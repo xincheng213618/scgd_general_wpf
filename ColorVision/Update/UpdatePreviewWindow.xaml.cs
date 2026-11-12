@@ -119,12 +119,12 @@ namespace ColorVision.Update
             try
             {
                 SaveUpdateOptions();
-                await UpdateSourceSelector.EnsureAsync();
-                LatestVersionCheckResult latestVersion = await AutoUpdater.GetLatestVersionCheckResultAsync(AutoUpdater.UpdateUrl, forceRefresh: true);
+                UpdateSourceSelection source = await UpdateSourceSelector.GetUpdateSourceAsync(forceRefresh: true);
+                LatestVersionCheckResult latestVersion = await AutoUpdater.GetLatestVersionFromSourceAsync(source);
                 if (IsClosed)
                     return;
 
-                ReinstallPlan = AutoUpdater.BuildReinstallPlan(AutoUpdater.CurrentVersion ?? latestVersion.Version, latestVersion);
+                ReinstallPlan = AutoUpdater.BuildReinstallPlan(AutoUpdater.CurrentVersion ?? latestVersion.Version, latestVersion, source.Url);
                 if (ReinstallPlan == null)
                 {
                     string message = latestVersion.Status == UpdateServerCheckStatus.NoInternetConnection

@@ -37,6 +37,24 @@ namespace ColorVision.UI.Tests
         }
 
         [Fact]
+        public async Task EnsurePackageAvailableAsync_DownloadsFromTheSourceCapturedByThePlan()
+        {
+            var downloader = new FakeMarketplacePackageDownloader();
+            var service = CreateService(new FakeMarketplacePackageClient(), downloader,
+                new FakeMarketplacePackageInstaller(), new FakeMarketplacePackageUi(_downloadDirectory));
+            var request = new MarketplacePackageRequest
+            {
+                PluginId = "PluginA",
+                Version = "1.0.0",
+                SourceUrl = "http://relay.test:9998",
+            };
+
+            await service.EnsurePackageAvailableAsync(request, showFailureDialog: false);
+
+            Assert.Equal("http://relay.test:9998/api/packages/PluginA/1.0.0", Assert.Single(downloader.Invocations).Url);
+        }
+
+        [Fact]
         public async Task EnsurePackageAvailableAsync_PreservesInvalidPreferredPackageBeforeDownloading()
         {
             string stalePath = Path.Combine(_downloadDirectory, "PluginA-1.0.0.cvxp");

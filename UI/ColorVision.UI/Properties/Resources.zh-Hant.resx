@@ -485,7 +485,7 @@
     <value>更新伺服器位址</value>
   </data>
   <data name="UpdateServerUrlsDescription" xml:space="preserve">
-    <value>留空使用官方伺服器。可填寫內網跳板或鏡像位址（如 http://192.168.1.20:9998），或離線更新資料夾（如 D:\CVUpdates、\\server\share\CVUpdates）。多個來源以分號分隔，依序選用第一個可用的來源進行更新檢查、下載和外掛更新；意見回饋等線上功能使用清單中的 HTTP 位址。只填內網位址或資料夾時不會連線官方伺服器。變更會從下一次請求生效。</value>
+    <value>留空使用官方伺服器。填寫一個跳板位址（如 http://192.168.1.20:9998）時，優先使用官方伺服器，失敗時使用跳板。手動檢查更新會重新選擇來源。完全隔離時可填寫離線資料夾（如 D:\CVUpdates 或 \\server\share\CVUpdates）。多個來源以分號分隔，按填寫順序嘗試。</value>
   </data>
   <data name="SettingsSectionAppearance" xml:space="preserve"><value>介面</value></data>
   <data name="SettingsSectionUpdates" xml:space="preserve"><value>更新與網路</value></data>

@@ -1,14 +1,16 @@
 using ColorVision.UI;
 using ColorVision.UI.Marketplace;
 using log4net;
+using System.Diagnostics.CodeAnalysis;
 using System.Net.Http;
+using System.Text.Json;
 
 namespace ColorVision.Update
 {
+    public readonly record struct UpdateSourceSelection(string Url, Version? LatestVersion);
+
     /// <summary>
-    /// Picks the first reachable service address from <see cref="MarketplaceConfig.ServiceBaseUrls"/> so update checks,
-    /// downloads, the marketplace and other service features use one source. With a single address nothing is probed.
-    /// Concurrent callers share one probe, and a selection is reused briefly so one update check does not switch sources midway.
+    /// Selects the first source that serves valid update metadata. Concurrent callers share the probe.
     /// </summary>
     public static class UpdateSourceSelector
     {
@@ -16,32 +18,53 @@ namespace ColorVision.Update
         private static readonly TimeSpan ProbeTimeout = TimeSpan.FromSeconds(4);
         private static readonly TimeSpan SelectionLifetime = TimeSpan.FromMinutes(5);
         private static readonly object SyncRoot = new();
-        private static Task<string>? _selection;
-        private static DateTime _selectedAtUtc;
+        private static Task<Selection>? _selection;
+        private static IReadOnlyList<string>? _probedSources;
+        private static bool _probedDirectMode;
+        private static bool _probedForRefresh;
 
-        public static async Task<string> GetUpdateSourceUrlAsync(CancellationToken cancellationToken = default)
+        private sealed record Selection(UpdateSourceSelection Source, DateTime SelectedAtUtc);
+
+        public static async Task<string> GetUpdateSourceUrlAsync(CancellationToken cancellationToken = default, bool forceRefresh = false)
         {
-            await EnsureAsync(cancellationToken).ConfigureAwait(false);
-            return MarketplaceConfig.UpdateSourceUrl;
+            return (await GetUpdateSourceAsync(cancellationToken, forceRefresh).ConfigureAwait(false)).Url;
         }
 
-        public static Task EnsureAsync(CancellationToken cancellationToken = default)
+        public static async Task<UpdateSourceSelection> GetUpdateSourceAsync(CancellationToken cancellationToken = default, bool forceRefresh = false)
         {
-            IReadOnlyList<string> urls = MarketplaceConfig.ServiceBaseUrls;
-            if (urls.Count <= 1)
-                return Task.CompletedTask;
-
-            Task<string> selection;
+            cancellationToken.ThrowIfCancellationRequested();
+            Task<Selection> selection;
+            bool useCachedAddress;
             lock (SyncRoot)
             {
-                bool reusable = _selection != null
-                    && (!_selection.IsCompleted || DateTime.UtcNow - _selectedAtUtc < SelectionLifetime);
+                IReadOnlyList<string> urls = MarketplaceConfig.ServiceBaseUrls;
+                if (urls.Count == 1)
+                    return new UpdateSourceSelection(urls[0], null);
+
+                bool directMode = UpdateNetworkConfig.Instance.DisableSystemProxyForUpdates;
+                bool reusable = ReferenceEquals(urls, _probedSources) && directMode == _probedDirectMode && _selection != null
+                    && (!_selection.IsCompleted
+                        ? !forceRefresh || _probedForRefresh
+                        : !forceRefresh && _selection.IsCompletedSuccessfully && _selection.Result.Source.LatestVersion != null
+                            && DateTime.UtcNow - _selection.Result.SelectedAtUtc < SelectionLifetime);
+                useCachedAddress = reusable && _selection!.IsCompleted;
                 if (!reusable)
-                    _selection = SelectAsync(urls.ToArray());
+                {
+                    _probedSources = urls;
+                    _probedDirectMode = directMode;
+                    _probedForRefresh = forceRefresh;
+                    _selection = Task.Run(() => SelectAsync(urls));
+                }
                 selection = _selection!;
             }
 
-            return selection.WaitAsync(cancellationToken);
+            Selection result = await selection.WaitAsync(cancellationToken).ConfigureAwait(false);
+            lock (SyncRoot)
+            {
+                if (ReferenceEquals(_selection, selection) && ReferenceEquals(_probedSources, MarketplaceConfig.ServiceBaseUrls))
+                    MarketplaceConfig.SetActiveServiceBaseUrl(result.Source.Url);
+            }
+            return useCachedAddress ? result.Source with { LatestVersion = null } : result.Source;
         }
 
         public static void Invalidate()
@@ -50,53 +73,63 @@ namespace ColorVision.Update
                 _selection = null;
         }
 
-        private static async Task<string> SelectAsync(string[] urls)
+        private static async Task<Selection> SelectAsync(IReadOnlyList<string> urls)
         {
-            try
+            foreach (string url in urls)
             {
-                foreach (string url in urls)
+                Version? version = await ProbeLatestVersionAsync(url).ConfigureAwait(false);
+                if (version != null)
                 {
-                    if (await IsReachableAsync(url).ConfigureAwait(false))
-                    {
-                        MarketplaceConfig.SetActiveServiceBaseUrl(url);
-                        log.Info($"Using update service {url}.");
-                        return url;
-                    }
+                    log.Info($"Using update service {url}.");
+                    return new Selection(new UpdateSourceSelection(url, version), DateTime.UtcNow);
                 }
+            }
 
-                log.Warn($"None of the configured update services responded; using {urls[0]}.");
-                MarketplaceConfig.SetActiveServiceBaseUrl(urls[0]);
-                return urls[0];
-            }
-            finally
-            {
-                lock (SyncRoot)
-                    _selectedAtUtc = DateTime.UtcNow;
-            }
+            log.Warn($"None of the configured sources returned valid update metadata; using {urls[0]}.");
+            return new Selection(new UpdateSourceSelection(urls[0], null), DateTime.UtcNow);
         }
 
-        /// <summary>
-        /// Any HTTP answer below 500 counts as reachable; a relay whose upstream is down closes the connection or answers 5xx.
-        /// </summary>
-        private static async Task<bool> IsReachableAsync(string baseUrl)
+        private static async Task<Version?> ProbeLatestVersionAsync(string baseUrl)
         {
             using CancellationTokenSource timeout = new(ProbeTimeout);
             try
             {
                 using HttpResponseMessage response = await UpdateHttpClientProvider.GetClient()
-                    .GetAsync($"{baseUrl}/api/app/latest-version", HttpCompletionOption.ResponseHeadersRead, timeout.Token)
+                    .GetAsync($"{baseUrl}/api/app/latest-version", HttpCompletionOption.ResponseContentRead, timeout.Token)
                     .ConfigureAwait(false);
-                return (int)response.StatusCode < 500;
+                if (response.IsSuccessStatusCode
+                    && TryParseLatestVersion(await response.Content.ReadAsStringAsync(timeout.Token).ConfigureAwait(false), out Version? version))
+                    return version;
             }
             catch (Exception ex) when (ex is HttpRequestException or OperationCanceledException)
             {
                 log.Info($"Update service {baseUrl} is not reachable: {ex.GetBaseException().Message}");
-                return false;
             }
+            return null;
+        }
+
+        public static bool TryParseLatestVersion(string payload, [NotNullWhen(true)] out Version? version)
+        {
+            string value = payload.Trim();
+            if (value.StartsWith('{'))
+            {
+                try
+                {
+                    using JsonDocument document = JsonDocument.Parse(value);
+                    value = document.RootElement.TryGetProperty("version", out JsonElement element)
+                        && element.ValueKind == JsonValueKind.String ? element.GetString()!.Trim() : string.Empty;
+                }
+                catch (JsonException)
+                {
+                    version = null;
+                    return false;
+                }
+            }
+            return Version.TryParse(value, out version) && version > new Version();
         }
     }
 
-    /// <summary>Applies the saved service address list before other features read <see cref="MarketplaceConfig.ServiceBaseUrl"/>.</summary>
+    /// <summary>Applies the saved update source settings during startup.</summary>
     public sealed class UpdateSourceInitializer : InitializerBase
     {
         public override int Order => 1;
@@ -104,7 +137,7 @@ namespace ColorVision.Update
 
         public override Task InitializeAsync()
         {
-            MarketplaceConfig.SetServiceBaseUrls(MarketplaceConfig.ParseServiceBaseUrls(UpdateNetworkConfig.Instance.UpdateServerUrls));
+            MarketplaceConfig.ConfigureUpdateSources(UpdateNetworkConfig.Instance.UpdateServerUrls);
             return Task.CompletedTask;
         }
     }

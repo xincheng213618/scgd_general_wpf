@@ -18,17 +18,14 @@ namespace ColorVision.Update
         /// <summary>
         /// Whether an update check is worth attempting. Windows reports "no Internet" on isolated networks even when
         /// the update service is reachable through an internal relay or mirror, so local connectivity suffices when a
-        /// non-default service is configured or the default service name resolves to a private address (hosts relay).
-        /// An offline update folder (local disk, USB or share) is always worth trying.
+        /// legacy hosts redirect resolves the official name to a private address. Explicit sources are always tried.
         /// </summary>
         public static bool CanReachUpdateService()
         {
-            if (IsConnectedToInternet() || MarketplaceConfig.HasFolderSource)
+            if (!MarketplaceConfig.UsesOnlyDefaultServiceBaseUrl || IsConnectedToInternet())
                 return true;
             if (!IsConnectedToAnyNetwork())
                 return false;
-            if (!MarketplaceConfig.UsesOnlyDefaultServiceBaseUrl)
-                return true;
             return ResolvesToPrivateAddress(MarketplaceConfig.DefaultServiceBaseUrl);
         }
 

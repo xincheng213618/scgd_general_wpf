@@ -19,20 +19,7 @@ namespace ColorVision.UI.Marketplace
         /// </summary>
         public static string UpdateSourceUrl => Volatile.Read(ref _activeServiceBaseUrl) ?? Volatile.Read(ref _serviceBaseUrls)[0];
 
-        /// <summary>
-        /// The HTTP service for features that need a live server (feedback, activation, cloud drive, web links):
-        /// the active source when it is HTTP, otherwise the first configured HTTP source, otherwise the official service.
-        /// </summary>
-        public static string ServiceBaseUrl
-        {
-            get
-            {
-                string active = UpdateSourceUrl;
-                if (!IsFolderSource(active))
-                    return active;
-                return Volatile.Read(ref _serviceBaseUrls).FirstOrDefault(url => !IsFolderSource(url)) ?? DefaultServiceBaseUrl;
-            }
-        }
+        public static string ServiceBaseUrl => DefaultServiceBaseUrl;
 
         public static bool UsesOnlyDefaultServiceBaseUrl
         {
@@ -107,6 +94,15 @@ namespace ColorVision.UI.Marketplace
                 Volatile.Write(ref _activeServiceBaseUrl, null);
         }
 
+        public static void ConfigureUpdateSources(string? text)
+        {
+            string[] urls = ParseServiceBaseUrls(text);
+            if (urls.Length == 1 && !IsFolderSource(urls[0])
+                && !string.Equals(urls[0], DefaultServiceBaseUrl, StringComparison.OrdinalIgnoreCase))
+                urls = [DefaultServiceBaseUrl, urls[0]];
+            SetServiceBaseUrls(urls);
+        }
+
         public static void SetActiveServiceBaseUrl(string url)
         {
             if (ServiceBaseUrls.Contains(url, StringComparer.OrdinalIgnoreCase))
@@ -118,14 +114,14 @@ namespace ColorVision.UI.Marketplace
             return $"{ServiceBaseUrl}/{relativePath.TrimStart('/')}";
         }
 
-        public static string BuildUpdateApiUrl(string relativePath)
+        public static string BuildUpdateApiUrl(string relativePath, string? source = null)
         {
-            return $"{UpdateSourceUrl}/{relativePath.TrimStart('/')}";
+            return $"{source ?? UpdateSourceUrl}/{relativePath.TrimStart('/')}";
         }
 
-        public static string BuildLegacyPluginUrl(string relativePath)
+        public static string BuildLegacyPluginUrl(string relativePath, string? source = null)
         {
-            return BuildApiUrl($"D%3A/ColorVision/Plugins/{relativePath.TrimStart('/')}");
+            return BuildUpdateApiUrl($"D%3A/ColorVision/Plugins/{relativePath.TrimStart('/')}", source);
         }
     }
 }

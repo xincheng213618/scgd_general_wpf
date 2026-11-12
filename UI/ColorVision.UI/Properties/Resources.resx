@@ -630,7 +630,7 @@
     <value>更新服务器地址</value>
   </data>
   <data name="UpdateServerUrlsDescription" xml:space="preserve">
-    <value>留空使用官方服务器。可填写内网跳板或镜像地址（如 http://192.168.1.20:9998），或离线更新文件夹（如 D:\CVUpdates、\\server\share\CVUpdates）。多个地址用分号分隔，按顺序选用第一个可用的来源进行更新检查、下载和插件更新；反馈等在线功能使用列表中的 HTTP 地址。只填内网地址或文件夹时不会访问官方服务器。修改后从下一次请求生效。</value>
+    <value>留空使用官方服务器。填写一个跳板地址（如 http://192.168.1.20:9998）时，优先用官方服务器，失败时用跳板。手动检查更新会重新选路。完全隔离时可填写离线文件夹（如 D:\CVUpdates 或 \\server\share\CVUpdates）。多个来源用分号分隔，按填写顺序尝试。</value>
   </data>
   <data name="SettingsSectionAppearance" xml:space="preserve"><value>界面</value></data>
   <data name="SettingsSectionUpdates" xml:space="preserve"><value>更新与网络</value></data>

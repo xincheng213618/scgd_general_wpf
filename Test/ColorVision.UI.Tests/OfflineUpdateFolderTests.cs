@@ -4,6 +4,8 @@ using ColorVision.UI.Marketplace;
 using ColorVision.Update;
 using Newtonsoft.Json;
 using System.IO;
+using System.Net;
+using System.Net.Sockets;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -46,6 +48,70 @@ public sealed class OfflineUpdateFolderTests : IDisposable
     }
 
     [Fact]
+    public void SingleRelayIsAStandbyAndAnExplicitListKeepsItsOrder()
+    {
+        const string relay = "http://192.168.1.20:9998";
+        string official = MarketplaceConfig.DefaultServiceBaseUrl;
+
+        MarketplaceConfig.ConfigureUpdateSources(relay);
+        Assert.Equal(new[] { official, relay }, MarketplaceConfig.ServiceBaseUrls);
+        MarketplaceConfig.SetActiveServiceBaseUrl(relay);
+        Assert.Equal(official, MarketplaceConfig.ServiceBaseUrl);
+
+        MarketplaceConfig.ConfigureUpdateSources($"{relay};{official}");
+        Assert.Equal(new[] { relay, official }, MarketplaceConfig.ServiceBaseUrls);
+
+        MarketplaceConfig.ConfigureUpdateSources(_folder);
+        Assert.StartsWith("file:", Assert.Single(MarketplaceConfig.ServiceBaseUrls));
+    }
+
+    [Theory]
+    [InlineData("", "")]
+    [InlineData("404 Not Found", "{\"version\":\"9.9.9.9\"}")]
+    [InlineData("200 OK", "<html>Login</html>")]
+    public async Task ManualCheckSkipsInvalidPublicSourceThenReturnsToItWhenItRecovers(string initialStatus, string initialBody)
+    {
+        int publicRecovered = 0;
+        await using var server = new VersionServer(path => path.StartsWith("/official/", StringComparison.Ordinal)
+            ? Volatile.Read(ref publicRecovered) == 0 ? (initialStatus, initialBody) : ("200 OK", """{"version":"9.9.9.9"}""")
+            : ("200 OK", """{"version":"9.9.9.8"}"""));
+        string official = server.Url + "/official";
+        string relay = server.Url + "/relay";
+        MarketplaceConfig.SetServiceBaseUrls(new[] { official, relay });
+        UpdateSourceSelector.Invalidate();
+
+        AutoUpdatePlan first = Assert.IsType<AutoUpdatePlan>((await AutoUpdater.GetUpdatePlanCheckResultAsync(forceRefresh: true)).Plan);
+        Assert.Equal(relay, first.SourceUrl);
+        Assert.Equal(new Version(9, 9, 9, 8), first.TargetVersion);
+
+        Volatile.Write(ref publicRecovered, 1);
+        AutoUpdatePlan next = Assert.IsType<AutoUpdatePlan>((await AutoUpdater.GetUpdatePlanCheckResultAsync(forceRefresh: true)).Plan);
+        Assert.Equal(official, next.SourceUrl);
+        Assert.Equal(new Version(9, 9, 9, 9), next.TargetVersion);
+        Assert.StartsWith(relay + "/", AutoUpdater.GetPackageDownloadUrl(first.TargetVersion, first.IsIncremental, first.SourceUrl));
+    }
+
+    [Fact]
+    public void UpdatePlanChoosesTheOfflineInstallerWhenTheIncrementalChainIsMissing()
+    {
+        Write("app/releases/ColorVision-9.9.9.9.exe", "installer");
+        WriteIndex();
+        MarketplaceConfig.ConfigureUpdateSources(_folder);
+        string folder = Assert.Single(MarketplaceConfig.ServiceBaseUrls);
+        var current = new Version(9, 9, 9, 8);
+        var latest = new Version(9, 9, 9, 9);
+
+        AutoUpdatePlan full = Assert.IsType<AutoUpdatePlan>(AutoUpdater.BuildUpdatePlan(current, latest, folder));
+        Assert.False(full.IsIncremental);
+        Assert.Equal(folder, full.SourceUrl);
+        Assert.Equal(latest, full.TargetVersion);
+
+        Write("app/updates/ColorVision-Update-[9.9.9.9].cvx", "incremental-package");
+        WriteIndex();
+        Assert.True(AutoUpdater.BuildUpdatePlan(current, latest, folder)!.IsIncremental);
+    }
+
+    [Fact]
     public async Task FolderSourceAnswersUpdateChecksAndCopiesVerifiedPackages()
     {
         Write("app/latest-version.json", """{"version":"9.9.9.9"}""");
@@ -59,7 +125,7 @@ public sealed class OfflineUpdateFolderTests : IDisposable
         UpdateSourceSelector.Invalidate();
         string source = await UpdateSourceSelector.GetUpdateSourceUrlAsync();
         Assert.StartsWith("file:", source);
-        Assert.Equal("http://127.0.0.1:1", MarketplaceConfig.ServiceBaseUrl);
+        Assert.Equal(MarketplaceConfig.DefaultServiceBaseUrl, MarketplaceConfig.ServiceBaseUrl);
         Assert.True(WindowsNetworkState.CanReachUpdateService());
 
         LatestVersionCheckResult latest = await AutoUpdater.GetLatestVersionCheckResultAsync(AutoUpdater.UpdateUrl, forceRefresh: true);
@@ -72,6 +138,7 @@ public sealed class OfflineUpdateFolderTests : IDisposable
         Assert.Null(versions["Missing"]);
         MarketplacePluginDetail? detail = await client.GetPluginUpdateMetadataAsync("DemoPlugin", forceRefresh: true);
         Assert.Equal("2.0.0.0", Assert.Single(detail!.Versions).Version);
+        Assert.Equal(source, detail.UpdateSourceUrl);
 
         var manager = new Aria2cDownloadManager(Path.Combine(_root, "Downloads.db"), new DownloadManagerConfig { DefaultDownloadPath = _root },
             new DownloadManagerLifecycleTests.FakeDaemon(), new DownloadManagerLifecycleTests.FakeRpc(), enablePolling: false, registerLifetime: false, directMode: () => true);
@@ -115,5 +182,52 @@ public sealed class OfflineUpdateFolderTests : IDisposable
         Assert.True(OfflineUpdateFolder.TryResolveDownload(url, out path, out _, out _));
         Assert.Null(path);
         Assert.False(OfflineUpdateFolder.TryResolveDownload("http://example.test/api/app/updates/9.9.9.9/download", out _, out _, out _));
+    }
+
+    private sealed class VersionServer : IAsyncDisposable
+    {
+        private readonly TcpListener _listener = new(IPAddress.Loopback, 0);
+        private readonly CancellationTokenSource _stop = new();
+        private readonly Task _run;
+        public string Url { get; }
+
+        public VersionServer(Func<string, (string Status, string Body)> response)
+        {
+            _listener.Start();
+            Url = $"http://127.0.0.1:{((IPEndPoint)_listener.LocalEndpoint).Port}";
+            _run = RunAsync(response);
+        }
+
+        private async Task RunAsync(Func<string, (string Status, string Body)> response)
+        {
+            try
+            {
+                while (!_stop.IsCancellationRequested)
+                {
+                    using TcpClient client = await _listener.AcceptTcpClientAsync(_stop.Token);
+                    using NetworkStream stream = client.GetStream();
+                    using StreamReader reader = new(stream, Encoding.ASCII, leaveOpen: true);
+                    string? request = await reader.ReadLineAsync(_stop.Token);
+                    while (!string.IsNullOrEmpty(await reader.ReadLineAsync(_stop.Token))) { }
+                    (string status, string body) = response(request?.Split(' ')[1] ?? string.Empty);
+                    if (status.Length == 0)
+                        continue;
+                    byte[] message = Encoding.UTF8.GetBytes($"HTTP/1.1 {status}\r\nConnection: close\r\nContent-Length: {Encoding.UTF8.GetByteCount(body)}\r\n\r\n{body}");
+                    await stream.WriteAsync(message, _stop.Token);
+                }
+            }
+            catch (OperationCanceledException) when (_stop.IsCancellationRequested) { }
+        }
+
+        public async ValueTask DisposeAsync()
+        {
+            await _stop.CancelAsync();
+            try { await _run; }
+            finally
+            {
+                _listener.Stop();
+                _stop.Dispose();
+            }
+        }
     }
 }

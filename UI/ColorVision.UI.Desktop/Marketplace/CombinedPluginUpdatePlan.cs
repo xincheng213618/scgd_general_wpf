@@ -5,6 +5,7 @@ namespace ColorVision.UI.Desktop.Marketplace
     public class CombinedPluginUpdatePlan
     {
         public Version? HostVersion { get; init; }
+        public string? SourceUrl { get; init; }
         public List<CombinedPluginUpdateItem> Updates { get; } = new();
         public List<string> SkippedIncompatiblePlugins { get; } = new();
         public List<string> UnresolvedPlugins { get; } = new();
@@ -13,7 +14,7 @@ namespace ColorVision.UI.Desktop.Marketplace
 
         public CombinedPluginUpdatePlan CreateCompatibleSubset(Version hostVersion)
         {
-            CombinedPluginUpdatePlan subset = new() { HostVersion = hostVersion };
+            CombinedPluginUpdatePlan subset = new() { HostVersion = hostVersion, SourceUrl = SourceUrl };
             subset.Updates.AddRange(Updates.Where(item => PluginUpdateCompatibility.IsCompatibleWithHostVersion(item.VersionInfo.RequiresVersion, hostVersion)));
             subset.SkippedIncompatiblePlugins.AddRange(SkippedIncompatiblePlugins);
             subset.UnresolvedPlugins.AddRange(UnresolvedPlugins);

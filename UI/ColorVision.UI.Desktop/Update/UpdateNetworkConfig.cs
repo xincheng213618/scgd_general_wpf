@@ -21,7 +21,7 @@ namespace ColorVision.Update
         public static UpdateNetworkConfig Instance => ConfigService.Instance.GetRequiredService<UpdateNetworkConfig>();
 
         /// <summary>
-        /// Ordered update/marketplace service addresses; empty means the official service. Applied to
+        /// Backup update server or ordered source list; empty means the official service. Applied to
         /// <see cref="MarketplaceConfig"/> whenever it is set, including when the saved configuration loads.
         /// </summary>
         [ConfigSetting(Order = 510, Section = ConfigSettingConstants.SectionUpdates, Description = "UpdateServerUrlsDescription")]
@@ -32,7 +32,7 @@ namespace ColorVision.Update
             set
             {
                 _updateServerUrls = value?.Trim() ?? string.Empty;
-                MarketplaceConfig.SetServiceBaseUrls(MarketplaceConfig.ParseServiceBaseUrls(_updateServerUrls));
+                MarketplaceConfig.ConfigureUpdateSources(_updateServerUrls);
                 UpdateSourceSelector.Invalidate();
                 OnPropertyChanged();
             }

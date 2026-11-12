@@ -591,7 +591,7 @@
     <value>Update server addresses</value>
   </data>
   <data name="UpdateServerUrlsDescription" xml:space="preserve">
-    <value>Leave empty to use the official server. Enter an internal relay or mirror address (such as http://192.168.1.20:9998) or an offline update folder (such as D:\CVUpdates or \\server\share\CVUpdates). Separate multiple sources with semicolons; the first available one is used for update checks, downloads and plugin updates, while online features such as feedback use the HTTP addresses in the list. When only internal addresses or folders are listed, the official server is not contacted. Changes apply to the next request.</value>
+    <value>Leave empty to use the official server. Enter one relay address (such as http://192.168.1.20:9998) to use it when the official server is unavailable. A manual update check tries the preferred source again. For an isolated site, enter an offline folder (such as D:\CVUpdates or \\server\share\CVUpdates). Separate multiple sources with semicolons to set their exact order.</value>
   </data>
   <data name="SettingsSectionAppearance" xml:space="preserve"><value>Interface</value></data>
   <data name="SettingsSectionUpdates" xml:space="preserve"><value>Updates and network</value></data>

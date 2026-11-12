@@ -85,8 +85,8 @@ namespace ColorVision.UI.Desktop.Marketplace
 
         public async Task<MarketplacePluginDetail?> GetPluginDetailAsync(string pluginId, bool forceRefresh, CancellationToken cancellationToken = default)
         {
-            string baseUrl = await UpdateSourceSelector.GetUpdateSourceUrlAsync(cancellationToken);
-            if (string.IsNullOrEmpty(baseUrl)) return null;
+            string baseUrl = await UpdateSourceSelector.GetUpdateSourceUrlAsync(cancellationToken, forceRefresh);
+            string cacheKey = $"{baseUrl}\n{pluginId}";
 
             try
             {
@@ -100,7 +100,10 @@ namespace ColorVision.UI.Desktop.Marketplace
                 string json = await response.Content.ReadAsStringAsync(timeoutSource.Token);
                 MarketplacePluginDetail? detail = JsonConvert.DeserializeObject<MarketplacePluginDetail>(json);
                 if (detail != null)
-                    _pluginDetailCache[pluginId] = new CachedPluginDetail(detail);
+                {
+                    detail.UpdateSourceUrl = baseUrl;
+                    _pluginDetailCache[cacheKey] = new CachedPluginDetail(detail);
+                }
                 return detail;
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
@@ -109,7 +112,7 @@ namespace ColorVision.UI.Desktop.Marketplace
             }
             catch (OperationCanceledException ex)
             {
-                if (TryGetCachedPluginDetail(pluginId, out MarketplacePluginDetail? staleDetail))
+                if (TryGetCachedPluginDetail(cacheKey, out MarketplacePluginDetail? staleDetail))
                 {
                     log.Warn($"Plugin detail request timed out for {pluginId}; using the last successful response.");
                     return staleDetail;
@@ -120,7 +123,7 @@ namespace ColorVision.UI.Desktop.Marketplace
             }
             catch (Exception ex)
             {
-                if (TryGetCachedPluginDetail(pluginId, out MarketplacePluginDetail? staleDetail))
+                if (TryGetCachedPluginDetail(cacheKey, out MarketplacePluginDetail? staleDetail))
                 {
                     log.Warn($"GetPluginDetailAsync failed for {pluginId}; using the last successful response: {ex.Message}");
                     return staleDetail;
@@ -134,15 +137,15 @@ namespace ColorVision.UI.Desktop.Marketplace
         public async Task<MarketplacePluginDetail?> GetPluginUpdateMetadataAsync(
             string pluginId,
             bool forceRefresh = false,
-            CancellationToken cancellationToken = default)
+            CancellationToken cancellationToken = default,
+            string? sourceUrl = null)
         {
-            string baseUrl = await UpdateSourceSelector.GetUpdateSourceUrlAsync(cancellationToken);
-            if (string.IsNullOrEmpty(baseUrl)) return null;
+            string baseUrl = sourceUrl ?? await UpdateSourceSelector.GetUpdateSourceUrlAsync(cancellationToken, forceRefresh);
 
             string requestKey = $"{baseUrl}\n{pluginId}";
             Task<MarketplacePluginDetail?> request = _pluginUpdateMetadataRequests.GetOrCreate(
                 requestKey,
-                () => FetchPluginUpdateMetadataAsync(baseUrl, pluginId),
+                () => FetchPluginUpdateMetadataAsync(baseUrl, pluginId, requestKey),
                 out bool reused);
             if (reused)
                 log.Info($"Reusing the plugin update metadata request already in progress for {pluginId}.");
@@ -150,7 +153,7 @@ namespace ColorVision.UI.Desktop.Marketplace
             return await request.WaitAsync(cancellationToken).ConfigureAwait(false);
         }
 
-        private static async Task<MarketplacePluginDetail?> FetchPluginUpdateMetadataAsync(string baseUrl, string pluginId)
+        private static async Task<MarketplacePluginDetail?> FetchPluginUpdateMetadataAsync(string baseUrl, string pluginId, string cacheKey)
         {
             try
             {
@@ -166,12 +169,15 @@ namespace ColorVision.UI.Desktop.Marketplace
                 string json = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
                 MarketplacePluginDetail? detail = JsonConvert.DeserializeObject<MarketplacePluginDetail>(json);
                 if (detail != null)
-                    _pluginUpdateMetadataCache[pluginId] = new CachedPluginDetail(detail);
+                {
+                    detail.UpdateSourceUrl = baseUrl;
+                    _pluginUpdateMetadataCache[cacheKey] = new CachedPluginDetail(detail);
+                }
                 return detail;
             }
             catch (OperationCanceledException)
             {
-                if (TryGetCachedPluginUpdateMetadata(pluginId, out MarketplacePluginDetail? staleDetail))
+                if (TryGetCachedPluginUpdateMetadata(cacheKey, out MarketplacePluginDetail? staleDetail))
                 {
                     log.Warn($"Plugin update metadata request timed out for {pluginId}; using the last successful response.");
                     return staleDetail;
@@ -182,7 +188,7 @@ namespace ColorVision.UI.Desktop.Marketplace
             }
             catch (Exception ex)
             {
-                if (TryGetCachedPluginUpdateMetadata(pluginId, out MarketplacePluginDetail? staleDetail))
+                if (TryGetCachedPluginUpdateMetadata(cacheKey, out MarketplacePluginDetail? staleDetail))
                 {
                     log.Warn($"Plugin update metadata request failed for {pluginId}; using the last successful response: {ex.Message}");
                     return staleDetail;
@@ -221,11 +227,10 @@ namespace ColorVision.UI.Desktop.Marketplace
         public async Task<Dictionary<string, string?>> BatchVersionCheckAsync(
             IEnumerable<string> pluginIds,
             bool forceRefresh = false,
-            CancellationToken cancellationToken = default)
+            CancellationToken cancellationToken = default,
+            string? sourceUrl = null)
         {
-            string baseUrl = await UpdateSourceSelector.GetUpdateSourceUrlAsync(cancellationToken);
-            if (string.IsNullOrEmpty(baseUrl))
-                throw new InvalidOperationException("Marketplace service address is not configured.");
+            string baseUrl = sourceUrl ?? await UpdateSourceSelector.GetUpdateSourceUrlAsync(cancellationToken, forceRefresh);
 
             List<string> normalizedPluginIds = pluginIds
                 .Where(pluginId => !string.IsNullOrWhiteSpace(pluginId))
@@ -235,7 +240,7 @@ namespace ColorVision.UI.Desktop.Marketplace
             if (normalizedPluginIds.Count == 0)
                 return new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
 
-            string cacheKey = string.Join("\n", normalizedPluginIds);
+            string cacheKey = baseUrl + "\n" + string.Join("\n", normalizedPluginIds);
             await _batchVersionSemaphore.WaitAsync(cancellationToken);
             try
             {
@@ -296,7 +301,12 @@ namespace ColorVision.UI.Desktop.Marketplace
 
         public string GetDownloadUrl(string pluginId, string version)
         {
-            return $"{BaseUrl}/api/packages/{Uri.EscapeDataString(pluginId)}/{Uri.EscapeDataString(version)}";
+            return BuildDownloadUrl(BaseUrl, pluginId, version);
+        }
+
+        internal static string BuildDownloadUrl(string sourceUrl, string pluginId, string version)
+        {
+            return $"{sourceUrl}/api/packages/{Uri.EscapeDataString(pluginId)}/{Uri.EscapeDataString(version)}";
         }
 
         public async Task<List<string>> GetCategoriesAsync(CancellationToken cancellationToken = default)
@@ -436,9 +446,9 @@ namespace ColorVision.UI.Desktop.Marketplace
             return new Dictionary<string, string?>(versions, StringComparer.OrdinalIgnoreCase);
         }
 
-        private static bool TryGetCachedPluginDetail(string pluginId, out MarketplacePluginDetail? detail)
+        private static bool TryGetCachedPluginDetail(string cacheKey, out MarketplacePluginDetail? detail)
         {
-            if (_pluginDetailCache.TryGetValue(pluginId, out CachedPluginDetail? cached))
+            if (_pluginDetailCache.TryGetValue(cacheKey, out CachedPluginDetail? cached))
             {
                 detail = cached.Detail;
                 return true;
@@ -448,9 +458,9 @@ namespace ColorVision.UI.Desktop.Marketplace
             return false;
         }
 
-        private static bool TryGetCachedPluginUpdateMetadata(string pluginId, out MarketplacePluginDetail? detail)
+        private static bool TryGetCachedPluginUpdateMetadata(string cacheKey, out MarketplacePluginDetail? detail)
         {
-            if (_pluginUpdateMetadataCache.TryGetValue(pluginId, out CachedPluginDetail? cached))
+            if (_pluginUpdateMetadataCache.TryGetValue(cacheKey, out CachedPluginDetail? cached))
             {
                 detail = cached.Detail;
                 return true;
