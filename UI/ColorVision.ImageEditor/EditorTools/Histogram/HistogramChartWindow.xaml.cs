@@ -7,7 +7,6 @@ using ScottPlot;
 using System;
 using System.Linq;
 using System.Windows;
-using System.Collections.Generic;
 
 namespace ColorVision.ImageEditor
 {
@@ -193,7 +192,7 @@ namespace ColorVision.ImageEditor
             else
             {
                 // Normal mode: ensure Y starts at 0
-                WpfPlot.Plot.Axes.SetLimitsY(0, maxYValue * 1.1); // Add 10% padding
+                WpfPlot.Plot.Axes.SetLimitsY(0, maxYValue > 0 ? maxYValue * 1.1 : 1);
             }
 
             // Refresh the plot
@@ -202,56 +201,32 @@ namespace ColorVision.ImageEditor
 
         private double CalculateOptimizedYMax()
         {
-            // Collect all values from enabled channels
-            List<double> allValues = new List<double>();
-
+            double maximum = ShowGrayCheckBox.IsChecked == true ? OptimizedCount(_histogramData.GrayChannel) * 1.1 : 0;
             if (_histogramData.IsMultiChannel)
             {
                 if (ShowRedCheckBox.IsChecked == true)
-                {
-                    var doubles = PrepareHistogramValues(_histogramData.RedChannel);
-                    var sortedValues1 = doubles.OrderByDescending(v => v).Distinct().ToList();
-                    allValues.Add(sortedValues1[1] * 1.2);
-                }
+                    maximum = Math.Max(maximum, OptimizedCount(_histogramData.RedChannel) * 1.2);
                 if (ShowGreenCheckBox.IsChecked == true)
-                {
-                    var doubles = PrepareHistogramValues(_histogramData.GreenChannel);
-                    var sortedValues1 = doubles.OrderByDescending(v => v).Distinct().ToList();
-                    allValues.Add(sortedValues1[1] * 1.1);
-                }
+                    maximum = Math.Max(maximum, OptimizedCount(_histogramData.GreenChannel) * 1.1);
                 if (ShowBlueCheckBox.IsChecked == true)
-                {
-                    var doubles = PrepareHistogramValues(_histogramData.BlueChannel);
-                    var sortedValues1 = doubles.OrderByDescending(v => v).Distinct().ToList();
-                    allValues.Add(sortedValues1[1] * 1.1);
-                }
-                if (ShowGrayCheckBox.IsChecked == true)
-                {
-                    var doubles = PrepareHistogramValues(_histogramData.GrayChannel);
-                    var sortedValues1 = doubles.OrderByDescending(v => v).Distinct().ToList();
-                    allValues.Add(sortedValues1[1] * 1.1);
-                }
-                if (allValues.Count == 0)
-                    return 100;
-                return allValues.Max();
+                    maximum = Math.Max(maximum, OptimizedCount(_histogramData.BlueChannel) * 1.1);
             }
-            else
+            return maximum > 0 ? maximum : 100;
+        }
+
+        private static int OptimizedCount(int[] histogram)
+        {
+            int highest = 0, secondHighest = 0;
+            foreach (int count in histogram)
             {
-                if (ShowGrayCheckBox.IsChecked == true)
-                    allValues.AddRange(PrepareHistogramValues(_histogramData.GrayChannel));
-                if (allValues.Count == 0)
-                    return 100;
-
-                // Sort and find second highest value
-                var sortedValues = allValues.OrderByDescending(v => v).Distinct().ToList();
-
-                if (sortedValues.Count < 2)
-                    return sortedValues.First() * 1.1;
-
-                // Use second highest value with 120% multiplier for better visibility
-                double secondHighest = sortedValues[1];
-                return secondHighest * 1.1;
+                if (count > highest)
+                {
+                    secondHighest = highest;
+                    highest = count;
+                }
+                else if (count < highest && count > secondHighest) secondHighest = count;
             }
+            return secondHighest > 0 ? secondHighest : highest;
         }
 
         private double[] PrepareHistogramValues(int[] histogram)

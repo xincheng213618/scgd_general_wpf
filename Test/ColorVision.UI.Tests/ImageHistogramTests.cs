@@ -1,4 +1,7 @@
 using ColorVision.Common.Utilities;
+using ColorVision.ImageEditor;
+using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 
@@ -6,6 +9,32 @@ namespace ColorVision.UI.Tests;
 
 public sealed class ImageHistogramTests
 {
+    [Theory]
+    [InlineData(true, true)]
+    [InlineData(true, false)]
+    [InlineData(false, false)]
+    public void OptimizeKeepsAUsableScaleWhenThereIsOnlyOnePositiveCount(bool color, bool uniform)
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            int[] histogram = new int[256];
+            if (uniform) Array.Fill(histogram, 2);
+            else histogram[128] = 2;
+            var window = color ? new HistogramChartWindow(histogram, histogram, histogram) : new HistogramChartWindow(histogram);
+            try
+            {
+                Button optimize = Assert.IsType<Button>(window.FindName("OptimizeButton"));
+                optimize.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                var plot = Assert.IsType<ScottPlot.WPF.WpfPlot>(window.FindName("WpfPlot"));
+
+                Assert.Equal("Normal", optimize.Content);
+                Assert.Equal(0, plot.Plot.Axes.GetLimits().Bottom);
+                Assert.Equal(color ? 2.4 : 2.2, plot.Plot.Axes.GetLimits().Top, 12);
+            }
+            finally { window.Close(); }
+        });
+    }
+
     [Theory]
     [InlineData("Rgb24")]
     [InlineData("Rgba64")]
