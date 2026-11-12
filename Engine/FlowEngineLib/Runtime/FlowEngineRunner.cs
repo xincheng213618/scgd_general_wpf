@@ -1,4 +1,5 @@
 using FlowEngineLib.Base;
+using FlowEngineLib.Start;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
@@ -71,26 +72,7 @@ public sealed class FlowEngineRunner
                 "A flow execution is already active.");
         }
 
-        var completion = new TaskCompletionSource<FlowEngineEventArgs>(
-            TaskCreationOptions.RunContinuationsAsynchronously);
-        FlowEngineEventHandler? handler = null;
-        handler = (_, data) =>
-        {
-            if (string.Equals(
-                    data.StartNodeName,
-                    startNodeName,
-                    StringComparison.Ordinal)
-                && string.Equals(
-                    data.SerialNumber,
-                    serialNumber,
-                    StringComparison.Ordinal))
-            {
-                completion.TrySetResult(data);
-            }
-        };
-        _control.Finished += handler;
-
-        bool started = false;
+        CVStartCFC? run = null;
         try
         {
             string? blockReason = _control.ExecutionBlockReason;
@@ -120,7 +102,9 @@ public sealed class FlowEngineRunner
                     "Flow execution was canceled before it started.");
             }
 
-            if (!ready || !_control.TryStartNode(startNodeName, serialNumber))
+            if (ready)
+                run = _control.TryStartRun(startNodeName, serialNumber, trackCompletion: true);
+            if (run == null)
             {
                 return CreateResult(
                     started: false,
@@ -132,55 +116,52 @@ public sealed class FlowEngineRunner
                         ? "Flow start was rejected."
                         : "The selected start node did not become ready.");
             }
-            started = true;
-
             try
             {
-                FlowEngineEventArgs data = executionTimeout.HasValue
+                Task<FlowStartEventArgs> completion = run.TrackedCompletion.Task;
+                FlowStartEventArgs data = executionTimeout.HasValue
                     && executionTimeout.Value != Timeout.InfiniteTimeSpan
-                        ? await completion.Task
+                        ? await completion
                             .WaitAsync(
                                 executionTimeout.Value,
                                 cancellationToken)
                             .ConfigureAwait(false)
-                        : await completion.Task
+                        : await completion
                             .WaitAsync(cancellationToken)
                             .ConfigureAwait(false);
-                return new FlowEngineRunResult(
-                    Started: true,
-                    FlowEngineRunTermination.Completed,
-                    data);
+                return Completed(data);
             }
             catch (OperationCanceledException)
                 when (cancellationToken.IsCancellationRequested)
             {
-                _control.StopNode(startNodeName, serialNumber);
-                return CreateResult(
-                    started: true,
-                    FlowEngineRunTermination.Canceled,
-                    startNodeName,
-                    serialNumber,
-                    StatusTypeEnum.Canceled,
-                    "Flow execution was canceled.");
+                return FinishInterruptedRun(run, FlowEngineRunTermination.Canceled);
             }
             catch (TimeoutException)
             {
-                _control.StopNode(startNodeName, serialNumber);
-                return CreateResult(
-                    started: true,
-                    FlowEngineRunTermination.TimedOut,
-                    startNodeName,
-                    serialNumber,
-                    StatusTypeEnum.OverTime,
-                    "Flow execution timed out.");
+                return FinishInterruptedRun(run, FlowEngineRunTermination.TimedOut);
             }
         }
         finally
         {
-            if (started && cancellationToken.IsCancellationRequested)
-                _control.StopNode(startNodeName, serialNumber);
-            _control.Finished -= handler;
+            if (run != null)
+                _control.RefreshRunningState();
             Interlocked.Exchange(ref _isRunning, 0);
+        }
+
+        FlowEngineRunResult Completed(FlowStartEventArgs data) => new(true, FlowEngineRunTermination.Completed,
+            new FlowEngineEventArgs(startNodeName, data.SerialNumber, data.Status, data.TotalTime, data.Message, data.ErrorNodeName, data.ErrorNodeId));
+
+        FlowEngineRunResult FinishInterruptedRun(CVStartCFC action, FlowEngineRunTermination termination)
+        {
+            // Stop competes with finalization on the same run. A committed
+            // result survives even while its notification is still deferred.
+            if (!_control.TryStopRun(action) && action.TrackedTerminalResult is { } terminal)
+                return Completed(terminal);
+
+            bool canceled = termination == FlowEngineRunTermination.Canceled;
+            return CreateResult(true, termination, startNodeName, serialNumber,
+                canceled ? StatusTypeEnum.Canceled : StatusTypeEnum.OverTime,
+                canceled ? "Flow execution was canceled." : "Flow execution timed out.");
         }
     }
 

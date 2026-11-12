@@ -61,6 +61,85 @@ public sealed class FlowRuntimeHostTests
         });
     }
 
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void InterruptedWaitPreservesTheExactTerminalResultWhileNotificationIsDeferred(bool cancel)
+    {
+        RunInSta(async () =>
+        {
+            await using var host = new FlowRuntimeHost();
+            await host.LoadAsync(CreateCanvas(new HeadlessNeverEndNode()));
+            var end = Assert.Single(host.Nodes.OfType<HeadlessNeverEndNode>());
+            using var cancellation = new CancellationTokenSource();
+            IDisposable? deferred = null;
+            CVStartCFC? terminal = null;
+            Assert.Single(end.GetAllInputOptions()).DataTransfer += (_, args) =>
+            {
+                if (args.TargetOption.Data is not CVStartCFC { IsRunning: true } action || deferred != null)
+                    return;
+                // Commit the terminal outcome during synchronous dispatch, before the runner starts its timer.
+                deferred = action.DeferFlowCompletionNotification();
+                terminal = new CVStartCFC(action);
+                terminal.Failed("failure on the final branch", "FinalBranch", terminal.StartTime, "terminal-id");
+                Assert.True(terminal.TryDoFinishing());
+                terminal.FireFinished();
+            };
+            try
+            {
+                Task<FlowEngineRunResult> execution = host.RunAsync("HeadlessStart", "SN-DEFERRED",
+                    executionTimeout: cancel ? null : TimeSpan.FromMilliseconds(50), cancellationToken: cancellation.Token);
+                Assert.NotNull(terminal);
+                if (cancel)
+                    cancellation.Cancel();
+                FlowEngineRunResult result = await execution.WaitAsync(LifecycleTestTimeout);
+
+                Assert.Equal(FlowEngineRunTermination.Completed, result.Termination);
+                Assert.Equal(StatusTypeEnum.Failed, result.Data.Status);
+                Assert.Equal("failure on the final branch", result.Data.Message);
+                Assert.Equal("FinalBranch", result.Data.ErrorNodeName);
+                Assert.Equal("terminal-id", result.Data.ErrorNodeId);
+                Assert.Equal((long)terminal.GetTotalTime().TotalMilliseconds, result.Data.TotalTime);
+            }
+            finally
+            {
+                deferred?.Dispose();
+            }
+        });
+    }
+
+    [Fact]
+    public void DeferredNotificationCannotCompleteTheNextRunWithTheSameSerialNumber()
+    {
+        RunInSta(async () =>
+        {
+            const string serialNumber = "SN-REUSED";
+            await using var host = new FlowRuntimeHost();
+            await host.LoadAsync(CreateCanvas(new HeadlessNeverEndNode()));
+            var end = Assert.Single(host.Nodes.OfType<HeadlessNeverEndNode>());
+            using var cancellation = new CancellationTokenSource();
+            Task<FlowEngineRunResult> first = host.RunAsync("HeadlessStart", serialNumber, cancellationToken: cancellation.Token);
+            CVStartCFC firstAction = Assert.IsType<CVStartCFC>(end.LastStartedAction);
+            using var deferred = firstAction.DeferFlowCompletionNotification();
+            Assert.True(firstAction.TryDoFinishing());
+            firstAction.FireFinished();
+            cancellation.Cancel();
+            await first.WaitAsync(LifecycleTestTimeout);
+
+            Task<FlowEngineRunResult> second = host.RunAsync("HeadlessStart", serialNumber);
+            CVStartCFC secondAction = Assert.IsType<CVStartCFC>(end.LastStartedAction);
+            Assert.NotSame(firstAction, secondAction);
+            deferred.Dispose();
+            secondAction.Failed("second run failure", "SecondRun", secondAction.StartTime, "second-id");
+            Assert.True(secondAction.TryDoFinishing());
+            secondAction.FireFinished();
+            FlowEngineRunResult result = await second.WaitAsync(LifecycleTestTimeout);
+
+            Assert.Equal(StatusTypeEnum.Failed, result.Data.Status);
+            Assert.Equal("second run failure", result.Data.Message);
+        });
+    }
+
     [Fact]
     public void OversizedExecutionTimeoutIsRejectedBeforeStartingTheGraph()
     {
@@ -456,14 +535,18 @@ public sealed class HeadlessPendingReadinessStartNode : BaseStartNode
 public sealed class HeadlessNeverEndNode : STNode
 {
     public int StartedCount { get; private set; }
+    public CVStartCFC? LastStartedAction { get; private set; }
 
     protected override void OnCreate()
     {
         base.OnCreate();
         InputOptions.Add("IN", typeof(CVStartCFC), bSingle: true).DataTransfer += (_, e) =>
         {
-            if (e.TargetOption.Data is CVStartCFC { IsRunning: true })
+            if (e.TargetOption.Data is CVStartCFC { IsRunning: true } action)
+            {
                 StartedCount++;
+                LastStartedAction = action;
+            }
         };
     }
 }

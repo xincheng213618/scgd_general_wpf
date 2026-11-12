@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using FlowEngineLib.Start;
 using log4net;
 using Newtonsoft.Json;
@@ -25,6 +26,9 @@ public class CVStartCFC : CVBaseCFC
 		public int FinishedNotificationDeferralCount;
 
 		public CVStartCFC PendingFinishedAction;
+
+		public TaskCompletionSource<FlowStartEventArgs> TrackedCompletion;
+		public FlowStartEventArgs TrackedTerminalResult;
 	}
 
 	private sealed class FinishedNotificationDeferral : IDisposable
@@ -53,6 +57,13 @@ public class CVStartCFC : CVBaseCFC
 	public StatusTypeEnum? FinishedStatus
 	{
 		get { lock (finishState.Lock) return finishState.Status; }
+	}
+
+	internal void TrackCompletion() => finishState.TrackedCompletion = new(TaskCreationOptions.RunContinuationsAsynchronously);
+	internal TaskCompletionSource<FlowStartEventArgs> TrackedCompletion => finishState.TrackedCompletion;
+	internal FlowStartEventArgs TrackedTerminalResult
+	{
+		get { lock (finishState.Lock) return finishState.TrackedTerminalResult; }
 	}
 
 	[JsonIgnore]
@@ -151,6 +162,8 @@ public class CVStartCFC : CVBaseCFC
 			{
 				logger.Error($"Failed to release runtime resources for flow {SerialNumber}.", error);
 			}
+			if (finishState.TrackedCompletion != null)
+				finishState.TrackedTerminalResult = BaseStartNode.CreateFinishedEventArgs(this);
 		}
 	}
 

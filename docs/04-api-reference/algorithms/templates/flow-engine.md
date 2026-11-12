@@ -67,14 +67,14 @@ FlowHeadlessExecutionResult result =
 | 阶段 | 等待范围与结果 |
 | --- | --- |
 | 起始节点就绪 | `FlowEngineControl.EnsureStartNodeReadyAsync` 向要求连接就绪的节点传递带就绪时限的取消 token；不要求连接就绪的节点跳过此等待。收到迟到的就绪结果也按未就绪处理，运行器给出 `Started=false`、`StartRejected`、`Data.Status=Failed` |
-| 节点图执行 | `TryStartNode` 成功返回后，execution timeout 才用于等待与起始节点名及 SN 匹配的 `Finished`；超时给出 `Started=true`、`TimedOut`、`Data.Status=OverTime` |
-| 运行中取消 | 运行器捕获取消后给出 `Started=true`、`Canceled`、`Data.Status=Canceled`；启动前已捕获的取消则为 `Started=false` |
+| 节点图执行 | 起始节点同步派发成功返回后，execution timeout 才用于等待本次运行的完成通知；仍在运行时超时给出 `Started=true`、`TimedOut`、`Data.Status=OverTime` |
+| 运行中取消 | 取消仍在运行的图时返回 `Started=true`、`Canceled`、`Data.Status=Canceled`；启动前已捕获的取消则为 `Started=false` |
 
 执行超时不覆盖 STN 加载、前面的就绪等待、`TryStartNode` 内同步启动代码、随后观察器收尾或宿主释放。因此设置执行时限不保证整个 `RunAsync` 在同样的时间内返回，也不能约束已经发出的外部动作持续多久。
 
 就绪时限依赖节点响应取消。自定义节点忽略取消时，宿主继续等它退出，并拒绝迟到的就绪结果。MQTT 起始节点等待已分离连接退役时可响应取消，旧连接随后自行完成订阅与连接清理。
 
-运行器在执行超时或运行中取消时调用 `StopNode(startNodeName, serialNumber)`，再构造终止结果。若指定 SN 仍有活动动作，`BaseStartNode.Stop` 将其改为停止并从活动映射移除、向节点图传递停止动作；这条链没有等待设备停止确认或回滚外部写入的完成屏障。`Canceled` / `TimedOut`、宿主回到 `Ready` 或随后释放，都不能单独证明硬件已经停稳；重试前须由相应设备/业务边界确认实际状态。
+超时或取消时，运行器只停止本次启动的图。若本次终态已经确定，即使通知延迟也保留状态、耗时和失败详情。同一起点和 SN 的旧通知无法完成新运行。停止活动图会移除运行记录并传递停止信号；设备停稳或外部写入回滚仍由相应设备及业务边界确认。
 
 并发 `StopAsync` 等待同一次托管运行收尾，各调用方可设置自己的等待时限。并发或重复 `DisposeAsync` 共用一次清理，先取消当前运行，再等托管运行和取消回调退出后释放节点图。节点长期不响应取消时，释放会继续等待，直到其退出。运行错误由 `RunAsync` 返回，释放仍会清理节点图。
 
