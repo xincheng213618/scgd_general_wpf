@@ -33,26 +33,36 @@ internal static class LuxDeviceMeasurements
     internal static async Task<double?> MeasureVidAsync(CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        DeviceCamera camera = ServiceManager.GetInstance().DeviceServices.OfType<DeviceCamera>().FirstOrDefault()
-            ?? throw new InvalidOperationException("未配置相机设备。");
-        LuxVidMeasurementMode mode = ProjectARVRProConfig.Instance.LuxVidMode;
+        var config = ProjectARVRProConfig.Instance;
+        string code = config.LuxVidCameraCode;
+        if (string.IsNullOrWhiteSpace(code)) throw new InvalidOperationException("请在“流程处理配置 → 其他配置”选择 VID 相机。");
+        var cameras = ServiceManager.GetInstance().DeviceServices.OfType<DeviceCamera>()
+            .Where(camera => string.Equals(camera.Code, code, StringComparison.Ordinal)).Take(2).ToArray();
+        if (cameras.Length == 0) throw new InvalidOperationException($"找不到 VID 相机“{code}”，请在“其他配置”重新选择。");
+        if (cameras.Length > 1) throw new InvalidOperationException($"VID 相机设备代码“{code}”重复，请检查设备配置。");
+        DeviceCamera camera = cameras[0];
+        LuxVidMeasurementMode mode = config.LuxVidMode;
         if (!Enum.IsDefined(mode)) throw new InvalidOperationException("请选择有效的 VID 测量方式。");
+        bool fineFocus = mode == LuxVidMeasurementMode.FineFocus;
+        LocalVidFocus? localFocus = fineFocus ? LocalVidFocus.ForCamera(camera) : null;
         AutoFocusParam? template = null;
-        if (mode == LuxVidMeasurementMode.AutoFocus)
+        if (mode != LuxVidMeasurementMode.GetPosition)
         {
-            DisplayCameraConfig display = DisplayConfigManager.Instance.GetDisplayConfig<DisplayCameraConfig>(camera.Config.Code);
+            DisplayCameraConfig display = camera.DisplayConfig;
             if (display.AutoFocusTemplateIndex < 0 || display.AutoFocusTemplateIndex >= TemplateAutoFocus.Params.Count)
-                throw new InvalidOperationException("请先选择自动对焦模板。");
+                throw new InvalidOperationException($"请先在 VID 相机“{camera.Name}”上选择自动对焦模板。");
             template = TemplateAutoFocus.Params[display.AutoFocusTemplateIndex].Value;
         }
         if (camera.DService.DeviceStatus <= DeviceStatusType.Closed)
         {
-            MsgReturn? opened = await WaitForResultAsync(camera.DService.Open(camera.Config.CameraID,
-                camera.Config.TakeImageMode, (int)camera.Config.ImageBpp), cancellationToken);
+            MsgRecord open = localFocus?.Open(camera) ?? camera.DService.Open(camera.Config.CameraID,
+                camera.Config.TakeImageMode, (int)camera.Config.ImageBpp);
+            MsgReturn? opened = await WaitForResultAsync(open, cancellationToken);
             if (opened == null) return null;
         }
         cancellationToken.ThrowIfCancellationRequested();
-        MsgRecord command = template == null ? camera.DService.GetPosition() : camera.DService.AutoFocus(template);
+        MsgRecord command = template == null ? camera.DService.GetPosition()
+            : localFocus?.Measure(camera, template, cancellationToken) ?? camera.DService.AutoFocus(template);
         MsgReturn? response = await WaitForResultAsync(command, cancellationToken);
         return response == null ? null : ReadVid(response);
     }

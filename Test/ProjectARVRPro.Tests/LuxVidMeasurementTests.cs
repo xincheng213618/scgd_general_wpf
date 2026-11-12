@@ -1,4 +1,5 @@
 using ColorVision.Engine.Messages;
+using ColorVision.Engine;
 using ColorVision.Engine.Services;
 using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.Services.Devices.Camera.Configs;
@@ -53,6 +54,48 @@ public sealed class LuxVidMeasurementTests
         camera.Complete(focus, MsgRecordState.Success, mode == LuxVidMeasurementMode.AutoFocus
             ? new { Position = 999, VidPosition = 123.45 } : (object)new { nPosition = 999, VidPos = 123.45 });
         Assert.Equal(123.45, await measurement.WaitAsync(Timeout));
+        Assert.Empty(camera.OtherService.Commands);
+    }
+
+    [Theory]
+    [InlineData("", LuxVidMeasurementMode.AutoFocus, "选择 VID 相机")]
+    [InlineData("REMOVED", LuxVidMeasurementMode.GetPosition, "找不到 VID 相机")]
+    [InlineData(CameraScope.VidCode, LuxVidMeasurementMode.FineFocus, "仅支持本地相机")]
+    public async Task InvalidVidCameraSettingsDoNotIssueDeviceCommands(string code, LuxVidMeasurementMode mode, string expectedError)
+    {
+        using var camera = new CameraScope(DeviceStatusType.Closed, mode);
+        Task<double?> measurement = null!;
+        ArvrDrawingOverlayCompatibilityTests.RunOnStaThread(() =>
+        {
+            ProjectARVRProConfig.Instance.LuxVidCameraCode = code;
+            camera.Service.Device.DisplayConfig.UseLocalCamera = false;
+            measurement = LuxDeviceMeasurements.MeasureVidAsync(CancellationToken.None);
+        });
+        var error = await Assert.ThrowsAsync<InvalidOperationException>(() => measurement.WaitAsync(Timeout));
+        Assert.Contains(expectedError, error.Message);
+        Assert.Empty(camera.OtherService.Commands);
+        Assert.Empty(camera.Service.Commands);
+    }
+
+    [Fact]
+    public async Task FineFocusBindsToTheHostLocalCommandWithoutSendingMqtt()
+    {
+        using var camera = new CameraScope(DeviceStatusType.Opened, LuxVidMeasurementMode.FineFocus);
+        Task<MsgReturn?> completion = null!;
+        MsgRecord command = null!;
+        ArvrDrawingOverlayCompatibilityTests.RunOnStaThread(() =>
+        {
+            camera.Service.Device.CameraBackend.SetLocalStatus(DeviceStatusType.Opened);
+            // Invalid range stops the real host command before it reaches a native camera.
+            var template = new AutoFocusParam { MinPosition = 10, MaxPosition = 10 };
+            command = LocalVidFocus.ForCamera(camera.Service.Device).Measure(camera.Service.Device, template, CancellationToken.None);
+            completion = LuxDeviceMeasurements.WaitForResultAsync(command, CancellationToken.None);
+        });
+        Assert.Null(await completion.WaitAsync(Timeout));
+        Assert.Equal("AutoFocus", command.MsgSend.EventName);
+        Assert.Equal(CameraScope.VidCode, command.MsgSend.DeviceCode);
+        Assert.Contains("范围下限", command.MsgReturn.Message);
+        Assert.Empty(camera.Service.Commands);
     }
 
     [Theory]
@@ -129,8 +172,10 @@ public sealed class LuxVidMeasurementTests
     }
 
     // Exercise the production VID method and camera API with controllable command completion, without native devices.
-    private sealed class CameraScope : IDisposable
+    internal sealed class CameraScope : IDisposable
     {
+        internal const string VidCode = "VID.TEST.DEVICE";
+        internal const string OtherCode = "MAIN.TEST.DEVICE";
         private static readonly BindingFlags PrivateInstance = BindingFlags.Instance | BindingFlags.NonPublic;
         private static readonly FieldInfo ManagerField = typeof(ServiceManager).GetField("_instance", BindingFlags.Static | BindingFlags.NonPublic)!;
         private readonly ServiceManager? previousManager = ServiceManager.Current;
@@ -138,34 +183,44 @@ public sealed class LuxVidMeasurementTests
         private readonly ObservableCollection<TemplateModel<AutoFocusParam>> previousTemplates = TemplateAutoFocus.Params;
         private ServiceManager manager = null!;
         internal FakeCameraService Service { get; private set; } = null!;
+        internal FakeCameraService OtherService { get; private set; } = null!;
 
         internal CameraScope(DeviceStatusType status, LuxVidMeasurementMode mode = LuxVidMeasurementMode.AutoFocus)
         {
             ArvrDrawingOverlayCompatibilityTests.RunOnStaThread(() =>
             {
                 ConfigService.SetInstance(new ConfigHandler { IsAutoSave = false });
-                ProjectARVRProConfig.Instance.LuxVidMode = mode;
-                TemplateAutoFocus.Params = mode == LuxVidMeasurementMode.AutoFocus
+                var config = ProjectARVRProConfig.Instance;
+                config.LuxVidMode = mode;
+                config.LuxVidCameraCode = VidCode;
+                TemplateAutoFocus.Params = mode != LuxVidMeasurementMode.GetPosition
                     ? [new("VID.TEST.FOCUS", new AutoFocusParam { Id = 42, Name = "VID.TEST.FOCUS" })] : [];
-                var device = (DeviceCamera)RuntimeHelpers.GetUninitializedObject(typeof(DeviceCamera));
-                device.Config = new ConfigCamera
-                {
-                    Code = "VID.TEST.DEVICE", CameraID = "VID.TEST.CAMERA",
-                    TakeImageMode = TakeImageMode.Measure_Normal, ImageBpp = (ImageBpp)16
-                };
-                typeof(DeviceCamera).GetField("<CameraBackend>k__BackingField", PrivateInstance)!.SetValue(device, new CameraBackendState(false));
-                Service = (FakeCameraService)RuntimeHelpers.GetUninitializedObject(typeof(FakeCameraService));
-                Service.Device = device;
-                Service.Config = device.Config;
-                Service.DeviceStatus = status;
-                Service.Commands = [];
-                Service.Opened = new(TaskCreationOptions.RunContinuationsAsynchronously);
-                Service.Measured = new(TaskCreationOptions.RunContinuationsAsynchronously);
-                device.DService = Service;
+                OtherService = CreateCamera(OtherCode, "SV6100_Camera", "MAIN.TEST.CAMERA", status);
+                Service = CreateCamera(VidCode, "VID100", "VID.TEST.CAMERA", status);
                 manager = (ServiceManager)RuntimeHelpers.GetUninitializedObject(typeof(ServiceManager));
-                manager.DeviceServices = [device];
+                manager.DeviceServices = [OtherService.Device, Service.Device];
                 ManagerField.SetValue(null, manager);
             });
+        }
+
+        private static FakeCameraService CreateCamera(string code, string name, string cameraId, DeviceStatusType status)
+        {
+            var device = (DeviceCamera)RuntimeHelpers.GetUninitializedObject(typeof(DeviceCamera));
+            device.SysResourceModel = new SysResourceModel { Code = code, Name = name };
+            device.Config = new ConfigCamera
+            {
+                Code = code, CameraID = cameraId, TakeImageMode = TakeImageMode.Measure_Normal, ImageBpp = (ImageBpp)16
+            };
+            typeof(DeviceCamera).GetField("<CameraBackend>k__BackingField", PrivateInstance)!.SetValue(device, new CameraBackendState(false));
+            var service = (FakeCameraService)RuntimeHelpers.GetUninitializedObject(typeof(FakeCameraService));
+            service.Device = device;
+            service.Config = device.Config;
+            service.DeviceStatus = status;
+            service.Commands = [];
+            service.Opened = new(TaskCreationOptions.RunContinuationsAsynchronously);
+            service.Measured = new(TaskCreationOptions.RunContinuationsAsynchronously);
+            device.DService = service;
+            return service;
         }
 
         internal void Complete(MsgRecord record, MsgRecordState state, object? data = null) =>
@@ -184,7 +239,7 @@ public sealed class LuxVidMeasurementTests
         });
     }
 
-    private sealed class FakeCameraService : MQTTCamera
+    internal sealed class FakeCameraService : MQTTCamera
     {
         private FakeCameraService() : base(null!) { }
         public override DeviceStatusType DeviceStatus { get; set; }

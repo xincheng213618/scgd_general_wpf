@@ -42,7 +42,8 @@ namespace ProjectARVRPro
     public enum LuxVidMeasurementMode
     {
         [Description("自动聚焦")] AutoFocus,
-        [Description("直接获取位置")] GetPosition
+        [Description("直接获取位置")] GetPosition,
+        [Description("微聚焦")] FineFocus
     }
 
     [DisplayName("模组检测设置")]
@@ -116,8 +117,13 @@ namespace ProjectARVRPro
         public string LuxMachineNo { get => _LuxMachineNo; set { _LuxMachineNo = value; OnPropertyChanged(); } }
         private string _LuxMachineNo = "H03";
 
+        [DisplayName("VID 相机"), Category("LUX协议"), PropertyEditorType(typeof(VidCameraPropertiesEditor))]
+        [Description("用于单次 VID 测量的相机，JSON MeasureVID 和 LUX T0001 共用。")]
+        public string LuxVidCameraCode { get => _LuxVidCameraCode; set { _LuxVidCameraCode = value; OnPropertyChanged(); } }
+        private string _LuxVidCameraCode = string.Empty;
+
         [DisplayName("VID 测量方式"), Category("LUX协议")]
-        [Description("自动聚焦使用相机当前选择的对焦模板；直接获取位置仅读取当前位置对应的 VID。两者使用相同的修正与限值。")]
+        [Description("自动聚焦和微聚焦使用所选相机的对焦模板；微聚焦仅适用于本地相机，从当前电机位置附近找焦。直接获取位置无需模板。")]
         public LuxVidMeasurementMode LuxVidMode { get => _LuxVidMode; set { _LuxVidMode = value; OnPropertyChanged(); } }
         private LuxVidMeasurementMode _LuxVidMode;
 

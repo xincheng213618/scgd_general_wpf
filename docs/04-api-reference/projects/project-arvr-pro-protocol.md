@@ -128,7 +128,7 @@ RunAll 启动时取当前启用步骤列表，依次运行。`AllowTestFailures`
 {"Version":"1.0","MsgID":"vid-001","EventName":"MeasureVID","SerialNumber":"SN001","Code":0,"Msg":"OK","Data":{"VID":123.45,"Pass":true}}
 ```
 
-在 ProcessManager 的 **其他配置** 选择 VID 测量方式、K/B 和限值，自动聚焦方式需选好相机的自动对焦模板。与 [LUX VID 文本命令](./project-lux-protocol.md) 共用测量配置。JSON 命令直接采集 VID，省去流程初始化、切图和 CSV 保存，回包时机取决于本次相机命令的完成时间。
+在 **流程处理配置 → 其他配置** 选择 **VID 相机**、测量方式、K/B 和限值。升级后须先选择相机；未选、设备不存在或设备代码重复时测量失败。自动聚焦和微聚焦均使用所选相机面板的对焦模板；微聚焦仅支持本地取图，从当前电机位置附近找焦；直接获取位置无需模板。与 [LUX VID 文本命令](./project-lux-protocol.md) 共用配置。JSON 命令直接测量并返回结果，不切图或保存 CSV。
 
 | `Code` | 结果 |
 | --- | --- |

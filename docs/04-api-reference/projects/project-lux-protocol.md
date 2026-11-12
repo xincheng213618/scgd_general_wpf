@@ -16,7 +16,7 @@ related: ["projects.arvr-pro","projects.arvr-pro-processes","projects.arvr-pro-p
 ## 部署与配置
 
 1. 在“网络通信 → 服务设置”启用 Socket Server，解析模式选择 **Text**。默认监听 `0.0.0.0:6666`，UTF-8；服务默认关闭。Pro JSON 客户端使用 Json 模式，两种模式按现场用途选择。
-2. 在“流程处理配置 → 其他配置”按需填写 **LUX 协议设备号**（默认 `H03`）、VID 测量方式、限值和 K/B；设备号只组成回包前缀，不决定是否返回光学中心数据。
+2. 在“流程处理配置 → 其他配置”设置 **LUX 协议设备号**（默认 `H03`）；使用 VID 时按[单次 VID 测量](./project-arvr-pro-protocol.md#单次-vid-测量)选择相机和方式。LUX 设备号只组成回包前缀。
 3. 普通流程在活动组的 **SocketCode** 列填写命令末两位，绑定实际 Flow 模板与 Pro 实例 Recipe。旧 LUX 配置不自动迁移，现场需重新配置；流程和配置存储见 [Pro 流程组](./project-arvr-pro-processes.md)。
 4. 准备相机、光谱仪、Flow 服务和输出目录。默认在 Pro 的 CSV 输出目录生成 `C_<SN>.csv`、`B_<SN>.csv`、`D_<SN>.csv`。需要旧 LUX 格式时，在结果保存中开启 **保存客户报表**，选择 `LUX_Current_CSV` / `LUX_Legacy_CSV`；此时 C_ 文件使用报表目录，B_/D_ 保持原路径，配置与口径见 [LUX 客户 CSV](./project-arvr-pro-lux-export.md)。
 
@@ -39,7 +39,7 @@ T00XX,<SN>;
 | 命令 | 执行与响应 |
 | --- | --- |
 | `T0000,SN001;` | 立即握手：`H0300,SN001,00;`。空闲时设置当前 SN，忙碌时不修改正在运行的 SN；不清空已有累计结果，窗口未创建时可直接回复 |
-| `T0001,SN001;` | 按 VID 测量方式调用相机 `AutoFocus` 或 `GetPosition`，取设备转换后的 VID，再应用 K/B，输出 `B_` CSV；如 `H0301,SN001,00;123.45` |
+| `T0001,SN001;` | 用指定相机测量 VID，再应用 K/B，输出 `B_` CSV；如 `H0301,SN001,00;123.45` |
 | `T0031,SN001;` | 调用光谱仪 `GetData`，取得光谱结果时输出 `D_` CSV；如 `H0331,SN001,00;125.42` |
 | `T0002,SN001;` | 按活动组 `SocketCode=02` 运行流程；回包内容由所选处理类型决定 |
 | `T00XX,SN001;` | 运行活动组首个 `SocketCode=XX` 匹配项绑定的模板，完成后输出 `C_` CSV；如 `H0321,SN001,00;` |
@@ -89,4 +89,4 @@ VID/光通量测量后在后台访问输出目录并保存 CSV；共享盘等待
 
 `LuxProtocolTests` 保护报文字面值、特殊分号位置、光学中心字段及单次异步回复；`LuxVidMeasurementTests` 检查 VID 测量方式；流程配置测试保护 SocketCode 的复制、保存重载及活动组查找；`SocketControlTests` 验证回环连接归属。构建与测试命令使用 [ARVRPro 的本地入口](./project-arvr-pro.md#本地构建与测试)。
 
-现场仍需串行验证握手、普通流程、`H03AR`、两种 VID 方式和光通量，核对 CSV、测量值、Recipe 判定、失败回包、忙碌超时与断线恢复。真实设备与产线操作须在授权范围内执行；离线和回环测试不能替代业务交付验收。
+现场仍需串行验证握手、普通流程、`H03AR`、VID 和光通量，核对 CSV、测量值、Recipe 判定、失败回包、忙碌超时与断线恢复。真实设备与产线操作须在授权范围内执行；离线和回环测试不能替代业务交付验收。

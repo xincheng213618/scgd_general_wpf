@@ -1,4 +1,5 @@
 using ColorVision.Themes;
+using ColorVision.Engine.Services;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
@@ -21,6 +22,7 @@ public sealed class ProjectSettingsWindowTests
     {
         RunUi(dark, () =>
         {
+            using var cameras = new LuxVidMeasurementTests.CameraScope(DeviceStatusType.Closed);
             var config = new ProjectARVRProConfig { LuxMachineNo = "H03AR", LuxVidMin = 100, LuxVidMax = 200 };
             int saves = 0;
             var panel = new Process.OtherSettingsPanel(config, () => saves++);
@@ -43,11 +45,20 @@ public sealed class ProjectSettingsWindowTests
                 machine.GetBindingExpression(TextBox.TextProperty)!.UpdateSource();
                 Assert.Equal("H03", config.LuxMachineNo);
                 Assert.Equal(1, saves);
-                var mode = Assert.Single(Descendants<ComboBox>(panel));
-                mode.SelectedValue = LuxVidMeasurementMode.GetPosition;
+                ComboBox FindPicker(string property) => Descendants<ComboBox>(panel).Single(input =>
+                    input.GetBindingExpression(Selector.SelectedValueProperty)?.ParentBinding.Path.Path == property);
+                var camera = FindPicker(nameof(config.LuxVidCameraCode));
+                Assert.Equal(-1, camera.SelectedIndex);
+                Assert.Equal(2, camera.Items.Count);
+                camera.SelectedValue = LuxVidMeasurementTests.CameraScope.VidCode;
                 Pump();
-                Assert.Equal(LuxVidMeasurementMode.GetPosition, config.LuxVidMode);
+                Assert.Equal(LuxVidMeasurementTests.CameraScope.VidCode, config.LuxVidCameraCode);
                 Assert.Equal(2, saves);
+                var mode = FindPicker(nameof(config.LuxVidMode));
+                mode.SelectedValue = LuxVidMeasurementMode.FineFocus;
+                Pump();
+                Assert.Equal(LuxVidMeasurementMode.FineFocus, config.LuxVidMode);
+                Assert.Equal(3, saves);
                 var bitmap = new RenderTargetBitmap((int)window.ActualWidth, (int)window.ActualHeight, 96, 96, PixelFormats.Pbgra32);
                 bitmap.Render(window);
                 var png = new PngBitmapEncoder();
@@ -60,7 +71,7 @@ public sealed class ProjectSettingsWindowTests
                 Assert.Equal(0, config.LuxVidB);
                 window.Close();
                 Assert.Equal(3.5, config.LuxVidB);
-                Assert.Equal(3, saves);
+                Assert.Equal(4, saves);
             }
             finally { window.Close(); }
         });

@@ -45,7 +45,7 @@ ARVRPro 也可承接原 LUX 文本客户端：现场只安装 ARVRPro，在“�
 
 LUX 命令、回包、流程匹配、设备测量和并发限制统一见 [LUX TCP 协议](./project-lux-protocol.md)。原独立项目的源码、测试和协议文档通过仓库 `Projects/ARCHIVED.md` 中的 Git 标签恢复，供交付前核对；后续迭代均在 Pro。
 
-`T0000` 在检测窗口尚未创建时直接回握手；`T0001`、`T0031` 复用后台检测实例，不自动显示或激活窗口，其它 Flow 指令沿用原窗口行为。VID 检查相机当前状态，未打开时通过原 `Open` 接口等待连接成功，再执行选定操作；直接获取位置无需对焦模板，两种方式统一按 `VID × K + B` 修正及同一组限值生成 CSV。只在设备命令成功、失败或超时后回包，进度通知不代表完成。检测窗口已打开时显示执行状态与耗时，并在设备测量期间禁用测试、流程选择和配置操作，终态后恢复。
+`T0000` 在检测窗口尚未创建时直接回握手；`T0001`、`T0031` 复用后台检测实例，不自动显示或激活窗口，其它 Flow 指令沿用原窗口行为。[VID](./project-arvr-pro-protocol.md#单次-vid-测量) 使用选定相机，等待设备命令结束后按 `VID × K + B` 修正和限值生成 CSV。检测窗口已打开时显示执行状态与耗时，并在测量期间禁用测试、流程选择和配置操作。
 
 协议入口位于 `Services/LuxSocketDispatcher.cs`，设备调用位于 `Services/LuxDeviceMeasurements.cs`，单流程适配位于 `ARVRWindow.Lux.cs`；`Test/ProjectARVRPro.Tests/LuxProtocolTests.cs` 保护原报文字面值和异步完成边界，流程配置测试同时检查 SocketCode 的复制、保存重载及活动组查找。这些隔离测试不替代相机、光谱仪和客户客户端的真机联调。
 

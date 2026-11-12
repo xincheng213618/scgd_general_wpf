@@ -139,8 +139,12 @@ public partial class ARVRWindow
     {
         // Keep this command's settings when another station handshakes during measurement.
         string directory = ViewResultManager.Config.CsvSavePath;
-        string operation = session.Request.SocketCode == "31" ? "光通量测量"
-            : ProjectConfig.LuxVidMode == LuxVidMeasurementMode.GetPosition ? "VID 获取位置" : "VID 自动聚焦";
+        string operation = session.Request.SocketCode == "31" ? "光通量测量" : ProjectConfig.LuxVidMode switch
+        {
+            LuxVidMeasurementMode.GetPosition => "VID 获取位置",
+            LuxVidMeasurementMode.FineFocus => "VID 微聚焦",
+            _ => "VID 自动聚焦"
+        };
         var elapsed = Stopwatch.StartNew();
         bool succeeded = false;
         string? failure = null;
