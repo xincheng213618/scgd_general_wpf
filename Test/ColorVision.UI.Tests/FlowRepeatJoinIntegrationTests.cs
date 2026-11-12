@@ -1,5 +1,6 @@
 using ColorVision.Engine.FlowProcessing.Nodes;
 using FlowEngineLib;
+using FlowEngineLib.Algorithm;
 using FlowEngineLib.Base;
 using FlowEngineLib.End;
 using FlowEngineLib.Logical;
@@ -92,6 +93,104 @@ public sealed class FlowRepeatJoinIntegrationTests
         else Assert.Equal(201, end.FinalMasterId);
         Assert.Null(start.GetCFC(serialNumber));
     });
+
+    [Theory]
+    [InlineData("server", "pending")]
+    [InlineData("server", "running")]
+    [InlineData("server", "terminal")]
+    [InlineData("two-port", "pending")]
+    [InlineData("two-port", "running")]
+    [InlineData("two-port", "terminal")]
+    [InlineData("local", "pending")]
+    [InlineData("local", "running")]
+    [InlineData("local", "terminal")]
+    public void RetriedServiceAndLocalJoinsOnlyConsumeTheirOwnInputs(string kind, string lateDelivery) => StaTest.Run(() =>
+    {
+        const string serialNumber = "same-serial-hub-retry";
+        using var container = new CVNodeContainer();
+        var start = new RuntimeTestStartNode();
+        var branches = new ControlledBranchNode();
+        var pairs = new ConcurrentQueue<(int ImageId, int RoiId)>();
+        CVCommonNode join = kind switch
+        {
+            "local" => new LocalJoinProbe(false, pairs),
+            "two-port" => new TwoPortServerJoinProbe { MaxTime = 10000 },
+            _ => new Algorithm2InNode { MaxTime = 10000 },
+        };
+        var end = new RecordingEndNode();
+        foreach (STNode node in new STNode[] { start, branches, join, end }) { node.Create(); container.Nodes.Add(node); }
+        Assert.Equal(ConnectionStatus.Connected, start.m_op_start.ConnectOption(branches.Input, false));
+        Assert.Equal(ConnectionStatus.Connected, branches.First.ConnectOption(join.GetAllInputOptions()[0], false));
+        Assert.Equal(ConnectionStatus.Connected, branches.Second.ConnectOption(join.GetAllInputOptions()[1], false));
+        Assert.Equal(ConnectionStatus.Connected, join.GetAllOutputOptions().Single().ConnectOption(end.m_in_start, false));
+        using var control = new FlowEngineControl(container, false, new FlowNodeManager()) { PersistResults = false };
+        var completed = new TaskCompletionSource<FlowEngineEventArgs>(TaskCreationOptions.RunContinuationsAsynchronously);
+        int dispatches = 0;
+        if (join is CVBaseServerNode server)
+        {
+            start.OnPublish = action =>
+            {
+                CVMQTTRequest request = JsonConvert.DeserializeObject<CVMQTTRequest>(action.Message)!;
+                JObject parameters = JObject.FromObject(request.Data);
+                pairs.Enqueue((parameters.Value<int>("MasterId"), parameters.Value<int>("POI_MasterId")));
+                dispatches++;
+                Assert.True(server.DoServerStatusRecv(new CVBaseDataFlowResp
+                {
+                    Code = 0, Message = "ok", Version = request.Version, ServiceName = request.ServiceCode,
+                    DeviceNodeCode = request.DeviceNodeCode, EventName = request.EventName, SerialNumber = request.SerialNumber,
+                    MsgID = request.MsgID, SendTime = DateTime.Now, ZIndex = request.ZIndex,
+                    Data = new JObject { ["MasterId"] = 301, ["MasterResultType"] = 250 },
+                }));
+            };
+        }
+        else join.nodeRunEvent += (_, _) => Interlocked.Increment(ref dispatches);
+
+        Assert.True(control.TryStartNode(start.NodeName, serialNumber));
+        var retired = new CVStartCFC(start.GetCFC(serialNumber));
+        retired.MasterValue(null!, 101, lateDelivery == "pending" ? 100 : 25);
+        if (lateDelivery == "pending") branches.First.TransferData(retired);
+        control.StopNode(start.NodeName, serialNumber);
+        Assert.True(retired.RuntimeResources.IsDisposed);
+        control.Finished += (_, args) => completed.TrySetResult(args);
+        Assert.True(control.TryStartNode(start.NodeName, serialNumber));
+
+        var active = Assert.IsType<CVStartCFC>(start.GetCFC(serialNumber));
+        var left = new CVStartCFC(active);
+        var right = new CVStartCFC(active);
+        left.MasterValue(null!, 201, 100);
+        right.MasterValue(null!, 202, 25);
+        if (lateDelivery == "pending")
+        {
+            branches.Second.TransferData(right);
+            Assert.Equal(0, Volatile.Read(ref dispatches));
+            branches.First.TransferData(left);
+        }
+        else
+        {
+            branches.First.TransferData(left);
+            if (lateDelivery == "terminal") retired.SetStatusType(StatusTypeEnum.Canceled);
+            branches.Second.TransferData(retired);
+            Assert.Equal(0, Volatile.Read(ref dispatches));
+            branches.Second.TransferData(right);
+        }
+
+        Assert.Equal(1, Volatile.Read(ref dispatches));
+        Assert.Equal(StatusTypeEnum.Completed, completed.Task.WaitAsync(TimeSpan.FromSeconds(10)).GetAwaiter().GetResult().Status);
+        Assert.Equal((201, 202), Assert.Single(pairs));
+        Assert.Equal(1, end.SuccessfulOutputs);
+    });
+
+    private sealed class TwoPortServerJoinProbe() : CVBaseServerNodeIn2Hub("Join fixture", "Algorithm", "SVR.Algorithm.Default", "DEV.Algorithm.Default")
+    {
+        protected override object getBaseEventData(CVStartCFC start)
+        {
+            var left = new AlgorithmPreStepParam();
+            var right = new AlgorithmPreStepParam();
+            getPreStepParam(0, left);
+            getPreStepParam(1, right);
+            return new { left.MasterId, POI_MasterId = right.MasterId };
+        }
+    }
 
     [Theory]
     [InlineData(false, false)]

@@ -83,7 +83,7 @@ public class CVBaseServerNodeIn2Hub : CVBaseServerNode
         action.NormalizeStopStatus();
         if (action.IsPaused)
         {
-            DoTransferToServer(action, e);
+            if (!action.HasFinished && !action.RuntimeResources.IsDisposed) DoTransferToServer(action, e);
             return;
         }
         if (action.TryGetStopStatus(out _))
@@ -99,6 +99,7 @@ public class CVBaseServerNodeIn2Hub : CVBaseServerNode
         CVStartCFC execution;
         lock (inputSync)
         {
+            if (action.HasFinished || action.RuntimeResources.IsDisposed) return;
             sender.Data = new CVStartCFC(action);
             int received = 0;
             for (int index = 0; index < InputOptionsCount; index++)
@@ -125,6 +126,7 @@ public class CVBaseServerNodeIn2Hub : CVBaseServerNode
             ClearInputs();
         }
 
+        if (execution.HasFinished || execution.RuntimeResources.IsDisposed) return;
         CVStartCFC[] previousInputs = requestInputs.Value;
         try
         {
@@ -150,11 +152,9 @@ public class CVBaseServerNodeIn2Hub : CVBaseServerNode
         {
             STNodeOption input = InputOptions[index];
             if (input.DataType != typeof(CVStartCFC)) continue;
-            if (action == null || input.Data is CVStartCFC pending && (action.IsSameExecutionIteration(pending)
-                || ReferenceEquals(action.RuntimeResources, pending.RuntimeResources)))
+            if (action == null || input.Data is CVStartCFC pending && ReferenceEquals(action.RuntimeResources, pending.RuntimeResources))
                 input.Data = null;
-            if (action == null || masterInput[index] != null && (action.IsSameExecutionIteration(masterInput[index])
-                || ReferenceEquals(action.RuntimeResources, masterInput[index].RuntimeResources)))
+            if (action == null || masterInput[index] != null && ReferenceEquals(action.RuntimeResources, masterInput[index].RuntimeResources))
                 masterInput[index] = null;
         }
     }

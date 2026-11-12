@@ -19,7 +19,7 @@ internal sealed class BranchJoinInputs
             foreach (STNodeOption option in options)
             {
                 if (option.DataType != typeof(CVStartCFC) || option.Data is not CVStartCFC pending) continue;
-                if (ReferenceEquals(action.RuntimeResources, pending.RuntimeResources) && action.IsSameExecutionIteration(pending))
+                if (action.IsSameExecutionIteration(pending))
                     received++;
                 else
                     option.Data = null;

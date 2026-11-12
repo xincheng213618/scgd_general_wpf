@@ -100,7 +100,7 @@ public class CVBaseServerNodeHub : CVBaseServerNode
         action.NormalizeStopStatus();
         if (action.IsPaused)
         {
-            DoTransferToServer(action, e);
+            if (!action.HasFinished && !action.RuntimeResources.IsDisposed) DoTransferToServer(action, e);
             return;
         }
         if (action.TryGetStopStatus(out _))
@@ -116,6 +116,7 @@ public class CVBaseServerNodeHub : CVBaseServerNode
         CVStartCFC execution;
         lock (inputSync)
         {
+            if (action.HasFinished || action.RuntimeResources.IsDisposed) return;
             sender.Data = new CVStartCFC(action);
             int received = 0;
             for (int index = 0; index < InputOptionsCount; index++)
@@ -142,6 +143,7 @@ public class CVBaseServerNodeHub : CVBaseServerNode
             ClearInputs();
         }
 
+        if (execution.HasFinished || execution.RuntimeResources.IsDisposed) return;
         CVStartCFC[] previousInputs = requestInputs.Value;
         try
         {
@@ -167,11 +169,9 @@ public class CVBaseServerNodeHub : CVBaseServerNode
         {
             STNodeOption input = InputOptions[index];
             if (input.DataType != typeof(CVStartCFC)) continue;
-            if (action == null || input.Data is CVStartCFC pending && (action.IsSameExecutionIteration(pending)
-                || ReferenceEquals(action.RuntimeResources, pending.RuntimeResources)))
+            if (action == null || input.Data is CVStartCFC pending && ReferenceEquals(action.RuntimeResources, pending.RuntimeResources))
                 input.Data = null;
-            if (action == null || masterInput[index] != null && (action.IsSameExecutionIteration(masterInput[index])
-                || ReferenceEquals(action.RuntimeResources, masterInput[index].RuntimeResources)))
+            if (action == null || masterInput[index] != null && ReferenceEquals(action.RuntimeResources, masterInput[index].RuntimeResources))
                 masterInput[index] = null;
         }
     }
