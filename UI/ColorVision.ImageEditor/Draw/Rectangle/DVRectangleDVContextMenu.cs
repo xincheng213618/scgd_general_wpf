@@ -105,35 +105,31 @@ namespace ColorVision.ImageEditor.Draw
             }
 
             Rect r = dvRectangle.Rect;
-            if (r.Width <= 0 || r.Height <= 0)
+            if (!ShapeGeometry.IsFinite(r) || r.Width <= 0 || r.Height <= 0)
             {
                 error = "矩形大小无效";
                 return false;
             }
 
-            int x = (int)Math.Floor(r.X);
-            int y = (int)Math.Floor(r.Y);
-            int w = (int)Math.Ceiling(r.Width);
-            int h = (int)Math.Ceiling(r.Height);
-
-            if (x < 0) { w -= (0 - x); x = 0; }
-            if (y < 0) { h -= (0 - y); y = 0; }
-            if (x >= source.PixelWidth || y >= source.PixelHeight)
+            // Image renders into RenderSize in canvas coordinates. Before layout, use its natural DIP size.
+            Size size = drawCanvas.RenderSize;
+            if (!drawCanvas.IsArrangeValid || size.Width <= 0 || size.Height <= 0)
+                size = new Size(source.Width, source.Height);
+            double scaleX = source.PixelWidth / size.Width;
+            double scaleY = source.PixelHeight / size.Height;
+            int x = (int)Math.Floor(Math.Clamp(r.Left * scaleX, 0, source.PixelWidth));
+            int y = (int)Math.Floor(Math.Clamp(r.Top * scaleY, 0, source.PixelHeight));
+            int right = (int)Math.Ceiling(Math.Clamp(r.Right * scaleX, 0, source.PixelWidth));
+            int bottom = (int)Math.Ceiling(Math.Clamp(r.Bottom * scaleY, 0, source.PixelHeight));
+            if (right <= x || bottom <= y)
             {
                 error = "矩形超出图像范围";
-                return false;
-            }
-            if (x + w > source.PixelWidth) w = source.PixelWidth - x;
-            if (y + h > source.PixelHeight) h = source.PixelHeight - y;
-            if (w <= 0 || h <= 0)
-            {
-                error = "裁剪范围无效";
                 return false;
             }
 
             try
             {
-                cropped = new CroppedBitmap(source, new Int32Rect(x, y, w, h));
+                cropped = new CroppedBitmap(source, new Int32Rect(x, y, right - x, bottom - y));
                 return true;
             }
             catch (Exception ex)
