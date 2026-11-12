@@ -174,6 +174,8 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             _MaxOutputChars = DefaultMaxOutputChars;
         }
 
+        public override bool RequiresRemoteService => false;
+
         protected override void m_in_start_DataTransfer(object sender, STNodeOptionEventArgs e)
         {
             if (e.Status != ConnectionStatus.Connected || !HasData(e))

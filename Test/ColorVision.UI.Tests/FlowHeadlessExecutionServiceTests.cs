@@ -1,11 +1,14 @@
 using ColorVision.Database;
 using ColorVision.Engine.FlowProcessing;
+using ColorVision.Engine.FlowProcessing.Nodes;
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.Flow;
 using FlowEngineLib;
 using FlowEngineLib.Base;
 using FlowEngineLib.End;
+using FlowEngineLib.Start;
 using ST.Library.UI.NodeEditor;
+using System.IO;
 using System.Reflection;
 using System.Runtime.ExceptionServices;
 
@@ -174,7 +177,7 @@ public sealed class FlowHeadlessExecutionServiceTests
     {
         RunInSta(async () =>
         {
-            byte[] canvas = CreateObservedCanvas();
+            byte[] canvas = CreateCanvas(new HeadlessObservedServerNode(), new HeadlessTestStartNode());
             var request = new FlowHeadlessExecutionRequest(
                 canvas,
                 "HeadlessStart",
@@ -225,7 +228,7 @@ public sealed class FlowHeadlessExecutionServiceTests
         RunInSta(async () =>
         {
             var request = new FlowHeadlessExecutionRequest(
-                CreateObservedCanvas(),
+                CreateCanvas(new HeadlessObservedServerNode(), new HeadlessTestStartNode()),
                 "HeadlessStart",
                 "SN-NO-SERVICES");
 
@@ -240,6 +243,39 @@ public sealed class FlowHeadlessExecutionServiceTests
             Assert.Contains(
                 "no MQTT service snapshot",
                 result.Data.Message);
+        });
+    }
+
+    [Fact]
+    public void LocalScriptRunsWithDisconnectedMqttStartAndNoServiceSnapshot()
+    {
+        RunInSta(async () =>
+        {
+            DirectoryInfo directory = Directory.CreateTempSubdirectory("ColorVision-offline-script-");
+            string marker = Path.Combine(directory.FullName, "script-started.txt");
+            try
+            {
+                using var start = new MQTTStartNode { NodeName = "OfflineStart", Server = string.Empty };
+                var script = new CommandLineScriptNode
+                {
+                    ScriptType = CommandLineScriptType.Cmd,
+                    CommandText = "echo started>script-started.txt",
+                    WorkingDirectory = directory.FullName,
+                };
+                var request = new FlowHeadlessExecutionRequest(CreateCanvas(script, start), start.NodeName, "SN-OFFLINE-SCRIPT",
+                    executionTimeout: TimeSpan.FromSeconds(5));
+                Assert.False(start.IsExecutionReady);
+
+                FlowHeadlessExecutionResult result = await FlowHeadlessExecutionService.Shared.RunAsync(request);
+
+                Assert.True(result.Succeeded, result.Data.Message);
+                Assert.True(File.Exists(marker));
+            }
+            finally
+            {
+                File.Delete(marker);
+                directory.Delete();
+            }
         });
     }
 
@@ -303,24 +339,22 @@ public sealed class FlowHeadlessExecutionServiceTests
         return editor.GetCanvasData();
     }
 
-    private static byte[] CreateObservedCanvas()
+    private static byte[] CreateCanvas(CVBaseServerNode node, BaseStartNode start)
     {
         using var editor = new STNodeEditor();
-        var start = new HeadlessTestStartNode();
-        var server = new HeadlessObservedServerNode();
         var end = new CVEndNode();
         start.Create();
-        server.Create();
+        node.Create();
         end.Create();
         editor.Nodes.Add(start);
-        editor.Nodes.Add(server);
+        editor.Nodes.Add(node);
         editor.Nodes.Add(end);
         Assert.Equal(
             ConnectionStatus.Connected,
-            start.m_op_start.ConnectOption(server.Input));
+            start.m_op_start.ConnectOption(node.GetAllInputOptions().Single(option => option.DataType == typeof(CVStartCFC))));
         Assert.Equal(
             ConnectionStatus.Connected,
-            server.Output.ConnectOption(end.m_in_start));
+            node.GetAllOutputOptions().Single(option => option.DataType == typeof(CVStartCFC)).ConnectOption(end.m_in_start));
         return editor.GetCanvasData();
     }
 
@@ -367,10 +401,6 @@ public sealed class HeadlessObservedServerNode :
             "DEV")
     {
     }
-
-    public STNodeOption Input => m_in_start;
-
-    public STNodeOption Output => m_op_end;
 
     protected override void m_in_start_DataTransfer(
         object sender,

@@ -35,7 +35,7 @@ related: ["flow.architecture","flow.runtime","flow.templates","flow.session","ui
 
 有限超时必须大于零且最多为 4,294,967,294 ms。仅 execution timeout 接受 `Timeout.InfiniteTimeSpan`。请求构造和直接运行 `FlowRuntimeHost` 都会在启动图前拒绝非法值。
 
-`RunAsync` 每次创建并最终释放一个 `FlowRuntimeHost`，加载后由 `FlowEngineRunner` 等待运行结束；并发请求不共享可变节点实例。若图中有 `CVBaseServerNode` 但未提供任何服务快照，明确返回 `StartRejected`。提供了非空快照也不证明每个设备在线或绑定成功。宿主本身不创建编辑器；具体节点的构造、加载和执行仍需满足其自身的 UI、服务和设备依赖。
+`RunAsync` 每次创建并最终释放一个 `FlowRuntimeHost`，加载后由 `FlowEngineRunner` 等待运行结束；并发请求各自持有节点实例。图中有需要远程服务的节点且未提供 MQTT 服务快照时，返回 `StartRejected`。纯本地图（包括命令行脚本节点）可以在 MQTT 起始节点断线时运行。具体节点仍需满足自身的运行环境和设备依赖。
 
 ### 调用示例
 
