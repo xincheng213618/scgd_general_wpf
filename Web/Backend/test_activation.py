@@ -9,6 +9,7 @@ import unittest
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import closing
 from datetime import datetime
+from importlib import import_module
 from pathlib import Path
 from unittest.mock import patch
 
@@ -245,6 +246,16 @@ class ActivationHttpTests(unittest.TestCase):
         cls.server_key = rsa.generate_private_key(public_exponent=65537, key_size=3072)
 
     def setUp(self):
+        # Full blueprint registration replaces legacy module contexts. Restore
+        # them so other route suites keep their own database and auth policy.
+        for name in (
+            "admin_api", "cvws_api", "frontend_spa", "health_api", "operations_relay",
+            "pages", "public_api", "public_pages", "spectrum_api", "transfer",
+        ):
+            module = import_module(f"routes.{name}")
+            self.enterContext(patch.object(module, "_ctx", module._ctx))
+        cvws = import_module("routes.cvws_api")
+        self.enterContext(patch.object(cvws, "_CVWS_PACKAGE_RE", cvws._CVWS_PACKAGE_RE))
         directory = tempfile.TemporaryDirectory()
         self.addCleanup(directory.cleanup)
         self.root = Path(directory.name)
