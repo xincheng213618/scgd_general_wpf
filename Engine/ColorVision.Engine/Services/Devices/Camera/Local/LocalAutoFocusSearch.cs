@@ -14,11 +14,20 @@ internal sealed record LocalAutoFocusSettings(EvaFunc Evaluation, FindFuncModel 
 {
     internal bool FineOnly { get; init; }
 
+    // 0 disables early stopping. Otherwise a full-range coarse scan ends once the peak is bracketed:
+    // an earlier sample and EarlyStopCount consecutive later samples score below EarlyStopRatio × peak.
+    internal double EarlyStopRatio { get; init; }
+    internal int EarlyStopCount { get; init; } = 2;
+
     internal static LocalAutoFocusSettings FromTemplate(AutoFocusParam template, MotorConfig motor)
     {
         ArgumentNullException.ThrowIfNull(template);
         var settings = new LocalAutoFocusSettings(template.EvaFunc, motor.FindFuncModel, template.MinPosition, template.MaxPosition,
-            template.CurStep, template.Forwardparam, template.Curtailparam, template.StopStep, template.MinValue, template.nTimeout);
+            template.CurStep, template.Forwardparam, template.Curtailparam, template.StopStep, template.MinValue, template.nTimeout)
+        {
+            EarlyStopRatio = motor.FocusEarlyStopRatio,
+            EarlyStopCount = motor.FocusEarlyStopCount
+        };
         settings.Validate();
         return settings;
     }
@@ -35,6 +44,8 @@ internal sealed record LocalAutoFocusSettings(EvaFunc Evaluation, FindFuncModel 
             throw new ArgumentException("自动对焦摆动步长须在搜索范围内，缩减系数必须大于 0 且小于 1。");
         if (!double.IsFinite(MinimumScore) || MinimumScore < 0 || Timeout <= 0)
             throw new ArgumentException("自动对焦最低评价值必须为非负有限值，超时必须大于 0。");
+        if (!double.IsFinite(EarlyStopRatio) || EarlyStopRatio < 0 || EarlyStopRatio >= 1 || EarlyStopCount < 1)
+            throw new ArgumentException("粗扫提前停止比例须在 0（关闭）到 1 之间，连续低点数至少为 1。");
     }
 
     internal int Remaining(long elapsedMilliseconds, CancellationToken token, string operation = "搜索")
@@ -65,6 +76,7 @@ internal static class LocalAutoFocusSearch
         int Remaining() => settings.Remaining(elapsed(), token);
 
         int bestPosition = settings.Minimum, samples = 0;
+        int? motorPosition = initialPosition;
         double bestScore = double.NegativeInfinity;
         var measured = new SortedDictionary<int, double>();
         double Sample(int position)
@@ -73,6 +85,7 @@ internal static class LocalAutoFocusSearch
             int remaining = Remaining();
             if (measured.TryGetValue(position, out double previous)) return previous;
             double score = sample(position, remaining);
+            motorPosition = position;
             Remaining();
             if (!double.IsFinite(score)) throw new InvalidOperationException("自动对焦返回了无效清晰度评价值。");
             samples++;
@@ -107,14 +120,30 @@ internal static class LocalAutoFocusSearch
             double leftScore = Sample(left), rightScore = Sample(right);
             return score > leftScore && score > rightScore;
         }
-        void Scan(int minimum, int maximum, int step)
+        // The grid is fixed by minimum and step; only the visiting order starts from the end nearer the motor.
+        void Scan(int minimum, int maximum, int step, bool coarse = false)
         {
-            int position = minimum;
-            while (true)
+            long span = (long)maximum - minimum;
+            long lastIndex = (span + step - 1) / step;
+            bool reverse = motorPosition is int current && Math.Abs((long)maximum - current) < Math.Abs((long)current - minimum);
+            bool earlyStop = coarse && settings.EarlyStopRatio > 0;
+            double peak = double.NegativeInfinity, lowest = double.PositiveInfinity, lowestBeforePeak = double.PositiveInfinity;
+            int falling = 0;
+            for (long offset = 0; offset <= lastIndex; offset++)
             {
-                Sample(position);
-                if (position == maximum) break;
-                position = (int)Math.Min((long)position + step, maximum);
+                long index = reverse ? lastIndex - offset : offset;
+                int position = index == lastIndex ? maximum : (int)(minimum + index * step);
+                double score = Sample(position);
+                if (!earlyStop) continue;
+                if (score > peak)
+                {
+                    lowestBeforePeak = lowest;
+                    peak = score;
+                    falling = 0;
+                }
+                else falling = score < settings.EarlyStopRatio * peak ? falling + 1 : 0;
+                lowest = Math.Min(lowest, score);
+                if (falling >= settings.EarlyStopCount && peak > settings.MinimumScore && lowestBeforePeak < settings.EarlyStopRatio * peak) break;
             }
         }
 
@@ -161,7 +190,7 @@ internal static class LocalAutoFocusSearch
         }
         else if (settings.Method == FindFuncModel.FindMaxDiff)
         {
-            Scan(settings.Minimum, settings.Maximum, settings.InitialStep);
+            Scan(settings.Minimum, settings.Maximum, settings.InitialStep, coarse: true);
             if (!ConfirmInterpolatedPeak(settings.Minimum, settings.Maximum)) RefinePeak(bestPosition);
         }
         else if (settings.Method == FindFuncModel.FindDichotomy)
@@ -182,9 +211,9 @@ internal static class LocalAutoFocusSearch
         {
             int minimum = settings.Minimum, maximum = settings.Maximum, step = settings.InitialStep;
             double fineStep = settings.FineStep;
-            while (true)
+            for (bool coarse = true; ; coarse = false)
             {
-                Scan(minimum, maximum, step);
+                Scan(minimum, maximum, step, coarse);
                 if (step <= settings.StopStep) break;
                 minimum = (int)Math.Max(settings.Minimum, (long)bestPosition - step);
                 maximum = (int)Math.Min(settings.Maximum, (long)bestPosition + step);

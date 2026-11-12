@@ -7394,6 +7394,10 @@
   <data name="CameraFocusChart_Score" xml:space="preserve"><value>評價值</value></data>
   <data name="CameraFocusChart_AutoSave" xml:space="preserve"><value>自動儲存對焦曲線</value></data>
   <data name="CameraFocusChart_AutoSaveHint" xml:space="preserve"><value>從相機面板執行本機自動對焦成功後，將對焦曲線儲存為 PNG。</value></data>
+  <data name="MotorConfig_FocusEarlyStopRatio" xml:space="preserve"><value>粗掃提前停止比例</value></data>
+  <data name="MotorConfig_FocusEarlyStopRatioHint" xml:space="preserve"><value>本機全範圍粗掃越過峰值後，若連續若干點低於「峰值 × 此比例」且峰值前也出現過低點，即停止粗掃。0 表示關閉；建議 0.3–0.5。存在多個清晰峰時請保持關閉。</value></data>
+  <data name="MotorConfig_FocusEarlyStopCount" xml:space="preserve"><value>粗掃提前停止連續低點數</value></data>
+  <data name="MotorConfig_FocusEarlyStopCountHint" xml:space="preserve"><value>越過峰值後需要連續低於比例的取樣點數，至少為 1，預設 2。</value></data>
   <data name="CameraFocusChart_SaveDirectory" xml:space="preserve"><value>對焦曲線儲存資料夾</value></data>
   <data name="CameraFocusChart_SaveDirectoryHint" xml:space="preserve"><value>留空時使用「文件\ColorVision\AutoFocus」。曲線依裝置與日期歸檔。</value></data>
   <data name="CameraPanel_StartPreview" xml:space="preserve"><value>視訊模式</value></data>

@@ -2898,6 +2898,10 @@
   <data name="CameraFocusChart_Score" xml:space="preserve"><value>评价值</value></data>
   <data name="CameraFocusChart_AutoSave" xml:space="preserve"><value>自动保存对焦曲线</value></data>
   <data name="CameraFocusChart_AutoSaveHint" xml:space="preserve"><value>从相机面板执行本地自动对焦成功后，将对焦曲线保存为 PNG。</value></data>
+  <data name="MotorConfig_FocusEarlyStopRatio" xml:space="preserve"><value>粗扫提前停止比例</value></data>
+  <data name="MotorConfig_FocusEarlyStopRatioHint" xml:space="preserve"><value>本地全范围粗扫越过峰值后，若连续若干点低于“峰值 × 此比例”且峰值前也出现过低点，即停止粗扫。0 表示关闭；建议 0.3–0.5。存在多个清晰峰时请保持关闭。</value></data>
+  <data name="MotorConfig_FocusEarlyStopCount" xml:space="preserve"><value>粗扫提前停止连续低点数</value></data>
+  <data name="MotorConfig_FocusEarlyStopCountHint" xml:space="preserve"><value>越过峰值后需要连续低于比例的采样点数，至少为 1，默认 2。</value></data>
   <data name="CameraFocusChart_SaveDirectory" xml:space="preserve"><value>对焦曲线保存目录</value></data>
   <data name="CameraFocusChart_SaveDirectoryHint" xml:space="preserve"><value>留空时使用“文档\ColorVision\AutoFocus”。曲线按设备和日期归档。</value></data>
   <data name="CameraPanel_StartPreview" xml:space="preserve"><value>视频模式</value></data>

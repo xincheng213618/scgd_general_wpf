@@ -134,6 +134,60 @@ public class LocalAutoFocusSearchTests
         Assert.InRange(Math.Abs(result.Position - peak), 0, settings.StopStep);
     }
 
+    [Theory]
+    [InlineData(FindFuncModel.FindMaxDiff, 60000, 80000, 125000)]
+    [InlineData(FindFuncModel.FindMaxDiff, 175000, 95000, 180000)]
+    [InlineData(FindFuncModel.FindMaxSearch, 60000, 80000, 125000)]
+    public void BracketedCoarsePeakStopsTheScanFromTheNearerEnd(FindFuncModel method, int start, int lowest, int highest)
+    {
+        const int peak = 110300;
+        var settings = LocalCameraMotorTests.Settings(method) with
+        {
+            Minimum = 80000, Maximum = 180000, InitialStep = 5000, FineStep = 2000, Reduction = 0.3, StopStep = 200,
+            EarlyStopRatio = 0.5, EarlyStopCount = 2
+        };
+        var sampled = new List<int>();
+        var result = LocalAutoFocusSearch.Run(settings, (position, _) =>
+        {
+            sampled.Add(position);
+            return 1000 * Math.Exp(-Math.Pow((position - peak) / 6000.0, 2));
+        }, (_, _) => { }, initialPosition: start);
+
+        Assert.Equal(start < 130000 ? 80000 : 180000, sampled[0]);
+        Assert.All(sampled, position => Assert.InRange(position, lowest, highest));
+        Assert.InRange(Math.Abs(result.Position - peak), 0, settings.StopStep);
+    }
+
+    [Fact]
+    public void EarlyStopKeepsFullCoverageWhenThePeakIsNotBracketed()
+    {
+        var settings = LocalCameraMotorTests.Settings() with { EarlyStopRatio = 0.5, EarlyStopCount = 2 };
+        var sampled = new List<int>();
+        var result = LocalAutoFocusSearch.Run(settings, (position, _) =>
+        {
+            sampled.Add(position);
+            return 1000 * Math.Exp(-Math.Pow(position / 150.0, 2));
+        }, (_, _) => { }, initialPosition: 0);
+
+        for (int position = settings.Minimum; position <= settings.Maximum; position += settings.InitialStep)
+            Assert.Contains(position, sampled);
+        Assert.InRange(result.Position, 0, 1);
+    }
+
+    [Fact]
+    public void ReverseCoarseScanPreservesTheGridWhenTheLastIntervalIsShorter()
+    {
+        var settings = LocalCameraMotorTests.Settings() with { Minimum = -100, Maximum = 175, InitialStep = 100 };
+        var sampled = new List<int>();
+        LocalAutoFocusSearch.Run(settings, (position, _) =>
+        {
+            sampled.Add(position);
+            return 100000 - Math.Pow(position - 80, 2);
+        }, (_, _) => { }, initialPosition: 175);
+
+        Assert.Equal([175, 100, 0, -100], sampled.Take(4));
+    }
+
     [Fact]
     public void TimeoutAndSampleFailureNeverSubmitAFinalMove()
     {

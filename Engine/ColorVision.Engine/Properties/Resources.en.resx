@@ -6441,6 +6441,10 @@ Active cache operations will finish first. Disk files will be kept, and the cach
   <data name="CameraFocusChart_Score" xml:space="preserve"><value>Score</value></data>
   <data name="CameraFocusChart_AutoSave" xml:space="preserve"><value>Save autofocus curves automatically</value></data>
   <data name="CameraFocusChart_AutoSaveHint" xml:space="preserve"><value>Saves a PNG after successful local autofocus from the camera panel.</value></data>
+  <data name="MotorConfig_FocusEarlyStopRatio" xml:space="preserve"><value>Coarse scan early-stop ratio</value></data>
+  <data name="MotorConfig_FocusEarlyStopRatioHint" xml:space="preserve"><value>Stops a local full-range coarse scan after the peak when consecutive samples fall below peak × this ratio and an earlier sample was also below it. 0 disables it; 0.3–0.5 is typical. Keep it off when several sharp peaks can occur.</value></data>
+  <data name="MotorConfig_FocusEarlyStopCount" xml:space="preserve"><value>Coarse scan early-stop samples</value></data>
+  <data name="MotorConfig_FocusEarlyStopCountHint" xml:space="preserve"><value>Consecutive samples below the ratio required after the peak. At least 1; default 2.</value></data>
   <data name="CameraFocusChart_SaveDirectory" xml:space="preserve"><value>Autofocus curve folder</value></data>
   <data name="CameraFocusChart_SaveDirectoryHint" xml:space="preserve"><value>Leave blank to use Documents\ColorVision\AutoFocus. Curves are grouped by device and date.</value></data>
   <data name="CameraPanel_StartPreview" xml:space="preserve"><value>Video</value></data>

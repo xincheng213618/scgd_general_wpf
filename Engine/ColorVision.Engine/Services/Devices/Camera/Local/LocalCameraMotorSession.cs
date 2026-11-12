@@ -198,8 +198,11 @@ internal sealed class LocalCameraMotorSession(ILocalCameraMotorNative native)
         var vidMapping = includeVid ? ReadVidMapping(settings) : null;
         focus.Remaining(watch.ElapsedMilliseconds, token, "准备自动对焦");
         native.PrepareFocus(cameraHandle, exposure, gain);
-        focus.Remaining(watch.ElapsedMilliseconds, token, "准备自动对焦");
-        int? initialPosition = focus.FineOnly || focus.Method == FindFuncModel.FindDichotomy ? ReadPosition() : null;
+        // Every search uses the start position: local searches begin there and scans start from the nearer end.
+        const string readPositionOperation = "读取本地电机位置";
+        int positionTimeout = focus.Remaining(watch.ElapsedMilliseconds, token, readPositionOperation);
+        int positionCode = native.GetPosition(handle, out int initialPosition, Math.Min(settings.Timeout, positionTimeout));
+        CheckFocusOperation(positionCode, focus, watch.ElapsedMilliseconds, readPositionOperation, token);
         var result = LocalAutoFocusSearch.Run(focus, (position, remaining) =>
         {
             if (!focus.FineOnly || position != initialPosition)
