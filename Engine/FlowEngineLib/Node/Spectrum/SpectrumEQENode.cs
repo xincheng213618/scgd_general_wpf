@@ -1,4 +1,5 @@
 using System.Drawing;
+using FlowEngineLib.Algorithm;
 using FlowEngineLib.Base;
 using log4net;
 using ST.Library.UI.NodeEditor;
@@ -68,7 +69,7 @@ public class SpectrumEQENode : CVBaseServerNode
 		}
 	}
 
-	[STNodeProperty("电压", "电压", true)]
+	[STNodeProperty("电压", "自定义电压，单位 V", true)]
 	public float Voltage
 	{
 		get
@@ -82,7 +83,7 @@ public class SpectrumEQENode : CVBaseServerNode
 		}
 	}
 
-	[STNodeProperty("电流", "电流", true)]
+	[STNodeProperty("电流", "自定义电流，单位 mA，与服务请求保持一致", true)]
 	public float Current
 	{
 		get
@@ -277,6 +278,16 @@ public class SpectrumEQENode : CVBaseServerNode
 				sMUResultData.V = _Voltage;
 				sMUResultData.I = _Current;
 			}
+		}
+		if (RequiresRemoteService)
+		{
+			// Remote services resolve the electrical input from the preceding result.
+			// Local EQE must keep its measured V/I and original SMU association.
+			AlgorithmPreStepParam previous = new();
+			getPreStepParam(start, previous);
+			sMUResultData ??= new SMUResultData();
+			sMUResultData.MasterId = previous.MasterId;
+			sMUResultData.MasterResultType = previous.MasterResultType;
 		}
 		return new SpectrumEQEParamData
 		{

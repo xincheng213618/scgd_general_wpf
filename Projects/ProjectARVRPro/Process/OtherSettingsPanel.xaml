@@ -1,0 +1,17 @@
+<UserControl x:Class="ProjectARVRPro.Process.OtherSettingsPanel"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:display="clr-namespace:ProjectARVRPro">
+    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <StackPanel Margin="16" MaxWidth="800" HorizontalAlignment="Left">
+            <TextBlock Text="{display:DisplayText Key='LUX 协议'}" FontSize="18" FontWeight="SemiBold"
+                       Foreground="{DynamicResource GlobalTextBrush}" Margin="0 0 0 12"/>
+            <Border BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="4" Padding="12">
+                <StackPanel x:Name="SettingsContent" MinWidth="580"/>
+            </Border>
+            <TextBlock Text="{display:DisplayText Key='VID 对应 T0001，光通量对应 T0031。设备指令不自动弹出检测窗口。'}"
+                       Foreground="{DynamicResource SecondaryTextBrush}" TextWrapping="Wrap" Margin="0 10 0 0"/>
+            <TextBlock x:Name="StatusText" Foreground="{DynamicResource DangerBrush}" TextWrapping="Wrap" Margin="0 8 0 0"/>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

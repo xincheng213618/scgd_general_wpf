@@ -390,6 +390,41 @@ public sealed class CopilotWebPageSecurityTests
         Assert.Equal("https://example.com/public", hit.Url);
     }
 
+    [Theory]
+    [InlineData("ddg-html")]
+    [InlineData("ddg-lite")]
+    [InlineData("bing-rss")]
+    public void SearchHitExtractionPreservesCaseDistinctTargetsAndDeduplicatesOnlyEquivalentAuthorities(string provider)
+    {
+        var candidates = new[]
+        {
+            (Url: "https://public.example/Report?id=ABC", Title: "First target"),
+            (Url: "https://PUBLIC.example/Report?id=ABC", Title: "Authority duplicate"),
+            (Url: "https://public.example/report?id=ABC", Title: "Distinct path"),
+            (Url: "https://public.example/Report?id=abc", Title: "Distinct query"),
+        };
+        var payload = provider switch
+        {
+            "ddg-html" => string.Concat(candidates.Select(candidate =>
+                $"<div class='result'><a class='result__a' href='{WebUtility.HtmlEncode(candidate.Url)}'>{candidate.Title}</a></div>")),
+            "ddg-lite" => "<table>" + string.Concat(candidates.Select(candidate =>
+                $"<tr><td><a class='result-link' href='{WebUtility.HtmlEncode(candidate.Url)}'>{candidate.Title}</a></td></tr>")) + "</table>",
+            _ => "<rss><channel>" + string.Concat(candidates.Select(candidate =>
+                $"<item><title>{candidate.Title}</title><link>{WebUtility.HtmlEncode(candidate.Url)}</link></item>")) + "</channel></rss>",
+        };
+
+        var hits = provider switch
+        {
+            "ddg-html" => CopilotWebSearchCapability.ExtractDuckDuckGoHits(payload),
+            "ddg-lite" => CopilotWebSearchCapability.ExtractDuckDuckGoLiteHits(payload),
+            _ => CopilotWebSearchCapability.ExtractBingRssHits(payload),
+        };
+
+        Assert.Equal(new[] { candidates[0].Url, candidates[2].Url, candidates[3].Url }, hits.Select(hit => hit.Url));
+        Assert.Equal(new[] { "First target", "Distinct path", "Distinct query" }, hits.Select(hit => hit.Title));
+        Assert.Equal(new[] { 1, 2, 3 }, hits.Select(hit => hit.Rank));
+    }
+
     [Fact]
     public async Task ConnectionGuardRejectsBlockedDnsResultBeforeConnecting()
     {
@@ -416,7 +451,10 @@ public sealed class CopilotWebPageSecurityTests
     }
 
     [Theory]
-    [MemberData(nameof(BlockedIpv4Addresses))]
+    [InlineData("10.0.0.1")]
+    [InlineData("127.0.0.1")]
+    [InlineData("169.254.1.1")]
+    [InlineData("192.168.1.1")]
     public async Task ConnectionGuardRejectsSpecialPurposeIpv4BeforeConnecting(string address)
     {
         var connectCalls = 0;
@@ -438,7 +476,11 @@ public sealed class CopilotWebPageSecurityTests
     }
 
     [Theory]
-    [MemberData(nameof(NonCanonicalBlockedIpv4Hosts))]
+    [InlineData("2130706433")]
+    [InlineData("0x7f000001")]
+    [InlineData("127.1")]
+    [InlineData("localhost.")]
+    [InlineData("１２７.０.０.１")]
     public async Task ConnectionGuardRejectsNonCanonicalBlockedHostWithoutDnsLookup(string host)
     {
         var resolverCalls = 0;

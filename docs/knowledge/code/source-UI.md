@@ -37,7 +37,7 @@ next: false
   图像编辑器本地算法扩展：Catalog 描述、provider 注册、Invocation 和 Runner 执行；像素预览与应用/取消、几何结果和叠加显示分流，保留所有权与发布门禁；ONNX仅设计。
 
 - [算法结果交接、展示与导出](../../04-api-reference/engine-components/result-handoff-chain.md) — `engine.results`
-  图像编辑器算法结果绘制与叠加显示：区分本地中立 Geometry/Overlay、Engine 历史 handler 和客户业务导出；接收、查询、缺图回放与文档/revision 生命周期分别核对。
+  算法结果交接、已加载批次主记录查询与叠加显示：区分本地中立 Geometry/Overlay、Engine 历史 handler 和客户业务导出，保留来源与文档/revision 生命周期。
 
 - [系统职责与跨模块边界](../../03-architecture/overview/system-overview.md) — `platform.system`
   宿主、UI、Engine、插件与项目的职责及调用边界：UI操作不必经过Engine，程序集依赖不是统一执行顺序，构建产物不等于交付制品。
@@ -71,8 +71,20 @@ next: false
 - [Copilot 扩展、MCP 与 Hook](../../02-developer-guide/core-concepts/copilot-agent-extensions.md) — `copilot.extensions`
   业务模块动态上下文、外部 MCP client 和 Hook 如何进入统一宿主权限与生命周期。
 
+- [Copilot 工具契约](../../02-developer-guide/core-concepts/copilot-agent-tool-contracts.md) — `copilot.tool-contracts`
+  Copilot 工具结果、事件、审批恢复和 Flow 编辑必须遵守的执行契约。
+
+- [Engine 设备资源与运行装配](../../04-api-reference/engine-components/device-service-chain.md) — `engine.devices`
+  设备工厂、资源重载、显示装配与详情视图按需初始化；旧对象释放、集合重建和显示替换并非一个事务，记录存在、界面可见、服务在线和动作完成分别判断。
+
+- [算法结果交接、展示与导出](../../04-api-reference/engine-components/result-handoff-chain.md) — `engine.results`
+  算法结果交接、已加载批次主记录查询与叠加显示：区分本地中立 Geometry/Overlay、Engine 历史 handler 和客户业务导出，保留来源与文档/revision 生命周期。
+
 - [模板注册、参数与持久化](../../03-architecture/components/templates/design.md) — `engine.template-design`
   TemplateControl注册与普通ITemplate\<T\>参数加载、保存、复制和删除契约；注册、内存变更和数据库成功是不同状态，JSON与Flow另有实现。
+
+- [Flow 运行诊断、中断恢复与 Incident 处置](../../04-api-reference/engine-components/flow-diagnostics.md) — `flow.diagnostics`
+  Flow本地诊断SQLite快照、节点尝试与Incident事件列表的读写边界；快照不保证包含未保存画布，终态持久化与业务结果分开，中断恢复不续跑节点，心跳不是判死条件。
 
 - [开发工具管理：检测与安装 Python、Node.js](../../02-developer-guide/core-concepts/developer-tools-manager.md) — `platform.developer-tools`
   开发工具管理的Python/Node检测、当前应用与新终端命令路径、官方版本选择和安装校验；下载等待30分钟，关窗停止后续安装但不取消下载或终止安装器。
@@ -91,6 +103,9 @@ next: false
 
 - [配置持久化、重载与对象所有权](../../04-api-reference/ui-components/configuration.md) — `ui.configuration`
   应用设置 JSON 的备份恢复、配置路径、延迟实例、合并保存与重载；ConfigHandler单文件替换不等于内存发布成功，重载会使旧配置引用失效。
+
+- [共享防抖与回调生命周期](../../04-api-reference/ui-components/debounce-timer.md) — `ui.debounce-timer`
+  共享防抖的同键替换、回调所有权、Dispatcher 排队取消与可复用清理边界。
 
 - [UI 运行时扩展发现与排查](../../04-api-reference/ui-components/ui-runtime-handoff.md) — `ui.discovery`
   UI 扩展发现与入口缺失排查：AssemblyHandler 的程序集过滤、类型缓存和 provider 构造；刷新程序集不重建所有消费者，入口可见不证明初始化或业务完成。
@@ -116,11 +131,17 @@ next: false
 - [配置向导：步骤、应用与完成边界](../../04-api-reference/ui-components/wizards.md) — `ui.wizards`
   配置向导的步骤发现、初始化时序、前进应用和完成标记；关闭不回滚，完成标记不证明组件健康或重启成功。
 
+- [FlowEngineLib 节点扩展](../../04-api-reference/extensions/flow-node.md) — `flow.node-extension`
+  说明服务与本地节点基类、请求与响应扩展点、分支输入隔离、属性编辑和流程完成的边界。
+
 - [JSON 模板](../../04-api-reference/algorithms/templates/json-templates.md) — `algorithms.json-templates`
   JSON模板的分组参数与文本编辑、语法检查、输入草稿、保存保护和默认参数；Schema提供字段提示而不补默认值或执行完整校验。
 
 - [ROI 统计：区域、直方图与坏点候选](../../02-developer-guide/core-concepts/roi-statistics-v1.md) — `algorithms.roi-statistics`
   ROI统计的区域选择、百分位、直方图、坏点候选计数/返回上限及六文件CSV导出；说明Float32精确统计预算、列名精度限制和实际窗口操作。
+
+- [ColorVision 本地 MCP](../../02-developer-guide/core-concepts/colorvision-mcp.md) — `copilot.mcp-server`
+  ColorVision 入站本地 MCP 的连接与会话、工具和资源、工作区读取、两阶段确认及菜单写入边界。
 
 - [系统监控（SystemMonitor）](../../04-api-reference/plugins/standard-plugins/system-monitor.md) — `plugins.system-monitor`
   系统监控的 CPU/RAM 采样、手动刷新与状态栏生命周期；缓存大小包含子目录，清理只删顶层文件，逐文件失败不会单独提示。
@@ -142,8 +163,11 @@ next: false
 - [本地点阵畸变 V2](../../04-api-reference/algorithms/detectors/grid-distortion-v2.md) — `algorithms.grid-distortion`
   本地点阵畸变 V2 单次定位、TV/九点多口径及相对光学估计，覆盖 ImageView、Flow 和 ARVR 2.0 适配；光学估计不等同于标定结果。
 
-- [本地灯珠与 P2 分析](../../04-api-reference/algorithms/local-native-analysis.md) — `algorithms.local-native-analysis`
-  ImageEditor 本地灯珠、Ghost、旋转模板和双目标定融合的操作、参数与结果；灯珠暗区候选不完整，P2 运行失败后复制结果可能仍取上次 JSON。
+- [灯珠定位与完整网格判定](../../04-api-reference/algorithms/detectors/light-beads.md) — `algorithms.light-beads`
+  灯珠亮点定位、完整规则网格与不亮偏暗判定，覆盖运行内存 POI、可选 CSV 及旧 native 暗区候选的限制。
+
+- [本地 P2 分析](../../04-api-reference/algorithms/local-native-analysis.md) — `algorithms.local-native-analysis`
+  本地 Ghost、旋转模板匹配和双目标定融合的直接 native 操作、结果显示与生命周期限制；灯珠定位由独立主题维护。
 
 - [Matching 模板匹配](../../04-api-reference/algorithms/templates/matching-template.md) — `algorithms.matching`
   说明本地模板匹配的节点内置配置、cvtm 导入导出与无数据库执行，以及旧服务 Matching 的请求与 AOI 结果。
@@ -161,13 +185,16 @@ next: false
   Windows x64 运行与源码构建前提：Desktop Runtime、SDK、C++ 工具集及已有 native DLL 的选择。
 
 - [OpenCV 和 native 集成开发指南](../../02-developer-guide/engine-development/opencv-integration.md) — `engine.native-integration`
-  native ABI与HImage所有权、函数族返回值、视频异步/关闭边界，以及helper构建和CUDA发布输入；路由校准Context与POI原生参考。
+  native ABI与HImage所有权、函数族返回值，以及helper构建和CUDA发布输入；路由校准Context与POI原生参考。
 
 - [UI NuGet 包构建与发布](../../04-api-reference/ui-components/publishing.md) — `ui.publishing`
   UI NuGet整批与Algorithms单包发布、Release标签和版本预检；预检不预留版本，逐包上传没有整批回滚或逐条失败检查。
 
+- [POI 模板](../../04-api-reference/algorithms/templates/poi-template.md) — `algorithms.poi-template`
+  说明 POI 主从表、伴生模板、复制导入、运行事件与结果类型映射。
+
 - [opencv\_helper.dll API 参考](../../04-api-reference/engine-components/opencv-helper-api.md) — `engine.opencv-helper-api`
-  opencv\_helper 英文 API 参考：校准/POI、图像处理、SFR、检测、视频与内存释放；核对真实参数单位和函数族错误码，声明的选项不等于当前 Engine 提供操作入口。
+  opencv\_helper 英文 API 参考：校准/POI、图像处理、SFR、检测与内存释放；核对真实参数单位和函数族错误码，声明的选项不等于当前 Engine 提供操作入口。
 
 - [ColorVision.Core](../../04-api-reference/ui-components/ColorVision.Core.md) — `ui.core`
   定位 HImage 所有权、OpenCV/CUDA PInvoke、ImageCompute 融合分流、位图桥接与默认关闭的原生日志。
@@ -210,7 +237,7 @@ next: false
   按问题路由到 UI 模块、属性编辑契约、运行时发现与 DLL 发布证据。
 
 - [显示图案计量](../../04-api-reference/algorithms/detectors/display-metrology.md) — `algorithms.display-metrology`
-  本地显示图案计量：RGB套色、九点十字RGB分离、鬼影候选、亮暗点/线缺陷/Mura、灰尘脏污候选、双目信号与几何、Eyebox扫描和全视场斜边SFR；公开原理与可复现合成样本，不承诺现场精度。
+  本地显示图案计量的入口、共享输入与 RGB 套色、外部鬼影、屏体缺陷、灰尘、双目和 Eyebox 等口径；十字 RGB 与圆环鬼影另有独立主题。
 
 - [本地十字定位 FindCross](../../04-api-reference/algorithms/detectors/find-cross.md) — `algorithms.find-cross`
   本地十字定位的图像菜单、Flow 节点、生产参数、全图坐标、原生返回值与失败诊断。
@@ -224,14 +251,26 @@ next: false
 - [本地点阵畸变 V2](../../04-api-reference/algorithms/detectors/grid-distortion-v2.md) — `algorithms.grid-distortion`
   本地点阵畸变 V2 单次定位、TV/九点多口径及相对光学估计，覆盖 ImageView、Flow 和 ARVR 2.0 适配；光学估计不等同于标定结果。
 
-- [本地灯珠与 P2 分析](../../04-api-reference/algorithms/local-native-analysis.md) — `algorithms.local-native-analysis`
-  ImageEditor 本地灯珠、Ghost、旋转模板和双目标定融合的操作、参数与结果；灯珠暗区候选不完整，P2 运行失败后复制结果可能仍取上次 JSON。
+- [灯珠定位与完整网格判定](../../04-api-reference/algorithms/detectors/light-beads.md) — `algorithms.light-beads`
+  灯珠亮点定位、完整规则网格与不亮偏暗判定，覆盖运行内存 POI、可选 CSV 及旧 native 暗区候选的限制。
+
+- [本地 P2 分析](../../04-api-reference/algorithms/local-native-analysis.md) — `algorithms.local-native-analysis`
+  本地 Ghost、旋转模板匹配和双目标定融合的直接 native 操作、结果显示与生命周期限制；灯珠定位由独立主题维护。
 
 - [Matching 模板匹配](../../04-api-reference/algorithms/templates/matching-template.md) — `algorithms.matching`
   说明本地模板匹配的节点内置配置、cvtm 导入导出与无数据库执行，以及旧服务 Matching 的请求与 AOI 结果。
 
 - [统一图像算法平台 V1](../../02-developer-guide/core-concepts/image-algorithm-platform-v1.md) — `algorithms.platform`
   图像编辑器本地算法扩展：Catalog 描述、provider 注册、Invocation 和 Runner 执行；像素预览与应用/取消、几何结果和叠加显示分流，保留所有权与发布门禁；ONNX仅设计。
+
+- [十字 RGB 分离](../../04-api-reference/algorithms/detectors/rgb-cross.md) — `algorithms.rgb-cross`
+  本地十字 RGB 三通道边缘测量、G 参考偏移、原图坐标与独立有效状态；像素结果不等同于已标定角度色差。
+
+- [圆环鬼影](../../04-api-reference/algorithms/detectors/ring-ghost.md) — `algorithms.ring-ghost`
+  完整圆环与偏心弱环的区域平均信号比、GMR 阶次及 Flow 正常未检出零值约定；不自动证明光路阶次或现场精度。
+
+- [本地条纹 MTF](../../04-api-reference/algorithms/detectors/stripe-mtf.md) — `algorithms.stripe-mtf`
+  ImageView 与 Flow 共用的本地条纹亮暗对比度：取样、四部定位、比例与百分数、输入限制及 MTF 2.0 结果兼容。
 
 - [Copilot 扩展、MCP 与 Hook](../../02-developer-guide/core-concepts/copilot-agent-extensions.md) — `copilot.extensions`
   业务模块动态上下文、外部 MCP client 和 Hook 如何进入统一宿主权限与生命周期。
@@ -246,7 +285,7 @@ next: false
   CVRAW/CVCIE 读取、动态校正参数覆盖、RAW 按需色度测量、内嵌 XYZ 显示，以及版本写回和失败边界。
 
 - [算法结果交接、展示与导出](../../04-api-reference/engine-components/result-handoff-chain.md) — `engine.results`
-  图像编辑器算法结果绘制与叠加显示：区分本地中立 Geometry/Overlay、Engine 历史 handler 和客户业务导出；接收、查询、缺图回放与文档/revision 生命周期分别核对。
+  算法结果交接、已加载批次主记录查询与叠加显示：区分本地中立 Geometry/Overlay、Engine 历史 handler 和客户业务导出，保留来源与文档/revision 生命周期。
 
 - [相机服务、采集与结果视图](../../01-user-guide/devices/camera.md) — `operations.camera`
   本地与服务相机控制、共享电机会话、自动曝光与自动对焦模板、无文件预览；明确占用、超时、结果完成及帧寿命。
@@ -261,7 +300,7 @@ next: false
   UI 扩展发现与入口缺失排查：AssemblyHandler 的程序集过滤、类型缓存和 provider 构造；刷新程序集不重建所有消费者，入口可见不证明初始化或业务完成。
 
 - [ColorVision.ImageEditor：打开、绘制与输出](../../04-api-reference/ui-components/ColorVision.ImageEditor.md) — `ui.image-editor`
-  图像/视频打开、绘图撤销、叠加层、3D 与快照输出边界，区分渲染图、当前源像素和重读源文件的模型导出。
+  图像打开、绘图撤销、叠加层、3D 与快照输出边界，区分渲染图、当前源像素和重读源文件的模型导出。
 
 - [ImageEditor：上下文、工具装配与临时选区](../../04-api-reference/ui-components/image-editor-context.md) — `ui.image-editor-context`
   ImageView 的文档、会话、显示、算法协调和扩展所有权；说明源提交、连续帧有界处理、工具生命周期及临时 ROI 有效期。
@@ -277,9 +316,6 @@ next: false
 
 - [UI NuGet 包构建与发布](../../04-api-reference/ui-components/publishing.md) — `ui.publishing`
   UI NuGet整批与Algorithms单包发布、Release标签和版本预检；预检不预留版本，逐包上传没有整批回滚或逐条失败检查。
-
-- [ARVR 算法与模板](../../04-api-reference/algorithms/templates/arvr-template.md) — `algorithms.arvr`
-  ARVR 远端模板与请求对应关系；ImageView 与 Flow 共用的自研条纹 MTF、直接配参及兼容结果契约，以及 SFR 曲线与 CSV 范围。
 
 - [Blob / 连通域 V1](../../02-developer-guide/core-concepts/blob-analysis-v1.md) — `algorithms.blob-analysis`
   BlobAnalysis 保留实现的参数、结果与验证契约；默认运行时由 Experimental 门禁拒绝执行。
@@ -297,7 +333,7 @@ next: false
   GeometricTransform 的输入、参数、结果、宿主接入与定向验证契约。
 
 - [图像比较：差分、SSIM 与对齐预检](../../02-developer-guide/core-concepts/image-comparison-v1.md) — `algorithms.image-comparison`
-  图像比较的操作、参数范围、ROI、差分/SSIM/对齐结果和PNG/JSON/CSV导出；预检不校正图像，192MiB仅限制图像输出，采样数存在狭长区域上限缺口。
+  图像比较的操作、参数范围、ROI、差分/SSIM/对齐结果和PNG/JSON/CSV导出；对齐预检使用有硬采样预算的均匀网格，192MiB仅限制图像输出。
 
 - [灰度与颜色剖面：采样、曲线与数据导出](../../02-developer-guide/core-concepts/image-profile-v1.md) — `algorithms.image-profile`
   灰度/RGB、CVCIE 及带校正参数 CVRAW 的多通道叠加剖面、主题适配、统计和完整 JSON/CSV 导出；包含精度、单位、失效规则及预算。
@@ -324,10 +360,13 @@ next: false
   SubpixelEdge 保留实现的参数、结果与验证契约；默认运行时由 Experimental 门禁拒绝执行。
 
 - [opencv\_helper.dll API 参考](../../04-api-reference/engine-components/opencv-helper-api.md) — `engine.opencv-helper-api`
-  opencv\_helper 英文 API 参考：校准/POI、图像处理、SFR、检测、视频与内存释放；核对真实参数单位和函数族错误码，声明的选项不等于当前 Engine 提供操作入口。
+  opencv\_helper 英文 API 参考：校准/POI、图像处理、SFR、检测与内存释放；核对真实参数单位和函数族错误码，声明的选项不等于当前 Engine 提供操作入口。
 
 - [ColorVision 概览](../../00-getting-started/what-is-colorvision.md) — `platform.product`
   ColorVision 的设备、流程、图像分析、结果、插件与客户项目能力，以及从任务进入文档的方法。
+
+- [ProjectARVRPro](../../04-api-reference/projects/project-arvr-pro.md) — `projects.arvr-pro`
+  ARVRPro 项目入口、Socket 自动化、输出与历史结果查询；流程组、实例 Recipe 和 Demura 各有对应操作主题。
 
 - [UI 包职责与依赖边界](../../04-api-reference/ui-components/component-handbook.md) — `ui.package-boundaries`
   UI类库的职责、依赖与目标框架/版本兼容；包版本可独立于主程序，ScottPlot与SkiaSharp保持已验证的资产组合。
@@ -350,12 +389,15 @@ next: false
   ImageTools内置注册、多图列表中的单张预览、刷新与SQLite缩略图缓存；重选不保证重载，关窗不清缓存，缓存关闭也不等于零数据库访问。
 
 - [存储清理与选择性设置重置](../../04-api-reference/ui-components/storage-maintenance.md) — `ui.storage-maintenance`
-  独立文件缓存窗口的模块发现、自动增量扫描和确认清理，以及设置页的内存管理、恢复点和选择性重置入口。
+  存储分类占用与模块扩展接口、独立文件确认清理，以及配置页的恢复点和选择性下次启动重置。
 
 - [UI 包职责与依赖边界](../../04-api-reference/ui-components/component-handbook.md) — `ui.package-boundaries`
   UI类库的职责、依赖与目标框架/版本兼容；包版本可独立于主程序，ScottPlot与SkiaSharp保持已验证的资产组合。
 
 ## UI/ColorVision.Rbac {#module-55492f436f6c6f72566973696f6e2e52626163}
+
+- [许可证激活与设备名额](../../02-developer-guide/backend/activation.md) — `delivery.backend-activation`
+  用户中心的可选许可证激活、TPM 离线凭据、在线租约和后台设备名额。
 
 - [文件中转、覆盖与公开分享](../../02-developer-guide/backend/file-transfer.md) — `delivery.file-transfer`
   Web文件中转与桌面云盘的匿名上传、续传、公开分享及过期规则；桌面保存本机队列，网页队列不持久化。
@@ -416,7 +458,7 @@ next: false
   ARVRPro TCP/JSON 对接：初始化与 RunAll、流程启用设置、切图确认、AOI 切图节点、状态码和最终结果关联；说明分帧与并发会话限制。
 
 - [LUX TCP 通讯协议](../../04-api-reference/projects/project-lux-protocol.md) — `projects.lux-protocol`
-  LUX TCP 文本协议的 T0000 握手、VID、光学中心、光通量与 SocketCode 流程，说明响应字段、状态码、分帧及共享会话限制。
+  ARVRPro 的 LUX TCP 文本入口：T0000 握手、VID、光学中心、光通量与 SocketCode 流程，以及回包和连接限制。
 
 - [UI 包职责与依赖边界](../../04-api-reference/ui-components/component-handbook.md) — `ui.package-boundaries`
   UI类库的职责、依赖与目标框架/版本兼容；包版本可独立于主程序，ScottPlot与SkiaSharp保持已验证的资产组合。
@@ -430,7 +472,7 @@ next: false
   设备工厂、资源重载、显示装配与详情视图按需初始化；旧对象释放、集合重建和显示替换并非一个事务，记录存在、界面可见、服务在线和动作完成分别判断。
 
 - [主窗口与入口装配](../../01-user-guide/interface/main-window.md) — `operations.main-window`
-  主窗口菜单、搜索、状态栏与工作区装配；紧凑主窗口在 Windows build 22000 或更高版本默认启用并保留旧窗口开关，低版本直接使用普通主窗口。
+  主窗口菜单、搜索、状态栏与工作区装配；Windows 11 使用紧凑主窗口，Windows 10 保持原生窗口。
 
 - [终端进程、会话与脚本运行](../../01-user-guide/interface/terminal.md) — `operations.terminal`
   定义内嵌ConPTY会话、编辑器Python运行与外部CMD入口，区分命令提交、脚本结束、shell退出和强制释放。
@@ -439,13 +481,13 @@ next: false
   UI 扩展发现与入口缺失排查：AssemblyHandler 的程序集过滤、类型缓存和 provider 构造；刷新程序集不重建所有消费者，入口可见不证明初始化或业务完成。
 
 - [编辑器选择、文档生命周期与停靠布局](../../04-api-reference/ui-components/editor-document-lifecycle.md) — `ui.documents`
-  编辑器注册与选择、按路径和编辑器区分文档、保存重载关闭及外部变更；停靠布局不恢复未注册文件标签，重置也不预审脏文档。
+  编辑器注册与选择、文档身份、保存重载关闭及外部变更；重置停靠布局保留已打开的编辑器和未保存修改。
 
 - [快捷键：发现、注册、编辑与释放](../../04-api-reference/ui-components/hotkeys.md) — `ui.hotkeys`
   快捷键的发现、多组绑定、窗口/全局注册与搜索编辑；同一操作共享作用域，未分配操作保留展示，确认后立即保存，注册或持久化失败按结果补偿。
 
 - [工作区创建、资源打开与文件树管理](../../04-api-reference/ui-components/ColorVision.Solution.md) — `ui.solution`
-  工作区创建、打开与最近列表，文件树搜索和引用移除，切换取消及cvsln恢复；同名创建可能覆盖配置，取消切换不回滚全部文件变化。
+  工作区创建、打开与最近列表，文件树搜索和引用移除，切换取消及 cvsln 恢复。新建工作区保留已有文件。
 
 - [状态栏：发现、刷新与宿主生命周期](../../04-api-reference/ui-components/status-bar.md) — `ui.status-bar`
   状态栏的插件发现、活动文档通知、绑定更新、控件重建和关闭生命周期；刷新不保证发现新provider，隐藏不等于保存偏好或停止采样。
@@ -462,7 +504,7 @@ next: false
 ## UI/ColorVision.Themes {#module-55492f436f6c6f72566973696f6e2e5468656d6573}
 
 - [主窗口与入口装配](../../01-user-guide/interface/main-window.md) — `operations.main-window`
-  主窗口菜单、搜索、状态栏与工作区装配；紧凑主窗口在 Windows build 22000 或更高版本默认启用并保留旧窗口开关，低版本直接使用普通主窗口。
+  主窗口菜单、搜索、状态栏与工作区装配；Windows 11 使用紧凑主窗口，Windows 10 保持原生窗口。
 
 - [PropertyGrid 属性编辑契约](../../04-api-reference/ui-components/property-grid.md) — `ui.property-grid`
   属性面板的字段生成、编辑器选择和 Flow 适配；区分直接修改、工作副本、关闭、重置与宿主持久化。
@@ -536,7 +578,7 @@ next: false
   区分log4net输出、历史文件读取与UI筛选，说明刷新、截断和原生日志采集边界；没有显示不等于动作未发生。
 
 - [主窗口与入口装配](../../01-user-guide/interface/main-window.md) — `operations.main-window`
-  主窗口菜单、搜索、状态栏与工作区装配；紧凑主窗口在 Windows build 22000 或更高版本默认启用并保留旧窗口开关，低版本直接使用普通主窗口。
+  主窗口菜单、搜索、状态栏与工作区装配；Windows 11 使用紧凑主窗口，Windows 10 保持原生窗口。
 
 - [终端进程、会话与脚本运行](../../01-user-guide/interface/terminal.md) — `operations.terminal`
   定义内嵌ConPTY会话、编辑器Python运行与外部CMD入口，区分命令提交、脚本结束、shell退出和强制释放。
@@ -575,7 +617,7 @@ next: false
   UI 扩展发现与入口缺失排查：AssemblyHandler 的程序集过滤、类型缓存和 provider 构造；刷新程序集不重建所有消费者，入口可见不证明初始化或业务完成。
 
 - [编辑器选择、文档生命周期与停靠布局](../../04-api-reference/ui-components/editor-document-lifecycle.md) — `ui.documents`
-  编辑器注册与选择、按路径和编辑器区分文档、保存重载关闭及外部变更；停靠布局不恢复未注册文件标签，重置也不预审脏文档。
+  编辑器注册与选择、文档身份、保存重载关闭及外部变更；重置停靠布局保留已打开的编辑器和未保存修改。
 
 - [快捷键：发现、注册、编辑与释放](../../04-api-reference/ui-components/hotkeys.md) — `ui.hotkeys`
   快捷键的发现、多组绑定、窗口/全局注册与搜索编辑；同一操作共享作用域，未分配操作保留展示，确认后立即保存，注册或持久化失败按结果补偿。
@@ -602,13 +644,13 @@ next: false
   设置窗口的元数据发现、搜索定位与活对象编辑；选项/搜索入口在关闭窗口后调用保存，关窗不撤销修改，保存失败不回滚；启动检查更新是聚合开关。
 
 - [工作区创建、资源打开与文件树管理](../../04-api-reference/ui-components/ColorVision.Solution.md) — `ui.solution`
-  工作区创建、打开与最近列表，文件树搜索和引用移除，切换取消及cvsln恢复；同名创建可能覆盖配置，取消切换不回滚全部文件变化。
+  工作区创建、打开与最近列表，文件树搜索和引用移除，切换取消及 cvsln 恢复。新建工作区保留已有文件。
 
 - [状态栏：发现、刷新与宿主生命周期](../../04-api-reference/ui-components/status-bar.md) — `ui.status-bar`
   状态栏的插件发现、活动文档通知、绑定更新、控件重建和关闭生命周期；刷新不保证发现新provider，隐藏不等于保存偏好或停止采样。
 
 - [存储清理与选择性设置重置](../../04-api-reference/ui-components/storage-maintenance.md) — `ui.storage-maintenance`
-  独立文件缓存窗口的模块发现、自动增量扫描和确认清理，以及设置页的内存管理、恢复点和选择性重置入口。
+  存储分类占用与模块扩展接口、独立文件确认清理，以及配置页的恢复点和选择性下次启动重置。
 
 - [主题选择、资源应用与窗口外观](../../04-api-reference/ui-components/ColorVision.Themes.md) — `ui.themes`
   应用主题即时预览，启动页独立选择深色、浅色或跟随软件且下次启动生效；ThemeManager 的资源、系统跟随、窗口外观和保存边界。
@@ -648,8 +690,14 @@ next: false
 - [检查更新、重新安装与程序备份](../../02-developer-guide/deployment/auto-update.md) — `delivery.update`
   检查更新、重新安装与程序备份入口，以及主程序和插件的检查复用、下载安装、失败回退与启动恢复。
 
+- [更新扫描保护：临时排除项与清理所有权](../../02-developer-guide/deployment/update-scan-protection.md) — `delivery.update-scan-protection`
+  ServiceHost提供的主程序增量更新临时Defender排除项、目录准入和清理所有权；启用失败不阻断更新，服务停止或保护超时不保证排除项立即恢复。
+
 - [开发工具管理：检测与安装 Python、Node.js](../../02-developer-guide/core-concepts/developer-tools-manager.md) — `platform.developer-tools`
   开发工具管理的Python/Node检测、当前应用与新终端命令路径、官方版本选择和安装校验；下载等待30分钟，关窗停止后续安装但不取消下载或终止安装器。
+
+- [启动、初始化与故障恢复](../../03-architecture/overview/runtime.md) — `platform.runtime`
+  启动顺序与故障恢复：软件渲染兼容参数在 WPF 窗口前生效；初始化进度和ready不代表全部成功，一次性插件跳过不绕过真实故障。
 
 - [插件产物、安装与交付](../../02-developer-guide/plugin-development/getting-started.md) — `plugins.getting-started`
   插件项目构建、HostCopy、市场与本地安装、备份回退和提取插件；DLL目录替换、依赖补回及重启后加载的完成条件，正式打包会上传。
@@ -676,13 +724,19 @@ next: false
   设置窗口的元数据发现、搜索定位与活对象编辑；选项/搜索入口在关闭窗口后调用保存，关窗不撤销修改，保存失败不回滚；启动检查更新是聚合开关。
 
 - [存储清理与选择性设置重置](../../04-api-reference/ui-components/storage-maintenance.md) — `ui.storage-maintenance`
-  独立文件缓存窗口的模块发现、自动增量扫描和确认清理，以及设置页的内存管理、恢复点和选择性重置入口。
+  存储分类占用与模块扩展接口、独立文件确认清理，以及配置页的恢复点和选择性下次启动重置。
 
 - [主题选择、资源应用与窗口外观](../../04-api-reference/ui-components/ColorVision.Themes.md) — `ui.themes`
   应用主题即时预览，启动页独立选择深色、浅色或跟随软件且下次启动生效；ThemeManager 的资源、系统跟随、窗口外观和保存边界。
 
 - [配置向导：步骤、应用与完成边界](../../04-api-reference/ui-components/wizards.md) — `ui.wizards`
   配置向导的步骤发现、初始化时序、前进应用和完成标记；关闭不回滚，完成标记不证明组件健康或重启成功。
+
+- [FlowEngineLib 节点扩展](../../04-api-reference/extensions/flow-node.md) — `flow.node-extension`
+  说明服务与本地节点基类、请求与响应扩展点、分支输入隔离、属性编辑和流程完成的边界。
+
+- [主程序启动与最小图像验证](../../00-getting-started/first-steps.md) — `operations.first-run`
+  主程序启动的配置、实例和服务副作用，远程白屏的软件渲染兼容入口，以及隔离测试环境中的最小本地图像验证。
 
 - [ColorVision.UI.Desktop](../../04-api-reference/ui-components/ColorVision.UI.Desktop.md) — `ui.desktop`
   桌面辅助壳层而非产品主入口：定位设置、市场下载、第三方工具、反馈和特权崩溃诊断。

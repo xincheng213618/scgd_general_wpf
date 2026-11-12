@@ -516,18 +516,19 @@ namespace ColorVision.Copilot
                         context.TurnEvidence,
                         hostedRun.CancellationToken).ConfigureAwait(false);
                 }
-                catch (OperationCanceledException) when (hostedRun.CancellationToken.IsCancellationRequested)
+                catch (OperationCanceledException exception) when (hostedRun.CancellationToken.IsCancellationRequested)
                 {
+                    var cancelledEvaluationUsage = CopilotTokenBudgetChatClient.ExtractPayloadFailureUsage(exception);
                     hostedRun.SuppressAutomaticFollowUpDispatch();
                     CopilotUiDispatcher.Invoke(
                         () => TryAccountBoundGoalAfterEvaluationCancellation(
                             conversation,
                             assistantMessage,
                             boundGoalId,
-                            turnUsage,
+                            turnUsage.Add(cancelledEvaluationUsage),
                             hostedRun.ElapsedSeconds),
                         fallback: false);
-                    return CopilotGoalPostTurnResult.Empty;
+                    return new CopilotGoalPostTurnResult(cancelledEvaluationUsage, string.Empty, string.Empty, false);
                 }
             }
 

@@ -1,3 +1,4 @@
+using Newtonsoft.Json;
 using System.IO;
 
 namespace ColorVision.Copilot.Tests;
@@ -105,6 +106,55 @@ public sealed class CopilotConversationPromptEditBranchTests
         Assert.Equal("First prompt", preparation.Branch.Messages[0].Content);
         Assert.Equal("First answer", preparation.Branch.Messages[1].Content);
         Assert.Equal(selectedPrompt.Id, preparation.Branch.BranchOrigin?.ThroughMessageId);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void RestoringCompactionBoundaryIdsDoesNotLeakLaterHistoryIntoAnEarlierBranch(bool duplicateBoundaryId)
+    {
+        const string futureDetail = "FUTURE_ONLY_DETAILS";
+        var source = CopilotConversationRecord.CreateEmpty("profile", "Profile");
+        var firstAnswer = new CopilotChatMessage(CopilotChatRole.Assistant, "First answer");
+        var laterAnswer = new CopilotChatMessage(CopilotChatRole.Assistant, futureDetail);
+        if (duplicateBoundaryId)
+            laterAnswer.Id = firstAnswer.Id;
+        source.Messages.Add(new CopilotChatMessage(CopilotChatRole.User, "First prompt"));
+        source.Messages.Add(firstAnswer);
+        source.Messages.Add(new CopilotChatMessage(CopilotChatRole.User, "Later prompt"));
+        source.Messages.Add(laterAnswer);
+        source.Compaction = new CopilotConversationCompaction
+        {
+            StrategyVersion = CopilotConversationCompaction.CurrentStrategyVersion,
+            ThroughMessageId = laterAnswer.Id,
+            Summary = "The later request established " + futureDetail,
+            SourceMessageCount = source.Messages.Count,
+            SourceCharacters = source.Messages.Sum(message => message.ModelContent.Length),
+        };
+        var compactionUsage = new CopilotTokenUsage(64, 16, 80, 32);
+        source.RecordCompactionUsage(compactionUsage, DateTimeOffset.Parse("2026-08-08T02:03:04Z"));
+        var sourceContents = source.Messages.Select(message => message.Content).ToArray();
+        var restored = Assert.IsType<CopilotConversationRecord>(
+            JsonConvert.DeserializeObject<CopilotConversationRecord>(JsonConvert.SerializeObject(source)));
+
+        restored.EnsureValid();
+        var branch = CopilotConversationBranchService.CreateBranch(restored, restored.Messages[1]);
+        var branchHistory = CopilotConversationRequestBuilder.CaptureHistorySnapshot(branch).ModelMessages;
+
+        Assert.Equal(new[] { "First prompt", "First answer" }, branchHistory.Select(message => message.Content));
+        Assert.Equal(sourceContents, restored.Messages.Select(message => message.Content));
+        Assert.Equal(compactionUsage, Assert.IsType<CopilotConversationAuxiliaryUsage>(restored.CompactionUsage).Usage);
+        var restoredHistory = CopilotConversationRequestBuilder.CaptureHistorySnapshot(restored).ModelMessages;
+        if (duplicateBoundaryId)
+        {
+            Assert.Null(restored.Compaction);
+            Assert.Equal(sourceContents, restoredHistory.Select(message => message.Content));
+        }
+        else
+        {
+            Assert.NotNull(restored.Compaction);
+            Assert.Contains(futureDetail, Assert.Single(restoredHistory).Content, StringComparison.Ordinal);
+        }
     }
 
     [Fact]

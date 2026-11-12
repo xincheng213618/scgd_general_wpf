@@ -22,6 +22,8 @@ namespace ColorVision.UI.Desktop.MenuItemManager
                     Order = 20,
                     Category = ThirdPartyAppCategory.Internal,
                     RequiredPermission = PermissionMode.Administrator,
+                    ActionId = "menus.customize",
+                    ResourceId = "application.menus",
                     IconGlyph = ThirdPartyAppIconGlyphs.MenuManager,
                     LaunchAction = OpenMenuItemManager,
                 }
@@ -30,6 +32,7 @@ namespace ColorVision.UI.Desktop.MenuItemManager
 
         private static void OpenMenuItemManager()
         {
+            AccessControl.Demand("menus.customize", PermissionMode.Administrator, "application.menus");
             Window? owner = Application.Current?.GetActiveWindow();
             new MenuItemManagerWindow
             {

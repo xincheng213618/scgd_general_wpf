@@ -22,7 +22,7 @@ namespace ProjectARVRPro.Process.AOI
         private string _ShowConfig = "F1";
 
         [Category("导出配置")]
-        [DisplayName("导出名称")]
+        [DisplayName("输出Key")]
         [Description("导出CSV时显示的测试画面名称")]
         public string Name { get => _Name; set { _Name = value; OnPropertyChanged(); } }
         private string _Name = "AOI"; 

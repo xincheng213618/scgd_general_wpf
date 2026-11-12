@@ -732,14 +732,14 @@ namespace ColorVision.Engine.FlowProcessing.Editor
                 _paletteResources = palette;
                 _paletteIsDark = theme.IsDark;
             }
-            // Scope the canvas chrome and its settings window without changing application resources.
+            // The canvas and its host's execution overlay share this palette.
             SetBrush("GlobalBackground", theme.Surface);
             SetBrush("GlobalTextBrush", theme.Text);
             SetBrush("GlobalBorderBrush", theme.Border);
             SetBrush("PrimaryTextBrush", theme.Text);
             SetBrush("SecondaryTextBrush", theme.SecondaryText);
             SetBrush("PrimaryBrush", theme.Accent);
-            ThemeButton.ToolTip = EngineLocalization.Get("画布主题") + "：" + GetThemeName(_settings.ThemeMode);
+            ThemeButton.ToolTip = EngineLocalization.Get("画布主题") + " → " + EngineLocalization.Get(NextTheme.Label);
         }
 
         private void SetBrush(string key, Color color)
@@ -749,30 +749,18 @@ namespace ColorVision.Engine.FlowProcessing.Editor
             Resources[key] = brush;
         }
 
-        private static string GetThemeName(FlowEditorThemeMode mode) => EngineLocalization.Get(mode switch
+        private (FlowEditorThemeMode Mode, string Label) NextTheme => _settings.ThemeMode switch
         {
-            FlowEditorThemeMode.Light => "浅色",
-            FlowEditorThemeMode.Dark => "深色",
-            FlowEditorThemeMode.Custom => "自定义配色",
-            _ => "跟随软件主题"
-        });
+            FlowEditorThemeMode.Light => (FlowEditorThemeMode.Dark, "深色"),
+            FlowEditorThemeMode.Dark => (FlowEditorThemeMode.Custom, "自定义配色"),
+            FlowEditorThemeMode.Custom => (FlowEditorThemeMode.FollowApplication, "跟随软件主题"),
+            _ => (FlowEditorThemeMode.Light, "浅色")
+        };
 
         private void ThemeButton_Click(object sender, RoutedEventArgs e)
         {
-            var menu = new ContextMenu { PlacementTarget = ThemeButton, Placement = PlacementMode.Bottom };
-            menu.Resources.MergedDictionaries.Add(Resources);
-            foreach (FlowEditorThemeMode mode in Enum.GetValues<FlowEditorThemeMode>())
-            {
-                var item = new MenuItem { Header = GetThemeName(mode), IsCheckable = true, IsChecked = _settings.ThemeMode == mode };
-                item.Click += (_, _) =>
-                {
-                    _settings.ThemeMode = mode;
-                    SaveSettings();
-                };
-                menu.Items.Add(item);
-            }
-            ThemeButton.ContextMenu = menu;
-            menu.IsOpen = true;
+            _settings.ThemeMode = NextTheme.Mode;
+            SaveSettings();
         }
 
         private void SettingsButton_Click(object sender, RoutedEventArgs e)

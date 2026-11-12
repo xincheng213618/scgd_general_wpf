@@ -1042,7 +1042,15 @@ namespace ColorVision.UI.Desktop.MenuItemManager
         {
             MenuItemScopeKey selectedKey = _selectedOwnerKey;
             MenuItemScopeKey? selectedSettingKey = _selectedSetting == null ? null : GetScopeKey(_selectedSetting);
-            MenuItemManagerService.CommitEditingSnapshot(_allSettings);
+            try
+            {
+                MenuItemManagerService.CommitEditingSnapshot(_allSettings);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(this, $"Menu settings could not be applied.\n\n{ex.Message}", "MenuItemManager", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
             _allSettings = MenuItemManagerService.CreateEditingSnapshot();
             InitializeTargetScopes();
             if (FindSetting(selectedKey) != null)

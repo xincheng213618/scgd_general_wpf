@@ -2,6 +2,7 @@ using ColorVision.Engine.PropertyEditor;
 using ColorVision.Engine.FlowProcessing.Diagnostics;
 using ColorVision.Engine.Services.Devices.Camera.Local;
 using ColorVision.Engine.Services.Results;
+using ColorVision.Engine.Services.POI;
 using ColorVision.Engine.Templates.POI;
 using FlowEngineLib.Base;
 using ST.Library.UI.NodeEditor;
@@ -21,6 +22,10 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
         public int PointCount { get; init; }
         public int TotalTime { get; init; }
         public object? POIResult { get; init; }
+        public bool MemoryOnly { get; init; }
+        public bool DatabasePersisted { get; init; } = true;
+        public string? ResultHandle { get; init; }
+        public string? ResultCsvFile { get; init; }
     }
 
     [STNode("Flow_LocalDevices", "POI", CategoryOrder = 9900, NodeOrder = 50)]
@@ -31,7 +36,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
         private string _POIReviseTempName = string.Empty;
 
         [Category("本地 POI")]
-        [STNodeProperty("POI 模板", "要计算的 POI 模板", true)]
+        [STNodeProperty("POI 模板", "要计算的 POI 模板；上游为本地灯珠点集时使用该点集，无需选择模板且测量明细不入库。", true)]
         [PropertyEditorType(typeof(PoiTemplatePropertiesEditor))]
         public string POITempName { get => _POITempName; set { _POITempName = value ?? string.Empty; OnPropertyChanged(); } }
 
@@ -41,6 +46,10 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
         [Browsable(false)]
         public string POIReviseTempName { get => _POIReviseTempName; set { _POIReviseTempName = value ?? string.Empty; OnPropertyChanged(); } }
 
+        private string resultDirectory = string.Empty;
+        [Category("本地 POI"), STNodeProperty("本地结果目录", "仅内存测量时可选的 CSV 输出目录（绝对路径）；留空不写文件，不写数据库。", true)]
+        public string ResultDirectory { get => resultDirectory; set { resultDirectory = value ?? string.Empty; OnPropertyChanged(); } }
+
         public LocalPoiNode() : base("POI", "POI", "Calculate")
         {
         }
@@ -49,9 +58,16 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
 
         protected override LocalNodeExecutionResult ExecuteLocal(CVStartCFC action)
         {
-            if (string.IsNullOrWhiteSpace(POITempName)) throw new InvalidOperationException("请选择 POI 模板。");
-            PoiParam poi = TemplatePoi.Params.FirstOrDefault(item => string.Equals(item.Key, POITempName, StringComparison.Ordinal))?.Value
-                ?? throw new InvalidOperationException($"找不到 POI 模板：{POITempName}");
+            CVStartCFC input = GetInputActionSnapshot(action, 0) ?? action;
+            input.Data.TryGetValue("MasterValue", out object? inputValue);
+            _ = LocalFlowPoiPointSet.TryResolve(input, inputValue?.ToString(), out LocalFlowPoiPointSet? pointSet);
+            PoiParam? poi = null;
+            if (pointSet == null)
+            {
+                if (string.IsNullOrWhiteSpace(POITempName)) throw new InvalidOperationException("请选择 POI 模板，或连接本地灯珠定位节点。");
+                poi = TemplatePoi.Params.FirstOrDefault(item => string.Equals(item.Key, POITempName, StringComparison.Ordinal))?.Value
+                    ?? throw new InvalidOperationException($"找不到 POI 模板：{POITempName}");
+            }
 
             bool loadedFromFile = !action.TryGetCurrentFrame(out LocalFlowFrame? currentFrame) || currentFrame == null;
             if (loadedFromFile)
@@ -64,6 +80,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             }
             try
             {
+                poi ??= pointSet!.CreateTemplate(currentFrame!);
                 string? imagePath = string.IsNullOrWhiteSpace(currentFrame!.CvCieFilePath) ? currentFrame.CvRawFilePath : currentFrame.CvCieFilePath;
                 Stopwatch stopwatch = Stopwatch.StartNew();
                 using (LocalFlowFrameLease frame = currentFrame.Acquire())
@@ -72,6 +89,19 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                     stopwatch.Stop();
                     int totalTime = checked((int)Math.Min(stopwatch.ElapsedMilliseconds, int.MaxValue));
                     ViewResultAlgType resultType = LocalPoiCalculator.ResolveResultType(frame.Metadata.Channels);
+                    action.RuntimeResources.StopToken.ThrowIfCancellationRequested();
+                    if (pointSet != null || !action.PersistResults)
+                    {
+                        (string handle, string? csvFile) = LocalPoiCalculator.StoreRuntimeResult(action, result, resultType, ResultDirectory);
+                        action.SetCurrentFrame(currentFrame);
+                        loadedFromFile = false;
+                        return new LocalNodeExecutionResult { Data = new LocalPoiNodeResultData
+                        {
+                            FrameId = result.FrameId, TemplateName = result.TemplateName, MasterId = 0,
+                            MasterResultType = (int)resultType, PointCount = result.Points.Count, TotalTime = totalTime,
+                            MemoryOnly = csvFile == null, DatabasePersisted = false, ResultHandle = handle, ResultCsvFile = csvFile
+                        } };
+                    }
                     int masterId = LocalFlowResultPersistence.SaveAlgorithmResult(
                         action,
                         resultType,

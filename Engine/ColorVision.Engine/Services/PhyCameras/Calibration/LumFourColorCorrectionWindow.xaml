@@ -63,11 +63,15 @@
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
             <RadioButton x:Name="SinglePointMode" GroupName="CorrectionMode" Content="{display:EngineLang Key='单点修正'}"
                          VerticalAlignment="Center" Checked="CorrectionMode_Checked" />
             <RadioButton x:Name="FourColorMode" Grid.Column="1" Margin="24,0,0,0"
                          GroupName="CorrectionMode" Content="{display:EngineLang Key='RGBW 四色'}" IsChecked="True"
+                         VerticalAlignment="Center" Checked="CorrectionMode_Checked" />
+            <RadioButton x:Name="LuminanceMode" Grid.Column="2" Margin="24,0,0,0"
+                         GroupName="CorrectionMode" Content="{display:EngineLang Key='单通道亮度修正'}"
                          VerticalAlignment="Center" Checked="CorrectionMode_Checked" />
         </Grid>
 
@@ -125,15 +129,15 @@
                         <DataGrid.Columns>
                             <DataGridTextColumn Width="54" Header="{display:EngineLang Key='目标'}" IsReadOnly="True" Binding="{Binding Target}" />
                             <DataGridTextColumn Width="*" Header="{display:EngineLang Key='CalibrationCameraLuminanceY'}" Binding="{Binding CameraY, UpdateSourceTrigger=PropertyChanged}" />
-                            <DataGridTextColumn Width="*" Header="{display:EngineLang Key='相机 x'}" Binding="{Binding CameraX, UpdateSourceTrigger=PropertyChanged}" />
-                            <DataGridTextColumn Width="*" Header="{display:EngineLang Key='CalibrationCameraChromaticityY'}" Binding="{Binding CameraYChromaticity, UpdateSourceTrigger=PropertyChanged}" />
+                            <DataGridTextColumn x:Name="CameraXColumn" Width="*" Header="{display:EngineLang Key='相机 x'}" Binding="{Binding CameraX, UpdateSourceTrigger=PropertyChanged}" />
+                            <DataGridTextColumn x:Name="CameraChromaticityYColumn" Width="*" Header="{display:EngineLang Key='CalibrationCameraChromaticityY'}" Binding="{Binding CameraYChromaticity, UpdateSourceTrigger=PropertyChanged}" />
                             <DataGridTextColumn Width="*" Header="{display:EngineLang Key='CalibrationSpectrumLuminanceY'}" Binding="{Binding ReferenceY, UpdateSourceTrigger=PropertyChanged}" />
-                            <DataGridTextColumn Width="*" Header="{display:EngineLang Key='光谱 x'}" Binding="{Binding ReferenceX, UpdateSourceTrigger=PropertyChanged}" />
-                            <DataGridTextColumn Width="*" Header="{display:EngineLang Key='CalibrationSpectrumChromaticityY'}" Binding="{Binding ReferenceYChromaticity, UpdateSourceTrigger=PropertyChanged}" />
+                            <DataGridTextColumn x:Name="SpectrumXColumn" Width="*" Header="{display:EngineLang Key='光谱 x'}" Binding="{Binding ReferenceX, UpdateSourceTrigger=PropertyChanged}" />
+                            <DataGridTextColumn x:Name="SpectrumChromaticityYColumn" Width="*" Header="{display:EngineLang Key='CalibrationSpectrumChromaticityY'}" Binding="{Binding ReferenceYChromaticity, UpdateSourceTrigger=PropertyChanged}" />
                         </DataGrid.Columns>
                     </DataGrid>
                     <CheckBox x:Name="ManualDataConfirmed" Grid.Row="2" Margin="0,12,0,0" Unchecked="InputChanged">
-                        <TextBlock Text="{display:EngineLang Key='已核对测量数据'}" ToolTip="{display:EngineLang Key='核对色块、原校正文件及光谱 IP（30%～95%）；修改数据后需重新确认。'}" />
+                        <TextBlock Text="{display:EngineLang Key='已核对测量数据'}" />
                     </CheckBox>
                 </Grid>
             </Border>

@@ -4,12 +4,17 @@ using ColorVision.Engine.Services.Devices.Camera.Local;
 using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Tif;
 using ColorVision.Solution.Mru;
+using log4net;
+using log4net.Appender;
+using log4net.Core;
+using log4net.Repository.Hierarchy;
 using OpenCvSharp;
 using Newtonsoft.Json.Linq;
 using System.Collections.Specialized;
 using System.Drawing.Imaging;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -20,6 +25,192 @@ namespace ColorVision.UI.Tests;
 
 public sealed class ExportCieTests
 {
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void CorruptOptionalRawTailStillExportsOriginalPixels(bool batch)
+    {
+        string root = Path.Combine(Path.GetTempPath(), $"colorvision-export-corrupt-tail-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(root);
+        string path = Path.Combine(root, "source.cvraw");
+        bool previousCache = CVFileReadCache.IsEnabled;
+        try
+        {
+            CVFileReadCache.IsEnabled = false;
+            byte[] expected = WritePatternedRawFixture(path, rows: 2, cols: 3, channels: 1);
+            new ColorCalibrationSnapshot
+            {
+                Width = 3, Height = 2, RawBpp = 16, Channels = 1, TransformKind = 2,
+                Coefficients = [2, 0, 0, 0, 0, 0, 0, 0, 0], Exposure = [1, 1, 1]
+            }.Save(path, canReplay: true);
+            using (FileStream file = File.Open(path, FileMode.Open, FileAccess.ReadWrite))
+            {
+                file.Position = file.Length - 1;
+                int checksum = file.ReadByte();
+                file.Position--;
+                file.WriteByte((byte)(checksum ^ 1));
+            }
+            Assert.Throws<InvalidDataException>(() => CVFileMetadata.Read(path));
+
+            string output;
+            if (batch)
+            {
+                Assert.Equal(1, CvRawBatchExporter.ExportFolder(root, 1).Exported);
+                output = Path.Combine(root, "source.tif");
+            }
+            else
+            {
+                var export = new VExportCIE(path, new MruPathService(new MemoryMruPathStore([]))) { SavePath = root, Name = "export" };
+                Assert.True(export.IsCanExportSrc);
+                Assert.False(export.HasCieChannels);
+                VExportCIE.SaveToTifOrThrow(export);
+                output = Path.Combine(root, "export.tiff");
+            }
+
+            Assert.Null(ReadTiffParameters(output).Calibration);
+            using Mat image = Cv2.ImRead(output, ImreadModes.Unchanged);
+            Assert.Equal(MatType.CV_16UC1, image.Type());
+            byte[] actual = new byte[expected.Length];
+            Marshal.Copy(image.Data, actual, 0, actual.Length);
+            Assert.Equal(expected, actual);
+        }
+        finally
+        {
+            CVFileReadCache.IsEnabled = previousCache;
+            foreach (string file in Directory.EnumerateFiles(root)) File.Delete(file);
+            Directory.Delete(root);
+        }
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void CalibratedRawExportKeepsOneSnapshotWhenAcquisitionChangesBetweenOutputs(bool cacheEnabled)
+    {
+        string root = Path.Combine(Path.GetTempPath(), $"colorvision-export-snapshot-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(root);
+        string path = Path.Combine(root, "source.cvraw");
+        bool previousCache = CVFileReadCache.IsEnabled;
+        var logger = (Logger)LogManager.GetLogger(typeof(CameraFileMetadata).Assembly, typeof(CameraFileMetadata)).Logger;
+        Hierarchy hierarchy = Assert.IsType<Hierarchy>(logger.Repository);
+        bool previousConfigured = hierarchy.Configured;
+        Level previousLevel = logger.Level;
+        Exception? updateFailure = null;
+        int updates = 0;
+        var appender = new AcquisitionWarningAppender(() =>
+        {
+            if (++updates != 1) return;
+            try
+            {
+                CameraFileMetadata.Save(path, CameraFileMetadata.AcquisitionKind, new ImageAcquisitionRecord { NdPort = 17 });
+            }
+            catch (Exception error) { updateFailure = error; }
+        });
+        try
+        {
+            CVFileReadCache.IsEnabled = cacheEnabled;
+            byte[] raw = WritePatternedRawFixture(path, rows: 2, cols: 3, channels: 1);
+            new ColorCalibrationSnapshot
+            {
+                Width = 3, Height = 2, RawBpp = 16, Channels = 1, TransformKind = 2,
+                Coefficients = [2, 0, 0, 0, 0, 0, 0, 0, 0], Exposure = [1, 1, 1], Template = "original"
+            }.Save(path, canReplay: true);
+            CVFileMetadata.SetProperty(path, CameraFileMetadata.AcquisitionKind, 1, [(byte)'{']);
+            var export = new VExportCIE(path, new MruPathService(new MemoryMruPathStore([]))) { SavePath = root, Name = "export" };
+            hierarchy.Configured = true;
+            logger.Level = Level.Warn;
+            logger.AddAppender(appender);
+
+            VExportCIE.SaveToTifOrThrow(export);
+
+            Assert.Null(updateFailure);
+            Assert.True(updates > 0);
+            Assert.Equal(17, CameraFileMetadata.Read(path).Acquisition?.NdPort);
+            Assert.Null(ReadTiffParameters(Path.Combine(root, "export_Src.tiff")).Acquisition);
+            string channel = Path.Combine(root, "export_Y.tiff");
+            Assert.Null(ReadTiffParameters(channel).Acquisition);
+            using Mat image = Cv2.ImRead(channel, ImreadModes.Unchanged);
+            float[] actual = new float[6];
+            Marshal.Copy(image.Data, actual, 0, actual.Length);
+            Assert.Equal(Enumerable.Range(0, 6).Select(pixel => 2f * BitConverter.ToUInt16(raw, pixel * sizeof(ushort))), actual);
+        }
+        finally
+        {
+            logger.RemoveAppender(appender);
+            appender.Close();
+            logger.Level = previousLevel;
+            hierarchy.Configured = previousConfigured;
+            CVFileReadCache.IsEnabled = previousCache;
+            foreach (string file in Directory.EnumerateFiles(root)) File.Delete(file);
+            Directory.Delete(root);
+        }
+    }
+
+    private sealed class AcquisitionWarningAppender(Action update) : AppenderSkeleton
+    {
+        protected override void Append(LoggingEvent loggingEvent)
+        {
+            if (loggingEvent.RenderedMessage == $"Invalid optional image record: {CameraFileMetadata.AcquisitionKind}") update();
+        }
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void JpegExportRejectsMeasurementPlanesBeforeWritingAndCanRetryWithOriginalOnly(bool cieFile)
+    {
+        string root = Path.GetFullPath(Path.Combine(Path.GetTempPath(), $"colorvision-export-jpeg-measurement-{Guid.NewGuid():N}"));
+        string rawPath = Path.Combine(root, "source.cvraw");
+        string inputPath = cieFile ? Path.Combine(root, "source.cvcie") : rawPath;
+        string output = Path.Combine(root, "output");
+        Directory.CreateDirectory(output);
+        try
+        {
+            WritePatternedRawFixture(rawPath, rows: 2, cols: 3, channels: 3);
+            if (cieFile)
+                WriteCieFixture(inputPath, rows: 2, cols: 3, channels: 1, srcFileName: Path.GetFileName(rawPath));
+            else
+            {
+                new ColorCalibrationSnapshot
+                {
+                    Width = 3, Height = 2, RawBpp = 16, Channels = 3, TransformKind = 0,
+                    Coefficients = [2, 0, 0, 0, -3, 0, 0, 0, 4], Exposure = [1, 1, 1], Template = "export",
+                }.Save(rawPath, canReplay: true);
+            }
+
+            string sourceTarget = Path.Combine(output, "result_Src.jpg");
+            string measurementTarget = Path.Combine(output, "result_Y.jpg");
+            byte[] originalSource = [1, 2, 3], originalMeasurement = [4, 5, 6];
+            File.WriteAllBytes(sourceTarget, originalSource);
+            File.WriteAllBytes(measurementTarget, originalMeasurement);
+            var export = new VExportCIE(inputPath, new MruPathService(new MemoryMruPathStore([])))
+            {
+                SavePath = output, Name = "result", ExportImageFormat = ImageFormat.Jpeg,
+            };
+            Assert.True(export.IsExportSrc);
+            Assert.True(export.IsExportChannelY);
+            var error = Assert.Throws<NotSupportedException>(() => VExportCIE.SaveToTifOrThrow(export));
+            Assert.Contains("TIFF", error.Message);
+            Assert.Equal(2, Directory.GetFiles(output).Length);
+            Assert.Equal(originalSource, File.ReadAllBytes(sourceTarget));
+            Assert.Equal(originalMeasurement, File.ReadAllBytes(measurementTarget));
+
+            export.IsExportChannelY = false;
+            if (!cieFile) export.IsExportChannelX = export.IsExportChannelZ = false;
+            // X and Z are absent from a one-channel CVCIE even when their hidden flags are set.
+            VExportCIE.SaveToTifOrThrow(export);
+            using Mat originalOnly = Cv2.ImRead(Path.Combine(output, "result.jpg"), ImreadModes.Unchanged);
+            Assert.Equal((2, 3, MatType.CV_8UC3), (originalOnly.Rows, originalOnly.Cols, originalOnly.Type()));
+            Assert.Equal(3, Directory.GetFiles(output).Length);
+        }
+        finally
+        {
+            Assert.StartsWith(Path.TrimEndingDirectorySeparator(Path.GetFullPath(Path.GetTempPath())) + Path.DirectorySeparatorChar,
+                root, StringComparison.OrdinalIgnoreCase);
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
     [Theory]
     [InlineData(3, true, true)]
     [InlineData(3, false, true)]
@@ -162,6 +353,7 @@ public sealed class ExportCieTests
                 BitmapFrame reopened = ReadFrame(secondPath);
                 Assert.True(ColorVisionTiffParameters.TryRead(reopened.Metadata as BitmapMetadata, out var copied));
                 Assert.True(JToken.DeepEquals(parameters.Calibration, copied!.Calibration));
+                Assert.Equal("calibration-input", copied.PixelRole);
                 Assert.Equal(parameters.PixelSha256, copied.PixelSha256);
 
                 // An edit with identical dimensions cannot acquire replay rights from the old metadata.
@@ -177,6 +369,35 @@ public sealed class ExportCieTests
             });
         }
         finally { Directory.Delete(root, recursive: true); }
+    }
+
+    [Fact]
+    public void BindsRgb48AcrossBlocksWithoutHashingPaddingOrChangingSource()
+    {
+        const int width = 1025;
+        const int height = 173;
+        const int rowBytes = width * 6;
+        using Mat owner = new(height + 2, width + 2, MatType.CV_16UC3, Scalar.All(54321));
+        using Mat image = new(owner, new OpenCvSharp.Rect(1, 1, width, height));
+        Assert.False(image.IsContinuous());
+        byte[] bgr = new byte[rowBytes * height];
+        new Random(71).NextBytes(bgr);
+        for (int y = 0; y < height; y++) Marshal.Copy(bgr, y * rowBytes, image.Ptr(y), rowBytes);
+        using Mat original = owner.Clone();
+        byte[] rgb = bgr.ToArray();
+        for (int pixel = 0; pixel < rgb.Length; pixel += 6)
+        {
+            (rgb[pixel], rgb[pixel + 4]) = (rgb[pixel + 4], rgb[pixel]);
+            (rgb[pixel + 1], rgb[pixel + 5]) = (rgb[pixel + 5], rgb[pixel + 1]);
+        }
+
+        ColorVisionTiffParameters parameters = new();
+        CalibratedImageExport.BindPixels(parameters, image);
+
+        Assert.Equal(Convert.ToHexString(SHA256.HashData(rgb)), parameters.PixelSha256);
+        Assert.Equal(3, parameters.PixelChannels);
+        Assert.Equal("Rgb48", parameters.PixelLayout);
+        Assert.Equal(0d, Cv2.Norm(original, owner, NormTypes.INF));
     }
 
     [Fact]
@@ -451,8 +672,10 @@ public sealed class ExportCieTests
         }
     }
 
-    [Fact]
-    public void Cvcie32BitExportWritesOnlyTheSelectedFloatChannel()
+    [Theory]
+    [InlineData(32)]
+    [InlineData(64)]
+    public void CvcieFloatExportWritesOnlyTheSelectedChannel(int bpp)
     {
         string root = Path.Combine(Path.GetTempPath(), $"colorvision-export-cvcie-{Guid.NewGuid():N}");
         string sourcePath = Path.Combine(root, "sample.cvcie");
@@ -461,7 +684,7 @@ public sealed class ExportCieTests
         {
             const int rows = 3;
             const int cols = 4;
-            float[] sourceValues = WriteCieFixture(sourcePath, rows, cols, channels: 3);
+            float[] sourceValues = WriteCieFixture(sourcePath, rows, cols, channels: 3, bpp: bpp);
             var viewModel = new VExportCIE(sourcePath, new MruPathService(new MemoryMruPathStore([])))
             {
                 SavePath = root,
@@ -479,15 +702,94 @@ public sealed class ExportCieTests
             Assert.True(File.Exists(yPath));
             Assert.Single(Directory.EnumerateFiles(root, "*.tiff"));
             using Mat exported = Cv2.ImRead(yPath, ImreadModes.Unchanged);
-            Assert.Equal(MatType.CV_32F, exported.Depth());
+            Assert.Equal(bpp == 32 ? MatType.CV_32F : MatType.CV_64F, exported.Depth());
             Assert.Equal(1, exported.Channels());
             Assert.True(exported.IsContinuous());
-            float[] actual = new float[rows * cols];
-            Marshal.Copy(exported.Data, actual, 0, actual.Length);
-            Assert.Equal(sourceValues.Skip(rows * cols).Take(rows * cols), actual);
+            double[] actual = new double[rows * cols];
+            if (bpp == 32)
+            {
+                float[] values = new float[actual.Length];
+                Marshal.Copy(exported.Data, values, 0, values.Length);
+                actual = values.Select(value => (double)value).ToArray();
+            }
+            else Marshal.Copy(exported.Data, actual, 0, actual.Length);
+            Assert.Equal(sourceValues.Skip(rows * cols).Take(rows * cols).Select(value => (double)value), actual);
         }
         finally
         {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void CvcieExportDoesNotAllocateAManagedMeasurementPlane()
+    {
+        string root = Directory.CreateTempSubdirectory("colorvision-export-allocation-").FullName;
+        string sourcePath = Path.Combine(root, "sample.cvcie");
+        string outputPath = Path.Combine(root, "measurement.tiff");
+        try
+        {
+            const int rows = 512;
+            const int cols = 512;
+            const int planeBytes = rows * cols * sizeof(float);
+            WriteCieFixture(sourcePath, rows, cols, channels: 1);
+            var export = new VExportCIE(sourcePath, new MruPathService(new MemoryMruPathStore([])))
+            {
+                SavePath = root, Name = "measurement", IsExportSrc = false,
+            };
+
+            VExportCIE.SaveToTifOrThrow(export);
+            long before = GC.GetAllocatedBytesForCurrentThread();
+            VExportCIE.SaveToTifOrThrow(export);
+            long allocated = GC.GetAllocatedBytesForCurrentThread() - before;
+
+            Assert.True(allocated < planeBytes, $"Export allocated {allocated:N0} managed bytes for a {planeBytes:N0}-byte plane.");
+        }
+        finally
+        {
+            File.Delete(outputPath);
+            File.Delete(sourcePath);
+            Directory.Delete(root);
+        }
+    }
+
+    // Preserve both selected-plane bounds and the existing complete-payload metadata validation.
+    [Theory]
+    [InlineData(32, 1)]
+    [InlineData(64, 1)]
+    [InlineData(32, 2)]
+    [InlineData(64, 2)]
+    public void CvcieExportRejectsIncompletePayload(int bpp, int selectedChannel)
+    {
+        string root = Path.GetFullPath(Path.Combine(Path.GetTempPath(), $"colorvision-export-plane-{Guid.NewGuid():N}"));
+        string sourcePath = Path.Combine(root, "partial.cvcie");
+        Directory.CreateDirectory(root);
+        try
+        {
+            WriteCieFixture(sourcePath, rows: 2, cols: 3, channels: 3, bpp: bpp);
+            int offset = CVFileUtil.ReadCIEFileHeader(sourcePath, out CVCIEFile header);
+            using (header)
+            using (FileStream file = File.OpenWrite(sourcePath))
+            using (BinaryWriter writer = new(file))
+            {
+                int availableBytes = 2 * 3 * (bpp / 8) * 2;
+                file.Position = offset;
+                writer.Write(availableBytes);
+                file.SetLength(offset + sizeof(int) + availableBytes);
+            }
+            var export = new VExportCIE(sourcePath, new MruPathService(new MemoryMruPathStore([])))
+            {
+                SavePath = root, Name = "selected", IsExportSrc = false,
+                IsExportChannelX = false, IsExportChannelY = selectedChannel == 1, IsExportChannelZ = selectedChannel == 2,
+            };
+            byte[] original = File.ReadAllBytes(sourcePath);
+            Assert.Throws<InvalidDataException>(() => VExportCIE.SaveToTifOrThrow(export));
+            Assert.Empty(Directory.EnumerateFiles(root, "*.tiff"));
+            Assert.Equal(original, File.ReadAllBytes(sourcePath));
+        }
+        finally
+        {
+            Assert.StartsWith(Path.TrimEndingDirectorySeparator(Path.GetFullPath(Path.GetTempPath())) + Path.DirectorySeparatorChar, root, StringComparison.OrdinalIgnoreCase);
             Directory.Delete(root, recursive: true);
         }
     }
@@ -502,7 +804,7 @@ public sealed class ExportCieTests
         try
         {
             WritePatternedRawFixture(rawPath, rows: 2, cols: 3, channels: 3);
-            WriteCieFixture(ciePath, rows: 2, cols: 3, channels: 3, srcFileName: Path.GetFileName(rawPath));
+            float[] xyz = WriteCieFixture(ciePath, rows: 2, cols: 3, channels: 3, srcFileName: Path.GetFileName(rawPath));
             var viewModel = new VExportCIE(ciePath, new MruPathService(new MemoryMruPathStore([])))
             {
                 SavePath = root,
@@ -530,11 +832,23 @@ public sealed class ExportCieTests
             Assert.Equal("Src", sourceParameters.ExportedChannel);
             Assert.Equal("source.cvraw", sourceParameters.InputFileName);
 
-            ColorVisionTiffParameters xParameters = ReadTiffParameters(Path.Combine(root, "measurement.v1_X.tiff"));
-            Assert.Equal("CVCIE", xParameters.SourceType);
-            Assert.Equal("X", xParameters.ExportedChannel);
-            Assert.Equal("sample.cvcie", xParameters.InputFileName);
-            Assert.Equal("source.cvraw", xParameters.AssociatedSourceFileName);
+            for (int channel = 0; channel < 3; channel++)
+            {
+                string channelName = "XYZ"[channel].ToString();
+                string path = Path.Combine(root, $"measurement.v1_{channelName}.tiff");
+                ColorVisionTiffParameters parameters = ReadTiffParameters(path);
+                Assert.Equal("CVCIE", parameters.SourceType);
+                Assert.Equal(channelName, parameters.ExportedChannel);
+                Assert.Equal("sample.cvcie", parameters.InputFileName);
+                Assert.Equal("source.cvraw", parameters.AssociatedSourceFileName);
+                Assert.Equal(3, parameters.SourceChannels);
+
+                using Mat plane = Cv2.ImRead(path, ImreadModes.Unchanged);
+                Assert.Equal(MatType.CV_32FC1, plane.Type());
+                float[] actual = new float[6];
+                Marshal.Copy(plane.Data, actual, 0, actual.Length);
+                Assert.Equal(xyz.Skip(channel * actual.Length).Take(actual.Length), actual);
+            }
         }
         finally
         {
@@ -542,8 +856,10 @@ public sealed class ExportCieTests
         }
     }
 
-    [Fact]
-    public void CvcieResolvesARelativeAssociatedSourceBeforeOfferingAndExportingIt()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void CvcieResolvesARelativeAssociatedSourceBeforeOfferingAndExportingIt(bool missingCiePayload)
     {
         string root = Path.Combine(Path.GetTempPath(), $"colorvision-export-associated-{Guid.NewGuid():N}");
         string rawPath = Path.Combine(root, "renamed-source.cvraw");
@@ -553,6 +869,12 @@ public sealed class ExportCieTests
         {
             byte[] sourceData = WritePatternedRawFixture(rawPath, rows: 3, cols: 4, channels: 3);
             WriteCieFixture(ciePath, rows: 3, cols: 4, channels: 3, srcFileName: Path.GetFileName(rawPath));
+            if (missingCiePayload)
+            {
+                int offset = CVFileUtil.ReadCIEFileHeader(ciePath, out CVCIEFile header);
+                using (header)
+                using (FileStream file = File.OpenWrite(ciePath)) file.SetLength(offset);
+            }
             var viewModel = new VExportCIE(ciePath, new MruPathService(new MemoryMruPathStore([])))
             {
                 SavePath = root,
@@ -694,12 +1016,13 @@ public sealed class ExportCieTests
         return data;
     }
 
-    private static float[] WriteCieFixture(string filePath, int rows, int cols, int channels, string? srcFileName = null)
+    private static float[] WriteCieFixture(string filePath, int rows, int cols, int channels, string? srcFileName = null, int bpp = 32)
     {
         float[] values = Enumerable.Range(0, rows * cols * channels).Select(index => index + 0.25f).ToArray();
-        byte[] data = new byte[values.Length * sizeof(float)];
-        Buffer.BlockCopy(values, 0, data, 0, data.Length);
-        WriteCieFile(filePath, CVType.CIE, rows, cols, bpp: 32, channels, data, srcFileName);
+        byte[] data = new byte[values.Length * (bpp / 8)];
+        if (bpp == 32) Buffer.BlockCopy(values, 0, data, 0, data.Length);
+        else Buffer.BlockCopy(values.Select(value => (double)value).ToArray(), 0, data, 0, data.Length);
+        WriteCieFile(filePath, CVType.CIE, rows, cols, bpp, channels, data, srcFileName);
         return values;
     }
 

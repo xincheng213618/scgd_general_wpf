@@ -1,9 +1,7 @@
 using ColorVision.Engine.FlowProcessing.PostProcess;
-using ColorVision.Engine.Templates.Flow;
 using FlowEngineLib;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
@@ -100,13 +98,10 @@ public sealed class FlowExecutionCoordinator
 
     private static string? FindSavedStnBase64(string flowKey)
     {
-        FlowParam? flowParam = TemplateFlow.Params
-            .Select(item => item.Value)
-            .FirstOrDefault(item => string.Equals(
-                item.FlowKey,
-                flowKey,
-                StringComparison.Ordinal));
-        return flowParam?.DataBase64;
+        var template = SavedFlowTemplateBinding.Find(flowKey, out bool ambiguous);
+        if (ambiguous)
+            throw new InvalidOperationException(SavedFlowTemplateBinding.AmbiguousMessage(flowKey));
+        return template?.Value.DataBase64;
     }
 
     public async Task<FlowControlData?> RunSelectedFlowAsync()

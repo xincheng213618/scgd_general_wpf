@@ -11,13 +11,43 @@ related: ["algorithms.index", "engine.native-integration", "engine.results", "ui
 
 # 本地十字定位 FindCross
 
-本地 FindCross 从图像中的两条十字轴线计算中心、旋转角和光学倾角。默认算法为 `PatternCrossV1`，自动选择亮/暗极性，通过粗搜索及原分辨率拟合检查四臂证据；多个有效十字、截断或证据不足时可拒绝。检测成功仍需按产品样本评估位置和角度精度。
-
 ImageEditor 的“本地 FindCross...”和 Flow 的“本地十字定位”共用 `ColorVision.Core.FindCrossLocal` → `M_FindCrossLocal`。图像菜单直接显示结果；Flow 还负责结果文件、数据库和下游输出。远端 `TemplateFindCross` 的模板/MQTT 接入见 [ARVR 模板](../templates/arvr-template.md)，参数不能直接互换。
+
+<!-- algorithm-help:start -->
+
+## 十字中心与倾角原理 {#algorithm-principles}
+
+本地 FindCross 从图像中的两条十字轴线计算中心、旋转角和光学倾角。生产算法为 `PatternCrossV1`，自动选择亮/暗极性，通过粗搜索及原分辨率拟合检查四臂证据；多个有效十字、截断或证据不足时可拒绝。位置单位为 **px**，旋转和倾角单位为 **°**。检测成功仍需按产品样本评估位置和角度精度。
+
+<figure class="algorithm-figure" style="overflow-x:auto">
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 330" role="img" aria-labelledby="cross-principle-title cross-principle-desc" style="display:block;min-width:720px;width:100%;height:auto;color:#1f2937">
+    <title id="cross-principle-title">十字中心与标准中心的偏移换算为倾角</title>
+    <desc id="cross-principle-desc">左图在原图内的搜索区域拟合十字四臂，交点 C 与全图标准中心 S 的偏移为 delta x、delta y，ROI 不移动标准中心。右图将像素偏移乘像元尺寸得到传感器上的毫米偏移，再以有效焦距换算反正切角度。</desc>
+    <g fill="currentColor" font-family="Segoe UI,Microsoft YaHei,sans-serif" font-size="17"><text x="25" y="29">定位：四臂支持两轴交点</text><text x="515" y="29">倾角：像素偏移 → 传感器偏移 → 角度</text></g>
+    <rect x="25" y="48" width="385" height="223" fill="#f8fafc" stroke="#94a3b8" />
+    <rect x="200" y="72" width="185" height="172" fill="#e8f2ff" stroke="#64748b" stroke-dasharray="6 4" />
+    <g stroke="#2175d9" stroke-width="10" stroke-linecap="round"><path d="M225 175 L359 195 M300 131.4 L284 238.6" /></g>
+    <g fill="none" stroke="#dc8b19" stroke-width="2"><path d="M217.5 159.5 L292 159.5 L292 185" /></g>
+    <g fill="#1f2937"><circle cx="217.5" cy="159.5" r="4" /><circle cx="292" cy="185" r="4" /></g>
+    <g fill="currentColor" font-family="Segoe UI,Microsoft YaHei,sans-serif" font-size="15"><text x="192" y="149">S</text><text x="304" y="181">C</text><text x="245" y="149">Δx</text><text x="304" y="163">Δy</text><text x="301" y="91">ROI</text><text x="36" y="68">原图</text><text x="26" y="298">S 默认取全图中心；C 为未取整的校正后中心</text></g>
+    <path d="M540 221 L805 221 L805 91 Z" fill="#e8f2ff" stroke="#2175d9" stroke-width="2" />
+    <path d="M578 221 A38 38 0 0 0 574.1 204.3" fill="none" stroke="#dc8b19" stroke-width="2" />
+    <g fill="currentColor" font-family="Segoe UI,Microsoft YaHei,sans-serif" font-size="16"><text x="660" y="249">有效焦距 f（mm）</text><text x="815" y="145">d</text><text x="596" y="212">θ</text><text x="520" y="78">d = Δx × 像元尺寸 / 1000（mm）</text><text x="532" y="298">示意 θ 为 X 倾角；Y 向下偏移时倾角取负</text></g>
+  </svg>
+  <figcaption>图中偏移仅作示意；实际倾角使用畸变校正和中心补偿之后、兼容中心取整之前的中心坐标。</figcaption>
+</figure>
+
+### 工作步骤 {#cross-steps}
+
+1. 从整图或指定 ROI 搜索唯一十字，自动判断亮/暗极性，并限制在预期角度及允许偏差内。
+2. 在原始分辨率拟合两条轴线，检查四臂长度、覆盖、内点和正交关系；用两轴交点定位中心。
+3. 通过双轴 `RobustTwoAxis` 估计旋转；它结合两轴方向、正交关系和名义方向，不是单条边的斜率。
+4. 按需执行 Brown 镜头畸变校正，再对中心叠加 `CalibrationOffset`，换算 X/Y 倾角。
+5. 检查成功标记和单结果项；Flow 还需提交结果文件、数据库和有效下游引用。
 
 ## 在图像中运行
 
-前提是当前图像已加载，且进程能加载匹配的 `opencv_helper.dll` 及 OpenCV 依赖；部署和 ABI 前提见 [native 集成](../../../02-developer-guide/engine-development/opencv-integration.md)。菜单可见不代表 DLL 已可用。
+前提是当前图像已加载，且进程能加载匹配的 `opencv_helper.dll` 及 OpenCV 依赖。菜单可见不代表 DLL 已可用。
 
 1. 在图像右键菜单选择“分析测量 → 定位与几何 → 十字中心与倾角...”执行整图检测；需要限制范围时，先绘制矩形，再从该矩形的右键菜单进入同名命令。
 2. 在“十字中心与倾角”参数窗口中设置预期角度、最大允许旋转偏差及光学校准。默认以整幅图像中心作为倾角基准；只有关闭“标准中心使用图像中心”后，才使用填写的标准中心 X/Y。
@@ -63,7 +93,7 @@ ImageEditor 的“本地 FindCross...”和 Flow 的“本地十字定位”共�
 
 ## 图像、ROI 与结果坐标
 
-`HImage`、stride、像素缓冲区所有权遵守 [API 参考](../../engine-components/opencv-helper-api.md#himage)。调用期间必须保持缓冲区有效。算法预处理对三通道使用 BGR、四通道使用 BGRA 灰度转换；描述符不包含颜色顺序、调色板或预乘 Alpha 语义，不能由通道数推断所有图像布局都等价。
+`HImage` 描述符和 stride 必须与实际像素布局一致，调用期间必须保持缓冲区有效。算法预处理对三通道使用 BGR、四通道使用 BGRA 灰度转换；描述符不包含颜色顺序、调色板或预乘 Alpha 语义，不能由通道数推断所有图像布局都等价。
 
 | 边界 | 规则 |
 | --- | --- |
@@ -74,15 +104,24 @@ ImageEditor 的“本地 FindCross...”和 Flow 的“本地十字定位”共�
 | `diagnostics.RawGeometricCenter` / `RawArmEndpoints` | 原图中的几何中心/轴端点，供叠图对照 |
 | `diagnostics.ArmEndpoints` | 校正后的轴端点；`CalibrationOffset` 只移动输出中心，不平移这些端点 |
 | `rotationAngle` | 度；Pattern 模式使用两轴拟合的 `RobustTwoAxis`，不是选择某一条边的角度 |
-| `tilt.tilt_x/tilt_y` | 度；用输出中心相对标准中心的偏差计算，图像 X 向右为正，Y 向下时 `tilt_y` 取负号 |
+| `tilt.tilt_x/tilt_y` | 度；用未取整的校正后中心相对标准中心的偏差计算，图像 X 向右为正，Y 向下时 `tilt_y` 取负号 |
 
-倾角公式为 `atan((centerX-standardX) × sensorPixSize/1000 ÷ focusLength)` 转为度，Y 分量相同计算后取负。独立调用 `FindCrossLocal.CalculateTilt` 必须明确提供标准中心，因为它没有图像尺寸可用于自动解析。
+### 倾角公式与示例 {#cross-tilt}
+
+令未取整的校正后中心为 $C=(c_x,c_y)$，标准中心为 $S=(s_x,s_y)$，像元尺寸为 $p$（μm），有效焦距为 $f$（mm）：
+
+$$
+\theta_x=\arctan\left(\frac{(c_x-s_x)p}{1000f}\right)\frac{180}{\pi},\qquad
+\theta_y=-\arctan\left(\frac{(c_y-s_y)p}{1000f}\right)\frac{180}{\pi}
+$$
+
+例如中心向右 100 px、向下 50 px，$p=3.76$ μm、$f=25.4$ mm，得到 X 倾角约 **+0.85°**、Y 倾角约 **−0.42°**。这两项是中心相对标准中心的角度偏差，十字在图像内旋转的 `rotationAngle` 是另一项指标；旋转十字但交点不移动时，倾角不会因此增加。
+
+native 在 `std::lround` 之前计算倾角。需要复算时使用 `diagnostics.CenterSubpixel`；兼容整数 `center` 或下游中心标量不能精确重建同一倾角。独立调用 `FindCrossLocal.CalculateTilt` 必须明确提供标准中心，因为它没有图像尺寸可用于自动解析。
 
 托管解析器要求结果框的起点非负、尺寸为正、数值有限，且结果中心在框内（右/下边界不包含）。偏移过大、ROI 边缘附近取整等情况可能让 native 已生成的结果在解析阶段失败；不能把正返回码直接当成可用中心。
 
 ## Flow 输入与保存
-
-本地十字 RGB 分离直接计算，不使用 FindCross 算法模板；模板保留给外部实现。两者共用数据库类型 `63` 和结果文件路径明细，但结果格式不同：单十字沿用 `1.0` 的 `result[]`；`LocalRgbCrossNode` 写入 `2.0` 主记录及 `colorvision.rgb-cross-measurement` JSON。本地节点通过独立的 RGB 分离配置编辑器设置检测参数，保留搜索区域关注点、固定矩形和结果目录配置。ARVRPro 选择“十字 RGB 分离”后读取此格式；原光学中心解析跳过九点记录。独立 ImageView 九点执行不入库，关闭结果窗保留叠图。完整九点输出和节点说明见显示计量主题。
 
 “本地十字定位”位于“本地算法”（`Flow_LocalAlgorithms`），节点标识 `LocalFindCross`。连接上游相机取图、校正或“加载图片”节点，通过“算法参数”“搜索区域”“搜索区域关注点”和“结果目录”配置检测与保存。
 
@@ -93,11 +132,30 @@ ImageEditor 的“本地 FindCross...”和 Flow 的“本地十字定位”共�
 - 成功后保存 FindCross 主结果、一条公共明细及 UTF-8 JSON 文件。结果目录为空时使用 `%LOCALAPPDATA%\ColorVision\Results\FindCross`；文件名带时间和 GUID。历史底图需要上游保存与实际帧一致的文件，节点不把已校正/翻转的内存结果自动关联到未经处理的源图。
 - 下游 `action.Data` 可读取 `LocalFindCrossResult`、`LocalFindCrossCenterX/Y`、`LocalFindCrossRotationAngle`、`LocalFindCrossTiltX/Y`、`LocalFindCrossDiagnostics`、`LocalFindCrossResultFile`；有内容时还保存 `LocalFindCrossRawJson` 和 `LocalFindCrossInteropDiagnostic`。这些中心标量来自兼容结果项，仍是上述取整中心。
 
-检测拒绝或结果校验失败时会保存失败主记录并发布到结果页，随后节点仍失败；不会生成成功明细/JSON，也不把失败主记录作为下游有效 `MasterValue`。输入缺失等前置错误可能更早发生。数据库、发布与展示的完整责任见 [Engine 结果链](../../engine-components/result-handoff-chain.md)。
+检测拒绝或结果校验失败时会尝试保存失败主记录并发布到结果页，随后节点仍失败；不会生成成功明细/JSON，也不把失败主记录作为下游有效 `MasterValue`。输入缺失等前置错误可能更早发生；数据库或发布本身失败时不能假定结果页已有记录。
 
-生产入口输出的是单十字中心、相对标准中心的水平/垂直角度偏差和图案旋转角。成功主记录的 `TName` 使用既有 `optCenter` 解析标识，使这组结果进入光轴校准的倾角与旋转结果；失败主记录保持 `LocalFindCross`。参数中的 `Algorithm=LocalFindCross` 保留本地实现身份。`Name` 仅标识 JSON 中的结果项，设置为 `ImageCenter` 也不会增加或切换测量指标；本地十字节点不生成独立的 `ImageCenter` 主记录。
+生产入口输出单十字结果，数据库类型为 `63`、版本为 `1.0`，文件沿用 `result[]`。成功主记录的 `TName` 使用既有 `optCenter` 解析标识，使这组结果进入光轴校准的倾角与旋转结果；失败主记录保持 `LocalFindCross`。参数中的 `Algorithm=LocalFindCross` 保留本地实现身份。`Name` 仅标识 JSON 中的结果项，设置为 `ImageCenter` 也不会增加或切换测量指标；本地十字节点不生成独立的 `ImageCenter` 主记录。
 
 倾角所用的标准中心是配置或整幅图像中心，不是算法独立测得的镜头光轴。要把角度偏差用于光轴校准，需使图卡参考点、标准中心和测量装置标定符合现场测量定义。Flow 画布上未接入执行链的结点不会执行，也不会保存结果。
+
+## 按失败原因排查
+
+| 原因 | 优先检查 |
+| --- | --- |
+| `NoSignal` / `LowPatternContrast` | 灰度动态范围、量程、照明和十字对比度 |
+| `NoPatternCandidate` | ROI 是否包含目标、预期角度和搜索偏差是否覆盖它 |
+| `AmbiguousPattern` | 搜索范围内是否有两个均通过质量检查的空间候选；用目标区域消除歧义 |
+| `PatternClipped` / `InsufficientArmSupport` | 四臂是否被 ROI、图像边缘或遮挡截断 |
+| `InsufficientFullResolutionInliers` / `PoorLineFit` / `PoorPatternSharpness` | 原分辨率的轴线样本、离群点和清晰度 |
+| `NonOrthogonalAxes` / `UnstableRefinement` | 十字形状、两轴关系和粗定位到精定位的一致性 |
+| `InvalidDistortionGeometry` / `InvalidCenterGeometry` | 标定内参、畸变系数、ROI 与坐标空间；不要把诊断几何直接当成功输出 |
+| `LowConfidence` | 综合质量不足；查看 `Confidence`、`ArmQuality` 和 `Warnings`，结合实际样本处理 |
+
+九宫格线条有多个十字交点，整图搜索可能返回 `AmbiguousPattern`。若只需中心交点，配置仅覆盖该交点及足够四臂长度的搜索区域；最终能否稳定检出及角度精度仍需原始相机图像验证。native 正返回码只说明产生 JSON，仍必须检查 `Success` 与 `HasSingleItem`，不能把诊断几何或失败结果交给下游。
+
+<!-- algorithm-help:end -->
+
+单十字与九点 RGB 分离使用不同结果版本；完整九点输出和节点说明见 [十字 RGB 分离](./rgb-cross.md)。部署与 ABI 前提见 [native 集成](../../../02-developer-guide/engine-development/opencv-integration.md)，`HImage` 和缓冲所有权见 [API 参考](../../engine-components/opencv-helper-api.md#himage)，数据库、发布与展示的责任见 [Engine 结果链](../../engine-components/result-handoff-chain.md)。
 
 ## 原生返回值与托管调用
 
@@ -137,21 +195,6 @@ int M_FindCrossLocalGetLastError(char* buffer, std::uint32_t bufferLength);
 - `debugCfg.Debug=true` 不写调试文件，诊断随 JSON 返回；`LegacyCompatible` 别名产生 `CompatibilityAliasNotVendorEquivalent`，不承诺与供应商旧算法数值一致。
 
 原始 `diagnostics` 还含 `ArmQuality`、请求/实际模式及完整有效光学信息；托管 diagnostics 只暴露其中部分字段，其他信息从 `RawJson` 查询。
-
-## 按失败原因排查
-
-| 原因 | 优先检查 |
-| --- | --- |
-| `NoSignal` / `LowPatternContrast` | 灰度动态范围、量程、照明和十字对比度 |
-| `NoPatternCandidate` | ROI 是否包含目标、预期角度和搜索偏差是否覆盖它 |
-| `AmbiguousPattern` | 搜索范围内是否有两个均通过质量检查的空间候选；用目标区域消除歧义 |
-| `PatternClipped` / `InsufficientArmSupport` | 四臂是否被 ROI、图像边缘或遮挡截断 |
-| `InsufficientFullResolutionInliers` / `PoorLineFit` / `PoorPatternSharpness` | 原分辨率的轴线样本、离群点和清晰度 |
-| `NonOrthogonalAxes` / `UnstableRefinement` | 十字形状、两轴关系和粗定位到精定位的一致性 |
-| `InvalidDistortionGeometry` / `InvalidCenterGeometry` | 标定内参、畸变系数、ROI 与坐标空间；不要把诊断几何直接当成功输出 |
-| `LowConfidence` | 综合质量不足；查看 `Confidence`、`ArmQuality` 和 `Warnings`，结合实际样本处理 |
-
-九宫格线条有多个十字交点，整图搜索可能返回 `AmbiguousPattern`。若只需中心交点，配置仅覆盖该交点及足够四臂长度的搜索区域；最终能否稳定检出及角度精度仍需原始相机图像验证。
 
 ## 验证入口与边界
 

@@ -23,10 +23,12 @@ namespace ColorVision.UI.Desktop.Settings
         public static string SectionPaths => GetString("SettingsSectionPaths");
         public static string SectionExtensions => GetString("SettingsSectionExtensions");
         public static string SectionOther => GetString("SettingsSectionOther");
+        public static string Configuration => GetString("SettingsConfiguration");
 
         private static readonly IReadOnlyDictionary<string, string> DefaultTexts = new Dictionary<string, string>
         {
             ["SettingsNoMatchingSettings"] = "没有匹配的设置",
+            ["SettingsConfiguration"] = "配置",
             ["SettingsEditorUnavailable"] = "该设置暂不可编辑",
             ["SettingsEditorLoadFailed"] = "设置编辑器加载失败",
             ["SettingsPageTypeInvalid"] = "设置页面类型无效",

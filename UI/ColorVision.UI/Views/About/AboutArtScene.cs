@@ -4,11 +4,7 @@ using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Media3D;
 
-#if SPECTRUM_ABOUT
-namespace Spectrum.Help.Art;
-#else
 namespace ColorVision.UI.Views.About;
-#endif
 
 public enum AboutArtwork { Vision, Spectrum }
 

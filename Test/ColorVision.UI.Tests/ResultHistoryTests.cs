@@ -6,8 +6,12 @@ using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.Services.Devices.Camera.Views;
 using ColorVision.Engine.Services.Results;
 using ColorVision.Database;
+using Microsoft.VisualBasic.FileIO;
 using Newtonsoft.Json;
 using SqlSugar;
+using System.Collections.Specialized;
+using System.Globalization;
+using System.IO;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Windows.Controls;
@@ -16,6 +20,43 @@ namespace ColorVision.UI.Tests;
 
 public sealed class ResultHistoryTests
 {
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void AlgorithmHistoryCsvKeepsValuesUnderTheirHeaders(bool quotedFields)
+    {
+        var result = new ViewResultAlg
+        {
+            Id = 17,
+            CreateTime = new DateTime(2026, 1, 20, 13, 42, 51),
+            ResultType = ViewResultAlgType.POI_XYZ,
+            ResultDesc = quotedFields ? "亮度,\"通过\"\r\n第二行" : "通过",
+            FilePath = quotedFields ? @"D:\captures\left,right.cvcie" : @"D:\captures\left.cvcie",
+            POITemplateName = "Standard POI",
+            ResultImagFile = @"D:\captures\result.png",
+            TotalTime = 357,
+            Batch = quotedFields ? "LOT-1,2" : "LOT-1"
+        };
+        using var output = new StringWriter(CultureInfo.InvariantCulture);
+        AlgorithmView.WriteHistoryCsv(output, [result]);
+        using var parser = new TextFieldParser(new StringReader(output.ToString())) { HasFieldsEnclosedInQuotes = true };
+        parser.SetDelimiters(",");
+
+        string[] headers = Assert.IsType<string[]>(parser.ReadFields());
+        string[] values = Assert.IsType<string[]>(parser.ReadFields());
+        Assert.Equal(result.CreateTime?.ToString(), values[1]);
+        Assert.Equal([
+            ColorVision.Engine.Properties.Resources.SerialNumber1, ColorVision.Engine.Properties.Resources.CreateTime,
+            "ResultType", "ResultDesc", ColorVision.Engine.Properties.Resources.File, ColorVision.Engine.Properties.Resources.Template,
+            "img_result", ColorVision.Engine.Properties.Resources.Duration, ColorVision.Engine.Properties.Resources.BatchNumber
+        ], headers);
+        Assert.Equal([
+            "17", result.CreateTime?.ToString(), "POI_XYZ", result.ResultDesc, result.FilePath,
+            result.POITemplateName, result.ResultImagFile, "357", result.Batch
+        ], values);
+        Assert.True(parser.EndOfData);
+    }
+
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
@@ -57,7 +98,7 @@ public sealed class ResultHistoryTests
     [Fact]
     public void EvictingASelectedResultClearsTheListSelection()
     {
-        StaTest.Run(() =>
+        WpfTestHost.Invoke(() =>
         {
             var history = new ResultHistoryCollection<Row>(row => row.Id, 1) { new() { Id = 1 } };
             ListView list = new() { ItemsSource = history, SelectedItem = history[0] };
@@ -110,28 +151,61 @@ public sealed class ResultHistoryTests
     }
 
     [Theory]
-    [InlineData(false, 0, 10)]
-    [InlineData(true, 0, 10)]
-    [InlineData(false, 8, 8)]
-    [InlineData(true, 8, 8)]
-    [InlineData(true, 2, 2)]
-    public void HistoryQueryLoadsFullyAndTheNextLiveResultsRestoreTheLimit(bool convert, int requested, int expected)
+    [InlineData(0, 0, 10)]
+    [InlineData(1, 0, 10)]
+    [InlineData(2, 0, 10)]
+    [InlineData(0, 8, 8)]
+    [InlineData(1, 8, 8)]
+    [InlineData(2, 8, 8)]
+    [InlineData(1, 2, 2)]
+    [InlineData(2, 2, 2)]
+    public void HistoryQueryLoadsFullyAndTheNextLiveResultsRestoreTheLimit(int conversionMode, int requested, int expected)
     {
-        StaTest.Run(() =>
+        WpfTestHost.Invoke(() =>
         {
             using var db = new SqlSugarClient(new ConnectionConfig { ConnectionString = "Data Source=:memory:", DbType = DbType.Sqlite, IsAutoCloseConnection = false });
             db.CodeFirst.InitTables<Row>();
             db.Insertable(Enumerable.Range(1, 10).Select(id => new Row { Id = id }).ToArray()).ExecuteCommand();
-            var rows = new ResultHistoryCollection<Row>(row => row.Id, 3);
+            var rows = new ResultHistoryCollection<Row>(row => row.Id, 3) { new() { Id = 100 } };
+            ListView list = new() { ItemsSource = rows, SelectedItem = rows[0] };
             int conversions = 0;
-            GenericQueryBase query = convert
-                ? new GenericQuery<Row, Row>(db, rows.QueryResults, row => { conversions++; return row; })
-                : new GenericQuery<Row>(db, rows.QueryResults);
+            var batchInputs = new List<int[]>();
+            var batchOutputs = new List<Row[]>();
+            GenericQueryBase query;
+            if (conversionMode == 0)
+                query = new GenericQuery<Row>(db, rows.QueryResults);
+            else
+            {
+                var convertedQuery = new GenericQuery<Row, Row>(db, rows.QueryResults, row => { conversions++; return row; });
+                if (conversionMode == 2)
+                {
+                    convertedQuery.BatchConverter = input =>
+                    {
+                        batchInputs.Add(input.Select(row => row.Id).ToArray());
+                        Row[] output = input.Select(row => new Row { Id = row.Id }).ToArray();
+                        batchOutputs.Add(output);
+                        return output;
+                    };
+                }
+                query = convertedQuery;
+            }
             query.QueryConfig.Count = requested;
+            var changes = new List<NotifyCollectionChangedAction>();
+            NotifyCollectionChangedEventHandler onChanged = (_, e) => changes.Add(e.Action);
+            rows.CollectionChanged += onChanged;
             query.QueryDB();
+            rows.CollectionChanged -= onChanged;
+            Assert.Equal(new[] { NotifyCollectionChangedAction.Reset, NotifyCollectionChangedAction.Reset }, changes);
+            Assert.Null(list.SelectedItem);
+            Assert.Equal(expected, list.Items.Count);
             Assert.Equal(expected, rows.Count);
             Assert.Equal(Enumerable.Range(11 - expected, expected).Reverse(), rows.Select(row => row.Id));
-            Assert.Equal(convert ? expected : 0, conversions);
+            Assert.Equal(conversionMode == 1 ? expected : 0, conversions);
+            if (conversionMode == 2)
+            {
+                Assert.Equal(Enumerable.Range(11 - expected, expected).Reverse(), Assert.Single(batchInputs));
+                Assert.Equal(Assert.Single(batchOutputs), rows.ToArray());
+            }
             Assert.Equal(10, db.Queryable<Row>().Count());
             for (int id = 11; id <= 14; id++) rows.Add(new Row { Id = id });
             Assert.Equal(new[] { 12, 13, 14 }, rows.Select(row => row.Id));
@@ -140,21 +214,66 @@ public sealed class ResultHistoryTests
             query.QueryConfig.Count = 2;
             query.QueryDB();
             Assert.Equal(new[] { 10, 9 }, rows.Select(row => row.Id));
+            Assert.Equal(conversionMode == 1 ? expected + 2 : 0, conversions);
+            if (conversionMode == 2)
+            {
+                Assert.Equal(2, batchInputs.Count);
+                Assert.Equal(new[] { 10, 9 }, batchInputs[1]);
+                Assert.Equal(batchOutputs[1], rows.ToArray());
+            }
             rows.Add(new Row { Id = 14 });
             Assert.Equal(14, Assert.Single(rows).Id);
+            list.ItemsSource = null;
         });
     }
 
     [Fact]
-    public void LargeSearchLoadsFullyAndContinuousTestingCanEvictItsRecords()
+    public void BatchQueryKeepsTheUniqueRowsAlreadyConvertedIfEnumerationFails()
     {
-        StaTest.Run(() =>
+        WpfTestHost.Invoke(() =>
+        {
+            var rows = new ResultHistoryCollection<Row>(row => row.Id, 1);
+            ListView list = new() { ItemsSource = rows };
+            var first = new Row { Id = 3 };
+
+            IEnumerable<Row> ConvertRows()
+            {
+                yield return first;
+                yield return new Row { Id = first.Id };
+                throw new InvalidOperationException("Conversion failed.");
+            }
+
+            Assert.Throws<InvalidOperationException>(() => rows.QueryResults.AddRange(ConvertRows()));
+            Assert.Same(first, Assert.Single(list.Items.Cast<Row>()));
+            Assert.True(rows.ContainsId(first.Id));
+            rows.Add(new Row { Id = 4 });
+            Assert.Equal(4, Assert.Single(list.Items.Cast<Row>()).Id);
+            list.ItemsSource = null;
+        });
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void LargeSearchLoadsFullyAndResumingLiveResultsPreservesSelectionOnlyForRetainedRows(bool selectRetained)
+    {
+        WpfTestHost.Invoke(() =>
         {
             var rows = new ResultHistoryCollection<Row>(row => row.Id, 500);
             for (int id = 1; id <= 1000; id++) rows.QueryResults.Add(new Row { Id = id });
-            Row selected = rows[0];
+            Row selected = selectRetained ? rows[^1] : rows[0];
             ListView list = new() { ItemsSource = rows, SelectedItem = selected };
-            for (int id = 1001; id <= 1600; id++) rows.Insert(0, new Row { Id = id });
+            var changes = new List<NotifyCollectionChangedAction>();
+            NotifyCollectionChangedEventHandler onChanged = (_, e) => changes.Add(e.Action);
+            rows.CollectionChanged += onChanged;
+            rows.Insert(0, new Row { Id = 1001 });
+            rows.CollectionChanged -= onChanged;
+            Assert.Equal(new[] { NotifyCollectionChangedAction.Reset, NotifyCollectionChangedAction.Remove, NotifyCollectionChangedAction.Add }, changes);
+            Assert.Same(selectRetained ? selected : null, list.SelectedItem);
+            Assert.Equal(Enumerable.Range(502, 499).Prepend(1001), rows.Select(row => row.Id));
+            Assert.False(rows.ContainsId(501));
+
+            for (int id = 1002; id <= 1600; id++) rows.Insert(0, new Row { Id = id });
             rows.Move(0, rows.Count - 1);
             rows.Add(new Row { Id = 1600 });
             rows.Add(new Row { Id = 1001 });
@@ -201,7 +320,7 @@ public sealed class ResultHistoryTests
             IConfigService previousConfig = ConfigService.Instance;
             try
             {
-                ConfigService.SetInstance(new ConfigHandler { IsAutoSave = false });
+                TestEnvironment.SetConfig(new ConfigHandler { IsAutoSave = false });
                 using var device = new DeviceCamera(new SysResourceModel { Id = -2, Code = "history-offline", Value = "{}" });
                 using var camera = new ViewCamera(device, true);
                 using var algorithm = new AlgorithmView(null, true);
@@ -229,7 +348,7 @@ public sealed class ResultHistoryTests
                 Assert.Empty(camera.ViewResults);
                 Assert.Empty(algorithm.ViewResults);
             }
-            finally { ConfigService.SetInstance(previousConfig); }
+            finally { TestEnvironment.SetConfig(previousConfig); }
         });
     }
 

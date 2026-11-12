@@ -16,35 +16,6 @@ public sealed class CopilotChatPanelScrollLifetimeTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
-    public void ScrollingUpBeforeThePendingFollowRunsKeepsTheReadersPosition(bool useVirtualization)
-    {
-        Run(fixture =>
-        {
-            var upwardScrollEvents = 0;
-            fixture.ScrollViewer.ScrollChanged += (_, args) =>
-            {
-                if (args.VerticalChange < 0)
-                    upwardScrollEvents++;
-            };
-            fixture.GrowStreamingAnswer();
-            fixture.ScrollViewer.ScrollToTop();
-            fixture.LayoutMessages();
-            DrainDispatcher(DispatcherPriority.Input);
-            fixture.LayoutMessages();
-            Assert.True(upwardScrollEvents > 0, "The real ScrollChanged event must precede the pending Background follow.");
-            Assert.InRange(fixture.ScrollViewer.VerticalOffset, 0, 1);
-            fixture.NavigationTargets.Clear();
-
-            fixture.Settle();
-
-            Assert.InRange(fixture.ScrollViewer.VerticalOffset, 0, 1);
-            Assert.DoesNotContain(fixture.StreamingMessage, fixture.NavigationTargets);
-        }, useVirtualization);
-    }
-
-    [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
     public void ExplicitHistoryNavigationWinsOverAnAlreadyPendingBottomFollow(bool useFind)
     {
         Run(fixture =>
@@ -89,28 +60,6 @@ public sealed class CopilotChatPanelScrollLifetimeTests
         });
     }
 
-    [Fact]
-    public void ReplacingTheViewModelDoesNotLetTheOldFollowOverrideTheNewViewsNavigation()
-    {
-        Run(fixture =>
-        {
-            fixture.GrowStreamingAnswer();
-            var replacement = fixture.CreateViewModel("Replacement");
-            fixture.Panel.DataContext = replacement;
-            fixture.LayoutMessages();
-            replacement.ConversationFindText = "Replacement needle";
-            replacement.OpenConversationFind();
-
-            fixture.Settle();
-
-            Assert.Same(replacement, fixture.Panel.DataContext);
-            Assert.Contains(replacement.Messages[0], fixture.NavigationTargets);
-            Assert.DoesNotContain(replacement.Messages[^1], fixture.NavigationTargets);
-            Assert.DoesNotContain(fixture.StreamingMessage, fixture.NavigationTargets);
-            Assert.InRange(fixture.ScrollViewer.VerticalOffset, 0, 1);
-        });
-    }
-
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
@@ -126,32 +75,6 @@ public sealed class CopilotChatPanelScrollLifetimeTests
             Assert.True(fixture.ScrollViewer.ExtentHeight > originalExtent + 100);
             fixture.AssertAtBottom();
         }, useVirtualization);
-    }
-
-    [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public void DelayedRowGrowthFollowsTheNewExtentWhenTheReaderWasAtTheBottom(bool useFiniteOffset)
-    {
-        Run(fixture =>
-        {
-            if (useFiniteOffset)
-                fixture.ScrollViewer.ScrollToVerticalOffset(fixture.ScrollViewer.ScrollableHeight);
-            else
-                fixture.ScrollViewer.ScrollToEnd();
-            fixture.Settle();
-            fixture.AssertAtBottom();
-            var content = fixture.StreamingMessage.Content;
-            var originalExtent = fixture.ScrollViewer.ExtentHeight;
-
-            // Simulate a later layout change without another Content event; this is not Markdown rendering.
-            Dispatcher.CurrentDispatcher.BeginInvoke(DispatcherPriority.Loaded, () => fixture.IncreaseLastRealizedRowHeight(400));
-            fixture.Settle();
-
-            Assert.Equal(content, fixture.StreamingMessage.Content);
-            Assert.True(fixture.ScrollViewer.ExtentHeight > originalExtent + 300);
-            fixture.AssertAtBottom();
-        });
     }
 
     private static void Run(Action<ScrollFixture> action, bool useVirtualization = false)

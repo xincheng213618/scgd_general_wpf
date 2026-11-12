@@ -15,15 +15,9 @@ public class AlgorithmNode : CVBaseServerNode
 
 	private int _POITempId;
 
-	private CVOLED_COLOR _Color;
-
 	private bool _IsInversion;
 
-	private int _BufferLen;
-
 	private STNodeEditText<AlgorithmType> m_ctrl_editText;
-
-	private STNodeEditText<CVOLED_COLOR> m_ctrl_color;
 
 	[STNodeProperty("算子", "算子", true)]
 	public AlgorithmType Algorithm
@@ -84,35 +78,6 @@ public class AlgorithmNode : CVBaseServerNode
         }
     }
 
-	[STNodeProperty("颜色", "颜色", true)]
-	public CVOLED_COLOR Color
-	{
-		get
-		{
-			return _Color;
-		}
-		set
-		{
-			_Color = value;
-			m_ctrl_color.Value = value;
-			OnPropertyChanged();
-		}
-	}
-
-	[STNodeProperty("缓存大小", "缓存大小", true)]
-	public int BufferLen
-	{
-		get
-		{
-			return _BufferLen;
-		}
-		set
-		{
-			_BufferLen = value;
-			OnPropertyChanged();
-		}
-	}
-
 	public AlgorithmNode()
 		: base("AI算法", "Algorithm", "SVR.Algorithm.Default", "DEV.Algorithm.Default")
 	{
@@ -120,10 +85,8 @@ public class AlgorithmNode : CVBaseServerNode
 		_TempName = "";
 		_TempId = -1;
 		_POITempId = -1;
-		_BufferLen = 1024;
 		_IsInversion = false;
-		_Color = CVOLED_COLOR.GREEN;
-		base.Height += 50;
+		base.Height += 25;
 	}
 
 	protected override void OnCreate()
@@ -132,8 +95,6 @@ public class AlgorithmNode : CVBaseServerNode
 		m_ctrl_editText = CreateControl(typeof(STNodeEditText<AlgorithmType>), m_custom_item, "算子:", _Algorithm);
 		m_custom_item.Y += 25;
 		CreateTempControl(m_custom_item);
-		m_custom_item.Y += 25;
-		m_ctrl_color = CreateControl(typeof(STNodeEditText<CVOLED_COLOR>), m_custom_item, "颜色:", _Color);
 	}
 
 	private void setAlgorithmType()
@@ -158,12 +119,6 @@ public class AlgorithmNode : CVBaseServerNode
 		case AlgorithmType.畸变:
 			operatorCode = "Distortion";
 			break;
-		case AlgorithmType.灯珠检测:
-			operatorCode = "LedCheck";
-			break;
-		case AlgorithmType.灯带检测:
-			operatorCode = "LEDStripDetection";
-			break;
 		case AlgorithmType.双目融合:
 			operatorCode = "ARVR.BinocularFusion";
 			break;
@@ -185,15 +140,13 @@ public class AlgorithmNode : CVBaseServerNode
 
 	protected override object getBaseEventData(CVStartCFC start)
 	{
-		if (!System.Enum.IsDefined(_Algorithm))
+		if (string.IsNullOrEmpty(operatorCode))
 			throw new System.NotSupportedException($"算法编号 {(int)_Algorithm} 已退役或不受支持，请重新选择受支持的算子。");
 		AlgorithmParam algorithmParam = null;
 		switch (_Algorithm)
 		{
 		case AlgorithmType.MTF:
 		case AlgorithmType.SFR:
-		case AlgorithmType.灯珠检测:
-		case AlgorithmType.灯带检测:
 		case AlgorithmType.SFR_FindROI:
 		case AlgorithmType.十字计算:
 			algorithmParam = new AlgorithmParam_ROI
@@ -210,8 +163,8 @@ public class AlgorithmNode : CVBaseServerNode
 			break;
 		}
 		algorithmParam.IsInversion = _IsInversion;
-		algorithmParam.BufferLen = _BufferLen;
-		BuildImageParam(_ImgFileName, _Color, algorithmParam);
+		algorithmParam.BufferLen = 1024;
+		BuildImageParam(_ImgFileName, algorithmParam);
 		getPreStepParam(start, algorithmParam);
 		algorithmParam.SMUData = GetSMUResult(start);
 		return algorithmParam;

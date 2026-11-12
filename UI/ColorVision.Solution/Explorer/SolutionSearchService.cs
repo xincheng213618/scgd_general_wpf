@@ -32,6 +32,8 @@ namespace ColorVision.Solution.Explorer
             IReadOnlyList<string> keywords = ParseKeywords(query);
             if (keywords.Count == 0 || explorers.Count == 0)
                 return Task.FromResult(new SolutionSearchResult([], IsTruncated: false));
+            if (cancellationToken.IsCancellationRequested)
+                return Task.FromCanceled<SolutionSearchResult>(cancellationToken);
 
             List<SearchContext> contexts = explorers
                 .Distinct()
@@ -55,6 +57,8 @@ namespace ColorVision.Solution.Explorer
             IReadOnlyList<string> keywords = ParseKeywords(query);
             if (keywords.Count == 0)
                 return Task.FromResult(new SolutionSearchResult([], IsTruncated: false));
+            if (cancellationToken.IsCancellationRequested)
+                return Task.FromCanceled<SolutionSearchResult>(cancellationToken);
 
             List<LoadedCandidate> loadedCandidates = new[] { root }
                 .Concat(root.VisualChildren.GetAllVisualChildren())
@@ -65,19 +69,17 @@ namespace ColorVision.Solution.Explorer
                     node.Name,
                     IsDirectoryNode(node),
                     node.Parent ?? root,
-                    Path.GetRelativePath(root.FullPath, node.FullPath)))
+                    LogicalDisplayPath: string.Empty))
                 .ToList();
-            var loadedNodesByPath = loadedCandidates
-                .GroupBy(candidate => candidate.FullPath, StringComparer.OrdinalIgnoreCase)
-                .ToDictionary(group => group.Key, group => group.First(), StringComparer.OrdinalIgnoreCase);
             var context = new SearchContext(
                 explorer,
                 root.FullPath,
+                explorer.Name,
                 IsExplicitProjectMode: false,
                 Cache: null,
                 ProjectScopes: [],
                 loadedCandidates,
-                loadedNodesByPath,
+                IndexLoadedCandidates(loadedCandidates),
                 root,
                 IsFileSystemView: true);
             return Task.Run(
@@ -128,7 +130,9 @@ namespace ColorVision.Solution.Explorer
                 var contextAccumulator = new SearchAccumulator(candidateLimit);
                 foreach (LoadedCandidate candidate in context.LoadedCandidates)
                 {
-                    if (!Matches(candidate.Name, candidate.FullPath, candidate.DisplayPath, keywords))
+                    cancellationToken.ThrowIfCancellationRequested();
+                    string displayPath = ResolveLoadedDisplayPath(context, candidate);
+                    if (!Matches(candidate.Name, candidate.FullPath, displayPath, keywords))
                         continue;
                     contextAccumulator.Add(new SolutionSearchHit(
                         context.Explorer,
@@ -137,8 +141,8 @@ namespace ColorVision.Solution.Explorer
                         candidate.IsDirectory,
                         candidate.Node,
                         candidate.ParentNode,
-                        candidate.DisplayPath,
-                        GetMatchRank(candidate.Name, candidate.DisplayPath, query, keywords)));
+                        displayPath,
+                        GetMatchRank(candidate.Name, displayPath, query, keywords)));
                 }
 
                 bool hasCache = context.Cache?.HasCache() == true;
@@ -153,13 +157,7 @@ namespace ColorVision.Solution.Explorer
                         ? context.ProjectScopes.Select(scope => scope.RootPath)
                         : [context.RootPath];
                 foreach (string rootPath in scanRoots.Distinct(StringComparer.OrdinalIgnoreCase))
-                {
-                    var rootAccumulator = new SearchAccumulator(candidateLimit);
-                    ScanDirectory(context, rootPath, keywords, query, rootAccumulator, cancellationToken);
-                    contextAccumulator.AddRange(rootAccumulator.Hits);
-                    if (rootAccumulator.WasTruncated)
-                        contextAccumulator.MarkTruncated();
-                }
+                    ScanDirectory(context, rootPath, keywords, query, contextAccumulator, cancellationToken);
                 contextAccumulators.Add(contextAccumulator);
             }
 
@@ -183,6 +181,9 @@ namespace ColorVision.Solution.Explorer
             SearchAccumulator accumulator,
             CancellationToken cancellationToken)
         {
+            Predicate<string>? includesPath = context.ProjectScopes.Any(scope => scope.Node.Project.ItemRules != null)
+                ? path => IsVisiblePhysicalPath(context, path, FindProjectScope(context.ProjectScopes, path))
+                : null;
             IEnumerable<string> searchRoots = context.IsExplicitProjectMode
                 ? context.ProjectScopes
                     .Select(scope => scope.RootPath)
@@ -197,7 +198,10 @@ namespace ColorVision.Solution.Explorer
                 List<FileTreeCacheEntry> entries = context.Cache!.Search(
                     keywords.ToArray(),
                     queryLimit,
-                    rootPath);
+                    rootPath,
+                    cancellationToken,
+                    nameQuery: query,
+                    includesPath: includesPath);
                 if (entries.Count > accumulator.Capacity)
                     accumulator.MarkTruncated();
                 foreach (FileTreeCacheEntry entry in entries.Take(accumulator.Capacity))
@@ -235,46 +239,28 @@ namespace ColorVision.Solution.Explorer
                 RecurseSubdirectories = false,
                 ReturnSpecialDirectories = false,
             };
-            while (pendingDirectories.Count > 0 && !accumulator.IsAtCapacity)
+            while (pendingDirectories.Count > 0)
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                string directoryPath = pendingDirectories.Pop();
                 try
                 {
-                    foreach (string childDirectoryPath in Directory.EnumerateDirectories(
-                        directoryPath,
-                        "*",
-                        enumerationOptions))
+                    var directory = new DirectoryInfo(pendingDirectories.Pop());
+                    foreach (FileSystemInfo entry in directory.EnumerateFileSystemInfos("*", enumerationOptions))
                     {
                         cancellationToken.ThrowIfCancellationRequested();
-                        var directory = new DirectoryInfo(childDirectoryPath);
+                        bool isDirectory = entry is DirectoryInfo;
+                        if (isDirectory && (entry.Attributes & FileAttributes.ReparsePoint) == 0)
+                            pendingDirectories.Push(entry.FullName);
+                        if (!isDirectory && !context.IsFileSystemView && SolutionNodeFactory.IsInternalFile(entry.Name))
+                            continue;
                         AddPhysicalCandidate(
                             context,
-                            directory.FullName,
-                            directory.Name,
-                            isDirectory: true,
+                            entry.FullName,
+                            entry.Name,
+                            isDirectory,
                             keywords,
                             query,
                             accumulator);
-                        if ((directory.Attributes & FileAttributes.ReparsePoint) == 0)
-                            pendingDirectories.Push(directory.FullName);
-                    }
-
-                    foreach (string filePath in Directory.EnumerateFiles(directoryPath, "*", enumerationOptions))
-                    {
-                        cancellationToken.ThrowIfCancellationRequested();
-                        string fileName = Path.GetFileName(filePath);
-                        if (context.IsFileSystemView || !SolutionNodeFactory.IsInternalFile(fileName))
-                        {
-                            AddPhysicalCandidate(
-                                context,
-                                filePath,
-                                fileName,
-                                isDirectory: false,
-                                keywords,
-                                query,
-                                accumulator);
-                        }
                     }
                 }
                 catch (Exception ex) when (ex is IOException
@@ -284,8 +270,6 @@ namespace ColorVision.Solution.Explorer
                 {
                 }
             }
-            if (pendingDirectories.Count > 0)
-                accumulator.MarkTruncated();
         }
 
         private static void AddPhysicalCandidate(
@@ -301,48 +285,46 @@ namespace ColorVision.Solution.Explorer
                 return;
 
             ProjectScope? projectScope = FindProjectScope(context.ProjectScopes, fullPath);
-            if (context.IsExplicitProjectMode && projectScope == null)
+            if (!IsVisiblePhysicalPath(context, fullPath, projectScope))
                 return;
-            if (projectScope != null && !projectScope.Node.IncludesPath(fullPath))
-                return;
-            if (!context.IsExplicitProjectMode
-                && projectScope == null
-                && !IsPathWithin(context.RootPath, fullPath))
-            {
-                return;
-            }
 
             context.LoadedNodesByPath.TryGetValue(fullPath, out LoadedCandidate? loadedCandidate);
             SolutionNode? existingNode = loadedCandidate?.Node;
             SolutionNode parentNode = existingNode?.Parent
                 ?? (SolutionNode?)projectScope?.Node
                 ?? context.RootNode;
-            string displayPath = loadedCandidate?.DisplayPath
-                ?? CreatePhysicalDisplayPath(
-                    context.Explorer,
-                    context.RootPath,
-                    projectScope,
-                    fullPath);
+            string displayPath = loadedCandidate == null
+                ? CreatePhysicalDisplayPath(context.SolutionName, context.RootPath, projectScope, fullPath)
+                : ResolveLoadedDisplayPath(context, loadedCandidate);
+            string displayName = existingNode?.Name ?? name;
             accumulator.Add(new SolutionSearchHit(
                 context.Explorer,
                 fullPath,
-                existingNode?.Name ?? name,
+                displayName,
                 existingNode != null ? IsDirectoryNode(existingNode) : isDirectory,
                 existingNode,
                 parentNode,
                 displayPath,
-                GetMatchRank(existingNode?.Name ?? name, displayPath, query, keywords)));
+                GetMatchRank(displayName, displayPath, query, keywords)));
+        }
+
+        private static bool IsVisiblePhysicalPath(SearchContext context, string fullPath, ProjectScope? projectScope)
+        {
+            return projectScope != null
+                ? projectScope.Node.IncludesPath(fullPath)
+                : !context.IsExplicitProjectMode && IsPathWithin(context.RootPath, fullPath);
         }
 
         private static SearchContext CreateContext(SolutionExplorer explorer)
         {
+            string solutionName = explorer.Name;
             var nodes = new[] { explorer }
                 .Concat(explorer.VisualChildren.GetAllVisualChildren())
                 .Where(node => node is not LazyLoadingNode and not SolutionSearchResultNode)
                 .ToList();
             List<ProjectScope> projectScopes = nodes
                 .OfType<ProjectNode>()
-                .Select(node => new ProjectScope(node, node.Project.ProjectDirectory.FullName))
+                .Select(node => new ProjectScope(node, node.Project.ProjectDirectory.FullName, node.Name))
                 .GroupBy(scope => scope.RootPath, StringComparer.OrdinalIgnoreCase)
                 .Select(group => group.First())
                 .ToList();
@@ -353,38 +335,52 @@ namespace ColorVision.Solution.Explorer
                     node.Name,
                     IsDirectoryNode(node),
                     node.Parent ?? explorer,
-                    CreateLoadedDisplayPath(explorer, projectScopes, node)))
+                    CreateLogicalDisplayPath(solutionName, node)))
                 .ToList();
-            Dictionary<string, LoadedCandidate> loadedNodesByPath = loadedCandidates
-                .Where(candidate => !string.IsNullOrWhiteSpace(candidate.FullPath))
-                .GroupBy(candidate => candidate.FullPath, StringComparer.OrdinalIgnoreCase)
-                .ToDictionary(group => group.Key, group => group.First(), StringComparer.OrdinalIgnoreCase);
             return new SearchContext(
                 explorer,
                 explorer.DirectoryInfo.FullName,
+                solutionName,
                 explorer.IsExplicitProjectMode,
                 explorer.Cache,
                 projectScopes,
                 loadedCandidates,
-                loadedNodesByPath,
+                IndexLoadedCandidates(loadedCandidates),
                 explorer,
                 IsFileSystemView: false);
         }
 
-        private static string CreateLoadedDisplayPath(
-            SolutionExplorer explorer,
-            IReadOnlyList<ProjectScope> projectScopes,
-            SolutionNode node)
+        private static Dictionary<string, LoadedCandidate> IndexLoadedCandidates(IReadOnlyList<LoadedCandidate> candidates)
         {
-            if (!string.IsNullOrWhiteSpace(node.FullPath)
-                && (File.Exists(node.FullPath) || Directory.Exists(node.FullPath)))
-            {
-                return CreatePhysicalDisplayPath(
-                    explorer,
-                    explorer.DirectoryInfo.FullName,
-                    FindProjectScope(projectScopes, node.FullPath),
-                    node.FullPath);
-            }
+            var index = new Dictionary<string, LoadedCandidate>(candidates.Count, StringComparer.OrdinalIgnoreCase);
+            foreach (LoadedCandidate candidate in candidates)
+                if (!string.IsNullOrWhiteSpace(candidate.FullPath)) index.TryAdd(candidate.FullPath, candidate);
+            return index;
+        }
+
+        private static string ResolveLoadedDisplayPath(SearchContext context, LoadedCandidate candidate)
+        {
+            if (context.IsFileSystemView)
+                return Path.GetRelativePath(context.RootPath, candidate.FullPath);
+
+            string logicalPath = candidate.LogicalDisplayPath;
+            if (string.IsNullOrWhiteSpace(candidate.FullPath))
+                return logicalPath;
+
+            string physicalPath = CreatePhysicalDisplayPath(context.SolutionName, context.RootPath,
+                FindProjectScope(context.ProjectScopes, candidate.FullPath), candidate.FullPath);
+            if (string.Equals(physicalPath, logicalPath, StringComparison.Ordinal))
+                return logicalPath;
+
+            return File.Exists(candidate.FullPath) || Directory.Exists(candidate.FullPath) ? physicalPath : logicalPath;
+        }
+
+        private static string CreateLogicalDisplayPath(string solutionName, SolutionNode node)
+        {
+            if (node is SolutionExplorer)
+                return solutionName;
+            if (node.Parent is null or SolutionExplorer)
+                return string.IsNullOrWhiteSpace(node.Name) ? solutionName : node.Name;
 
             var names = new Stack<string>();
             for (SolutionNode? current = node; current != null && current is not SolutionExplorer; current = current.Parent)
@@ -392,11 +388,11 @@ namespace ColorVision.Solution.Explorer
                 if (!string.IsNullOrWhiteSpace(current.Name))
                     names.Push(current.Name);
             }
-            return names.Count == 0 ? explorer.Name : Path.Combine(names.ToArray());
+            return names.Count == 0 ? solutionName : Path.Combine(names.ToArray());
         }
 
         private static string CreatePhysicalDisplayPath(
-            SolutionExplorer explorer,
+            string solutionName,
             string solutionRootPath,
             ProjectScope? projectScope,
             string fullPath)
@@ -413,20 +409,21 @@ namespace ColorVision.Solution.Explorer
             }
 
             if (projectScope == null)
-                return string.Equals(relativePath, ".", StringComparison.Ordinal) ? explorer.Name : relativePath;
+                return string.Equals(relativePath, ".", StringComparison.Ordinal) ? solutionName : relativePath;
             return string.Equals(relativePath, ".", StringComparison.Ordinal)
-                ? projectScope.Node.Name
-                : Path.Combine(projectScope.Node.Name, relativePath);
+                ? projectScope.Name
+                : Path.Combine(projectScope.Name, relativePath);
         }
 
         private static ProjectScope? FindProjectScope(
             IReadOnlyList<ProjectScope> scopes,
             string fullPath)
         {
-            return scopes
-                .Where(scope => IsPathWithin(scope.RootPath, fullPath))
-                .OrderByDescending(scope => scope.RootPath.Length)
-                .FirstOrDefault();
+            ProjectScope? best = null;
+            foreach (ProjectScope scope in scopes)
+                if ((best == null || scope.RootPath.Length > best.RootPath.Length) && IsPathWithin(scope.RootPath, fullPath))
+                    best = scope;
+            return best;
         }
 
         private static bool Matches(
@@ -487,7 +484,7 @@ namespace ColorVision.Solution.Explorer
                 keywords.Add(keyword);
         }
 
-        private sealed record ProjectScope(ProjectNode Node, string RootPath);
+        private sealed record ProjectScope(ProjectNode Node, string RootPath, string Name);
 
         private sealed record LoadedCandidate(
             SolutionNode Node,
@@ -495,11 +492,12 @@ namespace ColorVision.Solution.Explorer
             string Name,
             bool IsDirectory,
             SolutionNode ParentNode,
-            string DisplayPath);
+            string LogicalDisplayPath);
 
         private sealed record SearchContext(
             SolutionExplorer Explorer,
             string RootPath,
+            string SolutionName,
             bool IsExplicitProjectMode,
             SolutionCache? Cache,
             IReadOnlyList<ProjectScope> ProjectScopes,
@@ -515,7 +513,6 @@ namespace ColorVision.Solution.Explorer
 
             public int Capacity { get; }
             public bool WasTruncated { get; private set; }
-            public bool IsAtCapacity => _hits.Count >= Capacity;
             public IEnumerable<SolutionSearchHit> Hits => _orderedHits;
 
             public SearchAccumulator(int capacity)
@@ -536,7 +533,7 @@ namespace ColorVision.Solution.Explorer
                     }
                     return;
                 }
-                if (IsAtCapacity)
+                if (_hits.Count >= Capacity)
                 {
                     WasTruncated = true;
                     SolutionSearchHit? worstHit = _orderedHits.Max;

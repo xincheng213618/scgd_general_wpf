@@ -57,6 +57,7 @@ namespace ColorVision.Copilot
         {
             snapshot = null;
             if (!IsStructurallyValid()
+                || !string.IsNullOrWhiteSpace(SolutionDirectoryPath) && !Directory.Exists(SolutionDirectoryPath)
                 || !string.IsNullOrWhiteSpace(ActiveDocumentPath) && !File.Exists(ActiveDocumentPath)
                 || (AdditionalReadRootPaths ?? []).Any(path => !Directory.Exists(path)))
             {

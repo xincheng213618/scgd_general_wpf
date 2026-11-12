@@ -8,6 +8,7 @@
         <ResourceDictionary Source="/ColorVision.Themes;component/Themes/Components/Panel.xaml" />
         <ResourceDictionary Source="/ColorVision.Themes;component/Themes/Controls/TextBox.xaml" />
         <ResourceDictionary Source="/ColorVision.Themes;component/Themes/Controls/ComboBox.xaml" />
+        <ResourceDictionary Source="/ColorVision.Themes;component/Themes/Controls/SettingsComboBox.xaml" />
         <ResourceDictionary Source="/ColorVision.Themes;component/Themes/Controls/Button.xaml" />
         <ResourceDictionary Source="/ColorVision.Themes;component/Themes/Controls/Text.xaml" />
         <ResourceDictionary Source="/ColorVision.Themes;component/Themes/Controls/ListView.xaml" />

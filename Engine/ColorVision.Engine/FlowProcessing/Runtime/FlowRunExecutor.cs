@@ -1,4 +1,5 @@
 using FlowEngineLib.Base;
+using FlowEngineLib.Runtime;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
@@ -42,15 +43,7 @@ namespace ColorVision.Engine.FlowProcessing
             ArgumentException.ThrowIfNullOrWhiteSpace(startNodeName);
             ArgumentException.ThrowIfNullOrWhiteSpace(serialNumber);
             serialNumber = ColorVision.Common.Utilities.Tool.SanitizeFileName(serialNumber);
-            if (executionTimeout.HasValue
-                && executionTimeout.Value != Timeout.InfiniteTimeSpan
-                && executionTimeout.Value <= TimeSpan.Zero)
-            {
-                throw new ArgumentOutOfRangeException(
-                    nameof(executionTimeout),
-                    executionTimeout,
-                    "Execution timeout must be positive, infinite, or null.");
-            }
+            FlowEngineRunner.ValidateTimeouts(readinessTimeout: null, executionTimeout);
 
             if (Interlocked.CompareExchange(ref _isRunning, 1, 0) != 0)
             {
@@ -77,7 +70,7 @@ namespace ColorVision.Engine.FlowProcessing
                 completion.TrySetResult(data);
             };
 
-            _flowControl.FlowCompleted += completedHandler;
+            _flowControl.EngineCompleted += completedHandler;
             bool started = false;
             try
             {
@@ -126,31 +119,35 @@ namespace ColorVision.Engine.FlowProcessing
                 }
                 catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
                 {
-                    _flowControl.Stop();
-                    return CreateResult(
-                        started: true,
-                        FlowRunTermination.Canceled,
-                        startNodeName,
-                        serialNumber,
-                        StatusTypeEnum.Canceled,
-                        "Flow execution was canceled.");
+                    return FinishInterruptedWait(FlowRunTermination.Canceled);
                 }
                 catch (TimeoutException)
                 {
-                    _flowControl.Stop();
-                    return CreateResult(
-                        started: true,
-                        FlowRunTermination.TimedOut,
-                        startNodeName,
-                        serialNumber,
-                        StatusTypeEnum.OverTime,
-                        "Flow execution timed out.");
+                    return FinishInterruptedWait(FlowRunTermination.TimedOut);
                 }
             }
             finally
             {
-                _flowControl.FlowCompleted -= completedHandler;
+                _flowControl.EngineCompleted -= completedHandler;
                 Interlocked.Exchange(ref _isRunning, 0);
+            }
+
+            FlowRunExecutionResult FinishInterruptedWait(FlowRunTermination termination)
+            {
+                // Stop and terminal publication take the same lifecycle lock.
+                // If the matching run already finished, preserve its exact result.
+                _flowControl.Stop(startNodeName, serialNumber);
+                if (completion.Task.IsCompletedSuccessfully)
+                    return new FlowRunExecutionResult(true, FlowRunTermination.EngineCompleted, completion.Task.Result);
+
+                bool canceled = termination == FlowRunTermination.Canceled;
+                return CreateResult(
+                    started: true,
+                    termination,
+                    startNodeName,
+                    serialNumber,
+                    canceled ? StatusTypeEnum.Canceled : StatusTypeEnum.OverTime,
+                    canceled ? "Flow execution was canceled." : "Flow execution timed out.");
             }
         }
 

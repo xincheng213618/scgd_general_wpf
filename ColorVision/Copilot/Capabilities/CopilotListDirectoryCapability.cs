@@ -18,7 +18,7 @@ namespace ColorVision.Copilot
         private static readonly EnumerationOptions ListEnumerationOptions = new()
         {
             AttributesToSkip = FileAttributes.ReparsePoint,
-            IgnoreInaccessible = true,
+            IgnoreInaccessible = false,
             RecurseSubdirectories = false,
             ReturnSpecialDirectories = false,
         };

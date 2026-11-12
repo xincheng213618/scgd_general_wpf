@@ -37,6 +37,15 @@ namespace ColorVision.Copilot
                     CopilotChatState.CurrentSchemaVersion,
                     LastLoadStatus.StateFilePath);
 
+            if (ReadStateFile(TemporaryStateFilePath, out _, out var temporarySchemaVersion) == StateFileReadStatus.FutureVersion)
+            {
+                BlockForFutureVersion(temporarySchemaVersion, TemporaryStateFilePath);
+                throw new CopilotChatStateFutureVersionException(
+                    temporarySchemaVersion,
+                    CopilotChatState.CurrentSchemaVersion,
+                    TemporaryStateFilePath);
+            }
+
             if (LastLoadStatus.RequiresRecoveryProtection
                 && !IsManagedAttachmentCleanupProtected
                 && !ProtectManagedAttachments())

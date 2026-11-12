@@ -11,12 +11,12 @@ internal sealed record LocalSensorDiagnosticEntry(long Sequence, DateTime Time, 
     string Endpoint, string EventName, string CommandName, long CommandId, int Attempt, string Encoding,
     int ByteCount, int CapturedByteCount, string Text, string Hex)
 {
-    public string Direction => Kind switch { LocalSensorDiagnosticKind.Sent => "发送", LocalSensorDiagnosticKind.Received => "接收", LocalSensorDiagnosticKind.Error => "错误", _ => "日志" };
+    public string Direction => EngineLocalization.Get(Kind switch { LocalSensorDiagnosticKind.Sent => "发送", LocalSensorDiagnosticKind.Received => "接收", LocalSensorDiagnosticKind.Error => "错误", _ => "日志" });
     public string DisplayText { get; } = Kind is LocalSensorDiagnosticKind.Sent or LocalSensorDiagnosticKind.Received
         ? SensorCommandTextFormatter.ToReadableText(Text, Encoding == "Hex") : Text;
     public string Preview => (DisplayText.Length > 180 ? DisplayText[..180] + "…" : DisplayText).Replace("\r", "\\r").Replace("\n", "\\n").Replace("\t", "\\t");
-    public string CommandDisplay => CommandId == 0 ? CommandName : $"{CommandName} · #{CommandId} / 第 {Attempt} 次";
-    public string Label => Kind is LocalSensorDiagnosticKind.Sent or LocalSensorDiagnosticKind.Received ? CommandDisplay : EventName;
+    public string CommandDisplay => CommandId == 0 ? CommandName : EngineLocalization.Format($"{CommandName} · #{CommandId} / 第 {Attempt} 次");
+    public string Label => Kind is LocalSensorDiagnosticKind.Sent or LocalSensorDiagnosticKind.Received ? CommandDisplay : EngineLocalization.Get(EventName);
     public bool IsTruncated => CapturedByteCount < ByteCount;
 }
 

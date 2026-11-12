@@ -15,6 +15,29 @@ namespace ColorVision.UI.Tests;
 
 public class CameraBackendRoutingTests
 {
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void DeviceCommandsKeepThePanelBusyUntilCompletion(bool local)
+    {
+        var backend = new CameraBackendState(local);
+        if (local) backend.SetLocalStatus(DeviceStatusType.Opened);
+        else backend.ObserveService(DeviceStatusType.Opened);
+        int notifications = 0;
+        backend.Changed += (_, _) => notifications++;
+        if (local) backend.BeginLocalCommand();
+        else backend.BeginServiceCommand("AutoFocus");
+        var busy = ColorVision.Engine.Services.Devices.Camera.Controls.CameraPanelState.Create(backend, false, false);
+        Assert.True(busy.Busy);
+        Assert.False(busy.CanCapture);
+        if (local) backend.EndLocalCommand();
+        else backend.EndServiceCommand();
+        var ready = ColorVision.Engine.Services.Devices.Camera.Controls.CameraPanelState.Create(backend, false, false);
+        Assert.False(ready.Busy);
+        Assert.True(ready.CanCapture);
+        Assert.Equal(2, notifications);
+    }
+
     [Fact]
     public void CameraLogFollowsEffectiveOwnershipAndNeverFallsBackAcrossBackends()
     {
@@ -89,11 +112,12 @@ public class CameraBackendRoutingTests
     }
 
     [Fact]
-    public void DisplayPreferenceIsEditableAndNotifiesWithoutOpeningCamera()
+    public void DisplayPreferenceRemainsInAcquisitionDisplayAndNotifiesWithoutOpeningCamera()
     {
         var config = new DisplayCameraConfig { UseLocalCamera = false };
         var property = TypeDescriptor.GetProperties(config)[nameof(DisplayCameraConfig.UseLocalCamera)]!;
         Assert.True(property.IsBrowsable);
+        Assert.Equal("AcquisitionDisplay", property.Category);
         Assert.False(property.IsReadOnly);
         Assert.Equal("使用本地相机", property.DisplayName);
         Assert.Contains("下次打开", property.Description);

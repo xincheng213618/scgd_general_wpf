@@ -1,6 +1,7 @@
 ﻿using ColorVision.Common.MVVM;
 using Newtonsoft.Json;
 using System.Collections.Generic;
+using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Windows;
@@ -9,6 +10,9 @@ namespace ColorVision.Engine.Templates
 {
     public class ParamModBase : ModelBase
     {
+        [Browsable(false), JsonIgnore, System.Text.Json.Serialization.JsonIgnore]
+        public DateTime? TemplateDate { get; internal set; }
+
         [Browsable(false)]
         [JsonIgnore]
         public virtual RelayCommand CreateCommand { get; set; }

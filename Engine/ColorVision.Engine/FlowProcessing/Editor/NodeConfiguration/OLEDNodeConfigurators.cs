@@ -4,7 +4,6 @@ using ColorVision.Engine.Templates.Jsons.OLEDAOI.FPForBlackScreen;
 using ColorVision.Engine.Templates.Jsons.OLEDAOI.FPForQuardImg;
 using ColorVision.Engine.Templates.Jsons.OLEDAOI.FPForRePicGradingV2;
 using ColorVision.Engine.Templates.Jsons.OLEDImageProcessing;
-using Jsons = ColorVision.Engine.Templates.Jsons;
 
 namespace ColorVision.Engine.FlowProcessing.Editor.NodeConfiguration
 {
@@ -48,37 +47,4 @@ namespace ColorVision.Engine.FlowProcessing.Editor.NodeConfiguration
         }
     }
 
-    [NodeConfigurator(typeof(FlowEngineLib.Node.OLED.Algorithm2InNode))]
-    public class Algorithm2InNodeConfigurator : NodeConfiguratorBase
-    {
-        public override void Configure(NodeConfiguratorContext context)
-        {
-            var node = (FlowEngineLib.Node.OLED.Algorithm2InNode)context.Node;
-
-            void Refresh()
-            {
-                context.SignStackPanel.Children.Clear();
-
-                switch (node.Algorithm)
-                {
-                    case FlowEngineLib.Algorithm.Algorithm2Type.MTF:
-                        context.AddTemplateJsonPanel(nameof(node.TempName), "MTF2", new Jsons.MTF2.TemplateMTF2());
-                        break;
-                    case FlowEngineLib.Algorithm.Algorithm2Type.SFR:
-                        context.AddTemplateJsonPanel(nameof(node.TempName), "SFR2", new Jsons.SFR2.TemplateSFR2());
-                        break;
-                    case FlowEngineLib.Algorithm.Algorithm2Type.SFR_FindROI:
-                        context.AddTemplateJsonPanel(nameof(node.TempName), "SFR_FindROI", new Jsons.SFRFindROI.TemplateSFRFindROI());
-                        break;
-                    case FlowEngineLib.Algorithm.Algorithm2Type.十字计算:
-                        context.AddTemplateJsonPanel(nameof(node.TempName), Properties.Resources.CrossCalc, new Jsons.FindCross.TemplateFindCross());
-                        break;
-                    default:
-                        break;
-                }
-            }
-            context.ReconfigureOnPropertyChanged(node, nameof(node.Algorithm));
-            Refresh();
-        }
-    }
 }

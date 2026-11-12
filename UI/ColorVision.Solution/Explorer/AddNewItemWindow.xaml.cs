@@ -15,6 +15,7 @@ namespace ColorVision.Solution.Explorer
         public INewItemTemplate? SelectedTemplate { get; private set; }
         public string? NewFileName { get; private set; }
         public bool OverwriteExisting { get; private set; }
+        internal bool AddAsSolutionItem { get; init; }
 
         public AddNewItemWindow(string targetDirectory)
         {
@@ -136,8 +137,15 @@ namespace ColorVision.Solution.Explorer
                 MessageBox.Show(this, LocalizedText.Format($"同名文件夹 \"{fileName}\" 已存在"), LocalizedText.Get("添加新建项"), MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
+            bool exists = File.Exists(fullPath);
+            if ((AddAsSolutionItem || exists) && !SolutionPhysicalItemOperations.TryValidateSolutionItemFileType(fullPath, out string errorMessage))
+            {
+                MessageBox.Show(this, errorMessage, LocalizedText.Get("添加新建项"), MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
             OverwriteExisting = false;
-            if (File.Exists(fullPath))
+            if (exists)
             {
                 var result = MessageBox.Show(this, LocalizedText.Format($"文件 \"{fileName}\" 已存在，是否覆盖？"), LocalizedText.Get("添加新建项"),
                     MessageBoxButton.YesNo, MessageBoxImage.Question);

@@ -1,7 +1,10 @@
 using AvalonDock;
+using AvalonDock.Controls;
 using AvalonDock.Core;
 using AvalonDock.Layout;
 using AvalonDock.Serializer.Xml;
+using ColorVision.ImageEditor;
+using ColorVision.Solution.Themes;
 using ColorVision.Solution.Workspace;
 using System.IO;
 using System.Reflection;
@@ -13,6 +16,239 @@ namespace ColorVision.UI.Tests;
 
 public sealed class DockLayoutSerializationTests
 {
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void ResetKeepsTheOpenEditorAndItsUnsavedContent(bool floating)
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            LayoutRoot previousRoot = WorkspaceManager.layoutRoot;
+            LayoutDocumentPane previousPane = WorkspaceManager.LayoutDocumentPane;
+            var docking = CreateDockingManager(new LayoutAnchorable { Content = new Border() });
+            docking.Theme = new AvalonDockTheme(isDark: false);
+            var manager = new DockLayoutManager(docking);
+            manager.RegisterDocument("home", new Border(), "Home");
+            WorkspaceManager.layoutRoot = docking.Layout;
+            WorkspaceManager.LayoutDocumentPane = docking.Layout.Descendents().OfType<LayoutDocumentPane>().Single();
+            var draft = new UnsavedEditor();
+            string path = Path.Combine(Path.GetTempPath(), $"ColorVision-Draft-{Guid.NewGuid():N}.txt");
+            int closes = 0;
+            LayoutDocument? document = null;
+            try
+            {
+                WithShownDockWindow(docking, () =>
+                {
+                    document = EditorDocumentService.Open(path, typeof(UnsavedEditor), "Draft", () => draft, _ => closes++);
+                    LayoutRoot oldLayout = docking.Layout;
+                    if (floating)
+                    {
+                        document.Float();
+                        PumpDispatcher();
+                        Assert.Single(docking.FloatingWindows);
+                    }
+                    else
+                    {
+                        DocumentTabPinManager.ToggleCommand.Execute(document);
+                    }
+
+                    // Floating window activation depends on the desktop foreground. Set the layout state under test explicitly.
+                    document.IsActive = true;
+                    Assert.True(document.IsActive);
+                    manager.ResetLayout();
+                    PumpDispatcher();
+
+                    Assert.NotSame(oldLayout, docking.Layout);
+                    Assert.Same(docking.Layout, WorkspaceManager.layoutRoot);
+                    Assert.Contains(document, WorkspaceManager.LayoutDocumentPane.Children);
+                    Assert.Same(draft, document.Content);
+                    Assert.True(draft.IsDirty);
+                    Assert.True(document.IsActive);
+                    Assert.Same(Window.GetWindow(docking), Window.GetWindow(draft));
+                    Assert.Equal(!floating, DocumentTabPinManager.IsPinned(document));
+                    if (!floating) Assert.Same(document, WorkspaceManager.LayoutDocumentPane.Children[0]);
+                    Assert.Empty(docking.FloatingWindows);
+                    Assert.Equal(0, closes);
+                    Assert.Same(document, EditorDocumentService.Open<UnsavedEditor>(path, typeof(UnsavedEditor), "Draft",
+                        () => throw new InvalidOperationException("Reset must preserve the open editor instance.")));
+                    Assert.False(EditorDocumentService.TryCloseAllDocuments(_ => MessageBoxResult.Cancel));
+                    Assert.True(EditorDocumentService.TrySaveActiveDocument());
+                    Assert.False(draft.IsDirty);
+                    document.Close();
+                    Assert.Equal(1, closes);
+                });
+            }
+            finally
+            {
+                try
+                {
+                    draft.Save();
+                    if (document != null && closes == 0)
+                    {
+                        if (!ReferenceEquals(document.Root, docking.Layout))
+                        {
+                            document.Parent?.RemoveChild(document);
+                            WorkspaceManager.LayoutDocumentPane.Children.Add(document);
+                        }
+                        document.Close();
+                    }
+                }
+                finally
+                {
+                    WorkspaceManager.layoutRoot = previousRoot;
+                    WorkspaceManager.LayoutDocumentPane = previousPane;
+                }
+            }
+        });
+    }
+
+    private sealed class UnsavedEditor : Border, IEditorDocumentContent
+    {
+        public bool IsDirty { get; private set; } = true;
+        public bool CanSave => true;
+        public event EventHandler? DocumentStateChanged;
+
+        public bool Save()
+        {
+            IsDirty = false;
+            DocumentStateChanged?.Invoke(this, EventArgs.Empty);
+            return true;
+        }
+    }
+
+    [Fact]
+    public void FailedLayoutSerializationPreservesThePreviousFileAndCanBeRetried()
+    {
+        DirectoryInfo directory = Directory.CreateTempSubdirectory("ColorVision-DockLayout-");
+        string path = Path.Combine(directory.FullName, "MainWindowDockLayout.xml");
+        const string originalLayout = "<LayoutRoot />";
+        const string updatedLayout = "<LayoutRoot><RootPanel /></LayoutRoot>";
+        try
+        {
+            DockLayoutManager.WriteLayoutAtomically(path, writer => writer.Write(originalLayout));
+            var failure = new IOException("Layout serialization interrupted.");
+
+            Assert.Same(failure, Assert.Throws<IOException>(() => DockLayoutManager.WriteLayoutAtomically(path, writer =>
+            {
+                writer.Write("<LayoutRoot>");
+                writer.Flush();
+                Assert.Equal(originalLayout, File.ReadAllText(path));
+                throw failure;
+            })));
+
+            Assert.Equal(originalLayout, File.ReadAllText(path));
+            Assert.Equal(path, Assert.Single(Directory.EnumerateFileSystemEntries(directory.FullName)));
+
+            DockLayoutManager.WriteLayoutAtomically(path, writer => writer.Write(updatedLayout));
+            Assert.Equal(updatedLayout, File.ReadAllText(path));
+            Assert.Equal(path, Assert.Single(Directory.EnumerateFileSystemEntries(directory.FullName)));
+        }
+        finally
+        {
+            foreach (FileInfo file in directory.EnumerateFiles())
+                file.Delete();
+            directory.Delete();
+        }
+    }
+
+    [Theory]
+    [InlineData("document")]
+    [InlineData("tool")]
+    [InlineData("detached tool")]
+    public void WorkspaceFileDropsFollowTheFloatingWindowAndRespectContentHandlers(string windowKind)
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            bool document = windowKind == "document";
+            bool detached = windowKind == "detached tool";
+            var surface = new Border();
+            var tool = new LayoutAnchorable { ContentId = "tool", Title = "Tool", Content = document ? new Border() : surface };
+            var docking = CreateDockingManager(tool, new LayoutAnchorable { ContentId = "other-tool", Title = "Other tool", Content = new Border() });
+            docking.Theme = new AvalonDockTheme(isDark: false);
+            var documentPane = docking.Layout.Descendents().OfType<LayoutDocumentPane>().Single();
+            var tab = new LayoutDocument { ContentId = "document", Title = "Document", Content = document ? surface : new Border() };
+            documentPane.Children.Add(tab);
+            documentPane.Children.Add(new LayoutDocument { ContentId = "other-document", Title = "Other document", Content = new Border() });
+            LayoutContent content = document ? tab : tool;
+
+            WithShownDockWindow(docking, () =>
+            {
+                Window main = Window.GetWindow(docking)!;
+                var opened = new List<(string[] Paths, Window Owner)>();
+                _ = new WorkspaceFileDropRouter(main, docking, (paths, owner) =>
+                {
+                    opened.Add((paths, owner));
+                    return Task.CompletedTask;
+                });
+                string[] paths = ["preview.mp4", "notes.txt"];
+
+                Assert.True(RaiseFileDrop(surface, paths));
+                Assert.Same(main, Assert.Single(opened).Owner);
+                opened.Clear();
+
+                if (detached)
+                    docking.DetachAnchorableToWindow(tool);
+                else
+                    content.Float();
+                PumpDispatcher();
+                AssertFloatingDrop(surface);
+
+                if (!document && !detached)
+                {
+                    docking.Theme = null;
+                    docking.Theme = new AvalonDockTheme(isDark: true);
+                    PumpDispatcher();
+                    AssertFloatingDrop(surface);
+                }
+
+                void HandleContentDrop(object sender, DragEventArgs e) => e.Handled = true;
+                surface.Drop += HandleContentDrop;
+                Assert.True(RaiseFileDrop(surface, ["image.png"]));
+                Assert.Empty(opened);
+                surface.Drop -= HandleContentDrop;
+
+                var serializer = new XmlLayoutSerializer(docking);
+                using var savedLayout = new StringWriter();
+                serializer.Serialize(savedLayout);
+
+                if (detached)
+                    docking.ReattachAnchorable(tool);
+                else
+                    content.Dock();
+                PumpDispatcher();
+                Assert.Empty(docking.FloatingWindows);
+                Assert.True(RaiseFileDrop(surface, paths));
+                Assert.Same(main, Assert.Single(opened).Owner);
+                opened.Clear();
+
+                var restoredSurface = new Border();
+                serializer.LayoutSerializationCallback += (_, args) =>
+                    args.Content = args.Model.ContentId == content.ContentId ? restoredSurface : new Border();
+                serializer.Deserialize(new StringReader(savedLayout.ToString()));
+                PumpDispatcher();
+                AssertFloatingDrop(restoredSurface);
+
+                void AssertFloatingDrop(Border target)
+                {
+                    var source = PresentationSource.FromVisual(target);
+                    Window floating = detached
+                        ? Assert.IsType<DetachedAnchorableWindow>(source?.RootVisual)
+                        : Assert.Single(docking.FloatingWindows);
+                    var root = Assert.IsAssignableFrom<UIElement>(source?.RootVisual);
+                    Assert.NotSame(main, root);
+                    Assert.True(root.AllowDrop);
+                    Assert.True(target.AllowDrop);
+                    Assert.True(ImageView.GetForwardUnsupportedFileDrops(target));
+                    Assert.True(RaiseFileDrop(target, paths));
+                    var request = Assert.Single(opened);
+                    Assert.Equal(paths, request.Paths);
+                    Assert.Same(floating, request.Owner);
+                    opened.Clear();
+                }
+            });
+        });
+    }
+
     [Fact]
     public void DeferredTabWaitsForSelectionAndReusesItsHostAcrossLayoutRestoration()
     {
@@ -213,6 +449,18 @@ public sealed class DockLayoutSerializationTests
         rootPanel.Children.Add(pane);
         rootPanel.Children.Add(new LayoutDocumentPane());
         return new DockingManager { Layout = new LayoutRoot { RootPanel = rootPanel } };
+    }
+
+    private static bool RaiseFileDrop(UIElement target, string[] paths)
+    {
+        // WPF creates DragEventArgs internally. Raise its routed event without desktop mouse input.
+        ConstructorInfo constructor = typeof(DragEventArgs).GetConstructor(BindingFlags.Instance | BindingFlags.NonPublic, null,
+            [typeof(IDataObject), typeof(DragDropKeyStates), typeof(DragDropEffects), typeof(DependencyObject), typeof(Point)], null)!;
+        var args = (DragEventArgs)constructor.Invoke(
+            [new DataObject(DataFormats.FileDrop, paths), DragDropKeyStates.None, DragDropEffects.Copy, target, new Point()]);
+        args.RoutedEvent = DragDrop.DropEvent;
+        target.RaiseEvent(args);
+        return args.Handled;
     }
 
     private static void WithShownDockWindow(DockingManager docking, Action assertions)

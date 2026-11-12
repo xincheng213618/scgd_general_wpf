@@ -443,7 +443,7 @@ class EvaluatedPlatformPolicyTests(unittest.TestCase):
     OFFICIAL_PROJECTS = (
         "ColorVision/ColorVision.csproj",
         "Plugins/SystemMonitor/SystemMonitor.csproj",
-        "Projects/ProjectLUX/ProjectLUX.csproj",
+        "Projects/ProjectARVRPro/ProjectARVRPro.csproj",
     )
 
     def test_official_projects_fail_closed_for_every_non_x64_override(self) -> None:

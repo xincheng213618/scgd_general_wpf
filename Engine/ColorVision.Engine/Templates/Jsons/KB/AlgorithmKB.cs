@@ -43,6 +43,7 @@ namespace ColorVision.Engine.Templates.Jsons.KB
         }
     }
 
+    // Keep the resource key stable so saved algorithm selections still resolve.
     [DisplayAlgorithm(98, "键盘检测1", "数据提取算法")]
     public class AlgorithmKB : JsonDisplayAlgorithmBase<KBDisplayAlgorithmConfig>
     {

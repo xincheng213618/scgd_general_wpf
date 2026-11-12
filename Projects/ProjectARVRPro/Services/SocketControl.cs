@@ -37,7 +37,7 @@ namespace ProjectARVRPro.Services
 
             (string resolvedSerialNumber, int firstEnabledIndex) = Application.Current.Dispatcher.Invoke(() =>
             {
-                if (ProjectWindowInstance.WindowInstance.IsResultExportPending)
+                if (ProjectWindowInstance.WindowInstance.IsResultExportPending || ProjectWindowInstance.WindowInstance.IsJsonVidRunning)
                     return (request.SerialNumber?.Trim() ?? string.Empty, -2);
                 var processMetas = Process.ProcessManager.GetInstance().ProcessMetas;
                 int firstEnabledInternalIndex = -1;

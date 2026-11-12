@@ -380,36 +380,63 @@ namespace ColorVision.Copilot
                 "停止后台命令");
         }
 
-        private async Task StopBackgroundShellCommandAsync(
+        private Task StopBackgroundShellCommandAsync(
             CopilotLocalCommand command,
             string conversationId,
             string backgroundId,
-            int position)
+            int position) =>
+            StopBackgroundShellCommandCoreAsync(command, conversationId, backgroundId, position,
+                CopilotBackgroundShellCommandRegistry.Shared.StopAsync);
+
+        internal async Task StopBackgroundShellCommandCoreAsync(
+            CopilotLocalCommand command,
+            string conversationId,
+            string backgroundId,
+            int position,
+            Func<string, string, CancellationToken, Task<CopilotBackgroundShellCommandStopResult>> stopAsync)
         {
-            var result = await CopilotBackgroundShellCommandRegistry.Shared.StopAsync(
-                conversationId,
-                backgroundId,
-                CancellationToken.None);
-            if (!result.Success || result.Snapshot == null)
+            ArgumentNullException.ThrowIfNull(stopAsync);
+            var conversation = Conversations.FirstOrDefault(item =>
+                string.Equals(item.Id, conversationId, StringComparison.Ordinal));
+            var feedbackRevision = Volatile.Read(ref _localCommandResultRevision);
+            await CopilotUiTaskObserver.ObserveAsync(async () =>
             {
+                var result = await stopAsync(
+                    conversationId,
+                    backgroundId,
+                    CancellationToken.None);
+                if (!CanApplyAuxiliaryConversationFeedback(conversation, feedbackRevision))
+                    return;
+                if (!result.Success || result.Snapshot == null)
+                {
+                    ShowLocalCommandResult(
+                        command,
+                        "后台命令未停止："
+                        + (string.IsNullOrWhiteSpace(result.ErrorMessage)
+                            ? "命令已经离开当前会话或状态刚刚变化。"
+                            : result.ErrorMessage));
+                    return;
+                }
+
+                var status = result.Snapshot.State == CopilotBackgroundShellCommandState.Stopped
+                    ? $"已停止后台命令 #{position:N0} 的进程树。"
+                    : $"后台命令 #{position:N0} 的状态已变化，详情如下。";
                 ShowLocalCommandResult(
                     command,
-                    "后台命令未停止："
-                    + (string.IsNullOrWhiteSpace(result.ErrorMessage)
-                        ? "命令已经离开当前会话或状态刚刚变化。"
-                        : result.ErrorMessage));
-                return;
-            }
-
-            ShowLocalCommandResult(
-                command,
-                $"已停止后台命令 #{position:N0} 的进程树。"
-                + Environment.NewLine
-                + Environment.NewLine
-                + CopilotBackgroundShellCommandDiagnostics.FormatDetails(
-                    result.Snapshot,
-                    position,
-                    DateTimeOffset.UtcNow));
+                    status
+                    + Environment.NewLine
+                    + Environment.NewLine
+                    + CopilotBackgroundShellCommandDiagnostics.FormatDetails(
+                        result.Snapshot,
+                        position,
+                        DateTimeOffset.UtcNow));
+            }, "停止后台命令", message =>
+            {
+                if (!CanApplyAuxiliaryConversationFeedback(conversation, feedbackRevision))
+                    return;
+                LocalCommandResultTitle = "停止后台命令 · 失败";
+                LocalCommandResultText = message;
+            });
         }
 
         private void ResumeTaskFromCommand(

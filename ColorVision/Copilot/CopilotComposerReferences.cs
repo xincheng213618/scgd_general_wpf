@@ -56,7 +56,7 @@ namespace ColorVision.Copilot
 
     internal static class CopilotComposerReferenceCatalog
     {
-        private const int MaximumIndexedWorkspaceFiles = 5000;
+        private const int MaximumIndexedWorkspaceFiles = 20000;
         private const int MaximumTemplateReferences = 2048;
         private const int MaximumSuggestions = 12;
         private const int MaximumMentionQueryCharacters = 80;
@@ -340,7 +340,7 @@ namespace ColorVision.Copilot
             try
             {
                 foreach (var template in TemplateControl.ITemplateNames.Values
-                    .Where(template => template != null)
+                    .Where(template => template is { IsRetired: false })
                     .Distinct()
                     .Take(256))
                 {
@@ -610,6 +610,8 @@ namespace ColorVision.Copilot
             var files = new List<WorkspaceFileReference>();
             var pendingDirectories = new Stack<string>();
             pendingDirectories.Push(workspaceRoot);
+            // Ignored SDK copies and build output would otherwise fill the cap and hide real source files.
+            var ignoredPaths = CopilotGitIgnoredPathIndex.GetIgnoredPaths(workspaceRoot);
 
             while (pendingDirectories.Count > 0 && files.Count < MaximumIndexedWorkspaceFiles)
             {
@@ -618,8 +620,11 @@ namespace ColorVision.Copilot
                 {
                     foreach (var filePath in Directory.EnumerateFiles(directory))
                     {
-                        if (!SupportedFileExtensions.Contains(Path.GetExtension(filePath)))
+                        if (ignoredPaths.Contains(filePath)
+                            || !SupportedFileExtensions.Contains(Path.GetExtension(filePath)) && !CopilotWorkspaceSearchSupport.IsReadableTextFile(filePath))
+                        {
                             continue;
+                        }
 
                         files.Add(new WorkspaceFileReference(
                             Path.GetFullPath(filePath),
@@ -631,7 +636,7 @@ namespace ColorVision.Copilot
                     foreach (var childDirectory in Directory.EnumerateDirectories(directory))
                     {
                         var name = Path.GetFileName(childDirectory);
-                        if (SkippedDirectoryNames.Contains(name))
+                        if (SkippedDirectoryNames.Contains(name) || ignoredPaths.Contains(childDirectory))
                             continue;
                         if ((File.GetAttributes(childDirectory) & FileAttributes.ReparsePoint) != 0)
                             continue;

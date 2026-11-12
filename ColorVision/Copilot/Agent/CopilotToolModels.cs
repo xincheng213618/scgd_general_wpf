@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.IO;
 using System.Linq;
 using System.Text.Json;
 using System.Threading;
@@ -64,6 +65,13 @@ namespace ColorVision.Copilot
                     return element.GetString()?.Trim() ?? string.Empty;
             }
             return string.Empty;
+        }
+
+        public static bool GetBooleanArgument(this CopilotAgentToolInput? input, string name)
+        {
+            return input != null
+                && TryGetValue(input.Arguments, name, out var value)
+                && value is true or JsonElement { ValueKind: JsonValueKind.True };
         }
 
         public static int? GetInt32Argument(
@@ -158,6 +166,38 @@ namespace ColorVision.Copilot
             init => _workspaceReviewTarget = value?.CreateSnapshot();
         }
         private readonly CopilotWorkspaceReviewTargetContext? _workspaceReviewTarget;
+
+        private readonly object _workspaceReviewTargetSync = new();
+        private CopilotWorkspaceReviewTargetContext? _effectiveWorkspaceReviewTarget;
+
+        internal CopilotWorkspaceReviewTargetContext? GetEffectiveWorkspaceReviewTarget()
+        {
+            if (Mode != CopilotAgentMode.Review)
+                return null;
+
+            lock (_workspaceReviewTargetSync)
+            {
+                if (_effectiveWorkspaceReviewTarget == null)
+                {
+                    var target = _workspaceReviewTarget?.IsStructurallyValid() == true
+                        ? _workspaceReviewTarget.CreateSnapshot()
+                        : CopilotWorkspaceReviewTargetContext.WorkingTree();
+                    target.BoundRepositoryRoot = string.IsNullOrWhiteSpace(WorkspacePath) ? null : string.Empty;
+                    if (target.BoundRepositoryRoot != null && Path.IsPathFullyQualified(WorkspacePath))
+                    {
+                        var roots = CopilotGitProcessSupport.GetAllowedRoots(this);
+                        if (CopilotGitProcessSupport.TryResolveTargetPath(
+                            WorkspacePath, roots, requireExisting: true,
+                            out _, out var directory, out var containingRoot, out _))
+                        {
+                            target.BoundRepositoryRoot = CopilotGitProcessSupport.FindRepositoryRoot(directory, containingRoot);
+                        }
+                    }
+                    _effectiveWorkspaceReviewTarget = target;
+                }
+                return _effectiveWorkspaceReviewTarget.CreateSnapshot();
+            }
+        }
 
         public CopilotProfileConfig Profile { get; init; } = null!;
 

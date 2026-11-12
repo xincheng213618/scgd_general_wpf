@@ -3,6 +3,7 @@ using ColorVision.ImageEditor.Tif;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Text;
 
@@ -18,11 +19,28 @@ internal static class CameraFileMetadata
     internal static void Save<T>(string path, string kind, T record)
         => CVFileMetadata.SetProperty(path, kind, 1, Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(record)));
 
+    internal static CVFileProperty CreateProperty<T>(T record)
+        => new(1, Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(record)));
+
     internal static (ImageAcquisitionRecord? Acquisition, ImageCalibrationSummary? Provenance) Read(string path)
+        => Read(ReadOptionalProperties(() => CVFileMetadata.Read(path)));
+
+    internal static IReadOnlyDictionary<string, CVFileProperty>? ReadOptionalProperties(Stream stream)
+        => ReadOptionalProperties(() => CVFileMetadata.ReadFromStream(stream));
+
+    private static IReadOnlyDictionary<string, CVFileProperty>? ReadOptionalProperties(Func<IReadOnlyDictionary<string, CVFileProperty>> read)
     {
-        try
+        try { return read(); }
+        catch (Exception error) when (error is IOException or InvalidDataException or DecoderFallbackException or NotSupportedException or UnauthorizedAccessException)
         {
-            var properties = CVFileMetadata.Read(path);
+            Log.Warn("Optional image acquisition records are unavailable.", error);
+            return null;
+        }
+    }
+
+    internal static (ImageAcquisitionRecord? Acquisition, ImageCalibrationSummary? Provenance) Read(IReadOnlyDictionary<string, CVFileProperty>? properties)
+    {
+        if (properties == null) return default;
             T? ReadRecord<T>(string kind) where T : class
             {
                 if (!properties.TryGetValue(kind, out var property) || property.Version != 1) return null;
@@ -30,18 +48,6 @@ internal static class CameraFileMetadata
                 catch (JsonException error) { Log.Warn($"Invalid optional image record: {kind}", error); return null; }
             }
             return (ReadRecord<ImageAcquisitionRecord>(AcquisitionKind), ReadRecord<ImageCalibrationSummary>(ProvenanceKind));
-        }
-        catch (Exception error) when (error is IOException or NotSupportedException or UnauthorizedAccessException)
-        {
-            Log.Warn("Optional image acquisition records are unavailable.", error);
-            return default;
-        }
-    }
-
-    internal static void ApplyStored(ColorVisionTiffParameters parameters, string path)
-    {
-        (parameters.Acquisition, parameters.CalibrationSummary) = Read(path);
-        if (parameters.Acquisition?.NdPort is int ndPort) parameters.NdPort = ndPort;
     }
 
     internal static ColorVisionTiffParameters CreateParameters(LocalFrameMetadata metadata,

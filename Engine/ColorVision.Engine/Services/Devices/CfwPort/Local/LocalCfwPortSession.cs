@@ -25,6 +25,7 @@ internal sealed record LocalCfwPortConnection(string PortName, int BaudRate, int
 internal interface ILocalCfwPortNative
 {
     IntPtr Open(LocalCfwPortConnection config);
+    // Preserve cvCamera return codes, including CV_ERR_SUCCESS (1).
     int Close(IntPtr handle);
     int SetPort(IntPtr handle, int port);
     int GetPort(IntPtr handle, ref int port);
@@ -62,7 +63,15 @@ internal sealed class LocalCfwPortSession(ILocalCfwPortNative? native = null) : 
     internal DeviceStatusType Status => status;
     internal string? Endpoint => connection?.PortName;
 
-    private void SetStatus(DeviceStatusType value) { status = value; StatusChanged?.Invoke(value); }
+    private void SetStatus(DeviceStatusType value)
+    {
+        status = value;
+        foreach (var handler in StatusChanged?.GetInvocationList() ?? Array.Empty<Delegate>())
+        {
+            try { ((Action<DeviceStatusType>)handler)(value); }
+            catch (Exception error) { MQTTServiceBase.log.Error("本地滤色轮状态订阅失败。", error); }
+        }
+    }
 
     internal async Task<int?> ExecuteAsync(string operation, LocalCfwPortConnection config, int? port = null, bool autoConnect = false, CancellationToken token = default)
     {
@@ -74,7 +83,7 @@ internal sealed class LocalCfwPortSession(ILocalCfwPortNative? native = null) : 
             token.ThrowIfCancellationRequested();
             // Cancellation must never free a handle while a blocking SDK call still uses it.
             int? result = await Task.Run(() => ExecuteCore(operation, config, port, autoConnect, token), CancellationToken.None).ConfigureAwait(false);
-            token.ThrowIfCancellationRequested();
+            if (operation != "Open") token.ThrowIfCancellationRequested();
             return result;
         }
         finally { gate.Release(); }
@@ -87,7 +96,7 @@ internal sealed class LocalCfwPortSession(ILocalCfwPortNative? native = null) : 
         if (operation is not ("Open" or "SetPort" or "GetPort")) throw new NotSupportedException($"本地滤色轮不支持 {operation}。");
         config.Validate();
         if (operation == "SetPort" && (!port.HasValue || port < 0 || port >= config.Ports)) throw new ArgumentOutOfRangeException(nameof(port), "滤色轮孔位超出配置范围。");
-        if (operation == "Open" || (autoConnect && handle == IntPtr.Zero)) OpenCore(config);
+        if (operation == "Open" || (autoConnect && handle == IntPtr.Zero)) OpenCore(config, token);
         if (operation == "Open") return null;
         if (handle == IntPtr.Zero) throw new InvalidOperationException("请先连接本地滤色轮。");
         if (connection != config) throw new InvalidOperationException("滤色轮配置已改变，请关闭连接后重新连接。");
@@ -95,27 +104,31 @@ internal sealed class LocalCfwPortSession(ILocalCfwPortNative? native = null) : 
         SetStatus(DeviceStatusType.Busy);
         try
         {
-            int code = 0, actual = -1;
+            int code = cvErrorDefine.CV_ERR_SUCCESS, actual = -1;
             for (int attempt = 0; ; attempt++)
             {
                 token.ThrowIfCancellationRequested();
-                code = operation == "SetPort" ? native.SetPort(handle, port!.Value) : 0;
-                if (code == 0)
+                code = operation == "SetPort" ? native.SetPort(handle, port!.Value) : cvErrorDefine.CV_ERR_SUCCESS;
+                if (code == cvErrorDefine.CV_ERR_SUCCESS)
                 {
-                    if (config.Delay != 0 && token.WaitHandle.WaitOne(config.Delay)) token.ThrowIfCancellationRequested();
+                    if (config.Delay != 0) token.WaitHandle.WaitOne(config.Delay);
+                    token.ThrowIfCancellationRequested();
                     actual = -1;
                     code = native.GetPort(handle, ref actual);
-                    if (code == 0 && actual >= 0 && actual < config.Ports && (operation != "SetPort" || actual == port)) return actual;
+                    token.ThrowIfCancellationRequested();
+                    if (code == cvErrorDefine.CV_ERR_SUCCESS && actual >= 0 && actual < config.Ports && (operation != "SetPort" || actual == port)) return actual;
                 }
                 if (attempt >= config.RetryCount) break;
             }
+            token.ThrowIfCancellationRequested();
             throw new InvalidOperationException($"滤色轮{(operation == "SetPort" ? "定位" : "读位")}失败，SDK 返回 {code}，实际孔位 {actual}，目标孔位 {port?.ToString() ?? "读取"}。");
         }
         finally { SetStatus(DeviceStatusType.Opened); }
     }
 
-    private void OpenCore(LocalCfwPortConnection config)
+    private void OpenCore(LocalCfwPortConnection config, CancellationToken token)
     {
+        token.ThrowIfCancellationRequested();
         if (handle != IntPtr.Zero)
         {
             if (connection == config) return;
@@ -131,9 +144,9 @@ internal sealed class LocalCfwPortSession(ILocalCfwPortNative? native = null) : 
         SetStatus(DeviceStatusType.Opening);
         try
         {
+            token.ThrowIfCancellationRequested();
             handle = native.Open(config);
             if (handle == IntPtr.Zero) throw new InvalidOperationException($"无法打开滤色轮 {config.PortName}（{config.BaudRate} baud），请检查串口、接线及服务占用。");
-            SetStatus(DeviceStatusType.Opened);
         }
         catch
         {
@@ -142,6 +155,14 @@ internal sealed class LocalCfwPortSession(ILocalCfwPortNative? native = null) : 
             SetStatus(DeviceStatusType.Closed);
             throw;
         }
+
+        // Close outside the failed-open cleanup so an unconfirmed release keeps the serial reservation.
+        if (token.IsCancellationRequested)
+        {
+            CloseCore();
+            token.ThrowIfCancellationRequested();
+        }
+        SetStatus(DeviceStatusType.Opened);
     }
 
     private void CloseCore()
@@ -152,7 +173,7 @@ internal sealed class LocalCfwPortSession(ILocalCfwPortNative? native = null) : 
             try
             {
                 int code = native.Close(handle);
-                if (code != 0) throw new InvalidOperationException($"释放滤色轮失败，SDK 返回 {code}。");
+                if (code != cvErrorDefine.CV_ERR_SUCCESS) throw new InvalidOperationException($"释放滤色轮失败，SDK 返回 {code}。");
                 handle = IntPtr.Zero;
             }
             catch { quarantined = true; throw; } // Retain ownership when release cannot be confirmed.

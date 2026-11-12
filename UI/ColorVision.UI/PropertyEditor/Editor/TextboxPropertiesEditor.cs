@@ -1,4 +1,5 @@
 ﻿using ColorVision.UI;
+using System.ComponentModel.DataAnnotations;
 using System.Reflection;
 using System.Windows.Controls;
 using System.Windows.Data;
@@ -41,7 +42,11 @@ namespace System.ComponentModel
             if (Nullable.GetUnderlyingType(property.PropertyType) != null) binding.TargetNullValue = string.Empty;
 
             var t = Nullable.GetUnderlyingType(property.PropertyType) ?? property.PropertyType;
-            if (t == typeof(float) || t == typeof(double))
+            if (property.GetCustomAttribute<DisplayFormatAttribute>()?.DataFormatString is { Length: > 0 } format)
+            {
+                binding.StringFormat = format;
+            }
+            else if (t == typeof(float) || t == typeof(double))
             {
                 binding.StringFormat = "0.0################";
             }

@@ -6,7 +6,9 @@ using ColorVision.Common.MVVM;
 using ColorVision.Engine.Services;
 using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.Services.Devices.Camera.Local;
+using ColorVision.Engine.Services.Devices.Camera.Templates.AutoFocus;
 using ColorVision.Engine.Services.Devices.Camera.Templates.CameraRunParam;
+using ColorVision.Engine.Services.PhyCameras.Configs;
 using ColorVision.Engine.Services.PhyCameras.Group;
 using ColorVision.Engine.Services.Results;
 using ColorVision.Themes.Controls;
@@ -24,6 +26,8 @@ using System.Windows;
 
 namespace ColorVision.Engine.FlowProcessing.Nodes
 {
+    public enum LocalCameraFocusMode { FocusDisabled, FineFocus, FullFocus }
+
     internal sealed class LocalCameraNodeResultData
     {
         public string FrameId { get; init; } = string.Empty;
@@ -53,14 +57,22 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
     public sealed class LocalCameraNode : LocalDeviceFlowNodeBase, IRepeatParameterNode
     {
         private sealed record CameraExecutionParameters(DeviceCamera Device, CameraRunParam CameraParameters, CalibrationParam? Calibration,
-            CVImageFlipMode FlipMode, bool IsAutoExp, bool AutoConnect, bool SaveFiles, string CalibTempName);
+            CVImageFlipMode FlipMode, string? AutoExposureConfiguration, bool AutoConnect, bool SaveFiles, string CalibTempName,
+            LocalCameraFocusMode FocusMode, string? AutoFocusTemplateName, LocalAutoFocusSettings? AutoFocus)
+        {
+            public bool IsAutoExp => AutoExposureConfiguration != null;
+        }
         private const int CameraMasterResultType = 100;
+        private readonly Func<LocalCameraCaptureRequest, bool, LocalCameraCaptureResult> captureCamera;
         private string _CalibTempName = string.Empty;
         private float _ExpTime = 100;
         private float _Gain;
         private int _AvgCount = 1;
         private bool _AutoConnect = true;
         private bool _IsAutoExp;
+        private string _AutoExposureJson = string.Empty;
+        private LocalCameraFocusMode focusMode;
+        private string autoFocusTemplateName = string.Empty;
         private bool _SaveFiles = true;
         private CVImageFlipMode _FlipMode = CVImageFlipMode.None;
 
@@ -90,6 +102,42 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
         public bool IsAutoExp { get => _IsAutoExp; set { _IsAutoExp = value; OnPropertyChanged(); } }
 
         [Category("本地相机")]
+        [STNodeProperty("自动曝光参数", "查看设备参数，或为本节点设置独立的自动曝光参数。", true)]
+        [PropertyVisibility(nameof(IsAutoExp))]
+        [PropertyEditorType(typeof(LocalAutoExposurePropertiesEditor))]
+        public string AutoExposureJson { get => _AutoExposureJson; set { _AutoExposureJson = value ?? string.Empty; OnPropertyChanged(); } }
+
+        [Browsable(false), JsonIgnore]
+        public bool ShowFocusMode => FocusMode != LocalCameraFocusMode.FocusDisabled || SupportsAutoFocus;
+
+        [Browsable(false), JsonIgnore]
+        public bool ShowAutoFocusTemplate => FocusMode != LocalCameraFocusMode.FocusDisabled && SupportsAutoFocus;
+
+        private bool SupportsAutoFocus => ServiceManager.Current?.DeviceServices.OfType<DeviceCamera>()
+            .Any(camera => string.Equals(camera.Code, DeviceCode, StringComparison.Ordinal) && GetMotorConfig(camera).IsUseMotor) == true;
+
+        [Category("本地相机")]
+        [PropertyVisibility(nameof(ShowFocusMode))]
+        [STNodeProperty("Flow_LocalCamera_FocusMode", "Flow_LocalCamera_FocusModeHint", true)]
+        public LocalCameraFocusMode FocusMode
+        {
+            get => focusMode;
+            set
+            {
+                focusMode = value;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(ShowFocusMode));
+                OnPropertyChanged(nameof(ShowAutoFocusTemplate));
+            }
+        }
+
+        [Category("本地相机")]
+        [PropertyVisibility(nameof(ShowAutoFocusTemplate))]
+        [PropertyEditorType(typeof(AutoFocusTemplatePropertiesEditor))]
+        [STNodeProperty("AutoFocusTemplate", "Flow_LocalCamera_FocusTemplateHint", true)]
+        public string AutoFocusTemplateName { get => autoFocusTemplateName; set { autoFocusTemplateName = value ?? string.Empty; OnPropertyChanged(); } }
+
+        [Category("本地相机")]
         [STNodeProperty("保存文件", "启用时保存 CVRAW，写入完成后继续；关闭时仅保留缓存。数据库记录始终先写入，后续色度参数沿用此设置。", true)]
         public bool SaveFiles { get => _SaveFiles; set { _SaveFiles = value; OnPropertyChanged(); } }
 
@@ -107,10 +155,21 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
         [Description("查看校正文件与图像文件缓存，并统一释放内存")]
         public RelayCommand OpenLocalCalibrationCacheManagerCommand { get; }
 
-        public LocalCameraNode() : base("相机取图", "Camera", "GetData")
+        public LocalCameraNode() : this(LocalCameraCaptureService.Capture)
         {
+        }
+
+        internal LocalCameraNode(Func<LocalCameraCaptureRequest, bool, LocalCameraCaptureResult> captureCamera) : base("相机取图", "Camera", "GetData")
+        {
+            this.captureCamera = captureCamera;
             OpenLocalCameraManagerCommand = new RelayCommand(_ => OpenLocalCameraManager());
             OpenLocalCalibrationCacheManagerCommand = new RelayCommand(_ => LocalCalibrationCacheManagerWindow.OpenWindow());
+            PropertyChanged += (_, args) =>
+            {
+                if (args.PropertyName != nameof(DeviceCode)) return;
+                OnPropertyChanged(nameof(ShowFocusMode));
+                OnPropertyChanged(nameof(ShowAutoFocusTemplate));
+            };
             SelectFirstAvailableDevice<DeviceCamera>();
         }
 
@@ -145,41 +204,54 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             CalibrationParam? calibration = ResolveCalibration(device);
             if (CalibrationGroupGainResolver.TryResolve(calibration, device.PhyCamera?.VisualChildren.OfType<GroupResource>() ?? Enumerable.Empty<GroupResource>(), out float calibrationGain, out _))
                 cameraParameters.Gain = calibrationGain;
-            return new CameraExecutionParameters(device, cameraParameters, calibration, FlipMode, IsAutoExp, AutoConnect, SaveFiles, CalibTempName);
+            string? autoExposureConfiguration = IsAutoExp
+                ? LocalCameraAutoExposure.BuildConfiguration(AutoExposureJson, device.DisplayConfig.LocalAutoExposureConfig)
+                : null;
+            LocalCameraFocusMode mode = FocusMode;
+            var (focus, templateName) = ResolveAutoFocus(device, mode);
+            return new CameraExecutionParameters(device, cameraParameters, calibration, FlipMode, autoExposureConfiguration, AutoConnect, SaveFiles, CalibTempName, mode, templateName, focus);
         }
 
         protected override LocalNodeExecutionResult ExecuteLocal(CVStartCFC action)
         {
+            var stopToken = action.RuntimeResources.StopToken;
             CameraExecutionParameters parameters = GetExecutionParameters<CameraExecutionParameters>(action);
             DeviceCamera device = parameters.Device;
             CameraRunParam cameraParameters = parameters.CameraParameters;
             CalibrationParam? calibration = parameters.Calibration;
-            FlowNodeTiming.Run("ConnectCamera", () => device.EnsureLocalMeasurementConnected(parameters.AutoConnect));
-            LocalCameraCaptureResult capture = LocalCameraCaptureService.Capture(new LocalCameraCaptureRequest
+            LocalCameraCaptureResult capture = captureCamera(new LocalCameraCaptureRequest
             {
                 Device = device,
                 CameraParameters = cameraParameters,
                 Calibration = calibration,
                 FlipMode = parameters.FlipMode,
                 IsAutoExposure = parameters.IsAutoExp,
+                AutoExposureConfiguration = parameters.AutoExposureConfiguration,
+                AutoFocus = parameters.AutoFocus,
                 SaveFiles = false,
-                AllowAcceleration = true
-            });
+                AllowAcceleration = true,
+                Stop = stopToken
+            }, parameters.AutoConnect);
 
             LocalFlowFrame frame = capture.Frame;
             try
             {
+                // A native capture may finish after the workflow has stopped.
+                stopToken.ThrowIfCancellationRequested();
                 frame.CvRawFilePath = LocalFrameFileService.CreateCapturePath(device.Config.FileServerCfg.DataBasePath, device.Code, frame.Metadata);
                 Stopwatch saveTimer = Stopwatch.StartNew();
                 LocalFrameFileService.SaveCapture(frame, frame.CvRawFilePath, parameters.SaveFiles ? CVFileSaveMode.Synchronous : CVFileSaveMode.MemoryOnly);
                 int saveTime = checked((int)Math.Min(saveTimer.ElapsedMilliseconds, int.MaxValue));
+                stopToken.ThrowIfCancellationRequested();
                 MeasureResultImgModel persistedResult = FlowNodeTiming.Run("PersistResult", () => LocalCameraResultService.SaveFlowModel(action, ZIndex, frame, capture, cameraParameters, calibration, parameters.IsAutoExp));
+                stopToken.ThrowIfCancellationRequested();
                 int masterId = persistedResult.Id;
                 frame.MasterId = masterId;
-                action.MasterValue(null, masterId, CameraMasterResultType);
                 action.SetCurrentFrame(frame);
                 LocalFlowFrame currentFrame = frame;
                 frame = null!;
+                stopToken.ThrowIfCancellationRequested();
+                action.MasterValue(null, masterId, CameraMasterResultType);
                 FlowNodeTiming.Run("PublishResult", () => ResultMessageBus.Default.Publish(new ResultMessage(ResultRoutes.Camera, ResultKinds.Image, device.Code, OperatorCode, action.SerialNumber, NodeID, ZIndex, new ResultReference(masterId, CameraMasterResultType), persistedResult)));
                 LocalCameraNodeResultData result = new()
                 {
@@ -211,7 +283,8 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             CameraExecutionParameters parameters = GetExecutionParameters<CameraExecutionParameters>(action);
             return JsonConvert.SerializeObject(new { ServiceName = NodeName, DeviceCode = parameters.Device.Code, EventName = OperatorCode,
                 action.SerialNumber, parameters.CameraParameters.ExpTime, parameters.CameraParameters.Gain, parameters.CameraParameters.AvgCount,
-                parameters.CalibTempName, parameters.FlipMode, parameters.AutoConnect, parameters.IsAutoExp, parameters.SaveFiles, AllowAcceleration = true });
+                parameters.CalibTempName, parameters.FlipMode, parameters.AutoConnect, parameters.IsAutoExp, parameters.AutoExposureConfiguration,
+                parameters.FocusMode, parameters.AutoFocusTemplateName, parameters.SaveFiles, AllowAcceleration = true });
         }
 
         internal CVFileSaveMode SaveMode => SaveFiles ? CVFileSaveMode.Synchronous : CVFileSaveMode.MemoryOnly;
@@ -248,6 +321,27 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             return device.PhyCamera?.CalibrationParams.FirstOrDefault(item => string.Equals(item.Key, CalibTempName, StringComparison.Ordinal))?.Value
                 ?? throw new InvalidOperationException($"找不到校正模板：{CalibTempName}");
         }
+
+        private (LocalAutoFocusSettings? Settings, string? TemplateName) ResolveAutoFocus(DeviceCamera device, LocalCameraFocusMode mode)
+        {
+            if (mode == LocalCameraFocusMode.FocusDisabled) return (null, null);
+            if (!Enum.IsDefined(mode)) throw new InvalidOperationException("本地相机取图的聚焦方式无效。");
+            MotorConfig motor = GetMotorConfig(device);
+            if (!motor.IsUseMotor)
+                throw new InvalidOperationException("所选相机未启用电机，请在取图节点关闭聚焦或选择支持聚焦的相机。");
+
+            string name = AutoFocusTemplateName;
+            var templates = TemplateAutoFocus.Params;
+            int index = string.IsNullOrWhiteSpace(name) ? device.DisplayConfig.AutoFocusTemplateIndex : -1;
+            var template = string.IsNullOrWhiteSpace(name)
+                ? (index >= 0 && index < templates.Count ? templates[index] : null)
+                : templates.FirstOrDefault(item => string.Equals(item.Key, name, StringComparison.Ordinal));
+            if (template == null)
+                throw new InvalidOperationException(string.IsNullOrWhiteSpace(name) ? "请为本地相机取图节点选择自动对焦模板。" : $"找不到自动对焦模板：{name}");
+            return (LocalAutoFocusSettings.FromTemplate(template.Value, motor) with { FineOnly = mode == LocalCameraFocusMode.FineFocus }, template.Key);
+        }
+
+        private static MotorConfig GetMotorConfig(DeviceCamera device) => device.PhyCamera?.Config.MotorConfig ?? device.Config.MotorConfig;
 
         private static string? NullIfEmpty(string? value) => string.IsNullOrWhiteSpace(value) ? null : value;
     }

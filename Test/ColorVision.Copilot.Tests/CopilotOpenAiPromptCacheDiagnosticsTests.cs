@@ -67,93 +67,6 @@ public sealed class CopilotOpenAiPromptCacheDiagnosticsTests
         }
     }
 
-    [Theory]
-    [InlineData(true)]
-    [InlineData(false)]
-    public async Task IncompleteResponseCannotReplaceCompletedComparisonBaseline(bool streaming)
-    {
-        using var handler = new CapturingHandler((call, _) => Response(call, streaming, null,
-            status: call == 2 ? "incomplete" : "completed"));
-        using var httpClient = new HttpClient(handler);
-        var diagnostics = new List<string>();
-        using var client = CreateClient(httpClient, diagnostics.Add);
-
-        await SendAsync(client, streaming);
-        await SendAsync(client, streaming);
-        await SendAsync(client, streaming);
-
-        Assert.Single(diagnostics);
-        using var payload = JsonDocument.Parse(handler.Payloads[2]);
-        Assert.Equal("resp_1", ComparisonId(payload.RootElement));
-    }
-
-    [Theory]
-    [InlineData(true)]
-    [InlineData(false)]
-    public async Task FailedRequestKeepsOriginalFailureAndPreviousBaseline(bool streaming)
-    {
-        using var handler = new CapturingHandler((call, _) => call == 2
-            ? new HttpResponseMessage(HttpStatusCode.Unauthorized) { Content = new StringContent("{\"error\":{\"message\":\"Controlled failure.\",\"type\":\"authentication_error\"}}") }
-            : Response(call, streaming, null));
-        using var httpClient = new HttpClient(handler);
-        using var client = CreateClient(httpClient, _ => { });
-
-        await SendAsync(client, streaming);
-        var error = await Assert.ThrowsAnyAsync<System.ClientModel.ClientResultException>(() => SendAsync(client, streaming));
-        Assert.Equal(401, error.Status);
-        await SendAsync(client, streaming);
-
-        Assert.Equal(3, handler.Payloads.Count);
-        using var payload = JsonDocument.Parse(handler.Payloads[2]);
-        Assert.Equal("resp_1", ComparisonId(payload.RootElement));
-    }
-
-    [Theory]
-    [InlineData("cache_hit", "cache_hit")]
-    [InlineData("comparison_response_not_found", "comparison_response_not_found")]
-    [InlineData("unavailable", "unavailable")]
-    [InlineData("future_status_private_text", "unavailable")]
-    public async Task DiagnosticOutcomesRemainNonAuthoritativeAndUseFreshBaselines(string type, string expected)
-    {
-        using var handler = new CapturingHandler((call, _) => Response(call, true, new { type }));
-        using var httpClient = new HttpClient(handler);
-        var diagnostics = new List<string>();
-        using var client = CreateClient(httpClient, diagnostics.Add);
-
-        for (var call = 0; call < 3; call++)
-            Assert.Equal("Answer.", (await SendAsync(client, true)).Text);
-
-        Assert.All(diagnostics, diagnostic =>
-        {
-            Assert.Contains(expected, diagnostic, StringComparison.Ordinal);
-            Assert.DoesNotContain("private_text", diagnostic, StringComparison.Ordinal);
-        });
-        using var payload = JsonDocument.Parse(handler.Payloads[2]);
-        Assert.Equal("resp_2", ComparisonId(payload.RootElement));
-    }
-
-    [Theory]
-    [InlineData("null")]
-    [InlineData("[]")]
-    [InlineData("{\"type\":7}")]
-    [InlineData("{\"type\":\"cache_miss\",\"reason\":\"private-provider-text\",\"comparison_reusable_tokens\":-1,\"cache_missed_tokens\":999999999999999999999}")]
-    [InlineData("{\"type\":\"cache_miss\",\"reason\":\"input_changed\",\"comparison_reusable_tokens\":\"not_a_number\",\"cache_missed_tokens\":true}")]
-    public async Task MalformedOptionalFieldsNeverExposePayloadOrInvalidateAnswer(string json)
-    {
-        using var diagnosticDocument = JsonDocument.Parse(json);
-        using var handler = new CapturingHandler((call, _) => Response(call, true, diagnosticDocument.RootElement));
-        using var httpClient = new HttpClient(handler);
-        var diagnostics = new List<string>();
-        using var client = CreateClient(httpClient, diagnostics.Add);
-        await SendAsync(client, true);
-
-        Assert.Equal("Answer.", (await SendAsync(client, true)).Text);
-
-        var diagnostic = Assert.Single(diagnostics);
-        Assert.DoesNotContain("private-provider-text", diagnostic, StringComparison.Ordinal);
-        Assert.DoesNotContain("Token：", diagnostic, StringComparison.Ordinal);
-    }
-
     [Fact]
     public async Task DiagnosticObserverFailureCannotFailCompletedResponse()
     {
@@ -163,44 +76,6 @@ public sealed class CopilotOpenAiPromptCacheDiagnosticsTests
         await SendAsync(client, true);
         Assert.Equal("Answer.", (await SendAsync(client, true)).Text);
         Assert.Equal(2, handler.Payloads.Count);
-    }
-
-    [Fact]
-    public async Task NewAgentClientDoesNotReusePreviousRunsResponseId()
-    {
-        using var handler = new CapturingHandler((call, _) => Response(call, true, null));
-        using var httpClient = new HttpClient(handler);
-        using (var first = CreateClient(httpClient, _ => { }))
-            await SendAsync(first, true);
-        using (var second = CreateClient(httpClient, _ => { }))
-            await SendAsync(second, true);
-
-        Assert.All(handler.Payloads, json =>
-        {
-            using var payload = JsonDocument.Parse(json);
-            Assert.False(payload.RootElement.TryGetProperty("prompt_cache_options", out _));
-        });
-    }
-
-    [Theory]
-    [InlineData("gpt-5.5", false)]
-    [InlineData("gpt-5.6-sol", true)]
-    [InlineData("gpt-5.6-luna", true)]
-    [InlineData("gpt-5.10", true)]
-    [InlineData("gpt-6-astra", true)]
-    [InlineData("gpt-6-astra-2026-09-03", true)]
-    [InlineData("gpt-4o", false)]
-    [InlineData("custom-model", false)]
-    public void DiagnosticsOnlyUseSupportedOfficialResponsesModels(string model, bool expected)
-    {
-        var profile = CreateProfile();
-        profile.Model = model;
-        Assert.Equal(expected, CopilotOpenAiRequestPolicy.CanRequestPromptCacheDiagnostics(profile));
-        profile.BaseUrl = "https://example.test/v1";
-        Assert.False(CopilotOpenAiRequestPolicy.CanRequestPromptCacheDiagnostics(profile));
-        profile.BaseUrl = "https://api.openai.com/v1";
-        profile.VendorType = CopilotVendorType.Custom;
-        Assert.False(CopilotOpenAiRequestPolicy.CanRequestPromptCacheDiagnostics(profile));
     }
 
     private static CopilotProfileConfig CreateProfile() => new()

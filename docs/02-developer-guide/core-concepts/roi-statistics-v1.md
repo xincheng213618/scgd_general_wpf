@@ -33,6 +33,8 @@ ROI 统计计算所选矩形、圆形或多边形内的通道统计、百分位�
 
 分析不修改原图，结果窗口关闭后释放结果并移除该临时 overlay。路径和执行绑定当前 document/revision，切图、修改源像素或新分析会按[统一 session 规则](./image-algorithm-platform-v1.md#m0-执行与所有权规则)使旧请求失效。
 
+默认交互式统计复制选区裁剪后的像素包围框，按实际选区筛选样本。结果中的坏点、叠加层与导出信息使用原图坐标和尺寸。
+
 工具栏 `Histogram` 是另一入口：它读取显示位图的整幅图，固定 256 桶，Gray16/Rgb48 按高 8 位分桶。需要区域、原位深数值和以下统计字段时，使用本页 ROI 统计入口。
 
 ## 读懂结果
@@ -149,7 +151,7 @@ JSON 保存算法 ID/版本、状态、诊断及全部七个 artifact，包括�
 
 Catalog 别名 `RoiStatistics`、`ROIStatistics`、`RoiStatisticsRectangle`、`RoiStatisticsCircle`、`RoiStatisticsPolygon` 解析到同一算法。调用方通过 `AlgorithmInvocation.Create` 传入参数和 ROI，用 Runner 执行并释放整个 `AlgorithmResult`；结构化结果中的三个表、Measurement、Geometry、Overlay 和来源数据与上述界面/导出对应。
 
-`BatchAlgorithmAnalysisProcessor` 使用保存的 Invocation 逐文件导出分析结果，ROI 不自动随图像尺寸缩放；Mat 转换默认 96 DPI。默认输出 `_analysis` 后缀的 JSON、拒绝覆盖，失败项可继续下一项，取消不撤销先前导出。它不进入只接收主图像 artifact 的批量图像处理列表。
+`BatchAlgorithmAnalysisProcessor` 使用保存的 Invocation 逐文件导出分析结果，ROI 保持原像素坐标，Mat 转换默认 96 DPI。默认输出 `_analysis` 后缀的 JSON，并拒绝覆盖已有文件。同批报告及其 CSV 伴随文件与已选输入或已完成的报告重名时，整组报告追加编号。单项失败后可继续处理，取消时保留已完成的报告。批量图像处理列表只接收主图像 artifact。
 
 `LocalFlowImageAlgorithmAdapter.ExecuteRawAsync` 复制 RAW 帧且不取得外层 lease 所有权，当前桥接为 8/16-bit、1/3/4 通道、默认 96 DPI。它是可调用 API，尚无对应生产画布节点；注册边界见[平台 Flow 说明](./image-algorithm-platform-v1.md#执行平面与兼容层)。ROI 统计未进入 Copilot 白名单；Catalog 可发现不代表现有 Copilot 工具可以提交 ROI。
 

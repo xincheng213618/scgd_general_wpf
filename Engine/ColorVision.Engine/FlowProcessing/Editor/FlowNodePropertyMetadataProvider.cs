@@ -2,6 +2,10 @@ using ColorVision.UI;
 using ColorVision.Engine.PropertyEditor;
 using ColorVision.Engine.FlowProcessing.Nodes;
 using FlowEngineLib;
+using FlowEngineLib.Algorithm;
+using FlowEngineLib.Node.Algorithm;
+using FlowEngineLib.Node.OLED;
+using FlowEngineLib.Node.SMU;
 using ST.Library.UI.NodeEditor;
 using ST.Library.UI;
 using System;
@@ -95,6 +99,25 @@ namespace ColorVision.Engine.FlowProcessing.Editor
         {
             if (CameraCalibrationGainPropertiesEditor.IsSupported(propertyInfo))
                 return typeof(CameraCalibrationGainPropertiesEditor);
+
+            Type? owner = propertyInfo.DeclaringType;
+            if (owner == typeof(SMUSweepModelNode) && propertyInfo.Name == nameof(SMUSweepModelNode.ModelName))
+                return typeof(SmuTemplatePropertiesEditor);
+
+            if (propertyInfo.Name == nameof(AlgorithmNode.TempName)
+                && (owner == typeof(AlgorithmNode) || owner == typeof(Algorithm2InNode)
+                    || owner == typeof(AlgorithmARVRNode) || owner == typeof(AlgorithmGhostV2Node)))
+                return typeof(AlgorithmTemplatePropertiesEditor);
+
+            if (owner == typeof(AlgorithmFindLEDNode) && propertyInfo.Name == nameof(AlgorithmFindLEDNode.TempName))
+                return typeof(LedCheck2TemplatePropertiesEditor);
+
+            if (propertyInfo.Name == nameof(AlgorithmNode.Algorithm)
+                && (owner == typeof(AlgorithmNode) || owner == typeof(Algorithm2InNode)))
+                return typeof(AiAlgorithmOperatorPropertiesEditor);
+
+            if (owner == typeof(AlgorithmNode) && propertyInfo.Name == nameof(AlgorithmNode.POITempName))
+                return typeof(PoiTemplatePropertiesEditor);
 
             return null;
         }

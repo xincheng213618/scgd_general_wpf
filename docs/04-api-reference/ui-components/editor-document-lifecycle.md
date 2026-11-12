@@ -2,7 +2,7 @@
 knowledge_id: "ui.documents"
 knowledge_type: "topic"
 status: "current"
-summary: "编辑器注册与选择、按路径和编辑器区分文档、保存重载关闭及外部变更；停靠布局不恢复未注册文件标签，重置也不预审脏文档。"
+summary: "编辑器注册与选择、文档身份、保存重载关闭及外部变更；重置停靠布局保留已打开的编辑器和未保存修改。"
 aliases: ["EditorManager", "EditorDescriptor", "EditorDocumentService", "IEditorDocumentContent", "IReloadableEditorDocumentContent", "IResourcePathAwareDocumentContent", "DockLayoutManager", "DockContentRegistration", "DeferredDockContent", "WorkspaceManager", "DocumentTabPinManager", "TryCloseAllDocuments", "NotifyResourceRenamed", "ResetLayout", "DefaultEditorUpdated", "默认编辑器", "重复打开文件", "保存文档", "重新加载文件", "文件被外部修改", "固定选项卡", "固定标签", "重置窗口布局", "停靠布局恢复", "关闭重开面板", "面板内容双父节点"]
 code_paths: ["UI/ColorVision.Solution/Editor/EditorManager.cs", "UI/ColorVision.Solution/Editor/EditorDescriptor.cs", "UI/ColorVision.Solution/Editor/IEditor.cs", "UI/ColorVision.Solution/Editor/EditorForExtensionAttribute.cs", "UI/ColorVision.Solution/Editor/GenericEditorAttribute.cs", "UI/ColorVision.Solution/Editor/TextEditor.cs", "UI/ColorVision.Solution/Editor/ImageEditor.cs", "UI/ColorVision.Solution/Editor/SystemEditor.cs", "UI/ColorVision.Solution/Workspace/EditorDocumentService.cs", "UI/ColorVision.Solution/Workspace/IEditorDocumentContent.cs", "UI/ColorVision.Solution/Workspace/DocumentTabPinManager.cs", "UI/ColorVision.Solution/Workspace/DockLayoutManager.cs", "UI/ColorVision.Solution/Workspace/WorkspaceManager.cs", "UI/ColorVision.Solution/Workspace/LayoutMenuItems.cs", "UI/ColorVision.Solution/CommandInitializer.cs", "ColorVision/MainWindow.xaml.cs", "UI/ColorVision.UI/ConfigHandler.cs", "UI/ColorVision.UI/Environments.cs"]
 test_paths: []
@@ -19,7 +19,7 @@ related: ["ui.solution", "ui.configuration", "ui.image-editor", "ui.text-editor"
 
 ## 编辑器注册和默认选择
 
-`EditorManager` 初始化时扫描可用程序集，并监听后续 `AssemblyLoad`。发现输入是具体 `IEditor` 类型上的 `EditorForExtensionAttribute`、`GenericEditorAttribute` 和 `FolderEditorAttribute`；运行期也可直接 `RegisterEditor(EditorDescriptor)`。只存在一个类、不带发现属性且未显式注册，不会自动成为候选。
+`EditorManager` 初始化时扫描发现视图中的程序集，并在 `AssembliesChanged` 后登记新出现的程序集；没有程序集服务的宿主退回监听 `AppDomain.AssemblyLoad`。发现输入是具体 `IEditor` 类型上的 `EditorForExtensionAttribute`、`GenericEditorAttribute` 和 `FolderEditorAttribute`；运行期也可直接 `RegisterEditor(EditorDescriptor)`。只存在一个类、不带发现属性且未显式注册，不会自动成为候选。
 
 注册以 `EditorDescriptor.Id` 为键，不区分大小写；相同 ID 的新注册会替换旧注册，包括旧的文件夹、通用和各扩展名关联。扩展名去空白、补点并转小写；非通用文件编辑器必须声明扩展名，文件夹编辑器不使用扩展名。未指定稳定 ID 的属性注册回退到类型全名。注册验证不等于构造成功：没有 `Factory` 时仍需在打开时通过 `Activator.CreateInstance` 创建实例。
 
@@ -33,7 +33,7 @@ related: ["ui.solution", "ui.configuration", "ui.image-editor", "ui.text-editor"
 
 `IsVisibleInOpenWith` 只在 `GetFileEditorDescriptors` / `GetFolderEditorDescriptors` 的 `visibleOnly:true` 查询中过滤；默认解析和按 ID 打开不使用这个过滤。隐藏候选不等于禁止使用，也不等于清除已保存默认项。打开路由中的选择窗口和“始终使用”处理由 `ResourceOpenService` 负责。
 
-`TrySetDefaultEditor` / `TrySetDefaultFolderEditor` 先修改 `EditorManagerConfig`，调用 `ConfigService.Instance.Save<EditorManagerConfig>()`，未抛错才更新管理器的默认项缓存。抛错时恢复该配置字段并返回失败，不回滚已经打开的资源。当前 `ConfigHandler.Save<T>()` 又会丢弃内部 `TrySave` 的布尔失败结果，所以某些磁盘保存失败仍可能让这里返回成功并留下内存默认项；不能用成功返回或 `DefaultEditorUpdated=true` 证明默认选择已经落盘。配置存储的失败语义见[配置持久化](./configuration.md)。管理器只首次加载配置到自身缓存，没有订阅配置重载通知；外部改配置后也不能推断此缓存已刷新。
+`TrySetDefaultEditor` / `TrySetDefaultFolderEditor` 先修改 `EditorManagerConfig`。主应用使用 `ConfigHandler.TrySave` 确认落盘后才更新默认项缓存。保存失败时恢复配置字段并返回错误，已打开的资源保持打开。其他 `IConfigService` 继续按其 `Save<T>()` 契约保存。配置存储语义见[配置持久化](./configuration.md)。管理器只首次加载配置到缓存，配置重载不会刷新此缓存。
 
 选定描述符后，管理器只尝试这个编辑器。创建返回空、返回不符合声明类型的实例或 `Open` 抛错都会失败，不再尝试下一个候选。仅当 `CreateEditor` 已成功返回实例，且该实例实现 `IDisposable` 时，外层异常路径才会尝试释放；工厂返回错误类型在 `CreateEditor` 内即抛错，外层没有取得该实例，不会替它释放。`IEditor.Open(path)` 返回 `void`，管理器的成功只表示调用正常返回，不证明异步载入完成、产生了标签页或执行过保存。比如 `SystemEditor` 交给系统打开，不创建本服务管理的文档。
 
@@ -87,11 +87,13 @@ Reload 要求受管理内容支持重载且 `File.Exists(ResourcePath)`。有未
 
 这些批量动作不是全有或全无：前一项已保存后，后一项取消不会撤销保存；关闭阶段后续标签拒绝关闭，也不会重开之前已关闭标签。资源范围比较不区分大小写，并检查相对路径是否越过根目录，但不是解析真实文件身份的权限边界。资源操作应由调用方先准备、执行文件操作后再通知；这些文档 API 本身不执行重命名。
 
-预审选择“不保存”会缓存 `_closeApproved=true`。`TryCloseAllDocuments()` 全部通过后不清除此批准，后续 `DocumentStateChanged` 也不使它失效；若主窗口被其它关闭处理器取消而继续编辑，后续预审或 Closing 可能沿用旧批准而不再询问。部分预审失败会清理此前已批准项，真正 Closing 会消费该标记；不能将预审当成每次都重新确认当前脏状态的无状态检查。这是当前实现的保护缺口，不是允许丢弃后来修改的预期契约。
+预审选择“不保存”的批准在本次调用内有效。主窗口与维护操作的预审结束时清除批准，若之后重新发起关闭，仍有未保存修改的文档会再次询问。资源删除或重命名需要立即关闭标签时，同一批次的 `Closing` 可使用预审批准。批次退出时也会清除剩余批准。
 
 路径感知内容的 `TryUpdateResourcePath` 返回 false 时，该会话保持旧路径，`NotifyResourceRenamed` 没有聚合成功结果；异常也没有逐会话隔离。不能承诺“收到重命名通知就全部标签已迁移”。仅当原标题等于旧资源名时，服务才随路径更新标题，自定义标题保留。
 
-对非路径感知内容，通知仍会修改会话路径、ContentId 和监视器，却不会更新内容自身保存的路径。外部文件重命名事件直接调用通知，未经 `TryPrepareResourceRename`；这类内容不保证已先关闭，服务路径与内容内部路径可能分离。不能据标签新名字推断后续保存一定写到新位置。
+对非路径感知内容，通知只修改会话路径、ContentId 和监视器。外部重命名的通知绕过 `TryPrepareResourceRename`，服务路径与内容内部路径可能分离。
+
+资源树的剪切粘贴和拖放移动复用重命名前检查。移动成功后，路径感知文档及被移动文件夹中的文档跟随新路径，未保存内容继续保留。后续保存写入新位置。
 
 只有文档触发 Closed 后，会话才解除事件、停止并释放监视器/定时器、移出会话字典，再调用传入的 `closeContent`。服务不会对任意内容自动调用 `IDisposable.Dispose()`，释放责任取决于编辑器是否提供回调；例如 `TextEditor` 提供 Dispose，图像编辑器提供 Clear 和 Dispose。不能把从布局树移除、隐藏面板或布局重建等同于执行了这套 Closed 清理。
 
@@ -99,12 +101,12 @@ Reload 要求受管理内容支持重载且 `File.Exists(ResourcePath)`。有未
 
 支持重载的受管理内容在父目录存在时尝试建立文件名过滤的 `FileSystemWatcher`，处理更改、创建、删除、重命名。事件通过应用 Dispatcher 安排检查，并由 300 ms 定时器合并；不是每个文件事件都立即重新载入。监视器创建失败会被捕获并停用，不能据“打开了标签”证明正在监视。
 
-变化判定只比较存在标志、文件长度和 UTC 最后修改时间，不比较内容哈希。没有应用 Dispatcher、丢失的监视事件或相同时间/长度的变化，都不能靠此机制证明已捕获。它也不在保存前建立文件锁或检查磁盘版本。
+文件监视比较存在标志、文件长度和 UTC 最后修改时间。没有应用 Dispatcher、丢失监视事件或时间和长度相同时可能漏报。文本编辑器在保存时独立校验文件字节指纹。
 
 - 检测到现存文件变化，内容未脏则自动尝试 Reload；内容已脏则询问是否放弃本地修改。拒绝后保留内存内容，不进行合并。
 - 检查时先更新已观察快照，再提示/重载；拒绝或重载失败不会对同一快照持续重试，后续需要新的可检测变化或主动 Reload。
 - 文件不存在时保留文档并显示 `[已删除]`，不关闭文档、不清空内存内容。获取文件信息遇到 I/O 或权限异常也会得到“不存在”快照，所以这个标签不是物理删除的充分证据。
-- 收到匹配旧路径的重命名事件且新文件存在时，会转入 `NotifyResourceRenamed`；这不保证外部父目录移动或所有文件系统事件都能被监视器追踪。
+- 重命名也在合并检查中处理。原路径已恢复且备份仍在时，沿用原路径并按文件替换处理，即使长度和修改时间相同。目标存在时，若原路径已消失或仅修改了文件名大小写，文档跟随目标。已观察到重命名且原路径暂时消失时，保存会提示稍后重试。监视范围为文件所在目录。
 
 ## 停靠注册、布局恢复和重置
 
@@ -112,7 +114,7 @@ Reload 要求受管理内容支持重载且 `File.Exists(ResourcePath)`。有未
 
 `DockLayoutManager` 的注册表按 ContentId 保存内容与元数据，独立于 `EditorDocumentService` 的动态文档会话。主窗口先注册自身面板和各 `IDockPanelProvider`，再加载布局；只有已经注册的内容才有恢复入口。
 
-布局位置为 `Environments.DirStateLayout/MainWindowDockLayout.xml`，通常来自 `DirAppData/State/Layout`，不是工作区 `.cvsln` 内的文件标签清单，也不序列化 `DocumentTabPinManager` 的固定状态。`SaveLayout()` 建目录后用 `StreamWriter` 直接序列化 XML，捕获异常记警告，不返回失败状态；这里没有配置存储那样的临时文件原子替换、备份或写后验证，返回不证明布局文件完整落盘。
+布局保存在 `Environments.DirStateLayout/MainWindowDockLayout.xml`，通常位于 `DirAppData/State/Layout`。文件记录停靠布局，工作区文件清单和标签固定状态由各自的模块管理。`SaveLayout()` 将 XML 写入同目录临时文件，关闭后原子替换正式文件。序列化或写入失败时保留上次已保存的布局，失败记入日志。
 
 XML 序列化使用 AvalonDock 5.x 独立包中的 `AvalonDock.Serializer.Xml.XmlLayoutSerializer`。它可读取 AvalonDock 4.x 布局，包括旧版大写布尔值；新版保存的布局不保证能被 4.x 读取，回退至 4.x 宿主前应保留原布局副本。Spectrum 对无法绑定内容的工具面板显式使用 `UnresolvedContentHandling.Hide`，保留旧版隐藏面板的行为。
 
@@ -120,7 +122,7 @@ XML 序列化使用 AvalonDock 5.x 独立包中的 `AvalonDock.Serializer.Xml.Xm
 
 设备结果页由 `AddViewConfig` 使用 `IDisPlayControl.PersistenceKey` 登记稳定身份，设备 Code 不变时，改显示名称或加载顺序不影响匹配；主工作流程页使用固定 `Flow` 身份。`DockViewRegistration` 可按此身份创建新的延迟视图壳，恢复左右/上下分栏、窗格尺寸比例、标签顺序及选中状态。恢复分栏不恢复图像、曲线或测量记录，也不触发采集。设备未加载或身份重复时不猜测替代视图；没有稳定身份的旧 `DockView_序号` 项仍无法可靠恢复，需要升级后重新排列一次并正常退出保存。设备页恢复及再次加载后沿用当前文档的关闭/释放责任，旧布局的关闭事件不能释放新布局中的内容。`DockViewLifecycleTests.ColdStartRestoresNestedDevicePanesByIdentityWithFreshEmptyViews` 在内存中序列化实际布局、替换视图实例及顺序后验证分栏、比例、空记录和关闭所有权，不读写用户布局文件。
 
-`ResetLayout()` 先删除现有布局文件，再按面板默认位置和 `IsDefaultVisible`、已注册文档重建布局，最后清 DockView 缓存并调用 `ShowAllViews()`。它不保留未注册动态编辑器标签，也没有调用文档保存、关闭预审或逐项 Close。重置菜单及其默认 Ctrl+Alt+Shift+R 快捷键先弹出警告，默认选择“否”；只有用户确认后才调用它，启动失败恢复的直接调用不经过该提示。确认不等于自动保存或逐文档关闭授权，仍须先保存文档，不能把重置描述为保护未保存内容、触发编辑器释放或仅改变窗口位置的动作。失败捕获后只记警告，不恢复已删除的 XML 或之前的布局，也不立即另存新布局。
+`ResetLayout()` 删除旧布局文件并按默认位置重建面板和注册文档。`EditorDocumentService` 管理的已打开标签（包括浮动标签）移到主文档窗格，保留编辑器实例、未保存修改和固定状态，重置前活动的编辑标签重新选中。菜单与 Ctrl+Alt+Shift+R 先询问是否重置，默认选择“否”。启动布局恢复失败时直接重置。编辑内容仍由用户保存，布局文件在后续正常保存时写入。
 
 面板的 Hide/Show 与文档关闭不同。`TogglePanel` 隐藏/显示已有面板；`ShowPanel` 还会激活面板。面板已从布局移除时，两者可从注册表重新加入；不代表创建全新内容实例或重启终端进程。`IsPanelVisible` 只检查是否找到面板且未隐藏，不保证该页签当前激活或内容已构造。
 
@@ -132,11 +134,11 @@ XML 序列化使用 AvalonDock 5.x 独立包中的 `AvalonDock.Serializer.Xml.Xm
 
 断言宿主及子内容引用、逻辑父子关系和工厂调用次数，并区分旧布局项的 Dispatcher 清理在重开之前或之后发生。
 
-`Test/ColorVision.UI.Tests/DockLayoutSerializationTests.cs` 在内存中读取合成的 4.x XML 并做新版序列化往返，验证注册内容与关闭限制，以及移除未知项、保留隐藏工具面板两种恢复策略。它不读写用户布局文件。
+`Test/ColorVision.UI.Tests/DockLayoutSerializationTests.cs` 用合成的 4.x XML 验证兼容读取和新版往返，在临时目录验证写入失败恢复，并用 WPF 停靠与浮动窗口验证重置后保留脏编辑器及文档身份。
 
 同一测试文件还用离屏 WPF/AvalonDock 验证工厂面板在未选中或隐藏时不创建，首次选中或显式显示后只创建一次，并在内存布局恢复、隐藏重显、关闭重开后复用宿主与子内容。此回归保护共享按需加载与单一逻辑父节点的生命周期，不以耗时阈值断言启动加速。
 
-其他用例通过实际注册内容恢复入口取得宿主，再替换内存 `LayoutRoot`；不调用 `SaveLayout` / `LoadLayout` / `ResetLayout`，不读写用户 XML 或配置。因此这些检查不覆盖完整布局文件保存恢复、带脏文档重置、默认编辑器配置落盘失败、文档关闭取消、外部文件事件或路径更新失败，不能据此推断完整生命周期已验证。
+延迟面板用例通过注册内容恢复入口取得宿主，并替换内存 `LayoutRoot`。布局用例使用隔离目录。`EditorDefaultPersistenceTests` 使用独占锁定的配置文件验证文件和文件夹默认项保存失败。外部文件事件与路径更新失败需单独验证。
 
 不重建真实布局或写入用户布局文件，也不证明未保存文档已被自动保护。
 

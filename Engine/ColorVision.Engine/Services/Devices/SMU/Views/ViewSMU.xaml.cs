@@ -1,4 +1,4 @@
-using ColorVision.Common.Utilities;
+﻿using ColorVision.Common.Utilities;
 using ColorVision.Database;
 using ColorVision.Engine.Services.Devices.SMU.Dao;
 using ColorVision.Themes.Controls;
@@ -8,6 +8,7 @@ using ScottPlot.Plottables;
 using SqlSugar;
 using System;
 using System.Collections.ObjectModel;
+using System.Collections.Specialized;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -20,12 +21,13 @@ using System.Windows.Input;
 
 namespace ColorVision.Engine.Services.Devices.SMU.Views
 {
-    public partial class ViewSMU : UserControl
+    public partial class ViewSMU : UserControl, IDisposable
     {
         public ObservableCollection<ViewResultSMU> ViewResults { get; set; } = new();
         public ObservableCollection<GridViewColumnVisibility> GridViewColumnVisibilitys { get; set; } = new();
         private bool _initializationStarted;
         private bool _isInitialized;
+        private bool _isDisposed;
         private bool _updatingPoints;
         private ViewResultSMU? _activeResult;
         private ViewResultSMU? _latestResult;
@@ -53,7 +55,7 @@ namespace ColorVision.Engine.Services.Devices.SMU.Views
         internal void EnsureInitialized()
         {
             if (!Dispatcher.CheckAccess()) { Dispatcher.Invoke(EnsureInitialized); return; }
-            if (_initializationStarted) return;
+            if (_initializationStarted || _isDisposed) return;
             _initializationStarted = true;
             Loaded -= View_Loaded;
             IsVisibleChanged -= View_IsVisibleChanged;
@@ -71,12 +73,7 @@ namespace ColorVision.Engine.Services.Devices.SMU.Views
             if (_isInitialized) return;
             _isInitialized = true;
             listView1.ItemsSource = ViewResults;
-            ViewResults.CollectionChanged += (_, _) =>
-            {
-                RecordCount.Text = $"{ViewResults.Count} 条";
-                EmptyState.Visibility = ViewResults.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
-                if (_activeResult != null && !ViewResults.Contains(_activeResult)) PresentResult(null);
-            };
+            ViewResults.CollectionChanged += ViewResults_CollectionChanged;
             if (listView1.View is GridView gridView)
             {
                 GridViewColumnVisibility.AddGridViewColumn(gridView.Columns, GridViewColumnVisibilitys);
@@ -92,6 +89,7 @@ namespace ColorVision.Engine.Services.Devices.SMU.Views
 
         public void AddViewResultSMU(ViewResultSMU result)
         {
+            if (_isDisposed) return;
             EnsureInitialized();
             _latestResult = result;
             if (ViewSMUConfig.Instance.InsertAtBeginning)
@@ -103,6 +101,53 @@ namespace ColorVision.Engine.Services.Devices.SMU.Views
                 listView1.SelectedItem = result;
                 listView1.ScrollIntoView(result);
             }
+        }
+
+        private void ViewResults_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
+        {
+            if (_isDisposed) return;
+            RecordCount.Text = EngineLocalization.Format($"{ViewResults.Count} 条");
+            EmptyState.Visibility = ViewResults.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+            if (_activeResult != null && !ViewResults.Contains(_activeResult)) PresentResult(null);
+        }
+
+        public void Dispose()
+        {
+            if (!Dispatcher.CheckAccess()) { Dispatcher.Invoke(Dispose); return; }
+            if (_isDisposed) return;
+            _isDisposed = true;
+            Loaded -= View_Loaded;
+            IsVisibleChanged -= View_IsVisibleChanged;
+            ViewResults.CollectionChanged -= ViewResults_CollectionChanged;
+            if (ReferenceEquals(ViewSMUConfig.Instance.GridViewColumnVisibilitys, GridViewColumnVisibilitys))
+                ViewSMUConfig.Instance.GridViewColumnVisibilitys = new ObservableCollection<GridViewColumnVisibility>(GridViewColumnVisibilitys.Select(column =>
+                    new GridViewColumnVisibility { ColumnName = column.ColumnName, IsVisible = column.IsVisible, IsSortD = column.IsSortD }));
+            if (listView1 != null)
+            {
+                listView1.SelectionChanged -= Result_SelectionChanged;
+                listView1.PreviewKeyDown -= Result_PreviewKeyDown;
+                BindingOperations.ClearAllBindings(listView1);
+                listView1.ItemsSource = null;
+                listView1.ContextMenu = null;
+                listView1.CommandBindings.Clear();
+            }
+            if (listView2 != null)
+            {
+                listView2.SelectionChanged -= Point_SelectionChanged;
+                listView2.ItemsSource = null;
+            }
+            ViewResults.Clear();
+            _activeResult = null;
+            _latestResult = null;
+            _pointMarker = null;
+            if (_isInitialized)
+            {
+                MetricBand.DataContext = null;
+                wpfplot1.Plot.Clear();
+            }
+            DataContext = null;
+            Content = null;
+            GC.SuppressFinalize(this);
         }
 
         private void Result_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -117,9 +162,7 @@ namespace ColorVision.Engine.Services.Devices.SMU.Views
         {
             _activeResult = result;
             bool scan = result?.HasCurve == true;
-            ChartTitle.Text = result?.ResultKind == "脉冲" ? "脉冲采样点 · V–I" : "I–V 特性";
-            PlotNote.Text = result == null ? string.Empty : $"{result.SourceDescription} · {result.ProtectionDescription} · " +
-                (result.ResultKind == "脉冲" ? "仅显示脉冲采样点，不代表完整时域波形。" : "保留采集顺序；选择右侧数据点可定位读数。");
+            ChartTitle.Text = result?.ResultKind == "脉冲" ? EngineLocalization.Get("脉冲采样点 · V–I") : EngineLocalization.Get("I–V 特性");
             ScanPanel.Visibility = scan ? Visibility.Visible : Visibility.Collapsed;
             PointInfo.Visibility = scan ? Visibility.Collapsed : Visibility.Visible;
             HistorySplitter.Visibility = scan && ViewSMUConfig.Instance.IsShowListView ? Visibility.Visible : Visibility.Collapsed;
@@ -129,13 +172,13 @@ namespace ColorVision.Engine.Services.Devices.SMU.Views
             listView2.SelectedIndex = result?.SMUDatas.Count > 0 ? result.SMUDatas.Count - 1 : -1;
             if (listView2.SelectedItem != null) listView2.ScrollIntoView(listView2.SelectedItem);
             _updatingPoints = false;
-            string time = result?.CreateTime?.ToString("yyyy-MM-dd HH:mm:ss") ?? "时间未记录";
-            SelectionCaption.Text = result == null ? "选择一条记录查看测量详情" :
-                $"{result.ResultKind} · 通道 {result.ChannelType} · {result.SourceMode} · {time} · 用时 {result.TotalTime?.ToString() ?? "—"} ms";
-            PointExplanation.Text = result == null ? "单点测量直接显示读数；扫描结果显示 I–V 特性。" :
-                result.ResultKind == "脉冲" ? "当前显示脉冲采样读数；不代表示波器采集的完整时域波形。" :
-                result.Type == "Scan" ? "本次扫描少于两个点，直接显示读数。" : "单点测量 · 上方为本次实测值，下方可查看和比较历史读数。";
-            SettingsCaption.Text = result == null ? string.Empty : $"源设置：{result.SourceDescription}   ·   {result.ProtectionDescription}";
+            string time = result?.CreateTime?.ToString("yyyy-MM-dd HH:mm:ss") ?? EngineLocalization.Get("时间未记录");
+            SelectionCaption.Text = result == null ? EngineLocalization.Get("选择一条记录查看测量详情") :
+                EngineLocalization.Format($"{result.ResultKindDisplay} · 通道 {result.ChannelType} · {result.SourceModeDisplay} · {time} · 用时 {result.TotalTime?.ToString() ?? "—"} ms");
+            PointExplanation.Text = result == null ? EngineLocalization.Get("单点测量直接显示读数；扫描结果显示 I–V 特性。") :
+                result.ResultKind == "脉冲" ? EngineLocalization.Get("当前显示脉冲采样读数；不代表示波器采集的完整时域波形。") :
+                result.Type == "Scan" ? EngineLocalization.Get("本次扫描少于两个点，直接显示读数。") : EngineLocalization.Get("单点测量 · 上方为本次实测值，下方可查看和比较历史读数。");
+            SettingsCaption.Text = result == null ? string.Empty : EngineLocalization.Format($"源设置：{result.SourceDescription}   ·   {result.ProtectionDisplay}");
             UpdateReadings();
             DrawPlot();
         }
@@ -143,7 +186,7 @@ namespace ColorVision.Engine.Services.Devices.SMU.Views
         private void UpdateReadings()
         {
             MetricBand.DataContext = listView2.SelectedItem as SMUData;
-            PointPosition.Text = _activeResult == null ? string.Empty : $"{listView2.SelectedIndex + 1} / {_activeResult.PointCount} 点";
+            PointPosition.Text = _activeResult == null ? string.Empty : EngineLocalization.Format($"{listView2.SelectedIndex + 1} / {_activeResult.PointCount} 点");
         }
 
         private void Point_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -158,43 +201,72 @@ namespace ColorVision.Engine.Services.Devices.SMU.Views
         {
             wpfplot1.Plot.Clear();
             _pointMarker = null;
+            bool logY = LogYAxis.IsChecked == true;
+            wpfplot1.Plot.Axes.Left.TickGenerator = logY
+                ? new ScottPlot.TickGenerators.NumericAutomatic
+                {
+                    IntegerTicksOnly = true,
+                    MinorTickGenerator = new ScottPlot.TickGenerators.LogMinorTickGenerator(),
+                    LabelFormatter = position => Math.Pow(10, position).ToString("G4", CultureInfo.CurrentCulture)
+                }
+                : new ScottPlot.TickGenerators.NumericAutomatic();
+            PlotNote.Text = _activeResult == null ? string.Empty : $"{_activeResult.SourceDescription} · {_activeResult.ProtectionDisplay} · " +
+                (_activeResult.ResultKind == "脉冲" ? EngineLocalization.Get("仅显示脉冲采样点，不代表完整时域波形。") : EngineLocalization.Get("保留采集顺序；选择右侧数据点可定位读数。"));
             if (_activeResult?.HasCurve != true) { wpfplot1.Refresh(); return; }
             bool currentAxis = AxisChoice.SelectedIndex == 1;
             var results = CompareScans.IsChecked == true ? listView1.SelectedItems.OfType<ViewResultSMU>().Where(item => item.HasCurve).ToArray() : [_activeResult];
             Color[] colors = [Color.FromHex("#2878C8"), Color.FromHex("#C77B22"), Color.FromHex("#27856B"), Color.FromHex("#8D65B5")];
+            bool hasVisiblePoint = false;
             for (int index = 0; index < results.Length; index++)
             {
                 ViewResultSMU result = results[index];
-                double[] xs = result.SMUDatas.Select(point => currentAxis ? point.Current : point.Voltage).ToArray();
-                double[] ys = result.SMUDatas.Select(point => currentAxis ? point.Voltage : point.Current).ToArray();
-                var curve = wpfplot1.Plot.Add.Scatter(xs, ys);
+                Coordinates[] points = result.SMUDatas.Select(point => GetPlotCoordinates(point, currentAxis, logY)).ToArray();
+                hasVisiblePoint |= points.Any(point => double.IsFinite(point.X) && double.IsFinite(point.Y));
+                var curve = wpfplot1.Plot.Add.Scatter(points);
                 curve.Color = colors[index % colors.Length];
                 curve.LineWidth = ReferenceEquals(result, _activeResult) ? 2 : 1;
                 curve.MarkerSize = result.PointCount <= 100 ? 4 : 0;
                 curve.LegendText = $"{result.CreateTime:HH:mm:ss} · {result.ChannelType} · {result.SourceMode}";
             }
             wpfplot1.Plot.Legend.IsVisible = results.Length > 1;
-            wpfplot1.Plot.XLabel(currentAxis ? "电流 (mA)" : "电压 (V)");
-            wpfplot1.Plot.YLabel(currentAxis ? "电压 (V)" : "电流 (mA)");
+            wpfplot1.Plot.XLabel(currentAxis ? EngineLocalization.Get("电流 (mA)") : EngineLocalization.Get("电压 (V)"));
+            wpfplot1.Plot.YLabel(currentAxis ? EngineLocalization.Get("电压 (V)") : EngineLocalization.Get("电流 (mA)"));
+            if (logY)
+                PlotNote.Text = EngineLocalization.Get(hasVisiblePoint
+                    ? "对数轴只显示大于 0 的有效值；零、负数和无效值保留在逐点数据和导出中。"
+                    : "当前所选曲线没有可显示的正值；原始读数保留在逐点数据和导出中。") + " · " + PlotNote.Text;
             string font = Fonts.Detect("电压 电流");
             wpfplot1.Plot.Axes.Left.Label.FontName = font;
             wpfplot1.Plot.Axes.Bottom.Label.FontName = font;
             wpfplot1.Plot.Legend.FontName = font;
-            wpfplot1.Plot.Axes.AutoScale();
+            if (hasVisiblePoint) wpfplot1.Plot.Axes.AutoScale();
+            else wpfplot1.Plot.Axes.SetLimits(0, 1, logY ? -1 : 0, 1);
             RefreshPointMarker();
+        }
+
+        // Invalid/non-positive logarithmic points remain gaps, so curves never bridge a hidden measurement.
+        internal static Coordinates GetPlotCoordinates(SMUData point, bool currentAxis, bool logY)
+        {
+            double x = currentAxis ? point.Current : point.Voltage;
+            double y = currentAxis ? point.Voltage : point.Current;
+            if (!double.IsFinite(x) || !double.IsFinite(y) || (logY && y <= 0)) return new Coordinates(double.NaN, double.NaN);
+            return new Coordinates(x, logY ? Math.Log10(y) : y);
         }
 
         private void RefreshPointMarker()
         {
             if (_pointMarker != null) wpfplot1.Plot.Remove(_pointMarker);
             _pointMarker = null;
-            if (_activeResult?.HasCurve == true && listView2.SelectedItem is SMUData point && double.IsFinite(point.Voltage) && double.IsFinite(point.Current))
+            if (_activeResult?.HasCurve == true && listView2.SelectedItem is SMUData point)
             {
-                bool currentAxis = AxisChoice.SelectedIndex == 1;
-                _pointMarker = wpfplot1.Plot.Add.Marker(currentAxis ? point.Current : point.Voltage, currentAxis ? point.Voltage : point.Current);
-                _pointMarker.MarkerSize = 10;
-                _pointMarker.Color = Color.FromHex("#E28B24");
-                _pointMarker.MarkerShape = MarkerShape.FilledCircle;
+                Coordinates coordinates = GetPlotCoordinates(point, AxisChoice.SelectedIndex == 1, LogYAxis.IsChecked == true);
+                if (double.IsFinite(coordinates.X) && double.IsFinite(coordinates.Y))
+                {
+                    _pointMarker = wpfplot1.Plot.Add.Marker(coordinates.X, coordinates.Y);
+                    _pointMarker.MarkerSize = 10;
+                    _pointMarker.Color = Color.FromHex("#E28B24");
+                    _pointMarker.MarkerShape = MarkerShape.FilledCircle;
+                }
             }
             wpfplot1.Refresh();
         }
@@ -205,6 +277,7 @@ namespace ColorVision.Engine.Services.Devices.SMU.Views
         }
 
         private void CompareScans_Click(object sender, RoutedEventArgs e) => DrawPlot();
+        private void LogYAxis_Click(object sender, RoutedEventArgs e) => DrawPlot();
 
         private void FollowLatest_Click(object sender, RoutedEventArgs e)
         {
@@ -276,7 +349,7 @@ namespace ColorVision.Engine.Services.Devices.SMU.Views
             };
             if (dialog.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
             try { ExportToCsv(selected, dialog.FileName); MessageBox1.Show(Properties.Resources.ExportSucceeded); }
-            catch (Exception ex) { MessageBox1.Show($"导出失败：{ex.Message}"); }
+            catch (Exception ex) { MessageBox1.Show(EngineLocalization.Format($"导出失败：{ex.Message}")); }
         }
 
         internal static void ExportToCsv(ViewResultSMU[] results, string fileName)
@@ -310,7 +383,7 @@ namespace ColorVision.Engine.Services.Devices.SMU.Views
                 _latestResult = results.LastOrDefault();
                 listView1.SelectedItem = _latestResult;
             }
-            catch (Exception ex) { MessageBox1.Show($"查询源表历史失败：{ex.Message}"); }
+            catch (Exception ex) { MessageBox1.Show(EngineLocalization.Format($"查询源表历史失败：{ex.Message}")); }
         }
     }
 }

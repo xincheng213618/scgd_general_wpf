@@ -200,6 +200,10 @@ namespace ColorVision.Copilot
                 changed |= message.EnsureValid();
                 if (!messageIds.Add(message.Id))
                 {
+                    // A duplicate boundary cannot identify which occurrence its summary covers.
+                    if (Compaction != null && string.Equals(Compaction.ThroughMessageId, message.Id, StringComparison.Ordinal))
+                        Compaction = null;
+
                     string replacementId;
                     do
                     {

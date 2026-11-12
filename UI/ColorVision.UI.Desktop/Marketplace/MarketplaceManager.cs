@@ -3,6 +3,7 @@ using ColorVision.Common.MVVM;
 using ColorVision.UI.Desktop.Properties;
 using ColorVision.UI.Marketplace;
 using ColorVision.UI.Plugins;
+using ColorVision.Update;
 using log4net;
 using Microsoft.Win32;
 using System.Collections.ObjectModel;
@@ -211,6 +212,12 @@ namespace ColorVision.UI.Desktop.Marketplace
 
         public async Task RefreshVersionsAsync(CancellationToken cancellationToken = default, bool forceRefresh = false)
         {
+            string sourceUrl = await UpdateSourceSelector.GetUpdateSourceUrlAsync(cancellationToken, forceRefresh);
+            await RefreshVersionsForSourceAsync(sourceUrl, cancellationToken);
+        }
+
+        public async Task<IReadOnlyDictionary<string, string?>> RefreshVersionsForSourceAsync(string sourceUrl, CancellationToken cancellationToken)
+        {
             bool lockTaken = false;
             try
             {
@@ -221,21 +228,22 @@ namespace ColorVision.UI.Desktop.Marketplace
                 if (enabledPlugins.Count == 0)
                 {
                     UpdateAvailableCount = 0;
-                    return;
+                    return new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
                 }
 
                 Dictionary<string, string?> versions = await MarketplaceClient.GetInstance().BatchVersionCheckAsync(
                     enabledPlugins.Select(plugin => plugin.PackageName!),
-                    forceRefresh,
-                    cancellationToken);
+                    cancellationToken: cancellationToken,
+                    sourceUrl: sourceUrl);
                 foreach (PluginInfoVM plugin in enabledPlugins)
                 {
-                    if (versions.TryGetValue(plugin.PackageName!, out string? version) && !string.IsNullOrWhiteSpace(version))
-                        plugin.SetVersionFromBatchCheck(version);
+                    versions.TryGetValue(plugin.PackageName!, out string? version);
+                    plugin.SetVersionFromBatchCheck(version);
                 }
 
                 cancellationToken.ThrowIfCancellationRequested();
                 UpdateAvailableCount = Plugins.Count(p => p.HasUpdate);
+                return versions;
             }
             catch (OperationCanceledException)
             {
@@ -261,20 +269,23 @@ namespace ColorVision.UI.Desktop.Marketplace
             CancellationToken cancellationToken = default,
             bool forceRefresh = false)
         {
-            await RefreshVersionsAsync(cancellationToken, forceRefresh);
-            return await BuildCombinedUpdatePlanFromCurrentVersionsAsync(hostVersion, cancellationToken, forceRefresh);
+            string sourceUrl = await UpdateSourceSelector.GetUpdateSourceUrlAsync(cancellationToken, forceRefresh);
+            IReadOnlyDictionary<string, string?> versions = await RefreshVersionsForSourceAsync(sourceUrl, cancellationToken);
+            return await BuildCombinedUpdatePlanFromCurrentVersionsAsync(hostVersion, cancellationToken, sourceUrl, versions);
         }
 
         public async Task<CombinedPluginUpdatePlan> BuildCombinedUpdatePlanFromCurrentVersionsAsync(
             Version hostVersion,
-            CancellationToken cancellationToken = default,
-            bool forceRefreshDetails = false)
+            CancellationToken cancellationToken,
+            string sourceUrl,
+            IReadOnlyDictionary<string, string?> versions)
         {
             Stopwatch stopwatch = Stopwatch.StartNew();
             List<PluginInfoVM> pluginsToCheck = GetEnabledVersionedPlugins()
-                .Where(plugin => plugin.HasUpdate)
+                .Where(plugin => versions.TryGetValue(plugin.PackageName!, out string? latest)
+                    && Version.TryParse(latest, out Version? version) && version > plugin.AssemblyVersion)
                 .ToList();
-            CombinedPluginUpdatePlan plan = new() { HostVersion = hostVersion };
+            CombinedPluginUpdatePlan plan = new() { HostVersion = hostVersion, SourceUrl = sourceUrl };
             if (pluginsToCheck.Count == 0)
                 return plan;
 
@@ -285,7 +296,8 @@ namespace ColorVision.UI.Desktop.Marketplace
                 await detailConcurrency.WaitAsync(cancellationToken);
                 try
                 {
-                    MarketplacePluginDetail? detail = await client.GetPluginUpdateMetadataAsync(plugin.PackageName!, forceRefreshDetails, cancellationToken);
+                    MarketplacePluginDetail? detail = await client.GetPluginUpdateMetadataAsync(
+                        plugin.PackageName!, cancellationToken: cancellationToken, sourceUrl: sourceUrl);
                     MarketplacePluginVersionInfo? candidate = PluginUpdateCompatibility.SelectLatestCompatibleVersion(plugin.AssemblyVersion, detail, hostVersion);
                     return new PluginPlanCandidate(plugin, candidate, detail != null);
                 }
@@ -388,6 +400,7 @@ namespace ColorVision.UI.Desktop.Marketplace
                     PluginId = item.Plugin.PackageName!,
                     Version = item.VersionInfo.Version,
                     ExpectedHash = item.VersionInfo.FileHash,
+                    SourceUrl = plan.SourceUrl,
                 })
                 .ToList();
         }
@@ -451,7 +464,7 @@ namespace ColorVision.UI.Desktop.Marketplace
         public void Restart()
         {
             ConfigService.Instance.SaveConfigs();
-            PluginLoaderrConfig.Instance.Save();
+            PluginLoaderConfig.Instance.Save();
 
             Process.Start(Application.ResourceAssembly.Location.Replace(".dll", ".exe"), "-c MenuPluginManager");
 
@@ -489,6 +502,7 @@ namespace ColorVision.UI.Desktop.Marketplace
                 {
                     PluginId = SearchName,
                     Version = candidate.Version,
+                    SourceUrl = detail?.UpdateSourceUrl,
                     ExpectedHash = candidate.FileHash,
                 }, cancellationToken: cancellationToken);
             }

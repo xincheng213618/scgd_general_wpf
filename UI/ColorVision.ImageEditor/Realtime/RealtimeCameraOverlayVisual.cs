@@ -16,10 +16,23 @@ namespace ColorVision.ImageEditor.Realtime
         private bool _isRoiVisible = true;
         private bool _isStatusVisible = true;
         private string _statusText = string.Empty;
+        private Rect? _displayRoi;
 
         public RealtimeCameraOverlayVisual(DefaultRealtimeCameraConfig? config = null)
         {
             _config = config ?? DefaultRealtimeCameraConfig.Current;
+        }
+
+        public Rect? DisplayRoi
+        {
+            get => _displayRoi;
+            set
+            {
+                Dispatcher.VerifyAccess();
+                if (_displayRoi == value) return;
+                _displayRoi = value;
+                RequestRender();
+            }
         }
 
         public bool IsRoiVisible
@@ -64,7 +77,7 @@ namespace ColorVision.ImageEditor.Realtime
 
         public Rect GetProcessingRoi(int width, int height)
         {
-            Rect rect = _config.RectangleTextProperties.Rect;
+            Rect rect = _displayRoi ?? _config.RectangleTextProperties.Rect;
             return rect.Width <= 0 || rect.Height <= 0 ? new Rect(0, 0, width, height) : rect;
         }
 
@@ -73,6 +86,14 @@ namespace ColorVision.ImageEditor.Realtime
             string statusText = articulation.HasValue
                 ? string.Format(CultureInfo.InvariantCulture, "fps:{0:F1} 清晰度:{1:F5}", fps, articulation.Value)
                 : string.Format(CultureInfo.InvariantCulture, "fps:{0:F1}", fps);
+            UpdateStatusText(statusText);
+        }
+
+        public void UpdateFocusEvaluation(string evaluation, double score) =>
+            UpdateStatusText(string.Format(CultureInfo.InvariantCulture, "自动聚焦({0}) 评价值:{1:F5}", evaluation, score));
+
+        private void UpdateStatusText(string statusText)
+        {
             if (string.Equals(_statusText, statusText, StringComparison.Ordinal)) return;
 
             _statusText = statusText;
@@ -112,17 +133,18 @@ namespace ColorVision.ImageEditor.Realtime
         {
             using DrawingContext dc = RenderOpen();
             RectangleTextProperties rectangle = _config.RectangleTextProperties;
-            DrawRoi(dc, rectangle);
-            DrawStatus(dc, rectangle);
+            Rect roi = _displayRoi ?? rectangle.Rect;
+            DrawRoi(dc, rectangle, roi);
+            DrawStatus(dc, rectangle, roi);
         }
 
-        private void DrawRoi(DrawingContext dc, RectangleTextProperties rectangle)
+        private void DrawRoi(DrawingContext dc, RectangleTextProperties rectangle, Rect roi)
         {
-            if (!_isRoiVisible || rectangle.Rect.Width <= 0 || rectangle.Rect.Height <= 0) return;
-            dc.DrawRectangle(rectangle.Brush, rectangle.Pen, rectangle.Rect);
+            if (!_isRoiVisible || roi.Width <= 0 || roi.Height <= 0) return;
+            dc.DrawRectangle(rectangle.Brush, rectangle.Pen, roi);
         }
 
-        private void DrawStatus(DrawingContext dc, RectangleTextProperties rectangle)
+        private void DrawStatus(DrawingContext dc, RectangleTextProperties rectangle, Rect roi)
         {
             if (!_isStatusVisible || !rectangle.IsShowText || string.IsNullOrWhiteSpace(_statusText)) return;
 
@@ -135,7 +157,7 @@ namespace ColorVision.ImageEditor.Realtime
                 rectangle.Foreground,
                 VisualTreeHelper.GetDpi(this).PixelsPerDip);
 
-            dc.DrawText(formattedText, GetStatusOrigin(rectangle.Rect, formattedText, _isRoiVisible));
+            dc.DrawText(formattedText, GetStatusOrigin(roi, formattedText, _isRoiVisible));
         }
 
         private static Point GetStatusOrigin(Rect rect, FormattedText formattedText, bool anchorToRoi)

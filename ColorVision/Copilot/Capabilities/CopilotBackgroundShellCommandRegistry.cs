@@ -211,8 +211,14 @@ namespace ColorVision.Copilot
                     return startResult;
                 }
 
-                await entry.StopAsync(CancellationToken.None).ConfigureAwait(false);
-                entry.Dispose();
+                try
+                {
+                    await entry.StopAsync(CancellationToken.None).ConfigureAwait(false);
+                }
+                finally
+                {
+                    entry.Dispose();
+                }
                 return StartFailure(
                     CopilotToolFailureKind.Transient,
                     "The application began shutting down while the background command was starting.");

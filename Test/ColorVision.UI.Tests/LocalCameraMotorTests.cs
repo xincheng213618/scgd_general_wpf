@@ -36,8 +36,11 @@ public class LocalCameraMotorTests
         Assert.Equal(150, session.UseMotor(m => m.Move(150, true)));
         Assert.Equal(130, session.UseMotor(m => m.Move(-20, false)));
         int moves = motor.Moves;
-        Assert.Throws<ArgumentOutOfRangeException>(() => session.UseMotor(m => m.Move(1001, true)));
-        Assert.Equal(moves, motor.Moves);
+        Assert.Equal(1001, session.UseMotor(m => m.Move(1001, true)));
+        Assert.Equal(moves + 1, motor.Moves);
+        motor.Position = int.MaxValue;
+        Assert.Throws<ArgumentOutOfRangeException>(() => session.UseMotor(m => m.Move(1, false)));
+        Assert.Equal(moves + 1, motor.Moves);
         session.Close(true);
         Assert.Equal(1, motor.Closes);
         Assert.Equal(1, camera.Closes);
@@ -62,6 +65,64 @@ public class LocalCameraMotorTests
         motor.ConfigurationError = false;
         session.Open("camera", TakeImageMode.Measure_Normal, 16);
         Assert.True(session.IsOpen);
+        Assert.Equal(0, session.UseMotor(m => m.ReadPosition()));
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void MotorSetupAndRollbackFailurePreservesOwnershipAndHonorsLinkage(bool linkage)
+    {
+        var camera = new LocalCameraSessionTests.FakeNative();
+        var motor = new FakeMotor { ConfigurationError = true, CloseResult = -10063 };
+        var config = Configuration();
+        config.MotorConfig.IsCameraLinkage = linkage;
+        var backend = new CameraBackendState(true);
+        using var session = new LocalCameraSession(camera, backend, config, motorNative: motor);
+        try
+        {
+            if (linkage)
+                Assert.Throws<AggregateException>(() => session.Open("camera", TakeImageMode.Measure_Normal, 16));
+            else
+                Assert.Equal(cvErrorDefine.CV_ERR_SUCCESS, session.Open("camera", TakeImageMode.Measure_Normal, 16));
+
+            Assert.True(session.IsOpen);
+            Assert.True(backend.LocalOwned);
+            Assert.Equal(1, camera.Opens);
+            Assert.Equal(0, camera.Closes);
+            int measurements = 0;
+            int UseCamera() => session.UseOpened(_ => ++measurements);
+            if (linkage)
+            {
+                Assert.All(new Action[]
+                {
+                    () => session.EnsureMeasurement(autoConnect: true),
+                    () => session.Open("camera", TakeImageMode.Measure_Normal, 16),
+                    () => session.SwitchMode(TakeImageMode.Measure_Normal, 16),
+                    () => UseCamera()
+                }, operation => Assert.Contains("重新连接", Assert.Throws<InvalidOperationException>(operation).Message));
+                Assert.Equal(0, measurements);
+                Assert.False(session.UpdateCalibration("{}"));
+            }
+            else
+            {
+                session.EnsureMeasurement(autoConnect: false);
+                Assert.Equal(1, UseCamera());
+            }
+        }
+        finally
+        {
+            motor.CloseResult = cvErrorDefine.CV_ERR_SUCCESS;
+            motor.ConfigurationError = false;
+        }
+
+        session.Close(unregisterCallback: true);
+        Assert.False(backend.LocalOwned);
+        Assert.Equal(1, camera.Closes);
+        Assert.Equal(cvErrorDefine.CV_ERR_SUCCESS, session.Open("camera", TakeImageMode.Measure_Normal, 16));
+        Assert.Equal(2, camera.Opens);
+        session.EnsureMeasurement(autoConnect: false);
+        Assert.Equal(session.Handle, session.UseOpened(handle => handle));
         Assert.Equal(0, session.UseMotor(m => m.ReadPosition()));
     }
 
@@ -142,15 +203,84 @@ public class LocalCameraMotorTests
         new(EvaFunc.Tenengrad, method, 0, 1000, 100, 100, 0.5, 1, 0, 10000);
 
     [Fact]
-    public void TemplateSnapshotValidatesTravelAndDoesNotChangeWhenTemplateIsEdited()
+    public void ExhaustedFocusBudgetReportsTemplateTimeoutInsteadOfGenericMotorFailure()
+    {
+        var focus = Settings() with { Timeout = 30000 };
+        var error = Assert.Throws<TimeoutException>(() => LocalCameraMotorSession.CheckFocusOperation(0, focus, 30001, "自动对焦移动电机至 385000", default));
+        Assert.Contains("模板总超时 30000 ms", error.Message);
+        Assert.Contains("385000", error.Message);
+        Assert.DoesNotContain("failure", error.Message);
+        Assert.Throws<InvalidOperationException>(() => LocalCameraMotorSession.CheckFocusOperation(0, focus, 100, "自动对焦移动电机", default));
+        using var stop = new CancellationTokenSource();
+        stop.Cancel();
+        Assert.Throws<OperationCanceledException>(() => LocalCameraMotorSession.CheckFocusOperation(0, focus, 30001, "移动", stop.Token));
+    }
+
+    [Fact]
+    public void FocusPreviewUsesEachEvaluationWithoutAnotherCaptureAndStopsWithTheSearch()
+    {
+        var native = new FakeMotor();
+        using var session = new LocalCameraSession(new LocalCameraSessionTests.FakeNative(), new CameraBackendState(true), Configuration(), motorNative: native);
+        session.Open("camera", TakeImageMode.Measure_Normal, 16);
+        int evaluations = 0, previews = 0;
+        native.OnSample = () => evaluations++;
+        native.OnPreview = sink => sink?.Invoke(new(IntPtr.Zero, 2, 1, 16, 1));
+        var updates = new List<(int Position, double? Score)>();
+        var result = session.AutoFocus(Settings(), 10, 1, preview: frame => { Assert.Equal(16, frame.Bits); previews++; },
+            progress: (position, _, score) => { Assert.Equal(native.Position, position); updates.Add((position, score)); });
+        Assert.Equal(result.Samples, evaluations);
+        Assert.Equal(evaluations, previews);
+        Assert.Equal(result.Samples + 1, updates.Count(update => !update.Score.HasValue));
+        Assert.Equal(result.Samples + 1, updates.Count(update => update.Score.HasValue));
+        Assert.Equal((result.Position, (double?)result.Score), updates[^1]);
+        Assert.All(updates.Where(update => update.Score.HasValue), update =>
+            Assert.Equal(1000000 - Math.Pow(update.Position - 463, 2), update.Score!.Value));
+        using var stop = new CancellationTokenSource();
+        int moves = native.Moves;
+        Assert.Throws<OperationCanceledException>(() => session.AutoFocus(Settings(), 10, 1, stop.Token, _ => stop.Cancel()));
+        Assert.Equal(moves + 1, native.Moves);
+    }
+
+    [Fact]
+    public void StopRequestedAfterTheMotorMoveSkipsTheNextCapture()
+    {
+        int evaluations = 0;
+        var native = new FakeMotor { OnSample = () => evaluations++ };
+        using var session = new LocalCameraSession(new LocalCameraSessionTests.FakeNative(), new CameraBackendState(true), Configuration(), motorNative: native);
+        session.Open("camera", TakeImageMode.Measure_Normal, 16);
+        using var stop = new CancellationTokenSource();
+        Assert.Throws<OperationCanceledException>(() =>
+            session.AutoFocus(Settings(), 10, 1, stop.Token, progress: (_, _, _) => stop.Cancel()));
+        Assert.Equal(1, native.Moves);
+        Assert.Equal(0, evaluations);
+        Assert.True(session.IsOpen);
+    }
+
+    [Fact]
+    public void TemplateSnapshotUsesItsOwnRangeAndDoesNotChangeWhenTemplateIsEdited()
     {
         var config = Configuration();
         var template = new AutoFocusParam { MinPosition = 0, MaxPosition = 1000, CurStep = 100, Forwardparam = 100, StopStep = 1 };
         var snapshot = LocalAutoFocusSettings.FromTemplate(template, config.MotorConfig);
         template.MaxPosition = 2000;
+        template.CurStep = 200;
+        template.Forwardparam = 300;
+        template.StopStep = 2;
+        template.Curtailparam = 0.4;
+        template.nTimeout = 60000;
         Assert.Equal(1000, snapshot.Maximum);
-        Assert.Throws<ArgumentException>(() => LocalAutoFocusSettings.FromTemplate(template, config.MotorConfig));
+        Assert.Equal((100, 100d, 1, 0.3, 30000), (snapshot.InitialStep, snapshot.FineStep, snapshot.StopStep, snapshot.Reduction, snapshot.Timeout));
+        var nextRun = LocalAutoFocusSettings.FromTemplate(template, config.MotorConfig);
+        Assert.Equal((2000, 200, 300d, 2, 0.4, 60000), (nextRun.Maximum, nextRun.InitialStep, nextRun.FineStep, nextRun.StopStep, nextRun.Reduction, nextRun.Timeout));
+        template.MinPosition = 300000;
+        template.MaxPosition = 450000;
+        var vidFocus = LocalAutoFocusSettings.FromTemplate(template, config.MotorConfig);
+        Assert.Equal(300000, vidFocus.Minimum);
+        Assert.Equal(450000, vidFocus.Maximum);
+        template.MinPosition = 1000;
         template.MaxPosition = 1000;
+        Assert.Throws<ArgumentException>(() => LocalAutoFocusSettings.FromTemplate(template, config.MotorConfig));
+        template.MinPosition = 0;
         template.Curtailparam = 1;
         Assert.Throws<ArgumentException>(() => LocalAutoFocusSettings.FromTemplate(template, config.MotorConfig));
     }
@@ -173,6 +303,52 @@ public class LocalCameraMotorTests
             Assert.Throws<InvalidOperationException>(() => session.UseMotor(m => m.ConvertVid(500)));
         }
         finally { File.Delete(path); }
+    }
+
+    [Fact]
+    public void AutoFocusUsesOneVidMappingWhenTheCalibrationFileIsReplaced()
+    {
+        string path = Path.GetTempFileName();
+        var config = Configuration();
+        config.MotorConfig.VID.IsUseVID = true;
+        config.MotorConfig.VID.MappingFileName = path;
+        try
+        {
+            File.WriteAllText(path, """{"a":0,"b":0,"c":1,"d":10}""");
+            using var session = new LocalCameraSession(new LocalCameraSessionTests.FakeNative(), new CameraBackendState(true), config, motorNative: new FakeMotor());
+            session.Open("camera", TakeImageMode.Measure_Normal, 16);
+
+            var updates = new List<(int Position, double? Vid)>();
+            var result = session.AutoFocus(Settings(), 10, 1, progress: (position, vid, _) =>
+            {
+                if (updates.Count == 0)
+                    File.WriteAllText(path, """{"a":0,"b":0,"c":1,"d":1000}""");
+                updates.Add((position, vid));
+            });
+
+            Assert.True(updates.Count > 1);
+            Assert.All(updates, update => Assert.Equal(update.Position + 10, update.Vid));
+            Assert.Equal(result.Position + 10, result.VidPosition);
+            var nextRun = session.AutoFocus(Settings(), 10, 1);
+            Assert.Equal(nextRun.Position + 1000, nextRun.VidPosition);
+        }
+        finally { File.Delete(path); }
+    }
+
+    [Fact]
+    public void CalibrationFocusReadsRawMotorPositionWithoutTheConfiguredVidMap()
+    {
+        var config = Configuration();
+        config.MotorConfig.VID.IsUseVID = true;
+        config.MotorConfig.VID.MappingFileName = Path.Combine(Path.GetTempPath(), Guid.NewGuid() + ".dat");
+        using var session = new LocalCameraSession(new LocalCameraSessionTests.FakeNative(), new CameraBackendState(true), config, motorNative: new FakeMotor());
+        session.Open("camera", TakeImageMode.Measure_Normal, 16);
+
+        Assert.Throws<InvalidOperationException>(() => session.AutoFocus(Settings(), 10, 1));
+        var result = session.AutoFocus(Settings(), 10, 1, includeVid: false);
+
+        Assert.Null(result.VidPosition);
+        Assert.Equal(result.Position, session.UseMotor(motor => motor.ReadPosition()));
     }
 
     [Fact]
@@ -209,12 +385,17 @@ public class LocalCameraMotorTests
         }
 
         Assert.Equal(MsgRecordState.Success, (await Execute(() => mqtt.Move(150))).MsgRecordState);
+        Assert.Equal(MsgRecordState.Success, (await Execute(() => mqtt.Move(-20, IsbAbs: false))).MsgRecordState);
+        Assert.Equal(130, native.Position);
+        Assert.Equal(MsgRecordState.Success, (await Execute(() => mqtt.Move(10, IsbAbs: false))).MsgRecordState);
+        Assert.Equal(140, native.Position);
         Assert.Equal(MsgRecordState.Success, (await Execute(mqtt.GetPosition)).MsgRecordState);
         Assert.Equal(MsgRecordState.Success, (await Execute(mqtt.GoHome)).MsgRecordState);
         Assert.Equal(MsgRecordState.Success, (await Execute(() => mqtt.MoveDiaphragm(2.8))).MsgRecordState);
+        native.MoveResult = -10063;
         var failed = await Execute(() => mqtt.Move(2000));
         Assert.Equal(MsgRecordState.Fail, failed.MsgRecordState);
-        Assert.Contains("超出电机行程", failed.MsgReturn.Message);
+        Assert.Contains("移动本地电机", failed.MsgReturn.Message);
         WpfTestHost.Invoke(() => Assert.Equal(0, config.MotorConfig.Position));
 
         session.Close(true);
@@ -234,6 +415,7 @@ public class LocalCameraMotorTests
         internal bool ConfigurationError;
         internal LocalMotorSettings? Settings;
         internal Action? OnSample;
+        internal Action<Action<LocalAutoFocusFrame>?>? OnPreview;
         public int Open(ref IntPtr handle, LocalMotorSettings settings) { Events.Add("open"); Settings = settings; handle = new IntPtr(700); return 1; }
         public void Configure(IntPtr handle, LocalMotorSettings settings) { Events.Add("configure"); if (ConfigurationError) throw new InvalidOperationException("configuration failed"); }
         public int Close(IntPtr handle) { Closes++; Events.Add("close"); return CloseResult; }
@@ -242,6 +424,6 @@ public class LocalCameraMotorTests
         public int Home(IntPtr handle, LocalMotorSettings settings) { Position = 0; return 1; }
         public int Aperture(IntPtr handle, float aperture, int timeout) => 1;
         public void PrepareFocus(IntPtr cameraHandle, float exposure, float gain) { }
-        public int EvaluateFocus(IntPtr cameraHandle, EvaFunc evaluation, out double value) { OnSample?.Invoke(); value = 1000000 - Math.Pow(Position - 463, 2); return 1; }
+        public int EvaluateFocus(IntPtr cameraHandle, EvaFunc evaluation, out double value, Action<LocalAutoFocusFrame>? preview) { OnSample?.Invoke(); value = 1000000 - Math.Pow(Position - 463, 2); OnPreview?.Invoke(preview); return 1; }
     }
 }

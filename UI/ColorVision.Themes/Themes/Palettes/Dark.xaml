@@ -159,4 +159,12 @@
     <SolidColorBrush x:Key="ContextMenuRectangleFill" Color="#2D2D2D" />
 
     <DropShadowEffect x:Key="MenuPopupShadowEffect" Color="Black" BlurRadius="12" ShadowDepth="2" Direction="270" Opacity="0.28" RenderingBias="Performance"/>
+    <Color x:Key="CV.Color.Docking.Chrome">#262626</Color>
+    <Color x:Key="CV.Color.Docking.Surface">#1F1F1F</Color>
+    <Color x:Key="CV.Color.Docking.Border">#4B4B50</Color>
+    <Color x:Key="CV.Color.Docking.Accent">#A58BFA</Color>
+    <Color x:Key="CV.Color.Docking.Text">#F2F2F2</Color>
+    <Color x:Key="CV.Color.Docking.MutedText">#B8B8B8</Color>
+    <Color x:Key="CV.Color.Docking.Hover">#383838</Color>
+    <Color x:Key="CV.Color.Docking.Pressed">#464646</Color>
 </ResourceDictionary>

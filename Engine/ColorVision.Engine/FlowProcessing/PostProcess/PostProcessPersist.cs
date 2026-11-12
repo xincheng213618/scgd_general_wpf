@@ -1,10 +1,14 @@
 #pragma warning disable CA1852
+using Newtonsoft.Json;
+
 namespace ColorVision.Engine.FlowProcessing.PostProcess
 {
     internal class PostProcessPersist
     {
         public string Name { get; set; }
         public string TemplateName { get; set; }
+        [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
+        public string? FlowKey { get; set; }
         public string ProcessTypeFullName { get; set; }
 
         /// <summary>

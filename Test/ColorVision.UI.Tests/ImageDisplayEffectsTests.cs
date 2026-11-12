@@ -1,7 +1,10 @@
 using ColorVision.Core;
 using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Abstractions;
+using ColorVision.ImageEditor.Presentation;
 using ColorVision.ImageEditor.Presentation.PseudoColor;
+using System.Runtime.InteropServices;
+using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
@@ -109,6 +112,565 @@ public sealed class ImageDisplayEffectsTests
         });
     }
 
+    [Theory]
+    [InlineData(8, false)]
+    [InlineData(8, true)]
+    [InlineData(16, false)]
+    [InlineData(16, true)]
+    public async Task ContinuousRgbCompositeAndAutoRangeMatchCanonicalBgrLuminance(int depth, bool autoRange)
+    {
+        const int width = 5, height = 3;
+        int sampleBytes = depth / 8;
+        int stride = width * 3 * sampleBytes;
+        byte[] rgb = new byte[stride * height];
+        new Random(537).NextBytes(rgb);
+        byte[] bgr = (byte[])rgb.Clone();
+        for (int pixel = 0; pixel < bgr.Length; pixel += 3 * sampleBytes)
+            for (int i = 0; i < sampleBytes; i++)
+                (bgr[pixel + i], bgr[pixel + 2 * sampleBytes + i]) = (bgr[pixel + 2 * sampleBytes + i], bgr[pixel + i]);
+        using HImage canonical = OpenCVMediaHelper.AllocateHImage(width, height, 3, depth);
+        Marshal.Copy(bgr, 0, canonical.pData, bgr.Length);
+        Assert.Equal(0, OpenCVMediaHelper.M_GetMinMax(canonical, out uint minimum, out uint maximum, -1));
+        Assert.True(maximum > minimum);
+
+        using ImageFrameStore store = new();
+        EffectsFixture fixture = WpfTestHost.Invoke(() => new EffectsFixture { SelectedChannel = -1 });
+        try
+        {
+            var (source, request, completion) = WpfTestHost.Invoke(() =>
+            {
+                WriteableBitmap bitmap = new(width, height, 96, 96, depth == 16 ? PixelFormats.Rgb48 : PixelFormats.Rgb24, null);
+                bitmap.WritePixels(new Int32Rect(0, 0, width, height), rgb, stride, 0);
+                bitmap.Freeze();
+                Assert.True(bitmap.BackBufferStride > stride);
+                fixture.Source = bitmap;
+                fixture.Context.Presentation.Publish(bitmap, null);
+                fixture.Context.StreamPresentation.Submit(bitmap, Guid.NewGuid());
+                fixture.AcquireFrame = () => store.AcquireOrCreate(() => bitmap.ToHImage());
+                fixture.Context.Config.SetImageMetadata(ImageViewPropertyKeys.Depth, depth, "test", "test");
+                fixture.State.IsAutoSetRange = autoRange;
+                fixture.State.IsEnabled = true;
+                Assert.True(fixture.Context.DisplayEffects.TryCapturePseudoColorRequest(out var settings));
+                Assert.Equal(autoRange, settings.HasValidAutoRange);
+                if (autoRange)
+                {
+                    Assert.Equal(minimum, settings.DataMin);
+                    Assert.Equal(maximum, settings.DataMax);
+                }
+                return (bitmap, settings, fixture.Context.StreamPresentation.Completion);
+            });
+            await completion.WaitAsync(TimeSpan.FromSeconds(10));
+
+            int status = autoRange
+                ? OpenCVMediaHelper.ApplyPseudoColorAutoRange(canonical, out HImage output, request.Min, request.Max, request.ColormapTypes, -1, minimum, maximum)
+                : OpenCVMediaHelper.ApplyPseudoColor(canonical, out output, request.Min, request.Max, request.ColormapTypes, -1);
+            using (output)
+            {
+                Assert.Equal(0, status);
+                byte[] expected = new byte[width * height * 3];
+                Marshal.Copy(output.pData, expected, 0, expected.Length);
+                WpfTestHost.Invoke(() =>
+                {
+                    Assert.Same(source, fixture.Context.ViewBitmapSource);
+                    var display = Assert.IsType<WriteableBitmap>(fixture.Context.FunctionImage);
+                    byte[] actual = new byte[expected.Length];
+                    display.CopyPixels(actual, width * 3, 0);
+                    Assert.Equal(expected, actual);
+                });
+            }
+        }
+        finally { WpfTestHost.Invoke(fixture.Dispose); }
+    }
+
+    [Theory]
+    [InlineData(false, false)]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    [InlineData(true, true)]
+    public async Task ContinuousPseudoColorMatchesNativePackedOutputForPaddedCameraFrames(bool color, bool autoRange)
+    {
+        const int width = 5, height = 3;
+        int sourceStride = width * (color ? 6 : 2);
+        byte[] sourcePixels = new byte[sourceStride * height];
+        new Random(1729).NextBytes(sourcePixels);
+        EffectsFixture fixture = WpfTestHost.Invoke(() => new EffectsFixture { SelectedChannel = color ? 2 : 0 });
+        try
+        {
+            var (source, request, completion) = WpfTestHost.Invoke(() =>
+            {
+                WriteableBitmap bitmap = new(width, height, 110, 120, color ? PixelFormats.Rgb48 : PixelFormats.Gray16, null);
+                bitmap.WritePixels(new Int32Rect(0, 0, width, height), sourcePixels, sourceStride, 0);
+                bitmap.Freeze();
+                Assert.True(bitmap.BackBufferStride > sourceStride);
+                fixture.Source = bitmap;
+                fixture.Context.Presentation.Publish(bitmap, null);
+                fixture.State.SliderMaximum = 65535;
+                fixture.State.SliderValueStart = 500;
+                fixture.State.SliderValueEnd = 50000;
+                fixture.State.IsAutoSetRange = autoRange;
+                fixture.State.DataMin = 1000;
+                fixture.State.DataMax = 60000;
+                fixture.State.IsEnabled = true;
+                fixture.Context.DisplayEffects.Invalidate();
+                Assert.True(fixture.Context.DisplayEffects.TryCapturePseudoColorRequest(out var settings));
+                Assert.Equal(autoRange, settings.HasValidAutoRange);
+                fixture.Context.StreamPresentation.Submit(bitmap, Guid.NewGuid());
+                return (bitmap, settings, fixture.Context.StreamPresentation.Completion);
+            });
+            await completion.WaitAsync(TimeSpan.FromSeconds(10));
+
+            using HImage packedSource = source.ToHImage();
+            int status = autoRange
+                ? OpenCVMediaHelper.ApplyPseudoColorAutoRange(packedSource, out HImage packedDisplay, request.Min, request.Max, request.ColormapTypes, request.Channel, request.DataMin, request.DataMax)
+                : OpenCVMediaHelper.ApplyPseudoColor(packedSource, out packedDisplay, request.Min, request.Max, request.ColormapTypes, request.Channel);
+            using (packedDisplay)
+            {
+                Assert.Equal(0, status);
+                byte[] expected = new byte[width * height * 3];
+                Marshal.Copy(packedDisplay.pData, expected, 0, expected.Length);
+                WpfTestHost.Invoke(() =>
+                {
+                    Assert.Same(source, fixture.Context.ViewBitmapSource);
+                    var display = Assert.IsType<WriteableBitmap>(fixture.Context.FunctionImage);
+                    Assert.True(display.IsFrozen);
+                    Assert.Equal(PixelFormats.Bgr24, display.Format);
+                    Assert.Equal((96.0, 96.0), (display.DpiX, display.DpiY));
+                    byte[] actual = new byte[expected.Length];
+                    display.CopyPixels(actual, width * 3, 0);
+                    Assert.Equal(expected, actual);
+                    byte[] retainedSource = new byte[sourcePixels.Length];
+                    source.CopyPixels(retainedSource, sourceStride, 0);
+                    Assert.Equal(sourcePixels, retainedSource);
+                });
+            }
+        }
+        finally { WpfTestHost.Invoke(fixture.Dispose); }
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task ContinuousPseudoColorPublishesIndependentWorkerSnapshotsAndRejectsResetWork(bool reset)
+    {
+        using ManualResetEventSlim processing = new();
+        using ManualResetEventSlim finishProcessing = new();
+        EffectsFixture fixture = WpfTestHost.Invoke(() => new EffectsFixture());
+        ImageStreamPresentation stream = WpfTestHost.Invoke(() => new ImageStreamPresentation(fixture.Context, (source, _) =>
+        {
+            Assert.False(fixture.Context.Dispatcher.CheckAccess());
+            processing.Set();
+            Assert.True(finishProcessing.Wait(TimeSpan.FromSeconds(10)));
+            byte[] pixels = new byte[4];
+            for (int y = 0; y < 2; y++)
+                for (int x = 0; x < 2; x++)
+                    pixels[y * 2 + x] = (byte)(Marshal.ReadByte(source.pData, y * source.stride + x) + 10);
+            IntPtr output = Marshal.AllocCoTaskMem(pixels.Length);
+            Marshal.Copy(pixels, 0, output, pixels.Length);
+            return new HImage { pData = output, rows = 2, cols = 2, channels = 1, depth = 8, stride = 2 };
+        }));
+        try
+        {
+            WpfTestHost.Invoke(() =>
+            {
+                WriteableBitmap source = new(2, 2, 96, 96, PixelFormats.Gray8, null);
+                source.WritePixels(new Int32Rect(0, 0, 2, 2), new byte[] { 1, 2, 3, 4 }, 2, 0);
+                fixture.Source = source;
+                fixture.State.IsEnabled = true;
+                fixture.Context.DisplayEffects.Invalidate();
+                fixture.Context.Presentation.Publish(source, null);
+                stream.Submit(source, Guid.NewGuid());
+                source.WritePixels(new Int32Rect(0, 0, 2, 2), new byte[4], 2, 0);
+            });
+            Assert.True(processing.Wait(TimeSpan.FromSeconds(10)));
+            if (reset) WpfTestHost.Invoke(stream.Reset);
+            finishProcessing.Set();
+            await stream.Completion.WaitAsync(TimeSpan.FromSeconds(10));
+            WpfTestHost.Invoke(() =>
+            {
+                if (reset)
+                {
+                    Assert.False(stream.IsActive);
+                    Assert.Null(fixture.Context.FunctionImage);
+                    Assert.Equal(1, fixture.Context.ImageRevision);
+                    return;
+                }
+                var source = Assert.IsType<WriteableBitmap>(fixture.Source);
+                var display = Assert.IsType<WriteableBitmap>(fixture.Context.FunctionImage);
+                Assert.True(source.IsFrozen);
+                Assert.True(display.IsFrozen);
+                Assert.NotSame(source, display);
+                byte[] pixels = new byte[4];
+                source.CopyPixels(pixels, 2, 0);
+                Assert.Equal(new byte[] { 1, 2, 3, 4 }, pixels);
+                display.CopyPixels(pixels, 2, 0);
+                Assert.Equal(new byte[] { 11, 12, 13, 14 }, pixels);
+                Assert.Equal(2, fixture.Context.ImageRevision);
+                Assert.Same(display, fixture.Context.Presentation.DisplaySource);
+            });
+        }
+        finally
+        {
+            finishProcessing.Set();
+            WpfTestHost.Invoke(() => { stream.Dispose(); fixture.Dispose(); });
+        }
+    }
+
+    [Fact]
+    public async Task CanceledContinuousWorkCannotUseTheNextFrameGuard()
+    {
+        TimeSpan watchdog = TimeSpan.FromSeconds(10);
+        TaskCompletionSource firstEntered = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        TaskCompletionSource secondEntered = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        using ManualResetEventSlim finishFirst = new();
+        using ManualResetEventSlim finishSecond = new();
+        using CancellationTokenSource firstLifetime = new();
+        int attempts = 0;
+        var (fixture, stream, original, successor) = WpfTestHost.Invoke(() =>
+        {
+            EffectsFixture fixture = new();
+            ImageStreamPresentation stream = new(fixture.Context, (_, _) =>
+            {
+                bool first = Interlocked.Increment(ref attempts) == 1;
+                (first ? firstEntered : secondEntered).SetResult();
+                if (!(first ? finishFirst : finishSecond).Wait(watchdog)) throw new TimeoutException();
+                HImage output = OpenCVMediaHelper.AllocateHImage(1, 1, 1, 8);
+                Marshal.WriteByte(output.pData, 0);
+                return output;
+            });
+            WriteableBitmap original = new(1, 1, 96, 96, PixelFormats.Gray8, null);
+            WriteableBitmap successor = new(1, 1, 96, 96, PixelFormats.Gray8, null);
+            original.Freeze();
+            successor.Freeze();
+            fixture.Source = original;
+            fixture.Context.Presentation.Publish(original, null);
+            fixture.State.IsEnabled = true;
+            fixture.Context.DisplayEffects.Invalidate();
+            return (fixture, stream, original, successor);
+        });
+        try
+        {
+            Guid sourceId = Guid.NewGuid();
+            WpfTestHost.Invoke(() =>
+                stream.Submit(new WriteableBitmap(1, 1, 96, 96, PixelFormats.Gray8, null), null, sourceId,
+                    () => !firstLifetime.IsCancellationRequested, firstLifetime.Token));
+            await firstEntered.Task.WaitAsync(watchdog);
+            firstLifetime.Cancel();
+            WpfTestHost.Invoke(() => stream.Submit(successor, sourceId));
+            finishFirst.Set();
+            await secondEntered.Task.WaitAsync(watchdog);
+            WpfTestHost.Invoke(() =>
+            {
+                Assert.Same(original, fixture.Context.ViewBitmapSource);
+                Assert.Same(original, fixture.Context.Presentation.DisplaySource);
+                Assert.Equal(1, fixture.Context.ImageRevision);
+            });
+
+            finishSecond.Set();
+            await stream.Completion.WaitAsync(watchdog);
+            WpfTestHost.Invoke(() => Assert.Same(successor, fixture.Context.ViewBitmapSource));
+        }
+        finally
+        {
+            finishFirst.Set();
+            finishSecond.Set();
+            WpfTestHost.Invoke(() => { stream.Dispose(); fixture.Dispose(); });
+            await stream.Completion.WaitAsync(watchdog);
+        }
+    }
+
+    [Fact]
+    public async Task ContinuousPlainChannelRejectsInFlightPseudoColorAndPublishesOnlyLatestFrame()
+    {
+        using ManualResetEventSlim processing = new();
+        using ManualResetEventSlim finishProcessing = new();
+        EffectsFixture fixture = WpfTestHost.Invoke(() => new EffectsFixture { SelectedChannel = 2 });
+        int pseudoCalls = 0;
+        List<(Guid SourceId, WriteableBitmap Source)> presented = new();
+        Guid sourceId = Guid.NewGuid();
+        byte[] latestPixels = { 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120 };
+        PseudoColorFrameRequest pseudoSettings = default;
+        ImageStreamPresentation stream = WpfTestHost.Invoke(() =>
+        {
+            ImageStreamPresentation result = new(fixture.Context, (_, _) =>
+            {
+                Assert.False(fixture.Context.Dispatcher.CheckAccess());
+                Interlocked.Increment(ref pseudoCalls);
+                processing.Set();
+                Assert.True(finishProcessing.Wait(TimeSpan.FromSeconds(10)));
+                byte[] pixels = { 201, 202, 203, 204 };
+                IntPtr output = Marshal.AllocCoTaskMem(pixels.Length);
+                Marshal.Copy(pixels, 0, output, pixels.Length);
+                return new HImage { pData = output, rows = 2, cols = 2, channels = 1, depth = 8, stride = 2 };
+            });
+            result.FramePresented += (id, source) => presented.Add((id, source));
+            return result;
+        });
+        try
+        {
+            WpfTestHost.Invoke(() =>
+            {
+                WriteableBitmap source = new(2, 2, 96, 96, PixelFormats.Bgr24, null);
+                source.WritePixels(new Int32Rect(0, 0, 2, 2), new byte[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12 }, 6, 0);
+                fixture.Source = source;
+                fixture.Context.Presentation.Publish(source, null);
+                fixture.State.IsEnabled = true;
+                fixture.Context.DisplayEffects.Invalidate();
+                Assert.True(fixture.Context.DisplayEffects.TryCapturePseudoColorRequest(out pseudoSettings));
+                stream.Submit(source, sourceId);
+            });
+            Assert.True(processing.Wait(TimeSpan.FromSeconds(10)));
+            WpfTestHost.Invoke(() =>
+            {
+                fixture.State.IsEnabled = false;
+                fixture.Context.DisplayEffects.Invalidate();
+                Assert.False(fixture.Context.DisplayEffects.TryCapturePseudoColorRequest(out PseudoColorFrameRequest current));
+                // Keep every captured setting equal so only the mode can retire the old work.
+                Assert.Equal(pseudoSettings, current);
+                var source = Assert.IsType<WriteableBitmap>(fixture.Source);
+                source.WritePixels(new Int32Rect(0, 0, 2, 2), new byte[] { 11, 12, 13, 21, 22, 23, 31, 32, 33, 41, 42, 43 }, 6, 0);
+                stream.Submit(source, sourceId);
+                source.WritePixels(new Int32Rect(0, 0, 2, 2), latestPixels, 6, 0);
+                stream.Submit(source, sourceId);
+                Assert.Empty(presented);
+                Assert.Equal(1, fixture.Context.ImageRevision);
+            });
+            finishProcessing.Set();
+            await stream.Completion.WaitAsync(TimeSpan.FromSeconds(10));
+            WpfTestHost.Invoke(() =>
+            {
+                Assert.Equal(1, pseudoCalls);
+                Assert.False(fixture.State.IsEnabled);
+                Assert.Equal(2, fixture.SelectedChannel);
+                Assert.Equal(2, fixture.Context.ImageRevision);
+                var source = Assert.IsType<WriteableBitmap>(fixture.Source);
+                var display = Assert.IsType<WriteableBitmap>(fixture.Context.FunctionImage);
+                var publication = Assert.Single(presented);
+                Assert.Equal(sourceId, publication.SourceId);
+                Assert.Same(source, publication.Source);
+                Assert.True(source.IsFrozen);
+                Assert.True(display.IsFrozen);
+                Assert.Equal(PixelFormats.Bgr24, source.Format);
+                Assert.Equal(PixelFormats.Gray8, display.Format);
+                Assert.NotSame(source, display);
+                byte[] sourcePixels = new byte[12];
+                source.CopyPixels(sourcePixels, 6, 0);
+                Assert.Equal(latestPixels, sourcePixels);
+                byte[] displayPixels = new byte[4];
+                display.CopyPixels(displayPixels, 2, 0);
+                Assert.Equal(new byte[] { 30, 60, 90, 120 }, displayPixels);
+                Assert.Same(display, fixture.Context.Presentation.DisplaySource);
+            });
+        }
+        finally
+        {
+            finishProcessing.Set();
+            WpfTestHost.Invoke(() => { stream.Dispose(); fixture.Dispose(); });
+        }
+    }
+
+    [Theory]
+    [InlineData("direct-display")]
+    [InlineData("pending-request")]
+    [InlineData("no-final-frame")]
+    [InlineData("foreign-source")]
+    public void FrameSourceRestoreDeferralPreservesNewSelectionsAndFallsBackOnlyForItsOwnSource(string boundary)
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            using EffectsFixture fixture = new();
+            ImagePresentation presentation = fixture.Context.Presentation;
+            WriteableBitmap oldGray = new(2, 2, 96, 96, PixelFormats.Gray8, null);
+            WriteableBitmap newRgb = new(2, 2, 96, 96, PixelFormats.Bgr24, null);
+            WriteableBitmap newerDisplay = new(2, 2, 96, 96, PixelFormats.Gray8, null);
+            WriteableBitmap foreignSource = new(2, 2, 96, 96, PixelFormats.Bgr24, null);
+            fixture.Source = oldGray;
+            presentation.Publish(oldGray, oldGray);
+            ImagePresentationRequest oldRequest = presentation.BeginRequest();
+            ImagePresentationRequest? pendingRequest = null;
+            ImageSource expectedDisplay = oldGray;
+            ImageSource? expectedFunction = oldGray;
+
+            using (presentation.DeferSourceRestoreForFrame(newRgb, fixture.Context.ImageRevision + 1))
+            {
+                fixture.Context.CommitSourcePixels(newRgb);
+                switch (boundary)
+                {
+                    case "direct-display":
+                        presentation.Publish(newerDisplay, newerDisplay);
+                        expectedDisplay = newerDisplay;
+                        expectedFunction = newerDisplay;
+                        break;
+                    case "pending-request":
+                        pendingRequest = presentation.BeginRequest();
+                        break;
+                    case "no-final-frame":
+                        expectedFunction = null;
+                        break;
+                    case "foreign-source":
+                        fixture.Source = foreignSource;
+                        expectedDisplay = foreignSource;
+                        expectedFunction = null;
+                        break;
+                }
+                Assert.Equal(2, fixture.Context.ImageRevision);
+                Assert.False(presentation.IsCurrent(oldRequest));
+                presentation.RestoreSourceForDocumentMutation();
+                Assert.Same(expectedDisplay, presentation.DisplaySource);
+                Assert.Same(expectedFunction, presentation.FunctionImage);
+                if (pendingRequest is ImagePresentationRequest pending)
+                    Assert.True(presentation.IsCurrent(pending));
+            }
+
+            if (boundary == "no-final-frame") expectedDisplay = newRgb;
+            Assert.Same(expectedDisplay, presentation.DisplaySource);
+            Assert.Same(expectedFunction, presentation.FunctionImage);
+            Assert.Same(boundary == "foreign-source" ? foreignSource : newRgb, fixture.Source);
+            Assert.False(presentation.TryPublish(oldRequest, oldGray, oldGray));
+            if (pendingRequest is ImagePresentationRequest current)
+            {
+                Assert.True(presentation.IsCurrent(current));
+                Assert.True(presentation.TryPublish(current, newerDisplay, newerDisplay));
+                Assert.Same(newerDisplay, presentation.DisplaySource);
+                Assert.Same(newerDisplay, presentation.FunctionImage);
+            }
+        });
+    }
+
+    [Fact]
+    public void ChannelSelectionReturnsItsFrameWhenAcquisitionSelectsANewerDisplay()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            using ImageFrameStore store = new();
+            store.Invalidate();
+            using EffectsFixture fixture = new() { SelectedChannel = 2 };
+            using ImageChannelPresenter presenter = new(fixture.Context);
+            byte[] sourcePixels = [11, 21, 31, 41, 51, 61, 71, 81, 91, 101, 111, 121];
+            WriteableBitmap source = new(2, 2, 96, 96, PixelFormats.Bgr24, null);
+            source.WritePixels(new Int32Rect(0, 0, 2, 2), sourcePixels, 6, 0);
+            source.Freeze();
+            WriteableBitmap replacement = new(2, 2, 96, 96, PixelFormats.Gray8, null);
+            replacement.WritePixels(new Int32Rect(0, 0, 2, 2), new byte[] { 201, 202, 203, 204 }, 2, 0);
+            replacement.Freeze();
+            fixture.Source = source;
+            fixture.Context.Presentation.Publish(source, null);
+            Guid documentId = fixture.Context.DocumentInstanceId;
+            long revision = fixture.Context.ImageRevision;
+            ImageFrameLease? borrowed = null;
+            int releases = 0;
+            fixture.AcquireFrame = () =>
+            {
+                borrowed = store.AcquireOrCreate(() =>
+                {
+                    IntPtr pixels = Marshal.AllocCoTaskMem(sourcePixels.Length);
+                    Marshal.Copy(sourcePixels, 0, pixels, sourcePixels.Length);
+                    return new HImage { pData = pixels, rows = 2, cols = 2, channels = 3, depth = 8, stride = 6 };
+                }, image => { image.Dispose(); releases++; });
+                store.Dispose();
+                fixture.Context.Presentation.Publish(replacement, replacement);
+                return borrowed;
+            };
+
+            presenter.SelectChannel(2);
+
+            Assert.Equal(1, fixture.AcquireCount);
+            Assert.Equal(1, releases);
+            ImageFrameLease returned = Assert.IsType<ImageFrameLease>(borrowed);
+            Assert.Throws<ObjectDisposedException>(() => { _ = returned.Image; });
+            Assert.Same(replacement, fixture.Context.Presentation.DisplaySource);
+            Assert.Same(replacement, fixture.Context.FunctionImage);
+            Assert.Same(source, fixture.Source);
+            Assert.Equal(documentId, fixture.Context.DocumentInstanceId);
+            Assert.Equal(revision, fixture.Context.ImageRevision);
+            byte[] actualSource = new byte[12];
+            source.CopyPixels(actualSource, 6, 0);
+            Assert.Equal(sourcePixels, actualSource);
+        });
+    }
+
+    [Fact]
+    public async Task DisablingPseudoColorCannotOverwriteADisplaySelectedAfterChannelCapture()
+    {
+        TimeSpan watchdog = TimeSpan.FromSeconds(10);
+        using ImageFrameStore store = new();
+        store.Invalidate();
+        TaskCompletionSource<ImageFrameLease> capturedFrame = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        TaskCompletionSource<bool> released = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        Task? replacementPublication = null;
+        int releaseCount = 0;
+        byte[] sourcePixels = [11, 21, 31, 41, 51, 61, 71, 81, 91, 101, 111, 121];
+        WriteableBitmap? source = null;
+        WriteableBitmap? replacement = null;
+        Guid documentId = Guid.Empty;
+        long revision = 0;
+        EffectsFixture fixture = WpfTestHost.Invoke(() =>
+        {
+            EffectsFixture result = new() { SelectedChannel = 2 };
+            source = new WriteableBitmap(2, 2, 96, 96, PixelFormats.Bgr24, null);
+            source.WritePixels(new Int32Rect(0, 0, 2, 2), sourcePixels, 6, 0);
+            source.Freeze();
+            replacement = new WriteableBitmap(2, 2, 96, 96, PixelFormats.Gray8, null);
+            replacement.WritePixels(new Int32Rect(0, 0, 2, 2), new byte[] { 201, 202, 203, 204 }, 2, 0);
+            replacement.Freeze();
+            result.Source = source;
+            result.Context.Presentation.Publish(source, null);
+            documentId = result.Context.DocumentInstanceId;
+            revision = result.Context.ImageRevision;
+            result.State.IsAutoSetRange = false;
+            result.AcquireFrame = () =>
+            {
+                ImageFrameLease lease = Assert.IsType<ImageFrameLease>(store.AcquireOrCreate(() =>
+                {
+                    IntPtr pixels = Marshal.AllocCoTaskMem(sourcePixels.Length);
+                    Marshal.Copy(sourcePixels, 0, pixels, sourcePixels.Length);
+                    return new HImage { pData = pixels, rows = 2, cols = 2, channels = 3, depth = 8, stride = 6 };
+                }, image =>
+                {
+                    image.Dispose();
+                    Interlocked.Increment(ref releaseCount);
+                    released.TrySetResult(true);
+                }));
+                // Queue a real newer selection without pumping inside capture. Send precedes the prepared frame's UI commit.
+                replacementPublication = result.Context.Dispatcher.InvokeAsync(
+                    () => result.Context.Presentation.Publish(replacement, replacement), DispatcherPriority.Send).Task;
+                capturedFrame.TrySetResult(lease);
+                return lease;
+            };
+            return result;
+        });
+        try
+        {
+            WpfTestHost.Invoke(() =>
+            {
+                fixture.State.IsEnabled = true;
+                fixture.Context.DisplayEffects.Invalidate();
+                fixture.State.IsEnabled = false;
+            });
+            ImageFrameLease lease = await capturedFrame.Task.WaitAsync(watchdog);
+            Task publication = WpfTestHost.Invoke(() => Assert.IsAssignableFrom<Task>(replacementPublication));
+            await publication.WaitAsync(watchdog);
+            // Retire the store's reference: its release callback now deterministically waits for the controller's lease return.
+            store.Dispose();
+            await released.Task.WaitAsync(watchdog);
+            Assert.Throws<ObjectDisposedException>(() => { _ = lease.Image; });
+            WpfTestHost.Invoke(() =>
+            {
+                Assert.Equal(1, fixture.AcquireCount);
+                Assert.Equal(1, Volatile.Read(ref releaseCount));
+                Assert.False(fixture.State.IsEnabled);
+                Assert.Same(replacement, fixture.Context.Presentation.DisplaySource);
+                Assert.Same(replacement, fixture.Context.FunctionImage);
+                Assert.Same(source, fixture.Source);
+                Assert.Equal(documentId, fixture.Context.DocumentInstanceId);
+                Assert.Equal(revision, fixture.Context.ImageRevision);
+                byte[] actualSource = new byte[12];
+                source!.CopyPixels(actualSource, 6, 0);
+                Assert.Equal(sourcePixels, actualSource);
+            });
+        }
+        finally { WpfTestHost.Invoke(fixture.Dispose); }
+    }
+
     private sealed class EffectsFixture : IDisposable
     {
         internal ImageSource? Source { get; set; }
@@ -116,6 +678,8 @@ public sealed class ImageDisplayEffectsTests
         internal bool OwnerDisposed { get; set; }
         internal bool Initialized { get; set; }
         internal int AcquireCount { get; private set; }
+        internal Func<ImageFrameLease?>? AcquireFrame { get; set; }
+        private long _revision = 1;
         internal ImageProcessingContext Context { get; }
         internal PseudoColorState State => Context.DisplayEffects.PseudoColor;
 
@@ -128,15 +692,15 @@ public sealed class ImageDisplayEffectsTests
                     IsInitialized = () => Initialized,
                     GetDocumentInstanceId = () => documentId,
                     IsDisposed = () => OwnerDisposed,
-                    GetImageRevision = () => 1,
+                    GetImageRevision = () => _revision,
                     AcquireImageFrame = () =>
                     {
                         AcquireCount++;
-                        return null;
+                        return AcquireFrame?.Invoke();
                     },
-                    IsCurrentImageRevision = revision => !OwnerDisposed && revision == 1,
+                    IsCurrentImageRevision = revision => !OwnerDisposed && revision == _revision,
                     NotifySourcePixelsChanged = () => { },
-                    CommitSourcePixels = value => Source = value,
+                    CommitSourcePixels = value => { Source = value; _revision++; },
                     GetViewBitmapSource = () => Source,
                     SetViewBitmapSource = value => Source = value,
                     GetSelectedLayerSourceChannelIndex = () => SelectedChannel,

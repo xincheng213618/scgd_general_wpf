@@ -16,7 +16,7 @@ namespace ColorVision.UI.Desktop.Settings
         {
             var card = new Border
             {
-                CornerRadius = new CornerRadius(8),
+                CornerRadius = new CornerRadius(14),
                 BorderThickness = new Thickness(1),
                 Margin = new Thickness(0, 0, 0, 20),
                 Padding = new Thickness(0),
@@ -109,7 +109,7 @@ namespace ColorVision.UI.Desktop.Settings
         {
             var row = new Grid
             {
-                MinHeight = 36,
+                MinHeight = 30,
                 HorizontalAlignment = HorizontalAlignment.Stretch
             };
             row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
@@ -120,13 +120,15 @@ namespace ColorVision.UI.Desktop.Settings
             Grid.SetColumn(textPanel, 0);
             row.Children.Add(textPanel);
 
-            bool useCompactEditor = UsesCompactInlineEditor(entry);
+            FrameworkElement editor = CreatePropertyEditor(entry);
+            bool useCompactEditor = UsesCompactInlineEditor(entry) ||
+                editor is DockPanel { Children.Count: 1 } panel && panel.Children[0] is ComboBox;
             var editorHost = new Border
             {
                 Width = useCompactEditor ? double.NaN : 200,
                 HorizontalAlignment = HorizontalAlignment.Right,
                 VerticalAlignment = VerticalAlignment.Center,
-                Child = CreatePropertyEditor(entry)
+                Child = editor
             };
             Grid.SetColumn(editorHost, 1);
             row.Children.Add(editorHost);
@@ -137,7 +139,8 @@ namespace ColorVision.UI.Desktop.Settings
         private static bool UsesCompactInlineEditor(SettingEntry entry)
         {
             Type? propertyType = entry.PropertyInfo?.PropertyType;
-            return propertyType != null && (Nullable.GetUnderlyingType(propertyType) ?? propertyType) == typeof(bool);
+            return entry.Metadata.Layout == ConfigSettingLayout.InlineAuto ||
+                propertyType != null && (Nullable.GetUnderlyingType(propertyType) ?? propertyType) == typeof(bool);
         }
 
         private static Border CreateWidePropertySettingRow(SettingEntry entry, bool isLast)
@@ -169,12 +172,13 @@ namespace ColorVision.UI.Desktop.Settings
             {
                 Text = entry.Title,
                 FontSize = 13,
-                FontWeight = FontWeights.SemiBold,
+                FontWeight = FontWeights.Normal,
                 TextWrapping = TextWrapping.Wrap
             };
             title.SetResourceReference(TextBlock.ForegroundProperty, "GlobalTextBrush");
             stackPanel.Children.Add(title);
 
+            title.ToolTip = string.IsNullOrWhiteSpace(entry.Description) ? null : entry.Description;
             if (!string.IsNullOrWhiteSpace(entry.Description))
             {
                 var description = new TextBlock
@@ -182,7 +186,9 @@ namespace ColorVision.UI.Desktop.Settings
                     Text = entry.Description,
                     Margin = new Thickness(0, 3, 0, 0),
                     FontSize = 12,
-                    TextWrapping = TextWrapping.Wrap
+                    TextWrapping = TextWrapping.NoWrap,
+                    TextTrimming = TextTrimming.CharacterEllipsis,
+                    ToolTip = entry.Description
                 };
                 description.SetResourceReference(TextBlock.ForegroundProperty, "CV.Text.Secondary");
                 stackPanel.Children.Add(description);
@@ -195,7 +201,7 @@ namespace ColorVision.UI.Desktop.Settings
         {
             var border = new Border
             {
-                Padding = new Thickness(0, 10, 0, 10),
+                Padding = new Thickness(0, 8, 0, 8),
                 Margin = new Thickness(16, 0, 16, 0),
                 BorderThickness = new Thickness(0, 0, 0, isLast ? 0 : 1),
                 Child = child,
@@ -459,7 +465,8 @@ namespace ColorVision.UI.Desktop.Settings
                     comboBox.SetResourceReference(FrameworkElement.StyleProperty, "SettingsEditorComboBoxStyle");
                     comboBox.Width = double.NaN;
                     comboBox.MinWidth = 0;
-                    comboBox.HorizontalAlignment = HorizontalAlignment.Stretch;
+                    comboBox.MaxWidth = 320;
+                    comboBox.HorizontalAlignment = HorizontalAlignment.Right;
                     break;
                 case ToggleButton toggleButton:
                     toggleButton.HorizontalAlignment = HorizontalAlignment.Right;

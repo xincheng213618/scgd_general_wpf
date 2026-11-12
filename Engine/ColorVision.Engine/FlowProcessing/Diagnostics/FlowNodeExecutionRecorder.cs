@@ -2,7 +2,6 @@ using FlowEngineLib;
 using FlowEngineLib.Base;
 using log4net;
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -18,70 +17,40 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(FlowNodeExecutionRecorder));
 
-        private sealed class PendingNodeExecution
-        {
-            public PendingNodeExecution(
-                string writeKey,
-                FlowNodeRecord record,
-                FlowNodeMessage? message,
-                long generation)
-            {
-                WriteKey = writeKey;
-                Record = record;
-                Message = message;
-                Generation = generation;
-            }
+        private sealed record PendingNodeExecution(string WriteKey, FlowNodeRecord Record, FlowNodeMessage? Message);
 
-            public string WriteKey { get; }
-
-            public FlowNodeRecord Record { get; }
-
-            public FlowNodeMessage? Message { get; }
-
-            public long Generation { get; }
-        }
-
-        private readonly Func<FlowNodeRecord, int> _insertRecord;
-        private readonly Action<FlowNodeRecord> _updateRecord;
-        private readonly Func<FlowNodeMessage, int> _insertMessage;
-        private readonly Action<FlowNodeMessage> _updateMessage;
+        private readonly Func<FlowNodeRecord, FlowNodeMessage?, Task<int>> _insertExecution;
+        private readonly Func<FlowNodeRecord, FlowNodeMessage?, Task> _updateExecution;
         private readonly Func<TimeSpan?, bool> _flushPendingWrites;
         private readonly Action<Task> _trackPendingWrite;
         private readonly object _attachmentSync = new object();
         private readonly object _lifecycleSync = new object();
         private readonly object _writeSync = new object();
         private readonly List<CVCommonNode> _attachedNodes = new List<CVCommonNode>();
-        private readonly ConcurrentDictionary<string, ConcurrentQueue<PendingNodeExecution>> _pendingExecutions = new ConcurrentDictionary<string, ConcurrentQueue<PendingNodeExecution>>();
-        private readonly ConcurrentDictionary<string, Task> _writeTasks = new ConcurrentDictionary<string, Task>();
+        private readonly Dictionary<string, Queue<PendingNodeExecution>> _pendingExecutions = new();
+        private readonly Dictionary<string, Task> _writeTasks = new();
 
         private string? _activeSerialNumber;
         private int _activeBatchId;
-        private long _generation;
-        private bool _disposed;
+        private volatile bool _disposed;
 
         public FlowNodeExecutionRecorder()
             : this(
-                FlowNodeRecordDataBaseHelper.Insert,
-                FlowNodeRecordDataBaseHelper.Update,
-                FlowNodeRecordDataBaseHelper.InsertMessage,
-                FlowNodeRecordDataBaseHelper.UpdateMessage,
+                static (record, message) => FlowNodeRecordDataBaseHelper.InsertNodeExecutionAsync(record, message, preserveTimingOnMessageFailure: true),
+                static (record, message) => FlowNodeRecordDataBaseHelper.UpdateNodeExecutionAsync(record, message, preserveTimingOnMessageFailure: true),
                 FlowNodeRecordDataBaseHelper.FlushPendingWrites,
                 FlowNodeRecordDataBaseHelper.TrackPendingWrite)
         {
         }
 
         internal FlowNodeExecutionRecorder(
-            Func<FlowNodeRecord, int> insertRecord,
-            Action<FlowNodeRecord> updateRecord,
-            Func<FlowNodeMessage, int> insertMessage,
-            Action<FlowNodeMessage> updateMessage,
+            Func<FlowNodeRecord, FlowNodeMessage?, Task<int>> insertExecution,
+            Func<FlowNodeRecord, FlowNodeMessage?, Task> updateExecution,
             Func<TimeSpan?, bool> flushPendingWrites,
             Action<Task> trackPendingWrite)
         {
-            _insertRecord = insertRecord ?? throw new ArgumentNullException(nameof(insertRecord));
-            _updateRecord = updateRecord ?? throw new ArgumentNullException(nameof(updateRecord));
-            _insertMessage = insertMessage ?? throw new ArgumentNullException(nameof(insertMessage));
-            _updateMessage = updateMessage ?? throw new ArgumentNullException(nameof(updateMessage));
+            _insertExecution = insertExecution ?? throw new ArgumentNullException(nameof(insertExecution));
+            _updateExecution = updateExecution ?? throw new ArgumentNullException(nameof(updateExecution));
             _flushPendingWrites = flushPendingWrites ?? throw new ArgumentNullException(nameof(flushPendingWrites));
             _trackPendingWrite = trackPendingWrite ?? throw new ArgumentNullException(nameof(trackPendingWrite));
         }
@@ -125,10 +94,8 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
                 if (!string.IsNullOrWhiteSpace(_activeSerialNumber))
                     throw new InvalidOperationException($"Flow diagnostics are already recording {_activeSerialNumber}.");
 
-                _pendingExecutions.Clear();
                 _activeBatchId = batchId;
                 _activeSerialNumber = serialNumber;
-                Interlocked.Increment(ref _generation);
             }
         }
 
@@ -146,7 +113,7 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
             string? serialNumber = null,
             TimeSpan? flushTimeout = null)
         {
-            long completedGeneration;
+            Task[] queuedWrites;
             lock (_lifecycleSync)
             {
                 if (string.IsNullOrWhiteSpace(_activeSerialNumber)
@@ -156,13 +123,14 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
                 // The host can still close its recording after an exception clears
                 // its current result or switches the product serial number.
                 serialNumber = _activeSerialNumber;
-                completedGeneration = Volatile.Read(ref _generation);
                 _activeSerialNumber = null;
                 _activeBatchId = 0;
+                FinalizePendingExecutions(DateTime.Now);
+                lock (_writeSync)
+                    queuedWrites = _writeTasks.Values.ToArray();
             }
 
-            FinalizePendingExecutions(completedGeneration, DateTime.Now);
-            await WaitForQueuedWritesAsync().ConfigureAwait(false);
+            await WaitForQueuedWritesAsync(queuedWrites).ConfigureAwait(false);
 
             bool flushed = await Task.Run(
                 () => _flushPendingWrites(flushTimeout ?? TimeSpan.FromSeconds(5)))
@@ -170,7 +138,6 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
             if (!flushed)
                 log.Warn($"流程节点统计落库超时 => serialNumber={serialNumber}");
 
-            RemoveCompletedGeneration(completedGeneration);
             return flushed;
         }
 
@@ -178,52 +145,43 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
         {
             try
             {
-                if (sender is not CVCommonNode node
-                    || e == null
-                    || !TryGetActiveRun(e.SerialNumber, out int batchId, out long generation))
+                lock (_lifecycleSync)
                 {
-                    return;
-                }
+                    if (sender is not CVCommonNode node || e == null || !CanRecord(e.SerialNumber))
+                        return;
 
-                string writeKey = GetNodeExecutionKey(node, e.SendMsgId, e.SerialNumber);
-                var record = new FlowNodeRecord
-                {
-                    BatchId = batchId,
-                    SerialNumber = e.SerialNumber,
-                    NodeId = node.NodeID,
-                    NodeName = node.OnGetDrawTitle(),
-                    NodeType = node.NodeType,
-                    StartTime = DateTime.Now,
-                };
-                FlowNodeMessage? message = string.IsNullOrEmpty(e.SendMsgId)
-                    ? null
-                    : new FlowNodeMessage
+                    string writeKey = GetNodeExecutionKey(node, e.SendMsgId, e.SerialNumber);
+                    string nodeName = node.OnGetDrawTitle();
+                    var record = new FlowNodeRecord
                     {
-                        BatchId = batchId,
+                        BatchId = _activeBatchId,
                         SerialNumber = e.SerialNumber,
                         NodeId = node.NodeID,
-                        NodeName = node.OnGetDrawTitle(),
-                        MsgId = e.SendMsgId,
-                        EventName = e.SendEventName,
-                        SendTopic = e.SendTopic,
-                        SendPayload = e.SendPayload,
-                        SendTime = DateTime.Now,
-                        State = FlowMessageState.Sent,
+                        NodeName = nodeName,
+                        NodeType = node.NodeType,
+                        StartTime = DateTime.Now,
                     };
+                    FlowNodeMessage? message = string.IsNullOrEmpty(e.SendMsgId)
+                        ? null
+                        : new FlowNodeMessage
+                        {
+                            BatchId = record.BatchId,
+                            SerialNumber = e.SerialNumber,
+                            NodeId = node.NodeID,
+                            NodeName = nodeName,
+                            MsgId = e.SendMsgId,
+                            EventName = e.SendEventName,
+                            SendTopic = e.SendTopic,
+                            SendPayload = e.SendPayload,
+                            SendTime = DateTime.Now,
+                            State = FlowMessageState.Sent,
+                        };
 
-                var execution = new PendingNodeExecution(writeKey, record, message, generation);
-                _pendingExecutions
-                    .GetOrAdd(writeKey, _ => new ConcurrentQueue<PendingNodeExecution>())
-                    .Enqueue(execution);
-                QueueWrite(writeKey, () =>
-                {
-                    int insertId = _insertRecord(record);
-                    if (insertId > 0 && message != null)
-                    {
-                        message.NodeRecordId = record.Id;
-                        _insertMessage(message);
-                    }
-                });
+                    if (!_pendingExecutions.TryGetValue(writeKey, out var pending))
+                        _pendingExecutions.Add(writeKey, pending = new Queue<PendingNodeExecution>());
+                    pending.Enqueue(new PendingNodeExecution(writeKey, record, message));
+                    QueueWrite(writeKey, () => _insertExecution(record, message));
+                }
             }
             catch (Exception ex)
             {
@@ -235,39 +193,34 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
         {
             try
             {
-                if (sender is not CVCommonNode node
-                    || e == null
-                    || !TryGetActiveRun(e.SerialNumber, out _, out long generation))
+                lock (_lifecycleSync)
                 {
-                    return;
-                }
+                    if (sender is not CVCommonNode node || e == null || !CanRecord(e.SerialNumber))
+                        return;
 
-                string writeKey = GetNodeExecutionKey(node, e.RecvMsgId, e.SerialNumber);
-                if (!TryTakePendingExecution(writeKey, node, e.SerialNumber, generation, out PendingNodeExecution? execution))
-                    return;
+                    string writeKey = GetNodeExecutionKey(node, e.RecvMsgId, e.SerialNumber);
+                    PendingNodeExecution? execution = TakePendingExecution(writeKey, node, e.SerialNumber);
+                    if (execution == null)
+                        return;
 
-                DateTime endTime = DateTime.Now;
-                PendingNodeExecution completedExecution = execution!;
-                CompleteRecord(completedExecution, endTime);
-                if (completedExecution.Message is FlowNodeMessage message)
-                {
-                    message.RecvTime = endTime;
-                    if (!string.IsNullOrEmpty(e.RecvMsgId))
+                    DateTime endTime = DateTime.Now;
+                    if (execution.Message is FlowNodeMessage message)
                     {
-                        message.RecvTopic = e.RecvTopic;
-                        message.RecvPayload = e.RecvPayload;
-                        message.StatusCode = e.RecvStatusCode;
-                        message.StatusMessage = e.RecvStatusMessage;
-                        message.State = e.RecvStatusCode == 0
-                            ? FlowMessageState.Success
-                            : FlowMessageState.Fail;
+                        message.RecvTime = endTime;
+                        if (!string.IsNullOrEmpty(e.RecvMsgId))
+                        {
+                            message.RecvTopic = e.RecvTopic;
+                            message.RecvPayload = e.RecvPayload;
+                            message.StatusCode = e.RecvStatusCode;
+                            message.StatusMessage = e.RecvStatusMessage;
+                            message.State = e.RecvStatusCode == 0 ? FlowMessageState.Success : FlowMessageState.Fail;
+                        }
+                        else
+                        {
+                            message.State = FlowMessageState.Timeout;
+                        }
                     }
-                    else
-                    {
-                        message.State = FlowMessageState.Timeout;
-                    }
-
-                    QueueWrite(completedExecution.WriteKey, () => _updateMessage(message));
+                    CompleteExecution(execution, endTime);
                 }
             }
             catch (Exception ex)
@@ -276,95 +229,63 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
             }
         }
 
-        private bool TryGetActiveRun(string? serialNumber, out int batchId, out long generation)
+        private bool CanRecord(string? serialNumber) => !_disposed
+            && !string.IsNullOrWhiteSpace(serialNumber)
+            && string.Equals(serialNumber, _activeSerialNumber, StringComparison.Ordinal);
+
+        private PendingNodeExecution? TakePendingExecution(string writeKey, CVCommonNode node, string serialNumber)
         {
-            lock (_lifecycleSync)
+            if (!_pendingExecutions.TryGetValue(writeKey, out var pending))
             {
-                bool matches = !_disposed
-                    && !string.IsNullOrWhiteSpace(serialNumber)
-                    && string.Equals(serialNumber, _activeSerialNumber, StringComparison.Ordinal);
-                batchId = matches ? _activeBatchId : 0;
-                generation = matches ? Volatile.Read(ref _generation) : 0;
-                return matches;
-            }
-        }
-
-        private bool TryTakePendingExecution(
-            string writeKey,
-            CVCommonNode node,
-            string serialNumber,
-            long generation,
-            out PendingNodeExecution? execution)
-        {
-            if (_pendingExecutions.TryGetValue(writeKey, out ConcurrentQueue<PendingNodeExecution>? exactQueue)
-                && TryTakeGeneration(exactQueue, generation, out execution))
-            {
-                return true;
-            }
-
-            string prefix = $"{serialNumber}|{node.NodeID}|";
-            foreach (KeyValuePair<string, ConcurrentQueue<PendingNodeExecution>> item in _pendingExecutions
-                         .Where(item => item.Key.StartsWith(prefix, StringComparison.Ordinal))
-                         .OrderBy(item => item.Value.TryPeek(out PendingNodeExecution? pending)
-                             ? pending.Record.StartTime
-                             : DateTime.MaxValue))
-            {
-                if (TryTakeGeneration(item.Value, generation, out execution))
-                    return true;
-            }
-
-            execution = null;
-            return false;
-        }
-
-        private static bool TryTakeGeneration(
-            ConcurrentQueue<PendingNodeExecution> queue,
-            long generation,
-            out PendingNodeExecution? execution)
-        {
-            while (queue.TryDequeue(out PendingNodeExecution? candidate))
-            {
-                if (candidate.Generation == generation)
+                string prefix = $"{serialNumber}|{node.NodeID}|";
+                foreach (var (key, queue) in _pendingExecutions)
                 {
-                    execution = candidate;
-                    return true;
+                    if (key.StartsWith(prefix, StringComparison.Ordinal)
+                        && (pending == null || queue.Peek().Record.StartTime < pending.Peek().Record.StartTime))
+                    {
+                        writeKey = key;
+                        pending = queue;
+                    }
                 }
+                if (pending == null)
+                    return null;
             }
 
-            execution = null;
-            return false;
+            PendingNodeExecution execution = pending.Dequeue();
+            if (pending.Count == 0)
+                _pendingExecutions.Remove(writeKey);
+            return execution;
         }
 
-        private void CompleteRecord(PendingNodeExecution execution, DateTime endTime)
+        private void CompleteExecution(PendingNodeExecution execution, DateTime endTime)
         {
             execution.Record.EndTime = endTime;
             execution.Record.ElapsedMs = Math.Max(
                 0,
                 (long)(endTime - execution.Record.StartTime).TotalMilliseconds);
-            QueueWrite(execution.WriteKey, () => _updateRecord(execution.Record));
+            QueueWrite(execution.WriteKey, () => execution.Record.Id > 0
+                ? _updateExecution(execution.Record, execution.Message is { Id: > 0 } message ? message : null)
+                : Task.CompletedTask);
         }
 
-        private void FinalizePendingExecutions(long generation, DateTime completedTime)
+        private void FinalizePendingExecutions(DateTime completedTime)
         {
-            foreach (ConcurrentQueue<PendingNodeExecution> queue in _pendingExecutions.Values)
+            foreach (Queue<PendingNodeExecution> queue in _pendingExecutions.Values)
             {
-                while (queue.TryDequeue(out PendingNodeExecution? execution))
+                foreach (PendingNodeExecution execution in queue)
                 {
-                    if (execution.Generation != generation)
-                        continue;
-
-                    CompleteRecord(execution, completedTime);
                     if (execution.Message is FlowNodeMessage message)
                     {
                         message.RecvTime ??= completedTime;
                         message.State = FlowMessageState.Timeout;
-                        QueueWrite(execution.WriteKey, () => _updateMessage(message));
                     }
+                    CompleteExecution(execution, completedTime);
                 }
             }
+            _pendingExecutions.Clear();
         }
 
-        private void QueueWrite(string writeKey, Action write)
+        private void QueueWrite(string writeKey, Func<Task> write)
         {
             lock (_writeSync)
             {
@@ -373,7 +294,7 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
                         _ => write(),
                         CancellationToken.None,
                         TaskContinuationOptions.None,
-                        TaskScheduler.Default)
+                        TaskScheduler.Default).Unwrap()
                     : Task.Run(write);
                 _writeTasks[writeKey] = nextWrite;
                 _trackPendingWrite(nextWrite);
@@ -382,11 +303,8 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
                     {
                         lock (_writeSync)
                         {
-                            if (_writeTasks.TryGetValue(writeKey, out Task? current)
-                                && ReferenceEquals(current, nextWrite))
-                            {
-                                _writeTasks.TryRemove(writeKey, out _);
-                            }
+                            if (_writeTasks.TryGetValue(writeKey, out Task? current) && ReferenceEquals(current, nextWrite))
+                                _writeTasks.Remove(writeKey);
                         }
                     },
                     CancellationToken.None,
@@ -395,12 +313,8 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
             }
         }
 
-        private async Task WaitForQueuedWritesAsync()
+        private static async Task WaitForQueuedWritesAsync(Task[] pendingWrites)
         {
-            Task[] pendingWrites;
-            lock (_writeSync)
-                pendingWrites = _writeTasks.Values.ToArray();
-
             if (pendingWrites.Length == 0)
                 return;
 
@@ -411,18 +325,6 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
             catch (Exception ex)
             {
                 log.Warn("等待流程节点统计写入失败。", ex);
-            }
-        }
-
-        private void RemoveCompletedGeneration(long generation)
-        {
-            foreach (KeyValuePair<string, ConcurrentQueue<PendingNodeExecution>> item in _pendingExecutions)
-            {
-                if (item.Value.IsEmpty
-                    || item.Value.All(execution => execution.Generation <= generation))
-                {
-                    _pendingExecutions.TryRemove(item.Key, out _);
-                }
             }
         }
 
@@ -446,12 +348,14 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
 
         public void Dispose()
         {
-            if (_disposed)
-                return;
-
             string? activeSerialNumber;
             lock (_lifecycleSync)
+            {
+                if (_disposed)
+                    return;
+                _disposed = true;
                 activeSerialNumber = _activeSerialNumber;
+            }
             if (!string.IsNullOrWhiteSpace(activeSerialNumber))
             {
                 try
@@ -467,12 +371,7 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
             }
 
             lock (_attachmentSync)
-            {
-                _disposed = true;
                 DetachNodesCore();
-            }
-            _pendingExecutions.Clear();
-            _writeTasks.Clear();
         }
     }
 }

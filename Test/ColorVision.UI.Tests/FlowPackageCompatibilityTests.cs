@@ -1,8 +1,10 @@
+using ColorVision.Database;
 using ColorVision.Engine;
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.Flow;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using SqlSugar;
 using ST.Library.UI.NodeEditor;
 using System.IO;
 using System.IO.Compression;
@@ -13,6 +15,167 @@ namespace ColorVision.UI.Tests;
 
 public class FlowPackageCompatibilityTests
 {
+    [Fact]
+    public void BatchExportKeepsEachCanvasWhenSanitizedNamesCollide()
+    {
+        StaTest.Run(() =>
+        {
+            string path = Path.Combine(Path.GetTempPath(), $"flow-export-{Guid.NewGuid():N}.zip");
+            byte[] first = CreateTemplateReferenceFlow("Camera.First");
+            byte[] second = CreateTemplateReferenceFlow("Camera.Second");
+            byte[] third = CreateTemplateReferenceFlow("Camera.Third");
+            try
+            {
+                TemplateFlow.ExportBatch(path,
+                [
+                    new TemplateModel<FlowParam>("Flow?A", new FlowParam { DataBase64 = Convert.ToBase64String(first) }),
+                    new TemplateModel<FlowParam>("flow_a", new FlowParam { DataBase64 = Convert.ToBase64String(second) }),
+                    new TemplateModel<FlowParam>("Flow_A (2)", new FlowParam { DataBase64 = Convert.ToBase64String(third) })
+                ]);
+
+                using var archive = ZipFile.OpenRead(path);
+                Assert.Equal(3, archive.Entries.Count);
+                Assert.Equal(3, archive.Entries.Select(entry => entry.FullName).Distinct(StringComparer.OrdinalIgnoreCase).Count());
+                Assert.Equal(first, ReadBatchEntry(archive, "Flow_A.stn"));
+                Assert.Equal(second, ReadBatchEntry(archive, "flow_a (3).stn"));
+                Assert.Equal(third, ReadBatchEntry(archive, "Flow_A (2).stn"));
+            }
+            finally { File.Delete(path); }
+        });
+    }
+
+    [Fact]
+    public void BatchExportKeepsAnExistingArchiveWhenADefinitionCannotBeWritten()
+    {
+        StaTest.Run(() =>
+        {
+            string path = Path.Combine(Path.GetTempPath(), $"flow-export-{Guid.NewGuid():N}.zip");
+            var valid = new TemplateModel<FlowParam>("Valid", new FlowParam { DataBase64 = Convert.ToBase64String(CreateTemplateReferenceFlow("Camera.Valid")) });
+            var invalid = new TemplateModel<FlowParam>("Invalid", new FlowParam { DataBase64 = "!" });
+            try
+            {
+                TemplateFlow.ExportBatch(path, [valid]);
+                byte[] previous = File.ReadAllBytes(path);
+
+                Assert.Throws<FormatException>(() => TemplateFlow.ExportBatch(path, [valid, invalid]));
+
+                Assert.Equal(previous, File.ReadAllBytes(path));
+            }
+            finally { File.Delete(path); }
+        });
+    }
+
+    private static byte[] ReadBatchEntry(ZipArchive archive, string name)
+    {
+        using var entry = Assert.IsType<ZipArchiveEntry>(archive.GetEntry(name)).Open();
+        using var stream = new MemoryStream();
+        entry.CopyTo(stream);
+        return stream.ToArray();
+    }
+
+    [Fact]
+    public void CancelingPreparedFlowPackageLeavesAssociatedTemplatesUntouched()
+    {
+        WithPreparedFlowPackage((flow, associated) =>
+        {
+            Assert.True(flow.HasCreateTemplateSource);
+            Assert.IsType<FlowParam>(flow.CreateDefault());
+            flow.ClearCreateTemplateSource();
+
+            Assert.False(flow.HasCreateTemplateSource);
+            Assert.Equal(0, associated.CreateCount);
+        });
+    }
+
+    [Fact]
+    public void ConfirmedFlowPackageCreatesAssociationsBeforeSavingTheFlow()
+    {
+        WithPreparedFlowPackage((flow, associated) =>
+        {
+            Assert.Equal(0, associated.CreateCount);
+            Assert.False(flow.TryCreateTemplate("Imported flow", out string message));
+            Assert.Contains("Simulated flow storage failure", message);
+            Assert.Equal(1, associated.CreateCount);
+            Assert.Contains("Package camera", associated.GetTemplateNames());
+        });
+    }
+
+    [Theory]
+    [InlineData("", null)]
+    [InlineData("Existing flow", "Existing flow")]
+    public void InvalidOrDuplicateFlowNameLeavesAssociatedTemplatesUntouched(string requestedName, string? existingName)
+    {
+        WithPreparedFlowPackage((flow, associated) =>
+        {
+            Assert.False(flow.TryCreateTemplate(requestedName, out _));
+            Assert.Equal(0, associated.CreateCount);
+        }, existingName);
+    }
+
+    [Fact]
+    public void ReplacingPreparedFlowPackageDoesNotImportItsAssociatedTemplates()
+    {
+        WithPreparedFlowPackage((flow, associated) =>
+        {
+            Assert.True(flow.ApplyCreatePreset("flow-camera-capture"));
+            Assert.False(flow.TryCreateTemplate("Other flow", out _));
+            Assert.Equal(0, associated.CreateCount);
+        });
+    }
+
+    private static void WithPreparedFlowPackage(Action<TemplateFlow, FakeAssociatedTemplate> test, string? existingName = null)
+    {
+        StaTest.Run(() =>
+        {
+            string path = Path.Combine(Path.GetTempPath(), $"colorvision-staged-flow-{Guid.NewGuid():N}.cvflow");
+            string databasePath = path + ".db";
+            var registrations = TemplateControl.ITemplateNames.ToArray();
+            var previousFlows = TemplateFlow.Params;
+            try
+            {
+                TemplateFlow.Params = [];
+                using (var db = new SqlSugarClient(new ConnectionConfig
+                {
+                    ConnectionString = $"Data Source={databasePath};Pooling=False",
+                    DbType = SqlSugar.DbType.Sqlite,
+                    IsAutoCloseConnection = true,
+                }))
+                {
+                    db.CodeFirst.InitTables<ModMasterModel>();
+                    if (existingName != null)
+                        db.Insertable(new ModMasterModel { Name = existingName, Pid = 11, TenantId = 0, IsDelete = false }).ExecuteCommand();
+                }
+                var associated = new FakeAssociatedTemplate();
+                const string templateCode = "test-staged-flow-associated";
+                TemplateControl.ITemplateNames.Add(templateCode, associated);
+                FlowPackageTemplate dependency = PackageTemplate("Package camera", exposure: 80);
+                dependency.TemplateCode = templateCode;
+                var manifest = new FlowPackageManifest { Templates = [dependency] };
+                FlowPackageHelper.ExportFlowPackage(path, "Packaged flow", CreateTemplateReferenceFlow(dependency.TemplateName), manifest);
+
+                int openCalls = 0;
+                var flow = new TemplateFlow(new LocalFlowTemplateStorage(new LocalTemplateStore(databasePath)),
+                    () => true, () => ++openCalls == 1 ? new SqlSugarClient(new ConnectionConfig
+                    {
+                        ConnectionString = $"Data Source={databasePath};Mode=ReadOnly;Pooling=False",
+                        DbType = SqlSugar.DbType.Sqlite,
+                        IsAutoCloseConnection = true,
+                    }) : throw new InvalidOperationException("Simulated flow storage failure"));
+                Assert.True(flow.ImportFile(path));
+                test(flow, associated);
+            }
+            finally
+            {
+                File.Delete(path);
+                File.Delete(databasePath);
+                TemplateFlow.Params = previousFlows;
+                TemplateControl.ITemplateNames.Clear();
+                foreach (var registration in registrations)
+                    TemplateControl.ITemplateNames.Add(registration.Key, registration.Value);
+            }
+        });
+    }
+
     [Fact]
     public void TemplateExtractionAndReplacementAcceptVersionOne()
     {
@@ -92,6 +255,49 @@ public class FlowPackageCompatibilityTests
                     ],
                     StringComparer.OrdinalIgnoreCase)
                     .Count());
+        });
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void LegacyLocalCameraExposureTemplateIsImportedOnlyWhenStillReferenced(bool sharedWithOtherNode)
+    {
+        StaTest.Run(() =>
+        {
+            const string templateName = "retired-exposure-template";
+            using var editor = new STNodeEditor();
+            var node = new LegacyLocalCameraNode { AutoExpTempName = templateName };
+            node.Create();
+            editor.Nodes.Add(node);
+            if (sharedWithOtherNode)
+            {
+                var otherNode = new AlternateTemplateReferenceNode { AutoExpTempName = templateName };
+                otherNode.Create();
+                editor.Nodes.Add(otherNode);
+            }
+            byte[] flowData = editor.GetCanvasData();
+            Assert.Equal(sharedWithOtherNode, FlowPackageHelper.ExtractTemplateNames(flowData).Contains(templateName));
+            if (!sharedWithOtherNode)
+                Assert.Empty(FlowPackageHelper.CollectTemplatesForExport("Legacy camera flow", flowData).Templates);
+
+            var manifest = new FlowPackageManifest
+            {
+                FlowName = "Legacy camera flow",
+                Templates =
+                {
+                    new FlowPackageTemplate { TemplateName = templateName, TemplateCode = "auto_exp_time", SerializedContent = "{}" }
+                }
+            };
+            string path = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N") + ".cvflow");
+            try
+            {
+                FlowPackageHelper.ExportFlowPackage(path, manifest.FlowName, flowData, manifest);
+                var imported = FlowPackageHelper.ImportFlowPackage(path);
+                Assert.Equal(flowData, imported.StnData);
+                Assert.Equal(sharedWithOtherNode, imported.Manifest!.Templates.Any(template => template.TemplateName == templateName));
+            }
+            finally { File.Delete(path); }
         });
     }
 
@@ -940,6 +1146,13 @@ public class FlowPackageCompatibilityTests
 
         [STNodeProperty("Legacy calibration", "Camera-owned reference")]
         public string CaliTempName { get; set; } = string.Empty;
+    }
+
+    [STNodeSerializationModel("ColorVision.Engine.dll|ColorVision.Engine.FlowProcessing.Nodes.LocalCameraNode")]
+    private sealed class LegacyLocalCameraNode : STNode
+    {
+        [STNodeProperty("Auto exposure", "Template reference")]
+        public string AutoExpTempName { get; set; } = string.Empty;
     }
 
     private sealed class AlternateTemplateReferenceNode : STNode

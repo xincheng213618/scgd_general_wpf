@@ -525,7 +525,7 @@ namespace ColorVision.Copilot
             var agentDefaults = input.AgentDefaults.Clone();
             if (plan.ModelContextWindowTokensOverride.HasValue)
                 agentDefaults.ContextWindowTokens = plan.ModelContextWindowTokensOverride.Value;
-            return new CopilotAgentRequest
+            var request = new CopilotAgentRequest
             {
                 ConversationId = (input.ConversationId ?? string.Empty).Trim(),
                 TaskId = (input.TaskId ?? string.Empty).Trim(),
@@ -631,6 +631,8 @@ namespace ColorVision.Copilot
                     : Array.Empty<string>(),
                 RequiresDelegatedWorkspaceEvidence = plan.RequiresDelegatedWorkspaceEvidence,
             };
+            request.GetEffectiveWorkspaceReviewTarget();
+            return request;
         }
 
         public static IReadOnlyList<string> BuildSearchRootPaths(

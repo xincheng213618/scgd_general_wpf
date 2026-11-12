@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.Json;
@@ -51,17 +52,20 @@ namespace ColorVision.Copilot
             if (!statusResult.Success)
                 return Failure(statusResult);
 
-            var diffInput = new CopilotAgentToolInput
-            {
-                Arguments = new Dictionary<string, object?> { ["scope"] = scope },
-            };
-            var diffResult = await _inspectDiff(request, diffInput, cancellationToken);
-            if (!diffResult.Success)
-                return Failure(diffResult);
-
             try
             {
                 using var statusJson = ParseResultJson(statusResult.Content);
+                var repositoryRoot = NormalizeRepositoryRoot(ReadString(statusJson.RootElement, "repository_root"));
+                if (repositoryRoot.Length == 0)
+                    return new CopilotLocalGitDiffResult(false, "Git 状态检查没有返回有效的仓库目录。");
+                var diffInput = new CopilotAgentToolInput
+                {
+                    Path = repositoryRoot,
+                    Arguments = new Dictionary<string, object?> { ["scope"] = scope },
+                };
+                var diffResult = await _inspectDiff(request, diffInput, cancellationToken);
+                if (!diffResult.Success)
+                    return Failure(diffResult);
                 if (!CopilotGitDiffResultProtocol.TryParse(diffResult.Content, out var diffSnapshot, out var diffError))
                 {
                     return new CopilotLocalGitDiffResult(
@@ -69,6 +73,8 @@ namespace ColorVision.Copilot
                         "Git 返回了无法解析的本地快照："
                             + CopilotUserFacingErrorFormatter.Sanitize(diffError));
                 }
+                if (!string.Equals(repositoryRoot, NormalizeRepositoryRoot(diffSnapshot.RepositoryRoot), StringComparison.OrdinalIgnoreCase))
+                    return new CopilotLocalGitDiffResult(false, "Git 状态与补丁不再属于同一仓库，未生成混合快照。请重新执行 /diff。");
 
                 return new CopilotLocalGitDiffResult(true, FormatReport(statusJson.RootElement, diffSnapshot));
             }
@@ -102,24 +108,42 @@ namespace ColorVision.Copilot
             var builder = new StringBuilder();
             var repositoryRoot = ReadString(status, "repository_root");
             var branch = ReadString(status, "branch");
+            var statusComplete = ReadBool(status, "status_complete");
+            var countPrefix = statusComplete ? string.Empty : "至少 ";
             builder.AppendLine("仓库：" + (string.IsNullOrWhiteSpace(repositoryRoot) ? "未知" : repositoryRoot));
             builder.AppendLine("分支：" + (string.IsNullOrWhiteSpace(branch) ? "detached / unborn HEAD" : branch));
             builder.Append("变更：")
-                .Append(ReadInt(status, "changed_path_count")).Append(" 个路径 · ")
-                .Append(ReadInt(status, "staged_count")).Append(" 已暂存 · ")
-                .Append(ReadInt(status, "unstaged_count")).Append(" 未暂存 · ")
-                .Append(ReadInt(status, "untracked_count")).Append(" 未跟踪 · ")
-                .Append(ReadInt(status, "conflict_count")).AppendLine(" 冲突");
+                .Append(countPrefix).Append(ReadInt(status, "changed_path_count")).Append(" 个路径 · ")
+                .Append(countPrefix).Append(ReadInt(status, "staged_count")).Append(" 已暂存 · ")
+                .Append(countPrefix).Append(ReadInt(status, "unstaged_count")).Append(" 未暂存 · ")
+                .Append(countPrefix).Append(ReadInt(status, "untracked_count")).Append(" 未跟踪 · ")
+                .Append(countPrefix).Append(ReadInt(status, "conflict_count")).AppendLine(" 冲突");
 
             AppendUntrackedFiles(builder, status);
             AppendDiffSections(builder, diff);
 
+            if (!statusComplete)
+                builder.AppendLine().Append("…Git 状态输出不完整，以上计数仅为已观察到的下界。");
             if (ReadBool(status, "entries_truncated"))
                 builder.AppendLine().Append("…文件状态列表已截断。");
             if (diff.PatchTruncated)
                 builder.AppendLine().Append("…补丁内容已按本地显示上限截断，可运行 /review 进行更完整的审查。");
 
             return builder.ToString().TrimEnd();
+        }
+
+        private static string NormalizeRepositoryRoot(string path)
+        {
+            try
+            {
+                return Path.IsPathFullyQualified(path)
+                    ? Path.TrimEndingDirectorySeparator(Path.GetFullPath(path))
+                    : string.Empty;
+            }
+            catch (Exception exception) when (exception is ArgumentException or NotSupportedException or PathTooLongException)
+            {
+                return string.Empty;
+            }
         }
 
         private static void AppendUntrackedFiles(StringBuilder builder, JsonElement status)

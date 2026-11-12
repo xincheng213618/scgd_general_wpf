@@ -96,6 +96,15 @@ namespace ColorVision.Database
         }
         protected virtual void OnPreQuery() => PreQuery?.Invoke(this, EventArgs.Empty);
         protected virtual void OnQueryCompleted(QueryCompletedEventArgs e) => QueryCompleted?.Invoke(this, e);
+
+        internal static void AddResults<T>(IList<T> target, IEnumerable<T> rows)
+        {
+            if (target is IQueryResultList<T> batch)
+                batch.AddRange(rows);
+            else
+                foreach (T row in rows) target.Add(row);
+        }
+
         protected void OnConditionsChanged(int conditionCount)
         {
             ConditionCount = conditionCount;
@@ -232,10 +241,7 @@ namespace ColorVision.Database
             var dbList = QueryConfig.Count > 0 ? query.Take(QueryConfig.Count).ToList() : query.ToList();
 
             ViewResluts.Clear();
-            foreach (var dbItem in dbList)
-            {
-                ViewResluts.Add(dbItem);
-            }
+            AddResults(ViewResluts, dbList);
 
 
             _stopwatch.Stop();
@@ -269,6 +275,8 @@ namespace ColorVision.Database
     {
         public ISugarQueryable<T> Query { get; set; } = null!;
         public IList<T1> ViewResluts { get; set; }
+        /// <summary>Optionally converts one query's ordered, limited rows together instead of invoking the row converter.</summary>
+        public Func<IReadOnlyList<T>, IEnumerable<T1>>? BatchConverter { get; set; }
         internal ObservableCollection<QueryCondition> QueryConditions { get; } = new();
         Func<T, T1> Converter { get; set; }
         private bool _sessionStateLoaded;
@@ -383,10 +391,8 @@ namespace ColorVision.Database
             var dbList = QueryConfig.Count > 0 ? query.Take(QueryConfig.Count).ToList() : query.ToList();
 
             ViewResluts.Clear();
-            foreach (var dbItem in dbList)
-            {
-                ViewResluts.Add(Converter(dbItem));
-            }
+            IEnumerable<T1> converted = BatchConverter is { } batchConverter ? batchConverter(dbList) : dbList.Select(Converter);
+            AddResults(ViewResluts, converted);
 
             _stopwatch.Stop();
             OnQueryCompleted(new QueryCompletedEventArgs() { Sql =Sql,ResultCount = dbList.Count,Elapsed = _stopwatch.Elapsed });

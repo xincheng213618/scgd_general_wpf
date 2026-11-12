@@ -2,10 +2,10 @@
 knowledge_id: "ui.image-editor"
 knowledge_type: "topic"
 status: "current"
-summary: "图像/视频打开、绘图撤销、叠加层、3D 与快照输出边界，区分渲染图、当前源像素和重读源文件的模型导出。"
-aliases: ["打开图像","看图","视频模式","标注","撤销标注","自由套索","闭合多边形","图形旋转","绘图连续模式","绘图锁定","紧凑属性条","CompactInspector","保存原图还是截图","图像叠加层为什么没有显示","像素数字显示","PixelValueOverlay","ColorVision.ImageEditor","ImageView","OpenImage","ImageSourceLoaded","ExternalRenderCompleted","TIFF","Gray32Float","ImageViewSnapshot","AlgorithmOverlayManager","3D高度图","3D模型查看器","ModelViewer3D","ModelViewer3DControl","ModelViewer3DModel","Window3D","HeightMapPixelSampler","ImageGroupNavigation","VideoPlaybackSession","ImageSnapshotCapture","ImageDrawingPresentation","ImageContextMenuComposer"]
-code_paths: ["UI/ColorVision.ImageEditor/Tif/ImageAcquisitionRecord.cs", "UI/ColorVision.ImageEditor/Output/ImageSnapshotMetadata.cs", "UI/ColorVision.ImageEditor/Cie","UI/ColorVision.ImageEditor/Zoombox.cs","UI/ColorVision.ImageEditor/EditorTools/FullScreen","UI/ColorVision.ImageEditor/ImageView.xaml","UI/ColorVision.ImageEditor/ImageView.xaml.cs","UI/ColorVision.ImageEditor/ImageViewLifecycleEventArgs.cs","UI/ColorVision.ImageEditor/ImageView.Snapshot.cs","UI/ColorVision.ImageEditor/EditorContext.cs","UI/ColorVision.ImageEditor/EditorToolFactory.cs","UI/ColorVision.ImageEditor/CompactInspector.cs","UI/ColorVision.ImageEditor/DrawCanvas.cs","UI/ColorVision.ImageEditor/Draw/SelectEditorVisual.cs","UI/ColorVision.ImageEditor/Draw/RegionProperties.cs","UI/ColorVision.ImageEditor/Draw/Polygon","UI/ColorVision.ImageEditor/Draw/Circle/CircleManager.cs","UI/ColorVision.ImageEditor/Draw/Rectangle/RectangleManager.cs","UI/ColorVision.ImageEditor/Draw/Annotations/AnnotationMapper.cs","UI/ColorVision.ImageEditor/Tif","UI/ColorVision.ImageEditor/Video/VideoOpen.cs","UI/ColorVision.ImageEditor/Algorithms/AlgorithmOverlayManager.cs","UI/ColorVision.ImageEditor/Algorithms/AlgorithmOverlayRenderer.cs","UI/ColorVision.ImageEditor/ColorVision.ImageEditor.csproj","Engine/ColorVision.Engine/Media/CVRawOpen.cs","UI/ColorVision.ImageEditor/README.md","UI/ColorVision.ImageEditor/EditorTools/ThreeD","UI/ColorVision.ImageEditor/PixelValueOverlay.cs","UI/ColorVision.ImageEditor/Settings/DefaultImageViewDisplayConfig.cs","UI/ColorVision.ImageEditor/Settings/ImageViewSettingsWindow.xaml.cs","UI/ColorVision.ImageEditor/Settings/ImageViewSettingsEntry.cs","Engine/ColorVision.Engine/Media/CvcieDisplaySettingProvider.cs","UI/ColorVision.ImageEditor/ImageEditorSession.cs","UI/ColorVision.ImageEditor/Documents","UI/ColorVision.ImageEditor/Presentation","UI/ColorVision.ImageEditor/Output","UI/ColorVision.ImageEditor/Navigation","UI/ColorVision.ImageEditor/Draw/ImageDrawingPresentation.cs","UI/ColorVision.ImageEditor/Tooling/ImageContextMenuComposer.cs","UI/ColorVision.ImageEditor/Video/VideoPlaybackSession.cs","UI/ColorVision.ImageEditor/Video/VideoPlaybackBackend.cs","UI/ColorVision.ImageEditor/Video/VideoAudioTrack.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/ScreenshotParameterTests.cs", "Test/ColorVision.UI.Tests/ImageOpenCompletionContractTests.cs","Test/ColorVision.UI.Tests/CvcieDisplaySettingsTests.cs","Test/ColorVision.UI.Tests/AlgorithmOverlayManagerTests.cs","Test/ColorVision.UI.Tests/EraseManagerUndoTests.cs","Test/ColorVision.UI.Tests/DrawShapeCompatibilityTests.cs","Test/ColorVision.UI.Tests/VideoLifecycleTests.cs","Test/ColorVision.UI.Tests/HeightMapPixelSamplerTests.cs","Test/ColorVision.UI.Tests/ModelViewer3DStateTests.cs","Test/ColorVision.UI.Tests/ModelViewer3DModelTests.cs","Test/ColorVision.UI.Tests/HeightMapDxGeometryTests.cs","Test/ColorVision.UI.Tests/HeightMapOrbitCameraTests.cs","Test/ColorVision.UI.Tests/HeightMapModelExporterTests.cs","Test/ColorVision.UI.Tests/ImageGroupNavigationTests.cs","Test/ColorVision.UI.Tests/VideoPlaybackSessionTests.cs"]
+summary: "图像打开、绘图撤销、叠加层、3D 与快照输出边界，区分渲染图、当前源像素和重读源文件的模型导出。"
+aliases: ["打开图像","看图","标注","撤销标注","自由套索","闭合多边形","图形旋转","绘图连续模式","绘图锁定","紧凑属性条","CompactInspector","保存原图还是截图","图像叠加层为什么没有显示","像素数字显示","PixelValueOverlay","ColorVision.ImageEditor","ImageView","OpenImage","ImageSourceLoaded","ExternalRenderCompleted","TIFF","Gray32Float","ImageViewSnapshot","AlgorithmOverlayManager","3D高度图","3D模型查看器","ModelViewer3D","ModelViewer3DControl","ModelViewer3DModel","Window3D","HeightMapPixelSampler","ImageGroupNavigation","ImageSnapshotCapture","ImageDrawingPresentation","ImageContextMenuComposer"]
+code_paths: ["UI/ColorVision.ImageEditor/Tif/ImageAcquisitionRecord.cs", "UI/ColorVision.ImageEditor/Output/ImageSnapshotMetadata.cs", "UI/ColorVision.ImageEditor/Cie","UI/ColorVision.ImageEditor/Zoombox.cs","UI/ColorVision.ImageEditor/EditorTools/FullScreen","UI/ColorVision.ImageEditor/ImageView.xaml","UI/ColorVision.ImageEditor/ImageView.xaml.cs","UI/ColorVision.ImageEditor/ImageViewLifecycleEventArgs.cs","UI/ColorVision.ImageEditor/ImageView.Snapshot.cs","UI/ColorVision.ImageEditor/EditorContext.cs","UI/ColorVision.ImageEditor/EditorToolFactory.cs","UI/ColorVision.ImageEditor/CompactInspector.cs","UI/ColorVision.ImageEditor/DrawCanvas.cs","UI/ColorVision.ImageEditor/Draw/SelectEditorVisual.cs","UI/ColorVision.ImageEditor/Draw/RegionProperties.cs","UI/ColorVision.ImageEditor/Draw/Polygon","UI/ColorVision.ImageEditor/Draw/Circle/CircleManager.cs","UI/ColorVision.ImageEditor/Draw/Rectangle/RectangleManager.cs","UI/ColorVision.ImageEditor/Draw/Annotations/AnnotationMapper.cs","UI/ColorVision.ImageEditor/Tif","UI/ColorVision.ImageEditor/Algorithms/AlgorithmOverlayManager.cs","UI/ColorVision.ImageEditor/Algorithms/AlgorithmOverlayRenderer.cs","UI/ColorVision.ImageEditor/ColorVision.ImageEditor.csproj","Engine/ColorVision.Engine/Media/CVRawOpen.cs","UI/ColorVision.ImageEditor/README.md","UI/ColorVision.ImageEditor/EditorTools/ThreeD","UI/ColorVision.ImageEditor/PixelValueOverlay.cs","UI/ColorVision.ImageEditor/Settings/DefaultImageViewDisplayConfig.cs","UI/ColorVision.ImageEditor/Settings/ImageViewSettingsWindow.xaml.cs","UI/ColorVision.ImageEditor/Settings/ImageViewSettingsEntry.cs","Engine/ColorVision.Engine/Media/CvcieDisplaySettingProvider.cs","UI/ColorVision.ImageEditor/ImageEditorSession.cs","UI/ColorVision.ImageEditor/Documents","UI/ColorVision.ImageEditor/Presentation","UI/ColorVision.ImageEditor/Output","UI/ColorVision.ImageEditor/Navigation","UI/ColorVision.ImageEditor/Draw/ImageDrawingPresentation.cs","UI/ColorVision.ImageEditor/Tooling/ImageContextMenuComposer.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/ScreenshotParameterTests.cs", "Test/ColorVision.UI.Tests/ImageOpenCompletionContractTests.cs","Test/ColorVision.UI.Tests/CvcieDisplaySettingsTests.cs","Test/ColorVision.UI.Tests/AlgorithmOverlayManagerTests.cs","Test/ColorVision.UI.Tests/EraseManagerUndoTests.cs","Test/ColorVision.UI.Tests/DrawShapeCompatibilityTests.cs","Test/ColorVision.UI.Tests/HeightMapPixelSamplerTests.cs","Test/ColorVision.UI.Tests/ModelViewer3DStateTests.cs","Test/ColorVision.UI.Tests/ModelViewer3DModelTests.cs","Test/ColorVision.UI.Tests/HeightMapDxGeometryTests.cs","Test/ColorVision.UI.Tests/HeightMapOrbitCameraTests.cs","Test/ColorVision.UI.Tests/HeightMapModelExporterTests.cs","Test/ColorVision.UI.Tests/ImageGroupNavigationTests.cs"]
 related: ["ui.discovery","ui.image-editor-context","ui.property-grid","engine.results","algorithms.platform","algorithms.local-native-analysis","operations.first-run","ui.publishing"]
 ---
 
@@ -31,6 +31,8 @@ related: ["ui.discovery","ui.image-editor-context","ui.property-grid","engine.re
 
 图像右侧的 CIE 入口打开紧凑的独立窗口，继续接收图像取样点。默认窗口为 860 × 680 DIP，色度图占主体；模式切换与坐标系、缩放、适应和显示选项浮在图上。画布留白与图表底色统一为白色，不以黑色边带填补宽高比差异，也不拉伸坐标轴比例。
 
+悬停读数取指针所在的像素格。RGB48 和 RGBA64 按原始 16 位 RGB 通道推算相对 sRGB/D65 色度，标记颜色按 8 位显示。
+
 “色度图”支持 CIE 1931 xy、CIE 1960 uv 和 CIE 1976 u′v′。默认显示 sRGB 与 D65，其余色域、白点、色温线和日光轨迹可从“显示选项”展开；展开时图表避让面板。当前点的 xy 常驻左下角，展开可看 uv、u′v′、CCT 和 Duv；图上游标读数显示在右下角。显示选项只控制参考叠加，不改变图像测量结果。
 
 “色域计算”保留 RGB xy 输入、多标准选择、自动计算和原 CSV 导出。右侧参数可收起，底部结果可折叠，结果表按内容增高并在上限内滚动；表格优先显示标准、面积比、样品面积和标准面积，RGB 坐标保留在输入区与完整导出中。这里计算的是 xy 平面三角形面积比，不是相交覆盖率，也不是三维色域体积。
@@ -41,19 +43,22 @@ related: ["ui.discovery","ui.image-editor-context","ui.property-grid","engine.re
 
 ## 打开图像与完成信号
 
-`ImageView.OpenImageCore` 按扩展名查询 `IEditorToolFactory.IImageOpens`，不是只凭文件后缀就能保证解码成功：
+工具栏、Ctrl+O 和右键“打开”共用 `ApplicationCommands.Open`，宿主可接管选图流程。右键“在文件夹中选择文件”按当前 `Config.FilePath` 在资源管理器定位磁盘文件；内存帧、路径为空或文件不存在时禁用。
+
+`ImageView` 按扩展名查询 `IEditorToolFactory.IImageOpens`。扩展名命中后仍须完成解码。
 
 | 输入 | 打开器与限制 |
 | --- | --- |
 | BMP、JPG/JPEG、PNG、WEBP、ICO、GIF | `Tif/CommonImageOpen.cs` 声明这些扩展名，使用 WPF 解码；具体编码、像素格式及本机解码能力仍需满足，GIF 被识别不代表提供动画播放 |
 | TIF/TIFF | `Tif/Opentif.cs`；默认 `ConvertGray32FloatToGray16OnOpen=true`，Gray32Float 测量图可被映射为 Gray16 显示代理，不能把显示值或随后导出的底图当成原始浮点样本 |
 | CVRAW/CVCIE | 由已加载的 `Engine/ColorVision.Engine/Media/CVRawOpen.cs` 扩展注册，不是 ImageEditor 自带的普通位图解码器 |
-| 视频文件 | 走 `Video/VideoOpen.cs`，与静态图像的打开、播放和释放语义不同，见下文 |
+
+未登记的格式在图像组、文档、元数据和格式能力变更前被拒绝。主工作区中的图像控件将不属于自身的文件拖放交给宿主，视频文件通过统一打开路由使用系统关联应用。独立图像窗口提示格式不支持并保留当前图像。
 
 `SetImageSource` 对 `WriteableBitmap` 接受 Bgr32、Bgra32、Pbgra32、Bgr24、Rgb24、Indexed8、Rgb48、Gray8、Gray16、Gray32Float；其他格式会报不支持。不要将“打开器识别扩展名”扩大成“该格式的任意位深、通道或编码均支持”。
 
 - 普通同路径打开会跳过重载；“还原原图”在源文件仍存在且有打开器时强制重走文件打开流程，不是撤销栈中的一次图元操作，也不是恢复任意历史像素。
-- 普通图片和 TIFF 打开器异步解码，以取消令牌、请求编号和当前文件路径拒绝过期结果。只有无 ColorVision 参数、未冻结且尺寸、格式兼容的旧位图可以原位复用；从视频或实时冻结帧切入时创建新的可写位图，保留旧帧像素。调用 `OpenImage` 返回不等于像素已经就绪；静态加载可等待 `ImageOpenCompletion`，解码失败通过 Task 返回。格式读取和可选色度能力在正式发布前完成交接，详见[上下文契约](./image-editor-context.md)。
+- 静态图片在后台探测和解码，期间保留已发布的像素。换图和清空取消旧请求，拒绝迟到结果。`ImageOpenCompletion` 报告文件缺失和解码失败。失败或取消后可直接重开同一路径。格式读取和可选色度能力在发布前交接，详见[上下文契约](./image-editor-context.md)。
 - `ImageSourceLoaded` 表示当前像素源已载入或更新；`ExternalRenderCompleted` 只在外部渲染者显式通知时发出。该事件也可携带 `Succeeded=false` 或空 `Source`，发生事件不等于渲染成功。需要导出结果叠图时，核对成功标志、当前任务 `Context` 与 `ImageRevision`，再在视图 Dispatcher 捕获；不能仅凭像素加载或事件名称判断标注已完整。快照 API 自身不会等待或校验外部渲染状态，事件字段见 `ImageViewLifecycleEventArgs.cs`。
 
 CVCIE 的全局默认显示在“图像设置 → 文件打开 → CVCIE”中配置，由 Engine 的 `CvcieDisplayConfig` 持久化，`CvcieDisplaySettingProvider` 注册到设置窗口，加载 Engine 后无需先打开 CVCIE 即可设置；开启“启用真彩显示”后新打开的 CVCIE 默认采用 XYZ 真彩 sRGB，关闭后默认原图；亮度可选择自动适配或固定参考白。图层下拉框允许临时切换当前图片，不改全局开关。XYZ 转换与原图/Y 灰度回退也由 Engine 提供，异常只记日志，详见 [CV 文件的显示与校正边界](../engine-components/ColorVision.FileIO.md)。
@@ -93,9 +98,11 @@ CVCIE 的全局默认显示在“图像设置 → 文件打开 → CVCIE”中�
 多边形默认在 Enter 完成时闭合，也可点击起点附近完成；至少需要三个顶点。关闭工具的“闭合”选项可保留折线，对已有多边形可在属性或右键菜单切换“闭合区域”。自由套索按住鼠标拖动采集轮廓，松开时自动闭合，Esc 取消；它生成同一种多边形对象。注释往返保存 `IsClosed` 和 `Rotation`。这些封闭图形的 CVCIE 计算及传统节点边界见 [CVCIE POI](../engine-components/cvcie-results.md)。
 画布右键由整个 `Zoombox` 承接，`ImageContextMenuComposer` 按当前绘图和扩展贡献构建菜单：命中支持上下文操作的图元时优先显示对象菜单；没有图像、绘图模式未命中图元或对象没有专用动作时回退到标准图像菜单，至少保留打开图像等入口，不显示空菜单壳。
 
+矩形右键的裁剪、复制和替换使用同一片源像素。裁剪按底图在画布上的显示尺寸换算矩形边界，覆盖与选区相交的边缘像素，并裁到图像边界内。另存时仅在新图像编码完成后替换目标文件，编码失败会保留已有文件。
+
 `DrawCanvas` 的撤销/重做只覆盖登记到 `ActionCommand` 的操作；加入新命令会清空 redo，清空画布会清空两栈。不能把换图、任意像素处理或外部保存都视为可撤销。橡皮擦多对象删除是一笔撤销事务；临时框选图形不进入撤销历史。
 
-注释由 `AnnotationMapper` 映射圆、矩形、文本、线、多边形和 Bézier 曲线。未知图元导出时可能跳过，不能承诺任意自定义图元完整往返；新增类型需补映射和坐标往返验证。注释 JSON 不等于像素图，也不等于客户结果记录。
+注释由 `AnnotationMapper` 映射圆、矩形、文本、线、多边形和 Bézier 曲线。导入先验证文件并准备新图元，成功后整批替换当前注释，可用一次撤销恢复。文件必须包含 `Items` 数组，旧文件可省略 V1 版本和图像像素坐标字段。未知图元导出时可能跳过，新增类型需补映射和坐标往返验证。注释 JSON 不包含源像素和客户结果记录。
 
 ## 保存前分清输出语义
 
@@ -103,7 +110,7 @@ CVCIE 的全局默认显示在“图像设置 → 文件打开 → CVCIE”中�
 
 `ImageView.Snapshot.cs` 保留公开输出入口，捕获由 `Output/ImageSnapshotCapture` 负责，编码由 `Output/ImageSnapshotEncoder` 负责。`ImageViewSnapshot` 携带可独立消费的冻结源或缓冲租约及绘图快照；后台编码不再持有整个视图，也不改变文档源或当前显示。
 
-普通 Save、捕获后的位图保存和后台 rendered 输出携带采集参数、相机信息及校正摘要；PNG 使用 `ColorVision` tEXt，JPEG 使用说明元数据。捕获时将参数复制为独立 JSON，后续换图、参数变化或关闭视图不影响已捕获记录。截图保持 8 位/通道渲染语义，不额外保存原图；源采集尺寸/位深与 `renderedOutput` 的输出尺寸/像素格式分别记录。截图参数固定为 `pixelRole=display`，省略 `calibration`、像素哈希、绑定布局和测量通道，重新打开只读展示这些记录，不启用测量。新增相机信息投影到 `ColorVision.Camera.*`，不覆盖参与标尺配置匹配的 EXIF `CameraModel`/`CameraManufacturer`。后台 source 分支继续只保存当前基准像素，不继承此 rendered 记录或重放资格；客户导出的文件选择、顺序、名称、压缩选项及释放契约不因此变化。
+普通 Save、捕获后的位图保存和后台 rendered 输出携带采集参数、相机信息及校正摘要。PNG 使用 `ColorVision` tEXt，JPEG 使用说明元数据。换图等待中或失败后，只要仍显示旧图，截图沿用该图的来源记录和 DPI。捕获后的记录独立于视图。即时截图按画布和 DPI 换算像素尺寸；后台截图按源像素尺寸及所选比例输出，底图和叠加层一起缩放。截图按 8 位/通道渲染，源采集尺寸和位深与 `renderedOutput` 分开记录。截图使用 `pixelRole=display`，省略校正系数、像素哈希、绑定布局和测量通道，重开只供查看记录。采集相机信息投影到 `ColorVision.Camera.*`，标尺继续读取 EXIF `CameraModel` 和 `CameraManufacturer`。后台 source 分支仅保存基准像素。
 
 | 操作或 API | 实际输出 |
 | --- | --- |
@@ -126,6 +133,8 @@ CVCIE 的全局默认显示在“图像设置 → 文件打开 → CVCIE”中�
 
 图像右键仍使用两个算法外层入口：Algorithms 显示为“图像处理”，AlgorithmsCall 显示为“分析测量”。图像处理内部依次为灰度与色彩、滤波与增强、阈值与形态学、几何变换与校正，批量执行算法保留在该入口内。分析测量内部依次为定位与几何、视场与畸变、清晰度与频域、色彩与套色、缺陷与鬼影、灰度与统计、双目与视区。
 
+批量图像处理的“添加文件夹”可取消，扫描完成后统一加入列表。递归扫描跳过目录链接和联接，避免把所选范围外的目录加入批次。批量图片和分析报告与本批次其他源文件重名时追加编号。允许覆盖已有输出时，目录链接与联接按实际位置处理，选中文件的符号链接目标也受保护。
+
 菜单以测量用途命名：十字中心与倾角、发光区域定位、灯珠定位、视场角测量（FOV）、点阵畸变测量、九点畸变测量和鬼影检测（Ghost）。十字中心与倾角排在定位与几何首位，十字 RGB 分离测量归入色彩与套色。AlgorithmMenuGroups 统一 Catalog 与独立分析工具的分组；Catalog 的组内 Order 直接参与排序，不重新压缩序号，避免与独立工具的顺序冲突。菜单兼容 ID、算法 ID、参数及结果协议保持稳定。
 
 标准图像右键菜单及 Catalog 菜单文案支持简体中文、英文和繁体中文，按应用界面语言读取资源；Catalog 的交互条目显式声明资源键，第三方条目仍保留自身显示名称的回退语义。“适应窗口”保持长宽比完整显示图像；“另存快照”沿用上面的渲染 PNG 输出。缩放插值子菜单按不同数值列出默认、双线性、Fant 和最近邻四项，WPF 的 Linear/LowQuality、Fant/HighQuality 别名不产生重复项；修改标签不改变枚举值、选择状态或命令。
@@ -133,19 +142,6 @@ CVCIE 的全局默认显示在“图像设置 → 文件打开 → CVCIE”中�
 统一算法菜单由当前 Runtime 能力和 provider 可用性决定；有 Descriptor 或源码不等于默认可执行。查询 Blob、轮廓、亚像素边缘、拟合、FFT、摩尔纹等能力时，先核对[统一算法平台](../../02-developer-guide/core-concepts/image-algorithm-platform-v1.md)的发布门禁，再读对应专题的输入约束与预览/提交/导出边界。[本地 Native 分析](../algorithms/local-native-analysis.md)等直接入口不自动受这套门禁控制。工具构造、刷新与临时 ROI 见[编辑器上下文](./image-editor-context.md)。不能依据实现文件存在就构造一个产品菜单，也不能假设关闭算法窗口必然恢复原图。
 
 CIE 在同一个窗口提供 **色度图 / 色域计算 / 样品与色差**，多样品、色差、色域覆盖与导出契约见 [CIE 色度与样品分析](./cie-analysis.md)。选中样品可直接设为色域 R、G 或 B；实测 XYZ、RGB 推算和仅色坐标分别处理。
-
-## 视频模式
-
-`VideoOpen` 声明 MP4、AVI、MKV、MOV、WMV、FLV、WEBM；原生打开失败会返回，后缀命中不是编解码保证。打开成功读取首帧，不自动播放。`VideoOpen` 负责文件元数据、播放控件和图像接入，`VideoPlaybackSession` 负责原生句柄、回调帧寿命、播放状态与独立音轨；`IVideoPlaybackBackend`、`IVideoAudioTrack` 提供有界验证接缝，不要求打开器持有 native 生命周期细节。
-
-首帧复制并冻结后通过 `SetImageSource` 建立文档，其余帧交给共用 `ImageStreamPresentation`，沿[连续帧契约](./image-editor-context.md#连续帧显示)完成原图/伪彩显示。工具提供播放/暂停、跳转、0.25x 到 4x 的离散倍速选项、预览缩放和静音：
-
-- 跳转在拖动完成或点击滑块后提交，不是逐帧拖动预览；停止/结束会暂停并 seek 到起点，但不保证暂停状态立即重读和显示首帧。
-- 预览缩放调用原生视频 resize，等待后续帧应用，区别于画布 Zoom；UI 忙时会丢弃新帧，不能承诺高分辨率或任意倍速稳定满帧。
-- 音频由独立 WPF `MediaPlayer` 播放，静音和同步修正有实现；不能承诺每个文件都有音轨、所有编码可播或严格音画同步。
-- 自动隐藏只调整播放工具栏透明度，不折叠布局。换文件、`Clear`、打开器停用及 `Dispose` 触发 `VideoOpen.Close`，释放原生句柄、音频、定时器和事件，并仅重置属于该视频的流；单纯控件 `Unloaded` 不能替代释放。
-
-播放器以 handle generation 拒绝关闭/重开后的回调，即使 native 重用了相同句柄值也不能接纳旧回调。跳转另推进 timeline 和流 `SessionId`，拒绝已排队的旧帧及状态；同一播放器后续回调仍可继续交付。UI 交付期间最多保留一个待交付 native 帧，繁忙时新帧立即释放；交付给打开器的是同步回调期借用，关闭重入时也要等借用结束才释放。该解码队列与显示处理器的一在途/一最新等待帧是两个不同边界。
 
 ## 3D：亮度高度图与模型场景
 
@@ -174,7 +170,7 @@ CIE 在同一个窗口提供 **色度图 / 色域计算 / 样品与色差**，�
 
 - `ModelViewer3DControl` / `ModelViewer3DModel` 是 SharpDX/Assimp 的 OBJ/STL 模型查看链，支持场景树、可见性和隔离状态。线框由 `MeshNode.RenderWireframe` 控制，不能照旧说明把它写成 `FindEdges` 加边圆柱，或把高度曲面的 WPF 工具链直接套过来。
 - 界面 `ExportModel_Click` 调用 `ModelViewer3DLoader.ExportAsync(model.FilePath, ...)`，导出时重新由 `Importer` 读取源文件，再交给 `Exporter`，不是序列化当前显示场景。因此隐藏/隔离、线框与窗口变换不构成模型导出内容；源文件后续变化也可能影响输出。`ModelViewer3DModel.ExportToFile()` 则是另一条对已有场景操作的 API，不能因其存在就推断界面使用了它。
-- 模型导出会写入用户选择的目标；格式支持、材质/纹理、配套文件和输出保真须按实际导出器及样本核验，不能笼统承诺 OBJ/STL 都完整保留材质和纹理。导出接口返回成功不替代重新导入检查。
+- OBJ、材质和纹理全部写完后成组落位。落位失败会回滚已替换的配套文件；回滚失败时保留可用备份并报告路径。导出保真以实际样本重新导入为准。
 
 相关确定性测试为 `HeightMapPixelSamplerTests`、`HeightMapDxGeometryTests`、`HeightMapOrbitCameraTests`、`HeightMapModelExporterTests`，分别覆盖显示采样契约、网格/透明洞/射线命中、取景和按时间平滑，以及 OBJ/STL 流式导出、取消和 Assimp 重导入。`ModelViewer3DStateTests` 和 `ModelViewer3DModelTests` 继续覆盖模型可见性/加载状态及重读源文件导出。这些检查不覆盖所有格式、显卡驱动或低配机器，真实性能与交互体验仍需在目标显卡、目标样本和实际桌面上验证。
 
@@ -188,7 +184,6 @@ CIE 在同一个窗口提供 **色度图 / 色域计算 / 样品与色差**，�
 | 保存缺标注、位深变化或只生成一个文件 | 捕获是否成功、使用哪种输出分支、外部渲染是否完成、源像素格式和双输出异常 |
 | 伪彩/滤镜、CIE 或 3D 显示异常 | 当前输入类型及工具配置，再查 shader、colormap、CIE 数据/图片资源或 3D 依赖；视觉效果不构成测量正确性证明 |
 | 放大后没有像素数字 | `PixelValueOverlay.TryGetRenderState` 要求有效且支持的位图格式、画布采用 `NearestNeighbor`、单像素显示宽高达到 `PixelValueOverlayMinPixelCellSize`、可见区域非空且像素数不超过 `PixelValueOverlayMaxVisiblePixelCount`；仅放大不保证满足全部条件，阈值归 `DefaultImageViewDisplayConfig` |
-| 关闭视频后仍占资源 | `Config.Cleared → VideoOpen.Close`、打开器停用与 `VideoPlaybackSession.Close` 是否执行；核对 handle generation、timeline 和帧借用释放，不用反复启动播放器代替定位 |
 
 发布资源与依赖以 `ColorVision.ImageEditor.csproj` 和[UI 模块交付](./publishing.md)为准；本页不另列一份发布流程，也不把 DLL 存在当作工具或 native 功能通过。
 
@@ -196,6 +191,6 @@ CIE 在同一个窗口提供 **色度图 / 色域计算 / 样品与色差**，�
 
 真实打开器、图层切换、旧源租约、TIFF 解码像素和输入文件只读性需要使用获授权的样本单独验证。普通位图通道选择只改变显示；可重放 CVRAW 及内嵌有效参数的 PNG/TIFF 共享测量能力，XYZ 层切换可更换当前显示/算法输入，但保留原始测量样本和内容身份。普通 Save 和后台快照的 source 分支仍遵守上表的位图输出语义，不承诺恢复原始测量样本；测量原图导出使用独立的内容快照入口。
 
-元数据中的测试分别涉及图像完成/过期请求、overlay 生命周期、快照与源像素输出、擦除撤销、注释类型兼容、工具栏重复装配及上述 3D 子契约。`ImageGroupNavigationTests` 检查纯状态去重、跟随和事件顺序；`VideoPlaybackSessionTests` 以替代 backend/audio 检查首帧借用、播放控制、重开/跳转过期回调、UI 丢帧及关闭重入释放，`VideoLifecycleTests` 检查打开器清理。它们不证明所有真实视频编码和音画同步。
+元数据中的测试分别涉及图像完成/过期请求、overlay 生命周期、快照与源像素输出、擦除撤销、注释类型兼容、工具栏重复装配及上述 3D 子契约。`ImageGroupNavigationTests` 检查纯状态去重、跟随和事件顺序。`ImageOpenCompletionContractTests` 还覆盖拒绝格式时的文档、图像组与格式能力。
 
-测试文件存在不是已经运行：新增自定义图元往返、未知输入格式、真实视频编码/音频、全部绘图工具、CIE、3D 及 native 资源仍须按改动在获授权环境验证。最小检查使用非敏感本地样本；另存、导入替换和真实运行须分别确认副作用，不连接设备来验证纯图像交互。
+测试文件存在不是已经运行：新增自定义图元往返、未知输入格式、全部绘图工具、CIE、3D 及 native 资源仍须按改动在获授权环境验证。最小检查使用非敏感本地样本；另存、导入替换和真实运行须分别确认副作用，不连接设备来验证纯图像交互。

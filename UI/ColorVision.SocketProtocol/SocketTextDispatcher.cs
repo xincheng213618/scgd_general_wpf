@@ -16,18 +16,11 @@ namespace ColorVision.SocketProtocol
 
         public SocketTextDispatcher()
         {
-            foreach (var assembly in AssemblyService.Instance.GetAssemblies())
+            foreach (var type in AssemblyService.Instance.GetImplementationTypes(typeof(ISocketTextDispatcher)))
             {
-                foreach (var type in assembly.GetTypes().Where(t => typeof(ISocketTextDispatcher).IsAssignableFrom(t) && !t.IsAbstract))
+                if (Activator.CreateInstance(type) is ISocketTextDispatcher handler)
                 {
-                    {
-                        var displayNameAttr = type.GetCustomAttribute<DisplayNameAttribute>();
-                        var eventName = displayNameAttr?.DisplayName ?? type.Name;
-                        if (Activator.CreateInstance(type) is ISocketTextDispatcher handler)
-                        {
-                            _handlers.Add(handler);
-                        }
-                    }
+                    _handlers.Add(handler);
                 }
             }
         }

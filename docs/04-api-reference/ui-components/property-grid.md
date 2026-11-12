@@ -46,9 +46,13 @@ public RelayCommand RefreshDeviceIdCommand { get; set; }
 
 生成器拥有传入容器的内容，重新生成会替换旧按钮，宿主不要在容器中预置业务按钮。保留原有公开方法签名，现有调用端自动使用统一样式；Flow 节点检查器的 `compact: true` 保持平铺的小按钮工具栏，不加入分类卡片。
 
+相机、光谱仪和校正模块的“编辑显示配置”统一归入“设备与连接”，分组顺序为 `0`，与修改配置等设备设置入口放在一起。
+
 `DeviceCommandMetadataTests` 核对上述设备类型的分类和中文标签，不构建设备或操作硬件。
 
 ## 设置行呈现
+
+属性编辑器生成控件时按需读取当前应用主题资源。启动时缺少样式的字段，可在资源加载后重新打开面板恢复。新生成的控件使用最新的样式。
 
 `SettingsPropertyPresenter.Create` 为设置页面复用现有 PropertyEditor，保留原编辑器绑定、验证和 `PropertyVisibility`，将名称/说明放在左侧、控件放在右侧。支持属性白名单及 `Display` 本地化元数据，后者优先于旧 `DisplayName / Description`；本地化 `Display.GroupName`（没有时回退 `Category`）生成组标题。单控件的外边距和最小宽度由行容器统一处理，避免下拉框边框被固定列裁剪。
 
@@ -94,7 +98,7 @@ Engine 模板和量程编辑器可直接构造，不需要代理注册。公共 
 | 3 | `PropertyEditorRegistry.Find(property.PropertyType)` | 无类型注册时尝试嵌套对象 |
 | 4 | 可生成的嵌套对象属性面板 | 无有效控件则不生成该行 |
 
-通用 `TextboxPropertiesEditor` 对可空数值等文本属性将空文本映射为 `null`，允许清空可选参数；非可空字段继续使用其类型转换与校验规则。
+未指定编辑器类型时按属性类型匹配已注册的编辑器，包括只写了无参 `[PropertyEditorType]` 的属性。布尔值使用开关，枚举使用下拉框，文本和数值使用带类型绑定的文本框。无参标注仍可指定绑定更新时机。`TextboxPropertiesEditor` 将可空数值的空文本映射为 `null`，并支持通过 `DisplayFormat.DataFormatString` 指定显示格式。
 
 类型注册内部先找精确类型，再按注册顺序寻找第一个命中的谓词。谓词抛异常会记录警告并跳过该谓词。`TryGenerateEditor` 在构造或 `GenProperties` 失败时记录错误并返回空，让外层按上述路径继续；**不保证任意未知类型或所有编辑器失败后都会出现文本框**。
 
@@ -138,10 +142,12 @@ Engine 模板和量程编辑器可直接构造，不需要代理注册。公共 
 | 动作 | 实际行为与边界 |
 | --- | --- |
 | 编辑字段 | 通常按绑定触发条件写入 `EditableObject`；`Immediate` 下它就是原对象 |
-| 确定 | 先 `Commit()`，再触发 `Submitted`，最后关闭；是否落盘或保存模板取决于宿主订阅 |
+| 确定 | 先触发可取消的 `Submitting`，允许后才 `Commit()`、触发 `Submitted` 并关闭；是否落盘或保存模板取决于宿主订阅 |
 | 取消／关闭 | `Cancel_Click` 只关闭窗口，未调用恢复；`Immediate` 下按钮显示“关闭”，已写入原对象的值不会因此撤销 |
 | 重置 | `Reset()` 将打开时的初始快照复制到当前编辑对象；`Immediate` 下同样会修改原对象 |
 | 恢复默认 | `ResetToDefaults()` 用可构造的默认对象覆盖当前编辑对象；不是从配置备份文件恢复 |
+
+宿主可在 `Submitting` 中设置 `PropertyEditorSubmittingEventArgs.Cancel=true`，并通过 `ErrorMessage` 在窗口内显示拒绝原因。取消时保留窗口和工作副本，不调用 `Commit()`、`Submitted` 或宿主保存动作；没有订阅时保留原有提交流程。既有构造函数、`Submitted` 和兼容别名 `Submited` 的调用形状不变。该边界可用于提交前重新验证操作授权；`Immediate` 模式已经直接写入的值仍不因此回滚。
 
 编辑器只负责把控件值写入传入的 `obj`。判断“配置保存失败”需分别核对字段绑定、会话提交和宿主持久化，不能把界面值变化或确定按钮当成文件／数据库已保存的证据。[软件配置](./configuration.md)与[设备资源配置](../../01-user-guide/devices/configuration.md)有不同的保存/发布边界。只读诊断不要用改值、重置或恢复默认来探测设备配置；实际验证应使用隔离对象，并经授权检查保存后重开与宿主副作用。
 

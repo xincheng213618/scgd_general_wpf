@@ -9,6 +9,10 @@ namespace ColorVision.Solution.Explorer
 {
     public partial class SolutionExplorer
     {
+        private sealed record SavedConfig(string DiskContent, string ModelContent);
+        private readonly object _configSaveSync = new();
+        private SavedConfig _savedConfig = null!;
+
         internal bool IsPathWithinSolution(string fullPath)
         {
             string relativePath = Path.GetRelativePath(DirectoryInfo.FullName, fullPath);
@@ -156,8 +160,41 @@ namespace ColorVision.Solution.Explorer
         {
             if (Config == null)
                 return;
-            SolutionConfigStore.Save(ConfigFileInfo.FullName, Config);
+            CommitConfig(Config);
         }
+
+        private void CommitConfig(SolutionConfig config)
+        {
+            lock (_configSaveSync)
+            {
+                string content = SolutionConfigStore.Save(ConfigFileInfo.FullName, config);
+                _savedConfig = new(content, content);
+                Config = config;
+            }
+        }
+
+        private bool TrySaveAutomaticConfig(bool preserveConflict)
+        {
+            lock (_configSaveSync)
+            {
+                string content = SolutionConfigStore.Serialize(Config);
+                if (string.Equals(content, _savedConfig.ModelContent, StringComparison.Ordinal)) return true;
+                if (SolutionConfigStore.TrySaveCurrent(ConfigFileInfo.FullName, content, _savedConfig.DiskContent))
+                {
+                    _savedConfig = new(content, content);
+                    return true;
+                }
+
+                if (preserveConflict)
+                {
+                    string draftPath = SolutionConfigStore.SaveConflictCopy(ConfigFileInfo.FullName, content);
+                    Logger.Warn($"磁盘上的解决方案配置已更改或移除，退出时的草稿已保存在 {draftPath}。");
+                }
+                return false;
+            }
+        }
+
+        private void SaveConfigOnExit() => TrySaveAutomaticConfig(preserveConflict: true);
 
         private bool SaveConfigWithUserFeedback()
         {
@@ -275,7 +312,9 @@ namespace ColorVision.Solution.Explorer
             if (_disposed)
                 return;
             _disposed = true;
+            Interlocked.Increment(ref _rootPopulationVersion);
             Disposing?.Invoke(this, EventArgs.Empty);
+            _pendingReloadExpansion = null;
             ProjectProviderRegistry.ProvidersChanged -= ProjectProviderRegistry_ProvidersChanged;
             AppDomain.CurrentDomain.ProcessExit -= _processExitHandler;
             _fileSystemWatcher?.Dispose();

@@ -13,7 +13,7 @@ using System.Threading;
 
 namespace ColorVision.Engine.Services.Devices.Camera.Local
 {
-    internal sealed class LocalCameraCaptureRequest
+    internal sealed record LocalCameraCaptureRequest
     {
         public required DeviceCamera Device { get; init; }
         public CameraRunParam? CameraParameters { get; init; }
@@ -21,8 +21,10 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
         public CVImageFlipMode FlipMode { get; init; } = CVImageFlipMode.None;
         public bool IsAutoExposure { get; init; }
         public string? AutoExposureConfiguration { get; init; }
+        public LocalAutoFocusSettings? AutoFocus { get; init; }
         public bool SaveFiles { get; init; }
         public bool AllowAcceleration { get; init; }
+        public CancellationToken Stop { get; init; }
     }
 
     internal sealed class LocalCameraCaptureResult
@@ -37,6 +39,9 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
 
     internal static class LocalCameraCaptureService
     {
+        internal delegate int RawFrameCapture(IntPtr handle, string captureJson, ref uint width, ref uint height,
+            ref uint sourceBpp, ref uint destinationBpp, ref uint channels, IntPtr raw, IntPtr cie);
+
         private static readonly SemaphoreSlim CaptureLock = new(1, 1);
         private static readonly (ImageChannelType ChannelType, int CfwPort)[] DefaultChannelOrder =
         {
@@ -51,26 +56,51 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             (ImageChannelType.Gray_Z, 2),
         };
 
-        public static LocalCameraCaptureResult Capture(LocalCameraCaptureRequest request)
+        public static LocalCameraCaptureResult Capture(LocalCameraCaptureRequest request, bool autoConnect = false)
         {
             ArgumentNullException.ThrowIfNull(request);
-            FlowNodeTiming.Run("WaitCamera", CaptureLock.Wait);
-            try
+            DeviceCamera device = request.Device;
+            object sessionLock = device.LocalCameraSession.SyncRoot;
+            while (true)
             {
-                lock (request.Device.LocalCameraSession.SyncRoot)
+                FlowNodeTiming.Run("WaitCamera", () => CaptureLock.Wait(request.Stop));
+                bool sessionEntered = false;
+                try
                 {
-                    request.Device.EnsureLocalMeasurementConnected(autoConnect: false);
-                    return FlowNodeTiming.Run("CapturePipeline", () => request.Device.LocalCameraSession.UseOpened(handle => CaptureCore(request, handle)));
+                    Monitor.TryEnter(sessionLock, ref sessionEntered);
+                    if (sessionEntered)
+                    {
+                        request.Stop.ThrowIfCancellationRequested();
+                        var captureChannels = GetChannelConfigs(device, device.Config.Channel == ImageChannel.Three ? 3 : 1);
+                        FlowNodeTiming.Run("ConnectCamera", () => device.EnsureLocalMeasurementConnected(autoConnect));
+                        request.Stop.ThrowIfCancellationRequested();
+                        return FlowNodeTiming.Run("CapturePipeline", () => device.LocalCameraSession.UseOpened(handle => CaptureCore(request, handle, captureChannels)));
+                    }
                 }
-            }
-            finally
-            {
-                CaptureLock.Release();
+                finally
+                {
+                    if (sessionEntered) Monitor.Exit(sessionLock);
+                    CaptureLock.Release();
+                }
+
+                // A manual operation owns only the session. Wait for it without blocking other cameras.
+                FlowNodeTiming.Run("WaitCameraSession", () => WaitForSession(sessionLock, request.Stop));
             }
         }
 
-        private static LocalCameraCaptureResult CaptureCore(LocalCameraCaptureRequest request, IntPtr cameraHandle)
+        private static void WaitForSession(object sessionLock, CancellationToken stop)
         {
+            stop.ThrowIfCancellationRequested();
+            // A Monitor cannot wait on a token, so check for cancellation between timed waits.
+            int timeout = stop.CanBeCanceled ? 50 : Timeout.Infinite;
+            while (!Monitor.TryEnter(sessionLock, timeout)) stop.ThrowIfCancellationRequested();
+            Monitor.Exit(sessionLock);
+        }
+
+        private static LocalCameraCaptureResult CaptureCore(LocalCameraCaptureRequest request, IntPtr cameraHandle,
+            IReadOnlyList<(ImageChannelType ChannelType, int CfwPort)> captureChannels)
+        {
+            request.Stop.ThrowIfCancellationRequested();
             LocalFrameMirrorService.ValidateFlipMode(request.FlipMode);
             DeviceCamera device = request.Device;
             if (device.LocalCameraSession.OpenedMode == TakeImageMode.Live)
@@ -95,17 +125,28 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             int saveTimeMs = 0;
             try
             {
-                int gainResult = FlowNodeTiming.Run("SetGain", () => cvCameraCSLib.CM_SetGain(cameraHandle, cameraParameters.Gain));
-                if (gainResult != cvErrorDefine.CV_ERR_SUCCESS) throw CreateNativeException("本地相机设置增益失败", gainResult);
-                if (!device.Config.IsExpThree)
+                if (request.IsAutoExposure)
                 {
-                    int exposureResult = FlowNodeTiming.Run("SetExposure", () => cvCameraCSLib.CM_SetExpTime(cameraHandle, cameraParameters.ExpTime));
-                    if (exposureResult != cvErrorDefine.CV_ERR_SUCCESS) throw CreateNativeException("本地相机设置曝光失败", exposureResult);
+                    FlowNodeTiming.Run("AutoExposure", () => LocalCameraAutoExposure.Measure(device, cameraHandle, cameraParameters, request.AutoExposureConfiguration, captureChannels));
                 }
-
-                if (request.IsAutoExposure) FlowNodeTiming.Run("AutoExposure", () => LocalCameraAutoExposure.Measure(device, cameraHandle, cameraParameters, request.AutoExposureConfiguration));
-                else FlowNodeTiming.Skip("AutoExposure");
-                string captureJson = BuildRawCaptureJson(device, cameraParameters, false);
+                else
+                {
+                    int gainResult = FlowNodeTiming.Run("SetGain", () => cvCameraCSLib.CM_SetGain(cameraHandle, cameraParameters.Gain));
+                    if (gainResult != cvErrorDefine.CV_ERR_SUCCESS) throw CreateNativeException("本地相机设置增益失败", gainResult);
+                    if (!device.Config.IsExpThree)
+                    {
+                        int exposureResult = FlowNodeTiming.Run("SetExposure", () => cvCameraCSLib.CM_SetExpTime(cameraHandle, cameraParameters.ExpTime));
+                        if (exposureResult != cvErrorDefine.CV_ERR_SUCCESS) throw CreateNativeException("本地相机设置曝光失败", exposureResult);
+                    }
+                    FlowNodeTiming.Skip("AutoExposure");
+                }
+                if (request.AutoFocus is { } focus)
+                {
+                    float focusExposure = device.Config.IsExpThree ? cameraParameters.ExpTimeR : cameraParameters.ExpTime;
+                    FlowNodeTiming.Run("AutoFocus", () => device.LocalCameraSession.AutoFocus(focus, focusExposure, cameraParameters.Gain, request.Stop, includeVid: false));
+                    request.Stop.ThrowIfCancellationRequested();
+                }
+                string captureJson = BuildRawCaptureJson(device, cameraParameters, captureChannels);
                 uint width = 0, height = 0, sourceBpp = 0, channels = 0;
                 uint sourceInfoResult;
                 using (var sourceInfoStage = FlowNodeTiming.Measure("GetSourceFrameInfo"))
@@ -145,6 +186,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                     Acquisition = new ImageAcquisitionRecord
                     {
                         OpticalCenter = device.PhyCamera?.OpticalCenter,
+                        SensorRoi = device.LocalCameraSession.OpenedCalibrationRoi.ToAcquisitionRoi(),
                         Camera = new ImageCameraInformation
                         {
                             DeviceName = device.Config.Name, DeviceCode = device.Code,
@@ -166,29 +208,14 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                 using (LocalFlowFrameLease lease = frame.Acquire())
                 {
                     Stopwatch captureStopwatch = Stopwatch.StartNew();
-                    uint destinationBpp = 32;
                     // CM_GetFrame is retained for its CFW and averaging acquisition pipeline.
                     // Auto-exposure was resolved above so metadata and calibration use the actual exposure. BuildRawCaptureJson deliberately supplies no
                     // calibration items; all calibration runs once below on these buffers.
                     using var captureStage = FlowNodeTiming.Measure("CaptureFrame");
-                    int captureResult = cvCameraCSLib.CM_GetFrame(
-                        cameraHandle,
-                        captureJson,
-                        ref width,
-                        ref height,
-                        ref sourceBpp,
-                        ref destinationBpp,
-                        ref channels,
-                        lease.RawPointer,
-                        IntPtr.Zero);
+                    CaptureRawFrame(cameraHandle, captureJson, lease, cvCameraCSLib.CM_GetFrame, request.Stop);
                     captureStopwatch.Stop();
                     captureTimeMs = ToMilliseconds(captureStopwatch.ElapsedMilliseconds);
-                    if (captureResult != cvErrorDefine.CV_ERR_SUCCESS)
-                    {
-                        throw CreateNativeException("本地相机取图失败", captureResult);
-                    }
                     captureStage?.Complete();
-
                 }
 
                 if (calibrationFiles.Count > 0)
@@ -199,13 +226,14 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                         device.LocalCalibrationCacheManager,
                         calibrationFiles,
                         request.Calibration?.Name ?? string.Empty,
-                        LocalCalibrationRoi.Resolve(device.PhyCamera?.Config?.CameraCfg, frame.Metadata.Width, frame.Metadata.Height),
+                        LocalCalibrationRoi.ResolveForFrame(frame.Metadata, cameraConfig: null),
                         allowAcceleration: request.AllowAcceleration);
                     calibrationStopwatch.Stop();
                     calibrationTimeMs = ToMilliseconds(calibrationStopwatch.ElapsedMilliseconds);
                 }
                 else FlowNodeTiming.Skip("Calibration");
 
+                request.Stop.ThrowIfCancellationRequested();
                 if (request.SaveFiles)
                 {
                     Stopwatch saveStopwatch = Stopwatch.StartNew();
@@ -237,6 +265,22 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             }
         }
 
+        internal static void CaptureRawFrame(IntPtr cameraHandle, string captureJson, LocalFlowFrameLease lease, RawFrameCapture capture, CancellationToken stop = default)
+        {
+            LocalFrameMetadata metadata = lease.Metadata;
+            uint width = checked((uint)metadata.Width), height = checked((uint)metadata.Height);
+            uint sourceBpp = checked((uint)metadata.SourceBpp), channels = checked((uint)metadata.Channels);
+            uint destinationBpp = 32;
+            stop.ThrowIfCancellationRequested();
+            int result = capture(cameraHandle, captureJson, ref width, ref height, ref sourceBpp, ref destinationBpp, ref channels, lease.RawPointer, IntPtr.Zero);
+            stop.ThrowIfCancellationRequested();
+            if (result != cvErrorDefine.CV_ERR_SUCCESS) throw CreateNativeException("本地相机取图失败", result);
+            if (width != metadata.Width || height != metadata.Height || sourceBpp != metadata.SourceBpp || channels != metadata.Channels)
+            {
+                throw new InvalidOperationException($"本地相机返回的图像格式发生变化。预期 {metadata.Width}×{metadata.Height}、{metadata.SourceBpp} 位、{metadata.Channels} 通道，实际 {width}×{height}、{sourceBpp} 位、{channels} 通道。请重新连接相机。");
+            }
+        }
+
         private static CameraRunParam BuildDefaultCameraParameters(DeviceCamera device)
         {
             return new CameraRunParam
@@ -250,9 +294,10 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             };
         }
 
-        private static string BuildRawCaptureJson(DeviceCamera device, CameraRunParam cameraParameters, bool isAutoExposure)
+        private static string BuildRawCaptureJson(DeviceCamera device, CameraRunParam cameraParameters,
+            IReadOnlyList<(ImageChannelType ChannelType, int CfwPort)> channels)
         {
-            int channelCount = device.Config.Channel == ImageChannel.Three ? 3 : 1;
+            int channelCount = channels.Count;
             GetFrameParam param = new()
             {
                 channelCount = channelCount,
@@ -265,13 +310,12 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                 startBurst = 1,
                 endBurst = 3,
                 posBurst = 0,
-                autoExpFlag = isAutoExposure
+                autoExpFlag = false
             };
             // Keep packed color RAW in the SDK; null selects legacy split/merge
             // even when there are no calibration items. Other camera modes retain their existing path.
             if (channelCount == 3 && device.Config.CameraMode is CameraMode.BV_MODE or CameraMode.LVTOBV_MODE)
                 param.calibrationlist = new List<CalibrationItem>();
-            IReadOnlyList<(ImageChannelType ChannelType, int CfwPort)> channels = GetChannelConfigs(device, channelCount);
             float[] exposures = GetExposureValues(device, cameraParameters, channelCount);
             for (int index = 0; index < channelCount; index++)
             {
@@ -294,7 +338,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                 return ColorFrameChannelOrder;
             }
 
-            List<(ImageChannelType, int)> result = new(channelCount);
+            List<(ImageChannelType ChannelType, int CfwPort)> result = new(channelCount);
             if (device.Config.CFW.ChannelCfgs != null)
             {
                 foreach (var channel in device.Config.CFW.ChannelCfgs.Take(channelCount)) result.Add((channel.Chtype, channel.Cfwport));
@@ -304,6 +348,11 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                 foreach (var channel in device.PhyCamera.Config.CFW.ChannelCfgs.Take(channelCount - result.Count)) result.Add((channel.Chtype, channel.Cfwport));
             }
             while (result.Count < channelCount) result.Add(DefaultChannelOrder[Math.Min(result.Count, DefaultChannelOrder.Length - 1)]);
+
+            // CM_GetFrame can return capture success even when the native RAW copy skips a route missing X, Y or Z.
+            if (channelCount == 3 && (result.Select(channel => channel.ChannelType).Distinct().Count() != 3
+                || result.Any(channel => channel.ChannelType is not (ImageChannelType.Gray_X or ImageChannelType.Gray_Y or ImageChannelType.Gray_Z))))
+                throw new InvalidOperationException("本地三通道取图需要各一个 X、Y、Z 通道，请检查滤轮通道配置。");
             return result;
         }
 

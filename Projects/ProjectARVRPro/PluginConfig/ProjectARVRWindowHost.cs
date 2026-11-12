@@ -8,7 +8,7 @@ namespace ProjectARVRPro.PluginConfig
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(ProjectARVRWindowHost));
 
-        public static ARVRWindow ShowOrActivate()
+        internal static ARVRWindow GetOrCreate()
         {
             Application.Current.Dispatcher.VerifyAccess();
 
@@ -26,6 +26,13 @@ namespace ProjectARVRPro.PluginConfig
                         ProjectWindowInstance.WindowInstance = null!;
                 };
             }
+
+            return window;
+        }
+
+        public static ARVRWindow ShowOrActivate()
+        {
+            ARVRWindow window = GetOrCreate();
 
             if (window.WindowState == WindowState.Minimized)
             {

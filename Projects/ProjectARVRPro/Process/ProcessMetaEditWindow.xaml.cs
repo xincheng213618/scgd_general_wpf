@@ -8,6 +8,7 @@ using Newtonsoft.Json;
 using System.Collections.ObjectModel;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 
 namespace ProjectARVRPro.Process
 {
@@ -30,7 +31,8 @@ namespace ProjectARVRPro.Process
             bool isEnabled = true,
             bool showMetaFields = true,
             bool isEdit = false,
-            ProcessMetaEditTarget editTarget = ProcessMetaEditTarget.Choice)
+            ProcessMetaEditTarget editTarget = ProcessMetaEditTarget.Choice,
+            Func<string, bool>? isMetaNameTaken = null)
         {
             InitializeComponent();
             ColorVision.Themes.ThemeManagerExtensions.ApplyCaption(this);
@@ -44,17 +46,15 @@ namespace ProjectARVRPro.Process
                 isEnabled,
                 showMetaFields,
                 isEdit,
-                editTarget);
+                editTarget,
+                isMetaNameTaken);
             DataContext = _viewModel;
         }
 
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
             if (_viewModel.IsCreateBasicsPage && _viewModel.ShowMetaFields)
-            {
-                NameTextBox.Focus();
-                NameTextBox.SelectAll();
-            }
+                CreateTemplateSelector.MoveFocus(new TraversalRequest(FocusNavigationDirection.First));
 
             RefreshDraftConfigPanel();
         }
@@ -63,7 +63,7 @@ namespace ProjectARVRPro.Process
         {
             if (_viewModel.IsCreateBasicsPage)
             {
-                if (!ValidateNameAndTemplate())
+                if (!ValidateTemplate() || !ValidateName())
                     return;
 
                 _viewModel.GoToProcessPage();
@@ -83,13 +83,21 @@ namespace ProjectARVRPro.Process
             DialogResult = true;
         }
 
-        private bool ValidateNameAndTemplate() => ValidateName() && ValidateTemplate();
-
         private bool ValidateName()
         {
-            if (_viewModel.ShowMetaFields && string.IsNullOrWhiteSpace(MetaName))
+            if (!_viewModel.ShowMetaFields)
+                return true;
+
+            string name = MetaName;
+            if (name.Length == 0)
             {
                 MessageBox.Show(this, LocalizedText.Get("名称不能为空"), "ColorVision");
+                return false;
+            }
+
+            if (_viewModel.IsMetaNameTaken(name))
+            {
+                MessageBox.Show(this, LocalizedText.Get("名称重复"), "ColorVision");
                 return false;
             }
 
@@ -175,6 +183,8 @@ namespace ProjectARVRPro.Process
         private readonly ProcessTypeOption? _originalOption;
         private readonly IProcess? _originalProcess;
         private readonly ProcessMetaEditTarget _editTarget;
+        private readonly Func<string, bool>? _isMetaNameTaken;
+        private string? _suggestedMetaName;
 
         public ObservableCollection<TemplateModel<FlowParam>> VisibleTemplates { get; } = new();
         public ObservableCollection<string> Categories { get; } = new();
@@ -222,6 +232,18 @@ namespace ProjectARVRPro.Process
                     return;
 
                 _selectedTemplate = value;
+                if (!IsEditMode && ShowMetaFields && value?.Key is string templateName &&
+                    (string.IsNullOrWhiteSpace(MetaName) || MetaName == _suggestedMetaName))
+                {
+                    string baseName = templateName.Trim();
+                    string name = baseName;
+                    for (int suffix = 1; IsMetaNameTaken(name); suffix++)
+                        name = $"{baseName}（{suffix}）";
+
+                    _suggestedMetaName = name;
+                    MetaName = name;
+                }
+
                 OnPropertyChanged();
             }
         }
@@ -318,7 +340,7 @@ namespace ProjectARVRPro.Process
 
         public string PageTitle => CurrentPage switch
         {
-            ProcessMetaEditPage.CreateBasics => ShowMetaFields ? "填写名称并选择流程模板" : "选择流程模板",
+            ProcessMetaEditPage.CreateBasics => "选择流程模板",
             ProcessMetaEditPage.EditChoice => "选择要修改的内容",
             ProcessMetaEditPage.EditTemplate => "修改流程模板",
             ProcessMetaEditPage.Process => "选择处理类型",
@@ -357,21 +379,21 @@ namespace ProjectARVRPro.Process
             bool isEnabled,
             bool showMetaFields,
             bool isEdit,
-            ProcessMetaEditTarget editTarget)
+            ProcessMetaEditTarget editTarget,
+            Func<string, bool>? isMetaNameTaken = null)
         {
             IsEditMode = isEdit;
             ShowMetaFields = showMetaFields;
             _editTarget = editTarget;
+            _isMetaNameTaken = isMetaNameTaken;
             _allTemplates = templates.ToList();
             _allOptions = ProcessTypeCatalog.CreateOptions(processes);
 
             _metaName = metaName;
             _isEnabled = isEnabled;
-            _selectedTemplate = _allTemplates.FirstOrDefault(template => string.Equals(template.Key, flowTemplate, StringComparison.OrdinalIgnoreCase))
-                ?? (!isEdit && string.IsNullOrWhiteSpace(flowTemplate) ? _allTemplates.FirstOrDefault() : null);
-            _selectedOption = ProcessTypeCatalog.IsBlankProcess(process)
-                ? null
-                : _allOptions.FirstOrDefault(option => option.FullTypeName == process?.GetType().FullName);
+            SelectedTemplate = _allTemplates.FirstOrDefault(template => string.Equals(template.Key, flowTemplate, StringComparison.OrdinalIgnoreCase))
+                ?? (!isEdit && !showMetaFields && string.IsNullOrWhiteSpace(flowTemplate) ? _allTemplates.FirstOrDefault() : null);
+            _selectedOption = _allOptions.FirstOrDefault(option => option.FullTypeName == process?.GetType().FullName);
             _selectedProcessDraft = _selectedOption == null
                 ? null
                 : CreateProcessDraft(process ?? _selectedOption.Process);
@@ -383,6 +405,7 @@ namespace ProjectARVRPro.Process
             foreach (string category in new[]
                      {
                          ProcessTypeCatalog.ArvrCategory,
+                         ProcessTypeCatalog.BlankCategory,
                          ProcessTypeCatalog.AoiCategory,
                          ProcessTypeCatalog.DemuraCategory
                      })
@@ -404,6 +427,8 @@ namespace ProjectARVRPro.Process
                 }
                 : ProcessMetaEditPage.CreateBasics;
         }
+
+        public bool IsMetaNameTaken(string name) => _isMetaNameTaken?.Invoke(name) == true;
 
         public void GoToProcessPage()
         {

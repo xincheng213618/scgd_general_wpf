@@ -65,41 +65,20 @@ namespace ColorVision.Solution.Explorer
             if (_initialized) return;
             _initialized = true;
 
-            foreach (var assembly in AssemblyService.Instance.GetAssemblies())
+            foreach (var type in AssemblyService.Instance.GetImplementationTypes(typeof(INewItemTemplate)))
             {
-                foreach (var type in GetLoadableTypes(assembly))
-                {
-                    if (typeof(INewItemTemplate).IsAssignableFrom(type)
-                        && !type.IsInterface && !type.IsAbstract
-                        && type.GetCustomAttribute<NewItemTemplateAttribute>() != null)
-                    {
-                        try
-                        {
-                            var instance = (INewItemTemplate)Activator.CreateInstance(type)!;
-                            _templates.Add(instance);
-                        }
-                        catch
-                        {
-                            // Skip templates that fail to instantiate
-                        }
-                    }
-                }
-            }
-        }
+                if (type.GetCustomAttribute<NewItemTemplateAttribute>() == null)
+                    continue;
 
-        private static IEnumerable<Type> GetLoadableTypes(Assembly assembly)
-        {
-            try
-            {
-                return assembly.GetTypes();
-            }
-            catch (ReflectionTypeLoadException ex)
-            {
-                return ex.Types.Where(t => t != null)!;
-            }
-            catch
-            {
-                return Enumerable.Empty<Type>();
+                try
+                {
+                    var instance = (INewItemTemplate)Activator.CreateInstance(type)!;
+                    _templates.Add(instance);
+                }
+                catch
+                {
+                    // Skip templates that fail to instantiate
+                }
             }
         }
 

@@ -426,6 +426,9 @@ namespace ColorVision.Copilot
 
         public long ConsumedTokens { get; init; }
 
+        // What the request budget is measured against: ConsumedTokens with cached reads at their cost.
+        public long ChargedTokens { get; init; }
+
         public int ProviderCalls { get; init; }
 
         public int PeakEstimatedInputTokens { get; init; }

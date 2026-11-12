@@ -10,8 +10,6 @@
 #include <opencv2/geometry.hpp>
 #include <nlohmann/json.hpp>
 #include "../../Native/include/opencv_media_export.h"
-#include "../../Native/include/video_export.h"
-#include <atomic>
 #include <array>
 #include <chrono>
 #include <cmath>
@@ -27,7 +25,6 @@
 #include <sstream>
 #include <stdexcept>
 #include <string>
-#include <thread>
 #include <vector>
 
 #include "test_cuda_fusion.h"
@@ -52,9 +49,6 @@ bool RunFindCrossLocalSyntheticTests();
 bool RunGridDistortionV2Tests();
 int RunFindCrossLocalCvRawCommand(int argc, char* argv[]);
 bool ReadCIEFile(const std::string& filePath, CVCIEFile& fileInfo);
-
-static std::atomic<int> g_videoCallbackFrames{ 0 };
-static std::atomic<int> g_videoStatusPlaying{ 0 };
 
 std::filesystem::path findTestDataFile(const std::filesystem::path& relativePath)
 {
@@ -88,27 +82,6 @@ bool nearlyEqual(double actual, double expected, double tolerance)
     return std::isfinite(actual)
         && std::isfinite(expected)
         && std::abs(actual - expected) <= tolerance;
-}
-
-static void __stdcall smokeVideoFrameCallback(int, HImage* frame, int, int, void*)
-{
-    if (frame != nullptr && frame->pData != nullptr && frame->rows > 0 && frame->cols > 0) {
-        g_videoCallbackFrames.fetch_add(1);
-        CoTaskMemFree(frame->pData);
-        frame->pData = nullptr;
-    }
-}
-
-static void __stdcall smokeVideoStatusCallback(int, int status, void*)
-{
-    if (status == 1) {
-        g_videoStatusPlaying.fetch_add(1);
-    }
-}
-
-static int __cdecl smokeInitialFrameCallback(void* data, int rows, int cols, int channels)
-{
-    return data != nullptr && rows > 0 && cols > 0 && channels > 0 ? 0 : -1;
 }
 
 bool smokeHImageHelpersValidateLayoutAndOwnership()
@@ -194,23 +167,6 @@ bool smokeHImageHelpersValidateLayoutAndOwnership()
         && unsupportedRet == -4
         && unsupported.rows == 0
         && unsupported.pData == nullptr;
-}
-
-bool smokeCommonExportsFailSafely()
-{
-    SetInitialFrame(nullptr);
-    SetUpdateFrame(nullptr);
-
-    const bool nullVideoPathFails = ReadVideoTest(nullptr) == -1;
-
-    SetInitialFrame(smokeInitialFrameCallback);
-    const bool emptyVideoPathFails = ReadVideoTest("") == -1;
-
-    SetInitialFrame(nullptr);
-    SetUpdateFrame(nullptr);
-
-    return nullVideoPathFails
-        && emptyVideoPathFails;
 }
 
 // Helper function: create test image (bright area in center)
@@ -358,6 +314,29 @@ static cv::Mat createRobustLuminousFixture(
     image += noise;
     cv::max(image, 0.0, image);
     cv::min(image, 65535.0, image);
+    cv::Mat image16;
+    image.convertTo(image16, CV_16U);
+    return image16;
+}
+
+static cv::Mat createHaloLuminousFixture()
+{
+    cv::Mat image(1067, 1600, CV_32F);
+    for (int y = 0; y < image.rows; ++y) {
+        float* row = image.ptr<float>(y);
+        for (int x = 0; x < image.cols; ++x) {
+            const double haloX = (x - 810.0) / 145.0;
+            const double haloY = (y - 420.0) / 100.0;
+            double value = 100.0 + 6000.0 * std::exp(-0.5 * (haloX * haloX + haloY * haloY));
+            if (x >= 651 && x <= 930 && y >= 402 && y <= 668) {
+                const double horizontal = 0.10 + 0.90 * (x - 651.0) / 279.0;
+                const double vertical = 0.30 + 0.70 * (668.0 - y) / 266.0;
+                value += 40000.0 * horizontal * vertical;
+            }
+            row[x] = static_cast<float>(value);
+        }
+    }
+    cv::GaussianBlur(image, image, cv::Size(), 0.8);
     cv::Mat image16;
     image.convertTo(image16, CV_16U);
     return image16;
@@ -734,6 +713,20 @@ bool RunLuminousAreaV2SyntheticTests()
         cv::Point2f(119.0f, 558.0f)
     };
     double cleanConfidence = -1.0;
+
+    const std::array<cv::Point2f, 4> haloExpected{
+        cv::Point2f(651.0f, 402.0f), cv::Point2f(930.0f, 402.0f),
+        cv::Point2f(930.0f, 668.0f), cv::Point2f(651.0f, 668.0f)
+    };
+    json haloOutput;
+    int haloReturnCode = 0;
+    if (!callLuminousV2(createHaloLuminousFixture(), RoiRect{ 0, 0, 0, 0 }, json::object(),
+        haloOutput, haloReturnCode)
+        || !validateLuminousV2Success(haloOutput, haloExpected, 5.0)
+        || hasLuminousV2Warning(haloOutput, "InferredTopSide")) {
+        std::cerr << "V2 halo inference replaced a measured boundary: " << haloOutput.dump() << std::endl;
+        return false;
+    }
 
     for (bool severe : { false, true }) {
         cv::Mat image = createRobustLuminousFixture(920, 680, expected, severe);
@@ -2916,30 +2909,43 @@ bool smokeConvertImageHandlesStrideAndOwnedBuffer()
     himg.isDispose = false;
     himg.pData = padded.data();
 
-    unsigned char* output = nullptr;
-    int length = 0;
-    int scaleFactor = 0;
-    const int ret = M_ConvertImage(himg, &output, &length, &scaleFactor, width, height);
-
-    bool ok = false;
-    if (ret == 0 && output != nullptr && length == width * height && scaleFactor == 1) {
-        cv::Mat source(height, width, CV_8UC3, padded.data(), stride);
-        cv::Mat expected;
-        cv::cvtColor(source, expected, cv::COLOR_BGR2GRAY);
-
-        ok = true;
-        for (int y = 0; y < height && ok; ++y) {
-            for (int x = 0; x < width; ++x) {
-                if (output[y * width + x] != expected.at<unsigned char>(y, x)) {
-                    ok = false;
-                    break;
+    cv::Mat source(height, width, CV_8UC3, padded.data(), stride);
+    cv::Mat expected;
+    cv::cvtColor(source, expected, cv::COLOR_BGR2GRAY);
+    struct ScaleCase { int targetWidth; int targetHeight; int expectedScale; };
+    const ScaleCase cases[] = {
+        { 7, 5, 1 }, { 14, 10, 1 }, { 4, 2, 2 },
+        { 2, 2, 2 }, // Rounded scale 3: equidistant factors retain the smaller 2.
+        { 2, 1, 4 }, { 1, 1, 4 } // Rounded scale 6: retain 4 instead of 8.
+    };
+    for (const ScaleCase& test : cases) {
+        unsigned char* output = nullptr;
+        int length = 0;
+        int scaleFactor = 0;
+        const int ret = M_ConvertImage(himg, &output, &length, &scaleFactor, test.targetWidth, test.targetHeight);
+        const int expectedWidth = std::max(width / test.expectedScale, 1);
+        const int expectedHeight = std::max(height / test.expectedScale, 1);
+        bool ok = ret == 0 && output != nullptr
+            && length == expectedWidth * expectedHeight && scaleFactor == test.expectedScale;
+        if (ok) {
+            for (int y = 0; y < expectedHeight && ok; ++y) {
+                for (int x = 0; x < expectedWidth; ++x) {
+                    if (output[y * expectedWidth + x] != expected.at<unsigned char>(y * test.expectedScale, x * test.expectedScale)) {
+                        ok = false;
+                        break;
+                    }
                 }
             }
         }
+        M_FreeHImageData(output);
+        if (!ok) {
+            std::cerr << "M_ConvertImage scale/pixel contract failed for target "
+                << test.targetWidth << "x" << test.targetHeight << ": return=" << ret
+                << ", scale=" << scaleFactor << ", expected=" << test.expectedScale << std::endl;
+            return false;
+        }
     }
-
-    M_FreeHImageData(output);
-    return ok;
+    return true;
 }
 
 bool smokeConvertImageClearsOutputsOnFailure()
@@ -3261,107 +3267,6 @@ bool smokeHImageExportsClearOutputOnFailure()
         && stitchOut.rows == 0;
 }
 
-bool smokeVideoInvalidCalls()
-{
-    std::cout << "Video API invalid-call smoke..." << std::endl;
-
-    VideoInfo info{};
-    info.totalFrames = 123;
-    info.width = 456;
-    const bool openNullClearsInfo = M_VideoOpen(nullptr, &info) == -1
-        && info.totalFrames == 0
-        && info.width == 0;
-
-    HImage out{};
-    out.rows = 123;
-    out.cols = 456;
-    out.channels = 3;
-    out.depth = 8;
-    out.stride = 789;
-    out.isDispose = true;
-    out.pData = reinterpret_cast<unsigned char*>(static_cast<uintptr_t>(1));
-
-    const bool readInvalidClearsOutput = M_VideoReadFrame(-999, &out) == -1
-        && out.pData == nullptr
-        && out.rows == 0
-        && out.cols == 0
-        && out.stride == 0;
-
-    return openNullClearsInfo
-        && readInvalidClearsOutput
-        && M_VideoReadFrame(-999, nullptr) == -1
-        && M_VideoSeek(-999, 0) == -1
-        && M_VideoGetCurrentFrame(-999) == -1
-        && M_VideoSetPlaybackSpeed(-999, 1.0) == -1
-        && M_VideoSetResizeScale(-999, 1.0) == -1
-        && M_VideoPlay(-999, smokeVideoFrameCallback, smokeVideoStatusCallback, nullptr) == -1
-        && M_VideoPause(-999) == -1
-        && M_VideoClose(-999) == -1;
-}
-
-bool smokeVideoApiLifecycle()
-{
-    namespace fs = std::filesystem;
-    std::cout << "Video API lifecycle smoke..." << std::endl;
-
-    fs::path videoDir = fs::temp_directory_path() / "colorvision_native_video_smoke";
-    fs::create_directories(videoDir);
-
-    for (int i = 0; i < 10; ++i) {
-        cv::Mat frame(48, 64, CV_8UC3, cv::Scalar(20 + i * 10, 80, 180));
-        cv::putText(frame, std::to_string(i), cv::Point(8, 32), cv::FONT_HERSHEY_SIMPLEX, 0.7, cv::Scalar(255, 255, 255), 1);
-        char name[32];
-        std::snprintf(name, sizeof(name), "frame_%02d.png", i);
-        if (!cv::imwrite((videoDir / name).string(), frame)) {
-            fs::remove_all(videoDir);
-            return false;
-        }
-    }
-
-    fs::path videoPath = videoDir / "frame_%02d.png";
-    VideoInfo info{};
-    std::cout << "  open" << std::endl;
-    int handle = M_VideoOpen(videoPath.wstring().c_str(), &info);
-    if (handle <= 0) {
-        fs::remove_all(videoDir);
-        return false;
-    }
-
-    HImage frame{};
-    std::cout << "  read" << std::endl;
-    int readRet = M_VideoReadFrame(handle, &frame);
-    bool readOk = readRet == 0 && frame.pData != nullptr && frame.rows > 0 && frame.cols > 0 && frame.stride > 0;
-    if (frame.pData != nullptr) {
-        CoTaskMemFree(frame.pData);
-        frame.pData = nullptr;
-    }
-
-    g_videoCallbackFrames.store(0);
-    g_videoStatusPlaying.store(0);
-    std::cout << "  seek" << std::endl;
-    M_VideoSeek(handle, 0);
-    std::cout << "  play" << std::endl;
-    int playRet = M_VideoPlay(handle, smokeVideoFrameCallback, smokeVideoStatusCallback, nullptr);
-
-    for (int i = 0; i < 20 && g_videoCallbackFrames.load() == 0; ++i) {
-        std::this_thread::sleep_for(std::chrono::milliseconds(50));
-    }
-
-    std::cout << "  pause" << std::endl;
-    int pauseRet = M_VideoPause(handle);
-    std::cout << "  close" << std::endl;
-    int closeRet = M_VideoClose(handle);
-    std::cout << "  closed" << std::endl;
-    fs::remove_all(videoDir);
-
-    return readOk
-        && playRet == 0
-        && pauseRet == 0
-        && closeRet == 0
-        && g_videoStatusPlaying.load() > 0
-        && g_videoCallbackFrames.load() > 0;
-}
-
 using CudaFusionBatchFn = int(__cdecl*)(const char*, HImage*, int, int*);
 
 bool smokeCudaFusionBatchClearsOutputsOnFailure()
@@ -3662,8 +3567,97 @@ bool RunSfrAnalysisTests();
 
 bool RunBmwLocalizationTests();
 
+struct NativeTestCommand
+{
+    const char* name;
+    int minimumArgc;
+    int maximumArgc;
+    const char* arguments;
+};
+
+static constexpr NativeTestCommand nativeTestCommands[] = {
+    { "--help", 2, 2, "" },
+    { "--image-helpers-only", 2, 2, "" },
+    { "--bmw-only", 2, 2, "" },
+    { "--sfr-only", 2, 2, "" },
+    { "--grid-distortion-v2", 2, 2, "" },
+    { "--surface-defect-equivalence", 2, 2, "" },
+    { "--surface-defect-benchmark", 2, 2, "" },
+    { "--cuda-fusion-benchmark", 7, 9, "<dll> <width> <height> <images> <warm-iterations> [prewarm] [function]" },
+    { "--cuda-fusion-compare", 7, 8, "<reference-dll> <candidate-dll> <width> <height> <images> [channels]" },
+    { "--cuda-fusion-ab-benchmark", 8, 8, "<reference-dll> <candidate-dll> <width> <height> <images> <iterations>" },
+    { "--cuda-fusion-verify", 3, 3, "<candidate-dll>" },
+    { "--calibration-smoke", 2, 2, "" },
+    { "--calibration-cache-small-budget", 2, 2, "" },
+    { "--calibration-real-data", 3, 3, "<test-root>" },
+    { "--calibration-legacy-color", 5, 5, "<file.cvraw> <color-file> <legacy-dll>" },
+    { "--p2-only", 2, 2, "" },
+    { "--native-log", 2, 2, "" },
+    { "--pseudo-color", 2, 2, "" },
+    { "--luminous-v2-only", 2, 2, "" },
+    { "--find-cross-only", 2, 2, "" },
+    { "--find-cross-cvraw", 3, 13, "<file.cvraw> [x y width height [expectedCenterX expectedCenterY expectedRotation centerTolerance rotationTolerance minConfidence]]" },
+    { "--luminous-v2-cvraw", 3, 3, "<file.cvraw>" },
+    { "--luminous-v2-cvraw-reject", 3, 3, "<file.cvraw>" },
+    { "--distortion-p9-only", 2, 2, "" },
+};
+
+static void printNativeTestUsage(std::ostream& output)
+{
+    output << "Usage: opencv_helper_test.exe [image-path]" << std::endl
+        << "       opencv_helper_test.exe <mode> [mode arguments]" << std::endl
+        << "No arguments, or one image path, runs the default smoke suite." << std::endl
+        << "Modes:" << std::endl;
+    for (const NativeTestCommand& command : nativeTestCommands) {
+        output << "  " << command.name;
+        if (command.arguments[0] != '\0') {
+            output << " " << command.arguments;
+        }
+        output << std::endl;
+    }
+}
+
 int main(int argc, char* argv[])
 {
+    // Reject malformed invocations before any suite, image read, or device probe.
+    // Otherwise a mistyped focused mode can silently run the default suite and pass.
+    if (argc > 1) {
+        const std::string requested = argv[1];
+        if (requested.rfind("--", 0) == 0) {
+            const NativeTestCommand* selected = nullptr;
+            for (const NativeTestCommand& command : nativeTestCommands) {
+                if (requested == command.name) {
+                    selected = &command;
+                    break;
+                }
+            }
+            const bool validFindCrossCount = requested != "--find-cross-cvraw"
+                || argc == 3 || argc == 7 || argc == 13;
+            if (selected == nullptr || argc < selected->minimumArgc
+                || argc > selected->maximumArgc || !validFindCrossCount) {
+                std::cerr << (selected == nullptr ? "Unknown mode: " : "Invalid argument count for mode: ")
+                    << requested << std::endl;
+                printNativeTestUsage(std::cerr);
+                return 2;
+            }
+            if (requested == "--help") {
+                printNativeTestUsage(std::cout);
+                return 0;
+            }
+        }
+        else if (argc != 2) {
+            std::cerr << "The default suite accepts at most one image path." << std::endl;
+            printNativeTestUsage(std::cerr);
+            return 2;
+        }
+    }
+    if (argc == 2 && std::string(argv[1]) == "--image-helpers-only") {
+        const bool passed = smokeHImageHelpersValidateLayoutAndOwnership()
+            && smokeConvertImageHandlesStrideAndOwnedBuffer()
+            && smokeConvertImageClearsOutputsOnFailure();
+        std::cout << "Image helper focused tests: " << (passed ? "PASS" : "FAIL") << std::endl;
+        return passed ? 0 : 1;
+    }
     if (argc == 2 && std::string(argv[1]) == "--bmw-only") return RunBmwLocalizationTests() ? 0 : 1;
     if (argc == 2 && std::string(argv[1]) == "--sfr-only") {
         const bool diagnostics = RunSfrAnalysisTests();
@@ -3744,11 +3738,6 @@ int main(int argc, char* argv[])
 
     if (!smokeHImageHelpersValidateLayoutAndOwnership()) {
         std::cerr << "HImage helper validation test failed" << std::endl;
-        return 1;
-    }
-
-    if (!smokeCommonExportsFailSafely()) {
-        std::cerr << "Common legacy export failure guard test failed" << std::endl;
         return 1;
     }
 
@@ -3894,16 +3883,6 @@ int main(int argc, char* argv[])
 
     if (!smokeHImageExportsClearOutputOnFailure()) {
         std::cerr << "HImage export failure-clear test failed" << std::endl;
-        return 1;
-    }
-
-    if (!smokeVideoInvalidCalls()) {
-        std::cerr << "Video API invalid-call test failed" << std::endl;
-        return 1;
-    }
-
-    if (!smokeVideoApiLifecycle()) {
-        std::cerr << "Video API lifecycle test failed" << std::endl;
         return 1;
     }
 

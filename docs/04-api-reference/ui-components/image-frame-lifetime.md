@@ -5,7 +5,7 @@ status: "current"
 summary: "位图读取时借用原图内存与复制像素的区别、租约释放责任和缓存版本；原图修改须显式失效，复制HImage不延长租约。"
 aliases: ["图像帧租约", "图像内存所有权", "像素缓存失效", "借用图像", "复制图像", "SourceImageFrame", "ImageFrameStore", "ImageFrameLease", "HImageExtension", "ForHImage", "ToHImage", "NotifySourcePixelsChanged", "ImageDocument", "CommitSourcePixels"]
 code_paths: ["UI/ColorVision.Core/SourceImageFrame.cs", "UI/ColorVision.Core/HImage.cs", "UI/ColorVision.Core/HImageExtension.cs", "UI/ColorVision.ImageEditor/ImageView.xaml.cs", "UI/ColorVision.ImageEditor/Documents/ImageDocument.cs", "UI/ColorVision.ImageEditor/Presentation/ImageStreamPresentation.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/ImageFrameOwnerTests.cs","Test/ColorVision.UI.Tests/HImageExtensionCopyTests.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/ImageFrameOwnerTests.cs","Test/ColorVision.UI.Tests/HImageExtensionCopyTests.cs", "Test/ColorVision.UI.Tests/ImageDocumentSourceSnapshotTests.cs"]
 related: ["ui.core", "ui.image-editor", "engine.native-integration", "algorithms.platform"]
 ---
 
@@ -46,7 +46,9 @@ related: ["ui.core", "ui.image-editor", "engine.native-integration", "algorithms
 
 `ImageDocument.AcquireFrame` 只读取文档 `Source`（`ViewBitmapSource` 的转发目标）；文档无源时返回 null，即使画布上已有显示图，也不将显示结果当成计算输入。只有 `WriteableBitmap` 才以 `ToHImage()` 创建缓存副本，不重新读取磁盘。取帧入口会调度到文档所属 Dispatcher。旧租约因此是旧副本：原位图换掉或改写，不会自动改掉它的像素。矢量源可保留有效逻辑画布，但不会创建虚构像素帧。
 
-文档记录当前缓存帧对应的 `ImageSource` 对象；取帧时若发现该对象已被替换，会先推进 revision 并从当前源图重建缓存。兼容源 setter 仍只赋值，不在赋值时自动推进版本。生产者应使用 `CommitSourcePixels(source)` 显式完成源赋值和一次失效；原地改写同一张位图也可调用 `NotifySourcePixelsChanged()`。只改字节或调用 Core 位图复制工具不会由 store 自动识别为新版本。完整 `SetImageSource`、`Clear` 和像素提交如何联动算法会话、预览与 overlay，统一见[文档变更边界](../../02-developer-guide/core-concepts/image-algorithm-platform-v1.md#m0-执行与所有权规则)。
+`ImageDocument.CaptureSourceState()` 在文档 Dispatcher 同步源引用并返回 `(Source, Revision)`，使用同一个 `ImageFrameStore` 的 revision；它不复制像素，也不创建 native 帧。文档记录最近一次同步读取的源对象，再次捕获或取帧时若发现已记录的非空源被替换，会先推进 revision 并退役当前帧。失效回调可能嵌套捕获中间源并再次换源，因此返回前须重新核对当前绑定，必要时再次失效。`AcquireFrame()` 复用这一同步入口，再按需创建 native 缓存；只读取状态不会提前分配缓存。已取得的旧租约仍按引用计数保活原副本。
+
+兼容源 setter 仍只赋值，不在赋值时自动推进版本。生产者应使用 `CommitSourcePixels(source)` 显式完成源赋值和一次失效；原地改写同一张位图也可调用 `NotifySourcePixelsChanged()`。源状态捕获不是像素快照，也不延长位图像素的读取寿命；算法须继续复制私有 canonical 输入并核对捕获是否仍有效。只改字节或调用 Core 位图复制工具不会由 store 自动识别为新版本。完整 `SetImageSource`、`Clear` 和像素提交如何联动算法会话、预览与 overlay，统一见[文档变更边界](../../02-developer-guide/core-concepts/image-algorithm-platform-v1.md#m0-执行与所有权规则)。
 
 显示发布与像素提交独立：`ImagePresentation.Publish` / `RestoreSource` 不推进 source revision。连续帧先保存冻结源快照，再提交与处理结果对应的同一帧源；可变生产者缓冲不能作为后台长期读取输入。该有界处理队列、过期拒绝和失败回退见[连续帧显示](./image-editor-context.md#连续帧显示)，不能将冻结快照与借用 native 指针混为同一种所有权。
 
@@ -70,5 +72,7 @@ related: ["ui.core", "ui.image-editor", "engine.native-integration", "algorithms
 ## 测试证据与缺口
 
 `ImageFrameOwnerTests` 覆盖最后租约释放、重复 Dispose、借用副本、revision 失效、候选竞争、并发取得/失效/关闭。多数用例使用合成指针和释放计数，不解引用真实 native 图像；另有小 WPF 位图切换及原地修改用例，测试主动调用 Invalidate，不证明修改字节会被自动监听。
+
+`ImageDocumentSourceSnapshotTests` 用于检查不创建 native 缓存的源状态捕获、仅观察源状态后裸换源的版本失效、保有旧 native 租约时的退役读取，以及失效回调中嵌套捕获和再次换源的绑定核对；算法私有输入与会话启动拒绝重绑也在同一测试入口验证。测试关联不表示已经运行或通过。
 
 `HImageExtensionCopyTests` 覆盖冻结/可变位图复制、紧密/带 padding 的行、Bgr32 四通道校验。`ToHImage` 用例释放生成的拥有型副本；以 HImage 为输入的转换/更新用例使用借用描述符并自行清理缓冲，不验证拥有型输入的全部成功/失败释放分支。任意格式的色彩正确性、Dispatcher 故障、完整 ImageView 交互及实际 native 运行仍不在这些测试的覆盖范围内。

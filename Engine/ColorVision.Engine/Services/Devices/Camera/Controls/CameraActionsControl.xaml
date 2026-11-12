@@ -23,16 +23,17 @@
             <Button Command="{Binding EditCommand}" Content="{x:Static properties:Resources.PleaseConfigureCameraIDFirst}"/>
         </DockPanel>
         <Button x:Name="ButtonOffline" Margin="0,0,0,3" Background="Red" Content="{x:Static properties:Resources.DeviceOffline}" Foreground="White" Visibility="Collapsed"/>
-        <Grid Margin="0,0,0,2">
+        <Grid>
             <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition x:Name="VideoColumn" Width="Auto"/>
                 <ColumnDefinition Width="*"/>
-                <ColumnDefinition x:Name="VideoColumn" Width="*"/>
                 <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
-            <Button Margin="0,0,2,0" HorizontalAlignment="Stretch" Content="{engine:EngineLang CameraPanel_Connect}" x:Name="OpenButton"/>
-            <Button Margin="0,0,2,0" HorizontalAlignment="Stretch" Background="Red" Foreground="White" Content="{engine:EngineLang CameraPanel_Disconnect}" x:Name="CloseButton"/>
-            <Button Grid.Column="1" x:Name="LocalVideoButton" Content="{engine:EngineLang CameraPanel_StartPreview}" HorizontalAlignment="Stretch" Margin="0,0,2,0"/>
-            <Button Grid.Column="2" Width="24" Height="24" Padding="2" VerticalAlignment="Center" Command="{Binding OpenPhyCameraMangerCommand}" ToolTip="{x:Static properties:Resources.MenuPhyCameraManager}" AutomationProperties.Name="{x:Static properties:Resources.MenuPhyCameraManager}">
+            <Button Margin="0,0,5,0" HorizontalAlignment="Left" Content="{engine:EngineLang CameraPanel_Connect}" x:Name="OpenButton"/>
+            <Button Margin="0,0,5,0" HorizontalAlignment="Left" Background="Red" Foreground="White" Content="{engine:EngineLang CameraPanel_Disconnect}" x:Name="CloseButton"/>
+            <Button Grid.Column="1" x:Name="LocalVideoButton" Content="{engine:EngineLang CameraPanel_StartPreview}" HorizontalAlignment="Left" Margin="0,0,5,0"/>
+            <Button Grid.Column="3" Width="24" Height="24" Padding="2" VerticalAlignment="Center" Command="{Binding OpenPhyCameraMangerCommand}" ToolTip="{x:Static properties:Resources.MenuPhyCameraManager}" AutomationProperties.Name="{x:Static properties:Resources.MenuPhyCameraManager}">
                 <TextBlock Text="&#xE713;" FontFamily="Segoe MDL2 Assets" FontSize="14" HorizontalAlignment="Center"/>
             </Button>
         </Grid>

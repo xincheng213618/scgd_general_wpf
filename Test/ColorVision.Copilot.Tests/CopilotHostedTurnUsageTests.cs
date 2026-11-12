@@ -1,8 +1,11 @@
 using ColorVision.Solution;
 using Newtonsoft.Json.Linq;
 using System.IO;
+using System.Net;
+using System.Net.Http;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Text;
 
 namespace ColorVision.Copilot.Tests;
 
@@ -12,6 +15,99 @@ public sealed class CopilotHostedTurnUsageTests
     private static readonly TimeSpan TestTimeout = TimeSpan.FromSeconds(10);
     private static readonly CopilotTokenUsage PreviousUsage = new(900, 90, 990, 400);
     private static readonly CopilotTokenUsage CurrentUsage = new(120, 30, 150, 80);
+
+    [Theory]
+    [InlineData("cancel_review")]
+    [InlineData("cancel_billed_review")]
+    [InlineData("failed_primary")]
+    public async Task GoalEvaluationInterruptionRetainsAllReportedUsage(string scenario)
+    {
+        CopilotAgentTaskHost? host = null;
+        void CancelReview()
+        {
+            var active = Assert.IsType<CopilotHostedAgentRun>(host!.ActiveRun);
+            Assert.True(host.RequestCancel(active.Id));
+        }
+        var cancelled = scenario != "failed_primary";
+        using var handler = new GoalEvaluationCancellationHandler(scenario, CancelReview);
+        using var client = new HttpClient(handler);
+        var service = scenario == "cancel_billed_review"
+            ? new CopilotChatService(client, 3, _ => TimeSpan.Zero, (_, token) =>
+            {
+                CancelReview();
+                return Task.Delay(Timeout.InfiniteTimeSpan, token);
+            })
+            : new CopilotChatService(client);
+        await using var fixture = new UsageFixture(
+            reportUsage: true, previousUsageReported: false, chatService: service, completeAgentRun: true);
+        host = fixture.Host;
+        var conversation = fixture.Conversation;
+        conversation.SetCustomTitle("Goal evaluation cancellation accounting");
+        var now = DateTimeOffset.UtcNow;
+        conversation.Goal = CopilotConversationGoal.Create("Verify the completed fixture work.", now)
+            .WithTokenBudget(160, now);
+        var user = new CopilotChatMessage(CopilotChatRole.User, "Complete the fixture work.")
+        {
+            RequestMode = CopilotAgentMode.Auto,
+        };
+        var assistant = new CopilotChatMessage(CopilotChatRole.Assistant, string.Empty)
+        {
+            RequestMode = CopilotAgentMode.Auto,
+        };
+        assistant.MarkThinkingStarted();
+        conversation.Messages.Add(user);
+        conversation.Messages.Add(assistant);
+        var profile = fixture.ViewModel.SelectedProfile!.Clone();
+        profile.BaseUrl = "https://unit.test/v1/responses";
+        var prepared = new CopilotPreparedHostedTurn(
+            conversation, profile, user, assistant,
+            new CopilotAgentHostContextSnapshot(string.Empty, string.Empty, []),
+            new CopilotTurnRuntimeConfigSnapshot(new CopilotAgentDefaultsConfig(), []),
+            refreshExternalContext: false, isAutomaticGoalContinuation: false);
+        var execute = typeof(CopilotChatViewModel)
+            .GetMethod("ExecuteHostedPreparedTurnAsync", BindingFlags.Instance | BindingFlags.NonPublic)!
+            .CreateDelegate<Func<CopilotHostedAgentRun, CopilotPreparedHostedTurn, Task>>(fixture.ViewModel);
+        fixture.Runtime.Release();
+
+        var run = host.Start(conversation.Id, CopilotAgentMode.Auto, run => execute(run, prepared));
+        try
+        {
+            await run.Completion.WaitAsync(TestTimeout);
+        }
+        catch (OperationCanceledException) when (cancelled && run.CancellationToken.IsCancellationRequested)
+        {
+        }
+
+        Assert.False(assistant.WasResponseInterrupted, assistant.ResponseInterruptionDetail);
+        Assert.Equal(CopilotAgentStopReason.Completed, assistant.AgentStopReason);
+        Assert.Equal(cancelled, run.CancellationToken.IsCancellationRequested);
+        Assert.Equal(cancelled ? 2 : 1, handler.RequestCount);
+        Assert.Equal(cancelled ? CopilotAgentControlIntent.Cancel : CopilotAgentControlIntent.None, run.RunControl!.Intent);
+        if (cancelled)
+            Assert.False(run.AllowsAutomaticFollowUpDispatch);
+        var expectedEvaluationUsage = scenario == "failed_primary"
+            ? GoalEvaluationCancellationHandler.FailureUsage
+            : GoalEvaluationCancellationHandler.PrimaryUsage.Add(scenario == "cancel_billed_review"
+                ? GoalEvaluationCancellationHandler.FailureUsage : CopilotTokenUsage.Empty);
+        var expectedUsage = CurrentUsage.Add(expectedEvaluationUsage);
+        Assert.Equal(expectedUsage, assistant.ReportedUsage);
+        Assert.Equal(expectedUsage, conversation.LastUsage);
+        Assert.Equal(expectedUsage, CopilotConversationUsageDiagnostics.Capture(conversation).TotalUsage);
+        var goal = Assert.IsType<CopilotConversationGoal>(conversation.Goal);
+        Assert.Equal(cancelled ? CopilotConversationGoalState.Paused : CopilotConversationGoalState.BudgetLimited, goal.State);
+        Assert.Equal(1, goal.TurnCount);
+        Assert.Equal(cancelled ? 0 : 1, goal.EvaluationCount);
+        Assert.Equal(expectedUsage.EffectiveTotalTokens, goal.TokensUsed);
+        Assert.True(goal.IsTokenBudgetExhausted);
+        Assert.Empty(fixture.Host.QueuedRuns);
+
+        fixture.DiskStore.Save(fixture.State);
+        var restored = Assert.Single(fixture.DiskStore.Load().Conversations);
+        Assert.Equal(expectedUsage, restored.LastUsage);
+        Assert.Equal(expectedUsage, restored.Messages.Single(message => message.Id == assistant.Id).ReportedUsage);
+        Assert.Equal(goal.TokensUsed, restored.Goal!.TokensUsed);
+        Assert.True(restored.Goal.IsTokenBudgetExhausted);
+    }
 
     [Theory]
     [InlineData(false, true, true)]
@@ -115,7 +211,8 @@ public sealed class CopilotHostedTurnUsageTests
         public CopilotAgentTaskHost Host { get; } = new();
         public UsageThenFailureRuntime Runtime { get; }
 
-        public UsageFixture(bool reportUsage, bool previousUsageReported)
+        public UsageFixture(bool reportUsage, bool previousUsageReported,
+            CopilotChatService? chatService = null, bool completeAgentRun = false)
         {
             SolutionInstanceField.SetValue(null, _testSolutionInstance);
             Directory.CreateDirectory(_root);
@@ -150,8 +247,8 @@ public sealed class CopilotHostedTurnUsageTests
                 McpBearerToken = "hosted-usage-test-token",
                 Profiles = [profile],
             };
-            Runtime = new UsageThenFailureRuntime(reportUsage);
-            ViewModel = new CopilotChatViewModel(new CopilotChatService(), new MemoryStateStore(State, _root), config, Runtime, Host);
+            Runtime = new UsageThenFailureRuntime(reportUsage, completeAgentRun);
+            ViewModel = new CopilotChatViewModel(chatService ?? new CopilotChatService(), new MemoryStateStore(State, _root), config, Runtime, Host);
         }
 
         public async ValueTask DisposeAsync()
@@ -199,7 +296,67 @@ public sealed class CopilotHostedTurnUsageTests
         public int CleanupOrphanedAttachments(CopilotChatState value) => 0;
     }
 
-    private sealed class UsageThenFailureRuntime(bool reportUsage) : ICopilotTurnRuntime
+    private sealed class GoalEvaluationCancellationHandler(string scenario, Action cancelReview) : HttpMessageHandler
+    {
+        public static readonly CopilotTokenUsage PrimaryUsage = new(10, 5, 15, 4);
+        public static readonly CopilotTokenUsage FailureUsage = new(12, 8, 20, 3);
+        public int RequestCount { get; private set; }
+
+        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            RequestCount++;
+            if (RequestCount == 2 && scenario == "cancel_review")
+            {
+                cancelReview();
+                await Task.Delay(Timeout.InfiniteTimeSpan, cancellationToken);
+            }
+            if (scenario == "failed_primary" || RequestCount == 2 && scenario == "cancel_billed_review")
+            {
+                Assert.Equal(scenario == "failed_primary" ? 1 : 2, RequestCount);
+                var code = scenario == "failed_primary" ? "insufficient_quota" : "server_error";
+                var failure = new JObject
+                {
+                    ["id"] = "resp_goal_failure", ["object"] = "response", ["status"] = "failed", ["output"] = new JArray(),
+                    ["error"] = new JObject { ["code"] = code, ["type"] = code, ["message"] = "Controlled evaluation failure." },
+                    ["usage"] = new JObject
+                    {
+                        ["input_tokens"] = FailureUsage.InputTokens, ["output_tokens"] = FailureUsage.OutputTokens,
+                        ["total_tokens"] = FailureUsage.TotalTokens,
+                        ["input_tokens_details"] = new JObject { ["cached_tokens"] = FailureUsage.CachedInputTokens },
+                    },
+                };
+                return new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = new StringContent(failure.ToString(Newtonsoft.Json.Formatting.None), Encoding.UTF8, "application/json"),
+                };
+            }
+            Assert.Equal(1, RequestCount);
+            const string verdict = """
+                {"verdict":"achieved","progress_score":100,"checkpoint":"Fixture work completed","verified":"All required evidence is present","remaining":"","next_step":"","reason":"All material conditions are verified."}
+                """;
+            var response = new JObject
+            {
+                ["id"] = "resp_goal_primary", ["object"] = "response", ["status"] = "completed",
+                ["output"] = new JArray(new JObject
+                {
+                    ["type"] = "message", ["role"] = "assistant",
+                    ["content"] = new JArray(new JObject { ["type"] = "output_text", ["text"] = verdict }),
+                }),
+                ["usage"] = new JObject
+                {
+                    ["input_tokens"] = PrimaryUsage.InputTokens, ["output_tokens"] = PrimaryUsage.OutputTokens,
+                    ["total_tokens"] = PrimaryUsage.TotalTokens,
+                    ["input_tokens_details"] = new JObject { ["cached_tokens"] = PrimaryUsage.CachedInputTokens },
+                },
+            };
+            return new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent(response.ToString(Newtonsoft.Json.Formatting.None), Encoding.UTF8, "application/json"),
+            };
+        }
+    }
+
+    private sealed class UsageThenFailureRuntime(bool reportUsage, bool completeAgentRun) : ICopilotTurnRuntime
     {
         private readonly TaskCompletionSource _release = new(TaskCreationOptions.RunContinuationsAsynchronously);
         private readonly TaskCompletionSource _usageProcessed = new(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -210,8 +367,13 @@ public sealed class CopilotHostedTurnUsageTests
             CopilotTurnRequest request, [EnumeratorCancellation] CancellationToken cancellationToken)
         {
             yield return new CopilotTurnStartedEvent(request.TaskId, request.Mode);
-            yield return new CopilotTurnRequestPreparedEvent(new CopilotPreparedTurnRequest(request.UserText, false));
-            yield return new CopilotTurnChatDeltaEvent(new CopilotStreamDelta(string.Empty, "Partial provider answer"));
+            if (completeAgentRun)
+                yield return new CopilotTurnAgentEvent(CopilotAgentEvent.AnswerDelta("Fixture work completed."));
+            else
+            {
+                yield return new CopilotTurnRequestPreparedEvent(new CopilotPreparedTurnRequest(request.UserText, false));
+                yield return new CopilotTurnChatDeltaEvent(new CopilotStreamDelta(string.Empty, "Partial provider answer"));
+            }
             var events = new List<CopilotTurnEvent>();
             var sink = new CopilotTurnEventSink(events.Add);
             sink.OnTokenUsageUpdated(reportUsage ? CurrentUsage : CopilotTokenUsage.Empty);
@@ -219,6 +381,18 @@ public sealed class CopilotHostedTurnUsageTests
                 yield return turnEvent;
             _usageProcessed.TrySetResult();
             await _release.Task.WaitAsync(cancellationToken);
+            if (completeAgentRun)
+            {
+                var result = new CopilotAgentRunResult
+                {
+                    Usage = CurrentUsage, StopReason = CopilotAgentStopReason.Completed,
+                };
+                yield return new CopilotTurnPlanUpdatedEvent(CopilotTurnPlanSnapshot.FromTaskLedger(result.TaskLedger));
+                yield return new CopilotTurnAgentEvent(CopilotAgentEvent.Completed());
+                yield return CopilotTurnCompletedEvent.Completed(request.TaskId, CopilotTurnResult.FromAgent(
+                    request.Mode, CurrentUsage, result));
+                yield break;
+            }
             throw new InvalidOperationException("Expected provider failure after partial answer.");
         }
 

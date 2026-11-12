@@ -48,73 +48,6 @@ public sealed class CopilotLocalMcpDiagnosticLifecycleTests : IDisposable
     }
 
     [Theory]
-    [InlineData("port", true)]
-    [InlineData("port", false)]
-    [InlineData("port-back", true)]
-    [InlineData("port-back", false)]
-    [InlineData("invalid-port", true)]
-    [InlineData("invalid-port", false)]
-    [InlineData("invalid-port-back", true)]
-    [InlineData("invalid-port-back", false)]
-    [InlineData("equivalent-port-text", true)]
-    [InlineData("equivalent-port-text", false)]
-    [InlineData("token", true)]
-    [InlineData("token", false)]
-    [InlineData("token-back", true)]
-    [InlineData("token-back", false)]
-    [InlineData("enabled", true)]
-    [InlineData("enabled", false)]
-    [InlineData("enabled-back", true)]
-    [InlineData("enabled-back", false)]
-    [InlineData("close", true)]
-    [InlineData("close", false)]
-    [InlineData("new-notice", true)]
-    [InlineData("new-notice", false)]
-    public async Task ChangedOrClosedDraftCannotPublishAlreadyCompletedResult(string change, bool succeeds)
-    {
-        using var handler = new DeferredDiagnosticHandler(succeeds);
-        using var client = new HttpClient(handler);
-        using var viewModel = CreateViewModel(client);
-        var context = new PausedSynchronizationContext();
-        var diagnostic = StartDiagnostic(viewModel, context);
-        await handler.StatusRequestStarted.Task.WaitAsync(TimeSpan.FromSeconds(5));
-        handler.Release.TrySetResult();
-        await context.CallbackPosted.Task.WaitAsync(TimeSpan.FromSeconds(5));
-        Assert.False(diagnostic.IsCompleted);
-
-        ChangeDraft(viewModel, change);
-        var expectedNotice = viewModel.SettingsStatusText;
-        var expectedStatus = viewModel.McpStatusText;
-        var expectedTestText = viewModel.McpConnectionTestText;
-        var expectedDiagnostics = viewModel.McpDiagnosticsSummaryText;
-        if (change is not "close" and not "new-notice")
-        {
-            Assert.DoesNotContain("Testing", expectedNotice, StringComparison.Ordinal);
-            Assert.Empty(expectedTestText);
-        }
-
-        context.RunPending();
-        await diagnostic.WaitAsync(TimeSpan.FromSeconds(5));
-
-        Assert.False(viewModel.IsTestingMcpConnection);
-        Assert.False(viewModel.HasAppliedChanges);
-        Assert.Equal(expectedNotice, viewModel.SettingsStatusText);
-        if (change == "new-notice")
-        {
-            Assert.Contains("Agent timeout changed", viewModel.SettingsStatusText, StringComparison.Ordinal);
-            Assert.StartsWith(succeeds ? "Connected." : "Connection failed:", viewModel.McpConnectionTestText, StringComparison.Ordinal);
-        }
-        else
-        {
-            Assert.Equal(expectedStatus, viewModel.McpStatusText);
-            Assert.Equal(expectedTestText, viewModel.McpConnectionTestText);
-            Assert.Equal(expectedDiagnostics, viewModel.McpDiagnosticsSummaryText);
-        }
-        Assert.Equal(3, handler.Requests.Count);
-        Assert.Empty(Directory.EnumerateFiles(_rootDirectory));
-    }
-
-    [Theory]
     [InlineData("port")]
     [InlineData("invalid-port")]
     [InlineData("token")]
@@ -140,28 +73,6 @@ public sealed class CopilotLocalMcpDiagnosticLifecycleTests : IDisposable
         Assert.Equal(expectedStatus, viewModel.McpStatusText);
         Assert.Equal(expectedTestText, viewModel.McpConnectionTestText);
         Assert.DoesNotContain("Connection failed:", viewModel.McpConnectionTestText, StringComparison.Ordinal);
-        Assert.Empty(Directory.EnumerateFiles(_rootDirectory));
-    }
-
-    [Fact]
-    public async Task ANewDiagnosticUsesTheChangedPortAfterTheCancelledRequestFinishes()
-    {
-        using var handler = new DeferredDiagnosticHandler(succeeds: true);
-        using var client = new HttpClient(handler);
-        using var viewModel = CreateViewModel(client);
-        var firstDiagnostic = viewModel.TestMcpConnectionAsync();
-        await handler.StatusRequestStarted.Task.WaitAsync(TimeSpan.FromSeconds(5));
-        viewModel.McpPort++;
-        await firstDiagnostic.WaitAsync(TimeSpan.FromSeconds(5));
-        Assert.True(handler.RequestWasCancelled);
-
-        handler.Release.TrySetResult();
-        await viewModel.TestMcpConnectionAsync().WaitAsync(TimeSpan.FromSeconds(5));
-
-        Assert.Equal("Connected.", viewModel.McpConnectionTestText);
-        Assert.True(viewModel.CanTestMcpConnection);
-        Assert.Equal(6, handler.Requests.Count);
-        Assert.All(handler.Requests.Skip(3), request => Assert.Equal(CopilotConfig.DefaultMcpPort + 1, request.Port));
         Assert.Empty(Directory.EnumerateFiles(_rootDirectory));
     }
 

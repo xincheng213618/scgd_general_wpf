@@ -72,22 +72,24 @@ namespace ColorVision.UI.Tests
         }
 
         [Fact]
-        public void ServiceManagerMenuIsAvailableUnderHelpForAdministrators()
+        public void ServiceManagerEntriesAreAvailableToGuests()
         {
             Authorization previousAuthorization = Authorization.Instance;
             try
             {
-                var authorization = new Authorization { PermissionMode = PermissionMode.User };
+                var authorization = new Authorization { PermissionMode = PermissionMode.Guest };
                 Authorization.Instance = authorization;
                 var menu = new WindowsServicePlugin.ServiceManager.MenuServiceManager();
 
                 Assert.Equal(MenuItemConstants.Help, menu.OwnerGuid);
                 Assert.Equal("ServiceManager", menu.GuidId);
                 Assert.Equal(0, menu.Order);
-                Assert.False(menu.Command!.CanExecute(null));
-
-                authorization.PermissionMode = PermissionMode.Administrator;
                 Assert.True(menu.Command!.CanExecute(null));
+
+                var app = Assert.Single(new WindowsServicePlugin.ServiceManager.ServiceManagerAppProvider().GetThirdPartyApps());
+                Assert.Equal(PermissionMode.Guest, app.RequiredPermission);
+                Assert.True(app.IsAuthorized);
+                Assert.True(app.DoubleClickCommand.CanExecute(null));
             }
             finally
             {

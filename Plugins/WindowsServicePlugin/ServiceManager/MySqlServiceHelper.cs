@@ -385,13 +385,13 @@ namespace WindowsServicePlugin.ServiceManager
             Process? skipGrantProcess = null;
             try
             {
-                logCallback("开始强制重置 root 密码...");
-                if (Process.GetProcessesByName("mysqld").Length > 0)
+                logCallback("正在确认 MySQL 进程已退出...");
+                if (!WaitForMySqlProcessExit(logCallback))
                 {
-                    logCallback("检测到 mysqld 仍在运行，请先停止 MySQL 服务后再重置 root 密码");
                     return false;
                 }
 
+                logCallback("开始强制重置 root 密码...");
                 var startInfo = new ProcessStartInfo
                 {
                     FileName = MysqldExePath,
@@ -462,6 +462,37 @@ namespace WindowsServicePlugin.ServiceManager
                 catch
                 {
                 }
+            }
+        }
+
+        private static bool WaitForMySqlProcessExit(Action<string> logCallback)
+        {
+            TimeSpan timeout = TimeSpan.FromSeconds(10);
+            Stopwatch timer = Stopwatch.StartNew();
+
+            // The service can report Stopped before its process has exited.
+            while (true)
+            {
+                Process[] processes = Process.GetProcessesByName("mysqld");
+                try
+                {
+                    if (processes.Length == 0)
+                        return true;
+
+                    if (timer.Elapsed >= timeout)
+                    {
+                        string processIds = string.Join(", ", processes.Select(process => process.Id));
+                        logCallback($"等待 MySQL 进程退出超时（PID {processIds}），无法重置 root 密码。请确认对应的 MySQL 实例已停止后重试。");
+                        return false;
+                    }
+                }
+                finally
+                {
+                    foreach (Process process in processes)
+                        process.Dispose();
+                }
+
+                Thread.Sleep(200);
             }
         }
 

@@ -148,11 +148,13 @@ namespace ColorVision.Copilot
             IReadOnlyList<CopilotAttachmentItem> attachments,
             CopilotManagedImageAttachmentLease imageLease,
             CopilotConversationRecord conversation,
-            CopilotHostedAgentRun? hostedRun)
+            CopilotHostedAgentRun? hostedRun,
+            Func<bool>? canApplyFeedback = null)
         {
             if (!attachments.Any(attachment => attachment.Type == CopilotAttachmentType.Image))
                 return attachments;
 
+            var feedbackRevision = Volatile.Read(ref _localCommandResultRevision);
             var cancellation = BeginAuxiliaryOperation();
             using var queuedCancellation = hostedRun?.CancellationToken.Register(cancellation.RequestCancellation);
             _imagePreparationCancellations.Add(cancellation, (conversation.Id, hostedRun?.Id));
@@ -175,7 +177,9 @@ namespace ColorVision.Copilot
             }
             catch (CopilotImageAttachmentAdmissionException ex)
             {
-                if (!cancellation.IsCancellationRequested && CanApplyAuxiliaryConversationResult(conversation))
+                if (!cancellation.IsCancellationRequested
+                    && (canApplyFeedback?.Invoke() ?? true)
+                    && CanApplyAuxiliaryConversationFeedback(conversation, feedbackRevision))
                     ReportImageAttachmentAdmissionFailure(ex);
                 return null;
             }

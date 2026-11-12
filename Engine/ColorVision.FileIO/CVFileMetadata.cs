@@ -35,10 +35,20 @@ namespace ColorVision.FileIO
         public static IReadOnlyDictionary<string, CVFileProperty> Read(string filePath)
         {
             using (Stream stream = CVFileReadCache.OpenRead(filePath, populateCache: false))
+                return ReadFromStream(stream);
+        }
+
+        /// <summary>Reads the metadata from an already-open image snapshot and preserves its position.</summary>
+        public static IReadOnlyDictionary<string, CVFileProperty> ReadFromStream(Stream stream)
+        {
+            ArgumentNullException.ThrowIfNull(stream);
+            long position = stream.Position;
+            try
             {
-                long pixelEnd = GetPixelEnd(stream);
+                long pixelEnd = GetPixelRange(stream).End;
                 return ReadProperties(stream, pixelEnd, false);
             }
+            finally { stream.Position = position; }
         }
 
         public static void SetProperty(string filePath, string kind, uint version, byte[] value)
@@ -51,10 +61,10 @@ namespace ColorVision.FileIO
 
         private static CVFileReadCache.FileTail SetPropertyCore(Stream stream, string kind, uint version, byte[] value)
         {
-            long pixelEnd = GetPixelEnd(stream);
+            var (pixelStart, pixelEnd) = GetPixelRange(stream);
             Dictionary<string, CVFileProperty> properties = ReadProperties(stream, pixelEnd, true);
             properties[kind] = new CVFileProperty(version, value);
-            return new CVFileReadCache.FileTail(pixelEnd, Serialize(properties, pixelEnd));
+            return new CVFileReadCache.FileTail(pixelStart, pixelEnd, Serialize(properties, pixelEnd));
         }
 
         /// <summary>Replaces related records together in one validated tail update.</summary>
@@ -70,17 +80,18 @@ namespace ColorVision.FileIO
             }
             CVFileReadCache.UpdateMetadata(filePath, stream =>
             {
-                long pixelEnd = GetPixelEnd(stream);
+                var (pixelStart, pixelEnd) = GetPixelRange(stream);
                 var properties = ReadProperties(stream, pixelEnd, true);
                 foreach (var item in detached) properties[item.Key] = item.Value;
-                return new CVFileReadCache.FileTail(pixelEnd, Serialize(properties, pixelEnd));
+                return new CVFileReadCache.FileTail(pixelStart, pixelEnd, Serialize(properties, pixelEnd));
             });
         }
 
-        internal static void ReplaceTail(FileStream stream, CVFileReadCache.FileTail tail)
+        internal static bool ReplaceTail(FileStream stream, CVFileReadCache.FileTail tail, Stream cached)
         {
             stream.Position = tail.Offset;
             byte[] previous = ReadExactly(stream, checked((int)(stream.Length - tail.Offset)));
+            bool cacheMatches = cached != null && HasMatchingHeaderAndTail(stream, cached, tail, previous);
             try
             {
                 WriteTail(stream, tail.Offset, tail.Bytes);
@@ -92,6 +103,34 @@ namespace ColorVision.FileIO
                 catch (Exception rollbackError) { throw new AggregateException("Metadata update and rollback failed; pixel data was not rewritten.", writeError, rollbackError); }
                 throw;
             }
+            return cacheMatches;
+        }
+
+        private static bool HasMatchingHeaderAndTail(FileStream disk, Stream cached, CVFileReadCache.FileTail tail, ReadOnlySpan<byte> previous)
+        {
+            if (cached.Length != disk.Length) return false;
+
+            Span<byte> diskBytes = stackalloc byte[4096];
+            Span<byte> cacheBytes = stackalloc byte[4096];
+            disk.Position = cached.Position = 0;
+            for (long remaining = tail.PixelStart; remaining > 0;)
+            {
+                int count = (int)Math.Min(diskBytes.Length, remaining);
+                disk.ReadExactly(diskBytes[..count]);
+                cached.ReadExactly(cacheBytes[..count]);
+                if (!diskBytes[..count].SequenceEqual(cacheBytes[..count])) return false;
+                remaining -= count;
+            }
+
+            cached.Position = tail.Offset;
+            while (!previous.IsEmpty)
+            {
+                int count = Math.Min(cacheBytes.Length, previous.Length);
+                cached.ReadExactly(cacheBytes[..count]);
+                if (!previous[..count].SequenceEqual(cacheBytes[..count])) return false;
+                previous = previous[count..];
+            }
+            return true;
         }
 
         private static void WriteTail(FileStream stream, long pixelEnd, byte[] tail)
@@ -148,13 +187,22 @@ namespace ColorVision.FileIO
             return result;
         }
 
-        private static byte[] Serialize(Dictionary<string, CVFileProperty> properties, long pixelEnd)
+        internal static byte[] CreateInitialTail(IReadOnlyDictionary<string, CVFileProperty> properties, CVCIEFile header, long payloadLength, long pixelEnd)
+        {
+            if (properties == null || properties.Count == 0) return Array.Empty<byte>();
+            ValidatePixelLayout(header.Cols, header.Rows, header.Bpp, header.Channels, payloadLength);
+            return Serialize(properties, pixelEnd);
+        }
+
+        private static byte[] Serialize(IReadOnlyDictionary<string, CVFileProperty> properties, long pixelEnd)
         {
             using (var memory = new MemoryStream())
             using (var writer = new BinaryWriter(memory, Utf8, true))
             {
                 foreach (var entry in properties.OrderBy(item => item.Key, StringComparer.Ordinal))
                 {
+                    if (string.IsNullOrWhiteSpace(entry.Key) || entry.Value == null || entry.Value.Value.Length > MaximumMetadataBytes)
+                        throw new ArgumentException("Invalid metadata property.");
                     byte[] kind = Utf8.GetBytes(entry.Key);
                     if (kind.Length == 0 || kind.Length > 4096) throw new ArgumentException("Metadata kind is too long.");
                     writer.Write(kind.Length);
@@ -177,7 +225,7 @@ namespace ColorVision.FileIO
             }
         }
 
-        private static long GetPixelEnd(Stream stream)
+        private static (long Start, long End) GetPixelRange(Stream stream)
         {
             stream.Position = 0;
             using (var reader = new BinaryReader(stream, Encoding.ASCII, true))
@@ -195,11 +243,18 @@ namespace ColorVision.FileIO
                 for (int i = 0; i < channels; i++) reader.ReadSingle();
                 int width = reader.ReadInt32(), height = reader.ReadInt32(), bpp = reader.ReadInt32();
                 long length = version == 2 ? reader.ReadInt64() : reader.ReadInt32();
-                if (width <= 0 || height <= 0 || (bpp != 8 && bpp != 16 && bpp != 32 && bpp != 64)
-                    || length != checked((long)width * height * channels * (bpp / 8)) || length > stream.Length - stream.Position)
+                ValidatePixelLayout(width, height, bpp, channels, length);
+                if (length > stream.Length - stream.Position)
                     throw new InvalidDataException("Invalid ColorVision pixel payload.");
-                return checked(stream.Position + length);
+                return (stream.Position, checked(stream.Position + length));
             }
+        }
+
+        private static void ValidatePixelLayout(int width, int height, int bpp, int channels, long length)
+        {
+            if (width <= 0 || height <= 0 || channels is <= 0 or > 16 || bpp is not (8 or 16 or 32 or 64)
+                || length != checked((long)width * height * channels * (bpp / 8)))
+                throw new InvalidDataException("Invalid ColorVision pixel payload.");
         }
 
         private static byte[] ReadExactly(Stream stream, int length)

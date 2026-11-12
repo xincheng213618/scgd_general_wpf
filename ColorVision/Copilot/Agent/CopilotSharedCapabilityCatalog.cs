@@ -10,6 +10,7 @@ namespace ColorVision.Copilot
     internal static class CopilotSharedAgentToolNames
     {
         public const string SearchDocs = "SearchDocs";
+        public const string ReadAlgorithmHelp = "ReadAlgorithmHelp";
         public const string SearchFiles = "SearchFiles";
         public const string GrepText = "GrepText";
         public const string ReadLocalFile = "ReadLocalFile";
@@ -18,6 +19,17 @@ namespace ColorVision.Copilot
         public const string InspectSavedTemplate = "InspectSavedTemplate";
         public const string InspectTemplateType = "InspectTemplateType";
         public const string InspectFlowGraph = "InspectFlowGraph";
+        public const string InspectDeviceServices = "InspectDeviceServices";
+        public const string InspectLoadedBatchResults = "InspectLoadedBatchResults";
+        public const string ValidateFlowGraph = "ValidateFlowGraph";
+        public const string InspectFlowIncident = "InspectFlowIncident";
+        public const string ListFlowIncidents = "ListFlowIncidents";
+        public const string ListFlowRuns = "ListFlowRuns";
+        public const string InspectRecordedFlowTemplate = "InspectRecordedFlowTemplate";
+        public const string InspectFlowRunHistory = "InspectFlowRunHistory";
+        public const string InspectFlowRunEvents = "InspectFlowRunEvents";
+        public const string InspectFlowRunAttempts = "InspectFlowRunAttempts";
+        public const string CompareRecordedFlowTemplates = "CompareRecordedFlowTemplates";
         public const string SearchFlowNodeCatalog = "SearchFlowNodeCatalog";
         public const string PreviewFlowPatch = "PreviewFlowPatch";
         public const string ApplyFlowPatch = "ApplyFlowPatch";
@@ -152,22 +164,37 @@ namespace ColorVision.Copilot
     {
         private static CopilotToolInputSchema SearchDocsInputSchema { get; } =
             CopilotToolInputSchema.Query("Focused ColorVision documentation search terms.", required: true);
+        private static CopilotToolInputSchema AlgorithmHelpInputSchema { get; } = CreateSchema(
+            new Dictionary<string, object?>
+            {
+                ["topic_id"] = new { type = "string", minLength = 1, maxLength = 128, pattern = "^[a-z0-9]+(?:[.-][a-z0-9]+)*$", description = "Exact algorithmHelpTopicId returned by SearchFlowNodeCatalog. Never infer a topic id from a node title or type name." },
+                ["cursor"] = new { type = "string", minLength = 1, maxLength = 4096, description = "Opaque next_cursor from the preceding page; pass unchanged." },
+                ["max_characters"] = new { type = "integer", minimum = 256, maximum = 12000, @default = 6000, description = "Maximum Markdown characters in one page." },
+            }, "topic_id");
         private static CopilotToolInputSchema SearchFilesInputSchema { get; } = new(
         [
-            new CopilotToolParameter { Name = "query", Description = "Literal file name or workspace-relative path fragment to locate; not a natural-language instruction or glob.", Type = CopilotToolParameterType.Text, Required = true },
+            new CopilotToolParameter { Name = "query", Description = "File name or workspace-relative path fragment to locate; * and ? are wildcards, as in *.csproj. Not a natural-language instruction.", Type = CopilotToolParameterType.Text, Required = true },
             new CopilotToolParameter { Name = "path", Description = "Optional workspace-relative or absolute directory to search within.", Type = CopilotToolParameterType.Text },
-            new CopilotToolParameter { Name = "cursor", Description = "Optional opaque next_cursor returned by the preceding page for the same query and path. Never invent or modify it.", Type = CopilotToolParameterType.Text },
+            new CopilotToolParameter { Name = "cursor", Description = "Opaque next_cursor from the preceding page; pass unchanged.", Type = CopilotToolParameterType.Text },
         ]);
         private static CopilotToolInputSchema GrepTextInputSchema { get; } = new(
         [
-            new CopilotToolParameter { Name = "query", Description = "Single-line literal text to find, including spaces and punctuation; not a regex or natural-language instruction.", Type = CopilotToolParameterType.Text, Required = true },
+            new CopilotToolParameter { Name = "query", Description = "Single-line text to find, including spaces and punctuation; literal unless regex is true. Not a natural-language instruction.", Type = CopilotToolParameterType.Text, Required = true },
+            new CopilotToolParameter { Name = "regex", Description = "Treat query as a case-insensitive .NET regular expression matched per line; lookarounds and backreferences are not supported.", Type = CopilotToolParameterType.Boolean },
+            new CopilotToolParameter { Name = "glob", Description = "Optional file-name filter such as *.cs or *.{cs,xaml}; use path for directories.", Type = CopilotToolParameterType.Text },
             new CopilotToolParameter { Name = "path", Description = "Optional workspace-relative or absolute file or directory to search within.", Type = CopilotToolParameterType.Text },
-            new CopilotToolParameter { Name = "cursor", Description = "Optional opaque next_cursor returned by the preceding page for the same query and path. Never invent or modify it.", Type = CopilotToolParameterType.Text },
+            new CopilotToolParameter { Name = "cursor", Description = "Opaque next_cursor from the preceding page; pass unchanged.", Type = CopilotToolParameterType.Text },
         ]);
         private static CopilotToolInputSchema RecentLogInputSchema { get; } = CreateSchema(
             new Dictionary<string, object?>
             {
                 ["query"] = new { type = "string", description = "Optional case-insensitive filter text." },
+                ["source"] = new
+                {
+                    type = "string",
+                    @enum = new[] { "app", "native" },
+                    description = "app (default): the ColorVision application log. native: the newest native SDK log (camera, spectrometer and other device DLLs), where hardware errors are recorded.",
+                },
                 ["max_lines"] = new
                 {
                     type = "integer",
@@ -184,7 +211,7 @@ namespace ColorVision.Copilot
             new Dictionary<string, object?>
             {
                 ["path"] = new { type = "string", description = "Absolute path, or a path relative to an allowed root. If omitted, allowed roots are listed." },
-                ["cursor"] = new { type = "string", description = "Opaque next_cursor returned by the preceding page for the same directory. Never invent or modify it." },
+                ["cursor"] = new { type = "string", description = "Opaque next_cursor from the preceding page; pass unchanged." },
             });
         private static CopilotToolInputSchema SavedTemplateContextInputSchema { get; } = CreateSchema(
             new Dictionary<string, object?>
@@ -203,10 +230,97 @@ namespace ColorVision.Copilot
         private static CopilotToolInputSchema FlowGraphInputSchema { get; } = CreateSchema(
             new Dictionary<string, object?>
             {
-                ["node_id"] = new { type = "string", description = "Optional stable node instance id or node id to focus." },
-                ["include_properties"] = new { type = "boolean", description = "Include redacted node property values. Defaults to false." },
-                ["max_nodes"] = new { type = "integer", minimum = 1, maximum = 200, description = "Maximum nodes to return. Defaults to 80." },
+                ["node_id"] = new { type = "string", minLength = 1, maxLength = 256, description = "Optional exact stable node instance id or node id to focus. In the edges section, returns edges with either endpoint matching this node, including cross-page connections." },
+                ["include_properties"] = new { type = "boolean", description = "Include redacted node property values. Required for the properties stream." },
+                ["max_nodes"] = new { type = "integer", minimum = 1, maximum = 200, @default = 80, description = "Maximum node rows in one nodes page." },
+                ["section"] = new { type = "string", @enum = new[] { "nodes", "edges", "ports", "properties" }, @default = "nodes", description = "Stream to read. properties requires include_properties=true." },
+                ["max_edges"] = new { type = "integer", minimum = 1, maximum = 200, @default = 80, description = "Maximum edge rows in an edges page or attached to a nodes page." },
+                ["max_items"] = new { type = "integer", minimum = 1, maximum = 200, @default = 80, description = "Maximum detail rows in a ports or properties page." },
+                ["expected_revision"] = new { type = "string", minLength = 64, maxLength = 64, pattern = "^[0-9a-fA-F]{64}$", description = "Optional exact revision from a prior graph page, passed unchanged. Supply it with expected_source_instance_id on the first page of each additional stream." },
+                ["expected_source_instance_id"] = new { type = "string", minLength = 32, maxLength = 32, pattern = "^[0-9a-fA-F]{32}$", description = "Optional exact sourceInstanceId from a prior graph page, passed unchanged. Supply it with expected_revision." },
+                ["cursor"] = new { type = "string", minLength = 1, maxLength = 4096, description = "Opaque next_cursor from the preceding page; pass unchanged with the same filters." },
             });
+        private static CopilotToolInputSchema FlowGraphValidationInputSchema { get; } = CreateSchema(
+            new Dictionary<string, object?>
+            {
+                ["expected_revision"] = new { type = "string", minLength = 64, maxLength = 64, pattern = "^[0-9a-fA-F]{64}$", description = "Exact current revision from InspectFlowGraph/get_flow_graph, passed unchanged." },
+            }, "expected_revision");
+        private static CopilotToolInputSchema DeviceServicesInputSchema { get; } = CreateSchema(
+            new Dictionary<string, object?>
+            {
+                ["device_ref"] = new { type = "string", minLength = 32, maxLength = 32, pattern = "^[0-9a-fA-F]{32}$", description = "Optional exact reference from a preceding device directory. Requires expected_source_instance_id; cannot be combined with cursor. Never inferred." },
+                ["expected_source_instance_id"] = new { type = "string", minLength = 32, maxLength = 32, pattern = "^[0-9a-fA-F]{32}$", description = "Host instance id from the directory, passed unchanged. Required with device_ref; optional for list requests." },
+                ["max_devices"] = new { type = "integer", minimum = 1, maximum = 100, @default = 40, description = "Maximum list rows per page." },
+                ["cursor"] = new { type = "string", minLength = 1, maxLength = 4096, description = "Opaque next_cursor from a directory page; pass unchanged. Cannot be combined with device_ref." },
+            });
+        private static CopilotToolInputSchema LoadedBatchResultsInputSchema { get; } = CreateSchema(
+            new Dictionary<string, object?>
+            {
+                ["source_ref"] = new { type = "string", minLength = 32, maxLength = 32, pattern = "^[0-9a-fA-F]{32}$", description = "Optional exact source reference from the directory or the Loaded batch result source pair in automatic measurement context. Requires expected_source_instance_id. Omit for the source directory; never substitute a batch id, page name, or current selection." },
+                ["expected_source_instance_id"] = new { type = "string", minLength = 32, maxLength = 32, pattern = "^[0-9a-fA-F]{32}$", description = "Owner id from the directory's source_instance_id or the automatic measurement context pair, passed unchanged. Required with source_ref; optional for the directory." },
+                ["result_ref"] = new { type = "string", minLength = 32, maxLength = 32, pattern = "^[0-9a-fA-F]{32}$", description = "Optional exact row reference from a source page. Requires source_ref and its owner; cannot be combined with cursor. Not a database id, result code, or template name." },
+                ["max_items"] = new { type = "integer", minimum = 1, maximum = 100, @default = 40, description = "Maximum directory or result rows per page." },
+                ["cursor"] = new { type = "string", minLength = 1, maxLength = 4096, description = "Opaque next_cursor from the preceding page; pass unchanged. Not allowed with result_ref." },
+            });
+        private static CopilotToolInputSchema FlowIncidentInputSchema { get; } = CreateSchema(
+            new Dictionary<string, object?>
+            {
+                ["incident_id"] = new { type = "integer", minimum = 1L, maximum = long.MaxValue, description = "Exact incident id from the user, current flow-incidents context, or ListFlowIncidents; never guessed." },
+                ["max_events"] = new { type = "integer", minimum = 1, maximum = 100, @default = 40, description = "Maximum associated execution events." },
+            },
+            "incident_id");
+        private static CopilotToolInputSchema FlowIncidentsInputSchema { get; } = CreateSchema(
+            new Dictionary<string, object?>
+            {
+                ["state"] = new { type = "string", @enum = new[] { "active", "open", "acknowledged", "resolved", "all" }, @default = "active", description = "Incident state filter. active means every unresolved incident." },
+                ["max_results"] = new { type = "integer", minimum = 1, maximum = 100, @default = 20, description = "Maximum incidents in this page." },
+                ["cursor"] = new { type = "string", minLength = 1, maxLength = 4096, description = "Opaque next_cursor from the preceding page; pass unchanged." },
+            });
+        private static CopilotToolInputSchema FlowRunsInputSchema { get; } = CreateSchema(
+            new Dictionary<string, object?>
+            {
+                ["flow_key"] = new { type = "string", minLength = 1, maxLength = 256, description = "Optional complete recorded FlowKey from the user or a preceding run list; no name, prefix, or template id fallback. Omit to list all retained runs." },
+                ["max_results"] = new { type = "integer", minimum = 1, maximum = 100, @default = 20, description = "Maximum retained runs in this page." },
+                ["cursor"] = new { type = "string", minLength = 1, maxLength = 4096, description = "Opaque next_cursor from the preceding page; pass unchanged." },
+            });
+        private static CopilotToolInputSchema RecordedFlowTemplateInputSchema { get; } = CreateSchema(
+            new Dictionary<string, object?>
+            {
+                ["run_record_id"] = new { type = "integer", minimum = 1, maximum = int.MaxValue, description = "Exact retained run id from ListFlowRuns, recorded evidence, or the user; never inferred." },
+                ["node_id"] = new { type = "string", minLength = 36, maxLength = 36, pattern = "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$", description = "Optional exact node GUID from recorded evidence; focuses this node and its saved direct neighbors." },
+                ["max_nodes"] = new { type = "integer", minimum = 1, maximum = 200, @default = 80, description = "Maximum saved nodes returned." },
+            }, "run_record_id");
+        private static CopilotToolInputSchema FlowRunHistoryInputSchema { get; } = CreateSchema(
+            new Dictionary<string, object?>
+            {
+                ["run_record_id"] = new { type = "integer", minimum = 1, maximum = int.MaxValue, description = "Exact retained run id from ListFlowRuns, recorded evidence, or the user; never inferred." },
+                ["node_id"] = new { type = "string", minLength = 1, maxLength = 128, description = "Optional exact recorded node id, passed unchanged; need not be a GUID." },
+                ["max_runs"] = new { type = "integer", minimum = 1, maximum = 50, @default = 10, description = "Maximum previous run rows to inspect." },
+            },
+            "run_record_id");
+        private static CopilotToolInputSchema FlowRunEventsInputSchema { get; } = CreateSchema(
+            new Dictionary<string, object?>
+            {
+                ["run_record_id"] = new { type = "integer", minimum = 1, maximum = int.MaxValue, description = "Exact retained run id from ListFlowRuns, recorded evidence, or the user; never inferred." },
+                ["max_events"] = new { type = "integer", minimum = 1, maximum = 100, @default = 40, description = "Maximum recorded events in one page." },
+                ["cursor"] = new { type = "string", minLength = 1, maxLength = 4096, description = "Opaque next_cursor from the preceding page; pass unchanged." },
+            }, "run_record_id");
+        private static CopilotToolInputSchema FlowRunAttemptsInputSchema { get; } = CreateSchema(
+            new Dictionary<string, object?>
+            {
+                ["run_record_id"] = new { type = "integer", minimum = 1, maximum = int.MaxValue, description = "Exact retained run id from ListFlowRuns, recorded evidence, or the user; never inferred." },
+                ["node_id"] = new { type = "string", minLength = 1, maxLength = 128, description = "Optional exact recorded node id, passed unchanged; need not be a GUID. Omit for every recorded node in this run." },
+                ["max_attempts"] = new { type = "integer", minimum = 1, maximum = 100, @default = 40, description = "Maximum attempts in this page." },
+                ["cursor"] = new { type = "string", minLength = 1, maxLength = 4096, description = "Opaque next_cursor from the preceding page; pass unchanged." },
+            }, "run_record_id");
+        private static CopilotToolInputSchema RecordedFlowTemplateComparisonInputSchema { get; } = CreateSchema(
+            new Dictionary<string, object?>
+            {
+                ["baseline_run_record_id"] = new { type = "integer", minimum = 1, maximum = int.MaxValue, description = "Exact baseline run id from ListFlowRuns, recorded evidence, or the user; never inferred." },
+                ["current_run_record_id"] = new { type = "integer", minimum = 1, maximum = int.MaxValue, description = "Exact current run id from ListFlowRuns, recorded evidence, or the user; never inferred." },
+                ["max_changes"] = new { type = "integer", minimum = 1, maximum = 200, @default = 50, description = "Maximum detail rows across node changes, added edges, and removed edges." },
+                ["cursor"] = new { type = "string", minLength = 1, maxLength = 4096, description = "Opaque next_cursor from the preceding page; pass unchanged." },
+            }, "baseline_run_record_id", "current_run_record_id");
         private static CopilotToolInputSchema FlowNodeCatalogInputSchema { get; } = CreateSchema(
             new Dictionary<string, object?>
             {
@@ -216,18 +330,20 @@ namespace ColorVision.Copilot
         private static CopilotToolInputSchema FlowPatchInputSchema { get; } = CreateSchema(
             new Dictionary<string, object?>
             {
-                ["operation"] = new { type = "string", @enum = new[] { "add_node", "set_property", "connect" }, description = "Exactly one bounded Flow graph operation." },
-                ["expected_revision"] = new { type = "string", description = "Current graph revision from InspectFlowGraph." },
+                ["operation"] = new { type = "string", @enum = new[] { "add_node", "set_property", "connect", "disconnect" }, description = "Exactly one bounded Flow graph operation. disconnect removes only the exact existing source-node/output-port/target-node/input-port connection." },
+                ["expected_revision"] = new { type = "string", description = "Current graph revision from InspectFlowGraph. disconnect requires the exact 64-character hexadecimal revision." },
                 ["type_key"] = new { type = "string", description = "add_node: exact type key from SearchFlowNodeCatalog." },
                 ["left"] = new { type = "integer", minimum = -100000, maximum = 100000, description = "add_node: canvas X coordinate." },
                 ["top"] = new { type = "integer", minimum = -100000, maximum = 100000, description = "add_node: canvas Y coordinate." },
+                ["inherit_camera_defaults"] = new { type = "boolean", description = "add_node only: explicitly copy current camera acquisition settings for a catalog type with canInheritCameraDefaults. Defaults to false. Preview returns the effective settings and cameraDefaultsFingerprint." },
+                ["camera_defaults_fingerprint"] = new { type = "string", description = "add_node with inherit_camera_defaults=true: copy the exact cameraDefaultsFingerprint from the preview into apply. Required when applying; changed camera settings require a new preview." },
                 ["node_id"] = new { type = "string", description = "set_property: stable node instance id." },
                 ["property_name"] = new { type = "string", description = "set_property: exact writable propertyName from the node catalog." },
                 ["value"] = new { type = "string", description = "set_property: new value accepted by the existing STNodeProperty descriptor; an empty string is valid." },
-                ["source_node_id"] = new { type = "string", description = "connect: stable source node instance id." },
-                ["source_port_id"] = new { type = "string", description = "connect: source output port id such as out:0." },
-                ["target_node_id"] = new { type = "string", description = "connect: stable target node instance id." },
-                ["target_port_id"] = new { type = "string", description = "connect: target input port id such as in:0." },
+                ["source_node_id"] = new { type = "string", description = "connect/disconnect: stable source node instance id. disconnect requires a nonempty GUID in D format from graph evidence, never a legacy node alias." },
+                ["source_port_id"] = new { type = "string", description = "connect/disconnect: exact source output port id such as out:0." },
+                ["target_node_id"] = new { type = "string", description = "connect/disconnect: stable target node instance id. disconnect requires a nonempty GUID in D format from graph evidence, never a legacy node alias." },
+                ["target_port_id"] = new { type = "string", description = "connect/disconnect: exact target input port id such as in:0." },
             },
             "operation",
             "expected_revision");
@@ -274,6 +390,8 @@ namespace ColorVision.Copilot
             "language");
         private static CopilotSharedCapabilityPresentation DocumentationSearchPresentation { get; } =
             Presentation("file-search", "正在搜索文档", "搜索了文档", "已获得文档搜索结果。", isSearch: true);
+        private static CopilotSharedCapabilityPresentation AlgorithmHelpPresentation { get; } =
+            Presentation("file-read", "正在读取算法帮助", "读取了算法帮助", "已获得算法帮助正文。");
         private static CopilotSharedCapabilityPresentation FileSearchPresentation { get; } =
             Presentation("file-search", "正在搜索文件", "搜索了文件", "已完成文件搜索。", isSearch: true);
         private static CopilotSharedCapabilityPresentation DirectoryPresentation { get; } =
@@ -288,6 +406,28 @@ namespace ColorVision.Copilot
             Presentation("application", "正在检查模板类型", "检查了模板类型", "模板类型信息检查完成。");
         private static CopilotSharedCapabilityPresentation FlowGraphPresentation { get; } =
             Presentation("application", "正在检查流程", "检查了流程", "流程图检查完成。");
+        private static CopilotSharedCapabilityPresentation FlowGraphValidationPresentation { get; } =
+            Presentation("application", "正在校验流程图", "校验了流程图", "已获得宿主流程图校验结果。");
+        private static CopilotSharedCapabilityPresentation DeviceServicesPresentation { get; } =
+            Presentation("application", "正在读取设备服务", "读取了设备服务", "已获得已加载设备服务状态。");
+        private static CopilotSharedCapabilityPresentation LoadedBatchResultsPresentation { get; } =
+            Presentation("application", "正在读取已加载批次结果", "读取了已加载批次结果", "已获得已注册批次详情中的结果记录。");
+        private static CopilotSharedCapabilityPresentation FlowIncidentPresentation { get; } =
+            Presentation("application", "正在检查流程事故", "检查了流程事故", "流程事故检查完成。");
+        private static CopilotSharedCapabilityPresentation FlowIncidentsPresentation { get; } =
+            Presentation("application", "正在查询流程事故", "查询了流程事故", "已获得流程事故列表。", isSearch: true);
+        private static CopilotSharedCapabilityPresentation FlowRunsPresentation { get; } =
+            Presentation("application", "正在查询流程运行", "查询了流程运行", "已获得留存流程运行列表。", isSearch: true);
+        private static CopilotSharedCapabilityPresentation FlowRunHistoryPresentation { get; } =
+            Presentation("application", "正在检查历史流程运行", "检查了历史流程运行", "历史流程运行检查完成。");
+        private static CopilotSharedCapabilityPresentation FlowRunEventsPresentation { get; } =
+            Presentation("application", "正在读取流程运行事件", "读取了流程运行事件", "已获得流程运行事件。");
+        private static CopilotSharedCapabilityPresentation FlowRunAttemptsPresentation { get; } =
+            Presentation("application", "正在读取流程节点尝试", "读取了流程节点尝试", "已获得流程节点尝试记录。");
+        private static CopilotSharedCapabilityPresentation RecordedFlowTemplateComparisonPresentation { get; } =
+            Presentation("application", "正在比较留存流程模板", "比较了留存流程模板", "留存流程模板比较完成。");
+        private static CopilotSharedCapabilityPresentation RecordedFlowTemplatePresentation { get; } =
+            Presentation("application", "正在检查留存流程模板", "检查了留存流程模板", "留存流程模板检查完成。");
         private static CopilotSharedCapabilityPresentation FlowNodeSearchPresentation { get; } =
             Presentation("application", "正在搜索流程节点", "搜索了流程节点", "已获得流程节点类型结果。", isSearch: true);
         private static CopilotSharedCapabilityPresentation FlowPreviewPresentation { get; } =
@@ -322,6 +462,21 @@ namespace ColorVision.Copilot
                     "Call search_docs with { \"query\": \"plugin development\" }.",
                     openWorldHint: true),
                 presentation: DocumentationSearchPresentation);
+        public static CopilotSharedCapabilityDefinition AlgorithmHelp { get; } =
+            Shared(
+                "docs.algorithm-help",
+                CopilotSharedAgentToolNames.ReadAlgorithmHelp,
+                "read_algorithm_help",
+                AlgorithmHelpInputSchema,
+                applicationCapabilities => new CopilotReadAlgorithmHelpTool(applicationCapabilities),
+                dispatcher => (arguments, _, token) => dispatcher.ReadAlgorithmHelpAsync(arguments, token),
+                executionTimeout: TimeSpan.FromSeconds(15),
+                auditArgumentMode: CopilotToolAuditArgumentMode.NamesOnly,
+                agentDescription: "Read the algorithm principles and parameter documentation delivered with this installation, using the exact algorithmHelpTopicId returned by SearchFlowNodeCatalog. Returns pages of Markdown source. This documentation does not establish the current runtime configuration, measurement results, or acceptance. When has_more is true, pass next_cursor as cursor for the same topic.",
+                mcpDescription: "Read installed algorithm help Markdown using the exact algorithmHelpTopicId from get_flow_node_catalog. Required: topic_id. Optional: cursor unchanged for the same topic, max_characters (256-12000, default 6000). Returns complete JSON containing a bounded source page; follow next_cursor when has_more is true. Document changes invalidate continuation. No diagrams or components are executed and no network is used. Documentation is not evidence of current configuration, measurement, or acceptance.",
+                mcpMetadata: McpMetadata("context", "Call get_flow_node_catalog first and copy its exact algorithmHelpTopicId to topic_id in read_algorithm_help. Follow has_more and next_cursor for the same topic to read the remaining Markdown source."),
+                presentation: AlgorithmHelpPresentation,
+                executionRoute: CopilotSharedCapabilityExecutionRoute.ApplicationCapabilityRuntime);
         public static CopilotSharedCapabilityDefinition SearchFiles { get; } =
             Shared(
                 "workspace.search-files",
@@ -345,7 +500,7 @@ namespace ColorVision.Copilot
                 dispatcher => (arguments, scope, token) => Task.FromResult(dispatcher.GrepText(arguments, scope, token)),
                 executionRoute: CopilotSharedCapabilityExecutionRoute.WorkspaceAuthorizationAdapter,
                 agentDescription: "Search one stable bounded page of workspace text matches, optionally limited to one workspace file or directory, with an opaque continuation cursor when more matches remain. A completed empty search is successful evidence, not a tool failure; inspect scan_complete before concluding that text is absent.",
-                mcpDescription: "Search one stable bounded page of text matches under allowed ColorVision workspace roots using a literal case-insensitive query. The optional path may identify one file or directory. Required argument: query. Optional: path, cursor.",
+                mcpDescription: "Search one stable bounded page of text matches under allowed ColorVision workspace roots using a case-insensitive query that is literal unless regex is true. The optional path may identify one file or directory. Required argument: query. Optional: path, cursor, glob, regex.",
                 mcpMetadata: McpMetadata("search", "Call grep_text with { \"query\": \"FlowEngineManager\", \"path\": \"ColorVision/Copilot\" }; pass its next_cursor unchanged for another page."),
                 presentation: FileSearchPresentation);
         public static CopilotSharedCapabilityDefinition ReadAllowedFile { get; } =
@@ -359,7 +514,7 @@ namespace ColorVision.Copilot
                 _ => new CopilotReadLocalFileTool(),
                 dispatcher => (arguments, scope, token) => dispatcher.ReadAllowedFileAsync(arguments, scope, token),
                 executionRoute: CopilotSharedCapabilityExecutionRoute.WorkspaceAuthorizationAdapter,
-                agentDescription: "Read bounded local text allowed for the current round, prefix every returned source line with its authoritative one-based L<number>: coordinate, and report a safe line-and-column continuation cursor when content is truncated. When multiple exact files are preselected, omit path and line range to batch-read one task-focused evidence window from every file in one call. Otherwise, for known files or symbols, use GrepText on each exact file first and request focused line ranges; an unbounded read intentionally returns only the first bounded segment.",
+                agentDescription: "Read bounded local text allowed for the current round (a PDF yields its extracted text layer), prefix every returned source line with its authoritative one-based L<number>: coordinate, and report a safe line-and-column continuation cursor when content is truncated. When multiple exact files are preselected, omit path and line range to batch-read one task-focused evidence window from every file in one call. Otherwise, for known files or symbols, use GrepText on each exact file first and request focused line ranges; an unbounded read intentionally returns only the first bounded segment.",
                 mcpDescription: "Read a text file only if it is under an allowed ColorVision workspace root. Required argument: path. Optional: start_line, start_column, end_line.",
                 mcpMetadata: McpMetadata("file", "Call read_allowed_file with { \"path\": \"README.md\", \"start_line\": 1, \"start_column\": 1, \"end_line\": 40 }."),
                 presentation: FileReadPresentation);
@@ -385,8 +540,8 @@ namespace ColorVision.Copilot
                 _ => new CopilotGetRecentLogTool(),
                 dispatcher => (arguments, _, token) => dispatcher.GetRecentLogAsync(arguments, token),
                 executionRoute: CopilotSharedCapabilityExecutionRoute.SurfaceCapabilityAdapter,
-                agentDescription: "Read recent ColorVision application logs for failure or exception diagnosis. Do not use this tool for Windows version, port, process, service, or other machine-state inspection.",
-                mcpDescription: "Read recent ColorVision application log lines. Optional arguments: query, max_lines.",
+                agentDescription: "Read recent ColorVision application logs for failure or exception diagnosis; use source=native for camera, spectrometer and other device SDK errors. Do not use this tool for Windows version, port, process, service, or other machine-state inspection.",
+                mcpDescription: "Read recent ColorVision application log lines. Optional arguments: query, source (app or native), max_lines.",
                 mcpMetadata: McpMetadata("search", "Call get_recent_log with { \"query\": \"error\", \"max_lines\": 200 }."),
                 presentation: LogReadPresentation);
         public static CopilotSharedCapabilityDefinition SavedTemplateContext { get; } =
@@ -399,7 +554,7 @@ namespace ColorVision.Copilot
                 _ => (arguments, _, _) => Task.FromResult(CopilotMcpToolDispatcher.GetSavedTemplateContext(arguments)),
                 executionTimeout: TimeSpan.FromSeconds(15),
                 auditArgumentMode: CopilotToolAuditArgumentMode.NamesOnly,
-                agentDescription: "Read the exact saved template attached with @ as a bounded, redacted, read-only in-memory snapshot. Use the template_code and template_name from that reference before describing its values. This never queries the database, modifies, or saves a template.",
+                agentDescription: "Read the exact saved template attached with @ as a bounded, redacted snapshot. Use the template_code and template_name from that reference before describing its values.",
                 mcpDescription: "Return a bounded redacted read-only snapshot of one already loaded saved ColorVision template. Required arguments: template_code, template_name.",
                 mcpMetadata: McpMetadata("context", "Call get_saved_template_context with { \"template_code\": \"SFR\", \"template_name\": \"Default\" } after the user references a saved template."),
                 presentation: SavedTemplatePresentation,
@@ -414,7 +569,7 @@ namespace ColorVision.Copilot
                 _ => (arguments, _, _) => Task.FromResult(CopilotMcpToolDispatcher.GetTemplateTypeContext(arguments)),
                 executionTimeout: TimeSpan.FromSeconds(15),
                 auditArgumentMode: CopilotToolAuditArgumentMode.NamesOnly,
-                agentDescription: "Inspect the template type attached with @ as bounded read-only metadata: identity, loaded saved names, and browsable parameter field schema without values. Use its exact template_code. This never queries the database, reads template values, modifies, or saves a template.",
+                agentDescription: "Inspect the template type attached with @ as bounded metadata: identity, loaded saved names, and browsable parameter field schema without values. Use its exact template_code.",
                 mcpDescription: "Return bounded read-only metadata for one already loaded ColorVision template type, including saved names and parameter field schema but never parameter values. Required argument: template_code.",
                 mcpMetadata: McpMetadata("context", "Call get_template_type_context with { \"template_code\": \"SFR\" } after the user references a template type."),
                 presentation: TemplateTypePresentation,
@@ -429,10 +584,175 @@ namespace ColorVision.Copilot
                 dispatcher => (arguments, _, token) => dispatcher.GetFlowGraphAsync(arguments, token),
                 executionTimeout: TimeSpan.FromSeconds(15),
                 auditArgumentMode: CopilotToolAuditArgumentMode.NamesOnly,
-                agentDescription: "Inspect the active ColorVision flow as a structured graph with a revision, stable node ids, exact runtime type keys, ports, and edges. Use this instead of reading the binary .stn file.",
-                mcpDescription: "Return the active ColorVision flow as a bounded structured graph with a revision, stable node ids, runtime type keys, ports, and edges. Use this instead of reading the binary .stn file.",
-                mcpMetadata: McpMetadata("context", "Call get_flow_graph with { \"max_nodes\": 80 } before planning a flow edit."),
+                agentDescription: "Inspect the active ColorVision flow as paged structured evidence with revision, sourceInstanceId, stable node ids, exact type keys, ports, and edges. The default nodes stream returns bounded node overviews with detail counts and omission flags; attached internal edges are separately bounded (coverage.edges_truncated), and has_more covers only the selected stream. Read section=edges for all connections, section=ports for all port rows, or section=properties with include_properties=true for all parameter rows. An exact node_id focuses a node's rows or any incident edge, including cross-page connections. Complete structural evidence requires finishing nodes and edges. On the first page of each additional stream, pass the prior revision and sourceInstanceId as expected_revision and expected_source_instance_id, because identical revisions can belong to different hosts. Follow next_cursor for the same section, focus and include_properties; source, revision or stream-key changes require restarting. Inspect coverage and per-row text limits before claiming completeness. Use this instead of reading binary .stn files.",
+                mcpDescription: "Return one bounded current-graph page as complete JSON. Optional section=nodes (default), edges, ports, or properties; max_nodes/max_edges/max_items (1-200, default 80), exact node_id, include_properties, expected_revision, expected_source_instance_id, opaque cursor. properties requires include_properties=true; ports does not. Nodes provide bounded overviews with detail counts/omission flags and internal edges capped by max_edges; has_more is independent of omitted attached details. edges independently pages all source/port/target/port-ordered connections; ports/properties page detail rows with max_items and no nodes. Parameter text remains bounded and marked. node_id focuses node details or either edge endpoint, including cross-page edges. Finish nodes+edges for structural graph evidence; use detail streams for omitted port/parameter rows. Bind every additional stream's first page using prior revision and sourceInstanceId unchanged as expected_revision and expected_source_instance_id. Follow next_cursor unchanged for the same revision, source instance, focus, include_properties and section; limits may change. Restart when bindings or stream keys change and inspect coverage.",
+                mcpMetadata: McpMetadata("context", "Start get_flow_graph with section=nodes and follow has_more/next_cursor. Read section=edges independently for complete connections. Use section=ports or section=properties with include_properties=true for omitted overview details, limited by max_items. For each additional stream copy revision/sourceInstanceId into expected_revision/expected_source_instance_id; keep cursor unchanged and inspect row/text coverage."),
                 presentation: FlowGraphPresentation,
+                executionRoute: CopilotSharedCapabilityExecutionRoute.ApplicationCapabilityRuntime);
+        public static CopilotSharedCapabilityDefinition FlowGraphValidation { get; } =
+            Shared(
+                "flow.validate",
+                CopilotSharedAgentToolNames.ValidateFlowGraph,
+                "validate_flow_graph",
+                FlowGraphValidationInputSchema,
+                applicationCapabilities => new CopilotValidateFlowGraphTool(applicationCapabilities),
+                dispatcher => (arguments, _, token) => dispatcher.ValidateFlowGraphAsync(arguments, token),
+                executionTimeout: TimeSpan.FromSeconds(15),
+                auditArgumentMode: CopilotToolAuditArgumentMode.NamesOnly,
+                agentDescription: "Run the host's static validation of the entire active Flow graph using the exact expected_revision from InspectFlowGraph. valid=false is a completed validation result, not a tool failure; a missing editor, revision mismatch, or inability to check is a tool failure. This does not validate historical graphs, device readiness, every execution branch, algorithm parameter compliance, measurements, or acceptance.",
+                mcpDescription: "Return the host's static validation of the entire active Flow graph as complete JSON. Required: expected_revision unchanged from get_flow_graph. A successful call may report valid=false with a diagnostic. No active editor, a stale revision, or a failed check is a tool failure. This checks neither historical graphs nor device readiness, every branch, algorithm parameter compliance, measurements, or customer acceptance. No editing, saving, or execution occurs.",
+                mcpMetadata: McpMetadata("context", "Call get_flow_graph first, then pass its exact revision unchanged as expected_revision to validate_flow_graph. Inspect valid and diagnostic in a successful result; invalid business graphs do not imply a failed tool call."),
+                presentation: FlowGraphValidationPresentation,
+                executionRoute: CopilotSharedCapabilityExecutionRoute.ApplicationCapabilityRuntime);
+        public static CopilotSharedCapabilityDefinition DeviceServices { get; } =
+            Shared(
+                "device.services",
+                CopilotSharedAgentToolNames.InspectDeviceServices,
+                "inspect_device_services",
+                DeviceServicesInputSchema,
+                applicationCapabilities => new CopilotInspectDeviceServicesTool(applicationCapabilities),
+                dispatcher => (arguments, _, token) => dispatcher.InspectDeviceServicesAsync(arguments, token),
+                executionTimeout: TimeSpan.FromSeconds(15),
+                auditArgumentMode: CopilotToolAuditArgumentMode.NamesOnly,
+                agentDescription: "Read a directory of already-loaded device services, or focus an exact device_ref with its expected_source_instance_id from a preceding directory; there is no fuzzy name/code/resource-id or selected-device fallback. Follow next_cursor for list pages; member-object or host changes require restarting. Returns metadata and supported built-in cached status; unsupported plugins report unknown state. Cached status does not establish online health, heartbeat freshness, initialization, readiness, or measurement. This does not poll a device or read configuration or credentials.",
+                mcpDescription: "Inspect already-loaded device-service metadata and supported built-in cached state as complete JSON. Omit device_ref for a directory page; max_devices is 1-100 (default 40), cursor is an unchanged opaque continuation bound to host/member inventory. To focus, pass the exact 32-hex device_ref plus expected_source_instance_id from the directory and omit cursor. List requests may also pin expected_source_instance_id. References identify member objects in one host, not names, codes, resource ids, or persistent identities. Unknown/unsupported/read-failed states remain explicit. No live polling, health inference, configuration, initialization, reconnect, control commands, or UI creation.",
+                mcpMetadata: McpMetadata("context", "Call inspect_device_services without a focus to discover current references. Continue next_cursor unchanged for more directory rows, or pass one exact device_ref with the returned source_instance_id as expected_source_instance_id to inspect that member; never combine a focus with cursor."),
+                presentation: DeviceServicesPresentation,
+                executionRoute: CopilotSharedCapabilityExecutionRoute.ApplicationCapabilityRuntime);
+        public static CopilotSharedCapabilityDefinition LoadedBatchResults { get; } =
+            Shared(
+                "measurement.loaded-batch-results",
+                CopilotSharedAgentToolNames.InspectLoadedBatchResults,
+                "inspect_loaded_batch_results",
+                LoadedBatchResultsInputSchema,
+                applicationCapabilities => new CopilotInspectLoadedBatchResultsTool(applicationCapabilities),
+                dispatcher => (arguments, _, token) => dispatcher.InspectLoadedBatchResultsAsync(arguments, token),
+                executionTimeout: TimeSpan.FromSeconds(15),
+                auditArgumentMode: CopilotToolAuditArgumentMode.NamesOnly,
+                agentDescription: "Read already-loaded measurement batch details without a database query. When automatic measurement context provides a complete Loaded batch result source pair, pass its source_ref and expected_source_instance_id directly; otherwise discover the source directory first. Stale references require discovery, never a batch-id or selection fallback. Page image and algorithm master records, then optionally focus a returned result_ref without cursor; the context's selected result id is not result_ref. Follow next_cursor for the same mode and source. Sources and rows are distinct from database ids, names, UI selection, and flow run ids. Raw nullable result codes do not establish customer PASS/FAIL, and recorded dates are not labeled UTC. This does not read files or parse result payloads.",
+                mcpDescription: "Read complete JSON for loaded batch-detail source directory, exact source result pages, or exact row focus. Use a complete Loaded batch result source JSON pair from automatic measurement context directly, or discover source_ref and source_instance_id from the directory; pass the latter as expected_source_instance_id. Optional result_ref requires that source and forbids cursor; internal selected result ids are not result_ref. Snapshot references are revalidated at call time; stale references require discovery without batch-id or current-selection fallback. max_items is 1-100 (default 40); cursor is unchanged opaque continuation for the same registry/mode/source and member inventory. Closing/unloading pages, replacing batches or row objects requires restarting. Only image/algorithm master metadata is read, including raw nullable result code, recorded duration and date kind. This is not SQL history, customer judgment, parsed measurement values, file availability, or current selection. No SN, path, message, payload, handler execution, UI navigation, or database query.",
+                mcpMetadata: McpMetadata("context", "Use the complete Loaded batch result source JSON pair in automatic measurement context directly. Otherwise call inspect_loaded_batch_results without a source to discover registered loaded details, then pass one source_ref plus source_instance_id as expected_source_instance_id. References identify the captured source and are revalidated on calls; stale references require discovery, never inference from batch ids or selection. A returned result_ref may focus a row; internal selected result ids cannot. Follow next_cursor unchanged within its mode and exact source."),
+                presentation: LoadedBatchResultsPresentation,
+                executionRoute: CopilotSharedCapabilityExecutionRoute.ApplicationCapabilityRuntime);
+        public static CopilotSharedCapabilityDefinition FlowIncident { get; } =
+            Shared(
+                "flow.incident",
+                CopilotSharedAgentToolNames.InspectFlowIncident,
+                "inspect_flow_incident",
+                FlowIncidentInputSchema,
+                applicationCapabilities => new CopilotInspectFlowIncidentTool(applicationCapabilities),
+                dispatcher => (arguments, _, token) => dispatcher.InspectFlowIncidentAsync(arguments, token),
+                executionTimeout: TimeSpan.FromSeconds(15),
+                auditArgumentMode: CopilotToolAuditArgumentMode.NamesOnly,
+                agentDescription: "Inspect one exact recorded ColorVision flow incident and its associated run, node attempt, and bounded execution events. Use only an incident_id supplied by the user, current flow-incidents context, or ListFlowIncidents; never guess an id.",
+                mcpDescription: "Return a bounded read-only inspection of one exact recorded ColorVision flow incident, associated run and node attempt, and execution events. Required argument: incident_id from the user, current flow-incidents context, or list_flow_incidents; never guess an id. Optional: max_events (1-100, default 40).",
+                mcpMetadata: McpMetadata("context", "Call inspect_flow_incident with the exact incident_id supplied by the user, current flow-incidents context, or list_flow_incidents; optionally set max_events up to 100."),
+                presentation: FlowIncidentPresentation,
+                executionRoute: CopilotSharedCapabilityExecutionRoute.ApplicationCapabilityRuntime);
+        public static CopilotSharedCapabilityDefinition FlowIncidents { get; } =
+            Shared(
+                "flow.incidents",
+                CopilotSharedAgentToolNames.ListFlowIncidents,
+                "list_flow_incidents",
+                FlowIncidentsInputSchema,
+                applicationCapabilities => new CopilotListFlowIncidentsTool(applicationCapabilities),
+                dispatcher => (arguments, _, token) => dispatcher.ListFlowIncidentsAsync(arguments, token),
+                executionTimeout: TimeSpan.FromSeconds(15),
+                auditArgumentMode: CopilotToolAuditArgumentMode.NamesOnly,
+                agentDescription: "List one page of recorded ColorVision flow incidents, optionally filtered by state. The default active filter returns unresolved incidents. Use a returned incident_id with InspectFlowIncident for exact evidence. Follow next_cursor for the same filters. The list establishes neither a root cause nor the entire incident history.",
+                mcpDescription: "Return one bounded read-only page of recorded ColorVision flow incidents. Optional: state (active by default: unresolved incidents, all states except the exact standard Resolved state), max_results (1-100, default 20), cursor. Call inspect_flow_incident with a returned incident_id for exact details. Pass next_cursor unchanged for the same filters; a page is not a fault root cause or a snapshot of the entire incident history.",
+                mcpMetadata: McpMetadata("context", "Call list_flow_incidents with optional state and max_results; pass its next_cursor unchanged for the same filters. Use a returned incident_id with inspect_flow_incident for details."),
+                presentation: FlowIncidentsPresentation,
+                executionRoute: CopilotSharedCapabilityExecutionRoute.ApplicationCapabilityRuntime);
+        public static CopilotSharedCapabilityDefinition FlowRuns { get; } =
+            Shared(
+                "flow.runs",
+                CopilotSharedAgentToolNames.ListFlowRuns,
+                "list_flow_runs",
+                FlowRunsInputSchema,
+                applicationCapabilities => new CopilotListFlowRunsTool(applicationCapabilities),
+                dispatcher => (arguments, _, token) => dispatcher.ListFlowRunsAsync(arguments, token),
+                executionTimeout: TimeSpan.FromSeconds(15),
+                auditArgumentMode: CopilotToolAuditArgumentMode.NamesOnly,
+                agentDescription: "Discover retained local flow run ids even when no incident exists, newest first, including legacy identity and unknown statuses. Optional complete flow_key is an exact match. Use a returned run_record_id with InspectFlowRunHistory, InspectFlowRunEvents, or InspectRecordedFlowTemplate. Follow next_cursor for the same filter; pages query live data, not a frozen history or population success rate.",
+                mcpDescription: "Return a bounded JSON page of retained local flow runs, including runs without incidents. Optional flow_key (1-256 characters) matches the full Unicode-trimmed recorded key ordinally; omitted means all retained runs including legacy/unknown records. max_results is 1-100 (default 20). Continue with opaque next_cursor unchanged for the same canonical filter; page size may change. Rows are run_record_id DESC, not execution start order. Returned exact ids feed inspect_flow_run_history, inspect_flow_run_events, and inspect_recorded_flow_template. This is live retained metadata, not all executions, a success rate, or an actual executed canvas; no private payload or flow control.",
+                mcpMetadata: McpMetadata("context", "Start with list_flow_runs when no exact run id or incident exists. Use optional complete flow_key from recorded evidence, inspect returned run ids, and continue next_cursor unchanged for the same filter."),
+                presentation: FlowRunsPresentation,
+                executionRoute: CopilotSharedCapabilityExecutionRoute.ApplicationCapabilityRuntime);
+        public static CopilotSharedCapabilityDefinition RecordedFlowTemplate { get; } =
+            Shared(
+                "flow.recorded-template",
+                CopilotSharedAgentToolNames.InspectRecordedFlowTemplate,
+                "inspect_recorded_flow_template",
+                RecordedFlowTemplateInputSchema,
+                applicationCapabilities => new CopilotInspectRecordedFlowTemplateTool(applicationCapabilities),
+                dispatcher => (arguments, _, token) => dispatcher.InspectRecordedFlowTemplateAsync(arguments, token),
+                executionTimeout: TimeSpan.FromSeconds(15),
+                auditArgumentMode: CopilotToolAuditArgumentMode.NamesOnly,
+                agentDescription: "Inspect the exact template snapshot retained by a recorded ColorVision run, using run_record_id from the user, InspectFlowIncident, or ListFlowRuns. Returns saved node identities, property names, and connections resolvable from the saved port layout, never property values. Optional node_id focuses a saved node and direct neighbors. Retained data can omit unsaved canvas changes and does not establish the actual executed graph; current InspectFlowGraph is separate evidence.",
+                mcpDescription: "Read the exact retained template linked by run_record_id, without loading nodes or an editor. Optional node_id is an exact GUID; max_nodes is 1-200 (default 80). Returns saved identities/property names and resolvable saved connections, never property values or raw bytes. Retained data may omit unsaved canvas changes and must not be treated as proof of the actual executed graph.",
+                mcpMetadata: McpMetadata("context", "Use run_record_id from list_flow_runs, inspect_flow_incident, or the user. Call inspect_recorded_flow_template; optionally focus an exact saved node_id. Compare provenance before using current editor evidence."),
+                presentation: RecordedFlowTemplatePresentation,
+                executionRoute: CopilotSharedCapabilityExecutionRoute.ApplicationCapabilityRuntime);
+        public static CopilotSharedCapabilityDefinition FlowRunHistory { get; } =
+            Shared(
+                "flow.run-history",
+                CopilotSharedAgentToolNames.InspectFlowRunHistory,
+                "inspect_flow_run_history",
+                FlowRunHistoryInputSchema,
+                applicationCapabilities => new CopilotInspectFlowRunHistoryTool(applicationCapabilities),
+                dispatcher => (arguments, _, token) => dispatcher.InspectFlowRunHistoryAsync(arguments, token),
+                executionTimeout: TimeSpan.FromSeconds(15),
+                auditArgumentMode: CopilotToolAuditArgumentMode.NamesOnly,
+                agentDescription: "Inspect one exact recorded ColorVision run and a bounded window of lower run ids, with states, durations, and optional exact-node attempts. Confirmed flow identity requires the complete stored FlowKey to match; rows with no FlowKeys and a matching positive TemplateId are labeled legacy references, never confirmed same-flow statistics. Descriptive success samples require matching recorded content hashes and known successful outcomes; null outcomes are unknown. This is not full history, a success rate, or evidence of the actual executed canvas.",
+                mcpDescription: "Return complete JSON for one exact run and bounded previous run ids, optionally including bounded attempts of one exact node. Required: run_record_id. Optional: node_id unchanged, max_runs (1-50, default 10). Complete stored FlowKey matching confirms identity; same positive TemplateId with both FlowKeys absent is legacy reference only. Descriptive success samples use matching recorded hashes and known successful final outcomes; null outcomes are unknown. This is not full history, a success rate, or the actual executed canvas. No snapshot BLOBs, SNs, operators, payloads, or flow control.",
+                mcpMetadata: McpMetadata("context", "Call inspect_flow_run_history with the exact run_record_id returned by list_flow_runs or inspect_flow_incident; optionally pass an exact unchanged node_id and max_runs up to 50."),
+                presentation: FlowRunHistoryPresentation,
+                executionRoute: CopilotSharedCapabilityExecutionRoute.ApplicationCapabilityRuntime);
+        public static CopilotSharedCapabilityDefinition FlowRunEvents { get; } =
+            Shared(
+                "flow.run-events",
+                CopilotSharedAgentToolNames.InspectFlowRunEvents,
+                "inspect_flow_run_events",
+                FlowRunEventsInputSchema,
+                applicationCapabilities => new CopilotInspectFlowRunEventsTool(applicationCapabilities),
+                dispatcher => (arguments, _, token) => dispatcher.InspectFlowRunEventsAsync(arguments, token),
+                executionTimeout: TimeSpan.FromSeconds(15),
+                auditArgumentMode: CopilotToolAuditArgumentMode.NamesOnly,
+                agentDescription: "Read recorded execution events for an exact run_record_id from ListFlowRuns, InspectFlowIncident, InspectFlowRunHistory, or the user. Starts with the latest window; follow next_cursor for the same run to read earlier windows. Each page is ordered ascending. Payloads are not included. Missing events do not establish success, measurement results, or customer judgment.",
+                mcpDescription: "Read exact retained run events as complete JSON. Required: run_record_id from list_flow_runs, incident/history evidence, or the user. Optional: max_events (1-100, default 40), opaque cursor unchanged for the same run. The first page is the latest window; has_more and next_cursor continue toward earlier events. Each page is ordered by sequence and event id ascending. No payloads are read; absent events do not establish success, measurements, or customer judgment. No device control, rerun, or database write occurs.",
+                mcpMetadata: McpMetadata("context", "Pass an exact run_record_id from list_flow_runs, inspect_flow_incident, or inspect_flow_run_history to inspect_flow_run_events. Read events in each page's ascending sequence/id order; use next_cursor unchanged for the same run to retrieve earlier windows."),
+                presentation: FlowRunEventsPresentation,
+                executionRoute: CopilotSharedCapabilityExecutionRoute.ApplicationCapabilityRuntime);
+        public static CopilotSharedCapabilityDefinition FlowRunAttempts { get; } =
+            Shared(
+                "flow.run-attempts",
+                CopilotSharedAgentToolNames.InspectFlowRunAttempts,
+                "inspect_flow_run_attempts",
+                FlowRunAttemptsInputSchema,
+                applicationCapabilities => new CopilotInspectFlowRunAttemptsTool(applicationCapabilities),
+                dispatcher => (arguments, _, token) => dispatcher.InspectFlowRunAttemptsAsync(arguments, token),
+                executionTimeout: TimeSpan.FromSeconds(15),
+                auditArgumentMode: CopilotToolAuditArgumentMode.NamesOnly,
+                agentDescription: "Read retained node attempts for an exact recorded run from ListFlowRuns, incidents, history, events, or the user. Optional exact node_id need not be a GUID; omit it for all nodes. Starts with the latest attempts, each page ascending by attempt_id; follow next_cursor toward earlier ids for the same run and node filter. Returns recorded outcomes, errors, and duration when stored timing is valid. Repeated attempts are not deduplicated. Missing or unknown outcomes or errors do not establish run continuation, ContinueOnFail, a root cause, or customer judgment.",
+                mcpDescription: "Read one bounded JSON page of exact-run node attempts, including earlier detail omitted by incident/history overviews. Required run_record_id is a positive Int32 from recorded evidence or the user. Optional node_id (1-128 characters) matches exactly without trimming or GUID assumptions; omitted means all nodes. max_attempts is 1-100 (default 40). Pages select the latest attempt_id DESC window and deliver ASC; next_cursor unchanged reads an older window for the same run/node, with page size allowed to change. Null/unknown outcomes and invalid/missing durations remain unknown. Live retained pages do not freeze complete execution history or establish execution policy or root cause. No private payload or flow control.",
+                mcpMetadata: McpMetadata("context", "Use an exact run id from list_flow_runs, incident/history/event evidence, or the user. Read inspect_flow_run_attempts, optionally with the exact unchanged node_id; follow next_cursor unchanged for the same scope to inspect older attempts and recorded errors."),
+                presentation: FlowRunAttemptsPresentation,
+                executionRoute: CopilotSharedCapabilityExecutionRoute.ApplicationCapabilityRuntime);
+        public static CopilotSharedCapabilityDefinition RecordedFlowTemplateComparison { get; } =
+            Shared(
+                "flow.recorded-template-compare",
+                CopilotSharedAgentToolNames.CompareRecordedFlowTemplates,
+                "compare_recorded_flow_templates",
+                RecordedFlowTemplateComparisonInputSchema,
+                applicationCapabilities => new CopilotCompareRecordedFlowTemplatesTool(applicationCapabilities),
+                dispatcher => (arguments, _, token) => dispatcher.CompareRecordedFlowTemplatesAsync(arguments, token),
+                executionTimeout: TimeSpan.FromSeconds(15),
+                auditArgumentMode: CopilotToolAuditArgumentMode.NamesOnly,
+                agentDescription: "Compare the exact retained templates of baseline_run_record_id and current_run_record_id. Reports added/removed/modified nodes, changed saved field names, resolvable connection differences, and saved order/view flags, never values. Compatible recorded flow identity is required; legacy identity is explicitly weaker. Counts cover complete bounded templates, while max_changes limits detail rows. Follow next_cursor to continue details; changed run, snapshot, or source evidence requires a new comparison. Finishing pages does not prove every field name was read. Retained differences do not prove the actual executed canvas or a failure cause.",
+                mcpDescription: "Compare exact retained templates of two recorded runs from one read-only journal snapshot. Required: baseline_run_record_id and current_run_record_id. Optional max_changes (1-200, default 50) limits combined node/edge detail rows and may change between pages; full bounded-template counts remain separate. Continue has_more results using next_cursor as the opaque cursor unchanged without trimming. Run, snapshot, SHA or source evidence changes require a new comparison. Saved field names remain independently bounded even after all detail rows are read. Returns saved field names and resolvable structural differences, never field values, field hashes, or raw bytes. Unknown legacy connections are not guessed, and retained templates do not establish actual execution or fault causality.",
+                mcpMetadata: McpMetadata("context", "Read run history first, then pass explicit baseline_run_record_id and current_run_record_id to compare_recorded_flow_templates. Inspect counts, flags and coverage; when has_more is true, pass next_cursor unchanged as cursor to continue detail rows."),
+                presentation: RecordedFlowTemplateComparisonPresentation,
                 executionRoute: CopilotSharedCapabilityExecutionRoute.ApplicationCapabilityRuntime);
         public static CopilotSharedCapabilityDefinition FlowNodeCatalog { get; } =
             Shared(
@@ -444,8 +764,8 @@ namespace ColorVision.Copilot
                 dispatcher => (arguments, _, token) => dispatcher.GetFlowNodeCatalogAsync(arguments, token),
                 executionTimeout: TimeSpan.FromSeconds(15),
                 auditArgumentMode: CopilotToolAuditArgumentMode.NamesOnly,
-                agentDescription: "Search the node types loaded by the active Flow editor. Returns exact type keys and writable property schemas. Search first and never guess which camera node the user means.",
-                mcpDescription: "Search the node types loaded by the active Flow editor. Returns exact runtime type keys, categories, default device codes, and writable property schemas; do not guess a camera node type.",
+                agentDescription: "Search node types loaded by the active Flow editor. Returns exact type keys, property schemas, descriptor types, declared enum member names, Flags declarations and standard boolean string candidates. Keep member spelling unchanged. These are declaration metadata, not a complete list of values accepted by custom descriptors or setters; verify a proposed value with PreviewFlowPatch. Empty candidates do not mean read-only. Search first and never guess which camera node the user means.",
+                mcpDescription: "Search node types loaded by the active Flow editor. Returns runtime type keys, categories, device codes and property metadata including descriptorType, declaredEnumNames, isFlagsEnum and booleanStringCandidates. Preserve exact enum spelling; candidates are not a complete allowed-value list. Check isWritable and verify the proposed value with preview_flow_patch, especially for custom descriptors. Do not guess a camera node type.",
                 mcpMetadata: McpMetadata("context", "Call get_flow_node_catalog with { \"query\": \"相机\", \"max_results\": 30 }."),
                 presentation: FlowNodeSearchPresentation,
                 executionRoute: CopilotSharedCapabilityExecutionRoute.ApplicationCapabilityRuntime);
@@ -459,8 +779,8 @@ namespace ColorVision.Copilot
                 dispatcher => (arguments, _, token) => dispatcher.PreviewFlowPatchAsync(arguments, token),
                 executionTimeout: TimeSpan.FromSeconds(15),
                 auditArgumentMode: CopilotToolAuditArgumentMode.NamesOnly,
-                agentDescription: "Validate exactly one add_node, set_property, or connect operation against the active Flow graph revision. Use exact ids, port ids, and type keys from the read tools. This never edits, saves, or runs the flow.",
-                mcpDescription: "Validate one bounded Flow graph change without editing: add_node, set_property, or connect. Use exact ids/type keys from the Flow graph and node catalog.",
+                agentDescription: "Validate exactly one add_node, set_property, connect, or disconnect operation against the active Flow graph revision. disconnect previews removal of one exact existing source-node/output-port/target-node/input-port connection; both node ids must be nonempty GUIDs in D format and expected_revision must be 64 hex characters from graph evidence. Use exact ids, port ids, and type keys from the read tools. For supported camera additions only, explicitly set inherit_camera_defaults=true to preview current acquisition settings and obtain cameraDefaultsFingerprint for apply. This never edits, saves, or runs the flow.",
+                mcpDescription: "Validate one bounded Flow graph change without editing: add_node, set_property, connect, or disconnect. disconnect targets one exact existing connection using nonempty source/target node GUIDs in D format, exact output/input port ids, and the current 64-hex expected_revision. Use graph/catalog evidence. Camera defaults arguments apply only to add_node. No graph is changed, saved, or run.",
                 mcpMetadata: McpMetadata("context", "Call preview_flow_patch with one exact operation and the current graph revision."),
                 presentation: FlowPreviewPresentation,
                 executionRoute: CopilotSharedCapabilityExecutionRoute.ApplicationCapabilityRuntime);
@@ -475,8 +795,8 @@ namespace ColorVision.Copilot
                 CopilotSharedCapabilitySafetyClass.ApprovalRequiredWrite,
                 CopilotToolIdempotency.NonIdempotent,
                 auditArgumentMode: CopilotToolAuditArgumentMode.NamesOnly,
-                agentDescription: "Apply one previously previewed add_node, set_property, or connect operation to the active Flow editor. Rechecks the revision, requires explicit approval, and never saves or runs the flow.",
-                mcpDescription: "Apply one previously previewed add_node, set_property, or connect change after explicit approval. Rechecks the graph revision and never saves or runs the flow.",
+                agentDescription: "Apply one previously previewed add_node, set_property, connect, or disconnect operation to the active Flow editor after explicit approval. disconnect removes only the reviewed exact source-node/output-port/target-node/input-port connection, with nonempty GUID D instance ids and a 64-hex expected_revision. Rechecks the revision and existing connection and never saves or runs the flow. When inheriting camera settings for add_node, pass the preview's exact camera_defaults_fingerprint; changed settings are rejected before adding the node.",
+                mcpDescription: "Apply one previously previewed add_node, set_property, connect, or disconnect change after explicit approval. disconnect removes only the exact reviewed connection using GUID D instance ids, output/input port ids and current 64-hex expected_revision. Rechecks graph state. Camera defaults arguments apply only to add_node. Never saves or runs the flow.",
                 approvalMetadata: ManualApproval(
                     "修改不会自动保存或运行流程；如需恢复，必须在编辑器中手动撤销。"),
                 mcpMetadata: McpMetadata(
@@ -602,6 +922,7 @@ namespace ColorVision.Copilot
             Array.AsReadOnly(new[]
             {
                 SearchDocs,
+                AlgorithmHelp,
                 SearchFiles,
                 GrepText,
                 ReadAllowedFile,
@@ -610,6 +931,17 @@ namespace ColorVision.Copilot
                 SavedTemplateContext,
                 TemplateTypeContext,
                 FlowGraph,
+                FlowGraphValidation,
+                DeviceServices,
+                LoadedBatchResults,
+                FlowIncident,
+                FlowIncidents,
+                FlowRuns,
+                FlowRunHistory,
+                FlowRunEvents,
+                FlowRunAttempts,
+                RecordedFlowTemplateComparison,
+                RecordedFlowTemplate,
                 FlowNodeCatalog,
                 PreviewFlowPatch,
                 ApplyFlowPatch,

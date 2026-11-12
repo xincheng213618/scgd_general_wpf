@@ -120,4 +120,33 @@
   <data name="Core_UnsupportedFormat" xml:space="preserve">
     <value>{0} 暫不支持的格式，請聯繫開發人員</value>
   </data>
+  <data name="Intensity 使用灰度，Gradient 使用梯度特征。" xml:space="preserve"><value>Intensity 使用灰度，Gradient 使用梯度特徵。</value></data>
+  <data name="亚像素定位" xml:space="preserve"><value>亞像素定位</value></data>
+  <data name="允许遮挡比例" xml:space="preserve"><value>允許遮擋比例</value></data>
+  <data name="匹配判定" xml:space="preserve"><value>匹配判定</value></data>
+  <data name="尺度搜索" xml:space="preserve"><value>尺度搜索</value></data>
+  <data name="尺度步长" xml:space="preserve"><value>尺度步長</value></data>
+  <data name="抑制中心距离过近的重复匹配；0 表示不按距离抑制。" xml:space="preserve"><value>抑制中心距離過近的重複匹配；0 表示不按距離抑制。</value></data>
+  <data name="旋转搜索" xml:space="preserve"><value>旋轉搜索</value></data>
+  <data name="最低匹配分数" xml:space="preserve"><value>最低匹配分數</value></data>
+  <data name="最多匹配数量" xml:space="preserve"><value>最多匹配數量</value></data>
+  <data name="最多返回的目标数量，范围 1 到 10000。" xml:space="preserve"><value>最多返回的目標數量，範圍 1 到 10000。</value></data>
+  <data name="最大为 20；固定大小时将最小和最大尺度都设为 1。" xml:space="preserve"><value>最大爲 20；固定大小時將最小和最大尺度都設爲 1。</value></data>
+  <data name="最大尺度" xml:space="preserve"><value>最大尺度</value></data>
+  <data name="最大角度(°)" xml:space="preserve"><value>最大角度(°)</value></data>
+  <data name="最小尺度" xml:space="preserve"><value>最小尺度</value></data>
+  <data name="最小角度(°)" xml:space="preserve"><value>最小角度(°)</value></data>
+  <data name="检测" xml:space="preserve"><value>檢測</value></data>
+  <data name="特征与精度" xml:space="preserve"><value>特徵與精度</value></data>
+  <data name="特征模式" xml:space="preserve"><value>特徵模式</value></data>
+  <data name="目标最小间距(px)" xml:space="preserve"><value>目標最小間距(px)</value></data>
+  <data name="相对于参考图大小的比例，必须大于 0。" xml:space="preserve"><value>相對於參考圖大小的比例，必須大於 0。</value></data>
+  <data name="范围 0 到 0.75；较大值允许忽略更多不一致样本，也可能增加误匹配。" xml:space="preserve"><value>範圍 0 到 0.75；較大值允許忽略更多不一致樣本，也可能增加誤匹配。</value></data>
+  <data name="范围 0 到 1；低于该分数的候选不作为匹配结果。" xml:space="preserve"><value>範圍 0 到 1；低於該分數的候選不作爲匹配結果。</value></data>
+  <data name="范围 1 到 8。" xml:space="preserve"><value>範圍 1 到 8。</value></data>
+  <data name="角度步长(°)" xml:space="preserve"><value>角度步長(°)</value></data>
+  <data name="输入" xml:space="preserve"><value>輸入</value></data>
+  <data name="金字塔层数" xml:space="preserve"><value>金字塔層數</value></data>
+  <data name="Gradient" xml:space="preserve"><value>梯度</value></data>
+  <data name="Intensity" xml:space="preserve"><value>灰度強度</value></data>
 </root>

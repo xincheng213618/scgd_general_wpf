@@ -79,8 +79,9 @@ namespace ColorVision.ImageEditor.Algorithms
             ImageComparisonParameters parameters,
             CancellationToken cancellationToken)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             int width = reference.Width;
-            int height = reference.Height;
+            var (minimumX, minimumY, maximumXExclusive, maximumYExclusive) = region.GetSamplingBounds(reference);
             int radius = parameters.SsimWindowSize / 2;
             double[] sumX = new double[width];
             double[] sumY = new double[width];
@@ -89,7 +90,9 @@ namespace ColorVision.ImageEditor.Algorithms
             double[] sumXY = new double[width];
             int[] counts = new int[width];
             int[] possibleCounts = new int[width];
-            for (int row = 0; row <= Math.Min(radius, height - 1); row++)
+            // Samples outside the ROI never enter a window. Skip their zero-valued
+            // rows/columns while preserving the original order of nonzero additions.
+            for (int row = minimumY; row <= Math.Min(minimumY + radius, maximumYExclusive - 1); row++)
                 AddRow(reference, candidate, region, channel, row, 1, sumX, sumY, sumX2, sumY2, sumXY, counts, possibleCounts);
 
             double peak = reference.Format.IsFloatingPoint() ? parameters.FloatPeakValue
@@ -99,15 +102,15 @@ namespace ColorVision.ImageEditor.Algorithms
             KahanSum total = new();
             long valid = 0;
             long invalid = 0;
-            for (int y = 0; y < height; y++)
+            for (int y = minimumY; y < maximumYExclusive; y++)
             {
                 if ((y & 15) == 0) cancellationToken.ThrowIfCancellationRequested();
-                if (y > 0)
+                if (y > minimumY)
                 {
                     int remove = y - radius - 1;
                     int add = y + radius;
-                    if (remove >= 0) AddRow(reference, candidate, region, channel, remove, -1, sumX, sumY, sumX2, sumY2, sumXY, counts, possibleCounts);
-                    if (add < height) AddRow(reference, candidate, region, channel, add, 1, sumX, sumY, sumX2, sumY2, sumXY, counts, possibleCounts);
+                    if (remove >= minimumY) AddRow(reference, candidate, region, channel, remove, -1, sumX, sumY, sumX2, sumY2, sumXY, counts, possibleCounts);
+                    if (add < maximumYExclusive) AddRow(reference, candidate, region, channel, add, 1, sumX, sumY, sumX2, sumY2, sumXY, counts, possibleCounts);
                 }
 
                 double windowX = 0;
@@ -117,19 +120,19 @@ namespace ColorVision.ImageEditor.Algorithms
                 double windowXY = 0;
                 int windowCount = 0;
                 int possibleWindowCount = 0;
-                for (int column = 0; column <= Math.Min(radius, width - 1); column++)
+                for (int column = minimumX; column <= Math.Min(minimumX + radius, maximumXExclusive - 1); column++)
                     AddColumn(column, 1, sumX, sumY, sumX2, sumY2, sumXY, counts, possibleCounts,
                         ref windowX, ref windowY, ref windowX2, ref windowY2, ref windowXY, ref windowCount, ref possibleWindowCount);
 
-                for (int x = 0; x < width; x++)
+                for (int x = minimumX; x < maximumXExclusive; x++)
                 {
-                    if (x > 0)
+                    if (x > minimumX)
                     {
                         int remove = x - radius - 1;
                         int add = x + radius;
-                        if (remove >= 0) AddColumn(remove, -1, sumX, sumY, sumX2, sumY2, sumXY, counts, possibleCounts,
+                        if (remove >= minimumX) AddColumn(remove, -1, sumX, sumY, sumX2, sumY2, sumXY, counts, possibleCounts,
                             ref windowX, ref windowY, ref windowX2, ref windowY2, ref windowXY, ref windowCount, ref possibleWindowCount);
-                        if (add < width) AddColumn(add, 1, sumX, sumY, sumX2, sumY2, sumXY, counts, possibleCounts,
+                        if (add < maximumXExclusive) AddColumn(add, 1, sumX, sumY, sumX2, sumY2, sumXY, counts, possibleCounts,
                             ref windowX, ref windowY, ref windowX2, ref windowY2, ref windowXY, ref windowCount, ref possibleWindowCount);
                     }
                     if (!region.Contains(x, y)) continue;
@@ -175,7 +178,8 @@ namespace ColorVision.ImageEditor.Algorithms
             int[] counts,
             int[] possibleCounts)
         {
-            for (int x = 0; x < reference.Width; x++)
+            var samplingBounds = region.GetSamplingBounds(reference);
+            for (int x = samplingBounds.MinimumX; x < samplingBounds.MaximumXExclusive; x++)
             {
                 if (!region.Contains(x, row)) continue;
                 possibleCounts[x] += direction;
@@ -225,8 +229,19 @@ namespace ColorVision.ImageEditor.Algorithms
             ImageComparisonParameters parameters,
             CancellationToken cancellationToken)
         {
-            long boundingArea = checked((long)(region.MaximumXExclusive - region.MinimumX) * (region.MaximumYExclusive - region.MinimumY));
+            int width = region.MaximumXExclusive - region.MinimumX;
+            int height = region.MaximumYExclusive - region.MinimumY;
+            long boundingArea = checked((long)width * height);
             int step = Math.Max(1, (int)Math.Ceiling(Math.Sqrt(boundingArea / (double)parameters.AlignmentMaximumSamples)));
+            int maximumStep = Math.Max(width, height);
+            // Bound the rounded grid dimensions while retaining uniform spacing over the entire ROI.
+            while (step < maximumStep)
+            {
+                int candidateStep = step + (maximumStep - step) / 2;
+                long samples = ((width + (long)candidateStep - 1) / candidateStep) * ((height + (long)candidateStep - 1) / candidateStep);
+                if (samples <= parameters.AlignmentMaximumSamples) maximumStep = candidateStep;
+                else step = candidateStep + 1;
+            }
             long potential = 0;
             for (int y = region.MinimumY; y < region.MaximumYExclusive; y += step)
             {

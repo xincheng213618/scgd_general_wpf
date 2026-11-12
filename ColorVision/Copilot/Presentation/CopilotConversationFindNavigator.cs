@@ -74,18 +74,15 @@ namespace ColorVision.Copilot
             string query)
         {
             return Contains(message.Content, query)
-                || Contains(message.ReasoningContent, query)
-                || Contains(message.ExecutionContent, query)
+                || (message.HasAgentTraceEntries || message.HasLegacyThinkingTrace) && Contains(message.ThinkingContent, query)
                 || Contains(message.AssistantName, query)
                 || message.Attachments.Any(attachment =>
                     Contains(attachment?.Title, query)
                     || Contains(attachment?.DisplayLabel, query)
                     || Contains(attachment?.Source, query))
                 || message.AgentTraceEntries.Any(trace =>
-                    Contains(trace?.ToolName, query)
-                    || Contains(trace?.ArgumentSummary, query)
-                    || Contains(trace?.ResultSummary, query)
-                    || Contains(trace?.ErrorMessage, query));
+                    trace?.IsVisibleInActivity == true
+                    && Contains(trace.DiagnosticDetails, query));
         }
 
         private static bool Contains(string? text, string query)

@@ -1,12 +1,9 @@
 ﻿#pragma warning disable CA1720,CA1822,CA1854,CS8619
-using ColorVision.Common.MVVM;
 using ColorVision.UI.HotKey;
 using log4net;
 using System.Diagnostics;
-using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Input;
 
 namespace ColorVision.UI.Menus
 {
@@ -15,7 +12,7 @@ namespace ColorVision.UI.Menus
     /// </summary>
     public readonly record struct MenuItemScopeKey(string TargetName, string GuidId);
 
-    public class MenuManager : IMenuService
+    public partial class MenuManager : IMenuService
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(MenuManager));
         private static MenuManager _instance;
@@ -32,18 +29,27 @@ namespace ColorVision.UI.Menus
         private readonly List<MenuRegistration> _menuRegistrations = new();
         private readonly Dictionary<Menu, List<MenuItem>> _menuBackups = new();
 
-        private bool _typeCacheBuilt;
-        private readonly List<Type> _menuItemTypeCache = new();
-        private readonly List<Type> _menuItemProviderTypeCache = new();
-        /// <summary>Types decorated with <see cref="MenuItemAttribute"/> that do NOT
+        /// <param name="AttributeTypes">Types decorated with <see cref="MenuItemAttribute"/> that do NOT
         /// already implement <see cref="IMenuItem"/> or <see cref="IMenuItemProvider"/>.
-        /// These are handled via the lazy-loading path.</summary>
-        private readonly List<Type> _menuItemAttributeTypeCache = new();
+        /// These are handled via the lazy-loading path.</param>
+        private sealed record MenuTypeSnapshot(Type[] ItemTypes, Type[] ProviderTypes, Type[] AttributeTypes);
+
+        private volatile MenuTypeSnapshot? _typeSnapshot;
+        private int _typeSnapshotGeneration;
         private readonly object _typeCacheLock = new();
+        private readonly object _typeSnapshotPublicationLock = new();
 
         private MenuManager()
         {
             MenuService.SetInstance(this);
+            AssemblyHandler.GetInstance().AssembliesChanged += (_, _) =>
+            {
+                lock (_typeSnapshotPublicationLock)
+                {
+                    _typeSnapshotGeneration++;
+                    _typeSnapshot = null;
+                }
+            };
         }
 
         public int GetEffectiveOrder(IMenuItem mi)
@@ -287,195 +293,6 @@ namespace ColorVision.UI.Menus
             return menuItem;
         }
 
-        private void EnsureTypeCaches()
-        {
-            if (_typeCacheBuilt) return;
-            lock (_typeCacheLock)
-            {
-                if (_typeCacheBuilt) return;
-
-                foreach (var assembly in AssemblyHandler.GetInstance().GetAssemblies())
-                {
-                    foreach (var t in AssemblyHandler.GetInstance().GetTypes(assembly))
-                    {
-                        if (!IsConcreteMenuCandidate(t)) continue;
-
-                        if (typeof(IMenuItem).IsAssignableFrom(t))
-                        {
-                            AddInstantiableType(_menuItemTypeCache, t, nameof(IMenuItem));
-                        }
-                        else if (typeof(IMenuItemProvider).IsAssignableFrom(t))
-                        {
-                            AddInstantiableType(_menuItemProviderTypeCache, t, nameof(IMenuItemProvider));
-                        }
-                        else if (t.IsDefined(typeof(MenuItemAttribute), false))
-                        {
-                            AddInstantiableType(_menuItemAttributeTypeCache, t, nameof(MenuItemAttribute));
-                        }
-                    }
-                }
-
-                _typeCacheBuilt = true;
-            }
-        }
-
-        private static bool IsConcreteMenuCandidate(Type? type)
-        {
-            return type != null
-                && type.IsClass
-                && !type.IsAbstract
-                && !type.IsInterface
-                && !type.ContainsGenericParameters
-                && !type.IsDefined(typeof(ObsoleteAttribute), inherit: false);
-        }
-
-        private static bool HasPublicParameterlessConstructor(Type type)
-        {
-            return type.GetConstructor(Type.EmptyTypes) != null;
-        }
-
-        private void AddInstantiableType(List<Type> cache, Type type, string discoveryKind)
-        {
-            if (HasPublicParameterlessConstructor(type))
-            {
-                cache.Add(type);
-                return;
-            }
-
-            if (log.IsDebugEnabled)
-                log.Debug($"Skip {discoveryKind} discovery for {type.FullName}: no public parameterless constructor.");
-        }
-
-        /// <summary>
-        /// 提供一个公共方法，获取系统当前所有过滤后的 IMenuItem（包含所有窗口）
-        /// 用于之前的全局搜索或快捷键绑定功能
-        /// </summary>
-        public List<IMenuItem> GetAllMenuItemsFiltered()
-        {
-            return GetIMenuItemsFiltered(null);
-        }
-
-        private List<IMenuItem> GetWindowSpecificItems(string targetName, Func<Type, bool>? typeFilter)
-        {
-            var allItems = GetIMenuItemsFiltered(typeFilter);
-            return allItems.Where(mi =>
-                mi.TargetName == targetName ||
-                mi.TargetName == MenuItemConstants.GlobalTarget).ToList();
-        }
-
-        private List<IMenuItem> GetIMenuItemsFiltered(Func<Type, bool>? typeFilter)
-        {
-            var allMenuItems = CreateAllMenuItems(typeFilter);
-            var allFilteredItems = GetAllFilteredItems(allMenuItems);
-            return allMenuItems.Where(mi => mi.GuidId == null || !allFilteredItems.Contains(CreateScopeKey(mi))).ToList();
-        }
-
-        private List<IMenuItem> CreateAllMenuItems(Func<Type, bool>? typeFilter)
-        {
-            EnsureTypeCaches();
-            var allMenuItems = new List<IMenuItem>(_menuItemTypeCache.Count + _menuItemProviderTypeCache.Count + _menuItemAttributeTypeCache.Count + 16);
-
-            foreach (var t in _menuItemTypeCache)
-            {
-                if (typeFilter != null && !typeFilter(t))
-                    continue;
-
-                try
-                {
-                    if (Activator.CreateInstance(t) is IMenuItem item && item.Command != null)
-                        allMenuItems.Add(item);
-                }
-                catch (Exception ex)
-                {
-                    log.Warn($"Create IMenuItem failed: {t.FullName}: {ex.Message}");
-                }
-            }
-
-            foreach (var t in _menuItemProviderTypeCache)
-            {
-                if (typeFilter != null && !typeFilter(t))
-                    continue;
-
-                try
-                {
-                    if (Activator.CreateInstance(t) is IMenuItemProvider provider)
-                    {
-                        var provided = provider.GetMenuItems();
-                        if (provided != null)
-                        {
-                            foreach (var p in provided)
-                            {
-                                if (p != null && p.Command != null && p.Header != null)
-                                    allMenuItems.Add(p);
-                            }
-                        }
-                    }
-                }
-                catch (Exception ex)
-                {
-                    log.Warn($"Create IMenuItemProvider failed: {t.FullName}: {ex.Message}");
-                }
-            }
-
-            foreach (var t in _menuItemAttributeTypeCache)
-            {
-                if (typeFilter != null && !typeFilter(t))
-                    continue;
-
-                var attr = t.GetCustomAttribute<MenuItemAttribute>(false);
-                if (attr?.Header != null)
-                    allMenuItems.Add(new LazyMenuItemAdapter(attr, t));
-            }
-
-            return allMenuItems;
-        }
-
-        private HashSet<MenuItemScopeKey> GetAllFilteredItems(IReadOnlyCollection<IMenuItem> allMenuItems)
-        {
-            var result = allMenuItems
-                .Where(item => item.GuidId != null
-                    && (FilteredGuids.Contains(item.GuidId) || ScopedFilteredItems.Contains(CreateScopeKey(item))))
-                .Select(CreateScopeKey)
-                .ToHashSet();
-
-            bool added;
-            do
-            {
-                added = false;
-                foreach (var item in allMenuItems)
-                {
-                    if (item.GuidId == null)
-                        continue;
-
-                    var effectiveOwner = GetEffectiveOwnerGuid(item);
-                    if (effectiveOwner != null && IsFilteredOwner(item.TargetName, effectiveOwner, result) && result.Add(CreateScopeKey(item)))
-                        added = true;
-                }
-            } while (added);
-
-            return result;
-        }
-
-        private static bool IsFilteredOwner(string targetName, string ownerGuid, HashSet<MenuItemScopeKey> filteredItems)
-        {
-            return filteredItems.Contains(new MenuItemScopeKey(targetName, ownerGuid))
-                || filteredItems.Contains(new MenuItemScopeKey(MenuItemConstants.GlobalTarget, ownerGuid));
-        }
-
-        private static MenuItemScopeKey CreateScopeKey(IMenuItem item)
-        {
-            return new MenuItemScopeKey(item.TargetName, item.GuidId!);
-        }
-
-        /// <summary>
-        /// 获取系统中所有加载的菜单项（不应用任何过滤或隐藏规则）
-        /// 主要供配置界面使用，这样即便是被隐藏的菜单也能在设置里被找回来
-        /// </summary>
-        public List<IMenuItem> GetAllMenuItems()
-        {
-            return CreateAllMenuItems(null);
-        }
-
         /// <summary>
         /// 重新构建所有已注册窗口的菜单
         /// </summary>
@@ -484,154 +301,6 @@ namespace ColorVision.UI.Menus
             foreach (var registration in _menuRegistrations.ToList())
             {
                 LoadMenuForWindow(registration.TargetName, registration.Menu, registration.TypeFilter);
-            }
-        }
-
-        private sealed class MenuRegistration
-        {
-            private readonly MenuManager _owner;
-            private readonly RoutedEventHandler _unloadedHandler;
-            private RoutedEventHandler? _loadedHandler;
-            private EventHandler? _closedHandler;
-            private Window? _window;
-            private bool _detached;
-
-            public MenuRegistration(MenuManager owner, string targetName, Menu menu, Func<Type, bool>? typeFilter)
-            {
-                _owner = owner;
-                TargetName = targetName;
-                Menu = menu;
-                TypeFilter = typeFilter;
-
-                _unloadedHandler = OnMenuUnloaded;
-                Menu.Unloaded += _unloadedHandler;
-                AttachWindowIfAvailable();
-                if (_window == null)
-                {
-                    _loadedHandler = OnMenuLoaded;
-                    Menu.Loaded += _loadedHandler;
-                }
-            }
-
-            public string TargetName { get; private set; }
-            public Menu Menu { get; }
-            public Func<Type, bool>? TypeFilter { get; private set; }
-
-            public void Update(string targetName, Func<Type, bool>? typeFilter)
-            {
-                TargetName = targetName;
-                TypeFilter = typeFilter;
-                AttachWindowIfAvailable();
-            }
-
-            public void Detach()
-            {
-                if (_detached) return;
-
-                _detached = true;
-                Menu.Unloaded -= _unloadedHandler;
-                if (_loadedHandler != null)
-                {
-                    Menu.Loaded -= _loadedHandler;
-                    _loadedHandler = null;
-                }
-
-                if (_window != null && _closedHandler != null)
-                {
-                    _window.Closed -= _closedHandler;
-                }
-
-                _closedHandler = null;
-                _window = null;
-            }
-
-            private void AttachWindowIfAvailable()
-            {
-                if (_window != null) return;
-
-                var window = Window.GetWindow(Menu);
-                if (window == null) return;
-
-                _window = window;
-                _closedHandler = OnWindowClosed;
-                _window.Closed += _closedHandler;
-
-                if (_loadedHandler != null)
-                {
-                    Menu.Loaded -= _loadedHandler;
-                    _loadedHandler = null;
-                }
-            }
-
-            private void OnMenuLoaded(object sender, RoutedEventArgs e)
-            {
-                AttachWindowIfAvailable();
-            }
-
-            private void OnMenuUnloaded(object sender, RoutedEventArgs e)
-            {
-                _owner.UnregisterMenu(Menu);
-            }
-
-            private void OnWindowClosed(object? sender, EventArgs e)
-            {
-                _owner.UnregisterMenu(Menu);
-            }
-        }
-
-        /// <summary>
-        /// Adapts a <see cref="MenuItemAttribute"/>-decorated class to <see cref="IMenuItem"/>.
-        /// All display metadata comes from the attribute; the underlying class is instantiated
-        /// only when the menu item's command is executed (lazy loading).
-        /// </summary>
-        private sealed class LazyMenuItemAdapter : IMenuItem
-        {
-            private readonly MenuItemAttribute _attr;
-            private readonly Type _type;
-            private ICommand? _lazyCommand;
-
-            internal LazyMenuItemAdapter(MenuItemAttribute attr, Type type)
-            {
-                _attr = attr;
-                _type = type;
-            }
-
-            public string TargetName => _attr.TargetName;
-            public string? OwnerGuid => _attr.OwnerGuid;
-            public string? GuidId => _attr.GuidId ?? _type.FullName;
-            public int Order => _attr.Order;
-            public string? Header => _attr.Header;
-            public string? InputGestureText => _attr.InputGestureText;
-            public object? Icon => null;
-            public Visibility Visibility => Visibility.Visible;
-            public bool? IsChecked => null;
-
-            public ICommand? Command => _lazyCommand ??= new RelayCommand(_ => ExecuteUnderlying());
-
-            private void ExecuteUnderlying()
-            {
-                try
-                {
-                    var instance = Activator.CreateInstance(_type);
-                    if (instance is IMenuItem mi)
-                    {
-                        mi.Command?.Execute(null);
-                    }
-                    else
-                    {
-                        var method = _type.GetMethod("Execute",
-                            BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic,
-                            null, Type.EmptyTypes, null);
-                        if (method != null)
-                            method.Invoke(instance, null);
-                        else
-                            log.Warn($"[MenuItem] class {_type.FullName} has no parameterless Execute() method and does not implement IMenuItem.");
-                    }
-                }
-                catch (Exception ex)
-                {
-                    log.Warn($"Execute [MenuItem] class failed: {_type.FullName}: {ex.Message}");
-                }
             }
         }
     }

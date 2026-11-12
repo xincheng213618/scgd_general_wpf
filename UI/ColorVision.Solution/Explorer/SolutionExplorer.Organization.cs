@@ -1,5 +1,6 @@
 using LocalizedText = global::ColorVision.Solution.DisplayText;
 #pragma warning disable CS4014,CS8602,CS8604
+using Newtonsoft.Json;
 using System.IO;
 using System.Windows;
 
@@ -387,9 +388,10 @@ namespace ColorVision.Solution.Explorer
             return false;
         }
 
-        private void EnsureExplicitProjectModePreservingProjects()
+        private void EnsureExplicitProjectModePreservingProjects(SolutionConfig? config = null)
         {
-            if (Config.ProjectMode == SolutionProjectMode.Explicit)
+            config ??= Config;
+            if (config.ProjectMode == SolutionProjectMode.Explicit)
                 return;
 
             foreach (ProjectDefinition project in LoadProjects(applyActiveConfiguration: false))
@@ -397,15 +399,15 @@ namespace ColorVision.Solution.Explorer
                 string projectReference = Path.GetRelativePath(
                     DirectoryInfo.FullName,
                     project.ProjectFile.FullName);
-                if (!Config.Projects.Any(reference => ProjectReferencesEqual(
+                if (!config.Projects.Any(reference => ProjectReferencesEqual(
                     DirectoryInfo.FullName,
                     reference,
                     projectReference)))
                 {
-                    Config.Projects.Add(projectReference);
+                    config.Projects.Add(projectReference);
                 }
             }
-            Config.ProjectMode = SolutionProjectMode.Explicit;
+            config.ProjectMode = SolutionProjectMode.Explicit;
         }
 
         private bool IsKnownSolutionFolder(string? folderId)
@@ -523,12 +525,8 @@ namespace ColorVision.Solution.Explorer
                     errorMessage = $"解决方案项文件不存在：{fullPath}";
                     return false;
                 }
-                if (SolutionManager.IsSolutionFilePath(fullPath)
-                    || ProjectProviderRegistry.IsSupportedProjectFilePath(fullPath))
-                {
-                    errorMessage = $"“{Path.GetFileName(fullPath)}”是解决方案或项目文件，请使用对应的打开/添加命令。";
+                if (!SolutionPhysicalItemOperations.TryValidateSolutionItemFileType(fullPath, out errorMessage))
                     return false;
-                }
                 fullPaths.Add(fullPath);
             }
             if (fullPaths.Count == 0)
@@ -537,27 +535,39 @@ namespace ColorVision.Solution.Explorer
                 return false;
             }
 
-            EnsureExplicitProjectModePreservingProjects();
-            string targetFolderId = solutionFolderId ?? EnsureDefaultSolutionItemsFolder();
-            foreach (string fullPath in fullPaths)
+            try
             {
-                SolutionItemDefinition? existing = Config.SolutionItems.FirstOrDefault(item =>
-                    TryResolveSolutionItemPath(item.Path, out string existingPath)
-                    && PathEquals(existingPath, fullPath));
-                if (existing != null)
+                var updated = SolutionConfigStore.DeserializeAndMigrate(SolutionConfigStore.Serialize(Config), out _);
+                EnsureExplicitProjectModePreservingProjects(updated);
+                string targetFolderId = solutionFolderId ?? EnsureDefaultSolutionItemsFolder(updated);
+                foreach (string fullPath in fullPaths)
                 {
-                    existing.SolutionFolderId = targetFolderId;
-                    continue;
+                    SolutionItemDefinition? existing = updated.SolutionItems.FirstOrDefault(item =>
+                        TryResolveSolutionItemPath(item.Path, out string existingPath)
+                        && PathEquals(existingPath, fullPath));
+                    if (existing != null)
+                    {
+                        existing.SolutionFolderId = targetFolderId;
+                        continue;
+                    }
+
+                    updated.SolutionItems.Add(new SolutionItemDefinition
+                    {
+                        Path = Path.GetRelativePath(DirectoryInfo.FullName, fullPath),
+                        SolutionFolderId = targetFolderId,
+                    });
                 }
 
-                Config.SolutionItems.Add(new SolutionItemDefinition
-                {
-                    Path = Path.GetRelativePath(DirectoryInfo.FullName, fullPath),
-                    SolutionFolderId = targetFolderId,
-                });
+                CommitConfig(updated);
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException
+                or InvalidDataException or ArgumentException or NotSupportedException)
+            {
+                Logger.Error($"保存解决方案项失败: {ConfigFileInfo.FullName}", ex);
+                errorMessage = $"无法保存解决方案配置：{ex.Message}";
+                return false;
             }
 
-            SaveConfig();
             ReconcileExplicitProjects();
             return true;
         }
@@ -637,16 +647,17 @@ namespace ColorVision.Solution.Explorer
             return ReferenceEquals(parent, this) && IsRegisteredSolutionItemPath(file.FullName);
         }
 
-        private string EnsureDefaultSolutionItemsFolder()
+        private string EnsureDefaultSolutionItemsFolder(SolutionConfig? config = null)
         {
-            SolutionFolderDefinition? folder = Config.SolutionFolders.FirstOrDefault(item =>
+            config ??= Config;
+            SolutionFolderDefinition? folder = config.SolutionFolders.FirstOrDefault(item =>
                 item.ParentId == null
                 && string.Equals(item.Name, "解决方案项", StringComparison.OrdinalIgnoreCase));
             if (folder != null)
                 return folder.Id;
 
             folder = new SolutionFolderDefinition { Name = "解决方案项" };
-            Config.SolutionFolders.Add(folder);
+            config.SolutionFolders.Add(folder);
             return folder.Id;
         }
 

@@ -69,7 +69,8 @@ namespace ColorVision.ImageEditor.Algorithms
 
             cancellationToken.ThrowIfCancellationRequested();
             context.Progress?.Report(new AlgorithmProgress(0.05, "imaging-correction.references"));
-            int correctedChannels = parameters.CorrectAlpha || source.Format.Channels() != 4 ? source.Format.Channels() : 3;
+            int sourceChannels = source.Format.Channels();
+            int correctedChannels = sourceChannels == 4 && !parameters.CorrectAlpha ? 3 : sourceChannels;
             StageStatistics darkStatistics = dark == null
                 ? StageStatistics.Disabled("dark-frame", correctedChannels)
                 : ScanDark(source, dark, correctedChannels, parameters, cancellationToken);
@@ -142,7 +143,7 @@ namespace ColorVision.ImageEditor.Algorithms
                 return ValueTask.FromResult(Failure(context, exception.Code, exception.Message, exception.Path));
             }
 
-            long validOutputPixels = validityBytes.LongCount(value => value != 0);
+            long validOutputPixels = validityBytes.Length - validityBytes.AsSpan().Count((byte)0);
             long totalOutputPixels = (long)source.Width * source.Height;
             double validOutputFraction = validOutputPixels / (double)totalOutputPixels;
             bool hasRadiometricReference = dark != null || flat != null || shading != null;
@@ -170,7 +171,7 @@ namespace ColorVision.ImageEditor.Algorithms
                 artifacts.Add(new AlgorithmImageArtifact("corrected-image", "primary", output, BuildImageMetadata(context, parameters, inputs)));
                 artifacts.Add(new AlgorithmImageArtifact("correction-validity-mask", "validity-mask", validity,
                     new Dictionary<string, string> { ["valid"] = "255", ["invalid"] = "0" }));
-                artifacts.Add(BuildMeasurements(source, parameters, darkStatistics, flatStatistics, shadingStatistics, correction, validityBytes));
+                artifacts.Add(BuildMeasurements(source, parameters, darkStatistics, flatStatistics, shadingStatistics, correction, validOutputPixels));
                 artifacts.Add(BuildStageTable(darkStatistics, flatStatistics, shadingStatistics));
                 artifacts.Add(BuildProvenanceTable(inputs));
                 artifacts.Add(new AlgorithmStructuredDataArtifact("imaging-correction", ResultSchema, AlgorithmJson.ToElement(new
@@ -183,7 +184,7 @@ namespace ColorVision.ImageEditor.Algorithms
                     source = new { source.Width, source.Height, format = source.Format.ToString(), source.DpiX, source.DpiY },
                     stages = new[] { StageData(darkStatistics), StageData(flatStatistics), StageData(shadingStatistics) },
                     badPixels = new { enabled = badMap != null, correction.BadPixelsMarked, correction.BadPixelsCorrected, correction.BadPixelsUnresolved, parameters.BadPixelRadius },
-                    output = new { correction.InvalidOutputPixels, correction.ClippedLowSamples, correction.ClippedHighSamples, correction.NonFiniteOutputSamples, validPixels = validityBytes.LongCount(value => value != 0) },
+                    output = new { correction.InvalidOutputPixels, correction.ClippedLowSamples, correction.ClippedHighSamples, correction.NonFiniteOutputSamples, validPixels = validOutputPixels },
                     calibration = new { source = parameters.CalibrationSource, version = parameters.CalibrationVersion, checksum = parameters.CalibrationChecksum },
                     referenceLocators = new { parameters.DarkFramePath, parameters.FlatFieldPath, parameters.ShadingReferencePath, parameters.BadPixelMapPath },
                     inputs = inputs.Values.Select(value => new { value.Name, value.SourceUri, value.SourceRevision, value.Checksum, value.ColorSpace }).ToArray(),
@@ -293,6 +294,8 @@ namespace ColorVision.ImageEditor.Algorithms
             ImagingCorrectionParameters parameters,
             CancellationToken cancellationToken)
         {
+            int pixelChannels = dark.Format.Channels();
+            int sampleBits = dark.Format.BitsPerChannel();
             long validPixels = 0;
             long invalidPixels = 0;
             long validSamples = 0;
@@ -308,7 +311,7 @@ namespace ColorVision.ImageEditor.Algorithms
                     bool pixelValid = true;
                     for (int channel = 0; channel < channels; channel++)
                     {
-                        double value = ReadSample(row, dark.Format, x * dark.Format.Channels() + channel);
+                        double value = ReadSample(row, sampleBits, x * pixelChannels + channel);
                         if (ValidDarkReference(value, parameters))
                         {
                             validSamples++;
@@ -338,6 +341,8 @@ namespace ColorVision.ImageEditor.Algorithms
             ImagingCorrectionParameters parameters,
             CancellationToken cancellationToken)
         {
+            int pixelChannels = flat.Format.Channels();
+            int sampleBits = flat.Format.BitsPerChannel();
             long validPixels = 0;
             long invalidPixels = 0;
             long validSamples = 0;
@@ -354,8 +359,9 @@ namespace ColorVision.ImageEditor.Algorithms
                     bool pixelValid = true;
                     for (int channel = 0; channel < channels; channel++)
                     {
-                        double raw = ReadSample(flatRow, flat.Format, x * flat.Format.Channels() + channel);
-                        double darkValue = dark == null ? 0 : ReadSample(darkRow, dark.Format, x * dark.Format.Channels() + channel);
+                        int sampleIndex = x * pixelChannels + channel;
+                        double raw = ReadSample(flatRow, sampleBits, sampleIndex);
+                        double darkValue = dark == null ? 0 : ReadSample(darkRow, sampleBits, sampleIndex);
                         double response = raw - darkValue;
                         if (ValidReference(raw, response, parameters))
                         {
@@ -386,6 +392,8 @@ namespace ColorVision.ImageEditor.Algorithms
             double[] flatTargets,
             CancellationToken cancellationToken)
         {
+            int pixelChannels = shading.Format.Channels();
+            int sampleBits = shading.Format.BitsPerChannel();
             long validPixels = 0;
             long invalidPixels = 0;
             long validSamples = 0;
@@ -403,14 +411,14 @@ namespace ColorVision.ImageEditor.Algorithms
                     bool pixelValid = true;
                     for (int channel = 0; channel < channels; channel++)
                     {
-                        int sampleIndex = x * shading.Format.Channels() + channel;
-                        double raw = ReadSample(shadingRow, shading.Format, sampleIndex);
-                        double darkValue = dark == null ? 0 : ReadSample(darkRow, dark.Format, sampleIndex);
+                        int sampleIndex = x * pixelChannels + channel;
+                        double raw = ReadSample(shadingRow, sampleBits, sampleIndex);
+                        double darkValue = dark == null ? 0 : ReadSample(darkRow, sampleBits, sampleIndex);
                         double value = raw - darkValue;
                         bool channelIsValid = ValidReference(raw, value, parameters);
                         if (flat != null)
                         {
-                            double flatRaw = ReadSample(flatRow, flat.Format, sampleIndex);
+                            double flatRaw = ReadSample(flatRow, sampleBits, sampleIndex);
                             double flatResponse = flatRaw - darkValue;
                             if (!ValidReference(flatRaw, flatResponse, parameters)) channelIsValid = false;
                             else if (channelIsValid) value *= ClampGain(flatTargets[channel] / flatResponse, parameters);
@@ -454,7 +462,8 @@ namespace ColorVision.ImageEditor.Algorithms
             IProgress<AlgorithmProgress>? progress)
         {
             int sourceChannels = source.Format.Channels();
-            int bytesPerPixel = source.Format.BytesPerPixel();
+            int sampleBits = source.Format.BitsPerChannel();
+            int rowBytes = checked(source.Width * sourceChannels * (sampleBits / 8));
             for (int y = 0; y < source.Height; y++)
             {
                 if ((y & 15) == 0)
@@ -466,7 +475,7 @@ namespace ColorVision.ImageEditor.Algorithms
                 ReadOnlySpan<byte> darkRow = dark == null ? ReadOnlySpan<byte>.Empty : dark.Data.Span.Slice(y * dark.Stride, dark.Stride);
                 ReadOnlySpan<byte> flatRow = flat == null ? ReadOnlySpan<byte>.Empty : flat.Data.Span.Slice(y * flat.Stride, flat.Stride);
                 ReadOnlySpan<byte> shadingRow = shading == null ? ReadOnlySpan<byte>.Empty : shading.Data.Span.Slice(y * shading.Stride, shading.Stride);
-                Span<byte> outputRow = destination.AsSpan(y * source.Width * bytesPerPixel, source.Width * bytesPerPixel);
+                Span<byte> outputRow = destination.AsSpan(y * rowBytes, rowBytes);
                 for (int x = 0; x < source.Width; x++)
                 {
                     bool pixelValid = true;
@@ -478,13 +487,13 @@ namespace ColorVision.ImageEditor.Algorithms
                         for (int channel = 0; channel < correctedChannels; channel++)
                         {
                             int sampleIndex = x * sourceChannels + channel;
-                            double raw = ReadSample(shadingRow, shading.Format, sampleIndex);
-                            double darkValue = dark == null ? 0 : ReadSample(darkRow, dark.Format, sampleIndex);
+                            double raw = ReadSample(shadingRow, sampleBits, sampleIndex);
+                            double darkValue = dark == null ? 0 : ReadSample(darkRow, sampleBits, sampleIndex);
                             double response = raw - darkValue;
                             if (!ValidReference(raw, response, parameters)) { valid = false; break; }
                             if (flat != null)
                             {
-                                double flatRaw = ReadSample(flatRow, flat.Format, sampleIndex);
+                                double flatRaw = ReadSample(flatRow, sampleBits, sampleIndex);
                                 double flatResponse = flatRaw - darkValue;
                                 if (!ValidReference(flatRaw, flatResponse, parameters)) { valid = false; break; }
                                 response *= ClampGain(flatTargets[channel] / flatResponse, parameters);
@@ -498,21 +507,21 @@ namespace ColorVision.ImageEditor.Algorithms
                     for (int channel = 0; channel < sourceChannels; channel++)
                     {
                         int sampleIndex = x * sourceChannels + channel;
-                        double original = ReadSample(sourceRow, source.Format, sampleIndex);
+                        double original = ReadSample(sourceRow, sampleBits, sampleIndex);
                         double corrected = original;
                         bool valid = double.IsFinite(original);
                         if (channel < correctedChannels && valid)
                         {
+                            double darkValue = 0;
                             if (dark != null)
                             {
-                                double darkValue = ReadSample(darkRow, dark.Format, sampleIndex);
+                                darkValue = ReadSample(darkRow, sampleBits, sampleIndex);
                                 if (!ValidDarkReference(darkValue, parameters)) valid = false;
                                 else corrected -= darkValue;
                             }
                             if (flat != null && valid)
                             {
-                                double flatRaw = ReadSample(flatRow, flat.Format, sampleIndex);
-                                double darkValue = dark == null ? 0 : ReadSample(darkRow, dark.Format, sampleIndex);
+                                double flatRaw = ReadSample(flatRow, sampleBits, sampleIndex);
                                 double response = flatRaw - darkValue;
                                 if (!ValidReference(flatRaw, response, parameters)) valid = false;
                                 else corrected *= ClampGain(flatTargets[channel] / response, parameters);
@@ -523,19 +532,18 @@ namespace ColorVision.ImageEditor.Algorithms
                                 else corrected *= shadingGain;
                             }
                         }
-                        string invalidMessage = $"Invalid source/reference or non-representable output sample at ({x}, {y}), channel {channel}.";
-                        if (!valid) corrected = ResolveInvalid(parameters, original, invalidMessage);
-                        if (!TryWriteSample(outputRow, source.Format, sampleIndex, corrected, parameters.OutputRangePolicy, statistics))
+                        if (!valid) corrected = ResolveInvalid(parameters, original, x, y, channel);
+                        if (!TryWriteSample(outputRow, sampleBits, sampleIndex, corrected, parameters.OutputRangePolicy, statistics))
                         {
                             statistics.NonFiniteOutputSamples++;
-                            if (valid) corrected = ResolveInvalid(parameters, original, invalidMessage);
-                            if (!TryWriteSample(outputRow, source.Format, sampleIndex, corrected, parameters.OutputRangePolicy, statistics))
+                            if (valid) corrected = ResolveInvalid(parameters, original, x, y, channel);
+                            if (!TryWriteSample(outputRow, sampleBits, sampleIndex, corrected, parameters.OutputRangePolicy, statistics))
                             {
                                 // PreserveSource cannot preserve NaN/Infinity. A finite zero is the only
                                 // format-independent safe representation; the validity mask and diagnostics
                                 // retain the loss instead of publishing a non-finite sample as valid.
-                                if (!TryWriteSample(outputRow, source.Format, sampleIndex, 0, parameters.OutputRangePolicy, statistics))
-                                    throw new InvalidReferenceException("invalid_output_sample", invalidMessage, "output");
+                                if (!TryWriteSample(outputRow, sampleBits, sampleIndex, 0, parameters.OutputRangePolicy, statistics))
+                                    throw new InvalidReferenceException("invalid_output_sample", InvalidSampleMessage(x, y, channel), "output");
                             }
                             valid = false;
                         }
@@ -562,7 +570,8 @@ namespace ColorVision.ImageEditor.Algorithms
             IProgress<AlgorithmProgress>? progress)
         {
             int channels = source.Format.Channels();
-            int bytesPerPixel = source.Format.BytesPerPixel();
+            int sampleBits = source.Format.BitsPerChannel();
+            int rowBytes = checked(source.Width * channels * (sampleBits / 8));
             double threshold = parameters.BadPixelThresholdNormalized;
             List<double> neighborhood = new((parameters.BadPixelRadius * 2 + 1) * (parameters.BadPixelRadius * 2 + 1));
             for (int y = 0; y < source.Height; y++)
@@ -575,7 +584,7 @@ namespace ColorVision.ImageEditor.Algorithms
                 ReadOnlySpan<byte> mapRow = badMap.Data.Span.Slice(y * badMap.Stride, badMap.Stride);
                 for (int x = 0; x < source.Width; x++)
                 {
-                    if (ReadSample(mapRow, AlgorithmImageFormat.Gray8, x) <= threshold) continue;
+                    if (ReadSample(mapRow, 8, x) <= threshold) continue;
                     statistics.BadPixelsMarked++;
                     bool resolved = true;
                     for (int channel = 0; channel < correctedChannels; channel++)
@@ -584,13 +593,13 @@ namespace ColorVision.ImageEditor.Algorithms
                         for (int neighborY = Math.Max(0, y - parameters.BadPixelRadius); neighborY <= Math.Min(source.Height - 1, y + parameters.BadPixelRadius); neighborY++)
                         {
                             ReadOnlySpan<byte> neighborMap = badMap.Data.Span.Slice(neighborY * badMap.Stride, badMap.Stride);
-                            ReadOnlySpan<byte> outputRow = destination.AsSpan(neighborY * source.Width * bytesPerPixel, source.Width * bytesPerPixel);
+                            ReadOnlySpan<byte> outputRow = destination.AsSpan(neighborY * rowBytes, rowBytes);
                             for (int neighborX = Math.Max(0, x - parameters.BadPixelRadius); neighborX <= Math.Min(source.Width - 1, x + parameters.BadPixelRadius); neighborX++)
                             {
                                 if (neighborX == x && neighborY == y) continue;
-                                if (ReadSample(neighborMap, AlgorithmImageFormat.Gray8, neighborX) > threshold) continue;
+                                if (ReadSample(neighborMap, 8, neighborX) > threshold) continue;
                                 if (validity[neighborY * source.Width + neighborX] == 0) continue;
-                                neighborhood.Add(ReadSample(outputRow, source.Format, neighborX * channels + channel));
+                                neighborhood.Add(ReadSample(outputRow, sampleBits, neighborX * channels + channel));
                             }
                         }
                         if (neighborhood.Count == 0) { resolved = false; break; }
@@ -599,8 +608,8 @@ namespace ColorVision.ImageEditor.Algorithms
                         double median = neighborhood.Count % 2 == 0
                             ? (neighborhood[middle - 1] + neighborhood[middle]) / 2
                             : neighborhood[middle];
-                        Span<byte> targetRow = destination.AsSpan(y * source.Width * bytesPerPixel, source.Width * bytesPerPixel);
-                        WriteSample(targetRow, source.Format, x * channels + channel, median, parameters.OutputRangePolicy, statistics);
+                        Span<byte> targetRow = destination.AsSpan(y * rowBytes, rowBytes);
+                        WriteSample(targetRow, sampleBits, x * channels + channel, median, parameters.OutputRangePolicy, statistics);
                     }
                     if (resolved)
                     {
@@ -613,14 +622,14 @@ namespace ColorVision.ImageEditor.Algorithms
                         validity[y * source.Width + x] = 0;
                         if (parameters.InvalidReferencePolicy == InvalidReferencePixelPolicy.RejectInvocation)
                             throw new InvalidReferenceException("bad_pixel_unresolved", $"Bad pixel ({x}, {y}) has no valid neighbor within radius {parameters.BadPixelRadius}.", "inputs.bad-pixel-map");
-                        Span<byte> targetRow = destination.AsSpan(y * source.Width * bytesPerPixel, source.Width * bytesPerPixel);
+                        Span<byte> targetRow = destination.AsSpan(y * rowBytes, rowBytes);
                         ReadOnlySpan<byte> sourceRow = source.Data.Span.Slice(y * source.Stride, source.Stride);
                         for (int channel = 0; channel < correctedChannels; channel++)
                         {
                             double value = parameters.InvalidReferencePolicy == InvalidReferencePixelPolicy.FillConstant
                                 ? parameters.InvalidReferenceFillNormalized
-                                : ReadSample(sourceRow, source.Format, x * channels + channel);
-                            WriteSample(targetRow, source.Format, x * channels + channel, value, parameters.OutputRangePolicy, statistics);
+                                : ReadSample(sourceRow, sampleBits, x * channels + channel);
+                            WriteSample(targetRow, sampleBits, x * channels + channel, value, parameters.OutputRangePolicy, statistics);
                         }
                     }
                 }
@@ -639,48 +648,50 @@ namespace ColorVision.ImageEditor.Algorithms
         private static double ClampGain(double value, ImagingCorrectionParameters parameters)
             => Math.Clamp(value, parameters.MinimumGain, parameters.MaximumGain);
 
-        private static double ResolveInvalid(ImagingCorrectionParameters parameters, double original, string message)
+        private static string InvalidSampleMessage(int x, int y, int channel)
+            => $"Invalid source/reference or non-representable output sample at ({x}, {y}), channel {channel}.";
+
+        private static double ResolveInvalid(ImagingCorrectionParameters parameters, double original, int x, int y, int channel)
             => parameters.InvalidReferencePolicy switch
             {
-                InvalidReferencePixelPolicy.RejectInvocation => throw new InvalidReferenceException("invalid_reference_pixel", message, "inputs"),
+                InvalidReferencePixelPolicy.RejectInvocation => throw new InvalidReferenceException("invalid_reference_pixel", InvalidSampleMessage(x, y, channel), "inputs"),
                 InvalidReferencePixelPolicy.FillConstant => parameters.InvalidReferenceFillNormalized,
                 _ => original,
             };
 
-        private static double ReadSample(ReadOnlySpan<byte> row, AlgorithmImageFormat format, int sampleIndex)
+        private static double ReadSample(ReadOnlySpan<byte> row, int sampleBits, int sampleIndex)
         {
-            int bits = format.BitsPerChannel();
-            return bits switch
+            return sampleBits switch
             {
                 8 => row[sampleIndex] / 255d,
                 16 => BinaryPrimitives.ReadUInt16LittleEndian(row.Slice(sampleIndex * 2, 2)) / 65535d,
-                32 => BitConverter.Int32BitsToSingle(BinaryPrimitives.ReadInt32LittleEndian(row.Slice(sampleIndex * 4, 4))),
-                _ => throw new ArgumentOutOfRangeException(nameof(format)),
+                32 => BinaryPrimitives.ReadSingleLittleEndian(row.Slice(sampleIndex * 4, 4)),
+                _ => throw new ArgumentOutOfRangeException(nameof(sampleBits)),
             };
         }
 
         private static void WriteSample(
             Span<byte> row,
-            AlgorithmImageFormat format,
+            int sampleBits,
             int sampleIndex,
             double value,
             ImagingCorrectionOutputRangePolicy rangePolicy,
             CorrectionStatistics statistics)
         {
-            if (!TryWriteSample(row, format, sampleIndex, value, rangePolicy, statistics))
+            if (!TryWriteSample(row, sampleBits, sampleIndex, value, rangePolicy, statistics))
                 throw new InvalidReferenceException("invalid_output_sample", "The correction produced a sample that cannot be represented by the target format.", "output");
         }
 
         private static bool TryWriteSample(
             Span<byte> row,
-            AlgorithmImageFormat format,
+            int sampleBits,
             int sampleIndex,
             double value,
             ImagingCorrectionOutputRangePolicy rangePolicy,
             CorrectionStatistics statistics)
         {
             if (!double.IsFinite(value)) return false;
-            if (format.IsFloatingPoint())
+            if (sampleBits == 32)
             {
                 if (rangePolicy == ImagingCorrectionOutputRangePolicy.ClampToNominalRange)
                 {
@@ -694,14 +705,14 @@ namespace ColorVision.ImageEditor.Algorithms
                 }
                 float single = (float)value;
                 if (!float.IsFinite(single)) return false;
-                BinaryPrimitives.WriteInt32LittleEndian(row.Slice(sampleIndex * 4, 4), BitConverter.SingleToInt32Bits(single));
+                BinaryPrimitives.WriteSingleLittleEndian(row.Slice(sampleIndex * 4, 4), single);
                 return true;
             }
-            double peak = format.BitsPerChannel() == 8 ? byte.MaxValue : ushort.MaxValue;
+            double peak = sampleBits == 8 ? byte.MaxValue : ushort.MaxValue;
             if (value < 0) statistics.ClippedLowSamples++;
             if (value > 1) statistics.ClippedHighSamples++;
             ulong integer = (ulong)Math.Round(Math.Clamp(value, 0, 1) * peak, MidpointRounding.AwayFromZero);
-            if (format.BitsPerChannel() == 8) row[sampleIndex] = (byte)integer;
+            if (sampleBits == 8) row[sampleIndex] = (byte)integer;
             else BinaryPrimitives.WriteUInt16LittleEndian(row.Slice(sampleIndex * 2, 2), (ushort)integer);
             return true;
         }
@@ -726,9 +737,8 @@ namespace ColorVision.ImageEditor.Algorithms
             StageStatistics flat,
             StageStatistics shading,
             CorrectionStatistics correction,
-            byte[] validity)
+            long validPixels)
         {
-            long validPixels = validity.LongCount(value => value != 0);
             long totalPixels = (long)source.Width * source.Height;
             return new AlgorithmMeasurementArtifact("imaging-correction-summary",
             [

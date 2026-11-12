@@ -3,6 +3,7 @@ using System;
 using System.Text;
 using System.Runtime.InteropServices;
 using System.Linq;
+using ColorVision.Engine.Services.Devices.SMU.Configs;
 
 namespace ColorVision.Engine.Services.Devices.SMU.Local;
 
@@ -16,6 +17,7 @@ internal interface ILocalSmuNative
     int GetIdn(int handle, StringBuilder text, ref int length);
     int SetWiring(int handle, bool fourWire, bool front);
     int SetDelay(int handle, double milliseconds);
+    int SetNplc(int handle, double nplc, Pss_Type type);
     int SetChannel(int handle, bool channelA);
     int SetSource(int handle, bool voltage);
     int Measure(int handle, LocalSmuParameters parameters, bool step, ref double voltage, ref double current);
@@ -98,6 +100,15 @@ internal sealed class LocalSmuNative : ILocalSmuNative
     public int GetIdn(int h, StringBuilder text, ref int length) => PassSx.GetIDN(h, text, ref length);
     public int SetWiring(int h, bool fourWire, bool front) => PassSx.Set4WireFront(h, fourWire, front);
     public int SetDelay(int h, double milliseconds) => PassSx.SetDelayTime(h, milliseconds);
+    public int SetNplc(int h, double nplc, Pss_Type type)
+    {
+        try { return PassSx.SetNPLC(h, nplc); }
+        catch (EntryPointNotFoundException ex)
+        {
+            if (nplc == ConfigSMU.DefaultNplc(type)) return 1;
+            throw new InvalidOperationException("当前源表 DLL 不支持调整普通测量的 NPLC，请更新 cvCamera.dll 后重新启动程序。", ex);
+        }
+    }
     public int SetChannel(int h, bool channelA) => PassSx.SetSrcAorB(h, channelA);
     public int SetSource(int h, bool voltage) => PassSx.SetSourceV(h, voltage);
     public int Measure(int h, LocalSmuParameters p, bool step, ref double v, ref double i) => !p.IsAutoRng

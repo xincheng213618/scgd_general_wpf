@@ -2,6 +2,7 @@ using ColorVision.SocketProtocol;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using ProjectARVRPro.IntegrationDemo;
+using ProjectARVRPro.Process;
 using ProjectARVRPro.Process.Demura;
 using System.IO;
 using System.Text;
@@ -11,6 +12,76 @@ namespace ProjectARVRPro.Tests;
 
 public class DemuraResultJsonTests
 {
+    // CSV delivery must not inherit the tool/burning requirements, including when loading old configs.
+    [Fact]
+    public void CsvOnlyDefaultsOnAndFullProcessingCanBeRestoredExplicitly()
+    {
+        var process = new DemuraProcess();
+        Assert.True(process.Config.ReturnCsvOnly);
+        process.SetProcessConfig("""{"PrepareDemuraTool":true,"BurnAfterGenerate":true}""");
+        Assert.True(process.Config.ReturnCsvOnly);
+
+        process.Config.ReturnCsvOnly = false;
+        var restored = new DemuraProcess();
+        restored.SetProcessConfig(JsonConvert.SerializeObject(process.Config));
+        Assert.False(restored.Config.ReturnCsvOnly);
+        Assert.True(restored.Config.PrepareDemuraTool);
+        Assert.True(restored.Config.BurnAfterGenerate);
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void CsvOnlyRequiresOnlyTheW128File(bool fileExists)
+    {
+        var process = new DemuraProcess();
+        process.Config.RequireMergedBin = true;
+        var view = new DemuraViewTestResult
+        {
+            W128 = new DemuraCsvFileResult { SourceExists = fileExists, ValueCount = 1 }
+        };
+
+        process.RebuildItems(view);
+
+        ObjectiveTestItem item = Assert.Single(view.Items);
+        Assert.Equal("W128FileExists", item.Name);
+        Assert.Equal(fileExists, item.TestResult);
+    }
+
+    [Fact]
+    public void FullProcessingRetainsW255ToolAndBurnRequirements()
+    {
+        var process = new DemuraProcess();
+        process.Config.ReturnCsvOnly = false;
+        var view = new DemuraViewTestResult
+        {
+            W128 = new DemuraCsvFileResult { SourceExists = true, ValueCount = 640 * 480 }
+        };
+
+        process.RebuildItems(view);
+
+        Assert.False(Assert.Single(view.Items, item => item.Name == "W255FileExists").TestResult);
+        Assert.False(Assert.Single(view.Items, item => item.Name == "DemuraToolPrepared").TestResult);
+        Assert.False(Assert.Single(view.Items, item => item.Name == "DemuraBurnSendFile").TestResult);
+    }
+
+    [Fact]
+    public async Task CsvOnlyFlowFailureDoesNotRunPgPowerOffCleanup()
+    {
+        var process = new DemuraProcess();
+        var ctx = new IProcessExecutionContext
+        {
+            Result = new ProjectARVRReuslt { Msg = "采集失败" },
+            ObjectiveTestResult = new ObjectiveTestResult()
+        };
+
+        Assert.False(await process.ExecuteFailure(ctx));
+        Assert.False(ctx.Result.Result);
+        Assert.False(ctx.ObjectiveTestResult.TotalResult);
+        Assert.Equal("采集失败", ctx.Result.Msg);
+        Assert.Equal("采集失败", ctx.ObjectiveTestResult.Msg);
+    }
+
     // Protect the external file contract, including large text and JSON escaping.
     [Fact]
     public async Task W128Source_RoundTripsLargeFileAsFileNameAndDataOnly()

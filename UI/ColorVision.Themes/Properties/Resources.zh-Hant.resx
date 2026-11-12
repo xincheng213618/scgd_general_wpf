@@ -192,4 +192,11 @@
   <data name="操作" xml:space="preserve">
     <value>操作</value>
   </data>
+  <data name="IPv4 第 1 段" xml:space="preserve"><value>IPv4 第 1 段</value></data>
+  <data name="IPv4 第 2 段" xml:space="preserve"><value>IPv4 第 2 段</value></data>
+  <data name="IPv4 第 3 段" xml:space="preserve"><value>IPv4 第 3 段</value></data>
+  <data name="IPv4 第 4 段" xml:space="preserve"><value>IPv4 第 4 段</value></data>
+  <data name="主机名 / IPv6 / 其它地址" xml:space="preserve"><value>主機名 / IPv6 / 其它地址</value></data>
+  <data name="主机或网络地址" xml:space="preserve"><value>主機或網絡地址</value></data>
+  <data name="切换 IPv4 或文本地址" xml:space="preserve"><value>切換 IPv4 或文本地址</value></data>
 </root>

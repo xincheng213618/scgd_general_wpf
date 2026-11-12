@@ -40,9 +40,6 @@ next: false
 - [扩展性开发](../../02-developer-guide/core-concepts/extensibility.md) — `platform.extensibility`
   按插件、菜单、属性面板、设备、Flow、算法和结果扩展任务定位实现与当前契约。
 
-- [显示图案计量](../../04-api-reference/algorithms/detectors/display-metrology.md) — `algorithms.display-metrology`
-  本地显示图案计量：RGB套色、九点十字RGB分离、鬼影候选、亮暗点/线缺陷/Mura、灰尘脏污候选、双目信号与几何、Eyebox扫描和全视场斜边SFR；公开原理与可复现合成样本，不承诺现场精度。
-
 - [本地十字定位 FindCross](../../04-api-reference/algorithms/detectors/find-cross.md) — `algorithms.find-cross`
   本地十字定位的图像菜单、Flow 节点、生产参数、全图坐标、原生返回值与失败诊断。
 
@@ -55,6 +52,9 @@ next: false
 - [本地点阵畸变 V2](../../04-api-reference/algorithms/detectors/grid-distortion-v2.md) — `algorithms.grid-distortion`
   本地点阵畸变 V2 单次定位、TV/九点多口径及相对光学估计，覆盖 ImageView、Flow 和 ARVR 2.0 适配；光学估计不等同于标定结果。
 
+- [灯珠定位与完整网格判定](../../04-api-reference/algorithms/detectors/light-beads.md) — `algorithms.light-beads`
+  灯珠亮点定位、完整规则网格与不亮偏暗判定，覆盖运行内存 POI、可选 CSV 及旧 native 暗区候选的限制。
+
 - [Matching 模板匹配](../../04-api-reference/algorithms/templates/matching-template.md) — `algorithms.matching`
   说明本地模板匹配的节点内置配置、cvtm 导入导出与无数据库执行，以及旧服务 Matching 的请求与 AOI 结果。
 
@@ -63,6 +63,15 @@ next: false
 
 - [POI](../../04-api-reference/algorithms/primitives/poi.md) — `algorithms.poi-routes`
   说明 POI 点位、伴生模板及 Flow 和 JSON 算法的消费关系。
+
+- [十字 RGB 分离](../../04-api-reference/algorithms/detectors/rgb-cross.md) — `algorithms.rgb-cross`
+  本地十字 RGB 三通道边缘测量、G 参考偏移、原图坐标与独立有效状态；像素结果不等同于已标定角度色差。
+
+- [圆环鬼影](../../04-api-reference/algorithms/detectors/ring-ghost.md) — `algorithms.ring-ghost`
+  完整圆环与偏心弱环的区域平均信号比、GMR 阶次及 Flow 正常未检出零值约定；不自动证明光路阶次或现场精度。
+
+- [本地条纹 MTF](../../04-api-reference/algorithms/detectors/stripe-mtf.md) — `algorithms.stripe-mtf`
+  ImageView 与 Flow 共用的本地条纹亮暗对比度：取样、四部定位、比例与百分数、输入限制及 MTF 2.0 结果兼容。
 
 - [模板编辑与创建宿主](../../04-api-reference/algorithms/templates/template-management.md) — `algorithms.template-management`
   TemplateEditorWindow与TemplateCreateView的共享参数、创建来源、预览、索引和关闭语义；关闭不是通用回滚，筛选后的操作目标需单独核对。
@@ -110,7 +119,7 @@ next: false
   RC注册、服务目录同步、状态快照与连接测试；远端删除不清本地令牌和收发主题，更新可能部分生效，连接或测试成功不等于设备就绪。
 
 - [算法结果交接、展示与导出](../../04-api-reference/engine-components/result-handoff-chain.md) — `engine.results`
-  图像编辑器算法结果绘制与叠加显示：区分本地中立 Geometry/Overlay、Engine 历史 handler 和客户业务导出；接收、查询、缺图回放与文档/revision 生命周期分别核对。
+  算法结果交接、已加载批次主记录查询与叠加显示：区分本地中立 Geometry/Overlay、Engine 历史 handler 和客户业务导出，保留来源与文档/revision 生命周期。
 
 - [本地通用传感器与模板](../../04-api-reference/engine-components/generic-sensor.md) — `engine.sensor-device`
   本地 TCP/串口通用指令设备、回包分帧、模板持久化和旧传感器结点转发；明确打开、模板命令超时、关闭取消和服务占用边界。
@@ -194,7 +203,7 @@ next: false
   实体驱动的通用查询窗口：条件参数化、执行时SQL预览、结果替换与进程内会话；关闭不取消查询，清空表/截断表作用于整表而非筛选结果。
 
 - [ColorVision.ImageEditor：打开、绘制与输出](../../04-api-reference/ui-components/ColorVision.ImageEditor.md) — `ui.image-editor`
-  图像/视频打开、绘图撤销、叠加层、3D 与快照输出边界，区分渲染图、当前源像素和重读源文件的模型导出。
+  图像打开、绘图撤销、叠加层、3D 与快照输出边界，区分渲染图、当前源像素和重读源文件的模型导出。
 
 - [景深融合：输入、执行与结果生命周期](../../04-api-reference/ui-components/image-fusion.md) — `ui.image-fusion`
   景深融合窗口与本地流程节点共用文件执行器；输入顺序、CPU/CUDA门禁、取消、结果保存及下游图像交接。
@@ -217,6 +226,9 @@ next: false
 - [SQLite 正文存储、迁移与文件维护](../../04-api-reference/ui-components/sqlite-storage.md) — `ui.sqlite-storage`
   Socket 与 Flow 的 SQLite 正文 gzip 编解码、按ID读写、旧TEXT逐批迁移、WAL备份与VACUUM；通用工具不自动停写/备份/恢复，失败可能已有批次提交。
 
+- [存储清理与选择性设置重置](../../04-api-reference/ui-components/storage-maintenance.md) — `ui.storage-maintenance`
+  存储分类占用与模块扩展接口、独立文件确认清理，以及配置页的恢复点和选择性下次启动重置。
+
 - [配置向导：步骤、应用与完成边界](../../04-api-reference/ui-components/wizards.md) — `ui.wizards`
   配置向导的步骤发现、初始化时序、前进应用和完成标记；关闭不回滚，完成标记不证明组件健康或重启成功。
 
@@ -227,7 +239,7 @@ next: false
   Engine MQTT 的连接与订阅、异步发送、请求状态、迟到回包和 MsgID 复用限制；区分 Flow 客户端池与设备命令链。
 
 - [OpenCV 和 native 集成开发指南](../../02-developer-guide/engine-development/opencv-integration.md) — `engine.native-integration`
-  native ABI与HImage所有权、函数族返回值、视频异步/关闭边界，以及helper构建和CUDA发布输入；路由校准Context与POI原生参考。
+  native ABI与HImage所有权、函数族返回值，以及helper构建和CUDA发布输入；路由校准Context与POI原生参考。
 
 - [FlowEngineLib 节点扩展](../../04-api-reference/extensions/flow-node.md) — `flow.node-extension`
   说明服务与本地节点基类、请求与响应扩展点、分支输入隔离、属性编辑和流程完成的边界。
@@ -245,7 +257,7 @@ next: false
   UI NuGet整批与Algorithms单包发布、Release标签和版本预检；预检不预留版本，逐包上传没有整批回滚或逐条失败检查。
 
 - [ARVR 算法与模板](../../04-api-reference/algorithms/templates/arvr-template.md) — `algorithms.arvr`
-  ARVR 远端模板与请求对应关系；ImageView 与 Flow 共用的自研条纹 MTF、直接配参及兼容结果契约，以及 SFR 曲线与 CSV 范围。
+  ARVR 远端模板与请求对应关系、结果版本及 SFR 曲线与 CSV 范围；本地条纹 MTF 另有独立主题。
 
 - [灰度与颜色剖面：采样、曲线与数据导出](../../02-developer-guide/core-concepts/image-profile-v1.md) — `algorithms.image-profile`
   灰度/RGB、CVCIE 及带校正参数 CVRAW 的多通道叠加剖面、主题适配、统计和完整 JSON/CSV 导出；包含精度、单位、失效规则及预算。
@@ -268,8 +280,11 @@ next: false
 - [SysDictionary 系统字典兼容层](../../04-api-reference/algorithms/templates/sys-dictionary-template.md) — `algorithms.template-dictionary`
   说明保留的系统字典 DAO 与模板默认值、传感器和旧流程兼容依赖。
 
+- [ColorVision 本地 MCP](../../02-developer-guide/core-concepts/colorvision-mcp.md) — `copilot.mcp-server`
+  ColorVision 入站本地 MCP 的连接与会话、工具和资源、工作区读取、两阶段确认及菜单写入边界。
+
 - [opencv\_helper.dll API 参考](../../04-api-reference/engine-components/opencv-helper-api.md) — `engine.opencv-helper-api`
-  opencv\_helper 英文 API 参考：校准/POI、图像处理、SFR、检测、视频与内存释放；核对真实参数单位和函数族错误码，声明的选项不等于当前 Engine 提供操作入口。
+  opencv\_helper 英文 API 参考：校准/POI、图像处理、SFR、检测与内存释放；核对真实参数单位和函数族错误码，声明的选项不等于当前 Engine 提供操作入口。
 
 - [Flow 转换与校准节点](../../04-api-reference/engine-components/flow-conversion-calibration-nodes.md) — `flow.conversion-calibration`
   定位 Flow 数据转换、图像转换、校准及属性选择器。
@@ -323,7 +338,7 @@ next: false
   Windows x64 运行与源码构建前提：Desktop Runtime、SDK、C++ 工具集及已有 native DLL 的选择。
 
 - [ARVR 算法与模板](../../04-api-reference/algorithms/templates/arvr-template.md) — `algorithms.arvr`
-  ARVR 远端模板与请求对应关系；ImageView 与 Flow 共用的自研条纹 MTF、直接配参及兼容结果契约，以及 SFR 曲线与 CSV 范围。
+  ARVR 远端模板与请求对应关系、结果版本及 SFR 曲线与 CSV 范围；本地条纹 MTF 另有独立主题。
 
 - [cvColorVision](../../04-api-reference/engine-components/cvColorVision.md) — `engine.native-bindings`
   定位供应商 native DLL 的相机、光谱、PG 与源表绑定契约，以及内部版的交付边界。
@@ -379,7 +394,7 @@ next: false
   说明服务与本地节点基类、请求与响应扩展点、分支输入隔离、属性编辑和流程完成的边界。
 
 - [ARVR 算法与模板](../../04-api-reference/algorithms/templates/arvr-template.md) — `algorithms.arvr`
-  ARVR 远端模板与请求对应关系；ImageView 与 Flow 共用的自研条纹 MTF、直接配参及兼容结果契约，以及 SFR 曲线与 CSV 范围。
+  ARVR 远端模板与请求对应关系、结果版本及 SFR 曲线与 CSV 范围；本地条纹 MTF 另有独立主题。
 
 - [Flow 转换与校准节点](../../04-api-reference/engine-components/flow-conversion-calibration-nodes.md) — `flow.conversion-calibration`
   定位 Flow 数据转换、图像转换、校准及属性选择器。
@@ -391,6 +406,9 @@ next: false
   设备视图已接入 RAW/CIE 独立快照；记录有界调度、预览模式和更低复制成本等后续优化及验收缺口。
 
 ## Engine/ST.Library.UI {#module-456e67696e652f53542e4c6962726172792e5549}
+
+- [Copilot 工具契约](../../02-developer-guide/core-concepts/copilot-agent-tool-contracts.md) — `copilot.tool-contracts`
+  Copilot 工具结果、事件、审批恢复和 Flow 编辑必须遵守的执行契约。
 
 - [界面语言：资源发现、配置与重启](../../04-api-reference/ui-components/localization.md) — `ui.localization`
   界面语言的资源发现、系统语言回退、设置绑定和重启切换；语言下拉框不证明插件翻译完整，修改配置值不等于刷新窗口。

@@ -205,6 +205,66 @@ public sealed class CopilotProviderConnectionRecoveryTests
         Assert.False(budgetedClient.Snapshot.UsedEstimatedUsage);
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task RecoveryPreservesUsagePublishedBeforeTheFirstContentWithoutDoubleCounting(bool cancelRecovery)
+    {
+        var provider = new UsageBeforeConnectionFailureClient();
+        using var cancellation = new CancellationTokenSource();
+        var recoveries = new List<CopilotProviderConnectionRecoveryInfo>();
+        using var recovery = new CopilotProviderConnectionRecoveryChatClient(
+            new CopilotProviderInactivityChatClient(new CopilotCancellationGuardChatClient(provider)),
+            onRecovery: item =>
+            {
+                recoveries.Add(item);
+                if (cancelRecovery)
+                    cancellation.Cancel();
+            },
+            delayAsync: (_, token) => token.IsCancellationRequested ? Task.FromCanceled(token) : Task.CompletedTask);
+        using var budgeted = new CopilotTokenBudgetChatClient(recovery, CreateBudget());
+        var updates = new List<ChatResponseUpdate>();
+        async Task ReadAsync()
+        {
+            await foreach (var update in budgeted.GetStreamingResponseAsync(
+                [new ChatMessage(ChatRole.User, "Keep the usage the provider actually published.")],
+                cancellationToken: cancellation.Token))
+            {
+                updates.Add(update);
+            }
+        }
+
+        Exception? failure = null;
+        if (cancelRecovery)
+            failure = await Assert.ThrowsAsync<CopilotProviderConnectionRecoveryCancelledException>(ReadAsync);
+        else
+            await ReadAsync();
+
+        var expectedUsage = new CopilotTokenUsage(cancelRecovery ? 100 : 200, cancelRecovery ? 0 : 10,
+            cancelRecovery ? 100 : 210);
+        Assert.Single(recoveries);
+        Assert.Equal(cancelRecovery ? 1 : 2, provider.CallCount);
+        Assert.Equal(1, budgeted.Snapshot.ProviderCalls);
+        Assert.Equal(expectedUsage.InputTokens, budgeted.Snapshot.ReportedInputTokens);
+        Assert.Equal(expectedUsage.OutputTokens, budgeted.Snapshot.ReportedOutputTokens);
+        Assert.Equal(expectedUsage.EffectiveTotalTokens, budgeted.Snapshot.ReportedTotalTokens);
+        Assert.Equal(expectedUsage.EffectiveTotalTokens, budgeted.Snapshot.ConsumedTokens);
+        Assert.False(budgeted.Snapshot.UsedEstimatedUsage);
+        if (cancelRecovery)
+        {
+            Assert.Equal(expectedUsage, CopilotTokenBudgetChatClient.ExtractPayloadFailureUsage(failure!));
+            Assert.Empty(updates);
+        }
+        else
+        {
+            Assert.Equal("recovered", string.Concat(updates.Select(update => update.Text)));
+            var publishedUsage = Assert.Single(updates.SelectMany(update => update.Contents).OfType<UsageContent>());
+            // The Harness sums usage updates. Publish one logical-call total rather
+            // than separate attempt totals or repeated cumulative snapshots.
+            Assert.Equal(expectedUsage.EffectiveTotalTokens, publishedUsage.Details.TotalTokenCount);
+        }
+    }
+
     [Fact]
     public async Task BudgetExhaustionObserverFailureCannotReplaceBoundedStop()
     {
@@ -367,6 +427,48 @@ public sealed class CopilotProviderConnectionRecoveryTests
         public void Dispose()
         {
         }
+    }
+
+    private sealed class UsageBeforeConnectionFailureClient : IChatClient
+    {
+        public int CallCount { get; private set; }
+
+        public async IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(
+            IEnumerable<ChatMessage> messages,
+            ChatOptions? options = null,
+            [EnumeratorCancellation] CancellationToken cancellationToken = default)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var call = ++CallCount;
+            await Task.CompletedTask;
+            if (call == 1)
+            {
+                yield return new ChatResponseUpdate
+                {
+                    Contents = [new UsageContent(new UsageDetails { InputTokenCount = 100, TotalTokenCount = 100 })],
+                };
+                throw new HttpRequestException("The connection dropped after publishing usage and before content.");
+            }
+
+            yield return new ChatResponseUpdate(ChatRole.Assistant, "recovered");
+            yield return new ChatResponseUpdate
+            {
+                Contents = [new UsageContent(new UsageDetails { InputTokenCount = 50, TotalTokenCount = 50 })],
+            };
+            yield return new ChatResponseUpdate
+            {
+                FinishReason = ChatFinishReason.Stop,
+                Contents = [new UsageContent(new UsageDetails
+                {
+                    InputTokenCount = 100, OutputTokenCount = 10, TotalTokenCount = 110,
+                })],
+            };
+        }
+
+        public Task<ChatResponse> GetResponseAsync(IEnumerable<ChatMessage> messages,
+            ChatOptions? options = null, CancellationToken cancellationToken = default) => throw new NotSupportedException();
+        public object? GetService(Type serviceType, object? serviceKey = null) => null;
+        public void Dispose() { }
     }
 
     private sealed class FailOnceChatClient(Exception firstFailure) : IChatClient

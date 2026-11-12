@@ -23,7 +23,10 @@ next: false
   按客户业务代码、独立对接示例、旧项目归档与构建发布边界定位 Projects 的权威主题。
 
 - [显示图案计量](../../04-api-reference/algorithms/detectors/display-metrology.md) — `algorithms.display-metrology`
-  本地显示图案计量：RGB套色、九点十字RGB分离、鬼影候选、亮暗点/线缺陷/Mura、灰尘脏污候选、双目信号与几何、Eyebox扫描和全视场斜边SFR；公开原理与可复现合成样本，不承诺现场精度。
+  本地显示图案计量的入口、共享输入与 RGB 套色、外部鬼影、屏体缺陷、灰尘、双目和 Eyebox 等口径；十字 RGB 与圆环鬼影另有独立主题。
+
+- [十字 RGB 分离](../../04-api-reference/algorithms/detectors/rgb-cross.md) — `algorithms.rgb-cross`
+  本地十字 RGB 三通道边缘测量、G 参考偏移、原图坐标与独立有效状态；像素结果不等同于已标定角度色差。
 
 - [Copilot Agent 执行链](../../02-developer-guide/core-concepts/copilot-agent-execution.md) — `copilot.execution`
   Copilot 请求调度、工具筛选、审批、只读委派与执行证据闭环。
@@ -33,6 +36,9 @@ next: false
 
 - [构建平台与制品边界](../../02-developer-guide/README.md) — `delivery.index`
   定义宿主、插件、客户包和独立FileIO包的构建平台与制品边界，区分构建验证和远端发布。
+
+- [检查更新、重新安装与程序备份](../../02-developer-guide/deployment/auto-update.md) — `delivery.update`
+  检查更新、重新安装与程序备份入口，以及主程序和插件的检查复用、下载安装、失败回退与启动恢复。
 
 - [相机生产调试](../../04-api-reference/plugins/standard-plugins/camera-test.md) — `plugins.camera-test`
   CameraTest 相机生产调试：直接 SDK 取图、BMW 四边 SFR、RGB 位移、调焦趋势、可选判定与按设备编号存档；不主动连接 MySQL 或服务，POI 支持 SQLite 本地模板。
@@ -53,7 +59,7 @@ next: false
   主程序、插件和项目包的正式发布入口、只读校验与上传清理副作用。
 
 - [OpenCV 和 native 集成开发指南](../../02-developer-guide/engine-development/opencv-integration.md) — `engine.native-integration`
-  native ABI与HImage所有权、函数族返回值、视频异步/关闭边界，以及helper构建和CUDA发布输入；路由校准Context与POI原生参考。
+  native ABI与HImage所有权、函数族返回值，以及helper构建和CUDA发布输入；路由校准Context与POI原生参考。
 
 - [UI NuGet 包构建与发布](../../04-api-reference/ui-components/publishing.md) — `ui.publishing`
   UI NuGet整批与Algorithms单包发布、Release标签和版本预检；预检不预留版本，逐包上传没有整批回滚或逐条失败检查。

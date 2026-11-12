@@ -32,4 +32,5 @@
   <data name="RuntimeDisableSelectedAction" xml:space="preserve"><value>永久禁用所选</value></data>
   <data name="RuntimePluginSelectionHint" xml:space="preserve"><value>已加载插件会继续运行。临时跳过需要重启；永久禁用将在下次启动时生效。</value></data>
   <data name="RuntimePluginsDisabled" xml:space="preserve"><value>所选插件已禁用，将在下次启动时生效；当前已加载的插件仍会继续运行。</value></data>
+  <data name="AccessDenied" xml:space="preserve"><value>当前用户或策略不允许执行此操作。</value></data>
 </root>

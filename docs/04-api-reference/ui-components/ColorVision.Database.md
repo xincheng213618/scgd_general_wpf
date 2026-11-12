@@ -13,7 +13,7 @@ related: ["ui.database-query", "ui.sqlite-storage", "engine.database-maintenance
 
 `UI/ColorVision.Database/` 提供 MySQL 连接配置、业务 DAO、实体驱动的[通用查询](./database-query.md)，以及 [SQLite 正文存储、迁移与维护](./sqlite-storage.md)。
 
-`LocalTemplateStore` 管理当前用户 `ApplicationData/ColorVision/Config/ColorVision.Local.db`，SQLite 引擎随应用提供，无需安装数据库服务。首次使用自动建库；`local_templates` 按 `kind` 区分配置类型，保存名称、业务 schema 版本、完整 JSON 和顺序。当前接入 POI、流程、设备资源与许可证配置，后续类型由各 owner 定义 payload；该库只保存配置，不保存图片、检测结果、运行日志或执行记录。POI 及其全部点位作为一个文档原子保存，点位保留小数坐标；流程保存完整 STN 与稳定身份，并通过条件更新防止并发覆盖。读取失败和不支持的业务版本必须报错，不能当成空模板。
+`LocalTemplateStore` 管理当前用户 `ApplicationData/ColorVision/Config/ColorVision.Local.db`，SQLite 引擎随应用提供，无需安装数据库服务。首次使用自动建库；`local_templates` 按 `kind` 区分配置类型，保存名称、业务 schema 版本、完整 JSON、顺序和可空的 created_utc。新建文档记录 UTC 创建时间，更新、重命名及交换顺序不改变该时间；旧库自动新增可空列，已有记录保留未知日期，不按迁移时刻回填。当前接入 POI、流程、设备资源与许可证配置，后续类型由各 owner 定义 payload；该库只保存配置，不保存图片、检测结果、运行日志或执行记录。POI 及其全部点位作为一个文档原子保存，点位保留小数坐标；流程保存完整 STN 与稳定身份，并通过条件更新防止并发覆盖。读取失败和不支持的业务版本必须报错，不能当成空模板。
 
 POI 的 `PoiTemplateStorage` 在 MySQL 未连接或列表查询失败时自动使用本地库，不主动调用 `MySqlControl.Connect()`。ImageView 底部模板框旁的管理图标打开现有模板管理器，并选中当前模板；保存图标将当前图上的 POI 区域保存到所选模板，未选模板时输入名称新建。保存保留当前画布，支持矩形、圆形和已有点位；旋转矩形、椭圆及不能完整还原的形状会提示调整，避免改变保存后的几何。模板下拉箭头保留，工具栏无溢出项目时隐藏“更多”箭头。下拉框右键可编辑当前模板或刷新，管理器标题和下拉框提示标识当前存储。新建、编辑、重命名、复制、删除、排序和 `.cfg` 导入导出均走该存储入口。文件导入及导出不要求宿主 Solution 初始化。
 
@@ -23,7 +23,7 @@ POI 本地 ID 使用小于 -1 的值，-1 保留为空模板；MySQL ID 保持�
 
 `BaseTableDao` 的同步保存及 ARVR 批次创建/回写通过 `DatabaseCommandTiming` 区分连接取得与命令执行。仅失败或总耗时达到 100 ms 时输出同名 INFO 事件：`OpenConnectionMs` 包含打开连接或连接池等待，`ExecuteMs` 包含客户端 SQL 调用、服务端自动提交及命令自身的连接处理，`TotalMs` 为两阶段总耗时。它不拆分 MySQL 服务端执行与刷盘，不额外执行 SQL，也不新增事务。`Operation` 标识调用，插入成功时 `Result` 是返回的记录 ID，ARVR 额外携带流程 Code 作为 `CorrelationId`；失败保留阶段并继续向原调用方抛出。日志不记录 SQL、参数或连接字符串。
 
-设备资源、分组关联及相机/光谱仪许可证通过 `LocalConfigurationDao<T>` 的显式接入使用本地存储，见[设备配置](../../01-user-guide/devices/configuration.md)。这不是把 `BaseTableDao<T>` 全部切到 SQLite：普通算法、JSON、校正及第三方模板仍有 MySQL 依赖，见[模板存储边界](../../03-architecture/components/templates/design.md)。历史结果查询、服务端图像、SQL 维护和远程服务初始化的连接检查仍然有效，不应为了开放配置按钮一并删除。
+设备资源、分组关联及相机/光谱仪许可证通过 `LocalConfigurationDao<T>` 的显式接入使用本地存储，见[设备配置](../../01-user-guide/devices/configuration.md)。按本地 ID 读取只检查目标类型与文档，缺失返回 null，目标文档损坏或版本不支持仍报错；`LocalTemplateStore.Find` 仅在缺失时返回 null，`Read` 保持缺失抛错。这不是把 `BaseTableDao<T>` 全部切到 SQLite：普通算法、JSON、校正及第三方模板仍有 MySQL 依赖，见[模板存储边界](../../03-architecture/components/templates/design.md)。历史结果查询、服务端图像、SQL 维护和远程服务初始化的连接检查仍然有效，不应为了开放配置按钮一并删除。
 
 ## 已发布插件的注册兼容
 

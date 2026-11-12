@@ -554,7 +554,7 @@ namespace ColorVision.Copilot
             var childModelVerbosity = canInheritParentModelMetadata
                 ? parentRequest.CodexModelVerbosity
                 : CopilotCodexModelVerbosity.Unspecified;
-            childProfile.MaxTokens = Math.Min(childProfile.MaxTokens, MaximumExplorationOutputTokens);
+            childProfile.MaxTokens = CopilotReasoningCapabilities.GetBackgroundOutputTokens(childProfile, MaximumExplorationOutputTokens);
             var childExecutionScope = CopilotExecutionScope.ForAgentRun(parentRequest)
                 .DeriveChild(CopilotAgentTaskEventIds.CreateRunId());
 

@@ -36,6 +36,7 @@ namespace ColorVision.Copilot
         QueueFull,
         NoActiveRun,
         FollowUpConversationMismatch,
+        RequestCancelled,
     }
 
     internal readonly record struct CopilotRequestAdmissionResult(CopilotRequestAdmissionReason Reason)
@@ -372,7 +373,25 @@ namespace ColorVision.Copilot
                 mode,
                 enqueuedAtUtc,
                 operation,
+                allowAutomaticDispatch: true,
+                out run);
+
+        internal bool TryRestoreQueuedFollowUp(
+            string runId,
+            string conversationId,
+            CopilotAgentMode mode,
+            DateTimeOffset? enqueuedAtUtc,
+            Func<CopilotHostedAgentRun, Task> operation,
+            bool allowAutomaticDispatch,
+            out CopilotHostedAgentRun? run) =>
+            TryRestoreQueuedFollowUp(
+                runId,
+                conversationId,
+                mode,
+                enqueuedAtUtc,
+                operation,
                 isLocalCommand: false,
+                allowAutomaticDispatch,
                 out run);
 
         internal bool TryRestoreQueuedLocalCommand(
@@ -382,6 +401,23 @@ namespace ColorVision.Copilot
             DateTimeOffset? enqueuedAtUtc,
             Func<CopilotHostedAgentRun, Task> operation,
             out CopilotHostedAgentRun? run) =>
+            TryRestoreQueuedLocalCommand(
+                runId,
+                conversationId,
+                mode,
+                enqueuedAtUtc,
+                operation,
+                allowAutomaticDispatch: true,
+                out run);
+
+        internal bool TryRestoreQueuedLocalCommand(
+            string runId,
+            string conversationId,
+            CopilotAgentMode mode,
+            DateTimeOffset? enqueuedAtUtc,
+            Func<CopilotHostedAgentRun, Task> operation,
+            bool allowAutomaticDispatch,
+            out CopilotHostedAgentRun? run) =>
             TryRestoreQueuedFollowUp(
                 runId,
                 conversationId,
@@ -389,6 +425,7 @@ namespace ColorVision.Copilot
                 enqueuedAtUtc,
                 operation,
                 isLocalCommand: true,
+                allowAutomaticDispatch,
                 out run);
 
         private bool TryRestoreQueuedFollowUp(
@@ -398,6 +435,7 @@ namespace ColorVision.Copilot
             DateTimeOffset? enqueuedAtUtc,
             Func<CopilotHostedAgentRun, Task> operation,
             bool isLocalCommand,
+            bool allowAutomaticDispatch,
             out CopilotHostedAgentRun? run)
         {
             var normalizedRunId = (runId ?? string.Empty).Trim();
@@ -437,7 +475,7 @@ namespace ColorVision.Copilot
                 _queuedWorkItems.AddLast(new HostedRunWorkItem(
                     run,
                     operation,
-                    hasScheduledConversation
+                    hasScheduledConversation || !allowAutomaticDispatch
                         ? QueuedRunDispatchPolicy.AfterCompletedTurn
                         : QueuedRunDispatchPolicy.Always));
             }
@@ -741,6 +779,11 @@ namespace ColorVision.Copilot
                     return false;
 
                 run = node.Value.Run;
+                if (node.Value.DispatchPolicy != QueuedRunDispatchPolicy.Always)
+                {
+                    node.Value = node.Value with { DispatchPolicy = QueuedRunDispatchPolicy.Always };
+                    changed = true;
+                }
                 if (node.Previous != null)
                 {
                     _queuedWorkItems.Remove(node);

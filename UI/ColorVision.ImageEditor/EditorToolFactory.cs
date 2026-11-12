@@ -34,6 +34,8 @@ namespace ColorVision.ImageEditor
         private readonly EditorContext _context;
         private readonly List<IEditorTool> _imageOpenEditorTools = new();
         private object? _currentImageOpen;
+        private long _imageOpenToolsGeneration;
+        private bool _disposed;
 
         public T? GetIEditorTool<T>() where T : IEditorTool => GetEffectiveEditorTools().OfType<T>().FirstOrDefault();
 
@@ -59,49 +61,32 @@ namespace ColorVision.ImageEditor
             _toolbarComposer = new EditorToolbarComposer(imageView.GetRegionToolBar);
             _context = context;
 
-            foreach (var assembly in AssemblyHandler.GetInstance().GetAssemblies())
+            var assemblyService = AssemblyHandler.GetInstance();
+            foreach (var type in assemblyService.GetImplementationTypes(typeof(IDVContextMenu)))
             {
-                foreach (var type in AssemblyHandler.GetInstance().GetTypes(assembly))
+                if (CreateContextBoundOrDefaultInstance(type, context) is IDVContextMenu instance)
                 {
-                    if (typeof(IDVContextMenu).IsAssignableFrom(type) && !type.IsInterface && !type.IsAbstract)
-                    {
-                        if (CreateContextBoundOrDefaultInstance(type, context) is IDVContextMenu instance)
-                        {
-                            if (!IsAlgorithmMenuExecutable(instance, context)) continue;
-                            ContextMenuProviders.Add(instance);
-                        }
-                    }
+                    if (!IsAlgorithmMenuExecutable(instance, context)) continue;
+                    ContextMenuProviders.Add(instance);
                 }
             }
 
             // 加载上下文菜单
-            foreach (var assembly in Application.Current.GetAssemblies())
+            foreach (var type in assemblyService.GetImplementationTypes(typeof(IIEditorToolContextMenu)))
             {
-                foreach (var type in AssemblyHandler.GetInstance().GetTypes(assembly))
+                if (CreateContextBoundInstance(type, context) is IIEditorToolContextMenu instance)
                 {
-                    if (typeof(IIEditorToolContextMenu).IsAssignableFrom(type) && !type.IsInterface && !type.IsAbstract)
-                    {
-                        if (CreateContextBoundInstance(type, context) is IIEditorToolContextMenu instance)
-                        {
-                            if (!IsAlgorithmMenuExecutable(instance, context)) continue;
-                            IIEditorToolContextMenus.Add(instance);
-                        }
-                    }
+                    if (!IsAlgorithmMenuExecutable(instance, context)) continue;
+                    IIEditorToolContextMenus.Add(instance);
                 }
             }
 
             // 加载编辑器工具
-            foreach (var assembly in Application.Current.GetAssemblies())
+            foreach (var type in assemblyService.GetImplementationTypes(typeof(IEditorTool)))
             {
-                foreach (var type in AssemblyHandler.GetInstance().GetTypes(assembly))
+                if (CanCreateGlobalEditorTool(type) && CreateEditorTool(type, context) is IEditorTool instance)
                 {
-                    if (typeof(IEditorTool).IsAssignableFrom(type) && !type.IsInterface && !type.IsAbstract && CanCreateGlobalEditorTool(type))
-                    {
-                        if (CreateEditorTool(type, context) is IEditorTool instance)
-                        {
-                            IEditorTools.Add(instance);
-                        }
-                    }
+                    IEditorTools.Add(instance);
                 }
             }
 
@@ -112,25 +97,19 @@ namespace ColorVision.ImageEditor
             }
 
             // 加载图像打开器
-            foreach (var assembly in AssemblyService.Instance.GetAssemblies())
+            foreach (var type in assemblyService.GetImplementationTypes(typeof(IImageOpen)))
             {
-                foreach (var type in AssemblyHandler.GetInstance().GetTypes(assembly))
+                var attr = type.GetCustomAttributes(typeof(FileExtensionAttribute), false)
+                    .Cast<FileExtensionAttribute>().FirstOrDefault();
+                if (attr != null)
                 {
-                    if (typeof(IImageOpen).IsAssignableFrom(type) && !type.IsInterface && !type.IsAbstract)
+                    foreach (var ext in attr.Extensions)
                     {
-                        var attr = type.GetCustomAttributes(typeof(FileExtensionAttribute), false)
-                            .Cast<FileExtensionAttribute>().FirstOrDefault();
-                        if (attr != null)
-                        {
-                            foreach (var ext in attr.Extensions)
-                            {
-                                var extLower = ext.ToLowerInvariant();
+                        var extLower = ext.ToLowerInvariant();
 
-                                if (Activator.CreateInstance(type, context) is IImageOpen instance)
-                                {
-                                    IImageOpens.Add(extLower, instance);
-                                }
-                            }
+                        if (Activator.CreateInstance(type, context) is IImageOpen instance)
+                        {
+                            IImageOpens.Add(extLower, instance);
                         }
                     }
                 }
@@ -170,27 +149,46 @@ namespace ColorVision.ImageEditor
         public void ApplyImageOpenTools(IImageOpen? imageOpen)
             => ApplyImageContentTools(imageOpen == null ? null : _context.ImageView.ImageContentCapability ?? (object)imageOpen);
 
-        internal void ApplyImageContentTools(object? imageOpen)
+        internal bool ApplyImageContentTools(object? imageOpen)
         {
+            long generation = ++_imageOpenToolsGeneration;
+            if (_disposed) return false;
             IReadOnlyList<IEditorTool> previousTools = GetEffectiveEditorTools();
-            if (_currentImageOpen is IImageOpenEditorToolLifecycle previousLifecycle)
+            object? previousOwner = _currentImageOpen;
+            // Keep accepted tools until commit so a reentrant replacement can retire their toggles.
+            // Detach their owner first; its callback must not recursively deactivate it again.
+            _currentImageOpen = null;
+            if (previousOwner is IImageOpenEditorToolLifecycle previousLifecycle)
             {
                 previousLifecycle.OnEditorToolsDeactivated(_context);
+                if (!IsCurrentImageOpenTools(generation)) return false;
+            }
+
+            List<IEditorTool> incomingTools = new();
+            if (imageOpen is IImageOpenEditorToolProvider provider)
+            {
+                IEnumerable<IEditorTool> provided = provider.GetEditorTools();
+                if (!IsCurrentImageOpenTools(generation)) return false;
+                using (IEnumerator<IEditorTool> enumerator = provided.GetEnumerator())
+                {
+                    if (!IsCurrentImageOpenTools(generation)) return false;
+                    while (true)
+                    {
+                        bool hasNext = enumerator.MoveNext();
+                        if (!IsCurrentImageOpenTools(generation)) return false;
+                        if (!hasNext) break;
+                        IEditorTool tool = enumerator.Current;
+                        if (!IsCurrentImageOpenTools(generation)) return false;
+                        if (tool != null) incomingTools.Add(tool);
+                    }
+                }
+                // Iterator disposal is also extension code.
+                if (!IsCurrentImageOpenTools(generation)) return false;
             }
 
             _currentImageOpen = imageOpen;
             _imageOpenEditorTools.Clear();
-
-            if (imageOpen is IImageOpenEditorToolProvider provider)
-            {
-                foreach (IEditorTool tool in provider.GetEditorTools())
-                {
-                    if (tool != null)
-                    {
-                        _imageOpenEditorTools.Add(tool);
-                    }
-                }
-            }
+            _imageOpenEditorTools.AddRange(incomingTools);
 
             // Removing a button does not stop its tool's input handlers or overlays.
             HashSet<IEditorTool> effectiveTools = new(GetEffectiveEditorTools(), ReferenceEqualityComparer.Instance);
@@ -198,38 +196,44 @@ namespace ColorVision.ImageEditor
             {
                 if (!effectiveTools.Contains(tool))
                     tool.IsChecked = false;
+                if (!IsCurrentImageOpenTools(generation)) return false;
             }
 
             RefreshToolBars();
+            if (!IsCurrentImageOpenTools(generation)) return false;
 
             if (imageOpen is IImageOpenEditorToolLifecycle lifecycle)
             {
                 lifecycle.OnEditorToolsActivated(_context);
             }
+            return IsCurrentImageOpenTools(generation);
         }
+
+        private bool IsCurrentImageOpenTools(long generation)
+            => !_disposed && _imageOpenToolsGeneration == generation;
 
         public void RefreshToolBars() => _toolbarComposer.Refresh(GetEffectiveEditorTools());
 
         public void Dispose()
         {
-            if (_currentImageOpen is IImageOpenEditorToolLifecycle lifecycle)
-            {
-                lifecycle.OnEditorToolsDeactivated(_context);
-            }
-
-            _toolbarComposer.Clear();
-
-            HashSet<IDisposable> disposableTools = new();
-            foreach (IDisposable item in IEditorTools.Concat(_imageOpenEditorTools).OfType<IDisposable>())
-            {
-                if (disposableTools.Add(item))
-                {
-                    item.Dispose();
-                }
-            }
-
+            if (_disposed) return;
+            _disposed = true;
+            ++_imageOpenToolsGeneration;
+            object? previousOwner = _currentImageOpen;
+            _currentImageOpen = null;
+            HashSet<IDisposable> disposableTools = new(IEditorTools.Concat(_imageOpenEditorTools).OfType<IDisposable>());
             _imageOpenEditorTools.Clear();
-            GC.SuppressFinalize(this);
+            try
+            {
+                if (previousOwner is IImageOpenEditorToolLifecycle lifecycle)
+                    lifecycle.OnEditorToolsDeactivated(_context);
+            }
+            finally
+            {
+                _toolbarComposer.Clear();
+                foreach (IDisposable item in disposableTools) item.Dispose();
+                GC.SuppressFinalize(this);
+            }
         }
 
         private static bool CanCreateGlobalEditorTool(Type type)

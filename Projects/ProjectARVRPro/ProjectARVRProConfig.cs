@@ -39,6 +39,13 @@ namespace ProjectARVRPro
         public static ProjectARVRProLogConfig Instance => ConfigService.Instance.GetRequiredService<ProjectARVRProLogConfig>();
     }
 
+    public enum LuxVidMeasurementMode
+    {
+        [Description("自动聚焦")] AutoFocus,
+        [Description("直接获取位置")] GetPosition,
+        [Description("微聚焦")] FineFocus
+    }
+
     [DisplayName("模组检测设置")]
     public class ProjectARVRProConfig: ViewModelBase, IConfig
     {
@@ -104,6 +111,41 @@ namespace ProjectARVRPro
         [Description("流程或结果处理失败后继续下一项，不会把失败结果改成通过。")]
         public bool AllowTestFailures { get => _AllowTestFailures; set { _AllowTestFailures = value; OnPropertyChanged(); } }
         private bool _AllowTestFailures = true;
+
+        [DisplayName("LUX 协议设备号"), Category("LUX协议")]
+        [Description("原 LUX 文本回包的前缀，例如 H03 或 H03AR；不参与流程批次 Code 的生成。")]
+        public string LuxMachineNo { get => _LuxMachineNo; set { _LuxMachineNo = value; OnPropertyChanged(); } }
+        private string _LuxMachineNo = "H03";
+
+        [DisplayName("VID 相机"), Category("LUX协议"), PropertyEditorType(typeof(VidCameraPropertiesEditor))]
+        [Description("默认使用设备列表中的第一台相机。JSON MeasureVID 和 LUX T0001 共用此设置。")]
+        public string LuxVidCameraCode
+        {
+            get => _LuxVidCameraCode;
+            set { _LuxVidCameraCode = string.IsNullOrWhiteSpace(value) ? string.Empty : value; OnPropertyChanged(); }
+        }
+        private string _LuxVidCameraCode = string.Empty;
+
+        [DisplayName("VID 测量方式"), Category("LUX协议")]
+        [Description("自动聚焦和微聚焦使用所选相机的对焦模板；微聚焦仅适用于本地相机，从当前电机位置附近找焦。直接获取位置无需模板。")]
+        public LuxVidMeasurementMode LuxVidMode { get => _LuxVidMode; set { _LuxVidMode = value; OnPropertyChanged(); } }
+        private LuxVidMeasurementMode _LuxVidMode;
+
+        [DisplayName("VID 下限"), Category("LUX协议")]
+        public double LuxVidMin { get => _LuxVidMin; set { _LuxVidMin = value; OnPropertyChanged(); } }
+        private double _LuxVidMin;
+
+        [DisplayName("VID 上限"), Category("LUX协议")]
+        public double LuxVidMax { get => _LuxVidMax; set { _LuxVidMax = value; OnPropertyChanged(); } }
+        private double _LuxVidMax;
+
+        [DisplayName("VID 修正系数 K"), Category("LUX协议")]
+        public double LuxVidFix { get => _LuxVidFix; set { _LuxVidFix = value; OnPropertyChanged(); } }
+        private double _LuxVidFix = 1;
+
+        [DisplayName("VID 修正偏移 B"), Category("LUX协议")]
+        public double LuxVidB { get => _LuxVidB; set { _LuxVidB = value; OnPropertyChanged(); } }
+        private double _LuxVidB;
 
         [DisplayName("串口名称"), Category("串口参数")]
         [Description("例如 COM3；从流程处理配置的“雷鸟连接与切图”中连接和调试设备。")]

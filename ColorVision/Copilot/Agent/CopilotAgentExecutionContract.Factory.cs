@@ -62,62 +62,9 @@ namespace ColorVision.Copilot
             var batchImageConversionTools = availableTools.Where(CopilotToolIntentPolicy.IsBatchImageConversionTool).Select(tool => tool.Name);
             var needsValidation = CopilotToolIntentPolicy.NeedsWorkspaceValidation(request);
             var needsShellExecution = CopilotToolIntentPolicy.NeedsShellExecution(request);
-            if (CopilotToolIntentPolicy.NeedsWorkspaceRollback(request))
-            {
-                return Required(
-                    CopilotAgentExecutionRequirement.WorkspaceRollback,
-                    [workspaceRollbackTools],
-                    prerequisiteToolGroups,
-                    attachedFilePaths,
-                    requiredLocalFilePaths);
-            }
-            if (CopilotToolIntentPolicy.NeedsWorkspaceCreate(request))
-            {
-                return Required(
-                    (needsShellExecution, needsValidation) switch
-                    {
-                        (true, true) => CopilotAgentExecutionRequirement.WorkspaceCreateAndShellExecutionAndValidation,
-                        (true, false) => CopilotAgentExecutionRequirement.WorkspaceCreateAndShellExecution,
-                        (false, true) => CopilotAgentExecutionRequirement.WorkspaceCreateAndValidation,
-                        _ => CopilotAgentExecutionRequirement.WorkspaceCreate,
-                    },
-                    (needsShellExecution, needsValidation) switch
-                    {
-                        (true, true) => [workspaceApplyTools, shellExecutionTools, workspaceValidationTools],
-                        (true, false) => [workspaceApplyTools, shellExecutionTools],
-                        (false, true) => [workspaceApplyTools, workspaceValidationTools],
-                        _ => [workspaceApplyTools],
-                    },
-                    prerequisiteToolGroups,
-                    attachedFilePaths,
-                    requiredLocalFilePaths);
-            }
-            if (CopilotToolIntentPolicy.NeedsWorkspaceEdit(request))
-            {
-                return Required(
-                    (needsShellExecution, needsValidation) switch
-                    {
-                        (true, true) => CopilotAgentExecutionRequirement.WorkspaceEditAndShellExecutionAndValidation,
-                        (true, false) => CopilotAgentExecutionRequirement.WorkspaceEditAndShellExecution,
-                        (false, true) => CopilotAgentExecutionRequirement.WorkspaceEditAndValidation,
-                        _ => CopilotAgentExecutionRequirement.WorkspaceEdit,
-                    },
-                    (needsShellExecution, needsValidation) switch
-                    {
-                        (true, true) => [workspaceApplyTools, shellExecutionTools, workspaceValidationTools],
-                        (true, false) => [workspaceApplyTools, shellExecutionTools],
-                        (false, true) => [workspaceApplyTools, workspaceValidationTools],
-                        _ => [workspaceApplyTools],
-                    },
-                    prerequisiteToolGroups,
-                    attachedFilePaths,
-                    requiredLocalFilePaths);
-            }
             if (request.Mode == CopilotAgentMode.Review)
             {
-                var requiredReviewTarget = request.WorkspaceReviewTarget?.IsStructurallyValid() == true
-                    ? request.WorkspaceReviewTarget.CreateSnapshot()
-                    : CopilotWorkspaceReviewTargetContext.WorkingTree();
+                var requiredReviewTarget = request.GetEffectiveWorkspaceReviewTarget();
                 var gitWorkingTreeTools = availableTools
                     .Where(tool => string.Equals(tool.Name, "InspectGitWorkingTree", StringComparison.OrdinalIgnoreCase))
                     .Select(tool => tool.Name)
@@ -152,24 +99,81 @@ namespace ColorVision.Copilot
                         requiredReviewTarget);
                 }
             }
-            if (needsValidation)
+            // Words in the request cannot prove what the user wants done, so in Auto they only
+            // guide the model. An explicitly chosen mode still enforces the evidence.
+            CopilotAgentExecutionContract? textIntent = null;
+            if (CopilotToolIntentPolicy.NeedsWorkspaceRollback(request))
             {
-                return Required(
+                textIntent = Required(
+                    CopilotAgentExecutionRequirement.WorkspaceRollback,
+                    [workspaceRollbackTools],
+                    prerequisiteToolGroups,
+                    attachedFilePaths,
+                    requiredLocalFilePaths);
+            }
+            else if (CopilotToolIntentPolicy.NeedsWorkspaceCreate(request))
+            {
+                textIntent = Required(
+                    (needsShellExecution, needsValidation) switch
+                    {
+                        (true, true) => CopilotAgentExecutionRequirement.WorkspaceCreateAndShellExecutionAndValidation,
+                        (true, false) => CopilotAgentExecutionRequirement.WorkspaceCreateAndShellExecution,
+                        (false, true) => CopilotAgentExecutionRequirement.WorkspaceCreateAndValidation,
+                        _ => CopilotAgentExecutionRequirement.WorkspaceCreate,
+                    },
+                    (needsShellExecution, needsValidation) switch
+                    {
+                        (true, true) => [workspaceApplyTools, shellExecutionTools, workspaceValidationTools],
+                        (true, false) => [workspaceApplyTools, shellExecutionTools],
+                        (false, true) => [workspaceApplyTools, workspaceValidationTools],
+                        _ => [workspaceApplyTools],
+                    },
+                    prerequisiteToolGroups,
+                    attachedFilePaths,
+                    requiredLocalFilePaths);
+            }
+            else if (CopilotToolIntentPolicy.NeedsWorkspaceEdit(request))
+            {
+                textIntent = Required(
+                    (needsShellExecution, needsValidation) switch
+                    {
+                        (true, true) => CopilotAgentExecutionRequirement.WorkspaceEditAndShellExecutionAndValidation,
+                        (true, false) => CopilotAgentExecutionRequirement.WorkspaceEditAndShellExecution,
+                        (false, true) => CopilotAgentExecutionRequirement.WorkspaceEditAndValidation,
+                        _ => CopilotAgentExecutionRequirement.WorkspaceEdit,
+                    },
+                    (needsShellExecution, needsValidation) switch
+                    {
+                        (true, true) => [workspaceApplyTools, shellExecutionTools, workspaceValidationTools],
+                        (true, false) => [workspaceApplyTools, shellExecutionTools],
+                        (false, true) => [workspaceApplyTools, workspaceValidationTools],
+                        _ => [workspaceApplyTools],
+                    },
+                    prerequisiteToolGroups,
+                    attachedFilePaths,
+                    requiredLocalFilePaths);
+            }
+            else if (needsValidation)
+            {
+                textIntent = Required(
                     CopilotAgentExecutionRequirement.WorkspaceValidation,
                     [workspaceValidationTools],
                     prerequisiteToolGroups,
                     attachedFilePaths,
                     requiredLocalFilePaths);
             }
-            if (needsShellExecution)
+            else if (needsShellExecution)
             {
-                return Required(
+                textIntent = Required(
                     CopilotAgentExecutionRequirement.ShellExecution,
                     [shellExecutionTools],
                     prerequisiteToolGroups,
                     attachedFilePaths,
                     requiredLocalFilePaths);
             }
+            if (textIntent != null && request.Mode != CopilotAgentMode.Auto)
+                return textIntent;
+            // Batch intent stays enforced: requiring both an image and an action phrase filters most questions.
             if (CopilotToolIntentPolicy.NeedsBatchImageConversionExecution(request))
             {
                 return Required(
@@ -177,7 +181,7 @@ namespace ColorVision.Copilot
                     [batchImageConversionTools],
                     prerequisiteToolGroups,
                     attachedFilePaths,
-                    requiredLocalFilePaths);
+                    requiredLocalFilePaths).WithIntentHint(textIntent);
             }
             if (CopilotToolIntentPolicy.NeedsBatchImageProcessing(request))
             {
@@ -186,7 +190,7 @@ namespace ColorVision.Copilot
                     [batchImageProcessingTools],
                     prerequisiteToolGroups,
                     attachedFilePaths,
-                    requiredLocalFilePaths);
+                    requiredLocalFilePaths).WithIntentHint(textIntent);
             }
 
             var urlFetchTools = availableTools.Where(CopilotToolIntentPolicy.IsUrlFetchTool).Select(tool => tool.Name);
@@ -198,17 +202,20 @@ namespace ColorVision.Copilot
                     [urlFetchTools.Concat(webSearchTools)],
                     prerequisiteToolGroups,
                     attachedFilePaths,
-                    requiredLocalFilePaths);
+                    requiredLocalFilePaths).WithIntentHint(textIntent);
             }
 
             if (!explicitlyDisallowsPublicWebAccess && CopilotToolIntentPolicy.ExplicitlyRequiresPublicWebSearch(request))
             {
-                return Required(
+                var webSearch = Required(
                     CopilotAgentExecutionRequirement.PublicWebSearch,
                     [webSearchTools],
                     prerequisiteToolGroups,
                     attachedFilePaths,
                     requiredLocalFilePaths);
+                if (request.Mode != CopilotAgentMode.Auto)
+                    return webSearch;
+                textIntent ??= webSearch;
             }
 
             var requiredSuccessfulTools = request.RequiredSuccessfulToolNames
@@ -223,10 +230,10 @@ namespace ColorVision.Copilot
                     [requiredSuccessfulTools],
                     prerequisiteToolGroups,
                     attachedFilePaths,
-                    requiredLocalFilePaths);
+                    requiredLocalFilePaths).WithIntentHint(textIntent);
             }
 
-            return prerequisiteToolGroups.Count > 0
+            return (prerequisiteToolGroups.Count > 0
                 ? Required(
                     localFileReadTools.Length > 0
                         ? CopilotAgentExecutionRequirement.LocalFileEvidence
@@ -235,7 +242,7 @@ namespace ColorVision.Copilot
                     prerequisiteToolGroups,
                     attachedFilePaths,
                     requiredLocalFilePaths)
-                : None();
+                : None()).WithIntentHint(textIntent);
         }
 
         private static CopilotAgentExecutionContract Required(

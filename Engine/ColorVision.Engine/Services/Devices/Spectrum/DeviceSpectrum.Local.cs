@@ -22,6 +22,8 @@ public partial class DeviceSpectrum
     private bool localDisposed;
     public event Action<LocalSpectrumCapture, bool>? LocalResultAvailable;
     public event Action<string>? LocalCaptureFailed;
+    [Browsable(false)]
+    public bool IsLocalSpectrumBackend => SpectrumBackend.OpensLocally;
     [CommandDisplay("本地光谱仪管理", Order = -2, CategoryOrder = 0), Category("DeviceConnection")]
     public RelayCommand OpenLocalSpectrumManagerCommand { get; private set; } = null!;
 
@@ -38,7 +40,11 @@ public partial class DeviceSpectrum
     {
         if (e.PropertyName == nameof(DisplaySpectrumConfig.UseLocalSpectrum)) SpectrumBackend.SetPreference(DisplayConfig.UseLocalSpectrum);
     }
-    private void RefreshLocalSpectrumStatus() => DService?.RefreshBackendStatus();
+    private void RefreshLocalSpectrumStatus()
+    {
+        DService?.RefreshBackendStatus();
+        OnPropertyChanged(nameof(IsLocalSpectrumBackend));
+    }
 
     public void OpenLocalSpectrumWindow(ColorVision.Engine.FlowProcessing.Nodes.LocalSpectrumNode? node = null)
     {
@@ -60,6 +66,15 @@ public partial class DeviceSpectrum
 
     internal ConfigSpectrum SnapshotLocalConfiguration() => JsonConvert.DeserializeObject<ConfigSpectrum>(JsonConvert.SerializeObject(Config))!;
 
+    internal MsgRecord SetShutterTransmitting(bool transmitting)
+    {
+        lock (SpectrumBackend.Sync)
+        {
+            bool open = SpectrumBackend.OpensLocally ? transmitting != Config.ShutterCfg.OpenForDark : transmitting;
+            return open ? DService.ShutterDoopen() : DService.ShutterDoclose();
+        }
+    }
+
     internal void EnsureOtherSpectrumBackends(bool local)
     {
         foreach (var other in ServiceManager.Current?.DeviceServices.OfType<DeviceSpectrum>() ?? Enumerable.Empty<DeviceSpectrum>())
@@ -74,7 +89,7 @@ public partial class DeviceSpectrum
     {
         if (ExperimentalFeaturesConfig.Instance.IsEnabled) return;
         LicenseModel? license = PhyLicenseDao.Instance.GetByMAC(config.SN, SysResourceDao.IsLocalId(SysResourceModel.Id) || !ColorVision.Database.MySqlSetting.IsConnect);
-        LocalSpectrumLicense.EnsureNotExpired(license?.LiceType == 1 ? license.ExpiryDate : null, false, DateTime.Now);
+        LocalSpectrumLicense.EnsureNotExpired(license?.LiceType == 1 ? license.ExpiryDate : null, skipValidation: false, DateTime.Now);
     }
 
     // Callers reserve the backend before scheduling native work. The session itself serializes all handle access.
@@ -115,8 +130,9 @@ public partial class DeviceSpectrum
     {
         if (localDisposed) return;
         if (result.NDPort.HasValue) ApplyLocalNdState(result.NDPort.Value, result.NdCalibration);
-        DisplayConfig.IntTime = result.IntegralTime;
-        View.AddViewResultSpectrum(CreateLocalSpectrumView(result));
+        // Feeding back a synchronized duration can quantize it again on the next request.
+        if (!result.UsedSyncFrequency) DisplayConfig.IntTime = result.IntegralTime;
+        PresentResult(() => CreateLocalSpectrumView(result));
         LocalResultAvailable?.Invoke(result, continuous);
     }
 
@@ -130,7 +146,7 @@ public partial class DeviceSpectrum
         if (result.MeasurementId > 0) view.Id = result.MeasurementId;
         if (result.EqeData is { } eqe)
         {
-            view.Eqe = eqe.dEqe; view.V = (float)eqe.dVoltage; view.I = (float)eqe.dCurrent;
+            view.Eqe = eqe.dEqe; view.V = (float)eqe.dVoltage; view.I = (float)(eqe.dCurrent * 1000.0);
             view.LuminousFlux = eqe.dIm; view.RadiantFlux = eqe.dW;
         }
         return view;
@@ -157,6 +173,7 @@ public partial class DeviceSpectrum
             }
             EnsureLocalSpectrumConnected(false, config);
             if (eventName == "InitDark") LocalSession.Dark(parameters, config);
+            else if (eventName == "ResetDark") LocalSession.ResetDark(config);
             else if (eventName == "InitAutoDark") LocalSession.InitAutoDark(config);
             else if (eventName is "ShutterConnect" or "ShutterDisconnect" or "ShutterDoOpen" or "ShutterDoClose") LocalSession.ControlShutter(eventName, config);
             else throw new NotSupportedException($"本地光谱仪暂不支持 {eventName} 操作。");
@@ -242,7 +259,15 @@ public partial class DeviceSpectrum
         {
             object? data = null;
             Exception? failure = null;
-            try { data = await work(); }
+            try
+            {
+                data = await work();
+                if (eventName == "ResetDark")
+                {
+                    DisplayConfig.IsAutoDark = false;
+                    DisplayConfig.IsShutter = false;
+                }
+            }
             catch (OperationCanceledException ex) { failure = new OperationCanceledException("光谱仪操作已停止。", ex); LocalCaptureFailed?.Invoke(failure.Message); }
             catch (Exception ex) { failure = ex; log.Error(ex); LocalCaptureFailed?.Invoke(ex.Message); }
             record.ReciveTime = DateTime.Now;
@@ -325,6 +350,7 @@ public partial class DeviceSpectrum
     {
         if (localDisposed) return;
         localDisposed = true;
+        _view.Dispose();
         DisplayConfig.PropertyChanged -= LocalDisplayConfigChanged;
         SpectrumBackend.Changed -= RefreshLocalSpectrumStatus;
         _ = SpectrumBackend.StopLocalCommandAsync();

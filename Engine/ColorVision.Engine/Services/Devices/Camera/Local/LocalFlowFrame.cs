@@ -199,6 +199,8 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                 ArgumentOutOfRangeException.ThrowIfNegative(requiredLength);
                 lock (bufferSync)
                 {
+                    // The frame can lose its last reference while a resize is waiting for this lock.
+                    ObjectDisposedException.ThrowIf(Volatile.Read(ref referenceCount) <= 0, nameof(LocalFlowFrame));
                     if (requiredLength == cieLength) return;
                     IntPtr replacement = requiredLength > 0 ? Marshal.AllocHGlobal(requiredLength) : IntPtr.Zero;
                     IntPtr previous = ciePointer;

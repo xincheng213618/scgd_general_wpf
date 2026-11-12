@@ -43,9 +43,8 @@ namespace ColorVision.Solution
 
         private EditorManager()
         {
-            AppDomain.CurrentDomain.AssemblyLoad += CurrentDomain_AssemblyLoad;
-            RegisterEditors(AssemblyService.Instance?.GetAssemblies()
-                ?? AppDomain.CurrentDomain.GetAssemblies());
+            SolutionAssemblyDiscovery.Subscribe(RegisterEditors);
+            RegisterEditors(SolutionAssemblyDiscovery.GetAssemblies());
             LoadConfiguredEditors();
         }
 
@@ -60,11 +59,6 @@ namespace ColorVision.Solution
             return normalized.ToLowerInvariant();
         }
 
-        private void CurrentDomain_AssemblyLoad(object? sender, AssemblyLoadEventArgs e)
-        {
-            RegisterEditors([e.LoadedAssembly]);
-        }
-
         private void RegisterEditors(IEnumerable<Assembly> assemblies)
         {
             bool changed = false;
@@ -75,12 +69,12 @@ namespace ColorVision.Solution
                     if (!_registeredAssemblies.Add(assembly))
                         continue;
 
-                    foreach (Type type in GetLoadableTypes(assembly))
+                    foreach (Type type in SolutionAssemblyDiscovery.GetTypes(assembly))
                     {
                         if (!typeof(IEditor).IsAssignableFrom(type) || type.IsInterface || type.IsAbstract)
                             continue;
 
-                        if (type.GetCustomAttribute<EditorForExtensionAttribute>() is { } extensionAttribute)
+                        if (SolutionAssemblyDiscovery.GetExtensionAttribute<EditorForExtensionAttribute>(type) is { } extensionAttribute)
                         {
                             changed |= TryRegisterDiscoveredEditor(new EditorDescriptor(
                                 GetEditorId(type, extensionAttribute.EditorId),
@@ -94,7 +88,7 @@ namespace ColorVision.Solution
                                 GetLocalizedName(extensionAttribute.ResourceKey, extensionAttribute.Name)));
                         }
 
-                        if (type.GetCustomAttribute<GenericEditorAttribute>() is { } genericAttribute)
+                        if (SolutionAssemblyDiscovery.GetExtensionAttribute<GenericEditorAttribute>(type) is { } genericAttribute)
                         {
                             changed |= TryRegisterDiscoveredEditor(new EditorDescriptor(
                                 GetEditorId(type, genericAttribute.EditorId),
@@ -108,7 +102,7 @@ namespace ColorVision.Solution
                                 GetLocalizedName(genericAttribute.ResourceKey, genericAttribute.Name)));
                         }
 
-                        if (type.GetCustomAttribute<FolderEditorAttribute>() is { } folderAttribute)
+                        if (SolutionAssemblyDiscovery.GetExtensionAttribute<FolderEditorAttribute>(type) is { } folderAttribute)
                         {
                             changed |= TryRegisterDiscoveredEditor(new EditorDescriptor(
                                 GetEditorId(type, folderAttribute.EditorId),
@@ -244,22 +238,6 @@ namespace ColorVision.Solution
                 : registeredId.Trim();
         }
 
-        private static IEnumerable<Type> GetLoadableTypes(Assembly assembly)
-        {
-            try
-            {
-                return assembly.GetTypes();
-            }
-            catch (ReflectionTypeLoadException ex)
-            {
-                return ex.Types.Where(type => type != null)!;
-            }
-            catch
-            {
-                return Enumerable.Empty<Type>();
-            }
-        }
-
         private static List<EditorDescriptor> OrderDescriptors(IEnumerable<EditorDescriptor> descriptors)
         {
             return descriptors
@@ -298,21 +276,21 @@ namespace ColorVision.Solution
 
         public static string GetEditorName(Type type)
         {
-            if (type.GetCustomAttribute<EditorForExtensionAttribute>() is { } extensionAttribute)
+            if (SolutionAssemblyDiscovery.GetExtensionAttribute<EditorForExtensionAttribute>(type) is { } extensionAttribute)
             {
                 string? name = GetLocalizedName(extensionAttribute.ResourceKey, extensionAttribute.Name);
                 if (name != null)
                     return name;
             }
 
-            if (type.GetCustomAttribute<GenericEditorAttribute>() is { } genericAttribute)
+            if (SolutionAssemblyDiscovery.GetExtensionAttribute<GenericEditorAttribute>(type) is { } genericAttribute)
             {
                 string? name = GetLocalizedName(genericAttribute.ResourceKey, genericAttribute.Name);
                 if (name != null)
                     return name;
             }
 
-            if (type.GetCustomAttribute<FolderEditorAttribute>() is { } folderAttribute)
+            if (SolutionAssemblyDiscovery.GetExtensionAttribute<FolderEditorAttribute>(type) is { } folderAttribute)
             {
                 string? name = GetLocalizedName(folderAttribute.ResourceKey, folderAttribute.Name);
                 if (name != null)
@@ -422,14 +400,15 @@ namespace ColorVision.Solution
 
             try
             {
-                EditorManagerConfig config = EditorManagerConfig.Instance;
+                IConfigService configService = ConfigService.Instance;
+                EditorManagerConfig config = configService.GetRequiredService<EditorManagerConfig>();
                 lock (_syncRoot)
                 {
                     bool hadPreviousValue = config.DefaultEditors.TryGetValue(normalizedExtension, out string? previousValue);
                     config.DefaultEditors[normalizedExtension] = descriptor.Id;
                     try
                     {
-                        ConfigService.Instance.Save<EditorManagerConfig>();
+                        PersistDefaults(configService, config);
                     }
                     catch
                     {
@@ -463,14 +442,15 @@ namespace ColorVision.Solution
 
             try
             {
-                EditorManagerConfig config = EditorManagerConfig.Instance;
+                IConfigService configService = ConfigService.Instance;
+                EditorManagerConfig config = configService.GetRequiredService<EditorManagerConfig>();
                 lock (_syncRoot)
                 {
                     string? previousValue = config.DefaultFolderEditor;
                     config.DefaultFolderEditor = descriptor.Id;
                     try
                     {
-                        ConfigService.Instance.Save<EditorManagerConfig>();
+                        PersistDefaults(configService, config);
                     }
                     catch
                     {
@@ -486,6 +466,19 @@ namespace ColorVision.Solution
             {
                 errorMessage = $"保存默认文件夹编辑器失败：{ex.Message}";
                 return false;
+            }
+        }
+
+        private static void PersistDefaults(IConfigService service, EditorManagerConfig config)
+        {
+            if (service is ConfigHandler handler)
+            {
+                if (!handler.TrySave(config, out string error))
+                    throw new IOException(error);
+            }
+            else
+            {
+                service.Save<EditorManagerConfig>();
             }
         }
 

@@ -215,18 +215,13 @@ namespace ColorVision.Engine.Services
         private void CreateDeviceMenu_Opened(object sender, RoutedEventArgs e)
         {
             var menu = (ContextMenu)sender;
-            if (!AccessControl.Check(PermissionMode.Administrator))
-            {
-                menu.IsOpen = false;
-                return;
-            }
             menu.Items.Clear();
             PopulateCreateDeviceMenu(menu, ServiceManager.GetInstance().TypeServices, CreateServiceAndDevice);
         }
 
         private void CreateServiceAndDevice(Types.TypeService type)
         {
-            if (!AccessControl.Check(PermissionMode.Administrator)) return;
+            if (!AccessControl.Evaluate("service.create", PermissionMode.Administrator, type.CreationResourceId).Allowed) return;
             var dialog = new Types.CreateType(type) { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner };
             dialog.ShowDialog();
             if (dialog.CreatedTerminal is TerminalService terminal && terminal.OpenCreateWindowCommand.CanExecute(null))
@@ -256,7 +251,8 @@ namespace ColorVision.Engine.Services
                     typeItem.Items.Add(item);
                 }
                 if (typeItem.Items.Count > 0) typeItem.Items.Add(new Separator());
-                var createTerminal = new MenuItem { Header = Properties.Resources.CreateServiceAndDevice };
+                var createTerminal = new MenuItem { Header = Properties.Resources.CreateServiceAndDevice,
+                    IsEnabled = AccessControl.Evaluate("service.create", PermissionMode.Administrator, type.CreationResourceId).Allowed };
                 createTerminal.Click += (_, _) => createService(type);
                 typeItem.Items.Add(createTerminal);
                 menu.Items.Add(typeItem);

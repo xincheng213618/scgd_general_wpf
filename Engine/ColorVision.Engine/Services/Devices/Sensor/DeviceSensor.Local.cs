@@ -69,19 +69,7 @@ public partial class DeviceSensor
     }
 
     internal void EnsureOtherSensorBackends(bool local, string endpoint)
-    {
-        foreach (var other in ServiceManager.Current?.DeviceServices.OfType<DeviceSensor>() ?? Enumerable.Empty<DeviceSensor>())
-        {
-            string otherEndpoint = other.LocalSession.EndpointIdentity ?? LocalSensorSession.EndpointKey(other.Config);
-            if (ReferenceEquals(other, this) || otherEndpoint != endpoint) continue;
-            if (local)
-            {
-                if (other.SensorBackend.LocalOwned) throw new InvalidOperationException("另一个本地传感器正在使用此连接。");
-                other.SensorBackend.EnsureLocalAvailable();
-            }
-            else other.SensorBackend.EnsureServiceAvailable();
-        }
-    }
+        => LocalCommunicationOwnership.EnsureAvailable(this, local, endpoint);
 
     internal IReadOnlyList<LocalSensorCommand> ResolveLocalSensorCommands(object? parameters, ConfigSensor config)
     {
@@ -112,7 +100,7 @@ public partial class DeviceSensor
                 case "ExecCmd":
                     if (commands == null) throw new ArgumentException("缺少传感器指令。");
                     if (autoConnect && !LocalSession.IsOpen) await LocalSession.OpenAsync(config, token).ConfigureAwait(false);
-                    return await LocalSession.ExecuteAsync(commands, token).ConfigureAwait(false);
+                    return await LocalSession.ExecuteAsync(commands, token, expectedConnection: config).ConfigureAwait(false);
                 default: throw new NotSupportedException($"本地传感器不支持 {operation}。");
             }
         }

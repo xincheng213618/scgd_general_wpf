@@ -328,6 +328,10 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
     }
 
     [STNode("Flow_LocalAlgorithms", "FOV计算", CategoryOrder = 9910, NodeOrder = 20)]
+    [FlowEngineLib.FlowNodeDocumentation("将发光区的像素跨度按相机标定换算为水平、垂直和对角视场角。",
+        Usage = "设置配对的 FovDist 与 cameraDegrees；默认四角模式可直接接发光区结果，轮廓模式必须提供同源图像像素。",
+        Notes = "四角与轮廓模式的跨度口径不同。结果为几何视场，不能替代亮度或对比度限定的有效视场；无效标定会失败，轮廓模式还会拒绝裁切和可分辨孔洞。",
+        TopicId = "algorithms.fov-local")]
     public sealed class LocalFovNode : LocalFlowNodeBase
     {
         internal const int CalculationFailureResultCode = -1;

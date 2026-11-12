@@ -2,7 +2,7 @@
 using ColorVision.UI;
 using SqlSugar;
 using System.IO;
-using System.Windows;
+using System.Linq.Expressions;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 
@@ -15,6 +15,15 @@ namespace ColorVision.Solution.MultiImageViewer
     {
         private static ThumbnailCacheManager? _instance;
         private static readonly object _locker = new();
+        // A codec can still decode full source frames while downscaling. Bound the heavy work across viewers.
+        private static readonly SemaphoreSlim StandardDecodeSlots = new(2, 2);
+        private static readonly Expression<Func<ThumbnailCacheEntry, ThumbnailCacheEntry>> MetadataProjection = x => new ThumbnailCacheEntry
+        {
+            Id = x.Id, FilePath = x.FilePath, FileLastModified = x.FileLastModified,
+            ThumbnailWidth = x.ThumbnailWidth, ThumbnailHeight = x.ThumbnailHeight,
+            OriginalWidth = x.OriginalWidth, OriginalHeight = x.OriginalHeight,
+            FileSize = x.FileSize, CreateDate = x.CreateDate, ProviderCacheVersion = x.ProviderCacheVersion
+        };
         private SqlSugarClient? _db;
         private bool _disposed = false;
 
@@ -49,19 +58,32 @@ namespace ColorVision.Solution.MultiImageViewer
             try
             {
                 Directory.CreateDirectory(DirectoryPath);
-
-                _db = new SqlSugarClient(new ConnectionConfig
-                {
-                    ConnectionString = $"Data Source={SqliteDbPath}",
-                    DbType = DbType.Sqlite,
-                    IsAutoCloseConnection = true
-                });
-                _db.CodeFirst.InitTables<ThumbnailCacheEntry>();
+                _db = OpenDatabase(SqliteDbPath);
                 _cacheWriteVersion++;
             }
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"ThumbnailCacheManager Initialize Error: {ex.Message}");
+            }
+        }
+
+        private static SqlSugarClient OpenDatabase(string path)
+        {
+            var database = new SqlSugarClient(new ConnectionConfig
+            {
+                ConnectionString = $"Data Source={path}",
+                DbType = DbType.Sqlite,
+                IsAutoCloseConnection = true
+            });
+            try
+            {
+                database.CodeFirst.InitTables<ThumbnailCacheEntry>();
+                return database;
+            }
+            catch
+            {
+                database.Dispose();
+                throw;
             }
         }
 
@@ -72,64 +94,95 @@ namespace ColorVision.Solution.MultiImageViewer
         /// <param name="thumbnailSize">缩略图最大尺寸</param>
         /// <returns>缩略图的BitmapSource，失败返回null</returns>
         public async Task<BitmapSource?> GetOrCreateThumbnailAsync(string filePath, int thumbnailSize = 120)
-        {
-            if (!File.Exists(filePath))
-                return null;
+            => (await GetOrCreateThumbnailWithDimensionsAsync(filePath, thumbnailSize))?.Thumbnail;
 
-            long generation;
-            lock (_locker)
-            {
-                if (_disposed) return null;
-                generation = _cacheMaintenanceGeneration;
-            }
+        internal Task<ThumbnailLoadResult?> GetOrCreateThumbnailWithDimensionsAsync(string filePath, int thumbnailSize,
+            CancellationToken token = default)
+            => LoadThumbnailAsync(filePath, thumbnailSize, true, token, this);
+
+        internal static async Task<ThumbnailLoadResult?> LoadThumbnailAsync(string filePath, int thumbnailSize, bool useCache,
+            CancellationToken token, ThumbnailCacheManager? cache = null)
+        {
+            token.ThrowIfCancellationRequested();
+            // Fence requests already queued when maintenance invalidates outstanding writes.
+            long generation = Interlocked.Read(ref _cacheMaintenanceGeneration);
 
             try
             {
-                var fileInfo = new FileInfo(filePath);
-                var lastModified = fileInfo.LastWriteTime;
-
-                // 查找缓存
-                var cached = await Task.Run(() =>
-                {
-                    lock (_locker)
-                    {
-                        if (_disposed || generation != _cacheMaintenanceGeneration) return null;
-                        using var db = new SqlSugarClient(new ConnectionConfig
-                        {
-                            ConnectionString = $"Data Source={SqliteDbPath}",
-                            DbType = DbType.Sqlite,
-                            IsAutoCloseConnection = true
-                        });
-                        return db.Queryable<ThumbnailCacheEntry>().First(x => x.FilePath == filePath);
-                    }
-                });
-
+                var prepared = await Task.Run(() => PrepareThumbnail(filePath, useCache, cache, generation, token), token);
+                token.ThrowIfCancellationRequested();
+                if (prepared.Source is not { } source) return null;
+                var provider = ThumbnailProviderFactory.GetProvider(filePath);
+                int providerCacheVersion = useCache ? provider?.GetCacheVersion(filePath) ?? 0 : 0;
 
                 // 检查缓存是否有效
-                if (cached != null && cached.FileLastModified == lastModified && cached.ThumbnailData != null)
+                if (prepared.Entry is { ThumbnailData: { Length: > 0 } data } cached
+                    && cached.RequestedThumbnailSize == thumbnailSize && cached.FileLastModified == source.LastModified
+                    && cached.FileSize == source.Length && (cached.ProviderCacheVersion ?? 0) == providerCacheVersion)
                 {
-                    // 从缓存加载
-                    return await LoadThumbnailFromBytesAsync(cached.ThumbnailData);
+                    BitmapSource? cachedThumbnail = await LoadThumbnailFromBytesAsync(data, token);
+                    token.ThrowIfCancellationRequested();
+                    if (!await IsCurrentSourceAsync(filePath, source, token)) return null;
+                    if (cachedThumbnail != null && cachedThumbnail.PixelWidth == cached.ThumbnailWidth && cachedThumbnail.PixelHeight == cached.ThumbnailHeight)
+                        return new ThumbnailLoadResult(cachedThumbnail, cached.OriginalWidth, cached.OriginalHeight);
                 }
 
-                // 创建新缩略图
-                var (thumbnail, originalWidth, originalHeight) = await CreateThumbnailAsync(filePath, thumbnailSize);
-                if (thumbnail == null)
-                    return null;
+                // Custom providers still run on the calling context and may return an unfrozen bitmap.
+                ThumbnailLoadResult? generated = await GenerateThumbnailAsync(filePath, thumbnailSize, provider, token);
+                token.ThrowIfCancellationRequested();
+                if (generated == null || !await IsCurrentSourceAsync(filePath, source, token)) return null;
+                if (prepared.Writer is not { } writer) return generated;
 
-                // 保存到缓存
-                var thumbnailBytes = await EncodeThumbnailAsync(thumbnail);
+                var thumbnailBytes = await EncodeThumbnailAsync(generated.Thumbnail, token);
                 if (thumbnailBytes != null)
-                {
-                    await SaveToCacheAsync(filePath, fileInfo, thumbnailBytes, thumbnail, originalWidth, originalHeight, generation);
-                }
+                    await writer.SaveToCacheAsync(filePath, source, thumbnailSize, providerCacheVersion, thumbnailBytes, generated, generation, token);
 
-                return thumbnail;
+                token.ThrowIfCancellationRequested();
+                return await IsCurrentSourceAsync(filePath, source, token) ? generated : null;
             }
+            catch (OperationCanceledException) when (token.IsCancellationRequested) { throw; }
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"GetOrCreateThumbnailAsync Error: {ex.Message}");
                 return null;
+            }
+        }
+
+        private static (ThumbnailSourceStamp? Source, ThumbnailCacheEntry? Entry, ThumbnailCacheManager? Writer) PrepareThumbnail(
+            string filePath, bool useCache, ThumbnailCacheManager? cache, long generation, CancellationToken token)
+        {
+            var source = ThumbnailSourceStamp.Read(filePath);
+            if (source == null || !useCache) return (source, null, null);
+
+            token.ThrowIfCancellationRequested();
+            cache ??= Instance;
+            lock (_locker)
+            {
+                token.ThrowIfCancellationRequested();
+                if (cache._disposed) return default;
+                if (cache._db == null || generation != _cacheMaintenanceGeneration) return (source, null, null);
+                try
+                {
+                    var entry = cache._db.Queryable<ThumbnailCacheEntry>().First(x => x.FilePath == filePath);
+                    return (source, entry, cache);
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"Thumbnail cache query failed: {ex.Message}");
+                    return (source, null, null);
+                }
+            }
+        }
+
+        private static Task<bool> IsCurrentSourceAsync(string filePath, ThumbnailSourceStamp source, CancellationToken token)
+            => Task.Run(() => ThumbnailSourceStamp.Read(filePath) == source, token);
+
+        private readonly record struct ThumbnailSourceStamp(DateTime LastModified, long Length)
+        {
+            public static ThumbnailSourceStamp? Read(string path)
+            {
+                var file = new FileInfo(path);
+                return file.Exists ? new ThumbnailSourceStamp(file.LastWriteTime, file.Length) : null;
             }
         }
 
@@ -138,34 +191,106 @@ namespace ColorVision.Solution.MultiImageViewer
         /// </summary>
         public ThumbnailCacheEntry? GetCachedInfo(string filePath)
         {
-            lock (_locker)
+            ThumbnailCacheEntry? entry;
+            lock (_locker) entry = ReadCachedInfo(filePath);
+            return entry != null && HasCurrentProviderCacheVersion(entry) ? entry : null;
+        }
+
+        private ThumbnailCacheEntry? ReadCachedInfo(string filePath)
+        {
+            if (_db == null || _disposed) return null;
+            try
             {
-                if (_db == null || _disposed) return null;
-                try
-                {
-                    return _db.Queryable<ThumbnailCacheEntry>().First(x => x.FilePath == filePath);
-                }
-                catch (Exception ex)
-                {
-                    System.Diagnostics.Debug.WriteLine($"GetCachedInfo Error: {ex.Message}");
-                    return null;
-                }
+                return _db.Queryable<ThumbnailCacheEntry>().Where(x => x.FilePath == filePath).Select(MetadataProjection).First();
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"GetCachedInfo Error: {ex.Message}");
+                return null;
             }
         }
 
-        private async Task<(BitmapSource? thumbnail, int width, int height)> CreateThumbnailAsync(string filePath, int thumbnailSize)
+        internal IReadOnlyDictionary<string, ThumbnailCacheEntry> GetCachedInfos(IReadOnlyList<string> filePaths, CancellationToken token)
+        {
+            var result = new Dictionary<string, ThumbnailCacheEntry>(StringComparer.Ordinal);
+            lock (_locker)
+            {
+                if (_db == null || _disposed) return result;
+                foreach (string[] paths in filePaths.Distinct(StringComparer.Ordinal).Chunk(500))
+                {
+                    token.ThrowIfCancellationRequested();
+                    try
+                    {
+                        var rows = _db.Queryable<ThumbnailCacheEntry>().Where(x => paths.Contains(x.FilePath)).Select(MetadataProjection).ToList();
+                        foreach (var group in rows.GroupBy(row => row.FilePath, StringComparer.Ordinal))
+                        {
+                            // Legacy caches may contain duplicate paths. Preserve the single-read choice.
+                            ThumbnailCacheEntry? entry = group.Count() == 1 ? group.First() : ReadCachedInfo(group.Key);
+                            if (entry != null) result[group.Key] = entry;
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"GetCachedInfos Error: {ex.Message}");
+                        // One unreadable row must not hide metadata that individual reads can still load.
+                        foreach (string path in paths)
+                        {
+                            token.ThrowIfCancellationRequested();
+                            if (ReadCachedInfo(path) is { } entry) result[path] = entry;
+                        }
+                    }
+                }
+            }
+            foreach (string path in result.Keys.ToArray())
+            {
+                token.ThrowIfCancellationRequested();
+                if (!HasCurrentProviderCacheVersion(result[path])) result.Remove(path);
+            }
+            return result;
+        }
+
+        private static bool HasCurrentProviderCacheVersion(ThumbnailCacheEntry entry)
         {
             try
             {
-                // Check if there's a custom thumbnail provider for this file type
-                var customProvider = ThumbnailProviderFactory.GetProvider(filePath);
+                int version = ThumbnailProviderFactory.GetProvider(entry.FilePath)?.GetCacheVersion(entry.FilePath) ?? 0;
+                return (entry.ProviderCacheVersion ?? 0) == version;
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Thumbnail cache version lookup failed: {ex.Message}");
+                return false;
+            }
+        }
+
+        private static async Task<ThumbnailLoadResult?> GenerateThumbnailAsync(string filePath, int thumbnailSize,
+            IThumbnailProvider? customProvider, CancellationToken token)
+        {
+            try
+            {
+                token.ThrowIfCancellationRequested();
                 if (customProvider != null)
                 {
-                    var (width, height) = customProvider.GetImageDimensions(filePath);
-                    var thumbnail = await customProvider.GenerateThumbnailAsync(filePath, thumbnailSize);
-                    
+                    BitmapSource? thumbnail;
+                    int width, height;
+                    if (customProvider is IThumbnailProviderWithDimensions combinedProvider)
+                    {
+                        var result = await combinedProvider.GenerateThumbnailWithDimensionsAsync(filePath, thumbnailSize, token);
+                        if (result is not { } image) return null;
+                        (thumbnail, width, height) = image;
+                    }
+                    else
+                    {
+                        (width, height) = customProvider.GetImageDimensions(filePath);
+                        token.ThrowIfCancellationRequested();
+                        thumbnail = await customProvider.GenerateThumbnailAsync(filePath, thumbnailSize);
+                    }
+                    token.ThrowIfCancellationRequested();
+                    if (thumbnail == null) return null;
+                    if (!thumbnail.IsFrozen) thumbnail = (BitmapSource)thumbnail.GetCurrentValueAsFrozen();
+
                     // If thumbnail succeeded but dimensions failed, try to get dimensions from thumbnail
-                    if (thumbnail != null && (width <= 0 || height <= 0))
+                    if (width <= 0 || height <= 0)
                     {
                         // Calculate original dimensions from thumbnail and scale
                         double scale = Math.Min((double)thumbnailSize / thumbnail.PixelWidth, (double)thumbnailSize / thumbnail.PixelHeight);
@@ -180,81 +305,65 @@ namespace ColorVision.Solution.MultiImageViewer
                             height = thumbnail.PixelHeight;
                         }
                     }
-                    
-                    return (thumbnail, width, height);
+
+                    return new ThumbnailLoadResult(thumbnail, width, height);
                 }
 
-                // Fall back to default WPF thumbnail generation for standard image formats
-                return await CreateDefaultThumbnailAsync(filePath, thumbnailSize);
+                await StandardDecodeSlots.WaitAsync(token).ConfigureAwait(false);
+                try { return await Task.Run(() => CreateDefaultThumbnail(filePath, thumbnailSize), token).ConfigureAwait(false); }
+                finally { StandardDecodeSlots.Release(); }
             }
+            catch (OperationCanceledException) when (token.IsCancellationRequested) { throw; }
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"CreateThumbnailAsync Error: {ex.Message}");
-                return (null, 0, 0);
+                return null;
             }
         }
 
         /// <summary>
         /// Creates a thumbnail using default WPF BitmapDecoder for standard image formats.
         /// </summary>
-        private async Task<(BitmapSource? thumbnail, int width, int height)> CreateDefaultThumbnailAsync(string filePath, int thumbnailSize)
+        private static ThumbnailLoadResult CreateDefaultThumbnail(string filePath, int thumbnailSize)
         {
-            try
-            {
-                BitmapSource? result = null;
-                int width = 0, height = 0;
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(thumbnailSize);
+            using var stream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read);
+            var decoder = BitmapDecoder.Create(stream, BitmapCreateOptions.DelayCreation, BitmapCacheOption.None);
+            BitmapSource frame = decoder.Frames[0];
+            int width = frame.PixelWidth;
+            int height = frame.PixelHeight;
 
-                await Application.Current.Dispatcher.InvokeAsync(() =>
-                {
-                    using var stream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read);
-                    var decoder = BitmapDecoder.Create(stream, BitmapCreateOptions.DelayCreation, BitmapCacheOption.None);
-                    var frame = decoder.Frames[0];
+            double scale = Math.Min(1.0, Math.Min((double)thumbnailSize / width, (double)thumbnailSize / height));
+            int targetWidth = Math.Max(1, (int)(width * scale));
+            int targetHeight = Math.Max(1, (int)(height * scale));
+            if (targetWidth != width || targetHeight != height)
+                frame = new TransformedBitmap(frame, new ScaleTransform((double)targetWidth / width, (double)targetHeight / height));
+            if (frame.Format != PixelFormats.Pbgra32)
+                frame = new FormatConvertedBitmap(frame, PixelFormats.Pbgra32, null, 0);
 
-                    width = frame.PixelWidth;
-                    height = frame.PixelHeight;
-
-                    // 计算缩略图尺寸
-                    double scale = Math.Min((double)thumbnailSize / width, (double)thumbnailSize / height);
-                    scale = Math.Min(scale, 1.0); // 不放大小图
-                    int thumbWidth = (int)(width * scale);
-                    int thumbHeight = (int)(height * scale);
-
-                    var thumbnail = new TransformedBitmap(frame, new ScaleTransform(scale, scale));
-                    var rtb = new RenderTargetBitmap(thumbWidth, thumbHeight, 96, 96, PixelFormats.Pbgra32);
-                    var dv = new DrawingVisual();
-                    using (var dc = dv.RenderOpen())
-                    {
-                        dc.DrawImage(thumbnail, new Rect(0, 0, thumbWidth, thumbHeight));
-                    }
-                    rtb.Render(dv);
-                    rtb.Freeze();
-                    result = rtb;
-                });
-
-                return (result, width, height);
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"CreateDefaultThumbnailAsync Error: {ex.Message}");
-                return (null, 0, 0);
-            }
+            // Materialize the scaled pixels while the decoder's stream is still open.
+            int stride = checked(frame.PixelWidth * 4);
+            byte[] pixels = new byte[checked(stride * frame.PixelHeight)];
+            frame.CopyPixels(pixels, stride, 0);
+            var thumbnail = BitmapSource.Create(frame.PixelWidth, frame.PixelHeight, 96, 96, PixelFormats.Pbgra32, null, pixels, stride);
+            thumbnail.Freeze();
+            return new ThumbnailLoadResult(thumbnail, width, height);
         }
 
-        private async Task<byte[]?> EncodeThumbnailAsync(BitmapSource thumbnail)
+        private static async Task<byte[]?> EncodeThumbnailAsync(BitmapSource thumbnail, CancellationToken token)
         {
             try
             {
-                byte[]? result = null;
-                await Application.Current.Dispatcher.InvokeAsync(() =>
+                return await Task.Run(() =>
                 {
                     var encoder = new PngBitmapEncoder();
                     encoder.Frames.Add(BitmapFrame.Create(thumbnail));
                     using var ms = new MemoryStream();
                     encoder.Save(ms);
-                    result = ms.ToArray();
-                });
-                return result;
+                    return ms.ToArray();
+                }, token).ConfigureAwait(false);
             }
+            catch (OperationCanceledException) when (token.IsCancellationRequested) { throw; }
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"EncodeThumbnailAsync Error: {ex.Message}");
@@ -262,20 +371,20 @@ namespace ColorVision.Solution.MultiImageViewer
             }
         }
 
-        private async Task<BitmapSource?> LoadThumbnailFromBytesAsync(byte[] data)
+        private static async Task<BitmapSource?> LoadThumbnailFromBytesAsync(byte[] data, CancellationToken token)
         {
             try
             {
-                BitmapSource? result = null;
-                await Application.Current.Dispatcher.InvokeAsync(() =>
+                return await Task.Run(() =>
                 {
                     using var ms = new MemoryStream(data);
                     var decoder = new PngBitmapDecoder(ms, BitmapCreateOptions.PreservePixelFormat, BitmapCacheOption.OnLoad);
-                    result = decoder.Frames[0];
+                    var result = decoder.Frames[0];
                     result.Freeze();
-                });
-                return result;
+                    return result;
+                }, token).ConfigureAwait(false);
             }
+            catch (OperationCanceledException) when (token.IsCancellationRequested) { throw; }
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"LoadThumbnailFromBytesAsync Error: {ex.Message}");
@@ -283,38 +392,35 @@ namespace ColorVision.Solution.MultiImageViewer
             }
         }
 
-        private async Task SaveToCacheAsync(string filePath, FileInfo fileInfo, byte[] thumbnailData,
-            BitmapSource thumbnail, int originalWidth, int originalHeight, long generation)
+        private async Task SaveToCacheAsync(string filePath, ThumbnailSourceStamp source, int thumbnailSize, int providerCacheVersion,
+            byte[] thumbnailData, ThumbnailLoadResult generated, long generation, CancellationToken token)
         {
             await Task.Run(() =>
             {
                 try
                 {
+                    if (ThumbnailSourceStamp.Read(filePath) != source) return;
                     var entry = new ThumbnailCacheEntry
                     {
                         FilePath = filePath,
-                        FileLastModified = fileInfo.LastWriteTime,
+                        FileLastModified = source.LastModified,
                         ThumbnailData = thumbnailData,
-                        ThumbnailWidth = thumbnail.PixelWidth,
-                        ThumbnailHeight = thumbnail.PixelHeight,
-                        OriginalWidth = originalWidth,
-                        OriginalHeight = originalHeight,
-                        FileSize = fileInfo.Length,
+                        ThumbnailWidth = generated.Thumbnail.PixelWidth,
+                        ThumbnailHeight = generated.Thumbnail.PixelHeight,
+                        RequestedThumbnailSize = thumbnailSize,
+                        ProviderCacheVersion = providerCacheVersion,
+                        OriginalWidth = generated.OriginalWidth,
+                        OriginalHeight = generated.OriginalHeight,
+                        FileSize = source.Length,
                         CreateDate = DateTime.Now
                     };
 
                     lock (_locker)
                     {
-                        if (_disposed || generation != _cacheMaintenanceGeneration) return;
-                        using var db = new SqlSugarClient(new ConnectionConfig
-                        {
-                            ConnectionString = $"Data Source={SqliteDbPath}",
-                            DbType = DbType.Sqlite,
-                            IsAutoCloseConnection = true
-                        });
-                        var updateCount = db.Updateable(entry).Where(x => x.FilePath == filePath).ExecuteCommand();
+                        if (token.IsCancellationRequested || _db == null || _disposed || generation != _cacheMaintenanceGeneration) return;
+                        var updateCount = _db.Updateable(entry).Where(x => x.FilePath == filePath).ExecuteCommand();
                         if (updateCount == 0)
-                            db.Insertable(entry).ExecuteCommand();
+                            _db.Insertable(entry).ExecuteCommand();
                         _cacheWriteVersion++;
                     }
                 }
@@ -322,7 +428,7 @@ namespace ColorVision.Solution.MultiImageViewer
                 {
                     System.Diagnostics.Debug.WriteLine($"SaveToCacheAsync Error: {ex.Message}");
                 }
-            });
+            }, token);
         }
 
         /// <summary>
@@ -388,7 +494,7 @@ namespace ColorVision.Solution.MultiImageViewer
                 if (_disposed) return;
                 try
                 {
-                    _cacheMaintenanceGeneration++;
+                    Interlocked.Increment(ref _cacheMaintenanceGeneration);
                     if (_db?.Deleteable<ThumbnailCacheEntry>().Where(x => x.FilePath == filePath).ExecuteCommand() > 0)
                         _cacheWriteVersion++;
                 }
@@ -405,13 +511,15 @@ namespace ColorVision.Solution.MultiImageViewer
             {
                 if (_disposed) return;
                 _disposed = true;
-                _cacheMaintenanceGeneration++;
+                Interlocked.Increment(ref _cacheMaintenanceGeneration);
                 _db?.Dispose();
                 _db = null;
                 _instance = null;
             }
             GC.SuppressFinalize(this);
         }
+
+        internal sealed record ThumbnailLoadResult(BitmapSource Thumbnail, int OriginalWidth, int OriginalHeight);
 
     }
 }

@@ -3,10 +3,19 @@ using ColorVision.Engine.FlowProcessing.Nodes;
 using ColorVision.Engine.Services;
 using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.Services.Devices.Camera.Configs;
+using ColorVision.Engine.Services.Devices.Camera.Local;
+using ColorVision.Engine.Services.Devices.Camera.Templates.AutoFocus;
 using ColorVision.Engine.Services.Devices.Camera.Templates.CameraRunParam;
+using ColorVision.Engine.Services.Results;
+using ColorVision.Engine.Templates;
+using ColorVision.FileIO;
+using FlowEngineLib;
 using FlowEngineLib.Base;
+using FlowEngineLib.End;
 using FlowEngineLib.Repeat;
 using Newtonsoft.Json.Linq;
+using ST.Library.UI.NodeEditor;
+using System.IO;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 
@@ -108,18 +117,156 @@ public sealed class LocalCameraRepeatParameterTests
         });
     }
 
+    [Theory]
+    [InlineData(LocalCameraFocusMode.FocusDisabled)]
+    [InlineData(LocalCameraFocusMode.FineFocus)]
+    [InlineData(LocalCameraFocusMode.FullFocus)]
+    public void CaptureUsesTheSavedFocusModeAndAnImmutableTemplateSnapshot(LocalCameraFocusMode mode)
+    {
+        StaTest.Run(() =>
+        {
+            using var scope = new CameraScope();
+            bool enabled = mode != LocalCameraFocusMode.FocusDisabled;
+            var template = new TemplateModel<AutoFocusParam>("capture-focus-" + Guid.NewGuid(), new AutoFocusParam());
+            TemplateAutoFocus.Params.Add(template);
+            try
+            {
+                var requestReady = new TaskCompletionSource<LocalCameraCaptureRequest>(TaskCreationOptions.RunContinuationsAsynchronously);
+                var saved = new LocalCameraNode { FocusMode = mode, AutoFocusTemplateName = template.Key };
+                saved.Create();
+                var node = new LocalCameraNode((request, _) =>
+                {
+                    requestReady.SetResult(request);
+                    throw new OperationCanceledException();
+                });
+                node.Create();
+                Assert.False(node.ShowFocusMode);
+                scope.Device.Config.MotorConfig.IsUseMotor = enabled;
+                node.OnLoadNode(STNodeSavedState.Parse(saved.GetSaveData()).Properties);
+                Assert.Equal(mode, node.FocusMode);
+                Assert.Equal(template.Key, node.AutoFocusTemplateName);
+                Assert.Equal(enabled, node.ShowFocusMode);
+                Assert.Equal(enabled, node.ShowAutoFocusTemplate);
+
+                var action = new CVStartCFC("camera-focus-mode") { PersistResults = false };
+                using var resources = action.RuntimeResources;
+                JObject? payload = null;
+                node.nodeRunEvent += (_, args) =>
+                {
+                    payload = JObject.Parse(args.SendPayload);
+                    node.FocusMode = LocalCameraFocusMode.FocusDisabled;
+                    template.Value.MaxPosition += 1000;
+                };
+                int maximum = template.Value.MaxPosition;
+                node.GetAllInputOptions().Single().ReceiveData(action);
+                var request = requestReady.Task.WaitAsync(TimeSpan.FromSeconds(10)).GetAwaiter().GetResult();
+                Assert.NotNull(payload);
+                Assert.Equal((int)mode, payload.Value<int>(nameof(LocalCameraNode.FocusMode)));
+                Assert.Equal(enabled ? template.Key : null, payload.Value<string>(nameof(LocalCameraNode.AutoFocusTemplateName)));
+                Assert.Equal(resources.StopToken, request.Stop);
+                if (enabled)
+                {
+                    Assert.NotNull(request.AutoFocus);
+                    Assert.Equal(maximum, request.AutoFocus.Maximum);
+                    Assert.Equal(mode == LocalCameraFocusMode.FineFocus, request.AutoFocus.FineOnly);
+                }
+                else Assert.Null(request.AutoFocus);
+            }
+            finally { TemplateAutoFocus.Params.Remove(template); }
+        });
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void StoppingDuringDedicatedCaptureDiscardsTheLateFrameBeforeSaving(bool saveFiles)
+    {
+        StaTest.Run(() =>
+        {
+            const string serialNumber = "stopped-local-camera";
+            string tempParent = Path.GetFullPath(Path.GetTempPath());
+            string output = Path.GetFullPath(Path.Combine(tempParent, $"cv-stopped-camera-{Guid.NewGuid():N}"));
+            string outputPrefix = Path.TrimEndingDirectorySeparator(output) + Path.DirectorySeparatorChar;
+            using var scope = new CameraScope();
+            scope.Device.Config.FileServerCfg.DataBasePath = output;
+            using var enteredCapture = new ManualResetEventSlim();
+            using var releaseCapture = new ManualResetEventSlim();
+            CancellationToken captureStop = default;
+            using LocalFlowFrame frame = LocalFlowFrame.Allocate(new LocalFrameMetadata
+            {
+                Width = 2, Height = 1, SourceBpp = 8, Channels = 1, Exposure = [100f]
+            }, 2, 0);
+            var node = new LocalCameraNode((request, autoConnect) =>
+            {
+                captureStop = request.Stop;
+                enteredCapture.Set();
+                releaseCapture.Wait();
+                return new LocalCameraCaptureResult { Frame = frame };
+            }) { SaveFiles = saveFiles };
+            using var editor = new STNodeEditor();
+            using var control = new FlowEngineControl(editor, false, new FlowNodeManager()) { PersistResults = false };
+            var start = new RuntimeTestStartNode();
+            var end = new CVEndNode();
+            foreach (STNode graphNode in new STNode[] { start, node, end })
+            {
+                graphNode.Create();
+                editor.Nodes.Add(graphNode);
+            }
+            Assert.Equal(ConnectionStatus.Connected, start.m_op_start.ConnectOption(node.GetAllInputOptions().Single()));
+            Assert.Equal(ConnectionStatus.Connected, node.GetAllOutputOptions().Single().ConnectOption(end.m_in_start));
+            var finished = new TaskCompletionSource<FlowEngineEventArgs>(TaskCreationOptions.RunContinuationsAsynchronously);
+            control.Finished += (_, result) => finished.TrySetResult(result);
+            int published = 0;
+            using var subscription = ResultMessageBus.Default.Subscribe(message =>
+            {
+                if (message.SerialNumber == serialNumber) Interlocked.Increment(ref published);
+            });
+
+            bool previousCache = CVFileReadCache.IsEnabled;
+            CVFileReadCache.IsEnabled = true;
+            try
+            {
+                Assert.True(control.TryStartNode(start.NodeName, serialNumber));
+                Assert.True(enteredCapture.Wait(TimeSpan.FromSeconds(10)));
+                control.StopNode(start.NodeName, serialNumber);
+                Assert.Equal(StatusTypeEnum.Canceled, finished.Task.WaitAsync(TimeSpan.FromSeconds(10)).GetAwaiter().GetResult().Status);
+                Assert.True(captureStop.IsCancellationRequested);
+                releaseCapture.Set();
+                Assert.True(SpinWait.SpinUntil(() =>
+                {
+                    try { using var lease = frame.Acquire(); return false; }
+                    catch (ObjectDisposedException) { return true; }
+                }, TimeSpan.FromSeconds(10)));
+
+                Assert.False(Directory.Exists(output));
+                Assert.DoesNotContain(CVFileReadCache.GetSnapshot().Entries, entry => entry.FilePath.StartsWith(outputPrefix, StringComparison.OrdinalIgnoreCase));
+                Assert.Empty(frame.CvRawFilePath);
+                Assert.Equal(0, Volatile.Read(ref published));
+            }
+            finally
+            {
+                releaseCapture.Set();
+                CVFileReadCache.Release();
+                CVFileReadCache.IsEnabled = previousCache;
+                Assert.StartsWith(Path.TrimEndingDirectorySeparator(tempParent) + Path.DirectorySeparatorChar, output, StringComparison.OrdinalIgnoreCase);
+                if (Directory.Exists(output)) Directory.Delete(output, recursive: true);
+            }
+        });
+    }
+
     private sealed class CameraScope : IDisposable
     {
         private static readonly FieldInfo ManagerField = typeof(ServiceManager).GetField("_instance", BindingFlags.Static | BindingFlags.NonPublic)!;
         private readonly ServiceManager? previousManager = ServiceManager.Current;
+        internal DeviceCamera Device { get; }
 
         internal CameraScope()
         {
-            var device = (DeviceCamera)RuntimeHelpers.GetUninitializedObject(typeof(DeviceCamera));
-            device.Config = new ConfigCamera();
-            device.SysResourceModel = new SysResourceModel { Code = "LOCAL.CAMERA.REPEAT.TEST" };
+            Device = (DeviceCamera)RuntimeHelpers.GetUninitializedObject(typeof(DeviceCamera));
+            Device.Config = new ConfigCamera();
+            Device.SysResourceModel = new SysResourceModel { Code = "LOCAL.CAMERA.REPEAT.TEST" };
             var manager = (ServiceManager)RuntimeHelpers.GetUninitializedObject(typeof(ServiceManager));
-            manager.DeviceServices = [device];
+            manager.DeviceServices = [Device];
             // Request preparation resolves this manager through GetInstance; avoid registering a test manager globally.
             typeof(ServiceManager).GetField("_copilotAgentExtensionRegistration", BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(manager, this);
             ManagerField.SetValue(null, manager);

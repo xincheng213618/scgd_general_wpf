@@ -61,6 +61,7 @@ namespace ColorVision.Engine.Templates.POI
             var value = JsonConvert.DeserializeObject<PoiParam>(document.Payload) ?? throw new InvalidDataException("本地 POI 模板内容无效。");
             value.Id = LocalId(document.Id);
             value.Name = document.Name;
+            value.TemplateDate = document.CreatedUtc?.ToLocalTime();
             value.DetailsLoaded = true;
             return Attach(value);
         }
@@ -98,6 +99,7 @@ namespace ColorVision.Engine.Templates.POI
                     if (details.Count > 0) db.Insertable(details).ExecuteCommand();
                     db.Ado.CommitTran();
                     value.Id = id;
+                    value.TemplateDate = master.CreateDate;
                     value.DetailsLoaded = true;
                     Attach(value);
                 }
@@ -120,6 +122,7 @@ namespace ColorVision.Engine.Templates.POI
             for (int i = 0; i < snapshot.PoiPoints.Count; i++) snapshot.PoiPoints[i].Id = i + 1;
             int saved = local.Save(Kind, id, value.Name, 1, JsonConvert.SerializeObject(snapshot));
             value.Id = LocalId(saved);
+            value.TemplateDate = local.Read(Kind, saved).CreatedUtc?.ToLocalTime();
             value.DetailsLoaded = true;
             Attach(value);
         }
@@ -132,6 +135,7 @@ namespace ColorVision.Engine.Templates.POI
             snapshot.DetailsLoaded = true;
             Save(snapshot);
             value.Id = snapshot.Id;
+            value.TemplateDate = snapshot.TemplateDate;
             Attach(value);
         }
 

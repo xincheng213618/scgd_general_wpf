@@ -3,9 +3,9 @@ knowledge_id: "projects.arvr-pro"
 knowledge_type: "reference"
 status: "current"
 summary: "ARVRPro 项目入口、Socket 自动化、输出与历史结果查询；流程组、实例 Recipe 和 Demura 各有对应操作主题。"
-aliases: ["现场数据库离线查看","打开现场数据","ArvrOfflineDataSource","ARVR 历史原图删了还能看结果吗","保存结果图会不会重复画标记","ProjectARVRPro","ResultImageFileCandidates","SavedSourceImageFileName","SavedResultImageFileName","结果统计","统计日期记忆","CycleTimeStatisticsWindow","ARVR 项目"]
-code_paths: ["Projects/ProjectARVRPro/Offline/","Projects/ProjectARVRPro/ARVRWindow.xaml","Projects/ProjectARVRPro/TestResultViewWindow.xaml","Projects/ProjectARVRPro/ThunderbirdSerialDebugWindow.xaml","Projects/ProjectARVRPro/ARVRWindow.xaml.cs","Projects/ProjectARVRPro/FlowRuntimeEstimateCache.cs","Projects/ProjectARVRPro/FlowRunningNodeTracker.cs","Projects/ProjectARVRPro/ResultImagePresentation.cs","Projects/ProjectARVRPro/ProjectARVRReuslt.cs","Projects/ProjectARVRPro/ViewResultManager.cs","Projects/ProjectARVRPro/Services/SocketControl.cs","Projects/ProjectARVRPro/Services/SwitchGroupSocket.cs","Projects/ProjectARVRPro/Services/RunAllSocket.cs","Projects/ProjectARVRPro/Flow/ExternalImageSwitchNode.cs","Projects/ProjectARVRPro/CycleTimeStatisticsWindow.xaml","Projects/ProjectARVRPro/CycleTimeStatisticsWindow.xaml.cs","Projects/ProjectARVRPro/ResultStatisticsTheme.xaml","Projects/ProjectARVRPro/ResultStatistics.cs","Projects/ProjectARVRPro/ResultTimeline.cs","Projects/ProjectARVRPro/ProjectARVRProConfig.cs"]
-test_paths: ["Test/ProjectARVRPro.Tests/OfflineDataSourceTests.cs", "Test/ProjectARVRPro.Tests/ProjectARVRPro.Tests.csproj", "Test/ProjectARVRPro.Tests/ResultImagePresentationTests.cs", "Test/ProjectARVRPro.Tests/ResultJsonPayloadStorageTests.cs", "Test/ProjectARVRPro.Tests/ResultStatisticsTests.cs", "Test/ProjectARVRPro.Tests/FlowPhaseTimingPersistenceTests.cs", "Test/ProjectARVRPro.Tests/FlowRuntimeEstimateCacheTests.cs", "Test/ProjectARVRPro.Tests/FlowRunningNodeTrackerTests.cs", "Test/ProjectARVRPro.Tests/OfflineFileMaintenanceTests.cs"]
+aliases: ["现场数据库离线查看", "打开现场数据", "ArvrOfflineDataSource", "ARVR 历史原图删了还能看结果吗", "保存结果图会不会重复画标记", "ProjectARVRPro", "ResultImageFileCandidates", "SavedSourceImageFileName", "SavedResultImageFileName", "结果统计", "统计日期记忆", "CycleTimeStatisticsWindow", "ARVR 项目", "算法实证", "同图算法比对"]
+code_paths: ["Projects/ProjectARVRPro/Offline/", "Projects/ProjectARVRPro/ARVRWindow.xaml", "Projects/ProjectARVRPro/TestResultViewWindow.xaml", "Projects/ProjectARVRPro/ThunderbirdSerialDebugWindow.xaml", "Projects/ProjectARVRPro/ARVRWindow.xaml.cs", "Projects/ProjectARVRPro/FlowRuntimeEstimateCache.cs", "Projects/ProjectARVRPro/FlowRunningNodeTracker.cs", "Projects/ProjectARVRPro/ResultImagePresentation.cs", "Projects/ProjectARVRPro/ProjectARVRReuslt.cs", "Projects/ProjectARVRPro/ViewResultManager.cs", "Projects/ProjectARVRPro/Services/SocketControl.cs", "Projects/ProjectARVRPro/Services/SwitchGroupSocket.cs", "Projects/ProjectARVRPro/Services/RunAllSocket.cs", "Projects/ProjectARVRPro/Flow/ExternalImageSwitchNode.cs", "Projects/ProjectARVRPro/CycleTimeStatisticsWindow.xaml", "Projects/ProjectARVRPro/CycleTimeStatisticsWindow.xaml.cs", "Projects/ProjectARVRPro/ResultStatisticsTheme.xaml", "Projects/ProjectARVRPro/ResultStatistics.cs", "Projects/ProjectARVRPro/ResultTimeline.cs", "Projects/ProjectARVRPro/ProjectARVRProConfig.cs", "Projects/ProjectARVRPro/AlgorithmEvidence", "UI/ColorVision.ImageEditor/Algorithms/Evidence"]
+test_paths: ["Test/ProjectARVRPro.Tests/OfflineDataSourceTests.cs", "Test/ProjectARVRPro.Tests/ProjectARVRPro.Tests.csproj", "Test/ProjectARVRPro.Tests/ResultImagePresentationTests.cs", "Test/ProjectARVRPro.Tests/ResultJsonPayloadStorageTests.cs", "Test/ProjectARVRPro.Tests/ResultStatisticsTests.cs", "Test/ProjectARVRPro.Tests/FlowPhaseTimingPersistenceTests.cs", "Test/ProjectARVRPro.Tests/FlowRuntimeEstimateCacheTests.cs", "Test/ProjectARVRPro.Tests/FlowRunningNodeTrackerTests.cs", "Test/ProjectARVRPro.Tests/OfflineFileMaintenanceTests.cs", "Test/ProjectARVRPro.Tests/AlgorithmEvidenceTests.cs"]
 related: ["projects.index","projects.arvr-pro-demo","projects.arvr-pro-protocol","projects.arvr-pro-processes","projects.arvr-pro-demura","projects.capabilities"]
 ---
 
@@ -34,12 +34,20 @@ related: ["projects.index","projects.arvr-pro-demo","projects.arvr-pro-protocol"
 
 ## 项目边界和版本
 
-| 项目 | 通信方式 | 流程组织 | 典型风险 |
+| 入口 | 通信方式 | 流程组织 | 典型风险 |
 | --- | --- | --- | --- |
-| `ProjectARVRPro` | JSON `EventName` | `ProcessGroup` + `ProcessMeta` | 切图回执、Legacy 输出、控制连接归属 |
-| `ProjectLUX` | 文本命令 | 流程组 + `SocketCode` | 文本返码、客户命令映射 |
+| Pro JSON | JSON `EventName` | `ProcessGroup` + `ProcessMeta` | 切图回执、Legacy 输出、控制连接归属 |
+| Pro LUX | 文本命令 | 活动流程组 + `SocketCode` | 文本返码、客户命令映射 |
 
 客户项目判定逻辑应留在 `Projects/ProjectARVRPro/Process/` 和 Recipe 体系里，不要回写到 Engine 通用模板或 UI 基础库。手工维护项目 `ProjectARVRPro.csproj` 的 `VersionPrefix`；打包器从主 DLL 的文件版本生成 manifest 版本，不手工同步 `manifest.json`。最低宿主要求读取 manifest 的 `requires`。
+
+ARVRPro 也可承接原 LUX 文本客户端：现场只安装 ARVRPro，在“网络通信 → 服务设置”将解析模式设为现有的 `Text`，由 Pro 的 `LuxSocketDispatcher` 接收。在“流程处理配置 → 其他配置”填写 **LUX 协议设备号**（默认 `H03`，AR 光学中心站用 `H03AR`）、VID 测量方式、限值和 K/B，再在流程组的 **SocketCode** 列填写 `T00XX` 的末两位。设备号仅组成回包前缀，不是 Engine 批次 `Code`，也不是步骤索引；旧配置不迁移，现场重新配置。原 Pro 对接继续使用 `Json`，不新增公共协议模式或多处理器路由。
+
+LUX 命令、回包、流程匹配、设备测量和并发限制统一见 [LUX TCP 协议](./project-lux-protocol.md)。原独立项目的源码、测试和协议文档通过仓库 `Projects/ARCHIVED.md` 中的 Git 标签恢复，供交付前核对；后续迭代均在 Pro。
+
+`T0000` 在检测窗口尚未创建时直接回握手；`T0001`、`T0031` 复用后台检测实例，不自动显示或激活窗口，其它 Flow 指令沿用原窗口行为。[VID](./project-arvr-pro-protocol.md#单次-vid-测量) 使用选定相机，等待设备命令结束后按 `VID × K + B` 修正和限值生成 CSV。检测窗口已打开时显示执行状态与耗时，并在测量期间禁用测试、流程选择和配置操作。
+
+协议入口位于 `Services/LuxSocketDispatcher.cs`，设备调用位于 `Services/LuxDeviceMeasurements.cs`，单流程适配位于 `ARVRWindow.Lux.cs`；`Test/ProjectARVRPro.Tests/LuxProtocolTests.cs` 保护原报文字面值和异步完成边界，流程配置测试同时检查 SocketCode 的复制、保存重载及活动组查找。这些隔离测试不替代相机、光谱仪和客户客户端的真机联调。
 
 ## 主链路
 
@@ -59,11 +67,13 @@ related: ["projects.index","projects.arvr-pro-demo","projects.arvr-pro-protocol"
 
 主窗口底部“设置”和结果栏齿轮统一打开“模组检测设置”（`ProjectSettingsWindow`）：底部入口定位“检测设置”，齿轮定位“结果保存”。保持左侧目录、右侧设置内容的布局；检测设置、界面显示、结果保存、图像保存按单列连续排列，统一纵向滚动。左侧目录只定位对应段落、不切换或隐藏其它分类，滚动时同步高亮当前位置。结果输出目录、CSV、旧格式兼容、客户报表和结果编号规则直接显示在“结果保存”，不设折叠区；标记图、原图和原图快捷方式归入“图像保存”，共用结果输出目录。`TextSavePath` 没有 ARVRPro 输出消费者，仅保留旧配置字段，不在界面显示。雷鸟串口参数和手动切图统一从流程处理配置的“雷鸟连接与切图”进入。
 
-搜索固定在左侧目录上方，右侧从顶部开始完整用于设置内容；搜索匹配分类、属性名称、代码名和说明，同时筛选内容分组与左侧定位目录。清空搜索恢复全部分组，编辑控件和输入保持原实例。`Ctrl+F` 聚焦搜索，搜索框内 `Esc` 清空搜索；底部只保留“关闭”和“恢复默认设置”，正常状态不显示保存提示。紧凑布局沿用主题画刷和 `PropertyEditorHelper.GenProperties` 元数据编辑器，保留输入校验、条件显示及辅助技术名称，分组标题提供辅助技术标题层级；详细说明通过悬停提示和编辑器帮助文本提供。标记图、原图和客户报表的启用开关始终可见，关闭时隐藏附加参数；原图格式按打开设置时当前源图的 BMP 支持能力提供选项。
+`Ctrl+F` 聚焦左侧搜索框，`Esc` 清空搜索。搜索匹配分类、属性名称、代码名和说明，同时筛选内容和目录。原图格式按打开设置时源图的 BMP 支持能力提供选项。
 
-窗口通过 `ProjectSettingsSession` 暂存编辑值并逐项自动保存到原 `ProjectARVRProConfig`、`ViewResultManagerConfig` 实例，调用 `ConfigService.SaveConfigs` 持久化。开关和下拉选择修改后直接生效；文字、数字、目录在失焦或结束输入时校验并保存，目录选择器选定目录后自动保存。关闭（包括标题栏关闭）会提交最后一个有效输入，不撤销已保存项。无效输入就地标红且不影响其它有效设置；持久化失败恢复该项提交前的运行值并显示重试入口，仍有失败或无效输入时关闭需确认是否放弃这些未保存项。每次成功保存刷新比较基线，支持反复切换回原值，且不覆盖其它窗口修改的未编辑项。“恢复默认设置”经确认后一次保存所有可编辑项，失败时全部恢复运行值，不修改雷鸟连接参数或保留的文本目录。检测和导出后续读取配置时直接采用新值，不增加下轮生效的排队机制，也不撤销已经开始的后台导出。两种配置的序列化身份和属性名保持兼容；SN、进度、模板选择、结果区高度等非编辑状态不参与提交，原图格式只回写真实存储字段，避免两个格式选择器互相覆盖。测试入口为 `Test/ProjectARVRPro.Tests/ProjectSettingsSessionTests.cs` 与 `ProjectSettingsWindowTests.cs`，覆盖自动保存、输入校验、关闭提交、失败重试、默认值恢复、条件显示、连续滚动与定位同步、导航搜索和主题布局；不代替现场串口或实际导出验收。
+“图像保存”按通道配置命名，旧配置沿用原命名。标记图默认 `{FlowName}`，原图默认 `{FlowName}_source`。兼容 ProjectLUX 可选 PNG，例如 `White51_Test.png`。模板支持固定文字、`{FlowName}`（流程模板名）和 `{SN}`。扩展名取自图像格式，关闭保存时保留命名设置。遇到本次输入图（含目录联接或符号链接指向的同一位置）时，标记图追加 `_result`，原图追加 `_source`；两张导出图重名时原图继续追加 `_source`。重测可覆盖上次导出，自动清理沿用既有命名规则。
 
-主窗口测试工具栏下方使用 `ColorVision.UI.Controls.FlowExecutionStatus`，与 KB、LUX 共用紧凑执行状态栏：普通提示保持一行，运行时显示当前节点，运行中和结束后的耗时均显示整数毫秒（ms）；长错误最多占两行，窄窗口优先保留提示并隐藏辅助耗时。“详情”浮层可查看、选择和复制完整提示、流程名、节点与精确耗时，按 Esc 关闭，不挤压结果区域。上次耗时和预计剩余时间只在详情内显示，单位同为 ms；预计剩余时间仅作为历史参考。状态图标同时配中文文字，错误保留至后续执行更新，已排队的定时刷新不得覆盖最终状态。“流程执行完成”只表示 Flow 完成，不代替检测结果的 PASS/FAIL 判定。
+`ProjectSettingsSession` 将开关和下拉选择逐项自动保存，文字、数字及目录在失焦或结束输入时校验并保存。关闭会提交最后一个有效输入。无效输入就地标红，持久化失败恢复该项的运行值并提供重试。关闭时需确认是否放弃未保存项。“恢复默认设置”经确认后一次保存，失败时恢复运行值。自动保存保留未编辑项、雷鸟连接参数和文本目录，运行中的后台导出继续使用已捕获的设置。两种配置的序列化身份和属性名保持兼容。验证入口为 `Test/ProjectARVRPro.Tests/ProjectSettingsSessionTests.cs`、`ProjectSettingsWindowTests.cs` 和 `ProjectImageExportServiceTests.cs`。
+
+主窗口测试工具栏下方使用 `ColorVision.UI.Controls.FlowExecutionStatus`，与 KB 共用紧凑执行状态栏：普通提示保持一行，运行时显示当前节点，运行中和结束后的耗时均显示整数毫秒（ms）；长错误最多占两行，窄窗口优先保留提示并隐藏辅助耗时。“详情”浮层可查看、选择和复制完整提示、流程名、节点与精确耗时，按 Esc 关闭，不挤压结果区域。上次耗时和预计剩余时间只在详情内显示，单位同为 ms；预计剩余时间仅作为历史参考。状态图标同时配中文文字，错误保留至后续执行更新，已排队的定时刷新不得覆盖最终状态。“流程执行完成”只表示 Flow 完成，不代替检测结果的 PASS/FAIL 判定。
 
 单独测试与一键执行的运行中状态统一按 100 ms 间隔请求刷新，节点事件也会请求更新；UI 忙时合并待处理请求，执行时读取最新节点与秒表值，不积压逐次刷新。实际显示节奏受 UI 调度影响。刷新只更新状态显示，不触发采集、算法或结果查询；结束状态单独读取停止后的秒表，不按刷新间隔取整。
 
@@ -119,7 +129,7 @@ ARVRPro 通过 `ColorVision.SocketProtocol` 的 JSON 模式接入外部系统。
 
 ## 输出和兼容
 
-结果输出由 `ViewResultManager.Config` 控制，覆盖 SQLite、标准 CSV、Legacy CSV、客户 XLSX 和 Socket `ProjectARVRResult.Data`。`UseLegacyARVROutput` 会影响 CSV 和 Socket `Data`，改字段前先确认客户解析程序使用新版还是旧版。
+标准 CSV 为七列，文本按规则转义，数值用小数点。批量横向 CSV 用首条有指标的记录定列。`UseLegacyARVROutput` 影响 CSV 和 Socket `ProjectARVRResult.Data`，改字段前先确认客户格式。
 
 新版嵌套畸变结果按项目结果属性名输出，光学畸变字段为 `DistortionTestResult.OpticDistortion`，新生成的测试项 `Name` 也为 `OpticDistortion`。算法原始结果中的 `Optic_Distortion` 由 Engine 在解析入口映射，项目输出不沿用该原始字段名。读取历史项目结果时仍兼容 `Optic_Distortion`，重新序列化只输出 `OpticDistortion`；两个字段同时存在且标准字段非空时以标准字段为准。
 
@@ -142,6 +152,16 @@ W255 和键化亮色度 `LuminanceChromaticityTestResults[配置 Key]` 保留原
 内置结果解析器通过单次 `IProcessExecutionContext` 复用当前 batch 已读取的 `MeasureResultImgModel` 列表，并在 `Execute` 返回、最终 `FileName` 确定后从 `ImgFrameInfo` 写入 `ImageWidth` / `ImageHeight`。新结果已有两个正数尺寸时，`ViewResultManager.Save` 不再为读取尺寸重复查询 MySQL；尺寸缺失、无效、多尺寸无法唯一确定，或外部解析器既未写入有效尺寸也未使用该上下文缓存时，仍保留原数据库查询作为兼容回退。回退失败不会阻止结果保存，尺寸继续保持可空，也不需要现场数据库迁移。
 
 验证入口：`Test/ProjectARVRPro.Tests/ResultImagePresentationTests.cs` 覆盖候选顺序、缺失/重复路径、首图加载失败后继续、标记图不重复绘制，以及尺寸缓存、最终路径匹配和兼容回退短路契约；`ResultJsonPayloadStorageTests.cs` 覆盖结果持久化相关兼容。自动测试不等于已验证现场历史文件仍存在，现场排查还须只读核对记录路径与文件可读性。
+
+主窗口结果工具栏、右键菜单及本机 PG 明细提供“算法实证”，需配套更新项目包与宿主算法组件。支持发光区、十字 RGB、点阵畸变，历史模式只遍历当前查询快照，优先读取原图和无标记备用图，缺图跳过，不用标记图或占位图计算；现场资料只读窗口不开放此入口。也可“选择图像”多选本机文件，切换算法保留自选来源，报告不赋予历史 ID/SN。“云盘”复用现有上传队列；“上传当前原图”将实际读取的磁盘文件带入队列，点击云盘的“开始 / 继续上传”后分享。右键“在文件夹中选择文件”定位当前文件，无磁盘文件时不可用。
+
+发光区提供 RobustV2（红）、经典兼容（蓝）及服务端 AA（黄）；十字 RGB 复用当前本地算法，可配置参数及原图搜索矩形，逐点显示 R-G/B-G 与覆盖、饱和提示；点阵畸变提供本地 GridV2 和服务端旧版，两者参数独立。新旧畸变的公式及点位可能不同，服务端各分项保留各自点位和原始值，不直接相减判优劣。
+
+AA 与旧版畸变调用可选 x64 `CV_algorithm.dll`，需配套 `opencv_world401.dll` 和 VC++ 运行库；从主服务发现或手选库。默认标为**参考参数（非历史参数）**，可选模板或导入 JSON，不自动还原历史参数。报告记录库路径、SHA256、实际参数及原始结果。只接受 8/16 位 Gray/BGR，BGRA 去 alpha，浮点图不自动缩放；不输出调试图、不请求设备或改写 POI、历史结果。
+
+打开窗口、换图和更改算法只加载原图，不自动计算；点击“开始验证”才运行，未计算的图片不写入验证报告。算法共用像素快照，可写接口另用私有副本。结果页可独立隐藏叠图、查看诊断。“算法接受”不等于人工确认或产品通过。单个托管异常不阻止其它算法；缺库、非成功返回码或无效几何不画有效叠图。native 崩溃可能终止宿主，只应加载可信匹配库。读图失败可继续下一张；关闭取消后续调用，native 输入保留至返回，迟到结果不画到新图。
+
+“导出本次报告”保存已查看结果、来源、算法身份、参数和缺图清单，不重新采集或写库。共享适配器返回中立 artifacts，项目层负责历史筛选；离线验证不能替代真机或人工验收。
 
 ## 结果统计与查询记忆
 
@@ -173,11 +193,11 @@ W255 和键化亮色度 `LuminanceChromaticityTestResults[配置 Key]` 保留原
 
 离线读取兼容旧 TEXT 与 gzip 正文，缺失的可选阶段字段显示为不可用，必要表或关联字段缺失时拒绝加载并列出原因。只读库不会执行 CodeFirst、补列或建索引。`OfflineDataSourceTests` 使用临时旧结构、同 ID 的不同来源、WAL 和压缩正文验证数据隔离及不改源库；设置 `COLORVISION_OFFLINE_FEEDBACK_ROOT` 可对指定反馈目录执行整轮到消息的验证，`COLORVISION_OFFLINE_PREVIEW_DIR` 可输出深浅主题预览。现场反馈验证不替代完整宿主安装验收。
 
-本机运行库在 `ViewResultManager` 打开时为结果表和统计表补齐查询索引；旧库保留原记录并自动补建，包括按 `BatchId` 查找流程结果的索引。首次为较大的旧库建索引可能增加打开耗时，后续打开重复执行不会重建已有索引。离线资料仍保持只读。
+本机旧库首次打开时自动补齐索引并保留原记录，大库可能打开较慢。统计首页的单侧汇总和趋势共用一个已提交数据快照，查询可与本机 WAL 写入并行。离线资料保持只读。
 
 批次记录优先显示 SN、整组 CT、流程运行时间、结束时间和流程数；流程数显示为纯数字，测试次数放在末列。批次、全批次和流程查询表格按内容确定列宽，空间不足时可横向滚动，悬停单元格可查看完整内容。右侧流程明细优先显示流程名、结果、耗时和时间，其余字段保留在后方；可拖动可见的分隔条调整左右宽度及明细与时间轴的高度。批次记录与全批次记录的右侧流程明细提供相同右键菜单：复制、打开文件位置、流程结果查询、流程执行分析和查看测试结果；操作使用当前表格中选中的流程，离线资料仍禁用本机文件位置和 MySQL 流程结果查询。选中批次后，右侧下方时间轴以整组开始和最终化时间为同一横轴，按流程显示 PG 应答、本地切图与稳定等待、预处理、流程执行、执行后处理与保存，以及无法归因的间隔。时间轴摘要与长流程名换行显示，流程行超出可用高度时纵向滚动；鼠标悬停阶段条可查看起止时间和耗时。
 
-联合统计不新增或回写结果库字段，只在查询时解析最终后缀为 `_L_HHmmss` / `_R_HHmmss` 的 SN。只有全局结果记录中相邻、顺序为 L→R、去掉侧别与时间后主体 SN 相同且均已最终化的两条记录才组成一个全批次；插入其它记录、侧别倒序、主体不同或只存在单侧时均不配对，原记录仍完整保留在“批次记录”。全批次结果仅在 L 和 R 都 PASS 时为 PASS，完成时间按 R 最终化时间归入所选日/周/月；跨统计边界时会读取范围前紧邻的一条记录用于确认当天第一条 R 的 L 配对，但不会把范围外完成的 R 计入当前范围。
+联合统计只读结果库。全局记录按 ID 相邻、均已最终化、SN 主体相同且后缀依次为 `_L_HHmmss` 和 `_R_HHmmss` 的两条记录组成全批次。单侧记录均保留在“批次记录”。全批次仅在两侧均 PASS 时为 PASS，按 R 最终化时间归入所选周期。跨期时也按 R 的实际前一条记录确认配对，允许 L 在范围外完成。
 
 全批次 CT 从 L 收到 Init 并创建整组记录的时间开始，到 R 结果最终化结束，包含 L 单侧 CT、L 完成到 R Init 的等待以及 R 单侧 CT。全批次详情将 L、橙色的 L→R 等待和 R 映射到同一横轴，并列出 L Init、L 完成、R Init、R 完成四个里程碑；首页同时保留单侧批次指标，联合统计行显示全批次数、PASS/FAIL、成功率、平均全批次 CT、平均 L→R 等待和平均全批次运行时间，趋势在开关启用时改用全批次口径，避免把约 20–24 秒单侧基线与左右合计时间混为一谈。
 
@@ -222,7 +242,7 @@ W255 和键化亮色度 `LuminanceChromaticityTestResults[配置 Key]` 保留原
 - 软件每次重新启动后，三个页面默认“按天／今天”，筛选文本和结果条件回到初始状态。同一次软件运行中关闭、重新打开统计窗口，保留当前标签、周期、日期和筛选条件。
 - `ProjectARVRProConfig.ResultStatisticsWindowState` 仅作为运行内状态，标注 `[JsonIgnore]`；旧配置 JSON 中的同名字段不再恢复，关闭统计窗口也不会为查询条件写入配置。此规则只涉及查询条件，不会删除或截断历史结果数据。
 - 手动切换仍支持按天、按周、按月和全部。按天使用所选日期的 `00:00` 到次日 `00:00`，按周使用周一到下周一，按月使用月初到下月初，统一为包含起点、不含终点的区间；不是滚动 24 小时或最近 7 天。
-- 各页的“今天／本周／本月”按钮按当前周期回到本周期并刷新查询；切到“全部”时隐藏日期导航，按钮显示“全部”。已有 SN、流程名和结果筛选不会被快捷返回清空，需要清空时使用“重置”。
+- “今天／本周／本月”返回当前周期并保留筛选，“全部”隐藏日期导航。“重置”清空筛选。SN 和流程名按字面子串匹配，`_`、`%` 作为普通字符。
 - 首页与批次记录按整组结束时间统计，流程查询按流程 `CreateTime` 统计，不能把跨午夜完成的整组记录误算到开始日。首页“今日产量”和“本小时产量”是所选查询范围中落入当前日期/小时的子集；查看不包含今天的历史范围时这两个值为零。
 
 验证入口：`ResultStatisticsTests.cs` 覆盖自然周期、日期前后切换、分页、配置 JSON 忽略与运行内状态，以及三个查询在午夜的包含/排除边界。测试使用临时 SQLite；界面布局另需检查浅色/深色、最小窗口宽度、日期弹出日历和筛选操作。只加载 XAML 的合成预览不能替代真实窗口的查询与重开验证。

@@ -24,7 +24,7 @@ namespace ColorVision.Solution
 
         private void SaveWorkspaceState(SolutionExplorer? explorer)
         {
-            if (_isRestoringWorkspaceState || IsFileSystemView || explorer == null)
+            if (_isRestoringWorkspaceState || IsFileSystemView || explorer == null || explorer.IsRootReloadPending)
                 return;
 
             try
@@ -46,7 +46,7 @@ namespace ColorVision.Solution
 
         private async void RestoreWorkspaceState(SolutionExplorer? explorer)
         {
-            if (IsFileSystemView || explorer == null
+            if (IsFileSystemView || explorer == null || explorer.IsRootReloadPending
                 || !ReferenceEquals(explorer, SolutionManager.CurrentSolutionExplorer))
             {
                 return;

@@ -132,7 +132,8 @@ public sealed class OfflineDataSourceTests
                 {
                     DataGrid other = target == detailGrid ? combinedGrid : detailGrid;
                     MenuItem[] menu = target.ContextMenu.Items.OfType<MenuItem>().ToArray();
-                    Assert.Equal(5, menu.Length);
+                    // Optional history tools may grow; the offline access boundary must remain closed.
+                    MenuItem evidence = Assert.Single(menu, item => Equals(item.Header, DisplayText.Get("算法实证")));
                     Assert.Same(target, menu[0].CommandTarget);
                     target.SelectedItem = valid;
                     other.SelectedItem = unavailable;
@@ -140,10 +141,12 @@ public sealed class OfflineDataSourceTests
                     Assert.False(menu[2].Command.CanExecute(null)); // Offline MySQL history.
                     Assert.True(menu[3].Command.CanExecute(null));
                     Assert.True(menu[4].Command.CanExecute(null));
+                    Assert.False(evidence.Command.CanExecute(null));
                     target.SelectedItem = unavailable;
                     other.SelectedItem = valid;
                     Assert.False(menu[3].Command.CanExecute(null));
                     Assert.False(menu[4].Command.CanExecute(null));
+                    Assert.False(evidence.Command.CanExecute(null));
 
                     // Materialize the detail row without opening a real application window.
                     target.Measure(new Size(900, 300));
@@ -238,6 +241,82 @@ public sealed class OfflineDataSourceTests
     }
 
     [Fact]
+    public void BulkReadOnlyResultsKeepCompressedAndLegacyPayloadsAcrossQueryBatches()
+    {
+        using var fixture = new Files();
+        string path = fixture.CreateProject("legacy");
+        using (var db = new SqliteConnection($"Data Source={path};Pooling=False"))
+        {
+            db.Open();
+            Execute(db, """
+                ALTER TABLE ObjectiveTestResultRecord ADD COLUMN ObjectiveTestResultJsonGzip BLOB;
+                ALTER TABLE ARVRReuslt ADD COLUMN ViewResultJsonGzip BLOB;
+                WITH RECURSIVE ids(Id) AS (SELECT 3 UNION ALL SELECT Id + 1 FROM ids WHERE Id < 501)
+                INSERT INTO ObjectiveTestResultRecord(Id, SN, ResultId, BatchId, CreateTime, UpdateTime, TotalResult, ObjectiveTestResultJson)
+                SELECT Id, 'sameSN', Id, Id, '2026-09-16 12:00:00', '2026-09-16 12:01:00', 1, CASE WHEN Id <> 3 THEN 'legacy' END FROM ids;
+                WITH RECURSIVE ids(Id) AS (SELECT 3 UNION ALL SELECT Id + 1 FROM ids WHERE Id < 501)
+                INSERT INTO ARVRReuslt(Id, SN, BatchId, Model, CreateTime, RunTime, ViewResultJson, Result)
+                SELECT Id, 'sameSN', Id, 'PG', '2026-09-16 12:00:00', 1000, CASE WHEN Id <> 3 THEN 'legacy' END, 1 FROM ids;
+                INSERT INTO ARVRReuslt(Id, SN, BatchId, Model, CreateTime, RunTime, ViewResultJson, Result)
+                VALUES (0, 'legacyZero', 0, 'PG', '2026-09-16 12:00:00', 1000, '旧库零 ID 载荷', 1);
+                """);
+            using var update = db.CreateCommand();
+            update.CommandText = """
+                UPDATE ObjectiveTestResultRecord SET ObjectiveTestResultJsonGzip = CASE Id WHEN 1 THEN @first WHEN 2 THEN X'' WHEN 501 THEN @last END;
+                UPDATE ARVRReuslt SET ViewResultJsonGzip = CASE Id WHEN 1 THEN @first WHEN 2 THEN X'' WHEN 501 THEN @last END;
+                """;
+            update.Parameters.AddWithValue("@first", Compress("首条"));
+            update.Parameters.AddWithValue("@last", Compress("末条🧪"));
+            update.ExecuteNonQuery();
+        }
+
+        var store = new ResultStatisticsDataStore(path, readOnly: true);
+        string hash = Hash(path);
+        var objectives = store.GetRecords(Enumerable.Range(1, 501)).ToDictionary(item => item.Id);
+        Assert.Equal(501, objectives.Count);
+        Assert.Equal("首条", objectives[1].ObjectiveTestResultJson);
+        Assert.Equal("legacy", objectives[2].ObjectiveTestResultJson);
+        Assert.Equal(string.Empty, objectives[3].ObjectiveTestResultJson);
+        Assert.Equal("末条🧪", objectives[501].ObjectiveTestResultJson);
+
+        var flows = store.QueryFlowDetailsForExport(new ResultStatisticsRecordRow { SN = "sameSN", ResultId = 501 });
+        Assert.Equal(501, flows.Count);
+        Assert.Equal("首条", flows[0].ViewResultJson);
+        Assert.Equal("legacy", flows[1].ViewResultJson);
+        Assert.Null(flows[2].ViewResultJson);
+        Assert.Equal("末条🧪", flows[^1].ViewResultJson);
+
+        var legacyRow = new ResultStatisticsRecordRow
+        {
+            Id = 502,
+            SN = "legacyZero",
+            StartTime = Day.AddHours(11),
+            EndTime = Day.AddHours(13),
+        };
+        var legacyFlow = Assert.Single(store.QueryFlowDetailsForExport(legacyRow));
+        Assert.Equal(0, legacyFlow.Id);
+        Assert.Equal("旧库零 ID 载荷", legacyFlow.ViewResultJson);
+
+        var requests = Enumerable.Range(1, 501)
+            .Select(id => new ResultStatisticsRecordRow { Id = id, SN = "sameSN", PreviousResultId = id - 1, ResultId = id })
+            .Concat([legacyRow, new() { Id = 503, SN = "anotherSN", ResultId = 1 }, new() { Id = 504, SN = "sameSN", ResultId = 2 }])
+            .ToArray();
+        var batch = store.QueryFlowDetailsForBatchExport(requests);
+        Assert.Equal(requests.Length, batch.Count);
+        foreach (var flow in flows)
+        {
+            var item = Assert.Single(batch[flow.Id]);
+            Assert.Equal(flow.Id, item.Id);
+            Assert.Equal(flow.ViewResultJson, item.ViewResultJson);
+        }
+        Assert.Equal(legacyFlow.ViewResultJson, Assert.Single(batch[502]).ViewResultJson);
+        Assert.Empty(batch[503]);
+        Assert.Equal(new[] { 1, 2 }, batch[504].Select(item => item.Id));
+        Assert.Equal(new[] { "首条", "legacy" }, batch[504].Select(item => item.ViewResultJson));
+        Assert.Equal(hash, Hash(path));
+    }
+
+    [Fact]
     public void ReadOnlyConnectionRejectsWritesAndMissingFileDoesNotCreateDatabase()
     {
         using var fixture = new Files();
@@ -300,12 +379,12 @@ public sealed class OfflineDataSourceTests
         Assert.Equal("first-node", flowA.GetLastByNodeId("node")!.NodeName);
         Assert.Equal("first-node", flowA.GetMessagePayloads(1).SendPayload);
         Assert.Equal("second-node", flowB.GetMessagePayloads(1).SendPayload);
-        Assert.Single(flowA.GetByBatchIds([20]));
-        Assert.Single(flowA.GetBySerialNumbers(["sameSN_20260916T120000"]));
-        Assert.Equal(20, Assert.Single(flowA.GetDistinctBatchIds(5)));
+        Assert.Equal(20, Assert.Single(flowA.GetRecentRunSummaries(5, default)).BatchId);
+        Assert.Single(flowA.GetRunSummariesBySerialNumbers(["sameSN_20260916T120000"], default));
         Assert.Single(flowA.GetMessagesByRun(20, "sameSN_20260916T120000"));
         Assert.Single(flowA.GetHistoryMessagesByNodeId("node", [20]));
-        Assert.Empty(flowA.GetSameFlowRuns("sameSN_20260916T120000"));
+        var session = new FlowExecutionAnalysisSession(20, "sameSN_20260916T120000", null, null, [], [], [], Day, 0, flowA);
+        Assert.Empty(flowA.GetSameFlowRuns(session));
         Assert.Null(flowA.GetFlowRun(20, "sameSN_20260916T120000"));
         Assert.Empty(flowA.GetExecutionEvents(1));
     }
@@ -400,8 +479,9 @@ public sealed class OfflineDataSourceTests
             if (run != null)
             {
                 Assert.Equal(serial, run.SerialNumber);
-                flow.GetExecutionEvents(run.Id);
-                Assert.NotEmpty(flow.GetSameFlowRuns(serial));
+                var events = flow.GetExecutionEvents(run.Id);
+                var session = new FlowExecutionAnalysisSession(detail.BatchId, serial, null, run, nodes, messages, events, record.StartTime, 0, flow);
+                Assert.NotEmpty(flow.GetSameFlowRuns(session));
             }
             source.Statistics.LoadViewResultJson(detail);
         }

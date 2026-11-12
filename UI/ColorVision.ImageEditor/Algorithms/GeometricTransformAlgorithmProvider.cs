@@ -99,7 +99,7 @@ namespace ColorVision.ImageEditor.Algorithms
                 cancellationToken.ThrowIfCancellationRequested();
                 context.Progress?.Report(new AlgorithmProgress(0.78, "transform.mask"));
                 (byte[] mask, long validPixels) = BuildValidityMask(width, height, source.Width, source.Height, inverse, cancellationToken, context.Progress);
-                transformed = AlgorithmImageInterop.FromMat(output, source.DpiX, source.DpiY);
+                transformed = AlgorithmImageInterop.FromMat(output, source.DpiX, source.DpiY, cancellationToken);
                 validityMask = new AlgorithmImageBuffer(width, height, width, AlgorithmImageFormat.Gray8, mask, source.DpiX, source.DpiY);
                 artifacts.Add(new AlgorithmImageArtifact("transformed-image", "primary", transformed,
                     new Dictionary<string, string>

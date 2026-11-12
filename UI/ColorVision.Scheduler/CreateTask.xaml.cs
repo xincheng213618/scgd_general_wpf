@@ -2,9 +2,11 @@
 using ColorVision.Themes;
 using ColorVision.UI;
 using System.ComponentModel;
+using System.ComponentModel.DataAnnotations;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+using ValidationResult = System.ComponentModel.DataAnnotations.ValidationResult;
 
 namespace ColorVision.Scheduler
 {
@@ -18,6 +20,7 @@ namespace ColorVision.Scheduler
         private string? _suggestedJobName;
         private string? _suggestedGroupName;
         private string? _configurationError;
+        private IJobNameSuggestion? _jobNameSuggestion;
         private bool _suppressSelectionChanged;
         private bool _isSaving;
         private bool _loaded;
@@ -104,19 +107,21 @@ namespace ColorVision.Scheduler
             if (_suppressSelectionChanged || TaskComboBox.SelectedValue is not Type type)
                 return;
             SchedulerInfo.JobType = type;
+            RenderConfigurationEditor();
             if (!IsEditing)
             {
+                string typeName = _jobNameSuggestion == null ? type.Name : SchedulerPresentation.TaskTypeName(type);
                 // Suggestions must not overwrite a name the user has already entered.
                 if (string.IsNullOrWhiteSpace(SchedulerInfo.JobName) || SchedulerInfo.JobName == _suggestedJobName)
-                    SchedulerInfo.JobName = _suggestedJobName = _schedulerService.GetNewJobName(type.Name);
+                    SchedulerInfo.JobName = _suggestedJobName = _schedulerService.GetNewJobName(typeName);
                 if (string.IsNullOrWhiteSpace(SchedulerInfo.GroupName) || SchedulerInfo.GroupName == _suggestedGroupName)
-                    SchedulerInfo.GroupName = _suggestedGroupName = _schedulerService.GetNewGroupName(type.Name);
+                    SchedulerInfo.GroupName = _suggestedGroupName = _schedulerService.GetNewGroupName(typeName);
             }
-            RenderConfigurationEditor();
         }
 
         private void RenderConfigurationEditor()
         {
+            SetJobNameSuggestion(null);
             StackPanelConfig.Children.Clear();
             ConfigurationSection.Visibility = Visibility.Collapsed;
             if (ErrorMessage.Text == _configurationError)
@@ -139,6 +144,8 @@ namespace ColorVision.Scheduler
                     {
                         StackPanelConfig.Children.Add(editor);
                         ConfigurationSection.Visibility = Visibility.Visible;
+                        if (!IsEditing)
+                            SetJobNameSuggestion(SchedulerInfo.Config as IJobNameSuggestion);
                     }
                 }
             }
@@ -147,6 +154,22 @@ namespace ColorVision.Scheduler
                 _configurationError = string.Format(Properties.Resources.Sched_ConfigFailed, ex.Message);
                 ShowError(_configurationError);
             }
+        }
+
+        private void SetJobNameSuggestion(IJobNameSuggestion? suggestion)
+        {
+            if (_jobNameSuggestion != null)
+                _jobNameSuggestion.PropertyChanged -= UpdateSuggestedJobName;
+            _jobNameSuggestion = suggestion;
+            if (suggestion != null)
+                suggestion.PropertyChanged += UpdateSuggestedJobName;
+        }
+
+        private void UpdateSuggestedJobName(object? sender, PropertyChangedEventArgs e)
+        {
+            string? name = _jobNameSuggestion?.SuggestedJobName;
+            if (!string.IsNullOrWhiteSpace(name) && (string.IsNullOrWhiteSpace(SchedulerInfo.JobName) || SchedulerInfo.JobName == _suggestedJobName))
+                SchedulerInfo.JobName = _suggestedJobName = _schedulerService.GetNewJobName(name);
         }
 
         private void DelayStart_Checked(object sender, RoutedEventArgs e)
@@ -181,6 +204,16 @@ namespace ColorVision.Scheduler
             {
                 ShowError(error);
                 return false;
+            }
+
+            if (SchedulerInfo.Config is IValidatableObject configuration)
+            {
+                var validationResults = new List<ValidationResult>();
+                if (!Validator.TryValidateObject(configuration, new ValidationContext(configuration), validationResults, validateAllProperties: true))
+                {
+                    ShowError(validationResults[0].ErrorMessage ?? Properties.Resources.Sched_ParamError);
+                    return false;
+                }
             }
 
             _isSaving = true;
@@ -240,6 +273,7 @@ namespace ColorVision.Scheduler
         protected override void OnClosed(EventArgs e)
         {
             _isClosed = true;
+            SetJobNameSuggestion(null);
             base.OnClosed(e);
         }
 

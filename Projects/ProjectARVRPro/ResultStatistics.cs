@@ -1,3 +1,4 @@
+using Microsoft.Data.Sqlite;
 using SqlSugar;
 using ColorVision.Database;
 using System.Globalization;
@@ -571,33 +572,66 @@ namespace ProjectARVRPro
             double MaximumCtMilliseconds);
     }
 
-    internal static class ResultStatisticsSuggestionFilter
+    internal sealed class ResultStatisticsSuggestions
     {
-        public static IReadOnlyList<string> Filter(IEnumerable<string> suggestions, string? text, int limit)
+        private readonly string[] _recent;
+        private readonly string[] _alphabetical;
+
+        public int Count => _recent.Length;
+
+        public ResultStatisticsSuggestions(IEnumerable<string> suggestions)
         {
             ArgumentNullException.ThrowIfNull(suggestions);
-            if (limit <= 0)
-                return [];
-
-            string filter = text?.Trim() ?? string.Empty;
-            IEnumerable<string> candidates = suggestions
+            _recent = suggestions
                 .Where(item => !string.IsNullOrWhiteSpace(item))
                 .Select(item => item.Trim())
-                .Distinct(StringComparer.OrdinalIgnoreCase);
-            if (filter.Length == 0)
-                return candidates.Take(limit).ToList();
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToArray();
+            _alphabetical = (string[])_recent.Clone();
+            Array.Sort(_alphabetical, StringComparer.OrdinalIgnoreCase);
+        }
 
-            return candidates
-                .Where(item => item.Contains(filter, StringComparison.OrdinalIgnoreCase))
-                .OrderByDescending(item => item.StartsWith(filter, StringComparison.OrdinalIgnoreCase))
-                .ThenBy(item => item, StringComparer.OrdinalIgnoreCase)
-                .Take(limit)
-                .ToList();
+        public IReadOnlyList<string> Filter(string? text, int limit)
+        {
+            if (limit <= 0)
+                return [];
+            string filter = text?.Trim() ?? string.Empty;
+            if (filter.Length == 0)
+                return _recent.Take(limit).ToArray();
+
+            var matches = new List<string>();
+            var substringMatches = new List<string>();
+            foreach (string item in _alphabetical)
+            {
+                if (item.StartsWith(filter, StringComparison.OrdinalIgnoreCase))
+                {
+                    matches.Add(item);
+                    if (matches.Count == limit)
+                        return matches;
+                }
+                else if (substringMatches.Count < limit && item.Contains(filter, StringComparison.OrdinalIgnoreCase))
+                {
+                    substringMatches.Add(item);
+                }
+            }
+
+            matches.AddRange(substringMatches.Take(limit - matches.Count));
+            return matches;
         }
     }
 
     public sealed class ResultStatisticsDataStore
     {
+        private const string SerialNumberFilterSql = "\"SN\" LIKE @SN ESCAPE '\\'";
+
+        // Unfinished batches still delimit ownership of the flow rows they already saved.
+        private const string RecordFlowBoundariesSql = """
+            SELECT "Id", "SN", "ResultId", "CreateTime", "UpdateTime", "TotalResult",
+                   "LastModel", "BatchId", "Msg", "IsFinalized",
+                   COALESCE(LAG("ResultId") OVER (PARTITION BY TRIM("SN") ORDER BY "Id"), 0) AS "PreviousResultId"
+            FROM "ObjectiveTestResultRecord"
+            """;
+
         private static readonly Lazy<ResultStatisticsDataStore> LazyInstance = new(() => new ResultStatisticsDataStore());
         private readonly string? _databasePath;
         private readonly ReadOnlySqliteDatabase? _readOnlyDatabase;
@@ -672,24 +706,45 @@ namespace ProjectARVRPro
             InitializeSchema();
 
             using SqlSugarClient db = CreateClient();
-            // SqlSugar's default SQLite transaction requests a write lock. Offline readers need a deferred read snapshot.
-            if (_readOnlyDatabase == null) db.Ado.BeginTran();
-            else db.Ado.ExecuteCommand("BEGIN DEFERRED");
+            // Share a read snapshot across the summary and trend without reserving SQLite's writer lock.
+            db.Ado.Open();
+            db.Ado.Transaction = ((SqliteConnection)db.Ado.Connection).BeginTransaction(deferred: true);
             try
             {
                 const string cycleTimeExpression = "CASE WHEN julianday(\"UpdateTime\") >= julianday(\"CreateTime\") THEN (julianday(\"UpdateTime\") - julianday(\"CreateTime\")) * 86400000.0 ELSE 0.0 END";
                 string optionalFilter = string.Empty;
                 if (!string.IsNullOrWhiteSpace(query.SN))
-                    optionalFilter += " AND \"SN\" LIKE '%' || @SN || '%'";
+                    optionalFilter += " AND " + SerialNumberFilterSql;
                 if (query.Result.HasValue)
                     optionalFilter += " AND \"TotalResult\" = @Result";
-                string summarySql = $$"""
-                    WITH RankedRecords AS
+                string resultFilter = $$"""
+                    "UpdateTime" >= @From AND "UpdateTime" < @ToExclusive
+                    AND ("IsFinalized" = 1 OR "IsFinalized" IS NULL)
+                    {{optionalFilter}}
+                    """;
+                // Wider periods can select most of the database, making a separate SN set more expensive.
+                bool restrictHistory = query.ToExclusive - query.From <= TimeSpan.FromDays(1)
+                    && (optionalFilter.Length > 0 || HasRecordsOutsideRange(db, query));
+                string selectedSerialNumbers = restrictHistory ? $$"""
+                    SelectedSerialNumbers AS
                     (
-                        SELECT "Id", "SN", "ResultId", "CreateTime", "UpdateTime", "TotalResult",
+                        SELECT DISTINCT TRIM("SN") AS "NormalizedSerialNumber"
+                        FROM "ObjectiveTestResultRecord"
+                        WHERE {{resultFilter}}
+                    ),
+                    """ : string.Empty;
+                const string selectedHistoryFilter = """
+                    WHERE TRIM("SN") IN (SELECT "NormalizedSerialNumber" FROM SelectedSerialNumbers)
+                       OR ("SN" IS NULL AND EXISTS (SELECT 1 FROM SelectedSerialNumbers WHERE "NormalizedSerialNumber" IS NULL))
+                    """;
+                string summarySql = $$"""
+                    WITH {{selectedSerialNumbers}}
+                    RecordFlowBoundaries AS
+                    (
+                        SELECT "SN", "ResultId", "CreateTime", "UpdateTime", "TotalResult", "IsFinalized",
                                COALESCE(LAG("ResultId") OVER (PARTITION BY TRIM("SN") ORDER BY "Id"), 0) AS "PreviousResultId"
                         FROM "ObjectiveTestResultRecord"
-                        WHERE "IsFinalized" = 1 OR "IsFinalized" IS NULL
+                        {{(restrictHistory ? selectedHistoryFilter : string.Empty)}}
                     ),
                     TimedRecords AS
                     (
@@ -699,10 +754,8 @@ namespace ProjectARVRPro
                                 WHERE F."SN" = R."SN"
                                   AND F."Id" > R."PreviousResultId"
                                   AND F."Id" <= R."ResultId") AS "FlowRunTimeMilliseconds"
-                        FROM RankedRecords AS R
-                        WHERE "UpdateTime" >= @From
-                          AND "UpdateTime" < @ToExclusive
-                          {{optionalFilter}}
+                        FROM RecordFlowBoundaries AS R
+                        WHERE {{resultFilter}}
                     )
                     SELECT COUNT(*) AS "TotalCount",
                            COALESCE(SUM(CASE WHEN "TotalResult" = 1 THEN 1 ELSE 0 END), 0) AS "PassCount",
@@ -729,10 +782,7 @@ namespace ProjectARVRPro
                                COALESCE(SUM(CASE WHEN "TotalResult" = 1 THEN 1 ELSE 0 END), 0) AS "PassCount",
                                COALESCE(AVG({{cycleTimeExpression}}), 0.0) AS "AverageCtMilliseconds"
                         FROM "ObjectiveTestResultRecord"
-                        WHERE "UpdateTime" >= @From
-                          AND "UpdateTime" < @ToExclusive
-                          AND ("IsFinalized" = 1 OR "IsFinalized" IS NULL)
-                          {{optionalFilter}}
+                        WHERE {{resultFilter}}
                         GROUP BY {{bucketExpression}}
                         ORDER BY {{bucketExpression}};
                         """;
@@ -758,14 +808,12 @@ namespace ProjectARVRPro
                 }
 
                 ResultStatistics summary = CreateStatistics(aggregate);
-                if (_readOnlyDatabase == null) db.Ado.CommitTran();
-                else db.Ado.ExecuteCommand("COMMIT");
+                db.Ado.CommitTran();
                 return new ResultStatisticsDashboard { Summary = summary, Trend = trend };
             }
             catch
             {
-                if (_readOnlyDatabase == null) db.Ado.RollbackTran();
-                else db.Ado.ExecuteCommand("ROLLBACK");
+                db.Ado.RollbackTran();
                 throw;
             }
         }
@@ -782,52 +830,55 @@ namespace ProjectARVRPro
             InitializeSchema();
             using SqlSugarClient db = CreateClient();
             int skip = checked((query.PageNumber - 1) * query.PageSize);
-            const string sql = """
-                WITH RankedRecords AS
+            const string sql = $$"""
+                WITH PageRecords AS
                 (
-                    SELECT "Id",
-                           "SN",
-                           "CreateTime" AS "StartTime",
-                           "UpdateTime" AS "EndTime",
-                           "TotalResult" AS "Result",
-                           "LastModel",
-                           "BatchId",
-                           "ResultId",
-                           "Msg",
-                           COALESCE(LAG("ResultId") OVER (PARTITION BY TRIM("SN") ORDER BY "Id"), 0) AS "PreviousResultId",
-                           ROW_NUMBER() OVER (PARTITION BY TRIM("SN") ORDER BY "Id") AS "ExecutionIndex"
+                    SELECT "Id", "SN", "CreateTime" AS "StartTime", "UpdateTime" AS "EndTime", "TotalResult" AS "Result",
+                           "LastModel", "BatchId", "ResultId", "Msg"
                     FROM "ObjectiveTestResultRecord"
-                    WHERE "IsFinalized" = 1 OR "IsFinalized" IS NULL
+                    WHERE "UpdateTime" >= @From
+                      AND "UpdateTime" < @ToExclusive
+                      AND ("IsFinalized" = 1 OR "IsFinalized" IS NULL)
+                      AND (@SN IS NULL OR {{SerialNumberFilterSql}})
+                      AND (@Result IS NULL OR "TotalResult" = @Result)
+                    ORDER BY "Id" DESC
+                    LIMIT @PageSize OFFSET @Skip
+                ),
+                RankedRecords AS
+                (
+                    SELECT "Id", COALESCE(LAG("ResultId") OVER SerialNumberHistory, 0) AS "PreviousResultId",
+                           COUNT(CASE WHEN "IsFinalized" = 1 OR "IsFinalized" IS NULL THEN 1 END)
+                               OVER SerialNumberHistory AS "ExecutionIndex"
+                    FROM "ObjectiveTestResultRecord"
+                    WHERE TRIM("SN") IN (SELECT TRIM("SN") FROM PageRecords)
+                       OR ("SN" IS NULL AND EXISTS (SELECT 1 FROM PageRecords WHERE "SN" IS NULL))
+                    WINDOW SerialNumberHistory AS (PARTITION BY TRIM("SN") ORDER BY "Id" ROWS UNBOUNDED PRECEDING)
                 )
-                SELECT R."Id", R."ExecutionIndex", R."SN", R."StartTime", R."EndTime", R."Result",
-                       R."LastModel", R."BatchId", R."ResultId", R."Msg", R."PreviousResultId",
-                       CASE WHEN R."ResultId" > R."PreviousResultId" THEN
+                SELECT P."Id", R."ExecutionIndex", P."SN", P."StartTime", P."EndTime", P."Result",
+                       P."LastModel", P."BatchId", P."ResultId", P."Msg", R."PreviousResultId",
+                       CASE WHEN P."ResultId" > R."PreviousResultId" THEN
                            (SELECT COUNT(*)
                             FROM "ARVRReuslt" AS F
-                            WHERE F."SN" = R."SN"
+                            WHERE F."SN" = P."SN"
                               AND F."Id" > R."PreviousResultId"
-                              AND F."Id" <= R."ResultId")
+                              AND F."Id" <= P."ResultId")
                            ELSE 0 END AS "FlowCount",
-                       CASE WHEN R."ResultId" > R."PreviousResultId" THEN
+                       CASE WHEN P."ResultId" > R."PreviousResultId" THEN
                            COALESCE((SELECT SUM(F."RunTime")
                                      FROM "ARVRReuslt" AS F
-                                     WHERE F."SN" = R."SN"
+                                     WHERE F."SN" = P."SN"
                                        AND F."Id" > R."PreviousResultId"
-                                       AND F."Id" <= R."ResultId"), 0)
+                                       AND F."Id" <= P."ResultId"), 0)
                            ELSE 0 END AS "FlowRunTimeMilliseconds"
-                FROM RankedRecords AS R
-                WHERE R."EndTime" >= @From
-                  AND R."EndTime" < @ToExclusive
-                  AND (@SN IS NULL OR R."SN" LIKE '%' || @SN || '%')
-                  AND (@Result IS NULL OR R."Result" = @Result)
-                ORDER BY R."Id" DESC
-                LIMIT @PageSize OFFSET @Skip;
+                FROM PageRecords AS P
+                JOIN RankedRecords AS R ON R."Id" = P."Id"
+                ORDER BY P."Id" DESC;
                 """;
             return db.Ado.SqlQuery<ResultStatisticsRecordRow>(
                 ReadSql(sql),
                 new SugarParameter("@From", query.From),
                 new SugarParameter("@ToExclusive", query.ToExclusive),
-                new SugarParameter("@SN", string.IsNullOrWhiteSpace(query.SN) ? DBNull.Value : query.SN.Trim()),
+                new SugarParameter("@SN", (object?)CreateLiteralContainsPattern(query.SN) ?? DBNull.Value),
                 new SugarParameter("@Result", query.Result.HasValue ? query.Result.Value : DBNull.Value),
                 new SugarParameter("@PageSize", query.PageSize),
                 new SugarParameter("@Skip", skip));
@@ -907,6 +958,11 @@ namespace ProjectARVRPro
 
             InitializeSchema();
             using SqlSugarClient db = CreateClient();
+            return QueryFlowDetails(db, record);
+        }
+
+        private List<ProjectARVRReuslt> QueryFlowDetails(SqlSugarClient db, ResultStatisticsRecordRow record)
+        {
             string sn = record.SN;
             if (record.ResultId > record.PreviousResultId)
             {
@@ -935,6 +991,41 @@ namespace ProjectARVRPro
         {
             InitializeSchema();
             using SqlSugarClient db = CreateClient();
+            bool restrictHistory = query.ToExclusive - query.From <= TimeSpan.FromDays(1) && HasRecordsOutsideRange(db, query);
+            // Completion times can be out of ID order. Check the actual predecessor of each possible right side.
+            const string candidateRecordsSql = """
+                InRangeRecords AS
+                (
+                    SELECT "Id", "SN"
+                    FROM "ObjectiveTestResultRecord"
+                    WHERE "UpdateTime" >= @From AND "UpdateTime" < @ToExclusive
+                      AND ("IsFinalized" = 1 OR "IsFinalized" IS NULL)
+                ),
+                CandidateRecords AS
+                (
+                    SELECT "Id", "SN" FROM InRangeRecords
+                    UNION ALL
+                    SELECT L."Id", L."SN"
+                    FROM InRangeRecords AS R
+                    CROSS JOIN
+                    (
+                        SELECT "Id", "SN", "IsFinalized", "UpdateTime"
+                        FROM "ObjectiveTestResultRecord"
+                    ) AS L
+                    WHERE instr(upper(R."SN"), '_R_') > 0
+                      AND L."Id" = (SELECT P."Id"
+                                    FROM "ObjectiveTestResultRecord" AS P
+                                    WHERE P."Id" < R."Id"
+                                    ORDER BY P."Id" DESC LIMIT 1)
+                      AND (L."IsFinalized" = 1 OR L."IsFinalized" IS NULL)
+                      AND (L."UpdateTime" < @From OR L."UpdateTime" >= @ToExclusive OR L."UpdateTime" IS NULL)
+                ),
+                """;
+            // Keep a superset of possible sides. The matcher still validates the full suffix and global adjacency.
+            const string candidateHistoryFilter = """
+                WHERE TRIM("SN") IN (SELECT TRIM("SN") FROM CandidateRecords
+                                    WHERE instr(upper("SN"), '_L_') > 0 OR instr(upper("SN"), '_R_') > 0)
+                """;
             const string flowColumns = """
                     CASE WHEN R."ResultId" > R."PreviousResultId" THEN
                         (SELECT COUNT(*)
@@ -952,7 +1043,13 @@ namespace ProjectARVRPro
                         ELSE 0 END AS "FlowRunTimeMilliseconds"
                     """;
             string sql = $$"""
-                WITH RankedRecords AS
+                WITH {{candidateRecordsSql}}
+                RecordFlowBoundaries AS
+                (
+                    {{RecordFlowBoundariesSql}}
+                    {{(restrictHistory ? candidateHistoryFilter : string.Empty)}}
+                ),
+                RankedRecords AS
                 (
                     SELECT "Id",
                            "SN",
@@ -963,23 +1060,21 @@ namespace ProjectARVRPro
                            "BatchId",
                            "ResultId",
                            "Msg",
-                           COALESCE(LAG("ResultId") OVER (PARTITION BY TRIM("SN") ORDER BY "Id"), 0) AS "PreviousResultId",
+                           "PreviousResultId",
                            ROW_NUMBER() OVER (PARTITION BY TRIM("SN") ORDER BY "Id") AS "ExecutionIndex",
-                           COALESCE(LAG("Id") OVER (ORDER BY "Id"), 0) AS "PreviousObjectiveId"
-                    FROM "ObjectiveTestResultRecord"
+                           COALESCE((SELECT P."Id"
+                                     FROM "ObjectiveTestResultRecord" AS P
+                                     WHERE P."Id" < B."Id"
+                                     ORDER BY P."Id" DESC
+                                     LIMIT 1), 0) AS "PreviousObjectiveId"
+                    FROM RecordFlowBoundaries AS B
                     WHERE "IsFinalized" = 1 OR "IsFinalized" IS NULL
                 )
                 SELECT R."Id", R."ExecutionIndex", R."SN", R."StartTime", R."EndTime", R."Result",
                        R."LastModel", R."BatchId", R."ResultId", R."Msg", R."PreviousResultId", R."PreviousObjectiveId",
                        {{flowColumns}}
                 FROM RankedRecords AS R
-                WHERE (R."EndTime" >= @From AND R."EndTime" < @ToExclusive)
-                   OR R."Id" = COALESCE(
-                       (SELECT X."PreviousObjectiveId"
-                        FROM RankedRecords AS X
-                        WHERE X."EndTime" >= @From AND X."EndTime" < @ToExclusive
-                        ORDER BY X."Id"
-                        LIMIT 1), -1)
+                WHERE R."Id" IN (SELECT "Id" FROM CandidateRecords)
                 ORDER BY R."Id";
                 """;
             List<ResultStatisticsRecordRow> candidates = db.Ado.SqlQuery<ResultStatisticsRecordRow>(
@@ -1004,6 +1099,16 @@ namespace ProjectARVRPro
             return pairs.ToList();
         }
 
+        private bool HasRecordsOutsideRange(SqlSugarClient db, ResultStatisticsQuery query)
+        {
+            const string sql = """
+                SELECT EXISTS (SELECT 1 FROM "ObjectiveTestResultRecord" WHERE "UpdateTime" < @From)
+                    OR EXISTS (SELECT 1 FROM "ObjectiveTestResultRecord" WHERE "UpdateTime" >= @ToExclusive);
+                """;
+            return db.Ado.GetInt(ReadSql(sql), new SugarParameter("@From", query.From),
+                new SugarParameter("@ToExclusive", query.ToExclusive)) != 0;
+        }
+
         public IReadOnlyList<ProjectARVRReuslt> QueryFlowDetailsForExport(ResultStatisticsRecordRow record)
         {
             List<ProjectARVRReuslt> results = QueryFlowDetails(record).ToList();
@@ -1011,9 +1116,71 @@ namespace ProjectARVRPro
                 return results;
 
             using SqlSugarClient db = CreateClient();
-            if (_readOnlyDatabase == null) ResultJsonPayloadStorage.LoadViewResultJsons(db, results);
-            else foreach (ProjectARVRReuslt result in results) result.ViewResultJson = ReadFlowPayload(db, result.Id);
+            ResultJsonPayloadStorage.LoadViewResultJsons(db, results, _readOnlyDatabase);
             return results;
+        }
+
+        internal IReadOnlyDictionary<int, IReadOnlyList<ProjectARVRReuslt>> QueryFlowDetailsForBatchExport(
+            IReadOnlyList<ResultStatisticsRecordRow> records)
+        {
+            var idsByRecord = records.ToDictionary(record => record.Id, _ => new List<int>());
+            if (idsByRecord.Count == 0)
+                return new Dictionary<int, IReadOnlyList<ProjectARVRReuslt>>();
+
+            InitializeSchema();
+            using SqlSugarClient db = CreateClient();
+            var resultsById = new Dictionary<int, ProjectARVRReuslt>();
+            var ranged = new List<ResultStatisticsRecordRow>();
+            foreach (ResultStatisticsRecordRow record in records)
+            {
+                if (string.IsNullOrWhiteSpace(record.SN))
+                    continue;
+                if (record.ResultId > record.PreviousResultId)
+                {
+                    ranged.Add(record);
+                    continue;
+                }
+                // Legacy rows without a usable ID range retain the same time-based ownership rules.
+                foreach (ProjectARVRReuslt result in QueryFlowDetails(db, record))
+                {
+                    resultsById.TryAdd(result.Id, result);
+                    idsByRecord[record.Id].Add(result.Id);
+                }
+            }
+
+            // Four parameters per request. Stay below SQLite's legacy 999-variable limit.
+            foreach (ResultStatisticsRecordRow[] chunk in ranged.Chunk(200))
+            {
+                var parameters = new List<SugarParameter>(chunk.Length * 4);
+                string[] ranges = new string[chunk.Length];
+                for (int index = 0; index < chunk.Length; index++)
+                {
+                    ResultStatisticsRecordRow row = chunk[index];
+                    ranges[index] = $"(@record{index}, @sn{index}, @first{index}, @last{index})";
+                    parameters.Add(new($"@record{index}", row.Id));
+                    parameters.Add(new($"@sn{index}", row.SN));
+                    parameters.Add(new($"@first{index}", Math.Max(0, row.PreviousResultId)));
+                    parameters.Add(new($"@last{index}", row.ResultId));
+                }
+                using var reader = db.Ado.GetDataReader($$"""
+                    WITH Requested(RecordId, SN, FirstId, LastId) AS (VALUES {{string.Join(", ", ranges)}})
+                    SELECT R.RecordId, F.Id
+                    FROM Requested AS R CROSS JOIN "ARVRReuslt" AS F
+                    WHERE F.SN = R.SN AND F.Id > R.FirstId AND F.Id <= R.LastId
+                    ORDER BY R.RecordId, F.Id;
+                    """, parameters.ToArray());
+                while (reader.Read())
+                    idsByRecord[reader.GetInt32(0)].Add(reader.GetInt32(1));
+            }
+
+            foreach (int[] ids in idsByRecord.Values.SelectMany(ids => ids).Distinct().Where(id => !resultsById.ContainsKey(id)).Chunk(500))
+            {
+                foreach (ProjectARVRReuslt result in Query<ProjectARVRReuslt>(db).Where(item => ids.Contains(item.Id)).ToList())
+                    resultsById.Add(result.Id, result);
+            }
+            ResultJsonPayloadStorage.LoadViewResultJsons(db, resultsById.Values, _readOnlyDatabase);
+            return idsByRecord.ToDictionary(pair => pair.Key, pair => (IReadOnlyList<ProjectARVRReuslt>)pair.Value
+                .Where(resultsById.ContainsKey).Select(id => resultsById[id]).ToArray());
         }
 
         public IReadOnlyList<FlowExecutionRecordRow> QueryFlowExecutions(FlowExecutionQuery query)
@@ -1058,6 +1225,20 @@ namespace ProjectARVRPro
             return db.Ado.SqlQuery<FlowExecutionNameRow>(sql)
                 .Select(item => item.Model)
                 .ToList();
+        }
+
+        internal IReadOnlyList<string> QuerySnSuggestions()
+        {
+            InitializeSchema();
+            using SqlSugarClient db = CreateClient();
+            const string sql = """
+                SELECT TRIM("SN") AS "SN"
+                FROM "ObjectiveTestResultRecord"
+                WHERE TRIM("SN") <> '' AND ("IsFinalized" = 1 OR "IsFinalized" IS NULL)
+                GROUP BY TRIM("SN")
+                ORDER BY MAX("UpdateTime") DESC;
+                """;
+            return db.Ado.SqlQuery<string>(ReadSql(sql));
         }
 
         public IReadOnlyList<ResultStatisticsSnSummary> QuerySnSummaries()
@@ -1115,8 +1296,7 @@ namespace ProjectARVRPro
             List<ObjectiveTestResultRecord> records = Query<ObjectiveTestResultRecord>(db)
                 .Where(item => recordIds.Contains(item.Id))
                 .ToList();
-            if (_readOnlyDatabase == null) ResultJsonPayloadStorage.LoadObjectiveTestResultJsons(db, records);
-            else foreach (ObjectiveTestResultRecord record in records) record.ObjectiveTestResultJson = ReadObjectivePayload(db, record.Id);
+            ResultJsonPayloadStorage.LoadObjectiveTestResultJsons(db, records, _readOnlyDatabase);
             foreach (ObjectiveTestResultRecord record in records.Where(item => item.ObjectiveTestResultJson == null))
                 record.ObjectiveTestResultJson = string.Empty;
             return records;
@@ -1144,9 +1324,8 @@ namespace ProjectARVRPro
                 .Where(item => item.UpdateTime >= from
                     && item.UpdateTime < toExclusive
                     && (item.IsFinalized == true || item.IsFinalized == null));
-            string? sn = string.IsNullOrWhiteSpace(query.SN) ? null : query.SN.Trim();
-            if (sn != null)
-                queryResult = queryResult.Where(item => item.SN.Contains(sn));
+            if (CreateLiteralContainsPattern(query.SN) is string snPattern)
+                queryResult = queryResult.Where(SerialNumberFilterSql, new { SN = snPattern });
             if (query.Result.HasValue)
             {
                 bool expectedResult = query.Result.Value;
@@ -1164,9 +1343,8 @@ namespace ProjectARVRPro
             DateTime toExclusive = query.ToExclusive;
             ISugarQueryable<ProjectARVRReuslt> queryResult = queryable
                 .Where(item => item.CreateTime >= from && item.CreateTime < toExclusive);
-            string? model = string.IsNullOrWhiteSpace(query.Model) ? null : query.Model.Trim();
-            if (model != null)
-                queryResult = queryResult.Where(item => item.Model.Contains(model));
+            if (CreateLiteralContainsPattern(query.Model) is string modelPattern)
+                queryResult = queryResult.Where("\"Model\" LIKE @Model ESCAPE '\\'", new { Model = modelPattern });
             if (query.Result.HasValue)
             {
                 bool expectedResult = query.Result.Value;
@@ -1174,6 +1352,17 @@ namespace ProjectARVRPro
             }
 
             return queryResult;
+        }
+
+        private static string? CreateLiteralContainsPattern(string? value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+                return null;
+
+            string literal = value.Trim().Replace("\\", "\\\\", StringComparison.Ordinal)
+                .Replace("%", "\\%", StringComparison.Ordinal)
+                .Replace("_", "\\_", StringComparison.Ordinal);
+            return "%" + literal + "%";
         }
 
         private static void ValidateFlowExecutionQuery(FlowExecutionQuery query)
@@ -1193,7 +1382,7 @@ namespace ProjectARVRPro
             [
                 new SugarParameter("@From", query.From),
                 new SugarParameter("@ToExclusive", query.ToExclusive),
-                new SugarParameter("@SN", string.IsNullOrWhiteSpace(query.SN) ? DBNull.Value : query.SN.Trim()),
+                new SugarParameter("@SN", (object?)CreateLiteralContainsPattern(query.SN) ?? DBNull.Value),
                 new SugarParameter("@Result", query.Result.HasValue ? query.Result.Value : DBNull.Value),
                 new SugarParameter("@CurrentHour", currentHour),
                 new SugarParameter("@NextHour", currentHour.AddHours(1)),

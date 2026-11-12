@@ -3,19 +3,20 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:engine="clr-namespace:ColorVision.Engine"
         Title="{engine:EngineLang 后处理项}" Height="660" Width="1180" MinHeight="580" MinWidth="980"
-        Background="{DynamicResource GlobalBackground}" Loaded="Window_Loaded">
+        Foreground="{DynamicResource GlobalTextBrush}" Background="{DynamicResource GlobalBackground}" Loaded="Window_Loaded">
     <Window.Resources>
         <Style TargetType="{x:Type TextBlock}">
             <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
         </Style>
         <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
 
-        <Style x:Key="PanelTitleStyle" TargetType="{x:Type TextBlock}">
+        <Style x:Key="PanelTitleStyle" TargetType="{x:Type TextBlock}" BasedOn="{StaticResource {x:Type TextBlock}}">
             <Setter Property="FontWeight" Value="SemiBold"/>
             <Setter Property="FontSize" Value="14"/>
         </Style>
 
         <Style x:Key="TemplateItemStyle" TargetType="{x:Type ListBoxItem}">
+            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
             <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
             <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
             <Setter Property="Margin" Value="0 2"/>
@@ -43,6 +44,7 @@
         </Style>
 
         <Style x:Key="FilterItemStyle" TargetType="{x:Type ListBoxItem}">
+            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
             <Setter Property="HorizontalContentAlignment" Value="Center"/>
             <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
             <Setter Property="Margin" Value="0 0 7 7"/>
@@ -69,6 +71,7 @@
         </Style>
 
         <Style x:Key="TypeCardItemStyle" TargetType="{x:Type ListBoxItem}">
+            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
             <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
             <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
             <Setter Property="VerticalContentAlignment" Value="Stretch"/>

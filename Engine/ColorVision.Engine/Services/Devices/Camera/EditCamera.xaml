@@ -1,57 +1,83 @@
 <Window x:Class="ColorVision.Engine.Services.Devices.Camera.EditCamera"
-             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-             xmlns:local="clr-namespace:ColorVision.Engine.Services.Devices.Camera"
-             xmlns:config="clr-namespace:ColorVision.Engine.Services.Devices.Camera.Configs"
-             xmlns:properties="clr-namespace:ColorVision.Engine.Properties"
-             xmlns:hc="https://handyorg.github.io/handycontrol"
-             d:DataContext="{d:DesignInstance local:DeviceCamera}"
-             mc:Ignorable="d" 
-             Title="{x:Static properties:Resources.Edit}" Icon="{Binding Icon}" Background="{DynamicResource GlobalBackground}" Height="450" Width="600" Initialized="UserControl_Initialized">
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:i18n="clr-namespace:ColorVision.Engine"
+        xmlns:properties="clr-namespace:ColorVision.Engine.Properties"
+        xmlns:controls="clr-namespace:ColorVision.Themes.Controls;assembly=ColorVision.Themes"
+        xmlns:hc="https://handyorg.github.io/handycontrol"
+        Title="{x:Static properties:Resources.TitleEditCameraConfig}" Icon="{Binding Icon}"
+        Width="650" Height="410" MinWidth="580" MinHeight="350" WindowStartupLocation="CenterOwner"
+        Background="{DynamicResource GlobalBackground}" SnapsToDevicePixels="True" UseLayoutRounding="True"
+        Initialized="Window_Initialized">
     <Window.Resources>
-        <Style TargetType="TextBox" BasedOn="{StaticResource TextBoxBaseBaseStyle}">
-            <EventSetter Event="PreviewKeyDown" Handler="TextBox_PreviewKeyDown"/>
-        </Style>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/ColorVision.Engine;component/Services/PhyCameras/PhyCameraConsoleStyles.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+            <Style x:Key="CardStyle" TargetType="Border" BasedOn="{StaticResource MetricCardStyle}">
+                <Setter Property="CornerRadius" Value="8"/>
+                <Setter Property="Padding" Value="16,10"/>
+                <Setter Property="Margin" Value="0,0,4,10"/>
+            </Style>
+            <Style x:Key="FieldRowStyle" TargetType="DockPanel">
+                <Setter Property="MinHeight" Value="28"/>
+                <Setter Property="Margin" Value="0,3,0,5"/>
+            </Style>
+            <Style x:Key="FieldLabelStyle" TargetType="TextBlock">
+                <Setter Property="Width" Value="120"/>
+                <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
+                <Setter Property="VerticalAlignment" Value="Center"/>
+            </Style>
+        </ResourceDictionary>
     </Window.Resources>
-    <Grid Margin="5">
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="11*"/>
-            <ColumnDefinition Width="16*"/>
-            <ColumnDefinition Width="563*"/>
-        </Grid.ColumnDefinitions>
+    <Grid Margin="16,14,16,0">
         <Grid.RowDefinitions>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
-        <ScrollViewer x:Name="EditContent" d:DataContext="{d:DesignInstance config:ConfigCamera}" Grid.ColumnSpan="3" Margin="0,0,0,30" Grid.RowSpan="2">
-            <Border Background ="{DynamicResource GlobalBackground}" CornerRadius="5">
-                <StackPanel x:Name="EditStackPanel" Margin="5,0">
-                    <GroupBox Header="{x:Static properties:Resources.ResourceInformation}" Margin="0,5">
-                        <StackPanel Margin="5">
-                            <DockPanel Margin="0,0,0,5">
-                                <TextBlock Text="{x:Static properties:Resources.FrameDisplayName}" Width="120"/>
-                                <TextBox Text="{Binding Name}" Style="{StaticResource TextBox.Small}"/>
-                            </DockPanel>
-                            <DockPanel Margin="0,0,0,0" >
-                                <TextBlock Text="{x:Static properties:Resources.DeviceAutoConnect}" Width="120"/>
-                                <CheckBox Content="{x:Static properties:Resources.IsEnable}" IsChecked="{Binding IsAutoOpen}"/>
-                            </DockPanel>
-
-                            <DockPanel Margin="0,2">
-                                <Button Content="{x:Static properties:Resources.ApplySettings}" DockPanel.Dock="Right" Click="UpdateConfig_Click"/>
-                                <TextBlock Text="{x:Static properties:Resources.PhysicalCamera}" Width="120"/>
-                                <hc:ComboBox  x:Name="CameraPhyID" IsEditable="True" SelectedIndex="0" Text="{Binding CameraCode}" SelectionChanged="CameraPhyID_SelectionChanged" hc:InfoElement.ShowClearButton="True"  />
-                            </DockPanel>
-                        </StackPanel>
-                    </GroupBox>
-
-                </StackPanel>
-            </Border>
+        <ScrollViewer x:Name="EditContent" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+            <StackPanel>
+                <Border Style="{StaticResource CardStyle}">
+                    <StackPanel>
+                        <TextBlock Text="{x:Static properties:Resources.DeviceConnection}" Style="{StaticResource SectionTitleStyle}"/>
+                        <DockPanel Style="{StaticResource FieldRowStyle}">
+                            <TextBlock Text="{x:Static properties:Resources.FrameDisplayName}" Style="{StaticResource FieldLabelStyle}"/>
+                            <TextBox Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}" Margin="5,0,0,0" Style="{StaticResource TextBox.Small}"/>
+                        </DockPanel>
+                        <DockPanel Style="{StaticResource FieldRowStyle}">
+                            <TextBlock Text="{x:Static properties:Resources.DeviceAutoConnect}" Style="{StaticResource FieldLabelStyle}"/>
+                            <controls:ToggleSwitch HorizontalAlignment="Right" VerticalAlignment="Center" Background="DodgerBlue"
+                                                   AutomationProperties.Name="{x:Static properties:Resources.DeviceAutoConnect}"
+                                                   IsChecked="{Binding IsAutoOpen, Mode=TwoWay}"/>
+                        </DockPanel>
+                        <ContentControl x:Name="LocalCameraField" HorizontalContentAlignment="Stretch" MinHeight="28" Margin="0,3,0,5"/>
+                        <DockPanel Style="{StaticResource FieldRowStyle}">
+                            <TextBlock Text="{x:Static properties:Resources.PhysicalCamera}" Style="{StaticResource FieldLabelStyle}"/>
+                            <hc:ComboBox x:Name="CameraPhyID" IsEditable="True" Text="{Binding CameraCode}" Margin="5,0,0,0"
+                                         Style="{StaticResource ComboBox.Small}" SelectionChanged="CameraPhyID_SelectionChanged"
+                                         AutomationProperties.Name="{x:Static properties:Resources.PhysicalCamera}" hc:InfoElement.ShowClearButton="True"/>
+                        </DockPanel>
+                    </StackPanel>
+                </Border>
+                <Border Style="{StaticResource CardStyle}">
+                    <StackPanel>
+                        <TextBlock Text="{x:Static properties:Resources.SpectrumFileSettings}" Style="{StaticResource SectionTitleStyle}"/>
+                        <ContentControl x:Name="FilePathField" HorizontalContentAlignment="Stretch" MinHeight="28" Margin="0,3,0,5"/>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
         </ScrollViewer>
-        <Border Grid.Row="1" Height="30" Grid.ColumnSpan="3">
-            <Button  Content="{x:Static properties:Resources.Submit}" Foreground="White" Background="{StaticResource PrimaryBrush}" Click="Button_Click" />
+        <TextBlock Grid.Row="1" x:Name="StatusText" Foreground="{DynamicResource DangerBrush}" TextWrapping="Wrap" Margin="0,0,4,8" Visibility="Collapsed"/>
+        <Border Grid.Row="2" BorderBrush="{DynamicResource GlobalBorderBrush1}" BorderThickness="0,1,0,0" Padding="0,12">
+            <DockPanel>
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                    <Button Content="{x:Static properties:Resources.OK}" Style="{StaticResource PrimaryToolbarButtonStyle}" MinWidth="90" Height="34" Margin="0" IsDefault="True" Click="Ok_Click"/>
+                    <Button Content="{x:Static properties:Resources.Cancel}" Style="{StaticResource ToolbarButtonStyle}" MinWidth="90" Height="34" IsCancel="True" Margin="6,0,0,0"/>
+                </StackPanel>
+                <TextBlock Text="{i18n:EngineLang Key='修改连接参数后请重新连接。'}" Foreground="{DynamicResource GlobalTextBrush}"
+                           Opacity="0.65" FontSize="12" TextWrapping="Wrap" VerticalAlignment="Center" Margin="0,0,12,0"/>
+            </DockPanel>
         </Border>
     </Grid>
 </Window>

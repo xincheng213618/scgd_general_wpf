@@ -38,11 +38,14 @@ namespace ColorVision.Solution.Explorer
             INewItemTemplate template,
             string targetDirectory,
             string fileName,
-            bool overwrite)
+            bool overwrite,
+            bool asSolutionItem = false)
         {
             ArgumentNullException.ThrowIfNull(template);
             if (!TryGetTargetPath(targetDirectory, fileName, out string targetPath, out string errorMessage))
                 return Failure(fileName, errorMessage);
+            if ((asSolutionItem || overwrite) && !TryValidateSolutionItemFileType(targetPath, out errorMessage))
+                return Failure(targetPath, errorMessage);
             if (Directory.Exists(targetPath))
                 return Failure(targetPath, "同名文件夹已经存在。");
 
@@ -95,19 +98,10 @@ namespace ColorVision.Solution.Explorer
                 return new SolutionPhysicalItemResult(sources.Count, [], [], [], failures);
             }
 
-            foreach (string sourcePath in sources)
+            List<string> fullSources = ResolveImportSources(sources, failures);
+            var selectedPaths = fullSources.ToHashSet(StringComparer.OrdinalIgnoreCase);
+            foreach (string fullSourcePath in fullSources)
             {
-                string fullSourcePath;
-                try
-                {
-                    fullSourcePath = Path.GetFullPath(sourcePath);
-                }
-                catch (Exception ex) when (ex is ArgumentException or NotSupportedException or PathTooLongException)
-                {
-                    failures.Add(new SolutionPhysicalItemFailure(sourcePath, ex.Message));
-                    continue;
-                }
-
                 if (!File.Exists(fullSourcePath))
                 {
                     failures.Add(new SolutionPhysicalItemFailure(fullSourcePath, "源文件不存在。"));
@@ -122,6 +116,14 @@ namespace ColorVision.Solution.Explorer
                 }
 
                 string fileName = Path.GetFileName(fullSourcePath);
+                string destinationPath = Path.Combine(targetDirectory, fileName);
+                string fullDestinationPath = Path.GetFullPath(destinationPath);
+                bool alreadyInTarget = string.Equals(fullSourcePath, fullDestinationPath, StringComparison.OrdinalIgnoreCase);
+                if (!alreadyInTarget && selectedPaths.Contains(fullDestinationPath))
+                {
+                    failures.Add(new SolutionPhysicalItemFailure(fullSourcePath, "目标是本次操作的已选源文件，无法覆盖。"));
+                    continue;
+                }
                 if (!destinationNames.Add(fileName))
                 {
                     failures.Add(new SolutionPhysicalItemFailure(
@@ -130,8 +132,7 @@ namespace ColorVision.Solution.Explorer
                     continue;
                 }
 
-                string destinationPath = Path.Combine(targetDirectory, fileName);
-                if (PathsEqual(fullSourcePath, destinationPath))
+                if (alreadyInTarget)
                 {
                     successfulPaths.Add(destinationPath);
                     continue;
@@ -188,16 +189,17 @@ namespace ColorVision.Solution.Explorer
             if (!Directory.Exists(targetDirectory))
                 return [];
 
+            List<string> fullSources = ResolveImportSources(sourcePaths.Where(path => !string.IsNullOrWhiteSpace(path)));
+            var selectedPaths = fullSources.ToHashSet(StringComparer.OrdinalIgnoreCase);
             var conflicts = new List<string>();
-            foreach (string sourcePath in sourcePaths.Where(path => !string.IsNullOrWhiteSpace(path)))
+            foreach (string fullSourcePath in fullSources)
             {
                 try
                 {
-                    string fullSourcePath = Path.GetFullPath(sourcePath);
                     if (!File.Exists(fullSourcePath) || IsSolutionMetadataFile(fullSourcePath))
                         continue;
                     string destinationPath = Path.Combine(targetDirectory, Path.GetFileName(fullSourcePath));
-                    if (!PathsEqual(fullSourcePath, destinationPath) && File.Exists(destinationPath))
+                    if (!selectedPaths.Contains(Path.GetFullPath(destinationPath)) && File.Exists(destinationPath))
                         conflicts.Add(destinationPath);
                 }
                 catch (Exception ex) when (ex is ArgumentException or NotSupportedException or PathTooLongException)
@@ -205,6 +207,23 @@ namespace ColorVision.Solution.Explorer
                 }
             }
             return conflicts.Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+        }
+
+        private static List<string> ResolveImportSources(IEnumerable<string> sourcePaths, List<SolutionPhysicalItemFailure>? failures = null)
+        {
+            var fullPaths = new List<string>();
+            foreach (string sourcePath in sourcePaths)
+            {
+                try
+                {
+                    fullPaths.Add(Path.GetFullPath(sourcePath));
+                }
+                catch (Exception ex) when (ex is ArgumentException or NotSupportedException or PathTooLongException)
+                {
+                    failures?.Add(new SolutionPhysicalItemFailure(sourcePath, ex.Message));
+                }
+            }
+            return fullPaths;
         }
 
         public static string GetAvailableFileName(
@@ -309,6 +328,19 @@ namespace ColorVision.Solution.Explorer
                 || ProjectProviderRegistry.IsSupportedProjectFilePath(path);
         }
 
+        internal static bool TryValidateSolutionItemFileType(string path, out string errorMessage)
+        {
+            // Win32 normalizes trailing dots and spaces in ordinary file paths.
+            string normalizedPath = path.TrimEnd(' ', '.');
+            if (IsSolutionMetadataFile(normalizedPath))
+            {
+                errorMessage = $"“{Path.GetFileName(normalizedPath)}”是解决方案或项目文件，请使用对应的打开/添加命令。";
+                return false;
+            }
+            errorMessage = string.Empty;
+            return true;
+        }
+
         private static SolutionPhysicalItemResult Success(
             string path,
             bool changed,
@@ -352,14 +384,6 @@ namespace ColorVision.Solution.Explorer
         private static bool PathExists(string path)
         {
             return File.Exists(path) || Directory.Exists(path);
-        }
-
-        private static bool PathsEqual(string left, string right)
-        {
-            return string.Equals(
-                Path.GetFullPath(left).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar),
-                Path.GetFullPath(right).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar),
-                StringComparison.OrdinalIgnoreCase);
         }
     }
 }

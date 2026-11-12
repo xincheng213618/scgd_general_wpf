@@ -38,7 +38,7 @@ public partial class CalibrationBinaryEditorWindow : Window
         AddPoint.Visibility = RemovePoint.Visibility = points ? Visibility.Visible : Visibility.Collapsed;
         if (document.IsMap)
         {
-            Summary.Text = $"{type} · V{document.Version} · {document.Width} × {document.Height} · {document.Channels} 通道 · 源位深 {document.SourceBits}\n范围 {document.Minimum:G8} 至 {document.Maximum:G8}；映射仅查看，预览为采样热力图，V1 按像素交错通道。";
+            Summary.Text = EngineLocalization.Format($"{type} · V{document.Version} · {document.Width} × {document.Height} · {document.Channels} 通道 · 源位深 {document.SourceBits}\n范围 {document.Minimum:G8} 至 {document.Maximum:G8}；映射仅查看，预览为采样热力图，V1 按像素交错通道。");
             Values.Visibility = Curve.Visibility = Visibility.Collapsed;
             Grid.SetColumn(MapPreview.Parent as Grid ?? throw new InvalidOperationException(), 0);
             Grid.SetColumnSpan((UIElement)MapPreview.Parent, 2);
@@ -52,7 +52,7 @@ public partial class CalibrationBinaryEditorWindow : Window
         else
         {
             ChannelSelector.Visibility = MapPreview.Visibility = Visibility.Collapsed;
-            Summary.Text = points ? "缺陷点坐标 · 文件按 Y / X 顺序保存；坐标必须为非负 32 位整数。当前没有图像尺寸，无法检查是否越过图像边界。" : $"线性度逐像素乘数表 · {Count:N0} 项 · 每页 {PageSize} 项；曲线横轴为像素位置索引，采样最多 800 点。文件没有尺寸信息，需核对图像尺寸及适用条件。";
+            Summary.Text = points ? EngineLocalization.Get("缺陷点坐标 · 文件按 Y / X 顺序保存；坐标必须为非负 32 位整数。当前没有图像尺寸，无法检查是否越过图像边界。") : EngineLocalization.Format($"线性度逐像素乘数表 · {Count:N0} 项 · 每页 {PageSize} 项；曲线横轴为像素位置索引，采样最多 800 点。文件没有尺寸信息，需核对图像尺寸及适用条件。");
         }
         ready = true;
         ShowPage(); RenderPreview();
@@ -82,7 +82,7 @@ public partial class CalibrationBinaryEditorWindow : Window
             }
         }
         PageNumber.Text = (page + 1).ToString(CultureInfo.InvariantCulture);
-        PageInfo.Text = $"/ {Pages} 页 · {Count:N0} 项";
+        PageInfo.Text = EngineLocalization.Format($"/ {Pages} 页 · {Count:N0} 项");
         Previous.IsEnabled = page > 0; Next.IsEnabled = page + 1 < Pages;
     }
 
@@ -96,9 +96,9 @@ public partial class CalibrationBinaryEditorWindow : Window
             {
                 if (document.Type == ServiceTypes.DefectPoint)
                 {
-                    if (!uint.TryParse(row.Row, NumberStyles.Integer, CultureInfo.InvariantCulture, out _) || !uint.TryParse(row.Column, NumberStyles.Integer, CultureInfo.InvariantCulture, out _)) throw new FormatException($"坐标 {row.Index} 必须为非负 32 位整数。");
+                    if (!uint.TryParse(row.Row, NumberStyles.Integer, CultureInfo.InvariantCulture, out _) || !uint.TryParse(row.Column, NumberStyles.Integer, CultureInfo.InvariantCulture, out _)) throw new FormatException(EngineLocalization.Format($"坐标 {row.Index} 必须为非负 32 位整数。"));
                 }
-                else if (!float.TryParse(row.Value, NumberStyles.Float, CultureInfo.InvariantCulture, out var n) || !float.IsFinite(n)) throw new FormatException($"系数 {row.Index} 必须是有限浮点数。");
+                else if (!float.TryParse(row.Value, NumberStyles.Float, CultureInfo.InvariantCulture, out var n) || !float.IsFinite(n)) throw new FormatException(EngineLocalization.Format($"系数 {row.Index} 必须是有限浮点数。"));
             }
             foreach (var row in rows)
             {
@@ -118,7 +118,7 @@ public partial class CalibrationBinaryEditorWindow : Window
     private void Next_Click(object sender, RoutedEventArgs e) { if (CommitPage()) { page++; ShowPage(); RenderPreview(); } }
     private void GoPage_Click(object sender, RoutedEventArgs e)
     {
-        if (!int.TryParse(PageNumber.Text, out int requested) || requested < 1 || requested > Pages) { Status.Text = $"请输入 1 至 {Pages} 的页码。"; return; }
+        if (!int.TryParse(PageNumber.Text, out int requested) || requested < 1 || requested > Pages) { Status.Text = EngineLocalization.Format($"请输入 1 至 {Pages} 的页码。"); return; }
         if (CommitPage()) { page = requested - 1; ShowPage(); RenderPreview(); }
     }
     private void AddPoint_Click(object sender, RoutedEventArgs e) { if (CommitPage()) { document.AddPoint(new(0, 0)); dirty = true; page = Pages - 1; ShowPage(); RenderPreview(); } }
@@ -135,7 +135,7 @@ public partial class CalibrationBinaryEditorWindow : Window
             var pixels = new byte[width * height * 4];
             int channel = Math.Max(0, ChannelSelector.SelectedIndex);
             if (int.TryParse(ChannelSelector.Text, out int requested)) channel = requested - 1;
-            if (channel < 0 || channel >= document.Channels) { Status.Text = $"通道编号必须在 1 至 {document.Channels} 之间。"; return; }
+            if (channel < 0 || channel >= document.Channels) { Status.Text = EngineLocalization.Format($"通道编号必须在 1 至 {document.Channels} 之间。"); return; }
             double range = document.Maximum - document.Minimum;
             for (int y = 0; y < height; y++) for (int x = 0; x < width; x++)
             {
@@ -173,24 +173,24 @@ public partial class CalibrationBinaryEditorWindow : Window
     private bool SaveCurrent()
     {
         if (!CommitPage()) return false;
-        try { var bytes = document.BuildBytes(); _ = CalibrationBinaryDocument.Parse(document.Type, bytes); snapshot = CalibrationBinaryFileStore.Save(snapshot, bytes); dirty = false; Status.Text = "已保存；原文件备份：" + snapshot.LastBackupPath; RenderPreview(); return true; }
+        try { var bytes = document.BuildBytes(); _ = CalibrationBinaryDocument.Parse(document.Type, bytes); snapshot = CalibrationBinaryFileStore.Save(snapshot, bytes); dirty = false; Status.Text = EngineLocalization.Get("已保存；原文件备份：") + snapshot.LastBackupPath; RenderPreview(); return true; }
         catch (Exception ex) { Status.Text = ex.Message; return false; }
     }
     private void SaveAs_Click(object sender, RoutedEventArgs e)
     {
         if (!CommitPage()) return;
-        var dialog = new SaveFileDialog { FileName = System.IO.Path.GetFileNameWithoutExtension(snapshot.Path) + "_edited.dat", Filter = "校正文件|*.dat|所有文件|*.*", OverwritePrompt = false };
+        var dialog = new SaveFileDialog { FileName = System.IO.Path.GetFileNameWithoutExtension(snapshot.Path) + "_edited.dat", Filter = EngineLocalization.Get("校正文件|*.dat|所有文件|*.*"), OverwritePrompt = false };
         if (dialog.ShowDialog(this) != true) return;
-        try { var bytes = document.BuildBytes(); _ = CalibrationBinaryDocument.Parse(document.Type, bytes); snapshot = CalibrationBinaryFileStore.SaveAs(dialog.FileName, bytes, snapshot); dirty = false; Title = document.Type + " · " + System.IO.Path.GetFileName(snapshot.Path); Status.Text = "已另存为 " + snapshot.Path; }
+        try { var bytes = document.BuildBytes(); _ = CalibrationBinaryDocument.Parse(document.Type, bytes); snapshot = CalibrationBinaryFileStore.SaveAs(dialog.FileName, bytes, snapshot); dirty = false; Title = document.Type + " · " + System.IO.Path.GetFileName(snapshot.Path); Status.Text = EngineLocalization.Get("已另存为 ") + snapshot.Path; }
         catch (Exception ex) { Status.Text = ex.Message; }
     }
     private void Close_Click(object sender, RoutedEventArgs e) => Close();
     private void Window_Closing(object? sender, System.ComponentModel.CancelEventArgs e)
     {
-        if (!CommitPage()) { e.Cancel = MessageBox.Show(this, "存在无效输入，关闭将放弃编辑。继续关闭？", "校正编辑", MessageBoxButton.YesNo) != MessageBoxResult.Yes; return; }
+        if (!CommitPage()) { e.Cancel = MessageBox.Show(this, EngineLocalization.Get("存在无效输入，关闭将放弃编辑。继续关闭？"), EngineLocalization.Get("校正编辑"), MessageBoxButton.YesNo) != MessageBoxResult.Yes; return; }
         if (dirty)
         {
-            var answer = MessageBox.Show(this, "修改尚未保存。是否保存后关闭？", "校正编辑", MessageBoxButton.YesNoCancel);
+            var answer = MessageBox.Show(this, EngineLocalization.Get("修改尚未保存。是否保存后关闭？"), EngineLocalization.Get("校正编辑"), MessageBoxButton.YesNoCancel);
             e.Cancel = answer == MessageBoxResult.Cancel || (answer == MessageBoxResult.Yes && !SaveCurrent());
         }
     }

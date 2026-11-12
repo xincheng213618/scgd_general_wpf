@@ -135,6 +135,7 @@ public static class CalibrationBinaryFileStore
     }
     public static CalibrationBinaryFileSnapshot Save(CalibrationBinaryFileSnapshot source, byte[] bytes)
     {
+        ServiceAuthorization.DemandCalibrationFileWrite(source.Path);
         using var locked = LockSource(source);
         string temp = source.Path + "." + Guid.NewGuid().ToString("N") + ".tmp";
         string backup = source.Path + "." + DateTime.UtcNow.ToString("yyyyMMddHHmmssfff") + "." + Guid.NewGuid().ToString("N") + ".bak";
@@ -143,6 +144,7 @@ public static class CalibrationBinaryFileStore
     }
     public static CalibrationBinaryFileSnapshot SaveAs(string path, byte[] bytes, CalibrationBinaryFileSnapshot? source = null)
     {
+        ServiceAuthorization.DemandCalibrationFileWrite(path);
         path = System.IO.Path.GetFullPath(path); using var locked = source == null ? null : LockSource(source);
         string temp = path + "." + Guid.NewGuid().ToString("N") + ".tmp";
         try { WriteNew(temp, bytes); if (source != null) CheckPath(source); File.Move(temp, path, false); return Load(path); }

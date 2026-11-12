@@ -69,6 +69,29 @@ namespace ColorVision.Copilot
             ".xaml",
             ".yaml",
             ".yml",
+            // Omitting a real source format makes a completed search falsely report absence.
+            ".cc",
+            ".cjs",
+            ".editorconfig",
+            ".filters",
+            ".gitattributes",
+            ".gitignore",
+            ".gradle",
+            ".htm",
+            ".html",
+            ".hxx",
+            ".inc",
+            ".json5",
+            ".jsx",
+            ".manifest",
+            ".mjs",
+            ".properties",
+            ".psm1",
+            ".resx",
+            ".slnx",
+            ".toml",
+            ".vcxproj",
+            ".vue",
         };
 
         // Business exports can supply evidence without expanding the separate patch allowlist.
@@ -142,8 +165,34 @@ namespace ColorVision.Copilot
             CancellationToken cancellationToken,
             Action<string, string>? reportIncompletePath = null)
         {
-            foreach (var root in NormalizeSearchScopes(roots))
+            cancellationToken.ThrowIfCancellationRequested();
+            var requestedRoots = (roots ?? Array.Empty<string>()).ToArray();
+            var searchScopes = NormalizeSearchScopes(requestedRoots);
+            foreach (var requestedRoot in requestedRoots)
             {
+                string candidate;
+                try { candidate = Path.GetFullPath(requestedRoot); }
+                catch
+                {
+                    reportIncompletePath?.Invoke(requestedRoot, "The search scope has an invalid path format.");
+                    continue;
+                }
+                if (searchScopes.Any(scope => string.Equals(candidate, scope, StringComparison.OrdinalIgnoreCase)
+                    || Directory.Exists(scope) && IsSubPathOf(candidate, scope)))
+                {
+                    continue;
+                }
+                // Normalization must not silently narrow a previously accepted search scope.
+                reportIncompletePath?.Invoke(candidate, "The search scope no longer exists, is inaccessible, or has become a file-system reparse point.");
+            }
+
+            foreach (var root in searchScopes)
+            {
+                if (IsReparsePoint(root))
+                {
+                    reportIncompletePath?.Invoke(root, "The search scope could not be verified safely or has become a file-system reparse point.");
+                    continue;
+                }
                 if (File.Exists(root))
                 {
                     cancellationToken.ThrowIfCancellationRequested();
@@ -165,6 +214,19 @@ namespace ColorVision.Copilot
         {
             var extension = Path.GetExtension(filePath);
             return !string.IsNullOrWhiteSpace(extension) && TextFileExtensions.Contains(extension);
+        }
+
+        internal static bool TryExpandBraceGroup(string text, out string[] expressions)
+        {
+            var open = text.IndexOf('{');
+            var close = text.IndexOf('}');
+            expressions = [text];
+            if (open < 0 && close < 0)
+                return true;
+            if (open < 0 || close < open || text.IndexOf('{', open + 1) >= 0)
+                return false;
+            expressions = text[(open + 1)..close].Split(',').Select(option => text[..open] + option.Trim() + text[(close + 1)..]).ToArray();
+            return true;
         }
 
         public static bool IsReadableTextFile(string filePath) =>
@@ -366,6 +428,8 @@ namespace ColorVision.Copilot
         {
             var pendingDirectories = new Stack<string>();
             pendingDirectories.Push(rootPath);
+            // An explicit scope inside an ignored directory still searches it: only its children are compared.
+            var ignoredPaths = CopilotGitIgnoredPathIndex.GetIgnoredPaths(rootPath);
 
             while (pendingDirectories.Count > 0)
             {
@@ -378,7 +442,7 @@ namespace ColorVision.Copilot
                     cancellationToken,
                     () => reportIncompletePath?.Invoke(currentDirectory, "The directory could not be fully enumerated.")))
                 {
-                    if (ShouldIgnoreDirectory(subDirectory))
+                    if (ShouldIgnoreDirectory(subDirectory) || ignoredPaths.Contains(subDirectory))
                         continue;
 
                     pendingDirectories.Push(subDirectory);
@@ -389,7 +453,7 @@ namespace ColorVision.Copilot
                     cancellationToken,
                     () => reportIncompletePath?.Invoke(currentDirectory, "The directory could not be fully enumerated.")))
                 {
-                    if (textFilesOnly && !IsSearchableTextFile(file, reportIncompletePath))
+                    if (ignoredPaths.Contains(file) || textFilesOnly && !IsSearchableTextFile(file, reportIncompletePath))
                         continue;
 
                     yield return file;

@@ -83,6 +83,32 @@ namespace ColorVision.Copilot
             WorkspaceDiffWarning = snapshot.VerificationWarning;
         }
 
+        internal bool RefreshWorkspaceRecheckWarning()
+        {
+            if (IsUser) return false;
+            var structuredWarning = CopilotTurnWorkspaceDiffAccumulator.BuildVerificationWarning(AgentTraceEntries
+                .Where(entry => entry.Access == CopilotToolAccess.Write
+                    && entry.State is CopilotToolExecutionState.Interrupted or CopilotToolExecutionState.Failed or CopilotToolExecutionState.TimedOut)
+                .SelectMany(entry => CopilotAgentTraceEntry.CaptureWorkspaceRecheckPaths(entry.WorkspaceRecheckPaths)));
+            if (structuredWarning.Length == 0) return false;
+
+            const string previousWarningSeparator = "\n\n先前待核查记录：\n";
+            var separatorIndex = WorkspaceDiffWarning.StartsWith("文件状态待核查 · ", System.StringComparison.Ordinal)
+                ? WorkspaceDiffWarning.IndexOf(previousWarningSeparator, System.StringComparison.Ordinal) : -1;
+            // Old text may have no structured source. Keep one fixed historical tail,
+            // while rebuilding the current paths instead of nesting previous warnings.
+            var previousWarning = separatorIndex >= 0
+                ? WorkspaceDiffWarning[(separatorIndex + previousWarningSeparator.Length)..]
+                : string.Equals(WorkspaceDiffWarning, structuredWarning, System.StringComparison.Ordinal)
+                    ? string.Empty
+                    : WorkspaceDiffWarning;
+            var mergedWarning = BoundWorkspaceDiffWarning(structuredWarning + (previousWarning.Length > 0
+                ? previousWarningSeparator + previousWarning : string.Empty));
+            if (string.Equals(WorkspaceDiffWarning, mergedWarning, System.StringComparison.Ordinal)) return false;
+            WorkspaceDiffWarning = mergedWarning;
+            return true;
+        }
+
         private bool RestoreWorkspaceRecheckWarning(bool recoveredWorkspaceWrite)
         {
             if (IsUser || !recoveredWorkspaceWrite && HasWorkspaceDiffWarning) return false;
@@ -117,9 +143,7 @@ namespace ColorVision.Copilot
 
             if (_workspaceDiffWarning.Length > CopilotTurnWorkspaceDiffAccumulator.MaxVerificationWarningCharacters)
             {
-                var end = CopilotTurnWorkspaceDiffAccumulator.MaxVerificationWarningCharacters - 1;
-                if (char.IsHighSurrogate(_workspaceDiffWarning[end - 1])) end--;
-                WorkspaceDiffWarning = _workspaceDiffWarning[..end] + "…";
+                WorkspaceDiffWarning = BoundWorkspaceDiffWarning(_workspaceDiffWarning);
                 changed = true;
             }
 
@@ -161,6 +185,14 @@ namespace ColorVision.Copilot
                 changed = true;
             }
             return changed;
+        }
+
+        private static string BoundWorkspaceDiffWarning(string warning)
+        {
+            if (warning.Length <= CopilotTurnWorkspaceDiffAccumulator.MaxVerificationWarningCharacters) return warning;
+            var end = CopilotTurnWorkspaceDiffAccumulator.MaxVerificationWarningCharacters - 1;
+            if (char.IsHighSurrogate(warning[end - 1])) end--;
+            return warning[..end] + "…";
         }
     }
 }

@@ -23,19 +23,30 @@ namespace ProjectARVRPro
             ArgumentException.ThrowIfNullOrWhiteSpace(filePath);
 
             List<ObjectiveTestResultRecord> recordList = records.ToList();
-            IReadOnlyList<ObjectiveTestResultMetric> columns = recordList.Count == 0
-                ? Array.Empty<ObjectiveTestResultMetric>()
-                : CollectMetrics(recordList[0], flowResultsByRecordId);
+            AtomicCsvFile.Write(filePath, path => WriteCsv(recordList, flowResultsByRecordId, path));
+        }
+
+        private static void WriteCsv(
+            List<ObjectiveTestResultRecord> recordList,
+            IReadOnlyDictionary<int, IReadOnlyList<ProjectARVRReuslt>> flowResultsByRecordId,
+            string filePath)
+        {
+            IReadOnlyList<ObjectiveTestResultMetric> columns = Array.Empty<ObjectiveTestResultMetric>();
+            int headerSourceIndex = 0;
+            for (; headerSourceIndex < recordList.Count; headerSourceIndex++)
+            {
+                columns = CollectMetrics(recordList[headerSourceIndex], flowResultsByRecordId);
+                if (columns.Count > 0)
+                    break;
+            }
 
             using var writer = new StreamWriter(filePath, false, new UTF8Encoding(encoderShouldEmitUTF8Identifier: true));
             writer.NewLine = "\r\n";
             WriteRow(writer, FixedHeaders.Concat(columns.Select(column => column.Header)));
 
-            foreach (ObjectiveTestResultRecord record in recordList)
+            for (int index = 0; index < recordList.Count; index++)
             {
-                Dictionary<string, string> values = CollectMetrics(record, flowResultsByRecordId)
-                    .ToDictionary(metric => metric.Key, metric => metric.Value, StringComparer.OrdinalIgnoreCase);
-
+                ObjectiveTestResultRecord record = recordList[index];
                 var row = new List<string>(3 + columns.Count)
                 {
                     record.SN ?? string.Empty,
@@ -43,8 +54,21 @@ namespace ProjectARVRPro
                     record.UpdateTime.ToString(TimestampFormat, CultureInfo.InvariantCulture),
                 };
 
-                foreach (ObjectiveTestResultMetric column in columns)
-                    row.Add(values.TryGetValue(column.Key, out string? value) ? value : string.Empty);
+                if (index < headerSourceIndex)
+                {
+                    row.AddRange(Enumerable.Repeat(string.Empty, columns.Count));
+                }
+                else if (index == headerSourceIndex)
+                {
+                    row.AddRange(columns.Select(column => column.Value));
+                }
+                else
+                {
+                    Dictionary<string, string> values = CollectMetrics(record, flowResultsByRecordId)
+                        .ToDictionary(metric => metric.Key, metric => metric.Value, StringComparer.OrdinalIgnoreCase);
+                    foreach (ObjectiveTestResultMetric column in columns)
+                        row.Add(values.TryGetValue(column.Key, out string? value) ? value : string.Empty);
+                }
 
                 WriteRow(writer, row);
             }

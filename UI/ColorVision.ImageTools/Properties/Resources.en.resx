@@ -106,4 +106,7 @@
   <data name="景深融合(_F)" xml:space="preserve">
     <value>Depth of Field Fusion (_F)</value>
   </data>
+  <data name="正在打开 {0}…" xml:space="preserve"><value>Opening {0}…</value></data>
+  <data name="无法打开 {0}。可刷新重试。" xml:space="preserve"><value>Could not open {0}. Refresh to retry.</value></data>
+  <data name="画面仍为上一张图。" xml:space="preserve"><value>The previous image is still displayed.</value></data>
 </root>

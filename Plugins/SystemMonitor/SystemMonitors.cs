@@ -1,7 +1,7 @@
 ﻿#pragma warning disable CA1863
 using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
-using ColorVision.UI.CUDA;
+using ColorVision.UI.Desktop.Hardware;
 using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel;

@@ -81,6 +81,7 @@ namespace ColorVision.Copilot
             CopilotRequestAdmissionReason.MissingConversation => "当前没有可接收请求的会话",
             CopilotRequestAdmissionReason.HostShutdown => "Copilot 正在关闭，不能再发送请求",
             CopilotRequestAdmissionReason.QueueFull => $"Agent 队列已满（{_taskHost.QueuedCount}/{_taskHost.MaxQueuedRuns}）",
+            CopilotRequestAdmissionReason.RequestCancelled => "本次排队请求已取消",
             CopilotRequestAdmissionReason.NoActiveRun => "当前 Agent 已经结束；请直接发送这条请求",
             CopilotRequestAdmissionReason.FollowUpConversationMismatch => "后续消息只能排在当前正在运行的会话中",
             _ => "当前没有可接收请求的会话",

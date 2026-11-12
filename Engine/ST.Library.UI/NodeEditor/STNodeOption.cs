@@ -447,6 +447,66 @@ public class STNodeOption
 		}
 	}
 
+	/// <summary>
+	/// Disconnects one existing hosted edge, restoring that edge and its history if a callback fails.
+	/// External side effects performed by node or editor callbacks are not a business transaction.
+	/// </summary>
+	public ConnectionStatus DisConnectOptionTransactional(STNodeOption op, Action verifyBeforeMutation = null, Action afterDisconnection = null)
+	{
+		ArgumentNullException.ThrowIfNull(op);
+		STNodeEditor editor = _Owner?.Owner;
+		if (editor == null || op._Owner?.Owner != editor) return ConnectionStatus.NoOwner;
+		editor.Dispatcher.VerifyAccess();
+		if (_IsInput == op._IsInput) return ConnectionStatus.SameInputOrOutput;
+		if (!m_hs_connected.Contains(op) || !op.m_hs_connected.Contains(this))
+			throw new InvalidOperationException("The exact connection must exist at both endpoints.");
+		using STNodeEditor.SingleConnectionEditScope edit = editor.BeginSingleConnectionEdit();
+		try
+		{
+			if (!DisConnectingOption(op))
+			{
+				STNodeEidtorDisConnected(new STNodeEditorOptionEventArgs(op, this, ConnectionStatus.Reject));
+				RestoreEdge();
+				return ConnectionStatus.Reject;
+			}
+			verifyBeforeMutation?.Invoke();
+			if (_Owner?.Owner != editor || op._Owner?.Owner != editor
+				|| !m_hs_connected.Contains(op) || !op.m_hs_connected.Contains(this))
+				throw new InvalidOperationException("The connection endpoints changed during the disconnect callbacks.");
+			if (_Owner.LockOption || op._Owner.LockOption)
+			{
+				STNodeEidtorDisConnected(new STNodeEditorOptionEventArgs(op, this, ConnectionStatus.Locked));
+				RestoreEdge();
+				return ConnectionStatus.Locked;
+			}
+			op.RemoveConnection(this, bSponsor: false);
+			RemoveConnection(op, bSponsor: true);
+			ControlBuildLinePath();
+			STNodeEidtorDisConnected(new STNodeEditorOptionEventArgs(op, this, ConnectionStatus.DisConnected));
+			if (m_hs_connected.Contains(op) || op.m_hs_connected.Contains(this))
+				throw new InvalidOperationException("The connection was changed again by its disconnect callbacks.");
+			edit.Commit();
+			afterDisconnection?.Invoke();
+			if (m_hs_connected.Contains(op) || op.m_hs_connected.Contains(this))
+				throw new InvalidOperationException("The disconnected edge was changed during commit.");
+			return ConnectionStatus.DisConnected;
+		}
+		catch
+		{
+			RestoreEdge();
+			edit.Cancel();
+			throw;
+		}
+
+		void RestoreEdge()
+		{
+			m_hs_connected.Add(op);
+			op.m_hs_connected.Add(this);
+			try { ControlBuildLinePath(); }
+			catch { /* Preserve the original callback failure; the exact endpoint topology is already restored. */ }
+		}
+	}
+
 	internal void DisconnectAllDetached()
 	{
 		if (_DataType == null)

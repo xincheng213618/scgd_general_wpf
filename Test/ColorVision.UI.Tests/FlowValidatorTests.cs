@@ -1,4 +1,5 @@
 using ColorVision.Engine.FlowProcessing.Editor;
+using ColorVision.Engine.FlowProcessing.Integration;
 using FlowEngineLib;
 using FlowEngineLib.Base;
 using FlowEngineLib.End;
@@ -13,9 +14,8 @@ public sealed class FlowValidatorTests
     [Fact]
     public void MultipleStartsAndEndsAreValidatedIndependentlyOfSelectionAndDrawingOrder()
     {
-        WpfTestHost.Invoke(() =>
+        WithGraph(graph =>
         {
-            using var graph = new Graph();
             var first = graph.Add(new ValidationStartNode());
             var second = graph.Add(new ValidationStartNode());
             var secondEnd = graph.Add(new CVEndNode());
@@ -26,7 +26,7 @@ public sealed class FlowValidatorTests
             foreach (STNode active in new STNode[] { first, firstEnd, secondEnd, second })
             {
                 graph.Editor.SetActiveNode(active);
-                Assert.True(FlowValidator.TryValidate(graph.Editor, out string error, out STNode? invalid));
+                Assert.True(graph.TryValidate(out string error, out STNode? invalid));
                 Assert.Empty(error);
                 Assert.Null(invalid);
             }
@@ -36,9 +36,8 @@ public sealed class FlowValidatorTests
     [Fact]
     public void OneCompleteExecutionPathIsEnoughWhenOtherNodesAndBranchesAreIncomplete()
     {
-        WpfTestHost.Invoke(() =>
+        WithGraph(graph =>
         {
-            using var graph = new Graph();
             graph.Add(new ValidationStartNode());
             var start = graph.Add(new ValidationStartNode());
             graph.Add(new CVEndNode());
@@ -49,7 +48,7 @@ public sealed class FlowValidatorTests
             branch.GetAllOutputOptions()[0].ConnectOption(end.m_in_start);
             branch.GetAllOutputOptions()[1].ConnectOption(unfinished.GetAllInputOptions().Single());
 
-            Assert.True(FlowValidator.TryValidate(graph.Editor, out _, out _));
+            Assert.True(graph.TryValidate(out _, out _));
         });
     }
 
@@ -60,13 +59,12 @@ public sealed class FlowValidatorTests
     [InlineData(2, true, "Flow_NoPathFromStartToEnd")]
     public void MissingPathsKeepExistingErrorsAndIdentifyOnlyAnUnambiguousStart(int startCount, bool hasEnd, string resource)
     {
-        WpfTestHost.Invoke(() =>
+        WithGraph(graph =>
         {
-            using var graph = new Graph();
             ValidationStartNode[] starts = Enumerable.Range(0, startCount).Select(_ => graph.Add(new ValidationStartNode())).ToArray();
             if (hasEnd) graph.Add(new CVEndNode());
 
-            Assert.False(FlowValidator.TryValidate(graph.Editor, out string error, out STNode? invalid));
+            Assert.False(graph.TryValidate(out string error, out STNode? invalid));
             Assert.Equal(ColorVision.Engine.Properties.Resources.ResourceManager.GetString(resource), error);
             Assert.Same(startCount == 1 && hasEnd ? starts[0] : null, invalid);
         });
@@ -75,29 +73,27 @@ public sealed class FlowValidatorTests
     [Fact]
     public void ExplicitTerminationIsAnExecutionEndpoint()
     {
-        WpfTestHost.Invoke(() =>
+        WithGraph(graph =>
         {
-            using var graph = new Graph();
             var start = graph.Add(new ValidationStartNode());
             var end = graph.Add(new FlowTerminationNode { TerminationStatus = FlowTerminationStatus.Failed });
             Connect(start, end);
 
-            Assert.True(FlowValidator.TryValidate(graph.Editor, out _, out _));
+            Assert.True(graph.TryValidate(out _, out _));
         });
     }
 
     [Fact]
     public void LoopControlConnectionCannotSubstituteForAStartToEndExecutionPath()
     {
-        WpfTestHost.Invoke(() =>
+        WithGraph(graph =>
         {
-            using var graph = new Graph();
             var start = graph.Add(new ValidationStartNode());
             var end = graph.Add(new CVEndNode());
             Assert.Equal(ConnectionStatus.Connected, start.GetAllOutputOptions().First(port => port.DataType == typeof(CVLoopCFC))
                 .ConnectOption(end.GetAllInputOptions().First(port => port.DataType == typeof(CVLoopCFC))));
 
-            Assert.False(FlowValidator.TryValidate(graph.Editor, out string error, out STNode? invalid));
+            Assert.False(graph.TryValidate(out string error, out STNode? invalid));
             Assert.Equal(ColorVision.Engine.Properties.Resources.Flow_NoPathFromStartToEnd, error);
             Assert.Same(start, invalid);
             Assert.False(start.CanAcceptStart);
@@ -107,9 +103,8 @@ public sealed class FlowValidatorTests
     [Fact]
     public void LegacyLoopAndBoundHubRemainValidAlongTheirExecutionPorts()
     {
-        WpfTestHost.Invoke(() =>
+        WithGraph(graph =>
         {
-            using var graph = new Graph();
             var start = graph.Add(new ValidationStartNode());
             var loop = graph.Add(new LoopNode());
             var next = graph.Add(new LoopNextNode());
@@ -123,16 +118,15 @@ public sealed class FlowValidatorTests
 
             Assert.Equal(typeof(CVStartCFC), hub.GetAllInputOptions()[0].DataType);
             Assert.Equal(typeof(CVStartCFC), hub.GetAllOutputOptions()[0].DataType);
-            Assert.True(FlowValidator.TryValidate(graph.Editor, out _, out _));
+            Assert.True(graph.TryValidate(out _, out _));
         });
     }
 
     [Fact]
     public void InvalidRepeatRegionStillPreventsSavingAnOtherwiseCompletePath()
     {
-        WpfTestHost.Invoke(() =>
+        WithGraph(graph =>
         {
-            using var graph = new Graph();
             var start = graph.Add(new ValidationStartNode());
             var body = graph.Add(new FlowRerouteNode());
             var end = graph.Add(new CVEndNode());
@@ -140,7 +134,7 @@ public sealed class FlowValidatorTests
             Connect(body, end);
             body.SetRepeatRegion(Guid.NewGuid().ToString(), 3, 2);
 
-            Assert.False(FlowValidator.TryValidate(graph.Editor, out string error, out STNode? invalid));
+            Assert.False(graph.TryValidate(out string error, out STNode? invalid));
             Assert.NotEmpty(error);
             Assert.Null(invalid);
         });
@@ -150,6 +144,13 @@ public sealed class FlowValidatorTests
         => Assert.Equal(ConnectionStatus.Connected, from.GetAllOutputOptions().Single(port => port.DataType == typeof(CVStartCFC))
             .ConnectOption(to.GetAllInputOptions().Single(port => port.DataType == typeof(CVStartCFC))));
 
+    private static void WithGraph(Action<Graph> action)
+        => FlowExecutionEditingTests.WithCopilotGraph((host, editor) =>
+        {
+            using var graph = new Graph(host, editor);
+            action(graph);
+        });
+
     private sealed class ValidationStartNode : BaseStartNode
     {
         public ValidationStartNode() : base("Validation start") { }
@@ -157,7 +158,30 @@ public sealed class FlowValidatorTests
 
     private sealed class Graph : IDisposable
     {
-        public STNodeEditor Editor { get; } = new();
+        private readonly FlowCopilotService _host;
+        public STNodeEditor Editor { get; }
+
+        public Graph(FlowCopilotService host, STNodeEditor editor)
+        {
+            _host = host;
+            Editor = editor;
+        }
+
+        public bool TryValidate(out string error, out STNode? invalid)
+        {
+            bool valid = FlowValidator.TryValidate(Editor, out error, out invalid);
+            string revision = _host.CaptureCopilotFlowSnapshot().Revision;
+            var result = _host.ValidateCopilotFlowGraph(revision);
+            Assert.Equal(revision, result.Revision);
+            Assert.True(result.RevisionMatches);
+            Assert.Equal(valid, result.IsValid);
+            Assert.Equal(error, result.Diagnostic);
+            Assert.Equal(invalid?.Guid, result.InvalidNodeId);
+            Assert.Equal(Editor.Nodes.Count, result.NodeCount);
+            Assert.Equal(Editor.GetConnectionInfo().Length, result.ConnectionCount);
+            Assert.False(result.IsExecutionActive);
+            return valid;
+        }
 
         public T Add<T>(T node) where T : STNode
         {
@@ -169,7 +193,7 @@ public sealed class FlowValidatorTests
         public void Dispose()
         {
             foreach (BaseStartNode start in Editor.Nodes.OfType<BaseStartNode>()) start.Dispose();
-            Editor.Dispose();
+            // The shared real-host fixture owns the editor lifetime.
         }
     }
 }

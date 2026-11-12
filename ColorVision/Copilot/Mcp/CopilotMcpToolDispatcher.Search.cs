@@ -19,7 +19,7 @@ namespace ColorVision.Copilot.Mcp
             var maxLines = CopilotRecentLogSupport.NormalizeToolMaxLines(GetInt(arguments, "max_lines"));
             var result = await _environment.RecentLogProvider(
                 query,
-                CopilotRecentLogMode.RecentLines,
+                CopilotRecentLogSupport.ResolveToolMode(GetString(arguments, "source")),
                 maxLines,
                 CopilotRecentLogSupport.DefaultMaxLogChars,
                 cancellationToken);
@@ -95,7 +95,10 @@ namespace ColorVision.Copilot.Mcp
             }
 
             var cursor = GetString(arguments, "cursor");
-            var result = CopilotGrepTextCapability.SearchWithinScope(searchRoots, roots, query, null, cursor, cancellationToken);
+            var result = CopilotGrepTextCapability.SearchWithinScope(
+                searchRoots, roots, query, null, cursor,
+                new CopilotTextSearchOptions(GetString(arguments, "glob"), GetBool(arguments, "regex") ?? false),
+                cancellationToken);
             return ToMcpResult(result.ToCapabilityResult(), "grep_failed");
         }
 

@@ -16,7 +16,7 @@ namespace ColorVision.Copilot
                 .ToLowerInvariant();
             if (comparable is "stop" or "end_turn" or "stop_sequence" or "complete" or "completed" or "success")
                 return CopilotChatFinishKind.Complete;
-            if (comparable is "length" or "max_tokens" or "max_output_tokens" or "model_length"
+            if (comparable is "length" or "max_tokens" or "max_output_tokens" or "model_length" or "model_context_window_exceeded"
                 || comparable.Contains("length_limit", StringComparison.Ordinal)
                 || comparable.Contains("token_limit", StringComparison.Ordinal))
             {

@@ -61,8 +61,19 @@ namespace ColorVision.UI.Tests
                 provider => provider.GetType().FullName == "ColorVision.Rbac.MenuRbacManager");
 
             BuiltInModules.Register(catalog);
+            // The host discovers only registered assemblies, so its own first-party assemblies are listed too.
             string[] expectedBuiltInIds =
             {
+                "ColorVision",
+                "ColorVision.Common",
+                "ColorVision.UI",
+                "ColorVision.Themes",
+                "ColorVision.Core",
+                "ColorVision.Algorithms",
+                "ColorVision.FileIO",
+                "cvColorVision",
+                "FlowEngineLib",
+                "ST.Library.UI",
                 "ColorVision.Engine",
                 "ColorVision.Scheduler",
                 "ColorVision.ImageEditor",
@@ -98,6 +109,88 @@ namespace ColorVision.UI.Tests
             Assert.Same(firstSnapshot, secondSnapshot);
 
             handler.ClearCaches();
+        }
+
+        // A kept type can still reference the missing dependency through attribute or constructor metadata;
+        // it must be dropped so discovery checks such as IsDefined or GetConstructor cannot throw later.
+        [Theory]
+        [InlineData(null)]
+        [InlineData(BrokenMetadata.Attributes)]
+        [InlineData(BrokenMetadata.Constructors)]
+        public void GetTypes_PreservesLoadableExtensionsWhenAnotherTypeHasMissingDependencies(BrokenMetadata? brokenMetadata)
+        {
+            AssemblyHandler handler = AssemblyHandler.GetInstance();
+            var assembly = new PartiallyLoadableAssembly(brokenMetadata);
+
+            IReadOnlyList<Type> types = handler.GetTypes(assembly);
+
+            Assert.Equal(new[] { typeof(ModuleCatalogTests) }, types);
+            Assert.Same(types, handler.GetTypes(assembly));
+        }
+
+        public enum BrokenMetadata { Attributes, Constructors }
+
+        private sealed class PartiallyLoadableAssembly(BrokenMetadata? brokenMetadata) : Assembly
+        {
+            public override string FullName => $"PartiallyLoadableExtensionAssembly{brokenMetadata}";
+
+            public override Type[] GetTypes() => throw new ReflectionTypeLoadException(
+                brokenMetadata is { } broken ? new Type[] { typeof(ModuleCatalogTests), new MissingDependencyType(broken), null! } : new Type[] { typeof(ModuleCatalogTests), null! },
+                new Exception[] { new System.IO.FileNotFoundException("Optional extension dependency is missing.") });
+        }
+
+        private sealed class MissingDependencyType(BrokenMetadata broken) : TypeDelegator(typeof(object))
+        {
+            public override IList<CustomAttributeData> GetCustomAttributesData() =>
+                broken == BrokenMetadata.Attributes ? throw new System.IO.FileNotFoundException("Attribute dependency is missing.") : [];
+
+            public override ConstructorInfo[] GetConstructors(BindingFlags bindingAttr) =>
+                broken == BrokenMetadata.Constructors ? throw new System.IO.FileNotFoundException("Constructor dependency is missing.") : base.GetConstructors(bindingAttr);
+        }
+
+        [Fact]
+        public async Task GetImplementationTypes_InFlightQueryCannotRepopulateInvalidatedCache()
+        {
+            AssemblyHandler handler = AssemblyHandler.GetInstance();
+            handler.ClearCaches();
+            handler.RegisterAssembly(typeof(ModuleCatalogTests).Assembly);
+            _ = handler.GetAssemblies();
+            using var entered = new ManualResetEventSlim();
+            using var release = new ManualResetEventSlim();
+            var serviceType = new BlockingServiceType(entered, release);
+            Task<IReadOnlyList<Type>> query = Task.Run(() => handler.GetImplementationTypes(serviceType));
+            try
+            {
+                Assert.True(entered.Wait(TimeSpan.FromSeconds(30)), "The discovery query did not enter type matching.");
+                handler.ClearCaches();
+                _ = handler.GetAssemblies();
+            }
+            finally
+            {
+                release.Set();
+                await query;
+            }
+
+            int previousCalls = serviceType.MatchCalls;
+            _ = handler.GetImplementationTypes(serviceType);
+            Assert.True(serviceType.MatchCalls > previousCalls, "The invalidated query was reused instead of discovering the current snapshot.");
+            handler.ClearCaches();
+        }
+
+        private sealed class BlockingServiceType(ManualResetEventSlim entered, ManualResetEventSlim release) : TypeDelegator(typeof(object))
+        {
+            private int _matchCalls;
+            public int MatchCalls => Volatile.Read(ref _matchCalls);
+
+            public override bool IsAssignableFrom(Type? type)
+            {
+                if (Interlocked.Increment(ref _matchCalls) == 1)
+                {
+                    entered.Set();
+                    release.Wait();
+                }
+                return false;
+            }
         }
 
         private sealed class RecordingAssemblyService : IAssemblyService

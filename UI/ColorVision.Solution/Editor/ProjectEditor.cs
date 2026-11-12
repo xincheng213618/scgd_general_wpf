@@ -26,31 +26,73 @@ namespace ColorVision.Solution.Editor
 
     public sealed class FolderBrowserControl : UserControl
     {
+        private readonly DirectoryInfo _directory;
         private readonly ListView _listView;
+        private readonly ProgressBar _loading;
+        private CancellationTokenSource? _entryLoadCancellation;
 
         public FolderBrowserControl(string folderPath)
         {
-            var directory = new DirectoryInfo(folderPath);
+            _directory = new DirectoryInfo(folderPath);
             var pathText = new TextBlock
             {
-                Text = directory.FullName,
+                Text = _directory.FullName,
                 Margin = new Thickness(8, 6, 8, 6),
                 TextTrimming = TextTrimming.CharacterEllipsis,
             };
 
+            _loading = new ProgressBar { Height = 3, IsIndeterminate = true, Visibility = Visibility.Collapsed };
             _listView = new ListView
             {
                 Margin = new Thickness(4),
-                ItemsSource = LoadEntries(directory),
                 View = CreateGridView(),
             };
             _listView.MouseDoubleClick += ListView_MouseDoubleClick;
 
             var root = new DockPanel();
             DockPanel.SetDock(pathText, Dock.Top);
+            DockPanel.SetDock(_loading, Dock.Top);
             root.Children.Add(pathText);
+            root.Children.Add(_loading);
             root.Children.Add(_listView);
             Content = root;
+            Loaded += FolderBrowser_Loaded;
+            Unloaded += FolderBrowser_Unloaded;
+        }
+
+        private async void FolderBrowser_Loaded(object sender, RoutedEventArgs e)
+        {
+            if (_listView.ItemsSource != null || _entryLoadCancellation != null)
+                return;
+
+            using var cancellation = new CancellationTokenSource();
+            _entryLoadCancellation = cancellation;
+            _loading.Visibility = Visibility.Visible;
+            try
+            {
+                IReadOnlyList<FolderBrowserEntry> entries = await Task.Run(
+                    () => LoadEntries(_directory, cancellation.Token), cancellation.Token);
+                if (!cancellation.IsCancellationRequested)
+                    _listView.ItemsSource = entries;
+            }
+            catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
+            {
+            }
+            finally
+            {
+                if (ReferenceEquals(_entryLoadCancellation, cancellation))
+                {
+                    _entryLoadCancellation = null;
+                    _loading.Visibility = Visibility.Collapsed;
+                }
+            }
+        }
+
+        private void FolderBrowser_Unloaded(object sender, RoutedEventArgs e)
+        {
+            _entryLoadCancellation?.Cancel();
+            _entryLoadCancellation = null;
+            _loading.Visibility = Visibility.Collapsed;
         }
 
         private async void ListView_MouseDoubleClick(object sender, MouseButtonEventArgs e)
@@ -64,12 +106,16 @@ namespace ColorVision.Solution.Editor
                 await ResourceOpenService.Instance.TryOpenWithFeedbackAsync(entry.FullPath);
         }
 
-        private static IReadOnlyList<FolderBrowserEntry> LoadEntries(DirectoryInfo directory)
+        private static IReadOnlyList<FolderBrowserEntry> LoadEntries(DirectoryInfo directory, CancellationToken cancellationToken)
         {
             try
             {
                 return directory.EnumerateFileSystemInfos()
-                    .Where(item => (item.Attributes & FileAttributes.Hidden) != FileAttributes.Hidden)
+                    .Where(item =>
+                    {
+                        cancellationToken.ThrowIfCancellationRequested();
+                        return (item.Attributes & FileAttributes.Hidden) == 0;
+                    })
                     .Select(FolderBrowserEntry.Create)
                     .OrderByDescending(entry => entry.IsDirectory)
                     .ThenBy(entry => entry.Name, StringComparer.CurrentCultureIgnoreCase)

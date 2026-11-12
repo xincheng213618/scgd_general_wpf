@@ -48,14 +48,7 @@ public sealed class FlowHeadlessExecutionRequest
         }
         ArgumentException.ThrowIfNullOrWhiteSpace(startNodeName);
         ArgumentException.ThrowIfNullOrWhiteSpace(serialNumber);
-        ValidateTimeout(
-            readinessTimeout,
-            nameof(readinessTimeout),
-            allowInfinite: false);
-        ValidateTimeout(
-            executionTimeout,
-            nameof(executionTimeout),
-            allowInfinite: true);
+        FlowEngineRunner.ValidateTimeouts(readinessTimeout, executionTimeout);
 
         _stnSnapshot = (byte[])stnSnapshot.Clone();
         _services = CloneServices(services);
@@ -76,6 +69,12 @@ public sealed class FlowHeadlessExecutionRequest
 
     public TimeSpan? ExecutionTimeout { get; }
 
+    /// <summary>
+    /// Allows result nodes to persist into a batch already prepared by the caller
+    /// for this request's execution serial number.
+    /// </summary>
+    public bool PersistResults { get; init; }
+
     public string ContentHash { get; }
 
     public ReadOnlyMemory<byte> StnSnapshot =>
@@ -93,21 +92,6 @@ public sealed class FlowHeadlessExecutionRequest
     internal MQTTServiceInfo[] CreateServices()
     {
         return CloneServices(_services);
-    }
-
-    private static void ValidateTimeout(
-        TimeSpan? timeout,
-        string parameterName,
-        bool allowInfinite)
-    {
-        if (timeout.HasValue
-            && ((!allowInfinite
-                    && timeout.Value == Timeout.InfiniteTimeSpan)
-                || (timeout.Value != Timeout.InfiniteTimeSpan
-                    && timeout.Value <= TimeSpan.Zero)))
-        {
-            throw new ArgumentOutOfRangeException(parameterName);
-        }
     }
 
     private static MQTTServiceInfo[] CloneServices(
@@ -271,7 +255,19 @@ public sealed class FlowHeadlessExecutionService : IFlowExecutionRunner
         bool loaded = false;
         try
         {
-            await using var host = new FlowRuntimeHost { PersistResults = ColorVision.Database.MySqlSetting.IsConnect };
+            cancellationToken.ThrowIfCancellationRequested();
+            if (request.PersistResults && !ColorVision.Database.MySqlSetting.IsConnect)
+            {
+                stopwatch.Stop();
+                return CreateFailure(
+                    request,
+                    FlowHeadlessExecutionTermination.StartRejected,
+                    StatusTypeEnum.Failed,
+                    "MySQL is not connected for headless result persistence.",
+                    stopwatch.ElapsedMilliseconds);
+            }
+
+            await using var host = new FlowRuntimeHost { PersistResults = request.PersistResults };
             CVCommonNode[] observedNodes = [];
             MQTTServiceInfo[] services =
                 request.CreateServices();

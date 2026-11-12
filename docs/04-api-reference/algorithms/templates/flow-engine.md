@@ -31,9 +31,11 @@ related: ["flow.architecture","flow.runtime","flow.templates","flow.session","ui
 
 `FlowHeadlessExecutionRequest` 接收非空 STN、起始节点、SN、可选 MQTT 服务列表以及 readiness / execution timeout。构造时复制 STN、服务 token 和设备信息，计算 `ContentHash`；读取请求属性或创建宿主输入时再次复制，后续编辑和调用方修改不得改变正在执行的请求。`ContentHash` 是 STN 字节的 SHA-256，小写十六进制；不包含起始节点、SN、服务/设备快照或超时配置。相同哈希不能证明两次调用具有相同的执行条件，也不是请求幂等键。
 
-readiness timeout 必须为正值且不接受无限等待；execution timeout 可为正值或 `Timeout.InfiniteTimeSpan`。传入非法参数会在请求构造时抛出异常，不会进入结构化运行结果。
+无界面请求默认向节点传递 `PersistResults=false`，已保存流程和独立 Quartz 任务也采用此默认值。调用方已为请求的实际执行 SN 准备独立 MySQL 批次时，可在裸请求上显式设置 `PersistResults=true`。MySQL 未连接时，此请求会在图启动前返回 `StartRejected`。该标记由节点执行，节点仍可能按各自配置写文件、调用设备或服务。
 
-`RunAsync` 每次创建并最终释放一个 `FlowRuntimeHost`，加载后由 `FlowEngineRunner` 等待运行结束；并发请求不共享可变节点实例。若图中有 `CVBaseServerNode` 但未提供任何服务快照，明确返回 `StartRejected`。提供了非空快照也不证明每个设备在线或绑定成功。宿主本身不创建编辑器；具体节点的构造、加载和执行仍需满足其自身的 UI、服务和设备依赖。
+有限超时必须大于零且最多为 4,294,967,294 ms。仅 execution timeout 接受 `Timeout.InfiniteTimeSpan`。请求构造和直接运行 `FlowRuntimeHost` 都会在启动图前拒绝非法值。
+
+`RunAsync` 每次创建并最终释放一个 `FlowRuntimeHost`，加载后由 `FlowEngineRunner` 等待运行结束；并发请求各自持有节点实例。图中有需要远程服务的节点且未提供 MQTT 服务快照时，返回 `StartRejected`。纯本地图（包括命令行脚本节点）可以在 MQTT 起始节点断线时运行。具体节点仍需满足自身的运行环境和设备依赖。
 
 ### 调用示例
 
@@ -64,13 +66,17 @@ FlowHeadlessExecutionResult result =
 
 | 阶段 | 等待范围与结果 |
 | --- | --- |
-| 起始节点就绪 | `FlowEngineControl.EnsureStartNodeReadyAsync` 向要求连接就绪的节点传递带就绪时限的取消 token；不要求连接就绪的节点跳过此等待。就绪超时返回未就绪，运行器给出 `Started=false`、`StartRejected`、`Data.Status=Failed`，不是 `TimedOut` |
-| 节点图执行 | `TryStartNode` 成功返回后，execution timeout 才用于等待与起始节点名及 SN 匹配的 `Finished`；超时给出 `Started=true`、`TimedOut`、`Data.Status=OverTime` |
-| 运行中取消 | 运行器捕获取消后给出 `Started=true`、`Canceled`、`Data.Status=Canceled`；启动前已捕获的取消则为 `Started=false` |
+| 起始节点就绪 | `FlowEngineControl.EnsureStartNodeReadyAsync` 向要求连接就绪的节点传递带就绪时限的取消 token；不要求连接就绪的节点跳过此等待。收到迟到的就绪结果也按未就绪处理，运行器给出 `Started=false`、`StartRejected`、`Data.Status=Failed` |
+| 节点图执行 | 起始节点同步派发成功返回后，execution timeout 才用于等待本次运行的完成通知；仍在运行时超时给出 `Started=true`、`TimedOut`、`Data.Status=OverTime` |
+| 运行中取消 | 取消仍在运行的图时返回 `Started=true`、`Canceled`、`Data.Status=Canceled`；启动前已捕获的取消则为 `Started=false` |
 
 执行超时不覆盖 STN 加载、前面的就绪等待、`TryStartNode` 内同步启动代码、随后观察器收尾或宿主释放。因此设置执行时限不保证整个 `RunAsync` 在同样的时间内返回，也不能约束已经发出的外部动作持续多久。
 
-运行器在执行超时或运行中取消时调用 `StopNode(startNodeName, serialNumber)`，再构造终止结果。若指定 SN 仍有活动动作，`BaseStartNode.Stop` 将其改为停止并从活动映射移除、向节点图传递停止动作；这条链没有等待设备停止确认或回滚外部写入的完成屏障。`Canceled` / `TimedOut`、宿主回到 `Ready` 或随后释放，都不能单独证明硬件已经停稳；重试前须由相应设备/业务边界确认实际状态。
+就绪时限依赖节点响应取消。自定义节点忽略取消时，宿主继续等它退出，并拒绝迟到的就绪结果。MQTT 起始节点等待已分离连接退役时可响应取消，旧连接随后自行完成订阅与连接清理。
+
+超时或取消时，运行器只停止本次启动的图。若本次终态已经确定，即使通知延迟也保留状态、耗时和失败详情。同一起点和 SN 的旧通知无法完成新运行。停止活动图会移除运行记录并传递停止信号；设备停稳或外部写入回滚仍由相应设备及业务边界确认。
+
+并发 `StopAsync` 等待同一次托管运行收尾，各调用方可设置自己的等待时限。并发或重复 `DisposeAsync` 共用一次清理，先取消当前运行，再等托管运行和取消回调退出后释放节点图。节点长期不响应取消时，释放会继续等待，直到其退出。运行错误由 `RunAsync` 返回，释放仍会清理节点图。
 
 ## 结果与失败语义
 
@@ -79,7 +85,7 @@ FlowHeadlessExecutionResult result =
 | `Termination` | 含义 |
 | --- | --- |
 | `Completed` | 运行器完成；仍须检查 `Data.Status`，不能只读枚举名判成功 |
-| `StartRejected` | 门禁、服务快照或起始节点等条件未满足，包括就绪等待超时 |
+| `StartRejected` | 门禁、服务快照或起始节点等条件未满足，包括就绪等待超时及起始节点已在执行另一次启动 |
 | `Canceled` | 取消请求导致终止 |
 | `TimedOut` | 启动后的执行完成等待超时，不是整次调用超时 |
 | `LoadFailed` | 加载 STN/运行图失败 |
@@ -105,7 +111,7 @@ FlowHeadlessExecutionResult result =
 
 未设置这两个字段时沿用就绪 2 秒、执行不限时的默认值；JobDataMap 不接受用负数表示无限等待。
 
-这是 `HeadlessFlowJob` 的字段契约，不能套用到 `FlowJob`。后者通过 WPF Dispatcher 运行单例 `FlowEngineManager.View` 主工作区选中的流程，不跟随任意独立窗口的激活状态；它包含批次/前后处理并等待最终化结果，并非运行已保存快照的同义入口。
+这些字段由 `HeadlessFlowJob` 消费。普通[执行流程任务](../../ui-components/ColorVision.Scheduler.md)在主工作区运行，包含批次和前后处理，并等待最终化。新任务按配置选择已保存模板，旧的未绑定任务沿用主工作区流程。
 
 ## 源码定位
 

@@ -24,6 +24,8 @@ namespace ColorVision.Copilot
         int ContinuationStartColumn)
     {
         public int? ObservedTotalLineCount { get; init; }
+
+        public bool DecodedAsLegacyEncoding { get; init; }
     }
 
     public static class CopilotLocalFileToolSupport
@@ -178,25 +180,26 @@ namespace ColorVision.Copilot
 
             try
             {
-                await using var stream = new FileStream(fullPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-                var previewLength = (int)Math.Min(BinaryPreviewBytes, stream.Length);
-                var previewBuffer = new byte[previewLength];
-                var previewRead = await stream.ReadAtLeastAsync(previewBuffer.AsMemory(), previewLength, throwOnEndOfStream: false, cancellationToken);
-                using var reader = CreateTextReader(stream, previewBuffer.AsSpan(0, previewRead));
                 var normalizedStartLine = Math.Max(1, startLine ?? 1);
                 var normalizedStartColumn = Math.Max(1, startColumn ?? 1);
                 var normalizedEndLine = endLine.HasValue
                     ? Math.Max(normalizedStartLine, endLine.Value)
                     : int.MaxValue;
-                var range = await ReadBoundedRangeAsync(
-                    reader,
-                    normalizedStartLine,
-                    normalizedStartColumn,
-                    normalizedEndLine,
-                    maximumReadCharacters,
-                    cancellationToken);
+                var decodedAsLegacyEncoding = false;
+                BoundedTextRange range;
+                try
+                {
+                    range = await ReadFileRangeAsync(fullPath, useLegacyEncoding: false, normalizedStartLine, normalizedStartColumn, normalizedEndLine, maximumReadCharacters, cancellationToken);
+                }
+                catch (DecoderFallbackException)
+                {
+                    decodedAsLegacyEncoding = true;
+                    range = await ReadFileRangeAsync(fullPath, useLegacyEncoding: true, normalizedStartLine, normalizedStartColumn, normalizedEndLine, maximumReadCharacters, cancellationToken);
+                }
 
-                if (range.ActualStartLine == 0 && range.TotalLineCount < normalizedStartLine)
+                // An empty file has no line 1 to be beyond; it is a successful read of nothing.
+                var isEmptyFileRead = range.ReachedEndOfFile && range.TotalLineCount == 0 && normalizedStartLine == 1 && normalizedStartColumn == 1;
+                if (range.ActualStartLine == 0 && range.TotalLineCount < normalizedStartLine && !isEmptyFileRead)
                 {
                     return new CopilotLocalFileReadResult(
                         fullPath,
@@ -252,6 +255,7 @@ namespace ColorVision.Copilot
                     range.ContinuationStartColumn)
                 {
                     ObservedTotalLineCount = range.ReachedEndOfFile ? range.TotalLineCount : null,
+                    DecodedAsLegacyEncoding = decodedAsLegacyEncoding,
                 };
             }
             catch (OperationCanceledException)
@@ -281,16 +285,51 @@ namespace ColorVision.Copilot
             }
         }
 
-        internal static StreamReader CreateTextReader(FileStream stream, ReadOnlySpan<byte> preview)
+        private static async Task<BoundedTextRange> ReadFileRangeAsync(
+            string fullPath,
+            bool useLegacyEncoding,
+            int startLine,
+            int startColumn,
+            int endLine,
+            int maximumReadCharacters,
+            CancellationToken cancellationToken)
         {
+            await using var stream = new FileStream(fullPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+            var previewLength = (int)Math.Min(BinaryPreviewBytes, stream.Length);
+            var previewBuffer = new byte[previewLength];
+            var previewRead = await stream.ReadAtLeastAsync(previewBuffer.AsMemory(), previewLength, throwOnEndOfStream: false, cancellationToken);
+            using TextReader reader = CopilotPdfTextExtractor.HasPdfSignature(previewBuffer.AsSpan(0, previewRead))
+                ? new StringReader(await Task.Run(() => CopilotPdfTextExtractor.Extract(fullPath, cancellationToken), cancellationToken))
+                : CreateTextReader(stream, previewBuffer.AsSpan(0, previewRead), useLegacyEncoding);
+            return await ReadBoundedRangeAsync(reader, startLine, startColumn, endLine, maximumReadCharacters, cancellationToken);
+        }
+
+        // Chinese Windows tools still write GB18030 without a BOM. Reads may decode it because bytes
+        // that are neither valid UTF-8 nor valid GB18030 still fail; writes stay strict so a guess
+        // can never rewrite a file. A file with a BOM never falls back.
+        internal static StreamReader CreateTextReader(FileStream stream, ReadOnlySpan<byte> preview, bool useLegacyEncoding = false)
+        {
+            // "Invalid encoding" would send the model after a problem the file does not have.
+            if (CopilotPdfTextExtractor.HasPdfSignature(preview))
+                throw new InvalidDataException("This is a PDF document; only the file read tools can open it.");
+            if (preview.StartsWith("PK\u0003\u0004"u8))
+                throw new InvalidDataException("This is a zip-based document or archive such as .docx or .xlsx; text tools cannot read it. Ask the user for a text export or the relevant excerpt.");
             var encoding = ResolveTextEncoding(preview, out var preambleLength);
             if (preambleLength == 0 && preview.IndexOf((byte)0) >= 0)
                 throw new InvalidDataException("The file contains NUL bytes and appears to be binary.");
 
+            if (useLegacyEncoding && preambleLength == 0)
+                encoding = LegacyEncoding.Value;
             stream.Position = preambleLength;
             // Disable automatic detection so StreamReader cannot replace the strict decoder.
             return new StreamReader(stream, encoding, detectEncodingFromByteOrderMarks: false);
         }
+
+        internal static readonly Lazy<Encoding> LegacyEncoding = new(() =>
+        {
+            Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+            return Encoding.GetEncoding(54936, EncoderFallback.ExceptionFallback, DecoderFallback.ExceptionFallback);
+        });
 
         private static Encoding ResolveTextEncoding(ReadOnlySpan<byte> preview, out int preambleLength)
         {
@@ -320,7 +359,7 @@ namespace ColorVision.Copilot
         }
 
         private static async Task<BoundedTextRange> ReadBoundedRangeAsync(
-            StreamReader reader,
+            TextReader reader,
             int startLine,
             int startColumn,
             int endLine,
@@ -393,6 +432,8 @@ namespace ColorVision.Copilot
                         }
                         if (actualStartLine == 0)
                         {
+                            if (char.IsLowSurrogate(character))
+                                throw new InvalidDataException($"Requested start column {startColumn} splits a Unicode surrogate pair on line {startLine}. Select the preceding column to read the complete character.");
                             actualStartLine = currentLine;
                             actualStartColumn = currentColumn;
                         }

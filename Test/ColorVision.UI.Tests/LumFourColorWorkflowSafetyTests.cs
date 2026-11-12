@@ -16,6 +16,7 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using ColorVision.Engine.Services.Devices.Camera.Configs;
 using ColorVision.FileIO;
+using Newtonsoft.Json.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -656,6 +657,75 @@ public sealed class LumFourColorWorkflowSafetyTests
     }
 
     [Fact]
+    public void ManualLuminanceModeUsesTwoColumnsAndOnlyReplacesCoefficientA()
+    {
+        string directory = Directory.CreateTempSubdirectory("lum-manual-").FullName;
+        string path = Path.Combine(directory, "source.dat");
+        const string original = """{"a":2,"bpp":16,"Texp_x":12.5,"b":0,"device":{"capturedAt":"2026-01-01T12:00:00+08:00"}}""";
+        try
+        {
+            WriteSource(path);
+            WithTheme(() =>
+            {
+                var window = new LumFourColorCorrectionWindow(path);
+                try
+                {
+                    Control<RadioButton>(window, "LuminanceMode").IsChecked = true;
+                    Render(window, 1076, 576, "manual-luminance");
+                    var grid = Control<DataGrid>(window, "MeasurementsGrid");
+                    var visibleColumns = grid.Columns.Where(column => column.Visibility == Visibility.Visible).ToArray();
+                    Assert.Equal(3, visibleColumns.Length);
+                    var row = Assert.IsType<CorrectionMeasurementRow>(Assert.Single(grid.Items));
+                    var confirm = Control<CheckBox>(window, "ManualDataConfirmed");
+                    var save = Control<Button>(window, "SaveButton");
+                    var replace = Control<Button>(window, "ReplaceButton");
+                    var preview = Control<TextBox>(window, "ResultPreview");
+                    window.PasteMeasurements("相机 Y\t光谱 Y\n90\t120");
+                    grid.CurrentCell = new DataGridCellInfo(row, visibleColumns[2]);
+                    window.PasteMeasurements("135");
+                    Assert.Equal("90", row.CameraY);
+                    Assert.Equal("135", row.ReferenceY);
+                    Assert.Empty(row.CameraX);
+                    Assert.EndsWith("单点\t90\t135", LumFourColorMeasurementClipboard.CopyAll([row], luminanceOnly: true));
+
+                    confirm.IsChecked = true;
+                    Click(window, "CalculateButton");
+                    Assert.False(replace.IsEnabled);
+                    File.WriteAllText(path, original);
+                    row.CameraY = "0";
+                    confirm.IsChecked = true;
+                    Click(window, "CalculateButton");
+                    Assert.False(replace.IsEnabled);
+
+                    row.CameraY = "90";
+                    confirm.IsChecked = true;
+                    Click(window, "CalculateButton");
+                    Assert.Equal("a = 3", preview.Text);
+                    Assert.True(save.IsEnabled);
+                    Assert.True(replace.IsEnabled);
+
+                    int restarts = 0;
+                    Task replacement = window.ReplaceCurrentAsync(() => { restarts++; return Task.CompletedTask; });
+                    Assert.True(replacement.IsCompletedSuccessfully);
+                    Assert.Equal(1, restarts);
+                    Assert.Equal(original, File.ReadAllText(Assert.Single(Directory.GetFiles(directory, "*_backup.dat"))));
+                    JObject expected = JObject.Parse(original);
+                    expected["a"] = 3.0;
+                    Assert.True(JToken.DeepEquals(expected, JObject.Parse(File.ReadAllText(path))));
+                    Assert.False(confirm.IsChecked);
+                    Assert.False(replace.IsEnabled);
+                    Assert.Empty(preview.Text);
+
+                    Control<RadioButton>(window, "SinglePointMode").IsChecked = true;
+                    Assert.Equal(7, grid.Columns.Count(column => column.Visibility == Visibility.Visible));
+                }
+                finally { window.Close(); }
+            });
+        }
+        finally { Directory.Delete(directory, true); }
+    }
+
+    [Fact]
     public void TwoModesRequireWhiteForRgbwAndInvalidateResultsWhenSwitched()
     {
         string path = Path.GetTempFileName();
@@ -835,6 +905,11 @@ public sealed class LumFourColorWorkflowSafetyTests
             Assert.Equal(32, calibrated.BitsPerChannel);
             Assert.Equal(new[] { 6f, -6f, 4f }, Enumerable.Range(0, 3).Select(channel => BitConverter.ToSingle(calibrated.Data, channel * sizeof(float))));
             Assert.Null(calibrated.CalibrationHash);
+            var preview = LumFourColorCieService.Render(calibrated);
+            Assert.Equal(PixelFormats.Rgb48, preview.Format);
+            byte[] previewPixels = new byte[6];
+            preview.CopyPixels(previewPixels, 6, 0);
+            Assert.Equal(new byte[] { 3, 0, 2, 0, 1, 0 }, previewPixels);
             Assert.Equal(original, File.ReadAllBytes(rawPath));
             snapshot.Save(rawPath, canReplay: false);
             Assert.Contains("XYZ", Assert.Throws<InvalidOperationException>(() => LumFourColorRecentImages.Load(row, "A")).Message);
@@ -843,6 +918,53 @@ public sealed class LumFourColorWorkflowSafetyTests
             Assert.Empty(LumFourColorRecentImages.CreateList([new MeasureResultImgModel { DeviceCode = "B" }], "A"));
         }
         finally { File.Delete(rawPath); }
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void CiePreviewUsesAssociatedOriginalOrYAndPreservesMeasurementData(bool hasOriginal)
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            string ciePath = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N") + ".cvcie");
+            string rawPath = Path.ChangeExtension(ciePath, ".cvraw");
+            float[] xyz = [100, 200, 10, 30, 500, 600];
+            byte[] data = new byte[xyz.Length * sizeof(float)];
+            Buffer.BlockCopy(xyz, 0, data, 0, data.Length);
+            byte[] rawPixels = [1, 25, 250, 180, 20, 5];
+            try
+            {
+                using var cie = new CVCIEFile { Version = 1, Cols = 2, Rows = 1, Bpp = 32, Channels = 3,
+                    Gain = 1, Exp = [1, 1, 1], Data = data, SrcFileName = rawPath };
+                Assert.True(CVFileUtil.WriteCIEFile(ciePath, cie));
+                if (hasOriginal)
+                {
+                    using var raw = new CVCIEFile { Version = 1, FileExtType = CVType.Raw, Cols = 2, Rows = 1,
+                        Bpp = 8, Channels = 3, Gain = 1, Exp = [1, 1, 1], Data = rawPixels };
+                    Assert.True(CVFileUtil.WriteCVRaw(rawPath, raw));
+                }
+
+                var frame = LumFourColorCieService.Load(ciePath);
+                var preview = LumFourColorCieService.Render(frame);
+                Assert.Equal(hasOriginal ? PixelFormats.Bgr24 : PixelFormats.Gray8, preview.Format);
+                byte[] pixels = new byte[hasOriginal ? 6 : 2];
+                preview.CopyPixels(pixels, pixels.Length, 0);
+                Assert.Equal(hasOriginal ? rawPixels : new byte[] { 0, 255 }, pixels);
+                Assert.True(preview.IsFrozen);
+                Assert.Equal(data, frame.Data);
+                var measurement = LumFourColorCieService.Measure(frame, new(0, 0, 1, 1, PoiMeasurementShape.Rect));
+                Assert.Equal(100, measurement.X);
+                Assert.Equal(10, measurement.Y);
+                Assert.Equal(500, measurement.Z);
+                Assert.Equal(data, frame.Data);
+            }
+            finally
+            {
+                File.Delete(ciePath);
+                File.Delete(rawPath);
+            }
+        });
     }
 
     private static DeviceCamera TestCamera(string code)
@@ -859,7 +981,6 @@ public sealed class LumFourColorWorkflowSafetyTests
         WithTheme(() =>
         {
             var camera = TestCamera("VAM");
-            camera.EditCalibrationCommand = new ColorVision.Common.MVVM.RelayCommand(_ => { });
             camera.ReleaseLocalCalibrationCacheCommand = new ColorVision.Common.MVVM.RelayCommand(_ => { });
             camera.UserCalibrationCommand = new ColorVision.Common.MVVM.RelayCommand(_ => { });
             var commands = new System.Windows.Controls.Primitives.UniformGrid();

@@ -359,8 +359,26 @@
   <data name="Sched_SaveFailed" xml:space="preserve">
     <value>Failed to save task config: {0}</value>
   </data>
+  <data name="Sched_PauseSaveFailed" xml:space="preserve">
+    <value>已暫停的任務在目前的執行個體中保持暫停。{0}</value>
+  </data>
   <data name="Sched_LoadFailed" xml:space="preserve">
     <value>Failed to load task config: {0}</value>
+  </data>
+  <data name="Sched_TaskFileUnreadable" xml:space="preserve">
+    <value>無法讀取任務定義「{0}」。請保留原始檔案並檢查任務類型是否可用。必要時從有效備份還原，再重新載入。</value>
+  </data>
+  <data name="Sched_TaskFileChanged" xml:space="preserve">
+    <value>任務定義「{0}」在載入後發生變更。請重新啟動 ColorVision 載入目前的定義後重試。</value>
+  </data>
+  <data name="Sched_TaskFileBusy" xml:space="preserve">
+    <value>另一個執行個體正在讀寫任務定義「{0}」，請稍後重試。</value>
+  </data>
+  <data name="Sched_TaskBackupRequiresRestore" xml:space="preserve">
+    <value>主任務檔案缺失，仍保有備份「{0}」。請重新載入或重新啟動以還原，再儲存變更。</value>
+  </data>
+  <data name="Sched_TaskBackupRestored" xml:space="preserve">
+    <value>主任務檔案缺失，已從備份「{0}」還原。還原的排程尚未啟用，請核對進度和設定後再啟用。</value>
   </data>
   <data name="Sched_RestoreWarning" xml:space="preserve">
     <value>The following tasks failed to restore: {0}</value>
@@ -568,5 +586,14 @@
   </data>
   <data name="Sched_TaskNotFound" xml:space="preserve">
     <value>找不到該任務，請重新整理任務列表。</value>
+  </data>
+  <data name="Sched_StatusBarRunning" xml:space="preserve">
+    <value>定時任務 · 執行中</value>
+  </data>
+  <data name="Sched_StatusBarPausedRunning" xml:space="preserve">
+    <value>計畫已暫停 · 本輪執行中</value>
+  </data>
+  <data name="Sched_StatusBarNextRun" xml:space="preserve">
+    <value>下次 {0}</value>
   </data>
 </root>

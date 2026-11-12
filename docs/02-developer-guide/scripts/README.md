@@ -4,7 +4,7 @@ knowledge_type: "guide"
 status: "current"
 summary: "主程序、插件和项目包的正式发布入口、只读校验与上传清理副作用。"
 aliases: ["发布","打包","release.bat","package_project.bat","只做本地构建","版本标签","auto-tag.yml"]
-code_paths: [".github/workflows/auto-tag.yml","Directory.Build.props","Scripts/release.bat","Scripts/build.py","Scripts/build_update.py","Scripts/generate_shared_files.py","Scripts/installer_shared_files.py","Scripts/package_project.bat","Scripts/package_plugin.bat","Scripts/package_cvxp.py","Scripts/build_spectrum.py"]
+code_paths: [".github/workflows/auto-tag.yml","Directory.Build.props","Scripts/release.bat","Scripts/build.py","Scripts/build_update.py","Scripts/generate_shared_files.py","Scripts/installer_shared_files.py","Scripts/package_project.bat","Scripts/package_plugin.bat","Scripts/package_cvxp.py","Scripts/build_spectrum.py","Scripts/export_offline_updates.py"]
 test_paths: ["Scripts/tests"]
 related: ["delivery.index","delivery.testing","delivery.backend","delivery.update","delivery.code-statistics","ui.publishing"]
 ---
@@ -25,6 +25,7 @@ related: ["delivery.index","delivery.testing","delivery.backend","delivery.updat
 | 发布插件包 | `Scripts\package_plugin.bat <PluginName>` | 面向 `Plugins/<PluginName>/`，上传尝试结束后删除本地 `.cvxp` |
 | 发布项目包 | `Scripts\package_project.bat <ProjectName>` | 面向 `Projects/<ProjectName>/`，上传尝试结束后删除本地 `.cvxp` |
 | 发布 Spectrum 独立包和插件包 | `Scripts\Spectrum.bat --release-notes "<说明>"` | 同时维护独立更新源和 ColorVision 插件更新源，完整远程验收后才删除本地 `.cvxp` |
+| 导出离线更新文件夹 | `py Scripts\export_offline_updates.py --out <空目录> --from-version <现场版本> [--plugins <ID,...>]` | 只读取更新服务，导出主程序增量链、完整安装包和指定插件及 SHA-256 清单，供断网现场作为更新来源；用法见[离线更新文件夹](../deployment/auto-update.md#离线更新文件夹) |
 | CameraTest 离线测试包 | `pwsh -NoProfile -File .\Scripts\package_camera_test.ps1` | 只生成带版本/时间的干净 ZIP，供手动分发；不内置 .NET、不上传。完整契约见[相机生产调试](../../04-api-reference/plugins/standard-plugins/camera-test.md) |
 | 发布外部编译产物 | `py Scripts\package_cvxp.py --src-dir <输出目录>` | 适合只拿到插件输出目录的场景 |
 | 只校验插件清单 | `py Scripts\package_cvxp.py --project-file <插件.csproj> --validate-only` | 不构建、不打包、不上传 |
@@ -68,7 +69,7 @@ OpenCV 原生运行库遵循普通内容差分：与所选历史基准内容相�
 | 场景 | 命令 |
 | --- | --- |
 | 仓库内普通插件 | `Scripts\package_plugin.bat Conoscope` |
-| 仓库内项目包 | `Scripts\package_project.bat ProjectLUX` |
+| 仓库内项目包 | `Scripts\package_project.bat ProjectARVRPro` |
 | 外部编译产物 | `py Scripts\package_cvxp.py --src-dir C:\path\to\MyPlugin\bin\x64\Release\net10.0-windows` |
 
 插件和项目包默认上传，并在上传尝试结束后删除本地 `.cvxp`，包括上传或 `LATEST_RELEASE` 提交失败的路径；失败后应修复原因并重新执行 wrapper，不能把本地包是否残留当成成功依据。构建和上传前会先校验 `manifest.json` 的插件 ID、DLL 路径和文件大小；需要在 CI 或发布前单独检查时使用 `--validate-only`。校验通过后，打包再读取 `Scripts/shared_files.json`，剔除宿主已共享文件和 `.pdb`，生成 `.cvxp`。仓库内 `Plugins/`、`Projects/` 的默认打包路径会将该集合与当前 Release x64 宿主输出比较；发生双向漂移时自动从当前宿主输出刷新仓库与 Plugin Kit 两份清单，再继续打包。外部 `--src-dir` 和显式 `--shared-files` 仍保留离线兼容行为，不改写调用者提供的清单。

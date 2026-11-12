@@ -1,5 +1,6 @@
 using ColorVision.UI;
 using Newtonsoft.Json;
+using ProjectARVRPro.ImageExport;
 using System.ComponentModel;
 using System.Reflection;
 using System.IO;
@@ -46,7 +47,7 @@ internal sealed class ProjectSettingsSession
 
         Sections =
         [
-            Section(ProjectSettingsPage.Testing, "检测设置", "设置失败处理和 SN 锁定方式。", ["测试策略"]),
+            Section(ProjectSettingsPage.Testing, "检测设置", "设置失败处理及 SN 锁定方式。", ["测试策略"]),
             Section(ProjectSettingsPage.Display, "界面显示", "调整工作区、结果图层和默认查询条数。", ["界面", "结果图层", "结果列表"]),
             Section(ProjectSettingsPage.Results, "结果保存", "设置保存位置、CSV、兼容格式、客户报表和磁盘空间清理。", ["输出路径", "保存选项", "兼容格式", "客制化输出", "磁盘空间", "结果编号"]),
             Section(ProjectSettingsPage.Images, "图像保存", "标记图和原图保存在结果输出目录；开启后显示格式等选项。", ["标记图", "原图"]),
@@ -72,7 +73,7 @@ internal sealed class ProjectSettingsSession
         foreach (var property in source.GetType().GetProperties(BindingFlags.Public | BindingFlags.Instance)
             .Where(property => property.CanRead && property.CanWrite && property.GetIndexParameters().Length == 0
                 && property.GetCustomAttribute<JsonIgnoreAttribute>() == null
-                && property.GetCustomAttribute<CategoryAttribute>()?.Category != "串口参数"
+                && property.GetCustomAttribute<CategoryAttribute>()?.Category is not ("串口参数" or "LUX协议")
                 && (property.GetCustomAttribute<BrowsableAttribute>()?.Browsable != false
                     || property.Name == nameof(ViewResultManagerConfig.SourceExportFormat))))
         {
@@ -105,6 +106,13 @@ internal sealed class ProjectSettingsSession
     {
         if (source is ProjectARVRProConfig)
         {
+            if (property == nameof(ProjectARVRProConfig.LuxMachineNo)
+                && (value is not string machineNo || string.IsNullOrWhiteSpace(machineNo) || machineNo.IndexOfAny([',', ';', '\r', '\n']) >= 0))
+                return "LUX 协议设备号不能为空或包含逗号、分号、换行。";
+            if (property == nameof(ProjectARVRProConfig.LuxVidMode) && value is LuxVidMeasurementMode mode && !Enum.IsDefined(mode))
+                return "请选择有效的 VID 测量方式。";
+            if (property.StartsWith("LuxVid", StringComparison.Ordinal) && value is double vid && !double.IsFinite(vid))
+                return "VID 参数必须是有效数值。";
             if (property == nameof(ProjectARVRProConfig.TryCountMax) && value is int count && count < 0) return "最大尝试次数不能小于0。";
             if (property == nameof(ProjectARVRProConfig.ResultOverlayFontSize) && value is double size && !double.IsFinite(size)) return "结果文字字号必须是有效数值。";
         }
@@ -117,6 +125,9 @@ internal sealed class ProjectSettingsSession
                 try { _ = DateTime.Now.ToString(value as string); }
                 catch (FormatException) { return "编号时间格式无效，请使用有效的日期时间格式。"; }
             }
+            if (property is nameof(ViewResultManagerConfig.ResultImageFileNameTemplate) or nameof(ViewResultManagerConfig.SourceImageFileNameTemplate)
+                && !ProjectImageExportService.IsValidFileNameTemplate(value as string))
+                return "请输入不含路径或扩展名的有效文件名模板。支持 {FlowName} 和 {SN}。";
             if (property is nameof(ViewResultManagerConfig.CsvSavePath) or nameof(ViewResultManagerConfig.CustomXlsxSavePath))
             {
                 string path = value as string ?? "";

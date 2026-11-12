@@ -50,6 +50,8 @@ namespace ProjectARVRPro
                     continue;
 
                 string testName = property.GetCustomAttribute<DisplayNameAttribute>()?.DisplayName ?? property.Name;
+                if (value is OpticCenterTestResult center)
+                    testName = center.GetOutputKey();
                 if (value is IList list)
                 {
                     for (int index = 0; index < list.Count; index++)

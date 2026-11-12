@@ -250,6 +250,91 @@ public sealed class CopilotWebPageAttachmentAdmissionTests
         }, TimeSpan.FromSeconds(40), "The webpage admission test did not finish.");
     }
 
+    [Theory]
+    [InlineData("current", false)]
+    [InlineData("current", true)]
+    [InlineData("cancel-fetch", false)]
+    [InlineData("cancel-fetch", true)]
+    [InlineData("close", false)]
+    [InlineData("cancel-edit", false)]
+    [InlineData("newer-feedback", false)]
+    public void FetchFailureReportsOnlyForItsCurrentConversationAndEditLifetime(string transition, bool timedOut)
+    {
+        StaTest.Run(() =>
+        {
+            using var fixture = new Fixture(editSource: transition == "cancel-edit");
+            using var context = new PausedOperationContext();
+            var response = new TaskCompletionSource<CopilotFetchedWebPageContent>(TaskCreationOptions.RunContinuationsAsynchronously);
+            var previousContext = SynchronizationContext.Current;
+            Task? fetch = null;
+            try
+            {
+                if (transition == "cancel-edit")
+                {
+                    fixture.ViewModel.EditMessageCommand.Execute(fixture.OriginalUser);
+                    Assert.True(fixture.ViewModel.IsEditingMessage);
+                }
+
+                SynchronizationContext.SetSynchronizationContext(context);
+                fetch = fixture.ViewModel.AttachWebPageAsync(fixture.Conversation, PageUrl, (_, _) => response.Task);
+                Assert.False(fetch.IsCompleted);
+
+                switch (transition)
+                {
+                    case "cancel-fetch":
+                        fixture.ViewModel.PrimaryActionCommand.Execute(null);
+                        break;
+                    case "close":
+                        fixture.ViewModel.Dispose();
+                        break;
+                    case "cancel-edit":
+                        fixture.ViewModel.CancelMessageEditCommand.Execute(null);
+                        Assert.False(fixture.ViewModel.IsEditingMessage);
+                        break;
+                    case "newer-feedback":
+                        Assert.True((bool)typeof(CopilotChatViewModel).GetMethod("TryExecuteLocalCommand",
+                            BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(fixture.ViewModel, ["/help", false, null])!);
+                        Assert.True(fixture.ViewModel.HasLocalCommandResult);
+                        break;
+                }
+                fixture.ViewModel.InputText = NewerDraft;
+                var retainedAttachments = fixture.Conversation.Attachments.ToArray();
+                var retainedMessages = fixture.Conversation.Messages.ToArray();
+                var retainedTitle = fixture.ViewModel.LocalCommandResultTitle;
+                var retainedText = fixture.ViewModel.LocalCommandResultText;
+                const string failureMessage = "Synthetic webpage loader failure.";
+                response.SetException(timedOut
+                    ? new OperationCanceledException("Synthetic webpage deadline elapsed.")
+                    : new IOException(failureMessage));
+                context.Complete(fetch);
+                fetch.GetAwaiter().GetResult();
+
+                Assert.Equal(NewerDraft, fixture.ViewModel.InputText);
+                Assert.Equal(retainedAttachments, fixture.Conversation.Attachments.ToArray());
+                Assert.Equal(retainedMessages, fixture.Conversation.Messages.ToArray());
+                Assert.Empty(fixture.Runtime.Requests);
+                Assert.False(fixture.ViewModel.IsBusy);
+                if (transition == "current")
+                {
+                    Assert.Equal(timedOut ? "附加网页 · 超时" : "附加网页 · 失败", fixture.ViewModel.LocalCommandResultTitle);
+                    Assert.Equal(timedOut ? "网页读取已超时，请稍后重试。" : failureMessage, fixture.ViewModel.LocalCommandResultText);
+                }
+                else
+                {
+                    Assert.Equal(retainedTitle, fixture.ViewModel.LocalCommandResultTitle);
+                    Assert.Equal(retainedText, fixture.ViewModel.LocalCommandResultText);
+                }
+            }
+            finally
+            {
+                response.TrySetResult(CreateUpdatedPage(PageUrl));
+                if (fetch is { IsCompleted: false })
+                    context.Complete(fetch);
+                SynchronizationContext.SetSynchronizationContext(previousContext);
+            }
+        }, TimeSpan.FromSeconds(40), "The webpage failure feedback test did not finish.");
+    }
+
     private static CopilotFetchedWebPageContent CreateUpdatedPage(string url) =>
         new(url, "Refreshed webpage", string.Empty, UpdatedBody);
 

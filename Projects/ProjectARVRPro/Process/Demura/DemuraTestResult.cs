@@ -5,6 +5,8 @@ namespace ProjectARVRPro.Process.Demura
 {
     public class DemuraViewTestResult : DemuraTestResult
     {
+        public bool ReturnCsvOnly { get; set; }
+
         public ObservableCollection<ObjectiveTestItem> Items { get; set; } = new ObservableCollection<ObjectiveTestItem>();
 
         public DemuraCsvFileResult W128 { get; set; } = new DemuraCsvFileResult { Gray = "128" };

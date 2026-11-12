@@ -8,7 +8,6 @@ using System.Collections.Generic;
 
 namespace ColorVision.Engine.Templates.LedCheck
 {
-    [DisplayAlgorithm(20, "PixelLedDetect", "定位算法")]
     public class AlgorithmLedCheck : DisplayAlgorithmBase<DualTemplateDisplayAlgorithmConfig>
     {
 

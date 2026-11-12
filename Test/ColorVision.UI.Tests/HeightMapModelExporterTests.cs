@@ -165,6 +165,33 @@ public sealed class HeightMapModelExporterTests
 
     [Theory]
     [InlineData(".obj")]
+    [InlineData(".mtl")]
+    public async Task Obj_FailedPublicationKeepsPreviousModelAndCompanions(string lockedExtension)
+    {
+        using var output = new ExportDirectory();
+        string path = Path.Combine(output.Path, "existing.obj");
+        await HeightMapModelExporter.ExportAsync(Triangle(), CreateLut(), 4, path, true, CancellationToken.None);
+        string materialPath = Assert.Single(Directory.GetFiles(output.Path, "*.mtl"));
+        string texturePath = Assert.Single(Directory.GetFiles(output.Path, "*.png"));
+        await File.AppendAllTextAsync(materialPath, "# retained material comment\n");
+        string[] paths = [path, materialPath, texturePath];
+        var original = paths.ToDictionary(file => file, File.ReadAllBytes);
+
+        string lockedPath = Assert.Single(paths, file => Path.GetExtension(file) == lockedExtension);
+        using (FileStream locked = File.Open(lockedPath, FileMode.Open, FileAccess.Read, FileShare.None))
+        {
+            Exception? failure = await Record.ExceptionAsync(() =>
+                HeightMapModelExporter.ExportAsync(Triangle(), new byte[256 * 3], 8, path, false, CancellationToken.None));
+            Assert.True(failure is IOException or UnauthorizedAccessException, failure?.ToString());
+        }
+
+        Assert.All(paths, file => Assert.Equal(original[file], File.ReadAllBytes(file)));
+        Assert.True(File.GetAttributes(texturePath).HasFlag(FileAttributes.Hidden));
+        Assert.Equal(paths.OrderBy(file => file), Directory.GetFiles(output.Path).OrderBy(file => file));
+    }
+
+    [Theory]
+    [InlineData(".obj")]
     [InlineData(".stl")]
     public async Task Export_ZeroHeightWritesFiniteFlatGeometry(string extension)
     {
@@ -206,6 +233,12 @@ public sealed class HeightMapModelExporterTests
 
         string texture = Assert.Single(Directory.GetFiles(output.Path, "*.png"));
         Assert.Equal(hideTexture, (File.GetAttributes(texture) & FileAttributes.Hidden) != 0);
+
+        await HeightMapModelExporter.ExportAsync(Triangle(), CreateLut(), 8, path, !hideTexture, CancellationToken.None);
+
+        Assert.Equal(texture, Assert.Single(Directory.GetFiles(output.Path, "*.png")));
+        Assert.Equal(!hideTexture, File.GetAttributes(texture).HasFlag(FileAttributes.Hidden));
+        Assert.Contains("v 0.25 0.5 2", await File.ReadAllLinesAsync(path));
     }
 
     private static HeightMapDxGeometry Triangle()

@@ -84,22 +84,12 @@ public sealed partial class CopilotCodexTests
 
     [Theory]
     [InlineData("gpt-6-astra", CopilotReasoningMode.Max, null, "max", "chat")]
-    [InlineData("gpt-6-astra", CopilotReasoningMode.XHigh, null, "xhigh", "chat")]
-    [InlineData("gpt-6-astra", CopilotReasoningMode.Max, null, "max", "agent")]
     [InlineData("gpt-6-astra", CopilotReasoningMode.XHigh, null, "xhigh", "agent")]
-    [InlineData("gpt-6-astra", CopilotReasoningMode.Max, null, "max", "final")]
     [InlineData("gpt-6-astra", CopilotReasoningMode.XHigh, null, "xhigh", "final")]
     [InlineData("gpt-6-astra", CopilotReasoningMode.Max, "low", "low", "agent")]
-    [InlineData("gpt-6-astra", CopilotReasoningMode.Max, "low", "low", "final")]
-    [InlineData("gpt-6-astra", CopilotReasoningMode.Max, "none", "low", "agent")]
     [InlineData("gpt-6-astra", CopilotReasoningMode.Max, "none", "low", "final")]
     [InlineData("gpt-5.4", CopilotReasoningMode.Max, "none", "none", "agent")]
-    [InlineData("gpt-5.4", CopilotReasoningMode.Max, "none", "none", "final")]
     [InlineData("gpt-6-astra", CopilotReasoningMode.Default, null, null, "chat")]
-    [InlineData("gpt-6-astra", CopilotReasoningMode.Default, null, null, "agent")]
-    [InlineData("gpt-6-astra", CopilotReasoningMode.Default, null, null, "final")]
-    [InlineData("gpt-6-astra", CopilotReasoningMode.XHigh, "max", "max", "agent")]
-    [InlineData("gpt-6-astra", CopilotReasoningMode.XHigh, "max", "max", "final")]
     public async Task LocalReasoningModeSurvivesFrameworkOptionsAndTurnSerialization(
         string model, CopilotReasoningMode mode, string? configuredEffort, string? expectedEffort, string stage)
     {

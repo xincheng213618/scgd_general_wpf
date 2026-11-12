@@ -36,13 +36,14 @@ namespace ProjectARVRPro.Process.MTF
                         var mtfDetail = new MTFDetailViewReslut(details[0]);
                         if (mtfDetail.MTFResult?.result != null)
                         {
+                            var correction = new MtfRecipeCorrection(master.Params);
                             foreach (var mtf in mtfDetail.MTFResult.result)
                             {
                                 var hItem = new ObjectiveTestItem()
                                 {
                                     Name = mtf.name,
                                     Unit = Config.Unit,
-                                    Value = Config.RecipeConfig.UnifiedRecipe.Apply(mtf.mtfValue ?? 0),
+                                    Value = correction.Apply(mtf.mtfValue ?? 0, Config.RecipeConfig.UnifiedRecipe, mtf.name),
                                     LowLimit = Config.RecipeConfig.UnifiedRecipe.Min,
                                     UpLimit = Config.RecipeConfig.UnifiedRecipe.Max,
                                 };

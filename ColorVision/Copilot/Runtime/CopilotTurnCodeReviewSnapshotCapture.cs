@@ -21,19 +21,31 @@ namespace ColorVision.Copilot
             snapshot = null!;
             var toolResult = agentEvent.ToolResult;
             if (agentEvent.Type != CopilotAgentEventType.ToolResult
-                || toolResult?.Success != true)
+                || toolResult?.Success != true
+                || toolResult.Approval != null
+                || agentEvent.ToolExecution is { State: not CopilotToolExecutionState.Completed })
             {
                 return false;
             }
 
             if (string.Equals(toolResult.ToolName, "InspectGitDiff", StringComparison.OrdinalIgnoreCase))
             {
-                return CopilotGitDiffResultProtocol.TryParse(toolResult.Content, out var parsed, out _)
+                if (CopilotGitDiffResultProtocol.TryParse(toolResult.Content, out var parsed, out _)
                     && MatchesTarget(target, parsed)
                     && CopilotCodeReviewSnapshot.TryCreate(
                         parsed,
                         agentEvent.ModelToolResult,
-                        out snapshot);
+                        out snapshot))
+                {
+                    return true;
+                }
+
+                // Keep the requested target's evidence available for inspection, but
+                // a different or unusable latest diff cannot retain its completed result.
+                if (currentSnapshot?.IsStructurallyValid() != true)
+                    return false;
+                snapshot = currentSnapshot with { EvidenceId = string.Empty, FindingsResult = string.Empty };
+                return true;
             }
 
             return string.Equals(
@@ -51,7 +63,8 @@ namespace ColorVision.Copilot
         {
             ArgumentNullException.ThrowIfNull(target);
             ArgumentNullException.ThrowIfNull(snapshot);
-            if (!target.IsStructurallyValid() || !snapshot.IsStructurallyValid())
+            if (!target.IsStructurallyValid() || !snapshot.IsStructurallyValid()
+                || !target.MatchesRepository(snapshot.RepositoryRoot))
                 return false;
 
             return target.Target switch
@@ -74,7 +87,8 @@ namespace ColorVision.Copilot
         {
             ArgumentNullException.ThrowIfNull(target);
             ArgumentNullException.ThrowIfNull(snapshot);
-            if (!target.IsStructurallyValid() || !snapshot.IsStructurallyValid())
+            if (!target.IsStructurallyValid() || !snapshot.IsStructurallyValid()
+                || !target.MatchesRepository(snapshot.RepositoryRoot))
                 return false;
 
             return target.Target switch

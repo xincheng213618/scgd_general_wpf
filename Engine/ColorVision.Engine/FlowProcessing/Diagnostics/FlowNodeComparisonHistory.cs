@@ -32,9 +32,10 @@ internal sealed record FlowNodeComparisonHistory(
     internal IReadOnlyList<FlowNodeComparisonRow> BuildRows()
     {
         var rows = new List<FlowNodeComparisonRow>();
+        var messageLookup = new FlowExecutionAnalysisPresentation.NodeMessageLookup(Messages);
         foreach (FlowNodeRecord record in Records)
         {
-            IReadOnlyList<FlowNodeMessage> messages = FlowExecutionAnalysisPresentation.GetMessagesForNodeExecution(record, Messages, Records);
+            IReadOnlyList<FlowNodeMessage> messages = messageLookup.GetMessages(record, Records);
             if (messages.Count == 0)
                 rows.Add(new(record, null));
             else

@@ -235,6 +235,13 @@ namespace ColorVision.Copilot
                     "The deletion target changed after preview; it was not deleted.",
                     $"Expected SHA-256 {record.BeforeSha256}, current SHA-256 {currentHash}.");
             }
+            if (!IsInsideWritableRoot(request, deletePath))
+            {
+                RestoreState(record, WorkspacePatchState.Previewed);
+                return Failure(toolName, CopilotToolFailureKind.Authorization,
+                    "The deletion target is no longer inside a writable workspace root.",
+                    "An explicitly writable standalone file may be updated but cannot be deleted because its rollback path is not an authorized creation root.");
+            }
 
             try
             {

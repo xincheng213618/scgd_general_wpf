@@ -19,7 +19,17 @@ namespace ColorVision.Copilot
             IEnumerable<CopilotRequestMessage>? visibleHistory,
             string currentUserText,
             string currentAssistantText,
-            IEnumerable<string>? currentUserFollowUps = null)
+            IEnumerable<string>? currentUserFollowUps = null) =>
+            Merge(previousMemory, visibleHistory, currentUserText, currentAssistantText,
+                currentUserFollowUps, currentTurnMessages: null);
+
+        internal static IReadOnlyList<CopilotRequestMessage> Merge(
+            IReadOnlyList<CopilotRequestMessage>? previousMemory,
+            IEnumerable<CopilotRequestMessage>? visibleHistory,
+            string currentUserText,
+            string currentAssistantText,
+            IEnumerable<string>? currentUserFollowUps,
+            IEnumerable<CopilotRequestMessage>? currentTurnMessages)
         {
             var merged = MergeChronologically(
                     Normalize(previousMemory),
@@ -28,6 +38,7 @@ namespace ColorVision.Copilot
 
             AppendCurrent(merged, "user", currentUserText);
             AppendUserFollowUps(merged, currentUserFollowUps);
+            merged.AddRange(Normalize(currentTurnMessages));
             AppendCurrent(merged, "assistant", currentAssistantText);
             return SelectBounded(merged);
         }

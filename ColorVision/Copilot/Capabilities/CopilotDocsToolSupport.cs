@@ -1,6 +1,7 @@
 #pragma warning disable CA1859,CA1861
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
@@ -33,6 +34,8 @@ namespace ColorVision.Copilot
         public int DistinctPageCount { get; init; }
 
         public int TotalMatchCount { get; init; }
+
+        public bool IndexIsStale { get; init; }
     }
 
     internal static class CopilotDocsToolSupport
@@ -45,6 +48,7 @@ namespace ColorVision.Copilot
         private const int MaxExcerptChars = 360;
         private const int MaxSearchIndexBytes = 32 * 1024 * 1024;
         private static readonly TimeSpan SearchIndexCacheDuration = TimeSpan.FromMinutes(10);
+        private static readonly TimeSpan SavedIndexFreshDuration = TimeSpan.FromHours(24);
 
         private static readonly string[] DirectIntentKeywords =
         {
@@ -133,6 +137,13 @@ namespace ColorVision.Copilot
         };
 
         private static readonly Regex SearchTermRegex = new(@"(?<term>[\u4e00-\u9fff]{2,16}|[A-Za-z0-9_][A-Za-z0-9_\.\-]{1,63})", RegexOptions.Compiled);
+        private const int MaxQueryBigrams = 16;
+        private static readonly Regex ChineseRunRegex = new(@"[一-鿿]{3,}", RegexOptions.Compiled);
+        private static readonly HashSet<string> QueryStopWords = new(StringComparer.OrdinalIgnoreCase)
+        {
+            "the", "and", "for", "with", "how", "what", "why", "when", "where", "which", "does", "can", "not", "use", "using", "is", "are", "to", "in", "of", "do", "on", "it",
+            "如何", "怎么", "怎样", "什么", "为什", "为何", "哪里", "哪个", "是否", "能否", "可以", "一下", "这个", "那个", "我们", "请问", "帮我",
+        };
         private static readonly Regex NormalizationRegex = new(@"[\s\p{P}\p{S}]+", RegexOptions.Compiled);
         private static readonly JsonSerializerOptions JsonOptions = new()
         {
@@ -143,6 +154,7 @@ namespace ColorVision.Copilot
 
         private static CopilotDocsSearchIndex? _cachedSearchIndex;
         private static DateTimeOffset _cachedSearchIndexUtc = DateTimeOffset.MinValue;
+        private static bool _cachedSearchIndexIsStale;
 
         public static bool HasDocumentationIntent(string text)
         {
@@ -181,8 +193,25 @@ namespace ColorVision.Copilot
             }
 
             var searchIndex = await LoadSearchIndexAsync(cancellationToken);
-            var rankedHits = searchIndex.Entries
-                .Select(entry => CreateHit(entry, normalizedQuery, terms))
+            return Rank(searchIndex.Entries, query ?? string.Empty, normalizedQuery, terms, _cachedSearchIndexIsStale);
+        }
+
+        internal static CopilotDocsSearchQueryResult SearchIndexJson(string indexJson, string query)
+        {
+            var index = JsonSerializer.Deserialize<CopilotDocsSearchIndex>(indexJson, JsonOptions)!;
+            return Rank(index.Entries, query, NormalizeSearchText(query), ExtractSearchTerms(query), indexIsStale: false);
+        }
+
+        private static CopilotDocsSearchQueryResult Rank(
+            IReadOnlyList<CopilotDocsSearchEntry> entries,
+            string query,
+            string normalizedQuery,
+            IReadOnlyList<string> terms,
+            bool indexIsStale)
+        {
+            var bigrams = ExtractChineseBigrams(query);
+            var rankedHits = entries
+                .Select(entry => CreateHit(entry, normalizedQuery, terms, bigrams))
                 .Where(hit => hit.HasValue)
                 .Select(hit => hit!.Value)
                 .OrderByDescending(hit => hit.Score)
@@ -212,6 +241,7 @@ namespace ColorVision.Copilot
                 Hits = selectedHits,
                 DistinctPageCount = selectedGroups.Length,
                 TotalMatchCount = rankedHits.Length,
+                IndexIsStale = indexIsStale,
             };
         }
 
@@ -223,6 +253,8 @@ namespace ColorVision.Copilot
             builder.AppendLine("[Online Documentation Search]");
             builder.AppendLine($"Query: {result.Query}");
             builder.AppendLine($"Index URL: {result.SearchIndexUrl}");
+            if (result.IndexIsStale)
+                builder.AppendLine("Index Status: The online index could not be refreshed, so this is a saved copy that may be out of date.");
             builder.AppendLine($"Matched Pages: {result.DistinctPageCount}");
             builder.AppendLine($"Candidate Snippets: {result.Hits.Count}");
             builder.AppendLine();
@@ -273,43 +305,11 @@ namespace ColorVision.Copilot
                 if (_cachedSearchIndex != null && DateTimeOffset.UtcNow - _cachedSearchIndexUtc < SearchIndexCacheDuration)
                     return _cachedSearchIndex;
 
-                using var response = await HttpClient.GetAsync(
-                    DocsSearchIndexUrl,
-                    HttpCompletionOption.ResponseHeadersRead,
-                    cancellationToken);
-                if (response.StatusCode == HttpStatusCode.NotFound)
-                    throw new InvalidOperationException("The online documentation index has not been published yet. Confirm that the latest GitHub Pages deployment has completed.");
-
-                response.EnsureSuccessStatusCode();
-                var json = await CopilotBoundedHttpContentReader.ReadAsStringAsync(
-                    response.Content,
-                    MaxSearchIndexBytes,
-                    "Documentation search index",
-                    cancellationToken);
-                CopilotDocsSearchIndex? searchIndex;
-                try
-                {
-                    searchIndex = JsonSerializer.Deserialize<CopilotDocsSearchIndex>(json, JsonOptions);
-                }
-                catch (JsonException ex)
-                {
-                    throw new InvalidOperationException($"The online documentation index format could not be recognized: {ex.Message}", ex);
-                }
-
-                if (searchIndex?.Entries == null || searchIndex.Entries.Count == 0)
-                    throw new InvalidOperationException("The online documentation index is empty, so documentation questions cannot be answered right now.");
-
+                var (searchIndex, isStale) = await LoadThroughDiskCacheAsync(SearchIndexCachePath, DownloadSearchIndexJsonAsync, cancellationToken);
                 _cachedSearchIndex = searchIndex;
+                _cachedSearchIndexIsStale = isStale;
                 _cachedSearchIndexUtc = DateTimeOffset.UtcNow;
                 return searchIndex;
-            }
-            catch (HttpRequestException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
-            {
-                throw new InvalidOperationException("The online documentation index has not been published yet. Confirm that the latest GitHub Pages deployment has completed.", ex);
-            }
-            catch (HttpRequestException ex)
-            {
-                throw new InvalidOperationException($"Could not access the online documentation index: {ex.Message}", ex);
             }
             finally
             {
@@ -317,7 +317,120 @@ namespace ColorVision.Copilot
             }
         }
 
-        private static CopilotDocsSearchHit? CreateHit(CopilotDocsSearchEntry entry, string normalizedQuery, IReadOnlyList<string> terms)
+        private static string SearchIndexCachePath => Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "ColorVision", "Copilot", "docs-search-index.json");
+
+        // The index is several megabytes and sites are often offline, so a saved copy serves
+        // restarts directly and still answers, marked as possibly stale, when a refresh fails.
+        private static async Task<(CopilotDocsSearchIndex Index, bool IsStale)> LoadThroughDiskCacheAsync(
+            string cachePath,
+            Func<CancellationToken, Task<string>> download,
+            CancellationToken cancellationToken)
+        {
+            var saved = TryReadSavedIndex(cachePath, out var savedAgeIsFresh);
+            if (saved != null && savedAgeIsFresh)
+                return (saved, false);
+
+            try
+            {
+                var json = await download(cancellationToken);
+                var index = ParseSearchIndex(json);
+                TrySaveIndex(cachePath, json);
+                return (index, false);
+            }
+            catch (InvalidOperationException) when (saved != null)
+            {
+                return (saved, true);
+            }
+        }
+
+        internal static async Task<CopilotDocsSearchQueryResult> SearchThroughDiskCacheAsync(
+            string cachePath,
+            Func<CancellationToken, Task<string>> download,
+            string query)
+        {
+            var (index, isStale) = await LoadThroughDiskCacheAsync(cachePath, download, CancellationToken.None);
+            return Rank(index.Entries, query, NormalizeSearchText(query), ExtractSearchTerms(query), isStale);
+        }
+
+        private static CopilotDocsSearchIndex? TryReadSavedIndex(string cachePath, out bool isFresh)
+        {
+            isFresh = false;
+            try
+            {
+                var info = new FileInfo(cachePath);
+                if (!info.Exists)
+                    return null;
+                var index = ParseSearchIndex(File.ReadAllText(cachePath));
+                isFresh = DateTime.UtcNow - info.LastWriteTimeUtc < SavedIndexFreshDuration;
+                return index;
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException)
+            {
+                return null;
+            }
+        }
+
+        private static void TrySaveIndex(string cachePath, string json)
+        {
+            var temporaryPath = cachePath + "." + Guid.NewGuid().ToString("N") + ".tmp";
+            try
+            {
+                Directory.CreateDirectory(Path.GetDirectoryName(cachePath)!);
+                File.WriteAllText(temporaryPath, json);
+                File.Move(temporaryPath, cachePath, overwrite: true);
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                try { File.Delete(temporaryPath); }
+                catch (Exception cleanup) when (cleanup is IOException or UnauthorizedAccessException) { }
+            }
+        }
+
+        private static CopilotDocsSearchIndex ParseSearchIndex(string json)
+        {
+            CopilotDocsSearchIndex? searchIndex;
+            try
+            {
+                searchIndex = JsonSerializer.Deserialize<CopilotDocsSearchIndex>(json, JsonOptions);
+            }
+            catch (JsonException ex)
+            {
+                throw new InvalidOperationException($"The online documentation index format could not be recognized: {ex.Message}", ex);
+            }
+
+            if (searchIndex?.Entries == null || searchIndex.Entries.Count == 0)
+                throw new InvalidOperationException("The online documentation index is empty, so documentation questions cannot be answered right now.");
+            return searchIndex;
+        }
+
+        private static async Task<string> DownloadSearchIndexJsonAsync(CancellationToken cancellationToken)
+        {
+            const string notPublished = "The online documentation index has not been published yet. Confirm that the latest GitHub Pages deployment finished.";
+            try
+            {
+                using var response = await HttpClient.GetAsync(DocsSearchIndexUrl, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+                if (response.StatusCode == HttpStatusCode.NotFound)
+                    throw new InvalidOperationException(notPublished);
+
+                response.EnsureSuccessStatusCode();
+                return await CopilotBoundedHttpContentReader.ReadAsStringAsync(response.Content, MaxSearchIndexBytes, "Documentation search index", cancellationToken);
+            }
+            catch (HttpRequestException ex)
+            {
+                throw new InvalidOperationException($"Could not access the online documentation index: {ex.Message}", ex);
+            }
+            catch (TaskCanceledException ex) when (!cancellationToken.IsCancellationRequested)
+            {
+                throw new InvalidOperationException("Timed out reading the online documentation index.", ex);
+            }
+        }
+
+        private static CopilotDocsSearchHit? CreateHit(
+            CopilotDocsSearchEntry entry,
+            string normalizedQuery,
+            IReadOnlyList<string> terms,
+            IReadOnlyList<string> bigrams)
         {
             if (entry == null || string.IsNullOrWhiteSpace(entry.Url))
                 return null;
@@ -327,8 +440,17 @@ namespace ColorVision.Copilot
             var text = NormalizeSearchText(string.IsNullOrWhiteSpace(entry.Text) ? entry.Summary : entry.Text);
             var sectionTitle = NormalizeSearchText(entry.SectionTitle);
             var relativePath = entry.RelativePath ?? string.Empty;
+            // Aliases are the questions a topic is meant to answer, so they outrank body text.
+            var aliases = (entry.Aliases ?? []).Select(NormalizeSearchText).Where(alias => alias.Length >= 2).ToArray();
 
             var score = 0;
+            var isStrongMatch = title.Contains(normalizedQuery, StringComparison.Ordinal)
+                || text.Contains(normalizedQuery, StringComparison.Ordinal);
+            if (aliases.Any(alias => normalizedQuery.Contains(alias, StringComparison.Ordinal) || alias.Contains(normalizedQuery, StringComparison.Ordinal)))
+            {
+                score += 180;
+                isStrongMatch = true;
+            }
             if (title.Contains(normalizedQuery, StringComparison.Ordinal))
                 score += 220;
 
@@ -341,8 +463,20 @@ namespace ColorVision.Copilot
             if (sectionTitle.Contains(normalizedQuery, StringComparison.Ordinal))
                 score += 30;
 
+            var contentTerms = terms.Where(term => !string.Equals(term, normalizedQuery, StringComparison.Ordinal) || terms.Count == 1).ToArray();
+            var matchedTerms = 0;
             foreach (var term in terms)
             {
+                var isContentTerm = contentTerms.Contains(term);
+                if (isContentTerm && (title.Contains(term, StringComparison.Ordinal)
+                    || text.Contains(term, StringComparison.Ordinal)
+                    || aliases.Any(alias => alias.Contains(term, StringComparison.Ordinal))))
+                {
+                    matchedTerms++;
+                }
+                if (aliases.Any(alias => alias.Contains(term, StringComparison.Ordinal)))
+                    score += 25;
+
                 if (title.Equals(term, StringComparison.Ordinal))
                     score += 140;
                 else if (title.Contains(term, StringComparison.Ordinal))
@@ -358,9 +492,27 @@ namespace ColorVision.Copilot
                     score += 12;
             }
 
-            score += string.Equals(entry.Kind, "section", StringComparison.OrdinalIgnoreCase) ? 12 : 4;
-            if (score <= 0)
+            var matchedBigrams = 0;
+            foreach (var bigram in bigrams)
+            {
+                var inTitle = title.Contains(bigram, StringComparison.Ordinal);
+                if (inTitle || text.Contains(bigram, StringComparison.Ordinal) || aliases.Any(alias => alias.Contains(bigram, StringComparison.Ordinal)))
+                {
+                    matchedBigrams++;
+                    score += inTitle ? 10 : 4;
+                }
+            }
+
+            // Short query words appear in nearly every page, so a weak overlap is not a result.
+            var coversQuery = isStrongMatch
+                || contentTerms.Length > 0 && matchedTerms * 2 >= contentTerms.Length
+                || bigrams.Count > 0 && matchedBigrams * 2 >= bigrams.Count;
+            if (!coversQuery)
                 return null;
+
+            score += string.Equals(entry.Kind, "section", StringComparison.OrdinalIgnoreCase) ? 12 : 4;
+            if (entry.Status is "planned" or "historical")
+                score /= 3;
 
             var pageRelativeUrl = GetPageRelativeUrl(entry.Url);
             return new CopilotDocsSearchHit(
@@ -433,7 +585,7 @@ namespace ColorVision.Copilot
             foreach (Match match in SearchTermRegex.Matches(query ?? string.Empty))
             {
                 var term = NormalizeSearchText(match.Groups["term"].Value);
-                if (string.IsNullOrWhiteSpace(term) || term.Length < 2)
+                if (string.IsNullOrWhiteSpace(term) || term.Length < 2 || QueryStopWords.Contains(term))
                     continue;
 
                 terms.Add(term);
@@ -444,6 +596,23 @@ namespace ColorVision.Copilot
                 .OrderByDescending(term => term.Length)
                 .Take(8)
                 .ToArray();
+        }
+
+        // Chinese questions have no word breaks, so "怎么导出报表" would otherwise be one unmatched term.
+        private static IReadOnlyList<string> ExtractChineseBigrams(string query)
+        {
+            var bigrams = new List<string>();
+            foreach (Match match in ChineseRunRegex.Matches(query ?? string.Empty))
+            {
+                var run = match.Value;
+                for (var index = 0; index + 1 < run.Length && bigrams.Count < MaxQueryBigrams; index++)
+                {
+                    var bigram = run.Substring(index, 2);
+                    if (!QueryStopWords.Contains(bigram) && !bigrams.Contains(bigram))
+                        bigrams.Add(bigram);
+                }
+            }
+            return bigrams;
         }
 
         private static string NormalizeSearchText(string value)
@@ -491,6 +660,10 @@ namespace ColorVision.Copilot
             public string Id { get; set; } = string.Empty;
 
             public string Kind { get; set; } = string.Empty;
+
+            public string Status { get; set; } = string.Empty;
+
+            public string[] Aliases { get; set; } = Array.Empty<string>();
 
             public string SectionKey { get; set; } = string.Empty;
 

@@ -17,7 +17,8 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
         int IntervalMs,
         double ThresholdRatio,
         double MinCoverageRatio,
-        double TolerancePx);
+        double TolerancePx,
+        bool SourceIsRgb = false);
 
     internal readonly record struct VideoCrossGuideResult(
         bool Found,
@@ -45,6 +46,8 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
         string Message)
     {
         public bool IsPass => Found && Math.Abs(OffsetX) <= TolerancePx && Math.Abs(OffsetY) <= TolerancePx;
+        internal long Generation { get; init; }
+        internal CancellationToken PreviewLifetime { get; init; }
     }
 
     internal sealed class VideoCrossGuideProcessor : IDisposable
@@ -52,7 +55,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
         private static readonly ILog log = LogManager.GetLogger(typeof(VideoCrossGuideProcessor));
         private readonly object _gate = new();
         private readonly AutoResetEvent _frameReady = new(false);
-        private readonly CancellationTokenSource _cts = new();
+        private readonly TaskCompletionSource _retirement = new(TaskCreationOptions.RunContinuationsAsynchronously);
         private readonly Action<VideoCrossGuideResult> _resultHandler;
         private readonly Func<HImage, VideoCrossGuideRequest, int, int, RoiRect, VideoCrossGuideResult> _frameProcessor;
         private readonly Task _workerTask;
@@ -62,6 +65,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
         private int _pendingCapacity;
         private int _workingCapacity;
         private VideoCrossGuideRequest _pendingRequest;
+        private CancellationToken _pendingPreviewLifetime;
         private RoiRect _pendingSourceRoi;
         private RoiRect _workingSourceRoi;
         private int _pendingFrameWidth;
@@ -71,9 +75,12 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
         private bool _hasPendingFrame;
         private bool _processingFrame;
         private bool _acceptFrames = true;
-        private bool _disposed;
+        private int _disposeRequested;
         private long _generation;
         private long _lastSubmittedTick;
+
+        private bool IsDisposing => Volatile.Read(ref _disposeRequested) != 0;
+        internal Task Retirement => _retirement.Task;
 
         public VideoCrossGuideProcessor(Action<VideoCrossGuideResult> resultHandler)
             : this(resultHandler, VideoCrossGuideDetector.ProcessFrame)
@@ -88,49 +95,54 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
             ArgumentNullException.ThrowIfNull(frameProcessor);
             _resultHandler = resultHandler;
             _frameProcessor = frameProcessor;
-            _workerTask = Task.Factory.StartNew(WorkerLoop, _cts.Token, TaskCreationOptions.LongRunning, TaskScheduler.Default);
+            _workerTask = Task.Factory.StartNew(WorkerLoop, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default);
         }
 
-        public void SubmitFrame(IntPtr sourcePointer, int length, int width, int height, int channels, int depth, int stride, VideoCrossGuideRequest request)
-        {
-            if (sourcePointer == IntPtr.Zero || length <= 0 || _disposed) return;
-            if (width <= 0 || height <= 0 || channels <= 0 || depth <= 0 || depth % 8 != 0) return;
+        internal long CaptureGeneration() => Interlocked.Read(ref _generation);
 
-            int interval = Math.Max(50, request.IntervalMs);
-            long now = Environment.TickCount64;
-            long last = Interlocked.Read(ref _lastSubmittedTick);
-            if (now - last < interval) return;
-            Interlocked.Exchange(ref _lastSubmittedTick, now);
+        internal bool IsCurrentResult(VideoCrossGuideResult result)
+            => !IsDisposing && !result.PreviewLifetime.IsCancellationRequested && result.Generation == CaptureGeneration();
+
+        public void SubmitFrame(IntPtr sourcePointer, int length, int width, int height, int channels, int depth, int stride,
+            VideoCrossGuideRequest request, CancellationToken previewLifetime = default, long? requestGeneration = null)
+        {
+            long generation = requestGeneration ?? CaptureGeneration();
+            if (sourcePointer == IntPtr.Zero || length <= 0 || IsDisposing || previewLifetime.IsCancellationRequested) return;
+            if (width <= 0 || height <= 0 || channels <= 0 || depth <= 0 || depth % 8 != 0) return;
 
             RoiRect sourceRoi = VideoCrossGuideDetector.NormalizeRoi(request.Roi, width, height);
             if (sourceRoi.Width <= 0 || sourceRoi.Height <= 0) return;
 
-            SubmitFrameCore(sourcePointer, length, width, height, channels, depth, stride, sourceRoi, request);
+            SubmitFrameCore(sourcePointer, length, width, height, channels, depth, stride, sourceRoi, request, previewLifetime, generation);
         }
 
-        private unsafe void SubmitFrameCore(IntPtr sourcePointer, int length, int width, int height, int channels, int depth, int stride, RoiRect sourceRoi, VideoCrossGuideRequest request)
+        private unsafe void SubmitFrameCore(IntPtr sourcePointer, int length, int width, int height, int channels, int depth, int stride,
+            RoiRect sourceRoi, VideoCrossGuideRequest request, CancellationToken previewLifetime, long generation)
         {
-            int bytesPerSample = depth / 8;
-            int pixelBytes = channels * bytesPerSample;
-            int rowBytes = sourceRoi.Width * pixelBytes;
-            int requiredLength = rowBytes * sourceRoi.Height;
-            int sourceRowBytesNeeded = (sourceRoi.X + sourceRoi.Width) * pixelBytes;
-            if (rowBytes <= 0 || requiredLength <= 0 || stride < sourceRowBytesNeeded || length < stride * height) return;
+            long pixelBytes = channels * (depth / 8L);
+            if (stride <= 0 || pixelBytes > stride / width || (long)(height - 1) * stride + width * pixelBytes > length) return;
+            int rowBytes = (int)(sourceRoi.Width * pixelBytes);
+            int requiredLength = checked(rowBytes * sourceRoi.Height);
 
             lock (_gate)
             {
-                if (_disposed || !_acceptFrames) return;
+                if (IsDisposing || !_acceptFrames || generation != _generation || previewLifetime.IsCancellationRequested) return;
+                long now = Environment.TickCount64;
+                if (now - _lastSubmittedTick < Math.Max(50, request.IntervalMs)) return;
+                _lastSubmittedTick = now;
+
                 EnsureBuffer(ref _pendingFrame, ref _pendingCapacity, sourceRoi.Width, sourceRoi.Height, channels, depth, rowBytes, requiredLength);
                 byte* sourceBase = (byte*)sourcePointer;
                 byte* targetBase = (byte*)_pendingFrame!.Value.pData;
                 for (int y = 0; y < sourceRoi.Height; y++)
                 {
-                    byte* sourceRow = sourceBase + (sourceRoi.Y + y) * stride + sourceRoi.X * pixelBytes;
+                    byte* sourceRow = sourceBase + (long)(sourceRoi.Y + y) * stride + sourceRoi.X * pixelBytes;
                     byte* targetRow = targetBase + y * rowBytes;
                     Buffer.MemoryCopy(sourceRow, targetRow, rowBytes, rowBytes);
                 }
 
                 _pendingRequest = request;
+                _pendingPreviewLifetime = previewLifetime;
                 _pendingSourceRoi = sourceRoi;
                 _pendingFrameWidth = width;
                 _pendingFrameHeight = height;
@@ -141,10 +153,9 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
 
         private void WorkerLoop()
         {
-            while (!_cts.IsCancellationRequested)
+            while (!IsDisposing)
             {
-                _frameReady.WaitOne(100);
-                if (_cts.IsCancellationRequested) break;
+                _frameReady.WaitOne();
 
                 HImage workingFrame;
                 VideoCrossGuideRequest request;
@@ -152,10 +163,19 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
                 int frameWidth;
                 int frameHeight;
                 long generation;
+                CancellationToken previewLifetime;
 
                 lock (_gate)
                 {
+                    if (IsDisposing) break;
                     if (!_hasPendingFrame || _pendingFrame == null) continue;
+                    previewLifetime = _pendingPreviewLifetime;
+                    _pendingPreviewLifetime = default;
+                    if (previewLifetime.IsCancellationRequested)
+                    {
+                        _hasPendingFrame = false;
+                        continue;
+                    }
 
                     (_pendingFrame, _workingFrame) = (_workingFrame, _pendingFrame);
                     (_pendingCapacity, _workingCapacity) = (_workingCapacity, _pendingCapacity);
@@ -186,10 +206,8 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
                         continue;
                     }
 
-                    lock (_gate)
-                    {
-                        if (_disposed || generation != _generation) continue;
-                    }
+                    result = result with { Generation = generation, PreviewLifetime = previewLifetime };
+                    if (!IsCurrentResult(result)) continue;
                     try { _resultHandler(result); }
                     catch { }
                 }
@@ -199,7 +217,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
                     {
                         _processingFrame = false;
                         // Stop/reset may retire this frame while native detection still reads it.
-                        if (_disposed || generation != _generation) ReleaseBuffer(ref _workingFrame, ref _workingCapacity);
+                        if (IsDisposing || generation != _generation) ReleaseBuffer(ref _workingFrame, ref _workingCapacity);
                     }
                 }
             }
@@ -217,7 +235,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
 
             if (needsAllocation)
             {
-                buffer?.Dispose();
+                ReleaseBuffer(ref buffer, ref capacity);
                 buffer = new HImage
                 {
                     rows = height,
@@ -233,23 +251,30 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
 
         public void Start()
         {
+            if (IsDisposing) return;
             lock (_gate)
             {
-                if (_disposed || _acceptFrames) return;
+                if (IsDisposing || _acceptFrames) return;
                 _acceptFrames = true;
-                Interlocked.Exchange(ref _lastSubmittedTick, 0);
+                _lastSubmittedTick = 0;
             }
         }
 
         public void Reset()
         {
-            lock (_gate) ResetCore();
+            if (IsDisposing) return;
+            lock (_gate)
+            {
+                if (!IsDisposing) ResetCore();
+            }
         }
 
         public void Stop()
         {
+            if (IsDisposing) return;
             lock (_gate)
             {
+                if (IsDisposing) return;
                 _acceptFrames = false;
                 ResetCore();
             }
@@ -257,12 +282,13 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
 
         private void ResetCore()
         {
-            ++_generation;
+            Interlocked.Increment(ref _generation);
             _hasPendingFrame = false;
             _pendingRequest = default;
+            _pendingPreviewLifetime = default;
             ReleaseBuffer(ref _pendingFrame, ref _pendingCapacity);
             if (!_processingFrame) ReleaseBuffer(ref _workingFrame, ref _workingCapacity);
-            Interlocked.Exchange(ref _lastSubmittedTick, 0);
+            _lastSubmittedTick = 0;
         }
 
         private static void ReleaseBuffer(ref HImage? buffer, ref int capacity)
@@ -274,26 +300,31 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
 
         public void Dispose()
         {
-            lock (_gate)
-            {
-                if (_disposed) return;
-                _disposed = true;
-                _acceptFrames = false;
-                _cts.Cancel();
-                _frameReady.Set();
-            }
+            if (Interlocked.Exchange(ref _disposeRequested, 1) != 0) return;
+            // Wake an idle worker before scheduling cleanup of its event and buffers.
+            _frameReady.Set();
+            _ = Task.Run(FinishRetirementAsync);
+        }
 
+        private async Task FinishRetirementAsync()
+        {
             try
             {
-                _workerTask.Wait();
+                await _workerTask.ConfigureAwait(false);
             }
-            catch (AggregateException)
+            catch (Exception ex)
             {
+                log.Warn("Video cross-guide worker stopped unexpectedly.", ex);
             }
 
-            lock (_gate) ResetCore();
-            _frameReady.Dispose();
-            _cts.Dispose();
+            // A submit that was already copying can still own the pending buffer and signal.
+            lock (_gate)
+            {
+                _acceptFrames = false;
+                ResetCore();
+                _frameReady.Dispose();
+            }
+            _retirement.SetResult();
         }
     }
 
@@ -324,7 +355,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
             double minCoverageRatio = Clamp(request.MinCoverageRatio, 0.01, 0.95);
 
             RoiRect localRoi = new(0, 0, frame.cols, frame.rows);
-            double maxGray = FindMaxGray(frame, localRoi);
+            double maxGray = FindMaxGray(frame, localRoi, request.SourceIsRgb);
             if (maxGray < 8)
                 return NotFound(frameWidth, frameHeight, request, displayRoi, Properties.Resources.VideoCrossGuide_CrossNotFoundLowBrightness);
 
@@ -335,7 +366,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
             int[] columnHits = new int[localRoi.Width];
             List<BrightPixel> brightPixels = new(Math.Min(MaxAngleSamples, Math.Max(0, localRoi.Width * localRoi.Height / 64)));
 
-            Accumulate(frame, localRoi, threshold, rowSum, columnSum, rowHits, columnHits, brightPixels);
+            Accumulate(frame, localRoi, threshold, rowSum, columnSum, rowHits, columnHits, brightPixels, request.SourceIsRgb);
 
             int rowPeak = IndexOfMax(rowSum);
             int columnPeak = IndexOfMax(columnSum);
@@ -484,7 +515,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
             return new Rect(x, y, right - x, bottom - y);
         }
 
-        private static unsafe double FindMaxGray(HImage frame, RoiRect roi)
+        private static unsafe double FindMaxGray(HImage frame, RoiRect roi, bool sourceIsRgb)
         {
             double max = 0;
             for (int y = roi.Y; y < roi.Y + roi.Height; y++)
@@ -492,7 +523,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
                 byte* row = (byte*)frame.pData + y * frame.stride;
                 for (int x = roi.X; x < roi.X + roi.Width; x++)
                 {
-                    double gray = ReadGray(row, x, frame.channels, frame.depth);
+                    double gray = ReadGray(row, x, frame.channels, frame.depth, sourceIsRgb);
                     if (gray > max) max = gray;
                 }
             }
@@ -500,7 +531,8 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
             return max;
         }
 
-        private static unsafe void Accumulate(HImage frame, RoiRect roi, double threshold, double[] rowSum, double[] columnSum, int[] rowHits, int[] columnHits, List<BrightPixel> brightPixels)
+        private static unsafe void Accumulate(HImage frame, RoiRect roi, double threshold, double[] rowSum, double[] columnSum,
+            int[] rowHits, int[] columnHits, List<BrightPixel> brightPixels, bool sourceIsRgb)
         {
             for (int y = roi.Y; y < roi.Y + roi.Height; y++)
             {
@@ -508,7 +540,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
                 byte* row = (byte*)frame.pData + y * frame.stride;
                 for (int x = roi.X; x < roi.X + roi.Width; x++)
                 {
-                    double gray = ReadGray(row, x, frame.channels, frame.depth);
+                    double gray = ReadGray(row, x, frame.channels, frame.depth, sourceIsRgb);
                     if (gray < threshold) continue;
 
                     int columnIndex = x - roi.X;
@@ -522,25 +554,27 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
             }
         }
 
-        private static unsafe double ReadGray(byte* row, int x, int channels, int depth)
+        private static unsafe double ReadGray(byte* row, int x, int channels, int depth, bool sourceIsRgb)
         {
             int bytesPerSample = depth / 8;
             byte* pixel = row + x * channels * bytesPerSample;
+            int blueIndex = sourceIsRgb && channels >= 3 ? 2 : 0;
+            int redIndex = channels >= 3 ? 2 - blueIndex : channels - 1;
 
             if (depth == 8)
             {
                 if (channels == 1) return pixel[0];
-                double b = pixel[0];
-                double g = channels > 1 ? pixel[1] : b;
-                double r = channels > 2 ? pixel[2] : g;
+                double b = pixel[blueIndex];
+                double g = pixel[1];
+                double r = pixel[redIndex];
                 return (0.114 * b) + (0.587 * g) + (0.299 * r);
             }
 
             ushort* p16 = (ushort*)pixel;
             if (channels == 1) return p16[0] / 257.0;
-            double b16 = p16[0] / 257.0;
-            double g16 = channels > 1 ? p16[1] / 257.0 : b16;
-            double r16 = channels > 2 ? p16[2] / 257.0 : g16;
+            double b16 = p16[blueIndex] / 257.0;
+            double g16 = p16[1] / 257.0;
+            double r16 = p16[redIndex] / 257.0;
             return (0.114 * b16) + (0.587 * g16) + (0.299 * r16);
         }
 

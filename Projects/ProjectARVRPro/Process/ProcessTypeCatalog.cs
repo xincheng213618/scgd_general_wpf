@@ -26,7 +26,7 @@ namespace ProjectARVRPro.Process
     public static class ProcessTypeCatalog
     {
         public const string ArvrCategory = "ARVR";
-        public const string BlankCategory = "空模板";
+        public const string BlankCategory = "空流程";
         public const string AoiCategory = "AOI";
         public const string DemuraCategory = "Demura";
         public const string MtfSubcategory = "MTF";
@@ -41,7 +41,6 @@ namespace ProjectARVRPro.Process
             ArgumentNullException.ThrowIfNull(processes);
 
             return processes
-                .Where(process => process is not BlankProcess)
                 .GroupBy(process => process.GetType().FullName, StringComparer.Ordinal)
                 .Select(group => CreateOption(group.First()))
                 .OrderBy(option => GetCategoryOrder(option.Category))
@@ -78,7 +77,7 @@ namespace ProjectARVRPro.Process
                 return category;
 
             string typeName = processType.Name;
-            if (typeName.StartsWith("MTF", StringComparison.Ordinal))
+            if (typeName.StartsWith("MTF", StringComparison.Ordinal) || typeName == "VRMtfPartitionProcess")
                 return MtfSubcategory;
 
             if (typeName.StartsWith("Chessboard", StringComparison.Ordinal))
@@ -144,6 +143,7 @@ namespace ProjectARVRPro.Process
 
         private static (string DisplayName, string Description, string Capabilities) GetDocumentation(string typeName) => typeName switch
         {
+            "BlankProcess" => ("空流程", "执行绑定的 Flow 模板，完成后直接通过，不解析业务指标。", "无需配置 · 无业务指标 · 无额外 CSV 项"),
             "BlackProcess" => ("黑画面", "解析黑画面测量结果，用于暗态亮度、漏光与黑画面区域判定。", "结果解析 · 阈值判定 · 区域叠加 · 文本结果"),
             "ChessboardProcess" => ("棋盘格", "解析静态棋盘格结果，用于对比度及棋盘格亮暗区域评价。", "对比度 · 阈值判定 · 点位叠加 · 文本结果"),
             "ChessboardDynamicProcess" => ("动态棋盘格", "解析动态棋盘格结果，适合运行时生成点位的棋盘格对比度评价。", "动态点位 · 对比度 · 阈值判定 · 图形叠加"),
@@ -153,6 +153,7 @@ namespace ProjectARVRPro.Process
             "LuminanceChromaticityProcess" => ("亮色度", "解析关键点亮度与色度结果，用于亮度、色坐标及均匀性评价。", "亮度 · 色度 · 均匀性 · 点位叠加"),
             "LuminanceChromaticityYWProcess" => ("YW亮色度（12X7 + 8X7）", "分别解析YW的12X7与8X7两组POI，并直接计算平均亮度、亮度均匀性和色度均匀性。", "双POI组 · 本地均匀性计算 · 独立Recipe · 强类型Key"),
             "MTFProcess" => ("MTF 通用", "解析通用 MTF 结果，按测量点输出清晰度评价。", "MTF 解析 · 阈值判定 · 区域叠加 · 文本结果"),
+            "VRMtfPartitionProcess" => ("VR MTF 分区", "按自然点名顺序组成方形网格，计算互斥A/B/C/D区域的最小值、最大值与平均值。", "VR圆环分区 · 12项独立Recipe · 独立输出Key · 原始点叠加"),
             "MTFHProcess" => ("MTF 058-H（横条纹）", "解析058测试点位方案的横条纹MTF结果。", "横条纹 · 058点位 · 固定区域 · 独立阈值"),
             "MTFVProcess" => ("MTF 058-V（竖条纹）", "解析058测试点位方案的竖条纹MTF结果。", "竖条纹 · 058点位 · 固定区域 · 独立阈值"),
             "MTFH07Process" => ("MTFH07（横条纹）", "解析07测试点位方案的横条纹结果；中心0F和四角0.7F分别配置解析Key与Recipe。", "横条纹 · 5个固定点位 · 逐点Recipe · 独立输出Key"),
@@ -163,6 +164,7 @@ namespace ProjectARVRPro.Process
             "MTFHV058Process" => ("MTF-HV 058（特殊图案）", "解析058测试点位方案的HV特殊图案结果。", "HV特殊图案 · 058点位 · 阈值判定 · 区域叠加"),
             "RgbCrossProcess" => ("十字 RGB 分离", "读取十字测量 JSON，绘制 RGB 边缘；默认只测量，可由本项目配置分离判定。", "单十字/矩阵 · JSON 解析 · RGB 边缘叠加 · 可选判定"),
             "OpticCenterProcess" => ("光学中心", "解析固定点位光学中心结果，用于中心偏移及位置评价。", "中心定位 · 偏移评价 · 阈值判定 · 文本结果"),
+            "OpticCenterLuxProcess" => ("光学中心（回包）", "复用光学中心解析与判定，选择此类型即可从本次流程结果生成三轴回包。", "光学中心 · 实例Recipe · 回包接口 · 本次结果快照"),
             "OpticCenterDynamicProcess" => ("动态光学中心", "解析动态点位光学中心结果，适配运行时变化的中心定位流程。", "动态点位 · 中心定位 · 偏移评价 · 文本结果"),
             "PoiDynamicProcess" => ("动态 POI", "解析动态 POI 测量结果，用于运行时生成点位的亮色度展示。", "动态点位 · POI 解析 · 图形叠加 · 文本结果"),
             "DetectScreenDefectsProcess" => ("屏幕缺陷", "解析屏幕缺陷算法结果，显示缺陷类型、位置、尺寸及缺陷区域。", "缺陷解析 · 缺陷列表 · 区域叠加 · 结构化结果"),

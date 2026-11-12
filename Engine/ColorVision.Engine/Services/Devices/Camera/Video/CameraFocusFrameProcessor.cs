@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace ColorVision.Engine.Services.Devices.Camera.Video
 {
-    internal readonly record struct CameraFocusFrameRequest(FocusAlgorithm FocusAlgorithm, RoiRect Roi);
+    internal readonly record struct CameraFocusFrameRequest(FocusAlgorithm FocusAlgorithm, RoiRect Roi, bool SourceIsRgb = false);
     internal readonly record struct CameraFocusFrameResult(double Articulation);
 
     internal sealed class CameraFocusFrameProcessor : IDisposable
@@ -15,7 +15,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
         private static readonly ILog log = LogManager.GetLogger(typeof(CameraFocusFrameProcessor));
         private readonly object _gate = new();
         private readonly AutoResetEvent _frameReady = new(false);
-        private readonly CancellationTokenSource _cts = new();
+        private readonly TaskCompletionSource _retirement = new(TaskCreationOptions.RunContinuationsAsynchronously);
         private readonly Action<CameraFocusFrameResult> _resultHandler;
         private readonly Func<HImage, CameraFocusFrameRequest, CameraFocusFrameResult> _frameProcessor;
         private readonly Task _workerTask;
@@ -26,7 +26,9 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
         private int _workingCapacity;
         private CameraFocusFrameRequest _pendingRequest;
         private bool _hasPendingFrame;
-        private bool _disposed;
+        private int _stopRequested;
+
+        internal Task Retirement => _retirement.Task;
 
         public CameraFocusFrameProcessor(Action<CameraFocusFrameResult> resultHandler)
             : this(resultHandler, ProcessFrame)
@@ -43,7 +45,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
             _frameProcessor = frameProcessor;
             _workerTask = Task.Factory.StartNew(
                 WorkerLoop,
-                _cts.Token,
+                CancellationToken.None,
                 TaskCreationOptions.LongRunning,
                 TaskScheduler.Default);
         }
@@ -51,7 +53,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
         public void SubmitFrame(byte[] sourceBuffer, int length, int width, int height, int channels, int depth, int stride, CameraFocusFrameRequest request)
         {
             ArgumentNullException.ThrowIfNull(sourceBuffer);
-            if (length <= 0 || length > sourceBuffer.Length || _disposed) return;
+            if (length <= 0 || length > sourceBuffer.Length || Volatile.Read(ref _stopRequested) != 0) return;
 
             unsafe
             {
@@ -64,38 +66,80 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
 
         public void SubmitFrame(IntPtr sourcePointer, int length, int width, int height, int channels, int depth, int stride, CameraFocusFrameRequest request)
         {
-            if (sourcePointer == IntPtr.Zero || length <= 0 || _disposed) return;
+            if (sourcePointer == IntPtr.Zero || length <= 0 || Volatile.Read(ref _stopRequested) != 0) return;
             SubmitFrameCore(sourcePointer, length, width, height, channels, depth, stride, request);
         }
 
         private unsafe void SubmitFrameCore(IntPtr sourcePointer, int length, int width, int height, int channels, int depth, int stride, CameraFocusFrameRequest request)
         {
+            if (width <= 0 || height <= 0 || channels <= 0 || depth <= 0 || depth % 8 != 0 || stride < 0) return;
+            int sampleBytes = depth / 8;
+            long pixelBytes = (long)channels * sampleBytes;
+            if (pixelBytes > length / width) return;
+            int rowBytes = checked((int)(width * pixelBytes));
+            int sourceStride = stride == 0 ? rowBytes : stride;
+            if (sourceStride < rowBytes || sourceStride % sampleBytes != 0
+                || checked((long)(height - 1) * sourceStride + rowBytes) > length) return;
+
+            RoiRect crop = default;
+            RoiRect localRoi = default;
+            bool cropped = channels is 1 or 3 && depth is 8 or 16
+                && request.FocusAlgorithm is >= FocusAlgorithm.Variance and <= FocusAlgorithm.SpatialFrequency
+                && TryGetFocusCrop(request.Roi, width, height, out crop, out localRoi);
+            int outputStride = cropped ? checked((int)(crop.Width * pixelBytes)) : stride;
+            int outputLength = cropped ? checked(outputStride * crop.Height) : length;
+
             lock (_gate)
             {
-                if (_disposed) return;
-                EnsureBuffer(ref _pendingFrame, ref _pendingCapacity, width, height, channels, depth, stride, length);
-                Buffer.MemoryCopy((void*)sourcePointer, (void*)_pendingFrame!.Value.pData, _pendingCapacity, length);
+                if (Volatile.Read(ref _stopRequested) != 0) return;
+                EnsureBuffer(ref _pendingFrame, ref _pendingCapacity, cropped ? crop.Width : width,
+                    cropped ? crop.Height : height, channels, depth, outputStride, outputLength);
+                byte* destination = (byte*)_pendingFrame!.Value.pData;
+                if (cropped)
+                {
+                    byte* source = (byte*)sourcePointer + (long)crop.Y * sourceStride + crop.X * pixelBytes;
+                    for (int row = 0; row < crop.Height; row++)
+                        Buffer.MemoryCopy(source + (long)row * sourceStride, destination + (long)row * outputStride, outputStride, outputStride);
+                    request = request with { Roi = localRoi };
+                }
+                else Buffer.MemoryCopy((void*)sourcePointer, destination, _pendingCapacity, length);
                 _pendingRequest = request;
                 _hasPendingFrame = true;
                 _frameReady.Set();
             }
         }
 
+        private static bool TryGetFocusCrop(RoiRect roi, int width, int height, out RoiRect crop, out RoiRect localRoi)
+        {
+            crop = localRoi = default;
+            int left = Math.Max(0, roi.X), top = Math.Max(0, roi.Y);
+            long right = Math.Min(width, (long)roi.X + roi.Width);
+            long bottom = Math.Min(height, (long)roi.Y + roi.Height);
+            // The native helper uses the entire frame when the requested ROI does not intersect it.
+            if (left >= right || top >= bottom) return false;
+
+            // Mono Sobel and Laplacian can read one pixel beyond the ROI from its parent Mat.
+            int x = Math.Max(0, left - 1), y = Math.Max(0, top - 1);
+            int endX = (int)Math.Min(width, right + 1), endY = (int)Math.Min(height, bottom + 1);
+            if (x == 0 && y == 0 && endX == width && endY == height) return false;
+
+            crop = new RoiRect(x, y, endX - x, endY - y);
+            localRoi = new RoiRect(left - x, top - y, (int)(right - left), (int)(bottom - top));
+            return true;
+        }
+
         private void WorkerLoop()
         {
-            while (!_cts.IsCancellationRequested)
+            while (Volatile.Read(ref _stopRequested) == 0)
             {
-                _frameReady.WaitOne(100);
-                if (_cts.IsCancellationRequested)
-                {
-                    break;
-                }
+                _frameReady.WaitOne();
 
                 HImage workingFrame;
                 CameraFocusFrameRequest request;
 
                 lock (_gate)
                 {
+                    if (Volatile.Read(ref _stopRequested) != 0) break;
                     if (!_hasPendingFrame || _pendingFrame == null)
                     {
                         continue;
@@ -122,7 +166,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
 
                 try
                 {
-                    if (_cts.IsCancellationRequested)
+                    if (Volatile.Read(ref _stopRequested) != 0)
                     {
                         break;
                     }
@@ -136,8 +180,24 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
             }
         }
 
-        private static CameraFocusFrameResult ProcessFrame(HImage frame, CameraFocusFrameRequest request)
-            => new(OpenCVMediaHelper.M_CalArtculation(frame, request.FocusAlgorithm, request.Roi));
+        private static unsafe CameraFocusFrameResult ProcessFrame(HImage frame, CameraFocusFrameRequest request)
+        {
+            if (request.SourceIsRgb && frame.channels == 3 && frame.depth is 8 or 16)
+            {
+                // The worker owns this snapshot. Normalize only its copied pixels for the BGR native metric.
+                int sampleBytes = frame.depth / 8;
+                int pixelBytes = 3 * sampleBytes;
+                int stride = frame.stride == 0 ? frame.cols * pixelBytes : frame.stride;
+                for (int y = 0; y < frame.rows; y++)
+                {
+                    byte* pixel = (byte*)frame.pData + (long)y * stride;
+                    for (int x = 0; x < frame.cols; x++, pixel += pixelBytes)
+                        for (int i = 0; i < sampleBytes; i++)
+                            (pixel[i], pixel[2 * sampleBytes + i]) = (pixel[2 * sampleBytes + i], pixel[i]);
+                }
+            }
+            return new(OpenCVMediaHelper.M_CalArtculation(frame, request.FocusAlgorithm, request.Roi));
+        }
 
         private static void EnsureBuffer(ref HImage? buffer, ref int capacity, int width, int height, int channels, int depth, int stride, int requiredLength)
         {
@@ -152,6 +212,8 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
             if (needsAllocation)
             {
                 buffer?.Dispose();
+                buffer = null;
+                capacity = 0;
                 buffer = new HImage
                 {
                     rows = height,
@@ -167,26 +229,31 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
 
         public void Dispose()
         {
-            lock (_gate)
-            {
-                if (_disposed) return;
-                _disposed = true;
-                _cts.Cancel();
-                _frameReady.Set();
-            }
+            if (Interlocked.Exchange(ref _stopRequested, 1) != 0) return;
+            // A camera callback may be copying a full frame and the worker may be in native code.
+            _frameReady.Set();
+            _ = Task.Run(FinishRetirementAsync);
+        }
 
+        private async Task FinishRetirementAsync()
+        {
             try
             {
-                _workerTask.Wait();
+                await _workerTask.ConfigureAwait(false);
             }
-            catch (AggregateException)
+            catch (Exception ex)
             {
+                log.Warn("Camera focus worker stopped unexpectedly.", ex);
             }
-
-            _pendingFrame?.Dispose();
-            _workingFrame?.Dispose();
-            _frameReady.Dispose();
-            _cts.Dispose();
+            lock (_gate)
+            {
+                _pendingFrame?.Dispose();
+                _workingFrame?.Dispose();
+                _pendingFrame = null;
+                _workingFrame = null;
+                _frameReady.Dispose();
+            }
+            _retirement.SetResult();
         }
     }
 }

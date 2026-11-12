@@ -1,4 +1,5 @@
 using ProjectARVRPro.Process.KeyedResults;
+using ProjectARVRPro.Process.OpticCenter;
 using System.Collections;
 using System.Reflection;
 
@@ -91,13 +92,16 @@ namespace ProjectARVRPro.Exports
                     .OfType<System.ComponentModel.DisplayNameAttribute>()
                     .FirstOrDefault()?.DisplayName ?? property.Name;
 
+                object? value = property.GetValue(_result);
+                if (value is OpticCenterTestResult center)
+                    displayName = center.GetOutputKey();
+
                 if (!string.Equals(displayName, testScreenName, StringComparison.OrdinalIgnoreCase) &&
                     !string.Equals(property.Name, testScreenName, StringComparison.OrdinalIgnoreCase))
                 {
                     continue;
                 }
 
-                object? value = property.GetValue(_result);
                 if (value is IList list && list.Count > 0)
                     return list[0];
 

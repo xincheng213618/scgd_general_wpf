@@ -1,6 +1,8 @@
 #pragma warning disable CA1822
 using ColorVision.UI.LogImp.Models;
+using Microsoft.Win32.SafeHandles;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;
@@ -27,6 +29,9 @@ namespace ColorVision.UI.LogImp
 
         private DispatcherTimer? _refreshTimer;
         private long _lastReadPosition;
+        private (ulong Volume, ulong Low, ulong High)? _fileIdentity;
+        private Encoding? _effectiveEncoding;
+        private Encoding _encoding = Encoding.Default;
         private readonly object _fileLock = new();
         private FileSystemWatcher? _fileWatcher;
         private int _fileChangePending;
@@ -36,7 +41,11 @@ namespace ColorVision.UI.LogImp
         /// <summary>
         /// File encoding (defaults to system default; use GB2312 for C++ logs on Chinese Windows).
         /// </summary>
-        public Encoding Encoding { get; set; } = Encoding.Default;
+        public Encoding Encoding
+        {
+            get => _encoding;
+            set { _encoding = value; _effectiveEncoding = null; }
+        }
 
         /// <summary>
         /// Create a new LogLocalOutput instance for the specified log file.
@@ -108,11 +117,12 @@ namespace ColorVision.UI.LogImp
 
                 _fileWatcher = new FileSystemWatcher(dir, fileName)
                 {
-                    NotifyFilter = NotifyFilters.LastWrite | NotifyFilters.Size,
+                    NotifyFilter = NotifyFilters.LastWrite | NotifyFilters.Size | NotifyFilters.FileName,
                     EnableRaisingEvents = false
                 };
                 _fileWatcher.Changed += OnFileChanged;
                 _fileWatcher.Created += OnFileChanged;
+                _fileWatcher.Renamed += OnFileChanged;
             }
             catch
             {
@@ -192,7 +202,7 @@ namespace ColorVision.UI.LogImp
             if (!File.Exists(LogFilePath))
             {
                 LogViewer.SetMessage($"File not found: {LogFilePath}", LogEntryLevel.Warning);
-                _lastReadPosition = 0;
+                _effectiveEncoding = null;
                 return;
             }
 
@@ -200,16 +210,8 @@ namespace ColorVision.UI.LogImp
             {
                 lock (_fileLock)
                 {
-                    using var fileStream = new FileStream(LogFilePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-
-                    LogViewer.MaxEntries = Config.MaxLines;
-                    LogViewer.SetEntries(ReadDisplayEntries(fileStream), Config.LogReverse);
-                    _lastReadPosition = fileStream.Length;
-                }
-
-                if (Config.AutoScrollToEnd || Config.LogReverse)
-                {
-                    LogViewer.ScrollToLatest(Config.LogReverse);
+                    using var fileStream = OpenLogFile();
+                    ReplaceDisplayedLog(fileStream, GetFileIdentity(fileStream.SafeFileHandle));
                 }
             }
             catch (IOException ex)
@@ -222,25 +224,41 @@ namespace ColorVision.UI.LogImp
             }
         }
 
-        private List<LogEntry> ReadDisplayEntries(FileStream fileStream)
-        {
-            if (Config.MaxLines <= 0)
-            {
-                fileStream.Seek(0, SeekOrigin.Begin);
-                using var fullReader = new StreamReader(fileStream, Encoding, detectEncodingFromByteOrderMarks: true, leaveOpen: true);
-                return LogEntryParser.FromLines(ReadAllLines(fullReader));
-            }
+        private FileStream OpenLogFile() => new(LogFilePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
 
-            long tailStart = SupportsByteTailSearch(fileStream, Encoding)
-                ? FindTailStart(fileStream, Config.MaxLines)
+        private void ReplaceDisplayedLog(FileStream fileStream, (ulong Volume, ulong Low, ulong High)? identity)
+        {
+            var entries = ReadDisplayEntries(fileStream, out Encoding encoding);
+            LogViewer.MaxEntries = Config.MaxLines;
+            LogViewer.SetEntries(entries, Config.LogReverse);
+            _lastReadPosition = fileStream.Position;
+            _fileIdentity = identity;
+            _effectiveEncoding = encoding;
+            if (Config.AutoScrollToEnd || Config.LogReverse)
+                LogViewer.ScrollToLatest(Config.LogReverse);
+        }
+
+        private List<LogEntry> ReadDisplayEntries(FileStream fileStream, out Encoding encoding)
+        {
+            using (var probe = new StreamReader(fileStream, Encoding, detectEncodingFromByteOrderMarks: true, bufferSize: 128, leaveOpen: true))
+            {
+                _ = probe.Peek();
+                encoding = probe.CurrentEncoding;
+            }
+            int maxLines = Config.MaxLines;
+            long tailStart = maxLines > 0 && encoding.CodePage is not (1200 or 1201 or 12000 or 12001)
+                ? FindTailStart(fileStream, maxLines)
                 : 0;
-            fileStream.Seek(tailStart, SeekOrigin.Begin);
-            using var reader = new StreamReader(fileStream, Encoding, detectEncodingFromByteOrderMarks: tailStart == 0, leaveOpen: true);
-            var tailLines = new Queue<string>(Config.MaxLines);
+            fileStream.Position = tailStart;
+            using var reader = new StreamReader(fileStream, encoding, detectEncodingFromByteOrderMarks: tailStart == 0, leaveOpen: true);
+            if (maxLines <= 0)
+                return LogEntryParser.FromLines(ReadAllLines(reader));
+
+            var tailLines = new Queue<string>(maxLines);
             string? tailLine;
             while ((tailLine = reader.ReadLine()) != null)
             {
-                if (tailLines.Count == Config.MaxLines)
+                if (tailLines.Count == maxLines)
                 {
                     tailLines.Dequeue();
                 }
@@ -251,31 +269,25 @@ namespace ColorVision.UI.LogImp
             return LogEntryParser.FromLines(tailLines);
         }
 
-        private static bool SupportsByteTailSearch(FileStream fileStream, Encoding encoding)
+        private static (ulong Volume, ulong Low, ulong High)? GetFileIdentity(SafeFileHandle handle)
         {
-            if (encoding.CodePage is 1200 or 1201 or 12000 or 12001)
-            {
-                return false;
-            }
-
-            Span<byte> preamble = stackalloc byte[4];
-            fileStream.Seek(0, SeekOrigin.Begin);
-            int bytesRead = fileStream.Read(preamble);
-            fileStream.Seek(0, SeekOrigin.Begin);
-
-            if (bytesRead >= 2
-                && (preamble[0] == 0xFF && preamble[1] == 0xFE
-                    || preamble[0] == 0xFE && preamble[1] == 0xFF))
-            {
-                return false;
-            }
-
-            return bytesRead < 4
-                || preamble[0] != 0x00
-                || preamble[1] != 0x00
-                || preamble[2] != 0xFE
-                || preamble[3] != 0xFF;
+            const int fileIdInfo = 18;
+            return GetFileInformationByHandleEx(handle, fileIdInfo, out FileIdInformation identity, (uint)Marshal.SizeOf<FileIdInformation>())
+                ? (identity.VolumeSerialNumber, identity.FileIdLow, identity.FileIdHigh)
+                : null;
         }
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct FileIdInformation
+        {
+            public ulong VolumeSerialNumber;
+            public ulong FileIdLow;
+            public ulong FileIdHigh;
+        }
+
+        [DllImport("kernel32.dll")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static extern bool GetFileInformationByHandleEx(SafeFileHandle handle, int informationClass, out FileIdInformation information, uint size);
 
         private static long FindTailStart(FileStream fileStream, int maxLines)
         {
@@ -324,39 +336,36 @@ namespace ColorVision.UI.LogImp
         private void ReadNewLogContent()
         {
             if (!File.Exists(LogFilePath))
+            {
+                _effectiveEncoding = null;
                 return;
+            }
 
-            List<LogEntry>? newEntries = null;
-            var shouldReload = false;
+            List<LogEntry> newEntries;
 
             try
             {
                 lock (_fileLock)
                 {
-                    using var fileStream = new FileStream(LogFilePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-
-                    if (fileStream.Length < _lastReadPosition)
+                    using var fileStream = OpenLogFile();
+                    var identity = GetFileIdentity(fileStream.SafeFileHandle);
+                    long length = fileStream.Length;
+                    if (_effectiveEncoding == null || length < _lastReadPosition || (length > 0 && _lastReadPosition == 0)
+                        || (_fileIdentity.HasValue && identity.HasValue && _fileIdentity != identity))
                     {
-                        _lastReadPosition = 0;
-                        shouldReload = true;
+                        ReplaceDisplayedLog(fileStream, identity);
+                        return;
                     }
-                    else if (fileStream.Length > _lastReadPosition)
-                    {
-                        fileStream.Seek(_lastReadPosition, SeekOrigin.Begin);
-                        using var reader = new StreamReader(fileStream, Encoding, detectEncodingFromByteOrderMarks: false);
-
-                        newEntries = LogEntryParser.FromLines(ReadAllLines(reader));
-                        _lastReadPosition = fileStream.Length;
-                    }
+                    _fileIdentity ??= identity;
+                    if (length <= _lastReadPosition)
+                        return;
+                    fileStream.Position = _lastReadPosition;
+                    using var reader = new StreamReader(fileStream, _effectiveEncoding, detectEncodingFromByteOrderMarks: false, leaveOpen: true);
+                    newEntries = LogEntryParser.FromLines(ReadAllLines(reader));
+                    _lastReadPosition = fileStream.Position;
                 }
 
-                if (shouldReload)
-                {
-                    LoadLogFile();
-                    return;
-                }
-
-                if (newEntries is { Count: > 0 })
+                if (newEntries.Count > 0)
                 {
                     LogViewer.MaxEntries = Config.MaxLines;
                     LogViewer.AppendEntries(newEntries, Config.LogReverse, Config.AutoScrollToEnd);
@@ -447,6 +456,7 @@ namespace ColorVision.UI.LogImp
 
                 _fileWatcher.Changed -= OnFileChanged;
                 _fileWatcher.Created -= OnFileChanged;
+                _fileWatcher.Renamed -= OnFileChanged;
                 _fileWatcher.Dispose();
                 _fileWatcher = null;
             }

@@ -10,6 +10,15 @@ using System.Windows.Media.Imaging;
 
 namespace ColorVision.ImageEditor.Presentation;
 
+internal enum ChannelSelectionResult
+{
+    Superseded,
+    Ordinary,
+    StreamAccepted,
+    StreamRejected,
+    StaticPseudoHandled,
+}
+
 /// <summary>Produces channel previews without owning the document or the display surface.</summary>
 internal sealed class ImageChannelPresenter(ImageProcessingContext context) : IDisposable
 {
@@ -50,27 +59,74 @@ internal sealed class ImageChannelPresenter(ImageProcessingContext context) : ID
         }
     }
 
-    public void SelectChannel(int channel)
+    public ChannelSelectionResult SelectChannel(int channel, bool preferStream = false)
     {
         context.Dispatcher.VerifyAccess();
-        if (_disposed || context.ViewBitmapSource == null) return;
+        if (_disposed || context.IsDisposed || context.ViewBitmapSource == null) return ChannelSelectionResult.Superseded;
         CancellationTokenSource selection = BeginSelection();
-        context.SupersedePreviewForDisplaySelection();
-        if (channel == -1)
+        ImageFrameLease? lease = null;
+        bool handedOff = false;
+        try
         {
-            context.Presentation.RestoreSource();
-            CompleteSelection(selection);
-            return;
-        }
+            if (preferStream && context.DisplayEffects.TryRefreshOwnedStaticSelection(channel))
+                return ChannelSelectionResult.StaticPseudoHandled;
 
-        ImageFrameLease? lease = context.AcquireImageFrame();
-        if (lease == null)
-        {
-            CompleteSelection(selection);
-            return;
+            Guid documentId = context.DocumentInstanceId;
+            long revision = context.ImageRevision;
+            ImageSource source = context.ViewBitmapSource;
+            long claimSequence = context.AlgorithmClaimSequence;
+            long selectionVersion = context.Presentation.SelectionVersion;
+            bool restoredPreview = context.SupersedePreviewForDisplaySelection();
+            long expectedSelectionVersion = selectionVersion + (restoredPreview ? 1 : 0);
+
+            bool CanContinue() => !_disposed && !context.IsDisposed && !selection.IsCancellationRequested
+                && context.DocumentInstanceId == documentId && context.IsCurrentImageRevision(revision)
+                && ReferenceEquals(context.ViewBitmapSource, source) && context.AlgorithmClaimSequence == claimSequence
+                && !context.HasActiveAlgorithmPreview && context.Presentation.SelectionVersion == expectedSelectionVersion;
+
+            // Cancel publishes the canonical source synchronously. Its subscribers may
+            // already have selected another display, source, channel, or algorithm owner.
+            if (!CanContinue()) return ChannelSelectionResult.Superseded;
+            if (channel == -1)
+            {
+                context.Presentation.RestoreSource();
+                expectedSelectionVersion++;
+                return CanContinue() ? ChannelSelectionResult.Ordinary : ChannelSelectionResult.Superseded;
+            }
+
+            ChannelSelectionResult result = ChannelSelectionResult.Ordinary;
+            ImagePresentationRequest? request = null;
+            if (preferStream && channel is >= 0 and < 3 && channel == context.GetSelectedLayerSourceChannelIndex()
+                && (!context.DisplayEffects.PseudoColor.IsEnabled || !context.DisplayEffects.PseudoColor.IsAutoSetRange)
+                && context.StreamPresentation.IsActive
+                && source is BitmapSource bitmap && (bitmap.Format == PixelFormats.Bgr24 || bitmap.Format == PixelFormats.Bgr32
+                    || bitmap.Format == PixelFormats.Bgra32 || bitmap.Format == PixelFormats.Pbgra32 || bitmap.Format == PixelFormats.Rgb24
+                    || bitmap.Format == PixelFormats.Rgb48 || bitmap.Format == PixelFormats.Rgba64))
+            {
+                context.DisplayEffects.RetirePreviewForStreamSelection();
+                if (!CanContinue()) return ChannelSelectionResult.Superseded;
+                request = context.Presentation.BeginRequest();
+                expectedSelectionVersion++;
+                StreamRefreshResult refresh = context.StreamPresentation.TryRefreshCurrent(CanContinue);
+                if (!CanContinue() || refresh == StreamRefreshResult.Superseded) return ChannelSelectionResult.Superseded;
+                if (refresh == StreamRefreshResult.Accepted) return ChannelSelectionResult.StreamAccepted;
+                // The stream predicate already declined this selection. Ordinary fallback
+                // must not invoke the same effect refresh and predicate a second time.
+                result = ChannelSelectionResult.StreamRejected;
+            }
+
+            lease = context.AcquireImageFrame();
+            if (lease == null || !CanContinue()) return ChannelSelectionResult.Superseded;
+            _ = RenderAsync(lease, request ?? context.Presentation.BeginRequest(), channel, selection);
+            lease = null;
+            handedOff = true;
+            return result;
         }
-        ImagePresentationRequest request = context.Presentation.BeginRequest();
-        _ = RenderAsync(lease, request, channel, selection);
+        finally
+        {
+            lease?.Dispose();
+            if (!handedOff) CompleteSelection(selection);
+        }
     }
 
     private CancellationTokenSource BeginSelection()
@@ -104,7 +160,6 @@ internal sealed class ImageChannelPresenter(ImageProcessingContext context) : ID
 
     private async Task RenderAsync(ImageFrameLease lease, ImagePresentationRequest request, int channel, CancellationTokenSource selection)
     {
-        ChannelTarget? target = null;
         bool enteredGate = false;
         try
         {
@@ -113,22 +168,12 @@ internal sealed class ImageChannelPresenter(ImageProcessingContext context) : ID
             selection.Token.ThrowIfCancellationRequested();
 
             HImage source = lease.Image;
-            target = await context.Dispatcher.InvokeAsync(() => CreateTarget(source));
-            selection.Token.ThrowIfCancellationRequested();
-            await Task.Run(() =>
-            {
-                using Mat input = Mat.FromPixelData(source.rows, source.cols,
-                    MatType.MakeType(GetOpenCvDepth(source.depth), source.channels), source.pData, source.stride);
-                using Mat output = Mat.FromPixelData(source.rows, source.cols, target.Type, target.Buffer, target.Stride);
-                Cv2.ExtractChannel(input, output, channel);
-            }, selection.Token).ConfigureAwait(false);
+            WriteableBitmap prepared = await Task.Run(() => PrepareChannel(source, channel), selection.Token).ConfigureAwait(false);
 
             await context.Dispatcher.InvokeAsync(() =>
             {
-                target.Unlock(hasPixels: true);
                 if (context.IsDisposed || selection.IsCancellationRequested || !context.Presentation.IsCurrent(request)) return;
-                target.Bitmap.Freeze();
-                context.Presentation.TryPublish(request, target.Bitmap, target.Bitmap);
+                context.Presentation.TryPublish(request, prepared, prepared);
             });
         }
         catch (OperationCanceledException) when (selection.IsCancellationRequested)
@@ -140,15 +185,34 @@ internal sealed class ImageChannelPresenter(ImageProcessingContext context) : ID
         }
         finally
         {
-            if (target?.IsLocked == true)
-            {
-                try { await context.Dispatcher.InvokeAsync(() => target.Unlock(hasPixels: false)); }
-                catch (Exception ex) { Log.Warn("Unable to release the channel preview buffer.", ex); }
-            }
             lease.Dispose();
             if (enteredGate) _renderGate.Release();
             CompleteSelection(selection);
         }
+    }
+
+    internal static WriteableBitmap PrepareChannel(HImage source, int channel)
+    {
+        if (channel < 0 || channel >= source.channels)
+            throw new ArgumentOutOfRangeException(nameof(channel), channel, "Channel must identify a source channel.");
+        ChannelTarget target = CreateTarget(source);
+        bool hasPixels = false;
+        try
+        {
+            ExtractPixels(source, target, channel);
+            hasPixels = true;
+        }
+        finally { target.Unlock(hasPixels); }
+        target.Bitmap.Freeze();
+        return target.Bitmap;
+    }
+
+    private static void ExtractPixels(HImage source, ChannelTarget target, int channel)
+    {
+        using Mat input = Mat.FromPixelData(source.rows, source.cols,
+            MatType.MakeType(GetOpenCvDepth(source.depth), source.channels), source.pData, source.stride);
+        using Mat output = Mat.FromPixelData(source.rows, source.cols, target.Type, target.Buffer, target.Stride);
+        Cv2.ExtractChannel(input, output, channel);
     }
 
     private static ChannelTarget CreateTarget(HImage source)

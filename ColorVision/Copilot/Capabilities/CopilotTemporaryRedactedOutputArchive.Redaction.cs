@@ -303,7 +303,7 @@ namespace ColorVision.Copilot
                 return true;
             }
 
-            if (pending[index] is ':' or '=')
+            if (pending[index] is ':' or '=' or '：')
             {
                 var authorizationTerminator = GetAuthorizationHeaderTerminator(marker, pending, index, hadQuote);
                 if (authorizationTerminator != SensitiveValueTerminator.None)
@@ -446,10 +446,9 @@ namespace ColorVision.Copilot
             {
                 if (writeLength > 0)
                 {
-                    _stream.Write(MemoryMarshal.AsBytes(
-                        value[..writeLength]));
+                    _stream!.Write(MemoryMarshal.AsBytes(value[..writeLength]));
                 }
-                _stream.Flush();
+                _stream?.Flush();
                 _archivedCharacters += writeLength;
                 if (writeLength < value.Length)
                     _isTruncated = true;
@@ -490,7 +489,7 @@ namespace ColorVision.Copilot
             {
                 return value.Length > 0
                     && char.IsHighSurrogate(value[^1])
-                    ? value[..^1]
+                    ? value[..^1] + '\uFFFD'
                     : value;
             }
 
@@ -512,9 +511,15 @@ namespace ColorVision.Copilot
             marker = string.Empty;
             foreach (var candidate in SensitiveMarkers)
             {
-                var index = value.IndexOf(
-                    candidate,
-                    StringComparison.OrdinalIgnoreCase);
+                var index = value.IndexOf(candidate, StringComparison.OrdinalIgnoreCase);
+                // Short aliases such as SN also occur at the start of ordinary identifiers.
+                // Skip those candidates in this scan instead of repeatedly copying/rescanning the remaining output.
+                while (index >= 0 && index + candidate.Length < value.Length)
+                {
+                    var following = value[index + candidate.Length];
+                    if (char.IsWhiteSpace(following) || following is ':' or '=' or '：' or '"' or '\'') break;
+                    index = value.IndexOf(candidate, index + candidate.Length, StringComparison.OrdinalIgnoreCase);
+                }
                 if (index < 0
                     || bestIndex >= 0
                         && (index > bestIndex
@@ -582,7 +587,7 @@ namespace ColorVision.Copilot
                     continue;
                 if (terminator == SensitiveValueTerminator.AssignmentRemainder)
                 {
-                    if (character is ',' or ';' or '}' || char.IsWhiteSpace(character))
+                    if (character is ',' or ';' or '}' or ']' or ')' || char.IsWhiteSpace(character))
                         return index;
                     continue;
                 }

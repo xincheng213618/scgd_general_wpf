@@ -189,10 +189,20 @@ namespace ColorVision.Solution
             string defaultRoot = Path.Combine(
                 Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
                 "ColorVision");
-            Directory.CreateDirectory(defaultRoot);
-            string defaultSolution = Path.Combine(defaultRoot, "Default");
-            Directory.CreateDirectory(defaultSolution);
-            await CreateSolutionAsync(defaultSolution);
+            string defaultDirectory = Path.Combine(defaultRoot, "Default");
+            string defaultSolutionPath = GetNewSolutionPath(defaultDirectory);
+            if (File.Exists(defaultSolutionPath))
+            {
+                if (!string.Equals(restorePath, defaultSolutionPath, StringComparison.OrdinalIgnoreCase))
+                    await OpenSolutionAsync(defaultSolutionPath);
+                return;
+            }
+
+            try { await CreateSolutionAsync(defaultDirectory); }
+            catch (IOException) when (File.Exists(defaultSolutionPath))
+            {
+                await OpenSolutionAsync(defaultSolutionPath);
+            }
         }
 
         private void RecentWorkspaces_Changed(object? sender, EventArgs e)
@@ -717,17 +727,20 @@ namespace ColorVision.Solution
             }
         }
 
+        internal static string GetNewSolutionPath(string solutionDirectoryPath)
+        {
+            DirectoryInfo directory = new(solutionDirectoryPath);
+            return Path.Combine(directory.FullName, directory.Name + ".cvsln");
+        }
+
         public async Task<bool> CreateSolutionAsync(
             string solutionDirectoryPath,
             CancellationToken cancellationToken = default)
         {
-            if (!Directory.Exists(solutionDirectoryPath))
-                Directory.CreateDirectory(solutionDirectoryPath);
-
-            DirectoryInfo directoryInfo = new(solutionDirectoryPath);
-            string solutionPath = Path.Combine(directoryInfo.FullName, directoryInfo.Name + ".cvsln");
-
-            SolutionConfigStore.Save(solutionPath, new SolutionConfig { ProjectMode = SolutionProjectMode.Explicit });
+            if (cancellationToken.IsCancellationRequested) return false;
+            string solutionPath = GetNewSolutionPath(solutionDirectoryPath);
+            Directory.CreateDirectory(Path.GetDirectoryName(solutionPath)!);
+            SolutionConfigStore.Create(solutionPath, new SolutionConfig { ProjectMode = SolutionProjectMode.Explicit });
 
             SolutionCreated?.Invoke(solutionPath, EventArgs.Empty);
             SolutionOpenOperationResult result = await OpenSolutionAsync(solutionPath, cancellationToken);
@@ -761,10 +774,17 @@ namespace ColorVision.Solution
             {
                 if (newCreatWindow.IsCreate)
                 {
-                    string solutionDirectoryPath = Path.Combine(
-                        newCreatWindow.NewCreateViewMode.DirectoryPath,
-                        newCreatWindow.NewCreateViewMode.Name);
-                    await CreateSolutionAsync(solutionDirectoryPath);
+                    try
+                    {
+                        string solutionDirectoryPath = Path.Combine(
+                            newCreatWindow.NewCreateViewMode.DirectoryPath,
+                            newCreatWindow.NewCreateViewMode.Name);
+                        await CreateSolutionAsync(solutionDirectoryPath);
+                    }
+                    catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException)
+                    {
+                        MessageBox.Show(ex.Message, DisplayText.Get("创建项目失败"), MessageBoxButton.OK, MessageBoxImage.Error);
+                    }
                 }
             };
             newCreatWindow.ShowDialog();

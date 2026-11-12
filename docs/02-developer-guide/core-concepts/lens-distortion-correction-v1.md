@@ -45,14 +45,14 @@ Preset 由 `LensDistortionCorrectionPresetSerializer` 保存，严格校验 Algo
 
 ## 宿主接入
 
-- ImageView：“算法 → 镜头畸变校正...”打开参数/preset 窗口，通过统一 preview session 执行并提交。结果窗口显示校正图、mask、相机矩阵和系数，可保存 PNG、导出 CSV/JSON；关闭窗口释放 Result 图像。
+- ImageView：“算法 → 镜头畸变校正...”在打开参数/preset 窗口前绑定源图会话，确认后按[平台单次应用契约](./image-algorithm-platform-v1.md#m0-执行与所有权规则)执行并提交。结果窗口显示校正图、mask、相机矩阵和系数，可保存 PNG、导出 CSV/JSON；关闭窗口释放 Result 图像。
 - Batch：这是单输入、确定性、同尺寸像素算法，由 Catalog 自动投影到批处理列表，和交互入口使用同一参数对象与 provider；输出文件格式仍由 Batch 输出策略决定。
 - Flow：`LocalFlowImageAlgorithmAdapter.ExecuteRawAsync` 复用同一 Invocation/Runner/Result 与本地 frame lease，不改变旧远端 MQTT/device `AlgorithmNode` execution plane。
 - Copilot：未进入显式白名单；Catalog alias 或反射发现不会赋予执行权限。
 
 ## 验证、取消与资源预算
 
-`LensDistortionCorrectionV1Tests` 覆盖 Catalog/alias/schema/preset、九种规范格式 identity golden、Brown 像素中心数值 golden、optimal 输出矩阵、DPI/输入只读、ROI 与退化有效区失败、预执行/执行中取消、成功/失败/取消的 transferred 输入释放、Result artifact 释放、ImageView 提交和结果窗口，以及 Batch/Flow 复用与不覆盖导出。
+`LensDistortionCorrectionV1Tests` 覆盖 Catalog/alias/schema/preset、九种规范格式 identity golden、Brown 像素中心数值 golden、optimal 输出矩阵、DPI/输入只读、ROI 与退化有效区失败、预执行/执行中取消、成功/失败/取消的 transferred 输入释放、Result artifact 释放，以及 Batch/Flow 复用与不覆盖导出。ImageView 的单次应用生命周期由平台共享回归检查；参数窗口和结果窗口仍需要交互验收。
 
 可选性能门禁 `LensDistortionCorrectionPipelineProbe` 在 4K Gray16/Bgra32 上执行非零畸变。管理内存预算只允许一份校正输出、一份 Gray8 mask 和固定 16 MiB 余量；native 侧仍需要两份 float map 与 OpenCV 输出工作区。取消在 map 前后、mask 每 32 行及 remap 前后检查；单次不可中断的 OpenCV 调用结束后会立即观察取消并释放临时 Mat。
 

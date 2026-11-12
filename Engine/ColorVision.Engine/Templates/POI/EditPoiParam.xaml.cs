@@ -465,6 +465,75 @@ namespace ColorVision.Engine.Templates.POI
                 return;
             }
 
+            ApplyPointSize(size);
+            PoiConfig.PointPosition = DrawingGraphicPosition.Internal;
+        }
+
+        private void PointSizePercentage_Click(object sender, RoutedEventArgs e)
+        {
+            PointSizePercentagePopup.IsOpen = true;
+            UpdatePointSizePercentagePreview();
+        }
+
+        private void PointSizePercentage_Changed(object sender, RoutedEventArgs e)
+        {
+            if (ApplyPointSizePercentageButton != null)
+                UpdatePointSizePercentagePreview();
+        }
+
+        private void UpdatePointSizePercentagePreview()
+        {
+            bool valid = TryResolvePointSizePercentage(out Size size);
+            ApplyPointSizePercentageButton.IsEnabled = valid;
+            if (!valid)
+            {
+                PointSizePercentagePreview.Text = LocalizedText.Get("请输入大于 0 且不超过 100 的百分比，并确认参考区域有效、换算后至少为 1 像素。");
+                return;
+            }
+
+            PointSizePercentagePreview.Text = PoiConfig.IsPointCircle ? $"{size.Width / 2} px" : $"{size.Width} × {size.Height} px";
+        }
+
+        private bool TryResolvePointSizePercentage(out Size size)
+        {
+            size = default;
+            if (!PoiConfig.IsAreaMask || PoiConfig.IsPoiCIEFile)
+                return false;
+
+            Size reference;
+            if (PointSizePercentageCanvas.IsSelected)
+            {
+                if (ImageShow.Source is not ImageSource source)
+                    return false;
+
+                // Match the dimensions used by the editor for drawing and saving point geometry.
+                reference = new Size(source.Width, source.Height);
+            }
+            else if (!PoiLayoutGeometry.TryGetQuadrilateralSize(
+                [PoiConfig.Polygon1, PoiConfig.Polygon2, PoiConfig.Polygon3, PoiConfig.Polygon4], out reference))
+            {
+                return false;
+            }
+
+            double widthPercent = ParseDoubleOrDefault(PoiConfig.IsPointCircle ? PointSizeRadiusPercent.Text : PointSizeWidthPercent.Text);
+            double heightPercent = ParseDoubleOrDefault(PointSizeHeightPercent.Text);
+            return PoiLayoutGeometry.TryGetPercentagePointSize(reference, PoiConfig.DefaultPointType, widthPercent, heightPercent, out size);
+        }
+
+        private void ApplyPointSizePercentage_Click(object sender, RoutedEventArgs e)
+        {
+            if (!TryResolvePointSizePercentage(out Size size))
+            {
+                UpdatePointSizePercentagePreview();
+                return;
+            }
+
+            ApplyPointSize(size);
+            PointSizePercentagePopup.IsOpen = false;
+        }
+
+        private void ApplyPointSize(Size size)
+        {
             if (PoiConfig.IsPointCircle)
                 PoiConfig.DefaultCircleRadius = (int)(size.Width / 2);
             else
@@ -472,7 +541,6 @@ namespace ColorVision.Engine.Templates.POI
                 PoiConfig.DefaultRectWidth = (int)size.Width;
                 PoiConfig.DefaultRectHeight = (int)size.Height;
             }
-            PoiConfig.PointPosition = DrawingGraphicPosition.Internal;
         }
 
         private async void Button2_Click(object sender, RoutedEventArgs e)

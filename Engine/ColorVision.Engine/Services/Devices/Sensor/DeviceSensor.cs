@@ -30,7 +30,7 @@ namespace ColorVision.Engine.Services.Devices.Sensor
                 sensorDiagnosticsWindow.Closed += (_, _) => sensorDiagnosticsWindow = null;
                 sensorDiagnosticsWindow.Show();
             });
-            ContextMenu.Items.Add(new MenuItem { Header = "本地通信调试", Command = DiagnosticsCommand });
+            ContextMenu.Items.Add(new MenuItem { Header = EngineLocalization.Get("本地通信调试"), Command = DiagnosticsCommand });
             EditCommand = new RelayCommand(a =>
             {
                 EditSensor window = new(this);
@@ -38,8 +38,8 @@ namespace ColorVision.Engine.Services.Devices.Sensor
                 window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
                 if (window.ShowDialog() == true)
                 {
-                    ConfigHandler.GetInstance().Save<DisplayConfigManager>();
-                    Save();
+                    if (window.Draft.DisplaySettingsChanged) ConfigHandler.GetInstance().Save<DisplayConfigManager>();
+                    if (window.Draft.ServiceSettingsChanged) Save();
                 }
             });
 

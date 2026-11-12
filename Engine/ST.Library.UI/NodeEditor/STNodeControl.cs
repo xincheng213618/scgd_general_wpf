@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Text;
@@ -8,6 +9,9 @@ namespace ST.Library.UI.NodeEditor;
 
 public class STNodeControl
 {
+    public virtual STNodePreviewText CapturePreviewText(IReadOnlyDictionary<string, byte[]> savedProperties)
+        => new(DisplayRectangle, Text, string.Empty);
+
 	private STNode _Owner;
 
 	private int _Left;

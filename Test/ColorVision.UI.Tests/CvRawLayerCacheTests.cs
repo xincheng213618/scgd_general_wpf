@@ -53,9 +53,8 @@ public sealed class CvRawLayerCacheTests
 
     private static void Store(CvRawLayerController controller, string layer, WriteableBitmap bitmap)
     {
-        Type stampType = typeof(CvRawLayerController).GetNestedType("FileStamp", BindingFlags.NonPublic)!;
         typeof(CvRawLayerController).GetMethod("StoreCache", BindingFlags.Instance | BindingFlags.NonPublic)!
-            .Invoke(controller, [layer, bitmap, CvcieBrightnessMode.Auto, 65535d, Activator.CreateInstance(stampType)]);
+            .Invoke(controller, [layer, bitmap, CvcieBrightnessMode.Auto, 65535d]);
     }
 
     private static WriteableBitmap? Cached(CvRawLayerController controller, string field)

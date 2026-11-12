@@ -20,7 +20,7 @@ namespace Spectrum.Configs
         public bool IsBusy => Volatile.Read(ref activeOperationCount) > 0;
 
         // 绑定到界面的配置
-        public ShutterConfig Config=> SpectrumConfig.Instance.ShutterConfig;
+        public virtual ShutterConfig Config => SpectrumConfig.Instance.ShutterConfig;
 
         // 连接状态
         private bool _isConnected;
@@ -62,14 +62,14 @@ namespace Spectrum.Configs
                 "shutter-disconnect");
 
             OpenShutterCommand = new TimedButtonCommand(
-                _ => SendCommand(Config.OpenCmd, "turn on"),
+                _ => SetTransmitting(false),
                 _ => IsConnected && !IsBusy && !SpectrometerManager.Instance.IsDeviceBusy,
                 SpectrumTimedButtonHost.GetOwner,
                 SpectrumTimedButtonHost.BuildOperationKey,
                 "shutter-open");
 
             CloseShutterCommand = new TimedButtonCommand(
-                _ => SendCommand(Config.CloseCmd, "turn off"),
+                _ => SetTransmitting(true),
                 _ => IsConnected && !IsBusy && !SpectrometerManager.Instance.IsDeviceBusy,
                 SpectrumTimedButtonHost.GetOwner,
                 SpectrumTimedButtonHost.BuildOperationKey,
@@ -154,13 +154,15 @@ namespace Spectrum.Configs
 
         private Task<bool> DisconnectAsync() => RunSerializedAsync(() => Task.Run(DisconnectCore));
 
-        public async Task<bool> OpenShutter()
+        public Task<bool> SetTransmitting(bool transmitting) => transmitting != Config.OpenForDark ? OpenShutter() : CloseShutter();
+
+        public virtual async Task<bool> OpenShutter()
         {
-            return await SendCommand(Config.OpenCmd, "turn on");
+            return await SendCommand(Config.OpenCmd, Config.GetExpectedResponse(true));
         }
-        public async Task<bool> CloseShutter()
+        public virtual async Task<bool> CloseShutter()
         {
-            return await SendCommand(Config.CloseCmd, "turn off");
+            return await SendCommand(Config.CloseCmd, Config.GetExpectedResponse(false));
         }
 
         private async Task<bool> SendCommand(string cmd, string expectedResponse)

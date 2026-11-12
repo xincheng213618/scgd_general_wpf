@@ -18,7 +18,9 @@ related: ["projects.arvr-pro","projects.arvr-pro-processes","projects.arvr-pro-d
 1. 在 ColorVision 中加载 `ProjectARVRPro`，确认[活动流程组、Flow 模板、解析器和 Recipe](./project-arvr-pro-processes.md)已配置，所需设备与 Flow 服务可用。
 2. 在“通信协议”设置中启用 Socket Server，选择 **Json**。默认监听 `0.0.0.0:6666`，默认接收缓冲区为 10,240 字节；服务默认未启用。
 3. 客户端连接现场配置的地址和端口，以 UTF-8 发送 JSON。端口、防火墙和协议模式不一致时，先排查[通用 Socket 服务](../ui-components/ColorVision.SocketProtocol.md)。
-4. 保持一个控制连接，串行完成当前产品的测试，再开始下一个 SN。服务没有按连接隔离 ARVR 测试会话；这些 handler 会把当前连接写入共享的 `SocketControl.Current.Stream`，后续切图和结果使用该流发送。另一个客户端即使只查询启用状态，也可能改变推送目标。
+4. 保持一个控制连接，串行完成当前产品的测试，再开始下一个 SN。`SocketControl.Current.Stream` 保留异步切图和结果的回包连接，仍是原来的可写属性。`ProjectARVRInit`、`RunAll`、`SwitchPGCompleted` 等执行和推进入口沿用原有赋值方式；LUX 的 `T0000` 握手、启用状态查询、启用配置和切组不写入该属性，立即响应仍发给本次请求的连接。重连后收到执行或推进消息时更新回包连接，其中 `RunAll` 忙碌重发仍返回原来的 `Code=-4`，并沿用更新 Stream 的原行为。仅 LUX 握手或查询不接管旧任务结果。最终结果在实际发送前读取当前 Stream；发送失败仍按原流程记录异常，不自动补发。
+
+`Test/ProjectARVRPro.Tests/SocketControlTests.cs` 用本机回环 TCP 验证配置请求的立即响应不变、异步结果仍发给原连接，以及另一站请求不妨碍外部切图确认；另验证切图断线后清理等待状态、允许再次执行。这些测试不连接相机或光谱仪，不能代替现场调度联调。
 
 ### TCP 消息边界
 
@@ -58,6 +60,7 @@ related: ["projects.arvr-pro","projects.arvr-pro-processes","projects.arvr-pro-d
 | --- | --- | --- |
 | 外部逐步切图 | `ProjectARVRInit` → `SwitchPG` → 外部切图 → `SwitchPGCompleted`；重复到 `ProjectARVRResult` | 外部控制程序掌握每一步普通 PG 画面切换 |
 | 一键运行 | `RunAll` → 开始确认 → 等待 `ProjectARVRResult` | 活动组及每步内部切图、设备和预处理已配置好 |
+| 单次 VID | `MeasureVID` → 等待同名结果 | 相机已配置 VID 映射及测量方式 |
 
 RunAll 自行初始化本轮会话，不需要先发 `ProjectARVRInit`，执行过程中也不等待普通 `SwitchPGCompleted`。AOI Flow 内部的外部切图节点可以出现在任一种方式中，见[AOI 切图](#aoi-切图)。
 
@@ -112,6 +115,27 @@ RunAll 自行初始化本轮会话，不需要先发 `ProjectARVRInit`，执行�
 **开始确认不等于测试完成或 PASS。** 客户端应从建连起持续处理报文并等待最终事件，不依赖开始确认与异步推送的固定先后顺序。组中没有启用步骤也可能先被接受，然后产生失败的最终结果。
 
 RunAll 启动时取当前启用步骤列表，依次运行。`AllowTestFailures` 决定切图、预处理、执行或解析失败后是否继续；最终保留首次流程失败。测试中不要切换组或修改启用状态，管理接口并未统一拒绝这些操作。
+
+## 单次 VID 测量
+
+在 Json 模式发送一条 `MeasureVID`，需要产品 `SerialNumber`。服务端完成后在同一连接回一条 JSON，回显 `MsgID` 和 `SerialNumber`，沿用本页的 TCP 消息边界。
+
+```json
+{"Version":"1.0","MsgID":"vid-001","EventName":"MeasureVID","SerialNumber":"SN001"}
+```
+
+```json
+{"Version":"1.0","MsgID":"vid-001","EventName":"MeasureVID","SerialNumber":"SN001","Code":0,"Msg":"OK","Data":{"VID":123.45,"Pass":true}}
+```
+
+在 **流程处理配置 → 其他配置** 设置 **VID 相机**、测量方式、K/B 和限值。默认使用设备列表中的第一台相机，单相机现场升级后可直接测量。手动指定的相机不存在或设备代码重复时，测量失败并提示检查配置。自动聚焦和微聚焦均使用该相机面板的对焦模板。微聚焦仅支持本地取图，从当前电机位置附近找焦。直接获取位置无需模板。与 [LUX VID 文本命令](./project-lux-protocol.md) 共用配置。JSON 命令直接测量并返回结果，不切图或保存 CSV。
+
+| `Code` | 结果 |
+| --- | --- |
+| `0` | 得到有效 VID。`Data.VID` 是应用 K/B 后的数值。`Data.Pass` 表示是否符合限值，超限时仍返回数值 |
+| `-1` | 缺少 SN |
+| `-2` | 测量失败、取消或缺少有效 VID，`Data=null` |
+| `-4` | 项目正在执行或等待切图，当前请求未启动测量 |
 
 ## 切换流程组：SwitchGroup
 
@@ -232,7 +256,7 @@ AOI 使用本地 Flow 的「外部切图」节点（右键添加节点 → Proje
 
 **旧客户端兼容模式不能区分同一连接上迟到的上一次确认与当前请求。** 客户端必须每次切图只确认一次；需要排除这种误确认时，开启严格匹配并让客户端回显 MsgID。现有 IntegrationDemo / SemiAuto 自动确认自行生成 MsgID，使用它们时保持兼容模式，或先适配客户端的回显行为。
 
-流程停止会取消确认等待及完成后延时。主 Socket 检测断线并关闭流后，节点结束等待；其他客户端覆盖活动控制连接也会失败。主 Socket 的半包/粘包限制仍见本页「TCP 消息边界」，新增节点不改变其接收分帧实现。
+流程停止会取消确认等待及完成后延时。主 Socket 检测断线并关闭流后，节点结束等待并清理本次等待状态，重连后可再次执行；查询或 LUX `T0000` 握手不会使仍有效的切图连接失效，其它执行命令覆盖活动控制连接仍会失败。主 Socket 的半包/粘包限制仍见本页「TCP 消息边界」，新增节点不改变其接收分帧实现。
 
 迁移旧模板时，将专用于中转的通用传感器切图节点替换为「外部切图」，保留上下游连线并核对原来的超时和成功后延时。旧服务端 Flow 必须改用宿主进程中的 Flow 执行，不能在旧服务里直接运行这个项目节点。确认没有其它指令引用后，才清理该专用传感器连接配置。项目不再提供中转监听，也不再在启动时关闭并重开通用传感器；旧模板不会被自动改写。
 
@@ -262,7 +286,7 @@ AOI 使用本地 Flow 的「外部切图」节点（右键添加节点 → Proje
 
 `UseLegacyARVROutput=false` 时，Data 为 `ObjectiveTestResult`。亮色度、视场角和棋盘格等键化集合分别位于 `LuminanceChromaticityTestResults`、`FieldOfViewTestResults`、`ChessboardTestResults`；Key 来自流程配置，应枚举实际值。对应默认 Key 还可能写入 `W255TestResult`、`W51TestResult`、`ChessboardTestResult` 兼容字段。同一集合的同 Key 后写覆盖前值，独立测试项应使用可区分的 Key。
 
-Demura 的 W128 源文件放在 `Data.DemuraTestResults` 字典，Key 是流程配置的“导出名称”（`DemuraProcessConfig.Name`，默认 `Demura`），Value 只包含 `FileName` 和 `Data`：`FileName` 是不含目录的原文件名，`Data` 是按 UTF-8 读取的文件文本，不是 Base64；JSON 会转义换行、引号和反斜杠，解析后恢复文本。读取发生在 DemuraTool 准备之前，不依赖 W255 或 `G128.csv` 是否生成。每次执行先清除对应 Key 的旧结果，未找到 W128 时不写入该 Key；读取异常按解析失败处理，避免回传旧文件。不同名称可以并存，同名后写覆盖。文件内容不参与测量项 CSV 或总结果判定。
+Demura 的 W128 源文件放在 `Data.DemuraTestResults` 字典，Key 是流程配置的“输出Key”（`DemuraProcessConfig.Name`，默认 `Demura`），Value 只包含 `FileName` 和 `Data`：`FileName` 是不含目录的原文件名，`Data` 是按 UTF-8 读取的文件文本，不是 Base64；JSON 会转义换行、引号和反斜杠，解析后恢复文本。读取发生在 DemuraTool 准备之前，不依赖 W255 或 `G128.csv` 是否生成。每次执行先清除对应 Key 的旧结果，未找到 W128 时不写入该 Key；读取异常按解析失败处理，避免回传旧文件。不同 Key 可以并存，相同 Key 后写覆盖。文件内容不作为测量项导出；默认开启的 **仅返回CSV** 以 W128 文件存在且可读取作为本步骤通过条件，完整处理模式的配置与判定见 [Demura 说明](./project-arvr-pro-demura.md)。
 
 W128 文件可能达到数 MB，调用端应按「TCP 消息边界」累计接收完整 JSON，不能把单次读取缓冲区当作报文长度上限。Integration Demo 使用 8 KB 读取块，跨读取保留 UTF-8 解码及 JSON 字符串、转义和嵌套状态，只扫描新增内容并提取完整对象；JSON 解析器的 `MaxJsonLength` 为 `int.MaxValue`。其他调用端需核对自身的报文长度和超时设置。
 

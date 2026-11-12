@@ -1,4 +1,5 @@
 using ColorVision.Engine.Media;
+using cvColorVision;
 using System;
 using System.IO;
 using System.Security.Cryptography;
@@ -41,11 +42,11 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
 
         public static string ComputeHash(string path) => Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(path)));
 
-        public static LumFourColorSourceSnapshot Load(string path)
+        public static LumFourColorSourceSnapshot Load(string path, bool luminanceOnly = false)
         {
             string fullPath = System.IO.Path.GetFullPath(path);
             string hash = ComputeHash(fullPath);
-            var result = new LumFourColorSourceSnapshot(fullPath, hash, LumFourColorCalibrationFile.Load(fullPath));
+            var result = new LumFourColorSourceSnapshot(fullPath, hash, LumFourColorCalibrationFile.Load(fullPath, luminanceOnly));
             result.EnsureUnchanged();
             return result;
         }
@@ -67,7 +68,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
             try
             {
                 File.WriteAllText(temporary, CalibrationFile.SerializeCorrection(corrected), new UTF8Encoding(false));
-                _ = Load(temporary);
+                _ = Load(temporary, CalibrationFile.CalibrationType == CalibrationType.Luminance);
                 EnsureUnchanged();
                 // Create and verify the backup before touching the original. Never overwrite an earlier backup.
                 File.Copy(Path, backup, overwrite: false);
@@ -94,7 +95,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
             {
                 string contents = CalibrationFile.SerializeCorrection(corrected);
                 File.WriteAllText(temporary, contents, new UTF8Encoding(false));
-                _ = Load(temporary);
+                _ = Load(temporary, CalibrationFile.CalibrationType == CalibrationType.Luminance);
                 EnsureUnchanged();
                 if (File.Exists(fullPath))
                     File.Replace(temporary, fullPath, null);

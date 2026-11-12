@@ -138,7 +138,9 @@ public class FlowEngineControl : FlowEngineAPI, IDisposable
 		timeoutSource.CancelAfter(timeout);
 		try
 		{
-			if (!await startNode.EnsureReadyAsync(timeoutSource.Token).ConfigureAwait(false))
+			bool ready = await startNode.EnsureReadyAsync(timeoutSource.Token).ConfigureAwait(false);
+			timeoutSource.Token.ThrowIfCancellationRequested();
+			if (!ready)
 			{
 				return false;
 			}
@@ -632,6 +634,7 @@ public class FlowEngineControl : FlowEngineAPI, IDisposable
 				logger.Error("Flow completion subscriber failed.", ex);
 			}
 		}
+		e.TrackedCompletion?.TrySetResult(e);
 	}
 
 	private void DetachNodeEditorCore()
@@ -762,6 +765,11 @@ public class FlowEngineControl : FlowEngineAPI, IDisposable
 
 	public void Load(byte[] rawData, bool waitReady)
 	{
+		Load(rawData, waitReady, reuseLoadedCanvas: true);
+	}
+
+	internal void Load(byte[] rawData, bool waitReady, bool reuseLoadedCanvas)
+	{
 		IFlowGraphHost host = GetGraphHost();
 		if (rawData != null)
 		{
@@ -770,7 +778,7 @@ public class FlowEngineControl : FlowEngineAPI, IDisposable
 			bool alreadyLoaded;
 			lock (stateLock)
 			{
-				alreadyLoaded = loadedCanvas.ContainsKey(text);
+				alreadyLoaded = reuseLoadedCanvas && loadedCanvas.ContainsKey(text);
 			}
 			if (alreadyLoaded)
 			{
@@ -883,10 +891,12 @@ public class FlowEngineControl : FlowEngineAPI, IDisposable
 		TryStartNode(name, serialNumber);
 	}
 
-	public bool TryStartNode(string name, string serialNumber)
+	public bool TryStartNode(string name, string serialNumber) => TryStartRun(name, serialNumber, trackCompletion: false) != null;
+
+	internal CVStartCFC TryStartRun(string name, string serialNumber, bool trackCompletion)
 	{
 		string blockReason = ExecutionBlockReason;
-		if (blockReason != null) { logger.Warn(blockReason); return false; }
+		if (blockReason != null) { logger.Warn(blockReason); return null; }
 		serialNumber = ColorVision.Common.Utilities.Tool.SanitizeFileName(serialNumber);
 		BaseStartNode startNode = null;
 		lock (stateLock)
@@ -907,14 +917,13 @@ public class FlowEngineControl : FlowEngineAPI, IDisposable
 		if (startNode == null)
 		{
 			logger.WarnFormat("Flow start rejected because the start node is missing, busy, or not ready => {0}", name);
-			return false;
+			return null;
 		}
-		bool started = false;
 		try
 		{
 			logger.DebugFormat("Starting flow serialNumber={0}", serialNumber);
 			startNode.PersistResults = PersistResults;
-			started = startNode.TryStart(serialNumber);
+			return startNode.TryStartRun(serialNumber, trackCompletion);
 		}
 		finally
 		{
@@ -929,7 +938,14 @@ public class FlowEngineControl : FlowEngineAPI, IDisposable
 				StopStartNode(startNode);
 			}
 		}
-		return started;
+	}
+
+	internal bool TryStopRun(CVStartCFC action) => action.GetStartNode()?.TryStopRun(action) == true;
+
+	internal void RefreshRunningState()
+	{
+		lock (stateLock)
+			_IsRunning = attachedStartNodes.Any(node => node.Running);
 	}
 
 	public void StopNode(string serialNumber)
@@ -950,10 +966,7 @@ public class FlowEngineControl : FlowEngineAPI, IDisposable
 			return;
 		}
 		startNode.Stop(serialNumber);
-		lock (stateLock)
-		{
-			_IsRunning = attachedStartNodes.Any(node => node.Running);
-		}
+		RefreshRunningState();
 	}
 
 	public void LoadFromFile(string strFileName)

@@ -53,10 +53,5 @@ namespace ColorVision.ImageEditor
         public const string ColorVisionNdPort = "ColorVision.NDPort";
         public const string ColorVisionGain = "ColorVision.Gain";
         public const string ColorVisionExposure = "ColorVision.Exposure";
-        public const string VideoWidth = "VideoWidth";
-        public const string VideoHeight = "VideoHeight";
-        public const string VideoFPS = "VideoFPS";
-        public const string VideoTotalFrames = "VideoTotalFrames";
-        public const string VideoDuration = "VideoDuration";
     }
 }

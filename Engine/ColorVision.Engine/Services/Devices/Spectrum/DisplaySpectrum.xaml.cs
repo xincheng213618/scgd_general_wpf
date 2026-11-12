@@ -58,7 +58,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                     LoadingPanel.Visibility = Visibility.Collapsed;
                 });
             };
-            this.AddViewConfig(Device.ViewShell, DisPlayName);
+            this.AddViewConfig(Device.ViewRegistration, DisPlayName);
             DService_DeviceStatusChanged(sender, DeviceStatusType.Closed);
             DService_DeviceStatusChanged(sender,DService.DeviceStatus);
             DService.DeviceStatusChanged += DService_DeviceStatusChanged;
@@ -209,6 +209,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             }
 
             HideAllButtons();
+            SetVisibility(btn_stopTest, e == DeviceStatusType.SP_Continuous_Mode ? Visibility.Visible : Visibility.Collapsed);
             btn_autoTest.Content = ColorVision.Engine.Properties.Resources.ContinuousMeasurement;
             switch (e)
             {
@@ -274,6 +275,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             operations.Register(btn_oneTest);
             operations.Register(btn_stopTest);
             operations.Register(btn_oneInitDark);
+            operations.Register(btn_resetDark);
             return operations;
         }
 
@@ -361,6 +363,15 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             });
         }
 
+        private void Button_Click_Reset_Dark(object sender, RoutedEventArgs e)
+        {
+            ExecuteSpectrumCommand(sender, () => Device.RunLocalSpectrumCommand("ResetDark"), (record, state) =>
+            {
+                string message = state == MsgRecordState.Success ? "校零数据已重置，请重新采集。" : record.MsgReturn?.Message ?? "重置校零失败。";
+                MessageBox.Show(Application.Current.GetActiveWindow(), LocalizedText.Get(message), "ColorVision");
+            });
+        }
+
         #endregion
 
         private void Button_Click_Shutter_Connect(object sender, RoutedEventArgs e)
@@ -377,7 +388,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
 
         private void Button_Click_Shutter_Doopen(object sender, RoutedEventArgs e)
         {
-            ExecuteSpectrumCommand(sender, () => DService.ShutterDoopen(), (record, state) =>
+            ExecuteSpectrumCommand(sender, () => Device.SetShutterTransmitting(false), (record, state) =>
             {
                 if (state == MsgRecordState.Fail)
                 {
@@ -385,14 +396,14 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                 }
                 else if (state == MsgRecordState.Success)
                 {
-                    MessageBox.Show(Application.Current.GetActiveWindow(), $"Sucess", "ColorVision");
+                    MessageBox.Show(Application.Current.GetActiveWindow(), LocalizedText.Get("遮光指令已完成。"), "ColorVision");
                 }
             });
         }
 
         private void Button_Click_Shutter_Doclose(object sender, RoutedEventArgs e)
         {
-            ExecuteSpectrumCommand(sender, () => DService.ShutterDoclose(), (record, state) =>
+            ExecuteSpectrumCommand(sender, () => Device.SetShutterTransmitting(true), (record, state) =>
             {
                 if (state == MsgRecordState.Fail)
                 {
@@ -400,7 +411,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                 }
                 else if (state == MsgRecordState.Success)
                 {
-                    MessageBox.Show(Application.Current.GetActiveWindow(), $"Sucess", "ColorVision");
+                    MessageBox.Show(Application.Current.GetActiveWindow(), LocalizedText.Get("通光指令已完成。"), "ColorVision");
                 }
             });
         }

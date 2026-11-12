@@ -235,7 +235,9 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
 
             return WriteTransaction(() =>
             {
-                EnsureRunExists(attempt.RunRecordId);
+                FlowRunRecord? run = db.Queryable<FlowRunRecord>().InSingle(attempt.RunRecordId);
+                if (run == null)
+                    throw new InvalidOperationException($"找不到流程运行记录 {attempt.RunRecordId}。");
 
                 FlowNodeAttempt? existing = db.Queryable<FlowNodeAttempt>()
                     .Where(item =>
@@ -249,6 +251,9 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
                     CopyAttempt(existing, attempt);
                     return existing;
                 }
+
+                if (run.Status != FlowStatus.Runing || run.CompletedTimeUtc != null)
+                    throw new InvalidOperationException($"流程运行记录 {run.Id} 已结束，不能新增节点尝试。");
 
                 FlowNodeAttempt? last = db.Queryable<FlowNodeAttempt>()
                     .Where(item =>
@@ -348,6 +353,17 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
                 run.ElapsedMs = elapsedMs;
                 run.CompletedTimeUtc = completedUtc;
                 run.CompletedTime = completedUtc.ToLocalTime();
+                // An unobserved end has no measured timestamp. A real completion that is
+                // already in flight can still replace this diagnostic marker.
+                db.Updateable<FlowNodeAttempt>()
+                    .SetColumns(item => new FlowNodeAttempt
+                    {
+                        Outcome = "Interrupted",
+                        ErrorCode = "NodeEndNotRecorded",
+                        ErrorMessage = "流程已结束，尚未记录此节点的结束事件。"
+                    })
+                    .Where(item => item.RunRecordId == run.Id && item.CompletedTimeUtc == null && item.Outcome == null)
+                    .ExecuteCommand();
                 db.Updateable(run).ExecuteCommand();
                 return run;
             });

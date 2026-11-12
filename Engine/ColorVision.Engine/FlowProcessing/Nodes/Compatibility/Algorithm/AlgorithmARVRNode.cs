@@ -14,15 +14,9 @@ public class AlgorithmARVRNode : CVBaseServerNode
 
 	private string _POITempName;
 
-	private CVOLED_COLOR _Color;
-
 	private string _OutputFileName;
 
-	private int _BufferLen;
-
 	private STNodeEditText<AlgorithmARVRType> m_ctrl_editText;
-
-	private STNodeEditText<CVOLED_COLOR> m_ctrl_color;
 
 	[STNodeProperty("算子", "算子", true)]
 	public AlgorithmARVRType Algorithm
@@ -85,21 +79,6 @@ public class AlgorithmARVRNode : CVBaseServerNode
 		}
 	}
 
-	[STNodeProperty("颜色", "颜色", true)]
-	public CVOLED_COLOR Color
-	{
-		get
-		{
-			return _Color;
-		}
-		set
-		{
-			_Color = value;
-			m_ctrl_color.Value = value;
-			OnPropertyChanged();
-		}
-	}
-
 	[STNodeProperty("输出文件", "输出文件", true)]
 	public string OutputFileName
 	{
@@ -114,28 +93,12 @@ public class AlgorithmARVRNode : CVBaseServerNode
 		}
 	}
 
-	[STNodeProperty("缓存大小", "缓存大小", true)]
-	public int BufferLen
-	{
-		get
-		{
-			return _BufferLen;
-		}
-		set
-		{
-			_BufferLen = value;
-			OnPropertyChanged();
-		}
-	}
-
 	public AlgorithmARVRNode()
 		: base("ARVR算法", "Algorithm", "SVR.Algorithm.Default", "DEV.Algorithm.Default")
 	{
 		operatorCode = "MTF";
 		_OutputFileName = "result.json";
-		base.Height += 50;
-		_BufferLen = 1024;
-		_Color = CVOLED_COLOR.GREEN;
+		base.Height += 25;
 	}
 
 	protected override void OnCreate()
@@ -144,8 +107,6 @@ public class AlgorithmARVRNode : CVBaseServerNode
 		m_ctrl_editText = CreateControl(typeof(STNodeEditText<AlgorithmARVRType>), m_custom_item, "算子:", _Algorithm);
 		m_custom_item.Y += 25;
 		CreateTempControl(m_custom_item);
-		m_custom_item.Y += 25;
-		m_ctrl_color = CreateControl(typeof(STNodeEditText<CVOLED_COLOR>), m_custom_item, "颜色:", _Color);
 	}
 
 	private void setAlgorithmType()
@@ -192,9 +153,9 @@ public class AlgorithmARVRNode : CVBaseServerNode
 		};
 		algorithmParam_ROI.OutputFileName = _OutputFileName;
 		algorithmParam_ROI.IsInversion = false;
-		algorithmParam_ROI.BufferLen = _BufferLen;
+		algorithmParam_ROI.BufferLen = 1024;
 		getPreStepParam(start, algorithmParam_ROI);
-		BuildImageParam(_Color, algorithmParam_ROI);
+		BuildImageParam(algorithmParam_ROI);
 		algorithmParam_ROI.SMUData = GetSMUResult(start);
 		return algorithmParam_ROI;
 	}

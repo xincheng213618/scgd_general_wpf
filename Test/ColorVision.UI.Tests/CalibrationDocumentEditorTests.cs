@@ -1,5 +1,6 @@
 using ColorVision.Engine.Services.PhyCameras.Calibration.Editing;
 using ColorVision.Engine.Services.Types;
+using ColorVision.UI.Authorizations;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.IO;
@@ -12,9 +13,13 @@ using System.Windows.Threading;
 
 namespace ColorVision.UI.Tests;
 
-[Collection(AssemblyDiscoveryCollection.CollectionName)]
-public sealed class CalibrationDocumentEditorTests
+[Collection(AuthorizationStateTestGroup.CollectionName)]
+public sealed class CalibrationDocumentEditorTests : IDisposable
 {
+    private readonly Authorization previousAuthorization = Authorization.Instance;
+    public CalibrationDocumentEditorTests() => Authorization.Instance = new Authorization { PermissionMode = PermissionMode.Administrator };
+    public void Dispose() => Authorization.Instance = previousAuthorization;
+
     public static IEnumerable<object[]> JsonTypes => new[]
     {
         ServiceTypes.DarkNoise, ServiceTypes.ColorShift, ServiceTypes.Distortion,

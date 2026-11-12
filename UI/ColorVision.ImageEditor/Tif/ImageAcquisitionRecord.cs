@@ -19,6 +19,7 @@ public sealed record ImageAcquisitionRecord
 {
     public ImageCameraInformation? Camera { get; init; }
     public ImageOpticalCenter? OpticalCenter { get; init; }
+    public ImageSensorRoi? SensorRoi { get; init; }
     public DateTime? CapturedUtc { get; init; }
     public int Width { get; init; }
     public int Height { get; init; }
@@ -31,6 +32,9 @@ public sealed record ImageAcquisitionRecord
     public int? NdPort { get; init; }
     public int? AverageCount { get; init; }
 }
+
+/// <summary>The applied sensor crop in unflipped coordinates. Four zeros represent a full-frame capture.</summary>
+public sealed record ImageSensorRoi(int X, int Y, int Width, int Height);
 
 /// <summary>Principal point in the camera's unflipped image coordinates, in pixels.</summary>
 public sealed record ImageOpticalCenter(double X, double Y);

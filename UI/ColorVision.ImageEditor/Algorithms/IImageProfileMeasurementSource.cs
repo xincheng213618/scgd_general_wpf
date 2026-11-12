@@ -18,5 +18,12 @@ public interface IImageProfileMeasurementSource : IDisposable
     double Read(int x, int y, int channel);
 }
 
+/// <summary>Reads all raw channels for each requested pixel, in point order and without normalization.</summary>
+public interface IBatchedImageProfileMeasurementSource : IImageProfileMeasurementSource
+{
+    /// <summary>Writes <see cref="IImageProfileMeasurementSource.RawChannelCount"/> consecutive values per pixel.</summary>
+    void ReadPixels(ReadOnlyMemory<(int X, int Y)> pixels, Memory<double> destination);
+}
+
 /// <summary>An immutable source choice. Opening happens on a worker; each call owns its reader.</summary>
 public sealed record ImageProfileSourceOption(string Name, Func<CancellationToken, IImageProfileMeasurementSource> Open);

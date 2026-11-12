@@ -4,6 +4,8 @@ using ColorVision.Engine.Services.PhyCameras.Licenses;
 using ColorVision.Engine.Services.Types;
 using ColorVision.Themes;
 using ColorVision.Themes.Controls;
+using ColorVision.UI;
+using ColorVision.UI.Authorizations;
 using Newtonsoft.Json;
 using System;
 using System.Linq;
@@ -35,8 +37,14 @@ namespace ColorVision.Engine.Services.Terminal
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
+            if (!ServiceAuthorization.Can("device.create", TerminalService.SysResourceModel))
+            {
+                MessageBox1.Show(this, EngineLocalization.Get("当前权限不足，无法创建设备。"), "ColorVision");
+                return;
+            }
             SysResourceModel saveDevConfigInfo(DeviceServiceConfig deviceConfig, SysResourceModel sysResource)
             {
+                ServiceAuthorization.Demand("device.create", TerminalService.SysResourceModel);
                 sysResource.Value = JsonConvert.SerializeObject(deviceConfig);
                 int pkId = SysResourceDao.Instance.SaveAndReturnId(sysResource);
                 sysResource.Id = pkId;
@@ -77,6 +85,8 @@ namespace ColorVision.Engine.Services.Terminal
                 DeviceServiceFactoryRegistry.ApplyDefaultLicense(TerminalService.ServiceType, deviceConfig, licenses, DateTimeOffset.Now);
             }
             SysResourceModel sysDevModel = saveDevConfigInfo(deviceConfig, sysResource);
+            var displayConfigs = DisplayConfigManager.Instance;
+            bool displayInitialized = DeviceServiceFactoryRegistry.TryInitializeNewDeviceDisplayConfig(TerminalService.ServiceType, deviceConfig.Code, displayConfigs);
             DeviceService deviceService = deviceServiceFactory.CreateService(sysDevModel);
 
             TerminalService.AddChild(deviceService);
@@ -84,6 +94,8 @@ namespace ColorVision.Engine.Services.Terminal
             if (!SysResourceDao.IsLocalId(sysDevModel.Id))
                 RC.MqttRCService.GetInstance().RestartServices(TerminalService.ServiceType.ToString(), TerminalService.SysResourceModel.Code, sysDevModel.Code);
             ServiceManager.GetInstance().GenDeviceDisplayControl();
+            if (displayInitialized && !ConfigHandler.GetInstance().TrySave(displayConfigs, out string displayError))
+                MessageBox1.Show(this, EngineLocalization.Format($"设备已创建，但本机显示配置保存失败：{displayError}"), "ColorVision");
             Close();
 
         }

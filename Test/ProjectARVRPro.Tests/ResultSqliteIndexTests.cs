@@ -24,7 +24,7 @@ public sealed class ResultSqliteIndexTests
                 db.Insertable(new ProjectARVRReuslt { BatchId = 7, SN = "SN-OTHER", Model = "MTF" }).ExecuteCommand();
             }
 
-            using (SqliteConnection connection = new($"Data Source={databasePath}"))
+            using (SqliteConnection connection = new($"Data Source={databasePath};Pooling=False"))
             {
                 connection.Open();
                 Assert.Equal("SCAN ARVRReuslt", QueryPlan(connection, 42));
@@ -41,7 +41,7 @@ public sealed class ResultSqliteIndexTests
                     .First().Id);
             }
 
-            using (SqliteConnection connection = new($"Data Source={databasePath}"))
+            using (SqliteConnection connection = new($"Data Source={databasePath};Pooling=False"))
             {
                 connection.Open();
                 Assert.Contains("IX_ARVRReuslt_BatchId", QueryPlan(connection, 42), StringComparison.Ordinal);
@@ -55,7 +55,6 @@ public sealed class ResultSqliteIndexTests
         }
         finally
         {
-            SqliteConnection.ClearAllPools();
             foreach (string file in Directory.GetFiles(directory))
                 File.Delete(file);
             Directory.Delete(directory);
@@ -64,7 +63,7 @@ public sealed class ResultSqliteIndexTests
 
     private static SqlSugarClient CreateClient(string databasePath) => new(new ConnectionConfig
     {
-        ConnectionString = $"Data Source={databasePath}",
+        ConnectionString = $"Data Source={databasePath};Pooling=False",
         DbType = SqlSugar.DbType.Sqlite,
         IsAutoCloseConnection = true,
         InitKeyType = InitKeyType.Attribute,

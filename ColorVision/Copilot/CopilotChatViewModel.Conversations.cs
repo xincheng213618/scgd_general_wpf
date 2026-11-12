@@ -706,6 +706,11 @@ namespace ColorVision.Copilot
             && conversation != null
             && (Conversations.Contains(conversation) || ReferenceEquals(_conversationPendingDeletion, conversation));
 
+        private bool CanApplyAuxiliaryConversationFeedback(CopilotConversationRecord? conversation, long feedbackRevision) =>
+            CanApplyAuxiliaryConversationResult(conversation)
+            && ReferenceEquals(SelectedConversation, conversation)
+            && feedbackRevision == Volatile.Read(ref _localCommandResultRevision);
+
         private CopilotNonBlockingCancellationSource BeginAuxiliaryOperation()
         {
             var cancellation = new CopilotNonBlockingCancellationSource();

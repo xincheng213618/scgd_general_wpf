@@ -17,17 +17,23 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
         private readonly ImageProcessingContext _image;
         private readonly string _debounceKey = $"{nameof(ThresholdWindow)}_{Guid.NewGuid():N}";
         private ImageAlgorithmPreviewSession? _preview;
+        private readonly AlgorithmParameterInputs _parameterInputs;
+        private long _parameterRevision;
+        private Guid _completedPreviewInvocationId;
+        private long _completedPreviewParameterRevision;
+        private long _completedPreviewInputRevision;
 
         public ThresholdWindow(ImageProcessingContext image)
         {
             InitializeComponent();
             this.ApplyCaption();
             _image = image;
-            _preview = ImageAlgorithmPreviewSession.Start(image);
+            _preview = ImageAlgorithmPreviewSession.StartForCatalogPreview(image);
             
             ThresholdParameters defaults = new();
             ThresholdSlider.Maximum = byte.MaxValue;
             ThresholdSlider.Value = defaults.Threshold;
+            _parameterInputs = new(this);
             _ = ApplyThresholdAsync();
         }
 
@@ -38,7 +44,8 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
                 return;
             }
 
-            DebounceTimer.AddOrResetTimerDispatcher(_debounceKey, 50, () => _ = ApplyThresholdAsync());
+            _parameterRevision++;
+            DebounceTimer.AddOrResetTimerDispatcher(_debounceKey, 50, _preview.GuardDeferredPreview(() => _ = ApplyThresholdAsync()));
         }
 
         private async System.Threading.Tasks.Task<bool> ApplyThresholdAsync()
@@ -50,10 +57,25 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
 
             try
             {
+                long parameterRevision = _parameterRevision;
+                long inputRevision = _parameterInputs.Revision;
+                _completedPreviewInvocationId = Guid.Empty;
                 ThresholdParameters parameters = CreateParameters(ThresholdSlider.Value);
                 AlgorithmInvocation invocation = AlgorithmInvocation.Create(StandardAlgorithmIds.Threshold, parameters);
-                using AlgorithmResult result = await _preview.PreviewAsync(invocation);
-                return result.Status == AlgorithmResultStatus.Succeeded && _preview.IsCurrent(invocation.InvocationId);
+                bool succeeded;
+                using (AlgorithmResult result = await _preview.PreviewAsync(invocation))
+                {
+                    succeeded = result.Status == AlgorithmResultStatus.Succeeded;
+                }
+                // Result disposal can reenter; qualify only the completed run's original parameter state.
+                bool current = succeeded && _preview.IsCurrent(invocation.InvocationId);
+                if (current && parameterRevision == _parameterRevision && inputRevision == _parameterInputs.Revision)
+                {
+                    _completedPreviewParameterRevision = parameterRevision;
+                    _completedPreviewInputRevision = inputRevision;
+                    _completedPreviewInvocationId = invocation.InvocationId;
+                }
+                return current;
             }
             catch (Exception ex)
             {
@@ -67,8 +89,21 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
 
         private async void Apply_Click(object sender, RoutedEventArgs e)
         {
+            bool inputsValid = _parameterInputs.TryCommit();
             DebounceTimer.Cancel(_debounceKey);
-            if (await ApplyThresholdAsync() && _preview?.Commit() == true) Close();
+            if (!inputsValid) return;
+            long parameterRevision = _parameterRevision;
+            long inputRevision = _parameterInputs.Revision;
+            if (_completedPreviewInvocationId != Guid.Empty
+                && parameterRevision == _completedPreviewParameterRevision && inputRevision == _completedPreviewInputRevision
+                && _preview?.IsCurrent(_completedPreviewInvocationId) == true)
+            {
+                if (_preview?.Commit() == true) Close();
+                // Commit failure can mean a new owner took over during its synchronous callbacks.
+                return;
+            }
+            if (await ApplyThresholdAsync() && parameterRevision == _parameterRevision
+                && inputRevision == _parameterInputs.Revision && _preview?.Commit() == true) Close();
         }
 
         private void Cancel_Click(object sender, RoutedEventArgs e)
@@ -80,6 +115,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
         protected override void OnClosed(EventArgs e)
         {
             DebounceTimer.Cancel(_debounceKey);
+            _parameterInputs.Dispose();
             _preview?.Dispose();
             base.OnClosed(e);
         }

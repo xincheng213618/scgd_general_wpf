@@ -10,6 +10,8 @@ using OpenAI.Responses;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using AIChatFinishReason = Microsoft.Extensions.AI.ChatFinishReason;
 
 namespace ColorVision.Copilot
@@ -28,12 +30,16 @@ namespace ColorVision.Copilot
                     ApiKey = profile.ApiKey,
                     BaseUrl = profile.BaseUrl.Trim().TrimEnd('/'),
                     HttpClient = CopilotProviderHttpTransport.CreateClient(profile.Id),
-                    Handlers = [new CopilotAnthropicHttpErrorHandler(profile.ApiKey)],
+                    Handlers = CopilotAnthropicPromptCacheChatClient.IsOfficialEndpoint(profile)
+                        ? [new CopilotAnthropicHttpErrorHandler(profile.ApiKey), new CopilotAnthropicEagerToolInputHandler()]
+                        : [new CopilotAnthropicHttpErrorHandler(profile.ApiKey)],
                     // ColorVision owns bounded retries and accounts for every provider attempt.
                     MaxRetries = 0,
                 });
-                return CopilotDeepSeekAnthropicChatClient.WrapIfRequired(
-                    anthropicClient.AsIChatClient(profile.Model, profile.MaxTokens), profile);
+                return CopilotAnthropicPromptCacheChatClient.WrapIfSupported(
+                    CopilotDeepSeekAnthropicChatClient.WrapIfRequired(
+                        anthropicClient.AsIChatClient(profile.Model, profile.MaxTokens), profile),
+                    profile);
             }
 
             return CopilotOpenAiAgentChatClientFactory.Create(
@@ -77,6 +83,20 @@ namespace ColorVision.Copilot
             return options;
         }
 
+        // A non-streaming call must finish inside the first-content timeout, but official Claude can
+        // legitimately think for many minutes. Streaming lets its summaries count as progress.
+        private static Task<ChatResponse> GetFinalAnswerResponseAsync(
+            IChatClient client,
+            IReadOnlyList<Microsoft.Extensions.AI.ChatMessage> messages,
+            CopilotAgentRequest request,
+            CancellationToken cancellationToken)
+        {
+            var options = BuildFinalAnswerOptions(request);
+            return CopilotAnthropicPromptCacheChatClient.IsOfficialEndpoint(request.Profile)
+                ? client.GetStreamingResponseAsync(messages, options, cancellationToken).ToChatResponseAsync(cancellationToken)
+                : client.GetResponseAsync(messages, options, cancellationToken);
+        }
+
         private static string ExtractFinalAnswerText(ChatResponse response)
         {
             return string.Concat((response?.Messages ?? Array.Empty<Microsoft.Extensions.AI.ChatMessage>())
@@ -97,6 +117,7 @@ namespace ColorVision.Copilot
                 // The shared enum has no Max. The local adapter preserves this exact profile value.
                 CopilotReasoningMode.Max when profile.IsLocalCodex => null,
                 CopilotReasoningMode.XHigh or CopilotReasoningMode.Max => new ReasoningOptions { Effort = ReasoningEffort.ExtraHigh, Output = ReasoningOutput.Full },
+                _ when CopilotReasoningCapabilities.RequestsClaudeThinkingSummaryByDefault(profile) => new ReasoningOptions { Output = ReasoningOutput.Full },
                 _ => null,
             };
         }

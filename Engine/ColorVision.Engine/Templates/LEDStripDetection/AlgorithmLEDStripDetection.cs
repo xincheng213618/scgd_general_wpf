@@ -21,7 +21,6 @@ namespace ColorVision.Engine.Templates.LEDStripDetection
         }
     }
 
-    [DisplayAlgorithm(10, "LightBandDetection", "定位算法")]
     public class AlgorithmLEDStripDetection : DisplayAlgorithmBase<LEDStripDetectionDisplayAlgorithmConfig>
     {
 

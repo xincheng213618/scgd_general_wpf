@@ -7,6 +7,7 @@ using Newtonsoft.Json;
 using ProjectARVRPro.Process;
 using ProjectARVRPro.Process.Distortion;
 using ProjectARVRPro.Process.MTF;
+using ProjectARVRPro.Process.MTF.MTFHV058;
 using ProjectARVRPro.Process.ScreenDefects;
 using ProjectARVRPro.Process.W51;
 using System.Globalization;
@@ -186,6 +187,42 @@ public sealed class ArvrDrawingOverlayCompatibilityTests
                 Assert.Null(visual.BaseAttribute.Name);
                 Assert.Null(visual.BaseAttribute.Tag);
             });
+        });
+    }
+
+    [Fact]
+    public void MtfHv058UsesTheSavedParserColorForOverlayText()
+    {
+        RunOnStaThread(() =>
+        {
+            using ImageView imageView = new();
+            var process = new MTFHV058Process();
+            process.SetProcessConfig("{}");
+            Assert.Equal(Colors.RoyalBlue, process.Config.OverlayTextColor);
+
+            var savedConfig = new MTFHV058ProcessConfig { OverlayTextColor = Colors.Cyan };
+            process.SetProcessConfig(JsonConvert.SerializeObject(savedConfig));
+            process.Render(new IProcessExecutionContext
+            {
+                ImageView = imageView,
+                Result = new ProjectARVRReuslt
+                {
+                    ViewResultJson = JsonConvert.SerializeObject(new MTFHV058ViewTestResult
+                    {
+                        MTFDetailViewReslut = new MTFDetailViewReslut
+                        {
+                            MTFResult = new MTFResult
+                            {
+                                result = [new MTFItem { x = 125, y = 80, w = 48, h = 32, mtfValue = 0.7364 }],
+                            },
+                        },
+                    }),
+                },
+            });
+
+            var overlay = Assert.Single(imageView.ImageShow.Visuals.OfType<DVRectangleText>());
+            Assert.Equal(Colors.Cyan, Assert.IsType<SolidColorBrush>(overlay.Attribute.Foreground).Color);
+            Assert.Equal(Colors.Red, Assert.IsType<SolidColorBrush>(overlay.Pen.Brush).Color);
         });
     }
 

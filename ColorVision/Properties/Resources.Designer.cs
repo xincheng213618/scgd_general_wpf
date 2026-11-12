@@ -521,24 +521,6 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
-        ///   查找类似 紧凑主窗口（重启生效） 的本地化字符串。
-        /// </summary>
-        public static string ConfigUseCompactMainWindow {
-            get {
-                return ResourceManager.GetString("ConfigUseCompactMainWindow", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 将菜单与快捷入口合并到标题栏，保留系统按钮和边框。全新安装或首次升级到此开关时默认开启，重启生效；关闭并重启可恢复旧主窗口，之后保留该选择。仅在兼容的 Windows 11 环境启用，不支持时保留原生标题栏。 的本地化字符串。
-        /// </summary>
-        public static string ConfigUseCompactMainWindowDescription {
-            get {
-                return ResourceManager.GetString("ConfigUseCompactMainWindowDescription", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 是否更新 的本地化字符串。
         /// </summary>
         public static string ConfirmUpdate {
@@ -574,14 +556,6 @@ namespace ColorVision.Properties {
             }
         }
         
-        /// <summary>
-        ///   查找类似 API Key 的本地化字符串。
-        /// </summary>
-        public static string CopilotApiKey {
-            get {
-                return ResourceManager.GetString("CopilotApiKey", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 收起会话列表 的本地化字符串。
@@ -628,14 +602,6 @@ namespace ColorVision.Properties {
             }
         }
         
-        /// <summary>
-        ///   查找类似 语言模型 的本地化字符串。
-        /// </summary>
-        public static string CopilotLanguageModel {
-            get {
-                return ResourceManager.GetString("CopilotLanguageModel", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 模型 的本地化字符串。
@@ -646,14 +612,6 @@ namespace ColorVision.Properties {
             }
         }
         
-        /// <summary>
-        ///   查找类似 名称 的本地化字符串。
-        /// </summary>
-        public static string CopilotName {
-            get {
-                return ResourceManager.GetString("CopilotName", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 新会话 的本地化字符串。
@@ -673,14 +631,6 @@ namespace ColorVision.Properties {
             }
         }
         
-        /// <summary>
-        ///   查找类似 协议 的本地化字符串。
-        /// </summary>
-        public static string CopilotProtocol {
-            get {
-                return ResourceManager.GetString("CopilotProtocol", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 重试 的本地化字符串。
@@ -943,14 +893,6 @@ namespace ColorVision.Properties {
             }
         }
         
-        /// <summary>
-        ///   查找类似 本地下载 的本地化字符串。
-        /// </summary>
-        public static string DownloadLocal {
-            get {
-                return ResourceManager.GetString("DownloadLocal", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 强制更新 的本地化字符串。
@@ -1015,32 +957,8 @@ namespace ColorVision.Properties {
             }
         }
         
-        /// <summary>
-        ///   查找类似 文件关联 的本地化字符串。
-        /// </summary>
-        public static string MenuFileAssociation {
-            get {
-                return ResourceManager.GetString("MenuFileAssociation", resourceCulture);
-            }
-        }
         
-        /// <summary>
-        ///   查找类似 注册缩略图预览 的本地化字符串。
-        /// </summary>
-        public static string MenuRegisterThumbnail {
-            get {
-                return ResourceManager.GetString("MenuRegisterThumbnail", resourceCulture);
-            }
-        }
         
-        /// <summary>
-        ///   查找类似 卸载缩略图预览 的本地化字符串。
-        /// </summary>
-        public static string MenuUnregisterThumbnail {
-            get {
-                return ResourceManager.GetString("MenuUnregisterThumbnail", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 状态栏 的本地化字符串。

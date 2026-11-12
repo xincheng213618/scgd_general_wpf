@@ -69,6 +69,10 @@ namespace ProjectARVRPro.Process
         public bool IsEnabled { get => _IsEnabled; set { _IsEnabled = value; OnPropertyChanged(); } }
         private bool _IsEnabled = true;
 
+        /// <summary>LUX 文本命令 T00XX 的末两位；与流程顺序和批次 Code 无关。</summary>
+        public string SocketCode { get => _SocketCode; set { _SocketCode = value; OnPropertyChanged(); } }
+        private string _SocketCode = string.Empty;
+
         /// <summary>
         /// 执行此流程前的切图配置（可选，默认不启用）
         /// </summary>

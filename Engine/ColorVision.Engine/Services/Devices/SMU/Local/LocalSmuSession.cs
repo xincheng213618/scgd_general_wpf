@@ -11,6 +11,7 @@ namespace ColorVision.Engine.Services.Devices.SMU.Local;
 
 internal sealed class LocalSmuSession : IAsyncDisposable
 {
+    private static readonly log4net.ILog log = log4net.LogManager.GetLogger(typeof(LocalSmuSession));
     private static readonly object OwnersSync = new();
     private static readonly Dictionary<string, LocalSmuSession> Owners = new(StringComparer.OrdinalIgnoreCase);
     private readonly object sync = new();
@@ -18,6 +19,7 @@ internal sealed class LocalSmuSession : IAsyncDisposable
     private readonly ILocalSmuNative native;
     private readonly HashSet<SMUChannelType> outputChannels = [];
     private readonly Dictionary<SMUChannelType, long> outputGenerations = [];
+    private readonly Dictionary<SMUChannelType, long> readoutGenerations = [];
     private long nextGeneration;
     private CancellationTokenSource lifetime = new();
     private Task? closing;
@@ -35,9 +37,21 @@ internal sealed class LocalSmuSession : IAsyncDisposable
     internal int SweepCapabilities { get; private set; }
     internal int LocalFamily { get; private set; }
     private bool advancedMode;
+    private bool legacyReadInvalidated;
 
     internal LocalSmuSession(ILocalSmuNative? native = null) => this.native = native ?? new LocalSmuNative();
     private void SetStatus(DeviceStatusType value) { lock (sync) status = value; StatusChanged?.Invoke(value); }
+
+    internal bool CanApplyReadout(SMUChannelType channel, long? expectedGeneration)
+    {
+        lock (sync)
+        {
+            if (!expectedGeneration.HasValue) return !readoutGenerations.ContainsKey(channel);
+            return (status is DeviceStatusType.Opened or DeviceStatusType.Busy)
+                && readoutGenerations.TryGetValue(channel, out long current) && current == expectedGeneration;
+        }
+    }
+
     private static void Check(int code, string operation)
     {
         if (code != 1) throw new InvalidOperationException($"{operation}失败，SDK 返回 {code}。");
@@ -49,7 +63,11 @@ internal sealed class LocalSmuSession : IAsyncDisposable
     private bool OpenCore(LocalSmuConnection config)
     {
         config.Validate();
-        if (handle >= 0 && MatchesOpenSettings(config)) return true;
+        if (handle >= 0 && MatchesOpenSettings(config))
+        {
+            ApplyNplc(config);
+            return true;
+        }
         lock (OwnersSync)
         {
             if (Owners.TryGetValue(config.Endpoint, out var owner) && !ReferenceEquals(owner, this)) throw new InvalidOperationException("另一个本地源表正在使用此连接。");
@@ -80,6 +98,8 @@ internal sealed class LocalSmuSession : IAsyncDisposable
             stage = "读取仪器型号";
             Check(native.GetIdn(handle, text, ref length), "读取源表标识");
             Idn = text.ToString();
+            stage = "设置积分时间";
+            ApplyNplc(config);
             SweepCapabilities = native.GetSweepCapabilities(handle);
             LocalFamily = native.GetLocalFamily(handle);
             SetStatus(DeviceStatusType.Opened);
@@ -105,6 +125,7 @@ internal sealed class LocalSmuSession : IAsyncDisposable
             if (!read) parameters.Validate(config.DeviceType, scan, checkLimits);
             EnsureConnection(config, reconnect: !read);
             if (read && advancedMode) throw new InvalidOperationException("当前使用本地高级模式，请从本地源表窗口执行测量；切换普通点测后可使用旧读取命令。");
+            if (read && legacyReadInvalidated) throw new InvalidOperationException("上次普通采集未完成，请先成功执行一次普通测量，再读取结果。");
             if (read && lastParameters != null) parameters = lastParameters with { IsCloseOutput = false };
             if (read && !Enum.IsDefined(parameters.Channel)) throw new ArgumentException("源表通道无效。");
             SetStatus(DeviceStatusType.Busy);
@@ -112,17 +133,17 @@ internal sealed class LocalSmuSession : IAsyncDisposable
             LocalSmuCapture? capture = null;
             try
             {
+                // Failed setup can leave the SDK source mode and the previous reading out of sync.
+                if (!read) legacyReadInvalidated = true;
                 SelectChannel(parameters.Channel);
                 if (!read) Check(native.SetSource(handle, parameters.IsSourceV), "设置源类型");
+                if (!read) ApplyNplc(config);
                 // Apply each request's delay under the session lock; an override must not leak
                 // into a later node or a manual measurement that inherits the device setting.
                 if (!read) Check(native.SetDelay(handle, parameters.MeasureDelayMs ?? config.DelayTime), "设置源表测量延时");
-                if (!read) advancedMode = false;
-                if (!read) lastParameters = parameters;
+                if (scan) log.Info($"本地源表扫描开始：{CaptureContext(config, parameters, scan, read)}");
                 // A failing or canceled native call may already have enabled the selected output.
-                outputChannels.Add(parameters.Channel);
-                long generation = ++nextGeneration;
-                outputGenerations[parameters.Channel] = generation;
+                long generation = BeginOutputOperation(parameters.Channel);
                 var watch = Stopwatch.StartNew();
                 double[] voltages = new double[scan ? parameters.Points : 1], currents = new double[scan ? parameters.Points : 1];
                 if (scan) Check(parameters.IsListSweep
@@ -139,7 +160,11 @@ internal sealed class LocalSmuSession : IAsyncDisposable
                 }
                 capture = new LocalSmuCapture(parameters, voltages, currents, (int)Math.Min(watch.ElapsedMilliseconds, int.MaxValue), scan) { Generation = generation };
             }
-            catch (Exception ex) { failure = ex; }
+            catch (Exception ex)
+            {
+                failure = ex is OperationCanceledException ? ex
+                    : new InvalidOperationException($"{ex.Message}\n{CaptureContext(config, parameters, scan, read)}", ex);
+            }
             try
             {
                 if (failure != null || parameters.IsCloseOutput) CloseChannel(parameters.Channel);
@@ -151,8 +176,35 @@ internal sealed class LocalSmuSession : IAsyncDisposable
             }
             finally { if (Status == DeviceStatusType.Busy) SetStatus(DeviceStatusType.Opened); }
             if (failure != null) System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(failure).Throw();
+            if (!read)
+            {
+                lastParameters = parameters;
+                advancedMode = false;
+                legacyReadInvalidated = false;
+            }
+            lock (sync) readoutGenerations[parameters.Channel] = capture!.Generation;
             return capture!;
             }, token, flowOwner);
+    }
+
+    private void ApplyNplc(LocalSmuConnection config)
+    {
+        if (config.DeviceType is cvColorVision.Pss_Type.Keithley_2400 or cvColorVision.Pss_Type.Keithley_2600)
+            Check(native.SetNplc(handle, config.Nplc, config.DeviceType), "设置源表积分时间");
+    }
+
+    private static string CaptureContext(LocalSmuConnection config, LocalSmuParameters parameters, bool scan, bool read)
+    {
+        string transport = config.IsNet ? "网络" : $"串口 {config.BaudRate} baud";
+        string sourceUnit = parameters.IsSourceV ? "V" : "mA";
+        string limitUnit = parameters.IsSourceV ? "mA" : "V";
+        string operation = read ? "读取" : scan ? parameters.IsListSweep ? "列表扫描" : "线性扫描" : "点测";
+        string source = scan
+            ? FormattableString.Invariant($"起点={parameters.BeginValue:G17} {sourceUnit}，终点={parameters.EndValue:G17} {sourceUnit}，点数={parameters.Points}")
+            : FormattableString.Invariant($"源值={parameters.MeasureValue:G17} {sourceUnit}");
+        string range = parameters.IsAutoRng ? "自动量程"
+            : FormattableString.Invariant($"SDK 源量程={parameters.SrcRng:G17}，限量程={parameters.LmtRng:G17}");
+        return FormattableString.Invariant($"{config.DeviceType}，{config.DeviceName}，{transport}，通道={parameters.Channel}，{operation}；{source}，保护={parameters.LimitValue:G17} {limitUnit}，延时={parameters.MeasureDelayMs ?? config.DelayTime:G17} ms，NPLC={config.Nplc:G17}，{range}。");
     }
 
     internal Task CloseOutputAsync(SMUChannelType channel, CancellationToken token = default, long? expectedGeneration = null, object? flowOwner = null) => RunAsync(() =>
@@ -178,11 +230,9 @@ internal sealed class LocalSmuSession : IAsyncDisposable
             EnsureConnection(config, reconnect: true);
             if (LocalFamily == 0) throw new NotSupportedException("当前 DLL 或仪器命令集不支持本地高级源表功能；请核对实际型号并更新 DLL。");
             settings.ValidateFamily(LocalFamily);
-            SetStatus(DeviceStatusType.Busy);
             SelectChannel(settings.Channel);
-            outputChannels.Add(settings.Channel);
-            long generation = ++nextGeneration;
-            outputGenerations[settings.Channel] = generation;
+            SetStatus(DeviceStatusType.Busy);
+            long generation = BeginOutputOperation(settings.Channel);
             try
             {
                 double[] v = new double[sources.Length], i = new double[sources.Length], r = new double[sources.Length];
@@ -199,17 +249,23 @@ internal sealed class LocalSmuSession : IAsyncDisposable
                     MeasureValue = sources[^1], LimitValue = settings.Limit, BeginValue = sources[0], EndValue = sources[^1],
                     SourceValues = sources, Points = sources.Length, IsCloseOutput = settings.CloseOutput, AdvancedSettings = settings };
                 lastParameters = null;
-                if (settings.CloseOutput) { outputChannels.Remove(settings.Channel); outputGenerations.Remove(settings.Channel); }
-                return new LocalSmuCapture(parameters, measured ? v : [], measured ? i.Select(value => value * 1000).ToArray() : [],
+                if (settings.CloseOutput) ConfirmOutputClosed(settings.Channel);
+                var capture = new LocalSmuCapture(parameters, measured ? v : [], measured ? i.Select(value => value * 1000).ToArray() : [],
                     (int)Math.Min(watch.ElapsedMilliseconds, int.MaxValue), measured && sources.Length > 1)
                 { Generation = generation, Details = new(settings, sources,
                     measured ? r.Select(value => double.IsFinite(value) && Math.Abs(value) < 1e36 ? (double?)value : null).ToArray() : [],
                     measured ? status : [], settings.Waveform == SmuWaveform.DC ? "DC" : LocalFamily == 1 ? "2400-SDM-Approximate" : LocalFamily == 2 ? "2430-Pulse" : "2600-Timer") };
+                lock (sync) readoutGenerations[settings.Channel] = generation;
+                return capture;
             }
-            catch
+            catch (Exception failure)
             {
                 try { CloseChannel(settings.Channel); }
-                catch { SetStatus(DeviceStatusType.Unknown); throw; }
+                catch (Exception cleanup)
+                {
+                    SetStatus(DeviceStatusType.Unknown);
+                    throw new AggregateException("本地源表高级操作失败，关闭输出也失败。", failure, cleanup);
+                }
                 throw;
             }
             finally { if (Status == DeviceStatusType.Busy) SetStatus(DeviceStatusType.Opened); }
@@ -228,7 +284,7 @@ internal sealed class LocalSmuSession : IAsyncDisposable
             try
             {
                 Check(native.CloseAdvancedOutput(handle, (int)settings.Channel, (int)settings.OffMode), "设置关闭状态并关闭源表输出");
-                outputChannels.Remove(settings.Channel); outputGenerations.Remove(settings.Channel);
+                ConfirmOutputClosed(settings.Channel);
                 SetStatus(DeviceStatusType.Opened); return true;
             }
             catch { SetStatus(DeviceStatusType.Unknown); throw; }
@@ -296,12 +352,26 @@ internal sealed class LocalSmuSession : IAsyncDisposable
         if (!Enum.IsDefined(channel)) throw new ArgumentException("源表通道无效。");
         Check(native.SetChannel(handle, channel == SMUChannelType.A), "选择源表通道");
     }
+    private long BeginOutputOperation(SMUChannelType channel)
+    {
+        outputChannels.Add(channel);
+        long generation = ++nextGeneration;
+        outputGenerations[channel] = generation;
+        return generation;
+    }
+
     private void CloseChannel(SMUChannelType channel)
     {
         SelectChannel(channel);
         Check(native.CloseOutput(handle), "关闭源表输出");
+        ConfirmOutputClosed(channel);
+    }
+
+    private void ConfirmOutputClosed(SMUChannelType channel)
+    {
         outputChannels.Remove(channel);
         outputGenerations.Remove(channel);
+        lock (sync) readoutGenerations.Remove(channel);
     }
 
     private async Task<T> RunAsync<T>(Func<T> work, CancellationToken token, object? flowOwner = null)
@@ -380,12 +450,13 @@ internal sealed class LocalSmuSession : IAsyncDisposable
             throw new AggregateException("源表输出或连接释放失败。", failures);
         }
         if (connection is { } opened && opened.Endpoint != retainedEndpoint) ReleaseEndpoint(opened.Endpoint);
-        lock (sync) connection = null;
+        lock (sync) { connection = null; readoutGenerations.Clear(); }
         Idn = string.Empty;
         SweepCapabilities = 0;
         LocalFamily = 0;
         lastParameters = null;
         advancedMode = false;
+        legacyReadInvalidated = false;
         SetStatus(DeviceStatusType.Closed);
     }
 

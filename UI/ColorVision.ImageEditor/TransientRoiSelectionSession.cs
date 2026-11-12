@@ -99,15 +99,17 @@ namespace ColorVision.ImageEditor
         private readonly DrawEditorContext _drawContext;
         private readonly DrawCanvas _drawCanvas;
         private readonly Zoombox _zoombox;
-        private readonly TaskCompletionSource<SelectResult> _tcs;
+        private readonly TaskCompletionSource<SelectResult> _tcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
         private readonly SelectShapeType _shapeType;
         private readonly ImageProcessingContext? _processingContext;
         private ImageSelectionScope? _sourceScope;
+        private bool _started;
         private bool _cleanedUp;
 
         private DrawingVisual _visual;
         private Point _mouseDown;
         private bool _isDrawing;
+        private bool _hasMouseCapture;
         private Cursor _previousCursor;
         private ModifierKeys _previousActivateOn;
         private bool _previousEditMode;
@@ -127,50 +129,56 @@ namespace ColorVision.ImageEditor
             _zoombox = drawContext.Zoombox;
             _shapeType = shapeType;
             _processingContext = drawContext.ProcessingContext;
-            _tcs = new TaskCompletionSource<SelectResult>();
         }
 
         public Task<SelectResult> Start()
         {
+            _drawCanvas.Dispatcher.VerifyAccess();
+            if (_started) return _tcs.Task;
+            _started = true;
+
             _sourceScope = CaptureSourceScope(_processingContext);
-            if (_processingContext != null)
+            if (HasCurrentSource())
             {
-                if (_sourceScope == null || !IsSourceScopeCurrent(_processingContext, _sourceScope))
+                var previous = _drawCanvas.ActiveRoiSelection;
+                previous?.Cancel();
+                // A callback during cancellation can change the source or try to start another selection.
+                if (_drawCanvas.ActiveRoiSelection == null && (previous == null || HasCurrentSource()))
                 {
-                    // Nothing has been activated yet: do not restore uninitialized interaction
-                    // state or release another operation's mouse capture on this early exit.
-                    _tcs.TrySetResult(null);
+                    Activate();
                     return _tcs.Task;
                 }
-                _processingContext.DocumentScopeChanged += OnDocumentScopeChanged;
             }
 
+            _tcs.TrySetResult(null);
+            return _tcs.Task;
+        }
+
+        private bool HasCurrentSource() =>
+            _processingContext == null || (_sourceScope != null && IsSourceScopeCurrent(_processingContext, _sourceScope));
+
+        private void Activate()
+        {
             _previousCursor = _zoombox.Cursor;
             _previousActivateOn = _zoombox.ActivateOn;
             _previousEditMode = _drawContext.IsImageEditMode;
+            _drawCanvas.ActiveRoiSelection = this;
 
-            // Suppress edit mode so SelectEditorVisual doesn't interfere without
-            // running the full ImageView mode toggle side effects.
-            if (_previousEditMode)
-            {
-                _drawContext.IsImageEditMode = false;
-            }
-            // Ensure zoombox is in draw-friendly mode
-            _zoombox.ActivateOn = ModifierKeys.Control;
-            _zoombox.Cursor = Cursors.Cross;
-
+            if (_processingContext != null)
+                _processingContext.DocumentScopeChanged += OnDocumentScopeChanged;
             _drawCanvas.PreviewMouseLeftButtonDown += OnMouseDown;
             _drawCanvas.PreviewMouseMove += OnMouseMove;
             _drawCanvas.PreviewMouseLeftButtonUp += OnMouseUp;
             _drawCanvas.PreviewMouseRightButtonDown += OnMouseRightDown;
             _drawCanvas.PreviewKeyDown += OnKeyDown;
+            _drawCanvas.LostMouseCapture += OnLostMouseCapture;
 
             if (IsMultiClickMode)
-            {
                 _polygonPoints = new List<Point>();
-            }
 
-            return _tcs.Task;
+            _zoombox.ActivateOn = ModifierKeys.Control;
+            _zoombox.Cursor = Cursors.Cross;
+            _drawContext.IsImageEditMode = false;
         }
 
         private void OnMouseDown(object sender, MouseButtonEventArgs e)
@@ -205,7 +213,7 @@ namespace ColorVision.ImageEditor
                 }
 
                 RenderPolygonPreview(pos);
-                _drawCanvas.CaptureMouse();
+                _hasMouseCapture = _drawCanvas.CaptureMouse();
                 e.Handled = true;
                 return;
             }
@@ -217,7 +225,7 @@ namespace ColorVision.ImageEditor
             _visual = new DrawingVisual();
             _drawCanvas.AddVisual(_visual);
 
-            _drawCanvas.CaptureMouse();
+            _hasMouseCapture = _drawCanvas.CaptureMouse();
             e.Handled = true;
         }
 
@@ -246,14 +254,14 @@ namespace ColorVision.ImageEditor
             if (IsMultiClickMode)
             {
                 // Multi-click mode: mouse-up just finalizes the point position (already added in OnMouseDown)
-                _drawCanvas.ReleaseMouseCapture();
+                ReleaseMouseCapture();
                 e.Handled = true;
                 return;
             }
 
             if (!_isDrawing || _visual == null) return;
 
-            _drawCanvas.ReleaseMouseCapture();
+            ReleaseMouseCapture();
             var mouseUp = e.GetPosition(_drawCanvas);
 
             if (!TryCompleteDrag(_mouseDown, mouseUp))
@@ -279,8 +287,7 @@ namespace ColorVision.ImageEditor
                 }
                 else
                 {
-                    Cleanup();
-                    _tcs.TrySetResult(null);
+                    Cancel();
                 }
                 // Suppress context menu
                 e.Handled = true;
@@ -296,8 +303,7 @@ namespace ColorVision.ImageEditor
 
             if (realKey == Key.Escape)
             {
-                Cleanup();
-                _tcs.TrySetResult(null);
+                Cancel();
                 e.Handled = true;
                 return;
             }
@@ -418,7 +424,9 @@ namespace ColorVision.ImageEditor
 
         private bool TryCompletePolygon()
         {
-            if (_polygonPoints == null || !IsValidPolygon(_polygonPoints))
+            if (_polygonPoints == null
+                || (_shapeType == SelectShapeType.Quadrilateral && _polygonPoints.Count != 4)
+                || !IsValidPolygon(_polygonPoints))
             {
                 return false;
             }
@@ -528,7 +536,7 @@ namespace ColorVision.ImageEditor
             }
             if (_sourceScope == null || !IsSourceScopeCurrent(_processingContext, _sourceScope))
             {
-                InvalidateSourceScope();
+                Cancel();
                 return false;
             }
 
@@ -542,12 +550,13 @@ namespace ColorVision.ImageEditor
                 && _sourceScope != null
                 && !IsSourceScopeCurrent(_processingContext, _sourceScope))
             {
-                InvalidateSourceScope();
+                Cancel();
             }
         }
 
-        private void InvalidateSourceScope()
+        private void Cancel()
         {
+            if (_cleanedUp) return;
             Cleanup();
             _tcs.TrySetResult(null);
         }
@@ -585,6 +594,15 @@ namespace ColorVision.ImageEditor
                 && context.IsCurrentImageRevision(scope.SourceRevision)
                 && CaptureSourceScope(context) == scope;
 
+        private void OnLostMouseCapture(object sender, MouseEventArgs e) => _hasMouseCapture = false;
+
+        private void ReleaseMouseCapture()
+        {
+            if (!_hasMouseCapture) return;
+            _hasMouseCapture = false;
+            _drawCanvas.ReleaseMouseCapture();
+        }
+
         private void Cleanup()
         {
             if (_cleanedUp)
@@ -604,6 +622,7 @@ namespace ColorVision.ImageEditor
             _drawCanvas.PreviewMouseLeftButtonUp -= OnMouseUp;
             _drawCanvas.PreviewMouseRightButtonDown -= OnMouseRightDown;
             _drawCanvas.PreviewKeyDown -= OnKeyDown;
+            _drawCanvas.LostMouseCapture -= OnLostMouseCapture;
 
             if (_visual != null)
             {
@@ -611,12 +630,18 @@ namespace ColorVision.ImageEditor
                 _visual = null;
             }
 
-            _drawCanvas.ReleaseMouseCapture();
-
             // Restore previous state without running the full ImageView mode toggle side effects.
-            _zoombox.Cursor = _previousCursor;
-            _zoombox.ActivateOn = _previousActivateOn;
-            _drawContext.IsImageEditMode = _previousEditMode;
+            try
+            {
+                ReleaseMouseCapture();
+                _zoombox.Cursor = _previousCursor;
+                _zoombox.ActivateOn = _previousActivateOn;
+                _drawContext.IsImageEditMode = _previousEditMode;
+            }
+            finally
+            {
+                _drawCanvas.ActiveRoiSelection = null;
+            }
         }
     }
 }

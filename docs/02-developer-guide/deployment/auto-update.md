@@ -3,8 +3,8 @@ knowledge_id: "delivery.update"
 knowledge_type: "topic"
 status: "current"
 summary: "检查更新、重新安装与程序备份入口，以及主程序和插件的检查复用、下载安装、失败回退与启动恢复。"
-aliases: ["检查更新","变更日志","程序备份","更新前创建程序快照","正常启动后自动存档","自动更新","更新失败","重新安装","最新完整安装包","插件回滚","重复检查更新","更新检查缓存","十分钟缓存","空结果不缓存","启动检查结果","PluginUpdater","CombinedUpdateCoordinator","UpdateCheckReuseState","LatestVersionCheckRequestCache","CanReuseUpdateCheckOptions","GetPluginUpdateMetadataAsync","ServerUnavailable","NoInternetConnection","forceRefresh","ApplicationSnapshotService","ApplicationSnapshotConfig","ApplicationSnapshotsWindow","自动存档位置","autosave.zip","还原所选",".cvx","离线升级","增量包版本链","IncrementalUpdatePackageFileProcessor"]
-code_paths: ["ColorVision/Update","ColorVision/Recovery","UI/ColorVision.UI/Update/","UI/ColorVision.UI/ServiceHost/ApplicationUpdatePrivilegeBroker.cs","UI/ColorVision.UI/Plugins/PluginUpdater.cs","UI/ColorVision.UI/Plugins/PluginRecoveryBackupService.cs","UI/ColorVision.UI.Desktop/Marketplace/MarketplaceClient.cs","UI/ColorVision.UI.Desktop/Marketplace/MarketplaceManager.cs"]
+aliases: ["检查更新","变更日志","程序备份","更新前创建程序快照","正常启动后自动存档","自动更新","更新失败","重新安装","最新完整安装包","插件回滚","重复检查更新","更新检查缓存","十分钟缓存","空结果不缓存","启动检查结果","PluginUpdater","CombinedUpdateCoordinator","UpdateCheckReuseState","LatestVersionCheckRequestCache","CanReuseUpdateCheckOptions","GetPluginUpdateMetadataAsync","ServerUnavailable","NoInternetConnection","forceRefresh","ApplicationSnapshotService","ApplicationSnapshotConfig","ApplicationSnapshotsWindow","自动存档位置","autosave.zip","还原所选",".cvx","离线升级","增量包版本链","IncrementalUpdatePackageFileProcessor","更新服务器地址","内网更新源","UpdateServerUrls","UpdateSourceSelector","CanReachUpdateService","离线更新文件夹","断网更新","OfflineUpdateFolder","export_offline_updates.py"]
+code_paths: ["ColorVision/Update","ColorVision/Recovery","UI/ColorVision.UI.Desktop/Update/","UI/ColorVision.UI/Marketplace/MarketplaceConfig.cs","Scripts/export_offline_updates.py","UI/ColorVision.UI/ServiceHost/ApplicationUpdatePrivilegeBroker.cs","UI/ColorVision.UI.Desktop/Plugins/PluginUpdater.cs","UI/ColorVision.UI.Desktop/Plugins/PluginRecoveryBackupService.cs","UI/ColorVision.UI.Desktop/Marketplace/MarketplaceClient.cs","UI/ColorVision.UI.Desktop/Marketplace/MarketplaceManager.cs"]
 test_paths: ["Test/ColorVision.UI.Tests/HelpKeyboardNavigationTests.cs","Test/ColorVision.UI.Tests/PluginRecoveryBackupServiceTests.cs","Test/ColorVision.UI.Tests/ServiceHostUpdateCompatibilityTests.cs","Test/ColorVision.UI.Tests/AutoUpdatePlanTests.cs","Test/ColorVision.UI.Tests/StartupRecoverySnapshotRuntimeTests.cs"]
 related: ["delivery.deployment","delivery.scripts","platform.service-host","delivery.update-scan-protection","platform.startup-integrity"]
 ---
@@ -27,6 +27,22 @@ ColorVision 在“检查更新”窗口中统一查看主程序与插件更新�
 ### 网络设置
 
 设置中的“不使用系统代理”选项默认开启，开启时使用独立的直连 `HttpClient`；取消勾选后，更新检查和 Marketplace 请求遵循 Windows 系统代理。修改从下一次请求生效。该选项只影响 HTTP 元数据与 Marketplace 请求，不改变 aria2 下载和程序快照行为。
+
+“设置 → 更新 → 更新服务器地址”留空时使用官方服务器。只填一个跳板或镜像地址（如 `http://192.168.1.20:9998`）时，官方服务器优先。只填离线文件夹时从该文件夹更新。多个来源以分号分隔，按填写顺序尝试。手动检查重新探测，选择第一个能返回有效版本的来源。主程序和插件计划记住所选来源，下载和完整安装包回退沿用该来源。反馈、激活、云盘和网页入口使用官方服务。
+
+配置了跳板、镜像或离线文件夹后，即使 Windows 报告“无 Internet”也会尝试更新。旧版通过 hosts 指向内网的配置仍兼容，迁移步骤见[更新跳板工具](./overview.md#内网更新跳板)。
+
+### 离线更新文件夹
+
+现场无法访问任何更新服务时，由我方在能访问更新服务的电脑上导出文件夹，经 U 盘、堡垒机文件传输或共享目录交给现场，再把文件夹路径（如 `D:\CVUpdates`、`\\server\share\CVUpdates`）填入“更新服务器地址”。共享目录只需放一次，内网所有电脑都可从中更新。
+
+```powershell
+py Scripts\export_offline_updates.py --out D:\CVUpdates --from-version 1.4.17.100 --plugins ProjectARVRPro
+```
+
+`--from-version` 填现场已安装的版本，可重复，用于导出增量包链。默认也导出最新完整安装包，客户端在跨主次版本或文件夹缺少所需增量包时直接计划使用完整安装包。确认不需要时可用 `--no-installer` 跳过。`--plugins` 导出与最新主程序兼容的插件或项目包最新版本。输出目录必须为空。
+
+文件夹布局与接口映射由 `OfflineUpdateFolder` 定义，导出脚本与客户端必须同步修改。根目录 `colorvision-updates.json` 记录每个文件的 SHA-256：元数据在读取时校验，安装包在复制进下载缓存时校验，不在清单中、被修改或缺少清单的文件不会被使用。这只能发现复制损坏和误改，不是发行签名：能写入该文件夹的人可以同时改写清单，共享目录的写权限须由现场管理。离线来源不提供插件市场浏览和反馈。
 
 ## 重新安装
 
@@ -99,7 +115,7 @@ flowchart LR
 
 ## 更新包与插件事务
 
-同一主次版本内使用增量包链，跨主次版本运行完整安装程序。主程序增量更新采用覆盖复制。应用文件打开路由也接受 `.cvx`：`IncrementalUpdatePackageFileProcessor` 检查文件就绪后，把单个包直接交给增量更新入口；它不会补齐在线版本链，也不确认此包适用于当前基线。这是直接安装入口的校验缺口，不能把任意一个差异包当作完整离线升级包。常规离线升级使用完整安装包。
+同一主次版本内使用增量包链，跨主次版本运行完整安装程序。主程序增量更新采用覆盖复制。应用文件打开路由也接受 `.cvx`：`IncrementalUpdatePackageFileProcessor` 检查文件就绪后，把单个包直接交给增量更新入口；它不会补齐在线版本链，也不确认此包适用于当前基线。这是直接安装入口的校验缺口，不能把任意一个差异包当作完整离线升级包。常规离线升级使用离线更新文件夹或完整安装包。
 
 带清单的 `.cvxp` 必须包含完整插件目录。客户端先取得当前安装位置的插件恢复备份，再通过同卷目录事务替换 `Plugins/<id>/`；切换失败时尝试逆序回退。备份可以复用，不保证每次更新重新复制；无清单的旧式插件使用兼容覆盖路径。备份校验时机、保留策略和回退限制统一见[插件备份与恢复](../plugin-development/getting-started.md#插件备份与恢复)。
 
@@ -109,7 +125,7 @@ flowchart LR
 
 下载完成的安装包、增量包和插件包保留在各自的更新缓存中，供后续重装、还原或复用；更新结束时只删除 `%TEMP%` 下本次生成的解压和拼装目录。缓存除了检查文件结构，还会核对包内 `ColorVision.exe` 或完整安装程序的目标版本，避免同名旧包被当成新版本使用。校验失败或暂时无法读取的缓存包不会直接删除，而是移入同级 `Recovery` 目录并重新下载。
 
-用户可在[存储与维护](../../04-api-reference/ui-components/storage-maintenance.md)中另行扫描并确认清理过期安装包缓存。该类别默认不勾选，进行中或待安装的更新、未完成下载及续传文件受保护，`Recovery` 和程序快照不进入普通清理范围；这不改变上述正常更新结束时的缓存保留策略。
+用户可在[存储](../../04-api-reference/ui-components/storage-maintenance.md)的文件缓存管理中另行扫描并确认清理过期安装包缓存。该类别默认不勾选，进行中或待安装的更新、未完成下载及续传文件受保护，`Recovery` 和程序快照不进入普通清理范围；这不改变上述正常更新结束时的缓存保留策略。
 
 最终安装入口重新检查全部 `.cvx` 的就绪状态：存在、非空、无同名 `.aria2` 且 ZIP 可打开并包含条目；这不是签名或完整版本链校验。插件市场、本地文件和最终暂存共用插件包就绪判断：带 `.aria2` 的下载中包、损坏包、空包和非 `.cvxp/.zip` 文件都会被拒绝；`.zip` 仅用于第三方插件兼容。组合更新按 `manifest.id` 暂存插件，根目录包、官方包和主程序包内的插件目录采用同一套覆盖规则。
 
@@ -133,33 +149,33 @@ flowchart LR
 
 ## 检查复用与元数据新鲜度
 
-第一次手动打开窗口可复用一次启动自动检查的非空成功结果，有效期为检查完成后 10 分钟；空结果、失败、过期结果及后续手动检查结果均不复用。
+单来源时，第一次手动打开窗口可复用一次启动自动检查的非空成功结果，有效期为检查完成后 10 分钟。多来源时，手动检查重新选择来源以响应网络变化。
 
 | 层次 | 当前复用条件 |
 | --- | --- |
 | 组合检查任务 `SharedUpdateCheck` | 主程序/插件检查开关必须相同，且已包含请求需要的当前宿主插件范围；范围不兼容会另建检查 |
-| 尚在进行的组合检查 | 兼容范围可等待同一任务；交互请求复用启动任务时消耗其结果消费资格 |
-| 已完成的启动检查 | 仅非空成功结果可在 10 分钟内由第一次手动打开消费；其余情况重新检查 |
+| 尚在进行的组合检查 | 同一来源配置和兼容范围可等待同一任务。多来源时，手动检查独立于启动任务 |
+| 已完成的启动检查 | 单来源的非空成功结果可在 10 分钟内由第一次手动打开消费 |
 | 已完成的手动检查或 `Refresh` 检查 | 不复用，后续打开窗口重新检查 |
 | 主程序版本 HTTP 请求 | `LatestVersionCheckRequestCache` 只共享同 URL 的进行中请求；完成后新建请求。因此组合范围不同仍可能共享正在进行的主程序版本请求 |
 | 插件更新元数据 HTTP 请求 | 按服务地址与插件 ID 共享进行中请求；批量版本查询使用信号量串行执行，不等于复用一个已完成批量结果 |
 
 组合检查和上述共享 HTTP 请求用调用方的 `WaitAsync(cancellationToken)` 等待；关闭窗口可取消自己的等待，不会取消共享底层请求。有效期只在打开窗口时按完成时间比较，不使用定时器或后台轮询。
 
-客户端使用 `GET /api/app/latest-version`、`POST /api/plugins/batch-version-check` 和插件更新元数据接口 `GET /api/plugins/{id}?view=update`。主程序版本与插件批量版本并发查询，插件管理器再按 `HasUpdate` 选择候选并读取元数据以筛选兼容版本。插件更新元数据请求采用 2 秒单次超时，并以 300 ms、900 ms 间隔最多建立 3 次新请求。任一候选插件的元数据在重试和可用旧结果回退后仍未取得时，本轮主程序与插件更新计划整体延期，不把本应组合的更新拆成两次。
+客户端使用 `GET /api/app/latest-version`、`POST /api/plugins/batch-version-check` 和 `GET /api/plugins/{id}?view=update`。多来源探测返回的版本可直接用于本轮计划。插件候选来自同一来源的批量版本结果，再按详情筛选兼容版本。任一候选插件在重试和同源缓存回退后仍缺少元数据时，本轮组合更新延期。
 
-`AutoUpdater` 仍在进程内保存同 URL 的最后成功版本和 ETag：后续请求可带 `If-None-Match`，服务器返回 304 时使用旧版本并报告 `Success`。断网、超时、HTTP 异常或无效载荷也可能返回旧版本，但仍携带 `NoInternetConnection` / `ServerUnavailable`；取得非空 `Version` 或 `Plan` 不代表检查成功。组合入口在无 Internet 时提前结束，最终状态非 `Success` 时会延期主程序与插件计划。交互入口仅对 `ServerUnavailable` 再检查一次，不对 `NoInternetConnection` 重试。
+`AutoUpdater` 保存同 URL 的最后成功版本和 ETag。后续请求可带 `If-None-Match`，服务器返回 304 时使用旧版本并报告 `Success`。断网、超时、HTTP 异常或无效载荷可能返回旧版本，并携带 `NoInternetConnection` 或 `ServerUnavailable`；组合更新要求检查成功。交互入口仅对 `ServerUnavailable` 重试一次。
 
-`MarketplaceClient` 的批量版本、普通详情和更新元数据也保留最后成功响应，某些请求异常分支会回退这些旧对象；没有五分钟 TTL，返回值也不统一标记新鲜度。插件详情回退的缓存键只有插件 ID，批量回退按插件 ID 集合匹配，不保证切换服务地址后的缓存隔离。取到旧详情仍可能形成兼容更新候选，不能从非空结果或整轮检查完成推断每条插件元数据都刚从服务器取得。
+`MarketplaceClient` 按来源及插件 ID 或 ID 集合保存成功响应，请求失败时可回退到同一来源的旧结果。
 
-这些元数据 API 保留 `forceRefresh` 参数，但当前实现没有用它绕过进行中请求共享或禁用失败后的旧结果回退。Marketplace 显式刷新会重新进入查询链，不等于“完全禁用所有缓存”。磁盘中的安装包、`.cvx`、`.cvxp` 及程序快照另按包校验与恢复规则管理，不受上述检查结果消费次数控制。
+显式刷新重新选择来源，同源进行中的请求和失败后的缓存回退仍适用。磁盘中的安装包、`.cvx`、`.cvxp` 及程序快照按包校验与恢复规则管理。
 
 ## 相关位置
 
 | 范围 | 位置 |
 | --- | --- |
-| 客户端更新实现 | `ColorVision/Update/`、`UI/ColorVision.UI/Update/`、`UI/ColorVision.UI/Plugins/PluginUpdater.cs` |
-| 启动与插件恢复 | `ColorVision/Recovery/`、`UI/ColorVision.UI/Plugins/PluginRecoveryBackupService.cs` |
+| 客户端更新实现 | `ColorVision/Update/`、`UI/ColorVision.UI.Desktop/Update/`、`UI/ColorVision.UI.Desktop/Plugins/PluginUpdater.cs`；更新网络设置与共享 HTTP 客户端 `UpdateNetworkConfig`、`UpdateHttpClientProvider` 也在 `UI/ColorVision.UI.Desktop/Update/`，使用它们的插件需引用 `ColorVision.UI.Desktop` |
+| 启动与插件恢复 | `ColorVision/Recovery/`、`UI/ColorVision.UI.Desktop/Plugins/PluginRecoveryBackupService.cs` |
 | 正式发布入口 | [构建与发布脚本](../scripts/README.md) 中的 `Scripts\release.bat` |
 | 完整安装包 | `Scripts/build.py` 调用仓库外的 Advanced Installer `ColorVision.aip` 构建 |
 | 发布版本号 | `Directory.Build.props` 的 `VersionPrefix` |

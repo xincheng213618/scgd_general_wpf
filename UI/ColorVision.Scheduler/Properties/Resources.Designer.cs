@@ -30,6 +30,9 @@ namespace ColorVision.Scheduler.Properties {
         public static string Sched_ReenablePlan => ResourceManager.GetString("Sched_ReenablePlan", resourceCulture);
         public static string Sched_PlanEnabled => ResourceManager.GetString("Sched_PlanEnabled", resourceCulture);
         public static string Sched_WaitingExecution => ResourceManager.GetString("Sched_WaitingExecution", resourceCulture);
+        public static string Sched_StatusBarRunning => ResourceManager.GetString("Sched_StatusBarRunning", resourceCulture);
+        public static string Sched_StatusBarPausedRunning => ResourceManager.GetString("Sched_StatusBarPausedRunning", resourceCulture);
+        public static string Sched_StatusBarNextRun => ResourceManager.GetString("Sched_StatusBarNextRun", resourceCulture);
         public static string Sched_OnlyRunOnce => ResourceManager.GetString("Sched_OnlyRunOnce", resourceCulture);
         public static string Sched_ExecuteTaskHint => ResourceManager.GetString("Sched_ExecuteTaskHint", resourceCulture);
         public static string Sched_EnablePlanHint => ResourceManager.GetString("Sched_EnablePlanHint", resourceCulture);
@@ -705,6 +708,16 @@ namespace ColorVision.Scheduler.Properties {
                 return ResourceManager.GetString("Sched_LoadFailed", resourceCulture);
             }
         }
+
+        public static string Sched_TaskFileUnreadable => ResourceManager.GetString(nameof(Sched_TaskFileUnreadable), resourceCulture);
+
+        public static string Sched_TaskFileChanged => ResourceManager.GetString(nameof(Sched_TaskFileChanged), resourceCulture);
+
+        public static string Sched_TaskFileBusy => ResourceManager.GetString(nameof(Sched_TaskFileBusy), resourceCulture);
+
+        public static string Sched_TaskBackupRequiresRestore => ResourceManager.GetString(nameof(Sched_TaskBackupRequiresRestore), resourceCulture);
+
+        public static string Sched_TaskBackupRestored => ResourceManager.GetString(nameof(Sched_TaskBackupRestored), resourceCulture);
         
         /// <summary>
         ///   查找类似 更多 的本地化字符串。
@@ -1056,6 +1069,8 @@ namespace ColorVision.Scheduler.Properties {
                 return ResourceManager.GetString("Sched_SaveFailed", resourceCulture);
             }
         }
+
+        public static string Sched_PauseSaveFailed => ResourceManager.GetString(nameof(Sched_PauseSaveFailed), resourceCulture);
         
         /// <summary>
         ///   查找类似 执行计划 的本地化字符串。

@@ -99,10 +99,13 @@ namespace ColorVision.ImageEditor
                 return;
             }
 
-            CieChromaticity xy = CieColorConverter.RgbToCie1931xy(pixelSample.PreviewColor.R, pixelSample.PreviewColor.G, pixelSample.PreviewColor.B);
+            CieXyz xyz = pixelSample.Rgb16 is { } channels
+                ? CieColorConverter.NormalizedSrgbToXyz(channels.Red / 65535.0, channels.Green / 65535.0, channels.Blue / 65535.0)
+                : CieColorConverter.RgbToXyz(pixelSample.PreviewColor.R, pixelSample.PreviewColor.G, pixelSample.PreviewColor.B);
+            CieChromaticity xy = CieColorConverter.XyzToCie1931xy(xyz);
             SetSelectedXy(xy, pixelSample.PreviewColor, "RGB");
-            _analysisSample = CieAnalysisSample.Create("RGB", "", LocalizedText.Get("sRGB 推算 / D65"), CieInputSpace.SRgb,
-                pixelSample.PreviewColor.R, pixelSample.PreviewColor.G, pixelSample.PreviewColor.B, CieSampleBasis.Relative, new());
+            _analysisSample = CieAnalysisSample.Create("RGB", "", LocalizedText.Get("sRGB 推算 / D65"), CieInputSpace.XYZ,
+                xyz.X * 100, xyz.Y * 100, xyz.Z * 100, CieSampleBasis.Relative, new());
             SampleAnalysis.SetSourceSample(_analysisSample);
             UpdateSelectedReadout();
         }

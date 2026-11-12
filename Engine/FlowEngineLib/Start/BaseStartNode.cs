@@ -226,12 +226,29 @@ public abstract class BaseStartNode : CVDeviceNode, IDisposable
 				return false;
 			}
 			startActions.Add(action.SerialNumber, action);
+			action.WasDispatched = true;
 			Running = true;
 		}
-		Repeat.FlowRepeatRegion.ResetStates(this);
-		SetOptionText(m_op_start, action.SerialNumber);
-		m_op_start.TransferData(action);
-		return true;
+		try
+		{
+			logger.InfoFormat("Flow Started[{0}/{1}]", m_nodeName, action.SerialNumber);
+			Repeat.FlowRepeatRegion.ResetStates(this);
+			SetOptionText(m_op_start, action.SerialNumber);
+			m_op_start.TransferData(action);
+			return true;
+		}
+		catch
+		{
+			try
+			{
+				action.TryDoFinishing(() => action.SetActionType(ActionTypeEnum.Fail));
+			}
+			catch (Exception error)
+			{
+				logger.Error($"Failed to clean up flow startup for {action.SerialNumber}.", error);
+			}
+			throw;
+		}
 	}
 
 	protected virtual void DoStartTransferData(CVStartCFC action)
@@ -264,9 +281,7 @@ public abstract class BaseStartNode : CVDeviceNode, IDisposable
 			}
 			if (action.IsStop)
 			{
-				cVStartCFC.SetActionType(action.GetActionType());
-				cVStartCFC.EndTime = DateTime.Now;
-				RemoveStartAction(cVStartCFC);
+				TryFinishStoppedAction(cVStartCFC, action.GetActionType());
 			}
 			else if (cVStartCFC.GetActionType() != action.GetActionType())
 			{
@@ -435,17 +450,22 @@ public abstract class BaseStartNode : CVDeviceNode, IDisposable
 		TryStart(serialNumber);
 	}
 
-	public bool TryStart(string serialNumber)
+	public bool TryStart(string serialNumber) => TryStartRun(serialNumber, trackCompletion: false) != null;
+
+	internal CVStartCFC TryStartRun(string serialNumber, bool trackCompletion)
 	{
 		serialNumber = ColorVision.Common.Utilities.Tool.SanitizeFileName(serialNumber);
 		if (!CanAcceptStart)
 		{
 			logger.WarnFormat("Flow start rejected because the start node has no connected output => {0}", m_nodeName);
-			return false;
+			return null;
 		}
 		CVStartCFC start = new CVStartCFC(serialNumber) { PersistResults = PersistResults };
+		if (trackCompletion)
+			start.TrackCompletion();
 		DoDispatch(start);
-		return true;
+		// A downstream node can finish synchronously before dispatch returns.
+		return start.WasDispatched ? start : null;
 	}
 
 	protected void DoDispatch(CVStartCFC start)
@@ -453,7 +473,6 @@ public abstract class BaseStartNode : CVDeviceNode, IDisposable
 		if (start.GetActionType() == ActionTypeEnum.Start)
 		{
 			start.SetStartNode(this);
-			logger.InfoFormat("Flow Started[{0}/{1}]", m_nodeName, start.SerialNumber);
 		}
 		DoStartTransferData(start);
 	}
@@ -462,6 +481,23 @@ public abstract class BaseStartNode : CVDeviceNode, IDisposable
 	{
 		CVStartCFC action = new CVStartCFC(ActionTypeEnum.Stop, serialNumber);
 		DoStartTransferData(action);
+	}
+
+	internal bool TryStopRun(CVStartCFC action)
+	{
+		if (!ReferenceEquals(GetCFC(action.SerialNumber), action))
+			return false;
+		bool stopped = TryFinishStoppedAction(action, ActionTypeEnum.Stop);
+		DoStatusTransferData(action);
+		return stopped;
+	}
+
+	private static bool TryFinishStoppedAction(CVStartCFC action, ActionTypeEnum actionType)
+	{
+		if (!action.TryDoFinishing(() => action.SetActionType(actionType)))
+			return false;
+		action.FireFinished();
+		return true;
 	}
 
 	public void StopAll()
@@ -519,6 +555,29 @@ public abstract class BaseStartNode : CVDeviceNode, IDisposable
 			logger.WarnFormat("Fire Flow Finished ignored because start action is null");
 			return;
 		}
+		FlowStartEventHandler finished = Finished;
+		if (finished == null)
+			return;
+
+		FlowStartEventArgs result = startAction.TrackedTerminalResult ?? CreateFinishedEventArgs(startAction);
+		foreach (FlowStartEventHandler handler in finished.GetInvocationList())
+		{
+			try
+			{
+				handler(this, new FlowStartEventArgs(result.SerialNumber, result.Status, result.TotalTime, result.Message, result.ErrorNodeName, result.ErrorNodeId)
+				{
+					TrackedCompletion = startAction.TrackedCompletion
+				});
+			}
+			catch (Exception error)
+			{
+				logger.Error($"Start node completion subscriber failed for flow {result.SerialNumber}.", error);
+			}
+		}
+	}
+
+	internal static FlowStartEventArgs CreateFinishedEventArgs(CVStartCFC startAction)
+	{
 		StatusTypeEnum flowStatus = startAction.FlowStatus;
 		string message = string.Empty;
 		string errorNodeName = string.Empty;
@@ -538,15 +597,8 @@ public abstract class BaseStartNode : CVDeviceNode, IDisposable
 				message = flowStatus.ToString();
 			}
 		}
-		this.Finished?.Invoke(
-			this,
-			new FlowStartEventArgs(
-				startAction.SerialNumber,
-				flowStatus,
-				(long)startAction.GetTotalTime().TotalMilliseconds,
-				message,
-				errorNodeName,
-				errorNodeId));
+		long totalTime = (long)startAction.GetTotalTime().TotalMilliseconds;
+		return new FlowStartEventArgs(startAction.SerialNumber, flowStatus, totalTime, message, errorNodeName, errorNodeId);
 	}
 
 	private static string GetDataString(Dictionary<string, object> data, string key)

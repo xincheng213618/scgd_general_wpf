@@ -1,4 +1,5 @@
 using System;
+using System.Buffers.Binary;
 using System.IO;
 using System.IO.Compression;
 using System.Text;
@@ -7,6 +8,7 @@ namespace ColorVision.Copilot
 {
     internal static class CopilotPersistedTextCodec
     {
+        private static readonly uint[] Crc32Table = CreateCrc32Table();
         private static readonly UTF8Encoding StrictUtf8 = new(
             encoderShouldEmitUTF8Identifier: false,
             throwOnInvalidBytes: true);
@@ -56,6 +58,9 @@ namespace ColorVision.Copilot
             try
             {
                 var compressedBytes = Convert.FromBase64String(payload[prefix.Length..]);
+                if (compressedBytes.Length < 20)
+                    return payload;
+
                 using var input = new MemoryStream(compressedBytes, writable: false);
                 using var gzip = new GZipStream(input, CompressionMode.Decompress);
                 using var output = new MemoryStream();
@@ -72,7 +77,16 @@ namespace ColorVision.Copilot
                     output.Write(buffer, 0, bytesRead);
                 }
 
-                var decoded = StrictUtf8.GetString(output.GetBuffer(), 0, checked((int)output.Length));
+                var decodedBytes = output.GetBuffer().AsSpan(0, checked((int)output.Length));
+                // GZipStream can return partial content at EOF without requiring a complete trailer.
+                // The persisted v1 format contains one gzip member, including its CRC32 and ISIZE.
+                if (BinaryPrimitives.ReadUInt32LittleEndian(compressedBytes.AsSpan(compressedBytes.Length - 4)) != (uint)decodedBytes.Length
+                    || BinaryPrimitives.ReadUInt32LittleEndian(compressedBytes.AsSpan(compressedBytes.Length - 8)) != ComputeCrc32(decodedBytes))
+                {
+                    return payload;
+                }
+
+                var decoded = StrictUtf8.GetString(decodedBytes);
                 return decoded.Length <= maximumDecodedCharacters ? decoded : payload;
             }
             catch (Exception exception) when (exception is FormatException
@@ -106,6 +120,27 @@ namespace ColorVision.Copilot
             ArgumentException.ThrowIfNullOrEmpty(prefix);
             ArgumentOutOfRangeException.ThrowIfNegative(minimumCompressionCharacters);
             ArgumentOutOfRangeException.ThrowIfNegativeOrZero(maximumDecodedCharacters);
+        }
+
+        private static uint ComputeCrc32(ReadOnlySpan<byte> data)
+        {
+            var crc = uint.MaxValue;
+            foreach (var value in data)
+                crc = Crc32Table[(crc ^ value) & byte.MaxValue] ^ (crc >> 8);
+            return ~crc;
+        }
+
+        private static uint[] CreateCrc32Table()
+        {
+            var table = new uint[256];
+            for (uint index = 0; index < table.Length; index++)
+            {
+                var value = index;
+                for (var bit = 0; bit < 8; bit++)
+                    value = (value & 1) != 0 ? 0xEDB88320u ^ (value >> 1) : value >> 1;
+                table[index] = value;
+            }
+            return table;
         }
     }
 }

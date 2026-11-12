@@ -33,7 +33,6 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
     {
         private string layoutRoiTemplateName = "POI_W_AUTO";
         private string rePoiTemplateName = "POI_Black";
-        private string prefixName = string.Empty;
 
         [Category("本地关注点布点(Re)")]
         [STNodeProperty("布点 ROI", "包含目标四角点的 POI 模板，例如 POI_W_AUTO", true)]
@@ -61,18 +60,6 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             }
         }
 
-        [Category("本地关注点布点(Re)")]
-        [STNodeProperty("名称前缀", "添加到映射后每个关注点名称之前的前缀", true)]
-        public string PrefixName
-        {
-            get => prefixName;
-            set
-            {
-                prefixName = value ?? string.Empty;
-                OnPropertyChanged();
-            }
-        }
-
         public LocalBuildPoiNode() : base("关注点布点(Re)", "LocalBuildPOI", "BuildPOI")
         {
         }
@@ -86,7 +73,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             LocalPoiMappingPoint[] layout = ResolveLayout(sourceMasterId, sourceResultType, out string? layoutTemplateName);
 
             Stopwatch stopwatch = Stopwatch.StartNew();
-            List<LocalPoiRemappedPoint> points = LocalPoiRemappingCalculator.Remap(template, layout, PrefixName);
+            List<LocalPoiRemappedPoint> points = LocalPoiRemappingCalculator.Remap(template, layout);
             stopwatch.Stop();
             int totalTime = checked((int)Math.Min(stopwatch.ElapsedMilliseconds, int.MaxValue));
             int masterId = LocalFlowResultPersistence.SaveAlgorithmResult(
@@ -105,7 +92,6 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                     SourceResultType = sourceResultType,
                     LayoutROITemplate = layoutTemplateName,
                     RePOITemplate = template.Name,
-                    PrefixName,
                     PointCount = points.Count,
                     ImageRead = false,
                     MemoryOnly = true
@@ -149,7 +135,6 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                 BuildType = "ReMapping",
                 LayoutROITemplateName,
                 RePOITemplateName,
-                PrefixName,
                 ImageRead = false
             });
         }

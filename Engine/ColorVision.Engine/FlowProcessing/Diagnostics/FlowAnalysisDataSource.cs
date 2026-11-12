@@ -3,6 +3,7 @@ using SqlSugar;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 
 namespace ColorVision.Engine.FlowProcessing.Diagnostics;
 
@@ -36,27 +37,29 @@ internal sealed class FlowAnalysisDataSource
     internal List<FlowNodeRecord> GetByRun(int batchId, string? serialNumber) => Read<FlowNodeRecord>(
         q => q.Where(x => x.BatchId == batchId).WhereIF(!string.IsNullOrWhiteSpace(serialNumber), x => x.SerialNumber == serialNumber).OrderBy(x => x.StartTime),
         () => FlowNodeRecordDataBaseHelper.GetByRun(batchId, serialNumber));
-    internal List<FlowNodeRecord> GetByBatchIds(List<int> ids) => Read<FlowNodeRecord>(
-        q => q.Where(x => ids.Contains(x.BatchId)).OrderBy(x => x.StartTime), () => FlowNodeRecordDataBaseHelper.GetByBatchIds(ids));
-    internal List<FlowNodeRecord> GetBySerialNumbers(IEnumerable<string> serialNumbers)
-    {
-        string[] serials = serialNumbers.Where(x => !string.IsNullOrWhiteSpace(x)).Distinct().ToArray();
-        if (serials.Length == 0) return [];
-        return Read<FlowNodeRecord>(q => q.Where(x => serials.Contains(x.SerialNumber)).OrderBy(x => x.StartTime),
-            () => FlowNodeRecordDataBaseHelper.GetBySerialNumbers(serials));
-    }
     internal FlowNodeRecord? GetLatestRecord() => Read<FlowNodeRecord>(
         q => q.OrderByDescending(x => x.StartTime).Take(1), () => One(FlowNodeRecordDataBaseHelper.GetLatestRecord())).FirstOrDefault();
     internal FlowNodeRecord? GetLastByNodeId(string nodeId) => _database == null
         ? FlowNodeRecordDataBaseHelper.GetLastByNodeId(nodeId) : GetByNodeId(nodeId, 1).FirstOrDefault();
     internal List<FlowNodeRecord> GetByNodeId(string nodeId, int limit) => Read<FlowNodeRecord>(
         q => q.Where(x => x.NodeId == nodeId).OrderByDescending(x => x.StartTime).Take(limit), () => FlowNodeRecordDataBaseHelper.GetByNodeId(nodeId, limit));
-    internal List<int> GetDistinctBatchIds(int limit)
+    internal List<FlowRunNavigationSummary> GetRecentRunSummaries(int batchLimit, CancellationToken cancellationToken)
+        => ReadRunNavigation(db => FlowRunNavigationReader.ReadRecent(db, batchLimit, cancellationToken));
+
+    internal List<FlowRunNavigationSummary> GetRunSummariesBySerialNumbers(IEnumerable<string> serialNumbers, CancellationToken cancellationToken)
     {
-        if (_database == null) return FlowNodeRecordDataBaseHelper.GetDistinctBatchIds(limit);
-        using var db = _database.OpenClient();
-        return _database.Query<FlowNodeRecord>(db).GroupBy(x => x.BatchId).OrderByDescending(x => x.BatchId).Select(x => x.BatchId).Take(limit).ToList();
+        string[] serials = serialNumbers.Where(serial => !string.IsNullOrWhiteSpace(serial)).Distinct(StringComparer.Ordinal).ToArray();
+        return serials.Length == 0 ? [] : ReadRunNavigation(db => FlowRunNavigationReader.ReadBySerials(db, serials, cancellationToken));
     }
+
+    private List<FlowRunNavigationSummary> ReadRunNavigation(Func<SqlSugarClient, List<FlowRunNavigationSummary>> read)
+    {
+        if (_database == null)
+            return FlowNodeRecordDataBaseHelper.ReadRunNavigation(read);
+        using var db = _database.OpenClient();
+        return read(db);
+    }
+
     internal List<FlowNodeMessage> GetMessagesByRun(int batchId, string? serialNumber) => Read<FlowNodeMessage>(
         q => q.Where(x => x.BatchId == batchId).WhereIF(!string.IsNullOrWhiteSpace(serialNumber), x => x.SerialNumber == serialNumber).OrderBy(x => x.SendTime),
         () => FlowNodeRecordDataBaseHelper.GetMessagesByRun(batchId, serialNumber));
@@ -74,14 +77,7 @@ internal sealed class FlowAnalysisDataSource
     {
         FlowRunRecord? run = session.Run;
         if (run == null && !string.IsNullOrWhiteSpace(record.SerialNumber))
-        {
-            List<FlowRunRecord> legacyRuns = Read<FlowRunRecord>(
-                q => q.Where(item => item.BatchId == null && item.SerialNumber == record.SerialNumber)
-                    .OrderByDescending(item => item.CompletedTime).Take(2),
-                () => FlowNodeRecordDataBaseHelper.GetSameFlowRuns(record.SerialNumber)
-                    .Where(item => !item.BatchId.HasValue && item.SerialNumber == record.SerialNumber).Take(2).ToList());
-            if (legacyRuns.Count == 1) run = legacyRuns[0];
-        }
+            run = GetUniqueLegacyFlowRun(record.SerialNumber);
         bool isCurrentRun = run != null && (!run.BatchId.HasValue || run.BatchId == record.BatchId)
             && string.Equals(run.SerialNumber ?? string.Empty, record.SerialNumber ?? string.Empty, StringComparison.Ordinal);
         var identity = !isCurrentRun ? default : new FlowIdentity(run!.TemplateId, run.FlowKey, run.FlowName);
@@ -105,15 +101,28 @@ internal sealed class FlowAnalysisDataSource
         return FlowNodeComparisonHistory.ForRuns(record.NodeId, runs, records, messages);
     }
     internal FlowRunRecord? GetFlowRun(int batchId, string? serialNumber) => Read<FlowRunRecord>(
-        q => q.Where(x => x.BatchId == batchId).WhereIF(!string.IsNullOrWhiteSpace(serialNumber), x => x.SerialNumber == serialNumber).OrderByDescending(x => x.StartedTimeUtc).Take(1),
+        q => FlowNodeRecordDataBaseHelper.SelectFlowRun(q, batchId, serialNumber),
         () => One(FlowNodeRecordDataBaseHelper.GetFlowRun(batchId, serialNumber))).FirstOrDefault();
     internal List<FlowExecutionEvent> GetExecutionEvents(int runId) => Read<FlowExecutionEvent>(
         q => q.Where(x => x.RunRecordId == runId).OrderBy(x => x.SequenceNo), () => FlowNodeRecordDataBaseHelper.GetExecutionEvents(runId));
-    internal List<FlowRunRecord> GetSameFlowRuns(string? serialNumber)
+    internal List<FlowRunRecord> GetSameFlowRuns(FlowExecutionAnalysisSession session)
     {
-        if (_database == null) return FlowNodeRecordDataBaseHelper.GetSameFlowRuns(serialNumber);
-        FlowRunRecord? run = Read<FlowRunRecord>(q => q.Where(x => x.SerialNumber == serialNumber).OrderByDescending(x => x.CompletedTime).Take(1), () => []).FirstOrDefault();
-        return run == null ? [] : GetFlowRuns(new FlowIdentity(run.TemplateId, run.FlowKey, run.FlowName));
+        FlowRunRecord? run = session.Run ?? GetUniqueLegacyFlowRun(session.SerialNumber);
+        if (run == null)
+            return [];
+        var identity = new FlowIdentity(run.TemplateId, run.FlowKey, run.FlowName);
+        return identity.IsEmpty ? [] : GetFlowRuns(identity);
+    }
+
+    private FlowRunRecord? GetUniqueLegacyFlowRun(string? serialNumber)
+    {
+        if (string.IsNullOrWhiteSpace(serialNumber))
+            return null;
+
+        List<FlowRunRecord> candidates = Read<FlowRunRecord>(
+            q => FlowNodeRecordDataBaseHelper.SelectLegacyFlowRuns(q, serialNumber),
+            () => FlowNodeRecordDataBaseHelper.GetLegacyFlowRuns(serialNumber));
+        return candidates.Count == 1 ? candidates[0] : null;
     }
     internal List<FlowRunRecord> GetFlowRuns(FlowIdentity identity)
     {

@@ -347,7 +347,8 @@ namespace ColorVision.Copilot
 
         private bool CanReviewPendingAction(ConfirmableAction? action)
         {
-            return action != null
+            return Volatile.Read(ref _disposeState) == 0
+                && action != null
                 && _approvalCoordinator.Evaluate(action, CaptureApprovalScope()).CanReview;
         }
 

@@ -38,3 +38,8 @@ next: false
 
 - [桌面交付制品与责任路由](../../02-developer-guide/deployment/overview.md) — `delivery.deployment`
   区分完整安装器、主程序更新、插件项目包和独立在线下载工具；ColorVisionSetup以Framework 4.8单文件查询并下载最新版，实际安装仍由完整安装包负责。
+
+## src/ColorVisionUpdateRelay {#module-7372632f436f6c6f72566973696f6e55706461746552656c6179}
+
+- [桌面交付制品与责任路由](../../02-developer-guide/deployment/overview.md) — `delivery.deployment`
+  区分完整安装器、主程序更新、插件项目包和独立在线下载工具；ColorVisionSetup以Framework 4.8单文件查询并下载最新版，实际安装仍由完整安装包负责。

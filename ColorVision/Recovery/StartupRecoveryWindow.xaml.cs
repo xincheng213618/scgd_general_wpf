@@ -359,7 +359,7 @@ namespace ColorVision.Recovery
 
             try
             {
-                if (!WindowsNetworkState.IsConnectedToInternet())
+                if (!WindowsNetworkState.CanReachUpdateService())
                 {
                     SetRepairState(
                         LocalizedText.Get("未连接到 Internet"),
@@ -725,7 +725,7 @@ namespace ColorVision.Recovery
 
         private static void PersistDisabledPlugins(IEnumerable<StartupRecoveryPluginItem> selectedPlugins)
         {
-            PluginLoaderrConfig config = PluginLoaderrConfig.Instance;
+            PluginLoaderConfig config = PluginLoaderConfig.Instance;
             foreach (StartupRecoveryPluginItem item in selectedPlugins)
             {
                 KeyValuePair<string, PluginInfo> existingPair = config.Plugins

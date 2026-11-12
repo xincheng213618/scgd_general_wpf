@@ -121,7 +121,7 @@ namespace ColorVision.ImageEditor.Algorithms
                 cancellationToken.ThrowIfCancellationRequested();
                 (byte[] mask, long validPixels) = GeometricTransformAlgorithmProvider.BuildValidityMask(
                     reference.Width, reference.Height, moving.Width, moving.Height, inverse, cancellationToken, context.Progress);
-                registered = AlgorithmImageInterop.FromMat(output, reference.DpiX, reference.DpiY);
+                registered = AlgorithmImageInterop.FromMat(output, reference.DpiX, reference.DpiY, cancellationToken);
                 validityMask = new AlgorithmImageBuffer(reference.Width, reference.Height, reference.Width, AlgorithmImageFormat.Gray8, mask, reference.DpiX, reference.DpiY);
                 double photometricRmse = PhotometricRmse(referenceGray, output, moving.Format, mask, validPixels);
                 double inverseResidual = GeometricTransformAlgorithmProvider.InverseResidual(matrix, inverse);
@@ -268,7 +268,7 @@ namespace ColorVision.ImageEditor.Algorithms
             return new RegistrationEstimate(matrix, confidence, double.NaN, 1 - boundedResponse, shift.X, shift.Y, response, peakQuality.Uniqueness, 0, 0, []);
         }
 
-        private static PhasePeakQuality MeasurePhasePeakQuality(Mat reference, Mat moving, bool useHannWindow, CancellationToken cancellationToken)
+        private static unsafe PhasePeakQuality MeasurePhasePeakQuality(Mat reference, Mat moving, bool useHannWindow, CancellationToken cancellationToken)
         {
             int sourcePixels = checked(reference.Rows * reference.Cols);
             double scale = sourcePixels <= MaximumPhaseDiagnosticPixels
@@ -330,9 +330,10 @@ namespace ColorVision.ImageEditor.Algorithms
             for (int y = 0; y < correlationRows; y++)
             {
                 if ((y & 31) == 0) cancellationToken.ThrowIfCancellationRequested();
+                float* row = (float*)correlation.Ptr(y);
                 for (int x = 0; x < correlationColumns; x++)
                 {
-                    double value = correlation.At<float>(y, x);
+                    double value = row[x];
                     if (value > maximum) (maximum, peakX, peakY) = (value, x, y);
                 }
             }
@@ -341,12 +342,13 @@ namespace ColorVision.ImageEditor.Algorithms
             for (int y = 0; y < correlationRows; y++)
             {
                 if ((y & 31) == 0) cancellationToken.ThrowIfCancellationRequested();
+                float* row = (float*)correlation.Ptr(y);
                 int dy = Math.Min(Math.Abs(y - peakY), correlationRows - Math.Abs(y - peakY));
                 for (int x = 0; x < correlationColumns; x++)
                 {
                     int dx = Math.Min(Math.Abs(x - peakX), correlationColumns - Math.Abs(x - peakX));
                     if (dx <= exclusionRadius && dy <= exclusionRadius) continue;
-                    runnerUp = Math.Max(runnerUp, correlation.At<float>(y, x));
+                    runnerUp = Math.Max(runnerUp, row[x]);
                 }
             }
             double uniqueness = maximum <= 1e-12 || !double.IsFinite(runnerUp)

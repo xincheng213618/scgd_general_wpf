@@ -45,6 +45,7 @@ namespace ColorVision.Engine.Templates.POI
         public PoiParam(PoiMasterModel dbModel)
         {
             Id = dbModel.Id;
+            TemplateDate = dbModel.CreateDate;
 
             Name = dbModel.Name ?? string.Empty;
             Width = dbModel.Width ?? 0;

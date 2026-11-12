@@ -32,19 +32,6 @@ namespace ColorVision.UI.Desktop.Download
             return Convert.ToHexString(await SHA256.HashDataAsync(stream, cancellationToken).ConfigureAwait(false));
         }
 
-        public static long GetReusableSourceLength(DownloadEntry entry)
-        {
-            if (entry.TotalBytes > 0)
-                return entry.TotalBytes;
-
-            return File.Exists(entry.SavePath) ? new FileInfo(entry.SavePath).Length : 0;
-        }
-
-        public static bool CanRetryLocalReuse(DownloadTask task)
-        {
-            return !string.IsNullOrWhiteSpace(task.LocalReuseSourcePath) && File.Exists(task.LocalReuseSourcePath);
-        }
-
         public static bool CanReuseCompletedEntry(DownloadEntry entry, string targetDirectory, string destinationPath)
         {
             if (string.IsNullOrWhiteSpace(entry.SavePath))
@@ -58,31 +45,6 @@ namespace ColorVision.UI.Desktop.Download
                 return false;
 
             return IsEntryBackedByCompleteFile(entry);
-        }
-
-        public static bool TryGetRemoteValidatedCandidate(string url, string sourcePath, string destinationPath, out long expectedBytes)
-        {
-            expectedBytes = 0;
-
-            if (!CanAttemptRemoteValidation(url))
-                return false;
-
-            if (string.IsNullOrWhiteSpace(sourcePath) || !File.Exists(sourcePath) || File.Exists(sourcePath + ".aria2"))
-                return false;
-
-            if (string.Equals(sourcePath, destinationPath, StringComparison.OrdinalIgnoreCase))
-                return false;
-
-            try
-            {
-                expectedBytes = new FileInfo(sourcePath).Length;
-                return expectedBytes > 0;
-            }
-            catch
-            {
-                expectedBytes = 0;
-                return false;
-            }
         }
 
         public async Task<RemoteFileValidationInfo?> TryValidateLocalFileAgainstRemoteAsync(string url, string sourcePath, string? authorization, CancellationToken cancellationToken, string? expectedSha256 = null)

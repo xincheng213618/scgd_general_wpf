@@ -298,10 +298,11 @@ namespace Spectrum
 
         public const int ShutterOperationFailed = int.MinValue + 2;
         public const int FilterWheelOperationFailed = int.MinValue + 3;
+        private const int InvalidAdaptiveDarkSettings = int.MinValue + 4;
 
         public string GetOperationErrorMessage(int resultCode)
         {
-            return resultCode is CalibrationUnavailable or ShutterOperationFailed or FilterWheelOperationFailed
+            return resultCode is CalibrationUnavailable or ShutterOperationFailed or FilterWheelOperationFailed or InvalidAdaptiveDarkSettings
                 ? LastOperationError
                 : Spectrometer.GetErrorMessage(resultCode);
         }
@@ -1602,7 +1603,7 @@ namespace Spectrum
                 : ExecuteDarkOperationWithShutterCoreAsync(requireAutomaticControl, cancellationToken, darkOperation);
         }
 
-        private async Task<(int Result, string Error)> ExecuteDarkOperationWithShutterCoreAsync(
+        internal async Task<(int Result, string Error)> ExecuteDarkOperationWithShutterCoreAsync(
             bool requireAutomaticControl,
             CancellationToken cancellationToken,
             Func<int> darkOperation)
@@ -1613,25 +1614,25 @@ namespace Spectrum
 
             if (shouldControlShutter)
             {
-                log.Debug("关闭快门进行校零");
-                if (!await ShutterController.CloseShutter().ConfigureAwait(false))
+                log.Debug("按光闸配置遮光，进行校零");
+                if (!await ShutterController.SetTransmitting(false).ConfigureAwait(false))
                 {
-                    string closeError = string.IsNullOrWhiteSpace(ShutterController.LastErrorMessage)
-                        ? "快门未能确认关闭"
+                    string blockError = string.IsNullOrWhiteSpace(ShutterController.LastErrorMessage)
+                        ? "光闸未能确认遮光"
                         : ShutterController.LastErrorMessage;
-                    log.Warn($"{closeError}，校零已取消；尝试恢复打开快门");
-                    bool recovered = await ShutterController.OpenShutter().ConfigureAwait(false);
+                    log.Warn($"{blockError}，校零已取消；尝试恢复通光");
+                    bool recovered = await ShutterController.SetTransmitting(true).ConfigureAwait(false);
                     string recoveryError = recovered
                         ? string.Empty
                         : string.IsNullOrWhiteSpace(ShutterController.LastErrorMessage)
-                            ? "；恢复打开快门也失败，请检查光路"
+                            ? "；恢复通光也失败，请检查光路"
                             : $"；{ShutterController.LastErrorMessage}，请检查光路";
-                    return (ShutterOperationFailed, $"{closeError}，校零已取消{recoveryError}");
+                    return (ShutterOperationFailed, $"{blockError}，校零已取消{recoveryError}");
                 }
             }
 
             int result;
-            bool reopened = true;
+            bool lightRestored = true;
             try
             {
                 cancellationToken.ThrowIfCancellationRequested();
@@ -1641,14 +1642,14 @@ namespace Spectrum
             {
                 if (shouldControlShutter)
                 {
-                    log.Debug("打开快门");
-                    reopened = await ShutterController.OpenShutter().ConfigureAwait(false);
+                    log.Debug("按光闸配置恢复通光");
+                    lightRestored = await ShutterController.SetTransmitting(true).ConfigureAwait(false);
                 }
             }
 
-            if (!reopened)
+            if (!lightRestored)
                 return (ShutterOperationFailed, string.IsNullOrWhiteSpace(ShutterController.LastErrorMessage)
-                    ? "校零后快门未能重新打开，请检查光路"
+                    ? "校零后光闸未能恢复通光，请检查光路"
                     : $"{ShutterController.LastErrorMessage}，请检查光路");
             return result == 1
                 ? (1, string.Empty)
@@ -1945,8 +1946,13 @@ namespace Spectrum
             return (operation.Entered, operation.Result);
         }
 
+        internal Func<IntPtr, float, int, int, int, int> InitializeAdaptiveDark { get; init; } = Spectrometer.CM_Emission_Init_Auto_Dark;
+
         public async Task<int> PerformAdaptiveDarkCalibrationAsync(CancellationToken cancellationToken = default)
         {
+            var settings = AutodarkParam;
+            float start = settings.fTimeStart;
+            int step = settings.nStepTime, count = settings.nStepCount, average = Average;
             var operation = await TryRunExclusiveAsync(
                 token => Task.Run(async () =>
                 {
@@ -1954,18 +1960,37 @@ namespace Spectrum
                     if (!IsConnected || Handle == IntPtr.Zero)
                         return -1;
 
+                    // The SDK samples through index count (inclusive) and needs at least two distinct times.
+                    float last = start + (long)step * count;
+                    string? validationError = null;
+                    if (step < 1)
+                        validationError = "自适应校零步进至少为 1 ms。";
+                    else if (average < 1)
+                        validationError = "自适应校零平均次数至少为 1。";
+                    else if (!IsAdaptiveDarkIntegrationTimeInRange(start) || !IsAdaptiveDarkIntegrationTimeInRange(last))
+                        validationError = "自适应校零的起始和末次积分时间须在 0.001 至 2,147,483.5 ms 范围内。";
+                    if (validationError != null)
+                    {
+                        LastOperationError = validationError;
+                        return InvalidAdaptiveDarkSettings;
+                    }
+
                     (int result, string error) = await ExecuteDarkOperationWithConfiguredControlCoreAsync(
                         requireAutomaticControl: false,
                         token,
-                        () => Spectrometer.CM_Emission_Init_Auto_Dark(
-                            Handle, AutodarkParam.fTimeStart, AutodarkParam.nStepTime,
-                            AutodarkParam.nStepCount, Average)).ConfigureAwait(false);
+                        () => InitializeAdaptiveDark(Handle, start, step, count, average)).ConfigureAwait(false);
                     LastOperationError = error;
                     return result;
                 }, CancellationToken.None),
                 cancellationToken).ConfigureAwait(false);
 
             return operation.Entered ? operation.Result : OperationBusy;
+        }
+
+        private static bool IsAdaptiveDarkIntegrationTimeInRange(float milliseconds)
+        {
+            double microseconds = milliseconds * 1000f;
+            return microseconds >= 1 && microseconds <= int.MaxValue;
         }
 
         public async Task<SpectrumMeasurementResult> MeasureAsync(CancellationToken cancellationToken = default)

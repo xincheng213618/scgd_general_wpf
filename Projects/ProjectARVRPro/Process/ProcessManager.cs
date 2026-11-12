@@ -701,16 +701,13 @@ namespace ProjectARVRPro.Process
 
         private void LoadProcesses()
         {
-            foreach (var assembly in AssemblyHandler.GetInstance().GetAssemblies())
+            foreach (Type type in AssemblyHandler.GetInstance().GetImplementationTypes(typeof(IProcess)))
             {
                 try
                 {
-                    foreach (Type type in assembly.GetTypes().Where(t => typeof(IProcess).IsAssignableFrom(t) && !t.IsAbstract))
+                    if (Activator.CreateInstance(type) is IProcess process)
                     {
-                        if (Activator.CreateInstance(type) is IProcess process)
-                        {
-                            Processes.Add(process);
-                        }
+                        Processes.Add(process);
                     }
                 }
                 catch (Exception ex)
@@ -787,7 +784,8 @@ namespace ProjectARVRPro.Process
             var dialog = new ProcessMetaEditWindow(
                 templateModels,
                 Processes,
-                "新增流程项")
+                "新增流程项",
+                isMetaNameTaken: name => HasDuplicateMetaName(name))
             {
                 Owner = Application.Current.GetActiveWindow(),
                 WindowStartupLocation = WindowStartupLocation.CenterOwner
@@ -830,6 +828,9 @@ namespace ProjectARVRPro.Process
             SelectedProcessMeta = copy;
         }
 
+        public ProcessMeta? FindProcessMetaBySocketCode(string socketCode) => ActiveGroup?.ProcessMetas
+            .FirstOrDefault(meta => string.Equals(meta.SocketCode, socketCode, StringComparison.OrdinalIgnoreCase));
+
         private static ProcessMeta CloneProcessMeta(ProcessMeta source, string name)
         {
             string configJson = GetProcessConfigJson(source);
@@ -841,6 +842,7 @@ namespace ProjectARVRPro.Process
             {
                 Name = name,
                 FlowTemplate = source.FlowTemplate,
+                SocketCode = source.SocketCode,
                 Process = process,
                 IsEnabled = source.IsEnabled,
                 ConfigJson = configJson,
@@ -873,7 +875,7 @@ namespace ProjectARVRPro.Process
 
         private bool HasDuplicateMetaName(string name, ProcessMeta? ignoredMeta = null)
         {
-            return ProcessMetas.Any(m => !ReferenceEquals(m, ignoredMeta) && m.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
+            return ProcessMetas.Any(m => !ReferenceEquals(m, ignoredMeta) && string.Equals(m.Name, name, StringComparison.OrdinalIgnoreCase));
         }
 
         private void BeginEditMetaName(ProcessMeta? meta)
@@ -1436,6 +1438,7 @@ namespace ProjectARVRPro.Process
             {
                 Name = item.Name,
                 FlowTemplate = item.FlowTemplate,
+                SocketCode = item.SocketCode,
                 Process = proc,
                 IsEnabled = item.IsEnabled,
                 ConfigJson = item.ConfigJson,
@@ -1564,6 +1567,7 @@ namespace ProjectARVRPro.Process
             {
                 Name = meta.Name,
                 FlowTemplate = meta.FlowTemplate,
+                SocketCode = meta.SocketCode,
                 ProcessTypeFullName = meta.Process?.GetType().FullName ?? string.Empty,
                 IsEnabled = meta.IsEnabled,
                 ConfigJson = GetProcessConfigJson(meta),

@@ -231,13 +231,18 @@ namespace ColorVision.Copilot
                 foreach (var message in conversation.Messages ?? new ObservableCollection<CopilotChatMessage>())
                 {
                     var trace = message.AgentTraceEntries?.FirstOrDefault(entry =>
-                        string.Equals(entry.CallId, transition.AgentCallId, StringComparison.Ordinal)
-                        || (!string.IsNullOrWhiteSpace(entry.ApprovalActionId)
-                            && string.Equals(
-                                entry.ApprovalActionId,
-                                transition.ActionId,
-                                StringComparison.OrdinalIgnoreCase)));
-                    if (trace == null)
+                        !string.IsNullOrWhiteSpace(entry.ApprovalActionId)
+                        && string.Equals(entry.ApprovalActionId, transition.ActionId, StringComparison.OrdinalIgnoreCase))
+                        ?? message.AgentTraceEntries?.FirstOrDefault(entry =>
+                            string.IsNullOrWhiteSpace(entry.ApprovalActionId)
+                            && entry.State is CopilotToolExecutionState.Pending or CopilotToolExecutionState.Running or CopilotToolExecutionState.AwaitingApproval
+                            && string.Equals(entry.CallId, transition.AgentCallId, StringComparison.Ordinal));
+                    // A completed execution result carries more evidence than a later approval notification.
+                    if (trace == null
+                        || trace.CompletedAtUtc.HasValue && trace.State is
+                            CopilotToolExecutionState.Completed or CopilotToolExecutionState.Failed
+                            or CopilotToolExecutionState.TimedOut or CopilotToolExecutionState.Denied
+                            or CopilotToolExecutionState.Cancelled or CopilotToolExecutionState.Interrupted)
                         continue;
 
                     ApplyTransition(message, trace, transition);

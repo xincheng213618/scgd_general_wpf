@@ -2,7 +2,7 @@
 knowledge_id: "ui.solution"
 knowledge_type: "topic"
 status: "current"
-summary: "工作区创建、打开与最近列表，文件树搜索和引用移除，切换取消及cvsln恢复；同名创建可能覆盖配置，取消切换不回滚全部文件变化。"
+summary: "工作区创建、打开与最近列表，文件树搜索和引用移除，切换取消及 cvsln 恢复。新建工作区保留已有文件。"
 aliases: ["ColorVision.Solution", "SolutionManager", "ResourceOpenService", "OpenSolutionAsync", "OpenWith", "OpenManyAsync", "PrivateWorkspaceService", "SolutionConfigStore", "SolutionConfigStore.Load", "SolutionCache", "MruPathService", "MruPathService.Touch", "cvsln", "cvproj", "打开文件夹工作区", "取消切换工作区", "批量打开图片和项目", "工作区文件树缓存", "解决方案备份恢复", "默认打开方式保存失败", "解决方案资源管理器", "文件系统视图", "与活动文档同步", "全部折叠", "TreeViewControl", "OpenSolutionWindow", "NewCreateWindow", "CreateSolutionAsync", "SolutionSetting", "DefaultCreatName", "SolutionConfig", "SolutionSearchService", "SolutionOperationHistory", "ProjectProviderRegistry", "创建工程", "最近工作区列表", "从解决方案中移除", "移除解决方案文件夹"]
 code_paths: ["UI/ColorVision.Solution/README.md", "UI/ColorVision.Solution/ColorVision.Solution.csproj", "UI/ColorVision.Solution/Themes/", "UI/ColorVision.Solution/SolutionManager.cs", "UI/ColorVision.Solution/SolutionManagerInitializer.cs", "UI/ColorVision.Solution/StartupResourceOpenInitializer.cs", "ColorVision/ForwardedCommandLineHandler.cs", "ColorVision/MainWindow.Setting.cs", "UI/ColorVision.Solution/OpenSolutionWindow.xaml", "UI/ColorVision.Solution/OpenSolutionWindow.xaml.cs", "UI/ColorVision.Solution/NewCreatWindow.xaml", "UI/ColorVision.Solution/NewCreatWindow.xaml.cs", "UI/ColorVision.Solution/SolutionSetting.cs", "UI/ColorVision.Solution/SolutionMenuItems.cs", "UI/ColorVision.Solution/CommandInitializer.cs", "UI/ColorVision.Solution/Editor/ResourceOpenService.cs", "UI/ColorVision.Solution/Editor/ResourcePathIdentityComparer.cs", "UI/ColorVision.Solution/Editor/CommandLineResourceOpenRequest.cs", "UI/ColorVision.Solution/Workspace/PrivateWorkspaceService.cs", "UI/ColorVision.Solution/Explorer", "UI/ColorVision.Solution/Mru", "UI/ColorVision.Solution/TreeViewControl.xaml", "UI/ColorVision.Solution/TreeViewControl.xaml.cs", "UI/ColorVision.Solution/TreeViewControl.Navigation.cs", "UI/ColorVision.Solution/TreeViewControl.ViewMode.cs", "UI/ColorVision.Solution/TreeViewControl.Search.cs", "UI/ColorVision.Solution/TreeViewControl.Command.cs", "UI/ColorVision.Solution/TreeViewControl.WorkspaceState.cs", "UI/ColorVision.Solution/SolutionFeatureVisibility.cs", "UI/ColorVision.UI/FileProcessorFactory.cs"]
 test_paths: ["Test/ColorVision.UI.Tests/MruPathServiceTests.cs"]
@@ -40,7 +40,9 @@ related: ["ui.index", "ui.documents", "operations.terminal", "operations.first-r
 2. 使用准备新建的目录名。父目录不存在时，界面询问是否创建父目录。
 3. 点击“创建工程”。窗口关闭后，`SolutionManager.CreateSolutionAsync` 写入 `<项目名称>.cvsln`，再尝试切换。需要项目或文件时，在资源树支持的容器节点右键“添加”，选择“新建项目”“现有项目”“新建项”或“现有项”。
 
-**同名目录提示不是取消创建的完整保护。** 目标目录已存在时，选择清空会直接递归删除该目录；选择“否”（不清空）仍会继续，之后可能替换同名 `.cvsln`。清空异常被提示后也没有终止后续创建。这是当前创建入口的覆盖风险，已有工作区应通过打开入口访问。创建后切换失败或取消，不会撤销已经生成、替换或删除的文件。
+解决方案和项目文件使用对应的创建或打开命令。通过“新建项”添加解决方案项时会先校验文件类型，已有的解决方案和项目文件受覆盖保护。登记解决方案项只有在配置保存成功后才更新资源树。保存失败时保留原有登记状态，可以重试。
+
+已有目录可以复用，目录内的文件会保留。存在同名 `.cvsln` 时提示打开已有解决方案或改名。提交文件时也检查同名占用，即使在点击创建后出现竞争写入，也保留先创建的文件。启动回退优先打开已有默认解决方案。新配置已经写入后取消切换，会保留新文件。
 
 没有可用创建位置记录时，打开新建窗口就会准备 Documents 下的 `ColorVision` 目录并记录位置。新建窗口自动建议名称，可直接修改“项目名称”。`SolutionSetting.DefaultCreatName` 保留原配置键和已有自定义值，仅用于生成新建建议名，不重命名已有工作区；不为这一低频默认值提供独立设置窗口或“更多选项”入口。
 
@@ -56,9 +58,10 @@ related: ["ui.index", "ui.documents", "operations.terminal", "operations.first-r
 
 - **解决方案**保留 Provider 项目模型、显式项目引用、虚拟文件夹和解决方案项。
 - **文件系统**以工作区根目录为范围，按需加载真实目录和文件；显示实际项目文件、配置文件和隐藏项，不套用项目包含/排除或虚拟组织规则。它不代表项目引用中的外部目录。根节点不能重命名、删除或剪切，子节点沿用物理文件操作。该视图不建立第二个 Explorer、缓存或监控器；需要更新目录内容时使用“刷新”。
-- 搜索按当前视图的节点名称、完整路径和显示路径匹配，不读取文件正文。支持空白分隔的多个关键词及双引号短语，所有关键词需命中，最多显示 500 个结果；清除搜索回到当前视图，“在解决方案资源管理器中定位”在该视图的真实节点中展开定位。搜索异步结果和定位请求在视图/工作区切换时取消，避免旧结果替换新树。
+- 搜索范围限于当前视图的节点名称、完整路径和显示路径。支持空白分隔的关键词及双引号短语，所有关键词都需命中，最多显示 500 项。清除搜索回到当前视图，“在解决方案资源管理器中定位”展开目标节点所在路径。修改关键词会取消上一轮搜索，切换视图或工作区会取消搜索和定位请求。
 - “与活动文档同步”根据文档服务保存的文件路径定位，兼容旧编辑器以路径作为 ContentId 的方式；不把文档的散列 ContentId 当作磁盘路径。未打开文件文档或文档不属于当前视图范围时禁用入口。
 - “全部折叠”清除搜索并折叠已加载的子节点，保留根节点展开；不为折叠而递归加载整个目录。“刷新”针对当前视图根节点。“属性”作用于单个选中节点，设置入口位于“更多选项”。
+- 自动发现模式在后台读取项目，完成后更新解决方案级“运行”和“调试”的可用状态。执行命令时按当前项目文件解析启动项目。
 
 工具栏和树采用紧凑布局；选中行的中性灰圆角背景与左侧主题色标记固定在可见区域，横向滚动长文件名时仍保留标记。滚动条保留主题模板、拖动范围及自动显隐，由局部 `ExplorerScrollBarBehavior` 调整透明度，不修改全局主题资源。
 
@@ -67,6 +70,8 @@ related: ["ui.index", "ui.documents", "operations.terminal", "operations.first-r
 ## 打开入口的区别
 
 `CommandInitializer` 将 `ApplicationCommands.Open` 接到普通文件选择器，将 `SolutionWorkspaceCommands.OpenWorkspace` 接到工作区列表；可配置默认键由各入口的 `IHotKey` 声明。资源树自己的 `SolutionResourceCommands.Open` 用 `Enter` 打开选中项，避免把树内打开混同于全局文件选择器。
+
+将文件拖到主窗口、文档浮窗或工具面板浮窗时，当前内容优先处理拖放。内容没有处理时，窗口将文件交给工作区的统一打开路由，路由的批量失败提示以接收拖放的窗口为父窗口。工具面板的独立窗口和从布局恢复的浮窗也适用。视频文件默认通过系统关联程序打开。
 
 | 入口 | 实际分流 | 不能混同的结果 |
 | --- | --- | --- |
@@ -79,7 +84,7 @@ related: ["ui.index", "ui.documents", "operations.terminal", "operations.first-r
 
 `Classify` 先判断目录，再检查文件存在，随后判断 `.cvsln` 和 Provider 声明的项目模式，其余归为普通文件。未知项目格式可以出现在文本/Hex 编辑器中，不等于有项目 Provider 支持。内置 `.sln` 导入和 VC++ 项目 Provider 当前不存在。
 
-`OpenWith(..., setAsDefault: true)` 先打开，成功后才保存默认选择；因此可以返回 `Succeeded=true`、`DefaultEditorUpdated=false` 并带错误信息。不能把默认方式保存失败描述成“资源没打开”或自动关闭已经打开的文档。反过来，`DefaultEditorUpdated=true` 也不是磁盘提交证明：当前默认项保存调用的 void 配置包装会丢弃部分失败结果。具体内存、异常回退和落盘缺口见文档生命周期主题。
+`OpenWith(..., setAsDefault: true)` 先打开，成功后才保存默认选择。主应用配置保存失败时返回 `Succeeded=true`、`DefaultEditorUpdated=false` 和错误信息，已打开的文档保持打开。默认项缓存仅在保存成功后更新，其他配置提供者的行为见文档生命周期主题。
 
 批量路径去掉空字符串，按绝对路径、去掉结尾目录分隔符、不区分大小写去重，保留第一个传入字符串用于实际打开和报告。这不是解析链接、硬链接或文件系统对象的真实身份。`IsComplete` 要求非零请求且全部成功；空集合不是全部成功。批量取消在项目前检查，可能抛出取消异常并留下之前已打开项，也可能在末项得到取消失败结果；没有批量事务。
 
@@ -123,17 +128,21 @@ related: ["ui.index", "ui.documents", "operations.terminal", "operations.first-r
 | 最近工作区 | `Environments.DirLocalAppData/Solution/recent-workspaces.json` | 最近使用时间与固定项，不是配置备份或当前打开成功的证明 |
 | 停靠布局与编辑器默认项 | 各自独立存储 | 见文档生命周期与配置主题，不混入 `.cvsln` |
 
+文件树缓存的增量写入与全量扫描使用同一内部文件过滤规则，工作区配置、备份及原子保存临时文件不进入目录项缓存。目录校验遇到旧缓存中的此类文件记录时，仅清除对应缓存行，不删除实际文件或同后缀的真实目录；其它文件系统变化仍会使校验失败。打开已有缓存先轻量核对必需列和主键，结构完整时复用现有表；首次创建或缺少字段时仍执行原有表结构初始化与升级。折叠目录内新建或移入的文件在展开后按实际目录层级显示。
+
 私有工作区 key 来自规范化源路径转大写后的 MD5。`WorkspaceSourceKind` / `WorkspaceSourcePath` 保存来源；解析回原路径还要求私有目录、类型、源资源存在和期望文件名同时匹配，不能凭同名字段任意重定向。旧源目录的 `.ColorVision.cvsln` 可作为兼容输入读取，失败则记录日志并用新配置建立私有文件；不是删除旧文件或把新状态继续写回源目录。
 
 “打开文件夹不新建源目录配置”不能扩大成任何打开都只读：显式 `.cvsln` 可能被恢复、配置编辑会保存；项目文件 Provider 也有独立契约。工作区 RootPath、项目引用和解决方案项不是权限白名单。
 
 ### cvsln 版本、保存与恢复
 
-`SolutionConfigStore.CurrentSchemaVersion` 当前为 4，按 v0→v1 项目模式/配置、v1→v2 虚拟文件夹、v2→v3 解决方案项、v3→v4 平台逐步迁移。正常 Load 在内存迁移/规范化，不因旧版本本身立即落盘；后续 Save 才写当前结构。Explorer 还注册 ProcessExit 保存，退出时可能写入；Dispose 会解除该订阅，不能把正常 Load 的局部行为扩大成工作区整个生命周期只读。未来版本抛 `NotSupportedException`，不当作损坏文件自动回退旧备份。
+`SolutionConfigStore.CurrentSchemaVersion` 当前为 4，按 v0→v1 项目模式/配置、v1→v2 虚拟文件夹、v2→v3 解决方案项、v3→v4 平台逐步迁移。正常 Load 在内存迁移和规范化，后续 Save 才写当前结构。未来版本抛 `NotSupportedException`，不当作损坏文件自动回退旧备份。
+
+Explorer 自动选启动项目和退出保存前，核对磁盘配置是否仍为本次加载或上次保存的内容。内容已更改或移除时跳过自动选项。退出时未改动的配置直接跳过，有本地改动且磁盘已更改时，保留磁盘文件并将本地草稿另存为同目录的 `.cvsln.conflict-*`，日志记录位置。释放 Explorer 时解除退出订阅。
 
 Save 先规范化传入配置，再写同目录临时文件、Flush 到磁盘；已有主文件使用 `File.Replace` 留 `.bak`，平台不支持 Replace 时回退复制备份再覆盖移动。它是单个配置文件的提交，不是配置、项目文件、文档和内存的跨资源事务。
 
-Load 遇到受支持的读取/JSON/数据异常会尝试 `.bak`；备份解析后先尽力复制损坏主文件到 `.corrupt-*`，再把恢复内容写回主文件，只有解析和恢复写回均成功才返回 `RecoveredFromBackup=true`。损坏副本复制失败不会阻止修复，不能承诺总保留 `.corrupt-*`。备份读取/解析或恢复写回失败都会抛错，不自动创建空工作区；写回的权限或 I/O 错误也可能被包装成“主配置及备份都无法读取”，应检查内部 `AggregateException`，不能据外层文字判断备份损坏。排障前先保存证据，调用 Load 本身可能覆盖主文件。
+Load 仅在主配置缺失或已读到损坏内容时尝试 `.bak`。占用、权限等读取错误保留原始诊断。恢复缺失主文件时以新建方式提交，恢复损坏文件时核对已读内容，并在替换时保留 `.corrupt-*` 原文件。若此时已有其他写入者提交新配置，读取新主文件。成功从备份写回才返回 `RecoveredFromBackup=true`，原 `.bak` 保留。备份读取、解析或提交失败会报告错误，内部异常可用于区分故障阶段。
 
 ### MRU 与树状态
 
@@ -144,6 +153,8 @@ Load 遇到受支持的读取/JSON/数据异常会尝试 `.bak`；备份解析�
 ## 项目 Provider 与扩展归属
 
 `ProjectProviderRegistry` 扫描 `[ProjectProvider]` 的 `IProjectProvider`，并监听新程序集加载。注册按不区分大小写的 Provider Id 替换，优先级降序选择；声明文件模式与实际 `CanLoad` / `Load` 是不同门槛，插件未装或类型不匹配会产生可诊断的不可用项目，不应偷偷当普通文件夹使用。
+
+工程 Provider、模板、菜单和编辑器发现会跳过注解无法读取的扩展，并继续注册同一程序集中的其他可用类型。诊断输出给出扩展类型、注解和加载错误。
 
 - `FolderProjectProvider` 负责 `.cvproj` JSON，兼容旧文件缺失的 ProjectType，并支持自己的项目项/依赖修改和命令定义。
 - `MsBuildProjectProvider` 只读接入 `.csproj`、`.fsproj`、`.vbproj` 的 XML 字面信息，不执行完整 MSBuild import/条件求值，也不提供改写项目文件接口。只读适配器仍可提供生成/运行命令，不能把“只读解析”理解为整个模块绝不会启动进程。
@@ -159,10 +170,16 @@ Load 遇到受支持的读取/JSON/数据异常会尝试 `.bak`；备份解析�
 | `Explicit` 模式的项目节点、解决方案项 | 从 `.cvsln` 移除引用，保留项目文件、目录和被引用文件 |
 | 虚拟解决方案文件夹 | 移除虚拟分组，子文件夹、项目与解决方案项移到上一层，不删除物理目录 |
 | 普通物理文件/目录、`AutoDiscover` 模式的可删除项目目录 | 调用 Windows 回收站删除流程，影响磁盘内容；文件系统视图中的项目文件也只是物理文件 |
-| 多选删除 | 排除已选祖先之下的重复子项，确认后请求关闭相关文档，再按所属工作区处理；失败时可能已有部分项完成，没有整批回滚 |
+| 多选删除 | 跳过已选祖先下的子项，确认并关闭相关文档后按工作区处理。部分完成时按磁盘状态更新物理节点，并列出未完成项 |
 | 撤销/重做 | `SolutionOperationHistory` 保存最多 100 项配置快照；只恢复被记录的 `.cvsln` 配置变化，不提供磁盘删除、外部命令或任意项目文件修改的恢复 |
 
 文件系统视图根节点禁止重命名、删除和剪切，解决方案根节点也有自己的能力限制。物理操作入口集中在 `SolutionResourceCommands`、`SolutionPhysicalItemOperations`、`SolutionClipboardFileOperations` 与 `SolutionBatchDeleteService`；虚拟组织和配置变更由 Explorer 分部处理。恢复已删除文件应检查实际回收站或备份，不能把配置撤销当作文件恢复。
+
+粘贴或拖放复制文件夹时，复制完整后才在目标目录发布，遇到同名项自动编号。复制失败只尝试清理本次临时目录。复制和移动均保留源文件夹名，路径尾部有分隔符也适用。
+
+通过物理文件夹的“添加现有项”导入文件时，覆盖选项保护本次选中的源文件。已在目标目录中的选中文件直接保留，另一个同名输入会报告冲突。
+
+从资源树剪切后部分移动成功时，剩余剪切项只包含失败路径；再次粘贴不会移动已完成路径上后来创建的文件。剪贴板被占用时，本进程保留剩余项以便重试。操作完成只更新原剪切内容，保留后来复制或剪切的内容。
 
 ## 验证入口与缺口
 
@@ -170,4 +187,6 @@ Load 遇到受支持的读取/JSON/数据异常会尝试 `.bak`；备份解析�
 
 `Test/ColorVision.UI.Tests/MruPathServiceTests.cs` 覆盖大小写去重、别名移除、固定项顺序/容量、一次通知和 JSON 往返/坏 JSON 回退。它没有覆盖工作区异步竞争、取消后的文件写入、共享配置备份恢复、Provider 命令或事件失败后状态。
 
-尚缺直接覆盖 SolutionManager/ResourceOpenService 真实切换竞争、创建同名目录覆盖、配置自动恢复及批量物理操作的专项测试。其它测试中的隔离或反射替换不验证这些流程。补充验证应使用合成工作区与独立状态目录，分别检查返回值、内存状态及实际文件变化；涉及文件删除或项目命令的集成应在受控环境执行。
+尚缺直接覆盖 SolutionManager/ResourceOpenService 真实切换竞争、创建同名目录覆盖及配置自动恢复的专项测试。其它测试中的隔离或反射替换不验证这些流程。补充验证应使用合成工作区与独立状态目录，分别检查返回值、内存状态及实际文件变化；涉及文件删除或项目命令的集成应在受控环境执行。
+
+`SolutionClipboardFileOperationsTests` 用隔离目录验证同名编号、复制失败不发布及带尾部分隔符的移动。实际拖放、剪贴板交互和跨卷操作需单独验证。

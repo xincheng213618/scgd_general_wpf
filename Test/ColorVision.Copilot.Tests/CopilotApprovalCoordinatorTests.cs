@@ -1,5 +1,6 @@
 using ColorVision.Copilot.Mcp;
 using System.ComponentModel;
+using System.IO;
 
 namespace ColorVision.Copilot.Tests;
 
@@ -325,6 +326,80 @@ public sealed class CopilotApprovalCoordinatorTests
             Assert.True(message.IsExecutionInProgress);
     }
 
+    [Theory]
+    [InlineData(CopilotToolExecutionState.Interrupted, ConfirmableActionStatus.Cancelled)]
+    [InlineData(CopilotToolExecutionState.Interrupted, ConfirmableActionStatus.Executed)]
+    [InlineData(CopilotToolExecutionState.TimedOut, ConfirmableActionStatus.Cancelled)]
+    [InlineData(CopilotToolExecutionState.TimedOut, ConfirmableActionStatus.Executed)]
+    public void LateApprovalNotificationPreservesClosedUnknownOutcomeEvidenceAcrossRestart(
+        CopilotToolExecutionState terminalState,
+        ConfirmableActionStatus approvalStatus)
+    {
+        var (state, conversation, message, _) = CreateTraceState(ConversationId, "rollback-boundary-call");
+        const string actionId = "rollback-boundary-action";
+        const string warning = "The rollback may still be completing. Inspect the affected path before retrying; do not repeat the write automatically.";
+        var path = Path.Combine(Path.GetTempPath(), "rollback-boundary-candidate.txt");
+        var completedAt = DateTimeOffset.UtcNow.AddSeconds(-1);
+        CopilotAssistantMessagePresenter.ApplyAgentEvent(message, CopilotAgentEvent.FromToolResult(
+            new CopilotToolResult
+            {
+                ToolName = "RollbackWorkspacePatchEnvelope", Success = false,
+                Summary = "The rollback crossed its execution boundary without a final result.",
+                ErrorMessage = warning, FailureKind = CopilotToolFailureKind.OutcomeUnknown,
+                FailureCode = CopilotToolFailureCode.OutcomeUnknown, WorkspaceRecheckPaths = [path],
+            }, new CopilotToolExecutionInfo
+            {
+                CallId = "rollback-boundary-call", ApprovalActionId = actionId,
+                ToolName = "RollbackWorkspacePatchEnvelope", Access = CopilotToolAccess.Write,
+                Idempotency = CopilotToolIdempotency.NonIdempotent, State = terminalState,
+                FailureKind = CopilotToolFailureKind.OutcomeUnknown,
+                StartedAtUtc = completedAt.AddSeconds(-1), CompletedAtUtc = completedAt,
+            }));
+        message.IsExecutionInProgress = false;
+        message.MarkThinkingCompleted();
+        var trace = Assert.Single(message.AgentTraceEntries);
+        using var coordinator = new CopilotApprovalCoordinator(new FakeApprovalStore(), state);
+
+        var update = coordinator.ApplyTransition(new CopilotApprovalActionTransition(
+            actionId, "rollback-boundary-call", CopilotApprovalSourceKind.ColorVisionUi, ConversationId,
+            approvalStatus, ResumesAgentOnApproval: false, ExecutionSucceeded: false,
+            ExecutionResultText: "A generic late approval notification.", CompletedAt: DateTimeOffset.UtcNow,
+            ObservedAtUtc: DateTimeOffset.UtcNow));
+
+        var root = Directory.CreateTempSubdirectory("CopilotApprovalTerminalEvidence-").FullName;
+        try
+        {
+            var profile = CopilotProfileConfig.CreateDefault();
+            conversation.ProfileId = profile.Id;
+            state.ActiveProfileId = profile.Id;
+            state.ActiveConversationId = conversation.Id;
+            var store = new CopilotChatStateStore(root);
+            store.Save(state);
+            var restored = new CopilotChatStateStore(root).Load();
+            restored.EnsureInitializedAfterRestore(new CopilotConfig { Profiles = [profile] });
+            var restoredTrace = Assert.Single(Assert.Single(restored.Conversations).Messages).AgentTraceEntries.Single();
+
+            Assert.False(update.StateChanged);
+            foreach (var evidence in new[] { trace, restoredTrace })
+            {
+                Assert.Equal(terminalState, evidence.State);
+                Assert.Equal(completedAt, evidence.CompletedAtUtc);
+                Assert.Equal(CopilotToolFailureKind.OutcomeUnknown, evidence.FailureKind);
+                Assert.Equal(CopilotToolFailureCode.OutcomeUnknown, evidence.FailureCode);
+                Assert.Equal(new[] { path }, evidence.WorkspaceRecheckPaths);
+                Assert.Equal(warning, evidence.ErrorMessage);
+            }
+        }
+        finally
+        {
+            var resolvedRoot = Path.TrimEndingDirectorySeparator(Path.GetFullPath(root));
+            var temp = Path.TrimEndingDirectorySeparator(Path.GetFullPath(Path.GetTempPath()));
+            Assert.True(string.Equals(Path.GetDirectoryName(resolvedRoot), temp, StringComparison.OrdinalIgnoreCase)
+                && Path.GetFileName(resolvedRoot).StartsWith("CopilotApprovalTerminalEvidence-", StringComparison.Ordinal));
+            Directory.Delete(resolvedRoot, recursive: true);
+        }
+    }
+
     [Fact]
     public void InAppTransitionOnlyUpdatesItsOwningConversation()
     {
@@ -378,6 +453,62 @@ public sealed class CopilotApprovalCoordinatorTests
         Assert.Equal(2, result.UpdatedTraceCount);
         Assert.Equal(CopilotToolExecutionState.TimedOut, first.Trace.State);
         Assert.Equal(CopilotToolExecutionState.TimedOut, second.Trace.State);
+    }
+
+    [Theory]
+    [InlineData("previous-action")]
+    [InlineData("")]
+    public void ReusedCallIdDoesNotRebindACompletedHistoricalTrace(string previousActionId)
+    {
+        var (state, conversation, previousMessage, previousTrace) = CreateTraceState(ConversationId, "reused-call");
+        previousTrace.ApprovalActionId = previousActionId;
+        previousTrace.State = CopilotToolExecutionState.Completed;
+        previousTrace.StartedAtUtc = DateTimeOffset.UtcNow.AddMinutes(-2);
+        previousTrace.CompletedAtUtc = DateTimeOffset.UtcNow.AddMinutes(-1);
+        previousTrace.ResultSummary = "The previous operation completed.";
+        previousMessage.IsExecutionInProgress = false;
+        var previousCompletion = previousTrace.CompletedAtUtc;
+        var current = CreateTraceState(ConversationId, "reused-call");
+        conversation.Messages.Add(current.Message);
+        using var coordinator = new CopilotApprovalCoordinator(new FakeApprovalStore(), state);
+
+        var result = coordinator.ApplyTransition(new CopilotApprovalActionTransition(
+            "current-action", "reused-call", CopilotApprovalSourceKind.InAppAgent, ConversationId,
+            ConfirmableActionStatus.Rejected, ResumesAgentOnApproval: true, ExecutionSucceeded: false,
+            ExecutionResultText: string.Empty, CompletedAt: DateTimeOffset.UtcNow, ObservedAtUtc: DateTimeOffset.UtcNow));
+
+        Assert.Equal(1, result.UpdatedMessageCount);
+        Assert.Equal(1, result.UpdatedTraceCount);
+        Assert.Equal(CopilotToolExecutionState.Completed, previousTrace.State);
+        Assert.Equal(previousActionId, previousTrace.ApprovalActionId);
+        Assert.Equal(previousCompletion, previousTrace.CompletedAtUtc);
+        Assert.Equal("The previous operation completed.", previousTrace.ResultSummary);
+        Assert.False(previousMessage.IsExecutionInProgress);
+        Assert.Equal(CopilotToolExecutionState.Denied, current.Trace.State);
+        Assert.Equal("current-action", current.Trace.ApprovalActionId);
+    }
+
+    [Fact]
+    public void ExactApprovalIdentityWinsOverAnUnboundReusedCallId()
+    {
+        var (state, _, message, boundTrace) = CreateTraceState(ConversationId, "bound-call");
+        boundTrace.ApprovalActionId = "bound-action";
+        var unboundTrace = new CopilotAgentTraceEntry
+        {
+            CallId = "reused-call", ToolName = "approval_test", State = CopilotToolExecutionState.Running,
+        };
+        message.AgentTraceEntries.Insert(0, unboundTrace);
+        using var coordinator = new CopilotApprovalCoordinator(new FakeApprovalStore(), state);
+
+        var result = coordinator.ApplyTransition(new CopilotApprovalActionTransition(
+            "bound-action", "reused-call", CopilotApprovalSourceKind.InAppAgent, ConversationId,
+            ConfirmableActionStatus.Rejected, ResumesAgentOnApproval: true, ExecutionSucceeded: false,
+            ExecutionResultText: string.Empty, CompletedAt: DateTimeOffset.UtcNow, ObservedAtUtc: DateTimeOffset.UtcNow));
+
+        Assert.Equal(1, result.UpdatedTraceCount);
+        Assert.Equal(CopilotToolExecutionState.Denied, boundTrace.State);
+        Assert.Equal(CopilotToolExecutionState.Running, unboundTrace.State);
+        Assert.Empty(unboundTrace.ApprovalActionId);
     }
 
     [Fact]

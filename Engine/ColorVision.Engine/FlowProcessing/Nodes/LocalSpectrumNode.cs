@@ -16,8 +16,6 @@ namespace ColorVision.Engine.FlowProcessing.Nodes;
 [STNode("Flow_LocalDevices", "本地光谱采集", CategoryOrder = 9900, NodeOrder = 80)]
 public sealed class LocalSpectrumNode : LocalDeviceFlowNodeBase, IRepeatParameterNode
 {
-    // Native acquisition converts float milliseconds to signed integer microseconds.
-    private const double MaximumIntegralTime = 2_147_483.5;
     private sealed record ExecutionParameters(DeviceSpectrum Device, string DeviceCode, LocalSpectrumParameters Capture, bool AutoConnect, int ZIndex, string NodeId);
     private float integralTime = 100;
     private int average = 1;
@@ -25,6 +23,7 @@ public sealed class LocalSpectrumNode : LocalDeviceFlowNodeBase, IRepeatParamete
     private bool isWithNd;
     private bool autoConnect = true;
     private bool eqe;
+    private bool useUpstreamVI = true;
     private float voltage = 5, current = 1;
     private double factor = 1;
     [STNodeProperty("积分时间(ms)", "本次测量的积分时间", true)]
@@ -41,13 +40,20 @@ public sealed class LocalSpectrumNode : LocalDeviceFlowNodeBase, IRepeatParamete
     public bool SelfAdaptionInitDark { get => adaptiveDark; set { adaptiveDark = value; OnPropertyChanged(); } }
     [STNodeProperty("自动连接", "未打开时按当前设备配置连接本机光谱仪", true)]
     public bool AutoConnect { get => autoConnect; set { autoConnect = value; OnPropertyChanged(); } }
-    [STNodeProperty("光通量/EQE", "使用设置的电压、电流和修正系数测量 EQE", true)]
-    public bool Eqe { get => eqe; set { eqe = value; OnPropertyChanged(); } }
+    [STNodeProperty("光通量/EQE", "默认使用本次流程的上游源表电压、电流测量 EQE；也可关闭上游输入后手动填写。", true)]
+    public bool Eqe { get => eqe; set { eqe = value; OnPropertyChanged(); OnPropertyChanged(nameof(ShowManualVI)); } }
+    [STNodeProperty("使用上游源表电压/流", "默认开启；EQE 必须取得本次流程上游 SMU 的实际测量结果，否则报错。关闭后手动填写 V/A。", true)]
+    [PropertyVisibility(nameof(Eqe))]
+    public bool UseUpstreamVI { get => useUpstreamVI; set { useUpstreamVI = value; OnPropertyChanged(); OnPropertyChanged(nameof(ShowManualVI)); } }
+    [Browsable(false), JsonIgnore]
+    public bool ShowManualVI => Eqe && !UseUpstreamVI;
     [STNodeProperty("修正系数", "EQE 修正系数，必须大于 0", true)]
     public double AFactor { get => factor; set { factor = value; OnPropertyChanged(); } }
     [STNodeProperty("电压(V)", "EQE 的电压输入", true)]
+    [PropertyVisibility(nameof(ShowManualVI))]
     public float Voltage { get => voltage; set { voltage = value; OnPropertyChanged(); } }
     [STNodeProperty("电流(A)", "EQE 的电流输入，必须大于 0", true)]
+    [PropertyVisibility(nameof(ShowManualVI))]
     public float Current { get => current; set { current = value; OnPropertyChanged(); } }
     [JsonIgnore, CommandDisplay("本地光谱仪管理", Order = -100), Description("打开当前光谱仪的本地窗口，使用此节点的采集参数")]
     public RelayCommand OpenLocalSpectrumManagerCommand { get; }
@@ -81,7 +87,7 @@ public sealed class LocalSpectrumNode : LocalDeviceFlowNodeBase, IRepeatParamete
         string? syncReason = syncFrequency ? "同步频率模式会调整实际积分时间和平均次数，请先在光谱仪设置中关闭同步频率。" : null;
         return
         [
-            new(nameof(IntegralTime), "积分时间", "ms", IntegralTime, minimum: 0.001, maximum: MaximumIntegralTime,
+            new(nameof(IntegralTime), "积分时间", "ms", IntegralTime, minimum: LocalSpectrumParameters.MinimumIntegralTime, maximum: LocalSpectrumParameters.MaximumIntegralTime,
                 unavailableReason: syncReason ?? (AutoIntegration ? "自动积分已启用，请先关闭自动积分后设置逐轮积分时间。" : null)),
             new(nameof(NumberOfAverage), "平均次数", "次", NumberOfAverage, isInteger: true, minimum: 1, maximum: int.MaxValue, unavailableReason: syncReason)
         ];
@@ -107,9 +113,12 @@ public sealed class LocalSpectrumNode : LocalDeviceFlowNodeBase, IRepeatParamete
             IsWithND = IsWithND,
             Eqe = Eqe, AFactor = AFactor, Voltage = Voltage, Current = Current
         };
+        if (parameters.Eqe && UseUpstreamVI)
+        {
+            action.Data.TryGetValue("SMUResult", out object? smu);
+            parameters.ApplySmuData(smu);
+        }
         parameters.Validate();
-        if (parameters.IntegralTime > MaximumIntegralTime)
-            throw new InvalidOperationException($"积分时间不能超过 {MaximumIntegralTime:0.###} ms。");
         return new ExecutionParameters(FindDevice(), DeviceCode, parameters, AutoConnect, ZIndex, NodeID);
     }
 
@@ -132,7 +141,7 @@ public sealed class LocalSpectrumNode : LocalDeviceFlowNodeBase, IRepeatParamete
             snapshot.DeviceCode, parameters.IntegralTime, parameters.NumberOfAverage, parameters.AutoIntegration,
             parameters.AutoInitDark, parameters.SelfAdaptionInitDark, snapshot.AutoConnect,
             parameters.IsWithND,
-            parameters.Eqe, parameters.AFactor, parameters.Voltage, parameters.Current
+            parameters.Eqe, parameters.AFactor, parameters.Voltage, parameters.Current, parameters.SMUData
         });
     }
 }

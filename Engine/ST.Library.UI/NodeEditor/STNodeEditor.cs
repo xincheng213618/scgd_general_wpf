@@ -2556,7 +2556,7 @@ public partial class STNodeEditor : System.Windows.Controls.Control, IDisposable
 		g.DrawPath(p, connectionPath);
 	}
 
-	protected internal static GraphicsPath CreateBezierPath(float x1, float y1, float x2, float y2, float f)
+	public static GraphicsPath CreateBezierPath(float x1, float y1, float x2, float y2, float f)
 	{
 		GraphicsPath graphicsPath = new GraphicsPath();
 		if (x2 < x1 && Math.Abs(y2 - y1) < 60f)

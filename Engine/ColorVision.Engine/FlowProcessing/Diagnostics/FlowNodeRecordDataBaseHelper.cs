@@ -200,7 +200,8 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
         /// </summary>
         internal static Task<int> InsertNodeExecutionAsync(
             FlowNodeRecord record,
-            FlowNodeMessage? message)
+            FlowNodeMessage? message,
+            bool preserveTimingOnMessageFailure = false)
         {
             ArgumentNullException.ThrowIfNull(record);
             if (!EnsureInitialized())
@@ -217,25 +218,23 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
                 int recordId = -1;
                 try
                 {
-                    db.Ado.BeginTran();
-                    recordId = db.Insertable(startRecord)
-                        .ExecuteReturnIdentity();
+                    int messageId = 0;
+                    WriteNodeExecution(db,
+                        () => recordId = db.Insertable(startRecord).ExecuteReturnIdentity(),
+                        startMessage == null ? null : () =>
+                        {
+                            startMessage.NodeRecordId = recordId;
+                            int id = db.Insertable(startMessage).ExecuteReturnIdentity();
+                            FlowNodeMessagePayloadStorage.SaveSendPayload(db, id, startMessage.SendPayload);
+                            messageId = id;
+                        },
+                        preserveTimingOnMessageFailure);
                     record.Id = recordId;
-
-                    if (message != null && startMessage != null)
+                    if (message != null)
                     {
-                        startMessage.NodeRecordId = recordId;
-                        int messageId = db.Insertable(startMessage)
-                            .ExecuteReturnIdentity();
-                        FlowNodeMessagePayloadStorage.SaveSendPayload(
-                            db,
-                            messageId,
-                            startMessage.SendPayload);
                         message.Id = messageId;
-                        message.NodeRecordId = recordId;
+                        message.NodeRecordId = messageId > 0 ? recordId : null;
                     }
-
-                    db.Ado.CommitTran();
                 }
                 catch (Exception ex)
                 {
@@ -261,7 +260,8 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
         /// </summary>
         internal static Task UpdateNodeExecutionAsync(
             FlowNodeRecord record,
-            FlowNodeMessage? message)
+            FlowNodeMessage? message,
+            bool preserveTimingOnMessageFailure = false)
         {
             ArgumentNullException.ThrowIfNull(record);
             if (!EnsureInitialized())
@@ -273,19 +273,14 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
             {
                 try
                 {
-                    db.Ado.BeginTran();
-                    db.Updateable(record).ExecuteCommand();
-
-                    if (message != null)
-                    {
-                        db.Updateable(message).ExecuteCommand();
-                        FlowNodeMessagePayloadStorage.SaveRecvPayload(
-                            db,
-                            message.Id,
-                            message.RecvPayload);
-                    }
-
-                    db.Ado.CommitTran();
+                    WriteNodeExecution(db,
+                        () => db.Updateable(record).ExecuteCommand(),
+                        message == null ? null : () =>
+                        {
+                            db.Updateable(message).ExecuteCommand();
+                            FlowNodeMessagePayloadStorage.SaveRecvPayload(db, message.Id, message.RecvPayload);
+                        },
+                        preserveTimingOnMessageFailure);
                 }
                 catch (Exception ex)
                 {
@@ -295,6 +290,32 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
                 completion.TrySetResult(true);
             });
             return completion.Task;
+        }
+
+        private static void WriteNodeExecution(SqlSugarClient db, Action writeTiming, Action? writeMessage,
+            bool preserveTimingOnMessageFailure)
+        {
+            if (writeMessage == null)
+            {
+                writeTiming();
+                return;
+            }
+
+            db.Ado.BeginTran();
+            writeTiming();
+            try
+            {
+                writeMessage();
+            }
+            catch (Exception ex) when (preserveTimingOnMessageFailure)
+            {
+                // Direct FlowEngine hosts have always retained the timing row when message storage fails.
+                db.Ado.RollbackTran();
+                log.Error("保存流程节点消息失败，单独保存节点计时", ex);
+                writeTiming();
+                return;
+            }
+            db.Ado.CommitTran();
         }
 
         internal static FlowNodeRecord CloneNodeStartRecord(
@@ -466,6 +487,21 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
             }
         }
 
+        internal static List<FlowRunNavigationSummary> ReadRunNavigation(Func<SqlSugarClient, List<FlowRunNavigationSummary>> read)
+        {
+            EnsureInitialized();
+            try
+            {
+                using var db = CreateReadDb();
+                return read(db);
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                log.Error("查询流程历史导航失败", ex);
+                return [];
+            }
+        }
+
         internal static List<FlowNodeRecord> GetNodeRecordsForRuns(string nodeId, int[] batchIds, string[] serialNumbers)
         {
             EnsureInitialized();
@@ -515,21 +551,38 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
                     return result;
 
                 using var db = CreateReadDb();
-                foreach (string nodeId in ids)
-                {
-                    FlowNodeRecord record = db.Queryable<FlowNodeRecord>()
-                        .Where(item => item.NodeId == nodeId && item.EndTime != null && item.ElapsedMs > 0)
-                        .OrderByDescending(item => item.EndTime)
-                        .First();
-                    if (record != null)
-                        result[nodeId] = record.ElapsedMs;
-                }
+                ReadLatestCompletedDurations(db, ids, result);
             }
             catch (Exception ex)
             {
                 log.Error("查询节点上次执行耗时失败", ex);
             }
             return result;
+        }
+
+        internal static void ReadLatestCompletedDurations(SqlSugarClient db, IEnumerable<string> ids, Dictionary<string, long> result)
+        {
+            // End-time ties follow the previous node/start-time index's order.
+            foreach (string[] batch in ids.Chunk(256))
+            {
+                SugarParameter[] parameters = batch.Select((id, index) => new SugarParameter($"@node{index}", id)).ToArray();
+                string values = string.Join(",", parameters.Select(parameter => $"({parameter.ParameterName})"));
+                using var reader = db.Ado.GetDataReader($"""
+                    WITH requested(node_id) AS (VALUES {values})
+                    SELECT requested.node_id, (
+                        SELECT history.elapsed_ms
+                        FROM FlowNodeRecord AS history
+                        WHERE history.node_id = requested.node_id
+                            AND history.end_time IS NOT NULL AND history.elapsed_ms > 0
+                        ORDER BY history.end_time DESC, history.start_time DESC, history.id ASC
+                        LIMIT 1
+                    )
+                    FROM requested
+                    """, parameters);
+                while (reader.Read())
+                    if (!reader.IsDBNull(1))
+                        result[reader.GetString(0)] = reader.GetInt64(1);
+            }
         }
 
         public static long GetLastCompletedFlowElapsed(
@@ -565,21 +618,7 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
             try
             {
                 using var db = CreateReadDb();
-                if (!string.IsNullOrWhiteSpace(serialNumber))
-                {
-                    FlowRunRecord? exact = db.Queryable<FlowRunRecord>()
-                        .Where(item => item.BatchId == batchId)
-                        .Where(item => item.SerialNumber == serialNumber)
-                        .OrderByDescending(item => item.StartedTimeUtc)
-                        .First();
-                    if (exact != null)
-                        return exact;
-                }
-
-                return db.Queryable<FlowRunRecord>()
-                    .Where(item => item.BatchId == batchId)
-                    .OrderByDescending(item => item.StartedTimeUtc)
-                    .First();
+                return SelectFlowRun(db.Queryable<FlowRunRecord>(), batchId, serialNumber).First();
             }
             catch (Exception ex)
             {
@@ -587,6 +626,39 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
                 return null;
             }
         }
+
+        internal static ISugarQueryable<FlowRunRecord> SelectFlowRun(ISugarQueryable<FlowRunRecord> runs, int batchId, string? serialNumber)
+        {
+            var query = runs.Where(item => item.BatchId == batchId);
+            // Analysis displays missing and whitespace-only serials as one group.
+            if (string.IsNullOrWhiteSpace(serialNumber))
+                query = query.Where($"coalesce({FlowRunIdentitySql.TrimmedKey("serial_number")}, '') = ''");
+            else
+                query = query.Where("serial_number COLLATE BINARY = @runSerialNumber", new { runSerialNumber = serialNumber });
+
+            return query.OrderByDescending(item => item.StartedTimeUtc).OrderByDescending(item => item.Id).Take(1);
+        }
+
+        internal static List<FlowRunRecord> GetLegacyFlowRuns(string serialNumber)
+        {
+            if (!EnsureInitialized())
+                return [];
+            try
+            {
+                using var db = CreateReadDb();
+                return SelectLegacyFlowRuns(db.Queryable<FlowRunRecord>(), serialNumber).ToList();
+            }
+            catch (Exception ex)
+            {
+                log.Error("查询旧流程运行记录失败", ex);
+                return [];
+            }
+        }
+
+        internal static ISugarQueryable<FlowRunRecord> SelectLegacyFlowRuns(ISugarQueryable<FlowRunRecord> runs, string serialNumber)
+            => runs.Where(item => item.BatchId == null)
+                .Where("serial_number COLLATE BINARY = @runSerialNumber", new { runSerialNumber = serialNumber })
+                .Take(2);
 
         internal static List<FlowRunRecord> GetFlowRuns(
             FlowIdentity identity,

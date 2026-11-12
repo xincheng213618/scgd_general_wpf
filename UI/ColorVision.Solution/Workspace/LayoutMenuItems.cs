@@ -38,8 +38,7 @@ namespace ColorVision.Solution.Workspace
             if (_confirmReset()) _resetLayout();
         }
 
-        // Only the user-facing action asks: startup recovery still calls the layout
-        // manager directly. Default to No because reset may discard unsaved tabs.
+        // Startup recovery calls the layout manager directly without a prompt.
         private static bool ConfirmResetLayout() => MessageBox.Show(Application.Current?.GetActiveWindow(),
             BuiltInHotkeyDescriptions.ResetLayoutConfirmation, Resources.MenuResetLayout,
             MessageBoxButton.YesNo, MessageBoxImage.Warning, MessageBoxResult.No) == MessageBoxResult.Yes;

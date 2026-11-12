@@ -5,6 +5,8 @@ namespace ColorVision.Engine.Templates.LEDStripDetection
 {
     public class TemplateLEDStripDetection : ITemplate<LEDStripDetectionParam>, IITemplateLoad
     {
+        public override bool IsRetired => true;
+
         public static ObservableCollection<TemplateModel<LEDStripDetectionParam>> Params { get; set; } = new ObservableCollection<TemplateModel<LEDStripDetectionParam>>();
 
         public TemplateLEDStripDetection()

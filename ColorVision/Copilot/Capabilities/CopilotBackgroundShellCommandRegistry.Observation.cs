@@ -79,7 +79,7 @@ namespace ColorVision.Copilot
                     snapshot,
                     stream,
                     page,
-                    CopilotToolFailureKind.Transient,
+                    page.FailureKind,
                     page.ErrorMessage);
             }
             return new CopilotBackgroundShellCommandOutputReadResult(

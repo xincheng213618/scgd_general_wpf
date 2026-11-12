@@ -11,6 +11,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Automation;
 using System.Windows.Controls;
+using System.Windows.Data;
 using System.Windows.Media;
 
 namespace ColorVision.Engine.Media
@@ -117,6 +118,15 @@ namespace ColorVision.Engine.Media
                 button.Click += (_, _) => OpenManager();
                 imageView.ToolBarAl.Items.Add(button);
                 var save = CreateIconButton("PoiTemplateSave", "DrawingImageSave", "保存当前图上的 POI 区域");
+                var saveStyle = new Style(typeof(Button), imageView.ToolBarAl.TryFindResource(ToolBar.ButtonStyleKey) as Style);
+                var noImageTrigger = new DataTrigger
+                {
+                    Binding = new Binding(nameof(Image.Source)) { Source = imageView.ImageShow },
+                    Value = null
+                };
+                noImageTrigger.Setters.Add(new Setter(UIElement.VisibilityProperty, Visibility.Collapsed));
+                saveStyle.Triggers.Add(noImageTrigger);
+                save.Style = saveStyle;
                 save.Click += async (_, _) =>
                 {
                     if (saving) return;

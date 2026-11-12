@@ -9,6 +9,7 @@ namespace ColorVision.Copilot
     {
         Text,
         WholeNumber,
+        Boolean,
     }
 
     public sealed class CopilotToolParameter
@@ -26,7 +27,7 @@ namespace ColorVision.Copilot
     {
         private const int MaximumSerializedArgumentsLength = 65_536;
         private static readonly StringComparer NameComparer = StringComparer.OrdinalIgnoreCase;
-        private static readonly HashSet<string> SupportedNames = new(new[] { "query", "path", "cursor", "startLine", "startColumn", "endLine" }, NameComparer);
+        private static readonly HashSet<string> SupportedNames = new(new[] { "query", "path", "cursor", "startLine", "startColumn", "endLine", "glob", "regex" }, NameComparer);
 
         public static CopilotToolInputSchema Empty { get; } = new(Array.Empty<CopilotToolParameter>());
 
@@ -114,6 +115,8 @@ namespace ColorVision.Copilot
             if (!TryReadString(arguments, "query", out var query, out error)
                 || !TryReadString(arguments, "path", out var path, out error)
                 || !TryReadString(arguments, "cursor", out var cursor, out error)
+                || !TryReadString(arguments, "glob", out _, out error)
+                || !TryValidateBoolean(arguments, "regex", out error)
                 || !TryReadPositiveInt(arguments, "startLine", out var startLine, out error)
                 || !TryReadPositiveInt(arguments, "startColumn", out var startColumn, out error)
                 || !TryReadPositiveInt(arguments, "endLine", out var endLine, out error))
@@ -242,7 +245,12 @@ namespace ColorVision.Copilot
             {
                 var property = new Dictionary<string, object?>
                 {
-                    ["type"] = parameter.Type == CopilotToolParameterType.WholeNumber ? "integer" : "string",
+                    ["type"] = parameter.Type switch
+                    {
+                        CopilotToolParameterType.WholeNumber => "integer",
+                        CopilotToolParameterType.Boolean => "boolean",
+                        _ => "string",
+                    },
                     ["description"] = parameter.Description,
                 };
                 if (parameter.Type == CopilotToolParameterType.WholeNumber)
@@ -260,6 +268,18 @@ namespace ColorVision.Copilot
             if (required.Length > 0)
                 schema["required"] = required;
             return JsonSerializer.SerializeToElement(schema);
+        }
+
+        private static bool TryValidateBoolean(IReadOnlyDictionary<string, object?> arguments, string name, out string error)
+        {
+            error = string.Empty;
+            if (!TryGetValue(arguments, name, out var raw)
+                || raw is null or bool or JsonElement { ValueKind: JsonValueKind.True or JsonValueKind.False or JsonValueKind.Null or JsonValueKind.Undefined })
+            {
+                return true;
+            }
+            error = $"Argument '{name}' must be a boolean.";
+            return false;
         }
 
         private static bool TryReadString(IReadOnlyDictionary<string, object?> arguments, string name, out string value, out string error)

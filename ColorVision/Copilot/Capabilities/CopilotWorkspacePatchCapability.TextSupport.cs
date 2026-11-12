@@ -5,11 +5,14 @@ using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 
 namespace ColorVision.Copilot
 {
     internal sealed partial class CopilotWorkspacePatchStore
     {
+        private static readonly Regex LineBreakRegex = new(@"\r\n|\n|\r", RegexOptions.Compiled | RegexOptions.CultureInvariant);
+
         internal static bool TryGetTextArgument(CopilotAgentToolInput input, string name, out string value)
         {
             value = string.Empty;
@@ -139,16 +142,26 @@ namespace ColorVision.Copilot
                 .Replace("\n", newline, StringComparison.Ordinal);
         }
 
-        private static int CountOccurrences(string source, string value)
+        // Read results hide line endings, so a file mixing them must still match the text the model saw.
+        private static int FindNewlineInsensitive(string source, string value, out Match firstMatch)
         {
+            var pattern = new Regex(string.Join(
+                "(?:\r\n|\n|\r)",
+                NormalizeNewlines(value, "\n").Split('\n').Select(Regex.Escape)), RegexOptions.CultureInvariant);
+            firstMatch = pattern.Match(source);
             var count = 0;
-            var index = 0;
-            while ((index = source.IndexOf(value, index, StringComparison.Ordinal)) >= 0)
-            {
+            for (var match = firstMatch; match.Success; match = pattern.Match(source, match.Index + 1))
                 count++;
-                index++;
-            }
             return count;
+        }
+
+        private static string DetectNewlineNear(string text, Match match)
+        {
+            var matched = LineBreakRegex.Match(match.Value);
+            if (matched.Success)
+                return matched.Value;
+            var following = LineBreakRegex.Match(text, match.Index + match.Length);
+            return following.Success ? following.Value : DetectNewline(text);
         }
 
         private static string Hash(byte[] bytes) => Convert.ToHexString(SHA256.HashData(bytes)).ToLowerInvariant();

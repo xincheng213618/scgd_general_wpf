@@ -75,6 +75,8 @@ namespace ColorVision.Engine.Services.Devices.PG
                 case DeviceStatusType.LiveOpened:
                 case DeviceStatusType.Opening:
                 case DeviceStatusType.Opened:
+                case DeviceStatusType.Busy:
+                case DeviceStatusType.Free:
                     SetVisibility(StackPanelContent, Visibility.Visible);
                     SetVisibility(ButtonClose, Visibility.Visible);
                     SetVisibility(PGOperationPanel, Visibility.Visible);

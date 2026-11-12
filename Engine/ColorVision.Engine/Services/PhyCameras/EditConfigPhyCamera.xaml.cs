@@ -34,6 +34,11 @@ namespace ColorVision.Engine.Services.PhyCameras
 
         private void OkButton_Click(object sender, RoutedEventArgs e)
         {
+            if (!PhyCamera.CanConfigure)
+            {
+                MessageBox1.Show(this, EngineLocalization.Get("当前权限不足，无法保存物理相机配置。"), "ColorVision");
+                return;
+            }
             if (EditConfig.TryGetHkRoiAlignmentWarning(out string warning))
             {
                 ConfigEditor.SelectCameraParameters();
@@ -44,6 +49,7 @@ namespace ColorVision.Engine.Services.PhyCameras
             }
 
             EditConfig.CFW.NormalizeChannelCfgsForSave();
+            PhyCamera.DemandConfigurationAccess();
             HandleFileServerPathChanged();
             EditConfig.CopyTo(PhyCamera.Config);
             DialogResult = true;

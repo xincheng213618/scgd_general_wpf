@@ -163,6 +163,8 @@ namespace ColorVision.Rbac
 
         private void Window_Closed(object? sender, EventArgs e) => Dispose();
 
+        private void OpenActivation_Click(object sender, RoutedEventArgs e) => new Activation.ActivationWindow { Owner = this }.ShowDialog();
+
         private void OpenCloudDrive_Click(object sender, RoutedEventArgs e)
         {
             try
@@ -382,6 +384,7 @@ namespace ColorVision.Rbac
             Config.SessionToken = string.Empty;
             Config.RememberMe = false;
             Config.SavedUsername = string.Empty;
+            Authorization.Instance.SubjectId = null;
             Authorization.Instance.PermissionMode = PermissionMode.Guest;
             ConfigService.Instance.Save<RbacManagerConfig>();
 

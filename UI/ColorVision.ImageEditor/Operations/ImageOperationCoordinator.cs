@@ -165,6 +165,15 @@ namespace ColorVision.ImageEditor.Operations
             }
         }
 
+        /// <summary>The last accepted host claim sequence, retained after its claim is released.</summary>
+        internal long AlgorithmClaimSequence
+        {
+            get
+            {
+                lock (_algorithmPreviewSync) return _algorithmClaimSequence;
+            }
+        }
+
         internal long AlgorithmPreviewGeneration
         {
             get
@@ -178,11 +187,16 @@ namespace ColorVision.ImageEditor.Operations
             lock (_algorithmPreviewSync) return _activeAlgorithmPreviewClaim == claim;
         }
 
-        internal void SupersedePreviewForDisplaySelection()
+        internal bool SupersedePreviewForDisplaySelection()
         {
             AlgorithmInvocationClaim? claim;
-            lock (_algorithmPreviewSync) claim = _activeAlgorithmPreviewClaim;
-            if (claim.HasValue) TryCancelAlgorithmPreview(claim.Value);
+            bool hasRestore;
+            lock (_algorithmPreviewSync)
+            {
+                claim = _activeAlgorithmPreviewClaim;
+                hasRestore = _activeAlgorithmPreviewRestore != null;
+            }
+            return claim.HasValue && TryCancelAlgorithmPreview(claim.Value) && hasRestore;
         }
 
         internal bool TryPublishAlgorithmPreview(AlgorithmInvocationClaim claim, Action publication)
@@ -277,6 +291,9 @@ namespace ColorVision.ImageEditor.Operations
                                 || _algorithmClaimSequence != expectedClaimSequence
                                 || _algorithmPreviewGeneration != expectedGeneration)
                             {
+                                // A synchronous restore subscriber may already own the host.
+                                // TryRelease will reject our stale claim and keep the newer one.
+                                if (restoreCanonical) return;
                                 throw new InvalidOperationException("Preview ownership changed during publication.");
                             }
                             _activeAlgorithmPreviewClaim = null;
@@ -327,7 +344,7 @@ namespace ColorVision.ImageEditor.Operations
 
                 if (mutationKind == ImageDocumentMutationKind.SourcePixelsChanged)
                 {
-                    // In-place producers (video/realtime/native commit) have already updated
+                    // In-place producers (live preview or native commit) have already updated
                     // ViewBitmapSource. Publish that canonical source while invalidating the old
                     // revision so a stale preview cannot remain visible or republish later.
                     if (!preservesNewerPreview)

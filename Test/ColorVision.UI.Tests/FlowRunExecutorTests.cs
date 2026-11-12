@@ -6,7 +6,9 @@ using FlowEngineLib.Base;
 using FlowEngineLib.Start;
 using ST.Library.UI.NodeEditor;
 using System.Globalization;
+using System.IO;
 using System.Runtime.ExceptionServices;
+using System.Windows.Threading;
 
 namespace ColorVision.UI.Tests;
 
@@ -40,6 +42,47 @@ public class FlowRunExecutorTests
             Assert.Equal("Selected", result.Data.StartNodeName);
             Assert.Equal(executionSerialNumber, result.Data.SerialNumber);
             Assert.False(fixture.FlowControl.IsFlowRun);
+        });
+    }
+
+    [Fact]
+    public void CompletedEngineResultSurvivesStopBeforeTheUiNotification()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            using var fixture = new FlowFixture();
+            using var cancellation = new CancellationTokenSource();
+            TestStartNode start = fixture.AddConnectedStart("Selected");
+            Dispatcher dispatcher = Dispatcher.CurrentDispatcher;
+            FlowControlData? notification = null;
+            bool notifiedOnUi = false;
+            fixture.FlowControl.FlowCompleted += (_, data) =>
+            {
+                notification = data;
+                notifiedOnUi = dispatcher.CheckAccess();
+            };
+
+            const string serialNumber = "SN-Terminal-Before-Stop";
+            Task<FlowRunExecutionResult> execution = fixture.Executor.RunAsync(
+                "Selected", serialNumber, executionTimeout: null, cancellation.Token);
+            Assert.True(fixture.FlowControl.IsFlowRun);
+
+            // Keep the UI dispatcher occupied until the worker reports the terminal result.
+            Task.Run(() => start.Complete(serialNumber, StatusTypeEnum.Failed))
+                .WaitAsync(TimeSpan.FromSeconds(2)).GetAwaiter().GetResult();
+            Assert.False(fixture.FlowControl.IsFlowRun);
+            Assert.Null(notification);
+
+            cancellation.Cancel();
+            FlowRunExecutionResult result = execution.WaitAsync(TimeSpan.FromSeconds(2)).GetAwaiter().GetResult();
+            Assert.Equal(FlowRunTermination.EngineCompleted, result.Termination);
+            Assert.Equal(StatusTypeEnum.Failed, result.Data.Status);
+
+            var frame = new DispatcherFrame();
+            dispatcher.BeginInvoke(DispatcherPriority.ContextIdle, new Action(() => frame.Continue = false));
+            Dispatcher.PushFrame(frame);
+            Assert.True(notifiedOnUi);
+            Assert.Same(result.Data, notification);
         });
     }
 
@@ -136,6 +179,23 @@ public class FlowRunExecutorTests
     }
 
     [Fact]
+    public void UnsupportedExecutionTimeoutIsRejectedBeforeTheGraphStarts()
+    {
+        RunInSta(() =>
+        {
+            using var fixture = new FlowFixture();
+            TestStartNode start = fixture.AddConnectedStart("Selected");
+
+            Assert.Throws<ArgumentOutOfRangeException>(() => fixture.Executor.RunAsync(
+                "Selected", "SN-Oversized", TimeSpan.FromSeconds(4_294_968)).GetAwaiter().GetResult());
+
+            Assert.Equal(0, start.ActiveCount);
+            Assert.False(fixture.FlowControl.IsFlowRun);
+            Assert.False(fixture.Engine.IsRunning);
+        });
+    }
+
+    [Fact]
     public void RejectedStartDoesNotLeakIntoTheNextRun()
     {
         RunInSta(() =>
@@ -170,6 +230,82 @@ public class FlowRunExecutorTests
             Assert.True(completed.Started);
             Assert.Equal(FlowRunTermination.EngineCompleted, completed.Termination);
             Assert.Equal("SN-Next", completed.Data.SerialNumber);
+        });
+    }
+
+    [Fact]
+    public void ServiceLookupFailureDoesNotLeaveTheFlowRunningOrBlockRetry()
+    {
+        RunInSta(() =>
+        {
+            var lookupError = new InvalidOperationException("service registry unavailable");
+            int attempts = 0;
+            using var fixture = new FlowFixture(() => ++attempts == 1 ? throw lookupError : []);
+            TestStartNode start = fixture.AddConnectedStart("Selected");
+
+            Assert.Same(lookupError, Assert.Throws<InvalidOperationException>(() => fixture.Executor.RunAsync(
+                "Selected", "SN-Unavailable", executionTimeout: null).GetAwaiter().GetResult()));
+            Assert.False(fixture.FlowControl.IsFlowRun);
+            Assert.Null(fixture.FlowControl.SerialNumber);
+            Assert.False(fixture.Engine.IsRunning);
+            Assert.Equal(0, start.ActiveCount);
+
+            Task<FlowRunExecutionResult> retry = fixture.Executor.RunAsync("Selected", "SN-Retry", executionTimeout: null);
+            Assert.Equal(1, start.ActiveCount);
+            start.Complete("SN-Retry", StatusTypeEnum.Completed);
+            FlowRunExecutionResult result = retry.WaitAsync(TimeSpan.FromSeconds(2)).GetAwaiter().GetResult();
+            Assert.Equal(FlowRunTermination.EngineCompleted, result.Termination);
+            Assert.Equal("SN-Retry", result.Data.SerialNumber);
+            Assert.False(fixture.FlowControl.IsFlowRun);
+        });
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void StartupDispatchFailureReleasesTheRunAndPreservesTheOriginalException(bool cleanupThrows)
+    {
+        RunInSta(() =>
+        {
+            using var fixture = new FlowFixture();
+            TestStartNode start = fixture.AddStart("Selected");
+            StartSinkNode sink = fixture.Connect(start);
+            using var resource = new MemoryStream();
+            var startupError = new InvalidOperationException("downstream startup failed");
+            bool failStartup = true;
+            int rejectedTransfers = 0;
+            sink.Input.DataTransfer += (_, args) =>
+            {
+                if (args.TargetOption.Data is not CVStartCFC action)
+                    return;
+                if (action.IsRunning && failStartup)
+                {
+                    action.RuntimeResources.Set("probe", resource);
+                    throw startupError;
+                }
+                if (action.FlowStatus == StatusTypeEnum.Failed)
+                {
+                    rejectedTransfers++;
+                    if (cleanupThrows)
+                        throw new InvalidOperationException("downstream cleanup failed");
+                }
+            };
+            const string serial = "SN-DISPATCH-RETRY";
+
+            Assert.Same(startupError, Assert.Throws<InvalidOperationException>(() => fixture.Executor.RunAsync(
+                "Selected", serial, executionTimeout: null).GetAwaiter().GetResult()));
+
+            Assert.False(fixture.Engine.IsRunning);
+            Assert.False(fixture.FlowControl.IsFlowRun);
+            Assert.Null(fixture.FlowControl.SerialNumber);
+            Assert.Equal(0, start.ActiveCount);
+            Assert.False(resource.CanRead);
+            Assert.Equal(1, rejectedTransfers);
+
+            failStartup = false;
+            Task<FlowRunExecutionResult> retry = fixture.Executor.RunAsync("Selected", serial, executionTimeout: null);
+            start.Complete(serial, StatusTypeEnum.Completed);
+            Assert.Equal(FlowRunTermination.EngineCompleted, retry.WaitAsync(TimeSpan.FromSeconds(2)).GetAwaiter().GetResult().Termination);
         });
     }
 
@@ -301,11 +437,11 @@ public class FlowRunExecutorTests
     {
         private readonly FlowNodeManager _nodeManager = new();
 
-        public FlowFixture()
+        public FlowFixture(Func<List<MQTTServiceInfo>>? serviceTokensProvider = null)
         {
             Editor = new STNodeEditor();
             Engine = new FlowEngineControl(Editor, false, _nodeManager);
-            FlowControl = new FlowControl(MQTTControl.GetInstance(), Engine, () => []);
+            FlowControl = new FlowControl(MQTTControl.GetInstance(), Engine, serviceTokensProvider ?? (() => []));
             Executor = new FlowRunExecutor(FlowControl);
         }
 
@@ -332,12 +468,13 @@ public class FlowRunExecutorTests
             return start;
         }
 
-        public void Connect(TestStartNode start)
+        public StartSinkNode Connect(TestStartNode start)
         {
             var sink = new StartSinkNode();
             sink.Create();
             Editor.Nodes.Add(sink);
             Assert.Equal(ConnectionStatus.Connected, start.StartOutput.ConnectOption(sink.Input));
+            return sink;
         }
 
         public void Dispose()

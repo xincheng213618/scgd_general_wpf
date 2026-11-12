@@ -18,7 +18,8 @@ internal interface ILocalSpectrumShutterPort : IDisposable
 
 internal sealed class LocalSpectrumShutterPort(ShutterConfig config) : ILocalSpectrumShutterPort
 {
-    private readonly SerialPort port = new(config.Addr, config.BaudRate) { ReadTimeout = 1000, WriteTimeout = 1000 };
+    // The fixed shutter controller does not reply unless DTR is asserted.
+    private readonly SerialPort port = new(config.Addr, config.BaudRate) { DtrEnable = true, ReadTimeout = 1000, WriteTimeout = 1000 };
     public bool IsOpen => port.IsOpen;
     public void Open() => port.Open();
     public void DiscardInBuffer() => port.DiscardInBuffer();
@@ -29,9 +30,10 @@ internal sealed class LocalSpectrumShutterPort(ShutterConfig config) : ILocalSpe
 
 // Owned by LocalSpectrumSession and always called under its operation gate.
 internal sealed class LocalSpectrumShutter(Func<ShutterConfig, ILocalSpectrumShutterPort>? createPort = null,
-    Func<ShutterConfig, ILocalSpectrumFilterWheelOperation>? acquireFilterWheel = null)
+    Func<ShutterConfig, ILocalSpectrumFilterWheelOperation>? acquireFilterWheel = null, Action<int>? waitForSettle = null)
 {
     private readonly Func<ShutterConfig, ILocalSpectrumShutterPort> createPort = createPort ?? (config => new LocalSpectrumShutterPort(config));
+    private readonly Action<int> waitForSettle = waitForSettle ?? Thread.Sleep;
     private ILocalSpectrumShutterPort? port;
     private string? address;
     private int baudRate;
@@ -74,19 +76,21 @@ internal sealed class LocalSpectrumShutter(Func<ShutterConfig, ILocalSpectrumShu
         }
     }
 
-    public void SetOpen(bool open, ShutterConfig config)
+    // Optical direction is configurable; acknowledgements follow the actuator command.
+    public void SetTransmitting(bool transmitting, ShutterConfig config)
     {
         if (config.UseFilterWheel)
         {
             using var operation = AcquireOperation(config);
-            filterWheel!.SetOpen(open);
+            filterWheel!.SetTransmitting(transmitting);
             return;
         }
+        bool open = transmitting != config.OpenForDark;
         string command = open ? config.OpenCmd : config.CloseCmd;
         if (string.IsNullOrEmpty(command)) throw new InvalidOperationException("请先配置快门开关指令。");
         Connect(config);
-        string expected = open ? "turn on" : "turn off";
-        string opposite = open ? "turn off" : "turn on";
+        string expected = config.GetExpectedResponse(open);
+        string opposite = expected == "turn on" ? "turn off" : "turn on";
         try
         {
             // A delayed acknowledgement from a previous command must not confirm this command.
@@ -101,10 +105,15 @@ internal sealed class LocalSpectrumShutter(Func<ShutterConfig, ILocalSpectrumShu
                 string text = response.ToString();
                 if (text.Contains(opposite, StringComparison.OrdinalIgnoreCase))
                     throw new InvalidOperationException($"快门返回了相反状态：{opposite}。");
-                if (text.Contains(expected, StringComparison.OrdinalIgnoreCase)) return;
+                if (text.Contains(expected, StringComparison.OrdinalIgnoreCase))
+                {
+                    // A command acknowledgement does not guarantee that the shutter has finished moving.
+                    waitForSettle(timeout);
+                    return;
+                }
                 Thread.Sleep(10);
             } while (elapsed.ElapsedMilliseconds < timeout);
-            throw new TimeoutException($"快门未在 {timeout} ms 内确认{(open ? "打开" : "关闭")}。");
+            throw new TimeoutException($"光闸未在 {timeout} ms 内确认{(transmitting ? "通光" : "遮光")}。");
         }
         catch
         {

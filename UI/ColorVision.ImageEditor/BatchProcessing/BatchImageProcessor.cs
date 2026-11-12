@@ -1,3 +1,4 @@
+using ColorVision.ImageEditor.Algorithms;
 using OpenCvSharp;
 using System;
 using System.Collections.Generic;
@@ -22,6 +23,9 @@ namespace ColorVision.ImageEditor.BatchProcessing
         public bool PreserveFolderStructure { get; init; } = true;
 
         public bool AvoidOverwrite { get; init; } = true;
+
+        /// <summary>Checks the destination before staging and each publication attempt; throw to reject that file.</summary>
+        public Action<string>? ValidateOutputPath { get; init; }
     }
 
     public sealed class BatchImageFileResult
@@ -108,7 +112,12 @@ namespace ColorVision.ImageEditor.BatchProcessing
             }
 
             var results = new List<BatchImageFileResult>(request.Items.Count);
-            var reservedPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var reservations = new BatchOutputReservations(request.Items, !request.AvoidOverwrite, cancellationToken);
+            var nextUnreservedNumbers = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+            using AlgorithmReferenceImageLoader.BatchCache? references = request.Items.Count > 1
+                && request.Algorithm.Descriptor?.Id == StandardAlgorithmIds.ImagingCorrection
+                ? new AlgorithmReferenceImageLoader.BatchCache()
+                : null;
             for (var index = 0; index < request.Items.Count; index++)
             {
                 var item = request.Items[index];
@@ -127,6 +136,7 @@ namespace ColorVision.ImageEditor.BatchProcessing
 
                 var sourceRead = false;
                 var outputPath = string.Empty;
+                var validatingOutputPath = false;
                 try
                 {
                     var loader = GetLoader(item.FilePath)
@@ -138,21 +148,28 @@ namespace ColorVision.ImageEditor.BatchProcessing
                         request.OutputFormat,
                         request.PreserveFolderStructure,
                         request.AvoidOverwrite,
-                        reservedPaths);
+                        reservations,
+                        nextUnreservedNumbers);
 
                     using Mat source = loader.Load(item.FilePath);
                     sourceRead = true;
                     cancellationToken.ThrowIfCancellationRequested();
-                    using Mat result = request.Algorithm.Apply(source, cancellationToken);
-                    while (true)
+                    request.Algorithm.UseOutputInRun(source, cancellationToken, references, SaveOutput);
+
+                    void SaveOutput(Mat result)
                     {
-                        cancellationToken.ThrowIfCancellationRequested();
-                        try
+                        BatchImageOutput.EncodeAndPublish(result, outputPath, overwrite: !request.AvoidOverwrite,
+                            request.ValidateOutputPath != null ? ValidateDestination : null,
+                            request.AvoidOverwrite ? ResolveCollision : null, cancellationToken);
+
+                        void ValidateDestination(string path)
                         {
-                            BatchImageOutput.Save(result, outputPath, overwrite: !request.AvoidOverwrite);
-                            break;
+                            validatingOutputPath = true;
+                            request.ValidateOutputPath!(path);
+                            validatingOutputPath = false;
                         }
-                        catch (IOException) when (request.AvoidOverwrite && File.Exists(outputPath))
+
+                        string ResolveCollision()
                         {
                             outputPath = BatchImageOutput.CreateOutputPath(
                                 item,
@@ -161,7 +178,9 @@ namespace ColorVision.ImageEditor.BatchProcessing
                                 request.OutputFormat,
                                 request.PreserveFolderStructure,
                                 avoidOverwrite: true,
-                                reservedPaths);
+                                reservations,
+                                nextUnreservedNumbers);
+                            return outputPath;
                         }
                     }
 
@@ -208,7 +227,12 @@ namespace ColorVision.ImageEditor.BatchProcessing
                         SourcePath = item.FilePath,
                         OutputPath = outputPath,
                         SourceRead = sourceRead,
-                        ErrorCode = ex is BatchImageAlgorithmContractException contract ? contract.Code : "processing_failed",
+                        ErrorCode = ex switch
+                        {
+                            UnauthorizedAccessException when validatingOutputPath => "output_not_authorized",
+                            BatchImageAlgorithmContractException contract => contract.Code,
+                            _ => "processing_failed",
+                        },
                         ErrorMessage = ex.Message,
                     });
                     reportProgress?.Invoke(new BatchImageProgress

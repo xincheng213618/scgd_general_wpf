@@ -9,15 +9,11 @@ using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Services.Devices.Camera.Configs;
 using ColorVision.Engine.Services.Devices.Camera.Dao;
 using ColorVision.Engine.Services.Devices.Camera.Local;
-using ColorVision.Engine.Services.Devices.Camera.Templates.AutoExpTimeParam;
-using ColorVision.Engine.Services.Devices.Camera.Templates.AutoFocus;
-using ColorVision.Engine.Services.Devices.Camera.Templates.CameraRunParam;
 using ColorVision.Engine.Services.Devices.Camera.Views;
 using ColorVision.Engine.Services.PhyCameras;
 using ColorVision.Engine.Services.PhyCameras.Calibration;
 using ColorVision.Engine.Services.PhyCameras.Group;
 using ColorVision.Engine.Services.RC;
-using ColorVision.Engine.Templates;
 using ColorVision.ImageEditor.Settings;
 using ColorVision.Themes.Controls;
 using ColorVision.UI;
@@ -85,10 +81,11 @@ namespace ColorVision.Engine.Services.Devices.Camera
             DService = new MQTTCamera(this);
             CameraBackend.Changed += CameraBackend_Changed;
             DisplayConfig.PropertyChanged += DisplayConfig_BackendPreferenceChanged;
-            _view = new DockViewRegistration(() => new ViewCamera(this, true), Config.Name);
+            _view = new DockViewRegistration(() => new ViewCamera(this, true), Config.Name, DisPlayManager.IsControlVisible(Config.Code, Config.Name))
+                { PersistenceKey = Config.Code };
             this.SetIconResource("DrawingImageCamera");
 
-            EditCommand = new RelayCommand(a => EditCameraAction(), b => AccessControl.Check(EditCameraAction));
+            EditCommand = new RelayCommand(a => EditCameraAction(), b => CanConfigure);
 
             FetchLatestTemperatureCommand = new RelayCommand(a => FetchLatestTemperature(a));
 
@@ -107,19 +104,17 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
             RefreshDeviceIdCommand = new RelayCommand(a => RefreshDeviceId());
 
-            OpenPhyCameraMangerCommand = new RelayCommand(a => OpenPhyCameraManger());
+            OpenPhyCameraMangerCommand = new RelayCommand(a =>
+            {
+                if (AccessControl.Evaluate("physical-camera.manage", PermissionMode.Administrator, Code).Allowed) OpenPhyCameraManger();
+            }, _ => AccessControl.Evaluate("physical-camera.manage", PermissionMode.Administrator, Code).Allowed);
             EditPhyCameraConfigCommand = new RelayCommand(_ => PhyCamera?.EditCommand.Execute(null),
-                _ => PhyCamera != null && AccessControl.Check(PermissionMode.Administrator));
+                _ => PhyCamera?.CanConfigure == true);
 
             PhyCamera = PhyCameraManager.GetInstance().GetPhyCamera(Config.CameraCode);
 
-            EditAutoExpTimeCommand = new RelayCommand(a => EditAutoExpTime());
-
-            EditAutoFocusCommand = new RelayCommand(a => EditAutoFocus());
-            EditCameraExpousureCommand = new RelayCommand(A => EditCameraExpousure());
             EditRealtimeCameraConfigCommand = new RelayCommand(_ => EditRealtimeCameraConfig());
             EditDisplayConfigCommand = new RelayCommand(_ => EditDisplayConfig());
-            EditCalibrationCommand = new RelayCommand(a => EditCalibration());
             UserCalibrationCommand = new RelayCommand(_ => LumFourColorCalibrationWorkflowWindow.ShowWindow(camera: this));
             OpenCameraLogCommand = new RelayCommand(a => OpenCameraLog());
             ReleaseLocalCalibrationCacheCommand = new RelayCommand(_ => LocalCalibrationCacheManagerWindow.OpenWindow());
@@ -151,8 +146,8 @@ namespace ColorVision.Engine.Services.Devices.Camera
             cameraLocalWindow.Show();
         }
 
-        [CommandDisplay("EditDisplayConfig", Order = -1, CategoryOrder = 2)]
-        [Category("AcquisitionDisplay")]
+        [CommandDisplay("EditDisplayConfig", Order = -1, CategoryOrder = 0)]
+        [Category("DeviceConnection")]
         [Description("CommandDisplayConfigHint")]
         public RelayCommand EditDisplayConfigCommand { get; }
 
@@ -166,9 +161,6 @@ namespace ColorVision.Engine.Services.Devices.Camera
             ConfigHandler.GetInstance().Save<DisplayConfigManager>();
         }
 
-        [CommandDisplay("CameraLog", CategoryOrder = 3)]
-        [Category("DataLogs")]
-        [Description("CommandCameraLogHint")]
         public RelayCommand OpenCameraLogCommand { get; set; }
 
         [CommandDisplay("本地缓存管理", Order = 1, CategoryOrder = 1)]
@@ -211,60 +203,10 @@ namespace ColorVision.Engine.Services.Devices.Camera
         }
 
 
-        [CommandDisplay("EditCalibrationFile", Order = 0, CategoryOrder = 1)]
-        [Category("CalibrationCorrection")]
-        [Description("CommandCameraCalibrationHint")]
-        public RelayCommand EditCalibrationCommand { get; set; }
-
         [CommandDisplay("用户校正", Order = 2, CategoryOrder = 1)]
         [Category("CalibrationCorrection")]
         [Description("使用单点或 RGBW 测量修正校正文件")]
         public RelayCommand UserCalibrationCommand { get; set; }
-
-        public void EditCalibration()
-        {
-            if (PhyCamera == null)
-            {
-                MessageBox1.Show(Application.Current.GetActiveWindow(), ColorVision.Engine.Properties.Resources.ConfigurePhysicalCameraBeforeCalibration, "ColorVision");
-                return;
-            }
-            var ITemplate = new TemplateCalibrationParam(PhyCamera);
-            var windowTemplate = new TemplateEditorWindow(ITemplate) { Owner = Application.Current.GetActiveWindow() };
-            windowTemplate.ShowDialog();
-        }
-
-
-        [CommandDisplay("AutoExploreTemplate", Order = 100, CategoryOrder = 2)]
-        [Category("AcquisitionDisplay")]
-        [Description("CommandAutoExposureHint")]
-        public RelayCommand EditAutoExpTimeCommand { get; set; }
-
-        public static void EditAutoExpTime()
-        {
-            var windowTemplate = new TemplateEditorWindow(new TemplateAutoExpTime()) { Owner = Application.Current.GetActiveWindow() };
-            windowTemplate.ShowDialog();
-        }
-        [CommandDisplay("AutoFocusTemplate", Order = 100, CategoryOrder = 2)]
-        [Category("AcquisitionDisplay")]
-        [Description("CommandAutoFocusHint")]
-        public RelayCommand EditAutoFocusCommand { get; set; }
-        public static void EditAutoFocus()
-        {
-            var windowTemplate = new TemplateEditorWindow(new TemplateAutoFocus()) { Owner = Application.Current.GetActiveWindow() };
-            windowTemplate.ShowDialog();
-        }
-        [CommandDisplay("CameraParameterTemplate", Order = 100, CategoryOrder = 2)]
-        [Category("AcquisitionDisplay")]
-        [Description("CommandCameraParametersHint")]
-        public RelayCommand EditCameraExpousureCommand { get; set; }
-
-        public static void EditCameraExpousure()
-        {
-            var windowTemplate = new TemplateEditorWindow(new TemplateCameraRunParam()) { Owner = Application.Current.GetActiveWindow() };
-            windowTemplate.ShowDialog();
-        }
-
-
 
         public DefaultRealtimeCameraConfig RealtimeCameraConfig { get; } = DefaultRealtimeCameraConfig.Current;
         public RelayCommand EditRealtimeCameraConfigCommand { get; set; }
@@ -324,6 +266,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
         [RequiresPermission(PermissionMode.Administrator)]
         private void EditCameraAction()
         {
+            if (!CanConfigure) return;
             EditCamera window = new(this);
             window.Owner = Application.Current.GetActiveWindow();
             window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
@@ -338,9 +281,10 @@ namespace ColorVision.Engine.Services.Devices.Camera
         [Category("DeviceConnection")]
         public RelayCommand EditPhyCameraConfigCommand { get; set; }
 
-        [RequiresPermission(PermissionMode.Administrator)]
+        [RequiresPermission(PermissionMode.Administrator, ActionId = "physical-camera.manage")]
         public void OpenPhyCameraManger()
         {
+            AccessControl.Demand("physical-camera.manage", PermissionMode.Administrator, Code);
             if (PhyCamera != null)
             {
                 foreach (var item in PhyCameraManager.GetInstance().PhyCameras)

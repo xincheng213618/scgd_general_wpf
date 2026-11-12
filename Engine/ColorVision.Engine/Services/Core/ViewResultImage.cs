@@ -203,6 +203,7 @@ namespace ColorVision.Engine.Services
         [DisplayName("Duration")]
         public string TotalTime => string.Format("{0}", TimeSpan.FromMilliseconds(_totalTime).ToString(@"mm\:ss\:fff"));
         private long _totalTime;
+        internal long RawDurationMilliseconds => _totalTime;
 
         private string _resultDesc;
 

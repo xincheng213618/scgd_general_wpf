@@ -1,3 +1,4 @@
+using ColorVision.ImageEditor.Output;
 using System;
 using System.Globalization;
 using System.IO;
@@ -57,21 +58,23 @@ namespace ColorVision.ImageEditor.EditorTools.ThreeD
                 {
                     WriteObj(geometry, heightScale, modelTemporary, Path.GetFileName(materialPath), token);
                     WriteMaterial(materialTemporary, lut == null ? null : Path.GetFileName(texturePath));
-                    if (lut != null) WriteTexture(lut, textureTemporary);
-                }
-                token.ThrowIfCancellationRequested();
-                // Complete every file before replacing any destination. Promote the model last;
-                // a canceled/failed write never replaces an existing model with a partial file.
-                if (!isStl)
-                {
                     if (lut != null)
                     {
-                        File.Move(textureTemporary, texturePath, overwrite: true);
-                        if (hideTexture) TryHideTexture(texturePath);
+                        WriteTexture(lut, textureTemporary);
+                        if (hideTexture) TryHideTexture(textureTemporary);
                     }
-                    File.Move(materialTemporary, materialPath, overwrite: true);
                 }
-                File.Move(modelTemporary, filePath, overwrite: true);
+                token.ThrowIfCancellationRequested();
+                if (isStl)
+                {
+                    File.Move(modelTemporary, filePath, overwrite: true);
+                    return;
+                }
+
+                StagedFilePublication.Entry material = new(materialTemporary, materialPath);
+                StagedFilePublication.Entry model = new(modelTemporary, filePath);
+                StagedFilePublication.Commit(lut == null ? [material, model] : [new(textureTemporary, texturePath), material, model],
+                    overwrite: true, token);
             }
             finally
             {

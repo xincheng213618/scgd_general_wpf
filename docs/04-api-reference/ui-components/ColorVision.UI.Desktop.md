@@ -47,9 +47,9 @@ related: ["ui.index","ui.framework","ui.settings","ui.wizards","ui.menus","ui.co
 
 ## 下载任务与文件保护
 
-`Aria2cDownloadManager` 按任务串行处理启动、暂停、恢复和删除。取消或删除会立即使旧操作失效；即使 `addUri` 响应晚到，也会清除已提交的 GID，避免记录删除后后台下载继续运行。暂停任务保持同一模型和 GID，分页不会丢失恢复状态；重启只自动恢复等待或下载中的记录，明确暂停的记录由用户恢复。GID 已失效时重新提交并保留断点文件，RPC 错误作为错误处理，不能把文件打开失败当作缓存损坏而删除文件。
+`Aria2cDownloadManager` 按任务串行处理启动、暂停、恢复和删除。取消或删除会立即使旧操作失效；即使 `addUri` 响应晚到，也会清除已提交的 GID，避免记录删除后后台下载继续运行。暂停和取消的任务可恢复，不触发完成回调；删除是终态，尚未报告结果的任务以 `DownloadStatus.Deleted` 回调一次，等待方不会悬挂。暂停任务保持同一模型和 GID，重新加载记录不会丢失恢复状态；重启只自动恢复等待或下载中的记录，明确暂停的记录由用户恢复。GID 已失效时重新提交并保留断点文件，RPC 错误作为错误处理，不能把文件打开失败当作缓存损坏而删除文件。
 
-新建普通下载写入任务独有的 `.cvdownload-<GUID>.part`，完成后检查实际路径、大小和 SHA-256，再移动到预留的最终路径；已有最终文件不会被覆盖。旧记录仍沿用原路径及 `.aria2` 断点文件。取消和失败保留下载文件；清空记录只删除操作开始时的记录集合并停止对应任务，保留文件。删除记录时仅在用户选择删除文件后清理相应普通文件及断点文件，目录不会递归删除。完成回调异常单独记录，不触发重新下载或删除已成功的文件。
+新建普通下载写入任务独有的 `.cvdownload-<GUID>.part`，完成后检查实际路径、大小和 SHA-256，再移动到预留的最终路径；已有最终文件不会被覆盖，任务启动时最终路径已被占用会改用新文件名。旧记录仍沿用原路径及 `.aria2` 断点文件。取消和失败保留下载文件；清空全部或已完成记录只删除操作开始时的相应记录并停止对应任务，保留文件。删除记录时仅在用户选择删除文件后清理相应普通文件、工作文件及断点文件，目录不会递归删除。完成提示和自动打开由 `DownloadCompletionNotifier` 处理，与下载窗口是否打开无关，只作用于无回调的手动下载。完成回调异常单独记录，不触发重新下载或删除已成功的文件。
 
 `AddDownload` 保持原有调用契约；调用方可通过 `AddVerifiedDownload` 提供预期 SHA-256，市场下载会传入包元数据的哈希并继续执行市场自己的包校验。复用本地文件必须与调用方提供的哈希或服务器 `Digest` / `Content-Digest` 中的 SHA-256 匹配，复制过程也校验内容；文件大小相同、同 URL 历史完成记录或 ETag 本身不足以证明内容可复用。缺少可信摘要时正常联网下载。
 
@@ -67,7 +67,7 @@ RPC 只连接回环地址，后台进程使用随机的实例密钥；启动等�
 | 向导链 | [App 分流 → WizardManager 发现 → WizardWindow 的 Refresh/Apply/initializer → 标记与保存](./wizards.md) |
 | 市场链 | `MarketplaceWindow` -> `MarketplaceClient` -> Markdown/WebView2 -> 下载/安装服务 |
 | 下载链 | `DownloadWindow` -> `Aria2cDownloadManager` -> `aria2c.exe` / RPC daemon |
-| 崩溃诊断链 | `SettingWindow` -> `CrashDumpSettingsProvider` -> 通用属性编辑器 -> `ColorVisionServiceHost` / WER LocalDumps / `DumpHelper` |
+| 崩溃诊断链 | `SettingWindow` 的“配置 → 崩溃转储” -> `CrashDumpSettingsProvider` -> 通用属性编辑器 -> `ColorVisionServiceHost` / WER LocalDumps / `DumpHelper` |
 | 反馈收集链 | `FeedbackWindow` -> `IFeedbackLogCollector` -> 应用日志、系统信息、脱敏配置快照、Dump、Windows 事件日志 -> 匿名 `/api/feedback` |
 | 菜单管理链 | [MenuItemManagerWindow → 草稿 → CommitEditingSnapshot → 运行时覆盖/重建 → 尝试保存](./menus.md) |
 | DLL 诊断链 | `ViewDllVersionsWindow` |
@@ -78,7 +78,7 @@ Engine 提供默认勾选的“MVS 日志”来源，沿用统一天数范围，
 
 “当前进程内存转储”是独立的诊断来源，默认不勾选；手动选择后，由 `Feedback/Collectors/CurrentProcessDumpCollector.cs` 在打包时抓取运行中进程的完整内存快照。它不读取或修改 WER 崩溃转储配置，也不按日志天数或历史 Dump 的 100 MiB 上限筛选。快照写入临时文件后直接以最高 ZIP 压缩级别写入反馈包的 `ProcessDump/`，不会生成嵌套 ZIP；压缩率取决于内存内容。打包结束会清理临时快照，采集失败会清理未完成文件并尽量加入 `ProcessDump/collection-error.txt`，其他来源继续打包。服务器确认提交成功、上传文件流释放后，反馈窗口清理本次生成的诊断 ZIP；失败或取消上传时保留 ZIP 以便重试或离线复制，用户手动添加的原始附件不在清理列表内。回归入口为 `Test/ColorVision.UI.Tests/CrashDumpDiagnosticsTests.cs`，原生快照成功与真实提交后的清理仍需运行应用验收。
 
-物理相机管理的“操作 → MVS 日志”通过 SDK 环境变量、MVS 安装注册表信息和系统 Program Files 目录定位 LogViewer，优先 Win64、其次 Win32。启动时以查看器所在目录作为工作目录，并保留厂商程序要求的管理员权限；取消 UAC 不报告启动错误。只安装 SDK 运行库可能没有 LogViewer，找不到程序时显示提示。该入口与反馈收集共用 `MvsDiagnosticsPaths` 的安装位置发现，但收集文件不依赖成功打开查看器。
+打开物理相机管理时，通过 SDK 环境变量、MVS 安装注册表信息和系统 Program Files 目录定位 LogViewer，优先 Win64、其次 Win32。找到时，工具栏显示“MVS 日志”。启动时以查看器所在目录作为工作目录，并保留厂商程序要求的管理员权限；取消 UAC 不报告启动错误。该入口与反馈收集共用 `MvsDiagnosticsPaths` 的安装位置发现，但收集文件不依赖成功打开查看器。
 
 反馈窗口从帮助菜单、启动恢复或 Copilot `/feedback` 打开时均使用非模态 `Show()`，保留 Owner 与居中定位。打包和上传期间可最小化反馈窗口、切回其他窗口继续操作；打包仍在后台任务中执行，HTTP 上传仍异步等待。Copilot 附带的临时会话文件保留到反馈窗口关闭，不能在 `Show()` 返回时提前清理。
 

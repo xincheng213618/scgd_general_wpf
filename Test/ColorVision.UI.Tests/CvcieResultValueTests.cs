@@ -63,7 +63,7 @@ public sealed class CvcieResultValueTests
             IConfigService? previous = ConfigService.Instance;
             try
             {
-                ConfigService.SetInstance(new ConfigHandler());
+                TestEnvironment.SetConfig(new ConfigHandler());
                 CVCIEShowConfig config = CVCIEShowConfig.Instance;
                 config.MinimumValue = 0.002;
                 const string raw = "{\"X\":-1,\"Y\":-2,\"Z\":0,\"x\":-0.25,\"y\":0.5,\"u\":0,\"v\":-0.5,\"CCT\":-100,\"Wave\":-20}";
@@ -98,7 +98,7 @@ public sealed class CvcieResultValueTests
             }
             finally
             {
-                ConfigService.SetInstance(previous!);
+                TestEnvironment.SetConfig(previous!);
             }
         });
     }

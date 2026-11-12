@@ -75,18 +75,24 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
         }
 
         internal void Save(string filePath, bool canReplay)
+            => CVFileMetadata.SetProperties(filePath, CreateProperties(canReplay));
+
+        internal Dictionary<string, CVFileProperty> CreateProperties(bool canReplay)
         {
             Validate();
-            CVFileMetadata.SetProperties(filePath, new Dictionary<string, CVFileProperty>
+            return new Dictionary<string, CVFileProperty>
             {
-                [PropertyKind] = new(1, Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(this with { CanReplay = canReplay }))),
-                [CameraFileMetadata.ProvenanceKind] = new(1, Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(ToSummary())))
-            });
+                [PropertyKind] = CameraFileMetadata.CreateProperty(this with { CanReplay = canReplay }),
+                [CameraFileMetadata.ProvenanceKind] = CameraFileMetadata.CreateProperty(ToSummary())
+            };
         }
 
         internal static ColorCalibrationSnapshot? Read(string filePath, CVCIEFile header)
+            => Read(CVFileMetadata.Read(filePath), header);
+
+        internal static ColorCalibrationSnapshot? Read(IReadOnlyDictionary<string, CVFileProperty> properties, CVCIEFile header)
         {
-            if (!CVFileMetadata.Read(filePath).TryGetValue(PropertyKind, out CVFileProperty? property) || property.Version != 1) return null;
+            if (!properties.TryGetValue(PropertyKind, out CVFileProperty? property) || property.Version != 1) return null;
             ColorCalibrationSnapshot snapshot = JsonConvert.DeserializeObject<ColorCalibrationSnapshot>(Encoding.UTF8.GetString(property.Value))
                 ?? throw new InvalidDataException("RAW 色度校正参数为空。");
             snapshot.Validate();

@@ -3,9 +3,9 @@ knowledge_id: "algorithms.poi-template"
 knowledge_type: "reference"
 status: "current"
 summary: "说明 POI 主从表、伴生模板、复制导入、运行事件与结果类型映射。"
-aliases: ["POI复制会覆盖旧点位吗","TemplatePoi","PoiParam","FlowPackagePoiCodec","ViewHandleRealPOI","POI图标平铺","PoiTemplateManagerWindow","键盘亮度校正","POINode","IsCCTWave","色温/波长"]
-code_paths: ["Engine/ColorVision.Engine/Templates/POI/TemplatePoi.cs","Engine/ColorVision.Engine/Templates/POI/PoiTemplateManagerWindow.cs","Engine/ColorVision.Engine/Templates/POI/EditPoiParam1.xaml.cs","Engine/ColorVision.Engine/Templates/Browser","Engine/ColorVision.Engine/Media/PoiImageViewComponent.cs","Engine/ColorVision.Engine/Templates/POI/PoiParam.cs","Engine/ColorVision.Engine/Templates/POI/BuildPoi/TemplateBuildPoi.cs","Engine/ColorVision.Engine/Templates/Jsons/BuildPOIAA/TemplateBuildPOIAA.cs","Engine/ColorVision.Engine/Templates/Jsons/PoiAnalysis/TemplatePoiAnalysis.cs","Engine/ColorVision.Engine/FlowProcessing/Nodes/Compatibility/POI/POINode.cs","Engine/ColorVision.Engine/FlowProcessing/Nodes/Compatibility/POI/BuildPOINode.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/LocalPoiTemplateStorageTests.cs","Test/ColorVision.UI.Tests/FlowPackagePoiCodecTests.cs","Test/ColorVision.UI.Tests/PoiPointModelTests.cs","Test/ColorVision.UI.Tests/KeyboardLuminanceCalibrationTests.cs","Test/ColorVision.UI.Tests/CompatibilityNodeMigrationTests.cs","Test/ColorVision.UI.Tests/CompatibilityCameraPropertyEditorTests.cs"]
+aliases: ["POI复制会覆盖旧点位吗","TemplatePoi","PoiParam","FlowPackagePoiCodec","ViewHandleRealPOI","POI图标平铺","PoiTemplateManagerWindow","键盘亮度校正","POINode","IsCCTWave","色温/波长","9点校准","EnableNinePointCalibration"]
+code_paths: ["Engine/ColorVision.Engine/Templates/POI/TemplatePoi.cs","Engine/ColorVision.Engine/Templates/POI/PoiTemplateManagerWindow.cs","Engine/ColorVision.Engine/Templates/POI/EditPoiParam1.xaml.cs","Engine/ColorVision.Engine/Templates/Browser","Engine/ColorVision.Engine/Media/PoiImageViewComponent.cs","Engine/ColorVision.Engine/Templates/POI/PoiParam.cs","Engine/ColorVision.Engine/Templates/POI/BuildPoi/TemplateBuildPoi.cs","Engine/ColorVision.Engine/Templates/Jsons/BuildPOIAA/TemplateBuildPOIAA.cs","Engine/ColorVision.Engine/Templates/Jsons/PoiAnalysis/TemplatePoiAnalysis.cs","Engine/ColorVision.Engine/FlowProcessing/Nodes/Compatibility/POI/POINode.cs","Engine/ColorVision.Engine/FlowProcessing/Nodes/Compatibility/POI/BuildPOINode.cs","Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalCalibrationRealPoiNode.cs","UI/ColorVision.Core/NinePointBlockCalibration.cs","Engine/ColorVision.Engine/Templates/POI/LocalNinePointPoiCalibration.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/LocalPoiTemplateStorageTests.cs","Test/ColorVision.UI.Tests/FlowPackagePoiCodecTests.cs","Test/ColorVision.UI.Tests/PoiPointModelTests.cs","Test/ColorVision.UI.Tests/KeyboardLuminanceCalibrationTests.cs","Test/ColorVision.UI.Tests/CompatibilityNodeMigrationTests.cs","Test/ColorVision.UI.Tests/CompatibilityCameraPropertyEditorTests.cs","Test/ColorVision.UI.Tests/NinePointBlockCalibrationTests.cs","Test/ColorVision.UI.Tests/LocalNinePointPoiCalibrationTests.cs"]
 related: ["algorithms.index","algorithms.poi-routes","flow.templates","engine.results"]
 ---
 
@@ -41,9 +41,11 @@ POI 是“点集模板体系”，不是单个检测算法。维护时先分清�
 
 ## 主模板存储
 
-主菜单、图像工具栏、手动算法模板选择、流程节点属性面板和 Conoscope 对焦点管理通过 `PoiTemplateManagerWindow` 浏览主 POI 点集。窗口复用流程的 `TemplateBrowserWindow` 搜索、操作栏和浏览交互；固定使用紧凑图标平铺，按数据库保存顺序倒序显示，新建项排在前面。统一点阵图标下方显示居中的单行名称，长名称悬停查看。图标不是点位预览，浏览时不为它额外读取或渲染点明细。双击交给原 `EditPoiParam`；过滤、修正、输出等伴生模板维持各自的编辑宿主。
+主菜单、图像工具栏、手动算法模板选择、流程节点属性面板和 Conoscope 对焦点管理通过 `PoiTemplateManagerWindow` 浏览主 POI 点集。窗口复用流程的 `TemplateBrowserWindow` 搜索、操作栏和浏览交互；“查看”提供小、中、大、超大四档点阵图标与列表，列表包含勾选框、序号、名称和日期；支持名称/日期排序、可折叠分组、空白处右键菜单及与勾选同步的多选。具体尺寸、键盘、拖框、分组与日期来源见[流程模板浏览交互](../../engine-components/template-flow-chain.md#模板发现与主存储)。长名称悬停查看。卡片图标不是点位预览，不为每张卡片读取点明细。“查看 → 预览”可独立开关右侧预览栏，卡片与列表均可使用；每次打开窗口时默认关闭，用户展开后才加载或刷新当前项，折叠时取消加载并清空内容；选中点集后显示已保存点位布局、存储位置、画布尺寸、点数及圆形/矩形区域数，不含背景图像。动态点集会提示运行时点位可能不同。预览仅通过该模板所属存储异步读取当前项的点位，不回填共享主记录、不保存模板、不打开编辑器；切换、隐藏或关闭会丢弃旧结果。流程与 POI 分别记住显示模式、图标尺寸、排序和分组，随应用配置保存；预览开关不持久化。POI 预览展示尺寸与点数等点集信息，不将流程的执行统计当作点集独立执行次数。双击交给原 `EditPoiParam`；过滤、修正、输出等伴生模板维持各自的编辑宿主。
 
 拖拽交换两个模板的数据库顺序。MySQL 交换 POI 主记录 ID 并同步全部点明细 Pid，名称、尺寸、配置与点位内容不变；本地点集交换 SQLite sort_order，保持 ID。提交后共享下拉框集合同步并保留选中对象，保存失败提示重新打开核对。管理窗口及重新打开时都按数据库顺序倒序展示，不反转或筛选共享下拉框集合，不读取旧 flow_template_browser_order 本机偏好。新建、复制、导入、导出仍使用 `TemplatePoi` 原操作；重命名经 `PoiTemplateStorage.SaveMetadata` 保留未加载的点位；删除处理实际勾选项，包括被筛选隐藏的条目。重新加载跳过位置不变的集合移动，以免清空绑定的 ComboBox 选择。
+
+图像工具栏的“保存当前图上的 POI 区域”按钮在没有显示图像时折叠，加载图像后显示，清空图像后再次折叠；显示后仍需画布可编辑且已有绘图才可点击。
 
 `TemplatePoi` 双击打开 `EditPoiParam`，不是普通右侧 PropertyGrid。`PoiParam` 里保存画布尺寸、四角、配置 JSON 和 `ObservableCollection<PoiPoint>`。POI 主模板走专用表：
 
@@ -60,6 +62,10 @@ POI 是“点集模板体系”，不是单个检测算法。维护时先分清�
 
 ## Flow 消费
 
+高密度灯珠点集可由“本地算法 → 灯珠定位”直接传给本地 POI 或实时 POI，不创建 POI 模板，也不逐点写入结果数据库；点集和测量值跟随本次运行释放，可选导出本地 CSV。行列识别、不亮/偏暗判断、坐标与内存交接边界见[本地灯珠分析](../local-native-analysis.md#flow-内存点集与本地测量)。普通持久化模板仍使用下述表与命令。
+
+本地“校正+实时 POI”（`LocalCalibrationRealPoiNode`）的“9点校准”（`EnableNinePointCalibration`）默认关闭。开启且输入恰为九个点时，在本次图像完成校正后、POI 测量前，分别从初始点附近寻找亮块四边，以对角线交点细化几何中心；保留点身份、顺序、采样形状和大小，不回写共享 POI 模板。图像与输入点须处于同一坐标系，校准与取值使用同一帧，避免外框透视布点与当前亮块中心不完全重合。每个点只有找到可信对应亮块才修正；未找到、触及边界、低置信度、位移超限或重复命中时保留该点原 RE 坐标，其他点仍可校准。整幅黑图保留全部原点继续测量，输入不是九点时也跳过校准；非法配置或原生依赖等系统错误仍正常报错。
+
 “关注点算法”（`POINode`）的“色温/波长”固定显示 `True` 只读文本，执行请求始终带 `IsCCTWave=true`。旧流程保存的 `false` 不会关闭计算，重新保存时写为 `True`；亚像素等其它选项仍按原配置执行。
 
 Flow 中的常规 POI 模板字段由节点上的 PropertyEditor 类型和 `FlowPropertyEditorRegistry` 绑定；`POINodeConfigurators.cs` 只补充 `BuildPOINode.TemplateName` 的多模板选择：
@@ -71,6 +77,8 @@ Flow 中的常规 POI 模板字段由节点上的 PropertyEditor 类型和 `Flow
 | POI 运行 | `TemplatePoi` + 过滤/修正/输出 |
 | BuildPOI | `TemplateBuildPoi` 或 `TemplateBuildPOIAA`，以及 `RePOI`、`LayoutROI`、`SavePOI` |
 | PoiAnalysis | `TemplatePoiAnalysis` |
+
+“关注点修正标定”（`POIReviseNode`）的“参数模板”选择 `POIGenCali` 标定规则；“修正输出”（英文界面 `PatchOut`，保存字段 `Output`）选择用于保存倍率的 `PoiRevise` 修正模板，可通过字段右侧设置按钮新建并保存。服务端只更新已存在的修正模板，不会按填写的名称自动创建。“POI点名称”填写上游实际测量结果中的点名，不是点集模板名；“POI修正”只控制是否修正本次 POI 结果，不会修改相机校正模板或图像。“修正输出”允许留空，此时请求仍携带名称为空的 `OutputParam` 对象，兼容会直接读取 `OutputParam.Name` 的旧服务；不保存修正模板。需要在后续测量复用生成参数时，在对应 POI 节点的“修正模板”中选择该模板。
 
 POI 也会被 `POIAnalysisNode`、SFR ROI、OLED AOI、项目包等继续消费。它是共享原语，不是某个模板私有能力。
 

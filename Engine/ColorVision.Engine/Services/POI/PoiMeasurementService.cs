@@ -64,6 +64,18 @@ namespace ColorVision.Engine.Services.POI
         public int BitsPerChannel { get; }
         public int Channels { get; }
 
+        // The planar snapshot is immutable. A second wrapper keeps the array alive without
+        // sharing the lock used to borrow or dispose the view's original buffer.
+        internal PoiMeasurementBuffer? SharePlanarData()
+        {
+            if (RawSource != null) return null;
+            lock (sync)
+            {
+                byte[] current = data ?? throw new ObjectDisposedException(nameof(PoiMeasurementBuffer));
+                return new PoiMeasurementBuffer(current, Width, Height, BitsPerChannel, Channels);
+            }
+        }
+
         internal unsafe T Borrow<T>(Func<IntPtr, long, T> action)
         {
             ArgumentNullException.ThrowIfNull(action);
@@ -98,18 +110,31 @@ namespace ColorVision.Engine.Services.POI
             ArgumentNullException.ThrowIfNull(buffer);
             ArgumentNullException.ThrowIfNull(region);
             if (buffer.RawSource != null) return buffer.RawSource.CalculateRegion(region, preserveNonPositiveValues);
-            return buffer.Borrow((pointer, length) => CalculateRegionCore(pointer, buffer.Width, buffer.Height, buffer.Channels, region, preserveNonPositiveValues));
+            return buffer.Borrow((pointer, length) => CalculateRegionCore(pointer, buffer.Width, buffer.Height, buffer.Channels,
+                region.GetRuns(buffer.Width, buffer.Height), preserveNonPositiveValues));
         }
 
-        private static unsafe PoiMeasurementResult CalculateRegionCore(IntPtr pointer, int width, int height, int channels, ClosedPixelRegion region, bool preserveNonPositiveValues)
+        internal static PoiMeasurementResult CalculateCroppedRegion(IntPtr pointer, int channels, System.Windows.Int32Rect crop,
+            IEnumerable<PixelRowRun> originalRuns, bool preserveNonPositiveValues)
+            => CalculateRegionCore(pointer, crop.Width, crop.Height, channels, originalRuns,
+                preserveNonPositiveValues, offsetX: crop.X, offsetY: crop.Y);
+
+        internal static IEnumerable<PixelRowRun> GetEllipseRuns(PoiMeasurementPoint point, int width, int height)
+            => ClosedPixelRegion.Ellipse(new System.Windows.Point(point.X, point.Y), point.Width / 2.0, point.Height / 2.0)
+                .GetRuns(width, height);
+
+        private static unsafe PoiMeasurementResult CalculateRegionCore(IntPtr pointer, int width, int height, int channels,
+            IEnumerable<PixelRowRun> runs, bool preserveNonPositiveValues, int offsetX = 0, int offsetY = 0)
         {
             float* source = (float*)pointer;
             long plane = (long)width * height;
             double x = 0, y = 0, z = 0;
             long count = 0;
-            foreach (PixelRowRun run in region.GetRuns(width, height))
+            foreach (PixelRowRun run in runs)
             {
-                long offset = (long)run.Y * width;
+                if ((uint)(run.Y - offsetY) >= (uint)height || run.StartX < offsetX || run.EndX - offsetX > width)
+                    throw new ArgumentOutOfRangeException(nameof(runs), "The measurement region extends outside the pixel buffer.");
+                long offset = (long)(run.Y - offsetY) * width - offsetX;
                 for (int column = run.StartX; column < run.EndX; column++)
                 {
                     long index = offset + column;
@@ -208,7 +233,7 @@ namespace ColorVision.Engine.Services.POI
             return ConvertResults(results);
         }
 
-        private static PoiMeasurementResult[] CalculateCore(
+        internal static PoiMeasurementResult[] CalculateCore(
             IntPtr cieData,
             long cieByteLength,
             int width,
@@ -231,8 +256,7 @@ namespace ColorVision.Engine.Services.POI
                     PoiMeasurementPoint point = points[i];
                     ValidatePoint(point, width, height, i);
                     mixed[i] = point.Shape == PoiMeasurementShape.Ellipse
-                        ? CalculateRegionCore(cieData, width, height, channels,
-                            ClosedPixelRegion.Ellipse(new System.Windows.Point(point.X, point.Y), point.Width / 2.0, point.Height / 2.0), preserveNonPositiveValues)
+                        ? CalculateRegionCore(cieData, width, height, channels, GetEllipseRuns(point, width, height), preserveNonPositiveValues)
                         : CalculateCore(cieData, cieByteLength, width, height, bitsPerChannel, channels, new[] { point }, preserveNonPositiveValues)[0];
                 }
                 return mixed;

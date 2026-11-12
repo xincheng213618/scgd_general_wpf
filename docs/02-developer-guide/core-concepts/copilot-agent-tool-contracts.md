@@ -3,176 +3,183 @@ knowledge_id: "copilot.tool-contracts"
 knowledge_type: "topic"
 status: "current"
 summary: "Copilot 工具结果、事件、审批恢复和 Flow 编辑必须遵守的执行契约。"
-aliases: ["工具返回成功是否代表任务完成","审批和恢复怎样绑定调用","临时授权能自动运行Shell吗","自动审查拒绝后如何重试","模板补丁会自动保存吗","CopilotToolExecutionContracts","CopilotToolRegistry","CopilotAgentAccessContext","CopilotAgentTaskEventJournalRegistry","CopilotAutomaticApprovalReviewer","approvals_reviewer","/approve","TemplatePatch","ApplyTemplatePatch","preview_id","current_json","InspectFlowGraph","SearchFlowNodeCatalog","PreviewFlowPatch","ApplyFlowPatch","colorvision-flow-authoring"]
-code_paths: ["ColorVision/Copilot/Agent/Tools/Files/CopilotWorkspacePatchEnvelopeTools.cs", "ColorVision/Copilot/Agent/CopilotToolExecution.Support.cs", "ColorVision/Copilot/State/CopilotChatState.cs", "ColorVision/Copilot/CopilotChatPanel.xaml", "ColorVision/Copilot/CopilotChatMessage.WorkspaceDiff.cs", "ColorVision/Copilot/Runtime/CopilotTurnEventReducer.cs", "ColorVision/Copilot/Runtime/CopilotTurnWorkspaceDiffAccumulator.cs", "ColorVision/Copilot/Capabilities/CopilotWorkspaceChangeSetCapability.cs", "ColorVision/Copilot/Agent/CopilotMicrosoftAgentFrameworkRuntime.SteeringState.cs","ColorVision/Copilot/Agent/CopilotMicrosoftAgentFrameworkRuntime.HarnessToolBridge.Attempts.cs","ColorVision/Copilot/Agent/CopilotToolExecutionContracts.cs","ColorVision/Copilot/Capabilities/CopilotCapabilityResult.cs","ColorVision/Copilot/Agent/CopilotToolExecution.cs","ColorVision/Copilot/Agent/CopilotAgentTaskEventJournal.cs","ColorVision/Copilot/Agent/CopilotAgentTaskEventJournalRegistry.cs","ColorVision/Copilot/Agent/CopilotUserQuestion.cs","ColorVision/Copilot/Agent/CopilotAgentAccessModels.cs","ColorVision/Copilot/Agent/CopilotMicrosoftAgentFrameworkRuntime.ApprovalRouting.cs","ColorVision/Copilot/Agent/CopilotMicrosoftAgentFrameworkRuntime.HarnessToolBridge.ApprovalExecution.cs","ColorVision/Copilot/Agent/CopilotFrameworkApproval.cs","ColorVision/Copilot/Runtime/CopilotAutomaticApprovalReviewer.cs","ColorVision/Copilot/Runtime/CopilotAutomaticApprovalOverrideStore.cs","ColorVision/Copilot/CopilotChatViewModel.LocalCommandWorkflows.cs","ColorVision/Copilot/CopilotChatViewModel.Permissions.cs","ColorVision/Copilot/Agent/CopilotSharedCapabilityCatalog.cs","ColorVision/Copilot/Agent/Tools/Application/CopilotFlowGraphTools.cs","ColorVision/Copilot/Mcp/CopilotMcpToolDispatcher.FlowPatch.cs","ColorVision/Copilot/Skills/colorvision-flow-authoring","ColorVision/Copilot/Mcp/CopilotMcpToolDispatcher.TemplatePatch.cs","ColorVision/Copilot/Mcp/CopilotMcpToolDispatcher.TemplatePatchSupport.cs","ColorVision/Copilot/Mcp/CopilotMcpToolModels.cs","Engine/ColorVision.Engine/Templates/Jsons/EditTemplateJson.xaml.cs"]
-test_paths: ["Test/ColorVision.Copilot.Tests/CopilotWorkspaceCancellationEvidenceTests.cs","Test/ColorVision.Copilot.Tests/CopilotWorkspaceRecoveryEvidenceTests.cs","Test/ColorVision.Copilot.Tests/CopilotWriteToolAdmissionTests.cs","Test/ColorVision.Copilot.Tests/CopilotToolResultContractTests.cs","Test/ColorVision.Copilot.Tests/CopilotTurnEventProtocolTests.cs","Test/ColorVision.Copilot.Tests/CopilotAgentTaskEventJournalIntegrityTests.cs","Test/ColorVision.Copilot.Tests/CopilotCodexApprovalsReviewerTests.cs","Test/ColorVision.Copilot.Tests/CopilotAutomaticApprovalOverrideTests.cs","Test/ColorVision.Copilot.Tests/CopilotSharedCapabilityInputContractTests.cs","Test/ColorVision.Copilot.Tests/CopilotPlanModeTests.cs","Test/ColorVision.Copilot.Tests/CopilotPartialEvidencePresentationTests.cs"]
+aliases: ["工具返回成功是否代表任务完成","审批和恢复怎样绑定调用","临时授权能自动运行Shell吗","自动审查拒绝后如何重试","模板补丁会自动保存吗","CopilotToolExecutionContracts","CopilotToolRegistry","CopilotAgentAccessContext","CopilotAgentTaskEventJournalRegistry","CopilotAutomaticApprovalReviewer","approvals_reviewer","/approve","TemplatePatch","ApplyTemplatePatch","preview_id","current_json","InspectFlowGraph","SearchFlowNodeCatalog","PreviewFlowPatch","ApplyFlowPatch","colorvision-flow-authoring","ValidateFlowGraph","validate_flow_graph","当前流程静态校验","断开连线","disconnect","改线"]
+code_paths: ["ColorVision/Copilot/Mcp/CopilotMcpToolDispatcher.ApplicationPanels.cs","ColorVision/Copilot/Agent/ICopilotTool.cs","Engine/ColorVision.Engine/FlowProcessing/Integration/FlowCopilotService.cs","Engine/ColorVision.Engine/FlowProcessing/Editor/CameraNodeCreationDefaults.cs","UI/ColorVision.Common/Interfaces/Copilot/CopilotBusinessContextBuilder.cs","ColorVision/Copilot/Agent/Tools/Files/CopilotWorkspacePatchEnvelopeTools.cs","ColorVision/Copilot/Agent/CopilotToolExecution.Support.cs","ColorVision/Copilot/State/CopilotChatState.cs","ColorVision/Copilot/CopilotChatPanel.xaml","ColorVision/Copilot/CopilotChatMessage.WorkspaceDiff.cs","ColorVision/Copilot/Runtime/CopilotTurnEventReducer.cs","ColorVision/Copilot/Runtime/CopilotTurnWorkspaceDiffAccumulator.cs","ColorVision/Copilot/Capabilities/CopilotWorkspaceChangeSetCapability.cs","ColorVision/Copilot/Agent/CopilotMicrosoftAgentFrameworkRuntime.SteeringState.cs","ColorVision/Copilot/Agent/CopilotMicrosoftAgentFrameworkRuntime.HarnessToolBridge.Attempts.cs","ColorVision/Copilot/Agent/CopilotToolExecutionContracts.cs","ColorVision/Copilot/Capabilities/CopilotCapabilityResult.cs","ColorVision/Copilot/Agent/CopilotToolExecution.cs","ColorVision/Copilot/Agent/CopilotAgentTaskEventJournal.cs","ColorVision/Copilot/Agent/CopilotAgentTaskEventJournalRegistry.cs","ColorVision/Copilot/Agent/CopilotUserQuestion.cs","ColorVision/Copilot/Agent/CopilotAgentAccessModels.cs","ColorVision/Copilot/Agent/CopilotMicrosoftAgentFrameworkRuntime.ApprovalRouting.cs","ColorVision/Copilot/Agent/CopilotMicrosoftAgentFrameworkRuntime.HarnessToolBridge.ApprovalExecution.cs","ColorVision/Copilot/Agent/CopilotFrameworkApproval.cs","ColorVision/Copilot/Runtime/CopilotAutomaticApprovalReviewer.cs","ColorVision/Copilot/Runtime/CopilotAutomaticApprovalOverrideStore.cs","ColorVision/Copilot/CopilotChatViewModel.LocalCommandWorkflows.cs","ColorVision/Copilot/CopilotChatViewModel.Permissions.cs","ColorVision/Copilot/Agent/CopilotSharedCapabilityCatalog.cs","ColorVision/Copilot/Agent/Tools/Application/CopilotFlowGraphTools.cs","ColorVision/Copilot/Mcp/CopilotMcpToolDispatcher.FlowPatch.cs","ColorVision/Copilot/Skills/colorvision-flow-authoring","ColorVision/Copilot/Mcp/CopilotMcpToolDispatcher.TemplatePatch.cs","ColorVision/Copilot/Mcp/CopilotMcpToolDispatcher.TemplatePatchSupport.cs","ColorVision/Copilot/Agent/Tools/Application/CopilotApplyTemplatePatchTool.cs","ColorVision/Copilot/Mcp/CopilotMcpToolDispatcher.Confirmation.cs","ColorVision/Copilot/Mcp/CopilotMcpToolModels.cs","Engine/ColorVision.Engine/Templates/Jsons/EditTemplateJson.xaml.cs","Engine/ColorVision.Engine/FlowProcessing/Editor/FlowValidator.cs","UI/ColorVision.Common/Interfaces/Copilot/CopilotFlowValidationSnapshot.cs","ColorVision/Copilot/Capabilities/CopilotFlowGraphValidationService.cs","ColorVision/Copilot/Mcp/CopilotMcpToolEnvironment.FlowGraphValidation.cs","ColorVision/Copilot/Mcp/CopilotMcpToolDispatcher.FlowGraphValidation.cs","ColorVision/Copilot/Agent/Tools/Application/CopilotValidateFlowGraphTool.cs","ColorVision/Copilot/Capabilities/CopilotFlowGraphInspectionService.cs","ColorVision/Copilot/Capabilities/CopilotFlowGraphInspectionService.Cursor.cs","ColorVision/Copilot/Mcp/CopilotMcpToolDispatcher.FlowRead.cs","ColorVision/Copilot/Capabilities/CopilotFlowGraphInspectionService.Format.cs","Engine/ST.Library.UI/NodeEditor/STNodeOption.cs","Engine/ST.Library.UI/NodeEditor/STNodeEditor.Edit.cs","ColorVision/Copilot/Capabilities/CopilotFlowParameterRedaction.cs","ColorVision/Copilot/Mcp/CopilotFlowPatchPreviewFormatter.cs","ColorVision/Copilot/Mcp/CopilotMcpToolDispatcher.ContextFormatting.cs","ColorVision/Copilot/Mcp/CopilotMcpToolDispatcher.DiagnosticsFormatting.cs","ColorVision/Copilot/Mcp/CopilotMcpAuditLogger.cs","UI/ColorVision.Common/Interfaces/Copilot/CopilotSensitiveTextRedactor.cs","ColorVision/Copilot/Agent/Tools/Application/CopilotListFlowRunsTool.cs","ColorVision/Copilot/Skills/colorvision-flow-diagnostics","ColorVision/Copilot/Capabilities/CopilotApplicationCapabilityInvoker.cs","ColorVision/Copilot/Mcp/CopilotMcpToolResultContract.cs","ColorVision/Copilot/Mcp/CopilotMcpToolDispatcher.Invocation.cs","ColorVision/Copilot/Agent/CopilotToolResultContract.cs","ColorVision/Copilot/Agent/Tools/Application/CopilotInspectFlowRunAttemptsTool.cs","Engine/ColorVision.Engine/Services/CopilotDeviceServicesReader.cs","ColorVision/Copilot/Capabilities/CopilotDeviceServicesInspectionService.cs","ColorVision/Copilot/Capabilities/CopilotDeviceServicesInspectionService.Cursor.cs","ColorVision/Copilot/Agent/Tools/Application/CopilotInspectDeviceServicesTool.cs","ColorVision/Copilot/Mcp/CopilotMcpToolEnvironment.DeviceServices.cs","Engine/ColorVision.Engine/Services/CopilotDeviceContextFactory.cs","Engine/ColorVision.Engine/Services/DeviceService.cs","Engine/ColorVision.Engine/Dao/CopilotLoadedBatchResultsReader.cs","ColorVision/Copilot/Capabilities/CopilotLoadedBatchResultsInspectionService.cs","ColorVision/Copilot/Capabilities/CopilotLoadedBatchResultsInspectionService.Cursor.cs","ColorVision/Copilot/Agent/Tools/Application/CopilotInspectLoadedBatchResultsTool.cs","ColorVision/Copilot/Mcp/CopilotMcpToolEnvironment.LoadedBatchResults.cs","ColorVision/Copilot/Mcp/CopilotMcpToolDispatcher.LoadedBatchResults.cs","ColorVision/Copilot/Skills/colorvision-database-operations/SKILL.md"]
+test_paths: ["Test/ColorVision.Copilot.Tests/CopilotBatchImageCancellationEvidenceTests.cs","Test/ColorVision.Copilot.Tests/CopilotExecuteMenuApprovalTests.cs","Test/ColorVision.Copilot.Tests/CopilotFlowCameraDefaultsApprovalTests.cs","Test/ColorVision.Copilot.Tests/CopilotFlowCameraDefaultsMcpTests.cs","Test/ColorVision.Copilot.Tests/CopilotApprovalReviewTests.cs","Test/ColorVision.UI.Tests/FlowExecutionEditingTests.cs","Test/ColorVision.Copilot.Tests/CopilotTemplatePatchReviewTests.cs","Test/ColorVision.Copilot.Tests/CopilotWorkspaceCancellationEvidenceTests.cs","Test/ColorVision.Copilot.Tests/CopilotWorkspaceRecoveryEvidenceTests.cs","Test/ColorVision.Copilot.Tests/CopilotWriteToolAdmissionTests.cs","Test/ColorVision.Copilot.Tests/CopilotToolResultContractTests.cs","Test/ColorVision.Copilot.Tests/CopilotTurnEventProtocolTests.cs","Test/ColorVision.Copilot.Tests/CopilotAgentTaskEventJournalIntegrityTests.cs","Test/ColorVision.Copilot.Tests/CopilotCodexApprovalsReviewerTests.cs","Test/ColorVision.Copilot.Tests/CopilotAutomaticApprovalOverrideTests.cs","Test/ColorVision.Copilot.Tests/CopilotSharedCapabilityInputContractTests.cs","Test/ColorVision.Copilot.Tests/CopilotPlanModeTests.cs","Test/ColorVision.Copilot.Tests/CopilotPartialEvidencePresentationTests.cs","Test/ColorVision.UI.Tests/FlowValidatorTests.cs","Test/ColorVision.Copilot.Tests/CopilotFlowGraphValidationToolTests.cs","Test/ColorVision.Copilot.Tests/CopilotFlowGraphValidationServiceTests.cs","Test/ColorVision.UI.Tests/CopilotFlowNodePropertyCatalogTests.cs","Test/ColorVision.Copilot.Tests/CopilotFlowNodeCatalogMetadataToolTests.cs","Test/ColorVision.Copilot.Tests/CopilotFlowGraphPaginationToolTests.cs","Test/ColorVision.Copilot.Tests/CopilotFlowGraphInspectionServiceTests.cs","Test/ColorVision.UI.Tests/CopilotFlowParameterIdentityTests.cs","Test/ColorVision.UI.Tests/CopilotFlowDisconnectionHostTests.cs","Test/ColorVision.Copilot.Tests/CopilotFlowDisconnectionToolTests.cs","Test/ColorVision.UI.Tests/CopilotFlowDisconnectionTests.cs","Test/ColorVision.UI.Tests/STNodeTransactionalDisconnectionTests.cs","Test/ColorVision.Copilot.Tests/CopilotFlowPatchParameterPrivacyTests.cs","Test/ColorVision.UI.Tests/CopilotFlowSensitivePropertyTests.cs","Test/ColorVision.Copilot.Tests/CopilotFlowParameterRedactionTests.cs","Test/ColorVision.UI.Tests/CopilotFlowPreviewPrivacyTests.cs","Test/ColorVision.Copilot.Tests/CopilotFlowPropertyApprovalPrivacyTests.cs","Test/ColorVision.Copilot.Tests/CopilotCredentialNamePolicyTests.cs","Test/ColorVision.UI.Tests/CopilotContextTextPrivacyTests.cs","Test/ColorVision.Copilot.Tests/CopilotSharedTextRedactionTests.cs","Test/ColorVision.Copilot.Tests/CopilotTextArchivePolicyTests.cs","Test/ColorVision.UI.Tests/CopilotFlowLogProjectionPrivacyTests.cs","Test/ColorVision.Copilot.Tests/CopilotFlowRunQueryToolTests.cs","Test/ColorVision.Copilot.Tests/CopilotFlowRunDiscoveryWorkflowTests.cs","Test/ColorVision.Copilot.Tests/CopilotMcpPartialResultContractTests.cs","Test/ColorVision.Copilot.Tests/CopilotSharedCapabilityCatalogTests.cs","Test/ColorVision.Copilot.Tests/CopilotAlgorithmHelpToolTests.cs","Test/ColorVision.Copilot.Tests/CopilotFlowRunAttemptsToolTests.cs","Test/ColorVision.UI.Tests/CopilotDeviceServicesSourceTests.cs","Test/ColorVision.Copilot.Tests/CopilotDeviceServicesToolTests.cs","Test/ColorVision.Copilot.Tests/CopilotDeviceServicesWorkflowTests.cs","Test/ColorVision.UI.Tests/CopilotDeviceHeartbeatSourceTests.cs","Test/ColorVision.UI.Tests/CopilotDeviceHeartbeatContextTests.cs","Test/ColorVision.UI.Tests/CopilotDeviceDiagnosisHeartbeatWorkflowTests.cs","Test/ColorVision.UI.Tests/CopilotLoadedBatchResultsWorkflowTests.cs","Test/ColorVision.UI.Tests/CopilotLoadedBatchResultsSourceTests.cs","Test/ColorVision.Copilot.Tests/CopilotLoadedBatchResultsServiceTests.cs","Test/ColorVision.Copilot.Tests/CopilotLoadedBatchResultsToolTests.cs","Test/ColorVision.UI.Tests/CopilotLoadedBatchResultReferenceContextTests.cs"]
 related: ["copilot.runtime","copilot.execution","copilot.session-tools","copilot.interactions","copilot.extensions","copilot.view-model"]
 ---
 
 # Copilot 工具契约
 
+本页维护 Agent 与本机 MCP 的工具、审批、恢复证据及 Flow 编辑边界。Schema、限额和具体执行分支以 frontmatter 映射的源码为准；新增工具从 `ICopilotTool`、`CopilotSharedCapabilityCatalog` 与 `CopilotToolExecutor` 定位。
+
 ## 工具注册的最小契约
 
-工具实现 `ICopilotTool`，至少提供名称、说明、结构化输入 Schema、请求适用性和执行方法。Framework 只向模型暴露该工具声明的参数，并在执行前拒绝未知参数、缺失必填参数、错误类型和非法行号范围。新增工具时：
+工具必须声明真实使用的输入 Schema、适用上下文和执行方法，只在组合根注册一次。注册表拒绝空名、忽略大小写的重名、非法 Schema 和不安全策略组合。新增能力须明确：
 
-1. 实现 `CanHandle`，确保工具只在拥有所需上下文时暴露。
-2. 通过 `InputSchema` 声明工具真正使用的参数、类型、说明和必填项。
-3. 为修改应用状态的工具声明 `Access = CopilotToolAccess.Write`；只读工具保留默认值。
-4. 声明 `RiskLevel`、`ApprovalMode` 和 `Idempotency`。高风险写工具不能使用 `ApprovalMode.Never`；否则统一前置策略直接拒绝执行。
-5. 并发契约默认只允许 `ReadOnly + Idempotent` 进入 `SharedRead`；写工具和非幂等/未知只读工具均为 `Exclusive`。工具可通过 `GetConcurrencyKey` 描述资源身份；运行时只持久化其不可逆指纹，不记录原始查询或路径。
-6. 按最坏合理耗时设置 `ExecutionTimeout`，默认 30 秒，框架上限 10 分钟。排队时间单独记录，不占用工具执行超时。
-7. 在 `ExecuteAsync` 中响应传入的 `CancellationToken`，并返回对模型有用的结构化摘要、内容或错误。工具内部产生的待审批动作必须填充 `CopilotToolResult.Approval`，不能要求运行时解析提示文本。
-8. 失败时填写 `FailureKind`。只有可安全重复的瞬时故障才使用 `Transient`；参数错误、权限拒绝、资源不存在、冲突和内部错误不能伪装成可重试故障。
-9. 只在组合根注册一次；注册表会拒绝空名称和忽略大小写的重复名称。
+- 访问、风险、审批和幂等性；修改状态声明 `Write`，高风险写入不能声明从不审批。
+- 并发资源及超时；只有只读幂等调用可共享读取，写入和未知幂等性均独占。排队不占执行超时，资源身份只持久化不可逆指纹。
+- 取消与结构化终态；待审批用 `CopilotToolResult.Approval`，不能靠解析提示文本识别。只有可安全重复的瞬时故障才标记 `Transient`。
 
-网页来源元数据 `WebEvidenceSourceUrls` 随工具结果、Observation 和运行快照冻结；`null` 保留旧文本识别，空集合明确表示无来源，集合中的空元素会被统一结果契约拒绝。它只服务来源补写，不授予访问权限或证明全文读取完成，也不扩展 checkpoint 的恢复格式。
+网页来源 `WebEvidenceSourceUrls` 随结果冻结：`null` 兼容旧文本识别，空集合明确无来源，空元素非法。来源元数据不证明全文已读，也不授予访问或恢复授权。
 
 ## 输入校验与无效调用
 
-模型提交的工具参数即使未通过 Schema，也属于一次真实的 Agent 工具尝试：运行时会在执行闸门和审批之前拒绝它，消耗一次工具调用预算，并生成 `Failed + Validation` 的 step、ToolResult、任务事件和审计记录。非法参数的审计只保留字段名，不保存字段值；这类失败不可自动重试，但模型可以根据结构化错误改用修正后的参数再次调用。受保护工具同样先校验参数，非法调用不会创建 Pending Action。
-Agent `CopilotToolInputSchema.TryBind` 与本机 MCP dispatcher 共用 `CopilotToolInputContractValidator`，递归执行同一组 JSON Schema 关键字，包括封闭对象、必填字段、类型、枚举、字符串/数字/数组范围、正则格式和数组唯一性。Agent registry、MCP dispatcher 与 capability catalog 的所有来源都在注册时验证 Schema；内置、业务模块扩展或外部 MCP 工具只要声明不支持或内部矛盾的约束，就不会进入活动工具面。不能出现 Agent 只校验顶层而 MCP 校验嵌套，或目录已经发布运行时并未执行的约束。工具体返回后，`CopilotToolResultContract` 在统一执行边界核对注册身份、成功/失败/待审批终态、进程 evidence 与非空字段，并复制所有可变集合；违约结果归一为不可重试的 `Internal + invalid_tool_output`，原始伪造内容不会进入 Hook、事件、审计或模型结果。该边界不要求每个工具声明 DeepSeek 式输出 Schema，保留 ColorVision 的 operational result、模型可见结果和 Hook 投影。
-共享 capability 的 `CopilotCapabilityResult.ToToolResult` 将未分类的失败映射为 `Unspecified`，保留原始原因及已经明确的失败分类，不凭异常文本猜测可重试性。成功结果携带失败字段仍属于违约，不由适配器自动掩盖。批量文件读取只要有有效文件，就在正文中列出逐文件 `[Read Error]` 并保留成功读取范围；只有全部失败才填写终态 `ErrorMessage`。这样部分读取不会被丢弃为 `invalid_tool_output`，失败文件也不会进入成功证据列表。
+Agent 与 MCP 共用 `CopilotToolInputContractValidator` 递归校验，注册阶段拒绝不支持或矛盾的 Schema，调用阶段在审批和工具体之前拒绝非法输入。Schema 是执行约束，不能仅作为发现说明。非法 Agent 调用仍消耗调用预算并形成 `Failed + Validation` 证据；审计只留字段名，不创建审批。模型可以修正参数后重新调用，不能自动重试原非法输入。
 
-成功调用的覆盖限制通过可选 `PartialResultMessage` 传递到 observation、运行快照和持久化活动记录，失败结果不能携带该提示。它由工具根据分页、扫描上限、未检查路径、读取失败、内容截断或未读附件生成，不从文件正文推断状态；空值只表示工具未报告限制，不证明整个任务已经完成。普通指定行范围和任务聚焦窗口本身不算截断。附件读取复用共享结果适配器并保留逐文件 `LocalFileReadScopes`，只有本批次仍有附件未读或实际读取不完整时才显示提示。结果捕获会脱敏提示，活动记录保存时按既有摘要上限截断；旧记录缺省为空，不追溯猜测历史覆盖情况。`CopilotPartialEvidencePresentationTests` 覆盖真实文件搜索／读取、结果快照、附件续读和会话恢复；模型可见的具体范围、游标与逐文件错误仍由原工具正文提供。
+`CopilotToolResultContract` 冻结可变集合并校验工具身份、终态及 evidence；伪造或违约内容不能流入 Hook、审计或模型。只读幂等工具违约为不可重试的内部错误；**写入或非幂等工具进入工具体后抛异常、返回空值或违约，必须记为 `OutcomeUnknown`，不能据此断言未写入或自动重试**。执行前已冻结的 `WorkspaceRecheckPaths` 用于核查可能的副作用。工具体尚未进入、合法结构化失败以及有效 MCP JSON-RPC 错误回复仍按明确失败处理，取消和超时保留各自终态。
 
-模型请求本轮工具面中不存在的函数时，`FunctionInvokingChatClient` 仍负责生成带原 CallId 的 not-found 结果并交回模型纠错；ColorVision 在其下游 provider 响应处做只读观察，不改写框架消息协议。未知调用消耗工具预算，并按保守的高风险、不可重试、无 evidence 策略记录 `Failed + NotFound` step、任务事件和字段名审计，但绝不会创建审批或进入执行器。观察器按 CallId 去重，并忽略 `InformationalOnly` 或同一 provider 响应中已有匹配 FunctionResult 的服务端已处理调用。
-同一运行内模型重复提交完全相同的工具和参数时，普通重试要求上一次结果明确返回 `retry_allowed: true`。已成功、永久失败、正在运行或等待审批的相同调用会被无进展闸门拒绝；拒绝本身作为新的真实工具尝试消耗预算，并使用模型本轮 CallId 生成 `Failed + Conflict` step、ToolResult、任务事件和脱敏审计，但不会覆盖原调用的成功结果或重试状态，也不会再次打开审批。若仍有未完成 todo，最终 blocker 使用稳定代码 `tool_conflict`，停止原因为 `Blocked`，从而把重复调用循环与普通 pass 上限区分开。用户为自动审查拒绝显式创建的一次重试票据见下文；票据本身也不绕过此闸门。
+部分读取成功应保留成功范围和逐文件错误，只有全部失败才把整次读取标为失败。`PartialResultMessage` 是独立的成功覆盖限制，跨共享能力、MCP 适配器、observation、快照与会话保存；业务 JSON 正文不拼接摘要或提示，也不从正文猜测 partial 状态。失败和待审批不能携带该成功提示。旧记录缺少提示时保持空值，空值也不证明任务完整完成。
 
-用户在活动任务中提交且被接收的新补充输入，会允许本轮已有工具面中已结束的本地证据调用重新执行一次，也适用于此前因文件缺失或内容损坏而失败的调用。限定工具为 `ReadLocalFile`、`ReadAttachedFile`、`GrepText`、`SearchFiles` 和 `ListDirectory`。该次新观察之后，相同调用继续去重，直到又有新的用户输入；写调用、其他工具的失败调用、尚未结束的调用和相同 Provider CallId 不因此重放，文件范围、审批与全局调用预算也不扩大。外部文件变化本身不自动解除去重，用户可在原任务中补充“文件已补齐或修复，请重新读取”。新观察仍经过原冻结路径范围和工具执行检查；此前被拒绝的路径不会因补充输入获得授权。已成功应用且确认文件内容或存在状态变化的工作区补丁，会单独解除上述五类工具中受影响的成功调用去重，供保存后核验。文件读取按已读取的精确路径匹配，搜索和目录列表按实际查询范围匹配，即使先前没有任何匹配结果也能在新增、修改或删除后刷新；未指定路径时，搜索可覆盖多个根，而目录列表只对应实际列出的目录。该范围只用于本轮证据失效，不增加文件访问授权；无变化的补丁、写入前校验失败以及不相干目录不会解除去重，运行中调用仍不可重复启动。执行器释放读锁到 bridge 登记结果之间也属于未结束窗口：若此时先登记了工作区变更，待旧读取结束后按其真实文件或查询范围决定是否解除去重，避免迟到的旧结果阻止保存后核验；不相干范围和全局调用预算保持原约束。失败的 `ReadLocalFile`／`ReadAttachedFile` 另有确认新建例外：只有成功写入的 `WorkspaceMutation` 明确记录同一文件由不存在变为存在时，才允许重新读取一次。匹配使用工具已报告的尝试路径；本地文件读取在路径解析阶段失败时，则按冻结搜索根与原参数做词法匹配，下一次执行仍完整复核权限和重解析点。预览、已有文件修改、写入失败或仅标记待核查，都不能证明新建成功；这些情况不解除失败读取去重。该例外也覆盖旧失败结果晚于新建结果登记的窗口，仍须等旧调用结束才可重读。多文件补丁开始写入后失败，会对已尝试写入或恢复的精确路径单独标记需重新核查，允许上述本地观察再执行一次；该标记不是文件变化或恢复完成的证据，也不解除失败写调用的去重。
+未知函数由 Framework 按原 Provider CallId 返回 not-found，ColorVision 只观察并记录不可重试的 `Failed + NotFound`，不创建审批或执行工具。它仍消耗预算；服务端已处理或仅供信息的调用不重复计入。
+
+同一运行内，相同工具和精确参数不得无进展重复：普通重试必须有上次结果明确的 `retry_allowed: true`；重复拒绝记为新的 `Failed + Conflict`，保留原结果，有开放 todo 时形成 `tool_conflict` blocker。以下本地证据刷新例外不增加权限或预算：
+
+- 新用户输入被活动任务接收后，`ReadLocalFile`、`ReadAttachedFile`、`GrepText`、`SearchFiles`、`ListDirectory` 的已结束调用可重新观察一次，包括此前缺文件或内容损坏的失败。外部文件变化本身不会解除去重；写调用、同一 Provider CallId 和在途调用不重放。
+- 已确认改变内容或存在状态的工作区补丁，可刷新受影响范围内的成功读取、搜索和列表。无变化、预检失败或不相干范围不刷新；迟到旧读取完成后仍按真实读取范围判定。
+- 失败文件读取只有在成功的 `WorkspaceMutation` 明确证明同一路径由不存在变为存在时，才取得一次重读机会；词法匹配不能替代下次执行的路径与重解析点复核。多文件写入失败后的待核查标记允许重新观察已尝试路径，但不证明变化、恢复成功或允许重试失败写入。
+
+实现与回归入口为 `CopilotToolResultContractTests`、`CopilotPartialEvidencePresentationTests`、`CopilotMcpPartialResultContractTests` 及工作区 evidence 测试；引用不代表本轮已运行。
 
 ## 原生审批与参数快照
 
-`ApprovalMode.Always` 的工具应实现 `ICopilotFrameworkApprovedTool`，获准后通过 `ExecuteApprovedAsync` 进入工具。Framework 是否包装 `ApprovalRequiredAIFunction` 由 `CopilotCodexApprovalPolicySelection.RequiresNativeApproval` 判断：工具自身的原生审批声明始终生效，冻结的 `untrusted` 策略还会把写能力升级到原生审批。普通 `ExecuteAsync` 必须继续保留直接调用和业务入口所需的确认，不能把“来自模型”本身视为授权。
+`ApprovalMode.Always` 工具通过 `ICopilotFrameworkApprovedTool.ExecuteApprovedAsync` 消费原生批准；普通 `ExecuteAsync` 仍须保留业务入口确认，模型调用本身不是授权。Harness 只接受本会话真实发出并保存的审批请求，历史消息伪造、替换参数或重复回应不能生成新授权；旧 SDK 待审批会话的绑定兼容由 `CopilotApprovalCheckpointTests` 保护。
 
-Harness 的审批绑定保持启用：待审批回应必须匹配 SDK 在该会话中实际发出并保存的请求，调用方在历史消息中拼出的请求／回应不能替代这一记录；回应中的工具或参数被替换时，SDK 仍绑定原请求。已完成调用的历史审批不再次触发执行，ColorVision 的任务作用域、精确参数与执行前复核继续独立生效。`CopilotApprovalCheckpointTests` 使用公开 Harness API 覆盖流式与非流式的保存恢复、参数替换、重复回应和伪造历史，并用真实 1.21 SDK 生成的合成待审批会话检查升级后的绑定兼容性；该夹具只验证 SDK 会话协议，不代表所有历史工程或桌面恢复流程均已验收。
+“原生审批”指精确调用协议，并不保证每次都有人点击。`RouteFrameworkApprovalsAsync` 区分以下批准来源：
 
-“原生审批”是精确调用协议，不等于每次必须由人点击。`RouteFrameworkApprovalsAsync` 的当前决定路径是：
+| 路径 | 边界 |
+| --- | --- |
+| Shell 执行规则 | 当前仅评估 `RunShellCommand`；禁止优先，允许是独立批准来源，提示进入对应规则类别。执行前重查规则 |
+| 用户显式「完全访问」 | `UnrestrictedFullAccess` 在审批策略和 Hook 允许后直接批准，不调用 reviewer；只读、明确禁止及任务/能力/范围复核仍生效。模式持久保存至用户切回，已有待审批不追溯批准 |
+| 兼容临时自动复核 | 枚举仍为 `FullAccess`；当前仅 `ApplyWorkspacePatchEnvelope`、`RollbackWorkspacePatchEnvelope` 声明 `AllowsTemporaryFullAccess`，匹配任务/工作区/可写范围才可直接批准，仍绑定 reservation |
+| 独立自动 reviewer | 须启用 `guardian_approval`、非只读、原生受保护能力且策略允许。显式 `auto_review` 不要求临时 grant；`never`、`untrusted` 不允许该分支。兼容路径依赖有效临时 grant；显式 `user` 禁止独立 reviewer，不撤销其他成立的批准来源 |
+| 人工确认 | 策略和 `PermissionRequest` Hook 允许提示后创建 Pending Action |
 
-- `CopilotCodexExecPolicyEvaluator` 当前只评估 `RunShellCommand` 的冻结执行规则。若给出 `Forbidden`，拒绝调用；`Allow` 是单独的批准来源，执行前再次核对；`Prompt` 进入对应规则审批类别，不走临时补丁直接批准分支。
-- 用户显式启用「完全访问」时，`UnrestrictedFullAccess` 在审批策略与 `PermissionRequest` Hook 允许后直接批准受保护工具，不调用自动审查模型。执行前复核 grant、当前任务、精确参数和能力版本；只读模式与明确禁止规则仍生效。任务结束只解除任务绑定；访问模式持久保存，直到用户手动切回按需确认，已有待审批动作不会被追溯批准。
-- 临时自动复核仍使用兼容枚举 `FullAccess`。`CanAutoApprove` 在此模式下只允许当前 workspace 与可写范围匹配且声明 `AllowsTemporaryFullAccess` 的工具。目前只有 `ApplyWorkspacePatchEnvelope` 和 `RollbackWorkspacePatchEnvelope` 声明此标志；直接批准仍绑定原生 reservation。
-- 其余请求先通过审批策略与 `PermissionRequest` Hook，允许提示才创建 Pending Action。`CanAutoReview` 另行决定是否启用独立 reviewer：`guardian_approval` 必须启用、不能是只读模式且必须是原生受保护能力。显式 `approvals_reviewer=auto_review` 不要求临时 grant，但受当前审批类别与策略限制（`never`、`untrusted` 不允许此自动复核）；未显式选择 reviewer 时，兼容路径要求有效的任务/工作区临时 grant，且工具不属于补丁直接批准集合。显式 `user` 禁止独立自动复核，不代表撤销其他已成立的精确批准来源。
-- `CopilotAutomaticApprovalReviewer` 用同一 Profile 的独立模型请求读取有界任务、近期 user/assistant 文本及完整审批详情，`Tools` 为空，不执行提议动作。默认策略允许清晰、任务内普通本地开发的 LOW/MEDIUM 判断；有效的 `CodexAutoReviewPolicy` 可以替换默认审查策略，但不替换无工具和结构化输出协议。即使模型输出 APPROVE，HIGH/CRITICAL 仍由代码强制拒绝。缺少完整详情或超出 24,000 字符会拒绝；供应商失败、超时或无效判断是 `Unavailable`，不能当作批准。独立复核已经报告的输入、输出和缓存用量继续计入本轮结果与预算，包括被丢弃的重试及失败、提供商自行取消、任务暂停或取消时已结算的用量；同一响应内的重复表示只记一次，没有已报告用量时不从预算估算制造账单。`CopilotCodexApprovalsReviewerTests` 经正式 Runtime 覆盖拒绝、额度失败、提供商取消后的重试及审批重试中的暂停和取消，核验费用保留、审批关闭、检查点语义及零工具执行。
-- 兼容的临时任务复核未批准时，动作仍可等待人工确认；显式 `auto_review` 的动作不出现在人工 Pending 列表，DENY 关闭为 `automatic_review_denied`，Unavailable 关闭为 `automatic_review_unavailable`，不会静默回退人工窗口。Unavailable 只表示没有可用决定，不证明操作本身危险。自动批准落账前还会重查作用域；执行时仍检查精确输入、能力 revision、任务/工作区与动作状态。
+reviewer 使用同一 Profile 的独立请求，工具集为空，只判断完整审批详情。默认允许清晰任务内普通本地开发的 LOW/MEDIUM；有效自定义策略可替换判断规则，但 HIGH/CRITICAL 仍由代码拒绝。详情不完整或超过 reviewer 上限拒绝；供应商失败、超时、无效判断为 `Unavailable`，不能当作批准或危险性证明。显式 `auto_review` 的拒绝或不可用直接关闭，不静默转人工；兼容临时复核未批准时仍可等待人工。已经报告的 reviewer 用量在重试、失败、暂停及取消后仍计费和计入预算，不估造未报告用量。
 
-这些路径都不扩大工具 Schema、可写根、任务意图或执行安全边界。自动复核是模型判断，不是对任意命令安全性的静态证明；不能因启用临时授权或自动 reviewer 就承诺发布、删除、外部写入等动作可执行。
+`ICopilotFrameworkApprovalPresentation.ReviewDetails` 提供不可静默截断的完整目标、命令或差异。超出上限拒绝，结束后清除，不写普通日志/审计；启用自动复核时，符合其更小上限的完整详情会发送给 Profile 的模型供应商。审查编码保留普通文本与不可见/控制字符的区别。人工窗口须显式核对详情，过期、取消或上下文变化使动作失效。
 
-需要展示具体目标和冲突指纹的工具还可实现 `ICopilotFrameworkApprovalPresentation`。`CopilotToolApprovalPresentation.ReviewDetails` 为本机审批窗口与符合条件的自动复核提供不可静默截断的完整执行详情；它有独立的 128K 上限，不进入 `ConfirmActionPayloadJson`、普通审计或日志，并在动作离开 `Pending` 后清除。启用自动复核时，符合其更小长度上限的完整详情会作为审查证据发给 Profile 对应的模型供应商，不能声称该字段始终只留在本机窗口。Shell 使用该字段展示解析后的 Shell、工作目录、超时、完整命令、字符数与命令 SHA-256；审查编码会将反斜杠加倍，并转义换行、Tab、Unicode `Format`、异常控制符和不可见分隔符，使普通文本与转义后的危险代码点保持可区分，详情区固定为从左到右。人工窗口要求显式确认已核对详情，并在动作过期、取消或任务上下文变化时失效。工作区补丁也能显示完整目标路径以及应用前后的 SHA-256，同时审计仍只记录参数字段名。
-
-所有调用进入 `CopilotToolExecutor` 时都复用 `CopilotAgentToolInputSnapshot` 生成唯一执行输入，签名、审批、Hook、实际工具和 `ToolCall` 记录引用同一份快照；字符串、数字等不可变 JSON 标量保留既有 CLR 类型，可变对象和数组则保存为克隆的 `JsonElement`，顶层用只读字典封装，循环或不可序列化对象直接拒绝。审批动作以该快照生成规范化绑定：固定字段顺序、对象键递归排序、数组保持原顺序，再计算完整 SHA-256。恢复执行前同时复核工具与冻结输入的执行签名、审批动作的参数指纹、Agent call ID、Provider call ID 和当前任务/工作区；只有原请求与恢复调用的 `(ProviderCallId, Signature)` 完全一致时才能消费一次 reservation。这样即使原始嵌套 Dictionary/List 在签名或 Hook 之后被修改、另一个 call ID 重放相同参数，或展示摘要被截断，都不能改变实际执行或转移已有批准。
+签名、审批、Hook、工具执行和记录必须消费同一个不可变 `CopilotAgentToolInputSnapshot`。批准绑定完整规范化参数哈希及任务/工作区、能力版本、Agent/Provider CallId；只有原请求的 `(ProviderCallId, Signature)` 才能消费一次 reservation。修改原嵌套集合、换 CallId 或截断展示摘要不能转移批准。所有批准来源均不扩大 Schema、工具范围、可写根或任务意图。
 
 ## /approve 与自动拒绝后的精确重试
 
-`HandlePendingApprovalCommand` 优先处理当前可人工审阅的 Pending Action：无参数且仅一项时直接打开原生复核窗口，多项时列出；`/approve N` 打开指定项窗口，并不是命令本身直接批准。只有没有可审阅 Pending 项时，才改为列出当前 conversation/workspace 的自动审查拒绝；该分支的 `/approve N` 经 `TryAuthorizeOneRetry` 创建一次重试票据。
+`/approve` 优先列出或打开可人工复核的 Pending Action；`/approve N` 打开窗口，本身不批准执行。没有可审阅 Pending 项时，才列出当前会话/工作区的自动审查拒绝并允许创建一次重试票据。用户拒绝和 reviewer `Unavailable` 不进入该列表。
 
-票据只绑定 conversation、规范 workspace、工具名和完整参数 SHA-256，允许下一运行使用新的 task/call ID，但新 Pending Action 仍须与该次请求的 task/workspace 一致。拒绝记录最多保留 24 小时；票据 30 分钟过期、只能消费一次且只在进程内保存，不包含可执行参数或旧批准。用户拒绝和 reviewer 的 Unavailable 不进入这个拒绝重试列表。
-
-同会话 Agent 正在运行时，宿主发送 steering；空闲且允许调度时提交新的 Agent 轮次，有有效 checkpoint 时携带 `RetryDeniedAction`。其他任务占用、上下文不匹配或调度不允许时可能只保留票据，不能把命令反馈当成已经执行。模型仍须在原任务确有需要时重新提出完全相同的参数；票据不放宽 Schema、无进展闸门、调用预算或工具范围。新调用到达显式 `auto_review` 分支且精确匹配时，reviewer 才收到“一次重试获用户授权”的可信上下文，仍可能再次拒绝；它不是直接放行、相似动作许可或绕过不可覆盖规则的授权。
-
-对应验证入口是 `CopilotCodexApprovalsReviewerTests`（资格、关闭决定与 unavailable 等边界）和 `CopilotAutomaticApprovalOverrideTests`（跨运行精确匹配、单次消费、列表脱敏和排除非自动拒绝）。真实模型判断和各受保护工具仍需端到端验证。
+票据在进程内短期有效，仅绑定 conversation、规范 workspace、工具名和完整参数哈希，不保存可执行参数或旧批准。下一运行可用新 task/call ID，但仍须属于当前任务/工作区，并重新提出完全相同的调用；票据只向 reviewer 证明一次重试获用户授权，reviewer 仍可拒绝，不绕过 Schema、去重、预算或禁止规则。运行中用 steering，空闲时按调度条件发起新轮；调度失败可能只保留票据，反馈不代表已经执行。有效期和消费实现见 `TryAuthorizeOneRetry`；兼容和隔离测试见 `CopilotAutomaticApprovalOverrideTests`。
 
 ## 执行作用域和非权威日志
 
-Agent、外部 MCP、审批与审计共享不可变的 `CopilotExecutionScope`。授权边界由来源、授权通道、不可逆 session/caller identity、会话、任务、运行、规范工作区和能力目录版本共同确定；具体调用再绑定工具名、Provider call ID 与完整参数签名。Trace、父运行和工作区快照只用于关联与审计，不会被误当作授权继承。子 Agent 只继承父作用域中的安全字段，并创建独立 RunId；原始 MCP session token 不进入该对象或审计。有界内存审计仍在权威执行路径内形成，但向 log4net 写出的次要诊断统一经过 `CopilotNonAuthoritativeDiagnosticBoundary`；普通 sink 异常只计数并被隔离，不能把已经完成的工具或 MCP 调用改写为失败，OOM 等致命运行时异常仍继续上抛。
+`CopilotExecutionScope` 统一 Agent、MCP、审批与审计的来源、调用身份、会话、任务、运行、工作区和能力版本；具体调用另绑定工具名、Provider CallId 和完整参数。Trace、父运行、工作区快照只能关联，不能继承授权；子 Agent 使用独立 RunId，原始 MCP token 不进入 scope 或审计。
+
+权威执行内仍形成有界审计；次要 log4net 诊断经 `CopilotNonAuthoritativeDiagnosticBoundary` 隔离，普通 sink 异常不能把已完成操作改成失败，致命运行时异常仍上抛。
 
 ## 统一工具策略描述符
 
-`CopilotToolCapabilityDescriptor` 是工具策略的标准快照，集中承载访问级别、风险、审批、幂等性、并发、超时、参数审计和 evidence 模式。Harness 提示、Framework 审批包装、执行闸门、重试、trace 与审计都只消费该 Descriptor，避免各层分别解释工具属性。现有非共享工具的独立属性可由 `ICopilotTool.Capability` 默认桥接；与本机 MCP 重叠的 Agent 工具必须直接引用 `CopilotSharedCapabilityCatalog` 中的 Descriptor，兼容属性只能从该 Descriptor 派生。注册表会在工具进入运行时前拒绝非法枚举值及“高风险写入但从不审批”等不安全组合。有效并发与超时也在 Descriptor 中统一收敛：写入或非幂等能力强制独占，超时限制在默认 30 秒、最大 10 分钟之间。
+`CopilotToolCapabilityDescriptor` 是访问、风险、审批、幂等性、并发、超时、审计与 evidence 的唯一策略快照。Framework 包装、执行、重试和展示消费同一 Descriptor；非共享工具可用兼容属性桥接，共享工具直接引用 canonical 对象，不能各层重解释策略。
 
-普通工具执行从 `FunctionInvokingChatClient.CurrentContext.CallContent` 读取 provider 原始 CallId；Schema 拒绝、并发只读执行、原生审批、未知函数、trace、审计和任务事件因此使用同一个关联 ID。上下文由框架通过 AsyncLocal 隔离，并发函数不会互相串号；只有脱离 FunctionInvokingChatClient 的直接测试或业务调用才生成本地 CallId。并发调度不再复制第二套 ToolRuntime：框架负责保持 provider 提交顺序与 CallId/result 配对，`CopilotToolExecutionGate` 只负责最多 4 路共享读取、同资源互斥和全局写屏障；契约测试以反序完成的工具锁定提交顺序，防止依赖升级造成漂移。
+Framework 保持 provider 提交顺序与 CallId/result 配对，`CopilotToolExecutionGate` 只负责有界共享读取、资源互斥和全局写屏障。外部 MCP 的显式 `read-only` 信任映射为幂等共享读取，默认 `approval` 映射为受保护非幂等独占写入；两者只审计参数名。
 
-外部 MCP 工具通过 `CopilotMcpClientCapabilityPolicy` 从本地信任配置生成同一 Descriptor：显式 `read-only` 映射为低风险、幂等共享读取，默认 `approval` 映射为高风险、每次审批、非幂等独占写入。两者均使用 `NamesOnly` 审计模式，只记录参数名而不持久化第三方 Schema 中含义未知的值。
-
-写工具在 `CopilotToolExecutor` 的不可替换内置前置守卫中，重新使用目录的 `IsAllowedForMode` 规则检查本次请求。Plan、Review、Diagnose 和明确只读请求不能仅靠绕过发现目录、直接传入工具或已有批准进入写工具体；Review 的显式有界工作区验证仍是原有例外。Plan／Review 保留各自失败码，其余只读拒绝为 `request_write_access_denied`。`CopilotWriteToolAdmissionTests` 用真实目录与执行器同时验证无审批写工具、已批准受保护写工具的拒绝以及允许写入的对照。
+执行器还必须重新检查 `IsAllowedForMode`：Plan、Review、Diagnose 和明确只读请求不能靠绕过发现、直接传工具或已有批准进入写工具体；Review 的显式有界工作区验证仍是原有例外。定位 `CopilotWriteToolAdmissionTests`，不要只测工具是否隐藏。
 
 ## 能力目录与来源版本
 
-`CopilotCapabilityCatalog` 在 Descriptor 之上提供进程内只读目录。共享目录启动时发布全部内置工具，外部 MCP 成功发现后按来源原子更新；配置中删除的 MCP 来源会移除，暂时离线的来源保留最后已知元数据。每个条目包含稳定 ID、显示名、来源、条目 revision、有效策略、超时和输入 Schema 指纹；整体目录仅在来源或能力签名真正变化时递增 revision。MCP 来源 ID 使用端点与 token 环境变量名称的不可逆短指纹，不暴露 URL、环境变量名称或 token。插件可通过 `PublishSource(Plugin, ...)` 和 `ICopilotCapabilityCatalogIdentity` 发布自己的稳定能力键，同样受 64 个来源上限、重复 ID 检查和 Descriptor 安全校验约束。
+`CopilotCapabilityCatalog` 保存稳定身份、来源、策略及内容指纹，只在能力或来源签名变化时改变 revision。MCP 来源成功发现后原子更新，配置删除则移除，暂时离线保留最后已知元数据；来源身份不泄露端点、token 环境变量名或凭据。插件发布同样经过重复身份和策略校验。
+
+设置诊断及只读资源 `colorvision://copilot/capabilities` 暴露同一元数据快照，不包含调用参数、远端地址或凭据。具体目录结构和限额直接查 `CopilotCapabilityCatalog`。
 
 ## Agent 与 MCP 的共享能力定义
 
-内置 Agent 与本地 MCP 的重叠业务能力由 `CopilotSharedCapabilityCatalog` 声明稳定 capability ID、Agent 工具名、MCP 工具名、两侧说明、两侧输入 Schema、MCP 分类与调用示例、执行路由、Agent trace 展示元数据，以及 Agent 的完整 Descriptor。Agent 与 MCP 的说明允许针对各自表面采用不同措辞，但必须在同一 capability 项中并列声明；具体 Agent 工具只引用目录值，MCP dispatcher 则遍历 canonical `All` 集合自动物化所有共享 descriptor，并仅在一个按稳定 capability ID 分派的 resolver 中绑定具体 handler。新增目录项若没有 handler 会在 dispatcher 构造时失败，不再要求维护第二份共享 descriptor 清单。Descriptor 集中承载访问、风险、审批、幂等性、并发、超时、审计和 evidence 模式；三类 MCP 风险标签从其中的访问/风险/审批组合派生。共享 Agent 工具运行时直接引用目录对象，组合根仍对对象身份、实际说明、实际 Schema、MCP 分类/调用示例、完整 Agent 策略和 MCP 风险标签执行失败即停的漂移检查。16 项同形输入直接复用同一个 `CopilotToolInputSchema`；只有文件读取与菜单执行保留带原因的表面差异：Agent 文件读取可省略路径以批量读取预选文件，外部 MCP 必须给出单一文件；Agent 菜单工具只暴露审批绑定的执行入口，外部 MCP 还提供 `dry_run`。MCP dispatcher 启动时先验证每个 descriptor 的冻结 Schema 是递归封闭且内部一致的对象契约，未实现的关键字会失败而不是静默降级，再建立按工具名索引；统一调用入口随后递归执行索引中同一 Schema，在 handler、审批和应用动作之前拒绝任意层级的未知字段、缺失必填项、错误类型、越界数字/数组和非法枚举，并统一返回 `invalid_arguments + Validation`。Schema 因此同时是启动约束、发现契约和执行契约，而不是仅供客户端参考的说明。Flow、菜单、模板、流程创建、主题和语言等 12 个 capability 在目录中显式标为 `ApplicationCapabilityRuntime`，对应 Agent wrapper 与本机 MCP 请求处理器都从 `CopilotApplicationCapabilityInvokerFactory` 取得同一个进程级默认 dispatcher；只有显式注入自定义 environment 的测试或宿主才创建隔离实例。文档与日志读取标为 `SurfaceCapabilityAdapter`：两侧复用同一业务 capability，但保留 Agent 工具结果与 MCP 文本协议的表面投影。四个工作区读取能力标为 `WorkspaceAuthorizationAdapter`，因为 Agent 必须使用本轮预选文件与搜索根，而外部 MCP 必须使用当前 MCP workspace 根；它们仍复用同一搜索、读取与规范结果实现。每个共享能力都必须显式选择这三种执行路由之一，遗漏路由会在目录初始化时失败。注册时若 wrapper 的路由标记与目录不符，或绑定的 runtime 不是组合根实例，都会直接失败。`CopilotApplicationCapabilityInvocation` 统一把成功、失败与等待审批结果投影成 Agent 工具结果；`CopilotAgentTraceEntry` 与 `CopilotAgentTraceGroup` 也直接从目录读取共享工具的运行/完成文案、成功摘要、搜索失败可见性和分组，不再维护另一张按工具名匹配的展示表。新增差异必须进入目录和一致性测试，不能在具体工具、descriptor 或 trace presenter 中另写一份说明、Schema、调用提示、策略、路由、展示分类、结果格式或风险标签。两种表面仍保留各自的可用性和授权管线：Agent 调用继续经过 provider CallId、预算、Hook、原生审批和 `CopilotToolExecutor`，外部 MCP 继续经过 session identity、两阶段确认和 MCP 审计，不能因为共享定义而互相继承授权。
+`CopilotSharedCapabilityCatalog` 集中声明两侧名称、Schema、策略、说明、调用示例、执行路由与展示元数据。Agent 组合根和 MCP dispatcher 遍历 canonical 集合，各只保留按稳定 ID 分派的 resolver；遗漏 handler、路由或策略漂移在构造阶段失败。不得在 wrapper、dispatcher 或 trace 里再维护第二份能力表。
 
-Agent 组合根也遍历 `CopilotSharedCapabilityCatalog.All` 自动物化共享工具，不再手工列出 18 个 wrapper；它与 MCP dispatcher 各只保留一个按稳定 capability ID 分派的 adapter/handler resolver。目录新增能力但任一 resolver 未覆盖时，对应工具面在构造阶段直接失败。一致性测试还要求 Agent 共享子集与 canonical 目录顺序完全一致且只出现一次。
+共享能力显式选择 `ApplicationCapabilityRuntime`、`SurfaceCapabilityAdapter` 或 `WorkspaceAuthorizationAdapter`。应用能力复用进程级 dispatcher，文档/日志保留结果表面投影，文件能力分别使用 Agent 的冻结选择范围和 MCP 的 workspace 授权根。共享定义不共享授权：Agent 仍经过预算、Hook、原生审批和执行器，MCP 仍经过 session identity、两阶段确认和审计。
 
-设置诊断显示目录数量与 revision；本机 MCP 将同一快照以 `application/json` 暴露为只读资源 `colorvision://copilot/capabilities`。该资源只包含能力元数据与 Schema 指纹，不包含参数值、远端地址或凭据。
+输入原则上复用同一 Schema，现存表面差异有业务原因：Agent 文件读取可省略路径以读预选文件，MCP 必须给单文件；Agent 菜单只提供审批绑定的执行入口，MCP 另有 `dry_run`。新增差异须进入目录和一致性验证。
 
-共享 MCP descriptor 的 `readOnlyHint` 和 `idempotentHint` 从同一个 Agent Descriptor 派生；`destructiveHint` 与 `openWorldHint` 则在共享 capability 项中显式声明。只有纯追加写入可以声明非破坏性：流程/模板修改、通用菜单、主题和语言切换均保守标为可能破坏，创建新流程保持追加语义；在线文档搜索是当前唯一开放世界共享能力。非共享 MCP 写入未显式声明时按可能破坏处理，annotation 只提供客户端提示，不替代审批和授权。
+MCP annotations 与恢复说明也属于该目录：只读/幂等提示由策略派生，破坏性和开放世界显式声明。只有纯追加写入才可标非破坏；annotation 不替代授权。审批说明区分仅能手动恢复与未知恢复能力，不能承诺不存在的自动回滚。
 
-共享的审批写入还在 capability 项中声明恢复等级与恢复说明。Agent Framework 在工具自定义或默认审批文案生成后统一叠加该元数据，本机 MCP 的确认上下文也按 MCP 工具名读取同一个值；Flow/模板修改、语言切换和创建流程因此在两条入口都显示“仅可手动恢复”，通用菜单保持明确的未知恢复能力，而不是维护另一张审批 switch 表。
+设备与结果读取的关键来源边界：
+
+- 自动设备上下文按已观测心跳区分 Online/Offline/Unknown；未观测不能因默认 bool 推成离线。`InspectDeviceServices` 只读已加载目录及受支持缓存，不初始化、探测或控制设备。精确对象须用工具返回的 `device_ref` 和 `expected_source_instance_id`，Code/名称/资源 ID 不能代替；成功不证明在线、健康或就绪。
+- `InspectLoadedBatchResults` 只读已注册批次详情页的内存主记录。使用有效的 `source_ref`/宿主身份及 `result_ref`，不能用批次号、选中项或固定上下文 source 猜对象。页面释放或集合变化须重新发现；不查询历史数据库、加载图片、改变选择或输出敏感业务值。未知结果码不能补成 PASS/FAIL。
 
 ## 能力变化后的安全恢复
 
-Agent Framework checkpoint 保存目录 revision，以及每个能力的稳定 ID、条目 revision 和内容指纹。恢复时不能只比较进程内 revision，因为应用重启后 revision 会重新计数；运行时会逐项比较内容指纹。原能力缺失或指纹变化时，Harness session 与 todo ledger 不会反序列化，但 checkpoint 中独立保存的有界对话记忆会与当前可见历史去重合并后交给新 session，并通过 Harness instructions 强制从当前能力重新规划。该记忆最多 16 条、64K 字符，只允许 user/assistant 消息，保留初始目标与最近问答，不保存 system/tool 消息、参数或授权。新增能力不使旧计划失效；旧格式 checkpoint 缺少能力快照时同样走安全重规划。能力指纹覆盖描述、来源、策略、超时、审计模式、evidence 模式与输入 Schema，但目录和 checkpoint 都不保存调用参数或凭据。
+checkpoint 保存能力内容指纹，恢复不能只比重启后会重新计数的 revision。原能力缺失/变化、旧 checkpoint 缺少快照时，旧 Harness session 与 todo 不反序列化；有界 user/assistant 对话记忆与当前可见历史去重后交给新 session，按当前能力重规划。新增能力本身不使旧计划失效；记忆不包含 system/tool 消息、参数或授权。
 
-每轮 Agent 还会生成版本化的 `CopilotAgentEnvironmentContext`。Harness 以明确标记为 host data 的 JSON 接收当前工作目录、平台/架构、首选 Shell、本地日期与时区、活动文档、最多 8 个搜索/可写根目录，以及通过只读 `.git/HEAD` 获取的仓库、分支和提交；它不会读取或发送进程环境变量、API key 或其他凭据。路径边界只描述工具可见范围，不代表写入授权。checkpoint 仅保存环境版本和稳定 SHA-256 指纹；工作区、活动文档、Shell、时区或 Git 状态变化会废弃旧 Harness session 并从有界对话记忆重新规划，单纯跨越本地日期不会使 checkpoint 失效。旧 checkpoint 没有环境指纹时同样只重建可执行 session，不丢失对话语义。
+`CopilotAgentEnvironmentContext` 以 host data 交付工作区、平台、Shell、时区、活动文档和有界根目录及只读 Git 身份，不读取环境变量或凭据。checkpoint 只存版本和稳定指纹；工作区、文档、Shell、时区或 Git 状态变化触发安全重规划，单纯日期推进不触发。旧数据缺指纹也重建可执行 session，而不丢失对话语义；路径描述不等于写入授权。
 
-`CopilotToolEvidenceMode` 是 Descriptor 的显式证据持久化策略：`None`、`Summary`、`RedactedExcerpt`。只读工具默认 `Summary`，写工具默认 `None`；文档搜索、公开 Web 搜索和页面读取显式选择 `RedactedExcerpt`。`CopilotAgentEvidenceArtifacts.Merge` 仅接收成功、已完成、只读且幂等的 step record，按 capability ID 与哈希 resource key 去重，最多保留 24 条；`NamesOnly` 能力即使声明 excerpt 也只保存摘要。artifact 包含生产能力 ID/指纹、哈希资源键、脱敏摘要/摘录、内容指纹和采集时间，不包含调用参数。
+`CopilotToolEvidenceMode` 约束历史证据保存。`CopilotAgentEvidenceArtifacts.Merge` 只接收成功、已完成、只读幂等的记录，按能力/资源指纹有界去重；`NamesOnly` 不保存正文。新 session 可恢复脱敏摘要/摘录，但它们以独立 user-role 数据插入，不升级为 system 指令。`producer_changed`/`producer_unavailable` 仅作历史线索，易变状态必须重新核查，任何历史 evidence 都不构成写操作批准。
 
-只有 session 反序列化失败、profile 改变或 capability drift 触发新 session 时，恢复层才选择最近 12 条 artifact。可信防注入规则位于 Harness instructions；artifact JSON 使用单独的 user-role data message 插入到当前用户消息之前，避免把历史网页或工具内容提升为 system 指令。每条 artifact 标记 `producer_current`、`producer_changed` 或 `producer_unavailable`；后两者只能作为历史线索，所有易变化状态都必须重新核验，任何历史 evidence 都不能代表写操作审批。
 ## 结构化任务事件 journal
 
-`CopilotAgentTaskEventJournal` 把原先分散的 todo snapshot、工具生命周期、原生审批、运行中 steering、evidence artifact 和 stop reason 归入同一条版本化序列。每次运行生成独立的 `run:` ID；工具 `CallId`、审批 action ID 和 steering 内容只生成稳定哈希关联键，todo 仅保存数字 ID 与完成统计。摘要复用 MCP 审计脱敏器并限制为 320 字符，journal 最多保留最近 256 条事件。
+`CopilotAgentTaskEventJournal` 统一记录运行、todo、工具、审批、steering、evidence 和 stop reason；关联只留哈希，摘要脱敏且容量有界，不保存执行参数。旧 checkpoint 缺少 journal、未知 schema 或可选 journal 损坏时丢弃该诊断数据，不能将其直接作为模型上下文。
 
-`CopilotAgentTaskEventJournal.Query` 支持按事件类型、run ID、工具名、subject/related ID 和 `BeforeSequence` 游标查询，单页最多 100 条，结果按新到旧返回。checkpoint 保存完整有界 snapshot，`CopilotAgentRunResult` 返回当前可查询 snapshot；旧 checkpoint、未知 Schema 或损坏的可选 journal 会被丢弃而不会变成模型上下文。journal 默认只作为诊断元数据，不代表任何审批或重放授权；唯一例外是 `Finalize` 恢复会把最后一个已停止 run 中最多 24 条脱敏工具结果、审批结果和 blocker 复制成独立 user-role 数据块，用于解释已经发生的结果。该数据块明确标为不可信历史数据，不能授权、重放或声称重新核验任何操作。
+journal 不代表审批或重放授权。`Finalize` 的特殊恢复只把最后已停止运行的有界结果/审批/blocker 作为不可信 user-role 历史数据，帮助解释已发生的结果，不能据此重放或声称重新核验。
 
-`CopilotAgentTaskEventJournalRegistry` 是当前选中会话 journal 的内存诊断投影。`PublishSelectedTaskEventJournal` 读取 `CurrentAgentTaskEventJournal`，发布有效非空快照；没有可用 journal 时清空 registry。会话切换及请求保存时都会发布，因此 `PublishedAtUtc` 是投影发布时间，不是磁盘保存回执。
+checkpoint、独立 journal 和正式结果的提交权见[检查点与任务事件的所有权](./copilot-view-model-architecture.md#检查点与任务事件的所有权)。诊断 registry 的发布时间不是落盘回执，查询成功也不证明最新状态已保存。外部只读入口见 [Local MCP](./colorvision-mcp.md)。
 
-checkpoint、独立 journal 与正式运行结果的所有权及提交规则统一见[检查点与任务事件的所有权](./copilot-view-model-architecture.md#检查点与任务事件的所有权)。有界窗口的比较只能验证仍保留的证据，不承诺无限历史的完整性；恢复操作还必须遵守下列提问与工具终态契约。裁剪当前运行尚未配对的 provider 调用、尚未结清的工具执行或结果未知记录时，journal 的 `TrimmedSessionResumeRestriction` 保存保守恢复限制，随独立 journal 和 checkpoint 持久化；丢失细节不能被解释为工具已完成。相同运行的后续快照和加载归一化不能弱化该限制，恢复提示明确说明早期细节已被裁剪并要求先核对外部状态。真正开始新运行后才清除旧运行的裁剪限制；新建 session 前仍先按原 checkpoint 判定是否需要重新规划。旧数据缺少该字段时按 `None` 读取，日志容量和 schema 版本保持兼容。`CopilotAgentTaskEventJournalIntegrityTests` 覆盖容量裁剪、持久化往返、后续调用结清和新运行的边界。
+裁剪尚未配对的 provider 调用、未结清工具或结果未知记录时，`TrimmedSessionResumeRestriction` 必须持久保留保守恢复限制；同一运行的后续快照不能弱化。旧数据缺字段按 `None` 兼容，真正新运行才清除限制。丢失细节不能解释为工具已完成。
 
-进入结构化提问等待态前，运行时必须先发布包含 `UserQuestionRequested` 的增量 checkpoint；发布失败会立即记录 `UserQuestionResolved(Cancelled)` 并向模型返回拒绝，不留下仅存在于内存的长期等待。若 checkpoint 写入尚未返回而宿主已因取消期限或异常收尾，可见消息中的待回答问题也必须关闭为 `Cancelled`，收起选项并显示取消状态；已经回答的问题及其答案保持不变。这不代表迟到的生产者或外部操作已经结束。`CopilotHostedTurnCompletionTests` 覆盖受控 checkpoint 等待及宿主终态清理。
+结构化提问须先发布含 `UserQuestionRequested` 的 checkpoint，再进入等待；发布失败或宿主先行收尾时关闭未回答问题为 `Cancelled`，已回答内容保留。`CompleteOpenAgentRun` 幂等补齐终态：
 
-取消控制、暂停和运行时异常的兜底路径统一调用 conversation 的 `CompleteOpenAgentRun`：它先在最近的 open run 上补齐缺失的控制事件、悬空工具与结构化提问终态以及 `RunStopped`，再原子保留或退休 checkpoint；未得到回答的结构化提问统一落为 `Cancelled`，不会在重启后永久保持 `pending`。已出现 `ToolStarted` 但没有权威终态的调用标记为 `Interrupted + tool_outcome_unknown`，恢复提示明确要求写入或非幂等操作先核对外部状态或询问用户，不能盲目重试；尚未启动的排队调用使用 `tool_not_started`，等待审批被中断则使用 `approval_interrupted`，两者都明确表示受保护操作尚未执行且下次必须重新审批。重复完成回调不会追加第二个终态，普通 Chat 的结束也不会在展示层改写 Agent checkpoint。
+| 中断位置 | 恢复含义 |
+| --- | --- |
+| 已 `ToolStarted` 而无权威终态 | `tool_outcome_unknown`，写入/非幂等操作先核查外部状态，禁止盲目重试 |
+| 尚未开始的排队调用 | `tool_not_started`，操作未执行 |
+| 等待审批中断 | `approval_interrupted`，操作未执行，下次重新审批 |
 
-外部客户端可通过 Local MCP 的 `colorvision://copilot/task-events` 与 `get_agent_task_events` 查询这个诊断投影；可见会话范围、分页和 unavailable 条件见 [Local MCP](./colorvision-mcp.md)。查询成功不代表最新状态已落盘，也不产生执行授权。
+普通 Chat 收尾不能在展示层改写 Agent checkpoint。回归入口为 `CopilotAgentTaskEventJournalIntegrityTests`、`CopilotHostedTurnCompletionTests`。
+
 ## 结构化恢复协议
 
-`CopilotAgentRecoveryPolicy` 为 `BudgetExhausted`、`TaskPassLimit`、`ProviderFailure` 和应用异常退出形成的 `Interrupted` checkpoint 提供恢复动作；`AwaitingUser` 必须等待新的用户决定，`ApprovalDenied` 也不会显示“继续”按钮。兼容 checkpoint 直接恢复 session；profile 或 capability 发生变化时改为新 session 重新规划。若最近存在执行器明确标记为 `RetryEligible` 的只读幂等失败，UI 显示“重试只读检查”，但恢复请求只保存工具名和哈希 call key，不保存或重放历史参数。
+恢复由类型化 `CopilotAgentRecoveryRequest` 表达，运行时再次核对 journal 最后 stop reason；无效请求忽略。兼容 session 可继续，Profile/能力漂移则新建 session 重规划。预算、pass、provider 或应用中断可按策略恢复；`AwaitingUser` 等待新决定，`ApprovalDenied` 不提供普通继续。
 
-恢复意图以 `CopilotAgentRecoveryRequest` 类型化传入 Harness，而不是只依赖一段用户提示词。运行时会再次核对 checkpoint journal 的最后 stop reason，并记录 `RecoveryRequested` 事件；无效或与 checkpoint 不匹配的恢复元数据会被忽略。恢复指令始终要求重新核对当前状态：写操作不自动重放，历史审批不复用，受保护调用仍需本轮新的精确审批。普通回答的“重新生成”仍是独立路径，会清除 checkpoint，不会伪装成 Agent 恢复。
+“重试只读检查”只针对执行器标为 `RetryEligible` 的只读幂等失败，请求只保留工具名与哈希关联键，不保存或重放历史参数。所有恢复仍须核对当前状态、不复用历史批准；普通回答“重新生成”会清除 checkpoint，属于独立路径。
+
 ## 暂停、取消与 blocker
 
-Agent 运行创建可序列化 session 并完成首次持久化后才发布内部 `CheckpointReady` 生命周期事件。此后编辑器主按钮切换为“暂停”：`CopilotAgentRunControl` 先记录 `Pause` 意图，再取消当前 provider/tool 等待；Agent Framework 只捕获这一类显式控制取消，使用不再取消的 finalization token 读取 todo ledger、写入 `PauseRequested` 与 `RunStopped(Paused)`，最后序列化 session。暂停产生的 checkpoint 可走相同恢复协议。到达真实落盘边界之前，主按钮保持普通停止语义，不会虚假承诺已保存。
+只有可序列化 session 完成首次真实持久化后，UI 才能承诺“暂停”；暂停保存可恢复 checkpoint，明确取消丢弃继续状态，外部取消不能伪装成用户暂停。任务 UI、队列及重启语义以[任务与恢复](./copilot-agent-session-and-tools.md#任务-ui、停止原因、运行中-steering-与后续队列)为准。
 
-运行中同时提供独立的显式取消动作。`Cancel` 同样形成可查询事件和 `Cancelled` stop reason，但不会保存本轮新 checkpoint；UI 会清除旧 checkpoint，避免把已明确放弃的任务再次作为可继续状态。外部超时、系统取消和没有类型化控制意图的 `OperationCanceledException` 仍向上传播，不会被伪装成用户暂停。
+永久工具失败尚未解决且仍有 todo 时应为 `Blocked`，不能误报 pass 耗尽。后续只读调用以新 CallId、相同工具和精确参数成功，才可消除对应历史 blocker；原审计保留，参数相似、成功后再失败、写操作或未知结果不在此例。等待用户和预算终态的优先级不变。
 
-`CopilotAgentBlockerDetector` 将等待用户决定、审批拒绝，以及执行器明确判定不可重试的永久工具失败归一化为有界 `CopilotAgentBlockerSnapshot`。blocker 只保存类型、稳定 code、脱敏摘要、工具名和哈希 call key，不保存参数；assistant message 持久化最多 8 条，任务卡默认只显示一条紧凑提示。journal 追加 `BlockerDetected` 事件，本机 MCP 可沿用现有事件查询按类型、工具或关联 call key 检索。尚未解决的永久失败且仍有 todo 时 stop reason 为 `Blocked`，不再误报为普通轮次耗尽。
+内置受保护调用不一定产生人工 Pending；外部 MCP 不继承 Agent grant 或重试票据。写入面保持预览/应用分离，避免按参数临时改变审批语义。工作区、取消/超时和补偿失败的文件核查规则统一见[工作区补丁](./copilot-agent-execution.md#工作区补丁的预览、应用与回滚)；未知结果绝不因晚到成功而改写。
 
-若后续只读调用以新的 CallId、相同工具和精确参数成功完成，任务终态与 blocker 判定共同排除已解决的历史读取失败、超时或拒绝；原始 step 和 journal 审计记录保持不变。匹配使用规范化执行签名，不凭摘要或文件名推断；参数不同、同一 CallId、成功之后的新失败、写操作及结果未知的操作均不能由此消除。该判定不批准或重放调用，等待用户和预算耗尽的优先级保持不变。`CopilotAgentBlockerTests` 覆盖匹配与保留边界；
-
-`CopilotAgentTaskIndex` 从已持久化的会话、最后一条 assistant task ledger、stop reason、blocker 和 checkpoint 派生跨会话任务摘要，不维护第二套任务状态。索引收录仍有未完成 todo 且需要关注的暂停、等待回复、审批拒绝、永久阻塞、预算耗尽、轮次耗尽、Provider 中断和应用中断任务，也收录没有开放 todo 但仍缺最终回答的可恢复任务，并按会话更新时间排序。会话侧栏只显示紧凑标题与状态；可恢复任务可以直接继续，其他任务可以打开原会话补充输入，用户也可以显式放弃并清除 checkpoint。应用重启后会把 journal 中存在 `RunStarted` 但没有对应 `RunStopped` 的运行补记为 `Interrupted`，再从 `chat-state.json` 重建索引，因此不会因为进程退出或 UI 会话切换而丢失任务入口。
-
-`CopilotAgentTaskHost` 是进程级单活动运行宿主，运行通过稳定 run ID 绑定原会话，并集中持有 cancellation token、类型化 run control、checkpoint-ready 边界和 completion task。宿主保留一个活动槽和最多 3 个等待项；从其他会话提交的 Agent 请求按 FIFO 排队，前一项无论成功、失败或取消都会释放槽并提升下一项。整个 Agent 运行仍然串行，因此多任务不会绕过 capability resource、写操作审批或工具执行闸门。暂停只能在 checkpoint 边界后发生，明确取消可以覆盖待处理的暂停；排队任务可在启动前取消，且不会调用模型或工具。订阅者或某个排队任务异常不会阻断后续任务。
-
-Agent 执行期间允许切换或新建会话，事件和最终结果仍写回启动运行的原消息。同一活动会话中的新输入继续作为 Harness steering，不会误建第二个任务；同一排队会话也不会重复入队。提交时冻结 Profile、附件、活动文档和解决方案路径，任务真正启动时再采集最新设备、流程和应用状态。普通 Chat 不进入后台队列，并继续保持会话切换锁定，因为其历史构造依赖当前选中会话。Host 运行对象只存在于当前进程；满足 `ResumeAfterRestart` 条件的显式排队请求通过持久化恢复记录重新准入，不能继续使用旧运行对象或审批。持续目标和内部自动续作另有重启暂停边界，见[后续队列与恢复](./copilot-agent-session-and-tools.md#任务-ui、停止原因、运行中-steering-与后续队列)。Session checkpoint 和任务索引仍负责已开始任务的长期恢复。标题区只显示一条紧凑的运行或排队状态，不展开调度诊断。
-
-可写入工具按以下能力边界使用这条审批协议：
-
-- `CreateFlow`、`ApplyFlowPatch`、`ExecuteMenu` 和 `SetLanguage` 使用 `Always` 原生审批。
-- 模板修改拆成低风险只读的 `TemplatePatch` 预览和高风险非幂等的 `ApplyTemplatePatch` 应用，避免一个工具根据参数临时改变审批语义。
-- 工作区文本操作拆成只读的 `PreviewWorkspacePatch` / `PreviewCreateWorkspaceFile`，高风险非幂等的 `ApplyWorkspacePatch` / `ApplyCreateWorkspaceFile`，以及统一的 `RollbackWorkspacePatch`。默认可写根只包含当前解决方案目录；用户显式交给 Copilot 的现有文本文件和当前活动文档可作为精确修改授权，但新文件只能位于解决方案可写根。路径穿越、重解析点、非文本扩展、超过 1 MB 的编码内容、多重替换匹配和创建时覆盖现有路径均被拒绝。
-- 多文件工作区补丁若在写入途中失败，会在工具错误内容中保留原始失败路径和逐文件补偿结果；回滚失败时同样记录逐文件重新应用结果。`WorkspaceRecheckPaths` 用于本轮重新读取或搜索已尝试路径，并生成任务消息的“文件状态待核查”提示；它不增加访问授权，原始路径集合不直接写入会话历史，也不作为生成差异的依据。提示独立于差异展开区，在没有任何已确认差异时也可见；最多列出 8 个路径，其余保留总数。若本轮先前已有差异，标题改为“先前确认的文件变更”，避免把历史记录当作当前完整状态。提示随 Assistant 消息保存／恢复，旧会话缺少此字段时保持不标记；有界读取或后续单个补丁不能证明整个失败事务已经核验，因此提示作为该轮未完整核验的历史随消息保留。后续已确认补丁可接续被标记路径的当前内容，已有原始基线仍保留；未标记路径的差异连续性检查保持严格。工具仍明确失败；逐文件成功只表示该次恢复动作成功，模型必须重新读取后再描述当前文件。`CopilotWorkspaceRecoveryEvidenceTests` 使用真实只读文件错误覆盖应用／回滚、恢复成功／失败和随后重新读取，补偿失败边界采用受控内部调用；这些验证不等于进程崩溃、取消路径或桌面人工验收。
-- 已批准的工作区补丁或回滚跨过取消／超时边界时，执行器继续返回 `OutcomeUnknown`，禁止自动重试写操作；同时把对应变更集的可能受影响路径交给模型和任务消息，产生“文件状态待核查”提示。路径来自冻结参数所指向、且与当前 conversation／workspace 匹配的有效变更集，不代表每个文件已经开始写入、成功或恢复。路径快照在后台、工具体开始前获取；先发布不可变快照再检查取消令牌，确保取消发生于元数据读取期间时，延迟返回的工作线程不能继续进入写入体。原执行锁仍保留到后台工作结束，晚到的结果不会覆盖已经发布的未知终态。未批准或分发检查点失败时不捕获该范围。`CopilotWorkspaceCancellationEvidenceTests` 使用真实补丁应用／回滚与受控结果等待验证写入前后取消、超时、元数据等待及跨会话拒绝；这些用例不等于进程崩溃恢复验收。
-- `SetTheme` 是独立、低风险的明确能力；通用 `ExecuteMenu` 始终受保护，不会因某个菜单项在预检中被判定为低风险而直接执行。
-
-内置受保护调用经过上述原生精确审批路由，不保证每个调用都创建人工 Pending Action；外部 MCP 继续保留自己的两阶段确认协议，不继承 Agent 的临时 grant 或重试票据。
+`SetTheme` 是独立低风险能力，通用 `ExecuteMenu` 不因预检认为某菜单低风险而直接执行。精确批准后只派发一次菜单请求，不再建第二个 Pending；能力拒绝不自动重复，取消后迟到的预览不创建动作。
 
 ## 模板 JSON 预览与应用
 
-`TemplatePatch` / `preview_template_patch` 只计算差异，不修改或保存模板。要获得可应用的 `preview_id`，应从活动模板 JSON 编辑器读取当前内容：不传非空 `current_json`，由 `CopilotMcpToolDispatcher` 绑定该编辑器的 `source_id`。显式提供 `current_json` 只供离线预览，不绑定活动编辑器，也不生成可应用预览；`template_identifier` 不是按名称写入任意已保存模板的入口。
+`TemplatePatch`/`preview_template_patch` 只计算差异。可应用预览必须从当前活动 JSON 编辑器绑定来源；显式 `current_json` 仅供离线预览，不产生可应用 ID，`template_identifier` 也不是按名称写任意模板的入口。
 
-`ApplyTemplatePatch` / `apply_template_patch` 必须引用有效预览，并通过所在表面的当前审批链。创建受保护动作前和真正执行时都会复核活动编辑器来源、预览时的原 JSON、补丁 JSON 根对象和敏感字段限制；切换编辑器或内容发生冲突时须重新预览。默认 handler 再通过 `EditTemplateJson.TryApplyCopilotJsonPatchAsync` 定位仍加载的编辑器，在 UI 线程复核当前 JSON 后，只更新 `textEditor.Text`、绑定的 `IEditTemplateJson.JsonValue` 及属性编辑器显示。成功不调用模板 `Save` 或 DAO，不代表数据库已持久化；这是对编辑器及其绑定内存参数的修改，不承诺另有隔离副本或自动回滚。保存仍由模板编辑/持久化流程负责，动态来源生命周期见[业务上下文](./copilot-agent-extensions.md)。
+差异按完整 JSON 值比较，截断/脱敏摘要不能抹平变化。参数候选按真实 CLR 名和展示名同时判敏感；旧来源缺 CLR 名时按展示名兼容。父对象整体替换也不能借删除敏感子字段绕过限制。审批只展示所有变化字段的完整原值/新值，不带未变化正文；超过完整详情上限则拒绝创建动作，应缩小补丁，单字段仍过大则人工编辑。
 
-`CopilotSharedCapabilityInputContractTests` 验证预览参数和 `preview_id` 经包装器传给共享能力；`CopilotPlanModeTests` 验证 Plan 模式保留预览而拒绝应用。这些测试不是实际 WPF 编辑器冲突、应用失败、取消或数据库未写入的端到端验证，也不表示本轮已运行测试。
+`ApplyTemplatePatch`/`apply_template_patch` 通过当前表面审批，在建动作前及执行时复核来源、原 JSON、根对象和敏感限制；切换编辑器或内容冲突须重新预览。默认 handler 在 UI 线程更新编辑器文本、绑定参数及属性显示，**不调用 Save/DAO，不代表数据库持久化，也不承诺隔离副本或自动回滚**。保存权和动态来源见[业务上下文](./copilot-agent-extensions.md)。回归入口为 `CopilotTemplatePatchReviewTests`；真实 WPF 生命周期与业务存储仍须另验。
 
 ## Flow 图语义与受保护编辑
 
-Flow patch 的可见性由流程相关上下文与当前写入约束决定；动作同义表达或同时要求解释不会隐藏工具。可见性与任务意图、只读模式及原生审批的分工见[工具可见性与任务意图](./copilot-agent-execution.md#工具可见性与任务意图)。
+可见性、写意图与执行准入分工见[工具可见性与任务意图](./copilot-agent-execution.md#工具可见性与任务意图)。历史诊断先用精确标识或 `ListFlowRuns`/`ListFlowIncidents` 发现记录；事故 ID 不是运行 ID，未发现事故不证明成功。`colorvision-flow-diagnostics` 区分当前 UI 与留存证据；当前画布或有界列表不能证明历史配置、完整记录或根因，也不授予修改权限。
 
-`.stn` 是带自定义头和 GZip 内容的二进制画布格式，不交给模型按文本读取。`InspectFlowGraph` 从活动编辑器生成 `colorvision.flow-graph.v1`：包含基于节点 Guid 的稳定 instance id、保存时使用的精确 `module|runtime type` 键、结构化输入/输出端口、边、位置和确定性 SHA-256 revision；属性值只有显式请求时才返回并经过脱敏。输出限制最多 200 个节点，避免大型流程无界占用上下文。
+`.stn` 是带头和 GZip 的二进制画布，不按文本编辑。`InspectFlowGraph`/`get_flow_graph` 保留 `colorvision.flow-graph.v1`，用稳定节点 instance id、精确类型键、端口、`revision` 和宿主 `sourceInstanceId` 表达图；相同 revision 不证明同一宿主。读取须遵守：
 
-`SearchFlowNodeCatalog` 查询当前编辑器实际注册的节点类型，并返回标题、分类、业务节点类型、默认设备 Code 和可写 `STNodeProperty` Schema。例如“添加相机节点”必须先搜索 `相机` / `camera`，由模型在 `CVCameraNode`、`LVCameraNode`、XR/AOI 等真实候选中选择；候选含义不同则询问用户，不能硬编码或猜测类型名。目录按已加载类型签名缓存，插件节点集合变化时自动重建。
+- `nodes`、`edges`、`ports`、`properties` 分别分页，各自续传 opaque cursor；属性须显式 `include_properties=true`。焦点只按 instance id 或业务 NodeId 精确匹配，不猜名称/当前选择；纯空白焦点兼容读取全图。
+- 节点页只附带本页内部边。完整拓扑须续完节点，再绑定同一 `revision` 与 `sourceInstanceId` 续完独立边流；端口/参数证据合并也须双绑定，不跨 section 复用游标。
+- `has_more` 仅说明当前流分页；概览省略和文本限制看 `coverage` 及逐行标记。参数只覆盖宿主读到的 simple、visible 摘要；未请求属性时计数为 `null`，不是零。读完行流也不能恢复脱敏/截断文本。
+- `propertyName` 才是宿主提供的 CLR 名，不能由展示名补造；旧来源可缺该字段，`parameterIndex` 仅为当前摘要序号，不是稳定 ID。摘要变化可使明细游标失效，即使保存状态 revision 未变。
+- 游标绑定来源、版本、section、焦点及读取选项；过期重查。输出裁页只推进实际交付行，单行无法容纳时明确失败，不生成空页死循环。revision 不冻结实时 selection/status、设备或外部状态；节点保存异常的 fallback 哈希也不保证全部参数不变。
 
-写入面收敛为 `PreviewFlowPatch` / `ApplyFlowPatch` 两个工具，而不是为每种动作持续增加工具。每次 patch 只允许一种操作：`add_node` 使用目录返回的精确 type key；`set_property` 使用节点的稳定 ID、目录公开的可写 `propertyName` 和现有 `STNodePropertyDescriptor` 字符串转换，不建立第二套属性转换器，并拒绝密码、token、secret、license 等敏感属性；`connect` 只接受图快照中的 `out:N` / `in:N` 端口 ID，并复用 `CanConnect` / `ConnectOption` 的方向、所有者、锁定、单连接、重复边、数据类型和环路校验。
+具体字段、上限与失败分类查 `CopilotFlowGraphInspectionService` 和 `CopilotFlowGraphInspectionServiceTests`，两侧分页适配查 `CopilotFlowGraphPaginationToolTests`。
 
-预览在 UI 线程验证活动流程未运行且 revision 未过期；属性修改在从真实节点持久化数据构造的离图副本上验证，连线只运行无副作用的连接资格检查。`ApplyFlowPatch` 经原生审批后再次检查相同 revision，再执行单项修改；失败时恢复属性旧值、移除已加入节点或断开本次新边。成功也不会自动保存或运行流程。revision 基于每个节点真实 `GetSaveData()` 字节哈希和结构化边生成，复杂 `STNodeProperty` 的变化也会失效旧预览；单节点保存异常时退回稳定的基础节点状态哈希，避免上下文采集整体失败。删除、断连和批量 patch 尚未开放，不能回退到 Shell 或直接改 `.stn` 绕过边界。对应的 `colorvision-flow-authoring` Skill 保持“检查图 -> 查目录/属性/端口 -> 预览单项 patch -> 审批 -> 复核 revision”的短流程，诊断仍由独立的 `colorvision-flow-diagnostics` 负责。
+`ValidateFlowGraph`/`validate_flow_graph` 以读取结果的当前 `expected_revision` 对完整宿主画布执行无弹窗的保存结构校验，不对裁剪片段下结论。来源/版本失效不返回结论；`valid=false` 仍可表示工具成功交付诊断。既有规则检查 Repeat 约束及任一 Start 沿执行端口到 End/显式终止的路径，允许多 Start/End，不因其他未接支路自行加规则。通过不证明设备就绪、业务参数有效、全部分支完整或执行成功。修改后须重读新 revision 再校验，不能复用旧结论背书新图。
+
+`SearchFlowNodeCatalog` 返回当前注册类型及公开属性 Schema，添加节点须使用真实候选和精确 type key，不能猜类型。`declaredEnumNames` 保留原生枚举拼写，flags 不证明任意组合有效；标准布尔候选只适用于原生 bool 和默认 descriptor，nullable/自定义 descriptor 不猜候选。空候选不代表只读，以 `isWritable` 为准；最终仍由宿主 descriptor 转换和 setter 验证，不另造 parser。当前值由显式图读取取得；精确帮助 ID 的静态原理/参数说明见[节点帮助与正式读取契约](../../04-api-reference/extensions/flow-node.md)。
+
+写入仅用 `PreviewFlowPatch`/`ApplyFlowPatch`，每次一种操作：目录 type key 添加节点、稳定实例 ID 与可写 CLR 属性改单值、精确端口连接或断开单条现有边。预览/应用均复核同一宿主、revision、只读及完整执行生命周期；属性先在离图副本中验证，复用原 descriptor 和连接守卫。敏感 CLR 名或展示名任一命中就拒绝，不能以普通名称绕过；新增节点参数、备注和旧/新值输出脱敏，但不改写源配置或指纹。自动上下文、审计与输出归档复用 Common 脱敏规则，不能承诺识别所有未标识 secret。
+
+属性修改、相机继承和断连须在创建审批前完成可取消的正式异步预览；失败/取消的迟到结果不能创建动作或执行应用。完整审批详情展示转换后的属性变化或目标预览，两侧入口一致遵循敏感限制。
+
+断连必须给出非零 Guid D 格式的源/目标实例 ID、`out:N`/`in:N` 四元组及当前 revision，不接受业务别名、缺边静默成功或整端口断开。事务边界只恢复指定边和编辑器历史；同步回调或提交后失败不能留下半条边，但不回滚回调自行改变的其他图对象或外部业务状态，也不重放业务通知。改线是断连、重读 revision、再连接的两次独立预览审批，不保证跨步原子性或自动回滚；中间图静态校验失败时报告诊断，不擅自扩展修图范围。
+
+`add_node` 默认用构造初值；只有目录支持的直接参数相机节点可显式 `inherit_camera_defaults=true`。预览交付本次有效设备/曝光/增益/校正等设置及 `cameraDefaultsFingerprint`，应用原样传回 `camera_defaults_fingerprint`；审批前和执行前复核，源改变须重预览。该指纹只保护实际继承值，不将全局相机设置纳入图 revision，无效来源拒绝。
+
+应用失败仅恢复本次属性、添加节点或新边；成功不保存、不运行流程。删除节点、整端口断连和批量 patch 未开放，不得借 Shell 或直接改 `.stn` 绕过。`colorvision-flow-authoring` 沿“读图/按需校验 → 查目录 → 单项预览 → 审批 → 重读并校验”操作，历史诊断保持独立。
+
+回归从 `CopilotFlowGraphValidationServiceTests`、`CopilotFlowNodePropertyCatalogTests`、`CopilotFlowPatchParameterPrivacyTests`、`CopilotFlowDisconnectionTests` 及 `STNodeTransactionalDisconnectionTests` 定位；源码与替身测试不替代真实设备和完整业务验收。

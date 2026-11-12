@@ -1,4 +1,6 @@
 using ColorVision.Engine.Services.POI;
+using System.Runtime.InteropServices;
+using System.Windows.Threading;
 
 namespace ColorVision.UI.Tests;
 
@@ -85,6 +87,51 @@ public sealed class PoiMeasurementServiceTests
         Assert.Throws<ObjectDisposedException>(() => PoiMeasurementService.Calculate(
             buffer,
             new PoiMeasurementPoint(0, 0, 1, 1, PoiMeasurementShape.Point)));
+    }
+
+    [Fact]
+    public async Task SharedPlanarDataSurvivesOwnerDisposalWhileTheWorkerBorrowsTheSameStorage()
+    {
+        byte[] pixels = CreateConstantPlanarData(3, 2, -1, 0, 3);
+        using var owner = new PoiMeasurementBuffer(pixels, 3, 2, 32, 3);
+        using var snapshot = Assert.IsType<PoiMeasurementBuffer>(owner.SharePlanarData());
+        Assert.NotSame(owner, snapshot);
+        Assert.Equal((owner.Width, owner.Height, owner.BitsPerChannel, owner.Channels),
+            (snapshot.Width, snapshot.Height, snapshot.BitsPerChannel, snapshot.Channels));
+
+        var entered = new TaskCompletionSource<(IntPtr Pointer, long Length)>(TaskCreationOptions.RunContinuationsAsynchronously);
+        using var release = new ManualResetEventSlim();
+        TimeSpan timeout = TimeSpan.FromSeconds(10);
+        Task<byte[]> worker = Task.Run(() => snapshot.Borrow((pointer, length) =>
+        {
+            entered.SetResult((pointer, length));
+            if (!release.Wait(TimeSpan.FromSeconds(30))) throw new TimeoutException("POI worker borrow did not release.");
+            byte[] observed = new byte[checked((int)length)];
+            Marshal.Copy(pointer, observed, 0, observed.Length);
+            return observed;
+        }));
+        Task? retirement = null;
+        try
+        {
+            var borrowed = await entered.Task.WaitAsync(timeout);
+            Dispatcher dispatcher = WpfTestHost.Invoke(() => Dispatcher.CurrentDispatcher);
+            retirement = dispatcher.InvokeAsync(() =>
+            {
+                Assert.Equal(borrowed, owner.Borrow((pointer, length) => (pointer, length)));
+                owner.Dispose();
+                Assert.Throws<ObjectDisposedException>(() => owner.Borrow((_, _) => 0));
+            }).Task;
+            await retirement.WaitAsync(timeout);
+            Assert.False(worker.IsCompleted);
+            release.Set();
+            Assert.Equal(pixels, await worker.WaitAsync(timeout));
+        }
+        finally
+        {
+            release.Set();
+            await worker.WaitAsync(timeout);
+            if (retirement != null) await retirement.WaitAsync(timeout);
+        }
     }
 
     private static byte[] CreateConstantPlanarData(int width, int height, params float[] channelValues)

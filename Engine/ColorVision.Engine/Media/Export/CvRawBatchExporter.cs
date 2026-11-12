@@ -1,8 +1,4 @@
-﻿using ColorVision.FileIO;
-using ColorVision.Engine.Services.Devices.Camera.Local;
-using ColorVision.ImageEditor.Tif;
-using Newtonsoft.Json.Linq;
-using log4net;
+﻿using log4net;
 using OpenCvSharp;
 using System;
 using System.Collections.Generic;
@@ -98,28 +94,12 @@ namespace ColorVision.Engine.Media
                 cancellationToken.ThrowIfCancellationRequested();
                 if (File.Exists(outputPath)) return new(sourcePath, outputPath, CvRawExportStatus.Skipped);
 
-                bool loaded = CVFileUtil.ReadCVRaw(sourcePath, out CVCIEFile raw);
-                using (raw)
+                using (Mat image = VExportCIE.ReadRawBatchExportImage(sourcePath, cancellationToken, out var parameters))
                 {
-                    raw.FileExtType = CVType.Raw; // Header inference predates case-insensitive extensions.
-                    if (!loaded)
-                        throw new InvalidDataException("无法读取 CVRAW 文件头或图像数据。");
                     cancellationToken.ThrowIfCancellationRequested();
-
-                    // Preserve source samples; ToMat() is a display conversion for floating-point RAW.
-                    ColorCalibrationSnapshot? calibration = VExportCIE.ReadCalibration(sourcePath, raw);
-                    using Mat image = VExportCIE.CreateSourceMat(raw, calibration);
                     temporaryPath = Path.Combine(Path.GetDirectoryName(outputPath)!, $".__cvraw_export_{Guid.NewGuid():N}.tif");
                     if (!Cv2.ImWrite(temporaryPath, image, [new ImageEncodingParam(ImwriteFlags.TiffCompression, VExportCIE.DefaultTiffCompression)]))
                         throw new IOException("TIFF 图像写入失败。");
-                    ColorVisionTiffParameters parameters = VExportCIE.CreateTiffParameters(raw, "Src");
-                    parameters.PixelRole = "calibration-input";
-                    if (calibration != null)
-                    {
-                        parameters.CalibrationSummary = calibration.ToSummary();
-                        parameters.Calibration = JToken.FromObject(calibration with { InterleavedBgr = true });
-                        parameters.Exposure = (float[])calibration.Exposure.Clone();
-                    }
                     CalibratedImageExport.BindPixels(parameters, image);
                     TiffImageDescriptionWriter.Write(temporaryPath, parameters.ToJson());
                 }

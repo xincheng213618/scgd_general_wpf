@@ -68,7 +68,7 @@ public sealed class ConfigMaintenanceResetService
     public ConfigMaintenanceResetPlan Prepare(IEnumerable<string> sectionNames)
     {
         string[] sections = ValidateSelection(sectionNames);
-        using var fileLock = ConfigHandler.AcquireSaveFileLock(ConfigFilePath);
+        using var fileLock = ConfigFileStore.AcquireLock(ConfigFilePath);
         ReadConfiguration();
         return new ConfigMaintenanceResetPlan(sections);
     }
@@ -79,7 +79,7 @@ public sealed class ConfigMaintenanceResetService
         {
             ArgumentNullException.ThrowIfNull(plan);
             string[] sections = ValidateSelection(plan.SectionNames);
-            using var fileLock = ConfigHandler.AcquireSaveFileLock(ConfigFilePath);
+            using var fileLock = ConfigFileStore.AcquireLock(ConfigFilePath);
             ReadConfiguration();
             var existing = ReadPending();
             if (existing != null && existing.State != "Applied")
@@ -99,7 +99,7 @@ public sealed class ConfigMaintenanceResetService
     {
         try
         {
-            using var fileLock = ConfigHandler.AcquireSaveFileLock(ConfigFilePath);
+            using var fileLock = ConfigFileStore.AcquireLock(ConfigFilePath);
             var pending = ReadPending();
             return pending == null ? new(ConfigMaintenanceResetStatus.None)
                 : Result(pending.State == "Applied" ? ConfigMaintenanceResetStatus.Applied : ConfigMaintenanceResetStatus.Scheduled, pending);
@@ -114,7 +114,7 @@ public sealed class ConfigMaintenanceResetService
     {
         try
         {
-            using var fileLock = ConfigHandler.AcquireSaveFileLock(ConfigFilePath);
+            using var fileLock = ConfigFileStore.AcquireLock(ConfigFilePath);
             if (!File.Exists(PendingFilePath))
                 return new(ConfigMaintenanceResetStatus.None);
 
@@ -132,7 +132,7 @@ public sealed class ConfigMaintenanceResetService
     {
         try
         {
-            using var fileLock = ConfigHandler.AcquireSaveFileLock(ConfigFilePath);
+            using var fileLock = ConfigFileStore.AcquireLock(ConfigFilePath);
             byte[] original = ReadConfiguration();
             string path = GetBackupPath("manual-" + Guid.NewGuid().ToString("N"));
             WriteVerifiedBackup(path, original, allowExisting: false);
@@ -151,7 +151,7 @@ public sealed class ConfigMaintenanceResetService
         bool configurationChanged = false;
         try
         {
-            using var fileLock = ConfigHandler.AcquireSaveFileLock(ConfigFilePath);
+            using var fileLock = ConfigFileStore.AcquireLock(ConfigFilePath);
             pending = ReadPending();
             if (pending == null)
                 return new(ConfigMaintenanceResetStatus.None);
@@ -191,7 +191,7 @@ public sealed class ConfigMaintenanceResetService
                 JObject reset = RemoveSections(original, pending.SectionNames);
                 if (!string.Equals(Hash(Serialize(reset)), pending.AfterSha256, StringComparison.Ordinal))
                     throw new InvalidDataException("The prepared reset content did not pass verification.");
-                ConfigHandler.WriteConfigFile(ConfigFilePath, reset);
+                ConfigFileStore.Write(ConfigFilePath, reset);
                 configurationChanged = true;
             }
 
@@ -318,7 +318,7 @@ public sealed class ConfigMaintenanceResetService
     }
 
     private static bool IsHash(string? hash) => hash is { Length: 64 } && hash.All(Uri.IsHexDigit);
-    private void WritePending(PendingReset pending) => ConfigHandler.WriteConfigFile(PendingFilePath, JObject.FromObject(pending));
+    private void WritePending(PendingReset pending) => ConfigFileStore.Write(PendingFilePath, JObject.FromObject(pending));
 
     private ConfigMaintenanceResetResult Result(ConfigMaintenanceResetStatus status, PendingReset pending, bool configurationChanged = false)
         => new(status, pending.SectionNames, pending.State == "Scheduled" ? null : GetBackupPath(pending.Id), configurationChanged: configurationChanged);

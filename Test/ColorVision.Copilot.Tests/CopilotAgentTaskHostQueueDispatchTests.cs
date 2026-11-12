@@ -246,7 +246,6 @@ public sealed class CopilotAgentTaskHostQueueDispatchTests
             async commandRun =>
             {
                 executionOrder.Add("command");
-                commandStarted.TrySetResult();
                 Assert.False(host.TryScheduleQueuedCommandSuccessor(
                     commandRun.Id,
                     "another-conversation",
@@ -270,6 +269,8 @@ public sealed class CopilotAgentTaskHostQueueDispatchTests
                     out _,
                     out var admission));
                 Assert.True(admission.IsAllowed);
+                // Signal only after the successor is queued; the test thread then checks QueuedCount.
+                commandStarted.TrySetResult();
                 await releaseCommand.Task;
             },
             runNext: false,

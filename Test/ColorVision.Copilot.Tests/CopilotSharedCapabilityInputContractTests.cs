@@ -239,6 +239,47 @@ public sealed class CopilotSharedCapabilityInputContractTests
         Assert.Equal(CopilotToolFailureKind.Authorization, failed.FailureKind);
     }
 
+    [Theory]
+    [InlineData("success")]
+    [InlineData("failure")]
+    [InlineData("pending")]
+    [InlineData("null_partial")]
+    public void ApplicationCapabilityResultAdapterPreservesPartialMetadataForRuntimeValidation(string outcome)
+    {
+        string? partial = outcome == "null_partial" ? null : "Additional retained evidence remains unread.";
+        var source = new CopilotApplicationCapabilityCallResult
+        {
+            Success = outcome is "success" or "null_partial",
+            Content = "Exact capability content.",
+            PartialResultMessage = partial!,
+            FailureKind = outcome == "failure" ? CopilotToolFailureKind.Authorization : CopilotToolFailureKind.None,
+            ErrorCode = outcome == "failure" ? "policy_denied" : string.Empty,
+            Approval = outcome == "pending" ? new CopilotToolApprovalInfo
+            {
+                ActionId = "approval:partial-test", Title = "Confirm action", RiskLevel = "high",
+                ExpiresAtUtc = DateTimeOffset.UtcNow.AddMinutes(5),
+            } : null,
+        };
+
+        var adapted = CopilotApplicationCapabilityInvocation.ToToolResult(source, "ExampleTool", "completed", "failed", "waiting");
+        var captured = CopilotToolResultContract.Capture("ExampleTool", adapted);
+
+        Assert.Equal(partial, adapted.PartialResultMessage);
+        Assert.Equal(source.Content, adapted.Content);
+        Assert.Equal(source.Success || source.IsApprovalRequired, adapted.Success);
+        if (outcome == "success")
+        {
+            Assert.True(captured.Success);
+            Assert.Equal(partial, captured.PartialResultMessage);
+        }
+        else
+        {
+            Assert.False(captured.Success);
+            Assert.Equal(CopilotToolResultContract.InvalidOutputFailureCode, captured.FailureCode);
+            Assert.Empty(captured.PartialResultMessage);
+        }
+    }
+
     private static CopilotAgentToolInput Bind(
         CopilotToolInputSchema schema,
         IReadOnlyDictionary<string, object?> arguments)

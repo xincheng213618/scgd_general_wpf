@@ -1,4 +1,3 @@
-using ColorVision.Common.Utilities;
 using System;
 using System.Globalization;
 using System.Windows;
@@ -43,29 +42,20 @@ namespace ColorVision.ImageEditor.Draw.Special
 
         private void HandleMouseMove(object sender, MouseEventArgs e)
         {
-            if (_pixelSampleChanged == null || Image.Source is not BitmapSource bitmap)
-            {
-                return;
-            }
+            if (_pixelSampleChanged != null && SampleAt(e.GetPosition(Image)) is { } sample)
+                _pixelSampleChanged.Invoke(this, sample);
+        }
 
-            if (Image.ActualWidth <= 0 || Image.ActualHeight <= 0)
-            {
-                return;
-            }
+        internal ImagePixelSample? SampleAt(Point viewPosition)
+        {
+            if (Image.Source is not BitmapSource bitmap
+                || !(viewPosition.X >= 0 && viewPosition.X < Image.ActualWidth
+                    && viewPosition.Y >= 0 && viewPosition.Y < Image.ActualHeight))
+                return null;
 
-            Point point = e.GetPosition(Image);
-            Point viewPosition = new(point.X, point.Y);
-            point.X = point.X / Image.ActualWidth * bitmap.PixelWidth;
-            point.Y = point.Y / Image.ActualHeight * bitmap.PixelHeight;
-
-            int pixelX = point.X.ToInt32();
-            int pixelY = point.Y.ToInt32();
-            if (pixelX < 0 || pixelX >= bitmap.PixelWidth || pixelY < 0 || pixelY >= bitmap.PixelHeight)
-            {
-                return;
-            }
-
-            _pixelSampleChanged?.Invoke(this, CreatePixelSample(bitmap, viewPosition, pixelX, pixelY));
+            int pixelX = Math.Min(bitmap.PixelWidth - 1, (int)(viewPosition.X / Image.ActualWidth * bitmap.PixelWidth));
+            int pixelY = Math.Min(bitmap.PixelHeight - 1, (int)(viewPosition.Y / Image.ActualHeight * bitmap.PixelHeight));
+            return CreatePixelSample(bitmap, viewPosition, pixelX, pixelY);
         }
 
         private static ImagePixelSample CreatePixelSample(BitmapSource bitmap, Point viewPosition, int pixelX, int pixelY)
@@ -83,6 +73,7 @@ namespace ColorVision.ImageEditor.Draw.Special
                 ValueText = BuildSampleText(format, rawPixel, hasRgbChannels, red, green, blue),
                 PreviewColor = BuildDisplayColor(format, rawPixel, hasRgbChannels, red, green, blue),
                 HasRgbSourceChannels = hasRgbChannels,
+                Rgb16 = IsRgb16(format) ? ((ushort)red, (ushort)green, (ushort)blue) : null,
             };
         }
 
@@ -111,13 +102,15 @@ namespace ColorVision.ImageEditor.Draw.Special
                 return (true, pixelData[2], pixelData[1], pixelData[0]);
             }
 
-            if (format == PixelFormats.Rgb48 || format == PixelFormats.Rgba64)
+            if (IsRgb16(format))
             {
                 return (true, BitConverter.ToUInt16(pixelData, 0), BitConverter.ToUInt16(pixelData, 2), BitConverter.ToUInt16(pixelData, 4));
             }
 
             return (false, 0, 0, 0);
         }
+
+        private static bool IsRgb16(PixelFormat format) => format == PixelFormats.Rgb48 || format == PixelFormats.Rgba64;
 
         private static string BuildSampleText(PixelFormat format, byte[] pixelData, bool hasRgbChannels, int red, int green, int blue)
         {
@@ -178,7 +171,9 @@ namespace ColorVision.ImageEditor.Draw.Special
         {
             if (hasRgbChannels)
             {
-                return Color.FromRgb(ToByte(red), ToByte(green), ToByte(blue));
+                return IsRgb16(format)
+                    ? Color.FromRgb(Scale16BitToByte(red), Scale16BitToByte(green), Scale16BitToByte(blue))
+                    : Color.FromRgb((byte)red, (byte)green, (byte)blue);
             }
 
             if (format == PixelFormats.Gray8 || format == PixelFormats.Indexed8)
@@ -189,7 +184,7 @@ namespace ColorVision.ImageEditor.Draw.Special
 
             if (format == PixelFormats.Gray16)
             {
-                byte value = ToByte(BitConverter.ToUInt16(pixelData, 0));
+                byte value = Scale16BitToByte(BitConverter.ToUInt16(pixelData, 0));
                 return Color.FromRgb(value, value, value);
             }
 
@@ -202,15 +197,7 @@ namespace ColorVision.ImageEditor.Draw.Special
             return Colors.Black;
         }
 
-        private static byte ToByte(int value)
-        {
-            if (value <= 255)
-            {
-                return (byte)Math.Clamp(value, 0, 255);
-            }
-
-            return (byte)Math.Clamp(value / 257, 0, 255);
-        }
+        private static byte Scale16BitToByte(int value) => (byte)((value + 128) / 257);
 
         private static byte ToByte(float value)
         {

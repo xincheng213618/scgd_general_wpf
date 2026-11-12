@@ -6,6 +6,7 @@ using ColorVision.UI;
 using cvColorVision;
 using log4net;
 using Microsoft.Win32;
+using ColorVision.UI.Authorizations;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -21,6 +22,8 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
     {
         private static readonly ILog Log = LogManager.GetLogger(typeof(EditSpectrum));
         private readonly ConfigSpectrum target;
+        private readonly DisplaySpectrumConfig displayTarget;
+        private readonly string authorizationResourceId;
         private readonly bool useLocalStore = SysResourceDao.Instance.UseLocal;
         private readonly CancellationTokenSource cancellation = new();
         private readonly Dictionary<string, string> discoveries = new(StringComparer.OrdinalIgnoreCase);
@@ -32,10 +35,12 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
         public SpectrumConfigurationDraft Draft { get; }
         public ConfigSpectrum EditConfig => Draft.Config;
 
-        public EditSpectrum(ConfigSpectrum config)
+        public EditSpectrum(ConfigSpectrum config, DisplaySpectrumConfig displayConfig)
         {
             target = config;
-            Draft = new SpectrumConfigurationDraft(config);
+            displayTarget = displayConfig;
+            authorizationResourceId = config.Code;
+            Draft = new SpectrumConfigurationDraft(config, displayConfig);
             InitializeComponent();
             this.ApplyCaption();
             DataContext = this;
@@ -55,12 +60,14 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
         private void InitializeFields()
         {
             AddFields(ConnectionFields, EditConfig, nameof(ConfigSpectrum.SpectrometerType), nameof(ConfigSpectrum.IsAutoOpen));
+            AddFields(ConnectionFields, Draft.DisplayConfig, nameof(DisplaySpectrumConfig.UseLocalSpectrum));
             AddFields(SerialFields, Draft, nameof(SpectrumConfigurationDraft.SerialPortName));
             AddFields(SerialFields, EditConfig, nameof(ConfigSpectrum.BaudRate));
             AddFields(CalibrationFields, EditConfig, nameof(ConfigSpectrum.WavelengthFile), nameof(ConfigSpectrum.MaguideFile),
                 nameof(ConfigSpectrum.ActiveCalibrationGroupName), nameof(ConfigSpectrum.CalibrationGroups));
             AddGroup(CalibrationFields, Properties.Resources.SpectrumDarkSettings, EditConfig.SelfAdaptionInitDark);
             AddGroup(CalibrationFields, Properties.Resources.EmissionSP100Set, EditConfig.SetEmissionSP100Config);
+            AddFields(AcquisitionFields, Draft.DisplayConfig, nameof(DisplaySpectrumConfig.IsLuminousFluxMode));
             AddFields(AcquisitionFields, EditConfig, nameof(ConfigSpectrum.Saturation), nameof(ConfigSpectrum.MaxIntegralTime),
                 nameof(ConfigSpectrum.BeginIntegralTime), nameof(ConfigSpectrum.AutoTestTime));
             AddGroup(AcquisitionFields, Properties.Resources.SpectrumAcquisitionSettings, EditConfig.GetDataConfig);
@@ -243,13 +250,23 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
         private void Ok_Click(object sender, RoutedEventArgs e)
         {
             Keyboard.ClearFocus();
-            if (!Draft.TryApply(target, out string error))
+            if (!TryApply(out string error))
             {
                 ConnectionTab.IsSelected = true;
                 StatusText.Text = error;
                 return;
             }
             DialogResult = true;
+        }
+
+        internal bool TryApply(out string error)
+        {
+            if (!AccessControl.Evaluate("device.configure", PermissionMode.Administrator, authorizationResourceId).Allowed)
+            {
+                error = EngineLocalization.Get("当前权限不足，无法保存设备配置。");
+                return false;
+            }
+            return Draft.TryApply(target, out error, displayTarget);
         }
     }
 }

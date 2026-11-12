@@ -1,5 +1,4 @@
 ﻿#pragma warning disable CA1725,CS8604,CS8629
-using ColorVision.Common.MVVM;
 using ColorVision.Core;
 using ColorVision.Database;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
@@ -55,7 +54,6 @@ namespace ColorVision.Engine.Templates.LedCheck
                     ViewResultLedCheck ledResultData = new(new Point((double)item.PoiX, (double)item.PoiY), (double)item.PoiWidth / 2);
                     result.ViewResults.Add(ledResultData);
                 }
-                result.ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.Debug, Command = new RelayCommand(a => DisplayAlgorithmManager.GetInstance().SetType(new DisplayAlgorithmParam() { Type = typeof(AlgorithmLedCheck), ImageFilePath = result.FilePath })) });
             }
 
         }

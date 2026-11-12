@@ -148,7 +148,7 @@ namespace ColorVision.Engine.Templates.POI.AlgorithmImp
             double maxY = items.Max(o => o.y);
             double minY = items.Min(o => o.y);
 
-            stats.ColorUniformityDeltaUv = CalcMaxDeltaUv(items);
+            stats.ColorUniformityDeltaUv = ChromaticityDiameter.Calculate(items);
             stats.ColorUniformityDeltaX = maxX - minX;
             stats.ColorUniformityDeltaY = maxY - minY;
             ChromaticityCenterMetrics chromaticity = ChromaticityCenterCalculator.Calculate(items.Select(o => (o.u, o.v)));
@@ -212,22 +212,6 @@ namespace ColorVision.Engine.Templates.POI.AlgorithmImp
                 }
             }
             return closest;
-        }
-
-        private static double CalcMaxDeltaUv(IList<PoiResultCIExyuvData> list)
-        {
-            double maxD = 0;
-            for (int i = 0; i < list.Count; i++)
-            {
-                for (int j = i + 1; j < list.Count; j++)
-                {
-                    double du = list[i].u - list[j].u;
-                    double dv = list[i].v - list[j].v;
-                    double d = Math.Sqrt(du * du + dv * dv);
-                    if (d > maxD) maxD = d;
-                }
-            }
-            return maxD;
         }
 
         public override string ToString()

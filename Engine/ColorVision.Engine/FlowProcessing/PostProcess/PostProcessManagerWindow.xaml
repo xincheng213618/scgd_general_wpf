@@ -59,7 +59,7 @@
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
                         <GridViewColumn Header="{x:Static properties:Resources.Name}" Width="100" DisplayMemberBinding="{Binding Name}"/>
-                        <GridViewColumn Header="{x:Static properties:Resources.FlowTemplate}" Width="120" DisplayMemberBinding="{Binding TemplateName}"/>
+                        <GridViewColumn Header="{x:Static properties:Resources.FlowTemplate}" Width="120" DisplayMemberBinding="{Binding TemplateDisplayName}"/>
                         <GridViewColumn Header="{x:Static properties:Resources.ProcessClass}" Width="140" DisplayMemberBinding="{Binding ProcessDisplayName}"/>
                         <GridViewColumn Header="{engine:EngineLang 标签}" Width="80" DisplayMemberBinding="{Binding Tag}"/>
                         <GridViewColumn Header="{engine:EngineLang 失败策略}" Width="80" DisplayMemberBinding="{Binding FailurePolicy}"/>

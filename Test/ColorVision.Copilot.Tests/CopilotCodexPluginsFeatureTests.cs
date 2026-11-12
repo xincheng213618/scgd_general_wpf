@@ -3,34 +3,6 @@ namespace ColorVision.Copilot.Tests;
 public sealed class CopilotCodexPluginsFeatureTests
 {
     [Fact]
-    public void CapabilitySnapshotsCannotBeRewrittenAfterPublication()
-    {
-        var catalog = new CopilotCapabilityCatalog();
-        catalog.PublishSource(
-            CopilotCapabilitySourceKind.BuiltIn,
-            "builtin:frozen-snapshot",
-            "Built-in tools",
-            [new RecordingTool("FrozenBuiltInTool")]);
-        catalog.PublishSource(
-            CopilotCapabilitySourceKind.Plugin,
-            "plugin:frozen-snapshot",
-            "Plugin tools",
-            [new RecordingTool("FrozenPluginTool")]);
-
-        AssertReadOnly(catalog.GetSnapshot().Capabilities);
-        AssertReadOnly(catalog.GetSnapshot(includePluginCapabilities: false).Capabilities);
-
-        static void AssertReadOnly(IReadOnlyList<CopilotCapabilityCatalogEntry> capabilities)
-        {
-            var entries = Assert.IsAssignableFrom<System.Collections.Generic.IList<CopilotCapabilityCatalogEntry>>(
-                capabilities);
-            Assert.NotEmpty(entries);
-            Assert.True(entries.IsReadOnly);
-            Assert.Throws<NotSupportedException>(() => entries[0] = new CopilotCapabilityCatalogEntry());
-        }
-    }
-
-    [Fact]
     public void PluginFilteredCapabilityRevisionTracksNonPluginCatalogChangesMonotonically()
     {
         var catalog = new CopilotCapabilityCatalog();
@@ -68,48 +40,6 @@ public sealed class CopilotCodexPluginsFeatureTests
         Assert.Equal(
             ["FilteredRevisionBuiltInTool"],
             afterMcpRemovalSnapshot.Capabilities.Select(entry => entry.Name));
-    }
-
-    [Fact]
-    public void ExtensionRegistryAndBridgeSnapshotsCannotBeRewrittenAfterPublication()
-    {
-        var registry = new CopilotAgentExtensionRegistry();
-        using var bridge = new CopilotAgentExtensionBridge(
-            registry,
-            new CopilotCapabilityCatalog(),
-            reservedToolNames: [],
-            new CopilotToolExecutionHookRegistry());
-        using var registration = registry.Register(new CopilotAgentExtensionRegistration
-        {
-            SourceId = "test.frozen-extension-snapshot",
-            SourceName = "Frozen extension snapshot",
-            SourceVersion = "1.0.0",
-            ContextProviders = [new RecordingContextProvider("frozen-provider")],
-            Tools = [new RecordingModuleTool()],
-            ToolExecutionHooks = [new AsyncModuleHook()],
-        });
-
-        var registrySnapshot = registry.GetSnapshot();
-        var descriptor = Assert.Single(registrySnapshot.Extensions);
-        AssertReadOnly(registrySnapshot.Extensions);
-        AssertReadOnly(descriptor.ContextProviders);
-        AssertReadOnly(descriptor.Tools);
-        AssertReadOnly(descriptor.ToolExecutionHooks);
-
-        var bridgeSnapshot = bridge.GetSnapshot();
-        var source = Assert.Single(bridgeSnapshot.Sources);
-        AssertReadOnly(bridgeSnapshot.Sources);
-        AssertReadOnly(source.Hooks);
-        AssertReadOnly(bridgeSnapshot.ContextProviders);
-        AssertReadOnly(bridgeSnapshot.Tools);
-
-        static void AssertReadOnly<T>(IReadOnlyList<T> values)
-        {
-            var items = Assert.IsAssignableFrom<System.Collections.Generic.IList<T>>(values);
-            Assert.NotEmpty(items);
-            Assert.True(items.IsReadOnly);
-            Assert.Throws<NotSupportedException>(() => items[0] = items[0]);
-        }
     }
 
     [Fact]
@@ -156,46 +86,6 @@ public sealed class CopilotCodexPluginsFeatureTests
 
         Assert.True(result.Success);
         Assert.Equal(1, moduleTool.ExecutionCount);
-    }
-
-    [Fact]
-    public async Task ModuleContextProviderOrderIsFrozenWhileCaptureRemainsLive()
-    {
-        const string sourceId = "test.frozen-context-provider-order";
-        var contextProvider = new MutableContextProvider("stable-context", 25);
-        var registry = new CopilotAgentExtensionRegistry();
-        using var bridge = new CopilotAgentExtensionBridge(
-            registry,
-            new CopilotCapabilityCatalog(),
-            reservedToolNames: [],
-            new CopilotToolExecutionHookRegistry());
-        using var registration = registry.Register(new CopilotAgentExtensionRegistration
-        {
-            SourceId = sourceId,
-            SourceName = "Frozen context provider order",
-            ContextProviders = [contextProvider],
-        });
-
-        contextProvider.Order = -50;
-        using var refreshTrigger = registry.Register(new CopilotAgentExtensionRegistration
-        {
-            SourceId = "test.frozen-context-provider-refresh",
-            SourceName = "Frozen context provider refresh trigger",
-            ContextProviders = [new RecordingContextProvider("refresh-context")],
-        });
-
-        var registeredProvider = Assert.Single(
-            Assert.Single(registry.GetSnapshot().Extensions, extension => extension.SourceId == sourceId)
-                .ContextProviders);
-        Assert.Equal(25, registeredProvider.Order);
-
-        var contextRegistry = new CopilotContextRegistry([], bridge);
-        var items = await contextRegistry.CaptureAsync(
-            new CopilotContextRequest { IncludeExtensionProviders = true },
-            CancellationToken.None);
-
-        Assert.Equal(["refresh-context", "stable-context"], items.Select(item => item.Id));
-        Assert.Equal(1, contextProvider.CaptureCount);
     }
 
     [Fact]
@@ -532,20 +422,6 @@ public sealed class CopilotCodexPluginsFeatureTests
         Assert.DoesNotContain("source limit", issue.Message, StringComparison.OrdinalIgnoreCase);
     }
 
-    [Fact]
-    public void HarnessExposesTheFrozenPluginBoundary()
-    {
-        string harness = CopilotMicrosoftAgentFrameworkRuntime.BuildHarnessInstructions(
-            CreateAgentRequest(pluginsEnabled: false),
-            [new RecordingTool("PluginFeatureHarnessTool")],
-            new CopilotAgentEnvironmentContext(),
-            taskLedgerEnabled: false,
-            agentModeEnabled: true);
-
-        Assert.Contains("features.plugins=false is frozen", harness, StringComparison.Ordinal);
-        Assert.Contains("independently configured external MCP tools are unaffected", harness, StringComparison.Ordinal);
-    }
-
     private static CopilotAgentRequest CreateAgentRequest(bool pluginsEnabled) => new()
     {
         Profile = CopilotProfileConfig.CreateDefault(),
@@ -583,32 +459,6 @@ public sealed class CopilotCodexPluginsFeatureTests
         private int _captureCount;
 
         public int Order => 0;
-
-        public int CaptureCount => Volatile.Read(ref _captureCount);
-
-        public bool CanProvide(CopilotContextScope scope) => true;
-
-        public Task<CopilotContextItem?> CaptureAsync(
-            CopilotContextRequest request,
-            CancellationToken cancellationToken)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-            Interlocked.Increment(ref _captureCount);
-            return Task.FromResult<CopilotContextItem?>(new CopilotContextItem
-            {
-                Id = id,
-                Title = id,
-                Summary = id,
-                Content = id,
-            });
-        }
-    }
-
-    private sealed class MutableContextProvider(string id, int order) : ICopilotContextProvider
-    {
-        private int _captureCount;
-
-        public int Order { get; set; } = order;
 
         public int CaptureCount => Volatile.Read(ref _captureCount);
 

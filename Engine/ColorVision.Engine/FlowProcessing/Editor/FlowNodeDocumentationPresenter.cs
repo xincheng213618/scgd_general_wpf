@@ -9,6 +9,7 @@ using System.Linq;
 using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
+using ColorVision.UI.Desktop.Help;
 
 namespace ColorVision.Engine.FlowProcessing.Editor
 {
@@ -18,6 +19,7 @@ namespace ColorVision.Engine.FlowProcessing.Editor
         string Usage,
         string Processing,
         string Notes,
+        string TopicId,
         IReadOnlyList<FlowNodePortDocumentation> Inputs,
         IReadOnlyList<FlowNodePortDocumentation> Outputs,
         IReadOnlyList<FlowNodePropertyDocumentation> Properties);
@@ -47,6 +49,7 @@ namespace ColorVision.Engine.FlowProcessing.Editor
                 Localize(documentationAttribute?.Usage),
                 Localize(documentationAttribute?.Processing),
                 Localize(documentationAttribute?.Notes),
+                documentationAttribute?.TopicId ?? string.Empty,
                 GetPorts(node.GetAllInputOptions()),
                 GetPorts(node.GetAllOutputOptions()),
                 GetProperties(nodeType));
@@ -67,6 +70,20 @@ namespace ColorVision.Engine.FlowProcessing.Editor
             };
             SetTextBrush(title);
             panel.Children.Add(title);
+
+            if (!string.IsNullOrWhiteSpace(documentation.TopicId))
+            {
+                var helpButton = new Button
+                {
+                    Content = GetInspectorText("Flow_NodeInspector_AlgorithmHelp"),
+                    ToolTip = GetInspectorText("Flow_NodeInspector_AlgorithmHelpTooltip"),
+                    HorizontalAlignment = HorizontalAlignment.Left,
+                    Padding = new Thickness(12, 5, 12, 5),
+                    Margin = new Thickness(0, 0, 0, 12)
+                };
+                helpButton.Click += (_, _) => AlgorithmHelpWindow.ShowTopic(documentation.TopicId, Window.GetWindow(panel));
+                panel.Children.Add(helpButton);
+            }
 
             AddSection(panel, GetInspectorText("Flow_NodeInspector_Purpose"), documentation.Summary);
             AddSection(panel, GetInspectorText("Flow_NodeInspector_HowToUse"), documentation.Usage);

@@ -43,7 +43,8 @@ namespace ColorVision.UI.Tests
         [Fact]
         public void DeploymentFailureRemainsVisibleAlongsideRuntimeMismatch()
         {
-            StaTest.Run(() =>
+            // The window resolves implicit styles from Application resources owned by the shared WPF host thread.
+            WpfTestHost.Invoke(() =>
             {
                 ServiceHostManagerWindow window = new();
                 try

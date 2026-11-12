@@ -4,7 +4,7 @@ knowledge_type: "topic"
 status: "current"
 summary: "UI 扩展发现与入口缺失排查：AssemblyHandler 的程序集过滤、类型缓存和 provider 构造；刷新程序集不重建所有消费者，入口可见不证明初始化或业务完成。"
 aliases: ["插件加载了但入口没有出现", "UI运行时发现", "扩展发现", "程序集过滤", "类型扫描", "AssemblyHandler", "AssemblyService", "RegisterAssembly", "RefreshAssemblies", "ClearCaches", "GetTypes", "LoadImplementations", "ReflectionTypeLoadException", "Failed to load types from assembly", "Failed to create instance", "MenuManager"]
-code_paths: ["ColorVision/App.xaml.cs", "ColorVision/BuiltInModules.cs", "UI/ColorVision.Common/Interfaces/Assembly", "UI/ColorVision.UI/AssemblyHandler.cs", "UI/ColorVision.UI/Plugins/PluginLoader.cs", "UI/ColorVision.UI/Menus/MenuManager.cs", "UI/ColorVision.UI/ConfigSetting/ConfigSettingManager.cs", "UI/ColorVision.UI/PropertyEditor/PropertyEditorHelper.cs", "UI/ColorVision.UI/StatusBar/StatusBarManager.cs", "UI/ColorVision.UI/HotKey/HotkeyService.cs", "UI/ColorVision.UI/Serach/SearchManager.cs", "UI/ColorVision.UI.Desktop/Wizards/WizardWindow.xaml.cs", "UI/ColorVision.ImageEditor/EditorToolFactory.cs", "UI/ColorVision.SocketProtocol/SocketJsonDispatcher.cs", "UI/ColorVision.SocketProtocol/SocketTextDispatcher.cs", "UI/ColorVision.Scheduler/QuartzSchedulerManager.cs", "UI/ColorVision.Solution/Editor/EditorManager.cs"]
+code_paths: ["ColorVision/App.xaml.cs", "ColorVision/BuiltInModules.cs", "UI/ColorVision.Common/Interfaces/Assembly", "UI/ColorVision.UI/AssemblyHandler.cs", "UI/ColorVision.UI/Plugins/PluginLoader.cs", "UI/ColorVision.UI/Menus/MenuManager.cs", "UI/ColorVision.UI/ConfigSetting/ConfigSettingManager.cs", "UI/ColorVision.UI/PropertyEditor/PropertyEditorHelper.cs", "UI/ColorVision.UI/StatusBar/StatusBarManager.cs", "UI/ColorVision.UI/HotKey/HotkeyService.cs", "UI/ColorVision.UI/Search/SearchManager.cs", "UI/ColorVision.UI.Desktop/Wizards/WizardWindow.xaml.cs", "UI/ColorVision.ImageEditor/EditorToolFactory.cs", "UI/ColorVision.SocketProtocol/SocketJsonDispatcher.cs", "UI/ColorVision.SocketProtocol/SocketTextDispatcher.cs", "UI/ColorVision.Scheduler/QuartzSchedulerManager.cs", "UI/ColorVision.Solution/Editor/EditorManager.cs"]
 test_paths: ["Test/ColorVision.UI.Tests/PluginLoaderTests.cs","Test/ColorVision.UI.Tests/MenuDiscoveryExclusionTests.cs","Test/ColorVision.UI.Tests/ModuleCatalogTests.cs"]
 related: ["ui.index", "ui.control-catalog", "ui.configuration", "ui.settings", "ui.wizards", "ui.menus", "ui.hotkeys", "ui.search", "ui.status-bar", "plugins.model", "ui.property-grid", "ui.image-editor-context", "ui.socket-protocol", "ui.scheduler", "ui.documents", "engine.results"]
 ---
@@ -16,8 +16,8 @@ related: ["ui.index", "ui.control-catalog", "ui.configuration", "ui.settings", "
 ## 按顺序定位缺失的入口
 
 1. **确认程序集实际加载。** 记录插件 ID、目标扩展类型和当前安装目录，查本次装载日志。目录存在、缓存中有 `PluginInfo` 或阶段标记 `PluginsLoaded`，都不能证明该 DLL 本次已成功加载；先排除禁用、本次跳过和依赖失败。
-2. **确认进入发现视图。** 在对应宿主核对 `AssemblyHandler.GetAssemblies()` 中的程序集及其 `Location`。此集合经过过滤，不等于 `AppDomain.CurrentDomain.GetAssemblies()`；显式注册也不会绕过过滤，规则见下节。
-3. **确认类型可读。** 查看 `GetTypes(assembly)` 是否包含目标类型，以及 `Failed to load types from assembly` / `Unexpected error loading types from assembly` 日志。反射失败时这里不会保留部分可加载类型，不要仅凭 DLL 已加载继续排查控件布局。
+2. **确认进入发现视图。** 在对应宿主核对 `AssemblyHandler.GetAssemblies()` 中的程序集及其 `Location`。主程序只扫描模块目录中登记的程序集，未登记会有警告日志；此集合还经过过滤，不等于 `AppDomain.CurrentDomain.GetAssemblies()`，显式注册也不会绕过过滤，规则见下节。
+3. **确认类型可读。** 查看 `GetTypes(assembly)` 是否包含目标类型，以及 `Failed to load types from assembly` / `Unexpected error loading types from assembly` 日志。部分类型加载失败时保留可加载项，其它读取异常返回空集合；不要仅凭 DLL 已加载继续排查控件布局。
 4. **确认消费方已发现并构造条目。** 按下表选择具体 manager，检查接口、构造函数、类型/实例缓存与创建日志。程序集视图变了，不代表菜单、设置或图像工具已重新扫描；构造函数失败也可能仅留下日志。
 5. **确认宿主接入和显示条件。** 检查目标窗口、父级/标识、可见性、宿主资源与命令路由。条目已显示后，再按所属主题区分 `CanExecute`、注册成功、保存成功和业务完成。
 
@@ -27,39 +27,45 @@ related: ["ui.index", "ui.control-catalog", "ui.configuration", "ui.settings", "
 
 ## AssemblyHandler 的过滤与缓存
 
-程序集必须名称非空、非动态、有可读取的 `Location`，且位置在 `AppDomain.CurrentDomain.BaseDirectory` 之下。路径比较不区分大小写并保留目录分隔边界，不按当前工作目录判断，也不只限基础目录的第一层。
+主程序在 `BuiltInModules.Register` 之后调用 `UseRegisteredAssembliesOnly()`，此后发现视图只来自显式登记的程序集：内置模块、`BuiltInModules` 中列出的主程序与基础库，以及 `PluginLoader` 加载后登记的插件。插件和内置模块因此走同一条发现路径；未登记的程序集即使已在进程中也不会被扫描。主程序项目引用新的第一方程序集时，必须同时在 `BuiltInModules` 或其模块的 `Register` 中登记。启用后，应用目录（`Plugins` 子目录除外）中引用 `ColorVision.Common` 或 `ColorVision.UI` 却未登记的程序集会记录 `references ColorVision extension contracts but is not registered in the module catalog` 警告。未调用该开关的宿主（测试、独立运行的插件或客户应用）仍合并 AppDomain 已加载项与登记项。
+
+两种模式都要求程序集名称非空、非动态、有可读取的 `Location`，且位置在 `AppDomain.CurrentDomain.BaseDirectory` 之下。路径比较不区分大小写并保留目录分隔边界，不按当前工作目录判断，也不只限基础目录的第一层。
 
 名称按不区分大小写的前缀过滤，当前排除 `System.`、`Microsoft.`、`netstandard`、`WindowsBase`、`PresentationCore`、`PresentationFramework`、`mscorlib`、`Newtonsoft`、`EntityFramework`、`log4net` 和 `HandyControl`。这些是前缀规则，不能将其中某个名字开头的业务程序集视为例外。位于其它目录的 DLL 即使已经 LoadFrom 或登记，也不能据此进入该发现视图。
 
 | API | 缓存与返回语义 |
 | --- | --- |
 | `GetAssemblies()` | 已有快照时直接返回；首次调用才执行 `RefreshAssemblies()` |
-| `RegisterAssembly(assembly)` | 拒绝动态程序集；新登记项只有通过过滤且类型读取成功，才补入已有快照。每次新增登记均清空通用实现类型缓存；重复登记同一程序集直接返回，不是强制重试 |
-| `RefreshAssemblies()` | 合并 AppDomain 已加载项和显式登记项，过滤并读取类型后重建程序集快照；清空通用实现类型缓存，保留成功的程序集类型缓存 |
-| `GetTypes(assembly)` | 成功时按程序集复用同一个类型快照；读取异常时记录错误并返回空集合，失败结果不缓存。直接调用它不额外执行程序集目录/名称过滤 |
-| `ClearCaches()` | 清空程序集快照、程序集类型缓存和通用实现类型缓存；保留显式登记集合，不卸载 DLL，不清理各 manager 自己的缓存或已创建对象 |
+| `RegisterAssembly(assembly)` | 拒绝动态程序集；新登记项只有通过过滤且类型读取成功，才补入已有快照，并发布 `AssembliesChanged`。每次新增登记均清空通用实现类型缓存；重复登记同一程序集直接返回，不是强制重试 |
+| `RefreshAssemblies()` | 合并 AppDomain 已加载项和显式登记项（只认登记模式下仅取登记项），过滤并读取类型后重建程序集快照；清空通用实现类型缓存，保留成功的程序集类型缓存。已有快照且程序集集合变化时发布 `AssembliesChanged`，首次建立快照不发布 |
+| `GetTypes(assembly)` | 完整或部分成功时按程序集复用类型快照；`ReflectionTypeLoadException` 保留特性与构造签名都能解析的可加载项，其它异常记录错误并返回空集合、不缓存。直接调用不额外执行目录/名称过滤 |
+| `GetImplementationTypes(type)` | 在发现视图中返回可赋值给该接口或基类的非抽象、非开放泛型 class，按服务类型缓存，程序集集合变化时清空。不检查构造函数形态，由调用方决定如何构造 |
+| `ClearCaches()` | 清空程序集快照、程序集类型缓存和通用实现类型缓存并发布 `AssembliesChanged`；保留显式登记集合，不卸载 DLL，不清理已创建对象 |
 
-`Assembly.GetTypes()` 抛出 `ReflectionTypeLoadException` 时，AssemblyHandler 不使用异常中的 `Types` 残余项。首次构建或刷新程序集视图时，该程序集会因类型读取失败而被排除；有的消费者自己调用 `assembly.GetTypes()` 并处理残余类型，但前提仍是该程序集已经进入它取得的视图。应核对失败所在层，不能假定所有扫描都具有相同容错。
+`AssembliesChanged` 在锁外同步触发，订阅者只应丢弃自己的类型缓存，下次查询时重建；它不重建已显示的菜单、设置窗口或已创建的 provider。`IAssemblyService` 为 `GetTypes`、`GetImplementationTypes` 和该事件提供默认实现，其它实现不提供事件时，消费者只是不会自动失效。
 
-通用 `LoadImplementations<T>(params object?[]? args)` 要求 `T` 为接口，否则抛出 `Type parameter T must be an interface`。候选必须是实现该接口的非抽象 class，具有公共无参构造；缓存的是候选类型，每次调用都重新实例化。`args` 当前不传给构造函数，不能靠此参数注入依赖。单项构造异常记录 `Failed to create instance` 后继续，其它实例仍可返回。构造可以产生副作用，这个方法也不统一调用 `Initialize`、`Dispose` 或业务命令。
+`Assembly.GetTypes()` 抛出 `ReflectionTypeLoadException` 时，AssemblyHandler 记录错误并保留 `Types` 中的非空项；其中特性或构造函数签名仍引用缺失依赖的类型也会剔除并记录 `Skip partially loadable type` 警告（这类类型即使可构造，也会让消费方的 `IsDefined`、`GetCustomAttribute` 或 `GetConstructor` 抛异常），该程序集仍可进入发现视图，正常扩展不会随缺失依赖的类型一起消失。其它类型读取异常返回空集合，并使程序集无法进入新建或刷新的视图。应核对目标类型及失败日志，部分成功不证明全部扩展可用。完整加载的程序集不做该检查，成员签名引用缺失依赖时，菜单扫描会跳过该类型并记录 `Skip menu discovery` 警告，其它消费方按各自容错处理。
+
+通用 `LoadImplementations<T>(params object?[]? args)` 要求 `T` 为接口，否则抛出 `Type parameter T must be an interface`。候选取自 `GetImplementationTypes`，并要求具有公共无参构造；缓存的是候选类型，每次调用都重新实例化。`args` 当前不传给构造函数，不能靠此参数注入依赖。单项构造异常记录 `Failed to create instance` 后继续，其它实例仍可返回。构造可以产生副作用，这个方法也不统一调用 `Initialize`、`Dispose` 或业务命令。
 
 ## 各消费方的发现与刷新
 
-下表中的 API 需由实际宿主调用。它们使用不同缓存，不能用一次 `RefreshAssemblies()` 代替所有更新。
+下表中的 API 需由实际宿主调用。只有菜单、文件打开/导出和 Solution 的编辑器、项目 Provider、项目模板与菜单贡献注册表订阅 `AssembliesChanged`；其它消费方仍各自缓存，不能用一次 `RefreshAssemblies()` 代替所有更新。
 
 | 能力 | 发现入口与条件 | 刷新范围与所属契约 |
 | --- | --- | --- |
-| 菜单 | `MenuManager` 自行扫描 `IMenuItem`、`IMenuItemProvider`、`MenuItemAttribute`，排除开放泛型和直接标注 Obsolete 的类型 | 类型缓存一次建立；重建只重新构造既有类型，仍受目标、父子树与隐藏规则约束。见[菜单](./menus.md) |
-| 设置 | `ConfigSettingManager.GetAllSettings` 扫描 provider 和 `IConfig` 属性上的 ConfigSetting 标注 | 类型与条目两层缓存；`InvalidateCache` 只清条目，重建条目重新解析配置对象，不重扫类型。见[设置发现与搜索](./settings.md) |
-| 向导 | `WizardManager.Initialized` 扫描 `IWizardStep`、`IWizardInitializer`，无参构造后分别按 Order 排序 | 每次 Initialized 清列表并扫描；不统一过滤业务可见性，反射或构造异常可中断发现。见[向导](./wizards.md) |
+| 菜单 | `MenuManager` 在发现视图的类型快照中筛选 `IMenuItem`、`IMenuItemProvider`、`MenuItemAttribute`，排除开放泛型和直接标注 Obsolete 的类型 | 类型快照在 `AssembliesChanged` 后丢弃，下次加载或重建菜单时重扫；已显示的菜单不会自动重建，仍需宿主调用重建。见[菜单](./menus.md) |
+| 文件打开与导出 | `FileProcessorFactory` 通过 `GetImplementationTypes` 取得 `IFileOpenActionProcessor` / `IFileExporter`，按 `FileExtensionAttribute` 建立扩展名映射，`GenericFileAttribute` 导出器作为兜底 | 映射在首次使用时建立，`AssembliesChanged` 后丢弃重建；每次调用重新构造处理器，单个处理器构造失败记录警告并跳过。见[工作区与资源路由](./ColorVision.Solution.md) |
+| 设置 | `ConfigSettingManager.GetAllSettings` 取 provider 和 `IConfig` 的实现类型，再读属性上的 ConfigSetting 标注 | 类型与条目两层缓存；`InvalidateCache` 只清条目，重建条目重新解析配置对象，不重扫类型。见[设置发现与搜索](./settings.md) |
+| 向导 | `WizardManager.Initialized` 从 `GetImplementationTypes` 取 `IWizardStep`、`IWizardInitializer`，无参构造后分别按 Order 排序 | 每次 Initialized 清列表并扫描；不统一过滤业务可见性，反射或构造异常可中断发现。见[向导](./wizards.md) |
 | 属性编辑 | `PropertyEditorHelper` 静态初始化注册内置映射，并触发外部 IPropertyEditor 类型的静态构造；类型映射仍需注册 | 不是为每个实现类自动建立属性类型映射；显式 RegisterEditor、属性指定类型和元数据 provider 各有入口，实例缓存与字段选择见[PropertyGrid](./property-grid.md) |
 | 状态栏 | `StatusBarManager` 通过通用帮助器构造 `IStatusBarProvider`；活动文档项另来自 IActiveDocumentStatusProvider | 全局 provider 列表非空后复用实例；RefreshAll 重取元数据，不重扫新 provider。绑定值、项目变化事件和文档切换分开，见[状态栏](./status-bar.md) |
 | 热键 | `HotkeyService` 独立发现 `IHotkeyProvider` / `IHotKey`，也接收显式注册 | 发现定义、设置草稿、窗口/全局注册和释放分层，菜单隐藏不会注销热键。见[快捷键](./hotkeys.md) |
 | 搜索 | `SearchManager` 接收 `ISearch`、`ISearchProvider`、`IDynamicSearchProvider`、`IAsyncSearchProvider` | 所见程序集序列变化才重建 provider；常规候选刷新复用实例。静态候选、动态查询和过滤见[产品搜索](./search.md) |
-| 图像打开与工具 | `IEditorToolFactory` 构造时扫描 `IImageOpen`、工具和两类右键菜单接口，按接口选取可解析构造函数 | RefreshToolBars 重建已有工具的控件，不重扫类型；当前 opener 还可覆盖工具。见[编辑器上下文](./image-editor-context.md) |
-| Socket | `SocketJsonDispatcher` / `SocketTextDispatcher` 构造时分别扫描 handler；SocketManager 默认构造器创建二者 | 各自保留 handler 集合；JSON 按 EventName 路由，文本按独立规则派发。连接存在不证明业务调用，见[Socket 协议](./ColorVision.SocketProtocol.md) |
-| 调度 | `QuartzSchedulerManager.Start` 扫描 IJob 类型并建立任务类型目录 | 任务恢复、触发器、运行和历史是不同阶段；从 InitializationTask、任务配置与错误记录排查。见[调度](./ColorVision.Scheduler.md) |
-| Solution 编辑器 | `EditorManager` 发现 IEditor 的扩展名/通用/目录标注，也接受显式描述符注册 | 监听 AppDomain.AssemblyLoad，具有自己的程序集去重和注册规则；不能套用菜单缓存结论。见[编辑器与文档](./editor-document-lifecycle.md) |
+| 图像打开与工具 | `IEditorToolFactory` 构造时从 `GetImplementationTypes` 取 `IImageOpen`、工具和两类右键菜单接口，类型集合在多个图像视图间复用，按接口选取可解析构造函数 | RefreshToolBars 重建已有工具的控件，不重扫类型；当前 opener 还可覆盖工具。见[编辑器上下文](./image-editor-context.md) |
+| Socket | `SocketJsonDispatcher` / `SocketTextDispatcher` 构造时分别从 `GetImplementationTypes` 取 handler；SocketManager 默认构造器创建二者 | 各自保留 handler 集合；JSON 按 EventName 路由，文本按独立规则派发。连接存在不证明业务调用，见[Socket 协议](./ColorVision.SocketProtocol.md) |
+| 调度 | `QuartzSchedulerManager.Start` 从 `GetImplementationTypes` 取非抽象 IJob 类型并建立任务类型目录 | 任务恢复、触发器、运行和历史是不同阶段；从 InitializationTask、任务配置与错误记录排查。见[调度](./ColorVision.Scheduler.md) |
+| Solution 编辑器 | `EditorManager` 发现 IEditor 的扩展名/通用/目录标注，也接受显式描述符注册 | 订阅 `AssembliesChanged` 后按程序集增量登记并去重（无程序集服务时退回监听 `AppDomain.AssemblyLoad`），具有自己的注册规则；不能套用菜单缓存结论。见[编辑器与文档](./editor-document-lifecycle.md) |
 
 已经找到入口后的问题应转到对应契约：设置丢失查[配置持久化与重载](./configuration.md)；overlay 错位先核对底图、坐标空间及图像版本，再按[Engine 历史结果与中立算法](../engine-components/result-handoff-chain.md)分流；文件打不开先查[工作区与资源路由](./ColorVision.Solution.md)。主题外观、数据库操作和客户业务成功条件不由程序集发现证明。
 
@@ -67,7 +73,7 @@ related: ["ui.index", "ui.control-catalog", "ui.configuration", "ui.settings", "
 
 修改发现代码时，使用已知且无害的测试扩展，分别验证“程序集进入视图 → 类型进入候选 → 实例创建 → 目标宿主呈现”。涉及配置保存、热键注册、Socket 或任务执行，再按对应契约验证；不要用连接成功、窗口能打开或出现图标代替这些结果。
 
-- `ModuleCatalogTests` 用记录型服务检查重复登记与封存；另用真实 AssemblyHandler 检查 Rbac provider 进入既有快照及 GetTypes 复用。它不覆盖所有位置/名称过滤、类型加载失败、构造异常或各消费方缓存。
+- `ModuleCatalogTests` 用记录型服务检查重复登记与封存；另用真实 AssemblyHandler 检查 Rbac provider 进入既有快照、GetTypes 复用、部分类型加载失败保留可用项并剔除特性或构造签名无法解析的类型，以及并发旧查询无法回填失效缓存。它不覆盖所有位置/名称过滤、其它读取异常、构造异常或各消费方缓存。
 - `PluginLoaderTests` 检查跳过匹配和文件存在；任意字节文件也能通过存在性断言，测试没有完整装载 DLL 或验证全部依赖。
 - `MenuDiscoveryExclusionTests` 检查指定旧类型缺失和部分保留候选/位置，不是完整菜单树或业务初始化测试。菜单、设置、热键等的专项测试在各自主题中说明。
 

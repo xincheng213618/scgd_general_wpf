@@ -95,6 +95,10 @@ internal static class LocalRingGhostResultPersistence
 }
 
 [STNode("Flow_LocalAlgorithms", "圆环鬼影", CategoryOrder = 9910, NodeOrder = 80)]
+[FlowEngineLib.FlowNodeDocumentation("定位完整主环及内侧弱环，按原始环带区域平均信号比输出 GMR1、GMR2。",
+    Usage = "连接线性 RAW 或 TIFF 图像，并确认内外环与一阶、二阶的对应关系；主环周围保留完整边距。",
+    Notes = "当前流程采用一阶必有、正常未检出输出零的约定；算法失败、主像无效或饱和时不补零。",
+    TopicId = "algorithms.ring-ghost")]
 public sealed class LocalRingGhostNode : LocalFlowNodeBase
 {
     private readonly ILocalRingGhostNodeServices services;

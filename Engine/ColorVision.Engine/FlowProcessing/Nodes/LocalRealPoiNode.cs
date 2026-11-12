@@ -2,6 +2,7 @@ using ColorVision.Engine.FlowProcessing.Diagnostics;
 using ColorVision.Database;
 using ColorVision.Engine.Services.Devices.Camera.Local;
 using ColorVision.Engine.Services.Results;
+using ColorVision.Engine.Services.POI;
 using ColorVision.Engine.Templates.POI;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using ColorVision.Engine.Templates.POI.BuildPoi;
@@ -11,6 +12,7 @@ using Newtonsoft.Json;
 using ST.Library.UI.NodeEditor;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using FlowEngineLib.Node.POI;
@@ -22,10 +24,19 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
     {
         public required PoiParam Poi { get; init; }
         public int SourceMasterId { get; init; } = -1;
+        public bool MemoryOnly { get; init; }
     }
 
     internal static class LocalRealPoiInputResolver
     {
+        internal static LocalRealPoiParameters Resolve(CVStartCFC action, CVStartCFC pointInput, LocalFlowFrame image, int inputMasterId, int inputResultType, string imageInputName)
+        {
+            pointInput.Data.TryGetValue("MasterValue", out object? handle);
+            if (LocalFlowPoiPointSet.TryResolve(action, handle?.ToString(), out LocalFlowPoiPointSet? points))
+                return new LocalRealPoiParameters { Poi = points!.CreateTemplate(image), SourceMasterId = 0, MemoryOnly = true };
+            return Resolve(inputMasterId, inputResultType, imageInputName);
+        }
+
         public static LocalRealPoiParameters Resolve(int inputMasterId, int inputResultType, string imageInputName)
         {
             if (inputMasterId <= 0)
@@ -106,6 +117,10 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
         public int PointCount { get; init; }
         public int TotalTime { get; init; }
         public object? POIResult { get; init; }
+        public bool MemoryOnly { get; init; }
+        public string? ResultHandle { get; init; }
+        public bool DatabasePersisted { get; init; } = true;
+        public string? ResultCsvFile { get; init; }
     }
 
     [STNode("Flow_LocalDevices", "实时 POI", CategoryOrder = 9900, NodeOrder = 60)]
@@ -114,6 +129,10 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
         private static readonly string[] InputPortNames = { "IN_CIE", "IN_POI" };
         internal string? DeviceCodeOverride { get; init; }
         internal POITypeData? PointTypeOverride { get; init; }
+
+        private string resultDirectory = string.Empty;
+        [Category("本地 POI"), STNodeProperty("本地结果目录", "内存点集测量时可选的 CSV 输出目录（绝对路径）；留空不写文件，不写数据库。", true)]
+        public string ResultDirectory { get => resultDirectory; set { resultDirectory = value ?? string.Empty; OnPropertyChanged(); } }
 
         public LocalRealPoiNode() : base("实时 POI", "LocalRealPOI", "Real_POI", InputPortNames)
         {
@@ -134,7 +153,8 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             {
                 string? imagePath = string.IsNullOrWhiteSpace(currentFrame!.CvCieFilePath) ? currentFrame.CvRawFilePath : currentFrame.CvCieFilePath;
                 _ = TryGetInputMasterResult(action, 1, out int poiInputMasterId, out int poiInputResultType, out _);
-                LocalRealPoiParameters parameters = LocalRealPoiInputResolver.Resolve(poiInputMasterId, poiInputResultType, InputPortNames[0]);
+                CVStartCFC pointInput = GetInputActionSnapshot(action, 1) ?? action;
+                LocalRealPoiParameters parameters = LocalRealPoiInputResolver.Resolve(action, pointInput, currentFrame, poiInputMasterId, poiInputResultType, InputPortNames[0]);
                 PoiParam poi = PointTypeOverride.HasValue ? ApplyPointType(parameters.Poi, PointTypeOverride.Value) : parameters.Poi;
 
                 Stopwatch stopwatch = Stopwatch.StartNew();
@@ -147,6 +167,18 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                 int totalTime = checked((int)Math.Min(stopwatch.ElapsedMilliseconds, int.MaxValue));
                 action.RuntimeResources.StopToken.ThrowIfCancellationRequested();
                 ViewResultAlgType resultType = LocalPoiCalculator.ResolveResultType(currentFrame.Metadata.Channels);
+                if (parameters.MemoryOnly || !action.PersistResults)
+                {
+                    (string handle, string? csvFile) = LocalPoiCalculator.StoreRuntimeResult(action, result, resultType, ResultDirectory);
+                    action.SetCurrentFrame(currentFrame);
+                    loadedFromFile = false;
+                    return new LocalNodeExecutionResult { Data = new LocalRealPoiNodeResultData
+                    {
+                        FrameId = result.FrameId, MasterId = 0, MasterResultType = (int)resultType,
+                        CieMasterId = currentFrame.MasterId, PoiSourceMasterId = 0, PoiTemplateName = result.TemplateName,
+                        PointCount = result.Points.Count, TotalTime = totalTime, MemoryOnly = csvFile == null, DatabasePersisted = false, ResultHandle = handle, ResultCsvFile = csvFile
+                    } };
+                }
                 int masterId = -1;
                 try
                 {

@@ -3,6 +3,7 @@ using ColorVision.Core;
 using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Algorithms;
 using System.Runtime.InteropServices;
+using System.Text.Json;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -12,6 +13,79 @@ namespace ColorVision.UI.Tests;
 
 public sealed class ImageAlgorithmPixelFormatTests
 {
+    [Theory]
+    [InlineData(false, ImageProfileInterpolation.Nearest, ImageProfileBoundaryMode.Reject, 2.5, 1)]
+    [InlineData(true, ImageProfileInterpolation.Bilinear, ImageProfileBoundaryMode.Reject, 3.25, 2)]
+    [InlineData(false, ImageProfileInterpolation.Bilinear, ImageProfileBoundaryMode.Clamp, 9, 1)]
+    [InlineData(true, ImageProfileInterpolation.Bilinear, ImageProfileBoundaryMode.Skip, -0.25, 2)]
+    public void AxisProfileSliceMatchesFullBitmapWithOriginalCoordinates(bool vertical,
+        ImageProfileInterpolation interpolation, ImageProfileBoundaryMode boundary, double axisCoordinate, int copiedLines)
+    {
+        const int width = 9, height = 7;
+        PixelFormat format = vertical ? PixelFormats.Rgb48 : PixelFormats.Indexed8;
+        BitmapPalette? palette = vertical ? null : new BitmapPalette([Colors.Gold, Colors.Purple, Colors.Transparent]);
+        int stride = width * format.BitsPerPixel / 8;
+        byte[] pixels = Enumerable.Range(0, stride * height).Select(value => (byte)(vertical ? value : value % 3)).ToArray();
+        BitmapSource bitmap = BitmapSource.Create(width, height, 144, 120, format, palette, pixels, stride);
+        ImageSelectionScope scope = new(Guid.NewGuid(), 1, width, height, bitmap.DpiX, bitmap.DpiY);
+        PolylineAlgorithmRoi path = vertical
+            ? new([new(axisCoordinate, 0), new(axisCoordinate, height - 1)])
+            : new([new(0, axisCoordinate), new(width - 1, axisCoordinate)]);
+        ImageProfileParameters parameters = new() { Interpolation = interpolation, BoundaryMode = boundary, SampleSpacingPixels = 0.75 };
+        Int32Rect bounds = Assert.IsType<Int32Rect>(ImageProfileAlgorithmProvider.GetDisplaySlice(path, parameters, scope));
+        Assert.Equal(copiedLines, vertical ? bounds.Width : bounds.Height);
+        AssertDisplaySliceMatchesFullBitmap(bitmap, scope, path, parameters, bounds);
+    }
+
+    [Theory]
+    [InlineData(ImageProfileInterpolation.Nearest, ImageProfileBoundaryMode.Reject, false, 2, 2, 3, 4)]
+    [InlineData(ImageProfileInterpolation.Bilinear, ImageProfileBoundaryMode.Clamp, true, 2, 0, 7, 5)]
+    [InlineData(ImageProfileInterpolation.Bilinear, ImageProfileBoundaryMode.Skip, true, 2, 0, 7, 5)]
+    [InlineData(ImageProfileInterpolation.Bilinear, ImageProfileBoundaryMode.Reject, true, 2, 0, 7, 5)]
+    public void PolylineProfileSliceMatchesFullBitmapWithOriginalCoordinates(ImageProfileInterpolation interpolation,
+        ImageProfileBoundaryMode boundary, bool crossesBoundary, int x, int y, int width, int height)
+    {
+        const int imageWidth = 12, imageHeight = 8, stride = imageWidth * 6;
+        byte[] pixels = Enumerable.Range(0, stride * imageHeight).Select(value => unchecked((byte)value)).ToArray();
+        BitmapSource bitmap = BitmapSource.Create(imageWidth, imageHeight, 144, 120, PixelFormats.Rgb48, null, pixels, stride);
+        ImageSelectionScope scope = new(Guid.NewGuid(), 1, imageWidth, imageHeight, bitmap.DpiX, bitmap.DpiY);
+        PolylineAlgorithmRoi path = crossesBoundary
+            ? new([new(5.5, 1.25), new(7.75, -1), new(2.25, 3.5)])
+            : new([new(1.5, 1.5), new(4, 3), new(2.25, 5)]);
+        ImageProfileParameters parameters = new()
+        {
+            Interpolation = interpolation, BoundaryMode = boundary, ClosePath = crossesBoundary, SampleSpacingPixels = 0.75,
+        };
+
+        Int32Rect bounds = Assert.IsType<Int32Rect>(ImageProfileAlgorithmProvider.GetDisplaySlice(path, parameters, scope));
+        Assert.Equal(new Int32Rect(x, y, width, height), bounds);
+        AssertDisplaySliceMatchesFullBitmap(bitmap, scope, path, parameters, bounds);
+    }
+
+    private static void AssertDisplaySliceMatchesFullBitmap(BitmapSource bitmap, ImageSelectionScope scope,
+        PolylineAlgorithmRoi path, ImageProfileParameters parameters, Int32Rect bounds)
+    {
+        AlgorithmInvocation invocation = AlgorithmInvocation.Create(StandardAlgorithmIds.ImageProfile, parameters, path);
+        ImageProfileAlgorithmProvider provider = new();
+
+        Assert.True(ImageAlgorithmPlatform.Catalog.TryResolve(StandardAlgorithmIds.ImageProfile, out var descriptor));
+        using AlgorithmImageBuffer full = ImageAlgorithmInputFactory.Copy(bitmap);
+        using AlgorithmResult expected = provider.ExecuteAsync(new AlgorithmExecutionContext
+        {
+            Descriptor = descriptor!, Invocation = invocation, Parameters = parameters,
+            Inputs = [new AlgorithmInput { Name = "source", Image = full }],
+        }, default).GetAwaiter().GetResult();
+
+        using AlgorithmImageBuffer slice = ImageAlgorithmInputFactory.Copy(bitmap, bounds);
+        using AlgorithmResult actual = provider.ExecuteDisplaySlice(invocation, parameters, slice, bounds, scope, default);
+        Assert.Equal(bounds.Width * bounds.Height * full.Format.BytesPerPixel(), slice.Data.Length);
+        Assert.Equal(expected.Status, actual.Status);
+        Assert.Equal(expected.Failures.Select(failure => failure.Code), actual.Failures.Select(failure => failure.Code));
+        Assert.Equal(expected.Artifacts.Select(Serialize), actual.Artifacts.Select(Serialize));
+
+        static string Serialize(AlgorithmArtifact artifact) => JsonSerializer.Serialize(artifact, artifact.GetType(), AlgorithmJson.Options);
+    }
+
     [Fact]
     public void Rgb24NormalizesToCanonicalBgr24()
     {
@@ -108,30 +182,243 @@ public sealed class ImageAlgorithmPixelFormatTests
         Assert.Equal(rgba, Pixels(roundTrip, 8));
     }
 
-    [Fact]
-    public void HImageConversionRequiresMatchingExplicitCanonicalFormat()
+    [Theory]
+    [InlineData(AlgorithmImageFormat.Bgr48, 2)]
+    [InlineData(AlgorithmImageFormat.Bgr48, 3)]
+    [InlineData(AlgorithmImageFormat.Bgr48, 4)]
+    [InlineData(AlgorithmImageFormat.Bgra64, 3)]
+    public void SixteenBitInputNormalizesPrivateSnapshotAtVectorAndTailBoundaries(AlgorithmImageFormat format, int width)
     {
+        bool hasAlpha = format == AlgorithmImageFormat.Bgra64;
+        int pixelBytes = hasAlpha ? 8 : 6;
+        byte[] sourceRows = hasAlpha
+            ? [
+                0x34, 0x12, 0x78, 0x56, 0xBC, 0x9A, 0xF0, 0xDE,
+                0xDC, 0xFE, 0x98, 0xBA, 0x54, 0x76, 0x10, 0x32,
+                0x01, 0x00, 0x00, 0x01, 0xFF, 0xFF, 0x00, 0x00,
+                0x57, 0x13, 0x68, 0x24, 0xCD, 0xAB, 0x01, 0x00,
+                0xEF, 0x89, 0x45, 0x67, 0x01, 0x23, 0x00, 0x80,
+                0xFF, 0xFF, 0x00, 0x00, 0x34, 0x12, 0xFF, 0xFF,
+            ]
+            : [
+                0x34, 0x12, 0x78, 0x56, 0xBC, 0x9A,
+                0xDC, 0xFE, 0x98, 0xBA, 0x54, 0x76,
+                0x01, 0x00, 0x00, 0x01, 0xFF, 0xFF,
+                0x10, 0x32, 0x54, 0x76, 0x98, 0xBA,
+                0x57, 0x13, 0x68, 0x24, 0xCD, 0xAB,
+                0xEF, 0x89, 0x45, 0x67, 0x01, 0x23,
+                0xFF, 0xFF, 0x00, 0x00, 0x34, 0x12,
+                0x68, 0x24, 0xCD, 0xAB, 0x01, 0xEF,
+            ];
+        byte[] expectedRows = hasAlpha
+            ? [
+                0xBC, 0x9A, 0x78, 0x56, 0x34, 0x12, 0xF0, 0xDE,
+                0x54, 0x76, 0x98, 0xBA, 0xDC, 0xFE, 0x10, 0x32,
+                0xFF, 0xFF, 0x00, 0x01, 0x01, 0x00, 0x00, 0x00,
+                0xCD, 0xAB, 0x68, 0x24, 0x57, 0x13, 0x01, 0x00,
+                0x01, 0x23, 0x45, 0x67, 0xEF, 0x89, 0x00, 0x80,
+                0x34, 0x12, 0x00, 0x00, 0xFF, 0xFF, 0xFF, 0xFF,
+            ]
+            : [
+                0xBC, 0x9A, 0x78, 0x56, 0x34, 0x12,
+                0x54, 0x76, 0x98, 0xBA, 0xDC, 0xFE,
+                0xFF, 0xFF, 0x00, 0x01, 0x01, 0x00,
+                0x98, 0xBA, 0x54, 0x76, 0x10, 0x32,
+                0xCD, 0xAB, 0x68, 0x24, 0x57, 0x13,
+                0x01, 0x23, 0x45, 0x67, 0xEF, 0x89,
+                0x34, 0x12, 0x00, 0x00, 0xFF, 0xFF,
+                0x01, 0xEF, 0xCD, 0xAB, 0x68, 0x24,
+            ];
+        int stride = width * pixelBytes;
+        byte[] sourcePixels = [.. sourceRows.AsSpan(0, stride), .. sourceRows.AsSpan(24, stride)];
+        byte[] expected = [.. expectedRows.AsSpan(0, stride), .. expectedRows.AsSpan(24, stride)];
+        WriteableBitmap source = new(width, 2, 144, 120, hasAlpha ? PixelFormats.Rgba64 : PixelFormats.Rgb48, null);
+        source.WritePixels(new Int32Rect(0, 0, width, 2), sourcePixels, stride, 0);
+
+        using AlgorithmImageBuffer normalized = ImageAlgorithmInputFactory.Copy(source);
+
+        Assert.Equal(format, normalized.Format);
+        Assert.Equal(width, normalized.Width);
+        Assert.Equal(2, normalized.Height);
+        Assert.Equal(stride, normalized.Stride);
+        Assert.Equal(144, normalized.DpiX);
+        Assert.Equal(120, normalized.DpiY);
+        Assert.Equal(expected, normalized.Data.ToArray());
+        Assert.Equal(sourcePixels, Pixels(source, stride));
+
+        byte[] replacement = hasAlpha
+            ? [0xFE, 0xCA, 0xBE, 0xBA, 0xEF, 0xBE, 0x78, 0x56]
+            : [0xFE, 0xCA, 0xBE, 0xBA, 0xEF, 0xBE];
+        source.WritePixels(new Int32Rect(0, 0, 1, 1), replacement, pixelBytes, 0);
+        replacement.CopyTo(sourcePixels, 0);
+
+        Assert.Equal(sourcePixels, Pixels(source, stride));
+        Assert.Equal(expected, normalized.Data.ToArray());
+    }
+
+    [Theory]
+    [InlineData(AlgorithmImageFormat.Bgr48, 8)]
+    [InlineData(AlgorithmImageFormat.Bgr48, 7)]
+    [InlineData(AlgorithmImageFormat.Bgra64, 8)]
+    [InlineData(AlgorithmImageFormat.Bgra64, 7)]
+    public void SixteenBitOutputPreservesPaddedRowsAndReturnsIndependentWritablePixels(AlgorithmImageFormat format, int rowPadding)
+    {
+        bool hasAlpha = format == AlgorithmImageFormat.Bgra64;
+        int pixelBytes = hasAlpha ? 8 : 6;
+        int rowBytes = 3 * pixelBytes;
+        int sourceStride = rowBytes + rowPadding;
+        byte[] rowsWithEightBytePadding = hasAlpha
+            ? [
+                0x34, 0x12, 0x78, 0x56, 0xBC, 0x9A, 0xF0, 0xDE,
+                0xDC, 0xFE, 0x98, 0xBA, 0x54, 0x76, 0x10, 0x32,
+                0x01, 0x00, 0x00, 0x01, 0xFF, 0xFF, 0x00, 0x00,
+                0xA1, 0xB2, 0xC3, 0xD4, 0xE5, 0xF6, 0x07, 0x18,
+                0x57, 0x13, 0x68, 0x24, 0xCD, 0xAB, 0x01, 0x00,
+                0xEF, 0x89, 0x45, 0x67, 0x01, 0x23, 0x00, 0x80,
+                0xFF, 0xFF, 0x00, 0x00, 0x34, 0x12, 0xFF, 0xFF,
+                0x29, 0x3A, 0x4B, 0x5C, 0x6D, 0x7E, 0x8F, 0x90,
+            ]
+            : [
+                0x34, 0x12, 0x78, 0x56, 0xBC, 0x9A,
+                0xDC, 0xFE, 0x98, 0xBA, 0x54, 0x76,
+                0x01, 0x00, 0x00, 0x01, 0xFF, 0xFF,
+                0xA1, 0xB2, 0xC3, 0xD4, 0xE5, 0xF6, 0x07, 0x18,
+                0x57, 0x13, 0x68, 0x24, 0xCD, 0xAB,
+                0xEF, 0x89, 0x45, 0x67, 0x01, 0x23,
+                0xFF, 0xFF, 0x00, 0x00, 0x34, 0x12,
+                0x29, 0x3A, 0x4B, 0x5C, 0x6D, 0x7E, 0x8F, 0x90,
+            ];
+        byte[] sourcePixels = [
+            .. rowsWithEightBytePadding.AsSpan(0, sourceStride),
+            .. rowsWithEightBytePadding.AsSpan(rowBytes + 8, sourceStride),
+        ];
+        byte[] expected = hasAlpha
+            ? [
+                0xBC, 0x9A, 0x78, 0x56, 0x34, 0x12, 0xF0, 0xDE,
+                0x54, 0x76, 0x98, 0xBA, 0xDC, 0xFE, 0x10, 0x32,
+                0xFF, 0xFF, 0x00, 0x01, 0x01, 0x00, 0x00, 0x00,
+                0xCD, 0xAB, 0x68, 0x24, 0x57, 0x13, 0x01, 0x00,
+                0x01, 0x23, 0x45, 0x67, 0xEF, 0x89, 0x00, 0x80,
+                0x34, 0x12, 0x00, 0x00, 0xFF, 0xFF, 0xFF, 0xFF,
+            ]
+            : [
+                0xBC, 0x9A, 0x78, 0x56, 0x34, 0x12,
+                0x54, 0x76, 0x98, 0xBA, 0xDC, 0xFE,
+                0xFF, 0xFF, 0x00, 0x01, 0x01, 0x00,
+                0xCD, 0xAB, 0x68, 0x24, 0x57, 0x13,
+                0x01, 0x23, 0x45, 0x67, 0xEF, 0x89,
+                0x34, 0x12, 0x00, 0x00, 0xFF, 0xFF,
+            ];
+        byte[] sourceBefore = sourcePixels.ToArray();
+        using AlgorithmImageBuffer source = new(3, 2, sourceStride, format, sourcePixels, 144, 120);
+
+        WriteableBitmap output = ImageAlgorithmInputFactory.ToWriteableBitmap(source);
+
+        Assert.Equal(hasAlpha ? PixelFormats.Rgba64 : PixelFormats.Rgb48, output.Format);
+        Assert.Equal(3, output.PixelWidth);
+        Assert.Equal(2, output.PixelHeight);
+        Assert.Equal(144, output.DpiX);
+        Assert.Equal(120, output.DpiY);
+        Assert.NotEqual(sourceStride, output.BackBufferStride);
+        Assert.Equal(expected, Pixels(output, rowBytes));
+        Assert.False(output.IsFrozen);
+
+        byte[] replacement = hasAlpha
+            ? [0xFE, 0xCA, 0xBE, 0xBA, 0xEF, 0xBE, 0x78, 0x56]
+            : [0xFE, 0xCA, 0xBE, 0xBA, 0xEF, 0xBE];
+        output.WritePixels(new Int32Rect(0, 0, 1, 1), replacement, pixelBytes, 0);
+        replacement.CopyTo(expected, 0);
+
+        Assert.Equal(expected, Pixels(output, rowBytes));
+        Assert.Equal(sourceBefore, source.Data.ToArray());
+    }
+
+    [Theory]
+    [InlineData(2)]
+    [InlineData(4)]
+    public void Bgr48PackedRowsPreservePixelsAtVectorReadAndTailBoundaries(int width)
+    {
+        byte[] sourceRows = [
+            0x34, 0x12, 0x78, 0x56, 0xBC, 0x9A,
+            0xDC, 0xFE, 0x98, 0xBA, 0x54, 0x76,
+            0x01, 0x00, 0x00, 0x01, 0xFF, 0xFF,
+            0x10, 0x32, 0x54, 0x76, 0x98, 0xBA,
+            0x57, 0x13, 0x68, 0x24, 0xCD, 0xAB,
+            0xEF, 0x89, 0x45, 0x67, 0x01, 0x23,
+            0xFF, 0xFF, 0x00, 0x00, 0x34, 0x12,
+            0x68, 0x24, 0xCD, 0xAB, 0x01, 0xEF,
+        ];
+        byte[] expectedRows = [
+            0xBC, 0x9A, 0x78, 0x56, 0x34, 0x12,
+            0x54, 0x76, 0x98, 0xBA, 0xDC, 0xFE,
+            0xFF, 0xFF, 0x00, 0x01, 0x01, 0x00,
+            0x98, 0xBA, 0x54, 0x76, 0x10, 0x32,
+            0xCD, 0xAB, 0x68, 0x24, 0x57, 0x13,
+            0x01, 0x23, 0x45, 0x67, 0xEF, 0x89,
+            0x34, 0x12, 0x00, 0x00, 0xFF, 0xFF,
+            0x01, 0xEF, 0xCD, 0xAB, 0x68, 0x24,
+        ];
+        int stride = width * 6;
+        byte[] sourcePixels = [.. sourceRows.AsSpan(0, stride), .. sourceRows.AsSpan(24, stride)];
+        byte[] expected = [.. expectedRows.AsSpan(0, stride), .. expectedRows.AsSpan(24, stride)];
+        byte[] sourceBefore = sourcePixels.ToArray();
+        using AlgorithmImageBuffer source = new(width, 2, stride, AlgorithmImageFormat.Bgr48, sourcePixels);
+
+        WriteableBitmap output = ImageAlgorithmInputFactory.ToWriteableBitmap(source);
+
+        Assert.Equal(expected, Pixels(output, stride));
+        Assert.Equal(sourceBefore, source.Data.ToArray());
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(6)]
+    [InlineData(8)]
+    public void HImageConversionRequiresMatchingExplicitCanonicalFormat(int stride)
+    {
+        int physicalStride = stride == 0 ? 6 : stride;
+        byte[] pixels = new byte[physicalStride * 2];
+        new byte[] { 1, 2, 3, 4, 5, 6 }.CopyTo(pixels, 0);
+        new byte[] { 7, 8, 9, 10, 11, 12 }.CopyTo(pixels, physicalStride);
         HImage image = new()
         {
-            rows = 1,
-            cols = 1,
+            rows = 2,
+            cols = 2,
             channels = 3,
             depth = 8,
-            stride = 3,
-            pData = Marshal.AllocCoTaskMem(3),
+            stride = stride,
+            pData = Marshal.AllocCoTaskMem(pixels.Length),
         };
         try
         {
-            Marshal.Copy(new byte[] { 1, 2, 3 }, 0, image.pData, 3);
+            Marshal.Copy(pixels, 0, image.pData, pixels.Length);
             using AlgorithmImageBuffer normalized = ImageAlgorithmInputFactory.Copy(image, AlgorithmImageFormat.Bgr24);
 
-            Assert.Equal(new byte[] { 1, 2, 3 }, normalized.Data.ToArray());
+            Assert.Equal(new byte[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12 }, normalized.Data.ToArray());
             Assert.Throws<ArgumentException>(() => ImageAlgorithmInputFactory.Copy(image, AlgorithmImageFormat.Bgra32));
         }
         finally
         {
             image.Dispose();
         }
+    }
+
+    [Theory]
+    [InlineData(-1)]
+    [InlineData(5)]
+    public void HImageConversionRejectsInvalidStrideInsteadOfAssumingPackedRows(int stride)
+    {
+        HImage image = new()
+        {
+            rows = 2, cols = 2, channels = 3, depth = 8, stride = stride,
+            pData = Marshal.AllocCoTaskMem(12),
+        };
+        try
+        {
+            Marshal.Copy(new byte[12], 0, image.pData, 12);
+            Assert.Throws<ArgumentException>(() => ImageAlgorithmInputFactory.Copy(image, AlgorithmImageFormat.Bgr24));
+        }
+        finally { image.Dispose(); }
     }
 
     [Fact]

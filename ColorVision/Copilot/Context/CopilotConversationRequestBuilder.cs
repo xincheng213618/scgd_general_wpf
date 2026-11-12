@@ -564,32 +564,42 @@ namespace ColorVision.Copilot
             string filePath,
             CancellationToken cancellationToken)
         {
-            using var stream = new FileStream(
-                filePath,
-                FileMode.Open,
-                FileAccess.Read,
-                FileShare.ReadWrite,
-                bufferSize: 4096,
-                FileOptions.Asynchronous | FileOptions.SequentialScan);
+            using var stream = OpenAttachmentStream(filePath);
             cancellationToken.ThrowIfCancellationRequested();
             var prefix = new byte[BinaryInspectionBytes];
             var prefixLength = await ReadPrefixAsync(stream, prefix, cancellationToken).ConfigureAwait(false);
+            if (CopilotPdfTextExtractor.HasPdfSignature(prefix.AsSpan(0, prefixLength)))
+            {
+                var pdfText = await Task.Run(() => CopilotPdfTextExtractor.Extract(filePath, cancellationToken), cancellationToken).ConfigureAwait(false);
+                return pdfText.Length > AttachmentContentLimit
+                    ? new CopilotBoundedTextFileContent(pdfText[..AttachmentContentLimit], WasTruncated: true, IsBinary: false)
+                    : new CopilotBoundedTextFileContent(pdfText, WasTruncated: false, IsBinary: false);
+            }
             if (IsBinaryFilePrefix(prefix.AsSpan(0, prefixLength)))
                 return new CopilotBoundedTextFileContent(string.Empty, WasTruncated: false, IsBinary: true);
 
-            stream.Position = 0;
-            using var reader = new StreamReader(stream, detectEncodingFromByteOrderMarks: true);
+            // Same decoding as the file read tools: strict UTF-8 (or BOM), then GB18030 for files
+            // that Chinese Windows tools still write, so an attachment is not shown as U+FFFD.
+            // Each attempt opens its own stream because disposing a StreamReader closes it.
+            await stream.DisposeAsync().ConfigureAwait(false);
+            var preview = prefix.AsSpan(0, prefixLength).ToArray();
             var buffer = new char[AttachmentContentLimit + 1];
-            var totalRead = 0;
-            while (totalRead < buffer.Length)
+            int totalRead;
+            try
             {
-                var read = await reader.ReadBlockAsync(
-                        buffer.AsMemory(totalRead, buffer.Length - totalRead),
-                        cancellationToken)
-                    .ConfigureAwait(false);
-                if (read == 0)
-                    break;
-                totalRead += read;
+                totalRead = await ReadAttachmentCharsAsync(filePath, preview, buffer, useLegacyEncoding: false, cancellationToken).ConfigureAwait(false);
+            }
+            catch (DecoderFallbackException)
+            {
+                try
+                {
+                    totalRead = await ReadAttachmentCharsAsync(filePath, preview, buffer, useLegacyEncoding: true, cancellationToken).ConfigureAwait(false);
+                }
+                catch (DecoderFallbackException)
+                {
+                    using var lenient = new StreamReader(OpenAttachmentStream(filePath), detectEncodingFromByteOrderMarks: true);
+                    totalRead = await ReadIntoAsync(lenient, buffer, cancellationToken).ConfigureAwait(false);
+                }
             }
 
             var content = new string(buffer, 0, Math.Min(totalRead, AttachmentContentLimit));
@@ -597,6 +607,38 @@ namespace ColorVision.Copilot
                 content,
                 totalRead > AttachmentContentLimit,
                 IsBinaryText(content));
+        }
+
+        private static async Task<int> ReadAttachmentCharsAsync(
+            string filePath,
+            byte[] prefix,
+            char[] buffer,
+            bool useLegacyEncoding,
+            CancellationToken cancellationToken)
+        {
+            using var reader = CopilotLocalFileToolSupport.CreateTextReader(OpenAttachmentStream(filePath), prefix, useLegacyEncoding);
+            return await ReadIntoAsync(reader, buffer, cancellationToken).ConfigureAwait(false);
+        }
+
+        private static FileStream OpenAttachmentStream(string filePath) => new(
+            filePath,
+            FileMode.Open,
+            FileAccess.Read,
+            FileShare.ReadWrite,
+            bufferSize: 4096,
+            FileOptions.Asynchronous | FileOptions.SequentialScan);
+
+        private static async Task<int> ReadIntoAsync(TextReader reader, char[] buffer, CancellationToken cancellationToken)
+        {
+            var totalRead = 0;
+            while (totalRead < buffer.Length)
+            {
+                var read = await reader.ReadBlockAsync(buffer.AsMemory(totalRead, buffer.Length - totalRead), cancellationToken).ConfigureAwait(false);
+                if (read == 0)
+                    break;
+                totalRead += read;
+            }
+            return totalRead;
         }
 
         private static async Task<int> ReadPrefixAsync(

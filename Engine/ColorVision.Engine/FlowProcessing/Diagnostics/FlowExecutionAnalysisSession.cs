@@ -21,6 +21,8 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
 
     internal sealed class FlowExecutionAnalysisSession
     {
+        private readonly FlowExecutionAnalysisPresentation.NodeMessageLookup _messagesByExecution;
+
         internal FlowExecutionAnalysisSession(
             int batchId,
             string? serialNumber,
@@ -46,6 +48,7 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
                 .OrderBy(item => item.SendTime)
                 .ThenBy(item => item.Id)
                 .ToList();
+            _messagesByExecution = new FlowExecutionAnalysisPresentation.NodeMessageLookup(Messages);
             Events = events
                 .OrderBy(item => item.OccurredTimeUtc)
                 .ThenBy(item => item.SequenceNo)
@@ -55,7 +58,7 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
                 Records,
                 capturedAt,
                 slowNodeThresholdMs,
-                Messages);
+                _messagesByExecution);
             Summary = FlowExecutionAnalysisPresentation.BuildSummary(
                 Records,
                 DurationItems,
@@ -113,7 +116,7 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
 
         public IReadOnlyList<FlowNodeMessage> GetMessages(FlowNodeRecord record)
         {
-            return FlowExecutionAnalysisPresentation.GetMessagesForNodeExecution(record, Messages, Records);
+            return _messagesByExecution.GetMessages(record, Records);
         }
 
         public FlowNodeRecord? GetAdjacentRecord(FlowNodeRecord record, int offset)

@@ -100,11 +100,15 @@ public sealed class CopilotTextSearchCoverageTests : IDisposable
         Assert.Contains("earlier page", last.Content);
     }
 
-    [Fact]
-    public void CleanPaginationStillCompletesAndRejectsChangedFiles()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void CleanPaginationStillCompletesAndRejectsChangedFiles(bool splitAcrossFiles)
     {
         var path = Path.Combine(_directory.FullName, "capture.log");
-        File.WriteAllLines(path, Enumerable.Range(1, 45).Select(n => $"SUMMARY item={n}"));
+        File.WriteAllLines(path, Enumerable.Range(1, splitAcrossFiles ? 40 : 45).Select(n => $"SUMMARY item={n}"));
+        if (splitAcrossFiles)
+            File.WriteAllLines(Path.Combine(_directory.FullName, "tail.log"), Enumerable.Range(41, 5).Select(n => $"SUMMARY item={n}"));
 
         var first = Search(_directory.FullName);
         var last = Search(_directory.FullName, first.NextCursor);
@@ -112,9 +116,32 @@ public sealed class CopilotTextSearchCoverageTests : IDisposable
         Assert.False(first.ScanComplete);
         Assert.True(last.ScanComplete);
         Assert.True(last.ResultsComplete);
-        Assert.Equal(Enumerable.Range(1, 45), first.Matches.Concat(last.Matches).Select(match => match.LineNumber));
+        var expectedLines = splitAcrossFiles
+            ? Enumerable.Range(1, 40).Concat(Enumerable.Range(1, 5))
+            : Enumerable.Range(1, 45);
+        Assert.Equal(expectedLines, first.Matches.Concat(last.Matches).Select(match => match.LineNumber));
         File.AppendAllText(path, "SUMMARY changed");
         Assert.False(Search(_directory.FullName, first.NextCursor).Success);
+    }
+
+    [Fact]
+    public void ContinuationBeyondTheLastPhysicalLineCannotSupplyAbsenceEvidence()
+    {
+        var path = Path.Combine(_directory.FullName, "capture.log");
+        File.WriteAllLines(path, Enumerable.Range(1, 45).Select(n => $"SUMMARY item={n}"));
+        var first = Search(_directory.FullName);
+        Assert.Equal(40, first.Matches.Count);
+        var cursorParts = first.NextCursor.Split(':');
+        cursorParts[2] = "46";
+
+        var result = Search(_directory.FullName, string.Join(':', cursorParts));
+
+        Assert.False(result.Success);
+        Assert.False(result.ScanComplete);
+        Assert.False(result.ResultsComplete);
+        Assert.Empty(result.Matches);
+        Assert.Contains("Restart", result.ErrorMessage, StringComparison.Ordinal);
+        Assert.DoesNotContain("completed search scope", result.Content, StringComparison.Ordinal);
     }
 
     [Fact]

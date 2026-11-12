@@ -4,8 +4,8 @@ knowledge_type: "topic"
 status: "current"
 summary: "TemplateControl注册与普通ITemplate<T>参数加载、保存、复制和删除契约；注册、内存变更和数据库成功是不同状态，JSON与Flow另有实现。"
 aliases: ["模板架构","Templates目录","模板注册","如何新增算法模板","新增模板要继承什么","ITemplate","IITemplateLoad","TemplateControl","TemplateDicId","TemplateModel","ParamModBase","ModelBase","SaveIndex","TryCreateTemplate","SwapTemplateOrder"]
-code_paths: ["Engine/ColorVision.Engine/Templates/ITemplate.cs","Engine/ColorVision.Engine/Templates/TemplateOrderSwap.cs","Engine/ColorVision.Engine/Templates/TemplateControl.cs","Engine/ColorVision.Engine/Templates/ModelBase.cs","Engine/ColorVision.Engine/Templates/ParamModBase.cs","Engine/ColorVision.Engine/Templates/TemplateModel.cs","Engine/ColorVision.Engine/Templates/Jsons/ITemplateJson.cs","Engine/ColorVision.Engine/Dao/ModMasterModel.cs","Engine/ColorVision.Engine/Dao/ModDetailModel.cs","Engine/ColorVision.Engine/Templates/LedCheck/TemplateLedCheck.cs","Engine/ColorVision.Engine/Templates/LEDStripDetection/TemplateLEDStripDetection.cs","UI/ColorVision.UI/AssemblyHandler.cs","UI/ColorVision.Common/MVVM/ViewModelBaseExtensions.cs","Engine/ColorVision.Engine/PropertyEditor/FlowNodePropertyEditorRegistration.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/FlowTemplateBrowserOrderTests.cs"]
+code_paths: ["Engine/ColorVision.Engine/Templates/ITemplate.cs","Engine/ColorVision.Engine/Templates/TemplateDetailReader.cs","Engine/ColorVision.Engine/Services/Devices/Sensor/Templates/SensorParam.cs","Engine/ColorVision.Engine/Templates/TemplateOrderSwap.cs","Engine/ColorVision.Engine/Templates/TemplateControl.cs","Engine/ColorVision.Engine/Templates/ModelBase.cs","Engine/ColorVision.Engine/Templates/ParamModBase.cs","Engine/ColorVision.Engine/Templates/TemplateModel.cs","Engine/ColorVision.Engine/Templates/Jsons/ITemplateJson.cs","Engine/ColorVision.Engine/Dao/ModMasterModel.cs","Engine/ColorVision.Engine/Dao/ModDetailModel.cs","Engine/ColorVision.Engine/Templates/LedCheck/TemplateLedCheck.cs","Engine/ColorVision.Engine/Templates/LEDStripDetection/TemplateLEDStripDetection.cs","UI/ColorVision.UI/AssemblyHandler.cs","UI/ColorVision.Common/MVVM/ViewModelBaseExtensions.cs","Engine/ColorVision.Engine/PropertyEditor/FlowNodePropertyEditorRegistration.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/FlowTemplateBrowserOrderTests.cs","Test/ColorVision.UI.Tests/TemplateDetailReaderTests.cs"]
 related: ["engine.index","algorithms.template-management","algorithms.json-templates","flow.templates","ui.property-grid","engine.results"]
 ---
 
@@ -57,6 +57,8 @@ related: ["engine.index","algorithms.template-management","algorithms.json-templ
 
 `ITemplate<T>.Load()` 先清 `SaveIndex`，再按现有包装项的 ID 建备份。连接可用时查询 `Pid == TemplateDicId`、`TenantId == 0`、`IsDelete == false` 的主记录及对应明细，用 `(ModMasterModel, List<ModDetailModel>)` 构造参数。
 
+默认明细读取允许按主记录分批；重复 `SysPid` 或不同字典项映射到同一 `Symbol` 时沿用逐父查询，保留首次映射的选择。子类若把明细集合用作有序业务列表，须将受保护的 `PreserveDetailReadOrder` 覆写为 `true`，跳过批量预取并沿用原逐父读取。`TemplateSensor` 因命令顺序依赖明细集合而使用此分支；该开关不新增排序约定，也不适用于自管 `Load` 的模板。批量失败的兼容降级保留逐父发布边界，不能承诺瞬态故障的发生时序完全相同。
+
 - 已有 ID 保留 `TemplateModel<T>` 包装对象，但替换其 `Value`；新增 ID 追加到集合。持有旧参数对象的消费者不会自动换引用。
 - 不主动移除数据库中已不存在的旧集合项，也没有声明排序恢复。
 - 未连接时仍已清 `SaveIndex`，但不重新读取或恢复对象。查询或构造中途异常也没有整集合回滚。
@@ -98,4 +100,4 @@ Flow 常规属性通过 属性上的 `PropertyEditorTypeAttribute` 选择编辑�
 
 Flow 身份/流程包测试由 Flow 主题维护，不能拿它们代表全部 `ITemplate<T>`、字典迁移或编辑器行为。
 
-`FlowTemplateBrowserOrderTests` 在隔离数据库验证排序后的完整主记录字段、全部明细归属、缺失/过期目标和事务失败回滚；浏览器测试验证共享列表顺序与当前选择。其余普通模板注册冲突、离线/增量重载、默认创建及过滤后的所有写入入口仍缺少完整覆盖。修改这些代码时，需用隔离数据库和已授权样例核对持久化结果、旧模板字段与引用，并明确未覆盖的 UI/设备路径。
+`FlowTemplateBrowserOrderTests` 在隔离数据库验证排序后的完整主记录字段、全部明细归属、缺失/过期目标和事务失败回滚；浏览器测试验证共享列表顺序与当前选择。`TemplateDetailReaderTests` 用真实 SqlSugar/SQLite 覆盖明细分批边界、未知字段与状态保留、符号冲突降级，以及有序集合不预取、逐父读取和失败前的部分进展；不访问真实 `SymbolCache`、MySQL 或设备。其余普通模板注册冲突、离线/增量重载、默认创建及过滤后的所有写入入口仍缺少完整覆盖。修改这些代码时，需用隔离数据库和已授权样例核对持久化结果、旧模板字段与引用，并明确未覆盖的 UI/设备路径。

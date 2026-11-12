@@ -16,7 +16,6 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Reflection;
 using System.Text;
-using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
@@ -30,6 +29,7 @@ namespace ColorVision.Update
         public required Version LatestVersion { get; init; }
         public required IReadOnlyList<Version> VersionsToApply { get; init; }
         public required bool IsIncremental { get; init; }
+        public string? SourceUrl { get; init; }
 
         public Version TargetVersion => VersionsToApply.Count > 0
             ? VersionsToApply[VersionsToApply.Count - 1]
@@ -104,9 +104,15 @@ namespace ColorVision.Update
 
         public static Version? CurrentVersion { get => Assembly.GetExecutingAssembly().GetName().Version; }
 
-        public static string GetReleasePackageDownloadUrl(Version version) => BuildAppApiUrl($"releases/{Uri.EscapeDataString(version.ToString())}/download");
+        public static string GetReleasePackageDownloadUrl(Version version) => GetPackageDownloadUrl(version, isIncremental: false);
 
-        public static string GetIncrementalPackageDownloadUrl(Version version) => BuildAppApiUrl($"updates/{Uri.EscapeDataString(version.ToString())}/download");
+        public static string GetIncrementalPackageDownloadUrl(Version version) => GetPackageDownloadUrl(version, isIncremental: true);
+
+        internal static string GetPackageDownloadUrl(Version version, bool isIncremental, string? sourceUrl = null)
+        {
+            string directory = isIncremental ? "updates" : "releases";
+            return BuildAppApiUrl($"{directory}/{Uri.EscapeDataString(version.ToString())}/download", sourceUrl);
+        }
 
         public static string GetApplicationPackageCacheDirectory(bool isIncremental)
         {
@@ -117,11 +123,12 @@ namespace ColorVision.Update
 
         public static async Task ForceUpdate(CancellationToken cancellationToken = default)
         {
-            Version latestVersion = await GetLatestVersionNumber(UpdateUrl, forceRefresh: true, cancellationToken: cancellationToken);
-            if (latestVersion == new Version()) return;
+            UpdateSourceSelection source = await UpdateSourceSelector.GetUpdateSourceAsync(cancellationToken, forceRefresh: true);
+            LatestVersionCheckResult latest = await GetLatestVersionFromSourceAsync(source, cancellationToken);
+            if (latest.Status != UpdateServerCheckStatus.Success) return;
             await InvokeOnUiThreadAsync(() =>
             {
-                StartFullUpdate(latestVersion);
+                StartFullUpdate(latest.Version, downloadFailedAction: null, source.Url);
             });
         }
 
@@ -167,6 +174,14 @@ namespace ColorVision.Update
             return result.Version;
         }
 
+        internal static Task<LatestVersionCheckResult> GetLatestVersionFromSourceAsync(UpdateSourceSelection source, CancellationToken cancellationToken = default)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            return source.LatestVersion != null
+                ? Task.FromResult(new LatestVersionCheckResult(source.LatestVersion, UpdateServerCheckStatus.Success))
+                : GetLatestVersionCheckResultAsync(BuildAppApiUrl("latest-version", source.Url), forceRefresh: false, cancellationToken);
+        }
+
         internal static async Task<LatestVersionCheckResult> GetLatestVersionCheckResultAsync(
             string url,
             bool forceRefresh,
@@ -190,7 +205,7 @@ namespace ColorVision.Update
 
         private static async Task<LatestVersionCheckResult> FetchLatestVersionCheckResultAsync(string url)
         {
-            if (!WindowsNetworkState.IsConnectedToInternet())
+            if (!WindowsNetworkState.CanReachUpdateService())
             {
                 if (TryGetAnyCachedLatestVersion(url, out Version offlineCachedVersion))
                 {
@@ -224,10 +239,9 @@ namespace ColorVision.Update
 
                 response.EnsureSuccessStatusCode();
                 string payload = await response.Content.ReadAsStringAsync();
-                string versionString = ExtractVersionString(payload);
-                if (!Version.TryParse(versionString.Trim(), out Version? latestVersion))
+                if (!UpdateSourceSelector.TryParseLatestVersion(payload, out Version? latestVersion))
                 {
-                    log.Warn($"Invalid update version payload from {url}: {versionString}");
+                    log.Warn($"Invalid update version payload from {url}.");
                     Version fallbackVersion = TryGetAnyCachedLatestVersion(url, out Version invalidPayloadCachedVersion)
                         ? invalidPayloadCachedVersion
                         : new Version();
@@ -309,19 +323,21 @@ namespace ColorVision.Update
 
         internal static async Task<AutoUpdatePlanCheckResult> GetUpdatePlanCheckResultAsync(
             bool forceRefresh,
-            CancellationToken cancellationToken = default)
+            CancellationToken cancellationToken = default,
+            UpdateSourceSelection? source = null)
         {
-            LatestVersionCheckResult latestVersionResult = await GetLatestVersionCheckResultAsync(UpdateUrl, forceRefresh, cancellationToken);
+            UpdateSourceSelection selected = source ?? await UpdateSourceSelector.GetUpdateSourceAsync(cancellationToken, forceRefresh);
+            LatestVersionCheckResult latestVersionResult = await GetLatestVersionFromSourceAsync(selected, cancellationToken);
             Version latestVersion = latestVersionResult.Version;
             if (latestVersion == new Version())
                 return new AutoUpdatePlanCheckResult(null, latestVersionResult.Status);
 
             Version? currentVersion = CurrentVersion;
-            AutoUpdatePlan? plan = currentVersion == null ? null : BuildUpdatePlan(currentVersion, latestVersion);
+            AutoUpdatePlan? plan = currentVersion == null ? null : BuildUpdatePlan(currentVersion, latestVersion, selected.Url);
             return new AutoUpdatePlanCheckResult(plan, latestVersionResult.Status);
         }
 
-        internal static AutoUpdatePlan? BuildUpdatePlan(Version currentVersion, Version latestVersion)
+        internal static AutoUpdatePlan? BuildUpdatePlan(Version currentVersion, Version latestVersion, string? sourceUrl = null)
         {
             if (latestVersion <= currentVersion)
                 return null;
@@ -331,6 +347,13 @@ namespace ColorVision.Update
             IReadOnlyList<Version> versionsToApply = isIncrement
                 ? BuildIncrementalUpdateChain(currentVersion, latestVersion)
                 : new[] { latestVersion };
+            if (isIncrement && sourceUrl != null && MarketplaceConfig.IsFolderSource(sourceUrl)
+                && versionsToApply.Any(version => !HasOfflinePackage(version, isIncremental: true, sourceUrl))
+                && HasOfflinePackage(latestVersion, isIncremental: false, sourceUrl))
+            {
+                isIncrement = false;
+                versionsToApply = new[] { latestVersion };
+            }
 
             return new AutoUpdatePlan
             {
@@ -338,10 +361,17 @@ namespace ColorVision.Update
                 LatestVersion = latestVersion,
                 VersionsToApply = versionsToApply,
                 IsIncremental = isIncrement,
+                SourceUrl = sourceUrl,
             };
         }
 
-        internal static AutoUpdatePlan? BuildReinstallPlan(Version currentVersion, LatestVersionCheckResult latestVersionResult)
+        private static bool HasOfflinePackage(Version version, bool isIncremental, string sourceUrl)
+        {
+            return OfflineUpdateFolder.TryResolveDownload(GetPackageDownloadUrl(version, isIncremental, sourceUrl), out string? path, out _, out _)
+                && path != null;
+        }
+
+        internal static AutoUpdatePlan? BuildReinstallPlan(Version currentVersion, LatestVersionCheckResult latestVersionResult, string? sourceUrl = null)
         {
             // A failed refresh may return cached metadata; it cannot establish the latest installer.
             if (latestVersionResult.Status != UpdateServerCheckStatus.Success || latestVersionResult.Version == new Version())
@@ -353,6 +383,7 @@ namespace ColorVision.Update
                 LatestVersion = latestVersionResult.Version,
                 VersionsToApply = new[] { latestVersionResult.Version },
                 IsIncremental = false,
+                SourceUrl = sourceUrl,
             };
         }
 
@@ -362,6 +393,11 @@ namespace ColorVision.Update
         }
 
         public static void StartFullUpdate(Version version, Action? downloadFailedAction = null)
+        {
+            StartFullUpdate(version, downloadFailedAction, sourceUrl: null);
+        }
+
+        internal static void StartFullUpdate(Version version, Action? downloadFailedAction, string? sourceUrl)
         {
             string? cachedInstaller = GetCachedFullInstallerPath(version);
             if (cachedInstaller != null)
@@ -377,6 +413,7 @@ namespace ColorVision.Update
                 LatestVersion = version,
                 VersionsToApply = new[] { version },
                 IsIncremental = false,
+                SourceUrl = sourceUrl,
             };
             _ = StartUpdatePlanAsync(plan, downloadFailedAction);
         }
@@ -396,7 +433,7 @@ namespace ColorVision.Update
                     if (RequiresFullInstallerFallback(expectedCount, packagePaths.Count))
                     {
                         log.Warn($"Incremental update chain is incomplete; falling back to the full installer for {plan.LatestVersion}.");
-                        PostToUiThread(() => StartFullUpdate(plan.LatestVersion, downloadFailedAction));
+                        PostToUiThread(() => StartFullUpdate(plan.LatestVersion, downloadFailedAction, plan.SourceUrl));
                         return;
                     }
 
@@ -432,6 +469,7 @@ namespace ColorVision.Update
         internal static async Task<IReadOnlyList<string>> EnsureUpdatePlanPackagesAsync(AutoUpdatePlan plan, bool showDownloadWindow, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
+            string sourceUrl = plan.SourceUrl ?? await UpdateSourceSelector.GetUpdateSourceUrlAsync(cancellationToken).ConfigureAwait(false);
             List<Task<bool>> downloads = new();
             string downloadDirectory = GetApplicationPackageCacheDirectory(plan.IsIncremental);
             IEnumerable<Version> versions = plan.IsIncremental
@@ -449,9 +487,7 @@ namespace ColorVision.Update
                 string canonicalPath = Path.Combine(downloadDirectory, fileName);
                 _ = MoveInvalidApplicationPackageToRecovery(canonicalPath, plan.IsIncremental, version);
 
-                string downloadUrl = plan.IsIncremental
-                    ? GetIncrementalPackageDownloadUrl(version)
-                    : GetReleasePackageDownloadUrl(version);
+                string downloadUrl = GetPackageDownloadUrl(version, plan.IsIncremental, sourceUrl);
                 downloads.Add(DownloadPackageAsync(downloadUrl, downloadDirectory, fileName, plan.IsIncremental, version, cancellationToken));
             }
 
@@ -578,6 +614,13 @@ namespace ColorVision.Update
                     return;
                 }
 
+                // Deleting the package task abandons this update; it must not start the full installer fallback.
+                if (task.Status == DownloadStatus.Deleted)
+                {
+                    completion.TrySetCanceled();
+                    return;
+                }
+
                 bool ready = task.Status == DownloadStatus.Completed
                     && IsApplicationPackageFileReady(task.SavePath, isIncremental, expectedVersion);
                 if (!ready && task.Status == DownloadStatus.Completed)
@@ -647,35 +690,9 @@ namespace ColorVision.Update
             request.Headers.Authorization = new AuthenticationHeaderValue("Basic", Convert.ToBase64String(byteArray));
         }
 
-        private static string ExtractVersionString(string payload)
+        private static string BuildAppApiUrl(string relativePath, string? sourceUrl = null)
         {
-            string trimmed = payload?.Trim() ?? string.Empty;
-            if (string.IsNullOrWhiteSpace(trimmed))
-                return string.Empty;
-
-            if (!trimmed.StartsWith('{'))
-                return trimmed;
-
-            try
-            {
-                using JsonDocument document = JsonDocument.Parse(trimmed);
-                if (document.RootElement.TryGetProperty("version", out JsonElement element)
-                    && element.ValueKind == JsonValueKind.String)
-                {
-                    return element.GetString() ?? string.Empty;
-                }
-            }
-            catch (JsonException ex)
-            {
-                log.Warn($"Failed to parse update version payload: {ex.Message}");
-            }
-
-            return trimmed;
-        }
-
-        private static string BuildAppApiUrl(string relativePath)
-        {
-            return MarketplaceConfig.BuildApiUrl($"api/app/{relativePath.TrimStart('/')}");
+            return MarketplaceConfig.BuildUpdateApiUrl($"api/app/{relativePath.TrimStart('/')}", sourceUrl);
         }
 
         public static bool IsIncrementalPackageFileReady(string? filePath)

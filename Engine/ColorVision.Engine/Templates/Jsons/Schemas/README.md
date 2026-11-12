@@ -13,6 +13,4 @@ not automatic synchronization with a DLL or database.
 
 The authoritative [JSON template reference](../../../../../docs/04-api-reference/algorithms/templates/json-templates.md)
 describes supported keywords, editing and persistence limits, schema lookup,
-and maintenance examples. It also records the active HDR template's index and
-embedding path mismatch: its schema is under `Services/Devices/Camera/Templates/HDR/`,
-outside the normal `Templates/Jsons/` resource glob. KB uses a dedicated editor.
+and maintenance examples. KB uses a dedicated editor.

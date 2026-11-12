@@ -5,6 +5,7 @@ using ColorVision.Engine.Services.Devices.Sensor.Local;
 using ColorVision.Engine.Services.Devices.Sensor.Templates;
 using MQTTMessageLib.Sensor;
 using System.Net;
+using System.Globalization;
 using System.IO;
 using System.Net.Sockets;
 using System.Text;
@@ -19,8 +20,11 @@ namespace ColorVision.UI.Tests;
 // These regressions protect framing, cancellation and persisted template compatibility.
 public sealed class LocalSensorSessionTests
 {
-    [Fact]
-    public async Task DiagnosticWindowViewsExistingRecordsAndClosingOrClearingDoesNotControlConnection()
+    [Theory]
+    [InlineData("zh-CN")]
+    [InlineData("en-US")]
+    [InlineData("zh-Hant")]
+    public async Task DiagnosticWindowViewsExistingRecordsAndClosingOrClearingDoesNotControlConnection(string uiCulture)
     {
         var transport = new FakeTransport { Reply = _ => "{\"ok\":true}" };
         using var session = new LocalSensorSession(_ => transport);
@@ -30,9 +34,11 @@ public sealed class LocalSensorSessionTests
         WpfTestHost.Invoke(() =>
         {
             var previous = Application.Current.Resources;
+            CultureInfo previousCulture = CultureInfo.CurrentUICulture;
             SensorDiagnosticsWindow? window = null;
             try
             {
+                CultureInfo.CurrentUICulture = CultureInfo.GetCultureInfo(uiCulture);
                 var resources = new ResourceDictionary();
                 foreach (string uri in ThemeManager.ResourceDictionaryWhite.Concat(ThemeManager.ResourceDictionaryBase))
                     resources.MergedDictionaries.Add(new ResourceDictionary { Source = new Uri(uri, UriKind.RelativeOrAbsolute) });
@@ -41,6 +47,8 @@ public sealed class LocalSensorSessionTests
                 window.Show(); window.UpdateLayout();
                 var grid = (DataGrid)window.FindName("MessageGrid");
                 Assert.Equal(2, grid.Items.Count);
+                Assert.Equal(ColorVision.Engine.Properties.Resources.ResourceManager.GetString("本地传感器 · 通信调试", CultureInfo.CurrentUICulture), window.Title);
+                Assert.Equal(ColorVision.Engine.Properties.Resources.ResourceManager.GetString("发送", CultureInfo.CurrentUICulture), ((LocalSensorDiagnosticEntry)grid.Items[0]).Direction);
                 grid.SelectedIndex = 0;
                 var detail = (TextBox)window.FindName("DetailText");
                 Assert.Contains(Environment.NewLine, detail.Text);
@@ -90,7 +98,7 @@ public sealed class LocalSensorSessionTests
                 Assert.Equal(1, transport.Opens);
                 Assert.Equal(1, transport.Writes);
             }
-            finally { window?.Close(); Application.Current.Resources = previous; }
+            finally { window?.Close(); Application.Current.Resources = previous; CultureInfo.CurrentUICulture = previousCulture; }
         });
     }
 
@@ -166,6 +174,41 @@ public sealed class LocalSensorSessionTests
         Assert.True(exchange.Matches(bytes));
     }
 
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task FragmentedResponseKeepsEveryByteAtTheSizeLimit(bool fixedLength)
+    {
+        byte[] response = new byte[LocalSensorSession.MaxResponseBytes];
+        for (int index = 0; index < response.Length; index++)
+            response[index] = (byte)('A' + index % 26);
+        var command = new LocalSensorCommand
+        {
+            Request = "Q",
+            Response = fixedLength ? Encoding.ASCII.GetString(response) : string.Empty,
+            Timeout = 1000
+        };
+        var exchange = new LocalSensorSession.Exchange(command);
+        const int chunkSize = 4096;
+        for (int offset = 0; offset < response.Length; offset += chunkSize)
+        {
+            Assert.False(exchange.Completion.Task.IsCompleted);
+            exchange.Receive(response.AsSpan(offset, chunkSize));
+        }
+
+        if (fixedLength)
+        {
+            Assert.True(exchange.Completion.Task.IsCompletedSuccessfully);
+            Assert.Equal(response, await exchange.Completion.Task);
+        }
+        else
+        {
+            Assert.False(exchange.Completion.Task.IsCompleted);
+            Assert.Equal(response, exchange.Bytes);
+            Assert.Throws<IOException>(() => exchange.Receive([0x00]));
+        }
+    }
+
     [Fact]
     public async Task Utf8AndHexMatchBytesAcrossCharacterBoundaries()
     {
@@ -196,6 +239,37 @@ public sealed class LocalSensorSessionTests
         Assert.Equal(1, transport.Opens);
         Assert.Equal(DeviceStatusType.Closed, session.Status);
         await Assert.ThrowsAsync<InvalidOperationException>(() => session.ExecuteAsync([new() { Request = "Q" }]));
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task LateOpenSuccessCannotKeepTheEndpointAfterCancellationOrTimeout(bool timeout)
+    {
+        var config = Config();
+        if (timeout) config.ConnectTimeout = 10;
+        var transport = new FakeTransport { BlockOpen = true, CompleteOpenOnCancellation = true };
+        using var session = new LocalSensorSession(_ => transport);
+        var observed = new List<DeviceStatusType>();
+        session.StatusChanged += observed.Add;
+        using var stop = new CancellationTokenSource();
+        Task open = session.OpenAsync(config, stop.Token);
+        await transport.OpenStarted.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        if (timeout) await Assert.ThrowsAsync<TimeoutException>(() => open.WaitAsync(TimeSpan.FromSeconds(5)));
+        else
+        {
+            stop.Cancel();
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => open.WaitAsync(TimeSpan.FromSeconds(5)));
+        }
+
+        Assert.DoesNotContain(DeviceStatusType.Opened, observed);
+        Assert.Equal(DeviceStatusType.Closed, session.Status);
+        Assert.Null(session.EndpointIdentity);
+        Assert.True(transport.Disposed);
+        config.ConnectTimeout = 3000;
+        using var replacement = new LocalSensorSession(_ => new FakeTransport());
+        await replacement.OpenAsync(config);
+        Assert.True(replacement.IsOpen);
     }
 
     [Fact]
@@ -264,7 +338,7 @@ public sealed class LocalSensorSessionTests
             WpfTestHost.Invoke(() =>
             {
                 previousConfig = ConfigService.Instance;
-                ConfigService.SetInstance(new ConfigHandler { IsAutoSave = false });
+                TestEnvironment.SetConfig(new ConfigHandler { IsAutoSave = false });
                 device = new DeviceSensor(new() { Id = -2, Code = "sensor-lifecycle-" + Guid.NewGuid(), Value = Newtonsoft.Json.JsonConvert.SerializeObject(new ConfigSensor { IsNet = true, Addr = "127.0.0.1", Port = port }) });
                 var originalDisplayConfig = device.DisplayConfig;
                 device.Config.Code += "-renamed";
@@ -297,7 +371,66 @@ public sealed class LocalSensorSessionTests
         }
         finally
         {
-            WpfTestHost.Invoke(() => { device?.Dispose(); if (previousConfig != null) ConfigService.SetInstance(previousConfig); });
+            WpfTestHost.Invoke(() => { device?.Dispose(); if (previousConfig != null) TestEnvironment.SetConfig(previousConfig); });
+        }
+    }
+
+    [Fact]
+    public async Task EditedSensorEndpointCannotSendCommandsThroughTheOldConnection()
+    {
+        using var original = new TcpListener(IPAddress.Loopback, 0);
+        using var replacement = new TcpListener(IPAddress.Loopback, 0);
+        original.Start();
+        replacement.Start();
+        int originalPort = ((IPEndPoint)original.LocalEndpoint).Port;
+        int replacementPort = ((IPEndPoint)replacement.LocalEndpoint).Port;
+        ColorVision.UI.IConfigService? previousConfig = null;
+        DeviceSensor? device = null;
+        try
+        {
+            WpfTestHost.Invoke(() =>
+            {
+                previousConfig = ConfigService.Instance;
+                TestEnvironment.SetConfig(new ConfigHandler { IsAutoSave = false });
+                device = new DeviceSensor(new() { Id = -2, Code = "sensor-endpoint-" + Guid.NewGuid(), Value = Newtonsoft.Json.JsonConvert.SerializeObject(new ConfigSensor { IsNet = true, Addr = "127.0.0.1", Port = originalPort }) });
+            });
+            Assert.NotNull(device);
+            await device.ExecuteLocalSensorAsync("Open", null, device.SnapshotLocalSensorConfig(), default);
+            using var oldPeer = await original.AcceptTcpClientAsync().WaitAsync(TimeSpan.FromSeconds(5));
+            WpfTestHost.Invoke(() => device.Config.Port = replacementPort);
+            var config = device.SnapshotLocalSensorConfig();
+            LocalSensorCommand[] commands = [new() { Request = "Q", Timeout = 0 }];
+
+            var error = await Record.ExceptionAsync(() => device.ExecuteLocalSensorAsync("ExecCmd", commands, config, default, autoConnect: true));
+            if (error == null)
+            {
+                byte[] unexpected = new byte[1];
+                await oldPeer.GetStream().ReadExactlyAsync(unexpected).AsTask().WaitAsync(TimeSpan.FromSeconds(5));
+                Assert.Fail($"The previous sensor received '{(char)unexpected[0]}' after its configured endpoint changed.");
+            }
+            Assert.IsType<InvalidOperationException>(error);
+            await Assert.ThrowsAsync<InvalidOperationException>(() => device.ExecuteLocalSensorAsync("Open", null, config, default));
+            Assert.Equal(DeviceStatusType.Opened, device.LocalSession.Status);
+            Assert.False(oldPeer.GetStream().DataAvailable);
+
+            await device.ExecuteLocalSensorAsync("Reopen", null, config, default);
+            using var newPeer = await replacement.AcceptTcpClientAsync().WaitAsync(TimeSpan.FromSeconds(5));
+            await device.ExecuteLocalSensorAsync("ExecCmd", commands, config, default, autoConnect: true);
+            byte[] request = new byte[1];
+            await newPeer.GetStream().ReadExactlyAsync(request).AsTask().WaitAsync(TimeSpan.FromSeconds(5));
+            Assert.Equal((byte)'Q', request[0]);
+        }
+        finally
+        {
+            WpfTestHost.Invoke(() =>
+            {
+                if (device != null)
+                {
+                    device.Dispose();
+                    DisplayConfigManager.Instance.Configs.TryRemove(device.Code, out _);
+                }
+                if (previousConfig != null) TestEnvironment.SetConfig(previousConfig);
+            });
         }
     }
 
@@ -471,6 +604,7 @@ public sealed class LocalSensorSessionTests
     {
         private readonly Channel<byte[]> received = Channel.CreateUnbounded<byte[]>();
         public bool BlockOpen { get; init; }
+        public bool CompleteOpenOnCancellation { get; init; }
         public TaskCompletionSource? OpeningUnwind { get; init; }
         public Func<int, string>? Reply { get; init; }
         public Func<int, byte[][]>? ReplyChunks { get; init; }
@@ -487,6 +621,7 @@ public sealed class LocalSensorSessionTests
             if (BlockOpen)
             {
                 try { await Task.Delay(Timeout.Infinite, token); }
+                catch (OperationCanceledException) when (CompleteOpenOnCancellation) { }
                 finally { if (OpeningUnwind != null) await OpeningUnwind.Task; }
             }
         }

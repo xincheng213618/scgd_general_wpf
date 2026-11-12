@@ -23,7 +23,7 @@ namespace ColorVision.Engine.Templates.POI
     {
         private const double SingularTolerance = 1e-10;
 
-        public static List<LocalPoiRemappedPoint> Remap(PoiParam template, LocalPoiMappingPoint[] layout, string? prefixName)
+        public static List<LocalPoiRemappedPoint> Remap(PoiParam template, LocalPoiMappingPoint[] layout)
         {
             ArgumentNullException.ThrowIfNull(template);
             ArgumentNullException.ThrowIfNull(layout);
@@ -40,7 +40,7 @@ namespace ColorVision.Engine.Templates.POI
                 result.Add(new LocalPoiRemappedPoint
                 {
                     PoiId = point.Id,
-                    Name = string.Concat(prefixName ?? string.Empty, point.Name ?? point.Id.ToString()),
+                    Name = point.Name ?? point.Id.ToString(),
                     PointType = ToPoiPointType(point.PointType),
                     X = ConvertCoordinate(mapped.X, point.Name),
                     Y = ConvertCoordinate(mapped.Y, point.Name),

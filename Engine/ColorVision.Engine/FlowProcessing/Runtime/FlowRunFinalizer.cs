@@ -17,13 +17,17 @@ namespace ColorVision.Engine.FlowProcessing
         FlowControlData EngineResult,
         MeasureBatchModel? Batch,
         string FlowName,
-        long ElapsedMilliseconds);
+        long ElapsedMilliseconds)
+    {
+        public string? FlowKey { get; init; }
+    }
 
     internal interface IFlowPostProcessExecutor
     {
         Task<IReadOnlyList<PostProcessExecutionResult>> ExecuteAsync(
             MeasureBatchModel batch,
-            string flowName);
+            string flowName,
+            string? flowKey);
     }
 
     internal interface IFlowRunFinalizationPersistence
@@ -93,7 +97,8 @@ namespace ColorVision.Engine.FlowProcessing
                     postProcessResults =
                         await postProcessExecutor.ExecuteAsync(
                             request.Batch,
-                            request.FlowName);
+                            request.FlowName,
+                            request.FlowKey);
                 }
                 catch (Exception ex)
                 {
@@ -178,7 +183,10 @@ namespace ColorVision.Engine.FlowProcessing
                 request.EngineResult,
                 finalOutcome,
                 postProcessResults,
-                DateTime.UtcNow);
+                DateTime.UtcNow)
+            {
+                FlowName = request.FlowName
+            };
         }
 
         internal static FlowStatus ResolveRecordedStatus(
@@ -237,29 +245,26 @@ namespace ColorVision.Engine.FlowProcessing
         public async Task<IReadOnlyList<PostProcessExecutionResult>>
             ExecuteAsync(
                 MeasureBatchModel batch,
-                string flowName)
+                string flowName,
+                string? flowKey)
         {
             ArgumentNullException.ThrowIfNull(batch);
             var dispatcher = Application.Current?.Dispatcher;
             if (dispatcher == null || dispatcher.CheckAccess())
-                return ExecuteCore(batch, flowName);
+                return ExecuteCore(batch, flowName, flowKey);
 
             return await dispatcher.InvokeAsync(
-                () => ExecuteCore(batch, flowName));
+                () => ExecuteCore(batch, flowName, flowKey));
         }
 
         private static IReadOnlyList<PostProcessExecutionResult>
             ExecuteCore(
                 MeasureBatchModel batch,
-                string flowName)
+                string flowName,
+                string? flowKey)
         {
-            List<PostProcessMeta> matchingMetas =
-                PostProcessManager.GetInstance().ProcessMetas
-                    .Where(meta => string.Equals(
-                        meta.TemplateName,
-                        flowName,
-                        StringComparison.OrdinalIgnoreCase))
-                    .ToList();
+            List<PostProcessMeta> matchingMetas = PostProcessManager.GetInstance().GetFlowPostProcesses(
+                flowName, flowKey, out bool ambiguousLegacyBinding);
             if (matchingMetas.Count == 0)
                 return Array.Empty<PostProcessExecutionResult>();
 
@@ -274,7 +279,8 @@ namespace ColorVision.Engine.FlowProcessing
             IReadOnlyList<PostProcessExecutionResult> results =
                 PostProcessExecutionRunner.Execute(
                     matchingMetas,
-                    context);
+                    context,
+                    ambiguousLegacyBinding);
             foreach (PostProcessExecutionResult result in results)
             {
                 if (result.Succeeded)

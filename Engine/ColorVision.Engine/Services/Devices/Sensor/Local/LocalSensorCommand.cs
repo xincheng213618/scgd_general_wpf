@@ -8,6 +8,8 @@ namespace ColorVision.Engine.Services.Devices.Sensor.Local;
 /// <summary>The template owns command timing and framing; flow nodes add no second timeout.</summary>
 public sealed class LocalSensorCommand
 {
+    // Optional protocol framing supplied by a device adapter; template matching remains unchanged.
+    internal Func<ILocalSensorResponseParser>? CreateResponseParser { get; set; }
     public string Name { get; set; } = string.Empty;
     public SensorCmdType CmdType { get; set; } = SensorCmdType.Ascii;
     public string Request { get; set; } = string.Empty;
@@ -80,6 +82,11 @@ public sealed class LocalSensorCommand
             Timeout = timeout, Delay = delay, RetryCount = retries
         };
     }
+}
+
+internal interface ILocalSensorResponseParser
+{
+    byte[]? Receive(ReadOnlySpan<byte> bytes);
 }
 
 public sealed class LocalSensorCommandResult

@@ -1,4 +1,5 @@
 using ColorVision.Common.MVVM;
+using System.ComponentModel;
 
 namespace ColorVision.Scheduler
 {
@@ -8,6 +9,11 @@ namespace ColorVision.Scheduler
     /// </summary>
     public interface IJobConfig
     {
+    }
+
+    public interface IJobNameSuggestion : INotifyPropertyChanged
+    {
+        string? SuggestedJobName { get; }
     }
 
     /// <summary>

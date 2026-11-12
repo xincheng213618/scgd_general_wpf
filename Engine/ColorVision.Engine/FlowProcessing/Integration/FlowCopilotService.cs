@@ -1,4 +1,5 @@
 #pragma warning disable CA1822,CA1859,CS8602
+using ColorVision.Engine.FlowProcessing.Editor;
 using ColorVision.Engine.MQTT;
 using ColorVision.Engine.Services.RC;
 using ColorVision.Engine.Templates;
@@ -10,6 +11,7 @@ using log4net;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -27,6 +29,7 @@ namespace ColorVision.Engine.FlowProcessing.Integration
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(FlowCopilotService));
         private readonly FlowEngineManager _manager;
+        private readonly string _sourceInstanceId = Guid.NewGuid().ToString("N");
         private string _copilotNodeCatalogSignature = string.Empty;
         private IReadOnlyList<CopilotFlowNodeTypeContextSnapshot> _copilotNodeCatalog = Array.Empty<CopilotFlowNodeTypeContextSnapshot>();
         private IDisposable? _copilotAgentExtensionRegistration;
@@ -67,13 +70,14 @@ namespace ColorVision.Engine.FlowProcessing.Integration
             var nodes = BuildNodeSnapshots();
             var edges = BuildEdgeSnapshots();
             var batch = Batch;
-            var recentRunMessage = TakeRecentFlowMessageTail(View?.logTextBox?.Text, 6000);
+            var recentRunMessage = TakeRecentFlowMessageTail(CopilotBusinessContextBuilder.MaskSensitiveText(View?.logTextBox?.Text), 6000);
             var failureEvidence = ExtractRecentFlowFailureEvidence(recentRunMessage);
             var focusedNodes = nodes.Where(node => node.IsSelected || node.IsActive).ToArray();
 
             return new CopilotFlowContextSnapshot
             {
                 SourceId = CopilotFlowAgentExtension.SourceId,
+                SourceInstanceId = _sourceInstanceId,
                 Revision = ComputeFlowRevision(flowParam?.Id.ToString(), flowParam?.Name, View?.STNodeEditorMain?.Nodes.Cast<STNode>() ?? Enumerable.Empty<STNode>(), edges),
                 FlowName = flowParam?.Name ?? string.Empty,
                 TemplateName = flowParam?.Name ?? string.Empty,
@@ -98,6 +102,25 @@ namespace ColorVision.Engine.FlowProcessing.Integration
         {
             var snapshot = CaptureCopilotFlowSnapshot();
             return CopilotBusinessContextBundle.FromItem(snapshot.SourceId, CopilotBusinessContextBuilder.BuildFlowContextItem(snapshot));
+        }
+
+        public CopilotFlowValidationSnapshot ValidateCopilotFlowGraph(string expectedRevision)
+        {
+            if (expectedRevision is not { Length: 64 } || !expectedRevision.All(char.IsAsciiHexDigit))
+                throw new ArgumentException("A 64-character hexadecimal Flow revision is required.", nameof(expectedRevision));
+            var editor = View?.STNodeEditorMain ?? throw new InvalidOperationException("No active Flow editor is available.");
+            editor.Dispatcher.VerifyAccess();
+            var flowParam = SelectedFlowParam ?? (TemplateFlowParamsIndex >= 0 && TemplateFlowParamsIndex < FlowParams.Count ? FlowParams[TemplateFlowParamsIndex].Value : null);
+            var edges = BuildEdgeSnapshots();
+            var revision = ComputeFlowRevision(flowParam?.Id.ToString(), flowParam?.Name, editor.Nodes.Cast<STNode>(), edges);
+            var nodeCount = editor.Nodes.Count;
+            var connectionCount = editor.GetConnectionInfo().Length;
+            var executionActive = View.IsExecutionActive;
+            var editorReadOnly = !editor.EnableEdit;
+            if (!string.Equals(revision, expectedRevision, StringComparison.OrdinalIgnoreCase))
+                return new(revision, false, null, string.Empty, null, nodeCount, connectionCount, executionActive, editorReadOnly);
+            var valid = FlowValidator.TryValidate(editor, out string diagnostic, out STNode? invalidNode);
+            return new(revision, true, valid, diagnostic, invalidNode?.Guid, nodeCount, connectionCount, executionActive, editorReadOnly);
         }
 
         public void PublishContext()
@@ -179,8 +202,10 @@ namespace ColorVision.Engine.FlowProcessing.Integration
                         CategoryPath = attribute.Path ?? string.Empty,
                         Title = node?.Title ?? type.Name,
                         Description = attribute.DisplayDescription ?? string.Empty,
+                        AlgorithmHelpTopicId = type.GetCustomAttribute<FlowEngineLib.FlowNodeDocumentationAttribute>(inherit: true)?.TopicId ?? string.Empty,
                         NodeType = node is CVCommonNode commonNode ? commonNode.NodeType ?? string.Empty : string.Empty,
                         DefaultDeviceCode = node is IFlowDeviceNode commonNode1 ? commonNode1.DeviceCode ?? string.Empty : string.Empty,
+                        CanInheritCameraDefaults = node != null && CameraNodeCreationDefaults.SupportsDirectParameters(node),
                         Properties = BuildNodePropertySchemas(type),
                     });
                 }
@@ -206,7 +231,13 @@ namespace ColorVision.Engine.FlowProcessing.Integration
                     DisplayName = string.IsNullOrWhiteSpace(item.Attribute!.Name) ? item.Property.Name : item.Attribute.Name,
                     Description = item.Attribute.Description ?? string.Empty,
                     DataType = item.Property.PropertyType.FullName ?? item.Property.PropertyType.Name,
-                    IsWritable = item.Property.SetMethod?.IsPublic == true && !item.Attribute.IsReadOnly,
+                    IsWritable = IsCopilotFlowPropertyWritable(item.Property, item.Attribute),
+                    DescriptorType = item.Attribute.DescriptorType?.FullName ?? string.Empty,
+                    DeclaredEnumNames = item.Property.PropertyType.IsEnum
+                        ? Array.AsReadOnly(Enum.GetNames(item.Property.PropertyType)) : Array.Empty<string>(),
+                    IsFlagsEnum = item.Property.PropertyType.IsEnum && item.Property.PropertyType.IsDefined(typeof(FlagsAttribute), inherit: false),
+                    BooleanStringCandidates = item.Property.PropertyType == typeof(bool) && item.Attribute.DescriptorType == typeof(STNodePropertyDescriptor)
+                        ? Array.AsReadOnly(new[] { bool.TrueString, bool.FalseString }) : Array.Empty<string>(),
                 })
                 .OrderBy(property => property.DisplayName, StringComparer.CurrentCultureIgnoreCase)
                 .ToArray();
@@ -248,18 +279,22 @@ namespace ColorVision.Engine.FlowProcessing.Integration
             return result;
         }
 
-        public CopilotFlowNodeContextSnapshot PreviewCopilotFlowNodeAddition(string typeKey, int left, int top, string? expectedRevision)
+        public CopilotFlowNodeContextSnapshot PreviewCopilotFlowNodeAddition(string typeKey, int left, int top, string? expectedRevision,
+            bool inheritCameraDefaults = false, string? cameraDefaultsFingerprint = null)
         {
             EnsureCopilotFlowMutationAllowed(expectedRevision);
             var node = CreateCopilotFlowNode(typeKey, left, top);
-            return BuildNodeSnapshot(node, isActive: false);
+            var cameraDefaults = InitializeCopilotCameraDefaults(node, inheritCameraDefaults, cameraDefaultsFingerprint, requireFingerprint: false);
+            return BuildNodeSnapshot(node, isActive: false, cameraDefaults.Defaults, cameraDefaults.Fingerprint);
         }
 
-        public CopilotFlowContextSnapshot AddCopilotFlowNode(string typeKey, int left, int top, string? expectedRevision)
+        public CopilotFlowContextSnapshot AddCopilotFlowNode(string typeKey, int left, int top, string? expectedRevision,
+            bool inheritCameraDefaults = false, string? cameraDefaultsFingerprint = null)
         {
             EnsureCopilotFlowMutationAllowed(expectedRevision);
             var editor = View?.STNodeEditorMain ?? throw new InvalidOperationException("No active Flow editor is available.");
             var node = CreateCopilotFlowNode(typeKey, left, top);
+            InitializeCopilotCameraDefaults(node, inheritCameraDefaults, cameraDefaultsFingerprint, requireFingerprint: true);
             try
             {
                 if (node is CVBaseServerNode serverNode)
@@ -291,15 +326,16 @@ namespace ColorVision.Engine.FlowProcessing.Integration
             string value,
             string? expectedRevision)
         {
-            EnsureCopilotFlowMutationAllowed(expectedRevision);
+            EnsureCopilotFlowMutationAllowed(null);
             var node = FindCopilotFlowNode(nodeId);
             var property = ResolveCopilotFlowProperty(node, propertyName);
+            EnsureCopilotFlowMutationAllowed(expectedRevision);
             var clone = Activator.CreateInstance(node.GetType()) as STNode
                 ?? throw new InvalidOperationException($"The Flow node type cannot be created: {GetNodeTypeKey(node.GetType())}");
             clone.Create();
             clone.OnLoadNode(ParseNodeSaveData(node.GetSaveData()));
             var oldValue = FormatFlowPropertyValue(property.GetValue(clone));
-            clone.OnLoadNode(new Dictionary<string, byte[]> { [property.Name] = Encoding.UTF8.GetBytes(value ?? string.Empty) });
+            clone.SetPropertyValueFromString(property.Name, value);
             return (BuildNodeSnapshot(clone, isActive: false), property.Name, oldValue, FormatFlowPropertyValue(property.GetValue(clone)));
         }
 
@@ -309,14 +345,15 @@ namespace ColorVision.Engine.FlowProcessing.Integration
             string value,
             string? expectedRevision)
         {
-            EnsureCopilotFlowMutationAllowed(expectedRevision);
+            EnsureCopilotFlowMutationAllowed(null);
             var editor = View.STNodeEditorMain;
             var node = FindCopilotFlowNode(nodeId);
             var property = ResolveCopilotFlowProperty(node, propertyName);
+            EnsureCopilotFlowMutationAllowed(expectedRevision);
             var oldValue = property.GetValue(node);
             try
             {
-                node.OnLoadNode(new Dictionary<string, byte[]> { [property.Name] = Encoding.UTF8.GetBytes(value ?? string.Empty) });
+                node.SetPropertyValueFromString(property.Name, value);
                 editor.Invalidate();
                 return CaptureCopilotFlowSnapshot();
             }
@@ -366,6 +403,71 @@ namespace ColorVision.Engine.FlowProcessing.Integration
             }
         }
 
+        public CopilotFlowEdgeContextSnapshot PreviewCopilotFlowDisconnection(
+            string sourceNodeId, string sourcePortId, string targetNodeId, string targetPortId, string expectedRevision)
+        {
+            var (output, input, _) = ResolveCopilotFlowDisconnection(sourceNodeId, sourcePortId, targetNodeId, targetPortId, expectedRevision);
+            return BuildEdgeSnapshot(output, input);
+        }
+
+        public CopilotFlowContextSnapshot DisconnectCopilotFlowNodes(
+            string sourceNodeId, string sourcePortId, string targetNodeId, string targetPortId, string expectedRevision)
+        {
+            var (output, input, editor) = ResolveCopilotFlowDisconnection(sourceNodeId, sourcePortId, targetNodeId, targetPortId, expectedRevision);
+            CopilotFlowContextSnapshot? result = null;
+            var status = output.DisConnectOptionTransactional(input, () =>
+            {
+                // Pre-disconnect callbacks can change lifecycle, revision, or port ownership synchronously.
+                var current = ResolveCopilotFlowDisconnection(sourceNodeId, sourcePortId, targetNodeId, targetPortId, expectedRevision);
+                if (!ReferenceEquals(current.Output, output) || !ReferenceEquals(current.Input, input) || !ReferenceEquals(current.Editor, editor))
+                    throw new InvalidOperationException("The exact Flow connection changed during its disconnect callbacks.");
+            }, () =>
+            {
+                if (!ReferenceEquals(View?.STNodeEditorMain, editor))
+                    throw new InvalidOperationException("The Flow editor changed while disconnecting its edge.");
+                EnsureCopilotFlowMutationAllowed(null);
+                result = CaptureCopilotFlowSnapshot();
+            });
+            if (status != ConnectionStatus.DisConnected)
+                throw new InvalidOperationException($"Flow disconnection was rejected: {status}.");
+            return result ?? throw new InvalidOperationException("The disconnected Flow graph could not be captured.");
+        }
+
+        private (STNodeOption Output, STNodeOption Input, STNodeEditor Editor) ResolveCopilotFlowDisconnection(
+            string sourceNodeId, string sourcePortId, string targetNodeId, string targetPortId, string expectedRevision)
+        {
+            if (expectedRevision is not { Length: 64 } || !expectedRevision.All(char.IsAsciiHexDigit))
+                throw new ArgumentException("An exact 64-character hexadecimal Flow revision is required.", nameof(expectedRevision));
+            var editor = View?.STNodeEditorMain ?? throw new InvalidOperationException("No active Flow editor is available.");
+            editor.Dispatcher.VerifyAccess();
+            EnsureCopilotFlowMutationAllowed(expectedRevision);
+            STNode StableNode(string value)
+            {
+                if (value is not { Length: 36 } || !Guid.TryParseExact(value, "D", out var id) || id == Guid.Empty)
+                    throw new InvalidOperationException("Disconnection requires exact stable node GUIDs in D format.");
+                var matches = editor.Nodes.Cast<STNode>().Where(node => node.Guid == id).Take(2).ToArray();
+                return matches.Length == 1 ? matches[0] : throw new InvalidOperationException("The exact stable Flow node is missing or ambiguous.");
+            }
+            STNodeOption Port(STNodeOption[] options, string value, string direction)
+            {
+                var prefix = direction + ":";
+                if (value == null || !value.StartsWith(prefix, StringComparison.Ordinal)
+                    || !int.TryParse(value[prefix.Length..], NumberStyles.None, CultureInfo.InvariantCulture, out var index)
+                    || index < 0 || value[prefix.Length..] != index.ToString(CultureInfo.InvariantCulture))
+                    throw new InvalidOperationException("Disconnection requires a canonical out:N or in:N port identifier.");
+                return ResolveCopilotFlowPort(options, value, direction);
+            }
+            var source = StableNode(sourceNodeId);
+            var target = StableNode(targetNodeId);
+            var output = Port(source.GetAllOutputOptions(), sourcePortId, "out");
+            var input = Port(target.GetAllInputOptions(), targetPortId, "in");
+            if (!output.ConnectedOption.Contains(input) || !input.ConnectedOption.Contains(output))
+                throw new InvalidOperationException("The exact Flow connection no longer exists at both endpoints.");
+            if (source.LockOption || target.LockOption)
+                throw new InvalidOperationException("The Flow connection endpoints are locked.");
+            return (output, input, editor);
+        }
+
         private STNode FindCopilotFlowNode(string nodeId)
         {
             if (string.IsNullOrWhiteSpace(nodeId))
@@ -387,10 +489,18 @@ namespace ColorVision.Engine.FlowProcessing.Integration
             var property = node.GetType().GetProperty(propertyName, BindingFlags.Public | BindingFlags.Instance)
                 ?? throw new InvalidOperationException($"The Flow property was not found: {propertyName}");
             var attribute = property.GetCustomAttribute<STNodePropertyAttribute>();
-            if (attribute == null || attribute.IsHide || attribute.IsReadOnly || property.SetMethod?.IsPublic != true)
+            if (!IsCopilotFlowPropertyWritable(property, attribute))
+            {
+                if (IsSensitiveFlowPropertyName(attribute?.Name))
+                    throw new InvalidOperationException($"Copilot cannot read or change the sensitive Flow property: {propertyName}");
                 throw new InvalidOperationException($"The Flow property is not writable through Copilot: {propertyName}");
+            }
             return property;
         }
+
+        private static bool IsCopilotFlowPropertyWritable(PropertyInfo property, STNodePropertyAttribute? attribute)
+            => attribute != null && !attribute.IsHide && !attribute.IsReadOnly && property.SetMethod?.IsPublic == true
+                && !IsSensitiveFlowPropertyName(property.Name) && !IsSensitiveFlowPropertyName(attribute.Name);
 
         private (STNodeOption Output, STNodeOption Input) ResolveCopilotFlowConnection(
             string sourceNodeId,
@@ -481,10 +591,13 @@ namespace ColorVision.Engine.FlowProcessing.Integration
             return value?.ToString() ?? string.Empty;
         }
 
-        private static bool IsSensitiveFlowPropertyName(string propertyName)
+        private static bool IsSensitiveFlowPropertyName(string? propertyName)
         {
+            if (string.IsNullOrEmpty(propertyName)) return false;
+            var normalizedName = new string(propertyName.Where(character => !char.IsWhiteSpace(character) && character is not ('_' or '-' or '.')).ToArray());
             return new[] { "password", "passwd", "pwd", "secret", "token", "apikey", "api_key", "accesskey", "privatekey", "license", "sn" }
-                .Any(term => propertyName.Contains(term, StringComparison.OrdinalIgnoreCase));
+                .Any(term => normalizedName.Contains(term, StringComparison.OrdinalIgnoreCase))
+                || CopilotBusinessContextBuilder.IsSensitivePropertyName(propertyName);
         }
 
         private void EnsureCopilotFlowMutationAllowed(string? expectedRevision)
@@ -525,7 +638,41 @@ namespace ColorVision.Engine.FlowProcessing.Integration
             return node;
         }
 
-        private static CopilotFlowNodeContextSnapshot BuildNodeSnapshot(STNode node, bool isActive)
+        private static (CopilotFlowCameraDefaults? Defaults, string? Fingerprint) InitializeCopilotCameraDefaults(
+            STNode node, bool inheritCameraDefaults, string? expectedFingerprint, bool requireFingerprint)
+        {
+            if (!inheritCameraDefaults)
+            {
+                if (!string.IsNullOrEmpty(expectedFingerprint))
+                    throw new InvalidOperationException("A camera defaults fingerprint requires inheritCameraDefaults=true.");
+                return (null, null);
+            }
+            if (!CameraNodeCreationDefaults.SupportsDirectParameters(node))
+                throw new InvalidOperationException("This Flow node does not support inheriting camera acquisition defaults.");
+            if (requireFingerprint && string.IsNullOrWhiteSpace(expectedFingerprint))
+                throw new InvalidOperationException("Preview the current camera acquisition defaults and provide their fingerprint before adding this node.");
+            if (!CameraNodeCreationDefaults.InitializeFromCurrentCamera(node))
+                throw new InvalidOperationException("No available camera has valid acquisition defaults for this node. Check the camera selection, exposure, gain, average count, and flip mode.");
+
+            var defaults = CameraNodeCreationDefaults.CaptureEffectiveDefaults(node);
+            var canonical = new StringBuilder();
+            AppendCanonical(canonical, GetNodeTypeKey(node.GetType()));
+            AppendCanonical(canonical, defaults.DeviceCode);
+            AppendCanonical(canonical, defaults.ExposureMilliseconds.Count.ToString(CultureInfo.InvariantCulture));
+            foreach (float exposure in defaults.ExposureMilliseconds)
+                AppendCanonical(canonical, exposure.ToString("R", CultureInfo.InvariantCulture));
+            AppendCanonical(canonical, defaults.Gain.ToString("R", CultureInfo.InvariantCulture));
+            AppendCanonical(canonical, defaults.AverageCount.ToString(CultureInfo.InvariantCulture));
+            AppendCanonical(canonical, defaults.FlipMode);
+            AppendCanonical(canonical, defaults.CalibrationTemplateName);
+            string fingerprint = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(canonical.ToString())));
+            if (!string.IsNullOrEmpty(expectedFingerprint) && !string.Equals(expectedFingerprint, fingerprint, StringComparison.OrdinalIgnoreCase))
+                throw new InvalidOperationException("The camera acquisition defaults changed after preview. Preview and approve the updated defaults before adding this node.");
+            return (defaults, fingerprint);
+        }
+
+        private static CopilotFlowNodeContextSnapshot BuildNodeSnapshot(STNode node, bool isActive,
+            CopilotFlowCameraDefaults? cameraDefaults = null, string? cameraDefaultsFingerprint = null)
         {
             var runtimeType = node.GetType();
             var instanceId = node.Guid.ToString();
@@ -553,6 +700,8 @@ namespace ColorVision.Engine.FlowProcessing.Integration
                 InputPorts = BuildPortSnapshots(node.GetAllInputOptions(), "in"),
                 OutputPorts = BuildPortSnapshots(node.GetAllOutputOptions(), "out"),
                 Parameters = BuildNodeParameterSummary(node),
+                CameraDefaults = cameraDefaults,
+                CameraDefaultsFingerprint = cameraDefaultsFingerprint,
             };
         }
 
@@ -718,6 +867,7 @@ namespace ColorVision.Engine.FlowProcessing.Integration
                     var value = property.GetValue(node);
                     properties.Add(new CopilotContextProperty
                     {
+                        PropertyName = property.Name,
                         Name = string.IsNullOrWhiteSpace(nodeProperty.Name) ? property.Name : nodeProperty.Name,
                         Value = value?.ToString() ?? string.Empty,
                     });
@@ -727,7 +877,7 @@ namespace ColorVision.Engine.FlowProcessing.Integration
                 }
             }
 
-            return properties;
+            return properties.OrderBy(property => property.PropertyName, StringComparer.Ordinal).ToArray();
         }
 
         private static bool IsSimpleType(Type type)

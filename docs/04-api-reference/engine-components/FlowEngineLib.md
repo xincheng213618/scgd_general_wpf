@@ -4,8 +4,8 @@ knowledge_type: "reference"
 status: "current"
 summary: "节点图加载、服务绑定、弃用节点兼容、完成事件和隔离 RuntimeHost 的执行边界。"
 aliases: ["上游DLL更新", "反编译比对", "只提供DLL", "节点类型映射","跨程序集节点名称匹配","流程节点结束为什么业务还没完成","FlowEngineLib","FlowEngineAPI","FlowEngineControl","CVStartCFC","FlowRuntimeHost","弃用节点兼容","合规验证旧流程","AlgComplianceMathNode","AlgComplianceContrastNode","AlgComplianceJudgmentNode","ComplianceMathType","Compliance_Math","Compliance_Contrast","Compliance.Judgment"]
-code_paths: ["Engine/FlowEngineLib/README.md","Engine/FlowEngineLib/FlowEngineLib.csproj","Engine/FlowEngineLib/FlowEngineAPI.cs","Engine/FlowEngineLib/FlowEngineControl.cs","Engine/FlowEngineLib/FlowEngineEventArgs.cs","Engine/FlowEngineLib/Start/BaseStartNode.cs","Engine/FlowEngineLib/Base/CVBaseServerNode.cs","Engine/FlowEngineLib/Base/CVStartCFC.cs","Engine/FlowEngineLib/End/CVEndNode.cs","Engine/FlowEngineLib/Runtime/FlowRuntimeHost.cs","Engine/FlowEngineLib/Node/Algorithm/AlgComplianceMathNode.cs","Engine/FlowEngineLib/Node/Algorithm/AlgComplianceContrastNode.cs","Engine/FlowEngineLib/Node/Algorithm/AlgComplianceJudgmentNode.cs","Engine/FlowEngineLib/Node/Algorithm/ComplianceMathType.cs","Engine/FlowEngineLib/Algorithm/ComplianceMathParam.cs","Engine/FlowEngineLib/Algorithm/ComplianceContrastParam.cs","Engine/FlowEngineLib/Algorithm/ComplianceJudgmentParam.cs","Engine/ST.Library.UI/NodeEditor/STNodeTypeRegistry.cs","Engine/ST.Library.UI/NodeEditor/STNodeTreeView.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/CompatibilityNodeMigrationTests.cs", "Test/ColorVision.UI.Tests/LvCameraNodeMigrationTests.cs","Test/ColorVision.UI.Tests/FlowEngineControlLifecycleTests.cs","Test/ColorVision.UI.Tests/FlowRuntimeCompletionTests.cs","Test/ColorVision.UI.Tests/FlowRuntimeHostTests.cs"]
+code_paths: ["Engine/FlowEngineLib/README.md","Engine/FlowEngineLib/FlowEngineLib.csproj","Engine/FlowEngineLib/FlowEngineAPI.cs","Engine/FlowEngineLib/FlowEngineControl.cs","Engine/FlowEngineLib/FlowEngineEventArgs.cs","Engine/FlowEngineLib/Start/BaseStartNode.cs","Engine/FlowEngineLib/Base/CVBaseServerNode.cs","Engine/FlowEngineLib/Base/CVStartCFC.cs","Engine/FlowEngineLib/End/CVEndNode.cs","Engine/FlowEngineLib/Runtime/FlowRuntimeHost.cs","Engine/FlowEngineLib/Node/Algorithm/AlgComplianceMathNode.cs","Engine/FlowEngineLib/Node/Algorithm/AlgComplianceContrastNode.cs","Engine/FlowEngineLib/Node/Algorithm/AlgComplianceJudgmentNode.cs","Engine/FlowEngineLib/Node/Algorithm/ComplianceMathType.cs","Engine/FlowEngineLib/Algorithm/ComplianceMathParam.cs","Engine/FlowEngineLib/Algorithm/ComplianceContrastParam.cs","Engine/FlowEngineLib/Algorithm/ComplianceJudgmentParam.cs","Engine/ST.Library.UI/NodeEditor/STNodeTypeRegistry.cs","Engine/ST.Library.UI/NodeEditor/STNodeTreeView.cs","Engine/FlowEngineLib/CalcEQEParam.cs","Engine/FlowEngineLib/AlgorithmEQENode.cs","Engine/FlowEngineLib/Node/Spectrum/SpectrumEQENode.cs","Engine/FlowEngineLib/LightingSensorNode.cs","Engine/FlowEngineLib/LightingSensorData.cs","Engine/FlowEngineLib/LightingChannel.cs","Engine/FlowEngineLib/LightingCommand.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/CompatibilityNodeMigrationTests.cs", "Test/ColorVision.UI.Tests/LvCameraNodeMigrationTests.cs","Test/ColorVision.UI.Tests/FlowEngineControlLifecycleTests.cs","Test/ColorVision.UI.Tests/FlowRuntimeCompletionTests.cs","Test/ColorVision.UI.Tests/FlowRuntimeHostTests.cs","Test/ColorVision.UI.Tests/FlowUpstreamProtocolTests.cs","Test/ColorVision.UI.Tests/LocalSpectrumFlowTests.cs"]
 related: ["flow.architecture","flow.editor","flow.workspace","flow.templates","flow.session","flow.headless","flow.node-extension"]
 ---
 
@@ -38,7 +38,7 @@ related: ["flow.architecture","flow.editor","flow.workspace","flow.templates","f
 
 `FlowEngineControl.NodeAdded` 会把节点分成两类：`BaseStartNode` 进入 `startNodeNames` 并订阅完成事件；`CVBaseServerNode` 进入服务节点集合并同步到设备视图。
 
-`FlowEngineAPI` 定义 `LoadFromFile` / `LoadFromBase64`、`StartNode` 和 `StopNode`，具体的 `FlowEngineControl` 另提供 `TryStartNode`。`TryStartNode(name, serialNumber)` 检查当前未运行、开始节点存在、`IsExecutionReady` 和 `CanAcceptStart`；拒绝时返回 `false`。返回 `true` 只说明启动被接受，不代表图或客户业务完成；返回 `void` 的 `StartNode` 不提供该拒绝结果。
+`FlowEngineAPI` 定义 `LoadFromFile` / `LoadFromBase64`、`StartNode` 和 `StopNode`，具体的 `FlowEngineControl` 另提供 `TryStartNode`。`TryStartNode(name, serialNumber)` 检查当前未运行、开始节点存在、`IsExecutionReady` 和 `CanAcceptStart`。拒绝时返回 `false`，接受时返回 `true`。开始端口分发抛错时，结束已登记的动作并清理资源，保留原始异常供调用方处理。`StartNode` 返回 `void`。
 
 流程执行编号会被旧服务用于结果文件名，开始入口通过 `Tool.SanitizeFileName` 将 Windows 非法文件名字符（含 `?`、路径分隔符和控制字符）替换为 `_`，去除尾部点/空格，空名与保留设备名使用安全占位/前缀。合法编号保持不变；等待完成、回调、运行状态、查找开始动作和停止均使用相同规范化编号，`FlowHeadlessExecutionRequest.SerialNumber` 也保存实际执行编号。拥有业务批次的调用方须在创建批次和诊断记录前生成此编号，不能只在某个算法请求发送时替换，否则会割裂批次、消息和完成事件的关联。客户产品 SN 是独立业务字段，保留原值用于显示、追溯和协议回传；用它生成文件名时单独格式化，不改写文件内容或历史批次。
 
@@ -56,7 +56,9 @@ related: ["flow.architecture","flow.editor","flow.workspace","flow.templates","f
 | `CVEndNode` | `TryDoFinishing()` 接受首次终止后调用 `FireFinished()`，重复到达不会再次结束 |
 | `AlgorithmNode` / `AlgorithmARVRNode` | 把模板、图像、颜色、POI、SMU 数据打包成算法请求 |
 
-大部分节点的核心职责是构建并转发执行参数，不是在本地完成完整算法。
+大部分节点构建并转发执行参数，由服务完成算法。`LightingSensorNode` 复用现有 `LightingControl` 服务，支持 A/B 通道开关和查询，不另建连接或本地后端。
+
+`AlgorithmEQENode` 请求中的 `SMUData` 携带电气分支的结果 ID 和类型，同时保留旧 `SMU_MasterId` 字段兼容既有算法服务。`SpectrumEQENode` 的服务路径按紧邻前步结果构造关联；本地路径保留实际 SMU 量测关联、V/mA 单位和缺失输入校验，不能套用服务的零值占位。源码见 `Engine/FlowEngineLib/CalcEQEParam.cs`、`AlgorithmEQENode.cs` 和 `Node/Spectrum/SpectrumEQENode.cs`；`FlowUpstreamProtocolTests` 保护请求与保存边界。
 
 ## 节点类型加载
 
@@ -115,9 +117,11 @@ flowchart TD
 
 `Finished` 携带 `FlowEngineEventArgs`，字段包括 `StartNodeName`、`SerialNumber`、`Status`、`TotalTime`、`Message` 与错误节点信息；调用方按 `Status` 判断执行结果，按 `StartNodeName` 识别开始节点。
 
-节点完成通知尚未发布时，流程完成通知可延后。多个 `CVStartCFC` 副本共享延后计数，但通知保留真正结束流程的副本；最后释放延后计数的上游副本不能覆盖终态和错误信息。
+节点完成通知尚未发布时，流程完成通知可延后。`CVStartCFC` 副本共享延后计数，通知采用实际结束流程的副本。开始节点向各订阅者分别传递同一终态，记录单个订阅者的异常后继续通知引擎和其余订阅者。
 
-流程结束时，`BaseStartNode.DoFinishing` 会沿开始端口再次传递终态，供沿途节点释放运行记录；这是内核状态清理，与宿主配置的后处理项目无关。`CVBaseServerNode` 收到 `Completed` 时只清理并继续传递状态，不再次发送服务请求或启动本地执行。`IgnoreErrors` 用于让指定节点在上游出错后仍执行收尾，不会把本节点自身的执行失败改成成功，也不能让正常完成通知重新执行设备指令。
+流程结束时，`BaseStartNode.DoFinishing` 沿开始端口传递终态，供沿途节点释放运行记录；宿主后处理属于后续阶段。单次停止取消 `StopToken` 并释放运行资源，已停止的分支无法再次完成流程。资源释放失败时继续尝试其余资源，将异常写入日志，并发布已确定的终态。`CVBaseServerNode` 收到 `Completed` 时只清理并转发状态。`IgnoreErrors` 用于上游出错后的收尾，保留本节点自身的失败状态。
+
+“逻辑与”“组合”及多输入服务和本地节点只汇合同一次运行的分支。重复框内还要求轮次一致。同 SN 重新测量时，旧分支的结果和停止信号不会参与或清空新运行的待汇合输入。
 
 共享会话的 `RunFinalized`、后处理失败策略及项目兼容链见[执行会话](../../01-user-guide/workflow/execution.md)；隔离运行的状态映射见[无界面执行](../algorithms/templates/flow-engine.md)。它们不是 FlowEngineLib 内核自动附带的业务阶段。
 
@@ -132,7 +136,7 @@ FlowEngineLib 只知道节点图和引擎执行状态，不拥有模板数据库
 | 验收项 | 通过标准 |
 | --- | --- |
 | 构建和依赖 | `FlowEngineLib.csproj`、ST.Library.UI、MQTT/JSON 依赖能加载 |
-| 画布加载 | Base64 或文件能加载节点，相同画布不会重复加载 |
+| 画布加载 | 桌面画布复用相同内容。无界面宿主重载时按当前服务快照重新建立节点连接 |
 | 节点发现 | 开始节点进入 `startNodeNames`，服务节点进入服务集合 |
 | 服务绑定 | 外部 `MQTTServiceInfo` 能绑定到服务节点 |
 | 启动链 | 输入 SN 后能从正确开始节点启动，运行状态正确 |

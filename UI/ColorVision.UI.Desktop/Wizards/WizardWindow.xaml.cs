@@ -22,21 +22,22 @@ namespace ColorVision.UI.Desktop.Wizards
         {
             IWizardSteps.Clear();
             WizardInitializers.Clear();
-            foreach (var assembly in AssemblyHandler.GetInstance().GetAssemblies())
+            var assemblyService = AssemblyHandler.GetInstance();
+            foreach (var type in assemblyService.GetImplementationTypes(typeof(IWizardStep)))
             {
-                foreach (var type in assembly.GetTypes().Where(t => !t.IsAbstract))
+                if (Activator.CreateInstance(type) is IWizardStep wizardStep)
                 {
-                    if (typeof(IWizardStep).IsAssignableFrom(type) && Activator.CreateInstance(type) is IWizardStep wizardStep)
-                    {
-                        log.Debug(type);
-                        IWizardSteps.Add(wizardStep);
-                    }
+                    log.Debug(type);
+                    IWizardSteps.Add(wizardStep);
+                }
+            }
 
-                    if (typeof(IWizardInitializer).IsAssignableFrom(type) && Activator.CreateInstance(type) is IWizardInitializer initializer)
-                    {
-                        log.Debug(type);
-                        WizardInitializers.Add(initializer);
-                    }
+            foreach (var type in assemblyService.GetImplementationTypes(typeof(IWizardInitializer)))
+            {
+                if (Activator.CreateInstance(type) is IWizardInitializer initializer)
+                {
+                    log.Debug(type);
+                    WizardInitializers.Add(initializer);
                 }
             }
             IWizardSteps = IWizardSteps.OrderBy(handler => handler.Order).ToList();

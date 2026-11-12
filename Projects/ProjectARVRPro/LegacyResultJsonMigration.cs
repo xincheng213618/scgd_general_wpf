@@ -134,6 +134,7 @@ namespace ProjectARVRPro
             {
                 ExecuteNonQuery(connection, transaction, $"DROP TABLE IF EXISTS {QuoteIdentifier(temporaryTable)};");
                 ExecuteNonQuery(connection, transaction, createTemporaryTableSql);
+                CopyViewResultIdentitySequence(connection, transaction, temporaryTable);
                 ExecuteNonQuery(
                     connection,
                     transaction,
@@ -176,6 +177,24 @@ namespace ProjectARVRPro
                 transaction.Rollback();
                 throw;
             }
+        }
+
+        private static void CopyViewResultIdentitySequence(SqliteConnection connection, SqliteTransaction transaction, string temporaryTable)
+        {
+            const string sequenceExistsSql = "SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = 'sqlite_sequence';";
+            if (ExecuteScalarInt64(connection, transaction, sequenceExistsSql) == 0)
+                return;
+
+            // Copying surviving rows alone cannot preserve IDs from previously deleted rows.
+            using SqliteCommand command = connection.CreateCommand();
+            command.Transaction = transaction;
+            command.CommandText = """
+                INSERT INTO "sqlite_sequence" ("name", "seq")
+                SELECT $temporaryTable, "seq" FROM "sqlite_sequence" WHERE "name" = $viewTable;
+                """;
+            command.Parameters.AddWithValue("$temporaryTable", temporaryTable);
+            command.Parameters.AddWithValue("$viewTable", ViewTable);
+            command.ExecuteNonQuery();
         }
 
         private static bool HasLegacyValues(SqliteConnection connection, string tableName, string columnName)

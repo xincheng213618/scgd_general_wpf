@@ -24,6 +24,11 @@ public partial class FileManagementControl : UserControl
     }
 
     private async void Scan_Click(object sender, RoutedEventArgs e) => await ViewModel.ScanAsync();
+    internal void FocusCategory(StorageCleanupItem item) => Dispatcher.BeginInvoke(() =>
+    {
+        CategoriesList.UpdateLayout();
+        if (CategoriesList.ItemContainerGenerator.ContainerFromItem(item) is FrameworkElement element) element.BringIntoView();
+    });
     private void Cancel_Click(object sender, RoutedEventArgs e) => ViewModel.Cancel();
     private void OpenLocation_Click(object sender, RoutedEventArgs e)
     {

@@ -51,32 +51,6 @@
             </DockPanel>
         </DockPanel>
         <StackPanel x:Name="CaptureOnlyPanel">
-            <DockPanel Margin="0,0,0,2" x:Name="HdrPanel">
-                <Button Width="24" Height="24" Margin="4,0,0,0" Padding="2" ToolTip="{x:Static properties:Resources.Property}" DockPanel.Dock="Right" x:Name="EditHdrButton">
-                    <TextBlock FontFamily="Segoe MDL2 Assets" Text="" FontSize="14" HorizontalAlignment="Center"/>
-                </Button>
-                <TextBlock Width="52" Margin="0,0,4,0" Text="{engine:EngineLang CameraPanel_HDR}"/>
-                <ComboBox d:DataContext="{d:DesignInstance local:DisplayCameraConfig}" x:Name="ComboBoxHDRTemplate" SelectedIndex="{Binding HDRTemplateIndex}" SelectedValuePath="Value" Style="{StaticResource ComboBox.Small}">
-                    <ComboBox.ItemTemplate>
-                        <DataTemplate>
-                            <TextBlock>
-                                <TextBlock.Style>
-                                    <Style TargetType="TextBlock">
-                                        <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
-                                        <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
-                                        <Setter Property="Text" Value="{Binding Key}"/>
-                                        <Style.Triggers>
-                                            <DataTrigger Binding="{Binding Value.Id}" Value="-1">
-                                                <Setter Property="Text" Value="{engine:EngineLang CameraPanel_NotUsed}"/>
-                                            </DataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </TextBlock.Style>
-                            </TextBlock>
-                        </DataTemplate>
-                    </ComboBox.ItemTemplate>
-                </ComboBox>
-            </DockPanel>
             <DockPanel Margin="0,0,0,2">
                 <Button Content="{x:Static properties:Resources.AutoExposure}" Padding="3,1" x:Name="AutoExposureButton" DockPanel.Dock="Right"/>
                 <DockPanel x:Name="AutoExposureTemplatePanel">
@@ -141,7 +115,9 @@
                 <StackPanel x:Name="MotorPanel" Visibility="{Binding Config.MotorConfig.IsUseMotor, Converter={StaticResource bool2VisibilityConverter}}">
                     <StackPanel Margin="0,5,0,0">
                         <DockPanel>
-                            <Button Content="{x:Static properties:Resources.AutoFocus}" DockPanel.Dock="Right" x:Name="AutoFocusButton"/>
+                            <Button Content="{x:Static properties:Resources.AutoFocus}" Padding="5,1" DockPanel.Dock="Right" x:Name="AutoFocusButton"/>
+                            <Button x:Name="FineFocusButton" DockPanel.Dock="Right" Margin="0,0,3,0" Padding="5,1" Visibility="Collapsed"
+                                    Content="{engine:EngineLang CameraPanel_FineFocus}" ToolTip="{engine:EngineLang CameraPanel_FineFocusHint}"/>
                             <Grid Width="20" Margin="5,0" HorizontalAlignment="Left" DockPanel.Dock="Right">
                                 <TextBlock HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="16" Foreground="{DynamicResource GlobalTextBrush}" RenderTransformOrigin="0.5,0.5" Text="">
                                     <TextBlock.RenderTransform>
@@ -162,22 +138,54 @@
                             </Grid>
                             <ComboBox d:DataContext="{d:DesignInstance local:DisplayCameraConfig}" x:Name="ComboxAutoFocus" DisplayMemberPath="Key" SelectedIndex="{Binding AutoFocusTemplateIndex}" SelectedValuePath="Value" Style="{StaticResource ComboBox.Small}"/>
                         </DockPanel>
-                        <DockPanel Margin="0,2">
-                            <Button Content="{x:Static properties:Resources.Move}" DockPanel.Dock="Right" x:Name="MoveButton"/>
+                        <DockPanel Margin="0,1,0,0">
+                            <Button Content="{x:Static properties:Resources.Move}" Padding="5,1" DockPanel.Dock="Right" x:Name="MoveButton"/>
                             <CheckBox x:Name="CheckBoxIsAbs" Content="{x:Static properties:Resources.AbsolutePosition}"/>
-                            <TextBox x:Name="TextPos" Margin="5,0" BorderThickness="0,0,0,1" Text="0"/>
+                            <TextBox x:Name="TextPos" Margin="4,0" BorderThickness="0,0,0,1" Text="0"/>
                         </DockPanel>
-                        <DockPanel Margin="0,2">
-                            <Button Content="{x:Static properties:Resources.AdjustAperture}" DockPanel.Dock="Right" x:Name="ApertureButton"/>
-                            <TextBlock Width="40" Text="{x:Static properties:Resources.ApertureF}"/>
-                            <TextBox x:Name="TextDiaphragm" Margin="5,0" BorderThickness="0,0,0,1" Text="0"/>
-                        </DockPanel>
-                        <Button Margin="0,2" Content="{x:Static properties:Resources.HomePosition}" x:Name="HomeButton"/>
-                        <DockPanel>
-                            <Button Content="{x:Static properties:Resources.AcquirePosition}" DockPanel.Dock="Right" x:Name="ReadPositionButton"/>
-                            <TextBlock Width="60" Text="{x:Static properties:Resources.CurrentPosition}"/>
-                            <TextBox Width="60" Margin="5,0" Background="Transparent" BorderThickness="0,0,0,0" IsReadOnly="True" Text="{Binding Config.MotorConfig.Position}"/>
-                            <TextBox Margin="5,0" Background="Transparent" BorderThickness="0,0,0,0" IsReadOnly="True" Text="{Binding Config.MotorConfig.VIDPosition}" Visibility="{Binding Config.MotorConfig.VID.IsUseVID, Converter={StaticResource bool2VisibilityConverter}}"/>
+                        <Grid Margin="0,1,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="24"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="24"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <Button x:Name="JogLeftButton" Height="24" Padding="0" Content="←"
+                                    ToolTip="{engine:EngineLang CameraPanel_MotorJogLeft}"
+                                    AutomationProperties.Name="{engine:EngineLang CameraPanel_MotorJogLeft}"/>
+                            <DockPanel Grid.Column="1" Margin="3,0">
+                                <TextBlock Margin="0,0,3,0" Text="{engine:EngineLang CameraPanel_MotorJogStep}"/>
+                                <TextBox x:Name="JogStepBox" Padding="2,0" TextAlignment="Center" Text="100"
+                                         ToolTip="{engine:EngineLang CameraPanel_MotorJogStepHint}"
+                                         AutomationProperties.Name="{engine:EngineLang CameraPanel_MotorJogStep}"/>
+                            </DockPanel>
+                            <Button Grid.Column="2" x:Name="JogRightButton" Height="24" Padding="0" Content="→"
+                                    ToolTip="{engine:EngineLang CameraPanel_MotorJogRight}"
+                                    AutomationProperties.Name="{engine:EngineLang CameraPanel_MotorJogRight}"/>
+                            <DockPanel Grid.Column="3" Margin="6,0,0,0">
+                                <Button x:Name="ApertureButton" Width="30" Padding="2,1" DockPanel.Dock="Right"
+                                        Content="{engine:EngineLang CameraPanel_MotorSetAperture}"
+                                        ToolTip="{x:Static properties:Resources.AdjustAperture}"
+                                        AutomationProperties.Name="{x:Static properties:Resources.AdjustAperture}"/>
+                                <TextBlock Text="{engine:EngineLang CameraPanel_MotorAperture}"
+                                           ToolTip="{x:Static properties:Resources.ApertureF}"/>
+                                <TextBox x:Name="TextDiaphragm" Width="37" Margin="3,0" Padding="2,0" BorderThickness="0,0,0,1" Text="0"
+                                         AutomationProperties.Name="{x:Static properties:Resources.ApertureF}"/>
+                            </DockPanel>
+                        </Grid>
+                        <DockPanel Margin="0,1,0,0">
+                            <Button x:Name="HomeButton" DockPanel.Dock="Right" Padding="5,1"
+                                    Content="{engine:EngineLang CameraPanel_MotorHome}"
+                                    ToolTip="{x:Static properties:Resources.HomePosition}"
+                                    AutomationProperties.Name="{x:Static properties:Resources.HomePosition}"/>
+                            <Button x:Name="ReadPositionButton" DockPanel.Dock="Right" Padding="5,1" Margin="0,0,3,0"
+                                    Content="{engine:EngineLang CameraPanel_MotorReadPosition}"
+                                    ToolTip="{x:Static properties:Resources.AcquirePosition}"
+                                    AutomationProperties.Name="{x:Static properties:Resources.AcquirePosition}"/>
+                            <TextBlock Text="{engine:EngineLang CameraPanel_MotorPosition}"/>
+                            <TextBox Margin="4,0" Background="Transparent" BorderThickness="0" IsReadOnly="True"
+                                     Text="{Binding Config.MotorConfig.Position, Mode=OneWay}"
+                                     AutomationProperties.Name="{x:Static properties:Resources.CurrentPosition}"/>
                         </DockPanel>
                     </StackPanel>
                 </StackPanel>

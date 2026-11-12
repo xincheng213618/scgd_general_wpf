@@ -19,31 +19,9 @@ namespace ColorVision.UI
         private void EnsureTypeCaches()
         {
             if (_typeCacheBuilt) return;
-            foreach (var assembly in AssemblyHandler.GetInstance().GetAssemblies())
-            {
-                Type[] types;
-                try
-                {
-                    types = assembly.GetTypes();
-                }
-                catch (ReflectionTypeLoadException ex)
-                {
-                    types = (ex.Types?.Where(t => t != null).Cast<Type>().ToArray()) ?? Array.Empty<Type>();
-                }
-                catch
-                {
-                    continue;
-                }
-
-                foreach (var t in types)
-                {
-                    if (t == null || t.IsAbstract) continue;
-                    if (typeof(IConfigSettingProvider).IsAssignableFrom(t))
-                        _providerTypeCache.Add(t);
-                    if (typeof(IConfig).IsAssignableFrom(t))
-                        _configTypeCache.Add(t);
-                }
-            }
+            var assemblyService = AssemblyHandler.GetInstance();
+            _providerTypeCache.AddRange(assemblyService.GetImplementationTypes(typeof(IConfigSettingProvider)));
+            _configTypeCache.AddRange(assemblyService.GetImplementationTypes(typeof(IConfig)));
             _typeCacheBuilt = true;
         }
 

@@ -32,4 +32,5 @@ Please reopen ColorVision and try again.</value></data>
   <data name="RuntimeDisableSelectedAction" xml:space="preserve"><value>Disable selected</value></data>
   <data name="RuntimePluginSelectionHint" xml:space="preserve"><value>Loaded plugins keep running. Skipping plugins requires a restart; permanent disabling takes effect at the next startup.</value></data>
   <data name="RuntimePluginsDisabled" xml:space="preserve"><value>The selected plugins are disabled for the next startup. Already loaded plugins will keep running.</value></data>
+  <data name="AccessDenied" xml:space="preserve"><value>The current user or policy does not allow this operation.</value></data>
 </root>

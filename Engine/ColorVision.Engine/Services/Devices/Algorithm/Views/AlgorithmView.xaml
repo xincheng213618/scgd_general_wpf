@@ -45,8 +45,6 @@
                             <Path Style="{StaticResource PanelIconPathStyle}" Data="M4,4.5 H14 C14.55,4.5 15,4.95 15,5.5 V12.5 C15,13.05 14.55,13.5 14,13.5 H4 C3.45,13.5 3,13.05 3,12.5 V5.5 C3,4.95 3.45,4.5 4,4.5 Z M10.8,5.5 V12.5"/>
                         </ToggleButton>
 
-                        <Button Margin="2,0,0,0" Click="Exchange_Click" Content="{x:Static properties:Resources.Exchange}" />
-
                         <Button x:Name="Button222" Click="SideSave_Click" Content="{x:Static properties:Resources.SaveDataColumn}" />
 
                 </StackPanel>

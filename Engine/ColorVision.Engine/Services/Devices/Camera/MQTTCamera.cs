@@ -7,6 +7,7 @@ using ColorVision.Engine.Templates;
 using ColorVision.Themes.Controls;
 using cvColorVision;
 using MQTTMessageLib;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Windows;
@@ -90,6 +91,18 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
             if (Config.Code != null && msg.DeviceCode != Config.Code) return;
             if (Device.RoutesLocally) return;
+
+            if (msg.EventName == "AutoFocus" && msg.Code == 102 && msg.Data != null)
+            {
+                JObject data = msg.Data is JObject json ? json : JObject.FromObject((object)msg.Data);
+                int? position = data.Value<int?>("Position");
+                double? vid = data.Value<double?>("VidPosition");
+                Application.Current.Dispatcher.BeginInvoke(() =>
+                {
+                    if (position.HasValue) Config.MotorConfig.Position = position.Value;
+                    if (vid.HasValue) Config.MotorConfig.VIDPosition = vid.Value;
+                });
+            }
 
             if (msg.Code == 0)
             {
@@ -276,9 +289,9 @@ namespace ColorVision.Engine.Services.Devices.Camera
         }
 
 
-        public MsgRecord GetData(double[] expTime, CalibrationParam param, ParamBase autoExpTimeParam, ParamBase HDRparamBase)
+        public MsgRecord GetData(double[] expTime, CalibrationParam param, ParamBase autoExpTimeParam)
         {
-            if (Device.RoutesLocally) return Device.CaptureLocally(expTime, param, autoExpTimeParam, HDRparamBase);
+            if (Device.RoutesLocally) return Device.CaptureLocally(expTime, param, autoExpTimeParam);
             string SerialNumber = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
             var Params = new Dictionary<string, object>() { };
             MsgSend msg;
@@ -318,17 +331,6 @@ namespace ColorVision.Engine.Services.Devices.Camera
                     Params.Add("AutoExpTimeTemplate", new CVTemplateParam() { ID = autoExpTimeParam.Id, Name = autoExpTimeParam.Name });
                 }
             }
-
-            if (HDRparamBase.Id == -1)
-            {
-                Params.Add("IsHDR", false);
-            }
-            else
-            {
-                Params.Add("IsHDR", true);
-                Params.Add("CamParamTemplate", new CVTemplateParam() { ID = HDRparamBase.Id, Name = HDRparamBase.Name });
-            }
-
 
             Params.Add("ScaleFactor",1);
             Params.Add("Gain", Device.DisplayConfig.Gain);

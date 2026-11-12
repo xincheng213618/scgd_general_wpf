@@ -133,11 +133,16 @@ namespace ColorVision.Solution.Workspace
             return true;
         }
 
+        internal static bool IsManagedDocument(LayoutDocument document) => _sessions.ContainsKey(document);
+
         public static bool TryCloseAllDocuments()
+            => TryCloseAllDocuments(ConfirmSaveBeforeClose);
+
+        internal static bool TryCloseAllDocuments(Func<string, MessageBoxResult> confirmSave)
         {
             return TryCloseSessions(_sessions.Values
                 .Where(session => session.Document.Parent != null)
-                .ToList(), closeDocuments: false);
+                .ToList(), closeDocuments: false, confirmSave);
         }
 
         public static bool TryCloseDocumentsForResources(IEnumerable<string> resourcePaths)
@@ -230,34 +235,39 @@ namespace ColorVision.Solution.Workspace
                 ?? editorType.Name;
         }
 
-        private static bool TryCloseSessions(IReadOnlyList<EditorDocumentSession> sessions, bool closeDocuments)
+        private static MessageBoxResult ConfirmSaveBeforeClose(string title)
+            => MessageBox.Show(
+                Application.Current?.GetActiveWindow(),
+                LocalizedText.Format($"是否保存对“{title}”的更改？"),
+                "ColorVision",
+                MessageBoxButton.YesNoCancel,
+                MessageBoxImage.Warning);
+
+        private static bool TryCloseSessions(IReadOnlyList<EditorDocumentSession> sessions, bool closeDocuments,
+            Func<string, MessageBoxResult>? confirmSave = null)
         {
-            var approvedSessions = new List<EditorDocumentSession>();
-            foreach (EditorDocumentSession session in sessions)
+            try
             {
-                if (!session.TryApproveClose())
-                {
-                    foreach (EditorDocumentSession approvedSession in approvedSessions)
-                        approvedSession.ClearCloseApproval();
-                    return false;
-                }
-                approvedSessions.Add(session);
-            }
+                foreach (EditorDocumentSession session in sessions)
+                    if (!session.TryApproveClose(confirmSave))
+                        return false;
 
-            if (!closeDocuments)
+                if (!closeDocuments)
+                    return true;
+
+                foreach (EditorDocumentSession session in sessions)
+                {
+                    session.Document.Close();
+                    if (session.Document.Parent != null)
+                        return false;
+                }
                 return true;
-
-            foreach (EditorDocumentSession session in sessions)
-            {
-                session.Document.Close();
-                if (session.Document.Parent != null)
-                {
-                    foreach (EditorDocumentSession remainingSession in sessions)
-                        remainingSession.ClearCloseApproval();
-                    return false;
-                }
             }
-            return true;
+            finally
+            {
+                foreach (EditorDocumentSession session in sessions)
+                    session.ClearCloseApproval();
+            }
         }
 
         private static bool IsSameOrDescendant(string resourcePath, string rootPath)
@@ -309,6 +319,7 @@ namespace ColorVision.Solution.Workspace
             private readonly bool _titleFollowsResource;
             private FileSystemWatcher? _resourceWatcher;
             private DispatcherTimer? _externalChangeTimer;
+            private string? _externalRenameDestination;
             private ResourceFileStamp _observedResourceStamp;
             private bool _resourceMissing;
             private bool _closeApproved;
@@ -375,11 +386,15 @@ namespace ColorVision.Solution.Workspace
 
                 try
                 {
+                    if (_externalRenameDestination != null && !File.Exists(ResourcePath))
+                        throw new IOException(LocalizedText.Get("文件正在重命名或替换，请稍后再保存。"));
+
                     bool saved = Content.Save();
                     if (!saved && showError)
                         ShowSaveError(null);
                     if (saved)
                     {
+                        _externalRenameDestination = null;
                         CaptureResourceStamp();
                         _resourceMissing = false;
                         UpdateTitle();
@@ -422,6 +437,7 @@ namespace ColorVision.Solution.Workspace
                         ShowReloadError(null);
                     if (reloaded)
                     {
+                        _externalRenameDestination = null;
                         CaptureResourceStamp();
                         _resourceMissing = false;
                         UpdateTitle();
@@ -436,17 +452,12 @@ namespace ColorVision.Solution.Workspace
                 }
             }
 
-            public bool TryApproveClose()
+            public bool TryApproveClose(Func<string, MessageBoxResult>? confirmSave = null)
             {
                 if (Content?.IsDirty != true || _closeApproved)
                     return true;
 
-                MessageBoxResult result = MessageBox.Show(
-                    Application.Current?.GetActiveWindow(),
-                    LocalizedText.Format($"是否保存对“{_title}”的更改？"),
-                    "ColorVision",
-                    MessageBoxButton.YesNoCancel,
-                    MessageBoxImage.Warning);
+                MessageBoxResult result = (confirmSave ?? ConfirmSaveBeforeClose)(_title);
                 if (result == MessageBoxResult.Cancel)
                     return false;
                 if (result == MessageBoxResult.Yes)
@@ -550,7 +561,7 @@ namespace ColorVision.Solution.Workspace
 
             private void ResourceWatcher_Changed(object sender, FileSystemEventArgs e)
             {
-                ScheduleExternalResourceCheck(e.FullPath);
+                ScheduleExternalResourceCheck(sender, NormalizeResourcePath(e.FullPath));
             }
 
             private void ResourceWatcher_Renamed(object sender, RenamedEventArgs e)
@@ -559,40 +570,28 @@ namespace ColorVision.Solution.Workspace
                 string normalizedNewPath = NormalizeResourcePath(e.FullPath);
                 if (!string.Equals(normalizedOldPath, ResourcePath, StringComparison.OrdinalIgnoreCase))
                 {
-                    ScheduleExternalResourceCheck(e.FullPath);
-                    ScheduleExternalResourceCheck(e.OldFullPath);
+                    ScheduleExternalResourceCheck(sender, normalizedNewPath);
                     return;
                 }
 
-                Application.Current?.Dispatcher.BeginInvoke(() =>
-                {
-                    if (_isClosed
-                        || !string.Equals(normalizedOldPath, ResourcePath, StringComparison.OrdinalIgnoreCase))
-                    {
-                        return;
-                    }
-
-                    if (File.Exists(normalizedNewPath))
-                        NotifyResourceRenamed(normalizedOldPath, normalizedNewPath);
-                    else
-                        ScheduleExternalResourceCheck(normalizedOldPath);
-                });
+                ScheduleExternalResourceCheck(sender, normalizedOldPath, normalizedNewPath);
             }
 
-            private void ScheduleExternalResourceCheck(string changedPath)
+            private void ScheduleExternalResourceCheck(object watcher, string normalizedChangedPath, string? renameDestination = null)
             {
-                string normalizedChangedPath = NormalizeResourcePath(changedPath);
                 if (!string.Equals(normalizedChangedPath, ResourcePath, StringComparison.OrdinalIgnoreCase))
                     return;
 
                 Application.Current?.Dispatcher.BeginInvoke(() =>
                 {
-                    if (_isClosed
+                    if (_isClosed || !ReferenceEquals(watcher, _resourceWatcher)
                         || !string.Equals(normalizedChangedPath, ResourcePath, StringComparison.OrdinalIgnoreCase))
                     {
                         return;
                     }
 
+                    if (renameDestination != null && !string.Equals(ResourcePath, renameDestination, StringComparison.Ordinal))
+                        _externalRenameDestination = renameDestination;
                     _externalChangeTimer ??= CreateExternalChangeTimer();
                     _externalChangeTimer.Stop();
                     _externalChangeTimer.Start();
@@ -609,8 +608,21 @@ namespace ColorVision.Solution.Workspace
             private void ExternalChangeTimer_Tick(object? sender, EventArgs e)
             {
                 _externalChangeTimer?.Stop();
+                string? renameDestination = _externalRenameDestination;
+                _externalRenameDestination = null;
                 ResourceFileStamp currentStamp = GetResourceStamp(ResourcePath);
-                if (currentStamp == _observedResourceStamp)
+                if (renameDestination != null && File.Exists(renameDestination))
+                {
+                    string originalPath = ResourcePath;
+                    if (!currentStamp.Exists || string.Equals(originalPath, renameDestination, StringComparison.OrdinalIgnoreCase))
+                    {
+                        NotifyResourceRenamed(originalPath, renameDestination);
+                        if (!string.Equals(originalPath, ResourcePath, StringComparison.Ordinal)) return;
+                    }
+
+                    // A retained backup beside a recreated original path is a replacement even when the stamps match.
+                }
+                else if (currentStamp == _observedResourceStamp)
                     return;
 
                 _observedResourceStamp = currentStamp;
@@ -641,6 +653,7 @@ namespace ColorVision.Solution.Workspace
 
             private void DisposeResourceWatcher()
             {
+                _externalRenameDestination = null;
                 if (_externalChangeTimer != null)
                 {
                     _externalChangeTimer.Stop();

@@ -48,7 +48,8 @@ public class AlgorithmEQENode : CVBaseServerNodeHub
 		getPreStepParam(0, calcEQEParam);
 		getPreStepParam(1, algorithmPreStepParam);
 		BuildTemp(calcEQEParam);
-		calcEQEParam.SMU_MasterId = algorithmPreStepParam.MasterId;
+		calcEQEParam.SMUData.MasterId = algorithmPreStepParam.MasterId;
+		calcEQEParam.SMUData.MasterResultType = algorithmPreStepParam.MasterResultType;
 		return calcEQEParam;
 	}
 }

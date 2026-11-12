@@ -18,7 +18,7 @@ public sealed class CopilotNonStreamingUsageTests
         using var handler = new CompletionHandler(responsesApi);
         using var httpClient = new HttpClient(handler);
         using var provider = CopilotOpenAiAgentChatClientFactory.Create(CreateProfile(responsesApi), httpClient);
-        using var client = new CopilotTokenBudgetChatClient(provider, CreateBudget(4_096));
+        using var client = new CopilotTokenBudgetChatClient(provider, CreateBudget(3_200));
 
         var response = await client.GetResponseAsync([new ChatMessage(ChatRole.User, "Summarize the result.")]);
 

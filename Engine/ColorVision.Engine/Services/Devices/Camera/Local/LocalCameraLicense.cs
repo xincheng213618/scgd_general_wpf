@@ -9,10 +9,10 @@ internal sealed class LocalCameraLicenseException : InvalidOperationException
 
 internal static class LocalCameraLicense
 {
-    internal static void EnsureAvailable(DateTime? expiryDate, bool experimentalFeatures, DateTime now)
+    internal static void EnsureAvailable(DateTime? expiryDate, bool skipValidation, DateTime now)
     {
         // Use the expiry shown by physical camera management; do not decode or validate the license payload.
-        if (!experimentalFeatures && (!expiryDate.HasValue || expiryDate.Value <= now))
+        if (!skipValidation && (!expiryDate.HasValue || expiryDate.Value <= now))
             throw new LocalCameraLicenseException();
     }
 }

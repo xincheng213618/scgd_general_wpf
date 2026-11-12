@@ -18,27 +18,28 @@ internal static class LocalSpectrumResultService
 {
     internal static SpectumResultEntity CreateModel(LocalSpectrumCapture capture, LocalSpectrumParameters parameters)
     {
-        JObject data = JObject.FromObject(capture.Data);
-        data[nameof(SpectumResultEntity.fPL)] = JsonConvert.SerializeObject(capture.Data.fPL);
-        data[nameof(SpectumResultEntity.fRi)] = JsonConvert.SerializeObject(capture.Data.fRi);
-        var model = data.ToObject<SpectumResultEntity>()!;
-        model.fCCT = float.IsFinite(capture.Data.fCCT) ? capture.Data.fCCT : null;
-        model.dC = float.IsFinite(capture.Data.dC) ? capture.Data.dC : null;
-        model.fLd = float.IsFinite(capture.Data.fLd) ? capture.Data.fLd : null;
-        model.fPur = float.IsFinite(capture.Data.fPur) ? capture.Data.fPur : null;
-        model.fRa = float.IsFinite(capture.Data.fRa) ? capture.Data.fRa : null;
-        model.fLav = float.IsFinite(capture.Data.fLav) ? capture.Data.fLav : null;
-        if (capture.Data.fRi == null || Array.Exists(capture.Data.fRi, value => !float.IsFinite(value)))
-            model.fRi = null;
+        // Write the array columns directly instead of creating a JSON token for every sample.
+        var scalarData = capture.Data;
+        scalarData.fPL = null!;
+        scalarData.fRi = null!;
+        JObject data = JObject.FromObject(scalarData);
         data.Remove(nameof(SpectumResultEntity.fPL));
         data.Remove(nameof(SpectumResultEntity.fRi));
+        // SQL numeric columns cannot store NaN/Infinity; retain the original values in the JSON archive.
+        var storageData = (JObject)data.DeepClone();
+        foreach (var field in storageData.Properties())
+            if (field.Value.Type == JTokenType.Float && !double.IsFinite(field.Value.Value<double>())) field.Value = JValue.CreateNull();
+        var model = storageData.ToObject<SpectumResultEntity>()!;
+        model.fPL = JsonConvert.SerializeObject(capture.Data.fPL);
+        if (capture.Data.fRi is { } indices && Array.TrueForAll(indices, float.IsFinite))
+            model.fRi = JsonConvert.SerializeObject(indices);
         data[nameof(Views.cieData.AcquisitionParametersJson)] = capture.AcquisitionParametersJson;
         model.CieDataEx = data.ToString(Formatting.None);
         model.DeviceCode = capture.DeviceCode;
         model.CreateDate = capture.CapturedAt;
         model.IntTime = capture.IntegralTime;
         model.NDPort = capture.NDPort;
-        model.iAveNum = parameters.NumberOfAverage;
+        model.iAveNum = capture.EffectiveAverageCount ?? parameters.NumberOfAverage;
         model.AutoIntegration = parameters.AutoIntegration;
         model.AutoInitDark = parameters.AutoInitDark;
         model.SelfAdaptionInitDark = parameters.SelfAdaptionInitDark;
@@ -46,11 +47,18 @@ internal static class LocalSpectrumResultService
         model.DataType = parameters.Eqe;
         if (capture.EqeData is { } eqe)
         {
-            model.Eqe = eqe.dEqe; model.VResult = (float)eqe.dVoltage; model.IResult = (float)eqe.dCurrent;
-            model.AFactor = (float)parameters.AFactor; model.LuminousFlux = eqe.dIm; model.RadiantFlux = eqe.dW;
+            model.Eqe = double.IsFinite(eqe.dEqe) ? eqe.dEqe : null;
+            model.VResult = FiniteFloat(parameters.SMUData?.V ?? parameters.Voltage);
+            model.IResult = FiniteFloat(parameters.SMUData?.I ?? parameters.Current * 1000.0);
+            if (parameters.SMUData is { MasterId: > 0, MasterResultType: 200 } smu) model.SmuDataId = smu.MasterId;
+            model.AFactor = FiniteFloat(parameters.AFactor);
+            model.LuminousFlux = FiniteFloat(eqe.dIm);
+            model.RadiantFlux = double.IsFinite(eqe.dW) ? eqe.dW : null;
         }
         return model;
     }
+
+    private static float? FiniteFloat(double value) => float.IsFinite((float)value) ? (float)value : null;
 
     internal static SpectumResultEntity Save(LocalSpectrumCapture capture, LocalSpectrumParameters parameters, CVStartCFC? action = null, int zIndex = 0)
     {
@@ -67,8 +75,8 @@ internal static class LocalSpectrumResultService
                 && value is FlowEngineLib.SMUResultData { MasterId: > 0, MasterResultType: 200 } smu)
             {
                 model.SmuDataId = smu.MasterId;
-                model.VResult = double.IsFinite(smu.V) ? (float)smu.V : null;
-                model.IResult = double.IsFinite(smu.I) ? (float)smu.I : null;
+                model.VResult = FiniteFloat(smu.V);
+                model.IResult = FiniteFloat(smu.I);
             }
         }
         // Historical results always use the existing MySQL table, never the configuration SQLite store.

@@ -1,9 +1,11 @@
 #pragma warning disable CA1031
 using FlowEngineLib;
 using FlowEngineLib.Base;
+using FlowEngineLib.Runtime;
 using Newtonsoft.Json;
 using ST.Library.UI.NodeEditor;
 using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Globalization;
@@ -172,6 +174,8 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             _MaxOutputChars = DefaultMaxOutputChars;
         }
 
+        public override bool RequiresRemoteService => false;
+
         protected override void m_in_start_DataTransfer(object sender, STNodeOptionEventArgs e)
         {
             if (e.Status != ConnectionStatus.Connected || !HasData(e))
@@ -195,7 +199,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
 
             CVTransAction trans = new(start);
             m_trans_action.AddOrUpdate(start.SerialNumber, trans, (_, _) => trans);
-            nodeRunEvent?.Invoke(this, new FlowEngineNodeRunEventArgs
+            PublishNodeRun(new FlowEngineNodeRunEventArgs
             {
                 SerialNumber = start.SerialNumber,
                 SendTopic = LocalTopic,
@@ -212,7 +216,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                 }
                 finally
                 {
-                    m_trans_action.TryRemove(trans.trans_action.SerialNumber, out _);
+                    m_trans_action.TryRemove(new KeyValuePair<string, CVTransAction>(start.SerialNumber, trans));
                 }
             });
         }
@@ -220,6 +224,9 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
         private async Task FinishCommandLineNodeAsync(CVTransAction trans)
         {
             CVStartCFC action = trans.trans_action;
+            if (ReportIfStopped(trans))
+                return;
+
             if (!TryBuildProcessStartInfo(action, out ProcessStartInfo startInfo, out string displayCommand, out string errorMessage))
             {
                 FailCommandLineNode(trans, errorMessage, null, -1);
@@ -239,6 +246,9 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                 {
                     StartInfo = startInfo
                 };
+
+                if (ReportIfStopped(trans))
+                    return;
 
                 if (!process.Start())
                 {
@@ -273,19 +283,21 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                 stopwatch.Stop();
                 resultData.TotalTime = ToIntMilliseconds(stopwatch.ElapsedMilliseconds);
 
+                if (ReportIfStopped(trans))
+                    return;
+
                 if (timedOut)
                 {
                     resultData.TimedOut = true;
-                    SetResultData(action, resultData);
                     FailCommandLineNode(trans, string.Format(Properties.Resources.CommandLineScript_Timeout, GetMaxDelay()), resultData, -2);
                     return;
                 }
 
                 resultData.ExitCode = process.ExitCode;
-                SetResultData(action, resultData);
 
                 if (IsSuccessExitCode(process.ExitCode))
                 {
+                    SetResultData(action, resultData);
                     CVServerResponse response = new(action.SerialNumber, ActionStatusEnum.Finish, $"ExitCode={process.ExitCode}", operatorCode, resultData);
                     svrRecvResp = response;
                     action.AddResult(GetLocalNodeName(), response, trans.startTime);
@@ -300,9 +312,33 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             {
                 stopwatch.Stop();
                 resultData.TotalTime = ToIntMilliseconds(stopwatch.ElapsedMilliseconds);
-                SetResultData(action, resultData);
                 FailCommandLineNode(trans, string.Format(Properties.Resources.CommandLineScript_ExecutionException, ex.Message), resultData, -1);
             }
+        }
+
+        private bool ReportIfStopped(CVTransAction trans)
+        {
+            if (!IsStopped(trans))
+                return false;
+
+            CVStartCFC action = trans.trans_action;
+            PublishNodeEnd(new FlowEngineNodeEndEventArgs
+            {
+                SerialNumber = action.SerialNumber,
+                RecvTopic = LocalTopic,
+                RecvMsgId = action.SerialNumber,
+                RecvEventName = operatorCode,
+                RecvStatusCode = -4,
+                RecvStatusMessage = Properties.Resources.ExecutionCancelled,
+                FailureKind = FlowFailureKind.Canceled
+            });
+            return true;
+        }
+
+        private static bool IsStopped(CVTransAction trans)
+        {
+            CVStartCFC action = trans.trans_action;
+            return trans.IsCanceled || action.RuntimeResources.IsDisposed || action.IsDel || action.TryGetStopStatus(out _);
         }
 
         private bool TryBuildProcessStartInfo(CVStartCFC start, out ProcessStartInfo startInfo, out string displayCommand, out string errorMessage)
@@ -512,6 +548,9 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
 
         private void FailCommandLineNode(CVTransAction trans, string message, CommandLineScriptResultData? resultData, int statusCode)
         {
+            if (ReportIfStopped(trans))
+                return;
+
             using IDisposable finishedNotificationDeferral = trans.trans_action.DeferFlowCompletionNotification();
             CVStartCFC action = trans.trans_action;
             if (resultData != null)
@@ -535,7 +574,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
 
         private void TransferEnd(CVTransAction trans, CVServerResponse response, int statusCode)
         {
-            nodeEndEvent?.Invoke(this, new FlowEngineNodeEndEventArgs
+            PublishNodeEnd(new FlowEngineNodeEndEventArgs
             {
                 SerialNumber = trans.trans_action.SerialNumber,
                 RecvTopic = LocalTopic,
@@ -545,7 +584,9 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                 RecvStatusMessage = response.Message,
                 RecvPayload = response.Data != null ? JsonConvert.SerializeObject(response.Data) : null
             });
-            m_op_end.TransferData(trans.trans_action);
+            // Node-end observers can stop the flow synchronously before the result is forwarded.
+            if (statusCode != 0 || !IsStopped(trans))
+                m_op_end.TransferData(trans.trans_action);
         }
 
         private void SetResultData(CVStartCFC action, CommandLineScriptResultData resultData)

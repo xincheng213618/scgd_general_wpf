@@ -13,6 +13,7 @@ namespace ColorVision.Solution.Explorer
         {
             var window = new AddNewItemWindow(DirectoryInfo.FullName)
             {
+                AddAsSolutionItem = true,
                 Owner = Application.Current.GetActiveWindow(),
                 WindowStartupLocation = WindowStartupLocation.CenterOwner
             };
@@ -29,7 +30,8 @@ namespace ColorVision.Solution.Explorer
                     window.SelectedTemplate,
                     DirectoryInfo.FullName,
                     window.NewFileName,
-                    window.OverwriteExisting);
+                    window.OverwriteExisting,
+                    asSolutionItem: true);
                 if (!createResult.IsComplete)
                 {
                     MessageBox.Show(
@@ -265,9 +267,21 @@ namespace ColorVision.Solution.Explorer
 
         internal bool CanExecuteStartupProject(string capabilityId)
         {
-            return TryGetStartupProject(out ProjectDefinition? project)
-                && project != null
-                && ProjectProviderRegistry.CanExecuteCapability(project, capabilityId);
+            if (IsExplicitProjectMode)
+                return TryGetStartupProject(out ProjectDefinition? configuredProject) && configuredProject != null
+                    && ProjectProviderRegistry.CanExecuteCapability(configuredProject, capabilityId);
+
+            IReadOnlyList<ProjectDefinition>? projects = GetStartupProjectSnapshot();
+            if (projects == null) return false;
+
+            string reference = Config.StartupProject;
+            ProjectDefinition? project;
+            if (string.IsNullOrWhiteSpace(reference))
+                project = SelectStartupProject(projects.Select(ApplyActiveConfiguration), DirectoryInfo.FullName, reference);
+            else
+                project = SelectStartupProject(projects, DirectoryInfo.FullName, reference) is { } candidate
+                    ? ApplyActiveConfiguration(candidate) : null;
+            return project != null && ProjectProviderRegistry.CanExecuteCapability(project, capabilityId);
         }
 
         internal bool ExecuteStartupProject(string capabilityId)
@@ -322,40 +336,41 @@ namespace ColorVision.Solution.Explorer
             }
             else
             {
-                var options = new EnumerationOptions
-                {
-                    RecurseSubdirectories = true,
-                    IgnoreInaccessible = true,
-                    AttributesToSkip = FileAttributes.Hidden | FileAttributes.System,
-                };
-                try
-                {
-                    foreach (string projectFilePath in ProjectProviderRegistry.GetProjectFilePatterns()
-                        .SelectMany(pattern => Directory.EnumerateFiles(
-                            DirectoryInfo.FullName,
-                            pattern,
-                            options))
-                        .Distinct(StringComparer.OrdinalIgnoreCase))
-                    {
-                        if (ProjectProviderRegistry.TryLoadProject(
-                            new FileInfo(projectFilePath),
-                            out ProjectDefinition? project)
-                            && project != null)
-                        {
-                            projects.Add(applyActiveConfiguration ? ApplyActiveConfiguration(project) : project);
-                        }
-                    }
-                }
-                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
-                {
-                    Logger.Warn($"枚举解决方案项目失败: {ex.Message}");
-                }
+                List<ProjectDefinition> discovered = DiscoverProjectsAsync().GetAwaiter().GetResult();
+                projects.AddRange(applyActiveConfiguration ? discovered.Select(ApplyActiveConfiguration) : discovered);
             }
 
             return projects
                 .GroupBy(project => project.ProjectFile.FullName, StringComparer.OrdinalIgnoreCase)
                 .Select(group => group.First())
                 .ToList();
+        }
+
+        private async Task<List<ProjectDefinition>> DiscoverProjectsAsync()
+        {
+            var projects = new List<ProjectDefinition>();
+            var options = new EnumerationOptions
+            {
+                RecurseSubdirectories = true,
+                IgnoreInaccessible = true,
+                AttributesToSkip = FileAttributes.Hidden | FileAttributes.System,
+            };
+            try
+            {
+                foreach (string path in ProjectProviderRegistry.GetProjectFilePatterns()
+                    .SelectMany(pattern => Directory.EnumerateFiles(DirectoryInfo.FullName, pattern, options))
+                    .Distinct(StringComparer.OrdinalIgnoreCase))
+                {
+                    if (Volatile.Read(ref _disposed)) break;
+                    ProjectLoadResult result = await ProjectProviderRegistry.LoadProjectAsync(new FileInfo(path)).ConfigureAwait(false);
+                    if (result.Succeeded && result.Project != null) projects.Add(result.Project);
+                }
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                Logger.Warn($"枚举解决方案项目失败: {ex.Message}");
+            }
+            return projects;
         }
 
         internal IReadOnlyList<ProjectDefinition> LoadProjectsForConfigurationEditing()
@@ -764,11 +779,16 @@ namespace ColorVision.Solution.Explorer
             {
                 ExecuteTrackedMutation("更新启动项目", () =>
                 {
-                    EnsureStartupProject();
+                    EnsureStartupProjectCore();
                     return true;
                 }, result => result);
                 return;
             }
+            EnsureStartupProjectCore();
+        }
+
+        private void EnsureStartupProjectCore()
+        {
             ProjectDefinition? startupProject = SelectStartupProject(
                 VisualChildren.GetAllVisualChildren()
                     .OfType<ProjectNode>()
@@ -777,10 +797,23 @@ namespace ColorVision.Solution.Explorer
                 Config.StartupProject);
             if (startupProject != null && string.IsNullOrWhiteSpace(Config.StartupProject))
             {
+                string previousReference = Config.StartupProject;
                 Config.StartupProject = Path.GetRelativePath(
                     DirectoryInfo.FullName,
                     startupProject.ProjectFile.FullName);
-                SaveConfig();
+                try
+                {
+                    if (!TrySaveAutomaticConfig(preserveConflict: false))
+                    {
+                        Config.StartupProject = previousReference;
+                        Logger.Warn($"磁盘上的解决方案配置已更改或移除，跳过自动设置启动项目：{ConfigFileInfo.FullName}");
+                    }
+                }
+                catch
+                {
+                    Config.StartupProject = previousReference;
+                    throw;
+                }
             }
 
             UpdateStartupProjectState();
@@ -791,10 +824,8 @@ namespace ColorVision.Solution.Explorer
             string solutionDirectory,
             string? configuredReference)
         {
-            List<ProjectDefinition> availableProjects = projects
-                .GroupBy(project => project.ProjectFile.FullName, StringComparer.OrdinalIgnoreCase)
-                .Select(group => group.First())
-                .ToList();
+            IEnumerable<ProjectDefinition> availableProjects = projects
+                .DistinctBy(project => project.ProjectFile.FullName, StringComparer.OrdinalIgnoreCase);
             if (!string.IsNullOrWhiteSpace(configuredReference))
             {
                 return availableProjects.FirstOrDefault(project =>

@@ -42,6 +42,7 @@ namespace ColorVision.Copilot
         {
             "Git 状态", "Git状态", "Git 工作树", "Git工作树", "当前分支", "Git 分支", "Git分支",
             "上游分支", "领先上游", "落后上游", "未跟踪文件", "冲突文件",
+            "哪个分支", "什么分支",
             "git status", "git working tree", "git worktree", "current git branch", "git branch",
             "git upstream", "ahead of upstream", "behind upstream", "untracked files", "conflicted files",
         };
@@ -50,6 +51,7 @@ namespace ColorVision.Copilot
         {
             "Git 差异", "Git差异", "Git 修改", "Git修改", "代码差异", "文件差异", "当前改动",
             "当前修改", "待提交修改", "改了什么", "修改了什么", "有哪些修改", "变更内容", "补丁内容",
+            "动了哪些文件", "改了哪些文件", "改动了哪些文件", "修改了哪些文件",
             "git diff", "git changes", "current changes", "pending changes", "what changed",
             "changes made", "staged changes", "unstaged changes", "patch contents",
         };
@@ -68,17 +70,62 @@ namespace ColorVision.Copilot
             "please modify", "please edit", "edit the file", "fix this", "fix the code", "please implement", "implement a", "implement the", "implement this", "make this change", "change the code", "refactor", "replace the code", "update the file", "apply the patch", "delete file", "delete the file", "remove file", "remove the file",
         };
 
+        // Everyday imperative phrasings ("把这个文件删掉", "把函数里的空指针修掉"). Inside ColorVision the
+        // same verbs usually change app objects ("把这个名字换成新名称" renames a device or template),
+        // so they count only with a code or file target and when the request is not a question.
+        private static readonly string[] CasualWorkspaceEditMarkers =
+        {
+            "修掉", "修好", "改掉", "调成", "调到", "更新成", "更新为", "改成", "改为", "换成", "去掉这个", "去掉那个", "删掉", "一起改", "改吧", "改完",
+            "rename this", "rename the", "change it to", "remove this parameter", "remove the unused",
+        };
+
+        private static readonly string[] QuestionMarkers =
+        {
+            "怎么", "如何", "怎样", "为什么", "为何", "什么", "哪些", "几种", "吗", "？", "?", "多少", "比较好", "合适", "建议",
+            "how ", "what ", "why ", "which ",
+        };
+
+        private static readonly string[] CodeOnlyTargetMarkers =
+        {
+            "README", " bug", "注释", "变量", "编译", "comment", "variable", "compile",
+        };
+
+        // Records and flow nodes change through their own tools, not workspace patches.
+        private static readonly string[] NonFileEditTargetMarkers =
+        {
+            "流程", "节点", "记录", "flow", "node", "record",
+        };
+
         private static readonly string[] WorkspaceEditExplanationMarkers =
         {
             "如何修改", "怎么修改", "怎样修改", "如何修复", "怎么修复", "怎样修复", "如何实现", "怎么实现", "怎样实现", "如何重构", "怎么重构", "怎样重构",
             "how to modify", "how do i modify", "how to fix", "how do i fix", "how to implement", "how do i implement", "how to refactor", "how do i refactor",
+            "有什么区别", "有什么不同", "有何区别", "difference between", "what is the difference",
+        };
+
+        // Text in the conversation rather than a file: "改一下这句话的语气" edits nothing on disk.
+        private static readonly string[] ProseRewriteTargetMarkers =
+        {
+            "这句话", "这段话", "这段邮件", "这封邮件", "语气", "这个标题", "回复的", "回答", "your answer", "your reply", "your response",
         };
 
         private static readonly string[] WorkspaceEditOptOutMarkers =
         {
             "不要修改", "不用修改", "无需修改", "只说明", "只解释", "只分析", "不要写文件",
+            "只看不改", "不要动文件", "别动文件", "不要动代码", "别动代码", "不要改代码", "别改代码", "不改代码", "别动手", "只说思路", "给个思路", "先别改", "先不要改", "先不改", "暂时别改", "暂时不要改",
             "do not modify", "don't modify", "do not edit", "don't edit", "explain only", "analysis only", "read only",
+            "do not change anything", "don't change anything", "without changing anything",
         };
+
+        // Whole final clauses only; "接口不要改" constrains one part of a requested edit.
+        private static readonly string[] EditOptOutClauses =
+        {
+            "不要改", "别改", "不用改", "不必改", "无需改", "先不改", "先别改", "先不要改",
+        };
+
+        private static readonly char[] ClosingPunctuation = { ' ', '\t', '\r', '\n', '。', '.', '！', '!', '？', '?' };
+
+        private static readonly char[] ClauseSeparators = { '，', ',', '；', ';', '。', '：', ':', '\n' };
 
         private static readonly string[] ExplicitReadOnlyRequestMarkers =
         {
@@ -99,15 +146,17 @@ namespace ColorVision.Copilot
         private static readonly string[] WorkspaceRollbackMarkers =
         {
             "撤销修改", "撤销刚才", "回滚修改", "回滚刚才", "回滚补丁", "还原文件", "恢复原文件",
+            "撤销你刚才", "撤销改动", "撤回改动", "撤回刚才", "恢复原样", "改回去",
             "undo the change", "undo that change", "rollback the change", "roll back the change", "revert the file",
+            "roll back the patch", "revert the change", "revert your change", "undo your change",
         };
 
         private static readonly string[] WorkspaceCreateMarkers =
         {
-            "新建文件", "创建文件", "新增文件", "添加文件", "新建类", "创建类", "新增类", "添加类",
+            "新建文件", "创建文件", "新增文件", "添加文件", "新建类", "创建类", "新增类", "添加类", "新建一个", "创建一个",
             "新建多个文件", "创建多个文件", "新增多个文件", "添加多个文件", "新建两个文件", "创建两个文件",
             "新建脚本", "创建脚本", "写一个脚本", "写个脚本", "编写脚本", "生成脚本",
-            "create a file", "create the file", "add a file", "add the file", "create a class", "add a class", "new source file",
+            "create a file", "create the file", "create a new file", "add a file", "add the file", "create a class", "add a class", "new source file",
             "create a script", "create the script", "write a script", "generate a script",
         };
 
@@ -115,6 +164,14 @@ namespace ColorVision.Copilot
         {
             "新建", "创建", "写一个", "写个", "编写", "生成",
             "create", "write", "generate", "add",
+        };
+
+        // "在这个目录下加一个 README": an everyday verb plus a file-like target, not a question.
+        private static readonly string[] CasualWorkspaceCreateMarkers = { "加一个", "新增一个", "添加一个", "加个" };
+
+        private static readonly string[] CasualWorkspaceCreateTargetMarkers =
+        {
+            "README", "文件", ".cs", ".json", ".md", ".py", ".ps1", ".bat", ".xml", ".yaml", ".txt",
         };
 
         private static readonly string[] WorkspaceCreateExplanationMarkers =
@@ -129,6 +186,13 @@ namespace ColorVision.Copilot
             "build the project", "run the build", "run tests", "run the tests", "test the project", "verify the changes", "validate the changes",
         };
 
+        private static readonly string[] ColloquialWorkspaceValidationMarkers =
+        {
+            "跑一下测试", "跑一下单元测试", "跑单元测试", "测试跑一遍", "跑一遍测试", "测试跑一下", "运行单元测试", "执行单元测试", "运行 dotnet", "执行 dotnet", "跑 dotnet",
+            "build 一下",
+            "run unit tests", "run the unit tests",
+        };
+
         private static readonly string[] WorkspaceValidationExplanationMarkers =
         {
             "怎么构建", "如何构建", "构建原理", "怎么测试", "如何测试", "测试原理",
@@ -138,15 +202,22 @@ namespace ColorVision.Copilot
         private static readonly string[] PublicWebMarkers =
         {
             "搜索网页", "网上搜索", "联网搜索", "查网页", "查官网", "官网", "公开资料", "公开信息",
-            "最新消息", "最新版本", "近期新闻", "当前价格", "实时", "网页资料",
+            "最新消息", "最新版本", "近期新闻", "今天的新闻", "最新新闻", "当前价格", "实时", "网页资料",
             "search the web", "web search", "search online", "look online", "official website",
             "latest news", "current price", "public information",
         };
 
         private static readonly string[] ExplicitPublicWebSearchMarkers =
         {
-            "搜索网页", "网上搜索", "联网搜索", "查网页", "查官网", "搜索一下", "查询一下公开信息",
+            "搜索网页", "网上搜索", "联网搜索", "查网页", "查官网", "查询一下公开信息",
+            "联网查", "上网查", "上网搜", "网上查", "网上搜",
             "search the web", "web search", "search online", "look online", "search the public web",
+        };
+
+        // "搜索一下" alone means the web only when nothing local is named as its target.
+        private static readonly string[] LocalSearchTargetMarkers =
+        {
+            "代码", "源码", "文件", "目录", "项目", "工程", "仓库", "函数", "方法", "类", "引用", "日志", "数据库", "流程", "节点", "配置",
         };
 
         private static readonly string[] PublicWebOptOutMarkers =
@@ -232,9 +303,12 @@ namespace ColorVision.Copilot
             "flow graph", "flow editor", "workflow", "flow node", "camera node", "algorithm node",
         };
 
+        // With a flow open, naming a node ("把 POI 节点删了") refers to that flow.
+        private static readonly string[] FlowNodeReferenceMarkers = { "节点", "node" };
+
         private static readonly string[] CurrentSurfaceReferenceMarkers =
         {
-            "当前", "这个", "这里", "选中", "活动", "刚才",
+            "当前", "这个", "这两个", "这几个", "这些", "这里", "选中", "活动", "刚才",
             "current", "this", "here", "selected", "active",
         };
 
@@ -262,8 +336,8 @@ namespace ColorVision.Copilot
 
         private static readonly string[] FlowMutationMarkers =
         {
-            "添加", "新增", "创建", "插入", "连接", "修改", "设置", "移动",
-            "add node", "create node", "insert node", "connect node", "set node", "update node", "move node",
+            "添加", "新增", "创建", "插入", "连接", "修改", "设置", "移动", "删除", "删掉", "删了", "移除",
+            "add node", "create node", "insert node", "connect node", "set node", "update node", "move node", "delete node", "remove node",
         };
 
         private static readonly string[] MutationExplanationMarkers =
@@ -288,6 +362,32 @@ namespace ColorVision.Copilot
         {
             "修改数据库", "更新数据库", "写入数据库", "插入数据", "删除数据", "清理数据库", "创建数据库表", "修改数据库表", "删除数据库表",
             "insert into", "update database", "update table", "delete from", "create table", "alter table", "drop table", "truncate table", "rename table",
+        };
+
+        private static readonly string[] DatabaseTableTargetMarkers =
+        {
+            "数据表", "结果表", "这张表", "表里", "表中",
+            "result table", "the table", "this table", "from table",
+        };
+
+        // "把配置里的数据库地址改成 X" names the database but no rows, so it is not a data change.
+        private static readonly string[] DatabaseNameMarkers = { "数据库", "database" };
+
+        private static readonly string[] DatabaseRowMarkers =
+        {
+            "记录", "条数据", "些数据", "测试数据", "字段", "表", "record", "row", "column", "table",
+        };
+
+        private static readonly string[] DatabaseWriteActionMarkers =
+        {
+            "删掉", "删除", "清掉", "清空", "更新成", "更新为", "改成", "改为", "设为", "加一个", "增加一个", "添加一个", "新增一个",
+            "delete from", "insert into", "update the", "remove rows", "add a column",
+        };
+
+        private static readonly string[] DatabaseMutationNegationMarkers =
+        {
+            "不要删", "别删", "别动数据", "不要动数据", "别改数据", "不要改数据", "只查", "只读",
+            "do not delete", "don't delete", "read only", "read-only",
         };
 
         private static readonly string[] RecentLogMarkers =
@@ -329,6 +429,18 @@ namespace ColorVision.Copilot
             "shell command", "terminal command", "run command", "execute command", "run script", "execute script",
         };
 
+        // Requests, not reports: "这条命令执行失败了" and "程序跑起来很卡" must stay out.
+        private static readonly string[] ShellCommandVerbMarkers =
+        {
+            "运行一下", "执行一下", "跑一下", "帮我运行", "帮我执行", "帮我跑", "运行这个", "执行这个", "跑这个",
+        };
+
+        private static readonly string[] BackgroundShellStartMarkers =
+        {
+            "在后台运行", "在后台启动", "在后台执行", "在后台跑", "后台跑起来", "放到后台", "帮我跑起来", "给我跑起来",
+            "run in the background", "start in the background",
+        };
+
         private static readonly string[] ScriptRuntimeMarkers =
         {
             "Python", "Python脚本", "Python 脚本", ".py", "Node.js", "NodeJS", "Node JS", "node", "npm", "npx",
@@ -338,7 +450,7 @@ namespace ColorVision.Copilot
 
         private static readonly string[] ScriptExecutionMarkers =
         {
-            "运行", "执行", "调用", "启动", "处理", "转换", "批量", "自动化",
+            "运行", "执行", "调用", "启动", "处理", "转换", "批量", "自动化", "跑一下", "跑这个",
             "run", "execute", "invoke", "start", "process", "convert", "batch", "automate",
         };
 
@@ -415,6 +527,11 @@ namespace ColorVision.Copilot
             "should i", "should we", "whether i should", "whether we should", "do i need to", "do we need to", "would you recommend", "is it advisable",
         };
 
+        private static readonly string[] BatchImageAdvisoryQuestionMarkers =
+        {
+            "需要", "有必要", "应该", "适合", "值得",
+        };
+
         private static readonly string[] BatchImageAlgorithmNameMarkers =
         {
             "反相", "Canny", "边缘检测", "阈值", "锐化", "高斯模糊", "中值模糊", "形态学", "降噪",
@@ -425,7 +542,7 @@ namespace ColorVision.Copilot
 
         private static readonly string[] BatchImageAlgorithmTargetMarkers =
         {
-            "这些图片", "这些图像", "多张图片", "多张图像", "所有图片", "所有图像", "全部图片", "全部图像", "批量图片", "批量图像",
+            "这些图片", "这些图像", "这几张图", "这些图", "多张图片", "多张图像", "所有图片", "所有图像", "全部图片", "全部图像", "批量图片", "批量图像",
             "对图片", "对图像",
             "these images", "the images", "all images", "multiple images", "batch images", "batch image", " images",
         };

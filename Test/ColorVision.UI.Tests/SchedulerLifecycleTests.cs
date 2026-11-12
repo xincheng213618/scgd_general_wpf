@@ -1,8 +1,12 @@
 using ColorVision.Scheduler;
 using ColorVision.Scheduler.Data;
+using ColorVision.Scheduler.Properties;
 using Quartz;
+using System.Globalization;
 using System.IO;
 using System.Threading.Channels;
+using System.Windows.Controls;
+using System.Windows.Threading;
 using SchedulerStatus = ColorVision.Scheduler.SchedulerStatus;
 
 namespace ColorVision.UI.Tests;
@@ -29,7 +33,7 @@ public sealed class SchedulerLifecycleTests : IAsyncLifetime
         _scheduler = await _factory.GetScheduler();
         _manager = new QuartzSchedulerManager(_scheduler, Path.Combine(_directory, "tasks.json"));
         _manager.Listener = new TaskExecutionListener(_manager, record => _executions.Writer.TryWrite(record));
-        _scheduler.ListenerManager.AddJobListener(_manager.Listener);
+        _manager.Listener.AttachTo(_scheduler.ListenerManager);
     }
 
     [Fact]
@@ -63,6 +67,97 @@ public sealed class SchedulerLifecycleTests : IAsyncLifetime
         Assert.True(saved.ScheduleCompleted);
     }
 
+    [Fact]
+    public async Task ImmediateRefireConsumesOnlyTheOriginalScheduledOccurrence()
+    {
+        SchedulerInfo info = CreateInfo();
+        info.JobType = typeof(RefireOnceJob);
+        info.RepeatMode = JobRepeatMode.Multiple;
+        info.RepeatCount = 1;
+        info.Interval = TimeSpan.FromHours(1);
+        Assert.True((await _manager.CreateJob(info)).Success);
+        await _scheduler.Start();
+
+        JobExecutionRecord record = await _executions.Reader.ReadAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(15));
+        Assert.True(record.Success, record.Message);
+        Assert.Equal("Refired", record.Message);
+        Assert.Equal(1, info.RunCount);
+        Assert.Equal(1, info.ScheduledFireCount);
+        Assert.False(info.ScheduleCompleted);
+
+        string path = Path.Combine(_directory, "tasks.json");
+        SchedulerInfo saved = Assert.Single(SchedulerTaskSerializer.LoadFromFile(path));
+        Assert.Equal(1, saved.ScheduledFireCount);
+        DateTimeOffset next = Assert.IsType<DateTimeOffset>(saved.NextScheduledFireTimeUtc);
+        await _scheduler.Standby();
+        await _manager.StopJob(info.JobName, info.GroupName);
+        await _manager.ResumeJob(info.JobName, info.GroupName);
+
+        ISimpleTrigger resumed = Assert.IsAssignableFrom<ISimpleTrigger>(Assert.Single(
+            await _scheduler.GetTriggersOfJob(new JobKey(info.JobName, info.GroupName))));
+        Assert.Equal(next, resumed.NextFireTimeUtc);
+        Assert.Equal(0, resumed.RepeatCount);
+    }
+
+    [Fact]
+    public async Task PauseLetsTheAlreadyAdmittedFiringRefireAndRecordItsResult()
+    {
+        SchedulerInfo info = CreateInfo();
+        info.JobType = typeof(RefireOnceJob);
+        info.RepeatMode = JobRepeatMode.Multiple;
+        info.RepeatCount = 1;
+        info.Interval = TimeSpan.FromHours(1);
+        _scheduler.Context[nameof(RefireOnceJob)] = (Func<Task>)(() => _manager.StopJob(info.JobName, info.GroupName));
+        var observation = new ScheduledFireObservation();
+        observation.ReleaseVeto.SetResult();
+        _scheduler.ListenerManager.AddJobListener(observation);
+        Assert.True((await _manager.CreateJob(info)).Success);
+        await _scheduler.Start();
+
+        Assert.False(await observation.Vetoed.Task.WaitAsync(TimeSpan.FromSeconds(10)));
+        JobExecutionRecord record = await _executions.Reader.ReadAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(10));
+
+        Assert.True(record.Success, record.Message);
+        Assert.Equal("Refired", record.Message);
+        Assert.Equal(SchedulerStatus.Paused, info.Status);
+        Assert.Equal(1, info.ScheduledFireCount);
+        Assert.Equal(1, info.RunCount);
+        Assert.Equal(TriggerState.Paused, await _scheduler.GetTriggerState(new TriggerKey($"{info.JobName}-trigger", info.GroupName)));
+        SchedulerInfo saved = Assert.Single(SchedulerTaskSerializer.LoadFromFile(Path.Combine(_directory, "tasks.json")));
+        Assert.Equal(SchedulerStatus.Paused, saved.Status);
+        Assert.Equal(1, saved.ScheduledFireCount);
+        Assert.Equal(1, saved.RunCount);
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task ResultInspectionFailureStillCompletesAndRecordsTheJob(bool statusThrows)
+    {
+        var completion = new CompletionObservation(_manager.Listener);
+        _scheduler.ListenerManager.RemoveJobListener(_manager.Listener.Name);
+        _scheduler.ListenerManager.AddJobListener(completion);
+        _scheduler.Context[nameof(ThrowingResultJob)] = statusThrows;
+        SchedulerInfo info = CreateInfo();
+        info.JobType = typeof(ThrowingResultJob);
+        Assert.True((await _manager.CreateJob(info)).Success);
+        await _scheduler.Start();
+
+        Assert.Null(await completion.Error.Task.WaitAsync(TimeSpan.FromSeconds(10)));
+        Assert.True(_executions.Reader.TryRead(out JobExecutionRecord? record));
+        Assert.NotNull(record);
+        Assert.Equal(!statusThrows, record.Success);
+        Assert.Contains(statusThrows ? "status unavailable" : "summary unavailable", record.Message);
+        Assert.Equal(SchedulerStatus.Completed, info.Status);
+        Assert.Equal(1, info.RunCount);
+        Assert.Equal(statusThrows ? 1 : 0, info.FailureCount);
+        Assert.Equal(statusThrows ? 0 : 1, info.SuccessCount);
+
+        SchedulerInfo persisted = Assert.Single(SchedulerTaskSerializer.LoadFromFile(Path.Combine(_directory, "tasks.json")));
+        Assert.Equal(info.RunCount, persisted.RunCount);
+        Assert.Equal(record.Message, persisted.LastExecutionMessage);
+    }
+
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
@@ -87,6 +182,98 @@ public sealed class SchedulerLifecycleTests : IAsyncLifetime
         Assert.Equal(completed ? 1 : 0, info.ScheduledFireCount);
         Assert.Equal(completed, info.ScheduleCompleted);
         Assert.Empty(await _scheduler.GetTriggersOfJob(key));
+    }
+
+    [Fact]
+    public async Task MissingPrimary_RecoversTheBackupWithoutArmingIt()
+    {
+        string path = Path.Combine(_directory, "tasks.json");
+        SchedulerInfo saved = CreateInfo();
+        saved.HasScheduleCheckpoint = true;
+        saved.Status = SchedulerStatus.Running;
+        SchedulerTaskSerializer.SaveToFile(path + ".bak", [saved]);
+        byte[] backup = File.ReadAllBytes(path + ".bak");
+
+        Assert.NotNull(_manager.LoadTaskDefinitions());
+
+        SchedulerInfo recovered = Assert.Single(_manager.TaskInfos);
+        Assert.Equal(saved.JobName, recovered.JobName);
+        Assert.Equal(SchedulerStatus.Paused, recovered.Status);
+        Assert.Equal(backup, File.ReadAllBytes(path + ".bak"));
+        Assert.Equal(saved.JobName, Assert.Single(SchedulerTaskSerializer.LoadFromFile(path)).JobName);
+        await _manager.RestoreJob(recovered);
+        Assert.Empty(await _scheduler.GetTriggersOfJob(new JobKey(recovered.JobName, recovered.GroupName)));
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task StaleManager_CannotOverwriteAnotherManagersSavedDefinitions(bool existingFile)
+    {
+        string path = Path.Combine(_directory, "tasks.json");
+        if (existingFile)
+            SchedulerTaskSerializer.SaveToFile(path, [CreateInfo()]);
+        var staleManager = new QuartzSchedulerManager(_scheduler, path);
+        Assert.Null(_manager.LoadTaskDefinitions());
+        Assert.Null(staleManager.LoadTaskDefinitions());
+
+        SchedulerInfo savedByFirst = CreateInfo();
+        savedByFirst.JobName = "saved-by-first";
+        Assert.True((await _manager.CreateJob(savedByFirst)).Success);
+        byte[] primary = File.ReadAllBytes(path);
+        byte[]? backup = existingFile ? File.ReadAllBytes(path + ".bak") : null;
+
+        SchedulerInfo staleAddition = CreateInfo();
+        staleAddition.JobName = "stale-addition";
+        SchedulerOperationResult result = await staleManager.CreateJob(staleAddition);
+
+        Assert.False(result.Success);
+        Assert.Equal(SchedulerOperationError.PersistenceFailure, result.Error);
+        Assert.DoesNotContain(staleAddition, staleManager.TaskInfos);
+        Assert.False(await _scheduler.Exists(new JobKey(staleAddition.JobName, staleAddition.GroupName)));
+        Assert.Equal(primary, File.ReadAllBytes(path));
+        if (backup == null)
+        {
+            Assert.False(File.Exists(path + ".bak"));
+            return;
+        }
+
+        Assert.Equal(backup, File.ReadAllBytes(path + ".bak"));
+        File.Delete(path);
+        File.Delete(path + ".bak");
+        Assert.Null(staleManager.LoadTaskDefinitions());
+        Assert.Single(staleManager.TaskInfos);
+        Assert.False((await staleManager.CreateJob(staleAddition)).Success);
+        Assert.False(File.Exists(path));
+    }
+
+    [Theory]
+    [InlineData("{\"$values\":[")]
+    [InlineData("null")]
+    [InlineData("{\"$type\":\"Missing.TaskList, Missing.SchedulerJobs\",\"$values\":[]}")]
+    public async Task UnreadablePrimary_PreservesItAndItsBackupUntilValidReload(string invalidJson)
+    {
+        string path = Path.Combine(_directory, "tasks.json");
+        SchedulerInfo previous = CreateInfo();
+        SchedulerTaskSerializer.SaveToFile(path + ".bak", [previous]);
+        File.WriteAllText(path, invalidJson);
+        byte[] backup = File.ReadAllBytes(path + ".bak");
+
+        Assert.NotNull(_manager.LoadTaskDefinitions());
+        Assert.Empty(_manager.TaskInfos);
+        var replacement = CreateInfo();
+        replacement.JobName = "replacement";
+        SchedulerOperationResult rejected = await _manager.CreateJob(replacement);
+        Assert.False(rejected.Success);
+        Assert.Empty(_manager.TaskInfos);
+        Assert.False(await _scheduler.Exists(new JobKey(replacement.JobName, replacement.GroupName)));
+        Assert.Equal(invalidJson, File.ReadAllText(path));
+        Assert.Equal(backup, File.ReadAllBytes(path + ".bak"));
+
+        File.Copy(path + ".bak", path, overwrite: true);
+        Assert.Null(_manager.LoadTaskDefinitions());
+        Assert.Equal(previous.JobName, Assert.Single(_manager.TaskInfos).JobName);
+        Assert.True((await _manager.CreateJob(replacement)).Success);
     }
 
     [Fact]
@@ -116,6 +303,44 @@ public sealed class SchedulerLifecycleTests : IAsyncLifetime
         Assert.Equal(2, info.RunCount);
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task FailedPauseSave_LeavesRequestedSchedulesPaused(bool pauseAll)
+    {
+        SchedulerInfo first = CreateInfo();
+        first.IsDelayed = true;
+        first.Delay = TimeSpan.FromHours(1);
+        SchedulerInfo second = CreateInfo();
+        second.JobName = "second-job";
+        second.IsDelayed = true;
+        second.Delay = TimeSpan.FromHours(1);
+        Assert.True((await _manager.CreateJob(first)).Success);
+        Assert.True((await _manager.CreateJob(second)).Success);
+        await _scheduler.Start();
+        var firstTrigger = new TriggerKey($"{first.JobName}-trigger", first.GroupName);
+        var secondTrigger = new TriggerKey($"{second.JobName}-trigger", second.GroupName);
+        Assert.Equal(TriggerState.Normal, await _scheduler.GetTriggerState(firstTrigger));
+        Assert.Equal(TriggerState.Normal, await _scheduler.GetTriggerState(secondTrigger));
+        string path = Path.Combine(_directory, "tasks.json");
+        Task Pause() => pauseAll ? _manager.PauseAll() : _manager.StopJob(first.JobName, first.GroupName);
+
+        using (var locked = new FileStream(path, FileMode.Open, FileAccess.ReadWrite, FileShare.None))
+        {
+            await Assert.ThrowsAsync<InvalidOperationException>(Pause);
+            Assert.Equal(TriggerState.Paused, await _scheduler.GetTriggerState(firstTrigger));
+            Assert.Equal(pauseAll ? TriggerState.Paused : TriggerState.Normal, await _scheduler.GetTriggerState(secondTrigger));
+            Assert.Equal(SchedulerStatus.Paused, first.Status);
+            Assert.Equal(pauseAll ? SchedulerStatus.Paused : SchedulerStatus.Ready, second.Status);
+        }
+
+        Assert.All(SchedulerTaskSerializer.LoadFromFile(path), task => Assert.Equal(SchedulerStatus.Ready, task.Status));
+        await Pause();
+        var saved = SchedulerTaskSerializer.LoadFromFile(path);
+        Assert.Equal(SchedulerStatus.Paused, saved.Single(task => task.JobName == first.JobName).Status);
+        Assert.Equal(pauseAll ? SchedulerStatus.Paused : SchedulerStatus.Ready, saved.Single(task => task.JobName == second.JobName).Status);
+    }
+
     [Fact]
     public async Task FailedResumeSave_RestoresPausedJobWithoutLeavingATrigger()
     {
@@ -132,12 +357,215 @@ public sealed class SchedulerLifecycleTests : IAsyncLifetime
         Assert.Empty(await _scheduler.GetTriggersOfJob(new JobKey(info.JobName, info.GroupName)));
     }
 
+    [Fact]
+    public async Task ExecuteReportsTheValidationErrorWhenASavedTaskCouldNotBeRegistered()
+    {
+        SchedulerInfo invalid = CreateInfo();
+        invalid.Mode = JobExecutionMode.Interval;
+        invalid.Interval = TimeSpan.Zero;
+        string path = Path.Combine(_directory, "tasks.json");
+        SchedulerTaskSerializer.SaveToFile(path, [invalid]);
+        Assert.Null(_manager.LoadTaskDefinitions());
+        SchedulerInfo task = Assert.Single(_manager.TaskInfos);
+        var restoreError = await Assert.ThrowsAsync<InvalidOperationException>(() => _manager.RestoreJob(task));
+        await _scheduler.Start();
+
+        var executeError = await Assert.ThrowsAsync<InvalidOperationException>(() => _manager.ExecuteJob(task.JobName, task.GroupName));
+
+        Assert.Equal(restoreError.Message, executeError.Message);
+        var batchError = await Assert.ThrowsAsync<InvalidOperationException>(_manager.ResumeAll);
+        Assert.Contains(task.JobName, batchError.Message);
+        Assert.Contains(restoreError.Message, batchError.Message);
+        Assert.Equal(SchedulerStatus.Paused, task.Status);
+        Assert.False(await _scheduler.Exists(new JobKey(task.JobName, task.GroupName)));
+    }
+
+    [Fact]
+    public async Task ExecuteRestoresAnUnregisteredSavedTaskAndRollsBackOnSaveFailure()
+    {
+        SchedulerInfo saved = CreateInfo();
+        saved.IsDelayed = true;
+        saved.Delay = TimeSpan.FromHours(1);
+        string path = Path.Combine(_directory, "tasks.json");
+        SchedulerTaskSerializer.SaveToFile(path, [saved]);
+        Assert.Null(_manager.LoadTaskDefinitions());
+        SchedulerInfo task = Assert.Single(_manager.TaskInfos);
+        var key = new JobKey(task.JobName, task.GroupName);
+        await _scheduler.Start();
+
+        using (var locked = new FileStream(path, FileMode.Open, FileAccess.ReadWrite, FileShare.None))
+        {
+            await Assert.ThrowsAsync<InvalidOperationException>(() => _manager.ExecuteJob(task.JobName, task.GroupName));
+            Assert.Equal(SchedulerStatus.Paused, task.Status);
+            Assert.False(await _scheduler.Exists(key));
+        }
+
+        await _manager.ExecuteJob(task.JobName, task.GroupName);
+
+        Assert.Single(await _scheduler.GetTriggersOfJob(key));
+        Assert.Equal(SchedulerStatus.Ready, task.Status);
+        Assert.Equal(SchedulerStatus.Ready, Assert.Single(SchedulerTaskSerializer.LoadFromFile(path)).Status);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task FailedRemovalSave_RestoresNextFireAndRemainingRepetitions(bool paused)
+    {
+        SchedulerInfo info = CreateInfo();
+        info.RepeatMode = JobRepeatMode.Multiple;
+        info.RepeatCount = 2;
+        info.Interval = TimeSpan.FromHours(1);
+        Assert.True((await _manager.CreateJob(info)).Success);
+        await _scheduler.Start();
+        await NextExecution();
+        await _scheduler.Standby();
+        if (paused) await _manager.StopJob(info.JobName, info.GroupName);
+
+        var key = new JobKey(info.JobName, info.GroupName);
+        ISimpleTrigger original = Assert.IsAssignableFrom<ISimpleTrigger>(Assert.Single(await _scheduler.GetTriggersOfJob(key)));
+        DateTimeOffset next = Assert.IsType<DateTimeOffset>(original.NextFireTimeUtc);
+        Assert.Equal(info.NextScheduledFireTimeUtc, next);
+        Assert.Equal(1, info.ScheduledFireCount);
+        Assert.Equal(1, original.TimesTriggered);
+
+        string path = Path.Combine(_directory, "tasks.json");
+        byte[] saved = File.ReadAllBytes(path);
+        using (var locked = new FileStream(path, FileMode.Open, FileAccess.ReadWrite, FileShare.None))
+            await Assert.ThrowsAsync<InvalidOperationException>(() => _manager.RemoveJob(info.JobName, info.GroupName));
+
+        Assert.Same(info, Assert.Single(_manager.TaskInfos));
+        Assert.Equal(saved, File.ReadAllBytes(path));
+        ISimpleTrigger restored = Assert.IsAssignableFrom<ISimpleTrigger>(Assert.Single(await _scheduler.GetTriggersOfJob(key)));
+        Assert.Equal(next, restored.NextFireTimeUtc);
+        Assert.Equal(2, restored.RepeatCount + 1 - restored.TimesTriggered);
+        Assert.Equal(paused ? TriggerState.Paused : TriggerState.Normal, await _scheduler.GetTriggerState(restored.Key));
+    }
+
+    [Theory]
+    [InlineData(JobRepeatMode.Once)]
+    [InlineData(JobRepeatMode.Multiple)]
+    public async Task ScheduledFireWithUnsavedCheckpoint_IsVetoedAndCanResume(JobRepeatMode repeatMode)
+    {
+        SchedulerInfo info = CreateInfo();
+        info.RepeatMode = repeatMode;
+        info.Interval = TimeSpan.FromHours(1);
+        var observation = new ScheduledFireObservation();
+        _scheduler.ListenerManager.AddJobListener(observation);
+        Assert.True((await _manager.CreateJob(info)).Success);
+
+        var jobKey = new JobKey(info.JobName, info.GroupName);
+        DateTimeOffset? savedNext = info.NextScheduledFireTimeUtc;
+        string? previousFire = info.PreviousFireTime;
+        string path = Path.Combine(_directory, "tasks.json");
+        byte[] saved = File.ReadAllBytes(path);
+        try
+        {
+            using (var locked = new FileStream(path, FileMode.Open, FileAccess.ReadWrite, FileShare.None))
+            {
+                await _scheduler.Start();
+                Assert.True(await observation.Vetoed.Task.WaitAsync(TimeSpan.FromSeconds(15)));
+                Assert.Equal(SchedulerStatus.Paused, info.Status);
+                Assert.False(info.ScheduleCompleted);
+                Assert.Equal(0, info.ScheduledFireCount);
+                Assert.Equal(0, info.RunCount);
+                Assert.Equal(savedNext, info.NextScheduledFireTimeUtc);
+                Assert.Equal(previousFire, info.PreviousFireTime);
+                Assert.False(string.IsNullOrWhiteSpace(info.ScheduleAdmissionError));
+                Assert.False(_executions.Reader.TryRead(out _));
+            }
+            Assert.Equal(saved, File.ReadAllBytes(path));
+
+            // Resume before Quartz finishes handling the veto. Its cleanup
+            // of the old fire must leave the replacement trigger alone.
+            await _manager.ResumeJob(info.JobName, info.GroupName);
+            Assert.Null(info.ScheduleAdmissionError);
+            ISimpleTrigger resumed = Assert.IsAssignableFrom<ISimpleTrigger>(
+                Assert.Single(await _scheduler.GetTriggersOfJob(jobKey)));
+            Assert.Equal(repeatMode == JobRepeatMode.Once ? 0 : info.RepeatCount, resumed.RepeatCount);
+        }
+        finally
+        {
+            observation.ReleaseVeto.TrySetResult();
+        }
+
+        if (repeatMode == JobRepeatMode.Once)
+        {
+            await NextExecution();
+            Assert.Equal(1, info.ScheduledFireCount);
+            Assert.True(info.ScheduleCompleted);
+            Assert.Equal(SchedulerStatus.Completed, info.Status);
+        }
+        else
+        {
+            // The manual run uses the same single Quartz worker, so its
+            // completion also proves the old fire's veto cleanup is done.
+            await _scheduler.TriggerJob(jobKey);
+            await NextExecution();
+            var triggerKey = new TriggerKey($"{info.JobName}-trigger", info.GroupName);
+            ISimpleTrigger resumed = Assert.IsAssignableFrom<ISimpleTrigger>(await _scheduler.GetTrigger(triggerKey));
+            Assert.Equal(info.RepeatCount, resumed.RepeatCount);
+            Assert.Equal(TriggerState.Normal, await _scheduler.GetTriggerState(triggerKey));
+            Assert.Equal(0, info.ScheduledFireCount);
+        }
+    }
+
     private async Task NextExecution()
     {
         // A timeout fails a hung test; correctness assertions use completed
         // callbacks and trigger state rather than sleeps or timing tolerances.
         JobExecutionRecord record = await _executions.Reader.ReadAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(15));
         Assert.True(record.Success, record.Message);
+    }
+
+    [Fact]
+    public async Task StatusBar_TracksInFlightRoundAfterPauseAndNextTimeAfterResume()
+    {
+        var started = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var finish = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        _scheduler.Context[nameof(StatusProbeJob)] = (started, finish);
+        SchedulerInfo info = CreateInfo();
+        info.JobType = typeof(StatusProbeJob);
+        info.RepeatMode = JobRepeatMode.Multiple;
+        info.RepeatCount = 1;
+        info.Interval = TimeSpan.FromDays(2);
+        Assert.True((await _manager.CreateJob(info)).Success);
+
+        // Exercise the real status bar binding with no task window open.
+        TextBlock status = WpfTestHost.Invoke(() =>
+        {
+            var provider = new SchedulerStatusBarProvider(_manager);
+            var statusBar = new StatusBarControl();
+            statusBar.LoadItems(provider.GetStatusBarIconMetadata());
+            var right = Assert.IsType<StackPanel>(statusBar.FindName("RightItemsPanel"));
+            var item = Assert.IsType<Border>(Assert.Single(right.Children));
+            var host = Assert.IsType<ContentControl>(item.Child);
+            var content = Assert.IsType<StackPanel>(host.Content);
+            return Assert.IsType<TextBlock>(content.Children[0]);
+        });
+        Task<string> ReadStatusAsync() => status.Dispatcher.InvokeAsync(() => status.Text, DispatcherPriority.Background).Task;
+
+        try
+        {
+            await _scheduler.Start();
+            await started.Task.WaitAsync(TimeSpan.FromSeconds(15));
+            Assert.Equal(Resources.Sched_StatusBarRunning, await ReadStatusAsync());
+
+            await WpfTestHost.Invoke(() => _manager.StopJob(info.JobName, info.GroupName));
+            Assert.Equal(Resources.Sched_StatusBarPausedRunning, await ReadStatusAsync());
+        }
+        finally
+        {
+            finish.TrySetResult();
+        }
+
+        await NextExecution();
+        Assert.Empty(await ReadStatusAsync());
+
+        await WpfTestHost.Invoke(() => _manager.ResumeJob(info.JobName, info.GroupName));
+        DateTimeOffset next = Assert.IsType<DateTimeOffset>(info.NextScheduledFireTimeUtc);
+        string time = next.LocalDateTime.ToString("yyyy/MM/dd HH:mm:ss", CultureInfo.CurrentCulture);
+        Assert.Equal(string.Format(CultureInfo.CurrentCulture, Resources.Sched_StatusBarNextRun, time), await ReadStatusAsync());
     }
 
     [Fact]
@@ -161,6 +589,73 @@ public sealed class SchedulerLifecycleTests : IAsyncLifetime
         Assert.Equal(SchedulerStatus.Ready, pending.Status);
         Assert.Equal(TriggerState.Normal, await _scheduler.GetTriggerState(new TriggerKey($"{pending.JobName}-trigger", pending.GroupName)));
         Assert.Empty(await _scheduler.GetTriggersOfJob(new JobKey(completed.JobName, completed.GroupName)));
+    }
+
+    [Fact]
+    public async Task ResumeAllDoesNotRearmAPausedTaskWhileItsPreviousExecutionIsActive()
+    {
+        var started = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var finish = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        _scheduler.Context[nameof(StatusProbeJob)] = (started, finish);
+        SchedulerInfo active = CreateInfo();
+        active.JobType = typeof(StatusProbeJob);
+        active.RepeatMode = JobRepeatMode.Multiple;
+        active.RepeatCount = 1;
+        active.Interval = TimeSpan.FromHours(1);
+        SchedulerInfo pending = CreateInfo();
+        pending.JobName = "pending-job";
+        pending.IsDelayed = true;
+        pending.Delay = TimeSpan.FromHours(1);
+        Assert.True((await _manager.CreateJob(active)).Success);
+        Assert.True((await _manager.CreateJob(pending)).Success);
+
+        try
+        {
+            await _scheduler.Start();
+            await started.Task.WaitAsync(TimeSpan.FromSeconds(10));
+            await _manager.PauseAll();
+
+            Exception? error = await Record.ExceptionAsync(_manager.ResumeAll);
+
+            Assert.Equal(SchedulerStatus.Paused, active.Status);
+            var failure = Assert.IsType<InvalidOperationException>(error);
+            Assert.Contains(active.JobName, failure.Message);
+            Assert.Contains(Resources.Sched_AlreadyActive, failure.Message);
+            Assert.Equal(TriggerState.Paused, await _scheduler.GetTriggerState(new TriggerKey($"{active.JobName}-trigger", active.GroupName)));
+            Assert.Equal(SchedulerStatus.Ready, pending.Status);
+            Assert.Equal(TriggerState.Normal, await _scheduler.GetTriggerState(new TriggerKey($"{pending.JobName}-trigger", pending.GroupName)));
+        }
+        finally { finish.TrySetResult(); }
+
+        await NextExecution();
+    }
+
+    [Fact]
+    public async Task ResumeAll_ResumesOtherSavedTasksWhenACronScheduleHasExpired()
+    {
+        SchedulerInfo expired = CreateInfo();
+        expired.JobName = "expired-cron";
+        expired.Mode = JobExecutionMode.Cron;
+        expired.CronExpression = "0 0 0 1 1 ? 2000";
+        SchedulerInfo pending = CreateInfo();
+        pending.IsDelayed = true;
+        pending.Delay = TimeSpan.FromHours(1);
+        string path = Path.Combine(_directory, "tasks.json");
+        SchedulerTaskSerializer.SaveToFile(path, [expired, pending]);
+        Assert.Null(_manager.LoadTaskDefinitions());
+        foreach (SchedulerInfo task in _manager.TaskInfos)
+            await _manager.RestoreJob(task);
+        await _scheduler.Start();
+
+        Exception? failure = await Record.ExceptionAsync(_manager.ResumeAll);
+
+        Assert.Equal(SchedulerStatus.Ready, _manager.TaskInfos.Single(task => task.JobName == pending.JobName).Status);
+        Assert.Contains(expired.JobName, Assert.IsType<InvalidOperationException>(failure).Message);
+        Assert.Equal(TriggerState.Normal, await _scheduler.GetTriggerState(new TriggerKey($"{pending.JobName}-trigger", pending.GroupName)));
+        Assert.Empty(await _scheduler.GetTriggersOfJob(new JobKey(expired.JobName, expired.GroupName)));
+        var saved = SchedulerTaskSerializer.LoadFromFile(path);
+        Assert.Equal(SchedulerStatus.Paused, saved.Single(task => task.JobName == expired.JobName).Status);
+        Assert.Equal(SchedulerStatus.Ready, saved.Single(task => task.JobName == pending.JobName).Status);
     }
 
     [Fact]
@@ -262,9 +757,94 @@ public sealed class SchedulerLifecycleTests : IAsyncLifetime
         RepeatMode = JobRepeatMode.Once,
     };
 
+    private sealed class ScheduledFireObservation : IJobListener
+    {
+        public string Name => nameof(ScheduledFireObservation);
+        internal TaskCompletionSource<bool> Vetoed { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        internal TaskCompletionSource ReleaseVeto { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public async ValueTask JobExecutionVetoed(IJobExecutionContext context, CancellationToken cancellationToken = default)
+        {
+            Vetoed.TrySetResult(true);
+            await ReleaseVeto.Task.WaitAsync(cancellationToken);
+        }
+
+        public ValueTask JobWasExecuted(IJobExecutionContext context, JobExecutionException? jobException, CancellationToken cancellationToken = default)
+        {
+            Vetoed.TrySetResult(false);
+            return ValueTask.CompletedTask;
+        }
+    }
+
+    private sealed class CompletionObservation(TaskExecutionListener listener) : IJobListener
+    {
+        public string Name => listener.Name;
+        internal TaskCompletionSource<Exception?> Error { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public ValueTask JobToBeExecuted(IJobExecutionContext context, CancellationToken cancellationToken = default)
+            => listener.JobToBeExecuted(context, cancellationToken);
+
+        public ValueTask JobExecutionVetoed(IJobExecutionContext context, CancellationToken cancellationToken = default)
+            => listener.JobExecutionVetoed(context, cancellationToken);
+
+        public async ValueTask JobWasExecuted(IJobExecutionContext context, JobExecutionException? jobException, CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                await listener.JobWasExecuted(context, jobException, cancellationToken);
+                Error.TrySetResult(null);
+            }
+            catch (Exception ex)
+            {
+                Error.TrySetResult(ex);
+                throw;
+            }
+        }
+    }
+
+    public sealed class ThrowingResultJob : IJob
+    {
+        public ValueTask Execute(IJobExecutionContext context, CancellationToken cancellationToken = default)
+        {
+            context.Result = new ThrowingResult((bool)context.Scheduler.Context[nameof(ThrowingResultJob)]!);
+            return ValueTask.CompletedTask;
+        }
+
+        private sealed class ThrowingResult(bool statusThrows)
+        {
+            public bool Success => statusThrows ? throw new InvalidOperationException("status unavailable") : true;
+            public override string ToString() => throw new InvalidOperationException("summary unavailable");
+        }
+    }
+
     public sealed class NoOpJob : IJob
     {
         public ValueTask Execute(IJobExecutionContext context, CancellationToken cancellationToken = default) => ValueTask.CompletedTask;
+    }
+
+    public sealed class RefireOnceJob : IJob
+    {
+        public async ValueTask Execute(IJobExecutionContext context, CancellationToken cancellationToken = default)
+        {
+            if (context.RefireCount == 0)
+            {
+                if (context.Scheduler.Context.TryGetValue(nameof(RefireOnceJob), out object? callback) && callback is Func<Task> beforeRefire)
+                    await beforeRefire();
+                throw new JobExecutionException("Retry the same firing") { RefireImmediately = true };
+            }
+            context.Result = "Refired";
+        }
+    }
+
+    public sealed class StatusProbeJob : IJob
+    {
+        public async ValueTask Execute(IJobExecutionContext context, CancellationToken cancellationToken = default)
+        {
+            var (started, finish) = ((TaskCompletionSource, TaskCompletionSource))context.Scheduler.Context[nameof(StatusProbeJob)]!;
+            started.TrySetResult();
+            await finish.Task.WaitAsync(cancellationToken);
+        }
     }
 
     public async Task DisposeAsync()

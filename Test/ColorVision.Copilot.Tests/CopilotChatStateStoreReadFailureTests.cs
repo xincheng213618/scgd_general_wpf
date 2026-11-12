@@ -1,3 +1,4 @@
+using Newtonsoft.Json.Linq;
 using System.IO;
 
 namespace ColorVision.Copilot.Tests;
@@ -90,6 +91,53 @@ public sealed class CopilotChatStateStoreReadFailureTests
         Assert.Equal("recoverable draft", Assert.Single(fixture.Store.Load().Conversations).DraftText);
 
         await fixture.SaveDraftAsync("new draft", asynchronous);
+        Assert.Equal("new draft", Assert.Single(fixture.Store.Load().Conversations).DraftText);
+    }
+
+    [Theory]
+    [InlineData(false, false)]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    [InlineData(true, true)]
+    public async Task SavingDoesNotReplaceAFutureTemporarySnapshot(bool asynchronous, bool loadBeforeSnapshot)
+    {
+        using var fixture = new StateStoreFixture();
+        fixture.SaveDraft("older backup");
+        fixture.SaveDraft("latest primary");
+        if (loadBeforeSnapshot)
+            fixture.Store.Load();
+        fixture.WriteTemporaryDraft("newer application draft");
+        var document = JObject.Parse(File.ReadAllText(fixture.Store.TemporaryStateFilePath));
+        document[nameof(CopilotChatState.SchemaVersion)] = CopilotChatState.CurrentSchemaVersion + 1;
+        File.WriteAllText(fixture.Store.TemporaryStateFilePath, document.ToString());
+        var primary = File.ReadAllBytes(fixture.Store.StateFilePath);
+        var backup = File.ReadAllBytes(fixture.Store.BackupStateFilePath);
+        var temporary = File.ReadAllBytes(fixture.Store.TemporaryStateFilePath);
+
+        var exception = await Assert.ThrowsAsync<CopilotChatStateFutureVersionException>(
+            () => fixture.SaveDraftAsync("old application draft", asynchronous));
+
+        Assert.Equal(fixture.Store.TemporaryStateFilePath, exception.StateFilePath);
+        Assert.Equal(CopilotChatStateLoadSource.FutureVersion, fixture.Store.LastLoadStatus.Source);
+        Assert.Equal(primary, File.ReadAllBytes(fixture.Store.StateFilePath));
+        Assert.Equal(backup, File.ReadAllBytes(fixture.Store.BackupStateFilePath));
+        Assert.Equal(temporary, File.ReadAllBytes(fixture.Store.TemporaryStateFilePath));
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void SavingCanReplaceAnExistingSupportedOrInvalidTemporarySnapshot(bool validTemporary)
+    {
+        using var fixture = new StateStoreFixture();
+        fixture.SaveDraft("latest primary");
+        fixture.WriteTemporaryDraft("stale temporary draft");
+        if (!validTemporary)
+            File.WriteAllText(fixture.Store.TemporaryStateFilePath, "{broken-temporary");
+
+        fixture.SaveDraft("new draft");
+
+        Assert.False(File.Exists(fixture.Store.TemporaryStateFilePath));
         Assert.Equal("new draft", Assert.Single(fixture.Store.Load().Conversations).DraftText);
     }
 

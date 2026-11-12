@@ -36,6 +36,8 @@ namespace ColorVision.Common.ThirdPartyApps
         public string Group { get; set; } = string.Empty;
         public ThirdPartyAppCategory Category { get; set; } = ThirdPartyAppCategory.External;
         public PermissionMode RequiredPermission { get; set; } = PermissionMode.Guest;
+        public string? ActionId { get; set; }
+        public string? ResourceId { get; set; }
         public int Order { get; set; } = 100;
         public string InstallerPath { get; set; } = string.Empty;
         public string? InstalledExePath { get; set; }
@@ -106,16 +108,22 @@ namespace ColorVision.Common.ThirdPartyApps
         /// </summary>
         public string IconGlyph { get; set; } = ThirdPartyAppIconGlyphs.Default;
 
-        public bool IsAuthorized
-        {
-            get
-            {
-                Authorization? authorization = Authorization.Instance;
-                return authorization != null && IsAuthorizedFor(authorization.PermissionMode);
-            }
-        }
+        public bool IsAuthorized => AccessControl.Evaluate(GetActionId(), RequiredPermission, GetResourceId()).Allowed;
 
-        public bool IsAuthorizedFor(PermissionMode permissionMode) => permissionMode <= RequiredPermission;
+        public bool IsAuthorizedFor(PermissionMode permissionMode) => AccessControl.Evaluate(GetActionId(), RequiredPermission,
+            GetResourceId(), new AccessSubject(null, permissionMode)).Allowed;
+
+        private string GetActionId() => string.IsNullOrWhiteSpace(ActionId) ? "third-party.launch" : ActionId;
+
+        private string? GetResourceId()
+        {
+            if (!string.IsNullOrWhiteSpace(ResourceId)) return ResourceId;
+            if (!string.IsNullOrWhiteSpace(LaunchPath)) return LaunchPath;
+            if (LaunchAction is { } action) return $"{action.Method.DeclaringType?.FullName}.{action.Method.Name}";
+            if (!string.IsNullOrWhiteSpace(PortableExePath)) return PortableExePath;
+            if (!string.IsNullOrWhiteSpace(InstalledExePath)) return InstalledExePath;
+            return !string.IsNullOrWhiteSpace(InstallerPath) ? InstallerPath : GetType().FullName;
+        }
 
         public ICommand DoubleClickCommand => new RelayCommand(a => OnDoubleClick(), b => IsAuthorized);
         public ICommand OpenDirectoryCommand => new RelayCommand(a => OnOpenDirectory(), b => IsAuthorized && !string.IsNullOrEmpty(GetDirectoryPath()));

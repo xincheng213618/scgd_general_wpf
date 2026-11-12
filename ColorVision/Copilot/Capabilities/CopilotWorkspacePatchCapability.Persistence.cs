@@ -58,7 +58,12 @@ namespace ColorVision.Copilot
         private void RemoveExpiredEntries(DateTimeOffset now)
         {
             RemoveExpiredChangeSets(now);
-            foreach (var key in _records.Where(pair => pair.Value.ExpiresAtUtc <= now).Select(pair => pair.Key).ToArray())
+            // Keep every child while its envelope may still need to finish or compensate.
+            foreach (var key in _records.Where(pair => pair.Value.ExpiresAtUtc <= now
+                && pair.Value.State is not WorkspacePatchState.Applying and not WorkspacePatchState.RollingBack
+                && (!_changeSets.TryGetValue(pair.Value.ChangeSetId, out var changeSet)
+                    || changeSet.State is not WorkspaceChangeSetState.Applying and not WorkspaceChangeSetState.RollingBack))
+                .Select(pair => pair.Key).ToArray())
                 _records.Remove(key);
         }
 

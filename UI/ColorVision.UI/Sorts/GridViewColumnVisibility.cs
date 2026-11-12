@@ -43,10 +43,10 @@ namespace ColorVision.UI.Sorts
         public static void AdjustGridViewColumn(GridViewColumnCollection gridViewColumns, ObservableCollection<GridViewColumnVisibility> gridViewColumnVisibilitys)
         {
             ///HashSet效率更高
-            var invisibleColumns = new HashSet<GridViewColumn>(gridViewColumnVisibilitys.Where(x => !x.IsVisible).Select(x => x.GridViewColumn));
+            var invisibleColumns = new HashSet<GridViewColumn>(gridViewColumnVisibilitys.Where(x => !x.ShouldDisplay).Select(x => x.GridViewColumn));
 
             gridViewColumns.RemoveAll(column => invisibleColumns.Contains(column));
-            var lists = gridViewColumnVisibilitys.Where(x => x.IsVisible == true).ToList();
+            var lists = gridViewColumnVisibilitys.Where(x => x.ShouldDisplay).ToList();
 
             for (int i = 0; i < lists.Count; i++)
             {
@@ -70,10 +70,10 @@ namespace ColorVision.UI.Sorts
         public static void AdjustGridViewColumnAuto(GridViewColumnCollection gridViewColumns, ObservableCollection<GridViewColumnVisibility> gridViewColumnVisibilitys)
         {
             ///HashSet效率更高
-            var invisibleColumns = new HashSet<GridViewColumn>(gridViewColumnVisibilitys.Where(x => !x.IsVisible).Select(x => x.GridViewColumn));
+            var invisibleColumns = new HashSet<GridViewColumn>(gridViewColumnVisibilitys.Where(x => !x.ShouldDisplay).Select(x => x.GridViewColumn));
 
             gridViewColumns.RemoveAll(column => invisibleColumns.Contains(column));
-            var lists = gridViewColumnVisibilitys.Where(x => x.IsVisible == true).ToList();
+            var lists = gridViewColumnVisibilitys.Where(x => x.ShouldDisplay).ToList();
 
             for (int i = 0; i < lists.Count; i++)
             {
@@ -134,6 +134,12 @@ namespace ColorVision.UI.Sorts
 
         [JsonIgnore]
         public GridViewColumn GridViewColumn { get; set; }
+
+        // A view can hide a column without changing the saved visibility preference.
+        [JsonIgnore]
+        public bool IsSuppressed { get; set; }
+
+        private bool ShouldDisplay => IsVisible && !IsSuppressed;
 
         public event EventHandler VisibleChanged;
 

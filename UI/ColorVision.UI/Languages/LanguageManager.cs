@@ -19,6 +19,7 @@ namespace ColorVision.UI.Languages
         }
 
         public static Dictionary<string, string> keyValuePairs { get; set; }
+        internal static string AutoDetectDisplayName => Properties.Resources.ResourceManager.GetString("LanguageAutoDetect", CultureInfo.CurrentUICulture) ?? "Auto detect";
 
 
         public static List<string> GetDefaultLanguages(string? defaultProcessDllName = null)
@@ -62,7 +63,7 @@ namespace ColorVision.UI.Languages
 
             if (Thread.CurrentThread.CurrentUICulture.Name == CultureInfo.InstalledUICulture.Name)
             {
-                keyValuePairs.TryAdd(CultureInfo.InstalledUICulture.Name, Properties.Resources.UseSystem);
+                keyValuePairs.TryAdd(CultureInfo.InstalledUICulture.Name, AutoDetectDisplayName);
             }
             else
             {
@@ -90,7 +91,7 @@ namespace ColorVision.UI.Languages
             if (!list.Contains(CultureInfo.InstalledUICulture.Name))
             {
                 list.Add(CultureInfo.InstalledUICulture.Name);
-                keyValuePairs.TryAdd(CultureInfo.InstalledUICulture.Name, Properties.Resources.UseSystem);
+                keyValuePairs.TryAdd(CultureInfo.InstalledUICulture.Name, AutoDetectDisplayName);
             }
 
             return list;

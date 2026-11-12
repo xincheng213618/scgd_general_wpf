@@ -14,6 +14,7 @@ using SqlSugar;
 using System;
 using System.ComponentModel;
 using System.IO;
+using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -25,7 +26,20 @@ namespace ColorVision.Engine.Services
         public virtual string Code { get; set; }
         public virtual string SendTopic { get; set; }
         public virtual string SubscribeTopic { get; set; }
-        public virtual bool IsAlive { get; set; }
+        private int _observedAliveState;
+        public virtual bool IsAlive
+        {
+            get => Volatile.Read(ref _observedAliveState) == 2;
+            set => Volatile.Write(ref _observedAliveState, value ? 2 : 1);
+        }
+        internal bool? ObservedIsAlive
+        {
+            get
+            {
+                int state = Volatile.Read(ref _observedAliveState);
+                return state == 0 ? null : state == 2;
+            }
+        }
         public virtual DateTime LastAliveTime { get; set; }
         public ServiceTypes ServiceTypes => (ServiceTypes)SysResourceModel.Type;
 
@@ -59,6 +73,38 @@ namespace ColorVision.Engine.Services
 
         public virtual ImageSource Icon { get; set; }
         public SysResourceModel SysResourceModel { get; set; }
+        protected override string? AuthorizationResourceId => ServiceAuthorization.ResourceId(SysResourceModel);
+
+        internal bool CanConfigure => ServiceAuthorization.Can("device.configure", SysResourceModel);
+
+        internal void DemandConfigurationAccess() => ServiceAuthorization.Demand("device.configure", SysResourceModel);
+
+        internal void ProtectConfigurationEditor(PropertyEditorWindow window)
+        {
+            window.Submitting += (_, e) =>
+            {
+                if (CanConfigure) return;
+                e.Cancel = true;
+                e.ErrorMessage = EngineLocalization.Get("当前权限不足，无法保存设备配置。");
+            };
+        }
+
+        internal void CommitConfiguration(Action? prepare = null)
+        {
+            DemandConfigurationAccess();
+            prepare?.Invoke();
+            Save();
+        }
+
+        internal bool TryCommitConfiguration(Window owner, Action? prepare = null)
+        {
+            try { CommitConfiguration(prepare); return true; }
+            catch (AccessDeniedException)
+            {
+                MessageBox.Show(owner, EngineLocalization.Get("当前权限不足，无法保存设备配置。"), "ColorVision", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return false;
+            }
+        }
 
         public virtual UserControl GetDeviceInfo()
         {
@@ -138,7 +184,7 @@ namespace ColorVision.Engine.Services
                     MessageBox1.Show(WindowHelpers.GetActiveWindow(), Config.ToJsonN(), "ColorVision");
                 }
             });
-            DeleteCommand = new RelayCommand(a => Delete(), a => AccessControl.Check(PermissionMode.Administrator));
+            DeleteCommand = new RelayCommand(a => DeleteFromCommand(), a => CanDelete);
             EditCommand = new RelayCommand(a => { });
 
             ImportCommand = new RelayCommand(a =>
@@ -197,8 +243,6 @@ namespace ColorVision.Engine.Services
                 ServiceName = Name ?? string.Empty,
                 ServiceCode = Code ?? string.Empty,
                 ServiceType = ServiceTypes.ToString(),
-                DeviceStatus = IsAlive ? "Online" : "Offline",
-                IsAlive = IsAlive ? "yes" : "no",
             };
             var result = CopilotBusinessContextCoordinator.DispatchDiagnosis(bundle, CopilotBusinessContextCoordinator.BuildDeviceDiagnosisPrompt(snapshot));
             if (!result.WasSent)
@@ -250,6 +294,7 @@ namespace ColorVision.Engine.Services
 
         public override void Delete()
         {
+            DemandDeleteAccess();
             if (MessageBox1.Show(Application.Current.GetActiveWindow(), ColorVision.Engine.Properties.Resources.AvoidDeletionUnlessNecessary, "ColorVision", MessageBoxButton.OKCancel) == MessageBoxResult.Cancel) return;
             base.Delete();
 

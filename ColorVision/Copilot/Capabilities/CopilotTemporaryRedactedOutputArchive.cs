@@ -1,5 +1,7 @@
 using ColorVision.Copilot.Mcp;
+using ColorVision.UI;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -24,7 +26,12 @@ namespace ColorVision.Copilot
         int ArchivedCharacters,
         bool EndOfAvailableOutput,
         bool ArchiveTruncated,
-        string ErrorMessage);
+        string ErrorMessage)
+    {
+        public CopilotToolFailureKind FailureKind { get; init; } = Available
+            ? CopilotToolFailureKind.None
+            : CopilotToolFailureKind.Transient;
+    }
 
     internal sealed record CopilotRedactedOutputArchiveSearchResult(
         bool Available,
@@ -36,26 +43,7 @@ namespace ColorVision.Copilot
 
     internal sealed partial class CopilotTemporaryRedactedOutputArchive : IDisposable
     {
-        private static readonly string[] SensitiveMarkers =
-        [
-            "proxy-authorization",
-            "private_key",
-            "private-key",
-            "privatekey",
-            "authorization",
-            "access_key",
-            "access-key",
-            "accesskey",
-            "password",
-            "api_key",
-            "api-key",
-            "passwd",
-            "apikey",
-            "secret",
-            "bearer",
-            "token",
-            "pwd",
-        ];
+        private static readonly IReadOnlyList<string> SensitiveMarkers = CopilotSensitiveTextRedactor.SupportedAssignmentMarkers;
         private static readonly int MaximumMarkerCharacters =
             SensitiveMarkers.Max(marker => marker.Length);
         private readonly object _syncRoot = new();
@@ -217,11 +205,7 @@ namespace ColorVision.Copilot
                     return;
                 }
 
-                _pendingRaw.Append(
-                    observed.Replace(
-                        "\0",
-                        string.Empty,
-                        StringComparison.Ordinal));
+                _pendingRaw.Append(observed.Replace("\0", string.Empty, StringComparison.Ordinal));
                 DrainPendingUnderLock(flushAll: false);
             }
         }
@@ -259,7 +243,8 @@ namespace ColorVision.Copilot
                 {
                     return UnavailablePage(
                         offsetCharacters,
-                        "The output archive read range is invalid.");
+                        "The output archive read range is invalid.",
+                        CopilotToolFailureKind.Validation);
                 }
 
                 if (offsetCharacters > _archivedCharacters)
@@ -267,7 +252,8 @@ namespace ColorVision.Copilot
                     return UnavailablePage(
                         offsetCharacters,
                         $"The output archive currently contains {_archivedCharacters} characters; "
-                        + $"offset {offsetCharacters} is beyond the available output.");
+                        + $"offset {offsetCharacters} is beyond the available output.",
+                        CopilotToolFailureKind.Validation);
                 }
 
                 try
@@ -460,7 +446,8 @@ namespace ColorVision.Copilot
 
         private CopilotRedactedOutputArchivePage UnavailablePage(
             int offsetCharacters,
-            string errorMessage) =>
+            string errorMessage,
+            CopilotToolFailureKind failureKind = CopilotToolFailureKind.Transient) =>
             new(
                 Available: false,
                 Content: string.Empty,
@@ -471,7 +458,10 @@ namespace ColorVision.Copilot
                 EndOfAvailableOutput:
                     offsetCharacters >= _archivedCharacters,
                 ArchiveTruncated: _isTruncated,
-                ErrorMessage: errorMessage);
+                ErrorMessage: errorMessage)
+            {
+                FailureKind = failureKind,
+            };
 
         private CopilotRedactedOutputArchiveSearchResult UnavailableSearch(
             int offsetCharacters,

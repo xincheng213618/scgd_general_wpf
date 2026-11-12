@@ -2,6 +2,7 @@ using ColorVision.Engine.Templates.Jsons.MTF2;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using ProjectARVRPro.Process.KeyedResults;
+using ProjectARVRPro.Process.MTF;
 using ProjectARVRPro.Process.MTF.MTF07;
 using ProjectARVRPro.Process.MTF.MTF07.MTFH;
 using ProjectARVRPro.Process.MTF.MTF07.MTFV;
@@ -33,13 +34,44 @@ public sealed class MTF07DynamicResultBuilderTests
         var source = new MTFItem { name = "LeftUp_0.7F_H", mtfValue = 0.3 };
         var recipe = new RecipeBase(0.5, 0.9, 2, 0.1);
 
-        MTF07DynamicResultBuilder.PopulateItem(item, source, recipe, "F3", "%");
+        var correction = new MtfRecipeCorrection("""{"Algorithm":"StripeMtf","Parameters":{"PercentageDisplay":false}}""");
+        MTF07DynamicResultBuilder.PopulateItem(item, source, recipe, "F3", "%", correction);
 
         Assert.Equal(0.7, item.Value, 10);
         Assert.Equal("0.700", item.TestValue);
         Assert.Equal(0.5, item.LowLimit);
         Assert.Equal(0.9, item.UpLimit);
         Assert.Equal("%", item.Unit);
+    }
+
+    [Theory]
+    [InlineData("""{"Algorithm":"StripeMtf","Parameters":{"PercentageDisplay":false}}""", 0.5, 0.5, true)]
+    [InlineData("""{"Algorithm":"StripeMtf","Parameters":{"PercentageDisplay":false}}""", 0.5, 0.6, false)]
+    [InlineData("""{"Algorithm":"StripeMtf","Parameters":{"PercentageDisplay":true}}""", 50, 50, true)]
+    [InlineData("""{"Algorithm":"StripeMtf","Parameters":{"PercentageDisplay":true}}""", 50, 51, false)]
+    [InlineData("""{"CalcMethod":0,"PercentageDisplay":false}""", 0.5, -0.5, true)]
+    [InlineData("""{"CalcMethod":0,"PercentageDisplay":false}""", 0.5, -0.6, false)]
+    [InlineData("""{"CalcMethod":1,"PercentageDisplay":false}""", 2, 1, true)]
+    [InlineData(null, 2, 1, true)]
+    [InlineData(null, 2, double.PositiveInfinity, false)]
+    public void PopulateItem_ValidatesTheCorrectedValueUsingTheRecordedScale(string? parameters, double rawValue, double offset, bool accepted)
+    {
+        var item = new ObjectiveTestItem();
+        var source = new MTFItem { name = "Center_0F_H", mtfValue = rawValue };
+        var recipe = new RecipeBase(0, 0, 1, offset);
+        var correction = new MtfRecipeCorrection(parameters);
+
+        if (accepted)
+        {
+            MTF07DynamicResultBuilder.PopulateItem(item, source, recipe, "F3", "%", correction);
+            Assert.Equal(rawValue + offset, item.Value);
+            return;
+        }
+
+        var error = Assert.Throws<InvalidOperationException>(() => MTF07DynamicResultBuilder.PopulateItem(item, source, recipe, "F3", "%", correction));
+        Assert.Contains("MTF 修正越界 [Center_0F_H]", error.Message);
+        Assert.Contains($"原值={rawValue}，修正值={rawValue + offset}，Fix=1，B={offset}", error.Message);
+        Assert.Null(item.TestValue);
     }
 
     [Fact]

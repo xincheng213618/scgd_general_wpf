@@ -11,7 +11,9 @@ related: ["projects.arvr-pro", "operations.device-configuration"]
 
 # Demura 烧录与 PG 通信
 
-ProjectARVRPro 的 `DemuraProcess` 使用 PG 的 TCP 连接发送 GECS 指令，完成文件下发、确认上电、擦除和写入。本文用于配置烧录及定位通信故障；流程组、结果保存和项目装载见 [ProjectARVRPro](./project-arvr-pro.md)。
+ProjectARVRPro 的 `DemuraProcess` 默认开启 **仅返回CSV**（`ReturnCsvOnly=true`）。只要本批次匹配的 W128 源文件存在且可按 UTF-8 读取，本步骤即通过，并通过 `DemuraTestResults` 返回文件名和原文；不要求 W255，不校验输入点数，不准备或启动工具，不生成 Bin，也不执行烧录及失败下电。找不到 W128 或读取异常仍失败；本步骤通过不会清除整轮中其它步骤的失败。旧配置未保存该字段时同样默认开启。
+
+需要完整 Demura 处理时，在 **Process > 结果配置** 关闭 **仅返回CSV**，再配置工具和烧录。以下 PG 通信说明适用于完整处理模式：使用 PG 的 TCP 连接发送 GECS 指令，完成文件下发、确认上电、擦除和写入。流程组、结果保存和项目装载见 [ProjectARVRPro](./project-arvr-pro.md)。
 
 `SENDFILE` 帧携带源 bin 的完整路径和 PG 目标文件名，帧内没有 bin 原始内容。PG 如何访问该路径、是否另建文件传输通道，以及最终 FLASH 地址由 PG 服务或固件决定。
 
@@ -22,7 +24,7 @@ ProjectARVRPro 的 `DemuraProcess` 使用 PG 的 TCP 连接发送 GECS 指令，
 - 已取得完整的 W128/W255 CSV 和打包的 Demura 工具资源。自动烧录位于工具准备链中：只有执行到 `PrepareDemuraToolAsync` 的烧录分支才会触发。
 - 已核对源文件及 PG 对路径的访问方式。ColorVision 检查本地文件存在，不验证 PG 能否读取它，也不验证 bin 与本轮采集是否匹配。
 
-`BurnAfterGenerate` 默认开启。即使本轮 bin 生成失败，工具准备链仍可能继续检查已存在的源文件并尝试烧录；不能把该开关理解为“仅本轮生成成功才烧录”。只准备文件时应关闭“生成后自动烧录”。
+完整处理模式下，`BurnAfterGenerate` 默认开启。即使本轮 bin 生成失败，工具准备链仍可能继续检查已存在的源文件并尝试烧录；不能把该开关理解为“仅本轮生成成功才烧录”。只准备文件时应关闭“生成后自动烧录”。
 
 ## PG 连接和文件位置
 
@@ -142,6 +144,6 @@ $demuraPacket = [byte[]](
 | 擦除或写入失败 | 确认前序成功回包、固定通道 `1`、设备状态及 PG 错误日志；不要直接重发整组指令 |
 | 显示成功但效果不符 | 核对 bin 来源与本轮采集、PG 实际写入内容和光学验收，不能只看 `BurnSucceeded` |
 
-`DemuraTestResult` 保存实际源/目标、设备及连接信息、命令文本与 HEX、回包和烧录结果。实现入口是 `DemuraProcess.cs` 的 `BurnDemuraBinAsync` / `SendCommandAndWaitAsync`；组帧在 `GecsProtocol.cs`。
+`DemuraViewTestResult` 保存本次处理模式、实际源/目标、设备及连接信息、命令文本与 HEX、回包和烧录结果；对外的 `DemuraTestResult` 仅含文件名与原文。实现入口是 `DemuraProcess.cs` 的 `BurnDemuraBinAsync` / `SendCommandAndWaitAsync`；组帧在 `GecsProtocol.cs`。
 
-当前未登记 Demura 烧录链的专门自动化测试。源码可核验客户端组帧和判断顺序；PG 的文件读取、FLASH 实现、通道解释及设备效果需由 PG 协议和获授权的现场验证确认。
+`DemuraResultJsonTests` 覆盖仅返回 CSV 的默认配置、W128 文件存在/缺失判定、完整处理要求的保留、失败不下电，以及文件原文的 JSON 传输契约；不代表已验证烧录链。PG 的文件读取、FLASH 实现、通道解释及设备效果需由 PG 协议和获授权的现场验证确认。

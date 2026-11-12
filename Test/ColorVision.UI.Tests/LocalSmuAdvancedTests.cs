@@ -39,6 +39,7 @@ public sealed class LocalSmuAdvancedTests
         var settings = new LocalSmuSettings { IsSourceV = false, SourceValue = 10, Limit = 5,
             Measurement = SmuMeasurement.Resistance, Sweep = SmuSweep.List, Values = "10,20,10", CloseOutput = false };
         var result = await session.CaptureAdvancedAsync(connection, settings, true);
+        Assert.Equal(new[] { connection.Nplc }, native.AppliedNplc);
         Assert.Equal(new double[] { 10, 10, 10 }, result.Currents);
         Assert.Equal(new double?[] { 501, 502, null }, result.Details!.Resistance);
         var response = LocalSmuResultService.Response(result, 0);
@@ -113,6 +114,52 @@ public sealed class LocalSmuAdvancedTests
     }
 
     [Fact]
+    public async Task FailedChannelSelectionLeavesTheSessionReadyAndKeepsExistingOutput()
+    {
+        var native = new FakeNative();
+        await using var session = new LocalSmuSession(native);
+        var connection = Connection();
+        await session.OpenAsync(connection);
+        await session.CaptureAdvancedAsync(connection, new() { Channel = Channel.A, CloseOutput = false }, true);
+        native.RejectedChannel = Channel.B;
+
+        var failure = await Assert.ThrowsAsync<InvalidOperationException>(() => session.CaptureAdvancedAsync(
+            connection, new() { Channel = Channel.B, CloseOutput = false }, true));
+        Assert.Contains("选择源表通道", failure.Message);
+        Assert.Equal(DeviceStatusType.Opened, session.Status);
+        Assert.Equal(1, native.Captures);
+        Assert.Empty(native.ClosedChannels);
+
+        native.RejectedChannel = null;
+        await session.CaptureAdvancedAsync(connection, new() { Channel = Channel.B, CloseOutput = false }, true);
+        Assert.Equal(2, native.Captures);
+        Assert.Equal(DeviceStatusType.Opened, session.Status);
+        await session.CloseAsync();
+        Assert.Equal(new[] { Channel.A, Channel.B }, native.ClosedChannels.OrderBy(channel => channel));
+    }
+
+    [Fact]
+    public async Task CaptureAndOutputCleanupFailuresAreBothReported()
+    {
+        var native = new FakeNative { Fail = true, FailCloseOutput = true };
+        await using var session = new LocalSmuSession(native);
+        var connection = Connection();
+        await session.OpenAsync(connection);
+        try
+        {
+            var failure = await Assert.ThrowsAsync<AggregateException>(() => session.CaptureAdvancedAsync(connection, new(), true));
+            Assert.Equal(2, failure.InnerExceptions.Count);
+            Assert.Contains("synthetic capture failure", failure.InnerExceptions[0].Message);
+            Assert.Contains("关闭源表输出", failure.InnerExceptions[1].Message);
+            Assert.Equal(DeviceStatusType.Unknown, session.Status);
+        }
+        finally
+        {
+            native.FailCloseOutput = false;
+        }
+    }
+
+    [Fact]
     public async Task HighImpedanceCloseDoesNotRunMeasurementAndRestoresLegacyReadBoundary()
     {
         var native=new FakeNative();await using var session=new LocalSmuSession(native);
@@ -164,7 +211,7 @@ public sealed class LocalSmuAdvancedTests
             WpfTestHost.Invoke(()=>
             {
                 previousManager=managerField.GetValue(null);previousConfig=ConfigService.Instance;
-                ConfigService.SetInstance(new ConfigHandler { IsAutoSave=false });
+                TestEnvironment.SetConfig(new ConfigHandler { IsAutoSave=false });
                 foreach(string uri in ThemeManager.ResourceDictionaryWhite.Concat(ThemeManager.ResourceDictionaryBase))
                 { var d=new ResourceDictionary { Source=new Uri(uri,UriKind.RelativeOrAbsolute) };dictionaries.Add(d);Application.Current.Resources.MergedDictionaries.Add(d); }
                 var manager=(ServiceManager)RuntimeHelpers.GetUninitializedObject(typeof(ServiceManager));manager.DeviceServices=[];managerField.SetValue(null,manager);
@@ -200,7 +247,7 @@ public sealed class LocalSmuAdvancedTests
                 control?.Dispose();container?.Dispose();device?.Dispose();
                 if(device!=null)DisplayConfigManager.Instance.Configs.TryRemove(device.Code,out _);
                 managerField.SetValue(null,previousManager);foreach(var d in dictionaries)Application.Current.Resources.MergedDictionaries.Remove(d);
-                if(previousConfig!=null)ConfigService.SetInstance(previousConfig);
+                if(previousConfig!=null)TestEnvironment.SetConfig(previousConfig);
             });
             await session.DisposeAsync();
         }
@@ -235,7 +282,7 @@ public sealed class LocalSmuAdvancedTests
             DeviceSMU? device=null;LocalSmuWindow? window=null;
             try
             {
-                ConfigService.SetInstance(new ConfigHandler { IsAutoSave=false });
+                TestEnvironment.SetConfig(new ConfigHandler { IsAutoSave=false });
                 foreach(string uri in ThemeManager.ResourceDictionaryWhite.Concat(ThemeManager.ResourceDictionaryBase))
                 { var dictionary=new ResourceDictionary { Source=new Uri(uri,UriKind.RelativeOrAbsolute) };dictionaries.Add(dictionary);Application.Current.Resources.MergedDictionaries.Add(dictionary); }
                 var manager=(ServiceManager)RuntimeHelpers.GetUninitializedObject(typeof(ServiceManager));manager.DeviceServices=[];managerField.SetValue(null,manager);
@@ -285,7 +332,7 @@ public sealed class LocalSmuAdvancedTests
             finally
             {
                 window?.Close();device?.Dispose();if(device!=null)DisplayConfigManager.Instance.Configs.TryRemove(device.Code,out _);
-                managerField.SetValue(null,previousManager);foreach(var dictionary in dictionaries)Application.Current.Resources.MergedDictionaries.Remove(dictionary);ConfigService.SetInstance(previousConfig);
+                managerField.SetValue(null,previousManager);foreach(var dictionary in dictionaries)Application.Current.Resources.MergedDictionaries.Remove(dictionary);TestEnvironment.SetConfig(previousConfig);
             }
         });
     }
@@ -298,7 +345,10 @@ public sealed class LocalSmuAdvancedTests
     private sealed class FakeNative : ILocalSmuNative
     {
         internal int Family=4,Captures,Opens,Closes;internal bool Block,Fail,RequestedCloseOutput;internal double Source;internal SmuOffMode OffMode;
+        internal Channel? RejectedChannel;
+        internal bool FailCloseOutput;
         internal List<Channel>ClosedChannels=[];private Channel channel;
+        internal readonly List<double> AppliedNplc = [];
         internal TaskCompletionSource Started=new(TaskCreationOptions.RunContinuationsAsynchronously),Release=new(TaskCreationOptions.RunContinuationsAsynchronously);
         public int Open(LocalSmuConnection c){Opens++;return 0;}
         public int GetIdn(int h,StringBuilder text,ref int length){text.Append("KEITHLEY INSTRUMENTS INC.,MODEL 2602B,offline,1");return 1;}
@@ -306,7 +356,14 @@ public sealed class LocalSmuAdvancedTests
         public int CloseAdvancedOutput(int h,int ch,int mode){OffMode=(SmuOffMode)mode;ClosedChannels.Add((Channel)ch);return 1;}
         public int SetWiring(int h,bool wire,bool front)=>1;
         public int SetDelay(int h,double delay)=>1;
-        public int SetChannel(int h,bool a){channel=a?Channel.A:Channel.B;return 1;}
+        public int SetNplc(int h,double nplc,Pss_Type type){AppliedNplc.Add(nplc);return 1;}
+        public int SetChannel(int h, bool a)
+        {
+            Channel selected = a ? Channel.A : Channel.B;
+            if (selected == RejectedChannel) return -1;
+            channel = selected;
+            return 1;
+        }
         public int SetSource(int h,bool voltage)=>1;
         public void ExecuteAdvanced(int h,LocalSmuSettings s,double[] sources,double[] limits,double[] v,double[] i,double[] r,int[] status)
         {
@@ -317,7 +374,12 @@ public sealed class LocalSmuAdvancedTests
         public int Measure(int h,LocalSmuParameters p,bool step,ref double v,ref double i)=>throw new NotSupportedException();
         public int Read(int h,ref double v,ref double i)=>throw new NotSupportedException();
         public int Sweep(int h,LocalSmuParameters p,double[]v,double[]i)=>throw new NotSupportedException();
-        public int CloseOutput(int h){ClosedChannels.Add(channel);return 1;}
+        public int CloseOutput(int h)
+        {
+            if (FailCloseOutput) return -1;
+            ClosedChannels.Add(channel);
+            return 1;
+        }
         public int Close(int h){Closes++;return 1;}
     }
 }

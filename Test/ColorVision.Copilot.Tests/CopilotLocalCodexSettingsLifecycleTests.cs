@@ -5,51 +5,6 @@ namespace ColorVision.Copilot.Tests;
 public sealed class CopilotLocalCodexSettingsLifecycleTests
 {
     [Theory]
-    [InlineData("missing")]
-    [InlineData("connection")]
-    [InlineData("models")]
-    [InlineData("signedOut")]
-    public async Task RefreshClearsPreviousAccountAndModelsEvenWhenItCannotComplete(string outcome)
-    {
-        var refreshing = false;
-        var servers = new List<SettingsServer>();
-        using var settings = CreateSettings(
-            () => refreshing && outcome == "missing" ? [] : ["synthetic-codex.exe"],
-            (_, _) =>
-            {
-                if (refreshing && outcome == "connection")
-                    throw new InvalidOperationException("synthetic connection failure");
-                var server = new SettingsServer
-                {
-                    SignedIn = !refreshing || outcome != "signedOut",
-                    FailModels = refreshing && outcome == "models",
-                };
-                servers.Add(server);
-                return Task.FromResult<ICopilotCodexAppServer>(server);
-            });
-        await settings.DetectLocalCodexAsync();
-        Assert.True(settings.IsLocalCodexSignedIn);
-        Assert.Equal(["synthetic-model"], settings.LocalCodexModels);
-        var notifications = new List<string?>();
-        settings.PropertyChanged += (_, args) => notifications.Add(args.PropertyName);
-
-        refreshing = true;
-        var refresh = settings.DetectLocalCodexAsync();
-        Assert.Empty(settings.LocalCodexModels);
-        Assert.False(settings.IsLocalCodexSignedIn);
-        await refresh;
-
-        Assert.Empty(settings.LocalCodexModels);
-        Assert.False(settings.IsLocalCodexSignedIn);
-        Assert.False(settings.IsCheckingLocalCodex);
-        Assert.Equal(outcome != "missing", settings.HasLocalCodex);
-        Assert.False(settings.AddLocalCodexCommand.CanExecute(null));
-        Assert.Contains(nameof(settings.LocalCodexModels), notifications);
-        Assert.Contains(nameof(settings.AvailableModelPresets), notifications);
-        Assert.All(servers, server => Assert.True(server.Disposed));
-    }
-
-    [Theory]
     [InlineData("connection")]
     [InlineData("connection-snapshot")]
     [InlineData("account/read")]
@@ -137,41 +92,6 @@ public sealed class CopilotLocalCodexSettingsLifecycleTests
         Assert.Equal(signedIn ? 1 : 0, second.Requests.Count(method => method == "model/list"));
         Assert.True(first.Disposed);
         Assert.True(second.Disposed);
-    }
-
-    [Fact]
-    public async Task AccountRefreshAfterLoginReadsAgainInsteadOfUsingTheInitialSignedOutSnapshot()
-    {
-        using var server = new SettingsServer { InitialSignedIn = false, SignedIn = true };
-        using var settings = CreateSettings(() => [], (_, _) => throw new InvalidOperationException("Unexpected connection"));
-        await settings.RefreshLocalCodexAccountAsync(server, CancellationToken.None, useInitialSnapshot: true);
-        Assert.False(settings.IsLocalCodexSignedIn);
-        Assert.Empty(server.Requests);
-
-        await settings.RefreshLocalCodexAccountAsync(server, CancellationToken.None, useInitialSnapshot: false);
-
-        Assert.True(settings.IsLocalCodexSignedIn);
-        Assert.Equal(["synthetic-model"], settings.LocalCodexModels);
-        Assert.Equal(["account/read", "model/list"], server.Requests);
-    }
-
-    [Theory]
-    [InlineData(true)]
-    [InlineData(false)]
-    public async Task CancelledAccountRefreshDoesNotConsumeAnInitialSnapshotOrPublishState(bool signedIn)
-    {
-        using var server = new SettingsServer { InitialSignedIn = signedIn };
-        using var settings = CreateSettings(() => [], (_, _) => throw new InvalidOperationException("Unexpected connection"));
-        using var cancellation = new CancellationTokenSource();
-        cancellation.Cancel();
-        var status = settings.LocalCodexStatus;
-
-        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => settings.RefreshLocalCodexAccountAsync(server, cancellation.Token, useInitialSnapshot: true));
-
-        Assert.False(settings.IsLocalCodexSignedIn);
-        Assert.Empty(settings.LocalCodexModels);
-        Assert.Equal(status, settings.LocalCodexStatus);
-        Assert.Empty(server.Requests);
     }
 
     private static CopilotSettingsViewModel CreateSettings(

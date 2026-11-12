@@ -153,13 +153,14 @@ namespace ColorVision
             // UI is shown later, after the minimum theme/language services are available.
             bool startupWasHealthy = StartupRegistryChecker.CheckAndSet();
 
-            ConfigHandler.ConfigureMaintenanceResetSections(Settings.Maintenance.StorageMaintenanceControl.ResetSectionNames, Settings.Maintenance.MaintenanceStartupGuard.CanApplyReset);
+            ConfigHandler.ConfigureMaintenanceResetSections(Settings.Maintenance.ConfigurationMaintenanceControl.ResetSectionNames, Settings.Maintenance.MaintenanceStartupGuard.CanApplyReset);
             _moduleCatalog = new ModuleCatalog(AssemblyHandler.GetInstance());
             BuiltInModules.Register(_moduleCatalog);
+            AssemblyHandler.GetInstance().UseRegisteredAssembliesOnly();
             ConfigHandler configHandler = ConfigHandler.GetInstance();
             configHandler.IsAutoSave = false;
             LogConfig.Instance.SetLog();
-            this.ApplyTheme(ThemeConfig.Instance.Theme);
+            ThemeConfig.Instance.Apply(this);
             Thread.CurrentThread.CurrentUICulture = new System.Globalization.CultureInfo(LanguageConfig.Instance.UICulture);
             log.Info($"Startup core setup completed in {startupPhaseStopwatch.ElapsedMilliseconds} ms.");
             startupPhaseStopwatch.Restart();
@@ -268,7 +269,7 @@ namespace ColorVision
                         appConfig.AllowMultipleInstances = false;
                         configHandler.Save<APPConfig>();
                         ((log4net.Repository.Hierarchy.Hierarchy)log4net.LogManager.GetRepository()).Root.Level = LogConfig.Instance.LogLevel;
-                        this.ApplyTheme(ThemeConfig.Instance.Theme);
+                        ThemeConfig.Instance.Apply(this);
                         Thread.CurrentThread.CurrentUICulture = new System.Globalization.CultureInfo(LanguageConfig.Instance.UICulture);
                     }
                     catch (Exception ex)
@@ -394,12 +395,14 @@ namespace ColorVision
                 startupPhaseStopwatch.Restart();
                 StartupRegistryChecker.MarkStage("LoadingPlugins");
                 await showStage(global::ColorVision.Startup.StartupText.LoadingExtensions);
-                await PluginLoader.LoadPluginsAsync(
+                PluginLoadReport pluginReport = await PluginLoader.LoadPluginsAsync(
                     moduleCatalog,
                     skipOncePluginKeys,
                     pluginKey => StartupRegistryChecker.MarkStage("LoadingPlugin", pluginKey), cancellationToken);
                 StartupRegistryChecker.MarkStage("PluginsLoaded");
                 log.Info($"Startup plugin loading took {startupPhaseStopwatch.ElapsedMilliseconds} ms.");
+                if (pluginReport.UserMessages.Count > 0)
+                    MessageBox.Show(string.Join(Environment.NewLine + Environment.NewLine, pluginReport.UserMessages), "ColorVision");
             }
             else
             {

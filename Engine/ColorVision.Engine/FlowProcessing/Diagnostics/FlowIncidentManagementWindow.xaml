@@ -192,7 +192,7 @@
                                    Text="{Binding Incident.Summary, TargetNullValue=—}"/>
                     </Grid>
 
-                    <StackPanel Grid.Row="1"
+                    <WrapPanel Grid.Row="1"
                                 Margin="0,8,0,8"
                                 Orientation="Horizontal">
                         <Button x:Name="OpenRunAnalysisButton"
@@ -208,7 +208,12 @@
                                 Padding="10,5"
                                 Content="{engine:EngineLang Key='复制稳定标识'}"
                                 Click="CopyIdentifiersButton_Click"/>
-                    </StackPanel>
+                        <Button x:Name="DiagnoseIncidentButton"
+                                Margin="6,0,0,0"
+                                Padding="10,5"
+                                Content="{engine:EngineLang Key='诊断选中事故'}"
+                                Click="DiagnoseIncidentButton_Click"/>
+                    </WrapPanel>
 
                     <TabControl Grid.Row="2">
                         <TabItem Header="{engine:EngineLang Key='详情'}">

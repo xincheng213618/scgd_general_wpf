@@ -437,8 +437,8 @@
   <data name="可选中复制，双击全选" xml:space="preserve">
     <value>Select to copy; double-click to select all</value>
   </data>
-  <data name="名称用于流程组列表显示，后续可以单独修改。" xml:space="preserve">
-    <value>This name appears in the flow group list and can be changed later.</value>
+  <data name="选择流程模板后自动填入名称，可手动修改。" xml:space="preserve">
+    <value>Select a flow template to fill in the name. You can edit it afterward.</value>
   </data>
   <data name="启用 L/R 联合统计" xml:space="preserve">
     <value>Enable combined L/R statistics</value>

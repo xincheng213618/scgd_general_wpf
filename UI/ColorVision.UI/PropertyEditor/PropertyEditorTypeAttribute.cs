@@ -65,9 +65,9 @@ namespace System.ComponentModel
         public UpdateSourceTrigger UpdateSourceTrigger { get; set; } = UpdateSourceTrigger.PropertyChanged;
 
         /// <summary>
-        /// 自定义编辑器类型 (必须实现 IPropertyEditor). 若为空则使用 TextboxPropertiesEditor。
+        /// 显式指定实现 IPropertyEditor 的编辑器。留空时按属性类型选择已注册的编辑器。
         /// </summary>
-        public Type? EditorType { get; } = typeof(TextboxPropertiesEditor);
+        public Type? EditorType { get; }
 
         public PropertyEditorTypeAttribute() { }
         public PropertyEditorTypeAttribute(Type editorType)

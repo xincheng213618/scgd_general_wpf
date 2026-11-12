@@ -35,13 +35,15 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             ["本地发光区定位(V2)"] = "发光区定位",
             ["本地FOV计算(V2)"] = "FOV计算",
             ["本地点阵畸变(V2)"] = "点阵畸变",
+            ["本地模板匹配"] = "模板匹配",
             ["本地 POI"] = "POI",
             ["Local POI Layout (Remap)"] = "关注点布点(Re)",
             ["Local POI Layout (Parameters)"] = "关注点布点(参数)",
             ["Local Calibration"] = "校正",
             ["Local Calibration + Real-time POI"] = "校正+实时 POI",
             ["Local Camera Capture"] = "相机取图",
-            ["Local POI"] = "POI"
+            ["Local POI"] = "POI",
+            ["Local Template Matching"] = "模板匹配"
         };
 
         private sealed class LocalFlowInputSnapshot
@@ -232,7 +234,8 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
         protected string ResolveInputImageFilePath(CVStartCFC action, int inputIndex)
         {
             if (activeInputSets.TryGetValue(action.SerialNumber, out LocalFlowInputSnapshot[]? inputs)
-                && inputIndex >= 0 && inputIndex < inputs.Length && !string.IsNullOrWhiteSpace(inputs[inputIndex].ImageFilePath))
+                && inputIndex >= 0 && inputIndex < inputs.Length && action.IsSameExecutionIteration(inputs[inputIndex].Action)
+                && !string.IsNullOrWhiteSpace(inputs[inputIndex].ImageFilePath))
                 return inputs[inputIndex].ImageFilePath!;
             if (!TryGetInputMasterResult(action, inputIndex, out int masterId, out int masterResultType, out _) || masterId <= 0)
             {
@@ -277,6 +280,11 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             return true;
         }
 
+        protected CVStartCFC? GetInputActionSnapshot(CVStartCFC action, int inputIndex)
+            => activeInputSets.TryGetValue(action.SerialNumber, out LocalFlowInputSnapshot[]? inputs)
+                && inputIndex >= 0 && inputIndex < inputs.Length && action.IsSameExecutionIteration(inputs[inputIndex].Action)
+                ? inputs[inputIndex].Action : null;
+
         private void HandleMultiInput(STNodeOption? sender, STNodeOptionEventArgs e)
         {
             if (sender == null || e.Status != ConnectionStatus.Connected) return;
@@ -301,6 +309,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             LocalFlowInputSnapshot[]? readyInputs = null;
             lock (inputSync)
             {
+                if (start.HasFinished || start.RuntimeResources.IsDisposed) return;
                 if (!pendingInputSets.TryGetValue(start.SerialNumber, out LocalFlowInputSnapshot?[]? inputs))
                 {
                     inputs = new LocalFlowInputSnapshot?[inputNames.Length];
@@ -318,7 +327,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                 }
             }
 
-            if (readyInputs != null)
+            if (readyInputs != null && !start.HasFinished && !start.RuntimeResources.IsDisposed)
             {
                 BeginExecution(readyInputs[0].Action, readyInputs);
             }
@@ -369,8 +378,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                 else
                 {
                     if (pendingInputSets.TryGetValue(action.SerialNumber, out LocalFlowInputSnapshot?[]? inputs)
-                        && inputs.Any(input => input != null && (action.IsSameExecutionIteration(input.Action)
-                            || ReferenceEquals(action.RuntimeResources, input.Action.RuntimeResources))))
+                        && inputs.Any(input => input != null && ReferenceEquals(action.RuntimeResources, input.Action.RuntimeResources)))
                         pendingInputSets.Remove(action.SerialNumber);
                 }
             }

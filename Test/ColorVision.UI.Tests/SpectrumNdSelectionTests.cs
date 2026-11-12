@@ -13,6 +13,7 @@ using ColorVision.Engine.Services.PhyCameras.Configs;
 using ColorVision.Themes;
 using ColorVision.UI;
 using ColorVision.UI.Views;
+using cvColorVision;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.IO;
@@ -151,9 +152,9 @@ public sealed class SpectrumNdSelectionTests
         internal int Opens, Port;
         internal bool WrongRead;
         public IntPtr Open(LocalCfwPortConnection config) { Opens++; return new IntPtr(1234); }
-        public int Close(IntPtr handle) => 0;
-        public int SetPort(IntPtr handle, int port) { Port = port; return 0; }
-        public int GetPort(IntPtr handle, ref int port) { port = WrongRead ? Port + 1 : Port; return 0; }
+        public int Close(IntPtr handle) => cvErrorDefine.CV_ERR_SUCCESS;
+        public int SetPort(IntPtr handle, int port) { Port = port; return cvErrorDefine.CV_ERR_SUCCESS; }
+        public int GetPort(IntPtr handle, ref int port) { port = WrongRead ? Port + 1 : Port; return cvErrorDefine.CV_ERR_SUCCESS; }
     }
 
     [Theory]
@@ -273,7 +274,7 @@ public sealed class SpectrumNdSelectionTests
             Assert.True(File.Exists(scope.ConfigPath), "ND selection must persist without relying on process-exit saving.");
             var restored = new ConfigHandler { ConfigFilePath = scope.ConfigPath, IsAutoSave = false };
             restored.LoadConfigs();
-            ConfigService.SetInstance(restored);
+            TestEnvironment.SetConfig(restored);
             foreach ((string code, int port) in positions)
             {
                 using var device = new DeviceCfwPort(new SysResourceModel { Id = -2, Code = code, Value = value });
@@ -381,11 +382,11 @@ public sealed class SpectrumNdSelectionTests
             {
                 using (var operation = new LocalSpectrumFilterWheel(new ShutterConfig { FilterWheelDeviceCode = device.Code }))
                 {
-                    if (wrongReadback) Assert.Throws<InvalidOperationException>(() => operation.SetOpen(false));
+                    if (wrongReadback) Assert.Throws<InvalidOperationException>(() => operation.SetTransmitting(false));
                     else
                     {
-                        operation.SetOpen(false);
-                        operation.SetOpen(true);
+                        operation.SetTransmitting(false);
+                        operation.SetTransmitting(true);
                         Assert.Equal(new[] { "SetPort:0", "GetPort", "SetPort:5", "GetPort" }, mqtt.Commands);
                         Assert.Equal(5, device.DisplayConfig.PortNum);
                     }
@@ -492,6 +493,32 @@ public sealed class SpectrumNdSelectionTests
         return window;
     }
 
+    [Theory]
+    [InlineData(false, false)]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    [InlineData(true, true)]
+    public void ShutterButtonsUseLocalDirectionWithoutChangingServiceConvention(bool local, bool openForDark)
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            using var scope = new TestScope();
+            using var device = CreateSpectrum();
+            device.SpectrumBackend.SetPreference(local);
+            device.Config.ShutterCfg.OpenForDark = openForDark;
+            device.DService.Dispose();
+            using var mqtt = new RecordingSpectrum(device);
+            device.DService = mqtt;
+
+            MsgRecord dark = device.SetShutterTransmitting(false);
+            MsgRecord light = device.SetShutterTransmitting(true);
+
+            Assert.Equal(local && openForDark ? "ShutterDoOpen" : "ShutterDoClose", dark.MsgSend.EventName);
+            Assert.Equal(local && openForDark ? "ShutterDoClose" : "ShutterDoOpen", light.MsgSend.EventName);
+            Assert.Equal(2, mqtt.Commands);
+        });
+    }
+
     private sealed class RecordingSpectrum(DeviceSpectrum device) : MQTTSpectrum(device)
     {
         public int Commands;
@@ -520,7 +547,7 @@ public sealed class SpectrumNdSelectionTests
         public TestScope()
         {
             Directory.CreateDirectory(directory);
-            ConfigService.SetInstance(new ConfigHandler { ConfigFilePath = ConfigPath, IsAutoSave = false });
+            TestEnvironment.SetConfig(new ConfigHandler { ConfigFilePath = ConfigPath, IsAutoSave = false });
             SysResourceDao.Instance = new SysResourceDao(new LocalTemplateStore(Path.Combine(directory, "resources.db")), () => false);
             foreach (string uri in ThemeManager.ResourceDictionaryWhite.Concat(ThemeManager.ResourceDictionaryBase))
             {
@@ -546,7 +573,7 @@ public sealed class SpectrumNdSelectionTests
         {
             SysResourceDao.Instance = previousDao;
             PhysicalManagerField.SetValue(null, previousPhysicalManager);
-            ConfigService.SetInstance(previousConfig);
+            TestEnvironment.SetConfig(previousConfig);
             foreach (var dictionary in dictionaries) Application.Current.Resources.MergedDictionaries.Remove(dictionary);
             foreach (string file in Directory.EnumerateFiles(directory)) File.Delete(file);
             Directory.Delete(directory);

@@ -21,6 +21,7 @@ using System;
 using System.ComponentModel;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -60,7 +61,6 @@ namespace ColorVision.Engine.FlowProcessing
         public RelayCommand DeleteFlowCommand { get; set; }
         public RelayCommand ExportFlowCommand { get; set; }
         public RelayCommand ImportFlowCommand { get; set; }
-        public RelayCommand ImportModuleCommand { get; set; }
 
 
         public STNodeEditor STNodeEditorMain => EditorCanvas.NodeEditor;
@@ -124,6 +124,7 @@ namespace ColorVision.Engine.FlowProcessing
         private readonly FlowExecutionSession _executionSession;
         private FlowParam? _standaloneFlowParam;
         private string? _standaloneFilePath;
+        private string? _standaloneFileContentHash;
         private string _standaloneDocumentName = string.Empty;
         private bool _saveStandaloneFlowParam;
         private CVCommonNode? _executionDetailsNode;
@@ -204,10 +205,11 @@ namespace ColorVision.Engine.FlowProcessing
             Config = FlowEngineManager.Config;
 
             InitializeComponent();
+            ExecutionOverlay.Resources.MergedDictionaries.Add(EditorCanvas.Resources);
             EditorCanvas.PropertyPanelMargin = new Thickness(0, 54, 10, 108);
             EditorCanvas.AttachEditCommandRouting(this);
             _executionNavigator = new FlowExecutionNavigator(STNodeEditorMain);
-            _nodeContextMenuService = new FlowNodeContextMenuService(STNodeEditorMain, _executionNavigator, ImportModule);
+            _nodeContextMenuService = new FlowNodeContextMenuService(STNodeEditorMain, _executionNavigator);
             _layoutService = new FlowGraphLayoutService(STNodeEditorMain);
             _executionSession = new FlowExecutionSession(flowEngineManager, this);
 
@@ -248,7 +250,6 @@ namespace ColorVision.Engine.FlowProcessing
                 else
                     ImportFlow();
             }, _ => CanEditFlow);
-            ImportModuleCommand = new RelayCommand(a => ImportModule(), a => CanEditFlow && TemplateFlow.Params.Count > 0);
 
             this.CommandBindings.Add(new CommandBinding(ApplicationCommands.Save, (s, e) => Save(), (s, e) => { e.CanExecute = true; }));
 
@@ -323,40 +324,45 @@ namespace ColorVision.Engine.FlowProcessing
 
         public void DeleteFlow()
         {
-            if (!CanEditFlow) return;
-            var flowParam = GetActiveFlowParam();
-            if (flowParam == null) return;
+            _ = DeleteFlowAsync(name => MessageBox.Show(Application.Current.GetActiveWindow(),
+                string.Format(Properties.Resources.Flow_ConfirmDeleteFlow, name), "ColorVision",
+                MessageBoxButton.OKCancel, MessageBoxImage.Question) == MessageBoxResult.OK);
+        }
 
-            if (MessageBox.Show(Application.Current.GetActiveWindow(),
-                string.Format(Properties.Resources.Flow_ConfirmDeleteFlow, flowParam.Name), "ColorVision",
-                MessageBoxButton.OKCancel, MessageBoxImage.Question) != MessageBoxResult.OK || !CanEditFlow)
-                return;
+        internal Task DeleteFlowAsync(Func<string, bool> confirmDelete)
+        {
+            if (!CanEditFlow) return Task.CompletedTask;
+            var flowParam = GetActiveFlowParam();
+            if (flowParam == null) return Task.CompletedTask;
+            int id = flowParam.Id;
+            string? flowKey = flowParam.FlowKey;
+
+            if (!confirmDelete(flowParam.Name) || !CanEditFlow)
+                return Task.CompletedTask;
 
             var templateFlow = FlowEngineManager.CreateFlowTemplate();
             templateFlow.Load();
-            int index = templateFlow.TemplateParams.ToList().FindIndex(p => p.Value.Id == flowParam.Id);
-            if (index >= 0)
-            {
-                templateFlow.Delete(index);
-            }
+            var target = templateFlow.FindSavedTemplate(id, flowKey);
+            if (target != null) templateFlow.DeleteTemplate(target);
             if (_isStandalone)
+            {
                 Refresh();
-            else
-                _ = ReconcileTemplatesAsync();
+                return Task.CompletedTask;
+            }
+            return ReconcileTemplatesAsync();
         }
 
         public void ExportFlow()
         {
             var flowParam = GetActiveFlowParam();
             if (flowParam == null) return;
+            int id = flowParam.Id;
+            string? flowKey = flowParam.FlowKey;
 
             var templateFlow = FlowEngineManager.CreateFlowTemplate();
             templateFlow.Load();
-            int index = templateFlow.TemplateParams.ToList().FindIndex(p => p.Value.Id == flowParam.Id);
-            if (index >= 0)
-            {
-                templateFlow.Export(index);
-            }
+            var target = templateFlow.FindSavedTemplate(id, flowKey);
+            if (target != null) TemplateFlow.ExportTemplate(target);
         }
 
         public void ImportFlow()
@@ -368,48 +374,12 @@ namespace ColorVision.Engine.FlowProcessing
                 return;
 
             string importName = templateFlow.ImportName ?? $"Imported_{DateTime.Now:yyyyMMdd_HHmmss}";
-            templateFlow.Create(importName);
-            Refresh();
-        }
-
-        public void ImportModule()
-        {
-            if (!CanEditFlow) return;
-            var templateFlow = FlowEngineManager.CreateFlowTemplate();
-            templateFlow.Load();
-            var items = templateFlow.TemplateParams;
-            if (items.Count == 0)
+            if (!templateFlow.TryCreateTemplate(importName, out string error))
             {
-                MessageBox.Show(Application.Current.GetActiveWindow(), Properties.Resources.Flow_NoFlowTemplate, "ColorVision");
+                MessageBox.Show(Application.Current.GetActiveWindow(), error, "ColorVision");
                 return;
             }
-
-            var dialog = new TemplateSelectionDialog(items)
-            {
-                Owner = Application.Current.GetActiveWindow(),
-                WindowStartupLocation = WindowStartupLocation.CenterOwner
-            };
-
-            if (dialog.ShowDialog() == true && dialog.SelectedTemplate != null && CanEditFlow)
-            {
-                string base64 = dialog.SelectedTemplate.Value.DataBase64;
-                if (string.IsNullOrEmpty(base64))
-                {
-                    MessageBox.Show(Application.Current.GetActiveWindow(), Properties.Resources.Flow_TemplateNoFlowData, "ColorVision");
-                    return;
-                }
-
-                try
-                {
-                    byte[] canvasData = Convert.FromBase64String(base64);
-                    FlowEditorOperations.ImportCanvasAsModule(STNodeEditorMain, canvasData);
-                }
-                catch (Exception ex)
-                {
-                    log.Error("ImportModule failed", ex);
-                    MessageBox.Show(Application.Current.GetActiveWindow(), string.Format(Properties.Resources.Flow_ImportModuleFailed, ex.Message), "ColorVision");
-                }
-            }
+            Refresh();
         }
 
         public void AutoAlignment()
@@ -650,9 +620,13 @@ namespace ColorVision.Engine.FlowProcessing
         }
 
         internal Task<FlowRunFinalizedData?> RunFlowAndWaitForFinalizationAsync(
-            TemplateModel<FlowParam>? flowTemplate = null)
+            TemplateModel<FlowParam>? flowTemplate = null,
+            bool reportStartupFailures = false,
+            TimeSpan? executionTimeout = null,
+            CancellationToken cancellationToken = default)
         {
-            return _executionSession.RunFlowAndWaitForFinalizationAsync(flowTemplate: flowTemplate);
+            return _executionSession.RunFlowAndWaitForFinalizationAsync(flowTemplate: flowTemplate,
+                reportStartupFailures: reportStartupFailures, executionTimeout: executionTimeout, cancellationToken: cancellationToken);
         }
 
         public void Clear()
@@ -704,30 +678,34 @@ namespace ColorVision.Engine.FlowProcessing
         internal void LoadStandaloneFile(string filePath)
         {
             ThrowIfExecutionActive();
+            filePath = Path.GetFullPath(filePath);
             byte[]? canvasData = null;
             FlowParam? packageFlowParam = null;
             if (filePath.EndsWith(".cvflow", StringComparison.OrdinalIgnoreCase))
             {
-                try
+                using FileStream stream = File.OpenRead(filePath);
+                Span<byte> signature = stackalloc byte[STNodeConstant.NodeFlag.Length];
+                bool legacyCanvas = stream.ReadAtLeast(signature, signature.Length, false) == signature.Length
+                    && signature.SequenceEqual(STNodeConstant.NodeFlag);
+                if (legacyCanvas)
                 {
-                    var (stnData, _) = FlowPackageHelper.ImportFlowPackage(filePath);
-                    if (stnData != null && stnData.Length > 0)
-                    {
-                        packageFlowParam = new FlowParam
-                        {
-                            Name = Path.GetFileNameWithoutExtension(filePath),
-                            DataBase64 = Convert.ToBase64String(stnData)
-                        };
-                        canvasData = stnData;
-                    }
+                    canvasData = File.ReadAllBytes(filePath);
                 }
-                catch (Exception ex)
+                else
                 {
-                    log.Debug("Open cvflow package as legacy canvas file.", ex);
+                    (canvasData, _) = FlowPackageHelper.ImportFlowPackage(filePath);
+                    if (canvasData.Length == 0)
+                        throw new InvalidDataException(LocalizedText.Get("流程包缺少 flow.stn。"));
+                    packageFlowParam = new FlowParam
+                    {
+                        Name = Path.GetFileNameWithoutExtension(filePath),
+                        DataBase64 = Convert.ToBase64String(canvasData)
+                    };
                 }
             }
 
             canvasData ??= File.ReadAllBytes(filePath);
+            string? contentHash = packageFlowParam == null ? FlowSemanticHash.ComputeBinaryHash(canvasData) : null;
             // The loader parses and connects detached nodes before replacing the live graph.
             // Do not clear the current document or change its save target until loading succeeds.
             CVCommonNode[] previousNodes = STNodeEditorMain.Nodes.OfType<CVCommonNode>().ToArray();
@@ -735,6 +713,7 @@ namespace ColorVision.Engine.FlowProcessing
             StopStandaloneFlow(previousNodes: previousNodes);
             _standaloneFlowParam = packageFlowParam;
             _standaloneFilePath = packageFlowParam == null ? filePath : null;
+            _standaloneFileContentHash = contentHash;
             _standaloneDocumentName = Path.GetFileName(filePath);
             _saveStandaloneFlowParam = false;
             SetDocumentBaseline(packageFlowParam);
@@ -780,6 +759,7 @@ namespace ColorVision.Engine.FlowProcessing
             StopStandaloneFlow(previousNodes: previousNodes);
             _standaloneFlowParam = flowParam;
             _standaloneFilePath = null;
+            _standaloneFileContentHash = null;
             _standaloneDocumentName = flowParam.Name;
             _saveStandaloneFlowParam = saveToTemplate;
             SetDocumentBaseline(flowParam);
@@ -832,6 +812,7 @@ namespace ColorVision.Engine.FlowProcessing
             _standaloneFlowParam = null;
             _documentLoadedContentHash = null;
             _standaloneFilePath = null;
+            _standaloneFileContentHash = null;
             _standaloneDocumentName = Properties.Resources.New;
             _saveStandaloneFlowParam = false;
             StopStandaloneFlow();
@@ -900,27 +881,8 @@ namespace ColorVision.Engine.FlowProcessing
                     _documentLoadedContentHash =
                         _standaloneFlowParam.LoadedContentHash;
                 }
-                else
-                {
-                    if (string.IsNullOrEmpty(_standaloneFilePath))
-                    {
-                        using System.Windows.Forms.SaveFileDialog dialog = new()
-                        {
-                            Filter = "STN files (*.stn)|*.stn",
-                            DefaultExt = "stn",
-                            AddExtension = true,
-                            Title = Properties.Resources.Save
-                        };
-                        if (dialog.ShowDialog() != System.Windows.Forms.DialogResult.OK)
-                            return false;
-                        _standaloneFilePath = dialog.FileName;
-                        _standaloneFlowParam = null;
-                        _standaloneDocumentName = Path.GetFileName(dialog.FileName);
-                    }
-
-                    File.WriteAllBytes(_standaloneFilePath, canvasData);
-                    UpdateStandaloneWindowTitle(Path.GetFileName(_standaloneFilePath));
-                }
+                else if (!TrySaveStandaloneFile(canvasData, () => ChooseStandaloneFilePath(), ChooseStandaloneConflictCopy))
+                    return false;
 
                 STNodeEditorMain.MarkSaved();
                 MessageBox.Show(Properties.Resources.SaveSucess);
@@ -932,6 +894,68 @@ namespace ColorVision.Engine.FlowProcessing
                 MessageBox.Show(Application.Current.GetActiveWindow(), string.Format(Properties.Resources.Flow_SaveFailed, ex.Message));
                 return false;
             }
+        }
+
+        internal bool TrySaveStandaloneFile(byte[] canvasData, Func<string?> chooseDestination, Func<string, string?> chooseConflictCopy)
+        {
+            string? destination = _standaloneFilePath;
+            string? expectedHash = _standaloneFileContentHash;
+            if (destination == null)
+            {
+                destination = chooseDestination();
+                if (destination == null) return false;
+                expectedHash = StandaloneFlowFileStore.CaptureSelectedDestination(destination);
+            }
+
+            string savedHash;
+            try { savedHash = StandaloneFlowFileStore.Save(destination, canvasData, expectedHash); }
+            catch (StandaloneFlowFileConflictException) when (_standaloneFilePath != null)
+            {
+                destination = chooseConflictCopy(destination);
+                if (destination == null) return false;
+                savedHash = StandaloneFlowFileStore.Save(destination, canvasData, expectedContentHash: null);
+            }
+
+            _standaloneFilePath = destination;
+            _standaloneFileContentHash = savedHash;
+            _standaloneFlowParam = null;
+            _standaloneDocumentName = Path.GetFileName(destination);
+            UpdateStandaloneWindowTitle(_standaloneDocumentName);
+            return true;
+        }
+
+        private string? ChooseStandaloneConflictCopy(string sourcePath)
+        {
+            Window? owner = Window.GetWindow(this) ?? Application.Current.GetActiveWindow();
+            MessageBoxResult choice = MessageBox.Show(owner, LocalizedText.Get("Flow_StandaloneFileCopyPrompt"),
+                Properties.Resources.SaveAs, MessageBoxButton.YesNo, MessageBoxImage.Warning, MessageBoxResult.No);
+            return choice == MessageBoxResult.Yes ? ChooseStandaloneFilePath(sourcePath) : null;
+        }
+
+        private string? ChooseStandaloneFilePath(string? copyOf = null)
+        {
+            using System.Windows.Forms.SaveFileDialog dialog = new()
+            {
+                Filter = "STN files (*.stn)|*.stn",
+                DefaultExt = "stn",
+                AddExtension = true,
+                Title = copyOf == null ? Properties.Resources.Save : Properties.Resources.SaveAs,
+                OverwritePrompt = copyOf == null,
+            };
+            if (copyOf != null)
+            {
+                dialog.InitialDirectory = Path.GetDirectoryName(copyOf);
+                dialog.FileName = Path.GetFileNameWithoutExtension(copyOf) + "-copy.stn";
+                dialog.FileOk += (_, args) =>
+                {
+                    if (!File.Exists(dialog.FileName)) return;
+                    args.Cancel = true;
+                    MessageBox.Show(Window.GetWindow(this) ?? Application.Current.GetActiveWindow(),
+                        LocalizedText.Get("Flow_StandaloneFileCopyTargetExists"), Properties.Resources.SaveAs,
+                        MessageBoxButton.OK, MessageBoxImage.Warning);
+                };
+            }
+            return dialog.ShowDialog() == System.Windows.Forms.DialogResult.OK ? dialog.FileName : null;
         }
 
         internal bool ConfirmDocumentReplacement()
@@ -1080,6 +1104,12 @@ namespace ColorVision.Engine.FlowProcessing
             PreProcessManager.GetInstance().Edit();
         }
 
+
+        internal async Task DisposeWhenExecutionSettlesAsync()
+        {
+            await _executionSession.StopAndWaitForSettlementAsync();
+            Dispose();
+        }
 
         public void Dispose()
         {

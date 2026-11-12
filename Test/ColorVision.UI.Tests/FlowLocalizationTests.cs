@@ -1,6 +1,7 @@
 using ColorVision.Engine.FlowProcessing.Nodes;
 using FlowEngineLib.Node.PG;
 using FlowEngineLib;
+using FlowEngineLib.Repeat;
 using ColorVision.Engine.PropertyEditor;
 using System.ComponentModel;
 using System.Globalization;
@@ -51,6 +52,15 @@ public class FlowLocalizationTests
                 restored.Create();
                 restored.OnLoadNode(state);
                 Assert.Equal(PGGECSCommCmdType.切图, restored.PGCmd);
+
+                // Repeat labels and validation share Lang resources while execution keys remain stable.
+                var repeatParameter = new RepeatParameterDefinition("ExpTime", "曝光时间", "ms", 15.67, minimum: 0.001);
+                Assert.Equal("ExpTime", repeatParameter.Key);
+                Assert.Equal("ms", repeatParameter.Unit);
+                Assert.Equal("V", new RepeatParameterDefinition("Voltage", "设定电压", "V", 1).Unit);
+                Assert.DoesNotMatch(@"\p{IsCJKUnifiedIdeographs}", repeatParameter.DisplayName);
+                Assert.False(repeatParameter.TryValidate(-1, out string validationError));
+                Assert.DoesNotMatch(@"\p{IsCJKUnifiedIdeographs}", validationError);
             }
             finally
             {

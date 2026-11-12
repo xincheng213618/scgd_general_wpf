@@ -1,6 +1,7 @@
 ﻿#pragma warning disable CS8603
 using ColorVision.Core;
 using ColorVision.FileIO;
+using ColorVision.ImageEditor.Presentation;
 using ColorVision.Themes.Controls;
 using log4net;
 using OpenCvSharp;
@@ -85,7 +86,7 @@ namespace ColorVision.Engine.Media
 
             try
             {
-                ValidatePixelData(sourceData, rows, cols, bpp, channels);
+                ValidatePixelData(sourceData.LongLength, rows, cols, bpp, channels);
                 using var src = Mat.FromPixelData(rows, cols, MatType.MakeType(GetMatDepth(bpp), channels), sourceData);
                 using var dst = new Mat();
                 var conversion = channels == 3 ? ColorConversionCodes.BGR2RGB : ColorConversionCodes.BGRA2RGBA;
@@ -117,7 +118,7 @@ namespace ColorVision.Engine.Media
                 }
                 else if (fileInfo.FileExtType == CVType.Raw || fileInfo.FileExtType == CVType.Src || fileInfo.FileExtType == CVType.CIE)
                 {
-                    ValidatePixelData(fileInfo.Data, fileInfo.Rows, fileInfo.Cols, fileInfo.Bpp, fileInfo.Channels);
+                    ValidatePixelData(fileInfo.Data?.LongLength ?? 0, fileInfo.Rows, fileInfo.Cols, fileInfo.Bpp, fileInfo.Channels);
                     if (fileInfo.FileExtType == CVType.CIE)
                     {
                         if (fileInfo.Channels == 3)
@@ -135,8 +136,9 @@ namespace ColorVision.Engine.Media
                     }
                     if (fileInfo.Bpp is 32 or 64)
                     {
-                        OpenCvSharp.Cv2.Normalize(src, src, 0, 255, OpenCvSharp.NormTypes.MinMax);
-                        src.ConvertTo(src, OpenCvSharp.MatType.CV_8U);
+                        using Mat floatingPixels = src;
+                        src = null;
+                        src = ConvertFloatToDisplayBytes(floatingPixels, CancellationToken.None);
                     }
                 }
 
@@ -158,46 +160,94 @@ namespace ColorVision.Engine.Media
             }
         }
 
-        private static void ValidatePixelData(byte[]? data, int rows, int cols, int bpp, int channels)
+        internal static Mat ConvertFloatToDisplayBytes(Mat source, CancellationToken cancellationToken)
+        {
+            const int chunkSamples = 64 * 1024;
+            const double doubleMachineEpsilon = 2.2204460492503131e-16;
+            using Mat samples = source.Reshape(1, 1);
+            Cv2.MinMaxLoc(samples, out double min, out double max);
+            cancellationToken.ThrowIfCancellationRequested();
+
+            // Match OpenCV NORM_MINMAX at the input depth before the separate rounding to bytes.
+            MatType depth = source.Depth();
+            double scale = 255 * (max - min > doubleMachineEpsilon ? 1 / (max - min) : 0);
+            if (depth == MatType.CV_32F) scale = (float)scale;
+            double shift = depth == MatType.CV_32F ? 0f - (float)(min * scale) : 0d - min * scale;
+            Mat bytes = new(source.Rows, source.Cols, MatType.MakeType(MatType.CV_8U, source.Channels()));
+            try
+            {
+                // Work in bounded blocks so the source samples stay unchanged without a full float copy.
+                using Mat normalized = new();
+                int sampleCount = samples.Cols;
+                IntPtr output = bytes.Data;
+                for (int start = 0; start < sampleCount;)
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    int count = Math.Min(chunkSamples, sampleCount - start);
+                    using Mat block = samples.ColRange(start, start + count);
+                    using Mat destination = Mat.FromPixelData(1, count, MatType.CV_8UC1, IntPtr.Add(output, start));
+                    block.ConvertTo(normalized, depth, scale, shift);
+                    normalized.ConvertTo(destination, MatType.CV_8U);
+                    start += count;
+                }
+                return bytes;
+            }
+            catch
+            {
+                bytes.Dispose();
+                throw;
+            }
+        }
+
+        private static void ValidatePixelData(long dataLength, int rows, int cols, int bpp, int channels)
         {
             if (rows <= 0 || cols <= 0) throw new InvalidDataException("图像尺寸必须为正数。");
             if (channels is not (1 or 3 or 4)) throw new InvalidDataException($"不支持的图像通道数：{channels}。");
             if (bpp is not (8 or 16 or 32 or 64)) throw new InvalidDataException($"不支持的图像位深：{bpp}。");
             long expectedLength = checked((long)rows * cols * (bpp / 8) * channels);
-            if (data == null || data.LongLength != expectedLength)
-                throw new InvalidDataException($"图像数据长度与尺寸不匹配：需要 {expectedLength} 字节，实际 {data?.LongLength ?? 0} 字节。");
+            if (dataLength != expectedLength)
+                throw new InvalidDataException($"图像数据长度与尺寸不匹配：需要 {expectedLength} 字节，实际 {dataLength} 字节。");
         }
 
         internal static WriteableBitmap RenderFloatChannel(CVCIEFile fileInfo, CancellationToken cancellationToken = default)
         {
             ArgumentNullException.ThrowIfNull(fileInfo);
             cancellationToken.ThrowIfCancellationRequested();
-            if (fileInfo.Channels != 1 || fileInfo.Bpp is not (32 or 64))
+            if (fileInfo.Channels != 1)
                 throw new InvalidDataException("浮点灰度显示要求单通道 32 位或 64 位数据。");
-            ValidatePixelData(fileInfo.Data, fileInfo.Rows, fileInfo.Cols, fileInfo.Bpp, fileInfo.Channels);
-
-            int pixelCount = checked(fileInfo.Rows * fileInfo.Cols);
-            byte[] pixels = new byte[pixelCount];
-            if (fileInfo.Bpp == 32)
-                NormalizeFloatChannel<float>(fileInfo.Data, pixels, cancellationToken);
-            else
-                NormalizeFloatChannel<double>(fileInfo.Data, pixels, cancellationToken);
-
-            cancellationToken.ThrowIfCancellationRequested();
-            WriteableBitmap bitmap = new(fileInfo.Cols, fileInfo.Rows, 96, 96, PixelFormats.Gray8, null);
-            bitmap.WritePixels(new Int32Rect(0, 0, fileInfo.Cols, fileInfo.Rows), pixels, fileInfo.Cols, 0);
-            bitmap.Freeze();
-            return bitmap;
+            return RenderFloatChannel(fileInfo.Data, fileInfo.Cols, fileInfo.Rows, fileInfo.Bpp, cancellationToken);
         }
 
-        private const int FloatChannelChunkSize = 65536;
+        internal static WriteableBitmap RenderFloatChannel(ReadOnlyMemory<byte> samples, int width, int height, int bpp,
+            CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            if (bpp is not (32 or 64))
+                throw new InvalidDataException("浮点灰度显示要求单通道 32 位或 64 位数据。");
+            ValidatePixelData(samples.Length, height, width, bpp, 1);
+            return RenderFloatChannel(new FloatChannelInput(samples, null), width, height, bpp, cancellationToken);
+        }
 
-        private static void NormalizeFloatChannel<T>(byte[] data, byte[] pixels, CancellationToken cancellationToken)
+        internal static WriteableBitmap RenderFloatChannel(CvcieDiskPixels plane, int width, int height, int bpp, CancellationToken token)
+            => RenderFloatChannel(new FloatChannelInput(default, plane), width, height, bpp, token);
+
+        private static WriteableBitmap RenderFloatChannel(FloatChannelInput source, int width, int height, int bpp, CancellationToken token)
+            => bpp == 32 ? RenderFloatChannel<float>(source, width, height, token) : RenderFloatChannel<double>(source, width, height, token);
+
+        private const int FloatChannelChunkSize = 65536;
+        private readonly record struct FloatChannelInput(ReadOnlyMemory<byte> Samples, CvcieDiskPixels? File);
+
+        private static WriteableBitmap RenderFloatChannel<T>(FloatChannelInput source, int width, int height,
+            CancellationToken cancellationToken)
             where T : unmanaged, System.Numerics.IFloatingPointIeee754<T>
         {
-            int chunkCount = (pixels.Length + FloatChannelChunkSize - 1) / FloatChannelChunkSize;
+            int pixelCount = checked(width * height);
+            int chunkCount = (pixelCount - 1) / FloatChannelChunkSize + 1;
+            int workers = Math.Max(1, Environment.ProcessorCount / 2);
+            if (source.File.HasValue) workers = Math.Min(workers, 16);
             (double Minimum, double Maximum)[] ranges = new (double, double)[chunkCount];
-            RunFloatChannelChunks(chunkCount, pixels.Length, cancellationToken, chunk => ranges[chunk] = FindFloatChannelRange<T>(data, chunk));
+            RunFloatChannelChunks(chunkCount, pixelCount, workers, cancellationToken,
+                chunk => ranges[chunk] = FindFloatChannelRange<T>(source, pixelCount, chunk, cancellationToken));
             double minimum = double.PositiveInfinity;
             double maximum = double.NegativeInfinity;
             foreach (var local in ranges)
@@ -206,7 +256,6 @@ namespace ColorVision.Engine.Media
                 maximum = Math.Max(maximum, local.Maximum);
             }
 
-            if (minimum == maximum) return;
             double range = maximum - minimum;
             // Scale endpoints only when finite double extremes overflow their difference.
             // Divide by the range rather than forming an infinite factor for subnormal data.
@@ -216,45 +265,97 @@ namespace ColorVision.Engine.Media
                 minimum /= magnitude;
                 range = maximum / magnitude - minimum;
             }
-            RunFloatChannelChunks(chunkCount, pixels.Length, cancellationToken,
-                chunk => WriteFloatChannelChunk<T>(data, pixels, chunk, minimum, range, magnitude));
+            return CreateFrozenDisplayBitmap(width, height, PixelFormats.Gray8, (buffer, stride) =>
+                RunFloatChannelChunks(chunkCount, pixelCount, workers, cancellationToken,
+                    chunk => WriteFloatChannelChunk<T>(source, pixelCount, buffer, width, stride, chunk, minimum, range, magnitude, cancellationToken)), cancellationToken);
         }
 
-        private static (double Minimum, double Maximum) FindFloatChannelRange<T>(byte[] data, int chunk)
+        internal static WriteableBitmap CreateFrozenDisplayBitmap(int width, int height, PixelFormat format,
+            Action<IntPtr, int> fillBuffer, CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            WriteableBitmap bitmap = new(width, height, 96, 96, format, null);
+            bitmap.Lock();
+            try
+            {
+                // The writer must finish all work before the buffer is unlocked.
+                fillBuffer(bitmap.BackBuffer, bitmap.BackBufferStride);
+                cancellationToken.ThrowIfCancellationRequested();
+                bitmap.AddDirtyRect(new Int32Rect(0, 0, width, height));
+            }
+            finally { bitmap.Unlock(); }
+            bitmap.Freeze();
+            return bitmap;
+        }
+
+        private static (double Minimum, double Maximum) FindFloatChannelRange<T>(FloatChannelInput source, int pixelCount, int chunk, CancellationToken token)
             where T : unmanaged, System.Numerics.IFloatingPointIeee754<T>
         {
-            ReadOnlySpan<T> values = MemoryMarshal.Cast<byte, T>(data);
             int start = chunk * FloatChannelChunkSize;
-            int end = Math.Min(start + FloatChannelChunkSize, values.Length);
+            using var block = new FloatChannelChunk<T>(source, pixelCount, start, token);
+            ReadOnlySpan<T> values = block.Samples;
             double minimum = double.PositiveInfinity;
             double maximum = double.NegativeInfinity;
-            for (int index = start; index < end; index++)
+            for (int index = 0; index < values.Length; index++)
             {
                 double value = double.CreateChecked(values[index]);
-                if (!double.IsFinite(value)) throw new InvalidDataException($"灰度通道第 {index + 1} 个像素包含非有限数值。");
+                if (!double.IsFinite(value)) throw new InvalidDataException($"灰度通道第 {start + index + 1} 个像素包含非有限数值。");
                 minimum = Math.Min(minimum, value);
                 maximum = Math.Max(maximum, value);
             }
             return (minimum, maximum);
         }
 
-        private static void WriteFloatChannelChunk<T>(byte[] data, byte[] pixels, int chunk, double minimum, double range, double magnitude)
+        private static unsafe void WriteFloatChannelChunk<T>(FloatChannelInput source, int pixelCount, IntPtr buffer, int width, int stride,
+            int chunk, double minimum, double range, double magnitude, CancellationToken token)
             where T : unmanaged, System.Numerics.IFloatingPointIeee754<T>
         {
-            ReadOnlySpan<T> values = MemoryMarshal.Cast<byte, T>(data);
             int start = chunk * FloatChannelChunkSize;
-            int end = Math.Min(start + FloatChannelChunkSize, values.Length);
-            for (int index = start; index < end; index++)
+            using FloatChannelChunk<T> block = range == 0 ? default : new FloatChannelChunk<T>(source, pixelCount, start, token);
+            ReadOnlySpan<T> values = block.Samples;
+            int end = start + Math.Min(FloatChannelChunkSize, pixelCount - start);
+            for (int index = start; index < end;)
             {
-                double value = double.CreateChecked(values[index]);
-                double normalized = (value / magnitude - minimum) / range;
-                pixels[index] = (byte)Math.Round(Math.Clamp(normalized, 0, 1) * 255);
+                int row = Math.DivRem(index, width, out int column);
+                int count = Math.Min(width - column, end - index);
+                Span<byte> pixels = new((byte*)buffer + (long)row * stride + column, count);
+                if (range == 0)
+                    pixels.Clear();
+                else
+                {
+                    for (int x = 0; x < count; x++)
+                    {
+                        double value = double.CreateChecked(values[index + x - start]);
+                        double normalized = (value / magnitude - minimum) / range;
+                        pixels[x] = (byte)Math.Round(Math.Clamp(normalized, 0, 1) * 255);
+                    }
+                }
+                index += count;
             }
         }
 
-        private static void RunFloatChannelChunks(int chunkCount, int pixelCount, CancellationToken cancellationToken, Action<int> action)
+        private readonly ref struct FloatChannelChunk<T> where T : unmanaged
         {
-            if (pixelCount < 1024 * 1024 || Environment.ProcessorCount < 2)
+            private readonly CvcieDiskPixels.Chunk<T> _rented;
+            public ReadOnlySpan<T> Samples { get; }
+
+            public FloatChannelChunk(FloatChannelInput source, int pixelCount, int start, CancellationToken token)
+            {
+                int count = Math.Min(FloatChannelChunkSize, pixelCount - start);
+                if (source.File is { } file)
+                {
+                    _rented = new CvcieDiskPixels.Chunk<T>(file, pixelCount, 1, start, count, token);
+                    Samples = _rented.Samples;
+                }
+                else Samples = MemoryMarshal.Cast<byte, T>(source.Samples.Span).Slice(start, count);
+            }
+
+            public void Dispose() => _rented.Dispose();
+        }
+
+        private static void RunFloatChannelChunks(int chunkCount, int pixelCount, int workers, CancellationToken cancellationToken, Action<int> action)
+        {
+            if (pixelCount < 1024 * 1024 || workers == 1)
             {
                 for (int chunk = 0; chunk < chunkCount; chunk++)
                 {
@@ -268,7 +369,7 @@ namespace ColorVision.Engine.Media
                 Parallel.For(0, chunkCount, new ParallelOptions
                 {
                     CancellationToken = cancellationToken,
-                    MaxDegreeOfParallelism = Math.Max(1, Environment.ProcessorCount / 2)
+                    MaxDegreeOfParallelism = workers
                 }, action);
             }
             catch (AggregateException ex)
@@ -290,7 +391,7 @@ namespace ColorVision.Engine.Media
             return bitmap;
         }
 
-        private static bool TryGetDisplayPixelFormat(MatType type, out PixelFormat format)
+        internal static bool TryGetDisplayPixelFormat(MatType type, out PixelFormat format)
         {
             if (type == MatType.CV_8UC1)
                 format = PixelFormats.Gray8;
@@ -314,50 +415,48 @@ namespace ColorVision.Engine.Media
             return true;
         }
 
+        internal static bool IsCompatibleDisplayBitmap(WriteableBitmap? bitmap, Mat source, PixelFormat format)
+            => bitmap is { IsFrozen: false } && bitmap.PixelWidth == source.Cols && bitmap.PixelHeight == source.Rows
+                && bitmap.Format == format;
+
+        internal static Task<WriteableBitmap> PrepareDisplayBitmapAsync(this Mat source, PixelFormat format, CancellationToken cancellationToken)
+            => EditableBitmapCopy.CreateAsync(source.Cols, source.Rows, 96, 96, format, null,
+                (buffer, stride) => CopyDisplayPixels(source, buffer, stride), cancellationToken);
+
         public static bool MatUpdateWriteableBitmap(this Mat srcMat, WriteableBitmap writeableBitmap)
         {
-            if (writeableBitmap.IsFrozen) return false;
-            if (writeableBitmap.PixelWidth != srcMat.Cols || writeableBitmap.PixelHeight != srcMat.Rows)
-                return false;
-
-            // Equal byte counts do not imply compatible formats (for example float gray and BGRA32).
-            MatType type = srcMat.Type();
-            if (!TryGetDisplayPixelFormat(type, out PixelFormat format) || writeableBitmap.Format != format)
+            if (!TryGetDisplayPixelFormat(srcMat.Type(), out PixelFormat format)
+                || !IsCompatibleDisplayBitmap(writeableBitmap, srcMat, format))
                 return false;
 
             writeableBitmap.Lock();
             try
             {
-                // 使用 srcMat.Type() 确保 dstMat 的元数据与源完全一致
-                using var dstMat = Mat.FromPixelData(srcMat.Rows, srcMat.Cols, srcMat.Type(), writeableBitmap.BackBuffer, writeableBitmap.BackBufferStride);
-                if (type == MatType.CV_16UC3 || type == MatType.CV_16SC3) // PixelFormats.Rgb48
-                {
-                    Cv2.CvtColor(srcMat, dstMat, ColorConversionCodes.BGR2RGB);
-                }
-                else if (type == MatType.CV_16UC4 || type == MatType.CV_16SC4) // PixelFormats.Rgba64
-                {
-                    Cv2.CvtColor(srcMat, dstMat, ColorConversionCodes.BGRA2RGBA);
-                }
-                else
-                {
-                    srcMat.CopyTo(dstMat);
-                }
-                // 标记脏区域
+                CopyDisplayPixels(srcMat, writeableBitmap.BackBuffer, writeableBitmap.BackBufferStride);
                 writeableBitmap.AddDirtyRect(new Int32Rect(0, 0, srcMat.Cols, srcMat.Rows));
-
             }
             catch (Exception ex)
             {
-                log.Error("Failed to update WriteableBitmap from Mat.",ex);
-                // 可以在这里记录日志
+                log.Error("Failed to update WriteableBitmap from Mat.", ex);
                 return false;
             }
             finally
             {
-                // 无论是否发生异常，必须解锁，否则 UI 暴毙
                 writeableBitmap.Unlock();
             }
             return true;
+        }
+
+        private static void CopyDisplayPixels(Mat source, IntPtr buffer, int stride)
+        {
+            MatType type = source.Type();
+            using var destination = Mat.FromPixelData(source.Rows, source.Cols, type, buffer, stride);
+            if (type == MatType.CV_16UC3 || type == MatType.CV_16SC3)
+                Cv2.CvtColor(source, destination, ColorConversionCodes.BGR2RGB);
+            else if (type == MatType.CV_16UC4 || type == MatType.CV_16SC4)
+                Cv2.CvtColor(source, destination, ColorConversionCodes.BGRA2RGBA);
+            else
+                source.CopyTo(destination);
         }
 
         public static WriteableBitmap? ToWriteableBitmap(this CVCIEFile fileInfo, bool showErrors = true)

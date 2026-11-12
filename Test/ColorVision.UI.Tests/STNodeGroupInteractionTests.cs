@@ -122,7 +122,7 @@ public class STNodeGroupInteractionTests
                 Application.Current.Resources.MergedDictionaries.Add(new ResourceDictionary { Source = new Uri(uri, UriKind.RelativeOrAbsolute) });
             using var editor = new GroupEditor { EnableHistory = true };
             var nodes = CreateNodes(editor);
-            using var menu = new FlowNodeContextMenuService(editor, new FlowExecutionNavigator(editor), () => { });
+            using var menu = new FlowNodeContextMenuService(editor, new FlowExecutionNavigator(editor));
             editor.ClearHistory();
             var window = new Window { Content = editor, Width = 800, Height = 300, Left = -16000, Top = -16000, ShowActivated = false, ShowInTaskbar = false };
             DispatcherOperation? editOperation = null;

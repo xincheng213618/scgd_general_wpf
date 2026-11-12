@@ -28,6 +28,10 @@ internal sealed record LocalFileFusionResultData(int MasterId, int MasterResultT
     string FrameId, string ImageFilePath, int ImageCount, string ActualMode, long TotalTime);
 
 [STNode("Flow_LocalAlgorithms", "景深融合", CategoryOrder = 9910, NodeOrder = 90)]
+[FlowEngineLib.FlowNodeDocumentation("读取不同焦点的本地图片，按局部清晰度加权融合，保存融合图并交给下游图像节点。",
+    Usage = "选择文件夹或按焦点顺序排列的文件列表，使用至少两张同尺寸、同通道的 8-bit 图片；确认结果目录后连接流程触发。",
+    Notes = "IN 仅触发执行，图片取自节点文件配置；不会自动配准或采集焦点堆栈。流程保存图像记录需要已有批次和数据库。",
+    TopicId = "ui.image-fusion")]
 public sealed class LocalFileFusionNode : LocalFlowNodeBase
 {
     private readonly IFileFusionServices services;

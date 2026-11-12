@@ -207,6 +207,28 @@ public sealed class CopilotWorkspaceReviewExecutionContractTests
         Assert.True(refreshed.IsSatisfied);
     }
 
+    [Theory]
+    [InlineData("commit")]
+    [InlineData("working_tree")]
+    public void DifferentLatestTargetRequiresInspectingTheRequestedTargetAgain(string otherTarget)
+    {
+        var contract = CreateContract(target: null, StructuredReviewTools);
+        var status = Success("InspectGitWorkingTree", 1);
+        var first = Success("InspectGitDiff", 2, ("target", "working_tree"), ("scope", "both"));
+        var firstSubmission = SuccessFindings(first, 3);
+        var other = otherTarget == "commit"
+            ? Success("InspectGitDiff", 4, ("target", "commit"), ("revision", "abcdef1"))
+            : Success("InspectGitDiff", 4, ("target", "working_tree"), ("scope", "staged"));
+        var stale = contract.Evaluate([status, first, firstSubmission, other, SuccessFindings(other, 5)]);
+        Assert.False(stale.IsSatisfied);
+        Assert.True(stale.ShouldReinvoke);
+        Assert.Equal(["InspectGitDiff"], stale.MissingToolNames);
+        Assert.Contains("scope=\"both\"", stale.Feedback, StringComparison.Ordinal);
+
+        var refreshed = Success("InspectGitDiff", 6, ("target", "working_tree"), ("scope", "both"));
+        Assert.True(contract.Evaluate([status, first, firstSubmission, other, refreshed, SuccessFindings(refreshed, 7)]).IsSatisfied);
+    }
+
     [Fact]
     public void ReviewTargetPersistsWithUserMessageAndMalformedStateIsDiscarded()
     {

@@ -37,4 +37,10 @@ public partial class cvCameraCSLib
 
     [DllImport(LIBRARY_CVCAMERA, CallingConvention = CallingConvention.StdCall)]
     public static extern int CM_EvaluateFocus(IntPtr cameraHandle, EvaFunc evaluation, out double value);
+
+    [UnmanagedFunctionPointer(CallingConvention.StdCall)]
+    public delegate int AutoFocusFrameCallBack(IntPtr userData, int width, int height, int bpp, int channels, IntPtr pixels);
+
+    [DllImport(LIBRARY_CVCAMERA, CallingConvention = CallingConvention.StdCall)]
+    public static extern int CM_AutoFocusCallBackEx(IntPtr cameraHandle, AutoFocusFrameCallBack? callback, IntPtr userData);
 }

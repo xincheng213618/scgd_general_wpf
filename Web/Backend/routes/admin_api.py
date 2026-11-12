@@ -17,6 +17,7 @@ Per-endpoint scope requirements:
   - GET  /audit-log           → audit:read
   - GET  /deployments         → deployments:read
   - GET  /operations/overview → operations:manage
+  - GET  /activation/licenses/* → configured administrator only
   - GET  /feedback            → feedback:read
   - GET  /feedback/*          → feedback:read
   - PUT  /feedback/*/status   → feedback:manage
@@ -47,9 +48,11 @@ from typing import Any, Callable
 
 from flask import Blueprint, current_app, jsonify, request, send_file, session
 
+from db.repositories.activation_admin import list_activation_devices, list_activation_licenses
 from db_cache import CacheManager, now_iso
 from ports.jobs import JobRepository
 from ports.operations_admin import OperationsAdminQuery
+from routes.auth_adapters import is_configured_admin_session
 from routes.request_context import current_request_context, set_authenticated_request_context
 from services.auth_policy import AuthPolicy
 from services.api_key_service import (
@@ -89,6 +92,8 @@ ENDPOINT_SCOPES: dict[str, list[str]] = {
     "audit_log": ["audit:read"],
     "deployment_history": ["deployments:read"],
     "operations_overview": ["operations:manage"],
+    "activation_licenses": ["admin:*"],
+    "activation_devices": ["admin:*"],
     "feedback_inbox": ["feedback:read"],
     "feedback_detail": ["feedback:read"],
     "feedback_attachment": ["feedback:read"],
@@ -200,6 +205,11 @@ def _require_admin_auth(required_scopes: list[str] | None = None):
     if not decision.allowed and decision.reason == "insufficient_scope" and request.endpoint == "admin_api.feedback_handling":
         decision = ctx.auth_policy.authorize(request_context, ["feedback:manage"], allow_user_session=True)
     if decision.allowed:
+        if request.endpoint in {"admin_api.activation_licenses", "admin_api.activation_devices"} and (
+            decision.principal.auth_method != "basic"
+            and not is_configured_admin_session(_configured_admin_username())
+        ):
+            return jsonify({"error": "Configured administrator required", "code": "insufficient_scope", "status": 403}), 403
         set_authenticated_request_context(request_context.with_actor(decision.principal))
         return None
     if decision.reason == "password_change_required":
@@ -254,6 +264,37 @@ def register_admin_api_routes(app, ctx: AdminApiContext):
             result = _require_admin_auth(required)
             if result is not None:
                 return result
+
+
+# ---------------------------------------------------------------------------
+# Activation inventory
+# ---------------------------------------------------------------------------
+
+@admin_api.get("/activation/licenses")
+def activation_licenses():
+    query = request.args.get("q", "").strip()
+    status = request.args.get("status", "")
+    if len(query) > 100 or status not in {"", "active", "expired"}:
+        return jsonify({"error": "Invalid activation license filter"}), 400
+    try:
+        limit = _query_int_arg("limit", 20, minimum=1, maximum=100)
+        offset = _query_int_arg("offset", 0, minimum=0, maximum=2**31 - 1)
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 400
+    return jsonify(list_activation_licenses(_get_ctx().cache.get_db, query=query, status=status, limit=limit, offset=offset))
+
+
+@admin_api.get("/activation/licenses/<license_id>/devices")
+def activation_devices(license_id: str):
+    try:
+        limit = _query_int_arg("limit", 20, minimum=1, maximum=100)
+        offset = _query_int_arg("offset", 0, minimum=0, maximum=2**31 - 1)
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 400
+    result = list_activation_devices(_get_ctx().cache.get_db, license_id, limit=limit, offset=offset)
+    if result is None:
+        return jsonify({"error": "Activation license not found"}), 404
+    return jsonify(result)
 
 
 # ---------------------------------------------------------------------------

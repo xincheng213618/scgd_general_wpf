@@ -47,7 +47,11 @@ namespace ColorVision.Engine.Services
         public T? GetById(int? id)
         {
             if (id == null) return null;
-            if (IsLocalId(id.Value)) return GetLocal().FirstOrDefault(item => item.Id == id);
+            if (IsLocalId(id.Value))
+            {
+                LocalTemplateDocument? document = LocalStore.Find(kind, checked(-1 - id.Value));
+                return document == null ? null : Decode(document);
+            }
             return UseLocal ? null : BaseTableDaoExtensions.GetById(this, id);
         }
 

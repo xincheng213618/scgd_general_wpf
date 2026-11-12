@@ -359,8 +359,26 @@
   <data name="Sched_SaveFailed" xml:space="preserve">
     <value>Failed to save task config: {0}</value>
   </data>
+  <data name="Sched_PauseSaveFailed" xml:space="preserve">
+    <value>Paused tasks remain paused in this instance. {0}</value>
+  </data>
   <data name="Sched_LoadFailed" xml:space="preserve">
     <value>Failed to load task config: {0}</value>
+  </data>
+  <data name="Sched_TaskFileUnreadable" xml:space="preserve">
+    <value>Could not read task definitions from “{0}”. Keep the original file and check that its job types are available. Restore a valid backup if needed, then reload.</value>
+  </data>
+  <data name="Sched_TaskFileChanged" xml:space="preserve">
+    <value>Task definitions in “{0}” changed after loading. Restart ColorVision to load the current definitions, then try again.</value>
+  </data>
+  <data name="Sched_TaskFileBusy" xml:space="preserve">
+    <value>Another instance is reading or writing the task definitions in “{0}”. Try again shortly.</value>
+  </data>
+  <data name="Sched_TaskBackupRequiresRestore" xml:space="preserve">
+    <value>The primary task file is missing and backup “{0}” is present. Reload or restart to restore the backup before saving changes.</value>
+  </data>
+  <data name="Sched_TaskBackupRestored" xml:space="preserve">
+    <value>The missing task file was restored from backup “{0}”. Review the recovered progress and settings before enabling its schedules.</value>
   </data>
   <data name="Sched_RestoreWarning" xml:space="preserve">
     <value>The following tasks failed to restore: {0}</value>
@@ -568,5 +586,14 @@
   </data>
   <data name="Sched_TaskNotFound" xml:space="preserve">
     <value>The task was not found. Refresh the task list.</value>
+  </data>
+  <data name="Sched_StatusBarRunning" xml:space="preserve">
+    <value>Scheduled tasks · Running</value>
+  </data>
+  <data name="Sched_StatusBarPausedRunning" xml:space="preserve">
+    <value>Schedule paused · Run in progress</value>
+  </data>
+  <data name="Sched_StatusBarNextRun" xml:space="preserve">
+    <value>Next at {0}</value>
   </data>
 </root>

@@ -43,46 +43,54 @@ namespace ColorVision.UI.Desktop.Download
         public string SavePath { get => _SavePath; set { if (_SavePath == value) return; _SavePath = value; OnPropertyChanged(); } }
         private string _SavePath = string.Empty;
 
-        public DownloadStatus Status { get => _Status; set { if (_Status == value) return; _Status = value; OnPropertyChanged(); OnPropertyChanged(nameof(StatusText)); OnPropertyChanged(nameof(IsDownloading)); OnPropertyChanged(nameof(IsActiveDownloading)); OnPropertyChanged(nameof(IsCompleted)); OnPropertyChanged(nameof(IsPaused)); OnPropertyChanged(nameof(IsWaitingOrFailed)); OnPropertyChanged(nameof(FileSizeDisplayText)); } }
+        public DownloadStatus Status { get => _Status; set { if (_Status == value) return; _Status = value; OnPropertyChanged(); OnPropertyChanged(nameof(StatusText)); OnPropertyChanged(nameof(IsDownloading)); OnPropertyChanged(nameof(IsActiveDownloading)); OnPropertyChanged(nameof(IsCompleted)); OnPropertyChanged(nameof(IsPaused)); OnPropertyChanged(nameof(IsRetryable)); OnPropertyChanged(nameof(IsFinished)); OnPropertyChanged(nameof(FileSizeDisplayText)); } }
         private DownloadStatus _Status;
 
         public bool IsDownloading => Status == DownloadStatus.Downloading || Status == DownloadStatus.Waiting;
         public bool IsActiveDownloading => Status == DownloadStatus.Downloading;
-        public bool IsCompleted => Status == DownloadStatus.Completed || Status == DownloadStatus.FileDeleted;
+        public bool IsCompleted => Status == DownloadStatus.Completed;
+        public bool IsFinished => Status == DownloadStatus.Completed || Status == DownloadStatus.FileDeleted;
         public bool IsPaused => Status == DownloadStatus.Paused;
-        public bool IsWaitingOrFailed => Status == DownloadStatus.Waiting || Status == DownloadStatus.Failed;
+        public bool IsRetryable => Status == DownloadStatus.Failed || Status == DownloadStatus.FileDeleted;
 
-        public string StatusText => Status switch
+        public string StatusText
         {
-            DownloadStatus.Waiting => Properties.Resources.Waiting,
-            DownloadStatus.Downloading => Properties.Resources.Downloading,
-            DownloadStatus.Completed => Properties.Resources.Completed,
-            DownloadStatus.Failed => Properties.Resources.Failed,
-            DownloadStatus.Paused => Properties.Resources.Paused,
-            DownloadStatus.FileDeleted => Properties.Resources.FileDeleted,
-            _ => Status.ToString()
-        };
+            get
+            {
+                string text = Status switch
+                {
+                    DownloadStatus.Waiting => Properties.Resources.Waiting,
+                    DownloadStatus.Downloading => Properties.Resources.Downloading,
+                    DownloadStatus.Completed => Properties.Resources.Completed,
+                    DownloadStatus.Failed => Properties.Resources.Failed,
+                    DownloadStatus.Paused => Properties.Resources.Paused,
+                    DownloadStatus.FileDeleted => Properties.Resources.FileDeleted,
+                    _ => Status.ToString()
+                };
+                return Status == DownloadStatus.Failed && !string.IsNullOrWhiteSpace(ErrorMessage) ? $"{text}: {ErrorMessage}" : text;
+            }
+        }
 
         public int ProgressValue { get => _ProgressValue; set { if (_ProgressValue == value) return; _ProgressValue = value; OnPropertyChanged(); } }
         private int _ProgressValue;
 
-        public long TotalBytes { get => _TotalBytes; set { if (_TotalBytes == value) return; _TotalBytes = value; OnPropertyChanged(); OnPropertyChanged(nameof(TotalBytesText)); OnPropertyChanged(nameof(FileSizeDisplayText)); } }
+        public long TotalBytes { get => _TotalBytes; set { if (_TotalBytes == value) return; _TotalBytes = value; OnPropertyChanged(); OnPropertyChanged(nameof(FileSizeDisplayText)); } }
         private long _TotalBytes;
 
-        public long DownloadedBytes { get => _DownloadedBytes; set { if (_DownloadedBytes == value) return; _DownloadedBytes = value; OnPropertyChanged(); OnPropertyChanged(nameof(DownloadedBytesText)); OnPropertyChanged(nameof(FileSizeDisplayText)); } }
+        public long DownloadedBytes { get => _DownloadedBytes; set { if (_DownloadedBytes == value) return; _DownloadedBytes = value; OnPropertyChanged(); OnPropertyChanged(nameof(FileSizeDisplayText)); } }
         private long _DownloadedBytes;
 
         public string SpeedText { get => _SpeedText; set { if (_SpeedText == value) return; _SpeedText = value; OnPropertyChanged(); } }
         private string _SpeedText = string.Empty;
 
-        public string? ErrorMessage { get => _ErrorMessage; set { if (_ErrorMessage == value) return; _ErrorMessage = value; OnPropertyChanged(); } }
+        public string? ErrorMessage { get => _ErrorMessage; set { if (_ErrorMessage == value) return; _ErrorMessage = value; OnPropertyChanged(); OnPropertyChanged(nameof(StatusText)); } }
         private string? _ErrorMessage;
 
         public DateTime CreateTime { get => _CreateTime; set { if (_CreateTime == value) return; _CreateTime = value; OnPropertyChanged(); } }
         private DateTime _CreateTime = DateTime.Now;
 
-        public string TotalBytesText => FormatBytes(TotalBytes);
-        public string DownloadedBytesText => FormatBytes(DownloadedBytes);
+        internal bool HasLocalFiles => new[] { SavePath, SavePath + ".aria2", WorkingPath, WorkingPath == null ? null : WorkingPath + ".aria2" }
+            .Any(path => path != null && System.IO.File.Exists(path));
 
         public string FileSizeDisplayText
         {
@@ -103,8 +111,6 @@ namespace ColorVision.UI.Desktop.Download
         /// </summary>
         public string? Gid { get; set; }
 
-        public CancellationTokenSource? CancellationTokenSource { get; set; }
-
         /// <summary>
         /// Per-task completion callback. When set, the global ShowCompletedNotification is skipped for this task.
         /// </summary>
@@ -119,11 +125,6 @@ namespace ColorVision.UI.Desktop.Download
         /// Local source file reused for this task. Used to support copy retry/cancel.
         /// </summary>
         public string? LocalReuseSourcePath { get; set; }
-
-        /// <summary>
-        /// Whether the local reuse source must be revalidated against the remote resource before copy.
-        /// </summary>
-        public bool LocalReuseRequiresRemoteValidation { get; set; }
 
         public static string FormatBytes(long bytes)
         {

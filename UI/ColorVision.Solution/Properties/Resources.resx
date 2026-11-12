@@ -1131,8 +1131,8 @@
   <data name="文件名包含无效字符" xml:space="preserve">
     <value>文件名包含无效字符</value>
   </data>
-  <data name="文件夹不为空，是否清空文件夹" xml:space="preserve">
-    <value>文件夹不为空，是否清空文件夹</value>
+  <data name="已存在同名解决方案。请打开已有解决方案或换一个名称。" xml:space="preserve">
+    <value>已存在同名解决方案。请打开已有解决方案或换一个名称。</value>
   </data>
   <data name="文件夹路径不能为空" xml:space="preserve">
     <value>文件夹路径不能为空</value>
@@ -1322,6 +1322,9 @@
   <data name="重新加载将放弃当前未保存的更改，是否继续？" xml:space="preserve">
     <value>重新加载将放弃当前未保存的更改，是否继续？</value>
   </data>
+  <data name="文件在磁盘上已更改。请先复制未保存的修改，再重新加载文件并合并。" xml:space="preserve">
+    <value>文件在磁盘上已更改。请先复制未保存的修改，再重新加载文件并合并。</value>
+  </data>
   <data name="错误" xml:space="preserve">
     <value>错误</value>
   </data>
@@ -1361,4 +1364,8 @@
   <data name="正在打开：{0}" xml:space="preserve">
     <value>正在打开：{0}</value>
   </data>
+  <data name="字号" xml:space="preserve"><value>字号</value></data>
+  <data name="文本编辑器" xml:space="preserve"><value>文本编辑器</value></data>
+  <data name="显示" xml:space="preserve"><value>显示</value></data>
+  <data name="保存当前文件并在下方运行终端中执行" xml:space="preserve"><value>保存当前文件并在下方运行终端中执行</value></data>
 </root>

@@ -21,7 +21,7 @@ public sealed class FlowNodeContextMenuTests
             {
                 CultureInfo.CurrentUICulture = CultureInfo.GetCultureInfo("zh-CN");
                 using var editor = new STNodeEditor();
-                using var menus = new FlowNodeContextMenuService(editor, new FlowExecutionNavigator(editor), () => { });
+                using var menus = new FlowNodeContextMenuService(editor, new FlowExecutionNavigator(editor));
                 var creationMenu = new ContextMenu();
                 Invoke(menus, "AddNodeCreationMenuItems", creationMenu.Items);
                 MenuItem camera = Assert.Single(creationMenu.Items.OfType<MenuItem>(), item => Equals(item.Header, "相机"));
@@ -82,7 +82,7 @@ public sealed class FlowNodeContextMenuTests
             nodes[0].SetSelected(true, false);
             nodes[1].SetSelected(true, false);
             editor.ClearHistory();
-            using var menus = new FlowNodeContextMenuService(editor, new FlowExecutionNavigator(editor), () => { });
+            using var menus = new FlowNodeContextMenuService(editor, new FlowExecutionNavigator(editor));
             MenuItem[] edits = CreateEditItems(menus, nodes[clickedSelection ? 0 : 2], out _);
 
             edits[0].RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent));
@@ -118,8 +118,7 @@ public sealed class FlowNodeContextMenuTests
             editor.Nodes.Add(node);
             editor.ClearHistory();
             editor.EnableEdit = !disabledBeforeOpening;
-            int imports = 0;
-            using var menus = new FlowNodeContextMenuService(editor, new FlowExecutionNavigator(editor), () => imports++);
+            using var menus = new FlowNodeContextMenuService(editor, new FlowExecutionNavigator(editor));
 
             MenuItem[] edits = CreateEditItems(menus, node, out MenuItem history);
             Assert.True(history.IsEnabled);
@@ -135,7 +134,6 @@ public sealed class FlowNodeContextMenuTests
                 Assert.False(node.LockLocation);
                 Assert.False(editor.CanUndo);
                 Assert.False(editor.IsModified);
-                Assert.Equal(0, imports);
             }
 
             Assert.True(history.IsEnabled);
@@ -152,8 +150,7 @@ public sealed class FlowNodeContextMenuTests
             node.Create();
             editor.Nodes.Add(node);
             editor.ClearHistory();
-            int imports = 0;
-            using var menus = new FlowNodeContextMenuService(editor, new FlowExecutionNavigator(editor), () => imports++);
+            using var menus = new FlowNodeContextMenuService(editor, new FlowExecutionNavigator(editor));
 
             MenuItem[] edits = CreateEditItems(menus, node, out _);
             edits[0].RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent));
@@ -181,9 +178,6 @@ public sealed class FlowNodeContextMenuTests
             Assert.All(editor.Nodes.Cast<STNode>(), item => Assert.IsType<FlowMenuTestNode>(item));
             editor.Undo();
             Assert.Same(node, Assert.Single(editor.Nodes.Cast<STNode>()));
-
-            edits[5].RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent));
-            Assert.Equal(1, imports);
         });
     }
 
@@ -201,10 +195,7 @@ public sealed class FlowNodeContextMenuTests
         var creationMenu = new ContextMenu();
         Invoke(menus, "AddNodeCreationMenuItems", creationMenu.Items);
         MenuItem create = Descendants(creationMenu.Items).Single(item => Equals(item.Header, FlowMenuTestNode.MenuTitle));
-
-        var importMenu = new ContextMenu();
-        Invoke(menus, "AddImportModuleContextMenu", importMenu.Items);
-        return [.. nodeEdits, create, Assert.Single(importMenu.Items.OfType<MenuItem>())];
+        return [.. nodeEdits, create];
     }
 
     private static IEnumerable<MenuItem> Descendants(ItemCollection items)

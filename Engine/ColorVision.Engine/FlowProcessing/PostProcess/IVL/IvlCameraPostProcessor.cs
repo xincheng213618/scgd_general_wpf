@@ -43,9 +43,6 @@ namespace ColorVision.Engine.FlowProcessing.PostProcess.IVL
             IVLViewTestResult testResult = new IVLViewTestResult();
             try
             {
-                var values = MeasureImgResultDao.Instance.GetAllByBatchId(ctx.Batch.Id);
-                //if (values.Count > 0)
-                    //ctx.Result.FileName = values[0].FileUrl;
                 var masters = AlgResultMasterDao.Instance.GetAllByBatchId(ctx.Batch.Id);
                 int cout = 0;
                 foreach (var master in masters)

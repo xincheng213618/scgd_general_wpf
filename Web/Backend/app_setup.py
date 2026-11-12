@@ -7,6 +7,7 @@ Extracted from app.py to keep the main module as a thin assembly layer.
 from __future__ import annotations
 
 import atexit
+import os
 import sqlite3
 from dataclasses import dataclass
 from pathlib import Path
@@ -58,6 +59,10 @@ class ColorVisionRequest(FlaskRequest):
         # This works with both Flask 3.0 and 3.1, where the request setter differs.
         if self.method == "POST" and self.path == "/api/feedback":
             return None
+        if self.path == "/api/activation/secure":
+            return 8192
+        if self.path.startswith("/api/activation/"):
+            return 4096
         return super().max_content_length
 
 
@@ -352,6 +357,7 @@ def register_slow_request_logging(app, ctx: MarketplaceContext, access_recorder=
 
 def register_all_blueprints(app, ctx, services, helpers):
     """Register all blueprints on the app."""
+    from routes.activation_api import register_activation_api
     from routes.public_pages import PublicPageContext, register_public_pages
     from routes.health_api import register_health_api
     from routes.public_api import register_public_api
@@ -369,6 +375,8 @@ def register_all_blueprints(app, ctx, services, helpers):
         MarketplaceStorageService,
     )
     from services.artifact_delivery import ArtifactDeliveryService
+    from services.activation import ActivationService
+    from services.activation_http import load_http_private_key
 
     cache = helpers["cache"]
     config = helpers["config"]
@@ -389,6 +397,23 @@ def register_all_blueprints(app, ctx, services, helpers):
 
     # Public API (stats, feedback, legacy)
     register_public_api(app, ctx)
+    activation_key_path = os.environ.get("COLORVISION_ACTIVATION_HTTP_PRIVATE_KEY_FILE") or config.get(
+        "activation_http_private_key_file",
+    )
+    require_encrypted_activation = activation_key_path is not None and activation_key_path != ""
+    activation_http_key = None
+    if require_encrypted_activation:
+        try:
+            key_file = Path(activation_key_path)
+            if not key_file.is_absolute():
+                raise ValueError("Activation HTTP key file path must be absolute.")
+            activation_http_key = load_http_private_key(key_file)
+        except (TypeError, ValueError) as exc:
+            app.logger.error("Encrypted activation unavailable: %s", exc)
+    register_activation_api(
+        app, ActivationService(helpers["get_db"]),
+        secure_key=activation_http_key, require_secure=require_encrypted_activation,
+    )
 
     # Page routes
     register_pages(app, ctx)

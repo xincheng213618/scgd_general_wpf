@@ -14,15 +14,13 @@ public class FlowNodeExecutionRecorderTests
         var records = new ConcurrentBag<FlowNodeRecord>();
         int nextRecordId = 0;
         using var recorder = new FlowNodeExecutionRecorder(
-            record =>
+            (record, _) =>
             {
                 record.Id = Interlocked.Increment(ref nextRecordId);
                 records.Add(record);
-                return record.Id;
+                return Task.FromResult(record.Id);
             },
-            _ => { },
-            _ => 1,
-            _ => { },
+            (_, _) => Task.CompletedTask,
             _ => true,
             _ => { });
         var node = new CVDeviceNode("Camera", "CameraType", "CameraNode", "Device");
@@ -52,7 +50,7 @@ public class FlowNodeExecutionRecorderTests
     [Fact]
     public async Task CompletionForDifferentRunDoesNotStopActiveRecording()
     {
-        using var recorder = new FlowNodeExecutionRecorder(_ => 1, _ => { }, _ => 1, _ => { }, _ => true, _ => { });
+        using var recorder = new FlowNodeExecutionRecorder((_, _) => Task.FromResult(1), (_, _) => Task.CompletedTask, _ => true, _ => { });
         recorder.StartRun(100, "active-run");
 
         Assert.False(await recorder.CompleteRunAsync("previous-run"));
@@ -67,7 +65,7 @@ public class FlowNodeExecutionRecorderTests
     public async Task FailedDiagnosticsFlushDoesNotBlockNextExecution(bool throwOnFlush)
     {
         using var recorder = new FlowNodeExecutionRecorder(
-            _ => 1, _ => { }, _ => 1, _ => { },
+            (_, _) => Task.FromResult(1), (_, _) => Task.CompletedTask,
             _ => throwOnFlush ? throw new IOException("Synthetic diagnostics storage failure") : false,
             _ => { });
         recorder.StartRun(100, "previous-run");
@@ -89,23 +87,30 @@ public class FlowNodeExecutionRecorderTests
         var updatedRecords = new ConcurrentBag<FlowNodeRecord>();
         var insertedMessages = new ConcurrentBag<FlowNodeMessage>();
         var updatedMessages = new ConcurrentBag<FlowNodeMessage>();
+        var allowInsert = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         int nextRecordId = 0;
         int nextMessageId = 0;
         using var recorder = new FlowNodeExecutionRecorder(
-            record =>
+            async (record, message) =>
             {
+                await allowInsert.Task;
                 record.Id = Interlocked.Increment(ref nextRecordId);
                 insertedRecords.Add(record);
+                if (message != null)
+                {
+                    message.NodeRecordId = record.Id;
+                    message.Id = Interlocked.Increment(ref nextMessageId);
+                    insertedMessages.Add(message);
+                }
                 return record.Id;
             },
-            updatedRecords.Add,
-            message =>
+            (record, message) =>
             {
-                message.Id = Interlocked.Increment(ref nextMessageId);
-                insertedMessages.Add(message);
-                return message.Id;
+                updatedRecords.Add(record);
+                if (message != null)
+                    updatedMessages.Add(message);
+                return Task.CompletedTask;
             },
-            updatedMessages.Add,
             _ => true,
             _ => { });
         var node = new CVDeviceNode("Algorithm", "AlgorithmType", "AlgorithmNode", "Device");
@@ -130,8 +135,12 @@ public class FlowNodeExecutionRecorderTests
             RecvStatusMessage = "Completed",
         });
 
-        bool flushed = await recorder.CompleteRunAsync("run-001");
+        Task<bool> completion = recorder.CompleteRunAsync("run-001");
+        bool finishedBeforeInsert = completion.IsCompleted;
+        allowInsert.SetResult();
+        bool flushed = await completion;
 
+        Assert.False(finishedBeforeInsert);
         Assert.True(flushed);
         FlowNodeRecord record = Assert.Single(insertedRecords);
         Assert.Equal(24586, record.BatchId);
@@ -149,6 +158,41 @@ public class FlowNodeExecutionRecorderTests
         Assert.False(recorder.IsRecording());
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task OnlyCompletesRowsThatWereInserted(bool timingInserted)
+    {
+        var updates = new List<(FlowNodeRecord Record, FlowNodeMessage? Message)>();
+        using var recorder = new FlowNodeExecutionRecorder(
+            (record, _) =>
+            {
+                record.Id = timingInserted ? 12 : 0;
+                return Task.FromResult(timingInserted ? record.Id : -1);
+            },
+            (record, message) =>
+            {
+                updates.Add((record, message));
+                return Task.CompletedTask;
+            },
+            _ => true,
+            _ => { });
+        var node = new CVDeviceNode("Camera", "CameraType", "CameraNode", "Device");
+        recorder.AttachNodes([node]);
+        recorder.StartRun(1, "run-failed-write");
+        node.nodeRunEvent.Invoke(node, new FlowEngineNodeRunEventArgs { SerialNumber = "run-failed-write", SendMsgId = "msg" });
+
+        Assert.True(await recorder.CompleteRunAsync());
+        if (timingInserted)
+        {
+            var (record, message) = Assert.Single(updates);
+            Assert.NotNull(record.EndTime);
+            Assert.Null(message);
+        }
+        else
+            Assert.Empty(updates);
+    }
+
     [Fact]
     public async Task FinalizesUnmatchedNodeAndDetachesReplacedNodes()
     {
@@ -156,14 +200,20 @@ public class FlowNodeExecutionRecorderTests
         var updatedMessages = new ConcurrentBag<FlowNodeMessage>();
         int insertedRecordCount = 0;
         using var recorder = new FlowNodeExecutionRecorder(
-            record =>
+            (record, message) =>
             {
                 record.Id = Interlocked.Increment(ref insertedRecordCount);
-                return record.Id;
+                if (message != null)
+                    message.Id = 1;
+                return Task.FromResult(record.Id);
             },
-            updatedRecords.Add,
-            message => 1,
-            updatedMessages.Add,
+            (record, message) =>
+            {
+                updatedRecords.Add(record);
+                if (message != null)
+                    updatedMessages.Add(message);
+                return Task.CompletedTask;
+            },
             _ => true,
             _ => { });
         var oldNode = new CVDeviceNode("Old", "Type", "Old", "Device");

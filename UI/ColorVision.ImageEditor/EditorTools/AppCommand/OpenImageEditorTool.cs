@@ -12,15 +12,9 @@ namespace ColorVision.ImageEditor.EditorTools.AppCommand
 
         public object? Icon { get; set; } = IEditorToolFactory.TryFindResource("openDrawingImage");
 
-        public ICommand? Command { get; set; } = new RelayCommand(a =>
-        {
-            using var openFileDialog = new System.Windows.Forms.OpenFileDialog();
-            openFileDialog.RestoreDirectory = true;
-            if (openFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
-            {
-                EditorContext.OpenImage(openFileDialog.FileName);
-            }
-        }, a => true);
+        public ICommand? Command { get; set; } = new RelayCommand(
+            _ => ApplicationCommands.Open.Execute(null, EditorContext.ImageView),
+            _ => ApplicationCommands.Open.CanExecute(null, EditorContext.ImageView));
     }
 
 }

@@ -22,46 +22,47 @@ related: ["ui.index", "ui.solution", "ui.image-editor", "ui.documents", "ui.imag
 | 入口 | 实际行为 | 生命周期边界 |
 | --- | --- | --- |
 | 文件夹编辑器 `MultiImageViewerEditor` | 以 `colorvision.folder.multi-image` 注册，调用 `EditorDocumentService.Open`，在工厂中发起文件夹加载 | 向文档服务传入 viewer 的 `Dispose` 回调，但不等待加载完成再返回 |
-| 图像工具菜单 `ZoomEditorToolContextMenu` | 当前图片存在且有父目录时，创建独立窗口，预设 `FilePath` 后加载父目录 | 不等待加载任务；当前入口没有把 `Window.Closing` 绑定到 viewer 的 `Dispose` |
-| `LoadFromFolderAsync` / `LoadFromFilesAsync` | 从目录或显式列表重建文件列表和缩略图，再选择指定图片或首项 | 完成不等于大图解码已经成功，常规图像打开器具有 `async void` 处理路径 |
+| 图像工具菜单 `ZoomEditorToolContextMenu` | 当前图片存在且有父目录时，创建独立窗口，预设 `FilePath` 后加载父目录 | 加载在窗口打开后继续，窗口关闭时释放 viewer |
+| `LoadFromFolderAsync` / `LoadFromFilesAsync` | 重建列表后选中指定图片或首项 | 列表和初始选择先发布，任务等缓存尺寸查询结束。大图解码和缩略图各自进行 |
 
-目录加载只枚举顶层，按扩展名过滤后取 `MaxDisplayCount`，没有显式排序。显式文件列表保留传入顺序，过滤后同样截断；文件列表入口不逐项要求文件存在。当前列表接受 `.jpg/.jpeg/.png/.bmp/.gif/.tiff/.tif/.cvraw/.cvcie`；融合入口的 `ImageResourceFileTypes` 不是本查看器的格式表。扩展名入列不等于宿主拥有相应解码器。
+目录枚举和文件属性在后台准备。目录只枚举顶层，按扩展名过滤后取 `MaxDisplayCount`，沿用目录返回顺序。指定或刷新时选中的顶层图片若在上限之外且仍存在，占用列表最后一项并继续打开。显式文件列表按请求时的顺序准备，允许缺失文件入列。当前列表接受 `.jpg/.jpeg/.png/.bmp/.gif/.tiff/.tif/.cvraw/.cvcie`，实际解码由宿主支持的格式决定。
 
-进入 `LoadFilesAsync` 后先清 `ImageFiles` 和大图，再构造 `ImageFileInfo`；无效目录以及 null/空的 `List<string>` 会在上层入口提前返回，保留旧内容。启用 `ShowThumbnail` 时，按 `max(1, CPU逻辑处理器数/2)` 限制并发，等待列表中存在文件的缩略图任务全部结束后才设置选中项；XAML 列表虚拟化不等于缩略图按可视范围懒加载。列表数量只证明已入列，缩略图缺失和大图失败应分别判断。
+准备新列表时保留当前列表和大图，成功后一次替换并打开初始选择。目录无法读取或显式列表为空时保留当前内容。启用 `ShowThumbnail` 时，缩略图按列表实际创建的行生成，包含视口及上下预取区域。行回收或列表隐藏时取消需求并释放行持有的位图。替换列表、清空或关闭时取消旧请求。已开始的同步解码占用原并发配额直到结束，取消后的结果不会回填列表。
 
 ## 选择、刷新和外部文件变更
 
-`OpenImage` 有两道按路径去重：与 `ImageView.Config.FilePath` 相同则返回；与 `_currentOpeningFile` 相同也返回。后一个字段在发起打开前设置，但当前没有完成/失败后重置，也不在 `Clear` 或重新加载列表时重置。它不是完整的并发任务锁。
-
-因此，重新点同一路径不保证重新解码；刷新先清空大图，如果随后又选择上次路径，可能被第二道去重挡住而没有重开。这里是源码可达的限制，不是已完成的窗口复现或已修复行为。查看器没有文件监听器；缩略图更新时间、大图内容和当前路径标签不能当作同一版本的原子快照。切换到其它图片和实际解码完成属于[图像编辑器打开链](./ColorVision.ImageEditor.md)。
+正在打开或打开失败时，预览区标出选中的文件。若保留上一张图，提示会说明当前画面仍来自上一张图。刷新优先重新打开刷新时选中的文件，文件已离开列表时回到首项。缩略图完成后保留用户当前选择。外部文件变化可手动刷新。大图解码及其完成信号见[图像编辑器打开链](./ColorVision.ImageEditor.md)。
 
 ## SQLite 缓存与格式分流
 
 `ThumbnailCacheManager.Instance` 延迟创建 `%APPDATA%/ColorVision/Cache/ThumbnailCache.db` 和 `ThumbnailCache` 表，存 PNG 缩略图、原尺寸、文件大小和修改时间。它不同于 Explorer 的系统缩略图缓存，也不同于 Solution 工作区缓存。
 
-- `GetOrCreateThumbnailAsync` 按传入路径查记录，以 `LastWriteTime` 相等且 PNG blob 非空判断命中；缩略图尺寸、文件大小和内容哈希不参与命中。改变 `ThumbnailSize` 或替换文件但保留修改时间，不保证生成新的缩略图。
-- 缓存 PNG 解码失败时返回 `null`，不会再读原图重建；缓存查询抛异常也直接进入失败返回。新缩略图生成成功后的数据库保存异常会被吞掉并写 Debug 信息，所以显示成功不证明下次可命中缓存。
-- `ImageFileInfo.LoadFileInfo` 在文件存在且成功读取基本信息后，无论缓存/缩略图开关都会尝试读取缓存尺寸，不检查缓存的修改时间；即使关闭 `EnableThumbnailCache` 或 `ShowThumbnail`，仍可能创建目录/数据库并查询 SQLite。初始尺寸可能陈旧，不能用于验证源图布局。
-- 缓存开启且需新建时，先由 `ThumbnailProviderFactory` 查自定义 provider，否则走 WPF 解码。当前 `.cvraw/.cvcie` 的 `CVRawThumbnailProvider` 在 Engine，要求宿主已加载并发现该实现；单独安装 ImageTools 包不自动带来它。已选择的 provider 生成失败不会再尝试 WPF。
-- 缓存关闭时，`ImageFileInfo.LoadThumbnailDirectAsync` 直接走 WPF `BitmapDecoder` 的第一帧，不经过自定义 provider。这不是仅停止磁盘保存的等价开关；尤其不能承诺自定义格式仍具有相同缩略图能力。
+- 缓存命中要求路径、文件修改时间、大小、请求尺寸和生成器版本一致。旧库保留原有记录，缺少请求尺寸的 PNG 在下次使用时重建。旧 CVRAW 条目的缩略图和尺寸按新生成器版本刷新，其他旧格式仍可命中。源文件同时保留相同修改时间和大小时，仍可能命中已有缩略图。
+- PNG 无法解码或像素尺寸与记录不符时，从源图重建。数据库不可用时仍可显示新生成的缩略图。生成时检测到源文件变化则放弃当次结果。
+- 文件列表和首张图的打开无需等待 SQLite。缓存尺寸在后台补齐，记录的修改时间和文件大小须与源文件匹配。关闭 `EnableThumbnailCache` 或 `ShowThumbnail` 后仍可补齐已有记录的尺寸。
+- 新建缩略图时统一通过 `ThumbnailProviderFactory` 查自定义 provider，否则走 WPF 解码。关闭缓存仍沿用相同格式分流。`.cvraw/.cvcie` 的 `CVRawThumbnailProvider` 由 Engine 提供，要求宿主发现该实现。已选择的 provider 生成失败会返回空缩略图。
 
-标准 WPF 缩略图生成经 Dispatcher 执行，读取期间以 `FileShare.Read` 打开源图，并按目标尺寸等比缩小、不放大小图。`Async` 名称不代表所有解码工作都离开 UI 线程；多页/动画文件的第一帧也不代表完整内容已验证。
+视口缩略图在后台获取缓存连接、查询 SQLite 和核对文件状态，等待缓存时界面仍可响应。标准 WPF 缩略图生成和缓存 PNG 编解码也在后台执行，跨查看器最多同时生成两张标准缩略图。WPF 读取首帧并按目标尺寸缩小，每边至少一像素，结果冻结后交给界面。自定义 provider 仍从调用方线程进入，由自身决定解码线程。
+
+应用内 CVRAW/CVCIE 缩略图在后台校验并只读映射磁盘像素，映射不可用时从同一文件读取。三通道 CVCIE 校验完整 XYZ 后只使用内嵌 X。Float32 先按全图范围分块转成 8 位，再做面积缩放，保持原有舍入顺序。CVRAW 可复用已缓存的文件快照，浏览缩略图时的缓存未命中直接读盘。
+
+CVRAW/CVCIE 提供者从同一次文件读取返回冻结缩略图和原图尺寸，多个查看器与直接调用共用两个解码名额。排队请求可取消，已开始的读取和 Float32 分块转换在检查点响应取消。同步原生调用退出并释放资源后才归还名额。已有自定义提供者可继续使用分开的尺寸读取和缩略图入口。
 
 ## 配置、清理与所有权
 
-`MultiImageViewerConfig` 是共享的 `IConfig` 活对象：默认显示缩略图且启用缓存，`ThumbnailSize=120`（限制 50–300），`MaxDisplayCount=1000`（最小 10）。属性编辑不等于配置落盘，持久化遵循宿主[配置契约](./configuration.md)。`ImageReadDelay` 和 `ListHeight` 当前只有配置声明，没有在本查看器的读取/布局链消费，不能根据属性名承诺防抖或列表高度已经生效。修改显示/大小配置也不自动重新生成已有缓存。
+`MultiImageViewerConfig` 是共享的 `IConfig` 活对象。默认显示缩略图且启用缓存，`ThumbnailSize=120`（限制 50–300），`MaxDisplayCount=1000`（最小 10）。属性编辑不等于配置落盘，持久化遵循宿主[配置契约](./configuration.md)。改尺寸后，刷新列表会按新尺寸重新取图。`ImageReadDelay` 和 `ListHeight` 当前只有配置声明，读取和布局沿用现有行为。
 
 | 动作 | 实际影响 | 不保证的行为 |
 | --- | --- | --- |
-| viewer `Clear()` | 清列表、大图、当前目录和显式列表引用 | 不删 SQLite，也不取消缩略图任务或重置 `_currentOpeningFile` |
-| viewer `Dispose()` | 标记释放并调用 `ImageView.Dispose()` | 不清文件项缩略图引用、不释放缓存单例、不取消在途生成/写入 |
+| viewer `Clear()` | 取消文件列表和缩略图请求，清列表、大图、当前目录和显式列表引用 | 不删除 SQLite 缓存 |
+| viewer `Dispose()` | 清空并释放当前查看器 | 缓存单例由宿主管理 |
 | manager `RemoveCache(path)` | 删除该路径的缓存行，并推进维护代次，阻止此前启动的生成任务再写回 | 不清当前界面图像，不阻止此后新发起的生成 |
 | manager `ClearCache()` / 配置清缓存命令 | 调用维护快照与清理入口，删除确认缓存并执行 `VACUUM` | 不受当前窗口目录筛选，不删除源图；void 入口不返回清理结果，仅对 `Succeeded=false` 写 Debug |
 | manager `Dispose()` | 在 owner 锁内关闭客户端、推进代次并重置单例 | 不删除数据库；下次访问仍可重新初始化 |
 
 当前没有容量上限、LRU 或自动淘汰。`GetCacheSize` 只报告主数据库文件长度，不是进程内位图内存；`GetCacheCount` 的零也可能来自查询失败。关窗、列表清空、客户端释放和持久缓存删除是四种不同状态。
 
-缓存数据库读写经 owner 锁串行，图像解码和 Dispatcher 等待发生在锁外。维护页调用不初始化单例的静态扫描入口；配置页的清缓存命令则先访问 `ThumbnailCacheManager.Instance`。快照复验、维护代次和空间整理的结果由[存储清理与设置重置](./storage-maintenance.md#缩略图必须经-owner-清理)统一说明。
+缓存数据库读写经 owner 锁串行，图像解码发生在锁外。维护页调用不初始化单例的静态扫描入口；配置页的清缓存命令则先访问 `ThumbnailCacheManager.Instance`。快照复验、维护代次和空间整理的结果由[存储清理与设置重置](./storage-maintenance.md#缩略图必须经-owner-清理)统一说明。
 
 ## 验证入口与缺口
 

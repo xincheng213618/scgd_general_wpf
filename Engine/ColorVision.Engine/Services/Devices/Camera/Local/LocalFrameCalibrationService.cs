@@ -18,18 +18,29 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
 
         public static LocalCalibrationRoi Resolve(PhyCameraCfg? cameraConfig, int imageWidth, int imageHeight)
         {
-            if (cameraConfig?.IsRoiConfigured != true
-                || cameraConfig.Width != imageWidth
-                || cameraConfig.Height != imageHeight)
+            if (cameraConfig == null) return default;
+            return new LocalCalibrationRoi(cameraConfig.PointX, cameraConfig.PointY, cameraConfig.Width, cameraConfig.Height).ForImage(imageWidth, imageHeight);
+        }
+
+        internal static LocalCalibrationRoi ResolveForFrame(LocalFrameMetadata metadata, PhyCameraCfg? cameraConfig)
+            => metadata.Acquisition?.SensorRoi is ImageSensorRoi captured
+                ? new LocalCalibrationRoi(captured.X, captured.Y, captured.Width, captured.Height).ForImage(metadata.Width, metadata.Height)
+                : Resolve(cameraConfig, metadata.Width, metadata.Height);
+
+        internal ImageSensorRoi ToAcquisitionRoi()
+            => IsConfigured ? new(X, Y, Width, Height) : new(0, 0, 0, 0);
+
+        private LocalCalibrationRoi ForImage(int imageWidth, int imageHeight)
+        {
+            if (!IsConfigured || Width != imageWidth || Height != imageHeight)
             {
                 return default;
             }
-            if (cameraConfig.PointX < 0 || cameraConfig.PointY < 0)
+            if (X < 0 || Y < 0)
             {
-                throw new InvalidOperationException($"物理相机 ROI 起点不能为负数：({cameraConfig.PointX},{cameraConfig.PointY})。");
+                throw new InvalidOperationException($"物理相机 ROI 起点不能为负数：({X},{Y})。");
             }
-
-            return new LocalCalibrationRoi(cameraConfig.PointX, cameraConfig.PointY, cameraConfig.Width, cameraConfig.Height);
+            return this;
         }
     }
 

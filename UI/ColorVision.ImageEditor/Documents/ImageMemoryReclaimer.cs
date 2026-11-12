@@ -1,5 +1,6 @@
 using log4net;
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Media;
@@ -18,6 +19,8 @@ public static class ImageMemoryReclaimer
     private static readonly ILog Log = LogManager.GetLogger(typeof(ImageMemoryReclaimer));
     private static Task? _pending;
     private static long _requestedVersion;
+    private const long StreamCollectionBudgetBytes = 1024L * 1024 * 1024;
+    private static long _streamBytesSinceCollection;
 
     internal static Task PendingCollection { get { lock (Sync) return _pending ?? Task.CompletedTask; } }
 
@@ -25,7 +28,20 @@ public static class ImageMemoryReclaimer
         ? ((long)bitmap.PixelWidth * bitmap.Format.BitsPerPixel + 7) / 8 * bitmap.PixelHeight
         : 0;
 
-    /// <summary>Call only after dropping ownership, never for each incoming video frame.</summary>
+    /// <summary>
+    /// Continuous large frames retire native WPF buffers that the runtime does not account for (see
+    /// CollectAsync), so nothing collects them until the machine runs short. A non-blocking collection
+    /// per budget keeps a stream bounded without the pause of the explicit release path below.
+    /// </summary>
+    internal static void RecordStreamFrame(long pixelBytes)
+    {
+        if (pixelBytes < MinimumReleaseBytes) return;
+        if (Interlocked.Add(ref _streamBytesSinceCollection, pixelBytes) < StreamCollectionBudgetBytes) return;
+        Interlocked.Exchange(ref _streamBytesSinceCollection, 0);
+        _ = Task.Run(static () => GC.Collect(2, GCCollectionMode.Forced, blocking: false));
+    }
+
+    /// <summary>Call only after dropping ownership, never for each incoming live frame.</summary>
     public static Task RequestCollection(long releasedBytes)
     {
         if (releasedBytes < MinimumReleaseBytes) return Task.CompletedTask;

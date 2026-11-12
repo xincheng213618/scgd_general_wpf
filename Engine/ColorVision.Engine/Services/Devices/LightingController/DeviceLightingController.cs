@@ -21,14 +21,16 @@ namespace ColorVision.Engine.Services.Devices.LightingController
 
             EditCommand = new RelayCommand(_ =>
             {
+                if (!CanConfigure) return;
                 PropertyEditorWindow window = new(Config, PropertyEditorEditMode.Transactional)
                 {
                     Owner = Application.Current.GetActiveWindow(),
                     WindowStartupLocation = WindowStartupLocation.CenterOwner,
                 };
-                window.Submitted += (_, _) => Save();
+                ProtectConfigurationEditor(window);
+                window.Submitted += (_, _) => TryCommitConfiguration(window);
                 window.ShowDialog();
-            }, _ => AccessControl.Check(PermissionMode.Administrator));
+            }, _ => CanConfigure);
         }
 
         public override UserControl GetDeviceInfo() => new InfoLightingController(this);

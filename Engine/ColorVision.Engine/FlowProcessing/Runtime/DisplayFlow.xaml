@@ -53,7 +53,8 @@
                     </Button>
                     <ComboBox x:Name="ComboBoxFlow"
                               Margin="0,0,5,0"
-                              Style="{StaticResource ComboBoxExtend.Small}"
+                              Height="24"
+                              Style="{StaticResource ComboBox.Small}"
                               ItemsSource="{Binding FlowParams}"
                               SelectedIndex="{Binding TemplateFlowParamsIndex}" VerticalAlignment="Center"
                               DisplayMemberPath="Key"
@@ -72,7 +73,6 @@
                             VerticalAlignment="Bottom"
                             Content="{Binding ServiceConfig.RegistrationCenterServiceInfo.FileVersion, StringFormat={x:Static properties:Resources.Flow_RestartServiceVersionFormat}}"
                             Margin="0,0,5,0"
-                            Padding="6,2"
                             Click="Button_RestartServices_Click"/>
                     <StackPanel Grid.Column="1"
                                 Orientation="Horizontal"

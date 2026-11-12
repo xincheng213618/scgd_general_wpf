@@ -33,8 +33,9 @@ namespace ColorVision.Copilot
                 return false;
 
             var match = TargetRegex.Match(candidate);
-            if (!match.Success || !TryGetWorkspaceRoot(out var workspaceRoot))
+            if (!match.Success)
                 return false;
+            TryGetWorkspaceRoot(out var workspaceRoot);
 
             var lineNumber = TryParsePositiveNumber(match.Groups["line"].Value);
             var columnNumber = TryParsePositiveNumber(match.Groups["column"].Value);
@@ -50,14 +51,22 @@ namespace ColorVision.Copilot
                 {
                     if (fileUri.IsUnc)
                         return false;
-                    fullPath = Path.GetFullPath(fileUri.LocalPath);
+                    var localPath = fileUri.LocalPath;
+                    if (string.IsNullOrWhiteSpace(workspaceRoot) && !Path.IsPathFullyQualified(localPath))
+                        return false;
+                    fullPath = Path.GetFullPath(localPath);
                 }
                 else
                 {
                     pathValue = Uri.UnescapeDataString(pathValue);
-                    fullPath = Path.IsPathRooted(pathValue)
-                        ? Path.GetFullPath(pathValue)
-                        : Path.GetFullPath(pathValue, workspaceRoot);
+                    if (string.IsNullOrWhiteSpace(workspaceRoot) && !Path.IsPathFullyQualified(pathValue))
+                        return false;
+                    if (Path.IsPathRooted(pathValue))
+                        fullPath = Path.GetFullPath(pathValue);
+                    else if (!string.IsNullOrWhiteSpace(workspaceRoot))
+                        fullPath = Path.GetFullPath(pathValue, workspaceRoot);
+                    else
+                        return false;
                 }
 
                 if (!IsAllowedFile(fullPath, workspaceRoot, additionalAllowedRootPaths))
@@ -98,8 +107,8 @@ namespace ColorVision.Copilot
             errorMessage = string.Empty;
             try
             {
-                if (!TryGetWorkspaceRoot(out var workspaceRoot)
-                    || !IsAllowedFile(target.FilePath, workspaceRoot, additionalAllowedRootPaths))
+                TryGetWorkspaceRoot(out var workspaceRoot);
+                if (!IsAllowedFile(target.FilePath, workspaceRoot, additionalAllowedRootPaths))
                 {
                     throw new InvalidOperationException("文件已不存在或不在当前工作区或受信指令目录内。");
                 }

@@ -9,6 +9,7 @@ public enum AlgorithmType
 	FOV = 2,
 	鬼影 = 3,
 	畸变 = 4,
+	// The legacy loop node still reads these names and IDs. AI算法 no longer runs them.
 	灯珠检测 = 5,
 	灯带检测 = 6,
 	// Value 10 (OLED.GetRIAand) retired on 2026-10-22; do not reuse it.

@@ -38,7 +38,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
         private CVRawManualCieConfig? correctedConfig;
         private LumFourColorSourceSnapshot? sourceSnapshot;
         private bool busy;
-        private LumFourColorCorrectionMode SelectedMode => SinglePointMode.IsChecked == true ? LumFourColorCorrectionMode.SinglePoint : LumFourColorCorrectionMode.MatlabRgbw;
+        private bool IsLuminanceMode => LuminanceMode.IsChecked == true;
 
         public LumFourColorCorrectionWindow(string? sourcePath = null, LumFourColorCorrectionMode mode = LumFourColorCorrectionMode.MatlabRgbw)
         {
@@ -92,8 +92,10 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
         {
             OpenFileDialog dialog = new()
             {
-                Title = LocalizedText.Get("选择原色度校正文件"),
-                Filter = "四色 / 多色校正文件 (*.dat;*.json)|*.dat;*.json|所有文件 (*.*)|*.*",
+                Title = LocalizedText.Get(IsLuminanceMode ? "选择原单通道亮度校正文件" : "选择原色度校正文件"),
+                Filter = IsLuminanceMode
+                    ? $"{LocalizedText.Get("单通道亮度校正文件")} (*.dat;*.json)|*.dat;*.json|{LocalizedText.Get("所有文件")} (*.*)|*.*"
+                    : "四色 / 多色校正文件 (*.dat;*.json)|*.dat;*.json|所有文件 (*.*)|*.*",
                 CheckFileExists = true,
                 Multiselect = false,
             };
@@ -106,7 +108,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
 
         private void CorrectionMode_Checked(object sender, RoutedEventArgs e)
         {
-            if (!IsInitialized || MeasurementsGrid == null)
+            if (!IsInitialized || ManualDataConfirmed == null)
                 return;
 
             ShowMeasurementRows();
@@ -119,6 +121,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
             {
                 LumFourColorCorrectionMode.SinglePoint => SinglePointMode,
                 LumFourColorCorrectionMode.MatlabRgbw => FourColorMode,
+                LumFourColorCorrectionMode.Luminance => LuminanceMode,
                 _ => throw new ArgumentOutOfRangeException(nameof(mode)),
             };
             option.IsChecked = true;
@@ -126,8 +129,15 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
 
         private void ShowMeasurementRows()
         {
+            Visibility chromaticityVisibility = IsLuminanceMode ? Visibility.Collapsed : Visibility.Visible;
+            CameraXColumn.Visibility = CameraChromaticityYColumn.Visibility = chromaticityVisibility;
+            SpectrumXColumn.Visibility = SpectrumChromaticityYColumn.Visibility = chromaticityVisibility;
+            ManualDataConfirmed.ToolTip = LocalizedText.Get(IsLuminanceMode
+                ? "请核对相机 Y 使用原亮度校正文件测得，且与光谱 Y 为同一测量点。"
+                : "核对色块、原校正文件及光谱 IP（30%～95%）；修改数据后需重新确认。");
+
             rows.Clear();
-            if (SelectedMode == LumFourColorCorrectionMode.SinglePoint)
+            if (FourColorMode.IsChecked != true)
             {
                 rows.Add(new CorrectionMeasurementRow { Target = "单点" });
                 return;
@@ -165,12 +175,15 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
         internal void PasteMeasurements(string text)
         {
             int row = MeasurementsGrid.CurrentCell.Item is CorrectionMeasurementRow current ? rows.IndexOf(current) : 0;
-            int column = MeasurementsGrid.CurrentCell.Column?.DisplayIndex ?? 1;
+            DataGridColumn? currentColumn = MeasurementsGrid.CurrentCell.Column;
+            int column = currentColumn?.Visibility == Visibility.Visible
+                ? MeasurementsGrid.Columns.Count(candidate => candidate.Visibility == Visibility.Visible && candidate.DisplayIndex < currentColumn.DisplayIndex)
+                : 1;
             MeasurementsGrid.CommitEdit(DataGridEditingUnit.Cell, true);
             MeasurementsGrid.CommitEdit(DataGridEditingUnit.Row, true);
-            LumFourColorMeasurementClipboard.Paste(rows, text, row, column);
+            LumFourColorMeasurementClipboard.Paste(rows, text, row, column, IsLuminanceMode);
             ResetResult();
-            StatusText.Text = LocalizedText.Get("已粘贴，请核对色块顺序与测量来源。");
+            StatusText.Text = LocalizedText.Get(IsLuminanceMode ? "已粘贴，请核对测量来源。" : "已粘贴，请核对色块顺序与测量来源。");
         }
 
         private void Paste_Click(object sender, RoutedEventArgs e)
@@ -185,7 +198,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
             {
                 MeasurementsGrid.CommitEdit(DataGridEditingUnit.Cell, true);
                 MeasurementsGrid.CommitEdit(DataGridEditingUnit.Row, true);
-                Clipboard.SetText(LumFourColorMeasurementClipboard.CopyAll(rows));
+                Clipboard.SetText(LumFourColorMeasurementClipboard.CopyAll(rows, IsLuminanceMode));
                 StatusText.Text = LocalizedText.Get("已复制表头及全部测量数据，可直接粘贴到 Excel。");
             }
             catch (Exception ex) { StatusText.Text = ex.Message; }
@@ -202,10 +215,20 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
                 MeasurementsGrid.CommitEdit(System.Windows.Controls.DataGridEditingUnit.Cell, true);
                 MeasurementsGrid.CommitEdit(System.Windows.Controls.DataGridEditingUnit.Row, true);
                 if (ManualDataConfirmed.IsChecked != true)
-                    throw new InvalidOperationException("请先核对输入来源、色块及光谱 IP。");
-                sourceSnapshot = LumFourColorSourceSnapshot.Load(SourcePathBox.Text.Trim());
+                    throw new InvalidOperationException(LocalizedText.Get(IsLuminanceMode
+                        ? "请核对相机 Y 使用原亮度校正文件测得，且与光谱 Y 为同一测量点。"
+                        : "请先核对输入来源、色块及光谱 IP。"));
+                sourceSnapshot = LumFourColorSourceSnapshot.Load(SourcePathBox.Text.Trim(), IsLuminanceMode);
                 CVRawManualCieConfig source = sourceSnapshot.Config;
-                if (SelectedMode == LumFourColorCorrectionMode.SinglePoint)
+                if (IsLuminanceMode)
+                {
+                    CorrectionMeasurementRow row = rows[0];
+                    double cameraY = ParseNumber(row.CameraY, LocalizedText.Get("CalibrationCameraLuminanceY"));
+                    double referenceY = ParseNumber(row.ReferenceY, LocalizedText.Get("CalibrationSpectrumLuminanceY"));
+                    double corrected = LumFourColorCorrectionCalculator.CorrectLuminance(source.A, cameraY, referenceY);
+                    correctedConfig = new CVRawManualCieConfig { A = corrected };
+                }
+                else if (SinglePointMode.IsChecked == true)
                 {
                     correctedConfig = LumFourColorCorrectionCalculator.CorrectSinglePoint(source, CreateMeasurement(rows[0]));
                 }
@@ -221,7 +244,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
                         CreateMeasurement(rows[3])));
                 }
 
-                ResultPreview.Text = FormatMatrix(correctedConfig);
+                ResultPreview.Text = IsLuminanceMode ? $"a = {correctedConfig.A:G10}" : FormatMatrix(correctedConfig);
                 StatusText.Text = LocalizedText.Get("计算完成");
                 SaveButton.IsEnabled = true;
                 ReplaceButton.IsEnabled = true;
@@ -277,7 +300,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
             try
             {
                 var result = await LumFourColorCalibrationReplacement.ReplaceAndRestartAsync(sourceSnapshot, correctedConfig, restartServices);
-                // Reusing the same manual data against the replaced matrix would apply the correction twice.
+                // Reusing the same manual data against the replaced file would apply the correction twice.
                 ShowMeasurementRows();
                 ResetResult();
                 BackupPathText.Text = LocalizedText.Format($"备份：{result.BackupPath}");

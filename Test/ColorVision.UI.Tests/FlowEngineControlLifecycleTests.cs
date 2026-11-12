@@ -149,6 +149,49 @@ public class FlowEngineControlLifecycleTests
     }
 
     [Fact]
+    public void ReadinessSuccessAfterItsDeadlineDoesNotStartTheFlow()
+    {
+        StaTest.Run(() =>
+        {
+            using var editor = new STNodeEditor();
+            using var control = new InspectableFlowEngineControl(editor, false, new FlowNodeManager());
+            var start = CreateStartNode("Late");
+            var sink = new StartSinkNode();
+            sink.Create();
+            var deadlineReached = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            var reportReady = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            start.RequiresReady = true;
+            start.EnsureReadyHandler = async token =>
+            {
+                using var registration = token.Register(() => deadlineReached.TrySetResult());
+                return await reportReady.Task.ConfigureAwait(false);
+            };
+            editor.Nodes.Add(start);
+            editor.Nodes.Add(sink);
+            Assert.Equal(ConnectionStatus.Connected, start.m_op_start.ConnectOption(sink.Input));
+
+            TimeSpan testWait = TimeSpan.FromSeconds(5);
+            Task<bool> readiness = control.EnsureStartNodeReadyAsync("Late", TimeSpan.FromMilliseconds(100));
+            try
+            {
+                deadlineReached.Task.WaitAsync(testWait).GetAwaiter().GetResult();
+                start.Ready = true;
+            }
+            finally
+            {
+                reportReady.TrySetResult(true);
+            }
+
+            bool ready = readiness.WaitAsync(testWait).GetAwaiter().GetResult();
+            bool started = ready && control.TryStartByName("Late", "SN-Late");
+            Assert.False(ready);
+            Assert.False(started);
+            Assert.Equal(0, start.ActiveCount);
+            Assert.False(control.IsRunning);
+        });
+    }
+
+    [Fact]
     public void AttachIsIdempotentAndNodeRemovalUnsubscribesStartNode()
     {
         StaTest.Run(() =>
@@ -436,6 +479,139 @@ public class FlowEngineControlLifecycleTests
             control.StartByName("Start", "SN-2");
             Assert.True(start.Running);
             Assert.True(control.IsRunning);
+        });
+    }
+
+    [Fact]
+    public void StoppingAnActiveFlowReleasesResourcesAndRejectsLateCompletionAfterSameSerialRestart()
+    {
+        StaTest.Run(() =>
+        {
+            using var editor = new STNodeEditor();
+            using var control = new InspectableFlowEngineControl(editor, false, new FlowNodeManager());
+            var start = CreateStartNode("Start");
+            var sink = new StartSinkNode();
+            sink.Create();
+            editor.Nodes.Add(start);
+            editor.Nodes.Add(sink);
+            Assert.Equal(ConnectionStatus.Connected, start.m_op_start.ConnectOption(sink.Input));
+            var results = new List<FlowEngineEventArgs>();
+            control.Finished += (_, result) => results.Add(result);
+            const string serialNumber = "SN-REUSED";
+
+            Assert.True(control.TryStartByName(start.NodeName, serialNumber));
+            CVStartCFC first = Assert.IsType<CVStartCFC>(start.GetCFC(serialNumber));
+            var lateBranch = new CVStartCFC(first);
+            var resource = new DisposableProbe();
+            first.RuntimeResources.Set("resource", resource);
+
+            control.StopNode(start.NodeName, serialNumber);
+
+            Assert.True(first.RuntimeResources.StopToken.IsCancellationRequested);
+            Assert.True(resource.IsDisposed);
+            Assert.Equal(StatusTypeEnum.Canceled, Assert.Single(results).Status);
+            Assert.False(control.IsRunning);
+            Assert.True(control.TryStartByName(start.NodeName, serialNumber));
+            CVStartCFC next = Assert.IsType<CVStartCFC>(start.GetCFC(serialNumber));
+
+            Assert.False(lateBranch.TryDoFinishing());
+            Assert.Same(next, start.GetCFC(serialNumber));
+            Assert.True(control.IsRunning);
+            Assert.True(next.TryDoFinishing());
+            next.FireFinished();
+            Assert.Equal(new[] { StatusTypeEnum.Canceled, StatusTypeEnum.Completed }, results.Select(result => result.Status));
+        });
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void ResourceCleanupFailuresStillReleaseOtherResourcesAndPublishTheRunOutcome(bool stop)
+    {
+        StaTest.Run(() =>
+        {
+            using var editor = new STNodeEditor();
+            using var control = new InspectableFlowEngineControl(editor, false, new FlowNodeManager());
+            var start = CreateStartNode("Start");
+            var sink = new StartSinkNode();
+            sink.Create();
+            editor.Nodes.Add(start);
+            editor.Nodes.Add(sink);
+            Assert.Equal(ConnectionStatus.Connected, start.m_op_start.ConnectOption(sink.Input));
+            var results = new List<FlowEngineEventArgs>();
+            control.Finished += (_, result) => results.Add(result);
+            const string serialNumber = "SN-CLEANUP";
+            Assert.True(control.TryStartByName(start.NodeName, serialNumber));
+            CVStartCFC action = Assert.IsType<CVStartCFC>(start.GetCFC(serialNumber));
+            var first = new ThrowingDisposableProbe();
+            var second = new ThrowingDisposableProbe();
+            action.RuntimeResources.Set("first", first);
+            action.RuntimeResources.Set("second", second);
+
+            Exception? error = Record.Exception(() =>
+            {
+                if (stop)
+                    control.StopNode(start.NodeName, serialNumber);
+                else if (action.TryDoFinishing())
+                    action.FireFinished();
+            });
+
+            Assert.Equal(2, first.DisposeCount + second.DisposeCount);
+            Assert.Null(error);
+            Assert.True(action.RuntimeResources.StopToken.IsCancellationRequested);
+            Assert.Equal(stop ? StatusTypeEnum.Canceled : StatusTypeEnum.Completed, Assert.Single(results).Status);
+            Assert.False(control.IsRunning);
+        });
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void AStartNodeSubscriberCannotSuppressEngineCompletionOrBlockTheNextRun(bool stop)
+    {
+        StaTest.Run(() =>
+        {
+            using var editor = new STNodeEditor();
+            using var control = new InspectableFlowEngineControl(false, new FlowNodeManager());
+            var start = CreateStartNode("Start");
+            var sink = new StartSinkNode();
+            sink.Create();
+            start.Finished += (_, result) =>
+            {
+                result.SerialNumber = "CHANGED-BY-SUBSCRIBER";
+                result.Status = StatusTypeEnum.Failed;
+                throw new InvalidOperationException("Start node subscriber failed.");
+            };
+            editor.Nodes.Add(start);
+            editor.Nodes.Add(sink);
+            Assert.Equal(ConnectionStatus.Connected, start.m_op_start.ConnectOption(sink.Input));
+            control.AttachNodeEditor(editor);
+            var nodeResults = new List<FlowStartEventArgs>();
+            var engineResults = new List<FlowEngineEventArgs>();
+            start.Finished += (_, result) => nodeResults.Add(result);
+            control.Finished += (_, result) => engineResults.Add(result);
+
+            const string serial = "SN-OBSERVER";
+            Assert.True(control.TryStartByName(start.NodeName, serial));
+            CVStartCFC action = Assert.IsType<CVStartCFC>(start.GetCFC(serial));
+            Exception? error = Record.Exception(() =>
+            {
+                if (stop)
+                    control.StopNode(start.NodeName, serial);
+                else if (action.TryDoFinishing())
+                    action.FireFinished();
+            });
+
+            StatusTypeEnum expected = stop ? StatusTypeEnum.Canceled : StatusTypeEnum.Completed;
+            FlowEngineEventArgs engineResult = Assert.Single(engineResults);
+            FlowStartEventArgs nodeResult = Assert.Single(nodeResults);
+            Assert.Equal(expected, engineResult.Status);
+            Assert.Equal(expected, nodeResult.Status);
+            Assert.Equal(serial, engineResult.SerialNumber);
+            Assert.Equal(serial, nodeResult.SerialNumber);
+            Assert.Null(error);
+            Assert.False(control.IsRunning);
+            Assert.True(control.TryStartByName(start.NodeName, serial));
         });
     }
 
@@ -854,6 +1030,17 @@ public class FlowEngineControlLifecycleTests
         public void Dispose()
         {
             IsDisposed = true;
+        }
+    }
+
+    private sealed class ThrowingDisposableProbe : IDisposable
+    {
+        public int DisposeCount { get; private set; }
+
+        public void Dispose()
+        {
+            DisposeCount++;
+            throw new InvalidOperationException("Test resource cleanup failure.");
         }
     }
 

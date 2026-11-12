@@ -71,6 +71,67 @@ public sealed class DownloadManagerLifecycleTests : IDisposable
     }
 
     [Fact]
+    public async Task DeletedTaskReleasesWaitingCallerExactlyOnce()
+    {
+        var rpc = new FakeRpc();
+        var manager = Manager(rpc);
+        var statuses = new ConcurrentQueue<DownloadStatus>();
+        var waiting = manager.AddDownload("http://example.invalid/waiting.bin", _root, onCompleted: task => statuses.Enqueue(task.Status));
+        await Idle(manager, waiting);
+        await manager.DeleteRecordsAsync(new[] { waiting.Id });
+        Assert.Equal(new[] { DownloadStatus.Deleted }, statuses);
+
+        var reported = new ConcurrentQueue<DownloadStatus>();
+        var failed = manager.AddDownload("http://example.invalid/failed.bin", _root, onCompleted: task => reported.Enqueue(task.Status));
+        await Idle(manager, failed);
+        rpc.Statuses[failed.Gid!] = new JObject { ["status"] = "error", ["errorMessage"] = "server error" };
+        await manager.PollAsync();
+        await manager.DeleteRecordsAsync(new[] { failed.Id });
+        Assert.Equal(new[] { DownloadStatus.Failed }, reported);
+    }
+
+    [Fact]
+    public async Task RetryWithOccupiedDestinationPromotesToAnotherNameAndKeepsForeignFile()
+    {
+        var rpc = new FakeRpc();
+        var manager = Manager(rpc);
+        var task = manager.AddDownload("http://example.invalid/occupied.bin", _root);
+        await Idle(manager, task);
+        string occupied = task.SavePath;
+        File.WriteAllText(occupied, "foreign contents");
+        rpc.Complete(task, "downloaded contents");
+        await manager.PollAsync();
+        Assert.Equal(DownloadStatus.Failed, task.Status);
+
+        manager.RetryDownload(task);
+        await Idle(manager, task);
+        rpc.Complete(task, "downloaded contents");
+        await manager.PollAsync();
+        Assert.Equal(DownloadStatus.Completed, task.Status);
+        Assert.NotEqual(occupied, task.SavePath);
+        Assert.Equal("foreign contents", File.ReadAllText(occupied));
+        Assert.Equal("downloaded contents", File.ReadAllText(task.SavePath));
+        Assert.Equal(task.SavePath, Entry(task.Id).SavePath);
+    }
+
+    [Fact]
+    public async Task ClearCompletedKeepsUnfinishedTasks()
+    {
+        var rpc = new FakeRpc();
+        var manager = Manager(rpc);
+        var done = manager.AddDownload("http://example.invalid/done.bin", _root);
+        await Idle(manager, done);
+        rpc.Complete(done, "done");
+        await manager.PollAsync();
+        var running = manager.AddDownload("http://example.invalid/running.bin", _root);
+        await Idle(manager, running);
+        await manager.ClearCompletedRecordsAsync();
+        Assert.Equal(running.Id, Assert.Single(new DownloadTaskStore(_dbPath).GetAllEntries()).Id);
+        Assert.True(File.Exists(done.SavePath));
+        Assert.True(running.Runtime.IsRunning(running.Runtime.Version));
+    }
+
+    [Fact]
     public async Task ClearDuringPendingAddPreservesFilesAndNewlyAddedTask()
     {
         var rpc = new FakeRpc { BlockAdd = true };

@@ -15,7 +15,7 @@ related: ["ui.themes", "ui.hotkeys", "plugins.spectrum"]
 
 Spectrum 窗口的 **帮助 → 关于 Spectrum** 通过仅面向 `Spectrum` 的 `MenuSpectrumAbout` 打开 `SpectrumAboutWindow`，采用扭转光谱环和波长装饰。两者都是由各自活动窗口拥有的模态展示页，不提供业务操作或显示底部进度条式彩线。
 
-关于页的四个展示类与三份语言资源由 `UI/ColorVision.UI/Views/About` 维护单份源码；Spectrum 通过源码链接将它们编入自身的 `Spectrum.Help.Art` 命名空间及语言资源程序集，避免插件依赖已发布宿主尚未包含的关于页类型，主程序继续使用 `ColorVision.UI.Views.About`。
+关于页的四个展示类与三份语言资源由 `UI/ColorVision.UI/Views/About` 维护单份源码；主程序与 Spectrum 都直接使用 `ColorVision.UI` 中的 `ColorVision.UI.Views.About` 类型，因此 Spectrum 的 manifest `requires` 不低于包含这些类型的宿主版本。
 
 页面分别读取 `ColorVision` / `Spectrum` 自身的程序集版本和文件本地修改日期，并显示 .NET 运行时和进程位数。构建日期是文件时间，不是可追溯构建标识。主程序保留文字品牌署名，不显示软件图标、CPU/GPU 型号或硬件 ID，也不在打开时查询硬件；Spectrum 展示页同样不连接设备或加载标定。
 

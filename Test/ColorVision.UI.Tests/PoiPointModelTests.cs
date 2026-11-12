@@ -57,6 +57,24 @@ public class PoiPointModelTests
         Assert.Equal(PoiShape.LegacySolidPoint, legacySolidPoint.PointType);
     }
 
+    [Theory]
+    [InlineData(400, 200, GraphicTypes.Rect, 10, 10, 40, 20)]
+    [InlineData(200, 100, GraphicTypes.Circle, 10, 0, 40, 40)]
+    [InlineData(100, 100, GraphicTypes.Rect, 12.5, 9.5, 13, 10)]
+    [InlineData(400, 200, GraphicTypes.Rect, 0, 10, 0, 0)]
+    [InlineData(400, 200, GraphicTypes.Rect, 10, 101, 0, 0)]
+    [InlineData(400, 200, GraphicTypes.Circle, double.PositiveInfinity, 0, 0, 0)]
+    [InlineData(1, 1, GraphicTypes.Rect, 10, 10, 0, 0)]
+    public void PercentageUsesEachReferenceAxisAndKeepsTheCircleDiameterInPointGeometry(
+        int referenceWidth, int referenceHeight, GraphicTypes shape, double widthPercent, double heightPercent, int expectedWidth, int expectedHeight)
+    {
+        bool success = PoiLayoutGeometry.TryGetPercentagePointSize(
+            new Size(referenceWidth, referenceHeight), shape, widthPercent, heightPercent, out Size size);
+
+        Assert.Equal(expectedWidth > 0, success);
+        Assert.Equal(new Size(expectedWidth, expectedHeight), size);
+    }
+
     [Fact]
     public void CreatesCircleRectangleAndPointVisualsFromOneModel()
     {

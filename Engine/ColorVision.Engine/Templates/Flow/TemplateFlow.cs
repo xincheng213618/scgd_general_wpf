@@ -17,7 +17,6 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
-using System.IO.Compression;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
@@ -38,15 +37,30 @@ namespace ColorVision.Engine.Templates.Flow
 
     public class TemplateFlow : ITemplate<FlowParam>, IAsyncTemplateLoad
     {
+        public override bool UseCatalogCreateSources => true;
+
         private static readonly ILog log = LogManager.GetLogger(typeof(TemplateFlow));
 
-        public static ObservableCollection<TemplateModel<FlowParam>> Params { get; set; } = new ObservableCollection<TemplateModel<FlowParam>>();
+        private static ObservableCollection<TemplateModel<FlowParam>> parameters = [];
+        public static ObservableCollection<TemplateModel<FlowParam>> Params
+        {
+            get => parameters;
+            set
+            {
+                parameters = value;
+                UnavailableLocalTemplates = [];
+            }
+        }
+
+        internal static IReadOnlyList<UnavailableLocalFlowTemplate> UnavailableLocalTemplates { get; private set; } = [];
+        internal static bool IsUnavailableLocalTemplate(int id) => UnavailableLocalTemplates.Any(template => template.Id == id);
 
         public static FlowParam? GetParamOrDefault(int index) => Params.ElementAtOrDefault(index)?.Value;
 
         private readonly LocalFlowTemplateStorage localStorage;
         private readonly Func<bool> isMySqlConnected;
         private readonly Func<SqlSugarClient> openMySql;
+        private PreparedFlowPackage? preparedPackage;
         private bool localReadMode;
         private bool UseLocalStorage => localReadMode || !isMySqlConnected();
 
@@ -73,7 +87,8 @@ namespace ColorVision.Engine.Templates.Flow
         }
         public override bool ExitsTemplateName(string templateName)
         {
-            return Params.Any(a => a.Key.Equals(templateName, StringComparison.OrdinalIgnoreCase));
+            return Params.Any(a => a.Key.Equals(templateName, StringComparison.OrdinalIgnoreCase))
+                || IsUnavailableLocalName(templateName);
         }
 
         public override void Load() => ApplyValues(ReadValues());
@@ -82,33 +97,39 @@ namespace ColorVision.Engine.Templates.Flow
         {
             // Only detached parameters and storage reads run on the worker. Collection
             // publication, bindings and template registration stay on the UI thread.
-            IReadOnlyList<FlowParam> values = await Task.Run(ReadValues).ConfigureAwait(false);
-            await Application.Current.Dispatcher.InvokeAsync(() => ApplyValues(values));
+            FlowTemplateLoadResult result = await Task.Run(ReadValues).ConfigureAwait(false);
+            await Application.Current.Dispatcher.InvokeAsync(() => ApplyValues(result));
         }
 
-        private IReadOnlyList<FlowParam> ReadValues()
+        private FlowTemplateLoadResult ReadValues()
         {
             IReadOnlyList<FlowParam> values;
-            localReadMode = !isMySqlConnected();
-            if (!localReadMode)
+            IReadOnlyList<UnavailableLocalFlowTemplate> unavailable = [];
+            bool isLocal = !isMySqlConnected();
+            if (!isLocal)
             {
                 try { values = LoadMySql(); }
                 catch (Exception ex)
                 {
                     log.Warn("MySQL flow templates unavailable; using local flow templates.", ex);
-                    localReadMode = true;
-                    values = localStorage.Load();
+                    isLocal = true;
+                    (values, unavailable) = localStorage.LoadAvailable();
                 }
             }
-            else values = localStorage.Load();
+            else (values, unavailable) = localStorage.LoadAvailable();
 
             foreach (FlowParam value in values)
                 TryAttachCatalogRevision(value);
-            return values;
+            foreach (UnavailableLocalFlowTemplate item in unavailable)
+                log.Warn($"Local flow template '{item.Name}' ({item.Id}) could not be loaded.", item.Error);
+            return new FlowTemplateLoadResult(values, unavailable, isLocal);
         }
 
-        private void ApplyValues(IReadOnlyList<FlowParam> values)
+        private void ApplyValues(FlowTemplateLoadResult result)
         {
+            localReadMode = result.IsLocal;
+            UnavailableLocalTemplates = result.Unavailable;
+            IReadOnlyList<FlowParam> values = result.Values;
             var ids = values.Select(value => value.Id).ToHashSet();
             foreach (var removed in TemplateParams.Where(item => !ids.Contains(item.Id)).ToList()) TemplateParams.Remove(removed);
             for (int index = 0; index < values.Count; index++)
@@ -128,6 +149,11 @@ namespace ColorVision.Engine.Templates.Flow
             Title = Properties.Resources.WorkflowEngineTemplateManagement + (localReadMode ? LocalizedText.Get(" · 本地") : " · MySQL");
             SaveIndex.Clear();
         }
+
+        private sealed record FlowTemplateLoadResult(
+            IReadOnlyList<FlowParam> Values,
+            IReadOnlyList<UnavailableLocalFlowTemplate> Unavailable,
+            bool IsLocal);
 
         private IReadOnlyList<FlowParam> LoadMySql()
         {
@@ -159,44 +185,41 @@ namespace ColorVision.Engine.Templates.Flow
 
         public override void Delete(int index)
         {
-            int selectedCount = TemplateParams.Count(item => item.IsSelected);
-            if (selectedCount == 1) index = TemplateParams.IndexOf(TemplateParams.First(item => item.IsSelected));
+            foreach (var template in GetManagementTargets(index)) DeleteTemplate(template);
+        }
 
-            void DeleteSingle(int id)
+        internal TemplateModel<FlowParam>? FindSavedTemplate(int id, string? flowKey)
+            => TemplateParams.FirstOrDefault(template => template.Id == id && string.Equals(template.Value.FlowKey, flowKey, StringComparison.Ordinal));
+
+        internal void DeleteTemplate(TemplateModel<FlowParam> template)
+        {
+            FlowParam value = template.Value;
+            int id = value.Id;
+            if (LocalFlowTemplateStorage.IsLocalId(id))
             {
-                if (LocalFlowTemplateStorage.IsLocalId(id))
-                {
-                    var value = TemplateParams.First(item => item.Id == id).Value;
-                    (value.LocalStorage ?? localStorage).Delete(id);
-                    return;
-                }
+                (value.LocalStorage ?? localStorage).Delete(id);
+            }
+            else
+            {
                 if (!isMySqlConnected()) throw new InvalidOperationException("MySQL 未连接，不能删除服务器流程。");
                 using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
                 List<ModDetailModel> de = Db.Queryable<ModDetailModel>().Where(x => x.Pid == id).ToList();
-                int ret = Db.Deleteable<ModMasterModel>().Where(x => x.Id == id).ExecuteCommand();
+                Db.Deleteable<ModMasterModel>().Where(x => x.Id == id).ExecuteCommand();
 
                 Db.Deleteable<ModDetailModel>().Where(x => x.Pid == id).ExecuteCommand();
                 foreach (ModDetailModel model in de)
                 {
                     if (int.TryParse(model.ValueA, out int resourceId))
-                        ret = Db.Deleteable<SysResourceModel>().Where(x => x.Id == resourceId).ExecuteCommand();
+                        Db.Deleteable<SysResourceModel>().Where(x => x.Id == resourceId).ExecuteCommand();
                 }
             }
+            TemplateParams.Remove(template);
+        }
 
-            if (selectedCount <= 1)
-            {
-                int id = TemplateParams[index].Value.Id;
-                DeleteSingle(id);
-                TemplateParams.RemoveAt(index);
-            }
-            else
-            {
-                foreach (var item in TemplateParams.Where(item => item.IsSelected == true).ToList())
-                {
-                    DeleteSingle(item.Id);
-                    TemplateParams.Remove(item);
-                }
-            }
+        private TemplateModel<FlowParam>[] GetManagementTargets(int index)
+        {
+            var selected = TemplateParams.Where(template => template.IsSelected).ToArray();
+            return selected.Length == 0 ? [TemplateParams[index]] : selected;
         }
 
         public override void Save()
@@ -208,13 +231,31 @@ namespace ColorVision.Engine.Templates.Flow
                 if (index > -1 && index < TemplateParams.Count)
                 {
                     var item = TemplateParams[index];
-                    Save2DB(item.Value);
+                    Save(item);
                 }
             }
             SaveIndex.Clear();
         }
 
-        public override void Save(TemplateModel<FlowParam> item) => Save2DB(item.Value);
+        public override void Save(TemplateModel<FlowParam> item)
+        {
+            if (LocalFlowTemplateStorage.IsLocalId(item.Id) && IsUnavailableLocalName(item.Key))
+            {
+                string attemptedName = item.Key;
+                item.Key = (item.Value.LocalStorage ?? localStorage).Read(item.Id).Name;
+                ThrowIfUnavailableLocalName(attemptedName);
+            }
+            Save2DB(item.Value);
+        }
+
+        private static bool IsUnavailableLocalName(string name)
+            => UnavailableLocalTemplates.Any(item => item.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
+
+        private static void ThrowIfUnavailableLocalName(string name)
+        {
+            if (IsUnavailableLocalName(name))
+                throw new InvalidOperationException(LocalizedText.Format($"名称 {name} 已被无法读取的本地流程占用。"));
+        }
 
         public static void Save2DB(
             FlowParam flowParam,
@@ -351,77 +392,76 @@ namespace ColorVision.Engine.Templates.Flow
         }
 
 
-        public override void Export(int index)
+        internal static void ExportTemplate(TemplateModel<FlowParam> template)
         {
-            int selectedCount = TemplateParams.Count(item => item.IsSelected);
-            if (selectedCount == 1) index = TemplateParams.IndexOf(TemplateParams.First(item => item.IsSelected));
+            string name = template.Key;
+            string dataBase64 = template.Value.DataBase64;
+            using System.Windows.Forms.SaveFileDialog sfd = new System.Windows.Forms.SaveFileDialog();
+            bool isLocal = LocalFlowTemplateStorage.IsLocalId(template.Id);
+            sfd.DefaultExt = isLocal ? "stn" : "cvflow";
+            sfd.Filter = isLocal ? "STN files (*.stn)|*.stn" : ColorVision.Engine.Properties.Resources.Flow_ExportFlowFilter;
+            sfd.AddExtension = true;
+            sfd.RestoreDirectory = true;
+            sfd.Title = ColorVision.Engine.Properties.Resources.Flow_ExportFlow;
+            sfd.FileName = Tool.SanitizeFileName(name);
+            if (sfd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
 
-            if (selectedCount <= 1)
+            byte[] fileBytes = Convert.FromBase64String(dataBase64);
+            if (sfd.FileName.EndsWith(".cvflow", StringComparison.OrdinalIgnoreCase))
             {
-                using System.Windows.Forms.SaveFileDialog sfd = new System.Windows.Forms.SaveFileDialog();
-                bool isLocal = LocalFlowTemplateStorage.IsLocalId(TemplateParams[index].Id);
-                sfd.DefaultExt = isLocal ? "stn" : "cvflow";
-                sfd.Filter = isLocal ? "STN files (*.stn)|*.stn" : ColorVision.Engine.Properties.Resources.Flow_ExportFlowFilter;
-                sfd.AddExtension = true;
-                sfd.RestoreDirectory = true;
-                sfd.Title = ColorVision.Engine.Properties.Resources.Flow_ExportFlow;
-                sfd.FileName = Tool.SanitizeFileName(TemplateParams[index].Key);
-                if (sfd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
-
-                byte[] fileBytes = Convert.FromBase64String(TemplateParams[index].Value.DataBase64);
-
-                if (sfd.FileName.EndsWith(".cvflow", StringComparison.OrdinalIgnoreCase))
-                {
-                    // 导出流程包 (STN + 关联模板)
-                    var manifest = FlowPackageHelper.CollectTemplatesForExport(TemplateParams[index].Key, fileBytes);
-                    FlowPackageHelper.ExportFlowPackage(sfd.FileName, TemplateParams[index].Key, fileBytes, manifest);
-                }
-                else
-                {
-                    File.WriteAllBytes(sfd.FileName, fileBytes);
-                }
+                var manifest = FlowPackageHelper.CollectTemplatesForExport(name, fileBytes);
+                FlowPackageHelper.ExportFlowPackage(sfd.FileName, name, fileBytes, manifest);
             }
             else
             {
-                using System.Windows.Forms.SaveFileDialog sfd = new System.Windows.Forms.SaveFileDialog();
-                sfd.DefaultExt = "zip";
-                sfd.Filter = "*.zip|*.zip";
-                sfd.AddExtension = true;
-                sfd.RestoreDirectory = true;
-                sfd.Title = ColorVision.Engine.Properties.Resources.Export;
-                sfd.FileName = $"{Code}.zip";
-                if (sfd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
-
-                string tempDirectory = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
-                Directory.CreateDirectory(tempDirectory);
-                try
-                {
-                    // 导出所有模板文件到临时目录
-                    foreach (var kvp in TemplateParams.Where(item => item.IsSelected == true))
-                    {
-                        string filePath = Path.Combine(tempDirectory, $"{Tool.SanitizeFileName(kvp.Key)}.stn");
-                        byte[] fileBytes = Convert.FromBase64String(kvp.Value.DataBase64);
-                        File.WriteAllBytes(filePath, fileBytes);
-                    }
-
-                    // 创建压缩文件
-                    using (FileStream zipToOpen = new FileStream(sfd.FileName, FileMode.Create))
-                    {
-                        using (ZipArchive archive = new ZipArchive(zipToOpen, ZipArchiveMode.Create))
-                        {
-                            foreach (string filePath in Directory.GetFiles(tempDirectory))
-                            {
-                                archive.CreateEntryFromFile(filePath, Path.GetFileName(filePath));
-                            }
-                        }
-                    }
-                }
-                finally
-                {
-                    // 清理临时目录
-                    Directory.Delete(tempDirectory, true);
-                }
+                File.WriteAllBytes(sfd.FileName, fileBytes);
             }
+        }
+
+        public override void Export(int index)
+        {
+            var targets = GetManagementTargets(index);
+            if (targets.Length == 1)
+            {
+                ExportTemplate(targets[0]);
+                return;
+            }
+
+            using System.Windows.Forms.SaveFileDialog sfd = new System.Windows.Forms.SaveFileDialog();
+            sfd.DefaultExt = "zip";
+            sfd.Filter = "*.zip|*.zip";
+            sfd.AddExtension = true;
+            sfd.RestoreDirectory = true;
+            sfd.Title = ColorVision.Engine.Properties.Resources.Export;
+            sfd.FileName = $"{Code}.zip";
+            if (sfd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
+
+            ExportBatch(sfd.FileName, targets);
+        }
+
+        internal static void ExportBatch(string destination, IReadOnlyList<TemplateModel<FlowParam>> targets)
+        {
+            string[] names = targets.Select(template => Tool.SanitizeFileName(template.Key)).ToArray();
+            var reservedNames = names.Select(name => $"{name}.stn").ToHashSet(StringComparer.OrdinalIgnoreCase);
+            var writtenNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            FlowPackageHelper.WriteArchiveAtomically(destination, archive =>
+            {
+                for (int i = 0; i < targets.Count; i++)
+                {
+                    string name = names[i];
+                    string entryName = $"{name}.stn";
+                    if (!writtenNames.Add(entryName))
+                    {
+                        int suffix = 2;
+                        do { entryName = $"{name} ({suffix++}).stn"; }
+                        while (!reservedNames.Add(entryName));
+                    }
+
+                    byte[] fileBytes = Convert.FromBase64String(targets[i].Value.DataBase64);
+                    using var entry = archive.CreateEntry(entryName).Open();
+                    entry.Write(fileBytes);
+                }
+            });
         }
 
         public override bool Import()
@@ -436,6 +476,7 @@ namespace ColorVision.Engine.Templates.Flow
 
         public override bool ImportFile(string filePath)
         {
+            ClearCreateTemplateSource();
             if (!File.Exists(filePath)) return false;
             if (UseLocalStorage && filePath.EndsWith(".stn", StringComparison.OrdinalIgnoreCase))
             {
@@ -447,27 +488,7 @@ namespace ColorVision.Engine.Templates.Flow
             }
             if (UseLocalStorage) throw new NotSupportedException("本地流程目前支持导入 .stn 画布，关联模板包仍需在服务模式下导入。");
 
-            try
-            {
-                if (filePath.EndsWith(".cvflow", StringComparison.OrdinalIgnoreCase))
-                {
-                    return ImportFlowPackage(filePath);
-                }
-
-            }
-            catch (Exception ex)
-            {
-                log.Error(ex);
-
-                ImportName = Path.GetFileNameWithoutExtension(filePath);
-                byte[] fileBytes = File.ReadAllBytes(filePath);
-                string base64 = Convert.ToBase64String(fileBytes);
-                FlowParam param = new FlowParam();
-                param.DataBase64 = base64;
-                ImportTemp = param;
-            }
-
-            return true;
+            return filePath.EndsWith(".cvflow", StringComparison.OrdinalIgnoreCase) && PrepareFlowPackage(filePath);
         }
 
         public override bool ImportJsonContent(string templateName, string jsonContent)
@@ -476,6 +497,7 @@ namespace ColorVision.Engine.Templates.Flow
 
             try
             {
+                preparedPackage = null;
                 ImportName = templateName;
                 ImportTemp = JsonConvert.DeserializeObject<FlowParam>(jsonContent);
                 if (ImportTemp != null)
@@ -492,10 +514,7 @@ namespace ColorVision.Engine.Templates.Flow
             return false;
         }
 
-        /// <summary>
-        /// 导入 .cvflow 流程包文件，自动创建关联模板并更新流程中的模板引用
-        /// </summary>
-        private bool ImportFlowPackage(string filePath)
+        private bool PrepareFlowPackage(string filePath)
         {
             try
             {
@@ -508,25 +527,9 @@ namespace ColorVision.Engine.Templates.Flow
                     flowName = manifest.FlowName;
 
                 ImportName = flowName;
-
-                // 导入关联模板，获取名称映射 (旧名称 → 新名称)
-                Dictionary<string, string> nameMap = new Dictionary<string, string>();
-                if (manifest?.Templates != null && manifest.Templates.Count > 0)
-                {
-                    nameMap = FlowPackageHelper.ImportTemplates(manifest, flowName);
-                }
-
-                // 如果有模板名称发生了变更，更新 STN 中的引用
-                byte[] finalStnData = stnData;
-                if (nameMap.Count > 0)
-                {
-                    finalStnData = FlowPackageHelper.ReplaceTemplateNames(stnData, nameMap);
-                }
-
-                string base64 = Convert.ToBase64String(finalStnData);
-                FlowParam param = new FlowParam();
-                param.DataBase64 = base64;
-                ImportTemp = param;
+                var draft = new FlowParam { Id = -1, DataBase64 = Convert.ToBase64String(stnData) };
+                ImportTemp = draft;
+                preparedPackage = new PreparedFlowPackage(draft, flowName, manifest);
                 return true;
             }
             catch (Exception ex)
@@ -534,6 +537,12 @@ namespace ColorVision.Engine.Templates.Flow
                 MessageBox.Show(Application.Current.GetActiveWindow(), string.Format(ColorVision.Engine.Properties.Resources.Flow_ImportFlowPackageError, ex.Message), "ColorVision");
                 return false;
             }
+        }
+
+        public override void ClearCreateTemplateSource()
+        {
+            preparedPackage = null;
+            base.ClearCreateTemplateSource();
         }
 
         internal static string? ResolveExpectedContentHash(
@@ -552,6 +561,7 @@ namespace ColorVision.Engine.Templates.Flow
         {
             if (index > -1 && index < TemplateParams.Count)
             {
+                preparedPackage = null;
                 if (LocalFlowTemplateStorage.IsLocalId(TemplateParams[index].Id))
                 {
                     ImportTemp = new FlowParam { Id = -1, DataBase64 = TemplateParams[index].Value.DataBase64 };
@@ -570,8 +580,12 @@ namespace ColorVision.Engine.Templates.Flow
 
         public override void Create(string templateName)
         {
+            PreparedFlowPackage? package = preparedPackage != null && ReferenceEquals(preparedPackage.Draft, ImportTemp)
+                ? preparedPackage : null;
             if (UseLocalStorage)
             {
+                if (package != null) throw new NotSupportedException("关联模板包仍需在服务模式下导入。");
+                ThrowIfUnavailableLocalName(templateName);
                 var local = new FlowParam { Id = -1, Name = templateName, DataBase64 = ImportTemp?.DataBase64 ?? string.Empty };
                 localStorage.Save(local);
                 TemplateParams.Add(new TemplateModel<FlowParam>(templateName, local));
@@ -579,14 +593,26 @@ namespace ColorVision.Engine.Templates.Flow
                 TryRecordCatalogRevision(local);
                 return;
             }
-            FlowParam? param = AddFlowParam(templateName);
+            string? importData = ImportTemp?.DataBase64;
+            if (package != null)
+            {
+                ValidatePackageDestination(templateName);
+                if (package.Manifest is { Templates.Count: > 0 } manifest)
+                {
+                    var nameMap = FlowPackageHelper.ImportTemplates(manifest, package.FlowName);
+                    if (nameMap.Count > 0)
+                        importData = Convert.ToBase64String(FlowPackageHelper.ReplaceTemplateNames(Convert.FromBase64String(package.Draft.DataBase64), nameMap));
+                }
+            }
+            FlowParam? param = AddServerFlowParam(templateName);
             if (param != null)
             {
-                if (ImportTemp != null)
+                if (importData != null)
                 {
-                    param.DataBase64 = ImportTemp.DataBase64;
+                    param.DataBase64 = importData;
                     Save2DB(param);
                     ImportTemp = null;
+                    preparedPackage = null;
                 }
                 var a = new TemplateModel<FlowParam>(templateName, param);
                 TemplateParams.Add(a);
@@ -596,15 +622,37 @@ namespace ColorVision.Engine.Templates.Flow
                 MessageBox.Show(Application.Current.GetActiveWindow(), ColorVision.Engine.Properties.Resources.CreateDataBase+$"{typeof(FlowParam)}"+ ColorVision.Engine.Properties.Resources.TemplateFailed, "ColorVision");
             }
         }
+
+        private void ValidatePackageDestination(string templateName)
+        {
+            if (string.IsNullOrWhiteSpace(templateName))
+                throw new ArgumentException(Properties.Resources.InputTemplateName, nameof(templateName));
+            if (!ExitsTemplateName(templateName))
+            {
+                using var db = openMySql();
+                if (!db.Queryable<ModMasterModel>().Any(item => item.Pid == 11 && item.TenantId == 0 && !item.IsDelete && item.Name == templateName))
+                    return;
+            }
+            throw new InvalidOperationException(LocalizedText.Format($"流程模板 {templateName} 已存在。"));
+        }
+
+        private sealed record PreparedFlowPackage(FlowParam Draft, string FlowName, FlowPackageManifest? Manifest);
+
         public FlowParam? AddFlowParam(string templateName)
         {
             if (UseLocalStorage)
             {
+                ThrowIfUnavailableLocalName(templateName);
                 var local = new FlowParam { Id = -1, Name = templateName };
                 localStorage.Save(local);
                 return local;
             }
-            using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
+            return AddServerFlowParam(templateName);
+        }
+
+        private FlowParam? AddServerFlowParam(string templateName)
+        {
+            using var Db = openMySql();
             FlowParam? created = null;
             Db.Ado.BeginTran();
             try
@@ -693,6 +741,7 @@ namespace ColorVision.Engine.Templates.Flow
         {
             var preset = FlowTemplatePresets.Find(presetId);
             if (preset == null) return false;
+            preparedPackage = null;
             ImportTemp = FlowTemplatePresets.CreateDraft(preset);
             CreateTemp = null;
             ImportName = preset.Source.SuggestedName;

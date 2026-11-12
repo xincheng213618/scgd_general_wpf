@@ -1,6 +1,7 @@
 using ColorVision.Engine.Services.Devices.Spectrum.Configs;
 using cvColorVision;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -13,6 +14,9 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Local;
 
 public sealed class LocalSpectrumParameters
 {
+    internal const double MinimumIntegralTime = 0.001;
+    internal const double MaximumIntegralTime = 2_147_483.5;
+
     public float IntegralTime { get; set; } = 100;
     public int NumberOfAverage { get; set; } = 1;
     public bool AutoIntegration { get; set; }
@@ -23,13 +27,77 @@ public sealed class LocalSpectrumParameters
     public double AFactor { get; set; } = 1;
     public float Voltage { get; set; }
     public float Current { get; set; }
+    // The service/flow contract stores SMU current in mA; native EQE accepts A.
+    public FlowEngineLib.SMUResultData? SMUData { get; set; }
+
+    internal void ApplySmuData(object? value)
+    {
+        var data = value switch { null => null, JObject json => json, JToken => null, _ => JObject.FromObject(value) };
+        if (data?["V"] == null || data["V"]!.Type == JTokenType.Null || data["I"] == null || data["I"]!.Type == JTokenType.Null)
+            throw new InvalidOperationException("EQE 缺少本次流程上游源表的电压、电流。请先执行源表测量，或切换为手动输入：本地光谱节点关闭“使用上游源表电压/流”，旧 EQE 节点开启“自定义电压/流”。");
+        SMUData = data.ToObject<FlowEngineLib.SMUResultData>()!;
+        Voltage = (float)SMUData.V;
+        Current = (float)(SMUData.I / 1000.0);
+    }
 
     public void Validate()
     {
-        if (!float.IsFinite(IntegralTime) || IntegralTime <= 0 || NumberOfAverage < 1)
-            throw new InvalidOperationException("积分时间必须大于 0，平均次数至少为 1。");
+        ValidateIntegralTime(IntegralTime);
+        if (NumberOfAverage < 1)
+            throw new InvalidOperationException("平均次数至少为 1。");
         if (Eqe && (!double.IsFinite(AFactor) || AFactor <= 0 || !float.IsFinite(Voltage) || !float.IsFinite(Current) || Current <= 0))
             throw new InvalidOperationException("EQE 系数和电流必须大于 0，电压必须为有限值。");
+    }
+
+    internal static void ValidateIntegralTime(float time)
+    {
+        if (!IsRepresentableIntegralTime(time))
+            throw new InvalidOperationException($"积分时间必须在 {MinimumIntegralTime:0.###} 至 {MaximumIntegralTime:0.###} ms 范围内。");
+    }
+
+    private static bool IsRepresentableIntegralTime(float time)
+    {
+        // The SDK multiplies single-precision milliseconds by 1000 before converting to signed int.
+        double microseconds = time * 1000f;
+        return microseconds >= 1 && microseconds <= int.MaxValue;
+    }
+
+    internal LocalSpectrumParameters WithSyncFrequencyTiming(GetDataConfig settings)
+    {
+        if (!settings.IsSyncFrequencyEnabled) return this;
+
+        double period = 1000.0 / settings.Syncfreq;
+        int factor = settings.SyncfreqFactor;
+        if (!double.IsFinite(period) || period <= 0 || factor < 1)
+            throw new InvalidOperationException("同步频率和系数必须大于 0，且频率须为有限值。");
+
+        // Match CM_Emission_GetDataSyncfreq so both native acquisitions use the same timing.
+        float time;
+        int average = NumberOfAverage;
+        if (IntegralTime >= period)
+        {
+            time = (float)(Math.Round(IntegralTime / period, MidpointRounding.AwayFromZero) * period);
+        }
+        else
+        {
+            double ratio = period / IntegralTime;
+            if (ratio >= int.MaxValue)
+                throw new InvalidOperationException("同步频率计算的平均次数超出范围。");
+            int samplesPerPeriod = (int)ratio + 1;
+            long samples = (long)samplesPerPeriod * average;
+            if (samples > int.MaxValue / factor)
+                throw new InvalidOperationException("同步频率计算的平均次数超出范围。");
+            average = (int)(samples * factor);
+            time = (float)(period / samplesPerPeriod);
+        }
+
+        if (!IsRepresentableIntegralTime(time))
+            throw new InvalidOperationException("同步频率计算的积分时间超出原生微秒范围。");
+
+        var effective = (LocalSpectrumParameters)MemberwiseClone();
+        effective.IntegralTime = time;
+        effective.NumberOfAverage = average;
+        return effective;
     }
 }
 
@@ -43,6 +111,8 @@ public sealed class LocalSpectrumCapture
     public COLOR_PARA_EQE? EqeData { get; init; }
     public string? AcquisitionParametersJson { get; set; }
     public int? NDPort { get; internal set; }
+    internal int? EffectiveAverageCount { get; set; }
+    internal bool UsedSyncFrequency { get; set; }
     internal LocalSpectrumNd.Calibration? NdCalibration { get; set; }
 }
 
@@ -86,7 +156,6 @@ internal sealed class LocalSpectrumNative : ILocalSpectrumNative
         float time = p.IntegralTime;
         if (p.Eqe)
         {
-            if (settings.IsSyncFrequencyEnabled) throw new NotSupportedException("本地 EQE 采集暂不支持同步频率模式。");
             COLOR_PARA_EQE eqe = new() { fPL = new float[4001] };
             LocalSpectrumSession.Check(Spectrometer.CM_Emission_GetDataEQE(h, (TRIGGER_MODE)0, time, p.NumberOfAverage, settings.FilterBW, dark, 0, 0, p.AFactor, p.Voltage, p.Current, ref eqe), "EQE 采集");
             // Common color fields have the same names, but the native EQE ABI is a different structure.
@@ -94,9 +163,7 @@ internal sealed class LocalSpectrumNative : ILocalSpectrumNative
             return new() { IntegralTime = time, Data = SpectrumColorRendering.Apply(data), EqeData = eqe };
         }
         COLOR_PARA result = new() { fPL = new float[10000], fRi = new float[15] };
-        int code = settings.IsSyncFrequencyEnabled
-            ? Spectrometer.CM_Emission_GetDataSyncfreq(h, (TRIGGER_MODE)0, settings.Syncfreq, settings.SyncfreqFactor, ref time, p.NumberOfAverage, settings.FilterBW, dark, 0, 0, settings.SetWL1, settings.SetWL2, ref result)
-            : Spectrometer.CM_Emission_GetData(h, (TRIGGER_MODE)0, time, p.NumberOfAverage, settings.FilterBW, dark, 0, 0, settings.SetWL1, settings.SetWL2, ref result);
+        int code = Spectrometer.CM_Emission_GetData(h, (TRIGGER_MODE)0, time, p.NumberOfAverage, settings.FilterBW, dark, 0, 0, settings.SetWL1, settings.SetWL2, ref result);
         LocalSpectrumSession.Check(code, "光谱采集");
         return new() { IntegralTime = time, Data = SpectrumColorRendering.Apply(result) };
     }
@@ -158,7 +225,12 @@ internal sealed class LocalSpectrumSession : IDisposable
                     operation.GetPort();
                 }
             }
-            catch { Close(); throw; }
+            catch (Exception failure)
+            {
+                try { Close(); }
+                catch (Exception cleanup) { throw new AggregateException("打开光谱仪失败，清理连接时也遇到错误。", failure, cleanup); }
+                throw;
+            }
         }
     }
 
@@ -181,7 +253,9 @@ internal sealed class LocalSpectrumSession : IDisposable
                 SetWL1 = configured.SetWL1,
                 SetWL2 = configured.SetWL2
             };
+            if (parameters.Eqe && settings.IsSyncFrequencyEnabled) throw new NotSupportedException("本地 EQE 采集暂不支持同步频率模式。");
             SpectrumSmoothing.Validate(settings.SmoothingMethod, settings.FilterBW);
+            var effective = parameters.AutoIntegration ? parameters : parameters.WithSyncFrequencyTiming(settings);
             bool withNd = parameters.IsWithND && config.NDConfig.IsNDPort;
             using var ndOperation = config.NDConfig.IsNDPort ? nd.Acquire(config.NDConfig) : null;
             int? ndPort = ndOperation?.GetPort();
@@ -198,35 +272,59 @@ internal sealed class LocalSpectrumSession : IDisposable
             }
             Check(native.LoadWavelength(handle, wave), "加载波长校正");
             Check(native.LoadMagnitude(handle, magnitude), "加载幅度校正");
-            if (config.IsShutterEnable && !SharesNdShutter(config)) shutter.SetOpen(true, config.ShutterCfg);
-            if (parameters.AutoIntegration)
+            int? initialNdPort = ndPort;
+            float[] initialDark = dark;
+            bool ndMoveAttempted = false;
+            try
             {
-                float time = withNd ? FindNdAutoTime(ndOperation!, config, cancellationToken) : FindAutoTime(config, cancellationToken);
-                if (withNd)
+                if (parameters.AutoIntegration)
                 {
-                    ndPort = ndOperation!.GetPort();
-                    calibration = LocalSpectrumNd.ResolveCalibration(config, ndPort.Value);
-                    wave = calibration.WavelengthFile;
-                    magnitude = calibration.MagnitudeFile;
-                    Check(native.LoadWavelength(handle, wave), "加载 ND 波长校正");
-                    Check(native.LoadMagnitude(handle, magnitude), "加载 ND 幅度校正");
+                    float time = withNd
+                        ? FindNdAutoTime(ndOperation!, initialNdPort!.Value, config, cancellationToken, ref ndMoveAttempted)
+                        : FindAutoTime(config, cancellationToken);
+                    if (withNd)
+                    {
+                        ndPort = ndOperation!.GetPort();
+                        calibration = LocalSpectrumNd.ResolveCalibration(config, ndPort.Value);
+                        wave = calibration.WavelengthFile;
+                        magnitude = calibration.MagnitudeFile;
+                        Check(native.LoadWavelength(handle, wave), "加载 ND 波长校正");
+                        Check(native.LoadMagnitude(handle, magnitude), "加载 ND 幅度校正");
+                    }
+                    parameters.IntegralTime = time;
+                    parameters.Validate();
+                    effective = parameters.WithSyncFrequencyTiming(settings);
                 }
-                parameters.IntegralTime = time;
-                parameters.Validate();
+                cancellationToken.ThrowIfCancellationRequested();
+                if (parameters.AutoInitDark || parameters.SelfAdaptionInitDark)
+                    DarkCore(effective, config, settings.FilterBW, parameters.SelfAdaptionInitDark, ndOperation);
+                cancellationToken.ThrowIfCancellationRequested();
+                var result = native.Capture(handle, effective, settings, dark);
+                result.EffectiveAverageCount = effective.NumberOfAverage;
+                result.UsedSyncFrequency = settings.IsSyncFrequencyEnabled;
+                result.NDPort = ndPort;
+                result.NdCalibration = calibration;
+                result.AcquisitionParametersJson = JsonConvert.SerializeObject(new
+                {
+                    Parameters = parameters, Acquisition = settings,
+                    config.SN, NDPort = ndPort, WavelengthFile = wave, MagnitudeFile = magnitude
+                });
+                return result;
             }
-            cancellationToken.ThrowIfCancellationRequested();
-            if (parameters.AutoInitDark || parameters.SelfAdaptionInitDark)
-                DarkCore(parameters, config, parameters.SelfAdaptionInitDark, ndOperation);
-            cancellationToken.ThrowIfCancellationRequested();
-            var result = native.Capture(handle, parameters, settings, dark);
-            result.NDPort = ndPort;
-            result.NdCalibration = calibration;
-            result.AcquisitionParametersJson = JsonConvert.SerializeObject(new
+            catch (Exception failure) when (ndMoveAttempted && initialNdPort is int port)
             {
-                Parameters = parameters, Acquisition = settings,
-                config.SN, NDPort = ndPort, WavelengthFile = wave, MagnitudeFile = magnitude
-            });
-            return result;
+                dark = initialDark;
+                try
+                {
+                    if (ndOperation!.SetPort(port) != port)
+                        throw new InvalidOperationException("ND 未确认到达初始孔位。");
+                }
+                catch (Exception restoreFailure)
+                {
+                    throw new InvalidOperationException($"ND 自动积分后恢复初始孔位 {port} 失败，请检查光路。", new AggregateException(failure, restoreFailure));
+                }
+                throw;
+            }
         }
     }
 
@@ -235,22 +333,34 @@ internal sealed class LocalSpectrumSession : IDisposable
         lock (gate)
         {
             EnsureOpen(c);
+            p.Validate();
+            var settings = c.GetDataConfig;
+            var effective = p.WithSyncFrequencyTiming(settings);
+            int filterWidth = settings.FilterBW;
             using var ndOperation = !adaptive && c.NDConfig.IsNDPort ? nd.Acquire(c.NDConfig) : null;
-            DarkCore(p, c, adaptive, ndOperation);
+            DarkCore(effective, c, filterWidth, adaptive, ndOperation);
         }
     }
 
-    private void DarkCore(LocalSpectrumParameters p, ConfigSpectrum c, bool adaptive, ILocalSpectrumNdOperation? ndOperation)
+    private void DarkCore(LocalSpectrumParameters p, ConfigSpectrum c, int filterWidth, bool adaptive, ILocalSpectrumNdOperation? ndOperation)
     {
-        EnsureOpen(c);
-        p.Validate();
         if (adaptive && !adaptiveDarkInitialized) throw new InvalidOperationException("请先完成自适应校零初始化，再使用自适应暗校正。");
         using var lightPathOperation = !adaptive && c.IsShutterEnable && !SharesNdShutter(c) ? shutter.AcquireOperation(c.ShutterCfg) : null;
         var buffer = new float[10000];
-        void AcquireDark() => Check(native.Dark(handle, p.IntegralTime, p.NumberOfAverage, c.GetDataConfig.FilterBW, buffer, adaptive), "光谱校零");
+        void AcquireDark() => Check(native.Dark(handle, p.IntegralTime, p.NumberOfAverage, filterWidth, buffer, adaptive), "光谱校零");
         if (adaptive) AcquireDark();
         else WithDarkPath(c, ndOperation, AcquireDark);
         dark = buffer;
+    }
+
+    public void ResetDark(ConfigSpectrum config)
+    {
+        lock (gate)
+        {
+            EnsureOpen(config);
+            dark = new float[10000];
+            adaptiveDarkInitialized = false;
+        }
     }
 
     public void InitAutoDark(ConfigSpectrum c)
@@ -258,10 +368,26 @@ internal sealed class LocalSpectrumSession : IDisposable
         lock (gate)
         {
             EnsureOpen(c);
+            var configured = c.SelfAdaptionInitDark;
+            var settings = new SelfAdaptionInitDark
+            {
+                BeginIntegralTime = configured.BeginIntegralTime,
+                StepTime = configured.StepTime,
+                StepCount = configured.StepCount,
+                NumberOfAverage = configured.NumberOfAverage,
+            };
+            // The SDK clears its existing table before sampling and requires at least two distinct times to read it.
+            if (settings.StepCount < 1) throw new InvalidOperationException("自适应校零步数至少为 1。");
+            if (settings.StepTime < 1) throw new InvalidOperationException("自适应校零积分间隔至少为 1 ms。");
+            if (settings.NumberOfAverage < 1) throw new InvalidOperationException("自适应校零平均次数至少为 1。");
+            LocalSpectrumParameters.ValidateIntegralTime(settings.BeginIntegralTime);
+            float lastTime = settings.BeginIntegralTime + (long)settings.StepCount * settings.StepTime;
+            LocalSpectrumParameters.ValidateIntegralTime(lastTime);
+
             adaptiveDarkInitialized = false;
             using var ndOperation = c.NDConfig.IsNDPort ? nd.Acquire(c.NDConfig) : null;
             using var lightPathOperation = c.IsShutterEnable && !SharesNdShutter(c) ? shutter.AcquireOperation(c.ShutterCfg) : null;
-            WithDarkPath(c, ndOperation, () => Check(native.InitAutoDark(handle, c.SelfAdaptionInitDark), "自适应校零"));
+            WithDarkPath(c, ndOperation, () => Check(native.InitAutoDark(handle, settings), "自适应校零"));
             adaptiveDarkInitialized = true;
         }
     }
@@ -288,10 +414,11 @@ internal sealed class LocalSpectrumSession : IDisposable
         if (code == Spectrometer.AutoExposureCancelledErrorCode) throw new OperationCanceledException("光谱仪自动曝光已停止。", token);
         Check(code, "自动积分");
         token.ThrowIfCancellationRequested();
+        LocalSpectrumParameters.ValidateIntegralTime(time);
         return time;
     }
 
-    private float FindNdAutoTime(ILocalSpectrumNdOperation operation, ConfigSpectrum config, CancellationToken token)
+    private float FindNdAutoTime(ILocalSpectrumNdOperation operation, int current, ConfigSpectrum config, CancellationToken token, ref bool moveAttempted)
     {
         NDConfig settings = config.NDConfig;
         if (!double.IsFinite(settings.NDMinExpTime) || !double.IsFinite(settings.NDMaxExpTime)
@@ -302,7 +429,12 @@ internal sealed class LocalSpectrumSession : IDisposable
         int[] ports = settings.NDRate.Select((rate, port) => (rate, port)).OrderBy(item => item.rate).Select(item => item.port).ToArray();
         // Validate every candidate before moving any hardware; a missing file must not cause an uncalibrated capture.
         foreach (int candidate in ports) LocalSpectrumNd.ResolveCalibration(config, candidate);
-        int current = settings.EnableResetND ? operation.SetPort(ports[0]) : operation.GetPort();
+        if (settings.EnableResetND && current != ports[0])
+        {
+            token.ThrowIfCancellationRequested();
+            moveAttempted = true;
+            current = operation.SetPort(ports[0]);
+        }
         var visited = new System.Collections.Generic.HashSet<int>();
         while (visited.Add(current))
         {
@@ -314,6 +446,8 @@ internal sealed class LocalSpectrumSession : IDisposable
             if (next < 0 || next >= ports.Length || visited.Contains(ports[next]))
                 throw new InvalidOperationException("ND 自动积分无法在配置的孔位及积分范围内收敛，请检查光路和 ND 参数。");
             token.ThrowIfCancellationRequested();
+            // A command without confirmed readback may still have moved the wheel.
+            moveAttempted = true;
             current = operation.SetPort(ports[next]);
         }
         throw new InvalidOperationException("ND 自动积分无法收敛。");
@@ -321,7 +455,7 @@ internal sealed class LocalSpectrumSession : IDisposable
 
     private void WithDarkPath(ConfigSpectrum config, ILocalSpectrumNdOperation? operation, Action acquireDark)
     {
-        if ((config.IsShutterEnable && !SharesNdShutter(config)) || operation == null) { WithClosedShutter(config, acquireDark); return; }
+        if ((config.IsShutterEnable && !SharesNdShutter(config)) || operation == null) { WithShutterBlocked(config, acquireDark); return; }
         int darkPort = config.NDConfig.DarkNDPort >= 0 ? config.NDConfig.DarkNDPort : SharesNdShutter(config) ? config.ShutterCfg.DarkPort : -1;
         if (darkPort < 0) throw new InvalidOperationException("请配置 ND 校零孔位或启用外部快门后再校零。");
         int previous = operation.GetPort();
@@ -349,28 +483,28 @@ internal sealed class LocalSpectrumSession : IDisposable
             switch (eventName)
             {
                 case "ShutterConnect": shutter.Connect(config.ShutterCfg); break;
-                case "ShutterDoOpen": shutter.SetOpen(true, config.ShutterCfg); break;
-                case "ShutterDoClose": shutter.SetOpen(false, config.ShutterCfg); break;
+                case "ShutterDoOpen": shutter.SetTransmitting(!config.ShutterCfg.OpenForDark, config.ShutterCfg); break;
+                case "ShutterDoClose": shutter.SetTransmitting(config.ShutterCfg.OpenForDark, config.ShutterCfg); break;
                 default: throw new NotSupportedException($"未知快门操作：{eventName}。");
             }
         }
     }
 
-    private void WithClosedShutter(ConfigSpectrum config, Action operation)
+    private void WithShutterBlocked(ConfigSpectrum config, Action operation)
     {
         if (!config.IsShutterEnable) { operation(); return; }
         Exception? failure = null;
         try
         {
-            shutter.SetOpen(false, config.ShutterCfg);
+            shutter.SetTransmitting(false, config.ShutterCfg);
             operation();
         }
         catch (Exception ex) { failure = ex; }
-        // Even an unconfirmed close may have moved the shutter. Always attempt to restore light.
-        try { shutter.SetOpen(true, config.ShutterCfg); }
+        // Even an unconfirmed blocking command may have moved the shutter. Always attempt to restore light.
+        try { shutter.SetTransmitting(true, config.ShutterCfg); }
         catch (Exception ex)
         {
-            string restore = config.ShutterCfg.UseFilterWheel ? "恢复滤色轮测量位失败" : "恢复打开快门失败";
+            string restore = config.ShutterCfg.UseFilterWheel ? "恢复滤色轮测量位失败" : "恢复光闸通光状态失败";
             throw new InvalidOperationException($"{failure?.Message} 校零后{restore}：{ex.Message} 请检查光路。".Trim(),
                 failure == null ? ex : new AggregateException(failure, ex));
         }
@@ -396,31 +530,34 @@ internal sealed class LocalSpectrumSession : IDisposable
         lock (gate)
         {
             if (quarantined) throw new InvalidOperationException("光谱仪释放失败，请重启程序。");
-            try
+            List<Exception> failures = [];
+            if (handle != IntPtr.Zero)
             {
-                if (handle != IntPtr.Zero)
+                Attempt(() => Check(native.Close(handle), "关闭光谱仪"));
+                Attempt(() => Check(native.Release(handle), "释放光谱仪"));
+                if (failures.Count != 0)
                 {
-                    try { Check(native.Close(handle), "关闭光谱仪"); }
-                    finally { Check(native.Release(handle), "释放光谱仪"); }
+                    quarantined = true;
+                    lease?.Quarantine();
+                    lock (QuarantinedSessions) QuarantinedSessions.Add(this);
                 }
             }
-            catch
+
+            handle = IntPtr.Zero;
+            openedConfig = null;
+            dark = new float[10000];
+            adaptiveDarkInitialized = false;
+            lease?.Dispose();
+            if (!quarantined) lease = null;
+            Attempt(shutter.Disconnect);
+            Attempt(nd.Disconnect);
+            if (failures.Count == 1) ExceptionDispatchInfo.Capture(failures[0]).Throw();
+            if (failures.Count > 1) throw new AggregateException("断开光谱仪时遇到多项错误。", failures);
+
+            void Attempt(Action release)
             {
-                quarantined = true;
-                lease?.Quarantine();
-                lock (QuarantinedSessions) QuarantinedSessions.Add(this);
-                throw;
-            }
-            finally
-            {
-                handle = IntPtr.Zero;
-                openedConfig = null;
-                dark = new float[10000];
-                adaptiveDarkInitialized = false;
-                lease?.Dispose();
-                if (!quarantined) lease = null;
-                shutter.Disconnect();
-                nd.Disconnect();
+                try { release(); }
+                catch (Exception failure) { failures.Add(failure); }
             }
         }
     }

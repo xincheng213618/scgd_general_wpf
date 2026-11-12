@@ -207,6 +207,19 @@ export async function buildCatalog(repoRoot) {
   return { schema_version: 2, language: 'zh-CN', source_of_truth: 'Markdown frontmatter and body; verify implementation against mapped code and tests.', entries }
 }
 
+// Reading cost alarm, not a page-length target: over-budget topics may only shrink.
+export const topicBodyBudgetBytes = 40 * 1024
+
+export async function oversizedTopics(repoRoot, catalog, budget = topicBodyBudgetBytes) {
+  const oversized = []
+  for (const entry of catalog.entries) {
+    const { body } = parseFrontmatter(await fs.readFile(path.join(repoRoot, entry.source), 'utf8'), entry.source)
+    const bytes = Buffer.byteLength(body, 'utf8')
+    if (bytes > budget) oversized.push({ knowledge_id: entry.knowledge_id, source: entry.source, bytes })
+  }
+  return oversized.sort((left, right) => right.bytes - left.bytes)
+}
+
 export function catalogGroups(catalog) {
   return allCatalogGroups(catalog).filter((group) => group.entries.length)
 }
@@ -588,6 +601,11 @@ async function main() {
       const { validateReadmeDocsLinks } = await import('./readme-links.mjs')
       const readmeLinks = await validateReadmeDocsLinks(repoRoot)
       console.log(`Validated ${readmeLinks.links} README-to-docs links in ${readmeLinks.readmes} repository READMEs (page targets, not fragments).`)
+      const oversized = await oversizedTopics(repoRoot, catalog)
+      if (oversized.length) {
+        console.log(`Warning: ${oversized.length} topic bodies exceed the ${topicBodyBudgetBytes / 1024} KB reading budget. Edits to them must not grow the body; remove code-derivable detail first (docs/knowledge/maintenance.md).`)
+        for (const topic of oversized) console.log(`  ${Math.ceil(topic.bytes / 1024)} KB ${topic.knowledge_id} ${topic.source}`)
+      }
     }
     return
   }

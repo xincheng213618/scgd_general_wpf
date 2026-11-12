@@ -57,6 +57,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
         public DeviceSpectrum Device { get; set; }
         private bool _initializationStarted;
         private bool _isInitialized;
+        private bool _isDisposed;
 
         public ViewSpectrum(DeviceSpectrum device) : this(device, false) { }
 
@@ -86,7 +87,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
                 Dispatcher.Invoke(EnsureInitialized);
                 return;
             }
-            if (_initializationStarted) return;
+            if (_initializationStarted || _isDisposed) return;
             _initializationStarted = true;
             Loaded -= View_Loaded;
             IsVisibleChanged -= View_IsVisibleChanged;
@@ -146,6 +147,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
                 GridViewColumnVisibility.AddGridViewColumn(gridView.Columns, GridViewColumnVisibilitys);
                 ViewSpectrumConfig.Instance.GridViewColumnVisibilitys.CopyToGridView(GridViewColumnVisibilitys);
                 ViewSpectrumConfig.Instance.GridViewColumnVisibilitys = GridViewColumnVisibilitys;
+                ApplyColorRenderingColumnVisibility();
                 GridViewColumnVisibility.AdjustGridViewColumnAuto(gridView.Columns, GridViewColumnVisibilitys);
             }
             listView1.CommandBindings.Add(new CommandBinding(ApplicationCommands.Delete, (s, e) => Delete(), (s, e) => e.CanExecute = listView1.SelectedIndex > -1));
@@ -156,6 +158,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
             DisplayConfig_IsIsLuminousFluxModeChanged();
             DisplayConfig.IsIsLuminousFluxModeChanged += LuminousFluxModeChanged;
             PropertyChangedEventManager.AddHandler(Config, SpectrumConfig_PropertyChanged, nameof(ViewSpectrumConfig.IsShowSpectrumFill));
+            PropertyChangedEventManager.AddHandler(Config, ColorRenderingConfig_PropertyChanged, nameof(ViewSpectrumConfig.IsShowColorRendering));
             ThemeManager.Current.CurrentUIThemeChanged += ApplySpectrumTheme;
             ApplySpectrumTheme(ThemeManager.Current.CurrentUITheme);
             InitializeSpectrumAnalysis();
@@ -165,16 +168,43 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
 
         public void Dispose()
         {
+            if (!Dispatcher.CheckAccess()) { Dispatcher.Invoke(Dispose); return; }
+            if (_isDisposed) return;
+            _isDisposed = true;
             Loaded -= View_Loaded;
             IsVisibleChanged -= View_IsVisibleChanged;
             if (_isInitialized)
             {
                 DisplayConfig.IsIsLuminousFluxModeChanged -= LuminousFluxModeChanged;
                 PropertyChangedEventManager.RemoveHandler(Config, SpectrumConfig_PropertyChanged, nameof(ViewSpectrumConfig.IsShowSpectrumFill));
+                PropertyChangedEventManager.RemoveHandler(Config, ColorRenderingConfig_PropertyChanged, nameof(ViewSpectrumConfig.IsShowColorRendering));
                 ThemeManager.Current.CurrentUIThemeChanged -= ApplySpectrumTheme;
             }
             relativeCursor?.Dispose();
             absoluteCursor?.Dispose();
+            relativeCursor = null;
+            absoluteCursor = null;
+            if (ReferenceEquals(Config.GridViewColumnVisibilitys, GridViewColumnVisibilitys))
+                Config.GridViewColumnVisibilitys = new ObservableCollection<GridViewColumnVisibility>(GridViewColumnVisibilitys.Select(column =>
+                    new GridViewColumnVisibility { ColumnName = column.ColumnName, IsVisible = column.IsVisible, IsSortD = column.IsSortD }));
+            if (listView1 != null)
+            {
+                listView1.SelectionChanged -= listView1_SelectionChanged;
+                listView1.PreviewKeyDown -= listView1_PreviewKeyDown;
+                BindingOperations.ClearAllBindings(listView1);
+                listView1.ItemsSource = null;
+                listView1.ContextMenu = null;
+                listView1.CommandBindings.Clear();
+            }
+            ViewResults.Clear();
+            LastMulSelectComparsion = null;
+            if (_isInitialized)
+            {
+                wpfplot1.Plot.Clear();
+                wpfplot2.Plot.Clear();
+            }
+            DataContext = null;
+            Content = null;
             GC.SuppressFinalize(this);
         }
 
@@ -208,6 +238,26 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
             }
         }
 
+        private void ColorRenderingConfig_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+            => Dispatcher.Invoke(ApplyColorRenderingColumnVisibility);
+
+        private void ApplyColorRenderingColumnVisibility()
+        {
+            if (listView1.View is not GridView gridView) return;
+
+            HashSet<GridViewColumn> columns =
+            [
+                RaColumn, R1Column, R2Column, R3Column, R4Column, R5Column, R6Column, R7Column, R8Column,
+                R9Column, R10Column, R11Column, R12Column, R13Column, R14Column, R15Column, RenderingStatusColumn
+            ];
+            bool hideColumns = !Config.IsShowColorRendering;
+            foreach (var column in GridViewColumnVisibilitys)
+                if (columns.Contains(column.GridViewColumn))
+                    column.IsSuppressed = hideColumns;
+
+            GridViewColumnVisibility.AdjustGridViewColumn(gridView.Columns, GridViewColumnVisibilitys);
+        }
+
         private void Delete()
         {
             var selected = listView1.SelectedItems.Cast<ViewResultSpectrum>().ToArray();
@@ -232,9 +282,12 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
                 GridViewColumnVisibility.GenContentMenuGridViewColumn(contextMenu, gridView.Columns, GridViewColumnVisibilitys);
             foreach (var item in contextMenu.Items.OfType<MenuItem>())
             {
-                if (BindingOperations.GetBinding(item, MenuItem.IsCheckedProperty)?.Source is GridViewColumnVisibility column
-                    && (column.GridViewColumn == VoltageColumn || column.GridViewColumn == CurrentColumn))
-                    item.Visibility = DisplayConfig.IsLuminousFluxMode ? Visibility.Visible : Visibility.Collapsed;
+                if (BindingOperations.GetBinding(item, MenuItem.IsCheckedProperty)?.Source is GridViewColumnVisibility column)
+                {
+                    bool isFluxOnly = column.GridViewColumn == VoltageColumn || column.GridViewColumn == CurrentColumn;
+                    item.Visibility = column.IsSuppressed || (isFluxOnly && !DisplayConfig.IsLuminousFluxMode)
+                        ? Visibility.Collapsed : Visibility.Visible;
+                }
             }
         }
 
@@ -485,6 +538,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
 
         public void AddViewResultSpectrum(ViewResultSpectrum viewResultSpectrum)
         {
+            if (_isDisposed) return;
             EnsureInitialized();
             if (Config.InsertAtBeginning)
                 ViewResults.Insert(0, viewResultSpectrum);
@@ -616,7 +670,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
                 };
 
                 AddRenderingValues(row, result, includeRa: false);
-                AddSpectrumValues(row, result.SpectralDatas);
+                AddSpectrumValues(row, result);
                 AppendCsvLine(csvBuilder, row);
             }
 
@@ -655,7 +709,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
                 List<string> row = new()
                 {
                     result.Id.ToString(CultureInfo.InvariantCulture),
-                    result.BatchID?.ToString(CultureInfo.InvariantCulture) ?? string.Empty,
+                    result.BatchID?.ToString(CultureInfo.InvariantCulture) ?? "-1",
                     result.IP ?? string.Empty,
                     result.EqePercent.ToString(CultureInfo.InvariantCulture),
                     result.LuminousFlux?.ToString(CultureInfo.InvariantCulture) ?? string.Empty,
@@ -672,7 +726,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
                 };
 
                 AddRenderingValues(row, result, includeRa: true);
-                AddSpectrumValues(row, result.SpectralDatas);
+                AddSpectrumValues(row, result);
                 AppendCsvLine(csvBuilder, row);
             }
 
@@ -720,22 +774,41 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
             }
         }
 
-        private static void AddSpectrumValues(List<string> row, IList<SpectralData> spectralDatas)
+        private static void AddSpectrumValues(List<string> row, ViewResultSpectrum result)
         {
-            int spectralCount = spectralDatas?.Count ?? 0;
-            IList<SpectralData> safeSpectralDatas = spectralDatas ?? new List<SpectralData>();
-
-            for (int wl = StartWavelength; wl <= EndWavelength; wl++)
+            var relativeValues = new string[EndWavelength - StartWavelength + 1];
+            for (int column = 0; column < relativeValues.Length; column++)
             {
-                int index = wl - StartWavelength;
-                row.Add(index < spectralCount ? safeSpectralDatas[index].AbsoluteSpectrum.ToString(CultureInfo.InvariantCulture) : string.Empty);
+                float? sample = ReadMeasuredSample(result, StartWavelength + column);
+                if (sample is float value)
+                {
+                    row.Add(((double)(value * result.fPlambda)).ToString(CultureInfo.InvariantCulture));
+                    relativeValues[column] = ((double)(value > 0 ? value : 0)).ToString(CultureInfo.InvariantCulture);
+                }
+                else
+                {
+                    row.Add(string.Empty);
+                    relativeValues[column] = string.Empty;
+                }
             }
+            row.AddRange(relativeValues);
+        }
 
-            for (int wl = StartWavelength; wl <= EndWavelength; wl++)
-            {
-                int index = wl - StartWavelength;
-                row.Add(index < spectralCount ? safeSpectralDatas[index].RelativeSpectrum.ToString(CultureInfo.InvariantCulture) : string.Empty);
-            }
+        private static float? ReadMeasuredSample(ViewResultSpectrum result, int wavelength)
+        {
+            const double wavelengthTolerance = 0.001;
+            if (result.fPL is not { Length: > 0 } samples || !float.IsFinite(result.fSpect1)
+                || !float.IsFinite(result.fInterval) || result.fInterval <= 0)
+                return null;
+            if (float.IsFinite(result.fSpect2) && result.fSpect2 >= result.fSpect1
+                && wavelength > (double)result.fSpect2 + wavelengthTolerance)
+                return null;
+
+            double index = Math.Round((wavelength - (double)result.fSpect1) / result.fInterval);
+            // Allow rounding of the stored float grid without filling unmeasured wavelength columns.
+            if (index < 0 || index >= samples.Length || Math.Abs(result.fSpect1 + index * result.fInterval - wavelength) > wavelengthTolerance)
+                return null;
+            return samples[(int)index];
         }
 
         private static void AppendCsvLine(StringBuilder csvBuilder, List<string> values)

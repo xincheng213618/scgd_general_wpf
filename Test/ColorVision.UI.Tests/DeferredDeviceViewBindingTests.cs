@@ -42,7 +42,7 @@ public sealed class DeferredDeviceViewBindingTests
             Window? window = null;
             try
             {
-                ConfigService.SetInstance(new ConfigHandler { IsAutoSave = false });
+                TestEnvironment.SetConfig(new ConfigHandler { IsAutoSave = false });
                 foreach (string uri in ThemeManager.ResourceDictionaryWhite.Concat(ThemeManager.ResourceDictionaryBase))
                 {
                     ResourceDictionary dictionary = new() { Source = new Uri(uri, UriKind.RelativeOrAbsolute) };
@@ -148,7 +148,7 @@ public sealed class DeferredDeviceViewBindingTests
                 if (window != null) { window.Content = null; window.Close(); }
                 foreach (ResourceDictionary dictionary in dictionaries)
                     Application.Current.Resources.MergedDictionaries.Remove(dictionary);
-                ConfigService.SetInstance(previousConfig);
+                TestEnvironment.SetConfig(previousConfig);
             }
         });
     }
@@ -165,7 +165,7 @@ public sealed class DeferredDeviceViewBindingTests
             ViewSMU? view = null;
             try
             {
-                ConfigService.SetInstance(new ConfigHandler { IsAutoSave = false });
+                TestEnvironment.SetConfig(new ConfigHandler { IsAutoSave = false });
                 foreach (string uri in ThemeManager.ResourceDictionaryWhite.Concat(ThemeManager.ResourceDictionaryBase))
                 {
                     ResourceDictionary dictionary = new() { Source = new Uri(uri, UriKind.RelativeOrAbsolute) };
@@ -207,7 +207,7 @@ public sealed class DeferredDeviceViewBindingTests
                 if (view != null) DockViewManager.GetInstance().RemoveView(view);
                 foreach (ResourceDictionary dictionary in dictionaries)
                     Application.Current.Resources.MergedDictionaries.Remove(dictionary);
-                ConfigService.SetInstance(previousConfig);
+                TestEnvironment.SetConfig(previousConfig);
             }
         });
     }

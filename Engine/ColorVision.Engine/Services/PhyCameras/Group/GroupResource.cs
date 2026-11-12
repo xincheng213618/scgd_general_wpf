@@ -102,6 +102,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
 
         public static GroupResource? AddGroupResource(PhyCamera deviceService, string Name)
         {
+            ServiceAuthorization.Demand("calibration.write", deviceService.SysResourceModel);
             SysResourceModel sysResourceModel = new() { Name = Name, Type = (int)ServiceTypes.Group };
             sysResourceModel.Pid = deviceService.SysResourceModel.Id;
             sysResourceModel.TenantId = deviceService.SysResourceModel.TenantId;
@@ -123,6 +124,8 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
 
         public ConfigGroup Config { get; set; }
 
+        public override string Name { get => base.Name; set { base.Name = value; OnPropertyChanged(); } }
+
         public virtual bool IsEditMode { get => _IsEditMode; set { _IsEditMode = value; OnPropertyChanged(); } }
         private bool _IsEditMode;
 
@@ -134,12 +137,12 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
             SysResourceModel = sysResourceModel;
             Name = sysResourceModel.Name ?? sysResourceModel.Id.ToString();
             ReNameCommand = new RelayCommand(a => IsEditMode = true);
-            UploadCalibrationItemCommand = new RelayCommand(a => UploadCalibrationItem(a));
+            UploadCalibrationItemCommand = new RelayCommand(a => UploadCalibrationItem(a), _ => ServiceAuthorization.Can("calibration.write", SysResourceModel));
             Config = ServiceObjectBaseExtensions.TryDeserializeConfig<ConfigGroup>(SysResourceModel.Value);
             ContextMenu = new ContextMenu();
             ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.MenuRename, InputGestureText = "F2", Command = ReNameCommand });
             ContextMenu.Items.Add( new MenuItem() { Header = Properties.Resources.Delete, Command = ApplicationCommands.Delete });
-            ContextMenu.CommandBindings.Add(new CommandBinding(ApplicationCommands.Delete, (s, e) => Delete(), (s, e) => e.CanExecute = true));
+            ContextMenu.CommandBindings.Add(new CommandBinding(ApplicationCommands.Delete, (s, e) => DeleteFromCommand(), (s, e) => e.CanExecute = CanDelete));
         }
 
         /// <summary>
@@ -151,6 +154,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
         /// </summary>
         private void UploadCalibrationItem(object parameter)
         {
+            if (!ServiceAuthorization.Can("calibration.write", SysResourceModel)) return;
             if (parameter is not string typeName || string.IsNullOrWhiteSpace(typeName))
             {
                 MessageBox.Show(Application.Current.GetActiveWindow(), Properties.Resources.NoCalibrationTypeSpecified, Properties.Resources.CalibrationFileManagement);
@@ -195,6 +199,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
         /// <summary>Registers a generated or imported file and selects it in this group. Generated files never replace an existing camera file.</summary>
         internal CalibrationResource? ImportCalibrationFile(string slotKey, string srcFile, bool overwrite = false)
         {
+            ServiceAuthorization.Demand("calibration.write", SysResourceModel);
             if (!CalibrationSlotDefinitions.TryGet(slotKey, out var slot)) throw new ArgumentException("未知校正类型。", nameof(slotKey));
             if (this.GetAncestor<PhyCamera>() is not PhyCamera phyCamera) throw new InvalidOperationException(Properties.Resources.PhysicalCameraNotFound);
             if (!File.Exists(srcFile)) throw new FileNotFoundException("找不到生成的校正文件。", srcFile);
@@ -276,12 +281,14 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
 
         public override void Delete()
         {
-            this.Parent?.RemoveChild(this);
+            DemandDeleteAccess();
             SysResourceDao.Instance.DeleteById(Id);
+            this.Parent?.RemoveChild(this);
         }
 
         public override void Save()
         {
+            ServiceAuthorization.Demand("calibration.write", SysResourceModel);
             SysResourceModel.Name = Name;
             SysResourceModel.Value = JsonConvert.SerializeObject(Config);
             SysResourceDao.Instance.Save(SysResourceModel);

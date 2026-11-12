@@ -29,7 +29,7 @@ public sealed partial class DisplayMetrologyProvider
         int SaturatedSamples = 0,
         string Warning = "");
 
-    private sealed record CrossSlot(Rect Bounds, Rect Evidence, string Reason = "");
+    private sealed record CrossSlot(Rect Bounds, Rect Evidence, string Reason = "", CrossSlot? Expanded = null);
 
     // Pool every source pixel, preserving thin colored arms. This union is for location only;
     // all edge measurements below read independent channels at source resolution.
@@ -103,6 +103,39 @@ public sealed partial class DisplayMetrologyProvider
             }
             return (channels, width, height, step);
         }
+        if (step > 1 && (bytes is 1 or 2))
+        {
+            int maximum = bytes == 1 ? byte.MaxValue : ushort.MaxValue;
+            // Integer codes are exact in float storage. Pool them in source row order,
+            // preserving alpha validation, then decode only the preview cell maxima.
+            for (int y = 0; y < search.Height; y++)
+            {
+                token.ThrowIfCancellationRequested();
+                for (int x = 0; x < search.Width; x++)
+                {
+                    int offset = (search.Y + y) * input.Stride + (search.X + x) * count * bytes;
+                    int index = y / step * width + x / step;
+                    for (int c = 0; c < count; c++)
+                    {
+                        int sample = bytes == 1 ? data[offset + c] : System.Buffers.Binary.BinaryPrimitives.ReadUInt16LittleEndian(data.Slice(offset + c * bytes, 2));
+                        if (c == 3 && sample != maximum) throw new MeasurementException("transparent_input", "显示计量要求不透明图像。");
+                        if (c < 3) channels[2 - c][index] = Math.Max(channels[2 - c][index], (float)sample);
+                    }
+                }
+            }
+            for (int c = 0; c < channels.Length; c++)
+                for (int y = 0; y < height; y++)
+                {
+                    token.ThrowIfCancellationRequested();
+                    for (int x = 0; x < width; x++)
+                    {
+                        int index = y * width + x;
+                        double value = bytes == 1 ? channels[c][index] / 255d : channels[c][index] / 65535d;
+                        channels[c][index] = (float)(exponent == 1 ? value : Math.Pow(value, exponent));
+                    }
+                }
+            return (channels, width, height, step);
+        }
         for (int y = 0; y < search.Height; y++)
         {
             token.ThrowIfCancellationRequested();
@@ -130,7 +163,7 @@ public sealed partial class DisplayMetrologyProvider
         : bytes == 2 ? System.Buffers.Binary.BinaryPrimitives.ReadUInt16LittleEndian(data.Slice(offset, 2)) / 65535.0
         : BitConverter.Int32BitsToSingle(System.Buffers.Binary.BinaryPrimitives.ReadInt32LittleEndian(data.Slice(offset, 4)));
 
-    private static CrossSlot[] LocateCrossArray(float[][] channels, int width, int height, int step,
+    private static CrossSlot[] LocateCrossArray(AlgorithmImageBuffer input, float[][] channels, int width, int height, int step,
         Rect search, RgbCrossRegistrationParameters p, CancellationToken token, out int candidateCount)
     {
         int sourceWidth = search.Width, sourceHeight = search.Height;
@@ -151,6 +184,7 @@ public sealed partial class DisplayMetrologyProvider
         var mask = new byte[signal.Length];
         for (int i = 0; i < signal.Length; i++) if (signal[i] >= locatorFloor) mask[i] = 255;
         var located = new List<Rect>();
+        var footprints = new List<Rect>();
         foreach (var component in Components(mask, signal, width, height, token).Where(c => c.Area >= 5 && c.Bounds.Width >= 3 && c.Bounds.Height >= 3))
         {
             Rect footprint = component.Bounds;
@@ -175,9 +209,19 @@ public sealed partial class DisplayMetrologyProvider
                     if (signal[y * width + x] >= level)
                     { left = Math.Min(left, x); top = Math.Min(top, y); right = Math.Max(right, x + 1); bottom = Math.Max(bottom, y + 1); }
             if (right - left < 3 || bottom - top < 3) continue;
+            Rect sourceFootprint = new(footprint.X * step, footprint.Y * step,
+                Math.Min(footprint.Width * step, sourceWidth - footprint.X * step),
+                Math.Min(footprint.Height * step, sourceHeight - footprint.Y * step));
+            // Max pooling can join disconnected hot pixels into a false target. Check
+            // the same minimum connected support at source resolution; a dim or
+            // single-color real target still participates in array ambiguity checks.
+            if (step > 1 && !HasSourceCrossComponent(input,
+                new Rect(sourceFootprint.X + search.X, sourceFootprint.Y + search.Y, sourceFootprint.Width, sourceFootprint.Height),
+                locatorFloor, p.DecodeExponent, token)) continue;
             located.Add(new Rect(left * step, top * step,
                 Math.Min((right - left) * step, sourceWidth - left * step),
                 Math.Min((bottom - top) * step, sourceHeight - top * step)));
+            footprints.Add(sourceFootprint);
         }
         Rect[] candidates = located.ToArray();
         candidateCount = candidates.Length;
@@ -211,18 +255,64 @@ public sealed partial class DisplayMetrologyProvider
                     continue;
                 }
                 Rect evidence = matches[0];
-                int padX = Math.Max(4 * step, evidence.Width / 2), padY = Math.Max(4 * step, evidence.Height / 2);
-                int left = Math.Max(0, evidence.X - padX), top = Math.Max(0, evidence.Y - padY);
-                int right = Math.Min(sourceWidth, evidence.Right + padX), bottom = Math.Min(sourceHeight, evidence.Bottom + padY);
-                Rect roi = new(left, top, right - left, bottom - top);
-                string reason = candidates.Any(other => other != evidence && roi.IntersectsWith(other)) ? "target_roi_overlap" : "";
-                if ((long)roi.Width * roi.Height > MaximumFramePixels) reason = "target_roi_budget_exceeded";
-                if (evidence.X == 0 || evidence.Y == 0 || evidence.Right >= sourceWidth || evidence.Bottom >= sourceHeight) reason = "cross_clipped";
-                roi.X += search.X; roi.Y += search.Y;
-                evidence.X += search.X; evidence.Y += search.Y;
-                slots[r * p.Columns + c] = new(roi, evidence, reason);
+                int candidateIndex = Array.IndexOf(candidates, evidence);
+                CrossSlot slot = CreateCrossSlot(evidence, candidates, candidateIndex, search, step);
+                if (slot.Reason.Length == 0 && footprints[candidateIndex] != evidence)
+                {
+                    // Keep the low-noise footprint only as a recovery candidate. Normal
+                    // measurements retain their existing geometry and sampling positions.
+                    CrossSlot expanded = CreateCrossSlot(footprints[candidateIndex], footprints, candidateIndex, search, step);
+                    if (expanded.Reason.Length == 0) slot = slot with { Expanded = expanded };
+                }
+                slots[r * p.Columns + c] = slot;
             }
         return slots;
+    }
+
+    private static bool HasSourceCrossComponent(AlgorithmImageBuffer input, Rect footprint, double floor, double exponent, CancellationToken token)
+    {
+        // Resource limits cannot turn an unverified candidate into absent noise.
+        // Preserve oversized candidates; existing slot validation still applies.
+        if ((long)footprint.Width * footprint.Height > MaximumFramePixels) return true;
+        var signal = new float[footprint.Width * footprint.Height];
+        var mask = new byte[signal.Length];
+        int channels = input.Format.Channels(), bytes = input.Format.BitsPerChannel() / 8;
+        ReadOnlySpan<byte> data = input.Data.Span;
+        for (int y = 0; y < footprint.Height; y++)
+        {
+            token.ThrowIfCancellationRequested();
+            for (int x = 0; x < footprint.Width; x++)
+            {
+                int offset = (footprint.Y + y) * input.Stride + (footprint.X + x) * channels * bytes;
+                float maximum = 0;
+                for (int channel = 0; channel < 3; channel++)
+                {
+                    double value = CrossSample(data, offset + channel * bytes, bytes);
+                    maximum = Math.Max(maximum, (float)(exponent == 1 ? value : Math.Pow(value, exponent)));
+                }
+                int index = y * footprint.Width + x;
+                signal[index] = maximum;
+                if (maximum >= floor) mask[index] = 255;
+            }
+        }
+        return Components(mask, signal, footprint.Width, footprint.Height, token)
+            .Any(component => component.Area >= 5 && component.Bounds.Width >= 3 && component.Bounds.Height >= 3);
+    }
+
+    private static CrossSlot CreateCrossSlot(Rect evidence, IReadOnlyList<Rect> candidates, int candidateIndex, Rect search, int step)
+    {
+        int padX = Math.Max(4 * step, evidence.Width / 2), padY = Math.Max(4 * step, evidence.Height / 2);
+        int left = Math.Max(0, evidence.X - padX), top = Math.Max(0, evidence.Y - padY);
+        int right = Math.Min(search.Width, evidence.Right + padX), bottom = Math.Min(search.Height, evidence.Bottom + padY);
+        Rect roi = new(left, top, right - left, bottom - top);
+        string reason = "";
+        for (int i = 0; i < candidates.Count; i++)
+            if (i != candidateIndex && roi.IntersectsWith(candidates[i])) reason = "target_roi_overlap";
+        if ((long)roi.Width * roi.Height > MaximumFramePixels) reason = "target_roi_budget_exceeded";
+        if (evidence.X == 0 || evidence.Y == 0 || evidence.Right >= search.Width || evidence.Bottom >= search.Height) reason = "cross_clipped";
+        roi.X += search.X; roi.Y += search.Y;
+        evidence.X += search.X; evidence.Y += search.Y;
+        return new(roi, evidence, reason);
     }
 
     private static float SelectCrossUpperMedian(float[] values, CancellationToken token)
@@ -274,15 +364,27 @@ public sealed partial class DisplayMetrologyProvider
             return new(false, "cross_clipped");
         int channels = input.Format.Channels(), bytes = input.Format.BitsPerChannel() / 8;
         var values = new float[roi.Width * roi.Height];
-        const int histogramBins = ushort.MaxValue + 1;
-        // Large BGR16 ROIs can select the exact upper median by counting samples.
+        int histogramBins = bytes == 1 ? byte.MaxValue + 1 : ushort.MaxValue + 1;
+        // Integer ROIs can select the exact upper median by counting samples.
         // Positive decoding preserves their ordering, including float rounding ties.
         // For smaller ROIs, sorting a copy uses less scratch space than the bins.
-        int[]? histogram = input.Format == AlgorithmImageFormat.Bgr48 && values.Length >= histogramBins ? new int[histogramBins] : null;
+        int[]? histogram = (bytes is 1 or 2) && values.Length >= histogramBins ? new int[histogramBins] : null;
         ReadOnlySpan<byte> data = input.Data.Span;
         for (int y = 0; y < roi.Height; y++)
         {
             token.ThrowIfCancellationRequested();
+            if (histogram != null && bytes == 1)
+            {
+                for (int x = 0; x < roi.Width; x++)
+                {
+                    int offset = (roi.Y + y) * input.Stride + (roi.X + x) * channels + channel;
+                    byte sample = data[offset];
+                    histogram[sample]++;
+                    double value = sample / 255d;
+                    values[y * roi.Width + x] = (float)(p.DecodeExponent == 1 ? value : Math.Pow(value, p.DecodeExponent));
+                }
+                continue;
+            }
             for (int x = 0; x < roi.Width; x++)
             {
                 int offset = (roi.Y + y) * input.Stride + (roi.X + x) * channels * bytes + channel * bytes;
@@ -304,7 +406,8 @@ public sealed partial class DisplayMetrologyProvider
         {
             int remaining = values.Length / 2, median = 0;
             while (remaining >= histogram[median]) remaining -= histogram[median++];
-            minimum = (float)(p.DecodeExponent == 1 ? median / 65535d : Math.Pow(median / 65535d, p.DecodeExponent));
+            double normalizedMedian = bytes == 1 ? median / 255d : median / 65535d;
+            minimum = (float)(p.DecodeExponent == 1 ? normalizedMedian : Math.Pow(normalizedMedian, p.DecodeExponent));
         }
         else
         {
@@ -467,7 +570,7 @@ public sealed partial class DisplayMetrologyProvider
         Rect search = ResolveCrossSearchRegion(context.Invocation.Roi, input);
         var locator = CrossLocatorImage(input, search, parameters.DecodeExponent, token);
         float[][] signals = locator.Channels;
-        CrossSlot[] slots = LocateCrossArray(signals, locator.Width, locator.Height, locator.Step, search, parameters, token, out int candidateCount);
+        CrossSlot[] slots = LocateCrossArray(input, signals, locator.Width, locator.Height, locator.Step, search, parameters, token, out int candidateCount);
         for (int channel = 0; channel < signals.Length; channel++)
         {
             artifacts.Add(new AlgorithmImageArtifact(
@@ -501,7 +604,29 @@ public sealed partial class DisplayMetrologyProvider
         {
             token.ThrowIfCancellationRequested();
             Rect bounds = slots[index].Bounds;
+            int profileStart = profiles.Count;
             CrossTarget[] targets = channelIndexes.Select((channel, color) => LocateCross(input, channel, slots[index], parameters, token, index, channelNames[color], profiles)).ToArray();
+            if (slots[index].Expanded is CrossSlot expanded && targets.All(target => target.Valid)
+                && (targets.Any(target => target.HorizontalCoverage < parameters.MinimumArmCoverage || target.VerticalCoverage < parameters.MinimumArmCoverage)
+                    || CrossSamplingBandClipped(slots[index].Evidence, expanded.Evidence)))
+            {
+                // A bright junction can shrink the peak envelope into the arm and move
+                // sampling onto the junction. Retry all colors on one common footprint,
+                // without changing edge thresholds or accepting worse channel coverage.
+                var expandedProfiles = new List<IReadOnlyDictionary<string, JsonElement>>();
+                CrossTarget[] recovered = channelIndexes.Select((channel, color) => LocateCross(input, channel, expanded, parameters, token, index, channelNames[color], expandedProfiles)).ToArray();
+                if (recovered.Where((target, channel) => !target.Valid
+                    || target.HorizontalCoverage < Math.Max(parameters.MinimumArmCoverage, targets[channel].HorizontalCoverage)
+                    || target.VerticalCoverage < Math.Max(parameters.MinimumArmCoverage, targets[channel].VerticalCoverage)
+                    || target.Warning.Split(';', StringSplitOptions.RemoveEmptyEntries)
+                        .Except(targets[channel].Warning.Split(';', StringSplitOptions.RemoveEmptyEntries)).Any()).Any() == false)
+                {
+                    targets = recovered;
+                    bounds = expanded.Bounds;
+                    profiles.RemoveRange(profileStart, profiles.Count - profileStart);
+                    profiles.AddRange(expandedProfiles);
+                }
+            }
             bool valid = targets.All(target => target.Valid);
             string reason = string.Join(";", targets.Select((target, channel) => target.Valid ? null : $"{channelNames[channel]}:{target.Reason}")
                 .Where(value => value != null));
@@ -619,6 +744,16 @@ public sealed partial class DisplayMetrologyProvider
             RgbCrossMeasurementExporter.Create(context.Invocation.InvocationId, context.Descriptor.Version.ToString(),
                 context.Inputs[0].SourceRevision ?? context.Invocation.InvocationId.ToString(), input.Width, input.Height,
                 search, parameters.Rows, parameters.Columns, artifacts)));
+    }
+
+    private static bool CrossSamplingBandClipped(Rect evidence, Rect footprint)
+    {
+        // Use the same integer, half-open sampling intervals as Edges. End-point
+        // falloff outside these intervals is normal and keeps the original result.
+        return evidence.X > footprint.X + (int)(footprint.Width * 0.10)
+            || evidence.Right < footprint.X + (int)(footprint.Width * 0.90)
+            || evidence.Y > footprint.Y + (int)(footprint.Height * 0.10)
+            || evidence.Bottom < footprint.Y + (int)(footprint.Height * 0.90);
     }
 
     private static void AddCrossOverlay(

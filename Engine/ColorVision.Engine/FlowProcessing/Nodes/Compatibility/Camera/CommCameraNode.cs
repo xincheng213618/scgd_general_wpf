@@ -1,8 +1,11 @@
 #nullable disable
 using System.ComponentModel;
 using ColorVision.Engine.PropertyEditor;
+using ColorVision.Engine.Services.Devices.Camera.Local;
+using ColorVision.FileIO;
 using FlowEngineLib.Algorithm;
 using FlowEngineLib.Base;
+using Newtonsoft.Json;
 using ST.Library.UI.NodeEditor;
 
 namespace FlowEngineLib.Node.Camera;
@@ -11,8 +14,6 @@ namespace FlowEngineLib.Node.Camera;
 [STNodeSerializationModel("FlowEngineLib.dll|FlowEngineLib.Node.Camera.CommCameraNode")]
 public class CommCameraNode : CVBaseServerNode
 {
-	protected bool _IsHDR;
-
 	private string _CamTempName;
 
 	protected CVImageFlipMode _FlipMode;
@@ -29,22 +30,8 @@ public class CommCameraNode : CVBaseServerNode
 
 	private STNodeEditText<string> m_ctrl_camTemp;
 
-	[STNodeProperty("HDR", "HDR", true)]
-	public bool IsHDR
-	{
-		get
-		{
-			return _IsHDR;
-		}
-		set
-		{
-			_IsHDR = value;
-			CamTempName = string.Empty;
-			OnPropertyChanged();
-		}
-	}
-
 	[STNodeProperty("相机模板", "相机参数模板", true)]
+	[PropertyEditorType(typeof(CameraRunTemplatePropertiesEditor))]
 	public string CamTempName
 	{
 		get
@@ -91,6 +78,8 @@ public class CommCameraNode : CVBaseServerNode
 	}
 
 	[STNodeProperty("曝光模板", "曝光模板", true)]
+	[PropertyVisibility(nameof(IsAutoExp))]
+	[PropertyEditorType(typeof(AutoExposureTemplatePropertiesEditor))]
 	public string TempName
 	{
 		get
@@ -146,6 +135,12 @@ public class CommCameraNode : CVBaseServerNode
 		_FocusTempName = string.Empty;
 	}
 
+	[Browsable(false), JsonIgnore]
+	public override bool RequiresRemoteService => !LocalCameraFlowExecution.UsesLocalCamera(DeviceCode);
+
+	protected override FlowLocalExecution CreateLocalExecution(CVMQTTRequest request)
+		=> LocalCameraFlowExecution.Create(request, CVFileSaveMode.Synchronous);
+
 	protected override void OnCreate()
 	{
 		base.OnCreate();
@@ -165,6 +160,6 @@ public class CommCameraNode : CVBaseServerNode
 
 	protected override object getBaseEventData(CVStartCFC start)
 	{
-		return new CommCameraData(_CamTempName, _IsWithND, _IsAutoExp, _TempName, _CalibTempName, _IsHDR, _FlipMode);
+		return new CommCameraData(_CamTempName, _IsWithND, _IsAutoExp, _TempName, _CalibTempName, _FlipMode);
 	}
 }

@@ -2,7 +2,11 @@ using ColorVision.Algorithms;
 using ColorVision.Core;
 using System;
 using System.Buffers;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.X86;
+using System.Threading;
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
@@ -12,14 +16,16 @@ namespace ColorVision.ImageEditor.Algorithms
     internal static class ImageAlgorithmInputFactory
     {
         public static AlgorithmInput Acquire(ImageProcessingContext image, string name = "source")
+            => CreateInput(AcquireCurrentFrame(image), name);
+
+        private static AlgorithmInput CreateInput((AlgorithmImageBuffer Image, long Revision) frame, string name)
         {
-            (AlgorithmImageBuffer buffer, long revision) = AcquireCurrentFrame(image);
             return new AlgorithmInput
             {
                 Name = name,
-                Image = buffer,
+                Image = frame.Image,
                 Ownership = AlgorithmInputOwnership.Transferred,
-                SourceRevision = revision.ToString(System.Globalization.CultureInfo.InvariantCulture),
+                SourceRevision = frame.Revision.ToString(System.Globalization.CultureInfo.InvariantCulture),
                 ColorSpace = "encoded-device-values",
             };
         }
@@ -57,20 +63,45 @@ namespace ColorVision.ImageEditor.Algorithms
             throw new InvalidOperationException("The image changed while the ROI was being selected. Select the ROI again on the current image.");
         }
 
+        internal static AlgorithmInput AcquireRegion(ImageProcessingContext image, ImageSelectionScope scope, Int32Rect region)
+        {
+            if (TransientRoiSelectionSession.IsSourceScopeCurrent(image, scope))
+            {
+                var frame = AcquireCurrentFrame(image, region);
+                if (frame.Revision == scope.SourceRevision && TransientRoiSelectionSession.IsSourceScopeCurrent(image, scope))
+                    return CreateInput(frame, "source");
+
+                frame.Image.Dispose();
+            }
+
+            throw new InvalidOperationException("The image changed while the ROI was being selected. Select the ROI again on the current image.");
+        }
+
         /// <summary>
-        /// Captures the current document revision through ImageFrameLease while normalizing the
-        /// WPF source at the only boundary that still knows its channel, alpha and palette semantics.
+        /// Captures the shared document revision without materializing a native frame when the
+        /// host supports source-state capture. WPF still owns channel, alpha and palette semantics.
         /// </summary>
         public static (AlgorithmImageBuffer Image, long Revision) AcquireCurrentFrame(ImageProcessingContext image)
+            => AcquireCurrentFrame(image, null);
+
+        public static (AlgorithmImageBuffer Image, long Revision) AcquireCurrentFrame(ImageProcessingContext image, Int32Rect? region)
         {
             ArgumentNullException.ThrowIfNull(image);
             if (!image.Dispatcher.CheckAccess())
-                return image.Dispatcher.Invoke(() => AcquireCurrentFrameCore(image));
-            return AcquireCurrentFrameCore(image);
+                return image.Dispatcher.Invoke(() => AcquireCurrentFrameCore(image, region));
+            return AcquireCurrentFrameCore(image, region);
         }
 
-        private static (AlgorithmImageBuffer Image, long Revision) AcquireCurrentFrameCore(ImageProcessingContext image)
+        private static (AlgorithmImageBuffer Image, long Revision) AcquireCurrentFrameCore(ImageProcessingContext image, Int32Rect? region)
         {
+            if (image.CaptureSourceState() is { } state)
+            {
+                BitmapSource capturedSource = state.Source as BitmapSource
+                    ?? throw new InvalidOperationException("The current image has no WPF bitmap source.");
+                return CopyCurrentSource(image, capturedSource, state.Revision, region);
+            }
+
+            // Older hosts provide only native leases. Keep their lifetime and layout validation.
             using ImageFrameLease? lease = image.AcquireImageFrame();
             if (lease == null) throw new InvalidOperationException("The current image has no readable source frame.");
             BitmapSource source = image.ViewBitmapSource as BitmapSource
@@ -78,13 +109,19 @@ namespace ColorVision.ImageEditor.Algorithms
             if (source.PixelWidth != lease.Width || source.PixelHeight != lease.Height)
                 throw new InvalidOperationException("The WPF source and leased frame dimensions do not match.");
 
-            AlgorithmImageBuffer buffer = Copy(source);
-            if (!image.IsCurrentImageRevision(lease.Revision))
+            return CopyCurrentSource(image, source, lease.Revision, region);
+        }
+
+        private static (AlgorithmImageBuffer Image, long Revision) CopyCurrentSource(
+            ImageProcessingContext image, BitmapSource source, long revision, Int32Rect? region)
+        {
+            AlgorithmImageBuffer buffer = Copy(source, region);
+            if (!image.IsCurrentImageRevision(revision) || !ReferenceEquals(image.ViewBitmapSource, source))
             {
                 buffer.Dispose();
                 throw new InvalidOperationException("The source image changed while its algorithm snapshot was being captured.");
             }
-            return (buffer, lease.Revision);
+            return (buffer, revision);
         }
 
         /// <summary>
@@ -93,31 +130,42 @@ namespace ColorVision.ImageEditor.Algorithms
         /// </summary>
         public static AlgorithmImageBuffer Copy(HImage image, AlgorithmImageFormat format, double dpiX = 96, double dpiY = 96)
         {
+            if (image.pData == IntPtr.Zero || image.rows <= 0 || image.cols <= 0)
+                throw new ArgumentException("HImage must contain a nonempty pixel buffer with positive dimensions.", nameof(image));
             if (format.Channels() != image.channels || format.BitsPerChannel() != image.depth)
                 throw new ArgumentException($"Declared format {format} does not match HImage depth={image.depth}, channels={image.channels}.", nameof(format));
             int rowBytes = checked(image.cols * format.BytesPerPixel());
-            int sourceStride = image.stride >= rowBytes ? image.stride : rowBytes;
+            int sourceStride = image.stride == 0 ? rowBytes : image.stride;
+            if (sourceStride < rowBytes)
+                throw new ArgumentException("HImage stride must be zero or at least the size of one pixel row.", nameof(image));
             byte[] data = new byte[checked(rowBytes * image.rows)];
             for (int row = 0; row < image.rows; row++)
-                Marshal.Copy(IntPtr.Add(image.pData, row * sourceStride), data, row * rowBytes, rowBytes);
+                Marshal.Copy(new IntPtr(checked(image.pData.ToInt64() + (long)row * sourceStride)), data, row * rowBytes, rowBytes);
             return new AlgorithmImageBuffer(image.cols, image.rows, rowBytes, format, data, dpiX, dpiY);
         }
 
-        public static AlgorithmImageBuffer Copy(BitmapSource image)
+        public static AlgorithmImageBuffer Copy(BitmapSource image) => Copy(image, null);
+
+        public static unsafe AlgorithmImageBuffer Copy(BitmapSource image, Int32Rect? region)
         {
             ArgumentNullException.ThrowIfNull(image);
-            if (image.Format == PixelFormats.Indexed8) return CopyIndexed8(image);
+            Int32Rect bounds = region ?? new Int32Rect(0, 0, image.PixelWidth, image.PixelHeight);
+            int width = bounds.Width, height = bounds.Height;
+            if (image.Format == PixelFormats.Indexed8) return CopyIndexed8(image, bounds);
 
             AlgorithmImageFormat format = FromPixelFormat(image.Format);
-            int stride = checked(image.PixelWidth * format.BytesPerPixel());
-            byte[] data = new byte[checked(stride * image.PixelHeight)];
-            image.CopyPixels(data, stride, 0);
-            if (image.Format == PixelFormats.Rgb24) SwapRedBlue(data, stride, image.PixelWidth, image.PixelHeight, 1, 3);
-            else if (image.Format == PixelFormats.Rgb48) SwapRedBlue(data, stride, image.PixelWidth, image.PixelHeight, 2, 3);
-            else if (image.Format == PixelFormats.Rgba64) SwapRedBlue(data, stride, image.PixelWidth, image.PixelHeight, 2, 4);
-            else if (image.Format == PixelFormats.Bgr32) SetOpaqueAlpha(data, stride, image.PixelWidth, image.PixelHeight);
-            else if (image.Format == PixelFormats.Pbgra32) UnpremultiplyAlpha(data, stride, image.PixelWidth, image.PixelHeight);
-            return new AlgorithmImageBuffer(image.PixelWidth, image.PixelHeight, stride, format, data, image.DpiX, image.DpiY);
+            int stride = checked(width * format.BytesPerPixel());
+            byte[] data = new byte[checked(stride * height)];
+            image.CopyPixels(bounds, data, stride, 0);
+            if (image.Format == PixelFormats.Rgb24) SwapRedBlue(data, stride, width, height, 1, 3);
+            else if (image.Format == PixelFormats.Rgb48 || image.Format == PixelFormats.Rgba64)
+            {
+                fixed (byte* pixels = data)
+                    CopyColor16(pixels, stride, pixels, stride, width, height, format.BytesPerPixel());
+            }
+            else if (image.Format == PixelFormats.Bgr32) SetOpaqueAlpha(data, stride, width, height);
+            else if (image.Format == PixelFormats.Pbgra32) UnpremultiplyAlpha(data, stride, width, height);
+            return new AlgorithmImageBuffer(width, height, stride, format, data, image.DpiX, image.DpiY);
         }
 
         public static unsafe WriteableBitmap ToWriteableBitmap(AlgorithmImageBuffer image)
@@ -126,12 +174,15 @@ namespace ColorVision.ImageEditor.Algorithms
             Int32Rect bounds = new(0, 0, image.Width, image.Height);
             if (image.Format is AlgorithmImageFormat.Bgr48 or AlgorithmImageFormat.Bgra64)
             {
-                byte[] converted = image.Data.ToArray();
-                if (image.Format == AlgorithmImageFormat.Bgr48)
-                    SwapRedBlue(converted, image.Stride, image.Width, image.Height, 2, 3);
-                else
-                    SwapRedBlue(converted, image.Stride, image.Width, image.Height, 2, 4);
-                bitmap.WritePixels(bounds, converted, image.Stride, 0);
+                bitmap.Lock();
+                try
+                {
+                    using MemoryHandle pin = image.Data.Pin();
+                    CopyColor16((byte*)pin.Pointer, image.Stride, (byte*)bitmap.BackBuffer, bitmap.BackBufferStride,
+                        image.Width, image.Height, image.Format.BytesPerPixel());
+                    bitmap.AddDirtyRect(bounds);
+                }
+                finally { bitmap.Unlock(); }
             }
             else
             {
@@ -140,6 +191,66 @@ namespace ColorVision.ImageEditor.Algorithms
                 bitmap.WritePixels(bounds, (IntPtr)pin.Pointer, data.Length, image.Stride);
             }
             return bitmap;
+        }
+
+        // Supports disjoint output and in-place normalization of a private snapshot.
+        internal static unsafe void CopyColor16(byte* sourceBase, int sourceStride, byte* destinationBase, int destinationStride,
+            int width, int height, int pixelBytes, CancellationToken cancellationToken = default)
+        {
+            Vector128<byte> swap = pixelBytes == 6
+                ? Vector128.Create((byte)4, 5, 2, 3, 0, 1, 10, 11, 8, 9, 6, 7, 128, 128, 128, 128)
+                : Vector128.Create((byte)4, 5, 2, 3, 0, 1, 6, 7, 12, 13, 10, 11, 8, 9, 14, 15);
+            for (int y = 0; y < height; y++)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                byte* source = sourceBase + (long)y * sourceStride;
+                byte* destination = destinationBase + (long)y * destinationStride;
+                int x = 0;
+                if (Ssse3.IsSupported)
+                {
+                    if (pixelBytes == 6)
+                    {
+                        // A 16-byte load needs three valid 6-byte pixels. Emit exactly two pixels.
+                        for (; x + 2 < width; x += 2)
+                        {
+                            Vector128<byte> pixels = Ssse3.Shuffle(Unsafe.ReadUnaligned<Vector128<byte>>(source), swap);
+                            Unsafe.WriteUnaligned(destination, pixels.AsUInt64().GetElement(0));
+                            Unsafe.WriteUnaligned(destination + 8, pixels.AsUInt32().GetElement(2));
+                            source += 12;
+                            destination += 12;
+                        }
+                    }
+                    else
+                    {
+                        for (; x + 1 < width; x += 2)
+                        {
+                            Vector128<byte> pixels = Ssse3.Shuffle(Unsafe.ReadUnaligned<Vector128<byte>>(source), swap);
+                            Unsafe.WriteUnaligned(destination, pixels);
+                            source += 16;
+                            destination += 16;
+                        }
+                    }
+                }
+                for (; x < width; x++)
+                {
+                    byte blueLow = source[0];
+                    byte blueHigh = source[1];
+                    destination[0] = source[4];
+                    destination[1] = source[5];
+                    destination[2] = source[2];
+                    destination[3] = source[3];
+                    destination[4] = blueLow;
+                    destination[5] = blueHigh;
+                    if (pixelBytes == 8)
+                    {
+                        destination[6] = source[6];
+                        destination[7] = source[7];
+                    }
+                    source += pixelBytes;
+                    destination += pixelBytes;
+                }
+            }
+            cancellationToken.ThrowIfCancellationRequested();
         }
 
         public static AlgorithmImageFormat FromPixelFormat(PixelFormat format)
@@ -167,19 +278,19 @@ namespace ColorVision.ImageEditor.Algorithms
             _ => throw new ArgumentOutOfRangeException(nameof(format)),
         };
 
-        private static AlgorithmImageBuffer CopyIndexed8(BitmapSource image)
+        private static AlgorithmImageBuffer CopyIndexed8(BitmapSource image, Int32Rect bounds)
         {
             BitmapPalette palette = image.Palette
                 ?? throw new NotSupportedException("Indexed8 input requires a palette.");
-            int sourceStride = image.PixelWidth;
-            byte[] indices = new byte[checked(sourceStride * image.PixelHeight)];
-            image.CopyPixels(indices, sourceStride, 0);
+            int sourceStride = bounds.Width;
+            byte[] indices = new byte[checked(sourceStride * bounds.Height)];
+            image.CopyPixels(bounds, indices, sourceStride, 0);
 
-            int targetStride = checked(image.PixelWidth * 4);
-            byte[] data = new byte[checked(targetStride * image.PixelHeight)];
-            for (int y = 0; y < image.PixelHeight; y++)
+            int targetStride = checked(bounds.Width * 4);
+            byte[] data = new byte[checked(targetStride * bounds.Height)];
+            for (int y = 0; y < bounds.Height; y++)
             {
-                for (int x = 0; x < image.PixelWidth; x++)
+                for (int x = 0; x < bounds.Width; x++)
                 {
                     int index = indices[y * sourceStride + x];
                     if (index >= palette.Colors.Count)
@@ -192,7 +303,7 @@ namespace ColorVision.ImageEditor.Algorithms
                     data[target + 3] = color.A;
                 }
             }
-            return new AlgorithmImageBuffer(image.PixelWidth, image.PixelHeight, targetStride, AlgorithmImageFormat.Bgra32, data, image.DpiX, image.DpiY);
+            return new AlgorithmImageBuffer(bounds.Width, bounds.Height, targetStride, AlgorithmImageFormat.Bgra32, data, image.DpiX, image.DpiY);
         }
 
         private static void SetOpaqueAlpha(byte[] data, int stride, int width, int height)

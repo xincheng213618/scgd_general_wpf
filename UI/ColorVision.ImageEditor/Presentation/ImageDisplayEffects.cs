@@ -31,6 +31,12 @@ namespace ColorVision.ImageEditor.Presentation
 
         internal void ConfigureForImage() => _pseudoColorController.ConfigureForImage();
 
+        internal void RefreshForSelectedLayer() => _pseudoColorController.OnSelectedLayerChanged();
+
+        internal bool TryRefreshOwnedStaticSelection(int channel) => _pseudoColorController.TryRefreshOwnedStaticSelection(channel);
+
+        internal void RetirePreviewForStreamSelection() => _pseudoColorController.RetirePreviewForStreamSelection();
+
         internal void Invalidate() => _pseudoColorController.Invalidate();
 
         internal void ResetForSourceChange() => _pseudoColorController.Reset();

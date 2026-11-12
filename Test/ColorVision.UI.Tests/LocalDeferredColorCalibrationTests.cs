@@ -8,6 +8,7 @@ using FlowEngineLib.Algorithm;
 using Newtonsoft.Json;
 using System.IO;
 using System.Runtime.InteropServices;
+using FlowCalibrationExecution = ColorVision.Engine.FlowProcessing.Nodes.LocalCalibrationExecution;
 
 namespace ColorVision.UI.Tests;
 
@@ -105,7 +106,7 @@ public sealed class LocalDeferredColorCalibrationTests
             action.SetCurrentFrame(full);
             LocalCalibrationNode node = new() { AllowAcceleration = true, CalibTempName = "test" };
             var execute = typeof(LocalCalibrationNodeBase).GetMethod("ExecuteCalibration", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!;
-            using var execution = (IDisposable)execute.Invoke(node, [action])!;
+            using var execution = (IDisposable)execute.Invoke(node, [action, false])!;
             Assert.False(full.HasCie);
             Assert.Empty(full.CvCieFilePath);
             Assert.Equal(expected, Measure(full));
@@ -140,7 +141,26 @@ public sealed class LocalDeferredColorCalibrationTests
             using (cachedRaw) Assert.Equal(raw.Data, cachedRaw.Data);
             Assert.Equal(saveMode == CVFileSaveMode.Synchronous, File.Exists(path));
             Assert.Empty(frame.CvCieFilePath);
-            using (LocalFlowFrame reopened = LocalFrameFileService.Load(path)) Assert.Equal(Measure(frame), Measure(reopened));
+            using (LocalFlowFrame reopened = LocalFrameFileService.Load(path))
+            {
+                var action = new FlowEngineLib.Base.CVStartCFC("input-color");
+                using var resources = action.RuntimeResources;
+                reopened.MasterId = 42;
+                action.SetCurrentFrame(reopened);
+                LocalCalibrationRealPoiNode node = new() { AllowAcceleration = false };
+                var execute = typeof(LocalCalibrationNodeBase).GetMethod("ExecuteCalibration", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!;
+                LocalFrameMetadata metadata = reopened.Metadata;
+                ColorCalibrationSnapshot? color = reopened.ColorCalibration;
+                using var execution = (FlowCalibrationExecution)execute.Invoke(node, [action, true])!;
+                Assert.Same(reopened, execution.Frame);
+                Assert.Same(metadata, reopened.Metadata);
+                Assert.Same(color, reopened.ColorCalibration);
+                Assert.False(execution.Calibrated);
+                Assert.False(reopened.HasCie);
+                Assert.Equal(42, reopened.MasterId);
+                Assert.Equal(path, reopened.CvRawFilePath);
+                Assert.Equal(Measure(frame), Measure(execution.Frame));
+            }
             frame.ColorCalibration!.Save(path, canReplay: false);
             using LocalFlowFrame invalid = LocalFrameFileService.Load(path);
             Assert.Throws<InvalidOperationException>(() => Measure(invalid));
@@ -190,19 +210,47 @@ public sealed class LocalDeferredColorCalibrationTests
         Assert.DoesNotContain("AllowAcceleration", System.Text.Encoding.UTF8.GetString(node.GetSaveData()));
     }
 
-    [Fact]
-    public void LegacyCieInputIsReusedWhenAccelerationIsEnabled()
+    [Theory]
+    [InlineData(typeof(LocalCalibrationNode), false)]
+    [InlineData(typeof(LocalCalibrationRealPoiNode), true)]
+    public void InMemoryCieInputIsReusedWhenAccelerationIsEnabled(Type type, bool useInputColor)
     {
         using var frame = LocalFlowFrame.Allocate(new LocalFrameMetadata
             { Width = 1, Height = 1, Channels = 3, PrimaryBufferKind = LocalFrameBufferKind.CvCie }, 0, 12);
         var action = new FlowEngineLib.Base.CVStartCFC("legacy-cie");
         using var resources = action.RuntimeResources;
         action.SetCurrentFrame(frame);
-        LocalCalibrationNode node = new() { AllowAcceleration = true };
+        var node = (LocalCalibrationNodeBase)Activator.CreateInstance(type)!;
+        node.AllowAcceleration = true;
         var execute = typeof(LocalCalibrationNodeBase).GetMethod("ExecuteCalibration", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!;
-        using var execution = (IDisposable)execute.Invoke(node, [action])!;
+        using var execution = (FlowCalibrationExecution)execute.Invoke(node, [action, useInputColor])!;
+        Assert.Same(frame, execution.Frame);
         Assert.True(frame.HasCie);
         Assert.False(frame.HasRaw);
+    }
+
+    [Fact]
+    public void CalibrationRealPoiRejectsCvcieFileEvenWhenAlreadyLoaded()
+    {
+        string path = Path.Combine(Path.GetTempPath(), $"cv-cie-{Guid.NewGuid():N}.CVCIE");
+        try
+        {
+            Assert.True(CVFileUtil.WriteCIEFile(path, new byte[12], 1, 1, 32, 3));
+            using LocalFlowFrame frame = LocalFrameFileService.Load(path);
+            var action = new FlowEngineLib.Base.CVStartCFC("file-cie");
+            using var resources = action.RuntimeResources;
+            action.SetCurrentFrame(frame);
+            var execute = typeof(LocalCalibrationNodeBase).GetMethod("ExecuteCalibration", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!;
+            using var calibration = (FlowCalibrationExecution)execute.Invoke(new LocalCalibrationNode(), [action, false])!;
+            Assert.Same(frame, calibration.Frame);
+
+            var error = Assert.Throws<System.Reflection.TargetInvocationException>(() => execute.Invoke(new LocalCalibrationRealPoiNode(), [action, true]));
+            Assert.Contains("CVRAW", Assert.IsType<NotSupportedException>(error.InnerException).Message);
+        }
+        finally
+        {
+            File.Delete(path);
+        }
     }
 
     private static LocalFlowFrame CreateFrame(CVCIEFile raw, CVImageFlipMode flip)

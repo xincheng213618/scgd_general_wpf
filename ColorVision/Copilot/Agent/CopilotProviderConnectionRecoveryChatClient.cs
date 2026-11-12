@@ -6,6 +6,7 @@ using System.Linq;
 using System.Net.Http;
 using System.Net.Sockets;
 using System.Runtime.CompilerServices;
+using System.Runtime.ExceptionServices;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -183,6 +184,7 @@ namespace ColorVision.Copilot
                 ? array
                 : messages?.ToArray() ?? Array.Empty<Microsoft.Extensions.AI.ChatMessage>();
             var state = new CopilotProviderConnectionRecoveryState(_initialDelay, _maximumDelay);
+            var discardedUsage = CopilotTokenUsage.Empty;
 
             while (true)
             {
@@ -200,27 +202,92 @@ namespace ColorVision.Copilot
                     cancellationToken,
                     out var recovery))
                 {
+                    discardedUsage = discardedUsage.Add(
+                        CopilotTokenBudgetChatClient.ExtractPayloadFailureUsage(exception));
                     CopilotProviderNotificationObserver.Notify(
                         _onRecovery,
                         recovery,
                         "connection recovery");
-                    await WaitForRecoveryDelayAsync(recovery.Delay, cancellationToken).ConfigureAwait(false);
+                    try
+                    {
+                        await WaitForRecoveryDelayAsync(recovery.Delay, cancellationToken).ConfigureAwait(false);
+                    }
+                    catch (Exception delayFailure)
+                    {
+                        CopilotTokenBudgetChatClient.PreserveSettledFailureUsage(delayFailure, discardedUsage);
+                        throw;
+                    }
                     continue;
+                }
+                catch (Exception exception)
+                {
+                    CopilotTokenBudgetChatClient.PreserveSettledFailureUsage(exception,
+                        discardedUsage.Add(CopilotTokenBudgetChatClient.ExtractPayloadFailureUsage(exception)));
+                    throw;
                 }
 
                 if (streamingAttempt == null)
+                {
+                    var recoveredUsage = CopilotProviderRetryChatClient.CreateUsageUpdate(discardedUsage);
+                    if (recoveredUsage != null)
+                        yield return recoveredUsage;
                     yield break;
+                }
 
+                var mergeRecoveredUsage = discardedUsage.HasAny;
+                var attemptUsage = CopilotTokenUsage.Empty;
+                ChatResponseUpdate CaptureRecoveredUsage(ChatResponseUpdate update)
+                {
+                    if (!mergeRecoveredUsage || !update.Contents.Any(content => content is UsageContent))
+                        return update;
+                    attemptUsage = attemptUsage.MergeProgress(CopilotTokenBudgetChatClient.ExtractUsage(update.Contents));
+                    var preserved = update.Clone();
+                    preserved.Contents = update.Contents.Where(content => content is not UsageContent).ToList();
+                    return preserved;
+                }
                 await using (streamingAttempt)
                 {
                     foreach (var update in streamingAttempt.BufferedUpdates)
-                        yield return update;
+                        yield return CaptureRecoveredUsage(update);
 
                     var enumerator = streamingAttempt.Enumerator;
                     if (enumerator != null)
                     {
-                        while (await enumerator.MoveNextAsync().ConfigureAwait(false))
-                            yield return enumerator.Current;
+                        while (true)
+                        {
+                            var hasNext = false;
+                            ExceptionDispatchInfo? failure = null;
+                            try
+                            {
+                                hasNext = await enumerator.MoveNextAsync().ConfigureAwait(false);
+                            }
+                            catch (Exception exception)
+                            {
+                                failure = ExceptionDispatchInfo.Capture(exception);
+                            }
+                            if (failure != null)
+                            {
+                                if (mergeRecoveredUsage)
+                                {
+                                    CopilotTokenBudgetChatClient.PreserveSettledFailureUsage(failure.SourceException,
+                                        discardedUsage.Add(attemptUsage.MergeProgress(
+                                            CopilotTokenBudgetChatClient.ExtractPayloadFailureUsage(failure.SourceException))));
+                                }
+                                // The outer retry boundary publishes failure billing once.
+                                failure.Throw();
+                            }
+                            if (!hasNext)
+                                break;
+                            yield return CaptureRecoveredUsage(enumerator.Current);
+                        }
+                    }
+                    if (mergeRecoveredUsage)
+                    {
+                        // Budget consumers use cumulative snapshots, while the Harness sums
+                        // updates. Emit one logical-call total after merging recovered attempts.
+                        var recoveredUsage = CopilotProviderRetryChatClient.CreateUsageUpdate(discardedUsage.Add(attemptUsage));
+                        if (recoveredUsage != null)
+                            yield return recoveredUsage;
                     }
                 }
                 yield break;

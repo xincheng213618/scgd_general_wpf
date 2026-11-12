@@ -17,7 +17,7 @@ namespace ColorVision.Settings.Maintenance
 {
     internal static class StorageMaintenanceCatalog
     {
-        private static readonly string[] UpdateDirectoryPrefixes = ["ColorVisionUpdate-", "ColorVisionPluginsUpdate-", "ColorVisionPackageVersion-"];
+        internal static readonly string[] UpdateDirectoryPrefixes = ["ColorVisionUpdate-", "ColorVisionPluginsUpdate-", "ColorVisionPackageVersion-"];
 
         public static IReadOnlyList<MaintenanceFileCleanupRule> CreateRules(int logRetentionDays, int tempRetentionDays, int packageRetentionDays)
         {
@@ -162,7 +162,7 @@ namespace ColorVision.Settings.Maintenance
                 ? stem[..separator] + extension : name;
         }
 
-        private static bool IsCieCacheName(string name, CieDiagramKind kind)
+        internal static bool IsCieCacheName(string name, CieDiagramKind kind)
         {
             string prefix = $"{kind}_v";
             if (!name.StartsWith(prefix, StringComparison.Ordinal) || !name.EndsWith(".png", StringComparison.OrdinalIgnoreCase)) return false;

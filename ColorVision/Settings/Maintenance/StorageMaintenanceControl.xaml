@@ -6,95 +6,72 @@
              Foreground="{DynamicResource GlobalTextBrush}">
     <UserControl.Resources>
         <BooleanToVisibilityConverter x:Key="BoolVisibility"/>
-        <Style x:Key="SectionHeading" TargetType="TextBlock">
-            <Setter Property="FontSize" Value="14"/>
-            <Setter Property="FontWeight" Value="SemiBold"/>
-            <Setter Property="Margin" Value="2,22,0,10"/>
-        </Style>
-        <Style x:Key="Card" TargetType="Border">
-            <Setter Property="Background" Value="{DynamicResource GlobalBackground}"/>
-            <Setter Property="BorderBrush" Value="{DynamicResource ButtonBorderBrush}"/>
-            <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="CornerRadius" Value="10"/>
-        </Style>
-        <Style x:Key="ActionButton" TargetType="Button" BasedOn="{StaticResource ButtonDefault.Small}">
-            <Setter Property="MinHeight" Value="30"/>
-            <Setter Property="MinWidth" Value="76"/>
-            <Setter Property="Padding" Value="12,4"/>
-            <Setter Property="Margin" Value="6,0,0,0"/>
-        </Style>
-        <Style x:Key="SecondaryText" TargetType="TextBlock">
-            <Setter Property="FontSize" Value="12"/>
-            <Setter Property="Opacity" Value="0.76"/>
-            <Setter Property="TextWrapping" Value="Wrap"/>
-            <Setter Property="Margin" Value="0,4,0,0"/>
-        </Style>
-        <Style x:Key="DataRow" TargetType="Grid">
-            <Setter Property="Margin" Value="18,14"/>
-        </Style>
+        <Style x:Key="SectionHeading" TargetType="TextBlock"><Setter Property="FontSize" Value="15"/><Setter Property="FontWeight" Value="SemiBold"/><Setter Property="Margin" Value="0,28,0,12"/></Style>
+        <Style x:Key="Card" TargetType="Border"><Setter Property="Background" Value="{DynamicResource GlobalBackground}"/><Setter Property="BorderBrush" Value="{DynamicResource ButtonBorderBrush}"/><Setter Property="BorderThickness" Value="1"/><Setter Property="CornerRadius" Value="12"/></Style>
+        <Style x:Key="ActionButton" TargetType="Button" BasedOn="{StaticResource ButtonDefault.Small}"><Setter Property="MinHeight" Value="30"/><Setter Property="MinWidth" Value="68"/><Setter Property="Padding" Value="12,4"/><Setter Property="Margin" Value="8,0,0,0"/></Style>
+        <Style x:Key="SecondaryText" TargetType="TextBlock"><Setter Property="FontSize" Value="12"/><Setter Property="Opacity" Value="0.72"/><Setter Property="TextWrapping" Value="Wrap"/><Setter Property="Margin" Value="0,5,0,0"/></Style>
+        <Style x:Key="DataRow" TargetType="Grid"><Setter Property="Margin" Value="18,16"/></Style>
     </UserControl.Resources>
     <StackPanel>
+        <TextBlock Text="{x:Static local:MaintenanceText.ThisDevice}" FontSize="16" FontWeight="SemiBold"/>
+        <TextBlock Text="{x:Static local:MaintenanceText.StorageScope}" Style="{StaticResource SecondaryText}"/>
+        <Grid Margin="0,20,0,12">
+            <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+            <TextBlock Text="{Binding Overview.Summary}" FontWeight="SemiBold" FontSize="14" VerticalAlignment="Center" TextWrapping="Wrap" Margin="0,0,12,0" AutomationProperties.LiveSetting="Polite"/>
+            <StackPanel Grid.Column="1" Orientation="Horizontal">
+                <Button x:Name="RefreshStorageButton" Content="{x:Static local:MaintenanceText.Refresh}" Style="{StaticResource ActionButton}" IsEnabled="{Binding Overview.IsIdle}" Click="RefreshStorage_Click"/>
+                <Button Content="{x:Static local:MaintenanceText.Cancel}" Style="{StaticResource ActionButton}" Visibility="{Binding Overview.IsBusy, Converter={StaticResource BoolVisibility}}" Click="CancelStorage_Click"/>
+            </StackPanel>
+        </Grid>
+        <local:StorageUsageBar x:Name="OverviewBar" Height="24" ItemsSource="{Binding Overview.Items}" RefreshKey="{Binding Overview.ScanVersion}" AutomationProperties.Name="{Binding Overview.Summary}"/>
+        <ItemsControl x:Name="OverviewLegend" ItemsSource="{Binding Overview.Items}" Margin="0,12,0,0">
+            <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate><DataTemplate>
+                <Button Margin="0,0,22,14" MinWidth="92" Padding="0" Background="Transparent" BorderThickness="0" HorizontalContentAlignment="Left" IsEnabled="{Binding CanManage}" Click="ManageCategory_Click" AutomationProperties.Name="{Binding Title}">
+                    <StackPanel>
+                        <StackPanel Orientation="Horizontal"><Ellipse Width="8" Height="8" Fill="{Binding Color}" Margin="0,0,7,0"/><TextBlock Text="{Binding Title}" FontSize="12" MaxWidth="180" TextWrapping="Wrap"/></StackPanel>
+                        <TextBlock Text="{Binding SizeText}" Style="{StaticResource SecondaryText}"/>
+                    </StackPanel>
+                </Button>
+            </DataTemplate></ItemsControl.ItemTemplate>
+        </ItemsControl>
+        <TextBlock Text="{Binding Overview.Status}" Style="{StaticResource SecondaryText}" Margin="0,0,0,7" AutomationProperties.LiveSetting="Polite"/>
+        <TextBlock Text="{Binding Overview.PathText}" Style="{StaticResource SecondaryText}" MaxHeight="42" TextTrimming="CharacterEllipsis" ToolTip="{Binding Overview.PathText}"/>
+
         <TextBlock Text="{x:Static local:MaintenanceText.Management}" Style="{StaticResource SectionHeading}"/>
-        <Border Style="{StaticResource Card}">
-            <StackPanel>
-                <Grid Style="{StaticResource DataRow}">
-                    <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-                    <StackPanel Margin="0,0,16,0"><TextBlock Text="{x:Static local:MaintenanceText.FileManagement}" FontSize="14"/><TextBlock Text="{x:Static local:MaintenanceText.FileManagementDescription}" Style="{StaticResource SecondaryText}"/></StackPanel>
-                    <Button x:Name="FileManagementButton" Grid.Column="1" Content="{x:Static local:MaintenanceText.Manage}" Style="{StaticResource ActionButton}" Click="Files_Click"/>
-                </Grid>
-                <Separator Margin="18,0"/>
-                <Grid Style="{StaticResource DataRow}">
-                    <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-                    <StackPanel Margin="0,0,16,0"><TextBlock Text="{x:Static local:MaintenanceText.MemoryManagement}" FontSize="14"/><TextBlock Text="{x:Static local:MaintenanceText.MemoryManagementDescription}" Style="{StaticResource SecondaryText}"/></StackPanel>
-                    <Button x:Name="MemoryManagementButton" Grid.Column="1" Content="{x:Static local:MaintenanceText.Manage}" Style="{StaticResource ActionButton}" Click="Memory_Click"/>
-                </Grid>
-            </StackPanel>
-        </Border>
-        <TextBlock Text="{x:Static local:MaintenanceText.History}" Style="{StaticResource SectionHeading}"/>
-        <Border Style="{StaticResource Card}" IsEnabled="{Binding IsIdle}">
-            <StackPanel>
-                <Grid Style="{StaticResource DataRow}">
-                    <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-                    <StackPanel Margin="0,0,16,0"><TextBlock Text="{x:Static local:MaintenanceText.Database}" FontSize="14"/><TextBlock Text="{x:Static local:MaintenanceText.DatabaseDescription}" Style="{StaticResource SecondaryText}"/></StackPanel>
-                    <Button Grid.Column="1" Content="{x:Static local:MaintenanceText.Manage}" Style="{StaticResource ActionButton}" Click="Database_Click"/>
-                </Grid>
-                <Separator Margin="18,0"/>
-                <Grid Style="{StaticResource DataRow}">
-                    <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-                    <StackPanel Margin="0,0,16,0"><TextBlock Text="{x:Static local:MaintenanceText.Snapshots}" FontSize="14"/><TextBlock Text="{x:Static local:MaintenanceText.SnapshotsDescription}" Style="{StaticResource SecondaryText}"/></StackPanel>
-                    <Button Grid.Column="1" Content="{x:Static local:MaintenanceText.Manage}" Style="{StaticResource ActionButton}" Click="Snapshots_Click"/>
-                </Grid>
-                <Separator Margin="18,0"/>
-                <Grid Style="{StaticResource DataRow}">
-                    <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-                    <StackPanel Margin="0,0,16,0"><TextBlock Text="{x:Static local:MaintenanceText.ConfigBackup}" FontSize="14"/><TextBlock Text="{x:Static local:MaintenanceText.ConfigBackupDescription}" Style="{StaticResource SecondaryText}"/></StackPanel>
-                    <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
-                        <Button Content="{x:Static local:MaintenanceText.OpenFolder}" Style="{StaticResource ActionButton}" Click="OpenBackups_Click"/>
-                        <Button Content="{x:Static local:MaintenanceText.CreateBackup}" Style="{StaticResource ActionButton}" Click="Backup_Click"/>
-                    </StackPanel>
-                </Grid>
-            </StackPanel>
-        </Border>
-        <TextBlock Text="{Binding Status}" Style="{StaticResource SecondaryText}" Margin="18,6,18,0" AutomationProperties.LiveSetting="Polite"/>
-        <TextBlock Text="{x:Static local:MaintenanceText.Reset}" Style="{StaticResource SectionHeading}"/>
-        <Border Style="{StaticResource Card}" Padding="18,16" IsEnabled="{Binding IsIdle}">
-            <StackPanel>
-                <TextBlock Text="{x:Static local:MaintenanceText.ResetDescription}" Style="{StaticResource SecondaryText}"/>
-                <WrapPanel x:Name="ResetOptions" Margin="0,14,0,14">
-                    <CheckBox Content="{x:Static local:MaintenanceText.Appearance}" Tag="ColorVision.Themes.ThemeConfig,ThemeConfig,ColorVision.UI.Languages.LanguageConfig,LanguageConfig" IsChecked="True" Margin="0,0,20,10"/>
-                    <CheckBox Content="{x:Static local:MaintenanceText.Window}" Tag="ColorVision.MainWindowConfig,MainWindowConfig" IsChecked="True" Margin="0,0,20,10"/>
-                    <CheckBox Content="{x:Static local:MaintenanceText.Hotkeys}" Tag="ColorVision.UI.HotKey.HotKeyConfig,HotKeyConfig" Margin="0,0,20,10"/>
-                    <CheckBox Content="{x:Static local:MaintenanceText.Search}" Tag="ColorVision.UI.Serach.SearchConfig,SearchConfig" Margin="0,0,20,10"/>
-                    <CheckBox Content="{x:Static local:MaintenanceText.Viewer}" Tag="ColorVision.Solution.MultiImageViewer.MultiImageViewerConfig,MultiImageViewerConfig" Margin="0,0,20,10"/>
-                </WrapPanel>
-                <TextBlock x:Name="ResetStatus" TextWrapping="Wrap" FontSize="12" Margin="0,0,0,12"/>
-                <Border HorizontalAlignment="Right">
-                    <StackPanel Orientation="Horizontal">
-                        <Button x:Name="CancelResetButton" Content="{x:Static local:MaintenanceText.CancelReset}" Style="{StaticResource ActionButton}" Click="CancelReset_Click"/>
-                        <Button Content="{x:Static local:MaintenanceText.ScheduleReset}" Style="{StaticResource ActionButton}" Foreground="{DynamicResource GlobalTextBrush}" Click="Reset_Click"/>
-                    </StackPanel>
+        <Border Style="{StaticResource Card}"><StackPanel>
+            <Grid Style="{StaticResource DataRow}"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                <StackPanel Margin="0,0,16,0"><TextBlock Text="{x:Static local:MaintenanceText.FileManagement}" FontSize="14"/><TextBlock Text="{x:Static local:MaintenanceText.FileManagementDescription}" Style="{StaticResource SecondaryText}"/></StackPanel>
+                <Button x:Name="FileManagementButton" Grid.Column="1" Content="{x:Static local:MaintenanceText.Manage}" Style="{StaticResource ActionButton}" Click="Files_Click"/>
+            </Grid><Separator Margin="18,0"/>
+            <Grid Style="{StaticResource DataRow}"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                <StackPanel Margin="0,0,16,0"><TextBlock Text="{x:Static local:MaintenanceText.MemoryManagement}" FontSize="14"/><TextBlock Text="{x:Static local:MaintenanceText.MemoryManagementDescription}" Style="{StaticResource SecondaryText}"/></StackPanel>
+                <Button x:Name="MemoryManagementButton" Grid.Column="1" Content="{x:Static local:MaintenanceText.Manage}" Style="{StaticResource ActionButton}" Click="Memory_Click"/>
+            </Grid>
+        </StackPanel></Border>
+        <TextBlock Text="{x:Static local:MaintenanceText.StorageCategories}" Style="{StaticResource SectionHeading}"/>
+        <Border Style="{StaticResource Card}" Visibility="{Binding Overview.HasManagedSources, Converter={StaticResource BoolVisibility}}">
+            <ItemsControl ItemsSource="{Binding Overview.ManagedSources}"><ItemsControl.ItemTemplate><DataTemplate>
+                <Border Padding="18,14" BorderBrush="{DynamicResource ButtonBorderBrush}" BorderThickness="0,0,0,1">
+                    <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                        <StackPanel Margin="0,0,16,0"><TextBlock Text="{Binding Title}" FontSize="14"/><TextBlock Text="{Binding Description}" Style="{StaticResource SecondaryText}"/></StackPanel>
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center"><TextBlock Text="{Binding SizeText}" FontSize="12" Opacity="0.72" VerticalAlignment="Center"/><Button Content="{x:Static local:MaintenanceText.Manage}" Style="{StaticResource ActionButton}" IsEnabled="{Binding CanManage}" Click="ManageCategory_Click"/></StackPanel>
+                    </Grid>
                 </Border>
-            </StackPanel>
+            </DataTemplate></ItemsControl.ItemTemplate></ItemsControl>
         </Border>
+
+        <TextBlock Text="{x:Static local:MaintenanceText.History}" Style="{StaticResource SectionHeading}"/>
+        <Border Style="{StaticResource Card}" IsEnabled="{Binding ViewModel.IsIdle}"><StackPanel>
+            <Grid Style="{StaticResource DataRow}"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                <StackPanel Margin="0,0,16,0"><TextBlock Text="{x:Static local:MaintenanceText.Database}" FontSize="14"/><TextBlock Text="{x:Static local:MaintenanceText.DatabaseDescription}" Style="{StaticResource SecondaryText}"/></StackPanel>
+                <Button Grid.Column="1" Content="{x:Static local:MaintenanceText.Manage}" Style="{StaticResource ActionButton}" Click="Database_Click"/>
+            </Grid><Separator Margin="18,0"/>
+            <Grid Style="{StaticResource DataRow}"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                <StackPanel Margin="0,0,16,0"><TextBlock Text="{x:Static local:MaintenanceText.Snapshots}" FontSize="14"/><TextBlock Text="{x:Static local:MaintenanceText.SnapshotsDescription}" Style="{StaticResource SecondaryText}"/></StackPanel>
+                <Button Grid.Column="1" Content="{x:Static local:MaintenanceText.Manage}" Style="{StaticResource ActionButton}" Click="Snapshots_Click"/>
+            </Grid>
+        </StackPanel></Border>
+        <TextBlock Text="{Binding ViewModel.Status}" Style="{StaticResource SecondaryText}" Margin="0,8,0,0"/>
     </StackPanel>
 </UserControl>

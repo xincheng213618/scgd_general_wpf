@@ -2,7 +2,7 @@ using System;
 
 namespace ColorVision.Engine.Services.Devices.Sensor.Local;
 
-internal sealed class SensorBackendState(bool preference)
+internal sealed class SensorBackendState(bool preference, string deviceName = "传感器")
 {
     private static readonly object OwnershipSync = new();
     internal object Sync => OwnershipSync;
@@ -27,11 +27,11 @@ internal sealed class SensorBackendState(bool preference)
     }
     public void EnsureLocalAvailable()
     {
-        lock (Sync) if (!LocalOwned && (serviceMayOwn || serviceCommands != 0)) throw new InvalidOperationException("服务正在占用传感器，请先关闭服务连接。");
+        lock (Sync) if (!LocalOwned && (serviceMayOwn || serviceCommands != 0)) throw new InvalidOperationException($"服务正在占用{deviceName}，请先关闭服务连接。");
     }
     public void EnsureServiceAvailable()
     {
-        lock (Sync) if (LocalOwned || localCommands != 0) throw new InvalidOperationException("本地传感器正在使用，请先关闭本地连接。");
+        lock (Sync) if (LocalOwned || localCommands != 0) throw new InvalidOperationException($"本地{deviceName}正在使用，请先关闭本地连接。");
     }
     public void BeginLocalCommand() { lock (Sync) { EnsureLocalAvailable(); localCommands++; } }
     public void EndLocalCommand() { lock (Sync) localCommands--; }

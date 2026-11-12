@@ -179,29 +179,34 @@ public partial class DeviceSMU
         void Update()
         {
             if (localDisposed) return;
-            LocalResultAvailable?.Invoke(capture);
-            if (!capture.HasMeasurements) { ClearLocalSmuReadings(capture.Parameters.Channel, false); return; }
-            View.AddViewResultSMU(LocalSmuResultService.CreateView(capture, Code, id));
+            var captureChannel = capture.Parameters.Channel;
+            if (LocalSession.CanApplyReadout(captureChannel, capture.Generation)) LocalResultAvailable?.Invoke(capture);
+            if (capture.HasMeasurements) PresentResult(() => LocalSmuResultService.CreateView(capture, Code, id));
+            if (!LocalSession.CanApplyReadout(captureChannel, capture.Generation)) return;
+            if (!capture.HasMeasurements) { ClearLocalSmuReadings(captureChannel, false, capture.Generation); return; }
             if (!capture.IsScan || capture.Parameters.SourceValues != null)
             {
-                var channel = capture.Parameters.Channel == SMUChannelType.A ? DisplayConfig.ChannelA : DisplayConfig.ChannelB;
+                var channel = captureChannel == SMUChannelType.A ? DisplayConfig.ChannelA : DisplayConfig.ChannelB;
                 channel.V = capture.V; channel.I = capture.I;
-                if (capture.Parameters.Channel == DisplayConfig.Channel)
+                if (captureChannel == DisplayConfig.Channel)
                 {
                     DisplayConfig.V = capture.V; DisplayConfig.I = capture.I;
                     foreach (var spectrum in ServiceManager.Current?.DeviceServices.OfType<DeviceSpectrum>() ?? Enumerable.Empty<DeviceSpectrum>())
                     { spectrum.DisplayConfig.V = capture.V; spectrum.DisplayConfig.I = capture.I; }
                 }
             }
-            if (capture.Parameters.IsCloseOutput) ClearLocalSmuReadings(capture.Parameters.Channel, false);
+            if (capture.Parameters.IsCloseOutput) ClearLocalSmuReadings(captureChannel, false, capture.Generation);
         }
         if (Application.Current?.Dispatcher is { } dispatcher && !dispatcher.CheckAccess()) dispatcher.BeginInvoke(Update);
         else Update();
     }
-    internal void ClearLocalSmuReadings(SMUChannelType channel, bool all)
+    internal void ClearLocalSmuReadings(SMUChannelType channel, bool all, long? expectedGeneration = null)
     {
-        if (all || channel == SMUChannelType.A) { DisplayConfig.ChannelA.V = null; DisplayConfig.ChannelA.I = null; }
-        if (all || channel == SMUChannelType.B) { DisplayConfig.ChannelB.V = null; DisplayConfig.ChannelB.I = null; }
+        bool clearA = (all || channel == SMUChannelType.A) && LocalSession.CanApplyReadout(SMUChannelType.A, expectedGeneration);
+        bool clearB = (all || channel == SMUChannelType.B) && LocalSession.CanApplyReadout(SMUChannelType.B, expectedGeneration);
+        if (!clearA && !clearB) return;
+        if (clearA) { DisplayConfig.ChannelA.V = null; DisplayConfig.ChannelA.I = null; }
+        if (clearB) { DisplayConfig.ChannelB.V = null; DisplayConfig.ChannelB.I = null; }
         DisplayConfig.V = DisplayConfig.CurrentChannelConfig.V; DisplayConfig.I = DisplayConfig.CurrentChannelConfig.I;
     }
     public override void RestartRCService()
@@ -213,6 +218,7 @@ public partial class DeviceSMU
     {
         if (localDisposed) return;
         localDisposed = true;
+        _view.Dispose();
         localWindow?.Close();
         DisplayConfig.PropertyChanged -= LocalSmuPreferenceChanged;
         SmuBackend.Changed -= RefreshSmuBackendStatus;

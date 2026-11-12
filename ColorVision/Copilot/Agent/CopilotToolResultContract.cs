@@ -99,6 +99,9 @@ namespace ColorVision.Copilot
                 return Fail("terminal metadata contradicts a failed result", out violation);
             }
 
+            if (result.Approval != null && !string.IsNullOrWhiteSpace(result.PartialResultMessage))
+                return Fail("partial execution metadata contradicts an awaiting approval result", out violation);
+
             if (result.Approval != null
                 && (string.IsNullOrWhiteSpace(result.Approval.ActionId)
                     || string.IsNullOrWhiteSpace(result.Approval.Title)

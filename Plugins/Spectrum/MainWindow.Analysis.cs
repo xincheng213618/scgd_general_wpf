@@ -36,7 +36,12 @@ public partial class MainWindow
         analyze.Click += AnalyzeSpectrum_Click;
         var export = new MenuItem { Header = DisplayText.Get("导出此条测量结果 CSV"), DataContext = result };
         export.Click += Export_Click;
-        var raw = new MenuItem { Header = DisplayText.Get("导出此条完整原始光谱 CSV"), DataContext = result };
+        var raw = new MenuItem
+        {
+            Header = DisplayText.Get("导出此条完整光谱 CSV"),
+            ToolTip = DisplayText.Get("每个波长一行，保留全部采样点和负值"),
+            DataContext = result
+        };
         raw.Click += ExportRawSpectrum_Click;
         menu.Items.Add(analyze); menu.Items.Add(new Separator()); menu.Items.Add(export); menu.Items.Add(raw);
         row.ContextMenu = menu;
@@ -79,18 +84,9 @@ public partial class MainWindow
         (absolute ? absoluteCursor : relativeCursor)?.SetSpectrum(result.fPL, result.fSpect1, result.fInterval, result.fPlambda);
     }
 
-    private void OpenSpectrumExportMenu_Click(object sender, RoutedEventArgs e)
-    {
-        if (sender is Button { ContextMenu: { } menu } button)
-        {
-            menu.PlacementTarget = button; menu.Placement = PlacementMode.Bottom; menu.IsOpen = true;
-        }
-    }
-
     private async void ExportRawSpectrum_Click(object sender, RoutedEventArgs e)
     {
-        var selected = GetSpectrumExportResults(sender);
-        if (selected.Length == 0) { MessageBox.Show(this, DisplayText.Get("请先选择要导出的数据。")); return; }
+        if (sender is not MenuItem { DataContext: ViewResultSpectrum result }) return;
         using System.Windows.Forms.SaveFileDialog dialog = new()
         {
             Filter = "CSV files (*.csv)|*.csv", DefaultExt = "csv", AddExtension = true,
@@ -99,7 +95,7 @@ public partial class MainWindow
         if (dialog.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
         try
         {
-            var snapshot = await ViewResultManager.CreateRawExportSnapshotAsync(selected, Config.EqeEnabled);
+            var snapshot = await ViewResultManager.CreateRawExportSnapshotAsync([result], Config.EqeEnabled);
             await SpectrumRawExporter.WriteAsync(dialog.FileName, snapshot);
         }
         catch (Exception ex)

@@ -14,15 +14,12 @@ namespace ColorVision.SocketProtocol
 
         public SocketJsonDispatcher()
         {
-            foreach (var assembly in AssemblyService.Instance.GetAssemblies())
+            foreach (var type in AssemblyService.Instance.GetImplementationTypes(typeof(ISocketJsonHandler)))
             {
-                foreach (var type in assembly.GetTypes().Where(t => typeof(ISocketJsonHandler).IsAssignableFrom(t) && !t.IsAbstract))
+                if (Activator.CreateInstance(type) is ISocketJsonHandler handler)
                 {
-                    if (Activator.CreateInstance(type) is ISocketJsonHandler handler)
-                    {
-                        if (!_handlers.ContainsKey(handler.EventName))
-                            _handlers[handler.EventName] = handler;
-                    }
+                    if (!_handlers.ContainsKey(handler.EventName))
+                        _handlers[handler.EventName] = handler;
                 }
             }
         }

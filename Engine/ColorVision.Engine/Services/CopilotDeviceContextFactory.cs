@@ -16,11 +16,22 @@ namespace ColorVision.Engine.Services
 
         public const string FleetSourceId = "device-services:fleet";
 
+        internal readonly record struct HeartbeatObservation(bool? IsAlive)
+        {
+            internal bool IsKnown => IsAlive.HasValue;
+            internal string DeviceStatus => IsAlive switch { true => "Online", false => "Offline", _ => "Unknown" };
+            internal string StatusText => IsAlive switch { true => "yes", false => "no", _ => "unknown" };
+            internal string RuntimeText => IsAlive switch { true => "true", false => "false", _ => "unknown" };
+        }
+
+        internal static HeartbeatObservation ObserveHeartbeat(DeviceService device) => new(device.ObservedIsAlive);
+
         public static CopilotBusinessContextBundle Capture(DeviceService device)
         {
             ArgumentNullException.ThrowIfNull(device);
 
             var sourceId = GetSourceId(device);
+            var heartbeat = ObserveHeartbeat(device);
             var snapshot = new CopilotDeviceContextSnapshot
             {
                 SourceId = sourceId,
@@ -28,12 +39,12 @@ namespace ColorVision.Engine.Services
                 ServiceName = device.Name ?? string.Empty,
                 ServiceCode = device.Code ?? string.Empty,
                 ServiceType = device.ServiceTypes.ToString(),
-                DeviceStatus = device.IsAlive ? "Online" : "Offline",
-                IsAlive = device.IsAlive ? "yes" : "no",
+                DeviceStatus = heartbeat.DeviceStatus,
+                IsAlive = heartbeat.StatusText,
                 LastAliveTime = device.LastAliveTime == default ? string.Empty : device.LastAliveTime.ToString("O", CultureInfo.InvariantCulture),
                 SendTopic = device.SendTopic ?? string.Empty,
                 SubscribeTopic = device.SubscribeTopic ?? string.Empty,
-                RuntimeProperties = BuildRuntimeProperties(device),
+                RuntimeProperties = BuildRuntimeProperties(device, heartbeat),
                 ConfigProperties = BuildConfigurationProperties(device.GetConfig()),
             };
 
@@ -47,23 +58,26 @@ namespace ColorVision.Engine.Services
             var currentDevices = devices.Where(device => device != null).ToArray();
             if (currentDevices.Length == 0)
                 return null;
+            var observations = currentDevices.Select(device => (Device: device, Heartbeat: ObserveHeartbeat(device))).ToArray();
 
             var snapshot = new CopilotDeviceFleetContextSnapshot
             {
                 SourceId = FleetSourceId,
                 TotalDevices = currentDevices.Length,
-                OnlineDevices = currentDevices.Count(device => device.IsAlive),
-                OfflineDevices = currentDevices.Count(device => !device.IsAlive),
-                Devices = currentDevices.Take(MaxConfigProperties).Select(device => new CopilotDeviceHealthContextSnapshot
+                OnlineDevices = observations.Count(item => item.Heartbeat.IsAlive == true),
+                OfflineDevices = observations.Count(item => item.Heartbeat.IsAlive == false),
+                UnknownDevices = observations.Count(item => !item.Heartbeat.IsKnown),
+                Devices = observations.Take(MaxConfigProperties).Select(item => new CopilotDeviceHealthContextSnapshot
                 {
-                    ServiceName = device.Name ?? string.Empty,
-                    ServiceCode = device.Code ?? string.Empty,
-                    ServiceType = device.ServiceTypes.ToString(),
-                    IsAlive = device.IsAlive,
-                    OperationalStatus = device.GetMQTTService()?.DeviceStatus.ToString() ?? string.Empty,
-                    LastAliveTime = device.LastAliveTime == default
+                    ServiceName = item.Device.Name ?? string.Empty,
+                    ServiceCode = item.Device.Code ?? string.Empty,
+                    ServiceType = item.Device.ServiceTypes.ToString(),
+                    IsAlive = item.Heartbeat.IsAlive ?? false,
+                    HeartbeatObservationKnown = item.Heartbeat.IsKnown,
+                    OperationalStatus = item.Device.GetMQTTService()?.DeviceStatus.ToString() ?? string.Empty,
+                    LastAliveTime = item.Device.LastAliveTime == default
                         ? string.Empty
-                        : device.LastAliveTime.ToString("O", CultureInfo.InvariantCulture),
+                        : item.Device.LastAliveTime.ToString("O", CultureInfo.InvariantCulture),
                 }).ToArray(),
             };
             var item = CopilotBusinessContextBuilder.BuildDeviceFleetContextItem(snapshot);
@@ -79,11 +93,11 @@ namespace ColorVision.Engine.Services
                 : $"{SourceIdPrefix}runtime-{RuntimeHelpers.GetHashCode(device):x}";
         }
 
-        private static CopilotContextProperty[] BuildRuntimeProperties(DeviceService device)
+        private static CopilotContextProperty[] BuildRuntimeProperties(DeviceService device, HeartbeatObservation heartbeat)
         {
             return new[]
             {
-                new CopilotContextProperty { Name = "IsAlive", Value = device.IsAlive ? "true" : "false" },
+                new CopilotContextProperty { Name = "IsAlive", Value = heartbeat.RuntimeText },
                 new CopilotContextProperty { Name = "LastAliveTime", Value = device.LastAliveTime == default ? string.Empty : device.LastAliveTime.ToString("O", CultureInfo.InvariantCulture) },
                 new CopilotContextProperty { Name = "ServiceType", Value = device.ServiceTypes.ToString() },
                 new CopilotContextProperty { Name = "OperationalStatus", Value = device.GetMQTTService()?.DeviceStatus.ToString() ?? string.Empty },

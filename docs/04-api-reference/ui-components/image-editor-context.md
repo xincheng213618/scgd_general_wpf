@@ -5,13 +5,13 @@ status: "current"
 summary: "ImageView 的文档、会话、显示、算法协调和扩展所有权；说明源提交、连续帧有界处理、工具生命周期及临时 ROI 有效期。"
 aliases: ["图像编辑器上下文", "ImageView重构", "状态归属", "工具栏刷新", "配置作用域", "临时ROI", "临时选区", "四边形", "选区坐标", "白色画布选区", "矢量画布布点", "EditorContext", "ImageProcessingContext", "ImageDocument", "ImageEditorSession", "ImagePresentation", "ImageStreamPresentation", "ImageDisplayEffects", "ImageShaderPresentation", "ImageOperationCoordinator", "CommitSourcePixels", "ImageViewConfig", "ImageViewPropertyScope", "IEditorToolFactory", "BeginSelectAsync", "SelectShapeType", "SelectResult", "TransientRoiSelectionSession", "ImageSelectionScope", "EnableEditorImageServices"]
 code_paths: ["UI/ColorVision.ImageEditor/Abstractions/DecodedImageContent.cs", "UI/ColorVision.ImageEditor/ImageView.Content.cs", "UI/ColorVision.ImageEditor/ARCHITECTURE.md", "UI/ColorVision.ImageEditor/Documents", "UI/ColorVision.ImageEditor/ImageEditorSession.cs", "UI/ColorVision.ImageEditor/Presentation", "UI/ColorVision.ImageEditor/Operations", "UI/ColorVision.ImageEditor/Output", "UI/ColorVision.ImageEditor/Tooling", "UI/ColorVision.ImageEditor/Navigation", "UI/ColorVision.ImageEditor/Abstractions/PseudoColorFrameRequest.cs", "UI/ColorVision.ImageEditor/EditorContext.cs", "UI/ColorVision.ImageEditor/Contexts/ImageProcessingContext.cs", "UI/ColorVision.ImageEditor/ImageViewConfig.cs", "UI/ColorVision.ImageEditor/ImageViewPropertyMetadata.cs", "UI/ColorVision.ImageEditor/EditorToolFactory.cs", "UI/ColorVision.ImageEditor/ImageView.xaml.cs", "UI/ColorVision.ImageEditor/TransientRoiSelectionSession.cs", "UI/ColorVision.ImageEditor/EditorTools/PseudoColor", "UI/ColorVision.UI/AssemblyHandler.cs", "UI/ColorVision.ImageEditor/Draw/ImageDrawingPresentation.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/ImageOpenCompletionContractTests.cs", "Test/ColorVision.UI.Tests/ImageAlgorithmPreviewSessionTests.cs","Test/ColorVision.UI.Tests/ImageGroupNavigationTests.cs","Test/ColorVision.UI.Tests/ImageDisplayEffectsTests.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/ImageOpenCompletionContractTests.cs", "Test/ColorVision.UI.Tests/ImageAlgorithmPreviewSessionTests.cs","Test/ColorVision.UI.Tests/ImageGroupNavigationTests.cs","Test/ColorVision.UI.Tests/ImageDisplayEffectsTests.cs", "Test/ColorVision.UI.Tests/PseudoColorChannelSelectionTests.cs"]
 related: ["ui.image-editor", "ui.discovery", "ui.configuration", "algorithms.platform", "algorithms.roi-routes", "algorithms.local-native-analysis"]
 ---
 
 # ImageEditor：上下文、工具装配与临时选区
 
-`ImageView` 是 WPF 视图宿主，文档、显示能力、算法协调和工具装配有各自的状态拥有者。扩展通过 `EditorContext` 或更窄的上下文访问这些能力；新增功能应先确定其写入的是源像素、显示结果还是绘图对象，再选择入口。文件打开、撤销、保存、视频和 3D 操作见 [ImageEditor](./ColorVision.ImageEditor.md)。
+`ImageView` 是 WPF 视图宿主，文档、显示能力、算法协调和工具装配有各自的状态拥有者。扩展通过 `EditorContext` 或更窄的上下文访问这些能力；新增功能应先确定其写入的是源像素、显示结果还是绘图对象，再选择入口。文件打开、撤销、保存和 3D 操作见 [ImageEditor](./ColorVision.ImageEditor.md)。
 
 ## 状态由谁持有
 
@@ -28,19 +28,23 @@ related: ["ui.image-editor", "ui.discovery", "ui.configuration", "algorithms.pla
 | `Navigation/ImageGroupNavigation` | 图像组项目、当前索引、手动选择及自动跟随；视图负责 Dispatcher 适配和导航按钮 |
 | `Draw/ImageDrawingPresentation` / `Tooling/ImageContextMenuComposer` | 绘图列表同步、显示配置与缩放订阅、活动编辑提交，以及按命中对象/扩展构建菜单；绘图上下文、临时 ROI 与算法 overlay 各自保留所有权 |
 
-`ImageView.CreateEditorContext` 创建视图配置、绘图上下文和处理上下文，再由 `EditorContext` 聚合。`ImageProcessingContext` 提供强类型 `Presentation`、`DisplayEffects`、`StreamPresentation` 和算法入口，算法协调转给 `ImageOperationCoordinator`。binding 仅提供同一个文档的身份、版本、源及操作委托；所有宿主的 `FunctionImage` 都由 `ImagePresentation` 持有，binding 不存储显示状态。文档没有 `Source` 时取帧返回 null，不从显示图推断计算源。`EditorContext` 不是任意服务的注册容器：绘图列表、选择态、画布和缩放主要转发给 `DrawEditorContext`，文本编辑上下文按需创建。
+`ImageView.CreateEditorContext` 创建视图配置、绘图上下文和处理上下文，再由 `EditorContext` 聚合。`ImageProcessingContext` 提供强类型 `Presentation`、`DisplayEffects`、`StreamPresentation` 和算法入口，算法协调转给 `ImageOperationCoordinator`。binding 仅提供同一个文档的身份、版本、源及操作委托；ImageView 提供的可选 `CaptureSourceState` 在文档 Dispatcher 同步源引用与共享 revision，算法取得该状态不要求先创建 native 帧。所有宿主的 `FunctionImage` 都由 `ImagePresentation` 持有，binding 不存储显示状态。文档没有 `Source` 时取帧返回 null，不从显示图推断计算源。`EditorContext` 不是任意服务的注册容器：绘图列表、选择态、画布和缩放主要转发给 `DrawEditorContext`，文本编辑上下文按需创建。
 
 ### 源像素提交与显示发布
 
-静态 PNG/TIFF 的格式解码仍由 ImageEditor 负责。`IAsyncImageOpen.OpenImageAsync` 的 Task 在内容发布完成后结束，兼容的 `OpenImage` 保留旧入口；宿主可等待 `ImageView.ImageOpenCompletion`。换图和清空取消旧请求，迟到的能力准备结果必须释放，不能发布到新图；失败通过完成 Task 返回，格式器日志不等于成功完成。视频和连续帧不使用此静态完成契约。
+静态 PNG/TIFF 的格式解码仍由 ImageEditor 负责。`IAsyncImageOpen.OpenImageAsync` 的 Task 在内容发布完成后结束，兼容的 `OpenImage` 保留旧入口；宿主可等待 `ImageView.ImageOpenCompletion`。换图和清空取消旧请求，迟到的能力准备结果必须释放，不能发布到新图；失败通过完成 Task 返回，格式器日志不等于成功完成。连续帧不使用此静态完成契约。
 
 解码结果 `DecodedImageContent` 独立保存无损样本和可识别参数，浮点 TIFF 的 Gray16 显示代理不作为测量原图。可选 `IImageContentProvider` 在正式发布前验证并组装能力，`ImageDocument` 持有内容和 `IImageContentCapability` 生命周期；ImageEditor 不依赖 Engine。实际编辑、换文件、清空及关闭撤销能力和旧缓冲，参数继续作为只读记录。`SetDisplayLayerSource` 专用于有明确坐标对应的显示/算法层切换，保留内容身份和测量能力；普通 `SetImageSource` 或像素提交仍是内容变更。几何变换没有同步测量坐标的契约，因此同样撤销能力。版本化参数与导出边界见 [CV 图像导出](../engine-components/cv-image-export.md)。
 
+普通位图和 TIFF 串行执行解码与显示位图复制，排队请求可独立取消。每次打开使用独立显示位图，避免准备期间改写已发布的像素。完成复制后即释放解码槽位，因此新图可在已取消的旧能力准备仍在退出时打开。通过最终校验的请求才能替换源像素。内容退役继续等待已发起请求退出并释放其迟到的能力结果。
+
 显示层保留资格只属于本次替换，不豁免加载通知中的重入编辑。能力退役先原子分离旧对象和旧消费者，再在所有权锁外等待读者退出；可复用提供者通过 `DetachForRetirement(contentVersion)` 捕获该次激活的资源，返回清理操作，不能让迟到清理访问后来安装的缓冲、图层或工具。CVRAW 的复用读取另需等待已分离的测量读者全部退出。取消或目标已被替换的静态打开以取消 Task 结束，不能返回成功。
+
+`AttachImageContentCapability` 通过 Dispatcher 检查后接管传入能力的生命周期，发布者只释放尚未交接的准备结果。激活失败时按该次能力身份和内容版本摘除，再退役释放，避免文档保留已释放对象或清理重入中新安装的能力。能力的 `Activate()` 回调换源或换能力后，过期调用以取消结束，不继续安装旧能力工具或发送成功加载通知；这不要求回滚已接受的像素。
 
 `ViewBitmapSource` 实际类型是 `ImageSource`，可持有基准位图或 `DrawingImage` 等矢量画布；`FunctionImage` 表示处理/预览显示结果。兼容 setter 只赋值，**不自动推进 revision，也不等于完整源替换或显示发布**。内部显示生产者应使用 `Presentation.Publish(displaySource, functionImage)`，恢复基准图用 `RestoreSource()`；这些操作本身不提交源像素。
 
-`CommitSourcePixels(source)` 在 `ImageView`、`EditorContext` 和 `ImageProcessingContext` 提供等价入口，统一转发到 `ImageEditorSession` 的同一个实现：先赋基准源，再显式推进一次 source revision，不重新打开文件或执行完整换图重置。原位改写现有位图仍可调用 `NotifySourcePixelsChanged()`。`SetImageSource` 则走完整源替换，保留元数据、标定、图层和加载通知契约。缓存取帧发现源对象更换时也会失效，但不能以此代替生产者主动提交，尤其不能自动识别同一位图的字节改写；详见[源帧寿命](./image-frame-lifetime.md)。
+`CommitSourcePixels(source)` 在 `ImageView`、`EditorContext` 和 `ImageProcessingContext` 提供等价入口，统一转发到 `ImageEditorSession` 的同一个实现：先赋基准源，再显式推进一次 source revision，不重新打开文件或执行完整换图重置。原位改写现有位图仍可调用 `NotifySourcePixelsChanged()`。`SetImageSource` 则走完整源替换，保留元数据、标定、图层和加载通知契约。源状态捕获和缓存取帧共用源引用变化的失效检测，但不能以此代替生产者主动提交，尤其不能自动识别同一位图的字节改写；详见[源帧寿命](./image-frame-lifetime.md)。
 
 源赋值与显示发布要求 UI Dispatcher；`NotifySourcePixelsChanged()` 保留后台生产者的通知入口。帧存储同步退役旧版本、原子失效显示请求，随后算法与图元清理调度到 UI。同步回调为新版本创建的 preview、analysis 或 overlay 必须保留，不能让迟到的旧版本清理将它移除。文档释放后拒绝源赋值，失败的提交也不能重新挂回像素引用。
 
@@ -65,17 +69,25 @@ related: ["ui.image-editor", "ui.discovery", "ui.configuration", "algorithms.pla
 
 伪彩换图保留配色与自动范围偏好，关闭效果并重新计算图像相关范围；自动范围在新源赋值后计算。`Presentation/PseudoColor` 持有伪彩控制器、`PseudoColorState` 和默认配置，`PseudoColorEditorTool` 仅绑定控件及操作同一能力；释放工具不释放 controller。连续帧通过 `DisplayEffects.TryCapturePseudoColorRequest` 取得参数，并统一由 `StreamPresentation` 提交源与显示结果，不提供另一条外部处理结果发布路径。默认配置类型保留原完整类型名作为已有用户配置的稳定持久键，运行状态不依赖工具实例。静态图预览、连续帧 native 处理和显示 shader 保持各自输入与数值契约，不能因同属“效果”就视为等价算法。
 
+静态伪彩通过 `StartForCatalogPreview` 建立会话，不创建全尺寸占位位图；首个有效结果发布前显示原图。滑块请求由 `TaskConflator` 串行执行，只保留最新待执行请求，并使用 25 ms 的轮间等待参数；这不是固定帧率，也不承诺中断已经进入 native 的操作。查表输出与有界灰度缓存的数值、存储契约见[统一算法平台](../../02-developer-guide/core-concepts/image-algorithm-platform-v1.md)。
+
+静态图的通道选择与伪彩开关分别保留状态：普通关闭伪彩会重新呈现当前所选图层，例如 Red 单通道，不强制切回 Composite。支持的 8/16 位 RGB 单通道先在后台准备独立冻结显示，再于同一 UI 调用中取消伪彩并恢复该通道，避免取消后等待提取期间停留在全彩图；取消中的同步原图显示通知仍会发生，不代表从未发布过原图事件。默认位图图层的 Bgr24/Bgr32/Bgra32/Rgb24/Rgb48 源在仍属于当前伪彩会话时，关闭复用其只读 canonical 输入，避免再次创建 native 源缓存；Pbgra32 的 canonical 已反预乘，不能据此还原原始通道。自定义图层或没有有效会话输入时保留原取帧路径。准备期间换图、切换通道、发布其它显示或建立新算法 owner，会使旧准备失效。同一源图内，开启伪彩时通过默认位图图层选择器切换通道，若当前静态伪彩会话仍拥有预览，则复用会话及其独立 canonical 输入，保留旧伪彩直到新结果，不并行准备普通灰度显示。自动范围模式仍取得所需 native 源帧并计算新通道范围，手动模式保留当前上下限，两种模式都重绘伪彩。这类通道请求在接纳与实际发布时核验源、版本及归属，过期请求不能夺回后继显示或算法 owner。RGB 单通道预览只改变显示，不改文档源像素或 revision。关闭过程若有同步回调换图、发布其它显示或建立新算法 owner，则保留后继操作。换图 Reset，以及效果关闭时的范围和配色配置，不触发图层重选。
+
+静态算法输入已归一为 BGR/BGRA，因此伪彩在 UI 捕获请求时，将 `Rgb24/Rgb48/Rgba64` 的源通道 0、2 交换为 canonical 通道索引；公开连续帧请求和自动范围仍使用源通道索引。`PseudoColorChannelSelectionTests` 经真实图层选择器、通道提取和受控伪彩 provider 检查显示切换、源不变与取消回调接管；该受控输出不替代 native 配色数值验证。
+
 `ImageShaderPresentation` 拥有独立滤镜状态和 effect 附着，工具负责界面与显式持久化。显示白平衡提供范围为 `-1..1`、默认 `0` 的色温与色调控制，并与手动 RGB 增益组合；显示滤镜不重排颜色通道。以上变化都不提交或改写源像素。滤镜沿用完整画布的 `SceneEffect` 范围，包含图像和叠加内容；没有静默缩小成只处理底图。关闭时仅在当前 effect 仍是自身对象时恢复先前 effect。
 
 ### 连续帧显示
 
-相机 `RealtimeFramePresenter` 和视频打开器把帧交给 `ImageStreamPresentation`。可变输入先复制并冻结；后台处理读取该快照，不读取生产者下次改写的暂存位图。伪彩开启时最多有一帧执行、一帧等待，新输入替换等待帧，不建立无界队列；在途帧可以先发布，随后处理最新等待帧。
+相机 `RealtimeFramePresenter` 把帧交给 `ImageStreamPresentation`。可变输入先复制并冻结；已冻结输入直接复用，后台处理读取该快照，不读取生产者下次改写的暂存位图。相机在回调有效期内复制像素，位图创建、写入、翻转和冻结由单个后台任务完成，最多一帧准备或等待 UI 发布、一帧待准备；UI 只发布快照，重置和释放拒绝旧流的迟到快照。WPF 合成前需要转换的格式（`Bgr24`、`Rgb24`、`Gray16`、`Rgb48`，含伪彩和通道结果）由后台 `ImageRenderProxy` 预先生成 `Bgr32` 副本，避免整帧转换占用 UI 线程；副本只由 `DrawCanvas` 绘制且随所属 `Source` 更换失效，`Source`、`ViewBitmapSource` 和所有读像素的工具仍得到原格式与位深。每帧不小于 64 MB 的流按累计 1 GiB 触发一次非阻塞 GC 回收旧帧原生缓冲。需要伪彩或 RGB 单通道显示时，使用同一条最多一帧执行、一帧等待的处理队列，新输入替换等待帧，不建立无界队列；在途帧可以先发布，随后处理最新等待帧。
 
-处理输出也复制成独立冻结位图，不借用或改写已有 `FunctionImage`，以免破坏其它预览或输出仍保留的图像。发布时先通过 `CommitSourcePixels` 提交此次处理对应的冻结源，再通过 `Presentation.Publish` 发布同帧结果。因此当前基准源与伪彩显示来自同一帧，source revision 仍按帧提交推进；流身份和序号用于调度，不替代文档版本。
+处理输出也在后台复制成独立冻结位图，并在后台释放 native 输出，不借用或改写已有 `FunctionImage`，以免破坏其它预览或输出仍保留的图像。发布时先通过 `CommitSourcePixels` 提交此次处理对应的冻结源，再通过 `Presentation.Publish` 发布同帧结果。因此当前基准源与显示结果来自同一帧，source revision 仍按帧提交推进；流身份和序号用于调度，不替代文档版本。
 
-提交期间若重入回调又换图、推进版本、重置流、选择新显示或取得新的算法预览，此帧停止发布并重置流状态。`SelectionVersion` 区分显式显示选择与文档失效时清理旧预览的基准恢复，后者不应被当成新选择而阻断正常帧；新的用户显示选择和预览则优先于正在提交的流帧。
+提交期间若重入回调又换图、推进版本、重置流、选择新显示或取得新的算法预览，此帧停止发布并重置流状态。`SelectionVersion` 区分显式显示选择与文档失效时清理旧预览的基准恢复，后者不应被当成新选择而阻断正常帧。已有处理结果的帧提交通过精确匹配文档、源引用及下一版本的作用域，延后自身失效清理造成的原图发布，避免单通道或伪彩之间插入全彩图；正常结果和同步回调的新显示均优先，未完成且没有后继选择的提交仍恢复基准源。新选择在该版本创建的显示请求也保留有效性，不能被后置清理当成旧请求作废。
 
-换图、释放、流重置、参数变化和调用方的发布条件均参与过期检查。伪彩不可用时直接发布原图；native 处理异常时，仍有效的请求回退到该帧原图，清除旧处理显示。重置不承诺中断正在执行的 native 调用，迟到输出会释放。参数调整可通过 `RefreshCurrent()` 重处理最后的冻结帧，关闭伪彩可立即恢复它；实时请求仍需已有基准源，缺少基准时先发布原图建立源。视频解码与相机指标计算的上游限制分别见[视频模式](./ColorVision.ImageEditor.md#视频模式)和[相机实时链](../../01-user-guide/devices/camera.md#本地视频与实时伪彩)。
+换图、释放、流重置、参数变化、所选通道和调用方的发布条件均参与过期检查。未开启伪彩时，Composite 直接发布冻结源，RGB 单通道则在后台提取对应灰度显示，文档仍保留完整彩色帧。开启伪彩按当前源通道处理，关闭后继续呈现最后一帧的所选通道；通道切换和伪彩参数调整通过 `RefreshCurrent()` 重处理最后的冻结帧。native 处理异常时，仍有效的请求回退到该帧原图，清除旧处理显示。重置不承诺中断正在执行的 native 调用，迟到输出会释放；实时请求仍需已有基准源，缺少基准时先发布原图建立源。上游指标计算见[相机实时链](../../01-user-guide/devices/camera.md#本地视频与实时伪彩)。
+
+连续伪彩的原生路径可直接读取已冻结的相机帧，并写入独立的 Bgr24 输出位图。源缓冲在处理期间保持只读并持续有效，输出冻结后才交给发布队列。
 
 ## 扩展发现、构造与刷新
 
@@ -85,7 +97,7 @@ related: ["ui.image-editor", "ui.discovery", "ui.configuration", "algorithms.pla
 | --- | --- |
 | 新文件格式或连续数据源 | 打开器负责格式与元数据；有原生资源或播放状态时使用独立内容 session，连续像素交给 `StreamPresentation` |
 | 新显示效果 | 在 `Presentation` 中持有处理能力和当前状态，由处理上下文提供；工具负责绑定与配置。先明确效果作用于源像素、显示像素还是整个场景 |
-| 新交互算法 | 使用现有 runtime 和 `ImageOperationCoordinator` 的 preview/analysis 契约，算法输入取源帧租约，结果通过既有提交或 overlay 路径交付 |
+| 新交互算法 | 使用现有 runtime 和 `ImageOperationCoordinator` 的 preview/analysis 契约，由 `ImageAlgorithmInputFactory` 按文档源状态取得私有输入，结果通过既有提交或 overlay 路径交付 |
 | 新图元或编辑工具 | 图元、选择与历史操作放在 `Draw`，工具与菜单使用现有扩展点；不把文档源或 native 句柄放进工具栏控件 |
 | 新输出格式 | `ImageSnapshotCapture` 确定捕获内容，`ImageSnapshotEncoder` 负责后台编码；后台不访问活动 WPF 控件 |
 
@@ -106,7 +118,7 @@ related: ["ui.image-editor", "ui.discovery", "ui.configuration", "algorithms.pla
 
 `RefreshToolBars` 委托 `EditorToolbarComposer` 移除自己生成的 UI 元素，并从现有工具集合重新装配；它不重扫程序集、重建打开器或发现新加载插件。composer 只拥有 UI 附着，工具实例仍由工厂管理。初始化时工厂早于 `Crosshair` 创建，随后才执行 `IImageComponent.Execute` 等步骤；扩展构造不能假定所有视图服务都已就绪。
 
-打开器通过 `IImageOpenEditorToolProvider` 贡献当前工具。`GetEffectiveEditorTools` 先放打开器工具，再加入未被其非空 `GuidId` 覆盖的全局工具；比较区分大小写，空 ID 不参与覆盖，也不会自动去重打开器内部的重复 ID。`ApplyImageOpenTools` 先通知旧 lifecycle 停用并替换集合，将退出有效集合的 `IEditorToggleTool.IsChecked` 设为 `false`，再刷新工具栏并通知新 lifecycle 启用。被覆盖的鼠标读数等工具必须停止事件监听和 overlay，避免按钮消失后仍与 CIE 探针同时绘制；重新成为有效工具时保持关闭，用户可再次启用。单纯 `RefreshToolBars` 不停用仍有效的工具；停用不等于所有旧工具已 `Dispose`。
+打开器通过 `IImageOpenEditorToolProvider` 贡献当前工具。`GetEffectiveEditorTools` 先放打开器工具，再加入未被其非空 `GuidId` 覆盖的全局工具；比较区分大小写，空 ID 不参与覆盖，也不会自动去重打开器内部的重复 ID。`ApplyImageOpenTools` 为本次装配建立代次，先通知旧 lifecycle 停用，在本地枚举候选工具；仍属于当前代次才替换集合，将退出有效集合的 `IEditorToggleTool.IsChecked` 设为 `false`，再刷新工具栏并通知新 lifecycle 启用。提供者或 lifecycle 回调重入替换工具时，过期装配停止，不把旧工具追加到新集合；能力发布在工具装配后再次核对文档归属，失效的打开以取消结束。同一打开器重复调用仍执行刷新生命周期，装配代次不代表文件内容需要释放。被覆盖的鼠标读数等工具必须停止事件监听和 overlay，避免按钮消失后仍与 CIE 探针同时绘制；重新成为有效工具时保持关闭，用户可再次启用。单纯 `RefreshToolBars` 不停用仍有效的工具；停用不等于所有旧工具已 `Dispose`。
 
 工厂 `Dispose` 停用当前打开器 lifecycle，并对全局及当前打开器工具中的 `IDisposable` 去重释放，不承诺释放每个 opener/component。`ImageEditorSession.Dispose` 依次释放连续帧、显示能力、算法 overlay 和文档。`ImageView.Unloaded` 仅解绑窗口快捷键，不是 `Dispose`；宿主仍需负责真正释放。工具栏重建、控件卸载和文档资源释放不能混用。
 
@@ -120,7 +132,7 @@ related: ["ui.image-editor", "ui.discovery", "ui.configuration", "algorithms.pla
 
 `ImageView.BeginSelectAsync` 每次创建一个 `TransientRoiSelectionSession`，支持 Rectangle、Circle、Polygon、Quadrilateral。临时 visual 直接加入/移出画布，不登记撤销命令，也不是持久注释。
 
-手动选择只需要有效画布，不要求 `BitmapSource`：宽高有限且大于零的 `ImageSource` 均可进入选区，包括 POI 默认白色 `DrawingImage`。选择过程不将矢量画布栅格化，也不生成虚构像素。涉及统计、识别等像素计算时，`ImageAlgorithmInputFactory` 仍要求可读取的源帧与匹配的位图；能绘制选区不代表能执行图像计算。
+手动选择只需要有效画布，不要求 `BitmapSource`：宽高有限且大于零的 `ImageSource` 均可进入选区，包括 POI 默认白色 `DrawingImage`。选择过程不将矢量画布栅格化，也不生成虚构像素。涉及统计、识别等像素计算时，`ImageAlgorithmInputFactory` 仍要求当前文档具有可读取的 WPF 位图，并核对源引用与 revision；能绘制选区不代表能执行图像计算。
 
 多边形模式的完成键为 **Enter、Space、End、Tab**；**Escape** 取消任意形状并返回 `null`。
 
@@ -129,15 +141,13 @@ related: ["ui.image-editor", "ui.discovery", "ui.configuration", "algorithms.pla
 | Rectangle | 拖拽后松开左键；矩形宽高均大于 1 且数值有限时完成 | session 不处理右键 |
 | Circle | 按下点为圆心，拖拽距离为半径；松开左键且包围框通过同一校验时完成 | session 不处理右键 |
 | Polygon | 逐点点击，再按完成键或右键；至少三个点，形状须非退化且不自交 | 尝试完成；无效时继续等待 |
-| Quadrilateral | 第四次点击后尝试完成；第四点无效时，下一次点击替换第四点 | 不足四点时取消；已有四点时尝试完成 |
-
-四边形的键盘完成路径也使用 `TryCompletePolygon()`，当前没有额外要求恰好四点，因此三个有效点后按完成键也可能返回结果。这是四边形交互的实现缺口；需要四点的调用方必须复核 `Points.Count`。
+| Quadrilateral | 第四次点击后尝试完成；完成键同样要求四点有效；第四点无效时，下一次点击替换第四点 | 不足四点时取消；已有四点时尝试完成 |
 
 - 位置来自 `e.GetPosition(DrawCanvas)`，是 WPF 画布坐标；此类没有统一进行原始像素换算或边界裁剪。非 96 DPI、图像变换或裁剪后不能直接把坐标当源像素 ROI，需按调用链明确转换，见 [ROI 路由](../algorithms/primitives/roi.md)。
 - 矩形/圆拖拽无效时清除本次临时形状并继续等待；无效多边形保留选点继续等待。这些情况不立即返回 `null`。
-- 绑定源失效时清理并返回 `null`。正常启动后完成/取消会解绑事件、删除临时 visual、释放鼠标捕获并恢复记录的 cursor、ActivateOn 和编辑模式。初始源为空、尺寸无效或文档已释放时，`Start` 在激活前直接返回 `null`，不更改这些交互状态，也不释放其它操作的鼠标捕获。
+- 同一画布只保留一个临时选区；新请求成功启动前，旧选区取消并返回 `null`。结束时清理临时图形和本次鼠标捕获，恢复光标、平移快捷键和编辑模式。初始源无效的请求直接返回 `null`，画布上的活动选区继续等待输入。
 - 绑定 `ImageProcessingContext` 时捕获不可变 `ImageSelectionScope`：文档身份、source revision 和 WPF 逻辑画布宽高 `CanvasWidth/CanvasHeight`。位图同时保存真实像素宽高和 DPI；非位图的 `HasPixels=false`、像素宽高为零、DPI 占位值为 96，逻辑尺寸保留小数，不能将它当作可计算的像素源。选取期间换图、源版本变化或文档释放使 session 取消；成功结果携带该 scope。单独构造无处理上下文的绘图 session 则不能提供同样的图像绑定保证。
-- 已完成结果不会在日后换图时自动消失。调用方须保留 `SelectResult.SourceScope`，使用 `ImageAlgorithmInputFactory.Acquire(context, scope)` 等入口再次核验；不能丢掉 scope 后复用旧坐标。每次调用各建 session，不保证新调用自动取消旧调用，也没有统一单活动 session 调度器。
+- 已完成结果不会在日后换图时自动消失。调用方须保留 `SelectResult.SourceScope`，使用 `ImageAlgorithmInputFactory.Acquire(context, scope)` 等入口再次核验；不能丢掉 scope 后复用旧坐标。
 
 ## 验证范围
 
@@ -145,4 +155,4 @@ related: ["ui.image-editor", "ui.discovery", "ui.configuration", "algorithms.pla
 
 `ImageDisplayEffectsTests` 覆盖参数捕获的基准源、启用与存活门禁，以及不可变参数和无发布副作用。`ImageGroupNavigationTests` 覆盖去重、手动暂停跟随及导航事件顺序，不证明真实按钮/打开器交互。
 
-同时验证算法拒绝无像素选区或过期范围，正常位图仍可获取输入。部分通过反射驱动内部状态，不等于真实鼠标和任意 DPI 的整链验收。配置同名键、实际工具发现、四边形键盘完成和真实窗口行为仍需按改动补验证。
+同时验证算法拒绝无像素选区或过期范围，正常位图仍可获取输入。`TransientRoiSelectionTests` 使用 WPF 键盘事件验证选区替换、交互状态恢复及完成键的点数约束，真实鼠标与不同 DPI 的整链行为需在应用中验证。

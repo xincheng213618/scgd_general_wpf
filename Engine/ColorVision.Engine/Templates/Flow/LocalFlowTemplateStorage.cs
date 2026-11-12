@@ -24,6 +24,24 @@ public sealed class LocalFlowTemplateStorage
 
     public IReadOnlyList<FlowParam> Load() => documents.List(Kind).Select(Decode).ToList();
 
+    internal (IReadOnlyList<FlowParam> Available, IReadOnlyList<UnavailableLocalFlowTemplate> Unavailable) LoadAvailable()
+    {
+        var available = new List<FlowParam>();
+        var unavailable = new List<UnavailableLocalFlowTemplate>();
+        foreach (LocalTemplateDocument document in documents.List(Kind))
+        {
+            try
+            {
+                available.Add(Decode(document));
+            }
+            catch (Exception error) when (error is InvalidDataException or JsonException or FormatException)
+            {
+                unavailable.Add(new UnavailableLocalFlowTemplate(ConvertId(document.Id), document.Name, error));
+            }
+        }
+        return (available, unavailable);
+    }
+
     public FlowParam Read(int id)
     {
         if (!IsLocalId(id)) throw new ArgumentOutOfRangeException(nameof(id));
@@ -42,7 +60,8 @@ public sealed class LocalFlowTemplateStorage
         return new FlowParam
         {
             Id = ConvertId(document.Id), Name = document.Name, DataBase64 = content.DataBase64,
-            FlowKey = content.FlowKey, LoadedContentHash = hash, LocalStorage = this
+            FlowKey = content.FlowKey, LoadedContentHash = hash, LocalStorage = this,
+            TemplateDate = document.CreatedUtc?.ToLocalTime()
         };
     }
 
@@ -51,6 +70,7 @@ public sealed class LocalFlowTemplateStorage
         ArgumentNullException.ThrowIfNull(value);
         if (value.Id > 0) throw new InvalidOperationException("服务器流程不能直接保存到本地，请复制或导入为新的本地流程。");
         string hash = ValidateAndHash(value.DataBase64);
+        string savedName = value.Name;
         string flowKey;
         int id;
         if (IsLocalId(value.Id))
@@ -63,21 +83,26 @@ public sealed class LocalFlowTemplateStorage
             if (expectedHash != null && expectedHash != persisted.LoadedContentHash)
                 throw new FlowTemplateConcurrencyException(value.Name, expectedHash, persisted.LoadedContentHash!);
             flowKey = persisted.FlowKey!;
+            if (condition != null)
+                savedName = previous.Name;
             string payload = JsonConvert.SerializeObject(new FlowDocument(flowKey, value.DataBase64));
-            if (!documents.TryUpdate(Kind, previous, value.Name, 1, payload))
+            if (!documents.TryUpdate(Kind, previous, savedName, 1, payload))
                 throw new FlowTemplateConcurrencyException(value.Name, expectedHash ?? string.Empty, Read(value.Id).LoadedContentHash!);
             id = previous.Id;
         }
         else
         {
             flowKey = KeyPrefix + Guid.NewGuid().ToString("N");
-            id = documents.Save(Kind, null, value.Name, 1,
+            id = documents.Save(Kind, null, savedName, 1,
                 JsonConvert.SerializeObject(new FlowDocument(flowKey, value.DataBase64)));
         }
+        if (!string.Equals(value.Name, savedName, StringComparison.Ordinal))
+            value.Name = savedName;
         value.Id = ConvertId(id);
         value.FlowKey = flowKey;
         value.LoadedContentHash = hash;
         value.LocalStorage = this;
+        value.TemplateDate = documents.Read(Kind, id).CreatedUtc?.ToLocalTime();
     }
 
     public void Delete(int id)
@@ -102,3 +127,5 @@ public sealed class LocalFlowTemplateStorage
 
     private sealed record FlowDocument(string FlowKey, string DataBase64);
 }
+
+internal sealed record UnavailableLocalFlowTemplate(int Id, string Name, Exception Error);

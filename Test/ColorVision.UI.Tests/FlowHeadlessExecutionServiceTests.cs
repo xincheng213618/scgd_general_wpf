@@ -1,14 +1,64 @@
+using ColorVision.Database;
 using ColorVision.Engine.FlowProcessing;
+using ColorVision.Engine.FlowProcessing.Nodes;
+using ColorVision.Engine.Templates;
+using ColorVision.Engine.Templates.Flow;
 using FlowEngineLib;
 using FlowEngineLib.Base;
 using FlowEngineLib.End;
+using FlowEngineLib.Start;
 using ST.Library.UI.NodeEditor;
+using System.IO;
+using System.Reflection;
 using System.Runtime.ExceptionServices;
 
 namespace ColorVision.UI.Tests;
 
 public sealed class FlowHeadlessExecutionServiceTests
 {
+    [Fact]
+    public Task SavedFlowBindingRejectsTwoTemplatesSharingTheSameKey()
+    {
+        return WpfTestHost.Invoke(async () =>
+        {
+            string flowKey = $"flow:{Guid.NewGuid():N}";
+            string savedCanvas = Convert.ToBase64String(CreateCanvas(new CVEndNode()));
+            var first = new TemplateModel<FlowParam>("First", new FlowParam { Id = 4101, FlowKey = flowKey, DataBase64 = savedCanvas });
+            var second = new TemplateModel<FlowParam>("Second", new FlowParam { Id = 4102, FlowKey = flowKey, DataBase64 = savedCanvas });
+            TemplateFlow.Params.Add(first);
+            TemplateFlow.Params.Add(second);
+            try
+            {
+                var failure = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+                    FlowExecutionCoordinator.Instance.RunSavedFlowHeadlessAsync(flowKey, "HeadlessStart", "SN-AMBIGUOUS"));
+                Assert.Contains(flowKey, failure.Message);
+
+                TemplateFlow.Params.Remove(second);
+                var unique = await FlowExecutionCoordinator.Instance.RunSavedFlowHeadlessAsync(flowKey, "HeadlessStart", "SN-UNIQUE");
+                Assert.True(unique.Succeeded);
+            }
+            finally
+            {
+                TemplateFlow.Params.Remove(first);
+                TemplateFlow.Params.Remove(second);
+            }
+        });
+    }
+
+    [Theory]
+    [InlineData(true, "readinessTimeout")]
+    [InlineData(false, "executionTimeout")]
+    public void RequestRejectsTimeoutsOutsideTheTimerRange(bool forReadiness, string parameter)
+    {
+        TimeSpan unsupported = TimeSpan.FromMilliseconds(uint.MaxValue);
+        var failure = Assert.Throws<ArgumentOutOfRangeException>(() => new FlowHeadlessExecutionRequest(
+            [1], "HeadlessStart", "SN-TIMEOUT-RANGE",
+            readinessTimeout: forReadiness ? unsupported : null,
+            executionTimeout: forReadiness ? null : unsupported));
+
+        Assert.Equal(parameter, failure.ParamName);
+    }
+
     [Theory]
     [InlineData("SN-IMMUTABLE", "SN-IMMUTABLE")]
     [InlineData("SN?IMMUTABLE", "SN_IMMUTABLE")]
@@ -127,7 +177,7 @@ public sealed class FlowHeadlessExecutionServiceTests
     {
         RunInSta(async () =>
         {
-            byte[] canvas = CreateObservedCanvas();
+            byte[] canvas = CreateCanvas(new HeadlessObservedServerNode(), new HeadlessTestStartNode());
             var request = new FlowHeadlessExecutionRequest(
                 canvas,
                 "HeadlessStart",
@@ -178,7 +228,7 @@ public sealed class FlowHeadlessExecutionServiceTests
         RunInSta(async () =>
         {
             var request = new FlowHeadlessExecutionRequest(
-                CreateObservedCanvas(),
+                CreateCanvas(new HeadlessObservedServerNode(), new HeadlessTestStartNode()),
                 "HeadlessStart",
                 "SN-NO-SERVICES");
 
@@ -193,6 +243,81 @@ public sealed class FlowHeadlessExecutionServiceTests
             Assert.Contains(
                 "no MQTT service snapshot",
                 result.Data.Message);
+        });
+    }
+
+    [Fact]
+    public void LocalScriptRunsWithDisconnectedMqttStartAndNoServiceSnapshot()
+    {
+        RunInSta(async () =>
+        {
+            DirectoryInfo directory = Directory.CreateTempSubdirectory("ColorVision-offline-script-");
+            string marker = Path.Combine(directory.FullName, "script-started.txt");
+            try
+            {
+                using var start = new MQTTStartNode { NodeName = "OfflineStart", Server = string.Empty };
+                var script = new CommandLineScriptNode
+                {
+                    ScriptType = CommandLineScriptType.Cmd,
+                    CommandText = "echo started>script-started.txt",
+                    WorkingDirectory = directory.FullName,
+                };
+                var request = new FlowHeadlessExecutionRequest(CreateCanvas(script, start), start.NodeName, "SN-OFFLINE-SCRIPT",
+                    executionTimeout: TimeSpan.FromSeconds(5));
+                Assert.False(start.IsExecutionReady);
+
+                FlowHeadlessExecutionResult result = await FlowHeadlessExecutionService.Shared.RunAsync(request);
+
+                Assert.True(result.Succeeded, result.Data.Message);
+                Assert.True(File.Exists(marker));
+            }
+            finally
+            {
+                File.Delete(marker);
+                directory.Delete();
+            }
+        });
+    }
+
+    [Theory]
+    [InlineData(true, false, false)]
+    [InlineData(true, true, true)]
+    [InlineData(false, true, null)]
+    public void HeadlessPersistenceRequiresExplicitBatchOptInAndAnOnlineConnection(
+        bool connected, bool persistResults, bool? expectedNodeFlag)
+    {
+        RunInSta(async () =>
+        {
+            MySqlControl mysql = MySqlControl.GetInstance();
+            FieldInfo connectedField = typeof(MySqlControl).GetField("_IsConnect", BindingFlags.Instance | BindingFlags.NonPublic)!;
+            bool originalConnection = mysql.IsConnect;
+            bool? observedPersistence = null;
+            // Change only the observed connection state. The probe has no database access.
+            connectedField.SetValue(mysql, connected);
+            HeadlessPersistenceProbeEndNode.Observe = persist => observedPersistence = persist;
+            try
+            {
+                byte[] canvas = CreateCanvas(new HeadlessPersistenceProbeEndNode());
+                TimeSpan timeout = TimeSpan.FromSeconds(5);
+                FlowHeadlessExecutionRequest request = persistResults
+                    ? new(canvas, "HeadlessStart", "SN-PERSISTENCE", executionTimeout: timeout) { PersistResults = true }
+                    : new(canvas, "HeadlessStart", "SN-PERSISTENCE", executionTimeout: timeout);
+                FlowHeadlessExecutionResult result = await FlowHeadlessExecutionService.Shared.RunAsync(request);
+
+                if (expectedNodeFlag.HasValue)
+                    Assert.True(result.Succeeded, result.Data.Message);
+                else
+                {
+                    Assert.False(result.Started);
+                    Assert.Equal(FlowHeadlessExecutionTermination.StartRejected, result.Termination);
+                }
+                Assert.Equal(expectedNodeFlag, observedPersistence);
+            }
+            finally
+            {
+                HeadlessPersistenceProbeEndNode.Observe = null;
+                connectedField.SetValue(mysql, originalConnection);
+            }
         });
     }
 
@@ -214,24 +339,22 @@ public sealed class FlowHeadlessExecutionServiceTests
         return editor.GetCanvasData();
     }
 
-    private static byte[] CreateObservedCanvas()
+    private static byte[] CreateCanvas(CVBaseServerNode node, BaseStartNode start)
     {
         using var editor = new STNodeEditor();
-        var start = new HeadlessTestStartNode();
-        var server = new HeadlessObservedServerNode();
         var end = new CVEndNode();
         start.Create();
-        server.Create();
+        node.Create();
         end.Create();
         editor.Nodes.Add(start);
-        editor.Nodes.Add(server);
+        editor.Nodes.Add(node);
         editor.Nodes.Add(end);
         Assert.Equal(
             ConnectionStatus.Connected,
-            start.m_op_start.ConnectOption(server.Input));
+            start.m_op_start.ConnectOption(node.GetAllInputOptions().Single(option => option.DataType == typeof(CVStartCFC))));
         Assert.Equal(
             ConnectionStatus.Connected,
-            server.Output.ConnectOption(end.m_in_start));
+            node.GetAllOutputOptions().Single(option => option.DataType == typeof(CVStartCFC)).ConnectOption(end.m_in_start));
         return editor.GetCanvasData();
     }
 
@@ -257,6 +380,16 @@ public sealed class FlowHeadlessExecutionServiceTests
     }
 }
 
+public sealed class HeadlessPersistenceProbeEndNode : CVEndNode
+{
+    internal static Action<bool>? Observe { get; set; }
+
+    protected override void DoNodeEnded(CVStartCFC startAction)
+    {
+        Observe?.Invoke(startAction.PersistResults);
+        base.DoNodeEnded(startAction);
+    }
+}
 public sealed class HeadlessObservedServerNode :
     CVBaseServerNode
 {
@@ -268,10 +401,6 @@ public sealed class HeadlessObservedServerNode :
             "DEV")
     {
     }
-
-    public STNodeOption Input => m_in_start;
-
-    public STNodeOption Output => m_op_end;
 
     protected override void m_in_start_DataTransfer(
         object sender,

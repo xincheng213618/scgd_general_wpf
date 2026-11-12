@@ -255,7 +255,7 @@ namespace ColorVision.Copilot
 
             var analysisProfile = profile.Clone();
             analysisProfile.UseSystemPromptOverride(ImageAnalysisSystemPrompt);
-            analysisProfile.MaxTokens = Math.Min(analysisProfile.MaxTokens, MaximumAnalysisOutputTokens);
+            analysisProfile.MaxTokens = CopilotReasoningCapabilities.GetBackgroundOutputTokens(analysisProfile, MaximumAnalysisOutputTokens);
             analysisProfile.Temperature = 0.1;
 
             var prompt = BuildAnalysisPrompt(userRequest, images);

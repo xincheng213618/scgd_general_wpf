@@ -178,9 +178,7 @@ namespace ColorVision.Copilot
             return new CopilotToolOutputArchiveReadResult(
                 entry.Snapshot,
                 page,
-                page.Available
-                    ? CopilotToolFailureKind.None
-                    : CopilotToolFailureKind.Transient,
+                page.FailureKind,
                 page.ErrorMessage);
         }
 

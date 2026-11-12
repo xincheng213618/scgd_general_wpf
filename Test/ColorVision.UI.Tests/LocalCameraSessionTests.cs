@@ -1,9 +1,12 @@
 using ColorVision.Engine.Services.Devices.Camera.Local;
 using ColorVision.Engine.Services.Devices.Camera.Configs;
+using ColorVision.Engine.Services.Devices.Camera.Video;
 using cvColorVision;
 using ColorVision.Engine.Services.PhyCameras.Configs;
 using ColorVision.Engine.Services.PhyCameras;
 using ColorVision.Engine.Services.Devices.Camera;
+using ColorVision.Engine.Services.Devices.Camera.Controls;
+using ColorVision.Engine.Services;
 using System.Runtime.CompilerServices;
 using Newtonsoft.Json.Linq;
 using FlowEngineLib.Algorithm;
@@ -18,6 +21,31 @@ namespace ColorVision.UI.Tests;
 
 public class LocalCameraSessionTests
 {
+    [Fact]
+    public void PreviewUsesTheColorOrderOfTheOpenedMvsSession()
+    {
+        var config = new ConfigCamera { CameraModel = CameraModel.HK_USB, CameraMode = CameraMode.BV_MODE };
+        bool useMvs = true, outputBgr = true;
+        var native = new FakeNative { SwitchResult = cvErrorDefine.CV_ERR_SUCCESS };
+        using var session = new LocalCameraSession(native, new CameraBackendState(true), config,
+            getUseHikMvs: () => useMvs, getHikOutputBgr: () => outputBgr);
+
+        session.Open("camera-1", TakeImageMode.Live, 16);
+        Assert.Equal(CameraPreviewColorOrder.Bgr, session.OpenedPreviewColorOrder);
+        outputBgr = false;
+        session.SwitchMode(TakeImageMode.Measure_Normal, 16);
+        session.SwitchMode(TakeImageMode.Live, 16);
+        Assert.Equal(CameraPreviewColorOrder.Bgr, session.OpenedPreviewColorOrder);
+
+        session.Close(unregisterCallback: true);
+        session.Open("camera-1", TakeImageMode.Live, 16);
+        Assert.Equal(CameraPreviewColorOrder.Rgb, session.OpenedPreviewColorOrder);
+        session.Close(unregisterCallback: true);
+        useMvs = false;
+        session.Open("camera-1", TakeImageMode.Live, 16);
+        Assert.Equal(CameraPreviewColorOrder.Unspecified, session.OpenedPreviewColorOrder);
+    }
+
     [Fact]
     public void CvVideoStartsWithoutPreparingTheWheelAndFailedMeasurementPreservesPreview()
     {
@@ -169,6 +197,39 @@ public class LocalCameraSessionTests
     }
 
     [Theory]
+    [InlineData(false, false)]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    public void FailedCameraCloseReleasesTheFilterWheelIfTheCameraConnectionIsGone(bool cameraStaysOpen, bool filterWheelReleaseFails)
+    {
+        var handle = new IntPtr(42);
+        var cleanupError = new InvalidOperationException("simulated filter wheel release failure");
+        bool isOpen = true;
+        var events = new List<string>();
+        Exception? error = Record.Exception(() => LocalCameraNative.CloseCamera(handle, _ => isOpen, closingHandle =>
+        {
+            Assert.Equal(handle, closingHandle);
+            events.Add("close camera");
+            isOpen = cameraStaysOpen;
+            return -10009;
+        }, managerHandle =>
+        {
+            Assert.Equal(handle, managerHandle);
+            events.Add("release filter wheel");
+            if (filterWheelReleaseFails) throw cleanupError;
+        }));
+
+        Assert.Equal(cameraStaysOpen ? new[] { "close camera" } : new[] { "close camera", "release filter wheel" }, events);
+        if (filterWheelReleaseFails)
+        {
+            var combined = Assert.IsType<AggregateException>(error);
+            Assert.Contains("关闭本地相机失败", combined.InnerExceptions[0].Message);
+            Assert.Same(cleanupError, combined.InnerExceptions[1]);
+        }
+        else Assert.Contains("关闭本地相机失败", Assert.IsType<InvalidOperationException>(error).Message);
+    }
+
+    [Theory]
     [InlineData("COM0", 9600)]
     [InlineData("COM7", 0)]
     public void InvalidSerialFilterWheelSettingsAreRejectedBeforeCallingNativeCode(string port, int baudRate)
@@ -242,23 +303,22 @@ public class LocalCameraSessionTests
     }
 
     [Theory]
-    [InlineData(null, "{}", false)]
-    [InlineData(-1, "{}", false)]
-    [InlineData(0, "{\"IsEnabled\":false}", false)]
-    [InlineData(1, "{}", true)]
-    [InlineData(null, "{\"IsEnabled\":true}", true)]
-    [InlineData(-1, "{\"IsEnabled\":true}", true)]
-    public void LocalOpenChecksOnlyStoredExpiryAndRespectsPersistedExperimentalSetting(int? expirySeconds, string settingsJson, bool allowed)
+    [InlineData(null, false, false)]
+    [InlineData(-1, false, false)]
+    [InlineData(0, false, false)]
+    [InlineData(1, false, true)]
+    [InlineData(null, true, true)]
+    [InlineData(-1, true, true)]
+    public void LocalOpenChecksStoredExpiryUnlessValidationIsSkipped(int? expirySeconds, bool skipValidation, bool allowed)
     {
         DateTime now = new(2026, 10, 7, 12, 0, 0);
         LicenseModel license = new() { ExpiryDate = expirySeconds.HasValue ? now.AddSeconds(expirySeconds.Value) : null, LicenseValue = "not a license payload" };
-        ExperimentalFeaturesConfig settings = JsonConvert.DeserializeObject<ExperimentalFeaturesConfig>(settingsJson)!;
         var native = new FakeNative();
         var backend = new CameraBackendState(true);
         ConfigCamera config = new();
         int saves = 0;
         using var session = new LocalCameraSession(native, backend, config, () => saves++,
-            ensureLicenseAvailable: () => LocalCameraLicense.EnsureAvailable(license.ExpiryDate, settings.IsEnabled, now));
+            ensureLicenseAvailable: () => LocalCameraLicense.EnsureAvailable(license.ExpiryDate, skipValidation, now));
 
         if (allowed)
         {
@@ -290,7 +350,7 @@ public class LocalCameraSessionTests
         var native = new FakeNative { SwitchResult = switchResult };
         var backend = new CameraBackendState(true);
         using var session = new LocalCameraSession(native, backend,
-            ensureLicenseAvailable: () => LocalCameraLicense.EnsureAvailable(expiry, false, now));
+            ensureLicenseAvailable: () => LocalCameraLicense.EnsureAvailable(expiry, skipValidation: false, now));
         session.Open("camera-1", TakeImageMode.Live, 8);
         session.RegisterPreview(_ => cvErrorDefine.CV_ERR_SUCCESS, () => native.Events.Add("stop"));
         native.Events.Clear();
@@ -372,6 +432,40 @@ public class LocalCameraSessionTests
         Assert.Throws<InvalidOperationException>(backend.EnsureServiceAvailable);
     }
 
+    [Theory]
+    [InlineData(true, true)]
+    [InlineData(true, false)]
+    [InlineData(false, false)]
+    public void MvsFailedSwitchRestoresThePreviousPreviewOnlyWhenItCanResume(bool rollbackKeepsCameraOpen, bool previewCanResume)
+    {
+        const int switchFailure = -10048;
+        var native = new FakeNative { SwitchResult = switchFailure };
+        var config = new ConfigCamera { CameraModel = CameraModel.HK_USB, CameraMode = CameraMode.BV_MODE };
+        using var session = new LocalCameraSession(native, new CameraBackendState(true), config);
+        session.Open("camera-1", TakeImageMode.Live, 8);
+        if (!rollbackKeepsCameraOpen) native.OnSwitch = () => native.Close(session.Handle);
+        int registrations = 0, stops = 0;
+        Action owner = () => stops++;
+        session.RegisterPreview(_ => ++registrations == 1 || previewCanResume ? cvErrorDefine.CV_ERR_SUCCESS : -10009, owner);
+        native.Events.Clear();
+
+        Assert.Equal(switchFailure, session.SwitchMode(TakeImageMode.Measure_Normal, 16));
+
+        Assert.Equal(rollbackKeepsCameraOpen ? 2 : 1, registrations);
+        Assert.Equal(previewCanResume ? 0 : 1, stops);
+        Assert.Equal(rollbackKeepsCameraOpen, session.IsOpen);
+        Assert.Equal(TakeImageMode.Live, session.OpenedMode);
+        Assert.Equal(TakeImageMode.Live, config.TakeImageMode);
+        Assert.Equal(8, session.OpenedBpp);
+        Assert.Equal(1, native.Opens);
+        Assert.Equal(previewCanResume, session.TryRestartPreview(owner, _ => cvErrorDefine.CV_ERR_SUCCESS));
+        if (previewCanResume)
+        {
+            session.StopPreview(owner, closeCamera: false);
+            Assert.Equal(1, stops);
+        }
+    }
+
     [Fact]
     public void LegacySwitchKeepsThePreferencesOfTheActualOpenSession()
     {
@@ -403,10 +497,20 @@ public class LocalCameraSessionTests
         native.Events.Clear();
 
         session.StopPreview(first, closeCamera: true);
+        Assert.False(session.TryRestartPreview(first, _ => throw new Xunit.Sdk.XunitException("Previous owner must not restart preview.")));
         Assert.Equal(1, firstStops);
         Assert.Equal(0, secondStops);
         Assert.Empty(native.Events);
         Assert.True(session.IsOpen);
+        Assert.True(session.TryRestartPreview(second, handle =>
+        {
+            Assert.Equal(session.Handle, handle);
+            native.Events.Add("restart");
+            return cvErrorDefine.CV_ERR_SUCCESS;
+        }));
+        Assert.Equal(new[] { "restart" }, native.Events);
+        Assert.Equal(0, secondStops);
+        native.Events.Clear();
         session.StopPreview(second, closeCamera: false);
         Assert.Equal(1, secondStops);
         Assert.Equal(new[] { "detach" }, native.Events);
@@ -417,6 +521,120 @@ public class LocalCameraSessionTests
         session.StopPreview(second, closeCamera: true);
         Assert.Equal(2, secondStops);
         Assert.Equal(1, native.Closes);
+        Assert.False(session.IsOpen);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void FailedPreviewStartupRetainsItsOwnerUntilNativeDetachCanBeRetried(bool registrationThrows)
+    {
+        var native = new FakeNative();
+        using var session = new LocalCameraSession(native, new CameraBackendState(true));
+        session.Open("camera-1", TakeImageMode.Live, 8);
+        int previousStops = 0, failedStops = 0;
+        Action previousOwner = () => previousStops++;
+        Action failedOwner = () => failedStops++;
+        session.RegisterPreview(_ => cvErrorDefine.CV_ERR_SUCCESS, previousOwner);
+        native.Events.Clear();
+
+        var startError = new InvalidOperationException("simulated preview registration failure");
+        InvalidOperationException failure;
+        try
+        {
+            failure = Assert.Throws<InvalidOperationException>(() => session.RegisterPreview(_ =>
+            {
+                native.Events.Add("register");
+                native.DetachError = new InvalidOperationException("simulated native cleanup failure");
+                if (registrationThrows) throw startError;
+                return -10009;
+            }, failedOwner));
+        }
+        finally { native.DetachError = null; }
+
+        if (registrationThrows) Assert.Same(startError, failure);
+        else Assert.Contains("启动本地相机视频失败", failure.Message);
+        Assert.Equal(1, previousStops);
+        Assert.Equal(1, failedStops);
+        Assert.Equal(new[] { "detach", "register", "detach" }, native.Events);
+        Assert.False(session.TryRestartPreview(failedOwner, _ => throw new Xunit.Sdk.XunitException("Failed startup must not restart preview.")));
+
+        native.Events.Clear();
+        session.StopPreview(previousOwner, closeCamera: true);
+        Assert.Empty(native.Events);
+        Assert.True(session.IsOpen);
+
+        session.StopPreview(failedOwner, closeCamera: false);
+        Assert.Equal(new[] { "detach" }, native.Events);
+        Assert.Equal(1, failedStops);
+        Assert.True(session.IsOpen);
+
+        native.Events.Clear();
+        session.StopPreview(failedOwner, closeCamera: true);
+        Assert.Empty(native.Events);
+        Assert.True(session.IsOpen);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void PreviewOwnerCanRetryFailedNativeDetachWithoutStoppingTheReplacement(bool closeCamera)
+    {
+        var native = new FakeNative();
+        using var session = new LocalCameraSession(native, new CameraBackendState(true));
+        session.Open("camera-1", TakeImageMode.Live, 8);
+        int stops = 0, replacementStops = 0;
+        Action owner = () => stops++;
+        Action replacement = () => replacementStops++;
+        session.RegisterPreview(_ => cvErrorDefine.CV_ERR_SUCCESS, owner);
+        native.Events.Clear();
+
+        var failure = new InvalidOperationException("simulated detach failure");
+        native.DetachError = failure;
+        try { Assert.Same(failure, Assert.Throws<InvalidOperationException>(() => session.StopPreview(owner, closeCamera: false))); }
+        finally { native.DetachError = null; }
+        Assert.Equal(1, stops);
+        Assert.True(session.IsOpen);
+        Assert.False(session.TryRestartPreview(owner, _ => throw new Xunit.Sdk.XunitException("A retired owner must not restart preview.")));
+
+        session.StopPreview(owner, closeCamera);
+        Assert.Equal(1, stops);
+        Assert.Equal(new[] { "detach", "detach" }, native.Events);
+        Assert.Equal(closeCamera ? 1 : 0, native.Closes);
+        Assert.Equal(!closeCamera, session.IsOpen);
+
+        if (closeCamera) session.Open("camera-1", TakeImageMode.Live, 8);
+        session.RegisterPreview(_ => cvErrorDefine.CV_ERR_SUCCESS, replacement);
+        native.Events.Clear();
+        session.StopPreview(owner, closeCamera: true);
+        Assert.Empty(native.Events);
+        Assert.Equal(0, replacementStops);
+        Assert.True(session.IsOpen);
+    }
+
+    [Fact]
+    public void PreviewOwnerCanRetryFailedNativeCloseWithoutRepeatingSuccessfulDetach()
+    {
+        var native = new FakeNative();
+        using var session = new LocalCameraSession(native, new CameraBackendState(true));
+        session.Open("camera-1", TakeImageMode.Live, 8);
+        int stops = 0;
+        Action owner = () => stops++;
+        session.RegisterPreview(_ => cvErrorDefine.CV_ERR_SUCCESS, owner);
+        native.Events.Clear();
+
+        var failure = new InvalidOperationException("simulated close failure");
+        native.CloseError = failure;
+        try { Assert.Same(failure, Assert.Throws<InvalidOperationException>(() => session.StopPreview(owner, closeCamera: true))); }
+        finally { native.CloseError = null; }
+        Assert.Equal(1, stops);
+        Assert.True(session.IsOpen);
+        Assert.False(session.TryRestartPreview(owner, _ => throw new Xunit.Sdk.XunitException("A detached owner must not restart preview.")));
+
+        session.StopPreview(owner, closeCamera: true);
+        Assert.Equal(1, stops);
+        Assert.Equal(new[] { "detach" }, native.Events);
+        Assert.Equal(2, native.Closes);
         Assert.False(session.IsOpen);
     }
 
@@ -568,6 +786,34 @@ public class LocalCameraSessionTests
         Assert.Equal("configured", native.OpenedId);
         Assert.Equal(0, native.Scans);
         Assert.Equal("existing-code", config.CameraCode);
+    }
+
+    [Theory]
+    [InlineData(CameraModel.HK_USB, CameraMode.LV_MODE)]
+    [InlineData(CameraModel.HK_CARD, CameraMode.BV_MODE)]
+    public void ChangedCameraTypeRequiresReconnectBeforeUsingTheOpenManager(CameraModel model, CameraMode mode)
+    {
+        var config = new ConfigCamera { CameraModel = CameraModel.HK_USB, CameraMode = CameraMode.BV_MODE };
+        var native = new FakeNative { SwitchResult = cvErrorDefine.CV_ERR_SUCCESS };
+        using var session = new LocalCameraSession(native, new CameraBackendState(true), config);
+        session.Open("camera-1", TakeImageMode.Measure_Normal, 16);
+        config.CameraModel = model;
+        config.CameraMode = mode;
+
+        Assert.Throws<InvalidOperationException>(() => session.UseOpened(_ => 42));
+        Assert.Throws<InvalidOperationException>(() => session.Open("camera-1", TakeImageMode.Measure_Normal, 16));
+        Assert.Throws<InvalidOperationException>(() => session.EnsureMeasurement(autoConnect: true));
+        Assert.Throws<InvalidOperationException>(() => session.SwitchMode(TakeImageMode.Live, 8));
+        Assert.Equal(1, native.Opens);
+        Assert.Equal(0, native.Switches);
+
+        session.Close(unregisterCallback: true);
+        session.Open("camera-1", TakeImageMode.Measure_Normal, 16);
+        Assert.Equal((model, mode), native.OpenedCameraType);
+        Assert.Equal(42, session.UseOpened(_ => 42));
+        Assert.Equal(cvErrorDefine.CV_ERR_SUCCESS, session.SwitchMode(TakeImageMode.Live, 8));
+        Assert.Equal(2, native.Opens);
+        Assert.Equal(1, native.Switches);
     }
 
     [Fact]
@@ -923,6 +1169,50 @@ public class LocalCameraSessionTests
         Assert.Throws<ObjectDisposedException>(() => pool.Rent(16));
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void FailedFilterWheelReleaseKeepsTheClosedCameraAvailableForCleanupRetry(bool previewing)
+    {
+        var failure = new InvalidOperationException("simulated filter wheel release failure");
+        var native = new FakeNative { CloseError = failure, DisconnectBeforeCloseError = true, SwitchResult = cvErrorDefine.CV_ERR_SUCCESS };
+        var backend = new CameraBackendState(true);
+        using var session = new LocalCameraSession(native, backend, new ConfigCamera { CameraMode = CameraMode.CV_MODE });
+        session.Open("camera-1", TakeImageMode.Measure_Normal, 16);
+        int previewStops = 0;
+        Action owner = () => previewStops++;
+        if (previewing)
+        {
+            session.SwitchMode(TakeImageMode.Live, 8);
+            session.RegisterPreview(_ => cvErrorDefine.CV_ERR_SUCCESS, owner);
+        }
+
+        void Close()
+        {
+            if (previewing) session.StopPreview(owner, closeCamera: true);
+            else session.Close(unregisterCallback: true);
+        }
+
+        try { Assert.Same(failure, Assert.Throws<InvalidOperationException>(Close)); }
+        finally { native.CloseError = null; }
+        Assert.False(session.IsOpen);
+        Assert.True(backend.LocalOwned, "The filter wheel is still owned after the camera disconnects.");
+        Assert.Equal(DeviceStatusType.Unknown, backend.Status);
+        var panel = CameraPanelState.Create(backend, previewing: false, operating: false);
+        Assert.True(panel.Connected);
+        Assert.False(panel.Busy);
+        Assert.False(panel.CanPreview);
+        Assert.False(panel.CanCapture);
+        Assert.Throws<InvalidOperationException>(() => session.Open("camera-1", TakeImageMode.Measure_Normal, 16));
+        Assert.Equal(1, native.Opens);
+
+        Close();
+        Assert.Equal(2, native.Closes);
+        Assert.Equal(previewing ? 1 : 0, previewStops);
+        Assert.False(backend.LocalOwned);
+        Assert.Equal(cvErrorDefine.CV_ERR_SUCCESS, session.Open("camera-1", TakeImageMode.Measure_Normal, 16));
+    }
+
     [Fact]
     public void DisposeReleasesTheManagerWhenNativeCloseReportsAnError()
     {
@@ -950,7 +1240,10 @@ public class LocalCameraSessionTests
         public IReadOnlyList<string> CameraIds { get; init; } = [];
         public bool FailDiscovery { get; init; }
         public bool IgnoreClose { get; set; }
+        public bool DisconnectBeforeCloseError { get; init; }
         public Exception? CloseError { get; set; }
+        public Exception? DetachError { get; set; }
+        public LocalCalibrationRoi OpenedCalibrationRoi { get; set; }
         public int Releases;
         public int Scans, Initializations, Opens, Closes, Switches;
         public int MeasurementPreparations;
@@ -962,6 +1255,7 @@ public class LocalCameraSessionTests
         public int LastBpp;
         public int OpenResult = cvErrorDefine.CV_ERR_SUCCESS;
         public string? OpenedId;
+        public (CameraModel Model, CameraMode Mode) OpenedCameraType;
         private bool opened;
 
         public IReadOnlyList<string> GetCameraIds()
@@ -984,9 +1278,11 @@ public class LocalCameraSessionTests
         public bool OpenedUseHikMvs;
         public int OpenedHikBayerQuality;
         public bool OpenedHikOutputBgr;
-        public int Open(IntPtr handle, string cameraId, TakeImageMode mode, int bpp, bool useHikMvs, int hikBayerQuality, bool hikOutputBgr)
+        public int Open(IntPtr handle, string cameraId, (CameraModel Model, CameraMode Mode) cameraType, TakeImageMode mode, int bpp,
+            bool useHikMvs, int hikBayerQuality, bool hikOutputBgr)
         {
             Opens++;
+            OpenedCameraType = cameraType;
             LastMode = mode;
             LastBpp = bpp;
             OpenedId = cameraId;
@@ -999,10 +1295,18 @@ public class LocalCameraSessionTests
         public void Close(IntPtr handle)
         {
             Closes++;
-            if (CloseError != null) throw CloseError;
+            if (CloseError != null)
+            {
+                if (DisconnectBeforeCloseError) opened = false;
+                throw CloseError;
+            }
             if (!IgnoreClose) opened = false;
         }
-        public void DetachCallback(IntPtr handle) { Events.Add("detach"); }
+        public void DetachCallback(IntPtr handle)
+        {
+            Events.Add("detach");
+            if (DetachError != null) throw DetachError;
+        }
         public bool UpdateCalibration(IntPtr handle, string json) => true;
         public void Release(IntPtr handle) { Releases++; }
     }

@@ -5,7 +5,7 @@ import {
   redirectToLogin,
   WEB_CLIENT_HEADER_NAME,
   WEB_CLIENT_HEADER_VALUE,
-} from './request'
+} from './request.ts'
 
 const FILE_SAMPLE_SIZE = 64 * 1024
 const DEFAULT_CHUNK_SIZE = 8 * 1024 * 1024
@@ -120,9 +120,13 @@ async function fileFingerprint(file: File, signal?: AbortSignal) {
   const lastStart = Math.max(0, file.size - FILE_SAMPLE_SIZE)
   const last = new Uint8Array(await file.slice(lastStart).arrayBuffer())
   throwIfCanceled(signal)
-  const digest = await crypto.subtle.digest('SHA-256', joinBytes([metadata, first, last]))
+  const input = joinBytes([metadata, first, last])
+  // HTTP deployments do not expose SubtleCrypto; keep the same fingerprint for resume.
+  const digest = crypto.subtle
+    ? new Uint8Array(await crypto.subtle.digest('SHA-256', input))
+    : (await import('@noble/hashes/sha2.js')).sha256(input)
   throwIfCanceled(signal)
-  return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, '0')).join('')
+  return Array.from(digest, (byte) => byte.toString(16).padStart(2, '0')).join('')
 }
 
 function webHeaders(extra: Record<string, string> = {}) {

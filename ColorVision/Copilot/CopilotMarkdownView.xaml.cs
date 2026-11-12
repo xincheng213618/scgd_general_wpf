@@ -1,6 +1,7 @@
 using LocalizedText = global::ColorVision.DisplayText;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -28,7 +29,13 @@ namespace ColorVision.Copilot
         private static readonly Regex OrderedListRegex = new(@"^\s*(\d+)[.)]\s+(.+)$", RegexOptions.Compiled);
         private static readonly Regex ThematicBreakRegex = new(@"^\s{0,3}((\*\s*){3,}|(-\s*){3,}|(_\s*){3,})$", RegexOptions.Compiled);
 
+        private static readonly TimeSpan MinimumRenderInterval = TimeSpan.FromMilliseconds(100);
+        private static readonly TimeSpan MaximumRenderInterval = TimeSpan.FromSeconds(1);
+
         private readonly DispatcherTimer _renderTimer;
+        private string _stableSource = string.Empty;
+        private int _stableLength;
+        private int _stableBlockCount;
         private string? _renderedMarkdown;
         private FlowDocument? _renderDocument;
         private double _lastRenderedWidth;
@@ -42,7 +49,7 @@ namespace ColorVision.Copilot
             InitializeComponent();
             _renderTimer = new DispatcherTimer
             {
-                Interval = TimeSpan.FromMilliseconds(100),
+                Interval = MinimumRenderInterval,
             };
             _renderTimer.Tick += RenderTimer_Tick;
             Loaded += CopilotMarkdownView_Loaded;
@@ -129,18 +136,29 @@ namespace ColorVision.Copilot
             var selectionRevision = _selectionRevision;
             var selection = CaptureTextSelection(markdown);
             var codeSelections = CaptureCodeSelections(markdown);
+            // Tables size themselves when built, so a new width needs the whole document again.
+            var widthChanged = Math.Abs(ActualWidth - _lastRenderedWidth) >= 24;
             _lastRenderedWidth = ActualWidth;
+            var renderStart = Stopwatch.GetTimestamp();
             try
             {
-                DocumentViewer.Document = BuildMarkdownDocument(markdown);
+                if (widthChanged || !TryAppendToRenderedDocument(markdown))
+                    DocumentViewer.Document = BuildMarkdownDocument(markdown);
             }
             catch (Exception)
             {
                 // Formula controls can fail while WPF attaches the new document,
                 // after the LaTeX parser has already accepted the expression.
                 // Keep the chat usable by replacing the whole document with text.
+                _stableLength = 0;
                 DocumentViewer.Document = CreatePlainTextDocument(markdown);
             }
+
+            // Layout costs about as much again, so this keeps rendering near a quarter of the UI thread.
+            var renderInterval = Stopwatch.GetElapsedTime(renderStart) * 2;
+            _renderTimer.Interval = renderInterval < MinimumRenderInterval ? MinimumRenderInterval
+                : renderInterval > MaximumRenderInterval ? MaximumRenderInterval
+                : renderInterval;
 
             if (selectionRevision == _selectionRevision)
                 RestoreTextSelection(selection);
@@ -155,10 +173,11 @@ namespace ColorVision.Copilot
         {
             var document = CreateDocument();
             _renderDocument = document;
+            _stableLength = 0;
             try
             {
                 if (!string.IsNullOrWhiteSpace(markdown))
-                    PopulateMarkdownDocument(markdown);
+                    PopulateMarkdownDocument(NormalizeLineEndings(markdown), 0);
                 return document;
             }
             finally
@@ -167,10 +186,51 @@ namespace ColorVision.Copilot
             }
         }
 
-        private void PopulateMarkdownDocument(string markdown)
+        // A long answer would otherwise rebuild every block on each streamed update, which at 30,000
+        // characters takes longer than the update interval and leaves the UI thread no time. Only the
+        // text after the last stable boundary can still change while the response is appended to.
+        private bool TryAppendToRenderedDocument(string markdown)
         {
-            var normalized = markdown.Replace("\r\n", "\n", StringComparison.Ordinal).Replace('\r', '\n');
-            var lines = normalized.Split('\n');
+            var document = DocumentViewer.Document;
+            if (_renderedMarkdown == null || _stableLength == 0 || document.Blocks.Count < _stableBlockCount)
+                return false;
+
+            var normalized = NormalizeLineEndings(markdown);
+            if (normalized.Length < _stableLength
+                || !normalized.AsSpan(0, _stableLength).SequenceEqual(_stableSource.AsSpan(0, _stableLength)))
+            {
+                return false;
+            }
+
+            while (document.Blocks.Count > _stableBlockCount)
+            {
+                // A selection reaching a removed block would otherwise widen over the text added back
+                // in its place. Clearing it leaves the caller to restore what was captured.
+                var removed = document.Blocks.LastBlock;
+                if (DocumentViewer.Selection.End.CompareTo(removed.ContentStart) > 0)
+                    DocumentViewer.Selection.Select(document.ContentStart, document.ContentStart);
+                document.Blocks.Remove(removed);
+            }
+            _renderDocument = document;
+            try
+            {
+                PopulateMarkdownDocument(normalized, _stableLength);
+            }
+            finally
+            {
+                _renderDocument = null;
+            }
+            return true;
+        }
+
+        private static string NormalizeLineEndings(string markdown)
+            => markdown.Replace("\r\n", "\n", StringComparison.Ordinal).Replace('\r', '\n');
+
+        private void PopulateMarkdownDocument(string normalized, int startOffset)
+        {
+            var lines = normalized[startOffset..].Split('\n');
+            var stableLength = startOffset;
+            var stableBlockCount = CurrentDocument.Blocks.Count;
             var paragraphLines = new List<string>();
             var codeBuilder = new StringBuilder();
             var displayMathBuilder = new StringBuilder();
@@ -198,7 +258,7 @@ namespace ColorVision.Copilot
                 codeBuilder.Clear();
             }
 
-            for (var lineIndex = 0; lineIndex < lines.Length; lineIndex++)
+            for (int lineIndex = 0, lineStart = startOffset; lineIndex < lines.Length; lineStart += lines[lineIndex].Length + 1, lineIndex++)
             {
                 var sourceLine = lines[lineIndex];
                 var line = sourceLine ?? string.Empty;
@@ -271,6 +331,13 @@ namespace ColorVision.Copilot
                 if (string.IsNullOrWhiteSpace(line))
                 {
                     FlushParagraph();
+                    // Outside code and math, no parser state crosses a completed blank line, and
+                    // earlier blocks never depend on text after it. The final line may still grow.
+                    if (lineIndex < lines.Length - 1)
+                    {
+                        stableLength = lineStart + line.Length + 1;
+                        stableBlockCount = CurrentDocument.Blocks.Count;
+                    }
                     continue;
                 }
 
@@ -278,7 +345,8 @@ namespace ColorVision.Copilot
                 {
                     FlushParagraph();
                     AddTable(table);
-                    lineIndex += consumedLineCount - 1;
+                    for (var skipped = 0; skipped < consumedLineCount - 1; skipped++)
+                        lineStart += lines[lineIndex++].Length + 1;
                     continue;
                 }
 
@@ -332,6 +400,10 @@ namespace ColorVision.Copilot
                 var rawFormula = displayMathOpening + displayMathBuilder.ToString().TrimEnd();
                 AddTextBlock(rawFormula, new Thickness(0, 2, 0, 8));
             }
+
+            _stableSource = normalized;
+            _stableLength = stableLength;
+            _stableBlockCount = stableBlockCount;
         }
 
         private void AddHeading(string text, int level)

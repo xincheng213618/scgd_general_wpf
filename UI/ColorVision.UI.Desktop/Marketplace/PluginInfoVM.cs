@@ -70,7 +70,7 @@ namespace ColorVision.UI.Desktop.Marketplace
         public PluginInfo PluginInfo { get; set; }
 
 
-        public Version LastVersion
+        public Version? LastVersion
         {
             get => _LastVersion;
             set
@@ -84,7 +84,7 @@ namespace ColorVision.UI.Desktop.Marketplace
                 RaiseUpdateCommandCanExecuteChanged();
             }
         }
-        private Version _LastVersion;
+        private Version? _LastVersion;
 
         public bool HasUpdate => LastVersion != null && AssemblyVersion != null && LastVersion > AssemblyVersion;
 
@@ -156,17 +156,9 @@ namespace ColorVision.UI.Desktop.Marketplace
         /// <summary>
         /// Set version from an external batch check result (avoids redundant individual API calls).
         /// </summary>
-        public void SetVersionFromBatchCheck(string versionString)
+        public void SetVersionFromBatchCheck(string? versionString)
         {
-            try
-            {
-                if (!string.IsNullOrWhiteSpace(versionString))
-                    LastVersion = new Version(versionString.Trim());
-            }
-            catch (Exception ex)
-            {
-                log.Debug($"SetVersionFromBatchCheck failed for {PackageName}: {ex.Message}");
-            }
+            LastVersion = Version.TryParse(versionString, out Version? version) ? version : null;
         }
 
 
@@ -277,6 +269,7 @@ namespace ColorVision.UI.Desktop.Marketplace
                 {
                     PluginId = PackageName!,
                     Version = candidate.Version,
+                    SourceUrl = detail?.UpdateSourceUrl,
                     ExpectedHash = candidate.FileHash,
                 }, cancellationToken: cancellationToken);
             }

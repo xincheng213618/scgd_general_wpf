@@ -1,13 +1,13 @@
 ---
 name: colorvision-database-operations
-description: Query and explain ColorVision MySQL business data, discover schemas, compose read-only SQL, and perform explicitly requested cleanup through approved SQL tools. Use for flow counts, measurements, results, fields, relations, queries, and cleanup; Chinese intents include 数据库、表、字段、关系、查询、结果数据、清理.
+description: Explain ColorVision result data and query configured MySQL business data. Route already-loaded batch detail questions through InspectLoadedBatchResults before SQL; use database tools for explicit database history, schemas, fields, relations, statistics, and approved cleanup. Chinese intents include 已打开批次、结果数据、数据库、表、字段、关系、查询、清理.
 ---
 
 # ColorVision database operations
 
-Use ColorVision's configured MySQL connection through the provided tools. Never request or expose database credentials.
+First distinguish registered, already-loaded batch detail data from database history. For questions such as which loaded image or algorithm rows have nonzero or unknown result codes, use `InspectLoadedBatchResults` (`inspect_loaded_batch_results` on MCP) without schema discovery or SQL. Only use ColorVision's configured MySQL connection when the request needs database history, tables, fields, relations, statistics, or an explicit database mutation. Never request or expose database credentials.
 
-Read `references/schema.md` before answering a table, field, relation, result-data, or cleanup question. Then load only the matching category reference:
+Before the database workflow, read `references/schema.md` for a table, field, relation, database result-data, or cleanup question. Then load only the matching category reference:
 
 - `references/service-configuration-tables.md` for service/device registration and connection configuration.
 - `references/service-setting-tables.md` for parameter templates and behavior settings.
@@ -15,11 +15,22 @@ Read `references/schema.md` before answering a table, field, relation, result-da
 
 ## Choose the tool
 
+- Use `InspectLoadedBatchResults` first for main-record metadata already held by registered `MeasureBatchPage` details. Prefer a complete valid `source_ref` and `expected_source_instance_id` pair supplied by automatic context; otherwise discover sources. Read or focus only that exact source's loaded rows; current selection and recorded batch/result ids are not selectors.
 - Use `QueryFlowExecutionStats` first for flow execution counts, status distribution, completion rate, or average duration for today, yesterday, or the last seven local calendar days.
-- Use `QueryDatabaseSql` for schema discovery and all other read-only queries.
+- Use `QueryDatabaseSql` for schema discovery and other read-only database queries, after ruling out the loaded-detail scope above.
 - Use `ExecuteDatabaseSql` only for an explicitly requested service-configuration change or result-data cleanup. Every invocation requires native approval.
 - Service setting tables are read-only to Copilot. Never submit a mutation against them. The versioned reset path loads the native schema/defaults and restores preserved field rows; read `references/service-setting-tables.md` for that boundary.
 - Do not call a database tool when the user only asks for a general explanation that does not depend on live data.
+
+## Loaded batch results workflow
+
+1. If automatic context supplies a complete valid `source_ref` and `expected_source_instance_id` pair in its `Loaded batch result source: ` JSON, use both unchanged for the loaded-source read. The fixed context source name `measurement-results` is not either reference. Legacy or history summaries and incomplete pairs do not establish a source; do not combine references from different snapshots.
+2. Otherwise omit `source_ref` to discover all registered loaded-detail sources. Choose the returned exact `source_ref` and pass the root `source_instance_id` as `expected_source_instance_id`. `max_items` defaults to 40 and accepts 1–100; follow `has_more` and pass `next_cursor` unchanged for the needed directory scope. Do not guess a source from a batch id, flow run id, name, or active window. Multiple pages can display the same recorded batch id, and an empty directory does not mean the database has no historical results.
+3. Read the source's result rows with the same source binding and continue its own cursor when needed. References identify the source registration and in-memory row objects; recorded `kind` and `internal_id` are metadata. Restart discovery when a bound source or membership changes rather than silently switching pages.
+4. To focus one delivered record, use its exact `result_ref` together with `source_ref` and `expected_source_instance_id`, without a cursor. The tool does not select that row in the UI. References retained in chat attachments may be stale; let the formal tool validate them and rediscover after a stale or missing-source response, without falling back to the recorded batch id.
+5. Report only the delivered window and its coverage. `result_code` is raw nullable metadata, not customer PASS/FAIL; unknown does not mean success. Preserve raw `recorded_duration_ms`; only nonnegative valid values have `duration_ms`. Do not parse formatted image time or relabel recorded creation dates as UTC. Use partial/coverage and continuation information before claiming the requested rows are complete.
+
+This workflow does not create or open pages, query SQL, load handlers or images, probe files, or operate devices. It does not return paths, SN, raw messages, parameters, measured values, or file-existence evidence. A missing or closed source is not permission to query a broader database history; use the database workflow only when that history is part of the requested scope.
 
 ## Query workflow
 

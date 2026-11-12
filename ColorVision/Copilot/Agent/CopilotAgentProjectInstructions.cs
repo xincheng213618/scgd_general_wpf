@@ -28,7 +28,7 @@ namespace ColorVision.Copilot
     public static partial class CopilotAgentProjectInstructions
     {
         public const int MaxDocuments = 16;
-        public const int MaxDocumentCharacters = 12_000;
+        public const int MaxDocumentCharacters = CopilotProjectInstructionDiscoveryConfig.DefaultMaximumBytes;
         public const int MaxTotalCharacters = CopilotProjectInstructionDiscoveryConfig.MaximumMaximumBytes;
         public const int MaxPromptCharacters = 81_920;
 
@@ -446,11 +446,18 @@ namespace ColorVision.Copilot
 
             try
             {
-                using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
-                using var reader = new StreamReader(stream, Encoding.UTF8, true);
                 var buffer = new char[MaxSourceCharacters + 1];
-                var count = reader.ReadBlock(buffer, 0, buffer.Length);
-                truncated = count > MaxSourceCharacters || !reader.EndOfStream;
+                int count;
+                try
+                {
+                    count = ReadInstructionPrefix(path, StrictUtf8, buffer, out truncated);
+                }
+                catch (DecoderFallbackException)
+                {
+                    // An AGENTS.md saved by an older Notepad is ANSI; decode it rather than send U+FFFD rules.
+                    count = ReadInstructionPrefix(path, CopilotLocalFileToolSupport.LegacyEncoding.Value, buffer, out truncated);
+                }
+
                 var value = new string(buffer, 0, Math.Min(count, MaxSourceCharacters));
                 if (stripRuleFrontmatter)
                     value = StripRuleFrontmatter(value);
@@ -471,6 +478,17 @@ namespace ColorVision.Copilot
             {
                 return false;
             }
+        }
+
+        private static readonly Encoding StrictUtf8 = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
+
+        private static int ReadInstructionPrefix(string path, Encoding encoding, char[] buffer, out bool truncated)
+        {
+            using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
+            using var reader = new StreamReader(stream, encoding, detectEncodingFromByteOrderMarks: true);
+            var count = reader.ReadBlock(buffer, 0, buffer.Length);
+            truncated = count > MaxSourceCharacters || !reader.EndOfStream;
+            return count;
         }
 
         private static string StripRuleFrontmatter(string value)

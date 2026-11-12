@@ -4,6 +4,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ColorVision.Engine.Templates.POI"
+        xmlns:engine="clr-namespace:ColorVision.Engine"
         xmlns:xctk="http://schemas.xceed.com/wpf/xaml/toolkit"
         xmlns:base="clr-namespace:ColorVision.Themes.Controls;assembly=ColorVision.Themes"
         xmlns:im ="clr-namespace:ColorVision.ImageEditor;assembly=ColorVision.ImageEditor"
@@ -358,6 +359,52 @@
                                 <RadioButton x:Name="RadioButtonCircle" Width="60"  GroupName="shape" IsChecked="{Binding PoiConfig.IsPointCircle}" Content="{x:Static properties:Resources.Circle}"/>
                                 <RadioButton x:Name="RadioButtonRect" Width="60"  GroupName="shape" IsChecked="{Binding PoiConfig.IsPointRect}" Content="{x:Static properties:Resources.Rect}"/>
                                 <Button x:Name="ButtonAutoFitPointSize" Content="{x:Static properties:Resources.PoiAutoFitSize}" Margin="5,0,0,0" Padding="5,0" Height="25" Visibility="{Binding PoiConfig.IsAreaMask,Converter={StaticResource bool2VisibilityConverter}}" Click="AutoFitPointSize_Click" ToolTip="{x:Static properties:Resources.PoiAutoFitSizeToolTip}"/>
+                                <Grid>
+                                    <Grid.Style>
+                                        <Style TargetType="Grid">
+                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                            <Style.Triggers>
+                                                <MultiDataTrigger>
+                                                    <MultiDataTrigger.Conditions>
+                                                        <Condition Binding="{Binding PoiConfig.IsAreaMask}" Value="True"/>
+                                                        <Condition Binding="{Binding PoiConfig.IsPoiCIEFile}" Value="False"/>
+                                                    </MultiDataTrigger.Conditions>
+                                                    <Setter Property="Visibility" Value="Visible"/>
+                                                </MultiDataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Grid.Style>
+                                    <Button x:Name="PointSizePercentageButton" Content="{engine:EngineLang Key='按比例计算'}" Margin="5,0,0,0" Padding="5,0" Height="25" Click="PointSizePercentage_Click"/>
+                                    <Popup x:Name="PointSizePercentagePopup" AllowsTransparency="True" Placement="Bottom" PlacementTarget="{Binding ElementName=PointSizePercentageButton}" StaysOpen="False">
+                                        <Border Style="{StaticResource BorderModuleArea}" Background="{DynamicResource SecondaryRegionBrush}" Width="245" CornerRadius="5">
+                                            <StackPanel Margin="8">
+                                                <ComboBox SelectedIndex="0" Style="{StaticResource ComboBox.Small}" SelectionChanged="PointSizePercentage_Changed">
+                                                    <ComboBoxItem Content="{engine:EngineLang Key='当前布点区域'}" ToolTip="{engine:EngineLang Key='如需按原始发光区计算，请在设置边距前换算尺寸。'}"/>
+                                                    <ComboBoxItem x:Name="PointSizePercentageCanvas" Content="{engine:EngineLang Key='整图或画布'}"/>
+                                                </ComboBox>
+                                                <DockPanel Margin="0,6,0,0" Visibility="{Binding PoiConfig.IsPointCircle,Converter={StaticResource bool2VisibilityConverter}}" LastChildFill="False">
+                                                    <TextBlock Text="{engine:EngineLang Key='半径（按参考宽度）'}" VerticalAlignment="Center"/>
+                                                    <TextBox x:Name="PointSizeRadiusPercent" Text="10" Width="55" Margin="5,0,2,0" TextChanged="PointSizePercentage_Changed"/>
+                                                    <TextBlock Text="%" VerticalAlignment="Center"/>
+                                                </DockPanel>
+                                                <WrapPanel Margin="0,6,0,0" Visibility="{Binding PoiConfig.IsPointRect,Converter={StaticResource bool2VisibilityConverter}}">
+                                                    <DockPanel Margin="0,0,8,0">
+                                                        <TextBlock Text="{x:Static properties:Resources.Width}" VerticalAlignment="Center"/>
+                                                        <TextBox x:Name="PointSizeWidthPercent" Text="10" Width="48" Margin="5,0,2,0" TextChanged="PointSizePercentage_Changed"/>
+                                                        <TextBlock Text="%" VerticalAlignment="Center"/>
+                                                    </DockPanel>
+                                                    <DockPanel>
+                                                        <TextBlock Text="{x:Static properties:Resources.height}" VerticalAlignment="Center"/>
+                                                        <TextBox x:Name="PointSizeHeightPercent" Text="10" Width="48" Margin="5,0,2,0" TextChanged="PointSizePercentage_Changed"/>
+                                                        <TextBlock Text="%" VerticalAlignment="Center"/>
+                                                    </DockPanel>
+                                                </WrapPanel>
+                                                <TextBlock x:Name="PointSizePercentagePreview" Margin="0,6" TextWrapping="Wrap"/>
+                                                <Button x:Name="ApplyPointSizePercentageButton" Content="{x:Static properties:Resources.ButtonOK}" HorizontalAlignment="Right" Click="ApplyPointSizePercentage_Click"/>
+                                            </StackPanel>
+                                        </Border>
+                                    </Popup>
+                                </Grid>
                             </WrapPanel>
 
                             <StackPanel Margin="5" Visibility="{Binding PoiConfig.IsPointCircle,Converter={StaticResource bool2VisibilityConverter}}" >

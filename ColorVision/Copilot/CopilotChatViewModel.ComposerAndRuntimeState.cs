@@ -6,6 +6,7 @@ using System;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Windows.Input;
 
 namespace ColorVision.Copilot
@@ -90,7 +91,11 @@ namespace ColorVision.Copilot
         public string LocalCommandResultTitle
         {
             get => _localCommandResultTitle;
-            private set => SetProperty(ref _localCommandResultTitle, value ?? string.Empty);
+            private set
+            {
+                Interlocked.Increment(ref _localCommandResultRevision);
+                SetProperty(ref _localCommandResultTitle, value ?? string.Empty);
+            }
         }
 
         public string LocalCommandResultText
@@ -98,6 +103,7 @@ namespace ColorVision.Copilot
             get => _localCommandResultText;
             private set
             {
+                Interlocked.Increment(ref _localCommandResultRevision);
                 if (!SetProperty(ref _localCommandResultText, value ?? string.Empty))
                     return;
 

@@ -2,6 +2,7 @@ using ST.Library.UI.NodeContainer;
 using ST.Library.UI.NodeEditor;
 using System.Drawing;
 using System.IO;
+using System.IO.Compression;
 
 namespace ColorVision.UI.Tests;
 
@@ -9,9 +10,8 @@ public sealed class GraphImportRestorationTests
 {
     [Theory]
     [InlineData(0)] // Copy/paste selection.
-    [InlineData(1)] // Import a saved canvas as a module.
-    [InlineData(2)] // Open a saved canvas in the editor.
-    [InlineData(3)] // Load the same canvas without an editor.
+    [InlineData(1)] // Open a saved canvas in the editor.
+    [InlineData(2)] // Load the same canvas without an editor.
     public void HubChainRestoresAfterActivatingItsSourceChangesSerializedConnectionOrder(int importKind)
     {
         WpfTestHost.Invoke(() =>
@@ -38,7 +38,7 @@ public sealed class GraphImportRestorationTests
             Assert.Same(first, source.GetConnections()[0].Output.Owner);
             byte[] data = importKind == 0 ? source.GetNodesData(original) : source.GetCanvasData();
 
-            if (importKind == 3)
+            if (importKind == 2)
             {
                 var container = new CVNodeContainer();
                 container.LoadCanvas(data);
@@ -53,16 +53,14 @@ public sealed class GraphImportRestorationTests
             target.Nodes.Add(existing);
             target.SetActiveNode(existing);
             target.ClearHistory();
-            if (importKind == 2)
+            if (importKind == 1)
             {
                 target.LoadCanvas(data);
                 AssertRestoredChain(target.Nodes.Cast<STNode>().ToArray());
                 return;
             }
 
-            STNode[] imported = (importKind == 0
-                ? target.ImportSelectionData(data, new Point(400, 200))
-                : target.ImportCanvasAsModule(data, new Point(400, 200))).ToArray();
+            STNode[] imported = target.ImportSelectionData(data, new Point(400, 200)).ToArray();
             AssertRestoredChain(imported);
             Assert.Equal(5, target.Nodes.Count);
             Assert.Single(target.UndoHistory);
@@ -82,7 +80,7 @@ public sealed class GraphImportRestorationTests
     [Theory]
     [InlineData(false)] // An untyped Hub-only component cannot make progress.
     [InlineData(true)] // Typed neighbours resolve to incompatible string/int ports.
-    public void InvalidHubModulePreservesExistingGraphSelectionAndHistory(bool incompatibleTypes)
+    public void InvalidHubSelectionPreservesExistingGraphSelectionAndHistory(bool incompatibleTypes)
     {
         WpfTestHost.Invoke(() =>
         {
@@ -106,7 +104,7 @@ public sealed class GraphImportRestorationTests
             var redoBefore = target.RedoHistory.ToArray();
 
             InvalidOperationException failure = Assert.Throws<InvalidOperationException>(() =>
-                target.ImportCanvasAsModule(CreateInvalidHubCanvas(incompatibleTypes), new Point(400, 200)));
+                target.ImportSelectionData(CreateInvalidHubSelection(incompatibleTypes), new Point(400, 200)));
 
             Assert.Contains(nameof(ConnectionStatus.ErrorType), failure.Message);
             Assert.Equal(nodesBefore, target.Nodes.Cast<STNode>());
@@ -122,7 +120,7 @@ public sealed class GraphImportRestorationTests
         });
     }
 
-    private static byte[] CreateInvalidHubCanvas(bool incompatibleTypes)
+    private static byte[] CreateInvalidHubSelection(bool incompatibleTypes)
     {
         var first = new STNodeHub();
         var second = new STNodeHub();
@@ -144,7 +142,26 @@ public sealed class GraphImportRestorationTests
         }
         using var stream = new MemoryStream();
         STNodeCanvasWriter.Write(stream, nodes, connections, 0, 0, 1);
-        return stream.ToArray();
+        return CanvasToSelectionData(stream.ToArray());
+    }
+
+    // GetNodesData refuses to emit an unconnectable graph, so the invalid payload reuses the canvas writer's
+    // graph body: a canvas stores [flag][version]gzip(12 view bytes, count, body); a selection stores gzip(count, x, y, body).
+    private static byte[] CanvasToSelectionData(byte[] canvas)
+    {
+        using var compressed = new MemoryStream(canvas, STNodeConstant.NodeFlag.Length + 1, canvas.Length - STNodeConstant.NodeFlag.Length - 1);
+        using var gunzip = new GZipStream(compressed, CompressionMode.Decompress);
+        using var payload = new MemoryStream();
+        gunzip.CopyTo(payload);
+        byte[] body = payload.ToArray();
+        using var selection = new MemoryStream();
+        using (var gzip = new GZipStream(selection, CompressionMode.Compress, leaveOpen: true))
+        {
+            gzip.Write(body, 12, sizeof(int));
+            gzip.Write(new byte[2 * sizeof(int)]);
+            gzip.Write(body, 12 + sizeof(int), body.Length - 12 - sizeof(int));
+        }
+        return selection.ToArray();
     }
 
     private static void AssertRestoredChain(STNode[] nodes)

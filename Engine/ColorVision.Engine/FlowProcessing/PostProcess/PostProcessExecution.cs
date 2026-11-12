@@ -85,6 +85,8 @@ namespace ColorVision.Engine.FlowProcessing.PostProcess
 
         public FlowControlData EngineResult { get; }
 
+        public string FlowName { get; internal init; } = string.Empty;
+
         public FlowFinalOutcome FinalOutcome { get; }
 
         public IReadOnlyList<PostProcessExecutionResult> PostProcessResults { get; }
@@ -96,7 +98,8 @@ namespace ColorVision.Engine.FlowProcessing.PostProcess
     {
         public static IReadOnlyList<PostProcessExecutionResult> Execute(
             IEnumerable<PostProcessMeta> metas,
-            PostProcessContext context)
+            PostProcessContext context,
+            bool ambiguousLegacyBinding = false)
         {
             ArgumentNullException.ThrowIfNull(metas);
             ArgumentNullException.ThrowIfNull(context);
@@ -106,14 +109,17 @@ namespace ColorVision.Engine.FlowProcessing.PostProcess
             {
                 DateTime startedTimeUtc = DateTime.UtcNow;
                 IPostProcessor? processor = meta.PostProcessor;
-                if (processor == null)
+                string? bindingFailure = ambiguousLegacyBinding && meta.FlowKey == null
+                    ? EngineLocalization.Get("流程名称重复，请编辑后处理项并重新选择绑定模板。")
+                    : null;
+                if (processor == null || bindingFailure != null)
                 {
                     results.Add(new PostProcessExecutionResult(
                         meta.Name,
-                        string.Empty,
+                        meta.ProcessTypeFullName,
                         meta.FailurePolicy,
                         PostProcessExecutionStatus.Unavailable,
-                        "后处理器不可用。",
+                        bindingFailure ?? (meta.HasUnreadableConfiguration ? meta.ProcessDescription : "后处理器不可用。"),
                         startedTimeUtc,
                         DateTime.UtcNow));
                     continue;

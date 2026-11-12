@@ -58,7 +58,7 @@ related: ["ui.framework", "ui.menus", "ui.settings", "ui.configuration", "ui.com
 | 搜索命令与功能 | Ctrl+Shift+P | 打开或激活单一独立 SearchWindow，不查找文档正文 |
 | 查找当前内容或应用功能 | Ctrl+F | 优先当前编辑器、会话、日志的局部查找；没有局部查找的普通页面打开应用搜索 |
 | 日志 | Ctrl+Alt+L | 打开托管日志窗口，L 对应 Log；窗口内 Ctrl+F 仍用于日志查找 |
-| 重置窗口布局 | Ctrl+Alt+Shift+R | R 对应 Reset；菜单和快捷键均先询问，默认选择“否”，请先保存文档 |
+| 重置窗口布局 | Ctrl+Alt+Shift+R | 菜单和快捷键均先询问，默认选择“否”。打开的编辑标签移到主文档区域 |
 
 检查更新、状态栏和关于仍可配置但默认未分配。关于不是帮助文档，因此不拿 F1 代替帮助；布局重置可能移除文件标签，确认只是显式授权，不自动保存或预审脏文档。启动恢复直接调用布局管理器，不弹出这项用户操作确认。没有为设备运行、数据库清理、消息重发等风险操作新增默认键。
 
@@ -145,7 +145,7 @@ manager 的 Closed 路径释放所记录句柄，清空条目的 `Registration` 
 
 ## 源码定位与验证
 
-- 定义发现、ID 匹配、宿主与应用补偿：`HotkeyService.cs`、`HotkeyDefinition.cs`、`HotkeySetting.cs`、`HotkeyApplyResult.cs`。
+- 定义发现、ID 匹配、宿主与应用补偿：`HotkeyService.cs`（注册与宿主），`HotkeyService.Discovery.cs`、`.Settings.cs`、`.Apply.cs`（校验、保存与回滚）、`.Capture.cs`（录入期间暂停全局键），`HotkeyDefinition.cs`、`HotkeySetting.cs`、`HotkeyApplyResult.cs`。
 - 动作说明、分类、来源与友好缺省：`HotkeyPresentation.cs`、`HotkeyPresentationResources.resx` / `.en.resx`。
 - 列表、搜索、弹窗与录入限制：`HotKeysSetting.xaml` / `.xaml.cs`、`HotkeySettingsViewModel.cs`、`HotkeyEditWindow.xaml` / `.xaml.cs`、`HotkeyInput.cs`。
 - 窗口输入、重复组合与句柄释放：`WindowHotKey/WindowHotKey.cs`、`WindowHotKey/WindowHotKeyManager.cs`。

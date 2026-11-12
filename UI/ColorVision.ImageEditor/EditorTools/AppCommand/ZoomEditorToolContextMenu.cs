@@ -1,8 +1,10 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.Common.Utilities;
 using ColorVision.ImageEditor.Draw;
 using ColorVision.UI;
 using ColorVision.UI.Menus;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Windows;
 using System.Windows.Input;
@@ -19,6 +21,12 @@ namespace ColorVision.ImageEditor.EditorTools.AppCommand
 
             var MenuItemMetadatas = new  List<MenuItemMetadata>();
             MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "OpenImage", Order = 10, Header = Properties.Resources.Open, Command = ApplicationCommands.Open , Icon = MenuItemIcon.TryFindResource("DIOpen") });
+            MenuItemMetadatas.Add(new MenuItemMetadata
+            {
+                GuidId = "SelectImageFileInFolder", Order = 10, Header = DisplayText.Get("在文件夹中选择文件"),
+                Command = new RelayCommand(_ => PlatformHelper.OpenFolderAndSelectFile(config.FilePath), _ => File.Exists(config.FilePath)),
+                Icon = MenuItemIcon.TryFindResource("DIOpen")
+            });
             MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "SaveAsImage", Order = 300, Header = Properties.Resources.SaveAsImage, Command = ApplicationCommands.SaveAs ,Icon = MenuItemIcon.TryFindResource("DISave") });
 
             MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "ClearImage", Order = 11, Header = Properties.Resources.Clear, Command = ApplicationCommands.Close, Icon = MenuItemIcon.TryFindResource("DIDelete") });

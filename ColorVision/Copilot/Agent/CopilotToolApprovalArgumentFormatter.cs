@@ -105,8 +105,9 @@ namespace ColorVision.Copilot
                     break;
                 case JsonValueKind.String:
                     var text = value.GetString() ?? string.Empty;
-                    var redacted = CopilotMcpAuditLogger.RedactText(text);
-                    if (!string.Equals(text, redacted, StringComparison.Ordinal) && redacted.Contains("<redacted>", StringComparison.Ordinal))
+                    var isSql = string.Equals(propertyName, "sql", StringComparison.OrdinalIgnoreCase);
+                    var redacted = isSql ? CopilotDatabaseSqlPolicy.RedactForApproval(text) : CopilotMcpAuditLogger.RedactText(text);
+                    if (!isSql && !string.Equals(text, redacted, StringComparison.Ordinal) && redacted.Contains("<redacted>", StringComparison.Ordinal))
                         redacted = "<redacted>";
                     if (redacted.Length > MaximumValueLength)
                         redacted = redacted[..(MaximumValueLength - 3)] + "...";

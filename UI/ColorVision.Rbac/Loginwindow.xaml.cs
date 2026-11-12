@@ -3,6 +3,7 @@
 using ColorVision.Rbac.Dtos;
 using ColorVision.UI;
 using ColorVision.UI.Authorizations;
+using System.Globalization;
 using System.Windows;
 using System.Windows.Input;
 
@@ -72,6 +73,7 @@ namespace ColorVision.Rbac
                     // SessionToken 仍然有效，直接恢复登录状态
                     RbacManagerConfig.Instance.LoginResult = userLoginResult;
                     config.SavedUsername = userLoginResult.User.Username;
+                    Authorization.Instance.SubjectId = userLoginResult.User.Id.ToString(CultureInfo.InvariantCulture);
                     Authorization.Instance.PermissionMode = userLoginResult.UserDetail.PermissionMode;
                     ConfigService.Instance.Save<RbacManagerConfig>();
 
@@ -185,6 +187,7 @@ namespace ColorVision.Rbac
             config.LoginResult = userLoginResult;
             config.SessionToken = sessionToken;
             config.SavedUsername = userLoginResult.User.Username;
+            Authorization.Instance.SubjectId = userLoginResult.User.Id.ToString(CultureInfo.InvariantCulture);
             Authorization.Instance.PermissionMode = userLoginResult.UserDetail.PermissionMode;
 
             // 记住我：只保存 SessionToken，不保存密码

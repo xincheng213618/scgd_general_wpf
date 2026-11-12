@@ -106,6 +106,19 @@ namespace ColorVision.Copilot
                 if (result.Content is null)
                     throw new JsonException("The MCP tool response did not contain a valid content collection.");
             }
+            catch (McpProtocolException exception)
+            {
+                // A JSON-RPC error is an authoritative protocol response, unlike
+                // losing the response after the operation may have completed.
+                return new CopilotToolResult
+                {
+                    ToolName = Name,
+                    Success = false,
+                    Summary = $"External MCP tool {_server.Name}/{_remoteTool.ProtocolTool.Name} was rejected by the server.",
+                    ErrorMessage = CopilotUserFacingErrorFormatter.Sanitize(exception.Message),
+                    FailureKind = CopilotToolFailureKind.Internal,
+                };
+            }
             catch (Exception exception) when (
                 (Access == CopilotToolAccess.Write || Idempotency != CopilotToolIdempotency.Idempotent)
                 && (exception is IOException or HttpRequestException or OperationCanceledException or JsonException

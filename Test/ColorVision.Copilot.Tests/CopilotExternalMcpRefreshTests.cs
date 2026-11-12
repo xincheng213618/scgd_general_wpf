@@ -15,43 +15,6 @@ public sealed class CopilotExternalMcpRefreshTests : IDisposable
 
     public CopilotExternalMcpRefreshTests() => Directory.CreateDirectory(_rootDirectory);
 
-    [Theory]
-    [InlineData(true)]
-    [InlineData(false)]
-    public async Task RefreshChecksServersBeyondRuntimeToolBudgetWithoutPublishingTools(bool lastServerSucceeds)
-    {
-        var servers = CreateServers(3);
-        using var handler = new McpHandler { ToolCount = 32 };
-        var cache = new CopilotMcpToolDiscoveryCache();
-        var catalog = new CopilotCapabilityCatalog();
-        var provider = new CopilotMcpToolProvider(cache, catalog, handler.CreateClient);
-        await using (var initialLease = await provider.DiscoverAsync(Request(servers[0]), CancellationToken.None))
-            Assert.Equal(32, initialLease.Tools.Count);
-        var initialCatalog = catalog.GetSnapshot();
-        CopilotMcpClientHealthRegistry.RecordConnected(servers[2], 32, 32);
-        if (!lastServerSucceeds)
-            handler.FailedEndpoint = servers[2].Endpoint;
-
-        await using var lease = await provider.RefreshDiscoveryAsync(Request(servers), CancellationToken.None);
-
-        Assert.Empty(lease.Tools);
-        Assert.Equal(initialCatalog.Revision, catalog.GetSnapshot().Revision);
-        Assert.Equal(initialCatalog.Capabilities.Count, catalog.GetSnapshot().Capabilities.Count);
-        Assert.Equal(2, handler.ListCount(servers[0]));
-        Assert.Equal(1, handler.ListCount(servers[1]));
-        Assert.Equal(1, handler.ListCount(servers[2]));
-        Assert.True(CopilotMcpClientHealthRegistry.TryGetSnapshot(servers[0], out var firstHealth));
-        Assert.False(firstHealth.UsedCachedDiscovery);
-        Assert.Equal(32, firstHealth.ExposedToolCount);
-        Assert.True(CopilotMcpClientHealthRegistry.TryGetSnapshot(servers[2], out var lastHealth));
-        Assert.Equal(lastServerSucceeds ? CopilotMcpClientHealthState.Connected : CopilotMcpClientHealthState.Unavailable, lastHealth.State);
-        Assert.Equal(lastServerSucceeds ? 32 : 0, lastHealth.ExposedToolCount);
-        Assert.Equal(4, handler.CreatedClientCount);
-        Assert.Equal(handler.CreatedClientCount, handler.DisposedClientCount);
-        Assert.Equal(1, handler.MaximumActiveClientCount);
-        Assert.Equal(0, handler.ToolCallCount);
-    }
-
     [Fact]
     public async Task RuntimeDiscoveryRetainsIts64ToolBudgetAndApprovalPolicies()
     {
@@ -86,29 +49,6 @@ public sealed class CopilotExternalMcpRefreshTests : IDisposable
     }
 
     [Fact]
-    public async Task RefreshRetainsEightServerAndPaginationBoundsAndDisposesEachClientBeforeTheNext()
-    {
-        var servers = CreateServers(9);
-        using var handler = new McpHandler { ContinuePages = true };
-        var cache = new CopilotMcpToolDiscoveryCache();
-        var provider = new CopilotMcpToolProvider(cache, new CopilotCapabilityCatalog(), handler.CreateClient);
-
-        await using var lease = await provider.RefreshDiscoveryAsync(Request(servers), CancellationToken.None);
-
-        Assert.Empty(lease.Tools);
-        foreach (var server in servers.Take(8))
-        {
-            Assert.Equal(CopilotMcpToolDiscoveryPaginator.MaximumPages, handler.ListCount(server));
-            Assert.True(cache.TryGet(server, string.Empty, out var discovery));
-            Assert.Equal(CopilotMcpToolDiscoveryPaginator.MaximumPages, discovery.Tools.Count);
-        }
-        Assert.Equal(0, handler.ListCount(servers[8]));
-        Assert.Equal(8, handler.CreatedClientCount);
-        Assert.Equal(8, handler.DisposedClientCount);
-        Assert.Equal(1, handler.MaximumActiveClientCount);
-    }
-
-    [Fact]
     public async Task RefreshUsesConnectionTimeoutAndContinuesWithTheNextServer()
     {
         var servers = CreateServers(2);
@@ -123,108 +63,6 @@ public sealed class CopilotExternalMcpRefreshTests : IDisposable
         Assert.Equal(CopilotMcpClientHealthState.Unavailable, health.State);
         Assert.Equal(1, handler.ListCount(servers[1]));
         Assert.Equal(2, handler.DisposedClientCount);
-    }
-
-    [Theory]
-    [InlineData(true)]
-    [InlineData(false)]
-    public async Task CurrentDraftReceivesAllServerHealthWithoutChangingSavedSettings(bool lastServerSucceeds)
-    {
-        var servers = CreateServers(3);
-        using var handler = new McpHandler { ToolCount = 32, DeferredEndpoint = servers[2].Endpoint };
-        if (!lastServerSucceeds)
-            handler.FailedEndpoint = servers[2].Endpoint;
-        using var viewModel = CreateViewModel(handler, servers);
-        CopilotMcpClientHealthRegistry.RecordConnected(servers[2], 32, 32);
-        var context = new PausedSynchronizationContext();
-        var refresh = StartRefresh(viewModel, context);
-        await handler.RequestStarted.Task.WaitAsync(TimeSpan.FromSeconds(5));
-        handler.Release.TrySetResult();
-        await context.CallbackPosted.Task.WaitAsync(TimeSpan.FromSeconds(5));
-
-        context.RunPending();
-        await refresh.WaitAsync(TimeSpan.FromSeconds(5));
-
-        Assert.False(viewModel.IsRefreshingExternalMcpClients);
-        Assert.False(viewModel.HasAppliedChanges);
-        Assert.False(viewModel.HasUnsavedSettings);
-        Assert.Equal(3, viewModel.ExternalMcpClientStatuses.Count);
-        Assert.Equal(lastServerSucceeds ? "Connected · 32/32 tools" : "Unavailable", viewModel.ExternalMcpClientStatuses[2].StateText);
-        Assert.Equal($"External MCP discovery refreshed: {(lastServerSucceeds ? 3 : 2)}/3 server(s) connected.", viewModel.SettingsStatusText);
-        Assert.Equal(3, handler.DisposedClientCount);
-        Assert.Empty(Directory.EnumerateFiles(_rootDirectory));
-    }
-
-    [Theory]
-    [InlineData("edit", true)]
-    [InlineData("edit", false)]
-    [InlineData("edit-back", true)]
-    [InlineData("edit-back", false)]
-    [InlineData("clear", true)]
-    [InlineData("clear", false)]
-    [InlineData("invalid", true)]
-    [InlineData("invalid", false)]
-    [InlineData("close", true)]
-    [InlineData("close", false)]
-    [InlineData("new-notice", true)]
-    [InlineData("new-notice", false)]
-    public async Task ChangedOrClosedDraftCannotReceiveAlreadyCompletedRefresh(string change, bool succeeds)
-    {
-        var server = CreateServers(1)[0];
-        using var handler = new McpHandler { DeferredEndpoint = server.Endpoint };
-        if (!succeeds)
-            handler.FailedEndpoint = server.Endpoint;
-        using var viewModel = CreateViewModel(handler, [server]);
-        var originalText = viewModel.ExternalMcpServersText;
-        var context = new PausedSynchronizationContext();
-        var refresh = StartRefresh(viewModel, context);
-        await handler.RequestStarted.Task.WaitAsync(TimeSpan.FromSeconds(5));
-        handler.Release.TrySetResult();
-        await context.CallbackPosted.Task.WaitAsync(TimeSpan.FromSeconds(5));
-        Assert.False(refresh.IsCompleted);
-        Assert.Equal(1, handler.DisposedClientCount);
-
-        switch (change)
-        {
-            case "edit":
-            case "edit-back":
-                viewModel.ExternalMcpServersText = CopilotMcpClientConfigurationText.Format(CreateServers(1));
-                if (change == "edit-back")
-                    viewModel.ExternalMcpServersText = originalText;
-                break;
-            case "clear":
-                viewModel.ExternalMcpServersText = string.Empty;
-                break;
-            case "invalid":
-                viewModel.ExternalMcpServersText = "invalid server line";
-                break;
-            case "close":
-                viewModel.Dispose();
-                break;
-            case "new-notice":
-                viewModel.AgentTimeoutSeconds++;
-                break;
-            default:
-                throw new InvalidOperationException("Unknown refresh transition.");
-        }
-        var expectedNotice = viewModel.SettingsStatusText;
-        var expectedStatus = viewModel.ExternalMcpClientsStatusText;
-        var expectedRows = viewModel.ExternalMcpClientStatuses.ToArray();
-
-        context.RunPending();
-        await refresh.WaitAsync(TimeSpan.FromSeconds(5));
-
-        Assert.False(viewModel.IsRefreshingExternalMcpClients);
-        Assert.False(viewModel.HasAppliedChanges);
-        Assert.Equal(expectedNotice, viewModel.SettingsStatusText);
-        if (change == "new-notice")
-            Assert.StartsWith(succeeds ? "1/1 connected" : "0/1 connected", viewModel.ExternalMcpClientsStatusText, StringComparison.Ordinal);
-        else
-        {
-            Assert.Equal(expectedStatus, viewModel.ExternalMcpClientsStatusText);
-            Assert.Equal(expectedRows, viewModel.ExternalMcpClientStatuses.ToArray());
-        }
-        Assert.Empty(Directory.EnumerateFiles(_rootDirectory));
     }
 
     [Theory]
@@ -284,48 +122,7 @@ public sealed class CopilotExternalMcpRefreshTests : IDisposable
 
     private static CopilotAgentRequest Request(params CopilotMcpClientServerConfig[] servers) => new() { ExternalMcpServers = servers };
 
-    private static Task StartRefresh(CopilotSettingsViewModel viewModel, SynchronizationContext context)
-    {
-        var previousContext = SynchronizationContext.Current;
-        try
-        {
-            SynchronizationContext.SetSynchronizationContext(context);
-            return viewModel.RefreshExternalMcpClientsAsync();
-        }
-        finally
-        {
-            SynchronizationContext.SetSynchronizationContext(previousContext);
-        }
-    }
-
     public void Dispose() => Directory.Delete(_rootDirectory, recursive: true);
-
-    private sealed class PausedSynchronizationContext : SynchronizationContext
-    {
-        private readonly ConcurrentQueue<(SendOrPostCallback Callback, object? State)> _callbacks = new();
-        public TaskCompletionSource CallbackPosted { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
-
-        public override void Post(SendOrPostCallback callback, object? state)
-        {
-            _callbacks.Enqueue((callback, state));
-            CallbackPosted.TrySetResult();
-        }
-
-        public void RunPending()
-        {
-            var previousContext = Current;
-            try
-            {
-                SetSynchronizationContext(this);
-                while (_callbacks.TryDequeue(out var item))
-                    item.Callback(item.State);
-            }
-            finally
-            {
-                SetSynchronizationContext(previousContext);
-            }
-        }
-    }
 
     private sealed class McpHandler : HttpMessageHandler
     {

@@ -352,6 +352,60 @@ public class MQTTClientPoolTests
     }
 
     [Fact]
+    public async Task ReadinessCancellationDoesNotAbandonDetachedHelperCleanup()
+    {
+        string server = $"mqtt-start-ready-cancel-{Guid.NewGuid():N}";
+        const int port = 1883;
+        const string userName = "test-user";
+        var (client, proxy) = CreateTrackingClient(isConnected: true);
+        MQTTClientPool.SetActiveEndpoint(server, port, userName);
+        Assert.True(MQTTClientPool.Register(client, server, port, userName));
+        MQTTClientPool.Release(client);
+
+        var helper = new MQTTHelper();
+        ResultData_MQTT result = await helper.CreateMQTTClientAndStart(
+            server, port, userName, string.Empty, _ => { });
+        Assert.Equal(1, result.ResultCode);
+
+        using var startNode = new MQTTStartNode();
+        startNode.Create();
+        const BindingFlags fields = BindingFlags.Instance | BindingFlags.NonPublic;
+        FieldInfo helperField = typeof(MQTTStartNode).GetField("_MQTTHelper", fields)!;
+        helperField.SetValue(startNode, helper);
+        typeof(MQTTStartNode).GetMethod("BeginMqttSession", fields)!.Invoke(startNode, null);
+        var helperLifecycleGate = (SemaphoreSlim)typeof(MQTTHelper)
+            .GetField("_lifecycleGate", fields)!.GetValue(helper)!;
+
+        using var cancellation = new CancellationTokenSource();
+        await helperLifecycleGate.WaitAsync();
+        try
+        {
+            proxy.IsConnected = false;
+            proxy.ReconnectFailuresRemaining = 1;
+            Task<bool> readiness = startNode.EnsureReadyAsync(cancellation.Token);
+
+            Assert.Equal(1, proxy.ReconnectCalls);
+            Assert.Null(helperField.GetValue(startNode));
+            Assert.Equal(0, GetHelperActiveState(helper));
+            Assert.False(readiness.IsCompleted);
+
+            cancellation.Cancel();
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(
+                () => readiness.WaitAsync(TimeSpan.FromSeconds(2)));
+        }
+        finally
+        {
+            cancellation.Cancel();
+            MQTTClientPool.SetActiveEndpoint(server + "-retired", port, userName);
+            helperLifecycleGate.Release();
+        }
+
+        Assert.True(
+            SpinWait.SpinUntil(() => proxy.DisposeCalls == 1, TimeSpan.FromSeconds(2)),
+            "The detached helper did not release its pool reference after readiness was canceled.");
+    }
+
+    [Fact]
     public async Task PublishCancellationUnblocksDisconnectWithoutAStaleCallback()
     {
         string server = $"mqtt-helper-publish-cancel-{Guid.NewGuid():N}";

@@ -23,6 +23,7 @@ namespace ColorVision.Copilot
                 return false;
 
             return request.Mode == CopilotAgentMode.Web
+                || CopilotToolIntentPolicy.CanUseLocalReadTools(request)
                 || CopilotDocsCapability.HasDocumentationIntent(request.UserText);
         }
 

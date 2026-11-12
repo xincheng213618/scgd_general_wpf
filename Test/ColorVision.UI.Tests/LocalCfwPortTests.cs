@@ -7,6 +7,7 @@ using ColorVision.Engine.Services.Devices.Spectrum.Configs;
 using ColorVision.Engine.Services.Devices.Spectrum.Local;
 using ColorVision.Engine.Services.PhyCameras;
 using ColorVision.UI;
+using cvColorVision;
 using FlowEngineLib;
 using FlowEngineLib.Base;
 using Newtonsoft.Json;
@@ -46,6 +47,19 @@ public sealed class LocalCfwPortTests
             });
         }
         finally { nd.Disconnect(); }
+    }
+
+    [Fact]
+    public async Task FailedNativeSetNeverReadsBackOrReportsSuccess()
+    {
+        var native = new FakeNative { SetCode = 0 };
+        await using var session = new LocalCfwPortSession(native);
+        var config = Connection();
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => session.ExecuteAsync("SetPort", config, 3, autoConnect: true));
+
+        Assert.Equal(config.RetryCount + 1, native.Sets);
+        Assert.Equal(0, native.Reads);
     }
 
     [Theory]
@@ -105,13 +119,58 @@ public sealed class LocalCfwPortTests
     }
 
     [Fact]
-    public async Task CancellationAndCloseWaitForBlockingNativeCommand()
+    public async Task StatusObserverFailureCannotReleaseAnOpenFilterWheelReservation()
+    {
+        var config = Connection();
+        var native = new FakeNative();
+        var competingNative = new FakeNative();
+        await using var session = new LocalCfwPortSession(native);
+        await using var competing = new LocalCfwPortSession(competingNative);
+        var observed = new List<DeviceStatusType>();
+        bool failAllActiveStatuses = false;
+        void FailingObserver(DeviceStatusType status)
+        {
+            if (status == DeviceStatusType.Opened || (failAllActiveStatuses && status != DeviceStatusType.Closed))
+                throw new InvalidOperationException("simulated status observer failure");
+        }
+
+        session.StatusChanged += FailingObserver;
+        session.StatusChanged += observed.Add;
+        try
+        {
+            await session.ExecuteAsync("Open", config);
+            Assert.Equal(DeviceStatusType.Opened, session.Status);
+            Assert.Equal(config.PortName, session.Endpoint);
+            Assert.Equal(1, native.Opens);
+            Assert.Throws<InvalidOperationException>(() => LocalCfwPortSession.EnsureNotLocallyOwned(config.PortName));
+            await Assert.ThrowsAsync<InvalidOperationException>(() => competing.ExecuteAsync("Open", config));
+            Assert.Equal(0, competingNative.Opens);
+
+            failAllActiveStatuses = true;
+            Assert.Equal(3, await session.ExecuteAsync("SetPort", config, 3));
+            await session.ExecuteAsync("Close", config);
+            Assert.Equal(new[] { DeviceStatusType.Opening, DeviceStatusType.Opened, DeviceStatusType.Busy, DeviceStatusType.Opened,
+                DeviceStatusType.Closing, DeviceStatusType.Closed }, observed);
+            Assert.Equal(1, native.Closes);
+            await competing.ExecuteAsync("Open", config);
+            Assert.Equal(1, competingNative.Opens);
+        }
+        finally
+        {
+            session.StatusChanged -= FailingObserver;
+        }
+    }
+
+    [Theory]
+    [InlineData(cvErrorDefine.CV_ERR_SUCCESS)]
+    [InlineData(0)]
+    public async Task CancellationAndCloseWaitForBlockingNativeCommand(int setCode)
     {
         using var release = new ManualResetEventSlim();
         var entered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        var native = new FakeNative { OnSet = () => { entered.TrySetResult(); release.Wait(); } };
+        var native = new FakeNative { SetCode = setCode, OnSet = () => { entered.TrySetResult(); release.Wait(); } };
         await using var session = new LocalCfwPortSession(native);
-        var config = Connection();
+        var config = Connection() with { RetryCount = 0 };
         using var cancellation = new CancellationTokenSource();
         Task<int?> move = session.ExecuteAsync("SetPort", config, 3, true, cancellation.Token);
         try
@@ -125,10 +184,79 @@ public sealed class LocalCfwPortTests
             release.Set();
             await Assert.ThrowsAnyAsync<OperationCanceledException>(() => move);
             await close;
+            Assert.Equal(0, native.Reads);
             Assert.Equal(1, native.Closes);
             Assert.Equal(DeviceStatusType.Closed, session.Status);
         }
         finally { release.Set(); }
+    }
+
+    [Fact]
+    public async Task CancellationDuringTheFinalReadbackTakesPrecedenceOverAReadError()
+    {
+        using var cancellation = new CancellationTokenSource();
+        var native = new FakeNative { GetCode = -7, OnGet = cancellation.Cancel };
+        await using var session = new LocalCfwPortSession(native);
+        var config = Connection() with { RetryCount = 0 };
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
+            session.ExecuteAsync("SetPort", config, 3, autoConnect: true, token: cancellation.Token));
+
+        Assert.Equal(1, native.Sets);
+        Assert.Equal(1, native.Reads);
+        Assert.Equal(DeviceStatusType.Opened, session.Status);
+    }
+
+    [Theory]
+    [InlineData(false, cvErrorDefine.CV_ERR_SUCCESS)]
+    [InlineData(true, cvErrorDefine.CV_ERR_SUCCESS)]
+    [InlineData(false, -1)]
+    public async Task CanceledNativeOpenCleansUpBeforePublishingTheConnection(bool autoConnect, int closeCode)
+    {
+        using var release = new ManualResetEventSlim();
+        using var cancellation = new CancellationTokenSource();
+        var entered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var native = new FakeNative { CloseCode = closeCode, OnOpen = () => { entered.TrySetResult(); release.Wait(); } };
+        await using var session = new LocalCfwPortSession(native);
+        await using var competing = new LocalCfwPortSession(new FakeNative());
+        var statuses = new List<DeviceStatusType>();
+        session.StatusChanged += statuses.Add;
+        var config = Connection();
+        Task<int?> open = autoConnect
+            ? session.ExecuteAsync("SetPort", config, 3, autoConnect: true, token: cancellation.Token)
+            : session.ExecuteAsync("Open", config, token: cancellation.Token);
+        try
+        {
+            await entered.Task.WaitAsync(TimeSpan.FromSeconds(10));
+            cancellation.Cancel();
+            Assert.False(open.IsCompleted);
+            Assert.Equal(0, native.Closes);
+            Assert.Throws<InvalidOperationException>(() => LocalCfwPortSession.EnsureNotLocallyOwned(config.PortName));
+
+            release.Set();
+            if (closeCode == cvErrorDefine.CV_ERR_SUCCESS)
+            {
+                await Assert.ThrowsAnyAsync<OperationCanceledException>(() => open);
+                Assert.Equal(DeviceStatusType.Closed, session.Status);
+                Assert.Null(session.Endpoint);
+                await competing.ExecuteAsync("Open", config);
+            }
+            else
+            {
+                var failure = await Assert.ThrowsAsync<InvalidOperationException>(() => open);
+                Assert.Contains("释放滤色轮失败", failure.Message);
+                Assert.Equal(config.PortName, session.Endpoint);
+                await Assert.ThrowsAsync<InvalidOperationException>(() => competing.ExecuteAsync("Open", config));
+            }
+            Assert.DoesNotContain(DeviceStatusType.Opened, statuses);
+            Assert.Equal(1, native.Closes);
+            Assert.Equal(0, native.Sets);
+        }
+        finally
+        {
+            release.Set();
+            native.CloseCode = cvErrorDefine.CV_ERR_SUCCESS;
+        }
     }
 
     [Fact]
@@ -214,19 +342,38 @@ public sealed class LocalCfwPortTests
         Assert.Null(backend.Endpoint);
     }
 
-    [Fact]
-    public void ConfigurationDraftKeepsLocalPreferenceOutOfServiceConfig()
+    [Theory]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    [InlineData(true, true)]
+    public void ConfigurationDraftKeepsLocalPreferenceOutOfServiceConfig(bool editService, bool editDisplay)
     {
-        var config = new ConfigCfwPort { SzComName = "COM12", BaudRate = 9600 };
-        var display = new DisplayCfwPortConfig();
+        var config = new ConfigCfwPort { SzComName = "COM12", BaudRate = 9600, SN = "CAMERA-1" };
+        var display = new DisplayCfwPortConfig { PortNum = 2 };
         var draft = CfwPortConfigurationDraft.From(config, display);
-        draft.UseLocalCfwPort = true;
-        draft.BaudRate = 19200;
+        var session = PropertyEditSession.Create(draft, PropertyEditorEditMode.Transactional);
+        var editable = (CfwPortConfigurationDraft)session.EditableObject;
+        if (editDisplay) editable.UseLocalCfwPort = true;
+        if (editService)
+        {
+            editable.BaudRate = 19200;
+            editable.SN = "SPECTRUM-1";
+        }
+        Assert.Equal("CAMERA-1", config.SN);
         Assert.False(display.UseLocalCfwPort);
         Assert.Equal(9600, config.BaudRate);
-        draft.Apply(config, display);
+
+        session.Commit();
+        if (!editService) config.BaudRate = 38400;
+        if (!editDisplay) display.UseLocalCfwPort = true;
+        display.PortNum = 3;
+        var (serviceChanged, displayChanged) = draft.Apply(config, display);
+        Assert.Equal(editService, serviceChanged);
+        Assert.Equal(editDisplay, displayChanged);
         Assert.True(display.UseLocalCfwPort);
-        Assert.Equal(19200, config.BaudRate);
+        Assert.Equal(3, display.PortNum);
+        Assert.Equal(editService ? 19200 : 38400, config.BaudRate);
+        Assert.Equal(editService ? "SPECTRUM-1" : "CAMERA-1", JsonConvert.DeserializeObject<ConfigCfwPort>(JsonConvert.SerializeObject(config))!.SN);
         Assert.DoesNotContain("UseLocalCfwPort", JsonConvert.SerializeObject(config));
         Assert.True(JsonConvert.DeserializeObject<DisplayCfwPortConfig>(JsonConvert.SerializeObject(display))!.UseLocalCfwPort);
     }
@@ -249,7 +396,7 @@ public sealed class LocalCfwPortTests
             WpfTestHost.Invoke(() =>
             {
                 previousConfig = ConfigService.Instance;
-                ConfigService.SetInstance(new ConfigHandler { IsAutoSave = false, ConfigFilePath = Path.Combine(directory, "config.json") });
+                TestEnvironment.SetConfig(new ConfigHandler { IsAutoSave = false, ConfigFilePath = Path.Combine(directory, "config.json") });
                 var manager = (ServiceManager)RuntimeHelpers.GetUninitializedObject(typeof(ServiceManager));
                 manager.DeviceServices = [];
                 managerField.SetValue(null, manager);
@@ -307,9 +454,9 @@ public sealed class LocalCfwPortTests
             {
                 using var operation = new LocalSpectrumFilterWheel(new ShutterConfig
                 { FilterWheelDeviceCode = device!.Code, UseFilterWheel = true, MeasurementPort = 5, DarkPort = 0 });
-                operation.SetOpen(false);
+                operation.SetTransmitting(false);
                 Assert.Equal(0, native.Port);
-                operation.SetOpen(true);
+                operation.SetTransmitting(true);
                 Assert.Equal(5, native.Port);
             });
             Assert.Equal(1, native.Opens);
@@ -338,7 +485,7 @@ public sealed class LocalCfwPortTests
                 device?.Dispose();
                 managerField.SetValue(null, previousManager);
                 physicalManagerField.SetValue(null, previousPhysicalManager);
-                if (previousConfig != null) ConfigService.SetInstance(previousConfig);
+                if (previousConfig != null) TestEnvironment.SetConfig(previousConfig);
             });
             foreach (var file in Directory.EnumerateFiles(directory)) File.Delete(file);
             Directory.Delete(directory);
@@ -365,14 +512,17 @@ public sealed class LocalCfwPortTests
 
     private sealed class FakeNative : ILocalCfwPortNative
     {
-        public int Opens, Closes, Sets, Reads, Port, CloseCode, GetCode;
+        public int Opens, Closes, Sets, Reads, Port;
+        public int CloseCode = cvErrorDefine.CV_ERR_SUCCESS;
+        public int SetCode = cvErrorDefine.CV_ERR_SUCCESS;
+        public int GetCode = cvErrorDefine.CV_ERR_SUCCESS;
         public int? ReadOverride;
         public bool FailOpen;
-        public Action? OnSet;
+        public Action? OnOpen, OnSet, OnGet;
         public LocalCfwPortConnection? Connection;
-        public IntPtr Open(LocalCfwPortConnection config) { Opens++; Connection = config; return FailOpen ? IntPtr.Zero : new IntPtr(17); }
+        public IntPtr Open(LocalCfwPortConnection config) { Opens++; Connection = config; OnOpen?.Invoke(); return FailOpen ? IntPtr.Zero : new IntPtr(17); }
         public int Close(IntPtr handle) { Closes++; return CloseCode; }
-        public int SetPort(IntPtr handle, int port) { Sets++; OnSet?.Invoke(); Port = port; return 0; }
-        public int GetPort(IntPtr handle, ref int port) { Reads++; port = ReadOverride ?? Port; return GetCode; }
+        public int SetPort(IntPtr handle, int port) { Sets++; OnSet?.Invoke(); Port = port; return SetCode; }
+        public int GetPort(IntPtr handle, ref int port) { Reads++; OnGet?.Invoke(); port = ReadOverride ?? Port; return GetCode; }
     }
 }

@@ -17,10 +17,13 @@ namespace ColorVision.ToolPlugins.ThirdPartyApps
                     Group = ThirdPartyAppGroupNames.CommonTools,
                     Category = ThirdPartyAppCategory.Internal,
                     RequiredPermission = PermissionMode.Administrator,
+                    ActionId = "tools.network-adapter.open",
+                    ResourceId = "network.adapters",
                     Order = -897,
                     IconGlyph = ThirdPartyAppIconGlyphs.NetworkAdapter,
                     LaunchAction = () =>
                     {
+                        AccessControl.Demand("tools.network-adapter.open", PermissionMode.Administrator, "network.adapters");
                         new NetworkAdapterPriorityWindow
                         {
                             Owner = Application.Current.GetActiveWindow(),

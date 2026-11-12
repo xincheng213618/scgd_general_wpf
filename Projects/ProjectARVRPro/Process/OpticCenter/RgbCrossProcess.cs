@@ -33,7 +33,7 @@ public sealed class RgbCrossRecipeConfig : ViewModelBase, IRecipeConfig
 
 public sealed class RgbCrossProcessConfig : ProcessConfigBase<RgbCrossRecipeConfig>
 {
-    [Category("导出配置"), DisplayName("导出名称")]
+    [Category("导出配置"), DisplayName("输出Key")]
     [Description("CSV 分组及 DynamicRgbCrossResults 字典的 Key；不同画面使用不同名称，留空使用 RgbCross。")]
     public string Name { get => name; set { name = value ?? ""; OnPropertyChanged(); } }
     private string name = "RgbCross";

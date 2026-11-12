@@ -5,6 +5,8 @@ using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.Flow;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using log4net;
+using MQTTMessageLib.Algorithm;
+using Newtonsoft.Json.Linq;
 using SqlSugar;
 using System;
 using System.Collections.Generic;
@@ -63,6 +65,12 @@ internal sealed class FlowPoiExecutionException(int code, string message) : Exce
 /// </summary>
 public sealed class FlowPoiExecutionService
 {
+    internal const int MasterIdsPerQuery = 500;
+    private static readonly string[] XyzComponents = ["X", "Y", "Z"];
+    private static readonly JsonLoadSettings PoiJsonLoadSettings = new()
+    {
+        DuplicatePropertyNameHandling = DuplicatePropertyNameHandling.Error
+    };
     private static readonly ILog log = LogManager.GetLogger(typeof(FlowPoiExecutionService));
     public static FlowPoiExecutionService Shared { get; } = new();
     private readonly Func<FlowPoiExecutionRequest, Task<FlowPoiRun>> runFlow;
@@ -201,15 +209,24 @@ public sealed class FlowPoiExecutionService
             DbType = SqlSugar.DbType.MySql,
             IsAutoCloseConnection = true
         });
+        return ReadPoiResults(db, batchId);
+    }
+
+    internal static IReadOnlyList<FlowPoiPoint> ReadPoiResults(SqlSugarClient db, int batchId)
+    {
         List<AlgResultMasterModel> masters = db.Queryable<AlgResultMasterModel>()
             .Where(item => item.BatchId == batchId && item.ImgFileType == ViewResultAlgType.POI_XYZ)
-            .OrderBy(item => item.Id).ToList();
+            .OrderBy(item => item.Id).Select(item => new AlgResultMasterModel { Id = item.Id, TName = item.TName }).ToList();
         var points = new List<FlowPoiPoint>();
-        foreach (AlgResultMasterModel master in masters)
+        foreach (AlgResultMasterModel[] chunk in masters.Chunk(MasterIdsPerQuery))
         {
-            List<PoiPointResultModel> details = db.Queryable<PoiPointResultModel>()
-                .Where(item => item.Pid == master.Id).OrderBy(item => item.Id).ToList();
-            points.AddRange(details.Select(item => CreatePoint(master, item)));
+            int[] ids = chunk.Select(master => master.Id).ToArray();
+            var details = db.Queryable<PoiPointResultModel>()
+                .Where(item => item.Pid != null && ids.Contains(item.Pid.Value))
+                .OrderBy(item => item.Id).ToList().ToLookup(item => item.Pid);
+            // Each master belongs to one chunk; its grouping retains the detail ID order.
+            foreach (AlgResultMasterModel master in chunk)
+                points.AddRange(details[master.Id].Select(item => CreatePoint(master, item)));
         }
         return points;
     }
@@ -218,7 +235,22 @@ public sealed class FlowPoiExecutionService
     {
         if (string.IsNullOrWhiteSpace(detail.Value))
             throw new InvalidOperationException($"POI 结果 {detail.Id} 没有点位数值。");
-        var poi = new PoiResultCIExyuvData(detail);
+
+        JObject payload = JObject.Parse(detail.Value, PoiJsonLoadSettings);
+        foreach (string channel in XyzComponents)
+        {
+            // Lowercase x and y denote separate chromaticity coordinates.
+            if (!payload.TryGetValue(channel, StringComparison.Ordinal, out JToken? component)
+                || component.Type is not (JTokenType.Integer or JTokenType.Float or JTokenType.String))
+                throw new InvalidOperationException($"POI 结果 {detail.Id} 缺少有效的 {channel} 数值。");
+        }
+        // Json.NET would otherwise bind an unknown lowercase z field to Z.
+        payload.Remove("z");
+        POIResultDataCIExyuv values = payload.ToObject<POIResultDataCIExyuv>()!;
+        if (!float.IsFinite(values.X) || !float.IsFinite(values.Y) || !float.IsFinite(values.Z))
+            throw new InvalidOperationException($"POI 结果 {detail.Id} 的 XYZ 数值必须为有限值。");
+
+        var poi = new PoiResultCIExyuvData(detail, values);
         return new FlowPoiPoint(master.Id, master.TName, detail.PoiId, poi.Name,
             detail.PoiX ?? 0, detail.PoiY ?? 0, detail.PoiWidth ?? 0, detail.PoiHeight ?? 0,
             poi.X, poi.Y, poi.Z, poi.x, poi.y, poi.u, poi.v, poi.CCT, poi.Wave);

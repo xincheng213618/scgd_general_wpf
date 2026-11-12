@@ -5,7 +5,7 @@ using System.Collections.Concurrent;
 
 namespace ColorVision.Scheduler
 {
-    public class TaskExecutionListener : IJobListener
+    public class TaskExecutionListener : IJobListener, ITriggerListener
     {
         private readonly QuartzSchedulerManager _schedulerManager;
         private static readonly ILog _logger = LogManager.GetLogger(typeof(TaskExecutionListener));
@@ -28,23 +28,58 @@ namespace ColorVision.Scheduler
 
         public event Action<IJobExecutionContext>? JobExecutedEvent;
 
+        internal void AttachTo(IListenerManager listenerManager)
+        {
+            listenerManager.AddTriggerListener(this);
+            listenerManager.AddJobListener(this);
+        }
+
+        internal JobKey[] GetActiveJobKeys() => _activeExecutions.Values.Select(execution => execution.JobKey).Distinct().ToArray();
+
+        async ValueTask<bool> ITriggerListener.VetoJobExecution(ITrigger trigger, IJobExecutionContext context, CancellationToken cancellationToken)
+        {
+            if (!SchedulerScheduleState.IsScheduledFire(context)
+                || !context.JobDetail.JobDataMap.TryGetValue("SchedulerInfo", out object? definition)
+                || definition is not SchedulerInfo)
+            {
+                return false;
+            }
+
+            JobKey jobKey = context.JobDetail.Key;
+            _activeExecutions[context.FireInstanceId] = new ExecutionState(jobKey, DateTime.Now);
+            try
+            {
+                if (await _schedulerManager.TryCheckpointScheduledFireAsync(context))
+                    return false;
+            }
+            catch (Exception ex)
+            {
+                _logger.Error($"Failed to admit scheduled job: {jobKey.Name}({jobKey.Group})", ex);
+            }
+
+            _activeExecutions.TryRemove(context.FireInstanceId, out _);
+            _schedulerManager.NotifyActiveExecutionsChanged();
+            return true;
+        }
+
         public async ValueTask JobToBeExecuted(IJobExecutionContext context, CancellationToken cancellationToken = default)
         {
             JobKey jobKey = context.JobDetail.Key;
             // Register the fire before awaiting the UI dispatcher. Another
             // execution of the same JobKey can finish while this callback is
             // queued, and its completion must still observe this fire as active.
-            _activeExecutions[context.FireInstanceId] = new ExecutionState(jobKey, DateTime.Now);
+            bool needsStartingState = _activeExecutions.TryAdd(context.FireInstanceId, new ExecutionState(jobKey, DateTime.Now));
             try
             {
-                await _schedulerManager.RecordExecutionAsync(context, taskInfo =>
+                if (needsStartingState)
                 {
-                    SchedulerScheduleState.RecordFire(taskInfo, context);
-                    if (taskInfo.Status != SchedulerStatus.Paused)
+                    await _schedulerManager.RecordExecutionAsync(context, taskInfo =>
                     {
-                        taskInfo.Status = SchedulerStatus.Running;
-                    }
-                });
+                        SchedulerScheduleState.RecordFire(taskInfo, context);
+                        if (taskInfo.Status != SchedulerStatus.Paused)
+                            taskInfo.Status = SchedulerStatus.Running;
+                    });
+                }
                 _logger.Info($"Job starting: {jobKey.Name}({jobKey.Group}), FireInstanceId: {context.FireInstanceId}");
             }
             catch (Exception ex)
@@ -55,10 +90,13 @@ namespace ColorVision.Scheduler
             // Quartz awaits this listener before invoking the job, so record the
             // start after any UI dispatch delay to align with JobRunTime.
             _activeExecutions[context.FireInstanceId] = new ExecutionState(jobKey, DateTime.Now);
+            _schedulerManager.NotifyActiveExecutionsChanged();
         }
 
         public ValueTask JobExecutionVetoed(IJobExecutionContext context, CancellationToken cancellationToken = default)
         {
+            if (_activeExecutions.TryRemove(context.FireInstanceId, out _))
+                _schedulerManager.NotifyActiveExecutionsChanged();
             return ValueTask.CompletedTask;
         }
 
@@ -76,13 +114,10 @@ namespace ColorVision.Scheduler
             }
 
             long executionTimeMs = Math.Max(0, (long)context.JobRunTime.TotalMilliseconds);
-            bool success = jobException == null && !IsJobResultFailure(context.Result);
+            (bool success, string executionMessage) = ReadExecutionResult(context.Result, jobException);
             string executionResult = success
                 ? Properties.Resources.Sched_ExecSuccess
                 : Properties.Resources.Sched_ExecFail;
-            string executionMessage = jobException != null
-                ? jobException.InnerException?.Message ?? jobException.Message
-                : context.Result?.ToString() ?? string.Empty;
             var executionRecord = new JobExecutionRecord
             {
                 JobName = jobKey.Name,
@@ -101,7 +136,7 @@ namespace ColorVision.Scheduler
             }
             else if (!success)
             {
-                _logger.Warn($"Job reported failure: {jobKey.Name}({jobKey.Group}), Duration: {executionTimeMs}ms, Result: {context.Result}");
+                _logger.Warn($"Job reported failure: {jobKey.Name}({jobKey.Group}), Duration: {executionTimeMs}ms, Result: {executionMessage}");
             }
             else
             {
@@ -138,12 +173,13 @@ namespace ColorVision.Scheduler
                 _logger.Error($"Failed to update completed state for job: {jobKey.Name}({jobKey.Group})", ex);
             }
 
+            _schedulerManager.NotifyActiveExecutionsChanged();
             await WriteHistoryAsync(executionRecord);
 
             RaiseJobExecuted(context);
         }
 
-        private bool HasActiveExecution(JobKey jobKey)
+        internal bool HasActiveExecution(JobKey jobKey)
         {
             return _activeExecutions.Values.Any(execution => execution.JobKey.Equals(jobKey));
         }
@@ -220,24 +256,35 @@ namespace ColorVision.Scheduler
             }
         }
 
-        /// <summary>
-        /// 判断 Job 返回的结果是否表示失败。
-        /// 约定：如果 context.Result 是一个含 Success 属性的对象且 Success == false，则视为失败。
-        /// </summary>
-        private static bool IsJobResultFailure(object? result)
+        private static (bool Success, string Message) ReadExecutionResult(object? result, JobExecutionException? jobException)
         {
+            if (jobException != null)
+                return (false, jobException.InnerException?.Message ?? jobException.Message);
             if (result == null)
+                return (true, string.Empty);
+
+            bool success;
+            try
             {
-                return false;
+                // Read the optional result contract without depending on a specific job type.
+                var successProperty = result.GetType().GetProperty("Success");
+                success = successProperty?.PropertyType != typeof(bool) || (bool)successProperty.GetValue(result)!;
+            }
+            catch (Exception ex)
+            {
+                _logger.Error("Failed to read the job result's success state.", ex);
+                return (false, ex.GetBaseException().Message);
             }
 
-            // 通过反射检查是否有 bool Success 属性（避免 Scheduler 层直接引用 Engine 层类型）
-            var successProp = result.GetType().GetProperty("Success");
-            if (successProp != null && successProp.PropertyType == typeof(bool))
+            try
             {
-                return !(bool)successProp.GetValue(result)!;
+                return (success, result.ToString() ?? string.Empty);
             }
-            return false;
+            catch (Exception ex)
+            {
+                _logger.Warn("Failed to format the job result.", ex);
+                return (success, ex.GetBaseException().Message);
+            }
         }
 
         private sealed record ExecutionState(JobKey JobKey, DateTime StartTime);

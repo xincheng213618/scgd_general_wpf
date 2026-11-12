@@ -1,5 +1,7 @@
 using ColorVision.Themes;
+using ColorVision.UI;
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -11,19 +13,27 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
     {
         private readonly Func<FlowIncidentDetail, bool>? focusFlowNode;
         private readonly bool autoLoad;
+        private readonly Func<long, Task<FlowIncidentDetail>>? detailLoader;
         private FlowIncidentService? service;
         private FlowIncidentPage? currentPage;
         private FlowIncidentDetail? selectedDetail;
         private int pageNumber = 1;
         private bool isBusy;
+        private bool isClosed;
+        private int selectionVersion;
+        private CopilotDynamicContextSession? copilotContextSession;
+        private CopilotFlowIncidentContextSnapshot? copilotSelectionSnapshot;
 
         internal FlowIncidentManagementWindow(
             Func<FlowIncidentDetail, bool>? focusFlowNode = null,
-            bool autoLoad = true)
+            bool autoLoad = true,
+            Func<long, Task<FlowIncidentDetail>>? detailLoader = null)
         {
             this.focusFlowNode = focusFlowNode;
             this.autoLoad = autoLoad;
+            this.detailLoader = detailLoader;
             InitializeComponent();
+            Loaded += Window_Loaded;
             this.ApplyCaption();
             OperatorTextBox.Text = Environment.UserName;
             UpdateActionButtons();
@@ -39,7 +49,7 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
             bool resetPage,
             long? preferredIncidentId = null)
         {
-            if (isBusy)
+            if (isClosed || isBusy)
                 return;
             if (resetPage)
                 pageNumber = 1;
@@ -47,10 +57,21 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
             SetBusy(true);
             try
             {
-                service ??= await Task.Run(() => new FlowIncidentService());
+                if (service == null)
+                {
+                    var created = await Task.Run(() => new FlowIncidentService());
+                    if (isClosed)
+                    {
+                        created.Dispose();
+                        return;
+                    }
+                    service = created;
+                }
                 FlowIncidentQuery query = CreateQuery();
                 FlowIncidentPage result =
                     await Task.Run(() => service.Query(query));
+                if (isClosed)
+                    return;
                 if (result.Items.Count == 0
                     && result.TotalCount > 0
                     && result.PageNumber > result.TotalPages)
@@ -58,6 +79,8 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
                     pageNumber = result.TotalPages;
                     query = CreateQuery();
                     result = await Task.Run(() => service.Query(query));
+                    if (isClosed)
+                        return;
                 }
                 currentPage = result;
                 pageNumber = Math.Min(result.PageNumber, result.TotalPages);
@@ -87,11 +110,13 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
             }
             catch (Exception ex)
             {
-                ShowError("读取 Incident 失败", ex);
+                if (!isClosed)
+                    ShowError("读取 Incident 失败", ex);
             }
             finally
             {
-                SetBusy(false);
+                if (!isClosed)
+                    SetBusy(false);
             }
         }
 
@@ -116,34 +141,39 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
             object sender,
             SelectionChangedEventArgs e)
         {
+            ClearDetail();
+            var version = selectionVersion;
             if (IncidentDataGrid.SelectedItem
                 is not FlowIncidentListItem selected
-                || service == null)
+                || isClosed || service == null && detailLoader == null)
             {
-                ClearDetail();
                 return;
             }
 
             try
             {
+                var capturedService = service;
                 FlowIncidentDetail detail =
-                    await Task.Run(
-                        () => service.GetDetail(selected.IncidentId));
-                if (IncidentDataGrid.SelectedItem
-                        is not FlowIncidentListItem current
-                    || current.IncidentId != selected.IncidentId)
-                {
+                    detailLoader != null ? await detailLoader(selected.IncidentId)
+                        : await Task.Run(() => capturedService!.GetDetail(selected.IncidentId));
+                if (!IsCurrentSelection(version, selected.IncidentId)
+                    || detail.Incident.Id != selected.IncidentId)
                     return;
-                }
 
                 selectedDetail = detail;
                 DataContext = detail;
                 EventDataGrid.ItemsSource = detail.Events;
                 AttemptDataGrid.ItemsSource = detail.Attempts;
+                var incident = detail.Incident;
+                copilotSelectionSnapshot = new(incident.Id, incident.RunRecordId, incident.AttemptId,
+                    incident.NodeId ?? string.Empty, incident.State, incident.Kind, incident.Severity);
+                PublishCopilotContext();
                 UpdateActionButtons();
             }
             catch (Exception ex)
             {
+                if (!IsCurrentSelection(version, selected.IncidentId))
+                    return;
                 ClearDetail();
                 ShowError("读取 Incident 详情失败", ex);
             }
@@ -358,6 +388,10 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
 
         private void ClearDetail()
         {
+            selectionVersion++;
+            copilotSelectionSnapshot = null;
+            if (copilotContextSession?.IsCurrent == true)
+                CopilotLiveContextRegistry.Clear(CopilotFlowIncidentAgentExtension.SourceId);
             selectedDetail = null;
             DataContext = null;
             EventDataGrid.ItemsSource = null;
@@ -385,6 +419,71 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
                 !isBusy && selectedDetail != null;
             LocateFlowNodeButton.IsEnabled =
                 !isBusy && selectedDetail != null;
+            DiagnoseIncidentButton.IsEnabled = !isClosed && !isBusy && copilotSelectionSnapshot?.IncidentId > 0;
+        }
+
+        private bool IsCurrentSelection(int version, long incidentId) =>
+            !isClosed && version == selectionVersion
+            && IncidentDataGrid.SelectedItem is FlowIncidentListItem current && current.IncidentId == incidentId;
+
+        private void Window_Loaded(object sender, RoutedEventArgs e) => EnsureCopilotContextRegistered();
+
+        protected override void OnActivated(EventArgs e)
+        {
+            base.OnActivated(e);
+            EnsureCopilotContextRegistered();
+            copilotContextSession?.Activate();
+            PublishCopilotContext();
+        }
+
+        private void EnsureCopilotContextRegistered()
+        {
+            if (isClosed || copilotContextSession != null)
+                return;
+            try
+            {
+                copilotContextSession = CopilotFlowIncidentContextHub.Shared.Register(
+                    CaptureCopilotSelectionAsync, GetType().Assembly.GetName().Version?.ToString());
+                PublishCopilotContext();
+            }
+            catch (Exception ex)
+            {
+                log4net.LogManager.GetLogger(typeof(FlowIncidentManagementWindow)).Warn("注册事故 Copilot 上下文失败", ex);
+            }
+        }
+
+        private async Task<CopilotFlowIncidentContextSnapshot?> CaptureCopilotSelectionAsync(CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            if (!Dispatcher.CheckAccess())
+                return await Dispatcher.InvokeAsync(() =>
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    return isClosed ? null : copilotSelectionSnapshot;
+                });
+            return isClosed ? null : copilotSelectionSnapshot;
+        }
+
+        private void PublishCopilotContext()
+        {
+            if (isClosed || copilotContextSession?.IsCurrent != true || !IsActive || copilotSelectionSnapshot == null)
+                return;
+            CopilotBusinessContextCoordinator.Publish(CopilotBusinessContextBundle.FromItem(
+                CopilotFlowIncidentAgentExtension.SourceId, CopilotFlowIncidentContextBuilder.BuildContextItem(copilotSelectionSnapshot)));
+        }
+
+        private void DiagnoseIncidentButton_Click(object sender, RoutedEventArgs e)
+        {
+            var snapshot = copilotSelectionSnapshot;
+            if (isClosed || isBusy || snapshot == null || !IsCurrentSelection(selectionVersion, snapshot.IncidentId))
+                return;
+            var result = CopilotBusinessContextCoordinator.DispatchDiagnosis(
+                CopilotBusinessContextBundle.FromItem(CopilotFlowIncidentAgentExtension.SourceId,
+                    CopilotFlowIncidentContextBuilder.BuildContextItem(snapshot)),
+                CopilotFlowIncidentContextBuilder.BuildDiagnosisPrompt(snapshot));
+            if (!result.WasSent)
+                MessageBox.Show(this, result.StatusMessage, "ColorVision", MessageBoxButton.OK,
+                    result.IsAvailable ? MessageBoxImage.Warning : MessageBoxImage.Information);
         }
 
         private void SetBusy(bool value)
@@ -406,6 +505,10 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
 
         protected override void OnClosed(EventArgs e)
         {
+            isClosed = true;
+            ClearDetail();
+            copilotContextSession?.Dispose();
+            copilotContextSession = null;
             service?.Dispose();
             service = null;
             Mouse.OverrideCursor = null;

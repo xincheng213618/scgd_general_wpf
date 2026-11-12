@@ -263,6 +263,10 @@
         </Grid>
 
         <Grid Grid.Row="2" Margin="5,8">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="Auto"/>
@@ -277,6 +281,9 @@
                         Foreground="White" Background="{DynamicResource PrimaryBrush}" BorderBrush="{DynamicResource PrimaryBrush}" Click="OK_Click"/>
                 <Button x:Name="CancelButton" Content="{x:Static properties:Resources.Cancel}" Style="{StaticResource PropertyEditorActionButton}" Click="Cancel_Click"/>
             </StackPanel>
+            <TextBlock x:Name="SubmissionError" Grid.Row="1" Grid.ColumnSpan="2" Margin="4,6,4,0"
+                       Foreground="{DynamicResource DangerBrush}" TextWrapping="Wrap" Visibility="Collapsed"
+                       AutomationProperties.LiveSetting="Assertive"/>
         </Grid>
     </Grid>
 

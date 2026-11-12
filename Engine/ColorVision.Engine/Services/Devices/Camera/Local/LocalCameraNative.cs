@@ -12,8 +12,10 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
         IReadOnlyList<string> GetCameraIds();
         IntPtr Initialize();
         bool IsOpen(IntPtr handle);
+        LocalCalibrationRoi OpenedCalibrationRoi { get; }
         void PrepareMeasurement(IntPtr handle);
-        int Open(IntPtr handle, string cameraId, TakeImageMode mode, int bpp, bool useHikMvs, int hikBayerQuality, bool hikOutputBgr);
+        int Open(IntPtr handle, string cameraId, (CameraModel Model, CameraMode Mode) cameraType, TakeImageMode mode, int bpp,
+            bool useHikMvs, int hikBayerQuality, bool hikOutputBgr);
         int SwitchMode(IntPtr handle, TakeImageMode mode, int bpp);
         void Close(IntPtr handle);
         void DetachCallback(IntPtr handle);
@@ -23,6 +25,8 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
 
     internal sealed class LocalCameraNative(DeviceCamera device) : ILocalCameraNative
     {
+        public LocalCalibrationRoi OpenedCalibrationRoi { get; private set; }
+
         public int SwitchMode(IntPtr handle, TakeImageMode mode, int bpp) => cvCameraCSLib.CM_SwitchCaptureMode(handle, mode, bpp);
 
         public IReadOnlyList<string> GetCameraIds()
@@ -46,7 +50,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
         {
             try
             {
-                ConfigureFilterWheel(device, (enabled, port, baudRate) => cvCameraCSLib.CM_SetPortComParam(handle, enabled, port, baudRate));
+                ConfigureFilterWheel(device, (enabled, port, baudRate) => cvCameraCSLib.CM_SetPortComParam(handle, enabled, port, baudRate), CameraMode.CV_MODE);
             }
             catch (Exception error)
             {
@@ -57,12 +61,13 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             }
         }
 
-        public int Open(IntPtr handle, string cameraId, TakeImageMode mode, int bpp, bool useHikMvs, int hikBayerQuality, bool hikOutputBgr)
+        public int Open(IntPtr handle, string cameraId, (CameraModel Model, CameraMode Mode) cameraType, TakeImageMode mode, int bpp,
+            bool useHikMvs, int hikBayerQuality, bool hikOutputBgr)
         {
             try
             {
                 // The manager survives Close; reapply configuration changed since its creation.
-                int result = cvCameraCSLib.CM_SetCameraModel(handle, device.Config.CameraModel, device.Config.CameraMode);
+                int result = cvCameraCSLib.CM_SetCameraModel(handle, cameraType.Model, cameraType.Mode);
                 if (result != cvErrorDefine.CV_ERR_SUCCESS) throw CreateOpenException("CM_SetCameraModel", cameraId, result);
                 result = cvCameraCSLib.CM_SetCameraID(handle, cameraId);
                 if (result != cvErrorDefine.CV_ERR_SUCCESS) throw CreateOpenException("CM_SetCameraID", cameraId, result);
@@ -79,10 +84,11 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                 if (result != cvErrorDefine.CV_ERR_SUCCESS) throw CreateOpenException("CM_UpdateCfgJson", cameraId, result);
                 // CV serial control is prepared by the session only for measurement.
                 // Preserve the existing disabled-serial configuration for other modes.
-                if (device.Config.CameraMode != CameraMode.CV_MODE)
-                    ConfigureFilterWheel(device, (enabled, port, baudRate) => cvCameraCSLib.CM_SetPortComParam(handle, enabled, port, baudRate));
+                if (cameraType.Mode != CameraMode.CV_MODE)
+                    ConfigureFilterWheel(device, (enabled, port, baudRate) => cvCameraCSLib.CM_SetPortComParam(handle, enabled, port, baudRate), cameraType.Mode);
                 result = cvCameraCSLib.CM_Open(handle);
                 if (result != cvErrorDefine.CV_ERR_SUCCESS) throw CreateOpenException("CM_Open", cameraId, result, GetCameraIds);
+                OpenedCalibrationRoi = ReadCalibrationRoi(cameraConfig);
                 return result;
             }
             catch (Exception error)
@@ -96,10 +102,17 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             }
         }
 
-        internal static void ConfigureFilterWheel(DeviceCamera device, Func<bool, string, uint, int> configurePort)
+        internal static LocalCalibrationRoi ReadCalibrationRoi(JObject cameraConfig)
+        {
+            return cameraConfig["cameraCfg"] is JObject roi
+                ? new LocalCalibrationRoi(roi.Value<int>("ex"), roi.Value<int>("ey"), roi.Value<int>("ew"), roi.Value<int>("eh"))
+                : default;
+        }
+
+        internal static void ConfigureFilterWheel(DeviceCamera device, Func<bool, string, uint, int> configurePort, CameraMode? cameraMode = null)
         {
             var filterWheel = device.PhyCamera?.Config.CFW ?? device.Config.CFW;
-            bool enabled = device.Config.CameraMode == CameraMode.CV_MODE && filterWheel.IsUseCFW && filterWheel.IsCOM;
+            bool enabled = (cameraMode ?? device.Config.CameraMode) == CameraMode.CV_MODE && filterWheel.IsUseCFW && filterWheel.IsCOM;
             string port = enabled ? filterWheel.SzComName?.Trim().ToUpperInvariant() ?? string.Empty : string.Empty;
             uint baudRate = 9600;
             if (enabled)
@@ -143,14 +156,26 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             }
             return new InvalidOperationException($"{detail}{Environment.NewLine}{failure.Message}", failure);
         }
-        public void Close(IntPtr handle)
+        public void Close(IntPtr handle) => CloseCamera(handle, cvCameraCSLib.CM_IsOpen, cvCameraCSLib.CM_Close, ReleaseFilterWheel);
+
+        internal static void CloseCamera(IntPtr handle, Func<IntPtr, bool> isOpen, Func<IntPtr, int> closeCamera, Action<IntPtr> releaseFilterWheel)
         {
-            if (IsOpen(handle))
+            int result = isOpen(handle) ? closeCamera(handle) : cvErrorDefine.CV_ERR_SUCCESS;
+            if (result == cvErrorDefine.CV_ERR_SUCCESS)
             {
-                int result = cvCameraCSLib.CM_Close(handle);
-                if (result != cvErrorDefine.CV_ERR_SUCCESS) throw LocalCameraCaptureService.CreateNativeException("关闭本地相机失败", result);
+                releaseFilterWheel(handle);
+                return;
             }
-            ReleaseFilterWheel(handle);
+
+            var failure = LocalCameraCaptureService.CreateNativeException("关闭本地相机失败", result);
+            // The SDK can invalidate the camera connection while still reporting a close error.
+            // The filter wheel belongs to the surviving manager and needs its own release.
+            if (!isOpen(handle))
+            {
+                try { releaseFilterWheel(handle); }
+                catch (Exception cleanup) { throw new AggregateException(failure, cleanup); }
+            }
+            throw failure;
         }
         public void DetachCallback(IntPtr handle)
         {

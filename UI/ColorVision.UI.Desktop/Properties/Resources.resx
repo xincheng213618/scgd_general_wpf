@@ -264,7 +264,7 @@
     <value>请输入下载链接</value>
   </data>
   <data name="ClearRecordsConfirm" xml:space="preserve">
-    <value>确定要清除所有下载记录吗？</value>
+    <value>确定要清除所有下载记录吗？进行中的任务也会停止，已下载的文件会保留。</value>
   </data>
   <data name="Waiting" xml:space="preserve">
     <value>等待中</value>
@@ -1084,4 +1084,91 @@
   <data name="LanRemote_SecureDisabledStatus" xml:space="preserve"><value>安全运维通道已关闭。</value></data>
   <data name="LanRemote_SecureRunningStatus" xml:space="preserve"><value>安全运维通道运行中，HTTPS 端口 {0}。</value></data>
   <data name="LanRemote_SecureFailedStatus" xml:space="preserve"><value>安全运维通道启动失败：{0}</value></data>
+  <data name="AlgorithmHelp_Title" xml:space="preserve"><value>算法原理</value></data>
+  <data name="AlgorithmHelp_Online" xml:space="preserve"><value>在网站中打开</value></data>
+  <data name="AlgorithmHelp_CopyLink" xml:space="preserve"><value>复制网站链接</value></data>
+  <data name="AlgorithmHelp_Print" xml:space="preserve"><value>打印或保存 PDF</value></data>
+  <data name="AlgorithmHelp_Version" xml:space="preserve"><value>离线说明 · 随软件版本 {0}</value></data>
+  <data name="AlgorithmHelp_Failed" xml:space="preserve"><value>离线说明暂不可用：{0}</value></data>
+  <data name="DownloadRecordDeleted" xml:space="preserve">
+    <value>下载任务已被删除</value>
+  </data>
+  <data name="DownloadVerifying" xml:space="preserve">
+    <value>校验中…</value>
+  </data>
+  <data name="DownloadFilterAll" xml:space="preserve">
+    <value>全部</value>
+  </data>
+  <data name="DownloadFilterActive" xml:space="preserve">
+    <value>进行中</value>
+  </data>
+  <data name="DownloadSearchPlaceholder" xml:space="preserve">
+    <value>搜索文件名或链接</value>
+  </data>
+  <data name="DownloadMoreActions" xml:space="preserve">
+    <value>更多操作</value>
+  </data>
+  <data name="ClearCompletedRecords" xml:space="preserve">
+    <value>清除已完成记录</value>
+  </data>
+  <data name="ClearCompletedRecordsConfirm" xml:space="preserve">
+    <value>确定要清除已完成的下载记录吗？已下载的文件会保留。</value>
+  </data>
+  <data name="DeleteRecordsConfirm" xml:space="preserve">
+    <value>确定要删除选中的 {0} 条下载记录吗？</value>
+  </data>
+  <data name="DownloadManagerConfiguration" xml:space="preserve">
+    <value>下载管理器设置</value>
+  </data>
+  <data name="MaxConcurrentTasks" xml:space="preserve">
+    <value>最大同时下载数</value>
+  </data>
+  <data name="MaxConcurrentTasksDescription" xml:space="preserve">
+    <value>可同时进行的下载任务数量</value>
+  </data>
+  <data name="DefaultDownloadPath" xml:space="preserve">
+    <value>默认下载目录</value>
+  </data>
+  <data name="DefaultDownloadPathDescription" xml:space="preserve">
+    <value>手动新建下载时默认保存到此目录</value>
+  </data>
+  <data name="EnableSpeedLimit" xml:space="preserve">
+    <value>启用限速</value>
+  </data>
+  <data name="EnableSpeedLimitDescription" xml:space="preserve">
+    <value>限制所有下载任务的总速度</value>
+  </data>
+  <data name="SpeedLimitMB" xml:space="preserve">
+    <value>速度上限 (MB/s)</value>
+  </data>
+  <data name="SpeedLimitMBDescription" xml:space="preserve">
+    <value>启用限速后的总下载速度上限</value>
+  </data>
+  <data name="RpcPortDescription" xml:space="preserve">
+    <value>下载服务使用的本机端口；被占用时自动选择其他端口</value>
+  </data>
+  <data name="ShowCompletedNotification" xml:space="preserve">
+    <value>完成时提示</value>
+  </data>
+  <data name="ShowCompletedNotificationDescription" xml:space="preserve">
+    <value>手动下载完成或失败时弹出提示</value>
+  </data>
+  <data name="RunFileAfterDownload" xml:space="preserve">
+    <value>完成后自动打开</value>
+  </data>
+  <data name="RunFileAfterDownloadDescription" xml:space="preserve">
+    <value>手动下载完成后自动打开文件</value>
+  </data>
+  <data name="PromptDeleteFile" xml:space="preserve">
+    <value>删除记录时询问</value>
+  </data>
+  <data name="PromptDeleteFileDescription" xml:space="preserve">
+    <value>删除下载记录前确认，并询问是否同时删除文件</value>
+  </data>
+  <data name="DefaultDeleteFile" xml:space="preserve">
+    <value>默认同时删除文件</value>
+  </data>
+  <data name="DefaultDeleteFileDescription" xml:space="preserve">
+    <value>删除记录时默认同时删除文件</value>
+  </data>
 </root>

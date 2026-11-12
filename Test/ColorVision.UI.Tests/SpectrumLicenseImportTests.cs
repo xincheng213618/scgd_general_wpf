@@ -85,7 +85,7 @@ public sealed class SpectrumLicenseImportTests
                     dictionaries.Add(dictionary);
                     Application.Current.Resources.MergedDictionaries.Add(dictionary);
                 }
-                window = new EditSpectrum(new ConfigSpectrum { SN = "PREVIOUS-SN" })
+                window = new EditSpectrum(new ConfigSpectrum { SN = "PREVIOUS-SN" }, new DisplaySpectrumConfig())
                 {
                     Left = -10000, Top = -10000, ShowActivated = false, ShowInTaskbar = false
                 };

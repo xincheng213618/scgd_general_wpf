@@ -11,6 +11,74 @@ public sealed class CopilotQueuedFollowUpCancellationTests
     private static readonly TimeSpan TestTimeout = TimeSpan.FromSeconds(10);
 
     [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task SendingAnExistingQueuedItemNowDispatchesItAfterCancellingTheActiveTurn(bool differentActiveConversation)
+    {
+        await using var fixture = new QueueFixture();
+        var item = fixture.Schedule(goalBound: false);
+        var releaseIndependent = NewSignal();
+        CopilotHostedAgentRun? independent = null;
+        var active = fixture.ActiveRun;
+        try
+        {
+            if (differentActiveConversation)
+            {
+                var independentStarted = NewSignal();
+                Assert.True(fixture.Host.TrySchedule(fixture.OtherConversation.Id, CopilotAgentMode.Auto,
+                    _ =>
+                    {
+                        independentStarted.TrySetResult();
+                        return releaseIndependent.Task;
+                    }, out independent));
+                Assert.True(fixture.Host.RequestCancel(active.Id));
+                fixture.ReleaseActive.TrySetResult();
+                await independentStarted.Task.WaitAsync(TestTimeout);
+                await ObserveCompletionAsync(active);
+                active = independent!;
+            }
+
+            Assert.Equal(1, fixture.Host.GetQueuePosition(item.RunId));
+            Assert.True(fixture.ViewModel.SendQueuedFollowUpNowCommand.CanExecute(item));
+            var handoff = new TaskCompletionSource<CopilotHostedAgentRun?>(TaskCreationOptions.RunContinuationsAsynchronously);
+            var promotionNotifications = 0;
+            void ObserveHandoff(object? sender, CopilotAgentTaskHostChangedEventArgs args)
+            {
+                if (args.Kind == CopilotAgentTaskHostChangeKind.QueueChanged && args.Run.Id == item.RunId)
+                    Interlocked.Increment(ref promotionNotifications);
+                if (args.Kind == CopilotAgentTaskHostChangeKind.Completed && args.Run.Id == active.Id)
+                    handoff.TrySetResult(fixture.Host.ActiveRun);
+            }
+            fixture.Host.Changed += ObserveHandoff;
+            try
+            {
+                fixture.ViewModel.SendQueuedFollowUpNowCommand.Execute(item);
+
+                Assert.True(active.CancellationToken.IsCancellationRequested);
+                fixture.ReleaseActive.TrySetResult();
+                releaseIndependent.TrySetResult();
+                // The host selects its successor before publishing Completed, so
+                // this checks the committed handoff without a scheduling delay.
+                Assert.Same(fixture.FollowUpRun, await handoff.Task.WaitAsync(TestTimeout));
+                await fixture.FollowUpStarted.Task.WaitAsync(TestTimeout);
+                Assert.False(fixture.FollowUpRun!.CancellationToken.IsCancellationRequested);
+                Assert.Equal(1, Volatile.Read(ref promotionNotifications));
+                Assert.Equal(fixture.Conversation.Id, fixture.FollowUpRun.ConversationId);
+            }
+            finally
+            {
+                fixture.Host.Changed -= ObserveHandoff;
+            }
+        }
+        finally
+        {
+            releaseIndependent.TrySetResult();
+            if (independent != null)
+                await ObserveCompletionAsync(independent);
+        }
+    }
+
+    [Theory]
     [InlineData(false, false)]
     [InlineData(false, true)]
     [InlineData(true, false)]

@@ -106,23 +106,28 @@ namespace ColorVision.Engine.Services.PhyCameras
         public ObservableCollection<TemplateModel<CalibrationParam>> CalibrationParams { get; set; } = new ObservableCollection<TemplateModel<CalibrationParam>>();
 
         public string Code => SysResourceModel.Code ?? string.Empty;
+        internal bool CanConfigure => ServiceAuthorization.Can("physical-camera.configure", SysResourceModel);
+        internal void DemandConfigurationAccess() => ServiceAuthorization.Demand("physical-camera.configure", SysResourceModel);
 
 
         public PhyCamera(SysResourceModel sysResourceModel):base(sysResourceModel)
         {            
             Config = ServiceObjectBaseExtensions.TryDeserializeConfig<ConfigPhyCamera>(SysResourceModel.Value);
             Config.CameraID = PhysicalCameraIdentity.ReadCameraId(SysResourceModel, Config.CameraID);
-            DeleteCommand = new RelayCommand(a => Delete());
+            DeleteCommand = new RelayCommand(a => DeleteFromCommand(), a => CanDelete);
             EditCommand = new RelayCommand(a =>
             {
+                if (!CanConfigure) return;
                 EditConfigPhyCamera window = new EditConfigPhyCamera(this);
                 window.Owner = Application.Current.GetActiveWindow();
                 window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
                 if (window.ShowDialog() == true)
                 {
+                    if (!CanConfigure) return;
+                    DemandConfigurationAccess();
                     Save();
                 }
-            });
+            }, _ => CanConfigure);
 
             ContentInit();
 
@@ -165,14 +170,19 @@ namespace ColorVision.Engine.Services.PhyCameras
 
             FilterWheelEditCommand = new RelayCommand(a =>
             {
-                EditFilterWheelConfig window = new EditFilterWheelConfig(Config.FilterWheelConfig);
+                if (!CanConfigure) return;
+                var draft = new FilterWheelConfig { HoleMapping = new ObservableCollection<HoleMap>(Config.FilterWheelConfig.HoleMapping.Select(item => item.Clone())) };
+                EditFilterWheelConfig window = new EditFilterWheelConfig(draft);
                 window.Owner = Application.Current.GetActiveWindow();
                 window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
                 if (window.ShowDialog() == true)
                 {
+                    if (!CanConfigure) return;
+                    DemandConfigurationAccess();
+                    Config.FilterWheelConfig.HoleMapping = draft.HoleMapping;
                     SaveConfig();
                 }
-            }, a => AccessControl.Check(PermissionMode.Administrator));
+            }, a => CanConfigure);
 
         }
 
@@ -420,7 +430,9 @@ namespace ColorVision.Engine.Services.PhyCameras
 
         public override void Delete()
         {
+            DemandDeleteAccess();
             if (MessageBox1.Show(Application.Current.GetActiveWindow(), Properties.Resources.ConfirmDelete, Properties.Resources.Delete, MessageBoxButton.OKCancel) == MessageBoxResult.Cancel) return;
+            DemandDeleteAccess();
             CalibrationParams.Clear();
             this.VisualChildren.Clear();
 

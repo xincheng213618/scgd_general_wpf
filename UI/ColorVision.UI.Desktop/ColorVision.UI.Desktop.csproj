@@ -39,6 +39,9 @@
 		</None>
 	</ItemGroup>
 	<ItemGroup>
+		<None Update="Assets\Help\**\*" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" Pack="true" PackagePath="contentFiles\any\any\Assets\Help\%(RecursiveDir)" />
+	</ItemGroup>
+	<ItemGroup>
 	  <Compile Update="Marketplace\ViewDllVersionsWindow.xaml.cs">
 	    <SubType>Code</SubType>
 	  </Compile>

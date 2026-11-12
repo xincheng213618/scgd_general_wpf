@@ -5,7 +5,7 @@ status: "current"
 summary: "Web文件中转与桌面云盘的匿名上传、续传、公开分享及过期规则；桌面保存本机队列，网页队列不持久化。"
 aliases: ["云盘", "CloudDriveWindow", "TransferClient", "文件夹分享", "二维码分享", "文件中转", "Transfer", "file:transfer", "Upload-Offset", "X-Transfer-Client", "stream_transfer_upload", "create_or_resume_transfer_upload", "get_or_create_transfer_share", "断点续传", "匿名上传", "文件分享过期", "TransferPanel", "uploadTransferFile", "取消上传", "重试失败项", "服务器确认中", "colorvision.transfer.client-id"]
 code_paths: ["UI/ColorVision.Rbac/CloudDrive", "Web/Backend/routes/transfer.py", "Web/Backend/transfer_files.py", "Web/Backend/app_setup.py", "Web/Backend/config_loader.py", "Web/Backend/services/auth_policy.py", "Web/Backend/services/permission_service.py", "Web/Backend/services/scheduler.py", "Web/Backend/services/artifact_delivery.py", "Web/Backend/routes/artifact_delivery.py", "Web/Frontend/src/pages/TransferPage.tsx", "Web/Frontend/src/pages/TransferSharePage.tsx", "Web/Frontend/src/components/TransferPanel.tsx", "Web/Frontend/src/services/transferUpload.ts", "Web/Frontend/src/services/transferShares.ts", "Web/Frontend/src/utils/transferAccess.ts"]
-test_paths: ["Web/Backend/test_transfer_files.py", "Web/Backend/test_auth_policy.py", "Web/Frontend/tests/transferAccess.test.ts", "Test/ColorVision.UI.Tests/CloudDriveTransferTests.cs"]
+test_paths: ["Web/Backend/test_transfer_files.py", "Web/Backend/test_auth_policy.py", "Web/Frontend/tests/transferAccess.test.ts", "Web/Frontend/tests/transferUpload.test.ts", "Test/ColorVision.UI.Tests/CloudDriveTransferTests.cs"]
 related: ["delivery.backend", "operations.file-server", "operations.exports", "platform.rbac"]
 ---
 
@@ -18,6 +18,8 @@ Web 的“文件中转”（`/transfer`）用于多文件上传、断点续传�
 ## 桌面用户中心云盘
 
 用户中心的“云盘”入口打开独立非模态窗口，不要求本地 RBAC 或 Web 账号。选择多个文件、文件夹或拖入路径后，点击“开始 / 继续上传”；文件夹先在本机打包为 ZIP，保留内部目录和空目录，拒绝目录链接/符号链接以免带入所选目录之外的数据。打包使用快照文件，已开始续传的压缩包丢失时需重新添加文件夹，不能拿变化后的目录继续旧会话。
+
+算法实证复用同一云盘窗口及本机队列。“上传当前原图”只加入实际读取的源文件，上传仍由云盘的“开始 / 继续上传”触发；队列忙时提示先暂停再添加，不静默丢弃本次操作。
 
 `UI/ColorVision.Rbac/CloudDrive/` 复用本页的匿名断点协议，服务器地址来自 `MarketplaceConfig.ServiceBaseUrl`。客户端不发送账号凭据或浏览器 Cookie，使用持久化 UUID 维持匿名会话；服务器必须显式启用 `anonymous_transfer_upload_enabled`。启动上传前读取 `/api/auth/session` 的匿名开关和大小上限，超限项目显示失败原因。原文件不会因打包或上传被改写；上传名称附加随机标识以避免匿名同名冲突和覆盖他人文件。
 
@@ -103,6 +105,8 @@ Web 的“文件中转”（`/transfer`）用于多文件上传、断点续传�
 ### 断点与重试
 
 新建/恢复会话按上传者、精确文件名、声明大小和由 64 个十六进制字符组成的 `fingerprint` 匹配未完成会话。网页用文件名、大小、`lastModified` 和首尾各最多 64 KiB 的样本计算 SHA-256 指纹；这不是整个文件的内容哈希。服务端只校验指纹格式并用它找会话，不重算上传内容的哈希，因此 fingerprint 不是服务端完整性验收。零字节文件可在创建会话时直接完成。
+
+浏览器仅在安全上下文中提供 `crypto.subtle`。网页在它可用时使用原生 SHA-256，HTTP 部署下按需加载 JavaScript SHA-256 实现，输入与结果保持一致以兼容原断点；不会把整个大文件读入内存。`transferUpload.test.ts` 覆盖这两个环境的指纹兼容性、空文件及大于 2 GiB 文件的采样边界，模拟会话响应，不代表实际完成多 GB 传输。
 
 追加只接受与服务端确认值相等的 offset；错误 offset 返回 `409`，缺少/无法解析的请求头为 `400`，过大块为 `413`，超过声明总大小为 `409`。同一进程用会话锁串行追加；不要把它推断成多个独立服务进程共享目录时的分布式锁。
 

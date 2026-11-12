@@ -1,6 +1,7 @@
 using ColorVision.Database;
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.Flow;
+using ColorVision.Engine.Templates.Flow.Versioning;
 using FlowEngineLib.End;
 using ST.Library.UI.NodeEditor;
 using System.IO;
@@ -9,6 +10,36 @@ namespace ColorVision.UI.Tests;
 
 public sealed class LocalFlowTemplateStorageTests
 {
+    [Fact]
+    public void LegacyLocalDocumentsKeepUnknownDatesWhileNewCreationDatesSurviveUpdatesAndSwaps()
+    {
+        string path = NewPath();
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+        using (var connection = new Microsoft.Data.Sqlite.SqliteConnection($"Data Source={path};Pooling=False"))
+        {
+            connection.Open();
+            using var command = connection.CreateCommand();
+            command.CommandText = "CREATE TABLE local_templates(id INTEGER PRIMARY KEY AUTOINCREMENT,kind TEXT NOT NULL,name TEXT NOT NULL,schema_version INTEGER NOT NULL,payload TEXT NOT NULL,sort_order INTEGER NOT NULL DEFAULT 0); INSERT INTO local_templates(kind,name,schema_version,payload) VALUES('flow','legacy',1,'{}')";
+            command.ExecuteNonQuery();
+        }
+        var store = new LocalTemplateStore(path);
+        var legacy = Assert.Single(store.List("flow"));
+        Assert.Null(legacy.CreatedUtc);
+        Assert.True(store.TryUpdate("flow", legacy, "renamed legacy", 1, "{}"));
+        Assert.Null(store.Read("flow", legacy.Id).CreatedUtc);
+        int id = store.Save("flow", null, "new", 1, "{}");
+        var created = store.Read("flow", id);
+        Assert.NotNull(created.CreatedUtc);
+        Assert.Equal(DateTimeKind.Utc, created.CreatedUtc.Value.Kind);
+        store.Save("flow", id, "updated", 1, "{\"changed\":true}");
+        Assert.Equal(created.CreatedUtc, store.Read("flow", id).CreatedUtc);
+        var previous = store.Read("flow", id);
+        Assert.True(store.TryUpdate("flow", previous, "renamed", 1, "{}"));
+        store.SwapOrder("flow", legacy.Id, id);
+        Assert.Equal(created.CreatedUtc, store.Read("flow", id).CreatedUtc);
+        Assert.Null(store.Read("flow", legacy.Id).CreatedUtc);
+    }
+
     private static string NewPath() => Path.Combine(Path.GetTempPath(), "ColorVision-local-flow-tests", Guid.NewGuid().ToString("N"), "ColorVision.Local.db");
     private static LocalFlowTemplateStorage Open(string path) => new(new LocalTemplateStore(path));
     private static TemplateFlow Offline(LocalFlowTemplateStorage storage) => new(storage, () => false,
@@ -142,6 +173,42 @@ public sealed class LocalFlowTemplateStorageTests
         });
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void SavingACanvasPreservesTheNameChangedByAnotherWindow(bool restoreVersion)
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            var storage = Open(NewPath());
+            var flow = new FlowParam { Name = "原名称", DataBase64 = Convert.ToBase64String(CreateCanvas("原画布")) };
+            storage.Save(flow);
+            FlowParam editor = storage.Read(flow.Id);
+            FlowParam manager = storage.Read(flow.Id);
+            manager.Name = "新名称";
+            storage.Save(manager);
+
+            byte[] replacement = CreateCanvas("新画布");
+            if (restoreVersion)
+            {
+                var revision = new FlowRevision { FlowKey = editor.FlowKey!, Revision = 1, FullSnapshot = replacement, SemanticDocument = new FlowSemanticDocument() };
+                var restore = new FlowVersionRestoreService(storage.Save);
+                Assert.True(restore.Restore(new FlowVersionRestoreRequest(editor, revision, editor.LoadedContentHash)).Succeeded);
+            }
+            else
+            {
+                editor.DataBase64 = Convert.ToBase64String(replacement);
+                storage.Save(editor, new FlowTemplateSaveCondition(editor.LoadedContentHash));
+            }
+
+            FlowParam persisted = storage.Read(flow.Id);
+            Assert.Equal(manager.Name, persisted.Name);
+            Assert.Equal(manager.Name, editor.Name);
+            Assert.Equal(replacement, Convert.FromBase64String(persisted.DataBase64));
+            Assert.Equal(flow.FlowKey, persisted.FlowKey);
+        });
+    }
+
     [Fact]
     public void ConditionalDocumentUpdateDoesNotOverwriteAConcurrentChange()
     {
@@ -196,6 +263,56 @@ public sealed class LocalFlowTemplateStorageTests
         storage.Save(local);
         Assert.Throws<InvalidOperationException>(() => storage.Save(new FlowParam { Id = 1, Name = "服务器" }));
         Assert.Equal("本地", Assert.Single(storage.Load()).Name);
+    }
+
+    [Theory]
+    [InlineData(false, 99, "{}")]
+    [InlineData(true, 1, "invalid json")]
+    [InlineData(false, 1, "{\"FlowKey\":\"local-flow:93fa3c71f235441faf6fe1c842f4c366\",\"DataBase64\":\"invalid!\"}")]
+    public void InvalidLocalRowDoesNotHideOtherTemplates(bool mysqlConnected, int version, string payload)
+    {
+        WithTemplates((storage, path) =>
+        {
+            var documents = new LocalTemplateStore(path);
+            var first = new FlowParam { Name = "流程一", DataBase64 = Convert.ToBase64String(CreateCanvas("开始一")) };
+            var damaged = new FlowParam { Name = "已损坏", DataBase64 = Convert.ToBase64String(CreateCanvas("开始二")) };
+            var last = new FlowParam { Name = "流程三", DataBase64 = Convert.ToBase64String(CreateCanvas("开始三")) };
+            storage.Save(first);
+            storage.Save(damaged);
+            storage.Save(last);
+
+            var templates = new TemplateFlow(storage, () => mysqlConnected,
+                () => throw new IOException("Unavailable MySQL"));
+            templates.Load();
+            TemplateModel<FlowParam> original = TemplateFlow.Params[0];
+            int documentId = -damaged.Id - 1;
+            LocalTemplateDocument originalDocument = documents.Read("flow", documentId);
+            documents.Save("flow", documentId, damaged.Name, version, payload);
+
+            templates.Load();
+            Assert.Equal(new[] { first.Id, last.Id }, TemplateFlow.Params.Select(item => item.Id));
+            Assert.Same(original, TemplateFlow.Params[0]);
+            Assert.Equal(last.DataBase64, TemplateFlow.Params[1].Value.DataBase64);
+            var issue = Assert.Single(TemplateFlow.UnavailableLocalTemplates);
+            Assert.Equal(damaged.Id, issue.Id);
+            Assert.Equal(damaged.Name, issue.Name);
+            Assert.NotNull(Record.Exception(() => storage.Read(damaged.Id)));
+            Assert.True(templates.ExitsTemplateName(damaged.Name));
+            Assert.Throws<InvalidOperationException>(() => templates.Create(damaged.Name));
+            Assert.Throws<InvalidOperationException>(() => templates.AddFlowParam(damaged.Name));
+            original.Key = damaged.Name;
+            Assert.Throws<InvalidOperationException>(() => templates.Save(original));
+            Assert.Equal(first.Name, original.Key);
+            var stored = documents.Read("flow", documentId);
+            Assert.Equal(version, stored.SchemaVersion);
+            Assert.Equal(payload, stored.Payload);
+
+            documents.Save("flow", documentId, damaged.Name, originalDocument.SchemaVersion, originalDocument.Payload);
+            templates.Load();
+            Assert.Empty(TemplateFlow.UnavailableLocalTemplates);
+            Assert.Equal(new[] { first.Id, damaged.Id, last.Id }, TemplateFlow.Params.Select(item => item.Id));
+            Assert.Equal(damaged.FlowKey, TemplateFlow.Params[1].Value.FlowKey);
+        });
     }
 
     private static byte[] CreateCanvas(string name)

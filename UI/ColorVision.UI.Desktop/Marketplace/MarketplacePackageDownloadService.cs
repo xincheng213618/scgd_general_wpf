@@ -19,6 +19,7 @@ namespace ColorVision.UI.Desktop.Marketplace
         public required string PluginId { get; init; }
         public required string Version { get; init; }
         public string? ExpectedHash { get; init; }
+        public string? SourceUrl { get; init; }
     }
 
     public interface IMarketplacePackageClient
@@ -231,7 +232,11 @@ namespace ColorVision.UI.Desktop.Marketplace
                 log.Debug($"ResolveLatestVersionAsync API failed for {pluginId}: {ex.Message}");
             }
 
-            string latestReleaseUrl = MarketplaceConfig.BuildLegacyPluginUrl($"{pluginId}/LATEST_RELEASE");
+            string sourceUrl = MarketplaceConfig.UpdateSourceUrl;
+            if (MarketplaceConfig.IsFolderSource(sourceUrl))
+                return null;
+
+            string latestReleaseUrl = MarketplaceConfig.BuildLegacyPluginUrl($"{pluginId}/LATEST_RELEASE", sourceUrl);
             using var request = new HttpRequestMessage(HttpMethod.Get, latestReleaseUrl);
             string? authorization = _ui.Authorization;
             if (!string.IsNullOrWhiteSpace(authorization))
@@ -501,7 +506,9 @@ namespace ColorVision.UI.Desktop.Marketplace
 
         private async Task<string?> StartDownloadAsync(MarketplacePackageRequest request, bool showFailureDialog, CancellationToken cancellationToken)
         {
-            string downloadUrl = _client.GetDownloadUrl(request.PluginId, request.Version);
+            string downloadUrl = request.SourceUrl == null
+                ? _client.GetDownloadUrl(request.PluginId, request.Version)
+                : MarketplaceClient.BuildDownloadUrl(request.SourceUrl, request.PluginId, request.Version);
             string fileName = $"{request.PluginId}-{request.Version}.cvxp";
             var completionSource = new TaskCompletionSource<string?>(TaskCreationOptions.RunContinuationsAsynchronously);
             DownloadTask? downloadTask = null;
@@ -530,6 +537,13 @@ namespace ColorVision.UI.Desktop.Marketplace
                     if (cancellationToken.IsCancellationRequested)
                     {
                         completionSource.TrySetCanceled(cancellationToken);
+                        return;
+                    }
+
+                    if (task.Status == DownloadStatus.Deleted)
+                    {
+                        log.Info($"Marketplace package download was deleted by the user: {request.PluginId} v{request.Version}.");
+                        completionSource.TrySetResult(null);
                         return;
                     }
 

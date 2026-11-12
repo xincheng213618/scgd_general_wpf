@@ -130,7 +130,7 @@ namespace ColorVision.Engine.Templates.POI.AlgorithmImp
             double maxY = items.Max(o => o.y);
             double minY = items.Min(o => o.y);
 
-            double deltaUv = CalcMaxDeltaUv(items);
+            double deltaUv = ChromaticityDiameter.Calculate(items);
             double deltaX = maxX - minX;
             double deltaY = maxY - minY;
             ChromaticityCenterMetrics chromaticity = ChromaticityCenterCalculator.Calculate(items.Select(o => (o.u, o.v)));
@@ -336,22 +336,6 @@ namespace ColorVision.Engine.Templates.POI.AlgorithmImp
             return closest;
         }
 
-        private static double CalcMaxDeltaUv(IList<PoiResultCIExyuvData> list)
-        {
-            double maxD = 0;
-            for (int i = 0; i < list.Count; i++)
-            {
-                for (int j = i + 1; j < list.Count; j++)
-                {
-                    double du = list[i].u - list[j].u;
-                    double dv = list[i].v - list[j].v;
-                    double d = Math.Sqrt(du * du + dv * dv);
-                    if (d > maxD) maxD = d;
-                }
-            }
-            return maxD;
-        }
-
         private static string EscapeCsv(string? s)
         {
             if (string.IsNullOrEmpty(s)) return "";
@@ -401,21 +385,26 @@ namespace ColorVision.Engine.Templates.POI.AlgorithmImp
         public PoiResultCIExyuvData(PoiPointResultModel pOIPointResultModel) : base(pOIPointResultModel)
         {
             if (pOIPointResultModel.Value != null)
-            {
+                ApplyValues(JsonConvert.DeserializeObject<POIResultDataCIExyuv>(pOIPointResultModel.Value));
+        }
 
-                POIResultDataCIExyuv pOIDataCIExyuv = JsonConvert.DeserializeObject<POIResultDataCIExyuv>(pOIPointResultModel.Value);
-                CCT = pOIDataCIExyuv.CCT;
-                Wave = pOIDataCIExyuv.Wave;
+        internal PoiResultCIExyuvData(PoiPointResultModel model, POIResultDataCIExyuv values) : base(model)
+        {
+            ApplyValues(values);
+        }
 
-                X = pOIDataCIExyuv.X;
-                Y = pOIDataCIExyuv.Y;
-                Z = pOIDataCIExyuv.Z;
-                u = pOIDataCIExyuv.u;
-                v = pOIDataCIExyuv.v;
-                x = pOIDataCIExyuv.x;
-                y = pOIDataCIExyuv.y;
-                NormalizeXyz(CVCIEShowConfig.Instance.CreateValueNormalizer());
-            }
+        private void ApplyValues(POIResultDataCIExyuv values)
+        {
+            CCT = values.CCT;
+            Wave = values.Wave;
+            X = values.X;
+            Y = values.Y;
+            Z = values.Z;
+            u = values.u;
+            v = values.v;
+            x = values.x;
+            y = values.y;
+            NormalizeXyz(CVCIEShowConfig.Instance.CreateValueNormalizer());
         }
 
         internal void NormalizeXyz(Func<double, double> normalize)

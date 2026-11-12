@@ -133,7 +133,7 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
                 {
                     WriteFlushResult flush = FlushWrites();
                     cancellationToken.ThrowIfCancellationRequested();
-                    return (Selection: ResolveInitialRun(), Flush: flush);
+                    return (Selection: ResolveInitialRun(cancellationToken), Flush: flush);
                 }, cancellationToken);
                 if (loadVersion != _loadVersion)
                     return;
@@ -169,7 +169,7 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
             }
         }
 
-        private InitialRunSelection ResolveInitialRun()
+        private InitialRunSelection ResolveInitialRun(CancellationToken cancellationToken)
         {
             FlowNodeRecord? requestedNodeRecord = null;
             if (!string.IsNullOrWhiteSpace(_initialNodeId))
@@ -199,7 +199,7 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
             if (_initialFlowIdentity is FlowIdentity flowIdentity)
             {
                 IReadOnlyList<FlowRunNavigationItem> runs = LoadFlowRunOrder(
-                    _dataSource.GetFlowRuns(flowIdentity));
+                    _dataSource.GetFlowRuns(flowIdentity), cancellationToken);
                 FlowRunNavigationItem latestRun = runs.Count > 0
                     ? runs[^1]
                     : default;
@@ -364,14 +364,13 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
                     // One summary per opened/refreshed run; logging cannot delay the current page.
                     log.Info($"[FlowAnalysisLoad] batch={session.BatchId} source={(_dataSource.IsReadOnly ? "offline" : "live")} nodes={session.Records.Count} messages={session.Messages.Count} flushCompleted={flush.Completed} flushMs={flush.ElapsedMs:F1} queryMs={queryMs:F1} pageMs={pageMs:F1} currentLoadMs={currentMs:F1}");
                     var historyTimer = Stopwatch.StartNew();
-                    List<int> batchIds = _dataSource.GetDistinctBatchIds(500);
-                    cancellationToken.ThrowIfCancellationRequested();
-                    List<FlowNodeRecord> recentRecords = _dataSource.GetByBatchIds(batchIds);
+                    List<FlowRunNavigationSummary> recentRuns = _dataSource.GetRecentRunSummaries(500, cancellationToken);
                     cancellationToken.ThrowIfCancellationRequested();
                     IReadOnlyList<FlowRunNavigationItem> allRuns = BuildFlowRunOrder(
-                        recentRecords.Concat(session.Records).GroupBy(record => record.Id).Select(group => group.First()));
+                        recentRuns.Concat(session.Records.Select(record => new FlowRunNavigationSummary(
+                            record.BatchId, record.SerialNumber, record.StartTime, record.Id))));
                     IReadOnlyList<FlowRunNavigationItem> sameFlowRuns = LoadFlowRunOrder(
-                        _dataSource.GetSameFlowRuns(session.SerialNumber));
+                        _dataSource.GetSameFlowRuns(session), cancellationToken);
                     log.Debug($"[FlowAnalysisNavigation] batch={session.BatchId} historyMs={historyTimer.Elapsed.TotalMilliseconds:F1} allRuns={allRuns.Count} sameFlowRuns={sameFlowRuns.Count}");
                     return (AllRuns: allRuns, SameFlowRuns: sameFlowRuns);
                 }, cancellationToken);
@@ -1045,42 +1044,43 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
         }
 
         private IReadOnlyList<FlowRunNavigationItem> LoadFlowRunOrder(
-            List<FlowRunRecord> flowRuns)
+            List<FlowRunRecord> flowRuns, CancellationToken cancellationToken)
         {
             if (flowRuns.Count == 0)
                 return Array.Empty<FlowRunNavigationItem>();
 
-            List<FlowNodeRecord> nodeRecords =
-                _dataSource.GetBySerialNumbers(
-                    flowRuns.Select(run => run.SerialNumber ?? string.Empty));
-            return BuildSameFlowRunOrder(flowRuns, nodeRecords);
+            List<FlowRunNavigationSummary> runs = _dataSource.GetRunSummariesBySerialNumbers(
+                flowRuns.Select(run => run.SerialNumber ?? string.Empty), cancellationToken);
+            return BuildSameFlowRunOrder(flowRuns, runs);
         }
 
         internal static IReadOnlyList<FlowRunNavigationItem> BuildSameFlowRunOrder(
             IEnumerable<FlowRunRecord> flowRuns,
-            IEnumerable<FlowNodeRecord> nodeRecords)
+            IEnumerable<FlowRunNavigationSummary> nodeRuns)
         {
-            if (flowRuns == null || nodeRecords == null)
+            if (flowRuns == null || nodeRuns == null)
                 return Array.Empty<FlowRunNavigationItem>();
 
-            Dictionary<string, FlowRunNavigationItem> nodeRunsBySerial =
-                BuildFlowRunOrder(nodeRecords)
-                    .GroupBy(run => run.SerialNumber, StringComparer.Ordinal)
-                    .ToDictionary(
-                        group => group.Key,
-                        group => group.OrderByDescending(run => run.ExecutedTime).First(),
-                        StringComparer.Ordinal);
+            IReadOnlyList<FlowRunNavigationItem> nodeItems = BuildFlowRunOrder(nodeRuns);
+            var nodeRunsByKey = nodeItems.ToDictionary(run => (run.BatchId, run.SerialNumber));
+            var nodeRunsBySerial = nodeItems.GroupBy(run => run.SerialNumber, StringComparer.Ordinal)
+                .ToDictionary(group => group.Key, group => group.MaxBy(run => run.ExecutedTime), StringComparer.Ordinal);
+            var matched = new Dictionary<(int, string), FlowRunNavigationItem>();
+            // Prefer an explicit batch match if a legacy journal also maps to that node run.
+            foreach (FlowRunRecord run in flowRuns.OrderByDescending(run => run.BatchId.HasValue).ThenByDescending(run => run.CompletedTime))
+            {
+                if (string.IsNullOrWhiteSpace(run.SerialNumber))
+                    continue;
 
-            return flowRuns
-                .Where(run => !string.IsNullOrWhiteSpace(run.SerialNumber))
-                .GroupBy(run => NormalizeRunSerialNumber(run.SerialNumber), StringComparer.Ordinal)
-                .Select(group => group.OrderByDescending(run => run.CompletedTime).First())
-                .Where(run => nodeRunsBySerial.ContainsKey(run.SerialNumber!))
-                .Select(run =>
-                {
-                    FlowRunNavigationItem nodeRun = nodeRunsBySerial[run.SerialNumber!];
-                    return nodeRun with { ExecutedTime = run.CompletedTime };
-                })
+                FlowRunNavigationItem nodeRun;
+                bool found = run.BatchId is int batchId
+                    ? nodeRunsByKey.TryGetValue((batchId, run.SerialNumber), out nodeRun)
+                    : nodeRunsBySerial.TryGetValue(run.SerialNumber, out nodeRun);
+                if (found)
+                    matched.TryAdd((nodeRun.BatchId, nodeRun.SerialNumber), nodeRun with { ExecutedTime = run.CompletedTime });
+            }
+
+            return matched.Values
                 .OrderBy(run => run.ExecutedTime)
                 .ThenBy(run => run.BatchId)
                 .ThenBy(run => run.SerialNumber, StringComparer.Ordinal)
@@ -1088,23 +1088,23 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
         }
 
         internal static IReadOnlyList<FlowRunNavigationItem> BuildFlowRunOrder(
-            IEnumerable<FlowNodeRecord> records)
+            IEnumerable<FlowRunNavigationSummary> runs)
         {
-            if (records == null)
+            if (runs == null)
                 return Array.Empty<FlowRunNavigationItem>();
 
-            return records
-                .GroupBy(record => new
+            return runs
+                .GroupBy(run => new
                 {
-                    record.BatchId,
-                    SerialNumber = NormalizeRunSerialNumber(record.SerialNumber)
+                    run.BatchId,
+                    SerialNumber = NormalizeRunSerialNumber(run.SerialNumber)
                 })
                 .Select(group => new
                 {
                     group.Key.BatchId,
                     group.Key.SerialNumber,
-                    FirstStartTime = group.Min(record => record.StartTime),
-                    FirstRecordId = group.Min(record => record.Id)
+                    FirstStartTime = group.Min(run => run.FirstStartTime),
+                    FirstRecordId = group.Min(run => run.FirstRecordId)
                 })
                 .OrderBy(run => run.FirstStartTime)
                 .ThenBy(run => run.FirstRecordId)

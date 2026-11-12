@@ -1,4 +1,5 @@
 using ColorVision.Themes;
+using ColorVision.Engine.Services;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
@@ -14,6 +15,72 @@ namespace ProjectARVRPro.Tests;
 [Collection(nameof(FlowExecutionStatusTestGroup))]
 public sealed class ProjectSettingsWindowTests
 {
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void OtherSettingsPreserveValidationAndAutoSaveOutsideTheTestingPage(bool dark)
+    {
+        RunUi(dark, () =>
+        {
+            using var cameras = new LuxVidMeasurementTests.CameraScope(DeviceStatusType.Closed);
+            var config = new ProjectARVRProConfig { LuxMachineNo = "H03AR", LuxVidMin = 100, LuxVidMax = 200 };
+            int saves = 0;
+            var panel = new Process.OtherSettingsPanel(config, () => saves++);
+            var window = new Window { Content = panel, Width = 900, Height = 520, ShowActivated = false,
+                ShowInTaskbar = false, WindowStartupLocation = WindowStartupLocation.Manual, Left = -10000, Top = -10000 };
+            window.SetResourceReference(Window.BackgroundProperty, "GlobalBackground");
+            window.Closing += (_, _) => panel.CommitPendingEdits();
+            try
+            {
+                window.Show();
+                Pump();
+                var inputs = Descendants<TextBox>(panel).ToArray();
+                TextBox machine = inputs.Single(input => input.GetBindingExpression(TextBox.TextProperty)?.ParentBinding.Path.Path == nameof(config.LuxMachineNo));
+                machine.Text = "invalid;prefix";
+                machine.GetBindingExpression(TextBox.TextProperty)!.UpdateSource();
+                Assert.True(Validation.GetHasError(machine));
+                Assert.Equal("H03AR", config.LuxMachineNo);
+                Assert.Equal(0, saves);
+                machine.Text = "H03";
+                machine.GetBindingExpression(TextBox.TextProperty)!.UpdateSource();
+                Assert.Equal("H03", config.LuxMachineNo);
+                Assert.Equal(1, saves);
+                ComboBox FindPicker(string property) => Descendants<ComboBox>(panel).Single(input =>
+                    input.GetBindingExpression(Selector.SelectedValueProperty)?.ParentBinding.Path.Path == property);
+                var camera = FindPicker(nameof(config.LuxVidCameraCode));
+                Assert.Equal(string.Empty, camera.SelectedValue);
+                Assert.Contains("SV6100_Camera", ((KeyValuePair<string, string>)camera.SelectedItem).Value);
+                Assert.Equal(3, camera.Items.Count);
+                camera.SelectedValue = LuxVidMeasurementTests.CameraScope.VidCode;
+                Pump();
+                Assert.Equal(LuxVidMeasurementTests.CameraScope.VidCode, config.LuxVidCameraCode);
+                Assert.Equal(2, saves);
+                camera.SelectedValue = string.Empty;
+                Pump();
+                Assert.Equal(string.Empty, config.LuxVidCameraCode);
+                Assert.Equal(3, saves);
+                var mode = FindPicker(nameof(config.LuxVidMode));
+                mode.SelectedValue = LuxVidMeasurementMode.FineFocus;
+                Pump();
+                Assert.Equal(LuxVidMeasurementMode.FineFocus, config.LuxVidMode);
+                Assert.Equal(4, saves);
+                var bitmap = new RenderTargetBitmap((int)window.ActualWidth, (int)window.ActualHeight, 96, 96, PixelFormats.Pbgra32);
+                bitmap.Render(window);
+                var png = new PngBitmapEncoder();
+                png.Frames.Add(BitmapFrame.Create(bitmap));
+                using var file = File.Create(Path.Combine(Path.GetTempPath(), $"arvrpro-lux-other-settings-{(dark ? "dark" : "light")}.png"));
+                png.Save(file);
+                TextBox offset = inputs.Single(input => input.GetBindingExpression(TextBox.TextProperty)?.ParentBinding.Path.Path == nameof(config.LuxVidB));
+                offset.Focus();
+                offset.Text = "3.5";
+                Assert.Equal(0, config.LuxVidB);
+                window.Close();
+                Assert.Equal(3.5, config.LuxVidB);
+                Assert.Equal(5, saves);
+            }
+            finally { window.Close(); }
+        });
+    }
 
     [Fact]
     public void FailedConnectionSettingsSaveRestoresPreviousParameters()
@@ -197,6 +264,49 @@ public sealed class ProjectSettingsWindowTests
                 Assert.False(results.IsSaveSourceImage);
                 Assert.Equal(2, saves);
                 Assert.Equal(Visibility.Collapsed, ((TextBlock)window.FindName("StatusText")).Visibility);
+            }
+            finally { window.Close(); }
+        });
+    }
+
+    [Theory]
+    [InlineData(nameof(ViewResultManagerConfig.IsSaveImageReuslt), nameof(ViewResultManagerConfig.UseFlowNameForResultImage), nameof(ViewResultManagerConfig.ResultImageFileNameTemplate))]
+    [InlineData(nameof(ViewResultManagerConfig.IsSaveSourceImage), nameof(ViewResultManagerConfig.UseFlowNameForSourceImage), nameof(ViewResultManagerConfig.SourceImageFileNameTemplate))]
+    public void ImageNamingControlsFollowTheCorrespondingSaveToggle(string saveProperty, string namingProperty, string templateProperty)
+    {
+        RunUi(true, () =>
+        {
+            var results = new ViewResultManagerConfig { IsSaveLink = true };
+            var window = CreateWindow(new(new(), results, true), ProjectSettingsPage.Images, 840, () => { });
+            try
+            {
+                window.Show();
+                Pump();
+                var save = FindEditor<ToggleButton>(window, saveProperty);
+                var naming = FindEditor<ToggleButton>(window, namingProperty);
+                var template = FindEditor<TextBox>(window, templateProperty);
+                Assert.False(naming.IsVisible);
+                Assert.False(template.IsVisible);
+
+                save.IsChecked = true;
+                Pump();
+                Assert.True(naming.IsVisible);
+                Assert.False(template.IsVisible);
+
+                naming.IsChecked = true;
+                Pump();
+                Assert.True(template.IsVisible);
+
+                save.IsChecked = false;
+                Pump();
+                Assert.False(naming.IsVisible);
+                Assert.False(template.IsVisible);
+
+                save.IsChecked = true;
+                Pump();
+                Assert.True(naming.IsVisible);
+                Assert.True(naming.IsChecked);
+                Assert.True(template.IsVisible);
             }
             finally { window.Close(); }
         });

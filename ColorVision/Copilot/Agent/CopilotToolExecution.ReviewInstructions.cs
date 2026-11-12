@@ -45,8 +45,15 @@ namespace ColorVision.Copilot
                 || outcome.Invocation.Tool is not CopilotInspectGitDiffTool
                 || outcome.Execution.State != CopilotToolExecutionState.Completed
                 || !outcome.Result.Success
-                || !string.Equals(outcome.Result.ToolName, "InspectGitDiff", StringComparison.Ordinal)
-                || !CopilotGitDiffResultProtocol.TryParse(outcome.Result.Content, out var gitDiff, out _)
+                || !string.Equals(outcome.Result.ToolName, "InspectGitDiff", StringComparison.Ordinal))
+            {
+                return;
+            }
+
+            request.ReviewEvidenceContext.InvalidateEvidence();
+            var target = request.GetEffectiveWorkspaceReviewTarget();
+            if (!CopilotGitDiffResultProtocol.TryParse(outcome.Result.Content, out var gitDiff, out _)
+                || !CopilotTurnCodeReviewSnapshotCapture.MatchesTarget(target!, gitDiff)
                 || !CopilotCodeReviewSnapshot.TryCreate(
                     gitDiff,
                     outcome.FormattedModelResult,

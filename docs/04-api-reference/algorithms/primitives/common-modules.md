@@ -19,7 +19,7 @@ related: ["algorithms.index","algorithms.roi-routes","algorithms.poi-routes","al
 | --- | --- | --- |
 | 发光区、区域定位与裁剪 | [ROI](./roi.md)、`TemplateRoi`、`TemplateSFRFindROI` | 传统参数、JSON 与本地算法路径分开核对 |
 | 点集构建、过滤、修正和复用 | [POI](./poi.md)、[POI 模板](../templates/poi-template.md) | `TemplatePoi`、`PoiParam`、`PoiPoint` 被多个算法族使用 |
-| 模板图匹配和 AOI 四角结果 | [Matching](../templates/matching-template.md) | `MatchingDisplayAlgorithmConfig` 分别持有参数选择与 `TemplateFile`，当前不附带 POI 模板选择 |
+| 模板图匹配和 AOI 四角结果 | [Matching](../templates/matching-template.md) | 旧 `AlgorithmTMNode` 分别持有参数模板名与 `TemplateFile`，不附带 POI 模板选择；本地模板匹配使用节点内置配置 |
 | 编排进流程 | [Flow 接入](../templates/flow-engine.md)、[PropertyGrid](../../ui-components/property-grid.md) | 节点执行、参数编辑与模板持久化是不同契约 |
 | 新增中立算法或自定义 overlay | [算法平台](../../../02-developer-guide/core-concepts/image-algorithm-platform-v1.md)、[结果链](../../engine-components/result-handoff-chain.md) | 不以旧模板目录替代中立算法接口 |
 

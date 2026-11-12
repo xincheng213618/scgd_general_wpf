@@ -10,6 +10,33 @@ namespace ProjectARVRPro.Tests;
 public sealed class ProcessFlowTemplateTests
 {
     [Fact]
+    public void AddingStepSuggestsAnAvailableTemplateNameAndPreservesManualEdits()
+    {
+        StaTest.Run(() =>
+        {
+            var white = new TemplateModel<FlowParam>("White51_Test", new FlowParam());
+            var black = new TemplateModel<FlowParam>("Black_Test", new FlowParam());
+            var existingNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "white51_test", "White51_Test（1）" };
+            var editor = new ProcessMetaEditViewModel(new[] { white, black }, Array.Empty<IProcess>(), "", "", null,
+                true, true, false, ProcessMetaEditTarget.Choice, existingNames.Contains);
+
+            Assert.Null(editor.SelectedTemplate);
+            Assert.Empty(editor.MetaName);
+
+            editor.SelectedTemplate = white;
+            Assert.Equal("White51_Test（2）", editor.MetaName);
+            editor.SelectedTemplate = black;
+            Assert.Equal("Black_Test", editor.MetaName);
+
+            editor.MetaName = "Custom name";
+            editor.GoToProcessPage();
+            editor.GoBack();
+            editor.SelectedTemplate = white;
+            Assert.Equal("Custom name", editor.MetaName);
+        });
+    }
+
+    [Fact]
     public void RenamedOrDeletedFlowKeepsSavedNameAndReportsHowToRepairIt()
     {
         StaTest.Run(() =>
@@ -59,6 +86,7 @@ public sealed class ProcessFlowTemplateTests
             Assert.Null(editor.SelectedTemplate);
             editor.SelectedTemplate = template;
             Assert.Same(template, editor.SelectedTemplate);
+            Assert.Equal("MTF", editor.MetaName);
 
             var matchingEditor = new ProcessMetaEditViewModel(templates, Array.Empty<IProcess>(), "MTF", "availableflow", null,
                 true, true, true, ProcessMetaEditTarget.Template);

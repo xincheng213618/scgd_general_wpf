@@ -37,7 +37,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
         private readonly Dictionary<Type, UserControl> _algorithmViewDict = new();
         private List<DisplayAlgorithmMeta> _algorithmMetas = new();
         private DisplayAlgorithmManager? _algorithmManager;
-        private readonly string _allAlgorithmsGroup = "All";
 
         public DisplayAlgorithm(DeviceAlgorithm device)
         {
@@ -80,7 +79,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
 
             CB_Algorithms.SelectionChanged += CB_Algorithms_SelectionChanged;
             InitializeAlgorithmList();
-            CB_AlgorithmTypes.SelectionChanged += CB_AlgorithmTypes_SelectionChanged;
 
             this.AddViewConfig(Device.ViewRegistration, DisPlayName);
             this.ApplyChangedSelectedColor(DisPlayBorder);
@@ -111,47 +109,19 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
 
             CB_StackPanel.Children.Clear();
             CB_StackPanel.Children.Add(view);
+            CalculateAction.Content = null;
+            if (view is DisplayAlgorithmControl control)
+            {
+                CalculateAction.Content = control.DetachCalculateButton();
+            }
         }
-
-        private void CB_AlgorithmTypes_SelectionChanged(object sender, SelectionChangedEventArgs e) => CB_AlgorithmTypesChanged();
 
         private void InitializeAlgorithmList()
         {
-            List<string> groups = new() { _allAlgorithmsGroup };
-            groups.AddRange(_algorithmMetas
-                .Select(a => a.Group)
-                .Distinct()
-                .Where(group => !string.IsNullOrWhiteSpace(group) && group != _allAlgorithmsGroup));
-
-            string previousGroup = CB_AlgorithmTypes.SelectedValue as string ?? Device.DisplayConfig.LastSelectGroup;
-            CB_AlgorithmTypes.ItemsSource = groups
-                .Select(group => new KeyValuePair<string, string>(group, EngineLocalization.Get(group)))
-                .ToList();
-            CB_AlgorithmTypes.SelectedValue = groups.Contains(previousGroup)
-                ? previousGroup
-                : _allAlgorithmsGroup;
-
-            CB_AlgorithmTypesChanged();
-        }
-
-        private void CB_AlgorithmTypesChanged()
-        {
-            if (CB_AlgorithmTypes.SelectedValue is not string selectedGroup)
-            {
-                return;
-            }
-
-            Device.DisplayConfig.LastSelectGroup = selectedGroup;
-            List<DisplayAlgorithmMeta> filteredAlgorithms = selectedGroup == _allAlgorithmsGroup
-                ? _algorithmMetas
-                : _algorithmMetas
-                    .Where(a => a.Group == selectedGroup)
-                    .ToList();
-
-            CB_Algorithms.ItemsSource = filteredAlgorithms;
+            CB_Algorithms.ItemsSource = _algorithmMetas;
             CB_Algorithms.DisplayMemberPath = nameof(DisplayAlgorithmMeta.DisplayName);
 
-            DisplayAlgorithmMeta? lastSelectedAlgorithm = filteredAlgorithms
+            DisplayAlgorithmMeta? lastSelectedAlgorithm = _algorithmMetas
                 .FirstOrDefault(a => a.Name == Device.DisplayConfig.LastSelectTemplate);
             if (lastSelectedAlgorithm != null)
             {
@@ -230,10 +200,9 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
             _isDisposed = true;
             Device.DService.DeviceStatusChanged -= DService_DeviceStatusChanged;
             CB_Algorithms.SelectionChanged -= CB_Algorithms_SelectionChanged;
-            CB_AlgorithmTypes.SelectionChanged -= CB_AlgorithmTypes_SelectionChanged;
 
             CB_Algorithms.ItemsSource = null;
-            CB_AlgorithmTypes.ItemsSource = null;
+            CalculateAction.Content = null;
             CB_StackPanel.Children.Clear();
 
             _algorithmViewDict.Clear();

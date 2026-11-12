@@ -2,6 +2,7 @@ using ColorVision.Database;
 using Microsoft.Data.Sqlite;
 using SqlSugar;
 using System.IO;
+using System.Text;
 
 namespace ColorVision.UI.Tests;
 
@@ -51,6 +52,23 @@ public sealed class SqliteGzipTextMigrationTests
             GzipTextPayloadCodec.Decode(valid.CompressedBytes, valid.Utf8Length, maximumUtf8Bytes: 3));
         Assert.Throws<InvalidDataException>(() =>
             GzipTextPayloadCodec.Decode(null, 0));
+    }
+
+    [Fact]
+    public void CodecPreservesUnicodeAcrossBuffersAndEnforcesActualByteLimit()
+    {
+        // The emoji starts just before the end of an encoding block.
+        string text = new string('a', 64 * 1024 - 2) + "🧪" + new string('测', 30_000);
+        int utf8Length = Encoding.UTF8.GetByteCount(text);
+
+        GzipTextPayload payload = GzipTextPayloadCodec.Encode(text);
+
+        Assert.Equal(utf8Length, payload.Utf8Length);
+        Assert.Equal(text, GzipTextPayloadCodec.Decode(payload.CompressedBytes, null, utf8Length));
+        Assert.Equal(text, GzipTextPayloadCodec.Decode(payload.CompressedBytes, payload.Utf8Length, utf8Length));
+        Assert.Throws<InvalidDataException>(() =>
+            GzipTextPayloadCodec.Decode(payload.CompressedBytes, null, utf8Length - 1));
+        Assert.Throws<EncoderFallbackException>(() => GzipTextPayloadCodec.Encode(text + "\uD800"));
     }
 
     [Fact]

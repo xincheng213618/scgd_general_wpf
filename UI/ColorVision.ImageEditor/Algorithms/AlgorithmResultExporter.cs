@@ -1,5 +1,7 @@
 using ColorVision.Algorithms;
+using ColorVision.ImageEditor.Output;
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
@@ -14,6 +16,8 @@ namespace ColorVision.ImageEditor.Algorithms
     /// <summary>Streams host-neutral analysis artifacts to atomically replaced files.</summary>
     public static class AlgorithmResultExporter
     {
+        private const int StructuredJsonFlushBytes = 128 * 1024;
+        private static readonly SearchValues<char> CsvQuoteCharacters = SearchValues.Create(",\"\r\n");
         private static readonly UTF8Encoding Utf8WithBom = new(encoderShouldEmitUTF8Identifier: true);
 
         public static string ExportJson(AlgorithmResult result, string filePath, bool overwrite = false)
@@ -144,8 +148,7 @@ namespace ColorVision.ImageEditor.Algorithms
                 case AlgorithmStructuredDataArtifact structured:
                     writer.WriteString("schema", structured.Schema);
                     writer.WritePropertyName("data");
-                    int visited = 0;
-                    WriteJsonElement(writer, structured.Data, cancellationToken, ref visited);
+                    await WriteJsonElementAsync(writer, structured.Data, cancellationToken).ConfigureAwait(false);
                     break;
                 case AlgorithmOverlayArtifact overlay:
                     writer.WritePropertyName("lifetime");
@@ -157,28 +160,37 @@ namespace ColorVision.ImageEditor.Algorithms
             writer.WriteEndObject();
         }
 
-        private static void WriteJsonElement(
-            Utf8JsonWriter writer,
-            JsonElement value,
-            CancellationToken cancellationToken,
-            ref int visited)
+        // Utf8JsonWriter retains pending data until flushed. Keep the traversal and synchronous
+        // buffer flushes on a worker so a large structured artifact cannot block the dispatcher.
+        private static Task WriteJsonElementAsync(Utf8JsonWriter writer, JsonElement value, CancellationToken cancellationToken)
+            => Task.Run(() => WriteJsonElement(writer, value, cancellationToken), cancellationToken);
+
+        private static void WriteJsonElement(Utf8JsonWriter writer, JsonElement value, CancellationToken cancellationToken)
         {
-            if ((++visited & 1023) == 0) cancellationToken.ThrowIfCancellationRequested();
+            FlushStructuredJsonIfNeeded(writer, cancellationToken);
             switch (value.ValueKind)
             {
                 case JsonValueKind.Object:
                     writer.WriteStartObject();
                     foreach (JsonProperty property in value.EnumerateObject())
                     {
-                        writer.WritePropertyName(property.Name);
-                        WriteJsonElement(writer, property.Value, cancellationToken, ref visited);
+                        if (property.Value.ValueKind is JsonValueKind.Object or JsonValueKind.Array)
+                        {
+                            writer.WritePropertyName(property.Name);
+                            WriteJsonElement(writer, property.Value, cancellationToken);
+                        }
+                        else
+                        {
+                            FlushStructuredJsonIfNeeded(writer, cancellationToken);
+                            property.WriteTo(writer);
+                        }
                     }
                     writer.WriteEndObject();
                     break;
                 case JsonValueKind.Array:
                     writer.WriteStartArray();
                     foreach (JsonElement item in value.EnumerateArray())
-                        WriteJsonElement(writer, item, cancellationToken, ref visited);
+                        WriteJsonElement(writer, item, cancellationToken);
                     writer.WriteEndArray();
                     break;
                 default:
@@ -187,8 +199,18 @@ namespace ColorVision.ImageEditor.Algorithms
             }
         }
 
+        private static void FlushStructuredJsonIfNeeded(Utf8JsonWriter writer, CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            if (writer.BytesPending >= StructuredJsonFlushBytes)
+                writer.Flush();
+        }
+
         public static IReadOnlyList<string> ExportCsvBundle(AlgorithmResult result, string filePath, bool overwrite = false)
             => ExportCsvBundleAsync(result, filePath, overwrite, CancellationToken.None).GetAwaiter().GetResult();
+
+        internal static IEnumerable<string> GetCsvBundlePaths(AlgorithmResult result, string filePath)
+            => CreateCsvOutputs(result, filePath).Select(output => output.Path);
 
         /// <summary>
         /// Writes measurements to the selected CSV path and each Table/Geometry/StructuredData
@@ -204,17 +226,18 @@ namespace ColorVision.ImageEditor.Algorithms
         {
             ArgumentNullException.ThrowIfNull(result);
             CsvOutput[] outputs = CreateCsvOutputs(result, filePath);
+            Directory.CreateDirectory(Path.GetDirectoryName(outputs[0].Path)!);
             ValidateTargets(outputs.Select(output => output.Path).ToArray(), overwrite);
             long totalRows = Math.Max(1, outputs.Sum(output => output.EstimatedRows));
             long completedRows = 0;
-            List<StagedFile> staged = [];
+            List<StagedFilePublication.Entry> staged = [];
             try
             {
                 foreach (CsvOutput output in outputs)
                 {
                     cancellationToken.ThrowIfCancellationRequested();
                     string temporary = TemporaryFor(output.Path);
-                    staged.Add(new StagedFile(temporary, output.Path));
+                    staged.Add(new StagedFilePublication.Entry(temporary, output.Path));
                     await WriteCsvOutputAsync(
                         result,
                         output,
@@ -230,13 +253,13 @@ namespace ColorVision.ImageEditor.Algorithms
                         }).ConfigureAwait(false);
                 }
                 cancellationToken.ThrowIfCancellationRequested();
-                CommitStaged(staged, overwrite);
+                StagedFilePublication.Commit(staged, overwrite, cancellationToken);
                 progress?.Report(new AlgorithmProgress(1, "export-csv", "complete"));
                 return outputs.Select(output => output.Path).ToArray();
             }
             finally
             {
-                foreach (StagedFile file in staged) TryDelete(file.Temporary);
+                foreach (StagedFilePublication.Entry file in staged) TryDelete(file.Temporary);
             }
         }
 
@@ -246,7 +269,6 @@ namespace ColorVision.ImageEditor.Algorithms
             string directory = Path.GetDirectoryName(primary) ?? throw new ArgumentException("The export path has no directory.", nameof(filePath));
             string stem = Path.GetFileNameWithoutExtension(primary);
             if (string.IsNullOrWhiteSpace(stem)) throw new ArgumentException("The export path has no file name.", nameof(filePath));
-            Directory.CreateDirectory(directory);
 
             List<CsvOutput> outputs =
             [
@@ -289,28 +311,30 @@ namespace ColorVision.ImageEditor.Algorithms
                 bufferSize: 64 * 1024,
                 FileOptions.Asynchronous | FileOptions.SequentialScan);
             await using StreamWriter writer = new(stream, Utf8WithBom, bufferSize: 64 * 1024, leaveOpen: true);
+            CsvFieldBuffer csv = new(writer);
             switch (output.Kind)
             {
                 case CsvOutputKind.Measurements:
-                    await WriteMeasurementsAsync(result, writer, cancellationToken, reportRows).ConfigureAwait(false);
+                    await WriteMeasurementsAsync(result, csv, cancellationToken, reportRows).ConfigureAwait(false);
                     break;
                 case CsvOutputKind.Table:
-                    await WriteTableAsync((AlgorithmTableArtifact)output.Artifact!, writer, cancellationToken, reportRows).ConfigureAwait(false);
+                    await WriteTableAsync((AlgorithmTableArtifact)output.Artifact!, csv, cancellationToken, reportRows).ConfigureAwait(false);
                     break;
                 case CsvOutputKind.Geometry:
-                    await WriteGeometryAsync((AlgorithmGeometryArtifact)output.Artifact!, writer, cancellationToken, reportRows).ConfigureAwait(false);
+                    await WriteGeometryAsync((AlgorithmGeometryArtifact)output.Artifact!, csv, cancellationToken, reportRows).ConfigureAwait(false);
                     break;
                 case CsvOutputKind.Structured:
-                    await WriteStructuredAsync((AlgorithmStructuredDataArtifact)output.Artifact!, writer, stream, cancellationToken, reportRows).ConfigureAwait(false);
+                    await WriteStructuredAsync((AlgorithmStructuredDataArtifact)output.Artifact!, csv, writer, stream, cancellationToken, reportRows).ConfigureAwait(false);
                     break;
             }
+            await csv.FlushAsync(cancellationToken).ConfigureAwait(false);
             await writer.FlushAsync(cancellationToken).ConfigureAwait(false);
             await stream.FlushAsync(cancellationToken).ConfigureAwait(false);
         }
 
         private static async Task WriteMeasurementsAsync(
             AlgorithmResult result,
-            StreamWriter writer,
+            CsvFieldBuffer writer,
             CancellationToken cancellationToken,
             Action<int> reportRows)
         {
@@ -337,7 +361,7 @@ namespace ColorVision.ImageEditor.Algorithms
 
         private static async Task WriteTableAsync(
             AlgorithmTableArtifact table,
-            StreamWriter writer,
+            CsvFieldBuffer writer,
             CancellationToken cancellationToken,
             Action<int> reportRows)
         {
@@ -345,16 +369,20 @@ namespace ColorVision.ImageEditor.Algorithms
             foreach (IReadOnlyDictionary<string, JsonElement> row in table.Rows)
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                await WriteRowAsync(writer,
-                    table.Columns.Select(column => row.TryGetValue(column.Name, out JsonElement value) ? JsonText(value) : null),
-                    cancellationToken).ConfigureAwait(false);
+                bool first = true;
+                foreach (AlgorithmTableColumn column in table.Columns)
+                {
+                    await writer.WriteFieldAsync(row.TryGetValue(column.Name, out JsonElement value) ? JsonText(value) : null, first, cancellationToken).ConfigureAwait(false);
+                    first = false;
+                }
+                await writer.AppendAsync(Environment.NewLine.AsMemory(), cancellationToken).ConfigureAwait(false);
                 reportRows(1);
             }
         }
 
         private static async Task WriteGeometryAsync(
             AlgorithmGeometryArtifact artifact,
-            StreamWriter writer,
+            CsvFieldBuffer writer,
             CancellationToken cancellationToken,
             Action<int> reportRows)
         {
@@ -384,59 +412,41 @@ namespace ColorVision.ImageEditor.Algorithms
 
         private static async Task WriteStructuredAsync(
             AlgorithmStructuredDataArtifact artifact,
+            CsvFieldBuffer csv,
             StreamWriter writer,
             FileStream stream,
             CancellationToken cancellationToken,
             Action<int> reportRows)
         {
-            await WriteRowAsync(writer, ["Artifact", "Schema", "DataJson"], cancellationToken).ConfigureAwait(false);
-            await WriteFieldAsync(writer, artifact.Name, first: true, cancellationToken).ConfigureAwait(false);
-            await WriteFieldAsync(writer, artifact.Schema, first: false, cancellationToken).ConfigureAwait(false);
-            await writer.WriteAsync(",\"".AsMemory(), cancellationToken).ConfigureAwait(false);
+            await WriteRowAsync(csv, ["Artifact", "Schema", "DataJson"], cancellationToken).ConfigureAwait(false);
+            await csv.WriteFieldAsync(artifact.Name, first: true, cancellationToken).ConfigureAwait(false);
+            await csv.WriteFieldAsync(artifact.Schema, first: false, cancellationToken).ConfigureAwait(false);
+            await csv.AppendAsync(",\"".AsMemory(), cancellationToken).ConfigureAwait(false);
+            await csv.FlushAsync(cancellationToken).ConfigureAwait(false);
             await writer.FlushAsync(cancellationToken).ConfigureAwait(false);
-            using (CsvJsonEscapingStream escaping = new(stream))
+            using (CsvJsonEscapingBuffer escaping = new(stream, cancellationToken))
             using (Utf8JsonWriter json = new(escaping))
             {
-                artifact.Data.WriteTo(json);
-                json.Flush();
+                await Task.Run(() =>
+                {
+                    artifact.Data.WriteTo(json);
+                    json.Flush();
+                    escaping.Flush();
+                }, cancellationToken).ConfigureAwait(false);
             }
             await stream.WriteAsync("\"\r\n"u8.ToArray(), cancellationToken).ConfigureAwait(false);
             reportRows(1);
         }
 
-        private static async Task WriteRowAsync(StreamWriter writer, IEnumerable<string?> values, CancellationToken cancellationToken)
+        private static async Task WriteRowAsync(CsvFieldBuffer writer, IEnumerable<string?> values, CancellationToken cancellationToken)
         {
             bool first = true;
             foreach (string? value in values)
             {
-                await WriteFieldAsync(writer, value, first, cancellationToken).ConfigureAwait(false);
+                await writer.WriteFieldAsync(value, first, cancellationToken).ConfigureAwait(false);
                 first = false;
             }
-            await writer.WriteAsync(Environment.NewLine.AsMemory(), cancellationToken).ConfigureAwait(false);
-        }
-
-        private static async Task WriteFieldAsync(StreamWriter writer, string? value, bool first, CancellationToken cancellationToken)
-        {
-            if (!first) await writer.WriteAsync(",".AsMemory(), cancellationToken).ConfigureAwait(false);
-            value ??= string.Empty;
-            bool quote = value.IndexOfAny([',', '"', '\r', '\n']) >= 0;
-            if (!quote)
-            {
-                await writer.WriteAsync(value.AsMemory(), cancellationToken).ConfigureAwait(false);
-                return;
-            }
-            await writer.WriteAsync("\"".AsMemory(), cancellationToken).ConfigureAwait(false);
-            int start = 0;
-            while (true)
-            {
-                int index = value.IndexOf('"', start);
-                if (index < 0) break;
-                await writer.WriteAsync(value.AsMemory(start, index - start), cancellationToken).ConfigureAwait(false);
-                await writer.WriteAsync("\"\"".AsMemory(), cancellationToken).ConfigureAwait(false);
-                start = index + 1;
-            }
-            await writer.WriteAsync(value.AsMemory(start), cancellationToken).ConfigureAwait(false);
-            await writer.WriteAsync("\"".AsMemory(), cancellationToken).ConfigureAwait(false);
+            await writer.AppendAsync(Environment.NewLine.AsMemory(), cancellationToken).ConfigureAwait(false);
         }
 
         private static string JsonText(JsonElement value) => value.ValueKind switch
@@ -445,44 +455,6 @@ namespace ColorVision.ImageEditor.Algorithms
             JsonValueKind.String => value.GetString() ?? string.Empty,
             _ => value.GetRawText(),
         };
-
-        private static void CommitStaged(IReadOnlyList<StagedFile> staged, bool overwrite)
-        {
-            List<CommittedFile> committed = [];
-            try
-            {
-                foreach (StagedFile file in staged)
-                {
-                    string? backup = null;
-                    if (overwrite && File.Exists(file.Target))
-                    {
-                        backup = $"{file.Target}.{Guid.NewGuid():N}.bak";
-                        File.Move(file.Target, backup);
-                    }
-                    try
-                    {
-                        File.Move(file.Temporary, file.Target, overwrite: false);
-                        committed.Add(new CommittedFile(file.Target, backup));
-                    }
-                    catch
-                    {
-                        if (backup != null && File.Exists(backup)) File.Move(backup, file.Target);
-                        throw;
-                    }
-                }
-                foreach (CommittedFile file in committed)
-                    if (file.Backup != null) TryDelete(file.Backup);
-            }
-            catch
-            {
-                foreach (CommittedFile file in committed.AsEnumerable().Reverse())
-                {
-                    TryDelete(file.Target);
-                    if (file.Backup != null && File.Exists(file.Backup)) File.Move(file.Backup, file.Target);
-                }
-                throw;
-            }
-        }
 
         private static string Adjacent(string directory, string stem, string artifactName)
             => Path.Combine(directory, $"{stem}_{Sanitize(artifactName)}.csv");
@@ -517,37 +489,119 @@ namespace ColorVision.ImageEditor.Algorithms
 
         private sealed record CsvOutput(string Path, CsvOutputKind Kind, AlgorithmArtifact? Artifact, string DisplayName, long EstimatedRows);
 
-        private sealed record StagedFile(string Temporary, string Target);
 
-        private sealed record CommittedFile(string Target, string? Backup);
-
-        private sealed class CsvJsonEscapingStream(Stream inner) : Stream
+        private sealed class CsvFieldBuffer(StreamWriter writer)
         {
-            public override bool CanRead => false;
-            public override bool CanSeek => false;
-            public override bool CanWrite => true;
-            public override long Length => throw new NotSupportedException();
-            public override long Position { get => throw new NotSupportedException(); set => throw new NotSupportedException(); }
-            public override void Flush() => inner.Flush();
-            public override int Read(byte[] buffer, int offset, int count) => throw new NotSupportedException();
-            public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
-            public override void SetLength(long value) => throw new NotSupportedException();
-            public override void Write(byte[] buffer, int offset, int count) => Write(buffer.AsSpan(offset, count));
-            public override void Write(ReadOnlySpan<byte> buffer)
+            // Bound memory independently of field or row length.
+            private readonly char[] _buffer = new char[16 * 1024];
+            private int _count;
+
+            public async ValueTask WriteFieldAsync(string? value, bool first, CancellationToken cancellationToken)
             {
-                int start = 0;
-                while (start < buffer.Length)
+                cancellationToken.ThrowIfCancellationRequested();
+                if (!first) await AppendAsync(",".AsMemory(), cancellationToken).ConfigureAwait(false);
+                value ??= string.Empty;
+                if (value.AsSpan().IndexOfAny(CsvQuoteCharacters) < 0)
                 {
-                    int relative = buffer[start..].IndexOf((byte)'"');
-                    if (relative < 0) break;
-                    int index = start + relative;
-                    inner.Write(buffer[start..(index + 1)]);
-                    inner.WriteByte((byte)'"');
+                    await AppendAsync(value.AsMemory(), cancellationToken).ConfigureAwait(false);
+                    return;
+                }
+                await AppendAsync("\"".AsMemory(), cancellationToken).ConfigureAwait(false);
+                int start = 0;
+                while (true)
+                {
+                    int index = value.IndexOf('"', start);
+                    if (index < 0) break;
+                    await AppendAsync(value.AsMemory(start, index - start), cancellationToken).ConfigureAwait(false);
+                    await AppendAsync("\"\"".AsMemory(), cancellationToken).ConfigureAwait(false);
                     start = index + 1;
                 }
-                inner.Write(buffer[start..]);
+                await AppendAsync(value.AsMemory(start), cancellationToken).ConfigureAwait(false);
+                await AppendAsync("\"".AsMemory(), cancellationToken).ConfigureAwait(false);
             }
-            protected override void Dispose(bool disposing) => base.Dispose(disposing);
+
+            public ValueTask AppendAsync(ReadOnlyMemory<char> value, CancellationToken cancellationToken)
+            {
+                if (value.Length <= _buffer.Length - _count)
+                {
+                    value.Span.CopyTo(_buffer.AsSpan(_count));
+                    _count += value.Length;
+                    return ValueTask.CompletedTask;
+                }
+                return AppendSlowAsync(value, cancellationToken);
+            }
+
+            private async ValueTask AppendSlowAsync(ReadOnlyMemory<char> value, CancellationToken cancellationToken)
+            {
+                while (!value.IsEmpty)
+                {
+                    if (_count == _buffer.Length) await FlushAsync(cancellationToken).ConfigureAwait(false);
+                    int length = Math.Min(value.Length, _buffer.Length - _count);
+                    value.Span[..length].CopyTo(_buffer.AsSpan(_count));
+                    _count += length;
+                    value = value[length..];
+                }
+            }
+
+            public async ValueTask FlushAsync(CancellationToken cancellationToken)
+            {
+                if (_count == 0) return;
+                await writer.WriteAsync(_buffer.AsMemory(0, _count), cancellationToken).ConfigureAwait(false);
+                _count = 0;
+            }
+        }
+
+        // Flush between writer buffer requests and grow only for a single large token.
+        private sealed class CsvJsonEscapingBuffer(Stream stream, CancellationToken cancellationToken) : IBufferWriter<byte>, IDisposable
+        {
+            private byte[] _buffer = ArrayPool<byte>.Shared.Rent(StructuredJsonFlushBytes);
+            private int _pending;
+
+            public void Advance(int count) => _pending += count;
+
+            public Span<byte> GetSpan(int sizeHint = 0) => GetMemory(sizeHint).Span;
+
+            public Memory<byte> GetMemory(int sizeHint = 0)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                sizeHint = Math.Max(sizeHint, 1);
+                if (_buffer.Length - _pending < sizeHint)
+                {
+                    Flush();
+                    if (_buffer.Length < sizeHint)
+                    {
+                        byte[] replacement = ArrayPool<byte>.Shared.Rent(sizeHint);
+                        ArrayPool<byte>.Shared.Return(_buffer);
+                        _buffer = replacement;
+                    }
+                }
+                return _buffer.AsMemory(_pending);
+            }
+
+            public void Flush()
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                ReadOnlySpan<byte> pending = _buffer.AsSpan(0, _pending);
+                Span<byte> escaped = stackalloc byte[16 * 1024];
+                while (!pending.IsEmpty)
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    int count = Math.Min(pending.Length, escaped.Length / 2);
+                    int written = 0;
+                    foreach (byte value in pending[..count])
+                    {
+                        escaped[written] = value;
+                        escaped[written + 1] = value;
+                        // Only a quote keeps its second copy.
+                        written += value == (byte)'"' ? 2 : 1;
+                    }
+                    stream.Write(escaped[..written]);
+                    pending = pending[count..];
+                }
+                _pending = 0;
+            }
+
+            public void Dispose() => ArrayPool<byte>.Shared.Return(_buffer);
         }
     }
 }

@@ -26,6 +26,26 @@
             <RowDefinition x:Name="MainGridRow2" Height="Auto"/>
         </Grid.RowDefinitions>
         <im:ImageView Grid.Row="0" x:Name="ImageView"></im:ImageView>
+        <Grid Grid.Row="0" x:Name="FocusChartLayer" Panel.ZIndex="1" Margin="8" ClipToBounds="True">
+            <local:CameraFocusChart x:Name="FocusChart" HorizontalAlignment="Right" VerticalAlignment="Top"
+                                    MaxWidth="{Binding ActualWidth, ElementName=FocusChartLayer}"
+                                    MaxHeight="{Binding ActualHeight, ElementName=FocusChartLayer}">
+                <local:CameraFocusChart.Style>
+                    <Style TargetType="{x:Type local:CameraFocusChart}">
+                        <Style.Triggers>
+                            <MultiDataTrigger>
+                                <MultiDataTrigger.Conditions>
+                                    <Condition Binding="{Binding Device.MotorReadoutAvailable, RelativeSource={RelativeSource AncestorType={x:Type local:ViewCamera}}}" Value="True"/>
+                                    <Condition Binding="{Binding Device.Config.MotorConfig.IsUseMotor, RelativeSource={RelativeSource AncestorType={x:Type local:ViewCamera}}}" Value="True"/>
+                                    <Condition Binding="{Binding Device.Config.MotorConfig.VID.IsUseVID, RelativeSource={RelativeSource AncestorType={x:Type local:ViewCamera}}}" Value="True"/>
+                                </MultiDataTrigger.Conditions>
+                                <Setter Property="MotorVid" Value="{Binding Device.Config.MotorConfig.VIDPosition, RelativeSource={RelativeSource AncestorType={x:Type local:ViewCamera}}}"/>
+                            </MultiDataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </local:CameraFocusChart.Style>
+            </local:CameraFocusChart>
+        </Grid>
         <Grid x:Name="Grid1" Grid.Row="1">
             <Grid.RowDefinitions>
                 <RowDefinition Height="32"/>

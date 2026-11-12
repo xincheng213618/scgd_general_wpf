@@ -1,4 +1,6 @@
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
+using CsvHelper;
+using CsvHelper.Configuration;
 using System.Collections.ObjectModel;
 using System.Globalization;
 using System.IO;
@@ -57,30 +59,30 @@ namespace ProjectARVRPro.Process.Chessboard
             string contrastResultName,
             string contrastSource)
         {
-            List<string> lines = ReadLines(baseCsv);
+            List<string> records = ReadRecords(baseCsv);
             bool includeCellColor = calculation?.Success == true &&
                 calculation.ClassifiedPoints.Count > 0 &&
-                lines.Count > calculation.ClassifiedPoints.Count;
+                records.Count > calculation.ClassifiedPoints.Count;
 
             if (includeCellColor)
             {
-                lines[0] = $"{lines[0]},cell_color";
+                records[0] = $"{records[0]},cell_color";
                 for (int index = 0; index < calculation!.ClassifiedPoints.Count; index++)
                 {
-                    lines[index + 1] = $"{lines[index + 1]},{calculation.ClassifiedPoints[index].CellColor}";
+                    records[index + 1] = $"{records[index + 1]},{calculation.ClassifiedPoints[index].CellColor}";
                 }
 
-                for (int index = calculation.ClassifiedPoints.Count + 1; index < lines.Count; index++)
+                for (int index = calculation.ClassifiedPoints.Count + 1; index < records.Count; index++)
                 {
-                    lines[index] = $"{lines[index]},";
+                    records[index] = $"{records[index]},";
                 }
             }
 
             int columnCount = includeCellColor ? 16 : 15;
             var csv = new StringBuilder();
-            foreach (string line in lines)
+            foreach (string record in records)
             {
-                csv.AppendLine(line);
+                csv.AppendLine(record);
             }
 
             csv.AppendLine(new string(',', columnCount - 1));
@@ -115,15 +117,19 @@ namespace ProjectARVRPro.Process.Chessboard
             return csv.ToString();
         }
 
-        private static List<string> ReadLines(string value)
+        private static List<string> ReadRecords(string value)
         {
-            var lines = new List<string>();
-            using var reader = new StringReader(value ?? string.Empty);
-            while (reader.ReadLine() is string line)
+            var records = new List<string>();
+            using var parser = new CsvParser(new StringReader(value ?? string.Empty), new CsvConfiguration(CultureInfo.InvariantCulture)
             {
-                lines.Add(line);
+                IgnoreBlankLines = false
+            });
+            while (parser.Read())
+            {
+                // Preserve the original quoting and line breaks inside each field.
+                records.Add(parser.RawRecord.TrimEnd('\r', '\n'));
             }
-            return lines;
+            return records;
         }
 
         private static void AppendSummaryRow(StringBuilder csv, int columnCount, string item, string value, string unit = "")

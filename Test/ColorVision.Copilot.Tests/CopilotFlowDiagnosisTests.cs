@@ -104,6 +104,35 @@ public sealed class CopilotFlowDiagnosisTests
         Assert.DoesNotContain("Timeout evidence is present", result.Text, StringComparison.Ordinal);
     }
 
+    // A flow that fails on a device reports it only in the native SDK log; that source is kept separate and labelled.
+    [Fact]
+    public async Task NativeSdkLogIsSearchedWithTheSameKeywordAsASeparateSource()
+    {
+        var requests = new List<(string? Query, CopilotRecentLogMode Mode)>();
+        var dispatcher = new CopilotMcpToolDispatcher(new CopilotMcpToolEnvironment
+        {
+            WorkspaceSnapshotProvider = () => new CopilotMcpWorkspaceSnapshot(),
+            FlowSnapshotProvider = _ => Task.FromResult<CopilotFlowContextSnapshot?>(new CopilotFlowContextSnapshot { Status = "Failed" }),
+            RecentLogProvider = (query, mode, _, _, _) =>
+            {
+                requests.Add((query, mode));
+                return Task.FromResult(new CopilotCapabilityResult
+                {
+                    Success = true,
+                    Content = mode == CopilotRecentLogMode.NativeRecentLines ? "LOG_ERROR spectrometer not open" : "ERROR flow stopped",
+                });
+            },
+        });
+
+        var result = await dispatcher.CallAsync("diagnose_flow_failure", null, CancellationToken.None);
+
+        Assert.True(result.Success, result.Text);
+        Assert.Contains(("error", CopilotRecentLogMode.NativeRecentLines), requests);
+        Assert.Contains("## Native SDK Log Clues", result.Text, StringComparison.Ordinal);
+        Assert.Contains("LOG_ERROR spectrometer not open", result.Text, StringComparison.Ordinal);
+        Assert.Contains("an earlier run is not the current failure", result.Text, StringComparison.Ordinal);
+    }
+
     private static Task<CopilotMcpToolCallResult> DiagnoseAsync(
         CopilotFlowContextSnapshot? snapshot,
         CopilotCapabilityResult log,

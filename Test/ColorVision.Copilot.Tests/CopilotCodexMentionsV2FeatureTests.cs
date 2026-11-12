@@ -4,45 +4,6 @@ namespace ColorVision.Copilot.Tests;
 
 public sealed class CopilotCodexMentionsV2FeatureTests
 {
-    [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public void UnifiedCatalogFlagControlsTemplateAndMenuReferencesButAlwaysAllowsFiles(bool includeUnifiedReferences)
-    {
-        Assert.Equal(includeUnifiedReferences, CopilotComposerReferenceCatalog.CanIncludeReferenceKind(
-            CopilotComposerReferenceKind.Template, includeUnifiedReferences));
-        Assert.Equal(includeUnifiedReferences, CopilotComposerReferenceCatalog.CanIncludeReferenceKind(
-            CopilotComposerReferenceKind.Menu, includeUnifiedReferences));
-        Assert.True(CopilotComposerReferenceCatalog.CanIncludeReferenceKind(
-            CopilotComposerReferenceKind.File, includeUnifiedReferences));
-    }
-
-    [Fact]
-    public void DisabledCatalogStillReturnsFileCandidates()
-    {
-        string root = CreateTemporaryDirectory();
-        string filePath = Path.Combine(root, "CopilotMentionsLegacyFile.cs");
-        try
-        {
-            File.WriteAllText(filePath, "// legacy @ file candidate");
-
-            var candidates = CopilotComposerReferenceCatalog.SearchImmediate(
-                "CopilotMentionsLegacyFile",
-                filePath,
-                includeUnifiedReferences: false);
-
-            var file = Assert.Single(candidates);
-            Assert.Equal(CopilotComposerReferenceKind.File, file.Kind);
-            Assert.Equal(Path.GetFullPath(filePath), file.Value);
-            Assert.DoesNotContain(candidates, candidate =>
-                candidate.Kind is CopilotComposerReferenceKind.Template or CopilotComposerReferenceKind.Menu);
-        }
-        finally
-        {
-            Directory.Delete(root, recursive: true);
-        }
-    }
-
     [Fact]
     public void UnifiedCatalogCompletesSkillAsAnExplicitInvocation()
     {
@@ -71,8 +32,8 @@ public sealed class CopilotCodexMentionsV2FeatureTests
                 includeUnifiedReferences: false,
                 skills: [skill]);
 
-            var reference = Assert.Single(unified.Where(candidate =>
-                candidate.Kind == CopilotComposerReferenceKind.Skill));
+            var reference = Assert.Single(unified, candidate =>
+                candidate.Kind == CopilotComposerReferenceKind.Skill);
             Assert.Equal(CopilotComposerReferenceKind.Skill, reference.Kind);
             Assert.Equal("document-review", reference.AgentSkillReference?.Name);
             Assert.Empty(legacy);

@@ -9,15 +9,17 @@ namespace ColorVision.ImageEditor.Cie
 
         private readonly record struct CctUvSample(double TemperatureKelvin, CieChromaticity Uv);
 
-        private static double LinearizeSrgbComponent(int value)
+        private static double LinearizeSrgbComponent(double normalized)
         {
-            double normalized = Math.Clamp(value, 0, 255) / 255.0;
             return normalized <= 0.04045
                 ? normalized / 12.92
                 : Math.Pow((normalized + 0.055) / 1.055, 2.4);
         }
 
         public static CieXyz RgbToXyz(int r, int g, int b)
+            => NormalizedSrgbToXyz(Math.Clamp(r, 0, 255) / 255.0, Math.Clamp(g, 0, 255) / 255.0, Math.Clamp(b, 0, 255) / 255.0);
+
+        internal static CieXyz NormalizedSrgbToXyz(double r, double g, double b)
         {
             double red = LinearizeSrgbComponent(r);
             double green = LinearizeSrgbComponent(g);

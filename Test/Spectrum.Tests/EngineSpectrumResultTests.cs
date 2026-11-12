@@ -1,3 +1,5 @@
+using ColorVision.Engine.Messages;
+using ColorVision.Engine.Services.Devices.Spectrum;
 using ColorVision.Engine.Services.Devices.Spectrum.Dao;
 using ColorVision.Engine.Services.Devices.Spectrum.Views;
 using ColorVision.Engine.Services.Devices.Spectrum.Local;
@@ -14,6 +16,121 @@ namespace Spectrum.Tests;
 [Collection("LocalSpectrumDriver")]
 public sealed class EngineSpectrumResultTests
 {
+    [Theory]
+    [InlineData("GetDataAuto", false)]
+    [InlineData("EQE.GetDataAuto", true)]
+    public void ContinuousServiceResultFollowsTheNotificationWhenAnotherMeasurementHasArrived(string eventName, bool eqe)
+    {
+        using var db = CreateSpectrumDatabase();
+        int notifiedId = db.Insertable(new SpectumResultEntity { DeviceCode = "SPECTRUM.A", IntTime = 12, DataType = eqe }).ExecuteReturnIdentity();
+        db.Insertable(new SpectumResultEntity { DeviceCode = "SPECTRUM.A", IntTime = 24, DataType = eqe }).ExecuteReturnIdentity();
+        db.Insertable(new SpectumResultEntity { DeviceCode = "SPECTRUM.B", IntTime = 85, DataType = !eqe }).ExecuteReturnIdentity();
+        var notification = JsonConvert.DeserializeObject<MsgReturn>($$$"""
+            {"EventName":"{{{eventName}}}","Code":102,"DeviceCode":"SPECTRUM.A","data":{"MasterId":{{{notifiedId}}} }}
+            """)!;
+
+        var result = MQTTSpectrum.ReadServiceContinuousResult(db, (JObject)notification.Data);
+
+        Assert.NotNull(result);
+        Assert.Equal(notifiedId, result.Id);
+        Assert.Equal("SPECTRUM.A", result.DeviceCode);
+        Assert.Equal(12f, result.IntTime);
+        Assert.Equal(eqe, result.DataType);
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("{}")]
+    [InlineData("{\"MasterId\":0}")]
+    [InlineData("{\"MasterId\":-1}")]
+    [InlineData("{\"MasterId\":123456}")]
+    public void ContinuousServiceNotificationWithoutAMatchingResultDoesNotSubstituteHistory(string? data)
+    {
+        using var db = CreateSpectrumDatabase();
+        db.Insertable(new SpectumResultEntity { DeviceCode = "SPECTRUM.A", IntTime = 40 }).ExecuteReturnIdentity();
+
+        Assert.Null(MQTTSpectrum.ReadServiceContinuousResult(db, data == null ? null : JObject.Parse(data)));
+    }
+
+    private static SqlSugarClient CreateSpectrumDatabase()
+    {
+        var db = new SqlSugarClient(new ConnectionConfig
+        {
+            ConnectionString = "Data Source=:memory:", DbType = DbType.Sqlite,
+            IsAutoCloseConnection = false, InitKeyType = InitKeyType.Attribute
+        });
+        db.CodeFirst.InitTables<SpectumResultEntity>();
+        return db;
+    }
+
+    // Undefined SDK metrics must not become bare NaN/Infinity literals in an ORM INSERT.
+    [Theory]
+    [InlineData(float.NaN)]
+    [InlineData(float.PositiveInfinity)]
+    [InlineData(float.NegativeInfinity)]
+    public void NonFiniteMetricsPersistAsNullWithoutChangingRawSamples(float invalid)
+    {
+        using var db = new SqlSugarClient(new ConnectionConfig
+        {
+            ConnectionString = "Data Source=:memory:", DbType = DbType.Sqlite,
+            IsAutoCloseConnection = false, InitKeyType = InitKeyType.Attribute
+        });
+        db.CodeFirst.InitTables<SpectumResultEntity>();
+        object native = new COLOR_PARA { fPL = [1, invalid, -.25f], fRi = [invalid] };
+        var mappedFields = typeof(COLOR_PARA).GetFields().Where(field => field.FieldType == typeof(float)
+            && typeof(SpectumResultEntity).GetProperty(field.Name)?.PropertyType == typeof(float?)).ToArray();
+        foreach (var field in mappedFields) field.SetValue(native, invalid);
+        var data = (COLOR_PARA)native;
+        data.fy = .25f;
+        var capture = new LocalSpectrumCapture
+        {
+            DeviceCode = "NONFINITE.SPECTRUM", IntegralTime = 100, Data = data,
+            EqeData = new COLOR_PARA_EQE { dEqe = invalid, dIm = invalid, dW = invalid }
+        };
+        var model = LocalSpectrumResultService.CreateModel(capture, new() { Eqe = true, Voltage = 5, Current = 1 });
+        int id = db.Insertable(model).ExecuteReturnIdentity();
+        var stored = db.Queryable<SpectumResultEntity>().Single(row => row.Id == id);
+
+        foreach (var field in mappedFields.Where(field => field.Name != nameof(COLOR_PARA.fy)))
+            Assert.Null(typeof(SpectumResultEntity).GetProperty(field.Name)!.GetValue(stored));
+        Assert.Null(stored.Eqe);
+        Assert.Null(stored.LuminousFlux);
+        Assert.Null(stored.RadiantFlux);
+        Assert.Null(stored.fRi);
+        Assert.Equal(.25f, stored.fy);
+        Assert.Equal(100f, stored.IntTime);
+        Assert.Equal(5f, stored.VResult);
+        Assert.Equal(1000f, stored.IResult);
+        Assert.Equal(invalid, JsonConvert.DeserializeObject<float[]>(stored.fPL!)![1]);
+        Assert.Equal(invalid, JObject.Parse(stored.CieDataEx!)[nameof(COLOR_PARA.fx)]!.Value<float>());
+        Assert.Equal(invalid, capture.Data.fx);
+        Assert.Equal(invalid, capture.Data.fPL[1]);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void EqeHistoryStoresMilliampsAndTheActualSourceAssociation(bool upstream)
+    {
+        var parameters = new LocalSpectrumParameters { Eqe = true, Voltage = 5, Current = .025f };
+        if (upstream) parameters.ApplySmuData(new FlowEngineLib.SMUResultData(FlowEngineLib.SMUChannelType.A, 4.5, 25, 123, 200));
+        var capture = new LocalSpectrumCapture
+        {
+            DeviceCode = "EQE.TEST", IntegralTime = 100,
+            Data = new COLOR_PARA { fPL = [], fRi = [] },
+            EqeData = new COLOR_PARA_EQE { dVoltage = parameters.Voltage, dCurrent = parameters.Current, dEqe = .2 }
+        };
+        var model = LocalSpectrumResultService.CreateModel(capture, parameters);
+        Assert.Equal(upstream ? 4.5f : 5f, model.VResult);
+        Assert.Equal(25f, model.IResult);
+        var view = ColorVision.Engine.Services.Devices.Spectrum.DeviceSpectrum.CreateLocalSpectrumView(capture);
+        Assert.Equal(model.VResult, view.V);
+        Assert.Equal(model.IResult, view.I);
+        Assert.Equal(upstream ? 123 : (int?)null, model.SmuDataId);
+        Assert.Equal(.025f, JObject.Parse(model.Params!)["Current"]!.Value<float>());
+        if (upstream) Assert.Equal(25, JObject.Parse(model.Params!)["SMUData"]!["I"]!.Value<double>());
+    }
+
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
@@ -85,6 +202,82 @@ public sealed class EngineSpectrumResultTests
             string[] values = lines[1].Split(',');
             Assert.Equal(source.LuminousFlux?.ToString(), values[Array.IndexOf(headers, "LuminousFlux(lm)")]);
             Assert.Equal(source.RadiantFlux?.ToString(), values[Array.IndexOf(headers, "RadiantFlux(W)")]);
+        }
+        finally
+        {
+            ConfigService.SetInstance(previousConfig);
+            File.Delete(path);
+        }
+    }
+
+    [Theory]
+    [InlineData(false, 2f)]
+    [InlineData(true, 2f)]
+    [InlineData(false, 0.1f)]
+    [InlineData(true, 0.1f)]
+    public void StandardCsvKeepsSpectralSamplesAtTheirMeasuredWavelength(bool fluxMode, float interval)
+    {
+        var previousConfig = ConfigService.Instance;
+        ConfigService.SetInstance(new ConfigHandler { IsAutoSave = false });
+        string path = Path.Combine(Path.GetTempPath(), $"engine-spectrum-grid-{Guid.NewGuid():N}.csv");
+        try
+        {
+            var result = new ViewResultSpectrum(new COLOR_PARA
+            {
+                fSpect1 = 500f, fSpect2 = 504f, fInterval = interval, fPlambda = 2f,
+                fPL = Enumerable.Range(0, (int)Math.Round(4d / interval) + 1)
+                    .Select(index => index == 0 ? -0.5f : index * interval).ToArray()
+            });
+            if (fluxMode) SpectrumCsvExportHelper.ExportLuminousFluxMode(path, [result]);
+            else SpectrumCsvExportHelper.ExportLuminanceMode(path, [result]);
+
+            string[] lines = File.ReadAllLines(path);
+            string[] headers = lines[0].Split(',');
+            string[] values = lines[1].Split(',');
+            Assert.Equal(headers.Length, values.Length);
+            string Read(string header) => values[Array.IndexOf(headers, header)];
+
+            Assert.Equal(string.Empty, Read("380"));
+            Assert.Equal(string.Empty, Read("sp499"));
+            Assert.Equal("-1", Read("500"));
+            Assert.Equal("0", Read("sp500"));
+            Assert.Equal(interval == 2f ? string.Empty : "2", Read("501"));
+            Assert.Equal(interval == 2f ? string.Empty : "1", Read("sp501"));
+            Assert.Equal("4", Read("502"));
+            Assert.Equal("2", Read("sp502"));
+            Assert.Equal("8", Read("504"));
+            Assert.Equal("4", Read("sp504"));
+            Assert.Equal(string.Empty, Read("505"));
+        }
+        finally
+        {
+            ConfigService.SetInstance(previousConfig);
+            File.Delete(path);
+        }
+    }
+
+    [Fact]
+    public void StandardCsvIgnoresSamplesPastTheDeclaredEndWavelength()
+    {
+        var previousConfig = ConfigService.Instance;
+        ConfigService.SetInstance(new ConfigHandler { IsAutoSave = false });
+        string path = Path.Combine(Path.GetTempPath(), $"engine-spectrum-end-{Guid.NewGuid():N}.csv");
+        try
+        {
+            var result = new ViewResultSpectrum(new COLOR_PARA
+            {
+                fSpect1 = 500f, fSpect2 = 502.75f, fInterval = 1f, fPlambda = 2f,
+                fPL = [1f, 2f, 3f, 100f, 200f]
+            });
+            SpectrumCsvExportHelper.ExportLuminousFluxMode(path, [result]);
+
+            string[] lines = File.ReadAllLines(path);
+            string[] headers = lines[0].Split(',');
+            string[] values = lines[1].Split(',');
+            Assert.Equal("6", values[Array.IndexOf(headers, "502")]);
+            Assert.Equal("3", values[Array.IndexOf(headers, "sp502")]);
+            Assert.Equal(string.Empty, values[Array.IndexOf(headers, "503")]);
+            Assert.Equal(string.Empty, values[Array.IndexOf(headers, "sp503")]);
         }
         finally
         {

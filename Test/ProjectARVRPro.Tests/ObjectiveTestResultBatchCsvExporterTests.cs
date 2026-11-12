@@ -111,6 +111,45 @@ public class ObjectiveTestResultBatchCsvExporterTests
         }
     }
 
+    [Theory]
+    [InlineData("{}")]
+    [InlineData("{invalid json")]
+    public void ExportToCsv_UsesFirstRecordWithMetricsWhenInitialRecordOnlyHasMetadata(string initialJson)
+    {
+        DateTime start = new(2026, 8, 9, 8, 0, 0, DateTimeKind.Local);
+        string path = CreateTempPath();
+        try
+        {
+            var records = new[]
+            {
+                new ObjectiveTestResultRecord
+                {
+                    SN = "SN-1",
+                    CreateTime = start,
+                    UpdateTime = start.AddSeconds(2),
+                    ObjectiveTestResultJson = initialJson
+                },
+                CreateRecord("SN-2", start.AddMinutes(1), CreateDynamicResult(("B", "0"), ("A", "4.125"))),
+                CreateRecord("SN-3", start.AddMinutes(2), CreateDynamicResult(("A", "next"), ("C", "ignored")))
+            };
+
+            ObjectiveTestResultBatchCsvExporter.ExportToCsv(records, path);
+
+            Assert.Equal(
+                [
+                    "SN,开始时间,结束时间,Screen_B,Screen_A",
+                    "SN-1,2026-08-09 08:00:00.000,2026-08-09 08:00:02.000,,",
+                    "SN-2,2026-08-09 08:01:00.000,2026-08-09 08:01:02.000,0,4.125",
+                    "SN-3,2026-08-09 08:02:00.000,2026-08-09 08:02:02.000,,next"
+                ],
+                File.ReadAllLines(path, Encoding.UTF8));
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
     [Fact]
     public void ExportToCsv_WritesUtf8BomAndRfc4180Escaping()
     {
@@ -119,6 +158,7 @@ public class ObjectiveTestResultBatchCsvExporterTests
         try
         {
             ObjectiveTestResult result = CreateDynamicResult(("Item,\"Q\"", "line1,\"quoted\"\r\nline2"));
+            File.WriteAllText(path, "previous export");
             ObjectiveTestResultBatchCsvExporter.ExportToCsv(
                 [CreateRecord("SN,\"1\"", start, result)],
                 path);
@@ -127,6 +167,7 @@ public class ObjectiveTestResultBatchCsvExporterTests
             Assert.True(bytes.AsSpan().StartsWith(Encoding.UTF8.Preamble));
 
             string text = File.ReadAllText(path, Encoding.UTF8);
+            Assert.DoesNotContain("previous export", text, StringComparison.Ordinal);
             Assert.Contains("\"Screen_Item,\"\"Q\"\"\"", text, StringComparison.Ordinal);
             Assert.Contains("\"SN,\"\"1\"\"\"", text, StringComparison.Ordinal);
             Assert.Contains("\"line1,\"\"quoted\"\"\r\nline2\"", text, StringComparison.Ordinal);
@@ -135,6 +176,54 @@ public class ObjectiveTestResultBatchCsvExporterTests
         finally
         {
             File.Delete(path);
+        }
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void ExportToCsv_DoesNotPublishPartialResultsWhenLaterRecordFails(bool hasExistingExport)
+    {
+        DateTime start = new(2026, 8, 9, 8, 0, 0, DateTimeKind.Local);
+        string directory = Path.Combine(Path.GetTempPath(), $"ProjectARVRPro_BatchCsv_{Guid.NewGuid():N}");
+        Directory.CreateDirectory(directory);
+        string path = Path.Combine(directory, "result.csv");
+        try
+        {
+            byte[] previous = [];
+            if (hasExistingExport)
+            {
+                ObjectiveTestResultBatchCsvExporter.ExportToCsv(
+                    [CreateRecord("previous", start, CreateDynamicResult(("A", "previous-a")))], path);
+                previous = File.ReadAllBytes(path);
+            }
+
+            var records = new[]
+            {
+                CreateRecord("new", start, CreateDynamicResult(("A", "new-a"))),
+                new ObjectiveTestResultRecord
+                {
+                    SN = "broken",
+                    ObjectiveTestResultJson = """{"DynamicRgbCrossResults":{"Screen":{"Points":null}}}"""
+                }
+            };
+
+            Assert.ThrowsAny<Exception>(() => ObjectiveTestResultBatchCsvExporter.ExportToCsv(records, path));
+
+            if (hasExistingExport)
+            {
+                Assert.Equal(previous, File.ReadAllBytes(path));
+                Assert.Equal(path, Assert.Single(Directory.GetFiles(directory)));
+            }
+            else
+            {
+                Assert.Empty(Directory.GetFiles(directory));
+            }
+        }
+        finally
+        {
+            foreach (string file in Directory.GetFiles(directory)) File.Delete(file);
+            Directory.Delete(directory);
         }
     }
 

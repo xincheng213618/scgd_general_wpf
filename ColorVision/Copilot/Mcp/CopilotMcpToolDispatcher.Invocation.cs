@@ -221,6 +221,7 @@ namespace ColorVision.Copilot.Mcp
             {
                 Success = result.Success,
                 Content = result.Text,
+                PartialResultMessage = result.PartialResultMessage,
                 ErrorCode = result.ErrorCode,
                 FailureKind = result.FailureKind,
                 Approval = result.RequiresApproval && !string.IsNullOrWhiteSpace(result.ApprovalActionId)

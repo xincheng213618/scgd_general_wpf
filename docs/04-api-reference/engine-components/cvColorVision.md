@@ -23,9 +23,11 @@ related: ["engine.index","engine.native-integration","ui.core"]
 
 `CameraNativeLibrary` 为本程序集的所有 `cvCamera.dll` P/Invoke 注册统一解析器，在首次调用时优先查找托管程序集旁、其次宿主旁的 `runtimes/win-x64/native/`，再兼容按 RID 发布时平铺到程序集或宿主旁的 native 资产。加载前通过 `SetDllDirectoryW` 将实际目录设为当前进程的 DLL 搜索目录，覆盖 SCGDCamLayer 等旧 SDK 在稍后调用 `LoadLibrary` 按名称加载依赖的行为；这会取代宿主先前设置的单一 DLL 搜索目录，宿主在设备运行期间不得覆盖它。不更改系统或用户 `PATH`，不连接或枚举设备；缺少文件、依赖或架构不匹配仍由加载异常报告。原生 DLL、导出和许可证构建无需随本次目录调整而替换。
 
+传感器业务通过 Engine 的 `LocalSensorSession` 使用 C# TCP/串口实现，保留 MQTT 服务模式，不依赖旧 `cvColorVision.SensorComm` P/Invoke 类。该旧类型与配套内部版 DLL 的旧传感器/TCP 服务导出已退役；仍引用这些公共入口的外部插件需要迁移并重新编译，不能直接使用新的绑定程序集或原生 DLL。PG 绑定仍使用 `Communicate_Type`，其命名空间、类型名与枚举值保持兼容；相机继电器所需的五个串口函数仅作为原生内部实现保留。配套 DLL 同时退役了未使用的 `CalGamut`、`GetMAKETYPE`、`XYZ2xyuv`、`CheckLedJudge`，仍依赖它们的旧调用方也需先迁移。源码清理不代表已更新交付 DLL。
+
 电机控制器 `FOCUS_COMMUN` 与原生及已有配置的数值保持一致：`VID_SERIAL=0`、`CANON_SERIAL=1`、`NED_SERIAL=2`、`LONGFOOT_SERIAL=3`、`TSM_SERIAL=4`、`SV6100=5`。`InitCom` / `CM_InitComEx` 的首参对应原生 `HANDLE&`，C# 必须传 `ref IntPtr` 接收独立电机句柄，不能传相机管理器句柄，也不能把整数状态码当句柄。旧调用方需要按此签名重新编译；新增类型需要配套 DLL，选择项存在不证明串口通信已验收。本地相机会话通过 `CM_InitComEx` 创建电机、下发配置，通过 `CM_ShutDown` 释放；托管适配器串行进入原生电机注册表，避免不同相机对未加锁的原生句柄表并发访问。
 
-`CM_EvaluateFocus(HANDLE, EvaFunc, double&)` 是本地对焦使用的同步单帧评价入口，成功为 1，失败保留采集错误码或返回对应的平台错误；失败不写输出。它只采集 RAW 并调用既有原生清晰度算法，不移动电机、不创建异步线程、不保存图像、不保留回调或调用方缓冲。Live 模式、未打开的相机和未知评价类型会失败。移动、搜索范围、超时和句柄生命周期由 Engine 的本地相机会话管理，不通过遗留 `CM_CalcAutoFocus` / `CM_GetAutoFocus` 启动后台搜索；服务模式仍保留既有异步入口。
+`CM_EvaluateFocus(HANDLE, EvaFunc, double&)` 是本地对焦使用的同步单帧评价入口，成功为 1，失败保留采集错误码或返回对应的平台错误；失败不写输出。它只采集 RAW 并调用既有原生清晰度算法，不移动电机、不创建异步线程或保存图像。已通过现有 `CM_AutoFocusCallBackEx` 注册过程预览时，评价成功后同步借出同一 RAW 帧，回调返回后原生帧即释放，不额外取图；失败不发预览。Engine 在回调期间复制为独立显示快照，并在每次评价结束的 finally 中注销回调，委托保活至注销完成；显示错误不跨越原生边界，也不改变有效的清晰度结果。回调为 `int32/StdCall`，像素指针仅在调用期间有效。Live 模式、未打开的相机和未知评价类型会失败。移动、搜索范围、超时和句柄生命周期由 Engine 的本地相机会话管理，不通过遗留 `CM_CalcAutoFocus` / `CM_GetAutoFocus` 启动后台搜索；服务模式仍保留既有异步入口。
 
 当前内部版不包含本地 OLED/CUDA 链路：`cvCamera.dll` 不再导入 `cvOled.dll`，默认交付不含 `cvoled.dll`、`cudart64_12.dll`，C# 的 `CvOledDLL` 及其专用枚举也不再提供。原生导出 `CM_LedCalInit`、`CM_LedCalFind`、`CM_LedCalComBine`、`CM_LedCalFindHighDensity`、`CM_FindHighIndensityLed` 已删除；需要这些入口的旧插件不能直接使用此版本，按序号导入的外部二进制也需要重新核对。本地普通 LED 检测、远端 CVOLED 服务消息和流程节点不属于这条 DLL 依赖链。
 
@@ -71,7 +73,7 @@ MVS 开始采集前自动配置触发参数，无需用户先在海康客户端�
 
 本地取图、自动曝光和独立相机测试在设置曝光/增益失败时立即通过 `CM_GetErrorMessage` 构造错误，不继续采集；本地视频初始化检查采集模式、位深、曝光、增益和回调，界面手动设置和滑块调整失败也记录同一错误说明。
 
-`CM_SwitchCaptureMode(handle, mode, bpp)` 为本地 MVS 的普通拍照/视频切换入口，成功返回 `1`。模式或位深改变时停止取流，按需调整原生像素格式，将视频切为连续采集、拍照切为单帧软件触发，读回确认后恢复取流并清理旧帧；相同模式及位深不重启取流。均保留相机连接、ROI、曝光、增益及转换偏好；重复切换不追加原参数恢复记录。入口先停止并等待预览回调退出，再取得帧锁，避免回调与切换互相等待。旧后端返回 `CV_ERR_CAM_TYPE_NOT=-10030`，Engine 才使用原有关闭/重开方案；SDK 错误直接返回，不以重连掩盖失败。失败恢复先前格式及触发模式，无法恢复时关闭连接。原有仅关闭时可设置的 `CM_SetTakeImageMode` / `CM_SetImageBpp` 契约不变；MVS 的 Fast/FastEx 模式仍不支持。
+`CM_SwitchCaptureMode(handle, mode, bpp)` 为本地 MVS 的普通拍照/视频切换入口，成功返回 `1`。模式或位深改变时停止取流，按需调整原生像素格式，将视频切为连续采集、拍照切为单帧软件触发，读回确认后恢复取流并清理旧帧；相同模式及位深不重启取流。首次打开及切换共用位深初始化：LV 单色优先使用已列出或正在使用的原生 Mono8/Mono16；请求 16 位输出但没有原生 Mono16 时，保留当前 Mono10/12/14 或 Mono10/12_Packed 源格式，或从 8 位预览切回枚举支持的高位深单色格式。按真实源格式解包并将有效位左对齐为 16 位单通道输出，例如 12 位左移 4 位，保留全部有效位，不把 8 位源扩成 16 位测量。Mono10/12_Packed 使用旧 GigE 分组打包规则，要求偶数行宽，按打包后的源字节数验证完整性，不能按 16 位字节直接复制；截断帧在写输出前失败，SDK 帧在所有路径归还。LV 的 Bayer 原始平面与 BV 彩色分支保留同相位的 8/16 位格式切换规则，含 Packed 源相位；SDK 必须实际切换并读回验证，未知彩色相位要求唯一的已列出候选。`HikMvsPixelFormat` 记录当前格式、请求位深、目标格式及枚举是否包含它；独立 MVS 诊断工具仍要求原生 Mono16/Bayer16，用于该路径的对照，不覆盖 LV 高位深源格式的解包链路。均保留相机连接、ROI、曝光、增益及转换偏好；重复切换不追加原参数恢复记录。入口先停止并等待预览回调退出，再取得帧锁，避免回调与切换互相等待。旧后端返回 `CV_ERR_CAM_TYPE_NOT=-10030`，Engine 才使用原有关闭/重开方案；SDK 错误直接返回，不以重连掩盖失败。失败恢复先前格式及触发模式，无法恢复时关闭连接。原有仅关闭时可设置的 `CM_SetTakeImageMode` / `CM_SetImageBpp` 契约不变；MVS 的 Fast/FastEx 模式仍不支持。离线格式与缓冲测试不能代替同一实机的新旧后端测量对照。
 
 `CM_GetAutoExpFrame` 为测量模式下的独立自动曝光返回达标帧，参数包含调用方持有的图像指针及 `uint64_t` 字节容量、图像尺寸/位深/通道数，以及各有三个 `float` 的曝光（ms）和饱和度数组。它保留既有曝光搜索算法；成功为 `1`，按既有目标饱和度及偏差检查最终图像，未达标返回 `CV_ERR_CAM_AUTO_EXP_NOT_CONVERGED=-10075`，SDK 失败保留原始整数码。Live 模式拒绝此帧返回入口，避免把改变曝光前排队的回调图像作为最终帧；视频窗口继续使用既有自动曝光及实时显示。曝光与图像来自同一次最终采集；MVS 曝光采用设置时的 SDK 读回值，旧 burst 取图保留该合成帧的有效曝光。单次彩色/灰度采集将曝光和饱和度复制到三个槽位；CV 三通道的数组按 X/Y/Z（R/G/B）排列，图像保持现有 BGR 布局。容量不足或失败时不修改调用方图像及结果输出。Engine 在持有帧期间复制独立预览，随后释放帧；独立自动曝光不写 CVRAW、缓存文件或数据库记录。既有 `CM_GetAutoExpTime` 和正常测量保存链保持原语义。
 
@@ -80,6 +82,8 @@ MVS 开始采集前自动配置触发参数，无需用户先在海康客户端�
 `HK_USB` 和 `HK_CARD` 搜索使用直接 MVS 枚举，不受搜索入口占位 `CV_MODE` 影响。`HK_USB` 枚举 GigE/USB；`HK_CARD` 包含多种海康采集卡，不能统一当作 CameraLink。逐一查找已安装的 `MvFGProducerCML.cti`、`MvFGProducerCXP.cti`、`MvFGProducerGEV.cti` 和 `MvFGProducerXoF.cti`，每类优先使用实际加载 SDK 的目录，再查已安装 MVS x64 runtime；分别调用 `MV_CC_EnumInterfacesByGenTL` 和 `MV_CC_EnumDevicesByGenTL`，从 `MV_GENTL_DEV_INFO` 复制序列号、型号及 CTI 索引，跨传输类型匹配配置的序列号，再调用 `MV_CC_CreateHandleByGenTL` 创建对应句柄。未安装的 CTI 或接口为空不终止其它类型搜索；单类枚举 SDK 错误写入日志并继续搜索其它类型，最终无设备且存在 SDK 错误时返回首个原始错误。两类枚举共用进程锁，复制 SDK 所有的接口及设备信息后再离开锁；CTI 保持加载，避免影响其它句柄使用的索引。GenTL 接口仅为 `HK_CARD` 必需，不影响 USB/GigE 的运行依赖。`HikMvsGenTL` 日志记录各 CTI 路径、接口数、各接口设备数与设备身份及 CTI 索引。创建句柄后，打开、普通测量、视频及模式切换共用 `HikMvsCamera`。现场需要已安装与采集卡匹配的 MVS/GenTL 驱动；新后端失败时保留 SDK 错误，不自动切回旧后端；CV 滤轮的实际采集后端保持原规则。`CM_GetCameraID` / `CM_GetCameraIDV1` 仅将 `1` 视为成功，SDK 负数错误原样返回；无设备返回 `CV_ERR_CAM_SCAN=-10005`，不再将失败包装为空列表成功。
 
 `HikMvsSDK` 同时记录实际加载的 SDK 文件路径与宿主程序路径；默认 DLL 搜索失败后，依次尝试 `CommonProgramFiles(x86)` 和 `CommonProgramFiles` 下的 MVS x64 runtime。`GetImageBuffer` 超时保留 `MV_E_NODATA` 和操作名；`HikMvsTimeout` 记录触发参数读回，GigE 另记录本次取流的累计接收字节/帧数、丢帧、重发统计及流目标地址/端口节点。诊断接口或节点不可用时记录各自返回码，不覆盖原始采集错误。独立取图测试运行于 `ColorVision.Engine.exe`，主程序运行于 `ColorVision.exe`；测试成功只证明该次测试链路有效，不能据此认定主程序加载的 SDK、会话或程序防火墙规则一致。
+
+MVS 视频回调丢弃坏帧、归还 SDK 缓冲并继续取帧，超时仍无有效帧才退出。`HikMvsPreview` 记录被丢弃的帧号和丢包数。维护版源码中的同步取帧在直接 GigE 报告 `nLostPacket > 0` 时可探测包大小，见 `HikMvsCamera::Impl::RecoverPacketSize`。探测与回滚仅作用于当前相机会话，视频回调沿用现有包大小。原生离线测试覆盖坏帧后取到好帧、缓冲归还、持续坏帧超时及同步取帧恢复，现场丢包表现仍需实机验收。
 
 平台错误 `CV_ERR_CAM_ID_MATCH=-10007` 明确表示 ID 与枚举设备不匹配；`CV_ERR_CAM_OPEN=-10009` 仅表示设备打开失败。旧 SCGDCamLayer 普通打开日志记录请求 ID、枚举 ID、型号、模式和失败步骤，其指针接口未提供底层 SDK 错误码时明确标记不可用，不推断为 ID 错误。MVS 打开日志记录序列号、传输类型、失败操作及 SDK 错误。
 
@@ -106,7 +110,7 @@ MVS 开始采集前自动配置触发参数，无需用户先在海康客户端�
 | 图卡 | `Devices/PatternGenerator/PG.cs` | PG 初始化、TCP/串口连接、Start/Stop/Reset、帧切换 |
 | 源表/电源 | `Devices/PassSx/PassSx.cs` | 打开关闭、源模式、2/4 线、前后端口、电压电流、步进/扫描 |
 | 极薄入口 | `Algorithms.cs` 等 | 直接暴露少量底层函数 |
-| MQTT/设备 DTO | `MQTTMessageLib/`、`CVCommCore/` | 原生/设备链路相关消息和归档数据结构 |
+| MQTT/设备 DTO | `MQTTMessageLib/`、`CVCommCore/` | 原生/设备链路相关消息和数据结构 |
 
 ## 检查
 

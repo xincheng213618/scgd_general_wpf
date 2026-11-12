@@ -77,6 +77,26 @@ public sealed class ProfileDataExtractorTests
     }
 
     [Fact]
+    public void ExtractAlongPathIndexed8UsesTheColorsFromThePalette()
+    {
+        StaTest.Run(() =>
+        {
+            var palette = new BitmapPalette([Colors.Red, Colors.Lime, Colors.Blue]);
+            BitmapSource source = BitmapSource.Create(3, 2, 96, 96, PixelFormats.Indexed8, palette,
+                new byte[] { 0, 0, 0, 2, 0, 1 }, 3);
+
+            ProfileData result = ProfileDataExtractor.ExtractAlongPath(
+                [new Point(0, 1), new Point(2, 1)], new WriteableBitmap(source), totalSteps: 3);
+
+            Assert.True(result.IsMultiChannel);
+            Assert.Equal(new double[] { 0, 255, 0 }, result.RedChannel);
+            Assert.Equal(new double[] { 0, 0, 255 }, result.GreenChannel);
+            Assert.Equal(new double[] { 255, 0, 0 }, result.BlueChannel);
+            AssertValues([0.114 * 255, 0.299 * 255, 0.587 * 255], result.GrayChannel);
+        });
+    }
+
+    [Fact]
     public void ExtractAlongPathClosedPathSamplesEachVertexWithoutRepeatingTheFirst()
     {
         StaTest.Run(() =>

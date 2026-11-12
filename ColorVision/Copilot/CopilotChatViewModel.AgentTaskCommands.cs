@@ -1,5 +1,8 @@
 #pragma warning disable CA1001,CA1822,CA1859,CA1861,CA1870,CS4014
+using ColorVision.Copilot.Mcp;
 using System;
+using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -10,6 +13,8 @@ namespace ColorVision.Copilot
 {
     public partial class CopilotChatViewModel
     {
+        private readonly HashSet<(string ConversationId, string ChangeSetId)> _workspaceRollbackPreparations = new();
+
         private bool CanContinueAgentTasks(CopilotChatMessage? message)
         {
             if (IsEditingMessage || !CanScheduleComposerRequest(CopilotAgentMode.Auto) || message == null || message.IsUser || !message.HasRecoverableAgentTasks)
@@ -111,10 +116,13 @@ namespace ColorVision.Copilot
 
         private bool CanRequestWorkspaceRollback(CopilotAgentTraceEntry? trace)
         {
-            return trace?.CanRequestWorkspaceRollback == true
+            return Volatile.Read(ref _disposeState) == 0
+                && trace?.CanRequestWorkspaceRollback == true
                 && !IsBusy
                 && !IsEditingMessage
+                && _taskHost.ActiveRun is null or { IsQueuedLocalCommand: true }
                 && SelectedConversation?.Messages.Any(message => message.AgentTraceEntries.Contains(trace)) == true
+                && !_workspaceRollbackPreparations.Contains((SelectedConversation.Id, trace.WorkspaceChangeSetId))
                 && !HasActiveWorkspaceRollback(trace.WorkspaceChangeSetId);
         }
 
@@ -171,6 +179,9 @@ namespace ColorVision.Copilot
 
         private async Task RequestWorkspaceRollbackAsync(CopilotAgentTraceEntry trace)
         {
+            if (!CanRequestWorkspaceRollback(trace))
+                return;
+
             var conversation = SelectedConversation;
             var assistantMessage = conversation?.Messages.FirstOrDefault(message =>
                 message.AgentTraceEntries.Contains(trace));
@@ -181,50 +192,132 @@ namespace ColorVision.Copilot
                 return;
             }
 
+            var changeSetId = trace.WorkspaceChangeSetId;
+            var key = (conversation.Id, changeSetId);
             var workspacePath = CaptureHostedTurnSnapshot(conversation.Attachments).SolutionDirectoryPath;
-            var result = await _turnRuntime.RequestWorkspaceRollbackAsync(
-                new CopilotWorkspaceRollbackActionRequest(
-                    conversation.Id,
-                    workspacePath,
-                    trace.WorkspaceChangeSetId),
-                agentEvent => ApplyDirectWorkspaceRollbackEvent(
-                    conversation,
-                    assistantMessage,
-                    trace.WorkspaceChangeSetId,
-                    agentEvent),
-                CancellationToken.None);
-            if (!result.Success || result.Action == null)
+            var lastMessage = conversation.Messages.LastOrDefault();
+            var originalHostedRun = _taskHost.ActiveRun;
+            var feedbackRevision = Volatile.Read(ref _localCommandResultRevision);
+            var cancellation = BeginAuxiliaryOperation();
+            ConfirmableAction? action = null;
+            var preparationOpen = true;
+            _workspaceRollbackPreparations.Add(key);
+            CommandManager.InvalidateRequerySuggested();
+
+            bool SourceStillExists() => Volatile.Read(ref _disposeState) == 0
+                && Conversations.Contains(conversation)
+                && conversation.Messages.Contains(assistantMessage);
+
+            bool CanContinuePreparation() => !cancellation.IsCancellationRequested
+                && SourceStillExists()
+                && ReferenceEquals(SelectedConversation, conversation)
+                && !IsBusy
+                && !IsEditingMessage
+                && (_taskHost.ActiveRun == null || ReferenceEquals(_taskHost.ActiveRun, originalHostedRun))
+                && ReferenceEquals(conversation.Messages.LastOrDefault(), lastMessage)
+                && assistantMessage.AgentTraceEntries.Contains(trace)
+                && trace.CanRequestWorkspaceRollback
+                && AccessWorkspacePathsMatch(workspacePath,
+                    CaptureHostedTurnSnapshot(conversation.Attachments).SolutionDirectoryPath);
+
+            bool CanApplyEvent() => action?.Status is ConfirmableActionStatus.Executing or ConfirmableActionStatus.Executed
+                ? SourceStillExists()
+                : preparationOpen && CanContinuePreparation();
+
+            async Task SaveWriteCheckpointAsync(CancellationToken token)
             {
-                LocalCommandResultTitle = "无法撤销文件修改";
-                LocalCommandResultText = string.IsNullOrWhiteSpace(result.ErrorMessage)
-                    ? "安全回滚请求未能创建。"
-                    : result.ErrorMessage;
-                return;
+                var save = await CopilotUiDispatcher.InvokeAsync(() =>
+                {
+                    if (!SourceStillExists())
+                        throw new OperationCanceledException("The workspace rollback host is no longer available.", token);
+                    return FlushStatePersistenceBarrierAsync();
+                }, token).ConfigureAwait(false);
+                await save.WaitAsync(token).ConfigureAwait(false);
             }
 
-            SetPendingActionFeedback("已创建精确绑定的工作区回滚审批；无需再次调用模型。");
-            await ApprovePendingActionAsync(result.Action);
+            try
+            {
+                var result = await _turnRuntime.RequestWorkspaceRollbackAsync(
+                    new CopilotWorkspaceRollbackActionRequest(conversation.Id, workspacePath, changeSetId)
+                    {
+                        StatePersistenceBarrier = SaveWriteCheckpointAsync,
+                    },
+                    agentEvent => ApplyDirectWorkspaceRollbackEvent(
+                        conversation, assistantMessage, changeSetId, agentEvent, CanApplyEvent),
+                    cancellation.Token);
+                action = result.Action;
+                if (!CanContinuePreparation())
+                {
+                    if (action?.Status == ConfirmableActionStatus.Pending)
+                        CopilotMcpConfirmationStore.Instance.Cancel(action.ActionId, out _, "The workspace rollback preparation is no longer current.");
+                    return;
+                }
+                if (!result.Success || action == null)
+                {
+                    if (CanApplyAuxiliaryConversationFeedback(conversation, feedbackRevision))
+                    {
+                        LocalCommandResultTitle = "无法撤销文件修改";
+                        LocalCommandResultText = string.IsNullOrWhiteSpace(result.ErrorMessage)
+                            ? "安全回滚请求未能创建。"
+                            : result.ErrorMessage;
+                    }
+                    return;
+                }
+
+                if (CanApplyAuxiliaryConversationFeedback(conversation, feedbackRevision))
+                    SetPendingActionFeedback("已创建精确绑定的工作区回滚审批；无需再次调用模型。");
+                await ApprovePendingActionAsync(action);
+            }
+            catch (OperationCanceledException)
+            {
+            }
+            catch (Exception exception)
+            {
+                var message = CopilotUserFacingErrorFormatter.Sanitize(exception.Message);
+                Trace.TraceError($"Copilot workspace rollback preparation failed: {message}");
+                if (CanContinuePreparation()
+                    && CanApplyAuxiliaryConversationFeedback(conversation, feedbackRevision))
+                {
+                    LocalCommandResultTitle = "无法撤销文件修改";
+                    LocalCommandResultText = message;
+                }
+            }
+            finally
+            {
+                preparationOpen = false;
+                _workspaceRollbackPreparations.Remove(key);
+                CompleteAuxiliaryOperation(cancellation);
+                CommandManager.InvalidateRequerySuggested();
+            }
         }
 
         private void ApplyDirectWorkspaceRollbackEvent(
             CopilotConversationRecord conversation,
             CopilotChatMessage assistantMessage,
             string changeSetId,
-            CopilotAgentEvent agentEvent)
+            CopilotAgentEvent agentEvent,
+            Func<bool> canApply)
         {
             CopilotUiDispatcher.Invoke(() =>
             {
+                if (!canApply())
+                    return;
+
                 var presentationResult = CopilotAssistantMessagePresenter.ApplyAgentEvent(
                     assistantMessage,
                     agentEvent);
+                var warningUpdated = agentEvent.Type == CopilotAgentEventType.ToolResult
+                    && agentEvent.ToolResult?.WorkspaceRecheckPaths.Count > 0
+                    && assistantMessage.RefreshWorkspaceRecheckWarning();
                 var rolledBack = agentEvent.Type == CopilotAgentEventType.ToolResult
                     && agentEvent.ToolResult?.Success == true
+                    && agentEvent.ToolExecution?.State == CopilotToolExecutionState.Completed
                     && string.Equals(
                         agentEvent.ToolExecution?.ToolName,
                         "RollbackWorkspacePatchEnvelope",
                         StringComparison.Ordinal)
                     && conversation.MarkWorkspaceChangeSetRolledBack(changeSetId);
-                if (rolledBack
+                if (rolledBack || warningUpdated
                     || presentationResult.PersistenceMode != CopilotAgentEventPersistenceMode.None)
                 {
                     PersistState(immediate: rolledBack);

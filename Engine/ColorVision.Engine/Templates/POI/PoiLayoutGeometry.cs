@@ -91,6 +91,53 @@ namespace ColorVision.Engine.Templates.POI
             return points;
         }
 
+        public static bool TryGetQuadrilateralSize(IReadOnlyList<Point> corners, out Size size)
+        {
+            size = default;
+            if (!TryNormalizeQuadrilateral(corners, out List<Point> points))
+                return false;
+
+            size = GetQuadrilateralSize(points);
+            return double.IsFinite(size.Width) && double.IsFinite(size.Height);
+        }
+
+        private static Size GetQuadrilateralSize(IReadOnlyList<Point> points) => new(
+            ((points[1] - points[0]).Length + (points[2] - points[3]).Length) / 2,
+            ((points[3] - points[0]).Length + (points[2] - points[1]).Length) / 2);
+
+        public static bool TryGetPercentagePointSize(Size reference, GraphicTypes pointType, double widthPercent, double heightPercent, out Size size)
+        {
+            size = default;
+            if (!double.IsFinite(reference.Width) || !double.IsFinite(reference.Height) || reference.Width <= 0 || reference.Height <= 0)
+                return false;
+            if (!IsValidPercentage(widthPercent))
+                return false;
+
+            double width = Math.Round(reference.Width * (widthPercent / 100), MidpointRounding.AwayFromZero);
+            if (pointType == GraphicTypes.Circle)
+            {
+                // The input is a radius. Keep the diameter in the same size representation used by auto-fit.
+                double diameter = 2 * width;
+                if (width < 1 || diameter > int.MaxValue)
+                    return false;
+
+                size = new Size(diameter, diameter);
+                return true;
+            }
+
+            if (pointType != GraphicTypes.Rect || !IsValidPercentage(heightPercent))
+                return false;
+
+            double height = Math.Round(reference.Height * (heightPercent / 100), MidpointRounding.AwayFromZero);
+            if (width < 1 || height < 1 || width > int.MaxValue || height > int.MaxValue)
+                return false;
+
+            size = new Size(width, height);
+            return true;
+        }
+
+        private static bool IsValidPercentage(double percent) => percent > 0 && percent <= 100;
+
         public static bool TryGetAutoFitSize(IReadOnlyList<Point> corners, int rows, int columns, GraphicTypes pointType, out Size size)
         {
             size = default;
@@ -100,8 +147,9 @@ namespace ColorVision.Engine.Templates.POI
                 return false;
 
             // Estimate one sampling window from the opposing edges and the grid counts.
-            double width = ((points[1] - points[0]).Length + (points[2] - points[3]).Length) / 2 / columns;
-            double height = ((points[3] - points[0]).Length + (points[2] - points[1]).Length) / 2 / rows;
+            Size reference = GetQuadrilateralSize(points);
+            double width = reference.Width / columns;
+            double height = reference.Height / rows;
             bool isCircle = pointType == GraphicTypes.Circle;
             if (isCircle)
                 width = height = Math.Min(width, height);

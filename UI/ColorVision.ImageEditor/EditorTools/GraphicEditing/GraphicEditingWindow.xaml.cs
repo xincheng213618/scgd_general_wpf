@@ -226,6 +226,12 @@ namespace ColorVision.ImageEditor
 
     public class FindLightBeadsConfig : Common.MVVM.ViewModelBase
     {
+        [DisplayName("不良检测"), Description("按完整规则网格检查不亮和明显偏暗灯珠；关闭时仅定位亮点。")]
+        public bool InspectDefects { get; set; } = true;
+
+        [DisplayName("偏暗比例"), Description("低于同图正常亮点中位亮度的此比例时标为偏暗，须大于 0 且小于 1。")]
+        public double DimRatio { get; set; } = 0.5;
+
         [DisplayName("Threshold")]
         [Description("二值化阈值 (0-255)")]
         public int Threshold { get => _Threshold; set { if (value > 255) value = 255; if (value < 0) value = 0; _Threshold = value; OnPropertyChanged(); } }
@@ -241,19 +247,19 @@ namespace ColorVision.ImageEditor
         private int _MinSize = 2;
 
         [DisplayName("MaxSize")]
-        [Description("最大灯珠尺寸 (像素)")]
-        public int MaxSize { get => _MaxSize; set { if (value < 1) value = 1; _MaxSize = value; OnPropertyChanged(); } }
-        private int _MaxSize = -1;
+        [Description("最大灯珠尺寸 (像素)，0 表示不限。")]
+        public int MaxSize { get => _MaxSize; set { _MaxSize = Math.Max(0, value); OnPropertyChanged(); } }
+        private int _MaxSize;
 
         [DisplayName("Rows")]
-        [Description("预期灯珠行数")]
-        public int Rows { get => _Rows; set { if (value < 1) value = 1; _Rows = value; OnPropertyChanged(); } }
-        private int _Rows = -1;
+        [Description("预期灯珠行数，0 表示自动识别；输入正数时校验识别结果。")]
+        public int Rows { get => _Rows; set { _Rows = Math.Max(0, value); OnPropertyChanged(); } }
+        private int _Rows;
 
         [DisplayName("Cols")]
-        [Description("预期灯珠列数")]
-        public int Cols { get => _Cols; set { if (value < 1) value = 1; _Cols = value; OnPropertyChanged(); } }
-        private int _Cols = -1;
+        [Description("预期灯珠列数，0 表示自动识别；输入正数时校验识别结果。")]
+        public int Cols { get => _Cols; set { _Cols = Math.Max(0, value); OnPropertyChanged(); } }
+        private int _Cols;
     }
 
     public class DetectKeyRegionsConfig : Common.MVVM.ViewModelBase

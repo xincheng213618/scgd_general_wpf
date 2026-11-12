@@ -165,25 +165,25 @@
         <Border Grid.Row="1" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"
                 CornerRadius="8" Background="{DynamicResource GlobalBackground}">
             <Grid>
-                <!-- 新增：步骤一，名称与流程模板 -->
+                <!-- 新增：步骤一，流程模板与名称 -->
                 <Grid Margin="22"
                       Visibility="{Binding IsCreateBasicsPage, Converter={StaticResource BooleanToVisibilityConverter}}">
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="{Binding MetaColumnWidth}"/>
                         <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="{Binding MetaColumnWidth}"/>
                     </Grid.ColumnDefinitions>
 
-                    <StackPanel Grid.Column="0"
+                    <ContentControl x:Name="CreateTemplateSelector" Grid.Column="0"
+                                    Content="{Binding}" ContentTemplate="{StaticResource TemplateSelectorTemplate}"/>
+
+                    <StackPanel Grid.Column="1" Margin="22 0 0 0"
                                 Visibility="{Binding ShowMetaFields, Converter={StaticResource BooleanToVisibilityConverter}}">
                         <TextBlock Text="{display:DisplayText Key='名称'}" Style="{StaticResource PanelTitleStyle}" Margin="0 0 0 9"/>
-                        <TextBox x:Name="NameTextBox" Text="{Binding MetaName, UpdateSourceTrigger=PropertyChanged}"/>
-                        <TextBlock Text="{display:DisplayText Key='名称用于流程组列表显示，后续可以单独修改。'}"
+                        <TextBox Text="{Binding MetaName, UpdateSourceTrigger=PropertyChanged}"/>
+                        <TextBlock Text="{display:DisplayText Key='选择流程模板后自动填入名称，可手动修改。'}"
                                    Foreground="{DynamicResource SecondaryTextBrush}"
-                                   TextWrapping="Wrap" LineHeight="20" Margin="0 16 16 0"/>
+                                   TextWrapping="Wrap" LineHeight="20" Margin="0 16 0 0"/>
                     </StackPanel>
-
-                    <ContentControl Grid.Column="1" Margin="22 0 0 0"
-                                    Content="{Binding}" ContentTemplate="{StaticResource TemplateSelectorTemplate}"/>
                 </Grid>
 
                 <!-- 编辑：先选择修改哪一项 -->

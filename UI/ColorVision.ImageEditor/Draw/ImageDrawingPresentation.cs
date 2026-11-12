@@ -1,3 +1,4 @@
+using ColorVision.Common.MVVM;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -96,7 +97,7 @@ namespace ColorVision.ImageEditor.Draw
             _oldZoomRatio = zoomRatio;
             double scale = GetScale();
             _canvas.Scale = scale;
-            if (_config.IsLayoutUpdated)
+            if (_config.IsLayoutUpdated && _canvas.Visuals.Any(visual => visual is ILayoutScaleDrawingVisual))
             {
                 _layoutTimer.Stop();
                 _layoutTimer.Start();
@@ -223,6 +224,49 @@ namespace ColorVision.ImageEditor.Draw
 
         internal void AddVisual(Visual visual)
         {
+            PrepareDetachedVisual(visual);
+            _canvas.AddVisualCommand(visual);
+        }
+
+        internal void ReplaceAnnotations(IReadOnlyList<DrawingVisualBase> annotations)
+        {
+            foreach (DrawingVisualBase visual in annotations) PrepareDetachedVisual(visual);
+            CommitActiveEdits();
+            HashSet<Visual> registered = new(_draw.DrawingVisualLists.OfType<Visual>());
+            var previous = _canvas.Visuals.Select((visual, index) => (Visual: visual, Index: index))
+                .Where(item => registered.Contains(item.Visual)).ToArray();
+            if (previous.Length == 0 && annotations.Count == 0) return;
+
+            void RestorePrevious()
+            {
+                foreach (var (visual, index) in previous) _canvas.InsertVisual(index, visual);
+                foreach (DrawingVisualBase visual in annotations) _canvas.TryRemoveVisualForCommand(visual);
+            }
+
+            void InstallReplacement()
+            {
+                try
+                {
+                    // Attach the prepared visuals before removing any existing annotations.
+                    foreach (DrawingVisualBase visual in annotations) _canvas.AddVisual(visual);
+                    foreach (var (visual, _) in previous) _canvas.TryRemoveVisualForCommand(visual);
+                }
+                catch
+                {
+                    RestorePrevious();
+                    throw;
+                }
+            }
+
+            InstallReplacement();
+            _canvas.AddActionCommand(new ActionCommand(RestorePrevious, InstallReplacement)
+            {
+                Header = Properties.Resources.ImageView_ImportAnnotations,
+            });
+        }
+
+        private void PrepareDetachedVisual(Visual visual)
+        {
             if (visual is IDrawingVisual drawingVisual
                 && visual is DrawingVisual renderedVisual
                 && renderedVisual.Drawing == null)
@@ -241,7 +285,6 @@ namespace ColorVision.ImageEditor.Draw
                     drawingVisual.Render();
             }
 
-            _canvas.AddVisualCommand(visual);
         }
 
         internal void CommitActiveEdits()

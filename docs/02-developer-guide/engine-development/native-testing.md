@@ -4,8 +4,8 @@ knowledge_type: "guide"
 status: "current"
 summary: "opencv_helper_test 的实际入口、工具集与配置映射、专项参数、DLL/样本前提和退出码边界；默认运行与真实样本验收不同。"
 aliases: ["原生测试", "原生调试", "opencv_helper_test", "BUILD_AND_DEBUG_GUIDE", "build_test_find_luminous.bat", "v145", "--luminous-v2-only", "--find-cross-cvraw", "--calibration-smoke", "--calibration-cache-small-budget", "--cuda-fusion-benchmark", "--cuda-fusion-verify", "--cuda-fusion-compare", "--cuda-fusion-ab-benchmark", "--find-cross-only", "--luminous-v2-cvraw", "--luminous-v2-cvraw-reject", "--p2-only", "--native-log", "--pseudo-color", "--calibration-real-data", "--calibration-legacy-color", "--surface-defect-equivalence", "--surface-defect-benchmark", "COLORVISION_POI_BATCH_BASELINE_DLL", "COLORVISION_CALIBRATION_TEST_THREADS", "All tests completed", "LNK2019", "MSB8020"]
-code_paths: ["Test/opencv_helper_test/BUILD_AND_DEBUG_GUIDE.md", "Test/opencv_helper_test/opencv_helper_test.vcxproj", "Test/opencv_helper_test/test_find_luminous_area.cpp", "Test/opencv_helper_test/build_test_find_luminous.bat", "Test/opencv_helper_test/test_cuda_fusion.cpp", "Test/opencv_helper_test/test_calibration.cpp", "Test/opencv_helper_test/test_find_cross.cpp", "Native/opencv_helper/opencv_helper.vcxproj", "packages/OpenCV.Debug.x64.props", "packages/OpenCV.Release.x64.props", "packages/NativeCopy.targets", "scgd_general_wpf.sln", "build.sln"]
-test_paths: ["Test/opencv_helper_test/test_find_luminous_area.cpp", "Test/opencv_helper_test/test_calibration.cpp", "Test/opencv_helper_test/test_cuda_fusion.cpp", "Test/opencv_helper_test/test_find_cross.cpp", "Test/opencv_helper_test/test_p2_algorithms.cpp", "Test/opencv_helper_test/test_native_logging.cpp", "Test/opencv_helper_test/test_pseudo_color.cpp", "Test/opencv_helper_test/data/sfrmat5"]
+code_paths: ["Test/opencv_helper_test/BUILD_AND_DEBUG_GUIDE.md", "Test/opencv_helper_test/opencv_helper_test.vcxproj", "Test/opencv_helper_test/test_find_luminous_area.cpp", "Test/opencv_helper_test/validate_luminous_corpus.py", "Test/opencv_helper_test/build_test_find_luminous.bat", "Test/opencv_helper_test/test_cuda_fusion.cpp", "Test/opencv_helper_test/test_calibration.cpp", "Test/opencv_helper_test/test_find_cross.cpp", "Native/opencv_helper/opencv_helper.vcxproj", "packages/OpenCV.Debug.x64.props", "packages/OpenCV.Release.x64.props", "packages/NativeCopy.targets", "scgd_general_wpf.sln", "build.sln"]
+test_paths: ["Test/opencv_helper_test/test_find_luminous_area.cpp", "Scripts/tests/test_validate_luminous_corpus.py", "Scripts/tests/test_native_test_cli.py", "Test/opencv_helper_test/test_calibration.cpp", "Test/opencv_helper_test/test_cuda_fusion.cpp", "Test/opencv_helper_test/test_find_cross.cpp", "Test/opencv_helper_test/test_p2_algorithms.cpp", "Test/opencv_helper_test/test_native_logging.cpp", "Test/opencv_helper_test/test_pseudo_color.cpp", "Test/opencv_helper_test/data/sfrmat5"]
 related: ["delivery.testing", "delivery.prerequisites", "engine.native-integration", "engine.opencv-helper-api", "algorithms.find-light-area", "algorithms.find-cross", "ui.image-fusion"]
 ---
 
@@ -70,6 +70,7 @@ if ($nativeTestExit -ne 0) { throw "亮区专项测试失败，退出码 $native
 
 | 参数 | 执行范围 / 前提 |
 | --- | --- |
+| `--image-helpers-only` | HImage 布局/所有权、公共导出失败保护及灰度预览的尺度选择、采样与释放；不执行视频或 CUDA 探测 |
 | `--luminous-v2-only` | 本地亮区 V2 合成回归 |
 | `--find-cross-only` | [FindCross](../../04-api-reference/algorithms/detectors/find-cross.md) 合成图形、质量门禁和失败契约 |
 | `--distortion-p9-only` | 九点畸变合成点阵、亮度不均补充定位、缺点与多余候选诊断；桌面夹具存在时一并检查 |
@@ -82,7 +83,14 @@ if ($nativeTestExit -ne 0) { throw "亮区专项测试失败，退出码 $native
 | `--surface-defect-equivalence` | 表面缺陷实现等价性回归 |
 | `--surface-defect-benchmark` | 表面缺陷基准模式；性能输出只适用于该输入和运行环境 |
 
-以上布尔结果的专项分支通常成功返回 0、失败返回 1；异常退出和进程加载失败仍须看实际输出。主入口按精确参数数量匹配，没有通用 `--help` / 未知参数拒绝层。拼错选项或多传参数可能落入默认回归，再把第一个参数当普通图片路径，不能据此判定预期专项已执行。
+以上布尔结果的专项分支通常成功返回 0、失败返回 1；异常退出和进程加载失败仍须看实际输出。`--help` 打印全部模式及参数形式并返回 0，不执行回归。主入口在测试分派前检查模式及参数数量：未知 `--` 选项、已知模式参数过多/不足、多个普通图片路径返回 2，不落入默认整轮，也不读取样本或探测设备。无参数和单个普通图片路径仍进入默认回归；FindCross 文件模式只接受样本路径、完整 ROI，或完整 ROI 加预期结果的三种形式。各模式仍负责校验数值和文件内容。
+
+CLI 回归需要显式指定刚构建的可执行文件，避免误测旧产物；未设置环境变量时该测试类会跳过，不能报告为已验证：
+
+```powershell
+$env:COLORVISION_NATIVE_TEST_EXE = $nativeTestExe
+python -m unittest Scripts.tests.test_native_test_cli -v
+```
 
 ### 文件样本与显式预期
 
@@ -97,6 +105,41 @@ if ($nativeTestExit -ne 0) { throw "亮区专项测试失败，退出码 $native
 | `--calibration-legacy-color <raw> <color-file> <legacy-dll>` | 比较三通道 RAW 的旧校准/POI 行为，需要匹配的校准文件和可信 legacy DLL |
 
 FindCross 的用法/读文件/参数错误返回 2，结果断言失败返回 1；无标注样本退出 0 不证明目标一定被找到。Luminous 的文件模式使用布尔结果返回 0/1，必须同时确认选的是成功模式还是拒绝模式。
+
+### 发光区真实样本批量比较
+
+`Test/opencv_helper_test/validate_luminous_corpus.py` 直接调用指定 DLL 的 `M_FindLuminousAreaV2`，默认算法配置为 `{}`。它顺序读取样本目录根层的全部受支持原图，覆盖常见位图和 CVRAW；不递归收集历史预览或叠图，也不修改原图。CVRAW 只将声明的像素交给算法，兼容 FileIO 的可选采集/校正元数据尾部，输入哈希仍覆盖整个文件。已有的原生合成回归继续保护通用几何和失败边界，批量报告另用于检查真实样本是否保持已复核行为。
+
+运行需要 Windows x64、匹配位数的 Python、`numpy`、`opencv-python`、所选 helper DLL 及其 OpenCV/VC++ 依赖。使用已构建且可信的 DLL；调用会执行其原生代码并写本地报告，不启动设备或更改业务数据。以下示例假定原图和人工复核过的历史结果已放入自行准备的本地验证目录；样本与报告不应作为客户资料提交仓库。
+
+已有历史 `accepted.json` 时，先将其预期结果绑定到当前原图 SHA256。`bind-reference` 不运行算法，不把旧参考推断为逐像素真值，也不能证明历史运行时的输入与当前文件完全相同。输出使用新文件，保留历史参考及其复核依据：
+
+```powershell
+$corpusSamples = (Resolve-Path -LiteralPath '.\.artifacts\luminous\originals').Path
+$corpusLegacyReference = '.\.artifacts\luminous\reviewed-legacy.json'
+$corpusBoundReference = '.\.artifacts\luminous\bound-reference.json'
+python .\Test\opencv_helper_test\validate_luminous_corpus.py bind-reference --samples $corpusSamples --reference $corpusLegacyReference --output $corpusBoundReference
+if ($LASTEXITCODE -ne 0) { throw '参考绑定失败，先检查原图与历史记录。' }
+```
+
+每次运行指定新的输出目录；已存在的目录会被拒绝，避免覆盖证据或参考。`--dependency-dir` 可重复，用于提供 DLL 依赖目录：
+
+```powershell
+$corpusRunOutput = '.\.artifacts\luminous\candidate-001'
+python .\Test\opencv_helper_test\validate_luminous_corpus.py run --samples $corpusSamples --dll .\x64\Release\opencv_helper.dll --reference $corpusBoundReference --output $corpusRunOutput --dependency-dir .\packages\opencv\x64\vc18\bin
+$corpusRunExit = $LASTEXITCODE
+Write-Host "样本比较退出码：$corpusRunExit；请查看 $corpusRunOutput\summary.md"
+```
+
+运行输出 `report.json`、`summary.md` 和 `previews/` 叠图；`observations.jsonl` 在每张图完成后追加并刷新，异常终止时可检查已完成部分。报告记录输入、实际加载的 helper DLL、脚本、参考的身份及运行环境；依赖目录只表示搜索位置，不证明每个运行库的实际加载身份。显式指定的依赖目录不存在时拒绝运行。每张图的读取、调用或结果解析发生技术错误时，记录该图错误后继续处理其余图；不得把错误或未处理样本算作一致。退出码含义如下：
+
+| 退出码 | 含义 |
+| --- | --- |
+| `0` | 参考声明为 `reviewed-behavior`，样本覆盖完整，输入身份、尺寸、dtype、原生返回码和完整公开 JSON 均与绑定参考一致 |
+| `1` | 存在技术错误；检查报告中的具体失败和仍完成的样本 |
+| `2` | 需要人工复核：新增或缺失样本、输入哈希/尺寸/dtype/返回码/公开 JSON 变化、未提供参考，或旧参考缺少输入哈希/已复核声明 |
+
+合法的算法拒绝按参考中的成功/拒绝及结果契约比较，不一律视作运行失败；低置信度拒绝可以保留四角诊断。同样，算法返回成功不能证明边界正确。完整 JSON 的变化可能来自有效改善，也可能是回归，须结合叠图和业务预期复核。空对象、畸形结构及含技术失败的参考会被拒绝；已记录输入身份的参考不能重新绑定到其它字节。脚本不会自动接受候选或覆盖参考。耗时为每次调用的单次观测，不用于宣称性能提升或现场吞吐；真机、完整流程及客户验收仍需要各自证据。
 
 ### CUDA 比较与性能
 
@@ -120,7 +163,7 @@ CUDA 分派的未知模式返回 2，捕获到标准异常时返回 1；各模�
 - 可选普通图片参数会先跑默认回归，再进入 `testWithRealImage`。该演示用 `imread(..., IMREAD_UNCHANGED)`，不能解码时仅提示并跳过；算法失败也不统一转为非零退出。它适合人工看输出，不是可靠的图片批量验收入口。
 - `All tests completed!` 只说明执行到了 main 末尾。记录时保留完整命令、退出码、实际 DLL/配置和跳过信息；API 返回正 JSON 长度与进程退出 0 是两种不同结果。
 
-PNG/JPEG/TIFF/BMP 是否可读取由所链接的 OpenCV 编码器和实际输入决定。需要自动批量验收时，在现有测试分派中编写会累计失败并返回非零的用例，不能仅循环调用返回 `void` 的图片演示。
+PNG/JPEG/TIFF/BMP 是否可读取由所链接的 OpenCV 编码器和实际输入决定。真实发光区样本批量比较使用上述 corpus 脚本；新增原生边界回归时，在已有专项中累计失败并返回非零，不能仅循环调用返回 `void` 的图片演示。
 
 ## 断点、扩展与故障处理
 

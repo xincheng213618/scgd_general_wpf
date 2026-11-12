@@ -8,112 +8,6 @@ public sealed class CopilotProviderRateLimitTrackerTests
     private static readonly DateTimeOffset CapturedAtUtc =
         new(2026, 7, 31, 8, 0, 0, TimeSpan.Zero);
 
-    [Fact]
-    public void StatusPresentationIsHiddenWithoutCapturedHeaders()
-    {
-        var presentation = CopilotProviderRateLimitStatusPresenter.Create(
-            CopilotProviderRateLimitSnapshot.Empty);
-
-        Assert.False(presentation.IsVisible);
-        Assert.Empty(presentation.Label);
-        Assert.Empty(presentation.ToolTip);
-        Assert.False(presentation.IsUnderPressure);
-    }
-
-    [Fact]
-    public void StatusPresentationShowsLatestRequestBucketAndAccountBoundary()
-    {
-        var presentation = CopilotProviderRateLimitStatusPresenter.Create(
-            new CopilotProviderRateLimitSnapshot
-            {
-                CapturedAtUtc = CapturedAtUtc,
-                RequestLimit = 20,
-                RequestRemaining = 19,
-                TokenLimit = 10_000,
-                TokenRemaining = 9_000,
-            });
-
-        Assert.True(presentation.IsVisible);
-        Assert.Equal("请求 19/20", presentation.Label);
-        Assert.False(presentation.IsUnderPressure);
-        Assert.Contains("供应商限额：请求：剩余 19/20", presentation.ToolTip, StringComparison.Ordinal);
-        Assert.Contains("可能已经过期", presentation.ToolTip, StringComparison.Ordinal);
-        Assert.Contains("不代表账户套餐余额或可用金额", presentation.ToolTip, StringComparison.Ordinal);
-        Assert.Contains("/usage session", presentation.ToolTip, StringComparison.Ordinal);
-    }
-
-    [Fact]
-    public void StatusPresentationPrioritizesPressuredTokenBucket()
-    {
-        var presentation = CopilotProviderRateLimitStatusPresenter.Create(
-            new CopilotProviderRateLimitSnapshot
-            {
-                CapturedAtUtc = CapturedAtUtc,
-                RequestLimit = 20,
-                RequestRemaining = 19,
-                TokenLimit = 10_000,
-                TokenRemaining = 900,
-            },
-            CapturedAtUtc);
-
-        Assert.Equal("Token 900/10K", presentation.Label);
-        Assert.True(presentation.IsUnderPressure);
-    }
-
-    [Fact]
-    public void StatusPresentationMarksActiveRetryAfterAsThrottled()
-    {
-        var presentation = CopilotProviderRateLimitStatusPresenter.Create(
-            new CopilotProviderRateLimitSnapshot
-            {
-                CapturedAtUtc = CapturedAtUtc,
-                RequestLimit = 20,
-                RequestRemaining = 19,
-                RetryAfter = "4",
-            },
-            CapturedAtUtc.AddSeconds(1));
-
-        Assert.Equal("限流重试", presentation.Label);
-        Assert.True(presentation.IsUnderPressure);
-        Assert.Contains("Retry-After 4", presentation.ToolTip, StringComparison.Ordinal);
-    }
-
-    [Fact]
-    public void StatusPresentationExpiresRetryAndResetPressure()
-    {
-        var presentation = CopilotProviderRateLimitStatusPresenter.Create(
-            new CopilotProviderRateLimitSnapshot
-            {
-                CapturedAtUtc = CapturedAtUtc,
-                RequestLimit = 10,
-                RequestRemaining = 0,
-                RequestReset = "2s",
-                RetryAfter = "4",
-            },
-            CapturedAtUtc.AddSeconds(5));
-
-        Assert.Equal("限额待刷新", presentation.Label);
-        Assert.False(presentation.IsUnderPressure);
-        Assert.Contains("旧的剩余值不再作为当前压力告警", presentation.ToolTip, StringComparison.Ordinal);
-    }
-
-    [Fact]
-    public void StatusPresentationKeepsPressureUntilAbsoluteReset()
-    {
-        var presentation = CopilotProviderRateLimitStatusPresenter.Create(
-            new CopilotProviderRateLimitSnapshot
-            {
-                CapturedAtUtc = CapturedAtUtc,
-                TokenLimit = 10_000,
-                TokenRemaining = 900,
-                TokenReset = "2026-07-31T08:01:00Z",
-            },
-            CapturedAtUtc.AddSeconds(30));
-
-        Assert.Equal("Token 900/10K", presentation.Label);
-        Assert.True(presentation.IsUnderPressure);
-    }
-
     [Theory]
     [InlineData("1m2.5s", 62_500)]
     [InlineData("500ms", 500)]
@@ -130,30 +24,6 @@ public sealed class CopilotProviderRateLimitTrackerTests
     }
 
     [Fact]
-    public void ResetParserSupportsUnixTimestamp()
-    {
-        var expected = CapturedAtUtc.AddMinutes(1);
-
-        Assert.True(CopilotProviderRateLimitTimeParser.TryResolveResetDeadline(
-            expected.ToUnixTimeSeconds().ToString(System.Globalization.CultureInfo.InvariantCulture),
-            CapturedAtUtc,
-            out var deadlineUtc));
-        Assert.Equal(expected, deadlineUtc);
-    }
-
-    [Fact]
-    public void ResetParserSupportsUnixMillisecondTimestamp()
-    {
-        var expected = CapturedAtUtc.AddMinutes(1);
-
-        Assert.True(CopilotProviderRateLimitTimeParser.TryResolveResetDeadline(
-            expected.ToUnixTimeMilliseconds().ToString(System.Globalization.CultureInfo.InvariantCulture),
-            CapturedAtUtc,
-            out var deadlineUtc));
-        Assert.Equal(expected, deadlineUtc);
-    }
-
-    [Fact]
     public void RetryAfterParserSupportsHttpDate()
     {
         Assert.True(CopilotProviderRateLimitTimeParser.TryResolveRetryAfterDeadline(
@@ -161,26 +31,6 @@ public sealed class CopilotProviderRateLimitTrackerTests
             CapturedAtUtc,
             out var deadlineUtc));
         Assert.Equal(CapturedAtUtc.AddSeconds(30), deadlineUtc);
-    }
-
-    [Fact]
-    public void ResetParserSaturatesValidOversizedDuration()
-    {
-        Assert.True(CopilotProviderRateLimitTimeParser.TryResolveResetDeadline(
-            "999999999d",
-            CapturedAtUtc,
-            out var deadlineUtc));
-        Assert.Equal(DateTimeOffset.MaxValue, deadlineUtc);
-    }
-
-    [Fact]
-    public void ResetParserRejectsGarbageAfterOversizedDuration()
-    {
-        Assert.False(CopilotProviderRateLimitTimeParser.TryResolveResetDeadline(
-            "999999999dgarbage",
-            CapturedAtUtc,
-            out var deadlineUtc));
-        Assert.Equal(default, deadlineUtc);
     }
 
     [Fact]

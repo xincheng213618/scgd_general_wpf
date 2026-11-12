@@ -1,6 +1,7 @@
 using ColorVision.Algorithms;
 using OpenCvSharp;
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -10,6 +11,7 @@ namespace ColorVision.ImageEditor.Algorithms
 {
     public sealed class OpenCvAlgorithmProvider : IImageAlgorithmProvider, IAlgorithmDescriptorSupport
     {
+        private readonly PseudoColorProcessor _pseudoColor = new();
         private static readonly HashSet<AlgorithmImageFormat> Formats = Enum.GetValues<AlgorithmImageFormat>().ToHashSet();
         private static readonly HashSet<AlgorithmId> SupportedIds = new()
         {
@@ -77,17 +79,72 @@ namespace ColorVision.ImageEditor.Algorithms
                 });
             }
             using AlgorithmImageMatLease source = AlgorithmImageInterop.BorrowReadOnly(input.Image);
-            using Mat result = Execute(source.Mat, context.Descriptor.Id, context.Parameters, cancellationToken);
-            cancellationToken.ThrowIfCancellationRequested();
-            AlgorithmImageBuffer output = AlgorithmImageInterop.FromMat(result, input.Image.DpiX, input.Image.DpiY);
-            return ValueTask.FromResult(new AlgorithmResult
+            AlgorithmImageBuffer output;
+            if (context.Descriptor.Id == StandardAlgorithmIds.BasicAdjustment)
             {
-                InvocationId = context.Invocation.InvocationId,
-                AlgorithmId = context.Descriptor.Id,
-                AlgorithmVersion = context.Descriptor.Version,
-                Status = AlgorithmResultStatus.Succeeded,
-                Artifacts = new AlgorithmArtifact[] { new AlgorithmImageArtifact("image", "primary", output) },
-            });
+                output = ExecuteBasicAdjustment(source.Mat, input.Image, (BasicAdjustmentParameters)context.Parameters, cancellationToken);
+            }
+            else if (context.Descriptor.Id == StandardAlgorithmIds.PseudoColor)
+            {
+                output = _pseudoColor.Execute(source.Mat, input.Image, (PseudoColorParameters)context.Parameters, cancellationToken);
+            }
+            else
+            {
+                output = Execute(source.Mat, input.Image, context.Descriptor.Id, context.Parameters, cancellationToken);
+            }
+            try
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                return ValueTask.FromResult(new AlgorithmResult
+                {
+                    InvocationId = context.Invocation.InvocationId,
+                    AlgorithmId = context.Descriptor.Id,
+                    AlgorithmVersion = context.Descriptor.Version,
+                    Status = AlgorithmResultStatus.Succeeded,
+                    Artifacts = new AlgorithmArtifact[] { new AlgorithmImageArtifact("image", "primary", output) },
+                });
+            }
+            catch
+            {
+                output.Dispose();
+                throw;
+            }
+        }
+
+        private static unsafe AlgorithmImageBuffer ExecuteBasicAdjustment(Mat source, AlgorithmImageBuffer input,
+            BasicAdjustmentParameters parameters, CancellationToken cancellationToken)
+        {
+            int stride = checked(input.Width * input.Format.BytesPerPixel());
+            int length = checked(stride * input.Height);
+            cancellationToken.ThrowIfCancellationRequested();
+            byte[]? data = null;
+            MemoryHandle pin = default;
+            Mat? destination = null;
+            try
+            {
+                OpenCvImageAlgorithms.AdjustBasicTo(source, () =>
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    if (data != null) throw new InvalidOperationException("Basic adjustment requested its output more than once.");
+                    data = new byte[length];
+                    pin = data.AsMemory().Pin();
+                    destination = Mat.FromPixelData(input.Height, input.Width, AlgorithmImageInterop.ToMatType(input.Format),
+                        (IntPtr)pin.Pointer, stride);
+                    return destination;
+                }, parameters.Exposure, parameters.Brightness,
+                    parameters.Contrast, parameters.Gamma, cancellationToken);
+                if (destination == null || data == null)
+                    throw new InvalidOperationException("Basic adjustment did not create its output.");
+                if (destination.Data != (IntPtr)pin.Pointer || destination.Step() != stride)
+                    throw new InvalidOperationException("Basic adjustment replaced its externally owned output storage.");
+            }
+            finally
+            {
+                destination?.Dispose();
+                pin.Dispose();
+            }
+            cancellationToken.ThrowIfCancellationRequested();
+            return new AlgorithmImageBuffer(input.Width, input.Height, stride, input.Format, data, input.DpiX, input.DpiY);
         }
 
         private static bool TryGetCompatibilityFailure(
@@ -133,80 +190,71 @@ namespace ColorVision.ImageEditor.Algorithms
             return false;
         }
 
-        private static Mat Execute(Mat source, AlgorithmId id, IAlgorithmParameters parameters, CancellationToken cancellationToken)
+        private static unsafe AlgorithmImageBuffer Execute(Mat source, AlgorithmImageBuffer input, AlgorithmId id,
+            IAlgorithmParameters parameters, CancellationToken cancellationToken)
         {
-            Mat result = source.Clone();
-            try
+            cancellationToken.ThrowIfCancellationRequested();
+            using Mat? nativeOutput = id switch
             {
-                if (id == StandardAlgorithmIds.Invert) OpenCvImageAlgorithms.Invert(result);
-                else if (id == StandardAlgorithmIds.BasicAdjustment)
-                {
-                    BasicAdjustmentParameters value = (BasicAdjustmentParameters)parameters;
-                    OpenCvImageAlgorithms.AdjustBasic(result, value.Exposure, value.Brightness, value.Contrast, value.Gamma);
-                }
-                else if (id == StandardAlgorithmIds.Threshold)
-                {
-                    ThresholdParameters value = (ThresholdParameters)parameters;
-                    double maximum = GetMaximum(result.Depth());
-                    double threshold = ResolveNominal8BitValue(value.Threshold, value.UseNominalRange, maximum);
-                    OpenCvImageAlgorithms.Threshold(result, threshold, maximum);
-                }
-                else if (id == StandardAlgorithmIds.Sharpen) OpenCvImageAlgorithms.Sharpen(result);
-                else if (id == StandardAlgorithmIds.GaussianBlur)
-                {
-                    GaussianBlurParameters value = (GaussianBlurParameters)parameters;
-                    OpenCvImageAlgorithms.GaussianBlur(result, value.KernelSize, value.Sigma);
-                }
-                else if (id == StandardAlgorithmIds.MedianBlur)
-                {
-                    MedianBlurParameters value = (MedianBlurParameters)parameters;
-                    OpenCvImageAlgorithms.MedianBlur(result, value.KernelSize);
-                }
-                else if (id == StandardAlgorithmIds.Morphology)
-                {
-                    MorphologyParameters value = (MorphologyParameters)parameters;
-                    OpenCvImageAlgorithms.Morphology(result, (MorphologyOperation)value.Operation, value.KernelSize, value.Iterations);
-                }
-                else if (id == StandardAlgorithmIds.Denoise)
-                {
-                    DenoiseParameters value = (DenoiseParameters)parameters;
-                    double sigmaColor = ResolveNominal8BitValue(value.SigmaColor, value.UseNominalColorSigma, GetMaximum(result.Depth()));
-                    OpenCvImageAlgorithms.FilterDenoise(result, (FilterDenoiseOperation)value.Operation, value.KernelSize, sigmaColor, value.SigmaSpace);
-                }
-                else if (id == StandardAlgorithmIds.AutoLevels)
-                {
-                    Cv2.Normalize(source, result, 0, GetMaximum(source.Depth()), NormTypes.MinMax);
-                }
-                else if (id == StandardAlgorithmIds.WhiteBalance)
-                {
-                    result.Dispose();
-                    result = ApplyWhiteBalance(source, (WhiteBalanceParameters)parameters);
-                }
-                else if (id == StandardAlgorithmIds.Canny)
-                {
-                    result.Dispose();
-                    result = ApplyCanny(source, (CannyParameters)parameters);
-                }
-                else if (id == StandardAlgorithmIds.HistogramEqualization)
-                {
-                    result.Dispose();
-                    result = ApplyHistogramEqualization(source);
-                }
-                else if (id == StandardAlgorithmIds.PseudoColor)
-                {
-                    result.Dispose();
-                    result = ApplyPseudoColor(source, (PseudoColorParameters)parameters);
-                }
-                else throw new NotSupportedException($"OpenCV provider does not implement '{id}'.");
+                var value when value == StandardAlgorithmIds.Canny => ApplyCanny(source, (CannyParameters)parameters),
+                var value when value == StandardAlgorithmIds.HistogramEqualization => ApplyHistogramEqualization(source),
+                _ => null,
+            };
+            if (nativeOutput != null)
+                return AlgorithmImageInterop.FromMat(nativeOutput, input.DpiX, input.DpiY, cancellationToken);
 
-                cancellationToken.ThrowIfCancellationRequested();
-                return result;
-            }
-            catch
+            // Same-layout operations can fill the result buffer without a native staging image.
+            int stride = checked(input.Width * input.Format.BytesPerPixel());
+            byte[] data = new byte[checked(stride * input.Height)];
+            fixed (byte* pixels = data)
             {
-                result.Dispose();
-                throw;
+                using Mat destination = Mat.FromPixelData(input.Height, input.Width, source.Type(), (IntPtr)pixels, stride);
+                cancellationToken.ThrowIfCancellationRequested();
+                ExecuteInto(source, destination, id, parameters, cancellationToken);
+                if (destination.Data != (IntPtr)pixels || destination.Step() != stride)
+                    throw new InvalidOperationException($"OpenCV operation '{id}' replaced its externally owned output storage.");
             }
+            cancellationToken.ThrowIfCancellationRequested();
+            return new AlgorithmImageBuffer(input.Width, input.Height, stride, input.Format, data, input.DpiX, input.DpiY);
+        }
+
+        private static void ExecuteInto(Mat source, Mat destination, AlgorithmId id, IAlgorithmParameters parameters, CancellationToken cancellationToken)
+        {
+            if (id == StandardAlgorithmIds.Invert) Cv2.BitwiseNot(source, destination);
+            else if (id == StandardAlgorithmIds.Threshold)
+            {
+                ThresholdParameters value = (ThresholdParameters)parameters;
+                double maximum = GetMaximum(source.Depth());
+                double threshold = ResolveNominal8BitValue(value.Threshold, value.UseNominalRange, maximum);
+                Cv2.Threshold(source, destination, threshold, maximum, ThresholdTypes.Binary);
+            }
+            else if (id == StandardAlgorithmIds.Sharpen) OpenCvImageAlgorithms.Sharpen(source, destination);
+            else if (id == StandardAlgorithmIds.GaussianBlur)
+            {
+                GaussianBlurParameters value = (GaussianBlurParameters)parameters;
+                OpenCvImageAlgorithms.GaussianBlur(source, destination, value.KernelSize, value.Sigma);
+            }
+            else if (id == StandardAlgorithmIds.MedianBlur)
+            {
+                MedianBlurParameters value = (MedianBlurParameters)parameters;
+                OpenCvImageAlgorithms.MedianBlur(source, destination, value.KernelSize);
+            }
+            else if (id == StandardAlgorithmIds.Morphology)
+            {
+                MorphologyParameters value = (MorphologyParameters)parameters;
+                OpenCvImageAlgorithms.Morphology(source, destination, (MorphologyOperation)value.Operation, value.KernelSize, value.Iterations);
+            }
+            else if (id == StandardAlgorithmIds.Denoise)
+            {
+                DenoiseParameters value = (DenoiseParameters)parameters;
+                double sigmaColor = ResolveNominal8BitValue(value.SigmaColor, value.UseNominalColorSigma, GetMaximum(source.Depth()));
+                OpenCvImageAlgorithms.FilterDenoise(source, destination, (FilterDenoiseOperation)value.Operation, value.KernelSize, sigmaColor, value.SigmaSpace);
+            }
+            else if (id == StandardAlgorithmIds.AutoLevels)
+                Cv2.Normalize(source, destination, 0, GetMaximum(source.Depth()), NormTypes.MinMax);
+            else if (id == StandardAlgorithmIds.WhiteBalance)
+                ApplyWhiteBalance(source, destination, (WhiteBalanceParameters)parameters, cancellationToken);
+            else throw new NotSupportedException($"OpenCV provider does not implement '{id}'.");
         }
 
         internal static Mat ApplyCanny(Mat source, CannyParameters parameters)
@@ -218,22 +266,54 @@ namespace ColorVision.ImageEditor.Algorithms
             return result;
         }
 
-        internal static Mat ApplyWhiteBalance(Mat source, WhiteBalanceParameters parameters)
+        private static void ApplyWhiteBalance(Mat source, Mat destination, WhiteBalanceParameters parameters, CancellationToken cancellationToken)
         {
-            if (source.Channels() < 3) throw new NotSupportedException("White balance requires a three- or four-channel color image.");
-            Mat[] channels = Cv2.Split(source);
-            try
+            int channels = source.Channels();
+            if (channels < 3) throw new NotSupportedException("White balance requires a three- or four-channel color image.");
+            if (parameters.BlueScale == 1 && parameters.GreenScale == 1 && parameters.RedScale == 1)
             {
-                channels[0].ConvertTo(channels[0], channels[0].Type(), parameters.BlueScale);
-                channels[1].ConvertTo(channels[1], channels[1].Type(), parameters.GreenScale);
-                channels[2].ConvertTo(channels[2], channels[2].Type(), parameters.RedScale);
-                Mat result = new();
-                Cv2.Merge(channels, result);
-                return result;
+                source.CopyTo(destination);
+                return;
             }
-            finally
+
+            MatType depth = source.Depth();
+            int minimumLookupPixels = depth == MatType.CV_16U ? 1024 * 1024 : 512 * 512;
+            if ((depth == MatType.CV_8U || depth == MatType.CV_16U) && source.Total() >= minimumLookupPixels)
             {
-                foreach (Mat channel in channels) channel.Dispose();
+                using Mat ramp = OpenCvImageAlgorithms.CreateUnsignedRamp(depth);
+                using Mat blue = new(), green = new(), red = new(), table = new();
+                // Generate the table with the same ConvertTo rounding and saturation as the channel path.
+                ramp.ConvertTo(blue, depth, parameters.BlueScale);
+                ramp.ConvertTo(green, depth, parameters.GreenScale);
+                ramp.ConvertTo(red, depth, parameters.RedScale);
+                Cv2.Merge(channels == 4 ? [blue, green, red, ramp] : [blue, green, red], table);
+                cancellationToken.ThrowIfCancellationRequested();
+                Cv2.LUT(source, table, destination);
+                return;
+            }
+
+            int height = source.Rows;
+            int rowBytes = checked(source.Cols * (int)source.ElemSize());
+            int rowsPerBlock = Math.Max(1, 1024 * 1024 / rowBytes);
+            for (int top = 0; top < height;)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                int end = top + Math.Min(rowsPerBlock, height - top);
+                using Mat sourceBlock = source.RowRange(top, end);
+                using Mat targetBlock = destination.RowRange(top, end);
+                Mat[] planes = Cv2.Split(sourceBlock);
+                try
+                {
+                    planes[0].ConvertTo(planes[0], depth, parameters.BlueScale);
+                    planes[1].ConvertTo(planes[1], depth, parameters.GreenScale);
+                    planes[2].ConvertTo(planes[2], depth, parameters.RedScale);
+                    Cv2.Merge(planes, targetBlock);
+                }
+                finally
+                {
+                    foreach (Mat plane in planes) plane.Dispose();
+                }
+                top = end;
             }
         }
 
@@ -259,43 +339,7 @@ namespace ColorVision.ImageEditor.Algorithms
             return result;
         }
 
-        internal static Mat ApplyPseudoColor(Mat source, PseudoColorParameters parameters)
-        {
-            using Mat gray = SelectChannel(source, parameters.Channel);
-            using Mat gray8 = ConvertPseudoColorSource(gray, parameters, out double minimum, out double maximum);
-            using Mat scaled = new();
-            if (maximum > minimum)
-            {
-                gray8.ConvertTo(scaled, MatType.CV_8U, byte.MaxValue / (maximum - minimum), -minimum * byte.MaxValue / (maximum - minimum));
-            }
-            else
-            {
-                gray8.CopyTo(scaled);
-            }
-            Mat result = new();
-            Cv2.ApplyColorMap(scaled, result, (OpenCvSharp.ColormapTypes)(int)parameters.Colormap);
-            using Mat below = new();
-            using Mat above = new();
-            Cv2.Compare(gray8, minimum, below, CmpTypes.LT);
-            Cv2.Compare(gray8, maximum, above, CmpTypes.GT);
-            result.SetTo(Scalar.Black, below);
-            result.SetTo(Scalar.White, above);
-            return result;
-        }
-
-        private static Mat SelectChannel(Mat source, int channel)
-        {
-            if (source.Channels() == 1) return source.Clone();
-            if (channel >= 0 && channel < source.Channels())
-            {
-                Mat selected = new();
-                Cv2.ExtractChannel(source, selected, channel);
-                return selected;
-            }
-            return ConvertToGray(source);
-        }
-
-        private static Mat ConvertPseudoColorSource(Mat source, PseudoColorParameters parameters, out double minimum, out double maximum)
+        internal static Mat ConvertPseudoColorSource(Mat source, PseudoColorParameters parameters, out double minimum, out double maximum)
         {
             if (parameters.UseNominalRange)
             {

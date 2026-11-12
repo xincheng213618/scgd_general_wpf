@@ -25,18 +25,20 @@ internal static class SchedulerScheduleState
         info.NextScheduledFireTimeUtc = trigger.NextFireTimeUtc;
     }
 
-    internal static bool RecordFire(SchedulerInfo info, IJobExecutionContext context)
+    internal static bool IsScheduledFire(IJobExecutionContext context)
+        => context.Trigger.Key == new TriggerKey($"{context.JobDetail.Key.Name}-trigger", context.JobDetail.Key.Group);
+
+    internal static void RecordFire(SchedulerInfo info, IJobExecutionContext context)
     {
         info.PreviousFireTime = context.FireTimeUtc.ToLocalTime().ToString("yyyy/MM/dd HH:mm:ss");
-        if (context.Trigger.Key != new TriggerKey($"{info.JobName}-trigger", info.GroupName))
-            return false;
+        if (!IsScheduledFire(context))
+            return;
 
         info.HasScheduleCheckpoint = true;
         info.ScheduledFireCount++;
         info.NextScheduledFireTimeUtc = context.NextFireTimeUtc;
         info.ScheduleCompleted = context.NextFireTimeUtc == null;
         info.NextFireTime = context.NextFireTimeUtc?.ToLocalTime().ToString("yyyy/MM/dd HH:mm:ss") ?? "N/A";
-        return true;
     }
 
     internal static SchedulerTriggerBuildResult BuildRemaining(SchedulerInfo info, DateTimeOffset? nowUtc = null)

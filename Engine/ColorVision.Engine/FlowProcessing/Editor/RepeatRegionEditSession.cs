@@ -34,7 +34,7 @@ internal sealed class RepeatRegionEditSession
     {
         var removed = indices.Where(index => index >= 0 && index < Count).ToHashSet();
         if (removed.Count == 0) return;
-        if (removed.Count == Count) throw new InvalidOperationException("至少保留一轮执行。");
+        if (removed.Count == Count) throw new InvalidOperationException(EngineLocalization.Get("至少保留一轮执行。"));
         foreach (var node in Nodes)
             foreach (var parameter in node.Parameters)
                 parameter.Replace(parameter.Values.Where((_, index) => !removed.Contains(index)).ToArray());
@@ -48,10 +48,10 @@ internal sealed class RepeatRegionEditSession
             if (!string.IsNullOrEmpty(node.LoadError)) { error = node.LoadError; return false; }
             foreach (var parameter in node.Parameters.Where(parameter => parameter.Enabled))
             {
-                if (parameter.Values.Length != Count) { error = $"{node.Title} 的数组长度与执行次数不一致。"; return false; }
+                if (parameter.Values.Length != Count) { error = EngineLocalization.Format($"{node.Title} 的数组长度与执行次数不一致。"); return false; }
                 for (int index = 0; index < Count; index++)
                     if (!parameter.Definition.TryValidate(parameter.Values[index], out string reason))
-                    { error = $"{node.Title} · 第 {index + 1} 轮：{reason}"; return false; }
+                    { error = EngineLocalization.Format($"{node.Title} · 第 {index + 1} 轮：{reason}"); return false; }
             }
         }
         error = string.Empty;
@@ -83,7 +83,7 @@ internal sealed class RepeatNodeEditModel
         Parameters = definitions.Select(definition => new RepeatParameterEditSeries(definition, count,
             node.RepeatParameterValues.TryGetValue(definition.Key, out double[]? values) ? values : null)).ToArray();
         string[] unknown = node.RepeatParameterValues.Keys.Except(definitions.Select(definition => definition.Key)).ToArray();
-        LoadError = unknown.Length > 0 ? $"{Title} 含有当前版本不支持的参数：{string.Join("、", unknown)}。请取消原重复框后重新框选。" : string.Empty;
+        LoadError = unknown.Length > 0 ? EngineLocalization.Format($"{Title} 含有当前版本不支持的参数：{string.Join("、", unknown)}。请取消原重复框后重新框选。") : string.Empty;
     }
 
     public override string ToString() => Title;
@@ -118,8 +118,8 @@ internal sealed class RepeatParameterEditSeries
 
     public double[] GenerateFill(int first, int last, double start, double increment)
     {
-        if (!Enabled) throw new InvalidOperationException("请先启用此参数的逐轮编辑。");
-        if (first < 0 || last < first || last >= Values.Length) throw new ArgumentOutOfRangeException(nameof(first), "轮次范围无效。");
+        if (!Enabled) throw new InvalidOperationException(EngineLocalization.Get("请先启用此参数的逐轮编辑。"));
+        if (first < 0 || last < first || last >= Values.Length) throw new ArgumentOutOfRangeException(nameof(first), EngineLocalization.Get("轮次范围无效。"));
         double[] generated = new double[last - first + 1];
         bool useDecimal = TryDecimal(start, out decimal decimalStart);
         useDecimal &= TryDecimal(increment, out decimal decimalIncrement);
@@ -132,7 +132,7 @@ internal sealed class RepeatParameterEditSeries
                 try { value = ToDouble(decimalStart + index * decimalIncrement); }
                 catch (OverflowException) { useDecimal = false; }
             }
-            if (!Definition.TryValidate(value, out string error)) throw new InvalidOperationException($"第 {first + index + 1} 轮：{error}");
+            if (!Definition.TryValidate(value, out string error)) throw new InvalidOperationException(EngineLocalization.Format($"第 {first + index + 1} 轮：{error}"));
             generated[index] = value;
         }
         return generated;

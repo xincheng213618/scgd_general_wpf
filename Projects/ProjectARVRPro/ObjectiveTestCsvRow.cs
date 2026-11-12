@@ -19,7 +19,17 @@ public sealed record ObjectiveTestCsvRow(
     public string MetricKey => TestScreen + ObjectiveTestResultMetricCollector.KeySeparator + TestItem;
     public string MetricHeader => $"{TestScreen}_{TestItem}";
 
-    public string ToCsvLine() => string.Join(",", TestScreen, TestItem, TestValue, Unit, LowerLimit, UpperLimit, TestResult);
+    public string ToCsvLine() => FormatCsvLine(TestScreen, TestItem, TestValue, Unit, LowerLimit, UpperLimit, TestResult);
+
+    internal static string FormatCsvLine(params string?[] fields) => string.Join(",", fields.Select(EscapeCsvField));
+
+    private static string EscapeCsvField(string? field)
+    {
+        if (field == null)
+            return string.Empty;
+
+        return field.IndexOfAny([',', '"', '\r', '\n']) < 0 ? field : $"\"{field.Replace("\"", "\"\"")}\"";
+    }
 }
 
 public static class ObjectiveTestCsvRowCollector
@@ -40,7 +50,12 @@ public static class ObjectiveTestCsvRowCollector
             return Array.Empty<ObjectiveTestCsvRow>();
         }
 
-        if (result == null)
+        return FromObject(result, testScreen);
+    }
+
+    internal static IReadOnlyList<ObjectiveTestCsvRow> FromObject(object? result, string testScreen)
+    {
+        if (result == null || string.IsNullOrWhiteSpace(testScreen))
             return Array.Empty<ObjectiveTestCsvRow>();
 
         var rows = new List<ObjectiveTestCsvRow>();

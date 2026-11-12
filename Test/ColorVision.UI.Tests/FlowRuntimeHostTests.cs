@@ -11,6 +11,8 @@ namespace ColorVision.UI.Tests;
 
 public sealed class FlowRuntimeHostTests
 {
+    private static readonly TimeSpan LifecycleTestTimeout = TimeSpan.FromSeconds(10);
+
     [Theory]
     [InlineData("SN-BARE", "SN-BARE")]
     [InlineData("SN?BARE", "SN_BARE")]
@@ -37,6 +39,39 @@ public sealed class FlowRuntimeHostTests
     }
 
     [Fact]
+    public void BusyStartNodeRejectsNewDispatchWithoutWaitingOnAnUnstartedRun()
+    {
+        RunInSta(async () =>
+        {
+            const string activeSerialNumber = "SN-ACTIVE-EXTERNAL";
+            await using var host = new FlowRuntimeHost();
+            await host.LoadAsync(CreateCanvas(new HeadlessNeverEndNode()));
+            var start = Assert.Single(host.Nodes.OfType<HeadlessTestStartNode>());
+            var end = Assert.Single(host.Nodes.OfType<HeadlessNeverEndNode>());
+
+            // A start signal can enter the node directly, outside the runtime host's runner.
+            Assert.True(start.TryStart(activeSerialNumber));
+            var active = Assert.IsType<CVStartCFC>(end.LastStartedAction);
+            FlowEngineRunResult rejected = await host.RunAsync(start.NodeName, "SN-SECOND-START",
+                executionTimeout: TimeSpan.FromMilliseconds(50)).WaitAsync(LifecycleTestTimeout);
+
+            Assert.False(rejected.Started);
+            Assert.Equal(FlowEngineRunTermination.StartRejected, rejected.Termination);
+            Assert.False(start.TryStart(activeSerialNumber));
+            Assert.Same(active, start.GetCFC(activeSerialNumber));
+            Assert.Equal(1, end.StartedCount);
+
+            start.Stop(activeSerialNumber);
+            Task<FlowEngineRunResult> retry = host.RunAsync(start.NodeName, "SN-SECOND-START");
+            var restarted = Assert.IsType<CVStartCFC>(end.LastStartedAction);
+            Assert.NotSame(active, restarted);
+            Assert.True(restarted.TryDoFinishing());
+            restarted.FireFinished();
+            Assert.Equal(FlowEngineRunTermination.Completed, (await retry.WaitAsync(LifecycleTestTimeout)).Termination);
+        });
+    }
+
+    [Fact]
     public void CancellationStopsExactHeadlessRunAndReturnsHostToReady()
     {
         RunInSta(async () =>
@@ -56,6 +91,245 @@ public sealed class FlowRuntimeHostTests
             Assert.Equal(FlowEngineRunTermination.Canceled, result.Termination);
             Assert.Equal(StatusTypeEnum.Canceled, result.Data.Status);
             Assert.Equal(FlowRuntimeHostState.Ready, host.State);
+        });
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void InterruptedWaitPreservesTheExactTerminalResultWhileNotificationIsDeferred(bool cancel)
+    {
+        RunInSta(async () =>
+        {
+            await using var host = new FlowRuntimeHost();
+            await host.LoadAsync(CreateCanvas(new HeadlessNeverEndNode()));
+            var end = Assert.Single(host.Nodes.OfType<HeadlessNeverEndNode>());
+            using var cancellation = new CancellationTokenSource();
+            IDisposable? deferred = null;
+            CVStartCFC? terminal = null;
+            Assert.Single(end.GetAllInputOptions()).DataTransfer += (_, args) =>
+            {
+                if (args.TargetOption.Data is not CVStartCFC { IsRunning: true } action || deferred != null)
+                    return;
+                // Commit the terminal outcome during synchronous dispatch, before the runner starts its timer.
+                deferred = action.DeferFlowCompletionNotification();
+                terminal = new CVStartCFC(action);
+                terminal.Failed("failure on the final branch", "FinalBranch", terminal.StartTime, "terminal-id");
+                Assert.True(terminal.TryDoFinishing());
+                terminal.FireFinished();
+            };
+            try
+            {
+                Task<FlowEngineRunResult> execution = host.RunAsync("HeadlessStart", "SN-DEFERRED",
+                    executionTimeout: cancel ? null : TimeSpan.FromMilliseconds(50), cancellationToken: cancellation.Token);
+                Assert.NotNull(terminal);
+                if (cancel)
+                    cancellation.Cancel();
+                FlowEngineRunResult result = await execution.WaitAsync(LifecycleTestTimeout);
+
+                Assert.Equal(FlowEngineRunTermination.Completed, result.Termination);
+                Assert.Equal(StatusTypeEnum.Failed, result.Data.Status);
+                Assert.Equal("failure on the final branch", result.Data.Message);
+                Assert.Equal("FinalBranch", result.Data.ErrorNodeName);
+                Assert.Equal("terminal-id", result.Data.ErrorNodeId);
+                Assert.Equal((long)terminal.GetTotalTime().TotalMilliseconds, result.Data.TotalTime);
+            }
+            finally
+            {
+                deferred?.Dispose();
+            }
+        });
+    }
+
+    [Fact]
+    public void DeferredNotificationCannotCompleteTheNextRunWithTheSameSerialNumber()
+    {
+        RunInSta(async () =>
+        {
+            const string serialNumber = "SN-REUSED";
+            await using var host = new FlowRuntimeHost();
+            await host.LoadAsync(CreateCanvas(new HeadlessNeverEndNode()));
+            var end = Assert.Single(host.Nodes.OfType<HeadlessNeverEndNode>());
+            using var cancellation = new CancellationTokenSource();
+            Task<FlowEngineRunResult> first = host.RunAsync("HeadlessStart", serialNumber, cancellationToken: cancellation.Token);
+            CVStartCFC firstAction = Assert.IsType<CVStartCFC>(end.LastStartedAction);
+            using var deferred = firstAction.DeferFlowCompletionNotification();
+            Assert.True(firstAction.TryDoFinishing());
+            firstAction.FireFinished();
+            cancellation.Cancel();
+            await first.WaitAsync(LifecycleTestTimeout);
+
+            Task<FlowEngineRunResult> second = host.RunAsync("HeadlessStart", serialNumber);
+            CVStartCFC secondAction = Assert.IsType<CVStartCFC>(end.LastStartedAction);
+            Assert.NotSame(firstAction, secondAction);
+            deferred.Dispose();
+            secondAction.Failed("second run failure", "SecondRun", secondAction.StartTime, "second-id");
+            Assert.True(secondAction.TryDoFinishing());
+            secondAction.FireFinished();
+            FlowEngineRunResult result = await second.WaitAsync(LifecycleTestTimeout);
+
+            Assert.Equal(StatusTypeEnum.Failed, result.Data.Status);
+            Assert.Equal("second run failure", result.Data.Message);
+        });
+    }
+
+    [Fact]
+    public void OversizedExecutionTimeoutIsRejectedBeforeStartingTheGraph()
+    {
+        RunInSta(async () =>
+        {
+            await using var host = new FlowRuntimeHost();
+            await host.LoadAsync(CreateCanvas(new HeadlessNeverEndNode()));
+            var start = Assert.Single(host.Nodes.OfType<HeadlessTestStartNode>());
+            var terminal = Assert.Single(host.Nodes.OfType<HeadlessNeverEndNode>());
+
+            var failure = await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => host.RunAsync(
+                "HeadlessStart", "SN-INVALID-EXECUTION-TIMEOUT", executionTimeout: TimeSpan.FromMilliseconds(uint.MaxValue)));
+
+            Assert.False(start.Running);
+            Assert.Equal(0, terminal.StartedCount);
+            Assert.Equal("executionTimeout", failure.ParamName);
+            Assert.Equal(FlowRuntimeHostState.Ready, host.State);
+        });
+    }
+
+    [Fact]
+    public void OversizedReadinessTimeoutIsRejectedEvenWithALocalStartNode()
+    {
+        RunInSta(async () =>
+        {
+            await using var host = new FlowRuntimeHost();
+            await host.LoadAsync(CreateCanvas(new CVEndNode()));
+
+            var failure = await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => host.RunAsync(
+                "HeadlessStart", "SN-INVALID-READINESS-TIMEOUT", readinessTimeout: TimeSpan.FromMilliseconds(uint.MaxValue),
+                executionTimeout: LifecycleTestTimeout));
+
+            Assert.Equal("readinessTimeout", failure.ParamName);
+            Assert.Equal(FlowRuntimeHostState.Ready, host.State);
+        });
+    }
+
+    [Fact]
+    public void DisposalCanBeRepeatedAfterCleanup()
+    {
+        RunInSta(async () =>
+        {
+            var host = new FlowRuntimeHost();
+
+            await host.DisposeAsync();
+            await host.DisposeAsync();
+            host.Dispose();
+
+            Assert.Equal(FlowRuntimeHostState.Disposed, host.State);
+        });
+    }
+
+    [Fact]
+    public void ConcurrentDisposalsWaitForActiveRunCleanup()
+    {
+        RunInSta(async () =>
+        {
+            byte[] canvas = CreateCanvas(new CVEndNode(), new HeadlessPendingReadinessStartNode());
+            var host = new FlowRuntimeHost();
+            await host.LoadAsync(canvas);
+            var start = Assert.Single(host.Nodes.OfType<HeadlessPendingReadinessStartNode>());
+            Task<FlowEngineRunResult> execution = host.RunAsync("HeadlessStart", "SN-DISPOSE");
+
+            Task firstDisposal;
+            Task secondDisposal;
+            bool firstWasPending;
+            bool secondWasPending;
+            try
+            {
+                await start.ReadinessEntered.Task.WaitAsync(LifecycleTestTimeout);
+                firstDisposal = host.DisposeAsync().AsTask();
+                secondDisposal = host.DisposeAsync().AsTask();
+                firstWasPending = !firstDisposal.IsCompleted;
+                secondWasPending = !secondDisposal.IsCompleted;
+            }
+            finally
+            {
+                start.Readiness.TrySetResult(false);
+            }
+
+            await Task.WhenAll(firstDisposal, secondDisposal).WaitAsync(LifecycleTestTimeout);
+            FlowEngineRunResult result = await execution.WaitAsync(LifecycleTestTimeout);
+
+            Assert.True(firstWasPending);
+            Assert.True(secondWasPending);
+            Assert.False(result.Started);
+            Assert.Equal(FlowEngineRunTermination.Canceled, result.Termination);
+            Assert.Equal(FlowRuntimeHostState.Disposed, host.State);
+            Assert.Empty(host.Nodes);
+        });
+    }
+
+    [Fact]
+    public void DisposalClearsGraphWhenActiveRunFaults()
+    {
+        RunInSta(async () =>
+        {
+            byte[] canvas = CreateCanvas(new CVEndNode(), new HeadlessPendingReadinessStartNode());
+            var host = new FlowRuntimeHost();
+            await host.LoadAsync(canvas);
+            var start = Assert.Single(host.Nodes.OfType<HeadlessPendingReadinessStartNode>());
+            Task<FlowEngineRunResult> execution = host.RunAsync("HeadlessStart", "SN-DISPOSE-FAULT");
+            var readinessFailure = new InvalidOperationException("The test node failed readiness.");
+
+            Task disposal;
+            try
+            {
+                await start.ReadinessEntered.Task.WaitAsync(LifecycleTestTimeout);
+                disposal = host.DisposeAsync().AsTask();
+            }
+            finally
+            {
+                start.Readiness.TrySetException(readinessFailure);
+            }
+
+            var failure = await Assert.ThrowsAsync<InvalidOperationException>(() => execution.WaitAsync(LifecycleTestTimeout));
+            await disposal.WaitAsync(LifecycleTestTimeout);
+
+            Assert.Same(readinessFailure, failure);
+            Assert.Equal(FlowRuntimeHostState.Disposed, host.State);
+            Assert.Empty(host.Nodes);
+        });
+    }
+
+    [Fact]
+    public void ConcurrentStopsJoinSettlementAndKeepSeparateWaitTimeouts()
+    {
+        RunInSta(async () =>
+        {
+            byte[] canvas = CreateCanvas(new CVEndNode(), new HeadlessPendingReadinessStartNode());
+            await using var host = new FlowRuntimeHost();
+            await host.LoadAsync(canvas);
+            var start = Assert.Single(host.Nodes.OfType<HeadlessPendingReadinessStartNode>());
+            Task<FlowEngineRunResult> execution = host.RunAsync("HeadlessStart", "SN-STOP");
+
+            Task firstStop;
+            Task secondStop;
+            try
+            {
+                await start.ReadinessEntered.Task.WaitAsync(LifecycleTestTimeout);
+                firstStop = host.StopAsync(Timeout.InfiniteTimeSpan);
+                secondStop = host.StopAsync(Timeout.InfiniteTimeSpan);
+                Assert.False(firstStop.IsCompleted);
+                Assert.False(secondStop.IsCompleted);
+                await Assert.ThrowsAsync<TimeoutException>(() => host.StopAsync(TimeSpan.Zero));
+                Assert.Equal(FlowRuntimeHostState.Stopping, host.State);
+            }
+            finally
+            {
+                start.Readiness.TrySetResult(false);
+            }
+
+            await Task.WhenAll(firstStop, secondStop).WaitAsync(LifecycleTestTimeout);
+            Assert.Equal(FlowRuntimeHostState.Ready, host.State);
+            FlowEngineRunResult result = await execution.WaitAsync(LifecycleTestTimeout);
+            Assert.False(result.Started);
+            Assert.Equal(FlowEngineRunTermination.Canceled, result.Termination);
         });
     }
 
@@ -189,6 +463,35 @@ public sealed class FlowRuntimeHostTests
         });
     }
 
+    [Fact]
+    public void ReloadingTheSameCanvasRebindsConnectionsToTheNewServiceSnapshot()
+    {
+        RunInSta(async () =>
+        {
+            byte[] canvas = CreateCanvas(new HeadlessServiceProbeNode());
+            await using var host = new FlowRuntimeHost();
+            await host.LoadAsync(canvas, [CreateService("first/send", "first/receive", "first-token")]);
+            string? originalHash = host.ContentHash;
+            HeadlessServiceProbeNode firstNode = Assert.Single(host.Nodes.OfType<HeadlessServiceProbeNode>());
+            Assert.Equal("first/receive", firstNode.ConnectedReceiveTopic);
+
+            await host.LoadAsync(canvas, [CreateService("second/send", "second/receive", "second-token")]);
+
+            HeadlessServiceProbeNode secondNode = Assert.Single(host.Nodes.OfType<HeadlessServiceProbeNode>());
+            Assert.Equal("second/receive", secondNode.GetRecvTopic());
+            Assert.Equal("second/receive", secondNode.ConnectedReceiveTopic);
+            Assert.Equal("second/send", secondNode.GetSendTopic());
+            Assert.Equal("second-token", secondNode.ResolvedToken);
+            Assert.Equal(originalHash, host.ContentHash);
+
+            await host.LoadAsync(canvas);
+
+            HeadlessServiceProbeNode unmappedNode = Assert.Single(host.Nodes.OfType<HeadlessServiceProbeNode>());
+            Assert.Equal(unmappedNode.DefaultSubscribeTopic, unmappedNode.ConnectedReceiveTopic);
+            Assert.Equal(string.Empty, unmappedNode.ResolvedToken);
+        });
+    }
+
     private static MQTTServiceInfo CreateService(
         string publishTopic,
         string subscribeTopic,
@@ -251,23 +554,32 @@ public sealed class HeadlessPendingReadinessStartNode : BaseStartNode
     }
 
     public TaskCompletionSource<bool> Readiness { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+    public TaskCompletionSource ReadinessEntered { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
     public override bool RequiresConnectionReady => true;
 
-    public override Task<bool> EnsureReadyAsync(CancellationToken cancellationToken = default) => Readiness.Task;
+    public override Task<bool> EnsureReadyAsync(CancellationToken cancellationToken = default)
+    {
+        ReadinessEntered.TrySetResult();
+        return Readiness.Task;
+    }
 }
 
 public sealed class HeadlessNeverEndNode : STNode
 {
     public int StartedCount { get; private set; }
+    public CVStartCFC? LastStartedAction { get; private set; }
 
     protected override void OnCreate()
     {
         base.OnCreate();
         InputOptions.Add("IN", typeof(CVStartCFC), bSingle: true).DataTransfer += (_, e) =>
         {
-            if (e.TargetOption.Data is CVStartCFC { IsRunning: true })
+            if (e.TargetOption.Data is CVStartCFC { IsRunning: true } action)
+            {
                 StartedCount++;
+                LastStartedAction = action;
+            }
         };
     }
 }

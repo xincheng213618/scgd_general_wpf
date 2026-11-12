@@ -16,6 +16,87 @@ namespace ColorVision.UI.Tests;
 /// <summary>Screenshot records describe capture provenance, never replayable source samples.</summary>
 public sealed class ScreenshotParameterTests
 {
+    [Theory]
+    [InlineData(192, 48, 1)]
+    [InlineData(48, 192, 2)]
+    public async Task BackgroundScreenshotPreservesImageEdgesAndOverlayAlignmentAtNonDefaultDpi(double dpiX, double dpiY, int divisor)
+    {
+        string path = Path.Combine(Path.GetTempPath(), $"cv-shot-dpi-{Guid.NewGuid():N}.png");
+        ImageView view = WpfTestHost.Invoke(CreateView);
+        try
+        {
+            await PublishDpiFixture(view, dpiX, dpiY);
+            var snapshot = WpfTestHost.Invoke(() => Assert.IsType<ImageViewSnapshot>(view.CaptureSnapshotForBackgroundSave()));
+            await ImageView.SaveSnapshotWithOptionsAsync(snapshot, path, new() { ScaleDivisor = divisor });
+            WpfTestHost.Invoke(() =>
+            {
+                using var stream = File.OpenRead(path);
+                BitmapSource frame = BitmapDecoder.Create(stream, BitmapCreateOptions.PreservePixelFormat, BitmapCacheOption.OnLoad).Frames[0];
+                AssertDpiFixture(frame, divisor, dpiX, dpiY, fromPng: true);
+            });
+        }
+        finally { WpfTestHost.Invoke(view.Dispose); File.Delete(path); }
+    }
+
+    [Fact]
+    public async Task ImmediateScreenshotUsesPhysicalPixelDimensionsAtNonDefaultDpi()
+    {
+        ImageView view = WpfTestHost.Invoke(CreateView);
+        try
+        {
+            await PublishDpiFixture(view, 192, 48);
+            WpfTestHost.Invoke(() => AssertDpiFixture(Assert.IsAssignableFrom<BitmapSource>(view.CaptureSnapshot()), 1, 192, 48, fromPng: false));
+        }
+        finally { WpfTestHost.Invoke(view.Dispose); }
+    }
+
+    private static Task PublishDpiFixture(ImageView view, double dpiX, double dpiY) => WpfTestHost.Invoke(async () =>
+    {
+        byte[] pixels = new byte[8 * 8 * 4];
+        for (int y = 0; y < 8; y++)
+        {
+            for (int x = 0; x < 8; x++)
+            {
+                int index = (y * 8 + x) * 4;
+                pixels[index + (x < 4 ? 2 : 0)] = 255;
+                pixels[index + 3] = 255;
+            }
+        }
+        BitmapSource source = BitmapSource.Create(8, 8, dpiX, dpiY, PixelFormats.Bgra32, null, pixels, 32);
+        source.Freeze();
+        view.Config.FilePath = "dpi-fixture.png";
+        await view.PublishDecodedImageContentAsync(new(source, null, "dpi-fixture.png"), source);
+        view.ImageShow.Measure(new Size(source.Width, source.Height));
+        view.ImageShow.Arrange(new Rect(0, 0, source.Width, source.Height));
+        var marker = new DrawingVisual();
+        using (DrawingContext drawing = marker.RenderOpen())
+            drawing.DrawRectangle(Brushes.Lime, null, new Rect(4 * 96 / dpiX, 4 * 96 / dpiY, 2 * 96 / dpiX, 2 * 96 / dpiY));
+        view.ImageShow.AddVisual(marker);
+    });
+
+    private static void AssertDpiFixture(BitmapSource frame, int divisor, double dpiX, double dpiY, bool fromPng)
+    {
+        int size = 8 / divisor;
+        Assert.Equal((size, size), (frame.PixelWidth, frame.PixelHeight));
+        double dpiTolerance = fromPng ? 0.02 : 0.0; // PNG stores resolution as integer pixels per metre.
+        Assert.InRange(frame.DpiX, dpiX - dpiTolerance, dpiX + dpiTolerance);
+        Assert.InRange(frame.DpiY, dpiY - dpiTolerance, dpiY + dpiTolerance);
+        BitmapSource converted = new FormatConvertedBitmap(frame, PixelFormats.Bgra32, null, 0);
+        byte[] pixels = new byte[size * size * 4];
+        converted.CopyPixels(pixels, size * 4, 0);
+
+        Assert.Equal(Colors.Red, Read(0, size - 1));
+        Assert.Equal(Colors.Blue, Read(size - 1, 0));
+        Assert.Equal(Colors.Blue, Read(size - 1, size - 1));
+        Assert.Equal(Colors.Lime, Read(4 / divisor, 4 / divisor));
+
+        Color Read(int x, int y)
+        {
+            int index = (y * size + x) * 4;
+            return Color.FromArgb(pixels[index + 3], pixels[index + 2], pixels[index + 1], pixels[index]);
+        }
+    }
+
     [Fact]
     public async Task NativeCvRawOpenUsesPersistedCameraAndCalibrationSummaryForScreenshot()
     {
@@ -135,6 +216,98 @@ public sealed class ScreenshotParameterTests
         finally { WpfTestHost.Invoke(view.Dispose); File.Delete(path); }
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task SnapshotsDescribeTheVisibleImageAfterReplacementFilesFailToOpen(bool calibrated)
+    {
+        string prefix = Path.Combine(Path.GetTempPath(), $"cv-shot-open-{Guid.NewGuid():N}");
+        string failedPath = prefix + "-missing.png";
+        string replacementPath = prefix + "-replacement.png";
+        string immediatePath = prefix + "-immediate.png";
+        string backgroundPath = prefix + "-background.png";
+        ImageView view = WpfTestHost.Invoke(CreateView);
+        try
+        {
+            ColorVisionTiffParameters? parameters = calibrated ? Parameters() : null;
+            if (parameters != null) parameters.InputFileName = "fixture.tiff";
+            await Publish(view, parameters, dpi: 120);
+            var original = WpfTestHost.Invoke(() => view.ViewBitmapSource);
+
+            foreach (string path in new[] { failedPath, replacementPath })
+                await Assert.ThrowsAsync<FileNotFoundException>(() => WpfTestHost.Invoke(() =>
+                {
+                    view.OpenImage(path);
+                    return view.ImageOpenCompletion;
+                }));
+
+            var (immediate, background) = WpfTestHost.Invoke(() =>
+            {
+                Assert.Same(original, view.ViewBitmapSource);
+                if (parameters != null)
+                {
+                    parameters.Acquisition!.Exposure[0] = 999;
+                    parameters.CalibrationSummary!.Sources[0] = new() { FileName = "later.dat" };
+                }
+                view.ImageShow.Measure(new Size(4, 4));
+                view.ImageShow.Arrange(new Rect(0, 0, 4, 4));
+                return (Assert.IsAssignableFrom<BitmapSource>(view.CaptureSnapshot()),
+                    Assert.IsType<ImageViewSnapshot>(view.CaptureSnapshotForBackgroundSave(includeOverlays: false)));
+            });
+            using (background)
+            {
+                await ImageView.SaveSnapshotAsync(immediate, immediatePath);
+                await ImageView.SaveSnapshotAsync(background, backgroundPath);
+            }
+            WpfTestHost.Invoke(() =>
+            {
+                foreach (string path in new[] { immediatePath, backgroundPath })
+                {
+                    var record = ReadRecord(path);
+                    AssertRecordOnly(record);
+                    Assert.Equal("fixture.tiff", record.InputFileName);
+                    Assert.Equal(4, record.Rows);
+                    Assert.Equal(16, record.Bpp);
+                    Assert.Equal(calibrated ? "SN-123" : null, record.Acquisition?.Camera?.CameraId);
+                    if (calibrated)
+                    {
+                        Assert.Equal(10, record.Acquisition!.Exposure[0]);
+                        Assert.Equal("原始.dat", Assert.Single(record.CalibrationSummary!.Sources).FileName);
+                    }
+                    else Assert.Null(record.CalibrationSummary);
+                }
+                Assert.Equal(120, immediate.DpiX);
+                Assert.Equal(120, background.DpiY);
+            });
+
+            await WpfTestHost.Invoke(() =>
+            {
+                var encoder = new PngBitmapEncoder();
+                encoder.Frames.Add(BitmapFrame.Create(BitmapSource.Create(2, 2, 96, 96, PixelFormats.Gray8, null, new byte[4], 2)));
+                using (FileStream stream = File.Create(replacementPath)) encoder.Save(stream);
+                view.OpenImage(replacementPath);
+                return view.ImageOpenCompletion;
+            });
+            var recovered = WpfTestHost.Invoke(() => Assert.IsType<ImageViewSnapshot>(view.CaptureSnapshotForBackgroundSave(false)));
+            using (recovered) await ImageView.SaveSnapshotAsync(recovered, backgroundPath);
+            WpfTestHost.Invoke(() =>
+            {
+                var record = ReadRecord(backgroundPath);
+                Assert.Equal(Path.GetFileName(replacementPath), record.InputFileName);
+                Assert.Equal(2, record.Rows);
+                Assert.Null(record.Acquisition);
+                Assert.Null(record.CalibrationSummary);
+            });
+        }
+        finally
+        {
+            WpfTestHost.Invoke(view.Dispose);
+            File.Delete(replacementPath);
+            File.Delete(immediatePath);
+            File.Delete(backgroundPath);
+        }
+    }
+
     private static void AssertRecordOnly(ColorVisionTiffParameters record)
     {
         Assert.Equal("display", record.PixelRole);
@@ -156,12 +329,15 @@ public sealed class ScreenshotParameterTests
         return record!;
     }
 
-    private static Task Publish(ImageView view, ColorVisionTiffParameters parameters) => WpfTestHost.Invoke(() =>
+    private static Task Publish(ImageView view, ColorVisionTiffParameters? parameters, double dpi = 96) => WpfTestHost.Invoke(() =>
     {
-        BitmapSource pixels = BitmapSource.Create(4, 4, 96, 96, PixelFormats.Gray16, null, Enumerable.Repeat((ushort)10000, 16).ToArray(), 8);
+        BitmapSource pixels = BitmapSource.Create(4, 4, dpi, dpi, PixelFormats.Gray16, null, Enumerable.Repeat((ushort)10000, 16).ToArray(), 8);
         pixels.Freeze();
-        parameters.PixelLayout = pixels.Format.ToString();
-        parameters.PixelSha256 = ColorVisionPixelBinding.ComputeSha256(pixels);
+        if (parameters != null)
+        {
+            parameters.PixelLayout = pixels.Format.ToString();
+            parameters.PixelSha256 = ColorVisionPixelBinding.ComputeSha256(pixels);
+        }
         view.Config.FilePath = "fixture.tiff";
         return view.PublishDecodedImageContentAsync(new(pixels, parameters, "fixture.tiff"), pixels);
     });

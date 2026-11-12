@@ -43,18 +43,21 @@ namespace ColorVision.ImageEditor.Algorithms
         };
 
         public static AlgorithmPixelRoi Create(AlgorithmRoi roi, AlgorithmImageBuffer image)
+            => Create(roi, image.Width, image.Height, image.DpiX, image.DpiY);
+
+        internal static AlgorithmPixelRoi Create(AlgorithmRoi roi, int width, int height, double dpiX, double dpiY)
         {
             AlgorithmPixelRoi raw = roi switch
             {
-                RectangleAlgorithmRoi rectangle => CreateRectangle(rectangle, image),
-                CircleAlgorithmRoi circle => CreateCircle(circle, image),
-                PolygonAlgorithmRoi polygon => CreatePolygon(polygon, image),
+                RectangleAlgorithmRoi rectangle => CreateRectangle(rectangle, dpiX, dpiY),
+                CircleAlgorithmRoi circle => CreateCircle(circle, dpiX, dpiY),
+                PolygonAlgorithmRoi polygon => CreatePolygon(polygon, dpiX, dpiY),
                 _ => throw new ArgumentOutOfRangeException(nameof(roi)),
             };
-            int minimumX = Math.Clamp(raw.MinimumX, 0, image.Width);
-            int minimumY = Math.Clamp(raw.MinimumY, 0, image.Height);
-            int maximumX = Math.Clamp(raw.MaximumXExclusive, 0, image.Width);
-            int maximumY = Math.Clamp(raw.MaximumYExclusive, 0, image.Height);
+            int minimumX = Math.Clamp(raw.MinimumX, 0, width);
+            int minimumY = Math.Clamp(raw.MinimumY, 0, height);
+            int maximumX = Math.Clamp(raw.MaximumXExclusive, 0, width);
+            int maximumY = Math.Clamp(raw.MaximumYExclusive, 0, height);
             return new AlgorithmPixelRoi
             {
                 Kind = raw.Kind,
@@ -85,6 +88,25 @@ namespace ColorVision.ImageEditor.Algorithms
             _ => false,
         };
 
+        public (int MinimumX, int MinimumY, int MaximumXExclusive, int MaximumYExclusive) GetSamplingBounds(AlgorithmImageBuffer image)
+        {
+            // Contains accepts boundary samples beyond the nominal geometry. Circle
+            // tolerance is normalized by its radii, so one extra pixel is not enough
+            // for a very large circle. r * tolerance bounds r * (sqrt(1+tolerance)-1);
+            // the additional pixel also covers endpoint rounding. Keep nominal bounds
+            // and clipping metadata unchanged for callers that expose that geometry.
+            int padding = Kind switch
+            {
+                AlgorithmPixelRoiKind.Circle => (int)Math.Min(int.MaxValue, Math.Ceiling(Math.Max(RadiusX, RadiusY) * BoundaryTolerance) + 1),
+                // Extreme off-image vertices can overflow the existing ray-crossing
+                // arithmetic. Preserve its Contains result across the entire frame.
+                AlgorithmPixelRoiKind.Polygon => Points.Any(point => Math.Abs(point.X) > int.MaxValue || Math.Abs(point.Y) > int.MaxValue) ? int.MaxValue : 1,
+                _ => 0,
+            };
+            return (Math.Max(0, MinimumX - padding), Math.Max(0, MinimumY - padding),
+                (int)Math.Min(image.Width, (long)MaximumXExclusive + padding), (int)Math.Min(image.Height, (long)MaximumYExclusive + padding));
+        }
+
         private bool ContainsPolygon(double x, double y)
         {
             bool inside = false;
@@ -108,10 +130,10 @@ namespace ColorVision.ImageEditor.Algorithms
                 && y >= Math.Min(a.Y, b.Y) - BoundaryTolerance && y <= Math.Max(a.Y, b.Y) + BoundaryTolerance;
         }
 
-        private static AlgorithmPixelRoi CreateRectangle(RectangleAlgorithmRoi roi, AlgorithmImageBuffer image)
+        private static AlgorithmPixelRoi CreateRectangle(RectangleAlgorithmRoi roi, double dpiX, double dpiY)
         {
-            AlgorithmPoint origin = AlgorithmCoordinates.ToPixel(new AlgorithmPoint(roi.X, roi.Y), roi.CoordinateSpace, image.DpiX, image.DpiY);
-            AlgorithmPoint end = AlgorithmCoordinates.ToPixel(new AlgorithmPoint(roi.X + roi.Width, roi.Y + roi.Height), roi.CoordinateSpace, image.DpiX, image.DpiY);
+            AlgorithmPoint origin = AlgorithmCoordinates.ToPixel(new AlgorithmPoint(roi.X, roi.Y), roi.CoordinateSpace, dpiX, dpiY);
+            AlgorithmPoint end = AlgorithmCoordinates.ToPixel(new AlgorithmPoint(roi.X + roi.Width, roi.Y + roi.Height), roi.CoordinateSpace, dpiX, dpiY);
             double left = Math.Min(origin.X, end.X);
             double top = Math.Min(origin.Y, end.Y);
             double right = Math.Max(origin.X, end.X);
@@ -131,11 +153,11 @@ namespace ColorVision.ImageEditor.Algorithms
             };
         }
 
-        private static AlgorithmPixelRoi CreateCircle(CircleAlgorithmRoi roi, AlgorithmImageBuffer image)
+        private static AlgorithmPixelRoi CreateCircle(CircleAlgorithmRoi roi, double dpiX, double dpiY)
         {
-            AlgorithmPoint center = AlgorithmCoordinates.ToPixel(roi.Center, roi.CoordinateSpace, image.DpiX, image.DpiY);
-            double radiusX = roi.CoordinateSpace == AlgorithmCoordinateSpace.Pixel ? roi.Radius : roi.Radius * image.DpiX / 25.4;
-            double radiusY = roi.CoordinateSpace == AlgorithmCoordinateSpace.Pixel ? roi.Radius : roi.Radius * image.DpiY / 25.4;
+            AlgorithmPoint center = AlgorithmCoordinates.ToPixel(roi.Center, roi.CoordinateSpace, dpiX, dpiY);
+            double radiusX = roi.CoordinateSpace == AlgorithmCoordinateSpace.Pixel ? roi.Radius : roi.Radius * dpiX / 25.4;
+            double radiusY = roi.CoordinateSpace == AlgorithmCoordinateSpace.Pixel ? roi.Radius : roi.Radius * dpiY / 25.4;
             AlgorithmGeometry geometry;
             if (Math.Abs(radiusX - radiusY) <= 1e-9)
             {
@@ -165,10 +187,10 @@ namespace ColorVision.ImageEditor.Algorithms
             };
         }
 
-        private static AlgorithmPixelRoi CreatePolygon(PolygonAlgorithmRoi roi, AlgorithmImageBuffer image)
+        private static AlgorithmPixelRoi CreatePolygon(PolygonAlgorithmRoi roi, double dpiX, double dpiY)
         {
             AlgorithmPoint[] points = roi.Points
-                .Select(point => AlgorithmCoordinates.ToPixel(point, roi.CoordinateSpace, image.DpiX, image.DpiY))
+                .Select(point => AlgorithmCoordinates.ToPixel(point, roi.CoordinateSpace, dpiX, dpiY))
                 .ToArray();
             double minimumX = points.Min(point => point.X);
             double minimumY = points.Min(point => point.Y);

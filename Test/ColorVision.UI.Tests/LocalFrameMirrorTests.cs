@@ -189,6 +189,24 @@ public sealed class LocalFrameMirrorTests
     }
 
     [Fact]
+    public void ReleasingTheLastFrameReferencePreventsLateCieAllocation()
+    {
+        var storage = new LocalFlowFrame.SharedFrameStorage(1, 0, rawBufferPool: null);
+        storage.ReleaseReference();
+        try
+        {
+            Assert.Throws<ObjectDisposedException>(() => storage.ResizeCieBuffer(sizeof(float)));
+            Assert.Equal(IntPtr.Zero, storage.CiePointer);
+            Assert.Equal(0, storage.CieLength);
+        }
+        finally
+        {
+            // Clean up the late allocation when this regression runs against an older build.
+            if (storage.CiePointer != IntPtr.Zero) storage.ResizeCieBuffer(0);
+        }
+    }
+
+    [Fact]
     public void InheritedFlipStatePreventsGeneratedCieFromBeingMirroredTwice()
     {
         LocalFrameMetadata metadata = new()

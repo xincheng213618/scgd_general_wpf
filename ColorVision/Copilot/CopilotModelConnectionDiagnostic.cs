@@ -140,7 +140,8 @@ namespace ColorVision.Copilot
                 throw new InvalidOperationException("The selected model profile is incomplete.");
 
             profile.UseSystemPromptOverride(SystemPrompt);
-            profile.MaxTokens = 128;
+            profile.MaxTokens = CopilotReasoningCapabilities.GetBackgroundOutputTokens(profile, 128);
+            CopilotReasoningCapabilities.UseLowClaudeEffort(profile);
             profile.Temperature = 0;
 
             var displayableCharacters = 0;

@@ -424,28 +424,57 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
                     return false;
                 }
 
-                completionRequest ??= requestedCompletion;
-                if (completionPersisted)
-                    return true;
-
-                StopHeartbeat();
                 // A write may fail after SQLite has already accepted it. The
                 // journal's CompleteRun contract is idempotent, so one
                 // immediate retry with the exact same terminal tuple is safe.
-                for (int attempt = 0; attempt < 2; attempt++)
-                {
-                    if (coordinator.TryCompleteRun(
-                        RunRecordId,
-                        requestedCompletion.Status,
-                        requestedCompletion.ElapsedMs,
-                        requestedCompletion.FinalOutcome))
-                    {
-                        completionPersisted = true;
-                        return true;
-                    }
-                }
-                return false;
+                return TryPersistCompletionLocked(requestedCompletion, maxAttempts: 2);
             }
+        }
+
+        internal void CompleteAtScopeExit(
+            FlowStatus incompleteStatus,
+            long elapsedMs,
+            FlowFinalOutcome incompleteOutcome,
+            string incompleteMessage)
+        {
+            lock (completionSync)
+            {
+                if (Volatile.Read(ref disposed) != 0 || completionPersisted)
+                    return;
+
+                if (completionRequest is CompletionRequest pending)
+                {
+                    TryPersistCompletionLocked(pending, maxAttempts: 1);
+                    return;
+                }
+
+                TryAppendEvent(
+                    "run-ended-before-finalization",
+                    "RunEndedBeforeFinalization",
+                    code: incompleteStatus.ToString(),
+                    message: incompleteMessage);
+                TryPersistCompletionLocked(
+                    new CompletionRequest(incompleteStatus, Math.Max(0, elapsedMs), incompleteOutcome),
+                    maxAttempts: 2);
+            }
+        }
+
+        private bool TryPersistCompletionLocked(CompletionRequest request, int maxAttempts)
+        {
+            completionRequest ??= request;
+            if (completionPersisted)
+                return true;
+
+            StopHeartbeat();
+            for (int attempt = 0; attempt < maxAttempts; attempt++)
+            {
+                if (coordinator.TryCompleteRun(RunRecordId, request.Status, request.ElapsedMs, request.FinalOutcome))
+                {
+                    completionPersisted = true;
+                    return true;
+                }
+            }
+            return false;
         }
 
         private bool CanWrite
@@ -457,18 +486,6 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
                     return completionRequest == null
                         && Volatile.Read(ref disposed) == 0;
                 }
-            }
-        }
-
-        // FlowExecutionSession uses this as its "journal terminal state was
-        // safely written" guard. A merely attempted/failed write must remain
-        // retryable and must not be reported as completed.
-        internal bool IsCompletionRequested
-        {
-            get
-            {
-                lock (completionSync)
-                    return completionPersisted;
             }
         }
 

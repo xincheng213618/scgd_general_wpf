@@ -5,7 +5,7 @@ status: "current"
 summary: "Explorer 的 CVRAW/CVCIE COM provider 如何读取像素、生成非测量用途缩略图，以及源码脚本与 ServiceHost 注册的不同副作用和失败边界。"
 aliases: ["文件关联注册","文件关联","FileAssociationHelper","RegisterFileAssociations","资源管理器没有cvraw缩略图","cvcie缩略图颜色不对","缩略图读取会锁文件吗","注册缩略图","卸载缩略图","ColorVision.ShellExtension","CVThumbnailProviderBase","CVRawShellThumbnailProvider","CVCieShellThumbnailProvider","IInitializeWithStream","GetThumbnail","Register.ps1","RegisterThumbnail.ps1"]
 code_paths: ["Engine/ColorVision.ShellExtension/CVThumbnailProviderBase.cs","Engine/ColorVision.ShellExtension/CVRawShellThumbnailProvider.cs","Engine/ColorVision.ShellExtension/CVCieShellThumbnailProvider.cs","Engine/ColorVision.ShellExtension/Interop/ShellInterfaces.cs","Engine/ColorVision.ShellExtension/ShellLog.cs","Engine/ColorVision.ShellExtension/ColorVision.ShellExtension.csproj","Engine/ColorVision.ShellExtension/Register.ps1","Engine/ColorVision.ShellExtension/Unregister.ps1","Engine/ColorVision.FileIO/CVFileUtil.cs","ColorVision/Update/Export/FileAssociationHelper.cs","ColorVision/ServiceHost/ServiceHostManagerWindow.xaml.cs","UI/ColorVision.UI/ServiceHost/IColorVisionServiceHostClient.cs","src/ColorVisionServiceHost/ServiceHostCommandHandler.cs","src/ColorVisionServiceHost/Tasks/RegisterThumbnail.ps1","src/ColorVisionServiceHost/Tasks/UnregisterThumbnail.ps1","src/ColorVisionServiceHost/Tasks/RegisterFileAssociations.ps1"]
-test_paths: []
+test_paths: ["Test/ColorVision.UI.Tests/ShellThumbnailProviderTests.cs"]
 related: ["engine.index","engine.file-io","platform.service-host","delivery.update"]
 ---
 
@@ -19,22 +19,21 @@ related: ["engine.index","engine.file-io","platform.service-host","delivery.upda
 
 `CVThumbnailProviderBase` 实现 `IInitializeWithStream`、`IInitializeWithFile` 和 `IShellThumbnailProvider`，不是主程序中的图像加载器。
 
-- 流初始化读取 `IStream.Stat` 长度，拒绝非正数或大于 `int.MaxValue`，回到流首后分配整流缓冲。当前只调用一次 `Read`；正数短读会被接受为较短缓冲，初始化成功不代表完整文件或有效图像。`finally` 尝试释放输入 COM stream，不将该流保存到后续请求。
+- 流初始化在同一 `IStream` 读取头部及所需像素，按块补齐短读。三通道 CIE 先核验所声明的完整 XYZ 负载长度，再仅读取 X 平面。初始化结束即释放输入 COM 流，后续生成位图只使用已读取的像素。
 - 路径初始化仅保存非空路径，返回成功时尚未检查文件存在、格式或像素。`grfMode` 不用于选择实际打开权限。
-- `GetThumbnail` 优先使用流缓冲，否则检查保存路径，再依次调用 `ReadCIEFileHeader` 和 `ReadCIEFileData`。头部解析后会强制把 `FileExtType` 改成当前 provider 的 `Raw` 或 `CIE`，所以最终类型取决于 COM 绑定，不只是文件名或 FileIO 的类型推断。
-- 路径模式的头部和数据分别由 FileIO 以 `FileAccess.Read + FileShare.Read` 打开，并各自在调用结束时关闭；读取期间没有允许写入/删除共享，两次打开之间也没有同一句柄或文件版本检查，不能承诺一致性快照。流模式的文件共享由 Shell 提供的流决定。
-- 每次 `GetThumbnail` 无论成功或失败，都会释放临时 Mat、`CVCIEFile` 并清空路径/字节缓冲；后续请求需重新初始化。缩略图尺寸 `cx` 不限制原文件读取量，流缓冲、数据区及转换 Mat 可能同时占用内存；这不是按缩略图大小进行的小块解码。
+- `GetThumbnail` 优先使用初始化时读取的像素，路径模式在同一个 FileIO 流读取头部和像素，并在转换前归还流。像素解释由 COM 绑定的 provider 类型决定。磁盘流使用 `FileAccess.Read + FileShare.Read`，Shell 流的共享由其提供方决定。
+- 每次 `GetThumbnail` 结束后释放临时 Mat 和 `CVCIEFile`，后续请求需重新初始化。`cx` 只限制输出大小，CIE X 平面和 CVRAW 像素仍按原分辨率读取。
 
 ## 像素到 HBITMAP 的显示语义
 
 | provider | 注册身份 | 当前像素解释 |
 | --- | --- | --- |
 | `CVRawShellThumbnailProvider` | `{7B5E2A3C-8F1D-4E6A-B9C2-1D3E5F7A8B9C}` | 按 `Rows/Cols/Depth/Channels` 直接创建 Mat，未进行 CIE 平面转交错或色彩空间转换 |
-| `CVCieShellThumbnailProvider` | `{8C6F3B4D-9E2A-5F7B-C3D4-2E4F6A8B9C0D}` | 三通道时按三个独立平面的假设复制第一个 X 平面，显示为单通道；其它通道数直接创建相应 Mat |
+| `CVCieShellThumbnailProvider` | `{8C6F3B4D-9E2A-5F7B-C3D4-2E4F6A8B9C0D}` | 三通道时读取内嵌 X 平面并按单通道显示。其它通道数直接创建相应 Mat |
 
 两个 provider 对非 8-bit 数据先做 MinMax 归一化到 0–255 并转为 8-bit；因此缩略图亮度是显示拉伸，不保留原始测量量纲。基类按 `cx` 等比缩小、不放大，使用 Area 插值，宽高至少 1 像素；最终单通道转 BGR、四通道转 BGR 并丢弃 alpha，输出顶向下、行跨度四字节对齐的 24bpp DIB，`pdwAlpha = WTSAT_RGB`。成功的 `HBITMAP` 交给调用方持有，provider 只释放中间对象。
 
-子类虽然保留 `Tif` / `Src` 分支，但正常入口先要求 FileIO 自定义文件头，再覆盖为 provider 的固定类型；不能据这些分支宣称当前注册支持 TIFF、`.cvsrc` 或任意图像格式。当前也没有独立的完整像素尺寸/数据长度/通道数校验层；最终转换只专门处理 1/4 通道，其它值直接按 24bpp 输出，不能把任意头部字段都视为安全、受支持的输入。
+注册入口以 FileIO 自定义头和 provider 的固定类型为准。读取像素前要求正数尺寸、1/3/4 通道、8/16/32/64 位，以及覆盖图像布局的完整负载。声明负载内超出布局的字节会跳过。输出 DIB 的跨度和总长度在原生复制前校验。
 
 ## 注册入口与副作用
 
@@ -60,6 +59,6 @@ related: ["engine.index","engine.file-io","platform.service-host","delivery.upda
 
 ## 验证入口与缺口
 
-当前没有登记针对 provider、`IStream` 短读、读锁、像素转换或注册脚本的专门自动化测试。FileIO 测试只支持其库边界，更新/恢复测试中出现 ShellExtension 文件名也不等于验证 COM 缩略图。源码核对不能替代 Windows Shell 验收。
+`ShellThumbnailProviderTests` 直接调用 provider，覆盖 `IStream` 短读、输入流关闭后渲染、CIE X 平面、RAW 交错像素及尾字节跳过，以及残缺负载、异常通道和尺寸溢出的拒绝。注册、Explorer 和 COM surrogate 装载仍需在隔离环境验收。
 
 需独立授权后验证的项目包括：成功/失败后的句柄释放；损坏、超大及异常通道输入；CIE X 平面与 RAW 显示；当前 comhost/native 依赖装载；源码与 ServiceHost 两条注册链；部分失败后实际注册表状态、缓存和 DLL 锁。注册可能修改机器关联、终止进程和删除用户缓存，本页不把执行脚本列为无副作用的“检查命令”。

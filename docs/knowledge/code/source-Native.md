@@ -20,7 +20,7 @@ next: false
   Windows x64 运行与源码构建前提：Desktop Runtime、SDK、C++ 工具集及已有 native DLL 的选择。
 
 - [OpenCV 和 native 集成开发指南](../../02-developer-guide/engine-development/opencv-integration.md) — `engine.native-integration`
-  native ABI与HImage所有权、函数族返回值、视频异步/关闭边界，以及helper构建和CUDA发布输入；路由校准Context与POI原生参考。
+  native ABI与HImage所有权、函数族返回值，以及helper构建和CUDA发布输入；路由校准Context与POI原生参考。
 
 ## Native/include {#module-4e61746976652f696e636c756465}
 
@@ -33,17 +33,20 @@ next: false
 - [本地点阵畸变 V2](../../04-api-reference/algorithms/detectors/grid-distortion-v2.md) — `algorithms.grid-distortion`
   本地点阵畸变 V2 单次定位、TV/九点多口径及相对光学估计，覆盖 ImageView、Flow 和 ARVR 2.0 适配；光学估计不等同于标定结果。
 
-- [本地灯珠与 P2 分析](../../04-api-reference/algorithms/local-native-analysis.md) — `algorithms.local-native-analysis`
-  ImageEditor 本地灯珠、Ghost、旋转模板和双目标定融合的操作、参数与结果；灯珠暗区候选不完整，P2 运行失败后复制结果可能仍取上次 JSON。
+- [灯珠定位与完整网格判定](../../04-api-reference/algorithms/detectors/light-beads.md) — `algorithms.light-beads`
+  灯珠亮点定位、完整规则网格与不亮偏暗判定，覆盖运行内存 POI、可选 CSV 及旧 native 暗区候选的限制。
+
+- [本地 P2 分析](../../04-api-reference/algorithms/local-native-analysis.md) — `algorithms.local-native-analysis`
+  本地 Ghost、旋转模板匹配和双目标定融合的直接 native 操作、结果显示与生命周期限制；灯珠定位由独立主题维护。
 
 - [景深融合：输入、执行与结果生命周期](../../04-api-reference/ui-components/image-fusion.md) — `ui.image-fusion`
   景深融合窗口与本地流程节点共用文件执行器；输入顺序、CPU/CUDA门禁、取消、结果保存及下游图像交接。
 
 - [OpenCV 和 native 集成开发指南](../../02-developer-guide/engine-development/opencv-integration.md) — `engine.native-integration`
-  native ABI与HImage所有权、函数族返回值、视频异步/关闭边界，以及helper构建和CUDA发布输入；路由校准Context与POI原生参考。
+  native ABI与HImage所有权、函数族返回值，以及helper构建和CUDA发布输入；路由校准Context与POI原生参考。
 
 - [opencv\_helper.dll API 参考](../../04-api-reference/engine-components/opencv-helper-api.md) — `engine.opencv-helper-api`
-  opencv\_helper 英文 API 参考：校准/POI、图像处理、SFR、检测、视频与内存释放；核对真实参数单位和函数族错误码，声明的选项不等于当前 Engine 提供操作入口。
+  opencv\_helper 英文 API 参考：校准/POI、图像处理、SFR、检测与内存释放；核对真实参数单位和函数族错误码，声明的选项不等于当前 Engine 提供操作入口。
 
 ## Native/opencv\_cuda {#module-4e61746976652f6f70656e63765f63756461}
 
@@ -51,7 +54,7 @@ next: false
   景深融合窗口与本地流程节点共用文件执行器；输入顺序、CPU/CUDA门禁、取消、结果保存及下游图像交接。
 
 - [OpenCV 和 native 集成开发指南](../../02-developer-guide/engine-development/opencv-integration.md) — `engine.native-integration`
-  native ABI与HImage所有权、函数族返回值、视频异步/关闭边界，以及helper构建和CUDA发布输入；路由校准Context与POI原生参考。
+  native ABI与HImage所有权、函数族返回值，以及helper构建和CUDA发布输入；路由校准Context与POI原生参考。
 
 ## Native/opencv\_helper {#module-4e61746976652f6f70656e63765f68656c706572}
 
@@ -64,8 +67,14 @@ next: false
 - [本地点阵畸变 V2](../../04-api-reference/algorithms/detectors/grid-distortion-v2.md) — `algorithms.grid-distortion`
   本地点阵畸变 V2 单次定位、TV/九点多口径及相对光学估计，覆盖 ImageView、Flow 和 ARVR 2.0 适配；光学估计不等同于标定结果。
 
-- [本地灯珠与 P2 分析](../../04-api-reference/algorithms/local-native-analysis.md) — `algorithms.local-native-analysis`
-  ImageEditor 本地灯珠、Ghost、旋转模板和双目标定融合的操作、参数与结果；灯珠暗区候选不完整，P2 运行失败后复制结果可能仍取上次 JSON。
+- [灯珠定位与完整网格判定](../../04-api-reference/algorithms/detectors/light-beads.md) — `algorithms.light-beads`
+  灯珠亮点定位、完整规则网格与不亮偏暗判定，覆盖运行内存 POI、可选 CSV 及旧 native 暗区候选的限制。
+
+- [本地 P2 分析](../../04-api-reference/algorithms/local-native-analysis.md) — `algorithms.local-native-analysis`
+  本地 Ghost、旋转模板匹配和双目标定融合的直接 native 操作、结果显示与生命周期限制；灯珠定位由独立主题维护。
+
+- [Matching 模板匹配](../../04-api-reference/algorithms/templates/matching-template.md) — `algorithms.matching`
+  说明本地模板匹配的节点内置配置、cvtm 导入导出与无数据库执行，以及旧服务 Matching 的请求与 AOI 结果。
 
 - [CV 文件读取、通道与写回契约](../../04-api-reference/engine-components/ColorVision.FileIO.md) — `engine.file-io`
   CVRAW/CVCIE 读取、动态校正参数覆盖、RAW 按需色度测量、内嵌 XYZ 显示，以及版本写回和失败边界。
@@ -80,13 +89,13 @@ next: false
   Windows x64 运行与源码构建前提：Desktop Runtime、SDK、C++ 工具集及已有 native DLL 的选择。
 
 - [OpenCV 和 native 集成开发指南](../../02-developer-guide/engine-development/opencv-integration.md) — `engine.native-integration`
-  native ABI与HImage所有权、函数族返回值、视频异步/关闭边界，以及helper构建和CUDA发布输入；路由校准Context与POI原生参考。
+  native ABI与HImage所有权、函数族返回值，以及helper构建和CUDA发布输入；路由校准Context与POI原生参考。
 
 - [成像校正：参考图、执行与结果保存](../../02-developer-guide/core-concepts/imaging-correction-v1.md) — `algorithms.imaging-correction`
   成像校正的参考图、固定阶段、参数/preset、执行并提交、mask与PNG/CSV/JSON保存；明确Alpha裁剪、无效样本、精确复制和批量只保存主图的边界。
 
 - [opencv\_helper.dll API 参考](../../04-api-reference/engine-components/opencv-helper-api.md) — `engine.opencv-helper-api`
-  opencv\_helper 英文 API 参考：校准/POI、图像处理、SFR、检测、视频与内存释放；核对真实参数单位和函数族错误码，声明的选项不等于当前 Engine 提供操作入口。
+  opencv\_helper 英文 API 参考：校准/POI、图像处理、SFR、检测与内存释放；核对真实参数单位和函数族错误码，声明的选项不等于当前 Engine 提供操作入口。
 
 - [配套服务纳入 ColorVision 的演进规划 \[规划\]](../../03-architecture/service-integration-roadmap.md) — `platform.service-integration-roadmap`
   在不修改 CVWindowsService 源码的前提下，由 ColorVision 接管配置、执行选择、结果与交付的渐进路线；区分已有本地能力、残余数据库与原生依赖，以及阶段验收和回退条件。

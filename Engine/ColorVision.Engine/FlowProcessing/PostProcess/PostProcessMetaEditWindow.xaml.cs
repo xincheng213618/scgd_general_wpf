@@ -24,6 +24,13 @@ namespace ColorVision.Engine.FlowProcessing.PostProcess
         public IPostProcessor? SelectedProcess => _viewModel.SelectedProcess;
         public PostProcessFailurePolicy FailurePolicy => _viewModel.FailurePolicy;
 
+        internal void RestoreTemplateBinding(string? flowKey)
+        {
+            if (flowKey != null)
+                _viewModel.SelectedTemplate = _viewModel.VisibleTemplates.FirstOrDefault(template =>
+                    string.Equals(template.Value.FlowKey, flowKey, StringComparison.Ordinal));
+        }
+
         public PostProcessMetaEditWindow(
             IEnumerable<TemplateModel<FlowParam>> templates,
             IEnumerable<IPostProcessor> processes,
@@ -72,15 +79,16 @@ namespace ColorVision.Engine.FlowProcessing.PostProcess
             object? config = SelectedProcess?.GetConfig();
             if (config == null)
             {
-                DraftProcessConfigPanel.Children.Add(new TextBlock
+                var hint = new TextBlock
                 {
                     Text = SelectedProcess == null
                         ? EngineLocalization.Get("选择处理类型后显示配置")
                         : EngineLocalization.Get("此处理类型无需额外配置"),
-                    Foreground = System.Windows.Media.Brushes.Gray,
                     TextWrapping = TextWrapping.Wrap,
                     Margin = new Thickness(0, 10, 0, 0)
-                });
+                };
+                hint.SetResourceReference(TextBlock.ForegroundProperty, "SecondaryTextBrush");
+                DraftProcessConfigPanel.Children.Add(hint);
                 return;
             }
 
@@ -125,6 +133,7 @@ namespace ColorVision.Engine.FlowProcessing.PostProcess
         private readonly IReadOnlyList<PostProcessTypeOption> _allOptions;
         private readonly List<TemplateModel<FlowParam>> _allTemplates;
         private IPostProcessor? _selectedProcessDraft;
+        private bool _useTemplateName;
 
         public ObservableCollection<TemplateModel<FlowParam>> VisibleTemplates { get; } = new();
         public ObservableCollection<string> Categories { get; } = new();
@@ -144,6 +153,7 @@ namespace ColorVision.Engine.FlowProcessing.PostProcess
                 if (_metaName == value)
                     return;
                 _metaName = value;
+                _useTemplateName = string.IsNullOrWhiteSpace(value) || value == SelectedTemplate?.Key;
                 OnPropertyChanged();
             }
         }
@@ -183,6 +193,11 @@ namespace ColorVision.Engine.FlowProcessing.PostProcess
                 if (_selectedTemplate == value)
                     return;
                 _selectedTemplate = value;
+                if (_useTemplateName && value != null)
+                {
+                    _metaName = value.Key;
+                    OnPropertyChanged(nameof(MetaName));
+                }
                 OnPropertyChanged();
             }
         }
@@ -249,11 +264,14 @@ namespace ColorVision.Engine.FlowProcessing.PostProcess
             _allTemplates = templates.ToList();
             _allOptions = PostProcessTypeCatalog.CreateOptions(processes);
             _metaName = metaName;
+            _useTemplateName = string.IsNullOrWhiteSpace(metaName);
             _tag = tag;
             _failurePolicy = failurePolicy;
             PageTitle = pageTitle;
             _selectedTemplate = _allTemplates.FirstOrDefault(template => template.Key == templateName)
                 ?? (_allTemplates.Count > 0 ? _allTemplates[0] : null);
+            if (_useTemplateName && _selectedTemplate != null)
+                _metaName = _selectedTemplate.Key;
             _selectedOption = _allOptions.FirstOrDefault(option => option.FullTypeName == process?.GetType().FullName)
                 ?? (_allOptions.Count > 0 ? _allOptions[0] : null);
             _selectedProcessDraft = _selectedOption == null
@@ -268,12 +286,15 @@ namespace ColorVision.Engine.FlowProcessing.PostProcess
             RefreshVisibleProcesses();
         }
 
-        private static IPostProcessor CreateProcessDraft(IPostProcessor source)
+        private static IPostProcessor? CreateProcessDraft(IPostProcessor source)
         {
             IPostProcessor draft = source.CreateInstance();
             object? config = source.GetConfig();
             if (config != null)
+            {
+                if (ReferenceEquals(draft, source)) return null;
                 draft.SetConfig(JsonConvert.SerializeObject(config));
+            }
             return draft;
         }
 

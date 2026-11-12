@@ -2,7 +2,10 @@ using ColorVision.Engine.Services;
 using ColorVision.Engine.Services.Devices.SMU;
 using ColorVision.Engine.Services.Devices.SMU.Configs;
 using ColorVision.Engine.Services.Devices.SMU.Local;
+using ColorVision.Engine.FlowProcessing.Editor;
 using ColorVision.Engine.FlowProcessing.Nodes;
+using ColorVision.Engine.PropertyEditor;
+using ColorVision.Engine.Templates;
 using ColorVision.Themes;
 using cvColorVision;
 using FlowEngineLib;
@@ -11,10 +14,12 @@ using FlowEngineLib.End;
 using FlowEngineLib.Node.SMU;
 using ST.Library.UI.NodeContainer;
 using ST.Library.UI.NodeEditor;
+using System.ComponentModel;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Windows;
+using System.Windows.Controls;
 using Newtonsoft.Json.Linq;
 using Channel = ColorVision.Engine.Services.Devices.SMU.Dao.SMUChannelType;
 using SMUResultData = FlowEngineLib.SMUResultData;
@@ -23,6 +28,40 @@ namespace ColorVision.UI.Tests;
 
 public sealed class LocalSmuFlowTests
 {
+    [Fact]
+    public void TemplateScanInspectorSupportsSavedAndManuallyEnteredNames() => WpfTestHost.Invoke(() =>
+    {
+        var dictionaries = Application.Current.Resources.MergedDictionaries;
+        var theme = ThemeManager.ResourceDictionaryWhite.Concat(ThemeManager.ResourceDictionaryBase)
+            .Select(uri => new ResourceDictionary { Source = new Uri(uri, UriKind.RelativeOrAbsolute) }).ToArray();
+        foreach (var dictionary in theme) dictionaries.Add(dictionary);
+        var template = new TemplateModel<SMUParam>("editor-test-smu", new SMUParam());
+        TemplateSMUParam.Params.Add(template);
+        try
+        {
+            var node = new SMUSweepModelNode { ModelName = "service-only-template" };
+            node.Create();
+            PropertyInfo property = typeof(SMUSweepModelNode).GetProperty(nameof(node.ModelName))!;
+            Assert.Equal(typeof(SmuTemplatePropertiesEditor), FlowNodePropertyMetadataProvider.Instance.GetEditorType(property));
+            var editor = new SmuTemplatePropertiesEditor().GenProperties(property, node);
+            var grid = Assert.IsType<Grid>(Assert.Single(editor.Children));
+            var combo = Assert.Single(grid.Children.OfType<ComboBox>());
+            Assert.Equal("service-only-template", combo.Text);
+            Assert.True(Assert.Single(grid.Children.OfType<Button>()).IsEnabled);
+
+            combo.SelectedItem = template;
+            Assert.Equal(template.Key, node.ModelName);
+            Assert.Equal(template.Key, Encoding.UTF8.GetString(STNodeSavedState.Parse(node.GetSaveData()).Properties[property.Name]));
+            combo.SetCurrentValue(ComboBox.TextProperty, "another-service-template");
+            Assert.Equal("another-service-template", node.ModelName);
+        }
+        finally
+        {
+            TemplateSMUParam.Params.Remove(template);
+            foreach (var dictionary in theme) dictionaries.Remove(dictionary);
+        }
+    });
+
     // Keep saved legacy nodes on the local result and cleanup paths without MQTT.
     [Theory]
     [InlineData(0)]
@@ -142,7 +181,7 @@ public sealed class LocalSmuFlowTests
             WpfTestHost.Invoke(() =>
             {
                 previousConfig = ColorVision.UI.ConfigService.Instance;
-                ColorVision.UI.ConfigService.SetInstance(new ConfigHandler { IsAutoSave = false });
+                TestEnvironment.SetConfig(new ConfigHandler { IsAutoSave = false });
                 foreach (string uri in ThemeManager.ResourceDictionaryWhite.Concat(ThemeManager.ResourceDictionaryBase))
                 {
                     var dictionary = new ResourceDictionary { Source = new Uri(uri, UriKind.RelativeOrAbsolute) };
@@ -159,6 +198,7 @@ public sealed class LocalSmuFlowTests
                 device.DisplayConfig.UseLocalSmu = false;
                 device.DisplayConfig.LocalBaudRate = SMUSerialBaudRate.Baud115200;
                 device.Config.IsNet = configuredAsNetwork;
+                device.Config.Nplc = 0.5;
                 if (configuredAsNetwork) device.Config.IpAddress = address;
                 else device.Config.SerialPort = address;
                 if (scanScenario == RepeatScanScenario.NodeDelayOverride) device.Config.DelayTime = 100;
@@ -273,6 +313,9 @@ public sealed class LocalSmuFlowTests
             Assert.Equal(configuredAsNetwork, connection.IsNet);
             Assert.Equal(address, connection.DeviceName);
             Assert.Equal(configuredAsNetwork ? 9600 : 115200, connection.BaudRate);
+            Assert.Equal(0.5, connection.Nplc);
+            Assert.NotEmpty(sdk.AppliedNplc);
+            Assert.All(sdk.AppliedNplc, value => Assert.Equal(0.5, value));
             if (scanScenario == RepeatScanScenario.NodeDelayOverride)
                 Assert.Equal(new double[] { 100, 0, 0, 0 }, sdk.AppliedDelays);
             Assert.Equal(!usesScan, sdk.Step);
@@ -342,7 +385,7 @@ public sealed class LocalSmuFlowTests
                 managerField.SetValue(null, previousManager);
                 if (device != null) removedConfig = DisplayConfigManager.Instance.Configs.TryRemove(device.Code, out _);
                 foreach (var dictionary in dictionaries) Application.Current.Resources.MergedDictionaries.Remove(dictionary);
-                if (previousConfig != null) ColorVision.UI.ConfigService.SetInstance(previousConfig);
+                if (previousConfig != null) TestEnvironment.SetConfig(previousConfig);
             });
             await session.DisposeAsync();
             Assert.True(removedConfig);
@@ -403,12 +446,14 @@ public sealed class LocalSmuFlowTests
         internal double[]? ListSourceValues;
         internal readonly List<(double Source, double Limit)> Points = [];
         internal readonly List<double> AppliedDelays = [];
+        internal readonly List<double> AppliedNplc = [];
         internal readonly List<int> ClosedBeforePoint = [];
         private Channel channel;
         public int Open(LocalSmuConnection connection) { OpenedConnections.Add(connection); return 0; }
         public int GetIdn(int handle, StringBuilder text, ref int length) { text.Append("synthetic flow SMU"); return 1; }
         public int SetWiring(int handle, bool fourWire, bool front) => 1;
         public int SetDelay(int handle, double milliseconds) { AppliedDelays.Add(milliseconds); return 1; }
+        public int SetNplc(int handle, double nplc, Pss_Type type) { AppliedNplc.Add(nplc); return 1; }
         public int SetChannel(int handle, bool channelA) { channel = channelA ? Channel.A : Channel.B; return 1; }
         public int SetSource(int handle, bool voltage) => 1;
         public int Measure(int handle, LocalSmuParameters parameters, bool step, ref double voltage, ref double current)

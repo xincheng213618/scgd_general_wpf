@@ -14,7 +14,7 @@ namespace ColorVision.Solution.Explorer
         private static readonly object _syncRoot = new();
         private static string[] _projectFilePatterns = [];
         private static bool _initialized;
-        private static bool _assemblyLoadSubscribed;
+        private static bool _discoverySubscribed;
 
         public static event EventHandler? ProvidersChanged;
 
@@ -29,15 +29,13 @@ namespace ColorVision.Solution.Explorer
                 if (_initialized)
                     return;
 
-                if (!_assemblyLoadSubscribed)
+                if (!_discoverySubscribed)
                 {
-                    AppDomain.CurrentDomain.AssemblyLoad += CurrentDomain_AssemblyLoad;
-                    _assemblyLoadSubscribed = true;
+                    SolutionAssemblyDiscovery.Subscribe(OnAssembliesChanged);
+                    _discoverySubscribed = true;
                 }
 
-                Assembly[] assemblies = AssemblyService.Instance?.GetAssemblies()
-                    ?? AppDomain.CurrentDomain.GetAssemblies();
-                foreach (Assembly assembly in assemblies)
+                foreach (Assembly assembly in SolutionAssemblyDiscovery.GetAssemblies())
                     changed |= RegisterProvidersFromAssemblyCore(assembly);
                 _initialized = true;
             }
@@ -58,11 +56,12 @@ namespace ColorVision.Solution.Explorer
             ProvidersChanged?.Invoke(null, EventArgs.Empty);
         }
 
-        private static void CurrentDomain_AssemblyLoad(object? sender, AssemblyLoadEventArgs e)
+        private static void OnAssembliesChanged(IEnumerable<Assembly> assemblies)
         {
-            bool changed;
+            bool changed = false;
             lock (_syncRoot)
-                changed = RegisterProvidersFromAssemblyCore(e.LoadedAssembly);
+                foreach (Assembly assembly in assemblies)
+                    changed |= RegisterProvidersFromAssemblyCore(assembly);
             if (changed)
                 ProvidersChanged?.Invoke(null, EventArgs.Empty);
         }
@@ -73,16 +72,13 @@ namespace ColorVision.Solution.Explorer
                 return false;
 
             bool changed = false;
-            foreach (Type type in GetLoadableTypes(assembly))
+            foreach (Type type in SolutionAssemblyDiscovery.GetTypes(assembly))
             {
-                var attribute = type.GetCustomAttribute<ProjectProviderAttribute>();
-                if (attribute == null
-                    || !typeof(IProjectProvider).IsAssignableFrom(type)
-                    || type.IsAbstract
-                    || type.IsInterface)
-                {
+                if (!typeof(IProjectProvider).IsAssignableFrom(type) || type.IsAbstract || type.IsInterface)
                     continue;
-                }
+
+                if (SolutionAssemblyDiscovery.GetExtensionAttribute<ProjectProviderAttribute>(type) is not { } attribute)
+                    continue;
 
                 try
                 {
@@ -490,22 +486,6 @@ namespace ColorVision.Solution.Explorer
                 return _providers.FirstOrDefault(registration =>
                     string.Equals(registration.Provider.Id, providerId, StringComparison.OrdinalIgnoreCase))?.Provider
                     as IProjectCapabilityProvider;
-            }
-        }
-
-        private static IEnumerable<Type> GetLoadableTypes(Assembly assembly)
-        {
-            try
-            {
-                return assembly.GetTypes();
-            }
-            catch (ReflectionTypeLoadException ex)
-            {
-                return ex.Types.Where(type => type != null)!;
-            }
-            catch
-            {
-                return Enumerable.Empty<Type>();
             }
         }
     }

@@ -2,6 +2,7 @@ using ColorVision.Common.MVVM;
 using ColorVision.Engine.PropertyEditor;
 using ColorVision.Engine.Services.Devices.Spectrum.Configs;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using System;
 using System.ComponentModel;
 using System.Globalization;
@@ -11,14 +12,27 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
     public sealed class SpectrumConfigurationDraft : ViewModelBase
     {
         private static readonly JsonSerializerSettings CopySettings = new() { ObjectCreationHandling = ObjectCreationHandling.Replace };
+        private JObject appliedServiceSettings;
+        private (bool UseLocal, bool FluxMode) appliedDisplaySettings;
         public ConfigSpectrum Config { get; }
+        public DisplaySpectrumConfig DisplayConfig { get; }
+        internal bool ServiceSettingsChanged { get; private set; }
+        internal bool DisplaySettingsChanged { get; private set; }
 
-        public SpectrumConfigurationDraft(ConfigSpectrum source)
+        public SpectrumConfigurationDraft(ConfigSpectrum source, DisplaySpectrumConfig? displaySource = null)
         {
             ArgumentNullException.ThrowIfNull(source);
             // Collections and nested settings must belong to the draft, including calibration groups and ND lists.
             Config = JsonConvert.DeserializeObject<ConfigSpectrum>(JsonConvert.SerializeObject(source), CopySettings)!;
+            DisplayConfig = new DisplaySpectrumConfig();
+            if (displaySource != null)
+            {
+                DisplayConfig.UseLocalSpectrum = displaySource.UseLocalSpectrum;
+                DisplayConfig.IsLuminousFluxMode = displaySource.IsLuminousFluxMode;
+            }
             ReloadConnection();
+            appliedServiceSettings = GetServiceSettings();
+            appliedDisplaySettings = (DisplayConfig.UseLocalSpectrum, DisplayConfig.IsLuminousFluxMode);
         }
 
         public bool IsSerialConnection { get => isSerialConnection; set { isSerialConnection = value; OnPropertyChanged(); } }
@@ -75,15 +89,55 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             return true;
         }
 
-        internal bool TryApply(ConfigSpectrum target, out string error)
+        internal bool TryApply(ConfigSpectrum target, out string error, DisplaySpectrumConfig? displayTarget = null)
         {
-            if (!Prepare(out error)) return false;
-            if (Config.SN != null) Config.SN = Config.SN.Trim();
-            if (Config.NDConfig.IsBingNDDevice) Config.NDConfig.SzComName = string.Empty;
-            else Config.NDConfig.NDBindDeviceCode = string.Empty;
-            // Keep the live config identity and its subscribers; never copy event fields from the draft.
-            JsonConvert.PopulateObject(JsonConvert.SerializeObject(Config), target, CopySettings);
+            ServiceSettingsChanged = false;
+            DisplaySettingsChanged = false;
+            error = string.Empty;
+            if (displayTarget == null || !JToken.DeepEquals(appliedServiceSettings, GetServiceSettings()))
+            {
+                if (!Prepare(out error)) return false;
+                if (Config.SN != null) Config.SN = Config.SN.Trim();
+                if (Config.NDConfig.IsBingNDDevice) Config.NDConfig.SzComName = string.Empty;
+                else Config.NDConfig.NDBindDeviceCode = string.Empty;
+                var serviceSettings = JObject.FromObject(Config);
+                ServiceSettingsChanged = !JToken.DeepEquals(serviceSettings, JObject.FromObject(target));
+                if (ServiceSettingsChanged)
+                {
+                    // Keep the live config identity and its subscribers; never copy event fields from the draft.
+                    JsonConvert.PopulateObject(serviceSettings.ToString(Formatting.None), target, CopySettings);
+                }
+                appliedServiceSettings = GetServiceSettings();
+            }
+            if (displayTarget != null)
+            {
+                if (appliedDisplaySettings.FluxMode != DisplayConfig.IsLuminousFluxMode
+                    && displayTarget.IsLuminousFluxMode != DisplayConfig.IsLuminousFluxMode)
+                {
+                    displayTarget.IsLuminousFluxMode = DisplayConfig.IsLuminousFluxMode;
+                    DisplaySettingsChanged = true;
+                }
+                if (appliedDisplaySettings.UseLocal != DisplayConfig.UseLocalSpectrum
+                    && displayTarget.UseLocalSpectrum != DisplayConfig.UseLocalSpectrum)
+                {
+                    displayTarget.UseLocalSpectrum = DisplayConfig.UseLocalSpectrum;
+                    DisplaySettingsChanged = true;
+                }
+                appliedDisplaySettings = (DisplayConfig.UseLocalSpectrum, DisplayConfig.IsLuminousFluxMode);
+            }
             return true;
+        }
+
+        private JObject GetServiceSettings()
+        {
+            var settings = JObject.FromObject(Config);
+            // The editor normalizes these inputs when loading and validating a draft.
+            settings[nameof(ConfigSpectrum.SN)] = Config.SN?.Trim() ?? string.Empty;
+            settings.Remove(nameof(ConfigSpectrum.ComPortView));
+            settings[nameof(ConfigSpectrum.ComPort)] = TryGetPort(out int port)
+                ? new JValue(port)
+                : new JValue(SerialPortName?.Trim() ?? string.Empty);
+            return settings;
         }
     }
 }

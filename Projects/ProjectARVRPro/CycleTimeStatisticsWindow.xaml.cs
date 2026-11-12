@@ -48,8 +48,8 @@ namespace ProjectARVRPro
         private readonly ObservableCollection<ResultStatisticsRecordRow> _recordRows = [];
         private readonly ObservableCollection<ResultStatisticsCombinedRecordRow> _combinedRows = [];
         private readonly ObservableCollection<FlowExecutionRecordRow> _flowRows = [];
-        private string[] _snSuggestions = [];
-        private string[] _flowNameSuggestions = [];
+        private ResultStatisticsSuggestions _snSuggestions = new([]);
+        private ResultStatisticsSuggestions _flowNameSuggestions = new([]);
         private readonly ObservableCollection<ProjectARVRReuslt> _details = [];
         private readonly ObservableCollection<ProjectARVRReuslt> _combinedDetails = [];
         private readonly Dictionary<int, ObjectiveTestResultRecord> _recordCache = [];
@@ -952,13 +952,13 @@ namespace ProjectARVRPro
             UpdateStatusText();
             try
             {
-                IReadOnlyList<ResultStatisticsSnSummary> summaries = await Task.Run(_statisticsStore.QuerySnSummaries);
+                ResultStatisticsSuggestions suggestions = await Task.Run(() => new ResultStatisticsSuggestions(_statisticsStore.QuerySnSuggestions()));
                 if (version != _snIndexVersion)
                     return;
 
-                _snSuggestions = summaries.Select(item => item.SN).ToArray();
+                _snSuggestions = suggestions;
                 UpdateSnSuggestions(SnFilter.Text, openDropDown: false);
-                _snIndexStatus = $"可检索 {_snSuggestions.Length:N0} 个 SN，下拉最多显示 {SuggestionDisplayLimit} 个匹配项";
+                _snIndexStatus = $"可检索 {_snSuggestions.Count:N0} 个 SN，下拉最多显示 {SuggestionDisplayLimit} 个匹配项";
             }
             catch (Exception ex)
             {
@@ -1017,10 +1017,7 @@ namespace ProjectARVRPro
         private void UpdateSnSuggestions(string? text, bool openDropDown)
         {
             string input = text ?? string.Empty;
-            IReadOnlyList<string> matches = ResultStatisticsSuggestionFilter.Filter(
-                _snSuggestions,
-                input,
-                SuggestionDisplayLimit);
+            IReadOnlyList<string> matches = _snSuggestions.Filter(input, SuggestionDisplayLimit);
 
             _updatingSnSuggestions = true;
             SnFilter.ItemsSource = matches;
@@ -1043,13 +1040,13 @@ namespace ProjectARVRPro
             UpdateStatusText();
             try
             {
-                IReadOnlyList<string> names = await Task.Run(_statisticsStore.QueryFlowNames);
+                ResultStatisticsSuggestions suggestions = await Task.Run(() => new ResultStatisticsSuggestions(_statisticsStore.QueryFlowNames()));
                 if (version != _flowNameIndexVersion)
                     return;
 
-                _flowNameSuggestions = names.ToArray();
+                _flowNameSuggestions = suggestions;
                 UpdateFlowNameSuggestions(FlowNameFilter.Text, openDropDown: false);
-                _flowNameIndexStatus = $"可检索 {_flowNameSuggestions.Length:N0} 个流程名，下拉最多显示 {SuggestionDisplayLimit} 个匹配项";
+                _flowNameIndexStatus = $"可检索 {_flowNameSuggestions.Count:N0} 个流程名，下拉最多显示 {SuggestionDisplayLimit} 个匹配项";
             }
             catch (Exception ex)
             {
@@ -1108,10 +1105,7 @@ namespace ProjectARVRPro
         private void UpdateFlowNameSuggestions(string? text, bool openDropDown)
         {
             string input = text ?? string.Empty;
-            IReadOnlyList<string> matches = ResultStatisticsSuggestionFilter.Filter(
-                _flowNameSuggestions,
-                input,
-                SuggestionDisplayLimit);
+            IReadOnlyList<string> matches = _flowNameSuggestions.Filter(input, SuggestionDisplayLimit);
 
             _updatingFlowNameSuggestions = true;
             FlowNameFilter.ItemsSource = matches;
@@ -1711,13 +1705,9 @@ namespace ProjectARVRPro
                 {
                     Dictionary<int, ObjectiveTestResultRecord> recordsById = _statisticsStore.GetRecords(ids)
                         .ToDictionary(record => record.Id);
-                    List<ObjectiveTestResultRecord> records = selectedRows
-                        .Where(row => recordsById.ContainsKey(row.Id))
-                        .Select(row => recordsById[row.Id])
-                        .ToList();
-                    Dictionary<int, IReadOnlyList<ProjectARVRReuslt>> flowResultsByRecordId = selectedRows
-                        .Where(row => recordsById.ContainsKey(row.Id))
-                        .ToDictionary(row => row.Id, row => _statisticsStore.QueryFlowDetailsForExport(row));
+                    ResultStatisticsRecordRow[] rows = selectedRows.Where(row => recordsById.ContainsKey(row.Id)).ToArray();
+                    List<ObjectiveTestResultRecord> records = rows.Select(row => recordsById[row.Id]).ToList();
+                    var flowResultsByRecordId = _statisticsStore.QueryFlowDetailsForBatchExport(rows);
                     ObjectiveTestResultBatchCsvExporter.ExportToCsv(records, flowResultsByRecordId, fileName);
                     return records;
                 });
@@ -1889,6 +1879,14 @@ namespace ProjectARVRPro
             contextMenu.Items.Add(new MenuItem { Command = batchHistoryCommand, Header = LocalizedText.Get("流程结果查询") });
             contextMenu.Items.Add(new MenuItem { Command = flowExecutionAnalysisCommand, Header = LocalizedText.Get("流程执行分析") });
             contextMenu.Items.Add(new MenuItem { Command = viewTestResultCommand, Header = LocalizedText.Get("查看测试结果") });
+            contextMenu.Items.Add(new MenuItem
+            {
+                Header = LocalizedText.Get("算法实证"),
+                Command = new RelayCommand(_ =>
+                    new AlgorithmEvidence.AlgorithmEvidenceWindow(detailGrid.Items.OfType<ProjectARVRReuslt>().ToArray(),
+                        (detailGrid.SelectedItem as ProjectARVRReuslt)?.Id) { Owner = this }.Show(),
+                    _ => _offlineSource == null && detailGrid.SelectedItem is ProjectARVRReuslt)
+            });
             contextMenu.Opened += (_, _) => CommandManager.InvalidateRequerySuggested();
 
             detailGrid.PreviewMouseRightButtonDown += (_, e) =>

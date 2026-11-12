@@ -11,7 +11,71 @@ related: ["ui.image-tools", "ui.core", "ui.image-editor", "ui.documents", "engin
 
 # 景深融合：输入、执行与结果生命周期
 
+<!-- algorithm-help:start -->
+
+## 景深融合算法原理 {#algorithm-principles}
+
 景深融合将一组不同焦点的本地图片融合为一张图像。独立窗口和本地流程节点共同调用 `ColorVision.Core.FileFusion`，读取磁盘文件，不使用编辑器未保存的修改或流程连续采集帧。算法不依赖远端服务；流程图像结果登记仍依赖已有流程批次和 MySQL。
+
+不同焦点的图片在不同位置包含清晰细节。当前算法先为每张图计算局部清晰度，再在同一像素位置对各帧强度作加权融合。输入应保持同一视场和位置，并按焦点顺序、近似等间隔采集；**尺寸相同不代表已配准**，当前不会自动对齐、去重影或控制电机采集。
+
+<figure class="algorithm-figure">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 660 310" role="img" aria-labelledby="fusion-principle-title fusion-principle-desc">
+  <title id="fusion-principle-title">焦点堆栈按局部清晰度融合</title>
+  <desc id="fusion-principle-desc">三张同视场图像中，近处、中间和远处区域分别最清晰。每个位置建立跨帧清晰度权重，融合图综合三处细节。示意不表示执行了自动配准或取得真实深度。</desc>
+  <defs><marker id="fusion-principle-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0 L10 5 L0 10 Z" fill="#64748b" /></marker></defs>
+  <g font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="16" fill="#1f2937">
+    <text x="172" y="24" text-anchor="middle">按焦点顺序输入同视场图片</text>
+    <rect x="20" y="48" width="225" height="56" fill="#f8fafc" stroke="#94a3b8" />
+    <rect x="20" y="126" width="225" height="56" fill="#f8fafc" stroke="#94a3b8" />
+    <rect x="20" y="204" width="225" height="56" fill="#f8fafc" stroke="#94a3b8" />
+    <path d="M44 62 H80 M44 73 H80 M44 84 H80" stroke="#2563eb" stroke-width="3" />
+    <path d="M108 145 H144 M108 156 H144 M108 167 H144" stroke="#2563eb" stroke-width="3" />
+    <path d="M172 222 H208 M172 233 H208 M172 244 H208" stroke="#2563eb" stroke-width="3" />
+    <text x="265" y="82">帧 1</text><text x="265" y="160">帧 2</text><text x="265" y="238">帧 3</text>
+    <path d="M320 154 H419" stroke="#64748b" stroke-width="2" marker-end="url(#fusion-principle-arrow)" />
+    <text x="371" y="117" text-anchor="middle">逐位置选焦</text><text x="371" y="197" text-anchor="middle">归一化权重</text>
+    <rect x="442" y="114" width="196" height="82" fill="#eff6ff" stroke="#2563eb" />
+    <path d="M458 136 H494 M458 147 H494 M458 158 H494 M520 136 H556 M520 147 H556 M520 158 H556 M582 136 H618 M582 147 H618 M582 158 H618" stroke="#2563eb" stroke-width="3" />
+    <text x="540" y="93" text-anchor="middle">融合图像</text>
+    <text x="330" y="294" text-anchor="middle">每个像素的权重可以不同  输出仍是一张普通 8-bit 图像</text>
+  </g>
+</svg>
+<figcaption>示意强调同一位置跨帧比较清晰度；没有从权重直接输出深度图，也不生成 CIE 标定数据。</figcaption>
+</figure>
+
+### 局部清晰度与权重 {#fusion-focus-measure}
+
+令第 $k$ 张输入的归一化灰度图为 $G_k=\operatorname{Gray}(I_k)/255$，$B_w$ 表示边界复制的 $w\times w$ 局部均值，则：
+
+$$
+F_k=B_w\left[(G_k-B_w(G_k))^2\right]
+$$
+
+这里先减去局部均值，再对平方偏差作局部平均；纹理起伏较大的位置通常得到较高的清晰度值。`FocusWindow` 同时控制这两次局部均值。高噪声也会抬高清晰度，因此清晰度不是独立的物理焦距或计量分辨率。
+
+当图组张数 $P<2\times\mathrm{FocusStep}+1$ 时，使用普通清晰度加权。每个颜色通道独立套用同一组灰度权重：
+
+$$
+I_{\mathrm{out}}(x,y)=\frac{\sum_{k=1}^{P} w_k(x,y)I_k(x,y)}{\sum_{k=1}^{P}w_k(x,y)},\qquad w_k=F_k
+$$
+
+例如两帧某像素强度为 80、120，清晰度权重为 1、3，则输出为 $(80+3\times120)/4=110$。若所有清晰度之和不大于 $10^{-6}$，该位置改用输入平均强度，避免无纹理区域变成黑斑。
+
+图数足够时，先在清晰度峰附近按 `FocusStep` 取样，建立当前实现的对称高斯峰拟合。将其与所有帧的实际清晰度比较，得到归一化平均绝对误差；按 `ConsistencyWindow` 平滑后，记为 $E$，再计算：
+
+$$
+S=-20\log_{10}(\max(E,10^{-6})),\qquad
+\phi=\frac{1+\tanh(\alpha(S-T))}{2\alpha}
+$$
+
+$T$ 是 `Threshold`，单位 dB。$S$ 衡量清晰度曲线与该拟合模型的符合程度，**不是融合图与真值图比较所得的 PSNR**。$\phi$ 经过固定 3×3 中值滤波后，用归一化清晰度 $\widetilde F_k=F_k/\max_j F_j$ 形成权重：
+
+$$
+w_k=\frac12+\frac12\tanh\left[\phi(\widetilde F_k-1)\right]
+$$
+
+再代入加权融合公式。无法形成有效高斯峰时赋予低可信度并偏向多帧混合。调低阈值通常使选焦更集中，调高则增加混合；该行为还受纹理、噪声和 $\alpha$ 影响，不是线性锐化控制。
 
 ## 执行融合
 
@@ -88,11 +152,13 @@ Auto 只在执行前选路，不在 GPU 失败后重试 CPU。CUDA 驱动检查�
 
 ## 结果显示与保存边界
 
-窗口结果仍使用临时 `LayoutDocument` 或独立窗口，不通过 `EditorDocumentService` 注册路径文档。关闭完成（`Closed`）后释放 ImageView；取消关闭不会提前清空图像。另存与像素/叠加含义见[图像编辑器](./ColorVision.ImageEditor.md)。
+窗口结果仍使用临时 `LayoutDocument` 或独立窗口，不通过 `EditorDocumentService` 注册路径文档。关闭完成（`Closed`）后释放 ImageView；取消关闭不会提前清空图像。另存时需分清源像素和带叠加显示图像，详见本主题末尾的图像编辑器参考。
 
 流程结果由 Engine 保存和登记，计算模块不接触 MySQL。输出 PNG 使用唯一名称和 `CreateNew`，不覆盖已有文件；默认目录与源文件分离，配置输出为输入子目录时因不递归枚举也不会卷入下一次图组。输入顺序、请求/实际模式和计算耗时保存到图像记录 `Params` 中。
 
 只有图像记录成功登记、结果交接和发布完成后才作为节点成功结果继续执行。计算/写文件/数据库/发布任一失败均按节点失败处理；已经产生的 PNG 或记录保留用于诊断，不作为成功执行的证据。融合图是普通像素图，不生成 CIE 标定数据或承诺亮度、色度测量有效。
+
+<!-- algorithm-help:end -->
 
 ## 验证入口与缺口
 
@@ -101,3 +167,5 @@ Auto 只在执行前选路，不在 GPU 失败后重试 CPU。CUDA 驱动检查�
 - `Test/opencv_helper_test/test_find_luminous_area.cpp` 的 `smokeFusionReturnsOwnedHImage` 检查 CPU 单图输出和释放；`test_cuda_fusion.cpp` 提供 CUDA DLL 验证和比较入口，覆盖旧数组/新参数请求、同步/异步一致性、非法参数和短图组/平坦图像。CUDA DLL 内的 `M_Fusion` 是 GPU 别名，该入口比较不等于 CPU/GPU 数值一致性。
 
 测试入口不是本次已通过声明；窗口人工操作、真实数据库历史显示、CUDA 驱动/native 依赖、大图资源和真实焦点堆栈融合质量需分别验收。Native/CUDA 测试会创建隔离图像并加载真实 DLL，不能用窗口响应或托管替身测试代替它们。
+
+图像另存与 source/rendered 的差别见[图像编辑器](./ColorVision.ImageEditor.md)。

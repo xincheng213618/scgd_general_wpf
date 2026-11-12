@@ -20,13 +20,11 @@ public class POIReviseData
 		POI_MasterId = poi;
 		POIPointName = poiPointName;
 		IsSelfResultRevise = isSelfResultRevise;
-		if (!string.IsNullOrEmpty(outputName))
+		// Legacy algorithm services read OutputParam.Name even when template output is disabled.
+		OutputParam = new CVTemplateParam
 		{
-			OutputParam = new CVTemplateParam
-			{
-				ID = -1,
-				Name = outputName
-			};
-		}
+			ID = -1,
+			Name = outputName ?? string.Empty
+		};
 	}
 }

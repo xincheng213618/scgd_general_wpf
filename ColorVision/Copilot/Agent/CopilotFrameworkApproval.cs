@@ -406,17 +406,65 @@ namespace ColorVision.Copilot
             ArgumentNullException.ThrowIfNull(request);
             cancellationToken.ThrowIfCancellationRequested();
 
-            var completion = new TaskCompletionSource<CopilotFrameworkApprovalDecision>(TaskCreationOptions.RunContinuationsAsynchronously);
-            var argumentsSummary = CopilotToolApprovalArgumentFormatter.Create(input);
-            var exactArgumentsBinding = CopilotAgentToolInputExactBinding.Create(input);
-            var presentation = tool switch
+            var arguments = (Summary: CopilotToolApprovalArgumentFormatter.Create(input), ExactBinding: CopilotAgentToolInputExactBinding.Create(input));
+            var presentation = CreateSynchronousPresentation(tool, request, input, arguments.Summary);
+            return CreateApproval(tool, request, arguments, callId, presentation, cancellationToken, executionScope, userReviewVisible);
+        }
+
+        public async Task<CopilotFrameworkApprovalHandle> RequestApprovalAsync(
+            ICopilotTool tool,
+            CopilotAgentRequest request,
+            CopilotAgentToolInput input,
+            string callId,
+            CancellationToken cancellationToken,
+            CopilotExecutionScope? executionScope = null,
+            bool userReviewVisible = true)
+        {
+            ArgumentNullException.ThrowIfNull(tool);
+            ArgumentNullException.ThrowIfNull(request);
+            cancellationToken.ThrowIfCancellationRequested();
+
+            if (tool is not ICopilotFrameworkAsyncApprovalPresentation presenter)
+                return RequestApproval(tool, request, input, callId, cancellationToken, executionScope, userReviewVisible);
+            if (!CopilotAgentToolInputSnapshot.TryCreate(input, out var frozenInput, out var error))
+                throw new InvalidOperationException(error);
+
+            var arguments = (Summary: CopilotToolApprovalArgumentFormatter.Create(frozenInput), ExactBinding: CopilotAgentToolInputExactBinding.Create(frozenInput));
+            var presentationTask = presenter.CreateApprovalPresentationAsync(request, frozenInput, cancellationToken);
+            var presentation = await CopilotCancellationBoundary.WaitAsync(presentationTask, cancellationToken).ConfigureAwait(false);
+            cancellationToken.ThrowIfCancellationRequested();
+            return CreateApproval(tool, request, arguments, callId, presentation, cancellationToken, executionScope, userReviewVisible);
+        }
+
+        private static CopilotToolApprovalPresentation CreateSynchronousPresentation(
+            ICopilotTool tool,
+            CopilotAgentRequest request,
+            CopilotAgentToolInput input,
+            string argumentsSummary)
+        {
+            return tool switch
             {
                 ICopilotFrameworkContextualApprovalPresentation contextualPresenter => contextualPresenter.CreateApprovalPresentation(request, input),
                 ICopilotFrameworkApprovalPresentation presenter => presenter.CreateApprovalPresentation(input),
+                ICopilotFrameworkAsyncApprovalPresentation => throw new InvalidOperationException($"Tool {tool.Name} requires asynchronous approval presentation. Use RequestApprovalAsync."),
                 _ => new CopilotToolApprovalPresentation(
                     $"Approve {tool.Name}",
                     $"Microsoft Agent Framework wants to run the protected ColorVision tool {tool.Name} with {argumentsSummary}."),
             };
+        }
+
+        private CopilotFrameworkApprovalHandle CreateApproval(
+            ICopilotTool tool,
+            CopilotAgentRequest request,
+            (string Summary, string ExactBinding) arguments,
+            string callId,
+            CopilotToolApprovalPresentation presentation,
+            CancellationToken cancellationToken,
+            CopilotExecutionScope? executionScope,
+            bool userReviewVisible)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var completion = new TaskCompletionSource<CopilotFrameworkApprovalDecision>(TaskCreationOptions.RunContinuationsAsynchronously);
             presentation = CopilotSharedCapabilityCatalog.ApplyApprovalMetadata(
                 tool.Name,
                 presentation);
@@ -453,8 +501,8 @@ namespace ColorVision.Copilot
                     presentation.Title,
                     presentation.Description,
                     tool.Name,
-                    argumentsSummary,
-                    exactArgumentsBinding,
+                    arguments.Summary,
+                    arguments.ExactBinding,
                     callId,
                     CopilotConfirmationRequestContext.ForAgent(
                         request,
@@ -463,7 +511,8 @@ namespace ColorVision.Copilot
                         executionScope),
                     createdAction => action = createdAction,
                     reviewDetails: presentation.ReviewDetails,
-                    userReviewVisible: userReviewVisible);
+                    userReviewVisible: userReviewVisible,
+                    executionTargetFingerprint: presentation.ExecutionTargetFingerprint);
 
                 if (cancellationToken.IsCancellationRequested)
                 {

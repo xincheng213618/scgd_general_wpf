@@ -438,7 +438,7 @@ namespace ColorVision
             try
             {
                 Stopwatch stopwatch = Stopwatch.StartNew();
-                Window mainWindow = MainWindowFactory.Create(MainWindowConfig.Instance.UseCompactMainWindow);
+                Window mainWindow = MainWindowFactory.Create();
                 trace?.Observe(mainWindow);
                 mainWindow.ContentRendered += SaveProfileAfterFirstRender;
                 mainWindow.Show();

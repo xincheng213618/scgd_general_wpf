@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms</value></resheader>
+  <data name="CameraResourcesTitle" xml:space="preserve"><value>Camera resources</value></data>
+  <data name="CameraResourcesDescription" xml:space="preserve"><value>Physical camera configuration and calibration files. Browse their locations; excluded from bulk cleanup.</value></data>
+  <data name="CameraImagesTitle" xml:space="preserve"><value>Camera images</value></data>
+  <data name="CameraImagesDescription" xml:space="preserve"><value>Images and companion results in configured cameras' dedicated Data directories.</value></data>
+  <data name="AlgorithmImagesTitle" xml:space="preserve"><value>Algorithm results</value></data>
+  <data name="AlgorithmImagesDescription" xml:space="preserve"><value>Images and results in configured algorithm modules' dedicated Data directories.</value></data>
+  <data name="PreProcessFilesTitle" xml:space="preserve"><value>Preprocessing files</value></data>
+  <data name="PreProcessFilesDescription" xml:space="preserve"><value>Folders configured in preprocessing capacity policies, using their file types and subfolder settings.</value></data>
+  <data name="CleanupNotice" xml:space="preserve"><value>Review files selected by retention time before cleanup. Camera resources and active flow or capture files are protected. Deleting result files affects reopening historical results.</value></data>
+</root>

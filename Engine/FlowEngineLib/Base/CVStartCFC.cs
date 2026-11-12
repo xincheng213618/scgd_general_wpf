@@ -1,27 +1,36 @@
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using FlowEngineLib.Start;
+using log4net;
 using Newtonsoft.Json;
 
 namespace FlowEngineLib.Base;
 
 public class CVStartCFC : CVBaseCFC
 {
+	private static readonly ILog logger = LogManager.GetLogger(typeof(CVStartCFC));
+
     [JsonIgnore] internal Repeat.FlowRepeatRegionRun RepeatRun { get; set; }
     [JsonIgnore] internal int RepeatRound { get; set; }
     [JsonIgnore]
     public bool PersistResults { get; set; } = true;
+	internal bool WasDispatched { get; set; }
+
 	private sealed class FlowFinishState
 	{
 		public readonly object Lock = new object();
 
-		public bool IsFinished;
+		public volatile bool IsFinished;
 
 		public StatusTypeEnum? Status;
 
 		public int FinishedNotificationDeferralCount;
 
 		public CVStartCFC PendingFinishedAction;
+
+		public TaskCompletionSource<FlowStartEventArgs> TrackedCompletion;
+		public FlowStartEventArgs TrackedTerminalResult;
 	}
 
 	private sealed class FinishedNotificationDeferral : IDisposable
@@ -50,6 +59,15 @@ public class CVStartCFC : CVBaseCFC
 	public StatusTypeEnum? FinishedStatus
 	{
 		get { lock (finishState.Lock) return finishState.Status; }
+	}
+
+	internal void TrackCompletion() => finishState.TrackedCompletion = new(TaskCreationOptions.RunContinuationsAsynchronously);
+	[JsonIgnore]
+	public bool HasFinished => finishState.IsFinished;
+	internal TaskCompletionSource<FlowStartEventArgs> TrackedCompletion => finishState.TrackedCompletion;
+	internal FlowStartEventArgs TrackedTerminalResult
+	{
+		get { lock (finishState.Lock) return finishState.TrackedTerminalResult; }
 	}
 
 	[JsonIgnore]
@@ -143,7 +161,13 @@ public class CVStartCFC : CVBaseCFC
 		}
 		finally
 		{
-			RuntimeResources.Dispose();
+			try { RuntimeResources.Dispose(); }
+			catch (Exception error)
+			{
+				logger.Error($"Failed to release runtime resources for flow {SerialNumber}.", error);
+			}
+			if (finishState.TrackedCompletion != null)
+				finishState.TrackedTerminalResult = BaseStartNode.CreateFinishedEventArgs(this);
 		}
 	}
 
@@ -178,12 +202,11 @@ public class CVStartCFC : CVBaseCFC
 		return other != null && string.Equals(SerialNumber, other.SerialNumber, StringComparison.Ordinal);
 	}
 
-	/// <summary>Pairs branch inputs from the same flow and, inside a repeat region, the same run and round.</summary>
+	/// <summary>Pairs branch inputs from the same execution and, inside a repeat region, the same round.</summary>
 	public bool IsSameExecutionIteration(CVStartCFC other)
 	{
-		return IsSameFlow(other) && (RepeatRun == null && other.RepeatRun == null
-			|| ReferenceEquals(RepeatRun, other.RepeatRun) && RepeatRound == other.RepeatRound
-				&& ReferenceEquals(RuntimeResources, other.RuntimeResources));
+		return IsSameFlow(other) && ReferenceEquals(RuntimeResources, other.RuntimeResources)
+			&& ReferenceEquals(RepeatRun, other.RepeatRun) && (RepeatRun == null || RepeatRound == other.RepeatRound);
 	}
 
 	/// <summary>Owns a node-created resource and releases intermediate repeat resources between rounds.</summary>

@@ -19,7 +19,7 @@ ColorVision 的权限判断分布在桌面入口、账户服务、本机权限�
 
 | 入口或问题 | 负责判断的模块 | 对应文档 |
 | --- | --- | --- |
-| 应用管理员、菜单和窗口访问 | 全局 `Authorization.Instance.PermissionMode`、AccessControl 以及具体命令/窗口中的显式检查 | [Common 权限帮助器](../../04-api-reference/ui-components/ColorVision.Common.md)、[菜单执行](../../04-api-reference/ui-components/menus.md) |
+| 应用动作、菜单和窗口访问 | Common 的 `AccessRequest` / `IAccessPolicy` 决策点，以及实际执行入口的 `AccessControl` 检查；默认策略兼容全局角色层级 | [Common 权限帮助器](../../04-api-reference/ui-components/ColorVision.Common.md)、[菜单执行](../../04-api-reference/ui-components/menus.md) |
 | 用户登录、自动登录和登出 | RBAC 的 AuthService、SessionService 与登录/账户窗口；身份验证、缓存恢复和全局模式同步是不同步骤 | [RBAC 登录与会话](./rbac.md) |
 | 用户能否执行某个权限码 | RBAC PermissionChecker 查询角色权限并缓存结果；调用者仍需核对用户身份及检查位置 | [RBAC 权限检查](./rbac.md#权限检查) |
 | 本机服务、注册表、关联或安装维护 | ColorVisionServiceHost 的 Windows 调用身份、命令票据和业务参数规则 | [本机权限代理](../components/service-host.md) |
@@ -35,7 +35,11 @@ ColorVision 的权限判断分布在桌面入口、账户服务、本机权限�
 
 `Authorization.Instance` 是可设置的全局配置对象，RBAC 的初始化和登录路径会更新其中的模式。看到 Administrator 不能证明已验证有效 SessionToken、拥有指定 RBAC 权限码，或当前进程具有 Windows 管理员令牌。应用管理员与 ServiceHost 的 Windows 调用身份应分别检查。
 
-AccessControl 的方法特性检查和执行帮助器使用不同判据；类特性、委托包装、直接调用和命令 CanExecute 也不具有自动统一拦截效果。精确规则与空实例行为见 [Common 权限契约](../../04-api-reference/ui-components/ColorVision.Common.md#粗粒度权限的判据不是统一授权拦截)，不要仅因方法名包含 Permission 就认为所有调用路径等价。
+`AccessControl.Evaluate` 和 `Demand` 将动作、资源和主体交给可替换策略；旧 Check 与执行 helper 也适配到同一决策点。默认策略仍采用已有角色层级，不把动作标识自动映射成 RBAC 权限码，也不验证会话、Windows 身份或许可证。未装配 `Authorization.Instance` 时拒绝需要角色的动作，但 `new Authorization()` 及 RBAC 无有效缓存时仍默认 Administrator；默认策略并不要求已验证的 RBAC 登录会话。
+
+方法/类特性、委托包装、直接调用和命令 `CanExecute` 不具有自动统一拦截效果。已接入的关键执行入口会在副作用前重新决策，未接入的旧调用仍须按具体实现核对。精确原因码、策略失败时的拒绝和公开 API 兼容规则见 [Common 权限契约](../../04-api-reference/ui-components/ColorVision.Common.md#粗粒度权限的判据不是统一授权拦截)。
+
+实验功能开关、设备商业许可和操作授权由各自入口处理。本地 Camera/Spectrum 的许可层保留实验模式的兼容例外：`ExperimentalFeaturesConfig.IsEnabled` 开启时跳过应用侧许可证缺失/到期检查，关闭时恢复正常检查。设备打开入口读取实验开关，向许可检查帮助器传递显式的跳过参数，不通过操作授权策略替代许可判断；这个参数也不跳过原生 SDK 自身的许可校验、光谱许可证文件准备或有效 SN 规则。Common 的资源上下文与策略替换不构成远程灰度、商业授权服务器或自动审计服务。
 
 ## 本地账户与权限码的范围
 

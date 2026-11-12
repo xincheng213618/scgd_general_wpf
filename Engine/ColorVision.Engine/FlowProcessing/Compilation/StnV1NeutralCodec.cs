@@ -5,6 +5,7 @@ using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
 using System.Text;
 using FlowEngineLib.Base;
@@ -31,6 +32,8 @@ internal static class StnV1NeutralCodec
         SchemaCache = new();
     private static readonly ConcurrentDictionary<string, Type>
         NodeTypeCache = new(StringComparer.Ordinal);
+    private static readonly ConditionalWeakTable<Assembly, Type[]>
+        AssemblyNodeTypeCache = new();
 
     internal static NeutralCanvas Decode(
         byte[] canvasData,
@@ -460,12 +463,7 @@ internal static class StnV1NeutralCodec
         Type[] candidates = AppDomain.CurrentDomain
             .GetAssemblies()
             .Where(assembly => !assembly.IsDynamic)
-            .SelectMany(GetLoadableTypes)
-            .Where(type =>
-                type != null
-                && type.IsClass
-                && !type.IsAbstract
-                && typeof(STNode).IsAssignableFrom(type))
+            .SelectMany(GetLoadableNodeTypes)
             .ToArray();
 
         Type? resolved = candidates.FirstOrDefault(type =>
@@ -493,15 +491,22 @@ internal static class StnV1NeutralCodec
         return resolved;
     }
 
-    private static Type[] GetLoadableTypes(Assembly assembly)
+    private static Type[] GetLoadableNodeTypes(Assembly assembly)
     {
+        if (AssemblyNodeTypeCache.TryGetValue(assembly, out Type[]? cached))
+            return cached;
+        Type[] types;
+        bool complete = true;
         try
         {
-            return assembly.GetTypes();
+            // Reflect outside the cache callback/lock; dependency loading can re-enter discovery.
+            types = assembly.GetTypes();
         }
         catch (ReflectionTypeLoadException ex)
         {
-            return ex.Types
+            // A later dependency load can make the remaining types available.
+            complete = false;
+            types = ex.Types
                 .Where(type => type != null)
                 .Cast<Type>()
                 .ToArray();
@@ -510,6 +515,10 @@ internal static class StnV1NeutralCodec
         {
             return Array.Empty<Type>();
         }
+
+        // Keep metadata failures in the predicate visible, as they were before caching.
+        Type[] nodes = types.Where(type => type != null && type.IsClass && !type.IsAbstract && typeof(STNode).IsAssignableFrom(type)).ToArray();
+        return complete ? AssemblyNodeTypeCache.GetValue(assembly, _ => nodes) : nodes;
     }
 
     private static NeutralNodeSchema CreateSchema(Type type)

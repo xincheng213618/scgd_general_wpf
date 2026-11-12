@@ -72,6 +72,8 @@ namespace ColorVision.ImageEditor.BatchProcessing
                 throw new ArgumentException("The output suffix contains invalid file-name characters.", nameof(request));
 
             List<BatchAlgorithmAnalysisFileResult> files = new(request.Items.Count);
+            var reservations = new BatchOutputReservations(request.Items, !request.AvoidOverwrite, cancellationToken);
+            var nextUnreservedNumbers = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
             for (int index = 0; index < request.Items.Count; index++)
             {
                 BatchImageItem item = request.Items[index];
@@ -84,7 +86,7 @@ namespace ColorVision.ImageEditor.BatchProcessing
                         ?? throw new NotSupportedException(string.Format(Properties.Resources.BatchUnsupportedFormat, Path.GetExtension(item.FilePath)));
                     using Mat source = loader.Load(item.FilePath);
                     AlgorithmInvocation invocation = CloneInvocation(request.Invocation, item.FilePath);
-                    AlgorithmImageBuffer input = AlgorithmImageInterop.FromMat(source);
+                    AlgorithmImageBuffer input = AlgorithmImageInterop.FromMat(source, cancellationToken: cancellationToken);
                     using AlgorithmResult result = await _runtime.Runner.RunAsync(new AlgorithmRunRequest
                     {
                         Invocation = invocation,
@@ -114,10 +116,12 @@ namespace ColorVision.ImageEditor.BatchProcessing
                         continue;
                     }
 
-                    string outputPath = CreateOutputPath(item, request);
+                    cancellationToken.ThrowIfCancellationRequested();
+                    string outputPath = CreateOutputPath(item, request, result, reservations, nextUnreservedNumbers, cancellationToken);
                     IReadOnlyList<string> outputPaths = request.ExportFormat == BatchAnalysisExportFormat.Json
-                        ? [AlgorithmResultExporter.ExportJson(result, outputPath, overwrite: !request.AvoidOverwrite)]
-                        : AlgorithmResultExporter.ExportCsvBundle(result, outputPath, overwrite: !request.AvoidOverwrite);
+                        ? [await AlgorithmResultExporter.ExportJsonAsync(result, outputPath, overwrite: !request.AvoidOverwrite, cancellationToken)]
+                        : await AlgorithmResultExporter.ExportCsvBundleAsync(result, outputPath, overwrite: !request.AvoidOverwrite, cancellationToken);
+                    foreach (string path in outputPaths) reservations.Add(path);
                     files.Add(new BatchAlgorithmAnalysisFileResult(item.FilePath, outputPaths, result.Status));
                     progress?.Report(new BatchImageProgress
                     {
@@ -161,7 +165,9 @@ namespace ColorVision.ImageEditor.BatchProcessing
                 Metadata = source.Metadata,
             };
 
-        private static string CreateOutputPath(BatchImageItem item, BatchAlgorithmAnalysisRequest request)
+        private static string CreateOutputPath(BatchImageItem item, BatchAlgorithmAnalysisRequest request,
+            AlgorithmResult result, BatchOutputReservations reservations, Dictionary<string, int> nextUnreservedNumbers,
+            CancellationToken cancellationToken)
         {
             string directory = request.OutputDirectory ?? Path.GetDirectoryName(item.FilePath)!;
             if (request.PreserveFolderStructure
@@ -171,9 +177,34 @@ namespace ColorVision.ImageEditor.BatchProcessing
                 string relative = Path.GetRelativePath(Path.GetFullPath(item.SourceRoot), Path.GetDirectoryName(Path.GetFullPath(item.FilePath))!);
                 if (relative != "." && !relative.StartsWith("..", StringComparison.Ordinal)) directory = Path.Combine(directory, relative);
             }
-            Directory.CreateDirectory(directory);
-            string extension = request.ExportFormat == BatchAnalysisExportFormat.Json ? ".json" : ".csv";
-            return Path.Combine(directory, Path.GetFileNameWithoutExtension(item.FilePath) + request.Suffix + extension);
+            directory = Path.GetFullPath(directory);
+            string stem = Path.GetFileNameWithoutExtension(item.FilePath) + request.Suffix;
+            bool exportJson = request.ExportFormat == BatchAnalysisExportFormat.Json;
+            string extension = exportJson ? ".json" : ".csv";
+            string path = Path.Combine(directory, stem + extension);
+            cancellationToken.ThrowIfCancellationRequested();
+            if (!reservations.Contains(path) && !HasCompanionCollision(path))
+                return path;
+
+            string key = reservations.Resolve(path);
+            int firstUnreserved = nextUnreservedNumbers.GetValueOrDefault(key, 2);
+            for (int number = firstUnreserved; ; number++)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                path = Path.Combine(directory, $"{stem}_{number}{extension}");
+                if (reservations.Contains(path))
+                {
+                    if (number == firstUnreserved) firstUnreserved++;
+                    continue;
+                }
+                // A collision with a companion report may leave this number available to a different result.
+                if (HasCompanionCollision(path)) continue;
+                nextUnreservedNumbers[key] = firstUnreserved;
+                return path;
+            }
+
+            bool HasCompanionCollision(string candidate) => !exportJson
+                && AlgorithmResultExporter.GetCsvBundlePaths(result, candidate).Any(target => reservations.Contains(target));
         }
     }
 }

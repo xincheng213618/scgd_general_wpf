@@ -53,7 +53,7 @@ next: false
   区分log4net输出、历史文件读取与UI筛选，说明刷新、截断和原生日志采集边界；没有显示不等于动作未发生。
 
 - [主窗口与入口装配](../../01-user-guide/interface/main-window.md) — `operations.main-window`
-  主窗口菜单、搜索、状态栏与工作区装配；紧凑主窗口在 Windows build 22000 或更高版本默认启用并保留旧窗口开关，低版本直接使用普通主窗口。
+  主窗口菜单、搜索、状态栏与工作区装配；Windows 11 使用紧凑主窗口，Windows 10 保持原生窗口。
 
 - [RBAC：登录缓存、会话与权限边界](../../03-architecture/security/rbac.md) — `platform.rbac`
   本地RBAC的登录缓存、会话校验和权限同步限制，以及自动登录失败、登出撤销和用户中心统计的实际边界。
@@ -83,7 +83,7 @@ next: false
   UI 扩展发现与入口缺失排查：AssemblyHandler 的程序集过滤、类型缓存和 provider 构造；刷新程序集不重建所有消费者，入口可见不证明初始化或业务完成。
 
 - [编辑器选择、文档生命周期与停靠布局](../../04-api-reference/ui-components/editor-document-lifecycle.md) — `ui.documents`
-  编辑器注册与选择、按路径和编辑器区分文档、保存重载关闭及外部变更；停靠布局不恢复未注册文件标签，重置也不预审脏文档。
+  编辑器注册与选择、文档身份、保存重载关闭及外部变更；重置停靠布局保留已打开的编辑器和未保存修改。
 
 - [快捷键：发现、注册、编辑与释放](../../04-api-reference/ui-components/hotkeys.md) — `ui.hotkeys`
   快捷键的发现、多组绑定、窗口/全局注册与搜索编辑；同一操作共享作用域，未分配操作保留展示，确认后立即保存，注册或持久化失败按结果补偿。
@@ -104,13 +104,13 @@ next: false
   Socket连接管理器的监听配置、窗口关闭与服务停止、防火墙放行、消息查询和JSON/Text分发；清空消息只清列表，重发可能换客户端，Sent不证明对端执行。
 
 - [工作区创建、资源打开与文件树管理](../../04-api-reference/ui-components/ColorVision.Solution.md) — `ui.solution`
-  工作区创建、打开与最近列表，文件树搜索和引用移除，切换取消及cvsln恢复；同名创建可能覆盖配置，取消切换不回滚全部文件变化。
+  工作区创建、打开与最近列表，文件树搜索和引用移除，切换取消及 cvsln 恢复。新建工作区保留已有文件。
 
 - [状态栏：发现、刷新与宿主生命周期](../../04-api-reference/ui-components/status-bar.md) — `ui.status-bar`
   状态栏的插件发现、活动文档通知、绑定更新、控件重建和关闭生命周期；刷新不保证发现新provider，隐藏不等于保存偏好或停止采样。
 
 - [存储清理与选择性设置重置](../../04-api-reference/ui-components/storage-maintenance.md) — `ui.storage-maintenance`
-  独立文件缓存窗口的模块发现、自动增量扫描和确认清理，以及设置页的内存管理、恢复点和选择性重置入口。
+  存储分类占用与模块扩展接口、独立文件确认清理，以及配置页的恢复点和选择性下次启动重置。
 
 - [主题选择、资源应用与窗口外观](../../04-api-reference/ui-components/ColorVision.Themes.md) — `ui.themes`
   应用主题即时预览，启动页独立选择深色、浅色或跟随软件且下次启动生效；ThemeManager 的资源、系统跟随、窗口外观和保存边界。
@@ -171,8 +171,20 @@ next: false
 - [CVRAW / CVCIE 图像导出](../../04-api-reference/engine-components/cv-image-export.md) — `engine.cv-image-export`
   CVRAW/CVCIE 原生导出的窗口、命令行参数、通道和命名规则，以及覆盖、部分失败和退出码边界。
 
+- [Engine 设备资源与运行装配](../../04-api-reference/engine-components/device-service-chain.md) — `engine.devices`
+  设备工厂、资源重载、显示装配与详情视图按需初始化；旧对象释放、集合重建和显示替换并非一个事务，记录存在、界面可见、服务在线和动作完成分别判断。
+
+- [算法结果交接、展示与导出](../../04-api-reference/engine-components/result-handoff-chain.md) — `engine.results`
+  算法结果交接、已加载批次主记录查询与叠加显示：区分本地中立 Geometry/Overlay、Engine 历史 handler 和客户业务导出，保留来源与文档/revision 生命周期。
+
+- [Flow 运行诊断、中断恢复与 Incident 处置](../../04-api-reference/engine-components/flow-diagnostics.md) — `flow.diagnostics`
+  Flow本地诊断SQLite快照、节点尝试与Incident事件列表的读写边界；快照不保证包含未保存画布，终态持久化与业务结果分开，中断恢复不续跑节点，心跳不是判死条件。
+
 - [界面语言：资源发现、配置与重启](../../04-api-reference/ui-components/localization.md) — `ui.localization`
   界面语言的资源发现、系统语言回退、设置绑定和重启切换；语言下拉框不证明插件翻译完整，修改配置值不等于刷新窗口。
+
+- [FlowEngineLib 节点扩展](../../04-api-reference/extensions/flow-node.md) — `flow.node-extension`
+  说明服务与本地节点基类、请求与响应扩展点、分支输入隔离、属性编辑和流程完成的边界。
 
 - [ColorVision 本地 MCP](../../02-developer-guide/core-concepts/colorvision-mcp.md) — `copilot.mcp-server`
   ColorVision 入站本地 MCP 的连接与会话、工具和资源、工作区读取、两阶段确认及菜单写入边界。
@@ -188,7 +200,7 @@ next: false
 ## ColorVision/Guidance {#module-436f6c6f72566973696f6e2f47756964616e6365}
 
 - [主窗口与入口装配](../../01-user-guide/interface/main-window.md) — `operations.main-window`
-  主窗口菜单、搜索、状态栏与工作区装配；紧凑主窗口在 Windows build 22000 或更高版本默认启用并保留旧窗口开关，低版本直接使用普通主窗口。
+  主窗口菜单、搜索、状态栏与工作区装配；Windows 11 使用紧凑主窗口，Windows 10 保持原生窗口。
 
 ## ColorVision/NativeLogging {#module-436f6c6f72566973696f6e2f4e61746976654c6f6767696e67}
 
@@ -223,7 +235,7 @@ next: false
 ## ColorVision/Settings {#module-436f6c6f72566973696f6e2f53657474696e6773}
 
 - [存储清理与选择性设置重置](../../04-api-reference/ui-components/storage-maintenance.md) — `ui.storage-maintenance`
-  独立文件缓存窗口的模块发现、自动增量扫描和确认清理，以及设置页的内存管理、恢复点和选择性重置入口。
+  存储分类占用与模块扩展接口、独立文件确认清理，以及配置页的恢复点和选择性下次启动重置。
 
 - [设置、流程与结果的导入导出边界](../../01-user-guide/data-management/export-import.md) — `operations.exports`
   按软件设置备份、流程、图像和项目结果定位导入导出入口，说明备份恢复范围、文件验收与迁移边界。
@@ -239,7 +251,7 @@ next: false
 ## ColorVision/Themes {#module-436f6c6f72566973696f6e2f5468656d6573}
 
 - [主窗口与入口装配](../../01-user-guide/interface/main-window.md) — `operations.main-window`
-  主窗口菜单、搜索、状态栏与工作区装配；紧凑主窗口在 Windows build 22000 或更高版本默认启用并保留旧窗口开关，低版本直接使用普通主窗口。
+  主窗口菜单、搜索、状态栏与工作区装配；Windows 11 使用紧凑主窗口，Windows 10 保持原生窗口。
 
 ## ColorVision/ToolPlugins {#module-436f6c6f72566973696f6e2f546f6f6c506c7567696e73}
 
@@ -270,7 +282,7 @@ next: false
   快捷键的发现、多组绑定、窗口/全局注册与搜索编辑；同一操作共享作用域，未分配操作保留展示，确认后立即保存，注册或持久化失败按结果补偿。
 
 - [存储清理与选择性设置重置](../../04-api-reference/ui-components/storage-maintenance.md) — `ui.storage-maintenance`
-  独立文件缓存窗口的模块发现、自动增量扫描和确认清理，以及设置页的内存管理、恢复点和选择性重置入口。
+  存储分类占用与模块扩展接口、独立文件确认清理，以及配置页的恢复点和选择性下次启动重置。
 
 - [安装制品与运行输出](../../00-getting-started/installation.md) — `delivery.installation`
   区分完整安装制品、增量更新和源码输出，定位安装后缺依赖、配置与启动问题。
@@ -278,7 +290,7 @@ next: false
 ## ColorVision/Windowing {#module-436f6c6f72566973696f6e2f57696e646f77696e67}
 
 - [主窗口与入口装配](../../01-user-guide/interface/main-window.md) — `operations.main-window`
-  主窗口菜单、搜索、状态栏与工作区装配；紧凑主窗口在 Windows build 22000 或更高版本默认启用并保留旧窗口开关，低版本直接使用普通主窗口。
+  主窗口菜单、搜索、状态栏与工作区装配；Windows 11 使用紧凑主窗口，Windows 10 保持原生窗口。
 
 ## ColorVision/Wizards {#module-436f6c6f72566973696f6e2f57697a61726473}
 

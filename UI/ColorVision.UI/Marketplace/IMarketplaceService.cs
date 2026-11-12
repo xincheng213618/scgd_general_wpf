@@ -85,6 +85,8 @@ namespace ColorVision.UI.Marketplace
     /// </summary>
     public class MarketplacePluginDetail
     {
+        [Newtonsoft.Json.JsonIgnore]
+        public string? UpdateSourceUrl { get; set; }
         public string PluginId { get; set; } = string.Empty;
         public string Name { get; set; } = string.Empty;
         public string? Description { get; set; }

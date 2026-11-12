@@ -8,6 +8,7 @@ using Newtonsoft.Json.Linq;
 using ST.Library.UI.NodeContainer;
 using ST.Library.UI.NodeEditor;
 using System.ComponentModel;
+using System.Globalization;
 using System.IO;
 using System.Reflection;
 using System.Text;
@@ -77,12 +78,39 @@ public sealed class CompatibilityNodeMigrationTests
         Assert.Equal(13, (int)FlowEngineLib.Algorithm.AlgorithmType.AA布点);
         Assert.Equal(3, (int)FlowEngineLib.Algorithm.Algorithm2Type.SFR);
         Assert.Equal(6, (int)FlowEngineLib.Algorithm.Algorithm2Type.灯带检测);
+        AssertRetiredAlgorithm(node);
+    });
+
+    [Theory]
+    [InlineData(typeof(FlowEngineLib.Algorithm.AlgorithmNode), "灯珠检测", 5)]
+    [InlineData(typeof(FlowEngineLib.Algorithm.AlgorithmNode), "灯带检测", 6)]
+    [InlineData(typeof(FlowEngineLib.Node.OLED.Algorithm2InNode), "JND", 1)]
+    [InlineData(typeof(FlowEngineLib.Node.OLED.Algorithm2InNode), "灯带检测", 6)]
+    public void RetiredAiOperatorsLoadSavedNamesAndIdsButCannotExecute(Type type, string name, int id) => StaTest.Run(() =>
+    {
+        var node = (STNode)Activator.CreateInstance(type)!;
+        node.Create();
+        foreach (string savedAlgorithm in new[] { name, id.ToString(CultureInfo.InvariantCulture) })
+        {
+            node.OnLoadNode(new Dictionary<string, byte[]>
+            {
+                ["Algorithm"] = Encoding.UTF8.GetBytes(savedAlgorithm),
+                ["TempName"] = Encoding.UTF8.GetBytes("legacy-template")
+            });
+            Assert.Equal(id, Convert.ToInt32(type.GetProperty("Algorithm")!.GetValue(node), CultureInfo.InvariantCulture));
+            Assert.Equal("legacy-template", type.GetProperty("TempName")!.GetValue(node));
+            AssertRetiredAlgorithm(node);
+        }
+    });
+
+    private static void AssertRetiredAlgorithm(STNode node)
+    {
         var error = Assert.Throws<TargetInvocationException>(() => node.GetType()
             .GetMethod("getBaseEventData", BindingFlags.Instance | BindingFlags.NonPublic)!
             .Invoke(node, [new CVStartCFC("SYNTHETIC-RETIRED-ALGORITHM")]));
         Assert.IsType<NotSupportedException>(error.InnerException);
         Assert.Contains("已退役", error.InnerException!.Message);
-    });
+    }
 
     // These fixtures were saved by the compiled FlowEngineLib nodes before migration.
     // Retired nodes are excluded; the remaining 25 node records retain their original bytes.
@@ -124,6 +152,54 @@ public sealed class CompatibilityNodeMigrationTests
             Assert.Null(payload.Property("ExpTemplateParam"));
             Assert.True(calibration.IsSaveCIE);
         }
+    });
+
+    [Theory]
+    [InlineData(typeof(FlowEngineLib.Algorithm.AlgorithmNode), "ImageCompound")]
+    [InlineData(typeof(FlowEngineLib.Node.OLED.Algorithm2InNode), "十字计算")]
+    [InlineData(typeof(FlowEngineLib.Algorithm.AlgorithmARVRNode), "FOV")]
+    [InlineData(typeof(FlowEngineLib.Node.Algorithm.AlgorithmGhostV2Node), null)]
+    public void AlgorithmNodesIgnoreRetiredSettingsAndSendDefaultValues(Type type, string? algorithm) => StaTest.Run(() =>
+    {
+        var node = (STNode)Activator.CreateInstance(type)!;
+        node.Create();
+        var legacy = new Dictionary<string, byte[]> { ["BufferLen"] = Encoding.UTF8.GetBytes("4096") };
+        if (node is FlowEngineLib.Algorithm.AlgorithmNode or FlowEngineLib.Algorithm.AlgorithmARVRNode)
+            legacy["Color"] = Encoding.UTF8.GetBytes("RED");
+        if (algorithm != null)
+            legacy["Algorithm"] = Encoding.UTF8.GetBytes(algorithm);
+        node.OnLoadNode(legacy);
+
+        var saved = STNodeSavedState.Parse(node.GetSaveData()).Properties;
+        Assert.DoesNotContain("Color", saved.Keys);
+        Assert.DoesNotContain("BufferLen", saved.Keys);
+        if (algorithm != null)
+            Assert.Equal(algorithm, Encoding.UTF8.GetString(saved["Algorithm"]));
+        var request = type
+            .GetMethod("getBaseEventData", BindingFlags.Instance | BindingFlags.NonPublic)!
+            .Invoke(node, [new CVStartCFC("SYNTHETIC-ALGORITHM-DEFAULTS")])!;
+        var payload = JObject.FromObject(request);
+        Assert.Equal(1024, (int?)payload["BufferLen"]);
+        if (request is FlowEngineLib.Algorithm.AlgorithmImageParam)
+            Assert.Equal((int)FlowEngineLib.Algorithm.CVOLED_COLOR.GREEN, (int?)payload["Color"]);
+    });
+
+    [Fact]
+    public void LocalBuildPoiIgnoresLegacyNamePrefixAndKeepsTemplates() => StaTest.Run(() =>
+    {
+        var node = new LocalBuildPoiNode();
+        node.Create();
+        node.OnLoadNode(new Dictionary<string, byte[]>
+        {
+            ["PrefixName"] = Encoding.UTF8.GetBytes("legacy-prefix_"),
+            [nameof(node.LayoutROITemplateName)] = Encoding.UTF8.GetBytes("Layout"),
+            [nameof(node.RePOITemplateName)] = Encoding.UTF8.GetBytes("PointLayout")
+        });
+
+        var saved = STNodeSavedState.Parse(node.GetSaveData()).Properties;
+        Assert.DoesNotContain("PrefixName", saved.Keys);
+        Assert.Equal("Layout", Encoding.UTF8.GetString(saved[nameof(node.LayoutROITemplateName)]));
+        Assert.Equal("PointLayout", Encoding.UTF8.GetString(saved[nameof(node.RePOITemplateName)]));
     });
 
     [Fact]
@@ -205,11 +281,21 @@ public sealed class CompatibilityNodeMigrationTests
             JToken? expected = contracts[i]["request"]?.DeepClone();
             if (request is FlowEngineLib.CameraData or FlowEngineLib.Node.Camera.CommCameraData)
                 ((JObject)expected!).Remove("POIParam");
+            if (request is FlowEngineLib.Node.Camera.CommCameraData)
+                ((JObject)expected!).Remove("IsHDR");
             if (request is FlowEngineLib.Algorithm.CalibrationData)
             {
                 ((JObject)expected!).Remove("POIParam");
                 ((JObject)expected!).Remove("POI_MasterId");
                 ((JObject)expected!).Remove("ExpTemplateParam");
+            }
+            if (request is FlowEngineLib.Node.POI.POIReviseData)
+            {
+                ((JObject)expected!)["OutputParam"] = new JObject
+                {
+                    ["ID"] = -1,
+                    ["Name"] = ((FlowEngineLib.Node.POI.POIReviseNode)nodes[i]).Output ?? string.Empty,
+                };
             }
             Assert.True(JToken.DeepEquals(expected, request == null ? JValue.CreateNull() : JToken.FromObject(request)), type.FullName);
             if (i + 1 < nodes.Length)
@@ -330,6 +416,11 @@ public sealed class CompatibilityNodeMigrationTests
                     Assert.DoesNotContain(key, newProperties.Keys);
                 }
             }
+            if (modelKey == "FlowEngineLib.dll|FlowEngineLib.Node.Camera.CommCameraNode")
+            {
+                oldProperties.Remove("IsHDR");
+                Assert.DoesNotContain("IsHDR", newProperties.Keys);
+            }
             if (modelKey == "FlowEngineLib.dll|FlowEngineLib.Algorithm.CalibrationNode")
             {
                 foreach (string key in RetiredCalibrationProperties)
@@ -337,6 +428,13 @@ public sealed class CompatibilityNodeMigrationTests
                     oldProperties.Remove(key);
                     Assert.DoesNotContain(key, newProperties.Keys);
                 }
+            }
+            if (modelKey == "FlowEngineLib.dll|FlowEngineLib.Algorithm.AlgorithmARVRNode")
+            {
+                oldProperties.Remove("Color");
+                oldProperties.Remove("BufferLen");
+                Assert.DoesNotContain("Color", newProperties.Keys);
+                Assert.DoesNotContain("BufferLen", newProperties.Keys);
             }
             // Historical CV camera records predate local capture's persisted SaveFiles switch.
             // Missing values keep the current default and are written on the first save.
@@ -349,8 +447,9 @@ public sealed class CompatibilityNodeMigrationTests
             Assert.Equal(oldProperties.Keys, newProperties.Keys);
             foreach (var property in oldProperties)
             {
-                // Removed calibration controls change the default height of auto-sized runtime nodes.
-                if (modelKey == "FlowEngineLib.dll|FlowEngineLib.Algorithm.CalibrationNode"
+                // Removed controls change the default height of these auto-sized runtime nodes.
+                if (modelKey is ("FlowEngineLib.dll|FlowEngineLib.Algorithm.CalibrationNode"
+                        or "FlowEngineLib.dll|FlowEngineLib.Algorithm.AlgorithmARVRNode")
                     && oldProperties["AutoSize"][0] == 1 && property.Key == "Height")
                     continue;
                 // STNode.BuildSize measures AutoSize nodes when an editor owns them.

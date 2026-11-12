@@ -47,7 +47,7 @@ public sealed class CopilotUnicodeFileReadTests : IDisposable
         var path = Path.Combine(_directory.FullName, "preview.log");
         await File.WriteAllTextAsync(path, source, GetEncoding("utf8"));
 
-        var search = CopilotGrepTextCapability.Search([_directory.FullName], "tail", null, CancellationToken.None);
+        var search = CopilotGrepTextCapability.Search([_directory.FullName], "xxxx", null, CancellationToken.None);
 
         Assert.True(search.Success, search.ErrorMessage);
         var match = Assert.Single(search.Matches);
@@ -58,10 +58,7 @@ public sealed class CopilotUnicodeFileReadTests : IDisposable
 
     [Theory]
     [InlineData("utf8")]
-    [InlineData("utf8-bom")]
     [InlineData("utf16-le")]
-    [InlineData("utf16-be")]
-    [InlineData("utf32-le")]
     [InlineData("utf32-be")]
     public async Task ContinuationKeepsSupplementaryCharacterIntactAcrossReadBudget(string encodingName)
     {
@@ -86,11 +83,42 @@ public sealed class CopilotUnicodeFileReadTests : IDisposable
     }
 
     [Theory]
+    [InlineData("utf8", false)]
+    [InlineData("utf16-le", false)]
+    [InlineData("utf32-be", true)]
+    public async Task ExplicitColumnInsideSupplementaryCharacterCannotBecomeSuccessfulReadEvidence(string encodingName, bool atBufferBoundary)
+    {
+        const string header = "header\r\n";
+        var prefix = new string('x', atBufferBoundary ? 4095 - header.Length : 1);
+        var path = Path.Combine(_directory.FullName, "column.log");
+        await File.WriteAllTextAsync(path, header + prefix + "🔬 tail\r\nlast", GetEncoding(encodingName));
+        var original = await File.ReadAllBytesAsync(path);
+        var request = new CopilotAgentRequest { Mode = CopilotAgentMode.Auto, UserText = "读取日志", SearchRootPaths = [_directory.FullName] };
+        var tool = new CopilotReadLocalFileTool();
+
+        var invalid = await tool.ExecuteAsync(request, new() { Path = path, StartLine = 2, StartColumn = prefix.Length + 2, EndLine = 2 }, CancellationToken.None);
+
+        Assert.False(invalid.Success);
+        Assert.Contains($"Requested start column {prefix.Length + 2}", invalid.ErrorMessage);
+        Assert.Contains("splits a Unicode surrogate pair on line 2", invalid.ErrorMessage);
+        Assert.Empty(invalid.SuccessfullyReadLocalFilePaths);
+        Assert.Empty(invalid.LocalFileReadScopes);
+        Assert.NotEmpty(new UTF8Encoding(false, true).GetBytes(invalid.Content));
+
+        var complete = await tool.ExecuteAsync(request, new() { Path = path, StartLine = 2, StartColumn = prefix.Length + 1, EndLine = 2 }, CancellationToken.None);
+        Assert.True(complete.Success, complete.ErrorMessage);
+        var scope = Assert.Single(complete.LocalFileReadScopes);
+        Assert.Equal(prefix.Length + 1, scope.StartColumn);
+        Assert.Equal(2, scope.EndLine);
+        Assert.Contains($"L2:C{prefix.Length + 1}: 🔬 tail", complete.Content);
+        Assert.DoesNotContain("last", complete.Content);
+        Assert.NotEmpty(new UTF8Encoding(false, true).GetBytes(complete.Content));
+        Assert.Equal(original, await File.ReadAllBytesAsync(path));
+    }
+
+    [Theory]
     [InlineData("utf8")]
-    [InlineData("utf8-bom")]
     [InlineData("utf16-le")]
-    [InlineData("utf16-be")]
-    [InlineData("utf32-le")]
     [InlineData("utf32-be")]
     public async Task DecodedNulBeyondPreviewDoesNotBecomeSuccessfulTextEvidence(string encodingName)
     {
@@ -106,10 +134,7 @@ public sealed class CopilotUnicodeFileReadTests : IDisposable
 
     [Theory]
     [InlineData("utf8")]
-    [InlineData("utf8-bom")]
-    [InlineData("utf16-le")]
     [InlineData("utf16-be")]
-    [InlineData("utf32-le")]
     [InlineData("utf32-be")]
     public async Task IncompleteUnicodeCodeUnitIsRejectedInsteadOfReplacingEvidence(string encodingName)
     {

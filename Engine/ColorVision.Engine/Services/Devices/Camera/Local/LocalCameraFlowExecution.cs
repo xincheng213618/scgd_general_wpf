@@ -10,6 +10,7 @@ using ColorVision.FileIO;
 using System.Diagnostics;
 using cvColorVision;
 using FlowEngineLib.Algorithm;
+using FlowEngineLib.Node.Camera;
 
 namespace ColorVision.Engine.Services.Devices.Camera.Local;
 
@@ -22,11 +23,7 @@ internal interface ILocalCameraFlowServices
 
 internal sealed class LocalCameraFlowServices : ILocalCameraFlowServices
 {
-    public LocalCameraCaptureResult Capture(LocalCameraCaptureRequest request)
-    {
-        FlowNodeTiming.Run("ConnectCamera", () => request.Device.EnsureLocalMeasurementConnected(autoConnect: true));
-        return LocalCameraCaptureService.Capture(request);
-    }
+    public LocalCameraCaptureResult Capture(LocalCameraCaptureRequest request) => LocalCameraCaptureService.Capture(request, autoConnect: true);
 
     public MeasureResultImgModel Save(CVStartCFC action, int zIndex, LocalCameraCaptureRequest request, LocalCameraCaptureResult capture)
         => LocalCameraResultService.SaveFlowModel(action, zIndex, capture.Frame, capture, request.CameraParameters, request.Calibration, request.IsAutoExposure);
@@ -34,14 +31,17 @@ internal sealed class LocalCameraFlowServices : ILocalCameraFlowServices
     public void Publish(CVStartCFC action, string nodeId, int zIndex, LocalCameraCaptureRequest request, LocalCameraCaptureResult capture, MeasureResultImgModel model)
     {
         request.Device.PublishLocalPreview(capture.Frame, model, forceDisplay: false);
-        ResultMessageBus.Default.PublishPersisted(ResultRoutes.Camera, ResultKinds.Image, request.Device.Code, "GetData", action.SerialNumber, nodeId, zIndex, model.Id, 100);
+        if (action.PersistResults)
+            ResultMessageBus.Default.PublishPersisted(ResultRoutes.Camera, ResultKinds.Image, request.Device.Code, "GetData", action.SerialNumber, nodeId, zIndex, model.Id, 100);
+        else
+            ResultMessageBus.Default.Publish(new ResultMessage(ResultRoutes.Camera, ResultKinds.Image, request.Device.Code, "GetData", action.SerialNumber, nodeId, zIndex, new ResultReference(model.Id, 100), model));
     }
 }
 
 internal sealed class LocalCameraFlowExecution : FlowLocalExecution
 {
     private readonly DeviceCamera device;
-    private readonly LocalCameraCaptureRequest captureRequest;
+    private LocalCameraCaptureRequest captureRequest;
     private readonly ILocalCameraFlowServices services;
     private readonly string serialNumber;
     private readonly string nodeId;
@@ -55,12 +55,13 @@ internal sealed class LocalCameraFlowExecution : FlowLocalExecution
 
     public override bool UseNodeTimeout => false;
 
+    private static DeviceCamera? FindDevice(string deviceCode) => ServiceManager.Current?.DeviceServices.OfType<DeviceCamera>()
+        .FirstOrDefault(camera => string.Equals(camera.Code, deviceCode, StringComparison.Ordinal));
+
+    internal static bool UsesLocalCamera(string deviceCode) => FindDevice(deviceCode)?.CameraBackend.OpensLocally == true;
+
     internal static FlowLocalExecution? Create(CVMQTTRequest request, CVFileSaveMode saveMode)
-    {
-        DeviceCamera? device = ServiceManager.Current?.DeviceServices.OfType<DeviceCamera>()
-            .FirstOrDefault(camera => string.Equals(camera.Code, request.DeviceCode, StringComparison.Ordinal));
-        return CreateForDevice(device, request, new LocalCameraFlowServices(), saveMode);
-    }
+        => CreateForDevice(FindDevice(request.DeviceCode), request, new LocalCameraFlowServices(), saveMode);
 
     internal static FlowLocalExecution? CreateForDevice(DeviceCamera? device, CVMQTTRequest request, ILocalCameraFlowServices services, CVFileSaveMode saveMode)
     {
@@ -77,13 +78,75 @@ internal sealed class LocalCameraFlowExecution : FlowLocalExecution
         serialNumber = request.SerialNumber;
         nodeId = request.DeviceNodeCode;
         zIndex = request.ZIndex;
-        if (request.EventName != "GetData" || request.Data is not CameraData parameters)
+        if (request.EventName != "GetData")
             throw new InvalidOperationException("本地相机请求格式无效。");
-        captureRequest = BuildCaptureRequest(device, parameters);
+        captureRequest = BuildCaptureRequest(device, request.Data);
         device.CameraBackend.BeginLocalCommand();
     }
 
-    internal static LocalCameraCaptureRequest BuildCaptureRequest(DeviceCamera device, CameraData parameters)
+    internal static LocalCameraCaptureRequest BuildCaptureRequest(DeviceCamera device, object? parameters)
+    {
+        CameraRunParam cameraParameters;
+        string? calibrationName;
+        CVImageFlipMode flipMode;
+        string? autoExposureConfiguration = null;
+        switch (parameters)
+        {
+            case CameraData direct:
+                cameraParameters = BuildDirectCameraParameters(device, direct);
+                calibrationName = direct.Calibration?.Name;
+                flipMode = direct.FlipMode;
+                break;
+            case CommCameraData common:
+                cameraParameters = BuildCommCameraParameters(device, common);
+                calibrationName = common.Calibration?.Name;
+                flipMode = common.FlipMode;
+                if (common.IsAutoExpTime)
+                {
+                    if (common.IsAutoExpWithND)
+                        throw new NotSupportedException("本地自动曝光尚不支持 ND 自动切换，请关闭节点的启用ND选项后重试。");
+                    autoExposureConfiguration = LocalAutoExposureTemplate.BuildFlowConfiguration(
+                        common.AutoExpTimeTemplate?.Name, device.DisplayConfig.LocalAutoExposureConfig);
+                }
+                break;
+            default:
+                throw new InvalidOperationException("本地相机请求格式无效。");
+        }
+
+        if (!float.IsFinite(cameraParameters.Gain) || cameraParameters.Gain < 0 || cameraParameters.AvgCount < 1)
+            throw new InvalidOperationException("增益必须为非负有限值，平均次数至少为 1。");
+        LocalFrameMirrorService.ValidateFlipMode(flipMode);
+        CalibrationParam? calibration = string.IsNullOrWhiteSpace(calibrationName) ? null
+            : device.PhyCamera?.CalibrationParams.FirstOrDefault(item => string.Equals(item.Key, calibrationName, StringComparison.Ordinal))?.Value
+                ?? throw new InvalidOperationException($"找不到校正模板：{calibrationName}");
+        if (CalibrationGroupGainResolver.TryResolve(calibration, device.PhyCamera?.VisualChildren.OfType<GroupResource>() ?? Enumerable.Empty<GroupResource>(), out float calibrationGain, out _))
+            cameraParameters.Gain = calibrationGain;
+        return new LocalCameraCaptureRequest
+        {
+            Device = device, CameraParameters = cameraParameters, Calibration = calibration,
+            FlipMode = flipMode, IsAutoExposure = autoExposureConfiguration != null,
+            AutoExposureConfiguration = autoExposureConfiguration, SaveFiles = false
+        };
+    }
+
+    private static CameraRunParam BuildCommCameraParameters(DeviceCamera device, CommCameraData parameters)
+    {
+        string? templateName = parameters.CamParamTemplate?.Name;
+        if (string.IsNullOrWhiteSpace(templateName))
+            return device.BuildLocalCameraParameters();
+
+        CameraRunParam template = TemplateCameraRunParam.Params.FirstOrDefault(item => item.Key == templateName)?.Value
+            ?? throw new InvalidOperationException($"找不到相机参数模板：{templateName}");
+        if (template.EnableFocus)
+            throw new NotSupportedException("本地通用相机取图不执行相机模板中的焦距和光圈设置，请使用相机电机节点。");
+        return new CameraRunParam
+        {
+            Gain = template.Gain, AvgCount = template.AvgCount,
+            ExpTime = template.ExpTime, ExpTimeR = template.ExpTimeR, ExpTimeG = template.ExpTimeG, ExpTimeB = template.ExpTimeB
+        };
+    }
+
+    private static CameraRunParam BuildDirectCameraParameters(DeviceCamera device, CameraData parameters)
     {
         bool isCv = parameters is CVCameraData;
         int exposureCount = isCv ? 3 : 1;
@@ -96,35 +159,27 @@ internal sealed class LocalCameraFlowExecution : FlowLocalExecution
             if (cv.CV2LVChannel != (int)CV2LVChannelMode.None)
                 throw new NotSupportedException("本地 CV 相机节点暂不支持 CV2LV 单通道模式，请将 CV2LVChannel 设置为 None。");
         }
-        if (!float.IsFinite(parameters.Gain) || parameters.Gain < 0 || parameters.AvgCount < 1)
-            throw new InvalidOperationException("增益必须为非负有限值，平均次数至少为 1。");
-        LocalFrameMirrorService.ValidateFlipMode(parameters.FlipMode);
-        string calibrationName = parameters.Calibration?.Name ?? string.Empty;
-        CalibrationParam? calibration = string.IsNullOrWhiteSpace(calibrationName) ? null
-            : device.PhyCamera?.CalibrationParams.FirstOrDefault(item => string.Equals(item.Key, calibrationName, StringComparison.Ordinal))?.Value
-                ?? throw new InvalidOperationException($"找不到校正模板：{calibrationName}");
         CameraRunParam cameraParameters = new() { Gain = parameters.Gain, AvgCount = parameters.AvgCount };
         cameraParameters.SetAllExposure(parameters.ExpTime[0]);
         if (isCv)
         {
-            cameraParameters.ExpTimeR = parameters.ExpTime[0];
             cameraParameters.ExpTimeG = parameters.ExpTime[1];
             cameraParameters.ExpTimeB = parameters.ExpTime[2];
         }
-        if (CalibrationGroupGainResolver.TryResolve(calibration, device.PhyCamera?.VisualChildren.OfType<GroupResource>() ?? Enumerable.Empty<GroupResource>(), out float calibrationGain, out _))
-            cameraParameters.Gain = calibrationGain;
-        return new LocalCameraCaptureRequest
-        {
-            Device = device, CameraParameters = cameraParameters, Calibration = calibration,
-            FlipMode = parameters.FlipMode, IsAutoExposure = false,
-            SaveFiles = false
-        };
+        return cameraParameters;
     }
+
+    public override void Bind(CVStartCFC action) => captureRequest = captureRequest with { Stop = action.RuntimeResources.StopToken };
 
     public override void Execute()
     {
         using var activation = timing.Activate();
-        try { capture = services.Capture(captureRequest); }
+        try
+        {
+            captureRequest.Stop.ThrowIfCancellationRequested();
+            capture = services.Capture(captureRequest);
+            captureRequest.Stop.ThrowIfCancellationRequested();
+        }
         finally { ReleaseCommand(); }
     }
 
@@ -145,11 +200,12 @@ internal sealed class LocalCameraFlowExecution : FlowLocalExecution
             throw new InvalidOperationException("本地取图结果与当前流程批次不匹配。");
         LocalFlowFrame frame = capture.Frame;
         frame.CvRawFilePath = LocalFrameFileService.CreateCapturePath(device.Config.FileServerCfg.DataBasePath, device.Code, frame.Metadata);
-        MeasureResultImgModel model = FlowNodeTiming.Run("PersistResult", () => services.Save(action, zIndex, captureRequest, capture));
-        if (model.Id <= 0) throw new InvalidOperationException("保存本地相机结果记录失败。");
         Stopwatch saveTimer = Stopwatch.StartNew();
         LocalFrameFileService.SaveCapture(frame, frame.CvRawFilePath, saveMode);
         int saveTime = checked((int)Math.Min(saveTimer.ElapsedMilliseconds, int.MaxValue));
+        captureRequest.Stop.ThrowIfCancellationRequested();
+        MeasureResultImgModel model = FlowNodeTiming.Run("PersistResult", () => services.Save(action, zIndex, captureRequest, capture));
+        if (action.PersistResults && model.Id <= 0) throw new InvalidOperationException("保存本地相机结果记录失败。");
         frame.MasterId = model.Id;
         action.SetCurrentFrame(frame);
         frameTransferred = true;

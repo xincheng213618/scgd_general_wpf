@@ -89,9 +89,10 @@ namespace ColorVision.Copilot
             var outputFinishReasonIncomplete = false;
             try
             {
-                var response = await contextRecoveryChatClient.GetResponseAsync(
+                var response = await GetFinalAnswerResponseAsync(
+                    contextRecoveryChatClient,
                     messages,
-                    BuildFinalAnswerOptions(request),
+                    request,
                     cancellationToken);
                 usage = usage.Add(CopilotTokenBudgetChatClient.ExtractResponseUsage(response));
                 finalAnswer = ExtractFinalAnswerText(response);
@@ -203,7 +204,7 @@ namespace ColorVision.Copilot
             taskEventJournalBuilder.RecordStop(stopReason);
             var taskEventJournal = taskEventJournalBuilder.Snapshot();
             emit(CopilotAgentEvent.RuntimeDiagnostic(
-                $"Final-answer-only recovery used {budgetSnapshot.ConsumedTokens:N0}/{budgetSnapshot.RequestTokenBudget:N0} tokens across {budgetSnapshot.ProviderCalls} provider call(s) · tools 0/{budgetSnapshot.MaxToolCalls}."));
+                $"Final-answer-only recovery used {budgetSnapshot.ChargedTokens:N0}/{budgetSnapshot.RequestTokenBudget:N0} tokens across {budgetSnapshot.ProviderCalls} provider call(s) · tools 0/{budgetSnapshot.MaxToolCalls}."));
             emit(CopilotAgentEvent.RuntimeDiagnostic($"Agent stop reason · {stopReason}."));
 
             CopilotAgentSessionCheckpoint? sessionCheckpoint = null;

@@ -88,6 +88,11 @@ namespace ColorVision.ImageEditor
             return _binding.AcquireImageFrame();
         }
 
+        internal bool CanRestoreChannelFromCatalogSource => _binding.CanRestoreChannelFromCatalogSource?.Invoke() == true;
+
+        internal (ImageSource? Source, long Revision)? CaptureSourceState()
+            => _binding.CaptureSourceState?.Invoke();
+
         public bool IsCurrentImageRevision(long revision)
         {
             return _binding.IsCurrentImageRevision(revision);
@@ -121,6 +126,14 @@ namespace ColorVision.ImageEditor
         public int GetSelectedLayerSourceChannelIndex()
         {
             return _binding.GetSelectedLayerSourceChannelIndex();
+        }
+
+        internal void RestoreSelectedLayerDisplay()
+        {
+            Dispatcher.VerifyAccess();
+            if (IsDisposed) return;
+            if (_binding.RestoreSelectedLayerDisplay is Action restore) restore();
+            else Presentation.RestoreSource();
         }
 
         public void SetImageSource(ImageSource imageSource)
@@ -168,11 +181,13 @@ namespace ColorVision.ImageEditor
 
         internal bool HasActiveAlgorithmPreview => _operations.HasActiveAlgorithmPreview;
 
-        internal void SupersedePreviewForDisplaySelection()
+        internal bool SupersedePreviewForDisplaySelection()
         {
             DisplayEffects.Invalidate();
-            _operations.SupersedePreviewForDisplaySelection();
+            return _operations.SupersedePreviewForDisplaySelection();
         }
+
+        internal long AlgorithmClaimSequence => _operations.AlgorithmClaimSequence;
 
         internal long AlgorithmPreviewGeneration => _operations.AlgorithmPreviewGeneration;
 
@@ -230,6 +245,10 @@ namespace ColorVision.ImageEditor
 
         public required Func<ImageFrameLease?> AcquireImageFrame { get; init; }
 
+        internal Func<bool>? CanRestoreChannelFromCatalogSource { get; init; }
+
+        public Func<(ImageSource? Source, long Revision)>? CaptureSourceState { get; init; }
+
         public required Func<long, bool> IsCurrentImageRevision { get; init; }
 
         public required Action NotifySourcePixelsChanged { get; init; }
@@ -241,6 +260,8 @@ namespace ColorVision.ImageEditor
         public required Action<ImageSource?> SetViewBitmapSource { get; init; }
 
         public required Func<int> GetSelectedLayerSourceChannelIndex { get; init; }
+
+        public Action? RestoreSelectedLayerDisplay { get; init; }
 
         public required Action<ImageSource> SetImageSource { get; init; }
 

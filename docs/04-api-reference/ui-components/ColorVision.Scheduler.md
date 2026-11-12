@@ -21,6 +21,10 @@ related: ["ui.index","ui.status-bar","ui.configuration","flow.templates","flow.h
 4. 优先级与超时在**高级设置**中，默认折叠；编辑含非默认高级参数的任务时自动展开。点击 **创建任务**或**保存修改**，成功后窗口关闭；输入格式、参数生成、校验或保存失败会在窗口内显示错误并保留表单。
 5. 卡片主操作按任务类型与状态显示：间隔/重复任务为**执行任务、继续执行、重新执行**；Cron、日历和每日间隔任务为**启用计划、重新启用**。计划已经启动时禁用主操作，显示等待执行、执行中或计划已启用，并提供**暂停任务**。**编辑任务**保留在卡片上；**更多（•••）**和右键菜单提供**仅执行一次**、任务历史、属性与删除入口。顶部历史查看全部记录，**导出**菜单提供 CSV、JSON 和报告。
 
+创建 **执行流程** 任务时，选择一个已保存的流程模板。任务名称默认采用模板名称，可以自行修改。任务按模板标识读取触发时已保存的内容，主窗口当时选中的模板不决定运行目标。执行仍使用主工作区，工作区有未保存修改或已有流程在运行时，本次会报告未能启动。若已绑定模板不可用，在任务中重新选择模板。旧的未绑定任务沿用主工作区当前流程，编辑保存时可绑定已保存模板。
+
+流程任务等待前处理、流程执行和后处理的完成链。任务历史的详情显示本次实际运行的流程名、批次号、最终状态以及可用的执行消息和后处理失败原因。模板改名或任务改绑后，已经写入的历史仍显示运行当时的流程名。
+
 默认“间隔/重复 + 一次”计划可在创建后立即执行。重启只加载已保存的任务，不自动运行：未完成任务显示“已暂停”，完成的有限计划显示“计划已完成”。暂停后主操作保留进度，继续剩余计划；完成后点击**重新执行**会按原次数、间隔及延迟开始完整新一轮，无需打开编辑窗口。定时类型点击**启用计划**后按设定时间触发。**仅执行一次**额外运行一次，不消耗计划次数，也不解除暂停。涉及设备或流程的操作仍应先核对配置和运行条件。暂停、单次执行和关闭窗口的具体效果见[暂停与关闭](#暂停、取消、超时和关闭)。
 
 | 设置 | 默认值与含义 |
@@ -51,7 +55,7 @@ related: ["ui.index","ui.status-bar","ui.configuration","flow.templates","flow.h
 - `TaskViewerInitializer.Order=1000` 的正常宿主入口等待 `InitializationTask`，让低 Order 的服务初始化先执行。但 `SchedulerStatusBarProvider`、`TaskViewerWindow` 和历史窗口的上下文注册也会取得单例，不能据初始化器顺序断言所有首次访问都已等待设备就绪。
 - 单个任务类型丢失、定义校验失败或注册失败会汇总警告，其他可恢复任务仍会登记；启动阶段整体异常则记录日志、提示并使初始化任务失败。JSON/SQLite 加载异常有各自的捕获分支，不等于启动被统一阻断。
 
-Job 类型来自当次 `AssemblyService.Instance.GetAssemblies()` 扫描，不来自 SQLite。发现条件是实现 `IJob` 且不是接口；最终创建还要求非抽象类。显示键取 `DisplayNameAttribute` 或类型名，同名会覆盖目录项；当前没有持续监听新程序集重新发现 Job 的机制。
+Job 类型来自当次 `AssemblyService.Instance.GetImplementationTypes(typeof(IJob))`，不来自 SQLite。发现条件是实现 `IJob` 的非抽象、非开放泛型类，范围限于发现视图，主程序中不含 Quartz 自身的内部 Job。显示键取 `DisplayNameAttribute` 或类型名，同名会覆盖目录项；当前没有持续监听新程序集重新发现 Job 的机制。
 
 ## JSON 定义和计划进度
 
@@ -62,9 +66,13 @@ Job 类型来自当次 `AssemblyService.Instance.GetAssemblies()` 扫描，不�
 | `scheduler_tasks.json` | `SchedulerTaskSerializer` 保存整组 `SchedulerInfo`，含 Job 类型、配置、调度参数、本轮已触发次数、下一计划时间、完成标记及显示/统计字段 | 不是业务成功、在途执行或设备动作恰好一次的保证 |
 | `SchedulerHistory.db` | `JobExecutionRecord` 保存每次返回后的开始/结束时间、耗时、成功标记、结果与消息；启动时按 JobName/GroupName 恢复部分统计 | 不是任务定义，也不是设备实际静止或每次执行都已记录的保证 |
 
-JSON 使用 `TypeNameHandling.All` 保留多态类型和 `IJobConfig`，加载依赖对应程序集/类型可解析；没有在此序列化器配置类型白名单，因此只应把它当作可信本机状态，不接受未经核验的外来 JSON。保存先写同目录临时文件，再用 `File.Replace` 保留 `.bak`，首次保存则移动文件；这是单文件替换，不是 JSON 与 Quartz、SQLite 的跨系统事务。`LoadFromFile` 只读取主文件，没有自动加载 `.bak` 的回退，加载失败后不要用空任务列表覆盖证据。
+JSON 使用 `TypeNameHandling.All` 保留多态类型和 `IJobConfig`。加载依赖对应程序集和类型，应使用可信本机文件。保存先写同目录临时文件，再用 `File.Replace` 保留 `.bak`，首次保存则移动文件。JSON、Quartz 和 SQLite 各自提交。
 
-`SchedulerScheduleState` 区分累计 `RunCount` 与本轮 `ScheduledFireCount`，用 `HasScheduleCheckpoint`、`NextScheduledFireTimeUtc` 和 `ScheduleCompleted` 保存有限计划进度。监听器在计划触发进入业务前保存已消耗次数和下一时间，业务返回后保存结果统计，不依赖任务窗口是否打开；仅执行一次只更新累计统计及上次实际执行时间。有限计划最后一次触发后保留 durable Job，可重新执行整轮，也可通过更多菜单额外执行一次。
+管理器加载时，如果主文件缺失且备份可读取，会从 `.bak` 恢复主文件并提示核对进度。恢复的计划保持暂停或已完成。已有主文件无法解析或任务类型不可用时，管理器保留主文件和备份，并拒绝保存更改。可在修复任务类型或手动恢复有效主文件后重新启动应用。序列化器的 `LoadFromFile` 读取指定文件，应用的备份恢复由管理器加载入口触发。
+
+多个实例使用同一任务文件时，管理器拒绝从过期定义保存，保留已写入的主文件和备份。收到定义变化提示后，重启该实例载入当前定义，再重试修改。
+
+`SchedulerScheduleState` 分开记录累计 `RunCount` 和本轮进度（`HasScheduleCheckpoint`、`ScheduledFireCount`、`NextScheduledFireTimeUtc`、`ScheduleCompleted`）。自动触发先保存进度，再执行任务。暂停只拦截后续触发，同一次触发的即时重试沿用已保存的进度。保存失败则保留原进度并暂停，状态的悬停提示显示原因，修复后可继续。仅执行一次只更新累计统计和上次实际执行时间。
 
 重启不注册自动触发器。继续时只安排未完成次数，保留仍在未来的下一时间；已过期的简单重复计划从当前时间加一个间隔开始，不补跑积压触发，也不重置已经开始的延迟。编辑保存会明确建立新一轮计划，重置计划进度并保留同身份的累计历史统计。
 
@@ -89,19 +97,20 @@ JSON 使用 `TypeNameHandling.All` 保留多态类型和 `IJobConfig`，加载�
 
 `CreateTask` 提交新建/编辑时检查 `SchedulerOperationResult.Success`，失败不关闭窗口。编辑路径先克隆定义；`UpdateJob` 使用原任务名/分组定位旧任务，校验新定义和身份冲突，并拒绝更新当前正在执行的原 JobKey。
 
-创建、更新和删除等路径用 `SchedulerStandbyLease` 暂停新的触发分派，记录/替换 Quartz 定义和内存列表后保存 JSON，再按原状态恢复 scheduler。保存失败会尝试移除新 Job 或恢复原定义、触发器和暂停意图；补偿本身可能失败，部分路径仅写日志，不能声称失败返回必然完全回滚。Standby 不等待已有 Job 结束，操作成功也只证明相应调度修改完成，不证明业务任务执行成功。
+创建、更新和删除等路径用 `SchedulerStandbyLease` 暂停新的触发分派，记录/替换 Quartz 定义和内存列表后保存 JSON，再按原状态恢复 scheduler。保存失败会尝试移除新 Job 或恢复原定义和暂停意图，恢复触发器时保留下次触发时间和已触发次数。已经耗尽的触发器不重新启用。补偿异常见日志。Standby 不等待已有 Job 结束，调度修改成功后仍须按 Job 历史核对业务执行结果。
 
 同身份编辑会在替换前合并最新运行统计，防止编辑期间完成的执行被旧副本覆盖。改任务名或分组则被视为新统计身份，列表计数归零；旧 SQLite 历史仍保留在旧键下。删除任务不删除历史。直接修改 `SchedulerInfo` 属性、调用 `SaveTasks` 或 `LoadTasks` 不能替代 `CreateJob/UpdateJob` 的 Quartz 注册流程。
 
-`IConfigurableJob` 只定义配置类型与默认配置工厂，`CreateTask.RenderConfigurationEditor` 会实例化 Job 并通过 `PropertyEditorHelper` 生成元数据属性编辑器；构造或生成参数失败时显示错误并阻止提交，切换执行计划不会重建任务参数。类型被发现不代表构造、配置或运行必然成功。管理器默认只向 JobDataMap 写入 `SchedulerInfo`。要求额外键的 `HeadlessFlowJob` 不能仅因出现在类型列表就视为已配置可运行；它的 FlowKey、StartNode 与独立超时契约见[无界面流程执行](../algorithms/templates/flow-engine.md)，传统 `FlowJob` 的批次/最终完成链见[流程模板与执行](../engine-components/template-flow-chain.md)。
+`IConfigurableJob` 定义配置类型与默认配置工厂，创建表单通过 `PropertyEditorHelper` 生成编辑器，并在保存时检查实现 `IValidatableObject` 的配置。管理器把 `SchedulerInfo` 写入 JobDataMap，`FlowJob` 从其配置解析模板标识。要求额外键的 `HeadlessFlowJob` 不能仅因出现在类型列表就视为已配置可运行，见[无界面流程执行](../algorithms/templates/flow-engine.md)。
 
 ## 暂停、取消、超时和关闭
 
 | 调用或状态 | 实际效果与限制 |
 | --- | --- |
-| `StopJob` / `PauseAll` | 调用 Quartz PauseJob/PauseAll 并保存暂停意图；没有调用 Interrupt，不终止已开始的 Job |
-| `ResumeJob` / `ResumeAll` | 重建剩余触发并保存 Ready 意图；完成计划不会重新安排。全部操作逐任务执行，失败时已成功处理的其他任务保留结果 |
-| `TimeoutSeconds` | 通用模型和触发器只保存/校验该值，没有统一包裹每个 Job 的超时执行器；是否生效取决于具体 Job |
+| `StopJob` / `PauseAll` | 暂停后续触发并保存状态。全部暂停会尝试每个任务，再统一保存。保存失败时已暂停的任务保持暂停并提示错误，可再次执行暂停以保存。已开始的 Job 继续执行 |
+| `ResumeJob` / `ResumeAll` | 按保存的定义重建剩余触发并保存 Ready 意图。未登记的任务会重新校验并尝试登记。仍在执行的任务保持暂停，待执行结束后可恢复。全部恢复会继续处理其他任务，并汇报失败的任务和原因 |
+| `TimeoutSeconds` | 执行流程任务按此值限制引擎运行时间，0 表示无限等待，最大 4,294,967 秒。超时请求停止引擎，并等待原有后处理与归档。前处理、启动就绪和后处理使用各自的等待规则。其他 Job 自行解释该值 |
+| Quartz `Interrupt` | 执行流程任务会阻止尚未启动的图，或请求停止在运行的引擎。已经开始的前处理仍按原契约返回，已经启动的图仍等待后处理与归档；调用返回仅表示已请求取消 |
 | `Shutdown` | 调用无布尔参数的 Quartz `Shutdown()` 后释放其独立 factory，等价于不等待在途 Job 完成；同一已关闭 scheduler 不能通过 StartCommand 重启 |
 | 关闭任务/历史窗口 | 解除窗口事件与 Copilot 上下文，不关闭进程级 scheduler，也不取消 Job |
 
@@ -111,7 +120,7 @@ JSON 使用 `TypeNameHandling.All` 保留多态类型和 `IJobConfig`，加载�
 
 ## 执行结果、历史查询与清理
 
-`JobWasExecuted` 以 Quartz 返回的 `JobExecutionException` 和 `context.Result` 判定结果：有异常即失败；没有异常时，仅反射检查结果对象的公开 `bool Success`，值为 false 才判失败。null、普通字符串或没有该属性的对象默认按成功统计。因此“工具方法返回/没有异常”要由 Job 自己正确映射业务失败，Scheduler 不会替它核实设备结果。
+`JobWasExecuted` 将 Quartz 返回的 `JobExecutionException`、结果对象的公开 `bool Success=false` 或该属性读取异常记为失败。null、普通字符串或没有该属性的对象默认按成功统计。结果文本格式化异常会记录原因并保留已判定的状态。Job 负责映射业务结果。
 
 监听器通过管理器的变更门更新并保存显示/统计，再把历史写入排到串行 `_historyWriteTail` 并等待该次写入尝试结束，最后通知订阅者；订阅者异常被隔离。数据库初始化、插入和统计恢复的异常会记录日志但可能被捕获，历史没有记录不能证明任务没执行。SQLite 只在返回后插入终态记录，进程崩溃时的在途业务没有历史开始记录可供补账；JSON 的计划消耗记录仅用于避免重排本轮次数。
 
@@ -121,14 +130,16 @@ JSON 使用 `TypeNameHandling.All` 保留多态类型和 `IJobConfig`，加载�
 
 历史窗口清理按钮经确认删除所有任务90天前的记录，即使窗口当前只展示某个任务或失败筛选也不会限于该视图。`CleanupOldRecords` 失败返回0，与无可删记录相同；没有内建撤销，也没有后台自动清理调用。删除历史会影响以后重启恢复的统计，不改任务定义，当前列表累计值也不会立即同步重算。执行清理或导出前需获得对应数据操作授权。
 
-任务窗口已有 CSV、JSON 和文本报告导出，但导出的是当前 `TaskInfos` 快照，不是完整 SQLite 执行历史或原子恢复备份；手工 JSON 导出使用的设置也不同于任务定义使用的 `SchedulerTaskSerializer`。状态栏当前只显示任务数量/是否有任务，不证明 Quartz 已启动或 Job 正常。
+任务窗口的 CSV、JSON 和报告导出基于当前 `TaskInfos` 快照。完整执行记录请在历史窗口查询，导出文件也不能用于原子恢复。手工 JSON 导出与 `SchedulerTaskSerializer` 使用不同的设置。
+
+主窗口时钟位于右侧工具图标组的左端。关闭任务窗口后，状态文字仍从时钟左侧展开，时钟角标用播放、圆点和暂停符号区分执行中、等待下次触发和计划已暂停但本轮仍在执行。等待时显示已启用计划中最早的下次时间，跨日时带日期。没有在途任务或待触发计划时收起文字和角标。点击时钟或旁边的文字均打开原任务列表。
 
 ## 验证范围与缺口
 
 - 验证不加载用户保存任务或操作真实设备。
 - `SchedulerLifecycleTests` 使用独立 Quartz RAM scheduler、空 Job、临时 JSON 和隔离历史写入，覆盖有限计划完成后多次手动运行、重新执行完整循环并拒绝重复启动、Cron 主操作按时间登记、重启只登记无触发器任务、暂停时手动运行、继续剩余次数、保存失败回退、全部暂停/继续及编辑重新安排。
 - `SchedulerTriggerFactoryTests` 检查触发器类型、追加次数、日历间隔、Cron、延迟及非法值；其中 Quartz RAM scheduler 用例只验证替换行为，不启动真实 Job，也不覆盖 `QuartzSchedulerManager` 的 JSON 失败补偿链。
-- `SchedulerTaskSerializationTests` 验证旧多态 JSON、定义版本与替换备份；不验证管理器启动时的旧 Interval/Forever 暂停迁移或坏主文件恢复。
+- `SchedulerTaskSerializationTests` 验证旧多态 JSON、定义版本、替换备份和保存保护。`SchedulerLifecycleTests` 还覆盖主文件缺失时恢复备份及主文件不可读时保留原件。
 - `SchedulerHistoryQueryTests` 使用隔离临时 SQLite，验证筛选/分页统计、稳定排序与显式失败；不覆盖真实历史库初始化失败、执行监听写入或清理。
 - `ScheduledDeviceJobHelperTests` 检查相机/光谱 Job 的并发属性、零/正超时转换以及等待超时/取消；不证明设备已被停止，也没有执行真实采集。
 

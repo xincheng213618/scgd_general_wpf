@@ -6,6 +6,8 @@ namespace ProjectARVRPro.Exports
 
         string FileSuffix { get; }
 
+        string GetFileName(ObjectiveTestResultExportContext context);
+
         string Export(ObjectiveTestResultExportContext context);
     }
 }

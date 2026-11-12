@@ -4,13 +4,16 @@ using ColorVision.Engine.FlowProcessing.Editor;
 using ColorVision.Engine.FlowProcessing.Nodes;
 using ColorVision.Engine.Templates.Flow;
 using ColorVision.Engine.Templates.Flow.Versioning;
+using ColorVision.Solution.Editor;
 using ColorVision.UI;
 using FlowEngineLib.Base;
 using ST.Library.UI.NodeEditor;
 using System.IO;
+using System.IO.Compression;
 using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Interop;
 using System.Windows.Threading;
 
 namespace ColorVision.UI.Tests;
@@ -127,7 +130,7 @@ public class ViewFlowDocumentBehaviorTests
                 var redoHistory = editor.RedoHistory.ToArray();
                 byte[] currentCanvas = editor.GetCanvasData();
                 string title = window.Title;
-                string[] identityFields = ["_standaloneFlowParam", "_standaloneFilePath", "_standaloneDocumentName", "_saveStandaloneFlowParam", "_documentLoadedContentHash", "_standaloneStartNodeName"];
+                string[] identityFields = ["_standaloneFlowParam", "_standaloneFilePath", "_standaloneFileContentHash", "_standaloneDocumentName", "_saveStandaloneFlowParam", "_documentLoadedContentHash", "_standaloneStartNodeName"];
                 var identity = identityFields.ToDictionary(name => name, name => GetField(view, name));
 
                 // Choosing Discard authorizes replacement; a failed target must still leave this document intact.
@@ -252,7 +255,8 @@ public class ViewFlowDocumentBehaviorTests
             string path = Path.Combine(Path.GetTempPath(), $"flow-reload-{Guid.NewGuid():N}.stn");
             try
             {
-                File.WriteAllBytes(path, CreateCanvas("Saved file"));
+                byte[] savedFile = CreateCanvas("Saved file");
+                File.WriteAllBytes(path, savedFile);
                 view.LoadStandaloneFile(path);
                 STNode original = Assert.Single(view.STNodeEditorMain.Nodes.Cast<STNode>());
                 original.Title = "Unsaved title";
@@ -266,6 +270,7 @@ public class ViewFlowDocumentBehaviorTests
                 view.LoadStandaloneFlowParam(template, true);
                 Assert.Same(template, GetField(view, "_standaloneFlowParam"));
                 Assert.Null(GetField(view, "_standaloneFilePath"));
+                Assert.Null(GetField(view, "_standaloneFileContentHash"));
                 Assert.Equal(true, GetField(view, "_saveStandaloneFlowParam"));
                 Assert.Equal("Template node", Assert.Single(view.STNodeEditorMain.Nodes.Cast<STNode>()).Title);
                 Assert.Contains(template.Name, window.Title);
@@ -275,12 +280,306 @@ public class ViewFlowDocumentBehaviorTests
                 view.LoadStandaloneFile(path);
                 Assert.Null(GetField(view, "_standaloneFlowParam"));
                 Assert.Equal(path, GetField(view, "_standaloneFilePath"));
+                Assert.Equal(FlowSemanticHash.ComputeBinaryHash(savedFile), GetField(view, "_standaloneFileContentHash"));
                 Assert.Equal(false, GetField(view, "_saveStandaloneFlowParam"));
                 Assert.Null(GetField(view, "_documentLoadedContentHash"));
                 Assert.Contains(Path.GetFileName(path), window.Title);
             }
             finally { File.Delete(path); }
         });
+    }
+
+    [Theory]
+    [InlineData("cancel")]
+    [InlineData("copy")]
+    [InlineData("existing-target")]
+    public void StandaloneSaveConflictCanKeepTheDraftOrBindItToANewCopy(string choice)
+    {
+        WithStandaloneWindow(window =>
+        {
+            ViewFlow view = window.View;
+            string path = Path.Combine(Path.GetTempPath(), $"flow-conflict-{Guid.NewGuid():N}.stn");
+            string copy = Path.Combine(Path.GetTempPath(), $"flow-copy-{Guid.NewGuid():N}.stn");
+            try
+            {
+                File.WriteAllBytes(path, CreateCanvas("Original"));
+                view.LoadStandaloneFile(path);
+                string? baseline = (string?)GetField(view, "_standaloneFileContentHash");
+                view.STNodeEditorMain.Nodes[0].Title = "Draft";
+                byte[] draft = view.STNodeEditorMain.GetCanvasData();
+                byte[] otherSave = CreateCanvas("Saved elsewhere");
+                File.WriteAllBytes(path, otherSave);
+
+                bool SaveDraft() => view.TrySaveStandaloneFile(draft,
+                    () => throw new InvalidOperationException("The document already has a file target."),
+                    source =>
+                    {
+                        Assert.Equal(path, source);
+                        return choice == "cancel" ? null : choice == "copy" ? copy : path;
+                    });
+
+                if (choice == "copy")
+                {
+                    Assert.True(SaveDraft());
+                    Assert.Equal(copy, GetField(view, "_standaloneFilePath"));
+                    Assert.Equal(FlowSemanticHash.ComputeBinaryHash(draft), GetField(view, "_standaloneFileContentHash"));
+                    Assert.Equal(draft, File.ReadAllBytes(copy));
+                    Assert.Contains(Path.GetFileName(copy), window.Title);
+                }
+                else
+                {
+                    if (choice == "cancel") Assert.False(SaveDraft());
+                    else Assert.ThrowsAny<IOException>(() => SaveDraft());
+                    Assert.Equal(path, GetField(view, "_standaloneFilePath"));
+                    Assert.Equal(baseline, GetField(view, "_standaloneFileContentHash"));
+                    Assert.True(view.STNodeEditorMain.IsModified);
+                    Assert.Equal(draft, view.STNodeEditorMain.GetCanvasData());
+                    Assert.False(File.Exists(copy));
+                }
+
+                Assert.Equal(otherSave, File.ReadAllBytes(path));
+            }
+            finally
+            {
+                File.Delete(path);
+                File.Delete(copy);
+            }
+        });
+    }
+
+    [Theory]
+    [InlineData("invalid-stn", false)]
+    [InlineData("invalid-stn", true)]
+    [InlineData("corrupt-zip", false)]
+    [InlineData("corrupt-zip", true)]
+    [InlineData("missing-canvas", false)]
+    public void InvalidStandaloneFileReturnsItsFailureWithoutLeavingAWindow(string input, bool explicitEditor)
+    {
+        WithStandaloneWindow(_ =>
+        {
+            string extension = input == "invalid-stn" ? ".stn" : ".cvflow";
+            string path = Path.Combine(Path.GetTempPath(), $"flow-open-invalid-{Guid.NewGuid():N}{extension}");
+            FlowEngineToolWindow[] previous = GetStandaloneWindows();
+            try
+            {
+                string expectedError;
+                if (input == "invalid-stn")
+                {
+                    File.WriteAllBytes(path, new byte[5]);
+                    expectedError = "无法识别的文件类型";
+                }
+                else if (input == "corrupt-zip")
+                {
+                    File.WriteAllBytes(path, [80, 75, 3, 4, 0]);
+                    expectedError = Assert.Throws<InvalidDataException>(() => FlowPackageHelper.ImportFlowPackage(path)).Message;
+                }
+                else
+                {
+                    using (var archive = ZipFile.Open(path, ZipArchiveMode.Create))
+                        archive.CreateEntry("readme.txt");
+                    expectedError = "流程包缺少 flow.stn。";
+                }
+
+                ResourceOpenResult result = OpenStandaloneResource(path, explicitEditor);
+
+                Assert.Equal(ResourceOpenKind.File, result.Kind);
+                Assert.False(result.Succeeded);
+                Assert.False(result.Canceled);
+                if (explicitEditor)
+                {
+                    Assert.Contains(Path.GetFileName(path), result.ErrorMessage);
+                    Assert.Contains(expectedError, result.ErrorMessage);
+                }
+                else Assert.Equal(expectedError, result.ErrorMessage);
+                Assert.Equal(previous, GetStandaloneWindows());
+            }
+            finally
+            {
+                foreach (FlowEngineToolWindow window in GetStandaloneWindows().Except(previous))
+                    window.Close();
+                File.Delete(path);
+            }
+        });
+    }
+
+    [Theory]
+    [InlineData("stn", false)]
+    [InlineData("cvflow", false)]
+    [InlineData("cvflow", true)]
+    [InlineData("legacy-cvflow", false)]
+    public void ValidStandaloneFileOpensOneWindowWithItsLoadedCanvas(string input, bool explicitEditor)
+    {
+        WithStandaloneWindow(_ =>
+        {
+            string extension = input == "stn" ? ".stn" : ".cvflow";
+            string path = Path.Combine(Path.GetTempPath(), $"flow-open-valid-{Guid.NewGuid():N}{extension}");
+            FlowEngineToolWindow[] previous = GetStandaloneWindows();
+            try
+            {
+                byte[] canvas = CreateCanvas("Opened from file");
+                if (input == "cvflow")
+                {
+                    using var archive = ZipFile.Open(path, ZipArchiveMode.Create);
+                    using var entry = archive.CreateEntry("flow.stn").Open();
+                    entry.Write(canvas);
+                }
+                else File.WriteAllBytes(path, canvas);
+
+                ResourceOpenResult result = OpenStandaloneResource(path, explicitEditor);
+
+                Assert.True(result.Succeeded, result.ErrorMessage);
+                FlowEngineToolWindow opened = Assert.Single(GetStandaloneWindows().Except(previous));
+                Assert.True(opened.IsVisible);
+                Assert.Equal("Opened from file", Assert.Single(opened.View.STNodeEditorMain.Nodes.Cast<STNode>()).Title);
+                Assert.Equal(input == "cvflow" ? null : path, GetField(opened.View, "_standaloneFilePath"));
+            }
+            finally
+            {
+                foreach (FlowEngineToolWindow window in GetStandaloneWindows().Except(previous))
+                    window.Close();
+                File.Delete(path);
+            }
+        });
+    }
+
+    [Theory]
+    [InlineData(false, false)]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    public void StandaloneFileOpensAcrossOwnerWindowInitializationStates(bool useShownOwner, bool createHandle)
+    {
+        WithStandaloneWindow(shown =>
+        {
+            Window owner = useShownOwner ? shown : new Window();
+            if (createHandle) new WindowInteropHelper(owner).EnsureHandle();
+            string path = Path.Combine(Path.GetTempPath(), $"flow-open-owner-{Guid.NewGuid():N}.stn");
+            FlowEngineToolWindow[] previous = GetStandaloneWindows();
+            try
+            {
+                File.WriteAllBytes(path, CreateCanvas("Opened during startup"));
+                FlowEngineToolWindow.ShowFile(path, owner);
+
+                FlowEngineToolWindow opened = Assert.Single(GetStandaloneWindows().Except(previous));
+                Assert.True(opened.IsVisible);
+                Assert.Equal("Opened during startup", Assert.Single(opened.View.STNodeEditorMain.Nodes.Cast<STNode>()).Title);
+                Assert.Same(useShownOwner || createHandle ? owner : null, opened.Owner);
+            }
+            finally
+            {
+                foreach (FlowEngineToolWindow window in GetStandaloneWindows().Except(previous)) window.Close();
+                if (!useShownOwner) owner.Close();
+                File.Delete(path);
+            }
+        });
+    }
+
+    private static ResourceOpenResult OpenStandaloneResource(string path, bool explicitEditor)
+    {
+        if (explicitEditor) return ResourceOpenService.Instance.OpenWith(path, "colorvision.flow");
+        Task<ResourceOpenResult> pending = ResourceOpenService.Instance.OpenAsync(path);
+        PumpUntil(pending);
+        return pending.GetAwaiter().GetResult();
+    }
+
+    private static FlowEngineToolWindow[] GetStandaloneWindows()
+        => Application.Current.Windows.OfType<FlowEngineToolWindow>().ToArray();
+
+    [Fact]
+    public void StandaloneCloseKeepsTheEditorAliveUntilTheAcceptedRunSettles()
+    {
+        bool viewDisposedOnClose = false;
+        WithStandaloneWindow(window =>
+        {
+            ViewFlow view = window.View;
+            STNodeEditor editor = view.STNodeEditorMain;
+            window.Closed += (_, _) => viewDisposedOnClose = IsViewDisposed(view);
+            var node = new STNodeHub();
+            node.Create();
+            editor.Nodes.Add(node);
+            editor.MarkSaved();
+
+            FlowRunLifecycleGate lifecycle = GetRunLifecycle(view);
+            using var cancellation = new CancellationTokenSource();
+            const string serialNumber = "standalone-close";
+            Assert.True(lifecycle.TryBegin(serialNumber, cancellation, engineIsRunning: false));
+            try
+            {
+                Assert.False(view.FlowControl.IsFlowRun);
+                Assert.True(view.IsExecutionActive);
+                window.Close();
+                Assert.True(window.IsVisible);
+                Assert.False(IsViewDisposed(view));
+                Assert.Same(node, Assert.Single(editor.Nodes.Cast<STNode>()));
+                Assert.False(cancellation.IsCancellationRequested);
+
+                Assert.True(view.StopFlowCommand.CanExecute(null));
+                view.StopFlowCommand.Execute(null);
+                Assert.True(cancellation.IsCancellationRequested);
+                Assert.True(view.IsExecutionStopping);
+
+                // Finalization can still own the view after the engine and cancellation source have retired.
+                lifecycle.DetachCancellationSource(serialNumber, cancellation);
+                window.Close();
+                Assert.True(window.IsVisible);
+                Assert.False(IsViewDisposed(view));
+                Assert.True(view.IsExecutionActive);
+            }
+            finally { lifecycle.Complete(serialNumber); }
+
+            Assert.False(view.IsExecutionActive);
+        });
+        Assert.True(viewDisposedOnClose);
+    }
+
+    [Fact]
+    public void OwnerCloseRequestsStopAndDefersDisposalUntilTheAcceptedRunSettles()
+    {
+        WithStandaloneWindow(window =>
+        {
+            ViewFlow view = window.View;
+            var owner = new Window { ShowActivated = false, Left = -10000, Top = -10000 };
+            owner.Show();
+            window.Owner = owner;
+            bool childClosingRaised = false;
+            window.Closing += (_, _) => childClosingRaised = true;
+            FlowRunLifecycleGate lifecycle = GetRunLifecycle(view);
+            using var cancellation = new CancellationTokenSource();
+            const string serialNumber = "owner-close";
+            try
+            {
+                Assert.True(lifecycle.TryBegin(serialNumber, cancellation, engineIsRunning: false));
+                owner.Close();
+
+                Assert.False(childClosingRaised);
+                Assert.False(window.IsVisible);
+                Assert.True(cancellation.IsCancellationRequested);
+                Assert.True(view.IsExecutionActive);
+                Assert.False(IsViewDisposed(view));
+            }
+            finally
+            {
+                lifecycle.Complete(serialNumber);
+                if (owner.IsVisible) owner.Close();
+            }
+
+            using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+            PumpUntil(WaitForDisposalAsync());
+            Assert.True(IsViewDisposed(view));
+
+            async Task WaitForDisposalAsync()
+            {
+                while (!IsViewDisposed(view)) await Task.Delay(10, deadline.Token);
+            }
+        });
+    }
+
+    private static bool IsViewDisposed(ViewFlow view) => (bool)GetField(view, "_disposed")!;
+
+    private static FlowRunLifecycleGate GetRunLifecycle(ViewFlow view)
+    {
+        object session = GetField(view, "_executionSession")!;
+        return (FlowRunLifecycleGate)session.GetType()
+            .GetField("_runLifecycle", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(session)!;
     }
 
     private static object? GetField(ViewFlow view, string name)
@@ -312,22 +611,27 @@ public class ViewFlowDocumentBehaviorTests
         WpfTestHost.Invoke(() =>
         {
             var previous = ConfigService.Instance;
-            ConfigService.SetInstance(new ConfigHandler());
+            TestEnvironment.SetConfig(new ConfigHandler());
             var theme = new ResourceDictionary { Source = new Uri("/ColorVision.Themes;component/Themes/Theme.xaml", UriKind.Relative) };
             Application.Current.Resources.MergedDictionaries.Add(theme);
             FlowEngineToolWindow? window = null;
+            bool windowClosed = false;
             try
             {
                 window = new FlowEngineToolWindow { ShowActivated = false, Left = -10000, Top = -10000 };
+                window.Closed += (_, _) => windowClosed = true;
                 window.Show();
                 test(window);
             }
             finally
             {
-                window?.View.STNodeEditorMain.MarkSaved();
-                window?.Close();
+                if (window != null && !windowClosed)
+                {
+                    window.View.STNodeEditorMain.MarkSaved();
+                    window.Close();
+                }
                 Application.Current.Resources.MergedDictionaries.Remove(theme);
-                ConfigService.SetInstance(previous);
+                TestEnvironment.SetConfig(previous);
             }
         });
     }
@@ -338,7 +642,7 @@ public class ViewFlowDocumentBehaviorTests
         WpfTestHost.Invoke(() =>
         {
             var previous = ConfigService.Instance;
-            ConfigService.SetInstance(new ConfigHandler());
+            TestEnvironment.SetConfig(new ConfigHandler());
             var theme = new ResourceDictionary { Source = new Uri("/ColorVision.Themes;component/Themes/Theme.xaml", UriKind.Relative) };
             Application.Current.Resources.MergedDictionaries.Add(theme);
             FlowEngineToolWindow? window = null;
@@ -362,7 +666,7 @@ public class ViewFlowDocumentBehaviorTests
             {
                 window?.Close();
                 Application.Current.Resources.MergedDictionaries.Remove(theme);
-                ConfigService.SetInstance(previous);
+                TestEnvironment.SetConfig(previous);
             }
         });
     }

@@ -2,6 +2,7 @@ using ColorVision.Database;
 using ColorVision.Engine.Services.PhyCameras;
 using ColorVision.Themes;
 using ColorVision.UI;
+using ColorVision.UI.Authorizations;
 using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
@@ -14,10 +15,12 @@ namespace ColorVision.Engine.Services.Devices.PG;
 public partial class EditPG : Window
 {
     private readonly ConfigPG target;
+    private readonly DisplayPGConfig? displayTarget;
+    private readonly string authorizationResourceId;
     public PGConfigurationDraft Draft { get; }
     public ConfigPG EditConfig => Draft.Config;
 
-    public EditPG(DevicePG device) : this(device.Config, GetCategories(device))
+    public EditPG(DevicePG device) : this(device.Config, GetCategories(device), device.DisplayConfig)
     {
         Icon = device.Icon;
         if (MySqlSetting.IsConnect)
@@ -27,10 +30,12 @@ public partial class EditPG : Window
         }
     }
 
-    internal EditPG(ConfigPG source, IEnumerable<string> categories)
+    internal EditPG(ConfigPG source, IEnumerable<string> categories, DisplayPGConfig? display = null)
     {
         target = source;
-        Draft = new PGConfigurationDraft(source);
+        authorizationResourceId = source.Code;
+        displayTarget = display;
+        Draft = new PGConfigurationDraft(source, display);
         InitializeComponent();
         this.ApplyCaption();
         DataContext = this;
@@ -40,6 +45,13 @@ public partial class EditPG : Window
             field.Margin = new Thickness(0, 3, 0, 3);
             field.MinHeight = 28;
             DeviceFields.Children.Add(field);
+        }
+        foreach (string name in new[] { nameof(DisplayPGConfig.UseLocalPG), nameof(DisplayPGConfig.ConnectTimeout), nameof(DisplayPGConfig.CommandTimeout) })
+        {
+            var field = PropertyEditorHelper.GenProperties(Draft.DisplayConfig, name, Properties.Resources.ResourceManager);
+            field.Margin = new Thickness(0, 3, 0, 3);
+            field.MinHeight = 28;
+            LocalFields.Children.Add(field);
         }
         PgCategory.ItemsSource = categories.Append(EditConfig.Category).Where(name => !string.IsNullOrWhiteSpace(name)).Distinct().ToArray();
         SerialBaudRate.ItemsSource = new[] { 300, 600, 1200, 2400, 4800, 9600, 14400, 19200, 38400, 57600, 115200, 230400, 460800, 921600 };
@@ -60,13 +72,18 @@ public partial class EditPG : Window
 
     internal bool TryApply(out string error)
     {
+        if (!AccessControl.Evaluate("device.configure", PermissionMode.Administrator, authorizationResourceId).Allowed)
+        {
+            error = EngineLocalization.Get("当前权限不足，无法保存设备配置。");
+            return false;
+        }
         Keyboard.ClearFocus();
         if (HasInvalidInput(EditorContent))
         {
-            error = "请修正输入框中的无效数值。";
+            error = EngineLocalization.Get("请修正输入框中的无效数值。");
             return false;
         }
-        return Draft.TryApply(target, out error);
+        return Draft.TryApply(target, out error, displayTarget);
     }
 
     private static bool HasInvalidInput(DependencyObject root)

@@ -3,7 +3,7 @@ using ST.Library.UI.NodeEditor;
 
 namespace FlowEngineLib.Node.Algorithm;
 
-[STNode("Algorithm", CategoryOrder = 320)]
+// Retain the serialized type for existing flows; new flows use LocalTemplateMatchingNode.
 public class AlgorithmTMNode : CVBaseServerNode
 {
 	private string _TemplateFile;

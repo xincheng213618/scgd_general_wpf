@@ -4,7 +4,7 @@ knowledge_type: "index"
 status: "current"
 summary: "ColorVision.UI壳层责任入口：按配置、插件、菜单、热键、搜索、语言、状态栏、属性编辑和日志定位规范主题，业务行为仍归所属模块。"
 aliases: ["菜单和属性编辑器在哪个模块", "ColorVision.UI", "壳层基础设施", "ConfigSettingManager"]
-code_paths: ["UI/ColorVision.UI/README.md", "UI/ColorVision.UI/ColorVision.UI.csproj", "UI/ColorVision.UI/ConfigHandler.cs", "UI/ColorVision.UI/Plugins/PluginLoader.cs", "UI/ColorVision.UI/Menus/MenuManager.cs", "UI/ColorVision.UI/PropertyEditor/PropertyEditorHelper.cs", "UI/ColorVision.UI/LogImp", "UI/ColorVision.UI/HotKey", "UI/ColorVision.UI/Languages", "UI/ColorVision.UI/Serach", "UI/ColorVision.UI/StatusBar/StatusBarManager.cs"]
+code_paths: ["UI/ColorVision.UI/README.md", "UI/ColorVision.UI/ColorVision.UI.csproj", "UI/ColorVision.UI/ConfigHandler.cs", "UI/ColorVision.UI/Plugins/PluginLoader.cs", "UI/ColorVision.UI/Menus/MenuManager.cs", "UI/ColorVision.UI/PropertyEditor/PropertyEditorHelper.cs", "UI/ColorVision.UI/LogImp", "UI/ColorVision.UI/HotKey", "UI/ColorVision.UI/Languages", "UI/ColorVision.UI/Search", "UI/ColorVision.UI/StatusBar/StatusBarManager.cs"]
 test_paths: []
 related: ["ui.index", "ui.configuration", "plugins.model", "ui.property-grid", "ui.discovery", "ui.menus", "ui.hotkeys", "ui.search", "ui.localization", "ui.status-bar", "operations.logs", "ui.desktop"]
 ---
@@ -19,13 +19,13 @@ related: ["ui.index", "ui.configuration", "plugins.model", "ui.property-grid", "
 
 | 责任或问题 | 主要实现 | 规范主题 |
 | --- | --- | --- |
-| 配置对象来源、保存、重载、备份与发布失败 | `ConfigHandler.cs`、`ConfigSetting/ConfigServiceAdapters.cs` | [配置持久化与重载](./configuration.md) |
-| 插件 DLL、manifest、依赖门禁与禁用状态 | `Plugins/PluginLoader.cs`、`PluginLoaderrConfig.cs` | [插件装载与扩展发现](../../02-developer-guide/plugin-development/overview.md) |
-| 插件构建、安装目录替换、备份恢复和导出 | `Plugins/PluginUpdater.cs`、`PluginRecoveryBackupService.cs`、`PluginExtractor.cs` | [插件产物与交付](../../02-developer-guide/plugin-development/getting-started.md) |
+| 配置对象来源、保存、重载、备份与发布失败 | `ConfigHandler.cs`（加载与重载）、`.Save.cs`、`.Backup.cs`、`ConfigSetting/ConfigServiceAdapters.cs` | [配置持久化与重载](./configuration.md) |
+| 插件 DLL、manifest、依赖门禁与禁用状态 | `Plugins/PluginLoader.cs`、`PluginLoaderConfig.cs` | [插件装载与扩展发现](../../02-developer-guide/plugin-development/overview.md) |
+| 插件构建、安装目录替换、备份恢复和导出 | `Plugins/PluginExtractor.cs`；安装替换与恢复备份在 `UI/ColorVision.UI.Desktop/Plugins/`，主程序更新在 `UI/ColorVision.UI.Desktop/Update/` | [插件产物与交付](../../02-developer-guide/plugin-development/getting-started.md) |
 | 菜单、设置、状态栏、热键与搜索的扩展发现 | `AssemblyHandler.cs` 及各消费者 | [UI 发现链](./ui-runtime-handoff.md) |
-| 菜单树、隐藏、命令入口与管理提交 | `Menus/MenuManager.cs`、`UI/ColorVision.UI.Desktop/MenuItemManager/` | [菜单契约](./menus.md) |
+| 菜单树、隐藏、命令入口与管理提交 | `Menus/MenuManager.cs`（树构建）、`.Discovery.cs`（类型发现与过滤）、`.Registration.cs`、`UI/ColorVision.UI.Desktop/MenuItemManager/` | [菜单契约](./menus.md) |
 | 快捷键定义、设置草稿、注册冲突和释放 | `HotKey/` | [快捷键契约](./hotkeys.md) |
-| 搜索候选、刷新缓存、排序和结果执行 | `Serach/`，保留实际目录拼写 | [产品搜索契约](./search.md) |
+| 搜索候选、刷新缓存、排序和结果执行 | `Search/` | [产品搜索契约](./search.md) |
 | 语言资源、系统文化回退与确认重启 | `Languages/`、各模块 Properties 资源 | [界面语言契约](./localization.md) |
 | 状态项目、活动文档、绑定刷新和宿主清理 | `StatusBar/`、Common 状态接口及业务 provider | [状态栏契约](./status-bar.md) |
 | 属性元数据、编辑器选择、工作副本和提交 | `PropertyEditor/` | [PropertyGrid 编辑契约](./property-grid.md) |
@@ -36,7 +36,7 @@ related: ["ui.index", "ui.configuration", "plugins.model", "ui.property-grid", "
 
 ## 模块边界
 
-`Controls/FlowExecutionStatus` 是 ARVRPro、KB、LUX 共用的紧凑执行提示控件，`FlowExecutionStatusInfo` 只组织显示内容，不依赖 Engine、不触发流程、不持久化结果。普通状态一行，长错误最多两行；状态文字和主提示使用统一行高，窄窗口优先保留主提示。右侧信息图标打开可选择、复制的详情浮层，保留“查看完整执行信息”悬停提示与辅助功能名称。运行中和结束后的耗时均只显示整数与 ms（如 `1959 ms`），不显示“已用”或“用时”前缀；详情内保留耗时说明，历史耗时与预计剩余时间也使用 ms。流程名、当前节点和历史耗时由调用项目传入，计时停止及最终状态防覆盖仍归项目生命周期处理。`Completed` 只表示流程完成，不代表业务检测 PASS；KB 的服务提示与 MES 原始返回可以复用显示模型，但不得由控件解释协议返回码。
+`Controls/FlowExecutionStatus` 是 ARVRPro、KB 共用的紧凑执行提示控件，`FlowExecutionStatusInfo` 只组织显示内容，不依赖 Engine、不触发流程、不持久化结果。普通状态一行，长错误最多两行；状态文字和主提示使用统一行高，窄窗口优先保留主提示。右侧信息图标打开可选择、复制的详情浮层，保留“查看完整执行信息”悬停提示与辅助功能名称。运行中和结束后的耗时均只显示整数与 ms（如 `1959 ms`），不显示“已用”或“用时”前缀；详情内保留耗时说明，历史耗时与预计剩余时间也使用 ms。流程名、当前节点和历史耗时由调用项目传入，计时停止及最终状态防覆盖仍归项目生命周期处理。`Completed` 只表示流程完成，不代表业务检测 PASS；KB 的服务提示与 MES 原始返回可以复用显示模型，但不得由控件解释协议返回码。
 
 通用接口、命令和基础 ViewModel 主要在 `ColorVision.Common`；主题资源在 `ColorVision.Themes`；细粒度本地 RBAC 在 `ColorVision.Rbac`。Engine 的设备控制、客户包的判定/MES/报表以及 ImageEditor 的图像/overlay 责任不应因有 WPF 窗口就移入此项目。
 

@@ -27,6 +27,7 @@ namespace ColorVision.Engine.Services.Devices.SMU
             AddFields(SerialFields, Draft, nameof(SmuConfigurationDraft.SerialPortName));
             AddFields(BaudRateFields, Draft.DisplayConfig, nameof(DisplaySMUConfig.LocalBaudRate));
             AddFields(MeasurementFields, EditConfig, nameof(ConfigSMU.Is4Wire), nameof(ConfigSMU.IsFront), nameof(ConfigSMU.IsSrcA), nameof(ConfigSMU.DelayTime));
+            AddFields(NplcFields, EditConfig, nameof(ConfigSMU.Nplc));
             AddFields(DisplayFields, Draft.DisplayConfig, nameof(DisplaySMUConfig.IsUseLimitSigned), nameof(DisplaySMUConfig.IsSourceV), nameof(DisplaySMUConfig.Channel));
         }
 
@@ -37,7 +38,7 @@ namespace ColorVision.Engine.Services.Devices.SMU
                 var field = PropertyEditorHelper.GenProperties(config, name, Properties.Resources.ResourceManager);
                 field.Margin = new Thickness(0, 3, 0, 3);
                 field.MinHeight = 28;
-                if (panel.Name is "MeasurementFields" or "DisplayFields")
+                if (panel.Name is "MeasurementFields" or "NplcFields" or "DisplayFields")
                     foreach (UIElement child in field.Children)
                         if (child is TextBox or ComboBox) ((Control)child).MinWidth = 100;
                 panel.Children.Add(field);

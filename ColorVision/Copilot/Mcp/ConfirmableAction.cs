@@ -30,6 +30,9 @@ namespace ColorVision.Copilot.Mcp
 
         public string ArgumentsDigest { get; init; } = string.Empty;
 
+        [System.Text.Json.Serialization.JsonIgnore]
+        internal string ExecutionTargetFingerprint { get; init; } = string.Empty;
+
         public string ReviewDetails
         {
             get => _reviewDetails;

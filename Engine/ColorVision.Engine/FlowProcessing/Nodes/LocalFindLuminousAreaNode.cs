@@ -207,8 +207,10 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
     }
 
     [STNode("Flow_LocalAlgorithms", "发光区定位", CategoryOrder = 9910, NodeOrder = 10)]
-    [FlowNodeDocumentation("使用上游图像定位发光区，输出四角点。",
-        Usage = "将相机取图、校正或加载图片节点连接到 IN。本地图片请通过“加载图片”节点输入。")]
+    [FlowNodeDocumentation("按 RobustV2 定位发光区并拟合四边，输出 LT、RT、RB、LB 四角及置信度。",
+        Usage = "连接相机取图、校正或加载图片节点，按需设置搜索区域和最小置信度；POI保存模板为空时不回写模板。",
+        Notes = "置信度是定位质量评分；低于门限或角点几何无效时拒绝。POI 回写先于结果提交，后续保存失败不会撤销已提交的模板修改。",
+        TopicId = "algorithms.find-light-area")]
     public sealed class LocalFindLuminousAreaNode : LocalFlowNodeBase
     {
         internal const double DefaultMinimumConfidence = 0.25;

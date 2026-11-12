@@ -68,6 +68,7 @@ namespace ColorVision.Copilot
         private string _statePersistenceNoticeToolTip = string.Empty;
         private string _localCommandResultTitle = string.Empty;
         private string _localCommandResultText = string.Empty;
+        private long _localCommandResultRevision;
         private string _editingConversationId = string.Empty;
         private string _editingUserMessageId = string.Empty;
         private CopilotComposerDraftSnapshot? _composerDraftBeforeMessageEdit;

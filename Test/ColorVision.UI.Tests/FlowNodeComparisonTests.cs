@@ -108,6 +108,45 @@ public sealed class FlowNodeComparisonTests : IDisposable
         Assert.Equal("—", Assert.Single(rows, row => row.Record.Id == 2).DurationText);
     }
 
+    [Theory]
+    [InlineData(null)]
+    [InlineData(" \t\u3000")]
+    public void HistoryAssignsAnUnlinkedLegacyTimeoutToOnlyTheClosestExecution(string? messageSerial)
+    {
+        FlowNodeRecord first = new() { Id = 1, BatchId = 0, SerialNumber = "first", NodeId = "fov", StartTime = _time, EndTime = _time.AddSeconds(2), ElapsedMs = 2000 };
+        FlowNodeRecord second = new() { Id = 2, BatchId = 0, SerialNumber = "second", NodeId = "fov", StartTime = _time.AddMilliseconds(500), EndTime = _time.AddSeconds(2), ElapsedMs = 1500 };
+        FlowNodeMessage timeout = new() { Id = 1, BatchId = 0, SerialNumber = messageSerial!, NodeId = "fov", SendTime = _time.AddMilliseconds(550), State = FlowMessageState.Timeout };
+
+        var history = FlowExecutionAnalysisPresentation.BuildNodeHistoryItems([first, second], [timeout], _time.AddSeconds(3));
+
+        var firstItem = Assert.Single(history, item => item.Record.Id == first.Id);
+        Assert.Equal(FlowNodeExecutionOutcome.Completed, firstItem.Outcome);
+        Assert.False(firstItem.IsTimedOut);
+        var secondItem = Assert.Single(history, item => item.Record.Id == second.Id);
+        Assert.Equal(FlowNodeExecutionOutcome.Failed, secondItem.Outcome);
+        Assert.True(secondItem.IsTimedOut);
+    }
+
+    [Fact]
+    public void LinkedMessagesKeepBatchAndSerialRulesAndTakePrecedenceOverLegacyMatches()
+    {
+        var record = new FlowNodeRecord
+        {
+            Id = 5, BatchId = 3, SerialNumber = "sn", NodeId = "fov", StartTime = _time,
+            EndTime = _time.AddSeconds(1), ElapsedMs = 1000,
+        };
+        var matching = new FlowNodeMessage { Id = 1, BatchId = 3, SerialNumber = "sn", NodeRecordId = 5, SendTime = _time.AddMilliseconds(2) };
+        var blankSerial = new FlowNodeMessage { Id = 2, BatchId = 3, SerialNumber = " ", NodeRecordId = 5, SendTime = _time };
+        var otherSerial = new FlowNodeMessage { Id = 3, BatchId = 3, SerialNumber = "other", NodeRecordId = 5, SendTime = _time, State = FlowMessageState.Timeout };
+        var otherBatch = new FlowNodeMessage { Id = 4, BatchId = 4, SerialNumber = "sn", NodeRecordId = 5, SendTime = _time, State = FlowMessageState.Timeout };
+        var legacy = new FlowNodeMessage { Id = 5, BatchId = 3, SerialNumber = "sn", NodeId = "fov", SendTime = _time, State = FlowMessageState.Timeout };
+        var session = new FlowExecutionAnalysisSession(3, "sn", null, null, [record],
+            [matching, blankSerial, otherSerial, otherBatch, legacy], [], _time, 30_000);
+
+        Assert.Equal(new[] { blankSerial, matching }, session.GetMessages(record));
+        Assert.False(Assert.Single(session.DurationItems).IsTimedOut);
+    }
+
     [Fact]
     public void SelectingAndFilteringBatchesKeepsThePinnedPayload()
     {
@@ -130,9 +169,13 @@ public sealed class FlowNodeComparisonTests : IDisposable
             var baseline = (TextBox)page.FindName("BaselineReceiveTextBox");
             var selected = (TextBox)page.FindName("SelectedReceiveTextBox");
             var search = (TextBox)page.FindName("SearchTextBox");
-            page.RaiseEvent(new RoutedEventArgs(FrameworkElement.LoadedEvent));
+            SynchronizationContext? previousContext = SynchronizationContext.Current;
+            var operations = new AsyncVoidDrainContext(previousContext ?? new DispatcherSynchronizationContext(Dispatcher.CurrentDispatcher));
+            SynchronizationContext.SetSynchronizationContext(operations);
             try
             {
+                page.RaiseEvent(new RoutedEventArgs(FrameworkElement.LoadedEvent));
+                Assert.True(operations.ObservedOperation);
                 PumpUntil(() => baseline.Text.Contains("40") && selected.Text.Contains("40") && list.Items.Count == 2);
                 list.SelectedItem = list.Items.Cast<FlowNodeComparisonRow>().Single(row => row.BatchId == 11);
                 PumpUntil(() => selected.Text.Contains("42"));
@@ -148,8 +191,42 @@ public sealed class FlowNodeComparisonTests : IDisposable
                 Assert.Contains("42", baseline.Text);
                 Assert.False(((Button)page.FindName("BaselineButton")).IsEnabled);
             }
-            finally { page.RaiseEvent(new RoutedEventArgs(FrameworkElement.UnloadedEvent)); }
+            finally
+            {
+                try
+                {
+                    page.RaiseEvent(new RoutedEventArgs(FrameworkElement.UnloadedEvent));
+                    // Unloading suppresses obsolete UI results. Wait for their database reads before fixture disposal.
+                    PumpUntil(() => !operations.HasPendingOperations);
+                }
+                finally { SynchronizationContext.SetSynchronizationContext(previousContext); }
+            }
         });
+    }
+
+    private sealed class AsyncVoidDrainContext(SynchronizationContext dispatcher) : SynchronizationContext
+    {
+        private int _pending;
+        public bool HasPendingOperations => Volatile.Read(ref _pending) != 0;
+        public bool ObservedOperation { get; private set; }
+
+        public override void OperationStarted()
+        {
+            ObservedOperation = true;
+            Interlocked.Increment(ref _pending);
+        }
+        public override void OperationCompleted() => Interlocked.Decrement(ref _pending);
+        public override SynchronizationContext CreateCopy() => this;
+        public override void Post(SendOrPostCallback callback, object? state) => dispatcher.Post(value => Invoke(callback, value), state);
+        public override void Send(SendOrPostCallback callback, object? state) => dispatcher.Send(value => Invoke(callback, value), state);
+
+        private void Invoke(SendOrPostCallback callback, object? state)
+        {
+            SynchronizationContext? previous = Current;
+            SetSynchronizationContext(this);
+            try { callback(state); }
+            finally { SetSynchronizationContext(previous); }
+        }
     }
 
     private static void PumpUntil(Func<bool> complete)
@@ -195,6 +272,8 @@ public sealed class FlowNodeComparisonTests : IDisposable
         string target = Path.GetFullPath(_directory);
         if (!target.StartsWith(Path.GetFullPath(Path.GetTempPath()), StringComparison.OrdinalIgnoreCase))
             throw new InvalidOperationException("Unexpected test directory.");
+        // The analysis data source under test opens pooled connections to ui.db.
+        Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
         Directory.Delete(target, recursive: true);
     }
 }

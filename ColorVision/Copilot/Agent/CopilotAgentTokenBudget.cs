@@ -85,6 +85,8 @@ namespace ColorVision.Copilot
         private long _contextRecoveryEstimatedInputTokensBefore;
         private long _contextRecoveryEstimatedInputTokensAfter;
         private long _consumedTokens;
+        private long _chargedTokens;
+        private int _lastCachedInputTokens;
         private bool _usedEstimatedUsage;
         private bool _budgetExhausted;
         private bool _budgetNotificationPublished;
@@ -221,11 +223,11 @@ namespace ColorVision.Copilot
                     AddClamped(
                         _contextRecoveryEstimatedInputTokensAfter,
                         delegatedRun.ContextRecoveryEstimatedInputTokensAfter));
-                _consumedTokens = AddClamped(
-                    _consumedTokens,
-                    Math.Max(Math.Max(0, delegatedRun.ConsumedTokens), delegatedRun.Usage.EffectiveTotalTokens));
+                var delegatedTokens = Math.Max(Math.Max(0, delegatedRun.ConsumedTokens), delegatedRun.Usage.EffectiveTotalTokens);
+                _consumedTokens = AddClamped(_consumedTokens, delegatedTokens);
+                _chargedTokens = AddClamped(_chargedTokens, CopilotTokenUsage.CachedReadDiscount(delegatedTokens, delegatedRun.Usage.EffectiveCachedInputTokens));
                 _usedEstimatedUsage |= delegatedRun.UsedEstimatedUsage;
-                if (_consumedTokens >= _budget.RequestTokenBudget)
+                if (_chargedTokens >= _budget.RequestTokenBudget)
                     _budgetExhausted = true;
                 snapshot = CreateSnapshot();
             }
@@ -316,9 +318,12 @@ namespace ColorVision.Copilot
             {
                 response = await base.GetResponseAsync(materializedMessages, options, cancellationToken);
             }
-            catch (CopilotProviderConnectionRecoveryCancelledException)
+            catch (CopilotProviderConnectionRecoveryCancelledException exception)
             {
                 RecordProviderCallDuration(ToMilliseconds(providerStopwatch.Elapsed));
+                var reportedUsage = ExtractPayloadFailureUsage(exception);
+                if (reportedUsage.HasAny)
+                    CommitUsage(reportedUsage, estimatedInputTokens);
                 throw;
             }
             catch (Exception exception) when (CopilotContextWindowFailureClassifier.TryClassify(exception, out _))
@@ -371,9 +376,12 @@ namespace ColorVision.Copilot
             {
                 enumerator = await OpenStreamingAttemptAsync(materializedMessages, options, cancellationToken);
             }
-            catch (CopilotProviderConnectionRecoveryCancelledException)
+            catch (CopilotProviderConnectionRecoveryCancelledException exception)
             {
                 RecordProviderCallDuration(ToMilliseconds(providerStopwatch.Elapsed));
+                var reportedUsage = ExtractPayloadFailureUsage(exception);
+                if (reportedUsage.HasAny)
+                    CommitUsage(reportedUsage, estimatedInputTokens);
                 throw;
             }
             catch (Exception exception) when (CopilotContextWindowFailureClassifier.TryClassify(exception, out _))
@@ -520,10 +528,11 @@ namespace ColorVision.Copilot
             CopilotAgentBudgetSnapshot? notification = null;
             lock (_syncRoot)
             {
+                // The estimate cannot see the cache, so assume the prefix the last call read is still there.
                 var wouldExceedBudget = AddClamped(
-                    _consumedTokens,
-                    Math.Max(1, estimatedInputTokens)) > _budget.RequestTokenBudget;
-                if (_consumedTokens >= _budget.RequestTokenBudget || wouldExceedBudget)
+                    _chargedTokens,
+                    Math.Max(1, CopilotTokenUsage.CachedReadDiscount(estimatedInputTokens, _lastCachedInputTokens))) > _budget.RequestTokenBudget;
+                if (_chargedTokens >= _budget.RequestTokenBudget || wouldExceedBudget)
                 {
                     _budgetExhausted = true;
                     if (!_budgetNotificationPublished)
@@ -550,22 +559,30 @@ namespace ColorVision.Copilot
             lock (_syncRoot)
             {
                 var consumedTokens = Math.Max(1, estimatedTokens);
+                var chargedTokens = consumedTokens;
                 if (actualUsage.HasAny)
                 {
                     _usage = _usage.Add(actualUsage);
+                    _lastCachedInputTokens = actualUsage.EffectiveCachedInputTokens;
                     var actualTokens = Math.Max(1, actualUsage.EffectiveTotalTokens);
                     if (requireEstimatedFloor && actualTokens < consumedTokens)
+                    {
                         _usedEstimatedUsage = true;
+                    }
                     else
+                    {
                         consumedTokens = actualTokens;
+                        chargedTokens = Math.Max(1, actualUsage.BudgetChargeTokens);
+                    }
                 }
                 else
                 {
                     _usedEstimatedUsage = true;
                 }
                 _consumedTokens = AddClamped(_consumedTokens, consumedTokens);
+                _chargedTokens = AddClamped(_chargedTokens, chargedTokens);
 
-                if (_consumedTokens >= _budget.RequestTokenBudget)
+                if (_chargedTokens >= _budget.RequestTokenBudget)
                     _budgetExhausted = true;
                 snapshot = CreateSnapshot();
             }
@@ -682,6 +699,7 @@ namespace ColorVision.Copilot
                 InputBudgetTokens = _budget.InputBudgetTokens,
                 RequestTokenBudget = _budget.RequestTokenBudget,
                 ConsumedTokens = Math.Max(0, _consumedTokens),
+                ChargedTokens = Math.Max(0, _chargedTokens),
                 ProviderCalls = providerCalls,
                 PeakEstimatedInputTokens = Math.Max(0, _peakEstimatedInputTokens),
                 ProviderRetryCount = providerRetryCount,

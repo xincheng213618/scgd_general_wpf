@@ -468,4 +468,157 @@
   <data name="首次登录必须修改默认密码。" xml:space="preserve">
     <value>首次登錄必須修改默認密碼。</value>
   </data>
+  <data name="激活" xml:space="preserve">
+    <value>啟用</value>
+  </data>
+  <data name="许可证激活" xml:space="preserve">
+    <value>授權啟用</value>
+  </data>
+  <data name="申请许可证并查看设备占用。激活状态仅在此处显示，不影响软件功能。" xml:space="preserve">
+    <value>申請授權並查看裝置占用。啟用狀態僅在此處顯示，不影響軟體功能。</value>
+  </data>
+  <data name="刷新状态" xml:space="preserve">
+    <value>重新整理狀態</value>
+  </data>
+  <data name="复制许可证" xml:space="preserve">
+    <value>複製授權碼</value>
+  </data>
+  <data name="释放本机" xml:space="preserve">
+    <value>釋放此電腦</value>
+  </data>
+  <data name="选择设备类型" xml:space="preserve">
+    <value>選擇裝置類型</value>
+  </data>
+  <data name="我的电脑（TPM 离线）" xml:space="preserve">
+    <value>我的電腦（TPM 離線）</value>
+  </data>
+  <data name="共享电脑（在线）" xml:space="preserve">
+    <value>共用電腦（線上）</value>
+  </data>
+  <data name="离线模式需要 TPM，联网可续期。在线模式在此窗口打开时续租，关闭后由服务器按租约到期回收。" xml:space="preserve">
+    <value>離線模式需要 TPM，連線後可續期。線上租約會在此視窗開啟時續租，關閉後由伺服器於到期時回收。</value>
+  </data>
+  <data name="联网申请并激活" xml:space="preserve">
+    <value>連線申請並啟用</value>
+  </data>
+  <data name="使用已有许可证" xml:space="preserve">
+    <value>使用已有授權</value>
+  </data>
+  <data name="激活本机" xml:space="preserve">
+    <value>啟用此電腦</value>
+  </data>
+  <data name="请输入许可证。" xml:space="preserve">
+    <value>請輸入授權碼。</value>
+  </data>
+  <data name="释放后，本机需要联网重新激活。是否继续？" xml:space="preserve">
+    <value>釋放後，此電腦需要連線重新啟用。是否繼續？</value>
+  </data>
+  <data name="已释放本机。" xml:space="preserve">
+    <value>此電腦已釋放。</value>
+  </data>
+  <data name="许可证已复制。持有许可证的人可以占用可用设备名额。" xml:space="preserve">
+    <value>已複製授權碼。持有授權碼的人可占用可用的裝置名額。</value>
+  </data>
+  <data name="剪贴板暂不可用，请重试。" xml:space="preserve">
+    <value>剪貼簿暫時無法使用，請重試。</value>
+  </data>
+  <data name="激活请求未完成，请重试。" xml:space="preserve">
+    <value>啟用要求未完成，請重試。</value>
+  </data>
+  <data name="许可证已到期" xml:space="preserve">
+    <value>授權已到期</value>
+  </data>
+  <data name="本机已激活 · TPM 离线" xml:space="preserve">
+    <value>此電腦已啟用 · TPM 離線</value>
+  </data>
+  <data name="本机已激活 · 在线租约" xml:space="preserve">
+    <value>此電腦已啟用 · 線上租約</value>
+  </data>
+  <data name="本机待联网续期" xml:space="preserve">
+    <value>此電腦待連線續期</value>
+  </data>
+  <data name="本机未激活" xml:space="preserve">
+    <value>此電腦尚未啟用</value>
+  </data>
+  <data name="许可证到期 {0}" xml:space="preserve">
+    <value>授權到期 {0}</value>
+  </data>
+  <data name="离线凭据到期 {0}" xml:space="preserve">
+    <value>離線憑證到期 {0}</value>
+  </data>
+  <data name="正在读取激活状态…" xml:space="preserve">
+    <value>正在讀取啟用狀態…</value>
+  </data>
+  <data name="使用中的设备（{0} / {1}）" xml:space="preserve">
+    <value>使用中的裝置（{0} / {1}）</value>
+  </data>
+  <data name="使用中的设备" xml:space="preserve">
+    <value>使用中的裝置</value>
+  </data>
+  <data name="暂无使用中的设备。" xml:space="preserve">
+    <value>目前沒有使用中的裝置。</value>
+  </data>
+  <data name="{0}（本机）" xml:space="preserve">
+    <value>{0}（此電腦）</value>
+  </data>
+  <data name="TPM 离线" xml:space="preserve">
+    <value>TPM 離線</value>
+  </data>
+  <data name="在线租约" xml:space="preserve">
+    <value>線上租約</value>
+  </data>
+  <data name="{0} · 到期 {1}" xml:space="preserve">
+    <value>{0} · 到期 {1}</value>
+  </data>
+  <data name="本机无法创建 TPM 密钥。可选择共享电脑（在线）。" xml:space="preserve">
+    <value>此電腦無法建立 TPM 金鑰。可選擇共用電腦（線上）。</value>
+  </data>
+  <data name="本机密钥不可用，请检查 Windows 账户或 TPM 状态。" xml:space="preserve">
+    <value>此電腦的金鑰無法使用，請檢查 Windows 帳戶或 TPM 狀態。</value>
+  </data>
+  <data name="当前无法连接激活服务器，设备列表可能仅显示本机的离线凭据。" xml:space="preserve">
+    <value>目前無法連線至啟用伺服器，裝置清單可能僅顯示此電腦的離線憑證。</value>
+  </data>
+  <data name="激活服务器地址无效。" xml:space="preserve">
+    <value>啟用伺服器位址無效。</value>
+  </data>
+  <data name="HTTP 激活需要预置服务器公钥，请联系维护人员。" xml:space="preserve">
+    <value>HTTP 啟用需要預先設定伺服器公鑰，請聯絡維護人員。</value>
+  </data>
+  <data name="激活服务器公钥无效，请联系维护人员。" xml:space="preserve">
+    <value>啟用伺服器公鑰無效，請聯絡維護人員。</value>
+  </data>
+  <data name="无法读取或保存本机激活记录。" xml:space="preserve">
+    <value>無法讀取或儲存此電腦的啟用記錄。</value>
+  </data>
+  <data name="本机时间异常，请校准后联网刷新。" xml:space="preserve">
+    <value>請校準此電腦的時間，再連線重新整理。</value>
+  </data>
+  <data name="本机没有可续期的激活记录。" xml:space="preserve">
+    <value>此電腦沒有可續期的啟用記錄。</value>
+  </data>
+  <data name="许可证无效，请核对后重试。" xml:space="preserve">
+    <value>授權碼無效，請核對後重試。</value>
+  </data>
+  <data name="许可证已到期。" xml:space="preserve">
+    <value>授權已到期。</value>
+  </data>
+  <data name="设备名额已满，请先在其他设备上释放，或等待租约到期。" xml:space="preserve">
+    <value>裝置名額已滿，請先在其他裝置上釋放，或等候租約到期。</value>
+  </data>
+  <data name="请先释放本机的现有激活。" xml:space="preserve">
+    <value>請先釋放此電腦現有的啟用。</value>
+  </data>
+  <data name="请求过于频繁，请稍后重试。" xml:space="preserve">
+    <value>要求過於頻繁，請稍後重試。</value>
+  </data>
+  <data name="服务器返回的激活数据无法验证。" xml:space="preserve">
+    <value>無法驗證伺服器傳回的啟用資料。</value>
+  </data>
+  <data name="服务器记录设备名、公钥指纹和激活时间，用于识别设备及计算名额。" xml:space="preserve">
+    <value>伺服器記錄裝置名稱、公鑰指紋與啟用時間，以識別裝置並計算占用名額。</value>
+  </data>
+  <data name="另一个 ColorVision 窗口正在处理激活，请稍后重试。" xml:space="preserve">
+    <value>另一個 ColorVision 視窗正在處理啟用，請稍後重試。</value>
+  </data>
 </root>

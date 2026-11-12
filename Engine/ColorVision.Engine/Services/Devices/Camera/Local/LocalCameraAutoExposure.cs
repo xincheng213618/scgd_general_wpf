@@ -1,9 +1,12 @@
 using ColorVision.Engine.Services.Devices.Camera.Templates.CameraRunParam;
+using ColorVision.Engine.Services.PhyCameras.Configs;
 using ColorVision.UI;
 using cvColorVision;
 using FlowEngineLib.Algorithm;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
 
@@ -11,9 +14,50 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
 {
     internal static class LocalCameraAutoExposure
     {
-        internal static void Measure(DeviceCamera device, IntPtr handle, CameraRunParam parameters, string? configuration = null)
+        internal static string BuildConfiguration(string? json, PhyExpTimeCfg defaults)
         {
-            Prepare(device, handle, parameters, configuration);
+            JObject settings = string.IsNullOrWhiteSpace(json)
+                ? JObject.FromObject(defaults)
+                : JObject.Parse(json)["expTimeCfg"] as JObject ?? throw new InvalidOperationException("自动曝光参数缺少 expTimeCfg。");
+            return NormalizeConfiguration(settings);
+        }
+
+        internal static string NormalizeConfiguration(JObject settings)
+        {
+            foreach (string name in new[] { "autoExpTimeBegin", "autoExpSyncFreq", "autoExpSaturation", "autoExpSatMaxAD",
+                "autoExpMaxPecentage", "autoExpSatDev", "maxExpTime", "minExpTime", "burstThreshold" })
+            {
+                JToken? value = settings[name];
+                if (value?.Type is not (JTokenType.Integer or JTokenType.Float) || !double.IsFinite(value.Value<double>()))
+                    throw new InvalidOperationException($"自动曝光参数 {name} 无效。");
+            }
+            double minimum = settings.Value<double>("minExpTime");
+            double maximum = settings.Value<double>("maxExpTime");
+            double beginning = settings.Value<double>("autoExpTimeBegin");
+            if (settings["autoExpFlag"]?.Type != JTokenType.Boolean || maximum < minimum
+                || !IsNativeExposure(minimum) || !IsNativeExposure(maximum) || !IsNativeExposure(beginning))
+                throw new InvalidOperationException("自动曝光参数的开关或曝光范围无效。");
+
+            // The SDK reads a float and raises the minimum exposure to one sync period.
+            float syncFrequency = (float)settings.Value<double>("autoExpSyncFreq");
+            if (!float.IsFinite(syncFrequency) || syncFrequency == 0)
+                throw new InvalidOperationException("自动曝光同步频率无效，停用同步请设为 -1。");
+            if (syncFrequency > 0)
+            {
+                float syncPeriod = 1000f / syncFrequency;
+                if (!float.IsFinite(syncPeriod) || syncPeriod > (float)maximum)
+                    throw new InvalidOperationException("自动曝光同步频率对应的单周期长于最大曝光时间。");
+            }
+
+            return new JObject { ["expTimeCfg"] = settings.DeepClone() }.ToString(Formatting.None);
+
+            static bool IsNativeExposure(double exposure) => (float)exposure is > 0 and <= float.MaxValue;
+        }
+
+        internal static void Measure(DeviceCamera device, IntPtr handle, CameraRunParam parameters, string? configuration = null,
+            IReadOnlyList<(ImageChannelType ChannelType, int CfwPort)>? captureChannels = null)
+        {
+            Prepare(device, handle, parameters, configuration, captureChannels);
             float[] exposure = new float[3];
             float[] saturation = new float[3];
             int result = cvCameraCSLib.CM_GetAutoExpTimeEx(handle, exposure, saturation);
@@ -60,13 +104,14 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             catch { frame.Dispose(); throw; }
         }
 
-        private static void Prepare(DeviceCamera device, IntPtr handle, CameraRunParam parameters, string? configuration)
+        private static void Prepare(DeviceCamera device, IntPtr handle, CameraRunParam parameters, string? configuration,
+            IReadOnlyList<(ImageChannelType ChannelType, int CfwPort)>? captureChannels = null)
         {
             if (device.Config.IsAutoExpWithND)
                 throw new NotSupportedException("本地自动曝光尚不支持服务的 ND 自动切换，请关闭自动曝光 ND 选项后重试。");
             if (device.Config.IsExpThree)
             {
-                int channelResult = cvCameraCSLib.UpdateCfgJson(handle, ConfigType.Cfg_Channels, BuildChannelConfiguration(device));
+                int channelResult = cvCameraCSLib.UpdateCfgJson(handle, ConfigType.Cfg_Channels, BuildChannelConfiguration(device, captureChannels));
                 if (channelResult != cvErrorDefine.CV_ERR_SUCCESS)
                     throw LocalCameraCaptureService.CreateNativeException("本地自动曝光加载滤轮通道失败", channelResult);
             }
@@ -74,7 +119,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             {
                 int configurationResult = cvCameraCSLib.UpdateCfgJson(handle, ConfigType.Cfg_ExpTime, configuration);
                 if (configurationResult != cvErrorDefine.CV_ERR_SUCCESS)
-                    throw LocalCameraCaptureService.CreateNativeException("本地自动曝光加载模板失败", configurationResult);
+                    throw LocalCameraCaptureService.CreateNativeException("本地自动曝光加载参数失败", configurationResult);
             }
             int gainResult = cvCameraCSLib.CM_SetGain(handle, parameters.Gain);
             if (gainResult != cvErrorDefine.CV_ERR_SUCCESS) throw LocalCameraCaptureService.CreateNativeException("本地自动曝光设置增益失败", gainResult);
@@ -82,12 +127,10 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             if (exposureResult != cvErrorDefine.CV_ERR_SUCCESS) throw LocalCameraCaptureService.CreateNativeException("本地自动曝光设置曝光失败", exposureResult);
         }
 
-        internal static string BuildChannelConfiguration(DeviceCamera device)
+        internal static string BuildChannelConfiguration(DeviceCamera device,
+            IReadOnlyList<(ImageChannelType ChannelType, int CfwPort)>? channels = null)
         {
-            var channels = LocalCameraCaptureService.GetChannelConfigs(device, 3);
-            if (channels.Count != 3 || channels.Select(channel => channel.ChannelType).Distinct().Count() != 3
-                || channels.Any(channel => channel.ChannelType is not (ImageChannelType.Gray_X or ImageChannelType.Gray_Y or ImageChannelType.Gray_Z)))
-                throw new InvalidOperationException("CV 自动曝光需要各一个 X、Y、Z 通道，请检查滤轮通道配置。");
+            channels ??= LocalCameraCaptureService.GetChannelConfigs(device, 3);
             return JsonConvert.SerializeObject(new
             {
                 channelCfg = channels.Select(channel => new { cfwport = channel.CfwPort, chtype = channel.ChannelType })

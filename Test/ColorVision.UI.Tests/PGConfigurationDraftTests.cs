@@ -102,4 +102,30 @@ public sealed class PGConfigurationDraftTests
         Assert.True(draft.TryApply(config, out string error), error);
         Assert.Equal(address.Trim(), config.Addr);
     }
+
+    [Fact]
+    public void LocalTimeoutEditsKeepTheExistingServicePayloadAndUntouchedLivePreference()
+    {
+        var config = new ConfigPG { Category = "COMM.GXCLCM", Addr = " COM7 ", Port = 9600 };
+        var display = new DisplayPGConfig { UseLocalPG = true };
+        var draft = new PGConfigurationDraft(config, display);
+        string original = JsonConvert.SerializeObject(config);
+        draft.DisplayConfig.ConnectTimeout = 4000;
+        display.CommandTimeout = 12000;
+        Assert.Equal(3000, display.ConnectTimeout);
+
+        Assert.True(draft.TryApply(config, out string error, display), error);
+        Assert.False(draft.ServiceSettingsChanged);
+        Assert.True(draft.DisplaySettingsChanged);
+        Assert.Equal(original, JsonConvert.SerializeObject(config));
+        var restored = JObject.FromObject(display).ToObject<DisplayPGConfig>()!;
+        Assert.Equal(4000, restored.ConnectTimeout);
+        Assert.Equal(12000, restored.CommandTimeout);
+
+        draft.SerialPortName = "COM8";
+        Assert.True(draft.TryApply(config, out error, display), error);
+        Assert.True(draft.ServiceSettingsChanged);
+        Assert.False(draft.DisplaySettingsChanged);
+        Assert.Equal("COM8", config.Addr);
+    }
 }

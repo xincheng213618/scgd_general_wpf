@@ -159,7 +159,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
 
         private void DeviceService_OnMessageRecved(MsgReturn arg)
         {
-            if (IsDisposed || Device.RoutesLocally || arg.DeviceCode != Device.Config.Code) return;
+            if (IsDisposed || !Device.ViewRegistration.IsVisible || Device.RoutesLocally || arg.DeviceCode != Device.Config.Code) return;
 
             if (arg.Code == 102)
             {
@@ -170,7 +170,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
                         {
                             Application.Current?.Dispatcher.Invoke(() =>
                             {
-                                if (IsDisposed) return;
+                                if (IsDisposed || !Device.ViewRegistration.IsVisible) return;
 
                                 Device.Config.MotorConfig.Position = arg.Data.Position;
                                 OpenImage((string?)arg.Data.ImageTmpFile);
@@ -230,6 +230,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
         private void listView1_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (IsDisposed || updatingLocalSelection) return;
+            FocusChart.ClearCompletedAutoFocus();
 
             if (listView1.SelectedItem is ViewResultImage result)
             {
@@ -243,6 +244,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
         private void LocalResultPublished(ResultMessage message)
         {
             if (IsDisposed
+                || !Device.ViewRegistration.IsVisible
                 || message.Route != ResultRoutes.Camera
                 || message.ResultKind != ResultKinds.Image
                 || !string.Equals(message.DeviceCode, Device.Config.Code, StringComparison.Ordinal))
@@ -255,12 +257,12 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
 
         private void ShowPersistedResult(int masterId)
         {
-            if (IsDisposed || masterId <= 0) return;
+            if (IsDisposed || !Device.ViewRegistration.IsVisible || masterId <= 0) return;
             MeasureResultImgModel? model = MeasureImgResultDao.Instance.GetById(masterId);
             if (model == null) return;
             Application.Current?.Dispatcher.BeginInvoke(() =>
             {
-                if (!IsDisposed)
+                if (!IsDisposed && Device.ViewRegistration.IsVisible)
                     ShowResult(model);
             });
         }
@@ -269,6 +271,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
         {
             if (IsDisposed) return;
             EnsureInitialized();
+            FocusChart.ClearCompletedAutoFocus();
             if (string.IsNullOrWhiteSpace(filePath))
                 ImageView.Clear();
             else
@@ -284,25 +287,29 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
             }
         }
 
-        internal void ShowLocalResult(MeasureResultImgModel? model, LocalCameraPreview preview, bool forceDisplay)
+        internal void ShowLocalResult(MeasureResultImgModel? model, LocalCameraPreview preview, bool forceDisplay, bool focusFrame)
         {
-            if (IsDisposed) return;
+            if (IsDisposed || !Device.ViewRegistration.IsVisible) return;
+            bool keepVideo = Device.DisplayConfig.IsLocalVideoOpen;
+            if (keepVideo && model == null) return;
             EnsureInitialized();
             localPreview = preview;
             localPreviewResultId = model?.Id ?? -1;
+            bool showPreview = !keepVideo && (forceDisplay || Config.AutoRefreshView);
             updatingLocalSelection = true;
             try
             {
                 if (model != null)
                 {
                     ShowResult(model);
-                    if (forceDisplay || Config.AutoRefreshView)
+                    if (showPreview)
                         listView1.SelectedItem = ViewResults.FirstOrDefault(item => item.Id == model.Id);
                 }
             }
             finally { updatingLocalSelection = false; }
-            if (forceDisplay || Config.AutoRefreshView)
+            if (showPreview)
             {
+                if (!focusFrame) FocusChart.ClearCompletedAutoFocus();
                 preview.Show(ImageView);
                 ImageView.UpdateZoomAndScale();
             }
@@ -310,28 +317,34 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
 
         public void ShowResult(MeasureResultImgModel model)
         {
-            if (IsDisposed) return;
+            if (IsDisposed || !Device.ViewRegistration.IsVisible) return;
             EnsureInitialized();
 
-            ViewResultImage? previous = ViewResults.FirstOrDefault(item => item.Id == model.Id);
-            if (previous != null)
+            bool keepVideo = Device.DisplayConfig.IsLocalVideoOpen;
+            bool previousSelectionUpdate = updatingLocalSelection;
+            updatingLocalSelection = previousSelectionUpdate || keepVideo;
+            try
             {
-                if (previous.FileUrl == (model.FileUrl ?? string.Empty)) return;
-                ViewResults.Remove(previous);
-            }
-            ViewResultImage result = new(model);
-            if (Config.InsertAtBeginning)
-                ViewResults.Insert(0, result);
-            else
-                ViewResults.Add(result);
+                ViewResultImage? previous = ViewResults.FirstOrDefault(item => item.Id == model.Id);
+                if (previous != null)
+                {
+                    if (previous.FileUrl == (model.FileUrl ?? string.Empty)) return;
+                    ViewResults.Remove(previous);
+                }
+                ViewResultImage result = new(model);
+                if (Config.InsertAtBeginning)
+                    ViewResults.Insert(0, result);
+                else
+                    ViewResults.Add(result);
 
-
-            // A delayed persisted notification for an older capture must not replace the latest snapshot.
-            if (Config.AutoRefreshView && model.Id >= localPreviewResultId && _viewResults.ContainsId(model.Id))
-            {
-                listView1.SelectedItem = result;
-                listView1.ScrollIntoView(result);
+                // A delayed persisted notification for an older capture must not replace the latest snapshot.
+                if (!keepVideo && Config.AutoRefreshView && model.Id >= localPreviewResultId && _viewResults.ContainsId(model.Id))
+                {
+                    listView1.SelectedItem = result;
+                    listView1.ScrollIntoView(result);
+                }
             }
+            finally { updatingLocalSelection = previousSelectionUpdate; }
         }
         private void Search_Click(object sender, RoutedEventArgs e)
         {
@@ -346,11 +359,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
             var query = Db.Queryable<MeasureResultImgModel>();
             query = query.OrderBy(x => x.Id, Config.OrderByType);
             var dbList = Config.Count > 0 ? query.Take(Config.Count).ToList() : query.ToList();
-            foreach (var item in dbList)
-            {
-                ViewResultImage ViewResultAlg = new(item);
-                _viewResults.QueryResults.Add(ViewResultAlg);
-            }
+            _viewResults.QueryResults.AddRange(dbList.Select(item => new ViewResultImage(item)));
         }
 
 
@@ -395,6 +404,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
 
         private void DisposeCore()
         {
+            FocusChart?.Reset();
             _historyConfig.PropertyChanged -= HistoryConfig_PropertyChanged;
             Loaded -= View_Loaded;
             IsVisibleChanged -= View_IsVisibleChanged;

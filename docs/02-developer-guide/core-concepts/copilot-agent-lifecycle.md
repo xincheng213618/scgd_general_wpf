@@ -3,7 +3,7 @@ knowledge_id: "copilot.lifecycle"
 knowledge_type: "topic"
 status: "current"
 summary: "Copilot 任务生命周期、恢复预算与项目指令发现的契约；技能发现和调用见独立技能主题。"
-aliases: ["Copilot 如何加载 AGENTS.md","为什么不读取 config.toml","CopilotAgentProjectInstructions","/init","初始化项目指令","CopilotProjectInitialization"]
+aliases: ["AGENTS.md 太长会被截断吗","Copilot 如何加载 AGENTS.md","为什么不读取 config.toml","CopilotAgentProjectInstructions","/init","初始化项目指令","CopilotProjectInitialization"]
 code_paths: ["ColorVision/Copilot/Agent/CopilotAgentRunFinalizationScope.cs","ColorVision/Copilot/Agent/CopilotAgentProjectInstructions.cs","ColorVision/Copilot/Agent/CopilotAgentProjectInstructions.Rules.cs","ColorVision/Copilot/Agent/CopilotAgentSessionCheckpoint.cs","ColorVision/Copilot/Agent/CopilotAgentTokenBudget.cs","ColorVision/Copilot/Agent/CopilotAgentTokenBudget.Estimation.cs","ColorVision/Copilot/Agent/CopilotMicrosoftAgentFrameworkRuntime.FinalAnswerRecovery.cs","ColorVision/Copilot/Agent/CopilotMicrosoftAgentFrameworkRuntime.Recovery.cs","ColorVision/Copilot/Agent/CopilotMicrosoftAgentFrameworkRuntime.Loop.cs","ColorVision/Copilot/Agent/CopilotMicrosoftAgentFrameworkRuntime.AgentStreamingLoop.cs","ColorVision/Copilot/CopilotChatMessage.cs","ColorVision/Copilot/CopilotProjectInitialization.cs"]
 test_paths: ["Test/ColorVision.Copilot.Tests/CopilotLateFinalizationCancellationTests.cs","Test/ColorVision.Copilot.Tests/CopilotFinalCheckpointAwaitCancellationTests.cs","Test/ColorVision.Copilot.Tests/CopilotAgentProjectInstructionsTests.cs","Test/ColorVision.Copilot.Tests/CopilotAgentSessionCheckpointTests.cs","Test/ColorVision.Copilot.Tests/CopilotTokenUsageMergeTests.cs","Test/ColorVision.Copilot.Tests/CopilotNonStreamingUsageTests.cs","Test/ColorVision.Copilot.Tests/CopilotFinalAnswerCancellationTests.cs","Test/ColorVision.Copilot.Tests/CopilotFinalAnswerSteeringTests.cs","Test/ColorVision.Copilot.Tests/CopilotFinalAnswerRecoverySafetyTests.cs"]
 related: ["copilot.runtime","copilot.execution","copilot.extensions","copilot.skills"]
@@ -44,7 +44,7 @@ Harness 正常结束但没有产生任何 `TextContent` 时，Runtime 不再把�
 
 只更新 journal 不会使旧执行会话重新变得可恢复。`CopilotAgentSessionCheckpoint.SessionResumeRestriction` 将未知工具结果或未闭合的 Provider 工具调用绑定到保留的 `SerializedSessionJson`；`CopyWithOutcome` 及其 journal 复制入口在替换 journal 前固化该限制，JSON 存储、快照、等价判断和 journal 裁剪继续保留它。非法限制值拒绝恢复。连续失败的 Finalize 不能靠新增无工具 run 清除限制；真正重新规划并创建新 Session 时不继承旧标记，也不会因历史 journal 中仍有未知结果而永久禁止恢复。`CopilotFinalAnswerRecoverySafetyTests` 覆盖实际恢复入口、两次失败、保存重开、复制与新 Session 对照，同时确认 Finalize 不发现或执行工具。本修复不自动迁移旧版本已经丢失会话关联限制的历史记录；这类记录仍需重新规划，不能根据缺失标记断言原操作安全。
 
-`CopilotTokenBudgetChatClient` 基于官方 `DelegatingChatClient` 中间件包装真实模型客户端，累计同一 Agent 请求内所有供应商调用的 usage。当已观测用量达到有效请求预算时，中间件在下一次供应商调用前抛出受控的 `CopilotAgentTokenBudgetExceededException`，由 Runtime 转成确定性的结束提示，不会再次调用模型或重放工具。供应商不返回 usage 时使用字符数近似，并在诊断中标记 `includes estimates`。这个预算是跨调用循环闸门；单个供应商响应可能使最终统计略微超过阈值。
+`CopilotTokenBudgetChatClient` 基于官方 `DelegatingChatClient` 中间件包装真实模型客户端，累计同一 Agent 请求内所有供应商调用的 usage。每轮工具循环都会重读全部历史，缓存读取的费用约为新输入的十分之一，全额计入会让长任务因几乎没有计费的 Token 提前结束，因此判断预算耗尽时把供应商报告的缓存读取按 10% 计入（`BudgetChargeTokens`），调用前的估算也沿用上一次的缓存读取量；`ConsumedTokens` 和 `Reported*` 仍是原始账单值，可能超过预算值而未耗尽。子 Agent 共享池仍按原始值扣减。当已观测用量达到有效请求预算时，中间件在下一次供应商调用前抛出受控的 `CopilotAgentTokenBudgetExceededException`，由 Runtime 转成确定性的结束提示，不会再次调用模型或重放工具。供应商不返回 usage 时使用字符数近似，并在诊断中标记 `includes estimates`。这个预算是跨调用循环闸门；单个供应商响应可能使最终统计略微超过阈值。
 
 同一次流式响应的 usage 更新通过 `CopilotTokenUsage.MergeProgress` 合并，各字段保留已观测最大值，总量还须覆盖合并后的输入与输出之和；后续片段省略或降低 total 不会让用量倒退、重新开放已耗尽的预算。不同供应商调用之间仍使用 `Add` 累加。`CopilotTokenUsageMergeTests` 覆盖不完整 usage、溢出饱和、缓存计数，以及通过 Framework 流式 usage 验证下一次调用在到达供应商前被拦截。
 
@@ -73,7 +73,7 @@ Harness 的 `TodoProvider` 和 `AgentModeProvider` 作为标准运行时能力�
 
 ## 项目指令链
 
-非 Chat 模式按受信项目根到活动文档目录的顺序发现项目指令。受信项目根优先取当前解决方案目录；未打开解决方案时才回退到活动文档目录。每个目录先选择一个共享入口，依次尝试 `AGENTS.override.md`、`AGENTS.md`、`CLAUDE.md` 和 `.claude/CLAUDE.md`；后两者是面向 Claude Code 项目的兼容回退，不会在同目录已有 AGENTS 指令时重复注入。项目根的 `.claude/rules/**/*.md` 是共享入口之外的模块化规则；根共享文档之后按规则相对路径稳定排序，再加载同目录非空的 `CLAUDE.local.md` 个人叠加层。local 即使已经选择 AGENTS 入口也会生效，适合不应提交的本机测试数据或工作流偏好，仓库应把它加入 `.gitignore`。随后才加载活动文档链中的嵌套共享与 local 文档，因此越靠近活动文档的内容越晚出现。文档数量或字符预算不足时，选择阶段先保留活动文档链中最具体的文档；同一作用域按 local、共享或匹配路径的规则、无条件规则决定保留顺序，序列化时仍保持从外层到内层、共享到规则再到 local 的可解释顺序。
+非 Chat 模式按受信项目根到活动文档目录的顺序发现项目指令。单个文件不再有独立于总量的字符上限，只受总字节预算（默认 32 KiB）约束，否则指令文件末尾的约定会被静默截断。文件先按严格 UTF-8（或 BOM）解码，失败再按 GB18030，旧记事本保存的 ANSI 指令不会变成乱码。受信项目根优先取当前解决方案目录；未打开解决方案时才回退到活动文档目录。每个目录先选择一个共享入口，依次尝试 `AGENTS.override.md`、`AGENTS.md`、`CLAUDE.md` 和 `.claude/CLAUDE.md`；后两者是面向 Claude Code 项目的兼容回退，不会在同目录已有 AGENTS 指令时重复注入。项目根的 `.claude/rules/**/*.md` 是共享入口之外的模块化规则；根共享文档之后按规则相对路径稳定排序，再加载同目录非空的 `CLAUDE.local.md` 个人叠加层。local 即使已经选择 AGENTS 入口也会生效，适合不应提交的本机测试数据或工作流偏好，仓库应把它加入 `.gitignore`。随后才加载活动文档链中的嵌套共享与 local 文档，因此越靠近活动文档的内容越晚出现。文档数量或字符预算不足时，选择阶段先保留活动文档链中最具体的文档；同一作用域按 local、共享或匹配路径的规则、无条件规则决定保留顺序，序列化时仍保持从外层到内层、共享到规则再到 local 的可解释顺序。
 
 ### /init 创建项目指令
 

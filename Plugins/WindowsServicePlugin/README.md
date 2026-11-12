@@ -5,8 +5,8 @@ loads `WindowsServicePlugin.dll`; the project depends on matching ColorVision
 Engine/UI assemblies and currently targets `net10.0-windows`.
 
 The service manager is available from both `Help > Service Manager` and
-`Applications and Tools > Internal Tools`; both entry points require the
-ColorVision Administrator permission.
+`Applications and Tools > Internal Tools`; both entry points are available to
+all ColorVision roles.
 
 Use the canonical [package selection, local installation, database migration,
 and recovery contract](../../docs/04-api-reference/plugins/standard-plugins/windows-service.md).
@@ -28,7 +28,7 @@ Package-local prerequisites and warnings:
 - `WindowsServicePlugin` is not the `CVWindowsService` service ZIP or the separate
   `ColorVisionServiceHost` privilege broker. Broker-backed operations require a
   compatible installed broker and appropriate service, file, and database rights.
-  The app Administrator permission is not proof of Windows elevation.
+  Opening the manager does not grant Windows elevation.
 - Current installation uses full service packages. It can stop/register/start
   services, replace files, execute SQL, and change credentials/configuration. Confirm the targets and obtain maintenance authority.
 - Database backup and restore are manual operations. A completed backup file or

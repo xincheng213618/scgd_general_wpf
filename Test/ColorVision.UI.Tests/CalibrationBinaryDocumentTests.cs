@@ -1,13 +1,19 @@
 using ColorVision.Engine.Services.PhyCameras.Calibration.Creation;
 using ColorVision.Engine.Services.PhyCameras.Calibration.Editing;
 using ColorVision.Engine.Services.Types;
+using ColorVision.UI.Authorizations;
 using cvColorVision;
 using System.IO;
 
 namespace ColorVision.UI.Tests;
 
-public sealed class CalibrationBinaryDocumentTests
+[Collection(AuthorizationStateTestGroup.CollectionName)]
+public sealed class CalibrationBinaryDocumentTests : IDisposable
 {
+    private readonly Authorization previousAuthorization = Authorization.Instance;
+    public CalibrationBinaryDocumentTests() => Authorization.Instance = new Authorization { PermissionMode = PermissionMode.Administrator };
+    public void Dispose() => Authorization.Instance = previousAuthorization;
+
     [Theory]
     [InlineData(ServiceTypes.DSNU, CalibrationType.DSNU)]
     [InlineData(ServiceTypes.Uniformity, CalibrationType.Uniformity)]

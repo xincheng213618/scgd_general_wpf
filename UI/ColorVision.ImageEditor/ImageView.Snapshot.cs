@@ -39,10 +39,11 @@ namespace ColorVision.ImageEditor
         public BitmapSource? CaptureSnapshot()
         {
             Dispatcher.VerifyAccess();
+            var retained = _document.RetainedSnapshotMetadata;
             BitmapSource? pixels = snapshotCapture.CaptureRendered(
                 ImageShow,
-                Config.GetProperties<double>("DpiX"),
-                Config.GetProperties<double>("DpiY"),
+                retained?.DpiX ?? Config.GetProperties<double>(ImageViewPropertyKeys.DpiX),
+                retained?.DpiY ?? Config.GetProperties<double>(ImageViewPropertyKeys.DpiY),
                 CommitActiveDrawingEditsForOutput);
             return pixels == null ? null : ImageSnapshotMetadata.CaptureRecord(pixels, CaptureParameterRecord());
         }
@@ -54,23 +55,37 @@ namespace ColorVision.ImageEditor
         {
             Dispatcher.VerifyAccess();
             UpdateSnapshotCacheSource();
+            var retained = _document.RetainedSnapshotMetadata;
             ImageViewSnapshot? snapshot = snapshotCapture.CaptureForBackgroundSave(
                 ImageShow,
                 ViewBitmapSource,
-                Config.GetProperties<double>("DpiX"),
-                Config.GetProperties<double>("DpiY"),
+                retained?.DpiX ?? Config.GetProperties<double>(ImageViewPropertyKeys.DpiX),
+                retained?.DpiY ?? Config.GetProperties<double>(ImageViewPropertyKeys.DpiY),
                 includeOverlays,
                 CommitActiveDrawingEditsForOutput);
             if (snapshot != null) snapshot.RenderedParametersJson = CaptureParameterRecord();
             return snapshot;
         }
 
-        private string CaptureParameterRecord()
+        private void RetainDisplayedSnapshotMetadata()
         {
+            if (_document.Source == null || _document.RetainedSnapshotMetadata.HasValue) return;
+            // The next request clears configuration and measurement capabilities before replacing the visible pixels.
+            _document.RetainedSnapshotMetadata = (CreateSnapshotParameterRecord(),
+                Config.GetProperties<double>(ImageViewPropertyKeys.DpiX), Config.GetProperties<double>(ImageViewPropertyKeys.DpiY));
+        }
+
+        private string CaptureParameterRecord()
+            => (_document.RetainedSnapshotMetadata?.Record ?? CreateSnapshotParameterRecord()).ToJson();
+
+        private ColorVisionTiffParameters CreateSnapshotParameterRecord()
+        {
+            var source = _document.Source as BitmapSource;
             ColorVisionTiffParameters parameters = _document.ParameterRecord ?? new()
             {
                 InputFileName = Path.GetFileName(Config.FilePath), SourceType = Path.GetExtension(Config.FilePath).TrimStart('.').ToUpperInvariant(),
-                Rows = Config.GetProperties<int>(ImageViewPropertyKeys.ImageHeight), Cols = Config.GetProperties<int>(ImageViewPropertyKeys.ImageWidth),
+                Rows = source?.PixelHeight ?? Config.GetProperties<int>(ImageViewPropertyKeys.ImageHeight),
+                Cols = source?.PixelWidth ?? Config.GetProperties<int>(ImageViewPropertyKeys.ImageWidth),
                 Bpp = Config.GetProperties<int>(ImageViewPropertyKeys.Depth), SourceChannels = Config.GetProperties<int>(ImageViewPropertyKeys.Channel)
             };
             var record = parameters.ToDisplayRecord();
@@ -84,7 +99,7 @@ namespace ColorVision.ImageEditor
                         Manufacturer = Config.GetProperties<string>(ImageViewPropertyKeys.CameraManufacturer)
                     }
                 };
-            return record.ToJson();
+            return record;
         }
 
         public static Task SaveSnapshotAsync(BitmapSource snapshot, string fileName, CancellationToken cancellationToken = default)

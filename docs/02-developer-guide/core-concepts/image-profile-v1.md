@@ -29,7 +29,7 @@ related: ["algorithms.platform", "algorithms.index", "algorithms.roi-statistics"
 
 4. 等待分析完成；进度窗口可以取消。结果窗口显示曲线、统计摘要、样本表和路径长度，图像上出现本次路径 overlay。分析不修改原图；关闭结果窗口会释放结果并移除该临时 overlay。
 
-水平/垂直中心坐标可落在亚像素位置，读数由插值参数决定。矩形选择器要求显示坐标的宽和高都大于 1 DIP，过小选择会等待重新绘制。
+水平/垂直中心坐标可落在亚像素位置，读数由插值参数决定。对当前显示图像，剖面只复制覆盖路径和插值邻域的像素区域。水平和垂直剖面最多复制两行或两列，局部折线使用其包围区域。采样位置和导出坐标仍以整幅图为准。矩形选择器要求显示坐标的宽和高都大于 1 DIP，过小选择会等待重新绘制。
 
 **任意折线入口有选择器限制。** 当前复用 `TransientRoiSelectionSession` 的多边形模式，必须至少三点、闭合投影面积非零、相邻点不重复且不自交，即使 `ClosePath=false` 也执行这项检查。两点线和共线点无法在这个入口完成选择；需要局部直线时，可使用已有线图元右键“切面图”，或由调用方直接提供两点 Polyline ROI。底层算法支持两点路径，选择器限制是当前界面与算法之间的差异。
 
@@ -60,7 +60,9 @@ CVCIE 结果窗口的数据源提供：
 
 文件头没有可靠的单位声明，因此 Y/XYZ 的单位留空，不写为 `cd/m²` 或 `DN`；不能单凭 CVCIE 扩展名声称其 Y 已经是经标定的物理亮度 Lv。x/y 单位为 `1`（无量纲）。窗口标题、图例、统计、采样表及完整 CSV/JSON 均用 `CIE Y`、`CIE x`、`CIE y` 等明确区分。32-bit float 提升到 double 参与计算，64-bit double 不降为 float；不归一化、不夹紧负数。
 
-`CVRawOpen` 只向 UI 注入 `ImageProfileSourceOption` 工厂；UI 的 `IImageProfileMeasurementSource` 不依赖 Engine/FileIO。`CvcieProfileSource` 和未命中缓存的 `CvRawProfileSource` 在工作线程持有只读文件映射，按采样位置读取像素，不复制整幅 Y/XYZ 数组或显示帧。CVRAW 每个相邻像素调用原生色度变换，保留原生 float 输出后再插值 XYZ、计算 x/y，与已保存 CIE 的采样顺序一致；四邻域缓存仅服务当前采样，不创建整幅 XYZ。分析不写回文件；结束/错误/取消均释放映射及句柄。文件版本 1/2/3 的负载长度、尺寸、通道、位深与完整性必须校验。从磁盘打开时记录的测量文件或关联 RAW 长度/修改时间变化、原图尺寸不匹配或 document/revision 过期都拒绝结果，不回退到显示数据冒充测量值。CVRAW 命中文件缓存时，显示阶段只注册剖面工厂，不读取磁盘指纹；实际执行优先从缓存复制 RAW 像素并取得校正参数，随即归还缓存流；文件尚未落盘或仅缓存时也可计算，测量结束释放独立副本。未命中才使用磁盘映射。
+`CVRawOpen` 向 UI 注入 `ImageProfileSourceOption` 工厂。独立 CVRAW 的剖面与 POI 分块借用本次打开的原始像素和校正参数，包括仅缓存的图像。覆盖同一路径或清理文件缓存后，当前视图继续使用已加载的像素和参数，重开才采用可用的新快照。换图或清空会退役旧剖面。分块采样保留原生 float 色度值，再插值 XYZ 和计算 x/y，省去重读与复制整张 RAW。
+
+CVCIE 和其关联原图的文件剖面按采样位置从只读映射读取。测量文件或关联原图的版本变化、尺寸不符或图像 revision 过期时拒绝结果。请求结束即释放映射和文件句柄。
 
 测量入口使用同一 CPU scheduler、analysis session 和结果预算，调用 Provider 的 `ExecuteMeasurement` 核心；此扩展只用于交互剖面，不改变通用 `AlgorithmImageBuffer` 格式、Batch/Flow 的现有输入规则。大文件实际磁盘延迟、真实标定单位和客户仪器对标仍需现场验收。
 
@@ -172,16 +174,16 @@ ImageView、Batch 与本地 Flow adapter 复用同一 Provider，但参数、格
 
 ### 旧 ProfileDataExtractor 与图表窗口
 
-`ProfileDataExtractor.ExtractAlongPath` 保留默认 `totalSteps=500` 和同步返回 `ProfileData` 的接口，内部调用同一 Runner，但使用兼容参数：间距为 `路径长度/(totalSteps-1)`，Nearest、Skip、IncludeAlpha=false、IncludeLuminance=true。它不使用新窗口的 Bilinear/Reject 默认行为，闭合或越界路径的实际数量也不保证等于 totalSteps。
+`ProfileDataExtractor.ExtractAlongPath` 保留默认 `totalSteps=500` 和同步返回 `ProfileData` 的接口。默认运行时只复制路径所需的区域，复用标准采样核心；传入自定义运行时则由其 Runner 接收完整图像。兼容参数使用 `路径长度/(totalSteps-1)` 作为间距，采用 Nearest、Skip，并输出亮度曲线。闭合或越界路径的实际样本数可能少于 totalSteps。
 
 点数不足、退化路径、无法映射的位图格式或 Runner 失败会返回空的单通道数据，调用方无法从该返回值取得原始诊断。默认 500 步下，1 px 路径的间距约 0.002，小于合法下限 0.01，因此可能得到空结果。需要明确控制参数和错误时使用 Invocation/Runner。
 
-另有 Indexed8 兼容缺口：公共输入工厂将调色板展开为 BGRA，但旧 Extractor 的多通道判断不包含 Indexed8，成功分析后仍尝试读取不存在的 Gray 列，可能抛出异常。不能把新 ImageView 支持某种格式等同于旧返回模型也支持它。
+Indexed8 按调色板返回 RGB 和 Rec.601 亮度曲线。
 
 工厂创建的线/多边形菜单优先使用上下文构造，进入 `ImageProfileResultWindow`；仅用 DrawCanvas 的旧菜单构造仍走 Extractor 和 `ProfileChartWindow`。旧窗口 X 轴为样本序号，提供 `Save Chart as Image...`、`Save Data as CSV...` 和通道显示开关；旧 CSV 只含序号与曲线值，按当前区域设置格式化，直接写目标并可覆盖文件，不包含统一结果的坐标、距离、Status 和诊断。
 
 ## 验证范围
 
-`ProfileDataExtractorTests` 覆盖旧接口的 Gray8、Bgr24、Rgb48、闭合和 Skip；未覆盖 Indexed8 返回模型和默认 500 步的极短路径。
+`ProfileDataExtractorTests` 覆盖旧接口的 Gray8、Bgr24、Rgb48、Indexed8、闭合和 Skip；默认 500 步的极短路径仍需验证。
 
 这验证共享选择器，不证明“任意折线”入口已支持这些路径。现有用例也不能替代完整鼠标流程、预览遗漏尖峰、导出关闭/提交竞态和极短路径容差的验证。交付门禁见[统一平台](./image-algorithm-platform-v1.md#m0-验收门禁)。

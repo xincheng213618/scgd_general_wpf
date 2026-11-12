@@ -253,6 +253,8 @@ namespace ColorVision.Copilot
                         builder.AppendLine($"[Matched Task Terms] {string.Join(", ", taskFocusedRange.MatchedTerms)}");
                     }
 
+                    if (result.DecodedAsLegacyEncoding)
+                        builder.AppendLine("[Encoding] GB18030: the file is not valid UTF-8 and was decoded for reading only. Workspace patches refuse it until it is converted to UTF-8.");
                     builder.AppendLine("[Read Scope]");
                     builder.AppendLine($"start_line: {result.StartLine}");
                     builder.AppendLine($"start_column: {result.StartColumn}");
@@ -504,8 +506,12 @@ namespace ColorVision.Copilot
             try
             {
                 var info = new FileInfo(path);
-                if (!info.Exists || info.Length > MaximumTaskFocusScanBytes)
+                if (!info.Exists
+                    || info.Length > MaximumTaskFocusScanBytes
+                    || string.Equals(info.Extension, ".pdf", StringComparison.OrdinalIgnoreCase))
+                {
                     return null;
+                }
 
                 var lines = await File.ReadAllLinesAsync(path, cancellationToken);
                 if (lines.Length == 0)

@@ -99,6 +99,7 @@ public sealed class SpectrumConfigurationDraftTests
         Assert.Equal("original.dat", config.ActiveCalibrationGroup.WavelengthFile);
         Assert.Equal(9600, config.ShutterCfg.BaudRate);
         Assert.False(config.ShutterCfg.UseFilterWheel);
+        Assert.True(config.ShutterCfg.OpenForDark);
         Assert.Equal(string.Empty, config.ShutterCfg.FilterWheelDeviceCode);
         Assert.Equal(0, config.ShutterCfg.DarkPort);
         Assert.Equal(2, Assert.Single(config.NDConfig.NDRate));
@@ -122,6 +123,72 @@ public sealed class SpectrumConfigurationDraftTests
         Assert.Equal(2, config.CalibrationGroups.Count);
         draft.Config.CalibrationGroups.Clear();
         Assert.Equal(2, config.CalibrationGroups.Count);
+    }
+
+    [Theory]
+    [InlineData(" 0 ", null)]
+    [InlineData(" 0 ", " LEGACY ")]
+    [InlineData("999", " LEGACY ")]
+    public void DisplayOnlyChangesStayLocalAndNotifyTheLiveSpectrum(string savedPort, string? savedSerial)
+    {
+        var config = new ConfigSpectrum { ComPort = savedPort, SN = savedSerial! };
+        var display = new DisplaySpectrumConfig { UseLocalSpectrum = false, Divisor = 3 };
+        var draft = new SpectrumConfigurationDraft(config, display);
+        bool? notifiedFluxMode = null;
+        display.IsIsLuminousFluxModeChanged += (_, value) => notifiedFluxMode = value;
+        var originalConfig = JObject.FromObject(config);
+        Assert.False(draft.DisplayConfig.UseLocalSpectrum);
+        Assert.False(draft.DisplayConfig.IsLuminousFluxMode);
+
+        draft.DisplayConfig.UseLocalSpectrum = true;
+        draft.DisplayConfig.IsLuminousFluxMode = true;
+        draft.Config.SN = savedSerial?.Trim() ?? string.Empty;
+        Assert.False(display.UseLocalSpectrum);
+        Assert.False(display.IsLuminousFluxMode);
+        Assert.Null(notifiedFluxMode);
+
+        Assert.True(draft.TryApply(config, out _, display));
+        Assert.True(draft.DisplaySettingsChanged);
+        Assert.False(draft.ServiceSettingsChanged);
+        Assert.True(JToken.DeepEquals(originalConfig, JObject.FromObject(config)));
+        Assert.True(display.UseLocalSpectrum);
+        Assert.True(display.IsLuminousFluxMode);
+        Assert.True(notifiedFluxMode);
+        Assert.Equal(3, display.Divisor);
+        var restored = JObject.FromObject(display).ToObject<DisplaySpectrumConfig>()!;
+        Assert.True(restored.UseLocalSpectrum);
+        Assert.True(restored.IsLuminousFluxMode);
+    }
+
+    [Fact]
+    public void InvalidServiceEditDoesNotApplyLocalDisplaySettings()
+    {
+        var config = new ConfigSpectrum();
+        var display = new DisplaySpectrumConfig();
+        var draft = new SpectrumConfigurationDraft(config, display) { IsSerialConnection = true };
+        draft.DisplayConfig.UseLocalSpectrum = false;
+        draft.DisplayConfig.IsLuminousFluxMode = true;
+
+        Assert.False(draft.TryApply(config, out _, display));
+        Assert.False(draft.DisplaySettingsChanged);
+        Assert.False(draft.ServiceSettingsChanged);
+        Assert.True(display.UseLocalSpectrum);
+        Assert.False(display.IsLuminousFluxMode);
+    }
+
+    [Fact]
+    public void ApplyKeepsLiveChangesToUntouchedDisplaySettings()
+    {
+        var config = new ConfigSpectrum();
+        var display = new DisplaySpectrumConfig();
+        var draft = new SpectrumConfigurationDraft(config, display);
+        draft.DisplayConfig.IsLuminousFluxMode = true;
+        display.UseLocalSpectrum = false;
+
+        Assert.True(draft.TryApply(config, out _, display));
+        Assert.True(draft.DisplaySettingsChanged);
+        Assert.False(display.UseLocalSpectrum);
+        Assert.True(display.IsLuminousFluxMode);
     }
 
     [Theory]
@@ -174,6 +241,7 @@ public sealed class SpectrumConfigurationDraftTests
         draft.Config.ShutterCfg.FilterWheelDeviceCode = "ND-1";
         draft.Config.ShutterCfg.MeasurementPort = 3;
         draft.Config.ShutterCfg.DarkPort = 2;
+        draft.Config.ShutterCfg.OpenForDark = false;
         Assert.True(draft.TryApply(config, out _));
         var payload = JObject.FromObject(config);
         Assert.Null(payload["UseFilterWheel"]);
@@ -184,5 +252,25 @@ public sealed class SpectrumConfigurationDraftTests
         Assert.Equal(2, restored.ShutterCfg.DarkPort);
         Assert.Equal("COM7", restored.ShutterCfg.Addr);
         Assert.Equal("OPEN", restored.ShutterCfg.OpenCmd);
+        Assert.False(restored.ShutterCfg.OpenForDark);
+    }
+
+    [Theory]
+    [InlineData("a", "b", "turn on", "turn off")]
+    [InlineData("b", "a", "turn off", "turn on")]
+    [InlineData("OPEN", "CLOSE", "turn on", "turn off")]
+    public void MainAndPluginAcknowledgeTheConfiguredCommand(string openCommand, string closeCommand, string openReply, string closeReply)
+    {
+        var config = new ShutterConfig { OpenCmd = openCommand, CloseCmd = closeCommand };
+        var pluginConfig = new global::Spectrum.Configs.ShutterConfig { OpenCmd = openCommand, CloseCmd = closeCommand, OpenForDark = false };
+        Assert.Equal(openReply, config.GetExpectedResponse(true));
+        Assert.Equal(closeReply, config.GetExpectedResponse(false));
+        Assert.Equal(openReply, pluginConfig.GetExpectedResponse(true));
+        Assert.Equal(closeReply, pluginConfig.GetExpectedResponse(false));
+        var restored = JObject.FromObject(pluginConfig).ToObject<global::Spectrum.Configs.ShutterConfig>()!;
+        Assert.False(restored.OpenForDark);
+        Assert.Equal(openCommand, restored.OpenCmd);
+        Assert.Equal(closeCommand, restored.CloseCmd);
+        Assert.True(new JObject().ToObject<global::Spectrum.Configs.ShutterConfig>()!.OpenForDark);
     }
 }

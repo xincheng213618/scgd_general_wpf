@@ -119,10 +119,10 @@ namespace ColorVision.ImageEditor.Output
                 || format == PixelFormats.Indexed8;
         }
 
-        private static void SaveEncoderAtomically(
+        internal static void SaveEncoderAtomically(
             BitmapEncoder encoder,
             string fileName,
-            CancellationToken cancellationToken)
+            CancellationToken cancellationToken = default)
         {
             string? directory = Path.GetDirectoryName(fileName);
             if (!string.IsNullOrWhiteSpace(directory) && !Directory.Exists(directory))
@@ -344,7 +344,7 @@ namespace ColorVision.ImageEditor.Output
             DrawingGroup composedScene = new();
             composedScene.Children.Add(new ImageDrawing(
                 source,
-                new Rect(0, 0, snapshot.PixelWidth, snapshot.PixelHeight)));
+                new Rect(snapshot.SceneSize)));
             composedScene.Children.Add(snapshot.Scene);
             composedScene.Freeze();
             return composedScene;
@@ -361,18 +361,11 @@ namespace ColorVision.ImageEditor.Output
             DrawingVisual visual = new();
             using (DrawingContext context = visual.RenderOpen())
             {
-                if (outputWidth != snapshot.PixelWidth || outputHeight != snapshot.PixelHeight)
-                {
-                    context.PushTransform(new ScaleTransform(
-                        outputWidth / (double)snapshot.PixelWidth,
-                        outputHeight / (double)snapshot.PixelHeight));
-                    context.DrawDrawing(scene);
-                    context.Pop();
-                }
-                else
-                {
-                    context.DrawDrawing(scene);
-                }
+                context.PushTransform(new ScaleTransform(
+                    outputWidth * 96.0 / snapshot.DpiX / snapshot.SceneSize.Width,
+                    outputHeight * 96.0 / snapshot.DpiY / snapshot.SceneSize.Height));
+                context.DrawDrawing(scene);
+                context.Pop();
             }
 
             RenderTargetBitmap renderedBitmap = new(

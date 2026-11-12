@@ -65,6 +65,7 @@ namespace ColorVision.UI.Desktop.Marketplace
         private static readonly CompositeFormat DownloadCountFormat = CompositeFormat.Parse(Resources.MarketplaceDownloadCountFormat);
         private readonly PluginInfoVM? _installedPlugin;
         private readonly string? _defaultRequiresVersion;
+        private readonly string? _sourceUrl;
         private readonly MarketplacePackageDownloadService _packageDownloadService = MarketplacePackageDownloadService.GetInstance();
         private ImageSource? _icon = MarketplaceClient.GetDefaultPluginIcon();
 
@@ -160,6 +161,7 @@ namespace ColorVision.UI.Desktop.Marketplace
         {
             _installedPlugin = installedPlugin;
             _defaultRequiresVersion = detail.RequiresVersion;
+            _sourceUrl = detail.UpdateSourceUrl;
             Version? hostVersion = PluginUpdateCompatibility.GetCurrentHostVersion();
             MarketplacePluginVersionInfo? latestCompatibleVersion = hostVersion == null
                 ? null
@@ -431,6 +433,7 @@ namespace ColorVision.UI.Desktop.Marketplace
                 PluginId = PackageName,
                 Version = versionInfo.Version,
                 ExpectedHash = versionInfo.FileHash,
+                SourceUrl = _sourceUrl,
             };
 
             if (applyAfterDownload)

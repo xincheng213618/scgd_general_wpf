@@ -91,27 +91,43 @@ public sealed class ImageComparisonAdvancedV1Tests
         Assert.Equal(expected, Measurement(floatResult, "comparison.ssim"), 6);
     }
 
-    [Fact]
-    public async Task RoiRestrictsMetricsSsimHeatmapAndProducesStructuredOverlay()
+    [Theory]
+    [InlineData(ImageComparisonArtifactOutputs.All)]
+    [InlineData(ImageComparisonArtifactOutputs.None)]
+    public async Task RoiRestrictsMetricsAndSsimAndProducesRequestedArtifacts(ImageComparisonArtifactOutputs outputs)
     {
-        byte[] referencePixels = new byte[16];
-        byte[] candidatePixels = Enumerable.Repeat((byte)100, 16).ToArray();
-        for (int y = 0; y < 2; y++)
-            for (int x = 0; x < 2; x++) candidatePixels[y * 4 + x] = 0;
-        using AlgorithmImageBuffer reference = Gray8(referencePixels, 4, 4);
-        using AlgorithmImageBuffer candidate = Gray8(candidatePixels, 4, 4);
-        RectangleAlgorithmRoi roi = new(0, 0, 2, 2);
-        using AlgorithmResult result = await RunAsync(reference, candidate, roi: roi,
-            parameters: new ImageComparisonParameters { SsimWindowSize = 3, EnableAlignmentPrecheck = false });
+        byte[] referencePixels = new byte[400];
+        byte[] candidatePixels = Enumerable.Repeat((byte)100, 400).ToArray();
+        for (int y = 17; y < 19; y++)
+            for (int x = 17; x < 19; x++) candidatePixels[y * 20 + x] = 0;
+        using AlgorithmImageBuffer reference = Gray8(referencePixels, 20, 20);
+        using AlgorithmImageBuffer candidate = Gray8(candidatePixels, 20, 20);
+        RectangleAlgorithmRoi roi = new(17, 17, 2, 2);
+        ImageComparisonParameters parameters = new() { SsimWindowSize = 3, EnableAlignmentPrecheck = false };
+        using AlgorithmResult result = await RunAsync(reference, candidate, invocation: new AlgorithmInvocation
+        {
+            AlgorithmId = StandardAlgorithmIds.ImageComparison,
+            ParameterSchemaVersion = parameters.SchemaVersion,
+            Parameters = AlgorithmJson.ToElement(parameters),
+            Roi = roi,
+            Metadata = ImageComparisonOutputPlan.CreateMetadata(outputs),
+        });
 
         Assert.Equal(0, Measurement(result, "comparison.mse"));
         Assert.Equal(4, Measurement(result, "comparison.finite_sample_count"));
         Assert.Equal(1, Measurement(result, "comparison.ssim"), 12);
-        Assert.Equal(100, Image(result, "absolute-difference").Data.Span[15]);
-        AlgorithmImageBuffer heatmap = Image(result, "difference-heatmap");
-        Assert.Equal(new byte[] { 0, 0, 0 }, heatmap.Data.Span.Slice((3 * 4 + 3) * 3, 3).ToArray());
+        Assert.Equal(4, Measurement(result, "comparison.ssim.valid_window_count"));
+        Assert.Equal(0, Measurement(result, "comparison.ssim.invalid_window_count"));
         Assert.NotNull(result.GetArtifact<AlgorithmGeometryArtifact>("comparison-roi"));
         Assert.Equal(AlgorithmOverlayLifetime.Transient, result.GetArtifact<AlgorithmOverlayArtifact>("comparison-roi-overlay")!.Lifetime);
+        if (outputs == ImageComparisonArtifactOutputs.None)
+            Assert.Empty(result.Artifacts.OfType<AlgorithmImageArtifact>());
+        else
+        {
+            Assert.Equal(100, Image(result, "absolute-difference").Data.Span[399]);
+            AlgorithmImageBuffer heatmap = Image(result, "difference-heatmap");
+            Assert.Equal(new byte[] { 0, 0, 0 }, heatmap.Data.Span.Slice((19 * 20 + 19) * 3, 3).ToArray());
+        }
     }
 
     [Theory]
@@ -120,9 +136,22 @@ public sealed class ImageComparisonAdvancedV1Tests
     {
         using AlgorithmImageBuffer reference = new(5, 5, 5, AlgorithmImageFormat.Gray8, new byte[25], 254, 254);
         using AlgorithmImageBuffer candidate = new(5, 5, 5, AlgorithmImageFormat.Gray8, new byte[25], 254, 254);
-        using AlgorithmResult result = await RunAsync(reference, candidate, roi: roi,
-            parameters: new ImageComparisonParameters { EnableSsim = false, EnableAlignmentPrecheck = false });
+        ImageComparisonParameters parameters = new() { SsimWindowSize = 3, EnableAlignmentPrecheck = false };
+        using AlgorithmResult result = await RunAsync(reference, candidate, roi: roi, parameters: parameters);
         Assert.Equal(expectedPixels, Measurement(result, "comparison.finite_sample_count"));
+        Assert.Equal(expectedPixels, Measurement(result, "comparison.ssim.valid_window_count"));
+        Assert.Equal(1, Measurement(result, "comparison.ssim"));
+        using AlgorithmResult metricsOnly = await RunAsync(reference, candidate, invocation: new AlgorithmInvocation
+        {
+            AlgorithmId = StandardAlgorithmIds.ImageComparison,
+            ParameterSchemaVersion = parameters.SchemaVersion,
+            Parameters = AlgorithmJson.ToElement(parameters),
+            Roi = roi,
+            Metadata = ImageComparisonOutputPlan.CreateMetadata(ImageComparisonArtifactOutputs.None),
+        });
+        Assert.Equal(AlgorithmResultStatus.Succeeded, metricsOnly.Status);
+        Assert.Equal(AlgorithmJson.ToElement(result.GetArtifact<AlgorithmMeasurementArtifact>("image-comparison")).GetRawText(),
+            AlgorithmJson.ToElement(metricsOnly.GetArtifact<AlgorithmMeasurementArtifact>("image-comparison")).GetRawText());
     }
 
     public static TheoryData<AlgorithmRoi, double> RoiCases => new()
@@ -131,6 +160,11 @@ public sealed class ImageComparisonAdvancedV1Tests
         { new CircleAlgorithmRoi(new AlgorithmPoint(2, 2), 1), 5 },
         { new PolygonAlgorithmRoi([new(0, 0), new(2, 0), new(0, 2)]), 6 },
         { new RectangleAlgorithmRoi(0.1, 0.1, 0.2, 0.2) { CoordinateSpace = AlgorithmCoordinateSpace.Physical }, 4 },
+        // Boundary tolerance can include integer pixels outside the nominal bounds.
+        { new CircleAlgorithmRoi(new AlgorithmPoint(2, 2), 0.9999999998), 5 },
+        { new PolygonAlgorithmRoi([new(0, 0), new(1.99999999999, 0), new(0, 1.99999999999)]), 6 },
+        // Circle tolerance is normalized by its radius and can extend by more than one pixel.
+        { new CircleAlgorithmRoi(new AlgorithmPoint(-2_100_000_000 + 1.99, 2), 2_100_000_000), 20 },
     };
 
     [Fact]
@@ -200,22 +234,30 @@ public sealed class ImageComparisonAdvancedV1Tests
         Assert.Contains(result.Diagnostics.Messages, message => message.Code == "alignment_precheck_inconclusive");
     }
 
-    [Fact]
-    public async Task AlignmentPrecheckHonorsDeterministicSampleBound()
+    [Theory]
+    [InlineData(257, 257, 256, 17, 256)]
+    [InlineData(10000, 1, 4096, 3, 3334)]
+    [InlineData(1, 10000, 4096, 3, 3334)]
+    [InlineData(86, 86, 300, 6, 225)]
+    public async Task AlignmentPrecheckHonorsDeterministicSampleBound(int width, int height, int maximumSamples, int expectedStep, long expectedSamples)
     {
-        const int width = 257;
-        const int height = 257;
-        using AlgorithmImageBuffer reference = Gray8(PatternBytes(width, height), width, height);
+        byte[] values = PatternBytes(width, height);
+        // Keep texture at the far end so a first-N cutoff on the long ROIs cannot produce a correlation.
+        Array.Fill(values, (byte)10, 0, values.Length * 9 / 10);
+        using AlgorithmImageBuffer reference = Gray8(values, width, height);
         using AlgorithmImageBuffer candidate = reference.Clone();
         using AlgorithmResult result = await RunAsync(reference, candidate, new ImageComparisonParameters
         {
             EnableSsim = false,
             AlignmentSearchRadius = 0,
-            AlignmentMaximumSamples = 256,
+            AlignmentMaximumSamples = maximumSamples,
         });
         IReadOnlyDictionary<string, JsonElement> row = Assert.Single(result.GetArtifact<AlgorithmTableArtifact>("image-comparison-alignment")!.Rows);
-        Assert.InRange(row["SampleCount"].GetInt64(), 4, 256);
-        Assert.Equal(17, row["SampleStep"].GetInt32());
+        Assert.InRange(row["SampleCount"].GetInt64(), 4, maximumSamples);
+        Assert.Equal(expectedSamples, row["SampleCount"].GetInt64());
+        Assert.Equal(expectedStep, row["SampleStep"].GetInt32());
+        Assert.Equal("ok", row["Status"].GetString());
+        Assert.Equal(1, row["BestCorrelation"].GetDouble(), 12);
     }
 
     [Fact]

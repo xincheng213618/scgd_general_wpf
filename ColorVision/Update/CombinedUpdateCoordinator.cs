@@ -3,6 +3,7 @@ using ColorVision.Themes.Controls;
 using ColorVision.UI;
 using ColorVision.UI.Desktop.Download;
 using ColorVision.UI.Desktop.Marketplace;
+using ColorVision.UI.Marketplace;
 using log4net;
 using System;
 using System.Collections.Generic;
@@ -465,9 +466,9 @@ namespace ColorVision.Update
         {
             string applicationKey = applicationPlan == null
                 ? string.Empty
-                : $"{applicationPlan.LatestVersion}|{applicationPlan.IsIncremental}|{string.Join(",", applicationPlan.VersionsToApply)}";
+                : $"{applicationPlan.SourceUrl}|{applicationPlan.LatestVersion}|{applicationPlan.IsIncremental}|{string.Join(",", applicationPlan.VersionsToApply)}";
             string pluginKey = pluginPlan?.HasUpdates == true
-                ? string.Join(",", pluginPlan.Updates.Select(item => $"{item.Plugin.PackageName}:{item.VersionInfo.Version}"))
+                ? pluginPlan.SourceUrl + "|" + string.Join(",", pluginPlan.Updates.Select(item => $"{item.Plugin.PackageName}:{item.VersionInfo.Version}"))
                 : string.Empty;
             return applicationKey + "#" + pluginKey;
         }
@@ -597,7 +598,9 @@ namespace ColorVision.Update
             bool reused;
             lock (_updateCheckLock)
             {
+                IReadOnlyList<string> sources = MarketplaceConfig.ServiceBaseUrls;
                 reused = _sharedUpdateCheck != null
+                    && ReferenceEquals(_sharedUpdateCheck.Sources, sources)
                     && CanReuseSharedUpdateCheck(
                         _sharedUpdateCheck,
                         includeApplicationUpdates,
@@ -615,11 +618,14 @@ namespace ColorVision.Update
                         includeApplicationUpdates,
                         includePluginUpdates,
                         includeCurrentHostPlugins,
+                        sources,
+                        requestKind,
                         reuseState,
                         BuildSharedUpdateCheckAsync(
                             includeApplicationUpdates,
                             includePluginUpdates,
                             includeCurrentHostPlugins,
+                            requestKind != UpdateCheckRequestKind.Startup,
                             reuseState));
                     _sharedUpdateCheck = sharedCheck;
                 }
@@ -640,12 +646,14 @@ namespace ColorVision.Update
             bool includeApplicationUpdates,
             bool includePluginUpdates,
             bool includeCurrentHostPluginUpdatesWhenFullApplicationUpdate,
+            bool refreshSource,
             UpdateCheckReuseState reuseState)
         {
             UpdatePlansResult plansResult = await BuildUpdatePlansAsync(
                 includeApplicationUpdates,
                 includePluginUpdates,
                 includeCurrentHostPluginUpdatesWhenFullApplicationUpdate,
+                refreshSource,
                 CancellationToken.None);
             reuseState.RecordCompleted(
                 plansResult.ServerCheckStatus == UpdateServerCheckStatus.Success
@@ -674,6 +682,10 @@ namespace ColorVision.Update
             {
                 return false;
             }
+
+            // A manual check must retry the preferred route even if startup already found an update on the backup.
+            if (sharedCheck.Sources.Count > 1 && requestKind != UpdateCheckRequestKind.Startup)
+                return !sharedCheck.Task.IsCompleted && sharedCheck.RequestKind != UpdateCheckRequestKind.Startup;
 
             return sharedCheck.ReuseState.TryReuse(
                 sharedCheck.Task.IsCompleted,
@@ -713,6 +725,7 @@ namespace ColorVision.Update
                     LatestVersion = result.ApplicationPlan.LatestVersion,
                     VersionsToApply = result.ApplicationPlan.VersionsToApply.ToArray(),
                     IsIncremental = result.ApplicationPlan.IsIncremental,
+                    SourceUrl = result.ApplicationPlan.SourceUrl,
                 }
                 : null;
             bool canUsePluginPlan = includePluginUpdates
@@ -726,7 +739,7 @@ namespace ColorVision.Update
 
         private static CombinedPluginUpdatePlan ClonePluginPlan(CombinedPluginUpdatePlan source)
         {
-            CombinedPluginUpdatePlan clone = new() { HostVersion = source.HostVersion };
+            CombinedPluginUpdatePlan clone = new() { HostVersion = source.HostVersion, SourceUrl = source.SourceUrl };
             clone.Updates.AddRange(source.Updates.Select(item => new CombinedPluginUpdateItem
             {
                 Plugin = item.Plugin,
@@ -740,28 +753,30 @@ namespace ColorVision.Update
         private static async Task<UpdatePlansResult> BuildUpdatePlansAsync(
             bool includeApplicationUpdates,
             bool includePluginUpdates,
-            bool includeCurrentHostPluginUpdatesWhenFullApplicationUpdate = false,
-            CancellationToken cancellationToken = default)
+            bool includeCurrentHostPluginUpdatesWhenFullApplicationUpdate,
+            bool refreshSource,
+            CancellationToken cancellationToken)
         {
-            if (!WindowsNetworkState.IsConnectedToInternet())
+            if (!WindowsNetworkState.CanReachUpdateService())
             {
                 log.Info("Skipped update plan check because Windows reports no internet connectivity.");
                 return new UpdatePlansResult(null, null, UpdateServerCheckStatus.NoInternetConnection);
             }
 
             Stopwatch stopwatch = Stopwatch.StartNew();
+            UpdateSourceSelection source = await UpdateSourceSelector.GetUpdateSourceAsync(cancellationToken, refreshSource);
             MarketplaceManager? marketplaceManager = includePluginUpdates ? MarketplaceManager.GetInstance() : null;
             Task<AutoUpdatePlanCheckResult> applicationTask = includeApplicationUpdates
-                ? AutoUpdater.GetUpdatePlanCheckResultAsync(forceRefresh: false, cancellationToken)
+                ? AutoUpdater.GetUpdatePlanCheckResultAsync(forceRefresh: false, cancellationToken, source)
                 : Task.FromResult(new AutoUpdatePlanCheckResult(null, UpdateServerCheckStatus.Success));
-            Task pluginVersionsTask = marketplaceManager != null
-                ? marketplaceManager.RefreshVersionsAsync(cancellationToken)
-                : Task.CompletedTask;
+            Task<IReadOnlyDictionary<string, string?>>? pluginVersionsTask = marketplaceManager?.RefreshVersionsForSourceAsync(source.Url, cancellationToken);
 
             bool pluginVersionsAvailable = true;
+            IReadOnlyDictionary<string, string?>? pluginVersions = null;
             try
             {
-                await pluginVersionsTask;
+                if (pluginVersionsTask != null)
+                    pluginVersions = await pluginVersionsTask;
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
             {
@@ -777,7 +792,7 @@ namespace ColorVision.Update
             AutoUpdatePlan? applicationPlan = applicationResult.Plan;
 
             CombinedPluginUpdatePlan? pluginPlan = null;
-            if (marketplaceManager != null && pluginVersionsAvailable)
+            if (marketplaceManager != null && pluginVersions != null)
             {
                 Version? hostVersion = ResolvePluginPlanHostVersion(
                     applicationPlan,
@@ -787,7 +802,9 @@ namespace ColorVision.Update
                 {
                     pluginPlan = await marketplaceManager.BuildCombinedUpdatePlanFromCurrentVersionsAsync(
                         hostVersion,
-                        cancellationToken);
+                        cancellationToken,
+                        source.Url,
+                        pluginVersions);
                     if (!pluginPlan.IsComplete)
                     {
                         pluginVersionsAvailable = false;
@@ -823,6 +840,8 @@ namespace ColorVision.Update
             bool IncludeApplicationUpdates,
             bool IncludePluginUpdates,
             bool IncludeCurrentHostPluginUpdatesWhenFullApplicationUpdate,
+            IReadOnlyList<string> Sources,
+            UpdateCheckRequestKind RequestKind,
             UpdateCheckReuseState ReuseState,
             Task<UpdatePlanCheckResult> Task);
 
@@ -955,7 +974,7 @@ namespace ColorVision.Update
             if (action == CombinedIncrementalCompletionAction.DownloadFullInstaller)
             {
                 log.Warn($"Combined incremental application packages are incomplete; falling back to the full installer for {applicationPlan.LatestVersion}.");
-                AutoUpdater.StartFullUpdate(applicationPlan.LatestVersion, ShowUpdateDownloadFailedMessage);
+                AutoUpdater.StartFullUpdate(applicationPlan.LatestVersion, ShowUpdateDownloadFailedMessage, applicationPlan.SourceUrl);
                 return;
             }
 
@@ -1010,6 +1029,7 @@ namespace ColorVision.Update
                 LatestVersion = applicationPlan.LatestVersion,
                 VersionsToApply = new[] { applicationPlan.LatestVersion },
                 IsIncremental = false,
+                SourceUrl = applicationPlan.SourceUrl,
             };
         }
 

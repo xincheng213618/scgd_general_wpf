@@ -20,7 +20,6 @@ using log4net;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -70,6 +69,13 @@ namespace ColorVision.ImageEditor
         }
         public IReadOnlyList<ImageViewImageItem> ImageGroupItems => _imageGroup.Items;
         public int SelectedImageIndex => _imageGroup.SelectedIndex;
+
+        public static readonly DependencyProperty ForwardUnsupportedFileDropsProperty = DependencyProperty.RegisterAttached(
+            "ForwardUnsupportedFileDrops", typeof(bool), typeof(ImageView), new FrameworkPropertyMetadata(false, FrameworkPropertyMetadataOptions.Inherits));
+
+        public static bool GetForwardUnsupportedFileDrops(DependencyObject element) => (bool)element.GetValue(ForwardUnsupportedFileDropsProperty);
+
+        public static void SetForwardUnsupportedFileDrops(DependencyObject element, bool value) => element.SetValue(ForwardUnsupportedFileDropsProperty, value);
 
         private readonly ImageGroupNavigation _imageGroup;
 
@@ -195,7 +201,10 @@ namespace ColorVision.ImageEditor
                 else Dispatcher.BeginInvoke(RefreshRetiredTools);
             };
             _session = new ImageEditorSession(_document, (previous, current) => ImageDocumentRevisionAdvancedHook?.Invoke(previous, current));
-            _imageGroup = new ImageGroupNavigation(path => OpenImageCore(path));
+            _imageGroup = new ImageGroupNavigation(path =>
+            {
+                if (FindImageOpener(path) is { } opener) OpenImageCore(path, opener);
+            });
             _imageGroup.Changed += (_, _) => UpdateImageGroupNavigator();
             _imageGroup.SelectedImageChanged += (_, change) => SelectedImageChanged?.Invoke(this, change);
             InitializeComponent();
@@ -217,12 +226,15 @@ namespace ColorVision.ImageEditor
                     IsDisposed = () => Volatile.Read(ref _disposed) != 0,
                     GetImageRevision = () => _document.Revision,
                     AcquireImageFrame = AcquireImageFrame,
+                    CanRestoreChannelFromCatalogSource = () => _layerController is BitmapImageLayerController,
+                    CaptureSourceState = _document.CaptureSourceState,
                     IsCurrentImageRevision = IsCurrentImageRevision,
                     NotifySourcePixelsChanged = NotifySourcePixelsChanged,
                     CommitSourcePixels = _session.CommitSourcePixels,
                     GetViewBitmapSource = () => _document.Source,
                     SetViewBitmapSource = _document.AssignSource,
                     GetSelectedLayerSourceChannelIndex = GetSelectedLayerSourceChannelIndex,
+                    RestoreSelectedLayerDisplay = RestoreSelectedLayerDisplay,
                     SetImageSource = SetImageSource,
                     UpdateZoomAndScale = UpdateZoomAndScale,
                     BeforeAlgorithmClaimStateUpdate = claim => AlgorithmClaimStateUpdateHook?.Invoke(claim),
@@ -642,23 +654,21 @@ namespace ColorVision.ImageEditor
 
             try
             {
-                string json = File.ReadAllText(dialog.FileName);
-                AnnotationDocument document = AnnotationMapper.Deserialize(json);
-                IReadOnlyList<DrawingVisualBase> visuals = AnnotationMapper.ToVisuals(document);
-
-                ClearAnnotations();
-                foreach (DrawingVisualBase visual in visuals)
-                {
-                    visual.Render();
-                    ImageShow.AddVisual(visual);
-                }
-
-                WpfMessageBox.Show(string.Format(Properties.Resources.ImageView_ImportedAnnotations, visuals.Count), Properties.Resources.ImageView_ImportAnnotations, MessageBoxButton.OK, MessageBoxImage.Information);
+                int count = ImportAnnotationsFromJson(File.ReadAllText(dialog.FileName));
+                WpfMessageBox.Show(string.Format(Properties.Resources.ImageView_ImportedAnnotations, count), Properties.Resources.ImageView_ImportAnnotations, MessageBoxButton.OK, MessageBoxImage.Information);
             }
             catch (Exception ex)
             {
                 WpfMessageBox.Show(string.Format(Properties.Resources.ImageView_ImportAnnotationsFailed, ex.Message), Properties.Resources.ImageView_ImportAnnotations, MessageBoxButton.OK, MessageBoxImage.Error);
             }
+        }
+
+        internal int ImportAnnotationsFromJson(string json)
+        {
+            AnnotationDocument document = AnnotationMapper.Deserialize(json);
+            IReadOnlyList<DrawingVisualBase> visuals = AnnotationMapper.ToVisuals(document);
+            _drawing.ReplaceAnnotations(visuals);
+            return visuals.Count;
         }
 
 
@@ -693,7 +703,15 @@ namespace ColorVision.ImageEditor
                 return;
             }
 
-            if (!_imageGroup.TryOpenGroup(images, selectedIndex)) Clear();
+            var items = images?.ToList();
+            var unsupported = items?.FirstOrDefault(item => !string.IsNullOrWhiteSpace(item.FilePath) && FindImageOpener(item.FilePath) == null);
+            if (unsupported != null)
+            {
+                ShowUnsupportedImageFormat(unsupported.FilePath);
+                return;
+            }
+
+            if (!_imageGroup.TryOpenGroup(items, selectedIndex)) Clear();
         }
 
         public void AppendImage(string? filePath, bool open = true)
@@ -702,6 +720,12 @@ namespace ColorVision.ImageEditor
             if (!Dispatcher.CheckAccess())
             {
                 Dispatcher.BeginInvoke(() => AppendImage(filePath, open));
+                return;
+            }
+
+            if (!string.IsNullOrWhiteSpace(filePath) && FindImageOpener(filePath) == null)
+            {
+                ShowUnsupportedImageFormat(filePath);
                 return;
             }
 
@@ -754,17 +778,18 @@ namespace ColorVision.ImageEditor
 
         private void ImageView_Drop(object sender, DragEventArgs e)
         {
-            if (e.Data.GetDataPresent(DataFormats.FileDrop))
-            {
-                var sarr = e.Data.GetData(DataFormats.FileDrop);
-                var a = sarr as string[];
-                var fn = a?.First();
-                if (File.Exists(fn))
-                {
-                    OpenImage(fn);
-                    e.Handled = true;
-                }
-            }
+            if (e.Data.GetDataPresent(DataFormats.FileDrop) && e.Data.GetData(DataFormats.FileDrop) is string[] { Length: > 0 } paths)
+                e.Handled = TryHandleFileDrop(paths[0]);
+        }
+
+        internal bool TryHandleFileDrop(string filePath)
+        {
+            if (!File.Exists(filePath)) return false;
+            if (TryOpenImage(filePath)) return true;
+            if (GetForwardUnsupportedFileDrops(this)) return false;
+
+            ShowUnsupportedImageFormat(filePath);
+            return true;
         }
 
         public void Clear()
@@ -859,26 +884,51 @@ namespace ColorVision.ImageEditor
 
         public void OpenImage(string? filePath)
         {
-            if (string.IsNullOrWhiteSpace(filePath))
-                ClearImageGroup();
-            else
-                _imageGroup.SetSingle(filePath);
-
-            OpenImageCore(filePath);
+            if (!TryOpenImage(filePath)) ShowUnsupportedImageFormat(filePath!);
         }
 
-        private void OpenImageCore(string? filePath, bool forceReload = false)
+        internal bool TryOpenImage(string? filePath)
         {
-            // 普通打开会跳过同一路径；还原原图时强制重新走对应格式的打开器。
+            if (string.IsNullOrWhiteSpace(filePath))
+            {
+                ClearImageGroup();
+                return true;
+            }
 
-            if (filePath == null || (!forceReload && filePath.Equals(Config.GetProperties<string>(ImageViewPropertyKeys.FilePath), StringComparison.Ordinal)))
+            if (FindImageOpener(filePath) is not { } imageOpen) return false;
+
+            _imageGroup.SetSingle(filePath);
+            OpenImageCore(filePath, imageOpen);
+            return true;
+        }
+
+        private IImageOpen? FindImageOpener(string filePath)
+        {
+            return IEditorToolFactory.IImageOpens.GetValueOrDefault(Path.GetExtension(filePath).ToLowerInvariant());
+        }
+
+        private static void ShowUnsupportedImageFormat(string filePath)
+        {
+            WpfMessageBox.Show(string.Format(Properties.Resources.ImageView_UnsupportedImageFormat, Path.GetExtension(filePath)));
+        }
+
+        private void OpenImageCore(string filePath, IImageOpen imageOpen, bool forceReload = false)
+        {
+            // The configured path identifies the request even if no pixels were published.
+            if (!forceReload && !ImageOpenCompletion.IsFaulted && !ImageOpenCompletion.IsCanceled
+                && filePath.Equals(Config.GetProperties<string>(ImageViewPropertyKeys.FilePath), StringComparison.Ordinal))
             {
                 log.Info("文件路径未改变，跳过打开图像。");
                 return;
             }
-            string ext = Path.GetExtension(filePath).ToLower(CultureInfo.CurrentCulture);
-            IEditorToolFactory.IImageOpens.TryGetValue(ext, out var imageOpen);
-            long? cachedLength = imageOpen?.GetCachedFileLength(filePath);
+            RetainDisplayedSnapshotMetadata();
+            if (imageOpen is IPreparedImageOpen preparedOpen)
+            {
+                OpenPreparedFile(preparedOpen, filePath);
+                return;
+            }
+
+            long? cachedLength = imageOpen.GetCachedFileLength(filePath);
             bool fileExists = cachedLength.HasValue || File.Exists(filePath);
             ReleaseImageContent(fileExists ? imageOpen : null);
             ImageOpenCompletion = fileExists ? Task.CompletedTask : Task.FromException(new FileNotFoundException("Image file was not found.", filePath));
@@ -893,22 +943,14 @@ namespace ColorVision.ImageEditor
                     long fileSize = cachedLength ?? new FileInfo(filePath).Length;
                     Config.SetImageMetadata(ImageViewPropertyKeys.FileSize, fileSize, nameof(ImageView), Properties.Resources.ImageView_MetadataDesc_FileSize);
 
-                    if (imageOpen != null)
+                    EditorContext.IImageOpen = imageOpen;
+                    if (imageOpen is IAsyncImageOpen asyncOpen)
                     {
-                        EditorContext.IImageOpen = imageOpen;
-                        if (imageOpen is IAsyncImageOpen asyncOpen)
-                        {
-                            _staticOpenCancellation = new CancellationTokenSource();
-                            ImageOpenCompletion = OpenStaticImageAsync(asyncOpen, filePath, _staticOpenCancellation.Token);
-                        }
-                        else EditorContext.IImageOpen.OpenImage(EditorContext, filePath);
-                        IEditorToolFactory.ApplyImageOpenTools(imageOpen);
-                        return;
+                        _staticOpenCancellation = new CancellationTokenSource();
+                        ImageOpenCompletion = OpenStaticImageAsync(asyncOpen, filePath, _staticOpenCancellation.Token);
                     }
-                    else
-                    {
-                        WpfMessageBox.Show(string.Format(Properties.Resources.ImageView_UnsupportedImageFormat, ext));
-                    }
+                    else imageOpen.OpenImage(EditorContext, filePath);
+                    IEditorToolFactory.ApplyImageOpenTools(imageOpen);
                 }
             }
             catch(Exception ex)
@@ -921,18 +963,48 @@ namespace ColorVision.ImageEditor
         }
 
         /// <summary>Ends the file opener's content before replacing it with another file or a camera source.</summary>
-        public void ReleaseImageContent(IImageOpen? nextOpener = null)
+        public void ReleaseImageContent(IImageOpen? nextOpener = null) => ReleaseImageContent(nextOpener, null);
+
+        private void ReleaseImageContent(IImageOpen? nextOpener, CancellationTokenSource? nextRequest)
         {
             Dispatcher.VerifyAccess();
-            _staticOpenCancellation?.Cancel();
-            _staticOpenCancellation?.Dispose();
-            _staticOpenCancellation = null;
-            _document.RetireCapability(true);
-            _document.ParameterRecord = null;
-            var opener = EditorContext.IImageOpen;
+            long contentVersion = _document.ContentVersion;
+            var previousRequest = _staticOpenCancellation;
+            var activeOpener = EditorContext.IImageOpen;
+            var opener = activeOpener ?? _retainedOpenerDuringProbe;
+            bool reuse = ReferenceEquals(opener, nextOpener);
+            bool retainForProbe = nextRequest != null && reuse && opener is IImageOpenContentLifetime;
+            // Transfer the retained allocation before retirement callbacks can start another open.
+            _retainedOpenerDuringProbe = retainForProbe ? opener : null;
+            _staticOpenCancellation = nextRequest;
             EditorContext.IImageOpen = null;
-            if (opener is IImageOpenContentLifetime lifetime)
-                PendingContentRelease = Task.WhenAll(PendingContentRelease, ObserveContentReleaseAsync(lifetime, ReferenceEquals(opener, nextOpener)));
+            try { previousRequest?.Cancel(); }
+            finally
+            {
+                previousRequest?.Dispose();
+                try
+                {
+                    if (ReferenceEquals(_staticOpenCancellation, nextRequest) && EditorContext.IImageOpen == null && _document.ContentVersion == contentVersion)
+                    {
+                        _document.ParameterRecord = null;
+                        _document.RetireCapability(true);
+                    }
+                }
+                finally
+                {
+                    if (opener is IImageOpenContentLifetime lifetime && !ReferenceEquals(EditorContext.IImageOpen, opener)
+                        && (!retainForProbe || (activeOpener != null && ReferenceEquals(_retainedOpenerDuringProbe, opener))))
+                    {
+                        TrackContentRelease(lifetime, reuse);
+                    }
+                }
+            }
+        }
+
+        private void TrackContentRelease(IImageOpenContentLifetime lifetime, bool reuseBuffers)
+        {
+            Task release = ObserveContentReleaseAsync(lifetime, reuseBuffers);
+            PendingContentRelease = Task.WhenAll(PendingContentRelease, release);
         }
 
         private static async Task ObserveContentReleaseAsync(IImageOpenContentLifetime lifetime, bool reuseBuffers)
@@ -959,12 +1031,12 @@ namespace ColorVision.ImageEditor
             }
 
             string? filePath = Config.GetProperties<string>(ImageViewPropertyKeys.FilePath);
-            if (!CanRestoreOriginalImage)
+            if (filePath == null || !CanRestoreOriginalImage || FindImageOpener(filePath) is not { } opener)
             {
                 return false;
             }
 
-            OpenImageCore(filePath, forceReload: true);
+            OpenImageCore(filePath, opener, forceReload: true);
             return true;
         }
 
@@ -1088,6 +1160,12 @@ namespace ColorVision.ImageEditor
             return SelectedLayer?.SourceChannelIndex ?? -1;
         }
 
+        private void RestoreSelectedLayerDisplay()
+        {
+            if (_layerController != null && SelectedLayer is ImageLayerDescriptor layer) _layerController.SelectLayer(layer);
+            else _presentation.RestoreSource();
+        }
+
         private void ComboBoxLayers_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (_isUpdatingLayerSelection || _layerController == null)
@@ -1101,7 +1179,12 @@ namespace ColorVision.ImageEditor
             }
 
             SelectedLayer = layer;
-            _layerController.SelectLayer(layer);
+            if (_layerController is BitmapImageLayerController)
+            {
+                if (_channels.SelectChannel(layer.SourceChannelIndex ?? -1, preferStream: true) != ChannelSelectionResult.Ordinary) return;
+            }
+            else _layerController.SelectLayer(layer);
+            EditorContext.ProcessingContext.DisplayEffects.RefreshForSelectedLayer();
         }
 
         private void UpdateLayerSelectorVisibility()

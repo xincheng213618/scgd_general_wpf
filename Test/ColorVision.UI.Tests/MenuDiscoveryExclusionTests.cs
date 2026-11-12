@@ -28,6 +28,8 @@ public class MenuDiscoveryExclusionTests
     [InlineData("ColorVision.Engine.Services.Devices.Camera.Templates.CameraRunParam.MenuICameraExp")]
     [InlineData("ColorVision.Engine.Templates.Jsons.AutoExpTime.MenuAutoExpTimeV2")]
     [InlineData("ColorVision.Engine.Services.Devices.PG.Templates.ExportPGParam")]
+    [InlineData("ColorVision.Engine.FlowProcessing.Monitoring.LiveIvlMenuItem")]
+    [InlineData("ColorVision.Engine.Services.Devices.SMU.Templates.MenuSMUParam")]
     [InlineData("ColorVision.Database.ExportMySqlMenuItem")]
     [InlineData("ColorVision.Database.ExportMySqlConnect")]
     [InlineData("ColorVision.Database.ExportMySqlInitTables")]

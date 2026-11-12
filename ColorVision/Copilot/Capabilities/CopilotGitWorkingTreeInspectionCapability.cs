@@ -443,6 +443,32 @@ namespace ColorVision.Copilot
             return $"[Git Working Tree Inspection]\nresult_json: {JsonSerializer.Serialize(result)}";
         }
 
+        internal static bool TryReadRepositoryRoot(string? content, out string repositoryRoot)
+        {
+            repositoryRoot = string.Empty;
+            const string prefix = "[Git Working Tree Inspection]\nresult_json: ";
+            if (content?.StartsWith(prefix, StringComparison.Ordinal) != true)
+                return false;
+            try
+            {
+                using var document = JsonDocument.Parse(content[prefix.Length..], new JsonDocumentOptions { MaxDepth = 8 });
+                if (document.RootElement.ValueKind != JsonValueKind.Object
+                    || !document.RootElement.TryGetProperty("repository_root", out var root)
+                    || root.ValueKind != JsonValueKind.String
+                    || root.GetString() is not { } path
+                    || !Path.IsPathFullyQualified(path))
+                {
+                    return false;
+                }
+                repositoryRoot = path;
+                return true;
+            }
+            catch (JsonException)
+            {
+                return false;
+            }
+        }
+
         private static CopilotToolResult Failure(CopilotToolFailureKind kind, string summary, string error)
         {
             return new CopilotToolResult

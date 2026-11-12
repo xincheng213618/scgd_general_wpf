@@ -50,6 +50,14 @@ namespace ColorVision.Engine.Services.PhyCameras.Configs
         public FindFuncModel FindFuncModel { get => _FindFuncModel; set { _FindFuncModel = value; OnPropertyChanged(); } }
         private FindFuncModel _FindFuncModel;
 
+        [LocalizedDisplayName("MotorConfig_FocusEarlyStopRatio"), LocalizedDescription("MotorConfig_FocusEarlyStopRatioHint"), PropertyVisibility(nameof(ShowMotorSettings))]
+        public double FocusEarlyStopRatio { get => _FocusEarlyStopRatio; set { _FocusEarlyStopRatio = value; OnPropertyChanged(); } }
+        private double _FocusEarlyStopRatio;
+
+        [LocalizedDisplayName("MotorConfig_FocusEarlyStopCount"), LocalizedDescription("MotorConfig_FocusEarlyStopCountHint"), PropertyVisibility(nameof(ShowMotorSettings))]
+        public int FocusEarlyStopCount { get => _FocusEarlyStopCount; set { _FocusEarlyStopCount = value; OnPropertyChanged(); } }
+        private int _FocusEarlyStopCount = 2;
+
         [PropertyVisibility(nameof(ShowMotorSettings))]
         public FOCUS_COMMUN eFOCUSCOMMUN { get => _eFOCUSCOMMUN; set { _eFOCUSCOMMUN = value; OnPropertyChanged(); } }
         private FOCUS_COMMUN _eFOCUSCOMMUN;

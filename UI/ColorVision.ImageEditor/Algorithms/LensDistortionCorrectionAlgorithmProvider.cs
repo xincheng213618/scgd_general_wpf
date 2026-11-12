@@ -143,7 +143,7 @@ namespace ColorVision.ImageEditor.Algorithms
                         parameters.Border == GeometricTransformBorder.Replicate ? BorderTypes.Replicate : BorderTypes.Constant,
                         BorderScalar(source.Format, parameters));
                     cancellationToken.ThrowIfCancellationRequested();
-                    corrected = AlgorithmImageInterop.FromMat(output, source.DpiX, source.DpiY);
+                    corrected = AlgorithmImageInterop.FromMat(output, source.DpiX, source.DpiY, cancellationToken);
                 }
 
                 long totalPixels = (long)source.Width * source.Height;

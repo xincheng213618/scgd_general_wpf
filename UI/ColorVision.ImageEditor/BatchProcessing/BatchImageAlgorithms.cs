@@ -38,6 +38,13 @@ namespace ColorVision.ImageEditor.BatchProcessing
             _legacyApply = (source, _) => apply(source);
         }
 
+        internal BatchImageAlgorithmDefinition(string formatOnlyName)
+        {
+            Name = formatOnlyName;
+            Suffix = string.Empty;
+            Options = new NoBatchAlgorithmOptions();
+        }
+
         internal BatchImageAlgorithmDefinition(
             AlgorithmRuntime runtime,
             AlgorithmDescriptor descriptor,
@@ -87,28 +94,63 @@ namespace ColorVision.ImageEditor.BatchProcessing
         {
             ArgumentNullException.ThrowIfNull(source);
             cancellationToken.ThrowIfCancellationRequested();
+            Mat output;
+            if (Descriptor == null)
+            {
+                output = _legacyApply == null ? source.Clone() : _legacyApply(source, cancellationToken);
+            }
+            else
+            {
+                using AlgorithmImageBuffer image = ExecuteCatalog(source, cancellationToken, referenceCache: null);
+                cancellationToken.ThrowIfCancellationRequested();
+                output = AlgorithmImageInterop.ToMat(image);
+            }
+            try
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                return output;
+            }
+            catch
+            {
+                output.Dispose();
+                throw;
+            }
+        }
+
+        /// <summary>Provides pixels to the synchronous encoder without transferring a mutable Mat to it.</summary>
+        internal void UseOutputInRun(Mat source, CancellationToken cancellationToken,
+            AlgorithmReferenceImageLoader.BatchCache? referenceCache, Action<Mat> encode)
+        {
+            ArgumentNullException.ThrowIfNull(source);
+            cancellationToken.ThrowIfCancellationRequested();
             if (_legacyApply != null)
             {
-                Mat legacyResult = _legacyApply(source, cancellationToken);
-                try
-                {
-                    cancellationToken.ThrowIfCancellationRequested();
-                    return legacyResult;
-                }
-                catch
-                {
-                    legacyResult.Dispose();
-                    throw;
-                }
+                using Mat legacyResult = Apply(source, cancellationToken);
+                encode(legacyResult);
+                return;
+            }
+            if (Descriptor == null)
+            {
+                encode(source);
+                return;
             }
 
+            using AlgorithmImageBuffer image = ExecuteCatalog(source, cancellationToken, referenceCache);
+            cancellationToken.ThrowIfCancellationRequested();
+            using AlgorithmImageMatLease pixels = AlgorithmImageInterop.BorrowReadOnly(image);
+            encode(pixels.Mat);
+        }
+
+        private AlgorithmImageBuffer ExecuteCatalog(Mat source, CancellationToken cancellationToken,
+            AlgorithmReferenceImageLoader.BatchCache? referenceCache)
+        {
             AlgorithmDescriptor descriptor = Descriptor ?? throw new InvalidOperationException("The batch algorithm has no catalog descriptor.");
             IAlgorithmParameters parameters = CreateCompatibilityParameters((IAlgorithmParameters)Options);
             using Mat? compatibilityInput = _preserveLegacyBatchBehavior
                 ? CreateLegacyCompatibilityInput(source, descriptor.Id, parameters, cancellationToken)
                 : null;
             cancellationToken.ThrowIfCancellationRequested();
-            AlgorithmImageBuffer inputImage = AlgorithmImageInterop.FromMat(compatibilityInput ?? source);
+            AlgorithmImageBuffer inputImage = AlgorithmImageInterop.FromMat(compatibilityInput ?? source, cancellationToken: cancellationToken);
             AlgorithmInvocation invocation = new()
             {
                 AlgorithmId = descriptor.Id,
@@ -130,7 +172,7 @@ namespace ColorVision.ImageEditor.BatchProcessing
             {
                 if (parameters is ImagingCorrectionParameters correction)
                 {
-                    inputs.AddRange(AlgorithmReferenceImageLoader.LoadEnabledReferences(correction));
+                    inputs.AddRange(AlgorithmReferenceImageLoader.LoadEnabledReferences(correction, referenceCache, cancellationToken));
                     invocation = new AlgorithmInvocation
                     {
                         InvocationId = invocation.InvocationId,
@@ -171,17 +213,7 @@ namespace ColorVision.ImageEditor.BatchProcessing
                 AlgorithmPrimaryImageSelectionStatus.Missing => throw new BatchImageAlgorithmContractException("primary_image_contract_violation", $"The result contains {primary.ImageArtifactCount} image artifact(s), but none has Role=primary."),
                 _ => throw new BatchImageAlgorithmContractException("primary_image_contract_violation", $"The result contains {primary.PrimaryArtifactCount} Role=primary image artifacts; exactly one is required."),
             };
-            Mat output = AlgorithmImageInterop.ToMat(image.Image);
-            try
-            {
-                cancellationToken.ThrowIfCancellationRequested();
-                return output;
-            }
-            catch
-            {
-                output.Dispose();
-                throw;
-            }
+            return image.Image.RetainReadOnly();
         }
 
         private static Mat? CreateLegacyCompatibilityInput(
@@ -281,7 +313,7 @@ namespace ColorVision.ImageEditor.BatchProcessing
     public static class BatchImageAlgorithms
     {
         public static BatchImageAlgorithmDefinition CreateFormatOnly()
-            => new(Properties.Resources.BatchFormatOnly, string.Empty, new NoBatchAlgorithmOptions(), source => source.Clone());
+            => new(Properties.Resources.BatchFormatOnly);
 
         public static IReadOnlyList<BatchImageAlgorithmDefinition> CreateAll()
             => CreateAll(ImageAlgorithmPlatform.Runtime);

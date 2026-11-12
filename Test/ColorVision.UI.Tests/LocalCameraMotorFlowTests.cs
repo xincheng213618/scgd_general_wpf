@@ -127,7 +127,7 @@ public class LocalCameraMotorFlowTests
 
         internal Scope()
         {
-            WpfTestHost.Invoke(() => ConfigService.SetInstance(new ConfigHandler { IsAutoSave = false }));
+            WpfTestHost.Invoke(() => TestEnvironment.SetConfig(new ConfigHandler { IsAutoSave = false }));
             var config = LocalCameraMotorTests.Configuration();
             config.Code = "synthetic-camera-motor-" + Guid.NewGuid();
             config.CameraID = "camera";
@@ -189,7 +189,7 @@ public class LocalCameraMotorFlowTests
                 TemplateAutoFocus.Params.Remove(Template);
                 DisplayConfigManager.Instance.Configs.TryRemove(Device.Code, out _);
                 ManagerField.SetValue(null, previousManager);
-                ConfigService.SetInstance(previousConfig);
+                TestEnvironment.SetConfig(previousConfig);
             });
         }
     }

@@ -58,6 +58,8 @@
                             <Button Content="{display:DisplayText Key='缓存管理'}" Click="OpenLocalCacheManager_Click" Margin="2,0,0,0"
                                     ToolTip="{display:DisplayText Key='查看截图、图像文件、校正和相机取图缓存'}"/>
                             <Button Content="{display:DisplayText Key='结果统计'}" Click="OpenCycleTimeStatistics_Click" Margin="2,0,0,0"/>
+                            <Button Content="{display:DisplayText Key='算法实证'}" Click="OpenAlgorithmEvidence_Click" Margin="2,0,0,0"
+                                    ToolTip="{display:DisplayText Key='逐张读取当前查询中的原图，比对不同算法；缺图自动跳过'}"/>
                             <Button x:Name="ViewRefreshManagerButton" Content="{display:DisplayText Key='视图刷新管理'}"
                                     Click="OpenResultViewRefreshManager_Click"
                                     ToolTip="{display:DisplayText Key='查看并管理所有读图与结果视图的自动刷新'}"
@@ -197,7 +199,7 @@
                         <RowDefinition Height="*"/>
                         <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
-                    <DockPanel  Margin="0,0,0,5">
+                    <DockPanel x:Name="ExecutionToolbar" Margin="0,0,0,5">
                         <ComboBox  x:Name="FlowTemplate" Height="10" SelectedIndex="{Binding TemplateSelectedIndex}" ItemsSource="{Binding TemplateItemSource}" SelectedValuePath="Value" DisplayMemberPath="Key" Width="200" HorizontalAlignment="Left" />
                         <Grid Width="30" Margin="5,0"  HorizontalAlignment="Left">
                             <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="20" Foreground="{DynamicResource GlobalTextBrush}"/>
@@ -282,7 +284,7 @@
                 </ItemsPanelTemplate>
             </StatusBar.ItemsPanel>
             <StatusBarItem HorizontalAlignment="Left" HorizontalContentAlignment="Left" Padding="0">
-                <StackPanel Orientation="Horizontal">
+                <StackPanel x:Name="ConfigurationActions" Orientation="Horizontal">
                     <Button Content="{display:DisplayText Key='设置'}" Command="{Binding OpenConfigCommand}" Margin="2,0"/>
                     <Button Content="ProcessManager" Command="{Binding ProcessManager.EditCommand}" Margin="2,0"/>
                     <StackPanel Orientation="Horizontal" Margin="2,0">
@@ -304,7 +306,7 @@
             </StatusBarItem>
             <StatusBarItem HorizontalAlignment="Right" Panel.ZIndex="1">
                 <StackPanel Orientation="Horizontal">
-                    <Button Content="InitTest"
+                    <Button x:Name="InitTestButton" Content="InitTest"
                             Command="{Binding InitTestCommand}"
                             Margin="2,0"/>
                 </StackPanel>

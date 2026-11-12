@@ -46,8 +46,67 @@ namespace ColorVision.UI
         private Assembly[]? _assemblies;
         private readonly HashSet<Assembly> _registeredAssemblies = new();
         private readonly ConcurrentDictionary<Assembly, Type[]> _assemblyTypeCache = new();
-        private readonly ConcurrentDictionary<Type, List<Type>> _implementationTypeCache = new();
+        private ConcurrentDictionary<Type, Type[]> _implementationTypeCache = new();
         private readonly object _assembliesLock = new();
+        private bool _registeredAssembliesOnly;
+
+        public event EventHandler? AssembliesChanged;
+
+        /// <summary>
+        /// Restricts discovery to explicitly registered assemblies, i.e. the host's module catalog.
+        /// Without this switch every loaded assembly under the application directory is scanned,
+        /// which keeps tests and standalone hosts working without a catalog.
+        /// </summary>
+        public void UseRegisteredAssembliesOnly()
+        {
+            bool hasSnapshot;
+            lock (_assembliesLock)
+            {
+                if (_registeredAssembliesOnly)
+                    return;
+                _registeredAssembliesOnly = true;
+                hasSnapshot = _assemblies != null;
+            }
+
+            AppDomain.CurrentDomain.AssemblyLoad += (_, e) => WarnIfUnregisteredContributor(e.LoadedAssembly);
+            foreach (Assembly assembly in AppDomain.CurrentDomain.GetAssemblies())
+                WarnIfUnregisteredContributor(assembly);
+
+            if (hasSnapshot)
+                RefreshAssemblies();
+        }
+
+        /// <summary>
+        /// Catalog-only discovery silently skips a first-party assembly that was never registered,
+        /// so report application-directory assemblies that reference the extension contracts.
+        /// Plugin assemblies are excluded because PluginLoader registers them right after loading.
+        /// </summary>
+        private void WarnIfUnregisteredContributor(Assembly assembly)
+        {
+            try
+            {
+                lock (_assembliesLock)
+                {
+                    if (_registeredAssemblies.Contains(assembly))
+                        return;
+                }
+
+                string? name = assembly.GetName().Name;
+                if (!IsCustomAssembly(name, assembly) || !TryGetAssemblyLocation(assembly, out string? location))
+                    return;
+
+                string pluginDirectory = EnsureTrailingDirectorySeparator(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Plugins"));
+                if (location!.StartsWith(pluginDirectory, StringComparison.OrdinalIgnoreCase))
+                    return;
+
+                if (assembly.GetReferencedAssemblies().Any(reference => reference.Name is "ColorVision.Common" or "ColorVision.UI"))
+                    Log.Warn($"Assembly '{name}' references ColorVision extension contracts but is not registered in the module catalog; its extensions are not discovered.");
+            }
+            catch (Exception ex)
+            {
+                Log.Debug($"Could not inspect assembly '{assembly.FullName}' for catalog registration.", ex);
+            }
+        }
 
         private AssemblyHandler()
         {
@@ -65,20 +124,26 @@ namespace ColorVision.UI
             if (assembly.IsDynamic)
                 throw new ArgumentException("Dynamic assemblies cannot be registered as application modules.", nameof(assembly));
 
+            bool changed = false;
             lock (_assembliesLock)
             {
                 if (!_registeredAssemblies.Add(assembly))
                     return;
 
                 if (_assemblies != null
+                    && !_assemblies.Contains(assembly)
                     && IsCustomAssembly(assembly.GetName().Name, assembly)
                     && TryLoadAssemblyTypes(assembly, out _))
                 {
-                    _assemblies = _assemblies.Append(assembly).Distinct().ToArray();
+                    _assemblies = _assemblies.Append(assembly).ToArray();
+                    changed = true;
                 }
 
-                _implementationTypeCache.Clear();
+                Volatile.Write(ref _implementationTypeCache, new());
             }
+
+            if (changed)
+                AssembliesChanged?.Invoke(this, EventArgs.Empty);
         }
 
         /// <summary>
@@ -163,14 +228,36 @@ namespace ColorVision.UI
             }
             catch (ReflectionTypeLoadException ex)
             {
-                types = Array.Empty<Type>();
+                types = ex.Types.OfType<Type>().Where(IsMetadataResolvable).ToArray();
+                _assemblyTypeCache.TryAdd(assembly, types);
                 Log.Error($"Failed to load types from assembly '{assembly.FullName}': {ex.Message}", ex);
-                return false;
+                return true;
             }
             catch (Exception ex)
             {
                 types = Array.Empty<Type>();
                 Log.Error($"Unexpected error loading types from assembly '{assembly.FullName}': {ex.Message}", ex);
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// A type that survived a partial load can still reference the missing dependency through an
+        /// attribute or constructor signature, which makes discovery checks such as IsDefined or
+        /// GetConstructor throw. Keep only types whose metadata every consumer can safely read.
+        /// </summary>
+        private static bool IsMetadataResolvable(Type type)
+        {
+            try
+            {
+                _ = type.GetCustomAttributesData().Select(attribute => attribute.AttributeType).ToArray();
+                foreach (ConstructorInfo constructor in type.GetConstructors(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance))
+                    _ = constructor.GetParameters();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Log.Warn($"Skip partially loadable type '{type.FullName}': {ex.Message}");
                 return false;
             }
         }
@@ -193,10 +280,14 @@ namespace ColorVision.UI
         /// </summary>
         public Assembly[] RefreshAssemblies()
         {
+            Assembly[] customAssemblies;
+            bool changed;
             lock (_assembliesLock)
             {
-                var customAssemblies = AppDomain.CurrentDomain.GetAssemblies()
-                    .Concat(_registeredAssemblies)
+                IEnumerable<Assembly> candidates = _registeredAssembliesOnly
+                    ? _registeredAssemblies
+                    : AppDomain.CurrentDomain.GetAssemblies().Concat(_registeredAssemblies);
+                customAssemblies = candidates
                     .Distinct()
                     .Where(assembly =>
                     {
@@ -205,16 +296,19 @@ namespace ColorVision.UI
                     })
                     .ToArray();
 
+                changed = _assemblies != null && !_assemblies.ToHashSet().SetEquals(customAssemblies);
                 _assemblies = customAssemblies;
 
                 // Clear cache when assemblies are refreshed
-                _implementationTypeCache.Clear();
+                Volatile.Write(ref _implementationTypeCache, new());
 
                 if (Log.IsDebugEnabled)
                     Log.Debug($"Loaded {customAssemblies.Length} custom assemblies");
-
-                return customAssemblies;
             }
+
+            if (changed)
+                AssembliesChanged?.Invoke(this, EventArgs.Empty);
+            return customAssemblies;
         }
 
         /// <summary>
@@ -246,16 +340,21 @@ namespace ColorVision.UI
                     nameof(T));
             }
 
-            var implementationTypes = GetOrCacheImplementationTypes(interfaceType);
+            var implementationTypes = GetImplementationTypes(interfaceType)
+                .Where(type => type.GetConstructor(Type.EmptyTypes) != null);
             return InstantiateTypes<T>(implementationTypes, args);
         }
 
         /// <summary>
-        /// Gets implementation types from cache or discovers them
+        /// Gets concrete, closed classes assignable to the service type from the shared cache.
+        /// The cache is cleared whenever the discovered assembly set changes.
         /// </summary>
-        private List<Type> GetOrCacheImplementationTypes(Type interfaceType)
+        public IReadOnlyList<Type> GetImplementationTypes(Type serviceType)
         {
-            return _implementationTypeCache.GetOrAdd(interfaceType, key =>
+            ArgumentNullException.ThrowIfNull(serviceType);
+            // An in-flight query may finish after registration or a refresh. Keep its result
+            // in the old snapshot rather than repopulating the current cache with stale types.
+            return Volatile.Read(ref _implementationTypeCache).GetOrAdd(serviceType, key =>
             {
                 var implementationTypes = new List<Type>();
                 var assemblies = GetAssemblies();
@@ -263,26 +362,22 @@ namespace ColorVision.UI
                 foreach (var assembly in assemblies)
                 {
                     implementationTypes.AddRange(GetTypes(assembly)
-                        .Where(t => IsInstantiableImplementation(t, key)));
+                        .Where(t => IsConcreteImplementation(t, key)));
                 }
 
                 if (Log.IsDebugEnabled)
-                    Log.Debug($"Found {implementationTypes.Count} implementations of '{interfaceType.Name}'");
+                    Log.Debug($"Found {implementationTypes.Count} implementations of '{key.Name}'");
 
-                return implementationTypes;
+                return implementationTypes.ToArray();
             });
         }
 
-        /// <summary>
-        /// Determines if a type is a concrete implementation that can be instantiated
-        /// </summary>
-        private static bool IsInstantiableImplementation(Type type, Type interfaceType)
+        private static bool IsConcreteImplementation(Type type, Type serviceType)
         {
-            return interfaceType.IsAssignableFrom(type)
-                   && type.IsClass
+            return type.IsClass
                    && !type.IsAbstract
-                   && !type.IsInterface
-                   && type.GetConstructor(Type.EmptyTypes) != null;
+                   && !type.ContainsGenericParameters
+                   && serviceType.IsAssignableFrom(type);
         }
 
         /// <summary>
@@ -325,8 +420,10 @@ namespace ColorVision.UI
             {
                 _assemblies = null;
                 _assemblyTypeCache.Clear();
-                _implementationTypeCache.Clear();
+                Volatile.Write(ref _implementationTypeCache, new());
             }
+
+            AssembliesChanged?.Invoke(this, EventArgs.Empty);
         }
     }
 

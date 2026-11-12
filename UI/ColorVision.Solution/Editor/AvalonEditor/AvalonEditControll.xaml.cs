@@ -9,6 +9,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.IO;
 using System.ComponentModel;
+using System.Security.Cryptography;
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;
@@ -39,6 +40,7 @@ namespace ColorVision.Solution.Editor.AvalonEditor
         private readonly EditorIndentGuides _indentGuides = new();
         private double _zoom = 1;
         private string? _currentFileName;
+        private byte[]? _savedContentHash;
         private bool _isUpdatingHighlightingSelection;
         private bool _isFormatted;
         private bool _isDirty;
@@ -73,8 +75,8 @@ namespace ColorVision.Solution.Editor.AvalonEditor
             if (string.IsNullOrWhiteSpace(currentFileName) || !File.Exists(currentFileName))
                 return false;
 
-            _currentFileName = Path.GetFullPath(currentFileName);
-            return ReloadFromDisk();
+            LoadDocument(Path.GetFullPath(currentFileName));
+            return true;
         }
 
         private void InitializeEditor()
@@ -176,10 +178,77 @@ namespace ColorVision.Solution.Editor.AvalonEditor
             if (!CanSave)
                 return false;
 
-            textEditor.Save(_currentFileName!);
+            SaveFileAtomically(_currentFileName!);
             textEditor.Document.UndoStack.MarkAsOriginalFile();
             SetDirty(false);
             return true;
+        }
+
+        private void SaveFileAtomically(string path)
+        {
+            if (File.Exists(path))
+                path = File.ResolveLinkTarget(path, returnFinalTarget: true)?.FullName ?? path;
+
+            string temporaryPath = Path.Combine(Path.GetDirectoryName(path)!, $".__cvtext_{Guid.NewGuid():N}.tmp");
+            bool created = false;
+            try
+            {
+                byte[] writtenHash;
+                using (var stream = new FileStream(temporaryPath, FileMode.CreateNew, FileAccess.ReadWrite, FileShare.None))
+                {
+                    created = true;
+                    using (var writer = new StreamWriter(stream, textEditor.Encoding ?? Encoding.UTF8, leaveOpen: true))
+                        textEditor.Document.WriteTextTo(writer);
+                    stream.Position = 0;
+                    writtenHash = SHA256.HashData(stream);
+                }
+
+                if (File.Exists(path))
+                {
+                    // Block in-place writes through the check and replacement. The delete share allows File.Replace.
+                    using var current = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read | FileShare.Delete);
+                    if (_savedContentHash == null || !SHA256.HashData(current).AsSpan().SequenceEqual(_savedContentHash))
+                        throw new IOException(LocalizedText.Get("文件在磁盘上已更改。请先复制未保存的修改，再重新加载文件并合并。"));
+                    ReplaceSavedFile(temporaryPath, path);
+                }
+                else
+                {
+                    File.Move(temporaryPath, path);
+                }
+                created = false;
+                _savedContentHash = writtenHash;
+            }
+            finally
+            {
+                if (created) DeleteSaveArtifact(temporaryPath);
+            }
+        }
+
+        private static void ReplaceSavedFile(string temporaryPath, string path)
+        {
+            // Windows can move the old file before failing to publish the replacement.
+            string recoveryPath = Path.ChangeExtension(temporaryPath, ".bak");
+            try { File.Replace(temporaryPath, path, recoveryPath); }
+            catch (Exception saveError) when (File.Exists(recoveryPath))
+            {
+                try { File.Move(recoveryPath, path); }
+                catch (Exception recoveryError) when (recoveryError is IOException or UnauthorizedAccessException)
+                {
+                    throw new IOException($"Unable to restore the original document. It is available at {recoveryPath}",
+                        new AggregateException(saveError, recoveryError));
+                }
+                throw;
+            }
+            DeleteSaveArtifact(recoveryPath);
+        }
+
+        private static void DeleteSaveArtifact(string path)
+        {
+            try { File.Delete(path); }
+            catch (Exception error) when (error is IOException or UnauthorizedAccessException)
+            {
+                log4net.LogManager.GetLogger(typeof(AvalonEditControll)).Warn($"Unable to remove a temporary text document at {path}.", error);
+            }
         }
 
         public bool TryUpdateResourcePath(string resourcePath)
@@ -198,17 +267,26 @@ namespace ColorVision.Solution.Editor.AvalonEditor
             if (string.IsNullOrWhiteSpace(_currentFileName) || !File.Exists(_currentFileName))
                 return false;
 
+            LoadDocument(_currentFileName);
+            return true;
+        }
+
+        private void LoadDocument(string path)
+        {
+            using var stream = File.OpenRead(path);
+            byte[] hash = SHA256.HashData(stream);
+            stream.Position = 0;
             ResetCodeNavigation();
-            textEditor.Load(_currentFileName);
-            string text = textEditor.Text;
-            OriginalText = text;
+            textEditor.Load(stream);
+            _currentFileName = path;
+            _savedContentHash = hash;
+            OriginalText = textEditor.Text;
 
             ApplyFileSyntaxHighlighting();
             textEditor.Document.UndoStack.MarkAsOriginalFile();
             SetDirty(false);
             UpdateDocumentMetadata();
             UpdateRunButtonVisibility();
-            return true;
         }
 
         private void ApplyFileSyntaxHighlighting()

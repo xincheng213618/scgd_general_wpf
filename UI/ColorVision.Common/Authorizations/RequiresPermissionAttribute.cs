@@ -6,6 +6,8 @@ namespace ColorVision.UI.Authorizations
     public class RequiresPermissionAttribute : Attribute
     {
         public PermissionMode RequiredPermission { get; } 
+        public string? ActionId { get; set; }
+        public string? ResourceId { get; set; }
 
         public RequiresPermissionAttribute(PermissionMode requiredPermission)
         {

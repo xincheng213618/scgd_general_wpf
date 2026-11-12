@@ -132,8 +132,11 @@ namespace ProjectARVRPro
         internal bool IsResultExportPending { get; private set; }
 
         private bool IsTestExecutionBusy => IsSwitchRun
+            || _luxSession != null
+            || IsJsonVidRunning
+            || _isFlowCompletionPending
             || _isFlowStartPending
-            || flowControl.IsFlowRun
+            || flowControl?.IsFlowRun == true
             || _isFlowLifecycleActive
             || _isRunAllRunning
             || IsResultExportPending
@@ -141,6 +144,7 @@ namespace ProjectARVRPro
 
         public string InitTest(string? serialNumber)
         {
+            if (_luxSession != null || IsJsonVidRunning) return _objectiveSessionSerialNumber;
             if (IsResultExportPending)
             {
                 log.Warn("正在保存测试结果，暂不初始化下一次测试");
@@ -336,6 +340,7 @@ namespace ProjectARVRPro
 
         public async Task<bool> TryStartNextTemplateAsync(CancellationToken cancellationToken = default)
         {
+            if (_luxSession != null || IsJsonVidRunning) return false;
             if (IsSwitchRun)
             {
                 log.Warn("重复触发PG，忽略本次请求");
@@ -560,6 +565,11 @@ namespace ProjectARVRPro
             contextMenu.Items.Add(new MenuItem() { Command = batchHistoryCommand, Header = LocalizedText.Get("流程结果查询") });
             contextMenu.Items.Add(new MenuItem() { Command = flowExecutionAnalysisCommand, Header = LocalizedText.Get("流程执行分析") });
             contextMenu.Items.Add(new MenuItem() { Command = viewTestResultCommand, Header = LocalizedText.Get("查看测试结果") });
+            contextMenu.Items.Add(new MenuItem
+            {
+                Header = LocalizedText.Get("算法实证"),
+                Command = new RelayCommand(_ => OpenAlgorithmEvidence_Click(this, new RoutedEventArgs()), _ => listView1.SelectedItem is ProjectARVRReuslt)
+            });
 
             // 右键菜单打开时刷新 CanExecute 状态
             contextMenu.Opened += (s, e) => CommandManager.InvalidateRequerySuggested();
@@ -579,6 +589,10 @@ namespace ProjectARVRPro
 
             listView1.ContextMenu = contextMenu;
         }
+
+        private void OpenAlgorithmEvidence_Click(object sender, RoutedEventArgs e) =>
+            new AlgorithmEvidence.AlgorithmEvidenceWindow(ViewResluts.ToArray(), (listView1.SelectedItem as ProjectARVRReuslt)?.Id)
+            { Owner = this }.Show();
 
         private void ContextMenu_OpenFolderAndSelectFile()
         {
@@ -801,6 +815,7 @@ namespace ProjectARVRPro
 
         public async Task RunTemplate()
         {
+            if (_luxSession != null || IsJsonVidRunning) return;
             if (FlowTemplate.SelectedItem is not TemplateModel<FlowParam> template)
                 return;
 
@@ -1377,6 +1392,12 @@ namespace ProjectARVRPro
                 }
 
                 _isFlowLifecycleActive = false;
+                if (_luxSession != null)
+                {
+                    await CompleteLuxFlowAsync(processingSucceeded ? "Completed" : "Failed", CurrentFlowResult.Msg);
+                    TryCount = 0;
+                    return;
+                }
                 if (!processingSucceeded && !ProjectARVRProConfig.Instance.AllowTestFailures)
                 {
                     await TestCompletedAsync();
@@ -1408,7 +1429,8 @@ namespace ProjectARVRPro
                     _isFlowLifecycleActive = false;
                     await Task.Delay(200);
                     log.Info("重新尝试运行流程");
-                    _ = RunTemplate();
+                    if (_luxSession != null) _ = RunLuxTemplateAsync();
+                    else _ = RunTemplate();
                     return;
                 }
                 else
@@ -1418,6 +1440,12 @@ namespace ProjectARVRPro
                     ViewResultManager.Save(CurrentFlowResult);
                     SaveObjectiveTestResultRecord(CurrentFlowResult);
                     _isFlowLifecycleActive = false;
+                    if (_luxSession != null)
+                    {
+                        await CompleteLuxFlowAsync(FlowControlData.EventName, FlowControlData.Params);
+                        TryCount = 0;
+                        return;
+                    }
                     await TestCompletedAsync();
                 }
                 TryCount = 0;
@@ -1437,6 +1465,12 @@ namespace ProjectARVRPro
 
                 TryCount = 0;
 
+                if (_luxSession != null)
+                {
+                    _isFlowLifecycleActive = false;
+                    await CompleteLuxFlowAsync(FlowControlData.EventName, FlowControlData.Params);
+                    return;
+                }
                 if (ProjectARVRProConfig.Instance.AllowTestFailures)
                 {
                     //如果允许失败，则切换PG，并且提前设置流程,执行结束时直接发送结束
@@ -1757,6 +1791,11 @@ namespace ProjectARVRPro
 
         private async Task TestCompletedAsync()
         {
+            if (_luxSession != null)
+            {
+                await CompleteLuxFlowAsync("Failed", CurrentFlowResult?.Msg);
+                return;
+            }
             if (_objectiveSessionCompleted)
                 return;
 
@@ -1780,20 +1819,16 @@ namespace ProjectARVRPro
 
             // Settings and the editable SN can change while background cleanup is awaited.
             var config = ViewResultManager.Config;
+            CustomTestResultExportOptions customerOutput = CustomTestResultExportOptions.Capture(config);
             var outputConfig = new
             {
-                config.CsvSavePath, config.CustomXlsxSavePath, config.SaveByDate,
-                config.IsSaveCsv, config.UseLegacyARVROutput, config.IsSaveCustomXlsx,
-                config.AutoCleanupEnabled, config.MinimumFreeSpaceGB,
-                config.CustomXlsxProjectName, config.CustomOutputProfile
+                config.CsvSavePath, config.SaveByDate,
+                config.IsSaveCsv, config.UseLegacyARVROutput,
+                config.AutoCleanupEnabled, config.MinimumFreeSpaceGB
             };
             string serialNumber = SNtextBox.Text;
-            var responseStream = SocketControl.Current.Stream;
             DateTime exportTime = DateTime.Now;
             string csvOutputDirectory = outputConfig.CsvSavePath;
-            string customXlsxOutputDirectory = string.IsNullOrWhiteSpace(outputConfig.CustomXlsxSavePath)
-                ? outputConfig.CsvSavePath
-                : outputConfig.CustomXlsxSavePath;
             if (outputConfig.SaveByDate)
             {
                 string dateFolder = exportTime.ToString("yyyy-MM-dd");
@@ -1833,34 +1868,15 @@ namespace ProjectARVRPro
                 }
             }
 
-            if (outputConfig.IsSaveCustomXlsx)
+            if (customerOutput.Enabled)
             {
                 try
                 {
-                    string customXlsxBaseFileName = BuildDailyCustomXlsxBaseFileName(exportTime, outputConfig.CustomXlsxProjectName);
-                    string currentSnDirectory = ProjectImageExportService.BuildOutputDirectory(
-                        outputConfig.CsvSavePath, outputConfig.SaveByDate, exportTime, serialNumber);
-                    using var xlsxWrite = ResultStorageSpaceManager.Instance.BeginWrite(
-                        customXlsxOutputDirectory, outputConfig.AutoCleanupEnabled, outputConfig.MinimumFreeSpaceGB,
-                        currentSnDirectory, Path.Combine(customXlsxOutputDirectory, $"{customXlsxBaseFileName}.xlsx"));
-                    await xlsxWrite.EnsureSpaceAsync();
-                    Directory.CreateDirectory(customXlsxOutputDirectory);
-                    string xlsxPath = CustomTestResultExportService.Export(
-                        new ObjectiveTestResultExportContext
-                        {
-                            Result = ObjectiveTestResult,
-                            SerialNumber = serialNumber,
-                            OutputDirectory = customXlsxOutputDirectory,
-                            BaseFileName = customXlsxBaseFileName,
-                            ExportTime = exportTime,
-                        },
-                        outputConfig.CustomOutputProfile);
-
-                    log.Info($"客制化XLSX导出完成:{xlsxPath}");
+                    await ExportCustomerReportAsync(customerOutput, serialNumber, exportTime, luxFlow: false);
                 }
                 catch (Exception ex)
                 {
-                    log.Error("客制化XLSX导出失败", ex);
+                    log.Error("客户报表导出失败", ex);
                 }
             }
 
@@ -1895,6 +1911,7 @@ namespace ProjectARVRPro
                     ResponseCode = response.Code
                 };
 
+                var responseStream = SocketControl.Current.Stream;
                 if (SocketManager.GetInstance().TcpClients.Count <= 0 || responseStream == null)
                 {
                     log.Info("找不到连接的Socket");
@@ -2403,6 +2420,8 @@ namespace ProjectARVRPro
             bool includeOverlays = saveResultImage && config.ResultSnapshotIncludeOverlays;
             SourceImageFormat sourceFormat = config.SourceExportFormat;
             SourceTiffCompression sourceTiffCompression = config.SourceTiffCompressionMode;
+            string? resultFileNameTemplate = config.UseFlowNameForResultImage ? config.ResultImageFileNameTemplate : null;
+            string? sourceFileNameTemplate = config.UseFlowNameForSourceImage ? config.SourceImageFileNameTemplate : null;
             string outputRoot = config.CsvSavePath;
             bool saveByDate = config.SaveByDate;
             bool autoCleanupEnabled = config.AutoCleanupEnabled;
@@ -2465,6 +2484,7 @@ namespace ProjectARVRPro
 
                 _ = ExportImagesAsync(
                     snapshot,
+                    ImageView.Config.GetProperties<string>(ImageViewPropertyKeys.FilePath),
                     saveResultImage,
                     saveSourceImage,
                     resultFormat,
@@ -2472,6 +2492,8 @@ namespace ProjectARVRPro
                     includeOverlays,
                     sourceFormat,
                     sourceTiffCompression,
+                    resultFileNameTemplate,
+                    sourceFileNameTemplate,
                     result,
                     outputRoot,
                     saveByDate,
@@ -2499,6 +2521,7 @@ namespace ProjectARVRPro
 
         private async Task ExportImagesAsync(
             ImageViewSnapshot? snapshot,
+            string? inputFileName,
             bool saveResultImage,
             bool saveSourceImage,
             ResultImageFormat resultFormat,
@@ -2506,6 +2529,8 @@ namespace ProjectARVRPro
             bool includeOverlays,
             SourceImageFormat sourceFormat,
             SourceTiffCompression sourceTiffCompression,
+            string? resultFileNameTemplate,
+            string? sourceFileNameTemplate,
             ProjectARVRReuslt result,
             string outputRoot,
             bool saveByDate,
@@ -2538,12 +2563,13 @@ namespace ProjectARVRPro
                 string sourceName = string.IsNullOrWhiteSpace(result.FileName)
                     ? $"Image_{result.Id}_{requestedAt:yyyyMMddTHHmmssfffffff}"
                     : result.FileName;
+                var (renderedStem, sourceStem) = ProjectImageExportService.BuildFileStems(
+                    sourceName, result.Model, result.SN, resultFileNameTemplate, sourceFileNameTemplate);
                 if (saveResultImage)
                 {
-                    string fileStem = ProjectImageExportService.BuildResultFileStem(sourceName, result.Model);
                     renderedFilePath = ProjectImageExportService.BuildFilePath(
                         outputDirectory,
-                        fileStem,
+                        renderedStem,
                         ProjectImageExportService.GetResultExtension(resultFormat));
                     string overlayDescription = includeOverlays ? "混合标记" : "仅底图";
                     log.Debug(
@@ -2552,11 +2578,11 @@ namespace ProjectARVRPro
                 }
                 if (saveSourceImage)
                 {
-                    string fileStem = ProjectImageExportService.BuildSourceFileStem(sourceName, result.Model);
-                    sourceFilePath = ProjectImageExportService.BuildFilePath(
+                    sourceFilePath = ProjectImageExportService.BuildSourceFilePath(
                         outputDirectory,
-                        fileStem,
-                        ProjectImageExportService.GetSourceExtension(sourceFormat));
+                        sourceStem,
+                        ProjectImageExportService.GetSourceExtension(sourceFormat),
+                        renderedFilePath);
                     string sourceDescription = sourceFormat switch
                     {
                         SourceImageFormat.TIFF => $"TIFF {sourceTiffCompression}无损压缩",
@@ -2569,7 +2595,7 @@ namespace ProjectARVRPro
                 storageWrite = ResultStorageSpaceManager.Instance.BeginWrite(
                     outputRoot, autoCleanupEnabled, minimumFreeSpaceGB, outputDirectory);
                 await storageWrite.EnsureSpaceAsync().ConfigureAwait(false);
-                exportAttempt = new ProjectImageExportAttempt(renderedFilePath, sourceFilePath);
+                exportAttempt = new ProjectImageExportAttempt(renderedFilePath, sourceFilePath, inputFileName);
                 ImageViewSnapshotExportOptions exportOptions = exportAttempt.CreateOptions(
                     ProjectImageExportService.CreateRenderedOptions(resultFormat, resultSize),
                     ProjectImageExportService.CreateSourceOptions(sourceFormat, sourceTiffCompression),
@@ -2765,6 +2791,7 @@ namespace ProjectARVRPro
         /// </summary>
         public async Task RunAllAsync()
         {
+            if (_luxSession != null || IsJsonVidRunning) return;
             if (_isRunAllRunning)
             {
                 log.Info("一键执行已在运行中，忽略重复调用");
@@ -3063,6 +3090,7 @@ namespace ProjectARVRPro
                 return;
 
             _isDisposed = true;
+            _luxLifetime.Cancel();
             _runningFlowNodes.Reset(null);
             foreach (CVCommonNode node in STNodeEditorMain.Nodes.OfType<CVCommonNode>())
             {

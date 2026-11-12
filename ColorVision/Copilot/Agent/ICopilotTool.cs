@@ -143,11 +143,22 @@ namespace ColorVision.Copilot
         string ReversibilitySummary = "")
     {
         public string ReviewDetails { get; init; } = string.Empty;
+
+        [System.Text.Json.Serialization.JsonIgnore]
+        internal string ExecutionTargetFingerprint { get; init; } = string.Empty;
     }
 
     public interface ICopilotFrameworkApprovalPresentation
     {
         CopilotToolApprovalPresentation CreateApprovalPresentation(CopilotAgentToolInput toolInput);
+    }
+
+    public interface ICopilotFrameworkAsyncApprovalPresentation
+    {
+        Task<CopilotToolApprovalPresentation> CreateApprovalPresentationAsync(
+            CopilotAgentRequest request,
+            CopilotAgentToolInput toolInput,
+            CancellationToken cancellationToken);
     }
 
     public interface ICopilotFrameworkContextualApprovalPresentation : ICopilotFrameworkApprovalPresentation

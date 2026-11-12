@@ -97,7 +97,8 @@ namespace ColorVision.Copilot.Mcp
             CopilotConfirmationRequestContext requestContext,
             Action<ConfirmableAction> beforePublish,
             string? reviewDetails = null,
-            bool userReviewVisible = true)
+            bool userReviewVisible = true,
+            string executionTargetFingerprint = "")
         {
             return CreateCore(
                 title,
@@ -113,7 +114,8 @@ namespace ColorVision.Copilot.Mcp
                 exactArgumentsBinding,
                 beforePublish,
                 reviewDetails,
-                userReviewVisible);
+                userReviewVisible,
+                executionTargetFingerprint);
         }
 
         private ConfirmableAction CreateCore(
@@ -130,7 +132,8 @@ namespace ColorVision.Copilot.Mcp
             string? exactArgumentsBinding,
             Action<ConfirmableAction>? beforePublish,
             string? reviewDetails,
-            bool userReviewVisible = true)
+            bool userReviewVisible = true,
+            string executionTargetFingerprint = "")
         {
             ArgumentNullException.ThrowIfNull(executor);
             var normalizedReviewDetails = NormalizeReviewDetails(reviewDetails);
@@ -147,6 +150,7 @@ namespace ColorVision.Copilot.Mcp
                 ToolName = Sanitize(toolName),
                 ArgumentsSummary = Sanitize(argumentsSummary),
                 ArgumentsDigest = ComputeArgumentsDigest(exactArgumentsBinding ?? argumentsSummary),
+                ExecutionTargetFingerprint = executionTargetFingerprint,
                 ReviewDetails = normalizedReviewDetails,
                 ExecuteOnApproval = executeOnApproval,
                 ResumesAgentOnApproval = resumesAgentOnApproval,
@@ -523,6 +527,27 @@ namespace ColorVision.Copilot.Mcp
             }
 
             RaiseActionsChanged();
+        }
+
+        internal bool TryGetExecutionTargetFingerprint(CopilotToolInvocation invocation, out string fingerprint)
+        {
+            fingerprint = string.Empty;
+            if (!invocation.FrameworkApprovalGranted || string.IsNullOrEmpty(invocation.ApprovalActionId))
+                return false;
+            var action = Find(invocation.ApprovalActionId);
+            if (action == null)
+                return false;
+            lock (_syncRoot)
+            {
+                if (action.Status != ConfirmableActionStatus.Executing || !action.ResumesAgentOnApproval
+                    || !string.Equals(action.ToolName, invocation.Tool.Name, StringComparison.Ordinal)
+                    || !string.Equals(action.AgentCallId, invocation.CallId, StringComparison.Ordinal)
+                    || !ValidateReviewContextNoLock(action, new CopilotConfirmationReviewContext(
+                        invocation.AgentRequest.ConversationId, invocation.AgentRequest.TaskId, invocation.AgentRequest.WorkspacePath), out _))
+                    return false;
+                fingerprint = action.ExecutionTargetFingerprint;
+                return !string.IsNullOrEmpty(fingerprint);
+            }
         }
 
         private ConfirmableAction? Find(string actionId)

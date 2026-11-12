@@ -54,7 +54,6 @@ public sealed class STNodeReadOnlyEditingTests
     [Theory]
     [InlineData(0)]
     [InlineData(1)]
-    [InlineData(2)]
     public void ReadOnlyImportsRejectBeforeDecodingAndRemainAvailableAfterUnlock(int importKind)
     {
         WpfTestHost.Invoke(() =>
@@ -66,14 +65,9 @@ public sealed class STNodeReadOnlyEditingTests
             editor.Nodes.Add(node);
             node.SetSelected(true, false);
             editor.ClearHistory();
-            byte[] data = importKind == 2 ? editor.GetCanvasData() : editor.GetSelectedNodesData();
+            byte[] data = editor.GetSelectedNodesData();
             byte[] malformed = [0x13, 0x37, 0xFF, 0xFF];
-            IReadOnlyList<STNode> Import(byte[] bytes) => importKind switch
-            {
-                0 => editor.ImportSelectionData(bytes),
-                1 => editor.ImportSelectionData(bytes, new Point(400, 200)),
-                _ => editor.ImportCanvasAsModule(bytes, new Point(400, 200)),
-            };
+            IReadOnlyList<STNode> Import(byte[] bytes) => importKind == 0 ? editor.ImportSelectionData(bytes) : editor.ImportSelectionData(bytes, new Point(400, 200));
             editor.EnableEdit = false;
 
             // Malformed data must not even reach the decoder while editing is unavailable.

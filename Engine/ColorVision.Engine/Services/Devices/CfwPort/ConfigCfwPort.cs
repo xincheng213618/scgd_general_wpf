@@ -7,6 +7,10 @@ namespace ColorVision.Engine.Services.Devices.CfwPort
 {
     public class ConfigCfwPort: DeviceServiceConfig
     {
+        [DisplayName("SN"), Description("选择相机或光谱仪许可证的 SN，用于服务模式授权。")]
+        [PropertyEditorType(typeof(FilterWheelLicensePropertiesEditor))]
+        public override string SN { get => base.SN; set => base.SN = value; }
+
         [LocalizedDisplayName(nameof(Resources.AutoConnect))]
         public bool IsAutoOpen { get => _IsAutoOpen; set { _IsAutoOpen = value; OnPropertyChanged(); } }
         private bool _IsAutoOpen = true;

@@ -1,3 +1,4 @@
+using ColorVision.Copilot.Mcp;
 using ColorVision.UI;
 using System;
 using System.Collections.Generic;
@@ -7,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace ColorVision.Copilot
 {
-    public sealed class CopilotApplyTemplatePatchTool : ICopilotFrameworkApprovedTool, ICopilotApplicationCapabilityClient
+    public sealed class CopilotApplyTemplatePatchTool : ICopilotFrameworkApprovedTool, ICopilotFrameworkApprovalPresentation, ICopilotApplicationCapabilityClient
     {
         private readonly ICopilotApplicationCapabilityInvoker _capabilityInvoker;
 
@@ -41,6 +42,24 @@ namespace ColorVision.Copilot
         public bool AllowsTemporaryFullAccess => Capability.AllowsTemporaryFullAccess;
 
         public CopilotToolInputSchema InputSchema => CopilotSharedCapabilityCatalog.ApplyTemplatePatch.AgentInputSchema;
+
+        public CopilotToolApprovalPresentation CreateApprovalPresentation(CopilotAgentToolInput toolInput)
+        {
+            ArgumentNullException.ThrowIfNull(toolInput);
+            var previewId = toolInput.GetStringArgument("preview_id");
+            if (string.IsNullOrWhiteSpace(previewId) && !TryReadPreviewId(toolInput.Query, out previewId, out var error))
+                throw new InvalidOperationException(error);
+            if (!CopilotMcpTemplatePatchPreviewStore.Instance.TryGet(previewId, out var preview, out var message))
+                throw new InvalidOperationException(message);
+
+            return new CopilotToolApprovalPresentation(
+                "Confirm template patch",
+                $"Apply previewed JSON changes to active template editor: {preview.TemplateIdentifier}",
+                ImpactSummary: "Review the complete changed values before applying them to the active template editor.")
+            {
+                ReviewDetails = CopilotMcpToolDispatcher.BuildTemplatePatchReviewDetails(preview),
+            };
+        }
 
         public bool CanHandle(CopilotAgentRequest request)
         {

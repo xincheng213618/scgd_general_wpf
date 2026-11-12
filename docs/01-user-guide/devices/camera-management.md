@@ -3,7 +3,7 @@ knowledge_id: "operations.physical-camera"
 knowledge_type: "topic"
 status: "current"
 summary: "物理相机的扫描、创建、许可证、校正资源和还原点入口；区分扫描结果与缓存列表，首次创建唯一物理相机时补齐空设备绑定并静默重启本机注册中心。"
-aliases: ["物理相机","相机管理","相机许可证","导入lic","唯一相机自动绑定","校准文件上传","校正文件管理","四色校正采集","四色校正文件修正","恢复点","PhyCameraManager","PhyCamera","SearchCameraIds","SetLicense","CreateRestore","LoadResotre","UploadDataAsync","CalibrationEdit","扫描在线相机","添加未创建的相机","上传校正文件","创建还原点","加载还原点","CameraSearchResultViewModel","PhysicalCamera_Load","t_scgd_camera_license","LicenseState","ExpiryDateTime","许可证过期字段"]
+aliases: ["物理相机","相机管理","相机许可证","导入lic","唯一相机自动绑定","校准文件上传","校正文件管理","四色校正采集","四色校正文件修正","恢复点","PhyCameraManager","PhyCamera","SearchCameraIds","SetLicense","CreateRestore","LoadResotre","UploadDataAsync","CalibrationEdit","扫描在线相机","添加相机","上传校正文件","创建还原点","加载还原点","CameraSearchResultViewModel","PhysicalCamera_Load","t_scgd_camera_license","LicenseState","ExpiryDateTime","许可证过期字段"]
 code_paths: ["Engine/ColorVision.Engine/Services/PhyCameras/PhyCameraManager.cs","Engine/ColorVision.Engine/Services/PhyCameras/PhysicalCameraCreationBatch.cs","Engine/ColorVision.Engine/Services/PhyCameras/PhysicalCameraInitialBinding.cs","Engine/ColorVision.Engine/Services/PhyCameras/PhysicalCameraIdentity.cs","Engine/ColorVision.Engine/Services/PhyCameras/PhyCamera.cs","Engine/ColorVision.Engine/Services/PhyCameras/Licenses/PhyLicenseDao.cs","Engine/ColorVision.Engine/Services/PhyCameras/CalibrationUploadRunner.cs","Engine/ColorVision.Engine/Services/PhyCameras/CalibrationUploadWorkspace.cs","Engine/ColorVision.Engine/Services/PhyCameras/PhyCameraManagerWindow.xaml","Engine/ColorVision.Engine/Services/PhyCameras/PhyCameraManagerWindow.xaml.cs","Engine/ColorVision.Engine/Services/PhyCameras/CameraSearchTypeWindow.xaml.cs","Engine/ColorVision.Engine/Services/PhyCameras/CameraSearchResultWindow.xaml.cs","Engine/ColorVision.Engine/Services/PhyCameras/CreateWindow.xaml.cs","Engine/ColorVision.Engine/Services/PhyCameras/InfoPhyCamera.xaml","Engine/ColorVision.Engine/Services/PhyCameras/Group/CalibrationEdit.xaml","Engine/ColorVision.Engine/Services/PhyCameras/Group/CalibrationEdit.xaml.cs","Engine/ColorVision.Engine/Services/PhyCameras/Group/CalibrationArchivePlanBuilder.cs","Engine/ColorVision.Engine/Services/PhyCameras/Group/CalibrationExportArchive.cs","Engine/ColorVision.Engine/Services/PhyCameras/Calibration/LumFourColorCalibrationWorkflow.cs","Engine/ColorVision.Engine/Services/PhyCameras/Calibration/LumFourColorCalibrationWorkflowWindow.xaml","Engine/ColorVision.Engine/CalFile/CVXFileProcess.cs","Engine/cvColorVision/Camera/cvCameraCSLib.Discovery.cs"]
 test_paths: ["Test/ColorVision.UI.Tests/PhysicalCameraIdentityTests.cs","Test/ColorVision.UI.Tests/PhyCameraLicenseImportPolicyTests.cs","Test/ColorVision.UI.Tests/PhysicalCameraCreationBatchTests.cs","Test/ColorVision.UI.Tests/CalibrationUploadRunnerTests.cs","Test/ColorVision.UI.Tests/CalibrationUploadWorkspaceTests.cs","Test/ColorVision.UI.Tests/CVRawManualCieCalculatorTests.cs","Test/ColorVision.UI.Tests/CalibrationExportArchiveTests.cs"]
 related: ["operations.camera","operations.camera-configuration","operations.calibration","engine.devices"]
@@ -26,7 +26,7 @@ related: ["operations.camera","operations.camera-configuration","operations.cali
 3. 在下方相机列表核对 `CameraID`、MD5 和识别型号。托管发现按“型号 + CameraID”去重，结果窗口又将相同 MD5 的条目合并，所以各型号数量之和可能大于窗口的相机总数。
 4. 对未创建的条目点击“创建”，在创建窗口核对代码、ID、型号与物理参数，再确认。该入口预填扫描结果，不要求数据库中事先已有空配置候选。确认会插入或更新物理资源，并进入下文的目录请求和关联流程。
 
-工具栏的“添加未创建的相机”在 MySQL 模式先查 `Type == 101` 且 `Value` 为空的候选，没有则提示并转入扫描；本地模式允许直接填写相机代码与 ID。`CreateWindow` 保存失败时不继续创建流程；窗口关闭或行显示已创建仍不能代替硬件与绑定验收。
+工具栏的“添加相机”在 MySQL 模式列出 `Type == 101` 且 `Value` 为空的物理相机资源，候选与许可证是否过期无关。没有候选时提示并转入扫描。本地模式允许直接填写相机代码与 ID。`CreateWindow` 保存失败时不继续创建流程；窗口关闭或行显示已创建仍不能代替硬件与绑定验收。
 
 创建窗口与“修改配置”复用同一参数面板：顶部设置型号、模式、位深与通道，左侧切换相机参数、电机配置、参数限制和文件服务；CV 模式另有 CFW 分类。创建窗口额外保留相机代码选择和默认取图模式，底部提供属性编辑、提交与取消。两处使用相同的深浅主题文字、背景、边框和选中颜色，分类内容独立滚动；取消不会执行创建保存。
 
@@ -50,14 +50,15 @@ related: ["operations.camera","operations.camera-configuration","operations.cali
 
 | 位置与名称 | 用途 |
 | --- | --- |
-| 顶部“许可证导入” | 批量读取 `.lic` / `.zip`；已有相机只替换许可证，未创建相机进入创建流程，见下文 |
+| 顶部“导入许可证” | 批量读取 `.lic` / `.zip`；已有相机只替换许可证，未创建相机进入创建流程，见下文 |
 | 顶部“许可证管理” | 直接打开许可证管理窗口；与导入入口一同常驻工具栏 |
 | 当前相机的许可证区域 | 使用当前相机的许可证更新入口；按相机代码匹配 |
 | 详情区“修改配置” | 编辑选中相机的物理配置 |
 | 详情区“打开配置文件” | 实际打开 `FileBasePath / Code` 文件夹，目录存在时才可用 |
 | 详情区“上传校正文件” | 解包校正资源到当前相机目录并更新数据库，见下文 |
 | 详情区“创建还原点” / “加载还原点” | 通过保存/打开窗口创建或直接载入 `.cvcal`，见下文 |
-| 顶部“操作 > MVS 日志” | 启动本机 MVS 日志工具；只在约定的 `C:\Program Files (x86)\MVS\Applications\Win64\LogViewer.exe` 存在时可用 |
+| 顶部“设备管理器” | 打开 Windows 设备管理器 |
+| 顶部“MVS 日志” | 打开本机 MVS 日志工具，检测到 LogViewer 时显示 |
 
 ## 创建资源时的目录请求与自动关联
 

@@ -4,8 +4,14 @@ namespace ProjectARVRPro.Process.Demura
 {
     public class DemuraProcessConfig : ProcessConfigBase
     {
+        [Category("结果配置")]
+        [DisplayName("仅返回CSV")]
+        [Description("仅返回W128源CSV，文件存在且可读取即通过；不要求W255、点数、工具、Bin或烧录。关闭后执行完整Demura处理。")]
+        public bool ReturnCsvOnly { get => _ReturnCsvOnly; set { _ReturnCsvOnly = value; OnPropertyChanged(); } }
+        private bool _ReturnCsvOnly = true;
+
         [Category("导出配置")]
-        [DisplayName("导出名称")]
+        [DisplayName("输出Key")]
         [Description("导出CSV时显示的测试画面名称，也是DynamicTestResults和DemuraTestResults的Key")]
         public string Name { get => _Name; set { _Name = value; OnPropertyChanged(); } }
         private string _Name = "Demura";

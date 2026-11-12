@@ -98,18 +98,15 @@ namespace ColorVision.Engine.FlowProcessing.Editor
 
         private readonly STNodeEditor _nodeEditor;
         private readonly FlowExecutionNavigator _executionNavigator;
-        private readonly Action _importModule;
         private readonly ContextMenu _contextMenu;
         private System.Drawing.Point _contextCanvasPoint;
 
         public FlowNodeContextMenuService(
             STNodeEditor nodeEditor,
-            FlowExecutionNavigator executionNavigator,
-            Action importModule)
+            FlowExecutionNavigator executionNavigator)
         {
             _nodeEditor = nodeEditor;
             _executionNavigator = executionNavigator;
-            _importModule = importModule;
             _contextMenu = new ContextMenu();
             _nodeEditor.ContextMenu = _contextMenu;
             _nodeEditor.ContextMenuOpening += NodeEditor_ContextMenuOpening;
@@ -236,7 +233,6 @@ namespace ColorVision.Engine.FlowProcessing.Editor
             {
                 AddRepeatMenuItems(_contextMenu.Items, null);
                 AddNodeCreationMenuItems(_contextMenu.Items);
-                AddImportModuleContextMenu(_contextMenu.Items);
             }
 
             if (_contextMenu.Items.Count == 0)
@@ -462,12 +458,6 @@ namespace ColorVision.Engine.FlowProcessing.Editor
 
             _nodeEditor.Nodes.Add(node);
             _nodeEditor.SetActiveNode(node);
-        }
-
-        private void AddImportModuleContextMenu(ItemCollection items)
-        {
-            items.Add(new Separator());
-            items.Add(CreateEditMenuItem(Properties.Resources.Flow_ImportTemplateAsModule, _importModule));
         }
 
         public void Dispose()

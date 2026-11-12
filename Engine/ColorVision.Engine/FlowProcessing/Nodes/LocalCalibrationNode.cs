@@ -88,7 +88,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
         private bool allowAcceleration;
 
         [Category("本地校正")]
-        [STNodeProperty("校正模板", "对 RAW 指针执行的相机校正模板；CVCIE 输入会直接透传", true)]
+        [STNodeProperty("校正模板", "用于处理 RAW 图像的相机校正模板", true)]
         [PropertyEditorType(typeof(CalibrationTemplatePropertiesEditor))]
         public string CalibTempName { get => calibTempName; set { calibTempName = value ?? string.Empty; OnPropertyChanged(); } }
 
@@ -110,13 +110,14 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
 
         protected override string GetCompactSummaryValue() => CompactValueOrDash(CalibTempName);
 
-        private protected LocalCalibrationExecution ExecuteCalibration(CVStartCFC action)
+        private protected LocalCalibrationExecution ExecuteCalibration(CVStartCFC action, bool useInputColor)
         {
             LocalFlowFrame sourceFrame;
             bool ownsSourceFrame;
             bool loadedFromFile;
             if (action.TryGetCurrentFrame(out LocalFlowFrame? currentFrame) && currentFrame != null)
             {
+                ValidateImageInputPath(currentFrame.CvCieFilePath);
                 FlowNodeTiming.Skip("OpenImage");
                 sourceFrame = currentFrame;
                 ownsSourceFrame = false;
@@ -129,6 +130,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                 {
                     throw new InvalidOperationException("输入端没有本地图像内存帧，也没有可读取的图像结果。请连接相机取图或“加载图片”节点。");
                 }
+                ValidateImageInputPath(sourceFilePath);
                 sourceFrame = FlowNodeTiming.Run("OpenImage", () => LocalFrameFileService.Load(sourceFilePath));
                 ownsSourceFrame = true;
                 loadedFromFile = true;
@@ -150,16 +152,25 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                     && sourceFrame.Metadata.IsMirrorReady && sourceFrame.ColorCalibration?.CanReplay == true
                     && (string.IsNullOrWhiteSpace(CalibTempName)
                         || string.Equals(sourceFrame.Metadata.CalibrationTemplate, CalibTempName, StringComparison.Ordinal));
-                if (canReuseExistingCie || canReuseCalibratedRaw)
+                if (useInputColor || canReuseExistingCie || canReuseCalibratedRaw)
                 {
-                    if (sourceFrame.HasRaw && (AllowAcceleration || !sourceFrame.HasCie))
+                    if (useInputColor)
+                    {
+                        if (!sourceFrame.HasCie && (!sourceFrame.HasRaw || sourceFrame.ColorCalibration?.CanReplay != true))
+                            throw new InvalidOperationException("上游图像没有可用的 CIE 或可回放的 RAW 色度参数。请在取图节点配置亮度或颜色校正，或在本节点选择校正模板。");
+                        if (loadedFromFile && TryGetInputMasterResult(action, 0, out int imageMasterId, out _, out _))
+                            sourceFrame.MasterId = imageMasterId;
+                    }
+                    else if (sourceFrame.HasRaw && (AllowAcceleration || !sourceFrame.HasCie))
+                    {
                         LocalFrameCalibrationService.ReuseColorCalibration(sourceFrame, AllowAcceleration);
+                    }
                     outputFrame = sourceFrame;
                     ownsOutputFrame = ownsSourceFrame;
                     ownsSourceFrame = false;
                     if (!outputFrame.IsFlipApplied)
                     {
-                        throw new InvalidOperationException("The reusable CIE frame has a pending mirror operation and was published before its orientation was finalized.");
+                        throw new InvalidOperationException("The reusable frame has a pending mirror operation and was published before its orientation was finalized.");
                     }
                 }
                 else if (sourceFrame.HasRaw)
@@ -175,7 +186,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                         device.LocalCalibrationCacheManager,
                         calibrationFiles,
                         calibration.Name,
-                        LocalCalibrationRoi.Resolve(device.PhyCamera?.Config?.CameraCfg, sourceFrame.Metadata.Width, sourceFrame.Metadata.Height),
+                        LocalCalibrationRoi.ResolveForFrame(sourceFrame.Metadata, device.PhyCamera?.Config?.CameraCfg),
                         ResolveZeroExposureFallback(action, sourceFrame),
                         AllowAcceleration);
                     outputFrame = sourceFrame;
@@ -286,6 +297,8 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             });
         }
 
+        private protected virtual void ValidateImageInputPath(string filePath) { }
+
         private protected virtual float[]? ResolveZeroExposureFallback(CVStartCFC action, LocalFlowFrame sourceFrame) => null;
 
         private protected DeviceCamera ResolveDevice(string frameDeviceCode)
@@ -332,7 +345,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
 
         protected override LocalNodeExecutionResult ExecuteLocal(CVStartCFC action)
         {
-            using LocalCalibrationExecution execution = ExecuteCalibration(action);
+            using LocalCalibrationExecution execution = ExecuteCalibration(action, useInputColor: false);
             action.RuntimeResources.StopToken.ThrowIfCancellationRequested();
             MeasureResultImgModel persistedResult = SaveCalibrationResult(action, execution);
             int masterId = persistedResult.Id;

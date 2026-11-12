@@ -9,9 +9,11 @@ using ColorVision.UI.Sorts;
 using log4net;
 using SqlSugar;
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -210,38 +212,43 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                 dialog.RestoreDirectory = true;
                 if (dialog.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
 
-                using StreamWriter file = new(dialog.FileName, true, Encoding.UTF8); 
-                if (listView1.View is GridView gridView1)
-                {
-                    string headers = "";
-                    foreach (var item in gridView1.Columns)
-                    {
-                        headers += item.Header.ToString() + ",";
-                    }
-                    file.WriteLine(headers);
-                }
-                string value = "";
-                foreach (var item in ViewResults)
-                {
-                    value += item.Id + ","
-                        + item.Batch + ","
-                        + item.POITemplateName + ","
-                        + item.FilePath + ","
-                        + item.CreateTime + ","
-                        + item.ResultType + ","
-                        + item.TotalTime + ","
-                        + item.ResultDesc + ","
-                        + Environment.NewLine;
-                }
-                file.WriteLine(value);
+                using StreamWriter file = new(dialog.FileName, true, Encoding.UTF8);
+                WriteHistoryCsv(file, ViewResults);
                 ImageSource bitmapSource = ImageView.ImageShow.Source;
                 ImageUtils.SaveImageSourceToFile(bitmapSource, Path.Combine( Path.GetDirectoryName(dialog.FileName),Path.GetFileNameWithoutExtension(dialog.FileName) + ".png"));
             }
         }
 
+        internal static void WriteHistoryCsv(TextWriter writer, IEnumerable<ViewResultAlg> results)
+        {
+            (string Header, Func<ViewResultAlg, string?> Value)[] columns =
+            [
+                (Properties.Resources.SerialNumber1, static result => result.Id.ToString(CultureInfo.InvariantCulture)),
+                (Properties.Resources.CreateTime, static result => result.CreateTime?.ToString(CultureInfo.CurrentCulture)),
+                ("ResultType", static result => result.ResultType.ToString()),
+                ("ResultDesc", static result => result.ResultDesc),
+                (Properties.Resources.File, static result => result.FilePath),
+                (Properties.Resources.Template, static result => result.POITemplateName),
+                ("img_result", static result => result.ResultImagFile),
+                (Properties.Resources.Duration, static result => result.TotalTime.ToString(CultureInfo.InvariantCulture)),
+                (Properties.Resources.BatchNumber, static result => result.Batch)
+            ];
+
+            using var csv = new CsvHelper.CsvWriter(writer, CultureInfo.InvariantCulture, leaveOpen: true);
+            foreach (var column in columns)
+                csv.WriteField(column.Header);
+            csv.NextRecord();
+            foreach (var result in results)
+            {
+                foreach (var column in columns)
+                    csv.WriteField(column.Value(result));
+                csv.NextRecord();
+            }
+        }
+
         public void AddAlgResultMasterModel(AlgResultMasterModel result)
         {
-            if (!_isDisposed && result != null)
+            if (!_isDisposed && Device?.ViewRegistration.IsVisible != false && result != null)
             {
                 if (_viewResults.ContainsId(result.Id)) return;
                 EnsureInitialized();
@@ -268,6 +275,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
             if (_isDisposed
                 || Device == null
                 || Device.IsDisposed
+                || !Device.ViewRegistration.IsVisible
                 || !string.Equals(message.DeviceCode, Device.Config.Code, StringComparison.Ordinal)
                 || masterIdValue == null)
                 return;
@@ -283,6 +291,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
             if (_isDisposed
                 || Device == null
                 || Device.IsDisposed
+                || !Device.ViewRegistration.IsVisible
                 || (!isLocalFlow && message.Route != ResultRoutes.Algorithm)
                 || message.ResultKind != ResultKinds.Algorithm
                 || (!isLocalFlow && !string.Equals(message.DeviceCode, Device.Config.Code, StringComparison.Ordinal)))
@@ -293,7 +302,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
 
         private void ShowPersistedResult(int masterId)
         {
-            if (_isDisposed || Device == null || Device.IsDisposed || masterId <= 0) return;
+            if (_isDisposed || Device == null || Device.IsDisposed || !Device.ViewRegistration.IsVisible || masterId <= 0) return;
             AlgResultMasterModel? model = AlgResultMasterDao.Instance.GetById(masterId);
             if (model == null)
             {
@@ -304,7 +313,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
             log.Debug($"FileUrl：{model.ImgFile}");
             Application.Current?.Dispatcher.BeginInvoke(() =>
             {
-                if (!_isDisposed && !Device.IsDisposed)
+                if (!_isDisposed && !Device.IsDisposed && Device.ViewRegistration.IsVisible)
                     AddAlgResultMasterModel(model);
             });
         }
@@ -388,9 +397,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
 
         private void GridSplitter_DragCompleted1(object sender, DragCompletedEventArgs e)
         {
-            var listView = IsExchange ? listView1 : listViewSide;
-
-            listView.Width = ListCol2.ActualWidth;
+            listViewSide.Width = ListCol2.ActualWidth;
             SideTextBox.Width = ListCol2.ActualWidth;
             ListCol1.Width = new GridLength(1, GridUnitType.Star);
             ListCol2.Width = GridLength.Auto;
@@ -399,8 +406,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
         {
             if (ListRow2.ActualHeight > 32)
             {
-                var listView = !IsExchange ? listView1 : listViewSide;
-                listView.Height = ListRow2.ActualHeight - 32;
+                listView1.Height = ListRow2.ActualHeight - 32;
                 ListRow2.Height = GridLength.Auto;
                 ListRow1.Height = new GridLength(1, GridUnitType.Star);
 
@@ -416,40 +422,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
             if (sender is ContextMenu contextMenu && listViewSide.View is GridView gridView && LeftGridViewColumnVisibilitys.Count ==0)
                 GridViewColumnVisibility.GenContentMenuGridViewColumnZero(contextMenu, gridView.Columns, LeftGridViewColumnVisibilitys);
         }
-        bool IsExchange;
-        private void Exchange_Click(object sender, RoutedEventArgs e)
-        {
-            IsExchange = !IsExchange;
-            var listD = IsExchange ? listView1 : listViewSide;
-            var listL = IsExchange ? listViewSide : listView1;
-            if (listD.Parent is Grid parent1 && listL.Parent is Grid parent2 )
-            {
-                var tempCol = Grid.GetColumn(listD);
-                var tempRow = Grid.GetRow(listD);   
-
-                var tempCol1 = Grid.GetColumn(listL);
-                var tempRow1 = Grid.GetRow(listL);
-
-                parent1.Children.Remove(listD);
-                parent2.Children.Remove(listL);
-
-                parent1.Children.Add(listL);
-                parent2.Children.Add(listD);
-
-                Grid.SetColumn(listD, tempCol1);
-                Grid.SetRow(listD, tempRow1);
-
-                Grid.SetColumn(listL, tempCol);
-                Grid.SetRow(listL, tempRow);
-
-
-                listD.Width = listL.ActualWidth;
-                listL.Height = listD.ActualHeight;
-                listD.Height = double.NaN;
-                listL.Width = double.NaN;
-            }
-        }
-
         public void SideSave(ViewResultAlg result,string selectedPath)
         {
             EnsureInitialized();
@@ -538,18 +510,17 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
             var query = db.Queryable<AlgResultMasterModel>();
             query = query.OrderBy(x => x.Id, Config.OrderByType);
             var dbList = Config.Count > 0 ? query.Take(Config.Count).ToList() : query.ToList();
-            foreach (var item in dbList)
-            {
-                ViewResultAlg ViewResultAlg = new ViewResultAlg(item);
-                _viewResults.QueryResults.Add(ViewResultAlg);
-            }
+            _viewResults.QueryResults.AddRange(AlgorithmResultHistory.CreateViews(dbList, MySqlSetting.IsConnect ? db : null));
         }
 
         private void SearchAdvanced_Click(object sender, RoutedEventArgs e)
         {
             var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
 
-            GenericQuery<AlgResultMasterModel, ViewResultAlg> genericQuery = new GenericQuery<AlgResultMasterModel, ViewResultAlg>(Db, _viewResults.QueryResults, t => new ViewResultAlg(t));
+            GenericQuery<AlgResultMasterModel, ViewResultAlg> genericQuery = new(Db, _viewResults.QueryResults, t => new ViewResultAlg(t))
+            {
+                BatchConverter = rows => AlgorithmResultHistory.CreateViews(rows, MySqlSetting.IsConnect ? Db : null)
+            };
             GenericQueryWindow genericQueryWindow = new GenericQueryWindow(genericQuery) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }; ;
             genericQueryWindow.ShowDialog();
             Db.Dispose();

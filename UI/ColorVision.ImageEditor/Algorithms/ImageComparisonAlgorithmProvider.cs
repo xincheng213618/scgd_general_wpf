@@ -129,10 +129,16 @@ namespace ColorVision.ImageEditor.Algorithms
             ReadOnlySpan<byte> right = candidate.Data.Span;
             double[] differences = new double[4];
             long floatArtifactOverflowCount = 0;
+            bool metricsOnly = requestedOutputs == ImageComparisonArtifactOutputs.None;
+            var samplingBounds = region.GetSamplingBounds(reference);
+            int minimumX = metricsOnly ? samplingBounds.MinimumX : 0;
+            int minimumY = metricsOnly ? samplingBounds.MinimumY : 0;
+            int maximumXExclusive = metricsOnly ? samplingBounds.MaximumXExclusive : reference.Width;
+            int maximumYExclusive = metricsOnly ? samplingBounds.MaximumYExclusive : reference.Height;
 
-            for (int y = 0; y < reference.Height; y++)
+            for (int y = minimumY; y < maximumYExclusive; y++)
             {
-                if ((y & 15) == 0)
+                if (y == minimumY || (y & 15) == 0)
                 {
                     cancellationToken.ThrowIfCancellationRequested();
                     context.Progress?.Report(new AlgorithmProgress(0.05 + 0.75 * y / Math.Max(1, reference.Height), "comparison.scan"));
@@ -142,7 +148,7 @@ namespace ColorVision.ImageEditor.Algorithms
                 int absoluteRow = y * exactStride;
                 int signedRow = y * signedStride;
                 int visualRow = y * visualStride;
-                for (int x = 0; x < reference.Width; x++)
+                for (int x = minimumX; x < maximumXExclusive; x++)
                 {
                     bool inRegion = region.Contains(x, y);
                     bool displayInvalid = false;

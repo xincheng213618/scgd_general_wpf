@@ -3,9 +3,9 @@ knowledge_id: "operations.camera-configuration"
 knowledge_type: "topic"
 status: "current"
 summary: "相机参数的编辑入口、同步覆盖与保存；CameraID统一以物理配置为准，搜索保存身份并同步逻辑镜像，路径移动失败或被拒绝不等于取消路径变更。"
-aliases: ["曝光","增益","相机参数","相机配置被覆盖","ROI","三通道曝光","ConfigCamera","ConfigPhyCamera","DisplayCameraConfig","CameraRunParam","ApplyTo","IsExpThree","LocalVideoRoi","includeCameraId","本地相机ID","应用设置","相机数据路径","光心","畸变光心","十字寻引"]
+aliases: ["曝光","增益","相机参数","相机配置被覆盖","ROI","三通道曝光","ConfigCamera","ConfigPhyCamera","DisplayCameraConfig","CameraRunParam","ApplyTo","IsExpThree","LocalVideoRoi","includeCameraId","本地相机ID","逻辑相机绑定","相机数据路径","光心","畸变光心","十字寻引"]
 code_paths: ["Engine/ColorVision.Engine/Services/Devices/Camera/Configs/ConfigCamera.cs","Engine/ColorVision.Engine/Services/Devices/Camera/DeviceCamera.cs","Engine/ColorVision.Engine/Services/Devices/Camera/DisplayCamera.xaml.cs","Engine/ColorVision.Engine/Services/Devices/Camera/EditCamera.xaml","Engine/ColorVision.Engine/Services/Devices/Camera/EditCamera.xaml.cs","Engine/ColorVision.Engine/Services/Devices/Camera/Templates/CameraRunParam/CameraRunParam.cs","Engine/ColorVision.Engine/Services/PhyCameras/Configs/ConfigPhyCamera.cs","Engine/ColorVision.Engine/Services/PhyCameras/Configs/PhyCameraCfg.cs","Engine/ColorVision.Engine/Services/PhyCameras/EditConfigPhyCamera.xaml.cs","Engine/ColorVision.Engine/Services/PhyCameras/InfoPhyCamera.xaml","Engine/ColorVision.Engine/Services/PhyCameras/PhyCamera.cs","Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalCameraNode.cs","Engine/ColorVision.Engine/FlowProcessing/Editor/FlowNodeContextMenuService.cs","Engine/ColorVision.Engine/FlowProcessing/Editor/CameraNodeCreationDefaults.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/DeviceCameraAssociationTests.cs","Test/ColorVision.UI.Tests/LocalCameraSessionTests.cs","Test/ColorVision.UI.Tests/CameraRunParamTests.cs","Test/ColorVision.UI.Tests/ConfigPhyCameraApplyTests.cs","Test/ColorVision.UI.Tests/CameraNodeCreationDefaultsTests.cs","Test/ColorVision.UI.Tests/CameraOpticalCenterTests.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/FlowExecutionEditingTests.cs","Test/ColorVision.UI.Tests/DeviceCameraAssociationTests.cs","Test/ColorVision.UI.Tests/LocalCameraSessionTests.cs","Test/ColorVision.UI.Tests/CameraRunParamTests.cs","Test/ColorVision.UI.Tests/ConfigPhyCameraApplyTests.cs","Test/ColorVision.UI.Tests/CameraNodeCreationDefaultsTests.cs","Test/ColorVision.UI.Tests/CameraOpticalCenterTests.cs"]
 related: ["operations.camera","operations.physical-camera","operations.device-configuration"]
 ---
 
@@ -26,7 +26,7 @@ related: ["operations.camera","operations.physical-camera","operations.device-co
 
 ## 编辑入口与物理配置同步
 
-编辑物理参数时，在“物理相机管理”选择目标相机，点击详情区的“修改配置”；编辑逻辑服务时使用该逻辑相机的 `EditCommand`，此入口要求管理员权限。逻辑配置窗口的“应用设置”把所选物理参数带入编辑副本，“提交”才把副本复制回服务并保存。两者都可能影响绑定服务，确认前先核对逻辑 `Code` 与物理 `CameraCode`。
+编辑物理参数时，在“物理相机管理”选择目标相机，再点击详情区的“修改配置”。编辑逻辑服务时使用该逻辑相机的 `EditCommand`，此入口要求管理员权限。逻辑配置窗口选择物理相机后，自动将其参数带入编辑副本。点击“提交”时核对逻辑 `Code` 与物理 `CameraCode`，提交后才保存绑定。
 
 `ConfigPhyCamera.ApplyTo(ConfigCamera)` 复制通道、CFW、电机、模式、型号、采集模式、位深和曝光上下限。`includeCameraId` 默认 `true`，逻辑相机的 `CameraID` 是物理配置的兼容镜像；`includeCameraType` 默认 `true`。它不复制物理 `CameraCfg`、文件服务配置或显示端当前曝光/增益。
 
@@ -34,7 +34,7 @@ related: ["operations.camera","operations.physical-camera","operations.device-co
 
 | 调用位置 | `CameraID` | `CameraType` |
 | --- | --- | --- |
-| 逻辑配置窗口选择物理相机或“应用设置” | 同步所选物理相机 ID，同时更新 `CameraCode` | 保留，显式传 `false` |
+| 逻辑配置窗口选择物理相机 | 同步所选物理相机 ID，同时更新 `CameraCode` | 保留，显式传 `false` |
 | `DeviceCamera.Save()` | 同步所绑定物理相机的 ID，同一绑定也修复旧逻辑 ID | 从物理配置同步 |
 | 物理配置保存触发 `PhyCameraConfigChanged` | 从物理配置同步 | 从物理配置同步 |
 | 其它调用显式传 `includeCameraId: true` | 从物理配置同步 | 取决于 `includeCameraType` |
@@ -43,9 +43,11 @@ related: ["operations.camera","operations.physical-camera","operations.device-co
 
 显式搜索在当前配置库保存已匹配物理相机的 ID，再同步相同存储中绑定它的相机与校准设备；只更新身份字段，不调用设备 `Save()`、物理参数 `ConfigChanged` 或服务重启，也不重置曝光、增益或校正配置。逻辑配置保留 `CameraID` 字段以兼容旧协议，不能作为独立身份来源。搜索不创建尚未配置的相机、不清空未发现相机的 ID，失败诊断中的重新检测也不写配置。
 
-提交按钮先检查是否允许切换物理绑定，再把 `EditCamera` 的配置克隆复制回服务，调用一次 `DeviceCamera.Save()`，按 `CameraCode` 重新关联并以表中规则同步，随后执行[数据库保存与服务重启](./configuration.md)。保存完成才关闭窗口；失败时显示原始错误并记录日志。当前相机仍由本地会话、视频或服务占用时，切换会明确提示先关闭相机，编辑副本不写回当前配置；保存同一物理绑定不受这项限制。窗口选择列表仅包含尚未关联逻辑相机，或关联相机 `Name` 与当前设备相同的物理对象；这个界面过滤不能视为全局唯一绑定校验。
+提交设备配置改动时先检查是否允许切换物理绑定，再将编辑副本写回，按 `CameraCode` 重新关联并执行[数据库保存与服务重启](./configuration.md)。只修改“使用本地相机”时，提交将偏好保存到本机显示配置。关闭窗口会放弃未提交的改动。相机仍由本地会话、视频或服务占用时，切换绑定会提示先关闭相机。窗口选择列表仅包含尚未关联逻辑相机，或关联相机 `Name` 与当前设备相同的物理对象。全局唯一绑定须单独核对。
 
 当物理相机执行 `SaveConfig()` 时，`ConfigChanged` 会触发绑定设备的 `DeviceCamera.PhyCameraConfigChanged`：再次 `ApplyTo`，将显示端 `Gain` 重置为 `GainDefault`，将 `ExpTime` 和 R/G/B 三项都重置为 `ExpDefalut`，然后 `Save()`。所以“刚调好的曝光被改回”应先检查物理配置保存和绑定事件，不应立即判成 UI 没保存。
+
+旧逻辑配置中的 `ZBDebayer` 随配置读取和保存。远程相机服务仍使用该字段选择部分 LV→BV 采集路径的去马赛克方式。
 
 ## 曝光、通道与模板的区别
 
@@ -59,11 +61,15 @@ related: ["operations.camera","operations.physical-camera","operations.device-co
 
 `CameraRunParam.SetAllExposure(value)` 同时写四个曝光字段；`LocalCameraNode.BuildCameraParameters()` 用它构造节点参数，并拒绝非有限/非正曝光、非有限/负增益以及小于 1 的平均次数。这是该节点的检查，不能扩展成所有配置入口都有同样数值校验。改参数模板、显示面板和节点字段是三件不同的事。
 
-流程编辑器右键新建 L/BV、CV、本地“相机取图”和三个直接填写参数的 AOI 相机节点时，会从节点对应逻辑相机的当前显示配置读取一次曝光、翻转、平均次数、增益和所选校正模板。CV 节点保留 R/G/B 三路曝光；其余节点使用单路 `ExpTime`。若校正模板绑定的校正组指定增益，以组增益作为初值。节点设备代码还是默认占位值且找不到同名相机时，使用首个可用的逻辑相机并写入其设备代码；没有可用相机或源参数无效时保留节点原有默认值。已保存流程的加载、复制、导入、拖拽及 Copilot 加节点不执行这次同步；创建后更改手动面板也不会回写已有节点。通用/模板型相机和循环取图节点继续按自身的模板或循环参数运行。
+流程编辑器右键新建 L/BV、CV、本地“相机取图”和三个直接填写参数的 AOI 相机节点时，会从节点对应逻辑相机的当前显示配置读取一次曝光、翻转、平均次数、增益和所选校正模板。CV 节点保留 R/G/B 三路曝光；其余节点使用单路 `ExpTime`。若校正模板绑定的校正组指定增益，以组增益作为初值。节点设备代码还是默认占位值且找不到同名相机时，使用首个可用的逻辑相机并写入其设备代码；没有可用相机或源参数无效时保留节点原有默认值。已保存流程的加载、复制、导入和拖拽不执行这次同步；创建后更改手动面板也不会回写已有节点。通用/模板型相机和循环取图节点继续按自身的模板或循环参数运行。
+
+Copilot 加节点默认保留节点构造初值；只有显式要求继承当前相机设置时才读取同一组参数。预览与审批展示实际生效的参数，应用时再次核对，来源已变化或没有有效相机时拒绝添加，须重新预览。选项和指纹协议见[Flow 图语义与受保护编辑](../../02-developer-guide/core-concepts/copilot-agent-tool-contracts.md#flow-图语义与受保护编辑)。
 
 ## 两种 ROI 与物理保存约束
 
-物理 ROI 是 `ConfigPhyCamera.CameraCfg` 的 `PointX / PointY / Width / Height`（经 `PhyCameraCfg.ROI` 编辑）；`DisplayCameraConfig.LocalVideoRoi` 则用于实时分析/画面 ROI，由 `ApplyLocalVideoRoiToRealtimeConfig` 传给实时配置，不等于修改传感器采集 ROI。
+物理 ROI 由 `ConfigPhyCamera.CameraCfg` 的 `PointX / PointY / Width / Height` 定义，经 `PhyCameraCfg.ROI` 编辑。`DisplayCameraConfig.LocalVideoRoi` 按逻辑相机保存画面坐标，预览会话独立持有该 ROI 和当前翻转。主面板和本地相机窗口按当前翻转显示画面，清晰度与十字引导共用画面到原始帧的 ROI 换算。未选区域时使用整帧。
+
+本地取图生成的内存帧沿用相机成功打开时提交的物理 ROI。即时校正和流程中的后续本地校正都据此定位校正图，连接期间编辑配置不会改变已采集帧的区域。保存到 CVRAW 后，重新导入也可使用这份采集记录。
 
 `EditConfigPhyCamera` 使用配置克隆和独立的 CFW 编辑副本。确认时，对 `HK_USB / HK_CARD / HK_FG_CARD` 检查物理 ROI 宽高是否按 `PhyCameraCfg.HkRoiAlignment`（32）对齐。未对齐时显示当前值和未对齐项，询问是否继续保存，默认选择“否”；选择“是”按原值继续保存，选择“否”或关闭提示则停留在配置窗口。此提示不强制调整 ROI，也不包含所有型号/坐标合法性检查，不应宣称每个保存入口都执行了它。
 

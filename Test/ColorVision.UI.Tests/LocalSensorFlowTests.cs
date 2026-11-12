@@ -98,7 +98,7 @@ public sealed class LocalSensorFlowTests
             WpfTestHost.Invoke(() =>
             {
                 previousConfig = ColorVision.UI.ConfigService.Instance;
-                ColorVision.UI.ConfigService.SetInstance(new ColorVision.UI.ConfigHandler { IsAutoSave = false });
+                TestEnvironment.SetConfig(new ColorVision.UI.ConfigHandler { IsAutoSave = false });
                 var manager = (ServiceManager)RuntimeHelpers.GetUninitializedObject(typeof(ServiceManager));
                 manager.DeviceServices = [];
                 managerField.SetValue(null, manager);
@@ -175,7 +175,7 @@ public sealed class LocalSensorFlowTests
                 device?.Dispose();
                 managerField.SetValue(null, previousManager);
                 if (device != null) DisplayConfigManager.Instance.Configs.TryRemove(device.Code, out _);
-                if (previousConfig != null) ColorVision.UI.ConfigService.SetInstance(previousConfig);
+                if (previousConfig != null) TestEnvironment.SetConfig(previousConfig);
             });
         }
     }

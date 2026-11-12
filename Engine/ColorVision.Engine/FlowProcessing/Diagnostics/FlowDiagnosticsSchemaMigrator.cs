@@ -30,6 +30,16 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
 
             if (db.CurrentConnectionConfig.DbType == DbType.Sqlite)
             {
+                db.Ado.ExecuteCommand($"""
+                    CREATE INDEX IF NOT EXISTS idx_flow_run_normalized_key_id
+                    ON FlowRunRecord ({FlowRunIdentitySql.TrimmedKey("flow_key")} COLLATE BINARY, id DESC);
+                    """);
+                db.Ado.ExecuteCommand("""
+                    CREATE INDEX IF NOT EXISTS idx_flow_node_record_completed_end
+                    ON FlowNodeRecord (node_id, end_time DESC)
+                    WHERE end_time IS NOT NULL AND elapsed_ms > 0;
+                    """);
+
                 // FlowParam.Id is reorderable, so the old TemplateId+hash
                 // uniqueness rule cannot remain authoritative once FlowKey is
                 // available. The non-unique lookup index is created by

@@ -1,4 +1,5 @@
 using ColorVision.Common.MVVM;
+using ColorVision.Engine.Templates.Flow;
 using ColorVision.UI;
 using Newtonsoft.Json;
 using System.ComponentModel.DataAnnotations;
@@ -14,8 +15,23 @@ namespace ColorVision.Engine.FlowProcessing.PostProcess
         public string Name { get => _Name; set { _Name = value; OnPropertyChanged(); } }
         private string _Name;
 
-        public string TemplateName { get => _TemplateName; set { _TemplateName = value; OnPropertyChanged(); OnPropertyChanged(nameof(ExecutionOrder)); } }
+        public string TemplateName
+        {
+            get => _TemplateName;
+            set
+            {
+                _TemplateName = value;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(TemplateDisplayName));
+                OnPropertyChanged(nameof(ExecutionOrder));
+            }
+        }
         private string _TemplateName;
+        internal string? FlowKey { get; set; }
+
+        [JsonIgnore]
+        public string TemplateDisplayName => FlowKey == null ? TemplateName : TemplateFlow.Params.FirstOrDefault(template =>
+            string.Equals(template.Value.FlowKey, FlowKey, System.StringComparison.Ordinal))?.Key ?? TemplateName;
 
         /// <summary>
         /// Gets or sets user-defined tag/label for this batch process.
@@ -49,6 +65,7 @@ namespace ColorVision.Engine.FlowProcessing.PostProcess
             set 
             { 
                 _PostProcessor = value; 
+                if (value != null) HasUnreadableConfiguration = false;
                 _cachedMetadata = null; // Clear cache when process changes
                 OnPropertyChanged(); 
                 OnPropertyChanged(nameof(ProcessTypeName)); 
@@ -62,9 +79,17 @@ namespace ColorVision.Engine.FlowProcessing.PostProcess
         private IPostProcessor _PostProcessor;
 
         private PostProcessMetadata? _cachedMetadata;
+        internal string? PersistedProcessorTypeFullName { get; init; }
+        internal bool HasUnreadableConfiguration { get; private set; }
+
+        internal void MarkUnreadableConfiguration()
+        {
+            HasUnreadableConfiguration = true;
+            PostProcessor = null!;
+        }
 
         public string ProcessTypeName => PostProcessor?.GetType().Name ?? string.Empty;
-        public string ProcessTypeFullName => PostProcessor?.GetType().FullName ?? string.Empty;
+        public string ProcessTypeFullName => PostProcessor?.GetType().FullName ?? PersistedProcessorTypeFullName ?? string.Empty;
 
         /// <summary>
         /// Gets a value indicating whether this batch process has a configurable config.
@@ -117,7 +142,7 @@ namespace ColorVision.Engine.FlowProcessing.PostProcess
 
         /// <summary>
         /// Gets the execution order of this process within its flow template.
-        /// This shows the order in which processes with the same TemplateName will be executed.
+        /// This shows the order in which processes bound to the same template will be executed.
         /// </summary>
         [JsonIgnore]
         public string ExecutionOrder
@@ -129,7 +154,9 @@ namespace ColorVision.Engine.FlowProcessing.PostProcess
                     return string.Empty;
 
                 var sameTemplateItems = manager.ProcessMetas
-                    .Where(m => string.Equals(m.TemplateName, TemplateName, System.StringComparison.OrdinalIgnoreCase))
+                    .Where(meta => FlowKey == null
+                        ? meta.FlowKey == null && string.Equals(meta.TemplateName, TemplateName, System.StringComparison.OrdinalIgnoreCase)
+                        : string.Equals(meta.FlowKey, FlowKey, System.StringComparison.Ordinal))
                     .ToList();
 
                 if (sameTemplateItems.Count <= 1)
@@ -168,13 +195,17 @@ namespace ColorVision.Engine.FlowProcessing.PostProcess
         /// Gets the display name from metadata (falls back to type name if no metadata).
         /// </summary>
         [JsonIgnore]
-        public string ProcessDisplayName => Metadata.DisplayName;
+        public string ProcessDisplayName => HasUnreadableConfiguration
+            ? EngineLocalization.Get("Flow_PostProcess_InvalidConfiguration")
+            : Metadata.DisplayName;
 
         /// <summary>
         /// Gets the description from metadata.
         /// </summary>
         [JsonIgnore]
-        public string ProcessDescription => Metadata.Description;
+        public string ProcessDescription => HasUnreadableConfiguration
+            ? EngineLocalization.Get("Flow_PostProcess_InvalidConfigurationHint")
+            : Metadata.Description;
 
         /// <summary>
         /// Gets the category from metadata.

@@ -3,6 +3,9 @@ using ColorVision.Common.MVVM;
 using ColorVision.Database;
 using ColorVision.UI;
 using ProjectARVRPro.Exports;
+using ProjectARVRPro.Exports.Lux;
+using ProjectARVRPro.ImageExport;
+using ProjectARVRPro.Process.Uniformity;
 using SqlSugar;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
@@ -92,9 +95,34 @@ namespace ProjectARVRPro
             {
                 _IsSaveImageReuslt = value;
                 OnPropertyChanged();
+                OnPropertyChanged(nameof(ShowResultImageFileNameTemplate));
             }
         }
         private bool _IsSaveImageReuslt;
+
+        [DisplayName("标记图按流程模板名称命名"), Category("标记图")]
+        [Description("开启后使用标记图文件名模板。同一目录中同名图片会被覆盖。")]
+        [PropertyVisibility(nameof(IsSaveImageReuslt))]
+        public bool UseFlowNameForResultImage
+        {
+            get => _UseFlowNameForResultImage;
+            set
+            {
+                _UseFlowNameForResultImage = value;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(ShowResultImageFileNameTemplate));
+            }
+        }
+        private bool _UseFlowNameForResultImage;
+
+        [DisplayName("标记图文件名模板"), Category("标记图")]
+        [Description("填写不含扩展名的文件名，支持 {FlowName}（流程模板名）和 {SN}（序列号）。例如 {FlowName} 或 {SN}_{FlowName}。")]
+        [PropertyVisibility(nameof(ShowResultImageFileNameTemplate))]
+        public string ResultImageFileNameTemplate { get => _ResultImageFileNameTemplate; set { _ResultImageFileNameTemplate = value ?? string.Empty; OnPropertyChanged(); } }
+        private string _ResultImageFileNameTemplate = ProjectImageExportService.DefaultResultFileNameTemplate;
+
+        [Browsable(false), Newtonsoft.Json.JsonIgnore]
+        public bool ShowResultImageFileNameTemplate => IsSaveImageReuslt && UseFlowNameForResultImage;
 
         [Browsable(false), EditorBrowsable(EditorBrowsableState.Never)]
         [Newtonsoft.Json.JsonIgnore]
@@ -167,9 +195,34 @@ namespace ProjectARVRPro
                 OnPropertyChanged(nameof(ShowSourceFormatWithBmp));
                 OnPropertyChanged(nameof(ShowSourceFormatWithoutBmp));
                 OnPropertyChanged(nameof(ShowSourceTiffCompression));
+                OnPropertyChanged(nameof(ShowSourceImageFileNameTemplate));
             }
         }
         private bool _IsSaveSourceImage;
+
+        [DisplayName("原图按流程模板名称命名"), Category("原图")]
+        [Description("开启后使用原图文件名模板。同一目录中同名图片会被覆盖。")]
+        [PropertyVisibility(nameof(IsSaveSourceImage))]
+        public bool UseFlowNameForSourceImage
+        {
+            get => _UseFlowNameForSourceImage;
+            set
+            {
+                _UseFlowNameForSourceImage = value;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(ShowSourceImageFileNameTemplate));
+            }
+        }
+        private bool _UseFlowNameForSourceImage;
+
+        [DisplayName("原图文件名模板"), Category("原图")]
+        [Description("填写不含扩展名的文件名，支持 {FlowName}（流程模板名）和 {SN}（序列号）。例如 {FlowName}_source。")]
+        [PropertyVisibility(nameof(ShowSourceImageFileNameTemplate))]
+        public string SourceImageFileNameTemplate { get => _SourceImageFileNameTemplate; set { _SourceImageFileNameTemplate = value ?? string.Empty; OnPropertyChanged(); } }
+        private string _SourceImageFileNameTemplate = ProjectImageExportService.DefaultSourceFileNameTemplate;
+
+        [Browsable(false), Newtonsoft.Json.JsonIgnore]
+        public bool ShowSourceImageFileNameTemplate => IsSaveSourceImage && UseFlowNameForSourceImage;
 
         [Browsable(false)]
         public SourceImageFormat SourceExportFormat
@@ -282,26 +335,69 @@ namespace ProjectARVRPro
         public bool UseLegacyARVROutput { get => _UseLegacyARVROutput; set { _UseLegacyARVROutput = value; OnPropertyChanged(); } }
         private bool _UseLegacyARVROutput;
 
-        [DisplayName("保存客户 XLSX 报表"), Category("客制化输出")]
-        [Description("启用后，测试完成时会在标准CSV之外追加输出指定客户格式的XLSX")]
-        public bool IsSaveCustomXlsx { get => _IsSaveCustomXlsx; set { _IsSaveCustomXlsx = value; OnPropertyChanged(); } }
+        [DisplayName("保存客户报表"), Category("客制化输出")]
+        [Description("启用后按所选客户格式输出XLSX或CSV；LUX格式按SN保存并更新同一个文件")]
+        public bool IsSaveCustomXlsx
+        {
+            get => _IsSaveCustomXlsx;
+            set
+            {
+                _IsSaveCustomXlsx = value;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(ShowCustomProjectName));
+                OnPropertyChanged(nameof(ShowLuxMtfFormat));
+                OnPropertyChanged(nameof(ShowLuxLuminanceUniformityFormat));
+            }
+        }
         private bool _IsSaveCustomXlsx;
 
         [DisplayName("报表格式"), Category("客制化输出")]
         [PropertyVisibility(nameof(IsSaveCustomXlsx))]
         [Description("选择需要追加输出的客户表格格式")]
-        public CustomTestResultOutputProfile CustomOutputProfile { get => _CustomOutputProfile; set { _CustomOutputProfile = value; OnPropertyChanged(); } }
+        public CustomTestResultOutputProfile CustomOutputProfile
+        {
+            get => _CustomOutputProfile;
+            set
+            {
+                _CustomOutputProfile = value;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(ShowCustomProjectName));
+                OnPropertyChanged(nameof(ShowLuxMtfFormat));
+                OnPropertyChanged(nameof(ShowLuxLuminanceUniformityFormat));
+            }
+        }
         private CustomTestResultOutputProfile _CustomOutputProfile = CustomTestResultOutputProfile.金星1_0光机抽检规格_视彩成像色度计;
 
+        [Newtonsoft.Json.JsonIgnore, Browsable(false)]
+        public bool ShowCustomProjectName => IsSaveCustomXlsx && !CustomTestResultExportService.IsLuxProfile(CustomOutputProfile);
+
+        [Newtonsoft.Json.JsonIgnore, Browsable(false)]
+        public bool ShowLuxMtfFormat => IsSaveCustomXlsx && CustomOutputProfile == CustomTestResultOutputProfile.LUX_Legacy_CSV;
+
+        [DisplayName("MTF 点位格式"), Category("客制化输出")]
+        [PropertyVisibility(nameof(ShowLuxMtfFormat))]
+        [Description("058 使用 0F/0.5F/0.8F；048 使用 0F/0.4F/0.8F。应与当前项目的 MTF 点位约定一致。")]
+        public LuxMtfPointFormat LuxMtfFormat { get => _luxMtfFormat; set { _luxMtfFormat = value; OnPropertyChanged(); } }
+        private LuxMtfPointFormat _luxMtfFormat = LuxMtfPointFormat.Mtf058;
+
+        [Newtonsoft.Json.JsonIgnore, Browsable(false)]
+        public bool ShowLuxLuminanceUniformityFormat => IsSaveCustomXlsx && CustomTestResultExportService.IsLuxProfile(CustomOutputProfile);
+
+        [DisplayName("亮度均匀性格式"), Category("客制化输出")]
+        [PropertyVisibility(nameof(ShowLuxLuminanceUniformityFormat))]
+        [Description("切换 LUX 客户 CSV 中 W255 亮度均匀性的数值与限值倍率。项目名和单位沿用所选报表格式。")]
+        public UniformityDisplayFormat LuxLuminanceUniformityFormat { get => _luxLuminanceUniformityFormat; set { _luxLuminanceUniformityFormat = value; OnPropertyChanged(); } }
+        private UniformityDisplayFormat _luxLuminanceUniformityFormat = UniformityDisplayFormat.Percentage;
+
         [DisplayName("报表项目名称"), Category("客制化输出")]
-        [PropertyVisibility(nameof(IsSaveCustomXlsx))]
+        [PropertyVisibility(nameof(ShowCustomProjectName))]
         [Description("用于生成每天汇总XLSX文件名，例如 2026-5-21TestResults+ProjectARVRPro.xlsx")]
         public string CustomXlsxProjectName { get => _CustomXlsxProjectName; set { _CustomXlsxProjectName = value; OnPropertyChanged(); } }
         private string _CustomXlsxProjectName = "ProjectARVRPro";
 
         [DisplayName("报表保存目录"), PropertyEditorType(typeof(TextSelectFolderPropertiesEditor)), Category("客制化输出")]
         [PropertyVisibility(nameof(IsSaveCustomXlsx))]
-        [Description("客制化XLSX的输出文件夹。留空时默认使用CSV保存路径")]
+        [Description("客户XLSX或CSV的输出文件夹。留空时默认使用结果输出目录；LUX格式在这里保存C_<SN>.csv")]
         public string CustomXlsxSavePath { get => _CustomXlsxSavePath; set { _CustomXlsxSavePath = value; OnPropertyChanged(); } }
         private string _CustomXlsxSavePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "ARVR");
 

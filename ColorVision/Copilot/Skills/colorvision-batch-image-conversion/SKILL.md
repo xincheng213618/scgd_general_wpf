@@ -11,7 +11,7 @@ CVRAW and CVCIE are proprietary ColorVision formats. They must be decoded by Col
 
 - Direct conversion or explicit image-algorithm request: call `ConvertBatchImages` with the exact approved files or directories. For an algorithm, also pass its stable Catalog ID or compatibility alias and only parameters from that descriptor's schema.
 - Explicit Python, CMD, PowerShell, CLI, or reusable-script request: create a wrapper that invokes `ColorVision.exe` with the CLI contract below. Do not substitute `ExecuteMenu`, `OpenBatchImageProcessing`, or a generated decoder.
-- Interactive request: call `OpenBatchImageProcessing` only when the user asks to open the UI or needs manual algorithm/options configuration.
+- Interactive request: call `OpenBatchImageProcessing` only when the user asks to open the UI or needs manual algorithm/options configuration. If the user specified authorized inputs, pass them in `sources` to prefill the window; directory `recursive` defaults to false. This only appends inputs to an idle window and does not start processing or replace existing output/algorithm settings. Keep the directory roots so the user can preserve folder structure.
 
 ## ColorVision.exe CLI contract
 

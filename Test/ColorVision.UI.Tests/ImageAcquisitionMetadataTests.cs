@@ -17,6 +17,93 @@ namespace ColorVision.UI.Tests;
 /// <summary>Protects persisted acquisition provenance independently of measurement and legacy payload readers.</summary>
 public sealed class ImageAcquisitionMetadataTests
 {
+    [Theory]
+    [InlineData(CVFileSaveMode.Synchronous)]
+    [InlineData(CVFileSaveMode.MemoryOnly)]
+    public void RejectedCaptureMetadataDoesNotReplaceThePreviousRawImage(CVFileSaveMode saveMode)
+    {
+        string path = Path.Combine(Path.GetTempPath(), $"cv-capture-replace-{Guid.NewGuid():N}.cvraw");
+        bool previousCache = CVFileReadCache.IsEnabled;
+        try
+        {
+            CVFileReadCache.IsEnabled = true;
+            using CVCIEFile raw = RawColorCalibrationTests.CreateRaw(3, 2, 16, 1);
+            Assert.True(CVFileUtil.WriteCVRaw(path, raw, saveMode));
+            CameraFileMetadata.Save(path, CameraFileMetadata.AcquisitionKind, new ImageAcquisitionRecord { NdPort = 17 });
+            byte[] original = ReadBytes(path);
+            using LocalFlowFrame frame = LocalFlowFrame.Allocate(new LocalFrameMetadata
+            {
+                Width = 3, Height = 2, SourceBpp = 16, Channels = 1, Exposure = [2],
+                Acquisition = new ImageAcquisitionRecord { NdPort = 18 }
+            }, raw.Data.Length, 0);
+            using (LocalFlowFrameLease lease = frame.Acquire()) Marshal.Copy(raw.Data, 0, lease.RawPointer, raw.Data.Length);
+            frame.ColorCalibration = new ColorCalibrationSnapshot { Width = 3, Height = 2, RawBpp = 16, Channels = 1, TransformKind = 2 };
+
+            Assert.Throws<InvalidDataException>(() => LocalFrameFileService.SaveCapture(frame, path, saveMode));
+
+            Assert.Equal(original, ReadBytes(path));
+            if (saveMode == CVFileSaveMode.Synchronous) Assert.Equal(original, File.ReadAllBytes(path));
+            Assert.Empty(frame.CvRawFilePath);
+        }
+        finally
+        {
+            CVFileReadCache.IsEnabled = previousCache;
+            File.Delete(path);
+        }
+
+        static byte[] ReadBytes(string path)
+        {
+            using Stream stream = CVFileReadCache.OpenRead(path);
+            using MemoryStream bytes = new();
+            stream.CopyTo(bytes);
+            return bytes.ToArray();
+        }
+    }
+
+    [Theory]
+    [InlineData(CVFileSaveMode.Synchronous, false)]
+    [InlineData(CVFileSaveMode.Synchronous, true)]
+    [InlineData(CVFileSaveMode.MemoryOnly, true)]
+    public void LocalFlowLoadBorrowsOneRawSnapshotForPixelsAndRecords(CVFileSaveMode saveMode, bool initiallyCached)
+    {
+        string path = Path.Combine(Path.GetTempPath(), $"cv-flow-snapshot-{Guid.NewGuid():N}.cvraw");
+        bool previousCache = CVFileReadCache.IsEnabled;
+        try
+        {
+            CVFileReadCache.IsEnabled = initiallyCached;
+            const int width = 1025, height = 513;
+            using CVCIEFile raw = RawColorCalibrationTests.CreateRaw(width, height, 16, 1);
+            Assert.True(CVFileUtil.WriteCVRaw(path, raw, saveMode));
+            new ColorCalibrationSnapshot
+            {
+                Width = width, Height = height, RawBpp = 16, Channels = 1, TransformKind = 2,
+                Coefficients = [2, 0, 0, 0, 0, 0, 0, 0, 0], Exposure = [1, 1, 1], Template = "snapshot"
+            }.Save(path, canReplay: true);
+            CameraFileMetadata.Save(path, CameraFileMetadata.AcquisitionKind, new ImageAcquisitionRecord { NdPort = 17 });
+            CVFileReadCache.IsEnabled = true;
+            Assert.Equal(initiallyCached, CVFileReadCache.GetCachedLength(path).HasValue);
+            long before = CVFileReadCache.GetSnapshot().HitCount;
+
+            using LocalFlowFrame frame = LocalFrameFileService.Load(path);
+
+            Assert.Equal(initiallyCached ? 1 : 0, CVFileReadCache.GetSnapshot().HitCount - before);
+            Assert.NotNull(CVFileReadCache.GetCachedLength(path));
+            Assert.Equal("snapshot", frame.ColorCalibration?.Template);
+            Assert.Equal(17, frame.Metadata.Acquisition?.NdPort);
+            using LocalFlowFrameLease lease = frame.Acquire();
+            Assert.Equal(raw.Data.Length, lease.RawLength);
+            byte[] actual = new byte[lease.RawLength];
+            Marshal.Copy(lease.RawPointer, actual, 0, actual.Length);
+            Assert.Equal(raw.Data, actual);
+            Assert.Equal(saveMode == CVFileSaveMode.Synchronous, File.Exists(path));
+        }
+        finally
+        {
+            CVFileReadCache.IsEnabled = previousCache;
+            File.Delete(path);
+        }
+    }
+
     [Fact]
     public void BasicCalibrationProvenanceBelongsToSavedOutputAndDoesNotRelabelUnmodifiedInput()
     {
@@ -69,6 +156,7 @@ public sealed class ImageAcquisitionMetadataTests
             var acquisition = new ImageAcquisitionRecord
             {
                 OpticalCenter = new(1.25, 0),
+                SensorRoi = new(2, 3, 3, 2),
                 Camera = new() { DeviceName = "相机一", DeviceCode = "DEV.Camera.1", CameraId = "CAM-123", Model = "HK_USB" },
                 CapturedUtc = new DateTime(2026, 10, 23, 0, 1, 2, DateTimeKind.Utc),
                 Width = 3, Height = 2, BitsPerChannel = 16, Channels = 3,
@@ -93,6 +181,7 @@ public sealed class ImageAcquisitionMetadataTests
             using LocalFlowFrame reopened = LocalFrameFileService.Load(path);
             Assert.Equal("CAM-123", reopened.Metadata.Acquisition!.Camera!.CameraId);
             Assert.Equal(acquisition.OpticalCenter, reopened.Metadata.Acquisition.OpticalCenter);
+            Assert.Equal(acquisition.SensorRoi, reopened.Metadata.Acquisition.SensorRoi);
             Assert.Equal(acquisition.CapturedUtc, reopened.Metadata.Acquisition.CapturedUtc);
             Assert.Equal(4, reopened.Metadata.Acquisition.NdPort);
             Assert.Equal(new float[] { 10, 20, 30 }, reopened.Metadata.Acquisition.Exposure);
@@ -118,6 +207,7 @@ public sealed class ImageAcquisitionMetadataTests
                 Assert.True(ColorVisionTiffParameters.TryRead(pixels.Metadata as BitmapMetadata, out var exported));
                 Assert.Equal("CAM-123", exported!.Acquisition!.Camera!.CameraId);
                 Assert.Equal(acquisition.OpticalCenter, exported.Acquisition.OpticalCenter);
+                Assert.Equal(acquisition.SensorRoi, exported.Acquisition.SensorRoi);
                 var config = new ImageViewConfig();
                 Opentif.ApplyColorVisionMetadata(config, exported);
                 Assert.Equal(1.25, config.GetProperties<double>("ColorVision.Camera.OpticalCenterX"));

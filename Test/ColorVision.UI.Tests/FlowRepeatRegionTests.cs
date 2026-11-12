@@ -111,7 +111,7 @@ public sealed class FlowRepeatRegionTests
                 window.UpdateLayout();
                 Assert.Equal(2, editor.GetNodeGroups().Length);
                 SaveImage(window, "repeat-regions.png");
-                using var menus = new FlowNodeContextMenuService(editor, new FlowExecutionNavigator(editor), () => { });
+                using var menus = new FlowNodeContextMenuService(editor, new FlowExecutionNavigator(editor));
                 var menu = new ContextMenu();
                 typeof(FlowNodeContextMenuService).GetMethod("AddRepeatMenuItems", BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(menus, new object?[] { menu.Items, nodes[0] });
                 MenuItem remove = menu.Items.OfType<MenuItem>().Single(item => Equals(item.Header, FlowRepeatRegion.Text("取消重复框")));

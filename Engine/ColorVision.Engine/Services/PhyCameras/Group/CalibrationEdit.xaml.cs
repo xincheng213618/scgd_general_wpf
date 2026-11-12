@@ -8,7 +8,6 @@ using ColorVision.Engine.Services.PhyCameras.Calibration.Editing;
 using ColorVision.Engine.Services.Types;
 using ColorVision.UI.Authorizations;
 using ColorVision.Themes;
-using SqlSugar;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -43,7 +42,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
         public GroupResource Group { get; }
         public ObservableCollection<CalibrationResource> Resources { get; }
         public string Title { get; }
-        public string FileStatus => SelectedResource == null ? "未配置" : SelectedResource.IsValid ? "本机存在" : "本机缺失";
+        public string FileStatus => SelectedResource == null ? EngineLocalization.Get("未配置") : SelectedResource.IsValid ? EngineLocalization.Get("本机存在") : EngineLocalization.Get("本机缺失");
         public bool CanCorrect => slot.ServiceType == ServiceTypes.LumFourColor;
 
         public CalibrationResource? SelectedResource
@@ -218,13 +217,13 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
 
         private void CreateCalibration_Click(object sender, RoutedEventArgs e)
         {
-            if (sender is not Button button || !AccessControl.Check(PermissionMode.Administrator)) return;
+            if (sender is not Button button || !ServiceAuthorization.Can("calibration.write", PhyCamera.SysResourceModel)) return;
             if (ListView1.SelectedItem is not GroupResource group)
             {
-                MessageBox.Show(this, "请先选择或添加校正组。", Properties.Resources.CalibrationFileManagement);
+                MessageBox.Show(this, EngineLocalization.Get("请先选择或添加校正组。"), Properties.Resources.CalibrationFileManagement);
                 return;
             }
-            var menu = new ContextMenu();
+            var menu = new ContextMenu { FontFamily = FontFamily, FontSize = FontSize };
             foreach (var slot in CalibrationSlotDefinitions.AllSlots)
             {
                 var item = new MenuItem { Header = CalibrationSlotPresentation.GetTitle(slot.Key) };
@@ -236,8 +235,8 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
 
         private void CreateCalibrationRow_Click(object sender, RoutedEventArgs e)
         {
-            if (sender is not Button button || button.DataContext is not CalibrationEditRow row || !AccessControl.Check(PermissionMode.Administrator)) return;
-            var menu = new ContextMenu();
+            if (sender is not Button button || button.DataContext is not CalibrationEditRow row || !ServiceAuthorization.Can("calibration.write", row.Group.SysResourceModel)) return;
+            var menu = new ContextMenu { FontFamily = FontFamily, FontSize = FontSize };
             AddCreationChoices(menu.Items, CalibrationSlotDefinitions.ByKey[row.SlotKey], row.Group);
             menu.PlacementTarget = button; menu.Placement = PlacementMode.Bottom; menu.IsOpen = true;
         }
@@ -246,20 +245,20 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
         {
             if (CalibrationCreationWindow.SupportsType(slot.ServiceType.ToCalibrationType()))
             {
-                var measured = new MenuItem { Header = "从原始图像生成…" };
+                var measured = new MenuItem { Header = EngineLocalization.Get("从原始图像生成…") };
                 measured.Click += (_, _) => CreateCalibration(slot, group, measured: true);
                 items.Add(measured);
             }
             if (CalibrationResource.SupportsTextEditing(slot.ServiceType))
             {
-                var manual = new MenuItem { Header = "手工填写参数…" };
+                var manual = new MenuItem { Header = EngineLocalization.Get("手工填写参数…") };
                 manual.Click += (_, _) => CreateCalibration(slot, group, measured: false);
                 items.Add(manual);
             }
             if (items.Count == 0)
             {
-                items.Add(new MenuItem { Header = "需先取得实测响应表；可导入后编辑", IsEnabled = false });
-                items.Add(new MenuItem { Header = "导入已有文件…", Command = group.UploadCalibrationItemCommand, CommandParameter = slot.Key });
+                items.Add(new MenuItem { Header = EngineLocalization.Get("需先取得实测响应表；可导入后编辑"), IsEnabled = false });
+                items.Add(new MenuItem { Header = EngineLocalization.Get("导入已有文件…"), Command = group.UploadCalibrationItemCommand, CommandParameter = slot.Key });
             }
         }
 
@@ -286,11 +285,11 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
                 if (createdPath == null) return;
                 if (group.ImportCalibrationFile(slot.Key, createdPath) == null) return;
                 ShowGroup(group);
-                MessageBox.Show(this, $"已创建并选用于校正组「{group.Name}」的{CalibrationSlotPresentation.GetTitle(slot.Key)}。", Properties.Resources.CalibrationFileManagement, MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show(this, EngineLocalization.Format($"已创建并选用于校正组「{group.Name}」的{CalibrationSlotPresentation.GetTitle(slot.Key)}。"), Properties.Resources.CalibrationFileManagement, MessageBoxButton.OK, MessageBoxImage.Information);
             }
             catch (Exception ex)
             {
-                MessageBox.Show(this, ex.Message, "创建或登记校正失败", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(this, ex.Message, EngineLocalization.Get("创建或登记校正失败"), MessageBoxButton.OK, MessageBoxImage.Warning);
             }
         }
 
@@ -312,6 +311,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
 
         private void Button_Add_Click(object sender, RoutedEventArgs e)
         {
+            if (!ServiceAuthorization.Can("calibration.write", PhyCamera.SysResourceModel)) return;
             string calue = NewCreateFileName("title");
             var group = GroupResource.AddGroupResource(PhyCamera, calue);
             if (group == null)
@@ -336,27 +336,26 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
         {
             if (ListView1.SelectedItems.Count > 0)
             {
-                // Create a SysDictionaryModDetaiModels to hold the items to be removed
-                List<GroupResource> itemsToRemove = new List<GroupResource>();
-                using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
-
-                foreach (var selectedItem in ListView1.SelectedItems)
+                var itemsToRemove = ListView1.SelectedItems.OfType<GroupResource>().ToArray();
+                if (itemsToRemove.Any(item => !item.CanDelete))
                 {
-                    GroupResource groupResource = selectedItem as GroupResource;
-                    if (groupResource != null)
+                    MessageBox.Show(this, EngineLocalization.Get("当前权限不足，无法删除此资源。"), "ColorVision");
+                    return;
+                }
+                try
+                {
+                    foreach (var item in itemsToRemove)
                     {
-                        Db.Deleteable<SysResourceModel>().Where(it => it.Id == groupResource.SysResourceModel.Id).ExecuteCommand();
-                        itemsToRemove.Add(groupResource);
+                        item.Delete();
+                        groupResources.Remove(item);
+                        PhyCamera.VisualChildren.Remove(item);
                     }
                 }
-
-                // Remove the items from the original SysDictionaryModDetaiModels and the visual children
-                foreach (var item in itemsToRemove)
+                catch (AccessDeniedException)
                 {
-                    groupResources.Remove(item);
-                    PhyCamera.VisualChildren.Remove(item);
+                    MessageBox.Show(this, EngineLocalization.Get("当前权限不足，无法删除此资源。"), "ColorVision");
+                    return;
                 }
-
                 MessageBox.Show(Properties.Resources.DeleteSucceeded);
             }
             else
@@ -368,6 +367,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
         private void Window_Closed(object sender, EventArgs e)
         {
             PhyCamera.VisualChildren.CollectionChanged -= CameraChildrenChanged;
+            if (!ServiceAuthorization.Can("calibration.write", PhyCamera.SysResourceModel)) return;
             foreach (var item in groupResources)
             {
                 item.Save();
@@ -406,7 +406,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
                  zipFilePath = saveFileDialog.FileName;
             }
 
-            SetExporting(true, "正在准备导出…");
+            SetExporting(true, EngineLocalization.Get("正在准备导出…"));
             await Dispatcher.Yield(DispatcherPriority.Background);
 
             try

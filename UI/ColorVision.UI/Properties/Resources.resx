@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <root>
   <!-- 
 		Microsoft ResX Schema
@@ -145,10 +145,10 @@
     <value>语言(_L)</value>
   </data>
   <data name="Language" xml:space="preserve">
-    <value>用户界面语言</value>
+    <value>语言</value>
   </data>
   <data name="LanguageDescription" xml:space="preserve">
-    <value>选择界面显示语言，跟随系统时使用系统语言。</value>
+    <value>应用界面语言</value>
   </data>  <data name="HotKeys" xml:space="preserve">
     <value>快捷键</value>
   </data>  <data name="MenuExit" xml:space="preserve">
@@ -626,12 +626,18 @@
   <data name="DisableSystemProxyForUpdatesDescription" xml:space="preserve">
     <value>开启后，更新检查和插件市场请求将直接连接公网服务；关闭时使用 Windows 系统代理。修改后从下一次请求生效。</value>
   </data>
-  <data name="SettingsSectionAppearance" xml:space="preserve"><value>外观与语言</value></data>
+  <data name="UpdateServerUrls" xml:space="preserve">
+    <value>更新服务器地址</value>
+  </data>
+  <data name="UpdateServerUrlsDescription" xml:space="preserve">
+    <value>留空使用官方服务器。填写一个跳板地址（如 http://192.168.1.20:9998）时，优先用官方服务器，失败时用跳板。手动检查更新会重新选路。完全隔离时可填写离线文件夹（如 D:\CVUpdates 或 \\server\share\CVUpdates）。多个来源用分号分隔，按填写顺序尝试。</value>
+  </data>
+  <data name="SettingsSectionAppearance" xml:space="preserve"><value>界面</value></data>
   <data name="SettingsSectionUpdates" xml:space="preserve"><value>更新与网络</value></data>
   <data name="SettingsSectionDiagnostics" xml:space="preserve"><value>日志与诊断</value></data>
   <data name="CommandOtherActions" xml:space="preserve"><value>其他操作</value></data>
   <data name="StartupTheme" xml:space="preserve"><value>启动页主题</value></data>
-  <data name="StartupThemeDescription" xml:space="preserve"><value>选择启动页的颜色主题，下次启动生效。</value></data>
+  <data name="StartupThemeDescription" xml:space="preserve"><value>下次启动生效。</value></data>
   <data name="StartupThemeDark" xml:space="preserve"><value>深色</value></data>
   <data name="StartupThemeLight" xml:space="preserve"><value>浅色</value></data>
   <data name="StartupThemeFollowApplication" xml:space="preserve"><value>跟随软件主题</value></data>
@@ -690,7 +696,7 @@
     <value>暂无控制项</value>
   </data>
   <data name="DisplayControlVisibilityHint" xml:space="preserve">
-    <value>隐藏仅影响设备控制栏，设备和流程仍可正常运行。</value>
+    <value>隐藏会关闭对应详情页并暂停该页的自动保存；设备连接和流程继续运行。重启保持隐藏，重新显示恢复页面。</value>
   </data>
   <data name="DisplayControlCreateGroup" xml:space="preserve">
     <value>新建分组</value>
@@ -726,7 +732,7 @@
     <value>移动到分组</value>
   </data>
   <data name="DisplayControlVisibilityTooltip" xml:space="preserve">
-    <value>在设备控制栏中显示或隐藏</value>
+    <value>同时显示或隐藏设备控制项及对应详情页</value>
   </data>
   <data name="DisplayControlPinTooltip" xml:space="preserve">
     <value>在所属分组内置顶或取消置顶</value>
@@ -960,4 +966,23 @@
   <data name="选择参数查看路径。未提供字段说明时，仍可编辑现有参数。" xml:space="preserve">
     <value>选择参数查看路径。未提供字段说明时，仍可编辑现有参数。</value>
   </data>
+  <data name="Appearance" xml:space="preserve"><value>外观</value></data>
+  <data name="AppearanceMode" xml:space="preserve"><value>模式</value></data>
+  <data name="AppearanceVisualStyle" xml:space="preserve"><value>视觉风格</value></data>
+  <data name="AppearanceThemeColors" xml:space="preserve"><value>主题</value></data>
+  <data name="AppearancePreset" xml:space="preserve"><value>主题</value></data>
+  <data name="Codex" xml:space="preserve"><value>简约（Codex）</value></data>
+  <data name="Warm" xml:space="preserve"><value>暖色</value></data>
+  <data name="AppearanceAccent" xml:space="preserve"><value>强调色</value></data>
+  <data name="AppearanceBackground" xml:space="preserve"><value>背景</value></data>
+  <data name="AppearanceForeground" xml:space="preserve"><value>文字</value></data>
+  <data name="AppearanceFont" xml:space="preserve"><value>字体</value></data>
+  <data name="AppearanceSystemFont" xml:space="preserve"><value>系统</value></data>
+  <data name="AppearanceReset" xml:space="preserve"><value>重置</value></data>
+  <data name="AppearanceRestoreDefaults" xml:space="preserve"><value>恢复默认</value></data>
+  <data name="AppearanceHexColor" xml:space="preserve"><value>十六进制颜色</value></data>
+  <data name="SearchLanguages" xml:space="preserve"><value>搜索语言</value></data>
+  <data name="AppearanceDefault" xml:space="preserve"><value>ColorVision（默认）</value></data>
+  <data name="LanguageAutoDetect" xml:space="preserve"><value>自动检测</value></data>
+  <data name="SettingsConfiguration" xml:space="preserve"><value>配置</value></data>
 </root>

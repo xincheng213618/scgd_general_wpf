@@ -1,0 +1,170 @@
+<!doctype html>
+<!-- Generated from docs/04-api-reference/algorithms/templates/find-light-area.md by npm run docs:help. Do not edit generated files. -->
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
+  <title>发光区定位原理 - ColorVision</title>
+  <link rel="stylesheet" href="algorithm-help.css">
+
+</head>
+<body>
+  <div class="help-layout">
+    <nav class="help-toc" aria-label="本文目录">
+      <p>本文目录</p>
+      <a href="#algorithm-principles">发光区定位原理</a>
+      <a class="toc-sub" href="#luminous-steps">工作步骤与坐标</a>
+      <a href="#配置本地发光区定位-v2">配置本地发光区定位(V2)</a>
+      <a class="toc-sub" href="#图像来源与格式">图像来源与格式</a>
+      <a class="toc-sub" href="#回写-poi-保存模板">回写 POI 保存模板</a>
+      <a class="toc-sub" href="#结果提交与失败状态">结果提交与失败状态</a>
+      <a href="#robustv2-的结果判据">RobustV2 的结果判据</a>
+    </nav>
+    <main class="help-content">
+      <p class="help-kicker">ColorVision · 算法原理 · 离线说明</p>
+      <article><h2 id="algorithm-principles" tabindex="-1">发光区定位原理 <a class="header-anchor" href="#algorithm-principles" aria-label="Permalink to &quot;发光区定位原理 {#algorithm-principles}&quot;">&ZeroWidthSpace;</a></h2>
+<p>本地发光区定位 V2 用 <code>RobustV2</code> 从当前图像寻找有四边证据支持的发光区域，输出原图中的 <strong>LT、RT、RB、LB</strong> 四个几何角点。它不测量亮度均匀性或视场角，也不需要检测参数模板；成功四角可交给后续 FOV、布点和搜索区域使用。</p>
+<figure class="algorithm-figure" style="overflow-x:auto">
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 320" role="img" aria-labelledby="luminous-principle-title luminous-principle-desc" style="display:block;min-width:720px;width:100%;height:auto;color:#1f2937">
+    <title id="luminous-principle-title">发光区从候选到四角的工作过程</title>
+    <desc id="luminous-principle-desc">输入原图中限定搜索区域，多尺度阈值产生候选四边形，沿四边用卡尺采样并鲁棒拟合，最后检查逐边证据和总置信度，输出原图坐标 LT、RT、RB、LB。</desc>
+    <defs><marker id="luminous-flow-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 Z" fill="#64748b" /></marker></defs>
+    <g fill="currentColor" font-family="Segoe UI,Microsoft YaHei,sans-serif" font-size="16">
+      <text x="25" y="29">输入图像与搜索区域</text>
+      <text x="355" y="29">由粗到精定位</text>
+      <text x="655" y="29">原图中的四角</text>
+    </g>
+    <rect x="20" y="46" width="270" height="210" fill="#f8fafc" stroke="#94a3b8" />
+    <rect x="53" y="69" width="205" height="160" fill="none" stroke="#64748b" stroke-dasharray="6 5" />
+    <polygon points="80,85 234,99 223,197 89,211" fill="#e8f2ff" stroke="#2175d9" stroke-width="2" />
+    <g stroke="#d38b25" stroke-width="2"><path d="M108 76 L105 102 M145 79 L142 105 M182 84 L179 110 M225 126 L247 128 M221 158 L242 160 M116 193 L119 219 M159 189 L162 215 M80 122 L102 120 M82 162 L104 160" /></g>
+    <g fill="currentColor" font-family="Segoe UI,Microsoft YaHei,sans-serif" font-size="14"><text x="30" y="282">灰虚框限定 ROI，输出仍为原图坐标</text></g>
+    <rect x="335" y="75" width="215" height="60" rx="6" fill="#f1f5f9" stroke="#94a3b8" />
+    <rect x="335" y="179" width="215" height="60" rx="6" fill="#f1f5f9" stroke="#94a3b8" />
+    <g fill="currentColor" font-family="Segoe UI,Microsoft YaHei,sans-serif" font-size="16" text-anchor="middle"><text x="442" y="101">多尺度与多阈值</text><text x="442" y="123">寻找候选四边形</text><text x="442" y="205">沿四边卡尺取样</text><text x="442" y="227">鲁棒拟合边线与求交</text></g>
+    <g fill="none" stroke="#64748b" stroke-width="2" marker-end="url(#luminous-flow-arrow)"><path d="M291 112 L328 105" /><path d="M442 139 L442 172" /><path d="M556 207 L609 166" /></g>
+    <polygon points="650,95 842,80 854,221 624,212" fill="#e8f2ff" stroke="#2175d9" stroke-width="2" />
+    <g fill="#2175d9"><circle cx="650" cy="95" r="5" /><circle cx="842" cy="80" r="5" /><circle cx="854" cy="221" r="5" /><circle cx="624" cy="212" r="5" /></g>
+    <g fill="currentColor" font-family="Segoe UI,Microsoft YaHei,sans-serif" font-size="16"><text x="630" y="80">LT</text><text x="838" y="64">RT</text><text x="849" y="245">RB</text><text x="602" y="236">LB</text><text x="625" y="282">逐边证据与总置信度均须通过</text></g>
+  </svg>
+  <figcaption>卡尺提供沿边的明暗边缘证据，四条拟合边线的交点形成最终四角。</figcaption>
+</figure>
+<h3 id="luminous-steps" tabindex="-1">工作步骤与坐标 <a class="header-anchor" href="#luminous-steps" aria-label="Permalink to &quot;工作步骤与坐标 {#luminous-steps}&quot;">&ZeroWidthSpace;</a></h3>
+<ol>
+<li>借用上游图像，确认方向变换已经完成，再解析整图或指定搜索区域。</li>
+<li>归一化图像，在多尺度、多阈值候选中寻找四边形。</li>
+<li>沿粗边用卡尺采样和鲁棒直线拟合细化边界。</li>
+<li>检查角点几何、逐边证据和总置信度；通过后还原为原图坐标。</li>
+<li>按需回写已有 POI 模板，随后提交本次算法结果，供后续节点引用。</li>
+</ol>
+<p>ROI 只限定搜索范围。若 ROI 内的局部角点为 <mjx-container class="MathJax" jax="SVG" style="direction: ltr; position: relative;"><svg style="overflow: visible; min-height: 1px; min-width: 1px; vertical-align: -0.375ex;" xmlns="http://www.w3.org/2000/svg" width="4.881ex" height="1.92ex" role="img" focusable="false" viewBox="0 -683 2157.6 848.6" aria-hidden="true"><g stroke="currentColor" fill="currentColor" stroke-width="0" transform="scale(1,-1)"><g data-mml-node="math"><g data-mml-node="msub"><g data-mml-node="mi"><path data-c="1D443" d="M287 628Q287 635 230 637Q206 637 199 638T192 648Q192 649 194 659Q200 679 203 681T397 683Q587 682 600 680Q664 669 707 631T751 530Q751 453 685 389Q616 321 507 303Q500 302 402 301H307L277 182Q247 66 247 59Q247 55 248 54T255 50T272 48T305 46H336Q342 37 342 35Q342 19 335 5Q330 0 319 0Q316 0 282 1T182 2Q120 2 87 2T51 1Q33 1 33 11Q33 13 36 25Q40 41 44 43T67 46Q94 46 127 49Q141 52 146 61Q149 65 218 339T287 628ZM645 554Q645 567 643 575T634 597T609 619T560 635Q553 636 480 637Q463 637 445 637T416 636T404 636Q391 635 386 627Q384 621 367 550T332 412T314 344Q314 342 395 342H407H430Q542 342 590 392Q617 419 631 471T645 554Z" style="stroke-width: 3;"/></g><g data-mml-node="TeXAtom" transform="translate(675,-150) scale(0.707)" data-mjx-texclass="ORD"><g data-mml-node="mi"><path data-c="1D445" d="M230 637Q203 637 198 638T193 649Q193 676 204 682Q206 683 378 683Q550 682 564 680Q620 672 658 652T712 606T733 563T739 529Q739 484 710 445T643 385T576 351T538 338L545 333Q612 295 612 223Q612 212 607 162T602 80V71Q602 53 603 43T614 25T640 16Q668 16 686 38T712 85Q717 99 720 102T735 105Q755 105 755 93Q755 75 731 36Q693 -21 641 -21H632Q571 -21 531 4T487 82Q487 109 502 166T517 239Q517 290 474 313Q459 320 449 321T378 323H309L277 193Q244 61 244 59Q244 55 245 54T252 50T269 48T302 46H333Q339 38 339 37T336 19Q332 6 326 0H311Q275 2 180 2Q146 2 117 2T71 2T50 1Q33 1 33 10Q33 12 36 24Q41 43 46 45Q50 46 61 46H67Q94 46 127 49Q141 52 146 61Q149 65 218 339T287 628Q287 635 230 637ZM630 554Q630 586 609 608T523 636Q521 636 500 636T462 637H440Q393 637 386 627Q385 624 352 494T319 361Q319 360 388 360Q466 361 492 367Q556 377 592 426Q608 449 619 486T630 554Z" style="stroke-width: 3;"/></g><g data-mml-node="mi" transform="translate(759,0)"><path data-c="1D442" d="M740 435Q740 320 676 213T511 42T304 -22Q207 -22 138 35T51 201Q50 209 50 244Q50 346 98 438T227 601Q351 704 476 704Q514 704 524 703Q621 689 680 617T740 435ZM637 476Q637 565 591 615T476 665Q396 665 322 605Q242 542 200 428T157 216Q157 126 200 73T314 19Q404 19 485 98T608 313Q637 408 637 476Z" style="stroke-width: 3;"/></g><g data-mml-node="mi" transform="translate(1522,0)"><path data-c="1D43C" d="M43 1Q26 1 26 10Q26 12 29 24Q34 43 39 45Q42 46 54 46H60Q120 46 136 53Q137 53 138 54Q143 56 149 77T198 273Q210 318 216 344Q286 624 286 626Q284 630 284 631Q274 637 213 637H193Q184 643 189 662Q193 677 195 680T209 683H213Q285 681 359 681Q481 681 487 683H497Q504 676 504 672T501 655T494 639Q491 637 471 637Q440 637 407 634Q393 631 388 623Q381 609 337 432Q326 385 315 341Q245 65 245 59Q245 52 255 50T307 46H339Q345 38 345 37T342 19Q338 6 332 0H316Q279 2 179 2Q143 2 113 2T65 2T43 1Z" style="stroke-width: 3;"/></g></g></g></g></g></svg><mjx-assistive-mml unselectable="on" display="inline" style="top: 0px; left: 0px; clip: rect(1px, 1px, 1px, 1px); -webkit-touch-callout: none; -webkit-user-select: none; -khtml-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none; position: absolute; padding: 1px 0px 0px 0px; border: 0px; display: block; width: auto; overflow: hidden;"><math xmlns="http://www.w3.org/1998/Math/MathML"><msub><mi>P</mi><mrow data-mjx-texclass="ORD"><mi>R</mi><mi>O</mi><mi>I</mi></mrow></msub></math></mjx-assistive-mml></mjx-container>，ROI 左上角为 <mjx-container class="MathJax" jax="SVG" style="direction: ltr; position: relative;"><svg style="overflow: visible; min-height: 1px; min-width: 1px; vertical-align: -0.566ex;" xmlns="http://www.w3.org/2000/svg" width="7.144ex" height="2.262ex" role="img" focusable="false" viewBox="0 -750 3157.8 1000" aria-hidden="true"><g stroke="currentColor" fill="currentColor" stroke-width="0" transform="scale(1,-1)"><g data-mml-node="math"><g data-mml-node="mo"><path data-c="28" d="M94 250Q94 319 104 381T127 488T164 576T202 643T244 695T277 729T302 750H315H319Q333 750 333 741Q333 738 316 720T275 667T226 581T184 443T167 250T184 58T225 -81T274 -167T316 -220T333 -241Q333 -250 318 -250H315H302L274 -226Q180 -141 137 -14T94 250Z" style="stroke-width: 3;"/></g><g data-mml-node="msub" transform="translate(389,0)"><g data-mml-node="mi"><path data-c="1D465" d="M52 289Q59 331 106 386T222 442Q257 442 286 424T329 379Q371 442 430 442Q467 442 494 420T522 361Q522 332 508 314T481 292T458 288Q439 288 427 299T415 328Q415 374 465 391Q454 404 425 404Q412 404 406 402Q368 386 350 336Q290 115 290 78Q290 50 306 38T341 26Q378 26 414 59T463 140Q466 150 469 151T485 153H489Q504 153 504 145Q504 144 502 134Q486 77 440 33T333 -11Q263 -11 227 52Q186 -10 133 -10H127Q78 -10 57 16T35 71Q35 103 54 123T99 143Q142 143 142 101Q142 81 130 66T107 46T94 41L91 40Q91 39 97 36T113 29T132 26Q168 26 194 71Q203 87 217 139T245 247T261 313Q266 340 266 352Q266 380 251 392T217 404Q177 404 142 372T93 290Q91 281 88 280T72 278H58Q52 284 52 289Z" style="stroke-width: 3;"/></g><g data-mml-node="mn" transform="translate(605,-150) scale(0.707)"><path data-c="30" d="M96 585Q152 666 249 666Q297 666 345 640T423 548Q460 465 460 320Q460 165 417 83Q397 41 362 16T301 -15T250 -22Q224 -22 198 -16T137 16T82 83Q39 165 39 320Q39 494 96 585ZM321 597Q291 629 250 629Q208 629 178 597Q153 571 145 525T137 333Q137 175 145 125T181 46Q209 16 250 16Q290 16 318 46Q347 76 354 130T362 333Q362 478 354 524T321 597Z" style="stroke-width: 3;"/></g></g><g data-mml-node="mo" transform="translate(1397.6,0)"><path data-c="2C" d="M78 35T78 60T94 103T137 121Q165 121 187 96T210 8Q210 -27 201 -60T180 -117T154 -158T130 -185T117 -194Q113 -194 104 -185T95 -172Q95 -168 106 -156T131 -126T157 -76T173 -3V9L172 8Q170 7 167 6T161 3T152 1T140 0Q113 0 96 17Z" style="stroke-width: 3;"/></g><g data-mml-node="msub" transform="translate(1842.2,0)"><g data-mml-node="mi"><path data-c="1D466" d="M21 287Q21 301 36 335T84 406T158 442Q199 442 224 419T250 355Q248 336 247 334Q247 331 231 288T198 191T182 105Q182 62 196 45T238 27Q261 27 281 38T312 61T339 94Q339 95 344 114T358 173T377 247Q415 397 419 404Q432 431 462 431Q475 431 483 424T494 412T496 403Q496 390 447 193T391 -23Q363 -106 294 -155T156 -205Q111 -205 77 -183T43 -117Q43 -95 50 -80T69 -58T89 -48T106 -45Q150 -45 150 -87Q150 -107 138 -122T115 -142T102 -147L99 -148Q101 -153 118 -160T152 -167H160Q177 -167 186 -165Q219 -156 247 -127T290 -65T313 -9T321 21L315 17Q309 13 296 6T270 -6Q250 -11 231 -11Q185 -11 150 11T104 82Q103 89 103 113Q103 170 138 262T173 379Q173 380 173 381Q173 390 173 393T169 400T158 404H154Q131 404 112 385T82 344T65 302T57 280Q55 278 41 278H27Q21 284 21 287Z" style="stroke-width: 3;"/></g><g data-mml-node="mn" transform="translate(523,-150) scale(0.707)"><path data-c="30" d="M96 585Q152 666 249 666Q297 666 345 640T423 548Q460 465 460 320Q460 165 417 83Q397 41 362 16T301 -15T250 -22Q224 -22 198 -16T137 16T82 83Q39 165 39 320Q39 494 96 585ZM321 597Q291 629 250 629Q208 629 178 597Q153 571 145 525T137 333Q137 175 145 125T181 46Q209 16 250 16Q290 16 318 46Q347 76 354 130T362 333Q362 478 354 524T321 597Z" style="stroke-width: 3;"/></g></g><g data-mml-node="mo" transform="translate(2768.8,0)"><path data-c="29" d="M60 749L64 750Q69 750 74 750H86L114 726Q208 641 251 514T294 250Q294 182 284 119T261 12T224 -76T186 -143T145 -194T113 -227T90 -246Q87 -249 86 -250H74Q66 -250 63 -250T58 -247T55 -238Q56 -237 66 -225Q221 -64 221 250T66 725Q56 737 55 738Q55 746 60 749Z" style="stroke-width: 3;"/></g></g></g></svg><mjx-assistive-mml unselectable="on" display="inline" style="top: 0px; left: 0px; clip: rect(1px, 1px, 1px, 1px); -webkit-touch-callout: none; -webkit-user-select: none; -khtml-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none; position: absolute; padding: 1px 0px 0px 0px; border: 0px; display: block; width: auto; overflow: hidden;"><math xmlns="http://www.w3.org/1998/Math/MathML"><mo stretchy="false">(</mo><msub><mi>x</mi><mn>0</mn></msub><mo>,</mo><msub><mi>y</mi><mn>0</mn></msub><mo stretchy="false">)</mo></math></mjx-assistive-mml></mjx-container>，输出为：</p>
+<mjx-container tabindex="0" class="MathJax" jax="SVG" display="true" style="direction: ltr; display: block; text-align: center; margin: 1em 0; position: relative;"><svg style="overflow: visible; min-height: 1px; min-width: 1px; vertical-align: -0.667ex;" xmlns="http://www.w3.org/2000/svg" width="23.76ex" height="2.364ex" role="img" focusable="false" viewBox="0 -750 10502 1045" aria-hidden="true"><g stroke="currentColor" fill="currentColor" stroke-width="0" transform="scale(1,-1)"><g data-mml-node="math"><g data-mml-node="msub"><g data-mml-node="mi"><path data-c="1D443" d="M287 628Q287 635 230 637Q206 637 199 638T192 648Q192 649 194 659Q200 679 203 681T397 683Q587 682 600 680Q664 669 707 631T751 530Q751 453 685 389Q616 321 507 303Q500 302 402 301H307L277 182Q247 66 247 59Q247 55 248 54T255 50T272 48T305 46H336Q342 37 342 35Q342 19 335 5Q330 0 319 0Q316 0 282 1T182 2Q120 2 87 2T51 1Q33 1 33 11Q33 13 36 25Q40 41 44 43T67 46Q94 46 127 49Q141 52 146 61Q149 65 218 339T287 628ZM645 554Q645 567 643 575T634 597T609 619T560 635Q553 636 480 637Q463 637 445 637T416 636T404 636Q391 635 386 627Q384 621 367 550T332 412T314 344Q314 342 395 342H407H430Q542 342 590 392Q617 419 631 471T645 554Z" style="stroke-width: 3;"/></g><g data-mml-node="TeXAtom" transform="translate(675,-150) scale(0.707)" data-mjx-texclass="ORD"><g data-mml-node="mi"><path data-c="1D456" d="M184 600Q184 624 203 642T247 661Q265 661 277 649T290 619Q290 596 270 577T226 557Q211 557 198 567T184 600ZM21 287Q21 295 30 318T54 369T98 420T158 442Q197 442 223 419T250 357Q250 340 236 301T196 196T154 83Q149 61 149 51Q149 26 166 26Q175 26 185 29T208 43T235 78T260 137Q263 149 265 151T282 153Q302 153 302 143Q302 135 293 112T268 61T223 11T161 -11Q129 -11 102 10T74 74Q74 91 79 106T122 220Q160 321 166 341T173 380Q173 404 156 404H154Q124 404 99 371T61 287Q60 286 59 284T58 281T56 279T53 278T49 278T41 278H27Q21 284 21 287Z" style="stroke-width: 3;"/></g><g data-mml-node="mi" transform="translate(345,0)"><path data-c="1D45A" d="M21 287Q22 293 24 303T36 341T56 388T88 425T132 442T175 435T205 417T221 395T229 376L231 369Q231 367 232 367L243 378Q303 442 384 442Q401 442 415 440T441 433T460 423T475 411T485 398T493 385T497 373T500 364T502 357L510 367Q573 442 659 442Q713 442 746 415T780 336Q780 285 742 178T704 50Q705 36 709 31T724 26Q752 26 776 56T815 138Q818 149 821 151T837 153Q857 153 857 145Q857 144 853 130Q845 101 831 73T785 17T716 -10Q669 -10 648 17T627 73Q627 92 663 193T700 345Q700 404 656 404H651Q565 404 506 303L499 291L466 157Q433 26 428 16Q415 -11 385 -11Q372 -11 364 -4T353 8T350 18Q350 29 384 161L420 307Q423 322 423 345Q423 404 379 404H374Q288 404 229 303L222 291L189 157Q156 26 151 16Q138 -11 108 -11Q95 -11 87 -5T76 7T74 17Q74 30 112 181Q151 335 151 342Q154 357 154 369Q154 405 129 405Q107 405 92 377T69 316T57 280Q55 278 41 278H27Q21 284 21 287Z" style="stroke-width: 3;"/></g><g data-mml-node="mi" transform="translate(1223,0)"><path data-c="1D44E" d="M33 157Q33 258 109 349T280 441Q331 441 370 392Q386 422 416 422Q429 422 439 414T449 394Q449 381 412 234T374 68Q374 43 381 35T402 26Q411 27 422 35Q443 55 463 131Q469 151 473 152Q475 153 483 153H487Q506 153 506 144Q506 138 501 117T481 63T449 13Q436 0 417 -8Q409 -10 393 -10Q359 -10 336 5T306 36L300 51Q299 52 296 50Q294 48 292 46Q233 -10 172 -10Q117 -10 75 30T33 157ZM351 328Q351 334 346 350T323 385T277 405Q242 405 210 374T160 293Q131 214 119 129Q119 126 119 118T118 106Q118 61 136 44T179 26Q217 26 254 59T298 110Q300 114 325 217T351 328Z" style="stroke-width: 3;"/></g><g data-mml-node="mi" transform="translate(1752,0)"><path data-c="1D454" d="M311 43Q296 30 267 15T206 0Q143 0 105 45T66 160Q66 265 143 353T314 442Q361 442 401 394L404 398Q406 401 409 404T418 412T431 419T447 422Q461 422 470 413T480 394Q480 379 423 152T363 -80Q345 -134 286 -169T151 -205Q10 -205 10 -137Q10 -111 28 -91T74 -71Q89 -71 102 -80T116 -111Q116 -121 114 -130T107 -144T99 -154T92 -162L90 -164H91Q101 -167 151 -167Q189 -167 211 -155Q234 -144 254 -122T282 -75Q288 -56 298 -13Q311 35 311 43ZM384 328L380 339Q377 350 375 354T369 368T359 382T346 393T328 402T306 405Q262 405 221 352Q191 313 171 233T151 117Q151 38 213 38Q269 38 323 108L331 118L384 328Z" style="stroke-width: 3;"/></g><g data-mml-node="mi" transform="translate(2229,0)"><path data-c="1D452" d="M39 168Q39 225 58 272T107 350T174 402T244 433T307 442H310Q355 442 388 420T421 355Q421 265 310 237Q261 224 176 223Q139 223 138 221Q138 219 132 186T125 128Q125 81 146 54T209 26T302 45T394 111Q403 121 406 121Q410 121 419 112T429 98T420 82T390 55T344 24T281 -1T205 -11Q126 -11 83 42T39 168ZM373 353Q367 405 305 405Q272 405 244 391T199 357T170 316T154 280T149 261Q149 260 169 260Q282 260 327 284T373 353Z" style="stroke-width: 3;"/></g></g></g><g data-mml-node="mo" transform="translate(2908.4,0)"><path data-c="3D" d="M56 347Q56 360 70 367H707Q722 359 722 347Q722 336 708 328L390 327H72Q56 332 56 347ZM56 153Q56 168 72 173H708Q722 163 722 153Q722 140 707 133H70Q56 140 56 153Z" style="stroke-width: 3;"/></g><g data-mml-node="msub" transform="translate(3964.2,0)"><g data-mml-node="mi"><path data-c="1D443" d="M287 628Q287 635 230 637Q206 637 199 638T192 648Q192 649 194 659Q200 679 203 681T397 683Q587 682 600 680Q664 669 707 631T751 530Q751 453 685 389Q616 321 507 303Q500 302 402 301H307L277 182Q247 66 247 59Q247 55 248 54T255 50T272 48T305 46H336Q342 37 342 35Q342 19 335 5Q330 0 319 0Q316 0 282 1T182 2Q120 2 87 2T51 1Q33 1 33 11Q33 13 36 25Q40 41 44 43T67 46Q94 46 127 49Q141 52 146 61Q149 65 218 339T287 628ZM645 554Q645 567 643 575T634 597T609 619T560 635Q553 636 480 637Q463 637 445 637T416 636T404 636Q391 635 386 627Q384 621 367 550T332 412T314 344Q314 342 395 342H407H430Q542 342 590 392Q617 419 631 471T645 554Z" style="stroke-width: 3;"/></g><g data-mml-node="TeXAtom" transform="translate(675,-150) scale(0.707)" data-mjx-texclass="ORD"><g data-mml-node="mi"><path data-c="1D445" d="M230 637Q203 637 198 638T193 649Q193 676 204 682Q206 683 378 683Q550 682 564 680Q620 672 658 652T712 606T733 563T739 529Q739 484 710 445T643 385T576 351T538 338L545 333Q612 295 612 223Q612 212 607 162T602 80V71Q602 53 603 43T614 25T640 16Q668 16 686 38T712 85Q717 99 720 102T735 105Q755 105 755 93Q755 75 731 36Q693 -21 641 -21H632Q571 -21 531 4T487 82Q487 109 502 166T517 239Q517 290 474 313Q459 320 449 321T378 323H309L277 193Q244 61 244 59Q244 55 245 54T252 50T269 48T302 46H333Q339 38 339 37T336 19Q332 6 326 0H311Q275 2 180 2Q146 2 117 2T71 2T50 1Q33 1 33 10Q33 12 36 24Q41 43 46 45Q50 46 61 46H67Q94 46 127 49Q141 52 146 61Q149 65 218 339T287 628Q287 635 230 637ZM630 554Q630 586 609 608T523 636Q521 636 500 636T462 637H440Q393 637 386 627Q385 624 352 494T319 361Q319 360 388 360Q466 361 492 367Q556 377 592 426Q608 449 619 486T630 554Z" style="stroke-width: 3;"/></g><g data-mml-node="mi" transform="translate(759,0)"><path data-c="1D442" d="M740 435Q740 320 676 213T511 42T304 -22Q207 -22 138 35T51 201Q50 209 50 244Q50 346 98 438T227 601Q351 704 476 704Q514 704 524 703Q621 689 680 617T740 435ZM637 476Q637 565 591 615T476 665Q396 665 322 605Q242 542 200 428T157 216Q157 126 200 73T314 19Q404 19 485 98T608 313Q637 408 637 476Z" style="stroke-width: 3;"/></g><g data-mml-node="mi" transform="translate(1522,0)"><path data-c="1D43C" d="M43 1Q26 1 26 10Q26 12 29 24Q34 43 39 45Q42 46 54 46H60Q120 46 136 53Q137 53 138 54Q143 56 149 77T198 273Q210 318 216 344Q286 624 286 626Q284 630 284 631Q274 637 213 637H193Q184 643 189 662Q193 677 195 680T209 683H213Q285 681 359 681Q481 681 487 683H497Q504 676 504 672T501 655T494 639Q491 637 471 637Q440 637 407 634Q393 631 388 623Q381 609 337 432Q326 385 315 341Q245 65 245 59Q245 52 255 50T307 46H339Q345 38 345 37T342 19Q338 6 332 0H316Q279 2 179 2Q143 2 113 2T65 2T43 1Z" style="stroke-width: 3;"/></g></g></g><g data-mml-node="mo" transform="translate(6344,0)"><path data-c="2B" d="M56 237T56 250T70 270H369V420L370 570Q380 583 389 583Q402 583 409 568V270H707Q722 262 722 250T707 230H409V-68Q401 -82 391 -82H389H387Q375 -82 369 -68V230H70Q56 237 56 250Z" style="stroke-width: 3;"/></g><g data-mml-node="mo" transform="translate(7344.3,0)"><path data-c="28" d="M94 250Q94 319 104 381T127 488T164 576T202 643T244 695T277 729T302 750H315H319Q333 750 333 741Q333 738 316 720T275 667T226 581T184 443T167 250T184 58T225 -81T274 -167T316 -220T333 -241Q333 -250 318 -250H315H302L274 -226Q180 -141 137 -14T94 250Z" style="stroke-width: 3;"/></g><g data-mml-node="msub" transform="translate(7733.3,0)"><g data-mml-node="mi"><path data-c="1D465" d="M52 289Q59 331 106 386T222 442Q257 442 286 424T329 379Q371 442 430 442Q467 442 494 420T522 361Q522 332 508 314T481 292T458 288Q439 288 427 299T415 328Q415 374 465 391Q454 404 425 404Q412 404 406 402Q368 386 350 336Q290 115 290 78Q290 50 306 38T341 26Q378 26 414 59T463 140Q466 150 469 151T485 153H489Q504 153 504 145Q504 144 502 134Q486 77 440 33T333 -11Q263 -11 227 52Q186 -10 133 -10H127Q78 -10 57 16T35 71Q35 103 54 123T99 143Q142 143 142 101Q142 81 130 66T107 46T94 41L91 40Q91 39 97 36T113 29T132 26Q168 26 194 71Q203 87 217 139T245 247T261 313Q266 340 266 352Q266 380 251 392T217 404Q177 404 142 372T93 290Q91 281 88 280T72 278H58Q52 284 52 289Z" style="stroke-width: 3;"/></g><g data-mml-node="mn" transform="translate(605,-150) scale(0.707)"><path data-c="30" d="M96 585Q152 666 249 666Q297 666 345 640T423 548Q460 465 460 320Q460 165 417 83Q397 41 362 16T301 -15T250 -22Q224 -22 198 -16T137 16T82 83Q39 165 39 320Q39 494 96 585ZM321 597Q291 629 250 629Q208 629 178 597Q153 571 145 525T137 333Q137 175 145 125T181 46Q209 16 250 16Q290 16 318 46Q347 76 354 130T362 333Q362 478 354 524T321 597Z" style="stroke-width: 3;"/></g></g><g data-mml-node="mo" transform="translate(8741.8,0)"><path data-c="2C" d="M78 35T78 60T94 103T137 121Q165 121 187 96T210 8Q210 -27 201 -60T180 -117T154 -158T130 -185T117 -194Q113 -194 104 -185T95 -172Q95 -168 106 -156T131 -126T157 -76T173 -3V9L172 8Q170 7 167 6T161 3T152 1T140 0Q113 0 96 17Z" style="stroke-width: 3;"/></g><g data-mml-node="msub" transform="translate(9186.5,0)"><g data-mml-node="mi"><path data-c="1D466" d="M21 287Q21 301 36 335T84 406T158 442Q199 442 224 419T250 355Q248 336 247 334Q247 331 231 288T198 191T182 105Q182 62 196 45T238 27Q261 27 281 38T312 61T339 94Q339 95 344 114T358 173T377 247Q415 397 419 404Q432 431 462 431Q475 431 483 424T494 412T496 403Q496 390 447 193T391 -23Q363 -106 294 -155T156 -205Q111 -205 77 -183T43 -117Q43 -95 50 -80T69 -58T89 -48T106 -45Q150 -45 150 -87Q150 -107 138 -122T115 -142T102 -147L99 -148Q101 -153 118 -160T152 -167H160Q177 -167 186 -165Q219 -156 247 -127T290 -65T313 -9T321 21L315 17Q309 13 296 6T270 -6Q250 -11 231 -11Q185 -11 150 11T104 82Q103 89 103 113Q103 170 138 262T173 379Q173 380 173 381Q173 390 173 393T169 400T158 404H154Q131 404 112 385T82 344T65 302T57 280Q55 278 41 278H27Q21 284 21 287Z" style="stroke-width: 3;"/></g><g data-mml-node="mn" transform="translate(523,-150) scale(0.707)"><path data-c="30" d="M96 585Q152 666 249 666Q297 666 345 640T423 548Q460 465 460 320Q460 165 417 83Q397 41 362 16T301 -15T250 -22Q224 -22 198 -16T137 16T82 83Q39 165 39 320Q39 494 96 585ZM321 597Q291 629 250 629Q208 629 178 597Q153 571 145 525T137 333Q137 175 145 125T181 46Q209 16 250 16Q290 16 318 46Q347 76 354 130T362 333Q362 478 354 524T321 597Z" style="stroke-width: 3;"/></g></g><g data-mml-node="mo" transform="translate(10113,0)"><path data-c="29" d="M60 749L64 750Q69 750 74 750H86L114 726Q208 641 251 514T294 250Q294 182 284 119T261 12T224 -76T186 -143T145 -194T113 -227T90 -246Q87 -249 86 -250H74Q66 -250 63 -250T58 -247T55 -238Q56 -237 66 -225Q221 -64 221 250T66 725Q56 737 55 738Q55 746 60 749Z" style="stroke-width: 3;"/></g></g></g></svg><mjx-assistive-mml unselectable="on" display="block" style="top: 0px; left: 0px; clip: rect(1px, 1px, 1px, 1px); -webkit-touch-callout: none; -webkit-user-select: none; -khtml-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none; position: absolute; padding: 1px 0px 0px 0px; border: 0px; display: block; overflow: hidden; width: 100%;"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><msub><mi>P</mi><mrow data-mjx-texclass="ORD"><mi>i</mi><mi>m</mi><mi>a</mi><mi>g</mi><mi>e</mi></mrow></msub><mo>=</mo><msub><mi>P</mi><mrow data-mjx-texclass="ORD"><mi>R</mi><mi>O</mi><mi>I</mi></mrow></msub><mo>+</mo><mo stretchy="false">(</mo><msub><mi>x</mi><mn>0</mn></msub><mo>,</mo><msub><mi>y</mi><mn>0</mn></msub><mo stretchy="false">)</mo></math></mjx-assistive-mml></mjx-container><p>例如 ROI 左上角为 <code>(100,50)</code>，局部 LT 为 <code>(20.5,10.25)</code>，最终 LT 为原图的 <code>(120.5,60.25)</code>，单位为 <strong>px</strong>。下游使用同一幅已完成方向变换的图像，不能再把这些点当作 ROI 局部坐标或变换前坐标。</p>
+<h2 id="配置本地发光区定位-v2" tabindex="-1">配置本地发光区定位(V2) <a class="header-anchor" href="#配置本地发光区定位-v2" aria-label="Permalink to &quot;配置本地发光区定位(V2)&quot;">&ZeroWidthSpace;</a></h2>
+<p>在流程中加入 <strong>本地发光区定位(V2)</strong>，默认使用上游图像：接入相机取图或校正节点，本地文件通过 <strong>加载图片 → 发光区定位</strong> 输入。图像方向变换必须已完成；节点借用当前图像计算，不修改源像素。没有可用上游图像时明确报错，并提示连接取图、校正或加载图片节点。</p>
+<div class="table-scroll"><table tabindex="0">
+<thead>
+<tr>
+<th>界面选项</th>
+<th>属性 / 默认值</th>
+<th>使用方式</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>搜索区域</td>
+<td><code>SearchRegion</code> / 整图</td>
+<td><code>0,0,0,0</code> 表示整图；指定 ROI 时宽高必须大于零且完全位于图像内，输出还原为整图坐标</td>
+</tr>
+<tr>
+<td>最小置信度</td>
+<td><code>MinimumConfidence</code> / <code>0.25</code></td>
+<td>必须是 <code>0</code> 到 <code>1</code> 的有限数值；低于门限拒绝结果，不会静默改用旧算法</td>
+</tr>
+<tr>
+<td>POI保存模板</td>
+<td><code>SavePOITempName</code> / 空</td>
+<td>可选的数据库回写目标，见下文；不是检测输入参数模板</td>
+</tr>
+</tbody>
+</table></div>
+<p>运行包含该节点的流程后，检查 <code>Success</code>、置信度、警告与四角顺序，并在历史结果中核对本次主结果。成功四角按 <strong>LT、RT、RB、LB</strong> 保存；生成四个坐标本身不能作为成功判据。</p>
+<p><code>Confidence</code> 是 0～1 的定位质量评分，不是检测正确率概率。最低门限包含等于，例如门限 <code>0.25</code> 时，<code>0.23</code> 被拒绝；通过总分门限仍必须满足角点及逐边检查。<code>SideQuality</code> 保留逐边覆盖、内点、对比度、残差和缺口等诊断，供区分遮挡、弱边缘和拟合不稳定。</p>
+<h3 id="图像来源与格式" tabindex="-1">图像来源与格式 <a class="header-anchor" href="#图像来源与格式" aria-label="Permalink to &quot;图像来源与格式&quot;">&ZeroWidthSpace;</a></h3>
+<p>节点按以下优先级使用上游图像：</p>
+<ol>
+<li>当前上游本地内存帧。</li>
+<li><code>IN</code> 输入图像结果；没有有效输入引用时读取流程数据中的 <code>MasterId</code>、<code>MasterResultType</code>。结果类型需为相机图像或算法校正，读取对应 <code>FileUrl</code>、<code>RawFile</code> 中存在的文件。</li>
+</ol>
+<p>已选来源存在但无效时会报错，不会一路忽略错误尝试后续来源。例如上游图像结果指向的文件不存在时直接报错；声明 CIE 主缓冲却缺少 CIE 数据时，也不会改用 RAW。成功从文件加载的帧会交给后续节点，使角点与图像保持同源。</p>
+<p>本地 RAW 输入支持 8/16 位、1/3 通道交错缓冲；CIE 支持 32 位浮点单平面 Y 或三平面 XYZ，三平面只借用第二个 Y 平面。文件加载器先识别 ColorVision 文件头，否则交给 WPF 位图解码器；支持的位图像素格式包括 Gray8、Gray16、Rgb48、24/32 位彩色，并非只接受 <code>.cvraw</code> / <code>.cvcie</code> 扩展名。</p>
+<h3 id="回写-poi-保存模板" tabindex="-1">回写 POI 保存模板 <a class="header-anchor" href="#回写-poi-保存模板" aria-label="Permalink to &quot;回写 POI 保存模板&quot;">&ZeroWidthSpace;</a></h3>
+<p>填写 <strong>POI保存模板</strong> 会在定位成功后更新已有 POI 模板的数据库明细；留空则不回写。模板按去除首尾空白的名称、租户 <code>0</code>、未删除条件查询，同名时取最小 ID；<code>IsEnable</code> 不参与筛选。</p>
+<ul>
+<li>一个 <code>Rect</code> 或 <code>LTRect</code> 明细：写入四角的外接矩形；前者记录中心，后者记录左上角。宽高采用 <code>floor(max) - floor(min) + 1</code>。</li>
+<li>四个角点明细：按明细 ID 顺序写入 LT、RT、RB、LB，坐标转为整数，宽高归零。按服务的 <code>POIPointTypes</code> 判断类型；首行允许 <code>PolygonFour</code> 或兼容的 <code>LTRect</code> 数值表示，写回时统一为 <code>PolygonFour</code>。</li>
+<li>其它形状、明细数量或不存在的模板会报错，不会自动创建新模板。</li>
+</ul>
+<p>下游本地十字定位和本地点阵畸变 V2 的“搜索区域关注点”可选择同一模板，按最新保存明细生成搜索矩形，优先于节点固定区域。四角点取外接矩形，不透视裁正；模板读写遵循服务点类型数值。节点不缓存坐标，但模板不携带帧身份，也不能证明本轮前序检测成功；流程必须保证前序成功后再执行，并行流程使用不同模板以避免互相覆盖。</p>
+<p>POI 回写有自己的事务，且在算法结果事务之前提交。后续结果保存失败不会撤销已提交的 POI 修改；这两步不是一个整体事务。</p>
+<h3 id="结果提交与失败状态" tabindex="-1">结果提交与失败状态 <a class="header-anchor" href="#结果提交与失败状态" aria-label="Permalink to &quot;结果提交与失败状态&quot;">&ZeroWidthSpace;</a></h3>
+<p>成功路径为：检测与四角校验 → 可选 POI 回写 → 主结果及四条明细提交 → 设置流程主结果引用 → 发布结果消息。主结果和明细使用同一事务，数据库表需支持事务；若保存或回滚失败，异常会向上抛出。</p>
+<div class="table-scroll"><table tabindex="0">
+<thead>
+<tr>
+<th>失败位置</th>
+<th>可观察结果</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>检测返回拒绝或四角校验失败</td>
+<td>尝试保存 <code>ResultCode = -1</code> 的失败主结果及诊断参数，不保存角点明细；发布该失败记录后仍按失败结束，不设置本次可用主结果引用</td>
+</tr>
+<tr>
+<td>图像输入、ROI、方向变换或前置配置检查失败</td>
+<td>尚未进入上述失败记录保存分支，不能保证历史结果中已有失败主记录</td>
+</tr>
+<tr>
+<td>POI 回写或结果保存失败</td>
+<td>不继续发布成功结果；已先提交的 POI 回写不随结果保存失败回滚</td>
+</tr>
+<tr>
+<td>成功结果提交后消息发布失败</td>
+<td>已提交的结果和流程主结果引用保留，节点仍抛出异常；应核对结果 ID，避免重复执行造成重复数据</td>
+</tr>
+</tbody>
+</table></div>
+<p>保存成功与保存失败主结果都需要按流程流水号找到批次。找不到批次、数据库不可用或消息发布异常时，不能假定失败记录已经出现在“算法结果管理”。</p>
+<h2 id="robustv2-的结果判据" tabindex="-1">RobustV2 的结果判据 <a class="header-anchor" href="#robustv2-的结果判据" aria-label="Permalink to &quot;RobustV2 的结果判据&quot;">&ZeroWidthSpace;</a></h2>
+<p>默认允许尝试边界目标并附加警告；角点几何、逐边证据和总置信度仍需通过检查。遮挡、裁边、多候选或无有效信号均可能导致拒绝，不应仅凭叠图判断业务可接受。</p>
+<div class="table-scroll"><table tabindex="0">
+<thead>
+<tr>
+<th>调用层</th>
+<th>成功与结果边界</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>C++ <code>cvnative::luminous::FindLuminousAreaV2</code></td>
+<td>返回 <code>FindLuminousAreaV2Result</code>，检查 <code>success</code> 与 <code>hasCorners</code>；<code>corners</code> 是固定四元素数组，默认零坐标也占四项。拒绝仍可能保留诊断角点、置信度、原因和警告</td>
+</tr>
+<tr>
+<td>ABI <code>M_FindLuminousAreaV2</code></td>
+<td>正返回值表示产生 JSON，不表示 <code>Success=true</code>；仅在 <code>hasCorners</code> 为真时填写 <code>Corners</code>。结果指针按 <code>FreeResult</code> 契约释放；参数或调用错误与算法拒绝分别处理</td>
+</tr>
+<tr>
+<td>托管 <code>LuminousAreaNative.DetectV2</code></td>
+<td>解析 JSON、校验成功结果几何、还原 ROI 坐标并执行置信度门限。<code>HasValidCorners</code> 要求 <code>Success</code> 且角点几何有效，不因诊断角点存在而把失败改为成功</td>
+</tr>
+</tbody>
+</table></div>
+<p>ImageEditor、POI 的配置对象默认使用 <code>RobustV2</code>，旧配置缺少 <code>Algorithm</code> 字段时也保持此默认值；显式选择经典兼容模式才显示 <code>Threshold</code>、<code>UseRotatedRect</code>。本地 V2 Flow 节点固定使用 RobustV2。</p>
+<p>ImageEditor、POI 还可显式选择 <code>FovLuminanceBoundary</code>（界面名 <strong>实验：中心亮度比例边界（非几何 FOV）</strong>）。它先调用 <code>RobustV2</code>，再以中心亮度乘 <code>LuminanceBoundaryRatio</code>（默认 <code>0.5</code>）寻找亮度交点并拟合四边。内部暗角和渐变可能使角点明显内缩，该实验方法不代表标准有效视场。普通发光区和独立 FOV 均默认使用 <code>RobustV2</code> 几何边缘；FOV 有上游四角时直接复用，不调用此实验算法。</p>
+</article>
+      <p class="help-footer">此说明随软件提供。指标判定请核对项目约定的公式口径与限值。</p>
+    </main>
+  </div>
+</body>
+</html>

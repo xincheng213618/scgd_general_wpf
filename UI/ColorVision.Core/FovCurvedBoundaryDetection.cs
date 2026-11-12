@@ -20,22 +20,17 @@ namespace ColorVision.Core
             int step = Math.Max(1, (int)Math.Ceiling(Math.Max(reader.Width, reader.Height) / (double)MaximumSeedDimension));
             int width = (reader.Width + step - 1) / step;
             int height = (reader.Height + step - 1) / step;
-            double[] values = new double[checked(width * height)];
+            double[] values = reader.ReadSeedGrid(step, width, height);
             double minimum = double.PositiveInfinity;
             double maximum = double.NegativeInfinity;
-            for (int y = 0; y < height; y++)
+            foreach (double value in values)
             {
-                for (int x = 0; x < width; x++)
-                {
-                    double value = reader.Sample(reader.X + Math.Min(x * step, reader.Width - 1), reader.Y + Math.Min(y * step, reader.Height - 1));
-                    if (!double.IsFinite(value)) throw new InvalidOperationException("曲边发光区包含非有限像素值。");
-                    values[y * width + x] = value;
-                    minimum = Math.Min(minimum, value);
-                    maximum = Math.Max(maximum, value);
-                }
+                minimum = Math.Min(minimum, value);
+                maximum = Math.Max(maximum, value);
             }
             if (maximum <= minimum) throw new InvalidOperationException("曲边发光区没有可定位的明暗边界。");
-            double threshold = FindOtsuThreshold(values, minimum, maximum);
+            double brightThreshold = FindOtsuThreshold(values, minimum, maximum);
+            double threshold = FindSeedThreshold(values, minimum, brightThreshold);
             int[] labels = new int[values.Length];
             int[] queue = new int[values.Length];
             int largestLabel = 0;
@@ -91,10 +86,12 @@ namespace ColorVision.Core
                     if (score > support[corner]) { support[corner] = score; corners[corner] = point; }
                 }
             }
+            ValidateFilledComponent(labels, queue, width, height, largestLabel);
             LuminousAreaPoint center = new((minX + maxX) / 2, (minY + maxY) / 2);
             if (!IsInside(center)) throw new InvalidOperationException("曲边模式要求中心位于连续、填充的发光区内。");
 
             double confidence = 1;
+            Dictionary<double, double> raySamples = new();
             List<LuminousAreaPoint> contour = new(ContourSamples + 4);
             for (int sample = 0; sample < ContourSamples; sample++)
                 contour.Add(FindBoundary(center, 2 * Math.PI * sample / ContourSamples));
@@ -137,7 +134,7 @@ namespace ColorVision.Core
             if (confidence < minimumConfidence)
                 throw new InvalidOperationException($"曲边发光区定位可信度 {confidence:F3} 低于要求 {minimumConfidence:F3}。");
             LuminousAreaDetectionResult detection = new(true, "CurvedBoundary", null, confidence, null, string.Empty, null,
-                diagnostic: $"SeedStep={step}; ContourSamples={contour.Count}; Edge=LocalGradient; Center=ContourBounds; Axes=ImageXY.");
+                diagnostic: $"SeedStep={step}; Seed=NoiseBoundedOtsu; Sampling=SpatialMedian; ContourSamples={contour.Count}; Edge=ContrastSupportedLocalGradient; Center=ContourBounds; Axes=ImageXY.");
             return (detection, geometry);
 
             bool IsInside(LuminousAreaPoint point)
@@ -149,15 +146,26 @@ namespace ColorVision.Core
 
             LuminousAreaPoint FindBoundary(LuminousAreaPoint origin, double angle, bool includeConfidence = true)
             {
+                raySamples.Clear();
                 double dx = Math.Cos(angle);
                 double dy = Math.Sin(angle);
-                double limit = Math.Sqrt((double)reader.Width * reader.Width + (double)reader.Height * reader.Height);
+                double limitX = dx > 0 ? (reader.X + reader.Width - 1 - origin.X) / dx
+                    : dx < 0 ? (reader.X - origin.X) / dx : double.PositiveInfinity;
+                double limitY = dy > 0 ? (reader.Y + reader.Height - 1 - origin.Y) / dy
+                    : dy < 0 ? (reader.Y - origin.Y) / dy : double.PositiveInfinity;
+                double limit = Math.Min(limitX, limitY);
                 double radius = 0;
-                for (; radius < limit; radius += Math.Max(0.5, step / 2d))
+                double innerRadius = double.NaN;
+                while (true)
                 {
-                    if (!IsInside(new(origin.X + dx * radius, origin.Y + dy * radius))) break;
+                    LuminousAreaPoint point = new(origin.X + dx * radius, origin.Y + dy * radius);
+                    if (!IsInside(point)) break;
+                    if (radius >= limit) throw new InvalidOperationException("曲边发光区边界不可用。");
+                    int x = (int)Math.Round((point.X - reader.X) / step);
+                    int y = (int)Math.Round((point.Y - reader.Y) / step);
+                    if (values[y * width + x] > brightThreshold) innerRadius = radius;
+                    radius = Math.Min(radius + Math.Max(0.5, step / 2d), limit);
                 }
-                if (radius >= limit) throw new InvalidOperationException("曲边发光区边界不可用。");
                 for (double r = radius + 2 * step; r < limit; r += step)
                 {
                     LuminousAreaPoint point = new(origin.X + dx * r, origin.Y + dy * r);
@@ -165,12 +173,13 @@ namespace ColorVision.Core
                     if (IsInside(point)) throw new InvalidOperationException("曲边模式要求连续填充图案，当前轮廓含孔洞或同一方向的多段边界。");
                 }
                 double smoothing = Math.Max(1, step / 2d);
-                // Global segmentation can fall inside a dim corner or outside
-                // the edge halo. Search a neighbourhood of that seed, then
-                // refine the strongest local drop in original image pixels.
-                double searchRadius = Math.Max(4 * step, radius * 0.12);
-                double start = Math.Max(smoothing, radius - searchRadius);
-                double end = radius + searchRadius;
+                // The bright and dim seeds bracket vignetting. Allow four seed
+                // cells for sampling/median uncertainty, but do not search far
+                // outside this component and jump onto an unrelated lens ring.
+                double start = Math.Max(smoothing, (double.IsNaN(innerRadius) ? radius : innerRadius) - 4 * step);
+                double end = Math.Min(radius + 4 * step, limit);
+                double plateauDistance = 2 * step + 2 * smoothing;
+                double bestScore = double.NegativeInfinity;
                 double bestDrop = double.NegativeInfinity;
                 double bestRadius = 0;
                 int ties = 0;
@@ -178,10 +187,10 @@ namespace ColorVision.Core
                 Search(start, end, coarseStep);
                 double refinementStart = Math.Max(start, bestRadius - coarseStep);
                 double refinementEnd = Math.Min(end, bestRadius + coarseStep);
+                bestScore = double.NegativeInfinity;
                 bestDrop = double.NegativeInfinity;
                 ties = 0;
                 Search(refinementStart, refinementEnd, 1);
-                double plateauDistance = 2 * step + 2 * smoothing;
                 double inside = At(bestRadius - plateauDistance);
                 double outside = At(bestRadius + plateauDistance);
                 if (!double.IsFinite(bestDrop) || bestDrop <= (maximum - minimum) * 0.01 || !double.IsFinite(inside) || !double.IsFinite(outside))
@@ -195,13 +204,20 @@ namespace ColorVision.Core
                     for (double r = from; r <= to; r += increment)
                     {
                         double drop = At(r - smoothing) - At(r + smoothing);
-                        if (drop > bestDrop + (maximum - minimum) * 1e-10)
+                        double localInside = At(r - plateauDistance);
+                        double localOutside = At(r + plateauDistance);
+                        double localContrast = Math.Clamp((localInside - localOutside) / Math.Max(localInside - minimum, (maximum - minimum) * 1e-6), 0, 1);
+                        // A text stroke can have a strong gradient without a
+                        // sustained light-to-dark transition across the edge.
+                        double score = Math.Max(0, drop) * localContrast;
+                        if (score > bestScore + (maximum - minimum) * 1e-10)
                         {
+                            bestScore = score;
                             bestDrop = drop;
                             bestRadius = r;
                             ties = 1;
                         }
-                        else if (Math.Abs(drop - bestDrop) <= (maximum - minimum) * 1e-10)
+                        else if (Math.Abs(score - bestScore) <= (maximum - minimum) * 1e-10)
                         {
                             bestRadius = (bestRadius * ties + r) / (ties + 1);
                             ties++;
@@ -211,10 +227,55 @@ namespace ColorVision.Core
 
                 double At(double distance)
                 {
-                    double x = origin.X + dx * distance;
-                    double y = origin.Y + dy * distance;
-                    return (reader.Sample(x, y) + reader.Sample(x - dy, y + dx) + reader.Sample(x + dy, y - dx)) / 3;
+                    // A complete edge can have less background than the usual
+                    // plateau width. Use the last available background sample;
+                    // components touching the ROI have already been rejected.
+                    distance = Math.Min(distance, limit);
+                    if (raySamples.TryGetValue(distance, out double value)) return value;
+                    double x = Math.Clamp(origin.X + dx * distance, reader.X, reader.X + reader.Width - 1);
+                    double y = Math.Clamp(origin.Y + dy * distance, reader.Y, reader.Y + reader.Height - 1);
+                    value = reader.SampleRobust(x, y, step);
+                    raySamples.Add(distance, value);
+                    return value;
                 }
+            }
+        }
+
+        private static void ValidateFilledComponent(int[] labels, int[] queue, int width, int height, int component)
+        {
+            // The component never touches the ROI perimeter. Mark its exterior
+            // in the label workspace, leaving the image and seed values intact.
+            // Unlike angular rays, this also finds holes between neighbouring
+            // contour directions. Reuse the connected-component queue.
+            labels[0] = -1;
+            queue[0] = 0;
+            int count = 1;
+            for (int head = 0; head < count; head++)
+            {
+                int current = queue[head];
+                int x = current % width;
+                int y = current / width;
+                Visit(x - 1, y);
+                Visit(x + 1, y);
+                Visit(x, y - 1);
+                Visit(x, y + 1);
+                // Complement the foreground's four-connectivity: a diagonal
+                // opening to the exterior is not an enclosed hole.
+                Visit(x - 1, y - 1);
+                Visit(x + 1, y - 1);
+                Visit(x - 1, y + 1);
+                Visit(x + 1, y + 1);
+            }
+            if (labels.Any(value => value != component && value != -1))
+                throw new InvalidOperationException("曲边模式要求连续填充图案，当前轮廓含可分辨的孔洞。");
+
+            void Visit(int x, int y)
+            {
+                if (x < 0 || y < 0 || x >= width || y >= height) return;
+                int next = y * width + x;
+                if (labels[next] == component || labels[next] == -1) return;
+                labels[next] = -1;
+                queue[count++] = next;
             }
         }
 
@@ -226,10 +287,42 @@ namespace ColorVision.Core
             _ => -point.X + point.Y
         };
 
+        private static double FindSeedThreshold(double[] values, double minimum, double brightThreshold)
+        {
+            // Split the original dark class once more to recover dim corners.
+            // Keep the seed above measured background noise; splitting noise
+            // itself must not grow the component throughout the background.
+            double maximum = minimum;
+            foreach (double value in values)
+                if (value <= brightThreshold) maximum = Math.Max(maximum, value);
+            if (maximum <= minimum) return brightThreshold;
+            double threshold = FindOtsuThreshold(values, minimum, maximum);
+            int count = 0;
+            double sum = 0;
+            foreach (double value in values)
+            {
+                if (value > threshold) continue;
+                sum += value;
+                count++;
+            }
+            double mean = sum / count;
+            double variance = 0;
+            foreach (double value in values)
+                if (value <= threshold) variance += (value - mean) * (value - mean);
+            variance /= count;
+            return Math.Min(brightThreshold, Math.Max(threshold, mean + 3 * Math.Sqrt(variance)));
+        }
+
         private static double FindOtsuThreshold(double[] values, double minimum, double maximum)
         {
             int[] histogram = new int[256];
-            foreach (double value in values) histogram[Math.Clamp((int)((value - minimum) / (maximum - minimum) * 255), 0, 255)]++;
+            int totalCount = 0;
+            foreach (double value in values)
+            {
+                if (value > maximum) continue;
+                histogram[Math.Clamp((int)((value - minimum) / (maximum - minimum) * 255), 0, 255)]++;
+                totalCount++;
+            }
             double total = 0;
             for (int bin = 0; bin < histogram.Length; bin++) total += bin * (double)histogram[bin];
             int count = 0;
@@ -240,9 +333,9 @@ namespace ColorVision.Core
             {
                 count += histogram[bin];
                 sum += bin * (double)histogram[bin];
-                if (count == 0 || count == values.Length) continue;
-                double delta = sum / count - (total - sum) / (values.Length - count);
-                double variance = (double)count * (values.Length - count) * delta * delta;
+                if (count == 0 || count == totalCount) continue;
+                double delta = sum / count - (total - sum) / (totalCount - count);
+                double variance = (double)count * (totalCount - count) * delta * delta;
                 if (variance > best) { best = variance; threshold = bin; }
             }
             return minimum + (threshold + 0.5) / 255 * (maximum - minimum);
@@ -276,7 +369,85 @@ namespace ColorVision.Core
                     throw new ArgumentException("搜索区域必须完整位于图像内。", nameof(roi));
             }
 
-            public double Sample(double x, double y)
+            public double[] ReadSeedGrid(int step, int width, int height)
+            {
+                double[] values = new double[checked(width * height)];
+                int rowWidth = width + 4;
+                double[] rows = new double[5 * rowWidth];
+                Span<double> samples = stackalloc double[25];
+                // Adjacent seed windows share 20 of their 25 samples. Keep only
+                // five rows, including the clamped halo at the actual ROI edge.
+                // This is the same spatial median as SampleRobust, not a second
+                // image resize or a median of already filtered values.
+                for (int row = 0; row < height + 4; row++)
+                {
+                    int offset = row % 5 * rowWidth;
+                    int sourceY = Y + Math.Clamp((row - 2) * step, 0, Height - 1);
+                    for (int x = 0; x < rowWidth; x++)
+                    {
+                        double value = Sample(X + Math.Clamp((x - 2) * step, 0, Width - 1), sourceY);
+                        if (!double.IsFinite(value)) throw new InvalidOperationException("曲边发光区包含非有限像素值。");
+                        rows[offset + x] = value;
+                    }
+                    if (row < 4) continue;
+                    int y = row - 4;
+                    for (int x = 0; x < width; x++)
+                    {
+                        for (int j = 0; j < 5; j++)
+                            rows.AsSpan((y + j) % 5 * rowWidth + x, 5).CopyTo(samples.Slice(j * 5, 5));
+                        values[y * width + x] = SelectMedian(samples);
+                    }
+                }
+                return values;
+            }
+
+            public double SampleRobust(double x, double y, double spacing)
+            {
+                if (x < X || y < Y || x > X + Width - 1 || y > Y + Height - 1) return double.NaN;
+                // Use a spatial median in both directions so thin strokes are
+                // rejected regardless of their orientation or image colour.
+                // No pixels are overwritten or enclosed regions flood-filled.
+                Span<double> samples = stackalloc double[25];
+                int index = 0;
+                for (int j = -2; j <= 2; j++)
+                    for (int i = -2; i <= 2; i++)
+                    {
+                        double value = Sample(Math.Clamp(x + i * spacing, X, X + Width - 1), Math.Clamp(y + j * spacing, Y, Y + Height - 1));
+                        if (!double.IsFinite(value)) return double.NaN;
+                        samples[index++] = value;
+                    }
+                return SelectMedian(samples);
+            }
+
+            private static double SelectMedian(Span<double> values)
+            {
+                // Both callers supply exactly 25 finite samples. Partition
+                // around the middle order statistic without sorting each half.
+                const int middle = 12;
+                int left = 0, right = 24;
+                while (left < right)
+                {
+                    double pivot = values[(left + right) / 2];
+                    int i = left, j = right;
+                    do
+                    {
+                        while (values[i] < pivot) i++;
+                        while (values[j] > pivot) j--;
+                        if (i <= j)
+                        {
+                            (values[i], values[j]) = (values[j], values[i]);
+                            i++;
+                            j--;
+                        }
+                    } while (i <= j);
+                    if (middle <= j) right = j;
+                    else if (middle >= i) left = i;
+                    else break;
+                }
+                return values[middle];
+            }
+
+            private double Sample(double x, double y)
             {
                 if (x < X || y < Y || x > X + Width - 1 || y > Y + Height - 1) return double.NaN;
                 int x0 = (int)Math.Floor(x);

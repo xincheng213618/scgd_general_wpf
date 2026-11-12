@@ -11,98 +11,20 @@ related: ["algorithms.index","algorithms.json-templates","engine.results"]
 
 # LED 检测模板
 
-本页说明当前仓库中 LED 检测相关模板的维护边界，重点覆盖 `LEDStripDetection/` 和 `LedCheck/` 两个强类型模板，并说明它们和 `Jsons/LEDStripDetectionV2/`、`Jsons/LedCheck2/` 的关系。
+## 亚像素级灯珠检测
 
-## 先分清四个入口
+算法设备的 **定位算法 → 亚像素级灯珠检测** 和流程的 **LED定位** 使用 `TemplateLedCheck2` JSON 模板。模板编码为 `FindLED`，字典号为 `18`。手动入口通过 `Event_OLED_FindDotsArrayMem_GetData` 发送模板、颜色、FDA 类型和四个固定 LED 点位。编辑 JSON 模板的方式见[模板菜单与配置宿主](./template-menu-entries.md)。
 
-| 入口 | 类型 | 代码/事件 | 适用场景 |
-| --- | --- | --- | --- |
-| `LEDStripDetection/` | 强类型模板 | `Code = LEDStripDetection`，`Event_LED_StripDetection` | 旧灯条定位，参数由 `LEDStripDetectionParam` 管理。 |
-| `LedCheck/` | 强类型模板 | `Code = FindLED`，`Event_LED_Check_GetData` | 灯珠检测，依赖可选/必选 POI 参数，结果绘制圆点。 |
-| `Jsons/LEDStripDetectionV2/` | JSON 模板 | `Code = LEDStripDetection`，事件名字符串 `LEDStripDetection`，`Version = 2.0` | 新灯条/POI 中心计算，参数结构更复杂，适合继续扩展。 |
-| `Jsons/LedCheck2/` | JSON 模板 | `Code = FindLED`，`Event_OLED_FindDotsArrayMem_GetData` | 亚像素级灯珠检测，带颜色、FDA 类型和固定 LED 点位。 |
+规则灯珠阵列的本地定位和不亮、偏暗检验见[灯珠定位与完整网格判定](../detectors/light-beads.md)。该流程使用本次运行的内存 POI 点集，可接本地 POI 测量。
 
-维护时不要只凭 `Code` 判断唯一实现：`LEDStripDetection` 和 `FindLED` 都存在强类型旧实现和 JSON 新实现。
+## 历史模板与结果
 
-## LEDStripDetection 强类型链路
+灯条检测和像素级灯珠检测保留模板数据和历史结果读取路径，供旧流程包解析与历史结果排查。区分同编码模板时同时核对模板类型、字典号和请求事件。
 
-| 文件 | 用途 |
-| --- | --- |
-| `TemplateLEDStripDetection.cs` | 注册强类型灯条模板，`TemplateDicId = 21`，`IsUserControl = true`。 |
-| `LEDStripDetectionParam.cs` | 保存点数、点距、起始位置、二值化比例、调试和保存路径。 |
-| `EditLEDStripDetection.xaml(.cs)` | 自定义参数编辑控件。 |
-| `AlgorithmLEDStripDetection.cs` | 组装 `Event_LED_StripDetection` 请求。 |
-| `LEDStripDetectionDisplayAlgorithmConfig` | 通用宿主的配置对象，持有模板选择、图像路径和运行时 `IsInversion`。 |
-
-关键参数：
-
-| 参数 | 默认值 | 说明 |
+| 历史模板 | 标识 | 请求区分 |
 | --- | --- | --- |
-| `Method` | `1` | 算法方法选择，具体含义由算法服务解释。 |
-| `PointNumber` | `160` | 灯条点数。 |
-| `PointDistance` | `50` | 点间距。 |
-| `StartPosition` | `100` | 起始位置。 |
-| `BinaryPercentage` | `10` | 二值化比例。 |
-| `IsDebug` | `false` | 是否开启调试输出。 |
-| `SaveName` | `binim.tif` | 调试/保存图路径。 |
+| `TemplateLEDStripDetection` | `LEDStripDetection`，字典 `21` | `Event_LED_StripDetection` 的旧版参数 |
+| `TemplateLEDStripDetectionV2` | `LEDStripDetection`，字典 `26` | 同事件，`Version = "2.0"`，可附 POI 模板 |
+| `TemplateLedCheck` | `FindLED`，强类型 | `Event_LED_Check_GetData`，使用灯珠模板和 POI 模板 |
 
-手动页面由 `Services/Devices/Algorithm/DisplayAlgorithmControl.xaml.cs` 生成。`Execute()` 校验 `Config.Template` 与图像输入；请求包括 `ImgFileName`、`FileType`、`DeviceCode`、`DeviceType`、`TemplateParam` 和 `Config.IsInversion`，当前手动入口设备 code/type 传空字符串。模板编辑入口见 [模板菜单与配置宿主](./template-menu-entries.md)。
-
-## LedCheck 强类型链路
-
-| 文件 | 用途 |
-| --- | --- |
-| `TemplateLedCheck.cs` | 注册灯珠检测模板，`Code = FindLED`。 |
-| `LedCheckParam.cs` | 保存灯珠通道、固定半径、轮廓面积、二值化补正、灯珠网格数量等参数。 |
-| `AlgorithmLedCheck.cs` | 同时收集灯珠模板和 POI 模板，并发布 `Event_LED_Check_GetData`。 |
-| `DualTemplateDisplayAlgorithmConfig` | 通用宿主选择灯珠模板与 POI 模板； |
-| `ViewHandleMTF.cs` 内的 `ViewHandleLedCheck` | 从 POI 结果表恢复点位，以半径绘制灯珠结果；文件名与类名不同。 |
-| `ViewResultLedCheck.cs` | 保存点位和半径。 |
-
-`LedCheck` 的请求比灯条定位多一个 `POITemplateParam`。`Execute()` 同时校验 `Config.Template` 和 `Config.SecondaryTemplate` 的可解析选中值；后者来源为 `TemplatePoi.Params.CreateEmpty()`，其中空项可形成 `ID = -1`、`Name = string.Empty`。这不等于取消选择校验，也不证明每个服务版本都接受空 POI，需核对实际下游契约。
-
-`ViewHandleLedCheck.CanHandle` 当前为空列表。如果现场出现“算法执行成功但结果页不接管展示”，要先检查结果类型是否注册到这个 handler，而不是只排查绘图代码。
-
-`ViewHandleMTF.cs` 中的 native 画点结果复制为独立冻结位图，通过 `ImagePresentation.Publish` 更新显示；不借用已有 `FunctionImage` 作为可写缓冲，也不把显示画点提交成文档源。源/显示责任见[编辑器上下文](../../ui-components/image-editor-context.md)。
-
-## JSON V2 入口
-
-`Jsons/LEDStripDetectionV2/` 和 `Jsons/LedCheck2/` 使用 `ITemplateJson`，参数由 JSON 文本和 `EditTemplateJson` 承载。它们更适合复杂参数和后续扩展：
-
-- `TemplateLEDStripDetectionV2`：`TemplateDicId = 26`，`Name = LedStripDetectionV2`，默认 JSON 包含 `debugCfg`、`mathMaskRect`、`nV1`、`threshold`、`dRatio`、`pattern`、`CalcMethod`。
-- `AlgorithmLEDStripDetectionV2`：事件名为 `LEDStripDetection`，会传 `Version = 2.0`，可附带 `POITemplateParam`。
-- `TemplateLedCheck2`：`TemplateDicId = 18`，`Code = FindLED`。
-- `AlgorithmLedCheck2`：事件为 `Event_OLED_FindDotsArrayMem_GetData`，会传 `Color`、`FDAType` 和四个 `FixedLEDPoint`。
-
-## 选择哪个入口
-
-| 需求 | 建议入口 |
-| --- | --- |
-| 维护旧灯条定位参数 | `LEDStripDetection/` |
-| 新增复杂灯条参数或需要 JSON 版本治理 | `Jsons/LEDStripDetectionV2/` |
-| 维护传统灯珠检测和 POI 半径展示 | `LedCheck/` |
-| 亚像素级 OLED 点阵检测 | `Jsons/LedCheck2/` |
-| 排查结果展示 | 先看结果类型是否被 handler 接管，再看绘图和导出。 |
-
-## 常见排查
-
-| 现象 | 优先排查 |
-| --- | --- |
-| 灯条模板下拉为空 | `TemplateLEDStripDetection.Params` 是否加载，`TemplateDicId = 21` 是否存在。 |
-| V2 模板下拉为空 | `TemplateLEDStripDetectionV2` 是否加载，`TemplateDicId = 26` 的 JSON 字典是否恢复。 |
-| 灯珠检测执行失败 | `TemplateParam`、`POITemplateParam`、输入图像类型和设备 `Code/Type`。 |
-| JSON 参数改了不生效 | 确认修改的是 V2 JSON 模板，而不是旧强类型模板。 |
-| 结果不显示 | `ViewResultAlgType` 是否能匹配对应 handler，`ViewHandleLedCheck.CanHandle` 是否需要补注册。 |
-| 导出 CSV 不对 | `ViewHandleLedCheck.SideSave(...)` 当前写行时误用了表头集合，导出能力需要单独验收。 |
-
-## 检查清单
-
-- 涉及 `Code = LEDStripDetection` 的变更必须说明是旧强类型还是 JSON V2。
-- 涉及 `Code = FindLED` 的变更必须说明是 `LedCheck` 还是 `LedCheck2`。
-- 修改强类型参数时，同步更新参数类、默认值、编辑控件和现场样例。
-- 修改 JSON 参数时，同步更新 schema/说明 JSON、`Mysql*` 恢复命令和版本策略。
-- 修改结果展示时，同步更新 handler 的 `CanHandle`、导出、项目验收页和截图样例。
-
-## 验证入口与缺口
-
-验证缺口：未登记全部 LED 分支的专门自动化测试；尤其旧 ViewHandleLedCheck 的类型注册和 CSV 行写入限制仍需独立验收，不能按现有类名宣称功能完整。
+`ViewHandleLEDStripDetectionV2` 从历史明细引用的 JSON 结果文件读取点位，排查时先确认结果版本和文件可读性。`ViewHandleLedCheck` 的 `CanHandle` 为空，自动分发不接管其专用历史结果显示。

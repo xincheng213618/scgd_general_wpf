@@ -52,7 +52,9 @@ namespace ColorVision.Engine
             this.ApplyTheme(ThemeConfig.Instance.Theme);
             Thread.CurrentThread.CurrentUICulture = new System.Globalization.CultureInfo(LanguageConfig.Instance.UICulture);
 
-            PluginLoader.LoadPlugins("Plugins");
+            PluginLoadReport pluginReport = PluginLoader.LoadPlugins("Plugins");
+            if (pluginReport.UserMessages.Count > 0)
+                MessageBox.Show(string.Join(Environment.NewLine + Environment.NewLine, pluginReport.UserMessages), "ColorVision");
 
             await InitializeStandaloneEngineAsync();
 

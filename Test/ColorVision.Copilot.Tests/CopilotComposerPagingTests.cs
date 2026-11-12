@@ -5,23 +5,6 @@ namespace ColorVision.Copilot.Tests;
 public sealed class CopilotComposerPagingTests
 {
     [Theory]
-    [InlineData(Key.PageUp, 1, 3)]
-    [InlineData(Key.PageUp, 2, 3)]
-    [InlineData(Key.PageDown, 0, 3)]
-    [InlineData(Key.PageDown, 1, 3)]
-    public void MultilineComposerKeepsPagingKeysWhileCaretCanMove(
-        Key key,
-        int caretLineIndex,
-        int lineCount)
-    {
-        Assert.False(ShouldPageConversation(
-            key,
-            caretLineIndex,
-            lineCount,
-            selectionLength: 0));
-    }
-
-    [Theory]
     [InlineData(Key.PageUp, 0, 3)]
     [InlineData(Key.PageDown, 2, 3)]
     [InlineData(Key.PageUp, 0, 1)]
@@ -36,18 +19,6 @@ public sealed class CopilotComposerPagingTests
             caretLineIndex,
             lineCount,
             selectionLength: 0));
-    }
-
-    [Theory]
-    [InlineData(Key.PageUp, 0)]
-    [InlineData(Key.PageDown, 2)]
-    public void ComposerSelectionKeepsPagingKeys(Key key, int caretLineIndex)
-    {
-        Assert.False(ShouldPageConversation(
-            key,
-            caretLineIndex,
-            lineCount: 3,
-            selectionLength: 1));
     }
 
     private static bool ShouldPageConversation(

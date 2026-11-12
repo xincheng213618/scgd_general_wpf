@@ -10,6 +10,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Media.Imaging;
 
 namespace ColorVision.ImageEditor
 {   
@@ -45,12 +46,16 @@ namespace ColorVision.ImageEditor
         // The image has its own rendering surface. Annotation collections, selection and
         // undo history contain only editor visuals, while Image still owns layout/stretch.
         private readonly DrawingVisual imageVisual = new();
+        private BitmapSource? _renderProxy;
+        private ImageSource? _renderProxyOwner;
         // 使用只读集合，防止外部直接修改
         private readonly List<Visual> visuals = new();
         private readonly HashSet<Visual> visualSet = new();
         private readonly List<Visual> overlayVisuals = new();
 
         public IReadOnlyList<Visual> Visuals => visuals;
+
+        internal TransientRoiSelectionSession? ActiveRoiSelection { get; set; }
 
         public DrawCanvas()
         {
@@ -197,7 +202,10 @@ namespace ColorVision.ImageEditor
         {
             base.OnPropertyChanged(e);
             if (e.Property == SourceProperty && !ReferenceEquals(e.OldValue, e.NewValue))
+            {
+                if (!ReferenceEquals(_renderProxyOwner, e.NewValue)) SetRenderProxy(null, null);
                 ClearImageDrawing();
+            }
         }
 
         private void ClearImageDrawing()
@@ -210,7 +218,21 @@ namespace ColorVision.ImageEditor
         protected override void OnRender(DrawingContext drawingContext)
         {
             using DrawingContext imageContext = imageVisual.RenderOpen();
+            if (ActiveRenderProxy is BitmapSource proxy)
+            {
+                imageContext.DrawImage(proxy, new Rect(new Point(), RenderSize));
+                return;
+            }
             base.OnRender(imageContext);
+        }
+
+        internal BitmapSource? ActiveRenderProxy => ReferenceEquals(_renderProxyOwner, Source) ? _renderProxy : null;
+
+        /// <summary>Draws <paramref name="proxy"/> while <paramref name="owner"/> is Source; Source stays the pixel contract.</summary>
+        internal void SetRenderProxy(ImageSource? owner, BitmapSource? proxy)
+        {
+            _renderProxyOwner = proxy == null ? null : owner;
+            _renderProxy = proxy;
         }
 
         public bool ContainsVisual(Visual visual) => visualSet.Contains(visual);
@@ -458,25 +480,23 @@ namespace ColorVision.ImageEditor
         public void RemoveVisualCommand(Visual? visual)
         {
             int index = visuals.IndexOf(visual);
-            if (visual == null) return;
-
-            bool ownsRemovalMarker = _visualRemovalCommandTargets.Add(visual);
-            bool removed;
-            try
-            {
-                removed = TryRemoveVisual(visual);
-            }
-            finally
-            {
-                if (ownsRemovalMarker)
-                    _visualRemovalCommandTargets.Remove(visual);
-            }
-            if (!removed) return;
+            if (visual == null || !TryRemoveVisualForCommand(visual)) return;
             if (_visualCommandAdditionsInProgress.Contains(visual)) return;
 
             Action undoaction = () => InsertVisual(index, visual);
             Action redoaction = () => RemoveVisual(visual);
             AddActionCommand(new ActionCommand(undoaction, redoaction) { Header = LocalizedText.Get("移除") });
+        }
+
+        internal bool TryRemoveVisualForCommand(Visual visual)
+        {
+            bool ownsRemovalMarker = _visualRemovalCommandTargets.Add(visual);
+            try { return TryRemoveVisual(visual); }
+            finally
+            {
+                if (ownsRemovalMarker)
+                    _visualRemovalCommandTargets.Remove(visual);
+            }
         }
 
         public void AddOverlayVisual(Visual visual)

@@ -15,7 +15,7 @@ namespace ProjectARVRPro.Process.OpticCenter
             if (ctx?.Batch == null || ctx.Result == null) return false;
             var log = ctx.Log;
             OpticCenterRecipeConfig recipeConfig = Config.RecipeConfig;
-            OpticCenterTestResult testResult = new OpticCenterTestResult();
+            OpticCenterTestResult testResult = new OpticCenterTestResult { Key = Config.GetOutputKey() };
 
             try
             {
@@ -127,7 +127,7 @@ namespace ProjectARVRPro.Process.OpticCenter
         }
 
         public override IReadOnlyList<ObjectiveTestCsvRow> GetObjectiveCsvRows(ProjectARVRReuslt result) =>
-            GetObjectiveCsvRows<OpticCenterTestResult>(result, "Optical_Center");
+            GetObjectiveCsvRows<OpticCenterTestResult>(result, Config.GetOutputKey());
 
         public override void Render(IProcessExecutionContext ctx)
         {

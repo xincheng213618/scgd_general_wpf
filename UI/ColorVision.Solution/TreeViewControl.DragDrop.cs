@@ -91,7 +91,7 @@ namespace ColorVision.Solution
                     ? e.AllowedEffects.HasFlag(DragDropEffects.Move)
                         && !Keyboard.Modifiers.HasFlag(ModifierKeys.Control)
                     : Keyboard.Modifiers.HasFlag(ModifierKeys.Shift);
-                SolutionFileOperationResult result = SolutionClipboardFileOperations.Execute(
+                SolutionFileOperationResult result = TransferPaths(
                     paths,
                     targetDir,
                     isMove);

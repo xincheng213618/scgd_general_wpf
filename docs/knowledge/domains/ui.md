@@ -41,6 +41,9 @@ next: false
 - [通用查询、条件会话与整表操作](../../04-api-reference/ui-components/database-query.md) — `ui.database-query`
   实体驱动的通用查询窗口：条件参数化、执行时SQL预览、结果替换与进程内会话；关闭不取消查询，清空表/截断表作用于整表而非筛选结果。
 
+- [共享防抖与回调生命周期](../../04-api-reference/ui-components/debounce-timer.md) — `ui.debounce-timer`
+  共享防抖的同键替换、回调所有权、Dispatcher 排队取消与可复用清理边界。
+
 - [桌面宠物](../../04-api-reference/ui-components/desktop-pet.md) — `ui.desktop-pet`
   桌面宠物的启用、选择、Codex 创建、本地素材导入、精灵表规格、配置与故障定位；创建结果由设置页限时发现。
 
@@ -48,13 +51,13 @@ next: false
   UI 扩展发现与入口缺失排查：AssemblyHandler 的程序集过滤、类型缓存和 provider 构造；刷新程序集不重建所有消费者，入口可见不证明初始化或业务完成。
 
 - [编辑器选择、文档生命周期与停靠布局](../../04-api-reference/ui-components/editor-document-lifecycle.md) — `ui.documents`
-  编辑器注册与选择、按路径和编辑器区分文档、保存重载关闭及外部变更；停靠布局不恢复未注册文件标签，重置也不预审脏文档。
+  编辑器注册与选择、文档身份、保存重载关闭及外部变更；重置停靠布局保留已打开的编辑器和未保存修改。
 
 - [快捷键：发现、注册、编辑与释放](../../04-api-reference/ui-components/hotkeys.md) — `ui.hotkeys`
   快捷键的发现、多组绑定、窗口/全局注册与搜索编辑；同一操作共享作用域，未分配操作保留展示，确认后立即保存，注册或持久化失败按结果补偿。
 
 - [ColorVision.ImageEditor：打开、绘制与输出](../../04-api-reference/ui-components/ColorVision.ImageEditor.md) — `ui.image-editor`
-  图像/视频打开、绘图撤销、叠加层、3D 与快照输出边界，区分渲染图、当前源像素和重读源文件的模型导出。
+  图像打开、绘图撤销、叠加层、3D 与快照输出边界，区分渲染图、当前源像素和重读源文件的模型导出。
 
 - [ImageEditor：上下文、工具装配与临时选区](../../04-api-reference/ui-components/image-editor-context.md) — `ui.image-editor-context`
   ImageView 的文档、会话、显示、算法协调和扩展所有权；说明源提交、连续帧有界处理、工具生命周期及临时 ROI 有效期。
@@ -90,7 +93,7 @@ next: false
   Socket连接管理器的监听配置、窗口关闭与服务停止、防火墙放行、消息查询和JSON/Text分发；清空消息只清列表，重发可能换客户端，Sent不证明对端执行。
 
 - [工作区创建、资源打开与文件树管理](../../04-api-reference/ui-components/ColorVision.Solution.md) — `ui.solution`
-  工作区创建、打开与最近列表，文件树搜索和引用移除，切换取消及cvsln恢复；同名创建可能覆盖配置，取消切换不回滚全部文件变化。
+  工作区创建、打开与最近列表，文件树搜索和引用移除，切换取消及 cvsln 恢复。新建工作区保留已有文件。
 
 - [SQLite 正文存储、迁移与文件维护](../../04-api-reference/ui-components/sqlite-storage.md) — `ui.sqlite-storage`
   Socket 与 Flow 的 SQLite 正文 gzip 编解码、按ID读写、旧TEXT逐批迁移、WAL备份与VACUUM；通用工具不自动停写/备份/恢复，失败可能已有批次提交。
@@ -99,7 +102,7 @@ next: false
   状态栏的插件发现、活动文档通知、绑定更新、控件重建和关闭生命周期；刷新不保证发现新provider，隐藏不等于保存偏好或停止采样。
 
 - [存储清理与选择性设置重置](../../04-api-reference/ui-components/storage-maintenance.md) — `ui.storage-maintenance`
-  独立文件缓存窗口的模块发现、自动增量扫描和确认清理，以及设置页的内存管理、恢复点和选择性重置入口。
+  存储分类占用与模块扩展接口、独立文件确认清理，以及配置页的恢复点和选择性下次启动重置。
 
 - [文本编辑器](../../04-api-reference/ui-components/text-editor.md) — `ui.text-editor`
   AvalonEdit 编辑器的代码地图、字体、查找替换、自动配对、文档内补全与符号导航，以及后台分析和 JSON 诊断边界。

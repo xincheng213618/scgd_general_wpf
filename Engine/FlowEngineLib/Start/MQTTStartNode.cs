@@ -294,19 +294,19 @@ public class MQTTStartNode : BaseStartNode
 			{
 				if (current != null)
 				{
-					Interlocked.CompareExchange(ref _MQTTHelper, null, current);
-					await current.DisconnectAsync_Client().ConfigureAwait(false);
+					await RetireHelperAsync(current).WaitAsync(linkedToken).ConfigureAwait(false);
 				}
 
 				ThrowIfMqttSessionChanged(generation, topicVersion, linkedToken);
 				current = new MQTTHelper();
 				Interlocked.Exchange(ref _MQTTHelper, current);
+				MQTTHelper sender = current;
 				ResultData_MQTT result = await current.CreateMQTTClientAndStart(
 					_Server,
 					_Port,
 					string.Empty,
 					string.Empty,
-					onMsgSub,
+					message => onMsgSub(sender, message),
 					linkedToken).ConfigureAwait(false);
 				ThrowIfMqttSessionChanged(generation, topicVersion, linkedToken);
 				if (result.ResultCode <= 0 || !current.IsClientConnect())
@@ -317,11 +317,8 @@ public class MQTTStartNode : BaseStartNode
 				if (!current.IsClientConnect())
 				{
 					Ready = false;
-					if (ReferenceEquals(Interlocked.CompareExchange(ref _MQTTHelper, null, current), current))
-					{
-						await current.DisconnectAsync_Client().ConfigureAwait(false);
-						ThrowIfMqttSessionChanged(generation, topicVersion, linkedToken);
-					}
+					await RetireHelperAsync(current).WaitAsync(linkedToken).ConfigureAwait(false);
+					ThrowIfMqttSessionChanged(generation, topicVersion, linkedToken);
 					logger.WarnFormat("MQTT start node connection failed => {0}:{1}", _Server, _Port);
 					return false;
 				}
@@ -338,7 +335,8 @@ public class MQTTStartNode : BaseStartNode
 		catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
 		{
 			Ready = false;
-			await ReleaseStaleSessionHelperAsync(current, generation, topicVersion).ConfigureAwait(false);
+			if (current != null && !IsMqttSessionCurrent(generation, topicVersion))
+				_ = RetireHelperAsync(current);
 			return false;
 		}
 		finally
@@ -359,14 +357,12 @@ public class MQTTStartNode : BaseStartNode
 		}
 	}
 
-	private async Task ReleaseStaleSessionHelperAsync(MQTTHelper mqttHelper, long generation, long topicVersion)
+	private Task RetireHelperAsync(MQTTHelper mqttHelper)
 	{
-		if (mqttHelper != null
-			&& !IsMqttSessionCurrent(generation, topicVersion)
-			&& ReferenceEquals(Interlocked.CompareExchange(ref _MQTTHelper, null, mqttHelper), mqttHelper))
-		{
-			await mqttHelper.DisconnectAsync_Client().ConfigureAwait(false);
-		}
+		// Once detached, the helper suppresses callbacks and owns cleanup independently of the readiness wait.
+		return ReferenceEquals(Interlocked.CompareExchange(ref _MQTTHelper, null, mqttHelper), mqttHelper)
+			? mqttHelper.DisconnectAsync_Client()
+			: Task.CompletedTask;
 	}
 
 	private async Task ChangeStartTopicAsync(
@@ -477,9 +473,9 @@ public class MQTTStartNode : BaseStartNode
 		return _StatusTopicName + "/" + m_nodeName;
 	}
 
-	private void onMsgSub(ResultData_MQTT resultData_MQTT)
+	private void onMsgSub(MQTTHelper sender, ResultData_MQTT resultData_MQTT)
 	{
-		if (isDisposed)
+		if (isDisposed || !ReferenceEquals(sender, _MQTTHelper))
 		{
 			return;
 		}
@@ -487,7 +483,7 @@ public class MQTTStartNode : BaseStartNode
 		string text = (string)resultData_MQTT.ResultObject1;
 		if (resultData_MQTT.EventType == EventTypeEnum.MsgRecv)
 		{
-			if (!HasCurrentMqttClient(_MQTTHelper))
+			if (!HasCurrentMqttClient(sender))
 			{
 				return;
 			}
@@ -536,8 +532,7 @@ public class MQTTStartNode : BaseStartNode
 		}
 		else if (resultData_MQTT.EventType == EventTypeEnum.ClientConnected)
 		{
-			MQTTHelper mqttHelper = _MQTTHelper;
-			if (resultData_MQTT.ResultCode > 0 && mqttHelper != null && mqttHelper.IsClientConnect())
+			if (resultData_MQTT.ResultCode > 0 && HasCurrentMqttClient(sender))
 			{
 				QueueSubscriptionRestore();
 				logger.Debug("MQTT connected; restoring subscriptions.");

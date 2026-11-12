@@ -122,7 +122,13 @@ namespace ColorVision.ImageEditor.Draw.Annotations
         public static AnnotationDocument Deserialize(string json)
         {
             ArgumentException.ThrowIfNullOrWhiteSpace(json);
-            return JsonConvert.DeserializeObject<AnnotationDocument>(json) ?? new AnnotationDocument();
+            AnnotationDocument document = JsonConvert.DeserializeObject<AnnotationDocument>(json)
+                ?? throw new JsonSerializationException("An annotation document must be a JSON object with an Items array.");
+            if (document.SchemaVersion != 1)
+                throw new JsonSerializationException($"Unsupported annotation schema version: {document.SchemaVersion}.");
+            if (document.CoordinateSpace != AnnotationCoordinateSpace.ImagePixels)
+                throw new JsonSerializationException($"Unsupported annotation coordinate space: {document.CoordinateSpace}.");
+            return document;
         }
     }
 }

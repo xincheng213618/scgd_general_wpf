@@ -1,5 +1,6 @@
 using ColorVision.Engine;
 using ColorVision.Engine.FlowProcessing;
+using ColorVision.Engine.FlowProcessing.Diagnostics;
 using ColorVision.UI;
 using ColorVision.UI.Views;
 using FlowEngineLib;
@@ -14,6 +15,42 @@ namespace ColorVision.UI.Tests;
 
 public sealed class FlowExecutionSessionProgressTests
 {
+    [Fact]
+    public void CompletedNodeInvocationsReleaseTheirMessageBucketsDuringTheSameRun()
+    {
+        WithSession(fixture =>
+        {
+            const string serialNumber = "SN-REPEATED-NODE";
+            var node = new CVCommonNode("Repeated node", "test", "test");
+            node.Create();
+            fixture.Begin(serialNumber, node.Title);
+            try
+            {
+                for (int index = 0; index < 64; index++)
+                {
+                    string messageId = Guid.NewGuid().ToString("N");
+                    fixture.PublishNodeStart(node, serialNumber, messageId);
+                    fixture.PublishNodeEnd(node, serialNumber, messageId);
+                }
+                Assert.Equal(0, fixture.PendingInvocationBuckets);
+
+                fixture.PublishNodeStart(node, serialNumber, "older");
+                fixture.PublishNodeStart(node, serialNumber, "shared");
+                fixture.PublishNodeStart(node, serialNumber, "shared");
+                fixture.PublishNodeEnd(node, serialNumber, "shared");
+                Assert.Equal(2, fixture.PendingInvocationBuckets);
+                fixture.PublishNodeEnd(node, serialNumber, "shared");
+                Assert.Equal(1, fixture.PendingInvocationBuckets);
+                fixture.PublishNodeEnd(node, serialNumber, null);
+                Assert.Equal(0, fixture.PendingInvocationBuckets);
+            }
+            finally
+            {
+                FlowNodeRecordDataBaseHelper.FlushPendingWrites();
+            }
+        });
+    }
+
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
@@ -118,7 +155,7 @@ public sealed class FlowExecutionSessionProgressTests
         WpfTestHost.Invoke(() =>
         {
             var previousConfig = ConfigService.Instance;
-            ConfigService.SetInstance(new ConfigHandler());
+            TestEnvironment.SetConfig(new ConfigHandler());
             var theme = new ResourceDictionary { Source = new Uri("/ColorVision.Themes;component/Themes/Theme.xaml", UriKind.Relative) };
             Application.Current.Resources.MergedDictionaries.Add(theme);
             try
@@ -129,7 +166,7 @@ public sealed class FlowExecutionSessionProgressTests
             finally
             {
                 Application.Current.Resources.MergedDictionaries.Remove(theme);
-                ConfigService.SetInstance(previousConfig);
+                TestEnvironment.SetConfig(previousConfig);
             }
         });
     }
@@ -152,6 +189,14 @@ public sealed class FlowExecutionSessionProgressTests
         public ConcurrentDictionary<string, string> RunningNodeNames => GetField<ConcurrentDictionary<string, string>>("_runningNodeNames");
         public ConcurrentDictionary<string, long> ExpectedDurations => GetField<ConcurrentDictionary<string, long>>("_nodeExpectedDurations");
         public int PendingUiUpdate => GetField<int>("_pendingUiUpdate");
+        public int PendingInvocationBuckets
+        {
+            get
+            {
+                object pending = GetField<object>("_pendingNodeExecutions");
+                return (int)pending.GetType().GetProperty("Count")!.GetValue(pending)!;
+            }
+        }
 
         public ProgressFixture()
         {
@@ -173,6 +218,12 @@ public sealed class FlowExecutionSessionProgressTests
 
         public void RequestProgress() => Invoke("UpdateRuntimeProgress", [null]);
         public void StartNodeProgress(CVCommonNode node, long? duration) => Invoke("StartNodeTitleProgress", [node, duration]);
+
+        public void PublishNodeStart(CVCommonNode node, string serialNumber, string messageId)
+            => Invoke("NodeRunEvent", [node, new FlowEngineNodeRunEventArgs { SerialNumber = serialNumber, SendMsgId = messageId }]);
+
+        public void PublishNodeEnd(CVCommonNode node, string serialNumber, string? messageId)
+            => Invoke("NodeEndEvent", [node, new FlowEngineNodeEndEventArgs { SerialNumber = serialNumber, RecvMsgId = messageId!, RecvStatusCode = 0 }]);
 
         public void Dispose()
         {

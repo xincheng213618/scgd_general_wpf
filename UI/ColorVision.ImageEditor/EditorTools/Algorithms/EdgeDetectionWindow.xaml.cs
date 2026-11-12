@@ -14,12 +14,15 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
         private readonly string _debounceKey = $"{nameof(EdgeDetectionWindow)}_{Guid.NewGuid():N}";
         private readonly ImageAlgorithmPreviewSession _preview;
         private readonly CannyParameters _parameters = new();
+        private long _parameterRevision;
+        private Guid _completedPreviewInvocationId;
+        private long _completedPreviewParameterRevision;
 
         public EdgeDetectionWindow(ImageProcessingContext image)
         {
             InitializeComponent();
             this.ApplyCaption();
-            _preview = ImageAlgorithmPreviewSession.Start(image);
+            _preview = ImageAlgorithmPreviewSession.StartForCatalogPreview(image);
             Threshold1Slider.Value = _parameters.LowThreshold;
             Threshold2Slider.Value = _parameters.HighThreshold;
             _ = ApplyPreviewAsync();
@@ -30,17 +33,32 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
             if (!IsInitialized || Threshold1Slider == null || Threshold2Slider == null) return;
             _parameters.LowThreshold = Threshold1Slider.Value;
             _parameters.HighThreshold = Threshold2Slider.Value;
-            DebounceTimer.AddOrResetTimerDispatcher(_debounceKey, 50, () => _ = ApplyPreviewAsync());
+            if (_preview == null) return;
+            _parameterRevision++;
+            DebounceTimer.AddOrResetTimerDispatcher(_debounceKey, 50, _preview.GuardDeferredPreview(() => _ = ApplyPreviewAsync()));
         }
 
         private async System.Threading.Tasks.Task<bool> ApplyPreviewAsync()
         {
             try
             {
+                long parameterRevision = _parameterRevision;
+                _completedPreviewInvocationId = Guid.Empty;
                 AlgorithmInvocation invocation = AlgorithmInvocation.Create(StandardAlgorithmIds.Canny, _parameters);
-                using AlgorithmResult result = await _preview.PreviewAsync(invocation);
-                if (result.Status == AlgorithmResultStatus.Failed) log.Warn(string.Join("; ", result.Failures));
-                return result.Status == AlgorithmResultStatus.Succeeded && _preview.IsCurrent(invocation.InvocationId);
+                bool succeeded;
+                using (AlgorithmResult result = await _preview.PreviewAsync(invocation))
+                {
+                    if (result.Status == AlgorithmResultStatus.Failed) log.Warn(string.Join("; ", result.Failures));
+                    succeeded = result.Status == AlgorithmResultStatus.Succeeded;
+                }
+                // Result disposal can reenter; qualify only the completed run's original parameter state.
+                bool current = succeeded && _preview.IsCurrent(invocation.InvocationId);
+                if (current && parameterRevision == _parameterRevision)
+                {
+                    _completedPreviewParameterRevision = parameterRevision;
+                    _completedPreviewInvocationId = invocation.InvocationId;
+                }
+                return current;
             }
             catch (ObjectDisposedException)
             {
@@ -56,7 +74,15 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
         private async void Apply_Click(object sender, RoutedEventArgs e)
         {
             DebounceTimer.Cancel(_debounceKey);
-            if (await ApplyPreviewAsync() && _preview.Commit()) Close();
+            long parameterRevision = _parameterRevision;
+            if (_completedPreviewInvocationId != Guid.Empty
+                && parameterRevision == _completedPreviewParameterRevision && _preview.IsCurrent(_completedPreviewInvocationId))
+            {
+                if (_preview.Commit()) Close();
+                // Commit failure can mean a new owner took over during its synchronous callbacks.
+                return;
+            }
+            if (await ApplyPreviewAsync() && parameterRevision == _parameterRevision && _preview.Commit()) Close();
         }
 
         private void Cancel_Click(object sender, RoutedEventArgs e)

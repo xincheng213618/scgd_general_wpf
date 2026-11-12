@@ -43,8 +43,6 @@ internal sealed record LocalGridDistortionPersistenceRequest
     public required object Parameters { get; init; }
     public GridDistortionResult? Result { get; init; }
     public GridDistortionAnalysis? Analysis { get; init; }
-    public GridTvFormula TvFormula { get; init; }
-    public GridPoint9Formula Point9Formula { get; init; }
     public string ResultDirectory { get; init; } = string.Empty;
 }
 
@@ -102,7 +100,7 @@ internal static class LocalGridDistortionResultPersistence
 
         GridDistortionResult result = request.Result ?? throw new InvalidOperationException("成功的本地点阵畸变结果缺少明细。");
         GridDistortionAnalysis analysis = request.Analysis ?? throw new InvalidOperationException("成功的本地点阵畸变结果缺少指标分析。");
-        string resultFilePath = WriteResultFile(request.ResultDirectory, BuildLegacyResultJson(result, analysis, request.TvFormula, request.Point9Formula));
+        string resultFilePath = WriteResultFile(request.ResultDirectory, BuildLegacyResultJson(result, analysis));
         try
         {
             int masterId = SaveDatabaseCore(master, resultFilePath, static () => new SqlSugarLocalFlowResultTransaction<DetailCommonModel>());
@@ -119,16 +117,14 @@ internal static class LocalGridDistortionResultPersistence
         }
     }
 
-    internal static string BuildLegacyResultJson(GridDistortionResult result, GridDistortionAnalysis analysis,
-        GridTvFormula tvFormula, GridPoint9Formula point9Formula)
+    internal static string BuildLegacyResultJson(GridDistortionResult result, GridDistortionAnalysis analysis)
     {
         ArgumentNullException.ThrowIfNull(result);
         ArgumentNullException.ThrowIfNull(analysis);
         if (!result.Success || result.Metrics == null)
             throw new InvalidOperationException("拒绝结果不能写入成功的畸变 2.0 明细。");
-        if (!Enum.IsDefined(tvFormula) || !Enum.IsDefined(point9Formula)) throw new InvalidOperationException("畸变输出口径无效。");
-        var tv = tvFormula == GridTvFormula.Standard ? analysis.StandardTv : analysis.HalfTv;
-        var point9 = point9Formula == GridPoint9Formula.OppositeEdgeMean ? analysis.ReferencePoint9 : analysis.LegacyPoint9;
+        var tv = analysis.StandardTv;
+        var point9 = analysis.ReferencePoint9;
         var pointsById = result.Points.ToDictionary(point => point.Id);
         var points = result.Points.Select(point => new { id = point.Id, x = point.X, y = point.Y }).ToArray();
         var referencePoints = result.ReferencePointIds.Select(id =>
@@ -157,12 +153,10 @@ internal static class LocalGridDistortionResultPersistence
             MetricDefinition,
             analysis.FormulaVersion,
             Units = "percent",
-            OutputSelection = new { TvFormula = tvFormula.ToString(), Point9Formula = point9Formula.ToString() },
+            OutputSelection = new { TvFormula = nameof(GridTvFormula.Standard), Point9Formula = nameof(GridPoint9Formula.OppositeEdgeMean) },
             PointOrder = "row-major, top-to-bottom, left-to-right",
             ReferencePointOrder = "TL,TC,TR,ML,C,MR,BL,BC,BR",
-            KeystoneAxes = point9Formula == GridPoint9Formula.OppositeEdgeMean
-                ? "H=(leftHeight-rightHeight)/average(leftHeight,rightHeight); V=(topWidth-bottomWidth)/average(topWidth,bottomWidth)"
-                : "Legacy H=(topWidth-bottomWidth)/average(topWidth,middleWidth,bottomWidth); Legacy V=(leftHeight-rightHeight)/average(leftHeight,centerHeight,rightHeight)",
+            KeystoneAxes = "H=(leftHeight-rightHeight)/average(leftHeight,rightHeight); V=(topWidth-bottomWidth)/average(topWidth,bottomWidth)",
             Optic_Distortion = opticalResult,
             Point9_distortion = new
             {
@@ -256,6 +250,10 @@ internal static class LocalGridDistortionResultPersistence
 }
 
 [STNode("Flow_LocalAlgorithms", "点阵畸变", CategoryOrder = 9910, NodeOrder = 30)]
+[FlowEngineLib.FlowNodeDocumentation("识别完整规则点阵，同时计算 TV、九点四边、梯形、四角几何和相对径向估计。",
+    Usage = "连接上游图像，按图卡设置实际行列数和亮暗模式；需要限定目标时配置搜索区域。",
+    Notes = "缺点不补点；光学项为未标定的模型估计。详细取点方式、公式和图示见算法原理。",
+    TopicId = "algorithms.grid-distortion")]
 public sealed class LocalGridDistortionNode : LocalFlowNodeBase
 {
     internal const int DetectionFailureResultCode = -1;
@@ -267,8 +265,6 @@ public sealed class LocalGridDistortionNode : LocalFlowNodeBase
     private int expectedCols = 3;
     private bool brightTarget = true;
     private double minimumContrast = 0.02;
-    private GridTvFormula tvFormula;
-    private GridPoint9Formula point9Formula = GridPoint9Formula.OppositeEdgeMean;
 
     [Category("本地点阵畸变")]
     [STNodeProperty("图卡行数", "点阵行数，支持 3 到 15 的奇数；7×7 图卡填 7。缺失点不补点。", true)]
@@ -301,14 +297,6 @@ public sealed class LocalGridDistortionNode : LocalFlowNodeBase
     [STNodeProperty("最小对比度", "点目标相对背景的最小归一化对比度，范围 0 到 1；不足时拒绝测量。", true)]
     public double MinimumContrast { get => minimumContrast; set { minimumContrast = value; OnPropertyChanged(); } }
 
-    [Category("畸变输出")]
-    [STNodeProperty("TV 输出口径", "标准 TV 或标准值减半；同一次定位同时计算两种值，此项选择写入 ARVR 的口径。", true)]
-    public GridTvFormula TvFormula { get => tvFormula; set { tvFormula = value; OnPropertyChanged(); } }
-
-    [Category("畸变输出")]
-    [STNodeProperty("九点输出口径", "新建节点默认对边平均九点；结果 JSON 沿用 Point9_distortion 字段结构。旧 P9 三跨度可选，全部方案都会保存在分析结果中。", true)]
-    public GridPoint9Formula Point9Formula { get => point9Formula; set { point9Formula = value; OnPropertyChanged(); } }
-
     [Category("本地点阵畸变")]
     [PropertyEditorType(typeof(TextSelectFolderPropertiesEditor))]
     [STNodeProperty("结果目录", "可选；留空保存到当前用户 LocalAppData 下 ColorVision\\Results\\GridDistortion。", true)]
@@ -335,9 +323,6 @@ public sealed class LocalGridDistortionNode : LocalFlowNodeBase
         Int32Rect configuredRegion = SearchRegion;
         string configuredTemplate = SearchRegionPoiTemplate.Trim();
         string configuredDirectory = ResultDirectory;
-        GridTvFormula selectedTvFormula = TvFormula;
-        GridPoint9Formula selectedPoint9Formula = Point9Formula;
-        if (!Enum.IsDefined(selectedTvFormula) || !Enum.IsDefined(selectedPoint9Formula)) throw new InvalidOperationException("畸变输出口径无效。");
         int zIndex = ZIndex;
         string nodeId = NodeID;
         LocalFlowFrame? ownedFrame = null;
@@ -365,7 +350,7 @@ public sealed class LocalGridDistortionNode : LocalFlowNodeBase
                 SearchRegionPoiTemplate = configuredTemplate,
                 SearchRegion = new { roi.X, roi.Y, roi.Width, roi.Height },
                 Options = options,
-                OutputSelection = new { TvFormula = selectedTvFormula.ToString(), Point9Formula = selectedPoint9Formula.ToString() },
+                OutputSelection = new { TvFormula = nameof(GridTvFormula.Standard), Point9Formula = nameof(GridPoint9Formula.OppositeEdgeMean) },
                 Detection = detection,
                 PrimaryBufferKind = lease.Metadata.PrimaryBufferKind.ToString(),
                 SourceFilePath = lease.Metadata.SourceFilePath,
@@ -380,8 +365,7 @@ public sealed class LocalGridDistortionNode : LocalFlowNodeBase
             LocalGridDistortionPersistenceRequest request = new()
             {
                 Action = action, ImageFilePath = imageFile, ZIndex = zIndex,
-                TotalTime = totalTime, Parameters = parameters, ResultDirectory = configuredDirectory,
-                TvFormula = selectedTvFormula, Point9Formula = selectedPoint9Formula
+                TotalTime = totalTime, Parameters = parameters, ResultDirectory = configuredDirectory
             };
             GridDistortionAnalysis analysis;
             try
@@ -411,18 +395,18 @@ public sealed class LocalGridDistortionNode : LocalFlowNodeBase
             }
             action.Data["LocalGridDistortionResult"] = detection;
             action.Data["LocalGridDistortionAnalysis"] = analysis;
-            var selectedTv = selectedTvFormula == GridTvFormula.Standard ? analysis.StandardTv : analysis.HalfTv;
-            var selectedPoint9 = selectedPoint9Formula == GridPoint9Formula.OppositeEdgeMean ? analysis.ReferencePoint9 : analysis.LegacyPoint9;
-            action.Data["LocalGridDistortionMetrics"] = new { TV = selectedTv, Point9 = selectedPoint9, Geometry = analysis.Geometry };
+            var tv = analysis.StandardTv;
+            var point9 = analysis.ReferencePoint9;
+            action.Data["LocalGridDistortionMetrics"] = new { TV = tv, Point9 = point9, Geometry = analysis.Geometry };
             action.Data["LocalGridDistortionGeometry"] = analysis.Geometry;
             action.Data["LocalGridDistortionQuality"] = detection.Quality;
             action.Data["LocalGridDistortionPoints"] = detection.Points;
             action.Data["LocalGridDistortionReferencePointIds"] = detection.ReferencePointIds;
             action.Data["LocalGridDistortionResultFile"] = persisted.ResultFilePath;
-            action.Data["LocalGridDistortionHorizontalTvPercent"] = selectedTv.HorizontalPercent;
-            action.Data["LocalGridDistortionVerticalTvPercent"] = selectedTv.VerticalPercent;
-            action.Data["LocalGridDistortionKeystoneHorizontalPercent"] = selectedPoint9.KeystoneHorizontalPercent;
-            action.Data["LocalGridDistortionKeystoneVerticalPercent"] = selectedPoint9.KeystoneVerticalPercent;
+            action.Data["LocalGridDistortionHorizontalTvPercent"] = tv.HorizontalPercent;
+            action.Data["LocalGridDistortionVerticalTvPercent"] = tv.VerticalPercent;
+            action.Data["LocalGridDistortionKeystoneHorizontalPercent"] = point9.KeystoneHorizontalPercent;
+            action.Data["LocalGridDistortionKeystoneVerticalPercent"] = point9.KeystoneVerticalPercent;
             action.Data["LocalGridDistortionMaximumTiltDegrees"] = analysis.Geometry.MaximumTiltDegrees;
             action.Data["LocalGridDistortionMaximumEdgeLengthDifferencePercent"] = analysis.Geometry.MaximumEdgeLengthDifferencePercent;
             action.MasterValue(null, persisted.MasterId, (int)ViewResultAlgType.Distortion);
@@ -440,7 +424,7 @@ public sealed class LocalGridDistortionNode : LocalFlowNodeBase
     {
         ServiceName = NodeName, EventName = OperatorCode, action.SerialNumber,
         SearchRegion, SearchRegionPoiTemplate, ExpectedRows, ExpectedCols, BrightTarget, MinimumContrast, ResultDirectory,
-        TvFormula, Point9Formula, Algorithm = "GridDistortionV2"
+        Algorithm = "GridDistortionV2"
     });
 
     internal static void ValidateDetection(GridDistortionResult result, GridDistortionOptions options, int width, int height)

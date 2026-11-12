@@ -12,18 +12,15 @@ public class CommCameraData
 
 	public bool IsAutoExpTime { get; set; }
 
-	public bool IsHDR { get; set; }
-
 	public CVTemplateParam CamParamTemplate { get; set; }
 
 	public CVTemplateParam Calibration { get; set; }
 
-	public CommCameraData(string camTempName, bool isWithND, bool isAutoExpTime, string autoExpTempName, string caliTempName, bool isHDR = false, CVImageFlipMode flipMode = CVImageFlipMode.None)
+	public CommCameraData(string camTempName, bool isWithND, bool isAutoExpTime, string autoExpTempName, string caliTempName, CVImageFlipMode flipMode = CVImageFlipMode.None)
 	{
 		FlipMode = flipMode;
 		IsAutoExpWithND = isWithND;
 		IsAutoExpTime = isAutoExpTime;
-		IsHDR = isHDR;
 		AutoExpTimeTemplate = new CVTemplateParam
 		{
 			ID = -1,
