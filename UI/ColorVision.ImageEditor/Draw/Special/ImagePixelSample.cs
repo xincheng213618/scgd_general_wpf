@@ -19,6 +19,8 @@ namespace ColorVision.ImageEditor.Draw.Special
 
         public bool HasRgbSourceChannels { get; init; }
 
+        internal (ushort Red, ushort Green, ushort Blue)? Rgb16 { get; init; }
+
         public Point PixelPosition => new(PixelX, PixelY);
 
         public string CoordinateText => $"({PixelX},{PixelY})";
