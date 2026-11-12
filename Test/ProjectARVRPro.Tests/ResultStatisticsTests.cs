@@ -719,6 +719,40 @@ public sealed class ResultStatisticsTests
         Assert.Equal(interrupted.ResultId, row.PreviousResultId);
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void SerialAndFlowNameFiltersTreatSqlWildcardCharactersAsLiteralText(bool readOnly)
+    {
+        using var database = new TemporaryResultDatabase();
+        new ResultStatisticsDataStore(database.Path).InitializeSchema();
+        var store = new ResultStatisticsDataStore(database.Path, readOnly);
+        DateTime day = new(2026, 9, 19);
+        const string matchingSerial = "BODY_L_120000";
+        const string unrelatedSerial = "BODYXLX120000";
+        const string matchingModel = @"Mtf\_Fast%Test";
+        const string unrelatedModel = @"Mtf\XFastYTest";
+        database.Insert(
+            CreateRecord(matchingSerial, true, day.AddHours(8), 1_000, "first", true),
+            CreateRecord(unrelatedSerial, true, day.AddHours(9), 1_000, "second", true));
+        database.InsertFlow(new() { SN = matchingSerial, Model = matchingModel, CreateTime = day.AddHours(8), RunTime = 500 });
+        database.InsertFlow(new() { SN = unrelatedSerial, Model = unrelatedModel, CreateTime = day.AddHours(9), RunTime = 500 });
+        var records = new ResultStatisticsQuery { From = day, ToExclusive = day.AddDays(1), SN = " body_l_120000 " };
+        var flows = new FlowExecutionQuery { From = day, ToExclusive = day.AddDays(1), Model = @" mtf\_fast% " };
+
+        ResultStatisticsDashboard dashboard = store.QueryDashboard(records, ResultStatisticsPeriodMode.Day, day);
+        ResultStatisticsDashboard monthlyDashboard = store.QueryDashboard(records, ResultStatisticsPeriodMode.All, day);
+        Assert.Equal(1, store.QueryRecordCount(records));
+        Assert.Equal(matchingSerial, Assert.Single(store.QueryRecords(records)).SN);
+        Assert.Equal(1, store.QueryStatistics(records, day).TotalCount);
+        Assert.Equal(1, dashboard.Summary.TotalCount);
+        Assert.Single(dashboard.Trend);
+        Assert.Equal(1, monthlyDashboard.Summary.TotalCount);
+        Assert.Equal(1, Assert.Single(monthlyDashboard.Trend).TotalCount);
+        Assert.Equal(1, store.QueryFlowExecutionCount(flows));
+        Assert.Equal(matchingModel, Assert.Single(store.QueryFlowExecutions(flows)).Model);
+    }
+
     [Fact]
     public void LiveDashboardReadsCommittedStatisticsWhileAResultWriterHoldsTheWriteTransaction()
     {

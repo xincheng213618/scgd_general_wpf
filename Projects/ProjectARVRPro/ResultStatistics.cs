@@ -622,6 +622,8 @@ namespace ProjectARVRPro
 
     public sealed class ResultStatisticsDataStore
     {
+        private const string SerialNumberFilterSql = "\"SN\" LIKE @SN ESCAPE '\\'";
+
         // Unfinished batches still delimit ownership of the flow rows they already saved.
         private const string RecordFlowBoundariesSql = """
             SELECT "Id", "SN", "ResultId", "CreateTime", "UpdateTime", "TotalResult",
@@ -712,7 +714,7 @@ namespace ProjectARVRPro
                 const string cycleTimeExpression = "CASE WHEN julianday(\"UpdateTime\") >= julianday(\"CreateTime\") THEN (julianday(\"UpdateTime\") - julianday(\"CreateTime\")) * 86400000.0 ELSE 0.0 END";
                 string optionalFilter = string.Empty;
                 if (!string.IsNullOrWhiteSpace(query.SN))
-                    optionalFilter += " AND \"SN\" LIKE '%' || @SN || '%'";
+                    optionalFilter += " AND " + SerialNumberFilterSql;
                 if (query.Result.HasValue)
                     optionalFilter += " AND \"TotalResult\" = @Result";
                 string resultFilter = $$"""
@@ -828,7 +830,7 @@ namespace ProjectARVRPro
             InitializeSchema();
             using SqlSugarClient db = CreateClient();
             int skip = checked((query.PageNumber - 1) * query.PageSize);
-            const string sql = """
+            const string sql = $$"""
                 WITH PageRecords AS
                 (
                     SELECT "Id", "SN", "CreateTime" AS "StartTime", "UpdateTime" AS "EndTime", "TotalResult" AS "Result",
@@ -837,7 +839,7 @@ namespace ProjectARVRPro
                     WHERE "UpdateTime" >= @From
                       AND "UpdateTime" < @ToExclusive
                       AND ("IsFinalized" = 1 OR "IsFinalized" IS NULL)
-                      AND (@SN IS NULL OR "SN" LIKE '%' || @SN || '%')
+                      AND (@SN IS NULL OR {{SerialNumberFilterSql}})
                       AND (@Result IS NULL OR "TotalResult" = @Result)
                     ORDER BY "Id" DESC
                     LIMIT @PageSize OFFSET @Skip
@@ -876,7 +878,7 @@ namespace ProjectARVRPro
                 ReadSql(sql),
                 new SugarParameter("@From", query.From),
                 new SugarParameter("@ToExclusive", query.ToExclusive),
-                new SugarParameter("@SN", string.IsNullOrWhiteSpace(query.SN) ? DBNull.Value : query.SN.Trim()),
+                new SugarParameter("@SN", (object?)CreateLiteralContainsPattern(query.SN) ?? DBNull.Value),
                 new SugarParameter("@Result", query.Result.HasValue ? query.Result.Value : DBNull.Value),
                 new SugarParameter("@PageSize", query.PageSize),
                 new SugarParameter("@Skip", skip));
@@ -1322,9 +1324,8 @@ namespace ProjectARVRPro
                 .Where(item => item.UpdateTime >= from
                     && item.UpdateTime < toExclusive
                     && (item.IsFinalized == true || item.IsFinalized == null));
-            string? sn = string.IsNullOrWhiteSpace(query.SN) ? null : query.SN.Trim();
-            if (sn != null)
-                queryResult = queryResult.Where(item => item.SN.Contains(sn));
+            if (CreateLiteralContainsPattern(query.SN) is string snPattern)
+                queryResult = queryResult.Where(SerialNumberFilterSql, new { SN = snPattern });
             if (query.Result.HasValue)
             {
                 bool expectedResult = query.Result.Value;
@@ -1342,9 +1343,8 @@ namespace ProjectARVRPro
             DateTime toExclusive = query.ToExclusive;
             ISugarQueryable<ProjectARVRReuslt> queryResult = queryable
                 .Where(item => item.CreateTime >= from && item.CreateTime < toExclusive);
-            string? model = string.IsNullOrWhiteSpace(query.Model) ? null : query.Model.Trim();
-            if (model != null)
-                queryResult = queryResult.Where(item => item.Model.Contains(model));
+            if (CreateLiteralContainsPattern(query.Model) is string modelPattern)
+                queryResult = queryResult.Where("\"Model\" LIKE @Model ESCAPE '\\'", new { Model = modelPattern });
             if (query.Result.HasValue)
             {
                 bool expectedResult = query.Result.Value;
@@ -1352,6 +1352,17 @@ namespace ProjectARVRPro
             }
 
             return queryResult;
+        }
+
+        private static string? CreateLiteralContainsPattern(string? value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+                return null;
+
+            string literal = value.Trim().Replace("\\", "\\\\", StringComparison.Ordinal)
+                .Replace("%", "\\%", StringComparison.Ordinal)
+                .Replace("_", "\\_", StringComparison.Ordinal);
+            return "%" + literal + "%";
         }
 
         private static void ValidateFlowExecutionQuery(FlowExecutionQuery query)
@@ -1371,7 +1382,7 @@ namespace ProjectARVRPro
             [
                 new SugarParameter("@From", query.From),
                 new SugarParameter("@ToExclusive", query.ToExclusive),
-                new SugarParameter("@SN", string.IsNullOrWhiteSpace(query.SN) ? DBNull.Value : query.SN.Trim()),
+                new SugarParameter("@SN", (object?)CreateLiteralContainsPattern(query.SN) ?? DBNull.Value),
                 new SugarParameter("@Result", query.Result.HasValue ? query.Result.Value : DBNull.Value),
                 new SugarParameter("@CurrentHour", currentHour),
                 new SugarParameter("@NextHour", currentHour.AddHours(1)),
