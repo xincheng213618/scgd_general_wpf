@@ -48,17 +48,22 @@ public sealed class ProjectSettingsWindowTests
                 ComboBox FindPicker(string property) => Descendants<ComboBox>(panel).Single(input =>
                     input.GetBindingExpression(Selector.SelectedValueProperty)?.ParentBinding.Path.Path == property);
                 var camera = FindPicker(nameof(config.LuxVidCameraCode));
-                Assert.Equal(-1, camera.SelectedIndex);
-                Assert.Equal(2, camera.Items.Count);
+                Assert.Equal(string.Empty, camera.SelectedValue);
+                Assert.Contains("SV6100_Camera", ((KeyValuePair<string, string>)camera.SelectedItem).Value);
+                Assert.Equal(3, camera.Items.Count);
                 camera.SelectedValue = LuxVidMeasurementTests.CameraScope.VidCode;
                 Pump();
                 Assert.Equal(LuxVidMeasurementTests.CameraScope.VidCode, config.LuxVidCameraCode);
                 Assert.Equal(2, saves);
+                camera.SelectedValue = string.Empty;
+                Pump();
+                Assert.Equal(string.Empty, config.LuxVidCameraCode);
+                Assert.Equal(3, saves);
                 var mode = FindPicker(nameof(config.LuxVidMode));
                 mode.SelectedValue = LuxVidMeasurementMode.FineFocus;
                 Pump();
                 Assert.Equal(LuxVidMeasurementMode.FineFocus, config.LuxVidMode);
-                Assert.Equal(3, saves);
+                Assert.Equal(4, saves);
                 var bitmap = new RenderTargetBitmap((int)window.ActualWidth, (int)window.ActualHeight, 96, 96, PixelFormats.Pbgra32);
                 bitmap.Render(window);
                 var png = new PngBitmapEncoder();
@@ -71,7 +76,7 @@ public sealed class ProjectSettingsWindowTests
                 Assert.Equal(0, config.LuxVidB);
                 window.Close();
                 Assert.Equal(3.5, config.LuxVidB);
-                Assert.Equal(4, saves);
+                Assert.Equal(5, saves);
             }
             finally { window.Close(); }
         });

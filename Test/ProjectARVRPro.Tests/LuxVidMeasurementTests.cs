@@ -58,7 +58,28 @@ public sealed class LuxVidMeasurementTests
     }
 
     [Theory]
-    [InlineData("", LuxVidMeasurementMode.AutoFocus, "选择 VID 相机")]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task VidUsesTheFirstCameraWhenNoCameraIsConfigured(bool singleCamera)
+    {
+        using var camera = new CameraScope(DeviceStatusType.Opened, LuxVidMeasurementMode.GetPosition);
+        Task<double?> measurement = null!;
+        ArvrDrawingOverlayCompatibilityTests.RunOnStaThread(() =>
+        {
+            if (singleCamera) ServiceManager.GetInstance().DeviceServices.Remove(camera.OtherService.Device);
+            ProjectARVRProConfig.Instance.LuxVidCameraCode = string.Empty;
+            measurement = LuxDeviceMeasurements.MeasureVidAsync(CancellationToken.None);
+        });
+        FakeCameraService first = singleCamera ? camera.Service : camera.OtherService;
+        FakeCameraService unused = singleCamera ? camera.OtherService : camera.Service;
+        MsgRecord command = await first.Measured.Task.WaitAsync(Timeout);
+        camera.Complete(command, MsgRecordState.Success, new { VidPos = 123.45 });
+        Assert.Equal(123.45, await measurement.WaitAsync(Timeout));
+        Assert.Equal(["GetPosition"], first.Commands);
+        Assert.Empty(unused.Commands);
+    }
+
+    [Theory]
     [InlineData("REMOVED", LuxVidMeasurementMode.GetPosition, "找不到 VID 相机")]
     [InlineData(CameraScope.VidCode, LuxVidMeasurementMode.FineFocus, "仅支持本地相机")]
     public async Task InvalidVidCameraSettingsDoNotIssueDeviceCommands(string code, LuxVidMeasurementMode mode, string expectedError)

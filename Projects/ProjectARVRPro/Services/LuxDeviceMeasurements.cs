@@ -35,12 +35,19 @@ internal static class LuxDeviceMeasurements
         cancellationToken.ThrowIfCancellationRequested();
         var config = ProjectARVRProConfig.Instance;
         string code = config.LuxVidCameraCode;
-        if (string.IsNullOrWhiteSpace(code)) throw new InvalidOperationException("请在“流程处理配置 → 其他配置”选择 VID 相机。");
-        var cameras = ServiceManager.GetInstance().DeviceServices.OfType<DeviceCamera>()
-            .Where(camera => string.Equals(camera.Code, code, StringComparison.Ordinal)).Take(2).ToArray();
-        if (cameras.Length == 0) throw new InvalidOperationException($"找不到 VID 相机“{code}”，请在“其他配置”重新选择。");
-        if (cameras.Length > 1) throw new InvalidOperationException($"VID 相机设备代码“{code}”重复，请检查设备配置。");
-        DeviceCamera camera = cameras[0];
+        var cameras = ServiceManager.GetInstance().DeviceServices.OfType<DeviceCamera>();
+        DeviceCamera camera;
+        if (string.IsNullOrEmpty(code))
+        {
+            camera = cameras.FirstOrDefault() ?? throw new InvalidOperationException("当前没有可用于 VID 测量的相机。");
+        }
+        else
+        {
+            var matches = cameras.Where(device => string.Equals(device.Code, code, StringComparison.Ordinal)).Take(2).ToArray();
+            if (matches.Length == 0) throw new InvalidOperationException($"找不到 VID 相机“{code}”，请在“其他配置”重新选择。");
+            if (matches.Length > 1) throw new InvalidOperationException($"VID 相机设备代码“{code}”重复，请检查设备配置。");
+            camera = matches[0];
+        }
         LuxVidMeasurementMode mode = config.LuxVidMode;
         if (!Enum.IsDefined(mode)) throw new InvalidOperationException("请选择有效的 VID 测量方式。");
         bool fineFocus = mode == LuxVidMeasurementMode.FineFocus;

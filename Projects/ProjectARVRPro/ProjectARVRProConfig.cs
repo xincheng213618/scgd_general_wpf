@@ -118,8 +118,12 @@ namespace ProjectARVRPro
         private string _LuxMachineNo = "H03";
 
         [DisplayName("VID 相机"), Category("LUX协议"), PropertyEditorType(typeof(VidCameraPropertiesEditor))]
-        [Description("用于单次 VID 测量的相机，JSON MeasureVID 和 LUX T0001 共用。")]
-        public string LuxVidCameraCode { get => _LuxVidCameraCode; set { _LuxVidCameraCode = value; OnPropertyChanged(); } }
+        [Description("默认使用设备列表中的第一台相机。JSON MeasureVID 和 LUX T0001 共用此设置。")]
+        public string LuxVidCameraCode
+        {
+            get => _LuxVidCameraCode;
+            set { _LuxVidCameraCode = string.IsNullOrWhiteSpace(value) ? string.Empty : value; OnPropertyChanged(); }
+        }
         private string _LuxVidCameraCode = string.Empty;
 
         [DisplayName("VID 测量方式"), Category("LUX协议")]

@@ -12,11 +12,14 @@ internal sealed class VidCameraPropertiesEditor : IPropertyEditor
 {
     public DockPanel GenProperties(PropertyInfo property, object obj)
     {
-        var cameras = ServiceManager.GetInstance().DeviceServices.OfType<DeviceCamera>();
-        var options = cameras.Where(camera => !string.IsNullOrWhiteSpace(camera.Code))
+        var cameras = ServiceManager.GetInstance().DeviceServices.OfType<DeviceCamera>().ToArray();
+        var first = cameras.FirstOrDefault();
+        string defaultLabel = first == null || string.IsNullOrWhiteSpace(first.Name)
+            ? "默认（第一台相机）" : $"默认（第一台：{first.Name}）";
+        var options = new List<KeyValuePair<string, string>> { new(string.Empty, defaultLabel) };
+        options.AddRange(cameras.Where(camera => !string.IsNullOrWhiteSpace(camera.Code))
             .Select(camera => new KeyValuePair<string, string>(camera.Code,
-                string.IsNullOrWhiteSpace(camera.Name) || camera.Name == camera.Code ? camera.Code : $"{camera.Name} ({camera.Code})"))
-            .ToArray();
+                string.IsNullOrWhiteSpace(camera.Name) || camera.Name == camera.Code ? camera.Code : $"{camera.Name} ({camera.Code})")));
         var picker = new ComboBox
         {
             Style = PropertyEditorHelper.ComboBoxSmallStyle,
