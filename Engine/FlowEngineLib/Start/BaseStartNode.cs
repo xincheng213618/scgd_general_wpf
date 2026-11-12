@@ -226,10 +226,12 @@ public abstract class BaseStartNode : CVDeviceNode, IDisposable
 				return false;
 			}
 			startActions.Add(action.SerialNumber, action);
+			action.WasDispatched = true;
 			Running = true;
 		}
 		try
 		{
+			logger.InfoFormat("Flow Started[{0}/{1}]", m_nodeName, action.SerialNumber);
 			Repeat.FlowRepeatRegion.ResetStates(this);
 			SetOptionText(m_op_start, action.SerialNumber);
 			m_op_start.TransferData(action);
@@ -462,7 +464,8 @@ public abstract class BaseStartNode : CVDeviceNode, IDisposable
 		if (trackCompletion)
 			start.TrackCompletion();
 		DoDispatch(start);
-		return start;
+		// A downstream node can finish synchronously before dispatch returns.
+		return start.WasDispatched ? start : null;
 	}
 
 	protected void DoDispatch(CVStartCFC start)
@@ -470,7 +473,6 @@ public abstract class BaseStartNode : CVDeviceNode, IDisposable
 		if (start.GetActionType() == ActionTypeEnum.Start)
 		{
 			start.SetStartNode(this);
-			logger.InfoFormat("Flow Started[{0}/{1}]", m_nodeName, start.SerialNumber);
 		}
 		DoStartTransferData(start);
 	}

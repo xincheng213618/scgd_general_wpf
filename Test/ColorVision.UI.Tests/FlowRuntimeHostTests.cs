@@ -39,6 +39,39 @@ public sealed class FlowRuntimeHostTests
     }
 
     [Fact]
+    public void BusyStartNodeRejectsNewDispatchWithoutWaitingOnAnUnstartedRun()
+    {
+        RunInSta(async () =>
+        {
+            const string activeSerialNumber = "SN-ACTIVE-EXTERNAL";
+            await using var host = new FlowRuntimeHost();
+            await host.LoadAsync(CreateCanvas(new HeadlessNeverEndNode()));
+            var start = Assert.Single(host.Nodes.OfType<HeadlessTestStartNode>());
+            var end = Assert.Single(host.Nodes.OfType<HeadlessNeverEndNode>());
+
+            // A start signal can enter the node directly, outside the runtime host's runner.
+            Assert.True(start.TryStart(activeSerialNumber));
+            var active = Assert.IsType<CVStartCFC>(end.LastStartedAction);
+            FlowEngineRunResult rejected = await host.RunAsync(start.NodeName, "SN-SECOND-START",
+                executionTimeout: TimeSpan.FromMilliseconds(50)).WaitAsync(LifecycleTestTimeout);
+
+            Assert.False(rejected.Started);
+            Assert.Equal(FlowEngineRunTermination.StartRejected, rejected.Termination);
+            Assert.False(start.TryStart(activeSerialNumber));
+            Assert.Same(active, start.GetCFC(activeSerialNumber));
+            Assert.Equal(1, end.StartedCount);
+
+            start.Stop(activeSerialNumber);
+            Task<FlowEngineRunResult> retry = host.RunAsync(start.NodeName, "SN-SECOND-START");
+            var restarted = Assert.IsType<CVStartCFC>(end.LastStartedAction);
+            Assert.NotSame(active, restarted);
+            Assert.True(restarted.TryDoFinishing());
+            restarted.FireFinished();
+            Assert.Equal(FlowEngineRunTermination.Completed, (await retry.WaitAsync(LifecycleTestTimeout)).Termination);
+        });
+    }
+
+    [Fact]
     public void CancellationStopsExactHeadlessRunAndReturnsHostToReady()
     {
         RunInSta(async () =>

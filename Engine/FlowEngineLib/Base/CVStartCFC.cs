@@ -15,6 +15,8 @@ public class CVStartCFC : CVBaseCFC
     [JsonIgnore] internal int RepeatRound { get; set; }
     [JsonIgnore]
     public bool PersistResults { get; set; } = true;
+	internal bool WasDispatched { get; set; }
+
 	private sealed class FlowFinishState
 	{
 		public readonly object Lock = new object();

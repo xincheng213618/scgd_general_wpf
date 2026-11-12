@@ -85,7 +85,7 @@ FlowHeadlessExecutionResult result =
 | `Termination` | 含义 |
 | --- | --- |
 | `Completed` | 运行器完成；仍须检查 `Data.Status`，不能只读枚举名判成功 |
-| `StartRejected` | 门禁、服务快照或起始节点等条件未满足，包括就绪等待超时 |
+| `StartRejected` | 门禁、服务快照或起始节点等条件未满足，包括就绪等待超时及起始节点已在执行另一次启动 |
 | `Canceled` | 取消请求导致终止 |
 | `TimedOut` | 启动后的执行完成等待超时，不是整次调用超时 |
 | `LoadFailed` | 加载 STN/运行图失败 |
