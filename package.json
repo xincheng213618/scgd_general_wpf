@@ -32,7 +32,7 @@
   "devDependencies": {
     "@vue/compiler-dom": "^3.5.31",
     "markdown-it-mathjax3": "^4.3.2",
-    "mermaid": "^11.17.2",
+    "mermaid": "^12.3.0",
     "vitepress": "^1.6.4",
     "vitepress-plugin-mermaid": "^2.0.17",
     "vue": "^3.5.45"
