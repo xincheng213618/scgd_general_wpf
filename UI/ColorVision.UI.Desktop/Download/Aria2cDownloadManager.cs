@@ -345,6 +345,24 @@ namespace ColorVision.UI.Desktop.Download
                         return;
                     }
                 }
+                if (OfflineUpdateFolder.TryResolveDownload(task.Url, out string? offlineSource, out string? offlineSha256, out string? offlineError))
+                {
+                    // Offline update folders are copied locally instead of downloaded; aria2 cannot read file: URLs.
+                    if (offlineSource == null) throw new FileNotFoundException(offlineError);
+                    await ReassignOccupiedSavePathAsync(task, version).ConfigureAwait(false);
+                    _localCopyTasks[task.Id] = task;
+                    using var offlineSlot = await _copyGate.EnterAsync(() => Config.MaxConcurrentTasks, token).ConfigureAwait(false);
+                    long offlineLength = new FileInfo(offlineSource).Length;
+                    await UpdateTaskAsync(task, version, DownloadStatus.Downloading, offlineLength, 0, string.Empty, null).ConfigureAwait(false);
+                    _store.UpdateStatus(task.Id, DownloadStatus.Downloading);
+                    var offlineCopy = await LocalFileCopyService.CopyAsync(offlineSource, task.SavePath, offlineLength, progress =>
+                        PostUI(() => { if (task.Runtime.IsCurrent(version)) ApplyProgress(task, progress.TotalBytes, progress.CopiedBytes, progress.BytesPerSecond); }),
+                        token, task.ExpectedSha256 ?? offlineSha256).ConfigureAwait(false);
+                    task.ContentSha256 = offlineCopy.ContentSha256;
+                    _store.UpdateContentHash(task.Id, offlineCopy.ContentSha256);
+                    await CompleteTaskAsync(task, version, offlineCopy.TotalBytes, offlineCopy.CompletedBytes).ConfigureAwait(false);
+                    return;
+                }
                 if (tryReuse && !File.Exists(task.SavePath) && !File.Exists(task.WorkingPath ?? task.SavePath))
                 {
                     string? source = task.LocalReuseSourcePath;

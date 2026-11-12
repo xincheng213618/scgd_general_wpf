@@ -359,7 +359,7 @@ namespace ColorVision.Recovery
 
             try
             {
-                if (!WindowsNetworkState.IsConnectedToInternet())
+                if (!WindowsNetworkState.CanReachUpdateService())
                 {
                     SetRepairState(
                         LocalizedText.Get("未连接到 Internet"),

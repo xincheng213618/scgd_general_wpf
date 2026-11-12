@@ -119,6 +119,7 @@ namespace ColorVision.Update
             try
             {
                 SaveUpdateOptions();
+                await UpdateSourceSelector.EnsureAsync();
                 LatestVersionCheckResult latestVersion = await AutoUpdater.GetLatestVersionCheckResultAsync(AutoUpdater.UpdateUrl, forceRefresh: true);
                 if (IsClosed)
                     return;

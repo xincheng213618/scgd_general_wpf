@@ -430,6 +430,24 @@ namespace ColorVision.UI.Properties {
         }
         
         /// <summary>
+        ///   查找类似 更新服务器地址 的本地化字符串。
+        /// </summary>
+        public static string UpdateServerUrls {
+            get {
+                return ResourceManager.GetString("UpdateServerUrls", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 留空使用官方服务器 的本地化字符串。
+        /// </summary>
+        public static string UpdateServerUrlsDescription {
+            get {
+                return ResourceManager.GetString("UpdateServerUrlsDescription", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 置顶 的本地化字符串。
         /// </summary>
         public static string DisplayPin {

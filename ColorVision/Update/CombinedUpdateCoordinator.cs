@@ -743,7 +743,7 @@ namespace ColorVision.Update
             bool includeCurrentHostPluginUpdatesWhenFullApplicationUpdate = false,
             CancellationToken cancellationToken = default)
         {
-            if (!WindowsNetworkState.IsConnectedToInternet())
+            if (!WindowsNetworkState.CanReachUpdateService())
             {
                 log.Info("Skipped update plan check because Windows reports no internet connectivity.");
                 return new UpdatePlansResult(null, null, UpdateServerCheckStatus.NoInternetConnection);

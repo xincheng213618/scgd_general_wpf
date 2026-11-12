@@ -4,7 +4,7 @@ knowledge_type: "guide"
 status: "current"
 summary: "主程序、插件和项目包的正式发布入口、只读校验与上传清理副作用。"
 aliases: ["发布","打包","release.bat","package_project.bat","只做本地构建","版本标签","auto-tag.yml"]
-code_paths: [".github/workflows/auto-tag.yml","Directory.Build.props","Scripts/release.bat","Scripts/build.py","Scripts/build_update.py","Scripts/generate_shared_files.py","Scripts/installer_shared_files.py","Scripts/package_project.bat","Scripts/package_plugin.bat","Scripts/package_cvxp.py","Scripts/build_spectrum.py"]
+code_paths: [".github/workflows/auto-tag.yml","Directory.Build.props","Scripts/release.bat","Scripts/build.py","Scripts/build_update.py","Scripts/generate_shared_files.py","Scripts/installer_shared_files.py","Scripts/package_project.bat","Scripts/package_plugin.bat","Scripts/package_cvxp.py","Scripts/build_spectrum.py","Scripts/export_offline_updates.py"]
 test_paths: ["Scripts/tests"]
 related: ["delivery.index","delivery.testing","delivery.backend","delivery.update","delivery.code-statistics","ui.publishing"]
 ---
@@ -25,6 +25,7 @@ related: ["delivery.index","delivery.testing","delivery.backend","delivery.updat
 | 发布插件包 | `Scripts\package_plugin.bat <PluginName>` | 面向 `Plugins/<PluginName>/`，上传尝试结束后删除本地 `.cvxp` |
 | 发布项目包 | `Scripts\package_project.bat <ProjectName>` | 面向 `Projects/<ProjectName>/`，上传尝试结束后删除本地 `.cvxp` |
 | 发布 Spectrum 独立包和插件包 | `Scripts\Spectrum.bat --release-notes "<说明>"` | 同时维护独立更新源和 ColorVision 插件更新源，完整远程验收后才删除本地 `.cvxp` |
+| 导出离线更新文件夹 | `py Scripts\export_offline_updates.py --out <空目录> --from-version <现场版本> [--plugins <ID,...>]` | 只读取更新服务，导出主程序增量链、完整安装包和指定插件及 SHA-256 清单，供断网现场作为更新来源；用法见[离线更新文件夹](../deployment/auto-update.md#离线更新文件夹) |
 | CameraTest 离线测试包 | `pwsh -NoProfile -File .\Scripts\package_camera_test.ps1` | 只生成带版本/时间的干净 ZIP，供手动分发；不内置 .NET、不上传。完整契约见[相机生产调试](../../04-api-reference/plugins/standard-plugins/camera-test.md) |
 | 发布外部编译产物 | `py Scripts\package_cvxp.py --src-dir <输出目录>` | 适合只拿到插件输出目录的场景 |
 | 只校验插件清单 | `py Scripts\package_cvxp.py --project-file <插件.csproj> --validate-only` | 不构建、不打包、不上传 |

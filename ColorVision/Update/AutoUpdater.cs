@@ -117,6 +117,7 @@ namespace ColorVision.Update
 
         public static async Task ForceUpdate(CancellationToken cancellationToken = default)
         {
+            await UpdateSourceSelector.EnsureAsync(cancellationToken);
             Version latestVersion = await GetLatestVersionNumber(UpdateUrl, forceRefresh: true, cancellationToken: cancellationToken);
             if (latestVersion == new Version()) return;
             await InvokeOnUiThreadAsync(() =>
@@ -190,7 +191,7 @@ namespace ColorVision.Update
 
         private static async Task<LatestVersionCheckResult> FetchLatestVersionCheckResultAsync(string url)
         {
-            if (!WindowsNetworkState.IsConnectedToInternet())
+            if (!WindowsNetworkState.CanReachUpdateService())
             {
                 if (TryGetAnyCachedLatestVersion(url, out Version offlineCachedVersion))
                 {
@@ -311,6 +312,7 @@ namespace ColorVision.Update
             bool forceRefresh,
             CancellationToken cancellationToken = default)
         {
+            await UpdateSourceSelector.EnsureAsync(cancellationToken);
             LatestVersionCheckResult latestVersionResult = await GetLatestVersionCheckResultAsync(UpdateUrl, forceRefresh, cancellationToken);
             Version latestVersion = latestVersionResult.Version;
             if (latestVersion == new Version())
@@ -682,7 +684,7 @@ namespace ColorVision.Update
 
         private static string BuildAppApiUrl(string relativePath)
         {
-            return MarketplaceConfig.BuildApiUrl($"api/app/{relativePath.TrimStart('/')}");
+            return MarketplaceConfig.BuildUpdateApiUrl($"api/app/{relativePath.TrimStart('/')}");
         }
 
         public static bool IsIncrementalPackageFileReady(string? filePath)

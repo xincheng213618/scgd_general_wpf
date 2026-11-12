@@ -35,6 +35,31 @@ namespace ColorVision.UI.Tests
             Assert.True(config.DisableSystemProxyForUpdates);
         }
 
+        [Theory]
+        [InlineData(null, "http://xc213618.ddns.me:9998")]
+        [InlineData("  ", "http://xc213618.ddns.me:9998")]
+        [InlineData("192.168.1.20:9998", "http://192.168.1.20:9998")]
+        [InlineData("http://10.0.0.5:9998/; https://mirror.example.test/ ;http://10.0.0.5:9998", "http://10.0.0.5:9998|https://mirror.example.test")]
+        [InlineData("ftp://bad; http://user:pw@host:1; not a url", "http://xc213618.ddns.me:9998")]
+        [InlineData(@"D:\CV Updates\; \\server\share\CVUpdates; file:///E:/u", "file:///D:/CV%20Updates|file://server/share/CVUpdates|file:///E:/u")]
+        public void UpdateServerAddressesAreNormalizedInOrder(string? input, string expected)
+        {
+            Assert.Equal(expected.Split('|'), UI.Marketplace.MarketplaceConfig.ParseServiceBaseUrls(input));
+        }
+
+        [Theory]
+        [InlineData("10.1.2.3", true)]
+        [InlineData("172.20.0.1", true)]
+        [InlineData("192.168.31.86", true)]
+        [InlineData("100.64.0.1", true)]
+        [InlineData("fd00::1", true)]
+        [InlineData("172.32.0.1", false)]
+        [InlineData("8.8.8.8", false)]
+        public void InternalAddressesAllowUpdatesWithoutInternet(string address, bool expected)
+        {
+            Assert.Equal(expected, WindowsNetworkState.IsPrivate(System.Net.IPAddress.Parse(address)));
+        }
+
         [Fact]
         public void LatestVersionChecksReuseOnlyTheSameInFlightRequest()
         {

@@ -1,5 +1,6 @@
 using ColorVision.Common.MVVM;
 using ColorVision.UI;
+using ColorVision.UI.Marketplace;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Net;
@@ -18,6 +19,25 @@ namespace ColorVision.Update
         ];
 
         public static UpdateNetworkConfig Instance => ConfigService.Instance.GetRequiredService<UpdateNetworkConfig>();
+
+        /// <summary>
+        /// Ordered update/marketplace service addresses; empty means the official service. Applied to
+        /// <see cref="MarketplaceConfig"/> whenever it is set, including when the saved configuration loads.
+        /// </summary>
+        [ConfigSetting(Order = 510, Section = ConfigSettingConstants.SectionUpdates, Description = "UpdateServerUrlsDescription")]
+        [DisplayName("UpdateServerUrls")]
+        public string UpdateServerUrls
+        {
+            get => _updateServerUrls;
+            set
+            {
+                _updateServerUrls = value?.Trim() ?? string.Empty;
+                MarketplaceConfig.SetServiceBaseUrls(MarketplaceConfig.ParseServiceBaseUrls(_updateServerUrls));
+                UpdateSourceSelector.Invalidate();
+                OnPropertyChanged();
+            }
+        }
+        private string _updateServerUrls = string.Empty;
 
         [ConfigSetting(Order = 520, Section = ConfigSettingConstants.SectionUpdates, Description = "DisableSystemProxyForUpdatesDescription")]
         [DisplayName("DisableSystemProxyForUpdates")]
@@ -128,7 +148,7 @@ namespace ColorVision.Update
         private static HttpClient CreateClient(bool useProxy)
         {
             HttpClientHandler handler = new() { UseProxy = useProxy };
-            return new HttpClient(handler) { Timeout = TimeSpan.FromSeconds(15) };
+            return new HttpClient(new OfflineUpdateFolderHandler(handler)) { Timeout = TimeSpan.FromSeconds(15) };
         }
     }
 }

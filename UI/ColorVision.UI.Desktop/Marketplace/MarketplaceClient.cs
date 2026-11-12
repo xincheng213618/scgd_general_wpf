@@ -44,11 +44,11 @@ namespace ColorVision.UI.Desktop.Marketplace
         {
         }
 
-        private static string BaseUrl => MarketplaceConfig.ServiceBaseUrl;
+        private static string BaseUrl => MarketplaceConfig.UpdateSourceUrl;
 
         public async Task<bool> IsAvailableAsync(CancellationToken cancellationToken = default)
         {
-            string baseUrl = BaseUrl;
+            string baseUrl = await UpdateSourceSelector.GetUpdateSourceUrlAsync(cancellationToken);
             if (string.IsNullOrEmpty(baseUrl)) return false;
             try
             {
@@ -67,7 +67,7 @@ namespace ColorVision.UI.Desktop.Marketplace
 
         public async Task<MarketplaceSearchResult> SearchPluginsAsync(MarketplaceSearchRequest request, CancellationToken cancellationToken = default)
         {
-            string baseUrl = BaseUrl;
+            string baseUrl = await UpdateSourceSelector.GetUpdateSourceUrlAsync(cancellationToken);
             if (string.IsNullOrEmpty(baseUrl))
                 throw new InvalidOperationException("Marketplace service base URL is not configured.");
 
@@ -85,7 +85,7 @@ namespace ColorVision.UI.Desktop.Marketplace
 
         public async Task<MarketplacePluginDetail?> GetPluginDetailAsync(string pluginId, bool forceRefresh, CancellationToken cancellationToken = default)
         {
-            string baseUrl = BaseUrl;
+            string baseUrl = await UpdateSourceSelector.GetUpdateSourceUrlAsync(cancellationToken);
             if (string.IsNullOrEmpty(baseUrl)) return null;
 
             try
@@ -136,7 +136,7 @@ namespace ColorVision.UI.Desktop.Marketplace
             bool forceRefresh = false,
             CancellationToken cancellationToken = default)
         {
-            string baseUrl = BaseUrl;
+            string baseUrl = await UpdateSourceSelector.GetUpdateSourceUrlAsync(cancellationToken);
             if (string.IsNullOrEmpty(baseUrl)) return null;
 
             string requestKey = $"{baseUrl}\n{pluginId}";
@@ -195,7 +195,7 @@ namespace ColorVision.UI.Desktop.Marketplace
 
         public async Task<string?> GetLatestVersionAsync(string pluginId, CancellationToken cancellationToken = default)
         {
-            string baseUrl = BaseUrl;
+            string baseUrl = await UpdateSourceSelector.GetUpdateSourceUrlAsync(cancellationToken);
             if (string.IsNullOrEmpty(baseUrl)) return null;
 
             try
@@ -223,7 +223,7 @@ namespace ColorVision.UI.Desktop.Marketplace
             bool forceRefresh = false,
             CancellationToken cancellationToken = default)
         {
-            string baseUrl = BaseUrl;
+            string baseUrl = await UpdateSourceSelector.GetUpdateSourceUrlAsync(cancellationToken);
             if (string.IsNullOrEmpty(baseUrl))
                 throw new InvalidOperationException("Marketplace service address is not configured.");
 
@@ -301,7 +301,7 @@ namespace ColorVision.UI.Desktop.Marketplace
 
         public async Task<List<string>> GetCategoriesAsync(CancellationToken cancellationToken = default)
         {
-            string baseUrl = BaseUrl;
+            string baseUrl = await UpdateSourceSelector.GetUpdateSourceUrlAsync(cancellationToken);
             if (string.IsNullOrEmpty(baseUrl)) return new List<string>();
 
             try

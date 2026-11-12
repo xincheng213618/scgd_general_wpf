@@ -4430,7 +4430,8 @@
         "Scripts/package_project.bat",
         "Scripts/package_plugin.bat",
         "Scripts/package_cvxp.py",
-        "Scripts/build_spectrum.py"
+        "Scripts/build_spectrum.py",
+        "Scripts/export_offline_updates.py"
       ],
       "test_paths": [
         "Scripts/tests"
@@ -4573,12 +4574,23 @@
         ".cvx",
         "离线升级",
         "增量包版本链",
-        "IncrementalUpdatePackageFileProcessor"
+        "IncrementalUpdatePackageFileProcessor",
+        "更新服务器地址",
+        "内网更新源",
+        "UpdateServerUrls",
+        "UpdateSourceSelector",
+        "CanReachUpdateService",
+        "离线更新文件夹",
+        "断网更新",
+        "OfflineUpdateFolder",
+        "export_offline_updates.py"
       ],
       "code_paths": [
         "ColorVision/Update",
         "ColorVision/Recovery",
         "UI/ColorVision.UI.Desktop/Update",
+        "UI/ColorVision.UI/Marketplace/MarketplaceConfig.cs",
+        "Scripts/export_offline_updates.py",
         "UI/ColorVision.UI/ServiceHost/ApplicationUpdatePrivilegeBroker.cs",
         "UI/ColorVision.UI.Desktop/Plugins/PluginUpdater.cs",
         "UI/ColorVision.UI.Desktop/Plugins/PluginRecoveryBackupService.cs",
@@ -4602,6 +4614,7 @@
       "code_scopes": [
         "ColorVision/Recovery",
         "ColorVision/Update",
+        "Scripts",
         "UI/ColorVision.UI",
         "UI/ColorVision.UI.Desktop"
       ],
