@@ -253,7 +253,7 @@ namespace ProjectARVRPro.Process
             else if (!dropAfterTarget && sourceIndex < targetIndex)
                 destinationIndex--;
 
-            if (manager.MoveMetaToIndex(draggedMeta, destinationIndex))
+            if (manager.ConfirmAndMoveMetaToIndex(draggedMeta, destinationIndex))
             {
                 lvMetas.SelectedItem = draggedMeta;
                 lvMetas.ScrollIntoView(draggedMeta);

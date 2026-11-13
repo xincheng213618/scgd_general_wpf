@@ -503,11 +503,10 @@ namespace ColorVision.Engine.Templates.POI
             Size reference;
             if (PointSizePercentageCanvas.IsSelected)
             {
-                if (ImageShow.Source is not ImageSource source)
+                if (!ImageUtils.TryGetImageSize(ImageShow.Source, out int width, out int height))
                     return false;
 
-                // Match the dimensions used by the editor for drawing and saving point geometry.
-                reference = new Size(source.Width, source.Height);
+                reference = new Size(width, height);
             }
             else if (!PoiLayoutGeometry.TryGetQuadrilateralSize(
                 [PoiConfig.Polygon1, PoiConfig.Polygon2, PoiConfig.Polygon3, PoiConfig.Polygon4], out reference))
@@ -517,7 +516,8 @@ namespace ColorVision.Engine.Templates.POI
 
             double widthPercent = ParseDoubleOrDefault(PoiConfig.IsPointCircle ? PointSizeRadiusPercent.Text : PointSizeWidthPercent.Text);
             double heightPercent = ParseDoubleOrDefault(PointSizeHeightPercent.Text);
-            return PoiLayoutGeometry.TryGetPercentagePointSize(reference, PoiConfig.DefaultPointType, widthPercent, heightPercent, out size);
+            return PoiLayoutGeometry.TryGetPercentagePointSize(reference, PoiConfig.DefaultPointType, widthPercent, heightPercent, out size,
+                radiusByHeight: PointSizeRadiusByHeight.IsSelected);
         }
 
         private void ApplyPointSizePercentage_Click(object sender, RoutedEventArgs e)

@@ -13,6 +13,7 @@ internal sealed class LocalCameraMotorExecution : FlowLocalExecution
     private readonly DeviceCamera device;
     private readonly Func<CancellationToken, object?> operation;
     private readonly string serialNumber;
+    private readonly bool autoFocus;
     private CancellationToken stop;
     private object? result;
     private bool commandReleased;
@@ -33,6 +34,7 @@ internal sealed class LocalCameraMotorExecution : FlowLocalExecution
     {
         this.device = device;
         serialNumber = request.SerialNumber;
+        autoFocus = request.EventName == "AutoFocus";
         switch (request.EventName)
         {
             case "Move" when request.Data is FocusPosData move:
@@ -50,7 +52,7 @@ internal sealed class LocalCameraMotorExecution : FlowLocalExecution
                     && string.Equals(item.Key, name, StringComparison.Ordinal))?.Value
                     ?? throw new InvalidOperationException($"找不到自动对焦模板：{name}");
                 LocalAutoFocusSettings settings = LocalAutoFocusSettings.FromTemplate(template, device.PhyCamera?.Config.MotorConfig ?? device.Config.MotorConfig);
-                float exposure = (float)(device.Config.IsExpThree ? device.DisplayConfig.ExpTimeR : device.DisplayConfig.ExpTime);
+                float exposure = (float)(device.Config.CameraMode == CameraMode.CV_MODE ? device.DisplayConfig.ExpTimeR : device.DisplayConfig.ExpTime);
                 float gain = device.DisplayConfig.Gain;
                 operation = token => device.ExecuteLocalAutoFocus(settings, exposure, gain, token);
                 break;
@@ -67,7 +69,7 @@ internal sealed class LocalCameraMotorExecution : FlowLocalExecution
         try
         {
             stop.ThrowIfCancellationRequested();
-            if (device.LocalCameraSession.IsOpen && device.LocalCameraSession.OpenedMode == TakeImageMode.Live)
+            if (!autoFocus && device.LocalCameraSession.IsOpen && device.LocalCameraSession.OpenedMode == TakeImageMode.Live)
                 throw new InvalidOperationException("请先停止本地预览再操作电机。");
             device.EnsureLocalMeasurementConnected(autoConnect: true);
             stop.ThrowIfCancellationRequested();

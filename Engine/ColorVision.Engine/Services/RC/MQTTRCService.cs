@@ -103,18 +103,18 @@ namespace ColorVision.Engine.Services.RC
         private static readonly object _locker = new();
         public static MqttRCService GetInstance() { lock (_locker) { return _instance ??= new MqttRCService(); } }
 
-        private string NodeName;
-        private string NodeType;
-        private static string AppId => RCSetting.Instance.Config.AppId;
-        private static string AppSecret => RCSetting.Instance.Config.AppSecret;
-        private static string RCNodeName => RCSetting.Instance.Config.RCName;
-        private string DevcieName;
-        private string RCRegTopic;
-        private string RCHeartbeatTopic;
-        private string RCPublicTopic;
-        private string RCAdminTopic;
-        private string SysConfigTopic;
-        private string SysConfigRespTopic;
+        public const string RCNodeName = "RC_local";
+        public const string AppId = "app1";
+        public const string AppSecret = "123456";
+
+        private const string NodeType = "client";
+        private const string ClientDeviceCode = "dev.client.127.0.0.1";
+        private const string RCTopicPrefix = "MQTTRCService";
+        private const string RCRegTopic = $"{RCTopicPrefix}/Regist/{RCNodeName}";
+        private const string RCHeartbeatTopic = $"{RCTopicPrefix}/Heartbeat/{RCNodeName}";
+        private const string RCPublicTopic = $"{RCTopicPrefix}/Public/{RCNodeName}";
+        private const string RCAdminTopic = $"{RCTopicPrefix}/Admin/{RCNodeName}";
+        private readonly string NodeName;
         
         // 使用锁保护Token访问
         private readonly object _tokenLock = new object();
@@ -144,10 +144,11 @@ namespace ColorVision.Engine.Services.RC
 
         public MqttRCService()
         {
-            NodeType = "client";
-            NodeName = MQTTRCServiceTypeConst.BuildNodeName(NodeType, null);
-            DeviceCode = DevcieName = "dev." + NodeType + ".127.0.0.1";
-            LoadCfg();
+            NodeName = $"{NodeType}.{Guid.NewGuid()}";
+            DeviceCode = ClientDeviceCode;
+            SubscribeTopic = $"{RCTopicPrefix}/Node/{NodeName}/{RCNodeName}";
+            MQTTControl.SubscribeCache(SubscribeTopic);
+            MQTTControl.SubscribeCache($"SysRes/config/Resp/{RCNodeName}");
             ServiceName = Guid.NewGuid().ToString();
             MQTTControl.ApplicationMessageReceivedAsync -= MqttClient_ApplicationMessageReceivedAsync;
             MQTTControl.ApplicationMessageReceivedAsync += MqttClient_ApplicationMessageReceivedAsync;
@@ -190,7 +191,7 @@ namespace ColorVision.Engine.Services.RC
             {
                 await Task.Delay(ReconnectRegistrationDelay, cancellation.Token);
                 if (MQTTControl.IsConnect && Volatile.Read(ref _disposed) == 0)
-                    ReRegist();
+                    Regist();
             }
             catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
             {
@@ -219,20 +220,6 @@ namespace ColorVision.Engine.Services.RC
                 _reconnectRegistrationCancellation = null;
             }
             cancellation?.Cancel();
-        }
-
-        public void LoadCfg()
-        {
-            SubscribeTopic = MQTTRCServiceTypeConst.BuildNodeTopic(NodeName, RCNodeName);
-            SysConfigRespTopic = MQTTRCServiceTypeConst.BuildSysConfigRespTopic(RCNodeName);
-            RCRegTopic = MQTTRCServiceTypeConst.BuildRegTopic(RCNodeName);
-            RCHeartbeatTopic = MQTTRCServiceTypeConst.BuildHeartbeatTopic(RCNodeName);
-            RCPublicTopic = MQTTRCServiceTypeConst.BuildPublicTopic(RCNodeName);
-            RCAdminTopic = MQTTRCServiceTypeConst.BuildAdminTopic(RCNodeName);
-            SysConfigTopic = MQTTRCServiceTypeConst.BuildSysConfigTopic(RCNodeName);
-
-            MQTTControl.SubscribeCache(SubscribeTopic);
-            MQTTControl.SubscribeCache(SysConfigRespTopic);
         }
 
         private Task MqttClient_ApplicationMessageReceivedAsync(MqttApplicationMessageReceivedEventArgs arg)
@@ -269,7 +256,6 @@ namespace ColorVision.Engine.Services.RC
 
                                 SetConnectionState(true);
 
-                                // 读取TryTestRegist是线程安全的(volatile)
                                 QueryServices();
                             }
                             break;
@@ -441,12 +427,6 @@ namespace ColorVision.Engine.Services.RC
                 }
             }
         }
-        public bool ReRegist()
-        {
-            LoadCfg();
-            return Regist();
-        }
-
         private void SetToken(NodeToken? token)
         {
             lock (_tokenLock)
@@ -545,16 +525,32 @@ namespace ColorVision.Engine.Services.RC
                 NotifyChanged();
         }
 
-        private Task<bool> WaitForConnectionAsync() => RCConnectionWaiter.WaitAsync(
-            () => IsConnect,
-            handler => RCServiceConnectChanged += handler,
-            handler => RCServiceConnectChanged -= handler,
-            RegistrationResponseTimeout);
-
-        public async Task <bool> Connect()
+        public async Task<bool> Connect()
         {
             Regist();
-            return await WaitForConnectionAsync();
+            if (IsConnect)
+                return true;
+
+            TaskCompletionSource<bool> completion = new(TaskCreationOptions.RunContinuationsAsynchronously);
+            void OnConnectionChanged(object? sender, EventArgs e)
+            {
+                if (IsConnect)
+                    completion.TrySetResult(true);
+            }
+
+            RCServiceConnectChanged += OnConnectionChanged;
+            try
+            {
+                return IsConnect || await completion.Task.WaitAsync(RegistrationResponseTimeout);
+            }
+            catch (TimeoutException)
+            {
+                return false;
+            }
+            finally
+            {
+                RCServiceConnectChanged -= OnConnectionChanged;
+            }
         }
 
         public void QueryServices()
@@ -593,7 +589,7 @@ namespace ColorVision.Engine.Services.RC
                 return;
 
             List<DeviceHeartbeat> deviceStatues = new();
-            deviceStatues.Add(new DeviceHeartbeat(DevcieName, DeviceStatusType.Opened.ToString()));
+            deviceStatues.Add(new DeviceHeartbeat(ClientDeviceCode, DeviceStatusType.Opened.ToString()));
             string serviceHeartbeat = JsonConvert.SerializeObject(new MQTTServiceHeartbeat(NodeName, "", "", NodeType, ServiceName, deviceStatues, token.AccessToken, KeepAlivePeriodMilliseconds * 3 / 2));
             PublishAsyncClient(RCHeartbeatTopic, serviceHeartbeat);
             QueryServiceStatus();
@@ -630,19 +626,6 @@ namespace ColorVision.Engine.Services.RC
                 QueryServices();
             });
             return true;
-        }
-
-        public async Task<bool> TryRegist(RCServiceConfig cfg)
-        {
-            string RegTopic = MQTTRCServiceTypeConst.BuildRegTopic(cfg.RCName);
-            string appId = cfg.AppId;
-            string appSecret = cfg.AppSecret;
-            
-            SetConnectionState(false);
-            
-            MQTTNodeServiceRegist reg = new(NodeName, appId, appSecret, SubscribeTopic, NodeType);
-            await PublishAsyncClient(RegTopic, JsonConvert.SerializeObject(reg));
-            return await WaitForConnectionAsync();
         }
 
         public Task PublishAsyncClient(string topic, string json) => MQTTControl.PublishAsyncClient(topic, json, false);

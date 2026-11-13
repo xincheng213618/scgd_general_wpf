@@ -9,6 +9,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Threading;
 
 namespace ColorVision.Engine.FlowProcessing;
 
@@ -96,7 +97,7 @@ internal sealed class FlowTemplateWorkspaceController : IDisposable
             return;
 
         long generation = SetSelectedFlowTemplate(flowTemplate);
-        _ = DebouncedRefreshAsync(generation);
+        _ = QueueSelectionRefreshAsync(generation);
     }
 
     public async Task<FlowTemplateExecutionSnapshotResult> SelectFlowTemplateAsync(
@@ -657,21 +658,29 @@ internal sealed class FlowTemplateWorkspaceController : IDisposable
         return generation;
     }
 
-    private async Task DebouncedRefreshAsync(long generation)
+    private async Task QueueSelectionRefreshAsync(long generation)
     {
-        _refreshCts?.Cancel();
+        CancelPendingRefresh();
         var cts = new CancellationTokenSource();
         _refreshCts = cts;
         try
         {
-            await Task.Delay(200, cts.Token);
+            // Coalesce selection events and let WPF finish processing input and bindings first.
+            await _view.Dispatcher.InvokeAsync(() => { }, DispatcherPriority.Background, cts.Token);
+            if (!_disposed)
+                await RefreshAsync(generation, allowEmptyFlow: false, FlowWorkspaceReplacementMode.Confirm);
         }
         catch (TaskCanceledException)
         {
-            return;
         }
-        if (!_disposed)
-            await RefreshAsync(generation, allowEmptyFlow: false, FlowWorkspaceReplacementMode.Confirm);
+        finally
+        {
+            if (ReferenceEquals(_refreshCts, cts))
+            {
+                _refreshCts = null;
+                cts.Dispose();
+            }
+        }
     }
 
     private void CancelPendingRefresh()

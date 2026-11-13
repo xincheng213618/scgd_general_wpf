@@ -19,7 +19,7 @@ related: ["engine.host", "engine.devices", "engine.mqtt", "engine.rc-registratio
 | --- | --- | --- |
 | 设备没有出现、服务类型或 MQTT 控制器不匹配 | [设备服务链](./device-service-chain.md) | `DeviceServiceFactoryRegistry`、`ServiceManager` |
 | MQTT topic、请求、回复或超时关联不正确 | [MQTT 消息链](../../02-developer-guide/engine-development/mqtt.md) | `MQTTControl`、`MQTTServiceBase`、`MsgRecord` |
-| RC 连接测试、令牌、早到服务列表与状态不一致 | [RC 注册与服务快照](./rc-registration.md) | `MqttRCService`、`PendingServiceUpdateBuffer`、`RCServiceConnect` |
+| RC 默认注册参数、令牌、早到服务列表与状态不一致 | [RC 注册与服务快照](./rc-registration.md) | `MqttRCService`、`PendingServiceUpdateBuffer` |
 | 新增模板、模板未加载或参数保存异常 | [模板核心契约](../../03-architecture/components/templates/design.md)、[编辑与创建宿主](../algorithms/templates/template-management.md) | `TemplateControl`、`ITemplate<T>`；JSON 分支见 [JSON 模板](../algorithms/templates/json-templates.md) |
 | Flow 保存、导入或节点关联参数不正确 | [Flow 模板持久化](./template-flow-chain.md) | `TemplateFlow`、`FlowParam`、`FlowPackageHelper` |
 | 流程未启动、停止后仍处理结果或结束信号不一致 | [Flow 会话与最终化](../../01-user-guide/workflow/execution.md) | `FlowExecutionSession`、`FlowRunFinalizer`；对象责任见 [Flow 架构](../../03-architecture/components/engine/flow-engine.md) |

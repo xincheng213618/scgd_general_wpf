@@ -13,7 +13,7 @@ related: ["engine.index","engine.devices","engine.rc-registration","flow.runtime
 
 Engine 设备与注册中心通过 `MQTTControl` 共用 broker 连接；设备服务由 `MQTTServiceBase` / `MQTTDeviceService<T>` 发送命令、追踪回包。Flow 的 `MQTTHelper` / `MQTTClientPool` 使用另一条连接管理链，其就绪状态、订阅和测试不能直接代表 Engine 设备链可用。
 
-注册中心使用同一传输连接，但 RC 节点令牌、服务目录、早到快照和连接测试另有契约，见[RC 注册与状态同步](../../04-api-reference/engine-components/rc-registration.md)。MQTT 连接成功不等于 RC 注册成功，更不等于设备可执行。
+注册中心使用同一传输连接，注册、服务目录和早到快照见[RC 注册与状态同步](../../04-api-reference/engine-components/rc-registration.md)。排查设备时分别核对 MQTT 连接、RC 注册和设备命令回包。
 
 ## 当前 MQTT 分层
 

@@ -202,6 +202,42 @@ public class LocalCameraMotorTests
     internal static LocalAutoFocusSettings Settings(FindFuncModel method = FindFuncModel.FindMaxDiff) =>
         new(EvaFunc.Tenengrad, method, 0, 1000, 100, 100, 0.5, 1, 0, 10000);
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void AutoFocusSwitchesTheNativeLiveSessionBeforeMovingTheMotor(bool previewRegistered)
+    {
+        var camera = new LocalCameraSessionTests.FakeNative { SwitchResult = -10048 };
+        var motor = new FakeMotor();
+        var config = Configuration();
+        config.CameraModel = CameraModel.HK_USB;
+        config.CameraMode = CameraMode.BV_MODE;
+        config.ImageBpp = ImageBpp.bpp16;
+        using var session = new LocalCameraSession(camera, new CameraBackendState(true), config, motorNative: motor);
+        session.Open("camera", TakeImageMode.Live, 8);
+        int stopped = 0;
+        if (previewRegistered) session.RegisterPreview(_ => cvErrorDefine.CV_ERR_SUCCESS, () => stopped++);
+
+        Assert.Throws<InvalidOperationException>(() => session.AutoFocus(Settings(), 10, 1));
+        Assert.Equal(0, motor.Moves);
+        Assert.Equal(TakeImageMode.Live, session.OpenedMode);
+        Assert.Equal(0, stopped);
+
+        camera.SwitchResult = cvErrorDefine.CV_ERR_SUCCESS;
+        motor.OnSample = () =>
+        {
+            Assert.Equal(TakeImageMode.Measure_Normal, camera.LastMode);
+            Assert.Equal(16, camera.LastBpp);
+            Assert.Equal(previewRegistered ? 1 : 0, stopped);
+        };
+        var result = session.AutoFocus(Settings(), 10, 1);
+
+        Assert.True(result.Samples > 0);
+        Assert.Equal(TakeImageMode.Measure_Normal, session.OpenedMode);
+        Assert.Equal(1, camera.Opens);
+        Assert.Equal(0, camera.Closes);
+    }
+
     [Fact]
     public void ExhaustedFocusBudgetReportsTemplateTimeoutInsteadOfGenericMotorFailure()
     {

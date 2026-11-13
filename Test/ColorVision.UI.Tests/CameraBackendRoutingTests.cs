@@ -30,11 +30,13 @@ public class CameraBackendRoutingTests
         var busy = ColorVision.Engine.Services.Devices.Camera.Controls.CameraPanelState.Create(backend, false, false);
         Assert.True(busy.Busy);
         Assert.False(busy.CanCapture);
+        Assert.True(busy.ShowCapture);
         if (local) backend.EndLocalCommand();
         else backend.EndServiceCommand();
         var ready = ColorVision.Engine.Services.Devices.Camera.Controls.CameraPanelState.Create(backend, false, false);
         Assert.False(ready.Busy);
         Assert.True(ready.CanCapture);
+        Assert.Equal(ready.ShowPreview, busy.ShowPreview);
         Assert.Equal(2, notifications);
     }
 
@@ -228,9 +230,9 @@ public class CameraBackendRoutingTests
         state.ObserveService(DeviceStatusType.Opened);
         state.BeginLocalCommand();
         state.EndLocalCommand();
-        state.BeginLocalCommand(closing: true);
+        Assert.True(state.BeginLocalClose().IsCompletedSuccessfully);
         state.SetLocalStatus(DeviceStatusType.Closed);
-        state.EndLocalCommand();
+        state.EndLocalClose();
         state.SetPreference(false);
         Assert.Equal(DeviceStatusType.Opened, state.Status);
     }

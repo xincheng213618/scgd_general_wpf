@@ -31,7 +31,13 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 MsgRecordState = MsgRecordState.Sended
             };
             Exception? reservationError = null;
-            try { CameraBackend.BeginLocalCommand(eventName == "Close"); }
+            bool closing = eventName == "Close";
+            Task? pendingCommand = null;
+            try
+            {
+                if (closing) pendingCommand = CameraBackend.BeginLocalClose();
+                else CameraBackend.BeginLocalCommand();
+            }
             catch (Exception ex) { reservationError = ex; }
             Application.Current.Dispatcher.BeginInvoke(async () =>
             {
@@ -41,6 +47,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 {
                     if (failure == null)
                     {
+                        if (pendingCommand != null) await pendingCommand;
                         ObjectDisposedException.ThrowIf(IsDisposed, this);
                         data = await Task.Run(work);
                     }
@@ -48,7 +55,11 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 catch (Exception ex) { failure = ex; }
                 finally
                 {
-                    if (reservationError == null) CameraBackend.EndLocalCommand();
+                    if (reservationError == null)
+                    {
+                        if (closing) CameraBackend.EndLocalClose();
+                        else CameraBackend.EndLocalCommand();
+                    }
                     bool canceled = eventName == "AutoFocus" && failure is OperationCanceledException;
                     record.ReciveTime = DateTime.Now;
                     record.MsgReturn = new MsgReturn
@@ -107,7 +118,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             LocalAutoFocusSettings settings;
             try { settings = LocalAutoFocusSettings.FromTemplate(template, PhyCamera?.Config.MotorConfig ?? Config.MotorConfig) with { FineOnly = fineOnly }; }
             catch (Exception ex) { return RunLocalCommand("AutoFocus", () => throw ex); }
-            float exposure = (float)(Config.IsExpThree ? DisplayConfig.ExpTimeR : DisplayConfig.ExpTime);
+            float exposure = (float)(Config.CameraMode == CameraMode.CV_MODE ? DisplayConfig.ExpTimeR : DisplayConfig.ExpTime);
             float gain = DisplayConfig.Gain;
             MQTTServiceBase.log.Info($"[LocalAutoFocus] Template Name={template.Name} Id={template.Id}");
             return RunLocalCommand("AutoFocus", () =>
@@ -180,7 +191,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
         internal async Task<int> MeasureVidCalibrationPositionAsync(LocalAutoFocusSettings settings, CancellationToken stop)
         {
             if (!CameraBackend.OpensLocally) throw new InvalidOperationException("请将相机切换到本地取图模式后再校正 VID。");
-            float exposure = (float)(Config.IsExpThree ? DisplayConfig.ExpTimeR : DisplayConfig.ExpTime);
+            float exposure = (float)(Config.CameraMode == CameraMode.CV_MODE ? DisplayConfig.ExpTimeR : DisplayConfig.ExpTime);
             float gain = DisplayConfig.Gain;
             CameraBackend.BeginLocalCommand();
             try
@@ -191,8 +202,6 @@ namespace ColorVision.Engine.Services.Devices.Camera
                     {
                         ObjectDisposedException.ThrowIf(IsDisposed, this);
                         stop.ThrowIfCancellationRequested();
-                        if (LocalCameraSession.IsOpen && LocalCameraSession.OpenedMode == TakeImageMode.Live)
-                            throw new InvalidOperationException("请先停止本地预览再校正 VID。");
                         EnsureLocalMeasurementConnected(autoConnect: true);
                         LocalCameraSession.AutoFocus(settings, exposure, gain, stop, includeVid: false);
                         stop.ThrowIfCancellationRequested();

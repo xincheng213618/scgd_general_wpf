@@ -55,8 +55,8 @@ namespace ColorVision.Engine.Services.Types
 
             TerminalServiceConfig terminalServiceConfig = new() { };
 
-            terminalServiceConfig.SendTopic = $"{TypeService.ServiceTypes}/{CreateCode.Text}/CMD/{RCSetting.Instance.Config.RCName}";
-            terminalServiceConfig.SubscribeTopic = $"{TypeService.ServiceTypes}/{CreateCode.Text}/STATUS/{RCSetting.Instance.Config.RCName}";
+            terminalServiceConfig.SendTopic = $"{TypeService.ServiceTypes}/{CreateCode.Text}/CMD/{MqttRCService.RCNodeName}";
+            terminalServiceConfig.SubscribeTopic = $"{TypeService.ServiceTypes}/{CreateCode.Text}/STATUS/{MqttRCService.RCNodeName}";
 
             sysResource.Value = JsonConvert.SerializeObject(terminalServiceConfig);
             AccessControl.Demand("service.create", PermissionMode.Administrator, TypeService.CreationResourceId);

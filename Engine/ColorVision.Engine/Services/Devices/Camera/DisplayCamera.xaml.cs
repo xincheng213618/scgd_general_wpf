@@ -987,21 +987,21 @@ namespace ColorVision.Engine.Services.Devices.Camera
             if (IsDisposed) return;
             if (!Dispatcher.CheckAccess()) { Dispatcher.BeginInvoke(RefreshPanelState); return; }
             bool previewing = DisplayCameraConfig.IsLocalVideoOpen;
-            CameraPanelState state = CameraPanelState.Create(Device.CameraBackend, previewing, _isOpeningLocalVideo || _panelOperation != null);
+            bool panelOperating = _isOpeningLocalVideo || _panelOperation != null;
+            CameraPanelState state = CameraPanelState.Create(Device.CameraBackend, previewing, panelOperating);
             static Visibility Visible(bool value) => value ? Visibility.Visible : Visibility.Collapsed;
             if (_templateOptionsAreLocal != Device.RoutesLocally) RefreshAutoExpTimeTemplateOptions();
-            CameraPanelState idle = CameraPanelState.Create(Device.CameraBackend, previewing, false);
             bool opening = _panelOperation?.MsgSend?.EventName == "Open";
             bool closing = _panelOperation?.MsgSend?.EventName == "Close";
             Actions.ToolTip = state.Busy ? EngineLocalization.Get(state.StatusKey) : null;
-            Actions.OpenButton.Visibility = Visible(opening || (!state.Connected && !closing && (idle.CanConnect || state.Busy)));
+            Actions.OpenButton.Visibility = Visible(opening || (!state.Connected && !closing && (state.CanConnect || state.Busy)));
             Actions.OpenButton.IsEnabled = state.CanConnect;
             Actions.CloseButton.Visibility = Visible(!opening && (state.Connected || closing));
-            Actions.CloseButton.IsEnabled = !state.Busy;
-            Actions.LocalVideoButton.IsEnabled = state.CanPreview;
+            Actions.CloseButton.IsEnabled = !state.Busy || CanQueueLocalClose;
+            Actions.LocalVideoButton.IsEnabled = state.CanPreview || (CanQueueLocalClose && state.ShowPreview);
             Capture.TakePhotoButton.IsEnabled = state.CanCapture;
-            Actions.LocalVideoButton.Visibility = Visible(idle.CanPreview || (state.Busy && Device.CameraBackend.LocalOwned));
-            Capture.TakePhotoButton.Visibility = Visible(!previewing && (idle.CanCapture || (state.Busy && !Device.CameraBackend.VideoOwned)));
+            Actions.LocalVideoButton.Visibility = Visible(state.ShowPreview || (panelOperating && Device.RoutesLocally));
+            Capture.TakePhotoButton.Visibility = Visible(!previewing && state.ShowCapture);
             Actions.VideoColumn.Width = Actions.LocalVideoButton.Visibility == Visibility.Visible ? GridLength.Auto : new GridLength(0);
             Actions.LocalVideoButton.ToolTip = state.ShowServiceSettings && state.Connected
                 ? EngineLocalization.Get("CameraPanel_ServicePreviewHint") : null;
@@ -1012,7 +1012,10 @@ namespace ColorVision.Engine.Services.Devices.Camera
             Actions.ButtonInit.Visibility = Visible(showProblem && status == DeviceStatusType.UnInit);
             Actions.ButtonOffline.Visibility = Visible(showProblem && status == DeviceStatusType.OffLine);
             Capture.Visibility = Visible(state.ShowParameters);
-            Capture.IsEnabled = !state.Busy;
+            Capture.IsEnabled = !panelOperating;
+            Capture.MotorPanel.IsEnabled = !state.Busy;
+            Capture.ReadFilterButton.IsEnabled = !state.Busy;
+            Capture.ChangeFilterButton.IsEnabled = !state.Busy;
             StopAutoFocusButton.Visibility = Visible(_panelAutoFocusCancellation != null);
             if (_panelAutoFocusCancellation != null)
             {
@@ -1044,6 +1047,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         private void TrackPanelOperation(MsgRecord record)
         {
+            if (_panelOperation != null) _panelOperation.MsgRecordStateChanged -= PanelOperation_StateChanged;
             _panelOperation = record;
             record.MsgRecordStateChanged += PanelOperation_StateChanged;
             RefreshPanelState();
@@ -1650,9 +1654,12 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 TrackPanelOperation(DService.MoveDiaphragm(pos));
         }
 
+        private bool CanQueueLocalClose => Device.RoutesLocally && !_isOpeningLocalVideo
+            && (_panelOperation == null || _panelOperation.MsgSend?.EventName == "GetData");
+
         private async void Close_Click(object sender, RoutedEventArgs e)
         {
-            if (_panelOperation != null || _isOpeningLocalVideo) return;
+            if (IsDisposed || ((_panelOperation != null || _isOpeningLocalVideo) && !CanQueueLocalClose)) return;
             if (Device.CameraBackend.VideoOwned)
             {
                 _isOpeningLocalVideo = true;
@@ -1673,9 +1680,11 @@ namespace ColorVision.Engine.Services.Devices.Camera
             if (sender is Button button)
             {
                 EnsureTimedButtonOperations();
+                string? runningText = Device.RoutesLocally && Device.CameraBackend.IsCommandRunning
+                    ? EngineLocalization.Get("CameraPanel_WaitingToClose") : null;
                 MsgRecord msgRecord = DService.Close();
                 TrackPanelOperation(msgRecord);
-                ServicesHelper.SendTimedCommand(this, button, msgRecord, onTerminalStateChanged: (_, state) =>
+                ServicesHelper.SendTimedCommand(this, button, msgRecord, runningText, onTerminalStateChanged: (_, state) =>
                 {
                     if (state == MsgRecordState.Timeout)
                     {
@@ -2065,7 +2074,13 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         private async void Video1_Click(object sender, RoutedEventArgs e)
         {
-            if (IsDisposed || _panelOperation != null || _isOpeningLocalVideo || sender is not Button button) return;
+            if (IsDisposed || _isOpeningLocalVideo || sender is not Button button) return;
+            if (CanQueueLocalClose && (_panelOperation != null || Device.CameraBackend.IsCommandRunning))
+            {
+                HandyControl.Controls.Growl.Info(EngineLocalization.Get("CameraPanel_PreviewWhileBusy"));
+                return;
+            }
+            if (_panelOperation != null) return;
             TimedButtonOperationRegistry operations = EnsureTimedButtonOperations();
             if (Device.DisplayConfig.IsLocalVideoOpen)
             {

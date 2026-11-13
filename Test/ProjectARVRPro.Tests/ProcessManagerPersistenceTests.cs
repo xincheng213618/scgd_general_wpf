@@ -125,11 +125,40 @@ public sealed class ProcessManagerPersistenceTests
             group.ProcessMetas.Add(second);
             group.ProcessMetas.Add(third);
 
-            Assert.True(manager.MoveMetaToIndex(first, 2));
+            Assert.True(manager.MoveMetaToIndex(first, 2, _ => true, out string? error), error);
 
             Assert.Equal("Second,Third,First", string.Join(',', group.ProcessMetas.Select(meta => meta.Name)));
             Assert.Same(first, manager.SelectedProcessMeta);
-            Assert.False(manager.MoveMetaToIndex(first, 2));
+            Assert.Equal("Second,Third,First", string.Join(',', new ProcessManager().ProcessMetas.Select(meta => meta.Name)));
+            Assert.False(manager.MoveMetaToIndex(first, 2, _ => throw new InvalidOperationException("No move to confirm."), out _));
+        });
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void MoveMetaToIndexKeepsOriginalOrderWhenDeclinedOrSaveFails(bool confirm)
+    {
+        RunInTemporaryPersistenceDirectory(() =>
+        {
+            var manager = new ProcessManager();
+            var first = new ProcessMeta { Name = "First" };
+            var second = new ProcessMeta { Name = "Second" };
+            manager.ProcessMetas.Add(first);
+            manager.ProcessMetas.Add(second);
+            manager.SelectedProcessMeta = first;
+            string filePath = ProcessManager.GroupPersistFilePath;
+            string originalJson = File.ReadAllText(filePath);
+
+            using (new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.None))
+            {
+                Assert.False(manager.MoveMetaToIndex(first, 1, _ => confirm, out string? error));
+                Assert.Equal(confirm, error != null);
+            }
+
+            Assert.Equal(new[] { first, second }, manager.ProcessMetas);
+            Assert.Same(first, manager.SelectedProcessMeta);
+            Assert.Equal(originalJson, File.ReadAllText(filePath));
         });
     }
 

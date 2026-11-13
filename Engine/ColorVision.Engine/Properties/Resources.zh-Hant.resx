@@ -158,9 +158,6 @@
   </data>
 
 
-  <data name="RegistryCenter" xml:space="preserve">
-    <value>註冊中心</value>
-  </data>
   <data name="Refresh" xml:space="preserve">
     <value>重新整理</value>
   </data>
@@ -326,9 +323,6 @@
   <data name="CreateTime" xml:space="preserve">
     <value>測量時間</value>
   </data>
-  <data name="CreateNewConfigurationFile" xml:space="preserve">
-    <value>新建設定檔</value>
-  </data>
   <data name="CreateDevice" xml:space="preserve">
     <value>建立裝置</value>
   </data>
@@ -336,12 +330,6 @@
     <value>建立</value>
   </data>
 
-  <data name="CopyConfigurationFile" xml:space="preserve">
-    <value>複製設定檔</value>
-  </data>
-  <data name="ConnectionName" xml:space="preserve">
-    <value>連接名</value>
-  </data>
   <data name="Code" xml:space="preserve">
     <value>代碼</value>
   </data>
@@ -720,15 +708,6 @@
   </data>
   <data name="EnableSerialPort" xml:space="preserve">
     <value>啟用串口發送</value>
-  </data>
-  <data name="RegistryCenterConfig" xml:space="preserve">
-    <value>註冊中心配置</value>
-  </data>
-  <data name="RCName" xml:space="preserve">
-    <value>註冊中心名稱</value>
-  </data>
-  <data name="RCConnecteCfg" xml:space="preserve">
-    <value>註冊中心連線配置</value>
   </data>
   <data name="ServiceCode" xml:space="preserve">
     <value>服務代碼</value>
@@ -2844,7 +2823,8 @@
   <data name="按比例计算" xml:space="preserve"><value>按比例計算</value></data>
   <data name="当前布点区域" xml:space="preserve"><value>目前布點區域</value></data>
   <data name="整图或画布" xml:space="preserve"><value>整張影像或畫布</value></data>
-  <data name="半径（按参考宽度）" xml:space="preserve"><value>半徑（按參考寬度）</value></data>
+  <data name="按参考宽度" xml:space="preserve"><value>按參考寬度</value></data>
+  <data name="按参考高度" xml:space="preserve"><value>按參考高度</value></data>
   <data name="如需按原始发光区计算，请在设置边距前换算尺寸。" xml:space="preserve"><value>如需按原始發光區計算，請在設定邊距前換算尺寸。</value></data>
   <data name="请输入大于 0 且不超过 100 的百分比，并确认参考区域有效、换算后至少为 1 像素。" xml:space="preserve"><value>請輸入大於 0 且不超過 100 的百分比，並確認參考區域有效、換算後至少為 1 像素。</value></data>
   <data name="SpectrumSettingsTitle" xml:space="preserve"><value>光譜儀設定</value></data>
@@ -3262,9 +3242,6 @@
   </data>
   <data name="ApertureF" xml:space="preserve">
     <value>光圈F</value>
-  </data>
-  <data name="AppSecretTooltip" xml:space="preserve">
-    <value>App Secret</value>
   </data>
   <data name="BaudRate" xml:space="preserve">
     <value>波特率</value>
@@ -7369,6 +7346,8 @@
   <data name="CameraPanel_Disconnected" xml:space="preserve"><value>未連接</value></data>
   <data name="CameraPanel_Ready" xml:space="preserve"><value>已連接 · 待機</value></data>
   <data name="CameraPanel_Working" xml:space="preserve"><value>操作中…</value></data>
+  <data name="CameraPanel_WaitingToClose" xml:space="preserve"><value>等待取圖結束後關閉…</value></data>
+  <data name="CameraPanel_PreviewWhileBusy" xml:space="preserve"><value>相機正在操作，請結束目前操作後再切換視訊模式。</value></data>
   <data name="CameraPanel_Previewing" xml:space="preserve"><value>預覽中</value></data>
   <data name="CameraFocusChart_Show" xml:space="preserve"><value>曲線</value></data>
   <data name="CameraFocusChart_Hide" xml:space="preserve"><value>隱藏曲線</value></data>

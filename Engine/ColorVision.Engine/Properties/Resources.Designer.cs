@@ -655,15 +655,6 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
-        ///   查找类似 App Secret 的本地化字符串。
-        /// </summary>
-        public static string AppSecretTooltip {
-            get {
-                return ResourceManager.GetString("AppSecretTooltip", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 自动对齐 的本地化字符串。
         /// </summary>
         public static string AutoAlign {
@@ -3056,15 +3047,6 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
-        ///   查找类似 连接名 的本地化字符串。
-        /// </summary>
-        public static string ConnectionName {
-            get {
-                return ResourceManager.GetString("ConnectionName", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 连接方式 的本地化字符串。
         /// </summary>
         public static string ConnectType {
@@ -3124,15 +3106,6 @@ namespace ColorVision.Engine.Properties {
         public static string Copy {
             get {
                 return ResourceManager.GetString("Copy", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 复制配置文件 的本地化字符串。
-        /// </summary>
-        public static string CopyConfigurationFile {
-            get {
-                return ResourceManager.GetString("CopyConfigurationFile", resourceCulture);
             }
         }
         
@@ -3250,15 +3223,6 @@ namespace ColorVision.Engine.Properties {
         public static string CreateGroupFailed {
             get {
                 return ResourceManager.GetString("CreateGroupFailed", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 新建配置文件 的本地化字符串。
-        /// </summary>
-        public static string CreateNewConfigurationFile {
-            get {
-                return ResourceManager.GetString("CreateNewConfigurationFile", resourceCulture);
             }
         }
         
@@ -10855,24 +10819,6 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
-        ///   查找类似 注册中心连接配置 的本地化字符串。
-        /// </summary>
-        public static string RCConnecteCfg {
-            get {
-                return ResourceManager.GetString("RCConnecteCfg", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 注册中心名称 的本地化字符串。
-        /// </summary>
-        public static string RCName {
-            get {
-                return ResourceManager.GetString("RCName", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 接收信道 的本地化字符串。
         /// </summary>
         public static string ReceiveChannel {
@@ -10914,24 +10860,6 @@ namespace ColorVision.Engine.Properties {
         public static string RegisterAddress {
             get {
                 return ResourceManager.GetString("RegisterAddress", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 注册中心 的本地化字符串。
-        /// </summary>
-        public static string RegistryCenter {
-            get {
-                return ResourceManager.GetString("RegistryCenter", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 注册中心配置 的本地化字符串。
-        /// </summary>
-        public static string RegistryCenterConfig {
-            get {
-                return ResourceManager.GetString("RegistryCenterConfig", resourceCulture);
             }
         }
         

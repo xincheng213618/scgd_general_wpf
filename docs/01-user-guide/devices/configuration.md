@@ -19,7 +19,7 @@ MySQL 连接时，设备配置保存到 `SysResourceModel.Value`；未连接时�
 
 这些检查保护实际接入的界面/命令和提交入口，不把通用 `Save()`、DAO 或任意直接配置赋值变成全产品统一授权拦截。原有公开保存接口继续承担持久化与通知；宿主新增业务入口时仍应在副作用前请求对应动作，并保留数据库、远端服务、Windows 权限及设备许可各自的边界。
 
-RCName/AppId 等客户端注册配置不是这里的 MySQL 设备参数；其连接测试、取消、节点令牌与设备状态的区别见[RC 注册契约](../../04-api-reference/engine-components/rc-registration.md)。
+注册中心默认参数、节点令牌与设备状态见[RC 注册契约](../../04-api-reference/engine-components/rc-registration.md)。
 
 ## 无 MySQL 时创建相机与许可证
 

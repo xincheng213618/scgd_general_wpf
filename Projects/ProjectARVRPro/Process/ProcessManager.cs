@@ -730,14 +730,14 @@ namespace ProjectARVRPro.Process
 
         private void ProcessMetaCollectionChanged(NotifyCollectionChangedEventArgs e)
         {
-            if (e.NewItems != null)
+            if (e.Action != NotifyCollectionChangedAction.Move && e.NewItems != null)
             {
                 foreach (ProcessMeta meta in e.NewItems)
                 {
                     meta.PropertyChanged += Meta_PropertyChanged;
                 }
             }
-            if (e.OldItems != null)
+            if (e.Action != NotifyCollectionChangedAction.Move && e.OldItems != null)
             {
                 foreach (ProcessMeta meta in e.OldItems)
                 {
@@ -1140,7 +1140,7 @@ namespace ProjectARVRPro.Process
             var selectedMeta = SelectedProcessMeta;
             if (selectedMeta == null) return;
             int index = ProcessMetas.IndexOf(selectedMeta);
-            MoveMetaToIndex(selectedMeta, index - 1);
+            ConfirmAndMoveMetaToIndex(selectedMeta, index - 1);
         }
 
         private bool CanMoveDown()
@@ -1155,20 +1155,65 @@ namespace ProjectARVRPro.Process
             var selectedMeta = SelectedProcessMeta;
             if (selectedMeta == null) return;
             int index = ProcessMetas.IndexOf(selectedMeta);
-            MoveMetaToIndex(selectedMeta, index + 1);
+            ConfirmAndMoveMetaToIndex(selectedMeta, index + 1);
         }
 
-        internal bool MoveMetaToIndex(ProcessMeta meta, int destinationIndex)
+        internal bool ConfirmAndMoveMetaToIndex(ProcessMeta meta, int destinationIndex)
         {
-            int sourceIndex = ProcessMetas.IndexOf(meta);
-            if (sourceIndex < 0 || ProcessMetas.Count == 0)
+            Window? owner = Application.Current.GetActiveWindow();
+            bool moved = MoveMetaToIndex(meta, destinationIndex,
+                message => MessageBox.Show(owner, message, "ColorVision", MessageBoxButton.YesNo,
+                    MessageBoxImage.Question, MessageBoxResult.No) == MessageBoxResult.Yes,
+                out string? errorMessage);
+            if (errorMessage != null)
+                MessageBox.Show(owner, errorMessage, "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error);
+            return moved;
+        }
+
+        internal bool MoveMetaToIndex(ProcessMeta meta, int destinationIndex, Func<string, bool> confirm, out string? errorMessage)
+        {
+            errorMessage = null;
+            ProcessGroup? group = ActiveGroup;
+            if (group == null)
                 return false;
 
-            destinationIndex = Math.Clamp(destinationIndex, 0, ProcessMetas.Count - 1);
+            var metas = group.ProcessMetas;
+            int sourceIndex = metas.IndexOf(meta);
+            if (sourceIndex < 0)
+                return false;
+
+            destinationIndex = Math.Clamp(destinationIndex, 0, metas.Count - 1);
             if (sourceIndex == destinationIndex)
                 return false;
 
-            ProcessMetas.Move(sourceIndex, destinationIndex);
+            ProcessMeta target = metas[destinationIndex];
+            string message = LocalizedText.Format($"将流程组“{group.Name}”中的“{meta.Name}”从第 {sourceIndex + 1} 项移到第 {destinationIndex + 1} 项。是否保存新顺序？");
+            if (!confirm(message) || !ReferenceEquals(ActiveGroup, group)
+                || metas.IndexOf(meta) != sourceIndex || metas.IndexOf(target) != destinationIndex)
+                return false;
+
+            ProcessGroupsRoot candidate = CreateProcessGroupsRoot();
+            List<ProcessMetaPersist> persistedMetas = candidate.Groups[candidate.ActiveGroupIndex].Metas;
+            ProcessMetaPersist movedMeta = persistedMetas[sourceIndex];
+            persistedMetas.RemoveAt(sourceIndex);
+            persistedMetas.Insert(destinationIndex, movedMeta);
+            string change = $"流程项 {JsonConvert.ToString(movedMeta.Name)} 从第 {sourceIndex + 1} 项移到第 {destinationIndex + 1} 项";
+            if (!SavePersistedGroups(candidate, change))
+            {
+                errorMessage = LocalizedText.Get("保存失败，请检查磁盘空间和写入权限后重试。");
+                return false;
+            }
+
+            bool wasSuppressed = _suppressPersistence;
+            _suppressPersistence = true;
+            try
+            {
+                metas.Move(sourceIndex, destinationIndex);
+            }
+            finally
+            {
+                _suppressPersistence = wasSuppressed;
+            }
             SelectedProcessMeta = meta;
             CommandManager.InvalidateRequerySuggested();
             return true;
@@ -1473,7 +1518,7 @@ namespace ProjectARVRPro.Process
             return SavePersistedGroups(CreateProcessGroupsRoot());
         }
 
-        private static bool SavePersistedGroups(ProcessGroupsRoot root)
+        private static bool SavePersistedGroups(ProcessGroupsRoot root, string? change = null)
         {
             try
             {
@@ -1481,13 +1526,17 @@ namespace ProjectARVRPro.Process
 
                 string json = JsonConvert.SerializeObject(root, ExportJsonSerializerSettings);
                 WriteTextAtomically(GroupPersistFilePath, json);
-                return true;
             }
             catch (Exception ex)
             {
                 log.Error($"保存{GroupPersistFileName}失败", ex);
                 return false;
             }
+
+            ProcessGroupPersist? activeGroup = root.Groups.ElementAtOrDefault(root.ActiveGroupIndex);
+            string changeDetails = change == null ? string.Empty : $"，{change}";
+            log.Info($"已保存 ARVRPro 流程配置 [{GroupPersistFileName}]，当前组 {JsonConvert.ToString(activeGroup?.Name)}{changeDetails}");
+            return true;
         }
 
         public void SaveProcessGroups()

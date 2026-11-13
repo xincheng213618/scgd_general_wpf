@@ -2,7 +2,7 @@
   "manifest_version": 1,
   "Id": "ProjectARVRPro",
   "name": "ProjectARVRPro",
-  "version": "1.1.8.106",
+  "version": "1.1.8.107",
   "description": "",
   "dllpath": "ProjectARVRPro.dll",
   "requires": "1.4.17.114"

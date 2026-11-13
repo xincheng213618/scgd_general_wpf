@@ -2,41 +2,40 @@
 knowledge_id: "engine.rc-registration"
 knowledge_type: "topic"
 status: "current"
-summary: "RC注册、服务目录同步、状态快照与连接测试；远端删除不清本地令牌和收发主题，更新可能部分生效，连接或测试成功不等于设备就绪。"
-aliases: ["注册中心", "RC连接", "RC服务列表", "服务目录同步", "远端设备删除", "终端移除", "服务状态快照", "状态新鲜度", "启动早到消息", "RC测试连接", "RC设置", "注册中心连接配置", "新建配置文件", "复制配置文件", "NodeToken", "AccessToken", "RCName", "AppId", "AppSecret", "RC重复注册", "RC释放", "CVServiceType", "注册令牌", "MqttRCService", "PendingServiceUpdateBuffer", "RCServiceConnect", "RCSetting", "TryGetUsableToken", "ServiceTokensUpdated", "LiveTime", "LastAliveTime"]
-code_paths: ["Engine/ColorVision.Engine/Services/RC/MQTTRCService.cs", "Engine/ColorVision.Engine/Services/RC/PendingServiceUpdateBuffer.cs", "Engine/ColorVision.Engine/Services/RC/RCServiceConnect.xaml.cs", "Engine/ColorVision.Engine/Services/RC/RCServiceConnect.xaml", "Engine/ColorVision.Engine/Services/RC/RCSetting.cs", "Engine/ColorVision.Engine/Services/RC/RCServiceConfig.cs", "Engine/ColorVision.Engine/Services/RC/RCInitializer.cs", "Engine/cvColorVision/MQTTMessageLib/NodeToken.cs", "Engine/cvColorVision/MQTTMessageLib/MQTTRCServiceTypeConst.cs", "Engine/ColorVision.Engine/Services/Type/TypeService.cs", "Engine/ColorVision.Engine/MQTT/MQTTControl.cs", "Engine/ColorVision.Engine/Services/ServiceInitializer.cs", "Engine/ColorVision.Engine/Services/ServiceManager.cs", "Engine/ColorVision.Engine/Services/Devices/MQTTDeviceService.cs", "Engine/ColorVision.Engine/Services/Core/MQTTServiceBase.cs", "ColorVision/StartWindow.xaml.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/PendingServiceUpdateBufferTests.cs", "Test/ColorVision.UI.Tests/RCConnectionWaiterTests.cs"]
-related: ["engine.index", "engine.devices", "engine.mqtt", "operations.device-configuration", "operations.camera", "ui.configuration", "platform.runtime", "plugins.windows-service"]
+summary: "RC 默认注册参数、节点令牌、服务目录同步与状态快照。远端删除不清本地令牌和收发主题，更新可能部分生效。"
+aliases: ["注册中心", "RC连接", "RC默认值", "RC服务列表", "服务目录同步", "远端设备删除", "终端移除", "服务状态快照", "状态新鲜度", "启动早到消息", "NodeToken", "AccessToken", "RCName", "RCNodeName", "AppId", "AppSecret", "RC重复注册", "RC释放", "CVServiceType", "注册令牌", "MqttRCService", "PendingServiceUpdateBuffer", "TryGetUsableToken", "ServiceTokensUpdated", "LiveTime", "LastAliveTime"]
+code_paths: ["Engine/ColorVision.Engine/Services/RC/MQTTRCService.cs", "Engine/ColorVision.Engine/Services/RC/PendingServiceUpdateBuffer.cs", "Engine/ColorVision.Engine/Services/RC/RCInitializer.cs", "Engine/cvColorVision/MQTTMessageLib/NodeToken.cs", "Engine/ColorVision.Engine/Services/Type/CreateType.xaml.cs", "Engine/ColorVision.Engine/MQTT/MQTTControl.cs", "Engine/ColorVision.Engine/Services/ServiceInitializer.cs", "Engine/ColorVision.Engine/Services/ServiceManager.cs", "Engine/ColorVision.Engine/Services/Devices/MQTTDeviceService.cs", "Engine/ColorVision.Engine/Services/Core/MQTTServiceBase.cs", "ColorVision/StartWindow.xaml.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/PendingServiceUpdateBufferTests.cs"]
+related: ["engine.index", "engine.devices", "engine.mqtt", "operations.device-configuration", "operations.camera", "platform.runtime", "plugins.windows-service"]
 ---
 
-# RC 注册、服务快照与连接测试
+# RC 注册与服务快照
 
 `MqttRCService`（文件名 `MQTTRCService.cs`）负责注册中心协议、客户端节点令牌、服务目录及状态同步。它复用 `MQTTControl`，不是另一个 broker 客户端，也不是设备采集执行器。**MQTT 已连接、RC 连接标志为真、令牌可用、设备状态与本次命令成功是不同证据。**
 
-本页聚焦 `Services/RC/` 与本地服务树的交接。MQTT 传输/设备请求归[消息契约](../../02-developer-guide/engine-development/mqtt.md)，资源创建与保存归[设备配置](../../01-user-guide/devices/configuration.md)。注册、连接测试、重注册及重启都可能发送真实请求；文档问答不授权调用这些方法、启动 Windows 服务或操作设备。
+MQTT 传输与设备请求见[消息契约](../../02-developer-guide/engine-development/mqtt.md)，资源创建与保存见[设备配置](../../01-user-guide/devices/configuration.md)。
 
 ## 对象、凭据与状态的责任
 
 | 对象 | 保存或更新什么 | 不能据此推断 |
 | --- | --- | --- |
 | `MQTTControl` | broker 连接、订阅缓存和消息发布 | RC 已接受注册、设备准备好 |
-| `RCSetting.Config` | 当前 RCName、AppId、AppSecret；另有共享配置列表 | 字段改变已重建运行主题或落盘 |
 | `MqttRCService.Token` | RC 客户端节点 `NodeToken`；查询/心跳等使用 `AccessToken` | 所有设备的服务令牌也有效 |
 | `ServiceTokens` / 设备 `Config.ServiceToken` | 服务列表下发的服务令牌、设备映射和通信主题 | 令牌与所有本地资源匹配、设备可采集 |
-| `IsConnect` | 收到非空 Startup Token 后异步置真，断开时异步置假 | 与本次测试关联、此刻令牌未过期 |
+| `IsConnect` | 收到非空 Startup Token 后置真，断开时置假 | 与本次注册请求关联、此刻令牌未过期 |
 | `DeviceStatus` | 状态回包按终端及设备 Code 更新的值 | 状态足够新、本次硬件动作成功 |
 
-`RCSetting.Config` 是桌面客户端的注册配置：`RCName` 选择主题命名空间，`AppId` / `AppSecret` 用于注册身份，`Name` 仅标识配置项。它不是 MQTT 的主机/端口配置，也不是 Windows 服务目录中的 `cfg/WinService.config`；服务端配置文件的同步由 [Windows 服务管理器](../plugins/standard-plugins/windows-service.md#安装、数据库与配置顺序)负责，不由改客户端字段或 `ReRegist` 自动完成。
+桌面端直接使用 `MqttRCService` 的固定注册参数，旧客户端配置中的自定义值不会覆盖这套参数。注册主题、新建终端的收发主题与 Windows 服务管理器的配置同步共用同一注册中心名称。部署沿用自定义注册中心或注册凭据时，升级前需核对服务端 `NodeName`、`RCNodeName` 和数据库注册账户，确保与桌面端匹配。服务端文件同步见[Windows 服务管理器](../plugins/standard-plugins/windows-service.md#安装、数据库与配置顺序)。
 
-`RCInitializer.Order=4` 先尝试 `Connect()`；失败分支还可能经 ServiceHost 启动或安装本地服务，不是只读健康检查。`ServiceInitializer.Order=5` 在 MySQL 已连接时装配服务并应用早到更新。初始化器返回、进程启动和设备动作可执行也必须分别判断。
+`RCInitializer.Order=4` 先尝试 `Connect()`；失败分支还可能经 ServiceHost 启动或安装本地服务。`ServiceInitializer.Order=5` 装配服务树并应用早到更新。初始化器返回、进程启动和设备动作可执行也必须分别判断。
 
 ## 注册、令牌与保活
 
-`ReRegist()` 先 `LoadCfg()` 再 `Regist()`。`LoadCfg` 从当前配置重算 RC 主题并调用 `SubscribeCache`；没有在这里撤销旧订阅。直接改配置字段不自动执行这一过程。
+`MqttRCService` 构造时缓存订阅，MQTT 重连后恢复订阅并触发注册。
 
-允许本次注册时，`RegistCore` 清空节点 Token、`ServiceTokens`，立即更新内部 `IsConnect=false` 并在需要时将界面通知投递到 Dispatcher，随后发起发布。`Regist()` 是强制请求；`RequestRegist()` 才检查三秒间隔。该限制不覆盖所有自动入口：保活超时和令牌刷新走 `RequestRegist`，`Event_NotRegist` 回包直接调用 `Regist`。MQTT 断开时会取消排队中的重注册并清 RC 连接状态；只有 MQTT 已连接时才延迟一秒 `ReRegist`，重复连接通知会覆盖前一个等待。返回 true 只表示走到发起发布，不等待注册中心接受；底层 `MQTTControl.PublishAsyncClient` 在客户端为空或未连接时可以直接返回。
+允许本次注册时，`RegistCore` 清空节点 Token、`ServiceTokens`，立即更新内部 `IsConnect=false` 并在需要时将界面通知投递到 Dispatcher，随后发起发布。`RequestRegist()` 对保活超时和令牌刷新检查三秒间隔。主动连接、MQTT 重连与 `Event_NotRegist` 回包走 `Regist()`。MQTT 断开时会取消排队中的重注册并清 RC 连接状态。`Regist()` 返回 true 表示已发起发布，注册结果由后续回包更新。
 
-收到当前 `SubscribeTopic` 上的 `Event_Startup` 且 `Data.Token` 非空后，回调记录 Token 和本地接收时间，置 `IsConnect=true` 并将界面通知投递到 Dispatcher，再查询服务。此处理器没有把 Startup 与某个正在等待的注册/测试请求 ID 关联，也不检查 Token 内 `AccessToken` 是否为空；Token 对象存在不是凭据校验通过。`Connect()` 发起注册后通过连接状态事件等待，最多三秒；它不再以 10ms 轮询，但仍只观察共享连接标志，不等待服务树、设备初始化或采集完成。
+收到当前 `SubscribeTopic` 上的 `Event_Startup` 且 `Data.Token` 非空后，回调记录 Token 和本地接收时间，置 `IsConnect=true` 并将界面通知投递到 Dispatcher，再查询服务。`Connect()` 最多等待三秒，成功条件是共享连接标志置真。Startup 回包与等待中的注册请求没有请求 ID 关联，回调也不检查 `AccessToken` 内容。设备就绪需另行核对服务树、设备初始化及命令回包。
 
 查询、心跳及受令牌保护的重启入口另走 `TryGetUsableToken()`：
 
@@ -57,13 +56,13 @@ related: ["engine.index", "engine.devices", "engine.mqtt", "operations.device-co
 
 缓冲持有两类对象的引用：同类新快照覆盖旧快照，不按设备合并、不逐条重放、不深拷贝或写盘。两个槽独立更新，所以可以取到服务列表 S2 和状态 T1；锁只保护存取，**不证明它们来自同一时刻、同一版本或同一远端事务。**
 
-正常的 MySQL 已连接初始化分支依次执行：
+服务初始化依次执行：
 
 ```text
 取得 ServiceManager → Take 两槽并清空 → 应用列表 → 应用状态 → 生成设备显示控件
 ```
 
-`Take()` 在应用前已清空缓冲；后续应用异常没有自动重新入队或回滚保证。MySQL 未连接会跳过这条初始化分支。后续 `LoadServices()` 重建服务树本身不再次调用 `ApplyPendingServiceUpdates()`，因此不能概括为“任意重载、任意异常都绝不丢状态”。
+`Take()` 在应用前已清空缓冲。应用异常后需要新的 RC 快照。后续 `LoadServices()` 重建服务树本身不再次调用 `ApplyPendingServiceUpdates()`。
 
 ## 服务列表、状态与本地资源的交接
 
@@ -102,34 +101,8 @@ related: ["engine.index", "engine.devices", "engine.mqtt", "operations.device-co
 
 服务树装配、实际设备许可/初始化、命令参数、匹配 MsgID 的返回结果各有检查。尤其不要把存活时间变化或 RC 状态同步直接说成“相机已经能采集”，具体条件见[相机服务](../../01-user-guide/devices/camera.md)。
 
-## RCServiceConnect 的编辑、测试与关闭
-
-`RCServiceConnect` 的窗口标题是 **注册中心连接配置**，字段为连接名称、注册中心、AppId 和 AppSecret。仓库 C#/XAML 中没有找到它的直接打开调用；以下约束适用于由宿主或外部扩展显式打开此窗口的场景，不提供未经确认的默认菜单路径。Windows 服务安装和配置入口见 [Windows 服务管理器](../plugins/standard-plugins/windows-service.md)。
-
-| 操作 | 当前实现 | 影响边界 |
-| --- | --- | --- |
-| 打开 | 绑定 `RCSetting.Instance.Config` 活对象，另复制一次备份；将当前对象插到共享配置列表第 0 项并选中 | 不去重，不是独立编辑会话；绑定写回就影响当前对象 |
-| 切换配置项 | 直接将所选对象赋给 `RCSetting.Instance.Config` | 原始对象引用及配置列表不是事务快照 |
-| 新建 / 复制配置文件 | 向共享内存列表添加默认配置或当前配置副本；本身不创建文件或自动切换到新增项 | 名称中的“文件”不代表已经保存到磁盘 |
-| 测试连接 | 写入密码框值，再在后台调用运行单例的 `TryRegist(cfg)` | 会改共享连接标志并发送真实注册请求，不是离线校验 |
-| 取消按钮 | 将打开时备份 `CopyTo` 当前 `rcServiceConfig` 再关闭 | 切换过配置时，复制目标已变；不恢复整个列表、原引用、Token 或订阅 |
-| 标题栏关闭 | `Closed` 从列表移除当前配置对象 | 没有调用取消按钮的恢复逻辑 |
-| 确定 | 补名称、写密码、从列表移除当前对象，排队 `ReRegist()` 后关闭 | 不等待注册完成，窗口自身没有配置保存调用 |
-
-列表另有两个实现缺口：`ListViewRCBorder.PreviewKeyUp` 没有判断按键，只要事件到达且存在选中项就删除它；`ManipulationBoundaryFeedback` 处理器会新增默认配置并选中。取消不会撤销这些列表变更。确定按钮和 `Closed` 各移除一次当前对象，若列表本来就含同一引用，可能删除两处引用；不能将该列表当作独立、可靠的历史配置备份。
-
-`TryRegist` 从传入配置取注册目标主题和凭据，却继续携带运行单例当前的 `NodeName` / `SubscribeTopic`，不调用 `LoadCfg`。更换 RCName 时，注册目标与回复主题可能不是一套已同步配置。它先等待发送调用返回，再通过连接状态事件等待最多三秒；成功判据仍仅为观察到共享 `IsConnect=true`，没有本次请求 ID/候选配置关联，也没有隔离正常回包、自动重注册或并发测试。
-
-因此成功不能证明候选凭据与这次回包唯一对应、全部主题已切换或设备就绪；失败也不能证明稍后没有成功回包。正常回调仍可更新 Token、服务列表、设备主题与订阅。关闭窗口不取消后台任务，不补偿已经发出的注册及其后续效果。取消后如果要恢复运行连接，应在获得明确授权后核对配置和活动主题，而不是声称关窗已经恢复。
-
-内存编辑与落盘分开：已实例化的 `RCSetting` 可能由后续显式 `SaveConfigs` 或 `ConfigHandler` 在启用自动保存的进程退出路径保存；保存成功仍须按[配置持久化契约](../ui-components/configuration.md)核验。不要把其它设置窗口外层的保存逻辑推定到这个未确认调用入口的窗口。
-
 ## 排查、测试与权限边界
 
 先区分失败在哪一层：broker、RC 注册、节点 Token、服务目录/服务 Token、本地资源匹配、设备状态还是具体命令。只读调查可检查已有脱敏日志和这些源码入口；不要以“刷新一下”为由重注册、重载资源、安装服务或触发设备。
 
-`PendingServiceUpdateBufferTests.cs` 目前验证取出两份并清空、更新列表只保留最新且不丢另一槽，断言保留相同对象引用；`RCConnectionWaiterTests.cs` 验证连接事件完成、取消与解除订阅。它们不覆盖目录删除与本地匹配、部分应用和通知中断、Dispatcher 异常传播、状态新鲜度，也不覆盖真实 RC、完整启动、并发 Startup、连接测试关联、窗口取消、列表键盘/触摸事件、Dispose 后真实 MQTT 回调或主题切换。本页引用测试不表示已经运行。
-
-后续获得相应授权的隔离验证应覆盖：状态先到/列表先到、多次覆盖、管理器已存在但树不匹配、远端移除设备/终端后的本地残留、中途应用异常与通知缺失、不同入口的异常传播、旧状态保留、令牌刷新、迟到和并发 Startup、换 RCName、取消与标题栏关闭、订阅残留、显式保存与重启。真实 broker/设备和 Windows 服务另外验收。
-
-不要把 AppSecret、AccessToken、ServiceToken 或带凭据的完整注册消息写进文档和问答记录。`RCSetting.Encryption` 只处理当前 `Config.AppSecret`，没有在该方法中遍历配置列表；不能仅凭实现 `IConfigSecure` 就断言所有历史配置或日志字段都已加密。
+`PendingServiceUpdateBufferTests.cs` 验证快照覆盖、对象引用及取出后清空。部署验收需验证启动注册、断线后重新注册、服务目录刷新与实际设备命令。

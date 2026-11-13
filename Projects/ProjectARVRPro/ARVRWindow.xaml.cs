@@ -2418,6 +2418,7 @@ namespace ProjectARVRPro
             ResultImageFormat resultFormat = config.ResultSnapshotFormat;
             ImageExportSize resultSize = config.ResultSnapshotSize;
             bool includeOverlays = saveResultImage && config.ResultSnapshotIncludeOverlays;
+            bool useHeatmap = saveResultImage && config.ResultSnapshotSaveHeatmap;
             SourceImageFormat sourceFormat = config.SourceExportFormat;
             SourceTiffCompression sourceTiffCompression = config.SourceTiffCompressionMode;
             string? resultFileNameTemplate = config.UseFlowNameForResultImage ? config.ResultImageFileNameTemplate : null;
@@ -2473,7 +2474,7 @@ namespace ProjectARVRPro
                         Event = "ARVRImageSnapshotTiming", result.SN, result.BatchId, result.Model,
                         ResultId = result.Id, SourcePixelFormat = loadedSource.Format.ToString(),
                         SourceWidth = loadedSource.PixelWidth, SourceHeight = loadedSource.PixelHeight,
-                        SaveRendered = saveResultImage, SaveSource = saveSourceImage, IncludeOverlays = includeOverlays,
+                        SaveRendered = saveResultImage, SaveSource = saveSourceImage, IncludeOverlays = includeOverlays, UseHeatmap = useHeatmap,
                         ResultFormat = resultFormat.ToString(), ResultSize = resultSize.ToString(),
                         SourceFormat = sourceFormat.ToString(), SourceTiffCompression = sourceTiffCompression.ToString(),
                         CaptureMs = snapshotStopwatch.ElapsedMilliseconds,
@@ -2490,6 +2491,7 @@ namespace ProjectARVRPro
                     resultFormat,
                     resultSize,
                     includeOverlays,
+                    useHeatmap,
                     sourceFormat,
                     sourceTiffCompression,
                     resultFileNameTemplate,
@@ -2527,6 +2529,7 @@ namespace ProjectARVRPro
             ResultImageFormat resultFormat,
             ImageExportSize resultSize,
             bool includeOverlays,
+            bool useHeatmap,
             SourceImageFormat sourceFormat,
             SourceTiffCompression sourceTiffCompression,
             string? resultFileNameTemplate,
@@ -2597,7 +2600,7 @@ namespace ProjectARVRPro
                 await storageWrite.EnsureSpaceAsync().ConfigureAwait(false);
                 exportAttempt = new ProjectImageExportAttempt(renderedFilePath, sourceFilePath, inputFileName);
                 ImageViewSnapshotExportOptions exportOptions = exportAttempt.CreateOptions(
-                    ProjectImageExportService.CreateRenderedOptions(resultFormat, resultSize),
+                    ProjectImageExportService.CreateRenderedOptions(resultFormat, resultSize, useHeatmap),
                     ProjectImageExportService.CreateSourceOptions(sourceFormat, sourceTiffCompression),
                     ProjectImageExportService.BuildDiagnosticContext(
                         result.SN,

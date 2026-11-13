@@ -43,8 +43,8 @@ next: false
 - [CVRAW / CVCIE 图像导出](../../04-api-reference/engine-components/cv-image-export.md) — `engine.cv-image-export`
   CVRAW/CVCIE 原生导出的窗口、命令行参数、通道和命名规则，以及覆盖、部分失败和退出码边界。
 
-- [RC 注册、服务快照与连接测试](../../04-api-reference/engine-components/rc-registration.md) — `engine.rc-registration`
-  RC注册、服务目录同步、状态快照与连接测试；远端删除不清本地令牌和收发主题，更新可能部分生效，连接或测试成功不等于设备就绪。
+- [RC 注册与服务快照](../../04-api-reference/engine-components/rc-registration.md) — `engine.rc-registration`
+  RC 默认注册参数、节点令牌、服务目录同步与状态快照。远端删除不清本地令牌和收发主题，更新可能部分生效。
 
 - [跨模块运行问题定位](../../01-user-guide/README.md) — `operations.index`
   从启动、配置、日志、设备、流程和结果现象定位代码责任，区分已完成阶段与待验证阶段，避免用重启或改数据代替诊断。

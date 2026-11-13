@@ -594,20 +594,38 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
             try
             {
                 using var db = CreateReadDb();
-                var query = db.Queryable<FlowRunRecord>()
-                    .Where(item => item.Status == FlowStatus.Completed && item.ElapsedMs > 0);
-                query = ApplyFlowIdentityFilter(query, identity);
-
-                FlowRunRecord? record = query
-                    .OrderByDescending(item => item.CompletedTime)
-                    .First();
-                return record?.ElapsedMs ?? 0;
+                return ReadLastCompletedFlowElapsed(db, identity);
             }
             catch (Exception ex)
             {
                 log.Error("查询流程上次执行耗时失败", ex);
                 return 0;
             }
+        }
+
+        private static long ReadLastCompletedFlowElapsed(SqlSugarClient db, FlowIdentity identity)
+        {
+            if (identity.IsEmpty)
+                return 0;
+
+            var query = db.Queryable<FlowRunRecord>()
+                .Where(item => item.Status == FlowStatus.Completed && item.ElapsedMs > 0);
+            return ApplyFlowIdentityFilter(query, identity)
+                .OrderByDescending(item => item.CompletedTime)
+                .First()?.ElapsedMs ?? 0;
+        }
+
+        internal static (long? FlowElapsedMs, Dictionary<string, long> NodeDurations)? ReadProgressHistory(
+            FlowIdentity? identity, string[] nodeIds)
+        {
+            if (!EnsureInitialized())
+                return null;
+
+            using var db = CreateReadDb();
+            long? elapsed = identity is FlowIdentity flow ? ReadLastCompletedFlowElapsed(db, flow) : null;
+            var durations = new Dictionary<string, long>(StringComparer.Ordinal);
+            ReadLatestCompletedDurations(db, nodeIds, durations);
+            return (elapsed, durations);
         }
 
         internal static FlowRunRecord? GetFlowRun(

@@ -243,6 +243,16 @@ public sealed class LocalPoiTemplateStorageTests
 
                 editor.PointSizePercentageButton.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
                 Assert.Equal("40 × 20 px", editor.PointSizePercentagePreview.Text);
+                editor.PoiConfig.IsPointCircle = true;
+                editor.PointSizePercentageButton.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                Assert.Equal("40 px", editor.PointSizePercentagePreview.Text);
+                editor.PointSizeRadiusByHeight.IsSelected = true;
+                Assert.Equal("20 px", editor.PointSizePercentagePreview.Text);
+                editor.ApplyPointSizePercentageButton.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                Assert.Equal(20, editor.PoiConfig.DefaultCircleRadius);
+
+                editor.PoiConfig.IsPointRect = true;
+                editor.PointSizePercentageButton.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
                 editor.PointSizePercentageCanvas.IsSelected = true;
                 Assert.Equal("64 × 48 px", editor.PointSizePercentagePreview.Text);
                 editor.ApplyPointSizePercentageButton.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));

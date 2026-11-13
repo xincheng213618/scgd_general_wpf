@@ -64,6 +64,7 @@ public partial class STNodeEditor : System.Windows.Controls.Control, IDisposable
 	private PointF _CanvasOffset;
 
 	private Rectangle _CanvasValidBounds;
+	private bool _replacingCanvasNodes;
 
 	private float _CanvasScale = 1f;
 
@@ -2413,6 +2414,9 @@ public partial class STNodeEditor : System.Windows.Controls.Control, IDisposable
 
 	protected internal virtual void BuildBounds()
 	{
+		if (_replacingCanvasNodes)
+			return;
+
 		if (_Nodes.Count == 0)
 		{
 			_CanvasValidBounds = ControlToCanvas(ClientRectangle);
@@ -3111,16 +3115,26 @@ public partial class STNodeEditor : System.Windows.Controls.Control, IDisposable
 		// Parsing and connection validation are complete before the live graph
 		// is replaced, so truncated/corrupt input cannot leave a half-loaded
 		// canvas behind.
-		_Nodes.Clear();
-		foreach (STNode node in document.Nodes)
-			_Nodes.Add(node);
+		_replacingCanvasNodes = true;
+		try
+		{
+			_Nodes.Clear();
+			foreach (STNode node in document.Nodes)
+				_Nodes.Add(node);
+		}
+		finally
+		{
+			_replacingCanvasNodes = false;
+			BuildBounds();
+		}
 		ScaleCanvas(document.CanvasScale, 0f, 0f);
 		MoveCanvas(
 			document.CanvasOffsetX,
 			document.CanvasOffsetY,
 			bAnimation: false,
 			CanvasMoveArgs.All);
-		BuildBounds();
+		if (_Nodes.Count == 0)
+			BuildBounds();
 		foreach (STNode node in _Nodes)
 		{
 			node.OnEditorLoadCompleted();

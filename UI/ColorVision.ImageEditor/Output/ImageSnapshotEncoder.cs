@@ -183,6 +183,7 @@ namespace ColorVision.ImageEditor.Output
             TimeSpan materializeElapsed = TimeSpan.Zero;
             TimeSpan renderElapsed = TimeSpan.Zero;
             TimeSpan encodeWriteElapsed = TimeSpan.Zero;
+            TimeSpan heatmapElapsed = TimeSpan.Zero;
             string outcome = "Completed";
             SnapshotEncodeWorker.Reservation? encodeReservation = null;
             try
@@ -211,6 +212,7 @@ namespace ColorVision.ImageEditor.Output
                         queueStopwatch,
                         ref materializeElapsed,
                         ref renderElapsed,
+                        ref heatmapElapsed,
                         cancellationToken),
                     cancellationToken).ConfigureAwait(false);
                 Stopwatch encodeWriteStopwatch = Stopwatch.StartNew();
@@ -249,6 +251,7 @@ namespace ColorVision.ImageEditor.Output
                     materializeElapsed,
                     renderElapsed,
                     encodeWriteElapsed,
+                    heatmapElapsed,
                     totalStopwatch.Elapsed);
             }
         }
@@ -259,6 +262,7 @@ namespace ColorVision.ImageEditor.Output
             Stopwatch queueStopwatch,
             ref TimeSpan materializeElapsed,
             ref TimeSpan renderElapsed,
+            ref TimeSpan heatmapElapsed,
             CancellationToken cancellationToken)
         {
             queueStopwatch.Stop();
@@ -278,16 +282,33 @@ namespace ColorVision.ImageEditor.Output
             BitmapSource? rendered = null;
             if (!string.IsNullOrWhiteSpace(options.RenderedFileName))
             {
-                Stopwatch renderStopwatch = Stopwatch.StartNew();
-                try
+                BitmapSource? background = source;
+                if (options.RenderedOptions.UseHeatmap)
                 {
-                    DrawingGroup scene = ComposeSnapshotScene(snapshot, source);
-                    rendered = RenderSnapshot(snapshot, scene, options.RenderedOptions, cancellationToken);
+                    Stopwatch heatmapStopwatch = Stopwatch.StartNew();
+                    try
+                    {
+                        if (source == null)
+                            throw new InvalidOperationException("Heatmap rendering requires base image pixels.");
+                        (int width, int height) = GetSnapshotOutputSize(snapshot, options.RenderedOptions.ScaleDivisor);
+                        background = SnapshotHeatmap.Create(source, width, height, snapshot.DpiX, snapshot.DpiY, cancellationToken);
+                    }
+                    finally { heatmapElapsed = heatmapStopwatch.Elapsed; }
                 }
-                finally
+
+                if (options.RenderedOptions.UseHeatmap && snapshot.Scene.Children.Count == 0)
                 {
-                    renderStopwatch.Stop();
-                    renderElapsed = renderStopwatch.Elapsed;
+                    rendered = background;
+                }
+                else
+                {
+                    Stopwatch renderStopwatch = Stopwatch.StartNew();
+                    try
+                    {
+                        DrawingGroup scene = ComposeSnapshotScene(snapshot, background);
+                        rendered = RenderSnapshot(snapshot, scene, options.RenderedOptions, cancellationToken);
+                    }
+                    finally { renderElapsed = renderStopwatch.Elapsed; }
                 }
             }
 
@@ -400,6 +421,7 @@ namespace ColorVision.ImageEditor.Output
             TimeSpan materialize,
             TimeSpan render,
             TimeSpan encodeWrite,
+            TimeSpan heatmap,
             TimeSpan total)
         {
             string context = string.IsNullOrWhiteSpace(diagnosticContext)
@@ -407,7 +429,7 @@ namespace ColorVision.ImageEditor.Output
                 : diagnosticContext.Trim();
             log.Info(string.Format(
                 CultureInfo.InvariantCulture,
-                "ImageSnapshotExportTiming {0} Status={1} QueueMs={2:F3} MaterializeMs={3:F3} RenderMs={4:F3} EncodeWriteMs={5:F3} TotalMs={6:F3} EncodeConcurrency={7}",
+                "ImageSnapshotExportTiming {0} Status={1} QueueMs={2:F3} MaterializeMs={3:F3} RenderMs={4:F3} EncodeWriteMs={5:F3} TotalMs={6:F3} EncodeConcurrency={7} HeatmapMs={8:F3}",
                 context,
                 outcome,
                 queue.TotalMilliseconds,
@@ -415,7 +437,8 @@ namespace ColorVision.ImageEditor.Output
                 render.TotalMilliseconds,
                 encodeWrite.TotalMilliseconds,
                 total.TotalMilliseconds,
-                SnapshotEncodeWorker.MaxConcurrency));
+                SnapshotEncodeWorker.MaxConcurrency,
+                heatmap.TotalMilliseconds));
         }
 
         private sealed record PreparedSnapshot(BitmapSource? Rendered, BitmapSource? Source, string? ParametersJson);

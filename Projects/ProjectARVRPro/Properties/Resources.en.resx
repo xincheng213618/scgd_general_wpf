@@ -1294,6 +1294,7 @@ Automatically saved settings will remain.</value>
   <data name="名称不能为空，且不能与其他流程组重复。" xml:space="preserve"><value>Enter a name that is not used by another group.</value></data>
   <data name="组名不能包含换行或控制字符。" xml:space="preserve"><value>Group names cannot contain line breaks or control characters.</value></data>
   <data name="保存失败，请检查磁盘空间和写入权限后重试。" xml:space="preserve"><value>Could not save. Check disk space and write permissions, then try again.</value></data>
+  <data name="将流程组“{0}”中的“{1}”从第 {2} 项移到第 {3} 项。是否保存新顺序？" xml:space="preserve"><value>Move “{1}” in group “{0}” from position {2} to position {3}. Save the new order?</value></data>
   <data name="流程组已不存在，请关闭后重新选择。" xml:space="preserve"><value>This group no longer exists. Close this dialog and select another group.</value></data>
   <data name="等待" xml:space="preserve"><value>Waiting</value></data>
   <data name="执行中" xml:space="preserve"><value>Running</value></data>

@@ -1,4 +1,5 @@
 using ColorVision.Database;
+using ColorVision.Engine.Services.RC;
 using MySqlConnector;
 using System.IO;
 using System.Windows;
@@ -29,7 +30,7 @@ public partial class ServiceManagerViewModel
             if (ShowUiMessage($"将从注册中心监控列表移除 CVArchService。\n{notice}\n\n是否继续？", caption, MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes)
                 return;
 
-            string rcCode = ColorVision.Engine.Services.RC.RCSetting.Instance.Config.RCName;
+            string rcCode = MqttRCService.RCNodeName;
             string connectionString = MySqlControl.GetConnectionString(MySqlSetting.Instance.MySqlConfig, timeout: 5);
             await ApplyMonitoringChangeAsync(wasRunning,
                 () => ServiceHostWindowsServiceController.ExecuteAsync("RegistrationCenterService", ServiceHostServiceOperation.Stop, log.Info, "注册中心服务"),

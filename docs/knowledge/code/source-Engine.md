@@ -115,8 +115,8 @@ next: false
 - [MySQL SQL 恢复、重置与资源保留](../../04-api-reference/engine-components/mysql-recovery.md) — `engine.mysql-recovery`
   MySQL恢复后更新流程节点标识，再同步配置和重启注册中心；支持独立更新按钮。SQL导入不回滚，迁移备份不含结果。
 
-- [RC 注册、服务快照与连接测试](../../04-api-reference/engine-components/rc-registration.md) — `engine.rc-registration`
-  RC注册、服务目录同步、状态快照与连接测试；远端删除不清本地令牌和收发主题，更新可能部分生效，连接或测试成功不等于设备就绪。
+- [RC 注册与服务快照](../../04-api-reference/engine-components/rc-registration.md) — `engine.rc-registration`
+  RC 默认注册参数、节点令牌、服务目录同步与状态快照。远端删除不清本地令牌和收发主题，更新可能部分生效。
 
 - [算法结果交接、展示与导出](../../04-api-reference/engine-components/result-handoff-chain.md) — `engine.results`
   算法结果交接、已加载批次主记录查询与叠加显示：区分本地中立 Geometry/Overlay、Engine 历史 handler 和客户业务导出，保留来源与文档/revision 生命周期。
@@ -322,8 +322,8 @@ next: false
 - [发光区定位：AA 模板与本地 V2](../../04-api-reference/algorithms/templates/find-light-area.md) — `algorithms.find-light-area`
   AA 模板与本地发光区定位(V2)的入口、图像来源、POI保存模板和结果边界。
 
-- [RC 注册、服务快照与连接测试](../../04-api-reference/engine-components/rc-registration.md) — `engine.rc-registration`
-  RC注册、服务目录同步、状态快照与连接测试；远端删除不清本地令牌和收发主题，更新可能部分生效，连接或测试成功不等于设备就绪。
+- [RC 注册与服务快照](../../04-api-reference/engine-components/rc-registration.md) — `engine.rc-registration`
+  RC 默认注册参数、节点令牌、服务目录同步与状态快照。远端删除不清本地令牌和收发主题，更新可能部分生效。
 
 - [物理相机发现、许可证与资源管理](../../01-user-guide/devices/camera-management.md) — `operations.physical-camera`
   物理相机的扫描、创建、许可证、校正资源和还原点入口；区分扫描结果与缓存列表，首次创建唯一物理相机时补齐空设备绑定并静默重启本机注册中心。

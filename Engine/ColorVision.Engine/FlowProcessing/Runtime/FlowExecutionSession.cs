@@ -47,6 +47,7 @@ namespace ColorVision.Engine.FlowProcessing
         private int _pendingUiUpdate;
         private int _pendingRunRequest;
         private FlowExecutionJournalScope? _activeJournalScope;
+        private FlowProgressHistoryCache.Entry? _activeProgressHistory;
 
         private readonly record struct FlowRunCoreResult(
             FlowControlData? EngineResult,
@@ -424,18 +425,19 @@ namespace ColorVision.Engine.FlowProcessing
                 TimeSpan elapsed = TimeSpan.FromMilliseconds(elapsedMilliseconds);
                 string elapsedTime = $"{elapsed.Minutes:D2}:{elapsed.Seconds:D2}:{elapsed.Milliseconds:D4}";
                 string runningNodes = _runningNodeNames.IsEmpty ? _currentNodeName : string.Join(", ", _runningNodeNames.Values);
+                long lastFlowTime = Volatile.Read(ref _lastFlowTime);
                 string msg;
-                if (_lastFlowTime == 0 || _lastFlowTime - elapsedMilliseconds < 0)
+                if (lastFlowTime == 0 || lastFlowTime - elapsedMilliseconds < 0)
                 {
                     msg = $"{ColorVision.Engine.Properties.Resources.Flow_ExecutingNodeLabel}{runningNodes}{Environment.NewLine}{ColorVision.Engine.Properties.Resources.Flow_ElapsedTimeLabel}{elapsedTime} {Environment.NewLine}";
                 }
                 else
                 {
-                    long remainingMilliseconds = _lastFlowTime - elapsedMilliseconds;
+                    long remainingMilliseconds = lastFlowTime - elapsedMilliseconds;
                     TimeSpan remaining = TimeSpan.FromMilliseconds(remainingMilliseconds);
                     string remainingTime = $"{remaining.Minutes:D2}:{remaining.Seconds:D2}:{elapsed.Milliseconds:D4}";
 
-                    msg = $"{_flowName}{ColorVision.Engine.Properties.Resources.Flow_LastExecutionLabel}{_lastFlowTime} ms{Environment.NewLine}{ColorVision.Engine.Properties.Resources.Flow_ExecutingNodeLabel}{runningNodes}{Environment.NewLine}{ColorVision.Engine.Properties.Resources.Flow_ElapsedTimeLabel}{elapsedTime} {Environment.NewLine}{ColorVision.Engine.Properties.Resources.Flow_EstimatedRemainingLabel}{remainingTime}";
+                    msg = $"{_flowName}{ColorVision.Engine.Properties.Resources.Flow_LastExecutionLabel}{lastFlowTime} ms{Environment.NewLine}{ColorVision.Engine.Properties.Resources.Flow_ExecutingNodeLabel}{runningNodes}{Environment.NewLine}{ColorVision.Engine.Properties.Resources.Flow_ElapsedTimeLabel}{elapsedTime} {Environment.NewLine}{ColorVision.Engine.Properties.Resources.Flow_EstimatedRemainingLabel}{remainingTime}";
                 }
                 View.Dispatcher.BeginInvoke(() =>
                 {
@@ -444,9 +446,9 @@ namespace ColorVision.Engine.FlowProcessing
                         || !CanPresentRuntimeProgress)
                         return;
                     UpdateRunningNodeTitleProgress();
-                    if (!View.IsStandalone && _lastFlowTime != 0)
+                    if (!View.IsStandalone && lastFlowTime != 0)
                     {
-                        double perfect = (double) elapsedMilliseconds / (double)_lastFlowTime * 100;
+                        double perfect = (double)elapsedMilliseconds / lastFlowTime * 100;
                         FlowEngineManager.BatchProgress = perfect >= 100 ?  99:perfect;
                     }
                     View.logTextBox.Text = msg;
@@ -463,13 +465,15 @@ namespace ColorVision.Engine.FlowProcessing
                 FlowNodeRecord record,
                 FlowNodeMessage? message,
                 FlowExecutionJournalScope? journalScope,
-                long generation)
+                long generation,
+                FlowProgressHistoryCache.Entry? progressHistory)
             {
                 InvocationId = invocationId;
                 Record = record;
                 Message = message;
                 JournalScope = journalScope;
                 Generation = generation;
+                ProgressHistory = progressHistory;
             }
 
             public string InvocationId { get; }
@@ -486,6 +490,7 @@ namespace ColorVision.Engine.FlowProcessing
                 Task.CompletedTask;
 
             public long Generation { get; }
+            public FlowProgressHistoryCache.Entry? ProgressHistory { get; }
         }
 
         private readonly record struct NodeExecutionKey(string? SerialNumber, string NodeId, string MessageId);
@@ -615,19 +620,64 @@ namespace ColorVision.Engine.FlowProcessing
             }
         }
 
-        private async Task LoadNodeExpectedDurationsAsync()
+        private async Task LoadProgressHistoryAsync(FlowIdentity identity, FlowProgressHistoryCache.Entry entry, string serialNumber)
         {
+            long generation = Volatile.Read(ref _executionGeneration);
             string[] nodeIds = View.STNodeEditorMain.Nodes
                 .OfType<CVCommonNode>()
                 .Select(node => node.NodeID)
+                .Where(id => !string.IsNullOrWhiteSpace(id))
                 .Distinct(StringComparer.Ordinal)
                 .ToArray();
-            Dictionary<string, long> durations = await Task.Run(
-                () => FlowNodeRecordDataBaseHelper.GetLastElapsedByNodeIds(nodeIds));
+            ApplyProgressHistory(entry, nodeIds);
 
-            _nodeExpectedDurations.Clear();
-            foreach (KeyValuePair<string, long> item in durations)
-                _nodeExpectedDurations[item.Key] = item.Value;
+            Task pendingRead;
+            lock (entry.SyncRoot)
+            {
+                string[] missingNodes = nodeIds.Where(id => !entry.NodeDurations.ContainsKey(id)).ToArray();
+                if (entry.FlowElapsedMs.HasValue && missingNodes.Length == 0)
+                    return;
+
+                if (entry.PendingRead is not { IsCompleted: false })
+                    entry.PendingRead = PopulateProgressHistoryAsync(entry, entry.FlowElapsedMs.HasValue ? null : identity, missingNodes);
+                pendingRead = entry.PendingRead;
+            }
+            await pendingRead;
+
+            if (generation == Volatile.Read(ref _executionGeneration)
+                && _stopwatch.IsRunning && _runLifecycle.CanContinue(serialNumber))
+                ApplyProgressHistory(entry, nodeIds);
+        }
+
+        private void ApplyProgressHistory(FlowProgressHistoryCache.Entry entry, string[] nodeIds)
+        {
+            // A node may already have provided its configured or measured duration.
+            foreach (string nodeId in nodeIds)
+            {
+                if (entry.NodeDurations.TryGetValue(nodeId, out long duration) && duration > 0)
+                    _nodeExpectedDurations.TryAdd(nodeId, duration);
+            }
+            lock (entry.SyncRoot)
+                Volatile.Write(ref _lastFlowTime, entry.FlowElapsedMs ?? 0);
+        }
+
+        private static async Task PopulateProgressHistoryAsync(FlowProgressHistoryCache.Entry entry, FlowIdentity? identity, string[] missingNodes)
+        {
+            try
+            {
+                var history = await Task.Run(() => FlowNodeRecordDataBaseHelper.ReadProgressHistory(identity, missingNodes));
+                if (history is not { } result)
+                    return;
+
+                lock (entry.SyncRoot)
+                    entry.FlowElapsedMs ??= result.FlowElapsedMs;
+                foreach (string nodeId in missingNodes)
+                    entry.NodeDurations.TryAdd(nodeId, result.NodeDurations.GetValueOrDefault(nodeId));
+            }
+            catch (Exception ex)
+            {
+                log.Warn("读取流程进度预估耗时失败。", ex);
+            }
         }
 
         private void UpdateRunningNodeTitleProgress()
@@ -715,7 +765,11 @@ namespace ColorVision.Engine.FlowProcessing
                 record.EndTime = DateTime.Now;
                 record.ElapsedMs = (long)(record.EndTime.Value - record.StartTime).TotalMilliseconds;
                 if (record.ElapsedMs > 0)
+                {
                     _nodeExpectedDurations[algorithmNode.NodeID] = record.ElapsedMs;
+                    if (execution.ProgressHistory is { } history)
+                        history.NodeDurations[algorithmNode.NodeID] = record.ElapsedMs;
+                }
                 else if (elapsedFromClock > 0)
                     _nodeExpectedDurations[algorithmNode.NodeID] = elapsedFromClock;
 
@@ -960,7 +1014,8 @@ namespace ColorVision.Engine.FlowProcessing
                     record,
                     msg,
                     _activeJournalScope,
-                    generation);
+                    generation,
+                    _activeProgressHistory);
                 execution.StartWriteTask = PersistNodeStartAsync(
                     execution,
                     algorithmNode.NodeID);
@@ -1232,14 +1287,9 @@ namespace ColorVision.Engine.FlowProcessing
                 }
                 FlowEditorOperations.ClearSelection(View.STNodeEditorMain);
                 _flowName = flowName;
-                _lastFlowTime = await Task.Run(
-                    () => FlowNodeRecordDataBaseHelper.GetLastCompletedFlowElapsed(
-                        new FlowIdentity(
-                            selectedFlowParam.Id,
-                            selectedFlowParam.FlowKey,
-                            flowName)));
+                Volatile.Write(ref _lastFlowTime, 0);
+                _nodeExpectedDurations.Clear();
                 ResetNodeTitleProgress();
-                await LoadNodeExpectedDurationsAsync();
                 if (!CanContinueFlowStart(sn))
                 {
                     unstartedBatchStatus = FlowStatus.Canceled;
@@ -1293,6 +1343,11 @@ namespace ColorVision.Engine.FlowProcessing
                     "pre-process-started",
                     "PreProcessStarted",
                     message: "流程前处理已开始。");
+
+                var identity = new FlowIdentity(selectedFlowParam.Id, selectedFlowParam.FlowKey, flowName);
+                var progressHistory = FlowProgressHistoryCache.Shared.GetOrAdd(identity);
+                _activeProgressHistory = progressHistory;
+                _ = LoadProgressHistoryAsync(identity, progressHistory, sn);
 
                 Stopwatch preProcessStopwatch = Stopwatch.StartNew();
                 string? preProcessFailure;
@@ -1386,6 +1441,12 @@ namespace ColorVision.Engine.FlowProcessing
                         executionData,
                         executionSnapshot.FlowKey,
                         journalScope);
+                long elapsed = _stopwatch.ElapsedMilliseconds;
+                if (elapsed > 0 && finalizedResult?.FinalOutcome is FlowFinalOutcome.Succeeded or FlowFinalOutcome.SucceededWithWarnings)
+                {
+                    lock (progressHistory.SyncRoot)
+                        progressHistory.FlowElapsedMs = elapsed;
+                }
                 finalizationCompleted = true;
                 return new FlowRunCoreResult(
                     executionData,
@@ -1446,6 +1507,7 @@ namespace ColorVision.Engine.FlowProcessing
 
                     if (ReferenceEquals(_activeJournalScope, journalScope))
                         _activeJournalScope = null;
+                    _activeProgressHistory = null;
                     journalScope?.Dispose();
                     lock (_executionStateSync)
                     {

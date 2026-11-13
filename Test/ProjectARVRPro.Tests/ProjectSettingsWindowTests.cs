@@ -285,13 +285,27 @@ public sealed class ProjectSettingsWindowTests
                 var save = FindEditor<ToggleButton>(window, saveProperty);
                 var naming = FindEditor<ToggleButton>(window, namingProperty);
                 var template = FindEditor<TextBox>(window, templateProperty);
+                var heatmap = FindEditor<ToggleButton>(window, nameof(ViewResultManagerConfig.ResultSnapshotSaveHeatmap));
                 Assert.False(naming.IsVisible);
                 Assert.False(template.IsVisible);
+                Assert.False(heatmap.IsVisible);
+                Assert.False(heatmap.IsChecked);
 
                 save.IsChecked = true;
                 Pump();
                 Assert.True(naming.IsVisible);
                 Assert.False(template.IsVisible);
+                if (saveProperty == nameof(ViewResultManagerConfig.IsSaveImageReuslt))
+                {
+                    Assert.True(heatmap.IsVisible);
+                    heatmap.IsChecked = true;
+                    Pump();
+                    Assert.True(results.ResultSnapshotSaveHeatmap);
+                }
+                else
+                {
+                    Assert.False(heatmap.IsVisible);
+                }
 
                 naming.IsChecked = true;
                 Pump();
@@ -301,6 +315,7 @@ public sealed class ProjectSettingsWindowTests
                 Pump();
                 Assert.False(naming.IsVisible);
                 Assert.False(template.IsVisible);
+                Assert.False(heatmap.IsVisible);
 
                 save.IsChecked = true;
                 Pump();

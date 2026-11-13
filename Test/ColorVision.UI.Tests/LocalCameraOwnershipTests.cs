@@ -46,6 +46,51 @@ public class LocalCameraOwnershipTests
     }
 
     [Fact]
+    public async Task CloseWaitsForAnInFlightCaptureTimeoutAndBlocksNewCommands()
+    {
+        var native = new LocalCameraSessionTests.FakeNative();
+        var backend = new CameraBackendState(true);
+        var config = new ConfigCamera { Code = "local-test" };
+        using var session = new LocalCameraSession(native, backend, config);
+        session.Open("camera", TakeImageMode.Measure_Normal, 16);
+        var device = CreateDevice(config, backend, session);
+        var entered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        using var release = new ManualResetEventSlim();
+        var captureCompleted = new TaskCompletionSource<MsgRecordState>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var closeCompleted = new TaskCompletionSource<MsgRecordState>(TaskCreationOptions.RunContinuationsAsynchronously);
+        WpfTestHost.Invoke(() =>
+        {
+            var capture = device.RunLocalCommand("GetData", () => session.UseOpened<int>(_ =>
+            {
+                entered.SetResult();
+                release.Wait();
+                throw new TimeoutException("取图超时");
+            }));
+            capture.MsgRecordStateChanged += (_, state) => captureCompleted.TrySetResult(state);
+        });
+        try
+        {
+            await entered.Task.WaitAsync(TimeSpan.FromSeconds(10));
+            WpfTestHost.Invoke(() =>
+            {
+                var close = device.CloseLocalCamera();
+                close.MsgRecordStateChanged += (_, state) => closeCompleted.TrySetResult(state);
+            });
+            Assert.False(closeCompleted.Task.IsCompleted);
+            Assert.Equal(0, native.Closes);
+            Assert.Throws<InvalidOperationException>(backend.BeginLocalCommand);
+            Assert.Throws<InvalidOperationException>(() => { _ = backend.BeginLocalClose(); });
+        }
+        finally { release.Set(); }
+
+        Assert.Equal(MsgRecordState.Fail, await captureCompleted.Task.WaitAsync(TimeSpan.FromSeconds(10)));
+        Assert.Equal(MsgRecordState.Success, await closeCompleted.Task.WaitAsync(TimeSpan.FromSeconds(10)));
+        Assert.Equal(1, native.Closes);
+        Assert.False(backend.IsCommandRunning);
+        Assert.False(backend.LocalOwned);
+    }
+
+    [Fact]
     public async Task StoppingQueuedFlowCaptureDoesNotWaitForTheActiveModeSwitch()
     {
         var entered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);

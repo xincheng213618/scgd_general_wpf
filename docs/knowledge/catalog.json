@@ -5821,10 +5821,11 @@
       "knowledge_id": "engine.rc-registration",
       "knowledge_type": "topic",
       "status": "current",
-      "summary": "RC注册、服务目录同步、状态快照与连接测试；远端删除不清本地令牌和收发主题，更新可能部分生效，连接或测试成功不等于设备就绪。",
+      "summary": "RC 默认注册参数、节点令牌、服务目录同步与状态快照。远端删除不清本地令牌和收发主题，更新可能部分生效。",
       "aliases": [
         "注册中心",
         "RC连接",
+        "RC默认值",
         "RC服务列表",
         "服务目录同步",
         "远端设备删除",
@@ -5832,14 +5833,10 @@
         "服务状态快照",
         "状态新鲜度",
         "启动早到消息",
-        "RC测试连接",
-        "RC设置",
-        "注册中心连接配置",
-        "新建配置文件",
-        "复制配置文件",
         "NodeToken",
         "AccessToken",
         "RCName",
+        "RCNodeName",
         "AppId",
         "AppSecret",
         "RC重复注册",
@@ -5848,8 +5845,6 @@
         "注册令牌",
         "MqttRCService",
         "PendingServiceUpdateBuffer",
-        "RCServiceConnect",
-        "RCSetting",
         "TryGetUsableToken",
         "ServiceTokensUpdated",
         "LiveTime",
@@ -5858,14 +5853,9 @@
       "code_paths": [
         "Engine/ColorVision.Engine/Services/RC/MQTTRCService.cs",
         "Engine/ColorVision.Engine/Services/RC/PendingServiceUpdateBuffer.cs",
-        "Engine/ColorVision.Engine/Services/RC/RCServiceConnect.xaml.cs",
-        "Engine/ColorVision.Engine/Services/RC/RCServiceConnect.xaml",
-        "Engine/ColorVision.Engine/Services/RC/RCSetting.cs",
-        "Engine/ColorVision.Engine/Services/RC/RCServiceConfig.cs",
         "Engine/ColorVision.Engine/Services/RC/RCInitializer.cs",
         "Engine/cvColorVision/MQTTMessageLib/NodeToken.cs",
-        "Engine/cvColorVision/MQTTMessageLib/MQTTRCServiceTypeConst.cs",
-        "Engine/ColorVision.Engine/Services/Type/TypeService.cs",
+        "Engine/ColorVision.Engine/Services/Type/CreateType.xaml.cs",
         "Engine/ColorVision.Engine/MQTT/MQTTControl.cs",
         "Engine/ColorVision.Engine/Services/ServiceInitializer.cs",
         "Engine/ColorVision.Engine/Services/ServiceManager.cs",
@@ -5874,8 +5864,7 @@
         "ColorVision/StartWindow.xaml.cs"
       ],
       "test_paths": [
-        "Test/ColorVision.UI.Tests/PendingServiceUpdateBufferTests.cs",
-        "Test/ColorVision.UI.Tests/RCConnectionWaiterTests.cs"
+        "Test/ColorVision.UI.Tests/PendingServiceUpdateBufferTests.cs"
       ],
       "related": [
         "engine.index",
@@ -5883,7 +5872,6 @@
         "engine.mqtt",
         "operations.device-configuration",
         "operations.camera",
-        "ui.configuration",
         "platform.runtime",
         "plugins.windows-service"
       ],
@@ -5893,7 +5881,7 @@
         "Engine/cvColorVision"
       ],
       "domain": "engine",
-      "title": "RC 注册、服务快照与连接测试",
+      "title": "RC 注册与服务快照",
       "source": "docs/04-api-reference/engine-components/rc-registration.md",
       "url": "/04-api-reference/engine-components/rc-registration",
       "searchable": true

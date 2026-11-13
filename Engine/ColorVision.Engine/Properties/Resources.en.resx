@@ -167,9 +167,6 @@
   <data name="Reset" xml:space="preserve">
     <value>Reset</value>
   </data>
-  <data name="RegistryCenter" xml:space="preserve">
-    <value>Registration center</value>
-  </data>
   <data name="Refresh" xml:space="preserve">
     <value>Refresh</value>
   </data>
@@ -351,9 +348,6 @@
   <data name="CreateTime" xml:space="preserve">
     <value>Create Time</value>
   </data>
-  <data name="CreateNewConfigurationFile" xml:space="preserve">
-    <value>Create new configuration file</value>
-  </data>
   <data name="CreateDevice" xml:space="preserve">
     <value>Create a device</value>
   </data>
@@ -361,12 +355,6 @@
     <value>Create</value>
   </data>
 
-  <data name="CopyConfigurationFile" xml:space="preserve">
-    <value>Copy configuration file</value>
-  </data>
-  <data name="ConnectionName" xml:space="preserve">
-    <value>Connection Name</value>
-  </data>
   <data name="Code" xml:space="preserve">
     <value>Code</value>
   </data>
@@ -785,15 +773,6 @@
   </data>
   <data name="EnableSerialPort" xml:space="preserve">
     <value>Enable serial port transmission</value>
-  </data>
-  <data name="RegistryCenterConfig" xml:space="preserve">
-    <value>Registration Center Configuration</value>
-  </data>
-  <data name="RCName" xml:space="preserve">
-    <value>Registration Center Name</value>
-  </data>
-  <data name="RCConnecteCfg" xml:space="preserve">
-    <value>Registration Center Connection Configuration</value>
   </data>
   <data name="ServiceCode" xml:space="preserve">
     <value>Service Code</value>
@@ -4544,7 +4523,8 @@ Please close camera or other programs using this serial port, or check device co
   <data name="按比例计算" xml:space="preserve"><value>Calculate by percentage</value></data>
   <data name="当前布点区域" xml:space="preserve"><value>Current layout area</value></data>
   <data name="整图或画布" xml:space="preserve"><value>Whole image or canvas</value></data>
-  <data name="半径（按参考宽度）" xml:space="preserve"><value>Radius (% of width)</value></data>
+  <data name="按参考宽度" xml:space="preserve"><value>By reference width</value></data>
+  <data name="按参考高度" xml:space="preserve"><value>By reference height</value></data>
   <data name="如需按原始发光区计算，请在设置边距前换算尺寸。" xml:space="preserve"><value>Calculate the size before applying margins to use the original luminous area.</value></data>
   <data name="请输入大于 0 且不超过 100 的百分比，并确认参考区域有效、换算后至少为 1 像素。" xml:space="preserve"><value>Enter percentages greater than 0 and up to 100. Use a valid reference area that yields a size of at least 1 pixel.</value></data>
   <data name="SpectrumSettingsTitle" xml:space="preserve"><value>Spectrometer settings</value></data>
@@ -4912,9 +4892,6 @@ Only license records will be removed. Device settings, exported files and record
   </data>
   <data name="TemplateBrowserOrderFailed" xml:space="preserve">
     <value>Could not save the order. Reopen the manager, check the order, and try again.</value>
-  </data>
-  <data name="AppSecretTooltip" xml:space="preserve">
-    <value>App Secret</value>
   </data>
   <data name="DefaultCreateTemplateName" xml:space="preserve">
     <value>default</value>
@@ -6416,6 +6393,8 @@ Active cache operations will finish first. Disk files will be kept, and the cach
   <data name="CameraPanel_Disconnected" xml:space="preserve"><value>Disconnected</value></data>
   <data name="CameraPanel_Ready" xml:space="preserve"><value>Connected · Ready</value></data>
   <data name="CameraPanel_Working" xml:space="preserve"><value>Working…</value></data>
+  <data name="CameraPanel_WaitingToClose" xml:space="preserve"><value>Waiting to close…</value></data>
+  <data name="CameraPanel_PreviewWhileBusy" xml:space="preserve"><value>The camera is busy. Wait for the current operation to finish before switching video mode.</value></data>
   <data name="CameraPanel_Previewing" xml:space="preserve"><value>Previewing</value></data>
   <data name="CameraFocusChart_Show" xml:space="preserve"><value>Curve</value></data>
   <data name="CameraFocusChart_Hide" xml:space="preserve"><value>Hide curve</value></data>

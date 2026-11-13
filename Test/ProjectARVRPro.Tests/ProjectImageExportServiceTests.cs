@@ -187,6 +187,8 @@ public sealed class ProjectImageExportServiceTests
         Assert.Equal(ImageViewSnapshotFormat.Jpeg, rendered.Format);
         Assert.Equal(4, rendered.ScaleDivisor);
         Assert.Equal(100, rendered.JpegQuality);
+        Assert.False(rendered.UseHeatmap);
+        Assert.True(ProjectImageExportService.CreateRenderedOptions(ResultImageFormat.PNG, ImageExportSize.完整尺寸, useHeatmap: true).UseHeatmap);
 
         ImageViewSourceSaveOptions lzw = ProjectImageExportService.CreateSourceOptions(
             SourceImageFormat.TIFF,

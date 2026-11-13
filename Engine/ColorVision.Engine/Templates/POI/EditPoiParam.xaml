@@ -382,11 +382,17 @@
                                                     <ComboBoxItem Content="{engine:EngineLang Key='当前布点区域'}" ToolTip="{engine:EngineLang Key='如需按原始发光区计算，请在设置边距前换算尺寸。'}"/>
                                                     <ComboBoxItem x:Name="PointSizePercentageCanvas" Content="{engine:EngineLang Key='整图或画布'}"/>
                                                 </ComboBox>
-                                                <DockPanel Margin="0,6,0,0" Visibility="{Binding PoiConfig.IsPointCircle,Converter={StaticResource bool2VisibilityConverter}}" LastChildFill="False">
-                                                    <TextBlock Text="{engine:EngineLang Key='半径（按参考宽度）'}" VerticalAlignment="Center"/>
-                                                    <TextBox x:Name="PointSizeRadiusPercent" Text="10" Width="55" Margin="5,0,2,0" TextChanged="PointSizePercentage_Changed"/>
-                                                    <TextBlock Text="%" VerticalAlignment="Center"/>
-                                                </DockPanel>
+                                                <StackPanel Margin="0,6,0,0" Visibility="{Binding PoiConfig.IsPointCircle,Converter={StaticResource bool2VisibilityConverter}}">
+                                                    <ComboBox SelectedIndex="0" Style="{StaticResource ComboBox.Small}" SelectionChanged="PointSizePercentage_Changed">
+                                                        <ComboBoxItem Content="{engine:EngineLang Key='按参考宽度'}"/>
+                                                        <ComboBoxItem x:Name="PointSizeRadiusByHeight" Content="{engine:EngineLang Key='按参考高度'}"/>
+                                                    </ComboBox>
+                                                    <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
+                                                        <TextBlock Text="{x:Static properties:Resources.Radius}" VerticalAlignment="Center"/>
+                                                        <TextBox x:Name="PointSizeRadiusPercent" Text="10" Width="55" Margin="5,0,2,0" TextChanged="PointSizePercentage_Changed"/>
+                                                        <TextBlock Text="%" VerticalAlignment="Center"/>
+                                                    </StackPanel>
+                                                </StackPanel>
                                                 <WrapPanel Margin="0,6,0,0" Visibility="{Binding PoiConfig.IsPointRect,Converter={StaticResource bool2VisibilityConverter}}">
                                                     <DockPanel Margin="0,0,8,0">
                                                         <TextBlock Text="{x:Static properties:Resources.Width}" VerticalAlignment="Center"/>

@@ -50,6 +50,49 @@ public sealed class ScreenshotParameterTests
         finally { WpfTestHost.Invoke(view.Dispose); }
     }
 
+    [Theory]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    [InlineData(true, true)]
+    public async Task MarkedSnapshotUsesTheSelectedBaseImageAndKeepsTheSnapshotOverlay(bool useHeatmap, bool includeOverlay)
+    {
+        string directory = Directory.CreateTempSubdirectory("cv-heatmap-").FullName;
+        string path = Path.Combine(directory, "marked.png");
+        ImageView view = WpfTestHost.Invoke(CreateView);
+        try
+        {
+            await PublishDpiFixture(view, 192, 48);
+            ImageViewSnapshot snapshot = WpfTestHost.Invoke(() => Assert.IsType<ImageViewSnapshot>(view.CaptureSnapshotForBackgroundSave(includeOverlay)));
+            await ImageView.SaveSnapshotExportsAsync(snapshot, new()
+            {
+                RenderedFileName = path,
+                RenderedOptions = new() { ScaleDivisor = 2, UseHeatmap = useHeatmap },
+            });
+            Assert.Equal(path, Assert.Single(Directory.GetFiles(directory)));
+            WpfTestHost.Invoke(() =>
+            {
+                using var stream = File.OpenRead(path);
+                BitmapSource frame = BitmapDecoder.Create(stream, BitmapCreateOptions.PreservePixelFormat, BitmapCacheOption.OnLoad).Frames[0];
+                Assert.Equal((4, 4), (frame.PixelWidth, frame.PixelHeight));
+                BitmapSource image = new FormatConvertedBitmap(frame, PixelFormats.Bgra32, null, 0);
+
+                Color ReadPixel(int x, int y)
+                {
+                    byte[] pixel = new byte[4];
+                    image.CopyPixels(new Int32Rect(x, y, 1, 1), pixel, 4, 0);
+                    return Color.FromArgb(pixel[3], pixel[2], pixel[1], pixel[0]);
+                }
+
+                Color high = useHeatmap ? Color.FromRgb(128, 0, 0) : Colors.Red;
+                Color low = useHeatmap ? Color.FromRgb(0, 0, 128) : Colors.Blue;
+                Assert.Equal(high, ReadPixel(0, 3));
+                Assert.Equal(low, ReadPixel(3, 0));
+                Assert.Equal(includeOverlay ? Colors.Lime : low, ReadPixel(2, 2));
+            });
+        }
+        finally { WpfTestHost.Invoke(view.Dispose); File.Delete(path); Directory.Delete(directory); }
+    }
+
     private static Task PublishDpiFixture(ImageView view, double dpiX, double dpiY) => WpfTestHost.Invoke(async () =>
     {
         byte[] pixels = new byte[8 * 8 * 4];

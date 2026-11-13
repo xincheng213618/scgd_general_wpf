@@ -174,6 +174,12 @@ namespace ProjectARVRPro
         public bool ResultSnapshotIncludeOverlays { get => _ResultSnapshotIncludeOverlays; set { _ResultSnapshotIncludeOverlays = value; OnPropertyChanged(); } }
         private bool _ResultSnapshotIncludeOverlays = true;
 
+        [DisplayName("标记图使用热力图底图"), Category("标记图")]
+        [Description("开启后用按灰度范围生成的彩色热力图作为标记图底图，沿用标记图的文件名、格式、尺寸与混合标记设置。")]
+        [PropertyVisibility(nameof(IsSaveImageReuslt))]
+        public bool ResultSnapshotSaveHeatmap { get => _ResultSnapshotSaveHeatmap; set { _ResultSnapshotSaveHeatmap = value; OnPropertyChanged(); } }
+        private bool _ResultSnapshotSaveHeatmap;
+
         [Browsable(false), EditorBrowsable(EditorBrowsableState.Never)]
         [Newtonsoft.Json.JsonIgnore]
         [Obsolete("JPEG质量固定为100，不再向用户开放压缩参数。")]

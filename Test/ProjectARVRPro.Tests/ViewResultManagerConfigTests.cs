@@ -77,6 +77,7 @@ public sealed class ViewResultManagerConfigTests
         Assert.Equal(ResultImageFormat.PNG, config.ResultSnapshotFormat);
         Assert.Equal(ImageExportSize.完整尺寸, config.ResultSnapshotSize);
         Assert.True(config.ResultSnapshotIncludeOverlays);
+        Assert.False(config.ResultSnapshotSaveHeatmap);
         Assert.Equal(
             [ResultImageFormat.PNG, ResultImageFormat.JPEG],
             Enum.GetValues<ResultImageFormat>());
@@ -203,6 +204,7 @@ public sealed class ViewResultManagerConfigTests
             ResultSnapshotFormat = ResultImageFormat.JPEG,
             ResultSnapshotSize = ImageExportSize.四分之一尺寸,
             ResultSnapshotIncludeOverlays = false,
+            ResultSnapshotSaveHeatmap = true,
             IsSaveSourceImage = true,
             SourceExportFormat = SourceImageFormat.TIFF,
             SourceTiffCompressionMode = SourceTiffCompression.ZIP,
@@ -215,6 +217,7 @@ public sealed class ViewResultManagerConfigTests
         Assert.Equal(ResultImageFormat.JPEG, restored.ResultSnapshotFormat);
         Assert.Equal(ImageExportSize.四分之一尺寸, restored.ResultSnapshotSize);
         Assert.False(restored.ResultSnapshotIncludeOverlays);
+        Assert.True(restored.ResultSnapshotSaveHeatmap);
         Assert.True(restored.IsSaveSourceImage);
         Assert.Equal(SourceImageFormat.TIFF, restored.SourceExportFormat);
         Assert.Equal(SourceTiffCompression.ZIP, restored.SourceTiffCompressionMode);
