@@ -317,6 +317,8 @@ public sealed class ImageOpenCompletionContractTests(ITestOutputHelper output)
                 EnsureImageViewTestResources();
                 previousMainWindow = Application.Current.MainWindow;
                 previousWindows = Application.Current.Windows.OfType<WindowCVCIE>().ToHashSet();
+                // This unattached view must not inherit a main window left by another test.
+                Application.Current.MainWindow = null;
                 previousShowString = CVCIEShowConfig.Instance.IsShowString;
                 CVCIEShowConfig.Instance.IsShowString = true;
                 view = new ImageView();
@@ -431,6 +433,7 @@ public sealed class ImageOpenCompletionContractTests(ITestOutputHelper output)
                 EnsureImageViewTestResources();
                 previousMainWindow = Application.Current.MainWindow;
                 previousWindows = Application.Current.Windows.OfType<WindowCVCIE>().ToHashSet();
+                Application.Current.MainWindow = null;
                 previousClamp = CVCIEShowConfig.Instance.ClampNonPositiveValues;
                 CVCIEShowConfig.Instance.ClampNonPositiveValues = false;
                 view = new ImageView();
@@ -493,7 +496,7 @@ public sealed class ImageOpenCompletionContractTests(ITestOutputHelper output)
             var row = Assert.Single(window.PoiResultCIExyuvDatas);
             Assert.Equal((-2d, 4d, 6d), (row.X, row.Y, row.Z));
             window.Close();
-            Application.Current.MainWindow = previousMainWindow;
+            Application.Current.MainWindow = null;
         }
 
         static byte[] CreateSamples()
