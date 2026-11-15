@@ -22,17 +22,28 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
         {
             using LocalFlowFrameLease lease = frame.Acquire();
             LocalFrameMetadata metadata = lease.Metadata;
-            // Borrow RAW only during the synchronous copy into an independently owned display bitmap.
-            CVImageFlipMode displayFlip = frame.IsRawFlipApplied ? CVImageFlipMode.None : metadata.FlipMode;
-            WriteableBitmap bitmap = CreateRawBitmap(lease.RawPointer, lease.RawLength, metadata.SourceBpp, metadata.Channels,
-                metadata.Width, metadata.Height, displayFlip);
-            bitmap.Freeze();
             return new LocalCameraPreview
             {
-                Bitmap = bitmap, CieData = lease.CopyCieToArray(), Metadata = metadata,
+                Bitmap = CreateBitmap(lease, frame.IsRawFlipApplied), CieData = lease.CopyCieToArray(), Metadata = metadata,
                 Exposure = (float[])metadata.Exposure.Clone(),
                 Parameters = CameraFileMetadata.CreateParameters(metadata, lease.ColorCalibration, lease.CalibrationProvenance)
             };
+        }
+
+        internal static BitmapSource CreateBitmap(LocalFlowFrame frame)
+        {
+            using LocalFlowFrameLease lease = frame.Acquire();
+            return CreateBitmap(lease, frame.IsRawFlipApplied);
+        }
+
+        private static WriteableBitmap CreateBitmap(LocalFlowFrameLease lease, bool flipApplied)
+        {
+            LocalFrameMetadata metadata = lease.Metadata;
+            CVImageFlipMode displayFlip = flipApplied ? CVImageFlipMode.None : metadata.FlipMode;
+            WriteableBitmap bitmap = CreateRawBitmap(lease.RawPointer, lease.RawLength, metadata.SourceBpp, metadata.Channels,
+                metadata.Width, metadata.Height, displayFlip);
+            bitmap.Freeze();
+            return bitmap;
         }
 
         internal static unsafe WriteableBitmap CreateRawBitmap(byte[] raw, int bpp, int channels, int width, int height)

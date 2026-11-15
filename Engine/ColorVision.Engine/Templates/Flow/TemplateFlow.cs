@@ -183,9 +183,11 @@ namespace ColorVision.Engine.Templates.Flow
             return values;
         }
 
-        public override void Delete(int index)
+        public override void Delete(int index) => DeleteTemplates(GetMarkedTemplatesOrCurrent(index));
+
+        internal override void DeleteTemplates(IReadOnlyList<TemplateBase> targets)
         {
-            foreach (var template in GetManagementTargets(index)) DeleteTemplate(template);
+            foreach (var template in targets.Cast<TemplateModel<FlowParam>>()) DeleteTemplate(template);
         }
 
         internal TemplateModel<FlowParam>? FindSavedTemplate(int id, string? flowKey)
@@ -214,12 +216,6 @@ namespace ColorVision.Engine.Templates.Flow
                 }
             }
             TemplateParams.Remove(template);
-        }
-
-        private TemplateModel<FlowParam>[] GetManagementTargets(int index)
-        {
-            var selected = TemplateParams.Where(template => template.IsSelected).ToArray();
-            return selected.Length == 0 ? [TemplateParams[index]] : selected;
         }
 
         public override void Save()
@@ -418,9 +414,11 @@ namespace ColorVision.Engine.Templates.Flow
             }
         }
 
-        public override void Export(int index)
+        public override void Export(int index) => ExportTemplates(GetMarkedTemplatesOrCurrent(index));
+
+        internal override void ExportTemplates(IReadOnlyList<TemplateBase> selected)
         {
-            var targets = GetManagementTargets(index);
+            var targets = selected.Cast<TemplateModel<FlowParam>>().ToArray();
             if (targets.Length == 1)
             {
                 ExportTemplate(targets[0]);

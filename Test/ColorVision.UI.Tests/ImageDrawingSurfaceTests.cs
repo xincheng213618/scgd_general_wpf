@@ -103,7 +103,9 @@ public sealed class ImageDrawingSurfaceTests
             DVRectangle rectangle = new(new RectangleProperties { Rect = new Rect(left, top, width, height) });
             canvas.AddVisualCommand(rectangle);
             var menu = new DVRectangleDVContextMenu(canvas, context);
-            MenuItem replace = menu.GetContextMenuItems(rectangle).Last();
+            MenuItem crop = Assert.Single(menu.GetContextMenuItems(rectangle));
+            MenuItem replace = Assert.Single(crop.Items.OfType<MenuItem>(),
+                item => Equals(item.Header, ColorVision.ImageEditor.DisplayText.Get("裁剪并替换当前图像")));
 
             replace.RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent));
 

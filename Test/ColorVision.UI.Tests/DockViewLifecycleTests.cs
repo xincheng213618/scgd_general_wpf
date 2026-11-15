@@ -608,16 +608,20 @@ public sealed class DockViewLifecycleTests
             camera.Config.MotorConfig.IsUseMotor = true;
             camera.Config.MotorConfig.VID.IsUseVID = true;
             camera.Config.MotorConfig.VIDPosition = 42.5;
+            camera.Config.MotorConfig.Position = 107921;
             Pump();
             Assert.Null(view.FocusChart.MotorVid);
+            Assert.Null(view.FocusChart.MotorPosition);
 
             camera.CameraBackend.SetLocalStatus(DeviceStatusType.Opened);
             Pump();
             Assert.Equal(42.5, view.FocusChart.MotorVid);
+            Assert.Equal(107921, view.FocusChart.MotorPosition);
 
             camera.Config.MotorConfig.VID.IsUseVID = false;
             Pump();
             Assert.Null(view.FocusChart.MotorVid);
+            Assert.Null(view.FocusChart.MotorPosition);
         });
     }
 

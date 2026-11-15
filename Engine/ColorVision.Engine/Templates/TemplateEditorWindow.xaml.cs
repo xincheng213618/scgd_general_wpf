@@ -75,7 +75,11 @@ namespace ColorVision.Engine.Templates
                 HandyControl.Controls.Growl.SuccessGlobal(string.Format(Properties.Resources.TemplateEditor_SaveSuccess, Title));
             }, (s, e) => e.CanExecute = true));
             MainGrid.CommandBindings.Add(new CommandBinding(ApplicationCommands.Delete, (s, e) => Delete(), (s, e) => e.CanExecute = ListView1.SelectedIndex > -1));
-            MainGrid.CommandBindings.Add(new CommandBinding(Commands.ReName, (s, e) => ReName(), (s, e) => e.CanExecute = ListView1.SelectedIndex > -1));
+            MainGrid.CommandBindings.Add(new CommandBinding(Commands.ReName, (s, e) =>
+            {
+                if (e.Parameter is TemplateBase row) BeginRename(row);
+                else ReName();
+            }, (s, e) => e.CanExecute = ListView1.SelectedIndex > -1));
 
         }
         public ObservableCollection<GridViewColumnVisibility> GridViewColumnVisibilitys { get; set; } = new ObservableCollection<GridViewColumnVisibility>();
@@ -88,6 +92,8 @@ namespace ColorVision.Engine.Templates
             {
                 GridViewColumnVisibility.AddGridViewColumn(gridView.Columns, GridViewColumnVisibilitys);
                 Config.GridViewColumnVisibilitys.CopyToGridView(GridViewColumnVisibilitys);
+                foreach (var column in GridViewColumnVisibilitys)
+                    column.IsVisible = Equals(column.ColumnName, Properties.Resources.Name);
                 Config.GridViewColumnVisibilitys = GridViewColumnVisibilitys;
                 GridViewColumnVisibility.AdjustGridViewColumnAuto(gridView.Columns, GridViewColumnVisibilitys);
             }
@@ -96,9 +102,6 @@ namespace ColorVision.Engine.Templates
             {
                 GridProperty.Visibility = Visibility.Collapsed;
                 Grid.SetColumnSpan(TemplateGrid, 2);
-                Grid.SetRowSpan(TemplateGrid, 1);
-                Grid.SetColumnSpan(CreateGrid, 2);
-                Grid.SetColumn(CreateGrid, 0);
 
                 MinWidth = 360;
                 Width = 360;
@@ -137,19 +140,23 @@ namespace ColorVision.Engine.Templates
 
             this.PreviewKeyDown += (s, e) =>
             {
-                if (e.Key == Key.Enter)
+                if (e.Key == Key.Escape && TemplateSearchBar.Visibility == Visibility.Visible && TemplateGrid.IsKeyboardFocusWithin)
                 {
-                    if (ListView1.SelectedIndex > -1 && ITemplate.GetValue(ListView1.SelectedIndex) is TemplateBase templateModelBase)
-                    {
-                        templateModelBase.IsEditMode = false;
-                    }
+                    CloseTemplateSearch();
+                    e.Handled = true;
                 }
+                else if (e.Key == Key.Enter && !Searchbox.IsKeyboardFocusWithin && LastSelectTemplateBase != null)
+                    LastSelectTemplateBase.IsEditMode = false;
             };
-            // 设置快捷键 Ctrl + F
             var gesture = new KeyGesture(Key.F, ModifierKeys.Control);
             var command = new RoutedCommand();
             command.InputGestures.Add(gesture);
-            CommandBindings.Add(new CommandBinding(command, (s,e) => { Searchbox.Focus(); }));
+            CommandBindings.Add(new CommandBinding(command, (s, e) =>
+            {
+                TemplateSearchBar.Visibility = Visibility.Visible;
+                Searchbox.Focus();
+                Searchbox.SelectAll();
+            }));
             ListView1.Focus();
 
             this.Deactivated += (s, e) =>
@@ -163,13 +170,14 @@ namespace ColorVision.Engine.Templates
 
         public void ReName()
         {
-            if (ListView1.SelectedIndex > -1 && ITemplate.GetValue(ListView1.SelectedIndex) is TemplateBase templateModelBase)
-            {
-                LastSelectTemplateBase = templateModelBase;
-                templateModelBase.IsEditMode = true;
-            }
+            if (ListView1.SelectedItem is TemplateBase template) BeginRename(template);
         }
 
+        private void BeginRename(TemplateBase template)
+        {
+            LastSelectTemplateBase = template;
+            template.IsEditMode = true;
+        }
 
         private void ContextMenu_Opened(object sender, RoutedEventArgs e)
         {
@@ -182,11 +190,12 @@ namespace ColorVision.Engine.Templates
             if (sender is not ContextMenu contextMenu)
                 return;
 
-            if (contextMenu.PlacementTarget is FrameworkElement { DataContext: TemplateBase templateModel })
-                ListView1.SelectedItem = templateModel;
+            var template = (contextMenu.PlacementTarget as FrameworkElement)?.DataContext as TemplateBase;
+            if (template != null && !ListView1.SelectedItems.Contains(template)) ListView1.SelectedItem = template;
 
             foreach (var menuItem in contextMenu.Items.OfType<MenuItem>())
             {
+                menuItem.CommandParameter = template;
                 if (Equals(menuItem.Tag, "SetJsonAsDefault"))
                     menuItem.Visibility = ITemplate.CanSetJsonAsDefault ? Visibility.Visible : Visibility.Collapsed;
             }
@@ -194,7 +203,8 @@ namespace ColorVision.Engine.Templates
 
         private void MenuItem_SetJsonAsDefault_Click(object sender, RoutedEventArgs e)
         {
-            SetJsonAsDefault();
+            int selectedIndex = sender is MenuItem { CommandParameter: TemplateBase target } ? ITemplate.GetSourceIndex(target) : -1;
+            SetJsonAsDefault(selectedIndex);
         }
 
         private void GridViewColumnSort(object sender, RoutedEventArgs e)
@@ -222,14 +232,11 @@ namespace ColorVision.Engine.Templates
                             {
                                 SortableExtension.SortByProperty(collection, "Key", item.IsSortD);
                             }
-                            else if (columnName == Properties.Resources.Choice)
-                            {
-                                foreach (var modebase in ITemplate.ItemsSource.OfType<TemplateBase>())
-                                {
-                                    modebase.IsSelected = item.IsSortD;
-                                }
-                                e.Handled = true;
-                            }
+                        }
+                        if (columnName == Properties.Resources.Choice)
+                        {
+                            if (ListView1.SelectedItems.Count == ListView1.Items.Count) ListView1.UnselectAll();
+                            else ListView1.SelectAll();
                         }
                     }
                 }
@@ -246,6 +253,7 @@ namespace ColorVision.Engine.Templates
 
         private void ListView1_PreviewMouseDoubleClick(object sender, MouseButtonEventArgs e)
         {
+            if (Keyboard.Modifiers.HasFlag(ModifierKeys.Alt)) return;
             DependencyObject source = (DependencyObject)e.OriginalSource;
 
             while (source != null && !(source is ListViewItem))
@@ -272,8 +280,17 @@ namespace ColorVision.Engine.Templates
             if (IsDragBlockedElement(e.OriginalSource as DependencyObject))
                 return;
 
+            var item = FindVisualParent<ListViewItem>(e.OriginalSource as DependencyObject);
+            if (item != null && Keyboard.Modifiers.HasFlag(ModifierKeys.Alt))
+            {
+                item.Focus();
+                item.SetCurrentValue(ListViewItem.IsSelectedProperty, !item.IsSelected);
+                e.Handled = true;
+                return;
+            }
+
             _dragStartPoint = e.GetPosition(ListView1);
-            _draggedTemplate = FindVisualParent<ListViewItem>(e.OriginalSource as DependencyObject)?.Content as TemplateBase;
+            _draggedTemplate = item?.Content as TemplateBase;
         }
 
         private void ListView1_PreviewMouseMove(object sender, MouseEventArgs e)
@@ -309,8 +326,8 @@ namespace ColorVision.Engine.Templates
             if (draggedTemplate == null || targetItem?.Content is not TemplateBase targetTemplate || ReferenceEquals(draggedTemplate, targetTemplate))
                 return;
 
-            int sourceIndex = GetTemplateSourceIndex(draggedTemplate);
-            int targetIndex = GetTemplateSourceIndex(targetTemplate);
+            int sourceIndex = ITemplate.GetSourceIndex(draggedTemplate);
+            int targetIndex = ITemplate.GetSourceIndex(targetTemplate);
             if (sourceIndex < 0 || targetIndex < 0)
                 return;
 
@@ -377,44 +394,41 @@ namespace ColorVision.Engine.Templates
             return false;
         }
 
-        private int LastSelectedIndex = -1;
+        private TemplateBase? activeTemplate;
         private bool _restoringSelection;
 
         private void ListView1_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (_restoringSelection) return;
-            if (sender is ListView)
+            if (_restoringSelection || !ReferenceEquals(e.OriginalSource, ListView1) || ReferenceEquals(activeTemplate, ListView1.SelectedItem)) return;
+            if (GridProperty.Children.OfType<ITemplateEditorValidation>().Any(editor => !editor.TryCommitPendingEdits()))
             {
-                if (GridProperty.Children.OfType<ITemplateEditorValidation>().Any(editor => !editor.TryCommitPendingEdits()))
+                _restoringSelection = true;
+                try
                 {
-                    _restoringSelection = true;
-                    try { ListView1.SelectedItem = e.RemovedItems.Count > 0 ? e.RemovedItems[0] : null; }
-                    finally { _restoringSelection = false; }
-                    return;
+                    foreach (var added in e.AddedItems) ListView1.SelectedItems.Remove(added);
+                    if (activeTemplate != null && ListView1.Items.Contains(activeTemplate) && !ListView1.SelectedItems.Contains(activeTemplate))
+                        ListView1.SelectedItems.Add(activeTemplate);
+                    foreach (var removed in e.RemovedItems)
+                        if (ListView1.Items.Contains(removed) && !ListView1.SelectedItems.Contains(removed)) ListView1.SelectedItems.Add(removed);
                 }
-                int selectedIndex = GetSelectedTemplateSourceIndex();
-                if (selectedIndex < 0)
-                    return;
-
-                if (LastSelectedIndex >= 0 && LastSelectedIndex < ITemplate.Count)
-                {
-                    if (ITemplate.GetValue(LastSelectedIndex) is TemplateBase templateModelBase)
-                    {
-                        templateModelBase.IsEditMode = false;
-                    }
-                }
-
-                ITemplate.SetSaveIndex(selectedIndex);
-                if (ITemplate.IsUserControl)
-                {
-                    ITemplate.SetUserControlDataContext(selectedIndex);
-                }
-                else
-                {
-                    PropertyGrid1.SelectedObject = ITemplate.GetParamValue(selectedIndex);
-                }
-                LastSelectedIndex = selectedIndex;
+                finally { _restoringSelection = false; }
+                return;
             }
+            UpdateActiveTemplate();
+        }
+
+        private void UpdateActiveTemplate()
+        {
+            int selectedIndex = GetSelectedTemplateSourceIndex();
+            if (selectedIndex < 0 || ReferenceEquals(activeTemplate, ListView1.SelectedItem)) return;
+
+            if (activeTemplate != null) activeTemplate.IsEditMode = false;
+            activeTemplate = (TemplateBase)ListView1.SelectedItem;
+            ITemplate.SetSaveIndex(selectedIndex);
+            if (ITemplate.IsUserControl)
+                ITemplate.SetUserControlDataContext(selectedIndex);
+            else
+                PropertyGrid1.SelectedObject = ITemplate.GetParamValue(selectedIndex);
         }
 
 
@@ -471,31 +485,35 @@ namespace ColorVision.Engine.Templates
         }
         private void Delete()
         {
-            if (MessageBox1.Show(Application.Current.GetActiveWindow(), string.Format(Properties.Resources.TemplateEditor_ConfirmDelete, ITemplate.Code), "ColorVision", MessageBoxButton.OKCancel, MessageBoxImage.Warning) == MessageBoxResult.OK)
-            {
-                int index = ListView1.SelectedIndex;
-                try { ITemplate.Delete(ListView1.SelectedIndex); }
-                catch (Exception ex) when (ITemplate is POI.TemplatePoi or Flow.TemplateFlow)
-                {
-                    MessageBox1.Show(this, $"{ITemplate.Title}删除失败：{ex.Message}", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Warning);
-                    return;
-                }
-                if (index > ITemplate.Count)
-                    index = ITemplate.Count - 1;
-                ListView1.SelectedIndex = index;
-            }
-        }
+            var targets = ListView1.SelectedItems.OfType<TemplateBase>().ToArray();
+            if (targets.Length == 0) return;
+            string names = string.Join(Environment.NewLine, targets.Select(target => target.Key));
+            string prompt = string.Format(Properties.Resources.TemplateBrowserDeletePrompt, targets.Length, ITemplate.Code, names);
+            if (MessageBox1.Show(this, prompt, Title, MessageBoxButton.OKCancel, MessageBoxImage.Warning) != MessageBoxResult.OK)
+                return;
 
-
-        private void Button_Del_Click(object sender, RoutedEventArgs e)
-        {
-            if (ListView1.SelectedIndex > -1)
+            int visibleIndex = ListView1.SelectedIndex;
+            var sourceBeforeDelete = ITemplate.ItemsSource.OfType<TemplateBase>().ToArray();
+            var pendingSaves = ITemplate.SaveIndex.Where(index => index >= 0 && index < sourceBeforeDelete.Length)
+                .Select(index => sourceBeforeDelete[index]).ToArray();
+            var currentTargets = targets.Where(target => ITemplate.GetSourceIndex(target) >= 0).ToArray();
+            _restoringSelection = true;
+            try
             {
-                Delete();
+                if (currentTargets.Length > 0) ITemplate.DeleteTemplates(currentTargets);
             }
-            else
+            catch (Exception ex)
             {
-                MessageBox1.Show(Application.Current.GetActiveWindow(), Properties.Resources.TemplateEditor_SelectFirst, "ColorVision");
+                MessageBox1.Show(this, ex.Message, Properties.Resources.TemplateBrowserDeleteFailed, MessageBoxButton.OK, MessageBoxImage.Warning);
+            }
+            finally
+            {
+                ITemplate.SaveIndex = pendingSaves.Select(ITemplate.GetSourceIndex).Where(index => index >= 0).ToList();
+                _restoringSelection = false;
+                ApplyTemplateSearch();
+                if (ListView1.SelectedIndex < 0 && ListView1.Items.Count > 0)
+                    ListView1.SelectedIndex = Math.Clamp(visibleIndex, 0, ListView1.Items.Count - 1);
+                UpdateActiveTemplate();
             }
         }
 
@@ -509,12 +527,13 @@ namespace ColorVision.Engine.Templates
 
         private void Button_Export_Click(object sender, RoutedEventArgs e)
         {
-            if (ListView1.SelectedIndex < 0)
+            var targets = ListView1.SelectedItems.OfType<TemplateBase>().Where(target => ITemplate.GetSourceIndex(target) >= 0).ToArray();
+            if (targets.Length == 0)
             {
                 MessageBox1.Show(Properties.Resources.TemplateEditor_SelectFlowToExport, "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
                 return;
             }
-            try { ITemplate.Export(ListView1.SelectedIndex); }
+            try { ITemplate.ExportTemplates(targets); }
             catch (Exception ex) when (ITemplate is POI.TemplatePoi or Flow.TemplateFlow)
             {
                 MessageBox1.Show(this, $"{ITemplate.Title}导出失败：{ex.Message}", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Warning);
@@ -535,33 +554,41 @@ namespace ColorVision.Engine.Templates
 
         private void Searchbox_TextChanged(object sender, TextChangedEventArgs e)
         {
-            if (sender is TextBox textBox)
+            ApplyTemplateSearch();
+            if (ListView1.SelectedIndex < 0 && ListView1.Items.Count > 0 && !string.IsNullOrEmpty(Searchbox.Text))
+                ListView1.SelectedIndex = 0;
+        }
+
+        private void ApplyTemplateSearch()
+        {
+            string query = Searchbox.Text;
+            var selected = ListView1.SelectedItems.Cast<object>().ToArray();
+            _restoringSelection = true;
+            try
             {
-                if (SearchNoneText.Visibility == Visibility.Visible)
-                    SearchNoneText.Visibility = Visibility.Hidden;
-                if (string.IsNullOrEmpty(textBox.Text))
-                {
-                    ListView1.ItemsSource = ITemplate.ItemsSource;
-                }
-                else
-                {
-
-                    var filteredResults = FilterHelper.FilterByKeywords<TemplateBase>(ITemplate.ItemsSource, textBox.Text);
-                    // 更新 ListView 的数据源
-                    ListView1.ItemsSource = filteredResults;
-
-                    // 显示或隐藏无结果文本
-                    if (filteredResults.Count == 0)
-                    {
-                        SearchNoneText.Visibility = Visibility.Visible;
-                        SearchNoneText.Text = string.Format(Properties.Resources.TemplateEditor_NoSearchResults, textBox.Text);
-                    }
-                    else
-                    {
-                        ListView1.SelectedIndex = 0;
-                    }
-                }
+                ListView1.ItemsSource = string.IsNullOrEmpty(query)
+                    ? ITemplate.ItemsSource
+                    : FilterHelper.FilterByKeywords<TemplateBase>(ITemplate.ItemsSource, query);
+                foreach (var item in selected)
+                    if (ListView1.Items.Contains(item) && !ListView1.SelectedItems.Contains(item)) ListView1.SelectedItems.Add(item);
             }
+            finally { _restoringSelection = false; }
+
+            bool noResults = !string.IsNullOrEmpty(query) && ListView1.Items.Count == 0;
+            SearchNoneText.Visibility = noResults ? Visibility.Visible : Visibility.Collapsed;
+            if (noResults) SearchNoneText.Text = string.Format(Properties.Resources.TemplateEditor_NoSearchResults, query);
+
+            if (!ReferenceEquals(activeTemplate, ListView1.SelectedItem) &&
+                !GridProperty.Children.OfType<ITemplateEditorValidation>().Any(editor => !editor.TryCommitPendingEdits())) UpdateActiveTemplate();
+        }
+
+        private void CloseTemplateSearch()
+        {
+            Searchbox.Clear();
+            TemplateSearchBar.Visibility = Visibility.Collapsed;
+            if (ListView1.SelectedItem == null && activeTemplate != null && ListView1.Items.Contains(activeTemplate))
+                ListView1.SelectedItem = activeTemplate;
+            ListView1.Focus();
         }
         private void MenuItem_Click(object sender, RoutedEventArgs e)
         {
@@ -571,9 +598,9 @@ namespace ColorVision.Engine.Templates
             }
         }
 
-        private void CreateCopy()
+        private void Button_CreateCopy_Click(object sender, RoutedEventArgs e)
         {
-            int selectedIndex = GetSelectedTemplateSourceIndex();
+            int selectedIndex = sender is MenuItem { CommandParameter: TemplateBase target } ? ITemplate.GetSourceIndex(target) : -1;
             if (selectedIndex < 0)
             {
                 MessageBox1.Show(Application.Current.GetActiveWindow(), Properties.Resources.TemplateEditor_SelectFirst, "ColorVision");
@@ -593,19 +620,7 @@ namespace ColorVision.Engine.Templates
 
         private int GetSelectedTemplateSourceIndex()
         {
-            return ListView1.SelectedItem is TemplateBase selectedTemplate ? GetTemplateSourceIndex(selectedTemplate) : -1;
-        }
-
-        private int GetTemplateSourceIndex(TemplateBase template)
-        {
-            int index = 0;
-            foreach (var sourceTemplate in ITemplate.ItemsSource.OfType<TemplateBase>())
-            {
-                if (ReferenceEquals(sourceTemplate, template))
-                    return index;
-                index++;
-            }
-            return -1;
+            return ListView1.SelectedItem is TemplateBase selectedTemplate ? ITemplate.GetSourceIndex(selectedTemplate) : -1;
         }
 
         private void RefreshTemplateList(TemplateBase selectedTemplate)
@@ -623,48 +638,30 @@ namespace ColorVision.Engine.Templates
             ListView1.ScrollIntoView(selectedTemplate);
         }
 
-        private void Button_CreateCopy_Click(object sender, RoutedEventArgs e)
-        {
-            if (ListView1.SelectedIndex > -1)
-            {
-                CreateCopy();
-            }
-            else
-            {
-                MessageBox1.Show(Application.Current.GetActiveWindow(), Properties.Resources.TemplateEditor_SelectFirst, "ColorVision");
-            }
-
-
-
-        }
-
         private void Searchbox_PreviewKeyDown(object sender, KeyEventArgs e)
         {
-            if (e.Key == System.Windows.Input.Key.Enter)
+            if (e.Key == Key.Enter)
             {
-                if (ListView1.SelectedIndex > -1)
+                int sourceIndex = GetSelectedTemplateSourceIndex();
+                if (sourceIndex >= 0)
                 {
-                    Searchbox.Text = string.Empty;
-                    ITemplate.PreviewMouseDoubleClick(ListView1.SelectedIndex);
+                    CloseTemplateSearch();
+                    ITemplate.PreviewMouseDoubleClick(sourceIndex);
                 }
+                e.Handled = true;
             }
-            if (e.Key == System.Windows.Input.Key.Up)
+            else if (e.Key is Key.Up or Key.Down && ListView1.Items.Count > 0)
             {
-                if (ListView1.SelectedIndex > 0)
-                    ListView1.SelectedIndex -= 1;
-            }
-            if (e.Key == System.Windows.Input.Key.Down)
-            {
-                if (ListView1.SelectedIndex < ITemplate.Count - 1)
-                    ListView1.SelectedIndex += 1;
-
-
+                int offset = e.Key == Key.Up ? -1 : 1;
+                ListView1.SelectedIndex = Math.Clamp(ListView1.SelectedIndex + offset, 0, ListView1.Items.Count - 1);
+                if (ListView1.SelectedItem != null) ListView1.ScrollIntoView(ListView1.SelectedItem);
+                e.Handled = true;
             }
         }
 
-        private void SetJsonAsDefault()
+        private void SetJsonAsDefault(int selectedIndex)
         {
-            if (ListView1.SelectedIndex < 0)
+            if (selectedIndex < 0)
             {
                 MessageBox1.Show(Application.Current.GetActiveWindow(), Properties.Resources.TemplateEditor_SelectFirst, "ColorVision");
                 return;
@@ -678,12 +675,9 @@ namespace ColorVision.Engine.Templates
                     MessageBoxImage.Warning) != MessageBoxResult.OK)
                 return;
 
-            int selectedIndex = ListView1.SelectedIndex;
             if (ITemplate.SetJsonAsDefault(selectedIndex, out string message))
             {
                 ITemplate.Load();
-                if (selectedIndex > -1 && selectedIndex < ITemplate.Count)
-                    ListView1.SelectedIndex = selectedIndex;
 
                 HandyControl.Controls.Growl.SuccessGlobal(message);
             }

@@ -100,6 +100,11 @@ namespace ProjectARVRPro
         }
         private bool _IsSaveImageReuslt;
 
+        [DisplayName("保存 VID 对焦图像"), Category("标记图")]
+        [Description("本地 VID 自动聚焦或微聚焦完成后，在结果输出目录保存带 VID 和最佳电机位置的标记图及清晰度曲线。")]
+        public bool SaveVidFocusImages { get => _SaveVidFocusImages; set { _SaveVidFocusImages = value; OnPropertyChanged(); } }
+        private bool _SaveVidFocusImages;
+
         [DisplayName("标记图按流程模板名称命名"), Category("标记图")]
         [Description("开启后使用标记图文件名模板。同一目录中同名图片会被覆盖。")]
         [PropertyVisibility(nameof(IsSaveImageReuslt))]

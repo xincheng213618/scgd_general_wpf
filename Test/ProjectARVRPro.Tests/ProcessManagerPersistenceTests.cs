@@ -1,3 +1,7 @@
+using log4net;
+using log4net.Appender;
+using log4net.Core;
+using log4net.Repository.Hierarchy;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using ProjectARVRPro.Process;
@@ -16,6 +20,53 @@ public sealed class ProcessManagerPersistenceTestGroup
 [Collection(ProcessManagerPersistenceTestGroup.Name)]
 public sealed class ProcessManagerPersistenceTests
 {
+    [Fact]
+    public void ActiveGroupChangeIsLoggedOnlyAfterPersistenceSucceeds()
+    {
+        RunInTemporaryPersistenceDirectory(() =>
+        {
+            var manager = new ProcessManager();
+            string originalGroup = Assert.Single(manager.ProcessGroups).Name;
+            Assert.True(manager.TryAddGroup("Other model", out string error), error);
+            var logger = (Logger)LogManager.GetLogger(typeof(ProcessManager).Assembly, typeof(ProjectConfigurationLog)).Logger;
+            var hierarchy = Assert.IsType<Hierarchy>(logger.Repository);
+            bool configured = hierarchy.Configured;
+            Level previousLevel = logger.Level;
+            var appender = new MemoryAppender();
+            try
+            {
+                hierarchy.Configured = true;
+                logger.Level = Level.Info;
+                logger.AddAppender(appender);
+
+                using (new FileStream(ProcessManager.GroupPersistFilePath, FileMode.Open, FileAccess.Read, FileShare.None))
+                {
+                    manager.ActiveGroupIndex = 0;
+                    Assert.Empty(appender.GetEvents());
+                }
+
+                Assert.True(manager.TrySaveProcessGroups());
+                manager.SaveProcessGroups();
+                var entry = Assert.Single(appender.GetEvents());
+                var fields = JObject.Parse(entry.RenderedMessage);
+                Assert.Equal(Level.Info, entry.Level);
+                Assert.Equal("ArvrConfigurationSaved", fields.Value<string>("Event"));
+                Assert.Equal(nameof(manager.ActiveGroup), fields.Value<string>("Property"));
+                Assert.Equal(Environment.MachineName, fields.Value<string>("Machine"));
+                Assert.Equal("Other model", fields.Value<string>("OldValue"));
+                Assert.Equal(originalGroup, fields.Value<string>("NewValue"));
+                Assert.Equal(originalGroup, fields.Value<string>("FlowGroup"));
+            }
+            finally
+            {
+                logger.RemoveAppender(appender);
+                appender.Close();
+                logger.Level = previousLevel;
+                hierarchy.Configured = configured;
+            }
+        });
+    }
+
     [Fact]
     public void CameraOverrideMappingRequiresOneProcessForTheFlowTemplate()
     {

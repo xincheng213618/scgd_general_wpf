@@ -8,6 +8,8 @@ using Newtonsoft.Json;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Media;
+using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 
 namespace ColorVision.UI.Tests;
@@ -205,11 +207,25 @@ public sealed class LocalPoiTemplateStorageTests
             {
                 var selector = view!.ToolBarAl.Items.OfType<ComboBox>().Single(x => x.Name == "PoiTemplateSelector");
                 Assert.Contains("本地模板", selector.ToolTip.ToString());
+                Assert.Same(selector, Assert.Single(view.ToolBarAl.Items));
+                var menu = selector.ContextMenu;
+                var entries = menu.Items.OfType<MenuItem>().ToDictionary(item => item.Name);
+                menu.RaiseEvent(new RoutedEventArgs(ContextMenu.OpenedEvent));
+                Assert.Equal(Visibility.Collapsed, entries["PoiTemplateSave"].Visibility);
+                Assert.Equal(Visibility.Collapsed, entries["PoiTemplateEdit"].Visibility);
+                Assert.Equal(Visibility.Visible, entries["PoiTemplateManager"].Visibility);
+                Assert.Equal(Visibility.Visible, entries["PoiTemplateRefresh"].Visibility);
+                view.SetImageSource(new WriteableBitmap(640, 480, 96, 96, PixelFormats.Gray8, null),
+                    enableEditorImageServices: false, configureDefaultLayerController: false);
+                menu.RaiseEvent(new RoutedEventArgs(ContextMenu.OpenedEvent));
+                Assert.Equal(Visibility.Collapsed, entries["PoiTemplateSave"].Visibility);
                 selector.SelectedValue = Assert.Single(TemplatePoi.Params).Value;
                 Assert.True(PoiImageViewComponent.TryGetSelectedTemplate(view, out var selected));
                 Assert.Equal(value.Id, selected.Id);
                 Assert.Equal(2, view.EditorContext.DrawingVisualLists.Count);
-                Assert.Single(view.ToolBarAl.Items.OfType<Button>(), x => x.Name == "PoiTemplateManager");
+                menu.RaiseEvent(new RoutedEventArgs(ContextMenu.OpenedEvent));
+                Assert.Equal(Visibility.Visible, entries["PoiTemplateSave"].Visibility);
+                Assert.Equal(Visibility.Visible, entries["PoiTemplateEdit"].Visibility);
                 editor = new EditPoiParam(selected);
             });
             await WpfTestHost.Invoke(() => editor!.PoiLoadTask);

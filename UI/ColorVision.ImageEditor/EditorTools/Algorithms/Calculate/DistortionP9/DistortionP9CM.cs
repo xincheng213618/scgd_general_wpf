@@ -1,4 +1,5 @@
 using LocalizedText = global::ColorVision.ImageEditor.DisplayText;
+using ColorVision.Algorithms;
 using ColorVision.ImageEditor.Algorithms;
 #pragma warning disable CS8602,CS8604
 using ColorVision.Common.MVVM;
@@ -301,6 +302,8 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.DistortionP9
 
     public sealed class DistortionP9IDVContextMenu : IDVContextMenu
     {
+        public AlgorithmInteractiveGroupPresentation AnalysisGroup => AlgorithmMenuGroups.FieldGeometry;
+
         private readonly ImageProcessingContext _imageContext;
         private readonly DrawEditorContext _drawContext;
         private readonly ImageViewConfig _config;

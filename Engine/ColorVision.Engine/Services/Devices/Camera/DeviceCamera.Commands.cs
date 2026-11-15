@@ -113,7 +113,14 @@ namespace ColorVision.Engine.Services.Devices.Camera
             });
         }
 
-        internal MsgRecord AutoFocusLocally(AutoFocusParam template, CancellationToken stop = default, bool fineOnly = false)
+        internal MsgRecord AutoFocusLocally(AutoFocusParam template, CancellationToken stop = default, bool fineOnly = false) =>
+            RunLocalAutoFocus(template, stop, fineOnly, captureEvidence: false);
+
+        /// <summary>Runs local autofocus and returns a detached <see cref="CameraAutoFocusEvidence"/> in the completed command.</summary>
+        public MsgRecord AutoFocusLocallyWithEvidence(AutoFocusParam template, CancellationToken stop, bool fineOnly) =>
+            RunLocalAutoFocus(template, stop, fineOnly, captureEvidence: true);
+
+        private MsgRecord RunLocalAutoFocus(AutoFocusParam template, CancellationToken stop, bool fineOnly, bool captureEvidence)
         {
             LocalAutoFocusSettings settings;
             try { settings = LocalAutoFocusSettings.FromTemplate(template, PhyCamera?.Config.MotorConfig ?? Config.MotorConfig) with { FineOnly = fineOnly }; }
@@ -123,7 +130,8 @@ namespace ColorVision.Engine.Services.Devices.Camera
             MQTTServiceBase.log.Info($"[LocalAutoFocus] Template Name={template.Name} Id={template.Id}");
             return RunLocalCommand("AutoFocus", () =>
             {
-                LocalAutoFocusResult result = ExecuteLocalAutoFocus(settings, exposure, gain, stop, showProgress: true);
+                SortedDictionary<int, double>? curve = captureEvidence ? new() : null;
+                LocalAutoFocusResult result = ExecuteLocalAutoFocus(settings, exposure, gain, stop, showProgress: true, evidenceSamples: curve);
                 stop.ThrowIfCancellationRequested();
                 LocalCameraCaptureResult capture = LocalCameraCaptureService.Capture(new LocalCameraCaptureRequest
                 {
@@ -133,20 +141,34 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 {
                     stop.ThrowIfCancellationRequested();
                     PublishLocalPreview(capture.Frame, null, forceDisplay: true, focusFrame: true);
+                    if (curve != null)
+                    {
+                        try
+                        {
+                            return new CameraAutoFocusEvidence(LocalCameraPreview.CreateBitmap(capture.Frame), result, curve,
+                                Code, settings.Evaluation.ToString());
+                        }
+                        catch (Exception ex)
+                        {
+                            MQTTServiceBase.log.Warn($"[LocalAutoFocus] Camera={Code} evidence image could not be prepared.", ex);
+                        }
+                    }
                 }
                 return new { result.Position, result.Score, result.Samples, result.TotalTime, result.VidPosition };
             });
         }
 
-        internal LocalAutoFocusResult ExecuteLocalAutoFocus(LocalAutoFocusSettings settings, float exposure, float gain, CancellationToken stop = default, bool showProgress = false)
+        internal LocalAutoFocusResult ExecuteLocalAutoFocus(LocalAutoFocusSettings settings, float exposure, float gain,
+            CancellationToken stop = default, bool showProgress = false, SortedDictionary<int, double>? evidenceSamples = null)
         {
             Action<LocalAutoFocusFrame>? preview = showProgress ? source =>
             {
                 if (!stop.IsCancellationRequested) PublishLocalFocusPreview(source, exposure, gain);
             } : null;
             string evaluation = settings.Evaluation.ToString();
-            SortedDictionary<int, double>? curve = showProgress && DisplayConfig.SaveLocalAutoFocusChart ? new() : null;
-            string? directory = curve == null ? null : DisplayConfig.LocalAutoFocusChartDirectory;
+            bool autoSaveChart = showProgress && DisplayConfig.SaveLocalAutoFocusChart && evidenceSamples == null;
+            SortedDictionary<int, double>? curve = autoSaveChart ? new() : evidenceSamples;
+            string? directory = autoSaveChart ? DisplayConfig.LocalAutoFocusChartDirectory : null;
             if (showProgress) DispatchFocusView(view => view.FocusChart.BeginAutoFocus(evaluation));
             try
             {
@@ -162,7 +184,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 stop.ThrowIfCancellationRequested();
                 PublishLocalMotorPosition(result.Position, result.VidPosition);
                 if (showProgress) DispatchFocusView(view => view.FocusChart.CompleteAutoFocus(result));
-                if (curve != null)
+                if (autoSaveChart && curve != null)
                 {
                     try
                     {
@@ -186,32 +208,6 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 if (showProgress) DispatchFocusView(view => view.FocusChart.EndAutoFocus(canceled: false));
                 throw;
             }
-        }
-
-        internal async Task<int> MeasureVidCalibrationPositionAsync(LocalAutoFocusSettings settings, CancellationToken stop)
-        {
-            if (!CameraBackend.OpensLocally) throw new InvalidOperationException("请将相机切换到本地取图模式后再校正 VID。");
-            float exposure = (float)(Config.CameraMode == CameraMode.CV_MODE ? DisplayConfig.ExpTimeR : DisplayConfig.ExpTime);
-            float gain = DisplayConfig.Gain;
-            CameraBackend.BeginLocalCommand();
-            try
-            {
-                return await Task.Run(() =>
-                {
-                    lock (LocalCameraSession.SyncRoot)
-                    {
-                        ObjectDisposedException.ThrowIf(IsDisposed, this);
-                        stop.ThrowIfCancellationRequested();
-                        EnsureLocalMeasurementConnected(autoConnect: true);
-                        LocalCameraSession.AutoFocus(settings, exposure, gain, stop, includeVid: false);
-                        stop.ThrowIfCancellationRequested();
-                        int position = LocalCameraSession.UseMotor(motor => motor.ReadPosition());
-                        stop.ThrowIfCancellationRequested();
-                        return position;
-                    }
-                }, stop);
-            }
-            finally { CameraBackend.EndLocalCommand(); }
         }
 
         private void DispatchFocusView(Action<ViewCamera> update)

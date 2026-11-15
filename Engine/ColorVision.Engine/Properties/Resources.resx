@@ -2016,6 +2016,9 @@
   <data name="保存 POI 模板" xml:space="preserve">
     <value>保存 POI 模板</value>
   </data>
+  <data name="保存到模板" xml:space="preserve">
+    <value>保存到模板</value>
+  </data>
   <data name="保存修正后的校正文件（保持原格式）" xml:space="preserve">
     <value>保存修正后的校正文件（保持原格式）</value>
   </data>
@@ -2895,6 +2898,7 @@
   <data name="CameraFocusChart_Best" xml:space="preserve"><value>最佳位置 {0}　评价值 {1:G6}</value></data>
   <data name="CameraFocusChart_BestWithVid" xml:space="preserve"><value>最佳位置 {0}　评价值 {1:G6}　VID {2:G8}</value></data>
   <data name="CameraFocusChart_CurrentVid" xml:space="preserve"><value>当前 VID {0:G8}</value></data>
+  <data name="CameraFocusChart_CurrentPositionAndVid" xml:space="preserve"><value>电机位置 {0}　VID {1:G8}</value></data>
   <data name="CameraFocusChart_VideoReadout" xml:space="preserve"><value>FPS {0:F1} · 已显示 {1:N0} 帧 · 清晰度 {2}</value></data>
   <data name="CameraFocusChart_Seconds" xml:space="preserve"><value>时间（秒）</value></data>
   <data name="CameraFocusChart_Position" xml:space="preserve"><value>电机位置</value></data>

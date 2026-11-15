@@ -1,11 +1,60 @@
 using ColorVision.ImageEditor;
+using ColorVision.Engine.Messages;
+using ColorVision.Engine.Services.Devices.Camera;
+using ColorVision.Engine.Services.Devices.Camera.Local;
 using ProjectARVRPro.ImageExport;
 using System.IO;
+using System.Windows.Media;
+using System.Windows.Media.Imaging;
 
 namespace ProjectARVRPro.Tests;
 
 public sealed class ProjectImageExportServiceTests
 {
+    [Fact]
+    public async Task VidExportSavesPairedPngsFromTheSameFocusResult()
+    {
+        DirectoryInfo output = Directory.CreateTempSubdirectory("ProjectARVRPro-Vid-");
+        try
+        {
+            const int width = 320, height = 240;
+            var time = new DateTime(2026, 11, 14, 10, 30, 15);
+            var export = new VidFocusImageExport(output.FullName, true, "SN:42", time);
+            Task save = null!;
+            ArvrDrawingOverlayCompatibilityTests.RunOnStaThread(() =>
+            {
+                var pixels = Enumerable.Repeat((byte)128, width * height).ToArray();
+                var frame = BitmapSource.Create(width, height, 96, 96, PixelFormats.Gray8, null, pixels, width);
+                frame.Freeze();
+                var focus = new LocalAutoFocusResult(107921, 85, 3, 500) { VidPosition = -75832.79352 };
+                var evidence = new CameraAutoFocusEvidence(frame, focus,
+                    new SortedDictionary<int, double> { [107721] = 72, [107921] = 85, [108121] = 71 }, "VID100", "Variance");
+                Assert.True(export.TryCaptureResult(new MsgReturn { EventName = "AutoFocus", Data = evidence }, out double? vid));
+                Assert.Equal(focus.VidPosition, vid);
+                save = export.SaveAsync(-75800, CancellationToken.None);
+            });
+            await save;
+
+            string snDirectory = ProjectImageExportService.BuildOutputDirectory(output.FullName, true, time, "SN:42");
+            string directory = Assert.Single(Directory.GetDirectories(snDirectory));
+            Assert.Equal("VID_20261114_103015_0000000", Path.GetFileName(directory));
+            Assert.Equal(2, Directory.GetFiles(directory).Length);
+            ArvrDrawingOverlayCompatibilityTests.RunOnStaThread(() =>
+            {
+                using var image = File.OpenRead(Path.Combine(directory, "VID.png"));
+                var marked = Assert.Single(new PngBitmapDecoder(image, BitmapCreateOptions.None, BitmapCacheOption.OnLoad).Frames);
+                Assert.Equal((width, height), (marked.PixelWidth, marked.PixelHeight));
+                using var chart = File.OpenRead(Path.Combine(directory, "FocusCurve.png"));
+                var curve = Assert.Single(new PngBitmapDecoder(chart, BitmapCreateOptions.None, BitmapCacheOption.OnLoad).Frames);
+                Assert.Equal((1120, 660), (curve.PixelWidth, curve.PixelHeight));
+            });
+        }
+        finally
+        {
+            output.Delete(recursive: true);
+        }
+    }
+
     [Fact]
     public void DiagnosticContextIncludesStableCorrelationFieldsOnOneLine()
     {

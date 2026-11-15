@@ -194,30 +194,17 @@ namespace ColorVision.Engine.Templates.Jsons
         }
 
 
-        public override void Delete(int index)
+        public override void Delete(int index) => DeleteTemplates(GetMarkedTemplatesOrCurrent(index));
+
+        internal override void DeleteTemplates(IReadOnlyList<TemplateBase> targets)
         {
-            int selectedCount = TemplateParams.Count(item => item.IsSelected);
-            if (selectedCount == 1) index = TemplateParams.IndexOf(TemplateParams.First(item => item.IsSelected));
-            void DeleteSingle(int id)
+            foreach (var target in targets.Cast<TemplateModel<T>>())
             {
-                string key = TemplateParams[index].Key;
+                int id = target.Id;
                 using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
                 int ret = Db.Deleteable<ModMasterModel>().Where(it => it.Id == id).ExecuteCommand();
-                log.Info($"Delete Tempate：{key},ret{ret}");
-                TemplateParams.RemoveAt(index);
-            }
-
-            if (selectedCount <= 1)
-            {
-                int id = TemplateParams[index].Value.Id;
-                DeleteSingle(id);
-            }
-            else
-            {
-                foreach (var item in TemplateParams.Where(item => item.IsSelected == true).ToList())
-                {
-                    DeleteSingle(item.Id);
-                }
+                log.Info($"Delete Template：{target.Key},ret{ret}");
+                TemplateParams.Remove(target);
             }
         }
         public override bool CopyTo(int index)
@@ -231,12 +218,13 @@ namespace ColorVision.Engine.Templates.Jsons
             return ExportTemp != null;
         }
 
-        public override void Export(int index)
-        {
-            int selectedCount = TemplateParams.Count(item => item.IsSelected);
-            if (selectedCount == 1) index = TemplateParams.IndexOf(TemplateParams.First(item => item.IsSelected));
+        public override void Export(int index) => ExportTemplates(GetMarkedTemplatesOrCurrent(index));
 
-            if (selectedCount <= 1)
+        internal override void ExportTemplates(IReadOnlyList<TemplateBase> targets)
+        {
+            var selected = targets.Cast<TemplateModel<T>>().ToArray();
+
+            if (selected.Length == 1)
             {
                 using System.Windows.Forms.SaveFileDialog sfd = new System.Windows.Forms.SaveFileDialog();
                 sfd.DefaultExt = "cfg";
@@ -244,11 +232,11 @@ namespace ColorVision.Engine.Templates.Jsons
                 sfd.AddExtension = false;
                 sfd.RestoreDirectory = true;
                 sfd.Title = ColorVision.Engine.Properties.Resources.Engine_Dlg_ExportTemplate;
-                sfd.FileName = Tool.SanitizeFileName(TemplateParams[index].Key);
+                sfd.FileName = Tool.SanitizeFileName(selected[0].Key);
                 if (sfd.FileName.Contains('.'))
                     sfd.FileName = sfd.FileName + ".cfg";
                 if (sfd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
-                TemplateParams[index].Value.ToJsonNFile(sfd.FileName);
+                selected[0].Value.ToJsonNFile(sfd.FileName);
             }
             else
             {
@@ -266,7 +254,7 @@ namespace ColorVision.Engine.Templates.Jsons
                 try
                 {
                     // 导出所有模板文件到临时目录
-                    foreach (var kvp in TemplateParams.Where(item => item.IsSelected == true))
+                    foreach (var kvp in selected)
                     {
                         string filePath = Path.Combine(tempDirectory, $"{Tool.SanitizeFileName(kvp.Key)}.cfg");
                         kvp.Value.ToJsonNFile(filePath);

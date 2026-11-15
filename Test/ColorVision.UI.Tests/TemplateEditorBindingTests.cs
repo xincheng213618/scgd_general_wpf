@@ -1,11 +1,15 @@
 using ColorVision.Engine;
 using ColorVision.Engine.Templates;
+using ColorVision.Engine.Templates.Jsons;
+using ColorVision.Engine.Templates.Jsons.BlackMura;
 using ColorVision.Engine.Templates.LEDStripDetection;
 using ColorVision.Themes;
+using ColorVision.Themes.Controls;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Data;
+using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
 
@@ -13,6 +17,82 @@ namespace ColorVision.UI.Tests;
 
 public sealed class TemplateEditorBindingTests
 {
+    [Fact]
+    public void FilteredBatchActionsUseSelectedRowsInsteadOfVisibleIndicesOrSharedMarks()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            IConfigService previousConfig = ConfigService.Instance;
+            List<ResourceDictionary> dictionaries = [];
+            TemplateEditorWindow? window = null;
+            OfflineBlackMuraTemplate template = new();
+            try
+            {
+                TestEnvironment.SetConfig(new ConfigHandler { IsAutoSave = false });
+                foreach (string uri in ThemeManager.ResourceDictionaryWhite.Concat(ThemeManager.ResourceDictionaryBase))
+                {
+                    ResourceDictionary dictionary = new() { Source = new Uri(uri, UriKind.RelativeOrAbsolute) };
+                    dictionaries.Add(dictionary);
+                    Application.Current.Resources.MergedDictionaries.Add(dictionary);
+                }
+
+                window = new TemplateEditorWindow(template) { Left = -10000, Top = -10000, ShowActivated = false };
+                window.Show();
+                PumpBindings();
+                var list = (ListView)window.FindName("ListView1");
+                var searchBar = (Grid)window.FindName("TemplateSearchBar");
+                var search = (TextBox)window.FindName("Searchbox");
+                Assert.Equal(Visibility.Collapsed, searchBar.Visibility);
+                Assert.Single(((GridView)list.View).Columns);
+
+                var findCommand = window.CommandBindings.Cast<CommandBinding>().Select(binding => binding.Command)
+                    .OfType<RoutedCommand>().Single(command => command.InputGestures.OfType<KeyGesture>().Any(gesture =>
+                        gesture.Key == Key.F && gesture.Modifiers == ModifierKeys.Control));
+                findCommand.Execute(null, list);
+                Assert.Equal(Visibility.Visible, searchBar.Visibility);
+                search.Text = "Match";
+                PumpBindings();
+
+                TemplateBase unfiltered = template.TemplateParams[0];
+                TemplateBase first = template.TemplateParams[1];
+                TemplateBase second = template.TemplateParams[2];
+                Assert.Same(first, list.SelectedItem);
+                var secondRow = Assert.IsType<ListViewItem>(list.ItemContainerGenerator.ContainerFromItem(second));
+                secondRow.SetCurrentValue(ListViewItem.IsSelectedProperty, true);
+                Assert.Equal(new[] { first, second }, list.SelectedItems.Cast<TemplateBase>());
+
+                var export = Descendants(window).OfType<Button>().Single(button =>
+                    Equals(button.ToolTip, ColorVision.Engine.Properties.Resources.Export));
+                export.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                Assert.Equal(new[] { first, second }, template.Exported);
+
+                string? prompt = null;
+                window.Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(() =>
+                {
+                    var dialog = window.OwnedWindows.OfType<MessageBoxWindow>().SingleOrDefault();
+                    if (dialog == null) return;
+                    prompt = ((TextBox)dialog.FindName("messageBoxText")).Text;
+                    ((Button)dialog.FindName("ButtonOK")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                }));
+                ApplicationCommands.Delete.Execute(null, list);
+                Assert.Equal(new[] { first, second }, template.Deleted);
+                Assert.Contains(first.Key, prompt);
+                Assert.Contains(second.Key, prompt);
+                Assert.DoesNotContain(unfiltered.Key, prompt);
+                Assert.Same(unfiltered, Assert.Single(template.TemplateParams));
+                Assert.True(unfiltered.IsSelected);
+            }
+            finally
+            {
+                window?.Close();
+                TemplateControl.ITemplateNames.Remove(template.Name);
+                foreach (ResourceDictionary dictionary in dictionaries)
+                    Application.Current.Resources.MergedDictionaries.Remove(dictionary);
+                TestEnvironment.SetConfig(previousConfig);
+            }
+        });
+    }
+
     [Theory]
     [InlineData(-1)]
     [InlineData(0)]
@@ -144,5 +224,30 @@ public sealed class TemplateEditorBindingTests
         }
 
         public override void Load() { }
+    }
+
+    private sealed class OfflineBlackMuraTemplate : TemplateBlackMura
+    {
+        public OfflineBlackMuraTemplate()
+        {
+            TemplateParams =
+            [
+                new("Unfiltered", new TemplateJsonParam(new ModMasterModel { Id = 1, JsonVal = "{}" })) { IsSelected = true },
+                new("Match first", new TemplateJsonParam(new ModMasterModel { Id = 2, JsonVal = "{}" })),
+                new("Match second", new TemplateJsonParam(new ModMasterModel { Id = 3, JsonVal = "{}" }))
+            ];
+        }
+
+        public IReadOnlyList<TemplateBase> Exported { get; private set; } = [];
+        public IReadOnlyList<TemplateBase> Deleted { get; private set; } = [];
+        public override void Load() { }
+
+        internal override void ExportTemplates(IReadOnlyList<TemplateBase> targets) => Exported = targets;
+
+        internal override void DeleteTemplates(IReadOnlyList<TemplateBase> targets)
+        {
+            Deleted = targets;
+            foreach (var target in targets.Cast<TemplateModel<TemplateJsonParam>>()) TemplateParams.Remove(target);
+        }
     }
 }

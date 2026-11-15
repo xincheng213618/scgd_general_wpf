@@ -42,7 +42,9 @@ namespace ProjectARVRPro.Process
         private static ProcessManager _instance;
         private static readonly object _locker = new();
         private bool _suppressPersistence;
+        private string? _persistedActiveGroupName;
         public static ProcessManager GetInstance() { lock (_locker) { _instance ??= new ProcessManager(); return _instance; } }
+        internal static string? CurrentActiveGroupName => _instance?.ActiveGroup?.Name;
 
         public ObservableCollection<IProcess> Processes { get; } = new ObservableCollection<IProcess>();
         public ObservableCollection<ProcessMeta> ResultParserMetas { get; } = new();
@@ -1267,6 +1269,7 @@ namespace ProjectARVRPro.Process
             HookProcessMetasEvents();
             HookResultParserEvents();
 
+            _persistedActiveGroupName = ActiveGroup?.Name;
             if (saveAfterLoad)
                 SavePersistedGroups();
         }
@@ -1518,7 +1521,7 @@ namespace ProjectARVRPro.Process
             return SavePersistedGroups(CreateProcessGroupsRoot());
         }
 
-        private static bool SavePersistedGroups(ProcessGroupsRoot root, string? change = null)
+        private bool SavePersistedGroups(ProcessGroupsRoot root, string? change = null)
         {
             try
             {
@@ -1536,6 +1539,9 @@ namespace ProjectARVRPro.Process
             ProcessGroupPersist? activeGroup = root.Groups.ElementAtOrDefault(root.ActiveGroupIndex);
             string changeDetails = change == null ? string.Empty : $"，{change}";
             log.Info($"已保存 ARVRPro 流程配置 [{GroupPersistFileName}]，当前组 {JsonConvert.ToString(activeGroup?.Name)}{changeDetails}");
+            string? previousGroup = _persistedActiveGroupName;
+            _persistedActiveGroupName = activeGroup?.Name;
+            ProjectConfigurationLog.Saved(station: null, _persistedActiveGroupName, nameof(ActiveGroup), previousGroup, _persistedActiveGroupName);
             return true;
         }
 

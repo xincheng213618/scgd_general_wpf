@@ -1,6 +1,8 @@
+using ColorVision.Algorithms;
 using ColorVision.ImageEditor.Abstractions;
 using ColorVision.ImageEditor.Draw;
 using ColorVision.ImageEditor.Draw.Special;
+using ColorVision.ImageEditor.Properties;
 using ColorVision.UI.Menus;
 using System;
 using System.Collections.Generic;
@@ -20,6 +22,13 @@ namespace ColorVision.ImageEditor.Tooling
         internal void HandleOpening(object sender, ContextMenuEventArgs e)
         {
             _context.ContextMenu.Items.Clear();
+            if (!_context.DrawCanvas.HasImage)
+            {
+                CreateStandardContextMenu(hasImage: false);
+                e.Handled = _context.ContextMenu.Items.Count == 0;
+                return;
+            }
+
             Point mouseDownPoint = Mouse.GetPosition(_context.DrawCanvas);
 
             if (TryCreateReferenceLineContextMenu())
@@ -32,52 +41,71 @@ namespace ColorVision.ImageEditor.Tooling
                 Visual? mouseVisual = _context.DrawCanvas.GetVisual<Visual>(mouseDownPoint);
                 if (mouseVisual is SelectEditorVisual selectEditorVisual && selectEditorVisual.GetVisual(mouseDownPoint) is ISelectVisual selectVisual)
                 {
-                    foreach (var provider in _context.IEditorToolFactory.ContextMenuProviders)
-                    {
-                        if (provider.ContextType.IsAssignableFrom(selectVisual.GetType()))
-                        {
-                            var items = provider.GetContextMenuItems(selectVisual);
-                            foreach (var item in items)
-                            {
-                                _context.ContextMenu.Items.Add(item);
-                            }
-                        }
-                    }
-
-                    foreach (var provider in _context.IEditorToolFactory.ContextMenuProviders)
-                    {
-                        if (provider.ContextType.IsAssignableFrom(selectEditorVisual.GetType()))
-                        {
-                            var items = provider.GetContextMenuItems(selectEditorVisual);
-                            foreach (var item in items)
-                            {
-                                _context.ContextMenu.Items.Add(item);
-                            }
-                        }
-                    }
+                    AddDrawingItems(selectVisual, selectEditorVisual);
                 }
                 else if (mouseVisual != null)
                 {
-                    foreach (var provider in _context.IEditorToolFactory.ContextMenuProviders)
-                    {
-                        if (provider.ContextType.IsAssignableFrom(mouseVisual.GetType()))
-                        {
-                            var items = provider.GetContextMenuItems(mouseVisual);
-                            foreach (var item in items)
-                            {
-                                _context.ContextMenu.Items.Add(item);
-                            }
-                        }
-                    }
+                    AddDrawingItems(mouseVisual);
                 }
             }
 
             if (_context.ContextMenu.Items.Count == 0)
             {
-                CreateStandardContextMenu();
+                CreateStandardContextMenu(hasImage: true);
             }
 
             e.Handled = _context.ContextMenu.Items.Count == 0;
+        }
+
+        internal void AddDrawingItems(object drawing, SelectEditorVisual? selection = null)
+        {
+            var analysis = new Dictionary<AlgorithmInteractiveGroupPresentation, List<MenuItem>>();
+            AddFor(drawing);
+            if (selection != null) AddFor(selection);
+            if (analysis.Count == 0) return;
+
+            MenuItem measurements = new() { Header = Resources.Algorithm_AlgorithmCalls };
+            foreach (var (group, items) in analysis.OrderBy(entry => entry.Key.Order))
+            {
+                ItemCollection destination = measurements.Items;
+                if (analysis.Count > 1)
+                {
+                    string? header = group.ResourceKey != null ? Resources.ResourceManager.GetString(group.ResourceKey, Resources.Culture) : null;
+                    MenuItem category = new() { Header = header ?? group.DisplayName };
+                    measurements.Items.Add(category);
+                    destination = category.Items;
+                }
+                foreach (MenuItem item in items) destination.Add(item);
+            }
+
+            if (_context.ContextMenu.HasItems) _context.ContextMenu.Items.Add(new Separator());
+            _context.ContextMenu.Items.Add(measurements);
+
+            void AddFor(object target)
+            {
+                var providers = _context.IEditorToolFactory.ContextMenuProviders
+                    .Where(provider => provider.ContextType.IsInstanceOfType(target))
+                    .OrderBy(provider => provider is not DrawingVisualBaseDVContextMenu);
+                foreach (var provider in providers)
+                {
+                    var group = provider.AnalysisGroup;
+                    foreach (MenuItem item in provider.GetContextMenuItems(target))
+                    {
+                        if (item.Visibility != Visibility.Visible) continue;
+                        if (group == null)
+                        {
+                            _context.ContextMenu.Items.Add(item);
+                            continue;
+                        }
+                        if (!analysis.TryGetValue(group, out var items))
+                        {
+                            items = new List<MenuItem>();
+                            analysis.Add(group, items);
+                        }
+                        items.Add(item);
+                    }
+                }
+            }
         }
 
         private bool TryCreateReferenceLineContextMenu()
@@ -105,87 +133,65 @@ namespace ColorVision.ImageEditor.Tooling
             return _context.ContextMenu.Items.Count > 0;
         }
 
-        private void CreateStandardContextMenu()
+        private void CreateStandardContextMenu(bool hasImage)
         {
-            List<MenuItemMetadata> menuItemMetadatas = new();
-            if ((_context.ImageView.ImageContentCapability ?? (object?)_context.IImageOpen) is IIEditorToolContextMenu contentMenuProvider)
+            List<MenuItemMetadata> metadata = new();
+            if (hasImage && (_context.ImageView.ImageContentCapability ?? (object?)_context.IImageOpen) is IIEditorToolContextMenu contentMenuProvider)
             {
-                menuItemMetadatas.AddRange(contentMenuProvider.GetContextMenuItems());
+                metadata.AddRange(contentMenuProvider.GetContextMenuItems());
             }
 
-            foreach (var item in _context.IEditorToolFactory.IIEditorToolContextMenus)
+            foreach (var provider in _context.IEditorToolFactory.IIEditorToolContextMenus)
             {
-                if (item is IImageOpen)
+                if (provider is not IImageOpen)
                 {
-                    continue;
+                    metadata.AddRange(provider.GetContextMenuItems(hasImage));
                 }
-
-                menuItemMetadatas.AddRange(item.GetContextMenuItems());
             }
 
-            List<MenuItemMetadata> sortedMenuItems = menuItemMetadatas.OrderBy(item => item.Order).ToList();
+            var groups = metadata.Where(item => item.Visibility == Visibility.Visible && item.OwnerGuid != null)
+                .OrderBy(item => item.Order)
+                .GroupBy(item => item.OwnerGuid!)
+                .ToDictionary(group => group.Key);
 
-            void CreateMenu(MenuItem parentMenuItem, string ownerGuid)
+            AddItems(_context.ContextMenu.Items, MenuItemConstants.Menu);
+
+            void AddItems(ItemCollection destination, string ownerGuid)
             {
-                List<MenuItemMetadata> childItems = sortedMenuItems.FindAll(item => item.OwnerGuid == ownerGuid).OrderBy(item => item.Order).ToList();
-                for (int i = 0; i < childItems.Count; i++)
+                if (!groups.Remove(ownerGuid, out var children)) return;
+
+                int? previousOrder = null;
+                foreach (MenuItemMetadata item in children)
                 {
-                    MenuItemMetadata childItem = childItems[i];
-                    string guidId = childItem.GuidId ?? Guid.NewGuid().ToString();
+                    bool canExecute = item.Command is RoutedCommand routedCommand
+                        ? routedCommand.CanExecute(null, _context.ImageView)
+                        : item.Command?.CanExecute(null) ?? true;
+                    if (!canExecute) continue;
+
                     MenuItem menuItem = new()
                     {
-                        Header = childItem.Header,
-                        Icon = childItem.Icon,
-                        InputGestureText = childItem.InputGestureText,
-                        Command = childItem.Command,
-                        Tag = childItem,
-                        IsChecked = childItem.IsChecked ?? false,
-                        Visibility = childItem.Visibility,
+                        Header = item.Header,
+                        Icon = item.Icon,
+                        InputGestureText = item.InputGestureText,
+                        CommandTarget = item.Command is RoutedCommand ? _context.ImageView : null,
+                        Command = item.Command,
+                        Tag = item,
+                        IsChecked = item.IsChecked ?? false,
                     };
 
-                    CreateMenu(menuItem, guidId);
-                    if (i > 0 && childItem.Order - childItems[i - 1].Order > 4 && childItem.Visibility == Visibility.Visible)
+                    if (item.GuidId != null)
                     {
-                        parentMenuItem.Items.Add(new Separator());
+                        AddItems(menuItem.Items, item.GuidId);
                     }
 
-                    parentMenuItem.Items.Add(menuItem);
+                    if (item.Command == null && !menuItem.HasItems) continue;
+                    if (previousOrder is int order && item.Order - order > 4)
+                    {
+                        destination.Add(new Separator());
+                    }
+                    destination.Add(menuItem);
+                    previousOrder = item.Order;
                 }
-
-                foreach (MenuItemMetadata item in childItems)
-                {
-                    sortedMenuItems.Remove(item);
-                }
-            }
-
-            List<MenuItemMetadata> rootItems = menuItemMetadatas
-                .Where(item => item.OwnerGuid == MenuItemConstants.Menu && item.Visibility == Visibility.Visible)
-                .OrderBy(item => item.Order)
-                .ToList();
-
-            for (int i = 0; i < rootItems.Count; i++)
-            {
-                MenuItemMetadata menuItemMeta = rootItems[i];
-                MenuItem menuItem = new()
-                {
-                    Header = menuItemMeta.Header,
-                    Command = menuItemMeta.Command,
-                    Icon = menuItemMeta.Icon,
-                    InputGestureText = menuItemMeta.InputGestureText,
-                    IsChecked = menuItemMeta.IsChecked ?? false,
-                };
-
-                if (menuItemMeta.GuidId != null)
-                {
-                    CreateMenu(menuItem, menuItemMeta.GuidId);
-                }
-
-                if (i > 0 && menuItemMeta.Order - rootItems[i - 1].Order > 4)
-                {
-                    _context.ContextMenu.Items.Add(new Separator());
-                }
-
-                _context.ContextMenu.Items.Add(menuItem);
             }
         }
 

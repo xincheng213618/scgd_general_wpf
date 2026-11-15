@@ -7,6 +7,7 @@ using ColorVision.Engine.Services.Devices.Spectrum;
 using ColorVision.Engine.Services.Devices.Spectrum.Dao;
 using log4net;
 using Newtonsoft.Json.Linq;
+using ProjectARVRPro.ImageExport;
 using SqlSugar;
 
 namespace ProjectARVRPro.Services;
@@ -15,14 +16,15 @@ internal static class LuxDeviceMeasurements
 {
     private static readonly ILog log = LogManager.GetLogger(typeof(LuxDeviceMeasurements));
 
-    internal static async Task<(bool Succeeded, ObjectiveTestItem Item)> MeasureVidResultAsync(CancellationToken cancellationToken)
+    internal static async Task<(bool Succeeded, ObjectiveTestItem Item)> MeasureVidResultAsync(CancellationToken cancellationToken, VidFocusImageExport? export = null)
     {
         var config = ProjectARVRProConfig.Instance;
         double min = config.LuxVidMin, max = config.LuxVidMax;
         double factor = config.LuxVidFix, offset = config.LuxVidB;
-        double? measured = await MeasureVidAsync(cancellationToken);
+        double? measured = await MeasureVidAsync(cancellationToken, export);
         double value = measured.HasValue ? measured.Value * factor + offset : 0;
         if (!double.IsFinite(value)) throw new InvalidOperationException("VID 结果不是有效数值。");
+        if (measured.HasValue && export != null) await export.SaveAsync(value, cancellationToken);
 
         return (measured.HasValue, new ObjectiveTestItem
         {
@@ -30,7 +32,7 @@ internal static class LuxDeviceMeasurements
         });
     }
 
-    internal static async Task<double?> MeasureVidAsync(CancellationToken cancellationToken)
+    internal static async Task<double?> MeasureVidAsync(CancellationToken cancellationToken, VidFocusImageExport? export = null)
     {
         cancellationToken.ThrowIfCancellationRequested();
         var config = ProjectARVRProConfig.Instance;
@@ -68,9 +70,15 @@ internal static class LuxDeviceMeasurements
             if (opened == null) return null;
         }
         cancellationToken.ThrowIfCancellationRequested();
-        MsgRecord command = template == null ? camera.DService.GetPosition()
+        bool captureEvidence = export != null && template != null && camera.RoutesLocally && VidFocusImageExport.HostSupportsEvidence;
+        if (export != null && !captureEvidence)
+            log.Warn("VID 对焦图像需要支持图像导出的宿主和本地相机聚焦模式。");
+        MsgRecord command = captureEvidence ? VidFocusImageExport.Measure(camera, template!, cancellationToken, fineFocus)
+            : template == null ? camera.DService.GetPosition()
             : localFocus?.Measure(camera, template, cancellationToken) ?? camera.DService.AutoFocus(template);
         MsgReturn? response = await WaitForResultAsync(command, cancellationToken);
+        if (response != null && captureEvidence && export!.TryCaptureResult(response, out double? vid))
+            return vid;
         return response == null ? null : ReadVid(response);
     }
 

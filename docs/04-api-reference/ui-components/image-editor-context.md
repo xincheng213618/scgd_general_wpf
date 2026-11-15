@@ -60,7 +60,7 @@ related: ["ui.image-editor", "ui.discovery", "ui.configuration", "algorithms.pla
 - `ClearProperties` 清空文件路径、全部属性及分类记录，再触发 `Cleared`，不是只清 `ImageMetadata`。`ClearCommand` 本身只发 `Cleared` 通知，并不调用 `ClearProperties`；实际后果还取决于订阅者。
 - `Configs` 是另一份按精确 `Type` 缓存的 `IImageEditorConfig` 字典，`GetRequiredService<T>` 缺项时构造并缓存。`ClearProperties` 不清这份字典；它也不等于全局 `ConfigService` 的配置实例或保存入口。`Properties` 与分类记录标了 `JsonIgnore`，不能把临时属性写入当成已保存。
 
-`ImageViewConfig.Calibration` 是当前视图的独立标定状态，比例尺、尺子和参考网格从同一上下文读取。显示滤镜在构造时复制默认值，普通调整不回写默认；CVCIE 探针缓存于 `Configs`。设置的范围、保存和兼容契约见[图像设置](../../02-developer-guide/core-concepts/image-editor-settings-plan.md)。
+`ImageViewConfig.Calibration` 是当前视图的独立标定状态，比例尺和尺子从同一上下文读取。显示滤镜在构造时复制默认值，普通调整不回写默认；CVCIE 探针缓存于 `Configs`。设置的范围、保存和兼容契约见[图像设置](../../02-developer-guide/core-concepts/image-editor-settings-plan.md)。
 
 ### 关闭编辑服务也会改变图像文档
 

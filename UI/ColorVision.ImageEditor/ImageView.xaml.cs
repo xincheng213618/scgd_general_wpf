@@ -262,6 +262,11 @@ namespace ColorVision.ImageEditor
 
             RenderOptions.SetBitmapScalingMode(ImageShow, DefaultBitmapScalingConfig.Current.DefaultBitmapScalingMode);
             EditorContext = CreateEditorContext();
+            CommandBindings.Add(new CommandBinding(ApplicationCommands.Open, (s, e) => OpenImage(), (s, e) => { e.CanExecute = true; }));
+            CommandBindings.Add(new CommandBinding(ApplicationCommands.SaveAs, (s, e) => SaveAs(), CanExecuteImageCommand));
+            CommandBindings.Add(new CommandBinding(ApplicationCommands.Close, (s, e) => Clear(), CanExecuteImageCommand));
+            CommandBindings.Add(new CommandBinding(ApplicationCommands.Print, (s, e) => Print(), CanExecuteImageCommand));
+
             _drawing = new ImageDrawingPresentation(EditorContext.DrawEditorContext, Config);
             EditorContext.DrawEditorContext.SelectionVisual = new SelectEditorVisual(EditorContext.DrawEditorContext);
             EditorContext.DrawEditorContext.SelectionVisual.TextEditingContext = EditorContext.TextEditingContext;
@@ -294,12 +299,12 @@ namespace ColorVision.ImageEditor
             SetCompactInspectorVisibility(false);
             PixelValueOverlay.Attach(this);
 
-            // Setup commands for file operations
-            CommandBindings.Add(new CommandBinding(ApplicationCommands.Open, (s, e) => OpenImage(), (s, e) => { e.CanExecute = true; }));
-            CommandBindings.Add(new CommandBinding(ApplicationCommands.SaveAs, (s, e) => SaveAs(), (s, e) => { e.CanExecute = true; }));
-            CommandBindings.Add(new CommandBinding(ApplicationCommands.Close, (s, e) => Clear(), (s, e) => { e.CanExecute = true; }));
-            CommandBindings.Add(new CommandBinding(ApplicationCommands.Print, (s, e) => Print(), (s, e) => { e.CanExecute = true; }));
+        }
 
+        private void CanExecuteImageCommand(object sender, CanExecuteRoutedEventArgs e)
+        {
+            e.CanExecute = ImageShow.HasImage;
+            e.Handled = true;
         }
 
         private void DefaultDisplayConfig_PropertyChanged(object? sender, PropertyChangedEventArgs e)
@@ -395,7 +400,7 @@ namespace ColorVision.ImageEditor
 
         private void ImageView_PreviewKeyDown(object sender, KeyEventArgs e)
         {
-            if (e.Handled || e.Key != Key.F11 || Keyboard.Modifiers != ModifierKeys.None) return;
+            if (e.Handled || e.Key != Key.F11 || Keyboard.Modifiers != ModifierKeys.None || !CanToggleFullScreen) return;
             e.Handled = true;
             if (!e.IsRepeat) ToggleFullScreen();
         }
@@ -447,10 +452,12 @@ namespace ColorVision.ImageEditor
         private void ShortcutWindow_PreviewKeyDown(object sender, KeyEventArgs e)
         {
             if (e.Handled || e.Key != Key.F11 || Keyboard.Modifiers != ModifierKeys.None ||
-                WindowFullScreenSession.GetIsActive((WpfWindow)sender) || (!IsKeyboardFocusWithin && !IsMouseOver)) return;
+                !CanToggleFullScreen || WindowFullScreenSession.GetIsActive((WpfWindow)sender) || (!IsKeyboardFocusWithin && !IsMouseOver)) return;
             e.Handled = true;
             if (!e.IsRepeat) ToggleFullScreen();
         }
+
+        internal bool CanToggleFullScreen => ImageShow.HasImage || _fullScreenMode?.IsMax == true;
 
         public void ToggleFullScreen()
         {
@@ -462,6 +469,7 @@ namespace ColorVision.ImageEditor
                 {
                     if (_fullScreenMode.IsMax) Zoombox1.ZoomUniform();
                     else Zoombox1.RestoreView(_windowedImageMatrix);
+                    CommandManager.InvalidateRequerySuggested();
                 };
             }
             if (!_fullScreenMode.IsMax) _windowedImageMatrix = Zoombox1.ContentMatrix;
@@ -514,7 +522,7 @@ namespace ColorVision.ImageEditor
         {
             ImageViewSettingsWindow window = new(this, initialGroup)
             {
-                Owner = WpfWindow.GetWindow(this) ?? Application.Current.GetActiveWindow(),
+                Owner = WpfWindow.GetWindow(ImageContentGrid) ?? Application.Current.GetActiveWindow(),
                 WindowStartupLocation = WindowStartupLocation.CenterOwner,
             };
             window.ShowDialog();

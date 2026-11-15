@@ -161,9 +161,10 @@ public sealed class LuxVidMeasurementTests
             config.LuxVidB = -200;
             config.LuxVidMin = 10;
         });
-        var handler = new MeasureVidSocket(async () =>
+        var handler = new MeasureVidSocket(async serialNumber =>
         {
             Task<(bool Succeeded, ObjectiveTestItem Item)> measurement = null!;
+            Assert.Equal("SN001", serialNumber);
             ArvrDrawingOverlayCompatibilityTests.RunOnStaThread(() => measurement = LuxDeviceMeasurements.MeasureVidResultAsync(CancellationToken.None));
             var (succeeded, item) = await measurement;
             return (false, succeeded ? item : null);

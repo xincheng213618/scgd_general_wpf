@@ -198,6 +198,13 @@ namespace ColorVision.ImageEditor
         protected override Visual GetVisualChild(int index) => index == 0 ? imageVisual : visuals[index - 1];
         protected override int VisualChildrenCount => visuals.Count + 1;
 
+        private static readonly DependencyPropertyKey HasImagePropertyKey = DependencyProperty.RegisterReadOnly(
+            nameof(HasImage), typeof(bool), typeof(DrawCanvas), new PropertyMetadata(false));
+
+        public static readonly DependencyProperty HasImageProperty = HasImagePropertyKey.DependencyProperty;
+
+        public bool HasImage => (bool)GetValue(HasImageProperty);
+
         protected override void OnPropertyChanged(DependencyPropertyChangedEventArgs e)
         {
             base.OnPropertyChanged(e);
@@ -205,6 +212,11 @@ namespace ColorVision.ImageEditor
             {
                 if (!ReferenceEquals(_renderProxyOwner, e.NewValue)) SetRenderProxy(null, null);
                 ClearImageDrawing();
+                if ((e.OldValue == null) != (e.NewValue == null))
+                {
+                    SetValue(HasImagePropertyKey, e.NewValue != null);
+                    CommandManager.InvalidateRequerySuggested();
+                }
             }
         }
 

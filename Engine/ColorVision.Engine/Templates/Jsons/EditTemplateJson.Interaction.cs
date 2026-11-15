@@ -6,7 +6,6 @@ using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
 
@@ -145,11 +144,6 @@ public partial class EditTemplateJson
     {
         _searchPanel?.Open();
         _searchPanel?.Reactivate();
-    }
-
-    private void More_Click(object sender, RoutedEventArgs e)
-    {
-        if (sender is Button { ContextMenu: { } menu } button) { menu.PlacementTarget = button; menu.Placement = PlacementMode.Bottom; menu.IsOpen = true; }
     }
 
     private void CopyJson_Click(object sender, RoutedEventArgs e)

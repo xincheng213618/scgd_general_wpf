@@ -6247,8 +6247,6 @@
       ],
       "code_paths": [
         "Engine/ColorVision.Engine/Services/PhyCameras/Calibration/Editing",
-        "Engine/ColorVision.Engine/Services/PhyCameras/Calibration/VidFieldCalibration.cs",
-        "Engine/ColorVision.Engine/Services/PhyCameras/Calibration/VidFieldCalibrationWindow.xaml.cs",
         "Engine/ColorVision.Engine/Services/PhyCameras/Calibration/Creation",
         "Engine/ColorVision.Engine/Services/Devices/Calibration/DeviceCalibration.cs",
         "Engine/ColorVision.Engine/Services/Devices/Calibration/ConfigCalibration.cs",

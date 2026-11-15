@@ -40,6 +40,7 @@
                                     <Condition Binding="{Binding Device.Config.MotorConfig.VID.IsUseVID, RelativeSource={RelativeSource AncestorType={x:Type local:ViewCamera}}}" Value="True"/>
                                 </MultiDataTrigger.Conditions>
                                 <Setter Property="MotorVid" Value="{Binding Device.Config.MotorConfig.VIDPosition, RelativeSource={RelativeSource AncestorType={x:Type local:ViewCamera}}}"/>
+                                <Setter Property="MotorPosition" Value="{Binding Device.Config.MotorConfig.Position, RelativeSource={RelativeSource AncestorType={x:Type local:ViewCamera}}}"/>
                             </MultiDataTrigger>
                         </Style.Triggers>
                     </Style>

@@ -11,13 +11,14 @@ namespace ColorVision.UI
         public void SaveConfigs(string fileName)
             => SaveConfigSnapshot(fileName, backupSourcePath: null);
 
-        private void SaveConfigSnapshot(string fileName, string? backupSourcePath)
+        private void SaveConfigSnapshot(string fileName, string? backupSourcePath, bool logChanges = false)
         {
             string fullPath = Path.GetFullPath(fileName);
             while (true)
             {
                 long observedVersion = CaptureSaveTransactionVersion();
-                var stagedConfigs = CreateConfigSnapshot();
+                List<string>? comparableSections = logChanges && log.IsInfoEnabled ? new() : null;
+                var stagedConfigs = CreateConfigSnapshot(comparableSections);
                 if (!TryBeginSaveTransaction(observedVersion))
                     continue;
 
@@ -32,11 +33,16 @@ namespace ColorVision.UI
                     }
                     using var fileLock = ConfigFileStore.AcquireLock(fullPath);
                     var jObject = backupBase ?? ConfigFileStore.ReadForMerge(fullPath);
+                    string[]? changedSections = comparableSections?.Where(section => !JToken.DeepEquals(jObject[section], stagedConfigs[section]))
+                        .OrderBy(section => section, StringComparer.Ordinal)
+                        .ToArray();
                     foreach (var property in stagedConfigs.Properties())
                         jObject[property.Name] = property.Value.DeepClone();
 
                     ConfigFileStore.Write(fullPath, jObject);
                     persisted = true;
+                    if (changedSections is { Length: > 0 })
+                        LogPersistedConfigChanges(fullPath, changedSections);
                     return;
                 }
                 finally
@@ -110,7 +116,7 @@ namespace ColorVision.UI
             }
         }
 
-        private JObject CreateConfigSnapshot()
+        private JObject CreateConfigSnapshot(List<string>? comparableSections)
         {
             var stagedConfigs = new JObject();
             var jsonSerializer = JsonSerializer.Create(JsonSerializerSettings);
@@ -120,6 +126,9 @@ namespace ColorVision.UI
                 try
                 {
                     SaveConfig(stagedConfigs, configPair.Key, configPair.Value, jsonSerializer);
+                    // Some secure sections re-encrypt identical values to different ciphertext on each save.
+                    if (comparableSections != null && configPair.Value is not IConfigSecure)
+                        comparableSections.Add(ConfigSectionNames.GetSectionName(configPair.Key));
                 }
                 catch (Exception ex)
                 {
@@ -245,9 +254,12 @@ namespace ColorVision.UI
                 using (ConfigFileStore.AcquireLock(fullPath))
                 {
                     var jObject = ConfigFileStore.ReadForMerge(fullPath);
+                    bool changed = log.IsInfoEnabled && candidate is not IConfigSecure && !JToken.DeepEquals(jObject[configName], candidateToken);
                     jObject[configName] = candidateToken;
                     ConfigFileStore.Write(fullPath, jObject);
                     persisted = true;
+                    if (changed)
+                        LogPersistedConfigChanges(fullPath, [configName]);
                 }
 
                 try
@@ -280,6 +292,19 @@ namespace ColorVision.UI
                 if (transactionStarted)
                     EndSaveTransaction(persisted);
             }
+        }
+
+        private static void LogPersistedConfigChanges(string filePath, string[] sections)
+        {
+            var entry = new JObject
+            {
+                ["Event"] = "ConfigSectionsSaved",
+                ["Timestamp"] = DateTimeOffset.Now.ToString("O"),
+                ["Machine"] = Environment.MachineName,
+                ["File"] = filePath,
+                ["Sections"] = new JArray(sections)
+            };
+            log.Info(entry.ToString(Formatting.None));
         }
     }
 }

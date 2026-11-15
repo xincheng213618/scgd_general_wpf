@@ -9,11 +9,11 @@ namespace ProjectARVRPro.Services;
 public sealed class MeasureVidSocket : ISocketJsonHandler
 {
     private static readonly ILog log = LogManager.GetLogger(typeof(MeasureVidSocket));
-    private readonly Func<Task<(bool Busy, ObjectiveTestItem? Result)>> _measure;
+    private readonly Func<string, Task<(bool Busy, ObjectiveTestItem? Result)>> _measure;
 
     public MeasureVidSocket() : this(MeasureOnUiThreadAsync) { }
 
-    internal MeasureVidSocket(Func<Task<(bool Busy, ObjectiveTestItem? Result)>> measure) => _measure = measure;
+    internal MeasureVidSocket(Func<string, Task<(bool Busy, ObjectiveTestItem? Result)>> measure) => _measure = measure;
 
     public string EventName => "MeasureVID";
 
@@ -36,7 +36,7 @@ public sealed class MeasureVidSocket : ISocketJsonHandler
         try
         {
             // Dispatch waits on the client worker. SocketManager sends this single reply on that connection.
-            var (busy, result) = _measure().GetAwaiter().GetResult();
+            var (busy, result) = _measure(request.SerialNumber).GetAwaiter().GetResult();
             if (busy)
             {
                 response.Code = -4;
@@ -68,6 +68,6 @@ public sealed class MeasureVidSocket : ISocketJsonHandler
         return response;
     }
 
-    private static Task<(bool Busy, ObjectiveTestItem? Result)> MeasureOnUiThreadAsync() =>
-        Application.Current.Dispatcher.InvokeAsync(() => ProjectARVRWindowHost.GetOrCreate().MeasureVidForJsonAsync()).Task.Unwrap();
+    private static Task<(bool Busy, ObjectiveTestItem? Result)> MeasureOnUiThreadAsync(string serialNumber) =>
+        Application.Current.Dispatcher.InvokeAsync(() => ProjectARVRWindowHost.GetOrCreate().MeasureVidForJsonAsync(serialNumber)).Task.Unwrap();
 }

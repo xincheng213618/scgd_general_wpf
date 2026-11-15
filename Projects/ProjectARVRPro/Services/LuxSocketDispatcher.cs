@@ -35,6 +35,7 @@ internal sealed class LuxCommandSession(LuxRequest request, Action<string> send)
     private static readonly ILog log = LogManager.GetLogger(typeof(LuxCommandSession));
     private int _completed;
     internal LuxRequest Request { get; } = request;
+    internal string? FlowGroup { get; set; }
 
     internal void CompleteFlow(IProcess? process, ProjectARVRReuslt? result, string? eventName, string? parameters)
     {

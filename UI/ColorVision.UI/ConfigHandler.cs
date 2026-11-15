@@ -214,7 +214,7 @@ namespace ColorVision.UI
             ConfigsReloaded?.Invoke(this, EventArgs.Empty);
         }
 
-        public void SaveConfigs() => SaveConfigs(ConfigFilePath);
+        public void SaveConfigs() => SaveConfigSnapshot(ConfigFilePath, backupSourcePath: null, logChanges: true);
 
         internal JsonSerializerSettings JsonSerializerSettings { get; set; } = CreateJsonSerializerSettings();
 

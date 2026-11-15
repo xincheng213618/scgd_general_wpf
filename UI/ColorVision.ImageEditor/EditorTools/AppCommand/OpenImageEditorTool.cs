@@ -6,6 +6,7 @@ namespace ColorVision.ImageEditor.EditorTools.AppCommand
     public record class OpenImageEditorTool(EditorContext EditorContext) : IEditorTool
     {
         public ToolBarLocal ToolBarLocal => ToolBarLocal.Left;
+        public bool SupportsEmptyView => true;
         public string? GuidId => "OpenImage";
 
         public int Order { get; set; } = 1;

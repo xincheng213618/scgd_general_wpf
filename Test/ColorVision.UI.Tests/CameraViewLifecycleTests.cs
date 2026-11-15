@@ -128,16 +128,19 @@ public sealed class CameraViewLifecycleTests
     [Fact]
     public void CurrentVidReturnsAfterVideoAndDoesNotDuplicateBestFocusVid() => StaTest.Run(() =>
     {
-        var chart = new CameraFocusChart { MotorVid = 42 };
+        var chart = new CameraFocusChart { MotorVid = 42, MotorPosition = 200 };
         var show = (Button)chart.FindName("ShowChartButton");
         var readout = (TextBlock)chart.FindName("ChartReadout");
         var detail = (TextBlock)chart.FindName("ChartDetailReadout");
         Assert.Contains("VID 42", readout.Text);
+        Assert.Contains("200", readout.Text);
 
         chart.BeginAutoFocus();
         chart.CompleteAutoFocus(new LocalAutoFocusResult(200, 5, 2, 300) { VidPosition = 42 });
         Assert.Contains("VID 42", readout.Text);
         Assert.Equal(Visibility.Collapsed, detail.Visibility);
+        chart.MotorPosition = 201;
+        Assert.Contains("201", detail.Text);
         chart.MotorVid = 43;
         Assert.Contains("VID 43", detail.Text);
 

@@ -15,27 +15,33 @@ namespace ColorVision.ImageEditor.EditorTools.AppCommand
 
     public record class ZoomEditorToolContextMenu(ImageViewConfig config, DrawEditorContext drawContext) : IIEditorToolContextMenu, ICopilotBusinessContextSource
     {
-        public List<MenuItemMetadata> GetContextMenuItems()
+        public List<MenuItemMetadata> GetContextMenuItems() => GetContextMenuItems(hasImage: true);
+
+        public List<MenuItemMetadata> GetContextMenuItems(bool hasImage)
         {
+            List<MenuItemMetadata> items =
+            [
+                new() { GuidId = "OpenImage", Order = 10, Header = Properties.Resources.Open, Command = ApplicationCommands.Open, Icon = MenuItemIcon.TryFindResource("DIOpen") },
+            ];
+            if (!hasImage) return items;
+
             PublishCopilotContext();
 
-            var MenuItemMetadatas = new  List<MenuItemMetadata>();
-            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "OpenImage", Order = 10, Header = Properties.Resources.Open, Command = ApplicationCommands.Open , Icon = MenuItemIcon.TryFindResource("DIOpen") });
-            MenuItemMetadatas.Add(new MenuItemMetadata
+            items.Add(new MenuItemMetadata
             {
                 GuidId = "SelectImageFileInFolder", Order = 10, Header = DisplayText.Get("在文件夹中选择文件"),
                 Command = new RelayCommand(_ => PlatformHelper.OpenFolderAndSelectFile(config.FilePath), _ => File.Exists(config.FilePath)),
                 Icon = MenuItemIcon.TryFindResource("DIOpen")
             });
-            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "SaveAsImage", Order = 300, Header = Properties.Resources.SaveAsImage, Command = ApplicationCommands.SaveAs ,Icon = MenuItemIcon.TryFindResource("DISave") });
+            items.Add(new MenuItemMetadata() { GuidId = "SaveAsImage", Order = 300, Header = Properties.Resources.SaveAsImage, Command = ApplicationCommands.SaveAs, Icon = MenuItemIcon.TryFindResource("DISave") });
 
-            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "ClearImage", Order = 11, Header = Properties.Resources.Clear, Command = ApplicationCommands.Close, Icon = MenuItemIcon.TryFindResource("DIDelete") });
-            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "Print", Order = 300, Header = Properties.Resources.Print, Command = ApplicationCommands.Print, Icon = MenuItemIcon.TryFindResource("DIPrint"), InputGestureText = "Ctrl+P" });
+            items.Add(new MenuItemMetadata() { GuidId = "ClearImage", Order = 11, Header = Properties.Resources.Clear, Command = ApplicationCommands.Close, Icon = MenuItemIcon.TryFindResource("DIDelete") });
+            items.Add(new MenuItemMetadata() { GuidId = "Print", Order = 300, Header = Properties.Resources.Print, Command = ApplicationCommands.Print, Icon = MenuItemIcon.TryFindResource("DIPrint"), InputGestureText = "Ctrl+P" });
 
             RelayCommand askCopilotImageCommand = new RelayCommand(a => AskCopilotAboutImage());
-            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "AskCopilotAboutImage", Order = 310, Header = Properties.Resources.ImageView_AskAiAboutImage, Command = askCopilotImageCommand });
+            items.Add(new MenuItemMetadata() { GuidId = "AskCopilotAboutImage", Order = 310, Header = Properties.Resources.ImageView_AskAiAboutImage, Command = askCopilotImageCommand });
 
-            return MenuItemMetadatas;
+            return items;
         }
 
         private void AskCopilotAboutImage()
@@ -175,18 +181,23 @@ namespace ColorVision.ImageEditor.EditorTools.AppCommand
 
     public record class ImageViewSettingsEditorToolContextMenu(EditorContext context) : IIEditorToolContextMenu
     {
-        public List<MenuItemMetadata> GetContextMenuItems()
+        public List<MenuItemMetadata> GetContextMenuItems() => GetContextMenuItems(hasImage: true);
+
+        public List<MenuItemMetadata> GetContextMenuItems(bool hasImage)
         {
             RelayCommand openSettingsCommand = new RelayCommand(a => context.OpenSettingsWindow(Properties.Resources.Settings_GroupContext));
+            List<MenuItemMetadata> items =
+            [
+                new() { GuidId = "ImageViewSettings", Order = 303, Header = Properties.Resources.ImageView_ContextSettings, Command = openSettingsCommand, Icon = MenuItemIcon.TryFindResource("DIExpand") },
+            ];
+            if (!hasImage) return items;
+
             RelayCommand restoreOriginalCommand = new(
                 _ => context.ImageView.RestoreOriginalImage(),
                 _ => context.ImageView.CanRestoreOriginalImage);
 
-            return new List<MenuItemMetadata>
-            {
-                new MenuItemMetadata() { GuidId = "RestoreOriginalImage", Order = 12, Header = Properties.Resources.RestoreOriginalImage, Command = restoreOriginalCommand, Icon = MenuItemIcon.TryFindResource("DIRedo") },
-                new MenuItemMetadata() { GuidId = "ImageViewSettings", Order = 303, Header = Properties.Resources.ImageView_ContextSettings, Command = openSettingsCommand, Icon = MenuItemIcon.TryFindResource("DIExpand") },
-            };
+            items.Add(new MenuItemMetadata { GuidId = "RestoreOriginalImage", Order = 12, Header = Properties.Resources.RestoreOriginalImage, Command = restoreOriginalCommand, Icon = MenuItemIcon.TryFindResource("DIRedo") });
+            return items;
         }
     }
 

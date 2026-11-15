@@ -64,19 +64,10 @@ internal static class CameraFocusCurve
         string folder = Path.GetFullPath(Path.Combine(root, deviceFolder, day));
         Directory.CreateDirectory(folder);
 
-        using var plot = new Plot();
-        SpectrumPlotStyle.ApplyTheme(plot, dark: false);
-        string heading = $"{Title(evaluation)} · {deviceCode}\n{BestReadout(bestFocus)}";
-        plot.Title(heading, 18);
-        plot.Axes.Title.Label.FontName = Fonts.Detect(heading);
-        ConfigureAxes(plot, video: false);
-        var points = samples.OrderBy(sample => sample.Key).Select(sample => new Coordinates(sample.Key, sample.Value)).ToArray();
-        AddSamples(plot, points, showMarkers: true, bestFocus);
-
         string temporary = Path.Combine(folder, $".{Guid.NewGuid():N}.partial");
         try
         {
-            plot.SavePng(temporary, 1120, 660);
+            RenderPng(temporary, deviceCode, evaluation, samples, bestFocus);
             string file = Path.Combine(folder, timestamp + ".png");
             for (int suffix = 2; ; suffix++)
             {
@@ -95,5 +86,20 @@ internal static class CameraFocusCurve
         {
             File.Delete(temporary);
         }
+    }
+
+    internal static void RenderPng(string path, string deviceCode, string evaluation,
+        IReadOnlyDictionary<int, double> samples, LocalAutoFocusResult bestFocus)
+    {
+        using var plot = new Plot();
+        SpectrumPlotStyle.ApplyTheme(plot, dark: false);
+        string heading = $"{Title(evaluation)} · {deviceCode}\n{BestReadout(bestFocus)}";
+        plot.Title(heading, 18);
+        plot.Axes.Title.Label.FontName = Fonts.Detect(heading);
+        ConfigureAxes(plot, video: false);
+        var points = samples.OrderBy(sample => sample.Key).Select(sample => new Coordinates(sample.Key, sample.Value)).ToArray();
+        AddSamples(plot, points, showMarkers: true, bestFocus);
+
+        plot.SavePng(path, 1120, 660);
     }
 }

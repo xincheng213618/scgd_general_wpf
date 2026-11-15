@@ -56,7 +56,7 @@ CVCIE 探针对象缓存在 `Configs`，切换文件不丢失此视图的半径/
 
 ### 标定
 
-`ImageCalibrationConfig.Profiles` 保存档案；每个 `ImageViewConfig.Calibration` 保存独立有效值。该对象由比例尺、画布中的 `DrawingVisualRuler` 和参考网格共同读取，修改一个视图不会影响另一个视图。
+`ImageCalibrationConfig.Profiles` 保存档案；每个 `ImageViewConfig.Calibration` 保存独立有效值。该对象由比例尺和画布中的 `DrawingVisualRuler` 读取，修改一个视图不会影响另一个视图。
 
 `ApplyToView` 解析显式 `CalibrationSourceKey`，否则使用相机厂家/型号键，再回退 `Default`。`CalibrationProfileKey` 保存解析结果，不能回填成显式输入键，否则后续相机信息会被旧键遮蔽。读取未知来源回退默认档案而不创建持久档案；同一来源再次应用默认保留局部调整，`reload: true` 才重新应用档案。来源变化只更新所属视图。
 

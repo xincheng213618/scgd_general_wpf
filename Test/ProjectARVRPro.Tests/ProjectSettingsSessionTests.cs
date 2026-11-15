@@ -1,13 +1,65 @@
 using ColorVision.UI;
+using log4net;
+using log4net.Appender;
+using log4net.Core;
+using log4net.Repository.Hierarchy;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using System.IO;
 using System.ComponentModel;
 using System.Reflection;
 
 namespace ProjectARVRPro.Tests;
 
+[Collection(ProcessManagerPersistenceTestGroup.Name)]
 public sealed class ProjectSettingsSessionTests
 {
+    [Fact]
+    public void OutputSettingsLogPersistedValueChangesOnly()
+    {
+        const string previous = @"D:\output\old";
+        const string replacement = @"D:\output\new";
+        var results = new ViewResultManagerConfig { CsvSavePath = previous };
+        var session = new ProjectSettingsSession(new ProjectARVRProConfig { LuxMachineNo = "H03AR" }, results, true);
+        var logger = (Logger)LogManager.GetLogger(typeof(ProjectSettingsSession).Assembly, typeof(ProjectConfigurationLog)).Logger;
+        var hierarchy = Assert.IsType<Hierarchy>(logger.Repository);
+        bool configured = hierarchy.Configured;
+        Level previousLevel = logger.Level;
+        var appender = new MemoryAppender();
+        try
+        {
+            hierarchy.Configured = true;
+            logger.Level = Level.Info;
+            logger.AddAppender(appender);
+            session.Results.CsvSavePath = replacement;
+            var persistFailure = new IOException("test failure");
+            Assert.Throws<IOException>(() =>
+                session.SaveChange(session.Results, nameof(results.CsvSavePath), () => throw persistFailure));
+            Assert.Empty(appender.GetEvents());
+            session.SaveChange(session.Results, nameof(results.CsvSavePath), () =>
+            {
+                Assert.Equal(replacement, results.CsvSavePath);
+                Assert.Empty(appender.GetEvents());
+            });
+            session.SaveChange(session.Results, nameof(results.CsvSavePath), () => Assert.Fail("No-op setting was persisted."));
+            var entry = Assert.Single(appender.GetEvents());
+            var fields = JObject.Parse(entry.RenderedMessage);
+            Assert.Equal(Level.Info, entry.Level);
+            Assert.Equal("ArvrConfigurationSaved", fields.Value<string>("Event"));
+            Assert.Equal("H03AR", fields.Value<string>("Station"));
+            Assert.Equal(nameof(results.CsvSavePath), fields.Value<string>("Property"));
+            Assert.Equal(previous, fields.Value<string>("OldValue"));
+            Assert.Equal(replacement, fields.Value<string>("NewValue"));
+        }
+        finally
+        {
+            logger.RemoveAppender(appender);
+            appender.Close();
+            logger.Level = previousLevel;
+            hierarchy.Configured = configured;
+        }
+    }
+
     [Fact]
     public void ImageNamingSettingsDefaultOffAndSaveIndependently()
     {

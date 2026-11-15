@@ -1872,7 +1872,7 @@ namespace ProjectARVRPro
             {
                 try
                 {
-                    await ExportCustomerReportAsync(customerOutput, serialNumber, exportTime, luxFlow: false);
+                    await ExportCustomerReportAsync(customerOutput, serialNumber, exportTime);
                 }
                 catch (Exception ex)
                 {

@@ -25,7 +25,7 @@ public sealed class SocketControlTests
         try
         {
             int dispatches = 0;
-            var handler = new MeasureVidSocket(() =>
+            var handler = new MeasureVidSocket(_ =>
             {
                 dispatches++;
                 return Task.FromResult<(bool Busy, ObjectiveTestItem? Result)>((true, null));

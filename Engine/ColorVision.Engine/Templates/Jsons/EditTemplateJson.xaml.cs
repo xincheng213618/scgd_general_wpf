@@ -76,11 +76,7 @@ namespace ColorVision.Engine.Templates.Jsons
             InitializeComponent();
             PropertyModeButton.GroupName = TextModeButton.GroupName = _copilotContextSourceId;
             this.Width = double.IsNaN(EditTemplateJsonConfig.Instance.Width) ? 740 : Math.Max(480, EditTemplateJsonConfig.Instance.Width);
-            this.SizeChanged += (s, e) =>
-            {
-                EditTemplateJsonConfig.Instance.Width = this.ActualWidth;
-                FuncStackPanel.MaxWidth = Math.Max(160, ActualWidth - 250);
-            };
+            this.SizeChanged += (s, e) => EditTemplateJsonConfig.Instance.Width = this.ActualWidth;
             textEditor.TextArea.IndentationStrategy = new ICSharpCode.AvalonEdit.Indentation.DefaultIndentationStrategy();
             textEditor.ShowLineNumbers = true;
             textEditor.TextChanged += TextEditor_TextChanged;
@@ -339,17 +335,6 @@ namespace ColorVision.Engine.Templates.Jsons
 
             value = property.GetString() ?? string.Empty;
             return !string.IsNullOrWhiteSpace(value);
-        }
-
-        private void Button_Click_1(object sender, RoutedEventArgs e)
-        {
-            if (!TryCommitPendingEdits()) return;
-            Process.Start(new ProcessStartInfo
-            {
-                FileName = "https://www.json.cn/",
-                UseShellExecute = true
-            });
-            Common.Clipboard.SetText(textEditor.Text);
         }
 
         private void PropertyMode_Click(object sender, RoutedEventArgs e) => SwitchToPropertyEditorMode();
