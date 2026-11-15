@@ -5,7 +5,6 @@ status: "current"
 summary: "从工作流程面板或流程编辑器开始执行；流程停止请求与结果返回按启动准备、引擎和前后处理收尾分阶段判断，区分当前画布、诊断快照、执行耗时和结果落库；停止请求不保证设备停稳。"
 aliases: ["工作流程","流程编辑器","流程启动","流程运行","流程卡住","流程没结束","执行流程","停止流程","已经取消执行","执行耗时","流程后处理","RunFlowCommand","StopFlowCommand","RunFinalized","执行调试","StopFlow","CVBaseServerNode","FlowExecutionSession","FlowJob"]
 code_paths: ["Engine/ColorVision.Engine/FlowProcessing/Runtime/DisplayFlow.xaml","Engine/ColorVision.Engine/FlowProcessing/Runtime/ViewFlow.xaml","Engine/ColorVision.Engine/FlowProcessing/Runtime/ViewFlow.xaml.cs","Engine/ColorVision.Engine/FlowProcessing/Runtime/FlowExecutionSession.cs","Engine/ColorVision.Engine/FlowProcessing/Runtime/FlowRunExecutor.cs","Engine/ColorVision.Engine/FlowProcessing/Runtime/FlowRunFinalizer.cs","Engine/ColorVision.Engine/FlowProcessing/Runtime/FlowControl.cs","Engine/ColorVision.Engine/FlowProcessing/PostProcess/PostProcessExecution.cs","Engine/ColorVision.Engine/FlowProcessing/Scheduling/FlowJob.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/OfflineCameraFlowTests.cs","Test/ColorVision.UI.Tests/FlowFinalizedExecutionApiTests.cs","Test/ColorVision.UI.Tests/FlowRunFinalizerTests.cs"]
 related: ["flow.architecture","flow.templates","flow.workspace","flow.headless","flow.diagnostics"]
 ---
 
@@ -166,6 +165,6 @@ related: ["flow.architecture","flow.templates","flow.workspace","flow.headless",
 
 `DisplayFlow.xaml` 的执行/停止命令绑定到 `ViewFlow`。同目录 `FlowExecutionSession.cs` 负责启动与收尾，`FlowRunExecutor.cs` 负责等待和取消，`FlowControl.cs` 连接底层引擎；`FlowRunFinalizer.cs` 和 `PostProcess/PostProcessExecution.cs` 负责后处理及最终状态。
 
-`FlowFinalizedExecutionApiTests.cs` 核对事件/API 类型与 `FlowJob` 结果映射，不是实际会话的时序测试。`FlowRunFinalizerTests.cs` 用替身核对后处理策略、调度异常和后处理先于 legacy fallback 持久化；不验证真实 MySQL/SQLite 写入。停止阶段、耗时范围及当前画布与诊断快照差异依据上述源码链，现有这两组测试没有覆盖完整组合。
+验收时用实际会话检查后处理与旧版持久化的顺序、停止阶段与耗时范围、当前画布与诊断快照的差异，并确认结果写入目标 MySQL 或 SQLite。
 
 诊断相关测试及缺口见[诊断验证边界](../../04-api-reference/engine-components/flow-diagnostics.md#验证入口与缺口)。真实设备停止、注册中心连接和项目外部输出仍需在获授权的环境验证；当前没有单步或断点调试能力的承诺。

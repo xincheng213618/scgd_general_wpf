@@ -4,8 +4,7 @@ knowledge_type: "topic"
 status: "current"
 summary: "任务计划程序按类型执行循环或启用定时计划；重启先暂停，完成后可重新执行整轮，仅执行一次独立于计划次数。"
 aliases: ["任务计划程序","创建任务","间隔/重复","执行历史","定时任务为什么不执行","任务暂停后仍然执行","重启后一次性任务又执行","ColorVision.Scheduler","QuartzSchedulerManager","InitializationTask","scheduler_tasks.json","SchedulerHistory.db","SchedulerInfo","TaskExecutionListener","TimeoutSeconds","DisallowConcurrentExecution"]
-code_paths: ["UI/ColorVision.Scheduler/README.md","UI/ColorVision.Scheduler/ColorVision.Scheduler.csproj","UI/ColorVision.Scheduler/QuartzSchedulerManager.cs","UI/ColorVision.Scheduler/MenuTaskViewer.cs","UI/ColorVision.Scheduler/SchedulerStatusBarProvider.cs","UI/ColorVision.Scheduler/SchedulerInfo.cs","UI/ColorVision.Scheduler/SchedulerTriggerFactory.cs","UI/ColorVision.Scheduler/SchedulerScheduleState.cs","UI/ColorVision.Scheduler/SchedulerTaskSerializer.cs","UI/ColorVision.Scheduler/TaskExecutionListener.cs","UI/ColorVision.Scheduler/Data/SchedulerDbManager.cs","UI/ColorVision.Scheduler/TaskViewerWindow.xaml.cs","UI/ColorVision.Scheduler/CreateTask.xaml.cs","UI/ColorVision.Scheduler/CreateTask.xaml","UI/ColorVision.Scheduler/TaskViewerWindow.xaml","UI/ColorVision.Scheduler/Properties/Resources.resx","UI/ColorVision.Scheduler/Presentation/SchedulerPresentation.cs","UI/ColorVision.Scheduler/Presentation/SchedulerStyles.xaml","UI/ColorVision.Scheduler/Presentation/SchedulerTaskExporter.cs","UI/ColorVision.Scheduler/ExecutionHistoryWindow.xaml.cs","UI/ColorVision.UI/Environments.cs","Engine/ColorVision.Engine/Services/Devices/ScheduledDeviceJobHelper.cs","Engine/ColorVision.Engine/Services/Devices/Camera/Job/CameraCaptureJob.cs","Engine/ColorVision.Engine/FlowProcessing/Scheduling/HeadlessFlowJob.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/SchedulerTriggerFactoryTests.cs","Test/ColorVision.UI.Tests/SchedulerLifecycleTests.cs","Test/ColorVision.UI.Tests/SchedulerTaskSerializationTests.cs","Test/ColorVision.UI.Tests/SchedulerHistoryQueryTests.cs","Test/ColorVision.UI.Tests/ScheduledDeviceJobHelperTests.cs"]
+code_paths: ["UI/ColorVision.Scheduler","UI/ColorVision.UI/Environments.cs","Engine/ColorVision.Engine/Services/Devices/ScheduledDeviceJobHelper.cs","Engine/ColorVision.Engine/Services/Devices/Camera/Job/CameraCaptureJob.cs","Engine/ColorVision.Engine/FlowProcessing/Scheduling/HeadlessFlowJob.cs"]
 related: ["ui.index","ui.status-bar","ui.configuration","flow.templates","flow.headless"]
 ---
 
@@ -135,12 +134,5 @@ JSON 使用 `TypeNameHandling.All` 保留多态类型和 `IJobConfig`。加载�
 主窗口时钟位于右侧工具图标组的左端。关闭任务窗口后，状态文字仍从时钟左侧展开，时钟角标用播放、圆点和暂停符号区分执行中、等待下次触发和计划已暂停但本轮仍在执行。等待时显示已启用计划中最早的下次时间，跨日时带日期。没有在途任务或待触发计划时收起文字和角标。点击时钟或旁边的文字均打开原任务列表。
 
 ## 验证范围与缺口
-
-- 验证不加载用户保存任务或操作真实设备。
-- `SchedulerLifecycleTests` 使用独立 Quartz RAM scheduler、空 Job、临时 JSON 和隔离历史写入，覆盖有限计划完成后多次手动运行、重新执行完整循环并拒绝重复启动、Cron 主操作按时间登记、重启只登记无触发器任务、暂停时手动运行、继续剩余次数、保存失败回退、全部暂停/继续及编辑重新安排。
-- `SchedulerTriggerFactoryTests` 检查触发器类型、追加次数、日历间隔、Cron、延迟及非法值；其中 Quartz RAM scheduler 用例只验证替换行为，不启动真实 Job，也不覆盖 `QuartzSchedulerManager` 的 JSON 失败补偿链。
-- `SchedulerTaskSerializationTests` 验证旧多态 JSON、定义版本、替换备份和保存保护。`SchedulerLifecycleTests` 还覆盖主文件缺失时恢复备份及主文件不可读时保留原件。
-- `SchedulerHistoryQueryTests` 使用隔离临时 SQLite，验证筛选/分页统计、稳定排序与显式失败；不覆盖真实历史库初始化失败、执行监听写入或清理。
-- `ScheduledDeviceJobHelperTests` 检查相机/光谱 Job 的并发属性、零/正超时转换以及等待超时/取消；不证明设备已被停止，也没有执行真实采集。
 
 首次宿主访问、异常退出、在途任务与管理操作交错、检查点写入失败、JSON/Quartz 补偿失败、shutdown 后任务静止、真实设备取消和时区/misfire 仍需隔离环境验证；涉及真实 Job 的验收必须另行取得设备和数据操作授权。

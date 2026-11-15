@@ -5,7 +5,6 @@ status: "current"
 summary: "Backend HTTP制品交付的Range、完成事件、下载计数、Cache-Control/ETag、HEAD副作用与JSON gzip边界；服务端迭代完成不证明客户端落盘。"
 aliases: ["HTTP制品下载", "下载完成计数", "Range", "Content-Range", "HEAD下载", "ETag", "Cache-Control", "no-store", "gzip", "Accept-Encoding", "ArtifactDeliverySpec", "ArtifactDeliveryService", "ArtifactDownloadEvent", "deliver_artifact", "_CompletionTrackingIterator", "_completed_representation_bytes", "record_download", "repair_update_storage_layout", "register_response_compression"]
 code_paths: ["Web/Backend/services/artifact_delivery.py", "Web/Backend/routes/artifact_delivery.py", "Web/Backend/marketplace_api_routes.py", "Web/Backend/services/marketplace_api.py", "Web/Backend/marketplace_services.py", "Web/Backend/download_stats.py", "Web/Backend/routes/pages.py", "Web/Backend/update_retention.py", "Web/Backend/services/http_security.py", "Web/Backend/services/http_compression.py", "Web/Backend/app.py", "Web/Backend/app_setup.py", "Web/Backend/services/access_analytics.py"]
-test_paths: ["Web/Backend/test_artifact_delivery.py", "Web/Backend/test_http_security.py", "Web/Backend/test_http_compression.py", "Web/Backend/test_app.py"]
 related: ["delivery.backend", "delivery.file-transfer", "delivery.plugin-catalog", "delivery.web-pages"]
 ---
 
@@ -84,6 +83,4 @@ React 静态文件的 Brotli/gzip 旁文件协商、Range 表示选择和 VitePr
 - “HEAD 改了目录”：检查调用路由进入交付服务前的逻辑，增量包重点看 `repair_update_storage_layout`。交付服务不计数不等于整个请求无副作用。
 - “no-store/gzip 与预期不同”：核对具体路径和已有响应头；gzip 再看类型、缓冲/流式、阈值、协商与压缩收益，不从全局配置推断单个响应。
 
-现有 `test_artifact_delivery.py` 覆盖完整 GET、HEAD、304、部分/完整 Range 和提前关闭迭代器；`test_app.py::test_api_download_package_updates_stats_and_plugin_totals` 覆盖专用包路由的 HEAD/部分 Range 不计数及完整 GET 计数。`test_http_security.py` 覆盖补充 `no-store` 而不覆盖显式策略；`test_http_compression.py` 覆盖大 JSON、gzip质量值、通配符与小 JSON。
-
-`test_app.py` 的增量更新/旧下载路径用例覆盖 GET 触发目录修复，不等于已验证 HEAD 修复的部署表现。上述源码分支与测试也不证明真实网络断连、反向代理、WSGI服务器关闭时机、客户端下载落盘或回调失败后的统计补偿。
+部署验证需区分 GET 和 HEAD 的目录修复行为，另核对实际断连、反向代理、WSGI 关闭时机、客户端下载落盘及回调失败后的统计。

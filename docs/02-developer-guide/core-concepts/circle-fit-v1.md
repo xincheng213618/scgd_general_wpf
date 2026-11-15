@@ -5,7 +5,6 @@ status: "current"
 summary: "CircleFit 保留实现的参数、结果与验证契约；默认运行时由 Experimental 门禁拒绝执行。"
 aliases: ["如何拟合圆、为什么圆拟合默认不可执行","CircleFit","CircleFitAlgorithmProvider"]
 code_paths: ["UI/ColorVision.ImageEditor/Algorithms/CircleFitAlgorithmProvider.cs","UI/ColorVision.ImageEditor/Algorithms/StandardAlgorithmCatalog.cs","UI/ColorVision.ImageEditor/Algorithms/ImageAlgorithmPlatform.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/AlgorithmReleaseGateTests.cs"]
 related: ["algorithms.platform","algorithms.index"]
 ---
 

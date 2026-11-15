@@ -5,7 +5,6 @@ status: "current"
 summary: "算法结果交接、已加载批次主记录查询与叠加显示：区分本地中立 Geometry/Overlay、Engine 历史 handler 和客户业务导出，保留来源与文档/revision 生命周期。"
 aliases: ["结果交接","算法结果管理","算法视图配置","历史结果查询","保存数据列","自动保存数据列","结果白色底图","原图缺失","结果尺寸恢复","persistent overlay","overlay 注册句柄","结果CSV","结果列表清空","ResultMessageBus","AlgorithmResultDataSaver","ViewAlgorithmConfig","AutoRefreshView","AutoSaveSideData","AlgorithmResultImageDimensions","算法有结果为什么没有叠加层","ViewResultAlg","ResultHandleRegistry","IViewResult","IResultHandleBase","CanHandle1","AlgorithmOverlayManager","本地算法结果叠加","AlgorithmOverlayRenderer","AlgorithmGeometryArtifact","AlgorithmOverlayArtifact","批次详情","已加载批次结果","InspectLoadedBatchResults","inspect_loaded_batch_results"]
 code_paths: ["Engine/ColorVision.Engine/Services/Core/ViewResultAlg.cs","Engine/ColorVision.Engine/Services/ResultHandleRegistry.cs","Engine/ColorVision.Engine/Abstractions/IResultHandlers.cs","Engine/ColorVision.Engine/Services/Devices/Algorithm/Views/AlgorithmView.xaml.cs","Engine/ColorVision.Engine/Services/Devices/Algorithm/Views/AlgorithmView.xaml","Engine/ColorVision.Engine/Services/Devices/Algorithm/Views/ViewAlgorithmConfig.cs","Engine/ColorVision.Engine/Abstractions/ViewConfigBase.cs","Engine/ColorVision.Engine/Services/Results/ResultMessageBus.cs","Engine/ColorVision.Engine/Services/Results/AlgorithmResultDataSaver.cs","Engine/ColorVision.Engine/Services/Devices/Algorithm/AlgorithmResultImageDimensions.cs","Engine/ColorVision.Engine/Services/Core/ResultImagePresentation.cs","Engine/ColorVision.Engine/Services/Devices/Algorithm/DisplayAlgorithmManager.cs","Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalFindCrossNode.cs","Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalFindLuminousAreaNode.cs","UI/ColorVision.Algorithms/AlgorithmResults.cs","UI/ColorVision.ImageEditor/Algorithms/AlgorithmOverlayRenderer.cs","UI/ColorVision.ImageEditor/Algorithms/AlgorithmOverlayManager.cs","UI/ColorVision.ImageEditor/Contexts/ImageProcessingContext.cs","UI/ColorVision.ImageEditor/ImageView.xaml.cs","UI/ColorVision.ImageEditor/Operations/ImageOperationCoordinator.cs","Engine/ColorVision.Engine/Dao/MeasureBatchPage.xaml.cs","Engine/ColorVision.Engine/Dao/CopilotLoadedBatchResultsReader.cs","Engine/ColorVision.Engine/Dao/CopilotMeasurementResultContextProvider.cs","Engine/ColorVision.Engine/Services/Core/ViewResultImage.cs","ColorVision/Copilot/Capabilities/CopilotLoadedBatchResultsInspectionService.cs","ColorVision/Copilot/Capabilities/CopilotLoadedBatchResultsInspectionService.Cursor.cs","ColorVision/Copilot/Agent/Tools/Application/CopilotInspectLoadedBatchResultsTool.cs","ColorVision/Copilot/Mcp/CopilotMcpToolEnvironment.LoadedBatchResults.cs","ColorVision/Copilot/Mcp/CopilotMcpToolDispatcher.LoadedBatchResults.cs","ColorVision/Copilot/Skills/colorvision-database-operations/SKILL.md","UI/ColorVision.Common/Interfaces/Copilot/CopilotBusinessContextBuilder.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/AlgorithmResultOverlayTests.cs","Test/ColorVision.UI.Tests/FindCrossResultOverlayTests.cs","Test/ColorVision.UI.Tests/LocalFindCrossNodeTests.cs","Test/ColorVision.UI.Tests/LocalFindLuminousAreaNodeTests.cs","Test/ColorVision.UI.Tests/AlgorithmResultImageDimensionsTests.cs","Test/ColorVision.UI.Tests/ResultMessageBusTests.cs","Test/ColorVision.UI.Tests/AlgorithmOverlayManagerTests.cs","Test/ColorVision.UI.Tests/CopilotLoadedBatchResultsWorkflowTests.cs","Test/ColorVision.UI.Tests/CopilotLoadedBatchResultsSourceTests.cs","Test/ColorVision.Copilot.Tests/CopilotLoadedBatchResultsServiceTests.cs","Test/ColorVision.Copilot.Tests/CopilotLoadedBatchResultsToolTests.cs","Test/ColorVision.UI.Tests/CopilotLoadedBatchResultReferenceContextTests.cs"]
 related: ["engine.index","engine.mqtt","engine.devices","ui.image-editor","algorithms.platform","algorithms.find-cross","algorithms.find-light-area","algorithms.arvr"]
 ---
 
@@ -56,7 +55,7 @@ related: ["engine.index","engine.mqtt","engine.devices","ui.image-editor","algor
 
 手动查询直接填充列表，不走实时新增的自动选中/自动保存流程。清空按钮和删除键只修改内存列表，不删除数据库记录或原文件，之后查询仍可能看到这些结果。
 
-搜索时按查询设置完整加载，可以超过默认 500 条实时保留上限；之后有新实时记录加入，就将同一个列表收回到上限，旧搜索记录也会被淘汰。裁剪按最小主记录 ID 淘汰，表头排序与插入方向不改变规则，晚到的旧通知不会挤掉上限内已保留的较新结果。裁剪选中行会解除选择并清理侧栏和图像，自动刷新开启时再选择新结果。右键菜单与命令按需创建，释放视图时清空驻留结果与去重索引。`ResultHistoryTests` 覆盖实时容量、排序后的淘汰、重复通知、配置兼容、完整搜索后恢复实时上限和释放边界。
+搜索时按查询设置完整加载，可以超过默认 500 条实时保留上限；之后有新实时记录加入，就将同一个列表收回到上限，旧搜索记录也会被淘汰。裁剪按最小主记录 ID 淘汰，表头排序与插入方向不改变规则，晚到的旧通知不会挤掉上限内已保留的较新结果。裁剪选中行会解除选择并清理侧栏和图像，自动刷新开启时再选择新结果。右键菜单与命令按需创建，释放视图时清空驻留结果与去重索引。
 
 ## Engine 历史结果契约
 
@@ -150,14 +149,4 @@ Copilot 的 `InspectLoadedBatchResults`／`inspect_loaded_batch_results` 只读�
 
 ## 验证入口与缺口
 
-| 测试 | 已有断言范围 |
-| --- | --- |
-| `AlgorithmResultOverlayTests` / `FindCrossResultOverlayTests` | 多边形笔刷，以及十字历史叠图的原始中心解析与回退 |
-| `ResultImagePresentationTests` / `AlgorithmResultImageDimensionsTests` | 尺寸 JSON、占位缓存、路径/ZIndex/批次尺寸选择；不访问真实数据库 |
-| `ResultMessageBusTests` | 进程内信封字段与顺序退订；不覆盖已排队 UI 回调、DAO 或实际展示 |
-| `AlgorithmOverlayManagerTests` | transient/persistent、同名替换、后台 facade 清理、较旧 revision 清理与新注册保护；部分用例仅测试 store 回滚 |
-| 本地 FindCross / FindLuminousArea 节点测试 | 使用替身核对诊断主记录、发布与下游引用；不等于真实 native、数据库及图像页全链验收 |
-
-已加载批次读取的离线验证入口是 `CopilotLoadedBatchResultsWorkflowTests`：真实详情页注册后沿默认 Engine reader、原生共享调用与 MCP 读取未选中记录，核对精确对象引用、同内部 ID 替换、卸载失效、原始耗时／时间、隐私边界与不改变选择。这些测试不代表真实数据库、设备或模型验收。
-
-本页列出的测试覆盖上述局部边界；handler 扫描失败、条件重叠、Load/Handle 中断、实时重复消息、查询范围和各导出路径仍需对应隔离验证。真实数据库、设备与项目输出需要单独验收，文档和工具校验不能替代运行结果。
+结果验收沿实际 handler、批次查询和导出链核对结果归属、图像、叠加生命周期和失败恢复。真实数据库、设备及项目输出需分别核对。

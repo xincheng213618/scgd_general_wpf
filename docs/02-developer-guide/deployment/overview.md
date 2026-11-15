@@ -5,7 +5,6 @@ status: "current"
 summary: "区分完整安装器、主程序更新、插件项目包和独立在线下载工具；ColorVisionSetup以Framework 4.8单文件查询并下载最新版，实际安装仍由完整安装包负责。"
 aliases: ["部署","交付制品","安装器","完整安装包","源码构建输出","增量更新包","项目包交付","启动恢复入口","Advanced Installer","ColorVision.aip","ColorVisionSetup","CombinedUpdateCoordinator","StartupRecoveryWindow","更新跳板","堡垒机","内网更新","断网更新","ColorVisionUpdateRelay","portproxy"]
 code_paths: ["ColorVision/ColorVision.csproj","Scripts/release.bat","Scripts/build.py","ColorVision/Update/CombinedUpdateCoordinator.cs","ColorVision/Recovery/StartupRecoveryWindow.xaml.cs","src/ColorVisionSetup","src/ColorVisionUpdateRelay","Scripts/build_update_relay.ps1"]
-test_paths: ["src/ColorVisionSetup/Tests/Program.cs"]
 related: ["delivery.installation","delivery.prerequisites","delivery.update","delivery.scripts","plugins.getting-started","operations.first-run","delivery.backend","delivery.web-deployment"]
 ---
 
@@ -58,7 +57,7 @@ pwsh -NoProfile -File .\Scripts\build_setup.ps1
 
 输出为 `.artifacts/ColorVisionSetup/package/ColorVisionSetup.exe`。脚本检查交付目录仅有一个 EXE、程序集只引用 Framework 组件且不嵌入 DLL。根目录 `ColorVision.snk` 存在时继续强名称签名；强名称不等于 Authenticode 发行签名。正式分发前应使用既有受控签名流程，不能从本地构建成功推定已签名。
 
-`src/ColorVisionSetup/Tests/ColorVisionSetup.Tests.csproj` 是同框架控制台验证程序，无 NuGet 或主程序运行依赖。用 Visual Studio MSBuild 以 Release/x64 构建后运行；可传入一个已有的官方完整安装 EXE 路径，验证真实签名、版本不符、篡改拒绝及最终交接前文件锁。测试不会启动该安装包。无参数时跳过真实签名制品验证，不应将其报告为完整校验通过。
+在已有官方完整安装器上核对签名、版本匹配与文件锁。正式安装交接另行验收。
 
 需另外在目标电脑验证无 .NET 10 时单 EXE 启动、DPI/键盘操作、在线下载、UAC 取消和安装器交接；开发机测试和界面预览不等于这些现场验收。
 

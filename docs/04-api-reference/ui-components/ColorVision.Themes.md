@@ -5,7 +5,6 @@ status: "current"
 summary: "应用主题即时预览，启动页独立选择深色、浅色或跟随软件且下次启动生效；ThemeManager 的资源、系统跟随、窗口外观和保存边界。"
 aliases: ["切换深色主题","跟随系统","外观与语言","启动页主题","启动页默认深色","跟随软件主题","StartupTheme","ThemeConfig.StartupTheme","FollowApplication","主题切换为什么不生效","跟随系统但标题栏没变","强制主题重复资源字典","主题预览会自动保存吗","主题系统事件订阅释放","XAML绑定失败","ComboBoxItem","GridViewColumnHeader","圆角菜单","右键菜单","MenuPopupCornerRadius","MenuItemSecondaryForeground","ColorVision.Themes","ThemeManager","ThemeManager.Current","Theme","ApplyTheme","ForceApplyTheme","ApplyThemeChanged","CurrentTheme","CurrentUITheme","CurrentThemeChanged","CurrentUIThemeChanged","ApplyCaption","TryLoadPackageIcon","PackageIcon.png","ThemeConfig","ThemePropertiesEditor","AppsUseLightTheme"]
 code_paths: ["UI/ColorVision.Themes/README.md","UI/ColorVision.Themes/Theme.cs","UI/ColorVision.Themes/ThemeManager.cs","UI/ColorVision.Themes/ThemeManagerExtensions.cs","UI/ColorVision.Themes/Behaviors","UI/ColorVision.Themes/Windowing","UI/ColorVision.Themes/ThemeResourceDictionary.cs","UI/ColorVision.Themes/HandyControlStyleResources.cs","UI/ColorVision.Themes/Themes","UI/ColorVision.Themes/ColorVision.Themes.csproj","UI/ColorVision.UI/Themes/ThemeConfig.cs","UI/ColorVision.UI/Themes/StartupTheme.cs","UI/ColorVision.UI/Themes/ThemePropertiesEditor.cs","UI/ColorVision.UI/Properties/Resources.resx","UI/ColorVision.UI/Properties/Resources.en.resx","UI/ColorVision.UI/Properties/Resources.zh-Hant.resx","UI/ColorVision.UI/ConfigSetting/ConfigSettingManager.cs","UI/ColorVision.UI.Desktop/Settings/MenuOptions.cs","UI/ColorVision.UI.Desktop/Settings/SettingSearchProvider.cs","UI/ColorVision.UI/Extension/IIconExtension.cs","UI/ColorVision.UI/Display/DisPlayManager.cs","ColorVision/App.xaml","ColorVision/App.xaml.cs","ColorVision/StartWindow.xaml.cs","ColorVision/StartWindow.Presentation.cs","ColorVision/CompactMainWindow.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/HelpKeyboardNavigationTests.cs"]
 related: ["ui.index","ui.settings","ui.property-grid","ui.configuration","platform.runtime","operations.main-window"]
 ---
 
@@ -31,8 +30,6 @@ related: ["ui.index","ui.settings","ui.property-grid","ui.configuration","platfo
 
 主程序的 `App.xaml` 保留空资源字典，在 `Application_Startup` 读取配置后调用 `Application.ApplyTheme`，直接加载用户选择的主题；不先加载并丢弃一套默认浅色资源。主题应用仍位于恢复、单实例提示、独立文件、向导和启动窗口之前，配置加载及早期原生错误提示不依赖 WPF 主题。
 
-`StartupThemeBootstrapTests` 在空资源下检查缺失或损坏配置的关键默认对象、待应用主题重置及备份，再应用主题并构造启动、单实例与恢复窗口；不执行这些窗口的真实启动和恢复动作。
-
 独立宿主仍可在 `App.xaml` 合并 `/ColorVision.Themes;component/Themes/Theme.xaml` 获得默认浅色资源；该公共入口的行为不变。空白宿主也可以直接调用 `ApplyTheme`，包括首次选择 Light，无须先强制注入。
 
 | 位置 | 职责 |
@@ -51,7 +48,7 @@ related: ["ui.index","ui.settings","ui.property-grid","ui.configuration","platfo
 
 通用资源采用用途命名：`CV.Color.*` 是 Color，`CV.Text.*`、`CV.Surface.*`、`CV.Border.*`、`CV.Accent.*`、`CV.Action.Foreground` 是 Brush。业务控件通过 `DynamicResource` 使用语义画刷。浅深主题遵循相同信息层级；编辑器语法色和终端色保留独立用途，不机械反转颜色。
 
-旧 Color 资源继续保留明确的 Color 类型和默认值，与对应语义颜色的相等关系由测试检查；不使用可能改变 BAML 值类型的 `StaticResource` 元素别名。`PrimaryBrush` 依赖通用强调色，不再依赖更新窗口命名的颜色。旧资源名仍可解析，但新功能应使用语义资源；对旧名的局部覆盖不会自动成为所有新语义资源的覆盖。
+旧 Color 资源继续保留明确的 Color 类型和默认值。不使用可能改变 BAML 值类型的 `StaticResource` 元素别名。`PrimaryBrush` 依赖通用强调色，不再依赖更新窗口命名的颜色。旧资源名仍可解析，但新功能应使用语义资源；对旧名的局部覆盖不会自动成为所有新语义资源的覆盖。
 
 控件字典显式声明需要的基础样式。`HandyControlStyleResources` 仅导出 `CV.HandyControl.*` 基础样式，不把整套供应商隐式样式再次暴露到控件覆盖层，避免后加载的列头资源覆盖前面的 Button/TextBox。资源组仍按供应商资源、应用色板、基础控件顺序组装，整组替换保留现有静态模板解析方式。
 
@@ -104,7 +101,7 @@ BaseWindow 拥有自己的 WindowChrome、窗口命令及 WPF 标题按钮。默
 
 `ThemeManager.ApplyAppearance` 对两套方案取副本，整体替换主题组；`AppearanceChanged` 在强制刷新或实际明暗变化后通知，现有 `CurrentUIThemeChanged` 仍只通知实际明暗变化。色板加载失败保留原资源与已应用方案，订阅者异常不回滚已替换资源。外观覆盖层同时提供语义颜色、旧画刷和停靠面板颜色；独立编辑器语法色、终端色和业务状态色保持各自用途。窗口局部覆盖、静态缓存、硬编码和第三方专用模板仍有自己的作用域，不能据此承诺所有页面统一换色。
 
-界面字体通过 `CV.Font.UI` 应用于主窗口、选项窗口及 BaseWindow；有自己字体设置的编辑器和图标保留局部设置。字体属性直接赋值只改配置，通过字体编辑器或 `ThemeConfig.Apply` 应用运行期资源。`ThemeAppearanceSettingsTests` 覆盖旧配置默认值、双模式序列化、恢复默认和独立外观导航；`Test/ColorVision.Themes.Tests/AppearanceTests.cs` 覆盖资源兼容、宿主优先级、系统跟随和加载失败后的方案保留。这些验证不替代所有业务窗口的桌面验收。
+界面字体通过 `CV.Font.UI` 应用于主窗口、选项窗口及 BaseWindow；有自己字体设置的编辑器和图标保留局部设置。字体属性直接赋值只改配置，通过字体编辑器或 `ThemeConfig.Apply` 应用运行期资源。
 
 保存时机、退出自动保存、保存失败和重载对象替换均归配置服务，不由 Themes 库承诺。“预览已变色”不能证明设置已写盘，文件重载也不自动等于所有主题消费者已重新应用。
 
@@ -130,7 +127,7 @@ BaseWindow 拥有自己的 WindowChrome、窗口命令及 WPF 标题按钮。默
 
 `Controls/MessageBox.cs` 的 `MessageBox1.Show` 保留现有重载，由 `MessageBoxWindow` 统一呈现浅深主题消息。正文保持可选择、复制，使用透明底色；状态图标为矢量图形，确认/是与次要按钮有清晰层级，长文本按所在显示器工作区限制宽高并滚动，操作区始终留在正文外。`ShowAgain` 使用独立复选项行，返回“不再提示”的勾选值；传入 `true` 时直接跳过显示。
 
-普通调用在显式 owner 或应用的 Dispatcher 上显示。未传 owner 时优先使用活动窗口，再使用可见主窗口，否则屏幕居中；弹窗仅继承 owner 的 Topmost，不全局强制置顶。`defaultResult` 指定初始焦点及 Enter 默认按钮，无匹配项时使用第一个操作；它不会预先写入返回结果。按钮点击先写结果再关闭；Esc、标题栏关闭与 Alt+F4 对 OK 返回 OK，对 OKCancel/YesNoCancel 返回 Cancel，对 YesNo 返回 No，避免关闭被当作确认。`RightAlign`/`RtlReading` 由主题窗口处理；`ServiceNotification`/`DefaultDesktopOnly` 保留原生窗口语义并完整传递 options。`Test/ColorVision.Themes.Tests/MessageBoxTests.cs` 覆盖按钮结果、关闭/defaultResult 分离、后台线程调用、owner、选项、复选项及浅深主题长文本布局；真实多显示器混合 DPI 与屏幕阅读器仍需交互验收。
+普通调用在显式 owner 或应用的 Dispatcher 上显示。未传 owner 时优先使用活动窗口，再使用可见主窗口，否则屏幕居中；弹窗仅继承 owner 的 Topmost，不全局强制置顶。`defaultResult` 指定初始焦点及 Enter 默认按钮，无匹配项时使用第一个操作；它不会预先写入返回结果。按钮点击先写结果再关闭；Esc、标题栏关闭与 Alt+F4 对 OK 返回 OK，对 OKCancel/YesNoCancel 返回 Cancel，对 YesNo 返回 No，避免关闭被当作确认。`RightAlign`/`RtlReading` 由主题窗口处理；`ServiceNotification`/`DefaultDesktopOnly` 保留原生窗口语义并完整传递 options。 混合 DPI 的多显示器和屏幕阅读器需交互验收。
 
 检查更新窗口直接接入这套资源，“变更日志”“程序备份”“重新安装”保持主要操作文字层级。恢复、服务主机、应用与工具、RBAC 等现有消费者仍可通过 `Themes/UpdateDialogTheme.xaml` 使用旧 `UpdateDialog.*` 资源；旧文字按钮保留次要文字默认值。主程序的 `Update/UpdateDialogTheme.xaml` 继续是兼容入口。共享资源不引入更新、服务或权限业务依赖。
 
@@ -151,7 +148,7 @@ BaseWindow 拥有自己的 WindowChrome、窗口命令及 WPF 标题按钮。默
 
 排查 XAML 绑定失败时，按目标控件、目标属性和绑定来源定位共享样式。未挂载、隐藏或回收的容器可能没有可用祖先；Visual Studio 会按控件实例累计错误次数，同一种样式问题可能产生多条记录。
 
-`ComboBoxItemBindingTests` 使用真实主题检查弹出层对齐的动态继承和关闭/刷新后的解绑。`GridViewColumnHeaderBindingTests` 检查未挂载列头，以及默认/`GridViewColumnHeaderBase` 列头的绑定诊断、字号继承与调整列宽模板；用户窗口中的鼠标拖动、排序和主题切换仍需单独验证。
+在实际窗口核对鼠标拖动、排序与主题切换。
 
 ## 菜单的共享外观
 
@@ -176,16 +173,6 @@ BaseWindow 拥有自己的 WindowChrome、窗口命令及 WPF 标题按钮。默
 
 `UI/ColorVision.Themes/ColorVision.Themes.csproj` 当前面向 `net8.0-windows7.0;net10.0-windows7.0`，引用 HandyControl，启用 NuGet/符号包生成并打包 README。目标框架后缀不是每个 DWM 属性在该 Windows 版本可用的保证。包使用/本地构建入口保留在源码旁 README；发布规则见 [NuGet 包发布](./publishing.md)。
 
-| 已有测试 | 实际断言范围 |
-| --- | --- |
-| `ThemeResourceTests` | 独立 WPF 宿主中的首次初始化、主题组替换、宿主覆盖、加载失败重试、浅深键/类型兼容、实际模板、动态图标和窗口订阅 |
-| `ThemeSettingsTests` | 仅支持 UseSystem/Light/Dark 的列表；历史枚举值 3、4 被 ThemeConfig 归一为 UseSystem |
-| `StartupThemeSettingsTests` | 新建及旧配置默认深色、三策略 JSON 往返、非法数值归 Dark；注入真实元数据构造离屏设置行，检查简英繁标准下拉框、顺序和搜索投影，选择只写配置且不变更应用资源；不执行生产配置发现、真实菜单保存或重启 |
-| `StartWindowThemeLifecycleTests` | 启动窗口构造时释放早期日志缓冲并保留其他 appender，关闭后恢复 `SystemThemeChanged` 和 `CurrentUIThemeChanged` 订阅数且窗口可被 GC；不显示窗口，不覆盖启动动画或全部系统事件时序 |
-| `StartupPresentationTests` | 移除真实启动处理器后显示产品窗口，检查默认深色、固定浅色独立于应用，以及跟随软件时的简英繁文案、明确深浅与 UseSystem 解析；固定策略案例另验证配置修改仅在重开后生效。覆盖后续应用变色、英文布局和辅助名称、无调色按钮、进度不受调色影响及关闭后 UI 主题订阅恢复；不执行初始化或设备链。启动呈现和动画约束见[运行时启动界面](../../03-architecture/overview/runtime.md#启动界面与动画边界) |
-| `CompactTitleBarChromeTests` | 紧凑窗口原生样式、标题区域与透明背景保护等行为；不替代 DWM 原生按钮视觉验收 |
-| `MenuThemeTests` | 在真实离屏 WPF 窗口中加载浅/深色菜单，检查四种菜单角色、圆角与独立阴影、UI Automation 命令/勾选/禁用行为、快捷键列对齐及文本更新、纯文字空列收起、内容增减后的同级列对齐与宽度恢复、勾选切换的宽度稳定、长菜单滚动到末项，以及替换主题资源后既有菜单的背景色；不覆盖真实桌面鼠标穿越、键盘操作或系统高 DPI 视觉验收 |
+在实际桌面核对系统设置通知时序、预览配置持久化、第三方缓存刷新和 DWM 表现。
 
-测试引用不代表本次执行。独立主题测试覆盖受控替换、源加载失败恢复及窗口订阅；系统设置通知的真实时序、预览配置持久化、第三方缓存刷新和 DWM 真机表现仍需分别验证，不能由模板编译或控件截图推定。
-
-主题库独立回归：`dotnet test Test/ColorVision.Themes.Tests/ColorVision.Themes.Tests.csproj -c Release -p:Platform=x64`。当前套件不生成浅深控件预览 PNG；不同 DPI、原生 DWM 和现场设备窗口仍需在实际桌面验证。
+不同 DPI、原生 DWM 和现场设备窗口需要在实际桌面验证。

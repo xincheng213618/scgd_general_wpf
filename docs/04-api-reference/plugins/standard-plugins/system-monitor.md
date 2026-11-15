@@ -5,7 +5,6 @@ status: "current"
 summary: "系统监控的 CPU/RAM 采样、手动刷新与状态栏生命周期；缓存大小包含子目录，清理只删顶层文件，逐文件失败不会单独提示。"
 aliases: ["系统监控","SystemMonitor","SystemMonitors","SystemMonitorSetting","清理缓存","缓存大小","更新速度","状态栏性能监控在哪里","关闭监控窗口后还采样吗","SystemMonitorIStatusBarProvider","SystemMonitorControl"]
 code_paths: ["Plugins/SystemMonitor/SystemMonitorControl.xaml.cs","Plugins/SystemMonitor/SystemMonitors.cs","Plugins/SystemMonitor/SystemMonitorIStatusBarProvider.cs","Plugins/SystemMonitor/SystemMonitorControl.xaml","Plugins/SystemMonitor/manifest.json","UI/ColorVision.UI/Environments.cs","UI/ColorVision.Common/Utilities/MemorySize.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/SystemMonitorLifecycleTests.cs"]
 related: ["plugins.index","plugins.capabilities","ui.status-bar"]
 ---
 
@@ -76,17 +75,16 @@ SystemMonitor 提供系统资源信息、应用运行时长和可选状态栏项
 
 `SystemMonitors.cs` 持有配置、数据采样和清理；`SystemMonitorControl.xaml(.cs)` 负责设置页/菜单窗口与 Loaded/Unloaded；`SystemMonitorIStatusBarProvider.cs` 负责状态栏元数据。监控和配置类型位于 `ColorVision.UI.Configs` 命名空间。
 
-`SystemMonitorLifecycleTests` 通过纯决策方法和替身验证配置关闭、详情活跃、磁盘单项、元数据、单例来源复用与配置重载。它不创建真实性能计数器，也不验证 WPF 窗口事件、定时器释放、磁盘/网卡失败或缓存删除。
+现场核对实际 WPF 窗口事件、性能计数器、定时器释放、磁盘或网卡异常及缓存删除。
 
 环境验收应分别确认实际入口、采样来源、状态栏增删和关闭详情后的采样条件。清理属于另行授权的文件删除，不能为验证文档执行；部分删除结果应按上节解释。
 
 ## 本地构建与测试
 
-以下命令构建本地产物或运行隔离生命周期测试，不上传，也不执行缓存清理。若经 solution/MSBuild 构建并提供有效 `SolutionDir`，`PluginProject.HostCopy.targets` 还会将 DLL 和元数据复制到宿主的 Debug/Release 插件输出目录。
+以下命令构建本地产物。若经 solution/MSBuild 构建并提供有效 `SolutionDir`，`PluginProject.HostCopy.targets` 还会将 DLL 和元数据复制到宿主的 Debug/Release 插件输出目录。
 
 ```powershell
 dotnet build .\Plugins\SystemMonitor\SystemMonitor.csproj -c Release -p:Platform=x64
-dotnet test .\Test\ColorVision.UI.Tests\ColorVision.UI.Tests.csproj -c Release -p:Platform=x64 --filter FullyQualifiedName~SystemMonitorLifecycleTests
 ```
 
 ## 打包上传（需明确发布授权）

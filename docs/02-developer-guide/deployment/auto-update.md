@@ -5,7 +5,6 @@ status: "current"
 summary: "检查更新、重新安装与程序备份入口，以及主程序和插件的检查复用、下载安装、失败回退与启动恢复。"
 aliases: ["检查更新","变更日志","程序备份","更新前创建程序快照","正常启动后自动存档","自动更新","更新失败","重新安装","最新完整安装包","插件回滚","重复检查更新","更新检查缓存","十分钟缓存","空结果不缓存","启动检查结果","PluginUpdater","CombinedUpdateCoordinator","UpdateCheckReuseState","LatestVersionCheckRequestCache","CanReuseUpdateCheckOptions","GetPluginUpdateMetadataAsync","ServerUnavailable","NoInternetConnection","forceRefresh","ApplicationSnapshotService","ApplicationSnapshotConfig","ApplicationSnapshotsWindow","自动存档位置","autosave.zip","还原所选",".cvx","离线升级","增量包版本链","IncrementalUpdatePackageFileProcessor","更新服务器地址","内网更新源","UpdateServerUrls","UpdateSourceSelector","CanReachUpdateService","离线更新文件夹","断网更新","OfflineUpdateFolder","export_offline_updates.py"]
 code_paths: ["ColorVision/Update","ColorVision/Recovery","UI/ColorVision.UI.Desktop/Update/","UI/ColorVision.UI/Marketplace/MarketplaceConfig.cs","Scripts/export_offline_updates.py","UI/ColorVision.UI/ServiceHost/ApplicationUpdatePrivilegeBroker.cs","UI/ColorVision.UI.Desktop/Plugins/PluginUpdater.cs","UI/ColorVision.UI.Desktop/Plugins/PluginRecoveryBackupService.cs","UI/ColorVision.UI.Desktop/Marketplace/MarketplaceClient.cs","UI/ColorVision.UI.Desktop/Marketplace/MarketplaceManager.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/HelpKeyboardNavigationTests.cs","Test/ColorVision.UI.Tests/PluginRecoveryBackupServiceTests.cs","Test/ColorVision.UI.Tests/ServiceHostUpdateCompatibilityTests.cs","Test/ColorVision.UI.Tests/AutoUpdatePlanTests.cs","Test/ColorVision.UI.Tests/StartupRecoverySnapshotRuntimeTests.cs"]
 related: ["delivery.deployment","delivery.scripts","platform.service-host","delivery.update-scan-protection","platform.startup-integrity"]
 ---
 
@@ -137,7 +136,7 @@ flowchart LR
 
 主程序增量更新在原进程退出后、批量复制前处理仍被占用的 DLL。内容相同的文件按 SHA-256 确认后跳过覆盖；内容变化且允许更名时，先保留旧文件再放入新文件，使已有读取者继续使用旧内容。若更名也被共享锁阻止，仅在确认系统 `dllhost.exe` 同时加载了当前安装目录的 ShellExtension 和目标 DLL 后，关闭该缩略图宿主并重试，不按进程名关闭所有 COM Surrogate 或资源管理器。旧 DLL 若暂时无法删除，会在原目录保留带唯一后缀的副本并记入日志。
 
-文件共享冲突（错误 32）与目录权限不足是不同问题；取得管理员或 ServiceHost 权限不能代替释放占用。此处理保留既有更新交接规则：主动更新后自动重启，退出时更新按原有重新打开请求处理。隔离验证入口为 `UpdaterBatchExecutionTests`，覆盖文件读取占用、真实 DLL 映射、相同文件跳过及重启交接；这些测试不代表当前安装目录已完成更新。
+文件共享冲突（错误 32）与目录权限不足是不同问题；取得管理员或 ServiceHost 权限不能代替释放占用。此处理保留既有更新交接规则：主动更新后自动重启，退出时更新按原有重新打开请求处理。按目标安装目录复核 DLL 占用和重启交接。
 
 ## 启动恢复
 
@@ -190,7 +189,7 @@ flowchart LR
 
 ## 检查复用的验证入口与缺口
 
-现有测试只保留进行中请求共享、范围兼容和失败重试等通用约束；启动结果的消费与时效不设置实现级长期门禁。辅助器测试不等于真实窗口、HTTP 或安装流程已经验收。
+用目标安装和更新源验证启动抛出后的重试、共享请求与安装流程。
 
 当前没有据此声明 ETag/304、超时后旧元数据、服务地址切换、取消窗口与共享请求并发、真实主程序/插件组合更新的端到端覆盖。验证这些行为需要隔离网络和安装环境；文档检查不授权发起更新、安装或发布。
 

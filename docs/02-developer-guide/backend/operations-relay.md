@@ -5,7 +5,6 @@ status: "current"
 summary: "Backend Operations 的接口、身份与任务回执；区分在线、排队和执行完成，并说明加密快照的下载、消费与过期清理。"
 aliases: ["Operations中继", "运维后台", "设备签名中继", "operations_overview", "OperationsDeviceRelayService", "OperationsRelayContext", "OperationsAdminQuery", "SqliteOperationsAdminQuery", "OperationsSupportStore", "SqliteOperationsSupportStore", "OperationsSafeSnapshot", "ops:relay", "ops:operator", "operations:manage", "COLORVISION_OPERATIONS_RELAY_URL", "COLORVISION_OPERATIONS_RELAY_KEY", "signedRelayReady", "awaiting_local_consent", "X-CV-Timestamp", "X-CV-Nonce", "X-CV-Signature", "X-CV-Receipt-Metadata", "host_identity_conflict", "unknown_or_revoked_device", "request_time_out_of_range", "replayed_request", "idempotency_conflict", "window_snapshot_upload_required", "window_snapshot_task_not_uploadable", "window_snapshot_consumed", "window_snapshot_delete_failed", "window_snapshot_expired", "运维窗口快照", "operations_relay_window_snapshots"]
 code_paths: ["Web/Backend/routes/operations_relay.py", "Web/Backend/services/operations_device_relay.py", "Web/Backend/routes/admin_api.py", "Web/Backend/ports/operations_admin.py", "Web/Backend/ports/operations_support.py", "Web/Backend/db/repositories/operations_admin.py", "Web/Backend/db/repositories/operations_support.py", "Web/Backend/app_setup.py", "Web/Backend/cli.py", "UI/ColorVision.UI.Desktop/Operations/OperationsRelayClientService.cs", "UI/ColorVision.UI.Desktop/Operations/OperationsRelayProtocol.cs", "UI/ColorVision.UI.Desktop/Operations/OperationsSafeSnapshot.cs", "UI/ColorVision.UI.Desktop/Operations/OperationsDesktopActionService.cs", "UI/ColorVision.UI.Desktop/Operations/OperationsApplicationRestart.cs", "Engine/ColorVision.Engine/Services/Operations/ServiceHostOperationsMqttRestartController.cs", "Engine/ColorVision.Engine/Services/Operations/EngineOperationsMessageChannelHealthProvider.cs", "Engine/ColorVision.Engine/Services/Operations/FlowOperationsRuntimeStatusProvider.cs", "ColorVision/App.xaml.cs"]
-test_paths: ["Web/Backend/test_operations_relay.py", "Web/Backend/test_operations_admin.py", "Web/Backend/test_operations_support_store.py", "Test/ColorVision.UI.Tests/OperationsRelayProtocolTests.cs"]
 related: ["delivery.backend", "delivery.backend-auth", "delivery.android-operations"]
 ---
 
@@ -181,9 +180,6 @@ Overview 不返回主机证书/指纹、设备公钥、请求签名/nonce/body�
 
 ## 源码与验证边界
 
-- `test_operations_relay.py` 覆盖 legacy scope/目录/心跳-任务-回执、支持消息约束，以及 signed 往返、篡改/重放/撤销、受限 payload、幂等冲突、失败证据 schema、窗口快照上传/下载/consume 和清理失败等 Backend 协议分支；测试中的 completed 可由合成主机签名提交，不证明真实电脑执行。
-- `test_operations_admin.py` 覆盖无认证拒绝、配置 Basic 成功、合成计数/新旧主机/设备状态、投影排除字段和非法 limit；不覆盖所有 Session/角色组合、并发一致快照或真实网络在线率。共用认证测试见[认证契约](./authentication.md)。
-- `test_operations_support_store.py` 覆盖非 message 状态链、并发 requested 去重和未知主机拒写。它不是手机与桌面实际同意交互验收。
-- `OperationsRelayProtocolTests.cs` 覆盖桌面签名任务复验、过期/撤销、scope/payload 和部分本机前提；仍不等于 Android—Backend—桌面全链路验收。普通回执终态不可回退、legacy 单主机隔离不属于当前已实现保证。
+验收实际手机、后端与桌面联动时，核对任务、回执、在线状态、权限和用户同意。合成主机可以签名提交 `completed`，现场任务须用桌面实际动作核实。当前协议未保证普通回执终态不可回退或 legacy 单主机隔离。
 
-测试文件定位不表示已经执行；Backend 路由测试顶层导入 `app`，会先发生应用装配，再进入测试自己的临时路径设置，不能当作无副作用读取。文档校验不能代替获授权后的跨进程重试、离线/恢复、真实设备动作及证据生命周期验收。
+真实跨进程重试、离线恢复、设备动作与证据生命周期须在获授权环境验收。本地运行前确认后端应用装配、配置和数据库隔离。

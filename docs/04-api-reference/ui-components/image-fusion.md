@@ -5,7 +5,6 @@ status: "current"
 summary: "景深融合窗口与本地流程节点共用文件执行器；输入顺序、CPU/CUDA门禁、取消、结果保存及下游图像交接。"
 aliases: ["景深融合", "执行融合", "融合结果", "GPU 异步 (CUDA Async)", "焦点堆栈", "focus stacking", "FusionWindow", "FusionMode", "FusionFolderMenuContribution", "ImageCompute", "M_Fusion", "CM_Fusion", "CM_Fusion_Async", "融合耗时", "FileFusion", "LocalFileFusionNode", "流程景深融合", "有序文件列表"]
 code_paths: ["UI/ColorVision.Core/FileFusion.cs", "UI/ColorVision.Core/FileFusionOptions.cs", "Native/include/fusion_options.h", "Native/include/fusion_request.h", "Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalFileFusionNode.cs", "Engine/ColorVision.Engine/Services/Images/FileFusion/FileFusionServices.cs", "UI/ColorVision.ImageTools/Fusion/FusionWindow.xaml", "UI/ColorVision.ImageTools/Fusion/FusionWindow.xaml.cs", "UI/ColorVision.ImageTools/Fusion/FusionFolderMenuContribution.cs", "UI/ColorVision.ImageTools/ImageResourceFileTypes.cs", "UI/ColorVision.Core/ImageCompute.cs", "UI/ColorVision.Core/OpenCVMediaHelper.cs", "UI/ColorVision.Core/OpenCVCuda.cs", "Native/include/opencv_media_export.h", "Native/include/cuda_export.h", "Native/opencv_helper/opencv_media_export.cpp", "Native/opencv_helper/fusion.cpp", "Native/opencv_cuda/cuda_export.cpp", "Native/opencv_cuda/Fusion.h", "Native/opencv_cuda/cudamath.h"]
-test_paths: ["Test/ColorVision.UI.Tests/FileFusionTests.cs", "Test/ColorVision.UI.Tests/LocalFileFusionNodeTests.cs", "Test/opencv_helper_test/test_find_luminous_area.cpp", "Test/opencv_helper_test/test_cuda_fusion.cpp"]
 related: ["ui.image-tools", "ui.core", "ui.image-editor", "ui.documents", "engine.native-integration"]
 ---
 
@@ -162,10 +161,8 @@ Auto 只在执行前选路，不在 GPU 失败后重试 CPU。CUDA 驱动检查�
 
 ## 验证入口与缺口
 
-- `FileFusionTests`：文件夹自然顺序、显式顺序、输入锁、格式/尺寸/重复拒绝、Auto 小图组选路、强制 GPU 拒绝、取消后丢弃、native 失败不重试，以及两张合成灰度图的真实 CPU 调用。
-- `LocalFileFusionNodeTests`：节点端口、包含逗号和中文路径的 STN 往返、文件夹/列表输入、真实 PNG 保存和帧交接、登记失败及停止后丢弃。数据库与消息发布使用替身，不访问真实数据库。
-- `Test/opencv_helper_test/test_find_luminous_area.cpp` 的 `smokeFusionReturnsOwnedHImage` 检查 CPU 单图输出和释放；`test_cuda_fusion.cpp` 提供 CUDA DLL 验证和比较入口，覆盖旧数组/新参数请求、同步/异步一致性、非法参数和短图组/平坦图像。CUDA DLL 内的 `M_Fusion` 是 GPU 别名，该入口比较不等于 CPU/GPU 数值一致性。
+- CUDA DLL 内的 `M_Fusion` 是 GPU 别名。CPU/GPU 数值一致性需分别调用相应实现比对。
 
-测试入口不是本次已通过声明；窗口人工操作、真实数据库历史显示、CUDA 驱动/native 依赖、大图资源和真实焦点堆栈融合质量需分别验收。Native/CUDA 测试会创建隔离图像并加载真实 DLL，不能用窗口响应或托管替身测试代替它们。
+窗口实际操作、数据库历史显示、CUDA 驱动/native 依赖、大图资源和焦点堆栈融合质量需分别验收。
 
 图像另存与 source/rendered 的差别见[图像编辑器](./ColorVision.ImageEditor.md)。

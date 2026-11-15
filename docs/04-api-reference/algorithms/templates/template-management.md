@@ -5,7 +5,6 @@ status: "current"
 summary: "TemplateEditorWindow与TemplateCreateView的共享参数、创建来源、预览、索引和关闭语义；关闭不是通用回滚，筛选后的操作目标需单独核对。"
 aliases: ["模板类存在但列表不显示","模板编辑","模板创建","取消模板编辑","模板搜索后删除","TemplateEditorWindow","TemplateCreate","TemplateCreateView","TemplateCreateSourceKind","ApplyTemplateSource","IsUserControl","IsSideHide","TemplateSearchProvider","TemplatesExtension","放弃修改","放弃更改","模板未保存","关闭模板窗口","创建副本"]
 code_paths: ["Engine/ColorVision.Engine/Templates/TemplateEditorWindow.xaml.cs","Engine/ColorVision.Engine/Templates/TemplateEditorWindow.xaml","Engine/ColorVision.Engine/Templates/TemplateCreate.xaml.cs","Engine/ColorVision.Engine/Templates/TemplateCreateView.xaml.cs","Engine/ColorVision.Engine/Templates/ITemplate.cs","Engine/ColorVision.Engine/Templates/TemplateModel.cs","Engine/ColorVision.Engine/Templates/TemplateSearchProvider.cs","Engine/ColorVision.Engine/Templates/TemplatesExtension.cs"]
-test_paths: []
 related: ["engine.template-design","algorithms.template-menus","algorithms.json-templates","flow.workspace","ui.property-grid","ui.configuration"]
 ---
 
@@ -98,6 +97,6 @@ Flow 单独处理 `flow-recipe` 载荷，由固定节点类型构建实际连线
 
 ## 验证入口与缺口
 
-`SensorTemplatePresetTests` 覆盖传感器预设来源切换、可读预览、取消及基础库加载失败的降级行为；`ParameterTemplatePresetTests` 覆盖同代码不同存储格式隔离、按 symbol 映射、曝光名称与参数一致、JSON 草稿隔离和模块指引；`FlowTemplatePresetTests` 覆盖流程连线往返、无现场设备绑定、取消不落库、独立创建身份及预览清单。它们不证明所有模板子类的共享对象取消、过滤后目标选择、控件复用或普通数据库 CRUD 正确；这些边界仍需按具体实现核对。
+通用模板取消、筛选后目标选择、控件复用和数据库增删改查按具体实现核对。
 
 有授权时，应以隔离数据库和非敏感样例分别验证：打开/关闭、真实目标身份、默认/副本/文件来源、预览失败、保存部分失败与旧引用。记录已执行的最小用例和缺口；不要通过重置现场数据库、启动真实流程或删除模板来验证文档。

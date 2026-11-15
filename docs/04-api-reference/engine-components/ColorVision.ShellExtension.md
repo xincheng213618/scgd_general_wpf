@@ -4,8 +4,7 @@ knowledge_type: "topic"
 status: "current"
 summary: "Explorer 的 CVRAW/CVCIE COM provider 如何读取像素、生成非测量用途缩略图，以及源码脚本与 ServiceHost 注册的不同副作用和失败边界。"
 aliases: ["文件关联注册","文件关联","FileAssociationHelper","RegisterFileAssociations","资源管理器没有cvraw缩略图","cvcie缩略图颜色不对","缩略图读取会锁文件吗","注册缩略图","卸载缩略图","ColorVision.ShellExtension","CVThumbnailProviderBase","CVRawShellThumbnailProvider","CVCieShellThumbnailProvider","IInitializeWithStream","GetThumbnail","Register.ps1","RegisterThumbnail.ps1"]
-code_paths: ["Engine/ColorVision.ShellExtension/CVThumbnailProviderBase.cs","Engine/ColorVision.ShellExtension/CVRawShellThumbnailProvider.cs","Engine/ColorVision.ShellExtension/CVCieShellThumbnailProvider.cs","Engine/ColorVision.ShellExtension/Interop/ShellInterfaces.cs","Engine/ColorVision.ShellExtension/ShellLog.cs","Engine/ColorVision.ShellExtension/ColorVision.ShellExtension.csproj","Engine/ColorVision.ShellExtension/Register.ps1","Engine/ColorVision.ShellExtension/Unregister.ps1","Engine/ColorVision.FileIO/CVFileUtil.cs","ColorVision/Update/Export/FileAssociationHelper.cs","ColorVision/ServiceHost/ServiceHostManagerWindow.xaml.cs","UI/ColorVision.UI/ServiceHost/IColorVisionServiceHostClient.cs","src/ColorVisionServiceHost/ServiceHostCommandHandler.cs","src/ColorVisionServiceHost/Tasks/RegisterThumbnail.ps1","src/ColorVisionServiceHost/Tasks/UnregisterThumbnail.ps1","src/ColorVisionServiceHost/Tasks/RegisterFileAssociations.ps1"]
-test_paths: ["Test/ColorVision.UI.Tests/ShellThumbnailProviderTests.cs"]
+code_paths: ["Engine/ColorVision.ShellExtension","Engine/ColorVision.FileIO/CVFileUtil.cs","ColorVision/Update/Export/FileAssociationHelper.cs","ColorVision/ServiceHost/ServiceHostManagerWindow.xaml.cs","UI/ColorVision.UI/ServiceHost/IColorVisionServiceHostClient.cs","src/ColorVisionServiceHost/ServiceHostCommandHandler.cs","src/ColorVisionServiceHost/Tasks/RegisterThumbnail.ps1","src/ColorVisionServiceHost/Tasks/UnregisterThumbnail.ps1","src/ColorVisionServiceHost/Tasks/RegisterFileAssociations.ps1"]
 related: ["engine.index","engine.file-io","platform.service-host","delivery.update"]
 ---
 
@@ -59,6 +58,6 @@ related: ["engine.index","engine.file-io","platform.service-host","delivery.upda
 
 ## 验证入口与缺口
 
-`ShellThumbnailProviderTests` 直接调用 provider，覆盖 `IStream` 短读、输入流关闭后渲染、CIE X 平面、RAW 交错像素及尾字节跳过，以及残缺负载、异常通道和尺寸溢出的拒绝。注册、Explorer 和 COM surrogate 装载仍需在隔离环境验收。
+注册、Explorer 和 COM surrogate 装载需在隔离环境验收。
 
 需独立授权后验证的项目包括：成功/失败后的句柄释放；损坏、超大及异常通道输入；CIE X 平面与 RAW 显示；当前 comhost/native 依赖装载；源码与 ServiceHost 两条注册链；部分失败后实际注册表状态、缓存和 DLL 锁。注册可能修改机器关联、终止进程和删除用户缓存，本页不把执行脚本列为无副作用的“检查命令”。

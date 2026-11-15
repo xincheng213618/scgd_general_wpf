@@ -5,7 +5,6 @@ status: "current"
 summary: "CameraTest 相机生产调试：直接 SDK 取图、BMW 四边 SFR、RGB 位移、调焦趋势、可选判定与按设备编号存档；不主动连接 MySQL 或服务，POI 支持 SQLite 本地模板。"
 aliases: ["CameraTest", "相机生产调试", "相机出厂检测", "BMW 四边实时分析", "独立相机测试", "StandaloneCameraSession"]
 code_paths: ["Plugins/CameraTest", "Engine/ColorVision.Engine/Services/Devices/Camera/Local/StandaloneCameraSession.cs", "Scripts/package_camera_test.ps1"]
-test_paths: ["Test/CameraTest.Tests/CameraTestContractsTests.cs", "Test/CameraTest.Tests/CameraTestWindowTests.cs", "Test/CameraTest.Tests/ProductionArchiveTests.cs", "Test/CameraTest.Tests/ChromaticAberrationTests.cs", "Test/CameraTest.Tests/JudgmentAndFocusTests.cs", "Scripts/tests/test_package_camera_test.ps1"]
 related: ["operations.camera", "engine.opencv-helper-api"]
 ---
 
@@ -82,8 +81,6 @@ ZIP 内只保留一个 `CameraTest.exe` 入口、已声明的托管/native DLL�
 
 ## 验证范围
 
-运行 `dotnet test .\Test\CameraTest.Tests\CameraTest.Tests.csproj -c Release -p:Platform=x64`。测试检查配置身份/边界、帧布局和内存预算、16 位显示及存档往返、文件哈希、采集参数快照与来源区分、失败边保留与 JSON 坐标，以及未连接会话不初始化 SDK。位移用例通过真实 SFR DLL 检查 8/16 位、两个方向、正反极性的已知亚像素偏移；判定与趋势用例检查缺测、绝对值阈值、窗口淘汰和重复帧。窗口用例验证离线打开图像、各页布局，以及通过绘图工具同一新增命令创建矩形后分析、修改、删除、撤销及配置恢复；可用 `CAMERATEST_SMOKE_IMAGE` 和 `CAMERATEST_SMOKE_PROFILE` 指定匹配的现场样本及配置。`CameraOperationTests` 另验证自动参数记忆、关闭时保存、异常配置保护、16 位取图保存开关与失败提示，以及连续处理可用帧、单帧处理不改变连接按钮状态、断开等待在途分析、同帧 SFR/清晰度和显示 FPS 计算。它们不操作硬件，不验证驱动/许可证、持续取流、SDK RAW 通道排列或量产重复性。BMW/SFR 算法另按其专项用例和现场样本验证；本工作区不宣称 ISO 或 Imatest 一致性。
+在匹配的 Windows 环境核对驱动、许可证、持续取流、SDK RAW 通道排列和量产重复性。用现场样本核对 BMW/SFR 测量与分析结果，ISO 或 Imatest 一致性需独立证明。
 
-`MeasurementDetailTests` 检查同帧约束、16 位带行填充的像素裁剪、无效通道的拟合诊断保留、主窗口详情入口和灰度通道。设置 `CAMERATEST_RESULT_IMAGES_DIR` 后，另用目录中的 `01.tif` 与 `Image_20260827102310051.bmp` 验证五个框选靶标的分析与详情数值一致性；未提供文件目录时这些现场样本测试明确跳过。可选 `CAMERATEST_RESULT_CAPTURE_DIR` 输出详情截图与原始分析 JSON，源文件哈希须保持不变；此验证不证明与 Imatest 数值相同。
-
-打包规则用 `pwsh -NoProfile -File .\Scripts\tests\test_package_camera_test.ps1` 检查，包含相机 DLL 保留、历史数据排除、缺失依赖/文化资源和意外内置 .NET 的拒绝行为。分发前另将最终 ZIP 解压至新目录，验证启动、离线打开图像、BMW/SFR 分析与存档；仅在开发输出目录运行成功不能代替压缩包验收。
+分发前将最终 ZIP 解压至新目录，验收实际启动、离线打开图像、BMW/SFR 分析与存档。检查相机 DLL、配置和文化资源随包交付，并确认包中没有现场数据或意外内置的 .NET 运行时。

@@ -5,7 +5,6 @@ status: "current"
 summary: "Backend六项在线保留配置、SQLite快照创建、隐私清理和轮换；原子配置替换不等于全链事务，备份存在也不证明所有清理或恢复安全。"
 aliases: ["运维保留策略", "Operational Retention Settings", "数据库备份", "create_database_backup", "database_backup", "run_admin_data_retention", "admin_data_retention", "marketplace_backup", "backup_security_scrub", "admin_db_backup_keep_count", "audit_log_retention_days", "OPERATIONAL_RETENTION_SETTINGS", "persist_config_values"]
 code_paths: ["Web/Backend/services/database_backup.py", "Web/Backend/services/admin_data_retention.py", "Web/Backend/services/account_security_cleanup.py", "Web/Backend/services/operational_settings.py", "Web/Backend/services/config_persistence.py", "Web/Backend/services/access_analytics.py", "Web/Backend/services/scheduler.py", "Web/Backend/db_cache.py", "Web/Backend/routes/admin_api.py", "Web/Backend/marketplace_services.py", "Web/Frontend/src/pages/SettingsPage.tsx"]
-test_paths: ["Web/Backend/test_operational_settings.py", "Web/Backend/test_admin_data_retention.py", "Web/Backend/test_db_cache.py", "Web/Backend/test_account_security_cleanup.py", "Web/Backend/test_access_analytics.py", "Web/Backend/test_contracts.py"]
 related: ["delivery.backend", "delivery.backend-jobs", "delivery.backend-accounts", "delivery.backend-auth", "delivery.plugin-catalog", "delivery.backend-observability"]
 ---
 
@@ -104,8 +103,6 @@ GET尝试将现有值转int，缺失、bool、不能转换或越界时显示默�
 
 ## 验证范围与缺口
 
-`test_operational_settings.py` 覆盖精确allowlist、范围、未公开配置保留及replace失败不更新live；`test_contracts.py` 有设置GET/PUT、权限、审计、备份创建/清单不暴露正常path字段。`test_db_cache.py` 覆盖已提交WAL内容和拒绝源库覆盖。
-
-`test_admin_data_retention.py` 覆盖UTC严格cutoff、快照完整性、安全状态清理且不改在线库、重复scrub、保护当前/异常/非规范文件、同秒名称避让、每日备份注册/执行及新快照安全清理失败后删除。在线安全保留有 `test_account_security_cleanup.py`；访问快照保留有 `test_access_analytics.py`。这些测试的存在不代表本次已经运行。
+部署验收需在隔离环境核对快照、WAL 提交数据、保留窗口、清理候选、失败保护和恢复。
 
 跨进程同时备份、创建期间其它清理job、磁盘故障的多阶段部分成功、清理后实际恢复及各种旧凭据组合，不能由现有静态核对或正常路径用例宣布全量通过；尤其不能把quick_check等同于业务恢复验收。

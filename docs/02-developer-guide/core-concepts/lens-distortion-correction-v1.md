@@ -5,7 +5,6 @@ status: "current"
 summary: "LensDistortionCorrection 的输入、参数、结果、宿主接入与定向验证契约。"
 aliases: ["镜头畸变如何校正以及标定参数怎么保存","LensDistortionCorrection","LensDistortionCorrectionAlgorithmProvider"]
 code_paths: ["UI/ColorVision.ImageEditor/Algorithms/LensDistortionCorrectionAlgorithmProvider.cs","UI/ColorVision.ImageEditor/Algorithms/StandardAlgorithmCatalog.cs","UI/ColorVision.ImageEditor/Algorithms/ImageAlgorithmPlatform.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/LensDistortionCorrectionV1Tests.cs"]
 related: ["algorithms.platform","algorithms.index"]
 ---
 
@@ -52,7 +51,7 @@ Preset 由 `LensDistortionCorrectionPresetSerializer` 保存，严格校验 Algo
 
 ## 验证、取消与资源预算
 
-`LensDistortionCorrectionV1Tests` 覆盖 Catalog/alias/schema/preset、九种规范格式 identity golden、Brown 像素中心数值 golden、optimal 输出矩阵、DPI/输入只读、ROI 与退化有效区失败、预执行/执行中取消、成功/失败/取消的 transferred 输入释放、Result artifact 释放，以及 Batch/Flow 复用与不覆盖导出。ImageView 的单次应用生命周期由平台共享回归检查；参数窗口和结果窗口仍需要交互验收。
+参数和结果窗口须按真实交互验收。光学参数还须用实物和标定参考核对。
 
 可选性能门禁 `LensDistortionCorrectionPipelineProbe` 在 4K Gray16/Bgra32 上执行非零畸变。管理内存预算只允许一份校正输出、一份 Gray8 mask 和固定 16 MiB 余量；native 侧仍需要两份 float map 与 OpenCV 输出工作区。取消在 map 前后、mask 每 32 行及 remap 前后检查；单次不可中断的 OpenCV 调用结束后会立即观察取消并释放临时 Mat。
 

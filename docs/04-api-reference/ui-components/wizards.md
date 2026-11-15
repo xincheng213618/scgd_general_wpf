@@ -5,7 +5,6 @@ status: "current"
 summary: "配置向导的步骤发现、初始化时序、前进应用和完成标记；关闭不回滚，完成标记不证明组件健康或重启成功。"
 aliases: ["设置向导", "首次启动向导", "向导步骤", "向导初始化", "向导完成", "WizardWindow", "WizardManager", "WizardWindowConfig", "WizardCompletionKey", "IWizardStep", "WizardStepBase", "IWizardInitializer", "RunsBeforeInitializers", "RequestSkipWizard"]
 code_paths: ["UI/ColorVision.UI.Desktop/Wizards/WizardWindow.xaml", "UI/ColorVision.UI.Desktop/Wizards/WizardWindow.xaml.cs", "UI/ColorVision.UI.Desktop/Wizards/WizardWindowConfig.cs", "UI/ColorVision.Common/Interfaces/IWizardStep.cs", "UI/ColorVision.Common/Interfaces/Window/WindowConfig.cs", "UI/ColorVision.UI/AssemblyHandler.cs", "ColorVision/App.xaml.cs", "ColorVision/Wizards/ApplicationUpdateWizardStep.cs", "ColorVision/Wizards/RecommendedSoftwareWizardStep.cs", "ColorVision/Wizards/CameraDriverWizardStep.cs", "ColorVision/ToolPlugins/CameraDriver", "Engine/ColorVision.Engine/Services/Devices/Camera/CameraDriverInstallationService.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/ApplicationUpdateWizardStepTests.cs","Test/ColorVision.UI.Tests/CameraDriverWizardStepTests.cs","Test/ColorVision.UI.Tests/RecommendedSoftwareWizardStepTests.cs","Test/ColorVision.UI.Tests/StartupMaintenanceLifecycleTests.cs"]
 related: ["ui.desktop", "operations.first-run", "platform.runtime", "ui.configuration", "ui.discovery"]
 ---
 
@@ -100,10 +99,6 @@ related: ["ui.desktop", "operations.first-run", "platform.runtime", "ui.configur
 | 启动分流与退出恢复处理 | `ColorVision/App.xaml.cs` |
 | 有副作用的步骤示例 | `ColorVision/Wizards/RecommendedSoftwareWizardStep.cs` |
 
-`RecommendedSoftwareWizardStepTests` 只有三个假服务用例：缺失软件默认选中、全部取消选择时不安装也可完成、按 Everything/WinRAR 顺序调用安装服务。它们没有真实安装，也不覆盖通用向导导航、保存或重启。
+下载管理器的网络过程、原厂子安装器交互和设备兼容性应在获授权的测试机核对。
 
-`ApplicationUpdateWizardStepTests` 使用替身覆盖可选检查与跳过、失败元数据携带缓存计划时仍不更新、更新前持久化未完成标记、保存失败阻止交接，以及更新失败后的重试和放行。它们保护更新与向导之间的持久化及失败边界，不下载制品、不运行安装器，也不证明跨版本重启已经实测。
-
-`CameraDriverWizardStepTests` 覆盖 INF 身份及版本解析、卸载记录或单个驱动文件不足以判定安装、向导跳过及管理窗口返回后复查、安装与重装均走下载服务、错误路径/损坏下载阻止执行、下载失败、窗口关闭后的延迟回调、取消、退出后复查及重启状态。用例使用假下载与安装服务，损坏文件测试在进程启动前失败，不运行真实驱动安装器或操作相机；下载管理器的真实网络过程、原厂子安装器交互和设备兼容性需在获准测试机验证。
-
-发现失败、真实保存失败和启动主窗口重启交接仍未覆盖；底层配置测试和文档校验不能替代这些集成检查。需要实际安装、配置写入或服务操作时仍须单独确认授权。
+用实际宿主核对发现失败、保存失败和重启交接。安装、配置写入或服务操作需要相应授权。

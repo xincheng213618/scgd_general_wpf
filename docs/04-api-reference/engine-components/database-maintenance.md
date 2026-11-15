@@ -5,7 +5,6 @@ status: "current"
 summary: "数据库维护窗口与provider能力：表统计不是删除预览；备份默认关闭，备份和清理不是事务且失败不自动恢复；清理、手动优化和迁移边界彼此独立。"
 aliases: ["数据库清理", "数据维护窗口", "清理预览", "刷新统计", "清理前备份", "保留月数", "清空选中表", "清理取消", "索引优化", "结果关联索引", "DatabaseCleanupWindow", "DatabaseCleanupWindowViewModel", "DatabaseCleanupSourceViewModel", "DatabaseCleanupTableInfo", "IDatabaseCleanupSourceProvider", "IDatabaseCleanupSelectionProvider", "IDatabaseCleanupBackupProvider", "IDatabaseCleanupMaintenanceProvider", "IDatabaseCleanupMigrationProvider", "IDatabaseCleanupOptimizationProvider", "OptimizationCommand", "SocketDatabaseCleanupWindowLauncher"]
 code_paths: ["Engine/ColorVision.Engine/Mysql/DatabaseCleanupContracts.cs", "Engine/ColorVision.Engine/Mysql/DatabaseCleanupWindow.xaml", "Engine/ColorVision.Engine/Mysql/DatabaseCleanupWindow.xaml.cs", "Engine/ColorVision.Engine/Mysql/DatabaseCleanupWindowViewModel.cs", "Engine/ColorVision.Engine/Mysql/MySqlToolWindow.xaml.cs", "Engine/ColorVision.Engine/Services/DatabaseCleanup/SocketDatabaseCleanupWindowLauncher.cs", "UI/ColorVision.SocketProtocol/ISocketDatabaseCleanupWindowLauncher.cs", "UI/ColorVision.UI/AssemblyHandler.cs", "Projects/ProjectARVRPro/ArvrSqliteCleanupProvider.cs", "Projects/ProjectKB/KbSqliteCleanupProvider.cs"]
-test_paths: []
 related: ["engine.index", "engine.mysql-maintenance", "ui.sqlite-storage", "ui.database", "ui.discovery", "operations.data"]
 ---
 

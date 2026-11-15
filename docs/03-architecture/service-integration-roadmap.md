@@ -5,7 +5,6 @@ status: "planned"
 summary: "在不修改 CVWindowsService 源码的前提下，由 ColorVision 接管配置、执行选择、结果与交付的渐进路线；区分已有本地能力、残余数据库与原生依赖，以及阶段验收和回退条件。"
 aliases: ["服务内化", "服务成为产品的一部分", "服务接管规划", "去服务化", "CVWindowsService整合", "scgd_internal_dll", "本地运行闭环", "服务替换路线", "配置主权", "服务依赖退出"]
 code_paths: ["Engine/ColorVision.Engine/Services/ServiceManager.cs", "Engine/ColorVision.Engine/Services/LocalConfigurationDao.cs", "Engine/ColorVision.Engine/Services/Devices/Camera/Local", "Engine/ColorVision.Engine/Services/Devices/Spectrum/Local", "Engine/ColorVision.Engine/Services/Devices/Calibration/LocalFileCalibrationService.cs", "Engine/ColorVision.Engine/FlowProcessing/Runtime/FlowExecutionSession.cs", "Engine/ColorVision.Engine/Templates/Flow/LocalFlowTemplateStorage.cs", "Engine/ColorVision.Engine/Mysql/MySqlResultCleanupProvider.cs", "Engine/cvColorVision", "UI/ColorVision.Algorithms/AlgorithmRuntime.cs", "Native/opencv_helper", "Plugins/WindowsServicePlugin/ServiceManager", "src/ColorVisionServiceHost"]
-test_paths: ["Test/ColorVision.UI.Tests/OfflineDeviceConfigurationTests.cs", "Test/ColorVision.UI.Tests/OfflineCameraFlowTests.cs", "Test/ColorVision.UI.Tests/CameraBackendRoutingTests.cs", "Test/ColorVision.UI.Tests/LocalFlowTemplateStorageTests.cs", "Test/ColorVision.UI.Tests/LocalSpectrumFlowTests.cs", "Test/Spectrum.Tests/LocalSpectrumTests.cs", "Test/ColorVision.UI.Tests/ServiceHostServicePolicyTests.cs"]
 related: ["platform.architecture", "platform.service-host", "plugins.windows-service", "engine.devices", "engine.native-bindings", "flow.templates", "flow.session", "operations.calibration", "engine.spectrum-device", "algorithms.platform", "engine.results"]
 ---
 
@@ -213,6 +212,6 @@ B 和 C 可按项目需求交错推进，但同一能力应先明确配置与结
 
 后两个仓库是外部只读参考，不纳入主仓库 `code_paths`，不复制其业务源码。C++ 工作区与主仓库交付 DLL 是否来自同一构建尚未核实；任何依赖新增导出的实现都必须进一步核对实际二进制和构建来源。
 
-声明的测试路径说明已有局部验证入口，不表示本规划已运行这些测试。后续实现按变更选择最小验证范围：配置/来源测试、本地流程及结果恢复测试、设备后端互斥测试、光谱契约测试、原生样本与 ABI 测试、服务安装兼容测试。替身测试不能代替真实 SDK、许可证、设备、数据库和升级恢复演练。
+交付前应核对真实 SDK、许可证、设备、数据库和升级恢复，按变更选择样本与隔离演练范围。
 
 本文未完成所有客户项目、设备型号、旧算法及外部调用方的穷举盘点，未执行服务启停、硬件操作、数据库写入或发布。阶段 A 应把这些缺口转成具体清单后再决定删除和默认切换范围。

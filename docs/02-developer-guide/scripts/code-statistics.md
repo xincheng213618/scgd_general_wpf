@@ -5,7 +5,6 @@ status: "current"
 summary: "统计当前工作区的项目、目录和文件规模，并分析 Git 提交历史与时段；内置离线网页模板，工作区含未提交修改，历史快照不含。"
 aliases: ["代码行数", "代码统计", "代码历史", "历史仪表盘", "count_code_lines.py", "generate_code_history_dashboard.py", "tracked-only", "改写估算", "自然日均变更", "Pillow is required to generate --share-card", "Portable dashboard builder not found"]
 code_paths: ["Scripts/count_code_lines.py", "Scripts/generate_code_history_dashboard.py", "Scripts/code_history_analysis.py", "Scripts/code_history_dashboard", ".gitignore"]
-test_paths: ["Scripts/tests/test_code_history_analysis.py", "Scripts/tests/test_code_history_dashboard.mjs"]
 related: ["delivery.scripts", "governance.maintenance"]
 ---
 
@@ -130,15 +129,4 @@ py Scripts\generate_code_history_dashboard.py --no-build
 
 `package_html` 有一条验证降级路径：外部验证非零退出但输出包含 `"code":"horizontal_overflow"` 时，会改用普通构建器，后者成功即可继续。它没有证明该错误只来自滚动条，也没有排除同次验证中的其它失败；因此脚本成功不等于浏览器验证全部通过。
 
-相关测试命令如下，不调用产品构建或发布链：
-
-```powershell
-py -m unittest discover -s Scripts/tests -p test_code_history_analysis.py -v
-node --test Scripts/tests/test_code_history_dashboard.mjs
-# 可选：用实际生成数据再次检查各视图与统计聚合
-$env:CODE_HISTORY_ARTIFACT = (Resolve-Path .codex-artifacts/code-history-dashboard/artifact.json).Path
-node --test Scripts/tests/test_code_history_dashboard.mjs
-Remove-Item Env:CODE_HISTORY_ARTIFACT
-```
-
-Python 测试使用临时 Git 仓库检查未提交/未跟踪文件、工程归属、计数对齐、整周边界及安全嵌入。Node 测试默认使用独立合成数据，覆盖视图生成、筛选、下钻和聚合；设置上述环境变量后改用实际报告。Node 测试没有浏览器或布局引擎，不能代替真实浏览器的视觉、响应式、键盘和下载验收。只审阅说明时不必遍历整仓历史或生成图表。
+实际页面需用浏览器检查视觉、响应式、键盘和下载。只审阅说明时无需遍历仓库历史或生成图表。

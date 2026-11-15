@@ -5,7 +5,6 @@ status: "current"
 summary: "ProjectKB 的宿主/独立启动依赖、Modbus/MES、Recipe 判定、背光修正、CSV 与按天生产统计和运行内查询记忆。"
 aliases: ["Modbus 写 1 不触发 KB 测试","KB MES 返回 N 是成功吗","ProjectKB","ProjectKBWindow","KBItemMaster","KBItemMasterExtensions","KB CSV","KBLVSacle","KB生产统计","KB统计日期记忆","KBProductionStatisticsWindow","KB Socket","OpenSocketConfigCommand"]
 code_paths: ["Projects/ProjectKB/App.xaml.cs","Projects/ProjectKB/ProjectKBWindow.xaml.cs","Projects/ProjectKB/KBItemMasterExtensions.cs","Projects/ProjectKB/Modbus/","Projects/ProjectKB/MesDll.cs","Projects/ProjectKB/"]
-test_paths: ["Test/ProjectKB.Tests/ProjectKB.Tests.csproj","Test/ProjectKB.Tests/KBProductionStatisticsTests.cs"]
 related: ["projects.index","projects.capabilities"]
 ---
 
@@ -87,7 +86,7 @@ CSV 契约由 `KBItemMasterExtensions.SaveCsv()` 维护：除固定列外，按 
 - “今天／本周／本月”按当前周期返回本周期并查询第 1 页，不清空其它筛选；全部模式下日期导航隐藏，快捷按钮显示“全部”。首页图表及各页表格沿用同一组筛选，“今日／本小时产量”是所选范围中落入当前日期/小时的子集。
 - 列表及统计查询只投影统计所需字段，避免读取大体积 `ItemsJson`/压缩载荷；结果详情按需加载。
 
-验证入口：`KBProductionStatisticsTests.cs` 覆盖周期、会话与目标、逐条检测及分页，另验证旧 JSON 状态忽略、运行内复用、重建默认值和午夜边界。测试仅使用临时 SQLite，不能替代现场 Modbus/MES 验证。布局应另查浅色/深色、最小窗口、筛选换行、日期输入和分页；使用模拟数据的源 XAML 预览不执行真实查询或生产信息修改。
+生产验收需检查现场 Modbus/MES，以及实际统计界面在浅色、深色和最小宽度下的筛选、日期输入与分页。用真实数据核对查询和生产信息修改。
 
 ## 关键配置
 
@@ -111,7 +110,6 @@ Recipe 重点看单键亮度、平均亮度、亮度均匀性、局部对比度�
 
 ```powershell
 dotnet build Projects/ProjectKB/ProjectKB.csproj -c Release -p:Platform=x64
-dotnet test Test/ProjectKB.Tests/ProjectKB.Tests.csproj -c Release -p:Platform=x64
 ```
 
 ## 打包上传（需明确发布授权）

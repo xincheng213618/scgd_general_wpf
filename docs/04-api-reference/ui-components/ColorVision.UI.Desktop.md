@@ -5,7 +5,6 @@ status: "current"
 summary: "桌面辅助壳层而非产品主入口：定位设置、市场下载、第三方工具、反馈和特权崩溃诊断。"
 aliases: ["设置窗口和插件市场在哪里","ColorVision.UI.Desktop","SettingWindow","MarketplacePackageDownloadService","下载管理器","断点续传","Aria2cDownloadManager"]
 code_paths: ["UI/ColorVision.UI.Desktop/ColorVision.UI.Desktop.csproj","UI/ColorVision.UI.Desktop/App.xaml","UI/ColorVision.UI.Desktop/App.xaml.cs","UI/ColorVision.UI.Desktop/MainWindow.xaml","UI/ColorVision.UI.Desktop/MainWindow.xaml.cs","UI/ColorVision.UI.Desktop/Settings/SettingWindow.xaml.cs","UI/ColorVision.UI.Desktop/Marketplace","UI/ColorVision.UI.Desktop/Download","UI/ColorVision.UI.Desktop/Wizards","UI/ColorVision.UI.Desktop/ThirdPartyApps","UI/ColorVision.UI.Desktop/Diagnostics","UI/ColorVision.UI.Desktop/Feedback","UI/ColorVision.UI.Desktop/README.md"]
-test_paths: ["Test/ColorVision.UI.Tests/MarketplacePackageDownloadServiceTests.cs","Test/ColorVision.UI.Tests/DownloadManagerLifecycleTests.cs","Test/ColorVision.UI.Tests/DownloadInfrastructureTests.cs","Test/ColorVision.UI.Tests/DownloadAria2IntegrationTests.cs","Test/ColorVision.UI.Tests/FeedbackLogCollectorTests.cs","Test/ColorVision.UI.Tests/NetworkAdapterPriorityServiceTests.cs"]
 related: ["ui.index","ui.framework","ui.settings","ui.wizards","ui.menus","ui.configuration","ui.database","plugins.getting-started","platform.runtime"]
 ---
 
@@ -43,7 +42,7 @@ related: ["ui.index","ui.framework","ui.settings","ui.wizards","ui.menus","ui.co
 
 应用与工具窗口使用与更新、恢复窗口一致的主题资源，顶部提供搜索、添加应用、添加快捷脚本和刷新入口；分类以可换行的标签展示，应用以图标与名称组成的紧凑卡片展示。双击启动、右键操作、分类过滤与权限过滤沿用原入口；深浅主题同时覆盖窗口背景、文字和选择状态。
 
-“内部工具”提供“CVRAW 批量导出 TIFF”（`ColorVision/ToolPlugins/CvRawExport/`）。选择文件夹后点击“执行”，后台递归检索 `.cvraw`（扩展名不区分大小写，不跟随目录链接），将原始图像导出为同目录、同主文件名的 `.tif`；已有目标直接跳过，不覆盖、不重新编码。并发数可选 1～32，默认使用 CPU 逻辑处理器数的一半，最低 1、最高 4；大图像可降低并发以减少内存占用。保留位深、通道、像素值及既有 TIFF 图像参数，单文件失败后继续处理并列出文件和原因。界面显示成功、跳过、失败与总进度；取消或关窗会停止后续任务，等待正在进行的读取／编码返回，已完成文件保留。`Engine/ColorVision.Engine/Media/Export/CvRawBatchExporter.cs` 先写同目录临时 TIFF，完成后以不覆盖方式移入目标，避免中断残留被下次误认为已导出；边界验证见 `Test/ColorVision.UI.Tests/CvRawBatchExporterTests.cs`。
+“内部工具”提供“CVRAW 批量导出 TIFF”（`ColorVision/ToolPlugins/CvRawExport/`）。选择文件夹后点击“执行”，后台递归检索 `.cvraw`（扩展名不区分大小写，不跟随目录链接），将原始图像导出为同目录、同主文件名的 `.tif`；已有目标直接跳过，不覆盖、不重新编码。并发数可选 1～32，默认使用 CPU 逻辑处理器数的一半，最低 1、最高 4；大图像可降低并发以减少内存占用。保留位深、通道、像素值及既有 TIFF 图像参数，单文件失败后继续处理并列出文件和原因。界面显示成功、跳过、失败与总进度；取消或关窗会停止后续任务，等待正在进行的读取／编码返回，已完成文件保留。`Engine/ColorVision.Engine/Media/Export/CvRawBatchExporter.cs` 先写同目录临时 TIFF，完成后以不覆盖方式移入目标，避免中断残留被下次误认为已导出。
 
 ## 下载任务与文件保护
 
@@ -74,9 +73,9 @@ RPC 只连接回环地址，后台进程使用随机的实例密钥；启动等�
 
 反馈主窗口固定显示诊断项摘要、日志范围、打开来源目录、清理历史文件和打包入口，附件区滚动不会带走这些操作。“选择项目”打开独立的紧凑列表，支持按名称或说明搜索、全部选中／取消和恢复默认选择；这些批量操作作用于全部项目，不受搜索过滤影响，关闭或按 Esc 保留选择。范围统一应用于实现 `IFeedbackLogTimeRangeCollector` 的日志和数据库来源，目录菜单也仅列出该接口提供的目录，不支持的来源保持自己的收集规则。清理与打包勾选独立，仅交给实现 `IFeedbackDiagnosticCleanupSource` 的来源；无对应能力时禁用入口。打包期间禁止修改诊断选项或启动清理，避免修改正在使用的收集器。
 
-Engine 提供默认勾选的“MVS 日志”来源，沿用统一天数范围，把本机已有的海康 SDK 与客户端 `.log`（含数字轮转后缀）复制到 ZIP 的 `MVS/` 下。SDK 来源优先读取日志服务安装目录的 `Path.ini`，只访问其中指定根目录下的 `MvSDKLog`；同时检查 Windows／当前用户临时目录和应用目录下的 `MvSDKLog`，以及用户目录、ProgramData 下的 `MVS/Log`，不扫描整个临时目录或相机图像目录。服务的 `Path.ini`、`LogServer.ini` 不按日志天数过滤。单文件最多 50 MiB、总日志最多 200 MiB；活动日志允许共享读取，只复制打开时的长度，属于尽力采集，不保证跨文件一致快照。`MVS/collection.json` 记录采集时间、来源路径、日志查看器位置、缺失目录、访问／复制失败和大小限制跳过原因。收集不提权、不连接相机、不修改日志设置，也不参与“清理历史文件”；SDK 系统日志无读取权限时仍附状态说明，其他诊断项继续打包。实现与回归入口为 `Engine/ColorVision.Engine/Services/Devices/Camera/Diagnostics/MvsLogCollector.cs`、`Test/ColorVision.UI.Tests/MvsDiagnosticsTests.cs`。
+Engine 提供默认勾选的“MVS 日志”来源，沿用统一天数范围，把本机已有的海康 SDK 与客户端 `.log`（含数字轮转后缀）复制到 ZIP 的 `MVS/` 下。SDK 来源优先读取日志服务安装目录的 `Path.ini`，只访问其中指定根目录下的 `MvSDKLog`；同时检查 Windows／当前用户临时目录和应用目录下的 `MvSDKLog`，以及用户目录、ProgramData 下的 `MVS/Log`，不扫描整个临时目录或相机图像目录。服务的 `Path.ini`、`LogServer.ini` 不按日志天数过滤。单文件最多 50 MiB、总日志最多 200 MiB；活动日志允许共享读取，只复制打开时的长度，属于尽力采集，不保证跨文件一致快照。`MVS/collection.json` 记录采集时间、来源路径、日志查看器位置、缺失目录、访问／复制失败和大小限制跳过原因。收集不提权、不连接相机、不修改日志设置，也不参与“清理历史文件”；SDK 系统日志无读取权限时仍附状态说明，其他诊断项继续打包。 实现见 `Engine/ColorVision.Engine/Services/Devices/Camera/Diagnostics/MvsLogCollector.cs`。
 
-“当前进程内存转储”是独立的诊断来源，默认不勾选；手动选择后，由 `Feedback/Collectors/CurrentProcessDumpCollector.cs` 在打包时抓取运行中进程的完整内存快照。它不读取或修改 WER 崩溃转储配置，也不按日志天数或历史 Dump 的 100 MiB 上限筛选。快照写入临时文件后直接以最高 ZIP 压缩级别写入反馈包的 `ProcessDump/`，不会生成嵌套 ZIP；压缩率取决于内存内容。打包结束会清理临时快照，采集失败会清理未完成文件并尽量加入 `ProcessDump/collection-error.txt`，其他来源继续打包。服务器确认提交成功、上传文件流释放后，反馈窗口清理本次生成的诊断 ZIP；失败或取消上传时保留 ZIP 以便重试或离线复制，用户手动添加的原始附件不在清理列表内。回归入口为 `Test/ColorVision.UI.Tests/CrashDumpDiagnosticsTests.cs`，原生快照成功与真实提交后的清理仍需运行应用验收。
+“当前进程内存转储”是独立的诊断来源，默认不勾选；手动选择后，由 `Feedback/Collectors/CurrentProcessDumpCollector.cs` 在打包时抓取运行中进程的完整内存快照。它不读取或修改 WER 崩溃转储配置，也不按日志天数或历史 Dump 的 100 MiB 上限筛选。快照写入临时文件后直接以最高 ZIP 压缩级别写入反馈包的 `ProcessDump/`，不会生成嵌套 ZIP；压缩率取决于内存内容。打包结束会清理临时快照，采集失败会清理未完成文件并尽量加入 `ProcessDump/collection-error.txt`，其他来源继续打包。服务器确认提交成功、上传文件流释放后，反馈窗口清理本次生成的诊断 ZIP；失败或取消上传时保留 ZIP 以便重试或离线复制，用户手动添加的原始附件不在清理列表内。 在实际应用中确认原生快照能够生成，且服务器接收成功后正确清理。
 
 打开物理相机管理时，通过 SDK 环境变量、MVS 安装注册表信息和系统 Program Files 目录定位 LogViewer，优先 Win64、其次 Win32。找到时，工具栏显示“MVS 日志”。启动时以查看器所在目录作为工作目录，并保留厂商程序要求的管理员权限；取消 UAC 不报告启动错误。该入口与反馈收集共用 `MvsDiagnosticsPaths` 的安装位置发现，但收集文件不依赖成功打开查看器。
 
@@ -92,7 +91,7 @@ Engine 提供默认勾选的“MVS 日志”来源，沿用统一天数范围，
 
 数据库按记录自身的本地时间／UTC 字段筛选，保留关联运行、节点、事件、异常、模板快照和结果，因此部分关联记录可以早于所选起始时间。输出是反馈 ZIP 的 `Database/` 下可直接查询的独立 SQLite 文件，保留原字段、ID、索引及完整压缩正文，不跟随结果中的图片路径收集图片。源库以只读模式在单个读取事务中访问，包含读取快照时 WAL 中已提交的数据；不同数据库之间不提供统一事务快照，尚未落库的写入队列不属于导出范围。
 
-每个数据库附带同名 `.export.json`，记录所选时间范围（含时区）、各表条数、缺失表和失败原因。旧库缺少新诊断表时仍导出可用表并标为 `partial`；无法识别时间字段或数据库不可读时只附错误说明，不回退为全库收集。导出逻辑与模块筛选分别位于 `UI/ColorVision.Database/SqliteFeedbackCollector.cs` 和各模块的反馈收集器；回归入口为 `Test/ColorVision.UI.Tests/SqliteFeedbackCollectorTests.cs`、`Test/ProjectARVRPro.Tests/ProjectARVRProFeedbackCollectorTests.cs`。打包与发送沿用反馈窗口入口，附件上传按流读取；离线时仍可选中压缩包并打开所在目录。
+每个数据库附带同名 `.export.json`，记录所选时间范围（含时区）、各表条数、缺失表和失败原因。旧库缺少新诊断表时仍导出可用表并标为 `partial`；无法识别时间字段或数据库不可读时只附错误说明，不回退为全库收集。导出逻辑与模块筛选分别位于 `UI/ColorVision.Database/SqliteFeedbackCollector.cs` 和各模块的反馈收集器 打包与发送沿用反馈窗口入口，附件上传按流读取。离线时可选中压缩包并打开所在目录。
 
 “清理历史文件”先要求用户确认，再调用实现 `IFeedbackDiagnosticCleanupSource` 的诊断来源。应用和服务日志保留各活动目录中最新的文件，其他来源只返回点击清理前已经存在的历史文件；删除失败的占用或无权限文件会计入跳过数量。清理仅删除来源明确声明的文件，不删除目录、配置、数据库、反馈附件或已经打包的 ZIP；共享的 WER Dump 目录中也只匹配当前 ColorVision 进程命名的 `.dmp`。
 
@@ -146,4 +145,4 @@ Engine 提供默认勾选的“MVS 日志”来源，沿用统一天数范围，
 ## 验证入口与缺口
 
 
-下载生命周期测试使用临时 SQLite 与模拟 RPC，覆盖迟到响应、暂停恢复、同名任务、文件保护、内容校验、分页和磁力子任务。`DownloadAria2IntegrationTests` 使用随包的真实 aria2 与临时本地 HTTP 服务，验证下载、暂停续传及完成文件提升；它不访问外部站点，不能替代真实 P2P、代理环境、大文件吞吐量或窗口交互验收。其他自动化测试只覆盖各自受测服务；外部联网下载、HKLM 写入、DNS 修改和反馈上传都需明确授权，不能作为默认文档验证步骤。
+实际 P2P、代理环境、大文件吞吐量或窗口交互应在目标环境验收。外部联网下载、HKLM 写入、DNS 修改和反馈上传需要明确授权。

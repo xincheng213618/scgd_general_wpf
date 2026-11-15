@@ -5,7 +5,6 @@ status: "current"
 summary: "Web 的组成根、HTTP/服务/持久化边界、现有接口和架构检查；区分已实现约束、性能预算与后续演进目标。"
 aliases: ["Web 架构","Web architecture","架构边界","ArchitectureBoundaryTests","MarketplaceContext","MarketplaceApiRouteContext","IndexStateRepository","JobRepository","OperationsAdminQuery","OperationsSupportStore","check-dashboard-bundle","前端包体预算","ArtifactStore","OpenAPI"]
 code_paths: ["Web/Backend/app.py","Web/Backend/app_setup.py","Web/Backend/context.py","Web/Backend/marketplace_api_routes.py","Web/Backend/ports/","Web/Backend/db/repositories/","Web/Backend/routes/artifact_delivery.py","Web/Backend/services/artifact_delivery.py","Web/Backend/routes/auth_adapters.py","Web/Backend/services/auth_policy.py","Web/Backend/services/storage_events.py","Web/Backend/services/plugin_index.py","Web/Backend/services/artifact_index.py","Web/Backend/routes/frontend_spa.py","Web/Frontend/src/App.tsx","Web/Frontend/package.json","Web/Frontend/scripts/check-dashboard-bundle.mjs","Web/Frontend/scripts/precompress-static.mjs"]
-test_paths: ["Web/Backend/test_architecture_boundaries.py","Web/Backend/test_artifact_delivery.py","Web/Frontend/tests/viteConfig.test.ts"]
 related: ["delivery.backend","delivery.artifact-delivery","delivery.backend-auth","delivery.backend-observability","delivery.backend-jobs","delivery.plugin-catalog","delivery.backend-public-data"]
 ---
 
@@ -45,12 +44,12 @@ ColorVision Web 由 React 前端与 Flask 后端组成，提供公共门户、�
 
 ### 直接 SQL 的过渡范围
 
-`test_architecture_boundaries.py` 对以下既有 handler 的直接 `execute` / `executemany` / `executescript` 调用按函数冻结计数：
+直接调用 `execute`、`executemany` 或 `executescript` 的过渡范围限于现有 handler：
 
 - `routes/admin_api.py`：`stats_overview`。
 - `routes/operations_relay.py`：`heartbeat`、`poll_tasks`、`create_task`、`task_receipt`、`list_hosts`、`list_receipts`、`list_support_events`。
 
-`create_api_key` 不在该例外中。新增功能不扩大这些例外；迁移完整责任到服务/repository 后，同步收紧测试允许范围。计数检查针对指定文件和调用形态，不是全仓 SQL 数据流分析。
+`create_api_key` 不在例外范围内。新增功能应通过服务或 repository 访问数据库，迁移后的 handler 随之退出过渡范围。
 
 ## 跨模块契约
 
@@ -104,22 +103,11 @@ ColorVision Web 由 React 前端与 Flask 后端组成，提供公共门户、�
 
 ## 验证范围
 
-`test_architecture_boundaries.py` 检查指定模块的反向 import、Flask 全局读取、直接 SQL、下载适配入口及市场路由 context 字段。它不能证明所有模块的依赖都符合目标，也不验证运行时权限和真实下载。
-
-修改 Web 代码时，从最接近改动的测试开始；完整后端测试和前端检查从各自目录运行。后端测试可能初始化数据库，应先核对隔离方式；前端构建写本地 `dist`，不等于部署：
+在隔离环境核对运行时权限和实际下载。前端构建只写本地 `dist`。
 
 ```powershell
-Push-Location Web\Backend
-try {
-    python -m unittest discover -p "test_*.py"
-    if ($LASTEXITCODE -ne 0) { throw 'Backend tests failed.' }
-}
-finally { Pop-Location }
-
 Push-Location Web\Frontend
 try {
-    npm test
-    if ($LASTEXITCODE -ne 0) { throw 'Frontend tests failed.' }
     npm run lint
     if ($LASTEXITCODE -ne 0) { throw 'Frontend lint failed.' }
     npm run build
@@ -128,4 +116,4 @@ try {
 finally { Pop-Location }
 ```
 
-测试路径与命令是复核入口；当前是否通过应读取对应执行结果。对性能敏感的变更，还需按相同环境和表示复测，单次构建不能替代流式交付、存储一致性或浏览器性能证据。
+性能敏感变更按相同环境和数据复测流式交付、存储一致性或浏览器行为。

@@ -5,7 +5,6 @@ status: "current"
 summary: "共享防抖的同键替换、回调所有权、Dispatcher 排队取消与可复用清理边界。"
 aliases: ["DebounceTimer", "按键防抖", "防抖取消", "Dispatcher防抖", "ElapsedEventHandler"]
 code_paths: ["UI/ColorVision.Common/Utilities/DebounceTimer.cs", "UI/ColorVision.Common/Utilities/DebounceScheduler.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/DebounceTimerTests.cs"]
 related: ["ui.common"]
 ---
 
@@ -37,10 +36,4 @@ Dispatcher 的登记保留到 UI 动作开始前。到期后已进入 Dispatcher
 
 ## 验证入口与边界
 
-`Test/ColorVision.UI.Tests/DebounceTimerTests.cs` 通过可手动触发的计时器检查同键替换、迟到回调、重入登记、失败清理和清空后的复用，通过真实 WPF Dispatcher 检查排队后的取消与操作放弃，并用真实计时器检查 sender 和 `ElapsedEventArgs` 兼容性。测试关联不表示本次已运行或通过，也不代表真实客户窗口的关闭、业务动作或所有线程交错都已验收。
-
-在 Windows 仓库根目录运行以下定向测试；它不启动主程序或操作设备：
-
-```powershell
-dotnet test .\Test\ColorVision.UI.Tests\ColorVision.UI.Tests.csproj -p:Platform=x64 --filter FullyQualifiedName~DebounceTimerTests
-```
+在实际宿主核对同键替换、取消和窗口关闭前后的动作归属。

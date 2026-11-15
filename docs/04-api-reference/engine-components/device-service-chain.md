@@ -5,7 +5,6 @@ status: "current"
 summary: "设备工厂、资源重载、显示装配与详情视图按需初始化；旧对象释放、集合重建和显示替换并非一个事务，记录存在、界面可见、服务在线和动作完成分别判断。"
 aliases: ["设备打不开","设备服务","设备连接","设备资源有记录却不出现","如何新增设备服务","设备资源重载","设备资源过滤","设备类型字典","组关联资源","空设备树","管理员服务配置","进入采集窗口","切换列表","LastSelectIndex","运行对象生命周期","显示集合","ServiceManager","t_scgd_sys_resource","t_scgd_sys_resource_group","DeviceServiceFactoryRegistry","ServiceTypes","LoadServices","LastGenControl","设备控制分组","CreateGroupCommand","设备行置顶","取消置顶","DisplayPinButton","设备详情按需初始化","ViewShell","EnsureInitialized","ViewCamera","ViewSpectrum","AlgorithmView","ViewCalibration","InspectDeviceServices","inspect_device_services","已加载设备目录","设备缓存状态","HeartbeatObservationKnown","UnknownDevices","心跳未观测"]
 code_paths: ["Engine/ColorVision.Engine/Dao/SysResourceModel.cs","Engine/ColorVision.Engine/Dao/SysDictionaryModel.cs","Engine/ColorVision.Engine/Dao/SysResourceGoupModel.cs","Engine/ColorVision.Engine/Dao/VSysResourceDao.cs","UI/ColorVision.Database/BaseTableDao.cs","Engine/ColorVision.Engine/Services/LocalConfigurationDao.cs","Engine/ColorVision.Engine/Services/ServiceManager.cs","Engine/ColorVision.Engine/Services/ServiceInitializer.cs","Engine/ColorVision.Engine/Services/WindowService.xaml.cs","Engine/ColorVision.Engine/Services/WindowService.xaml","Engine/ColorVision.Engine/Services/DevicePropertyWindow.xaml","Engine/ColorVision.Engine/Services/DevicePropertyWindow.xaml.cs","Engine/ColorVision.Engine/Services/Devices/DeviceServiceFactory.cs","Engine/ColorVision.Engine/Services/Type/TypeService.cs","Engine/ColorVision.Engine/Services/DeviceService.cs","Engine/ColorVision.Engine/Services/Devices/Camera/DeviceCamera.cs","Engine/ColorVision.Engine/Services/Devices/Camera/DisplayCamera.xaml.cs","Engine/ColorVision.Engine/Services/Devices/Camera/Views/ViewCamera.xaml.cs","Engine/ColorVision.Engine/Services/Devices/Spectrum/DeviceSpectrum.cs","Engine/ColorVision.Engine/Services/Devices/Spectrum/DisplaySpectrum.xaml.cs","Engine/ColorVision.Engine/Services/Devices/Spectrum/Views/ViewSpectrum.xaml.cs","Engine/ColorVision.Engine/Services/Devices/Algorithm/DeviceAlgorithm.cs","Engine/ColorVision.Engine/Services/Devices/Algorithm/DisplayAlgorithm.xaml.cs","Engine/ColorVision.Engine/Services/Devices/Algorithm/Views/AlgorithmView.xaml.cs","Engine/ColorVision.Engine/Services/Devices/Calibration/DeviceCalibration.cs","Engine/ColorVision.Engine/Services/Devices/Calibration/DisplayCalibration.xaml.cs","Engine/ColorVision.Engine/Services/Devices/Calibration/Views/ViewCalibration.xaml.cs","UI/ColorVision.UI/Display/DisPlayManager.cs","UI/ColorVision.UI/Display/DisplayPinButton.xaml","UI/ColorVision.UI/Display/DisplayPinButton.xaml.cs","UI/ColorVision.UI/Display/DisPlayControlPanel.cs","UI/ColorVision.UI/Docking/DockPanelTitleAction.cs","UI/ColorVision.UI/Views/DockViewManager.cs","UI/ColorVision.Solution/Workspace/DockViewManager.cs","Engine/ColorVision.Engine/Services/CopilotDeviceServicesReader.cs","ColorVision/Copilot/Capabilities/CopilotDeviceServicesInspectionService.cs","ColorVision/Copilot/Capabilities/CopilotDeviceServicesInspectionService.Cursor.cs","ColorVision/Copilot/Agent/Tools/Application/CopilotInspectDeviceServicesTool.cs","ColorVision/Copilot/Mcp/CopilotMcpToolEnvironment.DeviceServices.cs","ColorVision/Copilot/Mcp/CopilotMcpToolDispatcher.DeviceServices.cs","ColorVision/Copilot/Skills/colorvision-flow-diagnostics/references/checklist.md","Engine/ColorVision.Engine/Services/CopilotDeviceContextFactory.cs","UI/ColorVision.Common/Interfaces/Copilot/CopilotBusinessContextBuilder.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/OfflineDeviceConfigurationTests.cs","Test/ColorVision.UI.Tests/CopilotDeviceServicesSourceTests.cs","Test/ColorVision.Copilot.Tests/CopilotDeviceServicesServiceTests.cs","Test/ColorVision.Copilot.Tests/CopilotDeviceServicesToolTests.cs","Test/ColorVision.Copilot.Tests/CopilotDeviceServicesWorkflowTests.cs","Test/ColorVision.UI.Tests/CopilotDeviceHeartbeatSourceTests.cs","Test/ColorVision.UI.Tests/CopilotDeviceHeartbeatContextTests.cs","Test/ColorVision.UI.Tests/CopilotDeviceDiagnosisHeartbeatWorkflowTests.cs"]
 related: ["engine.index","platform.runtime","operations.device-configuration","engine.mqtt","engine.rc-registration","engine.results","engine.spectrum-device","operations.camera","operations.motor","operations.smu","operations.calibration","operations.file-server","operations.flow-device","flow.session","ui.property-grid","ui.database"]
 ---
 
@@ -85,9 +84,7 @@ related: ["engine.index","platform.runtime","operations.device-configuration","e
 
 `coverage` 说明 `returned_devices`、`text_truncated`／`text_redacted`、`output_limited`、本页 `unknown_status_devices` 和 `all_matched_devices_returned`；后者只比较本次响应与全部匹配对象，最后一个续页也不汇总前页。当前 manager 不存在时，首次未绑定查询返回 `NotFound`；已绑定来源失效、过期游标或排队期间 owner 改变为 `Validation`，有效来源内不存在的精确对象为 `NotFound`，不伪装成空目录。有来源且集合确为空时可成功返回空页，但不证明数据库无配置或没有未注册设备。目录读完也不证明设备整体健康。
 
-`CopilotDeviceServicesSourceTests` 保护 UI 源采集、排队前 owner 绑定、对象身份与不触发虚拟插件读取；`CopilotDeviceServicesServiceTests` 保护预算、游标／focus、未知状态与明确失败；`CopilotDeviceServicesToolTests` 保护 Agent／MCP 同协议；`CopilotDeviceServicesWorkflowTests` 覆盖超过自动摘要容量后的发现、精确 focus 和成员／宿主替换。引用测试不表示真实设备连通、缓存新鲜度或现场验收。
-
-自动心跳投影由 `CopilotDeviceHeartbeatSourceTests` 保护未赋值与显式 false、时间戳／缓存状态独立及全 fleet 计数，再由 `CopilotDeviceHeartbeatContextTests` 保护默认行、旧显式布尔值、Unknown 优先的初始化／JSON 兼容和展示限制。`CopilotDeviceDiagnosisHeartbeatWorkflowTests` 通过真实 `AskCopilotCommand` 验证附加 context 的 Unknown／Offline／Online 与独立缓存状态；这些测试不建立设备心跳来源或存活阈值。
+设备目录和心跳缓存只反映已取得的证据。连通性、缓存新鲜度和实际设备动作需现场核对。
 
 设备卡片或上下文菜单中的 **属性** 同样复用 `GetDeviceInfo()`，但由 `DevicePropertyWindow` 提供独立窗口外壳：窗口显示设备名称与 Code，并在带边框、圆角和内边距的内容区承载设备页。这个外壳只属于独立窗口；管理员服务配置和终端详情继续使用各自已有的面板边界，不把窗口留白重复写进设备控件。
 
@@ -97,7 +94,7 @@ related: ["engine.index","platform.runtime","operations.device-configuration","e
 
 本地滤色轮通过 `NdCFWPortAPI` 调用随应用交付的 x64 `cvCamera.dll`，支持独立串口打开、关闭、切位和读位，不经 MQTT。孔位仍为从零开始的整数；切位后必须读回目标孔位才成功，`RetryCount` 表示首次失败后的额外尝试次数，`Delay` 在读回前等待。`Timeout` 传给 SDK 打开接口，SDK 内部切位、读位另有固定等待，不能将该值或取消请求解释为硬件停止的硬截止。未绑定物理相机时保留默认六孔名称，12 孔额外显示位置 6–11；已绑定相机的自定义孔位映射继续优先。`IsCVMode`（相机内置滤轮）和 `EnableVSPHub`（虚拟串口集线器）不能用于本地独立连接，打开前明确报错；这两种配置继续使用对应相机或服务功能。
 
-本地手动控制、Flow 和本地光谱校零共享设备会话。命令串行执行，关闭和释放等待在途 SDK 调用返回。连接中取消时，SDK 返回的句柄会在发布连接状态前关闭。释放失败保留串口占用标记并拒绝重新连接，需重启程序处理。同一程序内同串口的其它滤色轮以及已知的服务连接受互斥保护，服务离线不等于已关闭；模式偏好修改后，已打开的连接仍由原后端关闭。其它进程和相机直接占用串口不在该本地门禁内，连接失败应核对现场服务占用。光谱校零继续使用原占用及孔位确认机制，并等待本地 SDK 完成后才释放占用，不套用 MQTT 的回执超时。实现和模拟回归分别见 `Engine/ColorVision.Engine/Services/Devices/CfwPort/Local/`、`Test/ColorVision.UI.Tests/LocalCfwPortTests.cs`；模拟验证不代替现场 6/12 孔滤轮、接线及实际到位验收。
+本地手动控制、Flow 和本地光谱校零共享设备会话。命令串行执行，关闭和释放等待在途 SDK 调用返回。连接中取消时，SDK 返回的句柄会在发布连接状态前关闭。释放失败保留串口占用标记并拒绝重新连接，需重启程序处理。同一程序内同串口的其它滤色轮以及已知的服务连接受互斥保护，服务离线不等于已关闭；模式偏好修改后，已打开的连接仍由原后端关闭。其它进程和相机直接占用串口不在该本地门禁内，连接失败应核对现场服务占用。光谱校零继续使用原占用及孔位确认机制，并等待本地 SDK 完成后才释放占用，不套用 MQTT 的回执超时。实现见 `Engine/ColorVision.Engine/Services/Devices/CfwPort/Local/`。现场应核对 6/12 孔滤轮、接线和实际到位。
 
 内置设备卡片标题与 Flow 设备选择器的属性入口统一使用主题 `ButtonProperty` 样式：24 DIP 点击区域、单色信息图标和属性工具提示。按钮不显示边框或默认焦点虚线框，悬停与键盘焦点通过图标主题强调色反馈。图标随深浅主题更新，只表示打开属性窗口，不承担在线状态显示；不叠加常亮的绿色状态灯。它仍绑定原设备的 `PropertyCommand`，与相邻的置顶按钮各自独立。设备与工作流程内容区未选中时使用 `CV.Border.Weak` 的低对比度主题描边，选中时保留深浅主题各自的紫色高亮。
 
@@ -164,13 +161,13 @@ PG、Spectrum、Sensor 等设备从 `RegisterDefaults` 定位具体配置、命�
 
 PG 的“修改配置”打开独立单页 `EditPG`，分为设备、连接和按类型显示的设备参数。`PGConfigurationDraft` 编辑 `ConfigPG` 和 `DisplayPGConfig` 的副本，并分别保留网口地址/端口、串口名/波特率以及 `CH431.I2C` 设备索引/地址的临时输入；切换连接方式或类型不覆盖其它模式输入，打开已有 I²C 配置不重置其索引或地址。网口支持 IP 与主机名；串口可手填，本地模式填写本机端口，服务模式填写服务电脑端口。I²C 显示寄存器地址与通信速率，`GECS.V2.4` 编辑独立的 `Channel`，默认 `01`，保持与 PG 服务的字段和默认值一致；`RegisterAddress` 继续只表示 I²C 寄存器地址，其他类型隐藏这两项。
 
-确定前验证可见输入的数字格式，以及改动后的连接参数或启用时的本地连接参数。网口端口为 1～65535，串口波特率大于 0，I²C 索引为非负整数、设备地址为 0～255。设备参数有改动时，所选连接仍写回 `Addr` / `Port`，服务器资源沿原链路重载。连接区的本地开关、连接超时和指令超时独立保存在本机 `DisplayPGConfig`，仅修改这些选项时无需重载服务。取消或校验失败保留现有设置。`PGConfigurationDraftTests` 保护草稿隔离、模式输入保留、保存边界和既有序列化契约，设备连通仍需现场验证。
+确定前验证可见输入的数字格式，以及改动后的连接参数或启用时的本地连接参数。网口端口为 1～65535，串口波特率大于 0，I²C 索引为非负整数、设备地址为 0～255。设备参数有改动时，所选连接仍写回 `Addr` / `Port`，服务器资源沿原链路重载。连接区的本地开关、连接超时和指令超时独立保存在本机 `DisplayPGConfig`，仅修改这些选项时无需重载服务。取消或校验失败保留现有设置。设备连通需现场验证。
 
 通过创建设备入口添加且没有已存本机偏好的 PG 默认开启“使用本地 PG”，旧配置缺少该字段时继续使用服务。开启后，手动打开、关闭和控制命令以及旧 `PG`、`PG.For`、`PG.GECS`、`PG.GECS.Key`、`PG.GECS.Demura` 节点转到设备共享的本地 TCP/串口会话。流程未连接时自动打开并复用连接，仍保留节点最大超时及停止取消。手动控制前先打开设备。修改模式、地址、类型或通道后，已打开的本地连接继续使用打开时的参数，关闭后重新打开才采用新配置。
 
 `GECS.V2.4` 使用 `02 FF`、四位 ASCII 十六进制正文长度、ASCII 正文和 `03` 的帧格式；通道取 `Channel`，保留字符串形式及前导零；缺少该字段的旧配置使用服务默认值 `01`。内置上下电、上一图/下一图、指定编号、八种按键、Demura 擦除/写入/开关、DieId 和 OSC_TRIM 指令，校验完整帧、通道、命令与成功回包；半包继续等待，`ALIVE` 和当前命令的 `processing` 不算完成。电压电流校验并解析九路电压及九路电流，结果保留 `CmdType=POWER.MEASURE` 和 JSON 字符串 `ResultData`，其中为 `Channel`、`Voltages`、`Currents`。不自动重发可能产生写入副作用的 GECS 指令；已配置的 PG 模板覆盖命令沿用模板的超时、延时、重试及回包判定。GECS 没有内置 `CM_ReSetPG` 协议映射，需配置已确认的指令模板或使用独立 `KeyReset`，不自动将二者等同。
 
-普通文本 PG 使用现有 PG 类型指令表，编号切图替换 `{0}`；沿服务文本模式的仅发送契约，写入成功不代表设备完成动作。未配置的命令明确失败，`CH431.I2C` 本地连接也明确拒绝，继续通过服务使用。本地 PG 与本地通用传感器共用通信会话基础和端点互斥，已知的服务占用必须先关闭，服务离线不代表释放。关闭或流程停止取消在途请求，超时、断线、畸形或不匹配回包关闭本地连接，防止残留数据进入下一条指令；后续执行可重新连接。实现入口为 `Services/Devices/PG/DevicePG.Local.cs`、`Services/Devices/PG/Local/`，`Test/ColorVision.UI.Tests/LocalPGTests.cs` 保护旧节点本地转发、协议、结果结构、取消与跨 PG/传感器占用边界；回环 TCP 和模拟检查不代替现场设备、串口或烧录验收。
+普通文本 PG 使用现有 PG 类型指令表，编号切图替换 `{0}`；沿服务文本模式的仅发送契约，写入成功不代表设备完成动作。未配置的命令明确失败，`CH431.I2C` 本地连接也明确拒绝，继续通过服务使用。本地 PG 与本地通用传感器共用通信会话基础和端点互斥，已知的服务占用必须先关闭，服务离线不代表释放。关闭或流程停止取消在途请求，超时、断线、畸形或不匹配回包关闭本地连接，防止残留数据进入下一条指令；后续执行可重新连接。实现入口为 `Services/Devices/PG/DevicePG.Local.cs`、`Services/Devices/PG/Local/`。现场验收核对设备、串口及烧录。
 
 ## 扩展一个设备类型
 
@@ -192,9 +189,7 @@ PG 的“修改配置”打开独立单页 `EditPG`，分为设备、连接和�
 | 手动成功但 Flow 失败 | 节点引用的设备 Code、模板版本和输入，再查共享会话完成条件 |
 | 保存后异常或重启未生效 | 配置持久化和 RC 重启是不同阶段，进入[配置契约](../../01-user-guide/devices/configuration.md) |
 
-另检查相机、算法、校准未初始化详情的释放，以及相机和校准内存结果模型的首次显示。它不构造真实设备连接、不执行 DAO 结果回查，也不覆盖 Spectrum 完整释放。测试引用不表示已执行或通过。
-
-本页未声明资源树、工厂与真实 MySQL 的自动化集成覆盖。`ServiceConfigTests` 只验证注册中心服务信息属性通知，不证明此装配链；具体设备测试从对应主题进入。验证应记录同一设备的资源 ID/Code、版本、父终端、配置来源和实际失败阶段，敏感配置须脱敏。
+验证应记录同一设备的资源 ID/Code、版本、父终端、配置来源和实际失败阶段，敏感配置须脱敏。真实 MySQL 装配与设备路径需按现场配置另行核对。
 
 获得授权后的隔离验证还需覆盖：查询失败发生在 Dispose/集合清理之后、`LastGenControl` 与调用者集合共享引用、构造中途失败、显示生成前后的对象身份，以及 **进入采集窗口** 与标题栏关闭。字段、路径和检索校验不覆盖这些运行时行为。
 

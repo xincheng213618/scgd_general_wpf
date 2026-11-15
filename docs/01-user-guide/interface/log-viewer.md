@@ -5,7 +5,6 @@ status: "current"
 summary: "区分log4net输出、历史文件读取与UI筛选，说明刷新、截断和原生日志采集边界；没有显示不等于动作未发生。"
 aliases: ["日志查看器","查看日志","日志搜索","日志等级","历史日志","日志丢失","原生日志","开始捕获","暂停显示","AllToday","SinceStartup","正则变红","自动刷新","自动滚动","WindowLog","LogOutput","LogLocalOutput","LogLoadState","LogHistoryReader","LogSearchHelper","LogViewerAppender","NativeLogWindow"]
 code_paths: ["UI/ColorVision.UI/LogImp","ColorVision/log4net.config","ColorVision/EntryClass.cs","ColorVision/App.xaml.cs","ColorVision/MainWindow.xaml.cs","ColorVision/NativeLogging","UI/ColorVision.Core/NativeLogBridge.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/LogHistoryReaderTests.cs","Test/ColorVision.UI.Tests/LogSearchHelperTests.cs","Test/ColorVision.UI.Tests/LogEntryParserTests.cs","Test/ColorVision.UI.Tests/NativeLogPendingBufferTests.cs","Test/ColorVision.UI.Tests/ContextualFindRouterTests.cs","Test/ColorVision.UI.Tests/FeedbackLogCollectorTests.cs"]
 related: ["operations.index","ui.framework","ui.configuration","ui.core"]
 ---
 
@@ -39,7 +38,6 @@ related: ["operations.index","ui.framework","ui.configuration","ui.core"]
 
 目录转为绝对路径、忽略大小写和末尾分隔符后去重。ZIP 中分别使用 `AppLogs/AppData/`、`AppLogs/Installation/` 和 `AppLogs/Current/`，保留不同目录内同名的日志；当前目录与前两者重合时只收一次。所有来源沿用所选时间范围（默认最近 7 天）、按 `LastWriteTimeUtc` 过滤、单文件不超过 50 MiB 和只读顶层文件的规则。缺失目录会跳过，某个目录无法读取或某个文件复制失败不会阻止收集其他来源。“打开日志目录”仍指向当前 appender 所在目录，打包范围更广。
 
-`FeedbackLogCollectorTests` 使用临时目录覆盖两处同名日志同时保留、当前目录去重、自定义当前目录、时间范围和其他目录缺失时仍收集安装目录日志；不依赖现场管理员权限或生产日志。
 
 ## 全局输出等级不是本地筛选
 
@@ -100,9 +98,6 @@ native 的“暂停显示”仅暂停显示队列取出，采集仍继续；“�
 
 ## 证据与验证缺口
 
-- `LogHistoryReaderTests` 用合成文本验证启动时间边界、续行与顺/倒序字符裁剪；`LogEntryParserTests` 验证部分等级识别和多行归组。
-- `LogSearchHelperTests` 验证普通词 AND、正则、非法语法、行/对象匹配；没有据此证明 UI 防抖、变红、超时后的可见状态或大小写规范化都已验证。
-- `ContextualFindRouterTests` 使用独立控件与日志搜索控制器检查标准 Find 显示搜索栏及 Detach 解绑；不挂接生产日志 appender，不读取现场日志。
-- `NativeLogPendingBufferTests` 验证容量淘汰、批量读取、清空和 fake controller 会话暂停；`NativeLogWindowTests` 只验证菜单与编译 XAML 存在，不是 native DLL 或真实窗口交互验收。
+用实际宿主核对搜索反馈、标准查找焦点和窗口生命周期。原生日志还须核对生产 DLL、有效回调和日志源。反馈收集在目标账户权限及实际日志目录下验证。
 
 当前主题未声明外部文件轮转/编码组合、实际文件写入保留、UI 生命周期压力或生产日志不丢失的端到端覆盖。最小人工复核应使用获准的合成日志与隔离环境；不为文档校验开启真实采集。对外分享前脱敏路径、客户标识、设备数据与凭据，不删除现场日志来“清理”排障证据。

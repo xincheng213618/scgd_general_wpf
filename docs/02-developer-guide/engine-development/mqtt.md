@@ -5,7 +5,6 @@ status: "current"
 summary: "Engine MQTT 的连接与订阅、异步发送、请求状态、迟到回包和 MsgID 复用限制；区分 Flow 客户端池与设备命令链。"
 aliases: ["MQTT请求发出为什么没有结果","MQTTControl","MQTTServiceBase","MsgRecord","MsgID","MsgReturnReceived","MQTTClientPool","MQTT迟到回包","MQTT消息超时","SubscribeCache"]
 code_paths: ["Engine/ColorVision.Engine/MQTT/MQTTControl.cs","Engine/ColorVision.Engine/MQTT/MqttInitializer.cs","Engine/ColorVision.Engine/Services/Devices/MQTTDeviceService.cs","Engine/FlowEngineLib/MQTTHelper.cs","Engine/ColorVision.Engine/Services/Core/MQTTServiceBase.cs","Engine/FlowEngineLib/MQTTClientPool.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/MQTTClientPoolTests.cs","Test/ColorVision.UI.Tests/MQTTControlTests.cs"]
 related: ["engine.index","engine.devices","engine.rc-registration","flow.runtime"]
 ---
 
@@ -111,8 +110,6 @@ public MsgRecord DoSomething(string value)
 
 ## 验证入口与缺口
 
-关联测试：`Test/ColorVision.UI.Tests/MQTTControlTests.cs`、`Test/ColorVision.UI.Tests/MQTTClientPoolTests.cs`。
-
-`MQTTControlTests` 使用模拟 `IMqttClient`，覆盖固定匿名端点、并发连接与订阅复用、订阅拒绝后的恢复、离线退订、恢复取消和显式断开后重连。保留这些回归是为了保护固定端点和连接/订阅生命周期边界。`MQTTClientPoolTests` 覆盖 Flow 池的引用与连接身份、重连串行化、订阅恢复及取消/释放边界；两者均未验证真实 broker、自动重连压力或设备 `MsgRecord` 链。
+真实 broker、自动重连压力和设备 `MsgRecord` 链须部署验收。
 
 在获准的测试 broker 与设备模拟环境，应分别验证配置恢复、发布失败、匹配/不匹配回包、超时后迟到消息和订阅恢复；机械运动或相机采集需按对应设备的现场验收条件执行。源码核对和文档构建不提供这些运行结果。

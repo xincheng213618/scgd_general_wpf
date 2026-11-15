@@ -17,4 +17,4 @@ next: false
 ## packages/ 根目录与跨模块关联 {#module-7061636b61676573}
 
 - [原生 helper 测试与调试](../../02-developer-guide/engine-development/native-testing.md) — `delivery.native-testing`
-  opencv\_helper\_test 的实际入口、工具集与配置映射、专项参数、DLL/样本前提和退出码边界；默认运行与真实样本验收不同。
+  原生调试的工具集、配置、运行 DLL 和现场样本核对。

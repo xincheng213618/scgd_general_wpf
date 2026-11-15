@@ -74,8 +74,3 @@ next: false
 
 - [代码行数与 Git 历史统计](../../02-developer-guide/scripts/code-statistics.md) — `delivery.code-statistics`
   统计当前工作区的项目、目录和文件规模，并分析 Git 提交历史与时段；内置离线网页模板，工作区含未提交修改，历史快照不含。
-
-## Scripts/tests {#module-536372697074732f7465737473}
-
-- [测试与验证](../../02-developer-guide/testing.md) — `delivery.testing`
-  按改动范围选择managed、native、脚本、后端和知识验证，不以局部通过代表完整验收。

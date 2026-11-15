@@ -5,7 +5,6 @@ status: "current"
 summary: "BlobAnalysis 保留实现的参数、结果与验证契约；默认运行时由 Experimental 门禁拒绝执行。"
 aliases: ["连通域分析有何契约、为什么菜单里没有 Blob","BlobAnalysis","BlobAnalysisAlgorithmProvider"]
 code_paths: ["UI/ColorVision.ImageEditor/Algorithms/BlobAnalysisAlgorithmProvider.cs","UI/ColorVision.ImageEditor/Algorithms/StandardAlgorithmCatalog.cs","UI/ColorVision.ImageEditor/Algorithms/ImageAlgorithmPlatform.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/AlgorithmReleaseGateTests.cs"]
 related: ["algorithms.platform","algorithms.index"]
 ---
 
@@ -68,4 +67,4 @@ Runner 继续拥有 transferred input 的释放。Provider 在 mask 扫描、组
 
 ## 验收边界
 
-数值测试覆盖两个已知区域的面积/边界框/质心、4/8 连通对角规则、Gray8/Gray16/Gray32Float/Bgr24 标称阈值一致性、NaN、三类 ROI、过滤原因、图像边界、overlay 与候选上限。宿主测试覆盖 Batch JSON、Flow RAW、ImageView 菜单、结果表、实际 Visual/transient overlay 释放；取消测试验证 transferred input 释放。轮廓提取由 [独立契约](./contour-analysis-v1.md) 描述，不能因 Blob 测试通过而解除轮廓或 Blob 的生产资源门禁。
+依据已知面积、边界框和质心核对实测结果。轮廓提取另有契约，生产资源门禁分别适用。 [轮廓分析](./contour-analysis-v1.md)

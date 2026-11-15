@@ -5,7 +5,6 @@ status: "current"
 summary: "按程序集装载、产物交付、插件能力比较和模块操作定位权威主题与源码。"
 aliases: ["当前有哪些通用插件", "插件功能在哪里", "新建插件", "插件不加载从哪里查"]
 code_paths: ["Plugins", "UI/ColorVision.UI/Plugins/PluginLoader.cs", "Plugins/Directory.Build.props", "PluginProject.HostCopy.targets"]
-test_paths: []
 related: ["plugins.model", "plugins.getting-started", "plugins.capabilities", "plugins.conoscope", "plugins.spectrum", "plugins.system-monitor", "plugins.windows-service", "plugins.pattern", "platform.extensibility"]
 ---
 

@@ -3,9 +3,8 @@ knowledge_id: "operations.calibration"
 knowledge_type: "topic"
 status: "current"
 summary: "校准服务绑定物理相机并执行本地文件或MQTT校正；模板按Native执行链选用存在的校正文件，输出、显示、落库与缓存删除是不同完成边界。"
-aliases: ["用户校正", "导入最新图像", "最近拍摄图像", "校准服务","本地校正","标定资源","校准模板打不开","校正参数设置","四色校正采集","LumFourColorCalibrationSession","CalibrationControl","CalibrationSlotDefinitions","清理校准缓存","UseLocalCalibration","DeviceCalibration","LocalFileCalibrationService","MQTTCalibration", "校正文件编辑", "校正文件创建", "CalibrationJsonDocument", "CalibrationBinaryDocument", "CalibrationMapCreation", "CalibrationColorCreation"]
+aliases: ["用户校正", "导入最新图像", "最近拍摄图像", "校准服务","本地校正","标定资源","校准模板打不开","校正参数设置","四色校正采集","LumFourColorCalibrationSession","CalibrationControl","CalibrationSlotDefinitions","清理校准缓存","UseLocalCalibration","DeviceCalibration","LocalFileCalibrationService","MQTTCalibration", "校正文件编辑", "校正文件创建", "CalibrationJsonDocument", "CalibrationBinaryDocument", "CalibrationMapCreation", "CalibrationColorCreation", "校正+实时 POI", "CVRAW 文件头曝光全为零"]
 code_paths: ["Engine/ColorVision.Engine/Services/PhyCameras/Calibration/Editing", "Engine/ColorVision.Engine/Services/PhyCameras/Calibration/VidFieldCalibration.cs", "Engine/ColorVision.Engine/Services/PhyCameras/Calibration/VidFieldCalibrationWindow.xaml.cs", "Engine/ColorVision.Engine/Services/PhyCameras/Calibration/Creation", "Engine/ColorVision.Engine/Services/Devices/Calibration/DeviceCalibration.cs","Engine/ColorVision.Engine/Services/Devices/Calibration/ConfigCalibration.cs","Engine/ColorVision.Engine/Services/Devices/Calibration/DisplayCalibration.xaml.cs","Engine/ColorVision.Engine/Services/Devices/Calibration/LocalFileCalibrationService.cs","Engine/ColorVision.Engine/Services/Devices/Calibration/MQTTCalibration.cs","Engine/ColorVision.Engine/Services/Devices/Calibration/Views/ViewCalibration.xaml.cs","Engine/ColorVision.Engine/Services/Devices/Calibration/InfoCalibration.xaml.cs","Engine/ColorVision.Engine/Services/PhyCameras/Group/CalibrationParam.cs","Engine/ColorVision.Engine/Services/PhyCameras/Group/CalibrationControl.xaml","Engine/ColorVision.Engine/Services/PhyCameras/Group/CalibrationControl.xaml.cs","Engine/ColorVision.Engine/Services/PhyCameras/Group/CalibrationSlotDefinitions.cs","Engine/ColorVision.Engine/Services/PhyCameras/Calibration/LumFourColorCalibrationWorkflow.cs","Engine/ColorVision.Engine/Services/PhyCameras/Calibration/LumFourColorCalibrationWorkflowWindow.xaml.cs","Engine/ColorVision.Engine/Services/PhyCameras/Calibration/LumFourColorPoiEditor.cs","Engine/ColorVision.Engine/Services/Devices/Camera/Local/LocalCalibrationCacheService.cs","Engine/ColorVision.Engine/Services/Devices/Camera/Local/LocalCalibrationCacheManagerWindow.xaml.cs","Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalCalibrationNode.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/CalibrationExposureDisplayTests.cs", "Test/ColorVision.UI.Tests/VidFieldCalibrationTests.cs", "Test/ColorVision.UI.Tests/CalibrationDocumentEditorTests.cs", "Test/ColorVision.UI.Tests/CalibrationBinaryDocumentTests.cs", "Test/ColorVision.UI.Tests/CalibrationMapCreationTests.cs", "Test/ColorVision.UI.Tests/CalibrationColorCreationTests.cs", "Test/ColorVision.UI.Tests/CVRawManualCieCalculatorTests.cs","Test/ColorVision.UI.Tests/LumFourColorWorkflowSafetyTests.cs"]
 related: ["engine.devices","operations.device-configuration","operations.physical-camera","flow.session"]
 ---
 
@@ -49,7 +48,7 @@ related: ["engine.devices","operations.device-configuration","operations.physica
 
 畸变创建使用普通棋盘图像，至少五张同尺寸、不同姿态且覆盖画面各区域的图像；输入棋盘内角点行列与实际格距，经亚像素角点和相机标定生成普通相机内参与畸变系数。找不到完整棋盘、尺寸不一致或拟合无效时失败，不跳过坏图生成默认结果；鱼眼模型仍需已有标定参数。重投影 RMS 只衡量本次图像拟合，不能替代实际设备畸变验收。
 
-色偏创建使用至少三张独立拍摄的三通道棋盘 CVRAW，保持同一相机、曝光、增益和光学设置，覆盖不同画面区域。输入内角点列数、行数和允许的最大残差（像素），例如 `9,6,1`；行列须一奇一偶，残差上限由实际用途决定，示例值不代表验收标准。文件列表最后一张仅用于独立验证，其余拟合 R/B 到 G 的整数平移；输出 offset 按 B/G/R 排列，G 为零，边缘填黑。通道位移须小于棋盘最小点距的一半；完整棋盘检测失败、重复文件、输入参数不一致、任意拟合或验证点超过残差上限、验证 RMS 变差时拒绝生成，不静默丢弃异常点或改用其他变换。保存结果显示验证前后 RMS 和最大残差，JSON 的附加生成记录保留输入文件名、SHA-256、布局、棋盘参数和误差；这些只证明所提供棋盘点的拟合结果，不能证明真实设备精度、完整视场覆盖或边缘效果。实现入口为 `CalibrationColorShiftCreation`，回归为 `CalibrationColorShiftCreationTests`；旋转、尺度变化和径向色差不属于此整数平移模型。
+色偏创建使用至少三张独立拍摄的三通道棋盘 CVRAW，保持同一相机、曝光、增益和光学设置，覆盖不同画面区域。输入内角点列数、行数和允许的最大残差（像素），例如 `9,6,1`；行列须一奇一偶，残差上限由实际用途决定，示例值不代表验收标准。文件列表最后一张仅用于独立验证，其余拟合 R/B 到 G 的整数平移；输出 offset 按 B/G/R 排列，G 为零，边缘填黑。通道位移须小于棋盘最小点距的一半；完整棋盘检测失败、重复文件、输入参数不一致、任意拟合或验证点超过残差上限、验证 RMS 变差时拒绝生成，不静默丢弃异常点或改用其他变换。保存结果显示验证前后 RMS 和最大残差，JSON 的附加生成记录保留输入文件名、SHA-256、布局、棋盘参数和误差；这些只证明所提供棋盘点的拟合结果，不能证明真实设备精度、完整视场覆盖或边缘效果。实现入口为 `CalibrationColorShiftCreation`；旋转、尺度变化和径向色差不属于此整数平移模型。
 
 输入布局必须明确选择本地交错 BGR 或旧式平面 RGB；扩展名无法判断布局。DSNU/均匀场输出采用 Native V1 校正图格式，三通道负载按交错 BGR 保存。生成支持取消，最终文件只在生成完成后保存；离线结果仍需已知参考与实际相机验证。
 
@@ -149,7 +148,7 @@ MQTT 结果入口和 `ResultMessageBus` 的校准图像通知都由 `ViewCalibra
 
 本地节点执行色度校正时，更新已有 CVRAW 的色度参数尾块并继承取图的保存策略。若没有 RAW 文件，参数随内存帧传递。本地相机的“保存文件”控制 CVRAW 落盘，包含已执行的色度参数。普通“校正”节点兼容旧 CVCIE 图像。旧流程中的校正节点忽略 `SaveFiles`，相机节点的同名字段继续有效。基础校正改变了源像素而没有保存校正后 RAW 时，原文件的参数标记 `CanReplay=false`，须用校正后像素才能回放。
 
-本地“POI”和“实时 POI”优先使用当前帧，无帧时读取上游图像结果文件；同时接受完整 CIE 与包含 `colorvision.calibration.color` JSON 尾块的 CVRAW。RAW 输入必须具备与图像布局匹配、可回放的参数，并已完成所需翻转；参数缺失、损坏或不可回放时明确报错，不自动用未校正 RAW 计算。此能力不要求外置 JSON 文件。`LocalDeferredColorCalibrationTests` 覆盖完整/加速路径对照、翻转、基础校正组合及保存重读；真机取图与长时间现场内存趋势仍需独立验证。
+本地“POI”和“实时 POI”优先使用当前帧，无帧时读取上游图像结果文件，同时接受完整 CIE 与带 `colorvision.calibration.color` JSON 尾块的 CVRAW。RAW 输入须具备与图像布局匹配、可回放的参数，并完成所需翻转。参数缺失、损坏或不可回放时明确报错并停止计算。此能力无需外置 JSON。真机取图与长时间运行的内存趋势须独立验证。
 
 “实时 POI”和“校正+实时 POI”的 `IN_POI` 必须连接上游布点结果，沿用结果中的点位、类型、宽度和高度（原 `None` 语义），不再选择备用 POI 模板或覆盖点位类型、尺寸。输入数据可来自数据库明细或上游布点文件；缺少有效结果时明确提示连接上游布点节点。旧流程保存的 POI 模板、类型、尺寸及过滤/修正字段按未知属性规则忽略，重新保存后不再写出；节点类型与输入端口保持兼容。
 
@@ -159,6 +158,6 @@ MQTT 结果入口和 `ResultMessageBus` 的校准图像通知都由 `ViewCalibra
 
 ## 证据与验证缺口
 
-本页没有声明直接覆盖 `DeviceCalibration` 本地执行、MQTT 结果关联或缓存清理终态的自动化测试。相机模板克隆和上传测试只覆盖各自资源操作，不能作为这条运行链已经通过验证的证据。
+现场核对 `DeviceCalibration` 的本地执行、MQTT 结果关联和缓存清理的最终状态。
 
 验收需在有相应环境与授权后，分别验证校准资源适配、像素结果、输出文件、历史重开和失败清理边界。

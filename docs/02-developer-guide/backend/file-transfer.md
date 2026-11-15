@@ -5,7 +5,6 @@ status: "current"
 summary: "Web文件中转与桌面云盘的匿名上传、续传、公开分享及过期规则；桌面保存本机队列，网页队列不持久化。"
 aliases: ["云盘", "CloudDriveWindow", "TransferClient", "文件夹分享", "二维码分享", "文件中转", "Transfer", "file:transfer", "Upload-Offset", "X-Transfer-Client", "stream_transfer_upload", "create_or_resume_transfer_upload", "get_or_create_transfer_share", "断点续传", "匿名上传", "文件分享过期", "TransferPanel", "uploadTransferFile", "取消上传", "重试失败项", "服务器确认中", "colorvision.transfer.client-id"]
 code_paths: ["UI/ColorVision.Rbac/CloudDrive", "Web/Backend/routes/transfer.py", "Web/Backend/transfer_files.py", "Web/Backend/app_setup.py", "Web/Backend/config_loader.py", "Web/Backend/services/auth_policy.py", "Web/Backend/services/permission_service.py", "Web/Backend/services/scheduler.py", "Web/Backend/services/artifact_delivery.py", "Web/Backend/routes/artifact_delivery.py", "Web/Frontend/src/pages/TransferPage.tsx", "Web/Frontend/src/pages/TransferSharePage.tsx", "Web/Frontend/src/components/TransferPanel.tsx", "Web/Frontend/src/services/transferUpload.ts", "Web/Frontend/src/services/transferShares.ts", "Web/Frontend/src/utils/transferAccess.ts"]
-test_paths: ["Web/Backend/test_transfer_files.py", "Web/Backend/test_auth_policy.py", "Web/Frontend/tests/transferAccess.test.ts", "Web/Frontend/tests/transferUpload.test.ts", "Test/ColorVision.UI.Tests/CloudDriveTransferTests.cs"]
 related: ["delivery.backend", "operations.file-server", "operations.exports", "platform.rbac"]
 ---
 
@@ -29,7 +28,7 @@ Web 的“文件中转”（`/transfer`）用于多文件上传、断点续传�
 
 队列仅展示本机记录，不提供全站文件列表。“移除本机记录”同时清理该项自己生成的 ZIP，不删除服务器文件、不撤销已发出的链接；上传完成回执成功保存后也清理该项 ZIP。用户源文件不参与此清理。匿名 UUID 和分享链接都是持有者能力，不是账号权限或永久网盘存储。
 
-`Test/ColorVision.UI.Tests/CloudDriveTransferTests.cs` 覆盖持久化身份及断点恢复、最终响应丢失、offset 冲突、源文件变化、零字节上传、文件夹 ZIP 和损坏记录保护。真实 NAS、反向代理、大文件容量和跨电脑下载需要另外使用合成数据验证，不能用单元测试替代。
+真实 NAS、反向代理、大文件容量和跨电脑下载使用合成数据验证。
 
 ## 使用网页中转文件
 
@@ -106,7 +105,7 @@ Web 的“文件中转”（`/transfer`）用于多文件上传、断点续传�
 
 新建/恢复会话按上传者、精确文件名、声明大小和由 64 个十六进制字符组成的 `fingerprint` 匹配未完成会话。网页用文件名、大小、`lastModified` 和首尾各最多 64 KiB 的样本计算 SHA-256 指纹；这不是整个文件的内容哈希。服务端只校验指纹格式并用它找会话，不重算上传内容的哈希，因此 fingerprint 不是服务端完整性验收。零字节文件可在创建会话时直接完成。
 
-浏览器仅在安全上下文中提供 `crypto.subtle`。网页在它可用时使用原生 SHA-256，HTTP 部署下按需加载 JavaScript SHA-256 实现，输入与结果保持一致以兼容原断点；不会把整个大文件读入内存。`transferUpload.test.ts` 覆盖这两个环境的指纹兼容性、空文件及大于 2 GiB 文件的采样边界，模拟会话响应，不代表实际完成多 GB 传输。
+浏览器在安全上下文中提供 `crypto.subtle`。网页在它可用时使用原生 SHA-256，HTTP 部署下按需加载 JavaScript SHA-256 实现。两者的输入与结果一致以兼容原断点，读取仅涉及采样内容。实际多 GB 传输须部署验收。
 
 追加只接受与服务端确认值相等的 offset；错误 offset 返回 `409`，缺少/无法解析的请求头为 `400`，过大块为 `413`，超过声明总大小为 `409`。同一进程用会话锁串行追加；不要把它推断成多个独立服务进程共享目录时的分布式锁。
 
@@ -142,8 +141,8 @@ Web 的“文件中转”（`/transfer`）用于多文件上传、断点续传�
 
 ## 实现与验证范围
 
-`TransferPage.tsx` / `transferAccess.ts` 决定网页访问，`TransferPanel.tsx` 管理内存队列、覆盖确认和操作反馈，`transferUpload.ts` 负责指纹、客户端标识、分块和重试；`TransferSharePage.tsx` / `transferShares.ts` 读取公开分享。`transferAccess.test.ts` 覆盖登录跳转、访客开关、权限移除和强制改密分流，不覆盖完整上传队列。
+`TransferPage.tsx` / `transferAccess.ts` 决定网页访问，`TransferPanel.tsx` 管理内存队列、覆盖确认和操作反馈，`transferUpload.ts` 负责指纹、客户端标识、分块和重试。`TransferSharePage.tsx` / `transferShares.ts` 读取公开分享。
 
-`test_transfer_files.py` 有直属路径限制、所属会话、错误 offset、断线重试、匿名覆盖冲突、大小限制、到期隐藏与文件保留、旧清理任务兼容、常规 Basic/Bearer/Session 与浏览器 CSRF、整文件流式上传和 HEAD 不走普通删除分支等用例。到期回归保护文件保留及过期链接不能因目录扫描或会话清理重新生效的边界。`test_auth_policy.py` 验证普通角色参与授权、scope、配置 Basic 及改密限制。
+现场验收要核对到期后文件保留，且扫描目录或清理会话后过期链接仍失效。
 
-这些测试不构成真实反向代理、大文件容量、浏览器刷新/服务重启端到端或多进程并发验收；本页未声称已运行测试。尤其“整文件覆盖临时文件后保留旧 expiry”与“同名覆盖复用分享 token”的上述结论来自调用链，不假冒专门回归通过。真实上传、公开分享与删除涉及文件和访问权限副作用，应使用获授权的隔离目录与合成数据分别验证。
+真实反向代理、大文件容量、浏览器刷新、服务重启和多进程并发须分别验证。核对同名覆盖时原 expiry 和分享 token 的处理。实际上传、公开分享与删除使用获授权的隔离目录与合成数据。

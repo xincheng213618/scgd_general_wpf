@@ -5,7 +5,6 @@ status: "current"
 summary: "主程序、插件和项目包的正式发布入口、只读校验与上传清理副作用。"
 aliases: ["发布","打包","release.bat","package_project.bat","只做本地构建","版本标签","auto-tag.yml"]
 code_paths: [".github/workflows/auto-tag.yml","Directory.Build.props","Scripts/release.bat","Scripts/build.py","Scripts/build_update.py","Scripts/generate_shared_files.py","Scripts/installer_shared_files.py","Scripts/package_project.bat","Scripts/package_plugin.bat","Scripts/package_cvxp.py","Scripts/build_spectrum.py","Scripts/export_offline_updates.py"]
-test_paths: ["Scripts/tests"]
 related: ["delivery.index","delivery.testing","delivery.backend","delivery.update","delivery.code-statistics","ui.publishing"]
 ---
 

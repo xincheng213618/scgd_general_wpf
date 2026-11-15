@@ -4,8 +4,7 @@ knowledge_type: "reference"
 status: "current"
 summary: "说明 POI 主从表、伴生模板、复制导入、运行事件与结果类型映射。"
 aliases: ["POI复制会覆盖旧点位吗","TemplatePoi","PoiParam","FlowPackagePoiCodec","ViewHandleRealPOI","POI图标平铺","PoiTemplateManagerWindow","键盘亮度校正","POINode","IsCCTWave","色温/波长","9点校准","EnableNinePointCalibration"]
-code_paths: ["Engine/ColorVision.Engine/Templates/POI/TemplatePoi.cs","Engine/ColorVision.Engine/Templates/POI/PoiTemplateManagerWindow.cs","Engine/ColorVision.Engine/Templates/POI/EditPoiParam1.xaml.cs","Engine/ColorVision.Engine/Templates/Browser","Engine/ColorVision.Engine/Media/PoiImageViewComponent.cs","Engine/ColorVision.Engine/Templates/POI/PoiParam.cs","Engine/ColorVision.Engine/Templates/POI/BuildPoi/TemplateBuildPoi.cs","Engine/ColorVision.Engine/Templates/Jsons/BuildPOIAA/TemplateBuildPOIAA.cs","Engine/ColorVision.Engine/Templates/Jsons/PoiAnalysis/TemplatePoiAnalysis.cs","Engine/ColorVision.Engine/FlowProcessing/Nodes/Compatibility/POI/POINode.cs","Engine/ColorVision.Engine/FlowProcessing/Nodes/Compatibility/POI/BuildPOINode.cs","Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalCalibrationRealPoiNode.cs","UI/ColorVision.Core/NinePointBlockCalibration.cs","Engine/ColorVision.Engine/Templates/POI/LocalNinePointPoiCalibration.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/LocalPoiTemplateStorageTests.cs","Test/ColorVision.UI.Tests/FlowPackagePoiCodecTests.cs","Test/ColorVision.UI.Tests/PoiPointModelTests.cs","Test/ColorVision.UI.Tests/KeyboardLuminanceCalibrationTests.cs","Test/ColorVision.UI.Tests/CompatibilityNodeMigrationTests.cs","Test/ColorVision.UI.Tests/CompatibilityCameraPropertyEditorTests.cs","Test/ColorVision.UI.Tests/NinePointBlockCalibrationTests.cs","Test/ColorVision.UI.Tests/LocalNinePointPoiCalibrationTests.cs"]
+code_paths: ["Engine/ColorVision.Engine/Templates/POI","Engine/ColorVision.Engine/Templates/Browser","Engine/ColorVision.Engine/Media/PoiImageViewComponent.cs","Engine/ColorVision.Engine/Templates/Jsons/BuildPOIAA/TemplateBuildPOIAA.cs","Engine/ColorVision.Engine/Templates/Jsons/PoiAnalysis/TemplatePoiAnalysis.cs","Engine/ColorVision.Engine/FlowProcessing/Nodes/Compatibility/POI/POINode.cs","Engine/ColorVision.Engine/FlowProcessing/Nodes/Compatibility/POI/BuildPOINode.cs","Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalCalibrationRealPoiNode.cs","UI/ColorVision.Core/NinePointBlockCalibration.cs"]
 related: ["algorithms.index","algorithms.poi-routes","flow.templates","engine.results"]
 ---
 
@@ -58,7 +57,7 @@ POI 是“点集模板体系”，不是单个检测算法。维护时先分清�
 
 `EditPoiParam` 和键盘模板编辑器 `EditPoiParam1` 使用动态主题底色、分隔条和无外框点位列表；图像画布独立于窗口主题。界面验收检查浅色、深色及运行时主题切换。
 
-`EditPoiParam1` 的键盘快速亮度校正使用 `opencv_helper.dll`，通过 Unicode 文件接口加载所选模板的单通道 Luminance 资源。有效按键的归一化灰阶均值仍先四舍五入并限制到 16 位范围，再按当前图像的 `Exp` / `exp` 曝光执行校正；缺少曝光元数据时使用有效模板曝光，否则取 1。结果映射回原按键顺序，无效按键保留缺失值。未配置资源、文件加载失败或执行失败时返回未校正灰阶；四色模板仍不支持这条单通道快速路径。`KeyboardLuminanceCalibrationTests` 验证灰阶量化、曝光缩放、按键顺序与失败边界，不替代真机键盘验收。
+`EditPoiParam1` 的键盘快速亮度校正使用 `opencv_helper.dll`，通过 Unicode 文件接口加载所选模板的单通道 Luminance 资源。有效按键的归一化灰阶均值仍先四舍五入并限制到 16 位范围，再按当前图像的 `Exp` / `exp` 曝光执行校正；缺少曝光元数据时使用有效模板曝光，否则取 1。结果映射回原按键顺序，无效按键保留缺失值。未配置资源、文件加载失败或执行失败时返回未校正灰阶；四色模板仍不支持这条单通道快速路径。
 
 ## Flow 消费
 
@@ -86,7 +85,7 @@ POI 也会被 `POIAnalysisNode`、SFR ROI、OLED AOI、项目包等继续消费�
 
 该节点每次执行均按选择的亮度、色度或亮色度模式生成倍率，不使用旧“关注点修正标定”的触发阈值、修正输出模板或原地修改 POI 明细。倍率合入当前 RAW 的色度矩阵：三乘三矩阵按 XYZ 输出行缩放，曝光和增益已包含在原矩阵中，不再次归一化。只替换 CVRAW 尾部参数，保留 RAW 像素、原始色度系数、参考点与光谱结果标识；重复执行从原系数重新计算，避免累计倍率。仅缓存的相机图像在此节点同步落盘，已有文件只更新尾部。文件写入成功后才追加同批次图像主记录，写库失败尝试恢复原矩阵；成功后下游本地 POI 和 Conoscope 从新矩阵计算 XYZ，原 POI 记录继续表示修正前测量。相机校正模板不被修改，也不另存 CVCIE。
 
-`SpectrumRawCalibrationTests` 覆盖矩阵布局、三种修正模式、重复写回、RAW 像素保持和写库失败回滚；Conoscope 的 `FlowCaptureSelectionTests` 与 `CalibratedRawDocumentTests` 覆盖最新成功记录选择及同一路径换矩阵后重新加载。实际精度仍需现场验证同一光源、光学路径及参考视场；单点倍率不能证明所有角度或不同光谱分布均获得同样精度。
+实际精度需在同一光源、光学路径及参考视场下现场核对。单点倍率的精度结论仅适用于被验证的角度和光谱分布。
 
 ## 结果 handler
 
@@ -124,6 +123,4 @@ POI 也会被 `POIAnalysisNode`、SFR ROI、OLED AOI、项目包等继续消费�
 
 ## 验证入口与缺口
 
-`Test/ColorVision.UI.Tests/LocalPoiTemplateStorageTests.cs` 验证本地点位保存。另有 `Test/ColorVision.UI.Tests/FlowPackagePoiCodecTests.cs`、`Test/ColorVision.UI.Tests/PoiPointModelTests.cs`。
-
-包编解码与点模型测试不替代现场数据库保存、MQTT POI 服务和各结果 handler 回放；修改 ID 或引用名时补充旧模板集成验证。
+核对现场数据库保存、MQTT POI 服务和结果回放。更改 ID 或引用名时用旧模板联调。

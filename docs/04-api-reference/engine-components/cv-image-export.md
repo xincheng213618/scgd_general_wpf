@@ -4,8 +4,7 @@ knowledge_type: "topic"
 status: "current"
 summary: "CVRAW/CVCIE 原生导出的窗口、命令行参数、通道和命名规则，以及覆盖、部分失败和退出码边界。"
 aliases: ["CVRAW转TIFF", "CVCIE导出", "TIFF参数元数据", "ColorVision命令行导出", "Python批量转换CVRAW", "导出返回0但没有文件", "CVRawFileExporter", "VExportCIE", "ExportCVCIE", "SaveToTif"]
-code_paths: ["Engine/ColorVision.Engine/Media/Export/CalibratedImageExport.cs", "Engine/ColorVision.Engine/Media/Export/PngParameterWriter.cs", "Engine/ColorVision.Engine/Media/Export/CvRawBatchExporter.cs", "Engine/ColorVision.Engine/Media/FileProcessorCVRaw.cs", "Engine/ColorVision.Engine/Media/FileCVCIE.cs", "Engine/ColorVision.Engine/Media/Export/VExportCIE.cs", "Engine/ColorVision.Engine/Media/Export/TiffImageDescriptionWriter.cs", "Engine/ColorVision.Engine/Media/Export/ExportCVCIE.xaml", "Engine/ColorVision.Engine/Media/Export/ExportCVCIE.xaml.cs", "UI/ColorVision.ImageEditor/Tif/ColorVisionTiffParameters.cs", "UI/ColorVision.ImageEditor/Tif/Opentif.cs", "UI/ColorVision.UI/FileProcessorFactory.cs", "UI/ColorVision.UI/Shell/ArgumentParser.cs", "ColorVision/App.xaml.cs", "ColorVision/Copilot/Skills/colorvision-batch-image-conversion"]
-test_paths: ["Test/ColorVision.UI.Tests/ColorVisionPixelBindingTests.cs", "Test/ColorVision.UI.Tests/ExportCieTests.cs"]
+code_paths: ["Engine/ColorVision.Engine/Media/Export","Engine/ColorVision.Engine/Media/FileProcessorCVRaw.cs","Engine/ColorVision.Engine/Media/FileCVCIE.cs","UI/ColorVision.ImageEditor/Tif/ColorVisionTiffParameters.cs","UI/ColorVision.ImageEditor/Tif/Opentif.cs","UI/ColorVision.UI/FileProcessorFactory.cs","UI/ColorVision.UI/Shell/ArgumentParser.cs","ColorVision/App.xaml.cs","ColorVision/Copilot/Skills/colorvision-batch-image-conversion"]
 related: ["engine.file-io", "ui.image-editor", "algorithms.platform", "copilot.skills"]
 ---
 
@@ -94,4 +93,4 @@ CVCIE 导出从同一文件句柄读取选定的内嵌通道，并在多通道�
 
 `FileProcessorCVRaw.cs` 负责 CLI 参数和静默退出；`VExportCIE` 负责名称、通道、编码与路径；`ExportCVCIE.xaml.cs` 负责窗口状态和提示；`FileProcessorFactory.TryExportFile` 与 `App.Application_Startup` 决定分派和上层失败语义。随包的 `colorvision-batch-image-conversion` 技能保留脚本执行所需的最小参数与失败规则，不能只依赖未随包交付的仓库文档。
 
-`ExportCieTests` 覆盖目录创建、16 位 RAW 的 TIFF/PNG 像素、校正 RAW 的浮点 XYZ/Y 数值与负值、不可重放参数的原图回退、单图无后缀、带点名称下原图与 XYZ 多图的独立后缀、相对关联原图、JPEG 转换及窗口选项策略。这些测试入口不证明进程退出码、启动弹窗、超时或整组输出的实机行为已通过验证；文档核对不需要启动导出、覆盖文件或读取现场样本。
+交付验收按实际进程核对退出码、启动弹窗、超时和整组输出。只读核对无需启动导出、覆盖文件或读取现场样本。

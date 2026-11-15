@@ -5,7 +5,6 @@ status: "current"
 summary: "隔离STN流程的加载、起始节点就绪、执行超时与诊断收尾；停止请求不证明设备停稳，默认执行不限时，批次与前后处理由调用方负责。"
 aliases: ["无界面运行流程","独立调度","流程就绪等待","无界面流程超时","节点结束诊断","FlowHeadlessExecutionRequest","FlowHeadlessExecutionService","FlowHeadlessExecutionResult","FlowHeadlessExecutionObserver","RunSavedFlowHeadlessAsync","HeadlessFlowJob","FlowRuntimeHost","FlowEngineRunner","流程ContentHash","无界面流程Started=false","HeadlessStartupException","ReadinessTimeoutMs","ExecutionTimeoutMs"]
 code_paths: ["Engine/ColorVision.Engine/FlowProcessing/Runtime/FlowHeadlessExecutionService.cs","Engine/ColorVision.Engine/FlowProcessing/Runtime/FlowExecutionCoordinator.cs","Engine/ColorVision.Engine/FlowProcessing/Runtime/AsyncOperationDrain.cs","Engine/ColorVision.Engine/FlowProcessing/Scheduling/HeadlessFlowJob.cs","Engine/FlowEngineLib/Runtime/FlowRuntimeHost.cs","Engine/FlowEngineLib/Runtime/FlowEngineRunner.cs","Engine/FlowEngineLib/FlowEngineControl.cs","Engine/FlowEngineLib/Start/BaseStartNode.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/FlowHeadlessExecutionServiceTests.cs","Test/ColorVision.UI.Tests/FlowRuntimeHostTests.cs","Test/ColorVision.UI.Tests/FlowHeadlessHostTests.cs"]
 related: ["flow.architecture","flow.runtime","flow.templates","flow.session","ui.scheduler"]
 ---
 
@@ -125,6 +124,6 @@ FlowHeadlessExecutionResult result =
 
 ## 验证入口与缺口
 
-`FlowHeadlessExecutionServiceTests` 覆盖请求副本、并发隔离、取消结果、无效 STN、观察器和无服务快照拒绝；`FlowRuntimeHostTests` / `FlowHeadlessHostTests` 覆盖非可视宿主及生命周期。取消用例采用本地不结束节点，观察器用例由测试节点直接发出 Run/End 事件，不是真实 MQTT/设备往返。以上测试文件尚未直接覆盖执行超时窗口、超过 1 秒的观察器收尾、释放宿主的计时口径或外层异常丢失启动状态的情况；这些契约来自当前源码核对，不是已通过的行为测试结论。裸执行测试也不能证明设备停稳、Quartz 配置完整或项目业务输出成功。
+设备停稳、Quartz 配置和项目业务输出需在现场联调确认。
 
 对应改动应核对两次并发执行不共享图、请求创建后修改原输入无效、取消/超时/加载失败/启动拒绝有明确结果。若还要求批次、后处理、MES 或客户结果，必须另外验证负责这些阶段的宿主，不能将裸图完成当作业务交付。

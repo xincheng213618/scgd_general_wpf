@@ -5,7 +5,6 @@ status: "current"
 summary: "本地十字定位的图像菜单、Flow 节点、生产参数、全图坐标、原生返回值与失败诊断。"
 aliases: ["本地十字定位", "本地 FindCross", "M_FindCrossLocal", "M_FindCrossLocalGetLastError", "FindCrossLocal", "FindCrossLocalOptions", "FindCrossLocalResultParser", "LocalFindCrossNode", "PatternCrossV1", "OuterPanel", "ExpectedAngleDegrees", "AngleToleranceDegrees", "CalibrationOffset", "RawGeometricCenter", "LocalFindCrossCenterX", "NativeConfigurationInvalid", "AmbiguousPattern", "PatternClipped", "LegacyParametersIgnored", "标准中心使用图像中心", "最大允许旋转偏差"]
 code_paths: ["Native/include/opencv_media_export.h", "Native/opencv_helper/algorithm/find_cross", "UI/ColorVision.Core/FindCrossLocal.cs", "UI/ColorVision.Core/OpenCVMediaHelper.cs", "UI/ColorVision.ImageEditor/EditorTools/Algorithms/Calculate/FindCross/FindCrossLocalCM.cs", "Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalFindCrossNode.cs", "Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalFindLuminousAreaNode.cs"]
-test_paths: ["Test/opencv_helper_test/test_find_cross.cpp", "Test/ColorVision.UI.Tests/FindCrossLocalTests.cs", "Test/ColorVision.UI.Tests/LocalFindCrossNodeTests.cs", "Test/ColorVision.UI.Tests/FindCrossResultOverlayTests.cs"]
 related: ["algorithms.index", "engine.native-integration", "engine.results", "ui.image-editor", "delivery.native-testing"]
 ---
 
@@ -198,6 +197,5 @@ int M_FindCrossLocalGetLastError(char* buffer, std::uint32_t bufferLength);
 
 ## 验证入口与边界
 
-`FindCrossLocalTests` 覆盖生产参数、兼容 JSON、诊断解析、调用约定及释放异常；其中 `NativeV2Fact` 用例依赖实际 native 环境，不能把普通托管用例等同于导出已执行。`LocalFindCrossNodeTests` 使用替身验证输入选择、生产 JSON、结果校验、事务与失败发布；`FindCrossResultOverlayTests` 检查历史结果绘制契约。
 
 原生合成样本和 `.cvraw` 标注对照入口见[原生测试与调试](../../../02-developer-guide/engine-development/native-testing.md)。检查实际退出码和跳过信息；合成测试、页面构建或正确叠图均不能代替现场图像的精度、重复性及误检验收。

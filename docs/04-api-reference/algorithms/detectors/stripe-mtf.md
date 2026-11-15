@@ -5,7 +5,6 @@ status: "current"
 summary: "ImageView 与 Flow 共用的本地条纹亮暗对比度：取样、四部定位、比例与百分数、输入限制及 MTF 2.0 结果兼容。"
 aliases: ["条纹MTF", "StripeMtfAnalyzer", "ImageView MTF", "H/V条纹", "本地MTF", "LocalMtfNode", "MTF计算(V2)", "StripeMtf.TrimmedHistogram/1"]
 code_paths: ["UI/ColorVision.ImageEditor/Algorithms/Mtf", "UI/ColorVision.ImageEditor/EditorTools/Algorithms/Calculate/Mtf", "Engine/ColorVision.Engine/PropertyEditor/LocalMtfConfigurationEditor.cs", "Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalMtfNode.cs", "Engine/ColorVision.Engine/Services/Devices/Algorithm/LocalMtf"]
-test_paths: ["Test/ColorVision.UI.Tests/StripeMtfLocatorTests.cs"]
 related: ["algorithms.arvr", "engine.results", "flow.node-extension"]
 ---
 
@@ -104,4 +103,4 @@ $$
 
 ## 验证与现场复核
 
-`StripeMtfLocatorTests` 使用合成图验证四部定位对背景增强、位深、亮度和不合适参考阈值的处理，并检查缺角图案仍会失败、输入像素不会被修改。套件还保留节点模板映射和结果叠图等相邻契约，不包含供应商 DLL 对照或现场样本宿主。替换生产流程前应在获授权环境使用相同原图、ROI、参数和判定限对照自研算法与目标 DLL，并把读图、数据库、UI 和整套流程耗时分别记录。
+替换生产流程前，在获授权环境使用相同原图、ROI、参数和判定限，对照自研算法与目标 DLL。分别记录读图、数据库、UI 和整套流程耗时。

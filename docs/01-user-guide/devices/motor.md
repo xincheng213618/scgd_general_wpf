@@ -5,7 +5,6 @@ status: "current"
 summary: "电机设备配置、MQTT运动命令与位置读回契约；移动回包不会刷新位置，客户端参数不能代替现场限位与急停。"
 aliases: ["电机不动","回原点","返回原点","获取位置","调整光圈","位置没有刷新","绝对相对移动","DeviceMotor","MQTTMotor","GetPosition","MoveDiaphragm","DwTimeOut"]
 code_paths: ["Engine/ColorVision.Engine/Services/Devices/Motor/DeviceMotor.cs","Engine/ColorVision.Engine/Services/Devices/Motor/ConfigMotor.cs","Engine/ColorVision.Engine/Services/Devices/Motor/MQTTMotor.cs","Engine/ColorVision.Engine/Services/Devices/Motor/DisplayMotor.xaml.cs","Engine/ColorVision.Engine/Services/Devices/Motor/DisplayMotor.xaml","Engine/ColorVision.Engine/Services/Core/MQTTServiceBase.cs","Engine/ColorVision.Engine/Services/PhyCameras/Configs/MotorConfig.cs","Engine/FlowEngineLib/MotorNode.cs","Engine/ColorVision.Engine/FlowProcessing/Nodes/Compatibility/Camera/CamMotorNode.cs"]
-test_paths: []
 related: ["engine.devices","operations.device-configuration","engine.mqtt","flow.session"]
 ---
 
@@ -71,4 +70,4 @@ related: ["engine.devices","operations.device-configuration","engine.mqtt","flow
 
 ## 验证边界
 
-本主题没有声明独立电机自动化测试。源码核对可确认参数来源、消息事件和位置赋值，但不能证明真实控制器的单位、方向、限位、回零、停止或到位行为；这些仍需隔离现场、确认授权后的设备验收。本页的源码和文档检查不提供现场运动验收结论。
+在获授权的隔离现场核对控制器单位、方向、限位、回零、停止和到位行为。

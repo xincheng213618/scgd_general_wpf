@@ -5,7 +5,6 @@ status: "current"
 summary: "按控件、窗口和扩展接口定位对应 UI 源码与专题。"
 aliases: ["控件窗口源码在哪里","IEditorTool","IPropertyEditor","IEditor"]
 code_paths: ["UI/ColorVision.Common/Interfaces","UI/ColorVision.UI/PropertyEditor","UI/ColorVision.ImageEditor/EditorToolFactory.cs","UI/ColorVision.Solution/Editor/EditorManager.cs"]
-test_paths: []
 related: ["ui.index","ui.property-grid","ui.settings","ui.wizards","ui.menus","ui.hotkeys","ui.search","ui.localization","ui.status-bar","ui.discovery"]
 ---
 

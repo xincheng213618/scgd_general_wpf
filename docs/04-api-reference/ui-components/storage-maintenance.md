@@ -5,7 +5,6 @@ status: "current"
 summary: "存储分类占用与模块扩展接口、独立文件确认清理，以及配置页的恢复点和选择性下次启动重置。"
 aliases: ["存储", "配置", "存储空间", "分类占用", "扫描空间", "清理选中项", "配置恢复点", "安排重置", "取消重置", "清理日志", "运行垃圾", "工作垃圾", "清理缓存", "重置设置", "StorageMaintenanceCatalog", "StorageMaintenanceControl", "StorageMaintenanceViewModel", "MaintenanceFileCleanup", "ConfigMaintenanceResetService", "ThumbnailCacheMaintenanceSnapshot", "HasPackageMaintenanceProtection", "HasActiveUpdateForCleanup", "文件缓存管理", "内存缓存管理", "FileManagementWindow", "IFileMaintenanceProvider", "IStorageUsageProvider", "增量扫描"]
 code_paths: ["ColorVision/Settings/Maintenance", "ColorVision/App.xaml.cs", "ColorVision/Update/CombinedUpdateCoordinator.cs", "UI/ColorVision.UI/Maintenance", "UI/ColorVision.UI/ConfigMaintenanceResetService.cs", "UI/ColorVision.UI/ConfigHandler.cs", "UI/ColorVision.UI.Desktop/Update/ExitUpdateHandoff.cs", "UI/ColorVision.UI.Desktop/Download/Aria2cDownloadManager.cs", "UI/ColorVision.UI.Desktop/Download/Infrastructure/DownloadTaskStore.cs", "UI/ColorVision.ImageTools/MultiImageViewer/ThumbnailCacheManager.cs", "UI/ColorVision.ImageTools/MultiImageViewer/ThumbnailCacheManager.Maintenance.cs", "Engine/ColorVision.Engine/Services/Storage", "Engine/ColorVision.Engine/FlowProcessing/PreProcess"]
-test_paths: ["Test/ColorVision.UI.Tests/MaintenanceFileCleanupTests.cs","Test/ColorVision.UI.Tests/StorageMaintenanceCatalogTests.cs","Test/ColorVision.UI.Tests/StorageMaintenanceTests.cs","Test/ColorVision.UI.Tests/StorageOverviewTests.cs","Test/ColorVision.UI.Tests/StorageUsageScannerTests.cs","Test/ColorVision.UI.Tests/EngineStorageUsageProviderTests.cs","Test/ColorVision.UI.Tests/ThumbnailCacheMaintenanceTests.cs"]
 related: ["ui.settings", "ui.configuration", "operations.logs", "delivery.update", "engine.database-maintenance"]
 ---
 
@@ -108,19 +107,4 @@ related: ["ui.settings", "ui.configuration", "operations.logs", "delivery.update
 
 ## 验证入口与缺口
 
-相关隔离测试位于：
-
-- `MaintenanceFileCleanupTests.cs`：确认范围、身份变化、保留期、取消、占用和路径保护。
-- `StorageMaintenanceCatalogTests.cs`：实际日志命名、白名单目录、保护状态复查、新更新目录、续传文件与只读接管标记检查。
-- `StorageMaintenanceTests.cs`：扩展类别的扫描/清理与失败隔离、文件窗口加载自动扫描、ViewModel 门禁、保留期失效、取消与跨页面互斥；中英语言、深浅主题及 980/1180 宽度的隔离布局；真实设置框架中的注入分组、搜索、滚动复位与说明保留，不发现生产配置或连接生产服务。
-- `StorageOverviewTests.cs`：只读占用与保护文件、跨来源清单去重、准备失败清除旧统计、无清单统计拒绝计入、重扫替换和取消后的部分结果；不初始化生产 provider 或访问真实业务目录。
-- `StorageUsageScannerTests.cs` 与 `EngineStorageUsageProviderTests.cs`：统计白名单、链接/重解析点和重复来源、模块专用路径、预处理扩展来源、活动保护及确认清单清理；仅使用注入路径与隔离文件。
-- `ThumbnailCacheMaintenanceTests.cs`：缺库只读扫描、变化后重扫、事务清理、原图保留和维护 generation 推进；未模拟旧生成任务的实际回写。
-
-从仓库根目录可执行最小相关测试；仅针对测试创建的隔离数据，不运行实际维护页的删除、联网更新或业务数据清理：
-
-```powershell
-dotnet test .\Test\ColorVision.UI.Tests\ColorVision.UI.Tests.csproj -p:Platform=x64 --filter "FullyQualifiedName~MaintenanceFileCleanupTests|FullyQualifiedName~StorageMaintenanceCatalogTests|FullyQualifiedName~StorageMaintenanceTests|FullyQualifiedName~ThumbnailCacheMaintenanceTests"
-```
-
-测试文件存在和知识检查通过不代表测试已运行或真实窗口已验收。日志滚动配置变体、多个应用实例、活跃更新/反馈、真机缩略图并发、设置窗口关闭/卸载及完整重启重置仍需按变更风险验证，不能拿一次模拟目录测试替代这些场景。
+根据变更核对日志滚动、多个实例、活跃更新和反馈、缩略图并发、设置窗口关闭及重启重置。

@@ -5,7 +5,6 @@ status: "current"
 summary: "MySQL恢复后更新流程节点标识，再同步配置和重启注册中心；支持独立更新按钮。SQL导入不回滚，迁移备份不含结果。"
 aliases: ["MySQL数据库恢复", "加载SQL备份", "数据库重置", "资源迁移备份", "恢复失败但数据已改变", "恢复后重启", "更新流程节点", "UpdateRestoredFlowNodes", "FlowNodeIdentityNormalizer", "Sensor字典ID重映射", "MySqlDatabaseMaintenanceService", "RestoreAndRestartAsync", "RestoreSqlFileAsync", "RestoreMysql", "ResetDatabaseFromSqlFileAsync", "SynchronizeInstalledServiceConfigs", "UpdateConfigFile", "MigrationBackupTableNames", "BuildMigrationDictionaryDependencyStatements", "SensorTemplateMigrationSqlBuilder", "MySqlRestoreProgressWindow"]
 code_paths: ["Engine/ColorVision.Engine/Mysql/MySqlDatabaseMaintenanceService.cs", "Engine/ColorVision.Engine/Mysql/MySqlLocalServicesManager.cs", "Engine/ColorVision.Engine/Mysql/MySqlRestoreProgressWindow.xaml", "Engine/ColorVision.Engine/Mysql/MySqlRestoreProgressWindow.xaml.cs", "Engine/ColorVision.Engine/Mysql/MySqlToolWindow.xaml", "Engine/ColorVision.Engine/Mysql/MySqlToolWindow.xaml.cs", "Engine/ColorVision.Engine/Templates/Flow/FlowNodeIdentityNormalizer.cs", "Engine/ColorVision.Engine/Mysql/SensorTemplateMigrationSqlBuilder.cs", "Engine/ColorVision.Engine/Services/RC/RCInitializer.cs", "UI/ColorVision.Database/MySqlControl.cs", "UI/ColorVision.Database/MySqlSetting.cs", "UI/ColorVision.Database/MySqlProtocolDefaults.cs", "UI/ColorVision.UI/ServiceHost/IColorVisionServiceHostClient.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/MySqlBackupRestoreSafetyTests.cs", "Test/ColorVision.UI.Tests/MySqlMigrationBackupTableTests.cs", "Test/ColorVision.UI.Tests/SensorTemplateMigrationTests.cs", "Test/ColorVision.UI.Tests/LvCameraNodeMigrationTests.cs"]
 related: ["engine.mysql-maintenance", "engine.database-maintenance", "plugins.windows-service", "platform.service-host", "operations.data", "engine.template-design"]
 ---
 
@@ -92,9 +91,4 @@ SQL导入、节点更新、配置写入和注册中心重启不在同一事务�
 
 底层导入只检查路径、`.sql`扩展名、存在和非空，按流输入 `mysql.exe`；默认库参数不会限制脚本中的 `USE`、DDL或跨库语句。成功返回脚本完整路径，不返回业务行数校验结果；进程非零/流失败可能发生在部分SQL已经执行之后。字符集、密码传递、两小时预算及尝试终止子进程树的规则见[外部工具边界](./mysql-maintenance.md#外部工具与错误边界)，终止客户端不构成数据库回滚。
 
-- `MySqlBackupRestoreSafetyTests` 包括进程参数、维护门、入口源码检查、恢复阶段失败摘要及临时XML更新；返回路径用例实际只检查方法返回类型，阶段摘要用例也不执行真实恢复或服务重启。
-- `MySqlMigrationBackupTableTests` 检查九张保留表组合及其与结果清理表分离，不验证真库存在、导出内容或schema兼容。
-- `SensorTemplateMigrationTests` 对合成数据生成SQL，检查业务code推导、ID冲突重映射和健康命令保留的字符串；没有在MySQL中执行生成脚本。
-- `LvCameraNodeMigrationTests` 使用迁移前保存的BV/LV流程验证标识写回、参数与连线保留、重复执行不变，以及未知/歧义类型、插件不透明属性、损坏数据和禁止实例化节点；没有在MySQL中执行更新语句。
-
-现存这些测试不覆盖真实dump/import、缺依赖仍成功、配置缺键/部分写失败、并发切配置或服务重启失败后的恢复验收。
+在获授权的隔离环境演练真实 dump/import，核对依赖、配置缺键及部分写失败，验证并发切配置或服务重启失败后的恢复。

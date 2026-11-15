@@ -5,7 +5,6 @@ status: "current"
 summary: "UI 扩展发现与入口缺失排查：AssemblyHandler 的程序集过滤、类型缓存和 provider 构造；刷新程序集不重建所有消费者，入口可见不证明初始化或业务完成。"
 aliases: ["插件加载了但入口没有出现", "UI运行时发现", "扩展发现", "程序集过滤", "类型扫描", "AssemblyHandler", "AssemblyService", "RegisterAssembly", "RefreshAssemblies", "ClearCaches", "GetTypes", "LoadImplementations", "ReflectionTypeLoadException", "Failed to load types from assembly", "Failed to create instance", "MenuManager"]
 code_paths: ["ColorVision/App.xaml.cs", "ColorVision/BuiltInModules.cs", "UI/ColorVision.Common/Interfaces/Assembly", "UI/ColorVision.UI/AssemblyHandler.cs", "UI/ColorVision.UI/Plugins/PluginLoader.cs", "UI/ColorVision.UI/Menus/MenuManager.cs", "UI/ColorVision.UI/ConfigSetting/ConfigSettingManager.cs", "UI/ColorVision.UI/PropertyEditor/PropertyEditorHelper.cs", "UI/ColorVision.UI/StatusBar/StatusBarManager.cs", "UI/ColorVision.UI/HotKey/HotkeyService.cs", "UI/ColorVision.UI/Search/SearchManager.cs", "UI/ColorVision.UI.Desktop/Wizards/WizardWindow.xaml.cs", "UI/ColorVision.ImageEditor/EditorToolFactory.cs", "UI/ColorVision.SocketProtocol/SocketJsonDispatcher.cs", "UI/ColorVision.SocketProtocol/SocketTextDispatcher.cs", "UI/ColorVision.Scheduler/QuartzSchedulerManager.cs", "UI/ColorVision.Solution/Editor/EditorManager.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/PluginLoaderTests.cs","Test/ColorVision.UI.Tests/MenuDiscoveryExclusionTests.cs","Test/ColorVision.UI.Tests/ModuleCatalogTests.cs"]
 related: ["ui.index", "ui.control-catalog", "ui.configuration", "ui.settings", "ui.wizards", "ui.menus", "ui.hotkeys", "ui.search", "ui.status-bar", "plugins.model", "ui.property-grid", "ui.image-editor-context", "ui.socket-protocol", "ui.scheduler", "ui.documents", "engine.results"]
 ---
 
@@ -73,8 +72,4 @@ related: ["ui.index", "ui.control-catalog", "ui.configuration", "ui.settings", "
 
 修改发现代码时，使用已知且无害的测试扩展，分别验证“程序集进入视图 → 类型进入候选 → 实例创建 → 目标宿主呈现”。涉及配置保存、热键注册、Socket 或任务执行，再按对应契约验证；不要用连接成功、窗口能打开或出现图标代替这些结果。
 
-- `ModuleCatalogTests` 用记录型服务检查重复登记与封存；另用真实 AssemblyHandler 检查 Rbac provider 进入既有快照、GetTypes 复用、部分类型加载失败保留可用项并剔除特性或构造签名无法解析的类型，以及并发旧查询无法回填失效缓存。它不覆盖所有位置/名称过滤、其它读取异常、构造异常或各消费方缓存。
-- `PluginLoaderTests` 检查跳过匹配和文件存在；任意字节文件也能通过存在性断言，测试没有完整装载 DLL 或验证全部依赖。
-- `MenuDiscoveryExclusionTests` 检查指定旧类型缺失和部分保留候选/位置，不是完整菜单树或业务初始化测试。菜单、设置、热键等的专项测试在各自主题中说明。
-
-这些测试引用不代表已运行。文档核验可读取源码、声明、配置路径和既有日志；真实调用扫描可能构造插件对象，插件装载还会写配置并执行扩展代码，需符合当前任务授权。构建或链接检查只能证明文档结构与路由，不证明全部扩展已完成初始化。
+文档核验可读取源码、声明、配置路径和既有日志；真实调用扫描可能构造插件对象，插件装载还会写配置并执行扩展代码，需符合当前任务授权。构建或链接检查只能证明文档结构与路由，不证明全部扩展已完成初始化。

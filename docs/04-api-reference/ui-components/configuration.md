@@ -5,7 +5,6 @@ status: "current"
 summary: "应用设置 JSON 的备份恢复、配置路径、延迟实例、合并保存与重载；ConfigHandler单文件替换不等于内存发布成功，重载会使旧配置引用失效。"
 aliases: ["应用设置","软件设置","设置备份","备份恢复","配置文件在哪里","改了配置文件为什么没生效","配置导出缺少项目","配置重载旧引用","保存后发布失败","配置同名覆盖","完整类型名配置","ConfigHandler","ConfigService","SaveConfigs","BackupConfigs","LoadConfigs","LoadDefaultConfigs","Reload","ReloadFromDisk","ConfigsReloaded","TrySaveAndPublish","PersistedButPublishFailed","IConfigSecure"]
 code_paths: ["UI/ColorVision.UI/ConfigHandler.cs","UI/ColorVision.UI/ConfigFileStore.cs","UI/ColorVision.Common/Interfaces/Config/ConfigSectionAttribute.cs","UI/ColorVision.Common/Interfaces/Config/IConfig.cs","UI/ColorVision.Common/Interfaces/Config/IConfigSecure.cs","UI/ColorVision.Common/Interfaces/Config/IConfigService.cs","UI/ColorVision.Common/Interfaces/Config/ConfigService.cs","UI/ColorVision.UI/ConfigSetting/ConfigServiceAdapters.cs","UI/ColorVision.UI/ConfigSetting/ConfigSettingManager.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/ConfigHandlerPersistenceTests.cs","Test/ColorVision.UI.Tests/ConfigTypeNamePersistenceTests.cs","Test/ColorVision.UI.Tests/ConfigServiceAdaptersTests.cs"]
 related: ["ui.framework","ui.settings","ui.wizards","ui.menus","ui.property-grid","ui.storage-maintenance","operations.exports","operations.device-configuration"]
 ---
 
@@ -101,7 +100,7 @@ related: ["ui.framework","ui.settings","ui.wizards","ui.menus","ui.property-grid
 
 加载成功反序列化的 `IConfigSecure` 对象时调用 `Decrypt`；失败会记录并回退默认实例。保存时先把 candidate 序列化/反序列化为副本，只对副本调用 `Encryption`，再序列化副本写盘。
 
-因此加密钩子失败不应把原 candidate 留在半加密状态；已有测试针对这一点断言。但接口只是钩子，不证明实现采用了何种密钥管理或保护了每个字段，也不保证配置构造/属性访问完全无副作用。不能把所有 JSON 默认当作已加密，更不要把实际配置内容复制进日志或知识文档。
+加密钩子失败时保留原 candidate。加密范围、密钥管理和属性访问的副作用由实际实现决定。配置 JSON 仍按敏感资料保护。
 
 ## 落盘、内存发布与回滚
 
@@ -140,8 +139,6 @@ related: ["ui.framework","ui.settings","ui.wizards","ui.menus","ui.property-grid
 
 ## 验证入口与缺口
 
-`ConfigHandlerPersistenceTests` 覆盖重载对象替换及通知顺序、坏文件拒绝、同/不同 handler 并发保存保留其它节、旧快照重试、落盘/发布失败区分、同步与异步上下文重入拒绝、写入/序列化失败不改旧字节、加密失败不改 candidate，有效备份回退、不可读节的隔离副本，以及 `ConfigSection` 别名读取与稳定节名写入。`ConfigTypeNamePersistenceTests` 使用真实主窗口配置和链接的 Spectrum 配置源码，在两个确定的枚举顺序下检查单节、发布、全量和备份保存与重载后的引导标记；还覆盖旧 MySQL 配置和加密密码的读取/另存/重载、完整键优先级，以及主窗口重置同时清除新旧键但保留 Spectrum 完整键。这些不同 handler 测试仍运行在同一测试进程，不等于真实多进程故障验收。
+真实多进程的配置并发和故障恢复需在实际环境验证。
 
-`ConfigServiceAdaptersTests` 覆盖静态实例解析、显式注册优先/替换、容器解析和错误。名称含 `ConfigSettingManager_WorksWith...` 的用例只模拟其 `GetRequiredService` 调用，不是完整设置页面发现、重载或绑定集成测试。
-
-测试引用不代表已执行。工作目录切换、未实例化节的导出完整性、订阅者抛错后的其它消费者、跨会话写入、进程崩溃/磁盘故障和实际导入补偿仍需专门验证；本主题不授权对真实配置进行保存、导入、回退或备份清理。
+工作目录切换、未实例化节的导出完整性、订阅者抛错后的其它消费者、跨会话写入、进程崩溃/磁盘故障和实际导入补偿仍需专门验证；本主题不授权对真实配置进行保存、导入、回退或备份清理。

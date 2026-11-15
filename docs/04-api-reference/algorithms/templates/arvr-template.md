@@ -5,7 +5,6 @@ status: "current"
 summary: "ARVR 远端模板与请求对应关系、结果版本及 SFR 曲线与 CSV 范围；本地条纹 MTF 另有独立主题。"
 aliases: ["CV_Ali_calcMtf", "ARVR算法", "MTF SFR FOV模板对应哪个结果", "SFR2.0", "MTF2.0", "FOV2.0", "Ghost2.0", "Ghost1.0", "畸变2.0", "StereoFusion", "SFR寻边", "ARVR屏幕缺陷检测", "SFR曲线", "SFR导出CSV", "MTF@Freq", "Freq@MTF", "AlgorithmARVRNode", "TemplateMTF2", "ViewHandleSFR2", "Sfr2PlotWindow"]
 code_paths: ["Engine/ColorVision.Engine/Templates/Jsons/SFR2", "Engine/ColorVision.Engine/Templates/Jsons/Ghost2", "Engine/ColorVision.Engine/Templates/Jsons/MTF2", "Engine/ColorVision.Engine/Templates/Jsons/FOV2", "Engine/ColorVision.Engine/Templates/Jsons/Distortion2", "Engine/ColorVision.Engine/Templates/Jsons/BinocularFusion", "Engine/ColorVision.Engine/Templates/Jsons/SFRFindROI", "Engine/ColorVision.Engine/Templates/Jsons/FindCross", "Engine/ColorVision.Engine/Templates/Jsons/DetectScreenDefects", "Engine/ColorVision.Engine/Services/Devices/Algorithm/JsonDisplayAlgorithmBase.cs", "Engine/ColorVision.Engine/FlowProcessing/Nodes/Compatibility/Algorithm/AlgorithmARVRNode.cs", "Engine/FlowEngineLib/Base/CVBaseServerNode.cs", "Engine/ColorVision.Engine/PropertyEditor/AlgorithmTemplatePropertiesEditor.cs", "Engine/ColorVision.Engine/Services/ResultHandleRegistry.cs", "Engine/ColorVision.Engine/Services/Devices/Algorithm/Views/AlgorithmView.xaml.cs", "Engine/ColorVision.Engine/Services/Results/AlgorithmResultDataSaver.cs", "Engine/cvColorVision/MQTTMessageLib/Algorithm/MQTTAlgorithmEventEnum.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/FindCrossResultOverlayTests.cs"]
 related: ["algorithms.index", "algorithms.json-templates", "algorithms.template-menus", "algorithms.find-cross", "algorithms.grid-distortion", "engine.results", "algorithms.stripe-mtf"]
 ---
 
@@ -108,4 +107,4 @@ ARVR.Ghost算法与通用算法的鬼影参数选择器使用 `TemplateGhostQK`�
 
 手动适配器和结果处理器与模板位于同一算法目录。SFR 曲线及查询位于 `Templates/Jsons/SFR2/Sfr2PlotWindow.xaml.cs` 和 `Sfr2PlotControl.xaml.cs`。`AlgorithmARVRNode` 组装流程请求，`AlgorithmTemplatePropertiesEditor` 负责参数模板选择。
 
-`FindCrossResultOverlayTests.cs` 验证本地诊断数据与旧结果的叠图中心坐标选择，不验证远端 ARVR 服务或真实绘制。算法请求、返回版本、SFR 曲线和导出仍需用对应结果样例验证；测试文件存在不表示这些链路已通过端到端测试。
+使用对应结果样例核对算法请求、返回版本、SFR 曲线和导出。远端 ARVR 服务和现场绘制需联调。

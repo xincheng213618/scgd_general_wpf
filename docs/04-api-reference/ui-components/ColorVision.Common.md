@@ -5,7 +5,6 @@ status: "current"
 summary: "共享接口的宿主接入、属性通知与命令的同步执行限制、粗粒度权限判据，以及第三方工具发现和启动边界。"
 aliases: ["共享接口应该放在哪里", "属性相同仍然通知", "按钮禁用仍被调用", "方法权限特性与自动鉴权", "ColorVision.Common", "ViewModelBase", "SetProperty", "RelayCommand", "CanExecute", "RaiseCanExecuteChanged", "ActionCommand", "IConfig", "IAssemblyService", "ModuleCatalog", "Authorization", "AccessControl", "ExecuteWithPermissionCheck", "PermissionMode", "RequiresPermissionAttribute", "ThirdPartyAppManager", "ThirdPartyAppInfo", "IThirdPartyAppProvider", "WindowConfig", "窗口恢复DPI", "GetDipScreens", "GetPrimaryDipScreen"]
 code_paths: ["UI/ColorVision.Common/ColorVision.Common.csproj", "UI/ColorVision.Common/README.md", "UI/ColorVision.Common/MVVM/ViewModelBase.cs", "UI/ColorVision.Common/MVVM/RelayCommand.cs", "UI/ColorVision.Common/MVVM/ActionCommand.cs", "UI/ColorVision.Common/Interfaces", "UI/ColorVision.Common/Authorizations", "UI/ColorVision.Common/ThirdPartyApps", "UI/ColorVision.Common/NativeMethods", "UI/ColorVision.Common/Utilities", "UI/ColorVision.UI/AssemblyHandler.cs", "UI/ColorVision.UI/ConfigHandler.cs", "UI/ColorVision.Rbac/RbacManager.cs", "UI/ColorVision.Rbac/Services/PermissionChecker.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/ThirdPartyAppInfoTests.cs","Test/ColorVision.UI.Tests/ModuleCatalogTests.cs","Test/ColorVision.UI.Tests/ConfigHandlerPersistenceTests.cs"]
 related: ["ui.index", "ui.framework", "ui.configuration", "ui.menus", "platform.extensibility", "plugins.model", "platform.security"]
 ---
 
@@ -64,7 +63,7 @@ Common 中的 `AssemblyService`、`ConfigService`、`MenuService` 是可由宿�
 
 屏幕像素到 DIP 的转换优先读取视觉树的 `PresentationSource.CompositionTarget`。调用方提前创建 HWND 时，`SourceInitialized` 可能发生在窗口根视觉尚未挂接的阶段；此时复用 `WindowInteropHelper.Handle` 对应 `HwndSource` 的转换矩阵。两者均不可用才回退单位矩阵，读取几何不会调用 `EnsureHandle`、创建窗口句柄或显示窗口。`GetDipScreens` 和主屏回退共用这条规则。当前仍以窗口源的矩阵换算屏幕集合，不承诺分别处理多屏混合缩放或显示配置热切换。
 
-还检查已有 HWND 的登记不补恢复、后续位置变化回写，以及创建句柄前关闭保留保存值；测试不更改显示缩放。非单位缩放环境才能区分已有 HWND 转换与单位矩阵回退，100% 缩放下通过不能单独证明该分支修复。
+现场复核已有 HWND 的坐标转换时，使用非 100% 缩放区分实际转换与单位矩阵回退。
 
 ## 可恢复的全屏会话
 
@@ -117,8 +116,5 @@ RBAC 的用户/角色/权限码校验在 `UI/ColorVision.Rbac/Services/Permissio
 
 目标框架、WPF/WinForms、NuGet README 和生成包设置以 `ColorVision.Common.csproj` 为准。当前项目文件没有高层 `ProjectReference`；这不等于跨平台、所有工具无外部环境依赖，或上层程序集无需匹配版本。构建入口保留在源码旁 README，包生成不等于上传发布。
 
-- `ThirdPartyAppInfoTests.cs` 检查默认分类/权限、工具权限层级、直接执行命令仍检查权限及若干 provider 元数据；其中执行的是测试委托，不是实际安装或外部进程，不覆盖全部 Win32 行为。动作策略的原因码、空身份、提供方失败及替换策略需由对应权限测试单独验证，不能用工具列表的可见性代替。
-- `AccessControlPolicyTests.cs` 检查默认角色层级、未装配身份、无效枚举、主体快照与不持久化、替换策略的动作/资源上下文、策略失败，以及权限撤回后的菜单和工具命令执行。测试不创建 RBAC 用户、不验证真实 SessionToken，不代表 Windows 提权或硬件许可验收。
-- `ModuleCatalogTests.cs` 检查重复登记、Seal、RBAC 模块进入现有发现快照及类型快照复用；不证明所有插件、构造失败路径或上层 UI 都已验证。
-- `ConfigHandlerPersistenceTests.cs` 中的重载测试检查配置实例替换与 `Authorization.Instance` 重绑定；不是账户鉴权、权限码或跨线程通知测试。
-- 当前关联测试未证明 `ViewModelBase` 的所有通知线程/重入场景、泛型命令参数与重查询时序、第三方 provider 失败/取消/重载、真实外部工具、完整 SDK/ABI 兼容性。公共契约变更仍需有针对性的测试和实际消费者构建。
+- 现场权限验收需核对 RBAC、实际会话凭据、Windows 提权及硬件许可。
+- 公共契约变更应构建并验证实际消费者。权限验收还需核对外部工具和 SDK/ABI 兼容性。

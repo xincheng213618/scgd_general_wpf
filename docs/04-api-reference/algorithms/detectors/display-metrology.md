@@ -5,7 +5,6 @@ status: "current"
 summary: "本地显示图案计量的入口、共享输入与 RGB 套色、外部鬼影、屏体缺陷、灰尘、双目和 Eyebox 等口径；十字 RGB 与圆环鬼影另有独立主题。"
 aliases: ["RGB套色", "RGB分通道", "横向色差", "Eyebox", "眼盒", "低灰阶Mura", "灰尘检测", "脏污检测", "DustDetectionParameters", "显示计量", "全视场清晰度", "左右眼对准", "DisplayMetrologyProvider", "generate_display_metrology_samples"]
 code_paths: ["UI/ColorVision.ImageEditor/Algorithms/DisplayMetrology", "UI/ColorVision.ImageEditor/EditorTools/Algorithms/DisplayMetrologyEditorTool.cs", "UI/ColorVision.ImageEditor/Algorithms/StandardAlgorithmCatalog.cs", "Scripts/generate_display_metrology_samples.py"]
-test_paths: ["Test/ColorVision.UI.Tests/AlgorithmReleaseGateTests.cs"]
 related: ["algorithms.platform", "algorithms.local-native-analysis", "algorithms.fov-local", "algorithms.rgb-cross", "algorithms.ring-ghost"]
 ---
 
@@ -133,8 +132,4 @@ python Scripts/generate_display_metrology_samples.py
 
 ## 验证
 
-```powershell
-dotnet test Test/ColorVision.UI.Tests/ColorVision.UI.Tests.csproj -p:Platform=x64 --filter "FullyQualifiedName~AlgorithmReleaseGateTests"
-```
-
-用例覆盖已知位移/旋转/倍率、不同位深、强度比、点线与 Mura 位置、Eyebox 空洞与网格面积、高斯理论 MTF50、无效样本、预算、取消、PNG 导入和结果窗口所有权。测试存在或文档构建成功不等于已经运行；本次执行结果以实际日志为准。现场仍需验证采集重复性、不同模组/背景/缺陷尺度、误报漏报、运动扫描标定以及完整量产结果交接。
+现场验收涵盖采集重复性、不同模组/背景/缺陷尺度、误报漏报、运动扫描标定和完整量产结果交接。

@@ -28,15 +28,14 @@ next: false
 | [Native](./code/source-Native.md) | 4 | 14 |
 | [Plugins](./code/source-Plugins.md) | 7 | 16 |
 | [Projects](./code/source-Projects.md) | 5 | 15 |
-| [Web](./code/source-Web.md) | 3 | 21 |
-| [Scripts](./code/source-Scripts.md) | 3 | 19 |
-| [Test](./code/source-Test.md) | 2 | 2 |
+| [Web](./code/source-Web.md) | 3 | 20 |
+| [Scripts](./code/source-Scripts.md) | 2 | 18 |
 | [AndroidWebViewApp](./code/source-AndroidWebViewApp.md) | 2 | 1 |
 | [Drivers](./code/source-Drivers.md) | 1 | 1 |
 | [packages](./code/source-packages.md) | 1 | 1 |
 | [SDK](./code/source-SDK.md) | 2 | 1 |
 | [src](./code/source-src.md) | 3 | 7 |
-| [仓库与知识基础设施](./code/repository.md) | 5 | 22 |
+| [仓库与知识基础设施](./code/repository.md) | 4 | 21 |
 
 ## 按能力领域补充检索
 
@@ -51,5 +50,5 @@ next: false
 - [Copilot](./domains/copilot.md) — 11 个主题；Agent会话、工具契约、上下文、恢复和MCP边界。
 - [客户项目](./domains/projects.md) — 11 个主题；客户包、业务流程、协议对接与结果留存。
 - [插件与扩展](./domains/plugins.md) — 12 个主题；插件发现、生命周期、已有插件和集成边界。
-- [构建、测试与交付](./domains/delivery.md) — 30 个主题；克隆环境、构建依赖、测试、发布脚本和更新。
+- [构建与交付](./domains/delivery.md) — 30 个主题；构建环境、交付契约、发布脚本和更新。
 - [运行与现场排查](./domains/operations.md) — 17 个主题；安装使用、设备配置、现场故障、日志和数据管理。

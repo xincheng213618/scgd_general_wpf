@@ -5,7 +5,6 @@ status: "current"
 summary: "主程序启动失败识别、状态上报和后台缺依赖告警；十秒观察不强杀进程，已处理终态抑制重复弹窗，无告警不证明安装完整。"
 aliases: ["启动缺文件告警", "无法启动", "启动失败弹窗", "启动依赖缺失", "十秒启动观察", "启动告警抑制", "StartupFailureGuard", "StartupFailurePresentation", "StartupRegistryChecker", "ApplicationStartupIntegrityMonitor", "ApplicationStartupStatusHub", "ApplicationStartupStatusReport", "ApplicationRuntimeDependencyInspector", "InstalledColorVisionLocator", "WmiColorVisionProcessStartSource", "application-startup-status", "failed-handled"]
 code_paths: ["ColorVision/StartupFailureGuard.cs", "ColorVision/ProgramTimer.cs", "ColorVision/App.xaml.cs", "ColorVision/MainWindow.xaml.cs", "src/ColorVisionServiceHost/ApplicationStartupIntegrityMonitor.cs", "src/ColorVisionServiceHost/ServiceHostCommandHandler.cs", "src/ColorVisionServiceHost/ColorVisionServiceHostService.cs", "src/ColorVisionServiceHost/Program.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/ApplicationStartupIntegrityMonitorTests.cs", "Test/ColorVision.UI.Tests/ServiceHostStartupStatusTests.cs"]
 related: ["platform.runtime", "platform.service-host", "delivery.update"]
 ---
 
@@ -89,6 +88,4 @@ SCM服务启动会启动监测器，控制台 `--run` 不启动它。监测器St
 
 ## 验证证据与缺口
 
-`ApplicationStartupIntegrityMonitorTests` 使用临时文件检查依赖列表、直接测试Hub和布尔告警条件、构造异常验证guard分类；WMI用例只构造/Dispose事件源，没有Start订阅。它不执行真实监测器启动、注册安装发现、进程退出竞速、WTS提示或guard的MessageBox/Exit。`ServiceHostStartupStatusTests` 手工构造上下文验证handler接受null details，不证明真实pipe握手、身份或早期上报成功。
-
-当前没有据这些用例声明真实SCM/WMI启动、多个安装/路径回退、窗口与进程退出竞速、后台停止排空或安装器修复验收。文档校验只证明知识路径、链接和检索可用；系统集成验证需另行授权隔离Windows环境。
+系统集成验收应在获授权的隔离 Windows 环境核对真实 SCM/WMI 启动、多安装路径回退、窗口与进程退出竞速、后台停止排空、管道身份和安装器修复。

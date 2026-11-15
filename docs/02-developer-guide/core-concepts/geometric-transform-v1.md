@@ -5,7 +5,6 @@ status: "current"
 summary: "GeometricTransform 的输入、参数、结果、宿主接入与定向验证契约。"
 aliases: ["如何应用仿射透视矩阵并保持坐标和有效区语义","GeometricTransform","GeometricTransformAlgorithmProvider"]
 code_paths: ["UI/ColorVision.ImageEditor/Algorithms/GeometricTransformAlgorithmProvider.cs","UI/ColorVision.ImageEditor/Algorithms/StandardAlgorithmCatalog.cs","UI/ColorVision.ImageEditor/Algorithms/ImageAlgorithmPlatform.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/GeometricTransformV1Tests.cs"]
 related: ["algorithms.platform","algorithms.index"]
 ---
 
@@ -55,7 +54,7 @@ V1 支持最近邻/线性插值和常量/复制边界。常量边界以规范化
 
 ## 验证与性能
 
-`GeometricTransformV1Tests` 覆盖九种规范格式 identity golden、仿射平移与边界值、自动包围 90° 旋转、透视正逆点往返、有效 mask、preset JSON、奇异/投影无穷远/输出预算拒绝、取消、输入只读、成功/取消/Result 释放及 Batch/Flow。ImageView 的单次应用生命周期由平台共享回归检查；参数窗口和结果窗口仍需要交互验收。
+ImageView 的参数和结果窗口须按真实应用、取消、预览与导出交互验收。
 
 可选性能门禁 `GeometricTransformPipelineProbe` 在 4K Gray16/Bgra32 上验证 retained managed 图像只包含一份输出和一份 mask（另加固定 16 MiB 容差），并限制单次执行在 20 秒内。实际门禁使用的 native warp 读取 lease，无 `input → byte[] → Mat` 复制；剩余不可消除的边界是 native 输出到 Result-owned buffer 的一次复制，以及单字节 mask。
 

@@ -4,8 +4,7 @@ knowledge_type: "topic"
 status: "current"
 summary: "光谱仪软件 Spectrum 的连接、标定、单次测量和 CSV 导出；标定状态与测量前文件复核、EQE 输入及独立 ZIP/cvxp 发布版本来源。"
 aliases: ["HoleMapping","孔位映射","编辑滤光轮配置","Spectrum 如何校准和发布","光谱测量结果不一致","Spectrum","Spectrum.bat","SpectrometerManager","SpectrumMeasurementResult","ViewResultManagerConfig","ViewResultSpectrum","SpectrumMeasurementProfile","光谱仪软件","连接光谱仪","单次测试","IsCalibrationReady","设备序列号未知，无法保存标定配置"]
-code_paths: ["Plugins/Spectrum/README.md","Plugins/Spectrum/Spectrum.csproj","Plugins/Spectrum/manifest.json","Plugins/Spectrum/App.xaml.cs","Plugins/Spectrum/MainWindow.xaml.cs","Plugins/Spectrum/MainWindow.Chrome.cs","Plugins/Spectrum/MainWindow.PlotTheme.cs","Plugins/Spectrum/MainWindowConfig.cs","Plugins/Spectrum/Layout/","Plugins/Spectrum/MainWindow.xaml","Plugins/Spectrum/Properties/Resources.resx","Plugins/Spectrum/SpectrometerManager.cs","Plugins/Spectrum/Calibration/","Plugins/Spectrum/Configs/","Plugins/Spectrum/PropertyEditor/","Plugins/Spectrum/Data/","Plugins/Spectrum/Models/ViewResultSpectrum.cs","Plugins/Spectrum/SpectrumCsvExporter.cs","Plugins/Spectrum/DirectSpectrometer/","Plugins/Spectrum/Job/","Plugins/Spectrum/License/","Plugins/Spectrum/Update/","Scripts/Spectrum.bat","Scripts/build_spectrum.py"]
-test_paths: ["Test/Spectrum.Tests/Spectrum.Tests.csproj","Test/Spectrum.Tests/FilterWheelHoleMappingEditSessionTests.cs","Test/Spectrum.Tests/ViewResultSpectrumTests.cs","Test/Spectrum.Tests/SpectrumCalibrationStateTests.cs","Test/Spectrum.Tests/SpectrumCsvExporterTests.cs","Scripts/tests/test_build_spectrum.py"]
+code_paths: ["Plugins/Spectrum","Scripts/Spectrum.bat","Scripts/build_spectrum.py"]
 related: ["plugins.index","plugins.capabilities","plugins.spectrum-socket","ui.documents","operations.main-window","ui.themes"]
 ---
 
@@ -45,7 +44,7 @@ Windows build 22000 或更高版本固定尝试将菜单与原生最小化、最
 
 每行的 `CalibrationGroupName` 不在此窗口展示，复制与提交时原样保留。该字段注释描述了自动切组用途，但当前 `SpectrometerManager.OnFilterWheelPositionChanged` 实际先按标定组的 `FilterWheelPosition` 查找，再按孔位的 ND 名称查找，并不调用 `GetCalibrationGroupName`。自动切组关联仍在“标定文件分组管理”维护，不能把此字段的保存误认为运行时已经使用它。
 
-`FilterWheelHoleMappingEditSessionTests` 覆盖隔离编辑、提交快照、添加/删除、索引校验和标定组保留；窗口按钮、主题和滚动需要 WPF 预览验收。
+窗口按钮、主题和滚动需在 WPF 宿主验收。
 
 ## 先查什么
 
@@ -87,7 +86,7 @@ Windows build 22000 或更高版本固定尝试将菜单与原生最小化、最
 
 自适应校零初始化在遮光前检查步进、平均次数和 SDK 实际采样的首末积分时间。步进至少为 1 ms，平均次数至少为 1，首末积分时间均须在 0.001 至 2,147,483.5 ms 内。参数无效时保留已有暗电流表和当前光路。
 
-Shutter 的遮光/通光方向遵守[按设备配置的光闸约定](../../engine-components/spectrum-device.md)。在快门配置中填写打开/关闭指令，并设置 **遮光使用打开指令**（`OpenForDark`）；默认选中，可取消以反向控制，旧配置保持默认。回执随实际发送字符选择：`a → turn on`、`b → turn off`，不因 a/b 填在另一个字段而报告相反状态。手动按钮只显示 **遮光**、**通光**，与自动校零共用配置映射。`ExecuteDarkOperationWithShutterCoreAsync` 按配置遮光、采暗数据，再在 `finally` 中恢复通光；遮光失败时取消暗采集并仍尝试恢复通光，恢复失败拒绝报告校零成功。该实现也供 Socket 和 Job 使用；`SpectrumCalibrationStateTests` 保护正反两种方向及失败恢复。滤色轮模式按配置暗孔及原孔位控制，不使用串口 a/b 方向。
+Shutter 的遮光/通光方向遵守[按设备配置的光闸约定](../../engine-components/spectrum-device.md)。在快门配置中填写打开/关闭指令，并设置 **遮光使用打开指令**（`OpenForDark`）；默认选中，可取消以反向控制，旧配置保持默认。回执随实际发送字符选择：`a → turn on`、`b → turn off`，不因 a/b 填在另一个字段而报告相反状态。手动按钮只显示 **遮光**、**通光**，与自动校零共用配置映射。`ExecuteDarkOperationWithShutterCoreAsync` 按配置遮光、采暗数据，再在 `finally` 中恢复通光；遮光失败时取消暗采集并仍尝试恢复通光，恢复失败拒绝报告校零成功。该实现也供 Socket 和 Job 使用。滤色轮模式按配置暗孔及原孔位控制，不使用串口 a/b 方向。
 
 `CalibrationGroupWindow` 编辑独立副本。保存要求已知设备 SN；已连接时先加载两个候选文件，加载成功且请求仍有效才提交配置。未连接分支不加载 native，但 SN 缺失仍会拒绝保存。配置保存在 Windows 文档目录的 `Spectrometer/<SN>/CalibrationGroups.json`，以临时文件替换写入；保存失败会尝试恢复原标定，恢复失败时保持不可测量状态。
 
@@ -174,14 +173,13 @@ EQE 测量先取 `MainWindowConfig.EqeVoltage` / `EqeCurrentMA`。源表已打�
 
 ## 本地构建与测试
 
-以下命令只写本地编译/测试产物，不发布更新源。设备连接、暗场、快门和测量烟测会影响真实设备，须另外确认现场授权。
+以下命令只写本地编译产物。设备连接、暗场、快门和测量须另外确认现场授权。
 
 ```powershell
 dotnet build .\Plugins\Spectrum\Spectrum.csproj -c Release -p:Platform=x64
-dotnet test .\Test\Spectrum.Tests\Spectrum.Tests.csproj -c Release -p:Platform=x64
 ```
 
-`ViewResultSpectrumTests` 覆盖有效点数、采样端点和旧元信息回退；`SpectrumPlotFillTests` 覆盖共享渐变填充的原始采样、波段/零点裁剪、断点和重复刷新替换；`SpectrumChromaticityTests` 用独立参考数据验证 CCT/Duv、主/补色波长、纯度及双端导出边界；`SpectrumCalibrationStateTests` 检查标定快照、路径及文件哈希；`SpectrumCsvExporterTests` 检查展示导出的字段、采样网格、格式和调用时快照；`SpectrumRawExportTests` 检查完整采样、负值/异常值、ABI 填充、网格来源、双端一致性及原子写入；`SpectrumCursorTests` 检查原始网格读数、边界和不插值行为。这些用例不能代替原生设备、窗口关闭或 Socket 时序验证；引用测试文件也不表示测试已经运行。
+验收需核对原生设备、窗口关闭与 Socket 时序。
 
 ## 双通道发布（需明确发布授权）
 

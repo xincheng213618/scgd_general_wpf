@@ -5,7 +5,6 @@ status: "current"
 summary: "从模板菜单、算法面板或应用搜索打开模板；说明选择索引、流程设计器直达和菜单发现的边界。"
 aliases: ["模板编辑入口在哪里","MenuItemTemplateBase","DisplayAlgorithmTemplateSelection","ShowTemplateWindow","模板搜索入口","模板菜单没有算法","搜索模板打开流程设计器"]
 code_paths: ["Engine/ColorVision.Engine/Templates/Menus/MenuTemplate.cs","Engine/ColorVision.Engine/Templates/Menus/MenuItemTemplateBase.cs","Engine/ColorVision.Engine/Services/Devices/Algorithm/DisplayAlgorithmConfiguration.cs","UI/ColorVision.UI/Menus/MenuManager.cs","Engine/ColorVision.Engine/Templates/POI/MenuItemPoiParam.cs","Engine/ColorVision.Engine/Templates/Flow/TemplateFlow.cs","Engine/ColorVision.Engine/Templates/TemplateSearchProvider.cs","Engine/ColorVision.Engine/Services/Devices/Algorithm/DisplayAlgorithmManager.cs","Engine/ColorVision.Engine/Services/Devices/Algorithm/DisplayAlgorithmControl.xaml.cs","ColorVision/MainWindow.Hotkeys.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/MenuDiscoveryExclusionTests.cs","Test/ColorVision.UI.Tests/TemplateSearchProviderTests.cs"]
 related: ["algorithms.index","algorithms.template-management","ui.discovery","ui.menus","ui.search"]
 ---
 
@@ -76,6 +75,4 @@ related: ["algorithms.index","algorithms.template-management","ui.discovery","ui
 | 搜索结果缺失或旧结果无法执行 | 当前模板注册与名称、搜索类型开关，以及目录是否已刷新 |
 | 窗口能打开但不能保存 | 继续检查目标 `ITemplate` 的保存/导入导出，不归菜单层 |
 
-`MenuDiscoveryExclusionTests` 检查指定菜单类型不存在、两个保留类型通过候选谓词，以及 MySQL 工具的 Owner/Order；没有实际装配模板菜单树。`TemplateSearchProviderTests` 用内存模板验证同名条目身份稳定、替换注册后使用新实例、移除注册后旧命令失效。
-
-这些测试不构造真实模板编辑窗口，也不验证数据库保存。窗口能打开、选择正确和保存成功应分别核对；实际保存行为属于目标 `ITemplate`。
+窗口能打开、选择正确和保存成功应分别核对；实际保存行为属于目标 `ITemplate`。

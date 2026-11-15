@@ -6,11 +6,11 @@ prev: false
 next: false
 ---
 
-# 构建、测试与交付
+# 构建与交付
 
 > 自动生成的领域目录。修改主题 Markdown 元数据后运行 `node docs/.vitepress/scripts/knowledge.mjs generate`；不要手工编辑。
 
-克隆环境、构建依赖、测试、发布脚本和更新。 返回[知识总入口](../index.md)。
+构建环境、交付契约、发布脚本和更新。 返回[知识总入口](../index.md)。
 
 只读与当前问题相关的主题，再核对源码和测试。`规划`、`历史`不代表当前能力。
 
@@ -87,7 +87,7 @@ next: false
   区分完整安装制品、增量更新和源码输出，定位安装后缺依赖、配置与启动问题。
 
 - [原生 helper 测试与调试](../../02-developer-guide/engine-development/native-testing.md) — `delivery.native-testing`
-  opencv\_helper\_test 的实际入口、工具集与配置映射、专项参数、DLL/样本前提和退出码边界；默认运行与真实样本验收不同。
+  原生调试的工具集、配置、运行 DLL 和现场样本核对。
 
 - [系统要求与首次构建](../../00-getting-started/prerequisites.md) — `delivery.prerequisites`
   Windows x64 运行与源码构建前提：Desktop Runtime、SDK、C++ 工具集及已有 native DLL 的选择。
@@ -99,7 +99,7 @@ next: false
   Web 本地启动与 Windows NAS 部署的前提、参数、构建和健康检查、Git bundle 交付、备份保留及失败恢复；SkipTests 仍运行前端测试，失败不保证回退代码或数据库。
 
 - [测试与验证](../../02-developer-guide/testing.md) — `delivery.testing`
-  按改动范围选择managed、native、脚本、后端和知识验证，不以局部通过代表完整验收。
+  从实际代码选择验证范围，区分离线检查、硬件联调与交付验收。
 
 - [Web 历史性能基线 \[历史\]](../../02-developer-guide/backend/performance-baseline.md) — `delivery.web-performance-baseline`
   Web 的 2026-07-18 基线及后续补充测量，保留样本、方法和比较数字；不是当前部署性能、容量或测试状态。

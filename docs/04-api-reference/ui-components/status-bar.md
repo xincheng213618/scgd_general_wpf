@@ -5,7 +5,6 @@ status: "current"
 summary: "状态栏的插件发现、活动文档通知、绑定更新、控件重建和关闭生命周期；刷新不保证发现新provider，隐藏不等于保存偏好或停止采样。"
 aliases: ["状态栏", "状态栏刷新", "状态栏排序", "隐藏状态栏", "活动文档状态", "状态栏控件", "StatusBarManager", "StatusBarControl", "StatusBarMeta", "IStatusBarProvider", "IStatusBarProviderUpdatable", "IActiveDocumentStatusProvider", "StatusBarItemsChanged", "StatusBarAlignment", "StatusBarActionType", "StatusBarType"]
 code_paths: ["UI/ColorVision.UI/StatusBar", "UI/ColorVision.Common/Interfaces/StatusBar", "UI/ColorVision.UI/AssemblyHandler.cs", "ColorVision/MainWindow.xaml", "ColorVision/MainWindow.xaml.cs", "ColorVision/MainWindowConfig.cs", "UI/ColorVision.Solution/SolutionStatusBarProvider.cs", "UI/ColorVision.ImageEditor/ImageView.xaml.cs", "UI/ColorVision.Scheduler/SchedulerStatusBarProvider.cs", "Plugins/SystemMonitor/SystemMonitorIStatusBarProvider.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/SystemMonitorLifecycleTests.cs"]
 related: ["ui.framework", "ui.discovery", "ui.common", "ui.solution", "ui.image-editor", "ui.scheduler", "plugins.system-monitor", "operations.main-window"]
 ---
 
@@ -91,6 +90,5 @@ ActionType=Popup 且 factory 非空时走另一条分支：悬停两秒或点击
 
 主要实现是 `StatusBarManager.cs`、`StatusBarControl.xaml.cs` / `.xaml`；接口、metadata 与实际 provider 路径列在元数据中。修改某个 provider 时，同时核对该业务模块，而不是仅验证图标出现。
 
-`SystemMonitorLifecycleTests` 覆盖配置关闭时不创建 monitor、可见项目的 metadata、monitor 复用及配置重载等局部行为；不覆盖 StatusBarManager/Control。未找到本层发现缓存、多宿主、重复 ID、排序、增量失败、活动文档切换、隐藏持久化和关闭清理的专项测试。
 
 文档检索、路径和网站校验不能填补 WPF 运行时缺口。后续需用获授权的隔离宿主、合成 provider 与无害命令验证；不为文档验证连接 Socket、启动实际调度或运行设备操作。

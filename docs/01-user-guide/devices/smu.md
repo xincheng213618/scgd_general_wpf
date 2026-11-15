@@ -5,7 +5,6 @@ status: "current"
 summary: "SMU本地窗口、直流电阻/功率、扫描/脉冲、触发与关闭状态，以及服务兼容、结果单位和Flow输出释放边界。"
 aliases: ["SMU","源表","本地源表","UseLocalSmu","点测","扫描电压","通道串了","关闭输出","MQTTSMU","SMUParam","SMUSweepModelNode","LocalSmuWindow","电阻测量","脉冲","高阻"]
 code_paths: ["Engine/ColorVision.Engine/Services/Devices/SMU","Engine/cvColorVision/Devices/PassSx/PassSx.cs","Engine/ColorVision.Engine/FlowProcessing/Nodes/Compatibility/SMU","Engine/FlowEngineLib/SMUBaseNode.cs","Engine/FlowEngineLib/Node/SMU"]
-test_paths: ["Test/ColorVision.UI.Tests/LocalSmuSessionTests.cs","Test/ColorVision.UI.Tests/LocalSmuFlowTests.cs","Test/ColorVision.UI.Tests/InitTableEntityMappingTests.cs","Test/ColorVision.UI.Tests/LocalSmuAdvancedTests.cs"]
 related: ["engine.devices","operations.device-configuration","flow.session"]
 ---
 
@@ -50,7 +49,7 @@ related: ["engine.devices","operations.device-configuration","flow.session"]
 
 读数卡自动使用 mV、µA、nA、MΩ 等工程单位；逐点表、历史表和 CSV 使用 V、mA、Ω、W，CSV 保留完整数值精度。电阻优先使用仪器原生电阻结果，否则按当前工作点 V/I 计算，不能当作微分电阻。点测的“源设置”读取 `src_value`，保护限值读取 `limit_value`；扫描范围读取 `src_begin` / `src_end`。未记录的保护限值显示说明，不将扫描终点误作保护值。
 
-记录和详情中的“用时 (ms)”沿用点测、扫描结果表的 `total_time` 字段；本地实时结果、服务端入库结果和历史查询共用这一映射。空值显示“—”，已有的 0 值保留为 0。普通本地操作统计测量、读取或整批扫描的 SDK 调用区间；高级操作统计整次高级 SDK 调用。耗时包含该调用内的通讯、配置和等待，不包含排队、打开连接或结果入库；普通路径在测量后单独关闭输出的时间也不计入。扫描显示整批耗时，历史值按原存储值展示。`SmuResultViewTests` 验证点测/扫描切换、采样单位、历史选择与清空、扫描叠加和 CSV 原生电阻保留。
+记录和详情中的“用时 (ms)”沿用点测、扫描结果表的 `total_time`。本地实时结果、服务端入库结果和历史查询共用这一映射，空值显示“—”，已有的 0 值保留。普通本地操作统计测量、读取或整批扫描的 SDK 调用区间，高级操作统计整次高级 SDK 调用。耗时包含调用内的通讯、配置和等待，排除排队、打开连接和结果入库。普通路径单独关闭输出的时间也排除在外。扫描显示整批耗时，历史值沿用原存储值。
 
 本地校验拒绝无效通道、非有限源值/限值、零限值、无效手动量程，以及不在 2～100000 范围内的扫描点数。启用 `IsUseLimitSigned` 时使用既有机型限值，并检查扫描两个端点的最大绝对值。失败通过 `MsgRecord` 返回，校验失败不会调用测量 SDK。
 
@@ -64,9 +63,9 @@ related: ["engine.devices","operations.device-configuration","flow.session"]
 
 普通 `LocalSmuNode` 默认开启“沿用设备延时”，继续使用设备配置的“测量延时（ms）”，旧流程没有新增字段时保持这一行为。关闭该选项后显示节点自己的“测量延时 (ms)”，允许 0 和非负有限毫秒值，随流程保存并在本次节点执行时固定；它是输出设置后、源表采样前的等待，扫描合批时逐点应用，不在采样后再追加一次等待。在节点里已经等待灯响应时，下游无需再叠加同用途的延时；如果由下游延时节点统一等待，可以将此处设为 0，但该次源表 V/I 会在下游等待之前采集。节点设置不改设备默认值，下个沿用设备设置的节点和普通手动测量恢复设备默认延时；无需为节点覆盖值断开重连。开启“使用窗口设置”后隐藏这两个普通延时字段，改用窗口的高级测量延时。
 
-2600 普通流程步进点测（包括旧 GetData 节点的本地执行路径）按连接和当前通道复用已确认的源类型、接线、延时和量程。首次配置在仪器运行内存定义测量函数，连续点只发送短调用及变化的源值/保护限值，保持一次命令往返；函数不保存到仪器非易失存储，数字使用可完整往返 double 的精度。源表采样、错误队列检查和旧读取命令使用的实测 V/I 全部保留，不通过降低 NPLC、关闭调零或改变采样精度提速。普通关闭输出确认成功后保留静态配置和函数，但忘记源值/保护限值，下次测量重新发送两者，兼容关闭状态对源值的影响；关闭失败则使缓存完全失效。切换通道或源模式、普通手动点亮、读取、扫描、高级操作、断开重连或测量失败后完整重新配置。设备返回错误、函数丢失、读数不完整或超时会使缓存失效，并尝试关闭当前通道。通过仪器面板或其它程序修改配置后应断开重连。反馈原生命令日志的 `txBytes` 是本次发送字节数，`txMs` 是发送阶段时间，`rxMs` 是发送完成到完整回包的等待时间；这些软件计时不能替代独立的电气稳定时间测量。
+2600 普通步进点测在同一连接和通道复用配置，保持按既定设置测量。切换通道、改用另一种操作或通讯失败后会重新配置。通过仪器面板或其它程序修改配置后应断开重连。日志可区分发送与等回包的耗时，实际电气稳定时间须独立测量。
 
-2600/2604 本地高级直流测量会复用同一连接、当前通道及源模式的配置，参数不变时不重复初始化；源值、保护值或采样参数变化时只下发差异。采样等配置变化时先关闭仍开启的输出，再更新参数；自动调零“一次”在配置时执行，配置不变的连续测量不重复调零。每点将输出设置、测量和可选的完成后关闭合并为一次通信往返，读数、保护状态及错误仍完整检查。切换通道/源模式、普通测量、脉冲、显式关闭输出、断开/重连或失败后重新配置。通过面板或其它程序修改仪器参数后应断开重连，避免继续复用旧配置；离线命令验证不承诺具体实机耗时。
+2600/2604 高级直流连续测量可复用配置。改变采样配置前会先关闭仍开启的输出，切换模式、断开或失败后重新配置。真实节拍以实机测量为准。
 
 | 窗口功能 | 当前协议范围 |
 | --- | --- |
@@ -88,7 +87,7 @@ related: ["engine.devices","operations.device-configuration","flow.session"]
 
 高级节点每次进入执行一组设置，内部扫描/脉冲完成后下游进入一次；放在重复框时每轮可执行一组，不复用旧单点自动合批。节点依然持有整个流程的源表使用权，正常结束按节点选项关闭，失败/取消/超时尝试关闭。脉冲完成后已经返回基线，后续相机节点不会自动与脉冲峰值同步。高级模式期间旧 `SMU.MeasureResult` 读取被拒绝，避免把新回包格式套进旧解析器；执行普通点测会复位相关高级状态后恢复原有读取路径。停止不会中断阻塞中的 SDK 调用，必须等返回后清理，清理失败保留未知状态。
 
-`LocalSmuAdvancedTests` 保护本地 ABI、A/mA 边界、原生 Ω 历史往返、仅输出无伪造读数、会话取消/占用，以及 WPF 节点草稿与流程保存兼容。原生 `SmuLocalProtocolTest` 直接编译生产协议头，使用通信替身检查命令、结果完整性和失败关闭；这些离线验证不覆盖实际脉冲时序、保护、外部接线或 MySQL 迁移验收。
+实际脉冲时序、保护、外部接线及 MySQL 迁移须独立验收。
 
 ## 手动 MQTT 命令与客户端限制
 
@@ -152,8 +151,6 @@ related: ["engine.devices","operations.device-configuration","flow.session"]
 
 ## 证据与验证缺口
 
-`NodeConfiguratorBindingTests.PropertyEditors_BindAndFilterAdvancedProperties` 包含 SMU 量程编辑器的元数据、选项和属性绑定断言；`InitTableEntityMappingTests` 校验 `SmuScanModel.channel` 的枚举/数据库列映射。这些测试不覆盖实际点测、扫描、关闭输出、超时保护或数据库结果往返。
-
-`SmuConfigurationDraftTests` 验证两个配置类的取消/确认隔离、原有存储职责、实时通道状态保留、模式切换及 `IsNet + DevName` 的服务兼容保存。`LocalSmuSessionTests` 使用模拟 SDK 验证单位、扫描结果契约、通道关闭顺序、句柄 0、端点互斥、取消与释放失败，并覆盖流程输出使用权、阻止交叉命令及结束关闭配置；`LocalSmuFlowTests` 覆盖既有节点本地完成、新单点节点的重复数组取值、轮间保持输出及流程结束清理，不发布 MQTT。这些回归保护共享单位和生命周期边界，引用测试不表示已运行或通过，不替代仪器、供应商 SDK 或 MySQL 往返验收。
+用实际仪器和供应商 SDK 验收点测、扫描、关闭输出及超时保护，并核对 MySQL 结果往返和旧配置兼容。
 
 当前没有在本主题声明真机点测、扫描、读取单位或输出保护验证。后续验证须分别检查 SDK 返回码、精确载荷、通道关联、失败/超时后的实际输出状态和结果持久化，且硬件及数据库操作需要单独授权。

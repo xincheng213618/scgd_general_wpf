@@ -5,7 +5,6 @@ status: "current"
 summary: "说明服务与本地节点基类、请求与响应扩展点、分支输入隔离、属性编辑和流程完成的边界。"
 aliases: ["FlowLocalExecution","CreateLocalExecution","如何新增Flow节点","CVCommonNode","CVBaseServerNode","LocalFlowNodeBase","CVStartCFC输入快照","getBaseEventData","CVEndNode","离线算法帮助","AlgorithmHelpCatalog","ReadAlgorithmHelp","read_algorithm_help","algorithmHelpTopicId","DisConnectOptionTransactional","单条连线事务"]
 code_paths: ["Engine/ST.Library.UI/NodeEditor/STNodeAttribute.cs","Engine/ST.Library.UI/NodeEditor/STNodeTreeView.cs","Engine/FlowEngineLib/Base/FlowLocalExecution.cs","Engine/FlowEngineLib/Base/CVCommonNode.cs","Engine/FlowEngineLib/Base/CVBaseServerNode.cs","Engine/FlowEngineLib/Start/BaseStartNode.cs","Engine/FlowEngineLib/End/CVEndNode.cs","Engine/FlowEngineLib/PropertyEditor/FlowNodePropertyEditors.cs","Engine/ColorVision.Engine/FlowProcessing/Editor/FlowNodeContextMenuService.cs","Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalFlowNodeBase.cs","Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalCleanupNode.cs","Engine/ColorVision.Engine/Services/Files/FolderCleanupService.cs","Engine/ColorVision.Engine/FlowProcessing/PreProcess/FolderSizePreProcessor.cs","Engine/ColorVision.Engine/FlowProcessing/Nodes/Compatibility","Engine/FlowEngineLib/FlowNodeDocumentationAttribute.cs","Engine/ColorVision.Engine/FlowProcessing/Editor/FlowNodeDocumentationPresenter.cs","UI/ColorVision.UI.Desktop/Help","UI/ColorVision.Common/Interfaces/Copilot/CopilotBusinessContextBuilder.cs","Engine/ColorVision.Engine/FlowProcessing/Integration/FlowCopilotService.cs","ColorVision/Copilot/Capabilities/CopilotAlgorithmHelpReadingService.cs","ColorVision/Copilot/Agent/Tools/Application/CopilotReadAlgorithmHelpTool.cs","ColorVision/Copilot/Mcp/CopilotMcpToolDispatcher.AlgorithmHelp.cs","ColorVision/Copilot/Mcp/CopilotMcpToolDispatcher.FlowRead.cs","docs/.vitepress/scripts/algorithm-help.mjs","docs/.vitepress/algorithm-help/sources.json","Engine/ST.Library.UI/NodeEditor/STNodeOption.cs","Engine/ST.Library.UI/NodeEditor/STNodeEditor.Edit.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/CompatibilityNodeMigrationTests.cs","Test/ColorVision.UI.Tests/FlowLocalizationTests.cs","Test/ColorVision.UI.Tests/LvCameraLocalForwardingTests.cs","Test/ColorVision.UI.Tests/ConventionalFlowNodeTests.cs","Test/ColorVision.UI.Tests/FlowRuntimeCompletionTests.cs","Test/ColorVision.UI.Tests/LocalCleanupNodeTests.cs","Test/ColorVision.UI.Tests/FolderSizePreProcessorTests.cs","Test/ColorVision.UI.Tests/AlgorithmHelpTests.cs","Test/ColorVision.Copilot.Tests/CopilotAlgorithmHelpReadingServiceTests.cs","Test/ColorVision.Copilot.Tests/CopilotAlgorithmHelpToolTests.cs","Test/ColorVision.UI.Tests/FlowExecutionEditingTests.cs","docs/.vitepress/scripts/algorithm-help.test.mjs","Test/ColorVision.UI.Tests/CopilotFlowDisconnectionTests.cs","Test/ColorVision.UI.Tests/STNodeTransactionalDisconnectionTests.cs"]
 related: ["platform.extensibility","flow.index","flow.runtime","ui.property-grid"]
 ---
 
@@ -49,7 +48,7 @@ Copilot 的 `SearchFlowNodeCatalog`／MCP `get_flow_node_catalog` 在节点类�
 
 `coverage.start_offset`、`characters_returned`、`total_characters` 以 LF 原文的 UTF-16 code units 计数，调用方只回传游标，不自行计算偏移；切片保留完整 Unicode 代理对。`text_complete` 仅在单个响应从头交付全部正文时为真，末页没有 `next_cursor` 不表示该响应包含之前的片段；`metadata_truncated` 单独说明标题或链接裁剪。游标绑定精确主题和完整文本 hash，内容改变后返回 `Validation`，须去掉游标从头重读，不能混合不同正文版本。
 
-读取器只访问随包索引与受目录约束的帮助文件，验证 UTF-8、大小及 Markdown hash；索引和每个读取文件最多1 MiB。未知主题或缺文件为 `NotFound`，非法索引、路径、编码、完整性或预算为 `Validation`，无读取权限为 `Authorization`，I/O 失败为 `Transient`。工具不联网、不初始化浏览器，不渲染或执行公式、SVG、图示及交互组件标记；所有正文与链接均为参考数据，不是指令，也不提供当前值、测量结果、运行证据或客户验收结论。`AlgorithmHelpTests`、`CopilotAlgorithmHelpReadingServiceTests` 与 `CopilotAlgorithmHelpToolTests` 分别覆盖随包读取、正文分页／完整性及 Agent／MCP 交接；`FlowExecutionEditingTests` 的真实目录场景保护主题关联。引用用例不表示已完成现场算法或客户验收。
+读取器只访问随包索引与受目录约束的帮助文件，验证 UTF-8、大小及 Markdown hash；索引和每个读取文件最多1 MiB。未知主题或缺文件为 `NotFound`，非法索引、路径、编码、完整性或预算为 `Validation`，无读取权限为 `Authorization`，I/O 失败为 `Transient`。工具不联网、不初始化浏览器，不渲染或执行公式、SVG、图示及交互组件标记；所有正文与链接均为参考数据，不是指令，也不提供当前值、测量结果、运行证据或客户验收结论。
 
 迁入 Engine、仍保留旧流程名称和保存标识的节点集中在 `Engine/ColorVision.Engine/FlowProcessing/Nodes/Compatibility/`，再按设备或功能分组。其中需要 Engine 模板或量程编辑器的相机、校准、POI、SMU、传感器和算法节点分别放在对应子目录，保留各自原 namespace、类名和保存标识；目录名不参与流程序列化。只有普通字符串、数值或枚举属性的节点，以及通用执行基类，继续由 FlowEngineLib 提供。迁移范围以属性编辑器依赖为准，无需整体搬迁节点库。
 
@@ -87,7 +86,7 @@ Engine 内的模板与量程属性直接通过 `PropertyEditorType` 引用具体
 
 节点和预处理共用 `FolderCleanupService`，均拒绝相对目录、磁盘/共享根目录和链接/联接点，只删除指定目录内匹配的文件，保留目录结构。节点另保护当前内存帧的 CVRAW/CVCIE 文件和上游输入文件；扫描后大小或写入时间变化的文件会跳过。流程停止后不再启动后续删除。锁定或不可读文件记录失败并继续处理其余文件，目录扫描异常则让节点失败；受保护、变化中或删除失败的文件可能使容量无法降到目标。执行会永久删除文件，配置时应指定可清理的缓存目录，不能把数据库记录、标定资源或业务原件目录当作缓存。
 
-清理统计写入本次节点结果，并向流程 `Data` 添加 `CleanupDeletedFiles`、`CleanupDeletedBytes`、`CleanupRemainingBytes` 和 `CleanupFailedFiles`；不覆盖 `MasterId`、`MasterValue` 或当前帧。预处理继续沿用原有后台执行、同实例串行和目标容量归一化规则；清理节点对无效容量直接报错。删除与停止边界由 `LocalCleanupNodeTests.cs` 的隔离临时目录测试验证，预处理语义由 `FolderSizePreProcessorTests.cs` 覆盖。
+清理统计写入本次节点结果，并向流程 `Data` 添加 `CleanupDeletedFiles`、`CleanupDeletedBytes`、`CleanupRemainingBytes` 和 `CleanupFailedFiles`；不覆盖 `MasterId`、`MasterValue` 或当前帧。预处理继续沿用原有后台执行、同实例串行和目标容量归一化规则；清理节点对无效容量直接报错。
 
 标记为 `Obsolete` 的节点不会出现在新增节点菜单或 Copilot 节点目录中，但类型及序列化身份仍保留，用于加载旧流程；本地“关注点布点(参数)”和“值显示HUB”遵循这一兼容规则，需要布点时使用原有关注点节点。
 
@@ -95,7 +94,7 @@ Engine 本地节点由 `LocalFlowNodeBase` 在输入到达时捕获 `CVStartCFC`
 
 `FlowRepeatRegion` 接受单入口、单出口的无环子图，内部可分流至多输入节点，但所有分支须在框内汇合，内部输入不得从框外接入。每轮各流程输入与各节点输出仅接受一次，全部必需输入到达且内部节点完成后才推进，重复及迟到输出不参与下一轮；中间轮资源在换轮时回收，仅最终轮从出口放行。多输入节点使用 `CVStartCFC.IsSameExecutionIteration` 匹配：重复框内须同运行、同轮次并共享同一份运行资源，框外维持原有流水号匹配。服务 Hub 在锁内收齐并消费一组输入快照，再在锁外构建和发送本次请求，避免同步响应重入下一轮时清掉新输入。
 
-`Timer` 是延时透传节点，可单独重复，也可与源表、光谱仪等节点一起放入重复框，每轮均执行配置的毫秒延时。它保留原动态端口数量、端口索引和保存身份；未连接的备用端口不参与重复区域判定，实际接入的非流程通道或多个独立流程通道仍不能纳入同一重复框。每次延时捕获自己的动作快照，运行结束释放资源或收到停止动作后不再放行该次延迟输出。相关重复、快照、停止和保存兼容边界由 `Test/ColorVision.UI.Tests/TimerRepeatTests.cs` 覆盖。
+`Timer` 是延时透传节点，可单独重复，也可与源表、光谱仪等节点一起放入重复框，每轮均执行配置的毫秒延时。它保留原动态端口数量、端口索引和保存身份；未连接的备用端口不参与重复区域判定，实际接入的非流程通道或多个独立流程通道仍不能纳入同一重复框。每次延时捕获自己的动作快照，运行结束释放资源或收到停止动作后不再放行该次延迟输出。
 
 支持逐轮参数的节点实现 `IRepeatParameterNode`，通过 `RepeatParameterDefinition` 显式声明稳定参数标识、类型、默认值、单位、数值范围和不可用原因。只有声明过的参数可被重复框数组覆盖；数组存于节点的 `RepeatParameterValues`，随画布保存，整次运行开始时深复制并校验整个框。`ResolveRepeatParameter` 根据当前轮次解析值，框外或未配置数组时回退节点默认值。不可通过临时改写节点属性再恢复来实现覆盖。
 
@@ -121,10 +120,4 @@ Engine 本地节点由 `LocalFlowNodeBase` 在输入到达时捕获 `CVStartCFC`
 
 ## 验证
 
-- `ConventionalFlowNodeTests.cs`：常规节点契约。
-- `CompatibilityNodeMigrationTests.cs`：迁移前保存、排除退役节点后的合成画布，检查持久化字段、连线、请求、菜单分类及直接属性编辑器。
-- `FlowRuntimeCompletionTests.cs`：流程终态。
-- `STNodeTransactionalDisconnectionTests.cs`：单条断连的事件、历史与异常恢复边界；不覆盖任意回调的外部业务副作用。
-- `LvCameraLocalForwardingTests.cs`：服务节点由宿主本地执行时的路由、结果交接、命令终态和资源释放。
-
-测试均位于 `Test/ColorVision.UI.Tests/`。新增服务协议需要目标节点的请求、响应和资源生命周期用例；硬件执行应在获授权的测试环境中验证。
+新增服务协议需核对目标节点的请求、响应和资源生命周期。硬件执行在获授权的隔离环境中验证。

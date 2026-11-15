@@ -5,7 +5,6 @@ status: "current"
 summary: "说明 ST WPF 节点画布、端口、类型目录及 STN 兼容边界。"
 aliases: ["Flow画布加载后节点丢失","ST.Library.UI","STNodeEditor","STNodeTypeRegistry","CVNodeContainer","SerializationModel"]
 code_paths: ["Engine/ST.Library.UI/README.md","Engine/ST.Library.UI/ST.Library.UI.csproj","Engine/ST.Library.UI/NodeEditor/STNode.cs","Engine/ST.Library.UI/NodeEditor/STNodeAttribute.cs","Engine/ST.Library.UI/NodeEditor/STNodeSerializationModelAttribute.cs","Engine/ST.Library.UI/NodeEditor/STNodeTypeRegistry.cs","Engine/ST.Library.UI/NodeEditor/STNodeEditor.cs","Engine/ST.Library.UI/NodeEditor/STNodeCanvasSnapshot.cs","Engine/ST.Library.UI/NodeEditor/STNodeTreeView.cs","Engine/ST.Library.UI/NodeContainer/CVNodeContainer.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/CompatibilityNodeMigrationTests.cs","Test/ColorVision.UI.Tests/STNodeTypeRegistryConcurrencyTests.cs","Test/ColorVision.UI.Tests/LvCameraNodeMigrationTests.cs","Test/ColorVision.UI.Tests/FlowExecutionEditingTests.cs"]
 related: ["flow.architecture","flow.runtime","flow.workspace","operations.main-window"]
 ---
 
@@ -42,7 +41,7 @@ related: ["flow.architecture","flow.runtime","flow.workspace","operations.main-w
 
 `STNode.Mark` 修改后立即重新计算注释区域并进入属性历史；首次添加注释也能正确显示和命中，撤销可恢复为没有注释。节点分组通过可选的 `ISTNodeGroupMember` 提供显示标题与状态，分组标题命中让位于节点、端口和注释。分组边界包含成员注释，适应画布时计入完整外框；业务层通过 `NodeGroupDoubleClick` 打开自己的设置窗口，ST 库不承担重复执行策略。
 
-`STNode.SetPropertyValueFromString` 只修改一个公开且可写的 `STNodeProperty`，使用其 `DescriptorType` 的字符串转换；隐藏、只读和索引属性被拒绝。它不调用完整节点的 `OnLoadNode`，因此不会因缺少其他保存字段而清空备注、分组或业务配置。`OnLoadNode` 继续用于完整持久化数据恢复，二进制属性编解码不被当作文本输入协议。调用方负责编辑资格、授权与失败回滚；Copilot 在离图副本上预览，并在正式应用失败时恢复目标属性。`FlowExecutionEditingTests` 使用真实 Timer 和自定义描述符覆盖这条单属性边界，不运行流程或设备。
+`STNode.SetPropertyValueFromString` 只修改一个公开且可写的 `STNodeProperty`，使用其 `DescriptorType` 的字符串转换；隐藏、只读和索引属性被拒绝。它不调用完整节点的 `OnLoadNode`，因此不会因缺少其他保存字段而清空备注、分组或业务配置。`OnLoadNode` 继续用于完整持久化数据恢复，二进制属性编解码不被当作文本输入协议。调用方负责编辑资格、授权与失败回滚；Copilot 在离图副本上预览，并在正式应用失败时恢复目标属性。
 
 `STNodeOption.GetConnectedOption()` 在画布与无界面宿主中都返回连接的对端：输入返回上游输出，输出返回下游输入。成功断开的 `DisConnected` 事件携带 `ConnectionStatus.DisConnected`；被取消的断开不改连线与数据。连线检查按有向图遍历，已有环路也会结束查询，新连接仍拒绝形成回路。拖动连线期间切换为只读后，释放鼠标不会提交连接。
 
@@ -116,4 +115,4 @@ related: ["flow.architecture","flow.runtime","flow.workspace","operations.main-w
 ## 验证入口与缺口
 
 
-测试覆盖 WPF 控件、画布和类型注册契约；业务节点执行、真实外部程序集和旧流程语料需按变更补验。
+业务节点执行、真实外部程序集和旧流程语料需按变更补验。

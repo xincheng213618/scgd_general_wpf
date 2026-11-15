@@ -5,7 +5,6 @@ status: "current"
 summary: "桌面宠物的启用、选择、Codex 创建、本地素材导入、精灵表规格、配置与故障定位；创建结果由设置页限时发现。"
 aliases: ["桌面宠物","桌宠","小彩","唤醒宠物","收起宠物","选择宠物与设置","用 Codex 创建","导入精灵表","pet.json","avatar.json","spritesheetPath","DesktopPetConfig","DesktopPetAssetCatalog","DesktopPetPackageService","DesktopPetCodexService","FloatingBallWindow","OpenFloatingBall","hatch-pet","素材不可用"]
 code_paths: ["ColorVision/FloatingBall/","ColorVision/FloatingBallWindow.xaml","ColorVision/FloatingBallWindow.xaml.cs","ColorVision/MainWindowConfig.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/DesktopPetPackageServiceTests.cs","Test/ColorVision.UI.Tests/DesktopPetCodexServiceTests.cs"]
 related: ["ui.settings","ui.configuration","copilot.interactions"]
 ---
 
@@ -164,6 +163,4 @@ v1 为前 9 行，v2 必须提供完整 11 行。解码器只检查尺寸和网�
 
 `DesktopPetService` 管理窗口和 Copilot 桥接；`DesktopPetSettingsControl` 管理选择、导入后的刷新和创建等待；`DesktopPetAssetCatalog` 发现清单/归档；`DesktopPetPackageService` 导入本地包；`DesktopPetCodexService` 检测技能并打开预填任务；`DesktopPetSpriteSheet` 负责解码、裁帧和动画计划。
 
-已有测试声明覆盖本地导入清单、重名不覆盖、无效网格、临时目录清理范围，以及 Codex 提示词、深链接编码、技能复制/保留、不完整目录和包 ID 快照。快照测试只证明存在清单文件即可列出 ID，不证明图片可用；实际选择还要经过目录解析和图片解码。Copilot Tracker 测试覆盖多会话活动优先级与终态映射。
-
-这些测试不替代真实桌面拖动、主题/DPI 布局、本机 Codex 启动、生成完成或计时发现的端到端验证。上述入口便于查证覆盖范围，测试路径存在不代表本次已经执行。
+在实际桌面核对拖动、主题/DPI 布局、本机 Codex 启动、生成完成和计时发现。

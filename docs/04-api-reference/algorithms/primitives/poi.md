@@ -5,7 +5,6 @@ status: "current"
 summary: "说明 POI 点位、伴生模板及 Flow 和 JSON 算法的消费关系。"
 aliases: ["POI点集由谁生成和消费","POI 1x1中心点","POI 50%缩进","POI自动填充","自动适配尺寸","POI边距设置","PoiPoint","PoiParam"]
 code_paths: ["Engine/ColorVision.Engine/Templates/POI/PoiPoint.cs","Engine/ColorVision.Engine/Templates/POI/PoiParam.cs","Engine/ColorVision.Engine/Templates/POI/EditPoiParam.xaml","Engine/ColorVision.Engine/Templates/POI/EditPoiParam.xaml.cs","Engine/ColorVision.Engine/Templates/POI/PoiLayoutGeometry.cs","Engine/ColorVision.Engine/FlowProcessing/Nodes/Compatibility/POI/POINode.cs","Engine/ColorVision.Engine/FlowProcessing/Nodes/Compatibility/POI/BuildPOINode.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/PoiPointModelTests.cs"]
 related: ["algorithms.index","algorithms.poi-template","flow.templates","ui.image-editor-context"]
 ---
 
@@ -106,4 +105,4 @@ Flow 的模板字段、BuildPOI 多模板入口及分析节点对应关系，统
 ## 验证入口与缺口
 
 
-点模型和几何测试不覆盖数据库整批保存或远端 POI 请求；旧模板、文件模式及服务侧协议需另外回放。
+旧模板、整批保存、文件模式和远端 POI 协议应使用目标环境回放。

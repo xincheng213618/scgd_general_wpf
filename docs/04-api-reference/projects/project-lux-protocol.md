@@ -5,7 +5,6 @@ status: "current"
 summary: "ARVRPro 的 LUX TCP 文本入口：T0000 握手、VID、光学中心、光通量与 SocketCode 流程，以及回包和连接限制。"
 aliases: ["LUX TCP 协议","ProjectLUX TCP 通讯协议手册","LuxSocketDispatcher","T0000","T0001","T0002","T0031","T00XX","H03AR","MachineNO","No SN","No right Code","No Dispatcher Hanle","FlowFailed","LUX 光通量","LUX VID","光学中心（回包）","OpticCenterLuxProcess","ILuxFlowResponseProvider"]
 code_paths: ["Projects/ProjectARVRPro/Services/LuxSocketDispatcher.cs","Projects/ProjectARVRPro/Services/LuxDeviceMeasurements.cs","Projects/ProjectARVRPro/ARVRWindow.Lux.cs","Projects/ProjectARVRPro/Process/ILuxFlowResponseProvider.cs","Projects/ProjectARVRPro/Process/OpticCenter/OpticCenterLuxProcess.cs","Projects/ProjectARVRPro/Process/ProcessManager.cs","Projects/ProjectARVRPro/ProjectARVRProConfig.cs","UI/ColorVision.SocketProtocol/SocketManager.cs","UI/ColorVision.SocketProtocol/SocketTextDispatcher.cs","UI/ColorVision.SocketProtocol/SocketConfig.cs"]
-test_paths: ["Test/ProjectARVRPro.Tests/LuxProtocolTests.cs","Test/ProjectARVRPro.Tests/LuxVidMeasurementTests.cs","Test/ProjectARVRPro.Tests/ProcessManagerPersistenceTests.cs","Test/ProjectARVRPro.Tests/SocketControlTests.cs"]
 related: ["projects.arvr-pro","projects.arvr-pro-processes","projects.arvr-pro-protocol","ui.socket-protocol"]
 ---
 
@@ -87,6 +86,6 @@ VID/光通量测量后在后台访问输出目录并保存 CSV；共享盘等待
 
 ## 验证与交付
 
-`LuxProtocolTests` 保护报文字面值、特殊分号位置、光学中心字段及单次异步回复；`LuxVidMeasurementTests` 检查 VID 测量方式；流程配置测试保护 SocketCode 的复制、保存重载及活动组查找；`SocketControlTests` 验证回环连接归属。构建与测试命令使用 [ARVRPro 的本地入口](./project-arvr-pro.md#本地构建与测试)。
+本地构建见 [ARVRPro 本地入口](./project-arvr-pro.md#本地构建与测试)。
 
 现场仍需串行验证握手、普通流程、`H03AR`、VID 和光通量，核对 CSV、测量值、Recipe 判定、失败回包、忙碌超时与断线恢复。真实设备与产线操作须在授权范围内执行；离线和回环测试不能替代业务交付验收。

@@ -5,7 +5,6 @@ status: "current"
 summary: "本地十字 RGB 三通道边缘测量、G 参考偏移、原图坐标与独立有效状态；像素结果不等同于已标定角度色差。"
 aliases: ["十字RGB分离", "九点十字", "RGB分离", "LocalRgbCrossNode", "RgbCrossRegistrationParameters", "RgbCrossMeasurementExporter", "rToGMaximumEdge_px", "bToGMaximumEdge_px"]
 code_paths: ["UI/ColorVision.ImageEditor/Algorithms/DisplayMetrology/DisplayRgbCross.cs", "UI/ColorVision.ImageEditor/Algorithms/DisplayMetrology/RgbCrossMeasurementExporter.cs", "UI/ColorVision.ImageEditor/EditorTools/Algorithms/RgbCrossConfigurationDraft.cs", "UI/ColorVision.ImageEditor/EditorTools/Algorithms/RgbCrossConfigurationWindow.xaml", "Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalRgbCrossNode.cs", "Scripts/validate_rgb_cross.ps1", "Engine/ColorVision.Engine/Templates/Jsons/FindCross"]
-test_paths: ["Test/ColorVision.UI.Tests/LocalRgbCrossNodeTests.cs", "Test/ColorVision.UI.Tests/LocalRgbCrossConfigurationTests.cs", "Test/ColorVision.UI.Tests/RgbCrossProfileTests.cs", "Test/ColorVision.UI.Tests/RgbCrossPoolingTests.cs", "Test/ColorVision.UI.Tests/RgbCrossLocatorStatisticsTests.cs", "Test/ColorVision.UI.Tests/LocalRgbCrossHistoryTests.cs"]
 related: ["algorithms.display-metrology", "algorithms.find-cross", "engine.results", "flow.node-extension"]
 ---
 
@@ -121,7 +120,7 @@ Flow 使用 `LocalRgbCrossNode`，通过“算法参数 → 编辑…”配置�
 
 ## 独立原生入口与验证
 
-可独立交付的 C++ 测量实现位于 `Native/opencv_helper/algorithm/find_cross/rgb_cross.h/.cpp`，无 WPF、数据库或合格判定依赖，使用 C++17 与 nlohmann/json；`Test/opencv_helper_test/rgb_cross_standalone` 可用 CMake 编译 CLI 和合成自测。生产 ImageView/Flow 目前继续调用托管实现，C++ 是同口径独立入口，并非现有 `M_FindCrossLocal` 导出的替换。独立 C++ 入口目前没有托管 1.6.1 的多峰外包络、覆盖不足保留数值及暗臂范围恢复策略，相同输入的有效性可能不同。交付验证应逐点对比两端几何、有效性和分离值，不能只比较汇总计数。
+可独立交付的 C++ 测量实现见 `Native/opencv_helper/algorithm/find_cross/rgb_cross.h/.cpp`。它不依赖 WPF、数据库或合格判定，使用 C++17 与 nlohmann/json，CMake 的入口目标为 `rgb_cross_cli`。ImageView、Flow 和原 `M_FindCrossLocal` 各自保留执行链。独立 C++ 入口缺少托管 1.6.1 的多峰外包络、覆盖不足保留数值和暗臂范围恢复，相同输入的有效性可能不同。交付时逐点比较几何、有效性和分离值。
 
 没有直接调用单十字 `FindCrossLocal`：`pattern_cross.cpp` 的 `ConvertToGrayFloat` 会混合颜色，而 `PatternCrossResult` 提供轴交点、角度、端点和臂质量，不提供通道对应的双侧阈值边缘。其 `SampleAxis` 内部有原图背景滤除、单目标候选及光学坐标语义，也不是可直接调用的中立边缘 API。这里采用独立的逐通道截面质量检查与中位数测量；单十字功能及 Engine 结果链保持独立。当前没有像素到角度的自动换算，不能替代相机/镜头色差基线与现场误报漏报验收。
 

@@ -5,7 +5,6 @@ status: "current"
 summary: "终端与设备配置引用、创建、保存、重启和删除清理；保存不保证远端已应用配置，未保存的活对象改动可影响运行，删除不保证显示项和通信对象一并释放。"
 aliases: ["添加设备","保存设备","删除设备","设备配置引用","通信订阅清理","设备Code","设备配置保存失败","RestartRCService","SaveConfig","DeviceService","DeviceServiceConfig","DeviceServiceCreateContext","TryDeserializeConfig","txt_value","SQL修改设备配置"]
 code_paths: ["Engine/ColorVision.Engine/Dao/SysResourceModel.cs","Engine/ColorVision.Engine/Services/DeviceService.cs","Engine/ColorVision.Engine/Services/Core/ServiceObjectBaseExtensions.cs","Engine/ColorVision.Engine/Services/Core/MQTTServiceBase.cs","Engine/ColorVision.Engine/Services/Devices/MQTTDeviceService.cs","Engine/ColorVision.Engine/Services/Devices/DeviceServiceConfig.cs","Engine/ColorVision.Engine/Services/Devices/DeviceServiceFactory.cs","Engine/ColorVision.Engine/Services/PhyCameras/Licenses/PhyLicenseDao.cs","Engine/ColorVision.Engine/Services/Devices/SMU/DeviceSMU.cs","Engine/ColorVision.Engine/Services/Devices/SMU/MQTTSMU.cs","Engine/ColorVision.Engine/Services/Type/CreateType.xaml.cs","Engine/ColorVision.Engine/Services/Terminal/CreateTerminal.xaml.cs","Engine/ColorVision.Engine/Services/Terminal/TerminalService.cs","Engine/ColorVision.Engine/Services/RC/MQTTRCService.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/WindowServiceListTests.cs","Test/ColorVision.UI.Tests/OfflineDeviceConfigurationTests.cs"]
 related: ["engine.devices","engine.mqtt","engine.rc-registration","ui.property-grid","operations.acceptance"]
 ---
 
@@ -110,8 +109,8 @@ RC 的三参数 `RestartServices` 是 void 包装，丢弃 `TryRestartServices` 
 
 保存/创建失败时，分别记录：当前数据库和目标资源 ID/Type/Pid/Code、旧 Value 备份、编辑模式、数据库阶段结果、RC 连接与重启请求、设备端最终状态。只读诊断可以审查代码、脱敏日志与既有记录；不要通过改 Code、清库、重新导入或点击“重启服务”试探。
 
-`WindowServiceListTests` 使用内存菜单验证已有服务、空类型创建和多语言名称；`OfflineDeviceConfigurationTests` 使用临时 SQLite 验证仅改终端名称后的持久化、其它字段保留，以及保存失败时的名称回退，不连接 MySQL 或设备。创建/保存/重启的完整集成仍需隔离验证，覆盖旧 JSON 恢复、无效 JSON 保留证据、目标行不存在、RC 离线和后阶段失败，并检查数据库已提交但远端未生效的分离状态；真实设备动作另外验收。
+创建、保存与重启需在隔离环境核对旧 JSON 恢复、坏 JSON 保留证据、缺失目标行、RC 离线和后续阶段失败。分别确认数据库已提交、远端已生效和真实设备动作。
 
 不访问真实数据库或操作设备。
 
-共享 Config 的即时取值、删除前后显示实例与通信事件解绑也尚无本页声明的自动化覆盖；应使用隔离对象/替身分别验证，不能以知识检索命中替代生命周期测试。
+验证共享 Config 的即时取值，以及删除设备时显示实例和通信订阅释放。

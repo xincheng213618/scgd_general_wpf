@@ -5,7 +5,6 @@ status: "current"
 summary: "图像设置的作用范围、显式默认值与标定档案保存、当前视图隔离和扩展协议；主设置独立入口与旧接口清理仍待实施。"
 aliases: ["图像设置重构", "图像设置规划", "当前有效", "全局与当前", "外接设置", "设置作用范围", "设置提供方", "ImageViewSettingsEntry", "ImageViewSettingsWindow", "标定状态隔离", "ImageSettingsSession"]
 code_paths: ["UI/ColorVision.ImageEditor/Settings", "UI/ColorVision.ImageEditor/ImageView.xaml.cs", "UI/ColorVision.ImageEditor/ImageViewConfig.cs", "UI/ColorVision.ImageEditor/EditorTools/Filters", "UI/ColorVision.ImageEditor/EditorTools/PseudoColor", "UI/ColorVision.ImageEditor/Draw/Ruler", "UI/ColorVision.ImageEditor/Draw/Text/DefalutTextAttribute.cs", "UI/ColorVision.ImageEditor/Draw/Special/ToolReferenceLine.cs", "UI/ColorVision.UI/PropertyEditor/SettingsPropertyPresenter.cs", "Engine/ColorVision.Engine/Media/CvcieDisplaySettingProvider.cs", "Engine/ColorVision.Engine/Media/CvcieMouseProbeSettingProvider.cs", "Engine/ColorVision.Engine/Media/CvcieMouseProbeOptions.cs", "UI/ColorVision.ImageEditor/Presentation/ImageShaderPresentation.cs", "UI/ColorVision.ImageEditor/Presentation/ImageDisplayEffects.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/ImageSettingsScopeTests.cs", "Test/ColorVision.UI.Tests/CvcieDisplaySettingsTests.cs", "Test/ColorVision.UI.Tests/ImageDisplayEffectsTests.cs"]
 related: ["ui.image-editor", "ui.image-editor-context", "ui.configuration", "ui.property-grid", "engine.file-io"]
 ---
 
@@ -112,6 +111,6 @@ new ImageViewSettingsEntry(SettingsText.FileOpening, "CVCIE", config,
 
 ## 验证
 
-`ImageSettingsScopeTests` 覆盖双视图 Shader/标定隔离、白平衡默认值持久化、来源切换、探针/伪彩换图、仅保存改动、失败重试、无修改关闭零写入、注册注销及配置实例替换。`CvcieDisplaySettingsTests` 覆盖无图可见、共享全局对象和文件打开页归属。
+用实际宿主确认多视图的局部设置互不影响，校验跨窗口保存与重开。
 
-相邻回归入口是比例尺弱事件、尺子渲染、实时伪彩 generation、打开完成及工具工厂生命周期测试。控件布局和主题需使用实际 WPF 资源验证；输出更高 DPI 的截图不等同于跨显示器 DPI 运行验收，真实设备图像与外部二进制宿主也需分别验证。
+用实际 WPF 资源核对布局和主题。跨屏 DPI、真实设备图像与外部二进制宿主分别验收。

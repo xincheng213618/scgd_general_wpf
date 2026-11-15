@@ -5,7 +5,6 @@ status: "current"
 summary: "MySQL 连接配置与业务 DAO、POI 模板的 SQLite 自动回退，以及旧插件注册的二进制兼容。"
 aliases: ["数据库操作", "数据库浏览器", "连接数据库", "SQL", "MySQL", "SQLite", "ColorVision.Database", "BaseTableDao", "MySqlControl", "BatchExecuteNonQuery", "数据库事务回滚", "LegacyDatabaseBrowserRegistration", "ColorVision.Local.db", "POI 本地模板", "PoiTemplateStorage"]
 code_paths: ["UI/ColorVision.Database", "UI/ColorVision.Database/Compatibility/LegacyDatabaseBrowserRegistration.cs", "Engine/ColorVision.Engine/Mysql/MySqlConnect.xaml", "Engine/ColorVision.Engine/Mysql/MySqlConnect.xaml.cs", "Engine/ColorVision.Engine/Templates/POI/PoiTemplateStorage.cs", "Engine/ColorVision.Engine/Media/PoiImageViewComponent.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/BatchExecuteNonQueryTests.cs", "Test/ColorVision.UI.Tests/LegacyDatabaseBrowserRegistrationTests.cs", "Test/ColorVision.UI.Tests/LocalPoiTemplateStorageTests.cs", "Test/ColorVision.UI.Tests/ConfigTypeNamePersistenceTests.cs"]
 related: ["ui.database-query", "ui.sqlite-storage", "engine.database-maintenance", "operations.data", "ui.configuration", "ui.desktop", "flow.session"]
 ---
 
@@ -61,10 +60,9 @@ POI 本地 ID 使用小于 -1 的值，-1 保留为空模板；MySQL ID 保持�
 
 ## 验证入口与缺口
 
-- `LocalPoiTemplateStorageTests.cs` 在隔离临时 SQLite 文件验证离线读写、重启恢复、精度、导入导出、排序、存储隔离及 ImageView 编辑保存链；MySQL 故障通过禁止访问/抛错的 factory 模拟，不验证真实 MySQL 权限或硬件。
-- `BatchExecuteNonQueryTests.cs` 用 fake executor 核对事务阶段、失败诊断和清理语义，不连接真实 MySQL，也不证明 DDL 可以回滚。
-- `LegacyDatabaseBrowserRegistrationTests.cs` 按旧插件的精确类型、构造函数和方法签名反射绑定，再用禁止调用的路径/client factory 验证注册无数据库副作用；它不承诺旧浏览器的全部公开 API 继续可用。
-- `ConfigTypeNamePersistenceTests.cs` 在隔离配置文件覆盖旧设置读取、当前连接凭据加密保存和重载，以及旧连接列表被忽略的兼容边界；不连接真实 MySQL。
-- 数据库清理窗口的独立接口和窗口测试见[维护窗口契约](../engine-components/database-maintenance.md)。真实账号权限、连接生命周期、恢复和数据完整性仍由各业务 owner 验证。
+- 用真实 MySQL 与设备确认现场权限及采集。
+- 单独核对目标数据库的 DDL 回滚能力。
+- 使用匹配版本的旧插件核对加载与数据库副作用。兼容层仅保留旧插件启动所需的接口。
+- 现场验收须核对账号权限、连接生命周期、恢复和数据完整性。 [维护窗口契约](../engine-components/database-maintenance.md)
 
 目标框架和依赖以 `ColorVision.Database.csproj` 为准：当前 WPF 多目标 `net8.0-windows7.0;net10.0-windows7.0`，依赖 SqlSugar、SQLite runtime、Newtonsoft.Json、log4net 和 ColorVision.UI。缺 DLL、连接失败、真实库结构不符以及业务结果未完成应分别定位；该模块本身不安装数据库服务。

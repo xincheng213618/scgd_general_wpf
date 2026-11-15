@@ -4,8 +4,7 @@ knowledge_type: "topic"
 status: "current"
 summary: "WindowsServicePlugin的在线选包与缓存、本机完整安装、数据库版本切换和恢复边界；下载、日志完成、备份与实际服务状态不能互相替代。"
 aliases: ["Windows 服务管理器", "CVWindowsService 本机安装", "服务包在线下载", "WindowsServicePlugin", "ServiceInstallViewModel", "ServiceManagerAppProvider", "ServiceManagerConfig", "ServicePackageVersionResolver", "ServiceDatabaseVersionMap", "ServiceHostWindowsServiceController", "InstallServiceManager", "AutoUpdateDatabase", "UpdateServerUrl", "DownloadLocation", "IsFullServicePackageZip", "FindCachedCvWindowsServicePackage", "GetLatestCvWindowsServicePackageAsync", "ServiceManagerWindow", "ServiceOperationLog"]
-code_paths: ["Plugins/WindowsServicePlugin/WindowsServicePlugin.csproj", "Plugins/WindowsServicePlugin/manifest.json", "Plugins/WindowsServicePlugin/App.xaml.cs", "Plugins/Directory.Build.props", "Plugins/WindowsServicePlugin/ServiceManager/MenuServiceManager.cs", "Plugins/WindowsServicePlugin/ServiceManager/InstallServiceManager.cs", "Plugins/WindowsServicePlugin/ServiceManager/ServiceInstallViewModel.cs", "Plugins/WindowsServicePlugin/ServiceManager/ServiceInstallViewModel.Install.cs", "Plugins/WindowsServicePlugin/ServiceManager/ServiceInstallViewModel.Backup.cs", "Plugins/WindowsServicePlugin/ServiceManager/ServiceInstallWindow.xaml", "Plugins/WindowsServicePlugin/ServiceManager/ServiceInstallWindow.xaml.cs", "Plugins/WindowsServicePlugin/ServiceManager/ServiceManagerConfig.cs", "Plugins/WindowsServicePlugin/ServiceManager/ServiceManagerViewModel.Config.cs", "Plugins/WindowsServicePlugin/ServiceManager/ServiceManagerViewModel.Logs.cs", "Plugins/WindowsServicePlugin/ServiceManager/ServiceManagerViewModel.MySql.cs", "Plugins/WindowsServicePlugin/ServiceManager/ServiceHostWindowsServiceController.cs", "Plugins/WindowsServicePlugin/ServiceManager/ServiceLogCleanup.cs", "Plugins/WindowsServicePlugin/ServiceManager/ServiceDatabaseVersionMap.cs", "Plugins/WindowsServicePlugin/ServiceManager/Mysql/MySqlServiceManager.cs", "Plugins/WindowsServicePlugin/ServiceManager/MySqlServiceHelper.cs", "Plugins/WindowsServicePlugin/ServiceManager/Mqtt/MqttServiceManager.cs", "Plugins/WindowsServicePlugin/Menus", "UI/ColorVision.UI/Menus/MenuManager.cs", "UI/ColorVision.UI/Marketplace/MarketplaceConfig.cs", "ColorVision/MainWindow.xaml.cs", "Engine/ColorVision.Engine/Mysql/MySqlDatabaseMaintenanceService.cs", "Plugins/WindowsServicePlugin/ServiceManager/ServiceManagerWindow.xaml", "Plugins/WindowsServicePlugin/ServiceManager/ServiceManagerWindow.xaml.cs", "Plugins/WindowsServicePlugin/ServiceManager/ServiceManagerStyles.xaml", "Plugins/WindowsServicePlugin/ServiceManager/ServiceOperationLog.xaml", "Plugins/WindowsServicePlugin/ServiceManager/ServiceOperationLog.xaml.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/ServiceDatabaseVersionMapTests.cs","Test/ColorVision.UI.Tests/ServiceInstallDownloadTests.cs","Test/ColorVision.UI.Tests/MySqlBackupRestoreSafetyTests.cs","Test/ColorVision.UI.Tests/ThirdPartyAppInfoTests.cs","Test/ColorVision.UI.Tests/ServiceHostServicePolicyTests.cs"]
+code_paths: ["Plugins/WindowsServicePlugin/WindowsServicePlugin.csproj","Plugins/WindowsServicePlugin/manifest.json","Plugins/WindowsServicePlugin/App.xaml.cs","Plugins/Directory.Build.props","Plugins/WindowsServicePlugin/ServiceManager","Plugins/WindowsServicePlugin/Menus","UI/ColorVision.UI/Menus/MenuManager.cs","UI/ColorVision.UI/Marketplace/MarketplaceConfig.cs","ColorVision/MainWindow.xaml.cs","Engine/ColorVision.Engine/Mysql/MySqlDatabaseMaintenanceService.cs"]
 related: ["plugins.index", "plugins.getting-started", "delivery.cvwindowsservice", "platform.service-host", "engine.mysql-recovery", "ui.menus", "ui.wizards"]
 ---
 
@@ -120,12 +119,4 @@ dotnet build .\Plugins\WindowsServicePlugin\WindowsServicePlugin.csproj -c Relea
 .\Scripts\package_plugin.bat WindowsServicePlugin
 ```
 
-- `ServiceDatabaseVersionMapTests` 覆盖主版本数据库映射、包名解析、嵌入exe版本优先及配置回退，不执行真库升级或证明远端包可信。
-- `ServiceInstallDownloadTests` 覆盖发布元数据的真实文件名传递、版本接口的ZIP名称回退，以及单项下载失败时保留其它成功结果；不连接远端、不安装组件。
-- 不卸载本机运行库，也不替代干净Windows机器上的安装验收。
-- `MySqlBackupRestoreSafetyTests` 中插件相关用例检查恢复/重置委托Engine的源码边界，另有恢复阶段失败摘要和临时配置文件测试；不是安装、真库迁移或故障回滚验收。
-- `ThirdPartyAppInfoTests` 包含服务管理器提供器元数据检查，不证明应用角色、Windows权限及后台代理全链可用。
-- `ServiceHostServicePolicyTests` 验证三个业务服务的程序名准入，以及旧归档服务仅允许卸载、拒绝安装或启动的策略边界，不执行真实 SCM 操作。
-- `RegistrationCenterMonitorConfigurationTests` 用内存数据库和临时 XML 验证归档项精确移除、其它注册中心与配置保留、重复清理、缺键补齐、目标拒绝和提交失败时恢复原文件；用替身验证停止失败不写入、保存后恢复以及保存/恢复失败摘要，不执行真实 SCM 操作或连接现场 MySQL。
-
-这些是现存测试范围，不是执行通过声明。客户端源回退/包排序/缓存、完整包识别、下载中断、服务安装/启动失败汇总的真实SCM链路、部分备份、真实SQL迁移和恢复尚不能由这些测试认证；需在获授权的隔离环境逐层验证，不由文档构建替代。
+在获授权的隔离 Windows 环境核对源回退、包识别与下载中断、服务安装及失败汇总、真实 SQL 迁移和备份恢复。

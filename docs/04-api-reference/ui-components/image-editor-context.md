@@ -5,7 +5,6 @@ status: "current"
 summary: "ImageView 的文档、会话、显示、算法协调和扩展所有权；说明源提交、连续帧有界处理、工具生命周期及临时 ROI 有效期。"
 aliases: ["图像编辑器上下文", "ImageView重构", "状态归属", "工具栏刷新", "配置作用域", "临时ROI", "临时选区", "四边形", "选区坐标", "白色画布选区", "矢量画布布点", "EditorContext", "ImageProcessingContext", "ImageDocument", "ImageEditorSession", "ImagePresentation", "ImageStreamPresentation", "ImageDisplayEffects", "ImageShaderPresentation", "ImageOperationCoordinator", "CommitSourcePixels", "ImageViewConfig", "ImageViewPropertyScope", "IEditorToolFactory", "BeginSelectAsync", "SelectShapeType", "SelectResult", "TransientRoiSelectionSession", "ImageSelectionScope", "EnableEditorImageServices"]
 code_paths: ["UI/ColorVision.ImageEditor/Abstractions/DecodedImageContent.cs", "UI/ColorVision.ImageEditor/ImageView.Content.cs", "UI/ColorVision.ImageEditor/ARCHITECTURE.md", "UI/ColorVision.ImageEditor/Documents", "UI/ColorVision.ImageEditor/ImageEditorSession.cs", "UI/ColorVision.ImageEditor/Presentation", "UI/ColorVision.ImageEditor/Operations", "UI/ColorVision.ImageEditor/Output", "UI/ColorVision.ImageEditor/Tooling", "UI/ColorVision.ImageEditor/Navigation", "UI/ColorVision.ImageEditor/Abstractions/PseudoColorFrameRequest.cs", "UI/ColorVision.ImageEditor/EditorContext.cs", "UI/ColorVision.ImageEditor/Contexts/ImageProcessingContext.cs", "UI/ColorVision.ImageEditor/ImageViewConfig.cs", "UI/ColorVision.ImageEditor/ImageViewPropertyMetadata.cs", "UI/ColorVision.ImageEditor/EditorToolFactory.cs", "UI/ColorVision.ImageEditor/ImageView.xaml.cs", "UI/ColorVision.ImageEditor/TransientRoiSelectionSession.cs", "UI/ColorVision.ImageEditor/EditorTools/PseudoColor", "UI/ColorVision.UI/AssemblyHandler.cs", "UI/ColorVision.ImageEditor/Draw/ImageDrawingPresentation.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/ImageOpenCompletionContractTests.cs", "Test/ColorVision.UI.Tests/ImageAlgorithmPreviewSessionTests.cs","Test/ColorVision.UI.Tests/ImageGroupNavigationTests.cs","Test/ColorVision.UI.Tests/ImageDisplayEffectsTests.cs", "Test/ColorVision.UI.Tests/PseudoColorChannelSelectionTests.cs"]
 related: ["ui.image-editor", "ui.discovery", "ui.configuration", "algorithms.platform", "algorithms.roi-routes", "algorithms.local-native-analysis"]
 ---
 
@@ -50,7 +49,7 @@ related: ["ui.image-editor", "ui.discovery", "ui.configuration", "algorithms.pla
 
 异步显示请求通过 `BeginRequest()` 捕获 `(DocumentId, SourceRevision, Generation)`，`TryPublish` 只接受仍有效的请求；新的显示选择或文档变更使旧请求失效。单通道提取持有读取租约直到后台读取完成，迟到输出即使仍拥有有效内存，也不能覆盖新的显示选择。`Publish` 是 UI 同步发布边界，不提供文件、像素运算或任意外部回调的整体事务。
 
-文档变更先使显示请求失效，再调用宿主 revision hook，随后失效算法 scope 并通知订阅者，最后使伪彩请求失效。算法提交的 claim 消费、回滚和重入检查归 `ImageOperationCoordinator`，不能用普通显示请求取代 invocation 仲裁；详见[统一算法平台](../../02-developer-guide/core-concepts/image-algorithm-platform-v1.md)。
+文档变更会使旧显示和算法范围失效。算法提交的 claim、回滚及重入仲裁由 `ImageOperationCoordinator` 负责。 [统一算法平台](../../02-developer-guide/core-concepts/image-algorithm-platform-v1.md)
 
 ### 配置分类不是隔离容器
 
@@ -69,11 +68,11 @@ related: ["ui.image-editor", "ui.discovery", "ui.configuration", "algorithms.pla
 
 伪彩换图保留配色与自动范围偏好，关闭效果并重新计算图像相关范围；自动范围在新源赋值后计算。`Presentation/PseudoColor` 持有伪彩控制器、`PseudoColorState` 和默认配置，`PseudoColorEditorTool` 仅绑定控件及操作同一能力；释放工具不释放 controller。连续帧通过 `DisplayEffects.TryCapturePseudoColorRequest` 取得参数，并统一由 `StreamPresentation` 提交源与显示结果，不提供另一条外部处理结果发布路径。默认配置类型保留原完整类型名作为已有用户配置的稳定持久键，运行状态不依赖工具实例。静态图预览、连续帧 native 处理和显示 shader 保持各自输入与数值契约，不能因同属“效果”就视为等价算法。
 
-静态伪彩通过 `StartForCatalogPreview` 建立会话，不创建全尺寸占位位图；首个有效结果发布前显示原图。滑块请求由 `TaskConflator` 串行执行，只保留最新待执行请求，并使用 25 ms 的轮间等待参数；这不是固定帧率，也不承诺中断已经进入 native 的操作。查表输出与有界灰度缓存的数值、存储契约见[统一算法平台](../../02-developer-guide/core-concepts/image-algorithm-platform-v1.md)。
+静态伪彩首个有效结果发布前显示原图。`TaskConflator` 串行合并滑块请求，只保留最新待执行请求。已进入 native 的操作可能仍运行。 [统一算法平台](../../02-developer-guide/core-concepts/image-algorithm-platform-v1.md)
 
 静态图的通道选择与伪彩开关分别保留状态：普通关闭伪彩会重新呈现当前所选图层，例如 Red 单通道，不强制切回 Composite。支持的 8/16 位 RGB 单通道先在后台准备独立冻结显示，再于同一 UI 调用中取消伪彩并恢复该通道，避免取消后等待提取期间停留在全彩图；取消中的同步原图显示通知仍会发生，不代表从未发布过原图事件。默认位图图层的 Bgr24/Bgr32/Bgra32/Rgb24/Rgb48 源在仍属于当前伪彩会话时，关闭复用其只读 canonical 输入，避免再次创建 native 源缓存；Pbgra32 的 canonical 已反预乘，不能据此还原原始通道。自定义图层或没有有效会话输入时保留原取帧路径。准备期间换图、切换通道、发布其它显示或建立新算法 owner，会使旧准备失效。同一源图内，开启伪彩时通过默认位图图层选择器切换通道，若当前静态伪彩会话仍拥有预览，则复用会话及其独立 canonical 输入，保留旧伪彩直到新结果，不并行准备普通灰度显示。自动范围模式仍取得所需 native 源帧并计算新通道范围，手动模式保留当前上下限，两种模式都重绘伪彩。这类通道请求在接纳与实际发布时核验源、版本及归属，过期请求不能夺回后继显示或算法 owner。RGB 单通道预览只改变显示，不改文档源像素或 revision。关闭过程若有同步回调换图、发布其它显示或建立新算法 owner，则保留后继操作。换图 Reset，以及效果关闭时的范围和配色配置，不触发图层重选。
 
-静态算法输入已归一为 BGR/BGRA，因此伪彩在 UI 捕获请求时，将 `Rgb24/Rgb48/Rgba64` 的源通道 0、2 交换为 canonical 通道索引；公开连续帧请求和自动范围仍使用源通道索引。`PseudoColorChannelSelectionTests` 经真实图层选择器、通道提取和受控伪彩 provider 检查显示切换、源不变与取消回调接管；该受控输出不替代 native 配色数值验证。
+静态算法输入已归一为 BGR/BGRA，因此伪彩在 UI 捕获请求时，将 `Rgb24/Rgb48/Rgba64` 的源通道 0、2 交换为 canonical 通道索引；公开连续帧请求和自动范围仍使用源通道索引。 使用实际 native 输出核对配色数值。
 
 `ImageShaderPresentation` 拥有独立滤镜状态和 effect 附着，工具负责界面与显式持久化。显示白平衡提供范围为 `-1..1`、默认 `0` 的色温与色调控制，并与手动 RGB 增益组合；显示滤镜不重排颜色通道。以上变化都不提交或改写源像素。滤镜沿用完整画布的 `SceneEffect` 范围，包含图像和叠加内容；没有静默缩小成只处理底图。关闭时仅在当前 effect 仍是自身对象时恢复先前 effect。
 
@@ -126,7 +125,7 @@ related: ["ui.image-editor", "ui.discovery", "ui.configuration", "algorithms.pla
 
 `Abstractions/IImageEditor.cs` 中的 `IImageOpenContentLifetime` 将当前文件资源与工具栏生命周期分开。文件替换、清空及销毁视图经 `ImageView.ReleaseImageContent` 调用 `ReleaseContentAsync`，先失效旧请求，再异步等待正在读的内容退役；UI 不阻塞等待可能回调 Dispatcher 的读取。相机实时开始、本地预览及内存 CIE 接入同样先结束原文件内容。只有同一打开器紧接着加载下一文件时传入 `reuseBuffers=true`，允许保留可复用分配，但旧测量消费者仍须退出。RAW 切换到 PNG/JPG 等其他打开器会释放旧输入数组，后续重开不会被迟到的清理任务清除；工具栏刷新、普通页签切换及单纯显示图层变化不调用此入口。图像格式插件不实现此可选接口时仍保持原有行为。
 
-清空图像也释放保存快照的复用缓冲。对于单份像素缓冲至少 64 MiB 的清理或页签关闭，`Documents/ImageMemoryReclaimer` 在解除引用、UI 清空与渲染调度之后合并后台回收请求，完成终结器并归还空闲托管堆页；RAW 打开器在串行读取结束后才释放数组，取消尚未显示的加载及离开 RAW 打开器同样请求回收。小图及逐帧更新使用正常 GC，不在 UI 线程等待终结器。原因是 WPF 对超大 `WriteableBitmap` 的内存压力估算可能发生整数溢出，同时只解除引用或普通 GC 不能保证空闲 POH 页立即归还。后台回收仍可能带来短暂 GC 停顿；渲染器及程序其他模块的常驻内存不属于当前图像，进程不保证回到冷启动占用。验证需观察实际显示窗口反复打开、清理/关闭后的进程私有内存，并分别记录托管堆和空闲时变化；测试中主动强制 GC 后弱引用消失不能单独证明清理按钮的效果。
+清图和关页会解除大图及快照缓存引用。`ImageMemoryReclaimer` 在后台回收体量大的空闲缓冲，仍可能有短时 GC 停顿。渲染器和其他模块的常驻内存独立。排查时反复打开与关闭实际窗口，分别观察进程私有内存和托管堆。
 
 ## 临时 ROI：形状、坐标与有效期
 
@@ -151,8 +150,7 @@ related: ["ui.image-editor", "ui.discovery", "ui.configuration", "algorithms.pla
 
 ## 验证范围
 
-算法 claim 和预览回滚还需结合算法平台及 `ImageAlgorithmPreviewSessionTests` 的契约验证。
+算法 claim 和预览回滚仍需结合算法平台契约验证。
 
-`ImageDisplayEffectsTests` 覆盖参数捕获的基准源、启用与存活门禁，以及不可变参数和无发布副作用。`ImageGroupNavigationTests` 覆盖去重、手动暂停跟随及导航事件顺序，不证明真实按钮/打开器交互。
 
-同时验证算法拒绝无像素选区或过期范围，正常位图仍可获取输入。`TransientRoiSelectionTests` 使用 WPF 键盘事件验证选区替换、交互状态恢复及完成键的点数约束，真实鼠标与不同 DPI 的整链行为需在应用中验证。
+实际应用中核对过期 ROI 拒绝、鼠标操作和不同 DPI 下的选区交互。

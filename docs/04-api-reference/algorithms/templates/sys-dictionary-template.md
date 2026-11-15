@@ -5,7 +5,6 @@ status: "current"
 summary: "说明保留的系统字典 DAO 与模板默认值、传感器和旧流程兼容依赖。"
 aliases: ["系统字典窗口没了还能删除表吗","TemplateDicId","SysDictionaryModModel","SensorTemplateDictionaryService"]
 code_paths: ["Engine/ColorVision.Engine/Dao/SysDictionaryModMasterDao.cs","Engine/ColorVision.Engine/Dao/SysDictionaryModDetaiModel.cs","Engine/ColorVision.Engine/Templates/ITemplate.cs","Engine/ColorVision.Engine/Services/Devices/Sensor/Templates/SensorTemplateDictionaryService.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/SensorTemplateMigrationTests.cs","Test/ColorVision.UI.Tests/FlowPackageCompatibilityTests.cs"]
 related: ["algorithms.index","engine.template-design","algorithms.json-templates"]
 ---
 
@@ -53,6 +52,4 @@ related: ["algorithms.index","engine.template-design","algorithms.json-templates
 
 ## 验证入口与缺口
 
-关联测试：`Test/ColorVision.UI.Tests/SensorTemplateMigrationTests.cs`、`Test/ColorVision.UI.Tests/FlowPackageCompatibilityTests.cs`。
-
-测试覆盖传感器迁移与流程包兼容的一部分；现场数据库迁移必须保留主从 ID 和旧模板引用。
+现场数据库迁移必须保留主从 ID 和旧模板引用。

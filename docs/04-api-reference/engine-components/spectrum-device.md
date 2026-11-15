@@ -5,7 +5,6 @@ status: "current"
 summary: "主程序物理光谱仪配置、本地 SDK 连接与采集窗口、本地节点及原光谱节点转发；区分本地执行、服务执行和历史结果存储。"
 aliases: ["光谱仪搜不到", "光谱仪连接方式", "光谱单次采集", "SpectrumColorMeasurement", "CaptureColorMeasurementAsync", "ConfigSpectrum", "InfoSpectrum", "GetSpectrSerialNumberAsync", "SpectrumDeviceDiscovery", "CMvSpectra", "Gaolitong", "光谱仪配置分类", "物理光谱仪管理", "PhySpectrumManager", "SpectrumLicenseUpdateService", "光谱仪联网更新许可证", "ND位置记忆", "本地ND标定切换", "光闸", "遮光", "通光", "光谱采集全黑"]
 code_paths: ["Engine/ColorVision.Engine/Services/Devices/Spectrum", "Engine/ColorVision.Engine/Services/Devices/CfwPort", "Engine/ColorVision.Engine/Services/PhySpectrums", "Engine/ColorVision.Engine/Services/PhyCameras/Licenses/LicenseManagerWindow.xaml.cs"]
-test_paths: ["Test/Spectrum.Tests/SpectrumDeviceDiscoveryTests.cs", "Test/Spectrum.Tests/SpectrumCalibrationGroupConfigTests.cs", "Test/Spectrum.Tests/PhySpectrumManagerTests.cs", "Test/Spectrum.Tests/LocalSpectrumTests.cs", "Test/ColorVision.UI.Tests/LocalSpectrumFlowTests.cs", "Test/ColorVision.UI.Tests/SpectrumNdSelectionTests.cs"]
 related: ["engine.devices", "engine.native-bindings", "ui.property-grid", "plugins.spectrum"]
 ---
 
@@ -39,11 +38,11 @@ related: ["engine.devices", "engine.native-bindings", "ui.property-grid", "plugi
 
 单次、连续测量和流程执行将光谱、色度与实际积分时间直接交给界面/流程。连续测量逐条保存并追加到主界面和本地窗口，下一次测量不替换上一条；停止期间已经完成的原生采集仍保存和展示。离线结果逐条留在内存，可由本地窗口导出 JSON；在线历史结果写入原 MySQL 光谱结果表，流程遵守 `PersistResults`。保存成功后列表及导出使用数据库记录 ID；写入失败停止连续测量并报告错误，不继续静默丢弃记录。任何采集结果都不写配置 SQLite。图表按原生返回的波长起点、间隔和有效点数绘制，保留原始结果用于校正与导出。
 
-光谱、显色性数组和 CIE 扩展数据以原始 JSON 文本写入历史表，不再由 ORM 额外序列化字符串。写入数值列前，将光谱指标、EQE 和通量中的 `NaN`、正负无穷转换为数据库 `NULL`，不伪造为零；电压、电流和系数转换为单精度后溢出的值也按缺失处理。原始光谱样本及 CIE 扩展 JSON 保留原值，显色性数组包含无效值时沿用缺失处理；此保护不修改本次采集对象或光路配置。`EngineSpectrumResultTests` 通过隔离数据库验证无效指标可保存、有效数值和原始样本保持不变。读取兼容既有的 JSON 数组/对象及被引号包装的历史字符串，无需批量重写数据。普通查询和高级查询先完成读取、转换，再替换当前列表，查询失败时保留原列表。
+光谱、显色性数组和 CIE 扩展数据以原始 JSON 文本写入历史表，不再由 ORM 额外序列化字符串。写入数值列前，将光谱指标、EQE 和通量中的 `NaN`、正负无穷转换为数据库 `NULL`，不伪造为零；电压、电流和系数转换为单精度后溢出的值也按缺失处理。原始光谱样本及 CIE 扩展 JSON 保留原值，显色性数组包含无效值时沿用缺失处理；此保护不修改本次采集对象或光路配置。读取兼容既有的 JSON 数组/对象及被引号包装的历史字符串，无需批量重写数据。普通查询和高级查询先完成读取、转换，再替换当前列表，查询失败时保留原列表。
 
 本地 EQE 沿用服务的电气输入契约：旧 `SpectrumEQENode` 默认读取本次流程前面的 `SMUResult`，其中电压为 V、电流为 mA；开启“自定义电压/流”时以节点填写值覆盖 V/I，保留原有测量关联，且不修改上游测量对象。转交原生 EQE 之前电流只转换一次为 A（例如 25 mA → 0.025 A）。缺少上游且未启用自定义时明确失败，不使用设备界面中的上次值或 PG 九路数据。PG 的 `POWER.MEASURE` 没有服务默认的多路合成规则，不自动转成 `SMUResult`。
 
-新“本地光谱采集”节点的“使用上游源表电压/流”默认开启，启用 EQE 后读取本次流程实际执行过的上游 SMU 测量并按相同规则转换；仅存在节点却没有有效测量结果时明确报错，不自动回退到手填值。需要手动输入时关闭该选项，再填写 V/A；输入框只在 EQE 手动输入时显示。旧流程缺少该选项时采用上游默认值，已经明确保存的开启或关闭值继续保留。普通光谱不因此要求 SMU。节点保存值不被上游覆盖，执行日志和结果参数记录实际使用的 V/A 及原始 `SMUData`（mA）。手动窗口的 V/I 继续为 V/A。历史表 `VResult` / `IResult` 按服务约定保存 V/mA，并关联有效的上游 SMU 结果 ID，不把原生返回的 A 直接写入 mA 字段。`LocalSpectrumFlowTests`、`LocalSpectrumRepeatParameterTests` 与 `Test/Spectrum.Tests/EngineSpectrumResultTests.cs` 保护上游/自定义选择、单位转换、缺失输入、默认值、已保存的手动选择和结果关联边界。
+新“本地光谱采集”节点的“使用上游源表电压/流”默认开启，启用 EQE 后读取本次流程实际执行过的上游 SMU 测量并按相同规则转换；仅存在节点却没有有效测量结果时明确报错，不自动回退到手填值。需要手动输入时关闭该选项，再填写 V/A；输入框只在 EQE 手动输入时显示。旧流程缺少该选项时采用上游默认值，已经明确保存的开启或关闭值继续保留。普通光谱不因此要求 SMU。节点保存值不被上游覆盖，执行日志和结果参数记录实际使用的 V/A 及原始 `SMUData`（mA）。手动窗口的 V/I 继续为 V/A。历史表 `VResult` / `IResult` 按服务约定保存 V/mA，并关联有效的上游 SMU 结果 ID，不把原生返回的 A 直接写入 mA 字段。
 
 本地 EQE 暂不支持同步频率模式。启用 `NDConfig.IsNDPort` 后，ND 与光谱仪组成同一测量链：绑定已有滤轮时复用其本地会话，不要求再打开“使用本地滤色轮”开关；未绑定设备时使用 ND 配置的串口、波特率，由光谱仪会话持有连接。打开光谱仪时检查 ND 连接和实际孔位。断开时分别释放光谱仪、串口快门和自有 ND 连接，共享滤轮继续可用。任一步失败仍尝试释放其余设备，并报告所有关闭错误。已知服务占用、并发指令、配置变化或定位读回不符均明确失败；服务失联不视为已释放串口。
 
@@ -79,7 +78,7 @@ ND 采集始终读取实际孔位，加载该孔位对应的波长和幅值文�
 
 许可证窗口的 **获取光谱仪许可** 使用同一搜索逻辑，对三种方式查询 USB，不再为读取 SN 打开和关闭设备。联网更新由物理光谱仪管理中的独立按钮执行。
 
-主程序的 **许可证管理** 同时列出相机和光谱仪许可证，顶部统计正常、30 天内到期、已过期及日期未知的数量。到期判定沿用本地时间戳：到期时间早于当前时间才算过期；缺失日期显示“日期未知”。**一键清除过期** 显示待删除数量并要求确认，只删除本次确认范围内仍已过期的许可证记录，保留期间续期的记录、日期未知记录、设备配置和导出的 LIC 文件；清除不会重启服务或卸载运行中的许可证。完成后刷新列表并显示实际删除数量，失败保留错误信息。`Test/ColorVision.UI.Tests/LicenseExpirationTests.cs` 用隔离数据库验证过期边界、混合类型、空范围及确认后续期的保护，不代替现场 MySQL 和设备验收。
+主程序的 **许可证管理** 同时列出相机和光谱仪许可证，顶部统计正常、30 天内到期、已过期及日期未知的数量。到期判定沿用本地时间戳：到期时间早于当前时间才算过期；缺失日期显示“日期未知”。**一键清除过期** 显示待删除数量并要求确认，只删除本次确认范围内仍已过期的许可证记录，保留期间续期的记录、日期未知记录、设备配置和导出的 LIC 文件；清除不会重启服务或卸载运行中的许可证。完成后刷新列表并显示实际删除数量，失败保留错误信息。
 
 **物理光谱仪管理** 可从工具菜单、设备配置窗口顶部、设备属性页的“设备与连接”或光谱仪 SN 属性旁的“编辑”打开。顶部保留“扫描”和“导入”，左侧按 SN / 型号查询；右侧沿用物理相机的型号、SN 与紧凑许可证横条。横条内“更新”导入当前 SN 的本地许可证，下载图标后台联网更新，另提供复制和导出。它不提供相机的配置或备份属性，也不单列批量联网更新或手动登记按钮。
 
@@ -144,12 +143,4 @@ ND 已启用且光谱仪或绑定 ND 使用本地后端时，手动设置、读�
 
 ## 验证边界
 
-`SpectrumButtonOperationTests` 使用实际 WPF 光谱卡片和模拟命令，验证打开、关闭和测量期间原布局保留、当前按钮防止重复触发，以及成功、失败、超时和即时回复后的恢复；同时检查连续结果逐条追加、保存 ID 对齐，以及查询转换失败时列表不变。`EngineSpectrumResultTests` 用隔离 SQLite 验证 ORM 写入、普通/历史字符串 JSON 读取和原始样本保留；不连接现场 MySQL 或光谱硬件。
-
-`LocalSpectrumTests.CaptureWithoutDarkPreservesManualShutterState` 保护手动遮光/通光状态不被普通采集及自动积分覆盖；`ShutterCaptureBlocksOnlyForDarkAndThenRestoresTransmission` 保护串口默认 `a → 采暗数据 → b` 和滤轮暗位/测量位顺序。维护光闸控制时应保留这两项行为边界。该测试类还覆盖句柄复用、初始化失败清理、SN 不匹配、驱动互斥、校正前置检查、分段及旧回执、相反状态和超时拒绝、失败恢复、重连及释放。ND 用例保护实际孔位与标定文件一致、自动积分切孔、停止和不收敛、暗孔恢复及标定缺失边界。`LocalSpectrumFlowTests` 验证流程本地执行钩子、失败不发 MQTT、离线开始节点对本地转发和服务节点的不同限制，以及本地节点保存字段。`SpectrumNdSelectionTests` 通过实际注册、模拟滤轮会话和隔离配置库验证“光谱仪+ND”转发、真实读回及成功后文件提交，覆盖本地光谱和本地 ND 两种入口。它们不替代真实 SDK、硬件采集、串口机械动作和现场窗口操作验收。
-
-`SpectrumDeviceDiscoveryTests` 注入模拟查询，覆盖全部类型、USB/串口组合、单驱动失败后继续、原生返回码和序列号解析。测试不加载供应商驱动，也不能替代现场真机搜索与连接验收。
-
-`SpectrumConfigurationDraftTests` 验证串口开关与历史端口兼容、非法端口拒绝、关闭串口后保存 `0`、编辑取消隔离、嵌套集合独立性和 ND 保存清理规则，不触发设备连接或许可证入库。
-
-`Test/Spectrum.Tests/PhySpectrumManagerTests.cs` 验证旧数据清单合并、资源与许可证类型隔离、SN 去重、ZIP 目标匹配、无效许可证拒绝、模拟 HTTP 成功 / 错误响应，以及校正设备按 SN 匹配、重新绑定和拒绝回退到其它设备。测试不连接真实数据库、不访问许可证服务器；实际登记、许可证入库、驱动加载及设备扫描仍需现场验收。
+现场验收应核对 SDK、光谱采集、滤轮及串口动作、窗口恢复、真实 MySQL、许可证入库、驱动加载和设备扫描。

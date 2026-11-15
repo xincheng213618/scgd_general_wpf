@@ -5,7 +5,6 @@ status: "current"
 summary: "定位供应商 native DLL 的相机、光谱、PG 与源表绑定契约，以及内部版的交付边界。"
 aliases: ["设备SDK入口在哪里","cvColorVision","cvCameraCSLib","CVCommCore","MQTTMessageLib","CVCommCore.dll","MQTTMessageLib.dll"]
 code_paths: ["Engine/cvColorVision/README.md","Engine/cvColorVision/Camera","Engine/cvColorVision/CVCommCore","Engine/cvColorVision/MQTTMessageLib","Engine/cvColorVision/Devices/Spectrometer/Spectrometer.cs","Engine/cvColorVision/cvColorVision.csproj"]
-test_paths: []
 related: ["engine.index","engine.native-integration","ui.core"]
 ---
 
@@ -87,7 +86,7 @@ MVS 视频回调丢弃坏帧、归还 SDK 缓冲并继续取帧，超时仍无�
 
 平台错误 `CV_ERR_CAM_ID_MATCH=-10007` 明确表示 ID 与枚举设备不匹配；`CV_ERR_CAM_OPEN=-10009` 仅表示设备打开失败。旧 SCGDCamLayer 普通打开日志记录请求 ID、枚举 ID、型号、模式和失败步骤，其指针接口未提供底层 SDK 错误码时明确标记不可用，不推断为 ID 错误。MVS 打开日志记录序列号、传输类型、失败操作及 SDK 错误。
 
-`Test/ColorVision.UI.Tests/NativeCameraErrorTests.cs` 不连接设备，保护操作接口整数返回与状态查询的边界，验证当前程序集全部 `cvCamera.dll` 导入对应交付 DLL 的真实导出、跨 DLL 结构体大小/字段偏移、SDK 码跨线程解释、未知码回退、多个操作的无效句柄错误、取源图失败前不分配缓冲及消息缓冲边界；也检查电机类型数值、初始化句柄回写和源表波特率入口的无设备失败。原生 SDK 替身验证覆盖实际失败透传与后续成功调用，不代替现场 MVS 采集验收。
+交付时应核对 DLL 实际导出与结构布局，并在真实 MVS 环境验收采集。
 
 接口混用 `int`、`bool`、`void`，成功值由具体入口决定。例如 `Spectrometer.GetErrorMessage` 把 `1` 作为成功而返回空字符串，不能套用“所有 native 调用返回 0 才成功”。绑定存在、构建成功或取得返回值，都不能单独证明采集、校准或输出已安全完成；验证设备动作仍需明确授权和真实状态证据。
 

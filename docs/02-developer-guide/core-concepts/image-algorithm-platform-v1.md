@@ -4,8 +4,7 @@ knowledge_type: "topic"
 status: "current"
 summary: "图像编辑器本地算法扩展：Catalog 描述、provider 注册、Invocation 和 Runner 执行；像素预览与应用/取消、几何结果和叠加显示分流，保留所有权与发布门禁；ONNX仅设计。"
 aliases: ["有哪些本地图像算法","为什么算法有源码但菜单没有","ONNX 是否已经支持","Microsoft.ML.OnnxRuntime","AlgorithmRunner","AlgorithmImageBuffer","RetainReadOnly","AlgorithmImageBufferLease","ImageAlgorithmPlatform","ExperimentalAlgorithmProviderGate","AlgorithmsContextMenu","ImageAlgorithmPreviewSession","StartForCatalogPreview","ImageAlgorithmApplier","BasicAdjustmentWindow","WhiteBalanceWindow","ThresholdWindow","算法预览","应用与保存","基础调整","图像反相","白平衡","图像阈值","ConvertBatchImages","OpenBatchImageProcessing","colorvision-batch-image-conversion","批量图片处理","本地算法扩展","StandardAlgorithmCatalog","IImageAlgorithmProvider"]
-code_paths: ["ColorVision/Copilot/Agent/Tools/Application/CopilotBatchImageSourceResolver.cs","UI/ColorVision.ImageEditor/BatchProcessing/BatchImageProcessingWindow.xaml.cs","ColorVision/Copilot/Agent/Tools/Application/CopilotConvertBatchImagesTool.Evidence.cs","UI/ColorVision.Algorithms/", "UI/ColorVision.ImageEditor/Algorithms/ImageAlgorithmPlatform.cs", "UI/ColorVision.ImageEditor/Algorithms/ImageAlgorithmInputFactory.cs", "UI/ColorVision.ImageEditor/Algorithms/AlgorithmBitmapWriteTarget.cs", "UI/ColorVision.ImageEditor/Algorithms/OpenCvImageAlgorithms.cs", "UI/ColorVision.ImageEditor/Algorithms/OpenCvAlgorithmProvider.cs", "UI/ColorVision.ImageEditor/Algorithms/AlgorithmImageInterop.cs", "UI/ColorVision.ImageEditor/Algorithms/StandardAlgorithmCatalog.cs", "UI/ColorVision.ImageEditor/Algorithms/StandardAlgorithmParameters.cs", "UI/ColorVision.ImageEditor/Algorithms/ImageAlgorithmPreviewSession.cs", "UI/ColorVision.ImageEditor/Algorithms/ImageAlgorithmApplier.cs", "UI/ColorVision.ImageEditor/EditorTools/Algorithms/README.md", "UI/ColorVision.ImageEditor/EditorTools/Algorithms/AlgorithmsContextMenu.cs", "UI/ColorVision.ImageEditor/EditorTools/Algorithms/AlgorithmParameterInputs.cs", "UI/ColorVision.ImageEditor/EditorTools/Algorithms/BasicAdjustmentWindow.xaml.cs", "UI/ColorVision.ImageEditor/EditorTools/Algorithms/WhiteBalanceWindow.xaml.cs", "UI/ColorVision.ImageEditor/EditorTools/Algorithms/ThresholdWindow.xaml.cs", "UI/ColorVision.ImageEditor/EditorTools/Algorithms/GaussianBlurWindow.xaml.cs", "UI/ColorVision.ImageEditor/EditorTools/Algorithms/MedianBlurWindow.xaml.cs", "UI/ColorVision.ImageEditor/EditorTools/Algorithms/EdgeDetectionWindow.xaml.cs", "UI/ColorVision.ImageEditor/EditorTools/Algorithms/FilterDenoiseWindow.xaml.cs", "UI/ColorVision.ImageEditor/EditorTools/Algorithms/MorphologyWindow.xaml.cs", "UI/ColorVision.ImageEditor/EditorTools/Algorithms/InvertEditorTool.cs", "UI/ColorVision.ImageEditor/BatchProcessing/BatchImageAlgorithms.cs", "UI/ColorVision.ImageEditor/BatchProcessing/BatchImageProcessor.cs", "UI/ColorVision.ImageEditor/BatchProcessing/BatchImageOutput.cs", "Engine/ColorVision.Engine/Media/CVRawBatchImageLoader.cs", "ColorVision/Copilot/Agent/Tools/Application/CopilotConvertBatchImagesTool.cs", "ColorVision/Copilot/Agent/Tools/Application/CopilotOpenBatchImageProcessingTool.cs", "ColorVision/Copilot/Skills/colorvision-batch-image-conversion", "Engine/ColorVision.Engine/FlowProcessing/Algorithms/LocalFlowImageAlgorithmAdapter.cs", "UI/ColorVision.ImageEditor/Operations/ImageOperationCoordinator.cs", "UI/ColorVision.ImageEditor/Contexts/ImageProcessingContext.cs"]
-test_paths: ["Test/ColorVision.Copilot.Tests/CopilotOpenBatchImageInputTests.cs","Test/ColorVision.Copilot.Tests/CopilotBatchImageSourceResolverTests.cs","Test/ColorVision.UI.Tests/BatchImageWindowInputTests.cs","Test/ColorVision.Copilot.Tests/CopilotBatchImageApprovalTests.cs","Test/ColorVision.Copilot.Tests/CopilotBatchImageCancellationEvidenceTests.cs","Test/ColorVision.UI.Tests/AlgorithmReleaseGateTests.cs","Test/ColorVision.Copilot.Tests/CopilotBatchImageProcessingTests.cs","Scripts/tests/test_algorithm_package_contract.py","Test/ColorVision.UI.Tests/AlgorithmImageBufferTests.cs","Test/ColorVision.UI.Tests/ImageAlgorithmPixelFormatTests.cs","Test/ColorVision.UI.Tests/AlgorithmBitmapWriteTargetTests.cs","Test/ColorVision.UI.Tests/OpenCvImageAlgorithmsInPlaceTests.cs","Test/ColorVision.UI.Tests/BasicAdjustmentProviderTests.cs","Test/ColorVision.UI.Tests/BasicAdjustmentWindowOwnershipTests.cs","Test/ColorVision.UI.Tests/LazyBasicAdjustmentTests.cs","Test/ColorVision.UI.Tests/AlgorithmImageInteropTests.cs","Test/ColorVision.UI.Tests/ImageAlgorithmSessionArbitrationTests.cs","Test/ColorVision.UI.Tests/ImageAlgorithmPreviewSessionTests.cs", "Test/ColorVision.UI.Tests/ImageDocumentSourceSnapshotTests.cs"]
+code_paths: ["ColorVision/Copilot/Agent/Tools/Application/CopilotBatchImageSourceResolver.cs","UI/ColorVision.ImageEditor/BatchProcessing","ColorVision/Copilot/Agent/Tools/Application/CopilotConvertBatchImagesTool.Evidence.cs","UI/ColorVision.Algorithms","UI/ColorVision.ImageEditor/Algorithms/ImageAlgorithmPlatform.cs","UI/ColorVision.ImageEditor/Algorithms/ImageAlgorithmInputFactory.cs","UI/ColorVision.ImageEditor/Algorithms/AlgorithmBitmapWriteTarget.cs","UI/ColorVision.ImageEditor/Algorithms/OpenCvImageAlgorithms.cs","UI/ColorVision.ImageEditor/Algorithms/OpenCvAlgorithmProvider.cs","UI/ColorVision.ImageEditor/Algorithms/AlgorithmImageInterop.cs","UI/ColorVision.ImageEditor/Algorithms/StandardAlgorithmCatalog.cs","UI/ColorVision.ImageEditor/Algorithms/StandardAlgorithmParameters.cs","UI/ColorVision.ImageEditor/Algorithms/ImageAlgorithmPreviewSession.cs","UI/ColorVision.ImageEditor/Algorithms/ImageAlgorithmApplier.cs","UI/ColorVision.ImageEditor/EditorTools/Algorithms/README.md","UI/ColorVision.ImageEditor/EditorTools/Algorithms/AlgorithmsContextMenu.cs","UI/ColorVision.ImageEditor/EditorTools/Algorithms/AlgorithmParameterInputs.cs","UI/ColorVision.ImageEditor/EditorTools/Algorithms/BasicAdjustmentWindow.xaml.cs","UI/ColorVision.ImageEditor/EditorTools/Algorithms/WhiteBalanceWindow.xaml.cs","UI/ColorVision.ImageEditor/EditorTools/Algorithms/ThresholdWindow.xaml.cs","UI/ColorVision.ImageEditor/EditorTools/Algorithms/GaussianBlurWindow.xaml.cs","UI/ColorVision.ImageEditor/EditorTools/Algorithms/MedianBlurWindow.xaml.cs","UI/ColorVision.ImageEditor/EditorTools/Algorithms/EdgeDetectionWindow.xaml.cs","UI/ColorVision.ImageEditor/EditorTools/Algorithms/FilterDenoiseWindow.xaml.cs","UI/ColorVision.ImageEditor/EditorTools/Algorithms/MorphologyWindow.xaml.cs","UI/ColorVision.ImageEditor/EditorTools/Algorithms/InvertEditorTool.cs","Engine/ColorVision.Engine/Media/CVRawBatchImageLoader.cs","ColorVision/Copilot/Agent/Tools/Application/CopilotConvertBatchImagesTool.cs","ColorVision/Copilot/Agent/Tools/Application/CopilotOpenBatchImageProcessingTool.cs","ColorVision/Copilot/Skills/colorvision-batch-image-conversion","Engine/ColorVision.Engine/FlowProcessing/Algorithms/LocalFlowImageAlgorithmAdapter.cs","UI/ColorVision.ImageEditor/Operations/ImageOperationCoordinator.cs","UI/ColorVision.ImageEditor/Contexts/ImageProcessingContext.cs"]
 related: ["algorithms.index","algorithms.onnx","ui.index","ui.image-editor","ui.image-editor-context","engine.results","engine.cv-image-export"]
 ---
 
@@ -41,33 +40,17 @@ related: ["algorithms.index","algorithms.onnx","ui.index","ui.image-editor","ui.
 
 ## 当前普通像素算法执行入口
 
-普通像素算法的参数定义与默认执行已收口到 Catalog、Invocation 和 Runner。以下描述当前源码，不是待实施的迁移清单；历史上分散的 Batch 参数或执行实现不能据此重新引入。
+普通像素算法由同一 Catalog、Invocation 和 Runner 提供参数与执行。ImageView 的菜单按 provider 可用性投影，预览由 `ImageAlgorithmPreviewSession` 绑定文档、revision 和 invocation。Batch 图像输出用 `BatchImageAlgorithms` 读取同一份描述及默认值，保留同步 façade 和旧参数兼容。“仅转换格式”和明确给定的 legacy delegate 仍独立。
 
-| 当前入口 | 实现位置与调用链 | 必须保留的边界 |
-| --- | --- | --- |
-| ImageView 菜单与预览 | `EditorTools/Algorithms/AlgorithmsContextMenu.cs` 从 `AlgorithmCatalogProjection.ForInteractiveMenu` 投影菜单；普通像素预览由 `Algorithms/ImageAlgorithmPreviewSession.cs` 调用所属 runtime 的 Runner | 专用参数窗口是兼容适配器；菜单仍检查 provider 可用性，预览遵守 document/revision/invocation 有效性 |
-| 默认图像输出 Batch | `BatchProcessing/BatchImageAlgorithms.cs` 的 `CreateAll` 从 `ForBatchImageProcessing` 投影能力，`CreateDefaultParameters` 读取 Descriptor 默认值，`BatchImageAlgorithmDefinition.Apply` 构造 Invocation 并调用同一 runtime 的 Runner | 保留同步 façade 和部分旧参数归一化；“仅转换格式”及调用方显式构造的 legacy delegate 不冒充 Catalog 算法 |
-| Canny 参数与执行 | `Algorithms/StandardAlgorithmCatalog.cs` 注册 `StandardAlgorithmParameters.cs` 的 `CannyParameters`，低/高阈值默认为 `50/150`；默认 Batch 读取同一参数并经 Runner 执行 | Batch 不另设一套 Canny 默认值或私有执行路径；位深转换与输出 Gray8 的契约由同一 provider 负责 |
-
-以上路径相对 `UI/ColorVision.ImageEditor/`。测试存在不表示本次已经运行。RemoveMoire 的 native 依赖和允许的宿主入口仍以下方能力矩阵及前述发布门禁为准。
-
-ImageView 适配器从 `ImageDocument` 同步取得源引用与共享 `ImageFrameStore` revision，再建立私有 canonical 输入，并把 revision 与 `DocumentInstanceId`、`InvocationId` 一起交给专属 session；平台不维护第二套源版本或 native 缓存。需要读取 native 帧的消费者继续使用 `ImageFrameLease`。源状态捕获、租约、位图复制与显式失效的实现及测试范围见[源图像帧契约](../../04-api-reference/ui-components/image-frame-lifetime.md)，不把内存仍有效当作结果仍可发布。
-
-ImageEditor 中的具体仲裁 owner 是 `Operations/ImageOperationCoordinator`，`ImageProcessingContext` 保留同名兼容入口并转发。协调器管理 preview claim、analysis、发布/回滚和 overlay 注册；文档源及 revision 归 `ImageDocument`，显示成对赋值归 `ImagePresentation`。普通显示 generation 不能代替算法 invocation claim。静态伪彩仍可使用算法预览会话，连续帧则由 `ImageStreamPresentation` 使用冻结帧调度；不能假定两条输入/处理路径在数值和取消语义上等价。完整职责见[编辑器上下文](../../04-api-reference/ui-components/image-editor-context.md)。
+源和 revision 归 `ImageDocument` / `ImageFrameStore`。图像操作协调器管理预览、分析、提交和 overlay。静态伪彩走算法预览，连续帧走 `ImageStreamPresentation`，二者的像素输入与取消语义各自核对。 [源图像帧契约](../../04-api-reference/ui-components/image-frame-lifetime.md) · [编辑器上下文](../../04-api-reference/ui-components/image-editor-context.md)
 
 ### ImageEditor 参数窗口、应用与取消
 
-`AlgorithmsContextMenu` 使用 `ImageProcessingContext`（矩形/分析适配器另需 `DrawEditorContext`）。`InvertEditorTool`、`BasicAdjustmentWindow` 等也接收处理上下文。反相等“直接应用”工具的 `Execute()` 当前是 `async void`，内部等待 `ImageAlgorithmApplier.ApplyAsync`；外部调用返回并不是算法完成的信号，读取或导出结果须等待实际应用完成。
+参数窗口通过 `ImageAlgorithmPreviewSession.StartForCatalogPreview` 绑定原图快照。首个有效预览前显示原图，每次运行都以基准图作为输入。同步兼容的 `Start` 会发布独立初始位图，Catalog 预览则须等到实际结果发布才有 `PreviewBitmap`。直接应用的 `Execute()` 是 `async void` 时，外部要等实际应用完成后再读取或导出。
 
-基础调整、白平衡、阈值、边缘检测、高斯模糊、中值滤波、降噪滤波和形态学参数窗口在构造时通过 `ImageAlgorithmPreviewSession.StartForCatalogPreview` 建立预览会话并发起计算；参数变化使用各窗口独立的 50ms 防抖键。该启动入口仍同步复制私有 canonical 输入并取得初始 claim，但不复制占位 `WriteableBitmap`：同一所有权事务内恢复当前基准源、清空 `FunctionImage`；会话仍拥有宿主时，首个有效结果发布前显示原图。不同窗口、直接应用及其他分析会争用同一文档/revision 的调用所有权，旧会话不能提交或恢复掉后继结果。每次运行仍从会话的源图副本构造输入，不把上一次预览反复叠加为新输入。
+延迟预览在触发时重查文档、revision 和宿主调用权。换图、取消、分析或显示选择可让旧回调失效。原文档仍有效时，用户之后的新输入可以重新取得预览权。预览关闭后仍可明确点击“应用”。
 
-静态伪彩也使用 `StartForCatalogPreview`，首个有效结果发布前保留原图。`Start` 保留创建并发布独立、可修改初始位图的兼容行为，供单次应用及同步兼容入口使用。`StartForCatalogPreview` 尚未取得结果位图时没有 `PreviewBitmap`，读取该属性会拒绝，不会触发延迟复制。成功发布的结果仍是独立、可修改的位图。
-
-这些窗口通过 `ImageAlgorithmPreviewSession.GuardDeferredPreview(Action)` 包装参数刷新回调，再交给 `DebounceTimer.AddOrResetTimerDispatcher`；守卫的捕获与执行均在参数窗口的 Dispatcher 中。登记时捕获 `DocumentInstanceId`、source revision、`AlgorithmClaimSequence` 和 `AlgorithmPreviewGeneration`，回调只有在会话未完成且未释放、视图未释放且这些宿主状态仍全部相同时才发起普通预览。最后已接受的 claim sequence 在 owner 释放后仍保留，因此分析即使已经开始并结束、当前 claim 又为空，也会使更早的参数刷新过期；预览 generation 同时识别显示选择或仅取消带来的失效。被丢弃的是此前延迟的普通刷新：会话在同一文档/revision 仍有效时，用户后续新参数操作会捕获新的状态，仍可主动重新取得预览 claim。明确点击“应用”继续按当前参数执行与提交检查。
-
-几何变换、镜头畸变校正和成像校正的单次应用入口在打开参数窗口前建立会话，绑定原 document、source revision 和调用所有权，并保留源图快照至参数取消、失败或执行结束。确认参数及必要的异步参考准备后，`ImageAlgorithmApplier` 使用调用方持有的会话执行并提交；过期操作返回 `Superseded/commit_superseded`，清理参考输入而保留后继显示。附加输入非空时才要求 `MultiInput` 能力，空列表仍按单输入算法执行。没有参数窗口的直接应用入口在调用时建立并释放自己的会话，复用同一应用核心。此单次应用检查不改变可重复预览会话在同 revision 下重新取得 claim 的既有能力。
-
-`ImageAlgorithmSessionArbitrationTests` 的共享单次应用用例检查参数确认期间切图、revision 变化、新会话接管、空附加输入的单输入能力与正常提交一次；保留 context 入口作为生命周期兼容控制。它们检查应用边界，不代表每个参数窗口和结果窗口都已经完成点击验收。
+几何变换、镜头畸变和成像校正从打开参数窗口起绑定原文档、revision 与调用权。参考准备中发生切图或新调用接管时，旧操作返回 `Superseded/commit_superseded` 并释放自有输入。真正有附加输入时才检查 `MultiInput`。
 
 | 动作 | 当前效果与边界 |
 | --- | --- |
@@ -76,15 +59,11 @@ ImageEditor 中的具体仲裁 owner 是 `Operations/ImageOperationCoordinator`�
 | 成功提交 | 替换内存中的 `ViewBitmapSource`、清 `FunctionImage` 并推进一次 source revision；不写图像文件、不代表测量验收或可通过图元撤销恢复 |
 | 点击“取消”或窗口关闭 | 取消/释放该会话；只有仍拥有预览时才恢复宿主当前基准图，不应覆盖已换图、已提交或被其他调用取代的内容 |
 
-`Commit()` 只接受与当前完整 claim 绑定的位图。新的 invocation 尚未发布有效结果、失败或取消时，画布可能仍保留前一次成功预览，但不能把该旧位图作为新调用的结果提交；此时返回 `false`，不因此取消仍在执行的新调用。`DocumentInstanceId`、source revision、invocation 和宿主所有权检查继续参与最终提交。
+提交须命中本次调用和当前参数。新调用还未发布结果、已失败或已取消时，即使画布仍显示上一次预览，也不允许提交旧位图。计算中改参同样会使本次应用失效，窗口保持可继续编辑。
 
-八类参数窗口还将每次“应用”绑定到点击时的参数状态。计算期间继续改参数，会保留窗口并拒绝旧值的提交，即使新的防抖预览尚未开始；基础调整的重置和预览开关变化也使该次应用过期。关闭预览时继续调参会立即撤销旧请求并保持基准图，用户可再次点击“应用”明确提交当前值；预览开启时仍按原防抖规则更新画面。
+数值文本通过 `AlgorithmParameterInputs` 在应用前提交和校验。未失焦的新文本也会让计算中的应用过期。绑定失败时保留输入与提示，不执行算法。原生绑定错误仍由 WPF 管理，跟踪器只清理本次操作自己添加的提示。
 
-基础调整、白平衡、阈值、形态学和去噪的数值文本框共用 `AlgorithmParameterInputs`：点击“应用”先提交绑定，再取消此次回写可能排入的防抖刷新，只有绑定状态为 `Active` 且无验证错误时才开始计算。保留 WPF 的数值转换和滑条范围夹值，成功后回显实际值；失败时保留原文本、不执行算法或关窗。不能只检查验证错误标志：例如 `NaN` 可能只产生 `UpdateSourceError`。文本草稿变化独立推进输入版本，因此尚未失焦、尚未写回滑条的新文本也会使在途应用过期；基础调整关闭预览时还会立即撤销旧请求。版本在整次绑定提交完成后捕获，避免格式化回写使本次有效应用自行失效；窗口关闭时解除文本事件。默认失焦回写与主题的 Enter 移焦行为保持原样，直接默认按钮确认的验证不等同于物理按键或 IME 验收。
-
-数值确认失败沿用 WPF 验证标记和错误说明；没有原生验证标记的 source 更新错误由会话输入跟踪器补上标记。没有现有提示时附加错误 Tooltip，不覆盖已有提示。原文不变的失败重试保留拒绝和错误标记，不再次 `UpdateSource()`，以免框架清掉标记却仍保留失败状态。文本实际改变后才释放本次记录的拒绝状态；只按绑定及错误对象的身份清理自有标记，WPF 原生错误由绑定转换自然恢复，后继代码设置的错误和提示保持其所有权。窗口关闭时同样只清理自有反馈，不改变数值解析或范围规则。
-
-关闭预览会使此前已开始准备的请求过期；预览 claim 的注册、会话交接与关闭操作在 Dispatcher 中串行检查代际，避免关闭前的旧请求在关闭后取得发布权。已进入的单次 native 调用仍可在取消后完成，provider 在后续协作检查点观察取消；迟到结果按失效 claim 丢弃，不再显示。精确取消失败时不会恢复旧图或影响后继 owner；同步兼容会话仍保留原有逐像素恢复路径。基础调整中已经排到 Dispatcher 的普通刷新也检查当前预览开关，只有明确点击“应用”才在关闭预览时继续重算。
+关闭预览会使此前准备中的请求过期。已进入 native 的计算可能继续，迟到结果不能发布或恢复到已被后继拥有的视图。
 
 “应用后已保存原图”是错误推断。需要落盘时继续核对[图像编辑器输出](../../04-api-reference/ui-components/ColorVision.ImageEditor.md)的 source/rendered 格式、像素保真与覆盖边界。
 
@@ -115,7 +94,7 @@ ImageEditor 中的具体仲裁 owner 是 `Operations/ImageOperationCoordinator`�
 
 这里的“全部格式”只指 G8/G16/G32F/BGR8/BGR16/BGR32F/BGRA8/BGRA16/BGRA32F；需要标称范围的 32F 运算使用 `[0,1]`。Threshold 和 bilateral `SigmaColor` 的当前 schema 2 参数统一使用 0..255 标称刻度：provider 对 8-bit 保持原值、对 16-bit 乘 257、对 float 除 255，因此 ImageView、Batch、Flow 和 Copilot 的默认数值不再按位深漂移。schema 1 Invocation 由显式 migrator 进入绝对 DN 兼容模式，保留旧整数行为；绝对阈值超出目标格式标称峰值（例如 float 的 128）返回 `parameter_format_unsupported`，不再静默生成全黑图。Canny 本来就在 Gray8 规范化边界执行，Basic Adjustment 使用比例参数，核大小及空间 Sigma 使用像素单位，其他普通算法没有同类强度参数漂移。Descriptor 和 provider 都会检查格式；像非 8 位中值滤波大核这样的参数/格式组合同样结构化失败。旧 Batch façade 对偶数 kernel 仍按既有行为向上归一化为奇数；直接 Invocation、Flow 和 Copilot 使用严格参数校验。
 
-基础调整的 `OpenCvImageAlgorithms.AdjustBasic` 保留原位入口，并提供独立 source/destination 入口；两者使用相同的色调数学与取消检查。它先验证像素深度并观察取消，再判断有效变换是否中性：仅非空 `CV_8U/CV_16U`，且曝光/对比度合成增益 `alpha == 1`、亮度/对比度合成偏置 `beta == 0`、裁剪后的 `gammaValue == 1` 时，原位调用保留原像素与 Mat 存储直接返回，独立目标调用则复制源像素到目标。判断依据是这些精确系数，默认参数及合成后等价的参数都可满足；不以容差近似判定。低层 helper 的 `CV_32F/CV_64F` 即使使用默认参数仍执行 `[0,1]` 钳制，四通道的 Alpha 继续保留，公共格式清单仍以上表为准。空图不进入中性快路。上层 provider 仍从只读输入创建独立输出，经过 Runner、预览发布与提交检查；跳过中性色调运算不等于跳过这些所有权和生命周期边界。
+基础调整同时提供原位和独立输出入口。整型中性变换允许跳过色调运算，浮点仍按合同执行标称范围钳制，四通道保留 Alpha。上层 provider 始终交付独立输出，照常核对 Runner 所有权、预览发布和提交。
 
 ## 公共控制面
 
@@ -154,11 +133,11 @@ ImageEditor 中的具体仲裁 owner 是 `Operations/ImageOperationCoordinator`�
 
 `AlgorithmImageBuffer.StorageId` 标识一份进程内不可变像素快照；`RetainReadOnly()` 保持同一 ID，`Clone()` 或重新构造 buffer 都得到新 ID，即使重新包装相同数组也不复用身份。释放后读取 ID 同样会拒绝。它不是内容校验和、持久化标识或文档 revision，不能用于判断结果可否发布。
 
-静态伪彩由 `PseudoColorProcessor` 直接写入独立 Bgr24 artifact。8/16 位输入把原有两次量化、色图和上下界比较合并成查表；浮点输入保留原有归一化后再查表。单通道和有效选定通道直接读取原 stride，不抽取整幅通道图。每个 OpenCV provider 至多保留一份、不超过 128 MiB 的合成灰度快照，以 `StorageId` 匹配；选定通道、换快照或超出缓存上限都会淘汰旧项，超限时正常执行而不缓存。缓存只保留派生灰度，不保留原图；淘汰不使正在读取的独立句柄失效。此缓存不替代 preview 的文档/revision/claim 检查。`PseudoColorProviderTests` 对照独立旧算法检查全部 ushort 值、支持的像素格式和色图、缓存淘汰、并发与输出所有权。
+静态伪彩由 `PseudoColorProcessor` 写入独立 Bgr24 artifact，缓存只保留派生灰度。缓存失效时，正在读取它的独立句柄仍有效。发布仍须核对文档、revision 和 claim。
 
 ## 执行平面与兼容层
 
-本地像素算法和远端 MQTT/设备算法共享 Descriptor/Invocation/Result 控制面，但保持不同 execution plane。旧 `AlgorithmNode`、STN 序列化字段、公开 EditorTool 构造方法和菜单 Guid 保留；适配器只把适合的本地算法路由到 Runner，不反射发现或重写远端节点。能力矩阵的“本地 Flow adapter=是”表示 `LocalFlowImageAlgorithmAdapter.ExecuteRawAsync` 可从进程内 `LocalFlowFrameLease` 调用同一 Catalog/Invocation/Runner，并已有直接适配器测试；它不表示生产 Flow 画布已经注册新的本地算法节点。当前真实生产接入仍只有既有远端 MQTT/设备 `AlgorithmNode`；仓库尚无引用 `LocalFlowImageAlgorithmAdapter` 的节点模板、节点注册或 STN 序列化类型。因此本地 Flow 目前是可调用 adapter/API 边界，不能在发布说明中写成已完成生产节点接入。
+本地像素算法与远端设备共用 Descriptor、Invocation 和 Result，但各自执行。保留旧 `AlgorithmNode`、STN 字段、公开构造器和菜单 Guid。矩阵中的“本地 Flow adapter”表示 `LocalFlowImageAlgorithmAdapter.ExecuteRawAsync` 可处理进程内 RAW 帧，本地算法接入目前停在 API，画布上的生产节点仍走既有远端链。
 
 ### Copilot 批量图像工具
 
@@ -226,25 +205,11 @@ provider 观察取消或失败时释放尚未交付的临时 Mat 与输出 buffe
 
 ## 验收门禁
 
-验收以命令、测试类别和对应日志为准，不在文档中维护会随测试增长而失效的通过数量。固定入口是两个 `dotnet test` 项目 `Test\ColorVision.UI.Tests` 与 `Test\ColorVision.Copilot.Tests`（均使用 `-p:Platform=x64`）、`dotnet build .\UI\ColorVision.Algorithms\ColorVision.Algorithms.csproj --no-incremental`、`dotnet build .\ColorVision\ColorVision.csproj -p:Platform=x64 --no-incremental`，以及 `python .\Scripts\tests\test_algorithm_package_contract.py`。
+记录实际命令、工作区、构建输出和目标环境验收结果。
 
-定向回归至少覆盖 Catalog/provider 合同矩阵、同 scope latest-wins 与可重入取消、preview/analysis 宿主恢复、overlay token、九种公共图像格式的分析展示、Batch artifact 所有权、Copilot 白名单/审批/目录/覆盖拒绝以及包内双 TFM 资产。分析结果窗口的自动展示有固定预算：最多 8 张图、单图快照 16 MiB、总快照 32 MiB、预览最长边 1600 且不超过 1,048,576 像素、JSON 自动摘要不超过 32,768 字符；超预算显示诊断占位，完整 JSON/CSV 只在用户显式导出时生成。
+分析结果窗口最多自动预览 8 张图，单张快照上限 16 MiB，总快照上限 32 MiB，预览最长边 1600 且不超过 1,048,576 像素，JSON 自动摘要上限 32,768 字符。超预算显示诊断占位，完整 JSON/CSV 在用户导出时生成。
 
-`AlgorithmImageBufferTests.cs` 检查只读保留共享同一存储且保持图像布局、buffer 与 lease 的独立释放寿命，以及 `Clone` 仍深复制。`ImageAlgorithmSessionArbitrationTests.cs` 检查会话关闭并换图后，不观察取消的测试 provider 仍可读原输入，Runner 结束时释放本次 `Transferred` 句柄，迟到结果及其图像被释放且不改动新图。`ImageAlgorithmPixelFormatTests.cs` 检查私有 16-bit 输入快照原地归一化的向量/行尾边界及宿主图像独立性，以及 Bgr48/Bgra64 输出的奇偶源 stride、多行 padding、通道/Alpha/DPI 保留、输入不变与独立可修改性，并以 Bgr48 紧密行覆盖向量读取边界和行尾处理。
-
-`ImageDocumentSourceSnapshotTests.cs` 是源状态捕获的边界验证入口：算法输入不创建 native 缓存且保持私有像素、仅捕获元数据后换源仍使用同一 revision 失效、旧 native 租约退役后可读，以及失效回调嵌套换源时拒绝过期绑定。它不证明捕获期间任意不通知的原位写入可被识别。
-
-`BasicAdjustmentProviderTests.cs` 经真实 Runner 比较非中性基础调整的 Gray8/Gray16 全样本范围与 Gray32Float 样本，并检查带 padding 的 Bgra64 输入得到独立、紧密布局且保留 Alpha/DPI 的输出，输入与 Result 释放互不影响；中性输入也必须返回独立 owned 输出。`OpenCvImageAlgorithmsInPlaceTests.cs` 检查原位入口的中性整数全样本、等价参数、非中性 BGRA64 非连续子矩形的外围像素与存储保持，以及 32/64-bit 浮点精确比较和默认钳制。两者复用测试专用 `BasicAdjustmentReference` 保留的原分步计算作为数值 oracle，不把生产 helper 自身作为预期。
-
-`BasicAdjustmentWindowOwnershipTests.cs` 经真实 XAML 参数事件、计时器和 Dispatcher 检查基础调整的分析/新预览/显示选择接管、分析往返后无当前 owner，以及后续新操作重新发起预览；其余七类窗口分别检查分析接管后旧参数回调不能夺回所有权，并保留白平衡后续新输入可主动接管的正向用例。八类窗口共用就绪结果提交、提交回调接管和计算期间改参用例：边缘检测、高斯和中值滤波只有参数版本，其余五类同时检查可编辑文本版本。共享接入回归不等于每个窗口的全部生命周期或大图响应性能都已验收。
-
-`ImageAlgorithmSessionArbitrationTests.cs` 的提交就绪用例在旧结果已发布后，用 provider gate 挂起新的 invocation，检查旧位图不能被当作新结果提交，拒绝提交不取消新运行，且新结果真正发布后仍能正常提交。这种确定性的边界验证不以等待固定毫秒数推断结果是否已就绪。
-
-`AlgorithmBitmapWriteTargetTests.cs` 检查 Bgr48/Bgra64 带 padding 的输入可在原 buffer 释放后完成填充，通道/Alpha/DPI 保留、输出独立可修改、仅 UI 可单次转交，以及取消拒绝转交、等待填充结束后清理和 retained lease 释放。不需要 16-bit 彩色通道交换的分支以 Bgr24 的奇数宽与行 padding、Gray32Float 含 NaN/负值的原始位样本检查逐行复制，避免把旧同步转换测试当作 worker 路径的数值证明。`ImageAlgorithmSessionArbitrationTests.cs` 还在真实填充完成后的发布边界分别触发分析接管与调用方取消，检查终态、宿主显示隔离及 provider 图像释放；这些检查不证明 WPF native 存储立即回收或所有输出格式的全部线程交错。
-
-`LazyBasicAdjustmentTests.cs` 直接调用实际 factory API，检查预取消或不支持深度时不请求目标，成功时只请求一次并保持外部目标存储与数值；factory 内取消后不写目标且仍由调用方释放，factory 失败则保留源图可读且不变。这些边界测试不代表真实连续调参中的所有取消交错或分配行为已经验收。
-
-`OpenCvImageAlgorithmsInPlaceTests.cs` 与 `AlgorithmImageInteropTests.cs` 的预取消用例只验证传入已取消 token 时入口抛出 `OperationCanceledException`，并保留原 Mat；不能单独证明运行中 native 阶段或逐行复制已经观察取消。中途取消需结合真实 provider 的连续调参验证及分阶段轨迹，检查数值、资源释放和旧结果发布隔离，不能把单并发调度门的等待当作协作取消生效。测试关联不表示已运行或通过，也不覆盖违反只读合同的 provider。
+用真实 provider 和连续调参核对执行中取消。分开观察调度等待、native 阶段、逐行复制、资源释放和旧结果隔离。
 
 预览响应验证应区分会话 `Start`、`PreviewAsync` 返回未完成 Task 前的同步准备、provider 执行与结果展示，记录输入尺寸/格式、采样次数和分配口径。独立方法重放与整次 provider 执行是不同测量，不能拼成同一次执行的内部阶段轨迹。用受控 provider 隔离出的同步耗时与分配只能说明该阶段，不能作为完整 UI 响应、算法吞吐或生产现场性能的验收结果。
 
@@ -254,4 +219,4 @@ provider 观察取消或失败时释放尚未交付的临时 Mat 与输出 buffe
 
 离屏捕获须核对目标坐标、布局偏移和 DPI。实际图像视口应包含 Zoombox 的缩放与裁切；带 Margin 的 Content 子 visual 不能直接按内部尺寸当作零原点画布，否则可能裁掉按钮等内容。参数面板可按 Window 的完整 WPF 坐标捕获，并记录内容与按钮在捕获区域内的边界；这种图像仍不包含完整 native 非客户区。固定抓图规格后比较调参前后与取消恢复的像素，保留原始失败截图，不能把捕获坐标错误当作产品布局故障。
 
-构建验收只承诺零错误。增量构建显示“0 个警告”可能只是目标未重建，不能作为 fresh 构建的零警告证据；每次报告必须单独标明是否使用 `--no-incremental`，并如实记录 fresh 构建产生的 analyzer、nullable 或其他仓库既有警告数量。若默认主项目构建在 `Native/opencv_helper/opencv_helper.vcxproj:28` 以 MSB4278 失败，说明当前机器缺少 `Microsoft.Cpp.Default.props` / C++ workload；零字节 DLL 占位或因引用条件变化得到的成功结果一律无效。native 项目必须在安装 C++ workload 的 Visual Studio Developer PowerShell 中另行验证。
+报告构建的增量设置和实际告警。原生项目报 `MSB4278` 时，核对 C++ workload 和 `Microsoft.Cpp.Default.props` 后在 Visual Studio Developer PowerShell 验证，使用真实 DLL。

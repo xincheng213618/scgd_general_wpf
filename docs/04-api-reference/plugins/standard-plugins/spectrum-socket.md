@@ -4,8 +4,7 @@ knowledge_type: "topic"
 status: "current"
 summary: "Spectrum Socket 的启用与状态查询、五个指令的参数和返回值；连接成功与标定就绪不同，30/60 秒取消不保证原生操作按时停止。"
 aliases: ["光谱仪远程连接和测量","Spectrum Socket 指令","SpectrumStatus","SpectrumConnect","SpectrumDarkCalibration","SpectrumAutoIntTime","SpectrumMeasure","SpectrumStatusSocketHandler","SpectrumConnectSocketHandler","SpectrumDarkCalibrationSocketHandler","SpectrumAutoIntTimeSocketHandler","SpectrumMeasureSocketHandler","Spectrum.Socket","光谱仪Socket接入","Handler not found for event: SpectrumStatus"]
-code_paths: ["Plugins/Spectrum/Socket/README.md","Plugins/Spectrum/Socket/SpectrumStatusSocketHandler.cs","Plugins/Spectrum/Socket/SpectrumConnectSocketHandler.cs","Plugins/Spectrum/Socket/SpectrumDarkCalibrationSocketHandler.cs","Plugins/Spectrum/Socket/SpectrumAutoIntTimeSocketHandler.cs","Plugins/Spectrum/Socket/SpectrumMeasureSocketHandler.cs","Plugins/Spectrum/SpectrometerManager.cs","Plugins/Spectrum/Configs/ShutterController.cs","Plugins/Spectrum/Data/ViewResultManager.cs","Plugins/Spectrum/Models/ViewResultSpectrum.cs","Plugins/Spectrum/App.xaml","Plugins/Spectrum/App.xaml.cs","Plugins/Spectrum/MainWindow.xaml.cs","UI/ColorVision.SocketProtocol/SocketManagerWindow.xaml.cs","UI/ColorVision.SocketProtocol/SocketManagerWindow.xaml","UI/ColorVision.SocketProtocol/SocketConfig.cs"]
-test_paths: []
+code_paths: ["Plugins/Spectrum/Socket","Plugins/Spectrum/SpectrometerManager.cs","Plugins/Spectrum/Configs/ShutterController.cs","Plugins/Spectrum/Data/ViewResultManager.cs","Plugins/Spectrum/Models/ViewResultSpectrum.cs","Plugins/Spectrum/App.xaml","Plugins/Spectrum/App.xaml.cs","Plugins/Spectrum/MainWindow.xaml.cs","UI/ColorVision.SocketProtocol/SocketManagerWindow.xaml.cs","UI/ColorVision.SocketProtocol/SocketManagerWindow.xaml","UI/ColorVision.SocketProtocol/SocketConfig.cs"]
 related: ["plugins.spectrum","ui.socket-protocol"]
 ---
 
@@ -132,4 +131,4 @@ Socket 校零不回退到人工遮光，复用 [Spectrum 的 Shutter/滤色轮�
 
 五个 handler 的 `Handle` 定义参数和返回码；设备互斥、标定检查和取消观察点在 `SpectrometerManager`，快门确认在 `Configs/ShutterController.cs`，滤色轮位置确认在 `Configs/FilterWheelController.cs`，结果事务在 `Data/ViewResultManager.cs`，字段格式在 `Models/ViewResultSpectrum.cs`。扩展指令时保留这些责任边界，传输注册只依公共 Socket 的当前发现规则。
 
-当前没有发现针对这五个 handler 的专项自动化测试，因此 `test_paths` 为空。已有 Spectrum 数据/标定测试不等于 Socket 返回码、字段序列化、设备争用、超时或关闭窗口的协议覆盖；公共 Socket 的测试也不证明原生设备行为。源码契约说明不是端到端或真机验证结果；验证仍须分别覆盖 handler 字段/异常、忙与取消时序，以及经授权的快门恢复、原生长调用和进程生命周期。
+验收分别核对 handler 字段及异常、忙与取消时序，以及经授权的快门恢复、原生长调用和进程生命周期。

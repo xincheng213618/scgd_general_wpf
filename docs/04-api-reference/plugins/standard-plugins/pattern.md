@@ -5,7 +5,6 @@ status: "current"
 summary: "Pattern 图卡、用户默认值、模板文件管理，以及内置图片投影的预览和全屏切换；区分当前参数、已生成图片和实际投影。"
 aliases: ["Pattern", "ImageProjector", "图卡生成工具", "图片投影工具", "四象限线栅", "QuadrantGrating", "按数量排列", "按像素排列", "PatternBrushPropertiesEditor", "PatternHostCopy", "PatternUserDefaultManager", "保存到默认", "重置默认配置", "UserDefaults", "生成所有模板图片", "清空模板列表", "投影图片不切换", "ImageStretchMode", "FullscreenImageWindow"]
 code_paths: ["Plugins/Pattern", "scgd_general_wpf.sln"]
-test_paths: ["Test/Pattern.Tests/Pattern.Tests.csproj", "Test/Pattern.Tests/PatternMigrationTests.cs"]
 related: ["plugins.index", "plugins.capabilities", "plugins.getting-started", "ui.property-grid", "ui.image-editor"]
 ---
 
@@ -116,7 +115,6 @@ BMP 单张另存与批量生成均显式填写文件头的 `biSizeImage`，数�
 
 ```powershell
 dotnet build .\Plugins\Pattern\Pattern.csproj -c Release -p:Platform=x64
-dotnet test .\Test\Pattern.Tests\Pattern.Tests.csproj -c Release -p:Platform=x64
 ```
 
 完整本地输出包含可启动的 `Pattern.exe`、runtimeconfig 和依赖；投影实现编译进 `Pattern.dll`。启动应用会读取/可能保存用户配置并打开窗口，需使用预期工作目录；测试投影还需确认目标屏幕。`.cvxp` 会剥离宿主共享文件，不是上述完整输出的替代品。
@@ -129,8 +127,6 @@ Pattern 的 opt-in target 仅复制包含图卡和投影实现的 `Pattern.dll`�
 
 ## 验证范围
 
-`PatternMigrationTests` 覆盖默认 2×2 像素图、按数量/按像素分格、余边、两种视场模式与颜色、旧 JSON、当前属性编辑器及快选按钮、合并后的程序集/入口/配置身份、投影资源和默认目录。测试不启动完整 App，不导入/清空模板，不写用户配置，不投影，不上传；不覆盖用户默认损坏、模板筛选后的文件操作、批量失败后继续生成或投影预览同步。
-
-`PatternImageExportTests` 验证 BMP 1/4/8/24 位的像素区长度、行尾对齐以及解码后像素不变，保护客户驱动板依赖的文件格式兼容边界。
+图卡 BMP 位深兼容需使用目标客户驱动板验收。
 
 本地构建和测试只验证代码与当前依赖。真实宿主发现两个菜单、旧独立插件清理、多屏 DPI、图卡导出后的光学效果仍是独立验收边界。

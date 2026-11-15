@@ -4,8 +4,7 @@ knowledge_type: "topic"
 status: "current"
 summary: "ImageTools内置注册、多图列表中的单张预览、刷新与SQLite缩略图缓存；重选不保证重载，关窗不清缓存，缓存关闭也不等于零数据库访问。"
 aliases: ["多图查看", "缩略图缓存", "ColorVision.ImageTools", "ImageToolsModule", "MultiImageViewer", "MultiImageViewerEditor", "MultiImageViewerConfig", "ImageFileInfo", "ThumbnailCacheManager", "ThumbnailCache.db"]
-code_paths: ["UI/ColorVision.ImageTools/README.md", "UI/ColorVision.ImageTools/ImageToolsModule.cs", "UI/ColorVision.ImageTools/ColorVision.ImageTools.csproj", "UI/ColorVision.ImageTools/MultiImageViewer/MultiImageViewer.xaml", "UI/ColorVision.ImageTools/MultiImageViewer/MultiImageViewer.xaml.cs", "UI/ColorVision.ImageTools/MultiImageViewer/MultiImageViewerConfig.cs", "UI/ColorVision.ImageTools/MultiImageViewer/ImageFileInfo.cs", "UI/ColorVision.ImageTools/MultiImageViewer/ThumbnailCacheManager.cs", "UI/ColorVision.ImageTools/MultiImageViewer/ThumbnailCacheManager.Maintenance.cs", "UI/ColorVision.ImageTools/MultiImageViewer/ThumbnailCacheEntry.cs", "UI/ColorVision.Common/Interfaces/Assembly/ModuleCatalog.cs", "UI/ColorVision.Common/Interfaces/ThumbnailProviderFactory.cs", "Engine/ColorVision.Engine/Media/CVRawThumbnailProvider.cs", "ColorVision/BuiltInModules.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/ModuleCatalogTests.cs", "Test/ColorVision.UI.Tests/ThumbnailCacheMaintenanceTests.cs"]
+code_paths: ["UI/ColorVision.ImageTools/README.md","UI/ColorVision.ImageTools/ImageToolsModule.cs","UI/ColorVision.ImageTools/ColorVision.ImageTools.csproj","UI/ColorVision.ImageTools/MultiImageViewer","UI/ColorVision.Common/Interfaces/Assembly/ModuleCatalog.cs","UI/ColorVision.Common/Interfaces/ThumbnailProviderFactory.cs","Engine/ColorVision.Engine/Media/CVRawThumbnailProvider.cs","ColorVision/BuiltInModules.cs"]
 related: ["ui.index", "ui.solution", "ui.image-editor", "ui.documents", "ui.image-fusion", "ui.storage-maintenance", "plugins.model"]
 ---
 
@@ -66,7 +65,7 @@ CVRAW/CVCIE 提供者从同一次文件读取返回冻结缩略图和原图尺�
 
 ## 验证入口与缺口
 
-`ModuleCatalogTests.cs` 检查注册基础及内置模块 ID 包含 ImageTools。缩略图维护的隔离测试及其范围见[维护验证入口](./storage-maintenance.md#验证入口与缺口)；这些测试不覆盖实际图像浏览窗口、设备 provider 或跨进程完整工作流。
+缩略图维护见[维护验证入口](./storage-maintenance.md#验证入口与缺口)。实际图像浏览窗口、设备 provider 与跨进程流程需要现场验收。
 
 构建需满足 [native 依赖前提](../../02-developer-guide/engine-development/opencv-integration.md)。以下仅本地构建，可能还原依赖并产生输出/NuGet 包，不启动窗口或发布：
 

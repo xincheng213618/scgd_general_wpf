@@ -5,7 +5,6 @@ status: "current"
 summary: "灯珠亮点定位、完整规则网格与不亮偏暗判定，覆盖运行内存 POI、可选 CSV 及旧 native 暗区候选的限制。"
 aliases: ["灯珠不良", "坏点坐标", "LightBeadsInspector", "LocalLightBeadsNode", "DensePointVisual", "FindLightBeads", "M_FindLightBeads", "FindLightBeadsConfig", "BlackCenters", "MissingCount", "本地灯珠检测", "灯珠数量统计", "缺失数量", "灯珠定位算法原理", "偏暗比例", "标准行列数"]
 code_paths: ["UI/ColorVision.Core/LightBeadsDetection.cs", "UI/ColorVision.Core/LightBeadsInspection.cs", "UI/ColorVision.ImageEditor/Draw/DensePointVisual.cs", "UI/ColorVision.ImageEditor/Draw/ImageDrawingPresentation.cs", "UI/ColorVision.ImageEditor/EditorTools/Algorithms/Calculate/FindLightBeads/LightBeadsResultWindow.cs", "Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalLightBeadsNode.cs", "Engine/ColorVision.Engine/Services/POI/LocalFlowPoiPointSet.cs", "Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalPoiNode.cs", "Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalRealPoiNode.cs", "UI/ColorVision.ImageEditor/EditorTools/Algorithms/Calculate/FindLightBeads/FindLightBeadsCM.cs", "UI/ColorVision.ImageEditor/EditorTools/Algorithms/Calculate/FindLightBeads/README.md", "UI/ColorVision.ImageEditor/EditorTools/GraphicEditing/GraphicEditingWindow.xaml.cs", "Native/opencv_helper/algorithm.cpp", "Native/opencv_helper/opencv_media_export.cpp", "Native/include/opencv_media_export.h"]
-test_paths: ["Test/ColorVision.UI.Tests/LocalLightBeadsTests.cs", "Test/ColorVision.UI.Tests/LightBeadsInspectionTests.cs"]
 related: ["flow.node-extension", "algorithms.led", "ui.image-editor", "engine.native-integration"]
 ---
 
@@ -194,6 +193,6 @@ native 在调用期间借用帧，托管 `using (lease)` 在调用结束或异�
 
 ## 验证依据与缺口
 
-`LightBeadsInspectionTests` 覆盖完整网格、不亮与偏暗、分数灯距、中心偏移、浮点亮度量程和整行缺失时的标准行列校验。`LocalLightBeadsTests` 覆盖运行期句柄隔离与过期、本地 POI/实时 POI 的真实采样与输入分支、离线流程、CSV 输出及静态批量图层的缩放不重建、一次撤销、跨图块显示与后台快照。这些用例不证明所有屏幕的检测精度或完整 UI 菜单已验收；多 ROI、同 revision 并发、换图丢弃、RGB/调色板/Alpha 和真实相机输入仍需对应样本核对。本说明不授权启动设备、发布 DLL 或改动用户图像。
+现场核对使用覆盖多 ROI、并发、换图、RGB/调色板/Alpha 和真实相机输入的代表性样本。生产菜单与检测精度应在目标宿主验收。
 
 远端灯条与灯珠契约见 [LED 检测模板](../templates/led-detection.md)。

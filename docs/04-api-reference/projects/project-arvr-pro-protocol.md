@@ -5,7 +5,6 @@ status: "current"
 summary: "ARVRPro TCP/JSON 对接：初始化与 RunAll、流程启用设置、切图确认、AOI 切图节点、状态码和最终结果关联；说明分帧与并发会话限制。"
 aliases: ["ARVR TCP 协议","ARVRPRO TCP 通讯协议手册","ProjectARVRInit","SwitchPG","SwitchPGCompleted","SwitchGroup","RunAll","GetProcessEnable","SetProcessEnable","ARVRTestType","Partial applied","No enabled ARVR flow","ARVR test is busy","ProjectARVRResult","AoiSwitchPG","AOITestSwitchImageComplete","外部切图","ExternalImageSwitchNode","UseLegacyARVROutput","SNlocked"]
 code_paths: ["Projects/ProjectARVRPro/Services/SocketControl.cs","Projects/ProjectARVRPro/Services/RunAllSocket.cs","Projects/ProjectARVRPro/Services/SwitchGroupSocket.cs","Projects/ProjectARVRPro/Services/ProcessEnableSocket.cs","Projects/ProjectARVRPro/Flow/ExternalImageSwitchNode.cs","Projects/ProjectARVRPro/Services/ExternalImageSwitchService.cs","Projects/ProjectARVRPro/Services/AOITestSwitchImageCompleteHandler.cs","Projects/ProjectARVRPro/ARVRWindow.xaml.cs","Projects/ProjectARVRPro/ProjectARVRProConfig.cs","Projects/ProjectARVRPro/ObjectiveTestResult.cs","Projects/ProjectARVRPro/LegacyARVR/","UI/ColorVision.SocketProtocol/SocketManager.cs","UI/ColorVision.SocketProtocol/SocketJsonDispatcher.cs","UI/ColorVision.SocketProtocol/SocketConfig.cs"]
-test_paths: []
 related: ["projects.arvr-pro","projects.arvr-pro-processes","projects.arvr-pro-demo","ui.socket-protocol"]
 ---
 
@@ -20,7 +19,7 @@ related: ["projects.arvr-pro","projects.arvr-pro-processes","projects.arvr-pro-d
 3. 客户端连接现场配置的地址和端口，以 UTF-8 发送 JSON。端口、防火墙和协议模式不一致时，先排查[通用 Socket 服务](../ui-components/ColorVision.SocketProtocol.md)。
 4. 保持一个控制连接，串行完成当前产品的测试，再开始下一个 SN。`SocketControl.Current.Stream` 保留异步切图和结果的回包连接，仍是原来的可写属性。`ProjectARVRInit`、`RunAll`、`SwitchPGCompleted` 等执行和推进入口沿用原有赋值方式；LUX 的 `T0000` 握手、启用状态查询、启用配置和切组不写入该属性，立即响应仍发给本次请求的连接。重连后收到执行或推进消息时更新回包连接，其中 `RunAll` 忙碌重发仍返回原来的 `Code=-4`，并沿用更新 Stream 的原行为。仅 LUX 握手或查询不接管旧任务结果。最终结果在实际发送前读取当前 Stream；发送失败仍按原流程记录异常，不自动补发。
 
-`Test/ProjectARVRPro.Tests/SocketControlTests.cs` 用本机回环 TCP 验证配置请求的立即响应不变、异步结果仍发给原连接，以及另一站请求不妨碍外部切图确认；另验证切图断线后清理等待状态、允许再次执行。这些测试不连接相机或光谱仪，不能代替现场调度联调。
+现场调度联调需接入相机和光谱仪，核对控制连接归属及切图断线后的恢复。
 
 ### TCP 消息边界
 
@@ -110,7 +109,7 @@ RunAll 自行初始化本轮会话，不需要先发 `ProjectARVRInit`，执行�
 }
 ```
 
-接受后返回 `EventName=RunAll`、相同 `MsgID`、解析后的 SN、`Code=0`、`Msg="RunAll started"`。窗口处于切图、流程启动、执行、结果处理或 RunAll 阶段时，返回 `Code=-4`、`Msg="ARVR test is busy"`。
+接受后返回 `EventName=RunAll`、相同 `MsgID`、解析后的 SN、`Code=0`、`Msg="RunAll started"`。工站正在切图、运行、保存结果或执行 LUX / JSON VID 等占用操作时，返回 `Code=-4`、`Msg="ARVR test is busy"`。忙碌判据由 `IsTestExecutionBusy` 维护。
 
 **开始确认不等于测试完成或 PASS。** 客户端应从建连起持续处理报文并等待最终事件，不依赖开始确认与异步推送的固定先后顺序。组中没有启用步骤也可能先被接受，然后产生失败的最终结果。
 

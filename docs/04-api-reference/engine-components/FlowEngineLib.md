@@ -4,8 +4,7 @@ knowledge_type: "reference"
 status: "current"
 summary: "节点图加载、服务绑定、弃用节点兼容、完成事件和隔离 RuntimeHost 的执行边界。"
 aliases: ["上游DLL更新", "反编译比对", "只提供DLL", "节点类型映射","跨程序集节点名称匹配","流程节点结束为什么业务还没完成","FlowEngineLib","FlowEngineAPI","FlowEngineControl","CVStartCFC","FlowRuntimeHost","弃用节点兼容","合规验证旧流程","AlgComplianceMathNode","AlgComplianceContrastNode","AlgComplianceJudgmentNode","ComplianceMathType","Compliance_Math","Compliance_Contrast","Compliance.Judgment"]
-code_paths: ["Engine/FlowEngineLib/README.md","Engine/FlowEngineLib/FlowEngineLib.csproj","Engine/FlowEngineLib/FlowEngineAPI.cs","Engine/FlowEngineLib/FlowEngineControl.cs","Engine/FlowEngineLib/FlowEngineEventArgs.cs","Engine/FlowEngineLib/Start/BaseStartNode.cs","Engine/FlowEngineLib/Base/CVBaseServerNode.cs","Engine/FlowEngineLib/Base/CVStartCFC.cs","Engine/FlowEngineLib/End/CVEndNode.cs","Engine/FlowEngineLib/Runtime/FlowRuntimeHost.cs","Engine/FlowEngineLib/Node/Algorithm/AlgComplianceMathNode.cs","Engine/FlowEngineLib/Node/Algorithm/AlgComplianceContrastNode.cs","Engine/FlowEngineLib/Node/Algorithm/AlgComplianceJudgmentNode.cs","Engine/FlowEngineLib/Node/Algorithm/ComplianceMathType.cs","Engine/FlowEngineLib/Algorithm/ComplianceMathParam.cs","Engine/FlowEngineLib/Algorithm/ComplianceContrastParam.cs","Engine/FlowEngineLib/Algorithm/ComplianceJudgmentParam.cs","Engine/ST.Library.UI/NodeEditor/STNodeTypeRegistry.cs","Engine/ST.Library.UI/NodeEditor/STNodeTreeView.cs","Engine/FlowEngineLib/CalcEQEParam.cs","Engine/FlowEngineLib/AlgorithmEQENode.cs","Engine/FlowEngineLib/Node/Spectrum/SpectrumEQENode.cs","Engine/FlowEngineLib/LightingSensorNode.cs","Engine/FlowEngineLib/LightingSensorData.cs","Engine/FlowEngineLib/LightingChannel.cs","Engine/FlowEngineLib/LightingCommand.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/CompatibilityNodeMigrationTests.cs", "Test/ColorVision.UI.Tests/LvCameraNodeMigrationTests.cs","Test/ColorVision.UI.Tests/FlowEngineControlLifecycleTests.cs","Test/ColorVision.UI.Tests/FlowRuntimeCompletionTests.cs","Test/ColorVision.UI.Tests/FlowRuntimeHostTests.cs","Test/ColorVision.UI.Tests/FlowUpstreamProtocolTests.cs","Test/ColorVision.UI.Tests/LocalSpectrumFlowTests.cs"]
+code_paths: ["Engine/FlowEngineLib","Engine/ST.Library.UI/NodeEditor/STNodeTypeRegistry.cs","Engine/ST.Library.UI/NodeEditor/STNodeTreeView.cs"]
 related: ["flow.architecture","flow.editor","flow.workspace","flow.templates","flow.session","flow.headless","flow.node-extension"]
 ---
 
@@ -58,7 +57,7 @@ related: ["flow.architecture","flow.editor","flow.workspace","flow.templates","f
 
 大部分节点构建并转发执行参数，由服务完成算法。`LightingSensorNode` 复用现有 `LightingControl` 服务，支持 A/B 通道开关和查询，不另建连接或本地后端。
 
-`AlgorithmEQENode` 请求中的 `SMUData` 携带电气分支的结果 ID 和类型，同时保留旧 `SMU_MasterId` 字段兼容既有算法服务。`SpectrumEQENode` 的服务路径按紧邻前步结果构造关联；本地路径保留实际 SMU 量测关联、V/mA 单位和缺失输入校验，不能套用服务的零值占位。源码见 `Engine/FlowEngineLib/CalcEQEParam.cs`、`AlgorithmEQENode.cs` 和 `Node/Spectrum/SpectrumEQENode.cs`；`FlowUpstreamProtocolTests` 保护请求与保存边界。
+`AlgorithmEQENode` 请求中的 `SMUData` 携带电气分支的结果 ID 和类型，同时保留旧 `SMU_MasterId` 字段兼容既有算法服务。`SpectrumEQENode` 的服务路径按紧邻前步结果构造关联；本地路径保留实际 SMU 量测关联、V/mA 单位和缺失输入校验，不能套用服务的零值占位。源码见 `Engine/FlowEngineLib/CalcEQEParam.cs`、`AlgorithmEQENode.cs` 和 `Node/Spectrum/SpectrumEQENode.cs`。
 
 ## 节点类型加载
 
@@ -70,13 +69,13 @@ STND v1 的结点属性新增 `__STNode.PortLayout`，保存标题、输入/输�
 
 早期 STND v1 没有每结点的端口定义，全局端口编号无法唯一反推出缺失类型的端口数量。遇到这种缺失结点时整组旧连线暂不绘制，原始编号与原结点顺序封存在 `__STNode.LegacyConnections`，不会猜接其他结点。恢复全部所需组件并重新打开后可恢复旧连线；手动删除或替换占位后需自行确认并重新连线。占位存在期间仍可保存原始结点数据与封存连线。这是旧数据的信息缺口，不表示算法能被自动替代。
 
-相关实现位于 `Engine/ST.Library.UI/NodeEditor/STNodeSavedState.cs`、`STMissingNode.cs` 和 `STNodeCanvasReader.cs`。`Test/ColorVision.UI.Tests/MissingFlowNodeTests.cs` 覆盖缺失类型、二进制参数与原身份保留、保存重开、旧连线封存与恢复、复制以及阻止启动；这是持久化和执行边界的回归，不代替真实第三方插件或设备验收。
+持久化实现位于 `Engine/ST.Library.UI/NodeEditor/STNodeSavedState.cs`、`STMissingNode.cs` 和 `STNodeCanvasReader.cs`。第三方插件或设备按实际交付组合验收。
 
 普通 BV/LV 节点在 `ColorVision.Engine` 中实现，保留 `FlowEngineLib.LVCameraNode` 完整类型名，并声明稳定保存标识 `FlowEngineLib.dll|FlowEngineLib.LVCameraNode`。新宿主直接调用 Engine 的本地取图实现，未选中本地路径时沿用原服务请求。旧端继续加载自己的旧版 FlowEngineLib：GUID 不同时仍可按这个完整模型标识找到旧类，按原参数构造服务请求。只保留 namespace 而保存 Engine DLL 名不足以兼容这种旧加载器，也不应固定某一版本自动生成的 GUID。
 
 曾保存为 Engine 模型标识的画布可在新宿主中按名称回退加载，再保存或通过数据库工具“更新流程节点”写回旧端可识别的模型；旧端自身不具备跨 DLL 名称回退。这里兼容的是流程数据，并不提供 CLR 类型转发：旧端保持整套旧 DLL 不变；跟随新宿主升级且直接引用迁出节点的项目包需引用 Engine 并重新编译。需要 Engine 属性编辑器的相机、校准、POI、SMU、传感器和算法节点位于 `FlowProcessing/Nodes/Compatibility/`，保留原 namespace；普通参数节点和公共执行基类仍在 FlowEngineLib。属性编辑器元数据直接引用 Engine 实现，不属于旧流程保存契约。
 
-`LvCameraNodeMigrationTests` 使用移动前节点保存的双节点画布，检查编辑器、运行容器、编译往返、名称映射及参数/连线保留。`CompatibilityNodeMigrationTests` 使用迁移前保存、排除退役节点后的 28 节点合成画布核对属性、27 条连线、菜单可见性和构造请求；自动尺寸节点在编辑器中会重新测量宽高，运行容器往返则保留全部字段。跨版本验收还应将新节点实际保存的合成画布交给目标旧 DLL 的 `FlowEngineControl.LoadFromBase64`，核对旧类实例、参数、连线及构造的请求字段；只加载和构造数据，不启动流程或连接设备。这些检查不代表已验证所有现场流程或真实采集。
+跨版本验收应将新节点实际保存的画布交给目标旧 DLL 的 `FlowEngineControl.LoadFromBase64`，核对旧类身份、参数、连线和请求字段。此步骤只加载和构造数据，真实流程或采集另行验收。
 
 ## 上游 DLL 更新核对
 
@@ -153,8 +152,4 @@ FlowEngineLib 只知道节点图和引擎执行状态，不拥有模板数据库
 
 ## 验证入口与缺口
 
-关联测试：`Test/ColorVision.UI.Tests/FlowEngineControlLifecycleTests.cs`、`Test/ColorVision.UI.Tests/FlowRuntimeCompletionTests.cs`、`Test/ColorVision.UI.Tests/FlowRuntimeHostTests.cs`。
-
-`FlowEngineControlLifecycleTests` 分别核对本地开始节点无需连接就绪、连接型开始节点的目标就绪门禁、重复挂接和节点移除等行为；测试路径不是本次执行结果。
-
-关联测试未专门声明旧合规画布和旧算法服务的端到端覆盖，交付兼容需要使用对应存量流程另行验证。执行内核测试不能替代宿主后处理或项目判定；需要最终业务状态时另外验证 RunFinalized 所属链。
+交付兼容需使用对应存量流程和目标服务验证。项目判定及业务终态应沿宿主后处理和 `RunFinalized` 链核对。

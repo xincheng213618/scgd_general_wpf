@@ -5,7 +5,6 @@ status: "current"
 summary: "比较 ARVRPro、KB 和 IntegrationDemo 的检测触发、测试完成判据、流程配置与结果出口。"
 aliases: ["哪个项目使用 Modbus","哪些项目输出 MES 或 Socket","ProjectARVRPro","ProjectKB","ProjectARVRPro.IntegrationDemo","项目协议对比","项目结果出口","项目流程配置","测试完成确认"]
 code_paths: ["Projects/ProjectARVRPro/","Projects/ProjectARVRPro.IntegrationDemo/","Projects/ProjectKB/"]
-test_paths: ["Test/ProjectARVRPro.Tests/ProjectARVRPro.Tests.csproj","Test/ProjectKB.Tests/ProjectKB.Tests.csproj"]
 related: ["projects.index","projects.arvr-pro","projects.arvr-pro-demo","projects.kb","projects.lux-protocol"]
 ---
 
@@ -47,7 +46,7 @@ ARVRPro 的 LUX 文本入口按活动组首个 `SocketCode` 匹配项运行其�
 
 ## 交付与验证
 
-1. 先用对应项目页列出的自动化测试、样例和构建入口验证改动范围。测试项目存在或离线解析成功不代表现场联调完成。
+1. 按对应项目页准备构建、样例与现场依赖。现场联调需使用真实设备与接口。
 2. 真实 Modbus、MES、Socket、切图和设备测试会推进生产动作或写入外部系统；确认操作范围后，使用同一 SN/时间关联最终结果与已启用的输出。不能仅凭 ACK、寄存器归零或文件出现放行。
 3. 交付前核对配置与依赖：ARVRPro 关注流程组、切图、Recipe 和结果格式，Text 入口另核对 `SocketCode`、设备参数和输出目录；KB 关注 `FunTestDll.dll`、Modbus、MES 与 Recipe。
 

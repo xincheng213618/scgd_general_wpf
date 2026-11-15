@@ -5,7 +5,6 @@ status: "current"
 summary: "PluginLoader的manifest/依赖门禁、禁用缓存、程序集发现和失败边界；载入不等于provider可用，也不支持隔离卸载。"
 aliases: ["插件生命周期","插件菜单为什么没出现","插件能否卸载和热更新","插件禁用后仍运行","requires","deps.json","Loaded","IPlugin","PluginManifest","PluginLoader","PluginLoaderConfig","ModuleCatalog"]
 code_paths: ["ColorVision/App.xaml.cs","ColorVision/MainWindow.xaml.cs","UI/ColorVision.Common/Interfaces/IPlugin.cs","UI/ColorVision.Common/Interfaces/Assembly/ModuleCatalog.cs","UI/ColorVision.UI/Plugins/PluginManifest.cs","UI/ColorVision.UI/Plugins/PluginLoader.cs", "UI/ColorVision.UI/Plugins/PluginLoadReport.cs","UI/ColorVision.UI/Plugins/PluginLoaderConfig.cs","UI/ColorVision.UI/Plugins/PluginInfo.cs","UI/ColorVision.UI/AssemblyHandler.cs","UI/ColorVision.UI/Menus/MenuManager.cs","UI/ColorVision.UI/StatusBar/StatusBarManager.cs","UI/ColorVision.UI.Desktop/Marketplace/PluginUpdateCompatibility.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/PluginLoaderTests.cs","Test/ColorVision.UI.Tests/ModuleCatalogTests.cs","Test/ColorVision.UI.Tests/PluginUpdateCompatibilityTests.cs","Test/ColorVision.UI.Tests/MenuDiscoveryExclusionTests.cs"]
 related: ["plugins.index","plugins.getting-started","ui.discovery"]
 ---
 
@@ -74,9 +73,6 @@ related: ["plugins.index","plugins.getting-started","ui.discovery"]
 
 ## 测试覆盖与缺口
 
-- `PluginLoaderTests` 仅覆盖本次跳过匹配和 DLL 路径存在检查；文件存在测试写入任意字节，不验证该文件是可加载程序集，也不覆盖完整加载或 `.deps.json` 版本门禁。
-- `ModuleCatalogTests` 覆盖同程序集重复注册、封存后拒绝、Rbac 内置 provider 对已建立发现快照可见及类型快照复用；不代表所有外部插件与全部 provider 都可用。
-- `PluginUpdateCompatibilityTests` 覆盖市场更新版本筛选、最低宿主要求与回退规则，不覆盖运行装载器。
-- `MenuDiscoveryExclusionTests` 检查指定旧菜单类型缺失和部分保留菜单的候选/位置，不是所有菜单或状态栏发现的端到端测试。
+装载验收使用实际程序集及适配的 `.deps.json`。核对外部插件发现、版本门禁、扩展菜单和状态栏。
 
 完整加载、依赖文件异常、缓存持久化、失败后残留程序集、provider 副作用及目标窗口可见性仍需专门验证。文档/路径检查通过不等于已启动插件或完成业务验收。

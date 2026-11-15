@@ -5,7 +5,6 @@ status: "current"
 summary: "native ABI与HImage所有权、函数族返回值，以及helper构建和CUDA发布输入；路由校准Context与POI原生参考。"
 aliases: ["新克隆构建为什么需要C++","OpenCVMediaHelper","opencv_helper.dll","opencv_cuda.dll","HImage","isDispose","HImage.Dispose","M_FindLuminousAreaV2","M_CalArtculation","M_CalibrationExecuteToV1","M_CalibrationGetLastError","M_CalibrationCacheReleaseV1","M_CalculatePoiBatchV2","opencv_helper API"]
 code_paths: [".github/workflows/dotnet.yml","build.sln","Native/README.md","Native/opencv_helper/API_Documentation.md","UI/ColorVision.Core/ColorVision.Core.csproj","UI/ColorVision.Core/OpenCVMediaHelper.cs","UI/ColorVision.Core/OpenCVCuda.cs","UI/ColorVision.Core/HImage.cs","Native/opencv_helper/opencv_helper.vcxproj","Native/include/opencv_media_export.h","Native/include/custom_structs.h","Native/include/cuda_export.h","Native/opencv_helper/opencv_media_export.cpp","Native/opencv_helper/exports/calibration_export.cpp","Native/opencv_helper/exports/poi_export.cpp","Native/opencv_helper/exports/sfr_export.cpp","Native/opencv_cuda/opencv_cuda.vcxproj","Scripts/verify_native_contracts.py","Engine/ColorVision.Engine/Media/CVRawOpen.cs"]
-test_paths: ["Scripts/tests/test_algorithm_package_contract.py","Scripts/tests/test_verify_native_contracts.py","Test/opencv_helper_test"]
 related: ["engine.index","ui.core","ui.image-frames","engine.native-bindings","engine.file-io","algorithms.local-native-analysis","engine.opencv-helper-api","delivery.native-testing"]
 ---
 
@@ -114,7 +113,7 @@ CUDA 是另一条边界：Core 通过 `OpenCvCudaBinary` 无条件打包 DLL；�
 
 普通Windows CI使用 `--static-native-project-only`：仍核对源码、项目XML、PE导出和包传播字节，但明确未验证求值后的MSBuild元数据，不能替代默认发布环境门禁。PE导出表不包含C参数类型；严格源码契约加字节一致性也不能证明任意替换DLL确由当前源码编译，新DLL仍须真实CUDA构建与ABI/GPU烟雾验收。
 
-`Scripts/tests/test_verify_native_contracts.py` 提供契约变异用例，`Scripts/tests/test_algorithm_package_contract.py` 覆盖打包相关契约；发布链另核对运行目录及完整更新ZIP中的CUDA字节，包含 `create_full_zip` 回归。测试文件存在或文档构建成功不代表本次已执行这些门禁。
+发布链另核对运行目录和完整更新 ZIP 中的 CUDA 字节。
 
 ## `.cvraw` / `.cvcie` 链路
 

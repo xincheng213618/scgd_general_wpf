@@ -5,7 +5,6 @@ status: "historical"
 summary: "Web 的 2026-07-18 基线及后续补充测量，保留样本、方法和比较数字；不是当前部署性能、容量或测试状态。"
 aliases: ["Web 历史性能","Web performance baseline","PERFORMANCE_AUDIT","性能基线","2026-07-18","2026-08-12","ProForm"]
 code_paths: ["Web/PERFORMANCE_AUDIT.md"]
-test_paths: []
 related: ["platform.web-architecture","delivery.backend-observability","delivery.backend-public-data","delivery.plugin-catalog","delivery.backend-records"]
 ---
 

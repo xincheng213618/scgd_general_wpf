@@ -5,7 +5,6 @@ status: "current"
 summary: "Socket连接管理器的监听配置、窗口关闭与服务停止、防火墙放行、消息查询和JSON/Text分发；清空消息只清列表，重发可能换客户端，Sent不证明对端执行。"
 aliases: ["Socket端口连不上或消息没响应", "网络通信", "Socket 连接管理器", "Socket服务设置", "通信协议", "文本模式", "发送消息记录", "消息重发", "Socket消息搜索", "关闭Socket窗口", "停止Socket服务", "清空消息", "防火墙放行", "防火墙专用公用", "ColorVision.SocketProtocol", "SocketManager", "SocketManagerWindow", "SocketConfig", "SocketServerLifecycle", "SocketServerSettings", "SocketManagerApplicationLifetime", "SocketWorkerTracker", "SocketJsonDispatcher", "SocketTextDispatcher", "ISocketJsonHandler", "ISocketTextDispatcher", "SocketMessageManager", "SocketMessageManagerConfig", "SocketRequest", "SocketResponse", "SocketFirewallService", "WindowsFirewallStatusReader", "FirewallCommandService"]
 code_paths: ["UI/ColorVision.SocketProtocol", "src/ColorVisionServiceHost/FirewallCommandService.cs", "ColorVision/App.xaml.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/SocketServerLifecycleTests.cs", "Test/ColorVision.UI.Tests/SocketShutdownTests.cs", "Test/ColorVision.UI.Tests/SocketManagerProjectionTests.cs", "Test/ColorVision.UI.Tests/SocketMessageStorageTests.cs", "Test/ColorVision.UI.Tests/SocketMessageAsyncProjectionTests.cs"]
 related: ["ui.index", "ui.discovery", "ui.database-query", "ui.sqlite-storage", "engine.database-maintenance", "platform.service-host"]
 ---
 
@@ -147,9 +146,9 @@ Engine 内置 `FlowRunPoiSocketHandler`，通过同一 JSON 监听端口调用�
 | `500` | 流程或必需后处理失败、执行异常、POI 查询或解析失败 |
 | `503` | 主程序或 MySQL 结果批次不可用 |
 
-已取得最终执行结果的失败响应保留 `Data` 中的批次身份和状态，`Poi` 为空；启动前拒绝时 `Data` 为空。协议与结果隔离回归见 `Test/ColorVision.UI.Tests/FlowRunPoiSocketTests.cs`；设备采集、真实 MySQL 明细可见性和对端收包仍需现场联调。TCP 消息边界继续遵守下节的当前实现限制。
+已取得最终执行结果的失败响应保留 `Data` 中的批次身份和状态，`Poi` 为空；启动前拒绝时 `Data` 为空。 设备采集、MySQL 明细可见性和对端收包需现场联调。TCP 消息边界见下节。
 
-独立 net48/x64 调用逻辑、WPF 窗口及兼容命令行示例位于 `SDK/ColorVision.FlowPoi.Client.Net48/`：客户端仅依赖 Newtonsoft.Json，提供 `RunByNameAsync`、`RunByIdAsync`，每次建立一条连接，按 `EventName + MsgID` 匹配完整 JSON 响应。600 秒默认超时和取消只终止客户端等待，不自动重发，也不保证主程序流程已停止。线上 `X/x`、`Y/y` 分别映射为三刺激值和 `ChromaticityX/ChromaticityY`。窗口支持按名称/ID 执行、取消等待、离线样例与 JSON/CSV 导出，`FlowPoiResponse.Parse` 复用联机校验解析离线响应。现场操作和独立编译前提见该目录 `README.md`，客户报文与字段手册为 `API.md`；`Scripts/package_flow_poi_demo.ps1` 只生成包含 Binaries/Source 的本地客户 ZIP，不上传。net48 回环及已打包 Demo 回归位于 `Test/ColorVision.FlowPoi.Net48.Tests/`。
+独立 net48/x64 调用逻辑、WPF 窗口及兼容命令行示例位于 `SDK/ColorVision.FlowPoi.Client.Net48/`：客户端仅依赖 Newtonsoft.Json，提供 `RunByNameAsync`、`RunByIdAsync`，每次建立一条连接，按 `EventName + MsgID` 匹配完整 JSON 响应。600 秒默认超时和取消只终止客户端等待，不自动重发，也不保证主程序流程已停止。线上 `X/x`、`Y/y` 分别映射为三刺激值和 `ChromaticityX/ChromaticityY`。窗口支持按名称/ID 执行、取消等待、离线样例与 JSON/CSV 导出，`FlowPoiResponse.Parse` 复用联机校验解析离线响应。现场操作和独立编译前提见该目录 `README.md`，客户报文与字段手册为 `API.md`；`Scripts/package_flow_poi_demo.ps1` 只生成包含 Binaries/Source 的本地客户 ZIP，不上传。
 
 ## Text 分发与 TCP 消息边界
 
@@ -208,15 +207,6 @@ UI 仍可能因其它绘图或用户发起的数据库查询延迟业务 handler
 
 模块工程 `UI/ColorVision.SocketProtocol/ColorVision.SocketProtocol.csproj` 同时面向 `net8.0-windows7.0` 和 `net10.0-windows7.0`，依赖 `ColorVision.UI`、`ColorVision.Database`、`log4net`、`Newtonsoft.Json`。交付时应匹配宿主目标框架与依赖；项目可编译不替代真实监听、协议处理和业务响应验证。
 
-| 现有测试 | 覆盖范围 |
-| --- | --- |
-| `SocketServerLifecycleTests` | 启停代次、配置快照、绑定/停止失败、客户端资源清理 |
-| `SocketShutdownTests` | 共用关闭期限、延迟创建、worker 等待、清理重试和隔离 loopback 关闭 |
-| `SocketManagerProjectionTests` | WPF 状态投影、旧状态抑制、停止错误不被禁用配置掩盖 |
-| `SocketManagerWindowLayoutTests` | 筛选与空状态、详情格式化、多窗口独立筛选/关闭、维护入口及布局 |
-| `SocketMessageStorageTests` | 临时库的 gzip 写入、列表不取正文、按 ID 读取和旧 TEXT 迁移 |
-| `SocketMessageAsyncProjectionTests` | 提交与显示顺序、重新查询不重复、清空不复活、释放及 Dispatcher 退出后保留数据库记录 |
+真实防火墙 COM 写入和现场连通性应在获授权环境核对。
 
-`FirewallApplicationAccessTests` 使用内存规则验证按程序完整路径和网络类型解除阻止、保留其它范围、重复放行、写入失败及读回核验，保护规则修改的权限与作用范围边界；不修改运行测试的电脑的防火墙。真实 COM 写入及现场连通性需独立验证环境。
-
-尚缺直接覆盖 JSON 大小写/重复名、Text 多处理器分发、TCP 分帧、网络写失败后的 Sent、重发目标与回执的专项验证。补充验证应使用临时库、隔离客户端和无设备副作用的 handler。现有测试覆盖范围不等于现场业务已验收。
+用隔离客户端和临时库核查 JSON 大小写/重复名、Text 分发、TCP 分帧、发送失败状态与重发回执。

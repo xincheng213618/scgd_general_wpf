@@ -5,7 +5,6 @@ status: "current"
 summary: "在 ARVRPro 客户报表中配置 LUX Current/Legacy 逐项 CSV，说明单 SN 文件、默认判定和两种格式的兼容边界。"
 aliases: ["LUX CSV", "LUX Current", "LUX Legacy", "LUX_Current_CSV", "LUX_Legacy_CSV", "旧Lux导出", "CSV导出格式", "保存客户报表", "一个SN一个文件"]
 code_paths: ["Projects/ProjectARVRPro/Exports/Lux/", "Projects/ProjectARVRPro/Exports/CustomTestResultExportService.cs", "Projects/ProjectARVRPro/Exports/ITestResultCustomExporter.cs", "Projects/ProjectARVRPro/Exports/CustomTestResultExportOptions.cs", "Projects/ProjectARVRPro/ARVRWindow.CustomerExports.cs", "Projects/ProjectARVRPro/ARVRWindow.Lux.cs", "Projects/ProjectARVRPro/ViewResultManager.cs"]
-test_paths: ["Test/ProjectARVRPro.Tests/LuxCustomerCsvExporterTests.cs", "Test/ProjectARVRPro.Tests/JinxingInspectionXlsxExporterTests.cs", "Test/ProjectARVRPro.Tests/ProjectSettingsSessionTests.cs"]
 related: ["projects.lux-protocol", "projects.arvr-pro", "projects.arvr-pro-processes"]
 ---
 
@@ -53,4 +52,4 @@ POI 和原始 MTF 分量没有独立限值时，按默认 `0/0`（两侧不限�
 
 `Exports/Lux/` 专门维护 LUX 投影、固定字段契约和 CSV 命名。客户报表注册、设置、输出目录及空间保护仍由共享导出服务管理；金星 XLSX 继续按原格式保存。旧 `IsSaveCustomXlsx` 等配置字段保留，已有客户配置不会自动切换到 LUX。
 
-本地测试保护两种字段口径、比值与限值转换、POI 默认判定、同 SN 覆盖、文件名和转义、旧配置及异步导出设置快照；这些验证不能代替现场客户解析器和真实设备验收。现场需将 Current/Legacy 各导出一份，与此前同类结果核对项目名、单位、限值和判定。
+现场需将 Current/Legacy 各导出一份，与此前同类结果核对项目名、单位、限值和判定。

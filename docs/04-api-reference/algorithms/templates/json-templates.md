@@ -5,7 +5,6 @@ status: "current"
 summary: "JSON模板的分组参数与文本编辑、语法检查、输入草稿、保存保护和默认参数；Schema提供字段提示而不补默认值或执行完整校验。"
 aliases: ["JSON模板","JSON模板保存和V2结果如何对应","属性编辑","文本编辑","校验Json","设置为默认参数","无法重置，请检查数据库相关配置","JSON Schema默认值","Schema default","JSON模板重置","ITemplateJson","TemplateJsonParam","EditTemplateJson","JsonPropertyEditorControl","JsonEditorSchemaDocument","CanHandle1","SchemaIndexResourceName","TryLoadTemplateSchema"]
 code_paths: ["Engine/ColorVision.Engine/Templates/Jsons","Engine/ColorVision.Engine/Templates/TemplateEditorWindow.xaml.cs","UI/ColorVision.UI/PropertyEditor/Json","UI/ColorVision.UI/Utilities/JsonHelper.cs","UI/ColorVision.Common/Utilities/DebounceTimer.cs"]
-test_paths: []
 related: ["algorithms.index","algorithms.template-management","engine.host","engine.template-design","engine.results","copilot.tool-contracts"]
 ---
 
@@ -140,7 +139,5 @@ JSON 模板将一条参数保存为数据库 `ModMasterModel.JsonVal`，由 `ITe
 同名算法可同时存在 JSON 与强类型模板。结果显示失败时，沿实际模板、MQTT 事件名、结果 `Version`、`ViewHandle*.CanHandle1` 逐项检查；Schema 索引中的版本不是结果 handler 的匹配条件。结果发现与分发统一见[结果处理链](../../engine-components/result-handoff-chain.md)。
 
 ## 验证入口与缺口
-
-测试可以通过 `JSON_EDITOR_PREVIEW_DIR` 输出鬼影 Schema 默认参数的浅色、深色和窄窗口 WPF 渲染图。
 
 本地示例和内存参数验证不替代真实数据库保存后重新读取、默认字典查询或算法执行。Schema 交付另核对 Code、索引、实际文件、程序集资源名及无 Schema 回退；导入导出需比较有效载荷和目标字典身份，结果链需实际事件/版本样本。

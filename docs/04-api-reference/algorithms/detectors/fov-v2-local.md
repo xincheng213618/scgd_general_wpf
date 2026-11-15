@@ -5,7 +5,6 @@ status: "current"
 summary: "本地 FOV V2 的默认四角与独立轮廓模式、相机角度参数、中心截线及包络口径、叠图和 FOV 2.0 结果兼容契约。"
 aliases: ["本地FOV计算(V2)","FOV 计算 (V2)","FovDist","cameraDegrees","LocalFovNode","FovCalculator","FovImageViewRunner","HorizontalFieldOfViewAngle","DiagonalFieldOfViewAngle"]
 code_paths: ["UI/ColorVision.Core/FovCalculation.cs","UI/ColorVision.Core/FovCurvedBoundaryDetection.cs","Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalFovNode.cs","Engine/ColorVision.Engine/PropertyEditor/CameraDegreesPropertiesEditor.cs","Engine/ColorVision.Engine/Templates/Jsons/FOV2","UI/ColorVision.ImageEditor/EditorTools/Algorithms/Calculate/AlgorithmResultOverlay.cs","UI/ColorVision.ImageEditor/Draw/FovOverlayRenderer.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/AlgorithmResultOverlayTests.cs","Test/ColorVision.UI.Tests/FovCalculationTests.cs"]
 related: ["algorithms.find-light-area","algorithms.roi-routes","engine.results","flow.node-extension"]
 ---
 
@@ -149,10 +148,4 @@ leftDownToRightUp, leftUpToRightDown, message
 
 ## 验证边界
 
-托管回归覆盖默认四角兼容、轮廓独立读图、8/16 位及浮点/行跨度输入只读、非四边形截线、ROI 坐标与裁边/孔洞失败边界、Flow 上游角点绕过，以及叠图使用真实端点；不承担原生定位或现场精度验收。最小相关检查为：
-
-```powershell
-dotnet test .\Test\ColorVision.UI.Tests\ColorVision.UI.Tests.csproj -p:Platform=x64 --filter "FullyQualifiedName~FovCalculationTests|FullyQualifiedName~AlgorithmResultOverlayTests"
-```
-
-正式同位替换验收仍应在获授权环境覆盖旋转、暗角、漏光、低对比、饱和和裁边样本，比较四角、七项 FOV、重复性、耗时、出厂判定、结果落库与历史读取；文档检查和叠图单测不能代替这些证据。
+正式同位替换验收仍应在获授权环境覆盖旋转、暗角、漏光、低对比、饱和和裁边样本，比较四角、七项 FOV、重复性、耗时、出厂判定、结果落库与历史读取。

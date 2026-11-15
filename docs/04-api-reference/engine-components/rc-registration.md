@@ -5,7 +5,6 @@ status: "current"
 summary: "RC 默认注册参数、节点令牌、服务目录同步与状态快照。远端删除不清本地令牌和收发主题，更新可能部分生效。"
 aliases: ["注册中心", "RC连接", "RC默认值", "RC服务列表", "服务目录同步", "远端设备删除", "终端移除", "服务状态快照", "状态新鲜度", "启动早到消息", "NodeToken", "AccessToken", "RCName", "RCNodeName", "AppId", "AppSecret", "RC重复注册", "RC释放", "CVServiceType", "注册令牌", "MqttRCService", "PendingServiceUpdateBuffer", "TryGetUsableToken", "ServiceTokensUpdated", "LiveTime", "LastAliveTime"]
 code_paths: ["Engine/ColorVision.Engine/Services/RC/MQTTRCService.cs", "Engine/ColorVision.Engine/Services/RC/PendingServiceUpdateBuffer.cs", "Engine/ColorVision.Engine/Services/RC/RCInitializer.cs", "Engine/cvColorVision/MQTTMessageLib/NodeToken.cs", "Engine/ColorVision.Engine/Services/Type/CreateType.xaml.cs", "Engine/ColorVision.Engine/MQTT/MQTTControl.cs", "Engine/ColorVision.Engine/Services/ServiceInitializer.cs", "Engine/ColorVision.Engine/Services/ServiceManager.cs", "Engine/ColorVision.Engine/Services/Devices/MQTTDeviceService.cs", "Engine/ColorVision.Engine/Services/Core/MQTTServiceBase.cs", "ColorVision/StartWindow.xaml.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/PendingServiceUpdateBufferTests.cs"]
 related: ["engine.index", "engine.devices", "engine.mqtt", "operations.device-configuration", "operations.camera", "platform.runtime", "plugins.windows-service"]
 ---
 
@@ -105,4 +104,4 @@ MQTT 传输与设备请求见[消息契约](../../02-developer-guide/engine-deve
 
 先区分失败在哪一层：broker、RC 注册、节点 Token、服务目录/服务 Token、本地资源匹配、设备状态还是具体命令。只读调查可检查已有脱敏日志和这些源码入口；不要以“刷新一下”为由重注册、重载资源、安装服务或触发设备。
 
-`PendingServiceUpdateBufferTests.cs` 验证快照覆盖、对象引用及取出后清空。部署验收需验证启动注册、断线后重新注册、服务目录刷新与实际设备命令。
+部署验收需验证启动注册、断线后重新注册、服务目录刷新与实际设备命令。

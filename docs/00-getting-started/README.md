@@ -5,7 +5,6 @@ status: "current"
 summary: "克隆代码后的源码问答、本地构建、安装和运行分流；只问Codex不需要先启动程序。"
 aliases: ["安装入口","源码问答前提","构建还是运行","克隆仓库","拉取代码","Codex源码问答"]
 code_paths: ["ColorVision/ColorVision.csproj","Directory.Build.props"]
-test_paths: []
 related: ["delivery.prerequisites","operations.first-run","governance.knowledge"]
 ---
 

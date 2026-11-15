@@ -5,7 +5,6 @@ status: "current"
 summary: "ServiceHost提供的主程序增量更新临时Defender排除项、目录准入和清理所有权；启用失败不阻断更新，服务停止或保护超时不保证排除项立即恢复。"
 aliases: ["更新扫描保护", "临时Defender排除项", "排除项恢复", "扫描保护超时清理", "ApplicationUpdateScanProtection", "ApplicationUpdateScanProtectionService", "PowerShellDefenderExclusionManager", "IDefenderExclusionManager", "ApplicationUpdateScanProtectionPaths", "ApplicationUpdateScanProtectionState", "COLORVISION_UPDATE_SCAN_PROTECTION_ID"]
 code_paths: ["UI/ColorVision.UI.Desktop/Update/ApplicationUpdateScanProtection.cs", "ColorVision/Update/AutoUpdater.cs", "ColorVision/MainWindow.xaml.cs", "UI/ColorVision.UI/ServiceHost/IColorVisionServiceHostClient.cs", "src/ColorVisionServiceHost/ApplicationUpdateScanProtectionService.cs", "src/ColorVisionServiceHost/ServiceHostCommandHandler.cs", "src/ColorVisionServiceHost/ColorVisionServiceHostService.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/ApplicationUpdateScanProtectionTests.cs", "Test/ColorVision.UI.Tests/UpdaterBatchExecutionTests.cs", "Test/ColorVision.UI.Tests/ColorVisionServiceHostServiceLifecycleTests.cs"]
 related: ["delivery.update", "platform.service-host"]
 ---
 
@@ -72,8 +71,6 @@ Begin期间旧会话清理、新增排除、写状态和响应发送不是统一
 
 ## 验证证据边界
 
-`ApplicationUpdateScanProtectionTests` 使用临时目录、fake Defender适配器和可控时间核对新增/完成、过期与恢复journal、路径拒绝和停止所有权；另有启动PowerShell仅解析脚本文本的用例，不执行真实Defender变更。fake添加器将所有请求路径视为新增，没有直接覆盖预先已有项保留、零新增空ID、Defender回滚失败、JSON持久化失败或SID/PID变化。停止测试还明确允许剩余pending，不能将通过解释为全部排除项已撤销。`ColorVisionServiceHostServiceLifecycleTests` 证明的是fake组件停止的编排，不证明生产策略恢复。
-
-`UpdaterBatchExecutionTests.ExitUpdateBatchPropagatesScanProtectionIdToRestartedApplication` 只断言生成批处理包含ID环境变量，不启动真实主程序验证ContentRendered或清理；同测试文件其它用例会执行临时批处理，不能把整个文件当成无副作用文本检查。
+目标环境须核对既有排除项保护、Defender 恢复、持久化和 SID/PID 变动。停止时仍可能有待恢复项，须按实际状态确认。更新后还须验证真正重启的程序能恢复防护。
 
 当前没有据此声明真实Defender策略、junction准入、外部策略并发、跨进程会话重叠、响应丢失后恢复或重启后主窗口清理的端到端验收。维护本知识只核对源码/测试及文档验证，运行上述系统操作另需授权。

@@ -5,7 +5,6 @@ status: "current"
 summary: "按用途定位发光区、SFR 寻边和中立算法 ROI 模型；各分支参数与坐标契约分别维护。"
 aliases: ["ROI到底对应哪个模块","TemplateSFRFindROI","AlgorithmInvocation.Roi"]
 code_paths: ["Engine/ColorVision.Engine/Templates/Jsons/SFRFindROI/TemplateSFRFindROI.cs","UI/ColorVision.Algorithms/AlgorithmInvocation.cs"]
-test_paths: []
 related: ["algorithms.index","algorithms.find-light-area","algorithms.json-templates","algorithms.arvr","algorithms.platform"]
 ---
 

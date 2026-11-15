@@ -5,7 +5,6 @@ status: "current"
 summary: "ImageView 封闭区域 POI、D65 色彩中心 RMS、椭圆探针、结果显示精度与非正值重算；保留传统节点和导出边界。"
 aliases: ["CVCIE计算负值", "CVCIEShowConfig", "WindowCVCIE", "启用非正值替换", "ClampNonPositiveValues", "MinimumValue", "0.0001", "POI负值", "CVCIE最小值", "CVCIE色温", "CVCIE主波长", "XYZ重算", "结果数值替换", "NormalizeXyz", "CalculateColorMetrics", "色彩中心", "D65 RMS", "ColorCenterRmsToD65", "椭圆POI", "多边形POI", "自由套索", "旋转区域", "DecimalPlaces", "回显字段勾选", "CvcieTemplatePropertiesEditor"]
 code_paths: ["Engine/ColorVision.Engine/Media/CvcieTemplatePropertiesEditor.cs", "Engine/ColorVision.Engine/Media/CvcieTemplateDraft.cs", "Engine/ColorVision.Engine/Media/CvcieTemplateWindow.xaml", "Engine/ColorVision.Engine/Media/CvcieMouseProbeOptions.cs", "UI/ColorVision.ImageEditor/Draw/ClosedPixelRegion.cs", "Engine/ColorVision.Engine/Media/WindowCVCIE.xaml.cs", "Engine/ColorVision.Engine/Media/WindowCVCIE.xaml", "Engine/ColorVision.Engine/Media/CVRawOpen.cs", "Engine/ColorVision.Engine/Services/POI/PoiMeasurementService.cs", "Engine/ColorVision.Engine/Templates/POI/AlgorithmImp/ChromaticityCenterMetrics.cs", "Engine/ColorVision.Engine/Templates/POI/AlgorithmImp/CIEStatistics.cs", "Engine/ColorVision.Engine/Templates/POI/AlgorithmImp/PoiResultCIExyuvData.cs", "Engine/ColorVision.Engine/Templates/POI/AlgorithmImp/PoiResultData.cs", "Engine/ColorVision.Engine/Templates/POI/AlgorithmImp/ViewHanlePOIXZY.cs", "Engine/ColorVision.Engine/Templates/POI/AlgorithmImp/ViewHanlePOIY.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/ChromaticityCenterMetricsTests.cs","Test/ColorVision.UI.Tests/CvcieRegionTests.cs","Test/ColorVision.UI.Tests/CvcieResultValueTests.cs","Test/ColorVision.UI.Tests/PoiMeasurementServiceTests.cs"]
 related: ["ui.cie-analysis", "engine.file-io", "algorithms.poi-routes", "engine.opencv-helper-api", "engine.results", "ui.property-grid", "ui.configuration"]
 ---
 
@@ -102,10 +101,4 @@ POI 结果窗口只保留测量表、统计、显示设置及既有导出，不�
 
 ## 验证边界
 
-| 测试 | 断言范围 |
-| --- | --- |
-| `CvcieResultValueTests` | 旧 JSON 默认值、非法设置、配置快照、已有对象不刷新、替换后色值重算、未变化 XYZ 保留衍生值；色值重算用例会调用 native |
-| `ChromaticityCenterMetricsTests` | D65 对称样本、白点偏差/空间 RMS 分解、无效样本计数，以及原有最大 Δu′v′ 语义保留 |
-| `PoiMeasurementServiceTests` | 点/圆/矩形的负 XYZ 保留、单通道 Y、常规路径保留既有替换行为与已释放缓冲拒绝；需要匹配的 native DLL |
-
-这些测试不覆盖真实窗口的完整操作、配置落盘后重启、旧 DLL 组合或全部非有限数边界。源码规则、已有测试断言和实际设备/样本验收需分别核对。
+变更色值算法需使用匹配的 native DLL。真实窗口操作、配置落盘后重启、旧 DLL 组合及设备样本按实际交付环境验证。

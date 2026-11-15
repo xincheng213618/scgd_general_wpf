@@ -5,7 +5,6 @@ status: "current"
 summary: "ImageRegistration 的输入、参数、结果、宿主接入与定向验证契约。"
 aliases: ["图像配准如何求变换和输出配准质量","ImageRegistration","ImageRegistrationAlgorithmProvider"]
 code_paths: ["UI/ColorVision.ImageEditor/Algorithms/ImageRegistrationAlgorithmProvider.cs","UI/ColorVision.ImageEditor/Algorithms/StandardAlgorithmCatalog.cs","UI/ColorVision.ImageEditor/Algorithms/ImageAlgorithmPlatform.cs"]
-test_paths: []
 related: ["algorithms.platform","algorithms.index"]
 ---
 

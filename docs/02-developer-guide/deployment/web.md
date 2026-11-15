@@ -5,7 +5,6 @@ status: "current"
 summary: "Web 本地启动与 Windows NAS 部署的前提、参数、构建和健康检查、Git bundle 交付、备份保留及失败恢复；SkipTests 仍运行前端测试，失败不保证回退代码或数据库。"
 aliases: ["Web 部署", "NAS 部署", "本地启动 Web", "Run-Web", "Deploy-Nas", "SkipInstall", "SkipBuild", "SkipDocsBuild", "SkipTests", "RemoteGitBundle", "GitNetworkTimeoutSeconds", "DRY_RUN_ERROR", "DEPLOYMENT_ERROR", "already_current", "web-deploy-backups", "web-deploy-bundles", "ColorVisionWeb.log", "Invoke-WebDeployBackupRetention", "Invoke-WebGitBundleRetention", "New-WebRemotePowerShellTransport"]
 code_paths: ["Web/Run-Web.ps1", "Web/Run-Web.bat", "Web/Deploy-Nas.ps1", "Web/Deploy-Nas.bat", "Web/RemotePowerShellTransport.psm1", "Web/NativeProcess.psm1", "Web/DeploymentRetention.psm1", "Web/GitBundleRetention.psm1", "Web/DeploymentHistory.psm1", "Web/Backend/services/runtime_logging.py", "Web/Frontend/package.json", "Web/Frontend/scripts/precompress-static.mjs", "Web/Frontend/scripts/check-dashboard-bundle.mjs"]
-test_paths: ["Web/Test-NativeProcess.ps1", "Web/Test-RemotePowerShellTransport.ps1", "Web/Test-DeploymentRetention.ps1", "Web/Test-GitBundleRetention.ps1", "Web/Test-DeploymentHistory.ps1", "Web/Backend/test_runtime_logging.py", "Web/Backend/test_frontend_spa.py", "Web/Backend/test_docs_site.py"]
 related: ["delivery.backend", "delivery.backend-records", "delivery.backend-observability", "delivery.deployment", "delivery.artifact-delivery", "platform.web-architecture", "delivery.web-performance-baseline"]
 ---
 
@@ -108,7 +107,7 @@ DryRun 输出 `status=dry_run`、当前/目标提交、`update_required`、sourc
 3. 创建时间戳备份，复制生产配置、已有前端 `dist` 和前端 lockfile，并用 SQLite backup API 复制数据库。它不是停止所有写入后的多文件统一时间点快照。
 4. 提交不同时临时恢复受跟踪的 `config.json`，对已 fetch 的目标做 `merge --ff-only`，在 finally 中复制回备份的生产配置。确认最终 HEAD 等于目标；不再执行另一次 `git pull`。
 5. 两个提交间 Backend `requirements.txt` 有变化才执行 pip 安装；前端每次执行 `npm ci --no-audit --no-fund`、测试、TypeScript 编译、Vite 构建到 `dist.deploy-<时间戳>`，再生成压缩变体和检查包体预算。NAS 部署不构建仓库文档站点。
-6. 未指定 `-SkipTests` 时运行脚本中列出的 5 个 PowerShell 测试及 Backend 定向 unittest 集合；它不是整个仓库测试。随后确认旧监听进程归属，停止计划任务，必要时结束仍在监听的目标 Python 进程。
+6. `-SkipTests` 只跳过部署器指定的定向检查。随后确认旧监听进程归属，停止计划任务，必要时结束仍监听的目标 Python 进程。
 7. 将旧 `dist` 移到 `dist.rollback-<时间戳>`，切换暂存前端为正式 `dist`，启动计划任务并重新验证监听进程。代码同步和依赖安装在停服务前完成，整条链不是原子切换。
 8. 检查 `/api/health` 的 status 为 ok、`/api/ready` 的 ready 为 true；确认活动日志包含新 PID 的 `process_start`。请求 compact 首页、版本及变更日志的普通和 gzip 响应并记录大小，检查指定管理页的构建文件和访问统计表可查询。
 9. 移除临时 rollback 前端目录，写 success 标记，执行备份/bundle 保留和历史写入，最后输出结果 JSON。
@@ -191,6 +190,6 @@ bundle 只扫描根目录的直接 `.bundle` 文件，要求名称匹配 `ColorV
 
 部署顺序和恢复条件以 `Web/Deploy-Nas.ps1` 内嵌远端模板为准；它会读取本机的传输模块和 NativeProcess 源码，再在远端使用相应仓库模块。`Run-Web.ps1` 是另一条本地入口，不能把 NAS 的测试或健康检查推广到本地启动。
 
-`Test-NativeProcess.ps1` 检查参数、超时与子进程处理；`Test-RemotePowerShellTransport.ps1` 检查分块、终止标记和 Windows PowerShell 5.1 的 Unicode 传输；保留/历史测试使用临时数据检查候选保护、裁剪、坏记录拒绝及失败 DryRun 不写历史。Backend 的 runtime_logging、frontend_spa 和 docs_site 测试分别覆盖日志与服务静态产物的部分契约。
+在目标 NAS 验证远程进程与 PowerShell 传输、保留策略、部署历史、日志和静态制品。
 
-这些测试不构成真实 NAS 完整部署、并发部署、任意阶段断电或数据库恢复验收。文档构建和检索检查只验证文档产物；历史性能数据见[Web 历史性能基线](../backend/performance-baseline.md)，不能作为本次部署结果。
+完整部署、并发、断电和数据库恢复需在目标 NAS 独立验收。 [Web 历史性能基线](../backend/performance-baseline.md)

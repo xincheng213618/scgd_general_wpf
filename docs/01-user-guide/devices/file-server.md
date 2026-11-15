@@ -5,7 +5,6 @@ status: "current"
 summary: "旧 FileServer 资源的类型值、装配过滤和 RC 协议兼容，以及相机、算法等设备当前文件保存配置的职责。"
 aliases: ["文件服务器", "FileServer", "文件服务为什么不显示", "远程文件", "FileServerCfg", "FileSeviceConfig"]
 code_paths: ["Engine/ColorVision.Engine/Services/Devices/DeviceServiceFactory.cs", "Engine/ColorVision.Engine/Services/ServiceManager.cs", "Engine/ColorVision.Engine/Services/Type/TypeService.cs", "Engine/ColorVision.Engine/Services/RC/MQTTRCService.cs", "Engine/ColorVision.Engine/Services/Cache/FileServerCfg.cs", "Engine/ColorVision.Engine/Services/PhyCameras/Configs/ConfigPhyCamera.cs", "Engine/ColorVision.Engine/Services/Devices/Camera/Local/LocalCameraCaptureService.cs", "Engine/ColorVision.Engine/Services/Devices/Camera/Local/LocalFrameFileService.cs", "Engine/ColorVision.Engine/Services/Devices/Algorithm/LocalAlgorithmResultDirectory.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/FileServerCompatibilityTests.cs", "Test/ColorVision.UI.Tests/LocalAlgorithmResultDirectoryTests.cs"]
 related: ["engine.devices", "operations.device-configuration", "engine.mqtt", "operations.data", "delivery.file-transfer"]
 ---
 
@@ -39,6 +38,6 @@ related: ["engine.devices", "operations.device-configuration", "engine.mqtt", "o
 
 ## 验证范围
 
-`FileServerCompatibilityTests` 验证默认工厂跳过遗留 Type 为 6 的资源、保留原配置，并保持设备和 RC 的类型值为 6；同时覆盖旧保存天数加载后归零、显式序列化禁用值及属性编辑器隐藏保存天数。`LocalAlgorithmResultDirectoryTests` 覆盖算法结果目录继续读取数据基础路径；测试引用不表示已经执行或通过。
+升级旧站时核对旧资源保留、保存天数停用以及数据基础路径对应的实际输出位置。
 
 远端服务是否有文件传输调用、配置是否已生效以及现场文件保留行为，需要按实际部署另行核对。

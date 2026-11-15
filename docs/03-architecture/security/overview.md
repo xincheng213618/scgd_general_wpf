@@ -5,7 +5,6 @@ status: "current"
 summary: "区分应用管理员、RBAC会话与权限码、Windows服务身份及远程/工具授权；登录缓存和界面状态不能替代执行入口的权限检查。"
 aliases: ["权限边界", "安全架构", "应用管理员", "Windows管理员", "身份与权限", "授权入口", "鉴权入口"]
 code_paths: ["UI/ColorVision.Common/Authorizations", "UI/ColorVision.Rbac/RbacManager.cs", "UI/ColorVision.Rbac/Services/PermissionChecker.cs", "UI/ColorVision.Rbac/Services/Auth/AuthService.cs", "UI/ColorVision.Rbac/Services/SessionService.cs"]
-test_paths: []
 related: ["platform.architecture", "platform.rbac", "ui.common", "ui.menus", "platform.service-host", "copilot.mcp-server", "delivery.backend-operations", "copilot.execution"]
 ---
 
@@ -60,6 +59,6 @@ RBAC 的 AuditLogService 记录其接入的账户与权限动作。其它模块�
 
 ## 验证范围
 
-本页是跨模块定位概览，没有声明一套覆盖全产品的权限测试。Common、RBAC、ServiceHost、MCP 和 Copilot 的源码与测试入口随各自主题维护；只验证 UI 可见性或模块注册不足以证明未经授权的直接调用会被拒绝。
+权限验收需核对入口执行和直接调用的授权结果。UI 可见性和模块注册各自只反映局部行为。
 
 文档审查可读取代码和测试，核对入口与责任关系。实际创建用户、修改角色、调用特权服务或执行工具时，还需按操作范围使用获授权的隔离环境；示例与文档本身不授予操作权限。
