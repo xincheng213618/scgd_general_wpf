@@ -18,8 +18,8 @@ namespace ColorVision.Solution.Terminal
 
         private TerminalControl? _interactiveTerminalControl;
         private TerminalControl? _runTerminalControl;
-        private Action? _activateInteractiveTerminal;
         private Action? _activateRunTerminal;
+        private Func<TerminalControl>? _openProjectTerminal;
         private Func<TerminalControl?>? _getSelectedTerminal;
         private string? _pendingScriptPath;
         public const string PanelId = "TerminalPanel";
@@ -29,14 +29,14 @@ namespace ColorVision.Solution.Terminal
         internal void SetTerminalControls(
             TerminalControl interactiveTerminalControl,
             TerminalControl runTerminalControl,
-            Action activateInteractiveTerminal,
             Action activateRunTerminal,
+            Func<TerminalControl> openProjectTerminal,
             Func<TerminalControl?> getSelectedTerminal)
         {
             _interactiveTerminalControl = interactiveTerminalControl;
             _runTerminalControl = runTerminalControl;
-            _activateInteractiveTerminal = activateInteractiveTerminal;
             _activateRunTerminal = activateRunTerminal;
+            _openProjectTerminal = openProjectTerminal;
             _getSelectedTerminal = getSelectedTerminal;
 
             if (_pendingScriptPath is string pendingScriptPath)
@@ -56,8 +56,8 @@ namespace ColorVision.Solution.Terminal
 
             if (_interactiveTerminalControl == null && _runTerminalControl == null)
             {
-                _activateInteractiveTerminal = null;
                 _activateRunTerminal = null;
+                _openProjectTerminal = null;
                 _getSelectedTerminal = null;
             }
         }
@@ -86,53 +86,40 @@ namespace ColorVision.Solution.Terminal
         }
 
         /// <summary>
-        /// Send a command string to the terminal's shell.
+        /// Run a command in the project terminal.
         /// </summary>
-        public void SendCommand(string command)
-        {
-            if (!ShowPanel())
-                return;
-
-            var terminalControl = GetInteractiveTerminalControl();
-            if (terminalControl == null) return;
-            _activateInteractiveTerminal?.Invoke();
-            terminalControl.NotifyPanelActivated();
-            terminalControl.SendCommand(command);
-        }
+        public void SendCommand(string command) => TrySendCommand(command, null);
 
         public void SendCommand(string command, string workingDirectory)
         {
             TrySendCommand(command, workingDirectory);
         }
 
-        public bool TrySendCommand(string command, string workingDirectory)
+        public bool TrySendCommand(string command, string? workingDirectory)
         {
+            string shell = GetInteractiveTerminalControl()?.CurrentShell ?? "powershell";
+            string directory = string.IsNullOrWhiteSpace(workingDirectory) ? TerminalControl.GetDefaultWorkingDirectory() : workingDirectory;
+            if (!TerminalProjectCommand.CanRun(shell, command, directory))
+                return false;
+
             if (!ShowPanel())
                 return false;
 
-            var terminalControl = GetInteractiveTerminalControl();
-            if (terminalControl == null) return false;
-            _activateInteractiveTerminal?.Invoke();
-            terminalControl.NotifyPanelActivated();
-            terminalControl.SendCommand(command, workingDirectory);
-            return true;
+            return _openProjectTerminal?.Invoke().TryStartProjectCommand(shell,
+                TerminalProjectCommand.CreateCommandLine(shell, command), directory) == true;
         }
 
         public bool TrySendCommandBatch(IReadOnlyList<TerminalCommandRequest> commands)
         {
-            if (commands.Count == 0)
+            string shell = GetInteractiveTerminalControl()?.CurrentShell ?? "powershell";
+            if (commands.Count == 0 || commands.Any(command => !TerminalProjectCommand.CanRun(shell, command.Command, command.WorkingDirectory)))
                 return false;
 
             if (!ShowPanel())
                 return false;
 
-            var terminalControl = GetInteractiveTerminalControl();
-            if (terminalControl == null)
-                return false;
-            _activateInteractiveTerminal?.Invoke();
-            terminalControl.NotifyPanelActivated();
-            terminalControl.SendCommandBatch(commands);
-            return true;
+            return _openProjectTerminal?.Invoke().TryStartProjectCommand(shell,
+                TerminalProjectCommand.CreateBatchCommandLine(shell, commands), workingDirectory: null) == true;
         }
 
         public void NotifyPanelActivated()
@@ -201,6 +188,23 @@ namespace ColorVision.Solution.Terminal
                     tabControl.Items.Add(interactiveTab);
                     tabControl.Items.Add(runTab);
                     tabControl.SelectedItem = interactiveTab;
+                    TabItem? projectTab = null;
+
+                    TerminalControl OpenProjectTerminal()
+                    {
+                        if (projectTab?.Content is not TerminalControl projectTerminal || projectTerminal.IsDisposed)
+                        {
+                            projectTerminal = new TerminalControl(isProjectTerminal: true);
+                            if (projectTab == null)
+                            {
+                                projectTab = new TabItem { Header = DisplayText.Get("Terminal_ProjectCommands") };
+                                tabControl.Items.Add(projectTab);
+                            }
+                            projectTab.Content = projectTerminal;
+                        }
+                        tabControl.SelectedItem = projectTab;
+                        return projectTerminal;
+                    }
 
                     if (Application.Current != null)
                     {
@@ -208,17 +212,16 @@ namespace ColorVision.Solution.Terminal
                         {
                             interactiveTerminalControl.Dispose();
                             runTerminalControl.Dispose();
+                            (projectTab?.Content as TerminalControl)?.Dispose();
                         };
                     }
 
                     TerminalService.GetInstance().SetTerminalControls(
                         interactiveTerminalControl,
                         runTerminalControl,
-                        () => tabControl.SelectedItem = interactiveTab,
                         () => tabControl.SelectedItem = runTab,
-                        () => ReferenceEquals(tabControl.SelectedItem, runTab)
-                            ? runTerminalControl
-                            : interactiveTerminalControl);
+                        OpenProjectTerminal,
+                        () => (tabControl.SelectedItem as TabItem)?.Content as TerminalControl);
                     return tabControl;
                 },
                 Properties.Resources.Sol_Terminal_Title,

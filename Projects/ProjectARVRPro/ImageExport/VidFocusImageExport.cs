@@ -21,7 +21,7 @@ internal sealed class VidFocusImageExport(string root, bool saveByDate, string s
             [typeof(AutoFocusParam), typeof(CancellationToken), typeof(bool)])?
             .CreateDelegate<Func<DeviceCamera, AutoFocusParam, CancellationToken, bool, MsgRecord>>();
 
-    private Func<string, double, CancellationToken, Task>? saveImages;
+    private Func<string, double, string, CancellationToken, Task>? saveImages;
 
     internal static bool HostSupportsEvidence => FocusWithEvidence != null;
 
@@ -37,7 +37,7 @@ internal sealed class VidFocusImageExport(string root, bool saveByDate, string s
         if (response.Data is CameraAutoFocusEvidence evidence)
         {
             vid = evidence.VidPosition;
-            saveImages = (directory, correctedVid, token) => WriteImagesAsync(directory, evidence, correctedVid, token);
+            saveImages = (directory, correctedVid, unit, token) => WriteImagesAsync(directory, evidence, correctedVid, unit, token);
             return true;
         }
         vid = null;
@@ -45,7 +45,7 @@ internal sealed class VidFocusImageExport(string root, bool saveByDate, string s
         return false;
     }
 
-    internal async Task SaveAsync(double vid, CancellationToken token)
+    internal async Task SaveAsync(double vid, string unit, CancellationToken token)
     {
         if (saveImages == null) return;
         try
@@ -53,7 +53,7 @@ internal sealed class VidFocusImageExport(string root, bool saveByDate, string s
             string snDirectory = ProjectImageExportService.BuildOutputDirectory(root, saveByDate, requestedAt, serialNumber);
             string stamp = requestedAt.ToString("yyyyMMdd_HHmmss_fffffff", CultureInfo.InvariantCulture);
             string directory = Path.Combine(snDirectory, "VID_" + stamp);
-            await saveImages(directory, vid, token);
+            await saveImages(directory, vid, unit, token);
             log.Info($"VID 对焦图像已保存: {directory}");
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
@@ -62,9 +62,9 @@ internal sealed class VidFocusImageExport(string root, bool saveByDate, string s
         }
     }
 
-    private static async Task WriteImagesAsync(string directory, CameraAutoFocusEvidence evidence, double vid, CancellationToken token)
+    private static async Task WriteImagesAsync(string directory, CameraAutoFocusEvidence evidence, double vid, string unit, CancellationToken token)
     {
-        using ImageViewSnapshot snapshot = CreateSnapshot(evidence, vid);
+        using ImageViewSnapshot snapshot = CreateSnapshot(evidence, vid, unit);
         await Task.Run(async () =>
         {
             token.ThrowIfCancellationRequested();
@@ -91,13 +91,13 @@ internal sealed class VidFocusImageExport(string root, bool saveByDate, string s
         }, token);
     }
 
-    private static ImageViewSnapshot CreateSnapshot(CameraAutoFocusEvidence evidence, double vid)
+    private static ImageViewSnapshot CreateSnapshot(CameraAutoFocusEvidence evidence, double vid, string unit)
     {
         int width = evidence.Frame.PixelWidth;
         int height = evidence.Frame.PixelHeight;
         double fontSize = Math.Max(12, Math.Min(width, height) / 28d);
         double padding = fontSize / 2;
-        var label = new FormattedText($"VID {vid:R}\n最佳电机位置 {evidence.Position}", CultureInfo.CurrentCulture,
+        var label = new FormattedText($"VID {vid:R} {unit}\n最佳电机位置 {evidence.Position}", CultureInfo.CurrentCulture,
             FlowDirection.LeftToRight, new Typeface("Microsoft YaHei UI"), fontSize, Brushes.White, 1)
         {
             MaxTextWidth = Math.Max(1, width - 4 * padding)

@@ -148,18 +148,25 @@ public sealed class LuxVidMeasurementTests
     }
 
     [Theory]
-    [InlineData(100.0, 0.0, false)]
-    [InlineData(110.0, 20.0, true)]
-    [InlineData(null, null, false)]
-    public async Task JsonVidReturnsOnlyTheFinalMeasurementAndDistinguishesZeroFromFailure(double? raw, double? expected, bool pass)
+    [InlineData(5000.0, 1, -0.05714285714285716, LuxVidOutputUnit.Millimeters, "mm", 7000.0, 6000, true)]
+    [InlineData(4000.0, 2, -0.25, LuxVidOutputUnit.Meters, "m", 4.0, 4.5, false)]
+    [InlineData(-4000.0, 1, 0, LuxVidOutputUnit.Meters, "m", -4.0, -5, true)]
+    [InlineData(-5000.0, 2, 0.15, LuxVidOutputUnit.Diopters, "D", -0.25, -0.3, true)]
+    [InlineData(4000.0, 1, -0.25, LuxVidOutputUnit.Diopters, "D", 0.0, 0, true)]
+    [InlineData(4000.0, 1, -0.25, LuxVidOutputUnit.Millimeters, "mm", null, 0, false)]
+    [InlineData(0.0, 1, 0, LuxVidOutputUnit.Diopters, "D", null, 0, false)]
+    [InlineData(null, 1, 0, LuxVidOutputUnit.Millimeters, "mm", null, 0, false)]
+    public async Task JsonVidUsesDiopterCorrectionAndTheConfiguredOutputUnit(double? raw, double factor, double offset,
+        LuxVidOutputUnit unit, string expectedUnit, double? expected, double minimum, bool pass)
     {
         using var camera = new CameraScope(DeviceStatusType.Opened, LuxVidMeasurementMode.GetPosition);
         ArvrDrawingOverlayCompatibilityTests.RunOnStaThread(() =>
         {
             var config = ProjectARVRProConfig.Instance;
-            config.LuxVidFix = 2;
-            config.LuxVidB = -200;
-            config.LuxVidMin = 10;
+            config.LuxVidFix = factor;
+            config.LuxVidB = offset;
+            config.LuxVidUnit = unit;
+            config.LuxVidMin = minimum;
         });
         var handler = new MeasureVidSocket(async serialNumber =>
         {
@@ -167,6 +174,7 @@ public sealed class LuxVidMeasurementTests
             Assert.Equal("SN001", serialNumber);
             ArvrDrawingOverlayCompatibilityTests.RunOnStaThread(() => measurement = LuxDeviceMeasurements.MeasureVidResultAsync(CancellationToken.None));
             var (succeeded, item) = await measurement;
+            Assert.Equal(expectedUnit, item.Unit);
             return (false, succeeded ? item : null);
         });
         var request = new SocketRequest { EventName = "MeasureVID", Version = "1.0", MsgID = "vid-001", SerialNumber = "SN001" };
@@ -183,12 +191,14 @@ public sealed class LuxVidMeasurementTests
         Assert.Equal(expected.HasValue ? 0 : -2, reply.Value<int>("Code"));
         if (expected.HasValue)
         {
-            Assert.Equal(expected.Value, reply["Data"]!.Value<double>("VID"));
+            Assert.Equal(expected.Value, reply["Data"]!.Value<double>("VID"), precision: 8);
             Assert.Equal(pass, reply["Data"]!.Value<bool>("Pass"));
         }
         else
         {
             Assert.Equal(JTokenType.Null, reply["Data"]!.Type);
+            if (raw == 0) Assert.Contains("原始 VID", reply.Value<string>("Msg"));
+            else if (raw.HasValue) Assert.Contains("0 D", reply.Value<string>("Msg"));
         }
         Assert.Equal(["GetPosition"], camera.Service.Commands);
     }

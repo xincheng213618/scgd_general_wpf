@@ -21,15 +21,43 @@ internal static class LuxDeviceMeasurements
         var config = ProjectARVRProConfig.Instance;
         double min = config.LuxVidMin, max = config.LuxVidMax;
         double factor = config.LuxVidFix, offset = config.LuxVidB;
+        LuxVidOutputUnit unit = config.LuxVidUnit;
+        string unitLabel = unit switch
+        {
+            LuxVidOutputUnit.Millimeters => "mm",
+            LuxVidOutputUnit.Meters => "m",
+            LuxVidOutputUnit.Diopters => "D",
+            _ => throw new InvalidOperationException("请选择有效的 VID 输出单位。")
+        };
         double? measured = await MeasureVidAsync(cancellationToken, export);
-        double value = measured.HasValue ? measured.Value * factor + offset : 0;
-        if (!double.IsFinite(value)) throw new InvalidOperationException("VID 结果不是有效数值。");
-        if (measured.HasValue && export != null) await export.SaveAsync(value, cancellationToken);
+        double value = measured.HasValue ? CorrectVid(measured.Value, factor, offset, unit) : 0;
+        if (measured.HasValue && export != null) await export.SaveAsync(value, unitLabel, cancellationToken);
 
         return (measured.HasValue, new ObjectiveTestItem
         {
-            Name = "VID", Unit = "cd/m^2", Value = value, LowLimit = min, UpLimit = max
+            Name = "VID", Unit = unitLabel, Value = value, LowLimit = min, UpLimit = max
         });
+    }
+
+    private static double CorrectVid(double measuredMm, double factor, double offset, LuxVidOutputUnit unit)
+    {
+        if (!double.IsFinite(measuredMm) || measuredMm == 0)
+            throw new InvalidOperationException("原始 VID 必须为非零有限毫米值，才能换算为屈光度。");
+        if (!double.IsFinite(factor) || !double.IsFinite(offset))
+            throw new InvalidOperationException("VID 修正参数 K 和 B 必须为有限数值。");
+
+        // Preserve the original distance exactly when no correction is configured.
+        if (factor == 1 && offset == 0 && unit != LuxVidOutputUnit.Diopters)
+            return unit == LuxVidOutputUnit.Meters ? measuredMm / 1000d : measuredMm;
+
+        double diopters = 1000d / measuredMm * factor + offset;
+        if (!double.IsFinite(diopters)) throw new InvalidOperationException("修正后的 VID 屈光度不是有限数值。");
+        if (unit == LuxVidOutputUnit.Diopters) return diopters;
+        if (diopters == 0) throw new InvalidOperationException("修正后的 VID 为 0 D，无法表示为有限距离。");
+
+        double distance = (unit == LuxVidOutputUnit.Meters ? 1d : 1000d) / diopters;
+        if (!double.IsFinite(distance)) throw new InvalidOperationException("修正后的 VID 距离不是有限数值。");
+        return distance;
     }
 
     internal static async Task<double?> MeasureVidAsync(CancellationToken cancellationToken, VidFocusImageExport? export = null)

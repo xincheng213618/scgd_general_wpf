@@ -1732,27 +1732,6 @@
     <value>{0}不能包含特殊字元</value>
   </data>
 
-  <data name="ServiceLogX64" xml:space="preserve">
-    <value>x64服務日誌</value>
-  </data>
-  <data name="ServiceLogCamera" xml:space="preserve">
-    <value>相機服務日誌</value>
-  </data>
-  <data name="ServiceLogAlgorithm" xml:space="preserve">
-    <value>演算法服務日誌</value>
-  </data>
-  <data name="ServiceLogCVOLED" xml:space="preserve">
-    <value>CVOLED服務日誌</value>
-  </data>
-  <data name="ServiceLogSpectrum" xml:space="preserve">
-    <value>光譜儀服務日誌</value>
-  </data>
-  <data name="ServiceLogDev" xml:space="preserve">
-    <value>dev服務日誌</value>
-  </data>
-  <data name="ServiceLogSMU" xml:space="preserve">
-    <value>SMU服務日誌</value>
-  </data>
   <data name="Terminal" xml:space="preserve">
     <value>終端</value>
   </data>
@@ -7375,14 +7354,14 @@
   <data name="CameraFocusChart_Seconds" xml:space="preserve"><value>時間（秒）</value></data>
   <data name="CameraFocusChart_Position" xml:space="preserve"><value>馬達位置</value></data>
   <data name="CameraFocusChart_Score" xml:space="preserve"><value>評價值</value></data>
-  <data name="CameraFocusChart_AutoSave" xml:space="preserve"><value>自動儲存對焦曲線</value></data>
-  <data name="CameraFocusChart_AutoSaveHint" xml:space="preserve"><value>從相機面板執行本機自動對焦成功後，將對焦曲線儲存為 PNG。</value></data>
+  <data name="CameraFocusChart_AutoSave" xml:space="preserve"><value>自動儲存對焦結果</value></data>
+  <data name="CameraFocusChart_AutoSaveHint" xml:space="preserve"><value>本機自動對焦或微對焦成功後，儲存最佳位置的標記圖、對焦曲線和取樣 CSV。</value></data>
   <data name="MotorConfig_FocusEarlyStopRatio" xml:space="preserve"><value>粗掃提前停止比例</value></data>
   <data name="MotorConfig_FocusEarlyStopRatioHint" xml:space="preserve"><value>本機全範圍粗掃越過峰值後，若連續若干點低於「峰值 × 此比例」且峰值前也出現過低點，即停止粗掃。0 表示關閉；建議 0.3–0.5。存在多個清晰峰時請保持關閉。</value></data>
   <data name="MotorConfig_FocusEarlyStopCount" xml:space="preserve"><value>粗掃提前停止連續低點數</value></data>
   <data name="MotorConfig_FocusEarlyStopCountHint" xml:space="preserve"><value>越過峰值後需要連續低於比例的取樣點數，至少為 1，預設 2。</value></data>
-  <data name="CameraFocusChart_SaveDirectory" xml:space="preserve"><value>對焦曲線儲存資料夾</value></data>
-  <data name="CameraFocusChart_SaveDirectoryHint" xml:space="preserve"><value>留空時使用「文件\ColorVision\AutoFocus」。曲線依裝置與日期歸檔。</value></data>
+  <data name="CameraFocusChart_SaveDirectory" xml:space="preserve"><value>對焦結果儲存資料夾</value></data>
+  <data name="CameraFocusChart_SaveDirectoryHint" xml:space="preserve"><value>留空時使用「文件\ColorVision\AutoFocus」。結果依裝置、日期與對焦時間歸檔。</value></data>
   <data name="CameraPanel_StartPreview" xml:space="preserve"><value>視訊模式</value></data>
   <data name="CameraPanel_StopPreview" xml:space="preserve"><value>關閉視訊</value></data>
   <data name="CameraPanel_StopPreviewHint" xml:space="preserve"><value>停止連續畫面；本地相機保留連接</value></data>
@@ -7399,6 +7378,13 @@
   <data name="CameraPanel_MotorHome" xml:space="preserve"><value>回原點</value></data>
   <data name="CameraPanel_MotorReadPosition" xml:space="preserve"><value>讀取</value></data>
   <data name="CameraPanel_MotorPosition" xml:space="preserve"><value>位置</value></data>
+  <data name="CameraPanel_VidTarget" xml:space="preserve"><value>目標 VID (mm)</value></data>
+  <data name="CameraPanel_VidMove" xml:space="preserve"><value>按 VID 移動</value></data>
+  <data name="CameraPanel_VidMoveHint" xml:space="preserve"><value>輸入帶正負號的 VID 毫米值，在設定的馬達移動區間內依映射換算並移動馬達。</value></data>
+  <data name="CameraPanel_VidMoveInvalid" xml:space="preserve"><value>請輸入有效的 VID 毫米值。</value></data>
+  <data name="CameraPanel_VidMoveDisabled" xml:space="preserve"><value>請先啟用 VID 並設定映射檔案。</value></data>
+  <data name="CameraPanel_VidMoveUnreachable" xml:space="preserve"><value>目標 VID 在設定的馬達移動區間 {0}–{1} 內沒有可達位置。</value></data>
+  <data name="CameraPanel_MotorMoveCaptureFailed" xml:space="preserve"><value>馬達已到位置 {0}，取圖失敗：{1}</value></data>
   <data name="CameraPanel_AutoExposureND" xml:space="preserve"><value>自曝 ND</value></data>
   <data name="CameraPanel_NDHint" xml:space="preserve"><value>僅服務模式支援 ND 自動切換；本地自動曝光前請取消勾選</value></data>
   <data name="CameraPanel_PreviewSettings" xml:space="preserve"><value>預覽設定</value></data>

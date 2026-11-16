@@ -1854,6 +1854,16 @@ void runPoiV2SyntheticCoverage()
         throw std::runtime_error("POI V1 boundary ROI clipping changed");
     }
 
+    const MPoiRequestV1 latticeCircle{ 1, 0, 0, 10, 10 };
+    options = {};
+    options.structSize = sizeof(options);
+    options.filterMode = 1;
+    if (M_CalculatePoiBatchV1(width, height, 32, 3, cie.data(), cie.size(), &latticeCircle, 1, v1.data()) != M_POI_OK
+        || M_CalculatePoiBatchV2(width, height, 32, 3, cie.data(), cie.size(), &latticeCircle, 1, &options, v2.data()) != M_POI_OK
+        || v1[0].X != static_cast<float>(256.0 / 22.0) || v2[0].X != 12.5F) {
+        throw std::runtime_error("POI circle sampling changed at the clipped 3-4-5 boundary");
+    }
+
     std::array<MPoiRequestV1, 1> invalidRequest{{ { 2, -1, 0, 1, 1 } }};
     std::array<MPoiResultV1, 1> unchanged{};
     std::memset(unchanged.data(), 0x5A, sizeof(unchanged));

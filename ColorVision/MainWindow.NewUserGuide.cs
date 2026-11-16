@@ -36,7 +36,7 @@ public partial class MainWindow
         new(
             NewUserGuideText.Get("ExplorerStepTitle"),
             NewUserGuideText.Get("ExplorerStepDescription"),
-            () => _projectPanel),
+            () => ScrollViewerDisplay),
         new(
             NewUserGuideText.Get("WorkspaceStepTitle"),
             NewUserGuideText.Get("WorkspaceStepDescription"),

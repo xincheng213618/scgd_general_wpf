@@ -22,6 +22,7 @@ namespace {
 
 constexpr std::uint64_t kLegacyMapHeaderBytes = 8;
 constexpr std::uint64_t kCurrentMapHeaderBytes = 20;
+constexpr std::uint32_t kMinimumParallelRows = 8;
 
 template <typename T>
 bool checkedMultiply(T left, T right, T& result)
@@ -224,7 +225,7 @@ void parallelRows(std::uint32_t rowCount, const TAction& action)
     if (rowCount == 0) {
         return;
     }
-    if (rowCount < 8
+    if (rowCount < kMinimumParallelRows
         || rowCount > static_cast<std::uint32_t>((std::numeric_limits<int>::max)())) {
         action(0, rowCount);
         return;
@@ -806,14 +807,19 @@ public:
 private:
     template <typename, typename> friend class MapCalibration;
 
-    bool matchesFullBgr16(const ImageView& raw, const ExecutionOptions& options) const
+    bool matchesFullMap16(const ImageView& raw, const ExecutionOptions& options) const
     {
-        return raw.bitsPerChannel == 16 && raw.channels == 3
+        return raw.bitsPerChannel == 16 && (raw.channels == 1 || raw.channels == 3)
             && options.interleavedBgr && options.rgbType == 0
             && std::all_of(options.roi.begin(), options.roi.end(), [](auto value) { return value == 0; })
             && header_.version == 1 && header_.sourceBitsPerChannel == 16
             && header_.channels == raw.channels
             && header_.width == raw.width && header_.height == raw.height;
+    }
+
+    bool matchesFullBgr16(const ImageView& raw, const ExecutionOptions& options) const
+    {
+        return raw.channels == 3 && matchesFullMap16(raw, options);
     }
 
     template <typename TPixel>
@@ -1035,10 +1041,21 @@ bool MapCalibration<TCorrection, TOperation>::tryApplyWithNext(
     }
     else {
         const auto* uniformity = dynamic_cast<const MapCalibration<float, UniformityOperation>*>(&next);
-        if (uniformity == nullptr || !matchesFullBgr16(raw, options)
-            || !uniformity->matchesFullBgr16(raw, options)
+        if (uniformity == nullptr || !matchesFullMap16(raw, options)
+            || !uniformity->matchesFullMap16(raw, options)
             || (options.rawOutputFlip != -99 && options.rawOutputFlip != 0)) {
             return false;
+        }
+        if (raw.channels == 1) {
+            // The fused scalar loop saves memory traffic on large frames, but
+            // the independent passes vectorize better with fewer workers.
+            constexpr std::uint64_t minimumMonoPixels = 5'000'000;
+            constexpr int minimumMonoThreads = 8;
+            const auto rowCount = options.rawOutputFlip == 0 ? raw.height / 2 + raw.height % 2 : raw.height;
+            if (static_cast<std::uint64_t>(raw.width) * raw.height < minimumMonoPixels
+                || rowCount < kMinimumParallelRows || cv::getNumThreads() < minimumMonoThreads) {
+                return false;
+            }
         }
 
         const std::size_t rowSamples = static_cast<std::size_t>(raw.width) * raw.channels;

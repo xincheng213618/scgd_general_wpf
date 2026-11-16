@@ -17,8 +17,8 @@
   <data name="CompleteAction" xml:space="preserve"><value>開始使用</value></data>
   <data name="MenuStepTitle" xml:space="preserve"><value>頂部選單</value></data>
   <data name="MenuStepDescription" xml:space="preserve"><value>透過頂部選單存取檔案、範本、工具、檢視等功能。目前高亮區域可直接操作。</value></data>
-  <data name="ExplorerStepTitle" xml:space="preserve"><value>裝置與解決方案</value></data>
-  <data name="ExplorerStepDescription" xml:space="preserve"><value>左側面板可在「裝置控制」與「方案總管」之間切換。前者用於檢視和操作裝置，後者用於瀏覽專案、流程與檔案。</value></data>
+  <data name="ExplorerStepTitle" xml:space="preserve"><value>裝置控制</value></data>
+  <data name="ExplorerStepDescription" xml:space="preserve"><value>在左側檢視及操作裝置。需要瀏覽專案、流程與檔案時，從「檢視」選單開啟「方案總管」。</value></data>
   <data name="WorkspaceStepTitle" xml:space="preserve"><value>主要工作區</value></data>
   <data name="WorkspaceStepDescription" xml:space="preserve"><value>工作流程、相機、演算法與校正以分頁呈現。切換分頁即可進入對應的設定與操作介面。</value></data>
   <data name="StatusStepTitle" xml:space="preserve"><value>執行狀態</value></data>

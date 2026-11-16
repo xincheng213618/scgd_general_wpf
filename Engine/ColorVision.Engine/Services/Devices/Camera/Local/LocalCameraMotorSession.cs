@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Diagnostics;
+using System.Globalization;
 using Newtonsoft.Json.Linq;
 using System.Text.RegularExpressions;
 using System.Threading;
@@ -172,6 +173,22 @@ internal sealed class LocalCameraMotorSession(ILocalCameraMotorNative native)
         return ReadPosition();
     }
 
+    internal (int Position, double? VidPosition) MoveToVid(double targetMm)
+    {
+        if (!double.IsFinite(targetMm)) throw new ArgumentException(EngineLocalization.Get("CameraPanel_VidMoveInvalid"), nameof(targetMm));
+        var settings = RequireOpen();
+        var mapping = ReadVidMapping(settings) ?? throw new InvalidOperationException(EngineLocalization.Get("CameraPanel_VidMoveDisabled"));
+        int? position;
+        try { position = VidMappingCoefficients.FindFirstPosition(mapping, targetMm, settings.Minimum, settings.Maximum); }
+        catch (FormatException error) { throw new InvalidOperationException(VidMappingError, error); }
+        MQTTServiceBase.log.Info(FormattableString.Invariant($"[LocalMotor] Port={settings.Port} TargetVidMm={targetMm:R} MotorRange=[{settings.Minimum},{settings.Maximum}] TargetPosition={position}"));
+        if (position is not int targetPosition)
+            throw new InvalidOperationException(string.Format(CultureInfo.CurrentCulture,
+                EngineLocalization.Get("CameraPanel_VidMoveUnreachable"), settings.Minimum, settings.Maximum));
+        int actualPosition = Move(targetPosition, absolute: true);
+        return (actualPosition, ConvertVid(mapping, actualPosition));
+    }
+
     internal int Home()
     {
         Check(native.Home(handle, RequireOpen()), "本地电机回零");
@@ -202,23 +219,33 @@ internal sealed class LocalCameraMotorSession(ILocalCameraMotorNative native)
         int positionTimeout = focus.Remaining(watch.ElapsedMilliseconds, token, readPositionOperation);
         int positionCode = native.GetPosition(handle, out int initialPosition, Math.Min(settings.Timeout, positionTimeout));
         CheckFocusOperation(positionCode, focus, watch.ElapsedMilliseconds, readPositionOperation, token);
-        var result = LocalAutoFocusSearch.Run(focus, (position, remaining) =>
+
+        void MoveForFocus(int position, string operation)
+        {
+            int remaining = focus.Remaining(watch.ElapsedMilliseconds, token, operation);
+            int code = native.Move(handle, position, Math.Min(settings.Timeout, remaining));
+            if (code == 0 && settings.Controller == FOCUS_COMMUN.VID_SERIAL)
+            {
+                int retryTimeout = Math.Min(settings.Timeout, focus.Remaining(watch.ElapsedMilliseconds, token, operation));
+                MQTTServiceBase.log.Warn($"[LocalAutoFocus] {operation}失败，端口 {settings.Port}，驱动返回 {code}，重试一次（超时 {retryTimeout} ms）。");
+                code = native.Move(handle, position, retryTimeout);
+            }
+            CheckFocusOperation(code, focus, watch.ElapsedMilliseconds, operation, token);
+        }
+
+        var result = LocalAutoFocusSearch.Run(focus, (position, _) =>
         {
             if (!focus.FineOnly || position != initialPosition)
-            {
-                string operation = $"自动对焦移动电机至 {position}";
-                CheckFocusOperation(native.Move(handle, position, Math.Min(settings.Timeout, remaining)), focus, watch.ElapsedMilliseconds, operation, token);
-            }
+                MoveForFocus(position, $"自动对焦移动电机至 {position}");
             double? vid = progress == null ? null : ConvertVid(vidMapping, position);
             progress?.Invoke(position, vid, null);
             focus.Remaining(watch.ElapsedMilliseconds, token, "自动对焦取图评价");
             CheckFocusOperation(native.EvaluateFocus(cameraHandle, focus.Evaluation, out double value, preview), focus, watch.ElapsedMilliseconds, "自动对焦取图评价", token);
             progress?.Invoke(position, vid, value);
             return value;
-        }, (position, remaining) =>
+        }, (position, _) =>
         {
-            CheckFocusOperation(native.Move(handle, position, Math.Min(settings.Timeout, remaining)), focus, watch.ElapsedMilliseconds,
-                $"移动至最佳对焦位置 {position}", token);
+            MoveForFocus(position, $"移动至最佳对焦位置 {position}");
             progress?.Invoke(position, ConvertVid(vidMapping, position), null);
         }, token, () => watch.ElapsedMilliseconds, initialPosition);
         double? finalVid = ConvertVid(vidMapping, result.Position);

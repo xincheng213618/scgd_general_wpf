@@ -46,6 +46,13 @@ namespace ProjectARVRPro
         [Description("微聚焦")] FineFocus
     }
 
+    public enum LuxVidOutputUnit
+    {
+        [Description("mm")] Millimeters,
+        [Description("m")] Meters,
+        [Description("屈光度 (D)")] Diopters
+    }
+
     [DisplayName("模组检测设置")]
     public class ProjectARVRProConfig: ViewModelBase, IConfig
     {
@@ -131,19 +138,28 @@ namespace ProjectARVRPro
         public LuxVidMeasurementMode LuxVidMode { get => _LuxVidMode; set { _LuxVidMode = value; OnPropertyChanged(); } }
         private LuxVidMeasurementMode _LuxVidMode;
 
+        [DisplayName("VID 输出单位"), Category("LUX协议")]
+        [Description("用于 JSON 和 LUX 回包数值、CSV 及 VID 上下限。切换单位后请按新单位核对限值。")]
+        public LuxVidOutputUnit LuxVidUnit { get => _LuxVidUnit; set { _LuxVidUnit = value; OnPropertyChanged(); } }
+        private LuxVidOutputUnit _LuxVidUnit;
+
         [DisplayName("VID 下限"), Category("LUX协议")]
+        [Description("使用所选 VID 输出单位，填 0 表示不限制下限。")]
         public double LuxVidMin { get => _LuxVidMin; set { _LuxVidMin = value; OnPropertyChanged(); } }
         private double _LuxVidMin;
 
         [DisplayName("VID 上限"), Category("LUX协议")]
+        [Description("使用所选 VID 输出单位，填 0 表示不限制上限。")]
         public double LuxVidMax { get => _LuxVidMax; set { _LuxVidMax = value; OnPropertyChanged(); } }
         private double _LuxVidMax;
 
         [DisplayName("VID 修正系数 K"), Category("LUX协议")]
+        [Description("无单位。将原始 VID 换为屈光度后，按 D × K + B 修正。")]
         public double LuxVidFix { get => _LuxVidFix; set { _LuxVidFix = value; OnPropertyChanged(); } }
         private double _LuxVidFix = 1;
 
-        [DisplayName("VID 修正偏移 B"), Category("LUX协议")]
+        [DisplayName("VID 修正偏移 B (D)"), Category("LUX协议")]
+        [Description("单位为屈光度 (D)。修正后再换算成所选输出单位。")]
         public double LuxVidB { get => _LuxVidB; set { _LuxVidB = value; OnPropertyChanged(); } }
         private double _LuxVidB;
 

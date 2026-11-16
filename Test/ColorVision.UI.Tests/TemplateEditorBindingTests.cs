@@ -43,7 +43,8 @@ public sealed class TemplateEditorBindingTests
                 var searchBar = (Grid)window.FindName("TemplateSearchBar");
                 var search = (TextBox)window.FindName("Searchbox");
                 Assert.Equal(Visibility.Collapsed, searchBar.Visibility);
-                Assert.Single(((GridView)list.View).Columns);
+                Assert.Equal(new[] { ColorVision.Engine.Properties.Resources.Choice, ColorVision.Engine.Properties.Resources.Name },
+                    ((GridView)list.View).Columns.Select(column => column.Header));
 
                 var findCommand = window.CommandBindings.Cast<CommandBinding>().Select(binding => binding.Command)
                     .OfType<RoutedCommand>().Single(command => command.InputGestures.OfType<KeyGesture>().Any(gesture =>
@@ -58,13 +59,22 @@ public sealed class TemplateEditorBindingTests
                 TemplateBase second = template.TemplateParams[2];
                 Assert.Same(first, list.SelectedItem);
                 var secondRow = Assert.IsType<ListViewItem>(list.ItemContainerGenerator.ContainerFromItem(second));
-                secondRow.SetCurrentValue(ListViewItem.IsSelectedProperty, true);
+                var secondCheckBox = Descendants(secondRow).OfType<CheckBox>().Single();
+                secondCheckBox.SetCurrentValue(ToggleButton.IsCheckedProperty, true);
                 Assert.Equal(new[] { first, second }, list.SelectedItems.Cast<TemplateBase>());
 
                 var export = Descendants(window).OfType<Button>().Single(button =>
                     Equals(button.ToolTip, ColorVision.Engine.Properties.Resources.Export));
                 export.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
                 Assert.Equal(new[] { first, second }, template.Exported);
+
+                var parameterArea = (Grid)window.FindName("GridProperty");
+                Assert.False(ApplicationCommands.Delete.CanExecute(null, parameterArea));
+                Assert.False(ApplicationCommands.Delete.CanExecute(null, list));
+                var deleteShortcut = Assert.Single(list.InputBindings.OfType<KeyBinding>(), binding => binding.Key == Key.Delete);
+                Assert.Equal(ModifierKeys.Alt, deleteShortcut.Modifiers);
+                var deleteCommand = Assert.IsType<RoutedCommand>(deleteShortcut.Command);
+                Assert.Empty(deleteCommand.InputGestures);
 
                 string? prompt = null;
                 window.Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(() =>
@@ -74,7 +84,7 @@ public sealed class TemplateEditorBindingTests
                     prompt = ((TextBox)dialog.FindName("messageBoxText")).Text;
                     ((Button)dialog.FindName("ButtonOK")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
                 }));
-                ApplicationCommands.Delete.Execute(null, list);
+                deleteCommand.Execute(null, list);
                 Assert.Equal(new[] { first, second }, template.Deleted);
                 Assert.Contains(first.Key, prompt);
                 Assert.Contains(second.Key, prompt);

@@ -68,7 +68,7 @@ namespace ColorVision.Solution.Explorer
             if (TerminalService.GetInstance().TrySendCommandBatch(commands))
                 return true;
 
-            errorMessage = "终端面板尚未初始化，无法提交生成命令。";
+            errorMessage = "未能启动项目命令，请检查工作目录和“项目命令”标签的状态。";
             return false;
         }
     }

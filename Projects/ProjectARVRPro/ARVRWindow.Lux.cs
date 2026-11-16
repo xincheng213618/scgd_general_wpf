@@ -8,6 +8,7 @@ using ProjectARVRPro.Exports.Lux;
 using ProjectARVRPro.ImageExport;
 using ProjectARVRPro.Services;
 using System.IO;
+using System.Globalization;
 using System.Net.Sockets;
 using System.Diagnostics;
 using System.Windows.Threading;
@@ -171,12 +172,12 @@ public partial class ARVRWindow
             {
                 var export = VidFocusImageExport.Capture(ViewResultManager.Config, session.Request.SerialNumber);
                 (succeeded, var item) = await LuxDeviceMeasurements.MeasureVidResultAsync(_luxLifetime.Token, export);
-                string row = $"2pixel_linePair,{item.Name},{item.Value},{item.Unit},{item.LowLimit},{item.UpLimit},{(item.TestResult ? "pass" : "fail")}";
+                string row = FormattableString.Invariant($"2pixel_linePair,{item.Name},{item.Value:R},{item.Unit},{item.LowLimit},{item.UpLimit},{(succeeded && item.TestResult ? "pass" : "fail")}");
                 BeginSave();
                 var csvLog = new LuxCsvWriteContext(request.SerialNumber, null, request.MachineNo, session.FlowGroup, request.SocketCode);
                 await LuxDeviceReportWriter.WriteAsync(Path.Combine(directory, Tool.SanitizeFileName($"B_{session.Request.SerialNumber}.csv")),
                     path => File.WriteAllLines(path, [ProjectARVRResultCsvExporter.Header, row]), csvLog, _luxLifetime.Token);
-                session.Complete(session.Request.MeasurementResponse(item.Value));
+                session.Complete(session.Request.MeasurementResponse(item.Value.ToString("R", CultureInfo.InvariantCulture)));
             }
             else
             {

@@ -37,34 +37,94 @@ template<class Source> struct Reader {
     const Source* raw;
     const MRawColorTransformV1& transform;
     std::size_t pixels;
-    float at(std::size_t i, int channel) const
-    {
-        const double* m = transform.coefficients;
-        if (transform.kind == 2) return static_cast<float>(m[0] * raw[i]);
-        double r, g, b;
-        if (transform.interleavedBgr) { const Source* p = raw + i * 3; r = p[2]; g = p[1]; b = p[0]; }
-        else { r = raw[i]; g = raw[pixels + i]; b = raw[pixels * 2 + i]; }
-        if (transform.kind == 1) {
-            if (channel == 0) return static_cast<float>(m[0] * r + m[3] * b);
-            return static_cast<float>(channel == 1 ? m[1] * g : m[2] * b);
-        }
-        m += channel * 3;
-        return static_cast<float>(m[0] * r + m[1] * g + m[2] * b);
-    }
 };
 
-template<class Source> bool transformTyped(int width, int height, const void* raw, const MRawColorTransformV1& t, int channel, float* output)
+template<class Action> void transformRows(int width, int height, const Action& action)
 {
-    Reader<Source> reader{static_cast<const Source*>(raw), t, static_cast<std::size_t>(width) * height};
     cv::parallel_for_(cv::Range(0, height), [&](const cv::Range& range) {
-        for (int y = range.start; y < range.end; ++y) {
-            const std::size_t first = static_cast<std::size_t>(y) * width, last = first + width;
-            for (int c = channel < 0 ? 0 : channel; c < (channel < 0 ? t.channels : channel + 1); ++c) {
-                float* plane = output + (channel < 0 ? reader.pixels * c : 0);
-                for (std::size_t i = first; i < last; ++i) plane[i] = reader.at(i, c);
+        const auto first = static_cast<std::size_t>(range.start) * width;
+        const auto last = static_cast<std::size_t>(range.end) * width;
+        action(first, last);
+    });
+}
+
+template<int Stride, class Source>
+void transformScaled(int width, int height, const Source* raw, double factor, float* output)
+{
+    transformRows(width, height, [=](std::size_t first, std::size_t last) {
+        for (auto i = first; i < last; ++i) output[i] = static_cast<float>(factor * raw[i * Stride]);
+    });
+}
+
+template<bool Interleaved, bool OneColor, class Source>
+void transformColor(int width, int height, const Source* raw, const double* coefficients, int channel, float* output)
+{
+    const auto pixels = static_cast<std::size_t>(width) * height;
+    const auto rgbAt = [=](std::size_t i) -> std::array<double, 3> {
+        if constexpr (Interleaved) {
+            const Source* bgr = raw + i * 3;
+            return { static_cast<double>(bgr[2]), static_cast<double>(bgr[1]), static_cast<double>(bgr[0]) };
+        }
+        return { static_cast<double>(raw[i]), static_cast<double>(raw[pixels + i]), static_cast<double>(raw[pixels * 2 + i]) };
+    };
+    const auto firstPlane = [](const double* m, double red, double green, double blue) {
+        if constexpr (OneColor) return static_cast<float>(m[0] * red + m[3] * blue);
+        return static_cast<float>(m[0] * red + m[1] * green + m[2] * blue);
+    };
+
+    if (channel >= 0) {
+        const double* m = coefficients + channel * 3;
+        transformRows(width, height, [=](std::size_t first, std::size_t last) {
+            for (auto i = first; i < last; ++i) {
+                const auto [red, green, blue] = rgbAt(i);
+                output[i] = firstPlane(m, red, green, blue);
+            }
+        });
+        return;
+    }
+
+    // Load and convert RGB once for the three planar results. Keep each
+    // expression in double precision, in the original operand order.
+    float* const outY = output + pixels;
+    float* const outZ = outY + pixels;
+    const double* m = coefficients;
+    transformRows(width, height, [=](std::size_t first, std::size_t last) {
+        for (auto i = first; i < last; ++i) {
+            const auto [red, green, blue] = rgbAt(i);
+            output[i] = firstPlane(m, red, green, blue);
+            if constexpr (OneColor) {
+                outY[i] = static_cast<float>(m[1] * green);
+                outZ[i] = static_cast<float>(m[2] * blue);
+            }
+            else {
+                outY[i] = firstPlane(m + 3, red, green, blue);
+                outZ[i] = firstPlane(m + 6, red, green, blue);
             }
         }
     });
+}
+
+template<class Source> bool transformTyped(int width, int height, const void* raw, const MRawColorTransformV1& t, int channel, float* output)
+{
+    const auto* input = static_cast<const Source*>(raw);
+    if (t.kind == 2) {
+        transformScaled<1>(width, height, input, t.coefficients[0], output);
+    }
+    else if (t.kind == 1 && channel > 0) {
+        if (t.interleavedBgr) transformScaled<3>(width, height, input + 2 - channel, t.coefficients[channel], output);
+        else {
+            const auto plane = static_cast<std::size_t>(width) * height * channel;
+            transformScaled<1>(width, height, input + plane, t.coefficients[channel], output);
+        }
+    }
+    else if (t.interleavedBgr) {
+        if (t.kind == 1) transformColor<true, true>(width, height, input, t.coefficients, channel, output);
+        else transformColor<true, false>(width, height, input, t.coefficients, channel, output);
+    }
+    else {
+        if (t.kind == 1) transformColor<false, true>(width, height, input, t.coefficients, channel, output);
+        else transformColor<false, false>(width, height, input, t.coefficients, channel, output);
+    }
     return true;
 }
 

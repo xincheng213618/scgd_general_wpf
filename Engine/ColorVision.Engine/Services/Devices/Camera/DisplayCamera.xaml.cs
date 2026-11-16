@@ -305,6 +305,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
         private bool _isOpeningLocalVideo;
         private MsgRecord? _panelOperation;
         private CancellationTokenSource? _panelAutoFocusCancellation;
+        private Button? _panelAutoFocusButton;
         private Configs.ConfigCamera? _panelConfig;
         private DVRectangleText? _localVideoRoiVisual;
         private bool _isSyncingLocalVideoRoi;
@@ -375,6 +376,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             Capture.FineFocusButton.Click += (sender, _) => StartAutoFocus(sender, fineOnly: true);
             Capture.EditFocusButton.Click += EditAutoFocus;
             Capture.MoveButton.Click += Move_Click;
+            Capture.MoveToVidButton.Click += MoveToVid_Click;
             Capture.JogLeftButton.Click += JogMotor_Click;
             Capture.JogRightButton.Click += JogMotor_Click;
             Capture.ApertureButton.Click += Move1_Click;
@@ -1012,22 +1014,19 @@ namespace ColorVision.Engine.Services.Devices.Camera
             Actions.ButtonInit.Visibility = Visible(showProblem && status == DeviceStatusType.UnInit);
             Actions.ButtonOffline.Visibility = Visible(showProblem && status == DeviceStatusType.OffLine);
             Capture.Visibility = Visible(state.ShowParameters);
-            Capture.IsEnabled = !panelOperating;
-            Capture.MotorPanel.IsEnabled = !state.Busy;
+            bool stoppingFocus = _panelAutoFocusCancellation?.IsCancellationRequested == true;
+            Capture.SetFocusOperationState(panelOperating, state.Busy, _panelAutoFocusButton,
+                _panelOperation?.IsSend == true && !stoppingFocus, stoppingFocus);
             Capture.ReadFilterButton.IsEnabled = !state.Busy;
             Capture.ChangeFilterButton.IsEnabled = !state.Busy;
-            StopAutoFocusButton.Visibility = Visible(_panelAutoFocusCancellation != null);
-            if (_panelAutoFocusCancellation != null)
-            {
-                StopAutoFocusButton.IsEnabled = _panelOperation?.IsSend == true && !_panelAutoFocusCancellation.IsCancellationRequested;
-                StopAutoFocusButton.Content = EngineLocalization.Get(_panelAutoFocusCancellation.IsCancellationRequested
-                    ? "CameraPanel_AutoFocusStopping" : "CameraPanel_StopAutoFocus");
-            }
             Capture.AutoExposureButton.IsEnabled = state.CanCapture;
             Capture.AutoExposureButton.Visibility = Visible(_autoExpTimeTemplateOptions.Count > 0);
             Capture.AutoExposureButton.ToolTip = Device.RoutesLocally ? null : EngineLocalization.Get("独立自曝沿用相机当前增益；拍前自曝使用本次取图增益");
             Capture.CaptureOnlyPanel.Visibility = Visible(!previewing && !Device.CameraBackend.VideoOwned);
             Capture.FineFocusButton.Visibility = Visible(Device.RoutesLocally);
+            var motor = Device.PhyCamera?.Config.MotorConfig ?? Device.Config.MotorConfig;
+            Capture.VidTargetPanel.Visibility = Visible(Device.CameraBackend.LocalOwned && !previewing && !Device.CameraBackend.VideoOwned
+                && motor.IsUseMotor && motor.VID?.IsUseVID == true);
             Capture.AveragePanel.Visibility = Visible(!previewing && !Device.CameraBackend.VideoOwned);
             bool calibrationGain = DisplayCameraConfig.IsGainControlledByCalibrationGroup;
             Capture.GainPanel.IsEnabled = previewing || !calibrationGain;
@@ -1063,6 +1062,8 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 if (!ReferenceEquals(_panelOperation, sender)) return;
                 bool canceledByUser = state == MsgRecordState.Fail && _panelAutoFocusCancellation?.IsCancellationRequested == true
                     && sender is MsgRecord canceled && canceled.MsgReturn.Code == DeviceCamera.LocalAutoFocusCanceledCode;
+                if (_panelAutoFocusButton is { } focusButton) Capture.ResetFocusButton(focusButton);
+                _panelAutoFocusButton = null;
                 _panelAutoFocusCancellation = null;
                 _panelOperation = null;
                 RefreshPanelState();
@@ -1497,7 +1498,17 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         private void StartAutoFocus(object sender, bool fineOnly = false)
         {
-            if (IsDisposed || _panelOperation != null || _isOpeningLocalVideo || (fineOnly && !Device.CameraBackend.OpensLocally)) return;
+            if (IsDisposed || sender is not Button button) return;
+            if (ReferenceEquals(button, _panelAutoFocusButton))
+            {
+                if (_panelOperation?.IsSend == true && _panelAutoFocusCancellation is { IsCancellationRequested: false } active)
+                {
+                    active.Cancel();
+                    RefreshPanelState();
+                }
+                return;
+            }
+            if (_panelOperation != null || _isOpeningLocalVideo || (fineOnly && !Device.CameraBackend.OpensLocally)) return;
             if (!CameraTemplateSelection.TryResolveRequired(Capture.ComboxAutoFocus.SelectedItem, out AutoFocusParam param))
             {
                 ShowRequiredTemplateMessage(Properties.Resources.AutoFocusTemplate);
@@ -1510,6 +1521,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 try { msgRecord = Device.AutoFocusLocally(param, cancellation.Token, fineOnly); }
                 catch { cancellation.Dispose(); throw; }
                 _panelAutoFocusCancellation = cancellation;
+                _panelAutoFocusButton = button;
                 msgRecord.MsgRecordStateChanged += DisposeCancellation;
                 DisposeCancellation(null, msgRecord.MsgRecordState);
 
@@ -1525,14 +1537,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 msgRecord = DService.AutoFocus(param);
             }
             TrackPanelOperation(msgRecord);
-            ServicesHelper.SendCommand(sender, msgRecord);
-        }
-
-        private void StopLocalAutoFocus_Click(object sender, RoutedEventArgs e)
-        {
-            if (_panelOperation?.IsSend != true || _panelAutoFocusCancellation is not { IsCancellationRequested: false } cancellation) return;
-            cancellation.Cancel();
-            RefreshPanelState();
+            if (_panelAutoFocusButton == null) ServicesHelper.SendCommand(button, msgRecord);
         }
 
         private void MenuItem_Template(object sender, RoutedEventArgs e)
@@ -1607,15 +1612,11 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         private void Move_Click(object sender, RoutedEventArgs e)
         {
-            if (sender is Button button)
-            {
-                if (int.TryParse(Capture.TextPos.Text, out int pos))
-                {
-                    var msgRecord = DService.Move(pos, Capture.CheckBoxIsAbs.IsChecked ?? true);
-                    TrackPanelOperation(msgRecord);
-                    ServicesHelper.SendCommand(button, msgRecord);
-                }
-            }
+            if (sender is not Button button || !int.TryParse(Capture.TextPos.Text, out int pos)) return;
+            bool absolute = Capture.CheckBoxIsAbs.IsChecked ?? true;
+            MsgRecord record = Device.CameraBackend.OpensLocally ? Device.MoveMotorAndCaptureLocally(pos, absolute) : DService.Move(pos, absolute);
+            TrackPanelOperation(record);
+            ServicesHelper.SendCommand(button, record);
         }
 
 
@@ -1631,7 +1632,26 @@ namespace ColorVision.Engine.Services.Devices.Camera
             }
 
             int offset = ReferenceEquals(sender, Capture.JogLeftButton) ? -step : step;
-            TrackPanelOperation(DService.Move(offset, IsbAbs: false));
+            MsgRecord record = Device.CameraBackend.OpensLocally
+                ? Device.MoveMotorAndCaptureLocally(offset, absolute: false) : DService.Move(offset, IsbAbs: false);
+            TrackPanelOperation(record);
+        }
+
+        private void MoveToVid_Click(object sender, RoutedEventArgs e)
+        {
+            if (IsDisposed || !Device.CameraBackend.LocalOwned || _panelOperation != null || _isOpeningLocalVideo
+                || DisplayCameraConfig.IsLocalVideoOpen || Device.CameraBackend.VideoOwned) return;
+            if (!double.TryParse(Capture.VidTargetBox.Text, out double targetMm) || !double.IsFinite(targetMm))
+            {
+                MessageBox.Show(Application.Current.GetActiveWindow(), EngineLocalization.Get("CameraPanel_VidMoveInvalid"), "ColorVision");
+                Capture.VidTargetBox.Focus();
+                Capture.VidTargetBox.SelectAll();
+                return;
+            }
+
+            MsgRecord record = Device.MoveToVidLocally(targetMm);
+            TrackPanelOperation(record);
+            ServicesHelper.SendCommand(sender, record);
         }
 
         private void GoHome_Click(object sender, RoutedEventArgs e)
@@ -1807,6 +1827,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             _panelConfig = null;
             if (_panelOperation?.IsSend == true) _panelAutoFocusCancellation?.Cancel();
             _panelAutoFocusCancellation = null;
+            _panelAutoFocusButton = null;
             if (_panelOperation != null) _panelOperation.MsgRecordStateChanged -= PanelOperation_StateChanged;
             _panelOperation = null;
             PhyCameraManager.GetInstance().Loaded -= PhyCameraManager_Loaded;

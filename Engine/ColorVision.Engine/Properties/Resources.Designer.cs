@@ -1760,6 +1760,24 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
+        ///   查找类似 自动保存对焦结果 的本地化字符串。
+        /// </summary>
+        public static string CameraFocusChart_AutoSave {
+            get {
+                return ResourceManager.GetString("CameraFocusChart_AutoSave", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 本地自动聚焦或微对焦成功后，保存最佳位置的标记图、对焦曲线和采样 CSV。 的本地化字符串。
+        /// </summary>
+        public static string CameraFocusChart_AutoSaveHint {
+            get {
+                return ResourceManager.GetString("CameraFocusChart_AutoSaveHint", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 最佳位置 {0}　评价值 {1:G6} 的本地化字符串。
         /// </summary>
         public static string CameraFocusChart_Best {
@@ -1774,6 +1792,15 @@ namespace ColorVision.Engine.Properties {
         public static string CameraFocusChart_BestWithVid {
             get {
                 return ResourceManager.GetString("CameraFocusChart_BestWithVid", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 电机位置 {0}　VID {1:G8} 的本地化字符串。
+        /// </summary>
+        public static string CameraFocusChart_CurrentPositionAndVid {
+            get {
+                return ResourceManager.GetString("CameraFocusChart_CurrentPositionAndVid", resourceCulture);
             }
         }
         
@@ -1828,6 +1855,24 @@ namespace ColorVision.Engine.Properties {
         public static string CameraFocusChart_Sample {
             get {
                 return ResourceManager.GetString("CameraFocusChart_Sample", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 对焦结果保存目录 的本地化字符串。
+        /// </summary>
+        public static string CameraFocusChart_SaveDirectory {
+            get {
+                return ResourceManager.GetString("CameraFocusChart_SaveDirectory", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 留空时使用“文档\ColorVision\AutoFocus”。结果按设备、日期和对焦时间归档。 的本地化字符串。
+        /// </summary>
+        public static string CameraFocusChart_SaveDirectoryHint {
+            get {
+                return ResourceManager.GetString("CameraFocusChart_SaveDirectoryHint", resourceCulture);
             }
         }
         
@@ -1940,6 +1985,24 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
+        ///   查找类似 已停止对焦 的本地化字符串。
+        /// </summary>
+        public static string CameraPanel_AutoFocusStopped {
+            get {
+                return ResourceManager.GetString("CameraPanel_AutoFocusStopped", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 正在停止… 的本地化字符串。
+        /// </summary>
+        public static string CameraPanel_AutoFocusStopping {
+            get {
+                return ResourceManager.GetString("CameraPanel_AutoFocusStopping", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 平均 的本地化字符串。
         /// </summary>
         public static string CameraPanel_Averages {
@@ -1976,11 +2039,128 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
+        ///   查找类似 微对焦 的本地化字符串。
+        /// </summary>
+        public static string CameraPanel_FineFocus {
+            get {
+                return ResourceManager.GetString("CameraPanel_FineFocus", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 从当前位置开始，仅在附近细搜 的本地化字符串。
+        /// </summary>
+        public static string CameraPanel_FineFocusHint {
+            get {
+                return ResourceManager.GetString("CameraPanel_FineFocusHint", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 电机当前位置不在对焦模板的搜索范围内。请先移动到焦点附近，再开始微对焦。 的本地化字符串。
+        /// </summary>
+        public static string CameraPanel_FineFocusOutsideRange {
+            get {
+                return ResourceManager.GetString("CameraPanel_FineFocusOutsideRange", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 本机参数 的本地化字符串。
         /// </summary>
         public static string CameraPanel_LocalExposure {
             get {
                 return ResourceManager.GetString("CameraPanel_LocalExposure", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 光圈 的本地化字符串。
+        /// </summary>
+        public static string CameraPanel_MotorAperture {
+            get {
+                return ResourceManager.GetString("CameraPanel_MotorAperture", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 回原点 的本地化字符串。
+        /// </summary>
+        public static string CameraPanel_MotorHome {
+            get {
+                return ResourceManager.GetString("CameraPanel_MotorHome", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 向左点动 的本地化字符串。
+        /// </summary>
+        public static string CameraPanel_MotorJogLeft {
+            get {
+                return ResourceManager.GetString("CameraPanel_MotorJogLeft", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 向右点动 的本地化字符串。
+        /// </summary>
+        public static string CameraPanel_MotorJogRight {
+            get {
+                return ResourceManager.GetString("CameraPanel_MotorJogRight", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 步长 的本地化字符串。
+        /// </summary>
+        public static string CameraPanel_MotorJogStep {
+            get {
+                return ResourceManager.GetString("CameraPanel_MotorJogStep", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 请输入正整数步长（电机位置单位）。 的本地化字符串。
+        /// </summary>
+        public static string CameraPanel_MotorJogStepHint {
+            get {
+                return ResourceManager.GetString("CameraPanel_MotorJogStepHint", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 电机已到位置 {0}，取图失败：{1} 的本地化字符串。
+        /// </summary>
+        public static string CameraPanel_MotorMoveCaptureFailed {
+            get {
+                return ResourceManager.GetString("CameraPanel_MotorMoveCaptureFailed", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 位置 的本地化字符串。
+        /// </summary>
+        public static string CameraPanel_MotorPosition {
+            get {
+                return ResourceManager.GetString("CameraPanel_MotorPosition", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 读取 的本地化字符串。
+        /// </summary>
+        public static string CameraPanel_MotorReadPosition {
+            get {
+                return ResourceManager.GetString("CameraPanel_MotorReadPosition", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 设定 的本地化字符串。
+        /// </summary>
+        public static string CameraPanel_MotorSetAperture {
+            get {
+                return ResourceManager.GetString("CameraPanel_MotorSetAperture", resourceCulture);
             }
         }
         
@@ -2057,6 +2237,15 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
+        ///   查找类似 相机正在操作，请结束当前操作后再切换视频模式。 的本地化字符串。
+        /// </summary>
+        public static string CameraPanel_PreviewWhileBusy {
+            get {
+                return ResourceManager.GetString("CameraPanel_PreviewWhileBusy", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 已连接 · 待机 的本地化字符串。
         /// </summary>
         public static string CameraPanel_Ready {
@@ -2093,6 +2282,24 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
+        ///   查找类似 停止对焦 的本地化字符串。
+        /// </summary>
+        public static string CameraPanel_StopAutoFocus {
+            get {
+                return ResourceManager.GetString("CameraPanel_StopAutoFocus", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 等待当前移动或取图结束，停止后续对焦动作。 的本地化字符串。
+        /// </summary>
+        public static string CameraPanel_StopAutoFocusHint {
+            get {
+                return ResourceManager.GetString("CameraPanel_StopAutoFocusHint", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 关闭视频 的本地化字符串。
         /// </summary>
         public static string CameraPanel_StopPreview {
@@ -2107,6 +2314,69 @@ namespace ColorVision.Engine.Properties {
         public static string CameraPanel_StopPreviewHint {
             get {
                 return ResourceManager.GetString("CameraPanel_StopPreviewHint", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 按 VID 移动 的本地化字符串。
+        /// </summary>
+        public static string CameraPanel_VidMove {
+            get {
+                return ResourceManager.GetString("CameraPanel_VidMove", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 请先启用 VID 并配置映射文件。 的本地化字符串。
+        /// </summary>
+        public static string CameraPanel_VidMoveDisabled {
+            get {
+                return ResourceManager.GetString("CameraPanel_VidMoveDisabled", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 输入带符号的 VID 毫米值，在配置的电机移动区间内按映射换算并移动电机。 的本地化字符串。
+        /// </summary>
+        public static string CameraPanel_VidMoveHint {
+            get {
+                return ResourceManager.GetString("CameraPanel_VidMoveHint", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 请输入有效的 VID 毫米值。 的本地化字符串。
+        /// </summary>
+        public static string CameraPanel_VidMoveInvalid {
+            get {
+                return ResourceManager.GetString("CameraPanel_VidMoveInvalid", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 目标 VID 在配置的电机移动区间 {0}–{1} 内没有可达位置。 的本地化字符串。
+        /// </summary>
+        public static string CameraPanel_VidMoveUnreachable {
+            get {
+                return ResourceManager.GetString("CameraPanel_VidMoveUnreachable", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 目标 VID (mm) 的本地化字符串。
+        /// </summary>
+        public static string CameraPanel_VidTarget {
+            get {
+                return ResourceManager.GetString("CameraPanel_VidTarget", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 等待取图结束后关闭… 的本地化字符串。
+        /// </summary>
+        public static string CameraPanel_WaitingToClose {
+            get {
+                return ResourceManager.GetString("CameraPanel_WaitingToClose", resourceCulture);
             }
         }
         
@@ -5720,6 +5990,15 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
+        ///   查找类似 微聚焦 的本地化字符串。
+        /// </summary>
+        public static string FineFocus {
+            get {
+                return ResourceManager.GetString("FineFocus", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 翻转 的本地化字符串。
         /// </summary>
         public static string Flip {
@@ -5918,6 +6197,33 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
+        ///   查找类似 取图前聚焦 的本地化字符串。
+        /// </summary>
+        public static string Flow_LocalCamera_FocusMode {
+            get {
+                return ResourceManager.GetString("Flow_LocalCamera_FocusMode", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 微聚焦从当前电机位置附近找焦。全范围聚焦按模板范围和设备的搜索方式找焦。 的本地化字符串。
+        /// </summary>
+        public static string Flow_LocalCamera_FocusModeHint {
+            get {
+                return ResourceManager.GetString("Flow_LocalCamera_FocusModeHint", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 留空时使用相机面板当前选择的自动对焦模板。 的本地化字符串。
+        /// </summary>
+        public static string Flow_LocalCamera_FocusTemplateHint {
+            get {
+                return ResourceManager.GetString("Flow_LocalCamera_FocusTemplateHint", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 X 表示上下翻转，Y 表示左右镜像，XY 表示旋转 180°；不支持 90°/270°旋转。未选择校正模板时不会提前翻转 RAW，方向配置会保留到下游本地校正完成后再应用。 保存文件默认开启，写入完成后才继续。关闭保存文件后，图像和后续追加的色度参数仅保留在缓存；旧版服务需要磁盘文件时应开启保存文件。 的本地化字符串。
         /// </summary>
         public static string Flow_LocalCamera_Notes {
@@ -5927,7 +6233,7 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
-        ///   查找类似 相机采集 RAW → 空间/普通校正 → 保留色度校正参数 → RAW 图像翻转 → 按节点设置保存或仅缓存 CVRAW → 写数据库并通知相机页。相机页与下游 POI 使用校正后的 RAW 和参数按需计算色度，坐标对应最终方向。 的本地化字符串。
+        ///   查找类似 按节点设置聚焦后采集 RAW → 空间/普通校正 → 保留色度校正参数 → RAW 图像翻转 → 保存或仅缓存 CVRAW → 写数据库并通知相机页。相机页与下游 POI 使用校正后的 RAW 和参数按需计算色度，坐标对应最终方向。 的本地化字符串。
         /// </summary>
         public static string Flow_LocalCamera_Processing {
             get {
@@ -6380,6 +6686,24 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
+        ///   查找类似 配置无效 的本地化字符串。
+        /// </summary>
+        public static string Flow_PostProcess_InvalidConfiguration {
+            get {
+                return ResourceManager.GetString("Flow_PostProcess_InvalidConfiguration", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 无法读取已保存的后处理参数。请编辑此项并重新配置。 的本地化字符串。
+        /// </summary>
+        public static string Flow_PostProcess_InvalidConfigurationHint {
+            get {
+                return ResourceManager.GetString("Flow_PostProcess_InvalidConfigurationHint", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 动作配置 的本地化字符串。
         /// </summary>
         public static string Flow_PreProcess_ActionConfig {
@@ -6524,6 +6848,15 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
+        ///   查找类似 无法读取前处理配置。请恢复有效配置文件，再点击“重新加载”。 的本地化字符串。
+        /// </summary>
+        public static string Flow_PreProcess_ConfigUnavailable {
+            get {
+                return ResourceManager.GetString("Flow_PreProcess_ConfigUnavailable", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 停用 的本地化字符串。
         /// </summary>
         public static string Flow_PreProcess_DisabledStatus {
@@ -6538,6 +6871,33 @@ namespace ColorVision.Engine.Properties {
         public static string Flow_PreProcess_EnabledStatus {
             get {
                 return ResourceManager.GetString("Flow_PreProcess_EnabledStatus", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 配置无效 的本地化字符串。
+        /// </summary>
+        public static string Flow_PreProcess_InvalidActionConfig {
+            get {
+                return ResourceManager.GetString("Flow_PreProcess_InvalidActionConfig", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 已保存的参数无法读取。请禁用此动作，或删除后重新添加并配置。 的本地化字符串。
+        /// </summary>
+        public static string Flow_PreProcess_InvalidActionConfigHint {
+            get {
+                return ResourceManager.GetString("Flow_PreProcess_InvalidActionConfigHint", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 启用的前处理动作“{0}”配置无效。请禁用或重新配置后再运行。 的本地化字符串。
+        /// </summary>
+        public static string Flow_PreProcess_InvalidEnabledAction {
+            get {
+                return ResourceManager.GetString("Flow_PreProcess_InvalidEnabledAction", resourceCulture);
             }
         }
         
@@ -6632,6 +6992,51 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
+        ///   查找类似 请等待流程结束，或停止流程后再关闭窗口。 的本地化字符串。
+        /// </summary>
+        public static string Flow_StandaloneCloseWhileRunning {
+            get {
+                return ResourceManager.GetString("Flow_StandaloneCloseWhileRunning", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 流程文件已在磁盘上更改或删除，当前修改尚未保存。 的本地化字符串。
+        /// </summary>
+        public static string Flow_StandaloneFileConflict {
+            get {
+                return ResourceManager.GetString("Flow_StandaloneFileConflict", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 磁盘上的流程文件已更改或删除。是否将当前修改保存到新的 STN 文件？ 的本地化字符串。
+        /// </summary>
+        public static string Flow_StandaloneFileCopyPrompt {
+            get {
+                return ResourceManager.GetString("Flow_StandaloneFileCopyPrompt", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 请选择一个尚不存在的文件名。 的本地化字符串。
+        /// </summary>
+        public static string Flow_StandaloneFileCopyTargetExists {
+            get {
+                return ResourceManager.GetString("Flow_StandaloneFileCopyTargetExists", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 流程文件正在由另一个窗口保存，请稍后重试。 的本地化字符串。
+        /// </summary>
+        public static string Flow_StandaloneFileSaveBusy {
+            get {
+                return ResourceManager.GetString("Flow_StandaloneFileSaveBusy", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 启动 {0} 失败：{1} 的本地化字符串。
         /// </summary>
         public static string Flow_StartServiceFailed {
@@ -6691,6 +7096,15 @@ namespace ColorVision.Engine.Properties {
         public static string Focus {
             get {
                 return ResourceManager.GetString("Focus", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 关闭 的本地化字符串。
+        /// </summary>
+        public static string FocusDisabled {
+            get {
+                return ResourceManager.GetString("FocusDisabled", resourceCulture);
             }
         }
         
@@ -6871,6 +7285,15 @@ namespace ColorVision.Engine.Properties {
         public static string FullBackup {
             get {
                 return ResourceManager.GetString("FullBackup", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 全范围聚焦 的本地化字符串。
+        /// </summary>
+        public static string FullFocus {
+            get {
+                return ResourceManager.GetString("FullFocus", resourceCulture);
             }
         }
         
@@ -9006,6 +9429,42 @@ namespace ColorVision.Engine.Properties {
         public static string MotorConfig {
             get {
                 return ResourceManager.GetString("MotorConfig", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 粗扫提前停止连续低点数 的本地化字符串。
+        /// </summary>
+        public static string MotorConfig_FocusEarlyStopCount {
+            get {
+                return ResourceManager.GetString("MotorConfig_FocusEarlyStopCount", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 越过峰值后需要连续低于比例的采样点数，至少为 1，默认 2。 的本地化字符串。
+        /// </summary>
+        public static string MotorConfig_FocusEarlyStopCountHint {
+            get {
+                return ResourceManager.GetString("MotorConfig_FocusEarlyStopCountHint", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 粗扫提前停止比例 的本地化字符串。
+        /// </summary>
+        public static string MotorConfig_FocusEarlyStopRatio {
+            get {
+                return ResourceManager.GetString("MotorConfig_FocusEarlyStopRatio", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 本地全范围粗扫越过峰值后，若连续若干点低于“峰值 × 此比例”且峰值前也出现过低点，即停止粗扫。0 表示关闭；建议 0.3–0.5。存在多个清晰峰时请保持关闭。 的本地化字符串。
+        /// </summary>
+        public static string MotorConfig_FocusEarlyStopRatioHint {
+            get {
+                return ResourceManager.GetString("MotorConfig_FocusEarlyStopRatioHint", resourceCulture);
             }
         }
         
@@ -12105,69 +12564,6 @@ namespace ColorVision.Engine.Properties {
         public static string ServiceIdentifier {
             get {
                 return ResourceManager.GetString("ServiceIdentifier", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 Algorithm服务日志 的本地化字符串。
-        /// </summary>
-        public static string ServiceLogAlgorithm {
-            get {
-                return ResourceManager.GetString("ServiceLogAlgorithm", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 Camera服务日志 的本地化字符串。
-        /// </summary>
-        public static string ServiceLogCamera {
-            get {
-                return ResourceManager.GetString("ServiceLogCamera", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 CVOLED服务日志 的本地化字符串。
-        /// </summary>
-        public static string ServiceLogCVOLED {
-            get {
-                return ResourceManager.GetString("ServiceLogCVOLED", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 dev服务日志 的本地化字符串。
-        /// </summary>
-        public static string ServiceLogDev {
-            get {
-                return ResourceManager.GetString("ServiceLogDev", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 SMU服务日志 的本地化字符串。
-        /// </summary>
-        public static string ServiceLogSMU {
-            get {
-                return ResourceManager.GetString("ServiceLogSMU", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 Spectrum服务日志 的本地化字符串。
-        /// </summary>
-        public static string ServiceLogSpectrum {
-            get {
-                return ResourceManager.GetString("ServiceLogSpectrum", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 x64服务日志 的本地化字符串。
-        /// </summary>
-        public static string ServiceLogX64 {
-            get {
-                return ResourceManager.GetString("ServiceLogX64", resourceCulture);
             }
         }
         
@@ -16229,6 +16625,15 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
+        ///   查找类似 保存到模板 的本地化字符串。
+        /// </summary>
+        public static string 保存到模板 {
+            get {
+                return ResourceManager.GetString("保存到模板", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 保存参数 的本地化字符串。
         /// </summary>
         public static string 保存参数 {
@@ -17170,6 +17575,24 @@ namespace ColorVision.Engine.Properties {
         public static string 单色校正系数 {
             get {
                 return ResourceManager.GetString("单色校正系数", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 单通道亮度修正 的本地化字符串。
+        /// </summary>
+        public static string 单通道亮度修正 {
+            get {
+                return ResourceManager.GetString("单通道亮度修正", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 单通道亮度校正文件 的本地化字符串。
+        /// </summary>
+        public static string 单通道亮度校正文件 {
+            get {
+                return ResourceManager.GetString("单通道亮度校正文件", resourceCulture);
             }
         }
         
@@ -19708,6 +20131,24 @@ namespace ColorVision.Engine.Properties {
         public static string 按_Ctrl_选择多条扫描记录进行比较 {
             get {
                 return ResourceManager.GetString("按 Ctrl 选择多条扫描记录进行比较", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 按参考宽度 的本地化字符串。
+        /// </summary>
+        public static string 按参考宽度 {
+            get {
+                return ResourceManager.GetString("按参考宽度", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 按参考高度 的本地化字符串。
+        /// </summary>
+        public static string 按参考高度 {
+            get {
+                return ResourceManager.GetString("按参考高度", resourceCulture);
             }
         }
         
@@ -25036,6 +25477,15 @@ namespace ColorVision.Engine.Properties {
         public static string 选择创建来源以查看预览 {
             get {
                 return ResourceManager.GetString("选择创建来源以查看预览", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 选择原单通道亮度校正文件 的本地化字符串。
+        /// </summary>
+        public static string 选择原单通道亮度校正文件 {
+            get {
+                return ResourceManager.GetString("选择原单通道亮度校正文件", resourceCulture);
             }
         }
         

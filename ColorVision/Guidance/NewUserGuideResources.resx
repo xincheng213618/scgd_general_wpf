@@ -17,8 +17,8 @@
   <data name="CompleteAction" xml:space="preserve"><value>开始使用</value></data>
   <data name="MenuStepTitle" xml:space="preserve"><value>顶部菜单</value></data>
   <data name="MenuStepDescription" xml:space="preserve"><value>通过顶部菜单访问文件、模板、工具、视图等功能。当前高亮区域可直接操作。</value></data>
-  <data name="ExplorerStepTitle" xml:space="preserve"><value>设备与解决方案</value></data>
-  <data name="ExplorerStepDescription" xml:space="preserve"><value>左侧面板可在“设备控制”和“解决方案资源管理器”之间切换。前者用于查看和操作设备，后者用于浏览项目、流程与文件。</value></data>
+  <data name="ExplorerStepTitle" xml:space="preserve"><value>设备控制</value></data>
+  <data name="ExplorerStepDescription" xml:space="preserve"><value>在左侧查看和操作设备。需要浏览项目、流程与文件时，从“视图”菜单打开“解决方案资源管理器”。</value></data>
   <data name="WorkspaceStepTitle" xml:space="preserve"><value>主工作区</value></data>
   <data name="WorkspaceStepDescription" xml:space="preserve"><value>工作流程、相机、算法与校准以标签页呈现。切换标签页即可进入对应的配置与操作界面。</value></data>
   <data name="StatusStepTitle" xml:space="preserve"><value>运行状态</value></data>

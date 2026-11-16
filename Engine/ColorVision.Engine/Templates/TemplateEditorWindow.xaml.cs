@@ -54,6 +54,8 @@ namespace ColorVision.Engine.Templates
     /// </summary>
     public partial class TemplateEditorWindow : Window
     {
+        public static RoutedCommand DeleteTemplatesCommand { get; } = new(nameof(DeleteTemplatesCommand), typeof(TemplateEditorWindow));
+
         private const string TemplateDragFormat = "ColorVision.TemplateEditor.Template";
         private bool savingOrder;
 
@@ -74,7 +76,7 @@ namespace ColorVision.Engine.Templates
                 if (!TrySaveEditor()) return;
                 HandyControl.Controls.Growl.SuccessGlobal(string.Format(Properties.Resources.TemplateEditor_SaveSuccess, Title));
             }, (s, e) => e.CanExecute = true));
-            MainGrid.CommandBindings.Add(new CommandBinding(ApplicationCommands.Delete, (s, e) => Delete(), (s, e) => e.CanExecute = ListView1.SelectedIndex > -1));
+            MainGrid.CommandBindings.Add(new CommandBinding(DeleteTemplatesCommand, (s, e) => Delete(), (s, e) => e.CanExecute = ListView1.SelectedIndex > -1));
             MainGrid.CommandBindings.Add(new CommandBinding(Commands.ReName, (s, e) =>
             {
                 if (e.Parameter is TemplateBase row) BeginRename(row);
@@ -93,7 +95,7 @@ namespace ColorVision.Engine.Templates
                 GridViewColumnVisibility.AddGridViewColumn(gridView.Columns, GridViewColumnVisibilitys);
                 Config.GridViewColumnVisibilitys.CopyToGridView(GridViewColumnVisibilitys);
                 foreach (var column in GridViewColumnVisibilitys)
-                    column.IsVisible = Equals(column.ColumnName, Properties.Resources.Name);
+                    column.IsVisible = Equals(column.ColumnName, Properties.Resources.Choice) || Equals(column.ColumnName, Properties.Resources.Name);
                 Config.GridViewColumnVisibilitys = GridViewColumnVisibilitys;
                 GridViewColumnVisibility.AdjustGridViewColumnAuto(gridView.Columns, GridViewColumnVisibilitys);
             }
@@ -102,15 +104,15 @@ namespace ColorVision.Engine.Templates
             {
                 GridProperty.Visibility = Visibility.Collapsed;
                 Grid.SetColumnSpan(TemplateGrid, 2);
+                TemplateGrid.Margin = new Thickness(8);
 
-                MinWidth = 360;
-                Width = 360;
+                MinWidth = 440;
+                Width = 440;
             }
 
             if (ITemplate.IsUserControl)
             {
                 GridProperty.Children.Clear();
-                GridProperty.Margin = new Thickness(5, 5, 5, 5);
                 UserControl userControl = ITemplate.GetUserControl();
                 if (userControl.Parent is Grid grid)
                     grid.Children.Remove(userControl);
@@ -121,15 +123,22 @@ namespace ColorVision.Engine.Templates
                 }
                 if (!double.IsNaN(userControl.Width))
                 {
-                    Width = userControl.Width + 350;
+                    Width = userControl.Width + 240;
                     userControl.Width = double.NaN;
                 }
                 else
                 {
-                    Width = Width + 350;
+                    Width = Width + 240;
                 }
                 TemplateGrid.MinWidth = 200;
                 ScrollInfo.HorizontalAlignment = HorizontalAlignment.Right;
+            }
+            else if (!ITemplate.IsSideHide)
+            {
+                var themeManager = ThemeManager.Current;
+                Loaded += (_, _) => UpdatePropertyGridTheme(themeManager.CurrentUITheme);
+                themeManager.AppearanceChanged += UpdatePropertyGridTheme;
+                Closed += (_, _) => themeManager.AppearanceChanged -= UpdatePropertyGridTheme;
             }
 
             Title = ITemplate.Title;
@@ -167,6 +176,37 @@ namespace ColorVision.Engine.Templates
         }
 
         private TemplateBase LastSelectTemplateBase;
+
+        private void UpdatePropertyGridTheme(Theme _)
+        {
+            System.Drawing.Color GetColor(string key, System.Drawing.Color fallback)
+            {
+                if (TryFindResource(key) is not SolidColorBrush brush) return fallback;
+                return System.Drawing.Color.FromArgb(brush.Color.R, brush.Color.G, brush.Color.B);
+            }
+
+            var background = GetColor("GlobalBackground", System.Drawing.SystemColors.Window);
+            var surface = GetColor("ButtonBackground", System.Drawing.SystemColors.Control);
+            var foreground = GetColor("GlobalTextBrush", System.Drawing.SystemColors.WindowText);
+            var border = GetColor("ButtonBorderBrush", System.Drawing.SystemColors.ControlLight);
+            PropertyGrid1.BackColor = surface;
+            PropertyGrid1.ForeColor = foreground;
+            PropertyGrid1.ViewBackColor = background;
+            PropertyGrid1.ViewForeColor = foreground;
+            PropertyGrid1.ViewBorderColor = border;
+            PropertyGrid1.LineColor = surface;
+            PropertyGrid1.CategoryForeColor = foreground;
+            PropertyGrid1.CategorySplitterColor = surface;
+            PropertyGrid1.HelpBackColor = surface;
+            PropertyGrid1.HelpForeColor = foreground;
+            PropertyGrid1.HelpBorderColor = border;
+            PropertyGrid1.CommandsBackColor = surface;
+            PropertyGrid1.CommandsForeColor = foreground;
+            PropertyGrid1.CommandsBorderColor = border;
+            PropertyGrid1.DisabledItemForeColor = GetColor("SecondaryTextBrush", System.Drawing.SystemColors.GrayText);
+            PropertyGrid1.SelectedItemWithFocusBackColor = GetColor("PrimaryBrush", System.Drawing.SystemColors.Highlight);
+            PropertyGrid1.SelectedItemWithFocusForeColor = System.Drawing.Color.White;
+        }
 
         public void ReName()
         {

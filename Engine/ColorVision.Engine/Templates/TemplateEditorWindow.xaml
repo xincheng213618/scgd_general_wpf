@@ -12,41 +12,105 @@
         xmlns:commands="clr-namespace:ColorVision.UI;assembly=ColorVision.Common"
         ShowInTaskbar="False"
         d:DataContext="{d:DesignInstance local:TemplateSetting}"
-        Height="600" Width="700" MinWidth="600" Background="{DynamicResource GlobalBackground}" WindowStartupLocation="CenterOwner" Initialized="Window_Initialized">
+        Height="640" Width="700" MinWidth="600" FontSize="13" UseLayoutRounding="True" Background="{DynamicResource GlobalBackground}" WindowStartupLocation="CenterOwner" Initialized="Window_Initialized">
     <Window.Resources>
+        <SolidColorBrush x:Key="TemplateChromeHoverBrush" Color="{DynamicResource CV.Color.Surface.ControlHover}"/>
+        <SolidColorBrush x:Key="TemplateChromeSelectionBrush" Color="{DynamicResource CV.Color.Accent.Primary}" Opacity="0.14"/>
         <Style TargetType="{x:Type TextBox}" BasedOn="{StaticResource TextBox.Small}"/>
         <Style TargetType="{x:Type TextBlock}" BasedOn="{StaticResource TextBlockBaseStyle}"/>
+        <Style x:Key="TemplateSelectionCheckBox" TargetType="CheckBox">
+            <Setter Property="Width" Value="16"/>
+            <Setter Property="Height" Value="16"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="CheckBox">
+                        <Border x:Name="Box" Background="{DynamicResource GlobalBackground}" BorderBrush="{DynamicResource SecondaryTextBrush}" BorderThickness="1" CornerRadius="3">
+                            <Path x:Name="Tick" Data="M 3,7 L 6,10 L 11,4" Stroke="White" StrokeThickness="1.6" StrokeStartLineCap="Round" StrokeEndLineCap="Round" Visibility="Collapsed"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="Box" Property="Background" Value="{DynamicResource PrimaryBrush}"/>
+                                <Setter TargetName="Box" Property="BorderBrush" Value="{DynamicResource PrimaryBrush}"/>
+                                <Setter TargetName="Tick" Property="Visibility" Value="Visible"/>
+                            </Trigger>
+                            <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Box" Property="BorderBrush" Value="{DynamicResource PrimaryBrush}"/></Trigger>
+                            <Trigger Property="IsKeyboardFocused" Value="True"><Setter TargetName="Box" Property="BorderThickness" Value="2"/></Trigger>
+                            <Trigger Property="IsEnabled" Value="False"><Setter Property="Opacity" Value="0.4"/></Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
         <Style x:Key="TemplateToolbarButton" TargetType="Button" BasedOn="{StaticResource ButtonDefault}">
-            <Setter Property="Width" Value="28"/>
-            <Setter Property="Height" Value="28"/>
-            <Setter Property="Padding" Value="0"/>
-            <Setter Property="Margin" Value="0,0,4,0"/>
-            <Setter Property="FontFamily" Value="Segoe Fluent Icons, Segoe MDL2 Assets"/>
-            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="Height" Value="32"/>
+            <Setter Property="Padding" Value="10,0"/>
+            <Setter Property="Margin" Value="0,0,2,0"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderBrush" Value="Transparent"/>
+            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
             <Setter Property="AutomationProperties.Name" Value="{Binding ToolTip, RelativeSource={RelativeSource Self}}"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="1" CornerRadius="4" Padding="{TemplateBinding Padding}">
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Center">
+                                <TextBlock Text="{TemplateBinding Content}" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="16" Foreground="{TemplateBinding Foreground}" VerticalAlignment="Center"/>
+                                <TextBlock Text="{TemplateBinding ToolTip}" Margin="7,0,0,0" Foreground="{TemplateBinding Foreground}" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="{DynamicResource TemplateChromeSelectionBrush}"/>
+                    <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
+                </Trigger>
+                <Trigger Property="IsKeyboardFocused" Value="True">
+                    <Setter Property="BorderBrush" Value="{DynamicResource PrimaryBrush}"/>
+                </Trigger>
+                <Trigger Property="IsPressed" Value="True">
+                    <Setter Property="Background" Value="{DynamicResource TemplateChromeSelectionBrush}"/>
+                </Trigger>
+                <Trigger Property="IsEnabled" Value="False"><Setter Property="Opacity" Value="0.4"/></Trigger>
+            </Style.Triggers>
         </Style>
     </Window.Resources>
-    <Grid Margin="0" x:Name="MainGrid">
+    <Grid Margin="0" x:Name="MainGrid" Background="{DynamicResource GlobalBackground}">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="Auto"/>
+            <ColumnDefinition Width="240" MinWidth="200"/>
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
-        <Grid x:Name="TemplateGrid" Grid.Column="0" MinWidth="340">
+        <Border Grid.ColumnSpan="2" Margin="8,8,8,0" Padding="4" Background="{DynamicResource ButtonBackground}" BorderBrush="{DynamicResource ButtonBorderBrush}" BorderThickness="1" CornerRadius="6">
+            <WrapPanel>
+                <StackPanel Orientation="Horizontal">
+                    <Button Style="{StaticResource TemplateToolbarButton}" Content="&#xE710;" ToolTip="{x:Static properties:Resources.New}" Command="ApplicationCommands.New"/>
+                    <Button Style="{StaticResource TemplateToolbarButton}" Content="&#xE74E;" ToolTip="{x:Static properties:Resources.Save}" Click="Button_Save_Click"/>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal">
+                    <Border Width="1" Height="18" Background="{DynamicResource ButtonBorderBrush}" Margin="5,0,7,0"/>
+                    <Button Style="{StaticResource TemplateToolbarButton}" Content="&#xE8B5;" ToolTip="{x:Static properties:Resources.Import}" Click="Button_Import_Click"/>
+                    <Button Style="{StaticResource TemplateToolbarButton}" Content="&#xEDE1;" ToolTip="{x:Static properties:Resources.Export}" Click="Button_Export_Click"/>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal">
+                    <Border Width="1" Height="18" Background="{DynamicResource ButtonBorderBrush}" Margin="5,0,7,0"/>
+                    <Button Style="{StaticResource TemplateToolbarButton}" Content="&#xE74D;" ToolTip="{x:Static properties:Resources.Delete}" Command="{x:Static local:TemplateEditorWindow.DeleteTemplatesCommand}"/>
+                </StackPanel>
+            </WrapPanel>
+        </Border>
+        <Grid x:Name="TemplateGrid" Grid.Row="1" Grid.Column="0" MinWidth="200" Margin="8,8,0,8">
             <Grid.RowDefinitions>
-                <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
-            <Border Grid.RowSpan="3" Background="{DynamicResource SecondaryRegionBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"/>
-            <StackPanel Orientation="Horizontal" Margin="5,12">
-                <Button Style="{StaticResource TemplateToolbarButton}" Content="&#xE710;" ToolTip="{x:Static properties:Resources.New}" Command="ApplicationCommands.New"/>
-                <Button Style="{StaticResource TemplateToolbarButton}" Content="&#xE74D;" ToolTip="{x:Static properties:Resources.Delete}" Command="ApplicationCommands.Delete"/>
-                <Button Style="{StaticResource TemplateToolbarButton}" Content="&#xE74E;" ToolTip="{x:Static properties:Resources.Save}" Click="Button_Save_Click"/>
-                <Button Style="{StaticResource TemplateToolbarButton}" Content="&#xE898;" ToolTip="{x:Static properties:Resources.Export}" Click="Button_Export_Click"/>
-                <Button Style="{StaticResource TemplateToolbarButton}" Content="&#xE896;" ToolTip="{x:Static properties:Resources.Import}" Click="Button_Import_Click"/>
-            </StackPanel>
-            <Grid x:Name="TemplateSearchBar" Grid.Row="1" Margin="5,0,5,3" Visibility="Collapsed">
-                <hc:TextBox x:Name="Searchbox" Style="{DynamicResource TextBoxPlus.Small}" Padding="20,1,2,1" BorderThickness="1" hc:InfoElement.Placeholder="{x:Static properties:Resources.Search}" BorderBrush="#CCCEDB" MaxLength="15" VerticalContentAlignment="Center" PreviewKeyDown="Searchbox_PreviewKeyDown" TextChanged="Searchbox_TextChanged"/>
+            <Border Grid.RowSpan="2" Background="{DynamicResource ButtonBackground}" BorderBrush="{DynamicResource ButtonBorderBrush}" BorderThickness="1" CornerRadius="6"/>
+            <Grid x:Name="TemplateSearchBar" Margin="8,8,8,0" Visibility="Collapsed">
+                <hc:TextBox x:Name="Searchbox" Style="{DynamicResource TextBoxPlus.Small}" Padding="20,1,2,1" BorderThickness="1" hc:InfoElement.Placeholder="{x:Static properties:Resources.Search}" BorderBrush="{DynamicResource ButtonBorderBrush}" MaxLength="15" VerticalContentAlignment="Center" PreviewKeyDown="Searchbox_PreviewKeyDown" TextChanged="Searchbox_TextChanged"/>
                 <Viewbox Width="12" Height="12" HorizontalAlignment="Left" Margin="4,0,0,0">
                     <Rectangle Width="16" Height="16">
                         <Rectangle.Resources>
@@ -73,22 +137,50 @@
                 </Viewbox>
             </Grid>
 
-            <ListView Grid.Row="2" x:Name="ListView1" SelectionMode="Extended" Style="{StaticResource ListView.Small}" FocusVisualStyle="{x:Null}" BorderThickness="0" ScrollViewer.HorizontalScrollBarVisibility="Disabled" Padding="0" Margin="2,0,2,2" PreviewMouseDoubleClick="ListView1_PreviewMouseDoubleClick" PreviewMouseLeftButtonDown="ListView1_PreviewMouseLeftButtonDown" PreviewMouseMove="ListView1_PreviewMouseMove" SelectionChanged="ListView1_SelectionChanged" AllowDrop="True" DragOver="ListView1_DragOver" Drop="ListView1_Drop">
+            <ListView Grid.Row="1" x:Name="ListView1" SelectionMode="Extended" Style="{StaticResource ListView.Small}" Background="Transparent" FocusVisualStyle="{x:Null}" BorderThickness="0" ScrollViewer.HorizontalScrollBarVisibility="Disabled" Padding="0" Margin="5,6,5,6" PreviewMouseDoubleClick="ListView1_PreviewMouseDoubleClick" PreviewMouseLeftButtonDown="ListView1_PreviewMouseLeftButtonDown" PreviewMouseMove="ListView1_PreviewMouseMove" SelectionChanged="ListView1_SelectionChanged" AllowDrop="True" DragOver="ListView1_DragOver" Drop="ListView1_Drop">
                 <ListView.InputBindings>
-                    <KeyBinding Key="Delete" Modifiers="Alt" Command="ApplicationCommands.Delete"/>
+                    <KeyBinding Key="Delete" Modifiers="Alt" Command="{x:Static local:TemplateEditorWindow.DeleteTemplatesCommand}"/>
                 </ListView.InputBindings>
                 <ListView.Resources>
                     <ContextMenu x:Key="ItemContextMenu" Opened="ContextMenu_Opened"/>
                     <ContextMenu x:Key="ContextMenuItem" Opened="ContextMenuItem_Opened">
-                        <MenuItem Header="{x:Static properties:Resources.MenuDelete}" Command="ApplicationCommands.Delete" />
+                        <MenuItem Header="{x:Static properties:Resources.MenuDelete}" Command="{x:Static local:TemplateEditorWindow.DeleteTemplatesCommand}" InputGestureText="Alt+Delete" />
                         <MenuItem Header="{x:Static properties:Resources.MenuRename}" Command="{x:Static commands:Commands.ReName}"/>
                         <MenuItem Header="{x:Static properties:Resources.CreateCopy}" Click="Button_CreateCopy_Click"/>
                         <MenuItem Header="{x:Static properties:Resources.TemplateEditor_SetAsDefaultParameters}" Click="MenuItem_SetJsonAsDefault_Click" Tag="SetJsonAsDefault" Visibility="Collapsed" />
                     </ContextMenu>
                 </ListView.Resources>
                 <ListView.ItemContainerStyle>
-                    <Style TargetType="{x:Type ListViewItem}" BasedOn="{StaticResource ListViewItemBaseStyle.Small}" >
+                    <Style TargetType="{x:Type ListViewItem}">
                         <Setter Property="ContextMenu" Value="{StaticResource ContextMenuItem}"/>
+                        <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
+                        <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                        <Setter Property="VerticalContentAlignment" Value="Center"/>
+                        <Setter Property="MinHeight" Value="30"/>
+                        <Setter Property="Margin" Value="0,1"/>
+                        <Setter Property="ToolTip" Value="{Binding Key}"/>
+                        <Setter Property="Template">
+                            <Setter.Value>
+                                <ControlTemplate TargetType="ListViewItem">
+                                    <Border x:Name="Row" Background="Transparent" CornerRadius="4" BorderBrush="Transparent" BorderThickness="1" Padding="4,3">
+                                        <Grid>
+                                            <Border x:Name="SelectionMark" Width="2" Height="16" CornerRadius="1" HorizontalAlignment="Left" Background="{DynamicResource PrimaryBrush}" Visibility="Collapsed"/>
+                                            <GridViewRowPresenter Margin="4,0,0,0" Content="{TemplateBinding Content}" Columns="{Binding View.Columns, RelativeSource={RelativeSource AncestorType=ListView}}" VerticalAlignment="Center"/>
+                                        </Grid>
+                                    </Border>
+                                    <ControlTemplate.Triggers>
+                                        <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Row" Property="Background" Value="{DynamicResource TemplateChromeHoverBrush}"/></Trigger>
+                                        <Trigger Property="IsSelected" Value="True">
+                                            <Setter TargetName="Row" Property="Background" Value="{DynamicResource TemplateChromeSelectionBrush}"/>
+                                            <Setter TargetName="SelectionMark" Property="Visibility" Value="Visible"/>
+                                            <Setter Property="Foreground" Value="{DynamicResource PrimaryBrush}"/>
+                                        </Trigger>
+                                        <Trigger Property="IsKeyboardFocusWithin" Value="True"><Setter TargetName="Row" Property="BorderBrush" Value="{DynamicResource PrimaryBrush}"/></Trigger>
+                                        <Trigger Property="IsEnabled" Value="False"><Setter Property="Opacity" Value="0.45"/></Trigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </Setter.Value>
+                        </Setter>
                     </Style>
                 </ListView.ItemContainerStyle>
                 <ListView.View>
@@ -96,20 +188,23 @@
                         <GridView.ColumnHeaderContainerStyle>
                             <Style TargetType="{x:Type GridViewColumnHeader}" BasedOn="{StaticResource  GridViewColumnHeaderBase}">
                                 <Setter Property="ContextMenu" Value="{StaticResource ItemContextMenu}" />
+                                <Setter Property="Foreground" Value="{DynamicResource SecondaryTextBrush}"/>
+                                <Setter Property="FontSize" Value="11"/>
+                                <Setter Property="Padding" Value="8,4,0,6"/>
                                 <EventSetter Event="Click" Handler="GridViewColumnSort"/>
                             </Style>
                         </GridView.ColumnHeaderContainerStyle>
                         <GridViewColumn  Header="{x:Static properties:Resources.Choice}"  Width="40" >
                             <GridViewColumn.CellTemplate>
                                 <DataTemplate DataType="{x:Type local:TemplateBase}">
-                                    <CheckBox IsChecked="{Binding IsSelected, RelativeSource={RelativeSource AncestorType=ListViewItem}, Mode=TwoWay}"/>
+                                    <CheckBox Style="{StaticResource TemplateSelectionCheckBox}" HorizontalAlignment="Left" VerticalAlignment="Center" ToolTip="{Binding Key}" AutomationProperties.Name="{Binding Key}" IsChecked="{Binding IsSelected, RelativeSource={RelativeSource AncestorType=ListViewItem}, Mode=TwoWay}"/>
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>  
                         <GridViewColumn  Header="{x:Static properties:Resources.SerialNumber1}" >
                             <GridViewColumn.CellTemplate>
                                 <DataTemplate DataType="{x:Type local:TemplateBase}">
-                                    <TextBlock Text="{Binding Id}" />
+                                    <TextBlock Text="{Binding Id}" Foreground="{DynamicResource SecondaryTextBrush}" FontSize="11"/>
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
@@ -118,7 +213,7 @@
                                 <DataTemplate DataType="{x:Type local:TemplateBase}">
                                     <DockPanel Height="20">
                                         <Grid VerticalAlignment="Center">
-                                            <TextBlock Text="{Binding Key}" Visibility="{Binding IsEditMode,Converter={StaticResource bool2VisibilityConverter1}}" Padding="6,0"/>
+                                            <TextBlock Text="{Binding Key}" Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ListViewItem}}" Visibility="{Binding IsEditMode,Converter={StaticResource bool2VisibilityConverter1}}" Padding="4,0" TextTrimming="CharacterEllipsis"/>
                                             <TextBox  Text="{Binding Key}" LostFocus="TextBox_LostFocus" Tag="{Binding .}" HorizontalAlignment="Left" Visibility="{Binding IsEditMode,Converter={StaticResource bool2VisibilityConverter}}"/>
                                         </Grid>
                                     </DockPanel>
@@ -128,19 +223,19 @@
                     </GridView>
                 </ListView.View>
             </ListView>
-            <TextBlock Grid.Row="2" x:Name="SearchNoneText" Visibility="Collapsed" VerticalAlignment="Top" FontSize="16" Margin="20,80,0,0" Text="{x:Static properties:Resources.NoRelatedItemsFound}"/>
+            <TextBlock Grid.Row="1" x:Name="SearchNoneText" Visibility="Collapsed" VerticalAlignment="Top" FontSize="13" Foreground="{DynamicResource SecondaryTextBrush}" Margin="16,64,16,0" TextWrapping="Wrap" Text="{x:Static properties:Resources.NoRelatedItemsFound}"/>
         </Grid>
 
-        <GridSplitter HorizontalAlignment="Right" Background="#22FFFFFF"  Visibility="{Binding ElementName=GridProperty, Path=Visibility}" Width="1" Cursor="SizeWE"/>
+        <GridSplitter Grid.Row="1" HorizontalAlignment="Right" Background="Transparent" Visibility="{Binding ElementName=GridProperty, Path=Visibility}" Width="4" Cursor="SizeWE"/>
 
-        <Grid Grid.Column="1" x:Name="GridProperty" DataContext="{x:Null}">
+        <Grid Grid.Row="1" Grid.Column="1" x:Name="GridProperty" DataContext="{x:Null}" Margin="8">
             <!--<hc:PropertyGrid x:Name="PropertyGrid1"   hc:TipElement.Visibility="Visible"  />-->
             <!--<xctk:PropertyGrid   x:Name="PropertyGrid1" />-->
-            <WindowsFormsHost>
+            <WindowsFormsHost FontSize="15">
                 <winf:PropertyGrid x:Name="PropertyGrid1" />
             </WindowsFormsHost>
         </Grid>
-        <ScrollViewer x:Name="ScrollInfo" VerticalScrollBarVisibility="Auto" HorizontalAlignment="Left" Grid.ColumnSpan="2" Margin="0,52,0,0">
+        <ScrollViewer x:Name="ScrollInfo" Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalAlignment="Left" Grid.ColumnSpan="2" Margin="0,8,0,0">
             <StackPanel hc:Growl.GrowlParent="True" VerticalAlignment="Top"  />
         </ScrollViewer>
 

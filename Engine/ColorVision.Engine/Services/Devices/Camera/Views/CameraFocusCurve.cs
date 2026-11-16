@@ -4,7 +4,6 @@ using ScottPlot;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
-using System.IO;
 using System.Linq;
 
 namespace ColorVision.Engine.Services.Devices.Camera.Views;
@@ -44,48 +43,6 @@ internal static class CameraFocusCurve
             chart.Add.Marker(bestFocus.Position, bestFocus.Score, MarkerShape.FilledCircle, 9, Colors.Orange);
 
         chart.Axes.AutoScale();
-    }
-
-    internal static string SavePng(string? directory, string deviceCode, string evaluation,
-        IReadOnlyDictionary<int, double> samples, LocalAutoFocusResult bestFocus, DateTime completedAt)
-    {
-        if (samples.Count == 0) throw new ArgumentException("An autofocus curve requires at least one sample.", nameof(samples));
-        string deviceFolder = deviceCode;
-        foreach (char invalid in Path.GetInvalidFileNameChars())
-            deviceFolder = deviceFolder.Replace(invalid, '_');
-        deviceFolder = deviceFolder.Trim().TrimEnd('.');
-        if (deviceFolder.Length == 0) deviceFolder = "Camera";
-
-        string root = string.IsNullOrWhiteSpace(directory)
-            ? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "ColorVision", "AutoFocus")
-            : directory.Trim();
-        string day = completedAt.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
-        string timestamp = completedAt.ToString("yyyyMMdd_HHmmss_fff", CultureInfo.InvariantCulture);
-        string folder = Path.GetFullPath(Path.Combine(root, deviceFolder, day));
-        Directory.CreateDirectory(folder);
-
-        string temporary = Path.Combine(folder, $".{Guid.NewGuid():N}.partial");
-        try
-        {
-            RenderPng(temporary, deviceCode, evaluation, samples, bestFocus);
-            string file = Path.Combine(folder, timestamp + ".png");
-            for (int suffix = 2; ; suffix++)
-            {
-                try
-                {
-                    File.Move(temporary, file);
-                    return file;
-                }
-                catch (IOException) when (File.Exists(file))
-                {
-                    file = Path.Combine(folder, FormattableString.Invariant($"{timestamp}_{suffix}.png"));
-                }
-            }
-        }
-        finally
-        {
-            File.Delete(temporary);
-        }
     }
 
     internal static void RenderPng(string path, string deviceCode, string evaluation,

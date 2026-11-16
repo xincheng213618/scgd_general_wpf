@@ -31,7 +31,7 @@ public sealed class ProjectImageExportServiceTests
                     new SortedDictionary<int, double> { [107721] = 72, [107921] = 85, [108121] = 71 }, "VID100", "Variance");
                 Assert.True(export.TryCaptureResult(new MsgReturn { EventName = "AutoFocus", Data = evidence }, out double? vid));
                 Assert.Equal(focus.VidPosition, vid);
-                save = export.SaveAsync(-75800, CancellationToken.None);
+                save = export.SaveAsync(-75.8, "m", CancellationToken.None);
             });
             await save;
 

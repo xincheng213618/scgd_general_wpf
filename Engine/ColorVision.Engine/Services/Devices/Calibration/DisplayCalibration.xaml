@@ -24,7 +24,7 @@
     </UserControl.Resources>
     <StackPanel>
         <DockPanel Margin="0,0,5,0">
-            <Button DockPanel.Dock="Right" Style="{DynamicResource ButtonProperty}" Command="{Binding PropertyCommand}" ToolTip="{x:Static properties:Resources.Property}" />
+            <Button DockPanel.Dock="Right" Style="{DynamicResource ButtonProperty.OnDeviceRow}" Command="{Binding PropertyCommand}" ToolTip="{x:Static properties:Resources.Property}" />
 
             <displayUi:DisplayPinButton DockPanel.Dock="Right"/>
 

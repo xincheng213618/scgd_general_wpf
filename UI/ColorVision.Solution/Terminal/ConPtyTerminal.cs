@@ -1,181 +1,369 @@
 #pragma warning disable CA1806
 using log4net;
 using Microsoft.Win32.SafeHandles;
+using System.ComponentModel;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
 
 namespace ColorVision.Solution.Terminal
 {
-    /// <summary>
-    /// Wraps the Windows Pseudo Console (ConPTY) API so that child processes
-    /// see a real TTY on stdin/stdout (isatty() == true).
-    /// Requires Windows 10 1809+.
-    /// </summary>
+    /// <summary>Hosts a shell in a Windows pseudoconsole and owns its process tree.</summary>
     internal sealed class ConPtyTerminal : IDisposable
     {
+        private const int PipeBufferSize = 16 * 1024;
+        private static readonly TimeSpan ProcessExitGrace = TimeSpan.FromSeconds(1);
         private static readonly ILog log = LogManager.GetLogger(typeof(ConPtyTerminal));
 
-        private IntPtr _hPC;
-        private SafeFileHandle? _pipeInWrite;
-        private SafeFileHandle? _pipeOutRead;
-        private IntPtr _hProcess;
-        private IntPtr _hThread;
-        private IntPtr _hJob;
-        private Thread? _readThread;
-        private FileStream? _writerStream;
+        private readonly object _gate = new();
+        private readonly Queue<string> _input = new();
+        private readonly SemaphoreSlim _geometryChanged = new(0, 1);
+        private readonly TaskCompletionSource _stopRequested = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        private readonly TaskCompletionSource _transportEnded = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        private bool _started;
         private volatile bool _disposed;
+        private volatile bool _stopping;
+        private COORD? _pendingSize;
 
         public event Action<string>? OutputReceived;
         public event Action<int>? ProcessExited;
 
-        public bool IsRunning =>
-            _hProcess != IntPtr.Zero &&
-            WaitForSingleObject(_hProcess, 0) != WAIT_OBJECT_0;
-
-        public void Start(string commandLine, string workingDirectory,
-                          short cols = 120, short rows = 30)
+        public Task StartAsync(string commandLine, string workingDirectory, short cols = 120, short rows = 30)
         {
-            // 1. Create two anonymous pipe pairs
-            var sa = new SECURITY_ATTRIBUTES
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(cols);
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(rows);
+            lock (_gate)
             {
-                nLength = Marshal.SizeOf<SECURITY_ATTRIBUTES>(),
-                bInheritHandle = true
-            };
-
-            if (!CreatePipe(out var inRead, out var inWrite, ref sa, 0))
-                throw new InvalidOperationException(
-                    $"CreatePipe(in) failed: {Marshal.GetLastWin32Error()}");
-            if (!CreatePipe(out var outRead, out var outWrite, ref sa, 0))
-                throw new InvalidOperationException(
-                    $"CreatePipe(out) failed: {Marshal.GetLastWin32Error()}");
-
-            _pipeInWrite = inWrite;
-            _pipeOutRead = outRead;
-
-            // 2. Create the pseudo console
-            var size = new COORD { X = cols, Y = rows };
-            int hr = CreatePseudoConsole(size, inRead, outWrite, 0, out _hPC);
-            if (hr != 0)
-                throw new InvalidOperationException(
-                    $"CreatePseudoConsole failed: 0x{hr:X8}");
-
-            // These sides are now owned by the pseudo console
-            inRead.Dispose();
-            outWrite.Dispose();
-
-            // 3. Create the child process attached to the pseudo console
-            CreateKillOnCloseJob();
-            var attrSize = IntPtr.Zero;
-            InitializeProcThreadAttributeList(IntPtr.Zero, 1, 0, ref attrSize);
-
-            var attrList = Marshal.AllocHGlobal(attrSize.ToInt32());
-            try
-            {
-                if (!InitializeProcThreadAttributeList(attrList, 1, 0, ref attrSize))
-                    throw new InvalidOperationException(
-                        $"InitializeProcThreadAttributeList: {Marshal.GetLastWin32Error()}");
-
-                if (!UpdateProcThreadAttribute(
-                        attrList, 0,
-                        PROC_THREAD_ATTRIBUTE_PSEUDOCONSOLE,
-                        _hPC, (IntPtr)IntPtr.Size,
-                        IntPtr.Zero, IntPtr.Zero))
-                    throw new InvalidOperationException(
-                        $"UpdateProcThreadAttribute: {Marshal.GetLastWin32Error()}");
-
-                var si = new STARTUPINFOEX
-                {
-                    StartupInfo = new STARTUPINFO
-                    {
-                        cb = Marshal.SizeOf<STARTUPINFOEX>()
-                    },
-                    lpAttributeList = attrList
-                };
-
-                if (!CreateProcessW(
-                         null, commandLine,
-                         IntPtr.Zero, IntPtr.Zero, false,
-                         EXTENDED_STARTUPINFO_PRESENT | CREATE_SUSPENDED,
-                        IntPtr.Zero, workingDirectory,
-                        ref si, out var pi))
-                    throw new InvalidOperationException(
-                        $"CreateProcess failed: {Marshal.GetLastWin32Error()}");
-
-                _hProcess = pi.hProcess;
-                _hThread = pi.hThread;
-
-                if (!AssignProcessToJobObject(_hJob, _hProcess))
-                    throw new InvalidOperationException(
-                        $"AssignProcessToJobObject failed: {Marshal.GetLastWin32Error()}");
-
-                if (ResumeThread(_hThread) == uint.MaxValue)
-                    throw new InvalidOperationException(
-                        $"ResumeThread failed: {Marshal.GetLastWin32Error()}");
-            }
-            finally
-            {
-                DeleteProcThreadAttributeList(attrList);
-                Marshal.FreeHGlobal(attrList);
+                ObjectDisposedException.ThrowIf(_disposed, this);
+                if (_started)
+                    throw new InvalidOperationException("A ConPTY session can only be started once.");
+                _started = true;
             }
 
-            // 4. Open the writer stream and start the reader thread
-            _writerStream = new FileStream(_pipeInWrite, FileAccess.Write);
-            _readThread = new Thread(ReadLoop)
-            {
-                IsBackground = true,
-                Name = "ConPTY-Read"
-            };
-            _readThread.Start();
+            var startup = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            _ = Task.Run(() => RunSessionAsync(commandLine, workingDirectory, new COORD { X = cols, Y = rows }, startup));
+            return startup.Task;
         }
 
-        /// <summary>Write raw text (including control chars) to the terminal.</summary>
-        public void Write(string text)
+        public bool Write(string text)
         {
-            if (_writerStream == null || _disposed) return;
-            try
+            lock (_gate)
             {
-                byte[] bytes = Encoding.UTF8.GetBytes(text);
-                _writerStream.Write(bytes, 0, bytes.Length);
-                _writerStream.Flush();
-            }
-            catch (Exception ex)
-            {
-                log.Debug($"ConPTY write failed: {ex.Message}");
+                if (!_started || _stopping || text.Length == 0)
+                    return false;
+
+                // Anonymous ConPTY pipes are synchronous. The UI only enqueues input.
+                _input.Enqueue(text);
+                Monitor.Pulse(_gate);
+                return true;
             }
         }
 
         public void Resize(short cols, short rows)
         {
-            if (_disposed || _hPC == IntPtr.Zero || cols <= 0 || rows <= 0)
-                return;
+            lock (_gate)
+            {
+                if (!_started || _stopping || cols <= 0 || rows <= 0)
+                    return;
 
-            int hr = ResizePseudoConsole(_hPC, new COORD { X = cols, Y = rows });
-            if (hr != 0)
-                log.Debug($"ConPTY resize failed: 0x{hr:X8} ({cols}x{rows})");
+                _pendingSize = new COORD { X = cols, Y = rows };
+                SignalGeometryChange();
+            }
         }
 
-        public void Kill()
+        public void Dispose()
         {
-            if (_hJob != IntPtr.Zero)
+            lock (_gate)
             {
-                if (!TerminateJobObject(_hJob, 1))
-                    log.Debug($"TerminateJobObject failed: {Marshal.GetLastWin32Error()}");
+                if (_disposed)
+                    return;
+
+                _disposed = true;
+                RequestStop();
+            }
+        }
+
+        private void SignalGeometryChange()
+        {
+            // Callers serialize producers via _gate. Multiple resizes merge into the latest size.
+            if (_geometryChanged.CurrentCount == 0)
+                _geometryChanged.Release();
+        }
+
+        private async Task RunSessionAsync(string commandLine, string workingDirectory, COORD size, TaskCompletionSource startup)
+        {
+            IntPtr console = IntPtr.Zero;
+            SafeFileHandle? input = null;
+            SafeFileHandle? output = null;
+            SafeWaitHandle? job = null;
+            ShellProcess? process = null;
+            RegisteredWaitHandle? exitWatch = null;
+            Task? reader = null;
+            Task? writer = null;
+            Task? resize = null;
+            int? exitCode = null;
+
+            try
+            {
+                ObjectDisposedException.ThrowIf(_disposed, this);
+                (console, input, output) = CreateConsole(size);
+                reader = StartPipeWorker(() => ReadOutput(output));
+                job = CreateKillOnCloseJob();
+                ObjectDisposedException.ThrowIf(_disposed, this);
+                process = StartProcess(commandLine, workingDirectory, console, job);
+                exitWatch = ThreadPool.RegisterWaitForSingleObject(process, static (state, _) =>
+                {
+                    var terminal = (ConPtyTerminal)state!;
+                    lock (terminal._gate)
+                        terminal.RequestStop();
+                }, this, Timeout.Infinite, executeOnlyOnce: true);
+                if (OperatingSystem.IsWindowsVersionAtLeast(10, 0, 26100))
+                {
+                    // Let the pipes close when the last console client disconnects. The
+                    // HPCON still belongs to this worker and is freed during teardown.
+                    int hr = ReleasePseudoConsole(console);
+                    if (hr != 0)
+                        log.Debug($"ReleasePseudoConsole failed: 0x{hr:X8}");
+                }
+
+                writer = StartPipeWorker(() => WriteInput(input));
+                resize = Task.Run(() => ApplyResizesAsync(console, size));
+                if (_disposed)
+                    startup.TrySetCanceled();
+                else
+                    startup.TrySetResult();
+
+                Task completed = await Task.WhenAny(_stopRequested.Task, _transportEnded.Task).ConfigureAwait(false);
+                if (completed == _transportEnded.Task)
+                {
+                    // Windows can close the pipes before the child signals exit. Give an
+                    // exiting process a chance to report its code, or retire a detached one.
+                    await Task.WhenAny(_stopRequested.Task, Task.Delay(ProcessExitGrace)).ConfigureAwait(false);
+                }
+
+                if (!_disposed)
+                    exitCode = process.WaitOne(0) && GetExitCodeProcess(process.SafeWaitHandle, out int code) ? code : -1;
+            }
+            catch (Exception ex)
+            {
+                if (_disposed)
+                    startup.TrySetCanceled();
+                else if (!startup.TrySetException(ex))
+                {
+                    log.Warn("ConPTY session failed", ex);
+                    exitCode = -1;
+                }
+            }
+            finally
+            {
+                lock (_gate)
+                    RequestStop();
+                exitWatch?.Unregister(null);
+                process?.Dispose();
+                // Start terminating the job even if a resize is stuck writing to ConPTY's
+                // signal pipe. Keep the HPCON alive until that native call has returned.
+                job?.Dispose();
+                if (resize != null)
+                    await resize.ConfigureAwait(false);
+
+                if (reader == null)
+                    output?.Dispose();
+
+                // Older Windows versions wait for ConPTY's final output here. Keep the reader
+                // running independently, including when the UI has already detached the session.
+                if (console != IntPtr.Zero)
+                    ClosePseudoConsole(console);
+
+                if (reader != null)
+                    await reader.ConfigureAwait(false);
+                if (writer != null)
+                    await writer.ConfigureAwait(false);
+
+                input?.Dispose();
+                output?.Dispose();
             }
 
-            if (_hProcess != IntPtr.Zero && IsRunning)
-                TerminateProcess(_hProcess, 1);
-
-            if (_hProcess != IntPtr.Zero)
-                WaitForSingleObject(_hProcess, 2000);
+            if (!_disposed && exitCode is int finalCode)
+                ProcessExited?.Invoke(finalCode);
         }
 
-        private void CreateKillOnCloseJob()
+        private async Task ApplyResizesAsync(IntPtr console, COORD current)
         {
-            _hJob = CreateJobObject(IntPtr.Zero, null);
-            if (_hJob == IntPtr.Zero)
-                throw new InvalidOperationException(
-                    $"CreateJobObject failed: {Marshal.GetLastWin32Error()}");
+            try
+            {
+                while (!_stopping)
+                {
+                    await _geometryChanged.WaitAsync().ConfigureAwait(false);
+                    COORD? nextSize;
+                    lock (_gate)
+                    {
+                        if (_stopping)
+                            break;
+
+                        nextSize = _pendingSize;
+                        _pendingSize = null;
+                    }
+
+                    if (nextSize is COORD requested && (requested.X != current.X || requested.Y != current.Y))
+                    {
+                        int hr = ResizePseudoConsole(console, requested);
+                        if (hr == 0)
+                            current = requested;
+                        else
+                            log.Debug($"ConPTY resize failed: 0x{hr:X8} ({requested.X}x{requested.Y})");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                log.Warn("ConPTY resize ended", ex);
+                ReportTransportEnd();
+            }
+        }
+
+        // Called while holding _gate.
+        private void RequestStop()
+        {
+            StopInputAndResizes();
+            _stopRequested.TrySetResult();
+        }
+
+        private void ReportTransportEnd()
+        {
+            lock (_gate)
+            {
+                StopInputAndResizes();
+                _transportEnded.TrySetResult();
+            }
+        }
+
+        private void StopInputAndResizes()
+        {
+            if (_stopping)
+                return;
+
+            _stopping = true;
+            _input.Clear();
+            Monitor.Pulse(_gate);
+            SignalGeometryChange();
+        }
+
+        private string? TakeInput()
+        {
+            lock (_gate)
+            {
+                while (!_stopping && _input.Count == 0)
+                    Monitor.Wait(_gate);
+
+                return _stopping ? null : _input.Dequeue();
+            }
+        }
+
+        private static Task StartPipeWorker(Action work)
+        {
+            return Task.Factory.StartNew(work, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default);
+        }
+
+        private void ReadOutput(SafeFileHandle output)
+        {
+            try
+            {
+                using var stream = new FileStream(output, FileAccess.Read, bufferSize: 1);
+                var bytes = new byte[PipeBufferSize];
+                var chars = new char[Encoding.UTF8.GetMaxCharCount(bytes.Length)];
+                Decoder decoder = Encoding.UTF8.GetDecoder();
+
+                while (true)
+                {
+                    int read = stream.Read(bytes);
+                    int decoded = decoder.GetChars(bytes.AsSpan(0, read), chars, flush: read == 0);
+                    if (!_disposed && decoded > 0)
+                        OutputReceived?.Invoke(new string(chars, 0, decoded));
+                    if (read == 0)
+                        break;
+                }
+            }
+            catch (Exception ex)
+            {
+                if (!_disposed)
+                    log.Debug("ConPTY read ended", ex);
+            }
+            finally
+            {
+                ReportTransportEnd();
+            }
+        }
+
+        private void WriteInput(SafeFileHandle input)
+        {
+            try
+            {
+                using var stream = new FileStream(input, FileAccess.Write, bufferSize: 1);
+                var bytes = new byte[PipeBufferSize];
+                Encoder encoder = Encoding.UTF8.GetEncoder();
+
+                while (TakeInput() is string text)
+                {
+                    ReadOnlySpan<char> remaining = text.AsSpan();
+                    while (!remaining.IsEmpty && !_stopping)
+                    {
+                        encoder.Convert(remaining, bytes, flush: true, out int used, out int encoded, out _);
+                        stream.Write(bytes.AsSpan(0, encoded));
+                        remaining = remaining[used..];
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                if (!_stopping)
+                    log.Debug("ConPTY write ended", ex);
+            }
+            finally
+            {
+                ReportTransportEnd();
+            }
+        }
+
+        private static (IntPtr Console, SafeFileHandle Input, SafeFileHandle Output) CreateConsole(COORD size)
+        {
+            if (!CreatePipe(out SafeFileHandle inputRead, out SafeFileHandle inputWrite, IntPtr.Zero, 0))
+                throw NativeError("CreatePipe(input)");
+
+            SafeFileHandle? outputRead = null;
+            using (inputRead)
+            {
+                try
+                {
+                    if (!CreatePipe(out outputRead, out SafeFileHandle outputWrite, IntPtr.Zero, 0))
+                        throw NativeError("CreatePipe(output)");
+
+                    using (outputWrite)
+                    {
+                        int hr = CreatePseudoConsole(size, inputRead, outputWrite, 0, out IntPtr console);
+                        if (hr != 0)
+                            throw new InvalidOperationException($"CreatePseudoConsole failed: 0x{hr:X8}");
+
+                        return (console, inputWrite, outputRead);
+                    }
+                }
+                catch
+                {
+                    inputWrite.Dispose();
+                    outputRead?.Dispose();
+                    throw;
+                }
+            }
+        }
+
+        private static SafeWaitHandle CreateKillOnCloseJob()
+        {
+            SafeWaitHandle job = CreateJobObject(IntPtr.Zero, null);
+            if (job.IsInvalid)
+            {
+                Win32Exception error = NativeError("CreateJobObject");
+                job.Dispose();
+                throw error;
+            }
 
             var jobInfo = new JOBOBJECT_EXTENDED_LIMIT_INFORMATION
             {
@@ -184,103 +372,87 @@ namespace ColorVision.Solution.Terminal
                     LimitFlags = JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE,
                 },
             };
-            if (!SetInformationJobObject(
-                    _hJob,
-                    JobObjectExtendedLimitInformation,
-                    ref jobInfo,
-                    (uint)Marshal.SizeOf<JOBOBJECT_EXTENDED_LIMIT_INFORMATION>()))
-            {
-                int error = Marshal.GetLastWin32Error();
-                CloseHandle(_hJob);
-                _hJob = IntPtr.Zero;
-                throw new InvalidOperationException($"SetInformationJobObject failed: {error}");
-            }
+            if (SetInformationJobObject(job, JobObjectExtendedLimitInformation, ref jobInfo,
+                (uint)Marshal.SizeOf<JOBOBJECT_EXTENDED_LIMIT_INFORMATION>()))
+                return job;
+
+            Win32Exception failure = NativeError("SetInformationJobObject");
+            job.Dispose();
+            throw failure;
         }
 
-        private void ReadLoop()
+        private ShellProcess StartProcess(string commandLine, string workingDirectory, IntPtr console, SafeWaitHandle job)
         {
-            var buf = new byte[4096];
-            var charBuf = new char[4096];
-            var decoder = Encoding.UTF8.GetDecoder();
+            IntPtr attrSize = IntPtr.Zero;
+            InitializeProcThreadAttributeList(IntPtr.Zero, 1, 0, ref attrSize);
+            if (attrSize == IntPtr.Zero)
+                throw NativeError("InitializeProcThreadAttributeList");
 
+            IntPtr attrList = Marshal.AllocHGlobal(attrSize);
             try
             {
-                using var stream = new FileStream(_pipeOutRead!, FileAccess.Read, 4096);
-                while (true)
+                if (!InitializeProcThreadAttributeList(attrList, 1, 0, ref attrSize))
+                    throw NativeError("InitializeProcThreadAttributeList");
+
+                try
                 {
-                    int n = stream.Read(buf, 0, buf.Length);
-                    if (n <= 0) break;
-                    int chars = decoder.GetChars(buf, 0, n, charBuf, 0, false);
-                    OutputReceived?.Invoke(new string(charBuf, 0, chars));
+                    if (!UpdateProcThreadAttribute(attrList, 0, PROC_THREAD_ATTRIBUTE_PSEUDOCONSOLE,
+                        console, (IntPtr)IntPtr.Size, IntPtr.Zero, IntPtr.Zero))
+                        throw NativeError("UpdateProcThreadAttribute");
+
+                    var startupInfo = new STARTUPINFOEX
+                    {
+                        // Explicit null standard handles let ConPTY supply all three even if the host is redirected.
+                        StartupInfo = new STARTUPINFO { cb = Marshal.SizeOf<STARTUPINFOEX>(), dwFlags = STARTF_USESTDHANDLES },
+                        lpAttributeList = attrList,
+                    };
+                    if (!CreateProcessW(null, new StringBuilder(commandLine), IntPtr.Zero, IntPtr.Zero, false,
+                        EXTENDED_STARTUPINFO_PRESENT | CREATE_SUSPENDED, IntPtr.Zero, workingDirectory, ref startupInfo,
+                        out PROCESS_INFORMATION info))
+                        throw NativeError("CreateProcess");
+
+                    var process = new ShellProcess(info.hProcess);
+                    using var thread = new SafeWaitHandle(info.hThread, ownsHandle: true);
+                    try
+                    {
+                        if (!AssignProcessToJobObject(job, process.SafeWaitHandle))
+                            throw NativeError("AssignProcessToJobObject");
+                        ObjectDisposedException.ThrowIf(_disposed, this);
+                        if (ResumeThread(thread) == uint.MaxValue)
+                            throw NativeError("ResumeThread");
+
+                        return process;
+                    }
+                    catch
+                    {
+                        // A shell whose assignment failed is suspended and outside the job.
+                        TerminateProcess(process.SafeWaitHandle, 1);
+                        process.Dispose();
+                        throw;
+                    }
+                }
+                finally
+                {
+                    DeleteProcThreadAttributeList(attrList);
                 }
             }
-            catch (ObjectDisposedException) when (_disposed)
+            finally
             {
-                return;
+                Marshal.FreeHGlobal(attrList);
             }
-            catch (IOException) when (_disposed)
-            {
-                return;
-            }
-            catch (Exception ex) when (!_disposed)
-            {
-                log.Debug($"ConPTY read ended: {ex.Message}");
-            }
-
-            if (_disposed)
-                return;
-
-            int exitCode = -1;
-            if (_hProcess != IntPtr.Zero)
-            {
-                WaitForSingleObject(_hProcess, 5000);
-                GetExitCodeProcess(_hProcess, out exitCode);
-            }
-            ProcessExited?.Invoke(exitCode);
         }
 
-        public void Dispose()
+        private static Win32Exception NativeError(string operation)
         {
-            if (_disposed) return;
-            _disposed = true;
+            int code = Marshal.GetLastWin32Error();
+            return new Win32Exception(code, $"{operation} failed ({code}): {new Win32Exception(code).Message}");
+        }
 
-            // Terminate the whole shell/script process tree before ClosePseudoConsole. On older
-            // Windows versions ClosePseudoConsole can otherwise wait for surviving clients and
-            // block the UI thread during a repeated Run or application shutdown.
-            Kill();
-
-            try { _writerStream?.Dispose(); } catch { }
-            _writerStream = null;
-            try { _pipeInWrite?.Dispose(); } catch { }
-            _pipeInWrite = null;
-
-            if (_hPC != IntPtr.Zero)
+        private sealed class ShellProcess : WaitHandle
+        {
+            internal ShellProcess(IntPtr handle)
             {
-                ClosePseudoConsole(_hPC);
-                _hPC = IntPtr.Zero;
-            }
-
-            try { _pipeOutRead?.Dispose(); } catch { }
-            _pipeOutRead = null;
-
-            if (_readThread != null && _readThread != Thread.CurrentThread && !_readThread.Join(150))
-                log.Debug("ConPTY read thread did not stop before dispose completed.");
-            _readThread = null;
-
-            if (_hThread != IntPtr.Zero)
-            {
-                CloseHandle(_hThread);
-                _hThread = IntPtr.Zero;
-            }
-            if (_hProcess != IntPtr.Zero)
-            {
-                CloseHandle(_hProcess);
-                _hProcess = IntPtr.Zero;
-            }
-            if (_hJob != IntPtr.Zero)
-            {
-                CloseHandle(_hJob);
-                _hJob = IntPtr.Zero;
+                SafeWaitHandle = new SafeWaitHandle(handle, ownsHandle: true);
             }
         }
 
@@ -288,22 +460,14 @@ namespace ColorVision.Solution.Terminal
 
         private const uint EXTENDED_STARTUPINFO_PRESENT = 0x00080000;
         private const uint CREATE_SUSPENDED = 0x00000004;
+        private const int STARTF_USESTDHANDLES = 0x00000100;
         private const uint JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE = 0x00002000;
         private const int JobObjectExtendedLimitInformation = 9;
-        private const uint WAIT_OBJECT_0 = 0;
         private static readonly IntPtr PROC_THREAD_ATTRIBUTE_PSEUDOCONSOLE =
             (IntPtr)0x00020016;
 
         [StructLayout(LayoutKind.Sequential)]
         private struct COORD { public short X; public short Y; }
-
-        [StructLayout(LayoutKind.Sequential)]
-        private struct SECURITY_ATTRIBUTES
-        {
-            public int nLength;
-            public IntPtr lpSecurityDescriptor;
-            [MarshalAs(UnmanagedType.Bool)] public bool bInheritHandle;
-        }
 
         [StructLayout(LayoutKind.Sequential)]
         private struct STARTUPINFO
@@ -370,7 +534,7 @@ namespace ColorVision.Solution.Terminal
         [DllImport("kernel32.dll", SetLastError = true)]
         private static extern bool CreatePipe(
             out SafeFileHandle hReadPipe, out SafeFileHandle hWritePipe,
-            ref SECURITY_ATTRIBUTES lpPipeAttributes, int nSize);
+            IntPtr lpPipeAttributes, int nSize);
 
         [DllImport("kernel32.dll", SetLastError = true)]
         private static extern int CreatePseudoConsole(
@@ -379,6 +543,9 @@ namespace ColorVision.Solution.Terminal
 
         [DllImport("kernel32.dll")]
         private static extern void ClosePseudoConsole(IntPtr hPC);
+
+        [DllImport("kernel32.dll")]
+        private static extern int ReleasePseudoConsole(IntPtr hPC);
 
         [DllImport("kernel32.dll")]
         private static extern int ResizePseudoConsole(IntPtr hPC, COORD size);
@@ -395,11 +562,11 @@ namespace ColorVision.Solution.Terminal
             IntPtr lpPreviousValue, IntPtr lpReturnSize);
 
         [DllImport("kernel32.dll")]
-        private static extern bool DeleteProcThreadAttributeList(IntPtr lpAttributeList);
+        private static extern void DeleteProcThreadAttributeList(IntPtr lpAttributeList);
 
-        [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+        [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode, ExactSpelling = true)]
         private static extern bool CreateProcessW(
-            string? lpApplicationName, string lpCommandLine,
+            string? lpApplicationName, StringBuilder lpCommandLine,
             IntPtr lpProcessAttributes, IntPtr lpThreadAttributes,
             bool bInheritHandles, uint dwCreationFlags,
             IntPtr lpEnvironment, string lpCurrentDirectory,
@@ -407,37 +574,30 @@ namespace ColorVision.Solution.Terminal
             out PROCESS_INFORMATION lpProcessInformation);
 
         [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
-        private static extern IntPtr CreateJobObject(
+        private static extern SafeWaitHandle CreateJobObject(
             IntPtr lpJobAttributes,
             string? lpName);
 
         [DllImport("kernel32.dll", SetLastError = true)]
         private static extern bool SetInformationJobObject(
-            IntPtr hJob,
+            SafeWaitHandle hJob,
             int jobObjectInfoClass,
             ref JOBOBJECT_EXTENDED_LIMIT_INFORMATION lpJobObjectInfo,
             uint cbJobObjectInfoLength);
 
         [DllImport("kernel32.dll", SetLastError = true)]
-        private static extern bool AssignProcessToJobObject(IntPtr hJob, IntPtr hProcess);
+        private static extern bool AssignProcessToJobObject(SafeWaitHandle hJob, SafeWaitHandle hProcess);
 
         [DllImport("kernel32.dll", SetLastError = true)]
-        private static extern bool TerminateJobObject(IntPtr hJob, uint uExitCode);
+        private static extern uint ResumeThread(SafeWaitHandle hThread);
 
-        [DllImport("kernel32.dll", SetLastError = true)]
-        private static extern uint ResumeThread(IntPtr hThread);
 
         [DllImport("kernel32.dll")]
-        private static extern uint WaitForSingleObject(IntPtr hHandle, uint dwMilliseconds);
+        private static extern bool GetExitCodeProcess(SafeWaitHandle hProcess, out int lpExitCode);
 
         [DllImport("kernel32.dll")]
-        private static extern bool GetExitCodeProcess(IntPtr hProcess, out int lpExitCode);
+        private static extern bool TerminateProcess(SafeWaitHandle hProcess, uint uExitCode);
 
-        [DllImport("kernel32.dll")]
-        private static extern bool TerminateProcess(IntPtr hProcess, uint uExitCode);
-
-        [DllImport("kernel32.dll")]
-        private static extern bool CloseHandle(IntPtr hObject);
 
         #endregion
     }

@@ -11,7 +11,7 @@
              Background="{DynamicResource TerminalBackgroundBrush}"
     Loaded="UserControl_Loaded">
     <!-- Terminal area: custom drawn terminal view with IME proxy overlay -->
-    <Grid x:Name="TerminalRoot" Background="{DynamicResource TerminalBackgroundBrush}">
+    <Grid x:Name="TerminalRoot" Background="{DynamicResource TerminalBackgroundBrush}" UseLayoutRounding="True">
         <Grid.ContextMenu>
             <ContextMenu Opened="TerminalContextMenu_Opened">
                 <MenuItem x:Name="MenuCopy"
@@ -41,13 +41,13 @@
         </Grid.ContextMenu>
         <ScrollViewer x:Name="TerminalScrollViewer"
                       Background="{DynamicResource TerminalBackgroundBrush}"
-                      VerticalScrollBarVisibility="Auto"
+                      VerticalScrollBarVisibility="Visible"
                       HorizontalScrollBarVisibility="Disabled"
+                      CanContentScroll="True"
                       Focusable="True"
                       SizeChanged="TerminalScrollViewer_SizeChanged"
                       PreviewKeyDown="TerminalScrollViewer_PreviewKeyDown"
                       PreviewTextInput="TerminalScrollViewer_PreviewTextInput"
-                      MouseDown="TerminalScrollViewer_MouseDown"
                       GotFocus="TerminalScrollViewer_GotFocus">
             <local:TerminalView x:Name="TerminalDisplay"
                                 DefaultBackgroundColor="{DynamicResource TerminalBackgroundColor}"
@@ -61,13 +61,16 @@
         <Canvas x:Name="ImeCanvas" IsHitTestVisible="False">
             <TextBox x:Name="ImeProxy"
                      Width="2" Height="20"
+                     Margin="0" Padding="0"
                      Background="Transparent"
                      Foreground="Transparent"
                      CaretBrush="Transparent"
                      BorderThickness="0"
                      FontFamily="Cascadia Mono, Consolas, Courier New"
                      FontSize="14"
+                     AutomationProperties.Name="{x:Static properties:Resources.Sol_Terminal_Title}"
                      Focusable="True"
+                     IsTabStop="False"
                      AcceptsReturn="False"
                      PreviewKeyDown="OutputTextBox_PreviewKeyDown"
                      PreviewTextInput="ImeProxy_PreviewTextInput"/>

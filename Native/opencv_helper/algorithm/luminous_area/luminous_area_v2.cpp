@@ -743,26 +743,39 @@ std::vector<std::vector<EdgeCandidate>> CollectCaliperCandidates(
     return all;
 }
 
+const EdgeCandidate* FindCaliperInlier(
+    const std::vector<EdgeCandidate>& caliper,
+    const LineModel& line,
+    double distanceThreshold,
+    double& inlierDistance)
+{
+    const EdgeCandidate* best = nullptr;
+    double bestCost = std::numeric_limits<double>::max();
+    for (const EdgeCandidate& candidate : caliper) {
+        const double distance = PointLineDistance(line, candidate.point);
+        if (distance > distanceThreshold) {
+            continue;
+        }
+        const double cost = distance - std::min(0.35, candidate.strength) * distanceThreshold * 0.30;
+        if (cost < bestCost) {
+            bestCost = cost;
+            best = &candidate;
+            inlierDistance = distance;
+        }
+    }
+    return best;
+}
+
 std::vector<EdgeCandidate> SelectInliers(
     const std::vector<std::vector<EdgeCandidate>>& candidates,
     const LineModel& line,
     double distanceThreshold)
 {
     std::vector<EdgeCandidate> selected;
+    selected.reserve(candidates.size());
     for (const auto& caliper : candidates) {
-        const EdgeCandidate* best = nullptr;
-        double bestCost = std::numeric_limits<double>::max();
-        for (const EdgeCandidate& candidate : caliper) {
-            const double distance = PointLineDistance(line, candidate.point);
-            if (distance > distanceThreshold) {
-                continue;
-            }
-            const double cost = distance - std::min(0.35, candidate.strength) * distanceThreshold * 0.30;
-            if (cost < bestCost) {
-                bestCost = cost;
-                best = &candidate;
-            }
-        }
+        double distance = 0.0;
+        const EdgeCandidate* best = FindCaliperInlier(caliper, line, distanceThreshold, distance);
         if (best != nullptr) {
             selected.push_back(*best);
         }
@@ -870,6 +883,7 @@ SideFit FitSide(
     const auto candidates = CollectCaliperCandidates(
         gray, start, end, caliperCount, searchHalfWidth, minContrast);
     std::vector<const EdgeCandidate*> flattened;
+    flattened.reserve(candidates.size() * kCandidatesPerCaliper);
     for (const auto& caliper : candidates) {
         for (const EdgeCandidate& candidate : caliper) {
             flattened.push_back(&candidate);
@@ -881,24 +895,30 @@ SideFit FitSide(
     }
 
     const double distanceThreshold = std::max(1.35, std::min(gray.cols, gray.rows) * 0.0016);
+    const double strengthScale = std::max(minContrast, 0.04);
     LineModel best = LineFromPoints(start, end);
     double bestScore = -1.0;
     auto scoreLine = [&](const LineModel& line) {
         if (!line.valid || DirectionAgreement(line, referenceDirection) < std::cos(38.0 * CV_PI / 180.0)) {
             return -1.0;
         }
-        const std::vector<EdgeCandidate> selected = SelectInliers(candidates, line, distanceThreshold);
+        int inlierCount = 0;
         double strength = 0.0;
         double residual = 0.0;
-        for (const EdgeCandidate& candidate : selected) {
-            strength += std::min(1.0, candidate.strength / std::max(minContrast, 0.04));
-            residual += PointLineDistance(line, candidate.point) / distanceThreshold;
+        for (const auto& caliper : candidates) {
+            double distance = 0.0;
+            const EdgeCandidate* inlier = FindCaliperInlier(caliper, line, distanceThreshold, distance);
+            if (inlier != nullptr) {
+                ++inlierCount;
+                strength += std::min(1.0, inlier->strength / strengthScale);
+                residual += distance / distanceThreshold;
+            }
         }
         const double coarseDeviation = 0.5 * (
             PointLineDistance(line, start) + PointLineDistance(line, end));
         const double coarsePriorPenalty = caliperCount * 0.75
             * Clamp01(coarseDeviation / std::max(1.0, searchHalfWidth));
-        return selected.size() * 2.0 + strength * 0.35
+        return inlierCount * 2.0 + strength * 0.35
             - residual * 0.20 - coarsePriorPenalty;
     };
     bestScore = scoreLine(best);
@@ -927,10 +947,6 @@ SideFit FitSide(
     if (inliers.size() < 2) {
         return fit;
     }
-    std::sort(inliers.begin(), inliers.end(), [](const EdgeCandidate& left, const EdgeCandidate& right) {
-        return left.caliper < right.caliper;
-    });
-
     double squaredResidual = 0.0;
     std::vector<float> strengths;
     strengths.reserve(inliers.size());
