@@ -12,7 +12,7 @@ namespace ProjectARVRPro.Tests;
 public sealed class ProjectImageExportServiceTests
 {
     [Fact]
-    public async Task VidExportSavesPairedPngsFromTheSameFocusResult()
+    public async Task VidExportSavesBothPngsAndTheOrderedSamplesFromTheSameFocusResult()
     {
         DirectoryInfo output = Directory.CreateTempSubdirectory("ProjectARVRPro-Vid-");
         try
@@ -26,9 +26,9 @@ public sealed class ProjectImageExportServiceTests
                 var pixels = Enumerable.Repeat((byte)128, width * height).ToArray();
                 var frame = BitmapSource.Create(width, height, 96, 96, PixelFormats.Gray8, null, pixels, width);
                 frame.Freeze();
-                var focus = new LocalAutoFocusResult(107921, 85, 3, 500) { VidPosition = -75832.79352 };
+                var focus = new LocalAutoFocusResult(107921, 85.125, 3, 500) { VidPosition = -75832.79352 };
                 var evidence = new CameraAutoFocusEvidence(frame, focus,
-                    new SortedDictionary<int, double> { [107721] = 72, [107921] = 85, [108121] = 71 }, "VID100", "Variance");
+                    new OrderedDictionary<int, double> { [108121] = 71.25, [107721] = 72, [107921] = 85.125 }, "VID100", "Variance");
                 Assert.True(export.TryCaptureResult(new MsgReturn { EventName = "AutoFocus", Data = evidence }, out double? vid));
                 Assert.Equal(focus.VidPosition, vid);
                 save = export.SaveAsync(-75.8, "m", CancellationToken.None);
@@ -38,7 +38,9 @@ public sealed class ProjectImageExportServiceTests
             string snDirectory = ProjectImageExportService.BuildOutputDirectory(output.FullName, true, time, "SN:42");
             string directory = Assert.Single(Directory.GetDirectories(snDirectory));
             Assert.Equal("VID_20261114_103015_0000000", Path.GetFileName(directory));
-            Assert.Equal(2, Directory.GetFiles(directory).Length);
+            Assert.Equal(3, Directory.GetFiles(directory).Length);
+            Assert.Equal(new[] { "MotorPosition,Sharpness", "108121,71.25", "107721,72", "107921,85.125" },
+                File.ReadAllLines(Path.Combine(directory, "FocusSamples.csv")));
             ArvrDrawingOverlayCompatibilityTests.RunOnStaThread(() =>
             {
                 using var image = File.OpenRead(Path.Combine(directory, "VID.png"));

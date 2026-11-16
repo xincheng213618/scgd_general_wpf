@@ -5,6 +5,7 @@ using ColorVision.Engine.Services.Devices.Camera.Local;
 using ColorVision.Engine.Services.RC;
 using cvColorVision;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
@@ -111,6 +112,18 @@ public class CameraBackendRoutingTests
         Assert.False(state.RoutesLocally);
         Assert.False(state.OpensLocally);
         Assert.Equal(DeviceStatusType.Opened, state.Status);
+    }
+
+    [Fact]
+    public void VidReadbackDefaultsOnForOldDisplayConfigsAndPersistsWhenTurnedOff()
+    {
+        var manager = new DisplayConfigManager { Object = JObject.Parse("""{"VID100":{}}""") };
+        var camera = manager.GetDisplayConfig<DisplayCameraConfig>("VID100");
+        Assert.True(camera.UseMotorReadbackForVid);
+
+        camera.UseMotorReadbackForVid = false;
+        var reloaded = new DisplayConfigManager { Object = manager.Object };
+        Assert.False(reloaded.GetDisplayConfig<DisplayCameraConfig>("VID100").UseMotorReadbackForVid);
     }
 
     [Fact]

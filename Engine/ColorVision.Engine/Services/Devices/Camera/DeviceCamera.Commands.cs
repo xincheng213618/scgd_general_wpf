@@ -207,13 +207,14 @@ namespace ColorVision.Engine.Services.Devices.Camera
                         MQTTServiceBase.log.Warn($"[LocalAutoFocus] Camera={Code} result could not be saved.", ex);
                     }
                 }
-                return new { result.Position, result.Score, result.Samples, result.TotalTime, result.VidPosition };
+                return new { Position = result.MotorPosition, result.Score, result.Samples, result.TotalTime, result.VidPosition };
             });
         }
 
         internal LocalAutoFocusResult ExecuteLocalAutoFocus(LocalAutoFocusSettings settings, float exposure, float gain,
             CancellationToken stop = default, bool showProgress = false, IDictionary<int, double>? evidenceSamples = null)
         {
+            settings = settings with { UseMotorReadbackForVid = DisplayConfig.UseMotorReadbackForVid };
             Action<LocalAutoFocusFrame>? preview = showProgress ? source =>
             {
                 if (!stop.IsCancellationRequested) PublishLocalFocusPreview(source, exposure, gain);
@@ -232,7 +233,6 @@ namespace ColorVision.Engine.Services.Devices.Camera
                     }
                 });
                 stop.ThrowIfCancellationRequested();
-                PublishLocalMotorPosition(result.Position, result.VidPosition);
                 if (showProgress) DispatchFocusView(view => view.FocusChart.CompleteAutoFocus(result));
                 return result;
             }

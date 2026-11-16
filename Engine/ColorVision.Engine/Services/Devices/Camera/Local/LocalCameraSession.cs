@@ -574,7 +574,10 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                 cancellation.Token.ThrowIfCancellationRequested();
                 log.Info(FormattableString.Invariant($"[LocalAutoFocus] Begin Camera={OpenedCameraId} Method={settings.Method} FineOnly={settings.FineOnly} Evaluation={settings.Evaluation} Range=[{settings.Minimum},{settings.Maximum}] InitialStep={settings.InitialStep} FineStep={settings.FineStep} Reduction={settings.Reduction} StopStep={settings.StopStep} MinimumScore={settings.MinimumScore} TimeoutMs={settings.Timeout} ExposureMs={exposure} Gain={gain} Preview={preview != null}"));
                 var result = motor.AutoFocus(manager, settings, exposure, gain, cancellation.Token, preview, progress, includeVid);
-                log.Info(FormattableString.Invariant($"[LocalAutoFocus] Completed Camera={OpenedCameraId} Position={result.Position} Score={result.Score} Samples={result.Samples} TotalMs={result.TotalTime}"));
+                string vidDetails = result.ActualPosition is int actualPosition
+                    ? FormattableString.Invariant($" ActualPosition={actualPosition} VidMm={result.VidPosition:R} VidSource=ActualPosition")
+                    : result.VidPosition is double vid ? FormattableString.Invariant($" VidMm={vid:R} VidSource=TargetPosition") : string.Empty;
+                log.Info(FormattableString.Invariant($"[LocalAutoFocus] Completed Camera={OpenedCameraId} Position={result.Position} Score={result.Score} Samples={result.Samples} TotalMs={result.TotalTime}{vidDetails}"));
                 return result;
             }
             catch (OperationCanceledException) { log.Info($"[LocalAutoFocus] Stopped Camera={OpenedCameraId}"); throw; }

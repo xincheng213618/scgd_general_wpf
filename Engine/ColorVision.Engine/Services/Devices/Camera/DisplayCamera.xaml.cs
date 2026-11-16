@@ -89,6 +89,10 @@ namespace ColorVision.Engine.Services.Devices.Camera
         [Description("默认开启。主面板本地取图及 L/BV 节点本地转发保存 CVRAW，包含已执行的色度校正参数。关闭后仍显示图像并保存结果记录。")]
         public bool SaveLocalCaptureFiles { get; set; } = true;
 
+        [Category("AcquisitionDisplay"), LocalizedDisplayName("CameraFocus_UseMotorReadbackForVid")]
+        [LocalizedDescription("CameraFocus_UseMotorReadbackForVidHint")]
+        public bool UseMotorReadbackForVid { get; set; } = true;
+
         [Category("AcquisitionDisplay"), LocalizedDisplayName("CameraFocusChart_AutoSave")]
         [LocalizedDescription("CameraFocusChart_AutoSaveHint")]
         public bool SaveLocalAutoFocusChart { get; set; }

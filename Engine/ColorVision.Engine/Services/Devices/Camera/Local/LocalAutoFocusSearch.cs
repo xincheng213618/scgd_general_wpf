@@ -13,6 +13,7 @@ internal sealed record LocalAutoFocusSettings(EvaFunc Evaluation, FindFuncModel 
     int InitialStep, double FineStep, double Reduction, int StopStep, double MinimumScore, int Timeout)
 {
     internal bool FineOnly { get; init; }
+    internal bool UseMotorReadbackForVid { get; init; } = true;
 
     // 0 disables early stopping. Otherwise a full-range coarse scan ends once the peak is bracketed:
     // an earlier sample and EarlyStopCount consecutive later samples score below EarlyStopRatio × peak.
@@ -60,6 +61,8 @@ internal sealed record LocalAutoFocusSettings(EvaFunc Evaluation, FindFuncModel 
 
 internal sealed record LocalAutoFocusResult(int Position, double Score, int Samples, long TotalTime)
 {
+    internal int? ActualPosition { get; init; }
+    internal int MotorPosition => ActualPosition ?? Position;
     internal double? VidPosition { get; init; }
 }
 

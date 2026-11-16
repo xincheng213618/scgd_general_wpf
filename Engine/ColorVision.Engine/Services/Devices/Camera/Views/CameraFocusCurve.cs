@@ -17,8 +17,8 @@ internal static class CameraFocusCurve
     }
 
     internal static string BestReadout(LocalAutoFocusResult result) => result.VidPosition is double vid
-        ? string.Format(CultureInfo.CurrentCulture, EngineLocalization.Get("CameraFocusChart_BestWithVid"), result.Position, result.Score, vid)
-        : string.Format(CultureInfo.CurrentCulture, EngineLocalization.Get("CameraFocusChart_Best"), result.Position, result.Score);
+        ? string.Format(CultureInfo.CurrentCulture, EngineLocalization.Get("CameraFocusChart_BestWithVid"), result.MotorPosition, result.Score, vid)
+        : string.Format(CultureInfo.CurrentCulture, EngineLocalization.Get("CameraFocusChart_Best"), result.MotorPosition, result.Score);
 
     internal static void ConfigureAxes(Plot chart, bool video)
     {

@@ -21,7 +21,7 @@ internal sealed class VidFocusImageExport(string root, bool saveByDate, string s
             [typeof(AutoFocusParam), typeof(CancellationToken), typeof(bool)])?
             .CreateDelegate<Func<DeviceCamera, AutoFocusParam, CancellationToken, bool, MsgRecord>>();
 
-    private Func<string, double, string, CancellationToken, Task>? saveImages;
+    private Func<string, double, string, CancellationToken, Task>? saveResult;
 
     internal static bool HostSupportsEvidence => FocusWithEvidence != null;
 
@@ -37,7 +37,7 @@ internal sealed class VidFocusImageExport(string root, bool saveByDate, string s
         if (response.Data is CameraAutoFocusEvidence evidence)
         {
             vid = evidence.VidPosition;
-            saveImages = (directory, correctedVid, unit, token) => WriteImagesAsync(directory, evidence, correctedVid, unit, token);
+            saveResult = (directory, correctedVid, unit, token) => WriteResultAsync(directory, evidence, correctedVid, unit, token);
             return true;
         }
         vid = null;
@@ -47,37 +47,44 @@ internal sealed class VidFocusImageExport(string root, bool saveByDate, string s
 
     internal async Task SaveAsync(double vid, string unit, CancellationToken token)
     {
-        if (saveImages == null) return;
+        if (saveResult == null) return;
         try
         {
             string snDirectory = ProjectImageExportService.BuildOutputDirectory(root, saveByDate, requestedAt, serialNumber);
             string stamp = requestedAt.ToString("yyyyMMdd_HHmmss_fffffff", CultureInfo.InvariantCulture);
             string directory = Path.Combine(snDirectory, "VID_" + stamp);
-            await saveImages(directory, vid, unit, token);
+            await saveResult(directory, vid, unit, token);
             log.Info($"VID 对焦图像已保存: {directory}");
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
-            log.Warn("VID 对焦图像保存失败。", ex);
+            log.Warn("VID 对焦结果保存失败。", ex);
         }
     }
 
-    private static async Task WriteImagesAsync(string directory, CameraAutoFocusEvidence evidence, double vid, string unit, CancellationToken token)
+    private static async Task WriteResultAsync(string directory, CameraAutoFocusEvidence evidence, double vid, string unit, CancellationToken token)
     {
         using ImageViewSnapshot snapshot = CreateSnapshot(evidence, vid, unit);
+        // Hosts that already export the images can continue doing so until the CSV API is available.
+        var saveSamples = typeof(CameraAutoFocusEvidence).GetMethod(nameof(CameraAutoFocusEvidence.SaveSamplesCsv),
+            BindingFlags.Public | BindingFlags.Instance, [typeof(string), typeof(CancellationToken)])?
+            .CreateDelegate<Action<string, CancellationToken>>(evidence);
         await Task.Run(async () =>
         {
             token.ThrowIfCancellationRequested();
             string staging = directory + $".{Guid.NewGuid():N}.partial";
             string rendered = Path.Combine(staging, "VID.png");
             string curve = Path.Combine(staging, "FocusCurve.png");
+            string csv = Path.Combine(staging, "FocusSamples.csv");
             Directory.CreateDirectory(staging);
             try
             {
                 await ImageView.SaveSnapshotAsync(snapshot, rendered, token);
                 evidence.SaveCurvePng(curve, vid);
+                saveSamples?.Invoke(csv, token);
                 token.ThrowIfCancellationRequested();
                 Directory.Move(staging, directory);
+                if (saveSamples == null) log.Warn("当前 ColorVision 版本不支持 VID 对焦采样 CSV，请升级主程序。");
             }
             finally
             {
@@ -85,6 +92,7 @@ internal sealed class VidFocusImageExport(string root, bool saveByDate, string s
                 {
                     File.Delete(rendered);
                     File.Delete(curve);
+                    File.Delete(csv);
                     Directory.Delete(staging);
                 }
             }

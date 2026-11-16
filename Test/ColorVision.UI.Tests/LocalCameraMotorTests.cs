@@ -321,8 +321,8 @@ public class LocalCameraMotorTests
         Assert.Equal(result.Samples, evaluations);
         Assert.Equal(evaluations, previews);
         Assert.Equal(result.Samples + 1, updates.Count(update => !update.Score.HasValue));
-        Assert.Equal(result.Samples + 1, updates.Count(update => update.Score.HasValue));
-        Assert.Equal((result.Position, (double?)result.Score), updates[^1]);
+        Assert.Equal(result.Samples, updates.Count(update => update.Score.HasValue));
+        Assert.Equal((result.Position, (double?)null), updates[^1]);
         Assert.All(updates.Where(update => update.Score.HasValue), update =>
             Assert.Equal(1000000 - Math.Pow(update.Position - 463, 2), update.Score!.Value));
         using var stop = new CancellationTokenSource();
@@ -489,6 +489,62 @@ public class LocalCameraMotorTests
         finally { File.Delete(path); }
     }
 
+    [Theory]
+    [InlineData(false, true, 1)]
+    [InlineData(true, true, 1)]
+    [InlineData(false, true, 0)]
+    [InlineData(false, false, 0)]
+    public void AutoFocusVidUsesTheConfiguredPositionSource(bool fineOnly, bool useReadback, int readbackCode)
+    {
+        string path = Path.GetTempFileName();
+        var config = Configuration();
+        config.MotorConfig.VID.IsUseVID = true;
+        config.MotorConfig.VID.MappingFileName = path;
+        try
+        {
+            File.WriteAllText(path, """{"a":0,"b":0,"c":1,"d":10}""");
+            var operations = new List<string>();
+            var native = new FakeMotor { Position = 425 };
+            native.MoveResponse = position => { operations.Add($"move:{position}"); return 1; };
+            native.OnSample = () => operations.Add("sample");
+            native.PositionResponse = () =>
+            {
+                bool initial = operations.Count == 0;
+                operations.Add("read");
+                return initial ? (native.Position, 1) : (native.Position + 7, readbackCode);
+            };
+            using var session = new LocalCameraSession(new LocalCameraSessionTests.FakeNative(), new CameraBackendState(true), config, motorNative: native);
+            session.Open("camera", TakeImageMode.Measure_Normal, 16);
+            var focus = Settings() with { FineOnly = fineOnly, UseMotorReadbackForVid = useReadback };
+            var updates = new List<(int Position, double? Vid, double? Score)>();
+            LocalAutoFocusResult Run() => session.AutoFocus(focus, 10, 1, progress: (position, vid, score) => updates.Add((position, vid, score)));
+
+            if (useReadback && readbackCode == 0)
+            {
+                var error = Assert.Throws<InvalidOperationException>(() => Run());
+                Assert.Contains("读取对焦完成后的电机实际位置", error.Message);
+                Assert.NotEmpty(updates);
+                Assert.NotNull(updates[^1].Score);
+            }
+            else
+            {
+                var result = Run();
+                Assert.Equal(native.Position, result.Position);
+                int expectedPosition = useReadback ? native.Position + 7 : native.Position;
+                Assert.Equal(useReadback ? expectedPosition : (int?)null, result.ActualPosition);
+                Assert.Equal(expectedPosition, result.MotorPosition);
+                Assert.Equal(expectedPosition + 10, result.VidPosition);
+                Assert.Equal((expectedPosition, result.VidPosition, (double?)null), updates[^1]);
+                Assert.Equal(result.Samples, updates.Count(update => update.Score.HasValue));
+            }
+            Assert.Equal(useReadback ? 2 : 1, operations.Count(operation => operation == "read"));
+            Assert.Equal("read", operations[0]);
+            Assert.Equal($"move:{native.Position}", operations[useReadback ? ^2 : ^1]);
+            if (useReadback) Assert.Equal("read", operations[^1]);
+        }
+        finally { File.Delete(path); }
+    }
+
     [Fact]
     public void CalibrationFocusReadsRawMotorPositionWithoutTheConfiguredVidMap()
     {
@@ -585,13 +641,18 @@ public class LocalCameraMotorTests
         internal bool ConfigurationError;
         internal LocalMotorSettings? Settings;
         internal Func<int, int>? MoveResponse;
+        internal Func<(int Position, int Code)>? PositionResponse;
         internal Action? OnSample;
         internal Action<Action<LocalAutoFocusFrame>?>? OnPreview;
         public int Open(ref IntPtr handle, LocalMotorSettings settings) { Events.Add("open"); Settings = settings; handle = new IntPtr(700); return 1; }
         public void Configure(IntPtr handle, LocalMotorSettings settings) { Events.Add("configure"); if (ConfigurationError) throw new InvalidOperationException("configuration failed"); }
         public int Close(IntPtr handle) { Closes++; Events.Add("close"); return CloseResult; }
         public int Move(IntPtr handle, int position, int timeout) { Moves++; Position = position; return MoveResponse?.Invoke(position) ?? MoveResult; }
-        public int GetPosition(IntPtr handle, out int position, int timeout) { position = Position; return 1; }
+        public int GetPosition(IntPtr handle, out int position, int timeout)
+        {
+            (position, int code) = PositionResponse?.Invoke() ?? (Position, 1);
+            return code;
+        }
         public int Home(IntPtr handle, LocalMotorSettings settings) { Position = 0; return 1; }
         public int Aperture(IntPtr handle, float aperture, int timeout) => 1;
         public void PrepareFocus(IntPtr cameraHandle, float exposure, float gain) { }

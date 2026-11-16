@@ -2903,6 +2903,8 @@
   <data name="CameraFocusChart_Seconds" xml:space="preserve"><value>时间（秒）</value></data>
   <data name="CameraFocusChart_Position" xml:space="preserve"><value>电机位置</value></data>
   <data name="CameraFocusChart_Score" xml:space="preserve"><value>评价值</value></data>
+  <data name="CameraFocus_UseMotorReadbackForVid" xml:space="preserve"><value>VID 使用电机到位读数</value></data>
+  <data name="CameraFocus_UseMotorReadbackForVidHint" xml:space="preserve"><value>默认开启。开启时，本地对焦结束后读取电机实际坐标来换算 VID。关闭时，使用对焦选中的目标坐标。下次对焦生效。</value></data>
   <data name="CameraFocusChart_AutoSave" xml:space="preserve"><value>自动保存对焦结果</value></data>
   <data name="CameraFocusChart_AutoSaveHint" xml:space="preserve"><value>本地自动聚焦或微对焦成功后，保存最佳位置的标记图、对焦曲线和采样 CSV。</value></data>
   <data name="MotorConfig_FocusEarlyStopRatio" xml:space="preserve"><value>粗扫提前停止比例</value></data>

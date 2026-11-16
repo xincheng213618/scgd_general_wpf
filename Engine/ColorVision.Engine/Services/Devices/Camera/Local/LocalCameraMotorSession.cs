@@ -243,14 +243,19 @@ internal sealed class LocalCameraMotorSession(ILocalCameraMotorNative native)
             CheckFocusOperation(native.EvaluateFocus(cameraHandle, focus.Evaluation, out double value, preview), focus, watch.ElapsedMilliseconds, "自动对焦取图评价", token);
             progress?.Invoke(position, vid, value);
             return value;
-        }, (position, _) =>
+        }, (position, _) => MoveForFocus(position, $"移动至最佳对焦位置 {position}"), token, () => watch.ElapsedMilliseconds, initialPosition);
+
+        if (vidMapping != null && focus.UseMotorReadbackForVid)
         {
-            MoveForFocus(position, $"移动至最佳对焦位置 {position}");
-            progress?.Invoke(position, ConvertVid(vidMapping, position), null);
-        }, token, () => watch.ElapsedMilliseconds, initialPosition);
-        double? finalVid = ConvertVid(vidMapping, result.Position);
-        progress?.Invoke(result.Position, finalVid, result.Score);
-        return result with { VidPosition = finalVid };
+            const string operation = "读取对焦完成后的电机实际位置";
+            int remaining = focus.Remaining(watch.ElapsedMilliseconds, token, operation);
+            int code = native.GetPosition(handle, out int actualPosition, Math.Min(settings.Timeout, remaining));
+            CheckFocusOperation(code, focus, watch.ElapsedMilliseconds, operation, token);
+            result = result with { ActualPosition = actualPosition };
+        }
+        result = result with { VidPosition = ConvertVid(vidMapping, result.MotorPosition) };
+        progress?.Invoke(result.MotorPosition, result.VidPosition, null);
+        return result with { TotalTime = watch.ElapsedMilliseconds };
     }
 
     internal static void CheckFocusOperation(int code, LocalAutoFocusSettings focus, long elapsedMilliseconds, string operation, CancellationToken token)

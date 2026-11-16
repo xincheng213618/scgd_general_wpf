@@ -6401,6 +6401,8 @@ Active cache operations will finish first. Disk files will be kept, and the cach
   <data name="CameraFocusChart_Seconds" xml:space="preserve"><value>Time (s)</value></data>
   <data name="CameraFocusChart_Position" xml:space="preserve"><value>Motor position</value></data>
   <data name="CameraFocusChart_Score" xml:space="preserve"><value>Score</value></data>
+  <data name="CameraFocus_UseMotorReadbackForVid" xml:space="preserve"><value>Use motor readback for VID</value></data>
+  <data name="CameraFocus_UseMotorReadbackForVidHint" xml:space="preserve"><value>Enabled by default. After local autofocus, use the reported motor position to calculate VID. Turn off to use the selected target position. Applies to the next focus run.</value></data>
   <data name="CameraFocusChart_AutoSave" xml:space="preserve"><value>Save autofocus results automatically</value></data>
   <data name="CameraFocusChart_AutoSaveHint" xml:space="preserve"><value>Saves the marked best-focus image, focus curve, and sample CSV after successful local autofocus or fine focus.</value></data>
   <data name="MotorConfig_FocusEarlyStopRatio" xml:space="preserve"><value>Coarse scan early-stop ratio</value></data>

@@ -1751,6 +1751,24 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
+        ///   查找类似 VID 使用电机到位读数 的本地化字符串。
+        /// </summary>
+        public static string CameraFocus_UseMotorReadbackForVid {
+            get {
+                return ResourceManager.GetString("CameraFocus_UseMotorReadbackForVid", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 默认开启。开启时，本地对焦结束后读取电机实际坐标来换算 VID。关闭时，使用对焦选中的目标坐标。下次对焦生效。 的本地化字符串。
+        /// </summary>
+        public static string CameraFocus_UseMotorReadbackForVidHint {
+            get {
+                return ResourceManager.GetString("CameraFocus_UseMotorReadbackForVidHint", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   查找类似 自动对焦曲线 的本地化字符串。
         /// </summary>
         public static string CameraFocusChart_AutoFocus {

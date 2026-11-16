@@ -33,11 +33,24 @@ public sealed class CameraAutoFocusEvidence
 
     [JsonIgnore]
     public BitmapSource Frame { get; }
-    public int Position => result.Position;
+    public int Position => result.MotorPosition;
     public double? VidPosition => result.VidPosition;
 
     public void SaveCurvePng(string path, double vid) =>
         CameraFocusCurve.RenderPng(path, deviceCode, evaluation, samples, result with { VidPosition = vid });
+
+    /// <summary>Writes the motor positions and sharpness values in capture order.</summary>
+    public void SaveSamplesCsv(string path, CancellationToken stop)
+    {
+        stop.ThrowIfCancellationRequested();
+        using var writer = new StreamWriter(path);
+        writer.WriteLine("MotorPosition,Sharpness");
+        foreach (var sample in samples)
+        {
+            stop.ThrowIfCancellationRequested();
+            writer.WriteLine(FormattableString.Invariant($"{sample.Key},{sample.Value:R}"));
+        }
+    }
 
     internal string SaveLocalResult(string? directory, DateTime completedAt, CancellationToken stop)
     {
@@ -67,15 +80,7 @@ public sealed class CameraAutoFocusEvidence
             ImageView.SaveSnapshotAsync(snapshot, image, stop).GetAwaiter().GetResult();
             stop.ThrowIfCancellationRequested();
             CameraFocusCurve.RenderPng(curve, deviceCode, evaluation, samples, result);
-            using (var writer = new StreamWriter(csv))
-            {
-                writer.WriteLine("MotorPosition,Sharpness");
-                foreach (var sample in samples)
-                {
-                    stop.ThrowIfCancellationRequested();
-                    writer.WriteLine(FormattableString.Invariant($"{sample.Key},{sample.Value:R}"));
-                }
-            }
+            SaveSamplesCsv(csv, stop);
 
             string output = Path.Combine(parent, timestamp);
             for (int suffix = 2; ; suffix++)
