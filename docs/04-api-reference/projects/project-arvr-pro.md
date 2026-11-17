@@ -153,7 +153,7 @@ W255 和键化亮色度 `LuminanceChromaticityTestResults[配置 Key]` 保留原
 | 4 | 候选均不可用，但能确认结果宽高 | 使用相同尺寸的白色画布承载历史标记 |
 | 5 | 候选均不可用且尺寸未知 | 清除旧底图并记录失败，不能继续显示上一条结果的图 |
 
-`ARVRWindow.xaml.cs` 负责实际加载、请求版本仲裁和 `RenderResultImage` / `ShowSavedResultImage` 分流。两个保存路径是 `ProjectARVRReuslt` 的可空列；`ViewResultManager` 通过现有 `CodeFirst.InitTables<ProjectARVRReuslt, ObjectiveTestResultRecord>()` 为旧库补列，不能要求用户删库或手工编辑 SQLite。旧磁盘 PNG 不会被自动扫描回填；只有实际成功导出的通道才更新对应路径。
+`ARVRWindow.xaml.cs` 负责实际加载、请求版本仲裁和 `RenderResultImage` / `ShowSavedResultImage` 分流。选中结果时先记录三个图片路径，文件存在性检查在后台串行执行。快速切换时，已取消的请求等正在执行的文件检查返回后即停止，随后处理当前选择。两个保存路径是 `ProjectARVRReuslt` 的可空列；`ViewResultManager` 通过现有 `CodeFirst.InitTables<ProjectARVRReuslt, ObjectiveTestResultRecord>()` 为旧库补列，不能要求用户删库或手工编辑 SQLite。旧磁盘 PNG 不会被自动扫描回填；只有实际成功导出的通道才更新对应路径。
 
 内置解析器复用当前批次已经读到的图像尺寸，需要时仍回查数据库兼容外部解析器和历史缺失值。查不到宽高仍可保存结果。实现见 `IProcessExecutionContext` 和 `ViewResultManager.Save`。
 

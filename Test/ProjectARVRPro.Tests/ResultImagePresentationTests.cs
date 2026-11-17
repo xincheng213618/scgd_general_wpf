@@ -64,7 +64,7 @@ public sealed class ResultImagePresentationTests
     }
 
     [Fact]
-    public void ExistingImageCandidatesPreferOriginalThenSavedSourceThenSavedResult()
+    public async Task ExistingImageCandidatesPreferOriginalThenSavedSourceThenSavedResult()
     {
         ProjectARVRReuslt result = new()
         {
@@ -73,7 +73,9 @@ public sealed class ResultImagePresentationTests
             SavedResultImageFileName = @"C:\exports\result.png",
         };
 
-        IReadOnlyList<ResultImageFileCandidate> candidates = ResultImageFileCandidates.GetExisting(result, _ => true);
+        ResultImageFilePaths paths = ResultImageFilePaths.Capture(result);
+        result.FileName = null;
+        IReadOnlyList<ResultImageFileCandidate> candidates = await ResultImageFileCandidates.GetExistingAsync(paths, default, _ => true);
 
         Assert.Equal(
             [
@@ -82,6 +84,7 @@ public sealed class ResultImagePresentationTests
                 ResultImageFileKind.SavedResult,
             ],
             candidates.Select(candidate => candidate.Kind));
+        Assert.Equal(paths.Original, candidates[0].FilePath);
         Assert.True(candidates[0].RequiresOverlayRendering);
         Assert.True(candidates[1].RequiresOverlayRendering);
         Assert.False(candidates[2].RequiresOverlayRendering);
@@ -103,6 +106,42 @@ public sealed class ResultImagePresentationTests
 
         Assert.Equal(ResultImageFileKind.SavedSource, candidate.Kind);
         Assert.True(candidate.RequiresOverlayRendering);
+    }
+
+    [Fact]
+    public async Task CanceledProbeSkipsRemainingCandidatePathsAfterCurrentCheckReturns()
+    {
+        using CancellationTokenSource cancellation = new();
+        using ManualResetEventSlim releaseProbe = new();
+        TaskCompletionSource probeEntered = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        string originalPath = @"C:\images\original.cvraw";
+        ResultImageFilePaths paths = new(originalPath, @"C:\exports\source.png", @"C:\exports\result.png");
+        List<string> checkedPaths = [];
+
+        Task<IReadOnlyList<ResultImageFileCandidate>> candidates = ResultImageFileCandidates.GetExistingAsync(
+            paths,
+            cancellation.Token,
+            path =>
+            {
+                checkedPaths.Add(path);
+                probeEntered.TrySetResult();
+                Assert.True(releaseProbe.Wait(TimeSpan.FromSeconds(10)));
+                return true;
+            });
+
+        try
+        {
+            await probeEntered.Task.WaitAsync(TimeSpan.FromSeconds(10));
+            Assert.False(candidates.IsCompleted);
+            cancellation.Cancel();
+        }
+        finally
+        {
+            releaseProbe.Set();
+        }
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => candidates);
+        Assert.Equal(originalPath, Assert.Single(checkedPaths));
     }
 
     [Fact]

@@ -21,24 +21,44 @@ internal readonly record struct ResultImageFileCandidate(string FilePath, Result
     public bool RequiresOverlayRendering => Kind != ResultImageFileKind.SavedResult;
 }
 
+internal readonly record struct ResultImageFilePaths(string? Original, string? SavedSource, string? SavedResult)
+{
+    public static ResultImageFilePaths Capture(ProjectARVRReuslt result)
+    {
+        ArgumentNullException.ThrowIfNull(result);
+        return new(result.FileName, result.SavedSourceImageFileName, result.SavedResultImageFileName);
+    }
+}
+
 internal static class ResultImageFileCandidates
 {
     public static IReadOnlyList<ResultImageFileCandidate> GetExisting(
         ProjectARVRReuslt result,
-        Func<string, bool>? fileExists = null)
+        Func<string, bool>? fileExists = null) => GetExisting(ResultImageFilePaths.Capture(result), fileExists, default);
+
+    public static Task<IReadOnlyList<ResultImageFileCandidate>> GetExistingAsync(
+        ResultImageFilePaths paths,
+        CancellationToken cancellationToken,
+        Func<string, bool>? fileExists = null) => Task.Run(() => GetExisting(paths, fileExists, cancellationToken), cancellationToken);
+
+    private static IReadOnlyList<ResultImageFileCandidate> GetExisting(
+        ResultImageFilePaths filePaths,
+        Func<string, bool>? fileExists,
+        CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(result);
         fileExists ??= path => CVFileReadCache.GetCachedLength(path).HasValue || File.Exists(path);
 
         List<ResultImageFileCandidate> candidates = [];
         HashSet<string> paths = new(StringComparer.OrdinalIgnoreCase);
-        Add(result.FileName, ResultImageFileKind.Original);
-        Add(result.SavedSourceImageFileName, ResultImageFileKind.SavedSource);
-        Add(result.SavedResultImageFileName, ResultImageFileKind.SavedResult);
+        Add(filePaths.Original, ResultImageFileKind.Original);
+        Add(filePaths.SavedSource, ResultImageFileKind.SavedSource);
+        Add(filePaths.SavedResult, ResultImageFileKind.SavedResult);
+        cancellationToken.ThrowIfCancellationRequested();
         return candidates;
 
         void Add(string? filePath, ResultImageFileKind kind)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             if (string.IsNullOrWhiteSpace(filePath)
                 || !paths.Add(filePath)
                 || !fileExists(filePath))

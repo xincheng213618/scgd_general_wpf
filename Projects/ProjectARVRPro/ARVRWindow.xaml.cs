@@ -2254,7 +2254,7 @@ namespace ProjectARVRPro
                     log.Error(ex);
                 }
 
-                IReadOnlyList<ResultImageFileCandidate> imageCandidates = ResultImageFileCandidates.GetExisting(result);
+                ResultImageFilePaths imagePaths = ResultImageFilePaths.Capture(result);
                 CancellationTokenSource requestCancellation = new();
                 Interlocked.Exchange(ref _resultImagePresentationCancellation, requestCancellation)?.Cancel();
                 _ = Application.Current.Dispatcher.BeginInvoke(async () =>
@@ -2267,6 +2267,8 @@ namespace ProjectARVRPro
                         if (!IsCurrentResultImageRequest(requestVersion, result))
                             return;
 
+                        IReadOnlyList<ResultImageFileCandidate> imageCandidates = await ResultImageFileCandidates.GetExistingAsync(imagePaths, requestCancellation.Token);
+                        requestCancellation.Token.ThrowIfCancellationRequested();
                         bool hasDisplaySurface = false;
                         bool renderOverlays = true;
                         ResultImageFileCandidate? openedCandidate = await ResultImageFileCandidates.OpenFirstAsync(
@@ -2288,6 +2290,10 @@ namespace ProjectARVRPro
                                     log.Warn($"加载结果图片后没有有效图像，将尝试下一候选图：{candidate.FilePath}");
                             },
                             requestCancellation.Token);
+                        requestCancellation.Token.ThrowIfCancellationRequested();
+                        if (!IsCurrentResultImageRequest(requestVersion, result))
+                            return;
+
                         if (openedCandidate is ResultImageFileCandidate candidate
                             && GetLoadedImageSource() is BitmapSource)
                         {
@@ -2325,7 +2331,8 @@ namespace ProjectARVRPro
                     }
                     catch (OperationCanceledException) when (requestCancellation.IsCancellationRequested)
                     {
-                        _automaticImageExportResults.Remove(result);
+                        if (!ReferenceEquals(listView1.SelectedItem, result))
+                            _automaticImageExportResults.Remove(result);
                     }
                     catch (Exception ex)
                     {
