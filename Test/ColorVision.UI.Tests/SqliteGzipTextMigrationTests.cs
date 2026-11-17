@@ -103,6 +103,31 @@ public sealed class SqliteGzipTextMigrationTests
         Assert.Equal(0L, database.ExecuteScalarInt64("SELECT payload_utf8_length FROM PayloadLog WHERE id = 2;"));
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void PayloadStoreClosesFailedReadUnlessItIsInAnActiveTransaction(bool useTransaction)
+    {
+        using var database = new TemporarySqliteDatabase();
+        database.CreateLegacyPayloadTable();
+        using SqlSugarClient db = database.CreateSugarClient();
+        if (useTransaction)
+            db.Ado.BeginTran();
+
+        try
+        {
+            Assert.Throws<SqliteException>(() =>
+                SqliteGzipTextPayloadStore.Load(db, "missing_payload_table", "id", 1, "payload_gzip", "payload_utf8_length"));
+            Assert.Equal(useTransaction ? System.Data.ConnectionState.Open : System.Data.ConnectionState.Closed, db.Ado.Connection.State);
+            Assert.Equal(useTransaction, db.Ado.Transaction != null);
+        }
+        finally
+        {
+            if (useTransaction)
+                db.Ado.RollbackTran();
+        }
+    }
+
     [Fact]
     public void MigrationProcessesMoreThanFiveHundredRowsClearsLegacyTextAndIsIdempotent()
     {

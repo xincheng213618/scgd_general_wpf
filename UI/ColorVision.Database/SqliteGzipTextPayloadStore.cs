@@ -90,15 +90,29 @@ namespace ColorVision.Database
             ValidateIdentifier(gzipColumnName);
             ValidateIdentifier(lengthColumnName);
 
-            DataTable result = db.Ado.GetDataTable(
-                $"SELECT \"{gzipColumnName}\", \"{lengthColumnName}\" FROM \"{tableName}\" " +
-                $"WHERE \"{idColumnName}\" = @id LIMIT 1;",
-                new SugarParameter("@id", id));
-            if (result.Rows.Count == 0)
-                return null;
+            var ado = db.Ado;
+            object gzipValue;
+            object lengthValue;
+            try
+            {
+                using var reader = ado.GetDataReader(
+                    $"SELECT \"{gzipColumnName}\", \"{lengthColumnName}\" FROM \"{tableName}\" " +
+                    $"WHERE \"{idColumnName}\" = @id LIMIT 1;",
+                    new SugarParameter("@id", id));
+                if (!reader.Read())
+                    return null;
 
-            object gzipValue = result.Rows[0][gzipColumnName];
-            object lengthValue = result.Rows[0][lengthColumnName];
+                gzipValue = reader.GetValue(0);
+                lengthValue = reader.GetValue(1);
+            }
+            catch
+            {
+                // SqlSugar's reader only attaches automatic cleanup after the query succeeds.
+                if (db.CurrentConnectionConfig.IsAutoCloseConnection && ado.Transaction == null)
+                    ado.Close();
+                throw;
+            }
+
             byte[]? bytes = gzipValue == DBNull.Value ? null : gzipValue as byte[];
             int? length = lengthValue == DBNull.Value ? null : Convert.ToInt32(lengthValue);
             return GzipTextPayloadCodec.Decode(bytes, length, maximumUtf8Bytes);
