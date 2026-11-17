@@ -176,7 +176,11 @@ These variants take the destination `HImage` by value and reuse caller-owned sto
 
 ### M_GetMinMax
 
-For multi-channel input, an invalid channel index falls back to BGR-to-gray conversion. A single channel is used directly. Unsigned outputs clamp negative extrema to zero and discard fractions.
+对单通道直接统计最小值和最大值，并按有效索引统计彩色通道。彩色输入的索引无效时按 BGR 顺序转成灰度。接口借用源缓冲，返回的无符号值将负数截到零并舍去小数。
+
+### M_GetRgbMinMax
+
+ImageView 的 RGB24/RGB48 Composite 自动范围使用此接口。按 RGB 顺序统计灰度范围，沿用 `M_GetMinMax` 的缓冲区和返回值契约。
 
 ---
 

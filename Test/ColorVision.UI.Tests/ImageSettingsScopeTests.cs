@@ -5,9 +5,12 @@ using ColorVision.ImageEditor.Draw.Ruler;
 using ColorVision.ImageEditor.EditorTools.Filters;
 using ColorVision.ImageEditor.EditorTools.PseudoColor;
 using ColorVision.ImageEditor.Settings;
+using Newtonsoft.Json;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
+using System.Windows.Data;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 
@@ -128,6 +131,32 @@ public sealed class ImageSettingsScopeTests
         view.SetImageSource(new WriteableBitmap(2, 2, 96, 96, PixelFormats.Gray8, null));
         Assert.Equal(255, pseudo.State.SliderValueEnd);
         Assert.False(pseudo.State.IsEnabled);
+    });
+
+    [Fact]
+    public void PseudoColorSettingsDefaultToAutoAndAllowSavingManualRange() => Run(service =>
+    {
+        using ImageView view = new();
+        var state = view.EditorContext.ProcessingContext.DisplayEffects.PseudoColor;
+        ImageViewSettingsWindow window = new(view, ImageSettingsCategories.PseudoColor);
+        var toggle = Assert.Single(LogicalDescendants(window).OfType<ToggleButton>(), button =>
+            BindingOperations.GetBinding(button, ToggleButton.IsCheckedProperty)?.Path.Path == nameof(state.IsAutoSetRange));
+        Assert.Equal(SettingsText.PseudoAutoRange, System.Windows.Automation.AutomationProperties.GetName(toggle));
+        Assert.True(state.IsAutoSetRange);
+        Assert.Equal(true, toggle.IsChecked);
+
+        toggle.SetCurrentValue(ToggleButton.IsCheckedProperty, false);
+        Assert.False(state.IsAutoSetRange);
+        Assert.Empty(service.SavedTypes);
+        Button saveDefault = Assert.Single(LogicalDescendants(window).OfType<Button>(), button => Equals(button.Content, SettingsText.SetAsDefault));
+        saveDefault.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        window.Close();
+
+        using ImageView next = new();
+        Assert.False(next.EditorContext.ProcessingContext.DisplayEffects.PseudoColor.IsAutoSetRange);
+        Assert.Equal(new[] { typeof(PseudoColorDefaultConfig) }, service.SavedTypes);
+        var legacyDefaults = JsonConvert.DeserializeObject<PseudoColorDefaultConfig>("""{"IsAutoSetRangeByDefault":false}""")!;
+        Assert.False(legacyDefaults.IsAutoSetRangeByDefault);
     });
 
     [Fact]

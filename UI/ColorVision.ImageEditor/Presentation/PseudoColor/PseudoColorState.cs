@@ -1,7 +1,9 @@
 using ColorVision.Common.MVVM;
 using ColorVision.Core;
 using ColorVision.ImageEditor.EditorTools.PseudoColor;
+using ColorVision.ImageEditor.Settings;
 using System.ComponentModel;
+using System.ComponentModel.DataAnnotations;
 using System.Windows.Media;
 
 namespace ColorVision.ImageEditor.Presentation.PseudoColor
@@ -20,7 +22,7 @@ namespace ColorVision.ImageEditor.Presentation.PseudoColor
         }
         private bool _isEnabled;
 
-        [DisplayName("自动范围")]
+        [Display(Name = nameof(SettingsText.PseudoAutoRange), Description = nameof(SettingsText.PseudoAutoRangeDescription), ResourceType = typeof(SettingsText))]
         public bool IsAutoSetRange
         {
             get => _isAutoSetRange;

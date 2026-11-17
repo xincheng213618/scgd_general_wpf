@@ -54,10 +54,8 @@ cv::Mat grayFloat(const cv::Mat& image)
     return gray;
 }
 
-std::vector<Candidate> detectCandidates(const cv::Mat& gray8, double threshold, const Options& options)
+std::vector<Candidate> detectCandidates(const cv::Mat& mask, const Options& options)
 {
-    cv::Mat mask;
-    cv::threshold(gray8, mask, threshold, 255, cv::THRESH_BINARY);
     std::vector<std::vector<cv::Point>> contours;
     std::vector<cv::Vec4i> hierarchy;
     // Keep foreground components inside a surrounding frame or ring. CCOMP
@@ -65,14 +63,14 @@ std::vector<Candidate> detectCandidates(const cv::Mat& gray8, double threshold, 
     // their component, so a ring's inner edge cannot become a second dot.
     cv::findContours(mask, contours, hierarchy, cv::RETR_CCOMP, cv::CHAIN_APPROX_SIMPLE);
     std::vector<Candidate> candidates;
-    const double maxWidth = gray8.cols * 0.75 / std::max(2, options.cols - 1);
-    const double maxHeight = gray8.rows * 0.75 / std::max(2, options.rows - 1);
+    const double maxWidth = mask.cols * 0.75 / std::max(2, options.cols - 1);
+    const double maxHeight = mask.rows * 0.75 / std::max(2, options.rows - 1);
     for (size_t i = 0; i < contours.size(); ++i) {
         if (hierarchy[i][3] >= 0) continue;
         const auto& contour = contours[i];
         const cv::Rect bounds = cv::boundingRect(contour);
         if (bounds.width < 3 || bounds.height < 3 || bounds.width > maxWidth || bounds.height > maxHeight) continue;
-        if (bounds.x <= 0 || bounds.y <= 0 || bounds.br().x >= gray8.cols || bounds.br().y >= gray8.rows) continue;
+        if (bounds.x <= 0 || bounds.y <= 0 || bounds.br().x >= mask.cols || bounds.br().y >= mask.rows) continue;
         const double area = cv::contourArea(contour);
         const double perimeter = cv::arcLength(contour, true);
         const double extent = area / (bounds.width * bounds.height);
@@ -417,14 +415,20 @@ json calculateGridDistortionV2(const cv::Mat& image, const json& config, const c
     // Preserve high local contrast at dim points even when an unrelated saturated
     // reflection dominates a 16-bit/float image's global range. Global min/max is
     // only a numerical floor; it must not quantize those point amplitudes to zero.
-    cv::Mat grayMagnitude = cv::abs(gray), backgroundMagnitude = cv::abs(background);
-    cv::max(grayMagnitude, backgroundMagnitude, localScale);
+    if (image.depth() == CV_8U || image.depth() == CV_16U) {
+        // Gray conversion, blurring and interpolation preserve nonnegative intensities.
+        cv::max(gray, background, localScale);
+    }
+    else {
+        cv::Mat grayMagnitude = cv::abs(gray), backgroundMagnitude = cv::abs(background);
+        cv::max(grayMagnitude, backgroundMagnitude, localScale);
+    }
     cv::max(localScale, range * 1e-6, localScale);
     cv::divide(signal, localScale, signal);
     signal.convertTo(gray8, CV_8U, 255.0);
     result["timings"]["preprocessMs"] = elapsed(stage);
-    cv::Mat ignored;
-    const double otsu = cv::threshold(gray8, ignored, 0, 255, cv::THRESH_BINARY | cv::THRESH_OTSU);
+    cv::Mat mask;
+    const double otsu = cv::threshold(gray8, mask, 0, 255, cv::THRESH_BINARY | cv::THRESH_OTSU);
     const double floor = std::max(1.0, options.minimumContrast * 255.0 * 0.5);
     const std::array<double, 3> thresholds = { std::max(otsu, floor), std::max(otsu * 0.35, floor), std::max(otsu * 0.10, floor) };
     std::vector<Candidate> candidates;
@@ -435,7 +439,10 @@ json calculateGridDistortionV2(const cv::Mat& image, const json& config, const c
     for (int attempt = 0; attempt < static_cast<int>(thresholds.size()); ++attempt) {
         if (attempt > 0 && std::abs(thresholds[attempt] - thresholds[attempt - 1]) < 0.5) continue;
         stage = Clock::now();
-        candidates = detectCandidates(gray8, thresholds[attempt], options);
+        if (attempt != 0 || thresholds[attempt] != otsu) {
+            cv::threshold(gray8, mask, thresholds[attempt], 255, cv::THRESH_BINARY);
+        }
+        candidates = detectCandidates(mask, options);
         candidateMs += elapsed(stage);
         maxCandidates = std::max(maxCandidates, static_cast<int>(candidates.size()));
         stage = Clock::now();

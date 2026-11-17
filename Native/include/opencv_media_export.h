@@ -50,6 +50,7 @@ extern "C" COLORVISIONCORE_API int M_PseudoColorAutoRange(HImage img, HImage* ou
 extern "C" COLORVISIONCORE_API int M_PseudoColorInto(HImage img, HImage outImage, uint min, uint max, cv::ColormapTypes types = cv::ColormapTypes::COLORMAP_JET, int channel = -1);
 extern "C" COLORVISIONCORE_API int M_PseudoColorAutoRangeInto(HImage img, HImage outImage, uint min, uint max, cv::ColormapTypes types, int channel, uint dataMin, uint dataMax);
 extern "C" COLORVISIONCORE_API int M_GetMinMax(HImage img, uint* outMin, uint* outMax, int channel = -1);
+extern "C" COLORVISIONCORE_API int M_GetRgbMinMax(HImage img, uint* outMin, uint* outMax);
 
 extern "C" COLORVISIONCORE_API int M_AutoLevelsAdjust(HImage img, HImage* outImage);
 

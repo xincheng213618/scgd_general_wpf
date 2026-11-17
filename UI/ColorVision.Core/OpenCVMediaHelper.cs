@@ -222,6 +222,8 @@ namespace ColorVision.Core
         [DllImport(LibPath, CallingConvention = CallingConvention.Cdecl)]
         public static extern int M_GetMinMax(HImage image, out uint outMin, out uint outMax, int channel);
 
+        [DllImport(LibPath, CallingConvention = CallingConvention.Cdecl)]
+        public static extern int M_GetRgbMinMax(HImage image, out uint outMin, out uint outMax);
 
 
         /// <summary>
