@@ -2275,7 +2275,7 @@ namespace ProjectARVRPro
                             imageCandidates,
                             async (candidate, cancellationToken) =>
                             {
-                                BitmapSource? loadedSource = await OpenResultImageAsync(candidate.FilePath, cancellationToken);
+                                BitmapSource? loadedSource = await ResultImageLoader.OpenAsync(ImageView, candidate.FilePath, cancellationToken);
                                 if (!IsCurrentResultImageRequest(requestVersion, result))
                                     throw new OperationCanceledException(cancellationToken);
                                 return loadedSource != null;
@@ -2401,35 +2401,6 @@ namespace ProjectARVRPro
             _ => "算法原图",
         };
 
-        private async Task<BitmapSource?> OpenResultImageAsync(string filePath, CancellationToken cancellationToken)
-        {
-            string? activeFilePath = ImageView.Config.GetProperties<string>(ImageViewPropertyKeys.FilePath);
-            if (string.Equals(activeFilePath, filePath, StringComparison.OrdinalIgnoreCase)
-                && GetLoadedImageSource() is BitmapSource currentSource)
-                return currentSource;
-
-            TaskCompletionSource<ImageViewImageSourceLoadedEventArgs> imageLoaded = new(TaskCreationOptions.RunContinuationsAsynchronously);
-            EventHandler<ImageViewImageSourceLoadedEventArgs> imageSourceLoaded = (_, e) => imageLoaded.TrySetResult(e);
-            ImageView.ImageSourceLoaded += imageSourceLoaded;
-            try
-            {
-                ImageView.OpenImage(filePath);
-                ImageViewImageSourceLoadedEventArgs loaded = await imageLoaded.Task.WaitAsync(TimeSpan.FromSeconds(30), cancellationToken);
-                activeFilePath = ImageView.Config.GetProperties<string>(ImageViewPropertyKeys.FilePath);
-                if (!string.Equals(activeFilePath, filePath, StringComparison.OrdinalIgnoreCase)
-                    || !ImageView.IsCurrentImageRevision(loaded.ImageRevision))
-                {
-                    return null;
-                }
-
-                return loaded.Source as BitmapSource;
-            }
-            finally
-            {
-                ImageView.ImageSourceLoaded -= imageSourceLoaded;
-            }
-        }
-
         private readonly SemaphoreSlim _resultImagePresentationGate = new(1, 1);
         private readonly HashSet<ProjectARVRReuslt> _automaticImageExportResults = new(ReferenceEqualityComparer.Instance);
 
@@ -2477,11 +2448,7 @@ namespace ProjectARVRPro
             return ImageView.ImageShow.Source != null;
         }
 
-        private BitmapSource? GetLoadedImageSource()
-        {
-            return ImageView.ViewBitmapSource as BitmapSource
-                ?? ImageView.ImageShow.Source as BitmapSource;
-        }
+        private BitmapSource? GetLoadedImageSource() => ResultImageLoader.GetCurrentBitmap(ImageView);
 
         private void ImageView_ExternalRenderCompleted(
             object? sender,

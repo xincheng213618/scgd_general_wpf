@@ -2,10 +2,13 @@ using ColorVision.Common.Utilities;
 using ColorVision.Database;
 using ColorVision.Engine;
 using ColorVision.FileIO;
+using ColorVision.ImageEditor;
 using Newtonsoft.Json.Linq;
 using ProjectARVRPro.ImageExport;
+using System.Diagnostics;
 using System.IO;
 using System.Windows.Media;
+using System.Windows.Media.Imaging;
 
 namespace ProjectARVRPro;
 
@@ -98,6 +101,65 @@ internal static class ResultImageFileCandidates
         }
 
         return null;
+    }
+}
+
+internal static class ResultImageLoader
+{
+    private static readonly TimeSpan OpenTimeout = TimeSpan.FromSeconds(30);
+
+    public static BitmapSource? GetCurrentBitmap(ImageView imageView) =>
+        imageView.ViewBitmapSource as BitmapSource ?? imageView.ImageShow.Source as BitmapSource;
+
+    public static async Task<BitmapSource?> OpenAsync(ImageView imageView, string filePath, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        bool samePath = IsRequestedPath();
+        Task openCompletion = imageView.ImageOpenCompletion;
+        if (samePath && openCompletion.IsCompletedSuccessfully && GetCurrentBitmap(imageView) is BitmapSource currentSource)
+            return currentSource;
+
+        TaskCompletionSource<ImageViewImageSourceLoadedEventArgs> imageLoaded = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        EventHandler<ImageViewImageSourceLoadedEventArgs> onImageLoaded = (_, e) => imageLoaded.TrySetResult(e);
+        imageView.ImageSourceLoaded += onImageLoaded;
+        try
+        {
+            if (!samePath || openCompletion.IsCompleted)
+            {
+                imageView.OpenImage(filePath);
+                openCompletion = imageView.ImageOpenCompletion;
+            }
+
+            if (!IsRequestedPath())
+                return null;
+
+            long waitStarted = Stopwatch.GetTimestamp();
+            // Older openers can return from OpenImage before posting their pixels.
+            if (!openCompletion.IsCompletedSuccessfully
+                && await Task.WhenAny(openCompletion, imageLoaded.Task).WaitAsync(OpenTimeout, cancellationToken) == openCompletion)
+            {
+                await openCompletion;
+            }
+
+            TimeSpan remaining = OpenTimeout - Stopwatch.GetElapsedTime(waitStarted);
+            ImageViewImageSourceLoadedEventArgs loaded = await imageLoaded.Task.WaitAsync(
+                remaining > TimeSpan.Zero ? remaining : TimeSpan.Zero,
+                cancellationToken);
+            cancellationToken.ThrowIfCancellationRequested();
+            return IsRequestedPath() && imageView.IsCurrentImageRevision(loaded.ImageRevision)
+                ? loaded.Source as BitmapSource
+                : null;
+        }
+        catch (OperationCanceledException ex) when (!cancellationToken.IsCancellationRequested)
+        {
+            throw new IOException("The image opener canceled before publishing the result image.", ex);
+        }
+        finally
+        {
+            imageView.ImageSourceLoaded -= onImageLoaded;
+        }
+
+        bool IsRequestedPath() => string.Equals(filePath, imageView.Config.GetProperties<string>(ImageViewPropertyKeys.FilePath), StringComparison.OrdinalIgnoreCase);
     }
 }
 

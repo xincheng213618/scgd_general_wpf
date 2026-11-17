@@ -143,7 +143,7 @@ W255 和键化亮色度 `LuminanceChromaticityTestResults[配置 Key]` 保留原
 
 ## 历史结果图回退与持久化
 
-历史记录的原始图像不在原路径时，不应立即判定“无法查看结果”。`Projects/ProjectARVRPro/ResultImagePresentation.cs` 中 `ResultImageFileCandidates.GetExisting` 按下列顺序收集存在且去重的路径，`OpenFirstAsync` 在解码失败、超时或未得到图像时继续尝试下一候选；取消仍中止当前请求。
+历史记录的原始图像不在原路径时，不应立即判定“无法查看结果”。`Projects/ProjectARVRPro/ResultImagePresentation.cs` 按下列顺序收集存在且去重的路径。打开任务报告解码失败时立即尝试下一候选；打开器迟迟未发布图像时，每个候选最多等待 30 秒。用户切换选择会取消当前请求。
 
 | 顺序 | 字段/条件 | 显示规则 |
 | --- | --- | --- |

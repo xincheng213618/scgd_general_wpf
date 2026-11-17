@@ -1,10 +1,12 @@
 using ColorVision.ImageEditor;
+using ColorVision.ImageEditor.Tif;
 using ColorVision.Engine;
 using ColorVision.FileIO;
 using ProjectARVRPro.ImageExport;
 using ProjectARVRPro.Process;
 using System.IO;
 using System.Windows.Media;
+using System.Windows.Media.Imaging;
 
 namespace ProjectARVRPro.Tests;
 
@@ -62,6 +64,51 @@ public sealed class ResultImagePresentationTests
         Assert.Equal(candidates[1], opened);
         Assert.Equal(candidates.Select(candidate => candidate.FilePath), attempts);
     }
+
+    [Fact]
+    public Task CorruptOriginalPngFallsBackUsingTheOpenFailureWithoutWaitingForPublication() =>
+        ArvrDrawingOverlayCompatibilityTests.RunAsyncOnStaThread(async () =>
+        {
+            string directory = CreateTemporaryDirectory();
+            string originalPath = Path.Combine(directory, "corrupt.png");
+            string savedPath = Path.Combine(directory, "saved-result.png");
+            try
+            {
+                File.WriteAllText(originalPath, "invalid PNG");
+                PngBitmapEncoder encoder = new();
+                encoder.Frames.Add(BitmapFrame.Create(BitmapSource.Create(2, 1, 96, 96, PixelFormats.Gray8, null, new byte[] { 11, 99 }, 2)));
+                using (FileStream saved = File.Create(savedPath))
+                    encoder.Save(saved);
+
+                using ImageView view = new();
+                view.IEditorToolFactory.IImageOpens[".png"] = new CommonImageOpen(view.EditorContext);
+                ResultImageFileCandidate[] candidates =
+                [
+                    new(originalPath, ResultImageFileKind.Original),
+                    new(savedPath, ResultImageFileKind.SavedResult),
+                ];
+                List<Exception?> failures = [];
+                using CancellationTokenSource watchdog = new(TimeSpan.FromSeconds(10));
+                ResultImageFileCandidate? selected = await ResultImageFileCandidates.OpenFirstAsync(
+                    candidates,
+                    async (candidate, token) => await ResultImageLoader.OpenAsync(view, candidate.FilePath, token) is not null,
+                    (_, exception) => failures.Add(exception),
+                    watchdog.Token);
+
+                Exception? failure = Assert.Single(failures);
+                Assert.NotNull(failure);
+                Assert.IsNotType<TimeoutException>(failure);
+                Assert.Equal(candidates[1], selected);
+                Assert.Equal(savedPath, view.Config.GetProperties<string>(ImageViewPropertyKeys.FilePath));
+                Assert.Equal(2, Assert.IsAssignableFrom<BitmapSource>(view.ViewBitmapSource).PixelWidth);
+            }
+            finally
+            {
+                File.Delete(originalPath);
+                File.Delete(savedPath);
+                Directory.Delete(directory);
+            }
+        });
 
     [Fact]
     public async Task ExistingImageCandidatesPreferOriginalThenSavedSourceThenSavedResult()
