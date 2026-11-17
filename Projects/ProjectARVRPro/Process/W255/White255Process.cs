@@ -205,7 +205,8 @@ namespace ProjectARVRPro.Process.W255
                     return false;
 
                 ctx.Result.ViewResultJson = JsonConvert.SerializeObject(testResult);
-                ctx.ObjectiveTestResult.W255TestResult = JsonConvert.DeserializeObject<W255TestResult>(ctx.Result.ViewResultJson) ?? new W255TestResult();
+                // The view model is local to Execute. Its objective items now belong to the session result.
+                ctx.ObjectiveTestResult.W255TestResult = testResult.CreateObjectiveResult();
 
                 return true;
             }
