@@ -82,6 +82,43 @@ public sealed class CvcieRegionTests
     }
 
     [Fact]
+    public void DensePolygonKeepsHalfOpenNotchAndIndependentRunEnumerations()
+    {
+        Point[] corners = [new(-12, -5), new(76, -5), new(76, 99), new(44, 99),
+            new(44, 30), new(22, 30), new(22, 99), new(-12, 99)];
+        List<Point> outline = new();
+        for (int i = 0; i < corners.Length; i++)
+        {
+            Point from = corners[i];
+            Vector edge = corners[(i + 1) % corners.Length] - from;
+            for (int step = 0; step < 16; step++)
+                outline.Add(from + edge * (step / 16d));
+        }
+        var region = ClosedPixelRegion.Polygon(outline);
+        List<PixelRowRun> expected = new();
+        for (int y = 0; y < 30; y++)
+            expected.Add(new(y, 0, 70));
+        for (int y = 30; y < 99; y++)
+        {
+            expected.Add(new(y, 0, 22));
+            expected.Add(new(y, 44, 70));
+        }
+
+        var runs = region.GetRuns(70, 110);
+        using (var first = runs.GetEnumerator())
+        {
+            Assert.True(first.MoveNext());
+            List<PixelRowRun> resumed = [first.Current];
+            Assert.Equal(expected, runs.ToArray());
+            while (first.MoveNext())
+                resumed.Add(first.Current);
+            Assert.Equal(expected, resumed);
+        }
+        Assert.Equal(expected[0], runs.First());
+        Assert.Equal(expected, runs.ToArray());
+    }
+
+    [Fact]
     public void EqualAxisEllipsePreservesLegacyCircleMeasurement()
     {
         float[] values = Enumerable.Range(0, 3 * 21 * 21).Select(i => (float)(i * i % 997)).ToArray();
