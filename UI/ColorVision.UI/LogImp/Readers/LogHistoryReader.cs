@@ -26,13 +26,13 @@ namespace ColorVision.UI.LogImp
             DateTime today,
             DateTime startupTime)
         {
-            var entries = ReadEntries(reader, logLoadState, reverse, maxChars, today, startupTime);
-            if (entries.Count == 0)
+            var entries = ReadEntryTexts(reader, logLoadState, reverse, maxChars, today, startupTime);
+            if (entries.Length == 0)
             {
                 return string.Empty;
             }
 
-            return TrimDisplayText(string.Join(Environment.NewLine, entries.Select(entry => entry.Text)), reverse, maxChars);
+            return TrimDisplayText(string.Join(Environment.NewLine, entries), reverse, maxChars);
         }
 
         public static IReadOnlyList<LogEntry> ReadEntries(TextReader reader, LogLoadState logLoadState, bool reverse, int maxChars)
@@ -54,48 +54,66 @@ namespace ColorVision.UI.LogImp
             DateTime today,
             DateTime startupTime)
         {
+            string[] texts = ReadEntryTexts(reader, logLoadState, reverse, maxChars, today, startupTime);
+            if (texts.Length == 0) return Array.Empty<LogEntry>();
+
+            var entries = new LogEntry[texts.Length];
+            for (int i = 0; i < entries.Length; i++)
+                entries[i] = LogEntryParser.FromText(texts[i]);
+            return entries;
+        }
+
+        private static string[] ReadEntryTexts(
+            TextReader reader,
+            LogLoadState logLoadState,
+            bool reverse,
+            int maxChars,
+            DateTime today,
+            DateTime startupTime)
+        {
             ArgumentNullException.ThrowIfNull(reader);
 
             if (logLoadState == LogLoadState.None)
             {
-                return Array.Empty<LogEntry>();
+                return Array.Empty<string>();
             }
 
-            var matchingEntries = new Queue<LogEntry>();
+            var matchingEntries = new Queue<string>();
             var totalChars = 0;
             StringBuilder? currentEntry = null;
-            bool currentEntryIncluded = false;
+            string? currentLine = null;
 
             string? line;
             while ((line = reader.ReadLine()) != null)
             {
                 if (LogEntryParser.TryParseLogTimestamp(line, out DateTime logTime))
                 {
-                    if (currentEntryIncluded && currentEntry != null)
+                    if (currentLine != null)
                     {
-                        AddEntry(matchingEntries, ref totalChars, currentEntry.ToString(), maxChars);
+                        AddEntry(matchingEntries, ref totalChars, currentEntry?.ToString() ?? currentLine, maxChars);
+                        currentEntry = null;
                     }
 
-                    currentEntryIncluded = ShouldIncludeLogEntry(logLoadState, today, startupTime, logTime);
-                    currentEntry = currentEntryIncluded ? new StringBuilder(line) : null;
+                    currentLine = ShouldIncludeLogEntry(logLoadState, today, startupTime, logTime) ? line : null;
                     continue;
                 }
 
-                if (currentEntryIncluded && currentEntry != null)
+                if (currentLine != null)
                 {
+                    currentEntry ??= new StringBuilder(currentLine);
                     currentEntry.AppendLine();
                     currentEntry.Append(line);
                 }
             }
 
-            if (currentEntryIncluded && currentEntry != null)
+            if (currentLine != null)
             {
-                AddEntry(matchingEntries, ref totalChars, currentEntry.ToString(), maxChars);
+                AddEntry(matchingEntries, ref totalChars, currentEntry?.ToString() ?? currentLine, maxChars);
             }
 
             if (matchingEntries.Count == 0)
             {
-                return Array.Empty<LogEntry>();
+                return Array.Empty<string>();
             }
 
             var entries = matchingEntries.ToArray();
@@ -107,15 +125,15 @@ namespace ColorVision.UI.LogImp
             return entries;
         }
 
-        private static void AddEntry(Queue<LogEntry> entries, ref int totalChars, string entryText, int maxChars)
+        private static void AddEntry(Queue<string> entries, ref int totalChars, string entryText, int maxChars)
         {
-            var entry = LogEntryParser.FromText(entryText);
-            entries.Enqueue(entry);
-            totalChars += entry.Text.Length;
+            int length = entryText.AsSpan().TrimEnd("\r\n").Length;
+            entries.Enqueue(length == entryText.Length ? entryText : entryText[..length]);
+            totalChars += length;
             TrimOldEntries(entries, ref totalChars, maxChars);
         }
 
-        private static void TrimOldEntries(Queue<LogEntry> entries, ref int totalChars, int maxChars)
+        private static void TrimOldEntries(Queue<string> entries, ref int totalChars, int maxChars)
         {
             if (!HasMaxCharLimit(maxChars))
             {
@@ -124,7 +142,7 @@ namespace ColorVision.UI.LogImp
 
             while (entries.Count > 1 && GetJoinedLength(totalChars, entries.Count) > maxChars)
             {
-                totalChars -= entries.Dequeue().Text.Length;
+                totalChars -= entries.Dequeue().Length;
             }
         }
 

@@ -1,3 +1,4 @@
+using System.Text;
 using System.Text.RegularExpressions;
 
 namespace ColorVision.UI.LogImp
@@ -9,7 +10,6 @@ namespace ColorVision.UI.LogImp
     {
         private static readonly char[] RegexSpecialChars =
             { '.', '*', '+', '?', '^', '$', '(', ')', '[', ']', '{', '}', '|', '\\' };
-        private static readonly string[] NewLineSeparators = { Environment.NewLine };
         private static readonly object RegexCacheLock = new();
         private static readonly TimeSpan RegexMatchTimeout = TimeSpan.FromMilliseconds(250);
         private static string? _cachedRegexPattern;
@@ -56,7 +56,7 @@ namespace ColorVision.UI.LogImp
             {
                 foreach (var item in items)
                 {
-                    if (matcher(textSelector(item)))
+                    if (matcher.IsMatch(textSelector(item)))
                     {
                         filteredItems.Add(item);
                     }
@@ -72,8 +72,48 @@ namespace ColorVision.UI.LogImp
 
         public static bool FilterText(string searchText, string logText, out string filteredText)
         {
-            var logLines = logText.Split(NewLineSeparators, StringSplitOptions.None);
-            return FilterText(searchText, logLines, out filteredText);
+            ReadOnlySpan<char> remaining = logText.AsSpan(0, logText.Length);
+            filteredText = string.Empty;
+            if (string.IsNullOrEmpty(searchText)) return true;
+            if (!TryCreateMatcher(searchText, out var matcher)) return false;
+            if (matcher.MatchesAllLines)
+            {
+                filteredText = logText;
+                return true;
+            }
+
+            StringBuilder? matches = null;
+            string separator = Environment.NewLine;
+            try
+            {
+                while (true)
+                {
+                    int end = remaining.IndexOf(separator, StringComparison.Ordinal);
+                    ReadOnlySpan<char> line = end < 0 ? remaining : remaining[..end];
+                    if (matcher.IsMatch(line))
+                    {
+                        if (line.Length == logText.Length)
+                        {
+                            filteredText = logText;
+                            return true;
+                        }
+
+                        if (matches == null) matches = new StringBuilder(line.Length);
+                        else matches.Append(separator);
+                        matches.Append(line);
+                    }
+
+                    if (end < 0) break;
+                    remaining = remaining[(end + separator.Length)..];
+                }
+            }
+            catch (RegexMatchTimeoutException)
+            {
+                return false;
+            }
+
+            filteredText = matches?.ToString() ?? string.Empty;
+            return true;
         }
 
         public static bool FilterText(string searchText, IEnumerable<string> logLines, out string filteredText)
@@ -88,7 +128,7 @@ namespace ColorVision.UI.LogImp
             return true;
         }
 
-        private static bool ContainsAllKeywords(string line, string[] keywords)
+        private static bool ContainsAllKeywords(ReadOnlySpan<char> line, string[] keywords)
         {
             for (var i = 0; i < keywords.Length; i++)
             {
@@ -101,24 +141,35 @@ namespace ColorVision.UI.LogImp
             return true;
         }
 
-        private static bool TryCreateMatcher(string searchText, out Func<string, bool> matcher)
+        private static bool TryCreateMatcher(string searchText, out SearchMatcher matcher)
         {
             var containsRegex = searchText.IndexOfAny(RegexSpecialChars) >= 0;
             if (containsRegex)
             {
                 if (!TryGetRegex(searchText, out var regex))
                 {
-                    matcher = null!;
+                    matcher = default;
                     return false;
                 }
 
-                matcher = regex.IsMatch;
+                matcher = new SearchMatcher(regex, null);
                 return true;
             }
 
             var keywords = searchText.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-            matcher = line => ContainsAllKeywords(line, keywords);
+            matcher = new SearchMatcher(null, keywords);
             return true;
+        }
+
+        private readonly struct SearchMatcher(Regex? regex, string[]? keywords)
+        {
+            public bool MatchesAllLines => keywords is { Length: 0 };
+
+            public bool IsMatch(ReadOnlySpan<char> line)
+                => regex != null ? regex.IsMatch(line) : ContainsAllKeywords(line, keywords!);
+
+            public bool IsMatch(string line)
+                => regex != null ? regex.IsMatch(line) : MatchesAllLines || ContainsAllKeywords(line.AsSpan(0, line.Length), keywords!);
         }
 
         private static bool TryGetRegex(string pattern, out Regex regex)

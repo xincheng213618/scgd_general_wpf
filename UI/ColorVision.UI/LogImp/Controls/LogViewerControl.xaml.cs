@@ -236,34 +236,32 @@ namespace ColorVision.UI.LogImp.Controls
         {
             ArgumentNullException.ThrowIfNull(entries);
 
-            var incomingEntries = entries.Where(entry => !string.IsNullOrEmpty(entry.Text)).ToList();
-            if (incomingEntries.Count == 0)
+            var displayEntries = entries.Where(entry => !string.IsNullOrEmpty(entry.Text)).ToList();
+            if (displayEntries.Count == 0)
             {
                 return;
             }
 
             _latestAtTop = latestAtTop;
-            var displayEntries = latestAtTop
-                ? incomingEntries.AsEnumerable().Reverse().ToList()
-                : incomingEntries;
-            var wasPlainTextEmpty = string.IsNullOrEmpty(_plainText);
-            var appendedText = BuildText(displayEntries);
-
             if (latestAtTop)
-            {
+                displayEntries.Reverse();
+
+            var wasPlainTextEmpty = string.IsNullOrEmpty(_plainText);
+            if (latestAtTop)
                 _entries.InsertRange(0, displayEntries);
-                _plainText = CombineText(appendedText, _plainText);
-            }
             else
-            {
                 _entries.AddRange(displayEntries);
-                _plainText = CombineText(_plainText, appendedText);
-            }
 
             var removedCount = TrimEntries(keepHead: latestAtTop);
+            string appendedText = string.Empty;
             if (removedCount > 0)
             {
                 _plainText = BuildText(_entries);
+            }
+            else
+            {
+                appendedText = BuildText(displayEntries);
+                _plainText = latestAtTop ? CombineText(appendedText, _plainText) : CombineText(_plainText, appendedText);
             }
 
             var textTrimmed = TrimPlainText(keepHead: latestAtTop);
