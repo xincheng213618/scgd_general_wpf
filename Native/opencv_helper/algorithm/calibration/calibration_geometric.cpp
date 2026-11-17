@@ -8,6 +8,7 @@
 
 #include <algorithm>
 #include <array>
+#include <atomic>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
@@ -913,16 +914,24 @@ private:
     static cv::Mat compactMap(const cv::Mat& source)
     {
         cv::Mat compact(source.rows, source.cols, CV_8UC1);
-        for (int row = 0; row < source.rows; ++row) {
-            const auto* input = source.ptr<MapEntry>(row);
-            auto* output = compact.ptr<std::uint8_t>(row);
-            for (int column = 0; column < source.cols; ++column) {
-                const int dx = static_cast<int>(input[column][0]) - column;
-                const int dy = static_cast<int>(input[column][1]) - row;
-                if (dx < -8 || dx > 7 || dy < -8 || dy > 7) return {};
-                output[column] = static_cast<std::uint8_t>((dx + 8) | ((dy + 8) << 4));
+        std::atomic<bool> requiresWide{ false };
+        cv::parallel_for_(cv::Range(0, source.rows), [&](const cv::Range& range) {
+            for (int row = range.start; row < range.end; ++row) {
+                if (requiresWide.load(std::memory_order_relaxed)) return;
+                const auto* input = source.ptr<MapEntry>(row);
+                auto* output = compact.ptr<std::uint8_t>(row);
+                for (int column = 0; column < source.cols; ++column) {
+                    const int dx = static_cast<int>(input[column][0]) - column;
+                    const int dy = static_cast<int>(input[column][1]) - row;
+                    if (dx < -8 || dx > 7 || dy < -8 || dy > 7) {
+                        requiresWide.store(true, std::memory_order_relaxed);
+                        return;
+                    }
+                    output[column] = static_cast<std::uint8_t>((dx + 8) | ((dy + 8) << 4));
+                }
             }
-        }
+        });
+        if (requiresWide.load(std::memory_order_relaxed)) return {};
         return compact;
     }
 
