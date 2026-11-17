@@ -134,6 +134,17 @@ namespace ColorVision.ImageEditor.Algorithms
             bool metricsOnly = requestedOutputs == ImageComparisonArtifactOutputs.None;
             bool writeDifferenceVisual = absoluteVisualData != null || signedVisualData != null;
             bool trackArtifactOverflow = isFloat && signedData != null;
+            bool useByteVisualTables = bytesPerChannel == 1 && (writeDifferenceVisual || heatmapData != null);
+            Span<ushort> differenceColors = useByteVisualTables && writeDifferenceVisual ? stackalloc ushort[511] : [];
+            Span<uint> heatmapColors = useByteVisualTables && heatmapData != null ? stackalloc uint[256] : [];
+            for (int i = 0; i < differenceColors.Length; i++)
+            {
+                int difference = i - byte.MaxValue;
+                differenceColors[i] = (ushort)(VisualChannel(difference, displayMaximum, false)
+                    | VisualChannel(difference, displayMaximum, true) << 8);
+            }
+            for (int i = 0; i < heatmapColors.Length; i++)
+                heatmapColors[i] = HeatmapColor(i, displayMaximum);
             int comparedChannelCount = channels == 4 && !parameters.IncludeAlphaInMetrics ? 3 : channels;
             int scannedChannelCount = metricsOnly ? comparedChannelCount : channels;
             var samplingBounds = region.GetSamplingBounds(reference);
@@ -204,11 +215,26 @@ namespace ColorVision.ImageEditor.Algorithms
                         }
                     }
                     if (absoluteVisualData != null)
-                        WriteVisualPixel(absoluteVisualData, visualRow + x * 3, differences, channels, displayMaximum, false, displayInvalid);
+                    {
+                        if (useByteVisualTables)
+                            WriteByteVisualPixel(absoluteVisualData, visualRow + x * 3, differences, channels, differenceColors, 0);
+                        else
+                            WriteVisualPixel(absoluteVisualData, visualRow + x * 3, differences, channels, displayMaximum, false, displayInvalid);
+                    }
                     if (signedVisualData != null)
-                        WriteVisualPixel(signedVisualData, visualRow + x * 3, differences, channels, displayMaximum, true, displayInvalid);
+                    {
+                        if (useByteVisualTables)
+                            WriteByteVisualPixel(signedVisualData, visualRow + x * 3, differences, channels, differenceColors, 8);
+                        else
+                            WriteVisualPixel(signedVisualData, visualRow + x * 3, differences, channels, displayMaximum, true, displayInvalid);
+                    }
                     if (heatmapData != null)
-                        WriteHeatmapPixel(heatmapData, visualRow + x * 3, pixelMaximum, displayMaximum, inRegion, heatmapInvalid);
+                    {
+                        if (useByteVisualTables)
+                            WritePackedColor(heatmapData, visualRow + x * 3, inRegion ? heatmapColors[(int)pixelMaximum] : 0);
+                        else
+                            WriteHeatmapPixel(heatmapData, visualRow + x * 3, pixelMaximum, displayMaximum, inRegion, heatmapInvalid);
+                    }
                 }
             }
 
@@ -527,6 +553,14 @@ namespace ColorVision.ImageEditor.Algorithms
         private static bool Has(ImageComparisonArtifactOutputs outputs, ImageComparisonArtifactOutputs requested)
             => (outputs & requested) != 0;
 
+        private static void WriteByteVisualPixel(byte[] output, int offset, ReadOnlySpan<double> differences, int channels, ReadOnlySpan<ushort> colors, int shift)
+        {
+            byte first = (byte)(colors[(int)differences[0] + byte.MaxValue] >> shift);
+            output[offset] = first;
+            output[offset + 1] = channels == 1 ? first : (byte)(colors[(int)differences[1] + byte.MaxValue] >> shift);
+            output[offset + 2] = channels == 1 ? first : (byte)(colors[(int)differences[2] + byte.MaxValue] >> shift);
+        }
+
         private static void WriteVisualPixel(byte[] output, int offset, ReadOnlySpan<double> differences, int channels, double maximum, bool signed, bool invalid)
         {
             if (invalid)
@@ -539,10 +573,15 @@ namespace ColorVision.ImageEditor.Algorithms
             for (int color = 0; color < 3; color++)
             {
                 int sourceChannel = channels == 1 ? 0 : color;
-                double normalized = differences[sourceChannel] / maximum;
-                double mapped = signed ? 127.5 + Math.Clamp(normalized, -1, 1) * 127.5 : Math.Clamp(Math.Abs(normalized), 0, 1) * 255;
-                output[offset + color] = (byte)Math.Round(mapped, MidpointRounding.AwayFromZero);
+                output[offset + color] = VisualChannel(differences[sourceChannel], maximum, signed);
             }
+        }
+
+        private static byte VisualChannel(double difference, double maximum, bool signed)
+        {
+            double normalized = difference / maximum;
+            double mapped = signed ? 127.5 + Math.Clamp(normalized, -1, 1) * 127.5 : Math.Clamp(Math.Abs(normalized), 0, 1) * 255;
+            return (byte)Math.Round(mapped, MidpointRounding.AwayFromZero);
         }
 
         private static void WriteHeatmapPixel(byte[] output, int offset, double value, double maximum, bool included, bool invalid)
@@ -561,10 +600,22 @@ namespace ColorVision.ImageEditor.Algorithms
                 output[offset + 2] = 255;
                 return;
             }
+            WritePackedColor(output, offset, HeatmapColor(value, maximum));
+        }
+
+        private static void WritePackedColor(byte[] output, int offset, uint color)
+        {
+            output[offset] = (byte)color;
+            output[offset + 1] = (byte)(color >> 8);
+            output[offset + 2] = (byte)(color >> 16);
+        }
+
+        private static uint HeatmapColor(double value, double maximum)
+        {
             double t = Math.Clamp(value / maximum, 0, 1);
-            output[offset] = Color(1.5 - Math.Abs(4 * t - 1));
-            output[offset + 1] = Color(1.5 - Math.Abs(4 * t - 2));
-            output[offset + 2] = Color(1.5 - Math.Abs(4 * t - 3));
+            return Color(1.5 - Math.Abs(4 * t - 1))
+                | (uint)Color(1.5 - Math.Abs(4 * t - 2)) << 8
+                | (uint)Color(1.5 - Math.Abs(4 * t - 3)) << 16;
         }
 
         private static byte Color(double value) => (byte)Math.Round(Math.Clamp(value, 0, 1) * 255, MidpointRounding.AwayFromZero);
