@@ -6,8 +6,8 @@ using System.Threading.Tasks;
 
 namespace ColorVision.ImageEditor.Algorithms
 {
-    /// <summary>Preserves the static-image mapping, including its two quantization steps and threshold comparisons.</summary>
-    internal sealed class PseudoColorProcessor
+    /// <summary>Maps grayscale and single-channel samples to BGR colors with an integer lookup table.</summary>
+    public sealed class PseudoColorProcessor
     {
         private readonly object _cacheSync = new();
         private readonly long _cacheByteLimit;
@@ -74,6 +74,41 @@ namespace ColorVision.ImageEditor.Algorithms
             _sourceStorageId = default;
         }
 
+        /// <summary>
+        /// Renders unsigned 8-bit or 16-bit samples to an independent BGR destination.
+        /// The range is measured on the selected channel in Auto mode and is always returned in source pixel values.
+        /// </summary>
+        public static (double Minimum, double Maximum) RenderSampleRange(Mat source, Mat output, ImageColorChannel channel,
+            StandardPseudoColorMap colormap, bool autoRange, double minimum, double maximum, CancellationToken cancellationToken = default)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            int index = ImageChannelProcessor.ResolveIndex(source, channel);
+            if (source.Depth() != MatType.CV_8U && source.Depth() != MatType.CV_16U)
+                throw new ArgumentException("Source pixel ranges require unsigned 8-bit or 16-bit samples.", nameof(source));
+            if (!Enum.IsDefined(colormap)) throw new ArgumentOutOfRangeException(nameof(colormap));
+            if (!autoRange && (!double.IsFinite(minimum) || !double.IsFinite(maximum) || minimum < 0 || maximum > ushort.MaxValue || minimum >= maximum))
+                throw new ArgumentException("A fixed range requires 0 ≤ minimum < maximum ≤ 65535.");
+            if (ReferenceEquals(source, output)) throw new ArgumentException("The output image must be independent of the source.", nameof(output));
+
+            using Mat? selected = index < 0 || (autoRange && source.Channels() > 1) ? new Mat() : null;
+            if (selected != null)
+            {
+                ImageChannelProcessor.Select(source, selected, channel, cancellationToken);
+                index = 0;
+            }
+            Mat samples = selected ?? source;
+            if (autoRange) Cv2.MinMaxLoc(samples, out minimum, out maximum);
+            cancellationToken.ThrowIfCancellationRequested();
+
+            // Index the LUT directly by source value, preserving narrow windows on 16-bit images.
+            using Mat ramp = OpenCvImageAlgorithms.CreateUnsignedRamp(samples.Depth());
+            using Mat lut = MapColors(ramp, minimum, maximum, colormap, useLowestColorForConstant: true);
+            output.Create(samples.Rows, samples.Cols, MatType.CV_8UC3);
+            Lookup(samples, index, lut, output, cancellationToken);
+            return (minimum, maximum);
+        }
+
+        /// <summary>Preserves the static-image mapping, including its two quantization steps.</summary>
         internal static void Render(Mat source, Mat output, PseudoColorParameters parameters, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -122,11 +157,16 @@ namespace ColorVision.ImageEditor.Algorithms
 
         // Keep OpenCV's rounding and scalar comparison semantics. Computing this small table
         // replaces the same conversions, masks and masked writes over every source pixel.
-        private static Mat MapColors(Mat indices, double minimum, double maximum, StandardPseudoColorMap colormap)
+        private static Mat MapColors(Mat indices, double minimum, double maximum, StandardPseudoColorMap colormap, bool useLowestColorForConstant = false)
         {
             using Mat scaled = new();
             if (maximum > minimum)
                 indices.ConvertTo(scaled, MatType.CV_8U, byte.MaxValue / (maximum - minimum), -minimum * byte.MaxValue / (maximum - minimum));
+            else if (useLowestColorForConstant)
+            {
+                scaled.Create(indices.Rows, indices.Cols, MatType.CV_8UC1);
+                scaled.SetTo(Scalar.Black);
+            }
             else indices.CopyTo(scaled);
             Mat result = new();
             try

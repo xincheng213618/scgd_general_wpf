@@ -164,6 +164,56 @@ public sealed class PhysicalCameraIdentityTests : IDisposable
         Assert.True(latest.IsDelete);
     }
 
+    [Fact]
+    public void AutomaticStatusDiscoveryOnlyScansConfiguredSupportedModelsWithUnopenedCameras()
+    {
+        var hik = CreateStatusCamera("hik", CameraModel.HK_USB);
+        var hik2 = CreateStatusCamera("hik2", CameraModel.HK_USB);
+        var qhy = CreateStatusCamera("qhy", CameraModel.QHY_USB);
+        var other = CreateStatusCamera("other", CameraModel.TOUP_USB);
+
+        Assert.Empty(PhyCameraManager.GetAutomaticDiscoveryModels([]));
+        Assert.Equal([CameraModel.HK_USB], PhyCameraManager.GetAutomaticDiscoveryModels([hik]));
+        Assert.Equal([CameraModel.QHY_USB], PhyCameraManager.GetAutomaticDiscoveryModels([qhy]));
+        Assert.Equal([CameraModel.HK_USB, CameraModel.QHY_USB], PhyCameraManager.GetAutomaticDiscoveryModels([hik, hik2, qhy, other]));
+
+        hik.ConnectionStatus = PhysicalCameraStatus.Opened;
+        Assert.Empty(PhyCameraManager.GetAutomaticDiscoveryModels([hik, other]));
+        Assert.Equal([CameraModel.HK_USB], PhyCameraManager.GetAutomaticDiscoveryModels([hik, hik2]));
+    }
+
+    [Fact]
+    public void StatusDiscoveryMatchesConfiguredModelAndCodeAndPreservesOpenedCameras()
+    {
+        var hik = CreateStatusCamera("hik", CameraModel.HK_USB);
+        var unopened = CreateStatusCamera("unopened", CameraModel.HK_USB);
+        var opened = CreateStatusCamera("opened", CameraModel.HK_USB);
+        var qhy = CreateStatusCamera("qhy", CameraModel.QHY_USB);
+        var other = CreateStatusCamera("hik", CameraModel.TOUP_USB);
+        opened.ConnectionStatus = PhysicalCameraStatus.Opened;
+        qhy.ConnectionStatus = PhysicalCameraStatus.Online;
+        var summary = Discover("hik");
+        summary.Cameras[0].MD5Id = summary.Cameras[0].MD5Id.ToLowerInvariant();
+        summary.Models.Add(new() { CameraModel = CameraModel.QHY_USB, Success = false });
+        PhyCamera[] cameras = [hik, unopened, opened, qhy, other];
+
+        Assert.True(PhyCameraManager.ApplyDiscoveryStatus(summary, cameras));
+        Assert.Equal(PhysicalCameraStatus.Online, hik.ConnectionStatus);
+        Assert.Equal(PhysicalCameraStatus.Offline, unopened.ConnectionStatus);
+        Assert.Equal(PhysicalCameraStatus.Opened, opened.ConnectionStatus);
+        Assert.Equal(PhysicalCameraStatus.Unknown, qhy.ConnectionStatus);
+        Assert.Equal(PhysicalCameraStatus.Unknown, other.ConnectionStatus);
+        Assert.All(cameras, camera => Assert.Equal("Offline", camera.SysResourceModel.Remark));
+        Assert.False(PhyCameraManager.ApplyDiscoveryStatus(summary, cameras));
+    }
+
+    private static PhyCamera CreateStatusCamera(string cameraId, CameraModel model)
+    {
+        var camera = CreatePhysical(new SysResourceModel { Code = Tool.GetMD5(cameraId), Value = "{}", Remark = "Offline" });
+        camera.Config.CameraModel = model;
+        return camera;
+    }
+
     private static cvCameraCSLib.CameraDiscoverySummary Discover(string cameraId)
     {
         var summary = new cvCameraCSLib.CameraDiscoverySummary();

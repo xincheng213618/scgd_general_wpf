@@ -1,4 +1,5 @@
 #pragma warning disable CA1822
+using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Engine.Services.Devices.Camera.Local;
 using ColorVision.Database;
@@ -7,11 +8,13 @@ using ColorVision.Engine.Services.Results;
 using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Draw.Special;
 using ColorVision.Themes.Controls;
+using ColorVision.UI;
 using ColorVision.UI.Sorts;
 using log4net;
 using MQTTMessageLib.Camera;
 using SqlSugar;
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
@@ -28,7 +31,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
     /// <summary>
     /// ViewCamera.xaml 的交互逻辑
     /// </summary>
-    public partial class ViewCamera : UserControl, IDisposable
+    public partial class ViewCamera : UserControl, IDisposable, IActiveDocumentStatusProvider
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(App));
         private int _disposeState;
@@ -49,6 +52,13 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
         private readonly ViewCameraConfig _historyConfig;
         private readonly ResultHistoryCollection<ViewResultImage> _viewResults;
         public ObservableCollection<ViewResultImage> ViewResults => _viewResults;
+
+        public event EventHandler? StatusBarItemsChanged;
+
+        public IEnumerable<StatusBarMeta> GetActiveStatusBarItems() =>
+            !IsDisposed && ImageView != null ? ImageView.GetActiveStatusBarItems() : [];
+
+        private void ImageView_StatusBarItemsChanged(object? sender, EventArgs e) => StatusBarItemsChanged?.Invoke(this, e);
 
         public ViewCamera(DeviceCamera device) : this(device, false) { }
 
@@ -122,6 +132,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
         {
             if (IsDisposed || _isInitialized) return;
             _isInitialized = true;
+            ImageView.StatusBarItemsChanged += ImageView_StatusBarItemsChanged;
 
             if (ImageView.EditorContext.IEditorToolFactory.GetIEditorTool<ToolReferenceLine>() is ToolReferenceLine toolReferenceLine)
             {
@@ -294,7 +305,12 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
             if (keepVideo && model == null) return;
             EnsureInitialized();
             localPreview = preview;
-            localPreviewResultId = model?.Id ?? -1;
+            int resultId = model?.Id ?? -1;
+            if (localPreviewResultId != resultId)
+            {
+                localPreviewResultId = resultId;
+                CommandManager.InvalidateRequerySuggested();
+            }
             bool showPreview = !keepVideo && (forceDisplay || Config.AutoRefreshView);
             updatingLocalSelection = true;
             try
@@ -331,7 +347,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
                     if (previous.FileUrl == (model.FileUrl ?? string.Empty)) return;
                     ViewResults.Remove(previous);
                 }
-                ViewResultImage result = new(model);
+                ViewResultImage result = CreateResultRow(model);
                 if (Config.InsertAtBeginning)
                     ViewResults.Insert(0, result);
                 else
@@ -346,6 +362,25 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
             }
             finally { updatingLocalSelection = previousSelectionUpdate; }
         }
+
+        private ViewResultImage CreateResultRow(MeasureResultImgModel model)
+        {
+            ViewResultImage result = new(model);
+            result.OpenCVCIECommand = new RelayCommand(async _ =>
+            {
+                Window? owner = Window.GetWindow(this);
+                if (GetCachedResultPreview(result) is { } preview)
+                    ImageViewWindow.Show(view => preview.Show(view), owner);
+                else
+                    await ImageViewWindow.OpenFileAsync(result.FileUrl, owner);
+            }, _ => GetCachedResultPreview(result) != null || ImageViewWindow.CanOpenFile(result.FileUrl));
+            return result;
+        }
+
+        private LocalCameraPreview? GetCachedResultPreview(ViewResultImage result) =>
+            !IsDisposed && localPreview is { } preview && result.Id == localPreviewResultId &&
+            string.Equals(result.DeviceCode, Device.Config.Code, StringComparison.Ordinal) ? preview : null;
+
         private void Search_Click(object sender, RoutedEventArgs e)
         {
             SearchAll();
@@ -359,7 +394,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
             var query = Db.Queryable<MeasureResultImgModel>();
             query = query.OrderBy(x => x.Id, Config.OrderByType);
             var dbList = Config.Count > 0 ? query.Take(Config.Count).ToList() : query.ToList();
-            _viewResults.QueryResults.AddRange(dbList.Select(item => new ViewResultImage(item)));
+            _viewResults.QueryResults.AddRange(dbList.Select(CreateResultRow));
         }
 
 
@@ -368,7 +403,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
         {
             var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
 
-            GenericQuery<MeasureResultImgModel, ViewResultImage> genericQuery = new GenericQuery<MeasureResultImgModel, ViewResultImage>(Db, _viewResults.QueryResults, t => new ViewResultImage(t));
+            GenericQuery<MeasureResultImgModel, ViewResultImage> genericQuery = new GenericQuery<MeasureResultImgModel, ViewResultImage>(Db, _viewResults.QueryResults, CreateResultRow);
             GenericQueryWindow genericQueryWindow = new GenericQueryWindow(genericQuery) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }; ;
             genericQueryWindow.ShowDialog();
             Db.Dispose();
@@ -423,7 +458,11 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
                 DetachResultListView(listView1, listView1_SelectionChanged, listView1_PreviewKeyDown);
             ViewResults.Clear();
             localPreview = null;
-            ImageView?.Dispose();
+            if (ImageView != null)
+            {
+                ImageView.StatusBarItemsChanged -= ImageView_StatusBarItemsChanged;
+                ImageView.Dispose();
+            }
             DataContext = null;
         }
     }

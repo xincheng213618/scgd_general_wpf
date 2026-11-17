@@ -137,7 +137,7 @@
     <value>Socket 连接管理器</value>
   </data>
   <data name="MenuNetworkCommunication" xml:space="preserve">
-    <value>网络通信(_C)</value>
+    <value>通信(_C)</value>
   </data>
   <data name="Query" xml:space="preserve">
     <value>查询</value>

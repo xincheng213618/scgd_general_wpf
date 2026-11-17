@@ -137,7 +137,7 @@ related: ["algorithms.index","algorithms.onnx","ui.index","ui.image-editor","ui.
 
 ## 执行平面与兼容层
 
-本地像素算法与远端设备共用 Descriptor、Invocation 和 Result，但各自执行。保留旧 `AlgorithmNode`、STN 字段、公开构造器和菜单 Guid。矩阵中的“本地 Flow adapter”表示 `LocalFlowImageAlgorithmAdapter.ExecuteRawAsync` 可处理进程内 RAW 帧，本地算法接入目前停在 API，画布上的生产节点仍走既有远端链。
+本地像素算法与远端设备共用 Descriptor、Invocation 和 Result，分别执行。保留旧 `AlgorithmNode`、STN 字段、公开构造器和菜单 Guid。矩阵中的“本地 Flow adapter”表示 `LocalFlowImageAlgorithmAdapter.ExecuteRawAsync` 可处理进程内 RAW 帧。流程画布另外提供图像基础调整、RGB 通道处理和伪彩色输出三个本地节点，以各自分支的 8 位或 16 位 RAW 帧为输入，向下游交接派生图像。
 
 ### Copilot 批量图像工具
 

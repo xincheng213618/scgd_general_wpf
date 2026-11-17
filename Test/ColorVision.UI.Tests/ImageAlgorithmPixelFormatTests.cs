@@ -101,6 +101,32 @@ public sealed class ImageAlgorithmPixelFormatTests
     }
 
     [Fact]
+    public void Rgb24RegionSwapsEveryPixelAcrossPackedRowsAndTheTail()
+    {
+        const int sourceStride = 32;
+        byte[] pixels = new byte[sourceStride * 5];
+        new Random(741).NextBytes(pixels);
+        WriteableBitmap source = Bitmap(PixelFormats.Rgb24, pixels, 10, 5, sourceStride);
+        var bounds = new System.Windows.Int32Rect(2, 1, 7, 3);
+        byte[] expected = new byte[bounds.Width * bounds.Height * 3];
+        for (int y = 0; y < bounds.Height; y++)
+        for (int x = 0; x < bounds.Width; x++)
+        {
+            int input = (bounds.Y + y) * sourceStride + (bounds.X + x) * 3;
+            int output = (y * bounds.Width + x) * 3;
+            expected[output] = pixels[input + 2];
+            expected[output + 1] = pixels[input + 1];
+            expected[output + 2] = pixels[input];
+        }
+
+        using AlgorithmImageBuffer normalized = ImageAlgorithmInputFactory.Copy(source, bounds);
+
+        Assert.Equal(AlgorithmImageFormat.Bgr24, normalized.Format);
+        Assert.Equal(21, normalized.Stride);
+        Assert.Equal(expected, normalized.Data.ToArray());
+    }
+
+    [Fact]
     public void Rgb48NormalizesToBgr48AndRoundTripsWithoutChannelLoss()
     {
         byte[] rgb = [0x02, 0x01, 0x04, 0x03, 0x06, 0x05];
@@ -118,12 +144,14 @@ public sealed class ImageAlgorithmPixelFormatTests
     [Fact]
     public void Bgr32UnusedByteBecomesOpaqueStraightAlpha()
     {
-        WriteableBitmap source = Bitmap(PixelFormats.Bgr32, [10, 20, 30, 7], 1, 1, 4);
+        WriteableBitmap source = Bitmap(PixelFormats.Bgr32,
+            [10, 20, 30, 7, 11, 21, 31, 0, 12, 22, 32, 1, 13, 23, 33, 128, 14, 24, 34, 255], 5, 1, 20);
 
         using AlgorithmImageBuffer normalized = ImageAlgorithmInputFactory.Copy(source);
 
         Assert.Equal(AlgorithmImageFormat.Bgra32, normalized.Format);
-        Assert.Equal(new byte[] { 10, 20, 30, 255 }, normalized.Data.ToArray());
+        Assert.Equal(new byte[] { 10, 20, 30, 255, 11, 21, 31, 255, 12, 22, 32, 255, 13, 23, 33, 255, 14, 24, 34, 255 },
+            normalized.Data.ToArray());
         Assert.Equal(PixelFormats.Bgra32, ImageAlgorithmInputFactory.ToWriteableBitmap(normalized).Format);
     }
 
@@ -141,12 +169,13 @@ public sealed class ImageAlgorithmPixelFormatTests
     [Fact]
     public void Pbgra32UnpremultipliesToStraightBgraAndClearsTransparentColor()
     {
-        WriteableBitmap source = Bitmap(PixelFormats.Pbgra32, [30, 20, 10, 85, 9, 8, 7, 0], 2, 1, 8);
+        WriteableBitmap source = Bitmap(PixelFormats.Pbgra32,
+            [30, 20, 10, 85, 9, 8, 7, 0, 255, 127, 6, 128, 2, 128, 254, 255], 4, 1, 16);
 
         using AlgorithmImageBuffer normalized = ImageAlgorithmInputFactory.Copy(source);
 
         Assert.Equal(AlgorithmImageFormat.Bgra32, normalized.Format);
-        Assert.Equal(new byte[] { 90, 60, 30, 85, 0, 0, 0, 0 }, normalized.Data.ToArray());
+        Assert.Equal(new byte[] { 90, 60, 30, 85, 0, 0, 0, 0, 255, 253, 12, 128, 2, 128, 254, 255 }, normalized.Data.ToArray());
     }
 
     [Fact]
@@ -165,6 +194,27 @@ public sealed class ImageAlgorithmPixelFormatTests
         Assert.Equal(144, normalized.DpiX);
         Assert.Equal(120, normalized.DpiY);
         Assert.Equal(new byte[] { 60, 50, 40, 128, 30, 20, 10, 255 }, normalized.Data.ToArray());
+    }
+
+    [Fact]
+    public void Indexed8RegionExpandsAllIndicesInRowOrder()
+    {
+        BitmapPalette palette = new([Color.FromArgb(91, 2, 3, 4), Color.FromArgb(63, 5, 6, 7), Color.FromArgb(0, 8, 9, 10)]);
+        WriteableBitmap source = new(5, 4, 96, 96, PixelFormats.Indexed8, palette);
+        byte[] rows =
+        [
+            0, 0, 0, 0, 0, 255,
+            0, 2, 1, 0, 0, 255,
+            0, 1, 0, 2, 0, 255,
+            0, 0, 0, 0, 0, 255,
+        ];
+        source.WritePixels(new System.Windows.Int32Rect(0, 0, 5, 4), rows, 6, 0);
+
+        using AlgorithmImageBuffer normalized = ImageAlgorithmInputFactory.Copy(source, new System.Windows.Int32Rect(1, 1, 3, 2));
+
+        Assert.Equal(12, normalized.Stride);
+        Assert.Equal(new byte[] { 10, 9, 8, 0, 7, 6, 5, 63, 4, 3, 2, 91, 7, 6, 5, 63, 4, 3, 2, 91, 10, 9, 8, 0 },
+            normalized.Data.ToArray());
     }
 
     [Fact]

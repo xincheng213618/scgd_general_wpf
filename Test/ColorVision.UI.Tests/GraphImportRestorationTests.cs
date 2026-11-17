@@ -8,6 +8,42 @@ namespace ColorVision.UI.Tests;
 
 public sealed class GraphImportRestorationTests
 {
+    [Fact]
+    public void ConnectionSnapshotTracksCurrentCanvasAndPortOrder()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            using var editor = new STNodeEditor();
+            var firstSource = new OrderedPortsNode();
+            var secondSource = new OrderedPortsNode();
+            var firstTarget = new OrderedPortsNode();
+            var secondTarget = new OrderedPortsNode();
+            STNode[] nodes = [firstSource, secondSource, firstTarget, secondTarget];
+            foreach (STNode node in nodes) node.Create();
+            editor.Nodes.AddRange(nodes);
+
+            Assert.Equal(ConnectionStatus.Connected, firstSource.Outputs[1].ConnectOption(firstTarget.Inputs[0]));
+            Assert.Equal(ConnectionStatus.Connected, firstSource.Outputs[0].ConnectOption(secondTarget.Inputs[0]));
+            Assert.Equal(ConnectionStatus.Connected, firstSource.Outputs[0].ConnectOption(firstTarget.Inputs[0]));
+            Assert.Equal(ConnectionStatus.Connected, firstSource.Outputs[0].ConnectOption(firstTarget.Inputs[1]));
+            Assert.Equal(ConnectionStatus.Connected, secondSource.Outputs[0].ConnectOption(secondTarget.Inputs[1]));
+
+            editor.SetActiveNode(firstTarget);
+            Assert.True(firstTarget.ReorderInputOptions([firstTarget.Inputs[1], firstTarget.Inputs[0]]));
+            editor.SetActiveNode(firstSource);
+
+            (STNodeOption Output, STNodeOption Input)[] expected =
+            [
+                (secondSource.Outputs[0], secondTarget.Inputs[1]),
+                (firstSource.Outputs[0], secondTarget.Inputs[0]),
+                (firstSource.Outputs[0], firstTarget.Inputs[1]),
+                (firstSource.Outputs[0], firstTarget.Inputs[0]),
+                (firstSource.Outputs[1], firstTarget.Inputs[0]),
+            ];
+            Assert.Equal(expected, editor.GetConnections().Select(connection => (connection.Output, connection.Input)));
+        });
+    }
+
     [Theory]
     [InlineData(0)] // Copy/paste selection.
     [InlineData(1)] // Open a saved canvas in the editor.
@@ -180,6 +216,19 @@ public sealed class GraphImportRestorationTests
         sink.Received = null;
         start.Output.TransferData("restored result");
         Assert.Equal("restored result", sink.Received);
+    }
+
+    private sealed class OrderedPortsNode : STNode
+    {
+        public STNodeOption[] Inputs { get; private set; } = null!;
+        public STNodeOption[] Outputs { get; private set; } = null!;
+
+        protected override void OnCreate()
+        {
+            base.OnCreate();
+            Inputs = [InputOptions.Add("First", typeof(string), false), InputOptions.Add("Second", typeof(string), false)];
+            Outputs = [OutputOptions.Add("First", typeof(string), false), OutputOptions.Add("Second", typeof(string), false)];
+        }
     }
 }
 

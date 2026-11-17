@@ -136,6 +136,33 @@ public sealed class HeightMapPixelSamplerTests
     }
 
     [Fact]
+    public void Gray16SamplingPreservesWpfDisplayIntensityForEverySourceValue()
+    {
+        StaTest.Run(() =>
+        {
+            const int size = 256;
+            byte[] source = new byte[size * size * 2];
+            for (int value = 0; value <= ushort.MaxValue; value++)
+            {
+                source[value * 2] = (byte)value;
+                source[value * 2 + 1] = (byte)(value >> 8);
+            }
+            WriteableBitmap bitmap = CreateBitmap(size, size, PixelFormats.Gray16, source, size * 2);
+            var display = new FormatConvertedBitmap(bitmap, PixelFormats.Bgra32, null, 0);
+            byte[] bgra = new byte[size * size * 4];
+            display.CopyPixels(bgra, size * 4, 0);
+            byte[] expected = new byte[size * size];
+            for (int i = 0; i < expected.Length; i++)
+                expected[i] = bgra[i * 4];
+
+            var sample = InvokeSampler(bitmap, size, size);
+
+            Assert.Equal(expected, sample.Gray);
+            Assert.Null(sample.Alpha);
+        });
+    }
+
+    [Fact]
     public void ConvertBitmapToGray_UnpremultipliesPbgra32BeforeSampling()
     {
         StaTest.Run(() =>

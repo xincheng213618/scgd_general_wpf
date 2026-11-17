@@ -1,3 +1,4 @@
+using ColorVision.Engine.Services;
 using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.EditorTools.Algorithms;
 using ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.RoiStatistics;
@@ -89,6 +90,11 @@ public sealed class ImageFileContextMenuTests
                 Assert.Contains(loaded, item => item.Command == ApplicationCommands.Print);
                 Assert.Contains(loaded, item => Equals(item.Header, Resources.Zoom));
                 Assert.DoesNotContain(loaded, item => item.Tag is MenuItemMetadata { GuidId: "SelectImageFileInFolder" });
+                Assert.Single(loaded, item => item.Tag is MenuItemMetadata { GuidId: "OpenImageInNewWindow" });
+
+                view.SetImageSource(new ResultImagePlaceholderCache().GetOrCreate(16, 8),
+                    enableEditorImageServices: false, configureDefaultLayerController: false);
+                Assert.DoesNotContain(OpenCanvasMenu(view), item => item.Tag is MenuItemMetadata { GuidId: "OpenImageInNewWindow" });
 
                 view.Clear();
                 AssertEmptyCanvasMenu(OpenCanvasMenu(view));
@@ -203,7 +209,8 @@ public sealed class ImageFileContextMenuTests
         MenuItem algorithms = Assert.Single(items, item => Equals(item.Header, Resources.ImageAlgorithm));
         Assert.Equal(Resources.ImageView_BatchProcessing, Assert.Single(algorithms.Items.OfType<MenuItem>()).Header);
         Assert.DoesNotContain(items, item => item.Command == ApplicationCommands.Close || item.Command == ApplicationCommands.SaveAs
-            || item.Command == ApplicationCommands.Print || Equals(item.Header, Resources.Zoom) || Equals(item.Header, Resources.ImageView_AskAiAboutImage));
+            || item.Command == ApplicationCommands.Print || Equals(item.Header, Resources.Zoom) || Equals(item.Header, Resources.ImageView_AskAiAboutImage)
+            || item.Tag is MenuItemMetadata { GuidId: "OpenImageInNewWindow" });
     }
 
     private sealed class ExtensionRectangleMenu(MenuItem action) : IDVContextMenu

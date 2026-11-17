@@ -643,19 +643,22 @@ public sealed class CameraPreviewFileHandoffTests : IDisposable
     }
 
     [Theory]
-    [InlineData(1, 8, false)]
-    [InlineData(1, 16, true)]
-    [InlineData(3, 8, true)]
-    [InlineData(3, 16, true)]
-    public async Task LargeFrameDisplayCopyDrawsTheSamePixelsWithoutReplacingTheSource(int channels, int depth, bool expectsProxy)
+    [InlineData(1, 8, false, false)]
+    [InlineData(1, 16, true, false)]
+    [InlineData(3, 8, true, false)]
+    [InlineData(3, 16, true, false)]
+    [InlineData(3, 8, true, true)]
+    public async Task LargeFrameDisplayCopyDrawsTheSamePixelsWithoutReplacingTheSource(int channels, int depth, bool expectsProxy, bool rgb24)
     {
-        PixelFormat format = RealtimeFramePresenter.GetPixelFormat(channels, depth);
-        int stride = RealtimeFramePresenter.GetDefaultStride(3, format) + 5;
+        PixelFormat format = rgb24 ? PixelFormats.Rgb24 : RealtimeFramePresenter.GetPixelFormat(channels, depth);
+        // Exercise full vector groups and a tail on odd-width RGB inputs, and WIC gray quantization.
+        int width = rgb24 || depth == 16 ? 19 : 3;
+        int stride = RealtimeFramePresenter.GetDefaultStride(width, format) + 5;
         byte[] samples = Enumerable.Range(0, stride * 2).Select(i => (byte)(i * 11 + 1)).ToArray();
         WpfTestHost.Invoke(() =>
         {
             pipeline.Start(view, showOverlayRoi: false, showOverlayMetrics: false);
-            Assert.True(view.Realtime.SubmitFrame(samples, 3, 2, format, stride, samples.Length, RealtimeFramePresenter.TransformFlipY));
+            Assert.True(view.Realtime.SubmitFrame(samples, width, 2, format, stride, samples.Length, RealtimeFramePresenter.TransformFlipY));
         });
         await view.Realtime.Completion.WaitAsync(TimeSpan.FromSeconds(10));
         WpfTestHost.Invoke(() =>

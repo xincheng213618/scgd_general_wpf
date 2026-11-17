@@ -108,7 +108,7 @@ public sealed class FlowCanvasCatalogBuilder
         foreach (NeutralNode node in canvas.Nodes
             .OrderBy(item => item.NodeId))
         {
-            IReadOnlyDictionary<string, byte[]> properties =
+            IReadOnlyDictionary<string, ReadOnlyMemory<byte>> properties =
                 ParseProperties(node);
             document.Nodes.Add(CreateSemanticNode(node, properties));
             document.Layout.Nodes.Add(
@@ -146,11 +146,12 @@ public sealed class FlowCanvasCatalogBuilder
 
     private static FlowSemanticNode CreateSemanticNode(
         NeutralNode node,
-        IReadOnlyDictionary<string, byte[]> properties)
+        IReadOnlyDictionary<string, ReadOnlyMemory<byte>> properties)
     {
         var semanticProperties = new Dictionary<string, string?>(
             StringComparer.Ordinal);
-        foreach (KeyValuePair<string, byte[]> property in properties
+        Span<byte> digest = stackalloc byte[SHA256.HashSizeInBytes];
+        foreach (KeyValuePair<string, ReadOnlyMemory<byte>> property in properties
             .OrderBy(item => item.Key, StringComparer.Ordinal))
         {
             if (LayoutPropertyNames.Contains(property.Key)
@@ -160,10 +161,8 @@ public sealed class FlowCanvasCatalogBuilder
                 continue;
             }
 
-            semanticProperties[property.Key] =
-                Convert.ToHexString(
-                    SHA256.HashData(property.Value))
-                .ToLowerInvariant();
+            SHA256.HashData(property.Value.Span, digest);
+            semanticProperties[property.Key] = Convert.ToHexStringLower(digest);
         }
 
         return new FlowSemanticNode
@@ -176,7 +175,7 @@ public sealed class FlowCanvasCatalogBuilder
 
     private static FlowNodeLayout CreateLayoutNode(
         NeutralNode node,
-        IReadOnlyDictionary<string, byte[]> properties)
+        IReadOnlyDictionary<string, ReadOnlyMemory<byte>> properties)
     {
         int width = ReadLayoutValue(
             node,
@@ -205,7 +204,7 @@ public sealed class FlowCanvasCatalogBuilder
 
     private static FlowNodeSearchDocument CreateSearchDocument(
         NeutralNode node,
-        IReadOnlyDictionary<string, byte[]> properties)
+        IReadOnlyDictionary<string, ReadOnlyMemory<byte>> properties)
     {
         string? displayName = ReadSearchValue(
             properties,
@@ -250,11 +249,11 @@ public sealed class FlowCanvasCatalogBuilder
     }
 
     private static string? ReadSearchValue(
-        IReadOnlyDictionary<string, byte[]> properties,
+        IReadOnlyDictionary<string, ReadOnlyMemory<byte>> properties,
         string propertyName,
         int maximumLength)
     {
-        KeyValuePair<string, byte[]> match = properties.FirstOrDefault(
+        KeyValuePair<string, ReadOnlyMemory<byte>> match = properties.FirstOrDefault(
             item => string.Equals(
                 item.Key,
                 propertyName,
@@ -268,7 +267,7 @@ public sealed class FlowCanvasCatalogBuilder
         string value;
         try
         {
-            value = StrictUtf8.GetString(match.Value);
+            value = StrictUtf8.GetString(match.Value.Span);
         }
         catch (DecoderFallbackException)
         {
@@ -281,22 +280,22 @@ public sealed class FlowCanvasCatalogBuilder
 
     private static int ReadLayoutValue(
         NeutralNode node,
-        IReadOnlyDictionary<string, byte[]> properties,
+        IReadOnlyDictionary<string, ReadOnlyMemory<byte>> properties,
         string propertyName)
     {
         if (!properties.TryGetValue(
                 propertyName,
-                out byte[]? value)
+                out ReadOnlyMemory<byte> value)
             || value.Length != sizeof(int))
         {
             throw InvalidNode(
                 node,
                 $"布局属性 {propertyName} 缺失或长度无效。");
         }
-        return BinaryPrimitives.ReadInt32LittleEndian(value);
+        return BinaryPrimitives.ReadInt32LittleEndian(value.Span);
     }
 
-    private static Dictionary<string, byte[]> ParseProperties(
+    private static Dictionary<string, ReadOnlyMemory<byte>> ParseProperties(
         NeutralNode node)
     {
         try
@@ -305,7 +304,8 @@ public sealed class FlowCanvasCatalogBuilder
             int offset = 0;
             SkipByteLengthString(payload, ref offset, "节点类型");
             SkipByteLengthString(payload, ref offset, "节点类型标识");
-            var properties = new Dictionary<string, byte[]>(
+            // The projection only reads these slices while it builds the documents.
+            var properties = new Dictionary<string, ReadOnlyMemory<byte>>(
                 StringComparer.Ordinal);
             while (offset < payload.Length)
             {
@@ -318,12 +318,12 @@ public sealed class FlowCanvasCatalogBuilder
                         payload,
                         ref offset,
                         nameLength,
-                        "属性名称"));
+                        "属性名称").Span);
                 int valueLength = ReadInt32(
                     payload,
                     ref offset,
                     "属性值长度");
-                byte[] value = ReadBytes(
+                ReadOnlyMemory<byte> value = ReadBytes(
                     payload,
                     ref offset,
                     valueLength,
@@ -379,15 +379,15 @@ public sealed class FlowCanvasCatalogBuilder
         ref int offset,
         string fieldName)
     {
-        byte[] value = ReadBytes(
+        ReadOnlyMemory<byte> value = ReadBytes(
             payload,
             ref offset,
             sizeof(int),
             fieldName);
-        return BinaryPrimitives.ReadInt32LittleEndian(value);
+        return BinaryPrimitives.ReadInt32LittleEndian(value.Span);
     }
 
-    private static byte[] ReadBytes(
+    private static ReadOnlyMemory<byte> ReadBytes(
         byte[] payload,
         ref int offset,
         int length,
@@ -401,7 +401,7 @@ public sealed class FlowCanvasCatalogBuilder
                 $"{fieldName}长度无效：{length}。");
         }
 
-        byte[] value = payload.AsSpan(offset, length).ToArray();
+        ReadOnlyMemory<byte> value = payload.AsMemory(offset, length);
         offset += length;
         return value;
     }

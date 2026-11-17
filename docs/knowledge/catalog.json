@@ -5787,7 +5787,11 @@
         "read_algorithm_help",
         "algorithmHelpTopicId",
         "DisConnectOptionTransactional",
-        "单条连线事务"
+        "单条连线事务",
+        "图像基础调整",
+        "RGB 通道处理",
+        "伪彩色输出",
+        "流程保存伪彩色 PNG"
       ],
       "code_paths": [
         "Engine/ST.Library.UI/NodeEditor/STNodeAttribute.cs",
@@ -5800,6 +5804,7 @@
         "Engine/FlowEngineLib/PropertyEditor/FlowNodePropertyEditors.cs",
         "Engine/ColorVision.Engine/FlowProcessing/Editor/FlowNodeContextMenuService.cs",
         "Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalFlowNodeBase.cs",
+        "Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalPixelProcessingNodes.cs",
         "Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalCleanupNode.cs",
         "Engine/ColorVision.Engine/Services/Files/FolderCleanupService.cs",
         "Engine/ColorVision.Engine/FlowProcessing/PreProcess/FolderSizePreProcessor.cs",

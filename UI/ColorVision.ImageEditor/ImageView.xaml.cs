@@ -53,6 +53,9 @@ namespace ColorVision.ImageEditor
         private ImageContextMenuComposer _contextMenus = null!;
         private readonly List<Func<IEnumerable<ImageViewSettingsEntry>>> _settingsEntries = new();
         private int _disposed;
+        private ImageStatusBarInfo? _statusBarImageInfo;
+        private long _statusBarImageRevision = -1;
+        private (int Width, int Height, int Channels, int Depth, PixelFormat Format) _liveStatusGeometry;
 
         public event PropertyChangedEventHandler? PropertyChanged;
 
@@ -80,7 +83,18 @@ namespace ColorVision.ImageEditor
         private readonly ImageGroupNavigation _imageGroup;
 
         private RealtimeFramePresenter? _realtime;
-        public RealtimeFramePresenter Realtime => _realtime ??= new RealtimeFramePresenter(this);
+        public RealtimeFramePresenter Realtime
+        {
+            get
+            {
+                if (_realtime == null)
+                {
+                    _realtime = new RealtimeFramePresenter(this);
+                    _realtime.FrameDisplayed += Realtime_FrameDisplayed;
+                }
+                return _realtime;
+            }
+        }
         private ImageFullScreenMode? _fullScreenMode;
         private Matrix _windowedImageMatrix;
         private WpfWindow? _shortcutWindow;
@@ -111,6 +125,8 @@ namespace ColorVision.ImageEditor
             ImageSourceLoaded?.Invoke(
                 this,
                 new ImageViewImageSourceLoadedEventArgs(source, ImageRevision));
+            if (_statusBarImageRevision != ImageRevision)
+                RefreshImageStatusBar();
         }
 
         /// <summary>Notifies listeners that external scene rendering for the current image has finished.</summary>
@@ -263,6 +279,7 @@ namespace ColorVision.ImageEditor
             RenderOptions.SetBitmapScalingMode(ImageShow, DefaultBitmapScalingConfig.Current.DefaultBitmapScalingMode);
             EditorContext = CreateEditorContext();
             CommandBindings.Add(new CommandBinding(ApplicationCommands.Open, (s, e) => OpenImage(), (s, e) => { e.CanExecute = true; }));
+            CommandBindings.Add(new CommandBinding(ImageViewWindow.OpenCurrentImageCommand, OpenCurrentImageInNewWindow, CanOpenCurrentImageInNewWindow));
             CommandBindings.Add(new CommandBinding(ApplicationCommands.SaveAs, (s, e) => SaveAs(), CanExecuteImageCommand));
             CommandBindings.Add(new CommandBinding(ApplicationCommands.Close, (s, e) => Clear(), CanExecuteImageCommand));
             CommandBindings.Add(new CommandBinding(ApplicationCommands.Print, (s, e) => Print(), CanExecuteImageCommand));
@@ -327,6 +344,28 @@ namespace ColorVision.ImageEditor
         private void Config_Cleared(object? sender, EventArgs e)
         {
             _session.OnConfigurationCleared();
+            _liveStatusGeometry = default;
+            RefreshImageStatusBar();
+        }
+
+        private void Realtime_FrameDisplayed(object? sender, EventArgs e)
+        {
+            var geometry = (Config.GetProperties<int>(ImageViewPropertyKeys.Cols),
+                Config.GetProperties<int>(ImageViewPropertyKeys.Rows),
+                Config.GetProperties<int>(ImageViewPropertyKeys.Channel),
+                Config.GetProperties<int>(ImageViewPropertyKeys.Depth),
+                Config.GetProperties<PixelFormat>(ImageViewPropertyKeys.PixelFormat));
+            if (geometry == _liveStatusGeometry) return;
+
+            _liveStatusGeometry = geometry;
+            RefreshImageStatusBar();
+        }
+
+        private void RefreshImageStatusBar()
+        {
+            _statusBarImageRevision = ImageRevision;
+            _statusBarImageInfo = ViewBitmapSource == null ? null : ImageStatusBarInfo.Create(Config);
+            StatusBarItemsChanged?.Invoke(this, EventArgs.Empty);
         }
 
         public bool ImageEditMode
@@ -823,59 +862,21 @@ namespace ColorVision.ImageEditor
 
         public IEnumerable<StatusBarMeta> GetActiveStatusBarItems()
         {
-            var items = new List<StatusBarMeta>();
+            if (_statusBarImageInfo is not { } info) return [];
 
-            var cols = Config.GetProperties<int>("Cols");
-            var rows = Config.GetProperties<int>("Rows");
-            if (cols > 0 && rows > 0)
-            {
-                items.Add(new StatusBarMeta
+            return
+            [
+                new StatusBarMeta
                 {
                     Id = "ImageDimensions",
-                    Name = "Image Size",
-                    Description = $"{cols} x {rows}",
-                    Type = StatusBarType.Text,
-                    Alignment = StatusBarAlignment.Right,
+                    Name = DisplayText.Get("图像信息"),
+                    Description = info.Summary,
+                    Alignment = StatusBarAlignment.Center,
                     Order = 100,
-                    Source = this,
-                });
-                // 使用直接赋值内容，因为 Properties dict 不是 INotifyPropertyChanged 可绑定的
-                items[^1].BindingName = null; // 不绑定，使用 Description 显示
-            }
-
-            var channel = Config.GetProperties<int>("Channel");
-            var depth = Config.GetProperties<int>("Depth");
-            if (channel > 0)
-            {
-                items.Add(new StatusBarMeta
-                {
-                    Id = "ImageFormat",
-                    Name = "Format",
-                    Description = $"Ch:{channel} Depth:{depth}bit",
-                    Type = StatusBarType.Text,
-                    Alignment = StatusBarAlignment.Right,
-                    Order = 101,
-                    Source = this,
-                });
-            }
-
-            var filePath = Config.FilePath;
-            if (!string.IsNullOrEmpty(filePath))
-            {
-                var ext = Path.GetExtension(filePath).ToUpperInvariant();
-                items.Add(new StatusBarMeta
-                {
-                    Id = "ImageFileType",
-                    Name = "File Type",
-                    Description = ext,
-                    Type = StatusBarType.Text,
-                    Alignment = StatusBarAlignment.Right,
-                    Order = 102,
-                    Source = this,
-                });
-            }
-
-            return items;
+                    Source = info,
+                    ContentFactory = () => new ImageStatusBarView(info),
+                },
+            ];
         }
 
         public void OpenImage(WriteableBitmap? writeableBitmap)
@@ -1119,10 +1120,7 @@ namespace ColorVision.ImageEditor
             }
             if (!_publishingDecodedContent) NotifyImageSourceLoaded();
             CommandManager.InvalidateRequerySuggested();
-
-            // 图像加载完成后通知状态栏刷新
-            StatusBarItemsChanged?.Invoke(this, EventArgs.Empty);
-
+            if (_publishingDecodedContent) RefreshImageStatusBar();
         }
 
         public ImageSource FunctionImage
@@ -1254,7 +1252,11 @@ namespace ColorVision.ImageEditor
             _fullScreenMode = null;
             snapshotCapture.Dispose();
             DebounceTimer.Cancel(_pixelValueOverlayRefreshDebounceKey);
-            _realtime?.Dispose();
+            if (_realtime != null)
+            {
+                _realtime.FrameDisplayed -= Realtime_FrameDisplayed;
+                _realtime.Dispose();
+            }
             Clear();
             _defaultDisplayConfig.PropertyChanged -= DefaultDisplayConfig_PropertyChanged;
             Config.Cleared -= Config_Cleared;

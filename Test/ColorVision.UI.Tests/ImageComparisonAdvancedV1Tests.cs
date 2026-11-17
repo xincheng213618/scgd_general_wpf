@@ -183,8 +183,11 @@ public sealed class ImageComparisonAdvancedV1Tests
         Assert.Contains(clipped.Diagnostics.Messages, message => message.Code == "comparison_roi_clipped");
     }
 
-    [Fact]
-    public async Task AlignmentPrecheckFindsKnownCandidateOffsetWithoutTransformingImages()
+    [Theory]
+    [InlineData(false, 690, 690.0 / 768)]
+    [InlineData(true, 317, 1)]
+    public async Task AlignmentPrecheckFindsKnownCandidateOffsetWithoutTransformingImages(
+        bool useCircularRoi, int expectedSamples, double expectedOverlap)
     {
         const int width = 32;
         const int height = 24;
@@ -210,13 +213,15 @@ public sealed class ImageComparisonAdvancedV1Tests
             AlignmentSearchRadius = 4,
             AlignmentMinimumOverlapFraction = 0.7,
             AlignmentMaximumSamples = 4096,
-        });
+        }, roi: useCircularRoi ? new CircleAlgorithmRoi(new(11, 12), 10) : null);
         AlgorithmTableArtifact alignment = result.GetArtifact<AlgorithmTableArtifact>("image-comparison-alignment")!;
         IReadOnlyDictionary<string, JsonElement> row = Assert.Single(alignment.Rows);
         Assert.Equal("ok", row["Status"].GetString());
         Assert.Equal(shiftX, row["EstimatedShiftX"].GetInt32());
         Assert.Equal(shiftY, row["EstimatedShiftY"].GetInt32());
         Assert.Equal(1, row["BestCorrelation"].GetDouble(), 12);
+        Assert.Equal(expectedSamples, row["SampleCount"].GetInt32());
+        Assert.Equal(expectedOverlap, row["OverlapFraction"].GetDouble(), 12);
         Assert.Contains(result.Diagnostics.Messages, message => message.Code == "alignment_shift_suspected");
         Assert.NotNull(result.GetArtifact<AlgorithmGeometryArtifact>("alignment-precheck"));
         Assert.Equal(left, reference.Data.ToArray());

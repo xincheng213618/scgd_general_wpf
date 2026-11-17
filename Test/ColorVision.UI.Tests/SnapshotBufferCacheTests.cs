@@ -9,6 +9,33 @@ namespace ColorVision.UI.Tests;
 public sealed class SnapshotBufferCacheTests
 {
     [Fact]
+    public void FrozenSnapshotRetainsPixelsAndDpiAfterItsNativeBufferIsReused()
+    {
+        byte[] expected = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
+        BitmapSource snapshot = WpfTestHost.Invoke(() =>
+        {
+            using SnapshotImageBufferPool pool = new();
+            WriteableBitmap source = new(3, 2, 96, 96, PixelFormats.Gray16, null);
+            source.WritePixels(new(0, 0, 3, 2), expected, 6, 0);
+            BitmapSource result;
+            using (SnapshotImageBufferLease first = pool.Capture(source))
+                result = first.ToFrozenBitmap(144, 120);
+
+            source.WritePixels(new(0, 0, 3, 2), new byte[expected.Length], 6, 0);
+            using (pool.Capture(source)) { }
+            Assert.Equal(1, pool.GetSnapshot().HitCount);
+            return result;
+        });
+
+        Assert.True(snapshot.IsFrozen);
+        Assert.Equal((3, 2, PixelFormats.Gray16, 144d, 120d),
+            (snapshot.PixelWidth, snapshot.PixelHeight, snapshot.Format, snapshot.DpiX, snapshot.DpiY));
+        byte[] actual = new byte[expected.Length];
+        snapshot.CopyPixels(actual, 6, 0);
+        Assert.Equal(expected, actual);
+    }
+
+    [Fact]
     public void ScopedReleasePreservesOtherViewsAndRetiresOnlyExistingLeases()
     {
         WpfTestHost.Invoke(() =>

@@ -464,6 +464,7 @@ namespace ColorVision.ImageEditor.Algorithms
             int sourceChannels = source.Format.Channels();
             int sampleBits = source.Format.BitsPerChannel();
             int rowBytes = checked(source.Width * sourceChannels * (sampleBits / 8));
+            bool copyIntegerRows = (sampleBits is 8 or 16) && dark == null && flat == null && shading == null;
             for (int y = 0; y < source.Height; y++)
             {
                 if ((y & 15) == 0)
@@ -476,6 +477,12 @@ namespace ColorVision.ImageEditor.Algorithms
                 ReadOnlySpan<byte> flatRow = flat == null ? ReadOnlySpan<byte>.Empty : flat.Data.Span.Slice(y * flat.Stride, flat.Stride);
                 ReadOnlySpan<byte> shadingRow = shading == null ? ReadOnlySpan<byte>.Empty : shading.Data.Span.Slice(y * shading.Stride, shading.Stride);
                 Span<byte> outputRow = destination.AsSpan(y * rowBytes, rowBytes);
+                // With only a bad-pixel map, integer samples round-trip through normalization unchanged.
+                if (copyIntegerRows)
+                {
+                    sourceRow[..rowBytes].CopyTo(outputRow);
+                    continue;
+                }
                 for (int x = 0; x < source.Width; x++)
                 {
                     bool pixelValid = true;
@@ -573,6 +580,10 @@ namespace ColorVision.ImageEditor.Algorithms
             int sampleBits = source.Format.BitsPerChannel();
             int rowBytes = checked(source.Width * channels * (sampleBits / 8));
             double threshold = parameters.BadPixelThresholdNormalized;
+            // Compare normalized byte codes once to preserve the strict threshold at code boundaries.
+            int firstMarkedValue = 0;
+            while (firstMarkedValue <= byte.MaxValue && firstMarkedValue / 255d <= threshold)
+                firstMarkedValue++;
             List<double> neighborhood = new((parameters.BadPixelRadius * 2 + 1) * (parameters.BadPixelRadius * 2 + 1));
             for (int y = 0; y < source.Height; y++)
             {
@@ -581,10 +592,16 @@ namespace ColorVision.ImageEditor.Algorithms
                     cancellationToken.ThrowIfCancellationRequested();
                     progress?.Report(new AlgorithmProgress(0.76 + 0.18 * y / Math.Max(1, source.Height), "imaging-correction.bad-pixels"));
                 }
-                ReadOnlySpan<byte> mapRow = badMap.Data.Span.Slice(y * badMap.Stride, badMap.Stride);
+                if (firstMarkedValue > byte.MaxValue) continue;
+                ReadOnlySpan<byte> mapRow = badMap.Data.Span.Slice(y * badMap.Stride, source.Width);
                 for (int x = 0; x < source.Width; x++)
                 {
-                    if (ReadSample(mapRow, 8, x) <= threshold) continue;
+                    if (mapRow[x] < firstMarkedValue)
+                    {
+                        int next = mapRow[(x + 1)..].IndexOfAnyInRange((byte)firstMarkedValue, byte.MaxValue);
+                        if (next < 0) break;
+                        x += next + 1;
+                    }
                     statistics.BadPixelsMarked++;
                     bool resolved = true;
                     for (int channel = 0; channel < correctedChannels; channel++)

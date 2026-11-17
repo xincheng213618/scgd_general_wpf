@@ -19,13 +19,12 @@ related: ["ui.framework", "ui.discovery", "ui.common", "ui.desktop", "ui.setting
 | 检查更新 | U |
 | 关于 | A |
 | 日志 | L |
-| 原生日志 | N |
-| 插件市场 | P |
-| 发送反馈 | F |
-| ColorVision Service Host | S |
-| 网络通信 | C |
+| 商店 | P |
+| 反馈 | F |
+| Servicee Host | S |
+| 通信 | C |
 
-“网络通信”是菜单中的短名称，打开后的窗口仍使用完整标题“Socket 连接管理器”。独立日志窗口的 Esc 先退出搜索，再关闭窗口；插件市场的 Esc 先收起详情，再关闭窗口；网络通信窗口的 Esc 先清除筛选，再关闭窗口。进入反馈窗口后可直接输入正文，多行输入保留 Enter 换行；关于窗口支持 Enter 确认关闭。检查更新的默认操作与忙碌门禁见[更新窗口](../../02-developer-guide/deployment/auto-update.md)。
+“通信”打开“Socket 连接管理器”。独立日志窗口的 Esc 先退出搜索，再关闭窗口。插件市场的 Esc 先收起详情，再关闭窗口。Socket 连接管理器的 Esc 先清除筛选，再关闭窗口。进入反馈窗口后可直接输入正文，多行输入保留 Enter 换行。关于窗口支持 Enter 确认关闭。检查更新的默认操作与忙碌门禁见[更新窗口](../../02-developer-guide/deployment/auto-update.md)。
 
 菜单接口在 `ColorVision.Common`，`UI/ColorVision.UI/Menus/MenuManager.cs` 为调用方提供的 WPF `Menu` 装配菜单树；`UI/ColorVision.UI.Desktop/MenuItemManager/` 管理显示覆盖。三者分别负责扩展声明、运行时呈现和配置编辑，不接管菜单背后的设备、文件或业务事务。
 

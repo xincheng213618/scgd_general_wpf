@@ -6,6 +6,7 @@ using ColorVision.Engine.Media;
 using ColorVision.Engine.Templates.POI;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using ColorVision.FileIO;
+using ColorVision.ImageEditor;
 using ColorVision.Themes.Controls;
 using System;
 using System.Collections.ObjectModel;
@@ -26,7 +27,10 @@ namespace ColorVision.Engine.Services
 
         private ContextMenu? _contextMenu;
         private RelayCommand? _exportCVCIECommand, _copyToCommand, _openContainingFolderCommand, _exportToPoiCommand;
+        private RelayCommand? _openInNewWindowCommand;
         public ContextMenu ContextMenu { get => _contextMenu ??= CreateContextMenu(); set => _contextMenu = value; }
+        public RelayCommand OpenInNewWindowCommand => _openInNewWindowCommand ??= new RelayCommand(
+            async _ => await ImageViewWindow.OpenFileAsync(FindAvailableImagePath()), _ => FindAvailableImagePath() != null);
         public RelayCommand ExportCVCIECommand { get => _exportCVCIECommand ??= new RelayCommand(a => Export(), a => File.Exists(FilePath)); set => _exportCVCIECommand = value; }
         public RelayCommand CopyToCommand { get => _copyToCommand ??= new RelayCommand(a => CopyTo(), a => File.Exists(FilePath)); set => _copyToCommand = value; }
         public RelayCommand OpenContainingFolderCommand { get => _openContainingFolderCommand ??= new RelayCommand(a => OpenContainingFolder()); set => _openContainingFolderCommand = value; }
@@ -35,11 +39,18 @@ namespace ColorVision.Engine.Services
         private ContextMenu CreateContextMenu()
         {
             ContextMenu menu = new();
+            menu.Items.Add(new MenuItem { Header = ImageViewWindow.OpenInNewWindowText, Command = OpenInNewWindowCommand });
             menu.Items.Add(new MenuItem { Header = Properties.Resources.Selected, Command = OpenContainingFolderCommand });
             menu.Items.Add(new MenuItem { Header = Properties.Resources.Export, Command = ExportCVCIECommand });
             menu.Items.Add(new MenuItem { Header = Properties.Resources.CreateToPOI, Command = ExportToPoiCommand });
             menu.Closed += static (sender, _) => ((ContextMenu)sender).ClearValue(ContextMenu.PlacementTargetProperty);
             return menu;
+        }
+
+        private string? FindAvailableImagePath()
+        {
+            if (ImageViewWindow.CanOpenFile(FilePath)) return FilePath;
+            return ImageViewWindow.CanOpenFile(ResultImagFile) ? ResultImagFile : null;
         }
 
         public ViewResultAlg()

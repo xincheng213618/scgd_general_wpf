@@ -42,18 +42,27 @@ namespace ColorVision.ImageEditor.Cie
             int stride = width * 4;
             byte[] pixels = new byte[stride * height];
             List<CieChromaticity> locus = GetDiagramLocus(profile);
+            Span<double> intersections = stackalloc double[locus.Count];
+            Rect plot = profile.PlotAreaPixels;
+            Rect axes = profile.AxisBounds;
+            Color background = dark ? Colors.Black : Colors.White;
+            Color outsideSpectrum = dark ? background : Color.FromRgb(248, 248, 248);
 
             for (int y = 0; y < height; y++)
             {
+                double diagramY = axes.Top + (plot.Bottom - y) / plot.Height * axes.Height;
+                int intersectionCount = GetRowIntersections(diagramY, locus, intersections);
+                ReadOnlySpan<double> rowIntersections = intersections[..intersectionCount];
                 for (int x = 0; x < width; x++)
                 {
                     int offset = y * stride + x * 4;
-                    Color color = dark ? Colors.Black : Colors.White;
+                    Color color = background;
 
-                    if (profile.PlotAreaPixels.Contains(new Point(x, y)))
+                    if (plot.Contains(new Point(x, y)))
                     {
-                        CieChromaticity diagramPoint = ImagePixelToDiagramPoint(profile, new Point(x, y));
-                        if (profile.ContainsDiagramPoint(diagramPoint) && IsPointInPolygon(diagramPoint, locus))
+                        double diagramX = axes.Left + (x - plot.Left) / plot.Width * axes.Width;
+                        CieChromaticity diagramPoint = new(diagramX, diagramY);
+                        if (profile.ContainsDiagramPoint(diagramPoint) && IsInsideSpectrum(diagramX, rowIntersections))
                         {
                             CieChromaticity xy = profile.Kind == CieDiagramKind.Cie1976uv
                                 ? CieColorConverter.Uv1976ToXy(diagramPoint)
@@ -64,7 +73,7 @@ namespace ColorVision.ImageEditor.Cie
                         }
                         else
                         {
-                            color = dark ? Colors.Black : Color.FromRgb(248, 248, 248);
+                            color = outsideSpectrum;
                         }
                     }
 
@@ -191,14 +200,6 @@ namespace ColorVision.ImageEditor.Cie
             DrawText(dc, yLabel, new Point(plot.Left - 34, plot.Top - 4), textBrush, 18);
         }
 
-        private static CieChromaticity ImagePixelToDiagramPoint(CieDiagramProfile profile, Point pixel)
-        {
-            Rect plot = profile.PlotAreaPixels;
-            double x = profile.AxisBounds.Left + (pixel.X - plot.Left) / plot.Width * profile.AxisBounds.Width;
-            double y = profile.AxisBounds.Top + (plot.Bottom - pixel.Y) / plot.Height * profile.AxisBounds.Height;
-            return new CieChromaticity(x, y);
-        }
-
         private static List<CieChromaticity> GetDiagramLocus(CieDiagramProfile profile)
         {
             return CieSpectrumLocus.Points
@@ -207,21 +208,26 @@ namespace ColorVision.ImageEditor.Cie
                 .ToList();
         }
 
-        private static bool IsPointInPolygon(CieChromaticity point, IReadOnlyList<CieChromaticity> polygon)
+        private static int GetRowIntersections(double y, IReadOnlyList<CieChromaticity> polygon, Span<double> intersections)
         {
-            bool inside = false;
+            int count = 0;
             for (int i = 0, j = polygon.Count - 1; i < polygon.Count; j = i++)
             {
                 CieChromaticity pi = polygon[i];
                 CieChromaticity pj = polygon[j];
-                bool intersect = ((pi.Y > point.Y) != (pj.Y > point.Y)) &&
-                                 (point.X < (pj.X - pi.X) * (point.Y - pi.Y) / (pj.Y - pi.Y) + pi.X);
-                if (intersect)
-                {
-                    inside = !inside;
-                }
+                // Match the half-open edge test at polygon vertices.
+                if ((pi.Y > y) != (pj.Y > y))
+                    intersections[count++] = (pj.X - pi.X) * (y - pi.Y) / (pj.Y - pi.Y) + pi.X;
             }
 
+            return count;
+        }
+
+        private static bool IsInsideSpectrum(double x, ReadOnlySpan<double> intersections)
+        {
+            bool inside = false;
+            foreach (double intersection in intersections)
+                inside ^= x < intersection;
             return inside;
         }
 

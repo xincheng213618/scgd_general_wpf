@@ -38,11 +38,28 @@ namespace ColorVision.ImageEditor.Algorithms
         private static AlgorithmImageBuffer Decode(Stream stream, string role)
         {
             stream.Position = 0;
-            BitmapDecoder decoder = BitmapDecoder.Create(stream, BitmapCreateOptions.PreservePixelFormat, BitmapCacheOption.OnLoad);
-            if (decoder.Frames.Count == 0) throw new InvalidDataException($"Reference image '{role}' has no readable frame.");
-            BitmapSource frame = decoder.Frames[0];
+            var frames = BitmapDecoder.Create(stream, BitmapCreateOptions.PreservePixelFormat, BitmapCacheOption.None).Frames;
+            // The owned pixel copy completes before the stream closes. Preserve eager WPF color
+            // processing and validation of later frames when either can affect the result.
+            if (frames.Count > 1 || (frames.Count == 1 && MayHaveColorContext(frames[0])))
+            {
+                stream.Position = 0;
+                frames = BitmapDecoder.Create(stream, BitmapCreateOptions.PreservePixelFormat, BitmapCacheOption.OnLoad).Frames;
+            }
+            if (frames.Count == 0) throw new InvalidDataException($"Reference image '{role}' has no readable frame.");
+            BitmapSource frame = frames[0];
             _ = ImageAlgorithmInputFactory.FromPixelFormat(frame.Format);
             return ImageAlgorithmInputFactory.Copy(frame);
+        }
+
+        private static bool MayHaveColorContext(BitmapFrame frame)
+        {
+            try { return frame.ColorContexts is { Count: > 0 }; }
+            catch (Exception error) when (error is NotSupportedException or InvalidOperationException
+                or ArgumentException or FileFormatException or IOException or System.Runtime.InteropServices.COMException)
+            {
+                return true;
+            }
         }
 
         public static IReadOnlyList<AlgorithmInput> LoadEnabledReferences(ImagingCorrectionParameters parameters,

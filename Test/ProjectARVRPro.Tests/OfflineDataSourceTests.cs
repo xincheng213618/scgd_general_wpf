@@ -321,7 +321,13 @@ public sealed class OfflineDataSourceTests
     {
         using var fixture = new Files();
         string path = fixture.CreateProject("a");
+        using (var database = new SqliteConnection($"Data Source={path};Pooling=False"))
+        {
+            database.Open();
+            Execute(database, "CREATE TABLE pragma_table_info(user_value TEXT);");
+        }
         var reader = new ReadOnlySqliteDatabase(path);
+        Assert.True(reader.HasColumn("pragma_table_info", "user_value"));
         using var client = reader.OpenClient();
         Assert.ThrowsAny<Exception>(() => client.Ado.ExecuteCommand("DELETE FROM ARVRReuslt"));
         Assert.Equal(2, reader.Query<ProjectARVRReuslt>(client).Count());

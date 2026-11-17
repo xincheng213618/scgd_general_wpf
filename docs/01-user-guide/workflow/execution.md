@@ -12,6 +12,8 @@ related: ["flow.architecture","flow.templates","flow.workspace","flow.headless",
 
 从“工作流程”面板或“流程编辑器”点击“执行流程”，运行对应工作区的节点图。本页说明启动前提、停止行为，以及如何区分引擎结束、后处理完成和结果落库。共享业务链由 `FlowExecutionSession` 编排；项目窗口直接持有 `FlowControl` 的入口可能使用自己的完成规则。
 
+主窗口选中“工作流程”标签时，底部状态栏显示已加载的流程和“执行流程”按钮。它与流程编辑器使用同一执行命令，运行期间显示进度；尚无进度估算时显示活动动画。
+
 `ViewFlow.NodeExecutionCompleted` 在会话接受当前运行的一次节点结束通知后发布，携带批次 ID、SN、节点身份和状态码；旧 SN、未匹配的节点尝试及重复结束通知不会发布。该事件表示节点收尾，整图完成、后处理和诊断写入各自有独立时序。订阅者须快速返回，将耗时工作转交后台。订阅者异常会被隔离记录，不中断流程节点收尾。
 
 编辑与保存见[工作区](./design.md)，数据库/包格式见[模板持久化](../../04-api-reference/engine-components/template-flow-chain.md)。不需要 UI 批次和前后处理的裸图运行见[无界面执行](../../04-api-reference/algorithms/templates/flow-engine.md)。

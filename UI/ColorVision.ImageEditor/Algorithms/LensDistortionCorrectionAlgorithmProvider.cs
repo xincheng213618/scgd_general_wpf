@@ -131,9 +131,13 @@ namespace ColorVision.ImageEditor.Algorithms
                     }
                     validityMask = new AlgorithmImageBuffer(source.Width, source.Height, source.Width, AlgorithmImageFormat.Gray8, mask, source.DpiX, source.DpiY);
                     using AlgorithmImageMatLease input = AlgorithmImageInterop.BorrowReadOnly(source);
-                    using Mat output = new();
                     context.Progress?.Report(new AlgorithmProgress(0.76, "lens-distortion.remap"));
                     cancellationToken.ThrowIfCancellationRequested();
+                    // Constant and replicate borders fill the whole output. The Mat pins this private buffer until disposed.
+                    int stride = checked(source.Width * source.Format.BytesPerPixel());
+                    byte[] outputPixels = GC.AllocateUninitializedArray<byte>(checked(stride * source.Height));
+                    using Mat output = Mat.FromPixelData(source.Height, source.Width, input.Mat.Type(), outputPixels, stride);
+                    IntPtr outputAddress = output.Data;
                     Cv2.Remap(
                         input.Mat,
                         output,
@@ -143,7 +147,9 @@ namespace ColorVision.ImageEditor.Algorithms
                         parameters.Border == GeometricTransformBorder.Replicate ? BorderTypes.Replicate : BorderTypes.Constant,
                         BorderScalar(source.Format, parameters));
                     cancellationToken.ThrowIfCancellationRequested();
-                    corrected = AlgorithmImageInterop.FromMat(output, source.DpiX, source.DpiY, cancellationToken);
+                    corrected = output.Data == outputAddress && output.Step() == stride
+                        ? new AlgorithmImageBuffer(source.Width, source.Height, stride, source.Format, outputPixels, source.DpiX, source.DpiY)
+                        : AlgorithmImageInterop.FromMat(output, source.DpiX, source.DpiY, cancellationToken);
                 }
 
                 long totalPixels = (long)source.Width * source.Height;

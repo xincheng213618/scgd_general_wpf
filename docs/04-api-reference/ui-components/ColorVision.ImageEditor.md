@@ -46,6 +46,8 @@ related: ["ui.discovery","ui.image-editor-context","ui.property-grid","engine.re
 
 工具栏、Ctrl+O 和右键“打开”共用 `ApplicationCommands.Open`。右键命令指向当前视图，宿主可接管选图流程。右键“在文件夹中选择文件”仅在当前图像对应的磁盘文件存在时显示。
 
+活动图像的摘要显示在状态栏中间，包含尺寸、通道、位深和可用的文件标识。悬停摘要可预览图像详情，鼠标离开摘要和浮窗后收起。点击摘要可保留浮窗并复制其中的像素格式、DPI、文件路径与时间，以及图像已提供的采集或相机信息；浮窗失去焦点或按 Esc 时关闭。文件按钮会在资源管理器选中当前图像的源文件；点击时核对该文件是否仍可访问。
+
 `ImageView` 按扩展名查询 `IEditorToolFactory.IImageOpens`。扩展名命中后仍须完成解码。
 
 | 输入 | 打开器与限制 |
@@ -150,7 +152,7 @@ CIE 在同一个窗口提供 **色度图 / 色域计算 / 样品与色差**，�
 
 “图像 → 3D 视图”把当前 `DrawCanvas.Source` 的 `WriteableBitmap` 交给 `Window3D`。高度定义保持为 `Z = byte灰度 / 255 × 显示高度`，默认显示高度为 100。它表达当前显示图像的亮度，不是物理深度、原始 RGB48/Gray16/Gray32Float 测量值，也不从亮度重建真实物体。切换源图层或改变上游显示映射可能改变输入亮度。
 
-`HeightMapPixelSampler` 使用双线性采样，其他像素格式按 WPF 转为 Bgra32 显示。透明度须大于 127 才参与网格，粗网格也检查内部透明点，避免跨洞连接。浮点无效值沿用 WPF 显示转换。
+`HeightMapPixelSampler` 对显示亮度做双线性采样。高位深、浮点等需要转换的像素沿用 WPF 显示转换，包括浮点无效值的处理。透明度须大于 127 才参与网格，粗网格也检查内部透明点，避免跨洞连接。
 
 `HeightMapDxRenderer` 使用 SharpDX/DirectX 11。图例表示未加光照的 0–255 调色值，曲面光照会改变视觉亮度。采样、网格与命中分别见 `HeightMapPixelSampler`、`HeightMapDxRenderer` 和 `HeightMapDxGeometry`。
 
@@ -169,7 +171,7 @@ CIE 在同一个窗口提供 **色度图 / 色域计算 / 样品与色差**，�
 
 ### OBJ/STL 模型场景
 
-- `ModelViewer3DControl` / `ModelViewer3DModel` 是 SharpDX/Assimp 的 OBJ/STL 模型查看链，支持场景树、可见性和隔离状态。线框由 `MeshNode.RenderWireframe` 控制，不能照旧说明把它写成 `FindEdges` 加边圆柱，或把高度曲面的 WPF 工具链直接套过来。
+- `ModelViewer3DControl` / `ModelViewer3DModel` 是 SharpDX/Assimp 的 OBJ/STL 模型查看链，支持场景树、可见性和隔离状态。模型名称、几何统计和当前视图显示在状态栏中间。线框由 `MeshNode.RenderWireframe` 控制，不能照旧说明把它写成 `FindEdges` 加边圆柱，或把高度曲面的 WPF 工具链直接套过来。
 - 界面 `ExportModel_Click` 调用 `ModelViewer3DLoader.ExportAsync(model.FilePath, ...)`，导出时重新由 `Importer` 读取源文件，再交给 `Exporter`，不是序列化当前显示场景。因此隐藏/隔离、线框与窗口变换不构成模型导出内容；源文件后续变化也可能影响输出。`ModelViewer3DModel.ExportToFile()` 则是另一条对已有场景操作的 API，不能因其存在就推断界面使用了它。
 - OBJ、材质和纹理全部写完后成组落位。落位失败会回滚已替换的配套文件；回滚失败时保留可用备份并报告路径。导出保真以实际样本重新导入为准。
 

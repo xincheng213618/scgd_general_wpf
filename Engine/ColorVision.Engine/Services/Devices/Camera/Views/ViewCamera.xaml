@@ -58,6 +58,17 @@
                     </ToggleButton>
             </StackPanel>
             <StackPanel HorizontalAlignment="Right"  Orientation="Horizontal">
+                <Button x:Name="OpenSelectedImageButton" Command="{Binding SelectedItem.OpenCVCIECommand, ElementName=listView1}"
+                        ToolTip="{x:Static im:ImageViewWindow.OpenInNewWindowText}" AutomationProperties.Name="{x:Static im:ImageViewWindow.OpenInNewWindowText}">
+                    <Button.Style>
+                        <Style TargetType="Button" BasedOn="{StaticResource PanelIconButtonStyle}">
+                            <Style.Triggers>
+                                <Trigger Property="Command" Value="{x:Null}"><Setter Property="IsEnabled" Value="False"/></Trigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Button.Style>
+                    <Path Style="{StaticResource PanelActionIconPathStyle}" Data="M11,3 H15 V7 M15,3 L8,10 M8,4 H4 V14 H14 V10"/>
+                </Button>
                 <Button Style="{StaticResource PanelIconButtonStyle}" ToolTip="{x:Static properties:Resources.Inquire}" Click="Search_Click">
                     <Path Style="{StaticResource PanelActionIconPathStyle}" Data="M7.2,3.2 A4,4 0 1 1 7.2,11.2 A4,4 0 1 1 7.2,3.2 M10.2,10.2 L14.2,14.2"/>
                 </Button>
@@ -178,13 +189,6 @@
                             <GridViewColumn.CellTemplate>
                                 <DataTemplate  DataType="{x:Type se:ViewResultImage}">
                                     <TextBlock Text="{ Binding  ImgFrameInfo}" />
-                                </DataTemplate>
-                            </GridViewColumn.CellTemplate>
-                        </GridViewColumn>
-                        <GridViewColumn  Header="DeviceCode" Width="50">
-                            <GridViewColumn.CellTemplate>
-                                <DataTemplate  DataType="{x:Type se:ViewResultImage}">
-                                    <TextBlock Text="{Binding DeviceCode}"/>
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>

@@ -33,27 +33,33 @@ namespace ColorVision.ImageEditor.Output
 
         internal HImage Image => image ?? throw new ObjectDisposedException(nameof(SnapshotImageBufferLease));
 
-        internal WriteableBitmap ToWriteableBitmap(double dpiX, double dpiY)
+        internal BitmapSource ToFrozenBitmap(double dpiX, double dpiY)
         {
             HImage buffer = Image;
             BitmapPalette? palette = paletteColors == null ? null : new BitmapPalette(paletteColors);
-            WriteableBitmap bitmap = new(
-                buffer.cols,
-                buffer.rows,
-                dpiX,
-                dpiY,
-                format,
-                palette);
             int bytesPerRow = GetPackedRowBytes(buffer.cols, format.BitsPerPixel);
-            if (buffer.stride < bytesPerRow || bitmap.BackBufferStride < bytesPerRow)
+            if (buffer.stride < bytesPerRow)
                 throw new InvalidOperationException("Snapshot image buffer stride is invalid.");
 
             int bufferSize = checked(buffer.stride * buffer.rows);
-            bitmap.WritePixels(
-                new Int32Rect(0, 0, bitmap.PixelWidth, bitmap.PixelHeight),
-                buffer.pData,
-                bufferSize,
-                buffer.stride);
+            BitmapSource bitmap;
+            if (format.BitsPerPixel % 8 == 0)
+            {
+                // This factory copies the leased pixels into independently owned WIC storage.
+                bitmap = BitmapSource.Create(buffer.cols, buffer.rows, dpiX, dpiY, format, palette,
+                    buffer.pData, bufferSize, buffer.stride);
+            }
+            else
+            {
+                // Preserve WritePixels handling of unused bits at the ends of packed rows.
+                WriteableBitmap packed = new(buffer.cols, buffer.rows, dpiX, dpiY, format, palette);
+                if (packed.BackBufferStride < bytesPerRow)
+                    throw new InvalidOperationException("Snapshot image buffer stride is invalid.");
+                packed.WritePixels(new Int32Rect(0, 0, buffer.cols, buffer.rows), buffer.pData, bufferSize, buffer.stride);
+                bitmap = packed;
+            }
+            bitmap.Freeze();
+            GC.KeepAlive(this);
             return bitmap;
         }
 

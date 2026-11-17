@@ -7495,4 +7495,5 @@ Field: </value></data>
   <data name="Flow_PreProcess_ConfigUnavailable" xml:space="preserve"><value>Preprocessing configuration could not be read. Restore a valid configuration file, then select Reload.</value></data>
   <data name="Flow_PostProcess_InvalidConfiguration" xml:space="preserve"><value>Invalid configuration</value></data>
   <data name="Flow_PostProcess_InvalidConfigurationHint" xml:space="preserve"><value>The saved post-processing parameters could not be read. Edit this step and configure it again.</value></data>
+  <data name="在{0}添加设备" xml:space="preserve"><value>Add device to {0}</value></data>
 </root>

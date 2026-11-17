@@ -17,7 +17,7 @@ internal static class FlowRunNavigationReader
     // row by row so the navigation can compare the parsed dates as before.
     private const string CanonicalTime = """
         typeof(start_time) = 'text'
-        AND substr(start_time, 1, 19) GLOB '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9] [0-9][0-9]:[0-9][0-9]:[0-9][0-9]'
+        AND start_time GLOB '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9] [0-9][0-9]:[0-9][0-9]:[0-9][0-9]*'
         AND (length(start_time) = 19 OR (
             length(start_time) BETWEEN 21 AND 27
             AND substr(start_time, 20, 1) = '.'

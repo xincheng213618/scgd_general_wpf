@@ -339,22 +339,8 @@ namespace ColorVision.ImageEditor.Output
 
         private static BitmapSource? MaterializeSnapshotSource(ImageViewSnapshot snapshot)
         {
-            SnapshotImageBufferLease? buffer = snapshot.TakeImageBuffer();
-            if (buffer != null)
-            {
-                WriteableBitmap source;
-                try
-                {
-                    source = buffer.ToWriteableBitmap(snapshot.DpiX, snapshot.DpiY);
-                    source.Freeze();
-                }
-                finally
-                {
-                    buffer.Dispose();
-                }
-                return source;
-            }
-            return snapshot.FrozenSource;
+            using SnapshotImageBufferLease? buffer = snapshot.TakeImageBuffer();
+            return buffer == null ? snapshot.FrozenSource : buffer.ToFrozenBitmap(snapshot.DpiX, snapshot.DpiY);
         }
 
         private static DrawingGroup ComposeSnapshotScene(ImageViewSnapshot snapshot, BitmapSource? source)

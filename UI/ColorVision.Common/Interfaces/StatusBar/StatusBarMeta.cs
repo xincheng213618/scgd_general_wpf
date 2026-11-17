@@ -27,7 +27,7 @@ namespace ColorVision.UI
         public StatusBarType Type { get; set; } = StatusBarType.Icon;
 
         /// <summary>
-        /// 对齐方向: Left / Right
+        /// 对齐区域: Left / Right / Center
         /// </summary>
         public StatusBarAlignment Alignment { get; set; } = StatusBarAlignment.Right;
 
@@ -37,7 +37,7 @@ namespace ColorVision.UI
         public StatusBarActionType ActionType { get; set; } = StatusBarActionType.Command;
 
         /// <summary>
-        /// 排序顺序，同侧内从小到大排列
+        /// 排序顺序，同一区域内从小到大排列
         /// </summary>
         public int Order { get; set; }
 

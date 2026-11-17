@@ -21,14 +21,16 @@ related: ["operations.index","ui.framework","ui.configuration","ui.core"]
 
 ## 日志从哪里来
 
-独立日志窗口进入后聚焦日志查看区域，Esc 先收起已打开的搜索栏，再关闭窗口。原生日志窗口进入后聚焦等级选择；下拉列表先处理 Esc，随后 Esc 可关闭窗口并释放原有采集会话。两个窗口的 Tab / Shift+Tab 均在窗口内循环，菜单访问键见[帮助菜单](../../04-api-reference/ui-components/menus.md#帮助菜单的键盘入口)。
+独立日志窗口进入后聚焦日志查看区域，Esc 先收起已打开的搜索栏，再关闭窗口。按 `Alt+V` 后按 `N` 可打开原生日志窗口。窗口进入后聚焦等级选择，下拉列表先处理 Esc，随后 Esc 可关闭窗口并释放采集会话。两个窗口的 Tab / Shift+Tab 均在窗口内循环。独立日志窗口的菜单访问键见[帮助菜单](../../04-api-reference/ui-components/menus.md#帮助菜单的键盘入口)。
 
 | 入口 | 数据来源与边界 |
 | --- | --- |
 | 帮助 > 日志（`WindowLog`，快捷键可配置） | 给 log4net 根 logger 附加 `LogViewerAppender` 接收新事件，并在初始化时读取当前文件历史；每次菜单执行创建新窗口 |
 | 视图 > 日志（主窗口 `LogOutput`） | 按需打开，接收 log4net 新事件，本身不加载文件历史；`ModuleLogViewerBinder` 的模块面板只接受指定 logger 名或其点分隔子名称 |
+| 视图 > 原生日志（`NativeLogWindow`） | 独立的 `NativeLogBridge` 回调与采集会话 |
 | `WindowLogLocal` / `LogLocalOutput` | 读取调用方指定的外部文件，不接收 log4net 事件；编码可由调用方指定，默认 `Encoding.Default` |
-| 帮助 > 原生日志（`NativeLogWindow`） | 独立的 `NativeLogBridge` 回调与采集会话，不是从托管日志文件读回 native 历史 |
+
+主窗口“视图 > 日志”面板右上角的齿轮可打开本面板的“通用设置”。
 
 主程序通过 `EntryClass.cs` 的 `XmlConfigurator` 加载并监视 `ColorVision/log4net.config`。当前配置包含控制台和按日期滚动的 UTF-8 文件输出，文件配置前缀为 `log\`；当入口检查到当前工作目录包含 `C:\Program Files` 时，会改到应用数据目录下的 `ColorVision\Log\`。定位应读取当前 appender 的 `File`，不能只猜安装目录或将主面板当作完整日志文件。
 

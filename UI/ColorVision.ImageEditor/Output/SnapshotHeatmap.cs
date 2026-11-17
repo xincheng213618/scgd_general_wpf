@@ -9,16 +9,16 @@ namespace ColorVision.ImageEditor.Output;
 
 internal static class SnapshotHeatmap
 {
+    private const int ResizeStripRows = 512;
+    private const int ColorStripRows = 128;
+
     internal static BitmapSource Create(BitmapSource source, int width, int height, double dpiX, double dpiY, CancellationToken cancellationToken)
     {
-        using Mat gray = CopyLuminance(source, cancellationToken);
+        using Mat gray = new();
         using Mat scaled = new();
-        Mat samples = gray;
-        if (width != gray.Cols || height != gray.Rows)
-        {
-            Cv2.Resize(gray, scaled, new OpenCvSharp.Size(width, height), interpolation: InterpolationFlags.Area);
-            samples = scaled;
-        }
+        Mat samples = SampleLuminance(source, width, height, gray, scaled, cancellationToken);
+        if (ReferenceEquals(samples, scaled))
+            gray.Release();
 
         cancellationToken.ThrowIfCancellationRequested();
         Cv2.MinMaxLoc(samples, out double minimum, out double maximum);
@@ -45,48 +45,73 @@ internal static class SnapshotHeatmap
         return bitmap;
     }
 
-    private static Mat CopyLuminance(BitmapSource source, CancellationToken cancellationToken)
+    private static Mat SampleLuminance(BitmapSource source, int width, int height, Mat gray, Mat scaled,
+        CancellationToken cancellationToken)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         PixelFormat format = source.Format;
+        bool isHighBitColor = format == PixelFormats.Rgb48 || format == PixelFormats.Rgba64;
         MatType grayType = format == PixelFormats.Gray32Float ? MatType.CV_32FC1
-            : format == PixelFormats.Gray16 || format == PixelFormats.Rgb48 || format == PixelFormats.Rgba64
+            : format == PixelFormats.Gray16 || isHighBitColor
                 ? MatType.CV_16UC1 : MatType.CV_8UC1;
-        var gray = new Mat(source.PixelHeight, source.PixelWidth, grayType);
-        try
+        BitmapSource pixels = !isHighBitColor && grayType == MatType.CV_8UC1 && format != PixelFormats.Gray8
+            ? new FormatConvertedBitmap(source, PixelFormats.Gray8, null, 0)
+            : source;
+        using Mat? colorStrip = isHighBitColor ? new Mat() : null;
+        int sourceWidth = source.PixelWidth;
+        int sourceHeight = source.PixelHeight;
+        int divisor = width > 0 ? sourceWidth / width : 0;
+        if (divisor is 2 or 4 && sourceWidth % width == 0 && height == sourceHeight / divisor
+            && sourceHeight % divisor == 0 && sourceHeight > ResizeStripRows)
         {
-            if (format == PixelFormats.Gray8 || format == PixelFormats.Gray16 || format == PixelFormats.Gray32Float)
+            // At integer scale factors every AREA sample lies in one aligned strip.
+            // Keep the resampled frame for global normalization and reuse the source strip.
+            scaled.Create(height, width, grayType);
+            int outputRowsPerStrip = ResizeStripRows / divisor;
+            for (int top = 0; top < height; top += outputRowsPerStrip)
             {
-                CopyRows(source, 0, gray);
+                cancellationToken.ThrowIfCancellationRequested();
+                int outputRows = Math.Min(outputRowsPerStrip, height - top);
+                gray.Create(outputRows * divisor, sourceWidth, grayType);
+                CopyLuminance(pixels, top * divisor, gray, colorStrip, cancellationToken);
+                using Mat destination = scaled.RowRange(top, top + outputRows);
+                Cv2.Resize(gray, destination, new OpenCvSharp.Size(width, outputRows), interpolation: InterpolationFlags.Area);
             }
-            else if (format == PixelFormats.Rgb48 || format == PixelFormats.Rgba64)
-            {
-                // Convert high-bit color in strips to retain precision without a second full RGB frame.
-                const int stripHeight = 128;
-                bool hasAlpha = format == PixelFormats.Rgba64;
-                using Mat strip = new();
-                int width = source.PixelWidth;
-                int height = source.PixelHeight;
-                for (int top = 0; top < height; top += stripHeight)
-                {
-                    cancellationToken.ThrowIfCancellationRequested();
-                    int rows = Math.Min(stripHeight, height - top);
-                    strip.Create(rows, width, hasAlpha ? MatType.CV_16UC4 : MatType.CV_16UC3);
-                    CopyRows(source, top, strip);
-                    using Mat destination = gray.RowRange(top, top + rows);
-                    Cv2.CvtColor(strip, destination, hasAlpha ? ColorConversionCodes.RGBA2GRAY : ColorConversionCodes.RGB2GRAY);
-                }
-            }
-            else
-            {
-                CopyRows(new FormatConvertedBitmap(source, PixelFormats.Gray8, null, 0), 0, gray);
-            }
-
-            return gray;
+            return scaled;
         }
-        catch
+
+        gray.Create(sourceHeight, sourceWidth, grayType);
+        CopyLuminance(pixels, 0, gray, colorStrip, cancellationToken);
+        if (width == sourceWidth && height == sourceHeight)
+            return gray;
+
+        Cv2.Resize(gray, scaled, new OpenCvSharp.Size(width, height), interpolation: InterpolationFlags.Area);
+        return scaled;
+    }
+
+    private static void CopyLuminance(BitmapSource source, int sourceTop, Mat gray, Mat? colorStrip,
+        CancellationToken cancellationToken)
+    {
+        if (colorStrip == null)
         {
-            gray.Dispose();
-            throw;
+            CopyRows(source, sourceTop, gray);
+            return;
+        }
+
+        // Convert high-bit color in strips to retain precision without a full RGB frame.
+        bool hasAlpha = source.Format == PixelFormats.Rgba64;
+        MatType colorType = hasAlpha ? MatType.CV_16UC4 : MatType.CV_16UC3;
+        ColorConversionCodes conversion = hasAlpha ? ColorConversionCodes.RGBA2GRAY : ColorConversionCodes.RGB2GRAY;
+        int width = gray.Cols;
+        int height = gray.Rows;
+        for (int top = 0; top < height; top += ColorStripRows)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            int rows = Math.Min(ColorStripRows, height - top);
+            colorStrip.Create(rows, width, colorType);
+            CopyRows(source, sourceTop + top, colorStrip);
+            using Mat destination = gray.RowRange(top, top + rows);
+            Cv2.CvtColor(colorStrip, destination, conversion);
         }
     }
 

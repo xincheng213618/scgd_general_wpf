@@ -22,11 +22,6 @@ public partial class MainWindow
         return true;
     }
 
-    internal void ShowNewUserGuide(bool showWelcome)
-    {
-        NewUserGuideOverlay.ShowGuide(CreateNewUserGuideSteps(), showWelcome);
-    }
-
     private IReadOnlyList<NewUserGuideStep> CreateNewUserGuideSteps() =>
     [
         new(
@@ -71,7 +66,7 @@ public partial class MainWindow
                     throw new InvalidOperationException(errorMessage);
 
                 log.Info($"Automatic new-user guide state persisted; showing welcome. ConfigPath='{configHandler.ConfigFilePath}'; Section='{typeof(MainWindowConfig).FullName}'; HasShownNewUserGuide={Config.HasShownNewUserGuide}.");
-                ShowNewUserGuide(showWelcome: true);
+                NewUserGuideOverlay.ShowGuide(CreateNewUserGuideSteps());
             }
             catch (Exception ex)
             {

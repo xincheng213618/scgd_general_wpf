@@ -339,10 +339,26 @@ public sealed class FlowExecutionEditingTests
         {
             ViewFlow view = fixture.Manager.View;
             view.ShowExecutionSummary("Previous run completed");
+            var statusItem = Assert.Single(((IActiveDocumentStatusProvider)view).GetActiveStatusBarItems());
+            var toolbar = Assert.IsType<ContentPresenter>(statusItem.ContentFactory!());
+            toolbar.ApplyTemplate();
+            var statusName = Assert.IsType<TextBlock>(toolbar.ContentTemplate.FindName("StatusFlowName", toolbar));
+            var statusRun = Assert.IsType<Button>(toolbar.ContentTemplate.FindName("StatusRunButton", toolbar));
+            var statusProgress = Assert.IsType<ProgressBar>(toolbar.ContentTemplate.FindName("StatusFlowProgress", toolbar));
+            fixture.Manager.SelectedFlowParam = new FlowParam { Name = "Status workflow" };
             AssertExecutionControls(view, active: false, stopping: false, indeterminate: true);
+            Assert.Equal("Status workflow", statusName.Text);
+            Assert.Same(view.RunFlowCommand, statusRun.Command);
+            Assert.Equal(Visibility.Collapsed, statusProgress.Visibility);
 
             Task.Run(() => fixture.Manager.FlowControl.IsFlowRun = true).GetAwaiter().GetResult();
             AssertExecutionControls(view, active: true, stopping: false, indeterminate: false);
+            Assert.Equal(Visibility.Visible, statusProgress.Visibility);
+            Assert.True(statusProgress.IsIndeterminate);
+            Assert.False(statusRun.IsEnabled);
+            fixture.Manager.BatchProgress = 42;
+            Assert.Equal(42, statusProgress.Value);
+            Assert.False(statusProgress.IsIndeterminate);
 
             // Queue stale transitions without pumping; both notifications must present the final current state.
             Task.Run(() =>
@@ -352,6 +368,8 @@ public sealed class FlowExecutionEditingTests
                 fixture.Manager.FlowControl.IsFlowRun = false;
             }).GetAwaiter().GetResult();
             AssertExecutionControls(view, active: false, stopping: false, indeterminate: true);
+            Assert.Equal(Visibility.Collapsed, statusProgress.Visibility);
+            Assert.True(statusRun.IsEnabled);
             view.StopFlowCommand.Execute(null);
             Assert.Equal("Previous run completed", view.logTextBox.Text);
         });

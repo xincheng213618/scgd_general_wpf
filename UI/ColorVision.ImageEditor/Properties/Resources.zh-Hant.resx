@@ -3751,4 +3751,19 @@ ORB 特徵上限: {6:N0}    最少匹配/內點: {7}/{8}    重投影閾值: {9:
   <data name="颜色" xml:space="preserve"><value>顏色</value></data>
   <data name="高级设置" xml:space="preserve"><value>高級設置</value></data>
   <data name="在文件夹中选择文件" xml:space="preserve"><value>在資料夾中選取檔案</value></data>
+  <data name="图像信息" xml:space="preserve"><value>圖像資訊</value></data>
+  <data name="文件类型" xml:space="preserve"><value>檔案類型</value></data>
+  <data name="文件创建时间" xml:space="preserve"><value>檔案建立時間</value></data>
+  <data name="文件修改时间" xml:space="preserve"><value>檔案修改時間</value></data>
+  <data name="拍摄时间" xml:space="preserve"><value>拍攝時間</value></data>
+  <data name="相机型号" xml:space="preserve"><value>相機型號</value></data>
+  <data name="相机厂商" xml:space="preserve"><value>相機廠商</value></data>
+  <data name="采集增益" xml:space="preserve"><value>擷取增益</value></data>
+  <data name="曝光" xml:space="preserve"><value>曝光</value></data>
+  <data name="源文件通道数" xml:space="preserve"><value>來源檔案通道數</value></data>
+  <data name="源文件位深" xml:space="preserve"><value>來源檔案位元深度</value></data>
+  <data name="关联源文件" xml:space="preserve"><value>關聯來源檔案</value></data>
+  <data name="图像文件不存在或无法访问。" xml:space="preserve"><value>圖像檔案不存在或無法存取。</value></data>
+  <data name="在新窗口中打开图像" xml:space="preserve"><value>在新視窗中開啟圖像</value></data>
+  <data name="打开图像失败：{0}" xml:space="preserve"><value>無法開啟圖像：{0}</value></data>
 </root>

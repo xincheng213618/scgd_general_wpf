@@ -365,15 +365,15 @@ namespace ColorVision.ImageEditor.Algorithms
             CancellationToken cancellationToken,
             Action<int> reportRows)
         {
-            await WriteRowAsync(writer, table.Columns.Select(column => column.Name), cancellationToken).ConfigureAwait(false);
+            IReadOnlyList<AlgorithmTableColumn> columns = table.Columns;
+            await WriteRowAsync(writer, columns.Select(column => column.Name), cancellationToken).ConfigureAwait(false);
             foreach (IReadOnlyDictionary<string, JsonElement> row in table.Rows)
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                bool first = true;
-                foreach (AlgorithmTableColumn column in table.Columns)
+                for (int index = 0; index < columns.Count; index++)
                 {
-                    await writer.WriteFieldAsync(row.TryGetValue(column.Name, out JsonElement value) ? JsonText(value) : null, first, cancellationToken).ConfigureAwait(false);
-                    first = false;
+                    string name = columns[index].Name;
+                    await writer.WriteFieldAsync(row.TryGetValue(name, out JsonElement value) ? JsonText(value) : null, index == 0, cancellationToken).ConfigureAwait(false);
                 }
                 await writer.AppendAsync(Environment.NewLine.AsMemory(), cancellationToken).ConfigureAwait(false);
                 reportRows(1);
@@ -496,12 +496,26 @@ namespace ColorVision.ImageEditor.Algorithms
             private readonly char[] _buffer = new char[16 * 1024];
             private int _count;
 
-            public async ValueTask WriteFieldAsync(string? value, bool first, CancellationToken cancellationToken)
+            public ValueTask WriteFieldAsync(string? value, bool first, CancellationToken cancellationToken)
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                if (!first) await AppendAsync(",".AsMemory(), cancellationToken).ConfigureAwait(false);
                 value ??= string.Empty;
-                if (value.AsSpan().IndexOfAny(CsvQuoteCharacters) < 0)
+                ReadOnlySpan<char> field = value.AsSpan();
+                bool needsQuotes = field.IndexOfAny(CsvQuoteCharacters) >= 0;
+                if (!needsQuotes && field.Length <= _buffer.Length - _count - (first ? 0 : 1))
+                {
+                    if (!first) _buffer[_count++] = ',';
+                    field.CopyTo(_buffer.AsSpan(_count));
+                    _count += field.Length;
+                    return ValueTask.CompletedTask;
+                }
+                return WriteFieldSlowAsync(value, first, needsQuotes, cancellationToken);
+            }
+
+            private async ValueTask WriteFieldSlowAsync(string value, bool first, bool needsQuotes, CancellationToken cancellationToken)
+            {
+                if (!first) await AppendAsync(",".AsMemory(), cancellationToken).ConfigureAwait(false);
+                if (!needsQuotes)
                 {
                     await AppendAsync(value.AsMemory(), cancellationToken).ConfigureAwait(false);
                     return;

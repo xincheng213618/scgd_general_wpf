@@ -266,7 +266,7 @@ namespace ColorVision.ImageEditor.Algorithms
             return result;
         }
 
-        private static void ApplyWhiteBalance(Mat source, Mat destination, WhiteBalanceParameters parameters, CancellationToken cancellationToken)
+        internal static void ApplyWhiteBalance(Mat source, Mat destination, WhiteBalanceParameters parameters, CancellationToken cancellationToken)
         {
             int channels = source.Channels();
             if (channels < 3) throw new NotSupportedException("White balance requires a three- or four-channel color image.");

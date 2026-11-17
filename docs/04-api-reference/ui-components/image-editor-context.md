@@ -33,6 +33,8 @@ related: ["ui.image-editor", "ui.discovery", "ui.configuration", "algorithms.pla
 
 静态 PNG/TIFF 的格式解码仍由 ImageEditor 负责。`IAsyncImageOpen.OpenImageAsync` 的 Task 在内容发布完成后结束，兼容的 `OpenImage` 保留旧入口；宿主可等待 `ImageView.ImageOpenCompletion`。换图和清空取消旧请求，迟到的能力准备结果必须释放，不能发布到新图；失败通过完成 Task 返回，格式器日志不等于成功完成。连续帧不使用此静态完成契约。
 
+在图像画布右键选择 **在新窗口中打开图像**，可以在独立的 `ImageView` 中查看当前图像。画布为空或仅有结果占位图时不显示该入口。新窗口有自己的图像生命周期，关闭时释放其 `ImageView`。
+
 解码结果 `DecodedImageContent` 独立保存无损样本和可识别参数，浮点 TIFF 的 Gray16 显示代理不作为测量原图。可选 `IImageContentProvider` 在正式发布前验证并组装能力，`ImageDocument` 持有内容和 `IImageContentCapability` 生命周期；ImageEditor 不依赖 Engine。实际编辑、换文件、清空及关闭撤销能力和旧缓冲，参数继续作为只读记录。`SetDisplayLayerSource` 专用于有明确坐标对应的显示/算法层切换，保留内容身份和测量能力；普通 `SetImageSource` 或像素提交仍是内容变更。几何变换没有同步测量坐标的契约，因此同样撤销能力。版本化参数与导出边界见 [CV 图像导出](../engine-components/cv-image-export.md)。
 
 普通位图和 TIFF 串行执行解码与显示位图复制，排队请求可独立取消。每次打开使用独立显示位图，避免准备期间改写已发布的像素。完成复制后即释放解码槽位，因此新图可在已取消的旧能力准备仍在退出时打开。通过最终校验的请求才能替换源像素。内容退役继续等待已发起请求退出并释放其迟到的能力结果。
@@ -68,7 +70,7 @@ related: ["ui.image-editor", "ui.discovery", "ui.configuration", "algorithms.pla
 
 伪彩换图保留配色与自动范围偏好，关闭效果并重新计算图像相关范围；自动范围在新源赋值后计算。`Presentation/PseudoColor` 持有伪彩控制器、`PseudoColorState` 和默认配置，`PseudoColorEditorTool` 仅绑定控件及操作同一能力；释放工具不释放 controller。连续帧通过 `DisplayEffects.TryCapturePseudoColorRequest` 取得参数，并统一由 `StreamPresentation` 提交源与显示结果，不提供另一条外部处理结果发布路径。默认配置类型保留原完整类型名作为已有用户配置的稳定持久键，运行状态不依赖工具实例。静态图预览、连续帧 native 处理和显示 shader 保持各自输入与数值契约，不能因同属“效果”就视为等价算法。
 
-伪彩工具栏的 `A` 与 ImageView 设置「伪彩色 → 自动范围 (A)」控制同一个开关，关闭时使用手动范围。新视图默认选择自动范围，并遵循「默认显示与标注 → 伪彩默认偏好」中已有保存值。可在当前视图用「将当前设为默认」保存偏好。
+在 ImageView 设置「伪彩色 → 自动范围」中选择自动或手动范围。新视图默认选择自动范围，并遵循「默认显示与标注 → 伪彩默认偏好」中已有保存值。可在当前视图用「将当前设为默认」保存偏好。
 
 静态伪彩首个有效结果发布前显示原图。`TaskConflator` 串行合并滑块请求，只保留最新待执行请求。已进入 native 的操作可能仍运行。 [统一算法平台](../../02-developer-guide/core-concepts/image-algorithm-platform-v1.md)
 

@@ -66,7 +66,7 @@
   <data name="FilePath" xml:space="preserve"><value>Full path</value></data>
   <data name="Technical" xml:space="preserve"><value>Technical details</value></data>
   <data name="PseudoHint" xml:space="preserve"><value>Palette and auto-range preferences stay with this view. Image changes reset the range and disable the effect.</value></data>
-  <data name="PseudoAutoRange" xml:space="preserve"><value>Auto range (A)</value></data>
+  <data name="PseudoAutoRange" xml:space="preserve"><value>Auto range</value></data>
   <data name="PseudoAutoRangeDescription" xml:space="preserve"><value>On initializes the range from the current layer’s minimum and maximum pixel values. Off selects manual range.</value></data>
   <data name="FilterBasics" xml:space="preserve"><value>Basic display</value></data>
   <data name="FilterWhiteBalance" xml:space="preserve"><value>White balance and channels</value></data>

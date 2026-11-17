@@ -140,6 +140,24 @@ public class OpenCvImageAlgorithmsInPlaceTests
         AssertAlphaEqual(original, actual);
     }
 
+    [Fact]
+    public void BilateralBgra64KeepsOriginalAlphaWhenDestinationOverlapsSource()
+    {
+        using Mat owner = CreateFourChannelSource("CV_16UC4");
+        using Mat source = new(owner, new Rect(1, 2, 17, 12));
+        Rect target = new(2, 2, 17, 12);
+        using Mat destination = new(owner, target);
+        using Mat expectedOwner = owner.Clone();
+        using Mat expectedTarget = new(expectedOwner, target);
+        using Mat expected = source.Clone();
+        ApplyReferenceBilateral(expected, 5, 16 * 257, 7.25);
+        expected.CopyTo(expectedTarget);
+
+        OpenCvImageAlgorithms.FilterDenoise(source, destination, FilterDenoiseOperation.Bilateral, 5, 16 * 257, 7.25);
+
+        AssertMatsEqual(expectedOwner, owner);
+    }
+
     [Theory]
     [MemberData(nameof(MorphologyCases))]
     public void MorphologyMatchesExplicitSourceClone(int operation, string format)
@@ -325,6 +343,22 @@ public class OpenCvImageAlgorithmsInPlaceTests
         AssertMatsEqual(expected, image);
         Assert.Equal(data, image.Data);
         Assert.Equal(step, image.Step());
+    }
+
+    [Fact]
+    public void BasicAdjustmentFloatBgraKeepsAlphaAndReadsOriginalPixelsAcrossOverlappingRois()
+    {
+        using Mat owner = CreateFourChannelSource("CV_32FC4");
+        using Mat source = new(owner, new Rect(1, 2, 17, 12));
+        Rect target = new(2, 2, 17, 12);
+        using Mat destination = new(owner, target);
+        using Mat expectedOwner = owner.Clone();
+        using Mat expectedDestination = new(expectedOwner, target);
+        BasicAdjustmentReference.Apply(source, expectedDestination, 0.65, -15, 28, 1.8);
+
+        OpenCvImageAlgorithms.AdjustBasic(source, destination, 0.65, -15, 28, 1.8);
+
+        AssertMatsEqual(expectedOwner, owner);
     }
 
     [Theory]

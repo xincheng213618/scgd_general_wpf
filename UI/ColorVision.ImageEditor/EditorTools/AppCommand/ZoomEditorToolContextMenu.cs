@@ -25,6 +25,12 @@ namespace ColorVision.ImageEditor.EditorTools.AppCommand
             ];
             if (!hasImage) return items;
 
+            items.Add(new MenuItemMetadata
+            {
+                GuidId = "OpenImageInNewWindow", Order = 10, Header = ImageViewWindow.OpenInNewWindowText,
+                Command = ImageViewWindow.OpenCurrentImageCommand, Icon = MenuItemIcon.TryFindResource("DIOpen")
+            });
+
             PublishCopilotContext();
 
             items.Add(new MenuItemMetadata

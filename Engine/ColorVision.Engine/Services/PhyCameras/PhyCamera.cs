@@ -46,6 +46,14 @@ namespace ColorVision.Engine.Services.PhyCameras
         Invalid
     }
 
+    public enum PhysicalCameraStatus
+    {
+        Unknown,
+        Offline,
+        Online,
+        Opened
+    }
+
     public class PhyCamera : ServiceBase,ITreeViewItem, IUploadMsg
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(PhyCamera));
@@ -106,6 +114,18 @@ namespace ColorVision.Engine.Services.PhyCameras
         public ObservableCollection<TemplateModel<CalibrationParam>> CalibrationParams { get; set; } = new ObservableCollection<TemplateModel<CalibrationParam>>();
 
         public string Code => SysResourceModel.Code ?? string.Empty;
+
+        private PhysicalCameraStatus _connectionStatus;
+        public PhysicalCameraStatus ConnectionStatus
+        {
+            get => _connectionStatus;
+            internal set
+            {
+                if (_connectionStatus != value) SetProperty(ref _connectionStatus, value);
+            }
+        }
+        internal bool IsOnline => ConnectionStatus is PhysicalCameraStatus.Online or PhysicalCameraStatus.Opened;
+
         internal bool CanConfigure => ServiceAuthorization.Can("physical-camera.configure", SysResourceModel);
         internal void DemandConfigurationAccess() => ServiceAuthorization.Demand("physical-camera.configure", SysResourceModel);
 
@@ -535,7 +555,6 @@ namespace ColorVision.Engine.Services.PhyCameras
                 OnPropertyChanged(nameof(LicenseListTagText));
                 OnPropertyChanged(nameof(LicenseListTagBrush));
                 OnPropertyChanged(nameof(DeviceModeDisplayText));
-                OnPropertyChanged(nameof(CameraListMetaText));
                 OnPropertyChanged(nameof(LicenseSummaryMetaText));
             }
         }
@@ -601,22 +620,7 @@ namespace ColorVision.Engine.Services.PhyCameras
             Config.ImageBpp.ToString()
         }.Where(item => !string.IsNullOrWhiteSpace(item)));
 
-        public string CameraListMetaText
-        {
-            get
-            {
-                List<string> parts = new()
-                {
-                    Config.CameraModel.ToString(),
-                    Config.CameraMode.ToString()
-                };
-
-                if (CameraLicenseModel?.ExpiryDate is DateTime expiryDate)
-                    parts.Add($"{expiryDate:yyyy-MM-dd}");
-
-                return string.Join(" · ", parts.Where(item => !string.IsNullOrWhiteSpace(item)));
-            }
-        }
+        public string CameraListMetaText => $"{Config.CameraModel} · {Config.CameraMode}";
 
         public string LicenseSummaryMetaText
         {

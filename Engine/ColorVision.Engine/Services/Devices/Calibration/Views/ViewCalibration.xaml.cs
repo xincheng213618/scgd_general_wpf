@@ -8,11 +8,13 @@ using ColorVision.Engine.Services.Results;
 using ColorVision.FileIO;
 using ColorVision.ImageEditor;
 using ColorVision.Themes.Controls;
+using ColorVision.UI;
 using ColorVision.UI.Sorts;
 using log4net;
 using MQTTMessageLib.Calibration;
 using SqlSugar;
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
@@ -29,7 +31,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
     /// <summary>
     /// ViewCamera.xaml 的交互逻辑
     /// </summary>
-    public partial class ViewCalibration : UserControl, IDisposable
+    public partial class ViewCalibration : UserControl, IDisposable, IActiveDocumentStatusProvider
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(ViewCalibration));
         private bool _isInitialized;
@@ -40,6 +42,13 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
 
         public  MQTTCalibration DeviceService => Device.DService;
         public DeviceCalibration Device { get; set; }
+
+        public event EventHandler? StatusBarItemsChanged;
+
+        public IEnumerable<StatusBarMeta> GetActiveStatusBarItems() =>
+            !_isDisposed && ImageView != null ? ImageView.GetActiveStatusBarItems() : [];
+
+        private void ImageView_StatusBarItemsChanged(object? sender, EventArgs e) => StatusBarItemsChanged?.Invoke(this, e);
 
         public ViewCalibration(DeviceCalibration device) : this(device, deferInitialization: false)
         {
@@ -112,6 +121,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
                 return;
 
             _isInitialized = true;
+            ImageView.StatusBarItemsChanged += ImageView_StatusBarItemsChanged;
             listView1.ItemsSource = ViewResults;
 
             if (listView1.View is GridView gridView)
@@ -325,7 +335,11 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
                 listView1.ItemsSource = null;
                 listView1.CommandBindings.Clear();
             }
-            ImageView?.Dispose();
+            if (ImageView != null)
+            {
+                ImageView.StatusBarItemsChanged -= ImageView_StatusBarItemsChanged;
+                ImageView.Dispose();
+            }
             DataContext = null;
             GC.SuppressFinalize(this);
         }

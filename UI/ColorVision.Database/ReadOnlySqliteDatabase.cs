@@ -27,19 +27,29 @@ namespace ColorVision.Database
             }.ToString();
             using var connection = new SqliteConnection(ConnectionString);
             connection.Open();
-            using var tables = connection.CreateCommand();
-            tables.CommandText = "SELECT name FROM sqlite_master WHERE type='table'";
-            var names = new List<string>();
-            using (var reader = tables.ExecuteReader())
-                while (reader.Read()) names.Add(reader.GetString(0));
-            foreach (string table in names)
+            using var command = connection.CreateCommand();
+            // The fresh temp schema keeps a main table from shadowing the pragma function.
+            command.CommandText = """
+                SELECT tables.rowid, tables.name, columns.name
+                FROM sqlite_master AS tables
+                LEFT JOIN temp.pragma_table_info(tables.name, 'main') AS columns
+                WHERE tables.type='table'
+                ORDER BY tables.rowid
+                """;
+            using var reader = command.ExecuteReader();
+            long previousTableId = 0;
+            HashSet<string>? found = null;
+            while (reader.Read())
             {
-                using var columns = connection.CreateCommand();
-                columns.CommandText = $"PRAGMA table_info({Quote(table)})";
-                using var reader = columns.ExecuteReader();
-                var found = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-                while (reader.Read()) found.Add(reader.GetString(1));
-                _schema.Add(table, found);
+                long tableId = reader.GetInt64(0);
+                if (found == null || tableId != previousTableId)
+                {
+                    found = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                    _schema.Add(reader.GetString(1), found);
+                    previousTableId = tableId;
+                }
+                if (!reader.IsDBNull(2))
+                    found.Add(reader.GetString(2));
             }
         }
 

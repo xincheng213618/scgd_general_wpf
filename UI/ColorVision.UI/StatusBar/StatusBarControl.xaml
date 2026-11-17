@@ -16,6 +16,8 @@
                 <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
             <StackPanel x:Name="LeftItemsPanel" Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center"/>
+            <DockPanel x:Name="CenterItemsPanel" Grid.Column="1" LastChildFill="False"
+                       HorizontalAlignment="Center" VerticalAlignment="Center" ClipToBounds="True"/>
             <StackPanel x:Name="RightItemsPanel" Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center"/>
         </Grid>
     </Border>

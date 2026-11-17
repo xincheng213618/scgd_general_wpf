@@ -3751,4 +3751,19 @@ A single image contains no left/right eye pairing; DIFF_H / DIFF_V are not gener
   <data name="颜色" xml:space="preserve"><value>Color</value></data>
   <data name="高级设置" xml:space="preserve"><value>Advanced settings</value></data>
   <data name="在文件夹中选择文件" xml:space="preserve"><value>Select file in folder</value></data>
+  <data name="图像信息" xml:space="preserve"><value>Image information</value></data>
+  <data name="文件类型" xml:space="preserve"><value>File type</value></data>
+  <data name="文件创建时间" xml:space="preserve"><value>Created</value></data>
+  <data name="文件修改时间" xml:space="preserve"><value>Modified</value></data>
+  <data name="拍摄时间" xml:space="preserve"><value>Capture time</value></data>
+  <data name="相机型号" xml:space="preserve"><value>Camera model</value></data>
+  <data name="相机厂商" xml:space="preserve"><value>Camera manufacturer</value></data>
+  <data name="采集增益" xml:space="preserve"><value>Capture gain</value></data>
+  <data name="曝光" xml:space="preserve"><value>Exposure</value></data>
+  <data name="源文件通道数" xml:space="preserve"><value>Source channels</value></data>
+  <data name="源文件位深" xml:space="preserve"><value>Source bit depth</value></data>
+  <data name="关联源文件" xml:space="preserve"><value>Associated source file</value></data>
+  <data name="图像文件不存在或无法访问。" xml:space="preserve"><value>The image file is missing or cannot be accessed.</value></data>
+  <data name="在新窗口中打开图像" xml:space="preserve"><value>Open Image in a New Window</value></data>
+  <data name="打开图像失败：{0}" xml:space="preserve"><value>Could not open the image: {0}</value></data>
 </root>

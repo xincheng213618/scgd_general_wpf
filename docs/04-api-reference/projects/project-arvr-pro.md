@@ -40,7 +40,7 @@ related: ["projects.index","projects.arvr-pro-demo","projects.arvr-pro-protocol"
 
 客户项目判定逻辑应留在 `Projects/ProjectARVRPro/Process/` 和 Recipe 体系里，不要回写到 Engine 通用模板或 UI 基础库。手工维护项目 `ProjectARVRPro.csproj` 的 `VersionPrefix`；打包器从主 DLL 的文件版本生成 manifest 版本，不手工同步 `manifest.json`。最低宿主要求读取 manifest 的 `requires`。
 
-原 LUX 客户端可直接对接 ARVRPro。将“网络通信 → 服务设置”设为 `Text`，再在“流程处理配置 → 其他配置”填写设备号和 VID 参数，在流程组填写 `SocketCode`。设备号是回包前缀，旧配置由现场重新填写。Pro 客户端继续使用 `Json`。 [LUX TCP 协议](./project-lux-protocol.md)
+原 LUX 客户端可直接对接 ARVRPro。将“通信 → 服务设置”的解析模式设为 `Text`，再在“流程处理配置 → 其他配置”填写设备号和 VID 参数，在流程组填写 `SocketCode`。设备号是回包前缀，旧配置由现场重新填写。Pro 客户端继续使用 `Json`。 [LUX TCP 协议](./project-lux-protocol.md)
 
 原独立项目通过仓库 `Projects/ARCHIVED.md` 的 Git 标签回溯，后续迭代在 Pro。
 
@@ -81,6 +81,8 @@ related: ["projects.index","projects.arvr-pro-demo","projects.arvr-pro-protocol"
 ## 长期运行与结果视图刷新
 
 主窗口实时最多保留最近 1,000 条，列表淘汰不删除 SQLite 或在途导出的结果。手动历史查询仍按配置数量，恢复实时追加后重新限量。
+
+在主窗口结果表用鼠标左键拖动列头可改变列顺序，例如将 `SN` 拖到第一列。关闭模组检测窗口时保存列顺序，重新打开时恢复。已有配置缺少列顺序时沿用默认布局，升级新增的列追加在已保存列之后。
 
 `ARVRFlowPhaseTiming` 的待快照数和未结束导出数都不能视为实际并发编码数。排查短时卡顿优先看 `FlowPerformanceSample` 的窗口 GC 停顿，进程累计百分比会稀释短时事件。页面错误数包含软缺页，需独立证据区分磁盘换页。
 

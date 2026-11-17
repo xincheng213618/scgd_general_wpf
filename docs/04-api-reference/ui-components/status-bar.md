@@ -36,13 +36,13 @@ provider 构造不保证无副作用。例如 `SchedulerStatusBarProvider` 构�
 
 新 ActiveContent 不实现接口时，只清除上一份文档项目；实现接口时，项目送到所有 TargetName 匹配的宿主。manager 仅有一个 `_currentDocumentProvider`，不是每个宿主一个。当前文档事件要求 sender 为当前 provider；它重新取 metadata，不代表业务已执行完成。
 
-具体例子：`SolutionStatusBarProvider` 只实现基础 provider，以 Source + BindingName 显示工作区名称和打开状态；`SystemMonitorIStatusBarProvider` 用配置变化事件增删项目，但数值仍从 monitor 绑定读取。`ImageView.GetActiveStatusBarItems` 则从 Config 生成尺寸/格式等 Description 快照，在 SetImageSource 赋值图像源并完成相关同步步骤后发事件，不代表渲染完成，也不应把任意 Config 修改都当成自动刷新。
+具体例子：`SolutionStatusBarProvider` 只实现基础 provider，以 Source + BindingName 显示工作区名称和打开状态；`SystemMonitorIStatusBarProvider` 用配置变化事件增删项目，但数值仍从 monitor 绑定读取。`ImageView` 在发布新图像、清除图像或连续帧尺寸及格式变化时刷新图像信息，状态栏只读取已发布的元数据快照。
 
 公共 Init、AddItem、RemoveItem、RefreshAll、OnActiveDocumentChanged 不自动切到 UI 线程；两类项目变化事件内部才使用 `Application.Current?.Dispatcher.Invoke` 同步调度。没有统一节流、超时或取消协议，调用方要区分事件调度和直接方法调用；活动文档的 metadata 获取/添加也没有全局 provider 那样的异常隔离。
 
 ## 全量、增量和失败边界
 
-`RefreshAll` 清空 `_globalItems`，重取已缓存 provider 的 metadata，再让每个控件 LoadItems。LoadItems 清空左右面板、容器映射和右键菜单，重新创建显示容器。因此“刷新复用 provider”不等于“刷新保留全部控件状态”。
+`RefreshAll` 清空 `_globalItems`，重取已缓存 provider 的 metadata，再让每个控件 LoadItems。LoadItems 清空各区域、容器映射和右键菜单，重新创建显示容器。因此“刷新复用 provider”不等于“刷新保留全部控件状态”。
 
 单个全局 provider 事件先按旧 ID 移除项目，再获取并添加新项。获取或控件创建失败可留下空缺/部分更新，没有恢复旧显示的事务；旧项删除发生在获取异常捕获之前。活动文档切换同样先去掉旧项，也没有失败后恢复旧文档显示的协议。
 
@@ -50,7 +50,7 @@ provider 构造不保证无副作用。例如 `SchedulerStatusBarProvider` 构�
 
 ## 标识、顺序和显示字段
 
-左右两侧分别按 Order 升序。全量装载对同 Order 保留输入顺序，增量插入放在当前同 Order 项之后，没有额外的 ID 排序。右侧也是该面板内的升序，不是把数值倒排。
+左侧、中间和右侧分别按 Order 升序。全量装载对同 Order 保留输入顺序，增量插入放在当前同 Order 项之后。中间区域使用两侧状态项之间的剩余宽度，居中显示当前文档信息。任务计划程序入口属于右侧常驻图标组，排在该组前面。
 
 控件使用 `Id ?? Name ?? meta.GetHashCode().ToString()` 作为容器 key；manager 的删除只使用 `Id ?? Name`。贡献方应提供稳定、非空且跨来源不冲突的 ID，当前没有唯一性校验：
 

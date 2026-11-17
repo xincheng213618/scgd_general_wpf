@@ -242,6 +242,8 @@ CV 测量显示 R/G/B 三路曝光，视频显示单路曝光；停止预览后�
 | CSV 导出 | 只导出选中的一条记录，自动追加 `.csv` |
 | 清空列表或删除选中行 | 只移除视图中的行，不删除数据库记录或图像文件 |
 
+相机详情的结果列表省略 `DeviceCode` 列。实时结果仍按设备标识筛选，全表查询和 CSV 导出沿用原有字段。
+
 流程和本地取图结果按 `FileUrl` 经 `ImageView.OpenImage` 打开 CVRAW；`SaveFiles=false` 只能从缓存读取，缓存和磁盘都没有时无法打开。没有 CVRAW 路径的手动预览（如独立自动曝光）使用内存快照。RAW 预览只在显示副本中转换格式和方向，不修改源缓冲。
 
 有记录但无图时，先检查选中行、`FileUrl` 和文件加载；出现其它相机记录时，核对是否执行过全表查询。设备右键菜单的“相机日志”（`CameraLog`）按实际后端选择：本地会话打开本进程 `cvCamera.dll` 原生日志（目录依次为 `COLORVISION_NATIVE_LOG_DIRECTORY`、主程序日志目录、工作目录 `log`，取最新的 `*_Main_*.log`）；服务模式打开主服务目录的 `CVMainWindowsService_x64_camera*.log`。没有本地日志时不会改开服务日志。

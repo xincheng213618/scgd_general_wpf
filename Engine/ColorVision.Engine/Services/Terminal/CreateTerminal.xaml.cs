@@ -8,6 +8,8 @@ using ColorVision.UI;
 using ColorVision.UI.Authorizations;
 using Newtonsoft.Json;
 using System;
+using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Windows;
 using System.Windows.Input;
@@ -30,7 +32,19 @@ namespace ColorVision.Engine.Services.Terminal
         private void Window_Initialized(object sender, EventArgs e)
         {
             CreateCode.Text = TerminalService.NewCreateFileName($"DEV.{TerminalService.ServiceType}.Default");
-            CreateName.Text = TerminalService.NewCreateFileName($"DEV.{TerminalService.ServiceType}.Default");
+            var devices = ServiceManager.Current?.DeviceServices.AsEnumerable() ?? TerminalService.VisualChildren.OfType<DeviceService>();
+            CreateName.Text = SuggestDeviceName(TerminalService.ServiceType, devices.Select(device => device.Name));
+        }
+
+        internal static string SuggestDeviceName(ServiceTypes serviceType, IEnumerable<string> existingNames)
+        {
+            var usedNames = existingNames.ToHashSet(StringComparer.OrdinalIgnoreCase);
+            string prefix = serviceType.ToString();
+            string name = prefix;
+            for (int suffix = 1; usedNames.Contains(name); suffix++)
+                name = prefix + suffix.ToString(CultureInfo.InvariantCulture);
+
+            return name;
         }
 
         private void Button_Click(object sender, RoutedEventArgs e)

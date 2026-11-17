@@ -2940,8 +2940,10 @@ public partial class STNodeEditor : System.Windows.Controls.Control, IDisposable
 		List<ConnectionInfo> connections = new List<ConnectionInfo>();
 		foreach (STNode node in _Nodes)
 		{
-			foreach (STNodeOption output in node.GetAllOutputOptions())
+			STNodeOptionCollection outputs = node.OutputOptions;
+			for (int outputIndex = 0; outputIndex < outputs.Count; outputIndex++)
 			{
+				STNodeOption output = outputs[outputIndex];
 				foreach (STNodeOption input in output.ConnectedOption)
 				{
 					if (input != null && input.IsInput && input.Owner != null && input.Owner.Owner == this)
@@ -2951,11 +2953,20 @@ public partial class STNodeEditor : System.Windows.Controls.Control, IDisposable
 				}
 			}
 		}
+		if (connections.Count <= 1)
+			return connections.ToArray();
+
+		// Preserve canvas and port order without searching all nodes or copying port arrays for each edge.
+		var nodeOrder = new Dictionary<STNode, int>(_Nodes.Count);
+		for (int nodeIndex = 0; nodeIndex < _Nodes.Count; nodeIndex++)
+			nodeOrder.TryAdd(_Nodes[nodeIndex], nodeIndex);
+
 		return connections
-			.OrderBy(connection => _Nodes.IndexOf(connection.Output.Owner))
-			.ThenBy(connection => Array.IndexOf(connection.Output.Owner.GetAllOutputOptions(), connection.Output))
-			.ThenBy(connection => _Nodes.IndexOf(connection.Input.Owner))
-			.ThenBy(connection => Array.IndexOf(connection.Input.Owner.GetAllInputOptions(), connection.Input))
+			.OrderBy(connection => (
+				nodeOrder.GetValueOrDefault(connection.Output.Owner, -1),
+				connection.Output.Owner.OutputOptions.IndexOf(connection.Output),
+				nodeOrder.GetValueOrDefault(connection.Input.Owner, -1),
+				connection.Input.Owner.InputOptions.IndexOf(connection.Input)))
 			.ToArray();
 	}
 

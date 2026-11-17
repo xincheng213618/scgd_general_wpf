@@ -1,5 +1,6 @@
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Threading;
 
@@ -154,6 +155,21 @@ namespace ColorVision.Solution.Terminal
             AppendOutput("[终端已终止]\r\n");
             FocusTerminalInput(force: true);
             e.Handled = true;
+        }
+
+        private void OpenActionsMenu(UIElement anchor)
+        {
+            ContextMenu menu = TerminalRoot.ContextMenu;
+            menu.PlacementTarget = anchor;
+            menu.Placement = PlacementMode.Bottom;
+            menu.IsOpen = true;
+        }
+
+        private void TerminalContextMenu_Closed(object sender, RoutedEventArgs e)
+        {
+            var menu = (ContextMenu)sender;
+            menu.ClearValue(ContextMenu.PlacementTargetProperty);
+            menu.ClearValue(ContextMenu.PlacementProperty);
         }
 
         private void TerminalContextMenu_Opened(object sender, RoutedEventArgs e)

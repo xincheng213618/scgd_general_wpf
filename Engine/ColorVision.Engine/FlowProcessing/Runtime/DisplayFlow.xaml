@@ -40,17 +40,6 @@
                                    FontSize="14"
                                    Foreground="{DynamicResource GlobalTextBrush}"/>
                     </Button>
-                    <Button DockPanel.Dock="Right" Margin="0,0,5,0"
-                            Command="{Binding View.RefreshCommand}"
-                            Padding="2" Width="24" Height="24" VerticalAlignment="Center"
-                            ToolTip="{x:Static properties:Resources.Refresh}"
-                            AutomationProperties.Name="{x:Static properties:Resources.Refresh}">
-                        <TextBlock Text="&#xE72C;"
-                                   HorizontalAlignment="Center"
-                                   FontFamily="Segoe MDL2 Assets"
-                                   FontSize="14"
-                                   Foreground="{DynamicResource GlobalTextBrush}"/>
-                    </Button>
                     <ComboBox x:Name="ComboBoxFlow"
                               Margin="0,0,5,0"
                               Height="24"

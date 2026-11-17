@@ -95,7 +95,7 @@ namespace ColorVision.Engine.Templates
                 GridViewColumnVisibility.AddGridViewColumn(gridView.Columns, GridViewColumnVisibilitys);
                 Config.GridViewColumnVisibilitys.CopyToGridView(GridViewColumnVisibilitys);
                 foreach (var column in GridViewColumnVisibilitys)
-                    column.IsVisible = Equals(column.ColumnName, Properties.Resources.Choice) || Equals(column.ColumnName, Properties.Resources.Name);
+                    column.IsVisible = Equals(column.ColumnName, Properties.Resources.Name);
                 Config.GridViewColumnVisibilitys = GridViewColumnVisibilitys;
                 GridViewColumnVisibility.AdjustGridViewColumnAuto(gridView.Columns, GridViewColumnVisibilitys);
             }
@@ -272,11 +272,6 @@ namespace ColorVision.Engine.Templates
                             {
                                 SortableExtension.SortByProperty(collection, "Key", item.IsSortD);
                             }
-                        }
-                        if (columnName == Properties.Resources.Choice)
-                        {
-                            if (ListView1.SelectedItems.Count == ListView1.Items.Count) ListView1.UnselectAll();
-                            else ListView1.SelectAll();
                         }
                     }
                 }

@@ -47,6 +47,9 @@ namespace ProjectARVRPro
     public class ARVRWindowConfig : WindowConfig
     {
         public static ARVRWindowConfig Instance => ConfigService.Instance.GetRequiredService<ARVRWindowConfig>();
+
+        [Browsable(false)]
+        public string[] ResultColumnOrder { get; set; } = [];
     }
 
     public partial class ARVRWindow : Window, IDisposable
@@ -65,6 +68,7 @@ namespace ProjectARVRPro
         public ObservableCollection<ProcessMeta> ProcessMetas => ProcessManager.ProcessMetas;
 
         private readonly PictureSwitchService _pictureSwitchService;
+        private readonly string[] _initialResultColumnOrder;
 
         private readonly ResultImagePlaceholderCache _resultImagePlaceholderCache = new();
         private long _resultImagePresentationVersion;
@@ -83,7 +87,11 @@ namespace ProjectARVRPro
             _pictureSwitchService = new PictureSwitchService(ThunderbirdSerialController.GetInstance());
             InitializeComponent();
             this.ApplyCaption(false);
-            ARVRWindowConfig.Instance.SetWindow(this);
+            var windowConfig = ARVRWindowConfig.Instance;
+            windowConfig.SetWindow(this);
+            var resultColumns = ((GridView)listView1.View).Columns;
+            ResultColumnLayout.Restore(resultColumns, windowConfig.ResultColumnOrder);
+            _initialResultColumnOrder = ResultColumnLayout.Capture(resultColumns);
             this.Title += Assembly.GetAssembly(typeof(ARVRWindow))?.GetName().Version?.ToString() ?? "";
             Loaded += (_, _) => UpdateResultViewRefreshButtonState();
             DisPlayManager.GetInstance().IDisPlayControls.CollectionChanged += DisplayControls_CollectionChanged;
@@ -462,6 +470,7 @@ namespace ProjectARVRPro
 
             this.Closed += (s, e) =>
             {
+                SaveResultColumnOrder();
                 this.Dispose();
             };
 
@@ -1930,6 +1939,17 @@ namespace ProjectARVRPro
         {
             ViewResultManager.Config.Height = row2.ActualHeight;
             row2.Height = GridLength.Auto;
+        }
+
+        private void SaveResultColumnOrder()
+        {
+            var order = ResultColumnLayout.Capture(((GridView)listView1.View).Columns);
+            if (order.SequenceEqual(_initialResultColumnOrder)) return;
+
+            var config = ARVRWindowConfig.Instance;
+            config.ResultColumnOrder = order;
+            if (!ConfigHandler.GetInstance().TrySave(config, out string error))
+                log.Warn($"保存结果表列顺序失败：{error}");
         }
 
         private void Button_Click_Clear(object sender, RoutedEventArgs e)

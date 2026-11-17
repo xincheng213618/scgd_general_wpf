@@ -5,6 +5,7 @@ using Quartz;
 using System.Globalization;
 using System.IO;
 using System.Threading.Channels;
+using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Threading;
 using SchedulerStatus = ColorVision.Scheduler.SchedulerStatus;
@@ -537,7 +538,20 @@ public sealed class SchedulerLifecycleTests : IAsyncLifetime
             var provider = new SchedulerStatusBarProvider(_manager);
             var statusBar = new StatusBarControl();
             statusBar.LoadItems(provider.GetStatusBarIconMetadata());
+            statusBar.AddStatusBarItem(new StatusBarMeta
+            {
+                Id = "Test.ActiveDocument",
+                Alignment = StatusBarAlignment.Center,
+                ContentFactory = () => new Border { Width = 160, Height = 24 }
+            });
+            var center = Assert.IsType<DockPanel>(statusBar.FindName("CenterItemsPanel"));
             var right = Assert.IsType<StackPanel>(statusBar.FindName("RightItemsPanel"));
+            statusBar.Measure(new Size(800, 30));
+            statusBar.Arrange(new Rect(0, 0, 800, 30));
+            double groupRight = right.TranslatePoint(new Point(right.ActualWidth, 0), statusBar).X;
+            Assert.Equal(statusBar.ActualWidth, groupRight, precision: 3);
+            double centerMidpoint = center.TranslatePoint(new Point(center.ActualWidth / 2, 0), statusBar).X;
+            Assert.Equal((statusBar.ActualWidth - right.ActualWidth) / 2, centerMidpoint, precision: 3);
             var item = Assert.IsType<Border>(Assert.Single(right.Children));
             var host = Assert.IsType<ContentControl>(item.Child);
             var content = Assert.IsType<StackPanel>(host.Content);

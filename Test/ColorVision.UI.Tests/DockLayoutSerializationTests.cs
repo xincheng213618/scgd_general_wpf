@@ -4,12 +4,17 @@ using AvalonDock.Core;
 using AvalonDock.Layout;
 using AvalonDock.Serializer.Xml;
 using ColorVision.ImageEditor;
+using ColorVision.Solution.Terminal;
 using ColorVision.Solution.Themes;
 using ColorVision.Solution.Workspace;
 using System.IO;
 using System.Reflection;
 using System.Windows;
+using System.Windows.Automation.Peers;
+using System.Windows.Automation.Provider;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
+using System.Windows.Media;
 using System.Windows.Threading;
 
 namespace ColorVision.UI.Tests;
@@ -375,6 +380,189 @@ public sealed class DockLayoutSerializationTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
+    public void DetachedToolUsesThePaneTitleForWindowCommands(bool canClose)
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            var surface = new Border();
+            var tool = new LayoutAnchorable { ContentId = "detached-tool", Title = "Tool", Content = surface, CanClose = canClose, CanHide = !canClose };
+            int closed = 0;
+            tool.Closed += (_, _) => closed++;
+            var docking = CreateDockingManager(tool);
+            docking.Theme = new AvalonDockTheme(isDark: false);
+
+            WithShownDockWindow(docking, () =>
+            {
+                docking.DetachAnchorableToWindow(tool);
+                PumpDispatcher();
+                var window = Assert.IsType<DetachedAnchorableWindow>(PresentationSource.FromVisual(surface)?.RootVisual);
+                var chrome = System.Windows.Shell.WindowChrome.GetWindowChrome(window);
+                Assert.NotNull(chrome);
+                Assert.False(chrome.UseAeroCaptionButtons);
+                var caption = Assert.Single(FindVisualChildren<AnchorablePaneTitle>(window));
+                Assert.Same(tool, caption.Model);
+
+                var menu = Assert.Single(FindVisualChildren<DropDownButton>(caption));
+                Assert.True(menu.IsVisible);
+                Assert.True(System.Windows.Shell.WindowChrome.GetIsHitTestVisibleInChrome(menu));
+                var maximize = Assert.Single(FindVisualChildren<Button>(caption), button => button.Name == "DetachedMaximizeButton");
+                var close = Assert.Single(FindVisualChildren<Button>(caption), button => button.Name == "DetachedCloseButton");
+                Assert.True(maximize.IsVisible);
+                Assert.True(close.IsVisible);
+                Assert.Same(window, maximize.CommandParameter);
+                Assert.True(close.Command.CanExecute(close.CommandParameter));
+                Assert.Empty(FindVisualChildren<Button>(caption).Where(button => button.IsVisible && button.Name is "PART_AutoHidePin" or "PART_HidePin"));
+
+                close.Command.Execute(close.CommandParameter);
+                PumpDispatcher();
+                Assert.False(tool.IsDetached);
+                Assert.Equal(canClose ? 1 : 0, closed);
+                if (!canClose)
+                    Assert.Same(Window.GetWindow(docking), PresentationSource.FromVisual(surface)?.RootVisual);
+            });
+        });
+    }
+
+    [Fact]
+    public void TerminalSessionsOpenAsPeersAndCloseIndependently()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            var docking = CreateDockingManager(new LayoutAnchorable { Content = new Border() });
+            docking.Theme = new AvalonDockTheme(isDark: false);
+            var manager = new DockLayoutManager(docking);
+            DockLayoutManager? previousManager = WorkspaceManager.LayoutManager;
+            string scriptPath = Path.Combine(Path.GetTempPath(), $"ColorVision-Terminal-{Guid.NewGuid():N}.cmd");
+            string scriptMarker = Path.ChangeExtension(scriptPath, ".done");
+            try
+            {
+                File.WriteAllText(scriptPath, "@echo ColorVision terminal dock smoke > \"%~dpn0.done\"\r\n");
+                WorkspaceManager.LayoutManager = manager;
+                manager.RegisterPanel("LogPanel", new Border(), "Log", PanelPosition.Bottom);
+                new TerminalPanelProvider().RegisterPanels();
+                manager.ShowPanel("LogPanel");
+                manager.ShowPanel(TerminalService.PanelId);
+                var logPanel = GetPanel("LogPanel");
+                var primaryPanel = GetPanel(TerminalService.PanelId);
+                using var interactive = Assert.IsType<TerminalControl>(Assert.IsType<DeferredDockContent>(primaryPanel.Content).Content);
+                var interactiveMenu = Assert.IsType<Grid>(interactive.FindName("TerminalRoot")).ContextMenu;
+                var service = TerminalService.GetInstance();
+
+                WithShownDockWindow(docking, () =>
+                {
+                    var pane = Assert.IsType<LayoutAnchorablePane>(logPanel.Parent);
+                    Assert.Same(pane, primaryPanel.Parent);
+                    Assert.Collection(pane.Children, panel => Assert.Same(logPanel, panel), panel => Assert.Same(primaryPanel, panel));
+                    Assert.True(primaryPanel.IsSelected);
+                    AssertMenuOpens(GetTitleButton(primaryPanel, 1), interactiveMenu);
+
+                    InvokeTitleButton(GetTitleButton(primaryPanel, 0));
+                    var secondPanel = Assert.Single(pane.Children, panel => panel.Content is TerminalControl);
+                    using var second = Assert.IsType<TerminalControl>(secondPanel.Content);
+                    Assert.NotSame(interactive, second);
+                    Assert.True(secondPanel.IsSelected);
+
+                    service.RunScript(scriptPath);
+                    PumpDispatcher();
+                    var runPanel = GetPanel(TerminalService.RunPanelId);
+                    using var run = Assert.IsType<TerminalControl>(runPanel.Content);
+                    var runMenu = Assert.IsType<Grid>(run.FindName("TerminalRoot")).ContextMenu;
+                    Assert.Same(pane, runPanel.Parent);
+                    Assert.True(runPanel.IsSelected);
+                    Assert.NotSame(interactive, run);
+                    Assert.NotSame(second, run);
+                    WaitForScriptMarker(scriptMarker);
+                    AssertMenuOpens(GetTitleButton(runPanel, 1), runMenu);
+                    Assert.False(interactiveMenu.IsOpen);
+
+                    manager.ShowPanel(TerminalService.PanelId);
+                    Assert.True(primaryPanel.IsSelected);
+                    File.Delete(scriptMarker);
+                    service.RunScript(scriptPath);
+                    Assert.Same(runPanel, GetPanel(TerminalService.RunPanelId));
+                    Assert.Same(run, runPanel.Content);
+                    Assert.True(runPanel.IsSelected);
+                    WaitForScriptMarker(scriptMarker);
+
+                    runPanel.Close();
+                    secondPanel.Close();
+                    Assert.True(run.IsDisposed);
+                    Assert.True(second.IsDisposed);
+                    Assert.False(interactive.IsDisposed);
+                    Assert.DoesNotContain(runPanel, pane.Children);
+                    Assert.DoesNotContain(secondPanel, pane.Children);
+
+                    Button GetTitleButton(LayoutAnchorable panel, int buttonIndex)
+                    {
+                        var title = Assert.Single(FindVisualChildren<AnchorablePaneTitle>(docking),
+                            candidate => candidate.IsVisible && ReferenceEquals(candidate.Model, panel));
+                        var buttons = FindVisualChildren<Button>(title).Where(button => button.Name == "PanelTitleActionButton").ToArray();
+                        Assert.Equal(2, buttons.Length);
+                        return buttons[buttonIndex];
+                    }
+
+                    static void InvokeTitleButton(Button button)
+                    {
+                        var invoke = Assert.IsAssignableFrom<IInvokeProvider>(new ButtonAutomationPeer(button).GetPattern(PatternInterface.Invoke));
+                        invoke.Invoke();
+                        PumpDispatcher();
+                    }
+
+                    static void AssertMenuOpens(Button gear, ContextMenu expected)
+                    {
+                        try
+                        {
+                            InvokeTitleButton(gear);
+                            Assert.True(expected.IsOpen);
+                            Assert.Same(gear, expected.PlacementTarget);
+                            Assert.Equal(PlacementMode.Bottom, expected.Placement);
+
+                            CloseContextMenuAndWait(expected);
+                            Assert.Same(DependencyProperty.UnsetValue, expected.ReadLocalValue(ContextMenu.PlacementTargetProperty));
+                            Assert.Same(DependencyProperty.UnsetValue, expected.ReadLocalValue(ContextMenu.PlacementProperty));
+                        }
+                        finally
+                        {
+                            expected.IsOpen = false;
+                        }
+                    }
+                });
+
+                LayoutAnchorable GetPanel(string contentId) => Assert.Single(docking.Layout.Descendents().OfType<LayoutAnchorable>(),
+                    item => item.ContentId == contentId);
+            }
+            finally
+            {
+                WorkspaceManager.LayoutManager = previousManager;
+                File.Delete(scriptPath);
+                File.Delete(scriptMarker);
+            }
+        });
+    }
+
+    private static void WaitForScriptMarker(string path)
+    {
+        if (File.Exists(path))
+            return;
+
+        var dispatcher = Dispatcher.CurrentDispatcher;
+        var frame = new DispatcherFrame();
+        using var watcher = new FileSystemWatcher(Path.GetDirectoryName(path)!, Path.GetFileName(path));
+        watcher.Created += (_, _) => dispatcher.BeginInvoke(new Action(() => frame.Continue = false));
+        watcher.EnableRaisingEvents = true;
+        var watchdog = new DispatcherTimer { Interval = TimeSpan.FromSeconds(30) };
+        watchdog.Tick += (_, _) => frame.Continue = false;
+        watchdog.Start();
+        if (!File.Exists(path))
+            Dispatcher.PushFrame(frame);
+        watchdog.Stop();
+
+        Assert.True(File.Exists(path), "The script did not write its completion marker.");
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
     public void LegacyLayoutRestoresRegisteredContentAndPreservesUnresolvedContentPolicy(bool hideUnresolvedTools)
     {
         WpfTestHost.Invoke(() =>
@@ -449,6 +637,47 @@ public sealed class DockLayoutSerializationTests
         rootPanel.Children.Add(pane);
         rootPanel.Children.Add(new LayoutDocumentPane());
         return new DockingManager { Layout = new LayoutRoot { RootPanel = rootPanel } };
+    }
+
+    private static void CloseContextMenuAndWait(ContextMenu menu)
+    {
+        // WPF raises Closed after the popup's closing animation completes.
+        var frame = new DispatcherFrame();
+        bool closed = false;
+        var watchdog = new DispatcherTimer(DispatcherPriority.Send) { Interval = TimeSpan.FromSeconds(5) };
+        watchdog.Tick += (_, _) => frame.Continue = false;
+        menu.Closed += OnClosed;
+        try
+        {
+            watchdog.Start();
+            menu.IsOpen = false;
+            if (!closed)
+                Dispatcher.PushFrame(frame);
+        }
+        finally
+        {
+            watchdog.Stop();
+            menu.Closed -= OnClosed;
+        }
+        Assert.True(closed, "The context menu did not raise Closed.");
+
+        void OnClosed(object sender, RoutedEventArgs args)
+        {
+            closed = true;
+            frame.Continue = false;
+        }
+    }
+
+    private static IEnumerable<T> FindVisualChildren<T>(DependencyObject root) where T : DependencyObject
+    {
+        for (int index = 0; index < VisualTreeHelper.GetChildrenCount(root); index++)
+        {
+            DependencyObject child = VisualTreeHelper.GetChild(root, index);
+            if (child is T typed)
+                yield return typed;
+            foreach (T descendant in FindVisualChildren<T>(child))
+                yield return descendant;
+        }
     }
 
     private static bool RaiseFileDrop(UIElement target, string[] paths)

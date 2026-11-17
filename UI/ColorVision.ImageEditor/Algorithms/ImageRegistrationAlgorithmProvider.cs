@@ -654,28 +654,42 @@ namespace ColorVision.ImageEditor.Algorithms
         private static Mat ToNormalizedGray(AlgorithmImageBuffer image)
         {
             using AlgorithmImageMatLease lease = AlgorithmImageInterop.BorrowReadOnly(image);
-            using Mat gray = new();
-            if (image.Format.Channels() == 1) lease.Mat.CopyTo(gray);
-            else Cv2.CvtColor(lease.Mat, gray, image.Format.Channels() == 3 ? ColorConversionCodes.BGR2GRAY : ColorConversionCodes.BGRA2GRAY);
+            return CreateNormalizedGray(lease.Mat, image.Format);
+        }
+
+        private static Mat CreateNormalizedGray(Mat source, AlgorithmImageFormat format)
+        {
+            int channels = format.Channels();
+            double peak = format.IsFloatingPoint() ? 1 : format.BitsPerChannel() == 8 ? byte.MaxValue : ushort.MaxValue;
             Mat normalized = new();
-            double peak = image.Format.IsFloatingPoint() ? 1 : image.Format.BitsPerChannel() == 8 ? byte.MaxValue : ushort.MaxValue;
-            gray.ConvertTo(normalized, MatType.CV_32FC1, 1 / peak);
-            return normalized;
+            try
+            {
+                if (channels == 1)
+                {
+                    source.ConvertTo(normalized, MatType.CV_32FC1, 1 / peak);
+                }
+                else
+                {
+                    Cv2.CvtColor(source, normalized, channels == 3 ? ColorConversionCodes.BGR2GRAY : ColorConversionCodes.BGRA2GRAY);
+                    if (!format.IsFloatingPoint())
+                        normalized.ConvertTo(normalized, MatType.CV_32FC1, 1 / peak);
+                }
+                return normalized;
+            }
+            catch
+            {
+                normalized.Dispose();
+                throw;
+            }
         }
 
         private static double PhotometricRmse(Mat referenceGray, Mat registered, AlgorithmImageFormat format, byte[] mask, long validPixels)
         {
             if (validPixels == 0) return double.NaN;
-            using Mat registeredGray = new();
-            if (format.Channels() == 1) registered.CopyTo(registeredGray);
-            else Cv2.CvtColor(registered, registeredGray, format.Channels() == 3 ? ColorConversionCodes.BGR2GRAY : ColorConversionCodes.BGRA2GRAY);
-            using Mat normalized = new();
-            double peak = format.IsFloatingPoint() ? 1 : format.BitsPerChannel() == 8 ? byte.MaxValue : ushort.MaxValue;
-            registeredGray.ConvertTo(normalized, MatType.CV_32FC1, 1 / peak);
-            using Mat difference = new();
-            using Mat squared = new();
-            Cv2.Absdiff(referenceGray, normalized, difference);
-            Cv2.Multiply(difference, difference, squared);
+            // Reuse the owned gray image for the difference and squared residual.
+            using Mat squared = CreateNormalizedGray(registered, format);
+            Cv2.Absdiff(referenceGray, squared, squared);
+            Cv2.Multiply(squared, squared, squared);
             using Mat maskMat = Mat.FromPixelData(referenceGray.Rows, referenceGray.Cols, MatType.CV_8UC1, mask);
             return Math.Sqrt(Cv2.Mean(squared, maskMat).Val0);
         }

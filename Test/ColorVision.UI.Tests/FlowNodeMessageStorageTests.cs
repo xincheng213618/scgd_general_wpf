@@ -52,6 +52,8 @@ public sealed class FlowNodeMessageStorageTests : IDisposable
             id = db.Insertable(message).ExecuteReturnIdentity();
             FlowNodeMessagePayloadStorage.SaveSendPayload(db, id, sendPayload);
             FlowNodeMessagePayloadStorage.SaveRecvPayload(db, id, recvPayload);
+            Assert.Equal(new FlowNodeMessagePayloads(sendPayload, recvPayload),
+                FlowNodeMessagePayloadStorage.LoadPayloads(db, id));
             db.Ado.CommitTran();
         }
         catch
@@ -201,6 +203,7 @@ public sealed class FlowNodeMessageStorageTests : IDisposable
 
         Assert.Throws<InvalidDataException>(() =>
             FlowNodeMessagePayloadStorage.LoadPayloads(db, id));
+        Assert.Equal(ConnectionState.Closed, db.Ado.Connection.State);
     }
 
     [Fact]

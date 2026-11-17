@@ -63,8 +63,7 @@ internal static class PhysicalCameraIdentity
             if (ids.Length == 0) continue;
             if (ids.Length != 1) throw new InvalidOperationException($"物理相机 {physical.Code} 的搜索结果不唯一，未更新 CameraID。");
 
-            if (SynchronizeResolvedIdentity(physical, ids[0], resources, loadedDevices, save))
-                physical.SysResourceModel.Remark = "Online";
+            SynchronizeResolvedIdentity(physical, ids[0], resources, loadedDevices, save);
         }
     }
 

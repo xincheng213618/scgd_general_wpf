@@ -83,7 +83,7 @@ JSON 模板将一条参数保存为数据库 `ModMasterModel.JsonVal`，由 `ITe
 
 `EditTemplateJson.TryLoadTemplateSchema` 按当前 `TemplateJsonModel.Code` 查找，Code 为空时不加载；字典 ID 和算法结果版本不参与匹配。
 
-1. 先读当前 Engine 程序集的 `Templates/Jsons/Schemas/schema-index.json`，在 `schemas` 中按忽略大小写的 `code` 匹配，再按条目 `file` 读取嵌入资源。
+1. 先读当前 Engine 程序集的 `Templates/Jsons/Schemas/schema-index.json`，在 `schemas` 中按忽略大小写的 `code` 匹配，再按条目 `file` 读取嵌入资源。同一编辑器连续切换相同 Code 的模板时，复用已读取的嵌入 Schema。
 2. 嵌入资源未命中才查磁盘：分别从 `AppContext.BaseDirectory`、`Environment.CurrentDirectory` 向上最多八层，在每层尝试 `Templates/Jsons/Schemas/schema-index.json` 和 `Engine/ColorVision.Engine/Templates/Jsons/Schemas/schema-index.json`。
 3. 磁盘条目的 `file` 相对索引所属的 `Jsons` 目录解析。路径去重后逐个尝试；文件缺失、索引解析/读取失败或 Code 未匹配时继续下一候选，全部未命中则不提供 Schema。
 
@@ -115,7 +115,7 @@ JSON 模板将一条参数保存为数据库 `ModMasterModel.JsonVal`，由 `ITe
 | 导入、新建 | 文件导入读取 UTF-8 `.cfg` 并反序列化为 `T`，准备创建来源，尚未插入数据库。反序列化为 `null` 也可返回成功；不能凭布尔返回值认定载荷完整。最终新建以目标字典重建 `Code`、`Pid` 并使用新名称，不是恢复源数据库身份 |
 | 删除 | 按主记录 ID 物理删除；多选分支逐项写数据库，但移除界面项时复用同一个集合索引，可能移除错误项或越界，不能视为可靠的原子批量删除 |
 
-宿主关闭会调用 `Load()`，但这不等于完整回滚；共享对象、离线和旧集合项的限制仍然存在。删除、导出、设置默认等动作还要核对当前勾选集合与过滤后的显示索引，见[模板宿主选择规则](./template-management.md#搜索后的显示位置不总是源位置)。数据库操作出现异常时应先核对已写入的记录，不能假设整批都没有生效。
+宿主关闭会调用 `Load()`，但这不等于完整回滚；共享对象、离线和旧集合项的限制仍然存在。删除、导出、设置默认等动作还要核对当前选中的行与过滤后的显示索引，见[模板宿主选择规则](./template-management.md#搜索后的显示位置不总是源位置)。数据库操作出现异常时应先核对已写入的记录，不能假设整批都没有生效。
 
 ## 常见模板标识与结果版本
 

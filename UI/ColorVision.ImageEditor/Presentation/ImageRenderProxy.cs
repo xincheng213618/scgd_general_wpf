@@ -1,6 +1,9 @@
 using log4net;
 using System;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.X86;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Media;
@@ -17,13 +20,15 @@ namespace ColorVision.ImageEditor.Presentation;
 internal static class ImageRenderProxy
 {
     private static readonly ILog Log = LogManager.GetLogger(typeof(ImageRenderProxy));
+    private static uint[]? _gray16Colors;
 
     private static bool IsRequired(PixelFormat format)
         => format == PixelFormats.Bgr24 || format == PixelFormats.Rgb24 || format == PixelFormats.Gray16 || format == PixelFormats.Rgb48;
 
     internal static WriteableBitmap? TryCreate(WriteableBitmap source)
     {
-        if (!IsRequired(source.Format)) return null;
+        PixelFormat format = source.Format;
+        if (!IsRequired(format)) return null;
         int width = source.PixelWidth;
         int height = source.PixelHeight;
         if (width * 4L * height > int.MaxValue) return null;
@@ -35,7 +40,10 @@ internal static class ImageRenderProxy
             proxy.Lock();
             try
             {
-                if (source.Format == PixelFormats.Bgr24) CopyBgr24(source, proxy);
+                if (format == PixelFormats.Bgr24) CopyBgr24(source, proxy);
+                else if (format == PixelFormats.Rgb24 && source.IsFrozen) CopyRgb24(source, proxy);
+                else if (format == PixelFormats.Rgb48 && HasFrozenBackBuffer(source)) CopyRgb48(source, proxy);
+                else if (format == PixelFormats.Gray16 && HasFrozenBackBuffer(source)) CopyGray16(source, proxy);
                 else new FormatConvertedBitmap(source, PixelFormats.Bgr32, null, 0).CopyPixels(all, proxy.BackBuffer, proxy.BackBufferStride * height, proxy.BackBufferStride);
                 proxy.AddDirtyRect(all);
             }
@@ -49,6 +57,102 @@ internal static class ImageRenderProxy
             Log.Warn("Unable to prepare a display copy for a continuous frame.", ex);
             return null;
         }
+    }
+
+    private static bool HasFrozenBackBuffer(WriteableBitmap source)
+        => source.IsFrozen && source.GetType() == typeof(WriteableBitmap);
+
+    private static unsafe void CopyRgb24(WriteableBitmap source, WriteableBitmap target)
+    {
+        byte* sourceBase = (byte*)source.BackBuffer;
+        byte* targetBase = (byte*)target.BackBuffer;
+        int sourceStride = source.BackBufferStride;
+        int targetStride = target.BackBufferStride;
+        int width = source.PixelWidth;
+        int height = source.PixelHeight;
+        Vector128<byte> shuffle = Vector128.Create((byte)2, 1, 0, 128, 5, 4, 3, 128, 8, 7, 6, 128, 11, 10, 9, 128);
+        Vector128<byte> opaque = Vector128.Create(0xFF000000u).AsByte();
+        for (int y = 0; y < height; y++)
+        {
+            byte* from = sourceBase + (long)y * sourceStride;
+            uint* to = (uint*)(targetBase + (long)y * targetStride);
+            int x = 0;
+            if (Ssse3.IsSupported)
+            {
+                // A 16-byte read fits within the row when at least six RGB pixels remain.
+                for (; x <= width - 6; x += 4, from += 12)
+                {
+                    Vector128<byte> pixels = Sse2.LoadVector128(from);
+                    Sse2.Store((byte*)(to + x), Sse2.Or(Ssse3.Shuffle(pixels, shuffle), opaque));
+                }
+            }
+            for (; x < width; x++, from += 3)
+                to[x] = 0xFF000000u | (uint)from[0] << 16 | (uint)from[1] << 8 | from[2];
+        }
+        GC.KeepAlive(source);
+    }
+
+    private static unsafe void CopyRgb48(WriteableBitmap source, WriteableBitmap target)
+    {
+        byte* sourceBase = (byte*)source.BackBuffer;
+        byte* targetBase = (byte*)target.BackBuffer;
+        int sourceStride = source.BackBufferStride;
+        int targetStride = target.BackBufferStride;
+        int width = source.PixelWidth;
+        int height = source.PixelHeight;
+        // WIC keeps the high byte of each 16-bit sample. Select and reorder those bytes directly.
+        Vector128<byte> firstTwo = Vector128.Create((byte)5, 3, 1, 128, 11, 9, 7, 128, 128, 128, 128, 128, 128, 128, 128, 128);
+        Vector128<byte> lastTwo = Vector128.Create((byte)128, 128, 128, 128, 128, 128, 128, 128, 9, 7, 5, 128, 15, 13, 11, 128);
+        Vector128<byte> opaque = Vector128.Create(0xFF000000u).AsByte();
+        for (int y = 0; y < height; y++)
+        {
+            byte* from = sourceBase + (long)y * sourceStride;
+            uint* to = (uint*)(targetBase + (long)y * targetStride);
+            int x = 0;
+            if (Ssse3.IsSupported)
+            {
+                for (; x <= width - 4; x += 4, from += 24)
+                {
+                    Vector128<byte> low = Ssse3.Shuffle(Sse2.LoadVector128(from), firstTwo);
+                    Vector128<byte> high = Ssse3.Shuffle(Sse2.LoadVector128(from + 8), lastTwo);
+                    Sse2.Store((byte*)(to + x), Sse2.Or(Sse2.Or(low, high), opaque));
+                }
+            }
+            for (; x < width; x++, from += 6)
+                to[x] = 0xFF000000u | (uint)from[1] << 16 | (uint)from[3] << 8 | from[5];
+        }
+        GC.KeepAlive(source);
+    }
+
+    private static unsafe void CopyGray16(WriteableBitmap source, WriteableBitmap target)
+    {
+        byte* sourceBase = (byte*)source.BackBuffer;
+        byte* targetBase = (byte*)target.BackBuffer;
+        int sourceStride = source.BackBufferStride;
+        int targetStride = target.BackBufferStride;
+        int width = source.PixelWidth;
+        int height = source.PixelHeight;
+        uint[] colors = LazyInitializer.EnsureInitialized(ref _gray16Colors, CreateGray16Colors);
+        for (int y = 0; y < height; y++)
+        {
+            ushort* from = (ushort*)(sourceBase + (long)y * sourceStride);
+            uint* to = (uint*)(targetBase + (long)y * targetStride);
+            for (int x = 0; x < width; x++)
+                to[x] = colors[from[x]];
+        }
+        GC.KeepAlive(source);
+    }
+
+    private static uint[] CreateGray16Colors()
+    {
+        // Use this system's WIC gray transfer table, including its rounding at 8-bit boundaries.
+        const int side = 256;
+        var samples = new ushort[side * side];
+        for (int i = 0; i < samples.Length; i++) samples[i] = (ushort)i;
+        BitmapSource bitmap = BitmapSource.Create(side, side, 96, 96, PixelFormats.Gray16, null, samples, side * sizeof(ushort));
+        var colors = new uint[samples.Length];
+        new FormatConvertedBitmap(bitmap, PixelFormats.Bgr32, null, 0).CopyPixels(colors, side * sizeof(uint), 0);
+        return colors;
     }
 
     private static unsafe void CopyBgr24(WriteableBitmap source, WriteableBitmap target)

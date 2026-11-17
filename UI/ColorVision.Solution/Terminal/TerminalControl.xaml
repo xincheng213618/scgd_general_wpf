@@ -13,7 +13,7 @@
     <!-- Terminal area: custom drawn terminal view with IME proxy overlay -->
     <Grid x:Name="TerminalRoot" Background="{DynamicResource TerminalBackgroundBrush}" UseLayoutRounding="True">
         <Grid.ContextMenu>
-            <ContextMenu Opened="TerminalContextMenu_Opened">
+            <ContextMenu Opened="TerminalContextMenu_Opened" Closed="TerminalContextMenu_Closed">
                 <MenuItem x:Name="MenuCopy"
                           Header="{x:Static uiProperties:Resources.MenuCopy}"
                           InputGestureText="Ctrl+C"

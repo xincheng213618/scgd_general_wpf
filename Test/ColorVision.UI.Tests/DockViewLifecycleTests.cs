@@ -501,6 +501,30 @@ public sealed class DockViewLifecycleTests
     }
 
     [Fact]
+    public void DockedCameraReportsItsDisplayedImageAsTheActiveDocument() => WpfTestHost.Invoke(() =>
+    {
+        using var scope = new Scope();
+        using var camera = new DeviceCamera(Resource("image-status"));
+        DockViewManager.GetInstance().OpenView(camera.ViewRegistration);
+        var view = camera.View;
+        var provider = Assert.IsAssignableFrom<IActiveDocumentStatusProvider>(Assert.Single(scope.Pane.Children).Content);
+        Assert.Same(view, provider);
+        Assert.Empty(provider.GetActiveStatusBarItems());
+
+        object? updateSource = null;
+        provider.StatusBarItemsChanged += (sender, _) => updateSource = sender;
+        view.ImageView.SetImageSource(new WriteableBitmap(4, 3, 96, 96, PixelFormats.Gray8, null));
+        Assert.Same(provider, updateSource);
+        var imageStatus = Assert.Single(provider.GetActiveStatusBarItems());
+        Assert.Same(Assert.Single(view.ImageView.GetActiveStatusBarItems()).Source, imageStatus.Source);
+
+        updateSource = null;
+        view.ImageView.Clear();
+        Assert.Same(provider, updateSource);
+        Assert.Empty(provider.GetActiveStatusBarItems());
+    });
+
+    [Fact]
     public void QueuedPreviewUsesTheNewViewAfterCloseAndReopen()
     {
         WpfTestHost.Invoke(() =>

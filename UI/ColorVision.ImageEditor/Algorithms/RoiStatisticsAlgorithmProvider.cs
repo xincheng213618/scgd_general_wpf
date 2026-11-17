@@ -81,13 +81,20 @@ namespace ColorVision.ImageEditor.Algorithms
             int sourceWidth = DisplayRegion?.Source.PixelWidth ?? image.Width;
             int sourceHeight = DisplayRegion?.Source.PixelHeight ?? image.Height;
 
+            // A rectangular ROI includes the entire clipped raster when both corner pixels are inside.
+            bool boundsCovered = roi.Geometry.Kind == AlgorithmGeometryKind.Rectangle
+                && roi.Contains(roi.MinimumX, roi.MinimumY)
+                && roi.Contains(roi.MaximumXExclusive - 1, roi.MaximumYExclusive - 1);
             int channelCount = image.Format.Channels();
             long? preflightPixelCount = null;
             if (image.Format.IsFloatingPoint())
             {
                 long maximumPixels = MaximumExactFloatingValueBytes / checked(channelCount * sizeof(float));
                 context.Progress?.Report(new AlgorithmProgress(0.02, "roi.float-budget", "Checking the exact floating-point statistics budget"));
-                preflightPixelCount = CountIncludedPixels(roi, maximumPixels, cancellationToken);
+                cancellationToken.ThrowIfCancellationRequested();
+                preflightPixelCount = boundsCovered
+                    ? (long)(roi.MaximumXExclusive - roi.MinimumX) * (roi.MaximumYExclusive - roi.MinimumY)
+                    : CountIncludedPixels(roi, maximumPixels, cancellationToken);
                 if (ExceedsExactFloatingStatisticsBudget(preflightPixelCount.Value, channelCount, out _))
                 {
                     return ValueTask.FromResult(Failure(
@@ -103,7 +110,9 @@ namespace ColorVision.ImageEditor.Algorithms
             ChannelAccumulator[] channels = Enumerable.Range(0, channelCount)
                 .Select(index => new ChannelAccumulator(index, ChannelName(image.Format, index), image.Format, floatingCapacity))
                 .ToArray();
-            long includedPixels = Scan(image, roi, originX, originY, channels, cancellationToken, context.Progress);
+            long includedPixels = boundsCovered
+                ? Scan<FullBounds>(image, roi, originX, originY, channels, cancellationToken, context.Progress)
+                : Scan<ShapeBoundary>(image, roi, originX, originY, channels, cancellationToken, context.Progress);
             if (includedPixels == 0)
                 return ValueTask.FromResult(Failure(context, "roi_empty_after_clip", "The ROI does not contain any image pixel centers after clipping.", "roi"));
 
@@ -114,7 +123,9 @@ namespace ColorVision.ImageEditor.Algorithms
             if (parameters.DetectBadPixelCandidates && parameters.MaximumBadPixelCandidates > 0)
             {
                 context.Progress?.Report(new AlgorithmProgress(0.55, "roi.bad-pixels", "Detecting local outlier candidates"));
-                badPixels = DetectBadPixels(image, roi, originX, originY, channels, parameters, cancellationToken, context.Progress);
+                badPixels = boundsCovered
+                    ? DetectBadPixels<FullBounds>(image, roi, originX, originY, channels, parameters, cancellationToken, context.Progress)
+                    : DetectBadPixels<ShapeBoundary>(image, roi, originX, originY, channels, parameters, cancellationToken, context.Progress);
             }
 
             context.Progress?.Report(new AlgorithmProgress(0.82, "roi.artifacts", "Building structured result artifacts"));
@@ -192,7 +203,7 @@ namespace ColorVision.ImageEditor.Algorithms
             return requiredBytes > MaximumExactFloatingValueBytes;
         }
 
-        private static long Scan(
+        private static long Scan<TMembership>(
             AlgorithmImageBuffer image,
             AlgorithmPixelRoi roi,
             int originX,
@@ -200,6 +211,7 @@ namespace ColorVision.ImageEditor.Algorithms
             ChannelAccumulator[] channels,
             CancellationToken cancellationToken,
             IProgress<AlgorithmProgress>? progress)
+            where TMembership : struct, IRoiMembership
         {
             long included = 0;
             ReadOnlySpan<byte> data = image.Data.Span;
@@ -216,7 +228,7 @@ namespace ColorVision.ImageEditor.Algorithms
                 }
                 for (int x = roi.MinimumX; x < roi.MaximumXExclusive; x++)
                 {
-                    if (!roi.Contains(x, y)) continue;
+                    if (!TMembership.Contains(roi, x, y)) continue;
                     included++;
                     int pixelOffset = (y - originY) * stride + (x - originX) * pixelBytes;
                     for (int channel = 0; channel < channels.Length; channel++)
@@ -226,7 +238,7 @@ namespace ColorVision.ImageEditor.Algorithms
             return included;
         }
 
-        private static BadPixelDetectionResult DetectBadPixels(
+        private static BadPixelDetectionResult DetectBadPixels<TMembership>(
             AlgorithmImageBuffer image,
             AlgorithmPixelRoi roi,
             int originX,
@@ -235,6 +247,7 @@ namespace ColorVision.ImageEditor.Algorithms
             RoiStatisticsParameters parameters,
             CancellationToken cancellationToken,
             IProgress<AlgorithmProgress>? progress)
+            where TMembership : struct, IRoiMembership
         {
             PriorityQueue<BadPixelCandidate, BadPixelCandidate> strongest = new(
                 parameters.MaximumBadPixelCandidates,
@@ -259,7 +272,7 @@ namespace ColorVision.ImageEditor.Algorithms
                 for (int x = roi.MinimumX; x < roi.MaximumXExclusive; x++)
                 {
                     if (((x - roi.MinimumX) & 255) == 0) cancellationToken.ThrowIfCancellationRequested();
-                    if (!roi.Contains(x, y)) continue;
+                    if (!TMembership.Contains(roi, x, y)) continue;
                     bool pixelIsCandidate = false;
                     int pixelOffset = (y - originY) * stride + (x - originX) * pixelBytes;
                     for (int channelIndex = 0; channelIndex < channels.Length; channelIndex++)
@@ -278,7 +291,8 @@ namespace ColorVision.ImageEditor.Algorithms
                             {
                                 if (offsetX == 0 && offsetY == 0) continue;
                                 int neighborX = x + offsetX;
-                                if (neighborX < roi.MinimumX || neighborX >= roi.MaximumXExclusive || !roi.Contains(neighborX, neighborY)) continue;
+                                if (neighborX < roi.MinimumX || neighborX >= roi.MaximumXExclusive
+                                    || !TMembership.Contains(roi, neighborX, neighborY)) continue;
                                 double neighbor = ReadValue(data, neighborRowOffset + (neighborX - originX) * pixelBytes, channelBytes);
                                 if (!double.IsFinite(neighbor)) continue;
                                 neighbors[count++] = neighbor;
@@ -333,6 +347,22 @@ namespace ColorVision.ImageEditor.Algorithms
                 .ToArray();
             Array.Sort(candidates, (left, right) => BadPixelCandidateComparer.Instance.Compare(right, left));
             return new BadPixelDetectionResult(candidates, uniquePixelCount);
+        }
+
+        // Specialize the scan loops once per ROI so shape checks need no per-pixel mode branch.
+        private interface IRoiMembership
+        {
+            static abstract bool Contains(AlgorithmPixelRoi roi, int x, int y);
+        }
+
+        private readonly struct FullBounds : IRoiMembership
+        {
+            public static bool Contains(AlgorithmPixelRoi roi, int x, int y) => true;
+        }
+
+        private readonly struct ShapeBoundary : IRoiMembership
+        {
+            public static bool Contains(AlgorithmPixelRoi roi, int x, int y) => roi.Contains(x, y);
         }
 
         private static IReadOnlyList<AlgorithmArtifact> BuildArtifacts(

@@ -2770,6 +2770,15 @@ namespace ColorVision.Solution.Properties {
         }
         
         /// <summary>
+        ///   查找类似 新建终端 的本地化字符串。
+        /// </summary>
+        public static string Terminal_NewTerminal {
+            get {
+                return ResourceManager.GetString("Terminal_NewTerminal", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   查找类似 粘贴的内容包含换行，终端可能立即执行这些命令。继续粘贴？ 的本地化字符串。
         /// </summary>
         public static string Terminal_PasteWithNewlines {

@@ -26,6 +26,7 @@ public class BatchImageWindowInputTests
         try
         {
             foreach (string path in new[] { first, nested, unrelated, unsupported }) File.WriteAllText(path, "fixture");
+            File.SetAttributes(nested, FileAttributes.Hidden);
             try { Directory.CreateSymbolicLink(link, outside.FullName); }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { /* The directory scan still runs without a link. */ }
 

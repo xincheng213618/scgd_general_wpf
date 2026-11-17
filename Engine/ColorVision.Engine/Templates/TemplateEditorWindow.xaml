@@ -18,29 +18,6 @@
         <SolidColorBrush x:Key="TemplateChromeSelectionBrush" Color="{DynamicResource CV.Color.Accent.Primary}" Opacity="0.14"/>
         <Style TargetType="{x:Type TextBox}" BasedOn="{StaticResource TextBox.Small}"/>
         <Style TargetType="{x:Type TextBlock}" BasedOn="{StaticResource TextBlockBaseStyle}"/>
-        <Style x:Key="TemplateSelectionCheckBox" TargetType="CheckBox">
-            <Setter Property="Width" Value="16"/>
-            <Setter Property="Height" Value="16"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="CheckBox">
-                        <Border x:Name="Box" Background="{DynamicResource GlobalBackground}" BorderBrush="{DynamicResource SecondaryTextBrush}" BorderThickness="1" CornerRadius="3">
-                            <Path x:Name="Tick" Data="M 3,7 L 6,10 L 11,4" Stroke="White" StrokeThickness="1.6" StrokeStartLineCap="Round" StrokeEndLineCap="Round" Visibility="Collapsed"/>
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsChecked" Value="True">
-                                <Setter TargetName="Box" Property="Background" Value="{DynamicResource PrimaryBrush}"/>
-                                <Setter TargetName="Box" Property="BorderBrush" Value="{DynamicResource PrimaryBrush}"/>
-                                <Setter TargetName="Tick" Property="Visibility" Value="Visible"/>
-                            </Trigger>
-                            <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Box" Property="BorderBrush" Value="{DynamicResource PrimaryBrush}"/></Trigger>
-                            <Trigger Property="IsKeyboardFocused" Value="True"><Setter TargetName="Box" Property="BorderThickness" Value="2"/></Trigger>
-                            <Trigger Property="IsEnabled" Value="False"><Setter Property="Opacity" Value="0.4"/></Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
         <Style x:Key="TemplateToolbarButton" TargetType="Button" BasedOn="{StaticResource ButtonDefault}">
             <Setter Property="Height" Value="32"/>
             <Setter Property="Padding" Value="10,0"/>
@@ -194,13 +171,6 @@
                                 <EventSetter Event="Click" Handler="GridViewColumnSort"/>
                             </Style>
                         </GridView.ColumnHeaderContainerStyle>
-                        <GridViewColumn  Header="{x:Static properties:Resources.Choice}"  Width="40" >
-                            <GridViewColumn.CellTemplate>
-                                <DataTemplate DataType="{x:Type local:TemplateBase}">
-                                    <CheckBox Style="{StaticResource TemplateSelectionCheckBox}" HorizontalAlignment="Left" VerticalAlignment="Center" ToolTip="{Binding Key}" AutomationProperties.Name="{Binding Key}" IsChecked="{Binding IsSelected, RelativeSource={RelativeSource AncestorType=ListViewItem}, Mode=TwoWay}"/>
-                                </DataTemplate>
-                            </GridViewColumn.CellTemplate>
-                        </GridViewColumn>  
                         <GridViewColumn  Header="{x:Static properties:Resources.SerialNumber1}" >
                             <GridViewColumn.CellTemplate>
                                 <DataTemplate DataType="{x:Type local:TemplateBase}">

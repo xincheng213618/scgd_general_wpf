@@ -14,6 +14,8 @@ namespace ColorVision.Database
     {
         public const int DefaultMaximumUtf8Bytes = 64 * 1024 * 1024;
         private const int Utf8BufferSize = 64 * 1024;
+        private const int StackUtf8BufferSize = 1024;
+        private const int MaximumUtf8BytesPerChar = 3;
         private static readonly UTF8Encoding StrictUtf8 = new(false, true);
 
         public static GzipTextPayload Encode(string? text)
@@ -30,11 +32,24 @@ namespace ColorVision.Database
 
         private static int WriteUtf8(GZipStream gzip, string text)
         {
-            if (text.Length <= Utf8BufferSize / 3)
+            if (text.Length <= Utf8BufferSize / MaximumUtf8BytesPerChar)
             {
-                byte[] utf8 = StrictUtf8.GetBytes(text);
-                gzip.Write(utf8);
-                return utf8.Length;
+                int capacity = text.Length * MaximumUtf8BytesPerChar;
+                byte[]? rented = null;
+                Span<byte> utf8 = capacity <= StackUtf8BufferSize
+                    ? stackalloc byte[capacity]
+                    : (rented = ArrayPool<byte>.Shared.Rent(capacity));
+                try
+                {
+                    int length = StrictUtf8.GetBytes(text.AsSpan(), utf8);
+                    gzip.Write(utf8[..length]);
+                    return length;
+                }
+                finally
+                {
+                    if (rented != null)
+                        ArrayPool<byte>.Shared.Return(rented, clearArray: true);
+                }
             }
 
             byte[] buffer = ArrayPool<byte>.Shared.Rent(Utf8BufferSize);

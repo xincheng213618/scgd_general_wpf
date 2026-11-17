@@ -31,7 +31,7 @@ related: ["platform.system", "platform.startup-integrity", "delivery.update", "d
 
 ## 检查状态与查看安装记录
 
-默认入口是帮助菜单中的 **ColorVision Service Host**，窗口标题为“ColorVision 服务主机”。按以下顺序排查：
+通过 **帮助 → Servicee Host** 打开“ColorVision 服务主机”窗口。
 
 键盘可按 `Alt+H` 后按 `S` 打开，初始焦点位于“刷新状态”。Tab / Shift+Tab 在窗口内循环，空闲时 Esc 关闭；已有操作忙碌时忽略该关闭快捷键，不将 Enter 指定为服务启停、安装或卸载的全窗口默认动作。
 

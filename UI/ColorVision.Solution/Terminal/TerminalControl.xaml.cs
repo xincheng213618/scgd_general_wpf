@@ -1,4 +1,6 @@
 #pragma warning disable CA1822,CA1834
+using ColorVision.Common.MVVM;
+using ColorVision.UI.Docking;
 using log4net;
 using System.Diagnostics;
 using System.IO;
@@ -10,7 +12,7 @@ using System.Windows.Threading;
 
 namespace ColorVision.Solution.Terminal
 {
-    public partial class TerminalControl : UserControl, IDisposable
+    public partial class TerminalControl : UserControl, IDisposable, IDockPanelTitleActionProvider
     {
         private enum TerminalLifecycleState
         {
@@ -53,9 +55,11 @@ namespace ColorVision.Solution.Terminal
         private int _terminalSessionId;
         private Action<string>? _outputReceivedHandler;
         private Action<int>? _processExitedHandler;
+        private readonly Application? _application;
 
         internal bool IsDisposed => _disposed;
         internal string CurrentShell => _currentShell;
+        public IReadOnlyList<DockPanelTitleAction> TitleActions { get; }
 
         private bool CanSendInput => _terminal != null &&
             _terminalState is TerminalLifecycleState.Starting or TerminalLifecycleState.Running;
@@ -67,7 +71,20 @@ namespace ColorVision.Solution.Terminal
         internal TerminalControl(bool isProjectTerminal)
         {
             _isProjectTerminal = isProjectTerminal;
+            TitleActions =
+            [
+                new(new RelayCommand(_ => TerminalService.GetInstance().NewTerminal()), "\uE710", Properties.Resources.Terminal_NewTerminal),
+                new(new RelayCommand<UIElement>(anchor =>
+                {
+                    if (anchor != null)
+                        OpenActionsMenu(anchor);
+                }, anchor => anchor != null && !_disposed), "\uE713", Properties.Resources.Sol_Miv_Settings) { PassButtonAsParameter = true }
+            ];
             InitializeComponent();
+
+            _application = Application.Current;
+            if (_application != null)
+                _application.Exit += Application_Exit;
 
             if (_isProjectTerminal)
             {
@@ -250,6 +267,7 @@ namespace ColorVision.Solution.Terminal
         {
             if (!File.Exists(filePath))
             {
+                MarkInitialShellStarted();
                 AppendOutput($"文件不存在: {filePath}\r\n");
                 return;
             }
@@ -633,12 +651,16 @@ namespace ColorVision.Solution.Terminal
         }
 
 
+        private void Application_Exit(object sender, ExitEventArgs e) => Dispose();
+
         public void Dispose()
         {
             if (_disposed)
                 return;
 
             _disposed = true;
+            if (_application != null)
+                _application.Exit -= Application_Exit;
             SetTerminalState(TerminalLifecycleState.Disposed);
             TerminalDisplay.UrlClicked -= OnUrlClicked;
             TerminalDisplay.FontMetricsChanged -= QueueResizeToViewport;

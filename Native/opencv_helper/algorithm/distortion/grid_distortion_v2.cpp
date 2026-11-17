@@ -47,6 +47,8 @@ double median(std::vector<double> values)
 
 cv::Mat grayFloat(const cv::Mat& image)
 {
+    // Detection and refinement only read the grayscale pixels.
+    if (image.type() == CV_32FC1) return image;
     cv::Mat converted, gray;
     image.convertTo(converted, CV_32F);
     if (converted.channels() == 1) return converted;
@@ -259,7 +261,7 @@ bool refinePoint(const cv::Mat& source, const Candidate& candidate, double sx, d
     const int x1 = std::min(source.cols, static_cast<int>(std::ceil(candidate.bounds.br().x / sx + margin)));
     const int y1 = std::min(source.rows, static_cast<int>(std::ceil(candidate.bounds.br().y / sy + margin)));
     if (x1 - x0 < 3 || y1 - y0 < 3) return false;
-    cv::Mat patch = grayFloat(source(cv::Rect(x0, y0, x1 - x0, y1 - y0)));
+    const cv::Mat patch = grayFloat(source(cv::Rect(x0, y0, x1 - x0, y1 - y0)));
     if (!cv::checkRange(patch)) return false;
     std::vector<cv::Point3d> border;
     for (int x = 0; x < patch.cols; ++x) { border.emplace_back(x, 0, patch.at<float>(0, x)); border.emplace_back(x, patch.rows - 1, patch.at<float>(patch.rows - 1, x)); }
@@ -396,7 +398,8 @@ json calculateGridDistortionV2(const cv::Mat& image, const json& config, const c
     if (scale < 1.0) cv::resize(image, small, cv::Size(std::max(1, cvRound(image.cols * scale)), std::max(1, cvRound(image.rows * scale))), 0, 0, cv::INTER_AREA);
     else small = image;
     const double sx = static_cast<double>(small.cols) / image.cols, sy = static_cast<double>(small.rows) / image.rows;
-    cv::Mat gray = grayFloat(small), gray8;
+    const cv::Mat gray = grayFloat(small);
+    cv::Mat gray8;
     result["quality"]["processingScale"] = scale;
     if (!cv::checkRange(gray)) return finish("invalid_image", "Image contains non-finite intensities.");
     double minimum = 0, maximum = 0;
@@ -405,7 +408,7 @@ json calculateGridDistortionV2(const cv::Mat& image, const json& config, const c
     if (!std::isfinite(range) || range <= 1e-12) return finish("uniform_image", "Image has no measurable contrast.");
     // Estimate low-frequency leakage on a bounded secondary thumbnail. Candidate
     // thresholds operate on local background residuals, not absolute image gray.
-    cv::Mat backgroundSmall, background, signal, localScale;
+    cv::Mat backgroundSmall, background, signal;
     const double backgroundScale = std::min(1.0, 400.0 / std::max(gray.cols, gray.rows));
     cv::resize(gray, backgroundSmall, cv::Size(std::max(1, cvRound(gray.cols * backgroundScale)), std::max(1, cvRound(gray.rows * backgroundScale))), 0, 0, cv::INTER_AREA);
     const double sigma = std::max(2.0, std::min(static_cast<double>(backgroundSmall.cols) / options.cols, static_cast<double>(backgroundSmall.rows) / options.rows) * 0.12);
@@ -415,16 +418,18 @@ json calculateGridDistortionV2(const cv::Mat& image, const json& config, const c
     // Preserve high local contrast at dim points even when an unrelated saturated
     // reflection dominates a 16-bit/float image's global range. Global min/max is
     // only a numerical floor; it must not quantize those point amplitudes to zero.
+    // Reuse the background buffer for the local scale after computing the signal.
     if (image.depth() == CV_8U || image.depth() == CV_16U) {
         // Gray conversion, blurring and interpolation preserve nonnegative intensities.
-        cv::max(gray, background, localScale);
+        cv::max(gray, background, background);
     }
     else {
-        cv::Mat grayMagnitude = cv::abs(gray), backgroundMagnitude = cv::abs(background);
-        cv::max(grayMagnitude, backgroundMagnitude, localScale);
+        const cv::Mat grayMagnitude = cv::abs(gray);
+        cv::absdiff(background, cv::Scalar::all(0), background);
+        cv::max(grayMagnitude, background, background);
     }
-    cv::max(localScale, range * 1e-6, localScale);
-    cv::divide(signal, localScale, signal);
+    cv::max(background, range * 1e-6, background);
+    cv::divide(signal, background, signal);
     signal.convertTo(gray8, CV_8U, 255.0);
     result["timings"]["preprocessMs"] = elapsed(stage);
     cv::Mat mask;

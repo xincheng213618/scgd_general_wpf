@@ -20,6 +20,7 @@ using System.Security.Cryptography;
 using System.Text.Json;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using AppCommandContextMenu = ColorVision.ImageEditor.EditorTools.AppCommand.ImageViewSettingsEditorToolContextMenu;
@@ -2618,6 +2619,49 @@ public sealed class ImageOpenCompletionContractTests(ITestOutputHelper output)
         }
         finally { if (view != null) WpfTestHost.Invoke(view.Dispose); }
     }
+
+    [Fact]
+    public void StatusBarPublishesMetadataOnlyForTheCurrentSource() => WpfTestHost.Invoke(() =>
+    {
+        EnsureImageViewTestResources();
+        using ImageView view = new() { EnableEditorImageServices = false };
+        view.IEditorToolFactory.IEditorTools.Clear();
+        view.EditorContext.ProcessingContext.DisplayEffects.PseudoColor.IsEnabled = false;
+        WriteableBitmap pixels = new(4, 3, 96, 96, PixelFormats.Gray8, null);
+
+        string firstPath = Path.Combine(Path.GetTempPath(), "image-status-first.cvraw");
+        view.Config.FilePath = firstPath;
+        view.SetImageSource(pixels);
+        var firstItem = Assert.Single(view.GetActiveStatusBarItems());
+        var first = Assert.IsType<ImageStatusBarInfo>(firstItem.Source);
+        Assert.Equal(firstPath, first.FilePath);
+        Assert.Contains("4 × 3 px", first.Summary);
+        Assert.Contains("8 bit", first.Summary);
+
+        var statusView = Assert.IsType<ImageStatusBarView>(firstItem.ContentFactory!());
+        var reveal = Assert.IsType<Button>(statusView.FindName("RevealButton"));
+        Assert.Equal(Visibility.Visible, reveal.Visibility);
+        var popup = Assert.IsType<Popup>(statusView.FindName("DetailsPopup"));
+        Assert.False(popup.IsOpen);
+        Assert.Same(statusView.FindName("SummaryButton"), popup.PlacementTarget);
+
+        view.Config.ClearProperties();
+        Assert.Empty(view.GetActiveStatusBarItems());
+        string nextPath = Path.Combine(Path.GetTempPath(), "image-status-next.cvcie");
+        view.Config.FilePath = nextPath;
+        view.Config.SetImageMetadata(ImageViewPropertyKeys.Cols, pixels.PixelWidth);
+        view.Config.SetImageMetadata(ImageViewPropertyKeys.Rows, pixels.PixelHeight);
+        Assert.Empty(view.GetActiveStatusBarItems());
+
+        using (view.BeginImageContentPublication()) view.CommitSourcePixels(pixels);
+        var next = Assert.IsType<ImageStatusBarInfo>(Assert.Single(view.GetActiveStatusBarItems()).Source);
+        Assert.Equal(nextPath, next.FilePath);
+        Assert.Equal("image-status-next.cvcie", next.DisplayName);
+        Assert.DoesNotContain(first.DisplayName, next.Summary);
+
+        view.Clear();
+        Assert.Empty(view.GetActiveStatusBarItems());
+    });
 
     [Theory]
     [InlineData(false)]

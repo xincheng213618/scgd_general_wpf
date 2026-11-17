@@ -5,6 +5,8 @@ using ColorVision.Engine.Templates.Jsons.BlackMura;
 using ColorVision.Engine.Templates.LEDStripDetection;
 using ColorVision.Themes;
 using ColorVision.Themes.Controls;
+using ColorVision.UI.PropertyEditor.Json;
+using Newtonsoft.Json.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
@@ -17,6 +19,73 @@ namespace ColorVision.UI.Tests;
 
 public sealed class TemplateEditorBindingTests
 {
+    [Fact]
+    public void JsonTemplateSwitchReusesMatchingRowsWithoutCarryingPreviousEdits()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            JsonPropertyEditorControl editor = new();
+            List<string> changes = [];
+            editor.JsonValueChanged += (_, json) => changes.Add(json);
+
+            static IEnumerable<Control> Fields(DependencyObject element)
+            {
+                if (element is Control control && control.Tag is string) yield return control;
+                foreach (var child in LogicalTreeHelper.GetChildren(element).OfType<DependencyObject>())
+                    foreach (var field in Fields(child)) yield return field;
+            }
+
+            var propertyPanel = (Panel)editor.FindName("PropertyPanel");
+            Control Field(string path) => Assert.Single(Fields(propertyPanel), control => Equals(control.Tag, path));
+
+            editor.SetJson("""{"Level": 1, "Options": {"Name": "first"}}""");
+            Size size = new(800, 600);
+            editor.Measure(size);
+            editor.Arrange(new Rect(size));
+            var level = Assert.IsType<TextBox>(Field("Level"));
+            var name = Assert.IsType<TextBox>(Field("Options.Name"));
+            level.SelectAll();
+            level.SelectedText = "5";
+            Assert.True(level.CanUndo);
+            Assert.Single(changes);
+            changes.Clear();
+
+            editor.SetJson("""{"Level": 5, "Options": {"Name": "second"}}""");
+            Assert.Same(level, Field("Level"));
+            Assert.Same(name, Field("Options.Name"));
+            Assert.Equal("5", level.Text);
+            Assert.Equal("second", name.Text);
+            Assert.False(level.CanUndo);
+            Assert.False(name.CanUndo);
+            Assert.Empty(changes);
+
+            name.Text = "updated";
+            var edited = JObject.Parse(Assert.Single(changes));
+            Assert.Equal(5, edited.Value<int>("Level"));
+            Assert.Equal("updated", (string?)edited.SelectToken("Options.Name"));
+            Assert.True(JToken.DeepEquals(edited, JObject.Parse(editor.GetJson()!)));
+
+            level.SelectAll();
+            level.SelectedText = "9";
+            Assert.True(level.Undo());
+            Assert.False(level.CanUndo);
+            Assert.True(level.CanRedo);
+            changes.Clear();
+
+            editor.SetJson("""{"Level": 5, "Options": {"Name": "after undo"}}""");
+            Assert.Same(level, Field("Level"));
+            Assert.False(level.CanRedo);
+            Assert.Empty(changes);
+
+            editor.SetJson("""{"Level": true, "Options": {"Name": "third"}}""");
+            Assert.True(Assert.IsType<CheckBox>(Field("Level")).IsChecked);
+            var newName = Assert.IsType<TextBox>(Field("Options.Name"));
+            Assert.NotSame(name, newName);
+            Assert.Equal("third", newName.Text);
+            Assert.Empty(changes);
+        });
+    }
+
     [Fact]
     public void FilteredBatchActionsUseSelectedRowsInsteadOfVisibleIndicesOrSharedMarks()
     {
@@ -43,8 +112,9 @@ public sealed class TemplateEditorBindingTests
                 var searchBar = (Grid)window.FindName("TemplateSearchBar");
                 var search = (TextBox)window.FindName("Searchbox");
                 Assert.Equal(Visibility.Collapsed, searchBar.Visibility);
-                Assert.Equal(new[] { ColorVision.Engine.Properties.Resources.Choice, ColorVision.Engine.Properties.Resources.Name },
-                    ((GridView)list.View).Columns.Select(column => column.Header));
+                var nameColumn = Assert.Single(((GridView)list.View).Columns);
+                Assert.Equal(ColorVision.Engine.Properties.Resources.Name, nameColumn.Header);
+                Assert.Equal(SelectionMode.Extended, list.SelectionMode);
 
                 var findCommand = window.CommandBindings.Cast<CommandBinding>().Select(binding => binding.Command)
                     .OfType<RoutedCommand>().Single(command => command.InputGestures.OfType<KeyGesture>().Any(gesture =>
@@ -59,8 +129,7 @@ public sealed class TemplateEditorBindingTests
                 TemplateBase second = template.TemplateParams[2];
                 Assert.Same(first, list.SelectedItem);
                 var secondRow = Assert.IsType<ListViewItem>(list.ItemContainerGenerator.ContainerFromItem(second));
-                var secondCheckBox = Descendants(secondRow).OfType<CheckBox>().Single();
-                secondCheckBox.SetCurrentValue(ToggleButton.IsCheckedProperty, true);
+                secondRow.SetCurrentValue(ListViewItem.IsSelectedProperty, true);
                 Assert.Equal(new[] { first, second }, list.SelectedItems.Cast<TemplateBase>());
 
                 var export = Descendants(window).OfType<Button>().Single(button =>

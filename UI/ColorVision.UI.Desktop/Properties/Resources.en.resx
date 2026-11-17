@@ -368,7 +368,7 @@
     <value>Installed</value>
   </data>
   <data name="Marketplace" xml:space="preserve">
-    <value>Marketplace</value>
+    <value>Store</value>
   </data>
   <data name="MarketplacePluginCount" xml:space="preserve">
     <value>{0} plugins available</value>
@@ -378,6 +378,9 @@
   </data>
   <data name="SendFeedback" xml:space="preserve">
     <value>Send feedback</value>
+  </data>
+  <data name="MenuFeedback" xml:space="preserve">
+    <value>Feedback</value>
   </data>
   <data name="FeedbackMessageLabel" xml:space="preserve">
     <value>Problem description</value>

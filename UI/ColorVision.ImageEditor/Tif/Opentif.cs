@@ -202,7 +202,8 @@ namespace ColorVision.ImageEditor.Tif
                 {
                     cancellationToken.ThrowIfCancellationRequested();
                     int rowCount = Math.Min(rowsPerChunk, height - top);
-                    if (hasRange)
+                    // A single strip is still in the buffer from the range pass.
+                    if (hasRange && rowsPerChunk < height)
                         source.CopyPixels(new Int32Rect(0, top, width, rowCount), floatPixels, sourceStride, 0);
 
                     for (int row = 0; row < rowCount; row++)
@@ -255,7 +256,25 @@ namespace ColorVision.ImageEditor.Tif
         private static void NormalizeRow(ReadOnlySpan<float> input, Span<ushort> output, float min, double range)
         {
             int x = 0;
-            if (Avx2.IsSupported && Sse41.IsSupported && input.Length >= Vector256<float>.Count)
+            if (Avx512F.VL.IsSupported && input.Length >= Vector256<float>.Count)
+            {
+                Vector256<float> replacement = Vector256.Create(min);
+                Vector512<double> minimum = Vector512.Create((double)min);
+                Vector512<double> span = Vector512.Create(range);
+                ref float firstInput = ref MemoryMarshal.GetReference(input);
+                ref ushort firstOutput = ref MemoryMarshal.GetReference(output);
+                for (; x <= input.Length - Vector256<float>.Count; x += Vector256<float>.Count)
+                {
+                    Vector256<float> values = Vector256.LoadUnsafe(ref firstInput, (nuint)x);
+                    values = Vector256.ConditionalSelect(Vector256.IsFinite(values), values, replacement);
+                    // Quantize eight samples with the same double arithmetic and truncation as the scalar path.
+                    Vector512<double> normalized = Avx512F.Divide(Avx512F.Subtract(Avx512F.ConvertToVector512Double(values), minimum), span);
+                    normalized = Avx512F.Min(Avx512F.Max(normalized, Vector512<double>.Zero), Vector512.Create(1d));
+                    Vector256<int> quantized = Avx512F.ConvertToVector256Int32WithTruncation(Avx512F.Multiply(normalized, Vector512.Create((double)ushort.MaxValue)));
+                    Avx512F.VL.ConvertToVector128UInt16(quantized).StoreUnsafe(ref firstOutput, (nuint)x);
+                }
+            }
+            else if (Avx2.IsSupported && Sse41.IsSupported && input.Length >= Vector256<float>.Count)
             {
                 Vector256<float> replacement = Vector256.Create(min);
                 Vector256<double> minimum = Vector256.Create((double)min);

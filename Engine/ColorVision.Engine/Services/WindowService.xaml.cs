@@ -43,7 +43,7 @@ namespace ColorVision.Engine.Services
         }
 
         // Preserve the persisted service/device values; the former type view now opens services.
-        public int ShowType2 { get; set; } = 1;
+        public int ShowType2 { get; set; } = 2;
 
         internal void NormalizeListMode() => ShowType2 = ShowType2 == 2 ? 2 : 1;
 
@@ -79,7 +79,6 @@ namespace ColorVision.Engine.Services
             StackPanelShow.Children.Clear();
             DetailHeader.DataContext = TreeView1.SelectedItem;
             DetailHeader.Visibility = TreeView1.SelectedItem is DeviceService or TerminalService ? Visibility.Visible : Visibility.Collapsed;
-            RenameServiceButton.Visibility = TreeView1.SelectedItem is TerminalService ? Visibility.Visible : Visibility.Collapsed;
             DetailSubtitle.Text = TreeView1.SelectedItem switch
             {
                 DeviceService device => device.Code,
@@ -247,7 +246,7 @@ namespace ColorVision.Engine.Services
                 };
                 foreach (var terminal in type.VisualChildren.OfType<TerminalService>())
                 {
-                    var item = new MenuItem { Header = terminal.Name, Command = terminal.OpenCreateWindowCommand };
+                    var item = new MenuItem { Header = EngineLocalization.Format($"在{terminal.Name}添加设备"), Command = terminal.OpenCreateWindowCommand };
                     typeItem.Items.Add(item);
                 }
                 if (typeItem.Items.Count > 0) typeItem.Items.Add(new Separator());

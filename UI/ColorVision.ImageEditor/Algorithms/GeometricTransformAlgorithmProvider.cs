@@ -243,6 +243,19 @@ namespace ColorVision.ImageEditor.Algorithms
             byte[] mask = new byte[checked(width * height)];
             long valid = 0;
             const double tolerance = 1e-9;
+            bool axesAligned = inverse[1] == 0 && inverse[3] == 0;
+            bool axesSwapped = !axesAligned && inverse[0] == 0 && inverse[4] == 0;
+            double constantDenominator = inverse[8];
+            bool separable = (axesAligned || axesSwapped) && inverse[6] == 0 && inverse[7] == 0
+                && inverse.All(double.IsFinite) && Math.Abs(constantDenominator) > DenominatorTolerance(inverse, 0, 0);
+            int columnSourceLength = axesSwapped ? sourceHeight : sourceWidth;
+            int rowSourceLength = axesSwapped ? sourceWidth : sourceHeight;
+            double columnScale = inverse[axesSwapped ? 3 : 0];
+            double columnOffset = inverse[axesSwapped ? 5 : 2];
+            double rowScale = inverse[axesSwapped ? 1 : 4];
+            double rowOffset = inverse[axesSwapped ? 2 : 5];
+            int firstColumn = 0;
+            int lastColumn = 0;
             for (int y = 0; y < height; y++)
             {
                 if ((y & 31) == 0)
@@ -251,6 +264,27 @@ namespace ColorVision.ImageEditor.Algorithms
                     progress?.Report(new AlgorithmProgress(0.78 + 0.18 * y / Math.Max(1, height), "transform.mask"));
                 }
                 int row = y * width;
+                if (separable)
+                {
+                    // Each source coordinate is monotone in one destination axis. Find the
+                    // contiguous column interval once using the same pixel-center comparisons.
+                    if (y == 0)
+                    {
+                        while (firstColumn < width && !IsInsideAxis(firstColumn, columnScale, columnOffset, columnSourceLength))
+                            firstColumn++;
+                        lastColumn = firstColumn;
+                        while (lastColumn < width && IsInsideAxis(lastColumn, columnScale, columnOffset, columnSourceLength))
+                            lastColumn++;
+                    }
+
+                    if (IsInsideAxis(y, rowScale, rowOffset, rowSourceLength))
+                    {
+                        int length = lastColumn - firstColumn;
+                        mask.AsSpan(row + firstColumn, length).Fill(byte.MaxValue);
+                        valid += length;
+                    }
+                    continue;
+                }
                 for (int x = 0; x < width; x++)
                 {
                     double denominator = inverse[6] * x + inverse[7] * y + inverse[8];
@@ -265,6 +299,12 @@ namespace ColorVision.ImageEditor.Algorithms
             }
             cancellationToken.ThrowIfCancellationRequested();
             return (mask, valid);
+
+            bool IsInsideAxis(int coordinate, double scale, double offset, int length)
+            {
+                double mapped = (scale * coordinate + offset) / constantDenominator;
+                return mapped >= -tolerance && mapped <= length - 1 + tolerance;
+            }
         }
 
         private static AlgorithmMeasurementArtifact BuildMeasurements(

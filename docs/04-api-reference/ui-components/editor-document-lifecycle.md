@@ -125,6 +125,8 @@ XML 序列化使用 AvalonDock 5.x 独立包中的 `AvalonDock.Serializer.Xml.Xm
 
 面板的 Hide/Show 与文档关闭不同。`TogglePanel` 隐藏/显示已有面板；`ShowPanel` 还会激活面板。面板已从布局移除时，两者可从注册表重新加入；不代表创建全新内容实例或重启终端进程。`IsPanelVisible` 只检查是否找到面板且未隐藏，不保证该页签当前激活或内容已构造。
 
+`ShowTransientPanel` 按 ContentId 打开或激活当前进程内的工具会话。用面板关闭按钮结束会话时调用所有者的释放回调。重置布局将仍打开的会话移回默认停靠区域，保留内容实例。此类会话从布局文件恢复时会被跳过。「终端」面板中的新增终端、脚本运行和项目命令使用这个入口。 [终端与脚本运行](../../01-user-guide/interface/terminal.md)
+
 工厂注册用 `Lazy<object>` 复用内容，并由每个注册项懒建、持有唯一的 `DeferredDockContent`。自动恢复、Reset 和关闭后重新 Show/Toggle 都向布局交付同一个宿主；原始 UI 内容始终作为该宿主的子内容，不再直接挂到新 `LayoutAnchorable.Content` 或另一个延迟宿主上。由 AvalonDock 管理宿主随布局的挂接，不通过遍历任意 UI 父节点来强行解绑内容。已构造对象的非工厂注册仍直接使用原对象，不增加延迟宿主。
 
 自动恢复保持惰性：宿主可见且已 Loaded 后才在 `ApplicationIdle` 尝试构造；显式 Show 和 Toggle 的显示分支则同步物化，再显示/激活，不额外等待空闲回调。每个稳定宿主只尝试物化一次，失败记录日志，不承诺再次 Show 会重试；空工厂结果在取值时拒绝。Reset 不重建内容注册表，也不使宿主或 Lazy 缓存失效；不能用布局重置推断面板实例或失败的工厂已重新创建。布局恢复返回 true 也不意味着所有延迟面板均已构造成功。

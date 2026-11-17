@@ -1,3 +1,6 @@
+using HelixToolkit;
+using HelixToolkit.Maths;
+using HelixToolkit.SharpDX;
 using System;
 using System.Numerics;
 using System.Threading;
@@ -7,27 +10,57 @@ namespace ColorVision.ImageEditor.EditorTools.ThreeD
     /// <summary>Immutable CPU cache shared by upload, picking, and on-demand export.</summary>
     internal sealed class HeightMapDxGeometry
     {
-        public required HeightMapSample Sample { get; init; }
-        public required Vector3[] Positions { get; init; }
-        public required Vector3[] Normals { get; init; }
-        public required Vector2[] TextureCoordinates { get; init; }
-        public required int[] Indices { get; init; }
-        public required bool[] VisibleCells { get; init; }
+        private const byte VisibleAlphaThreshold = 127;
+
+        private readonly Vector3Collection positions;
+        private readonly Vector3Collection normals;
+        private readonly Vector2Collection textureCoordinates;
+        private readonly IntCollection indices;
+        private readonly bool[] visibleCells;
+
+        public HeightMapSample Sample { get; }
+        public ReadOnlySpan<Vector3> Positions => positions.GetInternalArray().AsSpan(0, positions.Count);
+        public ReadOnlySpan<Vector3> Normals => normals.GetInternalArray().AsSpan(0, normals.Count);
+        public ReadOnlySpan<Vector2> TextureCoordinates => textureCoordinates.GetInternalArray().AsSpan(0, textureCoordinates.Count);
+        public ReadOnlySpan<int> Indices => indices.GetInternalArray().AsSpan(0, indices.Count);
+
+        internal HeightMapDxGeometry(HeightMapSample sample, Vector3Collection positions, Vector3Collection normals,
+            Vector2Collection textureCoordinates, IntCollection indices, bool[] visibleCells)
+        {
+            Sample = sample;
+            this.positions = positions;
+            this.normals = normals;
+            this.textureCoordinates = textureCoordinates;
+            this.indices = indices;
+            this.visibleCells = visibleCells;
+        }
+
+        // Keep the mesh non-transient so upload retains the buffers used for picking and export.
+        internal MeshGeometry3D CreateMesh() => new()
+        {
+            Positions = positions, Normals = normals, TextureCoordinates = textureCoordinates, Indices = indices,
+        };
 
         public static HeightMapDxGeometry Build(HeightMapSample sample, double worldWidth, double worldHeight,
             CancellationToken cancellationToken, HeightMapSample? transparencySource = null)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             int width = sample.Width;
             int height = sample.Height;
             int count = checked(width * height);
-            var positions = new Vector3[count];
-            var normals = new Vector3[count];
-            var uv = new Vector2[count];
+            var meshPositions = new Vector3Collection(count);
+            var meshNormals = new Vector3Collection(count);
+            var meshTextureCoordinates = new Vector2Collection(count);
+            Vector3[] positions = ResizeBuffer(meshPositions, count);
+            Vector3[] normals = ResizeBuffer(meshNormals, count);
+            Vector2[] uv = ResizeBuffer(meshTextureCoordinates, count);
             var visibleCells = new bool[checked((width - 1) * (height - 1))];
             float dx = (float)(worldWidth / (width - 1));
             float dy = (float)(worldHeight / (height - 1));
             int visibleCount = 0;
             HeightMapSample maskSource = transparencySource ?? sample;
+            byte[]? mask = maskSource.Alpha;
+            bool maskMatchesMesh = maskSource.Width == width && maskSource.Height == height;
             for (int y = 0; y < height; y++)
             {
                 cancellationToken.ThrowIfCancellationRequested();
@@ -46,15 +79,19 @@ namespace ColorVision.ImageEditor.EditorTools.ThreeD
                     normals[index] = Vector3.Normalize(new Vector3(-gradientX, gradientY, 1));
                     if (x + 1 < width && y + 1 < height)
                     {
-                        // Coarse quads must not bridge a transparent hole hidden between their corners.
-                        bool visible = IsCellVisible(maskSource, x, y, width, height);
+                        bool visible = mask == null || (maskMatchesMesh
+                            ? mask[index] > VisibleAlphaThreshold && mask[index + 1] > VisibleAlphaThreshold
+                                && mask[index + width] > VisibleAlphaThreshold && mask[index + width + 1] > VisibleAlphaThreshold
+                            : IsCoarseCellVisible(maskSource, x, y, width, height));
                         visibleCells[y * (width - 1) + x] = visible;
                         if (visible) visibleCount++;
                     }
                 }
             }
 
-            var indices = new int[checked(visibleCount * 6)];
+            int indexCount = checked(visibleCount * 6);
+            var meshIndices = new IntCollection(indexCount);
+            int[] indices = ResizeBuffer(meshIndices, indexCount);
             int cursor = 0;
             for (int y = 0; y < height - 1; y++)
             {
@@ -72,43 +109,59 @@ namespace ColorVision.ImageEditor.EditorTools.ThreeD
                     indices[cursor++] = bottomLeft + 1;
                 }
             }
-            return new HeightMapDxGeometry { Sample = sample, Positions = positions, Normals = normals,
-                TextureCoordinates = uv, Indices = indices, VisibleCells = visibleCells };
+            return new HeightMapDxGeometry(sample, meshPositions, meshNormals, meshTextureCoordinates, meshIndices, visibleCells);
+        }
+
+        private static T[] ResizeBuffer<T>(FastList<T> collection, int count)
+        {
+            collection.Resize(count, fastClear: true);
+            return collection.GetInternalArray();
         }
 
         public static HeightMapSample Reduce(HeightMapSample source, int maxWidth, int maxHeight, CancellationToken token)
         {
             (int width, int height) = HeightMapPixelSampler.CalculateFitSize(source.Width, source.Height, maxWidth, maxHeight);
             if (width == source.Width && height == source.Height) return source;
+            token.ThrowIfCancellationRequested();
             var gray = new byte[width * height];
-            byte[]? alpha = source.Alpha == null ? null : new byte[gray.Length];
+            byte[]? sourceAlpha = source.Alpha;
+            byte[]? alpha = sourceAlpha == null ? null : new byte[gray.Length];
+            // The renderer's interaction widths need at most 4 KiB of column indices.
+            Span<int> sourceColumns = width <= 1024 ? stackalloc int[width] : new int[width];
+            for (int x = 0; x < width; x++)
+                sourceColumns[x] = (int)Math.Round(x * (source.Width - 1d) / (width - 1));
             for (int y = 0; y < height; y++)
             {
                 token.ThrowIfCancellationRequested();
                 int sy = (int)Math.Round(y * (source.Height - 1d) / (height - 1));
+                int sourceRow = sy * source.Width;
+                int targetRow = y * width;
                 for (int x = 0; x < width; x++)
                 {
-                    int sx = (int)Math.Round(x * (source.Width - 1d) / (width - 1));
-                    int sourceIndex = sy * source.Width + sx;
-                    gray[y * width + x] = source.Gray[sourceIndex];
-                    if (alpha != null) alpha[y * width + x] = source.Alpha![sourceIndex];
+                    int sourceIndex = sourceRow + sourceColumns[x];
+                    gray[targetRow + x] = source.Gray[sourceIndex];
+                    if (alpha != null) alpha[targetRow + x] = sourceAlpha![sourceIndex];
                 }
             }
             return new HeightMapSample(gray, alpha, width, height);
         }
 
-        private static bool IsVisible(HeightMapSample sample, int index) => sample.Alpha == null || sample.Alpha[index] > 127;
+        private static bool IsVisible(HeightMapSample sample, int index) => sample.Alpha == null || sample.Alpha[index] > VisibleAlphaThreshold;
 
-        private static bool IsCellVisible(HeightMapSample source, int x, int y, int width, int height)
+        private static bool IsCoarseCellVisible(HeightMapSample source, int x, int y, int width, int height)
         {
-            if (source.Alpha == null) return true;
+            // A coarse quad can cover a transparent hole between its corners.
             int left = (int)Math.Floor(x * (source.Width - 1d) / (width - 1));
             int right = (int)Math.Ceiling((x + 1) * (source.Width - 1d) / (width - 1));
             int top = (int)Math.Floor(y * (source.Height - 1d) / (height - 1));
             int bottom = (int)Math.Ceiling((y + 1) * (source.Height - 1d) / (height - 1));
+            byte[] mask = source.Alpha!;
             for (int sy = top; sy <= bottom; sy++)
-            for (int sx = left; sx <= right; sx++)
-                if (!IsVisible(source, sy * source.Width + sx)) return false;
+            {
+                int rowOffset = sy * source.Width;
+                for (int sx = left; sx <= right; sx++)
+                    if (mask[rowOffset + sx] <= VisibleAlphaThreshold) return false;
+            }
             return true;
         }
 
@@ -137,17 +190,18 @@ namespace ColorVision.ImageEditor.EditorTools.ThreeD
             double nextY = stepY == 0 ? double.PositiveInfinity : ((stepY > 0 ? y + 1 : y) - oy) / vy;
             double incrementX = stepX == 0 ? double.PositiveInfinity : Math.Abs(1 / vx);
             double incrementY = stepY == 0 ? double.PositiveInfinity : Math.Abs(1 / vy);
+            ReadOnlySpan<Vector3> points = Positions;
             for (int visited = 0; visited <= Sample.Width + Sample.Height; visited++)
             {
                 double cellExit = Math.Min(leave, Math.Min(nextX, nextY));
-                if (VisibleCells[y * (Sample.Width - 1) + x])
+                if (visibleCells[y * (Sample.Width - 1) + x])
                 {
                     int a = y * Sample.Width + x;
                     int c = a + Sample.Width;
-                    Vector3 p0 = Scaled(Positions[a], heightScale);
-                    Vector3 p1 = Scaled(Positions[a + 1], heightScale);
-                    Vector3 p2 = Scaled(Positions[c], heightScale);
-                    Vector3 p3 = Scaled(Positions[c + 1], heightScale);
+                    Vector3 p0 = Scaled(points[a], heightScale);
+                    Vector3 p1 = Scaled(points[a + 1], heightScale);
+                    Vector3 p2 = Scaled(points[c], heightScale);
+                    Vector3 p3 = Scaled(points[c + 1], heightScale);
                     double nearest = double.PositiveInfinity;
                     if (Triangle(origin, direction, p0, p2, p1, out double t0) && t0 >= enter - 1e-4 && t0 <= cellExit + 1e-4) nearest = t0;
                     if (Triangle(origin, direction, p1, p2, p3, out double t1) && t1 >= enter - 1e-4 && t1 <= cellExit + 1e-4) nearest = Math.Min(nearest, t1);

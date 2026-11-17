@@ -139,15 +139,17 @@ namespace ColorVision.Engine.Templates.Jsons
         {
             if (param is IEditTemplateJson editTemplateJson)
             {
-                RegisterCopilotEditor();
                 this.DataContext = param; 
                 if (IEditTemplateJson !=null)
                     IEditTemplateJson.JsonValueChanged -= IEditTemplateJson_JsonValueChanged;
                 if (!ReferenceEquals(IEditTemplateJson, editTemplateJson)) propertyEditor.ResetNavigation();
                 IEditTemplateJson = editTemplateJson;
-                _schemaInfo = TryLoadTemplateSchema(GetTemplateCode(editTemplateJson));
+                var templateCode = GetTemplateCode(editTemplateJson);
+                if (_schemaInfo == null || !_schemaInfo.SchemaPath.StartsWith("resource://", StringComparison.Ordinal) ||
+                    !string.Equals(_schemaInfo.Code, templateCode, StringComparison.OrdinalIgnoreCase))
+                    _schemaInfo = TryLoadTemplateSchema(templateCode);
                 _loadedJsonSnapshot = IEditTemplateJson.JsonValue ?? string.Empty;
-                SetTextSilently(IEditTemplateJson.JsonValue);
+                SetTextSilently(_loadedJsonSnapshot);
                 IEditTemplateJson.JsonValueChanged += IEditTemplateJson_JsonValueChanged;
                 if (_isInPropertyEditorMode)
                 {

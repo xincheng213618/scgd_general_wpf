@@ -9,7 +9,6 @@
              xmlns:phy="clr-namespace:ColorVision.Engine.Services.PhyCameras"
              mc:Ignorable="d"
              d:DesignHeight="640" d:DesignWidth="760"
-             MinWidth="520"
              Background="{DynamicResource UpdateDialog.Background}"
              Foreground="{DynamicResource UpdateDialog.TextPrimary}"
              Initialized="UserControl_Initialized">
@@ -36,18 +35,28 @@
             <Setter Property="FontFamily" Value="Segoe MDL2 Assets" />
             <Setter Property="FontSize" Value="13" />
         </Style>
+        <Style x:Key="CalibrationChoiceStyle" TargetType="ComboBoxItem" BasedOn="{StaticResource ComboBoxItemBaseStyle}">
+            <Setter Property="ToolTip" Value="{Binding Name}" />
+        </Style>
+        <Style x:Key="GroupMetadataStyle" TargetType="StackPanel">
+            <Setter Property="Margin" Value="0,0,16,0" />
+            <Setter Property="MinWidth" Value="44" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+        </Style>
         <DataTemplate x:Key="CalibrationRowTemplate">
             <Border BorderBrush="{DynamicResource UpdateDialog.WeakBorder}" BorderThickness="0,0,0,1" Padding="0,5">
                 <Grid>
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="86" />
+                        <ColumnDefinition Width="68" />
                         <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="72" />
                         <ColumnDefinition Width="28" />
                     </Grid.ColumnDefinitions>
-                    <TextBlock Text="{Binding Title}" FontSize="13" Foreground="{DynamicResource UpdateDialog.TextPrimary}" />
+                    <TextBlock Text="{Binding Title}" FontSize="13" Margin="0,0,6,0" TextWrapping="Wrap"
+                               TextTrimming="None" Foreground="{DynamicResource UpdateDialog.TextPrimary}" />
                     <ComboBox Grid.Column="1" Height="30" Margin="0,0,8,0" IsEditable="True"
                               ItemsSource="{Binding Resources}" DisplayMemberPath="Name"
+                              ItemContainerStyle="{StaticResource CalibrationChoiceStyle}"
                               Text="{Binding FileReference, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
                               ToolTip="{Binding FileReference}" />
                     <Grid Grid.Column="2" Width="72" VerticalAlignment="Center">
@@ -95,38 +104,21 @@
     <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
         <StackPanel Margin="12">
             <Border Style="{StaticResource SectionCardStyle}">
-                <Grid>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto" />
-                        <RowDefinition Height="Auto" />
-                    </Grid.RowDefinitions>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="Auto" />
-                    </Grid.ColumnDefinitions>
-                    <TextBlock Text="{display:EngineLang Key='模板校正配置'}" FontSize="18" FontWeight="SemiBold" />
-                    <StackPanel x:Name="uploadbutton" d:DataContext="{d:DesignInstance phy:PhyCamera}"
-                                Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                <StackPanel>
+                    <WrapPanel x:Name="uploadbutton" d:DataContext="{d:DesignInstance phy:PhyCamera}">
+                        <TextBlock Text="{display:EngineLang Key='模板校正配置'}" FontSize="18" FontWeight="SemiBold" Margin="0,0,12,0" />
                         <Button Style="{StaticResource UpdateDialogTextButtonStyle}" Margin="0,0,6,0"
                                 Command="{Binding UploadCalibrationCommand}" Content="{display:EngineLang Key='上传校正组'}" />
                         <Button Style="{StaticResource UpdateDialogTextButtonStyle}" Margin="0,0,6,0"
                                 Click="OpenCalibrationManager_Click" Content="{display:EngineLang Key='校正组管理'}" />
                         <Button Style="{StaticResource UpdateDialogTextButtonStyle}"
                                 Command="{Binding OpenSettingDirectoryCommand}" Content="{display:EngineLang Key='打开配置文件夹'}" />
-                    </StackPanel>
-                    <Grid Grid.Row="1" Grid.ColumnSpan="2" Margin="0,8,0,0">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="84" />
-                            <ColumnDefinition Width="58" />
-                            <ColumnDefinition Width="58" />
-                            <ColumnDefinition Width="58" />
-                            <ColumnDefinition Width="68" />
-                            <ColumnDefinition Width="76" />
-                        </Grid.ColumnDefinitions>
-                        <hc:ComboBox x:Name="ComboBoxList" Height="30" Margin="0,0,8,0" DisplayMemberPath="Name"
-                                     Text="{Binding CalibrationMode}" />
-                        <Border Grid.Column="1" Margin="0,0,8,0" Padding="8,0"
+                    </WrapPanel>
+                    <hc:ComboBox x:Name="ComboBoxList" Height="30" Margin="0,8,0,0" DisplayMemberPath="Name"
+                                 ItemContainerStyle="{StaticResource CalibrationChoiceStyle}"
+                                 Text="{Binding CalibrationMode}" ToolTip="{Binding SelectedItem.Name, RelativeSource={RelativeSource Self}}" />
+                    <WrapPanel Margin="0,8,0,0">
+                        <Border Margin="0,0,16,0" Padding="8,4"
                                 Background="{DynamicResource UpdateDialog.TagBackground}"
                                 BorderBrush="{DynamicResource UpdateDialog.WeakBorder}" BorderThickness="1" CornerRadius="6">
                             <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
@@ -135,28 +127,28 @@
                                            FontWeight="SemiBold" />
                             </StackPanel>
                         </Border>
-                        <StackPanel Grid.Column="2">
+                        <StackPanel Style="{StaticResource GroupMetadataStyle}">
                             <TextBlock Text="{display:EngineLang Key='曝光'}" FontSize="10" Foreground="{DynamicResource UpdateDialog.TextSecondary}" />
                             <TextBlock FontSize="11" Text="{Binding SelectedItem.Config.ExpTime, ElementName=ComboBoxList, TargetNullValue=--}" />
                         </StackPanel>
-                        <StackPanel Grid.Column="3">
+                        <StackPanel Style="{StaticResource GroupMetadataStyle}">
                             <TextBlock Text="ND" FontSize="10" Foreground="{DynamicResource UpdateDialog.TextSecondary}" />
                             <TextBlock FontSize="11" Text="{Binding SelectedItem.Config.NDShow, ElementName=ComboBoxList, TargetNullValue=--}" />
                         </StackPanel>
-                        <StackPanel Grid.Column="4">
+                        <StackPanel Style="{StaticResource GroupMetadataStyle}">
                             <TextBlock Text="{display:EngineLang Key='光圈'}" FontSize="10" Foreground="{DynamicResource UpdateDialog.TextSecondary}" />
                             <TextBlock FontSize="11" Text="{Binding SelectedItem.Config.ApertureShow, ElementName=ComboBoxList, TargetNullValue=--}" />
                         </StackPanel>
-                        <StackPanel Grid.Column="5">
+                        <StackPanel Style="{StaticResource GroupMetadataStyle}">
                             <TextBlock Text="{display:EngineLang Key='焦距'}" FontSize="10" Foreground="{DynamicResource UpdateDialog.TextSecondary}" />
                             <TextBlock FontSize="11" Text="{Binding SelectedItem.Config.FocalLengthShow, ElementName=ComboBoxList, TargetNullValue=--}" />
                         </StackPanel>
-                        <StackPanel Grid.Column="6">
+                        <StackPanel Style="{StaticResource GroupMetadataStyle}">
                             <TextBlock Text="{display:EngineLang Key='对焦距离'}" FontSize="10" Foreground="{DynamicResource UpdateDialog.TextSecondary}" />
-                            <TextBlock FontSize="11" Text="{Binding SelectedItem.Config.FocusDistanceShow, ElementName=ComboBoxList, TargetNullValue=--}" />
+                            <TextBlock FontSize="11" Text="{Binding SelectedItem.Config.FocusDistance, ElementName=ComboBoxList, StringFormat='{}{0}m', TargetNullValue=--, FallbackValue=--}" />
                         </StackPanel>
-                    </Grid>
-                </Grid>
+                    </WrapPanel>
+                </StackPanel>
             </Border>
 
             <Border Style="{StaticResource SectionCardStyle}">

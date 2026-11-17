@@ -3,8 +3,8 @@ knowledge_id: "flow.node-extension"
 knowledge_type: "guide"
 status: "current"
 summary: "说明服务与本地节点基类、请求与响应扩展点、分支输入隔离、属性编辑和流程完成的边界。"
-aliases: ["FlowLocalExecution","CreateLocalExecution","如何新增Flow节点","CVCommonNode","CVBaseServerNode","LocalFlowNodeBase","CVStartCFC输入快照","getBaseEventData","CVEndNode","离线算法帮助","AlgorithmHelpCatalog","ReadAlgorithmHelp","read_algorithm_help","algorithmHelpTopicId","DisConnectOptionTransactional","单条连线事务"]
-code_paths: ["Engine/ST.Library.UI/NodeEditor/STNodeAttribute.cs","Engine/ST.Library.UI/NodeEditor/STNodeTreeView.cs","Engine/FlowEngineLib/Base/FlowLocalExecution.cs","Engine/FlowEngineLib/Base/CVCommonNode.cs","Engine/FlowEngineLib/Base/CVBaseServerNode.cs","Engine/FlowEngineLib/Start/BaseStartNode.cs","Engine/FlowEngineLib/End/CVEndNode.cs","Engine/FlowEngineLib/PropertyEditor/FlowNodePropertyEditors.cs","Engine/ColorVision.Engine/FlowProcessing/Editor/FlowNodeContextMenuService.cs","Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalFlowNodeBase.cs","Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalCleanupNode.cs","Engine/ColorVision.Engine/Services/Files/FolderCleanupService.cs","Engine/ColorVision.Engine/FlowProcessing/PreProcess/FolderSizePreProcessor.cs","Engine/ColorVision.Engine/FlowProcessing/Nodes/Compatibility","Engine/FlowEngineLib/FlowNodeDocumentationAttribute.cs","Engine/ColorVision.Engine/FlowProcessing/Editor/FlowNodeDocumentationPresenter.cs","UI/ColorVision.UI.Desktop/Help","UI/ColorVision.Common/Interfaces/Copilot/CopilotBusinessContextBuilder.cs","Engine/ColorVision.Engine/FlowProcessing/Integration/FlowCopilotService.cs","ColorVision/Copilot/Capabilities/CopilotAlgorithmHelpReadingService.cs","ColorVision/Copilot/Agent/Tools/Application/CopilotReadAlgorithmHelpTool.cs","ColorVision/Copilot/Mcp/CopilotMcpToolDispatcher.AlgorithmHelp.cs","ColorVision/Copilot/Mcp/CopilotMcpToolDispatcher.FlowRead.cs","docs/.vitepress/scripts/algorithm-help.mjs","docs/.vitepress/algorithm-help/sources.json","Engine/ST.Library.UI/NodeEditor/STNodeOption.cs","Engine/ST.Library.UI/NodeEditor/STNodeEditor.Edit.cs"]
+aliases: ["FlowLocalExecution","CreateLocalExecution","如何新增Flow节点","CVCommonNode","CVBaseServerNode","LocalFlowNodeBase","CVStartCFC输入快照","getBaseEventData","CVEndNode","离线算法帮助","AlgorithmHelpCatalog","ReadAlgorithmHelp","read_algorithm_help","algorithmHelpTopicId","DisConnectOptionTransactional","单条连线事务","图像基础调整","RGB 通道处理","伪彩色输出","流程保存伪彩色 PNG"]
+code_paths: ["Engine/ST.Library.UI/NodeEditor/STNodeAttribute.cs","Engine/ST.Library.UI/NodeEditor/STNodeTreeView.cs","Engine/FlowEngineLib/Base/FlowLocalExecution.cs","Engine/FlowEngineLib/Base/CVCommonNode.cs","Engine/FlowEngineLib/Base/CVBaseServerNode.cs","Engine/FlowEngineLib/Start/BaseStartNode.cs","Engine/FlowEngineLib/End/CVEndNode.cs","Engine/FlowEngineLib/PropertyEditor/FlowNodePropertyEditors.cs","Engine/ColorVision.Engine/FlowProcessing/Editor/FlowNodeContextMenuService.cs","Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalFlowNodeBase.cs","Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalPixelProcessingNodes.cs","Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalCleanupNode.cs","Engine/ColorVision.Engine/Services/Files/FolderCleanupService.cs","Engine/ColorVision.Engine/FlowProcessing/PreProcess/FolderSizePreProcessor.cs","Engine/ColorVision.Engine/FlowProcessing/Nodes/Compatibility","Engine/FlowEngineLib/FlowNodeDocumentationAttribute.cs","Engine/ColorVision.Engine/FlowProcessing/Editor/FlowNodeDocumentationPresenter.cs","UI/ColorVision.UI.Desktop/Help","UI/ColorVision.Common/Interfaces/Copilot/CopilotBusinessContextBuilder.cs","Engine/ColorVision.Engine/FlowProcessing/Integration/FlowCopilotService.cs","ColorVision/Copilot/Capabilities/CopilotAlgorithmHelpReadingService.cs","ColorVision/Copilot/Agent/Tools/Application/CopilotReadAlgorithmHelpTool.cs","ColorVision/Copilot/Mcp/CopilotMcpToolDispatcher.AlgorithmHelp.cs","ColorVision/Copilot/Mcp/CopilotMcpToolDispatcher.FlowRead.cs","docs/.vitepress/scripts/algorithm-help.mjs","docs/.vitepress/algorithm-help/sources.json","Engine/ST.Library.UI/NodeEditor/STNodeOption.cs","Engine/ST.Library.UI/NodeEditor/STNodeEditor.Edit.cs"]
 related: ["platform.extensibility","flow.index","flow.runtime","ui.property-grid"]
 ---
 
@@ -80,7 +80,17 @@ Engine 内的模板与量程属性直接通过 `PropertyEditorType` 引用具体
 
 “相机”分类依次显示校正、L/BV 相机、CV 相机、通用相机，分隔线之后依次为 AOI 定位相机（模板）、AOI 提取相机（模板）、AOI 定位相机（参数）、AOI 提取相机（参数）、AOI 定位+提取相机。两组定位/提取节点分别使用相机模板和直接采集参数；组合节点在一次取图中串联定位与提取。显示名称与排序不改变节点类型、保存标识、端口和服务请求，已保存画布中的自定义标题继续保留。
 
-“本地设备”和“本地算法”是两个一级分类。本地设备包含相机、源表、加载图片、光谱与传感器采集，以及校正、布点、POI、实时 POI 和光谱参考校正；本地算法依次显示发光区定位、灯珠定位、FOV、点阵畸变、十字 RGB 分离、十字定位、MTF、模板匹配、圆环鬼影、景深融合、命令行脚本和缓存清理。这是菜单分组，不改变节点对设备资源的实际依赖。
+“本地设备”和“本地算法”是两个一级分类。本地设备包含相机、源表、加载图片、光谱与传感器采集，以及校正、布点、POI、实时 POI 和光谱参考校正。本地算法包含发光区和灯珠定位、FOV、点阵畸变、十字 RGB 分离、十字定位、MTF、模板匹配、圆环鬼影、景深融合、基础图像处理及命令行脚本和缓存清理。
+
+“图像基础调整”“RGB 通道处理”和“伪彩色输出”使用 `IN` 获取上游图像，由 `OUT` 将派生图像传给当前分支的下游。可从“加载图片”或“相机取图”接入已确定方向的本地 8 位或 16 位像素。使用原始采集或校正数据做亮色度测量时，从上游图像单独接到测量节点，再把测量和图像处理两支通过“运算 → 逻辑与”汇合到 `End`。
+
+| 本地算法节点 | 操作 |
+| --- | --- |
+| 图像基础调整 | 设置曝光补偿（EV）、亮度、对比度或 Gamma。输出保留输入位深。相机实际曝光时间仍由取图节点以毫秒设置。 |
+| RGB 通道处理 | 接入 BGR 或 BGRA 彩色图像，设置 R/G/B 增益，输出彩色图、指定单通道或灰度图。输出保留输入位深，BGRA 彩色输出保留 Alpha。 |
+| 伪彩色输出 | 选择 `Gray` 或彩色输入的指定 R/G/B 通道，色图默认 Jet，范围默认 `Auto`。`Auto` 根据每次输入的所选通道计算上下限。对多个样品采用相同色标时，选择 `Fixed` 并以源像素值（DN）设置固定下限和上限。输出为 8 位三通道彩图。 |
+
+在“伪彩色输出”启用“保存 PNG”后，把“输出目录”设为有写权限的路径。留空使用 `%LOCALAPPDATA%\ColorVision\Results\PseudoColor`。每次保存以独立文件写入彩图像素，成功后流程数据 `LocalPseudoColorPngPath` 记录文件路径。节点结果的 `Details` 记录实际色标的 `Minimum`、`Maximum`、`Unit` 和 `PngPath`。只需生成 PNG 时，可以串接 `Start → 加载图片或相机取图 → 伪彩色输出 → End`。
 
 “缓存清理”（`LocalCleanupNode`）可串接在流程任意位置，只有本地 `IN → OUT`，保留上游图像和结果身份。目录列表默认留空，需明确配置；支持多个目录、文件后缀、包含子目录、容量上限和目标容量。容量按各目录中匹配后缀且可读取的文件计算，空后缀匹配所有文件。默认上限 100 GiB、目标 50 GiB，仅在严格超过上限后，按最后写入时间从旧到新删除，直到不高于目标；目标允许为 0，但必须小于上限。
 
