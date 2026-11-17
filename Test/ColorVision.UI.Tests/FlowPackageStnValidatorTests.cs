@@ -7,10 +7,18 @@ namespace ColorVision.UI.Tests;
 
 public class FlowPackageStnValidatorTests
 {
-    [Fact]
-    public void ValidateAndDecompressAcceptsVersionOneCanvas()
+    [Theory]
+    [InlineData(0)]
+    [InlineData(1)]
+    [InlineData(2)]
+    [InlineData(3)]
+    [InlineData(4)]
+    [InlineData(5)]
+    [InlineData(6)]
+    [InlineData(7)]
+    public void ValidateAndDecompressAcceptsVersionOneCanvas(int extraValueBytes)
     {
-        byte[] nodeData = CreateNodeData();
+        byte[] nodeData = CreateNodeData(extraValueBytes);
         byte[] body = CreateCanvasBody(nodeData);
         byte[] stnData = CompressStndV1(body);
 
@@ -164,13 +172,13 @@ public class FlowPackageStnValidatorTests
         stream.Write(BitConverter.GetBytes(nodeCount));
     }
 
-    private static byte[] CreateNodeData()
+    private static byte[] CreateNodeData(int extraValueBytes)
     {
         using var node = new MemoryStream();
         WriteByteLengthString(node, "Model");
         WriteByteLengthString(node, "Type");
         byte[] key = Encoding.UTF8.GetBytes("TemplateName");
-        byte[] value = Encoding.UTF8.GetBytes("Camera.Default");
+        byte[] value = Encoding.UTF8.GetBytes("Camera.Default" + new string('x', extraValueBytes));
         node.Write(BitConverter.GetBytes(key.Length));
         node.Write(key);
         node.Write(BitConverter.GetBytes(value.Length));
