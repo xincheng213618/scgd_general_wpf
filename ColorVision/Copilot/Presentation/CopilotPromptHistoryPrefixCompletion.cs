@@ -24,20 +24,48 @@ namespace ColorVision.Copilot
                 return false;
             }
 
-            var match = (messages ?? [])
-                .Reverse()
-                .Where(message => message?.IsUser == true)
-                .Select(message => message.Content ?? string.Empty)
-                .FirstOrDefault(content =>
-                    content.Length > prefix.Length
-                    && content.StartsWith(prefix, StringComparison.Ordinal));
-            if (string.IsNullOrEmpty(match))
+            var match = FindLatestMatch(messages, prefix);
+            if (match == null)
                 return false;
 
             completion = new CopilotPromptHistoryPrefixCompletion(
                 match,
                 match[prefix.Length..]);
             return true;
+        }
+
+        private static string? FindLatestMatch(IEnumerable<CopilotChatMessage>? messages, string prefix)
+        {
+            if (messages is IReadOnlyList<CopilotChatMessage> indexed)
+            {
+                for (int index = indexed.Count - 1; index >= 0; index--)
+                {
+                    if (GetMatch(indexed[index], prefix) is { } match)
+                        return match;
+                }
+
+                return null;
+            }
+
+            foreach (var message in (messages ?? []).Reverse())
+            {
+                if (GetMatch(message, prefix) is { } match)
+                    return match;
+            }
+
+            return null;
+        }
+
+        private static string? GetMatch(CopilotChatMessage? message, string prefix)
+        {
+            if (message is { IsUser: true, Content: { } content }
+                && content.Length > prefix.Length
+                && content.StartsWith(prefix, StringComparison.Ordinal))
+            {
+                return content;
+            }
+
+            return null;
         }
     }
 }

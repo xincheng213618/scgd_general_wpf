@@ -76,13 +76,34 @@ namespace ColorVision.Copilot
             return Contains(message.Content, query)
                 || (message.HasAgentTraceEntries || message.HasLegacyThinkingTrace) && Contains(message.ThinkingContent, query)
                 || Contains(message.AssistantName, query)
-                || message.Attachments.Any(attachment =>
-                    Contains(attachment?.Title, query)
+                || message.HasAttachments && MatchesAttachments(message, query)
+                || message.AgentTraceEntries.Count > 0 && MatchesActivity(message, query);
+        }
+
+        private static bool MatchesAttachments(CopilotChatMessage message, string query)
+        {
+            foreach (var attachment in message.Attachments)
+            {
+                if (Contains(attachment?.Title, query)
                     || Contains(attachment?.DisplayLabel, query)
                     || Contains(attachment?.Source, query))
-                || message.AgentTraceEntries.Any(trace =>
-                    trace?.IsVisibleInActivity == true
-                    && Contains(trace.DiagnosticDetails, query));
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static bool MatchesActivity(CopilotChatMessage message, string query)
+        {
+            foreach (var trace in message.AgentTraceEntries)
+            {
+                if (trace?.IsVisibleInActivity == true && Contains(trace.DiagnosticDetails, query))
+                    return true;
+            }
+
+            return false;
         }
 
         private static bool Contains(string? text, string query)

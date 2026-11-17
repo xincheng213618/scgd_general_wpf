@@ -68,6 +68,13 @@ namespace ColorVision.Copilot
                     .ToArray();
             }
 
+            var terms = normalizedQuery.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            var foldedQuery = string.Create(normalizedQuery.Length, normalizedQuery, static (destination, text) =>
+            {
+                for (int i = 0; i < destination.Length; i++)
+                    destination[i] = char.ToUpperInvariant(text[i]);
+            });
+
             return newestEntries
                 .Select(item =>
                 {
@@ -76,7 +83,7 @@ namespace ColorVision.Copilot
                     {
                         item.Text,
                         Searchable = searchable,
-                        Score = Score(searchable, normalizedQuery),
+                        Score = Score(searchable, normalizedQuery, terms, foldedQuery),
                         item.Entry,
                         item.Index,
                     };
@@ -106,45 +113,50 @@ namespace ColorVision.Copilot
             return time.Length == 0 ? title : $"{title} · {time}";
         }
 
-        private static int Score(string candidate, string query)
+        private static int Score(string candidate, string query, string[] terms, string foldedQuery)
         {
-            if (query.Length == 0)
-                return 0;
-            if (string.Equals(candidate, query, StringComparison.OrdinalIgnoreCase))
-                return 100_000;
-            if (candidate.StartsWith(query, StringComparison.OrdinalIgnoreCase))
-                return 90_000 - Math.Min(candidate.Length - query.Length, 10_000);
+            int index = candidate.IndexOf(query, StringComparison.OrdinalIgnoreCase);
+            if (index == 0)
+                return candidate.Length == query.Length ? 100_000 : 90_000 - Math.Min(candidate.Length - query.Length, 10_000);
+            if (index > 0)
+                return 80_000 - Math.Min(index, 10_000);
 
-            var exactIndex = candidate.IndexOf(query, StringComparison.OrdinalIgnoreCase);
-            if (exactIndex >= 0)
-                return 80_000 - Math.Min(exactIndex, 10_000);
+            if (terms.Length > 1)
+            {
+                long sum = 0;
+                foreach (string term in terms)
+                {
+                    int position = candidate.IndexOf(term, StringComparison.OrdinalIgnoreCase);
+                    if (position < 0)
+                    {
+                        sum = -1;
+                        break;
+                    }
 
-            var terms = query.Split(
-                ' ',
-                StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-            var termPositions = terms
-                .Select(term => candidate.IndexOf(term, StringComparison.OrdinalIgnoreCase))
-                .ToArray();
-            if (termPositions.Length > 1 && termPositions.All(position => position >= 0))
-                return 60_000 - Math.Min(termPositions.Sum(), 10_000);
+                    sum += position;
+                }
 
-            return TryScoreSubsequence(candidate, query, out var subsequenceScore)
+                if (sum >= 0)
+                    return 60_000 - Math.Min(checked((int)sum), 10_000);
+            }
+
+            return TryScoreSubsequence(candidate, foldedQuery, out var subsequenceScore)
                 ? subsequenceScore
                 : -1;
         }
 
         private static bool TryScoreSubsequence(
             string candidate,
-            string query,
+            string foldedQuery,
             out int score)
         {
             score = -1;
             var queryIndex = 0;
             var firstMatch = -1;
             var lastMatch = -1;
-            for (var index = 0; index < candidate.Length && queryIndex < query.Length; index++)
+            for (var index = 0; index < candidate.Length && queryIndex < foldedQuery.Length; index++)
             {
-                if (char.ToUpperInvariant(candidate[index]) != char.ToUpperInvariant(query[queryIndex]))
+                if (char.ToUpperInvariant(candidate[index]) != foldedQuery[queryIndex])
                     continue;
 
                 if (firstMatch < 0)
@@ -153,13 +165,13 @@ namespace ColorVision.Copilot
                 queryIndex++;
             }
 
-            if (queryIndex != query.Length)
+            if (queryIndex != foldedQuery.Length)
                 return false;
 
             var span = lastMatch - firstMatch + 1;
             score = 40_000
                 - Math.Min(firstMatch, 10_000)
-                - Math.Min(span - query.Length, 10_000);
+                - Math.Min(span - foldedQuery.Length, 10_000);
             return true;
         }
 
@@ -179,11 +191,39 @@ namespace ColorVision.Copilot
 
         private static string Normalize(string? value, int maximumCharacters)
         {
-            var normalized = string.Join(
-                " ",
-                (value ?? string.Empty).Split(
-                    (char[]?)null,
-                    StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));
+            var input = value.AsSpan().Trim();
+            if (input.IsEmpty)
+                return string.Empty;
+
+            int length = 0;
+            bool pendingSpace = false;
+            bool collapseWhitespace = false;
+            foreach (char character in input)
+            {
+                if (char.IsWhiteSpace(character))
+                {
+                    collapseWhitespace |= pendingSpace || character != ' ';
+                    pendingSpace = true;
+                    continue;
+                }
+
+                length += pendingSpace ? 2 : 1;
+                pendingSpace = false;
+            }
+
+            string normalized = collapseWhitespace
+                ? string.Create(length, value!, static (destination, source) =>
+                {
+                    int index = 0;
+                    foreach (char character in source.AsSpan().Trim())
+                    {
+                        if (!char.IsWhiteSpace(character))
+                            destination[index++] = character;
+                        else if (destination[index - 1] != ' ')
+                            destination[index++] = ' ';
+                    }
+                })
+                : input.Length == value!.Length ? value : input.ToString();
             if (normalized.Length <= maximumCharacters)
                 return normalized;
 
