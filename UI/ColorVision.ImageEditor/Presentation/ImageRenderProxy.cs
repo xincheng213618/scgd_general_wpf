@@ -143,15 +143,18 @@ internal static class ImageRenderProxy
         GC.KeepAlive(source);
     }
 
-    private static uint[] CreateGray16Colors()
+    private static unsafe uint[] CreateGray16Colors()
     {
         // Use this system's WIC gray transfer table, including its rounding at 8-bit boundaries.
         const int side = 256;
         var samples = new ushort[side * side];
         for (int i = 0; i < samples.Length; i++) samples[i] = (ushort)i;
-        BitmapSource bitmap = BitmapSource.Create(side, side, 96, 96, PixelFormats.Gray16, null, samples, side * sizeof(ushort));
+        WriteableBitmap bitmap = new(side, side, 96, 96, PixelFormats.Gray16, null);
+        Int32Rect bounds = new(0, 0, side, side);
+        bitmap.WritePixels(bounds, samples, side * sizeof(ushort), 0);
         var colors = new uint[samples.Length];
-        new FormatConvertedBitmap(bitmap, PixelFormats.Bgr32, null, 0).CopyPixels(colors, side * sizeof(uint), 0);
+        fixed (uint* pixels = colors)
+            new FormatConvertedBitmap(bitmap, PixelFormats.Bgr32, null, 0).CopyPixels(bounds, (IntPtr)pixels, colors.Length * sizeof(uint), side * sizeof(uint));
         return colors;
     }
 

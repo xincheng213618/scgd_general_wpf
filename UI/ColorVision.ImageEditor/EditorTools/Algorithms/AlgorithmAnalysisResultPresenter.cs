@@ -229,8 +229,9 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
                 : CalculatePreviewDimensions(_width, _height);
             if (!Format.IsFloatingPoint())
             {
-                if (fullResolution)
-                    return (CreateNativeFullResolutionBitmap(pixels, cancellationToken), "native; original resolution");
+                if (fullResolution || (targetWidth == _width && targetHeight == _height))
+                    return (CreateNativeFullResolutionBitmap(pixels, cancellationToken),
+                        fullResolution ? "native; original resolution" : "native; nearest-neighbor bounded preview");
                 int bytesPerPixel = Format.BytesPerPixel();
                 int nativeTargetStride = checked(targetWidth * bytesPerPixel);
                 byte[] nativeTarget = SamplePixels(pixels.Span, _width, _height, _stride, targetWidth, targetHeight, bytesPerPixel, cancellationToken);
@@ -317,7 +318,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
             return (bitmap, policy);
         }
 
-        private BitmapSource CreateNativeFullResolutionBitmap(ReadOnlyMemory<byte> pixels, CancellationToken cancellationToken)
+        private unsafe BitmapSource CreateNativeFullResolutionBitmap(ReadOnlyMemory<byte> pixels, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
             PixelFormat pixelFormat = Format switch
@@ -330,33 +331,22 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
                 AlgorithmImageFormat.Bgra64 => PixelFormats.Rgba64,
                 _ => throw new InvalidOperationException($"不支持的算法图像格式：{Format}。"),
             };
-            byte[] source;
             if (Format is AlgorithmImageFormat.Bgr48 or AlgorithmImageFormat.Bgra64)
             {
-                source = pixels.ToArray();
-                int channels = Format.Channels();
-                for (int y = 0; y < _height; y++)
+                WriteableBitmap bitmap = new(_width, _height, _dpiX, _dpiY, pixelFormat, null);
+                bitmap.Lock();
+                try
                 {
-                    cancellationToken.ThrowIfCancellationRequested();
-                    int row = y * _stride;
-                    for (int x = 0; x < _width; x++)
-                    {
-                        int pixel = row + x * channels * sizeof(ushort);
-                        (source[pixel], source[pixel + 4]) = (source[pixel + 4], source[pixel]);
-                        (source[pixel + 1], source[pixel + 5]) = (source[pixel + 5], source[pixel + 1]);
-                    }
+                    using var pin = pixels.Pin();
+                    ImageAlgorithmInputFactory.CopyColor16((byte*)pin.Pointer, _stride, (byte*)bitmap.BackBuffer, bitmap.BackBufferStride,
+                        _width, _height, Format.BytesPerPixel(), cancellationToken);
+                    bitmap.AddDirtyRect(new Int32Rect(0, 0, _width, _height));
                 }
+                finally { bitmap.Unlock(); }
+                return bitmap;
             }
-            else if (MemoryMarshal.TryGetArray(pixels, out ArraySegment<byte> segment)
-                && segment.Offset == 0
-                && segment.Array != null)
-            {
-                source = segment.Array;
-            }
-            else
-            {
-                source = pixels.ToArray();
-            }
+            byte[] source = MemoryMarshal.TryGetArray(pixels, out ArraySegment<byte> segment)
+                && segment.Offset == 0 && segment.Array != null ? segment.Array : pixels.ToArray();
             return BitmapSource.Create(_width, _height, _dpiX, _dpiY, pixelFormat, null, source, _stride);
         }
 
