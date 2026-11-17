@@ -72,6 +72,13 @@ related: ["projects.index","projects.arvr-pro-demo","projects.arvr-pro-protocol"
 
 设置逐项自动保存，文字和数字在结束输入时提交。无效值标红，保存失败恢复该项运行值并可重试。关窗时确认是否放弃未保存项。恢复默认经确认一次写入。未编辑项、雷鸟参数及旧文本路径保留，在途导出沿用启动时的设置。
 
+用 `BatchId` 和 `ResultId` 关联同一次后台图像保存的日志。核对连续生产时的节拍，查看发起与结束时的在途数量，以及最后一次导出何时完成。各层的总耗时包含各自子段。
+
+- `ARVRImageSnapshotTiming` 记录 UI 捕获的 `CaptureMs`。随后 `ImageSnapshotExportTiming` 将 `QueueMs` 中的工作槽等待和渲染线程等待分别记为 `EncodeSlotWaitMs`、`StaWaitMs`。从提交编码到编码回调启动的 `EncodeDispatchWaitMs` 已包含在 `EncodeWriteMs`。未进入的等待阶段为 0。准备成功时 `PixelAlignedRgb48Png` 表示是否使用全尺寸 RGB48 对齐路径。`AdaptivePng=True` 表示大尺寸带标记结果图通过透明度及压缩采样检查并采用了快速无损 PNG 编码，解码像素、DPI 及 ColorVision 显示记录沿用原有结果图约定。
+- `ARVRImagePublicationTiming` 记录空间检查 `StorageWaitMs`、后台处理 `SnapshotPipelineMs`、正式文件替换和暂存清理 `FilePublishMs`、结果路径回写 `ResultPathPersistMs`。`TotalMs` 从 UI 捕获之后的导出提交计至任务结束。结合发布标志和 `PathUpdateStatus` 区分正式文件落盘与路径回写完成。
+
+全尺寸和半尺寸的大幅 RGB48 标记图都可使用快速 PNG 编码，压缩样本较密集的半尺寸结果图使用 WPF 编码。`HalfPrescaledRgb48=True` 表示底图逐像素对齐且宽高可精确减半，WPF 先缩放底图再叠加原有标记。
+
 执行状态栏显示当前节点与整数毫秒耗时。“详情”可复制完整错误、流程名和精确耗时，并查看历史估计。错误保留至后续执行更新。界面的“流程执行完成”只表示 Flow 完成，产品判定以 PASS/FAIL 结果为准。
 
 “正在执行”列出尚未结束的并行节点。重叠执行的同一节点全部结束后才移除，悬停和详情可看完整列表。上一轮迟到事件不改变当前状态。

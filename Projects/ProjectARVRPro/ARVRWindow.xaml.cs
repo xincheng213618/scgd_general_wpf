@@ -2568,7 +2568,7 @@ namespace ProjectARVRPro
             ProjectImageExportAttempt? exportAttempt = null;
             ResultStorageSpaceManager.WriteLease? storageWrite = null;
             ProjectImageExportAttemptResult exportResult = new();
-            Interlocked.Increment(ref _outstandingImageExports);
+            int outstandingAtSubmit = Interlocked.Increment(ref _outstandingImageExports);
             try
             {
                 if (_isDisposed)
@@ -2615,9 +2615,14 @@ namespace ProjectARVRPro
                     log.Debug($"后台导出原尺寸、原位深、无标记原图：{sourceDescription}");
                 }
 
-                storageWrite = ResultStorageSpaceManager.Instance.BeginWrite(
-                    outputRoot, autoCleanupEnabled, minimumFreeSpaceGB, outputDirectory);
-                await storageWrite.EnsureSpaceAsync().ConfigureAwait(false);
+                long storageStartedAt = Stopwatch.GetTimestamp();
+                try
+                {
+                    storageWrite = ResultStorageSpaceManager.Instance.BeginWrite(
+                        outputRoot, autoCleanupEnabled, minimumFreeSpaceGB, outputDirectory);
+                    await storageWrite.EnsureSpaceAsync().ConfigureAwait(false);
+                }
+                finally { storageWaitMs = Stopwatch.GetElapsedTime(storageStartedAt).TotalMilliseconds; }
                 exportAttempt = new ProjectImageExportAttempt(renderedFilePath, sourceFilePath, inputFileName);
                 ImageViewSnapshotExportOptions exportOptions = exportAttempt.CreateOptions(
                     ProjectImageExportService.CreateRenderedOptions(resultFormat, resultSize, useHeatmap),
@@ -2632,8 +2637,11 @@ namespace ProjectARVRPro
                 ImageViewSnapshot ownedSnapshot = snapshot;
                 snapshot = null;
                 await ColorVision.ImageEditor.ImageView.SaveSnapshotExportsAsync(
+            long submittedAt = Stopwatch.GetTimestamp();
                     ownedSnapshot,
+            double? storageWaitMs = null, filePublishMs = null, resultPathPersistMs = null;
                     exportOptions).ConfigureAwait(false);
+            string pathUpdateStatus = "NotRequired";
                 exportCompleted = true;
             }
             catch (Exception ex)
@@ -2647,9 +2655,14 @@ namespace ProjectARVRPro
                     exportStopwatch?.Stop();
                     if (exportAttempt != null)
                     {
-                        exportResult = exportAttempt.CommitSuccessfulChannels((channel, fileName, ex) =>
-                            log.Error($"{channel}已编码，但替换正式导出文件失败：{fileName}", ex));
-                        exportAttempt.Dispose();
+                        long publishStartedAt = Stopwatch.GetTimestamp();
+                        try
+                        {
+                            exportResult = exportAttempt.CommitSuccessfulChannels((channel, fileName, ex) =>
+                                log.Error($"{channel}已编码，但替换正式导出文件失败：{fileName}", ex));
+                            exportAttempt.Dispose();
+                        }
+                        finally { filePublishMs = Stopwatch.GetElapsedTime(publishStartedAt).TotalMilliseconds; }
                     }
                     ResultImageExportPathUpdate pathUpdate = ResultImageExportPathUpdate.From(
                         exportResult,
@@ -2659,7 +2672,7 @@ namespace ProjectARVRPro
                     {
                         try
                         {
-                            ViewResultManager.UpdateSavedImagePaths(result, pathUpdate);
+                            pathUpdateStatus = ViewResultManager.UpdateSavedImagePaths(result, pathUpdate) ? "Updated" : "Unchanged";
                         }
                         catch (Exception ex)
                         {
@@ -2676,7 +2689,27 @@ namespace ProjectARVRPro
                     storageWrite?.Dispose();
                     snapshot?.Dispose();
                 }
-                finally { Interlocked.Decrement(ref _outstandingImageExports); }
+                finally
+                {
+                    int outstandingAfterCompletion = Interlocked.Decrement(ref _outstandingImageExports);
+                    if (log.IsInfoEnabled)
+                        log.Info(JsonConvert.SerializeObject(new
+                        {
+                            Event = "ARVRImagePublicationTiming", result.SN, result.BatchId, result.Model,
+                            ResultId = result.Id, SaveRendered = saveResultImage, SaveSource = saveSourceImage,
+                            EncodingCompleted = exportCompleted,
+                            RenderedPublished = exportResult.RenderedFileName != null,
+                            SourcePublished = exportResult.SourceFileName != null,
+                            PathUpdateStatus = pathUpdateStatus,
+                            OutstandingAtSubmit = outstandingAtSubmit,
+                            OutstandingAfterCompletion = outstandingAfterCompletion,
+                            StorageWaitMs = storageWaitMs,
+                            SnapshotPipelineMs = exportStopwatch?.Elapsed.TotalMilliseconds,
+                            FilePublishMs = filePublishMs,
+                            ResultPathPersistMs = resultPathPersistMs,
+                            TotalMs = Stopwatch.GetElapsedTime(submittedAt).TotalMilliseconds,
+                        }));
+                }
             }
         }
 
@@ -2726,14 +2759,17 @@ namespace ProjectARVRPro
             run.Foreground = result.Result ? Brushes.Black : Brushes.White;
             run.FontSize = outputFontSize;
 
+                        long persistStartedAt = Stopwatch.GetTimestamp();
             var paragraph = new Paragraph();
             paragraph.Inlines.Add(run);
             outputText.Document.Blocks.Add(paragraph);
 
             IProcess? process = ResultProcessResolver.Resolve(result, ProcessManager.Processes, ProcessManager.GetResultProcessMappings());
             Brush foreground = result.Result ? Brushes.Black : Brushes.White;
+                            pathUpdateStatus = "Failed";
             paragraph = new Paragraph();
             if (process != null)
+                        finally { resultPathPersistMs = Stopwatch.GetElapsedTime(persistStartedAt).TotalMilliseconds; }
             {
                 try
                 {
