@@ -415,8 +415,7 @@ cv::Point CropBinarySupport(cv::Mat& binary, const cv::Mat& kernel)
     bounds.height += padding * 2;
     bounds &= cv::Rect(0, 0, binary.cols, binary.rows);
     if (bounds.size() != binary.size()) {
-        // Isolate morphology from the parent Mat beyond the cropped region.
-        binary = binary(bounds).clone();
+        binary = binary(bounds);
     }
     return bounds.tl();
 }
@@ -446,8 +445,8 @@ std::vector<CoarseCandidate> FindCoarseCandidates(
         const double sigma = sigmas[sigmaIndex];
         Scale& scale = scales[sigmaIndex];
         cv::GaussianBlur(gray8, scale.blurred, cv::Size(), sigma, sigma, cv::BORDER_REPLICATE);
-        cv::Mat temporary;
-        const double otsu = cv::threshold(scale.blurred, temporary, 0, 255, cv::THRESH_BINARY | cv::THRESH_OTSU) / 255.0;
+        const double otsu = cv::threshold(scale.blurred, cv::noArray(), 0, 255,
+            cv::THRESH_BINARY | cv::THRESH_OTSU | cv::THRESH_DRYRUN) / 255.0;
         // Low thresholds keep a dark side of a strongly sloped display in the
         // same coarse component as its bright side. Later line evidence and
         // confidence checks, rather than this threshold, decide acceptance.
@@ -478,8 +477,10 @@ std::vector<CoarseCandidate> FindCoarseCandidates(
         cv::Mat binary;
         cv::threshold(blurred, binary, threshold * 255.0, 255, cv::THRESH_BINARY);
         const cv::Point binaryOffset = CropBinarySupport(binary, kernel);
-        cv::morphologyEx(binary, binary, cv::MORPH_OPEN, kernel);
-        cv::morphologyEx(binary, binary, cv::MORPH_CLOSE, kernel, cv::Point(-1, -1), 2);
+        // Treat the cropped view as an independent image at the morphology border.
+        constexpr int borderType = cv::BORDER_CONSTANT | cv::BORDER_ISOLATED;
+        cv::morphologyEx(binary, binary, cv::MORPH_OPEN, kernel, cv::Point(-1, -1), 1, borderType);
+        cv::morphologyEx(binary, binary, cv::MORPH_CLOSE, kernel, cv::Point(-1, -1), 2, borderType);
 
         std::vector<std::vector<cv::Point>> contours;
         cv::findContours(binary, contours, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_NONE, binaryOffset);
