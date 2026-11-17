@@ -538,15 +538,23 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
 
         private static FlowNodeRecord? FindLegacyMessageOwner(
             FlowNodeMessage message,
-            IEnumerable<FlowNodeRecord> candidates)
+            List<FlowNodeRecord> candidates)
         {
-            return candidates
-                .Where(candidate => IsSameRun(candidate, message) && IsSameNode(candidate, message)
-                    && IsWithinLegacyMatchWindow(candidate, message.SendTime))
-                .OrderBy(candidate => Math.Abs((message.SendTime - candidate.StartTime).Ticks))
-                .ThenBy(candidate => candidate.StartTime)
-                .ThenBy(candidate => candidate.Id)
-                .FirstOrDefault();
+            FlowNodeRecord? owner = null;
+            (long Distance, DateTime Start, int Id) closest = default;
+            foreach (FlowNodeRecord candidate in candidates)
+            {
+                if (!IsSameRun(candidate, message) || !IsSameNode(candidate, message)
+                    || !IsWithinLegacyMatchWindow(candidate, message.SendTime))
+                    continue;
+
+                var order = (Math.Abs((message.SendTime - candidate.StartTime).Ticks), candidate.StartTime, candidate.Id);
+                if (owner != null && order.CompareTo(closest) >= 0)
+                    continue;
+                owner = candidate;
+                closest = order;
+            }
+            return owner;
         }
 
         private static bool IsWithinLegacyMatchWindow(FlowNodeRecord record, DateTime sendTime)

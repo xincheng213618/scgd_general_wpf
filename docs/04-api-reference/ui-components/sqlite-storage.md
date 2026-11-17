@@ -36,7 +36,7 @@ related: ["ui.database", "ui.database-query", "engine.database-maintenance", "ui
 
 Socket 正常 `Load` 和 Flow 的 `LoadPayloads` 都只读压缩列；实体列表不负责加载完整正文。混有旧 TEXT 的库需要显式迁移，不能承诺正常读取时明文与 gzip 自动混读或双写。业务层按 ID 取全文与发送/显示的责任见 [Socket 消息记录](./ColorVision.SocketProtocol.md)。
 
-现场资料的 `ReadOnlySqliteDatabase` 是独立读取路径：以 SQLite `Mode=ReadOnly` 和 `query_only` 打开指定现有文件，不迁移、不创建数据库、不执行应用初始化。它按实际表结构将缺失的可选实体列投影为 NULL，由调用方声明必要列；正文按单条 ID 读取，优先 gzip，兼容旧 TEXT。该兼容行为只用于离线诊断，不改变正常运行库的迁移要求；需要多次查询共享快照时使用延迟只读事务，不能使用默认申请写锁的 SQLite 事务。
+现场资料的 `ReadOnlySqliteDatabase` 是独立读取路径：以 SQLite `Mode=ReadOnly` 和 `query_only` 打开指定现有文件，不迁移、不创建数据库、不执行应用初始化。它按实际表结构将缺失的可选实体列投影为 NULL，由调用方声明必要列。离线流程消息详情通过 `ReadPayloadPair` 在一次查询中读取同一条 ID 的发送和接收正文，每个字段优先 gzip，兼容旧 TEXT。该兼容行为只用于离线诊断，不改变正常运行库的迁移要求；需要多次查询共享快照时使用延迟只读事务，不能使用默认申请写锁的 SQLite 事务。
 
 ## 旧 TEXT 迁移：可重跑，但不是全库原子操作
 
