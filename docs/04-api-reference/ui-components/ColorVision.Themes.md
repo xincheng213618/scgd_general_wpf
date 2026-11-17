@@ -4,7 +4,7 @@ knowledge_type: "topic"
 status: "current"
 summary: "应用主题即时预览，启动页独立选择深色、浅色或跟随软件且下次启动生效；ThemeManager 的资源、系统跟随、窗口外观和保存边界。"
 aliases: ["切换深色主题","跟随系统","外观与语言","启动页主题","启动页默认深色","跟随软件主题","StartupTheme","ThemeConfig.StartupTheme","FollowApplication","主题切换为什么不生效","跟随系统但标题栏没变","强制主题重复资源字典","主题预览会自动保存吗","主题系统事件订阅释放","XAML绑定失败","ComboBoxItem","GridViewColumnHeader","圆角菜单","右键菜单","MenuPopupCornerRadius","MenuItemSecondaryForeground","ColorVision.Themes","ThemeManager","ThemeManager.Current","Theme","ApplyTheme","ForceApplyTheme","ApplyThemeChanged","CurrentTheme","CurrentUITheme","CurrentThemeChanged","CurrentUIThemeChanged","ApplyCaption","TryLoadPackageIcon","PackageIcon.png","ThemeConfig","ThemePropertiesEditor","AppsUseLightTheme"]
-code_paths: ["UI/ColorVision.Themes/README.md","UI/ColorVision.Themes/Theme.cs","UI/ColorVision.Themes/ThemeManager.cs","UI/ColorVision.Themes/ThemeManagerExtensions.cs","UI/ColorVision.Themes/Behaviors","UI/ColorVision.Themes/Windowing","UI/ColorVision.Themes/ThemeResourceDictionary.cs","UI/ColorVision.Themes/HandyControlStyleResources.cs","UI/ColorVision.Themes/Themes","UI/ColorVision.Themes/ColorVision.Themes.csproj","UI/ColorVision.UI/Themes/ThemeConfig.cs","UI/ColorVision.UI/Themes/StartupTheme.cs","UI/ColorVision.UI/Themes/ThemePropertiesEditor.cs","UI/ColorVision.UI/Properties/Resources.resx","UI/ColorVision.UI/Properties/Resources.en.resx","UI/ColorVision.UI/Properties/Resources.zh-Hant.resx","UI/ColorVision.UI/ConfigSetting/ConfigSettingManager.cs","UI/ColorVision.UI.Desktop/Settings/MenuOptions.cs","UI/ColorVision.UI.Desktop/Settings/SettingSearchProvider.cs","UI/ColorVision.UI/Extension/IIconExtension.cs","UI/ColorVision.UI/Display/DisPlayManager.cs","ColorVision/App.xaml","ColorVision/App.xaml.cs","ColorVision/StartWindow.xaml.cs","ColorVision/StartWindow.Presentation.cs","ColorVision/CompactMainWindow.cs"]
+code_paths: ["UI/ColorVision.Themes/README.md","UI/ColorVision.Themes/Theme.cs","UI/ColorVision.Themes/ThemeManager.cs","UI/ColorVision.Themes/ThemeManagerExtensions.cs","UI/ColorVision.Themes/Behaviors","UI/ColorVision.Themes/Windowing","UI/ColorVision.Themes/ThemeResourceDictionary.cs","UI/ColorVision.Themes/HandyControlStyleResources.cs","UI/ColorVision.Themes/Themes","UI/ColorVision.Themes/ColorVision.Themes.csproj","UI/ColorVision.UI/Themes/ThemeConfig.cs","UI/ColorVision.UI/Themes/StartupTheme.cs","UI/ColorVision.UI/Themes/ThemePropertiesEditor.cs","UI/ColorVision.UI/Properties/Resources.resx","UI/ColorVision.UI/Properties/Resources.en.resx","UI/ColorVision.UI/Properties/Resources.zh-Hant.resx","UI/ColorVision.UI/ConfigSetting/ConfigSettingManager.cs","UI/ColorVision.UI.Desktop/Settings/MenuOptions.cs","UI/ColorVision.UI.Desktop/Settings/SettingSearchProvider.cs","UI/ColorVision.UI/Display/DisPlayManager.cs","ColorVision/App.xaml","ColorVision/App.xaml.cs","ColorVision/StartWindow.xaml.cs","ColorVision/StartWindow.Presentation.cs","ColorVision/CompactMainWindow.cs"]
 related: ["ui.index","ui.settings","ui.property-grid","ui.configuration","platform.runtime","operations.main-window"]
 ---
 
@@ -65,7 +65,7 @@ related: ["ui.index","ui.settings","ui.property-grid","ui.configuration","platfo
 
 所有应用操作切回目标 Application 的 Dispatcher。准备新资源组成功后，在原主题位置替换；已知的旧平铺初始化字典会被接管。没有旧主题时插在资源合并列表开头，让已有宿主覆盖保留优先级。只识别库的资源组、统一入口及已知旧 URI，不清空应用资源，也不移除无关插件字典。合并字典中后面的同名键优先，Application 自有键仍优先于合并字典。
 
-切换或重复强制应用不会不断追加主题组。实现整体重载色板和模板；不承诺只重新创建画刷。静态持有的图像、冻结资源或第三方缓存不保证随切换刷新：需要变色的界面应动态引用资源，或在实际主题事件中重新取值；现有 `IIconExtension` 等集成保持自己的刷新职责。
+切换或重复强制应用不会不断追加主题组。实现整体重载色板和模板；不承诺只重新创建画刷。静态持有的图像、冻结资源或第三方缓存不保证随切换刷新：需要变色的界面应动态引用资源，或在实际主题事件中重新取值。
 
 源字典加载失败时，旧资源组、选择字段和实际主题字段保持不变，可以修复资源后重试。WPF 延迟创建的资源和模板仍可能在首次使用时失败，加载入口成功不能代替控件实例化验证。资源替换及两个状态字段写入完成后，先通知选择变化，再通知实际主题变化；同配色强制刷新不重复通知实际主题。订阅者异常不回滚资源与字段，也没有逐订阅者异常隔离，调用方应区分资源加载失败与通知失败。
 
@@ -79,9 +79,9 @@ related: ["ui.index","ui.settings","ui.property-grid","ui.configuration","platfo
 
 ## 窗口外观与生命周期
 
-`window.ApplyCaption(Icon: true)` 按窗口幂等接入：原生窗口源尚未建立时等待 `SourceInitialized`，已有 HWND 时立即初始化，不等待内容 `Loaded`；后续订阅 `CurrentUIThemeChanged`，并切回窗口 Dispatcher。关闭时向保存的发布者解绑，包括全局管理器被替换的情况。默认图标资源缺失或解码失败不会阻断标题栏初始化。它只处理原生标题栏与图标，不接管 BaseWindow 的 WPF 标题按钮或紧凑主窗口布局。
+`window.ApplyCaption(Icon: true)` 按窗口幂等接入。原生窗口源尚未建立时等待 `SourceInitialized`，已有 HWND 时立即初始化。初始化时设置一次窗口图标，后续通过 `CurrentUIThemeChanged` 在窗口 Dispatcher 刷新标题栏配色。关闭时向保存的发布者解绑，包括全局管理器被替换的情况。默认图标资源缺失或解码失败时仍可初始化标题栏。BaseWindow 的 WPF 标题按钮和紧凑主窗口布局分别由各自的实现管理。
 
-`ThemeManagerExtensions.TryLoadPackageIcon(Window)` 从窗口类型所在程序集目录读取 `PackageIcon.png`，用 OnLoad 解码并冻结后返回。路径、文件或解码不可用时返回 null；方法自身不赋值图标、不订阅主题、不调用 DWM。ApplyCaption 找到包图标时优先采用它，包括 Icon=false；该参数仅禁用默认图标回退。默认图标是 `Assets/Image/ColorVision.ico` / `ColorVision1.ico`。
+`ThemeManagerExtensions.TryLoadPackageIcon(Window)` 从窗口类型所在程序集目录读取 `PackageIcon.png`，用 `OnLoad` 解码并冻结后返回。路径、文件或解码不可用时返回 `null`。`ApplyCaption` 优先采用包图标，`Icon=false` 且没有包图标时保留窗口当前图标。普通窗口、启动页、紧凑主窗口和插件市场缺省图标均使用 `LoadDefaultIcon()` 加载的 `Assets/Image/ColorVision1.ico`。
 
 `SetWindowTitleBarColor` 恢复 DWM 默认 caption/border 色，先写当前 `DWMWA_USE_IMMERSIVE_DARK_MODE`（20），仅在调用失败时回退旧 Windows 10 使用的属性值 19；返回码仍不作为生效保证。Windows 版本与原生属性支持范围需要实际窗口验证。
 

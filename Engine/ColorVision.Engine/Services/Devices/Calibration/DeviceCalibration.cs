@@ -7,7 +7,6 @@ using ColorVision.Engine.Templates;
 using ColorVision.Themes.Controls;
 using ColorVision.UI;
 using ColorVision.UI.Authorizations;
-using ColorVision.UI.Extension;
 using ColorVision.UI.Views;
 using log4net;
 using System;
@@ -48,8 +47,6 @@ namespace ColorVision.Engine.Services.Devices.Calibration
             DService = new MQTTCalibration(Config);
             _view = new DockViewRegistration(() => new ViewCalibration(this, deferInitialization: true), Config.Name, DisPlayManager.IsControlVisible(Config.Code, Config.Name))
                 { PersistenceKey = Config.Code };
-            this.SetIconResource("DICalibrationIcon");;
-
             EditCommand = new RelayCommand(a =>
             {
                 if (!CanConfigure) return;

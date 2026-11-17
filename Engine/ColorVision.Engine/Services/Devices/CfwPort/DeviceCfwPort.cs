@@ -1,5 +1,4 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.UI.Extension;
 using ColorVision.Engine.Services.PhyCameras;
 using ColorVision.Engine.Services.PhyCameras.Configs;
 using ColorVision.UI;
@@ -46,8 +45,6 @@ namespace ColorVision.Engine.Services.Devices.CfwPort
             InitializeLocalCfwPort();
             DService = new MQTTCfwPort(Config) { Device = this };
             DService.RefreshBackendStatus();
-
-            this.SetIconResource("CfwPortDrawingImage");
 
             EditCommand = new RelayCommand(a =>
             {

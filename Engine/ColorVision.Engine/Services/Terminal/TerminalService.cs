@@ -5,13 +5,11 @@ using ColorVision.Engine.Services.Types;
 using ColorVision.Themes.Controls;
 using ColorVision.UI;
 using ColorVision.UI.Authorizations;
-using ColorVision.UI.Extension;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Media;
 
 
 namespace ColorVision.Engine.Services.Terminal
@@ -32,7 +30,7 @@ namespace ColorVision.Engine.Services.Terminal
         }
     }
 
-    public class TerminalService : TerminalServiceBase, IIcon
+    public class TerminalService : TerminalServiceBase
     {
         public SysResourceModel SysResourceModel { get; set; }
         protected override string? AuthorizationResourceId => ServiceAuthorization.ResourceId(SysResourceModel);
@@ -45,8 +43,6 @@ namespace ColorVision.Engine.Services.Terminal
         public override string Name { get => SysResourceModel.Name??string.Empty ; set { SysResourceModel.Name = value; OnPropertyChanged(); } }
 
         public string Code { get => SysResourceModel.Code ?? string.Empty; set { SysResourceModel.Code = value; OnPropertyChanged(); } }
-
-        public ImageSource Icon { get; set; }
 
         public RelayCommand RefreshCommand { get; set; }
         public RelayCommand EditCommand { get; set; }
@@ -91,11 +87,6 @@ namespace ColorVision.Engine.Services.Terminal
                 createTerminal.ShowDialog();
             }, a => ServiceAuthorization.Can("device.create", SysResourceModel));
 
-            if (DeviceServiceFactoryRegistry.TryGetFactory(ServiceType, out IDeviceServiceFactory? deviceServiceFactory)
-                && !string.IsNullOrWhiteSpace(deviceServiceFactory?.TerminalIconResourceKey))
-            {
-                this.SetIconResource(deviceServiceFactory.TerminalIconResourceKey);
-            }
             MQTTServiceTerminalBase = new MQTTServiceTerminalBase<TerminalServiceConfig>(Config);
 
             ContextMenu = new ContextMenu();

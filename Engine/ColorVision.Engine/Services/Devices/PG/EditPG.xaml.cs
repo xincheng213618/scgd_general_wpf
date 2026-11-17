@@ -22,7 +22,6 @@ public partial class EditPG : Window
 
     public EditPG(DevicePG device) : this(device.Config, GetCategories(device), device.DisplayConfig)
     {
-        Icon = device.Icon;
         if (MySqlSetting.IsConnect)
         {
             CameraPhyID.ItemsSource = PhyCameraManager.GetInstance().PhyCameras;

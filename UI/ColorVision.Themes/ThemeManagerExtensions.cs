@@ -32,7 +32,6 @@ namespace ColorVision.Themes
             private readonly Window window;
             private readonly bool useDefaultIcon;
             private ThemeManager? publisher;
-            private BitmapImage? packageIcon;
             private IntPtr hwnd;
             private bool closed;
 
@@ -51,8 +50,9 @@ namespace ColorVision.Themes
             {
                 window.SourceInitialized -= SourceInitialized;
                 hwnd = new WindowInteropHelper(window).Handle;
-                packageIcon = TryLoadPackageIcon(window);
-                if (packageIcon != null) window.Icon = packageIcon;
+                BitmapImage? icon = TryLoadPackageIcon(window);
+                if (icon == null && useDefaultIcon) icon = TryLoadDefaultIcon();
+                if (icon != null) window.Icon = icon;
                 publisher = ThemeManager.Current;
                 publisher.CurrentUIThemeChanged += Apply;
                 Apply(publisher.CurrentUITheme);
@@ -66,7 +66,6 @@ namespace ColorVision.Themes
                     return;
                 }
                 if (closed) return;
-                if (useDefaultIcon && packageIcon == null && TryCreateDefaultIcon(theme) is { } defaultIcon) window.Icon = defaultIcon;
                 ThemeManager.SetWindowTitleBarColor(hwnd, theme);
             }
 
@@ -81,13 +80,19 @@ namespace ColorVision.Themes
             }
         }
 
-        private static BitmapImage? TryCreateDefaultIcon(Theme theme)
+        /// <summary>Loads the default application icon for any theme.</summary>
+        public static BitmapImage LoadDefaultIcon()
+        {
+            BitmapImage icon = new(new Uri("pack://application:,,,/ColorVision.Themes;component/Assets/Image/ColorVision1.ico"));
+            if (icon.CanFreeze) icon.Freeze();
+            return icon;
+        }
+
+        private static BitmapImage? TryLoadDefaultIcon()
         {
             try
             {
-                BitmapImage image = new(new Uri($"pack://application:,,,/ColorVision.Themes;component/Assets/Image/{(theme == Theme.Dark ? "ColorVision1.ico" : "ColorVision.ico")}"));
-                if (image.CanFreeze) image.Freeze();
-                return image;
+                return LoadDefaultIcon();
             }
             catch
             {

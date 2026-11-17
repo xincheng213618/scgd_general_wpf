@@ -5,7 +5,6 @@ using System;
 using System.Windows;
 using System.Windows.Controls;
 using ColorVision.UI.Authorizations;
-using ColorVision.UI.Extension;
 using ColorVision.UI.Views;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm
@@ -38,8 +37,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
             DService = new MQTTAlgorithm(Config);
             _view = new DockViewRegistration(() => new AlgorithmView(this, deferInitialization: true), Config.Name, DisPlayManager.IsControlVisible(Config.Code, Config.Name))
                 { PersistenceKey = Config.Code };
-            this.SetIconResource("DrawingImageAlgorithm");
-
             DisplayAlgorithmControlLazy = new Lazy<DisplayAlgorithm>(() => { DisplayAlgorithm ??= new DisplayAlgorithm(this); return DisplayAlgorithm; });
 
             EditCommand = new RelayCommand(a =>

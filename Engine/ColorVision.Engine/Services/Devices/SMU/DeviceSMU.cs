@@ -1,5 +1,4 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.UI.Extension;
 using ColorVision.Engine.Services.Devices.SMU.Configs;
 using ColorVision.Engine.Services.Devices.SMU.Dao;
 using ColorVision.Engine.Services.Devices.SMU.Views;
@@ -145,8 +144,6 @@ namespace ColorVision.Engine.Services.Devices.SMU
             InitializeLocalSmu();
             DService = new MQTTSMU(this);
             DService.RefreshBackendStatus();
-            this.SetIconResource("SMUDrawingImage");
-
             EditCommand = new RelayCommand(a =>
             {
                 var window = new EditSMU(Config, DisplayConfig) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };

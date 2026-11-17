@@ -18,7 +18,6 @@ using ColorVision.ImageEditor.Settings;
 using ColorVision.Themes.Controls;
 using ColorVision.UI;
 using ColorVision.UI.Authorizations;
-using ColorVision.UI.Extension;
 using ColorVision.UI.LogImp;
 using ColorVision.UI.Views;
 using cvColorVision;
@@ -83,8 +82,6 @@ namespace ColorVision.Engine.Services.Devices.Camera
             DisplayConfig.PropertyChanged += DisplayConfig_BackendPreferenceChanged;
             _view = new DockViewRegistration(() => new ViewCamera(this, true), Config.Name, DisPlayManager.IsControlVisible(Config.Code, Config.Name))
                 { PersistenceKey = Config.Code };
-            this.SetIconResource("DrawingImageCamera");
-
             EditCommand = new RelayCommand(a => EditCameraAction(), b => CanConfigure);
 
             FetchLatestTemperatureCommand = new RelayCommand(a => FetchLatestTemperature(a));

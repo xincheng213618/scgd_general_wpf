@@ -11217,7 +11217,6 @@
         "UI/ColorVision.UI/ConfigSetting/ConfigSettingManager.cs",
         "UI/ColorVision.UI.Desktop/Settings/MenuOptions.cs",
         "UI/ColorVision.UI.Desktop/Settings/SettingSearchProvider.cs",
-        "UI/ColorVision.UI/Extension/IIconExtension.cs",
         "UI/ColorVision.UI/Display/DisPlayManager.cs",
         "ColorVision/App.xaml",
         "ColorVision/App.xaml.cs",

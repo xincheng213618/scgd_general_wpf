@@ -59,7 +59,7 @@ related: ["ui.discovery","ui.menus","ui.hotkeys","ui.search","ui.status-bar","ui
 
 `CompactTitleBarChrome` 在取得 HWND 后检查 Windows 版本、DWM 和原生边框条件。系统版本过低直接使用普通窗口，已构造的紧凑窗口附加失败时在同一实例恢复原生外观并记录日志。窗口类型和 DWM 属性返回码不足以判断实际附加效果，应查看日志及窗口外观。
 
-紧凑标题区保留系统绘制的最小化、最大化、关闭按钮，空白留作系统拖动区。图标跟随实际主题和激活状态，窗口与任务栏优先使用客户包图标。菜单或右侧入口仍调用原命令。 [窗口主题与图标](../../04-api-reference/ui-components/ColorVision.Themes.md#窗口外观与生命周期)
+紧凑标题区保留系统绘制的最小化、最大化、关闭按钮，空白留作系统拖动区。标题栏配色跟随实际主题和激活状态。窗口与任务栏优先使用客户包图标，默认使用 `ColorVision1.ico`。菜单或右侧入口仍调用原命令。 [窗口主题与图标](../../04-api-reference/ui-components/ColorVision.Themes.md#窗口外观与生命周期)
 
 变窄时，右侧快捷入口先收入“更多”，随后折叠更新文字并以蓝点、提示与辅助功能名称保留更新提醒。恢复宽度后重新显示。更新状态由 `CombinedUpdateCoordinator` 提供，布局折叠不改变该状态。左侧主菜单没有对应的溢出导航。
 

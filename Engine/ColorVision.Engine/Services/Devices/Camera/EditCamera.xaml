@@ -5,7 +5,7 @@
         xmlns:properties="clr-namespace:ColorVision.Engine.Properties"
         xmlns:controls="clr-namespace:ColorVision.Themes.Controls;assembly=ColorVision.Themes"
         xmlns:hc="https://handyorg.github.io/handycontrol"
-        Title="{x:Static properties:Resources.TitleEditCameraConfig}" Icon="{Binding Icon}"
+        Title="{x:Static properties:Resources.TitleEditCameraConfig}"
         Width="650" Height="410" MinWidth="580" MinHeight="350" WindowStartupLocation="CenterOwner"
         Background="{DynamicResource GlobalBackground}" SnapsToDevicePixels="True" UseLayoutRounding="True"
         Initialized="Window_Initialized">

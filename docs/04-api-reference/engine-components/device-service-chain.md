@@ -173,7 +173,7 @@ PG 的“修改配置”打开独立单页 `EditPG`，分为设备、连接和�
 
 1. 先核对已有 `ServiceTypes` 和资源语义，保持历史编号兼容；确有新类型才新增枚举及对应字典配置。加枚举不会自动生成数据库字典。
 2. 在 `Services/Devices/<Module>/` 定义可兼容旧 JSON 的 `Config* : DeviceServiceConfig` 和 `Device* : DeviceService<Config*>`。通用配置加载/保存规则只在[配置契约](../../01-user-guide/devices/configuration.md)维护。
-3. 用 `DeviceServiceFactory<TConfig>` 注册构造函数，必要时设置终端图标或 `configureConfig`。创建上下文传入 Code、Name 和终端主题，不能让新设备丢失通信身份。
+3. 用 `DeviceServiceFactory<TConfig>` 注册构造函数，通过可选的 `configureConfig` 设置该类型的默认配置。创建上下文传入 Code、Name 和终端主题，不能让新设备丢失通信身份。
 4. 按实际需要实现 `GetDeviceInfo()`、`GetDisplayControl()` 和 `GetMQTTService()`；通常由 `MQTTDeviceService<TConfig>` 子类封装命令。基类 `GetDeviceInfo()` 抛 `NotImplementedException`，`GetDisplayControl()` 返回未实现 `IDisPlayControl` 的空控件，`GetMQTTService()` 返回 null；需明确实现需要的界面和通信能力。
 5. 普通参数复用 [PropertyGrid](../ui-components/property-grid.md) 元数据；专用 Flow 补充面板归 `FlowProcessing/Editor/NodeConfiguration/`。客户判定、MES 和项目导出仍归项目包。
 6. 在所属设备主题同步操作、配置、失败条件和源码/测试关联；通用装配与持久化规则通过链接复用。

@@ -992,7 +992,7 @@ public sealed class LumFourColorWorkflowSafetyTests
             Assert.Equal("用户校正", System.Windows.Automation.AutomationProperties.GetName(button));
             Assert.Same(camera.UserCalibrationCommand, button.Command);
             var content = new UserControl { Content = new ScrollViewer { Content = commands, VerticalScrollBarVisibility = ScrollBarVisibility.Auto } };
-            var window = new ColorVision.Engine.Services.DevicePropertyWindow(null, "VAM", "DEV.Camera.Default", content);
+            var window = new ColorVision.Engine.Services.DevicePropertyWindow("VAM", "DEV.Camera.Default", content);
             try { Render(window, 760, 440, "user-calibration-camera-entry"); }
             finally { window.Close(); }
         });

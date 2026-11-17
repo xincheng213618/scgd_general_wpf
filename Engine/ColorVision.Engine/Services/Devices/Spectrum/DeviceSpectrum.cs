@@ -18,7 +18,6 @@ using ColorVision.Engine.Templates;
 using ColorVision.Themes.Controls;
 using ColorVision.UI;
 using ColorVision.UI.Authorizations;
-using ColorVision.UI.Extension;
 using ColorVision.UI.LogImp;
 using ColorVision.UI.Views;
 using cvColorVision;
@@ -229,8 +228,6 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             InitializeLocalSpectrum();
             DService = new MQTTSpectrum(this);
             DService.RefreshBackendStatus();
-            this.SetIconResource("DISpectrumIcon");
-
             Config.SynchronizeActiveCalibrationGroupFiles();
 
             SpectrumResourceParam.Load(SpectrumResourceParams, SysResourceModel.Id);

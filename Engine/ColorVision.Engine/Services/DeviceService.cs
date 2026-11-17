@@ -17,11 +17,10 @@ using System.IO;
 using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Media;
 
 namespace ColorVision.Engine.Services
 {
-    public abstract class DeviceService : ServiceObjectBase, IDisposable, ITreeViewItem, IIcon, ICopilotBusinessContextSource
+    public abstract class DeviceService : ServiceObjectBase, IDisposable, ITreeViewItem, ICopilotBusinessContextSource
     {
         public virtual string Code { get; set; }
         public virtual string SendTopic { get; set; }
@@ -71,7 +70,6 @@ namespace ColorVision.Engine.Services
         [Description("CommandEditConfigHint")]
         public RelayCommand EditCommand { get; set; }
 
-        public virtual ImageSource Icon { get; set; }
         public SysResourceModel SysResourceModel { get; set; }
         protected override string? AuthorizationResourceId => ServiceAuthorization.ResourceId(SysResourceModel);
 
@@ -149,8 +147,6 @@ namespace ColorVision.Engine.Services
     {
         public T Config { get; set; }
 
-        public override ImageSource Icon { get => _Icon; set { _Icon = value; OnPropertyChanged(); } }
-        private ImageSource _Icon;
 
         public override object GetConfig() => Config;
 
@@ -208,7 +204,7 @@ namespace ColorVision.Engine.Services
 
             PropertyCommand = new RelayCommand((e) =>
             {
-                new DevicePropertyWindow(Icon, Name, Code, GetDeviceInfo())
+                new DevicePropertyWindow(Name, Code, GetDeviceInfo())
                 {
                     Owner = Application.Current.GetActiveWindow(),
                     WindowStartupLocation = WindowStartupLocation.CenterOwner

@@ -175,16 +175,10 @@
                         </TreeView.ContextMenu>
                         <TreeView.Resources>
                             <HierarchicalDataTemplate DataType="{x:Type terminal:TerminalService}" ItemsSource="{Binding VisualChildren}">
-                                <DockPanel Margin="0,1">
-                                    <Image Source="{Binding Icon}" Height="16" HorizontalAlignment="Left" Margin="0,0,3,0"/>
-                                    <TextBlock Text="{Binding Config.Name}" VerticalAlignment="Center"/>
-                                </DockPanel>
+                                <TextBlock Text="{Binding Config.Name}" VerticalAlignment="Center" Margin="0,1"/>
                             </HierarchicalDataTemplate>
                             <HierarchicalDataTemplate DataType="{x:Type devices:DeviceService}">
-                                <DockPanel Margin="0,1">
-                                    <Image Source="{Binding Icon}" Height="16" HorizontalAlignment="Left" Margin="0,0,3,0"/>
-                                    <TextBlock Text="{Binding Config.Name}" VerticalAlignment="Center"/>
-                                </DockPanel>
+                                <TextBlock Text="{Binding Config.Name}" VerticalAlignment="Center" Margin="0,1"/>
                             </HierarchicalDataTemplate>
                             <HierarchicalDataTemplate DataType="{x:Type core:GroupResource}" ItemsSource="{Binding VisualChildren}">
                                 <TextBlock Text="{Binding Name}" Margin="0,1"/>

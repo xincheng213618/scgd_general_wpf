@@ -31,8 +31,6 @@ namespace ColorVision.Engine.Services.Terminal
         {
             CreateCode.Text = TerminalService.NewCreateFileName($"DEV.{TerminalService.ServiceType}.Default");
             CreateName.Text = TerminalService.NewCreateFileName($"DEV.{TerminalService.ServiceType}.Default");
-
-            DataContext = TerminalService;
         }
 
         private void Button_Click(object sender, RoutedEventArgs e)
