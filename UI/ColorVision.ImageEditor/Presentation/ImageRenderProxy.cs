@@ -94,17 +94,21 @@ internal static class ImageRenderProxy
 
     private static unsafe void CopyRgb48(WriteableBitmap source, WriteableBitmap target)
     {
-        byte* sourceBase = (byte*)source.BackBuffer;
-        byte* targetBase = (byte*)target.BackBuffer;
-        int sourceStride = source.BackBufferStride;
-        int targetStride = target.BackBufferStride;
-        int width = source.PixelWidth;
-        int height = source.PixelHeight;
+        CopyRgb48Rows(source.BackBuffer, source.BackBufferStride,
+            target.BackBuffer, target.BackBufferStride, source.PixelWidth, 0, source.PixelHeight);
+        GC.KeepAlive(source);
+    }
+
+    internal static unsafe void CopyRgb48Rows(nint source, int sourceStride, nint target, int targetStride,
+        int width, int firstRow, int rowEnd)
+    {
+        byte* sourceBase = (byte*)source;
+        byte* targetBase = (byte*)target;
         // WIC keeps the high byte of each 16-bit sample. Select and reorder those bytes directly.
         Vector128<byte> firstTwo = Vector128.Create((byte)5, 3, 1, 128, 11, 9, 7, 128, 128, 128, 128, 128, 128, 128, 128, 128);
         Vector128<byte> lastTwo = Vector128.Create((byte)128, 128, 128, 128, 128, 128, 128, 128, 9, 7, 5, 128, 15, 13, 11, 128);
         Vector128<byte> opaque = Vector128.Create(0xFF000000u).AsByte();
-        for (int y = 0; y < height; y++)
+        for (int y = firstRow; y < rowEnd; y++)
         {
             byte* from = sourceBase + (long)y * sourceStride;
             uint* to = (uint*)(targetBase + (long)y * targetStride);
@@ -121,7 +125,6 @@ internal static class ImageRenderProxy
             for (; x < width; x++, from += 6)
                 to[x] = 0xFF000000u | (uint)from[1] << 16 | (uint)from[3] << 8 | from[5];
         }
-        GC.KeepAlive(source);
     }
 
     private static unsafe void CopyGray16(WriteableBitmap source, WriteableBitmap target)

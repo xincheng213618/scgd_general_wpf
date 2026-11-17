@@ -1,6 +1,8 @@
 using ColorVision.Core;
+using ColorVision.ImageEditor.Presentation;
 using System;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics.X86;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
@@ -11,6 +13,9 @@ namespace ColorVision.ImageEditor.Output
 {
     internal sealed class SnapshotImageBufferLease : IDisposable
     {
+        private const int ParallelConversionMinimumBytes = 128 * 1024 * 1024;
+        private static readonly log4net.ILog log = log4net.LogManager.GetLogger(typeof(SnapshotImageBufferLease));
+
         private readonly SnapshotImageBufferPool owner;
         private readonly PixelFormat format;
         private readonly Color[]? paletteColors;
@@ -62,6 +67,42 @@ namespace ColorVision.ImageEditor.Output
             bitmap.Freeze();
             GC.KeepAlive(this);
             return bitmap;
+        }
+
+        internal BitmapSource? TryCreateOpaqueRgb48Bitmap(int width, int height, double dpiX, double dpiY)
+        {
+            HImage buffer = Image;
+            if (format != PixelFormats.Rgb48 || !Ssse3.IsSupported || Environment.ProcessorCount < 2
+                || buffer.cols != width || buffer.rows != height || buffer.stride < width * 6L
+                || (long)buffer.stride * height < ParallelConversionMinimumBytes
+                || width * 4L * height > int.MaxValue)
+                return null;
+
+            try
+            {
+                WriteableBitmap bitmap = new(width, height, dpiX, dpiY, PixelFormats.Pbgra32, null);
+                bitmap.Lock();
+                try
+                {
+                    nint target = bitmap.BackBuffer;
+                    int targetStride = bitmap.BackBufferStride;
+                    int middleRow = height / 2;
+                    // The export worker keeps the lease until both bands finish writing the locked WPF back buffer.
+                    Parallel.Invoke(new ParallelOptions { MaxDegreeOfParallelism = 2, TaskScheduler = TaskScheduler.Default },
+                        () => ImageRenderProxy.CopyRgb48Rows(buffer.pData, buffer.stride, target, targetStride, width, 0, middleRow),
+                        () => ImageRenderProxy.CopyRgb48Rows(buffer.pData, buffer.stride, target, targetStride, width, middleRow, height));
+                    bitmap.AddDirtyRect(new Int32Rect(0, 0, width, height));
+                }
+                finally { bitmap.Unlock(); }
+                bitmap.Freeze();
+                return bitmap;
+            }
+            catch (Exception ex) when (ex is OutOfMemoryException or COMException or ArgumentException)
+            {
+                log.Warn("Unable to prepare the opaque RGB48 snapshot. Falling back to the original pixels.", ex);
+                return null;
+            }
+            finally { GC.KeepAlive(this); }
         }
 
         private static int GetPackedRowBytes(int width, int bitsPerPixel)

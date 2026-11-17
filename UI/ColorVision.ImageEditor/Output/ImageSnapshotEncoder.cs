@@ -304,9 +304,10 @@ namespace ColorVision.ImageEditor.Output
             cancellationToken.ThrowIfCancellationRequested();
             Stopwatch materializeStopwatch = Stopwatch.StartNew();
             BitmapSource? source;
+            bool usedOpaqueRgb48Source;
             try
             {
-                source = MaterializeSnapshotSource(snapshot);
+                source = MaterializeSnapshotSource(snapshot, options, out usedOpaqueRgb48Source);
             }
             finally
             {
@@ -342,7 +343,8 @@ namespace ColorVision.ImageEditor.Output
                     Stopwatch renderStopwatch = Stopwatch.StartNew();
                     try
                     {
-                        canUseAdaptivePng = background != null && CanUseAdaptiveRgb48Png(snapshot, background, options.RenderedOptions);
+                        canUseAdaptivePng = background != null
+                            && (usedOpaqueRgb48Source || CanUseAdaptiveRgb48Png(snapshot, background, options.RenderedOptions));
                         bool usePixelAlignedRgb48Png = canUseAdaptivePng && options.RenderedOptions.ScaleDivisor == 1;
                         // An odd side is rounded up by the export, so its source-to-output ratio is not exactly 2:1.
                         usedHalfPrescaledRgb48 = canUseAdaptivePng && options.RenderedOptions.ScaleDivisor == 2
@@ -384,10 +386,32 @@ namespace ColorVision.ImageEditor.Output
             }
         }
 
-        private static BitmapSource? MaterializeSnapshotSource(ImageViewSnapshot snapshot)
+        private static BitmapSource? MaterializeSnapshotSource(
+            ImageViewSnapshot snapshot,
+            ImageViewSnapshotExportOptions options,
+            out bool usedOpaqueRgb48Source)
         {
+            usedOpaqueRgb48Source = false;
             using SnapshotImageBufferLease? buffer = snapshot.TakeImageBuffer();
-            return buffer == null ? snapshot.FrozenSource : buffer.ToFrozenBitmap(snapshot.DpiX, snapshot.DpiY);
+            if (buffer == null)
+                return snapshot.FrozenSource;
+
+            ImageViewSnapshotSaveOptions rendered = options.RenderedOptions;
+            if (!string.IsNullOrWhiteSpace(options.RenderedFileName)
+                && string.IsNullOrWhiteSpace(options.SourceFileName)
+                && rendered.Format == ImageViewSnapshotFormat.Png && rendered.ScaleDivisor == 1 && !rendered.UseHeatmap
+                && IsPixelAligned(snapshot))
+            {
+                // In a 1:1 render, WPF takes the high byte of each RGB48 channel before compositing.
+                BitmapSource? opaque = buffer.TryCreateOpaqueRgb48Bitmap(snapshot.PixelWidth, snapshot.PixelHeight, snapshot.DpiX, snapshot.DpiY);
+                if (opaque != null)
+                {
+                    usedOpaqueRgb48Source = true;
+                    return opaque;
+                }
+            }
+
+            return buffer.ToFrozenBitmap(snapshot.DpiX, snapshot.DpiY);
         }
 
         private static DrawingGroup ComposeSnapshotScene(
@@ -423,7 +447,10 @@ namespace ColorVision.ImageEditor.Output
             options.Format == ImageViewSnapshotFormat.Png && options.ScaleDivisor is 1 or 2 && !options.UseHeatmap
             && source.Format == PixelFormats.Rgb48
             && source.PixelWidth == snapshot.PixelWidth && source.PixelHeight == snapshot.PixelHeight
-            && snapshot.SceneSize.Width == snapshot.PixelWidth * 96.0 / snapshot.DpiX
+            && IsPixelAligned(snapshot);
+
+        private static bool IsPixelAligned(ImageViewSnapshot snapshot) =>
+            snapshot.SceneSize.Width == snapshot.PixelWidth * 96.0 / snapshot.DpiX
             && snapshot.SceneSize.Height == snapshot.PixelHeight * 96.0 / snapshot.DpiY;
 
         private static RenderTargetBitmap RenderSnapshot(
