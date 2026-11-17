@@ -180,10 +180,12 @@ public sealed class GeometricTransformV1Tests
         Assert.Equal(new[] { new AlgorithmPoint(1, 0), new AlgorithmPoint(1, 2), new AlgorithmPoint(0, 2), new AlgorithmPoint(0, 0) }, footprint.Points);
     }
 
-    [Fact]
-    public async Task PerspectiveMatrixRoundTripsPointsAndMaskUsesInverseMappedPixelCenters()
+    [Theory]
+    [InlineData(5, 7, 0.01)]
+    [InlineData(129, 131, 0.0005)]
+    public async Task PerspectiveMatrixRoundTripsPointsAndMaskUsesInverseMappedPixelCenters(int inputWidth, int outputWidth, double projection)
     {
-        using AlgorithmImageBuffer input = CreatePattern(5, 4, AlgorithmImageFormat.Gray16);
+        using AlgorithmImageBuffer input = CreatePattern(inputWidth, 4, AlgorithmImageFormat.Gray16);
         GeometricTransformParameters parameters = new()
         {
             Kind = GeometricTransformKind.Perspective,
@@ -193,10 +195,10 @@ public sealed class GeometricTransformV1Tests
             M21 = -0.03,
             M22 = 0.95,
             M23 = 0.2,
-            M31 = 0.01,
+            M31 = projection,
             M32 = -0.015,
             Canvas = GeometricTransformCanvas.ExplicitSize,
-            OutputWidth = 7,
+            OutputWidth = outputWidth,
             OutputHeight = 6,
         };
         using AlgorithmResult result = await RunAsync(input, parameters);
@@ -211,6 +213,18 @@ public sealed class GeometricTransformV1Tests
         Assert.InRange(Measurement(result, "transform.inverse_residual"), 0, 1e-12);
         Assert.InRange(Measurement(result, "transform.valid_fraction"), 0.1, 0.99);
         Assert.Equal("colorvision.geometry.transform/v1", result.GetArtifact<AlgorithmStructuredDataArtifact>("geometric-transform")!.Schema);
+        AlgorithmImageBuffer mask = Image(result, "valid-region-mask");
+        const double tolerance = 1e-9;
+        byte[] expected = new byte[mask.Width * mask.Height];
+        for (int y = 0; y < mask.Height; y++)
+        for (int x = 0; x < mask.Width; x++)
+        {
+            AlgorithmPoint sample = Transform(inverse, new(x, y));
+            if (sample.X >= -tolerance && sample.Y >= -tolerance
+                && sample.X <= input.Width - 1 + tolerance && sample.Y <= input.Height - 1 + tolerance)
+                expected[y * mask.Width + x] = byte.MaxValue;
+        }
+        Assert.Equal(expected, mask.Data.ToArray());
     }
 
     [Theory]
