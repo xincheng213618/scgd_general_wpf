@@ -28,6 +28,8 @@ related: ["flow.index","flow.templates","ui.property-grid"]
 
 本地“关注点布点(Re)”沿用 POI 模板中的点名。旧流程保存的 `PrefixName` 在加载时忽略，重新保存时省略。按带前缀点名匹配的下游需改用模板点名。
 
+节点诊断将重映射布点分成 `LoadPoiTemplate`、`ResolvePoiLayout`、`RemapPoi`、`PersistPoiLayoutMaster` 和 `PersistPoiLayoutDetails`。下游读取已保存的点位时，`ReadPoiLayoutDetails` 记录 MySQL 明细查询。使用旧版布点文件时还会记录 `FindPoiLayoutFiles`，实际解析的文件分别记为 `ReadPoiLayoutFile`。这些阶段已包含在节点的 `ExecuteLocal` 中。
+
 ## 先查什么
 
 | 现象 | 第一检查点 |

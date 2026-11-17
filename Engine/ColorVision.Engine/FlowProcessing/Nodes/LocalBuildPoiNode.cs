@@ -1,5 +1,6 @@
 using ColorVision.Engine.PropertyEditor;
 using ColorVision.Database;
+using ColorVision.Engine.FlowProcessing.Diagnostics;
 using ColorVision.Engine.Services.Devices.Camera.Local;
 using ColorVision.Engine.Services.Results;
 using ColorVision.Engine.Services.Results.LightArea;
@@ -69,14 +70,21 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
         protected override LocalNodeExecutionResult ExecuteLocal(CVStartCFC action)
         {
             _ = TryGetInputMasterResult(action, 0, out int sourceMasterId, out int sourceResultType, out _);
-            PoiParam template = LocalPoiTemplateResolver.ResolvePoiTemplate(RePOITemplateName, "POI 模板(Re)");
-            LocalPoiMappingPoint[] layout = ResolveLayout(sourceMasterId, sourceResultType, out string? layoutTemplateName);
+            PoiParam template = FlowNodeTiming.Run("LoadPoiTemplate", () => LocalPoiTemplateResolver.ResolvePoiTemplate(RePOITemplateName, "POI 模板(Re)"));
+            string? layoutTemplateName = null;
+            LocalPoiMappingPoint[] layout = FlowNodeTiming.Run("ResolvePoiLayout", () => ResolveLayout(sourceMasterId, sourceResultType, out layoutTemplateName));
 
-            Stopwatch stopwatch = Stopwatch.StartNew();
-            List<LocalPoiRemappedPoint> points = LocalPoiRemappingCalculator.Remap(template, layout);
-            stopwatch.Stop();
+            List<LocalPoiRemappedPoint> points;
+            Stopwatch stopwatch;
+            using (FlowNodeTiming.Stage? remapStage = FlowNodeTiming.Measure("RemapPoi"))
+            {
+                stopwatch = Stopwatch.StartNew();
+                points = LocalPoiRemappingCalculator.Remap(template, layout);
+                stopwatch.Stop();
+                remapStage?.Complete();
+            }
             int totalTime = checked((int)Math.Min(stopwatch.ElapsedMilliseconds, int.MaxValue));
-            int masterId = LocalFlowResultPersistence.SaveAlgorithmResult(
+            int masterId = FlowNodeTiming.Run("PersistPoiLayoutMaster", () => LocalFlowResultPersistence.SaveAlgorithmResult(
                 action,
                 ViewResultAlgType.BuildPOI,
                 template.Id,
@@ -95,10 +103,10 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                     PointCount = points.Count,
                     ImageRead = false,
                     MemoryOnly = true
-                });
+                }));
             try
             {
-                LocalPoiRemappingCalculator.SaveDetails(masterId, points);
+                FlowNodeTiming.Run("PersistPoiLayoutDetails", () => LocalPoiRemappingCalculator.SaveDetails(masterId, points));
                 action.Data["LocalBuildPoiCount"] = points.Count;
                 action.Data["LocalBuildPoiSourceMasterId"] = sourceMasterId;
                 action.MasterValue(null, masterId, (int)ViewResultAlgType.BuildPOI);

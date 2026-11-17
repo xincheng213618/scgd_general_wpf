@@ -57,7 +57,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
 
         private static PoiParam BuildPoiFromInput(int masterId, int masterResultType)
         {
-            List<PoiPointResultModel> details = PoiPointResultDao.Instance.GetAllByPid(masterId);
+            List<PoiPointResultModel> details = FlowNodeTiming.Run("ReadPoiLayoutDetails", () => PoiPointResultDao.Instance.GetAllByPid(masterId));
             PoiParam poi = new() { Id = masterId, Name = $"IN_POI#{masterId}" };
             foreach (PoiPointResultModel detail in details)
             {
@@ -74,11 +74,11 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             }
             if (poi.PoiPoints.Count > 0) return poi;
 
-            List<PoiCieFileModel> files = PoiCieFileDao.Instance.GetAllByPid(masterId);
+            List<PoiCieFileModel> files = FlowNodeTiming.Run("FindPoiLayoutFiles", () => PoiCieFileDao.Instance.GetAllByPid(masterId));
             foreach (PoiCieFileModel file in files)
             {
                 if (string.IsNullOrWhiteSpace(file.FileUrl) || !File.Exists(file.FileUrl)) continue;
-                POIPointInfo? pointInfo = ViewHandleBuildPoiFile.ReadPOIPointFromCSV(file.FileUrl);
+                POIPointInfo? pointInfo = FlowNodeTiming.Run("ReadPoiLayoutFile", () => ViewHandleBuildPoiFile.ReadPOIPointFromCSV(file.FileUrl));
                 if (pointInfo?.Positions == null || pointInfo.HeaderInfo == null) continue;
                 int pointId = poi.PoiPoints.Count + 1;
                 foreach (POIPointPosition position in pointInfo.Positions)
