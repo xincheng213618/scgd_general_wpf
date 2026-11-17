@@ -108,7 +108,11 @@ namespace ColorVision.ImageEditor.Algorithms
             {
                 context.Progress?.Report(new AlgorithmProgress(0.74, "registration.warp"));
                 using AlgorithmImageMatLease movingLease = AlgorithmImageInterop.BorrowReadOnly(moving);
-                using Mat output = new();
+                cancellationToken.ThrowIfCancellationRequested();
+                int stride = checked(reference.Width * moving.Format.BytesPerPixel());
+                byte[] outputData = GC.AllocateUninitializedArray<byte>(checked(stride * reference.Height));
+                using Mat output = Mat.FromPixelData(reference.Height, reference.Width, movingLease.Mat.Type(), outputData, stride);
+                IntPtr outputAddress = output.Data;
                 using Mat transform = GeometricTransformAlgorithmProvider.CreateMatrix(matrix, GeometricTransformKind.Perspective);
                 Cv2.WarpPerspective(
                     movingLease.Mat,
@@ -121,7 +125,10 @@ namespace ColorVision.ImageEditor.Algorithms
                 cancellationToken.ThrowIfCancellationRequested();
                 (byte[] mask, long validPixels) = GeometricTransformAlgorithmProvider.BuildValidityMask(
                     reference.Width, reference.Height, moving.Width, moving.Height, inverse, cancellationToken, context.Progress);
-                registered = AlgorithmImageInterop.FromMat(output, reference.DpiX, reference.DpiY, cancellationToken);
+                // The warp fills its private destination. Read the actual Mat if OpenCV replaced its storage.
+                registered = output.Data == outputAddress && output.Step() == stride
+                    ? new AlgorithmImageBuffer(reference.Width, reference.Height, stride, moving.Format, outputData, reference.DpiX, reference.DpiY)
+                    : AlgorithmImageInterop.FromMat(output, reference.DpiX, reference.DpiY, cancellationToken);
                 validityMask = new AlgorithmImageBuffer(reference.Width, reference.Height, reference.Width, AlgorithmImageFormat.Gray8, mask, reference.DpiX, reference.DpiY);
                 double photometricRmse = PhotometricRmse(referenceGray, output, moving.Format, mask, validPixels);
                 double inverseResidual = GeometricTransformAlgorithmProvider.InverseResidual(matrix, inverse);
