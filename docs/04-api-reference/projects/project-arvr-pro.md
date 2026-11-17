@@ -230,6 +230,8 @@ AA 与旧版畸变调用可选 x64 `CV_algorithm.dll`，需配套 `opencv_world4
 
 原始回包到业务派发应结合宿主的 [Socket 计时](../ui-components/ColorVision.SocketProtocol.md#回包派发与界面刷新计时)，不能把消息列表后台排队时间重复计入 PG 或 CT。
 
+`ARVRSwitchDispatchTiming` 通过 `MsgID` 和 `SerialNumber` 对照 `SwitchPGCompleted` 的 Socket 日志。`DispatcherQueueMs` 统计请求派发到 UI 回调开始的等待，`DispatcherCallbackMs` 统计 UI 回调返回前的同步工作。后续异步启动使用 `ARVRFlowPhaseTiming` 分析。`BatchIdBeforeDispatch` 对应回调进入时窗口持有的流程结果，窗口尚无流程结果时为空。
+
 旧记录没有上述阶段字段时，时间轴只用 `CreateTime - RunTime` 推算流程执行段，并把剩余部分明确显示为“未归因间隔”；旧数据不能事后可靠拆分切图、预处理和结果保存。任何缺失、逆序或超出整组范围的阶段边界都不能被强行归类。
 
 - 软件每次重新启动后，三个页面默认“按天／今天”，筛选文本和结果条件回到初始状态。同一次软件运行中关闭、重新打开统计窗口，保留当前标签、周期、日期和筛选条件。

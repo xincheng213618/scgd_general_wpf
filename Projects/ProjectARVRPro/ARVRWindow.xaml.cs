@@ -155,6 +155,7 @@ namespace ProjectARVRPro
         private bool _runAllSessionPrepared;
         internal bool IsResultExportPending { get; private set; }
         internal bool IsCompletingFlowBatch => BatchFinalization.IsCompleting || BatchFinalization.CloseRequested;
+        internal int? CurrentFlowResultBatchId => CurrentFlowResult is { BatchId: > 0 } result ? result.BatchId : null;
 
         private bool IsTestExecutionBusy => IsSwitchRun
             || _luxSession != null

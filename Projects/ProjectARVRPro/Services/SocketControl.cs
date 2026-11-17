@@ -2,7 +2,9 @@
 using ColorVision.Engine.Templates.Flow;
 using ColorVision.SocketProtocol;
 using log4net;
+using Newtonsoft.Json;
 using ProjectARVRPro.PluginConfig;
+using System.Diagnostics;
 using System.Net.Sockets;
 using System.Windows;
 
@@ -84,19 +86,47 @@ namespace ProjectARVRPro.Services
 
         public SocketResponse Handle(NetworkStream stream, SocketRequest request)
         {
-            return Application.Current.Dispatcher.Invoke<SocketResponse>(() =>
+            bool measure = log.IsInfoEnabled;
+            long queuedAt = measure ? Stopwatch.GetTimestamp() : 0;
+            long startedAt = 0, finishedAt = 0;
+            int? batchIdBeforeDispatch = null;
+            string outcome = "Forwarded";
+            SocketResponse response = Application.Current.Dispatcher.Invoke<SocketResponse>(() =>
             {
-                ARVRWindow window = ProjectWindowInstance.WindowInstance;
-                if (window?.IsCompletingFlowBatch == true)
-                    return null;
-                SocketControl.Current.Stream = stream;
-                if (window == null)
-                    return new SocketResponse { MsgID = request.MsgID, SerialNumber = request.SerialNumber, Code = -3, Msg = "ProjectARVR Wont Open", EventName = EventName };
+                if (measure) startedAt = Stopwatch.GetTimestamp();
+                try
+                {
+                    ARVRWindow window = ProjectWindowInstance.WindowInstance;
+                    if (measure) batchIdBeforeDispatch = window?.CurrentFlowResultBatchId;
+                    if (window?.IsCompletingFlowBatch == true)
+                    {
+                        outcome = "BatchCompleting";
+                        return null;
+                    }
+                    SocketControl.Current.Stream = stream;
+                    if (window == null)
+                    {
+                        outcome = "WindowUnavailable";
+                        return new SocketResponse { MsgID = request.MsgID, SerialNumber = request.SerialNumber, Code = -3, Msg = "ProjectARVR Wont Open", EventName = EventName };
+                    }
 
-                log.Debug("PG切换结束");
-                window.SwitchPGCompleted();
-                return null;
+                    log.Debug("PG切换结束");
+                    window.SwitchPGCompleted();
+                    return null;
+                }
+                finally { if (measure) finishedAt = Stopwatch.GetTimestamp(); }
             });
+            if (measure)
+            {
+                log.Info(JsonConvert.SerializeObject(new
+                {
+                    Event = "ARVRSwitchDispatchTiming", request.MsgID, request.SerialNumber,
+                    BatchIdBeforeDispatch = batchIdBeforeDispatch, Outcome = outcome,
+                    DispatcherQueueMs = Math.Round(Stopwatch.GetElapsedTime(queuedAt, startedAt).TotalMilliseconds, 3),
+                    DispatcherCallbackMs = Math.Round(Stopwatch.GetElapsedTime(startedAt, finishedAt).TotalMilliseconds, 3)
+                }));
+            }
+            return response;
         }
     }
 
