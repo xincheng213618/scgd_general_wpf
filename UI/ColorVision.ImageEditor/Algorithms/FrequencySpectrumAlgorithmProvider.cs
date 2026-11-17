@@ -94,8 +94,9 @@ namespace ColorVision.ImageEditor.Algorithms
 
                 context.Progress?.Report(new AlgorithmProgress(0.52, "frequency.aggregate", "Aggregating radial and directional spectra"));
                 SpectrumAggregation aggregation = Aggregate(spectrum, windowSum, parameters, cancellationToken, context.Progress);
-                (byte[] magnitudeDisplay, byte[] powerDisplay) = CreateDisplays(
-                    spectrum, windowSum, aggregation.MaximumMagnitude, aggregation.MaximumPower, parameters, cancellationToken, context.Progress);
+                byte[] magnitudeDisplay = new byte[checked((int)pixelCount)];
+                byte[] powerDisplay = new byte[magnitudeDisplay.Length];
+                FillDisplays(spectrum, windowSum, aggregation, parameters, magnitudeDisplay, powerDisplay, cancellationToken, context.Progress);
                 SpectrumPeak[] peaks = DetectPeaks(
                     spectrum, windowSum, aggregation.MaximumEligiblePeakPower, parameters, cancellationToken, context.Progress);
 
@@ -360,20 +361,23 @@ namespace ColorVision.ImageEditor.Algorithms
                     Math.Min(180, (index + 1) * parameters.DirectionBinWidthDegrees))).ToArray());
         }
 
-        internal static unsafe (byte[] Magnitude, byte[] Power) CreateDisplays(
+        internal static unsafe void FillDisplays(
             Mat spectrum,
             double windowSum,
-            double maximumMagnitude,
-            double maximumPower,
+            SpectrumAggregation aggregation,
             FrequencySpectrumParameters parameters,
+            byte[] magnitude,
+            byte[]? power,
             CancellationToken cancellationToken,
             IProgress<AlgorithmProgress>? progress)
         {
             int rows = spectrum.Rows;
             int cols = spectrum.Cols;
-            byte[] magnitude = new byte[checked(rows * cols)];
-            byte[] power = new byte[magnitude.Length];
             double normalization = windowSum * windowSum;
+            double maximumMagnitude = aggregation.MaximumMagnitude;
+            double maximumPower = aggregation.MaximumPower;
+            double logarithmicMagnitudeMaximum = Math.Log(1 + maximumMagnitude);
+            double logarithmicPowerMaximum = Math.Log(1 + maximumPower);
             for (int y = 0; y < rows; y++)
             {
                 if ((y & 15) == 0)
@@ -382,28 +386,30 @@ namespace ColorVision.ImageEditor.Algorithms
                     progress?.Report(new AlgorithmProgress(0.64 + 0.1 * y / Math.Max(1, rows), "frequency.visualize"));
                 }
                 float* row = (float*)spectrum.Ptr(y);
-                int destinationY = parameters.CenterSpectrum ? (y + rows / 2) % rows : y;
+                bool centered = parameters.CenterSpectrum;
+                bool logarithmic = parameters.VisualizationScale == FrequencySpectrumVisualizationScale.Logarithmic;
+                double magnitudeDivisor = logarithmic ? logarithmicMagnitudeMaximum : maximumMagnitude;
+                double powerDivisor = logarithmic ? logarithmicPowerMaximum : maximumPower;
+                int destinationY = centered ? (y + rows / 2) % rows : y;
+                int destinationRow = destinationY * cols;
+                int destinationX = centered ? cols / 2 : 0;
                 for (int x = 0; x < cols; x++)
                 {
-                    double real = row[x * 2];
-                    double imaginary = row[x * 2 + 1];
-                    double p = (real * real + imaginary * imaginary) / normalization;
+                    double p = PowerAt(row, x, normalization);
                     double m = Math.Sqrt(p);
-                    int destinationX = parameters.CenterSpectrum ? (x + cols / 2) % cols : x;
-                    int destination = destinationY * cols + destinationX;
-                    magnitude[destination] = DisplayValue(m, maximumMagnitude, parameters.VisualizationScale);
-                    power[destination] = DisplayValue(p, maximumPower, parameters.VisualizationScale);
+                    int destination = destinationRow + destinationX;
+                    magnitude[destination] = DisplayValue(m, maximumMagnitude, magnitudeDivisor, logarithmic);
+                    if (power != null)
+                        power[destination] = DisplayValue(p, maximumPower, powerDivisor, logarithmic);
+                    if (++destinationX == cols) destinationX = 0;
                 }
             }
-            return (magnitude, power);
         }
 
-        private static byte DisplayValue(double value, double maximum, FrequencySpectrumVisualizationScale scale)
+        private static byte DisplayValue(double value, double maximum, double divisor, bool logarithmic)
         {
             if (!(maximum > 0) || !(value > 0)) return 0;
-            double normalized = scale == FrequencySpectrumVisualizationScale.Logarithmic
-                ? Math.Log(1 + value) / Math.Log(1 + maximum)
-                : value / maximum;
+            double normalized = (logarithmic ? Math.Log(1 + value) : value) / divisor;
             return (byte)Math.Clamp((int)Math.Round(normalized * byte.MaxValue), 0, byte.MaxValue);
         }
 
@@ -421,6 +427,7 @@ namespace ColorVision.ImageEditor.Algorithms
             List<SpectrumPeak> candidates = new();
             int rows = spectrum.Rows;
             int cols = spectrum.Cols;
+            long stride = spectrum.Step();
             for (int y = 0; y < rows; y++)
             {
                 if ((y & 7) == 0)
@@ -428,8 +435,11 @@ namespace ColorVision.ImageEditor.Algorithms
                     cancellationToken.ThrowIfCancellationRequested();
                     progress?.Report(new AlgorithmProgress(0.74 + 0.1 * y / Math.Max(1, rows), "frequency.peaks"));
                 }
+                // Rows below the Nyquist row have no canonical representatives.
+                if (y > rows / 2) continue;
                 int sy = SignedBin(y, rows);
                 double fy = sy / (double)rows;
+                float* row = (float*)spectrum.Ptr(y);
                 for (int x = 0; x < cols; x++)
                 {
                     int sx = SignedBin(x, cols);
@@ -438,8 +448,8 @@ namespace ColorVision.ImageEditor.Algorithms
                     double frequency = Math.Sqrt(fx * fx + fy * fy);
                     if (frequency < parameters.MinimumPeakFrequencyCyclesPerPixel
                         || frequency > parameters.MaximumPeakFrequencyCyclesPerPixel) continue;
-                    double power = PowerAt(spectrum, x, y, normalization);
-                    if (power < threshold || !IsLocalMaximum(spectrum, x, y, power, normalization, parameters.PeakNeighborhoodRadius)) continue;
+                    double power = PowerAt(row, x, normalization);
+                    if (power < threshold || !IsLocalMaximum(row, stride, cols, rows, x, y, power, normalization, parameters.PeakNeighborhoodRadius)) continue;
                     double frequencyDirection = NormalizeDirection(Math.Atan2(fy, fx) * 180 / Math.PI);
                     candidates.Add(new SpectrumPeak(
                         x, y,
@@ -450,25 +460,25 @@ namespace ColorVision.ImageEditor.Algorithms
                         maximumEligiblePower > 0 ? power / maximumEligiblePower : 0));
                 }
             }
+            GC.KeepAlive(spectrum);
             return candidates.OrderByDescending(value => value.Power)
                 .ThenBy(value => value.RawY).ThenBy(value => value.RawX)
                 .Take(parameters.MaximumPeaks).ToArray();
         }
 
-        private static unsafe bool IsLocalMaximum(Mat spectrum, int x, int y, double value, double normalization, int radius)
+        private static unsafe bool IsLocalMaximum(float* row, long stride, int cols, int rows, int x, int y, double value, double normalization, int radius)
         {
-            int rows = spectrum.Rows;
-            int cols = spectrum.Cols;
             int currentIndex = y * cols + x;
             double equalityTolerance = Math.Max(1, value) * 1e-12;
             for (int offsetY = -radius; offsetY <= radius; offsetY++)
             {
+                int ny = Mod(y + offsetY, rows);
+                float* neighborRow = (float*)((byte*)row + (ny - y) * stride);
                 for (int offsetX = -radius; offsetX <= radius; offsetX++)
                 {
                     if (offsetX == 0 && offsetY == 0) continue;
                     int nx = Mod(x + offsetX, cols);
-                    int ny = Mod(y + offsetY, rows);
-                    double neighbor = PowerAt(spectrum, nx, ny, normalization);
+                    double neighbor = PowerAt(neighborRow, nx, normalization);
                     if (neighbor > value + equalityTolerance) return false;
                     if (Math.Abs(neighbor - value) <= equalityTolerance && ny * cols + nx < currentIndex) return false;
                 }
@@ -476,9 +486,8 @@ namespace ColorVision.ImageEditor.Algorithms
             return true;
         }
 
-        internal static unsafe double PowerAt(Mat spectrum, int x, int y, double normalization)
+        private static unsafe double PowerAt(float* row, int x, double normalization)
         {
-            float* row = (float*)spectrum.Ptr(y);
             double real = row[x * 2];
             double imaginary = row[x * 2 + 1];
             return (real * real + imaginary * imaginary) / normalization;
