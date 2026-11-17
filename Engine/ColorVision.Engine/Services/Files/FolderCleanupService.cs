@@ -2,6 +2,7 @@ using log4net;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.IO.Enumeration;
 using System.Linq;
 
 namespace ColorVision.Engine.Services.Files;
@@ -22,7 +23,7 @@ internal static class FolderCleanupService
 {
     private static readonly ILog Log = LogManager.GetLogger(typeof(FolderCleanupService));
     private static readonly char[] ExtensionSeparators = [',', ';', ' ', '\t', '\r', '\n'];
-    private sealed record Candidate(string Path, long Length, DateTime LastWriteTimeUtc);
+    private readonly record struct Candidate(string Path, long Length, DateTime LastWriteTimeUtc);
 
     public static FolderCleanupResult Execute(IEnumerable<string> folders, string fileExtensions, bool includeSubfolders,
         long triggerBytes, long targetBytes, IReadOnlyCollection<string>? protectedFiles = null, Action? checkCancellation = null)
@@ -31,11 +32,13 @@ internal static class FolderCleanupService
         string[] roots = folders.Where(path => !string.IsNullOrWhiteSpace(path)).Select(ValidateRoot)
             .Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
         HashSet<string> extensions = ParseExtensions(fileExtensions);
+        var extensionLookup = extensions.GetAlternateLookup<ReadOnlySpan<char>>();
         HashSet<string> protectedPaths = new(StringComparer.OrdinalIgnoreCase);
         foreach (string path in protectedFiles ?? Array.Empty<string>())
             if (!string.IsNullOrWhiteSpace(path)) protectedPaths.Add(Path.GetFullPath(path));
 
         var result = new FolderCleanupResult();
+        FileSystemEnumerable<Candidate>.FindPredicate include = CountAndMatchFile;
         foreach (string root in roots)
         {
             checkCancellation?.Invoke();
@@ -53,22 +56,15 @@ internal static class FolderCleanupService
             };
             long totalBytes = 0;
             var candidates = new List<Candidate>();
-            foreach (FileInfo file in new DirectoryInfo(root).EnumerateFiles("*", options))
+            var entries = new FileSystemEnumerable<Candidate>(root,
+                static (ref FileSystemEntry entry) => new Candidate(entry.ToFullPath(), entry.Length, entry.LastWriteTimeUtc.UtcDateTime), options)
             {
-                checkCancellation?.Invoke();
-                result.ScannedFiles++;
-                if (extensions.Count > 0 && !extensions.Contains(file.Extension)) continue;
-                try
-                {
-                    long length = file.Length;
-                    totalBytes = checked(totalBytes + length);
-                    candidates.Add(new Candidate(file.FullName, length, file.LastWriteTimeUtc));
-                }
-                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
-                {
-                    result.FailedFiles++;
-                    Log.Warn($"Cannot read cleanup file: {file.FullName}", ex);
-                }
+                ShouldIncludePredicate = include,
+            };
+            foreach (Candidate candidate in entries)
+            {
+                totalBytes = checked(totalBytes + candidate.Length);
+                candidates.Add(candidate);
             }
 
             long deletedBytes = 0;
@@ -110,6 +106,19 @@ internal static class FolderCleanupService
             Log.Info($"Cache cleanup: Directory={root}, MatchedFiles={candidates.Count}, BeforeBytes={totalBytes}, DeletedBytes={deletedBytes}, RemainingBytes={totalBytes - deletedBytes}, TriggerBytes={triggerBytes}, TargetBytes={targetBytes}");
         }
         return result;
+
+        bool CountAndMatchFile(ref FileSystemEntry entry)
+        {
+            if (entry.IsDirectory) return false;
+            checkCancellation?.Invoke();
+            result.ScannedFiles++;
+            if (extensions.Count == 0) return true;
+
+            // Match FileSystemInfo.Extension, including trailing dots on Windows paths.
+            ReadOnlySpan<char> fileName = entry.FileName;
+            int dot = fileName.LastIndexOf('.');
+            return extensionLookup.Contains(dot < 0 ? ReadOnlySpan<char>.Empty : fileName[dot..]);
+        }
     }
 
     private static string ValidateRoot(string path)
