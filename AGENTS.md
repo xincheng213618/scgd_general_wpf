@@ -59,7 +59,7 @@ dotnet test .\Test\ColorVision.UI.Tests\ColorVision.UI.Tests.csproj -p:Platform=
 
 ## Release and packaging
 
-- Choose the artifact from the active task first: an explicitly named target wins; after work scoped to one `Plugins/<Name>/` or `Projects/<Name>/`, bare “发布” publishes only that artifact using its nearest `AGENTS.md`.
+- An explicitly named release target wins. For a bare “发布”, select the artifacts affected by the changes being delivered. Changes confined to `Plugins/<Name>/` or `Projects/<Name>/` publish only the affected independent packages using their nearest `AGENTS.md`. Changes confined to the main application and its shipped shared code publish only the main application. When both change, release the main application and each affected package through their respective entry points.
 - Main-application publication uses the current Git branch and the entire current working tree, including pending main-application changes saved by other chats. Do not limit the main build or its release notes to this chat's edits unless the user explicitly requests a narrower scope. Main-application publication does not automatically publish independently delivered plugins or customer bundles.
 - Publish from that same checkout and branch. Do not create or switch branches, create an isolated release worktree, or extract only this chat's changes for publication unless the user explicitly requests that Git operation.
 - `Scripts\release.bat` is the only normal main-release entry point. For main-app/repository-wide “发布”, “打包发布”, “直接打包”, or “快速发布”, use an explicitly requested version when provided; otherwise increment the final numeric component of the current local `Directory.Build.props` `VersionPrefix` by one. Do not query the remote version first.
