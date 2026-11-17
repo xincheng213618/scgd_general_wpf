@@ -6923,6 +6923,7 @@
         "ColorVision/MainWindow.xaml.cs",
         "ColorVision/MainWindow.NewUserGuide.cs",
         "ColorVision/Guidance",
+        "ColorVision/Notifications",
         "ColorVision/MainWindow.Hotkeys.cs",
         "ColorVision/CompactMainWindow.cs",
         "ColorVision/MainWindowFactory.cs",
@@ -6970,6 +6971,7 @@
       "code_scopes": [
         "ColorVision",
         "ColorVision/Guidance",
+        "ColorVision/Notifications",
         "ColorVision/Themes",
         "ColorVision/Windowing",
         "UI/ColorVision.Solution",

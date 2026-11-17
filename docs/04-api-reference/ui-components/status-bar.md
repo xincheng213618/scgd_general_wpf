@@ -58,7 +58,7 @@ provider 构造不保证无副作用。例如 `SchedulerStatusBarProvider` 构�
 - manager 按 ID 删除可影响其它 provider 或活动文档的同 ID 项，不按 provider/TargetName 隔离身份。
 - Id、Name 都为 null 时，控件的 hash 兜底不能让 manager 的增量/文档切换删除走到同一个 key。
 
-Name 用作右键菜单标题，Description 用作 Tooltip，Source 放入容器 DataContext。主要内容规则是：
+Name 用作右键菜单标题。`ContentFactory` 可为每个宿主创建独立的内容控件，自行处理点击和弹层；若提供 Source，则作为控件的 DataContext。普通显示容器取 Description 作为 Tooltip，Source 作为 DataContext，并按以下规则呈现。
 
 | Type | 实际显示 |
 | --- | --- |

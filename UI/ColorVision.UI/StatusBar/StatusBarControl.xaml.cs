@@ -149,6 +149,16 @@ namespace ColorVision.UI
 
         private FrameworkElement CreateItemContainer(StatusBarMeta meta)
         {
+            if (meta.ContentFactory is { } factory)
+            {
+                var content = factory();
+                if (meta.Source != null)
+                    content.DataContext = meta.Source;
+                if (!meta.IsVisible)
+                    content.Visibility = Visibility.Collapsed;
+                return content;
+            }
+
             var border = new Border
             {
                 Padding = new Thickness(6, 0, 6, 0),

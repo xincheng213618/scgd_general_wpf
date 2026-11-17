@@ -207,6 +207,11 @@ next: false
 - [日志来源、历史读取与筛选](../../01-user-guide/interface/log-viewer.md) — `operations.logs`
   区分log4net输出、历史文件读取与UI筛选，说明刷新、截断和原生日志采集边界；没有显示不等于动作未发生。
 
+## ColorVision/Notifications {#module-436f6c6f72566973696f6e2f4e6f74696669636174696f6e73}
+
+- [主窗口与入口装配](../../01-user-guide/interface/main-window.md) — `operations.main-window`
+  主窗口菜单、搜索、状态栏与工作区装配；Windows 11 使用紧凑主窗口，Windows 10 保持原生窗口。
+
 ## ColorVision/Recovery {#module-436f6c6f72566973696f6e2f5265636f76657279}
 
 - [桌面交付制品与责任路由](../../02-developer-guide/deployment/overview.md) — `delivery.deployment`

@@ -83,6 +83,11 @@ namespace ColorVision.UI
         public Func<FrameworkElement> PopupContentFactory { get; set; }
 
         /// <summary>
+        /// 为每个宿主创建独立的状态栏控件，由控件处理自身交互。
+        /// </summary>
+        public Func<FrameworkElement>? ContentFactory { get; set; }
+
+        /// <summary>
         /// 默认是否可见（用户可通过右键菜单切换）
         /// </summary>
         public bool IsVisible { get; set; } = true;
