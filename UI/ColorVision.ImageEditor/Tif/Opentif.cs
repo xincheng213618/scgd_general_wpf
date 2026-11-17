@@ -206,10 +206,18 @@ namespace ColorVision.ImageEditor.Tif
                     if (hasRange && rowsPerChunk < height)
                         source.CopyPixels(new Int32Rect(0, top, width, rowCount), floatPixels, sourceStride, 0);
 
+                    if (targetStride == width * sizeof(ushort))
+                    {
+                        Span<ushort> output = new((byte*)target + (long)top * targetStride, width * rowCount);
+                        if (hasRange) NormalizeSamples(floatPixels.AsSpan(0, output.Length), output, min, range);
+                        else output.Clear();
+                        continue;
+                    }
+
                     for (int row = 0; row < rowCount; row++)
                     {
                         Span<ushort> output = new((byte*)target + (long)(top + row) * targetStride, width);
-                        if (hasRange) NormalizeRow(floatPixels.AsSpan(row * width, width), output, min, range);
+                        if (hasRange) NormalizeSamples(floatPixels.AsSpan(row * width, width), output, min, range);
                         else output.Clear();
                     }
                 }
@@ -223,7 +231,27 @@ namespace ColorVision.ImageEditor.Tif
         private static void AccumulateFiniteRange(ReadOnlySpan<float> samples, ref float min, ref float max)
         {
             int index = 0;
-            if (Avx2.IsSupported && samples.Length >= Vector256<float>.Count)
+            if (Avx512F.IsSupported && samples.Length >= Vector512<float>.Count)
+            {
+                Vector512<float> positiveInfinity = Vector512.Create(float.PositiveInfinity);
+                Vector512<float> negativeInfinity = Vector512.Create(float.NegativeInfinity);
+                Vector512<float> minimum = positiveInfinity;
+                Vector512<float> maximum = negativeInfinity;
+                ref float first = ref MemoryMarshal.GetReference(samples);
+                for (; index <= samples.Length - Vector512<float>.Count; index += Vector512<float>.Count)
+                {
+                    Vector512<float> values = Vector512.LoadUnsafe(ref first, (nuint)index);
+                    Vector512<float> finite = Vector512.IsFinite(values);
+                    minimum = Vector512.MinNative(minimum, Vector512.ConditionalSelect(finite, values, positiveInfinity));
+                    maximum = Vector512.MaxNative(maximum, Vector512.ConditionalSelect(finite, values, negativeInfinity));
+                }
+                for (int lane = 0; lane < Vector512<float>.Count; lane++)
+                {
+                    min = MathF.Min(min, minimum.GetElement(lane));
+                    max = MathF.Max(max, maximum.GetElement(lane));
+                }
+            }
+            else if (Avx2.IsSupported && samples.Length >= Vector256<float>.Count)
             {
                 Vector256<float> positiveInfinity = Vector256.Create(float.PositiveInfinity);
                 Vector256<float> negativeInfinity = Vector256.Create(float.NegativeInfinity);
@@ -253,7 +281,7 @@ namespace ColorVision.ImageEditor.Tif
             }
         }
 
-        private static void NormalizeRow(ReadOnlySpan<float> input, Span<ushort> output, float min, double range)
+        private static void NormalizeSamples(ReadOnlySpan<float> input, Span<ushort> output, float min, double range)
         {
             int x = 0;
             if (Avx512F.VL.IsSupported && input.Length >= Vector256<float>.Count)

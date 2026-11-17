@@ -30,10 +30,11 @@ namespace ColorVision.UI.Tests;
 
 public sealed class ImageOpenCompletionContractTests(ITestOutputHelper output)
 {
-    [Fact]
-    public async Task FloatTiffDisplayNormalizationPreservesSamplesAcrossPaddedRowsAndFinalChunk()
+    [Theory]
+    [InlineData(512)]
+    [InlineData(513)]
+    public async Task FloatTiffDisplayNormalizationPreservesSamplesAcrossRowStridesAndFinalChunk(int width)
     {
-        const int width = 513;
         const int height = 513;
         const float min = -3.25f;
         const float max = 10.1f;
