@@ -294,6 +294,8 @@ namespace ColorVision.ImageEditor.Algorithms
             int maximumX = -1;
             int maximumY = -1;
             const double tolerance = 1e-5;
+            double upperX = width - 1 + tolerance;
+            double upperY = height - 1 + tolerance;
             for (int y = 0; y < height; y++)
             {
                 if ((y & 31) == 0)
@@ -303,24 +305,35 @@ namespace ColorVision.ImageEditor.Algorithms
                 }
                 ReadOnlySpan<float> xRow = new((void*)mapX.Ptr(y), width);
                 ReadOnlySpan<float> yRow = new((void*)mapY.Ptr(y), width);
-                int offset = y * width;
+                Span<byte> maskRow = mask.AsSpan(y * width, width);
+                int firstValidX = width;
+                int lastValidX = -1;
                 for (int x = 0; x < width; x++)
                 {
-                    double sourceX = xRow[x];
-                    double sourceY = yRow[x];
-                    if (!double.IsFinite(sourceX) || !double.IsFinite(sourceY))
+                    float mapSourceX = xRow[x];
+                    float mapSourceY = yRow[x];
+                    if (!float.IsFinite(mapSourceX) || !float.IsFinite(mapSourceY))
                         throw new InvalidOperationException("The lens-distortion map contains non-finite coordinates.");
-                    double displacement = Math.Sqrt((sourceX - x) * (sourceX - x) + (sourceY - y) * (sourceY - y));
+                    double sourceX = mapSourceX;
+                    double sourceY = mapSourceY;
+                    double dx = sourceX - x;
+                    double dy = sourceY - y;
+                    double displacement = Math.Sqrt(dx * dx + dy * dy);
                     displacementSum += displacement;
-                    maximumDisplacement = Math.Max(maximumDisplacement, displacement);
+                    if (displacement > maximumDisplacement) maximumDisplacement = displacement;
                     if (sourceX < -tolerance || sourceY < -tolerance
-                        || sourceX > width - 1 + tolerance || sourceY > height - 1 + tolerance) continue;
-                    mask[offset + x] = byte.MaxValue;
+                        || sourceX > upperX || sourceY > upperY) continue;
+                    maskRow[x] = byte.MaxValue;
                     valid++;
-                    minimumX = Math.Min(minimumX, x);
+                    if (firstValidX == width) firstValidX = x;
+                    lastValidX = x;
+                }
+                if (lastValidX >= 0)
+                {
+                    minimumX = Math.Min(minimumX, firstValidX);
                     minimumY = Math.Min(minimumY, y);
-                    maximumX = Math.Max(maximumX, x);
-                    maximumY = Math.Max(maximumY, y);
+                    maximumX = Math.Max(maximumX, lastValidX);
+                    maximumY = y;
                 }
             }
             cancellationToken.ThrowIfCancellationRequested();
