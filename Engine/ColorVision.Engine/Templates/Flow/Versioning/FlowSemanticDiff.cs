@@ -55,6 +55,10 @@ namespace ColorVision.Engine.Templates.Flow.Versioning
 
     public static class FlowSemanticDiff
     {
+        private static readonly IComparer<FlowPropertyChange> PropertyChangeOrder =
+            Comparer<FlowPropertyChange>.Create(
+                (first, second) => StringComparer.Ordinal.Compare(first.PropertyName, second.PropertyName));
+
         public static FlowSemanticDiffResult Compare(
             FlowSemanticDocument before,
             FlowSemanticDocument after)
@@ -137,30 +141,31 @@ namespace ColorVision.Engine.Templates.Flow.Versioning
             FlowSemanticNode before,
             FlowSemanticNode after)
         {
+            List<FlowPropertyChange> changes = result.PropertyChanges;
+            int start = changes.Count;
             foreach (string propertyName in before.Properties.Keys
-                .Union(after.Properties.Keys, StringComparer.Ordinal)
-                .OrderBy(item => item, StringComparer.Ordinal))
+                .Union(after.Properties.Keys, StringComparer.Ordinal))
             {
-                before.Properties.TryGetValue(
+                bool hasBefore = before.Properties.TryGetValue(
                     propertyName,
                     out string? beforeValue);
-                after.Properties.TryGetValue(
+                bool hasAfter = after.Properties.TryGetValue(
                     propertyName,
                     out string? afterValue);
-                if (!string.Equals(
-                    beforeValue,
-                    afterValue,
-                    StringComparison.Ordinal)
-                    || before.Properties.ContainsKey(propertyName)
-                        != after.Properties.ContainsKey(propertyName))
+                if (hasBefore != hasAfter
+                    || !string.Equals(beforeValue, afterValue, StringComparison.Ordinal))
                 {
-                    result.PropertyChanges.Add(new FlowPropertyChange(
+                    changes.Add(new FlowPropertyChange(
                         before.NodeId,
                         propertyName,
                         beforeValue,
                         afterValue));
                 }
             }
+
+            int count = changes.Count - start;
+            if (count > 1)
+                changes.Sort(start, count, PropertyChangeOrder);
         }
 
         private static void CompareSet<T>(
@@ -227,10 +232,10 @@ namespace ColorVision.Engine.Templates.Flow.Versioning
                     out FlowNodeLayout? afterNode);
                 if (beforeNode == null
                     || afterNode == null
-                    || !string.Equals(
-                        FlowSemanticHash.GetLayoutKey(beforeNode),
-                        FlowSemanticHash.GetLayoutKey(afterNode),
-                        StringComparison.Ordinal))
+                    || !SameLayoutValue(beforeNode.X, afterNode.X)
+                    || !SameLayoutValue(beforeNode.Y, afterNode.Y)
+                    || !SameLayoutValue(beforeNode.Width, afterNode.Width)
+                    || !SameLayoutValue(beforeNode.Height, afterNode.Height))
                 {
                     result.LayoutChanges.Add(new FlowLayoutChange(
                         nodeId,
@@ -238,6 +243,14 @@ namespace ColorVision.Engine.Templates.Flow.Versioning
                         afterNode?.DeepClone()));
                 }
             }
+        }
+
+        private static bool SameLayoutValue(double before, double after)
+        {
+            // The invariant round-trip representation distinguishes signed zeroes
+            // and uses the same text for all NaN values.
+            return BitConverter.DoubleToInt64Bits(before) == BitConverter.DoubleToInt64Bits(after)
+                || (double.IsNaN(before) && double.IsNaN(after));
         }
     }
 }
