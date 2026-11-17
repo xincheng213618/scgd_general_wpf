@@ -1468,10 +1468,11 @@ namespace ProjectARVRPro
             bool completed = FlowControlData.EventName == "Completed";
             if (completed)
                 BatchFinalization.BeginCompletion();
+            (bool switchNext, SocketResponse? response) handoff;
             try
             {
                 UpdateTestButtonState();
-                await ProcessSingleFlowCompletionAsync(FlowControlData);
+                handoff = await ProcessSingleFlowCompletionAsync(FlowControlData);
             }
             finally
             {
@@ -1480,9 +1481,16 @@ namespace ProjectARVRPro
                     EndFlowBatchCompletion();
                 UpdateTestButtonState();
             }
+
+            // The station can reply as soon as it sees the notification. Release
+            // the completion guard before advertising that it may advance.
+            if (!_isDisposed && handoff.response != null)
+                SendCompletedTestResponse(handoff.response);
+            else if (!_isDisposed && handoff.switchNext && !BatchFinalization.CloseRequested)
+                SwitchPG();
         }
 
-        private async Task ProcessSingleFlowCompletionAsync(FlowControlData FlowControlData)
+        private async Task<(bool SwitchNext, SocketResponse? Response)> ProcessSingleFlowCompletionAsync(FlowControlData FlowControlData)
         {
             flowControl.FlowCompleted -= FlowControl_FlowCompleted;
             stopwatch.Stop();
@@ -1494,7 +1502,7 @@ namespace ProjectARVRPro
             var batchForProcessing = (_currentFlowBatch?.Id, _currentFlowBatchConnectionString);
             await FinalizeCurrentFlowRunAsync(FlowControlData);
             if (_isDisposed)
-                return;
+                return default;
             flowFinalizeStopwatch.Stop();
             _currentFlowFinalizeMilliseconds = Math.Max(0, flowFinalizeStopwatch.ElapsedMilliseconds);
             ShowExecutionResult(FlowControlData.EventName, FlowControlData.Params);
@@ -1511,7 +1519,7 @@ namespace ProjectARVRPro
                 catch (Exception ex)
                 {
                     if (_isDisposed)
-                        return;
+                        return default;
                     CurrentFlowResult.FlowStatus = FlowStatus.Failed;
                     RecordFlowFailure($"结果处理异常: {ex.Message}");
                     ViewResultManager.Save(CurrentFlowResult);
@@ -1521,28 +1529,19 @@ namespace ProjectARVRPro
                 }
 
                 if (_isDisposed)
-                    return;
+                    return default;
                 _isFlowLifecycleActive = false;
                 if (_luxSession != null)
                 {
                     await CompleteLuxFlowAsync(processingSucceeded ? "Completed" : "Failed", CurrentFlowResult.Msg);
                     TryCount = 0;
-                    return;
+                    return default;
                 }
-                if (!processingSucceeded && !ProjectARVRProConfig.Instance.AllowTestFailures)
-                {
-                    await TestCompletedAsync();
-                }
-                else if (!IsTestTypeCompleted())
-                {
-                    if (!BatchFinalization.CloseRequested)
-                        SwitchPG();
-                }
-                else
-                {
-                    await TestCompletedAsync();
-                }
+
+                bool switchNext = (processingSucceeded || ProjectARVRProConfig.Instance.AllowTestFailures) && !IsTestTypeCompleted();
+                SocketResponse? response = switchNext ? null : await TestCompletedAsync(deferSocketResponse: true);
                 TryCount = 0;
+                return (switchNext, response);
             }
             else if (FlowControlData.EventName == "OverTime")
             {
@@ -1563,7 +1562,7 @@ namespace ProjectARVRPro
                     log.Info("重新尝试运行流程");
                     if (_luxSession != null) _ = RunLuxTemplateAsync();
                     else _ = RunTemplate();
-                    return;
+                    return default;
                 }
                 else
                 {
@@ -1576,7 +1575,7 @@ namespace ProjectARVRPro
                     {
                         await CompleteLuxFlowAsync(FlowControlData.EventName, FlowControlData.Params);
                         TryCount = 0;
-                        return;
+                        return default;
                     }
                     await TestCompletedAsync();
                 }
@@ -1601,7 +1600,7 @@ namespace ProjectARVRPro
                 {
                     _isFlowLifecycleActive = false;
                     await CompleteLuxFlowAsync(FlowControlData.EventName, FlowControlData.Params);
-                    return;
+                    return default;
                 }
                 if (ProjectARVRProConfig.Instance.AllowTestFailures)
                 {
@@ -1623,6 +1622,8 @@ namespace ProjectARVRPro
                     await TestCompletedAsync();
                 }
             }
+
+            return default;
         }
 
         private async Task<bool> Processing(string SerialNumber, (int? Id, string? ConnectionString) batchForProcessing)
@@ -1948,21 +1949,26 @@ namespace ProjectARVRPro
 
         }
 
-        private async Task TestCompletedAsync()
+        private async Task<SocketResponse?> TestCompletedAsync(bool deferSocketResponse = false)
         {
             if (_luxSession != null)
             {
                 await CompleteLuxFlowAsync("Failed", CurrentFlowResult?.Msg);
-                return;
+                return null;
             }
             if (_objectiveSessionCompleted)
-                return;
+                return null;
 
             _objectiveSessionCompleted = true;
             IsResultExportPending = true;
             try
             {
-                await ExportCompletedTestAsync();
+                SocketResponse? response = await ExportCompletedTestAsync();
+                if (deferSocketResponse)
+                    return response;
+                if (response != null)
+                    SendCompletedTestResponse(response);
+                return null;
             }
             finally
             {
@@ -1970,7 +1976,7 @@ namespace ProjectARVRPro
             }
         }
 
-        private async Task ExportCompletedTestAsync()
+        private async Task<SocketResponse?> ExportCompletedTestAsync()
         {
             FinalizeObjectiveTestResultRecord();
 
@@ -2048,7 +2054,7 @@ namespace ProjectARVRPro
                     responseData = LegacyARVRConverter.ToLegacy(ObjectiveTestResult);
                 }
 
-                var response = new SocketResponse
+                return new SocketResponse
                 {
                     Version = "1.0",
                     MsgID = string.Empty,
@@ -2058,6 +2064,18 @@ namespace ProjectARVRPro
                     Msg = _firstFlowFailure?.Message ?? (ObjectiveTestResult.TotalResult ? "ARVR Test Completed" : "ARVR Test Fail"),
                     Data = responseData
                 };
+            }
+            catch (Exception ex)
+            {
+                log.Error("生成 ProjectARVRResult 响应失败", ex);
+                return null;
+            }
+        }
+
+        private static void SendCompletedTestResponse(SocketResponse response)
+        {
+            try
+            {
                 string respString = JsonConvert.SerializeObject(response);
                 log.Info(respString);
                 var sentMsg = new SocketMessage
@@ -2988,6 +3006,7 @@ namespace ProjectARVRPro
             _isRunAllRunning = true;
             CurrentFlowResult = null!;
             ProjectARVRReuslt? lastPersistedRunAllResult = null;
+            SocketResponse? completionResponse = null;
             try
             {
                 bool usePreparedSession = _runAllSessionPrepared;
@@ -3212,7 +3231,7 @@ namespace ProjectARVRPro
                 }
 
                 log.Info($"一键执行完成, TotalResult={ObjectiveTestResult.TotalResult}");
-                await TestCompletedAsync();
+                completionResponse = await TestCompletedAsync(deferSocketResponse: BatchFinalization.IsCompleting);
             }
             catch (Exception ex)
             {
@@ -3248,7 +3267,7 @@ namespace ProjectARVRPro
                     // summary; the previous flow row has already completed successfully.
                     SaveObjectiveTestResultRecord(lastPersistedRunAllResult);
                 }
-                await TestCompletedAsync();
+                completionResponse = await TestCompletedAsync(deferSocketResponse: BatchFinalization.IsCompleting);
                 log.Error("一键执行异常", ex);
             }
             finally
@@ -3260,6 +3279,8 @@ namespace ProjectARVRPro
                 _isRunAllRunning = false;
                 if (BatchFinalization.IsCompleting)
                     EndFlowBatchCompletion();
+                if (!_isDisposed && completionResponse != null)
+                    SendCompletedTestResponse(completionResponse);
             }
         }
 

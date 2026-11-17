@@ -66,4 +66,27 @@ public sealed class FlowBatchFinalizationTests
             Assert.False(replay.Cancel);
             Assert.False(finalization.CloseRequested);
         });
+
+    [Fact]
+    public Task FailedWriteLeavesTheCompletionGuardInPlaceUntilResultCleanupEnds() =>
+        ArvrDrawingOverlayCompatibilityTests.RunAsyncOnStaThread(async () =>
+        {
+            var finalization = new FlowBatchFinalization();
+            finalization.BeginCompletion();
+            var failure = new InvalidOperationException("Database write failed.");
+
+            Assert.Same(failure, await Assert.ThrowsAsync<InvalidOperationException>(
+                () => finalization.RunAsync(() => throw failure)));
+            Assert.Null(finalization.PendingWrite);
+            Assert.True(finalization.IsCompleting);
+            Assert.False(finalization.EndCompletion());
+            Assert.False(finalization.IsCompleting);
+
+            int nextBatchWrites = 0;
+            finalization.BeginCompletion();
+            await finalization.RunAsync(() => Interlocked.Increment(ref nextBatchWrites));
+            Assert.Equal(1, nextBatchWrites);
+            Assert.Null(finalization.PendingWrite);
+            Assert.False(finalization.EndCompletion());
+        });
 }
