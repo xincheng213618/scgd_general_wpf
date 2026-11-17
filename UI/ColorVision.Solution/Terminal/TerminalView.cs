@@ -38,6 +38,8 @@ namespace ColorVision.Solution.Terminal
             return glyphTypeface;
         }).ToArray();
 
+        private static readonly int[]?[] AsciiGlyphMap = GlyphTypefaces.Select(CreateAsciiGlyphMap).ToArray();
+
         private static readonly Regex UrlRegex = CreateUrlRegex();
 
         private readonly TerminalHistoryLayout _lines = new();
@@ -45,6 +47,8 @@ namespace ColorVision.Solution.Terminal
         private ConditionalWeakTable<TerminalLine, DrawingGroup> _drawings = new();
         private readonly ConditionalWeakTable<TerminalLine, Link[]> _links = new();
         private readonly Dictionary<Color, SolidColorBrush> _brushes = new();
+        private (double Y, TranslateTransform? Transform)[] _rowTransforms = [];
+        private double _lastRenderOffset;
         private int _cursorLine;
         private int _cursorCol;
         private bool _cursorVisible;
@@ -257,15 +261,22 @@ namespace ColorVision.Solution.Terminal
         protected override void OnRender(DrawingContext dc)
         {
             dc.DrawRectangle(GetBrush(DefaultBackgroundColor), null, new Rect(RenderSize));
-            int first = Math.Max(0, (int)(VerticalOffset / LineHeight));
-            int end = Math.Min(_lines.Count, (int)Math.Ceiling((VerticalOffset + RenderSize.Height) / LineHeight));
+            double offset = VerticalOffset;
+            int first = Math.Max(0, (int)(offset / LineHeight));
+            int end = Math.Min(_lines.Count, (int)Math.Ceiling((offset + RenderSize.Height) / LineHeight));
+            // Moving by fractional rows usually changes every translation.
+            bool reuseTranslations = offset == _lastRenderOffset || offset == Math.Round(offset / LineHeight) * LineHeight;
+            _lastRenderOffset = offset;
+            int visibleRows = end - first;
+            if (reuseTranslations && visibleRows > _rowTransforms.Length)
+                Array.Resize(ref _rowTransforms, Math.Max(visibleRows, _rowTransforms.Length * 2));
 
             for (int index = first; index < end; index++)
             {
                 var line = _lines[index];
-                double y = index * LineHeight - VerticalOffset;
-                dc.PushTransform(new TranslateTransform(0, y));
-                dc.DrawDrawing(_drawings.GetValue(line, RenderLine));
+                double y = index * LineHeight - offset;
+                dc.PushTransform(reuseTranslations ? GetRowTranslation(index - first, y) : new TranslateTransform(0, y));
+                dc.DrawDrawing(_drawings.GetOrAdd(line, static (row, view) => view.RenderLine(row), this));
                 var (links, sourceColumn) = GetSourceLinks(index);
                 foreach (var link in links)
                 {
@@ -286,6 +297,18 @@ namespace ColorVision.Solution.Terminal
                 }
                 dc.Pop();
             }
+        }
+
+        private TranslateTransform GetRowTranslation(int row, double y)
+        {
+            ref var cached = ref _rowTransforms[row];
+            if (cached.Transform == null || cached.Y != y)
+            {
+                var translation = new TranslateTransform(0, y);
+                translation.Freeze();
+                cached = (y, translation);
+            }
+            return cached.Transform;
         }
 
         private DrawingGroup RenderLine(TerminalLine line)
@@ -330,6 +353,7 @@ namespace ColorVision.Solution.Terminal
         private void DrawTextRun(DrawingContext dc, ReadOnlySpan<TerminalCell> cells, int start, int font, Brush brush)
         {
             var glyphTypeface = GlyphTypefaces[font];
+            var glyphIndices = AsciiGlyphMap[font];
             int position = 0;
             while (position < cells.Length)
             {
@@ -340,17 +364,17 @@ namespace ColorVision.Solution.Terminal
                     continue;
                 }
 
-                if (glyphTypeface != null && IsSimpleCell(cell) && glyphTypeface.CharacterToGlyphMap.ContainsKey(cell.Char))
+                if (glyphTypeface != null && glyphIndices != null && IsSimpleCell(cell) && glyphIndices[cell.Char] >= 0)
                 {
                     int end = position + 1;
-                    while (end < cells.Length && IsSimpleCell(cells[end]) && glyphTypeface.CharacterToGlyphMap.ContainsKey(cells[end].Char))
+                    while (end < cells.Length && IsSimpleCell(cells[end]) && glyphIndices[cells[end].Char] >= 0)
                         end++;
 
                     var indices = new ushort[end - position];
                     var advances = new double[indices.Length];
                     for (int i = 0; i < indices.Length; i++)
                     {
-                        indices[i] = glyphTypeface.CharacterToGlyphMap[cells[position + i].Char];
+                        indices[i] = (ushort)glyphIndices[cells[position + i].Char];
                         advances[i] = CharWidth;
                     }
                     var baseline = new Point((start + position) * CharWidth, glyphTypeface.Baseline * FontSize);
@@ -372,6 +396,16 @@ namespace ColorVision.Solution.Terminal
                     dc.Pop();
                 position++;
             }
+        }
+
+        private static int[]? CreateAsciiGlyphMap(GlyphTypeface? typeface)
+        {
+            if (typeface == null) return null;
+            var glyphs = typeface.CharacterToGlyphMap;
+            var indices = new int['~' + 1];
+            for (char character = ' '; character <= '~'; character++)
+                indices[character] = glyphs.TryGetValue(character, out ushort index) ? index : -1;
+            return indices;
         }
 
         private static bool IsSimpleCell(TerminalCell cell) => cell.Glyph == null && cell.Char is >= ' ' and <= '~';
