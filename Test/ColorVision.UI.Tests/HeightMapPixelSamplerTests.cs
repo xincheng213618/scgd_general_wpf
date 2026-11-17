@@ -235,6 +235,31 @@ public sealed class HeightMapPixelSamplerTests
         });
     }
 
+    [Theory]
+    [InlineData(0, 1, 187, 56)]
+    [InlineData(0, 11, 57, 24)]
+    [InlineData(0, 20, 240, 83)]
+    [InlineData(23, 229, 45, 151)]
+    public void Sample_PreservesLuminanceRoundingAtColorMidpoints(int blue, int green, int red, int expected)
+    {
+        StaTest.Run(() =>
+        {
+            byte[] source = new byte[3 * 3 * 3];
+            for (int offset = 0; offset < source.Length; offset += 3)
+            {
+                source[offset] = (byte)blue;
+                source[offset + 1] = (byte)green;
+                source[offset + 2] = (byte)red;
+            }
+            WriteableBitmap bitmap = CreateBitmap(3, 3, PixelFormats.Bgr24, source, 9);
+
+            var sample = InvokeSampler(bitmap, 2, 2);
+
+            Assert.Equal(4, sample.Gray.Length);
+            Assert.All(sample.Gray, value => Assert.Equal((byte)expected, value));
+        });
+    }
+
     [Fact]
     public void Sample_PreservesSingletonDuplicationForMeshCompatibility()
     {

@@ -98,10 +98,21 @@ namespace ColorVision.ImageEditor.EditorTools.ThreeD
                     double xWeight = xFraction[x];
                     double leftWeight = 1 - xWeight;
 
-                    byte topLeftGray = ReadGray(rows, topOffset + leftOffset, isGray);
-                    byte topRightGray = ReadGray(rows, topOffset + rightOffset, isGray);
-                    byte bottomLeftGray = ReadGray(rows, bottomOffset + leftOffset, isGray);
-                    byte bottomRightGray = ReadGray(rows, bottomOffset + rightOffset, isGray);
+                    byte topLeftGray, topRightGray, bottomLeftGray, bottomRightGray;
+                    if (isGray)
+                    {
+                        topLeftGray = rows[topOffset + leftOffset];
+                        topRightGray = rows[topOffset + rightOffset];
+                        bottomLeftGray = rows[bottomOffset + leftOffset];
+                        bottomRightGray = rows[bottomOffset + rightOffset];
+                    }
+                    else
+                    {
+                        topLeftGray = ReadColorGray(rows, topOffset + leftOffset);
+                        topRightGray = ReadColorGray(rows, topOffset + rightOffset);
+                        bottomLeftGray = ReadColorGray(rows, bottomOffset + leftOffset);
+                        bottomRightGray = ReadColorGray(rows, bottomOffset + rightOffset);
+                    }
 
                     int index = targetOffset + x;
                     gray[index] = Interpolate(topLeftGray, topRightGray, bottomLeftGray, bottomRightGray,
@@ -148,7 +159,8 @@ namespace ColorVision.ImageEditor.EditorTools.ThreeD
                         for (int x = 0; x < width; x++, sourceOffset += bytesPerPixel)
                         {
                             int index = targetOffset + x;
-                            gray[index] = ReadGray(rows, sourceOffset, false);
+                            gray[index] = (byte)Math.Round(rows[sourceOffset] * 0.114
+                                + rows[sourceOffset + 1] * 0.587 + rows[sourceOffset + 2] * 0.299);
                             if (alpha != null)
                             {
                                 alpha[index] = rows[sourceOffset + 3];
@@ -176,10 +188,15 @@ namespace ColorVision.ImageEditor.EditorTools.ThreeD
             return (width, height);
         }
 
-        private static byte ReadGray(byte[] pixels, int offset, bool readSingleChannel)
+        private static byte ReadColorGray(byte[] pixels, int offset)
         {
-            if (readSingleChannel) return pixels[offset];
-            return (byte)Math.Round(pixels[offset] * 0.114 + pixels[offset + 1] * 0.587 + pixels[offset + 2] * 0.299);
+            int blue = pixels[offset];
+            int green = pixels[offset + 1];
+            int red = pixels[offset + 2];
+            int weighted = blue * 114 + green * 587 + red * 299 + 500;
+            int gray = weighted / 1000;
+            // Only an exact midpoint can be rounded differently by the original floating-point expression.
+            return weighted != gray * 1000 ? (byte)gray : (byte)Math.Round(blue * 0.114 + green * 0.587 + red * 0.299);
         }
 
         private static byte Interpolate(byte topLeft, byte topRight, byte bottomLeft, byte bottomRight,

@@ -1,5 +1,6 @@
 using ColorVision.ImageEditor.Output;
 using System;
+using System.Buffers.Binary;
 using System.Globalization;
 using System.IO;
 using System.Numerics;
@@ -137,20 +138,30 @@ namespace ColorVision.ImageEditor.EditorTools.ThreeD
                 double length = Math.Sqrt(x * x + y * y + z * z);
                 WriteVector(writer, "vn ", x / length, y / length, z / length);
             }
+            // Three corners, each with the same positive Int32 index in all three slots.
+            Span<char> face = stackalloc char[100];
+            face[0] = 'f';
+            face[1] = ' ';
             for (int i = 0; i < indices.Length; i += 3)
             {
                 if ((i & 1023) == 0) token.ThrowIfCancellationRequested();
-                writer.Write("f ");
+                int length = 2;
                 for (int corner = 0; corner < 3; corner++)
                 {
                     int index = indices[i + corner];
                     ValidateIndex(index, positions.Length);
-                    if (corner != 0) writer.Write(' ');
-                    WriteIndex(writer, index + 1); writer.Write('/');
-                    WriteIndex(writer, index + 1); writer.Write('/');
-                    WriteIndex(writer, index + 1);
+                    if (corner != 0) face[length++] = ' ';
+                    (index + 1).TryFormat(face[length..], out int written, provider: CultureInfo.InvariantCulture);
+                    ReadOnlySpan<char> formatted = face.Slice(length, written);
+                    length += written;
+                    face[length++] = '/';
+                    formatted.CopyTo(face[length..]);
+                    length += written;
+                    face[length++] = '/';
+                    formatted.CopyTo(face[length..]);
+                    length += written;
                 }
-                writer.WriteLine();
+                writer.WriteLine(face[..length]);
             }
         }
 
@@ -174,13 +185,16 @@ namespace ColorVision.ImageEditor.EditorTools.ThreeD
         private static void WriteStl(HeightMapDxGeometry geometry, double heightScale, string path, CancellationToken token)
         {
             using var stream = new FileStream(path, FileMode.CreateNew, FileAccess.Write, FileShare.None, 64 * 1024, FileOptions.SequentialScan);
-            using var writer = new BinaryWriter(stream, Encoding.UTF8, leaveOpen: false);
-            byte[] header = new byte[80];
-            Encoding.ASCII.GetBytes("ColorVision display-luminance height map").CopyTo(header, 0);
-            writer.Write(header);
             ReadOnlySpan<Vector3> positions = geometry.Positions;
             ReadOnlySpan<int> indices = geometry.Indices;
-            writer.Write((uint)(indices.Length / 3));
+            Span<byte> header = stackalloc byte[84];
+            header.Clear();
+            "ColorVision display-luminance height map"u8.CopyTo(header);
+            BinaryPrimitives.WriteUInt32LittleEndian(header[80..], (uint)(indices.Length / 3));
+            stream.Write(header);
+            const int triangleBytes = 50;
+            Span<byte> buffer = stackalloc byte[triangleBytes * 128];
+            int buffered = 0;
             for (int i = 0; i < indices.Length; i += 3)
             {
                 if ((i & 1023) == 0) token.ThrowIfCancellationRequested();
@@ -194,10 +208,20 @@ namespace ColorVision.ImageEditor.EditorTools.ThreeD
                 double nx = abY * acZ - abZ * acY, ny = abZ * acX - abX * acZ, nz = abX * acY - abY * acX;
                 double length = Math.Sqrt(nx * nx + ny * ny + nz * nz);
                 Vector3 normal = length > 0 ? new Vector3((float)(nx / length), (float)(ny / length), (float)(nz / length)) : Vector3.Zero;
-                WriteVector(writer, normal);
-                WriteVector(writer, a); WriteVector(writer, b); WriteVector(writer, c);
-                writer.Write((ushort)0);
+                Span<byte> triangle = buffer.Slice(buffered, triangleBytes);
+                WriteStlVector(triangle, normal);
+                WriteStlVector(triangle[12..], a);
+                WriteStlVector(triangle[24..], b);
+                WriteStlVector(triangle[36..], c);
+                BinaryPrimitives.WriteUInt16LittleEndian(triangle[48..], 0);
+                buffered += triangleBytes;
+                if (buffered == buffer.Length)
+                {
+                    stream.Write(buffer);
+                    buffered = 0;
+                }
             }
+            if (buffered > 0) stream.Write(buffer[..buffered]);
         }
 
         private static Vector3 ScaledPosition(ReadOnlySpan<Vector3> positions, int index, double heightScale)
@@ -215,9 +239,11 @@ namespace ColorVision.ImageEditor.EditorTools.ThreeD
             if ((uint)index >= (uint)count) throw new ArgumentException("A triangle references a vertex outside the mesh.");
         }
 
-        private static void WriteVector(BinaryWriter writer, Vector3 value)
+        private static void WriteStlVector(Span<byte> buffer, Vector3 value)
         {
-            writer.Write(value.X); writer.Write(value.Y); writer.Write(value.Z);
+            BinaryPrimitives.WriteSingleLittleEndian(buffer, value.X);
+            BinaryPrimitives.WriteSingleLittleEndian(buffer[4..], value.Y);
+            BinaryPrimitives.WriteSingleLittleEndian(buffer[8..], value.Z);
         }
 
         private static void WriteVector(TextWriter writer, string prefix, double x, double y, double z)
@@ -231,13 +257,6 @@ namespace ColorVision.ImageEditor.EditorTools.ThreeD
             if (!double.IsFinite(value)) throw new InvalidOperationException("OBJ coordinates and normals must be finite.");
             Span<char> buffer = stackalloc char[32];
             value.TryFormat(buffer, out int written, "R", CultureInfo.InvariantCulture);
-            writer.Write(buffer[..written]);
-        }
-
-        private static void WriteIndex(TextWriter writer, int value)
-        {
-            Span<char> buffer = stackalloc char[11];
-            value.TryFormat(buffer, out int written, provider: CultureInfo.InvariantCulture);
             writer.Write(buffer[..written]);
         }
 

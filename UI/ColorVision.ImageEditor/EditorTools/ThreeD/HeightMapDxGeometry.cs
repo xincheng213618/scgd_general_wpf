@@ -16,7 +16,7 @@ namespace ColorVision.ImageEditor.EditorTools.ThreeD
         private readonly Vector3Collection normals;
         private readonly Vector2Collection textureCoordinates;
         private readonly IntCollection indices;
-        private readonly bool[] visibleCells;
+        private readonly bool[]? visibleCells;
 
         public HeightMapSample Sample { get; }
         public ReadOnlySpan<Vector3> Positions => positions.GetInternalArray().AsSpan(0, positions.Count);
@@ -25,7 +25,7 @@ namespace ColorVision.ImageEditor.EditorTools.ThreeD
         public ReadOnlySpan<int> Indices => indices.GetInternalArray().AsSpan(0, indices.Count);
 
         internal HeightMapDxGeometry(HeightMapSample sample, Vector3Collection positions, Vector3Collection normals,
-            Vector2Collection textureCoordinates, IntCollection indices, bool[] visibleCells)
+            Vector2Collection textureCoordinates, IntCollection indices, bool[]? visibleCells)
         {
             Sample = sample;
             this.positions = positions;
@@ -54,16 +54,19 @@ namespace ColorVision.ImageEditor.EditorTools.ThreeD
             Vector3[] positions = ResizeBuffer(meshPositions, count);
             Vector3[] normals = ResizeBuffer(meshNormals, count);
             Vector2[] uv = ResizeBuffer(meshTextureCoordinates, count);
-            var visibleCells = new bool[checked((width - 1) * (height - 1))];
+            int cellCount = checked((width - 1) * (height - 1));
             float dx = (float)(worldWidth / (width - 1));
             float dy = (float)(worldHeight / (height - 1));
-            int visibleCount = 0;
             HeightMapSample maskSource = transparencySource ?? sample;
             byte[]? mask = maskSource.Alpha;
+            // A missing visibility array means every mesh cell is visible.
+            bool[]? visibleCells = mask != null || width <= 0 || height <= 0 ? new bool[cellCount] : null;
+            int visibleCount = visibleCells == null ? cellCount : 0;
             bool maskMatchesMesh = maskSource.Width == width && maskSource.Height == height;
             for (int y = 0; y < height; y++)
             {
                 cancellationToken.ThrowIfCancellationRequested();
+                int cellsInRow = visibleCells != null && y + 1 < height ? width - 1 : 0;
                 for (int x = 0; x < width; x++)
                 {
                     int index = y * width + x;
@@ -77,13 +80,13 @@ namespace ColorVision.ImageEditor.EditorTools.ThreeD
                     float gradientX = (sample.Gray[right] - sample.Gray[left]) / (255f * Math.Max(1, right - left) * dx);
                     float gradientY = (sample.Gray[bottom] - sample.Gray[top]) / (255f * Math.Max(1, (bottom - top) / width) * dy);
                     normals[index] = Vector3.Normalize(new Vector3(-gradientX, gradientY, 1));
-                    if (x + 1 < width && y + 1 < height)
+                    if (x < cellsInRow)
                     {
-                        bool visible = mask == null || (maskMatchesMesh
-                            ? mask[index] > VisibleAlphaThreshold && mask[index + 1] > VisibleAlphaThreshold
+                        bool visible = maskMatchesMesh
+                            ? mask![index] > VisibleAlphaThreshold && mask[index + 1] > VisibleAlphaThreshold
                                 && mask[index + width] > VisibleAlphaThreshold && mask[index + width + 1] > VisibleAlphaThreshold
-                            : IsCoarseCellVisible(maskSource, x, y, width, height));
-                        visibleCells[y * (width - 1) + x] = visible;
+                            : IsCoarseCellVisible(maskSource, x, y, width, height);
+                        visibleCells![y * (width - 1) + x] = visible;
                         if (visible) visibleCount++;
                     }
                 }
@@ -98,7 +101,7 @@ namespace ColorVision.ImageEditor.EditorTools.ThreeD
                 cancellationToken.ThrowIfCancellationRequested();
                 for (int x = 0; x < width - 1; x++)
                 {
-                    if (!visibleCells[y * (width - 1) + x]) continue;
+                    if (visibleCells != null && !visibleCells[y * (width - 1) + x]) continue;
                     int topLeft = y * width + x;
                     int bottomLeft = topLeft + width;
                     indices[cursor++] = topLeft;
@@ -194,7 +197,7 @@ namespace ColorVision.ImageEditor.EditorTools.ThreeD
             for (int visited = 0; visited <= Sample.Width + Sample.Height; visited++)
             {
                 double cellExit = Math.Min(leave, Math.Min(nextX, nextY));
-                if (visibleCells[y * (Sample.Width - 1) + x])
+                if (visibleCells == null || visibleCells[y * (Sample.Width - 1) + x])
                 {
                     int a = y * Sample.Width + x;
                     int c = a + Sample.Width;
