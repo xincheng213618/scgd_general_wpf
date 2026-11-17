@@ -194,33 +194,29 @@ namespace ColorVision.ImageEditor.Algorithms
             IAlgorithmParameters parameters, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            using Mat? nativeOutput = id switch
-            {
-                var value when value == StandardAlgorithmIds.Canny => ApplyCanny(source, (CannyParameters)parameters),
-                var value when value == StandardAlgorithmIds.HistogramEqualization => ApplyHistogramEqualization(source),
-                _ => null,
-            };
-            if (nativeOutput != null)
-                return AlgorithmImageInterop.FromMat(nativeOutput, input.DpiX, input.DpiY, cancellationToken);
-
-            // Same-layout operations can fill the result buffer without a native staging image.
-            int stride = checked(input.Width * input.Format.BytesPerPixel());
+            AlgorithmImageFormat format = input.Format;
+            if (id == StandardAlgorithmIds.Canny) format = AlgorithmImageFormat.Gray8;
+            else if (id == StandardAlgorithmIds.HistogramEqualization)
+                format = input.Format.Channels() == 1 ? AlgorithmImageFormat.Gray8 : AlgorithmImageFormat.Bgr24;
+            int stride = checked(input.Width * format.BytesPerPixel());
             byte[] data = new byte[checked(stride * input.Height)];
             fixed (byte* pixels = data)
             {
-                using Mat destination = Mat.FromPixelData(input.Height, input.Width, source.Type(), (IntPtr)pixels, stride);
+                using Mat destination = Mat.FromPixelData(input.Height, input.Width, AlgorithmImageInterop.ToMatType(format), (IntPtr)pixels, stride);
                 cancellationToken.ThrowIfCancellationRequested();
                 ExecuteInto(source, destination, id, parameters, cancellationToken);
                 if (destination.Data != (IntPtr)pixels || destination.Step() != stride)
                     throw new InvalidOperationException($"OpenCV operation '{id}' replaced its externally owned output storage.");
             }
             cancellationToken.ThrowIfCancellationRequested();
-            return new AlgorithmImageBuffer(input.Width, input.Height, stride, input.Format, data, input.DpiX, input.DpiY);
+            return new AlgorithmImageBuffer(input.Width, input.Height, stride, format, data, input.DpiX, input.DpiY);
         }
 
         private static void ExecuteInto(Mat source, Mat destination, AlgorithmId id, IAlgorithmParameters parameters, CancellationToken cancellationToken)
         {
             if (id == StandardAlgorithmIds.Invert) Cv2.BitwiseNot(source, destination);
+            else if (id == StandardAlgorithmIds.Canny) ApplyCanny(source, destination, (CannyParameters)parameters);
+            else if (id == StandardAlgorithmIds.HistogramEqualization) ApplyHistogramEqualization(source, destination);
             else if (id == StandardAlgorithmIds.Threshold)
             {
                 ThresholdParameters value = (ThresholdParameters)parameters;
@@ -257,13 +253,15 @@ namespace ColorVision.ImageEditor.Algorithms
             else throw new NotSupportedException($"OpenCV provider does not implement '{id}'.");
         }
 
-        internal static Mat ApplyCanny(Mat source, CannyParameters parameters)
+        internal static void ApplyCanny(Mat source, Mat destination, CannyParameters parameters)
         {
-            using Mat gray = ConvertToGray(source);
-            using Mat gray8 = ConvertTo8BitNominal(gray);
-            Mat result = new();
-            Cv2.Canny(gray8, result, parameters.LowThreshold, parameters.HighThreshold, parameters.ApertureSize, parameters.L2Gradient);
-            return result;
+            using Mat? convertedGray = source.Channels() == 1 ? null : ConvertToGray(source);
+            Mat gray = convertedGray ?? source;
+            // A true submatrix needs a detached buffer to retain its existing border behavior.
+            using Mat? converted8 = gray.Depth() != MatType.CV_8U || (convertedGray == null && gray.IsSubmatrix())
+                ? ConvertTo8BitNominal(gray)
+                : null;
+            Cv2.Canny(converted8 ?? gray, destination, parameters.LowThreshold, parameters.HighThreshold, parameters.ApertureSize, parameters.L2Gradient);
         }
 
         internal static void ApplyWhiteBalance(Mat source, Mat destination, WhiteBalanceParameters parameters, CancellationToken cancellationToken)
@@ -295,48 +293,51 @@ namespace ColorVision.ImageEditor.Algorithms
             int height = source.Rows;
             int rowBytes = checked(source.Cols * (int)source.ElemSize());
             int rowsPerBlock = Math.Max(1, 1024 * 1024 / rowBytes);
-            for (int top = 0; top < height;)
+            Mat[] planes = new Mat[channels];
+            try
             {
-                cancellationToken.ThrowIfCancellationRequested();
-                int end = top + Math.Min(rowsPerBlock, height - top);
-                using Mat sourceBlock = source.RowRange(top, end);
-                using Mat targetBlock = destination.RowRange(top, end);
-                Mat[] planes = Cv2.Split(sourceBlock);
-                try
+                for (int channel = 0; channel < channels; channel++)
+                    planes[channel] = new Mat();
+
+                for (int top = 0; top < height;)
                 {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    int end = top + Math.Min(rowsPerBlock, height - top);
+                    using Mat sourceBlock = source.RowRange(top, end);
+                    using Mat targetBlock = destination.RowRange(top, end);
+                    for (int channel = 0; channel < channels; channel++)
+                        Cv2.ExtractChannel(sourceBlock, planes[channel], channel);
                     planes[0].ConvertTo(planes[0], depth, parameters.BlueScale);
                     planes[1].ConvertTo(planes[1], depth, parameters.GreenScale);
                     planes[2].ConvertTo(planes[2], depth, parameters.RedScale);
                     Cv2.Merge(planes, targetBlock);
+                    top = end;
                 }
-                finally
-                {
-                    foreach (Mat plane in planes) plane.Dispose();
-                }
-                top = end;
+            }
+            finally
+            {
+                foreach (Mat plane in planes) plane?.Dispose();
             }
         }
 
-        internal static Mat ApplyHistogramEqualization(Mat source)
+        internal static void ApplyHistogramEqualization(Mat source, Mat destination)
         {
-            using Mat source8 = ConvertTo8BitRange(source);
+            using Mat? converted8 = source.Depth() == MatType.CV_8U ? null : ConvertTo8BitRange(source);
+            Mat source8 = converted8 ?? source;
             if (source8.Channels() == 1)
             {
-                Mat grayResult = new();
-                Cv2.EqualizeHist(source8, grayResult);
-                return grayResult;
+                Cv2.EqualizeHist(source8, destination);
+                return;
             }
 
-            using Mat bgr = ConvertToBgr(source8);
+            using Mat? convertedBgr = source8.Channels() == 3 ? null : ConvertToBgr(source8);
             using Mat yCrCb = new();
-            Cv2.CvtColor(bgr, yCrCb, ColorConversionCodes.BGR2YCrCb);
+            Cv2.CvtColor(convertedBgr ?? source8, yCrCb, ColorConversionCodes.BGR2YCrCb);
             using Mat luminance = new();
             Cv2.ExtractChannel(yCrCb, luminance, 0);
             Cv2.EqualizeHist(luminance, luminance);
             Cv2.InsertChannel(luminance, yCrCb, 0);
-            Mat result = new();
-            Cv2.CvtColor(yCrCb, result, ColorConversionCodes.YCrCb2BGR);
-            return result;
+            Cv2.CvtColor(yCrCb, destination, ColorConversionCodes.YCrCb2BGR);
         }
 
         internal static Mat ConvertPseudoColorSource(Mat source, PseudoColorParameters parameters, out double minimum, out double maximum)
@@ -421,7 +422,6 @@ namespace ColorVision.ImageEditor.Algorithms
 
         private static Mat ConvertTo8BitRange(Mat source)
         {
-            if (source.Depth() == MatType.CV_8U) return source.Clone();
             using Mat normalized = new();
             Cv2.Normalize(source, normalized, 0, byte.MaxValue, NormTypes.MinMax);
             Mat result = new();
