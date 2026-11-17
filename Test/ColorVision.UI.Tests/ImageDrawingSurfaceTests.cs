@@ -1,5 +1,6 @@
 using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Draw;
+using ColorVision.ImageEditor.Output;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
@@ -61,6 +62,57 @@ public sealed class ImageDrawingSurfaceTests
             Assert.Empty(surface.Visuals);
             Assert.Same(image, surface.Source);
             Assert.Equal(255, Render(surface)[(25 * 100 + 25) * 4 + 1]);
+        });
+    }
+
+    [Theory]
+    [InlineData(31)]
+    [InlineData(22.75)]
+    public void Rgb48ScreenshotPreservesBasePixelsAndRasterAnnotations(double width)
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            const int sourceWidth = 31, sourceHeight = 19;
+            ushort[] sourcePixels = Enumerable.Range(0, sourceWidth * sourceHeight * 3)
+                .Select(index => (ushort)(index * 31_997)).ToArray();
+            BitmapSource source = BitmapSource.Create(sourceWidth, sourceHeight, 96, 96, PixelFormats.Rgb48, null, sourcePixels, sourceWidth * 6);
+            source.Freeze();
+            using DrawCanvas surface = new() { Source = source, Stretch = Stretch.Fill };
+            RenderOptions.SetBitmapScalingMode(surface, BitmapScalingMode.HighQuality);
+            BitmapSource marker = BitmapSource.Create(2, 1, 96, 96, PixelFormats.Bgra32, null,
+                new byte[] { 0, 230, 27, 168, 110, 43, 255, 92 }, 8);
+            DrawingVisual annotation = new();
+            using (DrawingContext context = annotation.RenderOpen())
+                context.DrawImage(marker, new Rect(3.25, 4.3, 11.7, 5.2));
+            surface.AddVisual(annotation);
+            surface.Measure(new Size(width, sourceHeight));
+            surface.Arrange(new Rect(0, 0, width, sourceHeight));
+            surface.UpdateLayout();
+
+            int outputWidth = (int)Math.Ceiling(width);
+            byte[] ReadPixels(BitmapSource image)
+            {
+                byte[] pixels = new byte[outputWidth * sourceHeight * 4];
+                image.CopyPixels(pixels, outputWidth * 4, 0);
+                return pixels;
+            }
+            byte[] ReferencePixels()
+            {
+                RenderTargetBitmap reference = new(outputWidth, sourceHeight, 96, 96, PixelFormats.Pbgra32);
+                reference.Render(surface);
+                return ReadPixels(reference);
+            }
+
+            byte[] expected = ReferencePixels();
+            ImageSnapshotCapture capture = new();
+            try
+            {
+                BitmapSource actual = Assert.IsAssignableFrom<BitmapSource>(capture.CaptureRendered(surface, 96, 96, () => { }));
+                Assert.Equal(expected, ReadPixels(actual));
+                Assert.Equal(expected, ReferencePixels());
+                Assert.Equal(BitmapScalingMode.HighQuality, RenderOptions.GetBitmapScalingMode(surface));
+            }
+            finally { capture.Dispose(); }
         });
     }
 
