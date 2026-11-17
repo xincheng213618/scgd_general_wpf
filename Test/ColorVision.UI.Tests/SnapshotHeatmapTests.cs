@@ -8,6 +8,31 @@ namespace ColorVision.UI.Tests;
 
 public sealed class SnapshotHeatmapTests
 {
+    [Fact]
+    public void ConstantHeatmapUsesTheFirstJetColorWithoutChangingTheSource()
+    {
+        StaTest.Run(() =>
+        {
+            const int width = 7, height = 3;
+            ushort[] pixels = Enumerable.Repeat((ushort)50000, width * height).ToArray();
+            BitmapSource source = BitmapSource.Create(width, height, 96, 96, PixelFormats.Gray16, null, pixels, width * sizeof(ushort));
+
+            BitmapSource heatmap = SnapshotHeatmap.Create(source, width, height, 96, 96, CancellationToken.None);
+
+            using Mat index = new(1, 1, MatType.CV_8UC1, Scalar.Black);
+            using Mat firstJetColor = new();
+            Cv2.ApplyColorMap(index, firstJetColor, ColormapTypes.Jet);
+            Vec3b color = firstJetColor.At<Vec3b>(0, 0);
+            byte[] expected = Enumerable.Repeat(new[] { color.Item0, color.Item1, color.Item2 }, width * height).SelectMany(pixel => pixel).ToArray();
+            byte[] actual = new byte[expected.Length];
+            heatmap.CopyPixels(actual, width * 3, 0);
+            Assert.Equal(expected, actual);
+            ushort[] sourcePixels = new ushort[pixels.Length];
+            source.CopyPixels(sourcePixels, width * sizeof(ushort), 0);
+            Assert.Equal(pixels, sourcePixels);
+        });
+    }
+
     [Theory]
     [InlineData(2)]
     [InlineData(4)]

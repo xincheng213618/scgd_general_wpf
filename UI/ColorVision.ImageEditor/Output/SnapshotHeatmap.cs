@@ -24,19 +24,24 @@ internal static class SnapshotHeatmap
         Cv2.MinMaxLoc(samples, out double minimum, out double maximum);
         double scale = maximum > minimum && double.IsFinite(maximum - minimum) ? 255 / (maximum - minimum) : 0;
         using Mat indices = new();
-        if (scale > 0 && double.IsFinite(scale))
+        bool hasRange = scale > 0 && double.IsFinite(scale);
+        if (hasRange)
             samples.ConvertTo(indices, MatType.CV_8U, scale, -minimum * scale);
-        else
-        {
-            indices.Create(height, width, MatType.CV_8UC1);
-            indices.SetTo(Scalar.Black);
-        }
+        // Neither the compact indices nor the constant heatmap need the source luminance again.
+        samples.Release();
+        cancellationToken.ThrowIfCancellationRequested();
         var bitmap = new WriteableBitmap(width, height, dpiX, dpiY, PixelFormats.Bgr24, null);
         bitmap.Lock();
         try
         {
             using Mat colors = Mat.FromPixelData(height, width, MatType.CV_8UC3, bitmap.BackBuffer, bitmap.BackBufferStride);
-            Cv2.ApplyColorMap(indices, colors, ColormapTypes.Jet);
+            if (hasRange)
+                Cv2.ApplyColorMap(indices, colors, ColormapTypes.Jet);
+            else
+            {
+                // OpenCV's first JET entry in BGR order.
+                colors.SetTo(new Scalar(128, 0, 0));
+            }
             cancellationToken.ThrowIfCancellationRequested();
             bitmap.AddDirtyRect(new Int32Rect(0, 0, width, height));
         }
