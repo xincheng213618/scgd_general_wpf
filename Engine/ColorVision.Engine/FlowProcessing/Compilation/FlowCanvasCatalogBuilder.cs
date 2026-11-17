@@ -350,13 +350,24 @@ public sealed class FlowCanvasCatalogBuilder
 
     private static bool IsSensitivePropertyName(string propertyName)
     {
-        string normalized = new(
-            propertyName
-                .Where(char.IsLetterOrDigit)
-                .Select(char.ToLowerInvariant)
-                .ToArray());
-        return SensitivePropertyMarkers.Any(marker =>
-            normalized.Contains(marker, StringComparison.Ordinal));
+        const int maximumStackCharacters = 256;
+        Span<char> normalized = propertyName.Length <= maximumStackCharacters
+            ? stackalloc char[propertyName.Length]
+            : new char[propertyName.Length];
+        int length = 0;
+        foreach (char value in propertyName)
+        {
+            if (char.IsLetterOrDigit(value))
+                normalized[length++] = char.ToLowerInvariant(value);
+        }
+
+        ReadOnlySpan<char> name = normalized[..length];
+        foreach (string marker in SensitivePropertyMarkers)
+        {
+            if (name.Contains(marker, StringComparison.Ordinal))
+                return true;
+        }
+        return false;
     }
 
     private static void SkipByteLengthString(
