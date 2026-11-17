@@ -1370,6 +1370,26 @@ void runSyntheticCoverage()
         }
     }
 
+    const auto unequalColorDiffGr = directory.path / "color_diff_gr_degree.json";
+    const auto unequalColorDiffGb = directory.path / "color_diff_gb_degree.json";
+    writeText(unequalColorDiffGr, R"({"CalibDis":1,"MeasDis":1,"CenterCol":2,"CenterRow":2,"ColRowCoeffs_GB":[0,0],"ColRowCoeffs_GR":[0,0],"ColorDiffCoeffs_GB":[0],"ColorDiffCoeffs_GR":[0,1],"h":4,"w":4})");
+    writeText(unequalColorDiffGb, R"({"CalibDis":1,"MeasDis":1,"CenterCol":2,"CenterRow":2,"ColRowCoeffs_GB":[0,0],"ColRowCoeffs_GR":[0,0],"ColorDiffCoeffs_GB":[0,1],"ColorDiffCoeffs_GR":[0],"h":4,"w":4})");
+    // With targetRadius == radius, the longer polynomial maps its channel
+    // to the center while the shorter polynomial keeps the interior pixel.
+    constexpr std::size_t interior = (1 * 4 + 1) * 3, center = (2 * 4 + 2) * 3;
+    for (const auto& [file, channel] : std::array<std::pair<std::filesystem::path, int>, 2>{{
+        { unequalColorDiffGr, 2 }, { unequalColorDiffGb, 0 }
+    }}) {
+        std::memcpy(geometricRaw.data(), geometricPixels.data(), geometricRaw.size());
+        runOne(14, file, 4, 4, 16, 3, geometricRaw);
+        std::array<std::uint16_t, 3> pixel{};
+        std::memcpy(pixel.data(), geometricRaw.data() + interior * sizeof(std::uint16_t), sizeof(pixel));
+        for (int index = 0; index < 3; ++index) {
+            if (pixel[index] != geometricPixels[(index == channel ? center : interior) + index])
+                throw std::runtime_error("ColorDiff changed a channel with a different polynomial degree");
+        }
+    }
+
     Context geometricChain = createContext();
     requireResult(M_CalibrationLoadFileW(geometricChain.get(), 11, distortion.c_str()),
         geometricChain.get(), "load chained Distortion");

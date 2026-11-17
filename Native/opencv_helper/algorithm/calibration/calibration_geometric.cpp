@@ -1017,6 +1017,7 @@ private:
     {
         destinationGr.create(height, width, CV_16UC2);
         destinationGb.create(height, width, CV_16UC2);
+        const auto sharedTerms = (std::min)(coefficientsGr_.size(), coefficientsGb_.size());
         cv::parallel_for_(cv::Range(0, height), [&](const cv::Range& range) {
             for (int row = range.start; row < range.end; ++row) {
                 auto* mapGr = destinationGr.ptr<MapEntry>(row);
@@ -1030,11 +1031,20 @@ private:
                     const double angleSin = std::sin(angle);
                     const double angleCos = std::cos(angle);
 
-                    const auto writeEntry = [&](const std::vector<double>& coefficients,
+                    // Both channels use the same powers. Keep the original
+                    // accumulation order in each channel before rounding coordinates.
+                    double targetRadiusGr = 0.0;
+                    double targetRadiusGb = 0.0;
+                    for (std::size_t index = 0; index < sharedTerms; ++index) {
+                        const double radiusPower = std::pow(radius, static_cast<int>(index));
+                        targetRadiusGr += coefficientsGr_[index] * radiusPower;
+                        targetRadiusGb += coefficientsGb_[index] * radiusPower;
+                    }
+
+                    const auto writeEntry = [&](double targetRadius, const std::vector<double>& coefficients,
                                                 const std::array<double, 2>& columnRowShift,
                                                 MapEntry& entry) {
-                        double targetRadius = 0.0;
-                        for (std::size_t index = 0; index < coefficients.size(); ++index) {
+                        for (std::size_t index = sharedTerms; index < coefficients.size(); ++index) {
                             targetRadius += coefficients[index]
                                 * std::pow(radius, static_cast<int>(index));
                         }
@@ -1053,8 +1063,8 @@ private:
                         entry[0] = static_cast<std::uint16_t>(sourceColumn);
                         entry[1] = static_cast<std::uint16_t>(sourceRow);
                     };
-                    writeEntry(coefficientsGr_, shiftGr_, mapGr[column]);
-                    writeEntry(coefficientsGb_, shiftGb_, mapGb[column]);
+                    writeEntry(targetRadiusGr, coefficientsGr_, shiftGr_, mapGr[column]);
+                    writeEntry(targetRadiusGb, coefficientsGb_, shiftGb_, mapGb[column]);
                 }
             }
         });
