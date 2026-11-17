@@ -37,6 +37,7 @@ public sealed class ImageHistogramTests
 
     [Theory]
     [InlineData("Rgb24")]
+    [InlineData("Bgra32")]
     [InlineData("Rgba64")]
     [InlineData("Indexed8")]
     public void CountsDisplayedColorChannelsForAdditionalImageFormats(string formatName)
@@ -51,6 +52,10 @@ public sealed class ImageHistogramTests
                 case "Rgb24":
                     format = PixelFormats.Rgb24;
                     pixels = [11, 22, 33, 44, 55, 66];
+                    break;
+                case "Bgra32":
+                    format = PixelFormats.Bgra32;
+                    pixels = [33, 22, 11, 0, 66, 55, 44, 255];
                     break;
                 case "Rgba64":
                     format = PixelFormats.Rgba64;

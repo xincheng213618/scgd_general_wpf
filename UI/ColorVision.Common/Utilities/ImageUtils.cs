@@ -6,6 +6,7 @@ using System.Windows;
 using System.IO;
 using System.Windows.Interop;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 namespace ColorVision.Common.Utilities
@@ -72,12 +73,7 @@ namespace ColorVision.Common.Utilities
                     }
                     else if (pixelBytes == 4)
                     {
-                        foreach (uint pixel in MemoryMarshal.Cast<byte, uint>(pixelData.AsSpan(0, length)))
-                        {
-                            channel1[(pixel >> 16) & 255]++;
-                            channel2[(pixel >> 8) & 255]++;
-                            channel3[pixel & 255]++;
-                        }
+                        CountBgr32(pixelData.AsSpan(0, length), channel1, channel2, channel3);
                     }
                     else if (isWideRgb)
                     {
@@ -120,6 +116,20 @@ namespace ColorVision.Common.Utilities
                 channel1.CopyTo(channel3, 0);
             }
             return (channel1, channel2, channel3);
+        }
+
+        private static void CountBgr32(ReadOnlySpan<byte> pixels, int[] red, int[] green, int[] blue)
+        {
+            // RenderHistogram supplies 256 bins per channel, and every index is one byte.
+            ref int redBase = ref MemoryMarshal.GetArrayDataReference(red);
+            ref int greenBase = ref MemoryMarshal.GetArrayDataReference(green);
+            ref int blueBase = ref MemoryMarshal.GetArrayDataReference(blue);
+            foreach (uint pixel in MemoryMarshal.Cast<byte, uint>(pixels))
+            {
+                Unsafe.Add(ref redBase, (byte)(pixel >> 16))++;
+                Unsafe.Add(ref greenBase, (byte)(pixel >> 8))++;
+                Unsafe.Add(ref blueBase, (byte)pixel)++;
+            }
         }
 
         private static void CountGrayscale(ReadOnlySpan<byte> pixels, int pixelBytes, int[] bins, Span<int> scratch)
