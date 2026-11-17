@@ -101,6 +101,44 @@ public sealed class FlowSafeSearchSidecarTests
     }
 
     [Fact]
+    public void UnfilteredSqliteSearchAppliesOrderAndLimitAndPreservesMissingFields()
+    {
+        using var index = new SqliteFlowNodeSearchIndex("Data Source=:memory:");
+        var filled = new FlowNodeSearchDocument
+        {
+            SourceNodeGuid = Guid.Parse("7f08650d-32f8-4613-a171-a58692be307e"),
+            NodePath = "root/a",
+            NodeTypeKey = "Camera",
+            DisplayName = "曝光",
+            Title = "采集",
+            TemplateName = "Template",
+            DeviceCode = "Camera-1",
+            ServiceCode = "CameraService",
+            Tags = ["camera"],
+        };
+        var empty = new FlowNodeSearchDocument
+        {
+            SourceNodeGuid = Guid.Parse("5a23c064-42f6-44e8-9947-c6cb37d5cab4"),
+            NodePath = "root/b",
+            NodeTypeKey = "Spectrum",
+        };
+        index.ReplaceRevision("flow:search", 1, [filled]);
+        index.ReplaceRevision("flow:search", 2, [filled, empty]);
+
+        var results = index.Search(new FlowNodeSearchQuery { Limit = 2 });
+
+        Assert.Equal(["root/a", "root/b"], results.Select(entry => entry.NodePath));
+        Assert.All(results, entry => Assert.Equal(2, entry.Revision));
+        Assert.Equal("曝光", results[0].DisplayName);
+        Assert.Null(results[1].DisplayName);
+        Assert.Null(results[1].Title);
+        Assert.Null(results[1].TemplateName);
+        Assert.Null(results[1].DeviceCode);
+        Assert.Null(results[1].ServiceCode);
+        Assert.Equal(string.Empty, results[1].Tags);
+    }
+
+    [Fact]
     public void PublicIndexInputHasNoGenericSensitivePayloadFields()
     {
         string[] propertyNames = typeof(FlowNodeSearchDocument)
