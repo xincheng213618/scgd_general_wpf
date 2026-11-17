@@ -184,10 +184,10 @@ namespace ProjectARVRPro
             if (id <= 0)
                 return null;
 
-            DataTable table = db.Ado.GetDataTable(
+            object? payload = db.Ado.GetScalar(
                 $"SELECT \"{columnName}\" FROM \"{tableName}\" WHERE \"Id\" = @id LIMIT 1;",
                 new SugarParameter("@id", id));
-            return table.Rows.Count == 0 ? null : Decompress(ReadBytes(table.Rows[0][columnName]));
+            return Decompress(payload as byte[]);
         }
 
         private static byte[]? ReadBytes(object value)

@@ -652,32 +652,19 @@ namespace ProjectARVRPro
             var record = ObjectiveTestResultRecord.Create(result, objectiveTestResult);
             return ResultJsonPayloadStorage.RunDatabaseMaintenance(() =>
             {
-                if (currentRecordId > 0)
-                {
-                    var oldRecord = _db.Queryable<ObjectiveTestResultRecord>()
-                        .Where(x => x.Id == currentRecordId)
-                        .Select(x => new ObjectiveTestResultRecord
-                        {
-                            Id = x.Id,
-                            CreateTime = x.CreateTime,
-                            IsFinalized = x.IsFinalized,
-                        })
-                        .First();
-                    if (oldRecord != null)
-                    {
-                        record.Id = currentRecordId;
-                        record.CreateTime = oldRecord.CreateTime;
-                        record.IsFinalized = oldRecord.IsFinalized;
-                    }
-                }
-
                 _db.Ado.BeginTran();
                 try
                 {
-                    if (record.Id > 0)
-                        _db.Updateable(record).Where(x => x.Id == record.Id).ExecuteCommand();
-                    else
+                    // Preserve the original session start and finalization state in SQLite.
+                    record.Id = currentRecordId;
+                    if (currentRecordId <= 0 || _db.Updateable(record)
+                        .IgnoreColumns(x => new { x.CreateTime, x.IsFinalized })
+                        .Where(x => x.Id == record.Id)
+                        .ExecuteCommand() == 0)
+                    {
+                        record.Id = 0;
                         record.Id = _db.Insertable(record).ExecuteReturnIdentity();
+                    }
 
                     ResultJsonPayloadStorage.SaveObjectiveTestResultJson(_db, record.Id, record.ObjectiveTestResultJson);
                     _db.Ado.CommitTran();
