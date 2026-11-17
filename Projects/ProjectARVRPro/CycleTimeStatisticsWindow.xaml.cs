@@ -43,6 +43,7 @@ namespace ProjectARVRPro
         private readonly ResultStatisticsWindowState _windowState;
         private readonly CycleTimeStatisticsWindowConfig? _windowConfig;
         private readonly Offline.ArvrOfflineDataSource? _offlineSource;
+        internal Func<string, Task>? WaitForFlowDiagnosticsAsync { get; init; }
         private bool _openingOffline;
         private bool _closed;
         private readonly ObservableCollection<ResultStatisticsRecordRow> _recordRows = [];
@@ -1946,6 +1947,16 @@ namespace ProjectARVRPro
             if (batch == null)
             {
                 MessageBox.Show(this, LocalizedText.Get("找不到批次号，请检查流程配置"), "ColorVision");
+                return;
+            }
+
+            bool written = WaitForFlowDiagnosticsAsync == null || await FlowDiagnosticsWriteQueue.WaitAsync(
+                WaitForFlowDiagnosticsAsync(batch.Code ?? string.Empty), FlowDiagnosticsWriteQueue.WriteWaitTimeout);
+            if (_closed)
+                return;
+            if (!written)
+            {
+                MessageBox.Show(this, LocalizedText.Get("流程诊断仍在写入，请稍后打开。"), "ColorVision");
                 return;
             }
 

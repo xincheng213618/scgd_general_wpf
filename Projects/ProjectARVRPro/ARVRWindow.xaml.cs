@@ -111,6 +111,12 @@ namespace ProjectARVRPro
         private int _currentFlowTemplateId;
         private MeasureBatchModel? _currentFlowBatch;
         private readonly FlowNodeExecutionRecorder _flowNodeExecutionRecorder = new FlowNodeExecutionRecorder();
+        private readonly FlowDiagnosticsWriteQueue _flowDiagnosticsWrites = new();
+        // Older supported hosts expose only the synchronous write API.
+        private static readonly Func<int, string?, string?, FlowStatus, long, Task<int>>? QueueDiagnosticRun =
+            typeof(FlowNodeRecordDataBaseHelper).GetMethod(nameof(FlowNodeRecordDataBaseHelper.QueueFlowRunAsync),
+                [typeof(int), typeof(string), typeof(string), typeof(FlowStatus), typeof(long)])
+                ?.CreateDelegate<Func<int, string?, string?, FlowStatus, long, Task<int>>>();
         private readonly FlowRunningNodeTracker _runningFlowNodes = new();
         private DateTime? _pendingSwitchRequestedAt;
         private DateTime? _pendingSwitchAcknowledgedAt;
@@ -124,6 +130,8 @@ namespace ProjectARVRPro
         private double _currentBatchFinalizeMs;
         private double _currentNodeRecorderFlushMs;
         private bool? _currentNodeRecorderFlushed;
+        private bool _currentFlowDiagnosticsDeferred;
+        private double _currentFlowDiagnosticsBackpressureMs;
         private readonly FlowRuntimeEstimateCache _flowRuntimeEstimates = new();
         private FlowRuntimeEstimateKey _currentRuntimeEstimateKey;
         private double _currentRuntimeEstimateLookupMs;
@@ -238,6 +246,8 @@ namespace ProjectARVRPro
             _currentBatchFinalizeMs = 0;
             _currentNodeRecorderFlushMs = 0;
             _currentNodeRecorderFlushed = null;
+            _currentFlowDiagnosticsDeferred = false;
+            _currentFlowDiagnosticsBackpressureMs = 0;
             _currentRuntimeEstimateLookupMs = 0;
             _currentStartupWorkMs = 0;
             _currentRefreshServicesMs = 0;
@@ -313,6 +323,8 @@ namespace ProjectARVRPro
                 BatchFinalizeMs = Math.Round(_currentBatchFinalizeMs, 3),
                 NodeRecorderFlushMs = Math.Round(_currentNodeRecorderFlushMs, 3),
                 NodeRecorderFlushed = _currentNodeRecorderFlushed,
+                FlowDiagnosticsDeferred = _currentFlowDiagnosticsDeferred,
+                FlowDiagnosticsBackpressureMs = Math.Round(_currentFlowDiagnosticsBackpressureMs, 3),
                 BatchLookupMs = Math.Max(0, batchLookupMilliseconds),
                 ProcessExecuteMs = Math.Max(0, processExecutionMilliseconds),
                 ViewResultSaveMs = Math.Max(0, viewResultSaveMilliseconds),
@@ -526,6 +538,7 @@ namespace ProjectARVRPro
         {
             new CycleTimeStatisticsWindow
             {
+                WaitForFlowDiagnosticsAsync = _flowDiagnosticsWrites.WhenWritten,
                 Owner = this,
                 WindowStartupLocation = WindowStartupLocation.CenterOwner
             }.Show();
@@ -625,12 +638,22 @@ namespace ProjectARVRPro
             window.Show();
         }
 
-        private void ContextMenu_FlowExecutionAnalysis()
+        private async void ContextMenu_FlowExecutionAnalysis()
         {
             MeasureBatchModel? batch = GetSelectedMeasureBatch();
             if (batch == null)
             {
                 MessageBox.Show(Application.Current.GetActiveWindow(), LocalizedText.Get("找不到批次号，请检查流程配置"), "ColorVision");
+                return;
+            }
+
+            bool written = await FlowDiagnosticsWriteQueue.WaitAsync(
+                _flowDiagnosticsWrites.WhenWritten(batch.Code ?? string.Empty), FlowDiagnosticsWriteQueue.WriteWaitTimeout);
+            if (_isDisposed)
+                return;
+            if (!written)
+            {
+                MessageBox.Show(this, LocalizedText.Get("流程诊断仍在写入，请稍后打开。"), "ColorVision");
                 return;
             }
 
@@ -1086,13 +1109,30 @@ namespace ProjectARVRPro
             CurrentFlowResult.FlowStatus = flowResult.FlowStatus;
 
             long runRecordStarted = Stopwatch.GetTimestamp();
-            FlowNodeRecordDataBaseHelper.RecordFlowRun(
-                _currentFlowTemplateId,
-                FlowName,
-                serialNumber,
-                flowResult.FlowStatus,
-                elapsedMilliseconds);
-            _currentFlowRunRecordMs = Stopwatch.GetElapsedTime(runRecordStarted).TotalMilliseconds;
+            bool deferDiagnostics = QueueDiagnosticRun != null && !_isDisposed && flowResult.EventName == "Completed";
+            _currentFlowDiagnosticsDeferred = deferDiagnostics;
+            Task diagnosticsBackpressure = Task.CompletedTask;
+            if (deferDiagnostics)
+            {
+                Task<int> runWrite = QueueDiagnosticRun!(
+                    _currentFlowTemplateId, FlowName, serialNumber, flowResult.FlowStatus, elapsedMilliseconds);
+                _currentFlowRunRecordMs = Stopwatch.GetElapsedTime(runRecordStarted).TotalMilliseconds;
+                long recorderStarted = Stopwatch.GetTimestamp();
+                // CompleteRunAsync seals this recorder before its first await so the next run can start independently.
+                Task<bool>? recorderWrite = _flowNodeExecutionRecorder.IsRecording()
+                    ? _flowNodeExecutionRecorder.CompleteRunAsync(flushTimeout: TimeSpan.FromSeconds(5))
+                    : null;
+                _currentNodeRecorderFlushMs = Stopwatch.GetElapsedTime(recorderStarted).TotalMilliseconds;
+                Task completion = ObserveFlowDiagnosticsAsync(serialNumber, CurrentFlowResult.BatchId,
+                    runRecordStarted, runWrite, recorderWrite);
+                diagnosticsBackpressure = _flowDiagnosticsWrites.Track(serialNumber, completion);
+            }
+            else
+            {
+                FlowNodeRecordDataBaseHelper.RecordFlowRun(
+                    _currentFlowTemplateId, FlowName, serialNumber, flowResult.FlowStatus, elapsedMilliseconds);
+                _currentFlowRunRecordMs = Stopwatch.GetElapsedTime(runRecordStarted).TotalMilliseconds;
+            }
 
             long batchFinalizeStarted = Stopwatch.GetTimestamp();
             try
@@ -1126,8 +1166,35 @@ namespace ProjectARVRPro
                 _currentBatchFinalizeMs = Stopwatch.GetElapsedTime(batchFinalizeStarted).TotalMilliseconds;
             }
 
-            await CompleteFlowNodeRecordingAsync();
             _currentFlowBatch = null;
+            if (!deferDiagnostics)
+            {
+                await CompleteFlowNodeRecordingAsync().ConfigureAwait(false);
+            }
+            else if (!diagnosticsBackpressure.IsCompleted)
+            {
+                long backpressureStarted = Stopwatch.GetTimestamp();
+                if (!await FlowDiagnosticsWriteQueue.WaitAsync(diagnosticsBackpressure, FlowDiagnosticsWriteQueue.WriteWaitTimeout))
+                    log.Warn($"等待流程诊断写入队列超时 => serialNumber={serialNumber}");
+                _currentFlowDiagnosticsBackpressureMs = Stopwatch.GetElapsedTime(backpressureStarted).TotalMilliseconds;
+            }
+        }
+
+        private static async Task ObserveFlowDiagnosticsAsync(string serialNumber, int batchId, long queuedAt,
+            Task<int> runWrite, Task<bool>? recorderWrite)
+        {
+            try
+            {
+                int runRecordId = await runWrite.ConfigureAwait(false);
+                bool? recorderFlushed = recorderWrite == null ? null : await recorderWrite.ConfigureAwait(false);
+                log.Info($"ARVRFlowDiagnosticsCompletion SerialNumber={serialNumber} BatchId={batchId} "
+                    + $"RunRecordId={runRecordId} NodeRecorderFlushed={recorderFlushed} "
+                    + FormattableString.Invariant($"ElapsedMs={Stopwatch.GetElapsedTime(queuedAt).TotalMilliseconds:F3}"));
+            }
+            catch (Exception ex)
+            {
+                log.Error($"结束流程诊断写入失败 => batchId={batchId}, serialNumber={serialNumber}", ex);
+            }
         }
 
         private async Task CompleteFlowNodeRecordingAsync()
@@ -1139,7 +1206,7 @@ namespace ProjectARVRPro
             try
             {
                 _currentNodeRecorderFlushed = await _flowNodeExecutionRecorder.CompleteRunAsync(
-                    flushTimeout: TimeSpan.FromSeconds(5));
+                    flushTimeout: TimeSpan.FromSeconds(5)).ConfigureAwait(false);
             }
             catch (Exception ex)
             {
@@ -1377,6 +1444,8 @@ namespace ProjectARVRPro
             log.Debug($"流程执行Elapsed Time: {stopwatch.ElapsedMilliseconds} ms");
             Stopwatch flowFinalizeStopwatch = Stopwatch.StartNew();
             await FinalizeCurrentFlowRunAsync(FlowControlData);
+            if (_isDisposed)
+                return;
             flowFinalizeStopwatch.Stop();
             _currentFlowFinalizeMilliseconds = Math.Max(0, flowFinalizeStopwatch.ElapsedMilliseconds);
             ShowExecutionResult(FlowControlData.EventName, FlowControlData.Params);
@@ -2563,8 +2632,11 @@ namespace ProjectARVRPro
         {
             string? renderedFilePath = null;
             string? sourceFilePath = null;
+            long submittedAt = Stopwatch.GetTimestamp();
             Stopwatch? exportStopwatch = null;
+            double? storageWaitMs = null, filePublishMs = null, resultPathPersistMs = null;
             bool exportCompleted = false;
+            string pathUpdateStatus = "NotRequired";
             ProjectImageExportAttempt? exportAttempt = null;
             ResultStorageSpaceManager.WriteLease? storageWrite = null;
             ProjectImageExportAttemptResult exportResult = new();
@@ -2637,11 +2709,8 @@ namespace ProjectARVRPro
                 ImageViewSnapshot ownedSnapshot = snapshot;
                 snapshot = null;
                 await ColorVision.ImageEditor.ImageView.SaveSnapshotExportsAsync(
-            long submittedAt = Stopwatch.GetTimestamp();
                     ownedSnapshot,
-            double? storageWaitMs = null, filePublishMs = null, resultPathPersistMs = null;
                     exportOptions).ConfigureAwait(false);
-            string pathUpdateStatus = "NotRequired";
                 exportCompleted = true;
             }
             catch (Exception ex)
@@ -2670,14 +2739,17 @@ namespace ProjectARVRPro
                         result.SavedResultImageFileName);
                     if (pathUpdate.UpdateSavedResultImageFileName || pathUpdate.UpdateSavedSourceImageFileName)
                     {
+                        long persistStartedAt = Stopwatch.GetTimestamp();
                         try
                         {
                             pathUpdateStatus = ViewResultManager.UpdateSavedImagePaths(result, pathUpdate) ? "Updated" : "Unchanged";
                         }
                         catch (Exception ex)
                         {
+                            pathUpdateStatus = "Failed";
                             log.Error("图像已写盘，但保存本次成功导出路径到结果数据库失败；内存结果未更新。", ex);
                         }
+                        finally { resultPathPersistMs = Stopwatch.GetElapsedTime(persistStartedAt).TotalMilliseconds; }
                     }
                     LogExportedImage("8位标记图", exportResult.RenderedFileName);
                     LogExportedImage("原位深原图", exportResult.SourceFileName);
@@ -2759,17 +2831,14 @@ namespace ProjectARVRPro
             run.Foreground = result.Result ? Brushes.Black : Brushes.White;
             run.FontSize = outputFontSize;
 
-                        long persistStartedAt = Stopwatch.GetTimestamp();
             var paragraph = new Paragraph();
             paragraph.Inlines.Add(run);
             outputText.Document.Blocks.Add(paragraph);
 
             IProcess? process = ResultProcessResolver.Resolve(result, ProcessManager.Processes, ProcessManager.GetResultProcessMappings());
             Brush foreground = result.Result ? Brushes.Black : Brushes.White;
-                            pathUpdateStatus = "Failed";
             paragraph = new Paragraph();
             if (process != null)
-                        finally { resultPathPersistMs = Stopwatch.GetElapsedTime(persistStartedAt).TotalMilliseconds; }
             {
                 try
                 {
@@ -3037,6 +3106,8 @@ namespace ProjectARVRPro
 
                     Stopwatch flowFinalizeStopwatch = Stopwatch.StartNew();
                     await FinalizeCurrentFlowRunAsync(flowResult);
+                    if (_isDisposed)
+                        return;
                     flowFinalizeStopwatch.Stop();
                     _currentFlowFinalizeMilliseconds = Math.Max(0, flowFinalizeStopwatch.ElapsedMilliseconds);
                     ShowExecutionResult(flowResult.EventName, flowResult.Params);
@@ -3204,6 +3275,9 @@ namespace ProjectARVRPro
                 }
             }
             _flowNodeExecutionRecorder.Dispose();
+            if (!FlowDiagnosticsWriteQueue.WaitAsync(_flowDiagnosticsWrites.DrainAsync(),
+                FlowDiagnosticsWriteQueue.WriteWaitTimeout).GetAwaiter().GetResult())
+                log.Warn("关闭窗口时等待流程诊断写入超时。");
             _isFlowStartPending = false;
             _isFlowLifecycleActive = false;
             flowEngine.Dispose();
