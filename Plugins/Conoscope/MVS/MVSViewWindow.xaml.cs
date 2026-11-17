@@ -487,11 +487,20 @@ namespace Conoscope.MVS
                     ShowErrorMsg("Get Packet Size failed!", nPacketSize);
                 }
             }
-            int i = m_MyCamera.MV_CC_SetEnumValue_NET("PixelFormat", (uint)MVSViewWindowConfig.Instance.PixelType);
+            var requestedFormat = MVSViewManager.Config.PixelType;
+            int pixelWriteResult = m_MyCamera.MV_CC_SetEnumValue_NET("PixelFormat", (uint)requestedFormat);
+            if (pixelWriteResult != MyCamera.MV_OK)
+            {
+                log.Warn($"Observation camera declined PixelFormat {requestedFormat} (0x{pixelWriteResult:X8}); using the camera's frame format");
+            }
 
-            // ch:设置采集连续模式 | en:Set Continues Aquisition Mode
-            m_MyCamera.MV_CC_SetEnumValue_NET("AcquisitionMode", (uint)MyCamera.MV_CAM_ACQUISITION_MODE.MV_ACQ_MODE_CONTINUOUS);
-            m_MyCamera.MV_CC_SetEnumValue_NET("TriggerMode", (uint)MyCamera.MV_CAM_TRIGGER_MODE.MV_TRIGGER_MODE_OFF);
+            if (!TryDisablePreviewTriggers(out nRet) ||
+                !TrySetPreviewMode("AcquisitionMode", (uint)MV_CAM_ACQUISITION_MODE.MV_ACQ_MODE_CONTINUOUS, out nRet))
+            {
+                CloseDevice();
+                ShowErrorMsg("Could not configure continuous observation camera preview", nRet);
+                return;
+            }
 
             bnGetParam_Click(null, null);
 
@@ -510,6 +519,62 @@ namespace Conoscope.MVS
             bnSetParam.IsEnabled = true;
 
             MVSViewManager.IsOpen = true;
+        }
+
+        private bool TryDisablePreviewTriggers(out int error)
+        {
+            const uint triggerOff = (uint)MV_CAM_TRIGGER_MODE.MV_TRIGGER_MODE_OFF;
+            MVCC_ENUMVALUE selectors = new();
+            int readResult = m_MyCamera.MV_CC_GetEnumValue_NET("TriggerSelector", ref selectors);
+            if (readResult != MyCamera.MV_OK || selectors.nSupportedNum == 0)
+            {
+                return TrySetPreviewMode("TriggerMode", triggerOff, out error);
+            }
+
+            if (selectors.nSupportValue == null || selectors.nSupportedNum > selectors.nSupportValue.Length)
+            {
+                error = MyCamera.MV_E_PARAMETER;
+                log.Warn("Observation camera returned an invalid TriggerSelector list");
+                return false;
+            }
+
+            error = MyCamera.MV_OK;
+            for (int index = 0; index < selectors.nSupportedNum; index++)
+            {
+                if (!TrySetPreviewMode("TriggerSelector", selectors.nSupportValue[index], out error) ||
+                    !TrySetPreviewMode("TriggerMode", triggerOff, out error))
+                {
+                    break;
+                }
+            }
+
+            bool selectorRestored = TrySetPreviewMode("TriggerSelector", selectors.nCurValue, out int restoreError);
+            if (error == MyCamera.MV_OK && !selectorRestored)
+            {
+                error = restoreError;
+            }
+            return error == MyCamera.MV_OK;
+        }
+
+        private bool TrySetPreviewMode(string feature, uint expected, out int error)
+        {
+            int writeResult = m_MyCamera.MV_CC_SetEnumValue_NET(feature, expected);
+            MVCC_ENUMVALUE setting = new();
+            int readResult = m_MyCamera.MV_CC_GetEnumValue_NET(feature, ref setting);
+            if (readResult == MyCamera.MV_OK && setting.nCurValue == expected)
+            {
+                log.Info($"Observation camera verified {feature}={expected} (set 0x{writeResult:X8})");
+                error = MyCamera.MV_OK;
+                return true;
+            }
+
+            log.Warn($"Observation camera could not verify {feature}={expected}; set 0x{writeResult:X8}, read 0x{readResult:X8}, value {setting.nCurValue}");
+            error = writeResult != MyCamera.MV_OK ? writeResult : readResult;
+            if (error == MyCamera.MV_OK)
+            {
+                error = MyCamera.MV_E_GC_ACCESS;
+            }
+            return false;
         }
 
         private void bnClose_Click(object sender, RoutedEventArgs e)
@@ -546,7 +611,10 @@ namespace Conoscope.MVS
         {
             if (true == bnContinuesMode.IsChecked)
             {
-                m_MyCamera.MV_CC_SetEnumValue_NET("TriggerMode", (uint)MyCamera.MV_CAM_TRIGGER_MODE.MV_TRIGGER_MODE_OFF);
+                if (MVSViewManager?.IsOpen == true && !TrySetPreviewMode("TriggerMode", (uint)MV_CAM_TRIGGER_MODE.MV_TRIGGER_MODE_OFF, out int error))
+                {
+                    ShowErrorMsg("Could not disable observation camera trigger", error);
+                }
                 cbSoftTrigger.IsEnabled = false;
                 bnTriggerExec.IsEnabled = false;
             }
@@ -579,95 +647,115 @@ namespace Conoscope.MVS
         {
             long generation = frameUiUpdateGate.BeginGeneration();
             MyCamera.MV_FRAME_OUT stFrameInfo = new MyCamera.MV_FRAME_OUT();
-            MV_PIXEL_CONVERT_PARAM stConvertParam = new MV_PIXEL_CONVERT_PARAM();
+            MV_PIXEL_CONVERT_PARAM stConvertParam = new() { nRes = new uint[4] };
             IntPtr pImageBuffer = IntPtr.Zero;
             uint currentImageBufferSize = 0;
+            int consecutiveReceiveFailures = 0;
+            bool receivedFrame = false;
+            MvGvspPixelType? lastRejectedFormat = null;
 
             try
             {
                 while (!cancellationToken.IsCancellationRequested)
                 {
                     int nRet = m_MyCamera.MV_CC_GetImageBuffer_NET(ref stFrameInfo, 1000);
-                    if (nRet == MyCamera.MV_OK)
+                    if (nRet != MyCamera.MV_OK)
                     {
-                        try
+                        if (++consecutiveReceiveFailures == 3 && !cancellationToken.IsCancellationRequested)
                         {
-                            if (cancellationToken.IsCancellationRequested)
+                            log.Warn($"Observation camera GetImageBuffer failed three times (last result 0x{nRet:X8}, received a frame: {receivedFrame})");
+                        }
+                        continue;
+                    }
+
+                    consecutiveReceiveFailures = 0;
+                    try
+                    {
+                        if (cancellationToken.IsCancellationRequested)
+                        {
+                            continue;
+                        }
+
+                        var frame = stFrameInfo.stFrameInfo;
+                        if (!receivedFrame)
+                        {
+                            log.Info($"Observation camera first frame: {frame.nWidth}x{frame.nHeight}, {frame.enPixelType}, {frame.nFrameLen} bytes");
+                            receivedFrame = true;
+                        }
+
+                        IntPtr renderData = stFrameInfo.pBufAddr;
+                        uint renderSize = frame.nFrameLen;
+                        if (renderData == IntPtr.Zero || renderSize == 0 || frame.nWidth == 0 || frame.nHeight == 0)
+                        {
+                            if (lastRejectedFormat != frame.enPixelType)
                             {
+                                log.Warn($"Observation camera returned an empty {frame.enPixelType} frame ({frame.nWidth}x{frame.nHeight}, {renderSize} bytes)");
+                                lastRejectedFormat = frame.enPixelType;
+                            }
+                            continue;
+                        }
+
+                        PixelFormat? directFormat = MvsPreviewPixelFormat.GetDirectFormat(frame.enPixelType, MVSViewManager.Config.IsCoverBayer);
+                        PixelFormat pixelFormat = directFormat ?? PixelFormats.Rgb24;
+                        if (directFormat == null)
+                        {
+                            uint bufferSize = (uint)checked(frame.nWidth * frame.nHeight * 3);
+                            if (currentImageBufferSize < bufferSize)
+                            {
+                                pImageBuffer = pImageBuffer == IntPtr.Zero
+                                    ? Marshal.AllocHGlobal((int)bufferSize)
+                                    : Marshal.ReAllocHGlobal(pImageBuffer, (IntPtr)bufferSize);
+                                currentImageBufferSize = bufferSize;
+                            }
+
+                            stConvertParam.nWidth = frame.nWidth;
+                            stConvertParam.nHeight = frame.nHeight;
+                            stConvertParam.pSrcData = renderData;
+                            stConvertParam.nSrcDataLen = renderSize;
+                            stConvertParam.enSrcPixelType = frame.enPixelType;
+                            stConvertParam.enDstPixelType = MvGvspPixelType.PixelType_Gvsp_RGB8_Packed;
+                            stConvertParam.pDstBuffer = pImageBuffer;
+                            stConvertParam.nDstBufferSize = currentImageBufferSize;
+                            stConvertParam.nDstLen = 0;
+
+                            int convertResult = m_MyCamera.MV_CC_ConvertPixelType_NET(ref stConvertParam);
+                            if (convertResult != MyCamera.MV_OK || stConvertParam.nDstLen != bufferSize)
+                            {
+                                if (lastRejectedFormat != frame.enPixelType)
+                                {
+                                    log.Warn($"Observation camera could not convert {frame.enPixelType} to RGB8 (0x{convertResult:X8}, {stConvertParam.nDstLen}/{bufferSize} bytes)");
+                                    lastRejectedFormat = frame.enPixelType;
+                                }
                                 continue;
                             }
 
-                            IntPtr pRenderData = IntPtr.Zero;
-                            uint renderDataSize = 0;
-                            PixelFormat pixelFormat = PixelFormats.Gray8;
-                            bool shouldRender = false;
-
-                            // 1. 根据不同像素格式准备数据指针和参数
-                            if (stFrameInfo.stFrameInfo.enPixelType == MyCamera.MvGvspPixelType.PixelType_Gvsp_BayerGB8)
-                            {
-                                if (MVSViewManager.Config.IsCoverBayer)
-                                {
-                                    uint nConvertDataSize = (uint)(stFrameInfo.stFrameInfo.nWidth * stFrameInfo.stFrameInfo.nHeight * 3);
-
-                                    // 动态分配或调整非托管内存大小
-                                    if (pImageBuffer == IntPtr.Zero || currentImageBufferSize != nConvertDataSize)
-                                    {
-                                        if (pImageBuffer != IntPtr.Zero) Marshal.FreeHGlobal(pImageBuffer);
-                                        pImageBuffer = Marshal.AllocHGlobal((int)nConvertDataSize);
-                                        currentImageBufferSize = nConvertDataSize;
-                                    }
-
-                                    stConvertParam.nWidth = stFrameInfo.stFrameInfo.nWidth;
-                                    stConvertParam.nHeight = stFrameInfo.stFrameInfo.nHeight;
-                                    stConvertParam.pSrcData = stFrameInfo.pBufAddr;
-                                    stConvertParam.nSrcDataLen = stFrameInfo.stFrameInfo.nFrameLen;
-                                    stConvertParam.enSrcPixelType = stFrameInfo.stFrameInfo.enPixelType;
-                                    stConvertParam.enDstPixelType = MyCamera.MvGvspPixelType.PixelType_Gvsp_RGB8_Packed;
-                                    stConvertParam.nDstBufferSize = nConvertDataSize;
-                                    stConvertParam.pDstBuffer = pImageBuffer;
-
-                                    if (m_MyCamera.MV_CC_ConvertPixelType_NET(ref stConvertParam) == MyCamera.MV_OK)
-                                    {
-                                        pRenderData = pImageBuffer;
-                                        renderDataSize = nConvertDataSize;
-                                        pixelFormat = PixelFormats.Rgb24;
-                                        shouldRender = true;
-                                    }
-                                }
-                                else
-                                {
-                                    pRenderData = stFrameInfo.pBufAddr;
-                                    renderDataSize = stFrameInfo.stFrameInfo.nFrameLen;
-                                    pixelFormat = PixelFormats.Gray8;
-                                    shouldRender = true;
-                                }
-                            }
-                            else if (stFrameInfo.stFrameInfo.enPixelType == MyCamera.MvGvspPixelType.PixelType_Gvsp_RGB8_Packed)
-                            {
-                                pRenderData = stFrameInfo.pBufAddr;
-                                renderDataSize = stFrameInfo.stFrameInfo.nFrameLen;
-                                pixelFormat = PixelFormats.Rgb24;
-                                shouldRender = true;
-                            }
-
-                            // Realtime copies the native buffer before returning, then posts a
-                            // coalesced render without making this worker wait for the UI thread.
-                            if (shouldRender && pRenderData != IntPtr.Zero && !cancellationToken.IsCancellationRequested)
-                            {
-                                int width = stFrameInfo.stFrameInfo.nWidth;
-                                int height = stFrameInfo.stFrameInfo.nHeight;
-                                int stride = (width * pixelFormat.BitsPerPixel + 7) / 8;
-                                if (imgDisplay.Realtime.SubmitFrame(pRenderData, width, height, pixelFormat, stride, checked((int)renderDataSize)))
-                                {
-                                    QueueFrameUiUpdate(generation, cancellationToken);
-                                }
-                            }
+                            renderData = pImageBuffer;
+                            renderSize = stConvertParam.nDstLen;
                         }
-                        finally
+
+                        // Realtime copies the native buffer before returning.
+                        int stride = frame.nWidth * (pixelFormat.BitsPerPixel / 8);
+                        if (cancellationToken.IsCancellationRequested)
                         {
-                            // ch:释放相机内部缓存 | en:Release camera-owned frame buffer
-                            m_MyCamera.MV_CC_FreeImageBuffer_NET(ref stFrameInfo);
+                            continue;
                         }
+
+#pragma warning disable CA2016 // Use the overload available in older ColorVision hosts.
+                        if (imgDisplay.Realtime.SubmitFrame(renderData, frame.nWidth, frame.nHeight, pixelFormat, stride, checked((int)renderSize)))
+#pragma warning restore CA2016
+                        {
+                            lastRejectedFormat = null;
+                            QueueFrameUiUpdate(generation, cancellationToken);
+                        }
+                        else if (lastRejectedFormat != frame.enPixelType)
+                        {
+                            log.Warn($"Observation camera preview rejected {frame.enPixelType} frame ({frame.nWidth}x{frame.nHeight}, {renderSize} bytes)");
+                            lastRejectedFormat = frame.enPixelType;
+                        }
+                    }
+                    finally
+                    {
+                        m_MyCamera.MV_CC_FreeImageBuffer_NET(ref stFrameInfo);
                     }
                 }
             }
