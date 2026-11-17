@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Text;
+using System.Text.Unicode;
 
 namespace ColorVision.ServiceHost
 {
@@ -57,6 +58,10 @@ namespace ColorVision.ServiceHost
             if (offset >= buffer.Length)
                 return string.Empty;
 
+            ReadOnlySpan<byte> content = buffer.AsSpan(offset);
+            if (Utf8.IsValid(content))
+                return StrictUtf8.GetString(content);
+
             StringBuilder builder = new(buffer.Length - offset);
             int lineStart = offset;
             for (int index = offset; index < buffer.Length; index++)
@@ -92,22 +97,28 @@ namespace ColorVision.ServiceHost
             if (string.IsNullOrWhiteSpace(text))
                 return string.Empty;
 
-            string latestOutcome = string.Empty;
-            foreach (string line in text.Split(new[] { "\r\n", "\n" }, StringSplitOptions.RemoveEmptyEntries))
+            ReadOnlySpan<char> remaining = text.AsSpan();
+            while (!remaining.IsEmpty)
             {
+                int separator = remaining.LastIndexOf('\n');
+                ReadOnlySpan<char> line = remaining[(separator + 1)..];
                 if (line.Contains("installation failed", StringComparison.OrdinalIgnoreCase)
                     || line.Contains("安装失败", StringComparison.OrdinalIgnoreCase))
                 {
-                    latestOutcome = line.Trim();
+                    return line.Trim().ToString();
                 }
-                else if (line.Contains("installation completed", StringComparison.OrdinalIgnoreCase)
+
+                if (line.Contains("installation completed", StringComparison.OrdinalIgnoreCase)
                     || line.Contains("安装完成", StringComparison.OrdinalIgnoreCase))
                 {
-                    latestOutcome = string.Empty;
+                    return string.Empty;
                 }
+
+                if (separator < 0) break;
+                remaining = remaining[..separator];
             }
 
-            return latestOutcome;
+            return string.Empty;
         }
     }
 }
