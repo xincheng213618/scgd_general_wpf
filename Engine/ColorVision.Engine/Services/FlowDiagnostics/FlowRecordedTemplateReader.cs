@@ -28,6 +28,7 @@ public sealed record FlowRecordedTemplatePairReadResult(
 public sealed class FlowRecordedTemplateReader
 {
     public const int MaximumSnapshotBytes = 8 * 1024 * 1024;
+    private const int SnapshotReadBlockSize = 81_920;
     private const int MaximumIdentifierCharacters = 256;
     private const int MaximumHashCharacters = 65;
     private static readonly string IdentityWhitespace = new(Enumerable.Range(char.MinValue, char.MaxValue + 1)
@@ -76,7 +77,7 @@ public sealed class FlowRecordedTemplateReader
         using var transaction = connection.BeginTransaction(deferred: true);
         var baseline = ReadCore(database, connection, transaction, baselineRunRecordId, cancellationToken);
         var current = baselineRunRecordId == currentRunRecordId
-            ? baseline : ReadCore(database, connection, transaction, currentRunRecordId, cancellationToken);
+            ? baseline : ReadCore(database, connection, transaction, currentRunRecordId, cancellationToken, baseline?.Snapshot);
         var basis = "unavailable";
         if (baseline != null && current != null)
         {
@@ -110,7 +111,7 @@ public sealed class FlowRecordedTemplateReader
     }
 
     private static FlowRecordedTemplateReadResult? ReadCore(ReadOnlySqliteDatabase database, SqliteConnection connection,
-        SqliteTransaction transaction, int runRecordId, CancellationToken cancellationToken)
+        SqliteTransaction transaction, int runRecordId, CancellationToken cancellationToken, FlowTemplateSnapshot? verifiedSnapshot = null)
     {
         cancellationToken.ThrowIfCancellationRequested();
         var truncated = false;
@@ -196,6 +197,23 @@ public sealed class FlowRecordedTemplateReader
         }
 
         cancellationToken.ThrowIfCancellationRequested();
+        // Both runs are read in one transaction and each result owns its returned buffer.
+        if (verifiedSnapshot != null && verifiedSnapshot.Id == snapshot.Id
+            && verifiedSnapshot.ContentLength == snapshot.ContentLength
+            && string.Equals(verifiedSnapshot.ContentHash, snapshotHash, StringComparison.OrdinalIgnoreCase))
+        {
+            var content = new byte[snapshot.ContentLength];
+            for (int offset = 0; offset < content.Length; offset += SnapshotReadBlockSize)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                int count = Math.Min(SnapshotReadBlockSize, content.Length - offset);
+                verifiedSnapshot.Content.AsSpan(offset, count).CopyTo(content.AsSpan(offset, count));
+            }
+            cancellationToken.ThrowIfCancellationRequested();
+            snapshot.Content = content;
+            return new(run, snapshot, truncated);
+        }
+
         using (var command = Command(connection, transaction, $"""
             SELECT CASE WHEN typeof(content)='blob' AND content_length=$length AND length(content)=$length
                 AND length(content)<={MaximumSnapshotBytes} THEN content ELSE NULL END
@@ -211,7 +229,7 @@ public sealed class FlowRecordedTemplateReader
             while (offset < content.Length)
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                var count = checked((int)reader.GetBytes(0, offset, content, offset, Math.Min(81_920, content.Length - offset)));
+                var count = checked((int)reader.GetBytes(0, offset, content, offset, Math.Min(SnapshotReadBlockSize, content.Length - offset)));
                 if (count <= 0)
                     throw new InvalidDataException("The recorded template content ended before its verified length.");
                 offset += count;

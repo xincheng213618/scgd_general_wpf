@@ -184,14 +184,15 @@ public sealed class CopilotRecordedFlowTemplateComparisonGraphTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
-    public void BothEnvelopesMustPassTheExistingIntegrityBoundary(bool invalidCurrent)
+    [InlineData(null)]
+    public void BothEnvelopesMustPassTheExistingIntegrityBoundary(bool? invalidCurrent)
     {
         var valid = Canvas([Node(First)]);
         var corrupt = valid.ToArray();
         corrupt[^8] ^= 1;
 
         Assert.Throws<InvalidDataException>(() => RecordedFlowTemplateComparer.Compare(
-            invalidCurrent ? valid : corrupt, invalidCurrent ? corrupt : valid, CancellationToken.None));
+            invalidCurrent == true ? valid : corrupt, invalidCurrent == false ? valid : corrupt, CancellationToken.None));
     }
 
     [Theory]
@@ -219,6 +220,7 @@ public sealed class CopilotRecordedFlowTemplateComparisonGraphTests
 
         Assert.Equal(original, content);
         Assert.True(result.SameRecordedBytes);
+        Assert.Same(result.BaselineGraph, result.CurrentGraph);
         Assert.True(result.ConnectionsComparable);
         Assert.Empty(result.NodeChanges);
         Assert.Empty(result.AddedEdges);

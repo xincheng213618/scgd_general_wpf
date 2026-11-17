@@ -1,6 +1,7 @@
 using ColorVision.Engine.Templates.Flow;
 using ST.Library.UI.NodeEditor;
 using System;
+using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
@@ -21,7 +22,7 @@ public sealed record RecordedFlowTemplateGraph(
     int TotalConnectionCount,
     bool ConnectionsComplete);
 
-internal sealed record RecordedFlowTemplatePropertyFingerprint(int Length, string Sha256);
+internal readonly record struct RecordedFlowTemplatePropertyFingerprint(int Length, UInt128 Sha256Low, UInt128 Sha256High);
 
 internal readonly record struct RecordedFlowTemplateCanvasView(float OffsetX, float OffsetY, float Scale);
 
@@ -62,6 +63,7 @@ public static class RecordedFlowTemplateGraphReader
         var hasEmpty = false;
         var hasLegacyConnectionState = false;
         var layoutsComplete = true;
+        Span<byte> digest = stackalloc byte[SHA256.HashSizeInBytes];
         for (var index = 0; index < nodeCount; index++)
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -75,12 +77,14 @@ public static class RecordedFlowTemplateGraphReader
                 throw new InvalidDataException("Recorded flow node Guids must be nonempty and unique.");
             if (includePropertyFingerprints)
             {
-                var properties = new Dictionary<string, RecordedFlowTemplatePropertyFingerprint>(StringComparer.Ordinal);
+                var properties = new Dictionary<string, RecordedFlowTemplatePropertyFingerprint>(state.Properties.Count, StringComparer.Ordinal);
                 foreach (var property in state.Properties)
                 {
                     cancellationToken.ThrowIfCancellationRequested();
+                    SHA256.HashData(property.Value, digest);
                     properties.Add(property.Key, new RecordedFlowTemplatePropertyFingerprint(property.Value.Length,
-                        Convert.ToHexString(SHA256.HashData(property.Value))));
+                        BinaryPrimitives.ReadUInt128LittleEndian(digest),
+                        BinaryPrimitives.ReadUInt128LittleEndian(digest[(SHA256.HashSizeInBytes / 2)..])));
                 }
                 propertyFingerprints.Add(nodeId, new ReadOnlyDictionary<string, RecordedFlowTemplatePropertyFingerprint>(properties));
             }
