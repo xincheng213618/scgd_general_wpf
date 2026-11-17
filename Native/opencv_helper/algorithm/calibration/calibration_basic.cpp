@@ -382,14 +382,24 @@ public:
         const auto originalBytes = values.size() * sizeof(float);
         // Limit decoding to large maps with at least 20% less table traffic.
         if (bytes + result->blocks_.size() * sizeof(Block) > originalBytes - originalBytes / 5) return nullptr;
-        // The last packed sample uses an unaligned 32-bit read, masked to 24 bits.
-        result->bytes_.resize(bytes + sizeof(std::uint32_t));
+        result->byteCount_ = bytes + sizeof(std::uint32_t);
+        if (cv::getNumThreads() >= 4) {
+            // Parallel packing writes every payload byte. Initialize just the
+            // padding for the last packed sample's unaligned 32-bit read.
+            result->bytes_ = std::make_unique_for_overwrite<std::uint8_t[]>(result->byteCount_);
+            std::memset(result->bytes_.get() + bytes, 0, sizeof(std::uint32_t));
+        }
+        else {
+            // With few workers, pre-initializing pages is faster than making
+            // those workers fault in the pages while packing.
+            result->bytes_ = std::make_unique<std::uint8_t[]>(result->byteCount_);
+        }
         parallelRows(blockCount, [&](std::uint32_t first, std::uint32_t end) {
             for (auto block = first; block < end; ++block) {
                 const auto header = result->blocks_[block];
                 const auto begin = static_cast<std::size_t>(block) * blockSize;
                 const auto count = (std::min)(blockSize, values.size() - begin);
-                auto* destination = result->bytes_.data() + header.offset;
+                auto* destination = result->bytes_.get() + header.offset;
                 if (header.base == UINT32_MAX) {
                     std::memcpy(destination, values.data() + begin, count * sizeof(float));
                 }
@@ -407,7 +417,7 @@ public:
     std::size_t size() const noexcept { return count_; }
     std::uint64_t footprintBytes() const noexcept
     {
-        return sizeof(*this) + bytes_.capacity() + static_cast<std::uint64_t>(blocks_.capacity()) * sizeof(Block);
+        return sizeof(*this) + byteCount_ + static_cast<std::uint64_t>(blocks_.capacity()) * sizeof(Block);
     }
 
     float at(std::size_t index) const noexcept
@@ -415,7 +425,7 @@ public:
         const auto header = blocks_[index / blockSize];
         const bool packed = header.base != UINT32_MAX;
         std::uint32_t bits;
-        std::memcpy(&bits, bytes_.data() + header.offset + (index % blockSize) * (packed ? 3 : 4), sizeof(bits));
+        std::memcpy(&bits, bytes_.get() + header.offset + (index % blockSize) * (packed ? 3 : 4), sizeof(bits));
         if (packed) bits = (bits & 0xFFFFFFU) + header.base;
         return std::bit_cast<float>(bits);
     }
@@ -443,11 +453,11 @@ public:
             if constexpr (Fused) dark += done;
             if (header.base == UINT32_MAX) {
                 applyBlock<Fused, false>(source + done, destination + done, length,
-                    bytes_.data() + header.offset + offset * 4, 0, dark);
+                    bytes_.get() + header.offset + offset * 4, 0, dark);
             }
             else {
                 applyBlock<Fused, true>(source + done, destination + done, length,
-                    bytes_.data() + header.offset + offset * 3, header.base, dark);
+                    bytes_.get() + header.offset + offset * 3, header.base, dark);
             }
             done += length;
         }
@@ -503,7 +513,8 @@ private:
     struct Block { std::uint32_t base, offset; };
     std::size_t count_ = 0;
     std::vector<Block> blocks_;
-    std::vector<std::uint8_t> bytes_;
+    std::unique_ptr<std::uint8_t[]> bytes_;
+    std::size_t byteCount_ = 0;
 };
 
 template <typename TCorrection, typename TOperation, typename TPixel>
