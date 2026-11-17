@@ -16,10 +16,18 @@ namespace ColorVision.ImageEditor.Algorithms
         public static double ReadLuminanceNominal(AlgorithmImageBuffer image, int x, int y)
         {
             double scale = NominalPeak / NativePeak(image.Format);
-            double blueOrGray = ReadChannel(image, x, y, 0);
-            if (image.Format.Channels() == 1) return blueOrGray * scale;
-            double green = ReadChannel(image, x, y, 1);
-            double red = ReadChannel(image, x, y, 2);
+            int channels = image.Format.Channels();
+            int bytesPerChannel = image.Format.BitsPerChannel() / 8;
+            int offset = checked(y * image.Stride + x * channels * bytesPerChannel);
+            return ReadLuminanceNominal(image.Data.Span, offset, channels, bytesPerChannel, scale);
+        }
+
+        internal static double ReadLuminanceNominal(ReadOnlySpan<byte> row, int offset, int channels, int bytesPerChannel, double scale)
+        {
+            double blueOrGray = ReadChannel(row, offset, bytesPerChannel);
+            if (channels == 1) return blueOrGray * scale;
+            double green = ReadChannel(row, offset + bytesPerChannel, bytesPerChannel);
+            double red = ReadChannel(row, offset + 2 * bytesPerChannel, bytesPerChannel);
             return double.IsFinite(blueOrGray) && double.IsFinite(green) && double.IsFinite(red)
                 ? (0.114 * blueOrGray + 0.587 * green + 0.299 * red) * scale
                 : double.NaN;
@@ -71,20 +79,17 @@ namespace ColorVision.ImageEditor.Algorithms
             return true;
         }
 
-        private static double NativePeak(AlgorithmImageFormat format)
+        internal static double NativePeak(AlgorithmImageFormat format)
             => format.IsFloatingPoint() ? 1 : format.BitsPerChannel() == 8 ? byte.MaxValue : ushort.MaxValue;
 
-        private static double ReadChannel(AlgorithmImageBuffer image, int x, int y, int channel)
+        private static double ReadChannel(ReadOnlySpan<byte> data, int offset, int bytesPerChannel)
         {
-            ReadOnlySpan<byte> data = image.Data.Span;
-            int bytesPerChannel = image.Format.BitsPerChannel() / 8;
-            int offset = checked(y * image.Stride + x * image.Format.BytesPerPixel() + channel * bytesPerChannel);
-            return image.Format.BitsPerChannel() switch
+            return bytesPerChannel switch
             {
-                8 => data[offset],
-                16 => BinaryPrimitives.ReadUInt16LittleEndian(data.Slice(offset, 2)),
-                32 => BitConverter.Int32BitsToSingle(BinaryPrimitives.ReadInt32LittleEndian(data.Slice(offset, 4))),
-                _ => throw new ArgumentOutOfRangeException(nameof(image)),
+                1 => data[offset],
+                2 => BinaryPrimitives.ReadUInt16LittleEndian(data.Slice(offset, 2)),
+                4 => BinaryPrimitives.ReadSingleLittleEndian(data.Slice(offset, 4)),
+                _ => throw new ArgumentOutOfRangeException(nameof(bytesPerChannel)),
             };
         }
 

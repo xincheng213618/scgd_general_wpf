@@ -27,7 +27,15 @@ namespace ColorVision.ImageEditor.Algorithms
             long roiPixels = 0;
             long foregroundPixels = 0;
             long invalidPixels = 0;
+            int channels = image.Format.Channels();
+            int bytesPerChannel = image.Format.BitsPerChannel() / 8;
+            int pixelBytes = channels * bytesPerChannel;
+            double scale = AlgorithmIntensitySampler.NominalPeak / AlgorithmIntensitySampler.NativePeak(image.Format);
+            int width = roi.MaximumXExclusive - roi.MinimumX;
             int height = Math.Max(1, roi.MaximumYExclusive - roi.MinimumY);
+            bool rectangular = !roi.IsEmpty && roi.Geometry.Kind == AlgorithmGeometryKind.Rectangle
+                && roi.Contains(roi.MinimumX, roi.MinimumY)
+                && roi.Contains(roi.MaximumXExclusive - 1, roi.MaximumYExclusive - 1);
             for (int y = roi.MinimumY; y < roi.MaximumYExclusive; y++)
             {
                 if (((y - roi.MinimumY) & 15) == 0)
@@ -35,11 +43,15 @@ namespace ColorVision.ImageEditor.Algorithms
                     cancellationToken.ThrowIfCancellationRequested();
                     reportProgress?.Invoke((y - roi.MinimumY) / (double)height);
                 }
-                for (int x = roi.MinimumX; x < roi.MaximumXExclusive; x++)
+                if (width <= 0) continue;
+                ReadOnlySpan<byte> row = image.Data.Span[(y * image.Stride)..];
+                Span<byte> destination = mask.AsSpan(y * image.Width, image.Width);
+                int offset = roi.MinimumX * pixelBytes;
+                for (int x = roi.MinimumX; x < roi.MaximumXExclusive; x++, offset += pixelBytes)
                 {
-                    if (!roi.Contains(x, y)) continue;
+                    if (!rectangular && !roi.Contains(x, y)) continue;
                     roiPixels++;
-                    double intensity = AlgorithmIntensitySampler.ReadLuminanceNominal(image, x, y);
+                    double intensity = AlgorithmIntensitySampler.ReadLuminanceNominal(row, offset, channels, bytesPerChannel, scale);
                     if (!double.IsFinite(intensity))
                     {
                         invalidPixels++;
@@ -47,7 +59,7 @@ namespace ColorVision.ImageEditor.Algorithms
                     }
                     bool foreground = brightForeground ? intensity >= nominalThreshold : intensity <= nominalThreshold;
                     if (!foreground) continue;
-                    mask[y * image.Width + x] = byte.MaxValue;
+                    destination[x] = byte.MaxValue;
                     foregroundPixels++;
                 }
             }
