@@ -2,6 +2,7 @@ using ColorVision.Core;
 using System;
 using System.Runtime.InteropServices;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
@@ -83,6 +84,7 @@ namespace ColorVision.ImageEditor.Output
 
     internal sealed class SnapshotImageBufferPool : IDisposable
     {
+        private const int ParallelCopyMinimumBytes = 128 * 1024 * 1024;
         private static long nextId;
         private readonly object sync = new();
         private HImage? cachedImage;
@@ -244,7 +246,30 @@ namespace ColorVision.ImageEditor.Output
                 throw new InvalidOperationException("Snapshot image buffer stride is invalid.");
 
             int bufferSize = checked(image.stride * image.rows);
-            source.CopyPixels(Int32Rect.Empty, image.pData, bufferSize, image.stride);
+            if (!TryCopyLargeRgb48(source, image, bufferSize))
+                source.CopyPixels(Int32Rect.Empty, image.pData, bufferSize, image.stride);
+        }
+
+        private static unsafe bool TryCopyLargeRgb48(WriteableBitmap source, HImage image, int bufferSize)
+        {
+            if (bufferSize < ParallelCopyMinimumBytes || Environment.ProcessorCount < 2 || source.IsFrozen
+                || source.Format != PixelFormats.Rgb48 || source.BackBufferStride != image.stride
+                || !source.TryLock(new Duration(TimeSpan.Zero)))
+                return false;
+
+            try
+            {
+                // Keep the read-only back buffer locked until both copies finish.
+                nint pixels = source.BackBuffer;
+                nint target = image.pData;
+                int first = bufferSize / 2;
+                int second = bufferSize - first;
+                Parallel.Invoke(new ParallelOptions { MaxDegreeOfParallelism = 2, TaskScheduler = TaskScheduler.Default },
+                    () => Buffer.MemoryCopy(pixels.ToPointer(), target.ToPointer(), first, first),
+                    () => Buffer.MemoryCopy((pixels + first).ToPointer(), (target + first).ToPointer(), second, second));
+                return true;
+            }
+            finally { source.Unlock(); }
         }
 
         private static int GetPackedRowBytes(int width, int bitsPerPixel)
