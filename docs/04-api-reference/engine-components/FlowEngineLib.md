@@ -21,6 +21,7 @@ related: ["flow.architecture","flow.editor","flow.workspace","flow.templates","f
 | 开始按钮点了但没跑 | `GetStartNodeName()`、`startNodeNames`、`IsExecutionReady`、`CanAcceptStart` |
 | 服务节点没有设备 | `FlowNodeManager.UpdateDevice`、`MQTTServiceInfo`、节点 `NodeType` |
 | 节点执行但流程不结束 | 是否连接 `CVEndNode`，是否走到 `CVStartCFC.FireFinished()` |
+| 最后一个节点结束后固定多等一段时间 | “设置 → 其他 → 流程后处理时间（毫秒）”及最后节点到完成事件的间隔 |
 | `Finished` 重复触发 | `clear()` 是否解绑旧 `BaseStartNode.Finished` |
 | 项目包收不到结果 | `FlowEngineControl.Finished` 到宿主 `FlowCompleted` 的桥接 |
 | UI 选择和节点参数不一致 | 属性元数据、`FlowPropertyEditorRegistry` 与选择器绑定；专用补充面板再查 `NodeConfiguration/` |
@@ -54,6 +55,8 @@ related: ["flow.architecture","flow.editor","flow.workspace","flow.templates","f
 | `CVBaseServerNode` | 模板、图片、Token、超时、请求参数和服务端响应 |
 | `CVEndNode` | `TryDoFinishing()` 接受首次终止后调用 `FireFinished()`，重复到达不会再次结束 |
 | `AlgorithmNode` / `AlgorithmARVRNode` | 把模板、图像、颜色、POI、SMU 数据打包成算法请求 |
+
+`FlowEndDelayMilliseconds` 是运行级配置。执行已满 500 ms、仍在运行且未收到停止请求时，`CVEndNode` 在发布完成事件前另等配置的 1–1000 ms。配置为 0 时直接进入完成检查。分析流程节拍时可分别比较最后节点结束到完成事件、完成事件到下一轮启动的间隔。修改现场配置后，用实际流程核对结果完整性和外部联动时序。
 
 大部分节点构建并转发执行参数，由服务完成算法。`LightingSensorNode` 复用现有 `LightingControl` 服务，支持 A/B 通道开关和查询，不另建连接或本地后端。
 
