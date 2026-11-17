@@ -432,10 +432,18 @@ namespace ColorVision.Solution.Explorer
             string displayPath,
             IReadOnlyList<string> keywords)
         {
-            return keywords.All(keyword =>
-                name.Contains(keyword, StringComparison.OrdinalIgnoreCase)
-                || fullPath.Contains(keyword, StringComparison.OrdinalIgnoreCase)
-                || displayPath.Contains(keyword, StringComparison.OrdinalIgnoreCase));
+            for (int index = 0; index < keywords.Count; index++)
+            {
+                string keyword = keywords[index];
+                if (!name.Contains(keyword, StringComparison.OrdinalIgnoreCase)
+                    && !fullPath.Contains(keyword, StringComparison.OrdinalIgnoreCase)
+                    && !displayPath.Contains(keyword, StringComparison.OrdinalIgnoreCase))
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
 
         private static int GetMatchRank(
@@ -448,9 +456,13 @@ namespace ColorVision.Solution.Explorer
                 return 0;
             if (name.StartsWith(query, StringComparison.OrdinalIgnoreCase))
                 return 1;
-            if (keywords.All(keyword => name.Contains(keyword, StringComparison.OrdinalIgnoreCase)))
-                return 2;
-            return displayPath.Contains(query, StringComparison.OrdinalIgnoreCase) ? 3 : 4;
+            for (int index = 0; index < keywords.Count; index++)
+            {
+                if (!name.Contains(keywords[index], StringComparison.OrdinalIgnoreCase))
+                    return displayPath.Contains(query, StringComparison.OrdinalIgnoreCase) ? 3 : 4;
+            }
+
+            return 2;
         }
 
         private static bool IsDirectoryNode(SolutionNode node)
