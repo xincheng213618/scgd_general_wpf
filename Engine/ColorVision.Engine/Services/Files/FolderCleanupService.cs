@@ -22,6 +22,7 @@ internal sealed class FolderCleanupResult
 internal static class FolderCleanupService
 {
     private static readonly ILog Log = LogManager.GetLogger(typeof(FolderCleanupService));
+    private const int DirectoryReadBufferBytes = 16 * 1024;
     private static readonly char[] ExtensionSeparators = [',', ';', ' ', '\t', '\r', '\n'];
     private readonly record struct Candidate(string Path, long Length, DateTime LastWriteTimeUtc);
 
@@ -52,7 +53,8 @@ internal static class FolderCleanupService
             {
                 RecurseSubdirectories = includeSubfolders,
                 AttributesToSkip = FileAttributes.ReparsePoint,
-                IgnoreInaccessible = false
+                IgnoreInaccessible = false,
+                BufferSize = DirectoryReadBufferBytes
             };
             long totalBytes = 0;
             var candidates = new List<Candidate>();
