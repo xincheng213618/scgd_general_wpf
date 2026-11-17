@@ -58,6 +58,8 @@ related: ["projects.index","projects.arvr-pro-demo","projects.arvr-pro-protocol"
 
 宿主提供 `QueueFlowRunAsync` 时，成功流程的 SQLite 诊断记录在后台收尾，生产批次和结果仍按原顺序保存。诊断队列积累到四轮时，最多等待最早一轮 5 秒，超时后后台仍继续写入。结果页和节拍统计里的“流程执行分析”会先等待选中批次的诊断写入，超时可稍后重试。`ARVRFlowPhaseTiming` 的 `FlowDiagnosticsDeferred=True` 表示 `FlowRunRecordMs`、`NodeRecorderFlushMs` 记录入队耗时。实际写入结果见同一序列号和批次的 `ARVRFlowDiagnosticsCompletion`，节拍上等待诊断队列的时间单独记录为 `FlowDiagnosticsBackpressureMs`。
 
+`ARVRFlowPhaseTiming.ResultSqliteWrites` 分别记录明细、整组汇总和完成时间的保存阶段。`GateWaitMs` 是本进程的数据库维护锁等待，`BeginMs` 包含 SQLite 开启事务时的等待，`RowMs` 是字段写入，`CompressionMs` 和 `PayloadMs` 分别是 GZip 压缩与 BLOB 写入。`CommitMs` 记录显式提交。完成时间使用单条语句，隐式提交计入 `RowMs`。明细的 `PublicationMs` 包含提交后的列表检查和同步界面回调。未取得耗时的阶段为空，`Succeeded` 记录保存调用的结果。
+
 ## 界面主题
 
 “空间不足时自动清理”默认关闭。启用后按各输出盘的剩余空间下限检查，默认 100 GiB。`ResultStorageSpaceManager` 从旧到新删除已识别的导出图像、标准 CSV 和历史日汇总 XLSX，达到阈值即停止。原始采集、数据库、快捷方式目标、未知文件、当前 SN、在途输出和当天汇总受保护。只扫描配置的结果和客户报表目录。清理后 SQLite 历史仍在，历史图像需核对候选文件。

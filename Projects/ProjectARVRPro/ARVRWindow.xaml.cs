@@ -274,7 +274,8 @@ namespace ProjectARVRPro
             long linkSaveMilliseconds,
             long resultProcessingTimestampPersistMilliseconds,
             bool resultProcessingTimestampPersisted,
-            bool resultImageDimensionsFromProcessCache)
+            bool resultImageDimensionsFromProcessCache,
+            (ResultSqliteWriteTiming? View, ResultSqliteWriteTiming? Objective, ResultSqliteWriteTiming? CompletedTimestamp) sqliteWrites)
         {
             if (!log.IsInfoEnabled) return;
             DateTime persistedAt = DateTime.Now;
@@ -333,6 +334,7 @@ namespace ProjectARVRPro
                 ResultProcessingTimestampPersistMs = Math.Max(0, resultProcessingTimestampPersistMilliseconds),
                 ResultProcessingTimestampPersisted = resultProcessingTimestampPersisted,
                 ResultImageDimensionsFromProcessCache = resultImageDimensionsFromProcessCache,
+                ResultSqliteWrites = new { sqliteWrites.View, sqliteWrites.Objective, sqliteWrites.CompletedTimestamp },
                 PersistMs = persistMilliseconds,
                 FlowCompletionToResultProcessingCompleteMs = GetElapsedMilliseconds(result.FlowCompletedAt, result.ResultProcessingCompletedAt),
                 FlowCompletionToPersistedMs = GetElapsedMilliseconds(result.FlowCompletedAt, persistedAt),
@@ -1639,13 +1641,16 @@ namespace ProjectARVRPro
                             _automaticImageExportResults.Add(result);
                         }
 
+                        bool measureSqliteWrites = log.IsInfoEnabled;
+                        ResultSqliteWriteTiming? viewWrite = measureSqliteWrites ? new() : null;
                         Stopwatch viewResultSaveStopwatch = Stopwatch.StartNew();
-                        ViewResultManager.Save(result);
+                        ViewResultManager.Save(result, viewWrite);
                         viewResultSaveStopwatch.Stop();
                         ObjectiveTestResult.TotalResult = ObjectiveTestResult.TotalResult && result.Result;
 
+                        ResultSqliteWriteTiming? objectiveWrite = measureSqliteWrites ? new() : null;
                         Stopwatch objectiveResultSaveStopwatch = Stopwatch.StartNew();
-                        SaveObjectiveTestResultRecord(result);
+                        SaveObjectiveTestResultRecord(result, objectiveWrite);
                         objectiveResultSaveStopwatch.Stop();
 
                         long linkSaveMilliseconds = 0;
@@ -1679,11 +1684,12 @@ namespace ProjectARVRPro
                         }
 
                         DateTime resultProcessingCompletedAt = DateTime.Now;
+                        ResultSqliteWriteTiming? timestampWrite = measureSqliteWrites ? new() : null;
                         Stopwatch timestampPersistStopwatch = Stopwatch.StartNew();
                         bool timestampPersisted = false;
                         try
                         {
-                            timestampPersisted = ViewResultManager.MarkResultProcessingCompleted(result, resultProcessingCompletedAt);
+                            timestampPersisted = ViewResultManager.MarkResultProcessingCompleted(result, resultProcessingCompletedAt, timestampWrite);
                         }
                         catch (Exception ex)
                         {
@@ -1699,7 +1705,8 @@ namespace ProjectARVRPro
                             linkSaveMilliseconds,
                             timestampPersistStopwatch.ElapsedMilliseconds,
                             timestampPersisted,
-                            resultImageDimensionsFromProcessCache);
+                            resultImageDimensionsFromProcessCache,
+                            (viewWrite, objectiveWrite, timestampWrite));
                         return true;
                     }
                     else
@@ -1733,11 +1740,11 @@ namespace ProjectARVRPro
             return false;
         }
 
-        private void SaveObjectiveTestResultRecord(ProjectARVRReuslt result)
+        private void SaveObjectiveTestResultRecord(ProjectARVRReuslt result, ResultSqliteWriteTiming? timing = null)
         {
             try
             {
-                ObjectiveTestResultRecordId = ViewResultManager.SaveObjectiveTestResult(ObjectiveTestResultRecordId, result, ObjectiveTestResult);
+                ObjectiveTestResultRecordId = ViewResultManager.SaveObjectiveTestResult(ObjectiveTestResultRecordId, result, ObjectiveTestResult, timing);
                 log.Debug($"保存 ObjectiveTestResult 记录：{ObjectiveTestResultRecordId}");
             }
             catch (Exception ex)

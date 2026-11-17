@@ -496,7 +496,9 @@ namespace ProjectARVRPro
                     .First();
         }
 
-        public void Save(ProjectARVRReuslt item)
+        public void Save(ProjectARVRReuslt item) => Save(item, null);
+
+        internal void Save(ProjectARVRReuslt item, ResultSqliteWriteTiming? timing)
         {
             if (item == null) return;
 
@@ -505,11 +507,14 @@ namespace ProjectARVRPro
                 ResultImageDimensions.TryPopulate(item);
 
             bool savePayload = item.ViewResultJson != null;
+            timing?.PrepareMs = timing.FinishStage();
             ResultJsonPayloadStorage.RunDatabaseMaintenance(() =>
             {
+                timing?.GateWaitMs = timing.FinishStage();
                 _db.Ado.BeginTran();
                 try
                 {
+                    timing?.BeginMs = timing.FinishStage();
                     if (isNew)
                     {
                         item.Id = _db.Insertable(item).ExecuteReturnIdentity();
@@ -519,9 +524,11 @@ namespace ProjectARVRPro
                         _db.Updateable(item).ExecuteCommand();
                     }
 
+                    timing?.RowMs = timing.FinishStage();
                     if (savePayload)
-                        ResultJsonPayloadStorage.SaveViewResultJson(_db, item.Id, item.ViewResultJson);
+                        ResultJsonPayloadStorage.SaveViewResultJson(_db, item.Id, item.ViewResultJson, timing);
                     _db.Ado.CommitTran();
+                    timing?.CommitMs = timing.FinishStage();
                 }
                 catch
                 {
@@ -534,20 +541,29 @@ namespace ProjectARVRPro
 
             if (isNew || !ViewResluts.Any(x => ReferenceEquals(x, item) || x.Id == item.Id))
                 AddLiveResult(ViewResluts, item);
+            timing?.PublicationMs = timing.FinishStage();
+            timing?.Succeeded = true;
         }
 
-        internal bool MarkResultProcessingCompleted(ProjectARVRReuslt item, DateTime completedAt)
+        internal bool MarkResultProcessingCompleted(ProjectARVRReuslt item, DateTime completedAt, ResultSqliteWriteTiming? timing = null)
         {
             ArgumentNullException.ThrowIfNull(item);
             item.ResultProcessingCompletedAt = completedAt;
+            timing?.PrepareMs = timing.FinishStage();
             if (item.Id <= 0)
                 return false;
 
             int updatedRows = ResultJsonPayloadStorage.RunDatabaseMaintenance(() =>
-                _db.Updateable<ProjectARVRReuslt>()
+            {
+                timing?.GateWaitMs = timing.FinishStage();
+                int rows = _db.Updateable<ProjectARVRReuslt>()
                     .SetColumns(result => result.ResultProcessingCompletedAt == completedAt)
                     .Where(result => result.Id == item.Id)
-                    .ExecuteCommand());
+                    .ExecuteCommand();
+                timing?.RowMs = timing.FinishStage();
+                return rows;
+            });
+            timing?.Succeeded = updatedRows > 0;
             return updatedRows > 0;
         }
 
@@ -646,15 +662,22 @@ namespace ProjectARVRPro
         }
 
         public int SaveObjectiveTestResult(int currentRecordId, ProjectARVRReuslt result, ObjectiveTestResult objectiveTestResult)
+            => SaveObjectiveTestResult(currentRecordId, result, objectiveTestResult, null);
+
+        internal int SaveObjectiveTestResult(int currentRecordId, ProjectARVRReuslt result,
+            ObjectiveTestResult objectiveTestResult, ResultSqliteWriteTiming? timing)
         {
             if (result == null || objectiveTestResult == null) return currentRecordId;
 
             var record = ObjectiveTestResultRecord.Create(result, objectiveTestResult);
+            timing?.PrepareMs = timing.FinishStage();
             return ResultJsonPayloadStorage.RunDatabaseMaintenance(() =>
             {
+                timing?.GateWaitMs = timing.FinishStage();
                 _db.Ado.BeginTran();
                 try
                 {
+                    timing?.BeginMs = timing.FinishStage();
                     // Preserve the original session start and finalization state in SQLite.
                     record.Id = currentRecordId;
                     if (currentRecordId <= 0 || _db.Updateable(record)
@@ -666,8 +689,11 @@ namespace ProjectARVRPro
                         record.Id = _db.Insertable(record).ExecuteReturnIdentity();
                     }
 
-                    ResultJsonPayloadStorage.SaveObjectiveTestResultJson(_db, record.Id, record.ObjectiveTestResultJson);
+                    timing?.RowMs = timing.FinishStage();
+                    ResultJsonPayloadStorage.SaveObjectiveTestResultJson(_db, record.Id, record.ObjectiveTestResultJson, timing);
                     _db.Ado.CommitTran();
+                    timing?.CommitMs = timing.FinishStage();
+                    timing?.Succeeded = true;
                     return record.Id;
                 }
                 catch

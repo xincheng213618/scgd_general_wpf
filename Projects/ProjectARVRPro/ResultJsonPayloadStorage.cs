@@ -42,14 +42,19 @@ namespace ProjectARVRPro
             EnsureBlobColumn(db, ObjectiveResultTableName, ObjectiveResultColumnName);
         }
 
-        public static void SaveViewResultJson(SqlSugarClient db, int id, string? json)
-        {
-            SavePayload(db, ViewResultTableName, ViewResultColumnName, id, Compress(json));
-        }
+        public static void SaveViewResultJson(SqlSugarClient db, int id, string? json, ResultSqliteWriteTiming? timing = null)
+            => SaveJson(db, ViewResultTableName, ViewResultColumnName, id, json, timing);
 
-        public static void SaveObjectiveTestResultJson(SqlSugarClient db, int id, string? json)
+        public static void SaveObjectiveTestResultJson(SqlSugarClient db, int id, string? json, ResultSqliteWriteTiming? timing = null)
+            => SaveJson(db, ObjectiveResultTableName, ObjectiveResultColumnName, id, json, timing);
+
+        private static void SaveJson(SqlSugarClient db, string tableName, string columnName, int id, string? json,
+            ResultSqliteWriteTiming? timing)
         {
-            SavePayload(db, ObjectiveResultTableName, ObjectiveResultColumnName, id, Compress(json));
+            byte[]? payload = Compress(json);
+            timing?.CompressionMs = timing.FinishStage();
+            SavePayload(db, tableName, columnName, id, payload);
+            timing?.PayloadMs = timing.FinishStage();
         }
 
         public static string? LoadViewResultJson(SqlSugarClient db, int id)
