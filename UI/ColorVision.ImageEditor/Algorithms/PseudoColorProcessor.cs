@@ -9,6 +9,8 @@ namespace ColorVision.ImageEditor.Algorithms
     /// <summary>Maps grayscale and single-channel samples to BGR colors with an integer lookup table.</summary>
     public sealed class PseudoColorProcessor
     {
+        private static CachedTable<SampleRangeTableKey>? _sampleRangeTable;
+        private static CachedTable<AlgorithmTableKey>? _algorithmTable;
         private readonly object _cacheSync = new();
         private readonly long _cacheByteLimit;
         private Guid _sourceStorageId;
@@ -101,10 +103,21 @@ namespace ColorVision.ImageEditor.Algorithms
             cancellationToken.ThrowIfCancellationRequested();
 
             // Index the LUT directly by source value, preserving narrow windows on 16-bit images.
-            using Mat ramp = OpenCvImageAlgorithms.CreateUnsignedRamp(samples.Depth());
-            using Mat lut = MapColors(ramp, minimum, maximum, colormap, useLowestColorForConstant: true);
-            output.Create(samples.Rows, samples.Cols, MatType.CV_8UC3);
-            Lookup(samples, index, lut, output, cancellationToken);
+            var key = new SampleRangeTableKey(samples.Depth() == MatType.CV_16U, minimum, maximum, colormap);
+            CachedTable<SampleRangeTableKey>? cached = Volatile.Read(ref _sampleRangeTable);
+            if (cached?.Colors is byte[] colors && cached.Key == key)
+            {
+                output.Create(samples.Rows, samples.Cols, MatType.CV_8UC3);
+                Lookup(samples, index, colors, output, cancellationToken);
+            }
+            else
+            {
+                using Mat ramp = OpenCvImageAlgorithms.CreateUnsignedRamp(samples.Depth());
+                using Mat mapped = MapColors(ramp, minimum, maximum, colormap, useLowestColorForConstant: true);
+                output.Create(samples.Rows, samples.Cols, MatType.CV_8UC3);
+                Lookup(samples, index, mapped, output, cancellationToken);
+                RememberTable(ref _sampleRangeTable, cached, key, mapped);
+            }
             return (minimum, maximum);
         }
 
@@ -132,21 +145,42 @@ namespace ColorVision.ImageEditor.Algorithms
                     channel = 0;
                 }
                 cancellationToken.ThrowIfCancellationRequested();
-                using Mat ramp = OpenCvImageAlgorithms.CreateUnsignedRamp(integer ? samples.Depth() : MatType.CV_8U);
-                Mat lut;
                 if (integer)
                 {
-                    using Mat indices = OpenCvAlgorithmProvider.ConvertPseudoColorSource(ramp, parameters, out double min, out double max);
-                    lut = MapColors(indices, min, max, parameters.Colormap);
+                    var key = new AlgorithmTableKey(samples.Depth() == MatType.CV_16U, parameters.Colormap,
+                        parameters.UseNominalRange, parameters.AutoRange, parameters.Minimum, parameters.Maximum,
+                        parameters.DataMinimum, parameters.DataMaximum);
+                    CachedTable<AlgorithmTableKey>? cached = Volatile.Read(ref _algorithmTable);
+                    if (cached?.Colors is byte[] colors && cached.Key == key)
+                    {
+                        Lookup(samples, channel, colors, output, cancellationToken);
+                    }
+                    else
+                    {
+                        using Mat ramp = OpenCvImageAlgorithms.CreateUnsignedRamp(samples.Depth());
+                        // Build from the captured key so a mutable parameter object cannot publish a mismatched table.
+                        PseudoColorParameters mapping = new()
+                        {
+                            UseNominalRange = key.Nominal,
+                            AutoRange = key.Auto,
+                            Minimum = key.Minimum,
+                            Maximum = key.Maximum,
+                            DataMinimum = key.DataMinimum,
+                            DataMaximum = key.DataMaximum,
+                        };
+                        using Mat indices = OpenCvAlgorithmProvider.ConvertPseudoColorSource(ramp, mapping, out double min, out double max);
+                        using Mat mapped = MapColors(indices, min, max, key.Map);
+                        Lookup(samples, channel, mapped, output, cancellationToken);
+                        RememberTable(ref _algorithmTable, cached, key, mapped);
+                    }
                 }
                 else
                 {
+                    using Mat ramp = OpenCvImageAlgorithms.CreateUnsignedRamp(MatType.CV_8U);
                     normalized = OpenCvAlgorithmProvider.ConvertPseudoColorSource(samples, parameters, out double min, out double max);
-                    samples = normalized;
-                    channel = 0;
-                    lut = MapColors(ramp, min, max, parameters.Colormap);
+                    using Mat lut = MapColors(ramp, min, max, parameters.Colormap);
+                    Lookup(normalized, 0, lut, output, cancellationToken);
                 }
-                using (lut) Lookup(samples, channel, lut, output, cancellationToken);
             }
             finally
             {
@@ -183,9 +217,40 @@ namespace ColorVision.ImageEditor.Algorithms
             catch { result.Dispose(); throw; }
         }
 
-        private static unsafe void Lookup(Mat source, int channel, Mat lut, Mat output, CancellationToken cancellationToken)
+        // One immutable mapping per call family. In-flight lookups keep their own array alive across replacement.
+        private sealed record CachedTable<TKey>(TKey Key, byte[]? Colors);
+        private readonly record struct SampleRangeTableKey(bool Wide, double Minimum, double Maximum, StandardPseudoColorMap Map);
+        private readonly record struct AlgorithmTableKey(bool Wide, StandardPseudoColorMap Map, bool Nominal, bool Auto,
+            uint Minimum, uint Maximum, uint DataMinimum, uint DataMaximum);
+
+        private static void RememberTable<TKey>(ref CachedTable<TKey>? slot, CachedTable<TKey>? previous, TKey key, Mat lut)
+            where TKey : struct, IEquatable<TKey>
         {
-            nint sourceAddress = source.Data, outputAddress = output.Data, lutAddress = lut.Data;
+            // Wait for a repeat before allocating a copy, since automatic ranges may vary between frames.
+            byte[]? colors = null;
+            if (previous != null && previous.Key.Equals(key))
+            {
+                colors = GC.AllocateUninitializedArray<byte>(checked(lut.Rows * lut.Cols * 3));
+                System.Runtime.InteropServices.Marshal.Copy(lut.Data, colors, 0, colors.Length);
+            }
+            Interlocked.CompareExchange(ref slot, new(key, colors), previous);
+        }
+
+        private static unsafe void Lookup(Mat source, int channel, byte[] lut, Mat output, CancellationToken cancellationToken)
+        {
+            fixed (byte* table = lut)
+                Lookup(source, channel, (nint)table, output, cancellationToken);
+        }
+
+        private static void Lookup(Mat source, int channel, Mat lut, Mat output, CancellationToken cancellationToken)
+        {
+            Lookup(source, channel, lut.Data, output, cancellationToken);
+            GC.KeepAlive(lut);
+        }
+
+        private static unsafe void Lookup(Mat source, int channel, nint lutAddress, Mat output, CancellationToken cancellationToken)
+        {
+            nint sourceAddress = source.Data, outputAddress = output.Data;
             long sourceStride = source.Step(), outputStride = output.Step();
             int width = source.Cols, rows = source.Rows, channels = source.Channels();
             bool sixteenBit = source.Depth() == MatType.CV_16U;
