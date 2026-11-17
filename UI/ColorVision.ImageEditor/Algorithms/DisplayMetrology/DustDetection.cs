@@ -22,14 +22,17 @@ public sealed partial class DisplayMetrologyProvider
         int height = Math.Max(1, (int)Math.Round(image.Height * reduction));
         if (Math.Min(width, height) <= p.BorderMargin * 2 + 8)
             throw new MeasurementException("analysis_region_too_small", "内缩后的分析区域太小，请减小边界内缩或增加分析分辨率。");
-        using Mat resized = new();
-        Cv2.Resize(source.Mat, resized, new Size(width, height), interpolation: InterpolationFlags.Area);
+        using Mat? resized = width == image.Width && height == image.Height ? null : new Mat();
+        if (resized != null)
+            Cv2.Resize(source.Mat, resized, new Size(width, height), interpolation: InterpolationFlags.Area);
         token.ThrowIfCancellationRequested();
-        using Mat channel = new();
-        Cv2.ExtractChannel(resized, channel, image.Format.Channels() == 1 ? 0 : p.Channel);
+        Mat analysisSource = resized ?? source.Mat;
+        int channels = image.Format.Channels();
+        using Mat? channel = channels == 1 ? null : new Mat();
+        if (channel != null) Cv2.ExtractChannel(analysisSource, channel, p.Channel);
         using Mat signal = new();
-        int channelBytes = image.Format.BytesPerPixel() / image.Format.Channels();
-        channel.ConvertTo(signal, MatType.CV_32FC1, channelBytes == 1 ? 1.0 / 255 : channelBytes == 2 ? 1.0 / 65535 : 1);
+        int channelBytes = image.Format.BytesPerPixel() / channels;
+        (channel ?? analysisSource).ConvertTo(signal, MatType.CV_32FC1, channelBytes == 1 ? 1.0 / 255 : channelBytes == 2 ? 1.0 / 65535 : 1);
         if (p.DecodeExponent != 1) Cv2.Pow(signal, p.DecodeExponent, signal);
         using Mat smoothed = new();
         Cv2.GaussianBlur(signal, smoothed, new Size(0, 0), 0.8, borderType: BorderTypes.Reflect101);
@@ -39,17 +42,18 @@ public sealed partial class DisplayMetrologyProvider
             throw new MeasurementException("no_analysis_region", "没有足够的有效成像区域，请检查成像阈值与边界内缩。");
         context.Progress?.Report(new AlgorithmProgress(0.2, "dust.background", "分析成像区域内的暗斑"));
         using Mat score = new(height, width, MatType.CV_32FC1, Scalar.All(0));
-        foreach (int kernel in new[] { 31, 121, p.BackgroundKernel }.Distinct())
+        using (Mat background = new())
+        using (Mat delta = new())
         {
-            token.ThrowIfCancellationRequested();
-            using Mat background = new();
-            using Mat delta = new();
-            using Mat denominator = new();
-            Cv2.GaussianBlur(smoothed, background, new Size(kernel, kernel), 0, borderType: BorderTypes.Reflect101);
-            Cv2.Subtract(background, smoothed, delta);
-            Cv2.Max(background, 1e-6, denominator);
-            Cv2.Divide(delta, denominator, delta);
-            Cv2.Max(score, delta, score);
+            foreach (int kernel in new[] { 31, 121, p.BackgroundKernel }.Distinct())
+            {
+                token.ThrowIfCancellationRequested();
+                Cv2.GaussianBlur(smoothed, background, new Size(kernel, kernel), 0, borderType: BorderTypes.Reflect101);
+                Cv2.Subtract(background, smoothed, delta);
+                Cv2.Max(background, 1e-6, background);
+                Cv2.Divide(delta, background, delta);
+                Cv2.Max(score, delta, score);
+            }
         }
         using Mat candidateMask = new();
         Cv2.Threshold(score, candidateMask, p.ContrastPercent / 100, 255, ThresholdTypes.Binary);
@@ -123,19 +127,22 @@ public sealed partial class DisplayMetrologyProvider
         })));
     }
 
-    private static Mat BuildDustAnalysisMask(Mat signal, DustDetectionParameters p, CancellationToken token, out double threshold)
+    private static unsafe Mat BuildDustAnalysisMask(Mat signal, DustDetectionParameters p, CancellationToken token, out double threshold)
     {
         using Mat blurred = new();
         Cv2.GaussianBlur(signal, blurred, new Size(0, 0), 3, borderType: BorderTypes.Reflect101);
-        var samples = new List<float>();
         int height = blurred.Rows, width = blurred.Cols;
-        for (int y = 0; y < height; y += 8)
+        const int sampleStep = 8;
+        var samples = new float[((height + sampleStep - 1) / sampleStep) * ((width + sampleStep - 1) / sampleStep)];
+        int sampleIndex = 0;
+        for (int y = 0; y < height; y += sampleStep)
         {
             token.ThrowIfCancellationRequested();
-            for (int x = 0; x < width; x += 8) samples.Add(blurred.At<float>(y, x));
+            var row = new ReadOnlySpan<float>((void*)blurred.Ptr(y), width);
+            for (int x = 0; x < width; x += sampleStep) samples[sampleIndex++] = row[x];
         }
-        samples.Sort();
-        double reference = samples[(int)((samples.Count - 1) * 0.95)];
+        Array.Sort(samples);
+        double reference = samples[(int)((samples.Length - 1) * 0.95)];
         if (reference < 1e-6) throw new MeasurementException("no_illuminated_region", "图像没有足够的成像信号。");
         threshold = reference * p.ForegroundPercent / 100;
         using Mat foreground = new();
@@ -146,15 +153,19 @@ public sealed partial class DisplayMetrologyProvider
         Point[] largest = contours.MaxBy(c => Cv2.ContourArea(c))!;
         using Mat filled = new(signal.Rows, signal.Cols, MatType.CV_8UC1, Scalar.All(0));
         Cv2.DrawContours(filled, new[] { largest }, -1, Scalar.All(255), -1);
-        using Mat padded = new();
-        Cv2.CopyMakeBorder(filled, padded, 1, 1, 1, 1, BorderTypes.Constant, Scalar.All(0));
+        Rect bounds = Cv2.BoundingRect(largest);
+        // Outside zeros cannot affect the distance when the contour leaves a zero image border.
+        bool touchesBorder = bounds.X == 0 || bounds.Y == 0 || bounds.Right == width || bounds.Bottom == height;
+        using Mat? padded = touchesBorder ? new Mat() : null;
+        if (padded != null)
+            Cv2.CopyMakeBorder(filled, padded, 1, 1, 1, 1, BorderTypes.Constant, Scalar.All(0));
         using Mat distance = new();
-        Cv2.DistanceTransform(padded, distance, DistanceTypes.L2, DistanceTransformMasks.Mask5);
-        using Mat interior = new(distance, new Rect(1, 1, signal.Cols, signal.Rows));
+        Cv2.DistanceTransform(padded ?? filled, distance, DistanceTypes.L2, DistanceTransformMasks.Mask5);
+        using Mat? interior = padded == null ? null : new Mat(distance, new Rect(1, 1, width, height));
         Mat mask = new();
         try
         {
-            Cv2.Threshold(interior, mask, p.BorderMargin, 255, ThresholdTypes.Binary);
+            Cv2.Threshold(interior ?? distance, mask, p.BorderMargin, 255, ThresholdTypes.Binary);
             mask.ConvertTo(mask, MatType.CV_8UC1);
             return mask;
         }

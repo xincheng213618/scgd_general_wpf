@@ -12,19 +12,34 @@ public sealed partial class DisplayMetrologyProvider
 {
     private sealed record Target(bool Valid, string Reason, double X = 0, double Y = 0);
 
-    private static Target LocateTarget(float[] image, int width, Rect tile, double contrast, double threshold, CancellationToken token)
+    private struct TargetScratch
     {
-        var values = new float[tile.Width * tile.Height];
+        public float[]? Values;
+        public byte[]? Mask;
+        public int[]? Queue;
+    }
+
+    private static Target LocateTarget(float[] image, int width, Rect tile, double contrast, double threshold, CancellationToken token, ref TargetScratch scratch)
+    {
+        int tilePixels = tile.Width * tile.Height;
+        if (scratch.Values == null || scratch.Values.Length != tilePixels)
+            scratch.Values = new float[tilePixels];
+        float[] values = scratch.Values;
         for (int y = 0; y < tile.Height; y++) Array.Copy(image, (tile.Y + y) * width + tile.X, values, y * tile.Width, tile.Width);
         float minimum = values.Min(), maximum = values.Max();
         if (maximum - minimum < contrast) return new(false, "low_contrast");
-        var mask = new byte[values.Length];
+        if (scratch.Mask == null || scratch.Mask.Length != tilePixels)
+            scratch.Mask = new byte[tilePixels];
+        byte[] mask = scratch.Mask;
         for (int i = 0; i < values.Length; i++)
         {
             values[i] -= minimum;
             if (values[i] >= (maximum - minimum) * threshold) mask[i] = 255;
         }
-        var blobs = Components(mask, values, tile.Width, tile.Height, token).Where(b => b.Area >= 3).OrderByDescending(b => b.Sum).ToArray();
+        if (scratch.Queue == null || scratch.Queue.Length < tilePixels)
+            scratch.Queue = new int[tilePixels];
+        // Components clears the mask before it is used by another tile.
+        var blobs = Components(mask, values, tile.Width, tile.Height, token, scratch.Queue).Where(b => b.Area >= 3).OrderByDescending(b => b.Sum).ToArray();
         if (blobs.Length == 0) return new(false, "target_missing");
         if (blobs.Length > 1 && blobs[1].Sum > blobs[0].Sum * 0.05) return new(false, "ambiguous_targets");
         var target = blobs[0];
@@ -40,14 +55,17 @@ public sealed partial class DisplayMetrologyProvider
         var rows = new List<IReadOnlyDictionary<string, JsonElement>>();
         var shapes = new List<AlgorithmGeometry>();
         var errors = new List<double>();
+        var referenceTargets = new Target?[p.Rows * p.Columns];
+        TargetScratch scratch = default;
+        float[]? moving = null;
         foreach (int channel in new[] { 2, 0 })
         {
-            float[] moving = ReadSignal(input, channel, p.DecodeExponent, token);
+            moving = ReadSignal(input, channel, p.DecodeExponent, token, moving);
             foreach (var (index, bounds) in Grid(input.Width, input.Height, p))
             {
                 token.ThrowIfCancellationRequested();
-                Target reference = LocateTarget(green, input.Width, bounds, p.MinimumContrast, p.TargetThreshold, token);
-                Target target = LocateTarget(moving, input.Width, bounds, p.MinimumContrast, p.TargetThreshold, token);
+                Target reference = referenceTargets[index] ??= LocateTarget(green, input.Width, bounds, p.MinimumContrast, p.TargetThreshold, token, ref scratch);
+                Target target = LocateTarget(moving, input.Width, bounds, p.MinimumContrast, p.TargetThreshold, token, ref scratch);
                 bool valid = reference.Valid && target.Valid;
                 double dx = target.X - reference.X, dy = target.Y - reference.Y;
                 string pair = channel == 2 ? "R-G" : "B-G";
@@ -86,11 +104,12 @@ public sealed partial class DisplayMetrologyProvider
         var pairs = new List<(Target Left, Target Right)>();
         var shapes = new List<AlgorithmGeometry>();
         var ratios = new List<double>();
+        TargetScratch scratch = default;
         foreach (var (index, bounds) in Grid(leftInput.Width, leftInput.Height, p))
         {
             token.ThrowIfCancellationRequested();
-            var a = p.MeasureAlignment ? LocateTarget(left, leftInput.Width, bounds, p.MinimumContrast, 0.5, token) : new Target(false, "alignment_disabled");
-            var b = p.MeasureAlignment ? LocateTarget(right, leftInput.Width, bounds, p.MinimumContrast, 0.5, token) : new Target(false, "alignment_disabled");
+            var a = p.MeasureAlignment ? LocateTarget(left, leftInput.Width, bounds, p.MinimumContrast, 0.5, token, ref scratch) : new Target(false, "alignment_disabled");
+            var b = p.MeasureAlignment ? LocateTarget(right, leftInput.Width, bounds, p.MinimumContrast, 0.5, token, ref scratch) : new Target(false, "alignment_disabled");
             bool valid = a.Valid && b.Valid;
             double meanLeft = TileMean(left, leftInput.Width, bounds), meanRight = TileMean(right, leftInput.Width, bounds);
             double? ratio = meanLeft > 1e-8 ? meanRight / meanLeft : null;
@@ -133,10 +152,17 @@ public sealed partial class DisplayMetrologyProvider
         if (leftInput.Format.Channels() >= 3)
         {
             var channelRows = new List<IReadOnlyDictionary<string, JsonElement>>();
+            float[]? extraLeft = null, extraRight = null;
             for (int channel = 0; channel < 3; channel++)
             {
-                float[] l = channel == p.Channel ? left : ReadSignal(leftInput, channel, p.DecodeExponent, token);
-                float[] r = channel == p.Channel ? right : ReadSignal(context.Inputs[1].Image, channel, p.DecodeExponent, token);
+                float[] l = left, r = right;
+                if (channel != p.Channel)
+                {
+                    extraLeft = ReadSignal(leftInput, channel, p.DecodeExponent, token, extraLeft);
+                    extraRight = ReadSignal(context.Inputs[1].Image, channel, p.DecodeExponent, token, extraRight);
+                    l = extraLeft;
+                    r = extraRight;
+                }
                 foreach (var (index, bounds) in Grid(leftInput.Width, leftInput.Height, p))
                 {
                     token.ThrowIfCancellationRequested();

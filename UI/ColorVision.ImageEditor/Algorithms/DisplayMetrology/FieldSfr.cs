@@ -10,6 +10,30 @@ namespace ColorVision.ImageEditor.Algorithms;
 
 public sealed partial class DisplayMetrologyProvider
 {
+    private const int EdgeSpreadBins = 97;
+    private const int DftFrequencyCount = 65;
+
+    private static class DftWeights
+    {
+        public static readonly (double Cosine, double Sine)[] Values = Create();
+
+        private static (double Cosine, double Sine)[] Create()
+        {
+            const int lineSpreadBins = EdgeSpreadBins - 2;
+            var values = new (double, double)[DftFrequencyCount * lineSpreadBins];
+            for (int i = 0; i < DftFrequencyCount; i++)
+            {
+                double f = i / 128.0;
+                for (int j = 0; j < lineSpreadBins; j++)
+                {
+                    double angle = 2 * Math.PI * f * j / 4;
+                    values[i * lineSpreadBins + j] = (Math.Cos(angle), Math.Sin(angle));
+                }
+            }
+            return values;
+        }
+    }
+
     private sealed record EdgeSfr(bool Valid, string Reason, double Slope = 0, double Residual = 0, double? Mtf50 = null, double[]? Mtf = null);
 
     private static void MeasureFieldSfr(float[] signal, int width, int height, FieldSfrParameters p, List<AlgorithmArtifact> artifacts, CancellationToken token)
@@ -84,16 +108,27 @@ public sealed partial class DisplayMetrologyProvider
         double rms = Math.Sqrt(centers.Average(v => Math.Pow(v.X - slope * v.Y - intercept, 2)));
         if (Math.Abs(slope) < 0.02 || Math.Abs(slope) > 0.35) return new(false, "edge_angle_out_of_range");
         if (rms > 0.35) return new(false, "edge_not_straight");
-        const int bins = 97;
+        const int bins = EdgeSpreadBins;
+        const int samplesPerPixel = 4;
+        const double binCenter = bins / 2.0;
         var esf = new double[bins]; var counts = new int[bins];
+        double projectionScale = Math.Sqrt(1 + slope * slope);
+        // Include one extra pixel for truncating the projected center to an integer.
+        int projectionRadius = (int)Math.Ceiling(binCenter / samplesPerPixel * projectionScale) + 1;
         for (int y = 2; y < height - 2; y++)
-            for (int x = 0; x < width; x++)
+        {
+            double rowShift = slope * y;
+            int center = (int)(rowShift + intercept);
+            int start = Math.Max(0, center - projectionRadius);
+            int end = Math.Min(width, center + projectionRadius + 1);
+            for (int x = start; x < end; x++)
             {
-                double distance = (x - slope * y - intercept) / Math.Sqrt(1 + slope * slope);
-                int bin = (int)Math.Floor(distance * 4 + 48.5);
+                double distance = (x - rowShift - intercept) / projectionScale;
+                int bin = (int)Math.Floor(distance * samplesPerPixel + binCenter);
                 if (bin < 0 || bin >= bins) continue;
                 esf[bin] += Pixel(x, y); counts[bin]++;
             }
+        }
         if (counts.Count(v => v > 0) < bins * 0.8 || counts[0] == 0 || counts[^1] == 0) return new(false, "insufficient_subpixel_coverage");
         for (int i = 0; i < bins; i++) if (counts[i] > 0) esf[i] /= counts[i];
         for (int i = 1; i < bins - 1; i++)
@@ -112,15 +147,16 @@ public sealed partial class DisplayMetrologyProvider
         }
         double dc = lsf.Sum();
         if (dc <= 1e-8) return new(false, "invalid_lsf_dc");
-        var mtf = new double[65];
+        var mtf = new double[DftFrequencyCount];
         for (int i = 0; i < mtf.Length; i++)
         {
             token.ThrowIfCancellationRequested();
             double f = i / 128.0, real = 0, imaginary = 0;
+            ReadOnlySpan<(double Cosine, double Sine)> weights = DftWeights.Values.AsSpan(i * lsf.Length, lsf.Length);
             for (int j = 0; j < lsf.Length; j++)
             {
-                double angle = 2 * Math.PI * f * j / 4;
-                real += lsf[j] * Math.Cos(angle); imaginary -= lsf[j] * Math.Sin(angle);
+                real += lsf[j] * weights[j].Cosine;
+                imaginary -= lsf[j] * weights[j].Sine;
             }
             double derivativeCorrection = i == 0 ? 1 : (2 * Math.PI * f / 4) / Math.Sin(2 * Math.PI * f / 4);
             mtf[i] = Math.Sqrt(real * real + imaginary * imaginary) / dc * derivativeCorrection;
