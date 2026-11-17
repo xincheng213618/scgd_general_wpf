@@ -77,7 +77,7 @@ internal sealed class LocalRgbCrossHistory : IViewResult
         JsonElement points = root.GetProperty("points");
         Require(points.ValueKind == JsonValueKind.Array && points.GetArrayLength() <= gridRows * gridColumns, "十字点数超出图案网格。");
         Require(executionStatus != "SUCCEEDED" || points.GetArrayLength() == gridRows * gridColumns, "十字点数与图案网格不一致。");
-        List<LocalRgbCrossHistoryRow> rows = [];
+        List<LocalRgbCrossHistoryRow> rows = new(points.GetArrayLength());
         List<AlgorithmGeometry> geometries = [];
         List<AlgorithmOverlayItem> overlays = [];
         HashSet<string> ids = new(StringComparer.Ordinal);
@@ -90,19 +90,31 @@ internal sealed class LocalRgbCrossHistory : IViewResult
                 && id == "P" + ((row - 1) * gridColumns + column).ToString(CultureInfo.InvariantCulture) && ids.Add(id), "十字编号、行列或重复点无效。");
             string? status = point.GetProperty("status").GetString();
             Require(status is "VALID" or "INVALID", "未知十字测量状态。");
-            string diagnostic = string.Join("; ", new[] { Codes(point, "reasonCodes"), Codes(point, "warnings") }.Where(text => text.Length > 0));
+            string reasons = Codes(point, "reasonCodes");
+            string warnings = Codes(point, "warnings");
+            string diagnostic = reasons.Length == 0 ? warnings
+                : warnings.Length == 0 ? reasons
+                : reasons + "; " + warnings;
             Box? region = ReadBox(point.GetProperty("region"), image);
             if (region is Box target && search is Box limited) Require(Inside(target, limited), "十字区域超出主搜索区域。");
             JsonElement channels = point.GetProperty("channels");
-            Dictionary<string, bool> channelValid = new(StringComparer.Ordinal);
-            foreach (var (name, color) in new[] { ("R", "#FFFF4040"), ("G", "#FF40D060"), ("B", "#FF4090FF") })
+            bool redValid = ReadChannel("R", "#FFFF4040");
+            bool greenValid = ReadChannel("G", "#FF40D060");
+            bool blueValid = ReadChannel("B", "#FF4090FF");
+            Require(status != "VALID" || redValid && greenValid && blueValid, "有效十字缺少有效通道。");
+            double? rg = ReadPair(point, "R-G", redValid && greenValid, Math.Max(width, height));
+            double? bg = ReadPair(point, "B-G", blueValid && greenValid, Math.Max(width, height));
+            rows.Add(new LocalRgbCrossHistoryRow { Point = id, Row = row, Column = column, Status = status!, RG = rg, BG = bg, Diagnostic = diagnostic.TrimStart(';', ' ') });
+            if (region is Box bounds) AddBox(id + "-region", bounds, status == "VALID" ? "#FF00BFFF" : "#FFFFA500",
+                $"{id}  R-G {Pixel(rg)} px\nB-G {Pixel(bg)} px" + (status == "INVALID" ? "  INVALID" : ""));
+
+            bool ReadChannel(string name, string color)
             {
                 JsonElement channel = channels.GetProperty(name);
                 string? channelStatus = channel.GetProperty("status").GetString();
                 Require(channelStatus is "VALID" or "INVALID", "未知通道状态。");
                 Box? horizontal = ReadBox(channel.GetProperty("horizontalArm"), image), vertical = ReadBox(channel.GetProperty("verticalArm"), image);
                 bool valid = channelStatus == "VALID";
-                channelValid[name] = valid;
                 Require(valid ? horizontal.HasValue && vertical.HasValue && region.HasValue : horizontal == null && vertical == null, "通道状态与保存的边缘不一致。");
                 if (valid)
                 {
@@ -112,13 +124,8 @@ internal sealed class LocalRgbCrossHistory : IViewResult
                 }
                 string channelReason = Codes(channel, "reasonCodes");
                 if (!valid && channelReason.Length > 0) diagnostic += $"; {name}:{channelReason}";
+                return valid;
             }
-            Require(status != "VALID" || channelValid.Values.All(valid => valid), "有效十字缺少有效通道。");
-            double? rg = ReadPair(point, "R-G", channelValid["R"] && channelValid["G"], Math.Max(width, height));
-            double? bg = ReadPair(point, "B-G", channelValid["B"] && channelValid["G"], Math.Max(width, height));
-            rows.Add(new LocalRgbCrossHistoryRow { Point = id, Row = row, Column = column, Status = status!, RG = rg, BG = bg, Diagnostic = diagnostic.TrimStart(';', ' ') });
-            if (region is Box bounds) AddBox(id + "-region", bounds, status == "VALID" ? "#FF00BFFF" : "#FFFFA500",
-                $"{id}  R-G {Pixel(rg)} px\nB-G {Pixel(bg)} px" + (status == "INVALID" ? "  INVALID" : ""));
         }
         return new LocalRgbCrossHistory
         {
@@ -163,6 +170,7 @@ internal sealed class LocalRgbCrossHistory : IViewResult
     {
         if (!value.TryGetProperty(property, out JsonElement codes)) return "";
         Require(codes.ValueKind == JsonValueKind.Array && codes.GetArrayLength() <= 64, "诊断列表无效。");
+        if (codes.GetArrayLength() == 0) return "";
         return string.Join("; ", codes.EnumerateArray().Select(code =>
         {
             string text = code.GetString() ?? "";
