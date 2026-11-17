@@ -11,14 +11,51 @@ public static class CieAnalysisMath
 {
     private const double Epsilon = 216.0 / 24389;
     private const double Kappa = 24389.0 / 27;
-    private static readonly Lazy<(double Temperature, CieChromaticity Uv)[]> Planckian = new(() =>
+    private const int LocusBlockSize = 32;
+    private static readonly Lazy<PlanckianLocus> Planckian = new(CreatePlanckianLocus);
+
+    private sealed record PlanckianLocus((double Temperature, CieChromaticity Uv)[] Samples, ProjectionBounds[] Bounds);
+
+    private readonly record struct ProjectionBounds(double MinU, double MaxU, double MaxStepU, double MinV, double MaxV, double MaxStepV)
     {
-        var samples = new List<(double, CieChromaticity)>();
+        public double MinimumDistanceSquared(CieChromaticity target)
+        {
+            // The projected point is at most one segment's step away from any start in this block.
+            double du = Math.Max(0, Math.Max(target.X - MaxU, MinU - target.X) - MaxStepU);
+            double dv = Math.Max(0, Math.Max(target.Y - MaxV, MinV - target.Y) - MaxStepV);
+            return du * du + dv * dv;
+        }
+    }
+
+    private static PlanckianLocus CreatePlanckianLocus()
+    {
+        var samples = new List<(double Temperature, CieChromaticity Uv)>();
         for (int t = 1667; t < 25000; t += 10)
             samples.Add((t, CieColorConverter.XyToCie1960uv(CieColorConverter.CctToApproximatePlanckianXy(t))));
         samples.Add((25000, CieColorConverter.XyToCie1960uv(CieColorConverter.CctToApproximatePlanckianXy(25000))));
-        return samples.ToArray();
-    });
+
+        ProjectionBounds[] bounds = new ProjectionBounds[(samples.Count - 2) / LocusBlockSize + 1];
+        for (int block = 0; block < bounds.Length; block++)
+        {
+            int start = block * LocusBlockSize;
+            int end = Math.Min(start + LocusBlockSize, samples.Count - 1);
+            double minU = samples[start].Uv.X, maxU = minU, maxStepU = 0;
+            double minV = samples[start].Uv.Y, maxV = minV, maxStepV = 0;
+            for (int i = start; i < end; i++)
+            {
+                CieChromaticity point = samples[i].Uv;
+                CieChromaticity next = samples[i + 1].Uv;
+                minU = Math.Min(minU, point.X);
+                maxU = Math.Max(maxU, point.X);
+                minV = Math.Min(minV, point.Y);
+                maxV = Math.Max(maxV, point.Y);
+                maxStepU = Math.Max(maxStepU, Math.Abs(next.X - point.X));
+                maxStepV = Math.Max(maxStepV, Math.Abs(next.Y - point.Y));
+            }
+            bounds[block] = new ProjectionBounds(minU, maxU, maxStepU, minV, maxV, maxStepV);
+        }
+        return new PlanckianLocus(samples.ToArray(), bounds);
+    }
 
     public static CieXyz XyYToXyz(double x, double y, double luminance)
     {
@@ -154,20 +191,41 @@ public static class CieAnalysisMath
         CieChromaticity target = CieColorConverter.XyToCie1960uv(xy);
         if (!target.IsFinite) return CieCctResult.Empty;
         double best = double.MaxValue, kelvin = double.NaN, signed = double.NaN;
-        var samples = Planckian.Value;
-        for (int i = 0; i < samples.Length - 1; i++)
+        int bestIndex = int.MaxValue;
+        PlanckianLocus locus = Planckian.Value;
+        var samples = locus.Samples;
+        Span<double> minimumDistances = stackalloc double[locus.Bounds.Length];
+        int firstBlock = 0;
+        for (int block = 0; block < locus.Bounds.Length; block++)
         {
-            double temp = samples[i].Temperature, endTemp = samples[i + 1].Temperature;
-            CieChromaticity start = samples[i].Uv, end = samples[i + 1].Uv;
-            double dx = end.X - start.X, dy = end.Y - start.Y;
-            double fraction = Math.Clamp(((target.X - start.X) * dx + (target.Y - start.Y) * dy) / (dx * dx + dy * dy), 0, 1);
-            double ex = target.X - start.X - fraction * dx, ey = target.Y - start.Y - fraction * dy;
-            double distance = Math.Sqrt(ex * ex + ey * ey);
-            if (distance < best)
+            minimumDistances[block] = Math.Sqrt(locus.Bounds[block].MinimumDistanceSquared(target));
+            if (minimumDistances[block] < minimumDistances[firstBlock]) firstBlock = block;
+        }
+
+        for (int block = -1; block < locus.Bounds.Length; block++)
+        {
+            if (block == firstBlock) continue;
+            int candidateBlock = block < 0 ? firstBlock : block;
+            if (minimumDistances[candidateBlock] > best) continue;
+
+            int startIndex = candidateBlock * LocusBlockSize;
+            int endIndex = Math.Min(startIndex + LocusBlockSize, samples.Length - 1);
+            for (int i = startIndex; i < endIndex; i++)
             {
-                best = distance;
-                kelvin = temp + fraction * (endTemp - temp);
-                signed = Math.CopySign(distance, dy * ex - dx * ey);
+                double temp = samples[i].Temperature, endTemp = samples[i + 1].Temperature;
+                CieChromaticity start = samples[i].Uv, end = samples[i + 1].Uv;
+                double dx = end.X - start.X, dy = end.Y - start.Y;
+                double fraction = Math.Clamp(((target.X - start.X) * dx + (target.Y - start.Y) * dy) / (dx * dx + dy * dy), 0, 1);
+                double ex = target.X - start.X - fraction * dx, ey = target.Y - start.Y - fraction * dy;
+                double distance = Math.Sqrt(ex * ex + ey * ey);
+                // The closest block is visited first. An exact tie still belongs to the earlier segment.
+                if (distance < best || (distance == best && i < bestIndex))
+                {
+                    best = distance;
+                    bestIndex = i;
+                    kelvin = temp + fraction * (endTemp - temp);
+                    signed = Math.CopySign(distance, dy * ex - dx * ey);
+                }
             }
         }
         return best > 0.05 || kelvin <= 1667 || kelvin >= 25000 ? CieCctResult.Empty : new(kelvin, signed);
