@@ -36,7 +36,7 @@ Release 构建的 `ValidateGaolitongNativeDependencies` 会在 Build 前检查 `
 
 `cvCamera.dll` 的 log4z 日志在 `InitResource` 启动前读取进程环境变量 `COLORVISION_NATIVE_LOG_DIRECTORY`。C# 的 `cvCameraCSLib.InitResource` 在未显式设置该变量时，取当前 log4net 文件输出的实际目录，因此原生日志与主程序日志位于同一目录（安装版通常为 `%APPDATA%\ColorVision\Log`）；原生日志仍保留独立的 `.log` 文件、文件名和级别。外部程序可在首次初始化前设置该变量，例如 C# 调用 `Environment.SetEnvironmentVariable(cvCameraCSLib.NativeLogDirectoryEnvironmentVariable, @"D:\ColorVisionLogs")`，或 C++ 调用 `SetEnvironmentVariableW(L"COLORVISION_NATIVE_LOG_DIRECTORY", L"D:\\ColorVisionLogs")`。支持中文目录；路径按进程设置，不按相机句柄设置。直接调用 native 且未设置变量的程序保留原来的当前工作目录 `./log/` 默认值。日志目录在初始化时读取，运行中的日志配置更改不会自动同步；不要为切换日志目录额外调用设备资源初始化或释放。原生导出名称、序号及 `InitResource` 参数保持兼容。
 
-默认交付不含 `cfg/sys.cfg`。配套内部版 `cvCamera.dll` 的相机创建接口在配置路径为 `null` 或空字符串时初始化内置曝光、相机、XYZ 通道和空校准列表；显式文件路径仍保留兼容支持。WPF 的本地相机、视频和 CameraTest 会话使用空路径创建，物理相机及校准参数继续通过既有 JSON 接口注入。不能混用尚未支持空路径初始化的旧 DLL；仅删除配置文件不能替代 native 更新。
+默认交付不含 `cfg/sys.cfg`。配套内部版 `cvCamera.dll` 的相机创建接口在配置路径为 `null` 或空字符串时初始化内置曝光、相机、XYZ 通道和空校准列表；显式文件路径仍保留兼容支持。WPF 的本地相机和视频会话使用空路径创建，物理相机及校准参数继续通过既有 JSON 接口注入。不能混用尚未支持空路径初始化的旧 DLL；仅删除配置文件不能替代 native 更新。
 
 配套内部版 `cvCamera.dll` 不再使用 `CameraAttribute.db` 或旧 `cvTableList` 数据表实现，也不再导入 `sqlite3.dll`。相机读出模式保留 SDK 默认值；制冷能力通过 SDK 查询，温控开关和目标温度使用现有相机配置，停止温控不再依赖属性库。默认交付不含 `cvTableList.dll` / `sqlite3.dll`，托管 SQLite 的 `SQLitePCLRaw` 与 `e_sqlite3.dll` 依赖继续保留。旧 DataTable / SQLiteBaseControl 的 C++ 导出已移除，依赖这些导出或导出序号的外部程序需重新核对。
 

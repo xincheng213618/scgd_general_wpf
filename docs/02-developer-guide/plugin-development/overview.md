@@ -47,7 +47,7 @@ related: ["plugins.index","plugins.getting-started","ui.discovery"]
 
 `PluginLoaderConfig.Plugins` 主要以 manifest ID 保存 `PluginInfo`。扫描开始时，用磁盘清单中的有效 ID（否则用目录名）计算保留集合，删除已无对应候选的缓存项；这只删配置记录，不卸载程序集。
 
-对单个目录，装载器先检查目录名是否退役、缓存中同目录名是否禁用，以及是否属于本次跳过名单，再解析清单。解析后按 manifest ID 新建或更新 `PluginInfo`：新项默认 `Enabled=true`，已有项保留禁用状态，再执行退役/禁用/本次跳过判断。当前退役名单包含 `EventVWR`。缓存字典的默认键比较与大小写不敏感的退役/跳过集合并不相同；不要通过改 ID 或只改大小写来尝试绕过管理状态。
+对单个目录，装载器先检查目录名是否退役、缓存中同目录名是否禁用，以及是否属于本次跳过名单，再解析清单。解析后按 manifest ID 新建或更新 `PluginInfo`：新项默认 `Enabled=true`，已有项保留禁用状态，再执行退役/禁用/本次跳过判断。当前退役名单包含 `EventVWR` 和 `CameraTest`。缓存字典的默认键比较与大小写不敏感的退役/跳过集合并不相同；不要通过改 ID 或只改大小写来尝试绕过管理状态。
 
 `skipOncePluginKeys` 可按 manifest ID 或目录名匹配，匹配不区分大小写，只影响该次扫描；它不自动改写 `Enabled`。`Enabled=false` 是后续装载时的跳过条件，不是停止当前插件的命令。
 

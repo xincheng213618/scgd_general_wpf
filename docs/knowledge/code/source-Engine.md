@@ -184,9 +184,6 @@ next: false
 - [系统职责与跨模块边界](../../03-architecture/overview/system-overview.md) — `platform.system`
   宿主、UI、Engine、插件与项目的职责及调用边界：UI操作不必经过Engine，程序集依赖不是统一执行顺序，构建产物不等于交付制品。
 
-- [相机生产调试](../../04-api-reference/plugins/standard-plugins/camera-test.md) — `plugins.camera-test`
-  CameraTest 相机生产调试：直接 SDK 取图、BMW 四边 SFR、RGB 位移、调焦趋势、可选判定与按设备编号存档；不主动连接 MySQL 或服务，POI 支持 SQLite 本地模板。
-
 - [Conoscope 图像、采集与分析](../../04-api-reference/plugins/standard-plugins/conoscope.md) — `plugins.conoscope`
   Conoscope 的采集、CVCIE/校正 CVRAW 首屏与 XYZ 就绪、Polar 与三种 H/V 显示、Mat 与分析快照契约；按钮成功不代表文档加载完成。
 

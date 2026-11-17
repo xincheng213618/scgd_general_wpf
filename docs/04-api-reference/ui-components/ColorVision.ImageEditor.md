@@ -130,7 +130,7 @@ CVCIE 的全局默认显示在“图像设置 → 文件打开 → CVCIE”中�
 
 普通注释、Engine 历史结果图元和统一算法 overlay 不是同一种持久数据。统一算法由 `AlgorithmOverlayRenderer` 生成图元，`AlgorithmOverlayManager` 将图元与 artifact 一起绑定文档、source revision 和注册 token。transient 随会话释放或源像素提交清理；persistent 可以跨会话释放和源像素提交保留，但换图/清理仍会移除，名称中的 persistent 不代表已经保存到磁盘。完整替换、过期会话和历史 handler 契约以[结果展示链](../engine-components/result-handoff-chain.md)为准。
 
-应用需要自行布局标签时可通过 `AlgorithmOverlayRenderer.RegisterVisual` 注册 DrawingVisual，继续使用同一文档、source revision 与注册 token 的生命周期；应用负责字号、缩放重绘和交互命中。BMW 主图回显与 CameraTest 使用同一个 `BmwSfrOverlayRenderer`，避免两个入口的框线和数值标签分叉。共享显示设置支持 MTF50、MTF10、指定频率 MTF 与 Nyquist 响应；按原图测量拟合生成刃边虚线，再转换到当前 DPI/缩放的画布坐标，绘制范围限定在对应 ROI 内。中心十字使用识别出的靶标中心，默认显示且可关闭；可选显示中心原图坐标、内部矩形实际尺寸和距中心距离。中心只在定位成功且坐标有效时出现，标注数值使用原图像素，中心十字保持固定屏幕大小。显示切换只查询结果，不触发测量。
+应用需要自行布局标签时可通过 `AlgorithmOverlayRenderer.RegisterVisual` 注册 DrawingVisual，继续使用同一文档、source revision 与注册 token 的生命周期；应用负责字号、缩放重绘和交互命中。BMW 主图回显由 `BmwSfrOverlayRenderer` 绘制框线和数值标签。共享显示设置支持 MTF50、MTF10、指定频率 MTF 与 Nyquist 响应；按原图测量拟合生成刃边虚线，再转换到当前 DPI/缩放的画布坐标，绘制范围限定在对应 ROI 内。中心十字使用识别出的靶标中心，默认显示且可关闭；可选显示中心原图坐标、内部矩形实际尺寸和距中心距离。中心只在定位成功且坐标有效时出现，标注数值使用原图像素，中心十字保持固定屏幕大小。显示切换只查询结果，不触发测量。
 
 图像右键分为“图像处理”和“分析测量”，批量算法入口在“图像处理”。分类见 `AlgorithmMenuGroups`，定位时可按真实菜单文案搜源码。
 

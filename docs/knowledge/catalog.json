@@ -7923,32 +7923,26 @@
     {
       "knowledge_id": "plugins.camera-test",
       "knowledge_type": "topic",
-      "status": "current",
-      "summary": "CameraTest 相机生产调试：直接 SDK 取图、BMW 四边 SFR、RGB 位移、调焦趋势、可选判定与按设备编号存档；不主动连接 MySQL 或服务，POI 支持 SQLite 本地模板。",
+      "status": "historical",
+      "summary": "CameraTest 相机生产调试已退役。归档标签保留原插件、独立程序、测试与打包资料。",
       "aliases": [
         "CameraTest",
         "相机生产调试",
         "相机出厂检测",
-        "BMW 四边实时分析",
         "独立相机测试",
         "StandaloneCameraSession"
       ],
       "code_paths": [
-        "Plugins/CameraTest",
-        "Engine/ColorVision.Engine/Services/Devices/Camera/Local/StandaloneCameraSession.cs",
-        "Scripts/package_camera_test.ps1"
+        "Plugins/ARCHIVED.md"
       ],
       "related": [
-        "operations.camera",
-        "engine.opencv-helper-api"
+        "plugins.model"
       ],
       "code_scopes": [
-        "Engine/ColorVision.Engine",
-        "Plugins/CameraTest",
-        "Scripts"
+        "Plugins"
       ],
       "domain": "plugins",
-      "title": "相机生产调试",
+      "title": "相机生产调试已退役",
       "source": "docs/04-api-reference/plugins/standard-plugins/camera-test.md",
       "url": "/04-api-reference/plugins/standard-plugins/camera-test",
       "searchable": true

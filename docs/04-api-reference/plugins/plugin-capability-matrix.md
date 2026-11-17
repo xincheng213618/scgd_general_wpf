@@ -18,10 +18,11 @@ related: ["plugins.index","plugins.model","plugins.getting-started","plugins.con
 | --- | --- | --- |
 | [Pattern](./standard-plugins/pattern.md) | 工具 → 图卡生成工具 / 图片投影工具 | 导出、清理和全屏投影会影响文件或显示器 |
 | [Conoscope](./standard-plugins/conoscope.md) | 工具 → VAM，或符合条件的 ImageEditor 右键 | 分别核对本地 CVCIE、Engine 测量采集与 MVS 观察相机 |
-| [CameraTest](./standard-plugins/camera-test.md) | 工具 → 相机生产调试，或独立运行 | 需要兼容的相机 SDK。采集操作设备，存档写本地文件 |
 | [Spectrum](./standard-plugins/spectrum.md) | 光谱窗口、Socket 和调度 | 测量与校零会操作设备，结果保存到 SQLite |
 | [SystemMonitor](./standard-plugins/system-monitor.md) | 工具 → 系统监控，同名设置页和可选状态栏项 | 依赖系统计数器，执行清理会删除文件 |
 | [WindowsServicePlugin](./standard-plugins/windows-service.md) | 服务管理器和安装向导 | 安装或恢复可修改文件、数据库、服务与进程 |
+
+已退役的 CameraTest 参见[相机生产调试归档](./standard-plugins/camera-test.md)。
 
 应用内角色、Windows 权限和设备条件是不同前提。`ServiceManagerAppProvider` 声明应用内 `Administrator` 权限，但服务管理器还存在向导及旧工具入口；实际服务操作需要兼容的权限代理和目标资源权限。其余插件也不能仅凭窗口可打开就推断设备、路径或许可证已就绪。
 
