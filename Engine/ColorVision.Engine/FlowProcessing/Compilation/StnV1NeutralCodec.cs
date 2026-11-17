@@ -224,11 +224,6 @@ internal static class StnV1NeutralCodec
             canvas.Nodes.Add(node);
         }
 
-        Dictionary<long, NeutralPort> optionsByIndex =
-            BuildOptionsByIndex(canvas.Nodes);
-        Dictionary<NeutralNode, int> nodeIndices = canvas.Nodes
-            .Select((node, index) => (node, index))
-            .ToDictionary(item => item.node, item => item.index);
         int connectionCount = ReadCount(
             body,
             options.MaximumConnectionCount,
@@ -239,6 +234,9 @@ internal static class StnV1NeutralCodec
                 && STNodeSavedState.ReadPortLayout(STNodeSavedState.Parse(node.Payload).Properties) == null
                 && !STNodeSavedState.Parse(node.Payload).Properties.ContainsKey(STNodeSavedState.LegacyPlaceholderKey))
             && !canvas.Nodes.Any(node => STNodeSavedState.Parse(node.Payload).Properties.ContainsKey("__STNode.LegacyConnections"));
+        List<NeutralPort> optionsByIndex = connectionCount > 0 && !skipLegacyConnections
+            ? BuildOptionsByIndex(canvas.Nodes)
+            : [];
         for (int i = 0; i < connectionCount; i++)
         {
             long packed = ReadInt64(body);
@@ -250,20 +248,13 @@ internal static class StnV1NeutralCodec
                     || !packedConnections.Add(packed)) throw new InvalidDataException("旧流程连接编号无效或重复。");
                 continue;
             }
-            if (!optionsByIndex.TryGetValue(
-                    outputIndex,
-                    out NeutralPort? output)
-                || !optionsByIndex.TryGetValue(
-                    inputIndex,
-                    out NeutralPort? inputPort))
+            if (outputIndex < 0 || outputIndex >= optionsByIndex.Count || inputIndex >= optionsByIndex.Count)
             {
                 throw new InvalidDataException(
                     $"第 {i + 1} 条连接引用了不存在的端口。");
             }
-            var connection = new NeutralConnection(output, inputPort);
-            ValidateConnection(
-                connection,
-                nodeIndices);
+            var connection = new NeutralConnection(optionsByIndex[(int)outputIndex], optionsByIndex[(int)inputIndex]);
+            ValidateConnection(connection, nodeIndices: null);
             if (!packedConnections.Add(packed))
             {
                 throw new InvalidDataException(
@@ -585,29 +576,31 @@ internal static class StnV1NeutralCodec
         }
     }
 
-    private static Dictionary<long, NeutralPort> BuildOptionsByIndex(
+    private static List<NeutralPort> BuildOptionsByIndex(
         IReadOnlyList<NeutralNode> nodes)
     {
-        var options = new Dictionary<long, NeutralPort>();
-        NeutralPort? sharedEmpty = null;
-        long nextIndex = 0;
+        var options = new List<NeutralPort>();
+        bool hasSharedEmpty = false;
         foreach (NeutralNode node in nodes)
         {
-            foreach (NeutralPort port in node.Inputs.Concat(node.Outputs))
+            AddPorts(node.Inputs);
+            AddPorts(node.Outputs);
+        }
+        return options;
+
+        void AddPorts(NeutralPort[] ports)
+        {
+            foreach (NeutralPort port in ports)
             {
                 if (port.Schema.IsEmpty)
                 {
-                    if (sharedEmpty == null)
-                    {
-                        sharedEmpty = port;
-                        options.Add(nextIndex++, port);
-                    }
-                    continue;
+                    if (hasSharedEmpty)
+                        continue;
+                    hasSharedEmpty = true;
                 }
-                options.Add(nextIndex++, port);
+                options.Add(port);
             }
         }
-        return options;
     }
 
     private static Dictionary<NeutralPort, long> BuildOptionIndices(
@@ -636,7 +629,7 @@ internal static class StnV1NeutralCodec
 
     private static void ValidateConnection(
         NeutralConnection connection,
-        Dictionary<NeutralNode, int> nodeIndices)
+        Dictionary<NeutralNode, int>? nodeIndices)
     {
         if (connection.Output.IsInput
             || !connection.Input.IsInput
@@ -645,8 +638,9 @@ internal static class StnV1NeutralCodec
             || ReferenceEquals(
                 connection.Output.Node,
                 connection.Input.Node)
-            || !nodeIndices.ContainsKey(connection.Output.Node)
-            || !nodeIndices.ContainsKey(connection.Input.Node))
+            || (nodeIndices != null
+                && (!nodeIndices.ContainsKey(connection.Output.Node)
+                    || !nodeIndices.ContainsKey(connection.Input.Node))))
         {
             throw new InvalidDataException("流程连接方向无效。");
         }
