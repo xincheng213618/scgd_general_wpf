@@ -401,6 +401,87 @@ public sealed class ExportCieTests
     }
 
     [Fact]
+    public void LargeAutomaticRgb48PngPreservesOriginalPixelsAndBoundMetadata()
+    {
+        const int width = 3841, height = 2160;
+        string root = Directory.CreateTempSubdirectory("colorvision-rgb48-png-").FullName;
+        try
+        {
+            using Mat backing = new(height + 2, width + 2, MatType.CV_16UC3, new Scalar(1000, 32768, 65535));
+            using Mat source = new(backing, new OpenCvSharp.Rect(1, 1, width, height));
+            Assert.False(source.IsContinuous());
+            byte[] rowPrefix = new byte[17 * 6];
+            Random random = new(42);
+            for (int y = 0; y < height; y++)
+            {
+                random.NextBytes(rowPrefix);
+                Marshal.Copy(rowPrefix, 0, source.Ptr(y), rowPrefix.Length);
+            }
+
+            string output = Path.Combine(root, "original.png");
+            ColorVisionTiffParameters Parameters() => new()
+            {
+                SourceType = "CVRAW",
+                ExportedChannel = "Src",
+                PixelRole = "calibration-input",
+                Rows = height,
+                Cols = width,
+                Bpp = 16,
+                SourceChannels = 3,
+            };
+            ColorVisionTiffParameters expected = Parameters();
+            CalibratedImageExport.BindPixels(expected, source);
+            File.WriteAllBytes(output, [1, 2, 3, 4]);
+
+            Assert.Equal(output, CalibratedImageExport.SaveCore(source, Parameters(), output, ImageFormat.Png,
+                VExportCIE.DefaultTiffCompression, VExportCIE.AutomaticPngCompressionLevel, VExportCIE.DefaultJpegQuality));
+            using Mat decoded = Cv2.ImRead(output, ImreadModes.Unchanged);
+            Assert.Equal((width, height, MatType.CV_16UC3), (decoded.Cols, decoded.Rows, decoded.Type()));
+            Assert.Equal(0d, Cv2.Norm(source, decoded, NormTypes.INF));
+            Assert.Equal(output, Assert.Single(Directory.GetFiles(root)));
+            WpfTestHost.Invoke(() =>
+            {
+                BitmapFrame frame = ReadFrame(output);
+                Assert.Equal((width, height, PixelFormats.Rgb48), (frame.PixelWidth, frame.PixelHeight, frame.Format));
+                Assert.Equal(expected.ToJson(), (frame.Metadata as BitmapMetadata)?.GetQuery(ColorVisionTiffParameters.PngDescriptionQuery));
+            });
+        }
+        finally
+        {
+            foreach (string file in Directory.GetFiles(root)) File.Delete(file);
+            Directory.Delete(root);
+        }
+    }
+
+    [Fact]
+    public void FailedLargeRgb48PngEncodingJoinsBindingBeforeReturning()
+    {
+        string root = Directory.CreateTempSubdirectory("colorvision-png-binding-").FullName;
+        try
+        {
+            string path = Path.Combine(root, "existing.unsupported");
+            byte[] original = [1, 2, 3, 4];
+            File.WriteAllBytes(path, original);
+            using Mat source = new(2160, 3840, MatType.CV_16UC3, new Scalar(1000, 2000, 3000));
+            ColorVisionTiffParameters parameters = new() { PixelRole = "calibration-input" };
+
+            Assert.ThrowsAny<Exception>(() => CalibratedImageExport.SaveCore(source, parameters, path,
+                ImageFormat.Png, VExportCIE.DefaultTiffCompression, VExportCIE.AutomaticPngCompressionLevel,
+                VExportCIE.DefaultJpegQuality, expectedPixelHash: new string('0', 64)));
+
+            Assert.Equal("display", parameters.PixelRole);
+            Assert.Equal(64, parameters.PixelSha256?.Length);
+            Assert.Equal(original, File.ReadAllBytes(path));
+            Assert.Equal([path], Directory.GetFiles(root));
+        }
+        finally
+        {
+            foreach (string file in Directory.GetFiles(root)) File.Delete(file);
+            Directory.Delete(root);
+        }
+    }
+
+    [Fact]
     public void FloatPngExportRejectsQuantizationAndPreservesExistingDestination()
     {
         string root = Path.Combine(Path.GetTempPath(), $"colorvision-float-export-{Guid.NewGuid():N}");

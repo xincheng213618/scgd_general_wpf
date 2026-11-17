@@ -3,7 +3,9 @@ using OpenCvSharp;
 using System;
 using System.Drawing.Imaging;
 using System.IO;
+using System.Runtime.Intrinsics.X86;
 using System.Security.Cryptography;
+using System.Threading.Tasks;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 
@@ -67,27 +69,48 @@ namespace ColorVision.Engine.Media
             try
             {
                 // PNG has no floating point sample representation. Never let the codec silently quantize XYZ.
-                if (IsFormat(format, ImageFormat.Png) && src.Depth() != MatType.CV_8U && src.Depth() != MatType.CV_16U)
+                bool png = IsFormat(format, ImageFormat.Png);
+                MatType depth = png ? src.Depth() : default;
+                if (png && depth != MatType.CV_8U && depth != MatType.CV_16U)
                     throw new NotSupportedException("PNG cannot preserve floating point measurement samples; export TIFF instead.");
-                if (parameters != null)
-                {
-                    BindPixels(parameters, src);
-                    if (expectedPixelHash != null && !string.Equals(expectedPixelHash, parameters.PixelSha256, StringComparison.OrdinalIgnoreCase))
-                        parameters.PixelRole = "display";
-                }
+                bool largeAutomaticRgb48Png = png && pngCompression == VExportCIE.AutomaticPngCompressionLevel
+                    && depth == MatType.CV_16U && src.Channels() == 3 && (long)src.Cols * src.Rows >= 3840L * 2160;
+                bool bindDuringEncoding = parameters != null && largeAutomaticRgb48Png && Environment.ProcessorCount > 1;
+                if (parameters != null && !bindDuringEncoding)
+                    BindForExport(parameters, src, expectedPixelHash);
                 if (IsFormat(format, ImageFormat.Tiff))
                 {
                     if (!Cv2.ImWrite(temporaryPath, src, [new ImageEncodingParam(ImwriteFlags.TiffCompression, tiffCompression)]))
                         throw new IOException("Unable to encode TIFF image.");
                     if (parameters != null) TiffImageDescriptionWriter.Write(temporaryPath, parameters.ToJson());
                 }
-                else if (IsFormat(format, ImageFormat.Png))
+                else if (png)
                 {
-                    bool written = pngCompression == VExportCIE.AutomaticPngCompressionLevel
-                        ? Cv2.ImWrite(temporaryPath, src)
-                        : Cv2.ImWrite(temporaryPath, src, [new ImageEncodingParam(ImwriteFlags.PngCompression, pngCompression)]);
+                    // Both operations read the same immutable pixels. Join the binding before
+                    // metadata is written or the caller can dispose the source, even on failure.
+                    Task? binding = bindDuringEncoding
+                        ? Task.Run(() => BindForExport(parameters!, src, expectedPixelHash))
+                        : null;
+                    bool written;
+                    try
+                    {
+                        if (pngCompression != VExportCIE.AutomaticPngCompressionLevel)
+                            written = Cv2.ImWrite(temporaryPath, src, [new ImageEncodingParam(ImwriteFlags.PngCompression, pngCompression)]);
+                        else if (largeAutomaticRgb48Png && Ssse3.IsSupported
+                            && string.Equals(Path.GetExtension(temporaryPath), ".png", StringComparison.OrdinalIgnoreCase))
+                        {
+                            Rgb48PngEncoder.Write(temporaryPath, src);
+                            written = true;
+                        }
+                        else if (largeAutomaticRgb48Png)
+                            // Larger IDAT chunks reduce writes while keeping the default compression and filter.
+                            written = Cv2.ImWrite(temporaryPath, src, [new ImageEncodingParam(ImwriteFlags.PngZlibBufferSize, 256 * 1024)]);
+                        else
+                            written = Cv2.ImWrite(temporaryPath, src);
+                    }
+                    finally { binding?.GetAwaiter().GetResult(); }
                     if (!written) throw new IOException("Unable to encode PNG image.");
-                    if (parameters != null) PngParameterWriter.Write(temporaryPath, parameters.ToJson());
+                    if (parameters != null) PngParameterWriter.Write(temporaryPath, parameters.ToJson(), checkCanonicalTrailer: true);
                 }
                 else if (IsFormat(format, ImageFormat.Bmp) || IsFormat(format, ImageFormat.Jpeg))
                 {
@@ -105,6 +128,13 @@ namespace ColorVision.Engine.Media
             {
                 if (File.Exists(temporaryPath)) File.Delete(temporaryPath);
             }
+        }
+
+        private static void BindForExport(ColorVisionTiffParameters parameters, Mat image, string? expectedPixelHash)
+        {
+            BindPixels(parameters, image);
+            if (expectedPixelHash != null && !string.Equals(expectedPixelHash, parameters.PixelSha256, StringComparison.OrdinalIgnoreCase))
+                parameters.PixelRole = "display";
         }
 
         internal static unsafe void BindPixels(ColorVisionTiffParameters parameters, Mat image)
