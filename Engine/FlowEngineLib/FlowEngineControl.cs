@@ -881,9 +881,13 @@ public class FlowEngineControl : FlowEngineAPI, IDisposable
 	}
 
 	public bool TryStartNode(string name, string serialNumber, List<MQTTServiceInfo> services)
+		=> TryStartNode(name, serialNumber, services, initializeRuntimeResources: null);
+
+	/// <summary>Initializes process-local resources on the new run before dispatching its first node.</summary>
+	public bool TryStartNode(string name, string serialNumber, List<MQTTServiceInfo> services, Action<FlowRuntimeResources> initializeRuntimeResources)
 	{
 		FlowServiceManager.Instance.AddMQTTService(services);
-		return TryStartNode(name, serialNumber);
+		return TryStartRun(name, serialNumber, trackCompletion: false, initializeRuntimeResources) != null;
 	}
 
 	protected void StartNode(string name, string serialNumber)
@@ -893,7 +897,7 @@ public class FlowEngineControl : FlowEngineAPI, IDisposable
 
 	public bool TryStartNode(string name, string serialNumber) => TryStartRun(name, serialNumber, trackCompletion: false) != null;
 
-	internal CVStartCFC TryStartRun(string name, string serialNumber, bool trackCompletion)
+	internal CVStartCFC TryStartRun(string name, string serialNumber, bool trackCompletion, Action<FlowRuntimeResources> initializeRuntimeResources = null)
 	{
 		string blockReason = ExecutionBlockReason;
 		if (blockReason != null) { logger.Warn(blockReason); return null; }
@@ -923,7 +927,7 @@ public class FlowEngineControl : FlowEngineAPI, IDisposable
 		{
 			logger.DebugFormat("Starting flow serialNumber={0}", serialNumber);
 			startNode.PersistResults = PersistResults;
-			return startNode.TryStartRun(serialNumber, trackCompletion);
+			return startNode.TryStartRun(serialNumber, trackCompletion, initializeRuntimeResources);
 		}
 		finally
 		{

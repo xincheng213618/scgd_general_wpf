@@ -452,7 +452,7 @@ public abstract class BaseStartNode : CVDeviceNode, IDisposable
 
 	public bool TryStart(string serialNumber) => TryStartRun(serialNumber, trackCompletion: false) != null;
 
-	internal CVStartCFC TryStartRun(string serialNumber, bool trackCompletion)
+	internal CVStartCFC TryStartRun(string serialNumber, bool trackCompletion, Action<FlowRuntimeResources> initializeRuntimeResources = null)
 	{
 		serialNumber = ColorVision.Common.Utilities.Tool.SanitizeFileName(serialNumber);
 		if (!CanAcceptStart)
@@ -461,11 +461,23 @@ public abstract class BaseStartNode : CVDeviceNode, IDisposable
 			return null;
 		}
 		CVStartCFC start = new CVStartCFC(serialNumber) { PersistResults = PersistResults };
-		if (trackCompletion)
-			start.TrackCompletion();
-		DoDispatch(start);
-		// A downstream node can finish synchronously before dispatch returns.
-		return start.WasDispatched ? start : null;
+		try
+		{
+			initializeRuntimeResources?.Invoke(start.RuntimeResources);
+			if (trackCompletion)
+				start.TrackCompletion();
+			DoDispatch(start);
+			// A downstream node can finish synchronously before dispatch returns.
+			return start.WasDispatched ? start : null;
+		}
+		finally
+		{
+			if (!start.WasDispatched)
+			{
+				try { start.RuntimeResources.Dispose(); }
+				catch (Exception error) { logger.Error($"Failed to release resources for rejected flow {serialNumber}.", error); }
+			}
+		}
 	}
 
 	protected void DoDispatch(CVStartCFC start)

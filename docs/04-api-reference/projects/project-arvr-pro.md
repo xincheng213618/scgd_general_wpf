@@ -222,6 +222,8 @@ AA 与旧版畸变调用可选 x64 `CV_algorithm.dll`，需配套 `opencv_world4
 
 `ResultImageDimensionsFromProcessCache` 为 `false` 时，保存可能因兼容回退再查 MySQL，可结合 `ViewResultSaveMs` 及图像尺寸定位。
 
+支持批次传递的宿主在流程启动前把已插入的批次 ID 交给本轮动作。本地相机、本地校正及使用 `LocalFlowResultPersistence` 的节点用该 ID 写入结果。旧入口、批次编号或数据库连接不匹配，以及插入后经过本进程 MySQL 维护的情况，沿用按编号查询。动作携带的批次信息只在本进程内使用。
+
 启动阶段的字段以 `ARVRWindow.xaml.cs` 中 `ARVRFlowPhaseTiming` 为准。`StartupWorkMs` 可能省略单步方法进入之前的步骤选择。`RefreshTotalMs` 已包含服务发送、解绑、图加载和事件挂接。`BatchCreateMs`、`NodeRecorderStartMs` 属于 `FlowMs`，不计入启动段。服务发送时间不能用来估算设备应答。
 
 原始回包到业务派发应结合宿主的 [Socket 计时](../ui-components/ColorVision.SocketProtocol.md#回包派发与界面刷新计时)，不能把消息列表后台排队时间重复计入 PG 或 CT。

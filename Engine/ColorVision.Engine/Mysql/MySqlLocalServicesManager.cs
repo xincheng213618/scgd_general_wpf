@@ -149,6 +149,7 @@ namespace ColorVision.Database
         private const string RegistrationCenterServiceName = "RegistrationCenterService";
         private static readonly SemaphoreSlim DatabaseMaintenanceGate = new(1, 1);
         private static readonly AsyncLocal<int> DatabaseMaintenanceDepth = new();
+        private static long lastMaintenanceCompletedAt;
         private static readonly TimeSpan MySqlCommandTimeout = TimeSpan.FromHours(2);
         private const string ResultMasterTableName = "t_scgd_algorithm_result_master";
         private const string MeasureBatchTableName = "t_scgd_measure_batch";
@@ -184,7 +185,7 @@ namespace ColorVision.Database
             finally
             {
                 DatabaseMaintenanceDepth.Value = 0;
-                DatabaseMaintenanceGate.Release();
+                ReleaseDatabaseMaintenanceGate();
             }
         }
 
@@ -203,8 +204,18 @@ namespace ColorVision.Database
             finally
             {
                 DatabaseMaintenanceDepth.Value = 0;
-                DatabaseMaintenanceGate.Release();
+                ReleaseDatabaseMaintenanceGate();
             }
+        }
+
+        internal static bool CanReuseBatchFrom(long batchInsertStartedAt) =>
+            batchInsertStartedAt > 0 && DatabaseMaintenanceGate.CurrentCount != 0
+            && batchInsertStartedAt > Volatile.Read(ref lastMaintenanceCompletedAt);
+
+        private static void ReleaseDatabaseMaintenanceGate()
+        {
+            Volatile.Write(ref lastMaintenanceCompletedAt, System.Diagnostics.Stopwatch.GetTimestamp());
+            DatabaseMaintenanceGate.Release();
         }
 
         private static T RunNestedDatabaseMaintenance<T>(Func<T> maintenanceAction)
@@ -648,7 +659,7 @@ namespace ColorVision.Database
             {
                 DatabaseMaintenanceDepth.Value--;
                 if (ownsMaintenanceGate)
-                    DatabaseMaintenanceGate.Release();
+                    ReleaseDatabaseMaintenanceGate();
             }
         }
 

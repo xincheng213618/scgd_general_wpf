@@ -1,4 +1,5 @@
 #pragma warning disable CA1707,CA1861
+using ColorVision.Database;
 using ColorVision.Engine.FlowProcessing;
 using ColorVision.Engine.MQTT;
 using FlowEngineLib;
@@ -120,6 +121,43 @@ public class FlowEngineControlLifecycleTests
             Assert.False(first.Running);
             Assert.False(selected.Running);
             Assert.False(flowControl.IsFlowRun);
+        });
+    }
+
+    [Fact]
+    public void MeasurementBatchIsAvailableAtFirstDispatchAndIsolatedAcrossRunsWithTheSameCode()
+    {
+        StaTest.Run(() =>
+        {
+            using var editor = new STNodeEditor();
+            using var engineControl = new InspectableFlowEngineControl(editor, false, new FlowNodeManager());
+            var start = CreateStartNode("Batch");
+            var sink = new StartSinkNode();
+            sink.Create();
+            editor.Nodes.Add(start);
+            editor.Nodes.Add(sink);
+            Assert.Equal(ConnectionStatus.Connected, start.m_op_start.ConnectOption(sink.Input));
+            var flowControl = new FlowControl(MQTTControl.GetInstance(), engineControl, () => []);
+            string connectionString = MySqlControl.GetConnectionString();
+            List<int?> dispatchedBatchIds = [];
+            sink.Input.DataTransfer += (_, args) =>
+            {
+                if (args.TargetOption.Data is CVStartCFC { IsRunning: true } action)
+                    dispatchedBatchIds.Add(FlowMeasurementBatch.ResolveId(new CVStartCFC(action), _ => null));
+            };
+
+            Assert.True(flowControl.TryStartWithBatchAsync("SN?1", 41, connectionString, Stopwatch.GetTimestamp()).GetAwaiter().GetResult());
+            Assert.False(flowControl.TryStartWithBatchAsync("SN?1", 42, connectionString, Stopwatch.GetTimestamp()).GetAwaiter().GetResult());
+            flowControl.Stop();
+            Assert.True(flowControl.TryStartWithBatchAsync("SN?1", 43, connectionString, Stopwatch.GetTimestamp()).GetAwaiter().GetResult());
+            flowControl.Stop();
+            Assert.True(flowControl.TryStartAsync("SN?1").GetAwaiter().GetResult());
+            flowControl.Stop();
+            flowControl.PersistResults = false;
+            Assert.True(flowControl.TryStartWithBatchAsync("SN?1", 44, connectionString, Stopwatch.GetTimestamp()).GetAwaiter().GetResult());
+            flowControl.Stop();
+
+            Assert.Equal(new int?[] { 41, 43, null, null }, dispatchedBatchIds);
         });
     }
 

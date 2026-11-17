@@ -1,4 +1,5 @@
 using ColorVision.Database;
+using ColorVision.Engine.FlowProcessing;
 using FlowEngineLib.Base;
 using Newtonsoft.Json;
 using SqlSugar;
@@ -148,7 +149,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
         {
             ArgumentNullException.ThrowIfNull(action);
             ArgumentException.ThrowIfNullOrWhiteSpace(result);
-            MeasureBatchModel batch = BatchResultMasterDao.Instance.GetByNameOrCode(action.SerialNumber)
+            int batchId = FlowMeasurementBatch.ResolveId(action)
                 ?? throw new InvalidOperationException($"找不到流程批次：{action.SerialNumber}");
             var model = new AlgResultMasterModel
             {
@@ -157,7 +158,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                 ImgFile = NullIfEmpty(imageFile),
                 ImgFileType = resultType,
                 version = resultVersion,
-                BatchId = batch.Id,
+                BatchId = batchId,
                 Zindex = zIndex,
                 Params = JsonConvert.SerializeObject(parameters),
                 DeviceCode = NullIfEmpty(deviceCode),

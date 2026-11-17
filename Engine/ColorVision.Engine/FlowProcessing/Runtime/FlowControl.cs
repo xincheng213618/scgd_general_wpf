@@ -162,13 +162,23 @@ namespace ColorVision.Engine.FlowProcessing
             }
         }
 
-        public async Task<bool> TryStartAsync(string sn, CancellationToken cancellationToken = default)
+        public async Task<bool> TryStartAsync(string sn, CancellationToken cancellationToken = default) =>
+            await TryStartCoreAsync(flowEngine.GetStartNodeName(), sn, null, cancellationToken);
+
+        public Task<bool> TryStartAsync(string startNodeName, string sn, CancellationToken cancellationToken = default) =>
+            TryStartCoreAsync(startNodeName, sn, null, cancellationToken);
+
+        /// <summary>Starts a flow whose measurement batch has already been persisted by the caller.</summary>
+        public Task<bool> TryStartWithBatchAsync(string sn, int batchId, string connectionString, long batchInsertStartedAt, CancellationToken cancellationToken = default)
         {
-            string startNodeName = flowEngine.GetStartNodeName();
-            return await TryStartAsync(startNodeName, sn, cancellationToken);
+            string serialNumber = ColorVision.Common.Utilities.Tool.SanitizeFileName(sn);
+            Action<FlowRuntimeResources>? initializeRuntimeResources = batchId > 0
+                ? resources => FlowMeasurementBatch.Bind(resources, serialNumber, batchId, connectionString, batchInsertStartedAt)
+                : null;
+            return TryStartCoreAsync(flowEngine.GetStartNodeName(), serialNumber, initializeRuntimeResources, cancellationToken);
         }
 
-        public async Task<bool> TryStartAsync(string startNodeName, string sn, CancellationToken cancellationToken = default)
+        private async Task<bool> TryStartCoreAsync(string startNodeName, string sn, Action<FlowRuntimeResources>? initializeRuntimeResources, CancellationToken cancellationToken)
         {
             if (string.IsNullOrWhiteSpace(startNodeName))
                 return false;
@@ -183,7 +193,7 @@ namespace ColorVision.Engine.FlowProcessing
                 if (readinessSucceeded)
                 {
                     cancellationToken.ThrowIfCancellationRequested();
-                    started = TryStart(startNodeName, sn);
+                    started = TryStart(startNodeName, sn, initializeRuntimeResources);
                 }
                 return started;
             }
@@ -201,7 +211,7 @@ namespace ColorVision.Engine.FlowProcessing
             }
         }
 
-        private bool TryStart(string startNodeName, string sn)
+        private bool TryStart(string startNodeName, string sn, Action<FlowRuntimeResources>? initializeRuntimeResources)
         {
             sn = ColorVision.Common.Utilities.Tool.SanitizeFileName(sn);
             lock (lifecycleLock)
@@ -223,7 +233,7 @@ namespace ColorVision.Engine.FlowProcessing
                 try
                 {
                     flowEngine.PersistResults = PersistResults;
-                    if (!flowEngine.TryStartNode(startNodeName, sn, serviceTokens))
+                    if (!flowEngine.TryStartNode(startNodeName, sn, serviceTokens, PersistResults ? initializeRuntimeResources : null))
                     {
                         FlowRuntimeActivityRegistry.MarkCompleted(this, FlowStatus.Failed, 0);
                         flowEngine.Finished -= FinishedAsync;

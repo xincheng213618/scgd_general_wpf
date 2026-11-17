@@ -225,7 +225,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
         private protected MeasureResultImgModel SaveCalibrationResult(CVStartCFC action, LocalCalibrationExecution execution)
         {
             LocalFlowFrame frame = execution.Frame;
-            MeasureBatchModel batch = FlowNodeTiming.Run("ResolveBatch", () => BatchResultMasterDao.Instance.GetByNameOrCode(action.SerialNumber))
+            int batchId = FlowNodeTiming.Run("ResolveBatch", () => FlowMeasurementBatch.ResolveId(action))
                 ?? throw new InvalidOperationException($"找不到流程批次：{action.SerialNumber}");
             string? rawFilePath = NullIfEmpty(frame.CvRawFilePath);
             string? cieFilePath = NullIfEmpty(frame.CvCieFilePath);
@@ -236,7 +236,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
 
             MeasureResultImgModel model = new()
             {
-                BatchId = batch.Id,
+                BatchId = batchId,
                 ZIndex = ZIndex,
                 NDPort = -1,
                 Params = JsonConvert.SerializeObject(new

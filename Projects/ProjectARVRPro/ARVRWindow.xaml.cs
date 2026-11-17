@@ -110,6 +110,13 @@ namespace ProjectARVRPro
         private IProcess? _currentFlowProcess;
         private int _currentFlowTemplateId;
         private MeasureBatchModel? _currentFlowBatch;
+        private string? _currentFlowBatchConnectionString;
+        private long _currentFlowBatchInsertStartedAt;
+        // Existing supported hosts start from the code and resolve the batch inside each node.
+        private static readonly Func<FlowControl, string, int, string, long, CancellationToken, Task<bool>>? StartWithBatch =
+            typeof(FlowControl).GetMethod(nameof(FlowControl.TryStartWithBatchAsync),
+                [typeof(string), typeof(int), typeof(string), typeof(long), typeof(CancellationToken)])
+                ?.CreateDelegate<Func<FlowControl, string, int, string, long, CancellationToken, Task<bool>>>();
         private readonly FlowNodeExecutionRecorder _flowNodeExecutionRecorder = new FlowNodeExecutionRecorder();
         private readonly FlowDiagnosticsWriteQueue _flowDiagnosticsWrites = new();
         // Older supported hosts expose only the synchronous write API.
@@ -198,6 +205,8 @@ namespace ProjectARVRPro
             _currentFlowProcess = null;
             _currentFlowTemplateId = 0;
             _currentFlowBatch = null;
+            _currentFlowBatchConnectionString = null;
+            _currentFlowBatchInsertStartedAt = 0;
             _pendingSwitchRequestedAt = null;
             _pendingSwitchAcknowledgedAt = null;
             ResetCurrentPhaseDurations();
@@ -978,7 +987,7 @@ namespace ProjectARVRPro
                 await CreateCurrentFlowBatchAsync();
 
                 _isFlowLifecycleActive = true;
-                if (!await flowControl.TryStartAsync(CurrentFlowResult.Code, cancellationToken))
+                if (!await TryStartCurrentFlowAsync(flowControl, cancellationToken))
                 {
                     await HandleFlowStartFailureAsync(FlowStartRejectedMessage, runProcessMeta?.Process, persistResult: true);
                     return false;
@@ -1077,26 +1086,39 @@ namespace ProjectARVRPro
                 await CompleteFlowNodeRecordingAsync();
             }
 
-            long batchStartedAt = Stopwatch.GetTimestamp();
+            _currentFlowBatchInsertStartedAt = Stopwatch.GetTimestamp();
             _currentFlowBatch = new MeasureBatchModel
             {
                 TId = _currentFlowTemplateId > 0 ? _currentFlowTemplateId : null,
                 Name = CurrentFlowResult.SN,
                 Code = CurrentFlowResult.Code,
             };
+            _currentFlowBatchConnectionString = MySqlControl.GetConnectionString();
             using var db = new SqlSugarClient(new ConnectionConfig
             {
-                ConnectionString = MySqlControl.GetConnectionString(),
+                ConnectionString = _currentFlowBatchConnectionString,
                 DbType = SqlSugar.DbType.MySql,
                 IsAutoCloseConnection = true,
             });
             _currentFlowBatch.Id = DatabaseCommandTiming.Execute(db, "ARVR.CreateBatch", () => db.Insertable(_currentFlowBatch).ExecuteReturnIdentity(), CurrentFlowResult.Code);
             CurrentFlowResult.BatchId = _currentFlowBatch.Id;
-            _currentBatchCreateMs = Stopwatch.GetElapsedTime(batchStartedAt).TotalMilliseconds;
+            _currentBatchCreateMs = Stopwatch.GetElapsedTime(_currentFlowBatchInsertStartedAt).TotalMilliseconds;
             long recorderStartedAt = Stopwatch.GetTimestamp();
             _flowNodeExecutionRecorder.StartRun(_currentFlowBatch.Id, CurrentFlowResult.Code);
             _runningFlowNodes.Reset(CurrentFlowResult.Code);
             _currentNodeRecorderStartMs = Stopwatch.GetElapsedTime(recorderStartedAt).TotalMilliseconds;
+        }
+
+        private Task<bool> TryStartCurrentFlowAsync(FlowControl flowControl, CancellationToken cancellationToken = default)
+        {
+            string code = CurrentFlowResult.Code;
+            if (StartWithBatch != null && _currentFlowBatch is { Id: > 0 } batch && _currentFlowBatchConnectionString is { } connectionString
+                && string.Equals(batch.Code, code, StringComparison.Ordinal))
+            {
+                return StartWithBatch(flowControl, code, batch.Id, connectionString, _currentFlowBatchInsertStartedAt, cancellationToken);
+            }
+
+            return flowControl.TryStartAsync(code, cancellationToken);
         }
 
         private async Task FinalizeCurrentFlowRunAsync(FlowControlData flowResult)
@@ -1169,6 +1191,8 @@ namespace ProjectARVRPro
             }
 
             _currentFlowBatch = null;
+            _currentFlowBatchConnectionString = null;
+            _currentFlowBatchInsertStartedAt = 0;
             if (!deferDiagnostics)
             {
                 await CompleteFlowNodeRecordingAsync().ConfigureAwait(false);
@@ -1445,6 +1469,7 @@ namespace ProjectARVRPro
 
             log.Debug($"流程执行Elapsed Time: {stopwatch.ElapsedMilliseconds} ms");
             Stopwatch flowFinalizeStopwatch = Stopwatch.StartNew();
+            var batchForProcessing = (_currentFlowBatch?.Id, _currentFlowBatchConnectionString);
             await FinalizeCurrentFlowRunAsync(FlowControlData);
             if (_isDisposed)
                 return;
@@ -1459,7 +1484,7 @@ namespace ProjectARVRPro
                 bool processingSucceeded;
                 try
                 {
-                    processingSucceeded = await Processing(FlowControlData.SerialNumber);
+                    processingSucceeded = await Processing(FlowControlData.SerialNumber, batchForProcessing);
                 }
                 catch (Exception ex)
                 {
@@ -1573,10 +1598,10 @@ namespace ProjectARVRPro
             }
         }
 
-        private async Task<bool> Processing(string SerialNumber)
+        private async Task<bool> Processing(string SerialNumber, (int? Id, string? ConnectionString) batchForProcessing)
         {
             Stopwatch batchLookupStopwatch = Stopwatch.StartNew();
-            MeasureBatchModel Batch = BatchResultMasterDao.Instance.GetByCode(SerialNumber);
+            MeasureBatchModel? Batch = LoadBatchForProcessing(SerialNumber, batchForProcessing);
             batchLookupStopwatch.Stop();
 
 
@@ -1709,6 +1734,7 @@ namespace ProjectARVRPro
                             (viewWrite, objectiveWrite, timestampWrite));
                         return true;
                     }
+
                     else
                     {
                         string failureMessage = $"自定义 IProcess 执行失败: {result.Model} -> {processTypeName}";
@@ -1738,6 +1764,23 @@ namespace ProjectARVRPro
             ViewResultManager.Save(result);
             SaveObjectiveTestResultRecord(result);
             return false;
+        }
+
+        private static MeasureBatchModel? LoadBatchForProcessing(string serialNumber, (int? Id, string? ConnectionString) batch)
+        {
+            string connectionString = MySqlControl.GetConnectionString();
+            if (StartWithBatch == null || batch.Id is not > 0 || !string.Equals(batch.ConnectionString, connectionString, StringComparison.Ordinal))
+                return BatchResultMasterDao.Instance.GetByCode(serialNumber);
+
+            // Read the persisted fields for this run, including when a configured Code repeats.
+            using var db = new SqlSugarClient(new ConnectionConfig
+            {
+                ConnectionString = connectionString,
+                DbType = SqlSugar.DbType.MySql,
+                IsAutoCloseConnection = true,
+            });
+            int batchId = batch.Id.Value;
+            return db.Queryable<MeasureBatchModel>().Where(item => item.Id == batchId && item.Code == serialNumber).First();
         }
 
         private void SaveObjectiveTestResultRecord(ProjectARVRReuslt result, ResultSqliteWriteTiming? timing = null)
@@ -3036,7 +3079,7 @@ namespace ProjectARVRPro
                     FlowControlData flowResult;
                     try
                     {
-                        if (!await flowControl.TryStartAsync(CurrentFlowResult.Code))
+                        if (!await TryStartCurrentFlowAsync(flowControl))
                         {
                             log.Error($"流程 {meta.Name} 启动被拒绝");
                             flowResult = new FlowControlData
@@ -3086,6 +3129,7 @@ namespace ProjectARVRPro
                     log.Info($"流程 {meta.Name} 完成: {flowResult.EventName}, 耗时 {stopwatch.ElapsedMilliseconds}ms");
 
                     Stopwatch flowFinalizeStopwatch = Stopwatch.StartNew();
+                    var batchForProcessing = (_currentFlowBatch?.Id, _currentFlowBatchConnectionString);
                     await FinalizeCurrentFlowRunAsync(flowResult);
                     if (_isDisposed)
                         return;
@@ -3097,7 +3141,7 @@ namespace ProjectARVRPro
                     {
                         _flowRuntimeEstimates.RecordCompleted(_currentRuntimeEstimateKey, stopwatch.ElapsedMilliseconds);
                         CurrentFlowResult.Msg = "Completed";
-                        bool processingSucceeded = await Processing(flowResult.SerialNumber);
+                        bool processingSucceeded = await Processing(flowResult.SerialNumber, batchForProcessing);
                         lastPersistedRunAllResult = CurrentFlowResult;
                         if (!processingSucceeded && !ProjectARVRProConfig.Instance.AllowTestFailures)
                         {
