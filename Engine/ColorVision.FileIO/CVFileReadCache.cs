@@ -17,7 +17,8 @@ namespace ColorVision.FileIO
         private static readonly object Sync = new object();
         private static readonly List<CacheEntry> Entries = new List<CacheEntry>();
         private const int MetadataReserve = 64 * 1024;
-        private const int ParallelCopyThreshold = 128 * 1024 * 1024;
+        private const int LargeCopyThreshold = 128 * 1024 * 1024;
+        private const int LargeDiskReadBufferSize = 1024 * 1024;
         private static long hits;
         private static long misses;
         private static long allocations;
@@ -206,7 +207,8 @@ namespace ColorVision.FileIO
                 else if (committedWrite) CopyCommittedFile(file, entry.Buffer, (int)length);
                 else using (Stream destination = OpenBuffer(entry, length, FileAccess.Write))
                 {
-                    file.CopyTo(destination);
+                    if (length >= LargeCopyThreshold) file.CopyTo(destination, LargeDiskReadBufferSize);
+                    else file.CopyTo(destination);
                     if (destination.Position != length) throw new EndOfStreamException("Incomplete CVRAW cache snapshot.");
                 }
                 DateTime? lastWriteTimeUtc = file is FileStream disk ? TryGetLastWriteTimeUtc(disk) : publication?.LastWriteTimeUtc;
@@ -251,7 +253,7 @@ namespace ColorVision.FileIO
 
         private static unsafe void CopyCommittedFile(Stream file, IntPtr target, int length)
         {
-            if (length < ParallelCopyThreshold || Environment.ProcessorCount < 2 || file is not MemoryMappedViewStream view)
+            if (length < LargeCopyThreshold || Environment.ProcessorCount < 2 || file is not MemoryMappedViewStream view)
             {
                 file.ReadExactly(new Span<byte>(target.ToPointer(), length));
                 return;
@@ -754,7 +756,7 @@ namespace ColorVision.FileIO
 #if NETCOREAPP
             public override unsafe int Read(Span<byte> destination)
             {
-                if (destination.Length >= ParallelCopyThreshold && Environment.ProcessorCount >= 2
+                if (destination.Length >= LargeCopyThreshold && Environment.ProcessorCount >= 2
                     && entry is CacheEntry current && destination.Length <= memory.Length - position)
                 {
                     // The reader pins the cached prefix and the destination stays fixed until both copies finish.
