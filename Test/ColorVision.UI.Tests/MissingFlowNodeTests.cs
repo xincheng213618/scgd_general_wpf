@@ -20,6 +20,22 @@ public sealed class MissingFlowNodeTests
     private const string MissingType = "33333333-4444-5555-6666-777777777777";
     private const string LegacyConnectionsKey = "__STNode.LegacyConnections";
 
+    [Fact]
+    public void SavedNodeStateOwnsOpaquePropertyBytes()
+    {
+        const string key = "Vendor.原始字节";
+        byte[] original = [0x00, 0xff, 0x1f, 0x80];
+        byte[] saved = STNodeSavedState.Write(MissingModel, MissingType,
+            new Dictionary<string, byte[]> { [key] = original });
+        STNodeSavedState first = STNodeSavedState.Parse(saved);
+        STNodeSavedState second = STNodeSavedState.Parse(saved);
+
+        Array.Clear(saved);
+        first.Properties[key][1] = 0;
+
+        Assert.Equal(original, second.Properties[key]);
+    }
+
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
