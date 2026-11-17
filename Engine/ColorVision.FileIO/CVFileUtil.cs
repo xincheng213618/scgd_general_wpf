@@ -956,6 +956,62 @@ namespace ColorVision.FileIO
             IReadOnlyDictionary<string, CVFileProperty> properties)
             => WriteCIEFile(filePath, fileInfo, dataLength, writeData, saveMode, properties);
 
+        /// <summary>Saves a complete CVRAW snapshot from an immutable caller-owned pixel buffer.</summary>
+        /// <remarks>
+        /// The caller must keep the pixels allocated and unchanged until the synchronous call returns.
+        /// The disk file and cache own independent copies. The pixel pointer is never retained.
+        /// </remarks>
+        public static unsafe bool WriteCVRaw(
+            string filePath,
+            CVCIEFile fileInfo,
+            IntPtr pixels,
+            int dataLength,
+            CVFileSaveMode saveMode,
+            IReadOnlyDictionary<string, CVFileProperty> properties)
+        {
+            if (string.IsNullOrEmpty(filePath) || fileInfo == null || pixels == IntPtr.Zero || dataLength <= 0)
+                return false;
+            uint version = fileInfo.Version;
+            if (version is < 1 or > 3)
+                return false;
+
+            try
+            {
+                byte[] sourceName = Encoding1.GetBytes(fileInfo.SrcFileName ?? string.Empty);
+                using MemoryStream headerStream = new();
+                using (BinaryWriter writer = new(headerStream, Encoding.UTF8, leaveOpen: true))
+                    WriteImageHeader(writer, fileInfo, version, sourceName, dataLength);
+                ArraySegment<byte> header = new(headerStream.GetBuffer(), 0, (int)headerStream.Length);
+                long pixelEnd = (long)header.Count + dataLength;
+                byte[] tail = CVFileMetadata.CreateInitialTail(properties, fileInfo, dataLength, pixelEnd);
+
+                void WriteSnapshot(Stream stream)
+                {
+                    stream.Write(header.AsSpan());
+                    ReadOnlySpan<byte> payload = new(pixels.ToPointer(), dataLength);
+                    if (stream is FileStream)
+                    {
+                        const int blockSize = 1024 * 1024;
+                        while (payload.Length > blockSize)
+                        {
+                            stream.Write(payload[..blockSize]);
+                            payload = payload[blockSize..];
+                        }
+                    }
+                    stream.Write(payload);
+                    stream.Write(tail);
+                }
+
+                return CVFileReadCache.WriteFile(filePath, checked(pixelEnd + tail.Length),
+                    WriteSnapshot, saveMode, writeCommittedCache: WriteSnapshot);
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[WriteCVRaw] Exception: {ex}");
+                return false;
+            }
+        }
+
         /// <summary>
         /// Writes image Data to a file in CVCIE format with specified parameters.
         /// </summary>
