@@ -306,10 +306,13 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
         private static unsafe void CopyStreamToPointer(Stream stream, IntPtr destination, int length)
         {
             Span<byte> pixels = new(destination.ToPointer(), length);
-            while (pixels.Length > CopyBufferSize)
+            if (stream is FileStream)
             {
-                stream.ReadExactly(pixels[..CopyBufferSize]);
-                pixels = pixels[CopyBufferSize..];
+                while (pixels.Length > CopyBufferSize)
+                {
+                    stream.ReadExactly(pixels[..CopyBufferSize]);
+                    pixels = pixels[CopyBufferSize..];
+                }
             }
             stream.ReadExactly(pixels);
         }

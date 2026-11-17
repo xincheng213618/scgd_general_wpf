@@ -263,14 +263,18 @@ namespace ColorVision.FileIO
             handle.AcquirePointer(ref pointer);
             try
             {
-                nint source = (nint)(pointer + view.PointerOffset);
-                int firstLength = length / 2;
-                int secondLength = length - firstLength;
-                Parallel.Invoke(new ParallelOptions { MaxDegreeOfParallelism = 2, TaskScheduler = TaskScheduler.Default },
-                    () => Buffer.MemoryCopy((void*)source, target.ToPointer(), firstLength, firstLength),
-                    () => Buffer.MemoryCopy((void*)(source + firstLength), (target + firstLength).ToPointer(), secondLength, secondLength));
+                CopyBufferInHalves((nint)(pointer + view.PointerOffset), target, length);
             }
             finally { handle.ReleasePointer(); }
+        }
+
+        private static unsafe void CopyBufferInHalves(nint source, nint target, int length)
+        {
+            int firstLength = length / 2;
+            int secondLength = length - firstLength;
+            Parallel.Invoke(new ParallelOptions { MaxDegreeOfParallelism = 2, TaskScheduler = TaskScheduler.Default },
+                () => Buffer.MemoryCopy(source.ToPointer(), target.ToPointer(), firstLength, firstLength),
+                () => Buffer.MemoryCopy((source + firstLength).ToPointer(), (target + firstLength).ToPointer(), secondLength, secondLength));
         }
 
         /// <summary>Returns the cached length without accessing the disk file, or null on a miss.</summary>
@@ -748,8 +752,18 @@ namespace ColorVision.FileIO
 #endif
             }
 #if NETCOREAPP
-            public override int Read(Span<byte> destination)
+            public override unsafe int Read(Span<byte> destination)
             {
+                if (destination.Length >= ParallelCopyThreshold && Environment.ProcessorCount >= 2
+                    && entry is CacheEntry current && destination.Length <= memory.Length - position)
+                {
+                    // The reader pins the cached prefix and the destination stays fixed until both copies finish.
+                    fixed (byte* target = destination)
+                        CopyBufferInHalves((nint)((byte*)current.Buffer.ToPointer() + position), (nint)target, destination.Length);
+                    position += destination.Length;
+                    return destination.Length;
+                }
+
                 int read = 0;
                 if (position < memory.Length)
                 {
