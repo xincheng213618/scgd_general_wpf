@@ -341,6 +341,7 @@ namespace ColorVision.ImageEditor.Output
                 else
                 {
                     Stopwatch renderStopwatch = Stopwatch.StartNew();
+                    ImageDrawing? scratchDrawing = null;
                     try
                     {
                         canUseAdaptivePng = background != null
@@ -351,10 +352,19 @@ namespace ColorVision.ImageEditor.Output
                             && ((snapshot.PixelWidth | snapshot.PixelHeight) & 1) == 0;
                         if (usedHalfPrescaledRgb48)
                             background = new TransformedBitmap(background!, new ScaleTransform(0.5, 0.5));
-                        DrawingGroup scene = ComposeSnapshotScene(snapshot, background, usePixelAlignedRgb48Png || usedHalfPrescaledRgb48);
+                        DrawingGroup scene = ComposeSnapshotScene(snapshot, background, usePixelAlignedRgb48Png || usedHalfPrescaledRgb48, out scratchDrawing);
                         rendered = RenderSnapshot(snapshot, scene, options.RenderedOptions, cancellationToken);
                     }
-                    finally { renderElapsed = renderStopwatch.Elapsed; }
+                    finally
+                    {
+                        if (scratchDrawing != null)
+                        {
+                            scratchDrawing.ImageSource = null;
+                            if (rendered != null && background is WriteableBitmap scratch)
+                                SnapshotStaWorker.ReturnOpaqueBackground(scratch);
+                        }
+                        renderElapsed = renderStopwatch.Elapsed;
+                    }
                 }
             }
 
@@ -417,12 +427,17 @@ namespace ColorVision.ImageEditor.Output
         private static DrawingGroup ComposeSnapshotScene(
             ImageViewSnapshot snapshot,
             BitmapSource? source,
-            bool baseImageIsPixelAligned)
+            bool baseImageIsPixelAligned,
+            out ImageDrawing? scratchDrawing)
         {
+            scratchDrawing = null;
             if (source == null)
                 return snapshot.Scene;
 
-            Drawing background = new ImageDrawing(source, new Rect(snapshot.SceneSize));
+            ImageDrawing image = new(source, new Rect(snapshot.SceneSize));
+            if (source is WriteableBitmap && !source.IsFrozen)
+                scratchDrawing = image;
+            Drawing background = image;
             if (baseImageIsPixelAligned)
             {
                 // The base image has a 1:1 device-pixel mapping. Keep the sampling
@@ -436,7 +451,8 @@ namespace ColorVision.ImageEditor.Output
             DrawingGroup composedScene = new();
             composedScene.Children.Add(background);
             composedScene.Children.Add(snapshot.Scene);
-            composedScene.Freeze();
+            if (scratchDrawing == null)
+                composedScene.Freeze();
             return composedScene;
         }
 

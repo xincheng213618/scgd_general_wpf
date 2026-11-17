@@ -129,7 +129,7 @@ related: ["ui.image-editor", "ui.discovery", "ui.configuration", "algorithms.pla
 
 `Abstractions/IImageEditor.cs` 中的 `IImageOpenContentLifetime` 将当前文件资源与工具栏生命周期分开。文件替换、清空及销毁视图经 `ImageView.ReleaseImageContent` 调用 `ReleaseContentAsync`，先失效旧请求，再异步等待正在读的内容退役；UI 不阻塞等待可能回调 Dispatcher 的读取。相机实时开始、本地预览及内存 CIE 接入同样先结束原文件内容。只有同一打开器紧接着加载下一文件时传入 `reuseBuffers=true`，允许保留可复用分配，但旧测量消费者仍须退出。RAW 切换到 PNG/JPG 等其他打开器会释放旧输入数组，后续重开不会被迟到的清理任务清除；工具栏刷新、普通页签切换及单纯显示图层变化不调用此入口。图像格式插件不实现此可选接口时仍保持原有行为。
 
-清图和关页会解除大图及快照缓存引用。`ImageMemoryReclaimer` 在后台回收体量大的空闲缓冲，仍可能有短时 GC 停顿。渲染器和其他模块的常驻内存独立。排查时反复打开与关闭实际窗口，分别观察进程私有内存和托管堆。
+清图和关页会解除大图及快照缓存引用。`ImageMemoryReclaimer` 在后台回收体量大的空闲缓冲，仍可能有短时 GC 停顿。渲染器和其他模块的常驻内存独立。大幅 RGB48 仅导出全尺寸标记 PNG 时，渲染线程可暂存一个底图位图供同尺寸、同 DPI 的下一张复用。按双缓冲计上限为 512 MiB，空闲约 5 秒后解除引用。编码线程只接收独立冻结的渲染结果。排查时反复打开与关闭实际窗口，分别观察进程私有内存和托管堆。
 
 ## 临时 ROI：形状、坐标与有效期
 

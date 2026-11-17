@@ -80,7 +80,8 @@ namespace ColorVision.ImageEditor.Output
 
             try
             {
-                WriteableBitmap bitmap = new(width, height, dpiX, dpiY, PixelFormats.Pbgra32, null);
+                WriteableBitmap? scratch = SnapshotStaWorker.TakeOpaqueBackground(width, height, dpiX, dpiY);
+                WriteableBitmap bitmap = scratch ?? new(width, height, dpiX, dpiY, PixelFormats.Pbgra32, null);
                 bitmap.Lock();
                 try
                 {
@@ -94,7 +95,8 @@ namespace ColorVision.ImageEditor.Output
                     bitmap.AddDirtyRect(new Int32Rect(0, 0, width, height));
                 }
                 finally { bitmap.Unlock(); }
-                bitmap.Freeze();
+                if (scratch == null)
+                    bitmap.Freeze();
                 return bitmap;
             }
             catch (Exception ex) when (ex is OutOfMemoryException or COMException or ArgumentException)
