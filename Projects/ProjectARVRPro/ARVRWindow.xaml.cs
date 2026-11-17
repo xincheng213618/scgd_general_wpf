@@ -112,6 +112,7 @@ namespace ProjectARVRPro
         private MeasureBatchModel? _currentFlowBatch;
         private string? _currentFlowBatchConnectionString;
         private long _currentFlowBatchInsertStartedAt;
+        internal FlowBatchFinalization BatchFinalization { get; } = new();
         // Existing supported hosts start from the code and resolve the batch inside each node.
         private static readonly Func<FlowControl, string, int, string, long, CancellationToken, Task<bool>>? StartWithBatch =
             typeof(FlowControl).GetMethod(nameof(FlowControl.TryStartWithBatchAsync),
@@ -153,11 +154,13 @@ namespace ProjectARVRPro
         private bool _isFlowCompletionPending;
         private bool _runAllSessionPrepared;
         internal bool IsResultExportPending { get; private set; }
+        internal bool IsCompletingFlowBatch => BatchFinalization.IsCompleting || BatchFinalization.CloseRequested;
 
         private bool IsTestExecutionBusy => IsSwitchRun
             || _luxSession != null
             || IsJsonVidRunning
             || _isFlowCompletionPending
+            || IsCompletingFlowBatch
             || _isFlowStartPending
             || flowControl?.IsFlowRun == true
             || _isFlowLifecycleActive
@@ -168,7 +171,7 @@ namespace ProjectARVRPro
         public string InitTest(string? serialNumber)
         {
             if (_luxSession != null || IsJsonVidRunning) return _objectiveSessionSerialNumber;
-            if (IsResultExportPending)
+            if (IsResultExportPending || IsCompletingFlowBatch)
             {
                 log.Warn("正在保存测试结果，暂不初始化下一次测试");
                 return _objectiveSessionSerialNumber;
@@ -358,6 +361,7 @@ namespace ProjectARVRPro
         bool IsSwitchRun;
         public async void SwitchPGCompleted()
         {
+            if (IsCompletingFlowBatch) return;
             _pendingSwitchAcknowledgedAt ??= DateTime.Now;
             try
             {
@@ -371,7 +375,7 @@ namespace ProjectARVRPro
 
         public async Task<bool> TryStartNextTemplateAsync(CancellationToken cancellationToken = default)
         {
-            if (_luxSession != null || IsJsonVidRunning) return false;
+            if (_luxSession != null || IsJsonVidRunning || IsCompletingFlowBatch) return false;
             if (IsSwitchRun)
             {
                 log.Warn("重复触发PG，忽略本次请求");
@@ -858,7 +862,7 @@ namespace ProjectARVRPro
 
         public async Task RunTemplate()
         {
-            if (_luxSession != null || IsJsonVidRunning) return;
+            if (_luxSession != null || IsJsonVidRunning || IsCompletingFlowBatch) return;
             if (FlowTemplate.SelectedItem is not TemplateModel<FlowParam> template)
                 return;
 
@@ -1158,12 +1162,19 @@ namespace ProjectARVRPro
                 _currentFlowRunRecordMs = Stopwatch.GetElapsedTime(runRecordStarted).TotalMilliseconds;
             }
 
+            // Once a terminal write owns the batch, closing the window must drain it
+            // rather than write a second, canceled state for that same run.
+            MeasureBatchModel? batch = _currentFlowBatch;
+            int batchId = CurrentFlowResult.BatchId;
+            _currentFlowBatch = null;
+            _currentFlowBatchConnectionString = null;
+            _currentFlowBatchInsertStartedAt = 0;
+
             long batchFinalizeStarted = Stopwatch.GetTimestamp();
             try
             {
-                MeasureBatchModel? batch = _currentFlowBatch;
-                if (batch == null && CurrentFlowResult.BatchId > 0)
-                    batch = BatchResultMasterDao.Instance.GetById(CurrentFlowResult.BatchId);
+                if (batch == null && batchId > 0)
+                    batch = BatchResultMasterDao.Instance.GetById(batchId);
                 if (batch != null)
                 {
                     batch.TId = _currentFlowTemplateId > 0 ? _currentFlowTemplateId : null;
@@ -1172,27 +1183,22 @@ namespace ProjectARVRPro
                         : (int)elapsedMilliseconds;
                     batch.FlowStatus = flowResult.FlowStatus;
                     batch.Result = flowResult.Params ?? flowResult.Message ?? flowResult.EventName;
-                    using var db = new SqlSugarClient(new ConnectionConfig
-                    {
-                        ConnectionString = MySqlControl.GetConnectionString(),
-                        DbType = SqlSugar.DbType.MySql,
-                        IsAutoCloseConnection = true,
-                    });
-                    DatabaseCommandTiming.Execute(db, "ARVR.FinalizeBatch", () => db.Updateable(batch).ExecuteCommand(), serialNumber);
+                    string connectionString = MySqlControl.GetConnectionString();
+                    if (!_isDisposed && flowResult.EventName == "Completed")
+                        await BatchFinalization.RunAsync(() => WriteBatchFinalization(batch, connectionString, serialNumber));
+                    else
+                        WriteBatchFinalization(batch, connectionString, serialNumber);
                 }
             }
             catch (Exception ex)
             {
-                log.Error($"回写流程批次失败 => batchId={CurrentFlowResult.BatchId}, serialNumber={serialNumber}", ex);
+                log.Error($"回写流程批次失败 => batchId={batchId}, serialNumber={serialNumber}", ex);
             }
             finally
             {
                 _currentBatchFinalizeMs = Stopwatch.GetElapsedTime(batchFinalizeStarted).TotalMilliseconds;
             }
 
-            _currentFlowBatch = null;
-            _currentFlowBatchConnectionString = null;
-            _currentFlowBatchInsertStartedAt = 0;
             if (!deferDiagnostics)
             {
                 await CompleteFlowNodeRecordingAsync().ConfigureAwait(false);
@@ -1204,6 +1210,17 @@ namespace ProjectARVRPro
                     log.Warn($"等待流程诊断写入队列超时 => serialNumber={serialNumber}");
                 _currentFlowDiagnosticsBackpressureMs = Stopwatch.GetElapsedTime(backpressureStarted).TotalMilliseconds;
             }
+        }
+
+        private static void WriteBatchFinalization(MeasureBatchModel batch, string connectionString, string serialNumber)
+        {
+            using var db = new SqlSugarClient(new ConnectionConfig
+            {
+                ConnectionString = connectionString,
+                DbType = SqlSugar.DbType.MySql,
+                IsAutoCloseConnection = true,
+            });
+            DatabaseCommandTiming.Execute(db, "ARVR.FinalizeBatch", () => db.Updateable(batch).ExecuteCommand(), serialNumber);
         }
 
         private static async Task ObserveFlowDiagnosticsAsync(string serialNumber, int batchId, long queuedAt,
@@ -1448,14 +1465,19 @@ namespace ProjectARVRPro
                 return;
 
             _isFlowCompletionPending = true;
-            UpdateTestButtonState();
+            bool completed = FlowControlData.EventName == "Completed";
+            if (completed)
+                BatchFinalization.BeginCompletion();
             try
             {
+                UpdateTestButtonState();
                 await ProcessSingleFlowCompletionAsync(FlowControlData);
             }
             finally
             {
                 _isFlowCompletionPending = false;
+                if (completed)
+                    EndFlowBatchCompletion();
                 UpdateTestButtonState();
             }
         }
@@ -1488,6 +1510,8 @@ namespace ProjectARVRPro
                 }
                 catch (Exception ex)
                 {
+                    if (_isDisposed)
+                        return;
                     CurrentFlowResult.FlowStatus = FlowStatus.Failed;
                     RecordFlowFailure($"结果处理异常: {ex.Message}");
                     ViewResultManager.Save(CurrentFlowResult);
@@ -1496,6 +1520,8 @@ namespace ProjectARVRPro
                     processingSucceeded = false;
                 }
 
+                if (_isDisposed)
+                    return;
                 _isFlowLifecycleActive = false;
                 if (_luxSession != null)
                 {
@@ -1509,7 +1535,8 @@ namespace ProjectARVRPro
                 }
                 else if (!IsTestTypeCompleted())
                 {
-                    SwitchPG();
+                    if (!BatchFinalization.CloseRequested)
+                        SwitchPG();
                 }
                 else
                 {
@@ -1648,6 +1675,8 @@ namespace ProjectARVRPro
                             ImageView =ImageView,
                         };
                         executed = await process.Execute(ctx);
+                        if (_isDisposed)
+                            return false;
                         resultImageDimensionsFromProcessCache = ctx.TryPopulateResultImageDimensions();
                     }
                     catch (Exception ex)
@@ -1658,6 +1687,8 @@ namespace ProjectARVRPro
                     {
                         processExecutionStopwatch.Stop();
                     }
+                    if (_isDisposed)
+                        return false;
                     if (executed)
                     {
                         ViewResultManagerConfig exportConfig = ViewResultManager.Config;
@@ -2943,7 +2974,7 @@ namespace ProjectARVRPro
         /// </summary>
         public async Task RunAllAsync()
         {
-            if (_luxSession != null || IsJsonVidRunning) return;
+            if (_luxSession != null || IsJsonVidRunning || IsCompletingFlowBatch) return;
             if (_isRunAllRunning)
             {
                 log.Info("一键执行已在运行中，忽略重复调用");
@@ -3130,6 +3161,9 @@ namespace ProjectARVRPro
 
                     Stopwatch flowFinalizeStopwatch = Stopwatch.StartNew();
                     var batchForProcessing = (_currentFlowBatch?.Id, _currentFlowBatchConnectionString);
+                    bool completed = flowResult.EventName == "Completed";
+                    if (completed)
+                        BatchFinalization.BeginCompletion();
                     await FinalizeCurrentFlowRunAsync(flowResult);
                     if (_isDisposed)
                         return;
@@ -3137,16 +3171,24 @@ namespace ProjectARVRPro
                     _currentFlowFinalizeMilliseconds = Math.Max(0, flowFinalizeStopwatch.ElapsedMilliseconds);
                     ShowExecutionResult(flowResult.EventName, flowResult.Params);
 
-                    if (flowResult.EventName == "Completed")
+                    if (completed)
                     {
                         _flowRuntimeEstimates.RecordCompleted(_currentRuntimeEstimateKey, stopwatch.ElapsedMilliseconds);
                         CurrentFlowResult.Msg = "Completed";
                         bool processingSucceeded = await Processing(flowResult.SerialNumber, batchForProcessing);
+                        if (_isDisposed)
+                            return;
                         lastPersistedRunAllResult = CurrentFlowResult;
                         if (!processingSucceeded && !ProjectARVRProConfig.Instance.AllowTestFailures)
                         {
                             log.Error($"流程 {meta.Name} 结果处理失败且不允许失败，终止一键执行");
                             break;
+                        }
+                        if (i + 1 < enabledMetas.Count)
+                        {
+                            if (BatchFinalization.CloseRequested)
+                                return;
+                            EndFlowBatchCompletion();
                         }
                     }
                     else
@@ -3174,6 +3216,8 @@ namespace ProjectARVRPro
             }
             catch (Exception ex)
             {
+                if (_isDisposed)
+                    return;
                 string message = $"一键执行异常: {ex.Message}";
                 RecordFlowFailure(message);
                 flowControl.Stop();
@@ -3214,6 +3258,8 @@ namespace ProjectARVRPro
                 await CompleteFlowNodeRecordingAsync();
                 _runAllSessionPrepared = false;
                 _isRunAllRunning = false;
+                if (BatchFinalization.IsCompleting)
+                    EndFlowBatchCompletion();
             }
         }
 
@@ -3237,6 +3283,18 @@ namespace ProjectARVRPro
             }
 
             return builder.Length == 0 ? "ProjectARVRPro" : builder.ToString();
+        }
+
+        protected override void OnClosing(CancelEventArgs e)
+        {
+            base.OnClosing(e);
+            BatchFinalization.OnClosing(e);
+        }
+
+        internal void EndFlowBatchCompletion()
+        {
+            if (BatchFinalization.EndCompletion() && !_isDisposed)
+                _ = Dispatcher.BeginInvoke(() => { if (!_isDisposed) Close(); });
         }
 
         public void Dispose()
@@ -3280,7 +3338,12 @@ namespace ProjectARVRPro
             flowControl.PropertyChanged -= FlowControl_PropertyChanged;
             flowControl.Stop();
             stopwatch.Stop();
-            if (_currentFlowBatch?.Id > 0 && CurrentFlowResult != null)
+            if (BatchFinalization.PendingWrite is Task pendingBatchWrite)
+            {
+                try { pendingBatchWrite.GetAwaiter().GetResult(); }
+                catch (Exception ex) { log.Warn("关闭窗口时等待流程批次回写失败。", ex); }
+            }
+            else if (_currentFlowBatch?.Id > 0 && CurrentFlowResult != null)
             {
                 try
                 {

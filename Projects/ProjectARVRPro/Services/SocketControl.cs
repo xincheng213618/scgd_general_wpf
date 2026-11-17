@@ -20,24 +20,17 @@ namespace ProjectARVRPro.Services
 
         public SocketResponse Handle(NetworkStream stream, SocketRequest request)
         {
-            SocketControl.Current.Stream = stream;
-            if (ProjectWindowInstance.WindowInstance == null)
-            {
-                Application.Current.Dispatcher.Invoke(() =>
-                {
-                    ProjectWindowInstance.WindowInstance = new ARVRWindow
-                    {
-                        WindowStartupLocation = WindowStartupLocation.CenterOwner
-                    };
-                    ProjectWindowInstance.WindowInstance.Closed += (s, e) => ProjectWindowInstance.WindowInstance = null;
-                    ProjectWindowInstance.WindowInstance.Show();
-                });
-
-            }
-
             (string resolvedSerialNumber, int firstEnabledIndex) = Application.Current.Dispatcher.Invoke(() =>
             {
-                if (ProjectWindowInstance.WindowInstance.IsResultExportPending || ProjectWindowInstance.WindowInstance.IsJsonVidRunning)
+                bool needsShow = ProjectWindowInstance.WindowInstance == null;
+                ARVRWindow window = ProjectARVRWindowHost.GetOrCreate();
+                if (window.IsCompletingFlowBatch)
+                    return (request.SerialNumber?.Trim() ?? string.Empty, -2);
+                SocketControl.Current.Stream = stream;
+                if (needsShow)
+                    window.Show();
+
+                if (window.IsResultExportPending || window.IsJsonVidRunning)
                     return (request.SerialNumber?.Trim() ?? string.Empty, -2);
                 var processMetas = Process.ProcessManager.GetInstance().ProcessMetas;
                 int firstEnabledInternalIndex = -1;
@@ -52,7 +45,7 @@ namespace ProjectARVRPro.Services
                 if (firstEnabledInternalIndex < 0)
                     return (request.SerialNumber?.Trim() ?? string.Empty, firstEnabledInternalIndex);
 
-                string resolvedSerialNumber = ProjectWindowInstance.WindowInstance.InitTest(request.SerialNumber);
+                string resolvedSerialNumber = window.InitTest(request.SerialNumber);
                 int externalIndex = firstEnabledInternalIndex + GetProcessEnableSocket.GetIndexOffset();
                 return (resolvedSerialNumber, externalIndex);
             });
@@ -91,20 +84,19 @@ namespace ProjectARVRPro.Services
 
         public SocketResponse Handle(NetworkStream stream, SocketRequest request)
         {
-            SocketControl.Current.Stream = stream;
-            if (ProjectWindowInstance.WindowInstance != null)
+            return Application.Current.Dispatcher.Invoke<SocketResponse>(() =>
             {
+                ARVRWindow window = ProjectWindowInstance.WindowInstance;
+                if (window?.IsCompletingFlowBatch == true)
+                    return null;
+                SocketControl.Current.Stream = stream;
+                if (window == null)
+                    return new SocketResponse { MsgID = request.MsgID, SerialNumber = request.SerialNumber, Code = -3, Msg = "ProjectARVR Wont Open", EventName = EventName };
+
                 log.Debug("PG切换结束");
-                Application.Current.Dispatcher.Invoke(() =>
-                {
-                    ProjectWindowInstance.WindowInstance.SwitchPGCompleted();
-                });
+                window.SwitchPGCompleted();
                 return null;
-            }
-            else
-            {
-                return new SocketResponse { MsgID = request.MsgID, SerialNumber =request.SerialNumber,Code = -3, Msg = $"ProjectARVR Wont Open", EventName = EventName };
-            }
+            });
         }
     }
 
@@ -116,26 +108,31 @@ namespace ProjectARVRPro.Services
         public string EventName => "  ";
         public SocketResponse Handle(NetworkStream stream, SocketRequest request)
         {
-            SocketControl.Current.Stream = stream;
-            if (ProjectWindowInstance.WindowInstance != null)
+            return Application.Current.Dispatcher.Invoke(() =>
             {
-                if (TemplateFlow.Params.FirstOrDefault(a => a.Key == request.Params)?.Value is FlowParam flowParam)
+                ARVRWindow window = ProjectWindowInstance.WindowInstance;
+                if (window?.IsCompletingFlowBatch == true)
+                    return new SocketResponse { MsgID = request.MsgID, EventName = EventName, Code = -4, Msg = "ARVR test is busy", SerialNumber = request.SerialNumber };
+                if (window == null)
                 {
-                    Application.Current.Dispatcher.BeginInvoke(() =>
-                    {
-                        ProjectWindowInstance.WindowInstance.RunTemplate();
-                    });
-                    return new SocketResponse { MsgID = request.MsgID, EventName = EventName, Code = 0, Msg = $"Run {request.Params}"};
+                    SocketControl.Current.Stream = stream;
+                    return new SocketResponse { MsgID = request.MsgID, EventName = EventName, Code = -3, Msg = "ProjectARVR Wont Open" };
                 }
-                else
+                if (TemplateFlow.Params.FirstOrDefault(a => a.Key == request.Params)?.Value is not FlowParam)
                 {
+                    SocketControl.Current.Stream = stream;
                     return new SocketResponse { MsgID = request.MsgID, EventName = EventName, Code = -2, Msg = $"Cant Find Flow {request.Params}" };
                 }
-            }
-            else
-            {
-                return new SocketResponse { MsgID = request.MsgID, EventName = EventName, Code = -3, Msg = $"ProjectARVR Wont Open" };
-            }
+
+                _ = Application.Current.Dispatcher.BeginInvoke(() =>
+                {
+                    if (!ReferenceEquals(window, ProjectWindowInstance.WindowInstance) || window.IsCompletingFlowBatch)
+                        return;
+                    SocketControl.Current.Stream = stream;
+                    _ = window.RunTemplate();
+                });
+                return new SocketResponse { MsgID = request.MsgID, EventName = EventName, Code = 0, Msg = $"Run {request.Params}" };
+            });
         }
     }
 }

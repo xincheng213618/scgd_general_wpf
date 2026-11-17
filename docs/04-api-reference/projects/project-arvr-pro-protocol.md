@@ -17,7 +17,7 @@ related: ["projects.arvr-pro","projects.arvr-pro-processes","projects.arvr-pro-d
 1. 在 ColorVision 中加载 `ProjectARVRPro`，确认[活动流程组、Flow 模板、解析器和 Recipe](./project-arvr-pro-processes.md)已配置，所需设备与 Flow 服务可用。
 2. 在“通信协议”设置中启用 Socket Server，选择 **Json**。默认监听 `0.0.0.0:6666`，默认接收缓冲区为 10,240 字节；服务默认未启用。
 3. 客户端连接现场配置的地址和端口，以 UTF-8 发送 JSON。端口、防火墙和协议模式不一致时，先排查[通用 Socket 服务](../ui-components/ColorVision.SocketProtocol.md)。
-4. 保持一个控制连接，串行完成当前产品的测试，再开始下一个 SN。`SocketControl.Current.Stream` 保留异步切图和结果的回包连接，仍是原来的可写属性。`ProjectARVRInit`、`RunAll`、`SwitchPGCompleted` 等执行和推进入口沿用原有赋值方式；LUX 的 `T0000` 握手、启用状态查询、启用配置和切组不写入该属性，立即响应仍发给本次请求的连接。重连后收到执行或推进消息时更新回包连接，其中 `RunAll` 忙碌重发仍返回原来的 `Code=-4`，并沿用更新 Stream 的原行为。仅 LUX 握手或查询不接管旧任务结果。最终结果在实际发送前读取当前 Stream；发送失败仍按原流程记录异常，不自动补发。
+4. 保持一个控制连接，串行完成当前产品的测试，再开始下一个 SN。`SocketControl.Current.Stream` 保存异步切图和结果的回包连接。成功步骤正在回写或收尾时，重复初始化、`RunAll`、切图确认和旧版流程启动请求都保留当前控制连接，即时响应仍发给请求方。其余阶段的执行和推进消息沿用既有重连规则，包括 `RunAll` 忙碌重发时更新 Stream。仅 LUX 握手或查询不接管旧任务结果。最终结果在发送前读取当前 Stream，发送失败会记录异常。
 
 现场调度联调需接入相机和光谱仪，核对控制连接归属及切图断线后的恢复。
 
@@ -79,7 +79,7 @@ RunAll 自行初始化本轮会话，不需要先发 `ProjectARVRInit`，执行�
 
 `ARVRTestType` 是活动组中步骤的**外部索引**，不保证从 0 开始，也不是固定测试类型枚举。首条启用步骤可能位于组中间；Legacy 输出还会使索引加 1，具体见[查询与设置启用状态](#查询与设置启用状态)。
 
-没有启用步骤时，返回 `EventName=ProjectARVRInit`、`Code=-2`、`Msg="No enabled ARVR flow"`，不执行本轮初始化。结果输出等待后台空间清理或保存报表期间，初始化返回 `Code=-4`、`Msg="ARVR test is busy"`，保留原会话。其它执行阶段的初始化接口仍没有 RunAll 的完整忙检查；客户端必须在上一轮结束后才调用，不能用重复初始化探测设备是否忙。
+没有启用步骤时，返回 `EventName=ProjectARVRInit`、`Code=-2`、`Msg="No enabled ARVR flow"`。成功步骤回写或结果收尾、结果输出等待后台空间清理或保存报表期间，初始化返回 `Code=-4`、`Msg="ARVR test is busy"`，保留原会话。客户端应等上一轮结束后再发送初始化请求。
 
 ### 普通切图：SwitchPG 与 SwitchPGCompleted
 
@@ -96,7 +96,7 @@ RunAll 自行初始化本轮会话，不需要先发 `ProjectARVRInit`，执行�
 
 项目窗口存在时不返回单独 ACK。服务端从当前执行位置之后查找下一条启用步骤，按配置切图/预处理并启动 Flow，处理结果后推送下一条 `SwitchPG` 或最终 `ProjectARVRResult`。后续 `SwitchPG` 的 `MsgID` 为空，`Msg` 一般为 `Switch PG`，允许失败后继续时可能带上一流程失败说明。
 
-确认请求没有用于定位步骤的索引校验，也不核验请求 SN 是否等于当前会话 SN。执行中重复确认通常只记录日志并忽略；延迟到下一空闲阶段的重复确认可能推进下一步，因此客户端必须管理自己的确认状态。项目窗口不存在时返回 `Code=-3`、`Msg="ProjectARVR Wont Open"`。
+确认请求没有用于定位步骤的索引校验，也不核验请求 SN 是否等于当前会话 SN。成功步骤回写或收尾期间收到的确认会被忽略。延迟到下一空闲阶段的重复确认可能推进下一步，因此客户端必须管理自己的确认状态。项目窗口不存在时返回 `Code=-3`、`Msg="ProjectARVR Wont Open"`。
 
 ### 一键运行：RunAll
 
