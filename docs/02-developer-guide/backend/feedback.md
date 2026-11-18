@@ -93,7 +93,7 @@ pwsh -NoProfile -File .\Scripts\download_feedback.ps1 -List -AllowInsecureHttp
 
 ## 其他电脑下载
 
-在新电脑拉取仓库并安装 PowerShell 7 后，直接运行下载脚本；固定账号跟随仓库中的 `Web/Backend/config.json` 分发，无需登录或配置环境变量。此账号目前是服务端 `upload_auth` 管理账号，Basic 认证不区分使用它的电脑，也不提供反馈只读权限隔离；附件请求仍按账号、反馈编号、附件名、IP 和时间写入 SQLite 审计。服务端更改 `upload_auth` 后，维护电脑也需同步配置。已有的只读 API key 仍可显式指定 `-ApiKeyEnvironmentVariable COLORVISION_FEEDBACK_API_KEY` 使用，旧的 `Scripts/configure_feedback.ps1` 仅用于这条兼容路径。
+在新电脑拉取仓库并安装 PowerShell 7 后，直接运行下载脚本。固定账号跟随仓库中的 `Web/Backend/config.json` 分发，无需登录或配置环境变量。工具输出和报告不得显示凭据。此账号目前是服务端 `upload_auth` 管理账号，Basic 认证不区分使用它的电脑，也不提供反馈只读权限隔离。附件请求仍按账号、反馈编号、附件名、IP 和时间写入 SQLite 审计。服务端更改 `upload_auth` 后，维护电脑也需同步配置。已有的只读 API key 仍可显式指定 `-ApiKeyEnvironmentVariable COLORVISION_FEEDBACK_API_KEY` 使用，旧的 `Scripts/configure_feedback.ps1` 仅用于这条兼容路径。
 
 ```powershell
 # 远程获取最新反馈；现有服务地址使用 HTTP，需要显式允许

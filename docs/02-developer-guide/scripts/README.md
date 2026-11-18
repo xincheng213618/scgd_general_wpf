@@ -16,7 +16,7 @@ related: ["delivery.index","delivery.testing","delivery.backend","delivery.updat
 
 用户明确指定产物时按指定范围发布。直接说“发布”时，按本次交付改动涉及的产物选择入口。只改插件或客户项目时，只发布受影响的独立包。只改主程序或随主程序交付的共享代码时，只发布主程序。两者都改时，分别走各自的发布入口。
 
-主程序发布以当前 Git 分支、整个当前工作区为源码来源，覆盖其中全部待发布主程序改动，包括其他对话已保存到同一工作区的未提交修改；构建和发布说明不只限于当前对话。只有用户明确要求更小范围时，才按指定范围处理。发布使用现有分支和工作区，不另建或切换分支，也不创建隔离发布工作区。主程序发布不自动发布插件或客户项目的独立更新源。具体执行边界以根 `AGENTS.md` 为准。
+主程序发布使用当前 Git 分支和整个工作区，构建和发布说明涵盖其他对话已保存到同一工作区的待发布主程序改动。主程序和独立插件、客户项目各自发布。只有用户明确要求时才收窄范围、切换或创建分支、创建发布工作区，或抽取当前对话的改动单独发布。
 
 | 场景 | 使用入口 | 说明 |
 | --- | --- | --- |
@@ -36,11 +36,21 @@ related: ["delivery.index","delivery.testing","delivery.backend","delivery.updat
 
 以下命令会签名、打包并修改远端发布状态，只在用户明确要求发布时执行；文档或代码审阅不授予发布权限。
 
-主程序、ServiceHost 和 OperationsWatchdog 共用仓库根目录 `Directory.Build.props` 中的 `VersionPrefix`。每个增量包都必须携带完整的 `ServiceHost/` 和 `OperationsWatchdog/` 运行时：前者确保 ZIP 部署机器可从空的 ProgramData 目录完成首次安装，后者确保完整安装器漏项或旧安装损坏后也能由下一次增量更新自修复。发布前提升这个版本号，在根 `CHANGELOG.md` 顶部新增本次版本的一至三条用户可感知变化，并保留同一三段版本系列的全部版本记录，例如所有 `1.4.15.*` 的更新累计放在一起。切换到 `1.4.16.*` 时，将整个 `1.4.15.*` 系列合并到 `docs/_history/CHANGELOG.md`，保留既有历史并避免重复版本章节；根日志从新系列开始，只累计 `1.4.16.*` 的记录。条数限制只针对本次新增内容，不限制累计历史；已有记录缺失时从 Git 历史补回，不为没有记录的版本编造条目。然后运行：
+对于主程序或仓库级的「发布」「打包发布」「直接打包」「快速发布」，按以下快速发布流程操作。
+
+1. 更新根目录 `Directory.Build.props` 的 `VersionPrefix`。用户指定版本时使用指定值，否则将本地现有版本的最后一段加一。版本从本地读取，无需先查远端。
+2. 在根 `CHANGELOG.md` 顶部新增本次版本的一至三条用户可感知变化。发布说明省略测试、文档、文件名、类名、重构过程及逐提交记录。同一三段版本系列的条目全部保留。切换系列时，将旧系列完整合并到 `docs/_history/CHANGELOG.md`，保留已有历史并避免重复，根日志从新系列开始。同系列发布只改根日志。有记录缺失时从 Git 历史补回现有条目，缺乏记录的版本无需补写。
+3. 从原工作区执行一次 `Scripts\release.bat` 并报告结果。由脚本完成构建、安装器校验、上传和并行验收。准备工作限于版本和日志，沿用脚本提供的验收结果。
 
 ```powershell
 Scripts\release.bat
 ```
+
+快速发布省略单独测试、预构建、知识检索或 impact 分析、深度 diff 或历史审查、重复远端与下载校验。仅在补齐缺失的版本日志时读取对应历史。脚本失败时只检查失败阶段，按证据做一次修正并重跑一次。扩大排查范围由用户决定。
+
+只有显式要求「完整发布」才在快速验收之外增加独立测试、深入的改动范围审查、完整制品下载和哈希校验，以及远端分支与标签同步。创建提交或标签、推送均按用户明确要求执行。发布后如需提交并推送，将 `Directory.Build.props` 和根 `CHANGELOG.md` 一起提交，先同步再推送，随后核对远端分支。公开日志只记录用户可感知变化。
+
+主程序、ServiceHost 和 OperationsWatchdog 共用根目录 `Directory.Build.props` 的 `VersionPrefix`。增量包携带完整的 `ServiceHost/` 和 `OperationsWatchdog/`，支持 ZIP 部署后的首次安装，以及下一次增量更新对旧安装的修复。
 
 `docs/_history/CHANGELOG.md` 保存既有旧版记录和已经结束的版本系列，仅供仓库内回顾。只在三段版本系列切换时合并上一系列，同系列的日常发布不修改历史文件。历史文件不作为主程序 changelog 上传；下划线目录会从公开文档构建中排除。
 
@@ -50,7 +60,7 @@ OpenCV 原生运行库遵循普通内容差分：与所选历史基准内容相�
 
 主程序发布不携带输出根目录的 `CHANGELOG.md`：`build_update.py` 在全量 ZIP 和增量 CVX 中排除该路径，`generate_shared_files.py` 也忽略该文件，避免旧输出副本重新进入共享清单。运行时 `Config/` 和旧版窗口尺寸诊断可能留下的根目录 `window-resize-diagnostics.mode`、`window-resize-traces/` 属于本机产物，不进入主程序全量 ZIP、增量 CVX 或插件共享清单。外部 `ColorVision.aip` 不应包含这些文件；仓库根目录的变更日志原稿继续由 `build.py` 独立上传，插件自己的日志照常随插件包交付。这些规则不清理历史包或已有安装目录。
 
-发布成功时，控制台应依次看到主包上传、`CHANGELOG.md` 上传、`LATEST_RELEASE` 更新和增量包上传成功。最后 `verify_release.py` 会并行验证安装包 Authenticode 签名、远端 latest/changelog、安装包与更新包 Range 下载大小，并报告 Git 状态；只有这一阶段也返回零，wrapper 才算成功。后端 HTTP 接口是唯一发布通道；任一元数据上传失败都会阻止版本号更新。本地安装包、全量 zip、增量包是正常构建产物，不代表“本地-only 发布”。其中桌面 `History` 目录用于生成增量差分，不是额外分发渠道；基线 ZIP 解压到系统临时目录并在打包结束后自动清理。客户端检查、缓存和元数据重试规则见[检查更新](../deployment/auto-update.md#检查复用与元数据新鲜度)。发布失败时先修复失败原因，再重新走 `release.bat`。
+发布成功时，控制台应依次看到主包上传、`CHANGELOG.md` 上传、`LATEST_RELEASE` 更新和增量包上传成功。最后 `verify_release.py` 会并行验证安装包 Authenticode 签名、远端 latest/changelog、安装包与更新包 Range 下载大小，并报告 Git 状态。脚本全部阶段返回零才算发布成功。后端 HTTP 接口是唯一发布通道。主包或其元数据上传失败会阻止版本号更新。本地安装包、全量 zip 和增量包是构建产物。桌面 `History` 目录用于生成增量差分，基线 ZIP 解压到系统临时目录并在打包结束后自动清理。客户端检查、缓存和元数据重试规则见[检查更新](../deployment/auto-update.md#检查复用与元数据新鲜度)。
 
 提交 `LATEST_RELEASE` 前还必须上传该宿主版本的 PluginKit 共享文件清单，目的路径为 `Tool/PluginKit/shared-files/<宿主版本>/net10.0-windows-x64.json`。清单失败会阻止更新版本标记。文件复用现有公开 `/download/Tool/...` 下载通道，不需要启动新服务；客户端按精确目标版本获取并缓存，见 [PluginKit SDK 打包器](../plugin-development/sdk-packaging.md#远端版本化共享清单)。这不是每次重建 `cvplugin.exe`：共享清单随宿主发布，打包器逻辑可以独立升级。
 
@@ -109,7 +119,7 @@ $env:COLORVISION_UPLOAD_USE_SYSTEM_PROXY = "1"
 | `verify_release.py` | wrapper 的签名、远端元数据、下载大小和 Git 状态验收 |
 | `backend_client.py` | 发布脚本共用的认证、预检、重试、流式上传和路径编码 |
 
-如果某个脚本不在 `Scripts/` 目录里，就不要在文档里继续引用它。改正式发布路径时先运行相关脚本测试；测试环境发布演练也需要明确的远端写入授权。快速发布/完整发布的范围以根 `AGENTS.md` 为准，不自行添加额外发布轮次。
+修改正式发布路径时先运行相关脚本测试。测试环境发布演练也需要明确的远端写入授权。验收范围按本页「正式发布」执行。
 
 ## 常见失败
 
@@ -121,4 +131,4 @@ $env:COLORVISION_UPLOAD_USE_SYSTEM_PROXY = "1"
 | 插件/项目包找不到项目 | 名称是否等于 `Plugins/<Name>/<Name>.csproj` 或 `Projects/<Name>/<Name>.csproj` |
 | 上传 401 或连接失败 | 环境变量、后端是否运行、URL 是否正确、代理是否需要启用 |
 | Spectrum 发布保留了本地 `.cvxp` | 检查签名证书、独立发布接口响应、两个 latest 以及 Range 下载的大小/SHA-256 验证输出；修复后重新完整发布 |
-| 构建失败 | 根据 wrapper 报告定位 MSBuild、Advanced Installer 或外部依赖；快速发布只处理失败阶段，按根 `AGENTS.md` 执行，不额外增加预构建 |
+| 构建失败 | 根据 wrapper 报告定位 MSBuild、Advanced Installer 或外部依赖。快速发布只处理失败阶段 |
