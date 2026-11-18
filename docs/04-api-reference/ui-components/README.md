@@ -27,12 +27,4 @@ related: ["ui.control-catalog","ui.discovery","ui.property-grid","ui.package-bou
 
 ## 按模块定位
 
-各类库的职责和修改归属统一见[UI 包边界](./component-handbook.md)；按源码目录查主题使用[生成的 UI 知识地图](../../knowledge/code/source-UI.md)。本页的问答表负责问题分流，不另维护一份模块清单。
-
-## 依赖约束
-
-`Common`、`Themes` 等底层库不应反向依赖高层窗口或客户项目。具体依赖以目标 `.csproj` 为准；模块说明不是允许跨层引用的白名单。新问题无法映射到现有主题时，先检索精确符号及调用方，不要从页面缺失推断功能不存在。
-
-## 验证入口与缺口
-
-先核对模块实现及消费方，需要现场验证时查看所属专题。
+按目录查询[UI 知识地图](../../knowledge/code/source-UI.md)。各库的职责与依赖方向见[UI 包边界](./component-handbook.md)。

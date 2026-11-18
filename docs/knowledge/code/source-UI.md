@@ -378,7 +378,7 @@ next: false
   设备视图已接入 RAW/CIE 独立快照；记录有界调度、预览模式和更低复制成本等后续优化及验收缺口。
 
 - [图像设置：作用范围、保存和扩展](../../02-developer-guide/core-concepts/image-editor-settings-plan.md) — `ui.image-editor-settings-plan`
-  图像设置的作用范围、显式默认值与标定档案保存、当前视图隔离和扩展协议；主设置独立入口与旧接口清理仍待实施。
+  图像设置的作用范围、默认值与标定档案保存、视图隔离和扩展入口。
 
 ## UI/ColorVision.ImageTools {#module-55492f436f6c6f72566973696f6e2e496d616765546f6f6c73}
 
@@ -674,7 +674,7 @@ next: false
   UI类库的职责、依赖与目标框架/版本兼容；包版本可独立于主程序，ScottPlot与SkiaSharp保持已验证的资产组合。
 
 - [图像设置：作用范围、保存和扩展](../../02-developer-guide/core-concepts/image-editor-settings-plan.md) — `ui.image-editor-settings-plan`
-  图像设置的作用范围、显式默认值与标定档案保存、当前视图隔离和扩展协议；主设置独立入口与旧接口清理仍待实施。
+  图像设置的作用范围、默认值与标定档案保存、视图隔离和扩展入口。
 
 ## UI/ColorVision.UI.Desktop {#module-55492f436f6c6f72566973696f6e2e55492e4465736b746f70}
 

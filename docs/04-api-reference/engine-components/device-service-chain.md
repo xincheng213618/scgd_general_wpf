@@ -74,19 +74,9 @@ related: ["engine.index","platform.runtime","operations.device-configuration","e
 
 公共 `CopilotDeviceHealthContextSnapshot` 默认新行的 `HeartbeatObservationKnown=false`；显式初始化 `IsAlive=true` 或 `false` 沿用旧的已观测语义，显式 `HeartbeatObservationKnown=false` 则优先，且不依赖初始化或 JSON 属性顺序。Factory 先对全部设备计算已知在线、已知离线及 `UnknownDevices`，再限制最多60条展示行；只有未知数大于0时才增加 Unknown 计数，纯已知场景保留原文本。这个自动上下文的观测投影不改变正式查询只读取缓存状态的范围。
 
-正式只读查询使用单个共享工具 `InspectDeviceServices`（Agent）／`inspect_device_services`（本机 MCP），提供已有运行对象的目录分页或精确对象 focus。旧自动上下文的单设备意图推断、当前选择回退及60条展示上限保留；正式工具不按名称、Code、资源 ID 或当前选择猜测对象。`CopilotDeviceServicesReader.CaptureCurrentAsync` 在排队前冻结已有 `ServiceManager` owner，UI 回调采集前后核对同一 Current、集合和成员并处理取消，首次查询也不能排队后改采另一宿主。App 默认来源直接委托这个异步入口，不创建管理器、不重载资源、不查配置或数据库、不创建详情／显示控件，也不主动探测、连接、重连或控制设备。
+`InspectDeviceServices`／`inspect_device_services` 通过 `CopilotDeviceServicesReader.CaptureCurrentAsync` 只读已加载的设备和可用的状态缓存。设备引用绑定当前对象和宿主，失效后须重新发现。插件对象仅提供资源信息，状态为 `unsupported`。缓存与心跳是独立证据，连通性和设备动作需现场核对。 [查询参数与输出](../../02-developer-guide/core-concepts/colorvision-mcp.md)
 
-省略 `device_ref` 时读取目录，`max_devices` 默认40、范围1–100；可选非空 opaque `cursor` 最多4,096字符，须原样续传，页大小可变。focus 须同时传目录返回的32位十六进制 `device_ref` 和 `source_instance_id`（作为 `expected_source_instance_id`），且不能带 cursor；目录请求也可用 expected 字段锁定宿主。两种 nonce 分别绑定对象实例和 manager 实例，不是资源编号、Code、名称或哈希，也不是跨重载的持久身份；本地负资源 ID 只作为 metadata 保留。对象移除或替换后旧引用不回退匹配其他对象，须重新发现；同一宿主内仍存在的精确对象可继续 focus。
-
-成功正文为最多18,000字符的完整 JSON，`source=current_loaded_device_registry`，包含 `source_instance_id`、成员对象集合的 `inventory_revision`、`observed_at_utc`、`total_devices`、`matched_devices`、`devices`、`has_more` 和 `next_cursor`。目录按 device ref 的 Ordinal 升序排列；游标绑定宿主、成员对象 revision 与实际交付末行，当前成员对象集合或宿主与游标绑定不符时需重新查询。名称、资源 metadata 和缓存状态变化不冻结在游标中。正文预算只缩减未交付尾行，不跳过记录；无法容纳单行时明确失败且不推进。
-
-每行交付 `device_ref`、旧上下文提示 `context_source_id`、资源 ID、Code、名称、服务类型及 `status_code`／`status`／`status_recognized`／`status_read_state`；上下文 source 不是正式对象引用。Code／名称各最多256字符并脱敏，资源 metadata 直接来自当前对象关联的 `SysResourceModel`。状态只读取经过审查的 Engine 内置精确类型及既有服务缓存，不调用插件的虚拟状态 getter；插件仅交付 metadata，状态为 `unsupported`。读取状态还区分 `cached`、`no_existing_service` 和 `read_failed`；原始状态码保留，recognized 仅表示能否识别枚举。工具不使用 `IsAlive` 或 `LastAliveTime` 推导在线／离线，采集时间也不是最后心跳或缓存更新时间。缓存状态不证明设备健康、就绪、动作完成或测量结果。
-
-`coverage` 说明 `returned_devices`、`text_truncated`／`text_redacted`、`output_limited`、本页 `unknown_status_devices` 和 `all_matched_devices_returned`；后者只比较本次响应与全部匹配对象，最后一个续页也不汇总前页。当前 manager 不存在时，首次未绑定查询返回 `NotFound`；已绑定来源失效、过期游标或排队期间 owner 改变为 `Validation`，有效来源内不存在的精确对象为 `NotFound`，不伪装成空目录。有来源且集合确为空时可成功返回空页，但不证明数据库无配置或没有未注册设备。目录读完也不证明设备整体健康。
-
-设备目录和心跳缓存只反映已取得的证据。连通性、缓存新鲜度和实际设备动作需现场核对。
-
-设备卡片或上下文菜单中的 **属性** 同样复用 `GetDeviceInfo()`，但由 `DevicePropertyWindow` 提供独立窗口外壳：窗口显示设备名称与 Code，并在带边框、圆角和内边距的内容区承载设备页。这个外壳只属于独立窗口；管理员服务配置和终端详情继续使用各自已有的面板边界，不把窗口留白重复写进设备控件。
+设备卡片的 **属性** 通过 `DevicePropertyWindow` 打开设备详情，并复用 `GetDeviceInfo()`。
 
 滤色轮和光谱仪的主界面设备卡片在连接/状态行提供与 SMU 相同的配置齿轮。展开的卡片在未连接、离线或未授权时仍显示入口，点击直接执行该设备的 `EditCommand`，进入原有配置窗口；可执行性仍由原命令的管理员权限判断控制，确认后的保存沿用原设备逻辑。滤色轮服务模式的 SN 可选择相机或光谱仪许可证，“编辑”进入共用许可证管理；服务仍需能查询并验证所选 SN 的有效许可证，本地独立连接不使用此授权。
 
@@ -96,7 +86,7 @@ related: ["engine.index","platform.runtime","operations.device-configuration","e
 
 本地手动控制、Flow 和本地光谱校零共享设备会话。命令串行执行，关闭和释放等待在途 SDK 调用返回。连接中取消时，SDK 返回的句柄会在发布连接状态前关闭。释放失败保留串口占用标记并拒绝重新连接，需重启程序处理。同一程序内同串口的其它滤色轮以及已知的服务连接受互斥保护，服务离线不等于已关闭；模式偏好修改后，已打开的连接仍由原后端关闭。其它进程和相机直接占用串口不在该本地门禁内，连接失败应核对现场服务占用。光谱校零继续使用原占用及孔位确认机制，并等待本地 SDK 完成后才释放占用，不套用 MQTT 的回执超时。实现见 `Engine/ColorVision.Engine/Services/Devices/CfwPort/Local/`。现场应核对 6/12 孔滤轮、接线和实际到位。
 
-内置设备卡片标题与 Flow 设备选择器的属性入口统一使用主题 `ButtonProperty` 样式：24 DIP 点击区域、单色信息图标和属性工具提示。按钮不显示边框或默认焦点虚线框，悬停与键盘焦点通过图标主题强调色反馈。图标随深浅主题更新，只表示打开属性窗口，不承担在线状态显示；不叠加常亮的绿色状态灯。它仍绑定原设备的 `PropertyCommand`，与相邻的置顶按钮各自独立。设备与工作流程内容区未选中时使用 `CV.Border.Weak` 的低对比度主题描边，选中时保留深浅主题各自的紫色高亮。
+设备卡片与 Flow 设备选择器的属性按钮绑定 `PropertyCommand`，使用 `ButtonProperty` 主题样式。
 
 `GenDeviceDisplayControl()` 沿当前类型树生成主显示区；`GenControl(collection)` 使用指定设备集合。两者都先加入共享 `DisplayFlow`，只有设备 `GetDisplayControl()` 返回 `IDisPlayControl` 才追加该页，最后通过 `DisPlayManager.ReplaceControls` 替换显示集合。
 

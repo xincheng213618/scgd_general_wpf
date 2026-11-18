@@ -75,9 +75,7 @@ SystemMonitor 提供系统资源信息、应用运行时长和可选状态栏项
 
 `SystemMonitors.cs` 持有配置、数据采样和清理；`SystemMonitorControl.xaml(.cs)` 负责设置页/菜单窗口与 Loaded/Unloaded；`SystemMonitorIStatusBarProvider.cs` 负责状态栏元数据。监控和配置类型位于 `ColorVision.UI.Configs` 命名空间。
 
-现场核对实际 WPF 窗口事件、性能计数器、定时器释放、磁盘或网卡异常及缓存删除。
-
-环境验收应分别确认实际入口、采样来源、状态栏增删和关闭详情后的采样条件。清理属于另行授权的文件删除，不能为验证文档执行；部分删除结果应按上节解释。
+现场核对详情控件装卸载、状态栏开关和本机计数器。缓存清理会删除文件，验证前须明确清理目标。
 
 ## 本地构建与测试
 

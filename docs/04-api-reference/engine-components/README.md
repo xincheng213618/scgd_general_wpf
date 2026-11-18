@@ -39,11 +39,3 @@ related: ["engine.host", "engine.devices", "engine.mqtt", "engine.rc-registratio
 ## 不要合并的边界
 
 Engine 的历史 `IViewResult`/handler、统一算法的中立 Result/overlay、客户项目的判定与导出是不同契约。前两者的汇合位置见结果链；客户规则留在 `Projects/`，不要因为最终都显示在 ImageEditor 就合并模型或注册机制。
-
-## 待实施设计
-
-本地相机内存预览仍是 `planned`，不表示当前设备已支持该发布器或生命周期；设计、生命周期与验收统一维护在[本地相机内存帧预览方案](../../02-developer-guide/engine-development/local-camera-memory-preview.md)。
-
-## 验证入口与缺口
-
-沿实际调用链确定验证范围。设备动作、数据库写入和外部发布另行授权，业务验收按对应设备和任务进行。 [测试与验证](../../02-developer-guide/testing.md)

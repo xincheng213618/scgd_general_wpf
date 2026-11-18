@@ -86,7 +86,7 @@ Reader 仅接受版本 1、2、3。`Bpp` 在通道计算中是**每通道采样�
 
 `OpenLocalCVFile` 返回载体而忽略内部 bool，调用方须检查尺寸和 Data。
 
-### 新的直接通道读取与旧切片
+### 直接通道读取与切片兼容
 
 `ReadCIEFileChannel` 使用**零基嵌入索引**，XYZ 的 X/Y/Z 分别是 0/1/2。它检查索引、正尺寸、Bpp 为正且能被 8 整除，使用 checked 长度运算；单通道必须不超过 `int.MaxValue`。声明 payload 至少要容纳 header 声明的全部通道且不得超过文件剩余量，但不要求两者恰好等长。
 
@@ -94,7 +94,7 @@ Reader 仅接受版本 1、2、3。`Bpp` 在通道计算中是**每通道采样�
 
 `ReadCVCIEXYZ` 使用同一通道读取逻辑，成功返回 0 并设置 Channels=1、类型 Raw。文件头失败返回 `-1`，单通道输入、无效索引或像素读取失败返回 `-2`。`OpenLocalFileChannel` 只实现 SRC 和 CIE XYZ，消费方须检查数据。
 
-[Conoscope](../plugins/standard-plugins/conoscope.md) 使用新的直接通道入口，并额外要求 32 位浮点、至少三通道、Data 恰好是一个平面；Y-first 和其后的 XYZ 就绪属于 Conoscope 文档生命周期，不属于 FileIO。
+[Conoscope](../plugins/standard-plugins/conoscope.md) 通过 `ReadCIEFileChannel` 读取 32 位浮点 CIE 的单个平面。加载顺序和文档状态由插件维护。
 
 ## RAW/CVCIE 动态参数与按需色度测量
 

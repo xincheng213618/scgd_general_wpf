@@ -3,7 +3,7 @@ knowledge_id: "copilot.configuration"
 knowledge_type: "topic"
 status: "current"
 summary: "ColorVision内置Copilot的设置草稿、配置保存与运行态发布、模型选择和联网诊断；保存失败可能已落盘，Local MCP测试核验会话握手与只读状态调用。"
-aliases: ["本机 Codex","Codex 桌面版接入","LocalCodex","有效配置诊断","/debug-config","/debug config","/context","/memory","Copilot配置","Copilot 设置 Save / Apply / Cancel","聊天配置","模型设置","Test Model","Apply to Chat","CopilotSettingsViewModel","CopilotConfig","推理模式保存失败","MCP连接测试","config.toml不生效"]
+aliases: ["本机 Codex","Codex 桌面版接入","LocalCodex","有效配置诊断","/debug-config","/debug config","/context","/memory","Copilot配置","Copilot 设置 Save / Apply / Cancel","聊天配置","模型设置","模型预设","CopilotVendorCatalog","Test Model","Apply to Chat","CopilotSettingsViewModel","CopilotConfig","推理模式保存失败","MCP连接测试","config.toml不生效"]
 code_paths: ["ColorVision/Copilot/Codex","ColorVision/Copilot/Config/CopilotEffectiveConfigDiagnostics.cs","ColorVision/Copilot/CopilotChatViewModel.DiagnosticsCommands.cs","ColorVision/Copilot/CopilotContextDiagnostics.cs","ColorVision/Copilot/CopilotProjectInstructionDiagnostics.cs","ColorVision/Copilot/Agent/CopilotProjectInstructionDiscoveryConfig.cs","ColorVision/Copilot/Agent/CopilotCodexExecPolicy.cs","ColorVision/Copilot/Config","ColorVision/Copilot/CopilotSettingsWindow.xaml","ColorVision/Copilot/CopilotSettingsWindow.xaml.cs","ColorVision/Copilot/CopilotSettingsViewModel.cs","ColorVision/Copilot/CopilotSettingsViewModel.ProfileManagement.cs","ColorVision/Copilot/CopilotSettingsViewModel.ExternalMcp.cs","ColorVision/Copilot/CopilotSettingsViewModel.Diagnostics.cs","ColorVision/Copilot/CopilotSettingsViewModel.McpOperations.cs","ColorVision/Copilot/CopilotSettingsViewModel.WebPageNetwork.cs","ColorVision/Copilot/CopilotChatViewModel.ControlAndSettings.cs","ColorVision/Copilot/CopilotChatViewModel.Composer.cs","ColorVision/Copilot/CopilotChatViewModel.ConfigPersistence.cs","ColorVision/Copilot/CopilotChatViewModel.ConversationCommands.cs","ColorVision/Copilot/CopilotChatViewModel.Conversations.cs","ColorVision/Copilot/CopilotChatViewModel.Lifecycle.cs","ColorVision/Copilot/State/CopilotConversationSession.cs","ColorVision/Copilot/State/CopilotChatStatePersistenceCoordinator.cs","ColorVision/Copilot/CopilotModelConnectionDiagnostic.cs","ColorVision/Copilot/CopilotMcpConnectionDiagnostic.cs","ColorVision/Copilot/Mcp/CopilotMcpRequestHandler.cs","UI/ColorVision.UI/ConfigHandler.cs"]
 related: ["copilot.runtime", "copilot.interactions", "copilot.lifecycle", "copilot.extensions", "copilot.mcp-server", "copilot.view-model", "ui.configuration"]
 ---
@@ -115,25 +115,9 @@ ColorVision 在分块读取 stdout 时检查单行协议消息上限：最多 `1
 
 ## 新建 Profile 的模型预设
 
-`CopilotVendorCatalog` 只为新建或编辑 Profile 提供当前模型名候选，不自动改写已经保存的模型、地址、凭据或默认 Profile。以下候选按 2026-10-12 的官方目录核对；这是常用聊天／工具模型列表，不包含各家的完整专用 API 目录。
+`CopilotVendorCatalog` 提供新建和编辑 Profile 的模型候选与各协议默认地址。未列出的模型可手工填写。目录更新保留已保存的模型、地址、凭据、默认 Profile 和“支持图片输入”设置。
 
-| 供应商与官方依据 | 模型候选 |
-| --- | --- |
-| [OpenAI](https://developers.openai.com/api/docs/guides/latest-model) | `gpt-6-astra`、`gpt-6.1-sol`、`gpt-6-sol`、`gpt-6-luna`、`gpt-5.6`、`gpt-5.6-sol`、`gpt-5.6-terra`、`gpt-5.6-luna` |
-| [DeepSeek](https://api-docs.deepseek.com/quick_start/pricing) | `deepseek-v4-pro`、`deepseek-flash` |
-| [Claude](https://platform.claude.com/docs/en/models/overview) | `claude-fable-5-1`、`claude-opus-5-5`、`claude-sonnet-5-5`、`claude-haiku-5-5`、`claude-haiku-4-5-20251001` |
-| [Grok / xAI](https://docs.x.ai/developers/models) | `grok-4.7`、`grok-4.6`、`grok-4.5`、`grok-4.3` |
-| [Gemini](https://ai.google.dev/gemini-api/docs/deprecations) | `gemini-3.1-pro-preview`、`gemini-3.8-flash`、`gemini-3.7-flash`、`gemini-3.6-flash`、`gemini-3.5-flash-lite` |
-| [GLM](https://docs.bigmodel.cn/cn/guide/start/model-overview) | `glm-5.3`、`glm-5.3-flash`、`glm-5.3-flashx`、`glm-5.2`、`glm-5-turbo`、`glm-4.7-flash`、`glm-4.5-air` |
-| [MiniMax](https://platform.minimax.cn/docs/api-reference/text-anthropic-api) | `MiniMax-M3`、`MiniMax-M2.7`、`MiniMax-M2.7-highspeed`、`MiniMax-M2.5`、`MiniMax-M2.5-highspeed` |
-| [MiMo](https://mimo.mi.com/docs/zh-CN/quick-start/summary/model) | `mimo-v2.6-pro`、`mimo-v2.6-flash` |
-| [SenseNova](https://platform.sensenova.cn/docs) | `sensenova-6.8-flash-lite` |
-
-Claude Mythos 5.1 需要通过官方组织验证，MiniMax-M3.1-Flash-Preview 暂限 M Plan／MiniMax Code，MiMo Pro Ultraspeed 属于定制服务；这些模型不进入通用预设，有权限的用户仍可手工填写模型与端点。MiniMax 新建连接使用 `https://api.minimax.cn/anthropic` 或 `https://api.minimax.cn/v1`；MiMo 对应 `https://api.xiaomimimo.com/anthropic` 或 `https://api.xiaomimimo.com/v1`。切换协议提供匹配的默认地址，不改写已有连接。
-
-DeepSeek 的 `deepseek-flash` 对应 V4.1 Flash，包含原生图像理解；官方已将旧 `deepseek-v4-flash` 和 `deepseek-v4-flash-vision-exp` 暂时路由到该模型，因此菜单只列正式名称。已有 Profile 的旧名称继续保留；目录更新也不自动开启图像输入，仍由 Profile 的“支持图片输入”声明和附件校验控制。详见 [DeepSeek 2026-09-10 更新](https://api-docs.deepseek.com/news/news260910/) 与[图像接口说明](https://api-docs.deepseek.com/guides/vision/)。
-
-目录移除已退役、已弃用或已被当前系列替代的旧候选，但兼容读取手工填写或既有保存值。Gemini `gemini-3.5-flash` 已弃用并由官方路由到 3.6 Flash；MiMo `mimo-v2.5-pro`／`mimo-v2.5` 按[下线公告](https://mimo.mi.com/docs/zh-CN/updates/deprecate)于北京时间 2026-10-14 18:00 转向 2.6 Pro／Flash，2026-10-21 10:00 起旧 ID 报错。ColorVision 不迁移这些保存值、不在模型报错时换用其它模型；用户需手工选择新模型。模型名出现在候选中不等于账号已获权限、端点兼容或模型可连接；仍应通过 Profile 的实际连接测试验证。
+能否连接取决于已选端点、模型和账号权限，使用 Profile 的连接测试核对。供应商停用已保存的模型时，在设置中手动选择可用模型。图像输入由 Profile 的能力声明和附件校验决定。
 
 普通聊天、Agent 工具阶段与最终回答阶段共用采样限制：官方 Claude Fable 5.1、Opus／Sonnet／Haiku 5.5 不发送非默认温度，Haiku 4.5 保留温度；MiMo 默认开启思考，因此仅显式关闭思考时发送温度。官方 OpenAI 推理模型使用现有 Responses 路径，避免 Chat Completions 对新模型工具调用的限制。Profile 中保存的温度不因这些发送规则而被改写。
 

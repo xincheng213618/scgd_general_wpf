@@ -3,7 +3,7 @@ knowledge_id: "projects.arvr-pro"
 knowledge_type: "reference"
 status: "current"
 summary: "ARVRPro 项目入口、Socket 自动化、输出与历史结果查询；流程组、实例 Recipe 和 Demura 各有对应操作主题。"
-aliases: ["现场数据库离线查看", "打开现场数据", "ArvrOfflineDataSource", "ARVR 历史原图删了还能看结果吗", "保存结果图会不会重复画标记", "ProjectARVRPro", "ResultImageFileCandidates", "SavedSourceImageFileName", "SavedResultImageFileName", "结果统计", "统计日期记忆", "CycleTimeStatisticsWindow", "ARVR 项目", "算法实证", "同图算法比对"]
+aliases: ["现场数据库离线查看", "打开现场数据", "打开资料文件夹", "ArvrOfflineDataSource", "ARVR 历史原图删了还能看结果吗", "保存结果图会不会重复画标记", "ProjectARVRPro", "ResultImageFileCandidates", "SavedSourceImageFileName", "SavedResultImageFileName", "结果统计", "平均单侧运行时间", "平均全批次运行时间", "统计日期记忆", "CycleTimeStatisticsWindow", "ARVR 项目", "算法实证", "同图算法比对"]
 code_paths: ["Projects/ProjectARVRPro/Offline/", "Projects/ProjectARVRPro/ARVRWindow.xaml", "Projects/ProjectARVRPro/TestResultViewWindow.xaml", "Projects/ProjectARVRPro/ThunderbirdSerialDebugWindow.xaml", "Projects/ProjectARVRPro/ARVRWindow.xaml.cs", "Projects/ProjectARVRPro/FlowRuntimeEstimateCache.cs", "Projects/ProjectARVRPro/FlowRunningNodeTracker.cs", "Projects/ProjectARVRPro/ResultImagePresentation.cs", "Projects/ProjectARVRPro/ProjectARVRReuslt.cs", "Projects/ProjectARVRPro/ViewResultManager.cs", "Projects/ProjectARVRPro/Services/SocketControl.cs", "Projects/ProjectARVRPro/Services/SwitchGroupSocket.cs", "Projects/ProjectARVRPro/Services/RunAllSocket.cs", "Projects/ProjectARVRPro/Flow/ExternalImageSwitchNode.cs", "Projects/ProjectARVRPro/CycleTimeStatisticsWindow.xaml", "Projects/ProjectARVRPro/CycleTimeStatisticsWindow.xaml.cs", "Projects/ProjectARVRPro/ResultStatisticsTheme.xaml", "Projects/ProjectARVRPro/ResultStatistics.cs", "Projects/ProjectARVRPro/ResultTimeline.cs", "Projects/ProjectARVRPro/ProjectARVRProConfig.cs", "Projects/ProjectARVRPro/AlgorithmEvidence", "UI/ColorVision.ImageEditor/Algorithms/Evidence"]
 related: ["projects.index","projects.arvr-pro-demo","projects.arvr-pro-protocol","projects.arvr-pro-processes","projects.arvr-pro-demura","projects.capabilities"]
 ---
@@ -121,25 +121,15 @@ related: ["projects.index","projects.arvr-pro-demo","projects.arvr-pro-protocol"
 
 ## Socket 自动化
 
-ARVRPro 通过 `ColorVision.SocketProtocol` 的 JSON 模式接入外部系统。常规节奏是 `ProjectARVRInit` 初始化，软件返回 `SwitchPG`，外部切图后发 `SwitchPGCompleted`，软件运行当前 Flow 和 `IProcess`，全部完成后返回 `ProjectARVRResult`。
-
-| EventName | 作用 |
-| --- | --- |
-| `ProjectARVRInit` | 初始化测试并返回第一步切图信息 |
-| `SwitchPGCompleted` | 外部确认切图完成，触发当前步骤 |
-| `SwitchGroup` | 切换当前流程组 |
-| `RunAll` | 一键执行当前组内启用步骤 |
-| `AOITestSwitchImageComplete` | AOI 切图完成信号，完成当前外部切图节点的等待 |
-
-详细请求与响应、索引约定、状态码、并发限制及 AOI 切图见 [TCP 通讯协议](./project-arvr-pro-protocol.md)，可运行的客户端示例见 [Integration Demo](./project-arvr-pro-integration-demo.md)。
+JSON 请求、切图确认、最终结果和并发边界见 [TCP 通讯协议](./project-arvr-pro-protocol.md)。可运行的客户端见 [Integration Demo](./project-arvr-pro-integration-demo.md)。
 
 ## 输出和兼容
 
 标准 CSV 为七列，文本按规则转义，数值用小数点。批量横向 CSV 用首条有指标的记录定列。`UseLegacyARVROutput` 影响 CSV 和 Socket `ProjectARVRResult.Data`，改字段前先确认客户格式。
 
-新版嵌套畸变结果按项目结果属性名输出，光学畸变字段为 `DistortionTestResult.OpticDistortion`，新生成的测试项 `Name` 也为 `OpticDistortion`。算法原始结果中的 `Optic_Distortion` 由 Engine 在解析入口映射，项目输出不沿用该原始字段名。读取历史项目结果时仍兼容 `Optic_Distortion`，重新序列化只输出 `OpticDistortion`；两个字段同时存在且标准字段非空时以标准字段为准。
+嵌套畸变结果的属性和测试项 `Name` 都是 `OpticDistortion`。Engine 映射算法原始字段 `Optic_Distortion`。`DistortionTestResult` 也可读取历史项目结果中的 `Optic_Distortion`，并优先采用非空的 `OpticDistortion`。
 
-W255 和键化亮色度 `LuminanceChromaticityTestResults[配置 Key]` 保留原有 `ColorUniformity`（所有 POI 两两之间的最大 Δu′v′），并在其后输出独立的 `ColorCenterRmsToD65`。该指标对各流程已应用色度修正的有效 POI 直接计算相对 D65 的等权 RMS Δu′v′，不匹配或读取 `PoiAnalysis` 中的均匀性结果，在模板均匀性和本地均匀性两种模式下都会计算。计算值再应用自身 Recipe 的 K/B 修正与 Min/Max 限值，默认 Min/Max 均为 `0`，表示不约束；设置非零限值后按对应上下限参与该流程 PASS/FAIL 判定。亮色度 Key 为 `White` 时，该指标同步到 W255 兼容结果。旧配置没有该字段时使用此默认值，已保存的限值保持原值；没有有效 u′v′ POI 时记录警告并保留默认测试项，不增加限值判定。公式、D65 常量和 POI 样本边界见 [CVCIE POI 结果数值](../engine-components/cvcie-results.md#色彩中心与-d65-rms)。
+W255 和 `LuminanceChromaticityTestResults[配置 Key]` 输出 `ColorUniformity` 和 `ColorCenterRmsToD65`。D65 指标对色度修正后的有效 POI 等权计算，独立于 `PoiAnalysis` 的均匀性结果，再应用本项 Recipe 的 K/B 和非零限值。上下限默认 `0`，表示不限。缺少有效 POI 时记录警告并保留默认测试项。Key 为 `White` 时同步到 W255 兼容结果。公式和样本边界见 [CVCIE POI 结果数值](../engine-components/cvcie-results.md#色彩中心与-d65-rms)。
 
 ## 历史结果图回退与持久化
 
@@ -179,17 +169,17 @@ AA 与旧版畸变调用可选 x64 `CV_algorithm.dll`，需配套 `opencv_world4
 
 ### 统计口径与阶段归因
 
-“统计设置”可启用 L/R 联合统计，新增“全批次记录”并扩展首页指标。开关由 `CycleTimeStatisticsWindowConfig` 单独持久化。
+在“统计设置”启用 L/R 联合统计后，首页显示全批次指标，并可打开“全批次记录”。本机统计的开关存于 `CycleTimeStatisticsWindowConfig`，离线窗口的开关只在当前窗口生效。
 
 首页可切换累计或每小时产量。小时产量按结束时间归入 `[整点, 下一整点)` 并包含 PASS 和 FAIL，平均 CT 只按实际完成批次计算。空小时产量为 0，CT 留空。“全部”仍按月汇总。切换统计图只重绘现有查询结果。
 
-在结果统计选择“打开现场数据”读取反馈 ZIP 或 `ProjectARVRPro.db`，也可选数据库所在目录或其 `Database` 上级目录。`ArvrOfflineDataSource` 用独立副本打开四个已知库，文件夹导入包含已提交 WAL。默认定位到资料最新日期，原资料和本机运行库不写入。副本可从缓存管理的“现场数据副本”清理，活跃进程和仍在读取的副本受保护。原 ZIP、源目录和聚合资料不在清理范围。
+在结果统计用“打开现场数据”选反馈 ZIP 或 `ProjectARVRPro.db`，用“打开资料文件夹”选择直接或通过 `Database` 子目录包含该库的文件夹。`ArvrOfflineDataSource` 从副本读取可用的配套库，数据库文件或目录导入包含已提交 WAL。离线窗口默认定位到资料最新日期。缓存管理的“现场数据副本”仅清理未被使用的副本，保留原 ZIP、源目录和聚合资料。
 
 同一设备的多次反馈可用 `Scripts/merge_feedback.py` 手动聚合，以扩展可查询的历史范围。需要 Python 3.11 或更新版本，仅使用标准库。从仓库根目录运行 `py .\Scripts\merge_feedback.py "D:\Feedback\<机器名>"` 只预览；需要生成或更新时手动加 `--apply`。`--feedback-id <原始 feedbackId>` 可重复使用以选择部分反馈。脚本核对 `SystemInfo.txt` / 反馈元数据中的机器名与设备目录名，以原始 `feedbackId` 识别来源，按 `serverReceivedAt`、旧 `createdAt`、目录时间依次确定快照顺序，不使用文件修改时间，也不使用反馈上传客户端的版本代替采集时主程序版本。接收反馈、启动程序和打开统计窗口均不会触发聚合。
 
 执行后在设备目录下建立 `_aggregate`：`Sources/<feedbackId>/` 保存各次日志、配置和导出说明；`versions/<版本>/Database/` 保存结果、节点、Socket 和 MQTT 的聚合只读资料；`aggregate.json` 指向最近完整发布的版本，记录原 ZIP 路径、SHA-256、接收时间、各库导出范围及去重计数。原反馈文件不改写。重复行保留原编号，先核对运行身份，再选用较晚接收的快照；同 SN 的不同执行不按 SN 合并，缺失的新字段不编造值。每行保留来源关联，原始正文可追溯到原包。编号对应的身份不同、字段类型不兼容、导出失败或已导入原包发生变化时停止，不自动重新编号、跨机器拼接或覆盖旧聚合。较早无结果库的反馈仍保存日志，但无法补出不存在的结果记录；各库时间覆盖仍须查看清单，不能把区间并集视为无缺口的连续数据。
 
-后续手动重复执行只导入新增反馈，未变化的已导入包不会再次计数。更新先在独立版本准备和校验数据库，再一次替换清单指针；失败留下的 `.pending_*` 仅供排查，不供统计窗口读取。旧版本保留，因此聚合占用额外磁盘。查看时用“打开资料文件夹”选择设备下的 `_aggregate`，读取器先固定一个已发布版本，再复制到独立离线目录；已打开的窗口不随后续更新切换。原有“打开现场数据”也可直接选择该版本 `Database/ProjectARVRPro.db`。
+重复执行只导入尚未合并的反馈。更新先准备并校验独立版本，再替换清单指针。`.pending_*` 仅供排查，已发布版本会保留并占用磁盘。用“打开资料文件夹”选择 `_aggregate`，或用“打开现场数据”选定某个版本的 `Database/ProjectARVRPro.db`。窗口读取打开时选定的副本。
 
 离线窗口复用整轮结果、PG 明细、时间轴与导出。选中一轮后可打开“本轮相关消息”；Socket/MQTT 按本轮前后各 1 秒筛选候选消息，必须结合 SN、MsgID 和连接地址核对，不能仅凭时间邻近认定业务归属。PG 明细右键的执行分析先在同一份节点库按 `BatchId` 查找，再核对项目 SN 与 Flow 的“SN＋启动时间”，要求唯一运行标识；无匹配或多匹配明确提示，不回退到本机 MySQL。节点历史、消息正文和流程切换仍限定同一数据源；离线窗口隐藏清理操作，禁止批次 MySQL 查询及打开现场绝对图片路径。各库是独立导出快照，缺库/缺记录不表示现场没有执行；反馈不含原图，不能承诺查看图像。
 
@@ -203,7 +193,7 @@ AA 与旧版畸变调用可选 x64 `CV_algorithm.dll`，需配套 `opencv_world4
 
 全批次 CT 从 L 收到 Init 并创建记录，到 R 结果最终化，包含两侧 CT 和 L 完成到 R Init 的等待。全批次时间轴标出 L Init、L 完成、R Init、R 完成。联合视图仍保留单侧指标，趋势切换为全批次口径。
 
-首页的“平均单侧运行时间（不含 PG）”代替本小时和今日计数：先按每条最终化批次的 SN 与前后结果 ID 边界汇总关联流程的 `RunTime`，再在所选日/周/月/全部周期内按批次取平均。“平均全批次运行时间”同样先将每个完整 L/R 配对的左右流程运行时间相加，再按全批次取平均。运行时间仅包含流程实际执行，不包含 PG 应答、切图与准备、执行后处理或 L→R 等待，与墙钟 CT 分开显示；没有关联流程记录的单侧批次、任一侧缺少流程记录的全批次均不计入运行时间平均值，无可用样本时显示 `-`。
+首页的“平均单侧运行时间（不含 PG）”按每条最终化批次的 SN 与前后结果 ID 边界汇总关联流程的 `RunTime`，再按所选周期取平均。“平均全批次运行时间（不含 PG）”先合计每个完整 L/R 配对的左右流程运行时间，再按全批次取平均。运行时间仅包含流程实际执行，不包含 PG 应答、切图与准备、执行后处理或 L→R 等待。无关联流程记录的单侧批次或任一侧缺记录的全批次不计入平均值，无可用样本时显示 `-`。
 
 整组 CT 是 `ObjectiveTestResult.SessionStartTime` 到结果记录最终化的墙钟时间。统计界面中的“PG→执行结束”按每步 `SwitchPG` 发送到该步流程执行结束累计，内部包含 PG 应答、启动准备和流程执行；它与单独显示的绿色执行时间是包含关系，不能再次相加。整组 CT 减去这些 PG 周期后，才是执行结束后的结果处理、保存与无法归因空档。后台结果图导出可与后续流程重叠，也不能仅凭单张导出耗时推断其占用了同等 CT。
 
@@ -234,11 +224,11 @@ AA 与旧版畸变调用可选 x64 `CV_algorithm.dll`，需配套 `opencv_world4
 
 旧记录没有上述阶段字段时，时间轴只用 `CreateTime - RunTime` 推算流程执行段，并把剩余部分明确显示为“未归因间隔”；旧数据不能事后可靠拆分切图、预处理和结果保存。任何缺失、逆序或超出整组范围的阶段边界都不能被强行归类。
 
-- 软件每次重新启动后，三个页面默认“按天／今天”，筛选文本和结果条件回到初始状态。同一次软件运行中关闭、重新打开统计窗口，保留当前标签、周期、日期和筛选条件。
-- `ProjectARVRProConfig.ResultStatisticsWindowState` 仅作为运行内状态，标注 `[JsonIgnore]`；旧配置 JSON 中的同名字段不再恢复，关闭统计窗口也不会为查询条件写入配置。此规则只涉及查询条件，不会删除或截断历史结果数据。
+- 本机统计在程序启动后首次打开时默认“按天／今天”。同一次程序运行中关闭、重新打开窗口，保留当前标签、周期、日期和筛选条件。
+- 查询条件只保存在运行内的 `ProjectARVRProConfig.ResultStatisticsWindowState`（`[JsonIgnore]`）。历史结果保存在结果库。
 - 手动切换仍支持按天、按周、按月和全部。按天使用所选日期的 `00:00` 到次日 `00:00`，按周使用周一到下周一，按月使用月初到下月初，统一为包含起点、不含终点的区间；不是滚动 24 小时或最近 7 天。
 - “今天／本周／本月”返回当前周期并保留筛选，“全部”隐藏日期导航。“重置”清空筛选。SN 和流程名按字面子串匹配，`_`、`%` 作为普通字符。
-- 首页与批次记录按整组结束时间统计，流程查询按流程 `CreateTime` 统计，不能把跨午夜完成的整组记录误算到开始日。首页“今日产量”和“本小时产量”是所选查询范围中落入当前日期/小时的子集；查看不包含今天的历史范围时这两个值为零。
+- 首页与批次记录按整组结束时间统计，流程查询使用流程 `CreateTime`。跨午夜的整组记录归入完成日。
 
 ## 验收
 

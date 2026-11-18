@@ -41,7 +41,7 @@ related: ["ui.index","ui.framework","ui.settings","ui.wizards","ui.menus","ui.co
 | 反馈诊断 | `Feedback/`、`Feedback/Collectors/WindowsEventLogCollector`、`ColorVision.UI/LogImp/Collectors/ConfigurationSnapshotCollector` | 打包应用日志、系统信息、脱敏配置快照、Dump 和 Windows Application/System 警告或错误；可从反馈窗口清理旧的应用、更新、服务日志和 ColorVision Dump |
 | 诊断窗口 | `ViewDllVersionsWindow` | 查看已加载程序集版本、产品版本和路径 |
 
-应用与工具窗口使用与更新、恢复窗口一致的主题资源，顶部提供搜索、添加应用、添加快捷脚本和刷新入口；分类以可换行的标签展示，应用以图标与名称组成的紧凑卡片展示。双击启动、右键操作、分类过滤与权限过滤沿用原入口；深浅主题同时覆盖窗口背景、文字和选择状态。
+“应用与工具”支持搜索、分类筛选、添加自定义应用和快捷脚本。双击启动，右键显示可用操作。列表和启动命令均检查应用角色。
 
 “内部工具”提供“CVRAW 批量导出 TIFF”（`ColorVision/ToolPlugins/CvRawExport/`）。选择文件夹后点击“执行”，后台递归检索 `.cvraw`（扩展名不区分大小写，不跟随目录链接），将原始图像导出为同目录、同主文件名的 `.tif`；已有目标直接跳过，不覆盖、不重新编码。并发数可选 1～32，默认使用 CPU 逻辑处理器数的一半，最低 1、最高 4；大图像可降低并发以减少内存占用。保留位深、通道、像素值及既有 TIFF 图像参数，单文件失败后继续处理并列出文件和原因。界面显示成功、跳过、失败与总进度；取消或关窗会停止后续任务，等待正在进行的读取／编码返回，已完成文件保留。`Engine/ColorVision.Engine/Media/Export/CvRawBatchExporter.cs` 先写同目录临时 TIFF，完成后以不覆盖方式移入目标，避免中断残留被下次误认为已导出。
 
@@ -96,38 +96,15 @@ Engine 提供默认勾选的“MVS 日志”来源，沿用统一天数范围，
 
 “清理历史文件”先要求用户确认，再调用实现 `IFeedbackDiagnosticCleanupSource` 的诊断来源。应用和服务日志保留各活动目录中最新的文件，其他来源只返回点击清理前已经存在的历史文件；删除失败的占用或无权限文件会计入跳过数量。清理仅删除来源明确声明的文件，不删除目录、配置、数据库、反馈附件或已经打包的 ZIP；共享的 WER Dump 目录中也只匹配当前 ColorVision 进程命名的 `.dmp`。
 
-## 新增功能检查
-
-窗口能打开只证明入口可用，不等于[配置已持久化和发布](./configuration.md)、[安装替换成功](../../02-developer-guide/plugin-development/getting-started.md)或插件已加载。观察下载日志、目标路径和包版本是诊断；下载替换、安装更新、修改配置和系统状态需要相应授权，不因为“验证”而自动执行。
-
-| 要做什么 | 检查点 |
-| --- | --- |
-| 新增设置页 | 按[设置契约](./settings.md)检查发现缓存、搜索、绑定、页面生命周期与保存调用者 |
-| 新增向导步骤 | 按[向导契约](./wizards.md)检查排序、Refresh/Apply 副作用、initializer 时序与完成条件 |
-| 新增市场/下载能力 | 核对任务结果、目标文件及服务提供的完整性/版本校验；下载成功不等于宿主已加载插件，装载问题继续查 PluginLoader 与 manifest。WebView2、Markdown CSS、`aria2c.exe`、目录权限和错误提示分别验证 |
-| 新增第三方应用入口 | 路径、权限、图标、分组、右键入口和不存在时的提示都验证 |
-| 修改崩溃诊断 | 普通用户通过 `ColorVisionServiceHost` 写入/清除 HKLM；手动保存不提权；反馈包只收集大小和时间范围内的文件 |
-| 修改反馈文件清理 | 每个来源只枚举自己拥有的普通文件，保留活动日志并限制 Dump 的进程名前缀；验证去重、释放空间统计、占用/权限跳过和最小窗口布局 |
-
 ## 发布验收
 
-| 验收项 | 要查什么 |
-| --- | --- |
-| 目标框架 | `ColorVision.UI.Desktop.csproj` 的 `net10.0-windows7.0`、`OutputType=WinExe` |
-| 包内 README | `PackageReadmeFile`、包根目录 |
-| 项目依赖 | `ColorVision.UI`、`ColorVision.Database` 等基础壳层依赖 |
-| WebView/Markdown | `Microsoft.Web.WebView2`、`Markdig.Signed`、`Assets/css/github-markdown.css` |
-| 下载工具 | `Assets/Tool/aria2c.exe` 能进入输出目录并可启动 |
-| 设置窗口 | 设置分组、搜索、懒加载 View、保存和重启恢复正常 |
-| 向导窗口 | `IWizardStep` 能发现，排序和完成状态正常 |
-| 诊断窗口 | 能列出程序集版本、文件版本、产品版本和路径 |
-| 崩溃诊断 | 设置页可发现；Mini/Full/Custom 保存成功；旧 `EventVWR` 插件即使残留也不会再加载 |
+检查 `ColorVision.UI.Desktop.csproj` 的目标框架与包内 README、WebView2/Markdown 依赖，以及 `Assets/css/github-markdown.css`、`Assets/Tool/aria2c.exe` 的输出路径。共用流程见[UI DLL 发布](./publishing.md)。
 
 ## 边界
 
 - 本项目的 `App.xaml.cs` 为空实现，`App.xaml` 未设置 `StartupUri`；`MainWindow.xaml` 仅有空 `Grid`，构造器只调用 `InitializeComponent()`。声明 `WinExe` 不代表包含完整产品启动、单实例、首次向导或 AvalonDock 主窗口；真正的[宿主启动链](../../03-architecture/overview/runtime.md)在 `ColorVision/`。
-- Windows 事件查看器直接由“第三方应用”启动 `eventvwr.msc`。
 - 普通用户模式下，写入或清除 `HKLM\SOFTWARE\Microsoft\Windows\Windows Error Reporting\LocalDumps` 由 `ColorVisionServiceHost` 执行；管理员模式可直接写入，手动保存 Dump 不修改系统配置。
+- `PluginLoader` 跳过残留的 `EventVWR` 插件。
 - 特权服务的 `registry-set-values` / `registry-delete-key` 是通用 HKLM 写入接口，不限制到 WER 路径，并支持显式选择 32/64 位注册表视图；所有调用仍须通过调用方身份校验、单次 Broker Ticket，并写入不含值数据的审计日志。
 - 这里是窗口和管理工具集合，不是所有菜单、插件或配置运行时的唯一中心。
 
@@ -144,6 +121,5 @@ Engine 提供默认勾选的“MVS 日志”来源，沿用统一天数范围，
 | 崩溃与反馈诊断 | `Diagnostics/`、`Feedback/`、`ColorVision.Common/NativeMethods/DumpHelper.cs` |
 
 ## 验证入口与缺口
-
 
 实际 P2P、代理环境、大文件吞吐量或窗口交互应在目标环境验收。外部联网下载、HKLM 写入、DNS 修改和反馈上传需要明确授权。

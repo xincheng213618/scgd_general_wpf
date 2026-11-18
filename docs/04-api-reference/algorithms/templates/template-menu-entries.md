@@ -19,6 +19,7 @@ related: ["algorithms.index","algorithms.template-management","ui.discovery","ui
 | 要做的事 | 操作 |
 | --- | --- |
 | 管理 POI 或流程模板 | 打开 **模板 → POI模板** 或 **模板 → 流程**，在模板窗口选择条目 |
+| 管理通用传感器模板 | 打开 **模板 → 传感器模板**。配置和兼容规则见[传感器专题](../../engine-components/generic-sensor.md) |
 | 编辑当前手动算法使用的模板 | 进入算法设备的手动面板，选择算法及模板，再使用该模板旁的编辑命令 |
 | 按已知名称找模板 | 默认按 **Ctrl+Shift+P** 打开[应用搜索](../../ui-components/search.md)，输入模板名称并执行匹配项；自定义快捷键以当前配置为准 |
 
@@ -47,7 +48,7 @@ related: ["algorithms.index","algorithms.template-management","ui.discovery","ui
 
 `DisplayAlgorithmManager` 查找带 `DisplayAlgorithmAttribute` 的 `IDisplayAlgorithm` 实现；`DisplayAlgorithmControl` 根据算法 `Configuration` 生成界面，执行按钮调用 `Execute()`；请求后的结果处理见[结果链](../../engine-components/result-handoff-chain.md)。
 
-设备面板直接列出全部算法并恢复上次选择，算法下拉框固定宽度靠左，“计算”在同排右侧，中间留白；按钮随当前算法切换。图像和主模板行省略左侧标签，输入区域保持原大小并靠左排列，主模板下拉框与编辑齿轮继续保留；附加的关注点等模板保留各自名称、布局和编辑入口，CIE 等其他文件行也保留标签。独立调试窗口在配置上方保留自己的计算按钮。
+设备面板恢复上次选中的算法。选择图像和模板后点击 **计算**。主模板旁的齿轮打开模板编辑器，附加模板各有编辑入口。
 
 `DisplayAlgorithmTemplateSelection` 保存模板与条目来源，提供 `SelectedIndex`、`SelectedValue`、`SelectedName`、`IsSelectionValid`、`TryGetValue<T>`。它的 `EditCommand` 将 `SelectedIndex + editorIndexOffset` 传给 `Template.CreateManagerWindow`；主 POI 和流程进入专用浏览窗口，其他模板仍使用 `TemplateEditorWindow`；空项或特殊条目来源需检查索引偏移，不能照搬另一个算法的选中索引。
 

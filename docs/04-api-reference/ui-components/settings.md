@@ -106,5 +106,3 @@ related: ["ui.desktop", "ui.configuration", "ui.property-grid", "ui.discovery", 
 上表省略前缀的 `Settings/` 路径均相对于 `UI/ColorVision.UI.Desktop/`。
 
 在获授权的隔离环境核对生产 provider 发现、关窗保存、配置重载重新绑定和更新安装。
-
-应用委托及键位数据是隔离替身，不调用生产配置或业务操作，具体覆盖与 Win32 验证边界见[快捷键契约](./hotkeys.md)。

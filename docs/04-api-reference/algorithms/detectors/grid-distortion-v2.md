@@ -34,13 +34,13 @@ V2 用一次点阵定位得到完整点位，再由 `GridDistortionAnalysis.Calc
 
 “搜索区域关注点”可选择寻找发光区写入的 POI 模板，每次执行读取数据库最新内容，优先于固定“搜索区域”；两者属于同一配置组，选中关注点后隐藏手动区域，清空后恢复显示且保留原矩形值。结果目录支持文件夹选择器。支持单个中心矩形 Rect、左上角矩形 LTRect、按 LT/RT/RB/LB 保存的四角点外接矩形（宽高包含两端像素），不做透视裁正。模板不存在、形状无效或区域越界时停止，不回退全图。结果参数记录模板名和有效搜索矩形。模板没有帧身份，需让前序定位成功后串行执行，并行流程使用独立模板。
 
-节点自动输出 TV、九点及有效的相对光学估计，完整分析保存全部口径，无需配置输出选择。`TV_distortion` 和 `LocalGridDistortionMetrics.TV` 固定使用标准 TV，`Point9_distortion` 和 `LocalGridDistortionMetrics.Point9` 固定使用对边均值九点，沿用原默认口径供后续 ARVR 读取和判定。
+`TV_distortion` 和 `LocalGridDistortionMetrics.TV` 使用标准 TV，`Point9_distortion` 和 `LocalGridDistortionMetrics.Point9` 使用对边均值九点。完整分析保留全部口径。
 
-流程执行会写入既有结果数据库和节点结果目录，需要已有流程批次及数据库连接；ImageView 单次分析不要求数据库。成功记录的类型为 `Distortion`（9）、版本为 `2.0`，一条 `DetailCommon` 指向唯一结果 JSON 文件。默认把对边均值九点的六项数值写入既有 `Point9_distortion` 字段名，`TV_distortion`、`Point9_distortion`、`Optic_Distortion` 保持 `Distortion2View` 与 ProjectARVRPro 消费的 JSON 结构；兼容的是读取格式，不代表沿用旧 P9 公式或旧梯形轴定义。数值已经是百分数，不再乘 100。
+流程执行需要有效批次和数据库连接。成功记录的类型为 `Distortion`（9）、版本为 `2.0`，`DetailCommon` 指向结果 JSON。`Distortion2View` 与 ProjectARVRPro 读取 `TV_distortion`、`Point9_distortion`、`Optic_Distortion`，数值单位为百分数。ImageView 单次分析不要求数据库。
 
 主程序历史结果标注 P 编号和原图坐标，完整有序点阵显示行列连线及四角参考框；较大点阵需保存的行列元数据，不猜测旧结果布局。侧栏先列主要指标，再保留完整原始 JSON；仅对明确声明百分数的结果标 `%`，不改变历史数值。等待原图加载后才画叠图，切换结果时丢弃迟到绘制；非法或越界点不画标记，也不拼接残缺网格。
 
-全部分析同时保存在 `LocalGridDistortionAnalysis`、结果文件和主记录参数中。节点共用一次定位和分析，自动输出 TV、九点以及通过残差校验的相对光学估计；`Optic_Distortion` 仍标明是未标定估计，并省略含义未确认的 `t`。光学模型无效时该字段为 null，CSV 留空，不补零。旧节点配置可继续加载，其中的光学输出开关和 `TvFormula` / `Point9Formula` 选择均忽略，重新保存后不再写入；原先选择半值 TV 或旧 P9 三跨度的节点统一使用上述默认口径，其他口径保留在完整分析中。原有客户配方、判定限和协议字段由 ProjectARVRPro 负责。
+`Optic_Distortion` 是未标定的相对光学估计。残差校验不通过时写 `null`，CSV 留空。旧配置中的光学输出开关和 `TvFormula`／`Point9Formula` 不参与计算，重新保存时省略。客户配方和判定由 ProjectARVRPro 维护。
 
 算法结构化拒绝和分析几何退化可保存失败主记录，不生成成功明细，也不替换上游有效主记录引用；事务提交后才更新当前结果引用。提交后的消息发布失败不撤销已保存结果。帧加载、方向/ROI 等前置错误及未包装的意外异常不保证产生失败主记录。`TotalTime` 记录定位调用耗时，不含派生分析、文件、数据库和通知。
 

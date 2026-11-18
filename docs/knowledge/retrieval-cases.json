@@ -71,6 +71,8 @@
     { "query": "/approve自动复核拒绝后会直接执行吗", "expected_any": ["copilot.tool-contracts"], "include_planned": false },
     { "query": "更新检查forceRefresh会跳过所有缓存吗", "expected_any": ["delivery.update"], "include_planned": false },
     { "query": "ProjectARVRPro.IntegrationDemo是cvxp项目包吗", "expected_any": ["projects.index","projects.arvr-pro-demo"], "include_planned": false },
+    {"query":"打开资料文件夹","expected_any":["projects.arvr-pro"],"include_planned":false},
+    {"query":"平均单侧运行时间","expected_any":["projects.arvr-pro"],"include_planned":false},
     { "query": "Copilot Test Model和doctor一样吗", "expected_any": ["copilot.configuration","copilot.interactions"], "include_planned": false },
     { "query": "调度暂停之后相机还会继续采集吗", "expected_any": ["ui.scheduler"], "include_planned": false },
     { "query": "重启后一次性定时任务会再运行吗", "expected_any": ["ui.scheduler"], "include_planned": false },

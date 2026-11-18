@@ -176,6 +176,7 @@ CLI 在非 debug 模式发现默认 session 密钥、默认或空上传凭证等
 | `/admin/deployments` | [部署历史](./management-records.md) |
 | `/admin/operations/hosts` | [终端运维](./operations-relay.md) |
 | `/admin/feedback` | [反馈收件箱](./feedback.md) |
+| `/admin/activation` | 配置管理员查看[许可证与设备名额](./activation.md) |
 | `/admin/users` / `/admin/login-security` | [账号管理与账号安全](./accounts.md) |
 | `/admin/permissions` | [角色权限](./authentication.md) |
 | `/admin/api-keys` | [API key](./authentication.md) |

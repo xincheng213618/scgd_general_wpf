@@ -38,7 +38,9 @@ CUDA 是另一条边界：Core 通过 `OpenCvCudaBinary` 无条件打包 DLL；�
 
 共享 OpenCV 属性表默认使用 C++17；`opencv_helper` 和 `opencv_cuda` 项目使用 C++20。`opencv_cuda` 通过 `OpenCVCudaLanguageStandard=c++20` 让 Debug / Release x64 的 CUDA 编译显式传入 `--std=c++20`，与 MSVC 的语言标准保持一致。当前依赖使用 MSVC v145 构建，目录为 `packages/opencv/x64/vc18/`。OpenCV 5 将 `calib3d` 拆为 `calib`、`geometry`、`stereo` 等模块，将 `features2d` 政名为 `features`，圆点/棋盘格检测归入 `objdetect`；几何函数须显式包含 `opencv2/geometry.hpp`，不能依赖 `opencv.hpp` 间接引入。
 
-第三方构建保留共享库、非自由算法、SSE3 基线及 SSE4.1 / SSE4.2 / AVX / FP16 / AVX2 / AVX512 分派、IPP、OpenCL、FFmpeg、DirectShow、Media Foundation 和原有图像格式支持。OpenCV 自身不启用 CUDA；第一方 `opencv_cuda.dll` 源码使用 CUDA 13.4。已取消 Pascal / Volta 编译目标，支持 Turing（GTX 16 / RTX 20）及更新 GPU；Release / Debug 均使用 v145 和受支持的 CUDA 13.4 host 编译器，保留公开 ABI 和静态 cudart。MSVC 14.52 标准库要求 CUDA 13.4 或更新版本，不能仅依据 CUDA 的 MSVC 主版本检查判断兼容性，见 [MSVC 标准库版本与 CUDA 要求](https://github.com/microsoft/STL/wiki/Macro-_MSVC_STL_UPDATE)。CUDA 13.x 的驱动兼容基线为 R580，PTX/JIT 还须匹配实际工具链；本地 CUDA 13.4.2 / 驱动 610.88 / RTX 5080 已通过合成图融合 GPU 验证及同源码新旧工具链的逐像素结果对照，现场设备仍需验证。驱动要求以 [NVIDIA CUDA 兼容说明](https://docs.nvidia.com/cuda/archive/13.4.2/cuda-toolkit-release-notes/index.html#cuda-driver) 为准。OpenCV 5 不再随源码提供 OpenEXR，构建时需通过 `CMAKE_PREFIX_PATH` 提供独立 OpenEXR；当前使用静态 OpenEXR 3.4.16 / Imath 3.2.2，并保持 Release / Debug CRT 匹配。
+第三方 OpenCV 构建启用共享库、非自由算法、SSE3 基线及 SSE4.1 / SSE4.2 / AVX / FP16 / AVX2 / AVX512 分派、IPP、OpenCL、FFmpeg、DirectShow 和 Media Foundation。OpenCV 本身关闭 CUDA。构建 OpenCV 5 时，通过 `CMAKE_PREFIX_PATH` 提供静态 OpenEXR 3.4.16 / Imath 3.2.2，并匹配 Release / Debug CRT。
+
+`opencv_cuda.dll` 支持 Turing（GTX 16 / RTX 20）及更新 GPU。Debug / Release x64 使用 MSVC v145、CUDA 13.4 和静态 cudart，遵循既有 ABI。MSVC 14.52 标准库要求 CUDA 13.4 或更新版本。CUDA 13.x 的驱动兼容基线为 R580，PTX/JIT 还须匹配实际工具链。GPU 验收按目标驱动、设备和输入数据进行。 [MSVC 标准库版本与 CUDA 要求](https://github.com/microsoft/STL/wiki/Macro-_MSVC_STL_UPDATE) · [NVIDIA CUDA 兼容说明](https://docs.nvidia.com/cuda/archive/13.4.2/cuda-toolkit-release-notes/index.html#cuda-driver)
 
 两侧共享 `opencv_videoio_ffmpeg500_64.dll`。运行时内容校验从实际 NuGet 解析结果及 C++ 属性表分别定位依赖，仅在同名文件的 SHA-256 完全一致时复用一份文件；内容不同或源文件缺失仍阻止交付。供应商 SDK 所需的 `opencv_world401.dll` 属于另一条依赖链，须继续保留。
 

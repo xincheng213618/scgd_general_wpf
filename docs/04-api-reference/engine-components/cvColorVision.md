@@ -14,15 +14,15 @@ related: ["engine.index","engine.native-integration","ui.core"]
 
 本地相机取图由 `CM_GetFrame` 提供 RAW，校正由 `LocalFrameCalibrationService` 调用本地 `opencv_helper.dll`；POI 的 XYZ、xy/uv、CCT 和主波长测量由 `PoiMeasurementService` 通过 `OpenCVCalibration.M_CalculatePoiBatchV2` 或 RAW 测量入口计算，缓冲寿命由当前帧或 `PoiMeasurementBuffer` 管理。旧插件若引用早期 `cvColorVision.dll` 的句柄式 XYZ 采样 API，需要迁移到本地测量接口并重新编译；当前托管程序集不保证这些旧 API 的二进制兼容。
 
-托管绑定不再提供旧 `FovImgCentre` / `FovImgCentreEX`、`SFRCalculation`、`GhostGlareDectect` 和 `cvCalArticulation` 入口，图像测量使用现有本地算法。对应原生维护源码已删除旧 FOV、SFR、畸变、鬼影入口及清晰度导出包装；自动对焦仍需要的公共计算实现保留。Simple 源码保留用于同步上游，但不参与当前 DLL 构建，其旧算法调用迁移前不能重新启用。原生构建与替换交付 DLL 是两个步骤，源码清理不代表已发布；更新 DLL 时须使用匹配版本，不能再依赖这些退役导出或原有导出序号。
+FOV、SFR、畸变、鬼影与清晰度测量使用本地算法。依赖 `FovImgCentre`／`FovImgCentreEX`、`SFRCalculation`、`GhostGlareDectect` 或 `cvCalArticulation` 的旧调用方须迁移后重编译，并核对 DLL 版本和导出序号。Simple 源码用于同步上游，不参与 DLL 构建。
 
 ## 绑定与交付前提
 
 当前工程目标是 `net10.0-windows7.0`。`cvColorVision.csproj` 从 `DLL/scgd_internal_dll/` 复制和打包供应商 DLL，不在本工程编译这些 native 实现。全部 21 个 DLL 的工程链接、构建/发布输出和 NuGet 包路径统一为 `runtimes/win-x64/native/`，包含 `cvCamera.dll`、CommLibrary、OpenCV 及相机和光谱仪 SDK 的间接依赖。供应商原始输入继续保存在 `DLL/scgd_internal_dll/`。主程序与 PluginKit 的共享文件清单使用相同相对路径，安装工程也须从该目录取文件并安装到对应目录。具体功能还受设备驱动与部署配置约束。校正文件创建由主程序执行，本地校正统一使用 `opencv_helper.dll`；`cvCamera.dll` 继续负责相机等设备接口。
 
-`CameraNativeLibrary` 为本程序集的所有 `cvCamera.dll` P/Invoke 注册统一解析器，在首次调用时优先查找托管程序集旁、其次宿主旁的 `runtimes/win-x64/native/`，再兼容按 RID 发布时平铺到程序集或宿主旁的 native 资产。加载前通过 `SetDllDirectoryW` 将实际目录设为当前进程的 DLL 搜索目录，覆盖 SCGDCamLayer 等旧 SDK 在稍后调用 `LoadLibrary` 按名称加载依赖的行为；这会取代宿主先前设置的单一 DLL 搜索目录，宿主在设备运行期间不得覆盖它。不更改系统或用户 `PATH`，不连接或枚举设备；缺少文件、依赖或架构不匹配仍由加载异常报告。原生 DLL、导出和许可证构建无需随本次目录调整而替换。
+`CameraNativeLibrary` 依次查找托管程序集和宿主旁的 `runtimes/win-x64/native/`，兼容 RID 发布时的平铺输出。`SetDllDirectoryW` 将实际目录设为进程 DLL 搜索目录，供 SCGDCamLayer 等 SDK 后续按名称加载依赖。宿主在设备运行时须保留该搜索目录，系统和用户 `PATH` 独立。
 
-传感器业务通过 Engine 的 `LocalSensorSession` 使用 C# TCP/串口实现，保留 MQTT 服务模式，不依赖旧 `cvColorVision.SensorComm` P/Invoke 类。该旧类型与配套内部版 DLL 的旧传感器/TCP 服务导出已退役；仍引用这些公共入口的外部插件需要迁移并重新编译，不能直接使用新的绑定程序集或原生 DLL。PG 绑定仍使用 `Communicate_Type`，其命名空间、类型名与枚举值保持兼容；相机继电器所需的五个串口函数仅作为原生内部实现保留。配套 DLL 同时退役了未使用的 `CalGamut`、`GetMAKETYPE`、`XYZ2xyuv`、`CheckLedJudge`，仍依赖它们的旧调用方也需先迁移。源码清理不代表已更新交付 DLL。
+传感器使用 Engine 的 `LocalSensorSession`（TCP／串口）或 MQTT 服务模式。引用旧 `cvColorVision.SensorComm`、传感器／TCP 服务导出或 `CalGamut`、`GetMAKETYPE`、`XYZ2xyuv`、`CheckLedJudge` 的外部插件须迁移并重编译。PG 通过 `Communicate_Type` 保持枚举及类型兼容，相机继电器的串口函数仅供原生内部调用。
 
 电机控制器 `FOCUS_COMMUN` 与原生及已有配置的数值保持一致：`VID_SERIAL=0`、`CANON_SERIAL=1`、`NED_SERIAL=2`、`LONGFOOT_SERIAL=3`、`TSM_SERIAL=4`、`SV6100=5`。`InitCom` / `CM_InitComEx` 的首参对应原生 `HANDLE&`，C# 必须传 `ref IntPtr` 接收独立电机句柄，不能传相机管理器句柄，也不能把整数状态码当句柄。旧调用方需要按此签名重新编译；新增类型需要配套 DLL，选择项存在不证明串口通信已验收。本地相机会话通过 `CM_InitComEx` 创建电机、下发配置，通过 `CM_ShutDown` 释放；托管适配器串行进入原生电机注册表，避免不同相机对未加锁的原生句柄表并发访问。
 
@@ -30,7 +30,7 @@ related: ["engine.index","engine.native-integration","ui.core"]
 
 当前内部版不包含本地 OLED/CUDA 链路：`cvCamera.dll` 不再导入 `cvOled.dll`，默认交付不含 `cvoled.dll`、`cudart64_12.dll`，C# 的 `CvOledDLL` 及其专用枚举也不再提供。原生导出 `CM_LedCalInit`、`CM_LedCalFind`、`CM_LedCalComBine`、`CM_LedCalFindHighDensity`、`CM_FindHighIndensityLed` 已删除；需要这些入口的旧插件不能直接使用此版本，按序号导入的外部二进制也需要重新核对。本地普通 LED 检测、远端 CVOLED 服务消息和流程节点不属于这条 DLL 依赖链。
 
-OLED/CUDA 备份位于仓库 `docs/_history/native-dependencies/oled-cuda/`，包含移除前的匹配 DLL、原生源码快照、C# 绑定、安装器配置与 SHA-256 清单；恢复步骤见其中的 `README.txt`。恢复须同时处理原生实现/链接输入、C# 声明、工程复制/打包项、共享清单与外部 AIP，不能只放回两个依赖 DLL。此功能裁剪不改变本页的许可证构建约定。
+旧 OLED/CUDA 部署的匹配 DLL、源码和恢复说明位于 `docs/_history/native-dependencies/oled-cuda/README.txt` 所在目录。恢复需要同步核对原生链接、托管声明和打包清单。
 
 Release 构建的 `ValidateGaolitongNativeDependencies` 会在 Build 前检查 `glaDevSys64.dll`、`xGUSB64.dll`、`xGCOM64.dll`、`xserial64.dll` 和 `FTD2XX.dll` 是否存在；缺少其中任一文件就报错。这只是输入存在性门禁，不校验 DLL 能否加载、导出是否匹配或真实设备能否打开。README 也作为 NuGet 包说明打包，但其仓库相对链接不保证包内含有对应知识文件。
 
@@ -106,6 +106,7 @@ MVS 视频回调丢弃坏帧、归还 SDK 缓冲并继续取帧，超时仍无�
 | 能力 | 当前入口 | 说明 |
 | --- | --- | --- |
 | 相机/通用视觉 | `Camera/cvCameraCSLib.*.cs` | 相机打开关闭、预览、取帧、配置 JSON、自动曝光、ROI、采样、TIFF、对焦和多类检测函数 |
+| 光谱仪 | `Devices/Spectrometer/` | 光谱设备绑定 |
 | 图卡 | `Devices/PatternGenerator/PG.cs` | PG 初始化、TCP/串口连接、Start/Stop/Reset、帧切换 |
 | 源表/电源 | `Devices/PassSx/PassSx.cs` | 打开关闭、源模式、2/4 线、前后端口、电压电流、步进/扫描 |
 | 极薄入口 | `Algorithms.cs` 等 | 直接暴露少量底层函数 |
@@ -139,32 +140,6 @@ MVS 视频回调丢弃坏帧、归还 SDK 缓冲并继续取帧，超时仍无�
 `pCamMan->SetDeviceMode(mode)` 保存的是许可证中的 `device_mode`，供 `CM_GetDeviceMode` 返回，不是设置相机硬件工作模式。内部版本不执行许可证分支时不要单独补调用；此时设备模式保持为空，上层应继续使用配置的相机型号作为回退。
 
 按 `Release|x64` 构建后，确认相机、vLight 光谱仪和高立通光谱仪的打开路径没有活动的 `LicenseValidate` 调用，再把产物复制到 `DLL/scgd_internal_dll/cvCamera.dll`。静态许可证/HASP 代码或导出仍可能保留在 DLL 中；内部版本的验收标准是上述运行路径不触发许可证验证。
-
-## 变更边界
-
-| 变更类型 | 是否改这里 |
-| --- | --- |
-| DLL 入口名、参数、调用约定、结构体布局变化 | 是 |
-| 采集后的模板判定、OK/NG 规则 | 通常看 `ColorVision.Engine/Templates`、项目包和流程节点 |
-| CVCIE/CVRAW 文件格式 | 通常看 `ColorVision.FileIO` |
-| WPF 按钮、菜单、图像叠加 | 通常看 UI、ImageEditor、结果展示链 |
-| 新客户项目调用已有 native 能力 | 优先复用现有声明；只有 DLL 新增入口或签名变化时扩展这里 |
-
-## 边界
-
-- 关键能力主要来自 native DLL，C# 负责声明、薄包装和数据类型桥接。
-- `cvCameraCSLib` 由 `Camera/cvCameraCSLib.*.cs` 多个 partial 文件组成，除相机控制外还暴露图像处理、自动对焦和检测函数。
-- 接口粒度不统一，不能硬写成整齐分层 API。
-- 上层 Engine、设备服务和插件调用这里；这里不编排宿主窗口或业务流程。
-
-## 关键文件
-
-| 任务 | 先看 |
-| --- | --- |
-| 相机绑定面 | `Camera/cvCameraCSLib.Core.cs`、`Capture.cs`、`Configuration.cs`、`Discovery.cs`、`ImageProcessing.cs` |
-| 图卡 | `Devices/PatternGenerator/PG.cs` |
-| 源表/电源 | `Devices/PassSx/PassSx.cs` |
-| 光谱仪 | `Devices/Spectrometer/` |
 
 ## 验证入口与缺口
 

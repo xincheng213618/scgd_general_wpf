@@ -16,7 +16,7 @@ related: ["projects.index","projects.arvr-pro","projects.arvr-pro-demo","project
 
 | 项目 | 业务定位 | 入口与协议 | 完成确认 |
 | --- | --- | --- | --- |
-| [ProjectARVRPro](./project-arvr-pro.md) | AR/VR 流程组、Recipe、切图与光学测试，承接 LUX 的 VID、光通量 | Socket JSON：`ProjectARVRInit`、`RunAll`、`SwitchGroup`；LUX 客户端选择 Text `T00XX,SN;`；另有雷鸟串口切图、AOI 外部切图节点 | JSON 等待最终 `ProjectARVRResult` 并检查业务判定；LUX 固定 `00` 不表示 PASS。分别见 [JSON 对接契约](./project-arvr-pro-integration-demo.md)与 [LUX 协议](./project-lux-protocol.md) |
+| [ProjectARVRPro](./project-arvr-pro.md) | AR/VR 流程组、Recipe、切图与光学测试，承接 LUX 的 VID、光通量 | Socket JSON：`ProjectARVRInit`、`RunAll`、`SwitchGroup`；LUX 客户端选择 Text `T00XX,SN;`；另有雷鸟串口切图、AOI 外部切图节点 | JSON 等待最终 `ProjectARVRResult` 并检查业务判定；LUX 固定 `00` 不表示 PASS。分别见 [JSON 对接契约](./project-arvr-pro-protocol.md)与 [LUX 协议](./project-lux-protocol.md) |
 | [ProjectKB](./project-kb.md) | 键盘背光亮度、均匀性、局部对比度及背光修正 | Modbus TCP 触发检测；MES DLL 用于 SN 检查与结果回传 | 寄存器回 `0` 也可能是忽略空 SN 触发；需分别核对检测结果、PLC 读回和已启用的 MES 输出 |
 | [IntegrationDemo](./project-arvr-pro-integration-demo.md) | 独立 ARVRPro TCP/JSON 对接客户端 | 主动连接服务端，默认端口 `6666`；支持离线解析样例、联机命令及切图确认 | 联机测试等待最终结果；离线解析成功只说明样例可读取，不证明宿主、设备或协议联调通过 |
 

@@ -24,7 +24,7 @@ related: ["plugins.index","plugins.model","plugins.getting-started","plugins.con
 
 已退役的 CameraTest 参见[相机生产调试归档](./standard-plugins/camera-test.md)。
 
-应用内角色、Windows 权限和设备条件是不同前提。`ServiceManagerAppProvider` 声明应用内 `Administrator` 权限，但服务管理器还存在向导及旧工具入口；实际服务操作需要兼容的权限代理和目标资源权限。其余插件也不能仅凭窗口可打开就推断设备、路径或许可证已就绪。
+实际操作所需的应用角色、Windows 权限和设备条件见对应插件专题。
 
 ## 按宿主扩展点定位
 

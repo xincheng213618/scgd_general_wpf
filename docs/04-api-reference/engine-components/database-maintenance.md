@@ -20,7 +20,7 @@ related: ["engine.index", "engine.mysql-maintenance", "ui.sqlite-storage", "ui.d
 
 无参数 `OpenWindow()` 建立全局窗口，默认 ViewModel 通过 `AssemblyHandler.RefreshAssemblies()` 和 `LoadImplementations<IDatabaseCleanupSourceProvider>()` 实例化 provider，再按 `Order`、`DisplayName` 排序。该刷新会重建程序集列表并清空接口实现类型缓存，但不会替换已经打开的维护窗口持有的 provider 实例；发现规则见[程序集与扩展发现](./../../02-developer-guide/core-concepts/extensibility.md)。这里不扫描磁盘上所有 `.db` 文件，也不保证未加载的项目 provider 可见。
 
-`OpenWindow(owner, source)` 只注入一个 provider，不进行全局发现；`Sources` 对外只读，单源模式要求恰好一项，`SelectedSource` 拒绝集合外对象。Socket 的 Engine launcher 使用此入口；`MySqlToolWindow` 和流程结果管理页（`MeasureBatchManagerPage`）的“数据库清理”按钮调用无 source 的全局入口，流程结果管理页以所在窗口作为 owner。该按钮仅打开或激活维护窗口，实际清理仍由窗口内选择的数据源和确认操作决定。
+`OpenWindow(owner, source)` 只注入一个 provider，Socket 使用此入口。MySQL 工具窗口的“数据清理”和流程结果管理页的“数据库清理”均打开全局窗口。清理目标由窗口内选择的数据源和确认操作决定。
 
 必须保留真正的 `public static void OpenWindow()` 无参数重载：已发布的 ARVR、KB 等项目插件可能仍引用这个二进制签名。把它替换为带可选参数的方法，只能兼容重新编译的源码，旧 DLL 点击“数据清理”会抛 `MissingMethodException`。无参数重载转入同一全局窗口逻辑，不改变单源范围或清理行为；
 
@@ -93,10 +93,4 @@ Socket/Flow 的锁与迁移实现见 [SQLite 正文存储](../ui-components/sqli
 
 窗口没有取消按钮、CancellationToken 或 Closing 阶段的等待/拒绝协议。确认框取消只阻止尚未开始的动作；关闭已运行窗口不取消后台数据库操作、不回滚、不终止外部工具。关闭后窗口注册项被移除，重开可能建立另一套状态，不能用“新窗口不忙”判断旧维护已结束。
 
-`RelayCommand.CanExecute` 和 busy 状态不是权限控制。虽然核心异步包装会再次检查该 ViewModel 的 `IsBusy`，它不能约束公开 provider API 或其它实例；调用方仍须承担授权、目标固定与业务停写责任。
-
-## 验证证据
-
-它没有执行真实清理事务、在线索引 DDL 或窗口布局验收。
-
-例如布局测试显式刷新选中 source，不等于生产 Loaded 只刷新选中项；应读具体调用而不是仅凭测试名推断。现有测试不证明真实关闭时取消、备份故障恢复、主从完整性、跨窗口互斥或授权门禁。本次仅核对源码与测试内容，没有运行产品或操作用户数据库。
+`IsBusy` 门禁只约束当前 ViewModel。直接调用 provider 或使用其它窗口实例时，调用方仍负责授权、固定目标和协调停写。

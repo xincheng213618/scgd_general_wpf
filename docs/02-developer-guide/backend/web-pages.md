@@ -43,7 +43,7 @@ Flask 只为明确注册的应用路径返回 `index.html`，不会将所有 404
 | 路径 | 行为 |
 | --- | --- |
 | `/`、`/plugins` 及其子路径、`/releases`、`/changelog`、`/updates`、`/tools` | 公共 React 入口 |
-| `/transfer`、`/transfer/share/<路径>`、`/account`、`/browse` 及其子路径 | 返回 React 入口；后续 API 仍按各自权限执行 |
+| `/transfer`、`/transfer/share/<路径>`、`/account`、`/feedback`、`/browse` 及其子路径 | 返回 React 入口；后续 API 仍按各自权限执行 |
 | `/admin`、`/admin/` 及其子路径 | 先执行注入的管理认证检查，未通过则 302 到 `/login?next=...`，next 包含当前内部路径及查询串 |
 | `/assets/<路径>` | 构建资源；成功的 200/206/304 使用 `public, max-age=31536000, immutable` |
 | `/brand/<路径>`、`/media/<路径>`、`/favicon.svg`、`/favicon.ico` | 普通静态资源，max_age 为 3600 秒；ico 映射到 `brand/colorvision.ico` |

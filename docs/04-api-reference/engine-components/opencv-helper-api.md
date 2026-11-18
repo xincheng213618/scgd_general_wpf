@@ -14,14 +14,6 @@ related: ["engine.native-integration", "ui.core", "ui.image-frames", "algorithms
 
 `opencv_helper.dll` exposes OpenCV algorithms to ColorVision through C exports. Use `Native/include/opencv_media_export.h` and `Native/include/custom_structs.h` for signatures and layout. Managed declarations are in `UI/ColorVision.Core/OpenCVMediaHelper.cs`, `OpenCVCalibration.cs` and `HImage.cs`. This page records behavior that matters when crossing the ABI. [Native integration](../../02-developer-guide/engine-development/opencv-integration.md) · [ImageEditor native analysis](../algorithms/local-native-analysis.md)
 
----
-
-## Table of Contents
-
-See the page outline for individual export names. Start with [Data Structures](#data-structures), [Error Codes](#error-codes) and [Memory Management](#memory-management) when wiring a new caller.
-
----
-
 ## Data Structures
 
 ### HImage

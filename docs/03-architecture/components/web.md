@@ -85,22 +85,6 @@ ColorVision Web 由 React 前端与 Flask 后端组成，提供公共门户、�
 
 前端使用按路由懒加载和请求取消来控制入口体积及过期响应；静态变体的 HTTP 协商归 `frontend_spa.py`。性能复测需分别记录表示字节数、冷/热耗时和真实页面加载行为。历史测量见[Web 性能基线](../../02-developer-guide/backend/performance-baseline.md)。
 
-## 后续演进方向
-
-以下是设计方向，不是现成可调用接口或已完成迁移：
-
-| 方向 | 落地前需要解决的问题 |
-| --- | --- |
-| `ArtifactStore`、`ArtifactCatalogReader` / `ArtifactIndexRepository` | 将文件流、暂存替换和索引读写收敛到明确接口；已有 `IndexStateRepository` 仅负责状态部分 |
-| `EventPublisher`、`StorageChangeHandler` | 将静态领域事件及索引更新处理器从中央路径分支中分离 |
-| `AccessEventSink` / `AccessAnalytics` | 将事件接收和统计查询的抽象独立于审计；现有 recorder 仍是具体实现 |
-| `JobRegistry` / `HealthCheck`、`Clock` / `RequestIdentityResolver` | 把注册、时间、请求身份和可信代理政策显式化；不能直接接受任意 forwarded 地址 |
-| 完成功能模块与 application factory 迁移 | 逐条迁移剩余依赖和 SQL，保留仍有消费者的旧导入适配 |
-| 多 worker 刷新租约 | 在并行访问同一存储/索引前，为当前进程锁之外的刷新入口设计数据库租约与失败恢复 |
-| 大目录查询与心跳写入 | 按实际规模决定索引浏览和写入合并，保留文件系统来源契约 |
-| OpenAPI 与前端类型生成 | 当前客户端使用手写类型；先建立接口来源与兼容策略，再替换为生成类型 |
-
-
 ## 验证范围
 
 在隔离环境核对运行时权限和实际下载。前端构建只写本地 `dist`。

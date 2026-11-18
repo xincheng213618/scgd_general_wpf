@@ -22,9 +22,3 @@ related: ["plugins.model", "plugins.getting-started", "plugins.capabilities", "p
 | 当前有哪些插件；某个插件的设备、设置、窗口或数据库行为 | [当前插件与单模块主题](./plugin-capability-matrix.md#当前源码插件总表) | `Plugins/<Name>/` |
 | 横向检查插件扩展点与外部依赖 | [插件依赖与接入矩阵](./plugin-capability-matrix.md) | 各插件菜单、状态、配置和 native 接入 |
 | 客户判定、MES 字段或项目专用流程 | [项目知识入口](../../04-api-reference/projects/README.md) | `Projects/`，不是通用插件宿主 |
-
-## 修改与验证
-
-修改装载、依赖检查或包结构时，更新相应共用契约；修改某个插件的业务行为时，更新该模块主题。新增或移除模块后更新横向矩阵及相关主题元数据，再生成知识地图和网站导航；只有问题路由变化时才修改本入口。
-
-本地构建、运行插件和发布是不同动作。创建文档或诊断加载失败不授权启动设备、修改系统服务或上传包；普通插件、Spectrum 双通道、客户项目包和主程序的发布对象与入口见[产物契约](../../02-developer-guide/plugin-development/getting-started.md)及对应模块页。本入口不声明覆盖所有插件的统一运行测试。

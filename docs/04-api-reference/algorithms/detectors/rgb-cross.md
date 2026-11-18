@@ -120,7 +120,7 @@ Flow 使用 `LocalRgbCrossNode`，通过“算法参数 → 编辑…”配置�
 
 ## 独立原生入口与验证
 
-可独立交付的 C++ 测量实现见 `Native/opencv_helper/algorithm/find_cross/rgb_cross.h/.cpp`。它不依赖 WPF、数据库或合格判定，使用 C++17 与 nlohmann/json，CMake 的入口目标为 `rgb_cross_cli`。ImageView、Flow 和原 `M_FindCrossLocal` 各自保留执行链。独立 C++ 入口缺少托管 1.6.1 的多峰外包络、覆盖不足保留数值和暗臂范围恢复，相同输入的有效性可能不同。交付时逐点比较几何、有效性和分离值。
+独立 C++ 测量入口为 `Native/opencv_helper/algorithm/find_cross/rgb_cross.cpp`，CMake 目标为 `rgb_cross_cli`，依赖 C++17 和 nlohmann/json。多峰外包络、覆盖不足保留数值和暗臂范围恢复由托管实现提供。两种入口的交付结果应逐点核对几何、有效性和分离值。
 
 没有直接调用单十字 `FindCrossLocal`：`pattern_cross.cpp` 的 `ConvertToGrayFloat` 会混合颜色，而 `PatternCrossResult` 提供轴交点、角度、端点和臂质量，不提供通道对应的双侧阈值边缘。其 `SampleAxis` 内部有原图背景滤除、单目标候选及光学坐标语义，也不是可直接调用的中立边缘 API。这里采用独立的逐通道截面质量检查与中位数测量；单十字功能及 Engine 结果链保持独立。当前没有像素到角度的自动换算，不能替代相机/镜头色差基线与现场误报漏报验收。
 
