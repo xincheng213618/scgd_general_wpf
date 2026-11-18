@@ -9,6 +9,9 @@
 #include <nlohmann/json.hpp>
 
 #include <array>
+#if defined(_M_X64) && !defined(_M_ARM64EC)
+#include <xmmintrin.h>
+#endif
 #include <algorithm>
 #include <atomic>
 #include <chrono>
@@ -297,11 +300,12 @@ std::vector<std::uint8_t> referenceDistortion(
     int channels,
     bool fisheye,
     int roiX,
-    int roiY)
+    int roiY,
+    float focalLength = 10.0F)
 {
     std::array<float, 9> cameraValues{
-        10.0F, 0.0F, static_cast<float>(fisheye ? width / 2 : cameraCenterX - roiX),
-        0.0F, 10.0F, static_cast<float>(fisheye ? height / 2 : cameraCenterY - roiY),
+        focalLength, 0.0F, static_cast<float>(fisheye ? width / 2 : cameraCenterX - roiX),
+        0.0F, focalLength, static_cast<float>(fisheye ? height / 2 : cameraCenterY - roiY),
         0.0F, 0.0F, 1.0F
     };
     std::array<float, 5> distortionValues{ 0.01F, -0.003F, 0.0001F, 0.0002F, 0.0F };
@@ -344,6 +348,39 @@ std::vector<std::uint8_t> referenceDistortion(
     std::vector<std::uint8_t> bytes(result.total() * result.elemSize());
     std::memcpy(bytes.data(), result.data, bytes.size());
     return bytes;
+}
+
+void verifyLargeDistortion(const std::filesystem::path& directory)
+{
+    constexpr int width = 2503;
+    constexpr int height = 2001;
+    constexpr int centerX = 1251;
+    constexpr int centerY = 1000;
+    constexpr float focalLength = 1400.0F;
+    const auto path = directory / "large_distortion.json";
+    writeText(path, R"({"alpha":0,"cameraMatrix":[1400,0,1251,0,1400,1000,0,0,1],"distCoeffs":[0.01,-0.003,0.0001,0.0002,0],"w":2503,"h":2001,"useFisheye":false})");
+    Context context = createContext();
+    requireResult(M_CalibrationLoadFileW(context.get(), 11, path.c_str()), context.get(), "load large distortion");
+
+    std::vector<std::uint8_t> source(static_cast<std::size_t>(width) * height * 6);
+    std::uint32_t generator = 42;
+    for (std::size_t i = 0; i < source.size(); i += sizeof(std::uint16_t)) {
+        generator = 1664525U * generator + 1013904223U;
+        const auto value = i % 26 == 0 ? std::uint16_t{0}
+            : i % 34 == 0 ? std::uint16_t{65535} : static_cast<std::uint16_t>(generator >> 16);
+        std::memcpy(source.data() + i, &value, sizeof(value));
+    }
+    const auto expected = referenceDistortion(source, width, height, centerX, centerY, 16, 3,
+        false, 0, 0, focalLength);
+    auto actual = source;
+
+    MCalibrationExecutionOptionsV1 options{};
+    options.structSize = sizeof(options);
+    options.interleavedBgr = 1;
+    requireResult(M_CalibrationExecuteToV1(context.get(), width, height, 16, 3,
+        source.data(), source.size(), actual.data(), actual.size(), nullptr, 0, &options),
+        context.get(), "execute large distortion");
+    if (actual != expected) throw std::runtime_error("Large 16-bit distortion changed fixed-map interpolation");
 }
 
 template<typename T>
@@ -1054,6 +1091,52 @@ void verifyLargeColorDiffOutput(const std::filesystem::path& directory)
     std::cout << "calibration_stream_exact_cases,4" << std::endl;
 }
 
+void verifyColorDiffMixedOffsets(const std::filesystem::path& directory)
+{
+    constexpr int width = 51;
+    constexpr int height = 55;
+    constexpr int centerX = 10;
+    constexpr int centerY = 16;
+    constexpr double curve = 0.004013;
+    const auto file = directory / "mixed_color_diff_offsets.json";
+    // The red map fits in the compact layout throughout some rows. In other
+    // rows a long valid prefix precedes an out-of-range offset.
+    writeText(file, R"json({"CalibDis":1,"MeasDis":1,"CenterCol":10,"CenterRow":16,"ColRowCoeffs_GB":[-1,1],"ColRowCoeffs_GR":[1,0],"ColorDiffCoeffs_GB":[0],"ColorDiffCoeffs_GR":[0,0,0.004013],"h":55,"w":51})json");
+    Context context = createContext();
+    requireResult(M_CalibrationLoadFileW(context.get(), 14, file.c_str()), context.get(), "load mixed-offset ColorDiff");
+
+    std::vector<std::uint16_t> source(width * height * 3), actual(source.size()), expected(source.size());
+    for (std::size_t index = 0; index < source.size(); ++index) {
+        source[index] = static_cast<std::uint16_t>(index * 37 + 11);
+    }
+    for (int row = 0; row < height; ++row) {
+        for (int column = 0; column < width; ++column) {
+            const auto pixel = (row * width + column) * 3;
+            expected[pixel + 1] = source[pixel + 1];
+            if (row == 0 || row == height - 1 || column == 0 || column == width - 1) continue;
+
+            const auto deltaX = column - centerX;
+            const auto deltaY = row - centerY;
+            const auto radialFactor = curve * std::sqrt(deltaX * deltaX + deltaY * deltaY);
+            const int redX = std::clamp(static_cast<int>(column - radialFactor * deltaX - 1 + 0.5), 1, width - 2);
+            const int redY = std::clamp(static_cast<int>(row - radialFactor * deltaY + 0.5), 1, height - 2);
+            const int blueX = (std::min)(column + 1, width - 2);
+            const int blueY = (std::max)(row - 1, 1);
+            expected[pixel] = source[(blueY * width + blueX) * 3];
+            expected[pixel + 2] = source[(redY * width + redX) * 3 + 2];
+        }
+    }
+    MCalibrationExecutionOptionsV1 options{};
+    options.structSize = sizeof(options);
+    options.interleavedBgr = 1;
+    const auto byteCount = source.size() * sizeof(source[0]);
+    requireResult(M_CalibrationExecuteToV1(context.get(), width, height, 16, 3,
+        reinterpret_cast<const std::uint8_t*>(source.data()), byteCount,
+        reinterpret_cast<std::uint8_t*>(actual.data()), byteCount, nullptr, 0, &options),
+        context.get(), "execute mixed-offset ColorDiff");
+    if (actual != expected) throw std::runtime_error("Mixed-offset ColorDiff differs from the pixel reference");
+}
+
 void verifyRawOutputFlip(const std::filesystem::path& directory)
 {
     const auto distortion = directory / "mirror_distortion.json";
@@ -1148,6 +1231,81 @@ void verifyRawOutputFlip(const std::filesystem::path& directory)
     std::cout << "calibration_mirror_exact_cases," << cases << std::endl;
 }
 
+void verifyLargeMatrixColorOutput(const std::filesystem::path& directory)
+{
+    constexpr std::uint32_t width = 2503;
+    constexpr std::uint32_t height = 2000;
+    constexpr std::size_t pixels = static_cast<std::size_t>(width) * height;
+    constexpr std::size_t cacheLine = 64;
+    constexpr std::size_t lineFloats = cacheLine / sizeof(float);
+    static_assert(pixels >= 5'000'000 && pixels % lineFloats == 0);
+    constexpr std::array<double, 9> matrix{
+        1.234567891, -0.5, 0.03125, -0.25, 1.765432109, 0.125, 0.0625, -0.1875, 1.5
+    };
+    constexpr std::array<double, 3> gain{1.25, 0.75, 2.5};
+    constexpr std::array<float, 3> exposure{2.5F, 13.75F, 7.125F};
+    constexpr float guard = -12345.0F;
+    const auto sample = [](std::size_t index) {
+        if (index % 23 == 0) return std::uint16_t{0};
+        if (index % 31 == 0) return std::uint16_t{65535};
+        return static_cast<std::uint16_t>((index * 0x9e3779b9U) ^ (index >> 7));
+    };
+    std::vector<std::uint16_t> raw(pixels * 3);
+    for (std::size_t index = 0; index < raw.size(); ++index) raw[index] = sample(index);
+
+    std::vector<float> storage(pixels * 3 + lineFloats * 3, guard);
+    const auto address = reinterpret_cast<std::uintptr_t>(storage.data());
+    const auto alignment = (cacheLine - address % cacheLine) % cacheLine / sizeof(float);
+    // Offset all planes to exercise both scalar edges around the streaming blocks.
+    auto* const cie = storage.data() + alignment + 7;
+    const auto isGuard = [](float value) { return value == guard; };
+
+    MCalibrationExecutionOptionsV1 options{};
+    options.structSize = sizeof(options);
+    options.interleavedBgr = 1;
+    options.exposureX = exposure[0];
+    options.exposureY = exposure[1];
+    options.exposureZ = exposure[2];
+
+    for (const bool multiColor : {false, true}) {
+        const auto path = directory / (multiColor ? "large_multi_color.json" : "large_four_color.json");
+        writeText(path, multiColor
+            ? R"({"bpp":16,"Gain":[1.25,0.75,2.5],"pa":[1.234567891,-0.5,0.03125,-0.25,1.765432109,0.125,0.0625,-0.1875,1.5]})"
+            : R"({"bpp":16,"a":1.234567891,"b":-0.5,"c":0.03125,"d":-0.25,"e":1.765432109,"f":0.125,"g":0.0625,"h":-0.1875,"i":1.5})");
+        Context context = createContext();
+        requireResult(M_CalibrationLoadFileW(context.get(), multiColor ? 9 : 8, path.c_str()),
+            context.get(), "load large matrix calibration");
+        requireResult(M_CalibrationExecuteToV1(context.get(), width, height, 16, 3,
+            reinterpret_cast<const std::uint8_t*>(raw.data()), raw.size() * sizeof(raw[0]),
+            nullptr, 0, cie, pixels * 3, &options), context.get(), "execute large matrix calibration");
+
+        std::array<double, 9> factor{};
+        for (std::size_t index = 0; index < factor.size(); ++index) {
+            const auto channel = index % 3;
+            const double coefficient = multiColor ? static_cast<float>(matrix[index]) : matrix[index];
+            factor[index] = coefficient / exposure[channel];
+            if (multiColor) factor[index] /= gain[channel];
+        }
+        for (std::size_t pixel = 0; pixel < pixels; ++pixel) {
+            const auto* bgr = raw.data() + pixel * 3;
+            if (bgr[0] != sample(pixel * 3) || bgr[1] != sample(pixel * 3 + 1) || bgr[2] != sample(pixel * 3 + 2))
+                throw std::runtime_error("Large matrix calibration modified the input RAW");
+            for (std::size_t plane = 0; plane < 3; ++plane) {
+                const auto* coefficient = factor.data() + plane * 3;
+                const double redGreen = coefficient[0] * bgr[2] + coefficient[1] * bgr[1];
+                const float expected = static_cast<float>(redGreen + coefficient[2] * bgr[0]);
+                if (std::memcmp(&expected, cie + plane * pixels + pixel, sizeof(expected)) != 0) {
+                    throw std::runtime_error("Large matrix calibration changed a scalar XYZ value in " + path.string());
+                }
+            }
+        }
+        if (!std::all_of(storage.data(), cie, isGuard)
+            || !std::all_of(cie + pixels * 3, storage.data() + storage.size(), isGuard)) {
+            throw std::runtime_error("Large matrix calibration overwrote a CIE buffer guard");
+        }
+    }
+}
+
 void runSyntheticCoverage()
 {
     TemporaryDirectory directory(
@@ -1161,7 +1319,10 @@ void runSyntheticCoverage()
     verifyAdjacentMapEquivalence(directory.path, true);
     verifyRawOutputFlip(directory.path);
     verifyLargeUniformityOutput(directory.path);
+    verifyLargeDistortion(directory.path);
     verifyLargeColorDiffOutput(directory.path);
+    verifyColorDiffMixedOffsets(directory.path);
+    verifyLargeMatrixColorOutput(directory.path);
 
     const auto dark = directory.path / "dark.json";
     writeText(dark, R"({"bpp":16,"Texp_x":1.0,"DarkNoiseRatio":2.0})");
@@ -2205,6 +2366,91 @@ bool RunPoiBatchBaselineComparison(const std::filesystem::path& baselineDll)
     }
 }
 
+static void verifyLargeRawPoiBatch()
+{
+    constexpr int width = 321;
+    constexpr int height = 265;
+    std::vector<std::uint16_t> raw(width * height * 3);
+    for (std::size_t i = 0; i < raw.size(); ++i)
+        raw[i] = static_cast<std::uint16_t>((i * 2654435761U) ^ (i >> 3));
+
+    MRawColorTransformV1 transform{};
+    transform.structSize = sizeof(transform);
+    transform.channels = 3;
+    transform.interleavedBgr = 1;
+    for (std::size_t i = 0; i < 9; ++i)
+        transform.coefficients[i] = (static_cast<int>(i) - 2) / 13.0;
+
+    MPoiOptionsV2 options{};
+    options.structSize = sizeof(options);
+    options.flags = M_POI_OPTION_PRESERVE_NON_POSITIVE_VALUES;
+    const std::array<MPoiRequestV1, 16> requests{{
+        {0, 27, 32, 1, 1}, {0, 0, 0, 1, 1},
+        {1, 0, 0, 480, 1}, {1, 160, 132, 360, 360},
+        {2, width - 1, height - 1, 240, 180}, {2, 152, 112, 320, 260},
+        {1, 0, 100, 320, 320}, {1, 251, 3, 260, 260},
+        {0, width - 1, height - 1, 1, 1}, {1, 32, 32, 1, 1},
+        {2, 30, 220, 160, 140}, {2, 300, 4, 300, 150},
+        {1, 159, 140, 200, 200}, {1, 155, 48, 220, 220},
+        {0, 159, 100, 1, 1}, {2, 5, 250, 320, 260}
+    }};
+    const auto invoke = [&](const std::uint16_t* pixels, const MPoiRequestV1* points, std::uint32_t count, MPoiResultV1* output) {
+        return M_CalculateRawPoiBatchV1(width, height, 16, pixels, raw.size() * sizeof(raw[0]),
+            &transform, points, count, &options, output);
+    };
+    const auto serial = [&](const std::uint16_t* pixels, MPoiResultV1* output) {
+        for (std::size_t i = 0; i < requests.size(); ++i) {
+            if (invoke(pixels, &requests[i], 1, &output[i]) != M_POI_OK) return false;
+        }
+        return true;
+    };
+    constexpr auto count = static_cast<std::uint32_t>(requests.size());
+    std::array<MPoiResultV1, count> expected{}, actual{};
+#if defined(_M_X64) && !defined(_M_ARM64EC)
+    const unsigned original = _mm_getcsr();
+    for (unsigned rounding : {0U, 0x2000U}) {
+        // Also seed a sticky flag that must survive successful calculation.
+        const unsigned initial = 0x1f84U | rounding;
+        _mm_setcsr(initial);
+        const bool expectedOk = serial(raw.data(), expected.data());
+        const unsigned expectedState = _mm_getcsr();
+        _mm_setcsr(initial);
+        const int status = invoke(raw.data(), requests.data(), count, actual.data());
+        const unsigned actualState = _mm_getcsr();
+        _mm_setcsr(original);
+        if (!expectedOk || status != M_POI_OK || expectedState != actualState
+            || std::memcmp(actual.data(), expected.data(), sizeof(actual)) != 0)
+            throw std::runtime_error("Large RAW POI batch differs from serial output or floating-point state");
+    }
+#else
+    if (!serial(raw.data(), expected.data()) || invoke(raw.data(), requests.data(), count, actual.data()) != M_POI_OK
+        || std::memcmp(actual.data(), expected.data(), sizeof(actual)) != 0)
+        throw std::runtime_error("Large RAW POI batch differs from serial output");
+#endif
+
+    // The second point sees RAW samples replaced by the first result.
+    std::vector<std::uint16_t> aliasExpected = raw;
+    std::vector<std::uint16_t> aliasActual = raw;
+    auto* const expectedOverlap = reinterpret_cast<MPoiResultV1*>(aliasExpected.data());
+    auto* const actualOverlap = reinterpret_cast<MPoiResultV1*>(aliasActual.data());
+    if (!serial(aliasExpected.data(), expectedOverlap)
+        || invoke(aliasActual.data(), requests.data(), count, actualOverlap) != M_POI_OK
+        || aliasExpected != aliasActual)
+        throw std::runtime_error("Large RAW POI overlap changed the serial layout");
+
+    const auto prior = actual;
+    auto invalid = requests;
+    invalid.back().x = width;
+    if (invoke(raw.data(), invalid.data(), count, actual.data()) != M_POI_INVALID_ARGUMENT
+        || std::memcmp(actual.data(), prior.data(), sizeof(actual)) != 0)
+        throw std::runtime_error("Invalid RAW POI request wrote results before batch validation");
+
+    options.reserved[0] = 1;
+    if (invoke(raw.data(), requests.data(), count, actual.data()) != M_POI_INVALID_ARGUMENT
+        || std::memcmp(actual.data(), prior.data(), sizeof(actual)) != 0)
+        throw std::runtime_error("Invalid RAW POI options wrote results");
+}
+
 static void runRawColorApiCoverage()
 {
     static_assert(sizeof(MRawColorTransformV1) == 96);
@@ -2277,6 +2523,7 @@ bool RunCalibrationApiSmokeTests()
         runAngleShiftTilingCoverage();
         runPoiV2SyntheticCoverage();
         runRawColorApiCoverage();
+        verifyLargeRawPoiBatch();
         std::array<wchar_t, 32768> baselinePath{};
         const DWORD baselinePathLength = GetEnvironmentVariableW(
             L"COLORVISION_POI_BATCH_BASELINE_DLL", baselinePath.data(), static_cast<DWORD>(baselinePath.size()));

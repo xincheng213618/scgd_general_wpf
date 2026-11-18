@@ -12,8 +12,8 @@
 
     <!-- Dark docking feedback is intentionally neutral until a drop target is
          chosen; the translucent preview remains blue to communicate placement. -->
-    <SolidColorBrush x:Key="{x:Static reskeys:ResourceKeys.DockingButtonBackgroundBrushKey}" Color="#333337" />
-    <SolidColorBrush x:Key="{x:Static reskeys:ResourceKeys.DockingButtonForegroundBrushKey}" Color="#8B8B90" />
+    <SolidColorBrush x:Key="{x:Static reskeys:ResourceKeys.DockingButtonBackgroundBrushKey}" Color="#223849" />
+    <SolidColorBrush x:Key="{x:Static reskeys:ResourceKeys.DockingButtonForegroundBrushKey}" Color="#B3B4BA" />
     <SolidColorBrush x:Key="{x:Static reskeys:ResourceKeys.DockingButtonForegroundArrowBrushKey}" Color="#D0D0D0" />
     <SolidColorBrush x:Key="{x:Static reskeys:ResourceKeys.DockingButtonStarBorderBrushKey}" Color="#56565A" />
     <SolidColorBrush x:Key="{x:Static reskeys:ResourceKeys.DockingButtonStarBackgroundBrushKey}" Color="#242426" />

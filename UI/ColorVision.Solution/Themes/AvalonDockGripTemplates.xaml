@@ -10,6 +10,7 @@
 <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:display="clr-namespace:ColorVision.Solution"
+                    xmlns:dockingTheme="clr-namespace:ColorVision.Solution.Themes"
                     xmlns:avalonDock="clr-namespace:AvalonDock;assembly=AvalonDock"
                     xmlns:avalonDockControls="clr-namespace:AvalonDock.Controls;assembly=AvalonDock"
                     xmlns:avalonDockConverters="clr-namespace:AvalonDock.Converters;assembly=AvalonDock"
@@ -37,8 +38,8 @@
     </Style>
 
     <Style x:Key="ColorVisionFloatingCaptionButtonStyle" TargetType="{x:Type Button}">
-        <Setter Property="Width" Value="28" />
-        <Setter Property="Height" Value="28" />
+        <Setter Property="Width" Value="24" />
+        <Setter Property="Height" Value="24" />
         <Setter Property="Padding" Value="0" />
         <Setter Property="Focusable" Value="False" />
         <Setter Property="VerticalAlignment" Value="Center" />
@@ -70,8 +71,8 @@
     </Style>
 
     <Style x:Key="ColorVisionFloatingCaptionMenuStyle" TargetType="{x:Type avalonDockControls:DropDownButton}">
-        <Setter Property="Width" Value="28" />
-        <Setter Property="Height" Value="28" />
+        <Setter Property="Width" Value="24" />
+        <Setter Property="Height" Value="24" />
         <Setter Property="Padding" Value="0" />
         <Setter Property="Focusable" Value="False" />
         <Setter Property="VerticalAlignment" Value="Center" />
@@ -151,96 +152,221 @@
         <Setter Property="BorderBrush" Value="{DynamicResource DockingBorderBrush}" />
         <Setter Property="shell:WindowChrome.WindowChrome">
             <Setter.Value>
-                <shell:WindowChrome CaptionHeight="23" CornerRadius="4" GlassFrameThickness="0" ResizeBorderThickness="5" />
+                <!-- Keep DWM's shadow without a top glass band that hit-tests invisible system caption buttons. -->
+                <shell:WindowChrome CaptionHeight="20" CornerRadius="8" GlassFrameThickness="1,0,1,1" ResizeBorderThickness="5" />
             </Setter.Value>
         </Setter>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type avalonDockControls:LayoutAnchorableFloatingWindowControl}">
-                    <Grid>
-                        <Border x:Name="WindowBorderForResize" Background="{DynamicResource CV.Surface.Alternate}" BorderBrush="{DynamicResource CV.Surface.Alternate}" BorderThickness="5" CornerRadius="4" />
-                        <Grid>
-                            <Grid.RowDefinitions>
-                                <RowDefinition Height="28" />
-                                <RowDefinition Height="*" />
-                            </Grid.RowDefinitions>
-                            <Border x:Name="Header" Padding="6,0,2,0" Background="{DynamicResource CV.Surface.Alternate}" CornerRadius="4,4,0,0" TextElement.Foreground="{DynamicResource DockingTextBrush}">
-                                <Grid>
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="*" />
-                                        <ColumnDefinition Width="Auto" />
-                                        <ColumnDefinition Width="Auto" />
-                                        <ColumnDefinition Width="Auto" />
-                                        <ColumnDefinition Width="Auto" />
-                                    </Grid.ColumnDefinitions>
-                                    <Border Padding="2,0,8,0" VerticalAlignment="Center" ClipToBounds="True"
-                                            Visibility="{Binding Model.IsSinglePane, RelativeSource={RelativeSource TemplatedParent}, Converter={avalonDockConverters:BoolToVisibilityConverter}}">
-                                        <avalonDockControls:DropDownControlArea
+                    <dockingTheme:FloatingWindowFrame>
+                        <!-- AvalonDock hosts the pane in a child HWND. Reserve the curved lower
+                             edge in this window so that even opaque hosted content clears it. -->
+                        <Border x:Name="WindowBorder" Background="{DynamicResource DockingChromeBackground}"
+                                BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="1" CornerRadius="8" Padding="0,0,0,6">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="24" MinHeight="24" />
+                                    <RowDefinition Height="*" />
+                                </Grid.RowDefinitions>
+                                <Border x:Name="Header" dockingTheme:FloatingWindowFrame.IsCaption="True" Padding="6,0,0,0" Background="{DynamicResource CV.Surface.Alternate}" CornerRadius="7,7,0,0" TextElement.Foreground="{DynamicResource DockingTextBrush}">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <Border Padding="0,0,6,0" VerticalAlignment="Center" ClipToBounds="True"
+                                                Visibility="{Binding Model.IsSinglePane, RelativeSource={RelativeSource TemplatedParent}, Converter={avalonDockConverters:BoolToVisibilityConverter}}">
+                                            <avalonDockControls:DropDownControlArea
+                                                DropDownContextMenu="{Binding Model.Root.Manager.AnchorableContextMenu, RelativeSource={RelativeSource TemplatedParent}}"
+                                                DropDownContextMenuDataContext="{Binding SingleContentLayoutItem, RelativeSource={RelativeSource TemplatedParent}}"
+                                                Style="{DynamicResource DropDownControlArea}">
+                                                <ContentPresenter Content="{Binding Model.SinglePane.SelectedContent, RelativeSource={RelativeSource TemplatedParent}}"
+                                                                  ContentTemplate="{Binding Model.Root.Manager.AnchorableTitleTemplate, RelativeSource={RelativeSource TemplatedParent}}"
+                                                                  ContentTemplateSelector="{Binding Model.Root.Manager.AnchorableTitleTemplateSelector, RelativeSource={RelativeSource TemplatedParent}}" />
+                                            </avalonDockControls:DropDownControlArea>
+                                        </Border>
+
+                                        <ItemsControl Grid.Column="1" Style="{StaticResource DockingTitleActionItemsStyle}"
+                                            ItemsSource="{Binding Model.SinglePane.SelectedContent.Content, RelativeSource={RelativeSource TemplatedParent}, Converter={StaticResource DockPanelTitleActionsConverter}}" />
+                                        <avalonDockControls:DropDownButton x:Name="SinglePaneContextMenu" Grid.Column="2"
+                                            shell:WindowChrome.IsHitTestVisibleInChrome="True"
                                             DropDownContextMenu="{Binding Model.Root.Manager.AnchorableContextMenu, RelativeSource={RelativeSource TemplatedParent}}"
                                             DropDownContextMenuDataContext="{Binding SingleContentLayoutItem, RelativeSource={RelativeSource TemplatedParent}}"
-                                            Style="{DynamicResource DropDownControlArea}">
-                                            <ContentPresenter Content="{Binding Model.SinglePane.SelectedContent, RelativeSource={RelativeSource TemplatedParent}}"
-                                                              ContentTemplate="{Binding Model.Root.Manager.AnchorableTitleTemplate, RelativeSource={RelativeSource TemplatedParent}}"
-                                                              ContentTemplateSelector="{Binding Model.Root.Manager.AnchorableTitleTemplateSelector, RelativeSource={RelativeSource TemplatedParent}}" />
-                                        </avalonDockControls:DropDownControlArea>
-                                    </Border>
-
-                                    <ItemsControl Grid.Column="1" Style="{StaticResource DockingTitleActionItemsStyle}"
-                                        ItemsSource="{Binding Model.SinglePane.SelectedContent.Content, RelativeSource={RelativeSource TemplatedParent}, Converter={StaticResource DockPanelTitleActionsConverter}}" />
-                                    <avalonDockControls:DropDownButton x:Name="SinglePaneContextMenu" Grid.Column="2"
-                                        shell:WindowChrome.IsHitTestVisibleInChrome="True"
-                                        DropDownContextMenu="{Binding Model.Root.Manager.AnchorableContextMenu, RelativeSource={RelativeSource TemplatedParent}}"
-                                        DropDownContextMenuDataContext="{Binding SingleContentLayoutItem, RelativeSource={RelativeSource TemplatedParent}}"
-                                        Style="{StaticResource ColorVisionFloatingCaptionMenuStyle}"
-                                        ToolTip="{x:Static avalonDockProperties:Resources.Anchorable_CxMenu_Hint}"
-                                        Visibility="{Binding Model.IsSinglePane, RelativeSource={RelativeSource TemplatedParent}, Converter={avalonDockConverters:BoolToVisibilityConverter}}">
-                                        <TextBlock x:Name="PART_ImgPinMenu" Text="&#xE70D;" Style="{StaticResource ColorVisionFloatingCaptionGlyphStyle}" />
-                                    </avalonDockControls:DropDownButton>
-                                    <Button x:Name="PART_PinMaximize" Grid.Column="3" shell:WindowChrome.IsHitTestVisibleInChrome="True"
-                                            Command="{x:Static shell:SystemCommands.MaximizeWindowCommand}"
-                                            CommandParameter="{Binding RelativeSource={RelativeSource TemplatedParent}}"
-                                            Style="{StaticResource ColorVisionFloatingCaptionButtonStyle}"
-                                            ToolTip="{x:Static avalonDockProperties:Resources.Window_Maximize}"
-                                            Visibility="{Binding IsMaximized, RelativeSource={RelativeSource TemplatedParent}, Converter={avalonDockConverters:InverseBoolToVisibilityConverter}}">
-                                        <TextBlock x:Name="PART_ImgPinMaximize" Text="&#xE922;" Style="{StaticResource ColorVisionFloatingCaptionGlyphStyle}" />
-                                    </Button>
-                                    <Button x:Name="PART_PinRestore" Grid.Column="3" shell:WindowChrome.IsHitTestVisibleInChrome="True"
-                                            Command="{x:Static shell:SystemCommands.RestoreWindowCommand}"
-                                            CommandParameter="{Binding RelativeSource={RelativeSource TemplatedParent}}"
-                                            Style="{StaticResource ColorVisionFloatingCaptionButtonStyle}"
-                                            ToolTip="{x:Static avalonDockProperties:Resources.Window_Restore}"
-                                            Visibility="{Binding IsMaximized, RelativeSource={RelativeSource TemplatedParent}, Converter={avalonDockConverters:BoolToVisibilityConverter}}">
-                                        <TextBlock x:Name="PART_ImgPinRestore" Text="&#xE923;" Style="{StaticResource ColorVisionFloatingCaptionGlyphStyle}" />
-                                    </Button>
-                                    <Button x:Name="PART_PinClose" Grid.Column="4" shell:WindowChrome.IsHitTestVisibleInChrome="True"
-                                            Command="{Binding HideWindowCommand, RelativeSource={RelativeSource TemplatedParent}}"
-                                            Style="{StaticResource ColorVisionFloatingCaptionButtonStyle}"
-                                            ToolTip="{x:Static avalonDockProperties:Resources.Anchorable_BtnClose_Hint}"
-                                            Visibility="{Binding IsEnabled, RelativeSource={RelativeSource Self}, Mode=OneWay, Converter={avalonDockConverters:BoolToVisibilityConverter}}">
-                                        <TextBlock x:Name="PART_ImgPinClose" Text="&#xE711;" Style="{StaticResource ColorVisionFloatingCaptionGlyphStyle}" />
-                                    </Button>
-                                </Grid>
-                            </Border>
-                            <ContentPresenter x:Name="FloatingContent" Grid.Row="1" Margin="1,0,1,1" Content="{TemplateBinding Content}" />
-                        </Grid>
-                        <Border x:Name="WindowBorder" IsHitTestVisible="False" Background="Transparent" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="1" CornerRadius="4" />
-                    </Grid>
+                                            Style="{StaticResource ColorVisionFloatingCaptionMenuStyle}"
+                                            ToolTip="{x:Static avalonDockProperties:Resources.Anchorable_CxMenu_Hint}"
+                                            Visibility="{Binding Model.IsSinglePane, RelativeSource={RelativeSource TemplatedParent}, Converter={avalonDockConverters:BoolToVisibilityConverter}}">
+                                            <TextBlock x:Name="PART_ImgPinMenu" Text="&#xE70D;" FontSize="10" Style="{StaticResource ColorVisionFloatingCaptionGlyphStyle}" />
+                                        </avalonDockControls:DropDownButton>
+                                        <Button x:Name="PART_PinMaximize" Grid.Column="3" shell:WindowChrome.IsHitTestVisibleInChrome="True"
+                                                Command="{x:Static shell:SystemCommands.MaximizeWindowCommand}"
+                                                CommandParameter="{Binding RelativeSource={RelativeSource TemplatedParent}}"
+                                                Style="{StaticResource ColorVisionFloatingCaptionButtonStyle}"
+                                                ToolTip="{x:Static avalonDockProperties:Resources.Window_Maximize}"
+                                                Visibility="{Binding IsMaximized, RelativeSource={RelativeSource TemplatedParent}, Converter={avalonDockConverters:InverseBoolToVisibilityConverter}}">
+                                            <TextBlock x:Name="PART_ImgPinMaximize" Text="&#xE922;" FontSize="10" Style="{StaticResource ColorVisionFloatingCaptionGlyphStyle}" />
+                                        </Button>
+                                        <Button x:Name="PART_PinRestore" Grid.Column="3" shell:WindowChrome.IsHitTestVisibleInChrome="True"
+                                                Command="{x:Static shell:SystemCommands.RestoreWindowCommand}"
+                                                CommandParameter="{Binding RelativeSource={RelativeSource TemplatedParent}}"
+                                                Style="{StaticResource ColorVisionFloatingCaptionButtonStyle}"
+                                                ToolTip="{x:Static avalonDockProperties:Resources.Window_Restore}"
+                                                Visibility="{Binding IsMaximized, RelativeSource={RelativeSource TemplatedParent}, Converter={avalonDockConverters:BoolToVisibilityConverter}}">
+                                            <TextBlock x:Name="PART_ImgPinRestore" Text="&#xE923;" FontSize="10" Style="{StaticResource ColorVisionFloatingCaptionGlyphStyle}" />
+                                        </Button>
+                                        <Button x:Name="PART_PinClose" Grid.Column="4" shell:WindowChrome.IsHitTestVisibleInChrome="True"
+                                                Command="{Binding HideWindowCommand, RelativeSource={RelativeSource TemplatedParent}}"
+                                                Style="{StaticResource ColorVisionFloatingCaptionButtonStyle}"
+                                                ToolTip="{x:Static avalonDockProperties:Resources.Anchorable_BtnClose_Hint}"
+                                                Visibility="{Binding IsEnabled, RelativeSource={RelativeSource Self}, Mode=OneWay, Converter={avalonDockConverters:BoolToVisibilityConverter}}">
+                                            <TextBlock x:Name="PART_ImgPinClose" Text="&#xE711;" FontSize="14" Style="{StaticResource ColorVisionFloatingCaptionGlyphStyle}" />
+                                        </Button>
+                                    </Grid>
+                                </Border>
+                                <ContentPresenter x:Name="FloatingContent" Grid.Row="1" Content="{TemplateBinding Content}" />
+                            </Grid>
+                        </Border>
+                    </dockingTheme:FloatingWindowFrame>
                     <ControlTemplate.Triggers>
+                        <DataTrigger Binding="{Binding Model.SinglePane.Children.Count, RelativeSource={RelativeSource TemplatedParent}}" Value="1">
+                            <Setter TargetName="WindowBorder" Property="Background" Value="{DynamicResource GlobalBackground}" />
+                        </DataTrigger>
                         <Trigger Property="WindowState" Value="Maximized">
                             <Setter TargetName="WindowBorder" Property="BorderThickness" Value="0" />
                             <Setter TargetName="WindowBorder" Property="CornerRadius" Value="0" />
-                            <Setter TargetName="WindowBorderForResize" Property="BorderThickness" Value="0" />
-                            <Setter TargetName="WindowBorderForResize" Property="CornerRadius" Value="0" />
                             <Setter TargetName="Header" Property="CornerRadius" Value="0" />
-                            <Setter TargetName="FloatingContent" Property="Margin" Value="0" />
                         </Trigger>
-                        <DataTrigger Binding="{Binding Model.SinglePane.SelectedContent.IsActive, RelativeSource={RelativeSource Self}}" Value="True">
+                        <Trigger Property="IsActive" Value="True">
                             <Setter TargetName="WindowBorder" Property="BorderBrush" Value="{DynamicResource DockingAccentBrush}" />
-                        </DataTrigger>
+                            <Setter TargetName="SinglePaneContextMenu" Property="Foreground" Value="{DynamicResource DockingTextBrush}" />
+                            <Setter TargetName="PART_PinMaximize" Property="Foreground" Value="{DynamicResource DockingTextBrush}" />
+                            <Setter TargetName="PART_PinRestore" Property="Foreground" Value="{DynamicResource DockingTextBrush}" />
+                            <Setter TargetName="PART_PinClose" Property="Foreground" Value="{DynamicResource DockingTextBrush}" />
+                        </Trigger>
                         <DataTrigger Binding="{Binding Model.SinglePane.SelectedContent.CanClose, RelativeSource={RelativeSource Self}}" Value="True">
                             <Setter TargetName="PART_PinClose" Property="Command" Value="{Binding CloseWindowCommand, RelativeSource={RelativeSource TemplatedParent}}" />
                             <Setter TargetName="PART_PinClose" Property="ToolTip" Value="{x:Static avalonDockProperties:Resources.Document_Close}" />
                         </DataTrigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+    <dockingTheme:FloatingDocumentCaption x:Key="FloatingDocumentCaption" />
+    <dockingTheme:FloatingDocumentHostPrefix x:Key="FloatingDocumentHostPrefix" />
+
+    <Style x:Key="FloatingDocumentButton" TargetType="Button" BasedOn="{StaticResource ColorVisionFloatingCaptionButtonStyle}">
+        <Setter Property="Width" Value="36" />
+        <Setter Property="Height" Value="28" />
+        <Setter Property="shell:WindowChrome.IsHitTestVisibleInChrome" Value="True" />
+        <Setter Property="AutomationProperties.Name" Value="{Binding ToolTip, RelativeSource={RelativeSource Self}}" />
+    </Style>
+
+    <Style TargetType="{x:Type avalonDockControls:LayoutDocumentFloatingWindowControl}">
+        <Setter Property="UseLayoutRounding" Value="True" />
+        <Setter Property="SnapsToDevicePixels" Value="True" />
+        <Setter Property="Background" Value="{DynamicResource DockingSurfaceBackground}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource DockingBorderBrush}" />
+        <Setter Property="dockingTheme:FloatingDocumentCaption.Document">
+            <Setter.Value>
+                <MultiBinding Converter="{StaticResource FloatingDocumentCaption}">
+                    <Binding Path="Model" RelativeSource="{RelativeSource Self}" />
+                    <Binding Path="Model.SinglePane.SelectedContent" RelativeSource="{RelativeSource Self}" />
+                    <Binding Path="Model.Root.ActiveContent" RelativeSource="{RelativeSource Self}" />
+                </MultiBinding>
+            </Setter.Value>
+        </Setter>
+        <Setter Property="Title" Value="{Binding Path=(dockingTheme:FloatingDocumentCaption.Document).Title, RelativeSource={RelativeSource Self}, FallbackValue='', TargetNullValue=''}" />
+        <Setter Property="shell:WindowChrome.WindowChrome">
+            <Setter.Value>
+                <shell:WindowChrome CaptionHeight="32" ResizeBorderThickness="5" CornerRadius="8"
+                                    GlassFrameThickness="1,0,1,1" ShowSystemMenu="False" />
+            </Setter.Value>
+        </Setter>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type avalonDockControls:LayoutDocumentFloatingWindowControl}">
+                    <dockingTheme:FloatingWindowFrame x:Name="Frame">
+                        <Border x:Name="WindowBorder" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="1" CornerRadius="8">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="36" />
+                                    <RowDefinition Height="*" />
+                                </Grid.RowDefinitions>
+                                <Border x:Name="Header" Background="Transparent" Padding="6,0,2,0"
+                                        dockingTheme:FloatingWindowFrame.IsCaption="True" TextElement.Foreground="{DynamicResource DockingMutedTextBrush}">
+                                    <DockPanel>
+                                        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                                            <Button x:Name="PART_PinMaximize" Style="{StaticResource FloatingDocumentButton}"
+                                                    Command="{x:Static shell:SystemCommands.MaximizeWindowCommand}" CommandParameter="{Binding RelativeSource={RelativeSource TemplatedParent}}"
+                                                    ToolTip="{x:Static avalonDockProperties:Resources.Window_Maximize}">
+                                                <TextBlock Style="{StaticResource ColorVisionFloatingCaptionGlyphStyle}" FontSize="10" Text="&#xE922;" />
+                                            </Button>
+                                            <Button x:Name="PART_PinRestore" Style="{StaticResource FloatingDocumentButton}" Visibility="Collapsed"
+                                                    Command="{x:Static shell:SystemCommands.RestoreWindowCommand}" CommandParameter="{Binding RelativeSource={RelativeSource TemplatedParent}}"
+                                                    ToolTip="{x:Static avalonDockProperties:Resources.Window_Restore}">
+                                                <TextBlock Style="{StaticResource ColorVisionFloatingCaptionGlyphStyle}" FontSize="10" Text="&#xE923;" />
+                                            </Button>
+                                            <Button x:Name="PART_PinClose" Style="{StaticResource FloatingDocumentButton}"
+                                                    Command="{Binding CloseWindowCommand, RelativeSource={RelativeSource TemplatedParent}}"
+                                                    Visibility="{Binding IsEnabled, RelativeSource={RelativeSource Self}, Converter={avalonDockConverters:BoolToVisibilityConverter}}"
+                                                    ToolTip="{x:Static avalonDockProperties:Resources.Document_Close}">
+                                                <TextBlock Style="{StaticResource ColorVisionFloatingCaptionGlyphStyle}" FontSize="13" Text="&#xE711;" />
+                                            </Button>
+                                        </StackPanel>
+                                        <Grid DockPanel.Dock="Left" Width="20" Height="20" Margin="0,0,10,0" IsHitTestVisible="False">
+                                            <Image x:Name="CaptionIcon" Source="{Binding DockHostWindow.Icon, ElementName=Frame}" Stretch="Uniform" />
+                                            <TextBlock x:Name="FileGlyph" Visibility="Collapsed" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
+                                                       Text="&#xE8A5;" FontSize="16" TextAlignment="Center" VerticalAlignment="Center" />
+                                        </Grid>
+                                        <DockPanel x:Name="TitleLine" ClipToBounds="True" Margin="0,0,8,0" VerticalAlignment="Center">
+                                            <TextBlock x:Name="HostName" DockPanel.Dock="Left" MaxWidth="150" TextTrimming="CharacterEllipsis">
+                                                <TextBlock.Text>
+                                                    <MultiBinding Converter="{StaticResource FloatingDocumentHostPrefix}">
+                                                        <Binding Path="DockHostWindow.Title" ElementName="Frame" />
+                                                        <Binding Path="ActualWidth" ElementName="TitleLine" />
+                                                    </MultiBinding>
+                                                </TextBlock.Text>
+                                            </TextBlock>
+                                            <TextBlock x:Name="Separator" DockPanel.Dock="Left" Text="–" Margin="5,0" />
+                                            <ContentPresenter x:Name="HeaderContent" Content="{Binding Path=(dockingTheme:FloatingDocumentCaption.Document), RelativeSource={RelativeSource TemplatedParent}}"
+                                                ContentTemplate="{Binding Model.Root.Manager.DocumentTitleTemplate, RelativeSource={RelativeSource TemplatedParent}}"
+                                                ContentTemplateSelector="{Binding Model.Root.Manager.DocumentTitleTemplateSelector, RelativeSource={RelativeSource TemplatedParent}}" />
+                                        </DockPanel>
+                                    </DockPanel>
+                                </Border>
+                                <ContentPresenter x:Name="FloatingContent" Grid.Row="1" Margin="6,0,6,6" Content="{TemplateBinding Content}" />
+                            </Grid>
+                        </Border>
+                    </dockingTheme:FloatingWindowFrame>
+                    <ControlTemplate.Triggers>
+                        <DataTrigger Binding="{Binding DockHostWindow.Icon, ElementName=Frame}" Value="{x:Null}">
+                            <Setter TargetName="CaptionIcon" Property="Source" Value="{Binding Path=(dockingTheme:FloatingDocumentCaption.Document).IconSource, RelativeSource={RelativeSource TemplatedParent}}" />
+                        </DataTrigger>
+                        <Trigger SourceName="CaptionIcon" Property="Source" Value="{x:Null}">
+                            <Setter TargetName="FileGlyph" Property="Visibility" Value="Visible" />
+                        </Trigger>
+                        <Trigger SourceName="HostName" Property="Text" Value="">
+                            <Setter TargetName="Separator" Property="Visibility" Value="Collapsed" />
+                        </Trigger>
+                        <Trigger Property="IsActive" Value="True">
+                            <Setter TargetName="WindowBorder" Property="BorderBrush" Value="{DynamicResource DockingAccentBrush}" />
+                            <Setter TargetName="Header" Property="TextElement.Foreground" Value="{DynamicResource DockingTextBrush}" />
+                            <Setter TargetName="PART_PinMaximize" Property="Foreground" Value="{DynamicResource DockingTextBrush}" />
+                            <Setter TargetName="PART_PinRestore" Property="Foreground" Value="{DynamicResource DockingTextBrush}" />
+                            <Setter TargetName="PART_PinClose" Property="Foreground" Value="{DynamicResource DockingTextBrush}" />
+                        </Trigger>
+                        <Trigger Property="WindowState" Value="Maximized">
+                            <Setter TargetName="WindowBorder" Property="CornerRadius" Value="0" />
+                            <Setter TargetName="WindowBorder" Property="BorderThickness" Value="0" />
+                            <Setter TargetName="FloatingContent" Property="Margin" Value="0" />
+                            <Setter TargetName="PART_PinMaximize" Property="Visibility" Value="Collapsed" />
+                            <Setter TargetName="PART_PinRestore" Property="Visibility" Value="Visible" />
+                        </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
             </Setter.Value>

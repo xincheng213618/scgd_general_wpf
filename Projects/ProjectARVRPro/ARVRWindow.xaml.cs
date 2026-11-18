@@ -2328,24 +2328,27 @@ namespace ProjectARVRPro
 
             if (sender is ListView listView && listView.SelectedItem is ProjectARVRReuslt result)
             {
+                bool needsHistoryPayload = result.Id > 0 && result.ViewResultJson == null;
                 try
                 {
-                    ViewResultManager.LoadViewResultJson(result);
-                    if (result.FlowStatus == FlowStatus.Completed)
+                    if (needsHistoryPayload || result.FlowStatus != FlowStatus.Completed)
                     {
-                        GenoutputText(result);
+                        outputText.Background = Brushes.Transparent;
+                        outputText.Document.Blocks.Clear();
+                        if (result.FlowStatus == FlowStatus.Completed)
+                            SNtextBox.Focus();
                     }
                     else
                     {
-                        outputText.Background = Brushes.Transparent;
-                        outputText.Document.Blocks.Clear(); // 清除之前的内容
+                        GenoutputText(result);
                     }
-
                 }
                 catch (Exception ex)
                 {
                     log.Error(ex);
                 }
+                if (!IsCurrentResultImageRequest(requestVersion, result))
+                    return;
 
                 ResultImageFilePaths imagePaths = ResultImageFilePaths.Capture(result);
                 CancellationTokenSource requestCancellation = new();
@@ -2355,6 +2358,35 @@ namespace ProjectARVRPro
                     bool gateEntered = false;
                     try
                     {
+                        if (!IsCurrentResultImageRequest(requestVersion, result))
+                            return;
+
+                        // Historical reads have their own gate. A slow read must not hold up a live result image.
+                        if (needsHistoryPayload)
+                        {
+                            try
+                            {
+                                if (result.ViewResultJson == null)
+                                {
+                                    string? json = await ViewResultManager.ReadHistoricalViewResultJsonAsync(result.Id, requestCancellation.Token);
+                                    requestCancellation.Token.ThrowIfCancellationRequested();
+                                    if (!IsCurrentResultImageRequest(requestVersion, result))
+                                        return;
+                                    result.ViewResultJson ??= json ?? string.Empty;
+                                }
+                                if (result.FlowStatus == FlowStatus.Completed)
+                                    RenderResultOutputText(result);
+                            }
+                            catch (OperationCanceledException) when (requestCancellation.IsCancellationRequested)
+                            {
+                                throw;
+                            }
+                            catch (Exception ex)
+                            {
+                                log.Error("读取或显示历史结果详情失败", ex);
+                            }
+                        }
+
                         await _resultImagePresentationGate.WaitAsync(requestCancellation.Token);
                         gateEntered = true;
                         if (!IsCurrentResultImageRequest(requestVersion, result))
@@ -2896,6 +2928,12 @@ namespace ProjectARVRPro
 
         public void GenoutputText(ProjectARVRReuslt result)
         {
+            RenderResultOutputText(result);
+            SNtextBox.Focus();
+        }
+
+        private void RenderResultOutputText(ProjectARVRReuslt result)
+        {
             outputText.Background = result.Result ? Brushes.Lime : Brushes.Red;
             outputText.Document.Blocks.Clear(); // 清除之前的内容
 
@@ -2934,7 +2972,6 @@ namespace ProjectARVRPro
             AppendOutputLine(paragraph, "Pass/Fail Criteria:", foreground, outputFontSize);
             AppendOutputLine(paragraph, result.Result ? "Pass" : "Fail", foreground, outputFontSize);
             outputText.Document.Blocks.Add(paragraph);
-            SNtextBox.Focus();
         }
 
         private static void AppendOutputLine(Paragraph paragraph, string text, Brush foreground, double fontSize)

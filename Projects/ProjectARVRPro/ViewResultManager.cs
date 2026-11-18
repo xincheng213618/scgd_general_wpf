@@ -2,6 +2,7 @@
 using ColorVision.Common.MVVM;
 using ColorVision.Database;
 using ColorVision.UI;
+using Microsoft.Data.Sqlite;
 using ProjectARVRPro.Exports;
 using ProjectARVRPro.Exports.Lux;
 using ProjectARVRPro.ImageExport;
@@ -445,16 +446,29 @@ namespace ProjectARVRPro
         public RelayCommand GenericQueryCommand { get; set; }
 
         private readonly SqlSugarClient _db;
+        private readonly string _historyReadConnectionString;
+        private readonly SemaphoreSlim _historyReadGate = new(1, 1);
 
-        public ViewResultManager()
+        public ViewResultManager() : this(SqliteDbPath, ConfigService.Instance.GetRequiredService<ViewResultManagerConfig>())
         {
-            Config = ConfigService.Instance.GetRequiredService<ViewResultManagerConfig>();
+        }
+
+        internal ViewResultManager(string databasePath, ViewResultManagerConfig config)
+        {
+            Config = config;
             QueryCommand = new RelayCommand(a => Query());
             GenericQueryCommand = new RelayCommand(a => GenericQuery());
 
+            _historyReadConnectionString = new SqliteConnectionStringBuilder
+            {
+                DataSource = databasePath,
+                Mode = SqliteOpenMode.ReadOnly,
+                DefaultTimeout = 5,
+                Pooling = false
+            }.ToString();
             _db = new SqlSugarClient(new ConnectionConfig
             {
-                ConnectionString = $"Data Source={SqliteDbPath};Default Timeout=5",
+                ConnectionString = $"Data Source={databasePath};Default Timeout=5",
                 DbType = DbType.Sqlite,
                 IsAutoCloseConnection = true
             });
@@ -624,6 +638,31 @@ namespace ProjectARVRPro
             if (item.ViewResultJson == null && item.Id > 0)
                 item.ViewResultJson = ResultJsonPayloadStorage.LoadViewResultJson(_db, item.Id) ?? string.Empty;
             return item.ViewResultJson;
+        }
+
+        internal async Task<string?> ReadHistoricalViewResultJsonAsync(int id, CancellationToken cancellationToken)
+        {
+            await _historyReadGate.WaitAsync(cancellationToken).ConfigureAwait(false);
+            try
+            {
+                // Keep the gate until the synchronous SQLite read and decompression have finished.
+                string? json = await Task.Run(() =>
+                {
+                    using var db = new SqlSugarClient(new ConnectionConfig
+                    {
+                        ConnectionString = _historyReadConnectionString,
+                        DbType = DbType.Sqlite,
+                        IsAutoCloseConnection = true
+                    });
+                    return ResultJsonPayloadStorage.LoadViewResultJson(db, id);
+                }, cancellationToken).ConfigureAwait(false);
+                cancellationToken.ThrowIfCancellationRequested();
+                return json;
+            }
+            finally
+            {
+                _historyReadGate.Release();
+            }
         }
 
         public IReadOnlyList<ProjectARVRReuslt> GetObjectiveTestFlowResults(int objectiveRecordId)

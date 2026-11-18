@@ -8,7 +8,6 @@
 
 #include <algorithm>
 #include <array>
-#include <atomic>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
@@ -16,6 +15,7 @@
 #include <fstream>
 #include <limits>
 #include <memory>
+#include <mutex>
 #include <string>
 #include <type_traits>
 #include <utility>
@@ -190,6 +190,101 @@ bool validLegacyRoi(
         && x + width < static_cast<std::uint64_t>(fullWidth)
         && y + height < static_cast<std::uint64_t>(fullHeight);
 }
+
+#if defined(_M_X64)
+bool tryRemapFixedBgr16(
+    const cv::Mat& source,
+    cv::Mat& result,
+    const cv::Mat& coordinates,
+    const cv::Mat& interpolation)
+{
+    // Keep the fixed-map interpolation and float rounding verified against OpenCV 5.0.0.
+    static const bool supportedVersion = cv::getVersionString() == "5.0.0";
+    constexpr auto maximumDimension = (std::numeric_limits<short>::max)();
+    constexpr std::size_t minimumPixels = 5'000'000;
+    if (!supportedVersion || !cv::useOptimized() || source.type() != CV_16UC3
+        || result.total() < minimumPixels || source.cols < 3 || source.rows < 2
+        || source.cols >= maximumDimension || source.rows >= maximumDimension
+        || result.cols >= maximumDimension || result.rows >= maximumDimension
+        || coordinates.type() != CV_16SC2 || interpolation.type() != CV_16UC1
+        || coordinates.size() != result.size() || interpolation.size() != result.size()
+        || reinterpret_cast<std::uintptr_t>(source.data) % alignof(std::uint16_t) != 0
+        || reinterpret_cast<std::uintptr_t>(result.data) % alignof(std::uint16_t) != 0) {
+        return false;
+    }
+
+    static const auto weights = [] {
+        constexpr auto scale = static_cast<float>(cv::INTER_TAB_SIZE);
+        std::array<cv::Vec4f, cv::INTER_TAB_SIZE2> table;
+        for (int i = 0; i != cv::INTER_TAB_SIZE2; ++i) {
+            const float u = static_cast<float>(i % cv::INTER_TAB_SIZE) / scale;
+            const float v = static_cast<float>(i / cv::INTER_TAB_SIZE) / scale;
+            table[i] = cv::Vec4f((1.0F - u) * (1.0F - v), u * (1.0F - v), (1.0F - u) * v, u * v);
+        }
+        return table;
+    }();
+    const auto zero = _mm_setzero_si128();
+    const auto bias = _mm_set1_epi32(0x8000);
+    const auto sign = _mm_set1_epi16(-32768);
+    const auto stride = source.step1();
+    const auto* sourcePixels = source.ptr<std::uint16_t>();
+    const auto loadFourSamples = [&](const std::uint16_t* samples) {
+        return _mm_cvtepi32_ps(_mm_unpacklo_epi16(
+            _mm_loadl_epi64(reinterpret_cast<const __m128i*>(samples)), zero));
+    };
+    const auto lookupPixel = [&](int column, int row) -> const std::uint16_t* {
+        static constexpr std::uint16_t border[3]{};
+        return static_cast<unsigned>(column) < static_cast<unsigned>(source.cols)
+                && static_cast<unsigned>(row) < static_cast<unsigned>(source.rows)
+            ? sourcePixels + row * stride + 3 * column : border;
+    };
+    cv::parallel_for_(cv::Range(0, result.rows), [&](const cv::Range& rows) {
+        for (int y = rows.start; y < rows.end; ++y) {
+            const auto* positions = coordinates.ptr<cv::Vec2s>(y);
+            const auto* fractions = interpolation.ptr<std::uint16_t>(y);
+            auto* out = result.ptr<std::uint16_t>(y);
+            for (int x = 0; x < result.cols; ++x, out += 3) {
+                const int sourceX = positions[x][0];
+                const int sourceY = positions[x][1];
+                const auto& weight = weights[fractions[x] & (cv::INTER_TAB_SIZE2 - 1)];
+                if (static_cast<unsigned>(sourceX) < static_cast<unsigned>(source.cols - 2)
+                    && static_cast<unsigned>(sourceY) < static_cast<unsigned>(source.rows - 1)) {
+                    // The fourth loaded component belongs to the next pixel.
+                    // The column check above keeps both loads inside this row.
+                    const auto* top = sourcePixels + sourceY * stride + 3 * sourceX;
+                    const auto* bottom = top + stride;
+                    const auto a = _mm_mul_ps(loadFourSamples(top), _mm_set1_ps(weight[0]));
+                    const auto b = _mm_mul_ps(loadFourSamples(top + 3), _mm_set1_ps(weight[1]));
+                    const auto c = _mm_mul_ps(loadFourSamples(bottom), _mm_set1_ps(weight[2]));
+                    const auto d = _mm_mul_ps(loadFourSamples(bottom + 3), _mm_set1_ps(weight[3]));
+                    // Match cv::remap's float addition order before rounding to 16 bits.
+                    const auto weighted = _mm_add_ps(_mm_add_ps(_mm_add_ps(a, b), c), d);
+                    // SSE2 packs signed values, so shift the unsigned range first.
+                    const auto ints = _mm_sub_epi32(_mm_cvtps_epi32(weighted), bias);
+                    const auto packed = _mm_xor_si128(_mm_packs_epi32(ints, ints), sign);
+                    const auto bg = static_cast<std::uint32_t>(_mm_cvtsi128_si32(packed));
+                    std::memcpy(out, &bg, sizeof(bg));
+                    out[2] = static_cast<std::uint16_t>(_mm_extract_epi16(packed, 2));
+                    continue;
+                }
+                if (sourceX < -1 || sourceX >= source.cols || sourceY < -1 || sourceY >= source.rows) {
+                    std::fill_n(out, 3, std::uint16_t{0});
+                    continue;
+                }
+                const auto* topLeft = lookupPixel(sourceX, sourceY);
+                const auto* topRight = lookupPixel(sourceX + 1, sourceY);
+                const auto* bottomLeft = lookupPixel(sourceX, sourceY + 1);
+                const auto* bottomRight = lookupPixel(sourceX + 1, sourceY + 1);
+                for (int c = 0; c != 3; ++c) {
+                    out[c] = cv::saturate_cast<std::uint16_t>(topLeft[c] * weight[0]
+                        + topRight[c] * weight[1] + bottomLeft[c] * weight[2] + bottomRight[c] * weight[3]);
+                }
+            }
+        }
+    });
+    return true;
+}
+#endif
 
 class DistortionCalibration final : public CalibrationItem {
 public:
@@ -393,6 +488,11 @@ public:
                     copyHeight));
             }
 
+#if defined(_M_X64)
+            if (tryRemapFixedBgr16(remapSource, output, *selectedCoordinates, *selectedInterpolation)) {
+                return true;
+            }
+#endif
             cv::remap(
                 remapSource,
                 output,
@@ -909,32 +1009,6 @@ private:
 
     using MapEntry = cv::Vec<std::uint16_t, 2>;
 
-    // Each nibble stores an exact signed pixel displacement, biased by 8.
-    // Fall back to absolute 16-bit coordinates if either map exceeds [-8, 7].
-    static cv::Mat compactMap(const cv::Mat& source)
-    {
-        cv::Mat compact(source.rows, source.cols, CV_8UC1);
-        std::atomic<bool> requiresWide{ false };
-        cv::parallel_for_(cv::Range(0, source.rows), [&](const cv::Range& range) {
-            for (int row = range.start; row < range.end; ++row) {
-                if (requiresWide.load(std::memory_order_relaxed)) return;
-                const auto* input = source.ptr<MapEntry>(row);
-                auto* output = compact.ptr<std::uint8_t>(row);
-                for (int column = 0; column < source.cols; ++column) {
-                    const int dx = static_cast<int>(input[column][0]) - column;
-                    const int dy = static_cast<int>(input[column][1]) - row;
-                    if (dx < -8 || dx > 7 || dy < -8 || dy > 7) {
-                        requiresWide.store(true, std::memory_order_relaxed);
-                        return;
-                    }
-                    output[column] = static_cast<std::uint8_t>((dx + 8) | ((dy + 8) << 4));
-                }
-            }
-        });
-        if (requiresWide.load(std::memory_order_relaxed)) return {};
-        return compact;
-    }
-
     template<typename Entry>
     static std::size_t sourcePixel(const Entry& entry, std::size_t pixel, int width)
     {
@@ -1024,13 +1098,31 @@ private:
         cv::Mat& destinationGr,
         cv::Mat& destinationGb) const
     {
-        destinationGr.create(height, width, CV_16UC2);
-        destinationGb.create(height, width, CV_16UC2);
+        cv::Mat compactGr(height, width, CV_8UC1);
+        cv::Mat compactGb(height, width, CV_8UC1);
+        cv::Mat wideGr;
+        cv::Mat wideGb;
+        std::once_flag allocateWideMaps;
+        std::vector<std::uint8_t> wideRows(height);
+        const auto expandPrefix = [&](int row, int columns, MapEntry* red, MapEntry* blue) {
+            const auto* compactRed = compactGr.ptr<std::uint8_t>(row);
+            const auto* compactBlue = compactGb.ptr<std::uint8_t>(row);
+            const auto expand = [row](std::uint8_t packed, int column) {
+                return MapEntry(static_cast<std::uint16_t>(column + (packed & 15) - 8),
+                    static_cast<std::uint16_t>(row + (packed >> 4) - 8));
+            };
+            for (int column = 0; column < columns; ++column) {
+                red[column] = expand(compactRed[column], column);
+                blue[column] = expand(compactBlue[column], column);
+            }
+        };
         const auto sharedTerms = (std::min)(coefficientsGr_.size(), coefficientsGb_.size());
         cv::parallel_for_(cv::Range(0, height), [&](const cv::Range& range) {
             for (int row = range.start; row < range.end; ++row) {
-                auto* mapGr = destinationGr.ptr<MapEntry>(row);
-                auto* mapGb = destinationGb.ptr<MapEntry>(row);
+                auto* compactRed = compactGr.ptr<std::uint8_t>(row);
+                auto* compactBlue = compactGb.ptr<std::uint8_t>(row);
+                MapEntry* wideRed = nullptr;
+                MapEntry* wideBlue = nullptr;
                 for (int column = 0; column < width; ++column) {
                     const double deltaColumn = static_cast<double>(column - centerColumn);
                     const double deltaRow = static_cast<double>(row - centerRow);
@@ -1050,9 +1142,8 @@ private:
                         targetRadiusGb += coefficientsGb_[index] * radiusPower;
                     }
 
-                    const auto writeEntry = [&](double targetRadius, const std::vector<double>& coefficients,
-                                                const std::array<double, 2>& columnRowShift,
-                                                MapEntry& entry) {
+                    const auto computeEntry = [&](double targetRadius, const std::vector<double>& coefficients,
+                                                const std::array<double, 2>& columnRowShift) {
                         for (std::size_t index = sharedTerms; index < coefficients.size(); ++index) {
                             targetRadius += coefficients[index]
                                 * std::pow(radius, static_cast<int>(index));
@@ -1069,21 +1160,53 @@ private:
                         sourceRow = (std::max)(1, (std::min)(sourceRow, height - 2));
                         sourceColumn = (std::max)(1, (std::min)(sourceColumn, width - 2));
 
-                        entry[0] = static_cast<std::uint16_t>(sourceColumn);
-                        entry[1] = static_cast<std::uint16_t>(sourceRow);
+                        return MapEntry(static_cast<std::uint16_t>(sourceColumn),
+                            static_cast<std::uint16_t>(sourceRow));
                     };
-                    writeEntry(targetRadiusGr, coefficientsGr_, shiftGr_, mapGr[column]);
-                    writeEntry(targetRadiusGb, coefficientsGb_, shiftGb_, mapGb[column]);
+                    const MapEntry red = computeEntry(targetRadiusGr, coefficientsGr_, shiftGr_);
+                    const MapEntry blue = computeEntry(targetRadiusGb, coefficientsGb_, shiftGb_);
+                    if (wideRed == nullptr) {
+                        // Each nibble represents a signed offset in [-8, 7], biased by 8.
+                        const auto redX = static_cast<unsigned>(red[0] - column + 8);
+                        const auto redY = static_cast<unsigned>(red[1] - row + 8);
+                        const auto blueX = static_cast<unsigned>(blue[0] - column + 8);
+                        const auto blueY = static_cast<unsigned>(blue[1] - row + 8);
+                        if ((redX | redY | blueX | blueY) < 16) {
+                            compactRed[column] = static_cast<std::uint8_t>(redX | (redY << 4));
+                            compactBlue[column] = static_cast<std::uint8_t>(blueX | (blueY << 4));
+                            continue;
+                        }
+                        // Expand the prefix and finish this row with absolute coordinates.
+                        std::call_once(allocateWideMaps, [&] {
+                            wideGr.create(height, width, CV_16UC2);
+                            wideGb.create(height, width, CV_16UC2);
+                        });
+                        wideRed = wideGr.ptr<MapEntry>(row);
+                        wideBlue = wideGb.ptr<MapEntry>(row);
+                        expandPrefix(row, column, wideRed, wideBlue);
+                        wideRows[row] = 1;
+                    }
+                    wideRed[column] = red;
+                    wideBlue[column] = blue;
                 }
             }
         });
-        auto compactGr = compactMap(destinationGr);
-        if (compactGr.empty()) return;
-        auto compactGb = compactMap(destinationGb);
-        if (!compactGb.empty()) {
+        if (wideGr.empty()) {
             destinationGr = std::move(compactGr);
             destinationGb = std::move(compactGb);
+            return;
         }
+
+        // One out-of-range offset selects the wide layout for both maps.
+        cv::parallel_for_(cv::Range(0, height), [&](const cv::Range& range) {
+            for (int row = range.start; row < range.end; ++row) {
+                if (wideRows[row] == 0) {
+                    expandPrefix(row, width, wideGr.ptr<MapEntry>(row), wideGb.ptr<MapEntry>(row));
+                }
+            }
+        });
+        destinationGr = std::move(wideGr);
+        destinationGb = std::move(wideGb);
     }
 
     bool selectMaps(

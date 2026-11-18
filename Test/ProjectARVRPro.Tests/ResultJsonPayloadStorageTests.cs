@@ -9,6 +9,34 @@ namespace ProjectARVRPro.Tests;
 public sealed class ResultJsonPayloadStorageTests
 {
     [Fact]
+    public async Task HistoricalSelectionReadsCommittedPayloadsAndRecoversAfterCancellationOrCorruption()
+    {
+        using var database = new TemporaryPayloadDatabase();
+        using var manager = new ViewResultManager(database.Path, new ViewResultManagerConfig());
+        const string json = "{\"result\":\"历史详情🧪\"}";
+        int validId;
+        int corruptId;
+        using (SqlSugarClient db = database.CreateClient())
+        {
+            validId = db.Insertable(new ProjectARVRReuslt { SN = "history" }).ExecuteReturnIdentity();
+            corruptId = db.Insertable(new ProjectARVRReuslt { SN = "corrupt" }).ExecuteReturnIdentity();
+            ResultJsonPayloadStorage.SaveViewResultJson(db, validId, json);
+            db.Ado.ExecuteCommand(
+                $"UPDATE \"ARVRReuslt\" SET \"{ResultJsonPayloadStorage.ViewResultColumnName}\" = X'00010203' WHERE \"Id\" = @id;",
+                new SugarParameter("@id", corruptId));
+        }
+
+        using CancellationTokenSource canceled = new();
+        canceled.Cancel();
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(
+            () => manager.ReadHistoricalViewResultJsonAsync(validId, canceled.Token));
+        await Assert.ThrowsAsync<InvalidDataException>(
+            () => manager.ReadHistoricalViewResultJsonAsync(corruptId, default));
+        Assert.Equal(json, await manager.ReadHistoricalViewResultJsonAsync(validId, default));
+        Assert.Null(await manager.ReadHistoricalViewResultJsonAsync(int.MaxValue, default));
+    }
+
+    [Fact]
     public void LiveListEvictionPreservesHistoryAndAnExportStillOwningTheResult()
     {
         using var database = new TemporaryPayloadDatabase();

@@ -25,6 +25,10 @@ public class AvalonDockTheme : DictionaryTheme
         {
             Source = new Uri("/ColorVision.Solution;component/Themes/AvalonDockModernTemplates.xaml", UriKind.Relative)
         });
+        resources.MergedDictionaries.Add(new ResourceDictionary
+        {
+            Source = new Uri("/ColorVision.Solution;component/Themes/AvalonDockOverlayTemplates.xaml", UriKind.Relative)
+        });
         return resources;
     }
 }

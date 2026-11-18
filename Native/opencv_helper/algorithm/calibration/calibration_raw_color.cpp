@@ -4,9 +4,15 @@
 #include <opencv2/core.hpp>
 #include <algorithm>
 #include <array>
+#include <atomic>
 #include <cmath>
 #include <cstdint>
 #include <limits>
+#include <type_traits>
+
+#if defined(_M_X64) && !defined(_M_ARM64EC)
+#include <xmmintrin.h>
+#endif
 
 #pragma float_control(precise, on)
 #pragma fp_contract(off)
@@ -168,11 +174,52 @@ struct Sum {
     }
 };
 
+#if defined(_M_X64) && !defined(_M_ARM64EC)
+bool disjoint(
+    const void* first, std::size_t firstBytes, const void* second, std::size_t secondBytes) noexcept
+{
+    const auto a = reinterpret_cast<std::uintptr_t>(first);
+    const auto b = reinterpret_cast<std::uintptr_t>(second);
+    if (firstBytes > UINTPTR_MAX - a || secondBytes > UINTPTR_MAX - b) return false;
+    return a <= b ? b - a >= firstBytes : a - b >= secondBytes;
+}
+
+bool canParallelizeRawPoi(
+    int width, int height, const void* raw, const MRawColorTransformV1& transform,
+    const MPoiRequestV1* requests, std::uint32_t count, const MPoiOptionsV2* options, MPoiResultV1* results)
+{
+    constexpr std::uint64_t minimumEstimatedArea = 262'144;
+    if (transform.kind != 0 || transform.interleavedBgr != 1
+        || count > static_cast<std::uint32_t>((std::numeric_limits<int>::max)())
+        || cv::getNumThreads() <= 1) return false;
+
+    std::uint64_t area = 0;
+    for (std::uint32_t index = 0; index < count && area < minimumEstimatedArea; ++index) {
+        const auto& request = requests[index];
+        if (request.type == 0) continue;
+        // The rectangle scanner includes both ends of each integer half-size.
+        const bool rectangle = request.type == 2;
+        const auto columns = rectangle ? request.width / 2 * 2 + 1 : request.width;
+        const auto rows = rectangle ? request.height / 2 * 2 + 1 : request.width;
+        area += static_cast<std::uint64_t>((std::min)(width, columns)) * (std::min)(height, rows);
+    }
+    if (area < minimumEstimatedArea) return false;
+
+    // The C export does not reject overlap. Retain sequential behavior for such callers.
+    const auto resultBytes = static_cast<std::size_t>(count) * sizeof(*results);
+    const auto rawBytes = static_cast<std::size_t>(width) * height * 3 * sizeof(std::uint16_t);
+    return disjoint(results, resultBytes, raw, rawBytes)
+        && disjoint(results, resultBytes, requests, static_cast<std::size_t>(count) * sizeof(*requests))
+        && disjoint(results, resultBytes, &transform, sizeof(transform))
+        && disjoint(results, resultBytes, options, sizeof(*options));
+}
+#endif
+
 template<class Source> bool poiTyped(int width, int height, const void* raw, const MRawColorTransformV1& t,
     const MPoiRequestV1* requests, std::uint32_t count, const MPoiOptionsV2* options, MPoiResultV1* results)
 {
     Reader<Source> reader{static_cast<const Source*>(raw), t, static_cast<std::size_t>(width) * height};
-    for (std::uint32_t k = 0; k < count; ++k) {
+    const auto calculate = [&](std::uint32_t k) {
         const auto& q = requests[k];
         Sum sum;
         if (q.type == 0) sum.add(reader, static_cast<std::size_t>(q.y) * width + q.x);
@@ -189,7 +236,58 @@ template<class Source> bool poiTyped(int width, int height, const void* raw, con
             }
             if (sum.count == 0) sum.add(reader, static_cast<std::size_t>(q.y) * width + q.x);
         }
-        if (!sum.finish(t.channels, options, results + k)) return false;
+        return sum.finish(t.channels, options, results + k);
+    };
+#if defined(_M_X64) && !defined(_M_ARM64EC)
+    if constexpr (std::is_same_v<Source, std::uint16_t>) {
+        constexpr unsigned exceptionMask = 0x3fU;
+        constexpr unsigned controlMask = 0xffc0U;
+        constexpr unsigned defaultControls = 0x1f80U;
+        constexpr unsigned retrySerial = 0x40U;
+        const unsigned callerState = _mm_getcsr();
+        if (count >= 12 && (callerState & controlMask) == defaultControls
+            && canParallelizeRawPoi(width, height, raw, t, requests, count, options, results)) {
+            std::atomic<unsigned> outcome{0};
+            cv::parallel_for_(cv::Range(0, static_cast<int>(count)), [&](const cv::Range& range) {
+                const unsigned workerState = _mm_getcsr();
+                if ((workerState & controlMask) != defaultControls) {
+                    outcome.fetch_or(retrySerial, std::memory_order_relaxed);
+                    return;
+                }
+
+                // Forward the exception flags to the caller without modifying
+                // the incoming floating point state of an OpenCV worker.
+                _mm_setcsr(workerState & ~exceptionMask);
+                unsigned retry = 0;
+                try {
+                    for (int index = range.start; index < range.end; ++index) {
+                        if (!calculate(static_cast<std::uint32_t>(index))) {
+                            retry = retrySerial;
+                            break;
+                        }
+                    }
+                }
+                catch (...) {
+                    _mm_setcsr(workerState);
+                    throw;
+                }
+                const unsigned raised = _mm_getcsr() & exceptionMask;
+                _mm_setcsr(workerState);
+                outcome.fetch_or(raised | retry, std::memory_order_relaxed);
+            }, count);
+            const unsigned status = outcome.load(std::memory_order_relaxed);
+            if ((status & retrySerial) == 0) {
+                _mm_setcsr(callerState | status);
+                return true;
+            }
+            // All requests use the same options. Run the original loop on an
+            // invalid batch or a worker with a different floating point mode.
+            _mm_setcsr(callerState);
+        }
+    }
+#endif
+    for (std::uint32_t k = 0; k < count; ++k) {
+        if (!calculate(k)) return false;
     }
     return true;
 }

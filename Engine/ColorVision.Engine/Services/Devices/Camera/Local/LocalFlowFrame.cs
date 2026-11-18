@@ -81,31 +81,34 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
 
         internal void PrepareForCalibration(string calibrationTemplate, int cieLength, bool hasBasicCalibration, float[]? exposure = null)
         {
-            ObjectDisposedException.ThrowIf(Volatile.Read(ref disposed) != 0, this);
-            storage.ResizeCieBuffer(cieLength);
-            LocalFrameMetadata source = Metadata;
-            Metadata = new LocalFrameMetadata
+            lock (flipSync)
             {
-                Width = source.Width,
-                Height = source.Height,
-                SourceBpp = source.SourceBpp,
-                CieBpp = source.CieBpp,
-                Channels = source.Channels,
-                Gain = source.Gain,
-                Exposure = exposure ?? source.Exposure,
-                DeviceCode = source.DeviceCode,
-                SourceFilePath = source.SourceFilePath,
-                CalibrationTemplate = calibrationTemplate,
-                CaptureTime = source.CaptureTime,
-                Acquisition = source.Acquisition,
-                PrimaryBufferKind = cieLength > 0 ? LocalFrameBufferKind.CvCie : LocalFrameBufferKind.CvRaw,
-                FlipMode = source.FlipMode,
-                IsMirrorReady = true
-            };
-            CvCieFilePath = string.Empty;
-            ColorCalibration = null;
-            CalibrationProvenance = null;
-            if (hasBasicCalibration) CvRawFilePath = string.Empty;
+                ObjectDisposedException.ThrowIf(Volatile.Read(ref disposed) != 0, this);
+                storage.ResizeCieBuffer(cieLength);
+                LocalFrameMetadata source = Metadata;
+                Metadata = new LocalFrameMetadata
+                {
+                    Width = source.Width,
+                    Height = source.Height,
+                    SourceBpp = source.SourceBpp,
+                    CieBpp = source.CieBpp,
+                    Channels = source.Channels,
+                    Gain = source.Gain,
+                    Exposure = exposure ?? source.Exposure,
+                    DeviceCode = source.DeviceCode,
+                    SourceFilePath = source.SourceFilePath,
+                    CalibrationTemplate = calibrationTemplate,
+                    CaptureTime = source.CaptureTime,
+                    Acquisition = source.Acquisition,
+                    PrimaryBufferKind = cieLength > 0 ? LocalFrameBufferKind.CvCie : LocalFrameBufferKind.CvRaw,
+                    FlipMode = source.FlipMode,
+                    IsMirrorReady = true
+                };
+                CvCieFilePath = string.Empty;
+                ColorCalibration = null;
+                CalibrationProvenance = null;
+                if (hasBasicCalibration) CvRawFilePath = string.Empty;
+            }
         }
 
         public LocalFlowFrameLease Acquire()
@@ -118,18 +121,17 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
         internal void ApplyPendingFlip(Action<LocalFlowFrameLease, LocalFrameBufferKind, CVImageFlipMode> apply)
         {
             ArgumentNullException.ThrowIfNull(apply);
-            LocalFrameBufferKind target = Metadata.PrimaryBufferKind == LocalFrameBufferKind.CvCie
-                ? LocalFrameBufferKind.CvCie
-                : LocalFrameBufferKind.CvRaw;
-            if (storage.IsBufferFlipApplied(target, Metadata.FlipMode)) return;
-            if (!Metadata.IsMirrorReady)
-            {
-                throw new InvalidOperationException("Image mirroring is deferred until spatial calibration has completed.");
-            }
-
             lock (flipSync)
             {
-                if (storage.IsBufferFlipApplied(target, Metadata.FlipMode)) return;
+                LocalFrameMetadata metadata = Metadata;
+                LocalFrameBufferKind target = metadata.PrimaryBufferKind == LocalFrameBufferKind.CvCie
+                    ? LocalFrameBufferKind.CvCie
+                    : LocalFrameBufferKind.CvRaw;
+                if (storage.IsBufferFlipApplied(target, metadata.FlipMode)) return;
+                if (!metadata.IsMirrorReady)
+                {
+                    throw new InvalidOperationException("Image mirroring is deferred until spatial calibration has completed.");
+                }
                 if (storage.IsBufferFlipFailed(target))
                 {
                     throw new InvalidOperationException($"The previous {target} mirror operation failed; this frame can no longer be used safely.");
@@ -137,7 +139,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                 using LocalFlowFrameLease lease = Acquire();
                 try
                 {
-                    apply(lease, target, Metadata.FlipMode);
+                    apply(lease, target, metadata.FlipMode);
                     storage.MarkFlipApplied(target);
                 }
                 catch

@@ -34,7 +34,7 @@
                          Style="{StaticResource ExplorerViewButton}" Click="SolutionViewButton_Click" AutomationProperties.Name="{display:DisplayText Key='解决方案视图'}"/>
             <RadioButton x:Name="FileSystemViewButton" Content="{display:DisplayText Key='文件系统'}" GroupName="ExplorerView" Margin="2,0,3,0"
                          Style="{StaticResource ExplorerViewButton}" Click="FileSystemViewButton_Click" AutomationProperties.Name="{display:DisplayText Key='文件系统视图'}"/>
-            <Border Width="1" Height="16" Background="{DynamicResource GlobalTextBrush}" Opacity="0.14" Margin="2,5,4,5"/>
+            <Border Width="1" Height="16" Background="{DynamicResource CV.Border.Control}" Margin="2,0,4,0"/>
             <Button Style="{StaticResource ExplorerToolbarButton}" Command="{x:Static explorer:SolutionNavigationCommands.SyncWithActiveDocument}"
                     CommandTarget="{Binding ElementName=SolutionTreeView}" ToolTip="{display:DisplayText Key='与活动文档同步'}" AutomationProperties.Name="{display:DisplayText Key='与活动文档同步'}">
                 <TextBlock Style="{StaticResource ExplorerToolbarIcon}" Text="&#xE8AB;"/>
@@ -52,11 +52,18 @@
                 <Rectangle Width="16" Height="16" Fill="{DynamicResource DIProperty}"/>
             </Button>
         </WrapPanel>
-        <hc:SearchBar x:Name="SearchBar1" Grid.Row="1" Margin="5,2,5,4" Height="27" Padding="5,2"
-                      FontSize="12" hc:BorderElement.CornerRadius="2" TextChanged="SearchBar1_TextChanged"
-                      hc:InfoElement.Placeholder="{x:Static properties:Resources.SearchProjectFiles}"
-                      hc:InfoElement.ShowClearButton="True" Style="{StaticResource SearchBarPlus}" IsRealTime="True"
-                      AutomationProperties.Name="{display:DisplayText Key='搜索工程文件'}"/>
+        <Border Grid.Row="1" Margin="4,1,4,4" Style="{StaticResource ExplorerSearchSurface}">
+            <hc:SearchBar x:Name="SearchBar1" Style="{StaticResource SearchBarPlus.Small}" Padding="6,0"
+                          Background="Transparent" BorderThickness="0" BorderBrush="{DynamicResource CV.Text.Secondary}"
+                          hc:InfoElement.ContentHeight="NaN" FontSize="12" TextChanged="SearchBar1_TextChanged"
+                          hc:InfoElement.Placeholder="{x:Static properties:Resources.SearchProjectFiles}"
+                          hc:InfoElement.ShowClearButton="True" IsRealTime="True"
+                          AutomationProperties.Name="{display:DisplayText Key='搜索工程文件'}">
+                <hc:SearchBar.Resources>
+                    <SolidColorBrush x:Key="ThirdlyTextBrush" Color="{DynamicResource CV.Color.Docking.MutedText}"/>
+                </hc:SearchBar.Resources>
+            </hc:SearchBar>
+        </Border>
         <Border Grid.Row="2" Background="{DynamicResource SecondaryRegionBrush}" Margin="4,0,4,2" Padding="7,5" CornerRadius="2">
             <DockPanel>
                 <Path Width="16" Height="16" Data="M1.5,4.5 L6,4.5 7.5,6 14.5,6 14.5,13.5 1.5,13.5 Z"
@@ -120,31 +127,30 @@
                                             <RowDefinition MinHeight="{TemplateBinding MinHeight}" />
                                             <RowDefinition Height="Auto" />
                                         </Grid.RowDefinitions>
-                                        <Border x:Name="SelectionBackground" Background="{DynamicResource GlobalTextBrush}" Opacity="0.085" CornerRadius="4" Visibility="Collapsed" IsHitTestVisible="False"
-                                                HorizontalAlignment="Left" Width="{Binding ViewportWidth, RelativeSource={RelativeSource AncestorType=ScrollViewer}}">
-                                            <Border.RenderTransform>
+                                        <Grid IsHitTestVisible="False" HorizontalAlignment="Left"
+                                              Width="{Binding ViewportWidth, RelativeSource={RelativeSource AncestorType=ScrollViewer}}">
+                                            <Grid.RenderTransform>
                                                 <TranslateTransform X="{Binding HorizontalOffset, RelativeSource={RelativeSource AncestorType=ScrollViewer}}"/>
-                                            </Border.RenderTransform>
-                                        </Border>
+                                            </Grid.RenderTransform>
+                                            <Border x:Name="SelectionBackground" Background="{DynamicResource GlobalTextBrush}" CornerRadius="4" Visibility="Collapsed"/>
+                                            <Border x:Name="SelectionAccent" Background="{DynamicResource ExplorerAccentBrush}" Width="3" CornerRadius="1.5"
+                                                    HorizontalAlignment="Left" Margin="1,4,0,4" Visibility="Collapsed"/>
+                                            <Border x:Name="RowOutline" BorderBrush="{DynamicResource GlobalTextBrush}" BorderThickness="1"
+                                                    CornerRadius="4" Visibility="Collapsed"/>
+                                        </Grid>
                                         <Border Name="Bd" BorderBrush="Transparent" BorderThickness="1" Background="Transparent" SnapsToDevicePixels="true" CornerRadius="4">
                                             <DockPanel LastChildFill="True" Margin="{Binding Converter={StaticResource TreeViewItemMarginConverter}, RelativeSource={RelativeSource TemplatedParent}}">
                                                 <ToggleButton Name="Expander" ClickMode="Press" Margin="4,0,2,0" Style="{StaticResource ExpandCollapseToggleStyle}" IsChecked="{Binding IsExpanded , RelativeSource={RelativeSource TemplatedParent}, Mode=TwoWay}" />
                                                 <ContentPresenter Name="PART_Header" VerticalAlignment="Center" ContentSource="Header" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" />
                                             </DockPanel>
                                         </Border>
-                                        <Border x:Name="SelectionAccent" Background="{DynamicResource PrimaryBrush}" Width="2" CornerRadius="1" HorizontalAlignment="Left" Margin="2,4,0,4" Visibility="Collapsed" IsHitTestVisible="False">
-                                            <Border.RenderTransform>
-                                                <TranslateTransform X="{Binding HorizontalOffset, RelativeSource={RelativeSource AncestorType=ScrollViewer}}"/>
-                                            </Border.RenderTransform>
-                                        </Border>
-                                        <Border x:Name="KeyboardFocus" BorderBrush="{DynamicResource PrimaryBrush}" BorderThickness="1" Opacity="0.6" CornerRadius="4" Visibility="Collapsed" IsHitTestVisible="False"/>
                                         <ItemsPresenter Name="ItemsHost" Grid.Row="1"/>
                                        
                                     </Grid>
                                     <ControlTemplate.Triggers>
                                         <Trigger SourceName="Bd" Property="UIElement.IsMouseOver" Value="true">
                                             <Setter TargetName="SelectionBackground" Property="Visibility" Value="Visible"/>
-                                            <Setter TargetName="SelectionBackground" Property="Opacity" Value="0.045"/>
+                                            <Setter TargetName="SelectionBackground" Property="Opacity" Value="0.06"/>
                                         </Trigger>
                                         <Trigger Property="TreeViewItem.IsExpanded" Value="false">
                                             <Setter TargetName="ItemsHost" Property="Visibility" Value="Collapsed" />
@@ -158,17 +164,15 @@
                                             <Setter TargetName="SelectionAccent" Property="Visibility" Value="Visible"/>
                                             <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
                                         </DataTrigger>
-                                        <MultiDataTrigger>
-                                            <MultiDataTrigger.Conditions>
-                                                <Condition Binding="{Binding IsKeyboardFocused, RelativeSource={RelativeSource Self}}" Value="True"/>
-                                                <Condition Binding="{Binding IsMultiSelected}" Value="False"/>
-                                            </MultiDataTrigger.Conditions>
-                                            <Setter TargetName="KeyboardFocus" Property="Visibility" Value="Visible"/>
-                                        </MultiDataTrigger>
+                                        <Trigger Property="IsKeyboardFocused" Value="True">
+                                            <Setter TargetName="RowOutline" Property="Visibility" Value="Visible"/>
+                                        </Trigger>
                                         <DataTrigger Binding="{Binding IsDropTarget}" Value="True">
-                                            <Setter TargetName="Bd" Property="Background" Value="{DynamicResource SecondaryRegionBrush}" />
-                                            <Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource PrimaryBrush}" />
-                                            <Setter TargetName="Bd" Property="BorderThickness" Value="1" />
+                                            <Setter TargetName="SelectionBackground" Property="Visibility" Value="Visible"/>
+                                            <Setter TargetName="SelectionBackground" Property="Background" Value="{DynamicResource ExplorerAccentBrush}"/>
+                                            <Setter TargetName="SelectionBackground" Property="Opacity" Value="0.12"/>
+                                            <Setter TargetName="RowOutline" Property="Visibility" Value="Visible"/>
+                                            <Setter TargetName="RowOutline" Property="BorderBrush" Value="{DynamicResource ExplorerAccentBrush}"/>
                                         </DataTrigger>
                                         <Trigger Property="IsEnabled" Value="false">
                                             <Setter Property="UIElement.Opacity" Value=".4" />
