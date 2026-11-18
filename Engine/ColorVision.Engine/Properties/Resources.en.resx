@@ -82,9 +82,7 @@
     <value>Under Development</value>
   </data>
 
-  <data name="TransmitChannel" xml:space="preserve">
-    <value>Send Channel</value>
-  </data>  <data name="Timeout" xml:space="preserve">
+    <data name="Timeout" xml:space="preserve">
     <value>Timeout(ms)</value>
   </data>
 
@@ -169,9 +167,6 @@
   </data>
   <data name="Refresh" xml:space="preserve">
     <value>Refresh</value>
-  </data>
-  <data name="ReceiveChannel" xml:space="preserve">
-    <value>Receive Channel</value>
   </data>
   <data name="QuickPreview" xml:space="preserve">
     <value>Quick Preview</value>
@@ -379,9 +374,6 @@
   <data name="BatchNumber" xml:space="preserve">
     <value>Batch Number</value>
   </data>
-  <data name="BasicInformation" xml:space="preserve">
-    <value>Basic Information</value>
-  </data>
 
   <data name="AutoExposure" xml:space="preserve">
     <value>Auto Exposure</value>
@@ -538,26 +530,14 @@
   <data name="AcquirePosition" xml:space="preserve">
     <value>Acquire Position</value>
   </data>
-  <data name="ResourceInformation" xml:space="preserve">
-    <value>Resource Information</value>
-  </data>
   <data name="FrameDisplayName" xml:space="preserve">
     <value>Frame display name</value>
-  </data>
-  <data name="HeartbeatTime" xml:space="preserve">
-    <value>Heartbeat Time(ms)</value>
   </data>
   <data name="DeviceAutoConnect" xml:space="preserve">
     <value>Auto-connect Device</value>
   </data>
   <data name="ApplySettings" xml:space="preserve">
     <value>Apply Settings</value>
-  </data>
-  <data name="FileCache" xml:space="preserve">
-    <value>File cache:</value>
-  </data>
-  <data name="CVCIEFileSave" xml:space="preserve">
-    <value>Saving CVCIE files:</value>
   </data>
 
 
@@ -566,9 +546,6 @@
   </data>
   <data name="FlowResultManagement" xml:space="preserve">
     <value>Flow Result Management</value>
-  </data>
-  <data name="ParsingManagement" xml:space="preserve">
-    <value>Parsing Management</value>
   </data>
 
   <data name="Camera" xml:space="preserve">
@@ -632,9 +609,6 @@
   
   <data name="PixelLedDetect" xml:space="preserve">
     <value>Pixel-level LED detection</value>
-  </data>
-  <data name="LightBandDetection" xml:space="preserve">
-    <value>LED strip testing</value>
   </data>
   <data name="MoveUp" xml:space="preserve">
     <value>Move up</value>
@@ -867,9 +841,6 @@
   <data name="DeleteGroup" xml:space="preserve">
     <value>Delete group</value>
   </data>
-  <data name="ExportCalibration" xml:space="preserve">
-    <value>Export Calibration</value>
-  </data>
   <data name="CreateCalibration" xml:space="preserve">
     <value>Create Calibration</value>
   </data>
@@ -964,9 +935,6 @@
   </data>
   
 
-  <data name="UploadLic" xml:space="preserve">
-    <value>Upload License</value>
-  </data>
   <data name="ApaptivezeroCaliSet" xml:space="preserve">
     <value>Adaptive zero setting</value>
   </data>
@@ -1160,17 +1128,8 @@
   <data name="LimitStart" xml:space="preserve">
     <value>Start Value</value>
   </data>
-  <data name="CurrentCurve" xml:space="preserve">
-    <value>Current Curve</value>
-  </data>
-  <data name="ElectricCurrent" xml:space="preserve">
-    <value>Current (mA)</value>
-  </data>
   <data name="Voltage" xml:space="preserve">
     <value>Voltage (V)</value>
-  </data>
-  <data name="VoltageCurve" xml:space="preserve">
-    <value>Voltage Curve</value>
   </data>
   <data name="RelativeSpectrumCurve" xml:space="preserve">
     <value>Relative Spectrum Curve</value>
@@ -1507,12 +1466,6 @@
   <data name="TimeoutDuration" xml:space="preserve">
     <value>Timeout(ms)</value>
   </data>
-  <data name="ParamInput" xml:space="preserve">
-    <value>Input parameters</value>
-  </data>
-  <data name="CreationDate" xml:space="preserve">
-    <value>Creation Date</value>
-  </data>
   <data name="ProcessHandlingConfig" xml:space="preserve">
     <value>Post-Process Configuration</value>
   </data>
@@ -1608,9 +1561,6 @@
     <value>Step</value>
   </data>
 
-  <data name="SelectExportFileLocation" xml:space="preserve">
-    <value>Select the export file location</value>
-  </data>
   <data name="DataBaseConfig" xml:space="preserve">
     <value>Database configuration</value>
   </data>
@@ -1741,9 +1691,6 @@
   <data name="IsSyncFrequencyEnabled" xml:space="preserve">
     <value>Enable Sync Frequency</value>
   </data>
-  <data name="GetSpectrSerialNumber" xml:space="preserve">
-    <value>Get Spectrometer Serial Number</value>
-  </data>
   <data name="EditDisplayConfig" xml:space="preserve">
     <value>Edit Display Configuration</value>
   </data>
@@ -1753,9 +1700,6 @@
   </data>
   <data name="PropertyEdit" xml:space="preserve">
     <value>Edit properties</value>
-  </data>
-  <data name="TextEdit" xml:space="preserve">
-    <value>Text Edit</value>
   </data>
   <data name="PreprocessManager" xml:space="preserve">
     <value>Preprocess Manager</value>
@@ -1771,9 +1715,6 @@
   </data>
   <data name="EmittingAreaLocation" xml:space="preserve">
     <value>Positioning of the light-emitting area</value>
-  </data>
-  <data name="TemplateEdit" xml:space="preserve">
-    <value>Template editing</value>
   </data>
   
   <data name="ExportSucceeded" xml:space="preserve">
@@ -1814,15 +1755,6 @@
   <data name="ColorDifference" xml:space="preserve">
     <value>Color Difference</value>
   </data>
-  <data name="SubPixelLedCheck" xml:space="preserve">
-    <value>Sub-pixel LED Check</value>
-  </data>
-  <data name="PixelLedCheck" xml:space="preserve">
-    <value>Pixel-level LED Check</value>
-  </data>
-  <data name="CameraTemplate" xml:space="preserve">
-    <value>Camera Template</value>
-  </data>
   <data name="ExposureTemplate" xml:space="preserve">
     <value>Exposure Template</value>
   </data>
@@ -1850,23 +1782,11 @@
   <data name="FindLightArea" xml:space="preserve">
     <value>Light Area Detection</value>
   </data>
-  <data name="LedStripCheckV2" xml:space="preserve">
-    <value>LED Strip Detection V2</value>
-  </data>
-  <data name="LedStripCheck" xml:space="preserve">
-    <value>LED Strip Detection</value>
-  </data>
   <data name="LedCheck" xml:space="preserve">
     <value>LED Check</value>
   </data>
   <data name="BinocularFusion" xml:space="preserve">
     <value>Binocular Fusion</value>
-  </data>
-  <data name="CrossCalc" xml:space="preserve">
-    <value>Cross Calculation</value>
-  </data>
-  <data name="AABuildPoints" xml:space="preserve">
-    <value>AA Build Points</value>
   </data>
   <data name="NodeProperty" xml:space="preserve">
     <value>Node Property</value>
@@ -2289,9 +2209,6 @@
   <data name="CloseCameraTimeoutCheckLog" xml:space="preserve">
     <value>Close camera timeout, check logs</value>
   </data>
-  <data name="CloseLocalVideo" xml:space="preserve">
-    <value>Close Local Video</value>
-  </data>
 
   <data name="CloseSourceMeter" xml:space="preserve">
     <value>Close Source Meter</value>
@@ -2308,9 +2225,6 @@
     <value>Current Source</value>
   </data>
 
-  <data name="DebugMode" xml:space="preserve">
-    <value>Debug mode</value>
-  </data>
 
 
 
@@ -2392,9 +2306,6 @@ Please check serial port settings.</value>
   </data>
   <data name="InvalidSerialPortTitle" xml:space="preserve">
     <value>Invalid Serial Port</value>
-  </data>
-  <data name="JsonConfig" xml:space="preserve">
-    <value>JSON Configuration</value>
   </data>
 
 
@@ -2483,9 +2394,6 @@ Please check serial port settings.</value>
   <data name="LocalCamera" xml:space="preserve">
     <value>Local Camera</value>
   </data>
-  <data name="LocalVideo" xml:space="preserve">
-    <value>Local Video</value>
-  </data>
   <data name="LuminousEfficacy" xml:space="preserve">
     <value>Luminous Efficacy</value>
   </data>
@@ -2497,12 +2405,6 @@ Please check serial port settings.</value>
   </data>
   <data name="Measure" xml:space="preserve">
     <value>Measure</value>
-  </data>
-  <data name="MeasuredCurrentA" xml:space="preserve">
-    <value>Measured Current (A)</value>
-  </data>
-  <data name="MeasuredVoltageV" xml:space="preserve">
-    <value>Measured Voltage (V)</value>
   </data>
 
   <data name="NoAvailableCameraDevice" xml:space="preserve">
@@ -2639,9 +2541,6 @@ Please close camera or other programs using this serial port, or check device co
   <data name="TemplateFileNotExist" xml:space="preserve">
     <value>Using {0} template, {1} file does not exist</value>
   </data>
-  <data name="ThirdPartyAlgorithm" xml:space="preserve">
-    <value>ThirdPartyAlgorithm</value>
-  </data>
   
   <data name="Time" xml:space="preserve">
     <value>Time</value>
@@ -2703,17 +2602,11 @@ Please close camera or other programs using this serial port, or check device co
   <data name="Flow_PreProcess_SaveNow" xml:space="preserve">
     <value>Save Now</value>
   </data>
-  <data name="Flow_PreProcess_AppliedTemplates" xml:space="preserve">
-    <value>Applied Templates</value>
-  </data>
   <data name="Flow_PreProcess_EnabledStatus" xml:space="preserve">
     <value>Enabled</value>
   </data>
   <data name="Flow_PreProcess_DisabledStatus" xml:space="preserve">
     <value>Disabled</value>
-  </data>
-  <data name="Flow_PreProcess_AllTemplates" xml:space="preserve">
-    <value>All Templates</value>
   </data>
   <data name="Flow_MeasureBatch_SelectProcessType" xml:space="preserve">
     <value>Select Process Type:</value>
@@ -2927,9 +2820,6 @@ Please close camera or other programs using this serial port, or check device co
   </data>
   <data name="Erode" xml:space="preserve">
     <value>Erode</value>
-  </data>
-  <data name="OpenWithImageJ" xml:space="preserve">
-    <value>Open with ImageJ</value>
   </data>
 
 
@@ -3227,9 +3117,6 @@ Please close camera or other programs using this serial port, or check device co
   </data>
 
 
-  <data name="ShowOnCieDiagram" xml:space="preserve">
-    <value>Show on CIE Diagram</value>
-  </data>
   <data name="MysqlTool" xml:space="preserve">
     <value>MySQL Tool</value>
   </data>
@@ -3390,9 +3277,6 @@ Please close camera or other programs using this serial port, or check device co
   </data>
   <data name="SaveFocusPoints" xml:space="preserve">
     <value>Save Focus Points</value>
-  </data>
-  <data name="SelectFlowTemplateToImport" xml:space="preserve">
-    <value>Select flow template to import:</value>
   </data>
   <data name="SelectProcessToViewConfig" xml:space="preserve">
     <value>Select a process item to view config</value>
@@ -3561,8 +3445,6 @@ Please close camera or other programs using this serial port, or check device co
   <data name="Camera_MinCoverageRatio" xml:space="preserve"><value>Minimum coverage ratio</value></data>
   <data name="Camera_RefreshIntervalMs" xml:space="preserve"><value>Refresh interval (ms)</value></data>
   <data name="Camera_RoiRegion" xml:space="preserve"><value>ROI region</value></data>
-  <data name="Camera_StandardCenterX" xml:space="preserve"><value>Reference center X</value></data>
-  <data name="Camera_StandardCenterY" xml:space="preserve"><value>Reference center Y</value></data>
   <data name="Camera_TolerancePx" xml:space="preserve"><value>Pass tolerance (px)</value></data>
   <data name="Camera_UnknownError" xml:space="preserve"><value>Unknown error</value></data>
   <data name="Channel" xml:space="preserve"><value>Channel</value></data>
@@ -3587,8 +3469,6 @@ Please close camera or other programs using this serial port, or check device co
   <data name="Flow_PreProcess_ActionName" xml:space="preserve"><value>Action name</value></data>
   <data name="Flow_PreProcess_Actions" xml:space="preserve"><value>Pre-process actions</value></data>
   <data name="Flow_PreProcess_ActionSettings" xml:space="preserve"><value>Action settings</value></data>
-  <data name="Flow_PreProcess_AllTemplatesHint" xml:space="preserve"><value>Leave empty to apply to all templates. Separate multiple templates with commas or semicolons.</value></data>
-  <data name="Flow_PreProcess_AppliedTemplatesFormat" xml:space="preserve"><value>Applied templates: {0}</value></data>
   <data name="Flow_PreProcess_AutoSaved" xml:space="preserve"><value>Automatically saved at {0}</value></data>
   <data name="Flow_PreProcess_CategoryFormat" xml:space="preserve"><value>Category: {0}</value></data>
   <data name="Flow_PreProcess_ConfigLoaded" xml:space="preserve"><value>Configuration loaded at {0}</value></data>
@@ -3704,7 +3584,6 @@ Please close camera or other programs using this serial port, or check device co
   <data name="SpectrumCalibrationGroups_SaveHint" xml:space="preserve"><value>Saving writes the calibration files for the current group. The spectrum service restarts if a calibration file changes.</value></data>
   <data name="SpectrumCalibrationGroups_Title" xml:space="preserve"><value>Calibration file groups</value></data>
   <data name="SpectrumCalibrationGroups_WavelengthCalibration" xml:space="preserve"><value>Wavelength calibration</value></data>
-  <data name="TemplateEditor_ConfirmDelete" xml:space="preserve"><value>Delete the {0} template? This cannot be undone.</value></data>
   <data name="TemplateEditor_ConfirmSetJsonAsDefault" xml:space="preserve"><value>Use the current template JSON as the default parameters for new and reset templates. Continue?</value></data>
   <data name="TemplateEditor_DefaultParametersNotSupported" xml:space="preserve"><value>This template does not support setting default parameters</value></data>
   <data name="TemplateEditor_NoSearchResults" xml:space="preserve"><value>No templates found for “{0}”</value></data>
@@ -3752,8 +3631,7 @@ Please close camera or other programs using this serial port, or check device co
   <data name="VideoCrossGuide_CrossNotFoundLowBrightness" xml:space="preserve"><value>Brightness is too low; cross not found</value></data>
   <data name="VideoCrossGuide_BrightCrossLinesNotFound" xml:space="preserve"><value>No sufficiently bright cross lines were found</value></data>
   <data name="VideoCrossGuide_InsufficientCoverage" xml:space="preserve"><value>Insufficient bright-line coverage. Row: {0:P0}; column: {1:P0}</value></data>
-  <data name="Flow_CustomNodes" xml:space="preserve"><value>Custom Nodes</value></data><data name="Flow_LocalDevices" xml:space="preserve"><value>Local Devices</value></data><data name="Flow_LocalAlgorithms" xml:space="preserve"><value>Local Algorithms</value></data>
-  <data name="Flow_OtherNodes" xml:space="preserve"><value>Other</value></data>
+  <data name="Flow_LocalDevices" xml:space="preserve"><value>Local Devices</value></data><data name="Flow_LocalAlgorithms" xml:space="preserve"><value>Local Algorithms</value></data>
   <data name="LocalImage_FilePathDesc" xml:space="preserve"><value>Path to the local image file</value></data>
   <data name="LocalImage_PathEmpty" xml:space="preserve"><value>The local image path is empty</value></data>
   <data name="LocalImage_FileNotFound" xml:space="preserve"><value>Local image not found: {0}</value></data>
@@ -3889,7 +3767,6 @@ Please close camera or other programs using this serial port, or check device co
   <data name="用于处理 RAW 图像的相机校正模板" xml:space="preserve"><value>Camera calibration template for RAW images.</value></data>
   <data name="包含目标四角点的 POI 模板，例如 POI_W_AUTO" xml:space="preserve"><value>POI template containing the four target corner points, such as POI_W_AUTO.</value></data>
   <data name="包含画布四角参考点、用于 ReMapping 的 POI 模板" xml:space="preserve"><value>POI template containing the four canvas reference corners for remapping.</value></data>
-  <data name="添加到映射后每个关注点名称之前的前缀" xml:space="preserve"><value>Prefix added to each mapped POI name.</value></data>
   <data name="使用行列、边距、点类型和点尺寸生成关注点" xml:space="preserve"><value>Generates POIs from rows, columns, margins, point type, and point size.</value></data>
   <data name="提供布点区域的 POI 模板，例如 POI_W_AUTO" xml:space="preserve"><value>POI template that defines the layout area, such as POI_W_AUTO.</value></data>
   <data name="本次取图使用的曝光时间；三通道相机的 R/G/B 使用相同值" xml:space="preserve"><value>Exposure time for this capture; R, G, and B use the same value on a three-channel camera.</value></data>
@@ -4453,9 +4330,7 @@ Please close camera or other programs using this serial port, or check device co
   <data name="半径" xml:space="preserve"><value>Radius</value></data>
   <data name="布点类型" xml:space="preserve"><value>Point Layout Type</value></data>
   <data name="布局类型" xml:space="preserve"><value>Layout Type</value></data>
-  <data name="常规布局" xml:space="preserve"><value>Standard Layout</value></data>
   <data name="串口" xml:space="preserve"><value>Serial Port</value></data>
-  <data name="存储类型" xml:space="preserve"><value>Storage Type</value></data>
   <data name="点1" xml:space="preserve"><value>Point 1</value></data>
   <data name="点2" xml:space="preserve"><value>Point 2</value></data>
   <data name="点3" xml:space="preserve"><value>Point 3</value></data>
@@ -4465,11 +4340,9 @@ Please close camera or other programs using this serial port, or check device co
   <data name="高度" xml:space="preserve"><value>Height</value></data>
   <data name="高级设置" xml:space="preserve"><value>Advanced Settings</value></data>
   <data name="缓存大小" xml:space="preserve"><value>Cache Size</value></data>
-  <data name="计算色温波长" xml:space="preserve"><value>Calculate CCT and wavelength</value></data>
   <data name="矩形" xml:space="preserve"><value>Rectangle</value></data>
   <data name="宽度" xml:space="preserve"><value>Width</value></data>
   <data name="使用本地校正" xml:space="preserve"><value>Use Local Correction</value></data>
-  <data name="使用进程内优化校正；关闭后通过 MQTT 校正服务执行。" xml:space="preserve"><value>Use optimized in-process correction. When disabled, correction runs through the MQTT correction service.</value></data>
   <data name="使用三通道曝光" xml:space="preserve"><value>Use Three-channel Exposure</value></data>
   <data name="四边形" xml:space="preserve"><value>Quadrilateral</value></data>
   <data name="亚像素" xml:space="preserve"><value>Subpixel</value></data>
@@ -4480,7 +4353,6 @@ Please close camera or other programs using this serial port, or check device co
   <data name="CAD文件" xml:space="preserve"><value>CAD File</value></data>
   <data name="CAD映射" xml:space="preserve"><value>CAD Mapping</value></data>
   <data name="CIE文件" xml:space="preserve"><value>CIE File</value></data>
-  <data name="POI文件" xml:space="preserve"><value>POI File</value></data>
   <data name="选择数据源后再操作，每次仅处理当前数据库。" xml:space="preserve"><value>Select a data source first. Each operation applies only to the current database.</value></data>
   <data name="仅管理当前数据库，不显示或操作其他数据源。" xml:space="preserve"><value>Manage only the current database. Other data sources are not shown or affected.</value></data>
   <data name="单库维护" xml:space="preserve"><value>Single Database Maintenance</value></data>
@@ -4559,8 +4431,6 @@ Please close camera or other programs using this serial port, or check device co
   <data name="SpectrumSp100Start" xml:space="preserve"><value>Start pixel</value></data>
   <data name="SpectrumSp100End" xml:space="preserve"><value>End pixel</value></data>
   <data name="SpectrumSp100Threshold" xml:space="preserve"><value>Mean threshold</value></data>
-  <data name="SpectrumOpenShutter" xml:space="preserve"><value>Open shutter command</value></data>
-  <data name="SpectrumCloseShutter" xml:space="preserve"><value>Close shutter command</value></data>
   <data name="SpectrumFluxMode" xml:space="preserve"><value>Luminous flux mode</value></data>
   <data name="SpectrumFluxDivisor" xml:space="preserve"><value>Luminous flux divisor</value></data>
   <data name="SpectrumAutoDark" xml:space="preserve"><value>Automatic dark calibration</value></data>
@@ -4783,9 +4653,6 @@ Only license records will be removed. Device settings, exported files and record
   <data name="TemplateBrowserExportHint" xml:space="preserve">
     <value>Export the selected or checked templates</value>
   </data>
-  <data name="TemplateBrowserTemplates" xml:space="preserve">
-    <value>Templates</value>
-  </data>
   <data name="TemplateBrowserSearchHint" xml:space="preserve">
     <value>Search by name (Ctrl+F)</value>
   </data>
@@ -4822,14 +4689,8 @@ Only license records will be removed. Device settings, exported files and record
   <data name="TemplateBrowserFilteredCount" xml:space="preserve">
     <value>{0} / {1} {2} templates</value>
   </data>
-  <data name="TemplateBrowserCheckedCount" xml:space="preserve">
-    <value>{0} checked</value>
-  </data>
   <data name="TemplateBrowserNoSelection" xml:space="preserve">
     <value>No template selected</value>
-  </data>
-  <data name="TemplateBrowserOneSelected" xml:space="preserve">
-    <value>1 selected</value>
   </data>
   <data name="TemplateBrowserDeleteCount" xml:space="preserve">
     <value>Delete ({0})</value>
@@ -5091,9 +4952,6 @@ Only license records will be removed. Device settings, exported files and record
   <data name="图形回显内容" xml:space="preserve">
     <value>Graphic Display Content</value>
   </data>
-  <data name="在 json.cn 中打开…" xml:space="preserve">
-    <value>Open in json.cn…</value>
-  </data>
   <data name="在文件夹中显示" xml:space="preserve">
     <value>Show in Folder</value>
   </data>
@@ -5198,9 +5056,6 @@ Only license records will be removed. Device settings, exported files and record
   </data>
   <data name="曝光" xml:space="preserve">
     <value>Exposure</value>
-  </data>
-  <data name="更多 ▾" xml:space="preserve">
-    <value>More ▾</value>
   </data>
   <data name="更多采集设置" xml:space="preserve">
     <value>More Acquisition Settings</value>
@@ -5998,9 +5853,6 @@ Open the spectrum log?</value>
   <data name="结果 ID：{0}" xml:space="preserve">
     <value>Result ID: {0}</value>
   </data>
-  <data name="灯条Poi中心计算" xml:space="preserve">
-    <value>LED Strip POI Center</value>
-  </data>
   <data name="AA布点" xml:space="preserve">
     <value>AA Point Layout</value>
   </data>
@@ -6034,9 +5886,6 @@ Open the spectrum log?</value>
   <data name="定位算法" xml:space="preserve">
     <value>Positioning Algorithms</value>
   </data>
-  <data name="基础算法" xml:space="preserve">
-    <value>Basic Algorithms</value>
-  </data>
   <data name="数据提取算法" xml:space="preserve">
     <value>Data Extraction Algorithms</value>
   </data>
@@ -6055,9 +5904,6 @@ Open the spectrum log?</value>
   <data name="黑画面检测模板" xml:space="preserve">
     <value>Black Screen Template</value>
   </data>
-  <data name="畸变模板" xml:space="preserve">
-    <value>Distortion Template</value>
-  </data>
   <data name="键盘检测模板" xml:space="preserve">
     <value>Keyboard Template</value>
   </data>
@@ -6070,20 +5916,11 @@ Open the spectrum log?</value>
   <data name="双目融合模板" xml:space="preserve">
     <value>Binocular Fusion Template</value>
   </data>
-  <data name="AA布点模板" xml:space="preserve">
-    <value>AA Point Layout Template</value>
-  </data>
-  <data name="AAFindPoints模板" xml:space="preserve">
-    <value>AA Point Location Template</value>
-  </data>
   <data name="AOI模板" xml:space="preserve">
     <value>AOI Template</value>
   </data>
   <data name="BlackMura模板" xml:space="preserve">
     <value>Black Mura Template</value>
-  </data>
-  <data name="BuildPoi模板" xml:space="preserve">
-    <value>POI Layout Template</value>
   </data>
   <data name="FindCross模板" xml:space="preserve">
     <value>Cross Positioning Template</value>
@@ -6103,9 +5940,6 @@ Open the spectrum log?</value>
   <data name="MTF2.0模板" xml:space="preserve">
     <value>MTF 2.0 Template</value>
   </data>
-  <data name="POI分析模板" xml:space="preserve">
-    <value>POI Analysis Template</value>
-  </data>
   <data name="SFR2.0模板" xml:space="preserve">
     <value>SFR 2.0 Template</value>
   </data>
@@ -6121,17 +5955,11 @@ Open the spectrum log?</value>
   <data name="请先选择黑画面检测模板" xml:space="preserve">
     <value>Select a black screen template first</value>
   </data>
-  <data name="请先选择畸变模板" xml:space="preserve">
-    <value>Select a distortion template first</value>
-  </data>
   <data name="请先选择键盘检测模板" xml:space="preserve">
     <value>Select a keyboard template first</value>
   </data>
   <data name="请先选择亮点检测模板" xml:space="preserve">
     <value>Select a bright spot template first</value>
-  </data>
-  <data name="请先选择模板匹配参数" xml:space="preserve">
-    <value>Select template matching parameters first</value>
   </data>
   <data name="请先选择屏幕缺陷检测模板" xml:space="preserve">
     <value>Select a screen defect detection template first</value>
@@ -6142,20 +5970,11 @@ Open the spectrum log?</value>
   <data name="请先选择双目融合模板" xml:space="preserve">
     <value>Select a binocular fusion template first</value>
   </data>
-  <data name="请先选择AA布点模板" xml:space="preserve">
-    <value>Select an AA point layout template first</value>
-  </data>
-  <data name="请先选择AAFindPoints模板" xml:space="preserve">
-    <value>Select an AA point location template first</value>
-  </data>
   <data name="请先选择AOI模板" xml:space="preserve">
     <value>Select an AOI template first</value>
   </data>
   <data name="请先选择BlackMura模板" xml:space="preserve">
     <value>Select a black mura template first</value>
-  </data>
-  <data name="请先选择BuildPoi模板" xml:space="preserve">
-    <value>Select a POI layout template first</value>
   </data>
   <data name="请先选择FindCross模板" xml:space="preserve">
     <value>Select a cross positioning template first</value>
@@ -6171,9 +5990,6 @@ Open the spectrum log?</value>
   </data>
   <data name="请先选择MTF2.0模板" xml:space="preserve">
     <value>Select an MTF 2.0 template first</value>
-  </data>
-  <data name="请先选择POI分析模板" xml:space="preserve">
-    <value>Select a POI analysis template first</value>
   </data>
   <data name="请先选择SFR2.0模板" xml:space="preserve">
     <value>Select an SFR 2.0 template first</value>
@@ -6290,9 +6106,6 @@ Active cache operations will finish first. Disk files will be kept, and the cach
   <data name="Sensor_NoneHint" xml:space="preserve"><value>None selects a template; it is not a command encoding.</value></data>
   <data name="Sensor_DeleteCommand" xml:space="preserve"><value>Delete command</value></data>
   <data name="Sensor_EmptyCommands" xml:space="preserve"><value>No commands yet. Choose Add command to begin.</value></data>
-  <data name="Sensor_DeleteType" xml:space="preserve"><value>Delete type…</value></data>
-  <data name="Sensor_DeleteTypePrompt" xml:space="preserve"><value>Delete sensor type &quot;{0}&quot;?&#10;&#10;This also deletes its {1} templates and their commands:&#10;{2}&#10;&#10;Other types are unaffected. Update any flows referencing these templates. This cannot be undone.</value></data>
-  <data name="Sensor_DeleteTypeFailed" xml:space="preserve"><value>Could not delete type: {0}</value></data>
   <data name="Sensor_TypeNotFound" xml:space="preserve"><value>Sensor type no longer exists. Reopen the template menu.</value></data>
   <data name="Sensor_TypeInUse" xml:space="preserve"><value>These devices still use this type. Change their sensor type first: {0}</value></data>
   <data name="Sensor_TypeSharedCommands" xml:space="preserve"><value>Templates of other types reference these command definitions. Remove those references first.</value></data>
@@ -6437,7 +6250,6 @@ Active cache operations will finish first. Disk files will be kept, and the cach
   <data name="CameraPanel_AutoExposureND" xml:space="preserve"><value>AE + ND</value></data>
   <data name="CameraPanel_NDHint" xml:space="preserve"><value>Automatic ND switching requires the service; uncheck before local auto exposure</value></data>
   <data name="CameraPanel_PreviewSettings" xml:space="preserve"><value>Preview settings</value></data>
-  <data name="CameraPanel_NotUsed" xml:space="preserve"><value>Not used</value></data>
   <data name="CameraPanel_NoAutoExposureTemplate" xml:space="preserve"><value>Do not use auto exposure template</value></data>
   <data name="CameraPanel_NoCalibrationTemplate" xml:space="preserve"><value>Do not use calibration template</value></data>
   <data name="CameraPanel_Region" xml:space="preserve"><value>ROI</value></data>
@@ -6620,7 +6432,6 @@ Continue investigating with the original error below.</value></data>
   <data name="兴奋纯度(%)" xml:space="preserve"><value>Excitation purity (%)</value></data>
   <data name="在光谱图上移动鼠标读取采样值" xml:space="preserve"><value>Move over the spectrum to read measured samples</value></data>
   <data name="导出测量结果 CSV" xml:space="preserve"><value>Export measurement results CSV</value></data>
-  <data name="导出完整原始光谱 CSV" xml:space="preserve"><value>Export full spectrum CSV</value></data>
   <data name="每个波长一行，保留全部采样点和负值" xml:space="preserve"><value>One row per wavelength, preserving all samples and negative values</value></data>
   <data name="请先选择要导出的数据。" xml:space="preserve"><value>Select measurements to export first.</value></data>
   <data name="导出失败：{0}" xml:space="preserve"><value>Export failed: {0}</value></data>
@@ -6649,7 +6460,6 @@ Continue investigating with the original error below.</value></data>
   <data name="X / 列" xml:space="preserve"><value>X / Column</value></data>
   <data name="Y / 行" xml:space="preserve"><value>Y / Row</value></data>
   <data name="[LF] = 换行， [CR] = 回车。图案文件名、大小写及结束符需与设备协议一致。" xml:space="preserve"><value>[LF] = line feed, [CR] = carriage return. Pattern file names, letter case and terminators must match the device protocol.</value></data>
-  <data name="串口名按服务电脑填写，例如 COM7。" xml:space="preserve"><value>Use the serial port name on the service computer, such as COM7.</value></data>
   <data name="二进制校正" xml:space="preserve"><value>Binary Calibration</value></data>
   <data name="仅测量采用源表的电压表/电流表接法：源 0 A 测电压，或源 0 V 测电流，仍需接通输出。仅输出不会生成虚构的测量结果。" xml:space="preserve"><value>Measure-only uses voltmeter/ammeter wiring: source 0 A to measure voltage, or 0 V to measure current. Output must still be enabled. Output-only does not generate measurement results.</value></data>
   <data name="从第" xml:space="preserve"><value>From Round</value></data>
@@ -6716,7 +6526,6 @@ Continue investigating with the original error below.</value></data>
   <data name="更新曲线" xml:space="preserve"><value>Update Curves</value></data>
   <data name="更新预览" xml:space="preserve"><value>Update Preview</value></data>
   <data name="最大半径(px)" xml:space="preserve"><value>Maximum Radius (px)</value></data>
-  <data name="最近 500 条 · 控制字符如 0D/0A 显示为 [CR]/[LF] · 接收按分片记录，完整回包见运行日志 · Ctrl+F 搜索 · Ctrl+C 复制" xml:space="preserve"><value>Latest 500 records · Control characters such as 0D/0A appear as [CR]/[LF] · Received chunks are recorded separately; see runtime logs for complete responses · Ctrl+F Search · Ctrl+C Copy</value></data>
   <data name="本地传感器 · 通信调试" xml:space="preserve"><value>Local Sensor · Communication Diagnostics</value></data>
   <data name="本地源表" xml:space="preserve"><value>Local SMU</value></data>
   <data name="本地连接" xml:space="preserve"><value>Local Connection</value></data>
@@ -7401,7 +7210,6 @@ Field: </value></data>
   <data name="请先关闭相机节点的自动曝光，再设置逐轮曝光。" xml:space="preserve"><value>Disable auto exposure on the camera node before setting per-round exposure.</value></data>
   <data name="Flow_PreProcess_AddAction" xml:space="preserve"><value>Add Preprocessing Action</value></data>
   <data name="Flow_PreProcess_ChooseActionHint" xml:space="preserve"><value>Choose an action, then configure it in the panel on the right. Enabled actions run in list order before the flow starts.</value></data>
-  <data name="TemplateBrowserCards" xml:space="preserve"><value>Cards</value></data>
   <data name="TemplateBrowserList" xml:space="preserve"><value>List</value></data>
   <data name="TemplateBrowserPreview" xml:space="preserve"><value>Preview</value></data>
   <data name="TemplateBrowserSelectPreview" xml:space="preserve"><value>Select a template to see its preview and details</value></data>
