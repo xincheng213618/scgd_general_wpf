@@ -2,13 +2,13 @@
 knowledge_id: "ui.menus"
 knowledge_type: "topic"
 status: "current"
-summary: "菜单管理器的可见性（Visible）、位置、排序和全目标重置（Reset）；插件 DLL 发现、类型缓存、父子树和管理提交；IHotKey 提示随运行时键位更新，隐藏不禁用快捷键，Apply 成功提示不保证配置落盘，菜单入口不构成统一鉴权。"
-aliases: ["菜单", "菜单管理", "菜单管理器", "菜单排序", "菜单恢复默认", "Restore Default Position", "Restore Default Order", "OrderOverride", "OwnerGuidOverride", "菜单发现", "菜单隐藏", "菜单父子关系", "菜单重建", "菜单权限", "快捷键提示", "MenuManager", "IMenuItem", "IMenuItemProvider", "MenuItemBase", "MenuItemAttribute", "MenuItemMetadata", "MenuItemScopeKey", "OwnerGuid", "GuidId", "InputGestureText", "HotkeyMenuGestureBinding", "MenuService", "MenuItemManagerService", "MenuItemManagerWindow", "MenuSearchProvider"]
+summary: "插件菜单发现、类型缓存、菜单树、显示覆盖与执行权限。启动时加载可见性、顺序和父级配置，快捷键独立注册。"
+aliases: ["菜单", "菜单管理", "菜单管理器", "菜单排序", "菜单显示覆盖", "OrderOverride", "OwnerGuidOverride", "菜单发现", "插件菜单不显示", "菜单隐藏", "菜单父子关系", "菜单重建", "菜单权限", "快捷键提示", "MenuManager", "IMenuItem", "IMenuItemProvider", "MenuItemBase", "MenuItemAttribute", "MenuItemMetadata", "MenuItemScopeKey", "OwnerGuid", "GuidId", "InputGestureText", "HotkeyMenuGestureBinding", "MenuService", "MenuItemManagerConfig", "MenuItemManagerInitialized", "MenuItemManagerService", "MenuSearchProvider"]
 code_paths: ["UI/ColorVision.UI/Menus", "UI/ColorVision.Common/Interfaces/Menus", "UI/ColorVision.UI.Desktop/MenuItemManager", "UI/ColorVision.UI/ConfigHandler.cs", "UI/ColorVision.Common/MVVM/RelayCommand.cs", "UI/ColorVision.UI/Search/MenuSearchProvider.cs", "UI/ColorVision.UI/Search/SearchControl.xaml.cs", "UI/ColorVision.UI/HotKey/HotkeyService.cs", "ColorVision/MainWindow.xaml.cs"]
 related: ["ui.framework", "ui.discovery", "ui.common", "ui.desktop", "ui.settings", "ui.configuration", "ui.hotkeys", "ui.search", "platform.security", "algorithms.template-menus"]
 ---
 
-# 菜单：发现、显示、执行与管理提交
+# 菜单：发现、显示、执行与配置
 
 ## 帮助菜单的键盘入口
 
@@ -29,27 +29,6 @@ related: ["ui.framework", "ui.discovery", "ui.common", "ui.desktop", "ui.setting
 菜单接口在 `ColorVision.Common`，`UI/ColorVision.UI/Menus/MenuManager.cs` 为调用方提供的 WPF `Menu` 装配菜单树；`UI/ColorVision.UI.Desktop/MenuItemManager/` 管理显示覆盖。三者分别负责扩展声明、运行时呈现和配置编辑，不接管菜单背后的设备、文件或业务事务。
 
 主程序分别调用 `LoadMenuForWindow(MainWindow, Menu1)` 和 `LoadHotKeyFromAssembly()`。菜单显示、命令可执行、快捷键注册、搜索结果和业务完成是不同证据；不能通过隐藏一个入口来承诺操作已禁用。
-
-## 调整菜单显示与位置
-
-使用具备应用内 `Administrator` 权限的账号，从主窗口右侧打开“应用与工具”，搜索并双击“菜单管理器”。该工具位于内部工具列表，未获授权的工具不会显示；这不是 Windows 的“以管理员身份运行”设置。窗口当前使用 `Apply`、`Reset`、`Cancel` 等英文控件名称。
-
-1. 在左上角选择目标，例如 `MainWindow`。该视图同时包含此目标和 `Global` 项；选 `Global` 时只显示全局项。右侧 `Target` 显示条目真正所属的目标，修改 Global 项会影响所有使用该项的菜单窗口。
-2. 从左侧 `Menu Structure` 选择父项，中间列表显示其直接子项。搜索框按名称或当前路径查找当前目标视图中的全部项，包括隐藏项；清空搜索后恢复所选父项的子项列表。
-3. 选中条目，按下表调整草稿。右侧可查看当前路径、标识及来源类型；列表的 `Header` 为只读，不能在这里改菜单名称。
-4. 点击 `Apply` 提交**整个编辑快照中各目标的更改**。有运行时覆盖变化时重建已注册菜单，窗口保持打开；检查对应菜单的显示结果。成功弹窗不保证配置已写入文件，保存边界见下文。
-
-| 操作 | 控件与效果 |
-| --- | --- |
-| 隐藏或恢复显示 | 取消或勾选 `Visible`。隐藏父项也会过滤其后代，但不把后代各自的勾选状态改为隐藏；快捷键不会因此注销 |
-| 改变父级 | 在 `Move to` 选择有效父项，或拖到左侧树中的目标父项下。移动到根 `Menu` 表示成为顶层项 |
-| 调整顺序 | 在中间列表拖动行到目标行上方或下方；拖入另一父项的列表会改变父级并重新分配目标同级项的顺序值。可清空搜索后操作，便于确认当前父项 |
-| 指定顺序值 | 在 `OrderOverride` 输入整数，按 Enter 或移开焦点；较小值靠前。空白恢复声明值，非法文本恢复原值；拖放可能同时调整其它同级项的覆盖 |
-| 单项恢复默认 | `Restore Default Position` 只清除父级覆盖；`Restore Default Order` 只清除顺序覆盖，不改变可见性 |
-| 全部恢复默认 | `Reset` 经确认后重置**所有目标**的可见性、父级和顺序草稿，仍需 `Apply` 才应用；不是仅重置当前列表或搜索结果 |
-| 放弃未应用的更改 | `Cancel` 或关闭窗口。不撤销此前已经 Apply 的修改；辅助配置状态的例外见下文 |
-
-编辑树是配置预览，不保证与实际菜单树逐项相同：它保留隐藏项，并把无法解析父级的条目放在根下便于查找；运行时不会把缺少父项的条目提升到顶层。暂缺插件的覆盖也可显示为标识行，来源显示 `Unknown`，不证明插件已经加载。
 
 ## 发现来源和实例生命周期
 
@@ -80,8 +59,6 @@ related: ["ui.framework", "ui.discovery", "ui.common", "ui.desktop", "ui.setting
 - 树构建不按 GuidId 去重或合并。同一窗口中重复 ID 可能显示多个条目、重复挂载子树；沿当前路径遇到循环 ID 时只剪掉该分支，不能把剪枝当成冲突修复。
 - `MenuItemScopeKey(TargetName, GuidId)` 用于覆盖与过滤身份，不是树节点的全局唯一性强制机制。作用域覆盖优先于旧 GuidId-only 覆盖，未覆盖时使用条目的原始值。
 
-Desktop 编辑快照会对相同 ScopeKey 保留首个实时条目，与运行时树不去重的规则不同。不能因为菜单管理里只显示一行，就断定实际贡献没有冲突。
-
 ## 隐藏、刷新与控件状态
 
 manager 的 `FilteredGuids` 是旧式跨目标过滤，`ScopedFilteredItems` 是按目标过滤。被过滤父项的后代按有效 OwnerGuid 递归过滤，父项匹配考虑同目标和 Global；排序/父级覆盖分别来自有效覆盖表。
@@ -106,7 +83,7 @@ manager 的 `FilteredGuids` 是旧式跨目标过滤，`ScopedFilteredItems` 是
 
 搜索界面对不可执行结果给出不可用状态，并在真正派发前检查 `CanExecute`；RoutedCommand 使用原业务宿主中的明确内容目标，不因独立搜索窗口变为活动窗口而改为保存搜索框或关闭搜索宿主。原内容隐藏或活动文档已切换时拒绝旧路由结果，关闭搜索后仍复核目标。候选刷新、焦点恢复、目标失效和同步异常边界归[产品搜索契约](./search.md)。搜索通道的检查与默认 `MenuItemBase` 命令的执行检查分别负责各自边界，均不改变任意 `RelayCommand` 或直接方法调用的行为。菜单重建也不主动更新一个已经显示的搜索结果快照。
 
-`InputGestureText` 仅为显示文字，不注册 `Ctrl+X` 等快捷键。`HotkeyService` 独立发现 `IHotkeyProvider` / `IHotKey`，还接收显式注册；它不读取菜单隐藏覆盖。已注册快捷键可能仍调用原操作，是否能执行继续取决于该回调自己的检查和[热键注册状态](./hotkeys.md)。菜单管理窗口也没有快捷键编辑字段，编辑入口在独立的快捷键设置页。
+`InputGestureText` 仅为显示文字，不注册 `Ctrl+X` 等快捷键。`HotkeyService` 独立发现 `IHotkeyProvider` / `IHotKey`，还接收显式注册；它不读取菜单隐藏覆盖。已注册快捷键可能仍调用原操作，是否能执行继续取决于该回调自己的检查和[热键注册状态](./hotkeys.md)。键位在独立的快捷键设置页编辑。
 
 `MenuManager` 为实现 `IHotKey` 的现有菜单条目附加 `HotkeyMenuGestureBinding`：
 
@@ -119,34 +96,17 @@ manager 的 `FilteredGuids` 是旧式跨目标过滤，`ScopedFilteredItems` 是
 
 `IRightMenuItemProvider` 则由 `MainWindow.InitRightMenuItemPanel` 单独装配右侧按钮，不经 MenuManager 树和隐藏覆盖；其它地方直接使用 `ToMenuItem()` 也不能自动获得 manager 的配置规则。
 
-## 菜单管理的草稿与提交
+## 菜单覆盖配置
 
-入口由 `MenuItemManagerAppProvider` 提供，不是可由自身隐藏的菜单贡献。应用与工具的启动检查见[第三方工具契约](./ColorVision.Common.md)，声明权限元数据不代表任意直接调用都被拦截。
+`MenuItemManagerInitialized` 在启动时调用 `MenuItemManagerService.ApplySettings()`，加载 `MenuItemManagerConfig.Overrides` 中的 `IsVisible`、`OrderOverride` 和 `OwnerGuidOverride`。运行时覆盖有变化时重建菜单。
 
-`MenuItemManagerService.CreateEditingSnapshot()` 用实时菜单目录与持久化覆盖生成分离的 `MenuItemSetting` 草稿。界面的可见性、OrderOverride、OwnerGuidOverride 修改先留在草稿中，按上面的 Apply/Cancel 规则提交或放弃。这与[常规选项窗口](./settings.md)直接编辑活配置并在菜单返回后保存的模式不同。
-
-但打开管理窗口不是绝对只读：创建快照会迁移/清理活配置中的旧 Settings/退役条目，选择目标或树节点会直接更新 `LastSelected*` 内存字段。关闭不撤销这些辅助状态，也不会撤销此前已经 Apply 的更改；后续配置保存可能将它们落盘。
-
-配置只保存自定义覆盖，不复制完整实时菜单目录。没有 TargetName 的旧覆盖在编辑快照中按已知实时目标展开；Apply 将快照转换为显式作用域覆盖，只有文件保存成功才会持久化，单纯打开后保存活配置不会自动完成这种转换。暂时缺失插件的孤立覆盖会保留。移动父级校验拒绝自身、后代循环和不允许的目标：目标窗口项可挂到同目标或 Global 父项，Global 项只能挂 Global。直接操作 MenuManager 公共覆盖表并不自动经过这套编辑校验。
-
-没有有效自定义覆盖时，`ApplyConfigToMenuManager` 只清理残留的运行时覆盖表，不为构造覆盖表而枚举实时菜单。这个快速分支不代表调用方后续重建菜单也不会枚举或实例化条目。
-
-`CommitEditingSnapshot` 校验草稿并生成稀疏覆盖，更新活配置和运行时表，有变化时重建注册菜单，再用 `ConfigHandler.TrySave` 确认落盘。正常返回的 bool 表示运行时覆盖表是否变化。
-
-写盘或应用失败时尝试恢复旧 Overrides 和运行时表，必要时重建菜单。窗口显示错误并保留草稿供重试。各窗口重建可能产生独立副作用，文件提交语义见[配置持久化](./configuration.md)。
+旧 `Settings` 会迁移到 `Overrides`。缺少 `TargetName` 的覆盖按匹配 `GuidId` 的窗口目标展开。非法父级或循环会跳过覆盖并记录日志。
 
 ## 菜单未按预期显示时
 
 | 现象 | 检查顺序 |
 | --- | --- |
-| 菜单管理器找不到条目 | 确认目标范围和搜索条件；再检查插件是否进入发现视图、类型构造条件及发现日志。程序集未变化时，仅重建菜单不会刷新类型缓存 |
-| 管理器中 Visible 已勾选，实际菜单仍不显示 | 确认已 Apply、条目所属 Target、父项是否被过滤、父级是否存在及条目自身 Visibility；配置预览中的根项不一定是有效的运行时根项 |
+| 加载插件后没有菜单 | 检查插件是否进入程序集发现视图、类型是否满足构造条件，再查发现日志和宿主重建入口 |
+| 条目已被发现但菜单不可见 | 核对 `TargetName`、自身 `Visibility`、`MenuItemManagerConfig.Overrides` 和父级是否可达 |
 | 隐藏菜单后快捷键仍有效 | 到独立快捷键设置查看该动作的绑定。菜单隐藏控制显示，不能用作禁用业务操作的权限措施 |
-| Apply 成功，重启后恢复原样 | 区分本次运行时生效与文件保存成功；检查配置路径、保存错误日志和 `MenuItemManagerConfig` 实际文件内容，不用成功弹窗替代落盘证据 |
-| Reset 影响了其它窗口的菜单 | Reset 清除整个草稿的覆盖，Apply 提交所有目标；单项还原应使用对应的默认位置或默认顺序控件 |
-
-## 验证入口与缺口
-
-在真实窗口核对 Apply、保存失败和快捷键行为。
-
-修改树构建看 `UI/ColorVision.UI/Menus/MenuManager.cs`，修改类型发现与过滤看同目录 `MenuManager.Discovery.cs`；修改管理提交看 `UI/ColorVision.UI.Desktop/MenuItemManager/MenuItemManagerService.cs` 和窗口 Apply/Cancel；修改声明/命令看 `UI/ColorVision.Common/Interfaces/Menus/`。验证时分别证明候选进入、树显示、命令实际检查、运行时应用和文件保存，不通过执行真实业务菜单来默认“验收文档”。
+| 重启后显示与预期不符 | 核对配置文件中的 `MenuItemManagerConfig`、目标和父级覆盖，再查启动日志 |

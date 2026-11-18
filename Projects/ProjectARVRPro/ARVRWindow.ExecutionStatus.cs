@@ -19,7 +19,6 @@ public partial class ARVRWindow
             bool deviceRunning = IsJsonVidRunning || _luxSession?.Request.SocketCode is "01" or "31";
             ExecutionToolbar.IsEnabled = !deviceRunning;
             ConfigurationActions.IsEnabled = !deviceRunning;
-            InitTestButton.IsEnabled = !deviceRunning;
             bool canStop = flowControl.IsFlowRun;
             TestButton.Content = DisplayText.Get(canStop ? "停止" : "测试");
             TestButton.IsEnabled = !IsJsonVidRunning && !_isFlowCompletionPending

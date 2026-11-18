@@ -10327,18 +10327,17 @@
       "knowledge_id": "ui.menus",
       "knowledge_type": "topic",
       "status": "current",
-      "summary": "菜单管理器的可见性（Visible）、位置、排序和全目标重置（Reset）；插件 DLL 发现、类型缓存、父子树和管理提交；IHotKey 提示随运行时键位更新，隐藏不禁用快捷键，Apply 成功提示不保证配置落盘，菜单入口不构成统一鉴权。",
+      "summary": "插件菜单发现、类型缓存、菜单树、显示覆盖与执行权限。启动时加载可见性、顺序和父级配置，快捷键独立注册。",
       "aliases": [
         "菜单",
         "菜单管理",
         "菜单管理器",
         "菜单排序",
-        "菜单恢复默认",
-        "Restore Default Position",
-        "Restore Default Order",
+        "菜单显示覆盖",
         "OrderOverride",
         "OwnerGuidOverride",
         "菜单发现",
+        "插件菜单不显示",
         "菜单隐藏",
         "菜单父子关系",
         "菜单重建",
@@ -10356,8 +10355,9 @@
         "InputGestureText",
         "HotkeyMenuGestureBinding",
         "MenuService",
+        "MenuItemManagerConfig",
+        "MenuItemManagerInitialized",
         "MenuItemManagerService",
-        "MenuItemManagerWindow",
         "MenuSearchProvider"
       ],
       "code_paths": [
@@ -10390,7 +10390,7 @@
         "UI/ColorVision.UI.Desktop"
       ],
       "domain": "ui",
-      "title": "菜单：发现、显示、执行与管理提交",
+      "title": "菜单：发现、显示、执行与配置",
       "source": "docs/04-api-reference/ui-components/menus.md",
       "url": "/04-api-reference/ui-components/menus",
       "searchable": true

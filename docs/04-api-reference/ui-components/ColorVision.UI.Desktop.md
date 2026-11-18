@@ -31,10 +31,11 @@ related: ["ui.index","ui.framework","ui.settings","ui.wizards","ui.menus","ui.co
 | --- | --- | --- |
 | 设置窗口 | `Settings/SettingWindow.xaml.cs` | [侧栏、搜索、活对象编辑与关窗保存](./settings.md)，不是 Tab 或取消事务 |
 | 向导流程 | `WizardManager`、`WizardWindow`、`WizardWindowConfig` | [步骤发现、应用、初始化与完成标记](./wizards.md)，完成不等于所有组件健康 |
-| 菜单项管理 | `MenuItemManagerConfig`、`MenuItemManagerWindow` | [显示覆盖、编辑草稿与应用/保存边界](./menus.md)；不编辑快捷键 |
+| 菜单显示覆盖 | `MenuItemManagerConfig`、`MenuItemManagerInitialized` | [启动时加载可见性、顺序与父级配置](./menus.md) |
 | 插件市场 | `MarketplaceWindow`、`MarketplaceClient`、`MarketplacePackageDownloadService` | 展示市场内容、Markdown、下载和安装入口 |
 | 下载管理 | `Aria2cDownloadManager`、`DownloadWindow` | 使用内置 `aria2c.exe` 管理下载 |
-| 第三方应用 | `SystemAppProvider`、`CustomAppProvider`、`ThirdPartyAppsWindow` | 系统工具、自定义应用和磁盘 Treemap 入口 |
+| 系统工具 | `SystemAppProvider` | 控制面板、组策略、网络连接、注册表编辑器 |
+| 第三方应用 | `CustomAppProvider`、`ThirdPartyAppsWindow` | 自定义应用和磁盘 Treemap 入口 |
 | 主程序工具贡献 | `ColorVision/ToolPlugins/ThirdPartyApps/` | 通过 `IThirdPartyAppProvider` 向第三方应用窗口补充主程序工具；“上网网卡选择”可读取 IPv4、DNS、网关和 Metric，修改所选接口的 Metric，或将 DNS 设为 `114.114.114.114` 后刷新缓存 |
 | 崩溃诊断 | `Diagnostics/CrashDumpSettingsControl`、`CrashDumpConfiguration` | 通过通用属性反射生成 WER LocalDumps 设置，由后台特权服务写入 HKLM；支持手动保存当前进程 Dump 和反馈包收集 |
 | 反馈诊断 | `Feedback/`、`Feedback/Collectors/WindowsEventLogCollector`、`ColorVision.UI/LogImp/Collectors/ConfigurationSnapshotCollector` | 打包应用日志、系统信息、脱敏配置快照、Dump 和 Windows Application/System 警告或错误；可从反馈窗口清理旧的应用、更新、服务日志和 ColorVision Dump |
@@ -68,7 +69,7 @@ RPC 只连接回环地址，后台进程使用随机的实例密钥；启动等�
 | 下载链 | `DownloadWindow` -> `Aria2cDownloadManager` -> `aria2c.exe` / RPC daemon |
 | 崩溃诊断链 | `SettingWindow` 的“配置 → 崩溃转储” -> `CrashDumpSettingsProvider` -> 通用属性编辑器 -> `ColorVisionServiceHost` / WER LocalDumps / `DumpHelper` |
 | 反馈收集链 | `FeedbackWindow` -> `IFeedbackLogCollector` -> 应用日志、系统信息、脱敏配置快照、Dump、Windows 事件日志 -> 匿名 `/api/feedback` |
-| 菜单管理链 | [MenuItemManagerWindow → 草稿 → CommitEditingSnapshot → 运行时覆盖/重建 → 尝试保存](./menus.md) |
+| 菜单覆盖加载 | [`MenuItemManagerInitialized` → `ApplySettings` → 更新覆盖并按需重建菜单](./menus.md) |
 | DLL 诊断链 | `ViewDllVersionsWindow` |
 
 反馈主窗口固定显示诊断项摘要、日志范围、打开来源目录、清理历史文件和打包入口，附件区滚动不会带走这些操作。“选择项目”打开独立的紧凑列表，支持按名称或说明搜索、全部选中／取消和恢复默认选择；这些批量操作作用于全部项目，不受搜索过滤影响，关闭或按 Esc 保留选择。范围统一应用于实现 `IFeedbackLogTimeRangeCollector` 的日志和数据库来源，目录菜单也仅列出该接口提供的目录，不支持的来源保持自己的收集规则。清理与打包勾选独立，仅交给实现 `IFeedbackDiagnosticCleanupSource` 的来源；无对应能力时禁用入口。打包期间禁止修改诊断选项或启动清理，避免修改正在使用的收集器。
@@ -136,7 +137,7 @@ Engine 提供默认勾选的“MVS 日志”来源，沿用统一天数范围，
 | --- | --- |
 | 设置窗口 | `Settings/SettingWindow.xaml.cs`、`Settings/SettingWindowController.cs` |
 | 向导流程 | `Wizards/WizardWindow.xaml.cs`、`Wizards/WizardWindowConfig.cs` |
-| 菜单管理 | `MenuItemManager/MenuItemManagerConfig.cs`、`MenuItemManagerWindow.xaml.cs` |
+| 菜单显示覆盖 | `MenuItemManager/MenuItemManagerInitialized.cs`、`MenuItemManagerService.cs` |
 | 插件市场和下载 | `Marketplace/`、`Download/`、`WebViewService.cs` |
 | 第三方应用 | `ThirdPartyApps/SystemAppProvider.cs`、`ThirdPartyAppsWindow.xaml.cs` |
 | 主程序网卡工具 | `ColorVision/ToolPlugins/ThirdPartyApps/InternalAppProvider.cs`、`NetworkAdapterPriorityService.cs`、`NetworkAdapterPriorityWindow.xaml.cs` |

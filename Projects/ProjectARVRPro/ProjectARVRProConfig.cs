@@ -70,9 +70,6 @@ namespace ProjectARVRPro
         [Browsable(false)]
         [JsonIgnore]
         public RelayCommand OpenConfigCommand { get; set; }
-        [Browsable(false)]
-        [JsonIgnore]
-        public RelayCommand InitTestCommand { get; set; }
 
         public ProjectARVRProConfig()
         {
@@ -80,12 +77,6 @@ namespace ProjectARVRPro
             OpenFlowEngineToolCommand = new RelayCommand(a => OpenFlowEngineTool());
             TemplateItemSource = TemplateFlow.Params;
             OpenConfigCommand = new RelayCommand(a => OpenConfig());
-            InitTestCommand = new RelayCommand(a => InitTest());
-        }
-
-        public void InitTest()
-        {
-            ProjectWindowInstance.WindowInstance.InitTest(string.Empty);
         }
 
         [Browsable(false)]

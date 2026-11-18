@@ -94,8 +94,8 @@ next: false
 - [界面语言：资源发现、配置与重启](../../04-api-reference/ui-components/localization.md) — `ui.localization`
   界面语言的资源发现、系统语言回退、设置绑定和重启切换；语言下拉框不证明插件翻译完整，修改配置值不等于刷新窗口。
 
-- [菜单：发现、显示、执行与管理提交](../../04-api-reference/ui-components/menus.md) — `ui.menus`
-  菜单管理器的可见性（Visible）、位置、排序和全目标重置（Reset）；插件 DLL 发现、类型缓存、父子树和管理提交；IHotKey 提示随运行时键位更新，隐藏不禁用快捷键，Apply 成功提示不保证配置落盘，菜单入口不构成统一鉴权。
+- [菜单：发现、显示、执行与配置](../../04-api-reference/ui-components/menus.md) — `ui.menus`
+  插件菜单发现、类型缓存、菜单树、显示覆盖与执行权限。启动时加载可见性、顺序和父级配置，快捷键独立注册。
 
 - [应用搜索：入口、候选与执行](../../04-api-reference/ui-components/search.md) — `ui.search`
   应用搜索窗口的入口、关键词匹配、候选来源、缓存刷新与命令执行；Ctrl+F 按焦点执行局部查找，Ctrl+Shift+P 打开应用搜索。

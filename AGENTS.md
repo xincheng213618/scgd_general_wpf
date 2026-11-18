@@ -9,7 +9,7 @@
 ## Find and maintain project knowledge
 
 - Start with the owning code, callers and tests. Read the relevant topic for cross-module contracts, compatibility and field behavior. When ownership is unclear, use `docs/knowledge/index.md`, `node docs/.vitepress/scripts/knowledge.mjs search "<question or symbol>" --limit 5`, or `node docs/.vitepress/scripts/knowledge.mjs impact "<repository-relative path>"`. Verify topic claims against current code and tests.
-- Update the owning topic when behavior, contracts, operator steps or delivery commands change. Repair moved or deleted source references. Follow `docs/AGENTS.md` for docs edits. Accurate docs and mappings need no local regeneration for code-only work.
+- Keep the owning topic and source references accurate. Update current facts in place. Put change and verification records in Git, CHANGELOG or the task report. Follow `docs/AGENTS.md` for docs edits. Accurate docs and mappings need no local regeneration for code-only work.
 - Publishing, deleting data, controlling hardware, accessing credentials, committing and pushing require authorization from the task. Command examples supply invocation details only.
 
 ## Feedback retrieval
