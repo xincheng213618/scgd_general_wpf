@@ -1,3 +1,4 @@
+using ColorVision.Engine.Services.Devices.Sensor.Templates;
 using FlowEngineLib;
 using FlowEngineLib.Base;
 using Newtonsoft.Json.Linq;
@@ -31,6 +32,8 @@ internal sealed class LocalSensorFlowExecution : FlowLocalExecution
             {
                 if (!device.SensorBackend.OpensLocally)
                 {
+                    if (request.EventName == "ExecCmd" && request.Data is TempCommSensorData && request.Data is not CommSensorData { Cmd: not null })
+                        SensorTemplateDictionaryService.RequireDefaultCategory(device.Config.Category);
                     device.EnsureOtherSensorBackends(false, LocalSensorSession.EndpointKey(device.Config));
                     device.SensorBackend.EnsureServiceAvailable();
                     return null!;

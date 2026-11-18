@@ -65,13 +65,35 @@ public partial class SensorDiagnosticsWindow : Window
         var snapshot = session.Diagnostics.GetSnapshot(revision, out revision);
         if (snapshot != null)
         {
-            while (entries.Count > 0 && (snapshot.Length == 0 || entries[0].Sequence < snapshot[0].Sequence)) entries.RemoveAt(0);
-            long last = entries.Count == 0 ? 0 : entries[^1].Sequence;
-            foreach (var entry in snapshot) if (entry.Sequence > last) entries.Add(entry);
+            UpdateEntries(ShowFragments.IsChecked == true ? snapshot : LocalSensorDiagnostics.SummarizeResponses(snapshot));
             CountText.Text = EngineLocalization.Format($"发送 {entries.Count(entry => entry.Kind == LocalSensorDiagnosticKind.Sent)} · 接收 {entries.Count(entry => entry.Kind == LocalSensorDiagnosticKind.Received)} · 日志 {entries.Count(entry => entry.Kind is LocalSensorDiagnosticKind.Log or LocalSensorDiagnosticKind.Error)}");
             if (AutoScroll.IsChecked == true && view.Cast<object>().LastOrDefault() is { } latest) MessageGrid.ScrollIntoView(latest);
         }
         UpdateEmptyState();
+    }
+
+    private void UpdateEntries(LocalSensorDiagnosticEntry[] snapshot)
+    {
+        var selected = MessageGrid.SelectedItem as LocalSensorDiagnosticEntry;
+        while (entries.Count > 0 && (snapshot.Length == 0 || entries[0].Sequence < snapshot[0].Sequence)) entries.RemoveAt(0);
+        int index = 0;
+        while (index < entries.Count && index < snapshot.Length && entries[index].Sequence == snapshot[index].Sequence)
+        {
+            if (entries[index] != snapshot[index]) entries[index] = snapshot[index];
+            index++;
+        }
+        while (entries.Count > index) entries.RemoveAt(entries.Count - 1);
+        for (; index < snapshot.Length; index++) entries.Add(snapshot[index]);
+
+        if (selected != null && !ReferenceEquals(MessageGrid.SelectedItem, selected))
+            MessageGrid.SelectedItem = view.Cast<LocalSensorDiagnosticEntry>().FirstOrDefault(entry => entry.Sequence == selected.Sequence);
+    }
+
+    private void Fragments_Changed(object sender, RoutedEventArgs e)
+    {
+        if (view == null) return;
+        revision = -1;
+        RefreshRecords();
     }
 
     private void UpdateEmptyState()
@@ -91,6 +113,7 @@ public partial class SensorDiagnosticsWindow : Window
     {
         if (view == null) return; // XAML selection/text events run before construction finishes.
         DirectionFilter.IsEnabled = RecordTabs.SelectedIndex == 0;
+        ShowFragments.IsEnabled = DirectionFilter.IsEnabled;
         view.Refresh();
         UpdateEmptyState();
     }
@@ -109,6 +132,7 @@ public partial class SensorDiagnosticsWindow : Window
         DetailMeta.Text = $"{entry.Time:yyyy-MM-dd HH:mm:ss.fff} · {entry.Direction}\n{entry.Endpoint}\n{EngineLocalization.Get(entry.EventName)}";
         if (entry.CommandDisplay.Length > 0) DetailMeta.Text += " · " + entry.CommandDisplay;
         if (entry.ByteCount > 0) DetailMeta.Text += EngineLocalization.Format($"\n编码 {entry.Encoding} · {entry.ByteCount} 字节");
+        if (entry.FragmentCount > 1) DetailMeta.Text += " · " + EngineLocalization.Format($"{entry.FragmentCount} 个分片");
         if (entry.IsTruncated) DetailMeta.Text += EngineLocalization.Format($"\n仅保留前 {entry.CapturedByteCount} 字节，复制内容同样已截断。");
         string text = entry.DisplayText;
         if (FormatJson.IsChecked == true && !entry.IsTruncated)

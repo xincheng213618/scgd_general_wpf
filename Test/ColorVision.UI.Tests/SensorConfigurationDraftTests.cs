@@ -1,3 +1,4 @@
+using ColorVision.Engine;
 using ColorVision.Engine.Services.Devices.Sensor;
 using Newtonsoft.Json.Linq;
 using System.IO.Ports;
@@ -7,6 +8,37 @@ namespace ColorVision.UI.Tests;
 // Protect the combined editor's cancel/validation boundary and the two existing storage contracts.
 public sealed class SensorConfigurationDraftTests
 {
+    [Fact]
+    public void CategoryChoicesKeepCurrentLegacyCodeAlongsideTheDefault()
+    {
+        var standard = new SysDictionaryModModel { Id = 50, Code = "Sensor.Default", Name = "通用传感器" };
+
+        var choices = EditSensor.BuildCategoryChoices(standard, "Sensor.Legacy");
+
+        Assert.Equal(new[] { "Sensor.Default", "Sensor.Legacy" }, choices.Select(choice => choice.Code));
+        Assert.Same(standard, Assert.Single(EditSensor.BuildCategoryChoices(standard, "Sensor.Default")));
+        Assert.Equal("Sensor.Legacy", Assert.Single(EditSensor.BuildCategoryChoices(null, "Sensor.Legacy")).Code);
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void BlankCategoryDoesNotApplyEitherConfiguration(string category)
+    {
+        var config = new ConfigSensor { Category = "Sensor.Default" };
+        var display = new DisplaySensorConfig { UseLocalSensor = false };
+        var draft = new SensorConfigurationDraft(config, display);
+        draft.Config.Category = category;
+        draft.DisplayConfig.ConnectTimeout = 2500;
+
+        Assert.False(draft.TryApply(config, display, out string error));
+        Assert.NotEmpty(error);
+        Assert.False(draft.ServiceSettingsChanged);
+        Assert.False(draft.DisplaySettingsChanged);
+        Assert.Equal("Sensor.Default", config.Category);
+        Assert.Equal(3000, display.ConnectTimeout);
+    }
+
     [Fact]
     public void CombinedDraftIsDetachedAndAppliesWithoutReplacingLiveInstancesOrMovingSettings()
     {

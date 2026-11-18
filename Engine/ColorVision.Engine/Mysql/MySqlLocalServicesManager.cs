@@ -1299,25 +1299,23 @@ namespace ColorVision.Database
         }
 
         public static string BuildMigrationDictionaryDependencyStatements(string connectionString, Action<string>? logCallback = null)
+            => BuildMigrationDictionaryDependencyStatements(connectionString, logCallback, requireSensorDependencies: false);
+
+        internal static string BuildMigrationDictionaryDependencyStatements(string connectionString, Action<string>? logCallback, bool requireSensorDependencies)
         {
             try
             {
                 using var db = new SqlSugarClient(new ConnectionConfig { ConnectionString = connectionString, DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
+                string sensorSql = SensorTemplateMigrationSqlBuilder.Build(db);
                 StringBuilder sql = new();
-                AppendReferencedRowsSql(
-                    db,
-                    sql,
-                    DictionaryMasterTableName,
-                    $@"EXISTS (
+                try
+                {
+                    AppendReferencedRowsSql(db, sql, DictionaryMasterTableName, $@"EXISTS (
                            SELECT 1
                            FROM {QuoteIdentifier(ModParamMasterTableName)} m
                            WHERE m.{QuoteIdentifier("mm_id")} = {QuoteIdentifier(DictionaryMasterTableName)}.{QuoteIdentifier("id")})
                        AND COALESCE({QuoteIdentifier(DictionaryMasterTableName)}.{QuoteIdentifier("mod_type")}, 0) <> 5");
-                AppendReferencedRowsSql(
-                    db,
-                    sql,
-                    DictionaryItemTableName,
-                    $@"EXISTS (
+                    AppendReferencedRowsSql(db, sql, DictionaryItemTableName, $@"EXISTS (
                            SELECT 1
                            FROM {QuoteIdentifier(ModParamDetailTableName)} d
                            WHERE d.{QuoteIdentifier("cc_pid")} = {QuoteIdentifier(DictionaryItemTableName)}.{QuoteIdentifier("id")})
@@ -1326,7 +1324,13 @@ namespace ColorVision.Database
                            FROM {QuoteIdentifier(DictionaryMasterTableName)} dm
                            WHERE dm.{QuoteIdentifier("id")} = {QuoteIdentifier(DictionaryItemTableName)}.{QuoteIdentifier("pid")}
                              AND dm.{QuoteIdentifier("mod_type")} = 5)");
-                sql.Append(SensorTemplateMigrationSqlBuilder.Build(db));
+                }
+                catch (Exception ex)
+                {
+                    logCallback?.Invoke(string.Format(ColorVision.Engine.Properties.Resources.Mysql_DictionaryDependenciesAddFailed, ex.Message));
+                    sql.Clear();
+                }
+                sql.Append(sensorSql);
 
                 if (sql.Length == 0)
                 {
@@ -1336,7 +1340,7 @@ namespace ColorVision.Database
                 logCallback?.Invoke(ColorVision.Engine.Properties.Resources.Mysql_DictionaryDependenciesAdded);
                 return sql.ToString();
             }
-            catch (Exception ex)
+            catch (Exception ex) when (!requireSensorDependencies)
             {
                 logCallback?.Invoke(string.Format(ColorVision.Engine.Properties.Resources.Mysql_DictionaryDependenciesAddFailed, ex.Message));
                 return string.Empty;

@@ -1,5 +1,6 @@
 ﻿using ColorVision.Database;
 using ColorVision.Engine.Services.PhyCameras;
+using ColorVision.Engine.Services.Devices.Sensor.Templates;
 using ColorVision.Themes;
 using ColorVision.UI;
 using System.Collections.Generic;
@@ -29,15 +30,20 @@ public partial class EditSensor : Window
         AddFields(LocalConnectionFields, Draft.DisplayConfig, nameof(DisplaySensorConfig.ConnectTimeout));
         AddFields(SerialOptionsFields, Draft.DisplayConfig, nameof(DisplaySensorConfig.DataBits), nameof(DisplaySensorConfig.Parity), nameof(DisplaySensorConfig.StopBits));
         AddFields(SerialSignalFields, Draft.DisplayConfig, nameof(DisplaySensorConfig.DtrEnable), nameof(DisplaySensorConfig.RtsEnable));
-        var dictionary = MySqlSetting.IsConnect
-            ? SysDictionaryModMasterDao.Instance.GetAllByParam(new Dictionary<string, object> { { "mod_type", 5 } })
-            : new List<SysDictionaryModModel>();
-        var categories = dictionary.Where(item => item.Name != null && item.Code != null).ToDictionary(item => item.Name!, item => item.Code!);
-        categories.TryAdd(EditConfig.Category, EditConfig.Category);
-        ComboBoxSensor.ItemsSource = categories;
+        var dictionary = SensorTemplateDictionaryService.GetDefaultDictionary();
+        ComboBoxSensor.ItemsSource = BuildCategoryChoices(dictionary, EditConfig.Category);
+        ComboBoxSensor.SelectedValue = EditConfig.Category;
         ComboBoxPort.ItemsSource = new[] { 300, 600, 1200, 2400, 4800, 9600, 14400, 19200, 38400, 57600, 115200 };
         ComboBoxSerial.ItemsSource = SerialPort.GetPortNames().Append(EditConfig.Addr).Where(name => !string.IsNullOrWhiteSpace(name)).Distinct().ToArray();
         if (MySqlSetting.IsConnect) CameraPhyID.ItemsSource = PhyCameraManager.GetInstance().PhyCameras;
+    }
+
+    internal static List<SysDictionaryModModel> BuildCategoryChoices(SysDictionaryModModel? defaultDictionary, string? configuredCode)
+    {
+        List<SysDictionaryModModel> categories = defaultDictionary == null ? [] : [defaultDictionary];
+        if (!string.IsNullOrWhiteSpace(configuredCode) && configuredCode != defaultDictionary?.Code)
+            categories.Add(new SysDictionaryModModel { Code = configuredCode });
+        return categories;
     }
 
     private static void AddFields(Panel panel, object config, params string[] names)
@@ -57,6 +63,8 @@ public partial class EditSensor : Window
     private void Ok_Click(object sender, RoutedEventArgs e)
     {
         Keyboard.ClearFocus();
+        if (ComboBoxSensor.SelectedValue is string code)
+            EditConfig.Category = code;
         if (!Draft.TryApply(Device.Config, Device.DisplayConfig, out string error))
         {
             StatusText.Text = error;

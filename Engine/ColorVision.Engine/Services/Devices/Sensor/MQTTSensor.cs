@@ -1,4 +1,5 @@
 ﻿using ColorVision.Engine.Messages;
+using ColorVision.Engine.Services.Devices.Sensor.Templates;
 using MQTTMessageLib;
 using MQTTMessageLib.Sensor;
 using System.Collections.Generic;
@@ -86,6 +87,7 @@ namespace ColorVision.Engine.Services.Devices.Sensor
         /// <param name="temp"></param>
         public void ExecCmd(CVTemplateParam temp)
         {
+            SensorTemplateDictionaryService.RequireDefaultCategory(Config.Category);
             SensorExecCmdParam req = new();
             req.TemplateParam = temp;
             req.Cmd = new SensorCmd() { CmdType = SensorCmdType.None };

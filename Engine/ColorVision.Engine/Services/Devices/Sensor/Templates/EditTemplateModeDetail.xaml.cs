@@ -13,7 +13,6 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
-using ColorVision.Themes.Controls;
 
 namespace ColorVision.Engine.Services.Devices.Sensor.Templates
 {
@@ -91,13 +90,8 @@ namespace ColorVision.Engine.Services.Devices.Sensor.Templates
                 previous.SensorCommands.CollectionChanged -= Commands_CollectionChanged;
             Param = param;
             if (param is SensorParam sensorParam)
-            {
-                if (sensorParam.ModMaster.Pid > 0)
-                    TemplateSensor.EnsureDefaultCommandDefinition(sensorParam.ModMaster.Pid);
                 sensorParam.SensorCommands.CollectionChanged += Commands_CollectionChanged;
-            }
             this.DataContext = Param;
-            DeleteTypeButton.Visibility = Param.Id > 0 ? Visibility.Visible : Visibility.Collapsed;
             RefreshCommandSelection(null, 0);
         }
 
@@ -153,29 +147,6 @@ namespace ColorVision.Engine.Services.Devices.Sensor.Templates
             ConvertButton.ContextMenu.PlacementTarget = ConvertButton;
             ConvertButton.ContextMenu.Placement = PlacementMode.Bottom;
             ConvertButton.ContextMenu.IsOpen = true;
-        }
-
-        private void DeleteType_Click(object sender, RoutedEventArgs e)
-        {
-            if (Window.GetWindow(this) is not TemplateEditorWindow host || host.ITemplate is not TemplateSensor template) return;
-            try
-            {
-                using var db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
-                var templates = db.Queryable<ModMasterModel>().Where(item => item.Pid == template.TemplateDicId).ToList();
-                string names = string.Join(Environment.NewLine, templates.Select(item => item.Name));
-                if (MessageBox1.Show(host, string.Format(Properties.Resources.Sensor_DeleteTypePrompt, template.Code, templates.Count, names), "ColorVision", MessageBoxButton.OKCancel, MessageBoxImage.Warning) != MessageBoxResult.OK) return;
-                SensorTemplateDictionaryService.DeleteType(db, template.TemplateDicId, template.Code);
-                foreach (var entry in SymbolCache.Instance.Cache.Where(entry => entry.Value.PId == template.TemplateDicId).ToArray())
-                    SymbolCache.Instance.Cache.TryRemove(entry.Key, out _);
-                template.TemplateParams.Clear();
-                TemplateSensor.Params.Remove(template.Code);
-                foreach (var window in Application.Current.Windows.OfType<TemplateEditorWindow>().Where(window => window.ITemplate is TemplateSensor sensor && sensor.TemplateDicId == template.TemplateDicId).ToArray())
-                    window.Close();
-            }
-            catch (Exception ex)
-            {
-                MessageBox1.Show(host, string.Format(Properties.Resources.Sensor_DeleteTypeFailed, ex.Message), "ColorVision", MessageBoxButton.OK, MessageBoxImage.Warning);
-            }
         }
 
 

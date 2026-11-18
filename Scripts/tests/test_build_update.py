@@ -4,7 +4,7 @@ import unittest
 import zipfile
 from pathlib import Path
 from unittest import mock
-from Scripts import build_update
+from Scripts import build_update, verify_release
 
 from Scripts.build_update import (
     REQUIRED_SERVICE_HOST_RUNTIME_PATHS,
@@ -78,6 +78,60 @@ class NativeRuntimeDeliveryTests(unittest.TestCase):
             self.assertEqual(build_update.main(), 1)
         self.assertEqual(pack.call_args.kwargs["native_hashes"], {"native.dll": "hash"})
         upload.assert_not_called()
+
+
+class ReleaseBaselineTests(unittest.TestCase):
+    def test_first_release_establishes_baseline_and_next_release_verifies_incremental(self):
+        first_version = "1.9.1.1"
+        next_version = "1.9.1.2"
+        base_url = "https://release.example.test"
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            runtime = root / "runtime"
+            history = root / "History"
+            updates = history / "update"
+            runtime.mkdir()
+            updates.mkdir(parents=True)
+            installer = root / "installer.exe"
+            installer.touch()
+            (runtime / "ColorVision.exe").write_bytes(b"initial version")
+            (updates / f"ColorVision-Update-[{first_version}].cvx").write_bytes(b"stale update")
+
+            with mock.patch.multiple(build_update, new_version_dir=runtime, history_dir=history, update_dir=updates), \
+                 mock.patch.object(build_update, "get_file_version", side_effect=[first_version, next_version]), \
+                 mock.patch.object(build_update, "validate_service_host_runtime"), \
+                 mock.patch.object(build_update, "validate_operations_watchdog_runtime"), \
+                 mock.patch.object(build_update, "ensure_native_runtime_integrity", return_value={}), \
+                 mock.patch.object(build_update, "upload_file", return_value=True) as upload, \
+                 mock.patch.object(verify_release, "read_version", side_effect=[first_version, next_version]), \
+                 mock.patch.object(verify_release, "get_installer_path", return_value=installer), \
+                 mock.patch.object(verify_release, "resolve_upload_base_url", return_value=base_url), \
+                 mock.patch.object(verify_release, "verify_signature") as verify_signature, \
+                 mock.patch.object(verify_release, "verify_latest_version") as verify_latest, \
+                 mock.patch.object(verify_release, "verify_changelog") as verify_changelog, \
+                 mock.patch.object(verify_release, "verify_remote_size") as verify_download, \
+                 mock.patch.object(verify_release, "read_git_status"):
+                self.assertEqual(0, build_update.main())
+                baseline = history / f"ColorVision-[{first_version}].zip"
+                with zipfile.ZipFile(baseline) as archive:
+                    self.assertEqual(b"initial version", archive.read("ColorVision.exe"))
+                upload.assert_not_called()
+                verify_signature.assert_called_once_with(installer)
+                verify_latest.assert_called_once_with(base_url, first_version)
+                verify_changelog.assert_called_once_with(base_url, first_version)
+                verify_download.assert_called_once_with(base_url, f"/api/app/releases/{first_version}/download", installer)
+
+                (runtime / "ColorVision.exe").write_bytes(b"updated version")
+                verify_download.reset_mock()
+                self.assertEqual(0, build_update.main())
+                incremental = updates / f"ColorVision-Update-[{next_version}].cvx"
+                upload.assert_called_once_with(incremental, "ColorVision/Update")
+                with zipfile.ZipFile(incremental) as archive:
+                    self.assertEqual(b"updated version", archive.read("ColorVision.exe"))
+                verify_download.assert_has_calls([
+                    mock.call(base_url, f"/api/app/releases/{next_version}/download", installer),
+                    mock.call(base_url, f"/api/app/updates/{next_version}/download", incremental),
+                ], any_order=True)
 
 
 class IncrementalBaselineTests(unittest.TestCase):

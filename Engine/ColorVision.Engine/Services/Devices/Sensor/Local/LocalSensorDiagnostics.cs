@@ -1,7 +1,9 @@
 using log4net;
 using ColorVision.Engine.Services.Devices.Sensor.Templates;
+using MQTTMessageLib.Sensor;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace ColorVision.Engine.Services.Devices.Sensor.Local;
 
@@ -18,6 +20,7 @@ internal sealed record LocalSensorDiagnosticEntry(long Sequence, DateTime Time, 
     public string CommandDisplay => CommandId == 0 ? CommandName : EngineLocalization.Format($"{CommandName} · #{CommandId} / 第 {Attempt} 次");
     public string Label => Kind is LocalSensorDiagnosticKind.Sent or LocalSensorDiagnosticKind.Received ? CommandDisplay : EngineLocalization.Get(EventName);
     public bool IsTruncated => CapturedByteCount < ByteCount;
+    public int FragmentCount { get; init; } = 1;
 }
 
 /// <summary>Per-device history survives window closure. Payload and entry caps bound diagnostic memory.</summary>
@@ -41,6 +44,42 @@ internal sealed class LocalSensorDiagnostics
     }
 
     internal void Clear() { lock (sync) { entries.Clear(); ++revision; } }
+
+    internal static LocalSensorDiagnosticEntry[] SummarizeResponses(LocalSensorDiagnosticEntry[] snapshot)
+    {
+        var responses = snapshot.Where(IsCommandReceive).GroupBy(ResponseKey).ToDictionary(group => group.Key, group => group.ToArray());
+        var summary = new List<LocalSensorDiagnosticEntry>(snapshot.Length);
+        foreach (var entry in snapshot)
+        {
+            if (!IsCommandReceive(entry)) summary.Add(entry);
+            else if (responses.Remove(ResponseKey(entry), out var fragments))
+                summary.Add(fragments.Length == 1 ? entry : CombineFragments(fragments));
+        }
+        return summary.ToArray();
+    }
+
+    private static bool IsCommandReceive(LocalSensorDiagnosticEntry entry) => entry.Kind == LocalSensorDiagnosticKind.Received && entry.CommandId != 0;
+    private static (string Endpoint, long CommandId, int Attempt) ResponseKey(LocalSensorDiagnosticEntry entry) => (entry.Endpoint, entry.CommandId, entry.Attempt);
+
+    private static LocalSensorDiagnosticEntry CombineFragments(LocalSensorDiagnosticEntry[] fragments)
+    {
+        var first = fragments[0];
+        byte[] bytes = new byte[Math.Min(fragments.Sum(fragment => fragment.CapturedByteCount), MaxPayloadBytes)];
+        int captured = 0;
+        foreach (var fragment in fragments)
+        {
+            int length = Math.Min(bytes.Length - captured, fragment.CapturedByteCount);
+            Convert.FromHexString(fragment.Hex.AsSpan(0, length * 2), bytes.AsSpan(captured), out _, out _);
+            captured += length;
+            if (captured == bytes.Length || fragment.IsTruncated) break;
+        }
+
+        if (captured != bytes.Length) bytes = bytes[..captured];
+        var command = new LocalSensorCommand { CmdType = Enum.Parse<SensorCmdType>(first.Encoding) };
+        return new LocalSensorDiagnosticEntry(first.Sequence, first.Time, first.Kind, first.Endpoint, "累计接收",
+            first.CommandName, first.CommandId, first.Attempt, first.Encoding, fragments.Sum(fragment => fragment.ByteCount),
+            captured, command.Decode(bytes), Convert.ToHexString(bytes)) { FragmentCount = fragments.Length };
+    }
 
     internal void AddLog(string endpoint, string eventName, string message, bool error = false)
         => Add(error ? LocalSensorDiagnosticKind.Error : LocalSensorDiagnosticKind.Log, endpoint, eventName, "", 0, 0, "", 0, 0,

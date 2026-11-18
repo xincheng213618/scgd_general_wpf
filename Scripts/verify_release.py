@@ -48,10 +48,9 @@ def read_version(repo_root: Path) -> str:
     return version
 
 
-def get_release_paths(version: str) -> tuple[Path, Path]:
-    user_home = Path.home()
-    installer = (
-        user_home
+def get_installer_path(version: str) -> Path:
+    return (
+        Path.home()
         / "Documents"
         / "Advanced Installer"
         / "Projects"
@@ -59,8 +58,6 @@ def get_release_paths(version: str) -> tuple[Path, Path]:
         / "Setup Files"
         / f"ColorVision-{version}.exe"
     )
-    update = user_home / "Desktop" / "History" / "update" / f"ColorVision-Update-[{version}].cvx"
-    return installer, update
 
 
 def verify_signature(installer: Path) -> str:
@@ -181,12 +178,17 @@ def read_git_status(repo_root: Path) -> str:
     return f"{branch}; changes={max(len(lines) - 1, 0)}"
 
 
-def main() -> int:
+def verify_release(version: str, full_zip: Path, incremental_zip: Path | None) -> int:
     repo_root = Path(__file__).resolve().parent.parent
     try:
-        version = read_version(repo_root)
-        installer, update = get_release_paths(version)
-        missing = [str(path) for path in (installer, update) if not path.is_file()]
+        expected_version = read_version(repo_root)
+        if version != expected_version:
+            raise ReleaseVerificationError(f"Packaged version {version} does not match VersionPrefix {expected_version}")
+        installer = get_installer_path(version)
+        artifacts = [installer, full_zip]
+        if incremental_zip is not None:
+            artifacts.append(incremental_zip)
+        missing = [str(path) for path in artifacts if not path.is_file()]
         if missing:
             raise ReleaseVerificationError("Missing release artifact(s): " + ", ".join(missing))
 
@@ -201,13 +203,14 @@ def main() -> int:
                 f"/api/app/releases/{encoded_version}/download",
                 installer,
             ),
-            "update download": lambda: verify_remote_size(
-                base_url,
-                f"/api/app/updates/{encoded_version}/download",
-                update,
-            ),
             "git status": lambda: read_git_status(repo_root),
         }
+        if incremental_zip is not None:
+            checks["update download"] = lambda: verify_remote_size(
+                base_url,
+                f"/api/app/updates/{encoded_version}/download",
+                incremental_zip,
+            )
         results: dict[str, str] = {}
         with ThreadPoolExecutor(max_workers=len(checks)) as executor:
             futures = {executor.submit(check): name for name, check in checks.items()}
@@ -225,4 +228,4 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    raise SystemExit("Run Scripts\\release.bat to build, upload and verify the main application release.")

@@ -1,6 +1,7 @@
 // // Copyright (c) Microsoft. All rights reserved.
 // // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using ColorVision.ToolPlugins.UpdateRelay;
 using ColorVision.UI.Shell;
 using ColorVision.UI.Desktop.Operations;
 using log4net;
@@ -29,6 +30,12 @@ namespace ColorVision
         [GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
         public static void Main(string[] args)
         {
+            if (args.Length > 0 && args[0] == UpdateRelayForwarding.StartupArgument)
+            {
+                Environment.ExitCode = UpdateRelayForwarding.RunCommand(args);
+                return;
+            }
+
             args = WindowsApplicationRestartRegistration.CaptureAndRemoveRecoveryArguments(args);
             args = OperationsApplicationRestartController.WaitForEarlierProcessAndRemoveHandoffArguments(args);
             bool automaticRecoveryRegistered = WindowsApplicationRestartRegistration.TryRegister();

@@ -1,9 +1,11 @@
-﻿namespace ColorVision.Engine.Services.Devices.Sensor
+﻿using ColorVision.Engine.Services.Devices.Sensor.Templates;
+
+namespace ColorVision.Engine.Services.Devices.Sensor
 {
     public class ConfigSensor : DeviceServiceConfig
     {
         public string Category { get => _Category; set { _Category = value; OnPropertyChanged(); } }
-        private string _Category = "Sensor.Default";
+        private string _Category = SensorTemplateDictionaryService.DefaultCategoryCode;
 
         public bool IsNet { get => _IsNet; set { _IsNet = value; OnPropertyChanged(); } }
         private bool _IsNet;

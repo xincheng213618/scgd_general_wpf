@@ -1456,4 +1456,7 @@
   <data name="AngularRayCounts" xml:space="preserve">
     <value>鏡像角度取樣 {0}，參考缺測 {1}</value>
   </data>
+  <data name="Conoscope_Screenshot" xml:space="preserve">
+    <value>截圖</value>
+  </data>
 </root>

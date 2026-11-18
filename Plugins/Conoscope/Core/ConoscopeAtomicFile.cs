@@ -11,14 +11,23 @@ namespace Conoscope.Core
         // never replaces an existing export, and only our own temporary file is removed.
         public static void Write(string path, Action<StreamWriter> write, CancellationToken cancellationToken = default)
         {
+            WriteStream(path, stream =>
+            {
+                using StreamWriter writer = new(stream, new UTF8Encoding(true), leaveOpen: true);
+                write(writer);
+            }, cancellationToken);
+        }
+
+        public static void WriteStream(string path, Action<Stream> write, CancellationToken cancellationToken = default)
+        {
             string destination = Path.GetFullPath(path);
             string temporary = Path.Combine(Path.GetDirectoryName(destination)!, $".{Path.GetFileName(destination)}.{Guid.NewGuid():N}.tmp");
             try
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                using (StreamWriter writer = new(temporary, false, new UTF8Encoding(true)))
+                using (FileStream stream = new(temporary, FileMode.CreateNew, FileAccess.Write))
                 {
-                    write(writer);
+                    write(stream);
                 }
                 cancellationToken.ThrowIfCancellationRequested();
                 File.Move(temporary, destination, true);

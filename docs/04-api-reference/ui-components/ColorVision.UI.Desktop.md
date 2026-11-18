@@ -3,8 +3,8 @@ knowledge_id: "ui.desktop"
 knowledge_type: "reference"
 status: "current"
 summary: "桌面辅助壳层而非产品主入口：定位设置、市场下载、第三方工具、反馈和特权崩溃诊断。"
-aliases: ["设置窗口和插件市场在哪里","ColorVision.UI.Desktop","SettingWindow","MarketplacePackageDownloadService","下载管理器","断点续传","Aria2cDownloadManager"]
-code_paths: ["UI/ColorVision.UI.Desktop/ColorVision.UI.Desktop.csproj","UI/ColorVision.UI.Desktop/App.xaml","UI/ColorVision.UI.Desktop/App.xaml.cs","UI/ColorVision.UI.Desktop/MainWindow.xaml","UI/ColorVision.UI.Desktop/MainWindow.xaml.cs","UI/ColorVision.UI.Desktop/Settings/SettingWindow.xaml.cs","UI/ColorVision.UI.Desktop/Marketplace","UI/ColorVision.UI.Desktop/Download","UI/ColorVision.UI.Desktop/Wizards","UI/ColorVision.UI.Desktop/ThirdPartyApps","UI/ColorVision.UI.Desktop/Diagnostics","UI/ColorVision.UI.Desktop/Feedback","UI/ColorVision.UI.Desktop/README.md"]
+aliases: ["设置窗口和插件市场在哪里","ColorVision.UI.Desktop","SettingWindow","MarketplacePackageDownloadService","下载管理器","断点续传","Aria2cDownloadManager","SSCOM","sscom51.ini","SSCOM 调试预设","多条字符串发送"]
+code_paths: ["UI/ColorVision.UI.Desktop/ColorVision.UI.Desktop.csproj","UI/ColorVision.UI.Desktop/App.xaml","UI/ColorVision.UI.Desktop/App.xaml.cs","UI/ColorVision.UI.Desktop/MainWindow.xaml","UI/ColorVision.UI.Desktop/MainWindow.xaml.cs","UI/ColorVision.UI.Desktop/Settings/SettingWindow.xaml.cs","UI/ColorVision.UI.Desktop/Marketplace","UI/ColorVision.UI.Desktop/Download","UI/ColorVision.UI.Desktop/Wizards","UI/ColorVision.UI.Desktop/ThirdPartyApps","UI/ColorVision.UI.Desktop/Diagnostics","UI/ColorVision.UI.Desktop/Feedback","UI/ColorVision.UI.Desktop/README.md","ColorVision/ToolPlugins/ThirdPartyApps/SscomLauncher.cs","ColorVision/ToolPlugins/ThirdPartyApps/SscomPresetWindow.xaml.cs","ColorVision/ToolPlugins/ThirdPartyApps/SscomPresetIni.cs","ColorVision/ToolPlugins/ThirdPartyApps/SscomSensorPresets.cs","ColorVision/ToolPlugins/ThirdPartyApps/SscomArvrPresets.cs"]
 related: ["ui.index","ui.framework","ui.settings","ui.wizards","ui.menus","ui.configuration","ui.database","plugins.getting-started","platform.runtime"]
 ---
 
@@ -42,6 +42,10 @@ related: ["ui.index","ui.framework","ui.settings","ui.wizards","ui.menus","ui.co
 | 诊断窗口 | `ViewDllVersionsWindow` | 查看已加载程序集版本、产品版本和路径 |
 
 “应用与工具”支持搜索、分类筛选、添加自定义应用和快捷脚本。双击启动，右键显示可用操作。列表和启动命令均检查应用角色。
+
+“常用工具”中的 SSCOM 从 `%APPDATA%\ColorVision\Tools\SSCOM\sscom5.13.1.exe` 启动，使用同一目录保存 `sscom51.ini` 等设置。启动时先以安装目录 `Assets\Tool` 的 EXE 核对 `%APPDATA%\ColorVision\PackageCache\Tools\SSCOM` 的备份，再使用备份补齐或修复运行目录的 EXE。随备份保存的 SHA-256 可在安装目录缺少该 EXE 时校验备份。安装源和可校验的备份均不可用时，启动会提示修复安装。校验和修复只涉及 EXE 与备份摘要，运行目录已有的设置文件保留。
+
+首次双击 SSCOM 时，ColorVision 在运行目录创建缺失的 `sscom51.ini`，预置 PG 常用指令和 ARVR Pro TCP/JSON 指令，打开即可在「多条字符串发送」中看到。已有配置继续使用其现有指令和设置。右键 SSCOM 选择「调试预设」，可把 PG 常用指令、当前已加载的通用传感器模板或 ARVR Pro 指令添加到空槽位，再打开 SSCOM。选用 ARVR Pro 时，可填写 IPv4、端口和测试 SN，并设置 TCP 客户端。新增槽位的循环顺序为 0，首次启动和应用 TCP 预设时关闭自动连接。每条指令需要手动发送。文件使用 CP936 和 CRLF，发送栏使用 HEX 保留实际字节，单个文件最多 99 条。
 
 “内部工具”提供“CVRAW 批量导出 TIFF”（`ColorVision/ToolPlugins/CvRawExport/`）。选择文件夹后点击“执行”，后台递归检索 `.cvraw`（扩展名不区分大小写，不跟随目录链接），将原始图像导出为同目录、同主文件名的 `.tif`；已有目标直接跳过，不覆盖、不重新编码。并发数可选 1～32，默认使用 CPU 逻辑处理器数的一半，最低 1、最高 4；大图像可降低并发以减少内存占用。保留位深、通道、像素值及既有 TIFF 图像参数，单文件失败后继续处理并列出文件和原因。界面显示成功、跳过、失败与总进度；取消或关窗会停止后续任务，等待正在进行的读取／编码返回，已完成文件保留。`Engine/ColorVision.Engine/Media/Export/CvRawBatchExporter.cs` 先写同目录临时 TIFF，完成后以不覆盖方式移入目标，避免中断残留被下次误认为已导出。
 

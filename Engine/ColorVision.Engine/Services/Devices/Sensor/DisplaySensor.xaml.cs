@@ -230,6 +230,8 @@ namespace ColorVision.Engine.Services.Devices.Sensor
         private void UpdateTemplates(object? sender, EventArgs args)
         {
             var templates = new TemplateSensor(Device.Config.Category);
+            TemplateControls.IsEnabled = templates.TemplateDicId == SensorTemplateDictionaryService.DefaultDictionaryId;
+            TemplateControls.ToolTip = TemplateControls.IsEnabled ? null : SensorTemplateDictionaryService.GetUnavailableMessage(Device.Config.Category);
             templates.Load();
             ComboxSensorTemplate.ItemsSource = templates.TemplateParams;
         }

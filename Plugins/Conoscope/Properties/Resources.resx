@@ -284,6 +284,9 @@
   <data name="BtnPolarCoord" xml:space="preserve">
     <value>极坐标</value>
   </data>
+  <data name="Conoscope_Screenshot" xml:space="preserve">
+    <value>截屏</value>
+  </data>
   <data name="BtnFindDevice" xml:space="preserve">
     <value>查找设备</value>
   </data>

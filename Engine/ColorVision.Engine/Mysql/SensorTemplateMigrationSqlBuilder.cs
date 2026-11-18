@@ -14,27 +14,22 @@ namespace ColorVision.Database
         private const string DictionaryItemTableName = "t_scgd_sys_dictionary_mod_item";
         private const string ModParamMasterTableName = "t_scgd_mod_param_master";
         private const string ModParamDetailTableName = "t_scgd_mod_param_detail";
+        private const int DefaultDictionaryId = SensorTemplateDictionaryService.DefaultDictionaryId;
+        private const string DefaultCategoryCode = SensorTemplateDictionaryService.DefaultCategoryCode;
+        private static readonly string SensorTemplateFilter = $@"dm.`mod_type` = 5
+                       OR (dm.`id` IS NULL AND m.`mm_id` = {DefaultDictionaryId})
+                       OR (m.`name` LIKE 'Sensor.%' AND (dm.`id` IS NULL OR dm.`mod_type` <> 5))";
 
         internal static string Build(SqlSugarClient db)
         {
             var masters = db.Ado.SqlQuery<SensorTemplateMigrationMasterRow>(
                 $@"SELECT m.`id` AS ModMasterId,
                            m.`mm_id` AS SourceDictionaryId,
-                           m.`name` AS TemplateName,
                            dm.`code` AS DictionaryCode,
-                           dm.`name` AS DictionaryName,
-                           dm.`p_type` AS DictionaryPType,
-                           dm.`pid` AS DictionaryParentId,
-                           dm.`mod_type` AS DictionaryModType,
-                           dm.`cfg_json` AS DictionaryJson,
-                           dm.`version` AS DictionaryVersion,
-                           dm.`create_date` AS DictionaryCreateDate,
-                           dm.`remark` AS DictionaryRemark,
-                           dm.`tenant_id` AS DictionaryTenantId
+                           dm.`mod_type` AS DictionaryModType
                     FROM `{ModParamMasterTableName}` m
                     LEFT JOIN `{DictionaryMasterTableName}` dm ON dm.`id` = m.`mm_id`
-                    WHERE dm.`mod_type` = 5
-                       OR (m.`name` LIKE 'Sensor.%' AND (dm.`id` IS NULL OR dm.`mod_type` <> 5))");
+                    WHERE {SensorTemplateFilter}");
 
             if (masters.Count == 0)
             {
@@ -48,8 +43,7 @@ namespace ColorVision.Database
                     FROM `{ModParamDetailTableName}` d
                     INNER JOIN `{ModParamMasterTableName}` m ON m.`id` = d.`pid`
                     LEFT JOIN `{DictionaryMasterTableName}` dm ON dm.`id` = m.`mm_id`
-                    WHERE dm.`mod_type` = 5
-                       OR (m.`name` LIKE 'Sensor.%' AND (dm.`id` IS NULL OR dm.`mod_type` <> 5))");
+                    WHERE {SensorTemplateFilter}");
 
             var items = db.Ado.SqlQuery<SensorTemplateMigrationItemRow>(
                 $@"SELECT i.`id` AS SourceItemId,
@@ -65,7 +59,7 @@ namespace ColorVision.Database
                            i.`remark` AS Remark
                     FROM `{DictionaryItemTableName}` i
                     INNER JOIN `{DictionaryMasterTableName}` dm ON dm.`id` = i.`pid`
-                    WHERE dm.`mod_type` = 5");
+                    WHERE dm.`mod_type` = 5 AND dm.`id` = {DefaultDictionaryId} AND dm.`code` = '{DefaultCategoryCode}'");
 
             return Build(masters, details, items);
         }
@@ -75,98 +69,50 @@ namespace ColorVision.Database
             IReadOnlyCollection<SensorTemplateMigrationDetailRow> details,
             IReadOnlyCollection<SensorTemplateMigrationItemRow> items)
         {
-            var resolvedMasters = masters
-                .Select(master => new ResolvedSensorMaster(master, ResolveCode(master)))
-                .Where(master => !string.IsNullOrWhiteSpace(master.Code))
-                .ToList();
-            if (resolvedMasters.Count == 0)
+            if (masters.Count == 0)
             {
                 return string.Empty;
             }
 
             StringBuilder sql = new();
-            sql.AppendLine("-- Generic sensor dictionaries are restored by business key and references are remapped");
-
-            foreach (var group in resolvedMasters.GroupBy(master => master.Code!, StringComparer.OrdinalIgnoreCase).OrderBy(group => group.Key, StringComparer.OrdinalIgnoreCase))
-            {
-                AppendSensorGroup(sql, group.Key, group.ToList(), details, items);
-            }
+            int[] defaultTemplateIds = masters.Where(IsDefaultTemplate).Select(master => master.ModMasterId).Distinct().Order().ToArray();
+            int[] otherTemplateIds = masters.Where(master => !IsDefaultTemplate(master)).Select(master => master.ModMasterId).Distinct().Order().ToArray();
+            if (defaultTemplateIds.Length > 0) AppendDefaultSensorTemplates(sql, defaultTemplateIds, details, items);
+            if (otherTemplateIds.Length > 0) DetachOtherSensorTemplates(sql, otherTemplateIds);
 
             return sql.ToString();
         }
 
-        private static string? ResolveCode(SensorTemplateMigrationMasterRow master)
-        {
-            if (master.DictionaryModType == 5 && !string.IsNullOrWhiteSpace(master.DictionaryCode))
-            {
-                return master.DictionaryCode.Trim();
-            }
+        private static bool IsDefaultTemplate(SensorTemplateMigrationMasterRow master) => master.SourceDictionaryId == DefaultDictionaryId
+            && (master.DictionaryModType == null || (master.DictionaryModType == 5 && string.Equals(master.DictionaryCode, DefaultCategoryCode, StringComparison.OrdinalIgnoreCase)));
 
-            return SensorTemplateDictionaryService.InferLegacySensorCode(master.TemplateName);
-        }
-
-        private static void AppendSensorGroup(
+        private static void AppendDefaultSensorTemplates(
             StringBuilder sql,
-            string code,
-            IReadOnlyCollection<ResolvedSensorMaster> masters,
+            int[] modMasterIds,
             IReadOnlyCollection<SensorTemplateMigrationDetailRow> details,
             IReadOnlyCollection<SensorTemplateMigrationItemRow> items)
         {
-            SensorTemplateMigrationMasterRow sourceDictionary = masters
-                .Select(master => master.Source)
-                .FirstOrDefault(master => master.DictionaryModType == 5 && string.Equals(master.DictionaryCode, code, StringComparison.OrdinalIgnoreCase))
-                ?? masters.First().Source;
-            string dictionaryName = string.IsNullOrWhiteSpace(sourceDictionary.DictionaryName) || sourceDictionary.DictionaryModType != 5
-                ? code
-                : sourceDictionary.DictionaryName;
-            DateTime createDate = sourceDictionary.DictionaryModType == 5 && sourceDictionary.DictionaryCreateDate.HasValue
-                ? sourceDictionary.DictionaryCreateDate.Value
-                : DateTime.Now;
-            int tenantId = sourceDictionary.DictionaryModType == 5 ? sourceDictionary.DictionaryTenantId : 0;
-            int pType = sourceDictionary.DictionaryModType == 5 ? sourceDictionary.DictionaryPType : 0;
-            int? parentId = sourceDictionary.DictionaryModType == 5 ? sourceDictionary.DictionaryParentId : null;
-            string? dictionaryJson = sourceDictionary.DictionaryModType == 5 ? sourceDictionary.DictionaryJson : null;
-            string? dictionaryVersion = sourceDictionary.DictionaryModType == 5 ? sourceDictionary.DictionaryVersion : null;
-            string? dictionaryRemark = sourceDictionary.DictionaryModType == 5 ? sourceDictionary.DictionaryRemark : null;
-            int[] modMasterIds = masters.Select(master => master.Source.ModMasterId).Distinct().Order().ToArray();
             var groupDetails = details.Where(detail => modMasterIds.Contains(detail.ModMasterId)).ToList();
-            int[] healthySourceDictionaryIds = masters
-                .Select(master => master.Source)
-                .Where(master => master.DictionaryModType == 5 && string.Equals(master.DictionaryCode, code, StringComparison.OrdinalIgnoreCase))
-                .Select(master => master.SourceDictionaryId)
-                .Distinct()
-                .ToArray();
             var groupItems = items
-                .Where(item => healthySourceDictionaryIds.Contains(item.SourceDictionaryId))
+                .Where(item => item.SourceDictionaryId == DefaultDictionaryId)
                 .GroupBy(item => item.SourceItemId)
                 .Select(group => group.First())
                 .OrderBy(item => item.SourceItemId)
                 .ToList();
 
-            sql.AppendLine($"-- Generic sensor: {code}");
-            sql.AppendLine($@"INSERT INTO `{DictionaryMasterTableName}`
-(`code`, `name`, `p_type`, `pid`, `mod_type`, `cfg_json`, `version`, `create_date`, `is_enable`, `is_delete`, `remark`, `tenant_id`)
-SELECT {FormatSqlValue(code)}, {FormatSqlValue(dictionaryName)}, {pType}, {FormatSqlValue(parentId)}, 5,
-       {FormatSqlValue(dictionaryJson)}, {FormatSqlValue(dictionaryVersion)}, {FormatSqlValue(createDate)}, 1, 0, {FormatSqlValue(dictionaryRemark)}, {tenantId}
-WHERE NOT EXISTS (
-    SELECT 1 FROM `{DictionaryMasterTableName}` WHERE `code` = {FormatSqlValue(code)}
-);");
+            sql.AppendLine($"-- Generic sensor: {DefaultCategoryCode}");
             sql.AppendLine($@"SET @cv_sensor_dictionary_id = (
     SELECT `id`
     FROM `{DictionaryMasterTableName}`
-    WHERE `code` = {FormatSqlValue(code)}
-    ORDER BY CASE WHEN `mod_type` = 5 THEN 0 ELSE 1 END, `is_delete`, `id`
-    LIMIT 1
+    WHERE `id` = {DefaultDictionaryId} AND `code` = '{DefaultCategoryCode}' AND `mod_type` = 5 AND `is_enable` = 1 AND `is_delete` = 0
 );");
-            sql.AppendLine($@"UPDATE `{DictionaryMasterTableName}`
-SET `name` = {FormatSqlValue(dictionaryName)}, `p_type` = {pType}, `pid` = {FormatSqlValue(parentId)}, `mod_type` = 5,
-    `cfg_json` = {FormatSqlValue(dictionaryJson)}, `version` = {FormatSqlValue(dictionaryVersion)},
-    `is_enable` = 1, `is_delete` = 0, `remark` = {FormatSqlValue(dictionaryRemark)}, `tenant_id` = {tenantId}
-WHERE `id` = @cv_sensor_dictionary_id;");
+            string ids = string.Join(", ", modMasterIds);
             sql.AppendLine($@"UPDATE `{ModParamMasterTableName}`
 SET `mm_id` = @cv_sensor_dictionary_id
-WHERE `id` IN ({string.Join(", ", modMasterIds)})
-  AND @cv_sensor_dictionary_id IS NOT NULL;");
+WHERE `id` IN ({ids});");
+            sql.AppendLine($@"UPDATE `{ModParamDetailTableName}`
+SET `cc_pid` = NULL
+WHERE `pid` IN ({ids}) AND @cv_sensor_dictionary_id IS NULL;");
 
             foreach (var item in groupItems)
             {
@@ -180,39 +126,32 @@ WHERE `id` IN ({string.Join(", ", modMasterIds)})
             }
 
             var knownItemIds = groupItems.Select(item => item.SourceItemId).ToHashSet();
-            int[] missingItemIds = groupDetails
+            int[] missingDetailIds = groupDetails
                 .Where(detail => detail.SourceItemId > 0 && !knownItemIds.Contains(detail.SourceItemId))
-                .Select(detail => detail.SourceItemId)
+                .Select(detail => detail.DetailId)
                 .Distinct()
                 .Order()
                 .ToArray();
-            for (int index = 0; index < missingItemIds.Length; index++)
+            if (missingDetailIds.Length > 0)
             {
-                int missingItemId = missingItemIds[index];
-                string symbol = index == 0
-                    ? SensorTemplateDictionaryService.DefaultCommandSymbol
-                    : $"{SensorTemplateDictionaryService.DefaultCommandSymbol}_{missingItemId}";
-                int[] detailIds = groupDetails
-                    .Where(detail => detail.SourceItemId == missingItemId)
-                    .Select(detail => detail.DetailId)
-                    .Distinct()
-                    .Order()
-                    .ToArray();
-                AppendItem(
-                    sql,
-                    new SensorTemplateMigrationItemRow
-                    {
-                        SourceItemId = missingItemId,
-                        Symbol = symbol,
-                        Name = symbol,
-                        DefaultValue = SensorTemplateDictionaryService.DefaultCommandValue,
-                        ValueType = 3,
-                        CreateDate = DateTime.Now,
-                        IsEnable = true,
-                        IsDelete = false
-                    },
-                    detailIds);
+                sql.AppendLine($@"UPDATE `{ModParamDetailTableName}`
+SET `cc_pid` = (
+    SELECT `id` FROM `{DictionaryItemTableName}`
+    WHERE `pid` = @cv_sensor_dictionary_id AND `symbol` = '{SensorTemplateDictionaryService.DefaultCommandSymbol}'
+      AND `is_enable` = 1 AND `is_delete` = 0
+    ORDER BY `id` LIMIT 1
+)
+WHERE `id` IN ({string.Join(", ", missingDetailIds)});");
             }
+        }
+
+        private static void DetachOtherSensorTemplates(StringBuilder sql, int[] modMasterIds)
+        {
+            // Old numeric references can be occupied by unrelated dictionary entries after the reset.
+            string ids = string.Join(", ", modMasterIds);
+            sql.AppendLine($@"-- Preserve legacy sensor templates and commands without reusing their dictionary IDs
+UPDATE `{ModParamMasterTableName}` SET `mm_id` = NULL WHERE `id` IN ({ids});
+UPDATE `{ModParamDetailTableName}` SET `cc_pid` = NULL WHERE `pid` IN ({ids});");
         }
 
         private static void AppendItem(StringBuilder sql, SensorTemplateMigrationItemRow item, int[] detailIds)
@@ -294,25 +233,14 @@ WHERE `id` IN ({string.Join(", ", detailIds)})
                 .Replace("\t", "\\t")
                 .Replace("\u001A", "\\Z");
         }
-
-        private sealed record ResolvedSensorMaster(SensorTemplateMigrationMasterRow Source, string? Code);
     }
 
     internal sealed class SensorTemplateMigrationMasterRow
     {
         public int ModMasterId { get; set; }
         public int SourceDictionaryId { get; set; }
-        public string? TemplateName { get; set; }
         public string? DictionaryCode { get; set; }
-        public string? DictionaryName { get; set; }
-        public int DictionaryPType { get; set; }
-        public int? DictionaryParentId { get; set; }
         public int? DictionaryModType { get; set; }
-        public string? DictionaryJson { get; set; }
-        public string? DictionaryVersion { get; set; }
-        public DateTime? DictionaryCreateDate { get; set; }
-        public string? DictionaryRemark { get; set; }
-        public int DictionaryTenantId { get; set; }
     }
 
     internal sealed class SensorTemplateMigrationDetailRow

@@ -7178,6 +7178,10 @@ Field: </value></data>
   <data name="当前可测量" xml:space="preserve"><value>Measurements Available</value></data>
   <data name="径向位移多项式的最高幂次；每个通道需提供阶数加一项系数，从常数项开始。" xml:space="preserve"><value>Highest power of the radial displacement polynomial. Each channel requires order plus one coefficients, starting with the constant term.</value></data>
   <data name="接收分片" xml:space="preserve"><value>Received Chunk</value></data>
+  <data name="显示分片" xml:space="preserve"><value>Show chunks</value></data>
+  <data name="累计接收" xml:space="preserve"><value>Accumulated received data</value></data>
+  <data name="{0} 个分片" xml:space="preserve"><value>{0} chunks</value></data>
+  <data name="最近 500 条原始记录 · 按指令汇总接收 · Ctrl+F 搜索 · Ctrl+C 复制" xml:space="preserve"><value>Last 500 raw records · Receive data grouped by command · Ctrl+F Search · Ctrl+C Copy</value></data>
   <data name="插值放大倍数" xml:space="preserve"><value>Interpolation Magnification</value></data>
   <data name="数" xml:space="preserve"><value>numeric</value></data>
   <data name="整数" xml:space="preserve"><value>integer</value></data>

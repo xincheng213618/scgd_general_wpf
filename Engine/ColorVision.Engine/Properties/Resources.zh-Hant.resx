@@ -8131,6 +8131,10 @@
   <data name="当前可测量" xml:space="preserve"><value>當前可測量</value></data>
   <data name="径向位移多项式的最高幂次；每个通道需提供阶数加一项系数，从常数项开始。" xml:space="preserve"><value>徑向位移多項式的最高冪次；每個通道需提供階數加一項係數，從常數項開始。</value></data>
   <data name="接收分片" xml:space="preserve"><value>接收分片</value></data>
+  <data name="显示分片" xml:space="preserve"><value>顯示分片</value></data>
+  <data name="累计接收" xml:space="preserve"><value>累計接收</value></data>
+  <data name="{0} 个分片" xml:space="preserve"><value>{0} 個分片</value></data>
+  <data name="最近 500 条原始记录 · 按指令汇总接收 · Ctrl+F 搜索 · Ctrl+C 复制" xml:space="preserve"><value>最近 500 筆原始記錄 · 依指令彙整接收 · Ctrl+F 搜尋 · Ctrl+C 複製</value></data>
   <data name="插值放大倍数" xml:space="preserve"><value>插值放大倍數</value></data>
   <data name="数" xml:space="preserve"><value>數</value></data>
   <data name="整数" xml:space="preserve"><value>整數</value></data>

@@ -16,6 +16,8 @@ related: ["governance.maintenance", "delivery.testing"]
 
 `npm run docs:check` 校验目录、固定检索和工具回归；`npm run docs:build` 还构建本地网站、搜索索引并验证 HTML 链接。依赖、生成时机和检查边界见[维护规范](./maintenance.md#按变更选择验证)。两者均不发布或启动 ColorVision。
 
+固定检索用例按实际查找问题补充，定期删减过期、重复或失去回归价值的条目。
+
 ## 检索规则的回归边界
 
 CLI 查专题元数据，网站搜索使用页面全文。优先用实际界面名、代码符号或路径。返回顺序以 CLI 为准。`owner-fallback` 只定位可能的所属类型或路径，成员和版本仍须在源码核对。匹配细节以 `knowledge.mjs` 中的 `searchCatalog` 为准。

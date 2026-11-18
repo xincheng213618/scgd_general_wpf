@@ -102,6 +102,8 @@ CVCIE 仍调用 `CVFileUtil.ReadCIEFileChannel` 读取指定内嵌通道，不�
 
 图像区左上角的坐标 ComboBox 提供 `Polar`、`H/V`、`North Polar` 与 `East Polar`；这是单 View 的显示状态，不写回型号配置。后三项都是 Horizontal-Vertical 角度坐标，不是把图像像素简单改名为平面 x/y。`H/V` 对应 EZCom 手册所称 Azimuthal，另外两项采用不同的顺序旋转定义。
 
+极坐标图启用「显示文字」时，从圆心 `0°` 沿右侧半径标到型号最大极角。VA60 默认每 10° 标到 `60°`，空间不足时省略部分中间标签。极坐标网格默认使用黄色描线和深色轮廓。伪彩色条叠在图像视口右下方，给右侧 `0°` 方位标记留出空间。左图右键「截屏」可将当前视口保存为 PNG，包含可见的坐标刻度、参考线、关注点和伪彩色条。
+
 `ConoscopeHorizontalVerticalProjection` 先把源极坐标写成方向分量 `x = sin(theta) cos(phi)`、`y = sin(theta) sin(phi)`、`z = cos(theta)`，再按目标系统计算 H/V；反算通过方向分量和 `atan2` 保留完整象限：
 
 ```text
