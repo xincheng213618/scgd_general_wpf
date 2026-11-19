@@ -80,11 +80,11 @@ MySQL ZIP安装位置与服务根同级，默认业务用户cv。`MySqlServiceHe
 
 服务管理器将数据库配置写入服务目录的 `cfg/MySql.config`，将与桌面端共用的 MQTT 和注册中心默认参数写入现有的 `cfg/MQTT.config` 和 `cfg/WinService.config`。注册中心启动时以数据库监控列表为准并回写本地文件，因此常规配置同步将 `MySQL,CVMainService_x64,CVMainService_dev` 同步到默认注册中心 `RC_local` 对应的 `t_scgd_sys_config_monitor` 记录和本地 `Monitor.Services`，缺少本地键时补齐。数据库缺少记录或匹配多条记录会使同步失败。其它已存在的受管理配置写异常也可传播到安装编排、阻止后续启动，缺少配置文件时跳过该文件。
 
-服务管理器的 CVWindowsService 页在“注册中心服务”的“更多操作”菜单中提供“移除归档服务检测”，用于旧部署仍按 `Monitor.Services` 反复尝试启动 `CVArchService` 的情况。`ServiceManagerViewModel.Monitoring.cs` 优先从已注册的注册中心程序路径定位 `cfg/WinService.config`，未注册时回退到安装根目录。`RegistrationCenterMonitorConfiguration` 从默认注册中心对应的数据库列表中移除归档项并同步到本地文件，保留其它监控服务及检测周期。文件中的非空 `NodeName` 必须与默认注册中心名称一致。缺文件、缺监控记录或匹配多个记录均报错。
+服务管理器的 CVWindowsService 页在“注册中心服务”的“更多操作”菜单中提供“移除归档服务”。`ServiceManagerViewModel.Monitoring.cs` 优先从已注册的注册中心程序路径定位 `cfg/WinService.config`，未注册时回退到安装根目录。`RegistrationCenterMonitorConfiguration` 从默认注册中心对应的数据库列表中移除 `CVArchService` 并同步到本地文件，保留其它监控服务及检测周期。文件中的非空 `NodeName` 必须与默认注册中心名称一致。缺文件、缺监控记录或匹配多个记录均报错。
 
 从仍使用可编辑 RC 配置的版本升级时，需同步更新已安装的 Windows 服务管理插件。旧插件依赖主程序原有的 RC 配置类型。
 
-点击后先确认运行状态变化：原来运行的注册中心通过 ServiceHost 停止，保存后恢复；原来停止的保持停止。停止失败不会写配置。数据库更新使用事务，本地文件先以临时文件替换，数据库提交失败时尝试恢复原文件；普通写入失败不报告成功。这不是跨数据库和文件的崩溃原子事务，双重恢复失败会明确提示核对两处配置。保存失败仍尝试恢复原先运行的注册中心；保存成功但恢复启动失败会明确提示“配置已保存”和服务状态待处理。此操作不卸载归档服务、不删除归档库或数据，也不要求重装服务包；执行仍须具备数据库、目录写权限和兼容的后台代理。
+确认后，先通过 ServiceHost 停止原先运行的注册中心。保存监控配置成功后，如果本机仍安装 `CVArchService`，通过 ServiceHost 停止并卸载它。保存或卸载失败时也会尝试恢复原先运行的注册中心，原来停止的注册中心保持停止。数据库提交失败时尝试恢复原配置文件，两处恢复状态由错误提示说明。卸载失败时保留已保存的监控配置并提示重试。归档数据库和文件保留。执行需要数据库和目录写权限及兼容的后台代理。
 
 `ServiceManagerConfig.BaseLocation` 是安装根，`MySqlPort` 默认3306；安装窗口的 `InstallServiceChecked/InstallMySqlChecked/InstallMqttChecked` 直接代理同名配置字段，初始缺省分别true/false/false。`AutoUpdateDatabase` 和所选包路径则是安装ViewModel自己的状态，不能把勾选项一律当作已保存配置或已完成动作。
 

@@ -441,9 +441,9 @@
     <value>无法读取所选 MySQL 的版本，已停止操作。请选择原安装目录中的 bin\mysqld.exe，或包含该程序的有效 MySQL ZIP 安装包。</value>
   </data>
   <data name="RemoveArchiveServiceMonitoring" xml:space="preserve">
-    <value>移除归档服务检测</value>
+    <value>移除归档服务</value>
   </data>
   <data name="RemoveArchiveServiceMonitoringToolTip" xml:space="preserve">
-    <value>从注册中心监控列表移除 CVArchService；运行中的注册中心会短暂停止并恢复</value>
+    <value>移除注册中心对 CVArchService 的监控，并卸载已安装的归档服务。运行中的注册中心会短暂停止并恢复。</value>
   </data>
 </root>
