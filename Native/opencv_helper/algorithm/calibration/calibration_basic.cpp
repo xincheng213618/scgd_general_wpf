@@ -572,6 +572,9 @@ public:
             }
             return;
         }
+#if defined(_M_X64) && !defined(_M_ARM64EC)
+        const bool useSsse3 = std::is_same_v<Pixel, std::uint16_t> && cv::checkHardwareSupport(CV_CPU_SSSE3);
+#endif
         for (std::size_t done = 0; done < count;) {
             const auto index = first + done;
             const auto header = blocks_[index / blockSize];
@@ -586,14 +589,22 @@ public:
             else {
                 const auto* factors = bytes_.get() + header.offset + offset * 3;
 #if defined(_M_X64) && !defined(_M_ARM64EC)
-                if constexpr (SkipDarkZeros) {
-                    static_assert(Fused && std::is_same_v<Pixel, std::uint16_t> && std::is_same_v<Offset, std::uint8_t>);
+                if constexpr (std::is_same_v<Pixel, std::uint16_t>) {
                     // The full packed range must represent finite nonnegative floats.
                     constexpr auto maximumGainBits = std::bit_cast<std::uint32_t>((std::numeric_limits<float>::max)());
                     if (header.base <= maximumGainBits - 0xFFFFFFU) {
-                        applySparseDarkBlock(source + done, destination + done, length, factors, header.base, dark);
-                        done += length;
-                        continue;
+                        if (useSsse3) {
+                            applyPacked16Block<Fused, SkipDarkZeros, true>(
+                                source + done, destination + done, length, factors, header.base, dark);
+                            done += length;
+                            continue;
+                        }
+                        if constexpr (SkipDarkZeros) {
+                            applyPacked16Block<true, true, false>(
+                                source + done, destination + done, length, factors, header.base, dark);
+                            done += length;
+                            continue;
+                        }
                     }
                 }
 #endif
@@ -713,38 +724,75 @@ private:
     }
 
 #if defined(_M_X64) && !defined(_M_ARM64EC)
-    static void applySparseDarkBlock(const std::uint16_t* source, std::uint16_t* destination, std::size_t count,
-        const std::uint8_t* factors, std::uint32_t base, const std::uint8_t* offsets)
+    template<bool Fused, bool SkipDarkZeros, bool UseSsse3, typename Offset>
+    static void applyPacked16Block(const std::uint16_t* source, std::uint16_t* destination, std::size_t count,
+        const std::uint8_t* factors, std::uint32_t base, const Offset* offsets)
     {
+        static_assert(!SkipDarkZeros || (Fused && std::is_same_v<Offset, std::uint8_t>));
         const auto zero = _mm_setzero_si128();
+        const auto lowBytes = _mm_setr_epi8(0, 1, 2, -1, 3, 4, 5, -1, 6, 7, 8, -1, 9, 10, 11, -1);
+        const auto highBytes = _mm_setr_epi8(4, 5, 6, -1, 7, 8, 9, -1, 10, 11, 12, -1, 13, 14, 15, -1);
+        const auto baseBits = _mm_set1_epi32(std::bit_cast<std::int32_t>(base));
+        const auto maximum = _mm_set1_ps(65535.0F);
+        const auto bias = _mm_set1_epi32(32768);
+        const auto sign = _mm_set1_epi16(-32768);
+        const auto scale = [&](const __m128i samples, const __m128i packed, const __m128i select) {
+            const auto bits = _mm_add_epi32(_mm_shuffle_epi8(packed, select), baseBits);
+            const auto corrected = _mm_mul_ps(_mm_cvtepi32_ps(samples), _mm_castsi128_ps(bits));
+            return _mm_sub_epi32(_mm_cvttps_epi32(_mm_min_ps(corrected, maximum)), bias);
+        };
         std::size_t index = 0;
         for (; count - index >= 8; index += 8) {
-            const auto dark = darkCorrectEight(source + index, offsets + index);
-            // Select one bit per nonzero 16-bit lane.
-            auto active = static_cast<unsigned>(~_mm_movemask_epi8(_mm_cmpeq_epi16(dark, zero))) & 0x5555U;
-            auto* output = destination + index;
-            if (active == 0) {
-                _mm_storeu_si128(reinterpret_cast<__m128i*>(output), zero);
-                continue;
-            }
-            const auto afterFirstLane = active & (active - 1);
-            if ((afterFirstLane & (afterFirstLane - 1)) != 0) {
-                // Dense groups use the ordinary loop before writing to aliased RAW.
-                applyBlock<true, true>(source + index, output, 8, factors + index * 3, base, offsets + index);
-                continue;
+            auto values = _mm_loadu_si128(reinterpret_cast<const __m128i*>(source + index));
+            if constexpr (Fused) {
+                if constexpr (std::is_same_v<Offset, std::uint8_t>) {
+                    const auto dark = _mm_loadl_epi64(reinterpret_cast<const __m128i*>(offsets + index));
+                    values = _mm_subs_epu16(values, _mm_unpacklo_epi8(dark, zero));
+                }
+                else {
+                    const auto dark = _mm_loadu_si128(reinterpret_cast<const __m128i*>(offsets + index));
+                    values = _mm_subs_epu16(values, dark);
+                }
             }
 
-            _mm_storeu_si128(reinterpret_cast<__m128i*>(output), zero);
-            alignas(16) std::uint16_t darkSamples[8];
-            _mm_store_si128(reinterpret_cast<__m128i*>(darkSamples), dark);
-            for (; active != 0; active &= active - 1) {
-                const auto lane = std::countr_zero(active) / 2;
-                const auto sample = index + lane;
-                applyBlock<false, true>(darkSamples + lane, destination + sample, 1,
-                    factors + sample * 3, base, offsets + sample);
+            auto* output = destination + index;
+            if constexpr (SkipDarkZeros) {
+                // Select one bit per nonzero 16-bit lane.
+                auto active = static_cast<unsigned>(~_mm_movemask_epi8(_mm_cmpeq_epi16(values, zero))) & 0x5555U;
+                if (active == 0) {
+                    _mm_storeu_si128(reinterpret_cast<__m128i*>(output), zero);
+                    continue;
+                }
+                const auto afterFirstLane = active & (active - 1);
+                if ((afterFirstLane & (afterFirstLane - 1)) == 0) {
+                    _mm_storeu_si128(reinterpret_cast<__m128i*>(output), zero);
+                    alignas(16) std::uint16_t darkSamples[8];
+                    _mm_store_si128(reinterpret_cast<__m128i*>(darkSamples), values);
+                    for (; active != 0; active &= active - 1) {
+                        const auto lane = std::countr_zero(active) / 2;
+                        const auto sample = index + lane;
+                        applyBlock<false, true>(darkSamples + lane, destination + sample, 1,
+                            factors + sample * 3, base, offsets + sample);
+                    }
+                    continue;
+                }
+            }
+
+            if constexpr (UseSsse3) {
+                const auto* packed = factors + index * 3;
+                // The two 16-byte loads cover exactly the group's 24 bytes.
+                const auto low = scale(_mm_unpacklo_epi16(values, zero),
+                    _mm_loadu_si128(reinterpret_cast<const __m128i*>(packed)), lowBytes);
+                const auto high = scale(_mm_unpackhi_epi16(values, zero),
+                    _mm_loadu_si128(reinterpret_cast<const __m128i*>(packed + 8)), highBytes);
+                _mm_storeu_si128(reinterpret_cast<__m128i*>(output), _mm_xor_si128(_mm_packs_epi32(low, high), sign));
+            }
+            else {
+                applyBlock<Fused, true>(source + index, output, 8, factors + index * 3, base, offsets + index);
             }
         }
-        applyBlock<true, true>(source + index, destination + index, count - index, factors + index * 3, base, offsets + index);
+        applyBlock<Fused, true>(source + index, destination + index, count - index, factors + index * 3, base,
+            Fused ? offsets + index : nullptr);
     }
 #endif
 
