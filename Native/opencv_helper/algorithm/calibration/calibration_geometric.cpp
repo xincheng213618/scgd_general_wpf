@@ -227,6 +227,12 @@ struct OpticalRowSpan {
     int end;
 };
 
+struct SharedOpticalEdgePlan {
+    std::mutex mutex;
+    std::vector<NonzeroSampleSpan> sourceRows;
+    std::shared_ptr<const std::vector<OpticalRowSpan>> outputRows;
+};
+
 template<bool flipRows, bool flipColumns, bool pairAvx2 = false, bool opticalEdges = false>
 __declspec(noinline) void remapFixedBgr16(const cv::Mat& source, cv::Mat& result,
     const cv::Mat& coordinates, const cv::Mat& interpolation, std::span<const OpticalRowSpan> opticalRows = {})
@@ -518,9 +524,17 @@ public:
 
     [[nodiscard]] std::uint64_t cacheFootprintBytes() const noexcept override
     {
-        return sizeof(*this)
+        std::uint64_t bytes = sizeof(*this)
             + static_cast<std::uint64_t>(coordinates_.total()) * coordinates_.elemSize()
             + static_cast<std::uint64_t>(interpolation_.total()) * interpolation_.elemSize();
+#if defined(_M_X64)
+        if (sharedOpticalPlan_) {
+            // Reserve the bounded full-frame plan and its exact source key in the asset budget.
+            bytes += sizeof(SharedOpticalEdgePlan)
+                + static_cast<std::uint64_t>(coordinates_.rows) * (sizeof(NonzeroSampleSpan) + sizeof(OpticalRowSpan));
+        }
+#endif
+        return bytes;
     }
 
     bool load(const json& root, std::string& error)
@@ -592,6 +606,18 @@ public:
             error = "Unable to create distortion maps: " + std::string(exception.what());
             return false;
         }
+#if defined(_M_X64)
+        const cv::Size frameSize(width_, height_);
+        if (coordinates_.size() == frameSize
+            && canRemapFixedBgr16(frameSize, frameSize, coordinates_, interpolation_)) {
+            try {
+                sharedOpticalPlan_ = std::make_shared<SharedOpticalEdgePlan>();
+            }
+            catch (const std::bad_alloc&) {
+                // The executor can still use the original local plan or remap.
+            }
+        }
+#endif
         return true;
     }
 
@@ -729,78 +755,109 @@ public:
 
 private:
 #if defined(_M_X64)
+    static std::vector<OpticalRowSpan> buildOpticalEdgeRows(
+        BgrNonzeroRows sourceRows, const cv::Rect& sourceRect, cv::Size outputSize, const cv::Mat& coordinates)
+    {
+        std::vector<OpticalRowSpan> rows(outputSize.height);
+        std::vector<OpticalRowSpan> sourceEnvelopes(static_cast<std::size_t>(sourceRect.height) + 1);
+        const auto cropFirst = sourceRows.firstSample + static_cast<std::size_t>(sourceRect.x) * 3;
+        const auto cropEnd = cropFirst + static_cast<std::size_t>(sourceRect.width) * 3;
+        const auto sourceSpan = [&](int y) -> OpticalRowSpan {
+            const auto& span = sourceRows.rows[sourceRect.y + y];
+            const auto first = (std::max)(span.first, cropFirst);
+            const auto end = (std::min)(span.end, cropEnd);
+            if (first >= end) return {0, 0};
+            // Keep whole pixels whose BGR samples touch the gain span.
+            // Shift the first possible base X one pixel left for the right tap.
+            return {static_cast<int>((first - cropFirst) / 3) - 1,
+                static_cast<int>((end - cropFirst + 2) / 3)};
+        };
+        // Entries represent base Y from -1 through height-1. A bounding
+        // union of the two sampled rows may include gaps, which is safe.
+        OpticalRowSpan previous{0, 0};
+        for (int y = 0; y < sourceRect.height; ++y) {
+            const auto current = sourceSpan(y);
+            if (previous.first == previous.end) sourceEnvelopes[y] = current;
+            else if (current.first == current.end) sourceEnvelopes[y] = previous;
+            else sourceEnvelopes[y] = {(std::min)(previous.first, current.first),
+                (std::max)(previous.end, current.end)};
+            previous = current;
+        }
+        sourceEnvelopes.back() = previous;
+
+        cv::parallel_for_(cv::Range(0, outputSize.height), [&](const cv::Range& range) {
+            for (int y = range.start; y < range.end; ++y) {
+                const auto* positions = coordinates.ptr<cv::Vec2s>(y);
+                const auto mayHaveNonzeroTap = [&](int x) {
+                    const int sourceX = positions[x][0];
+                    const auto sourceY = static_cast<std::size_t>(positions[x][1] + 1);
+                    if (sourceY >= sourceEnvelopes.size()) return false;
+                    const auto& envelope = sourceEnvelopes[sourceY];
+                    return sourceX >= envelope.first && sourceX < envelope.end;
+                };
+                int first = 0, end = outputSize.width;
+                while (first < end && !mayHaveNonzeroTap(first)) ++first;
+                while (end > first && !mayHaveNonzeroTap(end - 1)) --end;
+                rows[y] = {first, end};
+            }
+        });
+        const bool hasEdges = std::any_of(rows.begin(), rows.end(), [&](const OpticalRowSpan& row) {
+            return row.first != 0 || row.end != outputSize.width;
+        });
+        return hasEdges ? std::move(rows) : std::vector<OpticalRowSpan>{};
+    }
+
     std::span<const OpticalRowSpan> opticalEdgeRows(BgrNonzeroRows sourceRows,
         const std::array<std::uint32_t, 4>& roi, const cv::Rect& sourceRect, cv::Size outputSize,
         const cv::Mat& coordinates, const cv::Mat& interpolation)
     {
-        // Keep one plan per Distortion executor. Different ROI requests can
-        // still use the ordinary mapper without rescanning every frame.
         if (opticalPlanAttempted_) {
-            if (opticalPlanInput_.rows.data() == sourceRows.rows.data()
+            if (opticalPlanRows_ && opticalPlanInput_.rows.data() == sourceRows.rows.data()
                 && opticalPlanInput_.rows.size() == sourceRows.rows.size()
                 && opticalPlanInput_.firstSample == sourceRows.firstSample
                 && opticalPlanRoi_ == roi && opticalPlanSourceRect_ == sourceRect
                 && opticalPlanOutput_ == outputSize) {
-                return opticalPlanRows_;
+                return *opticalPlanRows_;
             }
             return {};
         }
         if (!canRemapFixedBgr16(sourceRect.size(), outputSize, coordinates, interpolation)) return {};
+        std::unique_lock<std::mutex> cacheLock;
+        if (sharedOpticalPlan_ && roi == std::array<std::uint32_t, 4>{} && sourceRows.firstSample == 0) {
+            // Full-frame coordinates are identical across clones. A concurrent
+            // caller can remap its current frame and retry on the next one.
+            cacheLock = std::unique_lock<std::mutex>(sharedOpticalPlan_->mutex, std::try_to_lock);
+            if (!cacheLock) return {};
+        }
         opticalPlanAttempted_ = true;
         try {
-            std::vector<OpticalRowSpan> rows(outputSize.height);
-            std::vector<OpticalRowSpan> sourceEnvelopes(static_cast<std::size_t>(sourceRect.height) + 1);
-            const auto cropFirst = sourceRows.firstSample + static_cast<std::size_t>(sourceRect.x) * 3;
-            const auto cropEnd = cropFirst + static_cast<std::size_t>(sourceRect.width) * 3;
-            const auto sourceSpan = [&](int y) -> OpticalRowSpan {
-                const auto& span = sourceRows.rows[sourceRect.y + y];
-                const auto first = (std::max)(span.first, cropFirst);
-                const auto end = (std::min)(span.end, cropEnd);
-                if (first >= end) return {0, 0};
-                // Keep whole pixels whose BGR samples touch the gain span.
-                // Shift the first possible base X one pixel left for the right tap.
-                return {static_cast<int>((first - cropFirst) / 3) - 1,
-                    static_cast<int>((end - cropFirst + 2) / 3)};
-            };
-            // Entries represent base Y from -1 through height-1. A bounding
-            // union of the two sampled rows may include gaps, which is safe.
-            OpticalRowSpan previous{0, 0};
-            for (int y = 0; y < sourceRect.height; ++y) {
-                const auto current = sourceSpan(y);
-                if (previous.first == previous.end) sourceEnvelopes[y] = current;
-                else if (current.first == current.end) sourceEnvelopes[y] = previous;
-                else sourceEnvelopes[y] = {(std::min)(previous.first, current.first),
-                    (std::max)(previous.end, current.end)};
-                previous = current;
-            }
-            sourceEnvelopes.back() = previous;
-
-            cv::parallel_for_(cv::Range(0, outputSize.height), [&](const cv::Range& range) {
-                for (int y = range.start; y < range.end; ++y) {
-                    const auto* positions = coordinates.ptr<cv::Vec2s>(y);
-                    const auto mayHaveNonzeroTap = [&](int x) {
-                        const int sourceX = positions[x][0];
-                        const auto sourceY = static_cast<std::size_t>(positions[x][1] + 1);
-                        if (sourceY >= sourceEnvelopes.size()) return false;
-                        const auto& envelope = sourceEnvelopes[sourceY];
-                        return sourceX >= envelope.first && sourceX < envelope.end;
-                    };
-                    int first = 0, end = outputSize.width;
-                    while (first < end && !mayHaveNonzeroTap(first)) ++first;
-                    while (end > first && !mayHaveNonzeroTap(end - 1)) --end;
-                    rows[y] = {first, end};
+            if (cacheLock) {
+                auto& plan = *sharedOpticalPlan_;
+                if (!plan.outputRows) {
+                    std::vector<NonzeroSampleSpan> input(sourceRows.rows.begin(), sourceRows.rows.end());
+                    auto output = std::make_shared<const std::vector<OpticalRowSpan>>(
+                        buildOpticalEdgeRows(sourceRows, sourceRect, outputSize, coordinates));
+                    plan.sourceRows = std::move(input);
+                    plan.outputRows = std::move(output);
+                    opticalPlanRows_ = plan.outputRows;
                 }
-            });
-            const bool hasEdges = std::any_of(rows.begin(), rows.end(), [&](const OpticalRowSpan& row) {
-                return row.first != 0 || row.end != outputSize.width;
-            });
-            if (!hasEdges) return {};
+                else if (std::ranges::equal(plan.sourceRows, sourceRows.rows,
+                    [](const NonzeroSampleSpan& first, const NonzeroSampleSpan& second) {
+                        return first.first == second.first && first.end == second.end;
+                    })) {
+                    opticalPlanRows_ = plan.outputRows;
+                }
+                cacheLock.unlock();
+            }
+            if (!opticalPlanRows_) {
+                opticalPlanRows_ = std::make_shared<const std::vector<OpticalRowSpan>>(
+                    buildOpticalEdgeRows(sourceRows, sourceRect, outputSize, coordinates));
+            }
             opticalPlanInput_ = sourceRows;
             opticalPlanRoi_ = roi;
             opticalPlanSourceRect_ = sourceRect;
             opticalPlanOutput_ = outputSize;
-            opticalPlanRows_ = std::move(rows);
-            return opticalPlanRows_;
+            return *opticalPlanRows_;
         }
         catch (const std::bad_alloc&) {
             return {};
@@ -824,6 +881,9 @@ private:
         , distortionCoefficients_(source.distortionCoefficients_)
         , coordinates_(source.coordinates_)
         , interpolation_(source.interpolation_)
+#if defined(_M_X64)
+        , sharedOpticalPlan_(source.sharedOpticalPlan_)
+#endif
     {
     }
 
@@ -941,12 +1001,13 @@ private:
     int roiHeight_ = -1;
 
 #if defined(_M_X64)
+    std::shared_ptr<SharedOpticalEdgePlan> sharedOpticalPlan_;
     bool opticalPlanAttempted_ = false;
     BgrNonzeroRows opticalPlanInput_{};
     std::array<std::uint32_t, 4> opticalPlanRoi_{};
     cv::Rect opticalPlanSourceRect_;
     cv::Size opticalPlanOutput_;
-    std::vector<OpticalRowSpan> opticalPlanRows_;
+    std::shared_ptr<const std::vector<OpticalRowSpan>> opticalPlanRows_;
 #endif
     cv::Mat fallbackScratch_;
 };

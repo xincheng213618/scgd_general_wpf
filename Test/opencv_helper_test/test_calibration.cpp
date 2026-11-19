@@ -533,14 +533,21 @@ void verifyLargeDistortion(const std::filesystem::path& directory)
     }
 }
 
+template<typename Worker>
+void runTwoWorkersConcurrently(Worker worker);
+
 void verifyDistortionOpticalEdgesAtTrueRoi(const std::filesystem::path& directory)
 {
     constexpr std::uint32_t sensorWidth = 2505, sensorHeight = 2003;
     constexpr std::uint32_t cropWidth = 2503, cropHeight = 2001, channels = 3;
     constexpr std::size_t rowSamples = sensorWidth * channels;
     constexpr std::size_t samples = rowSamples * sensorHeight;
+    constexpr std::size_t leftZeroSamples = 301 * channels + 1;
+    constexpr std::size_t rightZeroSamples = 350 * channels + 2;
+    constexpr std::uint32_t emptyRow = 1004;
     const auto dsnu = directory / "optical_edge_dsnu.dat";
     const auto uniformity = directory / "optical_edge_uniformity.dat";
+    const auto shiftedUniformity = directory / "optical_edge_shifted_uniformity.dat";
     const auto distortion = directory / "optical_edge_fisheye.json";
     writeMap(dsnu, 16, 16, std::vector<std::uint16_t>(samples, 7), channels, sensorWidth, sensorHeight);
 
@@ -548,22 +555,38 @@ void verifyDistortionOpticalEdgesAtTrueRoi(const std::filesystem::path& director
     for (std::uint32_t row = 0; row < sensorHeight; ++row) {
         auto first = gains.begin() + row * rowSamples;
         // Leave nonzero channels in the first and last active pixels.
-        std::fill_n(first, 301 * channels + 1, 0.0F);
-        std::fill_n(first + rowSamples - (350 * channels + 2), 350 * channels + 2, 0.0F);
-        if (row == 1004) std::fill_n(first, rowSamples, 0.0F);
+        std::fill_n(first, leftZeroSamples, 0.0F);
+        std::fill_n(first + rowSamples - rightZeroSamples, rightZeroSamples, 0.0F);
+        if (row == emptyRow) std::fill_n(first, rowSamples, 0.0F);
     }
     writeMap(uniformity, 32, 16, gains, channels, sensorWidth, sensorHeight);
+    // Move both edges without changing any row's active sample count.
+    constexpr std::size_t shift = 220 * channels;
+    for (std::uint32_t row = 0; row < sensorHeight; ++row) {
+        if (row == emptyRow) continue;
+        auto first = gains.begin() + row * rowSamples;
+        std::fill_n(first + leftZeroSamples - shift, shift, 1.0F);
+        std::fill_n(first + rowSamples - rightZeroSamples - shift, shift, 0.0F);
+    }
+    writeMap(shiftedUniformity, 32, 16, gains, channels, sensorWidth, sensorHeight);
     writeText(distortion, R"({"alpha":0,"cameraMatrix":[1400,0,1257,0,1400,1006,0,0,1],"distCoeffs":[0.17,0.04,-0.02,0.02,0],"w":2505,"h":2003,"useFisheye":true})");
 
-    Context combined = createContext();
+    const auto load = [](void* context, int type, const std::filesystem::path& path) {
+        requireResult(M_CalibrationLoadFileW(context, type, path.c_str()), context, "load optical-edge calibration");
+    };
+    const auto loadChain = [&](const std::filesystem::path& gainFile) {
+        Context context = createContext();
+        load(context.get(), 4, dsnu);
+        load(context.get(), 5, gainFile);
+        load(context.get(), 11, distortion);
+        return context;
+    };
+    const Context combined = loadChain(uniformity);
     std::array<Context, 3> individual{createContext(), createContext(), createContext()};
     const std::array paths{dsnu, uniformity, distortion};
     const std::array types{4, 5, 11};
     for (std::size_t index = 0; index < types.size(); ++index) {
-        requireResult(M_CalibrationLoadFileW(combined.get(), types[index], paths[index].c_str()),
-            combined.get(), "load combined optical-edge geometry");
-        requireResult(M_CalibrationLoadFileW(individual[index].get(), types[index], paths[index].c_str()),
-            individual[index].get(), "load standalone optical-edge geometry");
+        load(individual[index].get(), types[index], paths[index]);
     }
     for (bool crop : {true, false}) {
         const auto width = crop ? cropWidth : sensorWidth;
@@ -575,18 +598,54 @@ void verifyDistortionOpticalEdgesAtTrueRoi(const std::filesystem::path& director
         options.roiWidth = width;
         options.roiHeight = height;
         std::vector<std::uint16_t> pixels(static_cast<std::size_t>(width) * height * channels);
-        for (std::size_t index = 0; index < pixels.size(); ++index) {
-            pixels[index] = static_cast<std::uint16_t>(100 + index % 4093);
-        }
+        const auto resetPixels = [&] {
+            for (std::size_t index = 0; index < pixels.size(); ++index) {
+                pixels[index] = static_cast<std::uint16_t>(100 + index % 4093);
+            }
+        };
+        resetPixels();
         auto expected = pixels;
         const auto execute = [&](void* context, std::vector<std::uint16_t>& raw) {
             requireResult(M_CalibrationExecute(context, width, height, 16, channels,
                 reinterpret_cast<std::uint8_t*>(raw.data()), raw.size() * sizeof(raw.front()),
                 nullptr, 0, &options), context, "execute optical-edge geometry");
         };
+        const auto compare = [&](const Context& context, const auto& reference, const char* error) {
+            resetPixels();
+            execute(context.get(), pixels);
+            if (pixels != reference) throw std::runtime_error(error);
+        };
         for (const auto& context : individual) execute(context.get(), expected);
-        execute(combined.get(), pixels);
-        if (pixels != expected) throw std::runtime_error("Optical zero edges changed cropped or full fixed-map pixels");
+        compare(combined, expected, "Optical zero edges changed cropped or full fixed-map pixels");
+        if (crop) continue;
+
+        const std::array<Context, 2> fullContexts{loadChain(uniformity), loadChain(uniformity)};
+        resetPixels();
+        runTwoWorkersConcurrently([&](std::size_t index) {
+            auto corrected = pixels;
+            execute(fullContexts[index].get(), corrected);
+            if (corrected != expected)
+                throw std::runtime_error("Concurrent full-frame Distortion contexts produced different optical edge pixels");
+        });
+
+        options.roiWidth = options.roiHeight = 0;
+        const Context inherited = loadChain(uniformity);
+        compare(inherited, expected, "Explicit and implicit full-frame optical edges differ across contexts");
+
+        const Context shiftedGain = createContext();
+        load(shiftedGain.get(), 5, shiftedUniformity);
+        resetPixels();
+        auto shiftedExpected = pixels;
+        execute(individual[0].get(), shiftedExpected);
+        execute(shiftedGain.get(), shiftedExpected);
+        execute(individual[2].get(), shiftedExpected);
+        const auto newlyActive = std::mismatch(expected.begin(), expected.end(), shiftedExpected.begin(),
+            [](std::uint16_t original, std::uint16_t shifted) { return original != 0 || shifted == 0; });
+        if (newlyActive.first == expected.end())
+            throw std::runtime_error("Shifted optical-edge fixture did not expose a previously zero output pixel");
+        const Context shifted = loadChain(shiftedUniformity);
+        compare(shifted, shiftedExpected, "A different Uniformity edge span reused the wrong Distortion plan");
+        compare(inherited, expected, "A different Uniformity edge span changed the original Distortion output");
     }
 }
 
