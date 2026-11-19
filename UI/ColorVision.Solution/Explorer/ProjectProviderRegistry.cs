@@ -1,6 +1,7 @@
 using ColorVision.UI;
 using Newtonsoft.Json.Linq;
 using System.IO;
+using System.IO.Enumeration;
 using System.Reflection;
 
 namespace ColorVision.Solution.Explorer
@@ -8,11 +9,17 @@ namespace ColorVision.Solution.Explorer
     public static class ProjectProviderRegistry
     {
         private sealed record Registration(IProjectProvider Provider, int Priority);
+        private sealed record ProjectFileFormats(string[] Patterns, HashSet<string>? Extensions);
 
         private static readonly List<Registration> _providers = new();
         private static readonly HashSet<Assembly> _registeredAssemblies = new();
         private static readonly object _syncRoot = new();
-        private static string[] _projectFilePatterns = [];
+        private static readonly EnumerationOptions _projectDirectoryOptions = new()
+        {
+            AttributesToSkip = 0,
+            IgnoreInaccessible = false,
+        };
+        private static ProjectFileFormats _projectFileFormats = new([], null);
         private static bool _initialized;
         private static bool _discoverySubscribed;
 
@@ -97,7 +104,7 @@ namespace ColorVision.Solution.Explorer
             _providers.RemoveAll(item => string.Equals(item.Provider.Id, provider.Id, StringComparison.OrdinalIgnoreCase));
             _providers.Add(new Registration(provider, priority));
             _providers.Sort((left, right) => right.Priority.CompareTo(left.Priority));
-            _projectFilePatterns = CreateProjectFilePatterns();
+            Volatile.Write(ref _projectFileFormats, CreateProjectFileFormats());
         }
 
         public static bool TryLoadProject(DirectoryInfo directory, out ProjectDefinition? project)
@@ -287,7 +294,7 @@ namespace ColorVision.Solution.Explorer
             if (string.IsNullOrWhiteSpace(fileName))
                 return false;
 
-            return GetProjectFilePatternSnapshot().Any(pattern =>
+            return GetProjectFileFormatSnapshot().Patterns.Any(pattern =>
                 System.IO.Enumeration.FileSystemName.MatchesSimpleExpression(
                     pattern,
                     fileName,
@@ -296,7 +303,7 @@ namespace ColorVision.Solution.Explorer
 
         public static IReadOnlyList<string> GetProjectFilePatterns()
         {
-            return GetProjectFilePatternSnapshot().ToArray();
+            return GetProjectFileFormatSnapshot().Patterns.ToArray();
         }
 
         public static IEnumerable<FileInfo> EnumerateProjectFiles(
@@ -306,19 +313,48 @@ namespace ColorVision.Solution.Explorer
             if (!directory.Exists)
                 return Array.Empty<FileInfo>();
 
+            ProjectFileFormats formats = GetProjectFileFormatSnapshot();
             var files = new Dictionary<string, FileInfo>(StringComparer.OrdinalIgnoreCase);
-            foreach (string pattern in GetProjectFilePatterns())
+            if (searchOption != SearchOption.TopDirectoryOnly
+                || formats.Extensions is not { Count: > 1 } extensions
+                || !TryCollectProjectFilesByExtension(directory, extensions, files))
             {
-                try
+                foreach (string pattern in formats.Patterns)
                 {
-                    foreach (FileInfo file in directory.EnumerateFiles(pattern, searchOption))
-                        files.TryAdd(file.FullName, file);
-                }
-                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
-                {
+                    try
+                    {
+                        foreach (FileInfo file in directory.EnumerateFiles(pattern, searchOption))
+                            files.TryAdd(file.FullName, file);
+                    }
+                    catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+                    {
+                    }
                 }
             }
             return files.Values.OrderBy(file => file.Name, StringComparer.OrdinalIgnoreCase).ToList();
+        }
+
+        private static bool TryCollectProjectFilesByExtension(DirectoryInfo directory, HashSet<string> extensions,
+            Dictionary<string, FileInfo> files)
+        {
+            try
+            {
+                var lookup = extensions.GetAlternateLookup<ReadOnlySpan<char>>();
+                var entries = new FileSystemEnumerable<FileInfo>(directory.FullName,
+                    static (ref FileSystemEntry entry) => (FileInfo)entry.ToFileSystemInfo(), _projectDirectoryOptions)
+                {
+                    ShouldIncludePredicate = (ref FileSystemEntry entry) =>
+                        !entry.IsDirectory && lookup.Contains(Path.GetExtension(entry.FileName)),
+                };
+                foreach (FileInfo file in entries)
+                    files.TryAdd(file.FullName, file);
+                return true;
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                files.Clear();
+                return false;
+            }
         }
 
         public static string GetProjectFileDialogPattern()
@@ -340,15 +376,15 @@ namespace ColorVision.Solution.Explorer
             return normalized;
         }
 
-        private static string[] GetProjectFilePatternSnapshot()
+        private static ProjectFileFormats GetProjectFileFormatSnapshot()
         {
             Initialize();
-            return Volatile.Read(ref _projectFilePatterns);
+            return Volatile.Read(ref _projectFileFormats);
         }
 
-        private static string[] CreateProjectFilePatterns()
+        private static ProjectFileFormats CreateProjectFileFormats()
         {
-            return _providers
+            string[] patterns = _providers
                 .Select(registration => registration.Provider)
                 .OfType<IProjectFileFormatProvider>()
                 .SelectMany(provider => provider.ProjectFilePatterns ?? Array.Empty<string>())
@@ -358,6 +394,19 @@ namespace ColorVision.Solution.Explorer
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .OrderBy(pattern => pattern, StringComparer.OrdinalIgnoreCase)
                 .ToArray();
+            var extensions = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (string pattern in patterns)
+            {
+                // Disjoint extension patterns can share one directory enumeration. Other
+                // globs retain the Win32 matching and precedence of the per-pattern scan.
+                if (pattern.Length <= 2 || !pattern.StartsWith("*.", StringComparison.Ordinal)
+                    || pattern.AsSpan(2).ContainsAny(".*?\"<>\0"))
+                {
+                    return new ProjectFileFormats(patterns, null);
+                }
+                extensions.Add(pattern[1..]);
+            }
+            return new ProjectFileFormats(patterns, extensions);
         }
 
         public static IReadOnlyList<ProjectCapabilityDescriptor> GetCapabilities(ProjectDefinition project)
