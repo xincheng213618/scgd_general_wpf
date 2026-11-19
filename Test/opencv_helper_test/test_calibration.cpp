@@ -1222,6 +1222,62 @@ void verifyColorDiffMixedOffsets(const std::filesystem::path& directory)
     if (actual != expected) throw std::runtime_error("Mixed-offset ColorDiff differs from the pixel reference");
 }
 
+void verifyAdjacentBgr8MapEquivalence(const std::filesystem::path& directory)
+{
+    constexpr std::uint32_t width = 33, height = 21, channels = 3;
+    constexpr std::size_t sampleCount = width * height * channels;
+    const std::array<std::uint8_t, 8> levels{ 0, 1, 31, 100, 127, 128, 254, 255 };
+    const std::array<std::uint16_t, 8> darkOffsets{ 0, 1, 10, 127, 255, 256, 1024, 65535 };
+    const std::array<float, 10> gains{
+        0.0F, -0.0F, 0.125F, 0.9999F, 1.0F, 1.0001F, 1.5F, 2.0F,
+        (std::numeric_limits<float>::min)(), (std::numeric_limits<float>::max)()
+    };
+    std::vector<std::uint8_t> input(sampleCount);
+    std::vector<float> factors(sampleCount);
+    for (std::size_t index = 0; index < sampleCount; ++index) {
+        input[index] = levels[index % levels.size()];
+        factors[index] = gains[(index / (levels.size() * darkOffsets.size())) % gains.size()];
+    }
+    const auto uniformity = directory / "adjacent_bgr8_uniformity.dat";
+    writeMap(uniformity, 32, 8, factors, channels, width, height);
+    Context second = createContext();
+    requireResult(M_CalibrationLoadFileW(second.get(), 5, uniformity.c_str()), second.get(), "load 8-bit Uniformity");
+
+    for (bool compact : { true, false }) {
+        std::vector<std::uint16_t> offsets(sampleCount);
+        for (std::size_t index = 0; index < sampleCount; ++index) {
+            const auto offset = darkOffsets[(index / levels.size()) % darkOffsets.size()];
+            offsets[index] = compact ? (std::min)(offset, std::uint16_t{255}) : offset;
+        }
+        const auto dsnu = directory / (compact ? "adjacent_bgr8_compact.dat" : "adjacent_bgr8_wide.dat");
+        writeMap(dsnu, 16, 8, offsets, channels, width, height);
+        Context first = createContext(), combined = createContext();
+        requireResult(M_CalibrationLoadFileW(first.get(), 4, dsnu.c_str()), first.get(), "load 8-bit DSNU");
+        requireResult(M_CalibrationLoadFileW(combined.get(), 4, dsnu.c_str()), combined.get(), "load 8-bit pair DSNU");
+        requireResult(M_CalibrationLoadFileW(combined.get(), 5, uniformity.c_str()), combined.get(), "load 8-bit pair Uniformity");
+
+        for (bool explicitRoi : { false, true }) {
+            MCalibrationExecutionOptionsV1 options{};
+            options.structSize = sizeof(options);
+            options.interleavedBgr = 1;
+            if (explicitRoi) {
+                options.roiWidth = width;
+                options.roiHeight = height;
+            }
+            const auto run = [&](void* context, std::vector<std::uint8_t>& pixels) {
+                requireResult(M_CalibrationExecute(context, width, height, 8, channels,
+                    pixels.data(), pixels.size(), nullptr, 0, &options), context, "execute 8-bit adjacent maps");
+            };
+            auto expected = input;
+            auto actual = input;
+            run(first.get(), expected);
+            run(second.get(), expected);
+            run(combined.get(), actual);
+            if (actual != expected) throw std::runtime_error("8-bit adjacent maps changed ordered calibration output");
+        }
+    }
+}
+
 void verifyRawOutputFlip(const std::filesystem::path& directory)
 {
     const auto distortion = directory / "mirror_distortion.json";
@@ -1405,6 +1461,7 @@ void runSyntheticCoverage()
     verifyProcessFileCacheAcrossGroups(directory.path);
     verifyAdjacentMapEquivalence(directory.path, false);
     verifyAdjacentMapEquivalence(directory.path, true);
+    verifyAdjacentBgr8MapEquivalence(directory.path);
     verifyRawOutputFlip(directory.path);
     verifyLargeUniformityOutput(directory.path);
     verifyLargeDistortion(directory.path);

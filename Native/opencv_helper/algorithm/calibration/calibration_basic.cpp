@@ -2,6 +2,10 @@
 
 #include <opencv2/core/utility.hpp>
 
+#if defined(_M_X64) && !defined(_M_ARM64EC)
+#include <emmintrin.h>
+#endif
+
 #include <algorithm>
 #include <bit>
 #include <cctype>
@@ -318,6 +322,26 @@ struct DsnuOperation {
         }
     }
 };
+
+bool hasFiniteNonnegativeGains(const std::vector<float>& gains)
+{
+    std::size_t index = 0;
+#if defined(_M_X64) && !defined(_M_ARM64EC)
+    const auto sign = _mm_set1_epi32(std::bit_cast<std::int32_t>(-0.0F));
+    const auto maxFinite = _mm_set1_epi32(std::bit_cast<std::int32_t>((std::numeric_limits<float>::max)()));
+    const auto limit = _mm_xor_si128(maxFinite, sign);
+    for (; gains.size() - index >= 4; index += 4) {
+        auto bits = _mm_loadu_si128(reinterpret_cast<const __m128i*>(gains.data() + index));
+        // Treat -0 as +0, then compare the IEEE bits as unsigned integers.
+        bits = _mm_andnot_si128(_mm_cmpeq_epi32(bits, sign), bits);
+        const auto invalid = _mm_cmpgt_epi32(_mm_xor_si128(bits, sign), limit);
+        if (_mm_movemask_epi8(invalid) != 0) return false;
+    }
+#endif
+    return std::all_of(gains.cbegin() + index, gains.cend(), [](float gain) {
+        return std::isfinite(gain) && gain >= 0.0F;
+    });
+}
 
 struct UniformityOperation {
     template <typename TPixel>
@@ -690,6 +714,10 @@ public:
         , correction_(std::move(correction))
     {
         if constexpr (std::is_same_v<TOperation, UniformityOperation>) {
+            if (header_.version == 1 && header_.sourceBitsPerChannel == 8 && header_.channels == 3) {
+                // Legacy maps can contain unusual gains. Keep their original execution path.
+                hasSafe8BitGains_ = hasFiniteNonnegativeGains(correction_);
+            }
             if (header_.version == 1 && header_.sourceBitsPerChannel == 16 && header_.channels == 3) {
                 // Zero gains at the optical field's edges always produce zero,
                 // including after DSNU. Find their bounds once, not per frame.
@@ -817,6 +845,16 @@ public:
 
 private:
     template <typename, typename> friend class MapCalibration;
+
+    bool matchesFullBgr8(const ImageView& raw, const ExecutionOptions& options) const
+    {
+        const bool fullFrame = options.roi == std::array<std::uint32_t, 4>{}
+            || options.roi == std::array<std::uint32_t, 4>{0, 0, raw.width, raw.height};
+        return raw.bitsPerChannel == 8 && raw.channels == 3
+            && options.interleavedBgr && options.rgbType == 0 && fullFrame
+            && header_.version == 1 && header_.sourceBitsPerChannel == 8 && header_.channels == 3
+            && header_.width == raw.width && header_.height == raw.height;
+    }
 
     bool matchesFullMap16(const ImageView& raw, const ExecutionOptions& options) const
     {
@@ -1041,7 +1079,58 @@ private:
     struct NonzeroSpan { std::size_t first, end; };
     std::vector<NonzeroSpan> nonzeroSpans_;
     std::unique_ptr<PackedUniformity> packedUniformity_;
+    bool hasSafe8BitGains_ = false;
 };
+
+template <typename TCorrection>
+void applyFusedBgr8(
+    std::uint8_t* pixels,
+    const TCorrection* __restrict offsets,
+    const float* __restrict factors,
+    std::size_t count)
+{
+    static_assert(std::is_same_v<TCorrection, std::uint8_t> || std::is_same_v<TCorrection, std::uint16_t>);
+    std::size_t index = 0;
+#if defined(_M_X64) && !defined(_M_ARM64EC)
+    const auto zero = _mm_setzero_si128();
+    const auto maximum = _mm_set1_ps(255.0F);
+    const auto applyGains = [maximum](const __m128i samples, const float* gains) {
+        const auto scaled = _mm_mul_ps(_mm_cvtepi32_ps(samples), _mm_loadu_ps(gains));
+        // Clamp before truncation, including when a finite gain overflows to +infinity.
+        return _mm_cvttps_epi32(_mm_min_ps(scaled, maximum));
+    };
+    const auto correctEight = [&](const __m128i samples, const float* gains) {
+        return _mm_packs_epi32(
+            applyGains(_mm_unpacklo_epi16(samples, zero), gains),
+            applyGains(_mm_unpackhi_epi16(samples, zero), gains + 4));
+    };
+    for (; count - index >= 16; index += 16) {
+        const auto raw = _mm_loadu_si128(reinterpret_cast<const __m128i*>(pixels + index));
+        __m128i low;
+        __m128i high;
+        if constexpr (std::is_same_v<TCorrection, std::uint8_t>) {
+            const auto dark = _mm_subs_epu8(raw,
+                _mm_loadu_si128(reinterpret_cast<const __m128i*>(offsets + index)));
+            low = _mm_unpacklo_epi8(dark, zero);
+            high = _mm_unpackhi_epi8(dark, zero);
+        }
+        else {
+            low = _mm_subs_epu16(_mm_unpacklo_epi8(raw, zero),
+                _mm_loadu_si128(reinterpret_cast<const __m128i*>(offsets + index)));
+            high = _mm_subs_epu16(_mm_unpackhi_epi8(raw, zero),
+                _mm_loadu_si128(reinterpret_cast<const __m128i*>(offsets + index + 8)));
+        }
+        const auto corrected = _mm_packus_epi16(
+            correctEight(low, factors + index), correctEight(high, factors + index + 8));
+        _mm_storeu_si128(reinterpret_cast<__m128i*>(pixels + index), corrected);
+    }
+#endif
+    for (; index < count; ++index) {
+        const int darkCorrected = (std::max)(0, static_cast<int>(pixels[index]) - offsets[index]);
+        const float corrected = factors[index] * static_cast<float>(darkCorrected);
+        pixels[index] = static_cast<std::uint8_t>((std::min)(255.0F, corrected));
+    }
+}
 
 template <typename TCorrection, typename TOperation>
 bool MapCalibration<TCorrection, TOperation>::tryApplyWithNext(
@@ -1054,6 +1143,24 @@ bool MapCalibration<TCorrection, TOperation>::tryApplyWithNext(
     }
     else {
         const auto* uniformity = dynamic_cast<const MapCalibration<float, UniformityOperation>*>(&next);
+        if (raw.bitsPerChannel == 8) {
+            if (uniformity == nullptr || options.rawOutputFlip != -99
+                || !matchesFullBgr8(raw, options) || !uniformity->matchesFullBgr8(raw, options)
+                || !uniformity->hasSafe8BitGains_) {
+                return false;
+            }
+
+            const auto rowSamples = static_cast<std::size_t>(raw.width) * raw.channels;
+            auto* pixels = reinterpret_cast<std::uint8_t*>(raw.data);
+            const auto* __restrict offsets = correction_.data();
+            const auto* __restrict factors = uniformity->correction_.data();
+            parallelRows(raw.height, [&](std::uint32_t first, std::uint32_t end) {
+                const auto start = first * rowSamples;
+                applyFusedBgr8(pixels + start, offsets + start, factors + start, (end - first) * rowSamples);
+            });
+            return true;
+        }
+
         if (uniformity == nullptr || !matchesFullMap16(raw, options)
             || !uniformity->matchesFullMap16(raw, options)
             || (options.rawOutputFlip != -99 && options.rawOutputFlip != 0)) {
