@@ -118,6 +118,12 @@ public:
     {
         return false;
     }
+
+    // A preflight before seeding scratch for geometry that can consume the flip.
+    virtual bool canFuseRawFlip(const ImageView&, const ImageView&, const ExecutionOptions&) const
+    {
+        return false;
+    }
 };
 
 [[nodiscard]] bool isColorCalibration(CalibrationType type) noexcept;

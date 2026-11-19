@@ -417,6 +417,33 @@ void verifyColorShiftInterleaved(const std::filesystem::path& directory)
     }
 }
 
+template<typename T>
+void writeBinaryValue(std::ofstream& output, const T& value)
+{
+    output.write(reinterpret_cast<const char*>(&value), sizeof(value));
+}
+
+template<typename T>
+void writeMap(
+    const std::filesystem::path& path,
+    std::uint32_t dataBits,
+    std::uint32_t typeBits,
+    const std::vector<T>& values,
+    std::uint32_t channels = 1,
+    std::uint32_t width = 4,
+    std::uint32_t height = 4)
+{
+    std::ofstream output(path, std::ios::binary);
+    writeBinaryValue(output, height);
+    writeBinaryValue(output, width);
+    writeBinaryValue(output, dataBits);
+    writeBinaryValue(output, channels);
+    writeBinaryValue(output, typeBits);
+    output.write(reinterpret_cast<const char*>(values.data()),
+        static_cast<std::streamsize>(values.size() * sizeof(T)));
+    if (!output) throw std::runtime_error("Unable to write synthetic map calibration");
+}
+
 void verifyLargeDistortion(const std::filesystem::path& directory)
 {
     constexpr int width = 2503;
@@ -448,33 +475,28 @@ void verifyLargeDistortion(const std::filesystem::path& directory)
         source.data(), source.size(), actual.data(), actual.size(), nullptr, 0, &options),
         context.get(), "execute large distortion");
     if (actual != expected) throw std::runtime_error("Large 16-bit distortion changed fixed-map interpolation");
-}
 
-template<typename T>
-void writeBinaryValue(std::ofstream& output, const T& value)
-{
-    output.write(reinterpret_cast<const char*>(&value), sizeof(value));
-}
+    const auto dsnu = directory / "large_distortion_dsnu.dat";
+    const auto uniformity = directory / "large_distortion_uniformity.dat";
+    const std::size_t samples = source.size() / sizeof(std::uint16_t);
+    writeMap(dsnu, 16, 16, std::vector<std::uint16_t>(samples, 0), 3, width, height);
+    writeMap(uniformity, 32, 16, std::vector<float>(samples, 1.0F), 3, width, height);
+    requireResult(M_CalibrationClear(context.get()), context.get(), "clear large distortion");
+    requireResult(M_CalibrationLoadFileW(context.get(), 4, dsnu.c_str()), context.get(), "load large distortion DSNU");
+    requireResult(M_CalibrationLoadFileW(context.get(), 5, uniformity.c_str()), context.get(), "load large distortion Uniformity");
+    requireResult(M_CalibrationLoadFileW(context.get(), 11, path.c_str()), context.get(), "load large seeded distortion");
 
-template<typename T>
-void writeMap(
-    const std::filesystem::path& path,
-    std::uint32_t dataBits,
-    std::uint32_t typeBits,
-    const std::vector<T>& values,
-    std::uint32_t channels = 1,
-    std::uint32_t width = 4,
-    std::uint32_t height = 4)
-{
-    std::ofstream output(path, std::ios::binary);
-    writeBinaryValue(output, height);
-    writeBinaryValue(output, width);
-    writeBinaryValue(output, dataBits);
-    writeBinaryValue(output, channels);
-    writeBinaryValue(output, typeBits);
-    output.write(reinterpret_cast<const char*>(values.data()),
-        static_cast<std::streamsize>(values.size() * sizeof(T)));
-    if (!output) throw std::runtime_error("Unable to write synthetic map calibration");
+    options.roiWidth = width;
+    options.roiHeight = height;
+    for (int flip : {0, 1, -1}) {
+        auto mirrored = expected;
+        cv::Mat reference(height, width, CV_16UC3, mirrored.data());
+        cv::flip(reference, reference, flip);
+        actual = source;
+        requireResult(M_CalibrationExecuteRawWithFlipV1(context.get(), width, height, 16, 3,
+            actual.data(), actual.size(), &options, flip), context.get(), "execute large seeded distortion mirror");
+        if (actual != mirrored) throw std::runtime_error("Large distortion mirror changed fixed-map pixels");
+    }
 }
 
 void runOne(

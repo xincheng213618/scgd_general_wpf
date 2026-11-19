@@ -383,6 +383,12 @@ public:
             leasedNext != nullptr ? *leasedNext->implementation_ : next, raw, destination, options);
     }
 
+    bool canFuseRawFlip(const ImageView& source, const ImageView& destination,
+        const ExecutionOptions& options) const override
+    {
+        return implementation_->canFuseRawFlip(source, destination, options);
+    }
+
 private:
     std::shared_ptr<CalibrationItem> implementation_;
     std::shared_ptr<CalibrationAssetLease> lease_;
@@ -1014,7 +1020,8 @@ bool CalibrationContext::execute(
     // The leading pair can write to scratch so the sole geometry stage
     // writes straight to RAW instead of requiring a full-frame copy.
     if (canSeedScratchFromPair_
-        && (options.rawOutputFlip == -99 || fusedRawFlip || canFuseHorizontalFlip)
+        && (options.rawOutputFlip == -99 || fusedRawFlip || canFuseHorizontalFlip
+            || items_[2]->canFuseRawFlip(scratch, raw, options))
         && items_[0]->tryApplyWithNextTo(*items_[1], raw, scratch, calibrationOptions)) {
         const auto restorePairOutput = [&] { std::memcpy(raw.data, scratch.data, requiredRawBytes); };
         std::string error;

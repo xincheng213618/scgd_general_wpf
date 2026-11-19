@@ -192,27 +192,23 @@ bool validLegacyRoi(
 }
 
 #if defined(_M_X64)
-bool tryRemapFixedBgr16(
-    const cv::Mat& source,
-    cv::Mat& result,
-    const cv::Mat& coordinates,
-    const cv::Mat& interpolation)
+bool canRemapFixedBgr16(cv::Size source, cv::Size result,
+    const cv::Mat& coordinates, const cv::Mat& interpolation)
 {
     // Keep the fixed-map interpolation and float rounding verified against OpenCV 5.0.0.
     static const bool supportedVersion = cv::getVersionString() == "5.0.0";
     constexpr auto maximumDimension = (std::numeric_limits<short>::max)();
     constexpr std::size_t minimumPixels = 5'000'000;
-    if (!supportedVersion || !cv::useOptimized() || source.type() != CV_16UC3
-        || result.total() < minimumPixels || source.cols < 3 || source.rows < 2
-        || source.cols >= maximumDimension || source.rows >= maximumDimension
-        || result.cols >= maximumDimension || result.rows >= maximumDimension
-        || coordinates.type() != CV_16SC2 || interpolation.type() != CV_16UC1
-        || coordinates.size() != result.size() || interpolation.size() != result.size()
-        || reinterpret_cast<std::uintptr_t>(source.data) % alignof(std::uint16_t) != 0
-        || reinterpret_cast<std::uintptr_t>(result.data) % alignof(std::uint16_t) != 0) {
-        return false;
-    }
+    return supportedVersion && cv::useOptimized() && source.width >= 3 && source.height >= 2
+        && source.width < maximumDimension && source.height < maximumDimension
+        && result.width < maximumDimension && result.height < maximumDimension
+        && static_cast<std::size_t>(result.area()) >= minimumPixels
+        && coordinates.type() == CV_16SC2 && interpolation.type() == CV_16UC1
+        && coordinates.size() == result && interpolation.size() == result;
+}
 
+const auto& fixedRemapWeights()
+{
     static const auto weights = [] {
         constexpr auto scale = static_cast<float>(cv::INTER_TAB_SIZE);
         std::array<cv::Vec4f, cv::INTER_TAB_SIZE2> table;
@@ -223,6 +219,14 @@ bool tryRemapFixedBgr16(
         }
         return table;
     }();
+    return weights;
+}
+
+template<bool flipRows, bool flipColumns>
+void remapFixedBgr16(const cv::Mat& source, cv::Mat& result,
+    const cv::Mat& coordinates, const cv::Mat& interpolation)
+{
+    const auto& weights = fixedRemapWeights();
     const auto zero = _mm_setzero_si128();
     const auto bias = _mm_set1_epi32(0x8000);
     const auto sign = _mm_set1_epi16(-32768);
@@ -242,8 +246,12 @@ bool tryRemapFixedBgr16(
         for (int y = rows.start; y < rows.end; ++y) {
             const auto* positions = coordinates.ptr<cv::Vec2s>(y);
             const auto* fractions = interpolation.ptr<std::uint16_t>(y);
-            auto* out = result.ptr<std::uint16_t>(y);
-            for (int x = 0; x < result.cols; ++x, out += 3) {
+            auto* out = result.ptr<std::uint16_t>(flipRows ? result.rows - 1 - y : y);
+            // For a reversed row, decrement before each store so the pointer
+            // stays within the output row after writing its first pixel.
+            if constexpr (flipColumns) out += 3 * result.cols;
+            for (int x = 0; x < result.cols; ++x, out += flipColumns ? 0 : 3) {
+                if constexpr (flipColumns) out -= 3;
                 const int sourceX = positions[x][0];
                 const int sourceY = positions[x][1];
                 const auto& weight = weights[fractions[x] & (cv::INTER_TAB_SIZE2 - 1)];
@@ -283,6 +291,23 @@ bool tryRemapFixedBgr16(
             }
         }
     });
+}
+
+bool tryRemapFixedBgr16(const cv::Mat& source, cv::Mat& result,
+    const cv::Mat& coordinates, const cv::Mat& interpolation, int flip)
+{
+    if (source.type() != CV_16UC3
+        || reinterpret_cast<std::uintptr_t>(source.data) % alignof(std::uint16_t) != 0
+        || reinterpret_cast<std::uintptr_t>(result.data) % alignof(std::uint16_t) != 0
+        || !canRemapFixedBgr16(source.size(), result.size(), coordinates, interpolation)) {
+        return false;
+    }
+    switch (flip) {
+    case 0: remapFixedBgr16<true, false>(source, result, coordinates, interpolation); break;
+    case 1: remapFixedBgr16<false, true>(source, result, coordinates, interpolation); break;
+    case -1: remapFixedBgr16<true, true>(source, result, coordinates, interpolation); break;
+    default: remapFixedBgr16<false, false>(source, result, coordinates, interpolation); break;
+    }
     return true;
 }
 #endif
@@ -300,6 +325,48 @@ public:
     {
         return true;
     }
+
+#if defined(_M_X64)
+    bool canFuseRawFlip(const ImageView& source, const ImageView& destination,
+        const ExecutionOptions& options) const override
+    {
+        if (source.bitsPerChannel != 16 || source.channels != 3 || !options.interleavedBgr || options.rgbType != 0
+            || destination.width != source.width || destination.height != source.height
+            || destination.bitsPerChannel != source.bitsPerChannel || destination.channels != source.channels
+            || (options.rawOutputFlip != 0 && options.rawOutputFlip != 1 && options.rawOutputFlip != -1)
+            || reinterpret_cast<std::uintptr_t>(source.data) % alignof(std::uint16_t) != 0
+            || reinterpret_cast<std::uintptr_t>(destination.data) % alignof(std::uint16_t) != 0) {
+            return false;
+        }
+
+        const bool useRoi = validLegacyRoi(options, width_, height_);
+        const std::int64_t roiX = useRoi ? options.roi[0] : 0;
+        const std::int64_t roiY = useRoi ? options.roi[1] : 0;
+        const auto width = useRoi ? options.roi[2] : static_cast<std::uint32_t>(width_);
+        const auto height = useRoi ? options.roi[3] : static_cast<std::uint32_t>(height_);
+        constexpr auto maximumDimension = static_cast<std::uint32_t>((std::numeric_limits<short>::max)());
+        if (width == 0 || height == 0 || width >= maximumDimension || height >= maximumDimension
+            || source.width != width || source.height != height) {
+            return false;
+        }
+        const cv::Size result(static_cast<int>(width), static_cast<int>(height));
+        // Let ordinary execution build maps for a new ROI before fusing its flip.
+        if (useRoi && (roiX_ != roiX || roiY_ != roiY || roiWidth_ != result.width || roiHeight_ != result.height)) {
+            return false;
+        }
+
+        const std::int64_t offsetX = static_cast<std::int64_t>(width) / 2 - cameraCenterX_ + roiX;
+        const std::int64_t offsetY = static_cast<std::int64_t>(height) / 2 - cameraCenterY_ + roiY;
+        const std::int64_t sourceWidth = static_cast<std::int64_t>(width) - (useFisheye_ ? std::abs(offsetX) : 0);
+        const std::int64_t sourceHeight = static_cast<std::int64_t>(height) - (useFisheye_ ? std::abs(offsetY) : 0);
+        if (sourceWidth < 3 || sourceHeight < 2 || sourceWidth >= maximumDimension || sourceHeight >= maximumDimension) {
+            return false;
+        }
+        const cv::Size remapSource(static_cast<int>(sourceWidth), static_cast<int>(sourceHeight));
+        return canRemapFixedBgr16(remapSource, result,
+            useRoi ? roiCoordinates_ : coordinates_, useRoi ? roiInterpolation_ : interpolation_);
+    }
+#endif
 
     [[nodiscard]] std::unique_ptr<CalibrationItem> cloneForContext() const override
     {
@@ -490,7 +557,7 @@ public:
             }
 
 #if defined(_M_X64)
-            if (tryRemapFixedBgr16(remapSource, output, *selectedCoordinates, *selectedInterpolation)) {
+            if (tryRemapFixedBgr16(remapSource, output, *selectedCoordinates, *selectedInterpolation, options.rawOutputFlip)) {
                 return true;
             }
 #endif
@@ -501,6 +568,8 @@ public:
                 *selectedInterpolation,
                 cv::INTER_LINEAR,
                 cv::BORDER_CONSTANT);
+            // The backend can still decline after the context's preflight.
+            if (options.rawOutputFlip != -99) cv::flip(output, output, options.rawOutputFlip);
             return true;
         }
         catch (const cv::Exception& exception) {
