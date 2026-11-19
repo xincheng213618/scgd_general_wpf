@@ -289,6 +289,9 @@ next: false
 - [ColorVision 概览](../../00-getting-started/what-is-colorvision.md) — `platform.product`
   ColorVision 的设备、流程、图像分析、结果、插件与客户项目能力，以及从任务进入文档的方法。
 
+- [ColorVision.UI.Desktop](../../04-api-reference/ui-components/ColorVision.UI.Desktop.md) — `ui.desktop`
+  桌面辅助壳层而非产品主入口：定位设置、市场下载、第三方工具、反馈和特权崩溃诊断。
+
 - [设备视图内存预览设计（待实施） \[规划\]](../../02-developer-guide/engine-development/local-camera-memory-preview.md) — `engine.camera-preview-plan`
   设备视图已接入 RAW/CIE 独立快照；记录有界调度、预览模式和更低复制成本等后续优化及验收缺口。
 

@@ -4,7 +4,7 @@ knowledge_type: "reference"
 status: "current"
 summary: "桌面辅助壳层而非产品主入口：定位设置、市场下载、第三方工具、反馈和特权崩溃诊断。"
 aliases: ["设置窗口和插件市场在哪里","ColorVision.UI.Desktop","SettingWindow","MarketplacePackageDownloadService","下载管理器","断点续传","Aria2cDownloadManager","SSCOM","sscom51.ini","SSCOM 调试预设","多条字符串发送"]
-code_paths: ["UI/ColorVision.UI.Desktop/ColorVision.UI.Desktop.csproj","UI/ColorVision.UI.Desktop/App.xaml","UI/ColorVision.UI.Desktop/App.xaml.cs","UI/ColorVision.UI.Desktop/MainWindow.xaml","UI/ColorVision.UI.Desktop/MainWindow.xaml.cs","UI/ColorVision.UI.Desktop/Settings/SettingWindow.xaml.cs","UI/ColorVision.UI.Desktop/Marketplace","UI/ColorVision.UI.Desktop/Download","UI/ColorVision.UI.Desktop/Wizards","UI/ColorVision.UI.Desktop/ThirdPartyApps","UI/ColorVision.UI.Desktop/Diagnostics","UI/ColorVision.UI.Desktop/Feedback","UI/ColorVision.UI.Desktop/README.md","ColorVision/ToolPlugins/ThirdPartyApps/SscomLauncher.cs","ColorVision/ToolPlugins/ThirdPartyApps/SscomPresetWindow.xaml.cs","ColorVision/ToolPlugins/ThirdPartyApps/SscomPresetIni.cs","ColorVision/ToolPlugins/ThirdPartyApps/SscomSensorPresets.cs","ColorVision/ToolPlugins/ThirdPartyApps/SscomArvrPresets.cs"]
+code_paths: ["UI/ColorVision.UI.Desktop/ColorVision.UI.Desktop.csproj","UI/ColorVision.UI.Desktop/App.xaml","UI/ColorVision.UI.Desktop/App.xaml.cs","UI/ColorVision.UI.Desktop/MainWindow.xaml","UI/ColorVision.UI.Desktop/MainWindow.xaml.cs","UI/ColorVision.UI.Desktop/Settings/SettingWindow.xaml.cs","UI/ColorVision.UI.Desktop/Marketplace","UI/ColorVision.UI.Desktop/Download","UI/ColorVision.UI.Desktop/Wizards","UI/ColorVision.UI.Desktop/ThirdPartyApps","UI/ColorVision.UI.Desktop/Diagnostics","UI/ColorVision.UI.Desktop/Feedback","Engine/ColorVision.Engine/Mysql/CameraCaptureTimingFeedbackCollector.cs","UI/ColorVision.UI.Desktop/README.md","ColorVision/ToolPlugins/ThirdPartyApps/SscomLauncher.cs","ColorVision/ToolPlugins/ThirdPartyApps/SscomPresetWindow.xaml.cs","ColorVision/ToolPlugins/ThirdPartyApps/SscomPresetIni.cs","ColorVision/ToolPlugins/ThirdPartyApps/SscomSensorPresets.cs","ColorVision/ToolPlugins/ThirdPartyApps/SscomArvrPresets.cs"]
 related: ["ui.index","ui.framework","ui.settings","ui.wizards","ui.menus","ui.configuration","ui.database","plugins.getting-started","platform.runtime"]
 ---
 
@@ -97,6 +97,10 @@ Engine 提供默认勾选的“MVS 日志”来源，沿用统一天数范围，
 数据库按记录自身的本地时间／UTC 字段筛选，保留关联运行、节点、事件、异常、模板快照和结果，因此部分关联记录可以早于所选起始时间。输出是反馈 ZIP 的 `Database/` 下可直接查询的独立 SQLite 文件，保留原字段、ID、索引及完整压缩正文，不跟随结果中的图片路径收集图片。源库以只读模式在单个读取事务中访问，包含读取快照时 WAL 中已提交的数据；不同数据库之间不提供统一事务快照，尚未落库的写入队列不属于导出范围。
 
 每个数据库附带同名 `.export.json`，记录所选时间范围（含时区）、各表条数、缺失表和失败原因。旧库缺少新诊断表时仍导出可用表并标为 `partial`；无法识别时间字段或数据库不可读时只附错误说明，不回退为全库收集。导出逻辑与模块筛选分别位于 `UI/ColorVision.Database/SqliteFeedbackCollector.cs` 和各模块的反馈收集器 打包与发送沿用反馈窗口入口，附件上传按流读取。离线时可选中压缩包并打开所在目录。
+
+“相机取图与校正耗时”默认勾选。发送反馈时，客户端按所选时间范围读取现场 MySQL 的 `t_scgd_measure_result_img`，写入 `Database/CameraCaptureTiming.json`。升级前已保存且仍在库内的结果也能导出，选中覆盖拍摄日期的范围即可。打开附件，在 `Rows` 里按 `DeviceCode`、`CreatedAt` 或 `RawFile` 找到对应帧。对照同一 `CalibrationTemplate` 和曝光 `ExposureMs`，读取 `Timing` 中的 `Capture`（取图）、`Calibration`（校正）、`Save`（保存）和 `Total`（总耗时），单位均为毫秒。
+
+旧记录缺少分段计时时，`Timing` 为 `null`，`TotalTimeMs` 保留数据库中的总耗时。附件的 `From` 和 `To` 给出实际查询范围。`Status` 为 `ok` 且 `Count` 为 0 表示查询成功、范围内没有相机结果，`error` 表示读取失败。
 
 “清理历史文件”先要求用户确认，再调用实现 `IFeedbackDiagnosticCleanupSource` 的诊断来源。应用和服务日志保留各活动目录中最新的文件，其他来源只返回点击清理前已经存在的历史文件；删除失败的占用或无权限文件会计入跳过数量。清理仅删除来源明确声明的文件，不删除目录、配置、数据库、反馈附件或已经打包的 ZIP；共享的 WER Dump 目录中也只匹配当前 ColorVision 进程命名的 `.dmp`。
 

@@ -9509,6 +9509,7 @@
         "UI/ColorVision.UI.Desktop/ThirdPartyApps",
         "UI/ColorVision.UI.Desktop/Diagnostics",
         "UI/ColorVision.UI.Desktop/Feedback",
+        "Engine/ColorVision.Engine/Mysql/CameraCaptureTimingFeedbackCollector.cs",
         "UI/ColorVision.UI.Desktop/README.md",
         "ColorVision/ToolPlugins/ThirdPartyApps/SscomLauncher.cs",
         "ColorVision/ToolPlugins/ThirdPartyApps/SscomPresetWindow.xaml.cs",
@@ -9529,6 +9530,7 @@
       ],
       "code_scopes": [
         "ColorVision/ToolPlugins",
+        "Engine/ColorVision.Engine",
         "UI/ColorVision.UI.Desktop"
       ],
       "domain": "ui",
