@@ -8,6 +8,7 @@
 
 #include <algorithm>
 #include <array>
+#include <bit>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
@@ -1355,7 +1356,9 @@ public:
             + static_cast<std::uint64_t>(coefficientsGr_.capacity()) * sizeof(double)
             + static_cast<std::uint64_t>(coefficientsGb_.capacity()) * sizeof(double)
             + static_cast<std::uint64_t>(mapGr_.total()) * mapGr_.elemSize()
-            + static_cast<std::uint64_t>(mapGb_.total()) * mapGb_.elemSize();
+            + static_cast<std::uint64_t>(mapGb_.total()) * mapGb_.elemSize()
+            + (runs_ ? sizeof(JointRuns) + runs_->rowOffsets.capacity() * sizeof(std::uint32_t)
+                + runs_->values.capacity() * sizeof(JointRun) : 0);
     }
 
     bool load(const json& root, std::string& error)
@@ -1408,6 +1411,20 @@ public:
             error = "Unable to create ColorDiff maps: " + std::string(exception.what());
             return false;
         }
+#if defined(_M_X64)
+        if (mapGr_.type() == CV_8UC1 && mapGr_.total() * 6ULL >= 32ULL * 1024 * 1024) {
+            // Keep the dense pair if a compact run table cannot be built.
+            try {
+                runs_ = buildRuns(mapGr_, mapGb_);
+            }
+            catch (const std::bad_alloc&) {
+            }
+            if (runs_) {
+                mapGr_.release();
+                mapGb_.release();
+            }
+        }
+#endif
         return true;
     }
 
@@ -1447,9 +1464,10 @@ public:
             if (!selectMaps(raw, options, selectedGr, selectedGb, error)) {
                 return false;
             }
-            return selectedGr->type() == CV_8UC1
-                ? applyTyped<std::uint8_t>(raw, destination, options, *selectedGr, *selectedGb, error)
-                : applyTyped<MapEntry>(raw, destination, options, *selectedGr, *selectedGb, error);
+            const JointRuns* runs = selectedGr == &mapGr_ ? runs_.get() : nullptr;
+            return runs != nullptr || selectedGr->type() == CV_8UC1
+                ? applyTyped<std::uint8_t>(raw, destination, options, *selectedGr, *selectedGb, error, runs)
+                : applyTyped<MapEntry>(raw, destination, options, *selectedGr, *selectedGb, error, nullptr);
         }
         catch (const cv::Exception& exception) {
             error = "ColorDiff calibration failed: " + std::string(exception.what());
@@ -1471,10 +1489,93 @@ private:
         , shiftGb_(source.shiftGb_)
         , mapGr_(source.mapGr_)
         , mapGb_(source.mapGb_)
+        , runs_(source.runs_)
     {
     }
 
     using MapEntry = cv::Vec<std::uint16_t, 2>;
+
+    struct JointRun {
+        std::uint16_t end;
+        std::uint8_t red;
+        std::uint8_t blue;
+    };
+
+    struct JointRuns {
+        std::vector<std::uint32_t> rowOffsets;
+        std::vector<JointRun> values;
+    };
+
+#if defined(_M_X64)
+    static std::shared_ptr<const JointRuns> buildRuns(const cv::Mat& red, const cv::Mat& blue)
+    {
+        auto runs = std::make_shared<JointRuns>();
+        runs->rowOffsets.reserve(static_cast<std::size_t>(red.rows) + 1);
+        // Cap the number of runs at one per eight pixels, so even with
+        // vector growth the compressed pair occupies less than the dense pair.
+        const auto maxEntries = red.total() / 8;
+        for (int row = 0; row < red.rows; ++row) {
+            runs->rowOffsets.push_back(static_cast<std::uint32_t>(runs->values.size()));
+            const auto* gr = red.ptr<std::uint8_t>(row);
+            const auto* gb = blue.ptr<std::uint8_t>(row);
+            for (int column = 0; column < red.cols;) {
+                const auto redOffset = gr[column];
+                const auto blueOffset = gb[column];
+                const auto redBytes = _mm_set1_epi8(static_cast<char>(redOffset));
+                const auto blueBytes = _mm_set1_epi8(static_cast<char>(blueOffset));
+                ++column;
+                for (; column + 16 <= red.cols; column += 16) {
+                    const auto reds = _mm_loadu_si128(reinterpret_cast<const __m128i*>(gr + column));
+                    const auto blues = _mm_loadu_si128(reinterpret_cast<const __m128i*>(gb + column));
+                    const auto same = _mm_and_si128(_mm_cmpeq_epi8(reds, redBytes), _mm_cmpeq_epi8(blues, blueBytes));
+                    const auto changed = static_cast<unsigned>(_mm_movemask_epi8(same)) ^ 0xFFFFU;
+                    if (changed != 0) {
+                        column += static_cast<int>(std::countr_zero(changed));
+                        break;
+                    }
+                }
+                while (column < red.cols && gr[column] == redOffset && gb[column] == blueOffset) ++column;
+                if (runs->values.size() >= maxEntries) return {};
+                runs->values.push_back({static_cast<std::uint16_t>(column), redOffset, blueOffset});
+            }
+        }
+        runs->rowOffsets.push_back(static_cast<std::uint32_t>(runs->values.size()));
+        return runs;
+    }
+#endif
+
+    // Other layouts reuse their original kernels with one exact map row per
+    // worker. Full-size contexts never need to retain a second copy of the maps.
+    template<typename Entry>
+    class MapRow {
+    public:
+        MapRow(const cv::Mat& map, const JointRuns* runs, int width, bool red)
+            : map_(map), runs_(runs), red_(red), row_(runs ? width : 0)
+        {
+        }
+
+        const Entry* get(int row)
+        {
+            if constexpr (std::is_same_v<Entry, std::uint8_t>) {
+                if (runs_) {
+                    int begin = 0;
+                    for (auto index = runs_->rowOffsets[row]; index < runs_->rowOffsets[row + 1]; ++index) {
+                        const auto& run = runs_->values[index];
+                        std::fill_n(row_.data() + begin, run.end - begin, red_ ? run.red : run.blue);
+                        begin = run.end;
+                    }
+                    return row_.data();
+                }
+            }
+            return map_.ptr<Entry>(row);
+        }
+
+    private:
+        const cv::Mat& map_;
+        const JointRuns* runs_;
+        bool red_;
+        std::vector<Entry> row_;
+    };
 
     template<typename Entry>
     static std::size_t sourcePixel(const Entry& entry, std::size_t pixel, int width)
@@ -1497,7 +1598,8 @@ private:
         const ExecutionOptions& options,
         const cv::Mat& mapGr,
         const cv::Mat& mapGb,
-        std::string& error)
+        std::string& error,
+        const JointRuns* runs)
     {
         const bool flipRows = options.rawOutputFlip == 0;
 
@@ -1507,8 +1609,8 @@ private:
                 return false;
             }
             return raw.bitsPerChannel == 8
-                ? applyPlanar<std::uint8_t, Entry>(raw, destination, mapGr, mapGb, flipRows)
-                : applyPlanar<std::uint16_t, Entry>(raw, destination, mapGr, mapGb, flipRows);
+                ? applyPlanar<std::uint8_t, Entry>(raw, destination, mapGr, mapGb, flipRows, runs)
+                : applyPlanar<std::uint16_t, Entry>(raw, destination, mapGr, mapGb, flipRows, runs);
         }
 
         switch (options.rgbType) {
@@ -1520,12 +1622,12 @@ private:
             if (options.rawOutputFlip == 1 || options.rawOutputFlip == -1) {
                 const bool flipBothAxes = options.rawOutputFlip == -1;
                 return raw.bitsPerChannel == 8
-                    ? applyInterleavedHorizontal<std::uint8_t, Entry>(raw, destination, mapGr, mapGb, flipBothAxes)
-                    : applyInterleavedHorizontal<std::uint16_t, Entry>(raw, destination, mapGr, mapGb, flipBothAxes);
+                    ? applyInterleavedHorizontal<std::uint8_t, Entry>(raw, destination, mapGr, mapGb, flipBothAxes, runs)
+                    : applyInterleavedHorizontal<std::uint16_t, Entry>(raw, destination, mapGr, mapGb, flipBothAxes, runs);
             }
             return raw.bitsPerChannel == 8
-                ? applyInterleaved<std::uint8_t, Entry>(raw, destination, mapGr, mapGb, flipRows)
-                : applyInterleaved<std::uint16_t, Entry>(raw, destination, mapGr, mapGb, flipRows);
+                ? applyInterleaved<std::uint8_t, Entry>(raw, destination, mapGr, mapGb, flipRows, runs)
+                : applyInterleaved<std::uint16_t, Entry>(raw, destination, mapGr, mapGb, flipRows, runs);
         case 1:
         case 2:
         case 3:
@@ -1551,11 +1653,11 @@ private:
                 ? applySingle<std::uint8_t, Entry>(
                     raw,
                     destination,
-                    options.rgbType == 1 ? mapGr : mapGb, flipRows)
+                    options.rgbType == 1 ? mapGr : mapGb, flipRows, runs, options.rgbType == 1)
                 : applySingle<std::uint16_t, Entry>(
                     raw,
                     destination,
-                    options.rgbType == 1 ? mapGr : mapGb, flipRows);
+                    options.rgbType == 1 ? mapGr : mapGb, flipRows, runs, options.rgbType == 1);
         default:
             error = "ColorDiff rgbType must be 0 (BGR), 1 (R), 2 (G), or 3 (B)";
             return false;
@@ -1737,7 +1839,8 @@ private:
         const ImageView& output,
         const cv::Mat& mapGr,
         const cv::Mat& mapGb,
-        bool flipRows)
+        bool flipRows,
+        const JointRuns* runs)
     {
 #if defined(_M_X64)
         if constexpr (std::is_same_v<Sample, std::uint16_t> && std::is_same_v<Entry, std::uint8_t>) {
@@ -1745,7 +1848,9 @@ private:
             // blocks without fetching the old destination pixels into the cache.
             if (imageByteCount(raw) >= 32ULL * 1024 * 1024
                 && (reinterpret_cast<std::uintptr_t>(output.data) & 1U) == 0) {
-                return applyInterleavedStream16(raw, output, mapGr, mapGb, flipRows);
+                return runs
+                    ? applyInterleavedStream16<true>(raw, output, mapGr, mapGb, flipRows, runs)
+                    : applyInterleavedStream16<false>(raw, output, mapGr, mapGb, flipRows, nullptr);
             }
         }
 #endif
@@ -1755,9 +1860,11 @@ private:
         auto* destination = reinterpret_cast<Sample*>(output.data);
 
         cv::parallel_for_(cv::Range(0, height), [&](const cv::Range& range) {
+            MapRow<Entry> redRows(mapGr, runs, width, true);
+            MapRow<Entry> blueRows(mapGb, runs, width, false);
             for (int row = range.start; row < range.end; ++row) {
-                const auto* gr = mapGr.ptr<Entry>(row);
-                const auto* gb = mapGb.ptr<Entry>(row);
+                const auto* gr = redRows.get(row);
+                const auto* gb = blueRows.get(row);
                 const bool borderRow = row == 0 || row == height - 1;
                 const int targetRow = flipRows ? height - 1 - row : row;
                 for (int column = 0; column < width; ++column) {
@@ -1783,12 +1890,14 @@ private:
     }
 
 #if defined(_M_X64)
+    template<bool useRuns>
     bool applyInterleavedStream16(
         const ImageView& raw,
         const ImageView& output,
         const cv::Mat& mapGr,
         const cv::Mat& mapGb,
-        bool flipRows)
+        bool flipRows,
+        const JointRuns* runs)
     {
         constexpr int blockPixels = 32;
         const int width = static_cast<int>(raw.width);
@@ -1800,7 +1909,7 @@ private:
             const auto evenBlue = _mm_setr_epi16(-1, 0, 0, -1, 0, 0, -1, 0);
             const auto evenGreen = _mm_setr_epi16(0, -1, 0, 0, -1, 0, 0, -1);
             const auto evenRed = _mm_setr_epi16(0, 0, -1, 0, 0, -1, 0, 0);
-            const auto isUniform = [](const std::uint8_t* map, std::uint8_t entry) {
+            [[maybe_unused]] const auto isUniform = [](const std::uint8_t* map, std::uint8_t entry) {
                 static_assert(blockPixels == 32);
                 const auto code = _mm_set1_epi8(static_cast<char>(entry));
                 const auto first = _mm_loadu_si128(reinterpret_cast<const __m128i*>(map));
@@ -1809,8 +1918,20 @@ private:
             };
             alignas(16) std::uint16_t block[blockPixels * 3];
             for (int row = range.start; row < range.end; ++row) {
-                const auto* gr = mapGr.ptr<std::uint8_t>(row);
-                const auto* gb = mapGb.ptr<std::uint8_t>(row);
+                const std::uint8_t* gr = nullptr;
+                const std::uint8_t* gb = nullptr;
+                const JointRun* run = nullptr;
+                if constexpr (useRuns) {
+                    run = runs->values.data() + runs->rowOffsets[row];
+                }
+                else {
+                    gr = mapGr.ptr<std::uint8_t>(row);
+                    gb = mapGb.ptr<std::uint8_t>(row);
+                }
+                [[maybe_unused]] const auto runAt = [&](int column) -> const JointRun& {
+                    while (column >= run->end) ++run;
+                    return *run;
+                };
                 const auto rowBase = static_cast<std::size_t>(row) * width;
                 const int targetRow = flipRows ? height - 1 - row : row;
                 auto* outputRow = destination + static_cast<std::size_t>(targetRow) * width * 3;
@@ -1821,8 +1942,15 @@ private:
                         pixel[0] = pixel[2] = 0;
                         return;
                     }
-                    pixel[0] = source[sourcePixel(gb[column], index, width) * 3];
-                    pixel[2] = source[sourcePixel(gr[column], index, width) * 3 + 2];
+                    if constexpr (useRuns) {
+                        const auto& offsets = runAt(column);
+                        pixel[0] = source[sourcePixel(offsets.blue, index, width) * 3];
+                        pixel[2] = source[sourcePixel(offsets.red, index, width) * 3 + 2];
+                    }
+                    else {
+                        pixel[0] = source[sourcePixel(gb[column], index, width) * 3];
+                        pixel[2] = source[sourcePixel(gr[column], index, width) * 3 + 2];
+                    }
                 };
                 int column = 0;
                 // Keep streamed cache lines separate from scalar heads/tails,
@@ -1832,10 +1960,22 @@ private:
                 for (; column + blockPixels <= width; column += blockPixels) {
                     // With a constant map entry, the corrected channel comes
                     // from a contiguous run. Keep the sensor borders scalar.
-                    if (!flipRows && row != 0 && row != height - 1 && column > 0 && column + blockPixels < width) {
-                        const auto red = gr[column];
-                        const auto blue = gb[column];
-                        if (isUniform(gb + column, blue) && isUniform(gr + column, red)) {
+                    if ((!flipRows || useRuns) && row != 0 && row != height - 1 && column > 0 && column + blockPixels < width) {
+                        std::uint8_t red = 0;
+                        std::uint8_t blue = 0;
+                        bool uniform;
+                        if constexpr (useRuns) {
+                            const auto& offsets = runAt(column);
+                            red = offsets.red;
+                            blue = offsets.blue;
+                            uniform = column + blockPixels <= offsets.end;
+                        }
+                        else {
+                            red = gr[column];
+                            blue = gb[column];
+                            uniform = isUniform(gb + column, blue) && isUniform(gr + column, red);
+                        }
+                        if (uniform) {
                             const auto pixel = rowBase + column;
                             const auto* original = source + pixel * 3;
                             auto* out = outputRow + column * 3;
@@ -1907,7 +2047,8 @@ private:
         const ImageView& output,
         const cv::Mat& mapGr,
         const cv::Mat& mapGb,
-        bool flipRows)
+        bool flipRows,
+        const JointRuns* runs)
     {
         const int width = static_cast<int>(raw.width);
         const int height = static_cast<int>(raw.height);
@@ -1918,9 +2059,11 @@ private:
         [[maybe_unused]] const bool streamOutput = canStream && imageByteCount(raw) >= 32ULL * 1024 * 1024;
 #endif
         cv::parallel_for_(cv::Range(0, height), [&](const cv::Range& range) {
+            MapRow<Entry> redRows(mapGr, runs, width, true);
+            MapRow<Entry> blueRows(mapGb, runs, width, false);
             for (int row = range.start; row < range.end; ++row) {
-                const auto* gr = mapGr.ptr<Entry>(row);
-                const auto* gb = mapGb.ptr<Entry>(row);
+                const auto* gr = redRows.get(row);
+                const auto* gb = blueRows.get(row);
                 const auto rowBase = static_cast<std::size_t>(row) * width;
                 const bool borderRow = row == 0 || row == height - 1;
                 const int targetRow = flipRows ? height - 1 - row : row;
@@ -1987,7 +2130,9 @@ private:
         const ImageView& raw,
         const ImageView& output,
         const cv::Mat& map,
-        bool flipRows)
+        bool flipRows,
+        const JointRuns* runs,
+        bool red)
     {
         const int width = static_cast<int>(raw.width);
         const int height = static_cast<int>(raw.height);
@@ -1995,8 +2140,9 @@ private:
         auto* destination = reinterpret_cast<Sample*>(output.data);
 
         cv::parallel_for_(cv::Range(0, height), [&](const cv::Range& range) {
+            MapRow<Entry> rows(map, runs, width, red);
             for (int row = range.start; row < range.end; ++row) {
-                const auto* mapRow = map.ptr<Entry>(row);
+                const auto* mapRow = rows.get(row);
                 const bool borderRow = row == 0 || row == height - 1;
                 const int targetRow = flipRows ? height - 1 - row : row;
                 for (int column = 0; column < width; ++column) {
@@ -2022,7 +2168,8 @@ private:
         const ImageView& output,
         const cv::Mat& mapGr,
         const cv::Mat& mapGb,
-        bool flipRows)
+        bool flipRows,
+        const JointRuns* runs)
     {
         const int width = static_cast<int>(raw.width);
         const int height = static_cast<int>(raw.height);
@@ -2031,9 +2178,11 @@ private:
         auto* destination = reinterpret_cast<Sample*>(output.data);
 
         cv::parallel_for_(cv::Range(0, height), [&](const cv::Range& range) {
+            MapRow<Entry> redRows(mapGr, runs, width, true);
+            MapRow<Entry> blueRows(mapGb, runs, width, false);
             for (int row = range.start; row < range.end; ++row) {
-                const auto* gr = mapGr.ptr<Entry>(row);
-                const auto* gb = mapGb.ptr<Entry>(row);
+                const auto* gr = redRows.get(row);
+                const auto* gb = blueRows.get(row);
                 const bool borderRow = row == 0 || row == height - 1;
                 const int targetRow = flipRows ? height - 1 - row : row;
                 for (int column = 0; column < width; ++column) {
@@ -2071,6 +2220,7 @@ private:
 
     cv::Mat mapGr_;
     cv::Mat mapGb_;
+    std::shared_ptr<const JointRuns> runs_;
     cv::Mat roiMapGr_;
     cv::Mat roiMapGb_;
     int roiX_ = -1;
