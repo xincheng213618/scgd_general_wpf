@@ -1031,9 +1031,9 @@ bool CalibrationContext::load(CalibrationType type, const std::filesystem::path&
     }
 
     items_.push_back(std::move(item));
-    canSeedScratchFromPair_ = items_.size() == 3
-        && items_[0]->type() == CalibrationType::Dsnu
-        && items_[1]->type() == CalibrationType::Uniformity
+    canSeedScratchFromPair_ = items_.size() >= 3
+        && items_[items_.size() - 3]->type() == CalibrationType::Dsnu
+        && items_[items_.size() - 2]->type() == CalibrationType::Uniformity
         && (type == CalibrationType::Distortion || type == CalibrationType::ColorDiff);
     if (digest != nullptr) *digest = loadedDigest;
     return true;
@@ -1130,30 +1130,33 @@ bool CalibrationContext::execute(
     ImageView scratch = raw;
     scratch.data = rawScratch_.get();
     scratch.dataLength = rawScratchCapacity_;
-    // The leading pair can write to scratch so the sole geometry stage
-    // writes straight to RAW instead of requiring a full-frame copy.
-    if (canSeedScratchFromPair_
-        && (options.rawOutputFlip == -99 || fusedRawFlip || canFuseHorizontalFlip
-            || items_[2]->canFuseRawFlip(scratch, raw, options))
-        && items_[0]->tryApplyWithNextTo(*items_[1], raw, scratch, calibrationOptions)) {
-        const auto restorePairOutput = [&] { std::memcpy(raw.data, scratch.data, requiredRawBytes); };
-        std::string error;
-        try {
-            if (items_[2]->applyOutOfPlace(scratch, raw, options, error)) return true;
-        }
-        catch (...) {
-            restorePairOutput();
-            throw;
-        }
-        // The ordinary in-place path exposes the leading corrections on failure.
-        restorePairOutput();
-        lastError_ = error.empty() ? "Basic calibration failed" : std::move(error);
-        return false;
-    }
     for (std::size_t index = 0; index < items_.size(); ++index) {
         const auto& item = items_[index];
         if (item->isColorTransform()) {
             continue;
+        }
+        // Once preceding stages have run, seed scratch from the adjacent maps
+        // so final geometry can write back to RAW without a full-frame copy.
+        if (canSeedScratchFromPair_ && colorItem == nullptr
+            && index + 3 == items_.size() && current.data == raw.data) {
+            const auto& geometry = items_.back();
+            if ((options.rawOutputFlip == -99 || fusedRawFlip || canFuseHorizontalFlip
+                    || geometry->canFuseRawFlip(scratch, raw, options))
+                && item->tryApplyWithNextTo(*items_[index + 1], current, scratch, calibrationOptions)) {
+                const auto restorePairOutput = [&] { std::memcpy(raw.data, scratch.data, requiredRawBytes); };
+                std::string error;
+                try {
+                    if (geometry->applyOutOfPlace(scratch, raw, options, error)) return true;
+                }
+                catch (...) {
+                    restorePairOutput();
+                    throw;
+                }
+                // The ordinary path exposes all preceding corrections on failure.
+                restorePairOutput();
+                lastError_ = error.empty() ? "Basic calibration failed" : std::move(error);
+                return false;
+            }
         }
         const bool flipAfterPair = options.rawOutputFlip == 0 && index + 2 == items_.size();
         if (index + 1 < items_.size()

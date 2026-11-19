@@ -1171,13 +1171,41 @@ void verifyAdjacentMapEquivalence(const std::filesystem::path& directory, bool c
     const auto mismatchedDistortion = directory / "adjacent_invalid_distortion.json";
     // This map also excludes the cropped fixture's right edge.
     writeText(mismatchedDistortion, R"({"alpha":0,"cameraMatrix":[14,0,3,0,13,5,0,0,1],"distCoeffs":[0.07,-0.004,0.003,0.001,0],"w":6,"h":11,"useFisheye":false})");
+    const auto mismatchedColorDiff = directory / "adjacent_invalid_color_diff.json";
+    writeText(mismatchedColorDiff, R"({"CalibDis":1,"MeasDis":1,"CenterCol":3,"CenterRow":5,"ColRowCoeffs_GB":[-1,1],"ColRowCoeffs_GR":[1,-1],"ColorDiffCoeffs_GB":[0],"ColorDiffCoeffs_GR":[0],"h":11,"w":6})");
+    const auto darkNoise = directory / "adjacent_dark_noise.json";
+    writeText(darkNoise, R"({"bpp":16,"Texp_x":1.0,"DarkNoiseRatio":2.0})");
+    constexpr std::uint32_t defectX = 4, defectY = 4;
+    const auto defect = directory / "adjacent_defect.dat";
+    {
+        std::ofstream output(defect, std::ios::binary);
+        writeBinaryValue(output, std::uint32_t{1});
+        writeBinaryValue(output, defectY);
+        writeBinaryValue(output, defectX);
+    }
+    // Preserve a sample changed by DarkNoise through the otherwise zero first row.
+    const auto prefixedUniformity = directory / "adjacent_prefixed_uniformity.dat";
+    auto prefixedFactors = factors;
+    prefixedFactors[2] = 1.5F;
+    writeMap(prefixedUniformity, 32, 16, prefixedFactors, channels, width, height);
+    const auto loadDarkNoise = [&](void* context) {
+        requireResult(M_CalibrationLoadFileW(context, 0, darkNoise.c_str()), context, "load adjacent DarkNoise");
+    };
+    const auto loadDefect = [&](void* context) {
+        requireResult(M_CalibrationLoadFileW(context, 3, defect.c_str()), context, "load adjacent DefectPoint");
+    };
     const auto loadGeometry = [](void* context, int type, const std::filesystem::path& file) {
         requireResult(M_CalibrationLoadFileW(context, type, file.c_str()), context, "load adjacent geometry");
     };
-    const auto loadOddChain = [&](int type, const std::filesystem::path& file) {
+    const auto loadOddChain = [&](int type, const std::filesystem::path& file, bool withPrefix = false) {
         Context context = createContext();
+        if (withPrefix) {
+            loadDarkNoise(context.get());
+            loadDefect(context.get());
+        }
         requireResult(M_CalibrationLoadFileW(context.get(), 4, dsnu.c_str()), context.get(), "load odd chain DSNU");
-        requireResult(M_CalibrationLoadFileW(context.get(), 5, uniformity.c_str()), context.get(), "load odd chain Uniformity");
+        const auto& gainFile = withPrefix ? prefixedUniformity : uniformity;
+        requireResult(M_CalibrationLoadFileW(context.get(), 5, gainFile.c_str()), context.get(), "load odd chain Uniformity");
         loadGeometry(context.get(), type, file);
         return context;
     };
@@ -1186,6 +1214,15 @@ void verifyAdjacentMapEquivalence(const std::filesystem::path& directory, bool c
     loadGeometry(geometry[1].get(), 14, colorDiff);
     const std::array<Context, 2> oddChains{loadOddChain(11, distortion), loadOddChain(14, colorDiff)};
     const Context badChain = loadOddChain(11, mismatchedDistortion);
+    const std::array<Context, 2> prefixedChains{
+        loadOddChain(11, distortion, true), loadOddChain(14, colorDiff, true)};
+    const std::array<Context, 2> badPrefixedChains{
+        loadOddChain(11, mismatchedDistortion, true), loadOddChain(14, mismatchedColorDiff, true)};
+    const Context dark = createContext(), defects = createContext(), prefixedGain = createContext();
+    loadDarkNoise(dark.get());
+    loadDefect(defects.get());
+    requireResult(M_CalibrationLoadFileW(prefixedGain.get(), 5, prefixedUniformity.c_str()),
+        prefixedGain.get(), "load adjacent prefixed Uniformity");
 
     // The same ordered stages must be byte-identical both when combined and
     // when executed independently, including zero clamp, fractions and saturation.
@@ -1246,6 +1283,80 @@ void verifyAdjacentMapEquivalence(const std::filesystem::path& directory, bool c
                     if (result != M_CALIBRATION_EXECUTE_FAILED || corrected != expected
                         || nativeError(badChain.get()) != "RAW dimensions do not match the distortion calibration") {
                         throw std::runtime_error("Failed geometry did not preserve the preceding RAW corrections");
+                    }
+                }
+
+                auto prefixSource = source;
+                const auto defectIndex = ((defectY - options.roiY) * imageWidth + defectX - options.roiX) * channels;
+                std::fill_n(prefixSource.begin() + defectIndex, channels, std::uint16_t{65535});
+                auto prefixExpected = prefixSource;
+                run(dark.get(), prefixExpected);
+                run(defects.get(), prefixExpected);
+                if (prefixExpected[defectIndex] == prefixSource[defectIndex])
+                    throw std::runtime_error("Prefixed geometry fixture did not exercise DefectPoint");
+                run(first.get(), prefixExpected);
+                run(prefixedGain.get(), prefixExpected);
+                if (layout == 0 && prefixExpected[2] != 300)
+                    throw std::runtime_error("Prefixed geometry fixture did not preserve the DarkNoise correction");
+
+                const auto execute = [&](void* context, std::vector<std::uint16_t>& pixels, bool mirror) {
+                    auto* data = reinterpret_cast<std::uint8_t*>(pixels.data());
+                    const auto bytes = pixels.size() * sizeof(std::uint16_t);
+                    return mirror ? M_CalibrationExecuteRawWithFlipV1(context, imageWidth, imageHeight, 16,
+                        channels, data, bytes, &options, 1)
+                        : M_CalibrationExecute(context, imageWidth, imageHeight, 16,
+                            channels, data, bytes, nullptr, 0, &options);
+                };
+                for (std::size_t index = 0; index < prefixedChains.size(); ++index) {
+                    auto geometryExpected = prefixExpected;
+                    run(geometry[index].get(), geometryExpected);
+                    auto mirrored = geometryExpected;
+                    cv::Mat image(imageHeight, imageWidth, CV_16UC3, mirrored.data());
+                    cv::flip(image, image, 1);
+                    // An unprepared cropped Distortion map must also work with the final-flip fallback.
+                    auto corrected = prefixSource;
+                    void* context = prefixedChains[index].get();
+                    requireResult(execute(context, corrected, true), context, "execute prefixed geometry with horizontal mirror");
+                    if (corrected != mirrored)
+                        throw std::runtime_error("Prefixed geometry with mirror changed RAW output");
+                    corrected = prefixSource;
+                    run(context, corrected);
+                    if (corrected != geometryExpected)
+                        throw std::runtime_error("Prefixed geometry changed RAW output");
+
+                    void* bad = badPrefixedChains[index].get();
+                    const char* error = index == 0 ? "RAW dimensions do not match the distortion calibration"
+                        : "RAW dimensions do not match the ColorDiff calibration";
+                    for (bool mirror : {false, true}) {
+                        corrected = prefixSource;
+                        if (execute(bad, corrected, mirror) != M_CALIBRATION_EXECUTE_FAILED
+                            || corrected != prefixExpected || nativeError(bad) != error) {
+                            throw std::runtime_error("Failed geometry did not preserve the prefixed RAW corrections");
+                        }
+                    }
+                }
+                if (compactDsnu && layout == 0) {
+                    // Color is applied after geometry even when registered before the map pair.
+                    const auto colorFile = directory / "adjacent_eight_bit_color.json";
+                    writeText(colorFile, R"({"bpp":8,"Texp_x":1.0,"Texp_y":1.0,"Texp_z":1.0,"Gain_x":1.0,"Gain_y":1.0,"Gain_z":1.0,"a":1.0,"b":0.0,"c":0.0,"d":0.0,"e":1.0,"f":0.0,"g":0.0,"h":0.0,"i":1.0})");
+                    const Context withColor = createContext();
+                    for (const auto& [type, path] : std::array{
+                            std::pair{8, colorFile}, std::pair{4, dsnu},
+                            std::pair{5, uniformity}, std::pair{11, distortion}}) {
+                        requireResult(M_CalibrationLoadFileW(withColor.get(), type, path.c_str()),
+                            withColor.get(), "load geometry with a color stage");
+                    }
+                    auto corrected = source;
+                    std::vector<float> cie(source.size(), -1.0F);
+                    auto colorOptions = options;
+                    colorOptions.exposureX = colorOptions.exposureY = colorOptions.exposureZ = 1.0F;
+                    const int result = M_CalibrationExecute(withColor.get(), imageWidth, imageHeight, 16, channels,
+                        reinterpret_cast<std::uint8_t*>(corrected.data()), corrected.size() * sizeof(std::uint16_t),
+                        cie.data(), cie.size(), &colorOptions);
+                    if (result != M_CALIBRATION_EXECUTE_FAILED || corrected != expected
+                        || nativeError(withColor.get()) != "LumFourColor calibration expects 8-bit RAW data"
+                        || !std::all_of(cie.begin(), cie.end(), [](float value) { return value == -1.0F; })) {
+                        throw std::runtime_error("Color failure after geometry changed the visible correction state");
                     }
                 }
             }
