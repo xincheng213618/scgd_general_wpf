@@ -4,6 +4,8 @@
 
 #if defined(_M_X64) && !defined(_M_ARM64EC)
 #include <emmintrin.h>
+#include <smmintrin.h>
+#include <tmmintrin.h>
 #endif
 
 #include <algorithm>
@@ -432,17 +434,17 @@ public:
         result->count_ = values.size();
         result->blocks_.resize((values.size() + blockSize - 1) / blockSize);
         const auto blockCount = static_cast<std::uint32_t>(result->blocks_.size());
+#if defined(_M_X64) && !defined(_M_ARM64EC)
+        const bool useSse41 = cv::checkHardwareSupport(CV_CPU_SSE4_1);
+        const bool useSsse3 = cv::checkHardwareSupport(CV_CPU_SSSE3);
+#else
+        constexpr bool useSse41 = false, useSsse3 = false;
+#endif
         parallelRows(blockCount, [&](std::uint32_t first, std::uint32_t end) {
             for (auto block = first; block < end; ++block) {
                 const auto begin = static_cast<std::size_t>(block) * blockSize;
-                const auto limit = (std::min)(begin + blockSize, values.size());
-                std::uint32_t low = UINT32_MAX, high = 0;
-                for (auto index = begin; index < limit; ++index) {
-                    const auto bits = std::bit_cast<std::uint32_t>(values[index]);
-                    low = (std::min)(low, bits);
-                    high = (std::max)(high, bits);
-                }
-                result->blocks_[block].base = high - low <= 0xFFFFFFU && low != UINT32_MAX ? low : UINT32_MAX;
+                const auto count = (std::min)(blockSize, values.size() - begin);
+                result->blocks_[block].base = packedBase(values.data() + begin, count, useSse41);
             }
         });
         std::size_t bytes = 0;
@@ -477,10 +479,7 @@ public:
                     std::memcpy(destination, values.data() + begin, count * sizeof(float));
                 }
                 else {
-                    for (std::size_t index = 0; index < count; ++index) {
-                        const auto delta = std::bit_cast<std::uint32_t>(values[begin + index]) - header.base;
-                        std::memcpy(destination + index * 3, &delta, 3);
-                    }
+                    writeDeltas(values.data() + begin, count, header.base, destination, useSsse3);
                 }
             }
         });
@@ -578,6 +577,69 @@ public:
     }
 
 private:
+    static std::uint32_t packedBase(const float* values, std::size_t count, [[maybe_unused]] bool useSse41) noexcept
+    {
+        std::uint32_t low = UINT32_MAX, high = 0;
+        std::size_t index = 0;
+#if defined(_M_X64) && !defined(_M_ARM64EC)
+        if (useSse41) {
+            auto lows = _mm_set1_epi32(-1);
+            auto highs = _mm_setzero_si128();
+            for (; count - index >= 4; index += 4) {
+                const auto bits = _mm_loadu_si128(reinterpret_cast<const __m128i*>(values + index));
+                lows = _mm_min_epu32(lows, bits);
+                highs = _mm_max_epu32(highs, bits);
+            }
+            lows = _mm_min_epu32(lows, _mm_shuffle_epi32(lows, _MM_SHUFFLE(1, 0, 3, 2)));
+            highs = _mm_max_epu32(highs, _mm_shuffle_epi32(highs, _MM_SHUFFLE(1, 0, 3, 2)));
+            low = static_cast<std::uint32_t>(_mm_cvtsi128_si32(
+                _mm_min_epu32(lows, _mm_shuffle_epi32(lows, _MM_SHUFFLE(2, 3, 0, 1)))));
+            high = static_cast<std::uint32_t>(_mm_cvtsi128_si32(
+                _mm_max_epu32(highs, _mm_shuffle_epi32(highs, _MM_SHUFFLE(2, 3, 0, 1)))));
+        }
+#endif
+        // The unsigned ordering includes every float bit pattern, even special gains.
+        for (; index < count; ++index) {
+            const auto bits = std::bit_cast<std::uint32_t>(values[index]);
+            low = (std::min)(low, bits);
+            high = (std::max)(high, bits);
+        }
+        return high - low <= 0xFFFFFFU && low != UINT32_MAX ? low : UINT32_MAX;
+    }
+
+    static void writeDeltas(const float* values, std::size_t count, std::uint32_t base,
+        std::uint8_t* destination, [[maybe_unused]] bool useSsse3) noexcept
+    {
+        std::size_t index = 0;
+#if defined(_M_X64) && !defined(_M_ARM64EC)
+        if (useSsse3) {
+            const auto bases = _mm_set1_epi32(std::bit_cast<std::int32_t>(base));
+            const auto byteMask = _mm_setr_epi8(0, 1, 2, 4, 5, 6, 8, 9, 10, 12, 13, 14, -1, -1, -1, -1);
+            const auto packFour = [&](const float* source) {
+                const auto bits = _mm_loadu_si128(reinterpret_cast<const __m128i*>(source));
+                return _mm_shuffle_epi8(_mm_sub_epi32(bits, bases), byteMask);
+            };
+            for (; count - index >= 16; index += 16) {
+                const auto first = packFour(values + index);
+                const auto second = packFour(values + index + 4);
+                const auto third = packFour(values + index + 8);
+                const auto fourth = packFour(values + index + 12);
+                auto* output = destination + index * 3;
+                // Emit exactly 48 bytes. Blocks can be written by different workers.
+                _mm_storeu_si128(reinterpret_cast<__m128i*>(output), _mm_or_si128(first, _mm_slli_si128(second, 12)));
+                _mm_storeu_si128(reinterpret_cast<__m128i*>(output + 16),
+                    _mm_or_si128(_mm_srli_si128(second, 4), _mm_slli_si128(third, 8)));
+                _mm_storeu_si128(reinterpret_cast<__m128i*>(output + 32),
+                    _mm_or_si128(_mm_srli_si128(third, 8), _mm_slli_si128(fourth, 4)));
+            }
+        }
+#endif
+        for (; index < count; ++index) {
+            const auto delta = std::bit_cast<std::uint32_t>(values[index]) - base;
+            std::memcpy(destination + index * 3, &delta, 3);
+        }
+    }
+
     template<bool Fused, bool Packed, typename Pixel, typename Offset>
     static void applyBlock(const Pixel* source, Pixel* destination, std::size_t count,
         const std::uint8_t* factors, std::uint32_t base, const Offset* offsets)
