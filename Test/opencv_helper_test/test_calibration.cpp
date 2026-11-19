@@ -997,7 +997,8 @@ void verifyAdjacentMapEquivalence(const std::filesystem::path& directory, bool c
     const auto colorDiff = directory / "adjacent_color_diff.json";
     writeText(colorDiff, R"({"CalibDis":1,"MeasDis":1,"CenterCol":8,"CenterRow":5,"ColRowCoeffs_GB":[-1,1],"ColRowCoeffs_GR":[1,-1],"ColorDiffCoeffs_GB":[0],"ColorDiffCoeffs_GR":[0],"h":11,"w":17})");
     const auto mismatchedDistortion = directory / "adjacent_invalid_distortion.json";
-    writeText(mismatchedDistortion, R"({"alpha":0,"cameraMatrix":[14,0,8,0,13,5,0,0,1],"distCoeffs":[0.07,-0.004,0.003,0.001,0],"w":18,"h":11,"useFisheye":false})");
+    // This map also excludes the cropped fixture's right edge.
+    writeText(mismatchedDistortion, R"({"alpha":0,"cameraMatrix":[14,0,3,0,13,5,0,0,1],"distCoeffs":[0.07,-0.004,0.003,0.001,0],"w":6,"h":11,"useFisheye":false})");
     const auto loadGeometry = [](void* context, int type, const std::filesystem::path& file) {
         requireResult(M_CalibrationLoadFileW(context, type, file.c_str()), context, "load adjacent geometry");
     };
@@ -1056,7 +1057,7 @@ void verifyAdjacentMapEquivalence(const std::filesystem::path& directory, bool c
                 nullptr, 0, &options), combined.get(), "execute adjacent maps to distinct output");
             if (readOnlySource != source || distinct != expected)
                 throw std::runtime_error("Adjacent maps changed read-only source or distinct output");
-            if (!reverse && (layout == 0 || layout == 3)) {
+            if (!reverse && options.interleavedBgr) {
                 for (std::size_t index = 0; index < oddChains.size(); ++index) {
                     auto geometryExpected = expected;
                     auto corrected = source;
@@ -1065,9 +1066,9 @@ void verifyAdjacentMapEquivalence(const std::filesystem::path& directory, bool c
                     if (corrected != geometryExpected)
                         throw std::runtime_error("A leading map pair followed by geometry changed RAW output");
                 }
-                if (layout == 0) {
+                if (layout == 0 || layout == 2) {
                     auto corrected = source;
-                    const int result = M_CalibrationExecute(badChain.get(), width, height, 16, channels,
+                    const int result = M_CalibrationExecute(badChain.get(), imageWidth, imageHeight, 16, channels,
                         reinterpret_cast<std::uint8_t*>(corrected.data()), corrected.size() * sizeof(std::uint16_t),
                         nullptr, 0, &options);
                     if (result != M_CALIBRATION_EXECUTE_FAILED || corrected != expected

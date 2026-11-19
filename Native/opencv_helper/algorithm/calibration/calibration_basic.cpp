@@ -926,9 +926,10 @@ private:
     void applyFusedMapRows16(const ImageView& raw,
         const MapCalibration<float, UniformityOperation>& uniformity, std::uint16_t* pixels) const;
 
+    template<bool distinctOutput>
     bool tryApplyCroppedBgr16(
         const MapCalibration<float, UniformityOperation>& uniformity,
-        const ImageView& raw,
+        const ImageView& raw, std::uint16_t* pixels,
         const ExecutionOptions& options) const;
 
     bool matchesFullBgr8(const ImageView& raw, const ExecutionOptions& options) const
@@ -1218,9 +1219,10 @@ void applyFusedBgr8(
 }
 
 template <typename TCorrection, typename TOperation>
+template<bool distinctOutput>
 bool MapCalibration<TCorrection, TOperation>::tryApplyCroppedBgr16(
     const MapCalibration<float, UniformityOperation>& uniformity,
-    const ImageView& raw,
+    const ImageView& raw, std::uint16_t* pixels,
     const ExecutionOptions& options) const
 {
     if (raw.bitsPerChannel != 16 || raw.channels != 3 || !options.interleavedBgr
@@ -1238,7 +1240,7 @@ bool MapCalibration<TCorrection, TOperation>::tryApplyCroppedBgr16(
     const auto mapRowSamples = static_cast<std::size_t>(header_.width) * raw.channels;
     const auto cropStart = static_cast<std::size_t>(options.roi[0]) * raw.channels;
     const auto cropEnd = cropStart + rawRowSamples;
-    auto* pixels = reinterpret_cast<std::uint16_t*>(raw.data);
+    const auto* input = distinctOutput ? reinterpret_cast<const std::uint16_t*>(raw.data) : pixels;
     const auto* offsets = correction_.data();
     const auto* factors = uniformity.correction_.data();
     const auto* packed = uniformity.packedUniformity_.get();
@@ -1248,7 +1250,9 @@ bool MapCalibration<TCorrection, TOperation>::tryApplyCroppedBgr16(
         for (auto row = first; row < end; ++row) {
             const auto mapRow = static_cast<std::size_t>(options.roi[1]) + row;
             const auto mapBase = mapRow * mapRowSamples + cropStart;
-            auto* rowPixels = pixels + row * rawRowSamples;
+            const auto rawBase = row * rawRowSamples;
+            const auto* rowInput = input + rawBase;
+            auto* rowPixels = pixels + rawBase;
             std::size_t start = 0, limit = rawRowSamples;
             if (!spans.empty()) {
                 // Intersect the full map's nonzero span with the crop in sample coordinates.
@@ -1260,14 +1264,14 @@ bool MapCalibration<TCorrection, TOperation>::tryApplyCroppedBgr16(
             }
             if (start == limit) continue;
             if (packed) {
-                packed->apply<true>(rowPixels + start, rowPixels + start, limit - start,
+                packed->apply<true>(rowInput + start, rowPixels + start, limit - start,
                     mapBase + start, 1, offsets + mapBase + start);
                 continue;
             }
             const auto* rowOffsets = offsets + mapBase;
             const auto* rowFactors = factors + mapBase;
             for (auto column = start; column < limit; ++column) {
-                const auto pixel = rowPixels[column];
+                const auto pixel = rowInput[column];
                 const auto offset = rowOffsets[column];
                 const auto darkCorrected = pixel < offset ? std::uint16_t{0} : static_cast<std::uint16_t>(pixel - offset);
                 const float corrected = rowFactors[column] * darkCorrected;
@@ -1310,7 +1314,8 @@ bool MapCalibration<TCorrection, TOperation>::tryApplyWithNext(
 
         if (uniformity == nullptr) return false;
         if (!matchesFullMap16(raw, options) || !uniformity->matchesFullMap16(raw, options)) {
-            return tryApplyCroppedBgr16(*uniformity, raw, options);
+            return tryApplyCroppedBgr16<false>(*uniformity, raw,
+                reinterpret_cast<std::uint16_t*>(raw.data), options);
         }
         if (options.rawOutputFlip != -99 && options.rawOutputFlip != 0) return false;
         if (raw.channels == 1) {
@@ -1359,12 +1364,16 @@ bool MapCalibration<TCorrection, TOperation>::tryApplyWithNextTo(
     }
     else {
         const auto* uniformity = dynamic_cast<const MapCalibration<float, UniformityOperation>*>(&next);
-        if (uniformity == nullptr || options.rawOutputFlip != -99 || !matchesFullBgr16(raw, options)
-            || !uniformity->matchesFullBgr16(raw, options)
+        if (uniformity == nullptr || options.rawOutputFlip != -99
             || reinterpret_cast<std::uintptr_t>(raw.data) % alignof(std::uint16_t) != 0) {
             return false;
         }
-        applyFusedMapRows16<true>(raw, *uniformity, reinterpret_cast<std::uint16_t*>(destination.data));
+
+        auto* pixels = reinterpret_cast<std::uint16_t*>(destination.data);
+        if (!matchesFullBgr16(raw, options) || !uniformity->matchesFullBgr16(raw, options)) {
+            return tryApplyCroppedBgr16<true>(*uniformity, raw, pixels, options);
+        }
+        applyFusedMapRows16<true>(raw, *uniformity, pixels);
         return true;
     }
 }
