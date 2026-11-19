@@ -22,7 +22,7 @@
 #include <vector>
 
 #if defined(_M_X64)
-#include <emmintrin.h>
+#include <immintrin.h>
 #endif
 
 namespace cvcore::calibration {
@@ -222,8 +222,8 @@ const auto& fixedRemapWeights()
     return weights;
 }
 
-template<bool flipRows, bool flipColumns>
-void remapFixedBgr16(const cv::Mat& source, cv::Mat& result,
+template<bool flipRows, bool flipColumns, bool pairAvx2 = false>
+__declspec(noinline) void remapFixedBgr16(const cv::Mat& source, cv::Mat& result,
     const cv::Mat& coordinates, const cv::Mat& interpolation)
 {
     const auto& weights = fixedRemapWeights();
@@ -255,6 +255,54 @@ void remapFixedBgr16(const cv::Mat& source, cv::Mat& result,
                 const int sourceX = positions[x][0];
                 const int sourceY = positions[x][1];
                 const auto& weight = weights[fractions[x] & (cv::INTER_TAB_SIZE2 - 1)];
+#if !defined(_M_ARM64EC)
+                if constexpr (pairAvx2) {
+                    static_assert(!flipRows && !flipColumns);
+                    if (x + 1 < result.cols
+                        && static_cast<unsigned>(sourceX) < static_cast<unsigned>(source.cols - 2)
+                        && static_cast<unsigned>(sourceY) < static_cast<unsigned>(source.rows - 1)) {
+                        const int nextX = positions[x + 1][0];
+                        const int nextY = positions[x + 1][1];
+                        if (static_cast<unsigned>(nextX) < static_cast<unsigned>(source.cols - 2)
+                            && static_cast<unsigned>(nextY) < static_cast<unsigned>(source.rows - 1)) {
+                            // AVX lanes are two independent copies of the established SSE interpolation.
+                            const auto* firstTop = sourcePixels + sourceY * stride + 3 * sourceX;
+                            const auto* secondTop = sourcePixels + nextY * stride + 3 * nextX;
+                            const auto* firstBottom = firstTop + stride;
+                            const auto* secondBottom = secondTop + stride;
+                            const auto loadPair = [](const std::uint16_t* first, const std::uint16_t* second) {
+                                const auto joined = _mm_unpacklo_epi64(
+                                    _mm_loadl_epi64(reinterpret_cast<const __m128i*>(first)),
+                                    _mm_loadl_epi64(reinterpret_cast<const __m128i*>(second)));
+                                return _mm256_cvtepi32_ps(_mm256_cvtepu16_epi32(joined));
+                            };
+                            const auto& nextWeight = weights[fractions[x + 1] & (cv::INTER_TAB_SIZE2 - 1)];
+                            const auto factors = _mm256_insertf128_ps(_mm256_castps128_ps256(_mm_loadu_ps(weight.val)),
+                                _mm_loadu_ps(nextWeight.val), 1);
+                            const auto a = _mm256_mul_ps(loadPair(firstTop, secondTop),
+                                _mm256_shuffle_ps(factors, factors, _MM_SHUFFLE(0, 0, 0, 0)));
+                            const auto b = _mm256_mul_ps(loadPair(firstTop + 3, secondTop + 3),
+                                _mm256_shuffle_ps(factors, factors, _MM_SHUFFLE(1, 1, 1, 1)));
+                            const auto c = _mm256_mul_ps(loadPair(firstBottom, secondBottom),
+                                _mm256_shuffle_ps(factors, factors, _MM_SHUFFLE(2, 2, 2, 2)));
+                            const auto d = _mm256_mul_ps(loadPair(firstBottom + 3, secondBottom + 3),
+                                _mm256_shuffle_ps(factors, factors, _MM_SHUFFLE(3, 3, 3, 3)));
+                            const auto weighted = _mm256_add_ps(_mm256_add_ps(_mm256_add_ps(a, b), c), d);
+                            const auto rounded = _mm256_cvtps_epi32(weighted);
+                            const auto packed = _mm_packus_epi32(_mm256_castsi256_si128(rounded),
+                                _mm256_extracti128_si256(rounded, 1));
+                            const auto twoPixels = _mm_shuffle_epi8(packed,
+                                _mm_setr_epi8(0, 1, 2, 3, 4, 5, 8, 9, 10, 11, 12, 13, -1, -1, -1, -1));
+                            _mm_storel_epi64(reinterpret_cast<__m128i*>(out), twoPixels);
+                            const auto tail = static_cast<std::uint32_t>(_mm_cvtsi128_si32(_mm_srli_si128(twoPixels, 8)));
+                            std::memcpy(out + 4, &tail, sizeof(tail));
+                            ++x;
+                            out += 3;
+                            continue;
+                        }
+                    }
+                }
+#endif
                 if (static_cast<unsigned>(sourceX) < static_cast<unsigned>(source.cols - 2)
                     && static_cast<unsigned>(sourceY) < static_cast<unsigned>(source.rows - 1)) {
                     // The fourth loaded component belongs to the next pixel.
@@ -290,6 +338,9 @@ void remapFixedBgr16(const cv::Mat& source, cv::Mat& result,
                 }
             }
         }
+#if !defined(_M_ARM64EC)
+        if constexpr (pairAvx2) _mm256_zeroupper();
+#endif
     });
 }
 
@@ -302,6 +353,12 @@ bool tryRemapFixedBgr16(const cv::Mat& source, cv::Mat& result,
         || !canRemapFixedBgr16(source.size(), result.size(), coordinates, interpolation)) {
         return false;
     }
+#if !defined(_M_ARM64EC)
+    if (flip == -99 && cv::checkHardwareSupport(CV_CPU_AVX2)) {
+        remapFixedBgr16<false, false, true>(source, result, coordinates, interpolation);
+        return true;
+    }
+#endif
     switch (flip) {
     case 0: remapFixedBgr16<true, false>(source, result, coordinates, interpolation); break;
     case 1: remapFixedBgr16<false, true>(source, result, coordinates, interpolation); break;
