@@ -36,7 +36,7 @@ namespace ProjectARVRPro
             int headerSourceIndex = 0;
             for (; headerSourceIndex < recordList.Count; headerSourceIndex++)
             {
-                columns = CollectMetrics(recordList[headerSourceIndex], flowResultsByRecordId, flowReader, includeHeaders: true);
+                columns = CollectMetrics(recordList[headerSourceIndex], flowResultsByRecordId, flowReader);
                 if (columns.Count > 0)
                     break;
             }
@@ -45,6 +45,7 @@ namespace ProjectARVRPro
             writer.NewLine = "\r\n";
             WriteRow(writer, FixedHeaders.Concat(columns.Select(column => column.Header)));
 
+            Dictionary<string, string>? values = null;
             for (int index = 0; index < recordList.Count; index++)
             {
                 ObjectiveTestResultRecord record = recordList[index];
@@ -65,8 +66,16 @@ namespace ProjectARVRPro
                 }
                 else
                 {
-                    Dictionary<string, string> values = CollectMetrics(record, flowResultsByRecordId, flowReader, includeHeaders: false)
-                        .ToDictionary(metric => metric.Key, metric => metric.Value, StringComparer.OrdinalIgnoreCase);
+                    values ??= new Dictionary<string, string>(columns.Count, StringComparer.OrdinalIgnoreCase);
+                    values.Clear();
+
+                    if (flowResultsByRecordId.TryGetValue(record.Id, out IReadOnlyList<ProjectARVRReuslt>? flowResults))
+                        flowReader.CollectMetricValues(flowResults, values);
+                    if (values.Count == 0)
+                    {
+                        foreach (ObjectiveTestResultMetric metric in CollectSummaryMetrics(record))
+                            values.Add(metric.Key, metric.Value);
+                    }
                     foreach (ObjectiveTestResultMetric column in columns)
                         row.Add(values.TryGetValue(column.Key, out string? value) ? value : string.Empty);
                 }
@@ -78,16 +87,20 @@ namespace ProjectARVRPro
         private static IReadOnlyList<ObjectiveTestResultMetric> CollectMetrics(
             ObjectiveTestResultRecord record,
             IReadOnlyDictionary<int, IReadOnlyList<ProjectARVRReuslt>> flowResultsByRecordId,
-            ProjectARVRResultCsvExporter.FlowCsvReader flowReader,
-            bool includeHeaders)
+            ProjectARVRResultCsvExporter.FlowCsvReader flowReader)
         {
             if (flowResultsByRecordId.TryGetValue(record.Id, out IReadOnlyList<ProjectARVRReuslt>? flowResults))
             {
-                IReadOnlyList<ObjectiveTestResultMetric> flowMetrics = flowReader.CollectMetrics(flowResults, includeHeaders);
+                IReadOnlyList<ObjectiveTestResultMetric> flowMetrics = flowReader.CollectMetrics(flowResults);
                 if (flowMetrics.Count > 0)
                     return flowMetrics;
             }
 
+            return CollectSummaryMetrics(record);
+        }
+
+        private static IReadOnlyList<ObjectiveTestResultMetric> CollectSummaryMetrics(ObjectiveTestResultRecord record)
+        {
             if (string.IsNullOrWhiteSpace(record.ObjectiveTestResultJson))
                 return Array.Empty<ObjectiveTestResultMetric>();
 

@@ -153,13 +153,14 @@ public static class ObjectiveTestCsvRowCollector
     private static ObjectiveTestCsvRow CreateItemRow(string testScreen, string fallbackItemName, ObjectiveTestItem item)
     {
         string itemName = string.IsNullOrWhiteSpace(item.Name) ? fallbackItemName : item.Name;
+        string formattedValue = item.Value.ToString("R", CultureInfo.InvariantCulture);
         string metricValue = string.IsNullOrWhiteSpace(item.TestValue)
-            ? item.Value.ToString("R", CultureInfo.InvariantCulture)
+            ? formattedValue
             : item.TestValue;
         return new ObjectiveTestCsvRow(
             testScreen,
             itemName,
-            item.Value.ToString("R", CultureInfo.InvariantCulture),
+            formattedValue,
             metricValue,
             item.Unit ?? string.Empty,
             item.LowLimit.ToString("R", CultureInfo.InvariantCulture),
