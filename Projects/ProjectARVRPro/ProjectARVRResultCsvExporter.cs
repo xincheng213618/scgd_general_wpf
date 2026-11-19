@@ -11,32 +11,7 @@ public static class ProjectARVRResultCsvExporter
         ColorVision.Common.Utilities.Tool.SanitizeFileName($"TestResults_{serialNumber}_{timestamp:yyyyMMdd_HHmmss}_.csv");
 
     public static IReadOnlyList<ObjectiveTestCsvRow> CollectRows(IEnumerable<ProjectARVRReuslt> results)
-    {
-        ArgumentNullException.ThrowIfNull(results);
-
-        ProcessManager processManager = ProcessManager.GetInstance();
-        var rows = new List<ObjectiveTestCsvRow>();
-        foreach (ProjectARVRReuslt result in results.OrderBy(item => item.Id))
-        {
-            // Exact replay requires the process and config snapshots captured with the row.
-            // Older rows fall back to the aggregate ObjectiveTestResult exporter at the caller.
-            if (string.IsNullOrWhiteSpace(result.ViewResultJson) ||
-                string.IsNullOrWhiteSpace(result.ProcessTypeFullName) ||
-                string.IsNullOrWhiteSpace(result.ProcessConfigJson))
-                continue;
-
-            IProcess? process = ResultProcessResolver.Resolve(
-                result,
-                processManager.Processes,
-                processManager.GetResultProcessMappings());
-            if (process == null)
-                continue;
-
-            rows.AddRange(process.GetObjectiveCsvRows(result));
-        }
-
-        return rows;
-    }
+        => new FlowCsvReader().CollectRows(results);
 
     public static void ExportToCsv(IEnumerable<ProjectARVRReuslt> results, string filePath)
     {
@@ -51,17 +26,51 @@ public static class ProjectARVRResultCsvExporter
     }
 
     public static IReadOnlyList<ObjectiveTestResultMetric> CollectMetrics(IEnumerable<ProjectARVRReuslt> results)
-        => CollectMetrics(results, includeHeaders: true);
+        => new FlowCsvReader().CollectMetrics(results);
 
-    internal static IReadOnlyList<ObjectiveTestResultMetric> CollectMetrics(IEnumerable<ProjectARVRReuslt> results, bool includeHeaders)
+    internal sealed class FlowCsvReader
     {
-        var metrics = new List<ObjectiveTestResultMetric>();
-        var keys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        foreach (ObjectiveTestCsvRow row in CollectRows(results))
+        private readonly Dictionary<(string ProcessType, string? ConfigJson), IProcess> snapshots = [];
+
+        internal IReadOnlyList<ObjectiveTestCsvRow> CollectRows(IEnumerable<ProjectARVRReuslt> results)
         {
-            if (keys.Add(row.MetricKey))
-                metrics.Add(new ObjectiveTestResultMetric(row.MetricKey, includeHeaders ? row.MetricHeader : string.Empty, row.MetricValue));
+            ArgumentNullException.ThrowIfNull(results);
+
+            ProcessManager processManager = ProcessManager.GetInstance();
+            var rows = new List<ObjectiveTestCsvRow>();
+            foreach (ProjectARVRReuslt result in results.OrderBy(item => item.Id))
+            {
+                // Exact replay requires the process and config snapshots captured with the row.
+                // Older rows fall back to the aggregate ObjectiveTestResult exporter at the caller.
+                if (string.IsNullOrWhiteSpace(result.ViewResultJson) ||
+                    string.IsNullOrWhiteSpace(result.ProcessTypeFullName) ||
+                    string.IsNullOrWhiteSpace(result.ProcessConfigJson))
+                    continue;
+
+                IProcess? process = ResultProcessResolver.Resolve(
+                    result,
+                    processManager.Processes,
+                    processManager.GetResultProcessMappings(),
+                    snapshots);
+                if (process == null)
+                    continue;
+
+                rows.AddRange(process.GetObjectiveCsvRows(result));
+            }
+
+            return rows;
         }
-        return metrics;
+
+        internal IReadOnlyList<ObjectiveTestResultMetric> CollectMetrics(IEnumerable<ProjectARVRReuslt> results, bool includeHeaders = true)
+        {
+            var metrics = new List<ObjectiveTestResultMetric>();
+            var keys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (ObjectiveTestCsvRow row in CollectRows(results))
+            {
+                if (keys.Add(row.MetricKey))
+                    metrics.Add(new ObjectiveTestResultMetric(row.MetricKey, includeHeaders ? row.MetricHeader : string.Empty, row.MetricValue));
+            }
+            return metrics;
+        }
     }
 }

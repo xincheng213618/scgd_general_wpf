@@ -31,11 +31,12 @@ namespace ProjectARVRPro
             IReadOnlyDictionary<int, IReadOnlyList<ProjectARVRReuslt>> flowResultsByRecordId,
             string filePath)
         {
+            var flowReader = new ProjectARVRResultCsvExporter.FlowCsvReader();
             IReadOnlyList<ObjectiveTestResultMetric> columns = Array.Empty<ObjectiveTestResultMetric>();
             int headerSourceIndex = 0;
             for (; headerSourceIndex < recordList.Count; headerSourceIndex++)
             {
-                columns = CollectMetrics(recordList[headerSourceIndex], flowResultsByRecordId, includeHeaders: true);
+                columns = CollectMetrics(recordList[headerSourceIndex], flowResultsByRecordId, flowReader, includeHeaders: true);
                 if (columns.Count > 0)
                     break;
             }
@@ -64,7 +65,7 @@ namespace ProjectARVRPro
                 }
                 else
                 {
-                    Dictionary<string, string> values = CollectMetrics(record, flowResultsByRecordId, includeHeaders: false)
+                    Dictionary<string, string> values = CollectMetrics(record, flowResultsByRecordId, flowReader, includeHeaders: false)
                         .ToDictionary(metric => metric.Key, metric => metric.Value, StringComparer.OrdinalIgnoreCase);
                     foreach (ObjectiveTestResultMetric column in columns)
                         row.Add(values.TryGetValue(column.Key, out string? value) ? value : string.Empty);
@@ -77,11 +78,12 @@ namespace ProjectARVRPro
         private static IReadOnlyList<ObjectiveTestResultMetric> CollectMetrics(
             ObjectiveTestResultRecord record,
             IReadOnlyDictionary<int, IReadOnlyList<ProjectARVRReuslt>> flowResultsByRecordId,
+            ProjectARVRResultCsvExporter.FlowCsvReader flowReader,
             bool includeHeaders)
         {
             if (flowResultsByRecordId.TryGetValue(record.Id, out IReadOnlyList<ProjectARVRReuslt>? flowResults))
             {
-                IReadOnlyList<ObjectiveTestResultMetric> flowMetrics = ProjectARVRResultCsvExporter.CollectMetrics(flowResults, includeHeaders);
+                IReadOnlyList<ObjectiveTestResultMetric> flowMetrics = flowReader.CollectMetrics(flowResults, includeHeaders);
                 if (flowMetrics.Count > 0)
                     return flowMetrics;
             }

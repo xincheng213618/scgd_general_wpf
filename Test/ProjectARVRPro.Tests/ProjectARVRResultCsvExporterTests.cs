@@ -4,6 +4,7 @@ using Newtonsoft.Json.Linq;
 using ProjectARVRPro.Exports;
 using ProjectARVRPro.Process;
 using ProjectARVRPro.Process.OpticCenter;
+using ProjectARVRPro.Process.POI;
 using System.Globalization;
 using System.IO;
 
@@ -11,6 +12,31 @@ namespace ProjectARVRPro.Tests;
 
 public sealed class ProjectARVRResultCsvExporterTests
 {
+    [Fact]
+    public void CsvResolverReusesOnlySuccessfullyRestoredExactSnapshots()
+    {
+        var template = new PoiDynamicProcess();
+        var snapshots = new Dictionary<(string ProcessType, string? ConfigJson), IProcess>();
+        string exactType = typeof(PoiDynamicProcess).FullName!;
+        const string firstConfig = """{"Name":"First"}""";
+
+        IProcess? Resolve(string type, string config) => ResultProcessResolver.Resolve(
+            new ProjectARVRReuslt { ProcessTypeFullName = type, ProcessConfigJson = config }, [template], [], snapshots);
+
+        var first = Assert.IsType<PoiDynamicProcess>(Resolve(exactType, firstConfig));
+        var second = Assert.IsType<PoiDynamicProcess>(Resolve(exactType, """{"Name":"Second"}"""));
+        Assert.NotSame(template, first);
+        Assert.Equal("First", first.Config.Name);
+        Assert.Equal("Second", second.Config.Name);
+        Assert.Same(first, Resolve(exactType, firstConfig));
+
+        const string malformed = "{invalid";
+        Assert.NotSame(Resolve(exactType, malformed), Resolve(exactType, malformed));
+        string oldType = $"Legacy.{nameof(PoiDynamicProcess)}";
+        Assert.NotSame(Resolve(oldType, firstConfig), Resolve(oldType, firstConfig));
+        Assert.Equal(2, snapshots.Count);
+    }
+
     [Theory]
     [InlineData(true)]
     [InlineData(false)]
