@@ -67,7 +67,7 @@ namespace ColorVision
             }
 
             _subscribedThemeManager = ThemeManager.Current;
-            Icon = ThemeManagerExtensions.LoadDefaultIcon();
+            Icon = ThemeManagerExtensions.LoadDefaultWindowIcon();
             InitializePresentation();
         }
 

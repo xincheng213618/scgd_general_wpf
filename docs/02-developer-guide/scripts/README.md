@@ -52,6 +52,8 @@ Scripts\release.bat
 
 主程序、ServiceHost 和 OperationsWatchdog 共用根目录 `Directory.Build.props` 的 `VersionPrefix`。增量包携带完整的 `ServiceHost/` 和 `OperationsWatchdog/`，支持 ZIP 部署后的首次安装，以及下一次增量更新对旧安装的修复。
 
+安装工程 `ColorVision.aip` 中，开始菜单和桌面的 ColorVision 快捷方式使用目标 `ColorVision.exe` 的默认图标。这样增量更新替换 EXE 后，快捷方式也能读取新版图标。给快捷方式指定自定义图标会让 Windows Installer 创建独立的图标副本；正式打包前 `build.py` 会检查这两项。安装包自身和“已安装的应用”列表仍使用各自的图标资源。
+
 `docs/_history/CHANGELOG.md` 保存既有旧版记录和已经结束的版本系列，仅供仓库内回顾。只在三段版本系列切换时合并上一系列，同系列的日常发布不修改历史文件。历史文件不作为主程序 changelog 上传；下划线目录会从公开文档构建中排除。
 
 发布前会按 SHA-256 校验 OpenCV 原生运行库：OpenCvSharp 的源文件由主程序 `project.assets.json` 中实际解析的 NuGet 版本定位，本地 OpenCV 由 `packages/OpenCV.Release.x64.props` 定位。安装器构建前自动修复输出副本，复制后再次校验；缺少源文件、复制失败或校验不符会停止发布。增量打包前只读复查，包内包含的原生库还会在上传前再次校验，文件大小和修改时间相同不能代替内容一致性。

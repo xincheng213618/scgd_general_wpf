@@ -243,6 +243,14 @@ def validate_installer_runtime_dlls(
     return True
 
 
+def validate_installer_shortcut_icons(aip_path: Path) -> None:
+    for row in ElementTree.parse(aip_path).iterfind(".//ROW[@Shortcut]"):
+        if row.get("Target") != "[#ColorVision.exe]" or row.get("Directory_") not in ("SHORTCUTDIR", "DesktopFolder"):
+            continue
+        if row.get("Icon_") or row.get("IconIndex") not in (None, "", "0"):
+            raise ValueError(f"Shortcut {row.get('Shortcut')} in {aip_path} must use its target executable's default icon. Clear its custom icon in Advanced Installer.")
+
+
 def rebuild_project(msbuild_path: Path, solution_path: Path, advanced_installer_path: Path, aip_path: Path) -> bool:
     try:
         print(f"Running MSBuild: {msbuild_path} {solution_path}")
@@ -271,9 +279,10 @@ def rebuild_project(msbuild_path: Path, solution_path: Path, advanced_installer_
             return False
 
         try:
+            validate_installer_shortcut_icons(aip_path)
             validate_basic_template_runtime(runtime_directory, collect_installer_shared_files(aip_path, runtime_directory))
         except (OSError, ValueError, ElementTree.ParseError) as exc:
-            print(f"Built-in template delivery check failed: {exc}")
+            print(f"Installer delivery check failed: {exc}")
             return False
 
         print(f"Running Advanced Installer: {advanced_installer_path} /rebuild {aip_path}")

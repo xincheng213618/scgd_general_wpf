@@ -1,12 +1,66 @@
+using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Interop;
 using System.Windows.Media;
+using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 
 namespace ColorVision.Themes.Tests;
 
 public partial class ThemeResourceTests
 {
+    [DllImport("user32.dll")]
+    private static extern IntPtr SendMessageW(IntPtr hwnd, uint message, IntPtr wParam, IntPtr lParam);
+
+    [Fact]
+    public void DefaultCaptionUsesTheMatchingIcoFrameForSmallAndLargeWindowIcons()
+    {
+        Run((app, manager) =>
+        {
+            var window = new Window { ShowInTaskbar = false };
+            try
+            {
+                window.ApplyCaption();
+                IntPtr hwnd = new WindowInteropHelper(window).EnsureHandle();
+                var frame = Assert.IsAssignableFrom<BitmapFrame>(window.Icon);
+                var decoder = Assert.IsType<IconBitmapDecoder>(frame.Decoder);
+                foreach (int iconType in new[] { 0, 1 })
+                {
+                    const uint WmGetIcon = 0x007F;
+                    IntPtr icon = SendMessageW(hwnd, WmGetIcon, iconType, IntPtr.Zero);
+                    Assert.NotEqual(IntPtr.Zero, icon);
+                    var native = Imaging.CreateBitmapSourceFromHIcon(icon, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions());
+                    var closest = decoder.Frames.MinBy(f =>
+                        Math.Abs(f.PixelWidth - native.PixelWidth) + Math.Abs(f.PixelHeight - native.PixelHeight))!;
+                    var expectedAlpha = AlphaPixels(closest);
+                    var nativeAlpha = AlphaPixels(native);
+                    if (closest.PixelWidth == native.PixelWidth && closest.PixelHeight == native.PixelHeight)
+                    {
+                        Assert.Equal(expectedAlpha, nativeAlpha);
+                    }
+                    else
+                    {
+                        // At intermediate DPI sizes Windows can resample the closest frame.
+                        // The opaque area should still occupy the same fraction of the icon.
+                        double expectedCoverage = (double)expectedAlpha.Count(a => a >= 128) / expectedAlpha.Length;
+                        double nativeCoverage = (double)nativeAlpha.Count(a => a >= 128) / nativeAlpha.Length;
+                        Assert.InRange(nativeCoverage, expectedCoverage * 0.8, expectedCoverage * 1.2);
+                    }
+                }
+            }
+            finally { window.Close(); }
+        });
+    }
+
+    private static byte[] AlphaPixels(BitmapSource source)
+    {
+        var bitmap = new FormatConvertedBitmap(source, PixelFormats.Bgra32, null, 0);
+        var pixels = new byte[bitmap.PixelWidth * bitmap.PixelHeight * 4];
+        bitmap.CopyPixels(pixels, bitmap.PixelWidth * 4, 0);
+        return pixels.Where((_, i) => i % 4 == 3).ToArray();
+    }
+
     // The override layer must cover both semantic colors and retained brush names,
     // preserve host precedence, and survive repeated mode changes without growing resources.
     [Fact]

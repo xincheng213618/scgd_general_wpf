@@ -8,6 +8,8 @@ namespace ColorVision.Themes
 {
     public static class ThemeManagerExtensions
     {
+        private const string DefaultIconUri = "pack://application:,,,/ColorVision.Themes;component/Assets/Image/ColorVision1.ico";
+
         /// <summary>
         /// 更新主题
         /// </summary>
@@ -50,8 +52,8 @@ namespace ColorVision.Themes
             {
                 window.SourceInitialized -= SourceInitialized;
                 hwnd = new WindowInteropHelper(window).Handle;
-                BitmapImage? icon = TryLoadPackageIcon(window);
-                if (icon == null && useDefaultIcon) icon = TryLoadDefaultIcon();
+                BitmapSource? icon = TryLoadPackageIcon(window);
+                if (icon == null && useDefaultIcon) icon = TryLoadDefaultWindowIcon();
                 if (icon != null) window.Icon = icon;
                 publisher = ThemeManager.Current;
                 publisher.CurrentUIThemeChanged += Apply;
@@ -83,16 +85,20 @@ namespace ColorVision.Themes
         /// <summary>Loads the default application icon for any theme.</summary>
         public static BitmapImage LoadDefaultIcon()
         {
-            BitmapImage icon = new(new Uri("pack://application:,,,/ColorVision.Themes;component/Assets/Image/ColorVision1.ico"));
+            BitmapImage icon = new(new Uri(DefaultIconUri));
             if (icon.CanFreeze) icon.Freeze();
             return icon;
         }
 
-        private static BitmapImage? TryLoadDefaultIcon()
+        /// <summary>Keeps the ICO frames available so WPF can select each native window icon size.</summary>
+        public static BitmapSource LoadDefaultWindowIcon() =>
+            BitmapFrame.Create(new Uri(DefaultIconUri), BitmapCreateOptions.None, BitmapCacheOption.OnLoad);
+
+        private static BitmapSource? TryLoadDefaultWindowIcon()
         {
             try
             {
-                return LoadDefaultIcon();
+                return LoadDefaultWindowIcon();
             }
             catch
             {

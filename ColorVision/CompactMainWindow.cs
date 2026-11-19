@@ -73,7 +73,7 @@ public sealed class CompactMainWindow : MainWindow
             DockingManager1.Margin = new Thickness(0);
             SetCompactHeaderAlignment(true);
             CompactDragRegion.Visibility = Visibility.Visible;
-            Icon = ThemeManagerExtensions.TryLoadPackageIcon(this) ?? ThemeManagerExtensions.LoadDefaultIcon();
+            Icon = ThemeManagerExtensions.TryLoadPackageIcon(this) ?? ThemeManagerExtensions.LoadDefaultWindowIcon();
             _compactTitleBarThemeManager = ThemeManager.Current;
             _compactTitleBarThemeManager.CurrentUIThemeChanged += ApplyCompactTitleBarTheme;
             ApplyCompactTitleBarTheme(_compactTitleBarThemeManager.CurrentUITheme);
