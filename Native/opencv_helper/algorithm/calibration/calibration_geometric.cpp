@@ -1138,6 +1138,12 @@ private:
                 error = "Combined ColorDiff requires a three-channel BGR image";
                 return false;
             }
+            if (options.rawOutputFlip == 1 || options.rawOutputFlip == -1) {
+                const bool flipBothAxes = options.rawOutputFlip == -1;
+                return raw.bitsPerChannel == 8
+                    ? applyInterleavedHorizontal<std::uint8_t, Entry>(raw, destination, mapGr, mapGb, flipBothAxes)
+                    : applyInterleavedHorizontal<std::uint16_t, Entry>(raw, destination, mapGr, mapGb, flipBothAxes);
+            }
             return raw.bitsPerChannel == 8
                 ? applyInterleaved<std::uint8_t, Entry>(raw, destination, mapGr, mapGb, flipRows)
                 : applyInterleaved<std::uint16_t, Entry>(raw, destination, mapGr, mapGb, flipRows);
@@ -1449,6 +1455,72 @@ private:
         return true;
     }
 #endif
+
+    template<typename Sample, typename Entry>
+    bool applyInterleavedHorizontal(
+        const ImageView& raw,
+        const ImageView& output,
+        const cv::Mat& mapGr,
+        const cv::Mat& mapGb,
+        bool flipRows)
+    {
+        const int width = static_cast<int>(raw.width);
+        const int height = static_cast<int>(raw.height);
+        const auto* source = reinterpret_cast<const Sample*>(raw.data);
+        auto* destination = reinterpret_cast<Sample*>(output.data);
+#if defined(_M_X64)
+        constexpr bool canStream = std::is_same_v<Sample, std::uint16_t> && std::is_same_v<Entry, std::uint8_t>;
+        [[maybe_unused]] const bool streamOutput = canStream && imageByteCount(raw) >= 32ULL * 1024 * 1024;
+#endif
+        cv::parallel_for_(cv::Range(0, height), [&](const cv::Range& range) {
+            for (int row = range.start; row < range.end; ++row) {
+                const auto* gr = mapGr.ptr<Entry>(row);
+                const auto* gb = mapGb.ptr<Entry>(row);
+                const auto rowBase = static_cast<std::size_t>(row) * width;
+                const bool borderRow = row == 0 || row == height - 1;
+                const int targetRow = flipRows ? height - 1 - row : row;
+                auto* outputRow = destination + static_cast<std::size_t>(targetRow) * width * 3;
+                const auto writePixel = [&](int targetColumn, Sample* pixel) {
+                    // Resolve the map and border in sensor coordinates, then write the mirrored destination.
+                    const int column = width - 1 - targetColumn;
+                    const auto index = rowBase + column;
+                    pixel[1] = source[index * 3 + 1];
+                    if (borderRow || column == 0 || column == width - 1) {
+                        pixel[0] = pixel[2] = 0;
+                        return;
+                    }
+                    pixel[0] = source[sourcePixel(gb[column], index, width) * 3];
+                    pixel[2] = source[sourcePixel(gr[column], index, width) * 3 + 2];
+                };
+                int column = 0;
+#if defined(_M_X64)
+                if constexpr (canStream) {
+                    if (streamOutput) {
+                        constexpr int blockPixels = 32;
+                        alignas(16) std::uint16_t block[blockPixels * 3];
+                        for (; column < width && (reinterpret_cast<std::uintptr_t>(outputRow + column * 3) & 63U) != 0; ++column)
+                            writePixel(column, outputRow + column * 3);
+                        for (; column + blockPixels <= width; column += blockPixels) {
+                            for (int index = 0; index < blockPixels; ++index)
+                                writePixel(column + index, block + index * 3);
+                            for (int index = 0; index < blockPixels * 3; index += 8) {
+                                _mm_stream_si128(reinterpret_cast<__m128i*>(outputRow + column * 3 + index),
+                                    _mm_load_si128(reinterpret_cast<const __m128i*>(block + index)));
+                            }
+                        }
+                    }
+                }
+#endif
+                for (; column < width; ++column) writePixel(column, outputRow + column * 3);
+            }
+#if defined(_M_X64)
+            if constexpr (canStream) {
+                if (streamOutput) _mm_sfence();
+            }
+#endif
+        });
+        return true;
+    }
 
     template<typename Sample, typename Entry>
     bool applySingle(

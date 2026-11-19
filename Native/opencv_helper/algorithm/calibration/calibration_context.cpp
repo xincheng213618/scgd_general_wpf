@@ -986,8 +986,12 @@ bool CalibrationContext::execute(
 
     // Preserve LocalCalibrationCacheManager semantics: every basic item runs
     // in template order; the sole RAW-to-CIE transform always runs last.
-    bool fusedVerticalFlip = options.rawOutputFlip == 0 && !items_.empty()
+    bool fusedRawFlip = options.rawOutputFlip == 0 && !items_.empty()
         && items_.back()->type() == CalibrationType::ColorDiff;
+    const bool canFuseHorizontalFlip = (options.rawOutputFlip == 1 || options.rawOutputFlip == -1)
+        && options.interleavedBgr && options.rgbType == 0 && raw.channels == 3
+        && (raw.bitsPerChannel == 8 || reinterpret_cast<std::uintptr_t>(raw.data) % alignof(std::uint16_t) == 0)
+        && !items_.empty() && items_.back()->type() == CalibrationType::ColorDiff;
     ExecutionOptions calibrationOptions = options;
     calibrationOptions.rawOutputFlip = -99;
     ImageView current = raw;
@@ -1003,24 +1007,28 @@ bool CalibrationContext::execute(
         if (index + 1 < items_.size()
             && item->tryApplyWithNext(*items_[index + 1], current,
                 flipAfterPair ? options : calibrationOptions)) {
-            if (flipAfterPair) fusedVerticalFlip = true;
+            if (flipAfterPair) fusedRawFlip = true;
             ++index;
             continue;
         }
         if (options.rawOutputFlip == 0 && index + 1 == items_.size()
             && item->tryApplyWithFlip(current, options)) {
-            fusedVerticalFlip = true;
+            fusedRawFlip = true;
             continue;
         }
         std::string error;
         bool applied = false;
         if (item->requiresDistinctOutput()) {
             const ImageView& destination = current.data == raw.data ? scratch : raw;
-            const auto& stageOptions = fusedVerticalFlip && index + 1 == items_.size()
+            const bool finalStage = index + 1 == items_.size();
+            // With an odd stage count the existing flip also copies scratch back to RAW.
+            const bool fuseHorizontalFlip = canFuseHorizontalFlip && finalStage && destination.data == raw.data;
+            const auto& stageOptions = finalStage && (fusedRawFlip || fuseHorizontalFlip)
                 ? options : calibrationOptions;
             applied = item->applyOutOfPlace(current, destination, stageOptions, error);
             if (applied) {
                 current = destination;
+                fusedRawFlip = fusedRawFlip || fuseHorizontalFlip;
             }
         }
         else {
@@ -1039,7 +1047,7 @@ bool CalibrationContext::execute(
             return false;
         }
     }
-    if (options.rawOutputFlip != -99 && !fusedVerticalFlip) {
+    if (options.rawOutputFlip != -99 && !fusedRawFlip) {
         // With odd geometric stage counts this also replaces the final scratch
         // copy. Planar RAW must mirror each plane, not interleaved samples.
         const bool planar = !options.interleavedBgr && raw.channels == 3;

@@ -1155,7 +1155,23 @@ void verifyLargeColorDiffOutput(const std::filesystem::path& directory)
             reinterpret_cast<std::uint8_t*>(actual.data()), bytes, &options, flip), context.get(), "large ColorDiff flip");
         if (actual != reference) throw std::runtime_error("Large ColorDiff flip differs from pixel reference");
     }
-    std::cout << "calibration_stream_exact_cases,4" << std::endl;
+    // Two distinct stages return the final ColorDiff output straight to RAW.
+    // The identity ColorShift keeps the same independent pixel reference.
+    const auto identity = directory / "large_color_diff_identity_shift.json";
+    writeText(identity, R"({"fillOffset":false,"offset":{"X":0,"Y":0}})");
+    Context chained = createContext();
+    requireResult(M_CalibrationLoadFileW(chained.get(), 12, identity.c_str()), chained.get(), "load identity ColorShift");
+    requireResult(M_CalibrationLoadFileW(chained.get(), 14, file.c_str()), chained.get(), "load chained large ColorDiff");
+    for (int flip : {1, -1}) {
+        auto reference = expected;
+        cv::Mat view(height, width, CV_16UC3, reference.data());
+        cv::flip(view, view, flip);
+        auto actual = source;
+        requireResult(M_CalibrationExecuteRawWithFlipV1(chained.get(), width, height, 16, 3,
+            reinterpret_cast<std::uint8_t*>(actual.data()), bytes, &options, flip), chained.get(), "chained large ColorDiff flip");
+        if (actual != reference) throw std::runtime_error("Chained large ColorDiff flip differs from pixel reference");
+    }
+    std::cout << "calibration_stream_exact_cases,6" << std::endl;
 }
 
 void verifyColorDiffMixedOffsets(const std::filesystem::path& directory)
