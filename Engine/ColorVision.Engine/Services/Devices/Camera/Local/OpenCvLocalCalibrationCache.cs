@@ -3,6 +3,7 @@ using ColorVision.Engine.FlowProcessing.Diagnostics;
 using cvColorVision;
 using FlowEngineLib.Algorithm;
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -25,6 +26,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
         // Deferred color contexts hold only calibration parameters. These two
         // slots add no RAW scratch or spatial map capacity to the general cache.
         private const int MaxDeferredColorContexts = 2;
+        private const int CalibrationHashBufferSize = 256 * 1024;
         private readonly LinkedList<CachedContext> contexts = new();
         private readonly LinkedList<CachedContext> deferredColorContexts = new();
         private bool disposed;
@@ -258,7 +260,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                     using FileStream source = new(file.FullPath, FileMode.Open, FileAccess.Read, FileShare.Read);
                     if (source.Length != file.Length || File.GetLastWriteTimeUtc(file.FullPath).Ticks != file.LastWriteTimeUtcTicks)
                         throw new IOException("校正资源在加载前已变化，请重试。");
-                    file.Sha256 = Convert.ToHexString(SHA256.HashData(source));
+                    file.Sha256 = ComputeSourceHash(source, file.Length);
                     int loadResult = OpenCVCalibration.M_CalibrationLoadFileW(newContext, (int)file.CalibrationType, file.FullPath);
                     if (loadResult != OpenCVCalibration.CalibrationOk)
                     {
@@ -276,6 +278,28 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                 Exception? cleanupError = TryDestroyContext(newContext);
                 if (cleanupError != null) throw new AggregateException(loadError, cleanupError);
                 throw;
+            }
+        }
+
+        private static string ComputeSourceHash(FileStream source, long length)
+        {
+            if (length < CalibrationHashBufferSize)
+                return Convert.ToHexString(SHA256.HashData(source));
+
+            // Large tables need fewer file reads and hash updates with a bounded buffer.
+            using IncrementalHash hash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
+            byte[] buffer = ArrayPool<byte>.Shared.Rent(CalibrationHashBufferSize);
+            try
+            {
+                int read;
+                while ((read = source.Read(buffer.AsSpan(0, CalibrationHashBufferSize))) > 0)
+                    hash.AppendData(buffer.AsSpan(0, read));
+
+                return Convert.ToHexString(hash.GetHashAndReset());
+            }
+            finally
+            {
+                ArrayPool<byte>.Shared.Return(buffer, clearArray: true);
             }
         }
 
