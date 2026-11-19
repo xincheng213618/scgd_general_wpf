@@ -1502,8 +1502,23 @@ private:
                         for (; column < width && (reinterpret_cast<std::uintptr_t>(outputRow + column * 3) & 63U) != 0; ++column)
                             writePixel(column, outputRow + column * 3);
                         for (; column + blockPixels <= width; column += blockPixels) {
-                            for (int index = 0; index < blockPixels; ++index)
-                                writePixel(column + index, block + index * 3);
+                            // The first and last destination columns mirror the
+                            // sensor edges. Interior blocks use only mapped taps.
+                            if (!borderRow && column > 0 && column + blockPixels < width) {
+                                const int firstSensorColumn = width - 1 - column;
+                                for (int index = 0; index < blockPixels; ++index) {
+                                    const int sensorColumn = firstSensorColumn - index;
+                                    const auto sensorPixel = rowBase + sensorColumn;
+                                    auto* pixel = block + index * 3;
+                                    pixel[0] = source[sourcePixel(gb[sensorColumn], sensorPixel, width) * 3];
+                                    pixel[1] = source[sensorPixel * 3 + 1];
+                                    pixel[2] = source[sourcePixel(gr[sensorColumn], sensorPixel, width) * 3 + 2];
+                                }
+                            }
+                            else {
+                                for (int index = 0; index < blockPixels; ++index)
+                                    writePixel(column + index, block + index * 3);
+                            }
                             for (int index = 0; index < blockPixels * 3; index += 8) {
                                 _mm_stream_si128(reinterpret_cast<__m128i*>(outputRow + column * 3 + index),
                                     _mm_load_si128(reinterpret_cast<const __m128i*>(block + index)));

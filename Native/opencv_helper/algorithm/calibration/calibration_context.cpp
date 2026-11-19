@@ -1013,12 +1013,13 @@ bool CalibrationContext::execute(
     scratch.dataLength = rawScratchCapacity_;
     // The leading pair can write to scratch so the sole geometry stage
     // writes straight to RAW instead of requiring a full-frame copy.
-    if (canSeedScratchFromPair_ && options.rawOutputFlip == -99
+    if (canSeedScratchFromPair_
+        && (options.rawOutputFlip == -99 || fusedRawFlip || canFuseHorizontalFlip)
         && items_[0]->tryApplyWithNextTo(*items_[1], raw, scratch, calibrationOptions)) {
         const auto restorePairOutput = [&] { std::memcpy(raw.data, scratch.data, requiredRawBytes); };
         std::string error;
         try {
-            if (items_[2]->applyOutOfPlace(scratch, raw, calibrationOptions, error)) return true;
+            if (items_[2]->applyOutOfPlace(scratch, raw, options, error)) return true;
         }
         catch (...) {
             restorePairOutput();
