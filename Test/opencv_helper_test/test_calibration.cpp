@@ -1216,6 +1216,51 @@ void verifyMono16MapEquivalence(const std::filesystem::path& directory)
     }
 }
 
+void verifyLegacyBinaryMaps(const std::filesystem::path& directory)
+{
+    constexpr std::uint32_t width = 9, height = 5;
+    constexpr std::size_t count = width * height;
+    const auto dsnu = directory / L"\u53bb\u6697\u573a-v0.dat";
+    const auto uniformity = directory / L"\u5747\u5300\u6027-v0.dat";
+    const auto writeLegacyMap = [&](const auto& path, const auto& values) {
+        std::ofstream output(path, std::ios::binary);
+        writeBinaryValue(output, height);
+        writeBinaryValue(output, width);
+        output.write(reinterpret_cast<const char*>(values.data()),
+            static_cast<std::streamsize>(values.size() * sizeof(values.front())));
+        if (!output) throw std::runtime_error("Unable to write V0 calibration map");
+    };
+    std::vector<std::uint16_t> offsets(count, 5);
+    offsets.front() = 200;
+    offsets.back() = 256;
+    std::vector<float> gains(count, 2.0F);
+    gains.back() = 1.5F;
+    writeLegacyMap(dsnu, offsets);
+    writeLegacyMap(uniformity, gains);
+
+    const auto truncated = directory / "truncated_uniformity_v1.dat";
+    writeMap(truncated, 32, 16, gains, 1, width, height);
+    std::filesystem::resize_file(truncated, std::filesystem::file_size(truncated) - 1);
+    Context context = createContext();
+    requireResult(M_CalibrationLoadFileW(context.get(), 4, dsnu.c_str()), context.get(), "load V0 DSNU on a Unicode path");
+    requireResult(M_CalibrationLoadFileW(context.get(), 5, uniformity.c_str()), context.get(), "load V0 Uniformity on a Unicode path");
+    if (M_CalibrationLoadFileW(context.get(), 5, truncated.c_str()) != M_CALIBRATION_LOAD_FAILED)
+        throw std::runtime_error("Truncated V1 Uniformity map was not rejected");
+
+    MCalibrationExecutionOptionsV1 options{};
+    options.structSize = sizeof(options);
+    options.interleavedBgr = 1;
+    options.exposureX = options.exposureY = options.exposureZ = 1;
+    std::vector<std::uint16_t> pixels(count, 400);
+    requireResult(M_CalibrationExecute(context.get(), width, height, 16, 1,
+        reinterpret_cast<std::uint8_t*>(pixels.data()), count * sizeof(std::uint16_t), nullptr, 0, &options),
+        context.get(), "execute V0 calibration maps");
+    auto expected = std::vector<std::uint16_t>(count, 790);
+    expected.front() = 400;
+    expected.back() = 216;
+    if (pixels != expected) throw std::runtime_error("V0 calibration payload or failed load changed pixels");
+}
+
 void verifyLargeUniformityOutput(const std::filesystem::path& directory)
 {
     constexpr std::uint32_t width = 3001, height = 1865, channels = 3;
@@ -1706,6 +1751,7 @@ void runSyntheticCoverage()
     verifyAdjacentMapEquivalence(directory.path, true);
     verifyAdjacentBgr8MapEquivalence(directory.path);
     verifyMono16MapEquivalence(directory.path);
+    verifyLegacyBinaryMaps(directory.path);
     verifyRawOutputFlip(directory.path);
     verifyLargeUniformityOutput(directory.path);
     verifyLargeDistortion(directory.path);

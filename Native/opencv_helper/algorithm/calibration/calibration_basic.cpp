@@ -1,6 +1,12 @@
 #include "calibration_core.h"
 
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#include <Windows.h>
+#include <io.h>
 #include <opencv2/core/utility.hpp>
+#include <share.h>
 
 #if defined(_M_X64) && !defined(_M_ARM64EC)
 #include <emmintrin.h>
@@ -13,12 +19,14 @@
 #include <cctype>
 #include <cerrno>
 #include <cmath>
+#include <cstddef>
+#include <cstdio>
 #include <cstdlib>
 #include <cstring>
-#include <fstream>
 #include <limits>
 #include <stdexcept>
 #include <string_view>
+#include <system_error>
 #include <type_traits>
 #include <utility>
 #include <vector>
@@ -78,55 +86,48 @@ bool checkedAdd(std::uint64_t left, std::uint64_t right, std::uint64_t& result)
     return true;
 }
 
-bool fileSize(const std::filesystem::path& file, std::uint64_t& size, std::string& error)
-{
-    std::error_code ec;
-    const auto nativeSize = std::filesystem::file_size(file, ec);
-    if (ec) {
-        error = "Unable to read calibration file size: " + ec.message();
-        return false;
-    }
-    size = static_cast<std::uint64_t>(nativeSize);
-    return true;
-}
+struct CloseBinaryFile {
+    void operator()(std::FILE* file) const noexcept { std::fclose(file); }
+};
+using BinaryFile = std::unique_ptr<std::FILE, CloseBinaryFile>;
 
 bool seekAndRead(
-    std::ifstream& stream,
+    const BinaryFile& stream,
     std::uint64_t offset,
     void* destination,
     std::uint64_t byteCount,
     std::string& error)
 {
-    if (offset > static_cast<std::uint64_t>((std::numeric_limits<std::streamoff>::max)())
-        || byteCount > static_cast<std::uint64_t>((std::numeric_limits<std::streamsize>::max)())) {
+    if (offset > static_cast<std::uint64_t>((std::numeric_limits<std::int64_t>::max)())
+        || byteCount > static_cast<std::uint64_t>((std::numeric_limits<std::ptrdiff_t>::max)())) {
         error = "Calibration file is too large for the native stream API";
         return false;
     }
 
-    stream.clear();
-    stream.seekg(static_cast<std::streamoff>(offset), std::ios::beg);
-    if (!stream) {
+    if (_fseeki64(stream.get(), static_cast<std::int64_t>(offset), SEEK_SET) != 0) {
         error = "Unable to seek in calibration file";
         return false;
     }
 
-    if (byteCount == 0) {
-        return true;
-    }
-
-    stream.read(static_cast<char*>(destination), static_cast<std::streamsize>(byteCount));
-    if (!stream || static_cast<std::uint64_t>(stream.gcount()) != byteCount) {
-        error = "Calibration file ended before all data was read";
-        return false;
+    // The MSVC binary file stream splits bulk reads into roughly 4 KiB calls.
+    constexpr std::size_t blockBytes = 32 * 1024 * 1024;
+    auto* bytes = static_cast<std::uint8_t*>(destination);
+    for (auto remaining = static_cast<std::size_t>(byteCount); remaining != 0;) {
+        const auto count = (std::min)(remaining, blockBytes);
+        if (std::fread(bytes, 1, count, stream.get()) != count) {
+            error = "Calibration file ended before all data was read";
+            return false;
+        }
+        bytes += count;
+        remaining -= count;
     }
     return true;
 }
 
 template <typename T>
-bool readPod(std::ifstream& stream, T& value, std::string& error)
+bool readPod(const BinaryFile& stream, T& value, std::string& error)
 {
-    stream.read(reinterpret_cast<char*>(&value), sizeof(value));
-    if (!stream || stream.gcount() != static_cast<std::streamsize>(sizeof(value))) {
+    if (std::fread(&value, 1, sizeof(value), stream.get()) != sizeof(value)) {
         error = "Calibration file header is incomplete";
         return false;
     }
@@ -135,24 +136,30 @@ bool readPod(std::ifstream& stream, T& value, std::string& error)
 
 bool openBinary(
     const std::filesystem::path& file,
-    std::ifstream& stream,
+    BinaryFile& stream,
     std::uint64_t& size,
     std::string& error)
 {
-    if (!fileSize(file, size, error)) {
-        return false;
-    }
-    stream.open(file, std::ios::binary);
+    // Match the old binary stream's wide-path open and read/write sharing.
+    stream.reset(_wfsopen(file.c_str(), L"rb", _SH_DENYNO));
     if (!stream) {
         error = "Unable to open calibration file";
         return false;
     }
+    const auto handle = reinterpret_cast<HANDLE>(_get_osfhandle(_fileno(stream.get())));
+    LARGE_INTEGER fileLength{};
+    if (!GetFileSizeEx(handle, &fileLength)) {
+        const auto code = GetLastError();
+        error = "Unable to read calibration file size: " + std::system_category().message(static_cast<int>(code));
+        return false;
+    }
+    size = static_cast<std::uint64_t>(fileLength.QuadPart);
     return true;
 }
 
 bool readTextFile(const std::filesystem::path& file, std::string& text, std::string& error)
 {
-    std::ifstream stream;
+    BinaryFile stream;
     std::uint64_t size = 0;
     if (!openBinary(file, stream, size, error)) {
         return false;
@@ -775,7 +782,7 @@ bool loadMap(
     std::vector<TCorrection>& values,
     std::string& error)
 {
-    std::ifstream stream;
+    BinaryFile stream;
     std::uint64_t length = 0;
     if (!openBinary(file, stream, length, error)) {
         return false;
@@ -1991,7 +1998,7 @@ std::unique_ptr<CalibrationItem> loadDefectPoints(
     const std::filesystem::path& file,
     std::string& error)
 {
-    std::ifstream stream;
+    BinaryFile stream;
     std::uint64_t length = 0;
     if (!openBinary(file, stream, length, error)) {
         return nullptr;
@@ -2099,7 +2106,7 @@ std::unique_ptr<CalibrationItem> loadLineArity(
     const std::filesystem::path& file,
     std::string& error)
 {
-    std::ifstream stream;
+    BinaryFile stream;
     std::uint64_t length = 0;
     if (!openBinary(file, stream, length, error)) {
         return nullptr;
