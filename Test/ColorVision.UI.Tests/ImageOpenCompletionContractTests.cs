@@ -784,6 +784,111 @@ public sealed class ImageOpenCompletionContractTests(ITestOutputHelper output)
     }
 
     [Fact]
+    public async Task LargeCvcieSwitchToAssociatedRawPreservesEditableRgb48Pixels()
+    {
+        const int width = 1367, height = 1024, channels = 3;
+        const int rowBytes = width * channels * sizeof(ushort);
+        string path = Path.Combine(Path.GetTempPath(), $"colorvision-cvcie-large-raw-{Guid.NewGuid():N}.cvcie");
+        string rawPath = Path.ChangeExtension(path, null) + "-linked.cvraw";
+        TimeSpan timeout = TimeSpan.FromSeconds(10);
+        CvcieDisplayMode originalMode = WpfTestHost.Invoke(() => CvcieDisplayConfig.Current.DisplayMode);
+        ImageView? view = null;
+        try
+        {
+            using CVCIEFile raw = new()
+            {
+                Version = 2, FileExtType = CVType.Raw, Rows = height, Cols = width,
+                Bpp = 16, Channels = channels, Exp = [1, 1, 1],
+            };
+            Assert.True(CVFileUtil.WriteCVRaw(rawPath, raw, rowBytes * height, stream =>
+            {
+                byte[] row = new byte[rowBytes];
+                Span<ushort> samples = MemoryMarshal.Cast<byte, ushort>(row.AsSpan());
+                for (int y = 0; y < height; y++)
+                {
+                    for (int x = 0; x < width; x++)
+                    for (int channel = 0; channel < channels; channel++)
+                        samples[x * channels + channel] = Sample(x, y, channel);
+                    stream.Write(row);
+                }
+            }));
+            using CVCIEFile cie = new()
+            {
+                Version = 2, FileExtType = CVType.CIE, Rows = height, Cols = width, Bpp = 32, Channels = channels,
+                SrcFileName = Path.GetFileName(rawPath), Exp = [1, 1, 1], Data = new byte[width * height * channels * sizeof(float)],
+            };
+            Assert.True(CVFileUtil.WriteCIEFile(path, cie));
+
+            await WpfTestHost.Invoke(() =>
+            {
+                EnsureImageViewTestResources();
+                CvcieDisplayConfig.Current.EnableTrueColor = true;
+                view = new ImageView { EnableEditorImageServices = false };
+                view.IEditorToolFactory.IImageOpens[".cvcie"] = new CVRawOpen(view.EditorContext);
+                view.OpenImage(path);
+                return view.ImageOpenCompletion;
+            }).WaitAsync(timeout);
+
+            await WpfTestHost.Invoke(async () =>
+            {
+                Assert.Equal("cie-srgb", view!.SelectedLayer?.Id);
+                var loaded = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+                EventHandler<ImageViewImageSourceLoadedEventArgs> onLoaded = (_, _) => loaded.TrySetResult();
+                view.ImageSourceLoaded += onLoaded;
+                try
+                {
+                    view.ComboBoxLayers.SelectedItem = view.ComboBoxLayers.Items.OfType<ImageLayerDescriptor>()
+                        .Single(layer => layer.Id == "composite");
+                    await loaded.Task.WaitAsync(timeout);
+                }
+                finally { view.ImageSourceLoaded -= onLoaded; }
+
+                Assert.Equal("composite", view.SelectedLayer?.Id);
+                var bitmap = Assert.IsType<WriteableBitmap>(view.ViewBitmapSource);
+                Assert.Same(bitmap, view.Presentation.DisplaySource);
+                Assert.False(bitmap.IsFrozen);
+                Assert.Equal(PixelFormats.Rgb48, bitmap.Format);
+                Assert.Equal((width, height), (bitmap.PixelWidth, bitmap.PixelHeight));
+                Assert.True(bitmap.BackBufferStride > rowBytes);
+
+                foreach (var (x, y) in new[] { (0, 0), (width - 1, 0), (0, 1), (width - 1, height - 1) })
+                {
+                    byte[] pixel = new byte[channels * sizeof(ushort)];
+                    bitmap.CopyPixels(new Int32Rect(x, y, 1, 1), pixel, pixel.Length, 0);
+                    Assert.Equal(new[] { Sample(x, y, 2), Sample(x, y, 1), Sample(x, y, 0) },
+                        MemoryMarshal.Cast<byte, ushort>(pixel.AsSpan()).ToArray());
+                }
+
+                var firstPixel = new Int32Rect(0, 0, 1, 1);
+                byte[] replacement = [1, 2, 3, 4, 5, 6];
+                byte[] actual = new byte[replacement.Length];
+                bitmap.WritePixels(firstPixel, replacement, replacement.Length, 0);
+                bitmap.CopyPixels(firstPixel, actual, actual.Length, 0);
+                Assert.Equal(replacement, actual);
+            });
+        }
+        finally
+        {
+            try
+            {
+                await WpfTestHost.Invoke(() =>
+                {
+                    view?.Dispose();
+                    CvcieDisplayConfig.Current.DisplayMode = originalMode;
+                    return view?.PendingContentRelease ?? Task.CompletedTask;
+                }).WaitAsync(timeout);
+            }
+            finally
+            {
+                File.Delete(path);
+                File.Delete(rawPath);
+            }
+        }
+
+        static ushort Sample(int x, int y, int channel) => (ushort)(0x102 + channel * 0x2000 + (y * width + x) * 13 % 0x1fff);
+    }
+
+    [Fact]
     public async Task OpenedCvRawProfileUsesTheSameRawAndCalibrationAsTheVisibleImage()
     {
         string path = Path.Combine(Path.GetTempPath(), $"colorvision-profile-open-{Guid.NewGuid():N}.cvraw");
