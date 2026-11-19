@@ -2116,13 +2116,14 @@ void runSyntheticCoverage()
     }
 
     constexpr int fisheyeWidth = 12;
-    constexpr int fisheyeHeight = 10;
+    constexpr int fisheyeHeight = 27;
+    constexpr int middleRow = fisheyeHeight / 2;
     const std::array<std::pair<int, int>, 5> fisheyeCenters{{
-        { 6, 5 },   // zero offset
-        { 4, 4 },   // positive X/Y offset
-        { 8, 7 },   // negative X/Y offset
-        { -6, 5 },  // positive X offset equals width
-        { 6, 15 },  // negative Y offset equals height
+        { 6, middleRow },                   // zero offset
+        { 4, middleRow - 1 },               // positive X/Y offset
+        { 8, middleRow + 2 },               // negative X/Y offset
+        { -6, middleRow },                  // positive X offset equals width
+        { 6, middleRow + fisheyeHeight },   // negative Y offset equals height
     }};
     for (bool fisheye : { false, true }) {
         for (std::size_t index = 0; index < fisheyeCenters.size(); ++index) {
@@ -2144,7 +2145,7 @@ void runSyntheticCoverage()
                 for (int channels : { 1, 3 }) {
                     for (bool roi : { false, true }) {
                         const int width = roi ? 8 : fisheyeWidth;
-                        const int height = roi ? 6 : fisheyeHeight;
+                        const int height = roi ? 19 : fisheyeHeight;
                         MCalibrationExecutionOptionsV1 options{};
                         options.structSize = sizeof(options);
                         options.interleavedBgr = 1;

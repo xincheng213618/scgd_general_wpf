@@ -312,6 +312,67 @@ bool tryRemapFixedBgr16(const cv::Mat& source, cv::Mat& result,
 }
 #endif
 
+void buildFisheyeFixedMaps(const std::array<float, 9>& camera, const std::array<float, 5>& distortion,
+    const cv::Mat& newCamera, cv::Size size, int offsetX, int offsetY, cv::Mat& coordinates, cv::Mat& interpolation)
+{
+    cv::Matx33d projection;
+    newCamera.convertTo(projection, CV_64F);
+    const auto inverse = (projection * cv::Matx33d::eye()).inv(cv::DECOMP_SVD);
+    coordinates.create(size, CV_16SC2);
+    interpolation.create(size, CV_16UC1);
+
+    // Keep OpenCV's row recurrence and float rounding before fixed-point conversion.
+    // A worker needs only one band of temporary float coordinates.
+    constexpr int bandRows = 16;
+    cv::parallel_for_(cv::Range(0, 1 + (size.height - 1) / bandRows), [&](const cv::Range& range) {
+        const int scratchHeight = (std::min)(bandRows, size.height);
+        cv::Mat mapX(scratchHeight, size.width, CV_32FC1), mapY(scratchHeight, size.width, CV_32FC1);
+        for (int band = range.start; band < range.end; ++band) {
+            const int first = band * bandRows;
+            const int rows = (std::min)(bandRows, size.height - first);
+            for (int index = 0; index < rows; ++index) {
+                const int row = first + index;
+                auto* xOut = mapX.ptr<float>(index);
+                auto* yOut = mapY.ptr<float>(index);
+                double xNumerator = row * inverse(0, 1) + inverse(0, 2);
+                double yNumerator = row * inverse(1, 1) + inverse(1, 2);
+                double denominator = row * inverse(2, 1) + inverse(2, 2);
+                for (int column = 0; column < size.width; ++column) {
+                    double u, v;
+                    if (denominator <= 0) {
+                        constexpr auto infinity = std::numeric_limits<double>::infinity();
+                        u = xNumerator > 0 ? -infinity : infinity;
+                        v = yNumerator > 0 ? -infinity : infinity;
+                    }
+                    else {
+                        const auto x = xNumerator / denominator, y = yNumerator / denominator;
+                        const auto radius = std::sqrt(x * x + y * y);
+                        const auto theta = std::atan(radius);
+                        const auto theta2 = theta * theta, theta4 = theta2 * theta2;
+                        const auto theta6 = theta4 * theta2, theta8 = theta4 * theta4;
+                        const auto distorted = theta * (1 + distortion[0] * theta2 + distortion[1] * theta4
+                            + distortion[2] * theta6 + distortion[3] * theta8);
+                        const auto scale = radius == 0 ? 1.0 : distorted / radius;
+                        u = camera[0] * x * scale + camera[2];
+                        v = camera[4] * y * scale + camera[5];
+                    }
+                    xOut[column] = static_cast<float>(u);
+                    yOut[column] = static_cast<float>(v);
+                    xNumerator += inverse(0, 0);
+                    yNumerator += inverse(1, 0);
+                    denominator += inverse(2, 0);
+                }
+            }
+            auto xBand = mapX.rowRange(0, rows), yBand = mapY.rowRange(0, rows);
+            if (offsetX > 0) xBand -= static_cast<float>(offsetX);
+            if (offsetY > 0) yBand -= static_cast<float>(offsetY);
+            auto coordinateBand = coordinates.rowRange(first, first + rows);
+            auto interpolationBand = interpolation.rowRange(first, first + rows);
+            cv::convertMaps(xBand, yBand, coordinateBand, interpolationBand, CV_16SC2);
+        }
+    });
+}
+
 class DistortionCalibration final : public CalibrationItem {
 public:
     DistortionCalibration() = default;
@@ -635,6 +696,19 @@ private:
                 newCamera,
                 alpha_,
                 newSize);
+
+            const int offsetX = roi
+                ? outputWidth / 2 - cameraCenterX_ + roiX
+                : width_ / 2 - cameraCenterX_;
+            const int offsetY = roi
+                ? outputHeight / 2 - cameraCenterY_ + roiY
+                : height_ / 2 - cameraCenterY_;
+            if (!newSize.empty() && cv::checkRange(camera) && cv::checkRange(distortion) && cv::checkRange(newCamera)) {
+                buildFisheyeFixedMaps(adjusted, distortionCoefficients_, newCamera, newSize,
+                    offsetX, offsetY, coordinates, interpolation);
+                return;
+            }
+
             cv::fisheye::initUndistortRectifyMap(
                 camera,
                 distortion,
@@ -645,12 +719,6 @@ private:
                 mapX,
                 mapY);
 
-            const int offsetX = roi
-                ? outputWidth / 2 - cameraCenterX_ + roiX
-                : width_ / 2 - cameraCenterX_;
-            const int offsetY = roi
-                ? outputHeight / 2 - cameraCenterY_ + roiY
-                : height_ / 2 - cameraCenterY_;
             // Positive shifts move the valid rectangle's origin in the
             // translated image; rebase float maps to the cropped source view.
             mapX -= static_cast<float>((std::max)(0, offsetX));
@@ -678,7 +746,6 @@ private:
         }
 
         // Cache remap's fixed-point coordinates and interpolation indices once.
-        // Keep the float-map construction and fisheye rebasing above unchanged.
         cv::convertMaps(mapX, mapY, coordinates, interpolation, CV_16SC2);
     }
 
