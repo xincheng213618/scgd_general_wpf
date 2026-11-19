@@ -838,29 +838,31 @@ public:
                 return true;
             }
 
+            std::array<cv::Mat, 3> planarViews;
+            const cv::Mat* sourcePlanes = planarViews.data();
             if (options.interleavedBgr) {
                 cv::split(source, planes_);
+                sourcePlanes = planes_.data();
             }
             else {
-                // The legacy non-BGR path consumes planar R/G/B and produces
-                // interleaved B/G/R. Keep that byte-layout conversion intact.
+                // Borrow the caller's planar R/G/B only for this execution.
+                // Keep the retained split outputs independent of the RAW buffer.
                 const std::size_t planeBytes = static_cast<std::size_t>(raw.width)
                     * raw.height * (raw.bitsPerChannel / 8);
-                planes_.resize(3);
                 const int planeType = CV_MAKETYPE(
                     raw.bitsPerChannel == 8 ? CV_8U : CV_16U,
                     1);
-                planes_[0] = cv::Mat(
+                planarViews[0] = cv::Mat(
                     static_cast<int>(raw.height),
                     static_cast<int>(raw.width),
                     planeType,
                     raw.data + planeBytes * 2);
-                planes_[1] = cv::Mat(
+                planarViews[1] = cv::Mat(
                     static_cast<int>(raw.height),
                     static_cast<int>(raw.width),
                     planeType,
                     raw.data + planeBytes);
-                planes_[2] = cv::Mat(
+                planarViews[2] = cv::Mat(
                     static_cast<int>(raw.height),
                     static_cast<int>(raw.width),
                     planeType,
@@ -871,10 +873,10 @@ public:
             for (std::size_t index = 0; index < mergePlanes.size(); ++index) {
                 const auto& offset = channelOffsets_[index];
                 if (offset.x == 0 && offset.y == 0) {
-                    mergePlanes[index] = planes_[index];
+                    mergePlanes[index] = sourcePlanes[index];
                 }
                 else {
-                    warp(planes_[index], warpedPlanes_[index], offset);
+                    warp(sourcePlanes[index], warpedPlanes_[index], offset);
                     preserveLegacyFillBehavior(warpedPlanes_[index], offset);
                     mergePlanes[index] = warpedPlanes_[index];
                 }

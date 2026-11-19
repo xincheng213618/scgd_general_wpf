@@ -150,11 +150,17 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             }
 
             LinkedList<CachedContext> cache = deferredColorOnly ? deferredColorContexts : contexts;
+            LinkedListNode<CachedContext>? mostRecent = cache.First;
+            CachedContext? previous = deferredColorOnly ? null : mostRecent?.Value;
             LinkedListNode<CachedContext>? cachedNode = Find(cache, layout, requestedFiles);
             if (cachedNode != null)
             {
-                cache.Remove(cachedNode);
-                cache.AddFirst(cachedNode);
+                if (cachedNode != mostRecent)
+                {
+                    TransferRawWorkBuffers(previous, cachedNode.Value);
+                    cache.Remove(cachedNode);
+                    cache.AddFirst(cachedNode);
+                }
                 return cachedNode.Value;
             }
 
@@ -164,9 +170,20 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                 EvictLeastRecentlyUsed(cache);
             }
 
+            // Keep the donor's buffers until the requested file set has loaded successfully.
             CachedContext created = CreateContext(layout, requestedFiles);
             cache.AddFirst(created);
+            TransferRawWorkBuffers(previous, created);
             return created;
+        }
+
+        private static void TransferRawWorkBuffers(CachedContext? previous, CachedContext requested)
+        {
+            if (previous?.UsesRawWorkBuffers == true && requested.UsesRawWorkBuffers)
+            {
+                // An older DLL or a rejected transfer leaves both contexts usable independently.
+                _ = OpenCVCalibration.TryTransferCalibrationWorkBuffers(requested.Context, previous.Context);
+            }
         }
 
         private static (ulong RawByteLength, ulong CieFloatCount) GetBufferLengths(
@@ -390,6 +407,8 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             public IntPtr Context { get; set; } = context;
             public LocalCalibrationLayout Layout { get; } = layout;
             public CachedCalibrationFile[] Files { get; } = files;
+            public bool UsesRawWorkBuffers { get; } = files.Any(file => file.CalibrationType is
+                CalibrationType.Distortion or CalibrationType.ColorShift or CalibrationType.ColorDiff or CalibrationType.AngleShift);
         }
     }
 }

@@ -54,6 +54,14 @@ ABI compatibility; its RAW and CIE ranges must also be distinct. Output buffers
 are undefined after a failed ExecuteTo call; do not consume partially written
 outputs as valid calibration results.
 
+`M_CalibrationTransferWorkBuffersV1(destination, source)` moves reusable RAW
+working allocations between two live contexts. Each destination slot keeps the
+larger allocation and the corresponding source slot becomes empty. Passing the
+same context twice succeeds without moving buffers. Calibration files and
+geometry maps stay with their owning context. Engine uses this optional export
+when switching cached geometry contexts and keeps independent buffers with
+older helpers.
+
 All functions use `__cdecl`. Calls on a live context are serialized internally,
 but `M_CalibrationDestroy` must not overlap another call on the same context.
 Use `M_CalibrationGetLastError` twice: first to obtain the required UTF-8 byte

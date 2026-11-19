@@ -164,6 +164,16 @@ namespace ColorVision.Core
         public const int CalibrationOk = 1;
         public const int PoiOk = 1;
 
+        private enum WorkBufferTransferSupport
+        {
+            Unknown,
+            Available,
+            Unavailable,
+        }
+
+        private static readonly object WorkBufferTransferProbe = new();
+        private static volatile WorkBufferTransferSupport workBufferTransferSupport;
+
         [StructLayout(LayoutKind.Sequential)]
         private struct CalibrationCacheStatsV1
         {
@@ -264,6 +274,40 @@ namespace ColorVision.Core
             IntPtr cieData,
             ulong cieFloatCount,
             in CalibrationExecutionOptionsV1 options);
+
+        [DllImport(LibPath, CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
+        private static extern int M_CalibrationTransferWorkBuffersV1(IntPtr destinationContext, IntPtr sourceContext);
+
+        /// <summary>
+        /// Reuses native calibration work buffers when the installed helper exports this operation.
+        /// The caller must keep both contexts alive for the duration of the transfer.
+        /// </summary>
+        public static bool TryTransferCalibrationWorkBuffers(IntPtr destinationContext, IntPtr sourceContext)
+        {
+            if (workBufferTransferSupport == WorkBufferTransferSupport.Unknown)
+            {
+                lock (WorkBufferTransferProbe)
+                {
+                    if (workBufferTransferSupport == WorkBufferTransferSupport.Unknown)
+                    {
+                        try
+                        {
+                            int result = M_CalibrationTransferWorkBuffersV1(destinationContext, sourceContext);
+                            workBufferTransferSupport = WorkBufferTransferSupport.Available;
+                            return result == CalibrationOk;
+                        }
+                        catch (EntryPointNotFoundException)
+                        {
+                            workBufferTransferSupport = WorkBufferTransferSupport.Unavailable;
+                            return false;
+                        }
+                    }
+                }
+            }
+
+            return workBufferTransferSupport == WorkBufferTransferSupport.Available
+                && M_CalibrationTransferWorkBuffersV1(destinationContext, sourceContext) == CalibrationOk;
+        }
 
         [DllImport(LibPath, CallingConvention = CallingConvention.Cdecl)]
         public static extern int M_CalibrationGetLastError(IntPtr context, [Out] byte[]? buffer, uint bufferLength);

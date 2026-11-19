@@ -164,6 +164,25 @@ extern "C" COLORVISIONCORE_API int __cdecl M_CalibrationClear(void* context)
     }
 }
 
+extern "C" COLORVISIONCORE_API int __cdecl M_CalibrationTransferWorkBuffersV1(
+    void* destinationContext, void* sourceContext)
+{
+    if (destinationContext == nullptr || sourceContext == nullptr) {
+        return fail(destinationContext, M_CALIBRATION_INVALID_ARGUMENT, "Calibration destination or source context is null");
+    }
+    try {
+        asContext(destinationContext)->transferWorkBuffersFrom(*asContext(sourceContext));
+        globalError.clear();
+        return M_CALIBRATION_OK;
+    }
+    catch (const std::exception& ex) {
+        return fail(destinationContext, M_CALIBRATION_INTERNAL_ERROR, ex.what());
+    }
+    catch (...) {
+        return fail(destinationContext, M_CALIBRATION_INTERNAL_ERROR, "Unknown error while transferring calibration work buffers");
+    }
+}
+
 extern "C" COLORVISIONCORE_API int __cdecl M_CalibrationLoadFileW(
     void* context,
     std::int32_t calibrationType,

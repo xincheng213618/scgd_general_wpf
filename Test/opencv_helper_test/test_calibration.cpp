@@ -401,6 +401,40 @@ void verifyColorShiftInterleaved(const std::filesystem::path& directory)
                     || actual[actual.size() - 2] != 0xA5 || actual.back() != 0xA5) {
                     throw std::runtime_error("Interleaved ColorShift changed samples, source, or output guards");
                 }
+
+                if (bits == 16) {
+                    constexpr std::size_t pixelCount = width * height;
+                    std::vector<std::uint8_t> planar(input.size());
+                    for (std::size_t pixel = 0; pixel < pixelCount; ++pixel) {
+                        for (std::size_t channel = 0; channel < 3; ++channel) {
+                            const auto planarSample = (2 - channel) * pixelCount + pixel;
+                            const auto interleavedSample = pixel * 3 + channel;
+                            std::memcpy(planar.data() + planarSample * bytesPerSample,
+                                input.data() + interleavedSample * bytesPerSample, bytesPerSample);
+                        }
+                    }
+                    const auto planarBefore = planar;
+                    auto planarOptions = options;
+                    planarOptions.interleavedBgr = 0;
+                    requireResult(M_CalibrationExecuteToV1(context.get(), width, height, bits, 3, planar.data(), planar.size(),
+                        actual.data() + 2, input.size(), nullptr, 0, &planarOptions), context.get(), "apply planar ColorShift");
+                    if (planar != planarBefore || !std::equal(expected.begin(), expected.end(), actual.begin() + 2)) {
+                        throw std::runtime_error("Planar ColorShift changed source or output samples");
+                    }
+
+                    // Reuse the old planar input as caller-owned memory. An odd
+                    // output address forces BGR through the split/warp fallback.
+                    std::fill(planar.begin(), planar.end(), 0x5A);
+                    std::fill(actual.begin(), actual.end(), 0xA5);
+                    requireResult(M_CalibrationExecuteToV1(context.get(), width, height, bits, 3, input.data(), input.size(),
+                        actual.data() + 1, input.size(), nullptr, 0, &options), context.get(), "apply BGR ColorShift after planar");
+                    if (!std::all_of(planar.begin(), planar.end(), [](std::uint8_t value) { return value == 0x5A; })
+                        || input != before || !std::equal(expected.begin(), expected.end(), actual.begin() + 1)
+                        || actual.front() != 0xA5 || actual[actual.size() - 3] != 0xA5
+                        || actual[actual.size() - 2] != 0xA5 || actual.back() != 0xA5) {
+                        throw std::runtime_error("BGR ColorShift reused a previous planar input");
+                    }
+                }
             }
         }
     }
@@ -1492,6 +1526,35 @@ void verifyRawOutputFlip(const std::filesystem::path& directory)
         actual.data(), actual.size(), &options, 0) != M_CALIBRATION_EXECUTE_FAILED || actual != source)
         throw std::runtime_error("RAW-only mirror entry accepted a CIE template or modified RAW on rejection");
     std::cout << "calibration_mirror_exact_cases," << cases << std::endl;
+
+    Context donor = createContext(), recipient = createContext();
+    requireResult(M_CalibrationLoadFileW(donor.get(), 11, distortion.c_str()), donor.get(), "load donor distortion");
+    requireResult(M_CalibrationLoadFileW(donor.get(), 14, colorDiff.c_str()), donor.get(), "load donor ColorDiff");
+    requireResult(M_CalibrationLoadFileW(donor.get(), 8, color.c_str()), donor.get(), "load donor color transform");
+    requireResult(M_CalibrationLoadFileW(recipient.get(), 14, colorDiff.c_str()), recipient.get(), "load recipient ColorDiff");
+    requireResult(M_CalibrationLoadFileW(recipient.get(), 8, color.c_str()), recipient.get(), "load recipient color transform");
+    const auto executeWithScratch = [&](void* context) {
+        std::vector<float> cie(17 * 13 * 3);
+        requireResult(M_CalibrationExecuteToV1(context, 17, 13, 16, 3, source.data(), source.size(),
+            nullptr, 0, cie.data(), cie.size(), &options), context, "execute calibration with work buffers");
+        return cie;
+    };
+    const auto expectedDonor = executeWithScratch(donor.get());
+    const auto expectedRecipient = executeWithScratch(recipient.get());
+    if (M_CalibrationTransferWorkBuffersV1(nullptr, donor.get()) != M_CALIBRATION_INVALID_ARGUMENT
+        || nativeError(nullptr).empty()
+        || M_CalibrationTransferWorkBuffersV1(recipient.get(), nullptr) != M_CALIBRATION_INVALID_ARGUMENT
+        || nativeError(recipient.get()).empty()) {
+        throw std::runtime_error("Work buffer transfer accepted a null context or lost its error");
+    }
+    requireResult(M_CalibrationTransferWorkBuffersV1(donor.get(), donor.get()), donor.get(), "transfer work buffers to self");
+    requireResult(M_CalibrationTransferWorkBuffersV1(recipient.get(), donor.get()), recipient.get(), "transfer work buffers");
+    requireResult(M_CalibrationTransferWorkBuffersV1(recipient.get(), donor.get()), recipient.get(), "transfer empty work buffers");
+    if (M_CalibrationGetItemCount(donor.get()) != 3 || M_CalibrationGetItemCount(recipient.get()) != 2
+        || executeWithScratch(donor.get()) != expectedDonor
+        || executeWithScratch(recipient.get()) != expectedRecipient) {
+        throw std::runtime_error("Work buffer transfer changed calibration items or computation");
+    }
 }
 
 void verifyLargeMatrixColorOutput(const std::filesystem::path& directory)

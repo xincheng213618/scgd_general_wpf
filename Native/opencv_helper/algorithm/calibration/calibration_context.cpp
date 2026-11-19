@@ -885,6 +885,24 @@ bool CalibrationContext::clear()
     return true;
 }
 
+void CalibrationContext::transferWorkBuffersFrom(CalibrationContext& source)
+{
+    if (this == &source) return;
+
+    std::scoped_lock lock(mutex_, source.mutex_);
+    const auto takeLarger = [](std::unique_ptr<std::uint8_t[]>& destinationBuffer, std::size_t& destinationCapacity,
+        std::unique_ptr<std::uint8_t[]>& sourceBuffer, std::size_t& sourceCapacity) {
+        if (sourceCapacity > destinationCapacity) {
+            destinationBuffer = std::move(sourceBuffer);
+            destinationCapacity = sourceCapacity;
+        }
+        sourceBuffer.reset();
+        sourceCapacity = 0;
+    };
+    takeLarger(rawScratch_, rawScratchCapacity_, source.rawScratch_, source.rawScratchCapacity_);
+    takeLarger(rawScratch2_, rawScratch2Capacity_, source.rawScratch2_, source.rawScratch2Capacity_);
+}
+
 bool CalibrationContext::load(CalibrationType type, const std::filesystem::path& file)
 {
     std::scoped_lock lock(mutex_);

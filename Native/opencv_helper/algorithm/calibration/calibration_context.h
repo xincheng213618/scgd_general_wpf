@@ -14,6 +14,7 @@ namespace cvcore::calibration {
 class CalibrationContext final {
 public:
     bool clear();
+    void transferWorkBuffersFrom(CalibrationContext& source);
     bool load(CalibrationType type, const std::filesystem::path& file);
     bool execute(const ImageView& raw, float* cieData, std::size_t cieElementCount, const ExecutionOptions& options);
     bool executeTo(

@@ -305,6 +305,11 @@ static_assert(sizeof(MCalibrationCacheReleaseResultV1) == 40, "Calibration cache
 extern "C" COLORVISIONCORE_API int __cdecl M_CalibrationCreate(void** context);
 extern "C" COLORVISIONCORE_API int __cdecl M_CalibrationDestroy(void* context);
 extern "C" COLORVISIONCORE_API int __cdecl M_CalibrationClear(void* context);
+// Keeps the larger allocation in each corresponding RAW work buffer slot at
+// the destination and empties the distinct source slots. Both contexts keep
+// their calibration items. Passing the same context twice succeeds as a no-op.
+extern "C" COLORVISIONCORE_API int __cdecl M_CalibrationTransferWorkBuffersV1(
+    void* destinationContext, void* sourceContext);
 extern "C" COLORVISIONCORE_API int __cdecl M_CalibrationLoadFileW(
     void* context,
     std::int32_t calibrationType,
