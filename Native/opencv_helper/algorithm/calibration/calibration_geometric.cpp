@@ -278,7 +278,6 @@ __declspec(noinline) void remapFixedBgr16(const cv::Mat& source, cv::Mat& result
                 const auto& weight = weights[fractions[x] & (cv::INTER_TAB_SIZE2 - 1)];
 #if !defined(_M_ARM64EC)
                 if constexpr (pairAvx2) {
-                    static_assert(!flipRows && !flipColumns);
                     if (x + 1 < end
                         && static_cast<unsigned>(sourceX) < static_cast<unsigned>(source.cols - 2)
                         && static_cast<unsigned>(sourceY) < static_cast<unsigned>(source.rows - 1)) {
@@ -312,13 +311,18 @@ __declspec(noinline) void remapFixedBgr16(const cv::Mat& source, cv::Mat& result
                             const auto rounded = _mm256_cvtps_epi32(weighted);
                             const auto packed = _mm_packus_epi32(_mm256_castsi256_si128(rounded),
                                 _mm256_extracti128_si256(rounded, 1));
-                            const auto twoPixels = _mm_shuffle_epi8(packed,
-                                _mm_setr_epi8(0, 1, 2, 3, 4, 5, 8, 9, 10, 11, 12, 13, -1, -1, -1, -1));
-                            _mm_storel_epi64(reinterpret_cast<__m128i*>(out), twoPixels);
+                            const auto ordered = flipColumns
+                                ? _mm_setr_epi8(8, 9, 10, 11, 12, 13, 0, 1, 2, 3, 4, 5, -1, -1, -1, -1)
+                                : _mm_setr_epi8(0, 1, 2, 3, 4, 5, 8, 9, 10, 11, 12, 13, -1, -1, -1, -1);
+                            const auto twoPixels = _mm_shuffle_epi8(packed, ordered);
+                            // A reversed row stores the second mapped pixel at
+                            // the lower address, with the same interpolation.
+                            auto* pairOutput = flipColumns ? out - 3 : out;
+                            _mm_storel_epi64(reinterpret_cast<__m128i*>(pairOutput), twoPixels);
                             const auto tail = static_cast<std::uint32_t>(_mm_cvtsi128_si32(_mm_srli_si128(twoPixels, 8)));
-                            std::memcpy(out + 4, &tail, sizeof(tail));
+                            std::memcpy(pairOutput + 4, &tail, sizeof(tail));
                             ++x;
-                            out += 3;
+                            out += flipColumns ? -3 : 3;
                             continue;
                         }
                     }
@@ -377,12 +381,17 @@ bool tryRemapFixedBgr16(const cv::Mat& source, cv::Mat& result,
     }
     const bool useOpticalEdges = flip == -99 && opticalRows.size() == static_cast<std::size_t>(result.rows);
 #if !defined(_M_ARM64EC)
-    if (flip == -99 && cv::checkHardwareSupport(CV_CPU_AVX2)) {
+    if (cv::checkHardwareSupport(CV_CPU_AVX2)) {
         if (useOpticalEdges) {
             remapFixedBgr16<false, false, true, true>(source, result, coordinates, interpolation, opticalRows);
         }
         else {
-            remapFixedBgr16<false, false, true>(source, result, coordinates, interpolation);
+            switch (flip) {
+            case 0: remapFixedBgr16<true, false, true>(source, result, coordinates, interpolation); break;
+            case 1: remapFixedBgr16<false, true, true>(source, result, coordinates, interpolation); break;
+            case -1: remapFixedBgr16<true, true, true>(source, result, coordinates, interpolation); break;
+            default: remapFixedBgr16<false, false, true>(source, result, coordinates, interpolation); break;
+            }
         }
         return true;
     }

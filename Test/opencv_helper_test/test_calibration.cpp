@@ -617,7 +617,23 @@ void verifyDistortionOpticalEdgesAtTrueRoi(const std::filesystem::path& director
         };
         for (const auto& context : individual) execute(context.get(), expected);
         compare(combined, expected, "Optical zero edges changed cropped or full fixed-map pixels");
-        if (crop) continue;
+        if (crop) {
+            // This call warmed the cropped fisheye maps. Subsequent mirrors
+            // can use the fixed-map kernel over a strided source view.
+            const cv::Mat corrected(height, width, CV_16UC3, expected.data());
+            cv::Mat mirrored;
+            const auto rawBytes = pixels.size() * sizeof(pixels.front());
+            for (int flip : {0, 1, -1}) {
+                resetPixels();
+                cv::flip(corrected, mirrored, flip);
+                requireResult(M_CalibrationExecuteRawWithFlipV1(combined.get(), width, height, 16, channels,
+                    reinterpret_cast<std::uint8_t*>(pixels.data()), rawBytes, &options, flip),
+                    combined.get(), "execute mirrored cropped fisheye calibration");
+                if (std::memcmp(pixels.data(), mirrored.data, rawBytes) != 0)
+                    throw std::runtime_error("Mirrored cropped fisheye calibration differs from separately mirrored pixels");
+            }
+            continue;
+        }
 
         const std::array<Context, 2> fullContexts{loadChain(uniformity), loadChain(uniformity)};
         resetPixels();
