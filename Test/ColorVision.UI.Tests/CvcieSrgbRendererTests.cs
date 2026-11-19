@@ -4,6 +4,7 @@ using System.IO;
 using System.Runtime.InteropServices;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using System.Windows.Threading;
 
 namespace ColorVision.UI.Tests;
 
@@ -66,6 +67,35 @@ public sealed class CvcieSrgbRendererTests
             byte[] expected = RenderSerialReference(file, mode, 0.7);
 
             StaTest.Run(() => Assert.Equal(expected, ReadPixels(CvRawLayerController.LoadSrgb(path, mode, 0.7))));
+        }
+        finally { File.Delete(path); }
+    }
+
+    [Theory]
+    [InlineData(32, CvcieBrightnessMode.Auto)]
+    [InlineData(64, CvcieBrightnessMode.ReferenceWhite)]
+    public async Task UncachedFileTrueColorWritesAnEditableBitmapOnTheDestinationDispatcher(int bpp, CvcieBrightnessMode mode)
+    {
+        string path = Path.Combine(Path.GetTempPath(), $"colorvision-editable-srgb-{Guid.NewGuid():N}.cvcie");
+        try
+        {
+            using CVCIEFile file = CreateLargeRandomFile(bpp);
+            file.Version = 2;
+            file.FileExtType = CVType.CIE;
+            file.Exp = [1, 1, 1];
+            Assert.True(CVFileUtil.WriteCIEFile(path, file));
+            byte[] expected = RenderSerialReference(file, mode, 0.7);
+            Dispatcher dispatcher = WpfTestHost.Invoke(() => Dispatcher.CurrentDispatcher);
+            WriteableBitmap bitmap = await Task.Run(() => CvcieSrgbRenderer.RenderFileForDisplayAsync(
+                path, mode, 0.7, dispatcher, cacheBudgetBytes: 0, CancellationToken.None)).WaitAsync(TimeSpan.FromSeconds(15));
+
+            WpfTestHost.Invoke(() =>
+            {
+                Assert.False(bitmap.IsFrozen);
+                Assert.Same(dispatcher, bitmap.Dispatcher);
+                Assert.Equal(PixelFormats.Bgr24, bitmap.Format);
+                Assert.Equal(expected, ReadPixels(bitmap));
+            });
         }
         finally { File.Delete(path); }
     }

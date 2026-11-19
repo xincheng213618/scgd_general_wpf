@@ -121,6 +121,9 @@ namespace ColorVision.Engine.Media
         public static WriteableBitmap LoadSrgb(string filePath, CvcieBrightnessMode brightnessMode, double referenceWhiteLuminance, CancellationToken cancellationToken = default)
             => CvcieSrgbRenderer.RenderFile(filePath, brightnessMode, referenceWhiteLuminance, cancellationToken);
 
+        internal static long GetDisplayBitmapBytes(int width, int height, int bitsPerPixel)
+            => (((long)width * bitsPerPixel + 31) / 32) * 4 * height;
+
         internal static CvcieDisplaySource LoadSourceForDisplay(string filePath, out bool usesLuminance, out WriteableBitmap? bitmap,
             CancellationToken cancellationToken = default)
         {
@@ -231,7 +234,7 @@ namespace ColorVision.Engine.Media
                     bool streamPixels = loadPixels && streamLargeRgb48 && image.Channels == 3 && image.Bpp == 16
                         && image.Cols <= MediaHelper.RawRgb48StagingBytes / (rgb48BitsPerPixel / 8)
                         && (long)image.Rows * image.Cols <= Array.MaxLength / (rgb48BitsPerPixel / 8)
-                        && (((long)image.Cols * rgb48BitsPerPixel + 31) / 32) * 4 * image.Rows <= int.MaxValue
+                        && GetDisplayBitmapBytes(image.Cols, image.Rows, rgb48BitsPerPixel) <= int.MaxValue
                         && EditableBitmapCopy.ShouldCopyInBackground(image.Cols, image.Rows, rgb48BitsPerPixel);
                     if (!loadPixels || streamPixels)
                     {
@@ -461,7 +464,9 @@ namespace ColorVision.Engine.Media
             if (layer.Kind != ImageLayerKind.Derived) return await LoadSourceLayerAsync(layer, token);
             WriteableBitmap bitmap = layer.Id switch
             {
-                "cie-srgb" => _liveXyz == null ? LoadSrgb(_filePath, mode, white, token) : CvcieSrgbRenderer.Render(_liveXyz, mode, white, token),
+                "cie-srgb" => _liveXyz == null
+                    ? await CvcieSrgbRenderer.RenderFileForDisplayAsync(_filePath, mode, white, _imageView.Dispatcher, DisplayCacheBudgetBytes, token)
+                    : await CvcieSrgbRenderer.RenderForDisplayAsync(_liveXyz, mode, white, _imageView.Dispatcher, DisplayCacheBudgetBytes, token),
                 "cie-x" => LoadCieChannel(0, token),
                 "cie-y" => LoadCieChannel(1, token),
                 "cie-z" => LoadCieChannel(2, token),
@@ -479,8 +484,7 @@ namespace ColorVision.Engine.Media
         {
             if (layerId != "cie-srgb" && layerId is not ("cie-x" or "cie-y" or "cie-z")) return;
             // This is extra storage alongside the mutable display clone. Bound the sum, not each slot.
-            long stride = (((long)bitmap.PixelWidth * bitmap.Format.BitsPerPixel + 31) / 32) * 4;
-            long bytes = stride * bitmap.PixelHeight;
+            long bytes = GetDisplayBitmapBytes(bitmap.PixelWidth, bitmap.PixelHeight, bitmap.Format.BitsPerPixel);
             bool srgb = layerId == "cie-srgb";
             if (srgb) _srgbCache = null;
             else _channelCache = null;

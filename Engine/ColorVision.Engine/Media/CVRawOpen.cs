@@ -1119,7 +1119,8 @@ namespace ColorVision.Engine.Media
                     {
                         try
                         {
-                            srgb = CvRawLayerController.LoadSrgb(requestedFilePath, brightnessMode, referenceWhite, cancellationToken);
+                            srgb = await CvcieSrgbRenderer.RenderFileForDisplayAsync(requestedFilePath, brightnessMode, referenceWhite,
+                                view.Dispatcher, CvRawLayerController.DisplayCacheBudgetBytes, cancellationToken);
                         }
                         catch (OperationCanceledException) { throw; }
                         catch (Exception ex)
@@ -1268,7 +1269,7 @@ namespace ColorVision.Engine.Media
                         bool preservesView = false;
                         if (editableDisplay != null || displayBitmap != null)
                         {
-                            source = editableDisplay ?? displayBitmap!.Clone();
+                            source = editableDisplay ?? (displayBitmap!.IsFrozen ? displayBitmap.Clone() : displayBitmap);
                         }
                         else if (view.ViewBitmapSource is WriteableBitmap current && mat!.MatUpdateWriteableBitmap(current))
                         {
