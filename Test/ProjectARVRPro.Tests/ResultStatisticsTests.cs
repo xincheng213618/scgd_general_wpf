@@ -680,6 +680,7 @@ public sealed class ResultStatisticsTests
 
         HashSet<string> indexNames = database.QueryIndexNames();
         Assert.Contains("IX_ObjectiveTestResultRecord_SN", indexNames);
+        Assert.Contains("IX_ObjectiveTestResultRecord_TrimSN_Id", indexNames);
         Assert.Contains("IX_ObjectiveTestResultRecord_CreateTime", indexNames);
         Assert.Contains("IX_ObjectiveTestResultRecord_UpdateTime", indexNames);
         Assert.Contains("IX_ObjectiveTestResultRecord_TotalResult", indexNames);

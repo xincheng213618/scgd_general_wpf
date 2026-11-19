@@ -156,18 +156,7 @@ namespace ProjectARVRPro
 
         private static void WriteRow(TextWriter writer, IEnumerable<string> fields)
         {
-            writer.WriteLine(string.Join(",", fields.Select(EscapeCsv)));
-        }
-
-        private static string EscapeCsv(string? field)
-        {
-            if (string.IsNullOrEmpty(field))
-                return string.Empty;
-
-            if (!field.Contains(',') && !field.Contains('"') && !field.Contains('\r') && !field.Contains('\n'))
-                return field;
-
-            return $"\"{field.Replace("\"", "\"\"")}\"";
+            writer.WriteLine(string.Join(",", fields.Select(ObjectiveTestCsvRow.EscapeCsvField)));
         }
     }
 }

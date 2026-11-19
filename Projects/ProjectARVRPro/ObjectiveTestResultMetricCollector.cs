@@ -12,6 +12,7 @@ namespace ProjectARVRPro
     public static class ObjectiveTestResultMetricCollector
     {
         public const string KeySeparator = "\u001F";
+        private static readonly PropertyInfo[] ObjectiveProperties = ResultPropertySet.For(typeof(ObjectiveTestResult)).OrderedProperties;
 
         public static IReadOnlyList<ObjectiveTestResultMetric> Collect(ObjectiveTestResult result)
         {
@@ -20,9 +21,7 @@ namespace ProjectARVRPro
             var metrics = new List<ObjectiveTestResultMetric>();
             var keys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-            foreach (PropertyInfo property in typeof(ObjectiveTestResult)
-                .GetProperties(BindingFlags.Public | BindingFlags.Instance)
-                .OrderBy(item => item.MetadataToken))
+            foreach (PropertyInfo property in ObjectiveProperties)
             {
                 if (IsSeparatelyCollectedProperty(property.Name))
                     continue;
@@ -177,14 +176,8 @@ namespace ProjectARVRPro
             ICollection<ObjectiveTestResultMetric> metrics,
             ISet<string> keys)
         {
-            PropertyInfo[] properties = source.GetType()
-                .GetProperties(BindingFlags.Public | BindingFlags.Instance)
-                .OrderBy(item => item.MetadataToken)
-                .ToArray();
-            bool hasMultiplePoiCollections = properties.Count(property =>
-                typeof(IEnumerable<PoixyuvData>).IsAssignableFrom(property.PropertyType)) > 1;
-
-            foreach (PropertyInfo property in properties)
+            ResultPropertySet properties = ResultPropertySet.For(source.GetType());
+            foreach (PropertyInfo property in properties.OrderedProperties)
             {
                 object? value;
                 try
@@ -202,7 +195,7 @@ namespace ProjectARVRPro
                 }
                 else if (value is IEnumerable<PoixyuvData> pois)
                 {
-                    string poiTestName = hasMultiplePoiCollections
+                    string poiTestName = properties.HasMultiplePoiCollections
                         ? $"{testName}_{GetPoiGroupName(property.Name)}"
                         : testName;
                     foreach (PoixyuvData? poi in pois)

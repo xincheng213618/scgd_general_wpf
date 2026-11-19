@@ -15,6 +15,7 @@ internal static class ResultSqliteSchema
         ResultJsonPayloadStorage.EnsureSchema(db);
 
         db.Ado.ExecuteCommand($"CREATE INDEX IF NOT EXISTS \"IX_{ObjectiveTable}_SN\" ON \"{ObjectiveTable}\" (\"SN\");");
+        db.Ado.ExecuteCommand($"CREATE INDEX IF NOT EXISTS \"IX_{ObjectiveTable}_TrimSN_Id\" ON \"{ObjectiveTable}\" (TRIM(\"SN\"), \"Id\");");
         db.Ado.ExecuteCommand($"CREATE INDEX IF NOT EXISTS \"IX_{ObjectiveTable}_CreateTime\" ON \"{ObjectiveTable}\" (\"CreateTime\");");
         db.Ado.ExecuteCommand($"CREATE INDEX IF NOT EXISTS \"IX_{ObjectiveTable}_UpdateTime\" ON \"{ObjectiveTable}\" (\"UpdateTime\");");
         db.Ado.ExecuteCommand($"CREATE INDEX IF NOT EXISTS \"IX_{ObjectiveTable}_TotalResult\" ON \"{ObjectiveTable}\" (\"TotalResult\");");
