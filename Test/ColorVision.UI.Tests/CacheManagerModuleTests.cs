@@ -6,6 +6,7 @@ using ColorVision.FileIO;
 using cvColorVision;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography;
 
 namespace ColorVision.UI.Tests;
 
@@ -201,6 +202,78 @@ public sealed class CacheManagerModuleTests
         {
             pinned.Free();
         }
+    }
+
+    [Fact]
+    public void DeferredColorHasIndependentBoundedCacheAndRefreshesFileRevisions()
+    {
+        string root = Directory.CreateTempSubdirectory("cv-deferred-cache-").FullName;
+        GCHandle pinned = GCHandle.Alloc(new byte[3 * 2 * 3 * sizeof(ushort)], GCHandleType.Pinned);
+        try
+        {
+            using LocalCalibrationCacheManager manager = new("deferred-cache-test");
+            const string dark = """{"bpp":16,"Texp_x":1.0,"DarkNoiseRatio":2.0}""";
+            const string color = """{"a":1,"b":0,"c":0,"d":0,"e":1,"f":0,"g":0,"h":0,"i":1}""";
+            DeviceCameraCalibrationFile darkA = CreateFile("dark-a.dat", CalibrationType.DarkNoise, dark);
+            DeviceCameraCalibrationFile darkB = CreateFile("dark-b.dat", CalibrationType.DarkNoise, dark);
+            DeviceCameraCalibrationFile colorA = CreateFile("color-a.dat", CalibrationType.LumFourColor, color);
+            DeviceCameraCalibrationFile colorB = CreateFile("color-b.dat", CalibrationType.LumFourColor, color);
+            DeviceCameraCalibrationFile colorC = CreateFile("color-c.dat", CalibrationType.LumFourColor, color);
+
+            LocalCalibrationExecution initial = Execute(darkA, colorA);
+            Assert.Equal(new[] { darkA.DisplayName, colorA.DisplayName }, initial.Sources.Select(source => source.Name));
+            Assert.Equal(1d, initial.Transform!.Value.Coefficients[0]);
+            Execute(darkB, colorA);
+            Assert.Equal(1U, OwnerCount(darkA));
+            Assert.Equal(1U, OwnerCount(darkB));
+            Assert.Equal(1U, OwnerCount(colorA));
+
+            Execute(darkA, colorB);
+            Execute(darkA, colorA);
+            Execute(darkB, colorC);
+            Assert.Equal(1U, OwnerCount(colorA));
+            Assert.Equal(0U, OwnerCount(colorB));
+            Assert.Equal(1U, OwnerCount(colorC));
+            Assert.Equal(1U, OwnerCount(darkA));
+            Assert.Equal(1U, OwnerCount(darkB));
+
+            DateTime previousWriteTime = File.GetLastWriteTimeUtc(colorA.FullPath);
+            File.WriteAllText(colorA.FullPath, color.Replace("\"a\":1", "\"a\":2", StringComparison.Ordinal));
+            File.SetLastWriteTimeUtc(colorA.FullPath, previousWriteTime.AddMinutes(1));
+            LocalCalibrationExecution updated = Execute(darkA, colorA);
+            string digest = Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(colorA.FullPath)));
+            Assert.Equal(2d, updated.Transform!.Value.Coefficients[0]);
+            Assert.NotEqual(initial.Sources[1].FileSha256, digest);
+            Assert.Equal(digest, updated.Sources[1].FileSha256);
+
+            Assert.Equal(4, manager.ReleaseCache());
+            Assert.Equal(0, manager.ReleaseCache());
+            Assert.Equal(0U, OwnerCount(darkA));
+            Assert.Equal(0U, OwnerCount(darkB));
+            Assert.Equal(0U, OwnerCount(colorA));
+            Assert.Equal(0U, OwnerCount(colorC));
+
+            DeviceCameraCalibrationFile CreateFile(string name, CalibrationType type, string content)
+            {
+                string path = Path.Combine(root, name);
+                File.WriteAllText(path, content);
+                return new DeviceCameraCalibrationFile(name, type, name, name, path);
+            }
+
+            LocalCalibrationExecution Execute(DeviceCameraCalibrationFile darkFile, DeviceCameraCalibrationFile colorFile)
+                => manager.Execute(new LocalCalibrationLayout(3, 2, 16, 3), [colorFile, darkFile],
+                    pinned.AddrOfPinnedObject(), IntPtr.Zero, [1, 1, 1], default, allowAcceleration: true);
+        }
+        finally
+        {
+            pinned.Free();
+            Directory.Delete(root, recursive: true);
+        }
+
+        static uint OwnerCount(DeviceCameraCalibrationFile file)
+            => checked((uint)LocalCalibrationCacheManager.GetEntries().Entries.Where(
+                entry => string.Equals(entry.FilePath, file.FullPath, StringComparison.OrdinalIgnoreCase))
+                .Sum(entry => (long)entry.ActiveOwnerCount));
     }
 
     private sealed class TestCacheModule(string id) : ICacheModule

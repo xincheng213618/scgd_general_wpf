@@ -22,10 +22,15 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
         // Keep the camera and downstream templates hot without allowing native
         // correction maps to grow with every workflow variant.
         private const int MaxCachedContexts = 2;
+        // Deferred color contexts hold only calibration parameters. These two
+        // slots add no RAW scratch or spatial map capacity to the general cache.
+        private const int MaxDeferredColorContexts = 2;
         private readonly LinkedList<CachedContext> contexts = new();
+        private readonly LinkedList<CachedContext> deferredColorContexts = new();
         private bool disposed;
 
-        public int CachedItemCount => contexts.Sum(entry => entry.Files.Length);
+        public int CachedItemCount => contexts.Sum(entry => entry.Files.Length)
+            + deferredColorContexts.Sum(entry => entry.Files.Length);
 
         public LocalCalibrationExecution Execute(
             LocalCalibrationLayout layout,
@@ -46,10 +51,10 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
 
             if (allowAcceleration && calibrationFiles.Any(file => IsColorCalibration(file.CalibrationType)))
             {
-                // Extract a small immutable transform before executing basic stages. Two
-                // cached contexts retain the basic chain and color parameters, without XYZ.
+                // Extract the color parameters before executing the basic stages, without allocating XYZ.
                 DeviceCameraCalibrationFile[] colorFiles = calibrationFiles.Where(file => IsColorCalibration(file.CalibrationType)).ToArray();
-                CachedContext colorContext = FlowNodeTiming.Run("LoadCalibrationResources", () => Prepare(layout, colorFiles, ciePointer, true));
+                CachedContext colorContext = FlowNodeTiming.Run("LoadCalibrationResources",
+                    () => Prepare(layout, colorFiles, ciePointer, deferredColorOnly: true));
                 CalibrationExecutionOptionsV1 deferredOptions = CreateExecutionOptions(exposure, calibrationRoi);
                 RawColorTransformV1 deferred = RawColorTransformV1.Create();
                 int deferredResult = OpenCVMediaHelper.M_CalibrationGetColorTransformV1(colorContext.Context, in deferredOptions, ref deferred);
@@ -134,31 +139,33 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             LocalCalibrationLayout layout,
             IReadOnlyList<DeviceCameraCalibrationFile> calibrationFiles,
             IntPtr ciePointer,
-            bool allowAcceleration = false)
+            bool deferredColorOnly = false)
         {
             CachedCalibrationFile[] requestedFiles = calibrationFiles.Select(CreateCachedFile).ToArray();
             int colorFileCount = requestedFiles.Count(file => IsColorCalibration(file.CalibrationType));
             if (colorFileCount > 1) throw new InvalidOperationException("本地校正一次只能选择一个亮度/颜色校正文件。");
-            if (colorFileCount == 1 && ciePointer == IntPtr.Zero && !allowAcceleration)
+            if (colorFileCount == 1 && ciePointer == IntPtr.Zero && !deferredColorOnly)
             {
                 throw new ArgumentException("选择亮度/颜色校正后，CIE 输出指针不能为空。", nameof(ciePointer));
             }
 
-            LinkedListNode<CachedContext>? cachedNode = Find(layout, requestedFiles);
+            LinkedList<CachedContext> cache = deferredColorOnly ? deferredColorContexts : contexts;
+            LinkedListNode<CachedContext>? cachedNode = Find(cache, layout, requestedFiles);
             if (cachedNode != null)
             {
-                contexts.Remove(cachedNode);
-                contexts.AddFirst(cachedNode);
+                cache.Remove(cachedNode);
+                cache.AddFirst(cachedNode);
                 return cachedNode.Value;
             }
 
-            if (contexts.Count >= MaxCachedContexts)
+            int capacity = deferredColorOnly ? MaxDeferredColorContexts : MaxCachedContexts;
+            if (cache.Count >= capacity)
             {
-                EvictLeastRecentlyUsed();
+                EvictLeastRecentlyUsed(cache);
             }
 
             CachedContext created = CreateContext(layout, requestedFiles);
-            contexts.AddFirst(created);
+            cache.AddFirst(created);
             return created;
         }
 
@@ -176,11 +183,12 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             return (rawByteLength, cieFloatCount);
         }
 
-        private LinkedListNode<CachedContext>? Find(
+        private static LinkedListNode<CachedContext>? Find(
+            LinkedList<CachedContext> cache,
             LocalCalibrationLayout layout,
             IReadOnlyList<CachedCalibrationFile> requestedFiles)
         {
-            LinkedListNode<CachedContext>? node = contexts.First;
+            LinkedListNode<CachedContext>? node = cache.First;
             while (node != null)
             {
                 if (Matches(node.Value, layout, requestedFiles)) return node;
@@ -254,12 +262,12 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             }
         }
 
-        private void EvictLeastRecentlyUsed()
+        private static void EvictLeastRecentlyUsed(LinkedList<CachedContext> cache)
         {
-            LinkedListNode<CachedContext>? leastRecentlyUsed = contexts.Last;
+            LinkedListNode<CachedContext>? leastRecentlyUsed = cache.Last;
             if (leastRecentlyUsed == null) return;
 
-            contexts.Remove(leastRecentlyUsed);
+            cache.Remove(leastRecentlyUsed);
             IntPtr contextToRelease = leastRecentlyUsed.Value.Context;
             leastRecentlyUsed.Value.Context = IntPtr.Zero;
             Exception? releaseError = TryDestroyContext(contextToRelease);
@@ -270,16 +278,19 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
         {
             int released = CachedItemCount;
             List<Exception>? releaseErrors = null;
-            while (contexts.First != null)
+            foreach (LinkedList<CachedContext> cache in new[] { contexts, deferredColorContexts })
             {
-                CachedContext cachedContext = contexts.First.Value;
-                contexts.RemoveFirst();
-                IntPtr contextToRelease = cachedContext.Context;
-                cachedContext.Context = IntPtr.Zero;
-                Exception? releaseError = TryDestroyContext(contextToRelease);
-                if (releaseError != null)
+                while (cache.First != null)
                 {
-                    (releaseErrors ??= new List<Exception>()).Add(releaseError);
+                    CachedContext cachedContext = cache.First.Value;
+                    cache.RemoveFirst();
+                    IntPtr contextToRelease = cachedContext.Context;
+                    cachedContext.Context = IntPtr.Zero;
+                    Exception? releaseError = TryDestroyContext(contextToRelease);
+                    if (releaseError != null)
+                    {
+                        (releaseErrors ??= new List<Exception>()).Add(releaseError);
+                    }
                 }
             }
 
