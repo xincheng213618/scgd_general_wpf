@@ -802,9 +802,10 @@ CalibrationFileLoadResult loadCalibrationFileOnce(
         pendingLoad.fail(error, false);
         return CalibrationFileLoadResult::Failure;
     }
-    const std::uint64_t estimatedMemoryBytes = (std::max)(
-        static_cast<std::uint64_t>(metadata.size),
-        loadedShared->cacheFootprintBytes());
+    const auto footprint = loadedShared->cacheFootprintBytes();
+    // Binary maps report all storage they retain after lossless packing.
+    const std::uint64_t estimatedMemoryBytes = (type == CalibrationType::Dsnu || type == CalibrationType::Uniformity)
+        ? footprint : (std::max)(static_cast<std::uint64_t>(metadata.size), footprint);
     if (!pendingLoad.succeed(loadedShared, estimatedMemoryBytes, error, verifiedSource ? &loadedDigest : nullptr)) {
         return entry->retry.load(std::memory_order_relaxed)
             ? CalibrationFileLoadResult::Retry

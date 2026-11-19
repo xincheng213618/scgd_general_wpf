@@ -1112,6 +1112,25 @@ void runSmallBudgetCacheCoverage(bool verified)
     if (afterAllOwners.entryCount != 0 || afterAllOwners.estimatedMemoryBytes != 0) {
         throw std::runtime_error("Cache remained over budget after all active owners ended");
     }
+
+    constexpr std::uint32_t compactWidth = 768;
+    const auto compactFile = directory.path / "compact_dsnu.dat";
+    writeMap(compactFile, 16, 16, std::vector<std::uint16_t>(compactWidth * height, 1), 1, compactWidth, height);
+    Context compact = createContext();
+    load(compact, compactFile);
+    compact.reset();
+    const auto retained = readCalibrationCacheStats();
+    if (std::filesystem::file_size(compactFile) <= retained.budgetBytes || retained.entryCount != 1
+        || retained.estimatedMemoryBytes < compactWidth * height || retained.estimatedMemoryBytes > retained.budgetBytes) {
+        throw std::runtime_error("A compact DSNU map that fits in memory was evicted at its source file size");
+    }
+    Context reopened = createContext();
+    load(reopened, compactFile);
+    const auto compactHit = readCalibrationCacheStats();
+    if (compactHit.hitCount != retained.hitCount + 1 || compactHit.missCount != retained.missCount) {
+        throw std::runtime_error("Reopening a retained compact DSNU map reloaded it");
+    }
+    reopened.reset();
     releaseCalibrationCache();
 }
 

@@ -77,7 +77,8 @@ canonical file path, so different camera/template groups reuse the same file
 data and precomputed maps while keeping independent execution contexts. File
 size and last-write time invalidate stale generations. The default retained
 memory budget is 4 GiB; set `COLORVISION_CALIBRATION_CACHE_MB` before first use
-to override it (`0` disables retention). Use
+to override it (`0` disables retention). DSNU and Uniformity count the memory
+retained by the parsed maps, including lossless packed data and its indexes. Use
 `M_CalibrationCacheGetStatsV1`/`M_CalibrationCacheGetEntryV1` to inspect the
 cache and `M_CalibrationCacheReleaseV1` to drop cache-owned references. Releasing
 the cache never invalidates a live context; the release result reports memory
