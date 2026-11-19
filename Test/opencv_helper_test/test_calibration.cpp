@@ -998,7 +998,7 @@ void verifyAdjacentMapEquivalence(const std::filesystem::path& directory, bool c
             (reverse ? uniformity : dsnu).c_str()), combined.get(), "load adjacent first");
         requireResult(M_CalibrationLoadFileW(combined.get(), reverse ? 4 : 5,
             (reverse ? dsnu : uniformity).c_str()), combined.get(), "load adjacent second");
-        for (int layout = 0; layout < 3; ++layout) {
+        for (int layout = 0; layout < 4; ++layout) {
             const std::uint32_t imageWidth = layout == 2 ? 5 : width;
             const std::uint32_t imageHeight = layout == 2 ? 5 : height;
             std::vector<std::uint16_t> expected(imageWidth * imageHeight * channels);
@@ -1010,6 +1010,8 @@ void verifyAdjacentMapEquivalence(const std::filesystem::path& directory, bool c
             options.interleavedBgr = layout == 1 ? 0 : 1;
             if (layout == 2) {
                 options.roiX = 1; options.roiY = 2;
+            }
+            if (layout >= 2) {
                 options.roiWidth = imageWidth; options.roiHeight = imageHeight;
             }
             const auto run = [&](void* context, std::vector<std::uint16_t>& pixels) {
@@ -1029,7 +1031,7 @@ void verifyAdjacentMapEquivalence(const std::filesystem::path& directory, bool c
                 nullptr, 0, &options), combined.get(), "execute adjacent maps to distinct output");
             if (readOnlySource != source || distinct != expected)
                 throw std::runtime_error("Adjacent maps changed read-only source or distinct output");
-            if (layout == 0) {
+            if (layout == 0 || layout == 3) {
                 for (std::size_t i = 0; i < actual.size(); ++i) {
                     const auto applyDsnu = [&](std::uint16_t value) {
                         return value < offsets[i] ? std::uint16_t{0} : static_cast<std::uint16_t>(value - offsets[i]);
@@ -1261,16 +1263,19 @@ void verifyRawOutputFlip(const std::filesystem::path& directory)
             }
             // BGR, planar RGB, and individual R/G/B exercise distinct writers.
             for (int layout = 0; layout < 5; ++layout) {
-                for (bool roi : { false, true }) {
-                    const int width = roi ? 9 : 17, height = roi ? 7 : 13;
+                for (int roiMode = 0; roiMode < 3; ++roiMode) {
+                    const bool cropped = roiMode == 1;
+                    const int width = cropped ? 9 : 17, height = cropped ? 7 : 13;
                     const int channels = layout < 2 ? 3 : 1;
                     MCalibrationExecutionOptionsV1 options{};
                     options.structSize = sizeof(options);
                     options.interleavedBgr = layout != 1;
                     options.rgbType = layout < 2 ? 0 : layout - 1;
                     options.exposureX = options.exposureY = options.exposureZ = 1;
-                    if (roi) {
+                    if (cropped) {
                         options.roiX = 2; options.roiY = 1;
+                    }
+                    if (roiMode != 0) {
                         options.roiWidth = width; options.roiHeight = height;
                     }
                     std::vector<std::uint8_t> source(width * height * channels * bits / 8);

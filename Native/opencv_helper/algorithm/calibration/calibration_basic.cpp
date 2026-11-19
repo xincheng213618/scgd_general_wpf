@@ -820,9 +820,11 @@ private:
 
     bool matchesFullMap16(const ImageView& raw, const ExecutionOptions& options) const
     {
+        // A configured ROI covering this entire map uses the full-frame path.
+        const bool fullFrame = options.roi == std::array<std::uint32_t, 4>{}
+            || options.roi == std::array<std::uint32_t, 4>{0, 0, raw.width, raw.height};
         return raw.bitsPerChannel == 16 && (raw.channels == 1 || raw.channels == 3)
-            && options.interleavedBgr && options.rgbType == 0
-            && std::all_of(options.roi.begin(), options.roi.end(), [](auto value) { return value == 0; })
+            && options.interleavedBgr && options.rgbType == 0 && fullFrame
             && header_.version == 1 && header_.sourceBitsPerChannel == 16
             && header_.channels == raw.channels
             && header_.width == raw.width && header_.height == raw.height;
