@@ -350,6 +350,73 @@ std::vector<std::uint8_t> referenceDistortion(
     return bytes;
 }
 
+void verifyColorShiftInterleaved(const std::filesystem::path& directory)
+{
+    constexpr int width = 13;
+    constexpr int height = 7;
+    const std::array<std::array<std::pair<int, int>, 3>, 3> variants{{
+        {{{2, -1}, {0, 0}, {-3, -2}}},
+        {{{2, 1}, {2, 1}, {2, 1}}},
+        {{{6, 0}, {0, 0}, {-6, 0}}},
+    }};
+    MCalibrationExecutionOptionsV1 options{};
+    options.structSize = sizeof(options);
+    options.interleavedBgr = 1;
+    int caseNumber = 0;
+    for (const auto& shifts : variants) {
+        for (bool fill : {false, true}) {
+            const auto path = directory / ("color_shift_interleaved_" + std::to_string(caseNumber++) + ".json");
+            auto offsets = nlohmann::json::array();
+            for (const auto& [x, y] : shifts) offsets.push_back({{"X", x}, {"Y", y}});
+            writeText(path, nlohmann::json{{"fillOffset", fill}, {"offset", offsets}}.dump());
+            Context context = createContext();
+            requireResult(M_CalibrationLoadFileW(context.get(), 12, path.c_str()), context.get(), "load interleaved ColorShift");
+            for (std::uint32_t bits : {8U, 16U}) {
+                const std::size_t bytesPerSample = bits / 8;
+                std::vector<std::uint8_t> input(width * height * 3 * bytesPerSample);
+                for (std::size_t i = 0; i < input.size(); ++i) input[i] = static_cast<std::uint8_t>(13 + 23 * i);
+                const auto before = input;
+                std::vector<std::uint8_t> expected(input.size());
+                for (int row = 0; row < height; ++row) {
+                    for (int column = 0; column < width; ++column) {
+                        for (int channel = 0; channel < 3; ++channel) {
+                            const auto [dx, dy] = shifts[channel];
+                            const int sourceRow = row - dy;
+                            int sourceColumn = column - dx;
+                            if (fill && (sourceColumn < 0 || sourceColumn >= width)) sourceColumn = column;
+                            if (sourceRow >= 0 && sourceRow < height && sourceColumn >= 0 && sourceColumn < width) {
+                                const auto sourceSample = (sourceRow * width + sourceColumn) * 3 + channel;
+                                const auto outputSample = (row * width + column) * 3 + channel;
+                                std::memcpy(expected.data() + outputSample * bytesPerSample,
+                                    input.data() + sourceSample * bytesPerSample, bytesPerSample);
+                            }
+                        }
+                    }
+                }
+                std::vector<std::uint8_t> actual(input.size() + 4, 0xA5);
+                requireResult(M_CalibrationExecuteToV1(context.get(), width, height, bits, 3, input.data(), input.size(),
+                    actual.data() + 2, input.size(), nullptr, 0, &options), context.get(), "apply interleaved ColorShift");
+                if (input != before || !std::equal(expected.begin(), expected.end(), actual.begin() + 2)
+                    || actual[0] != 0xA5 || actual[1] != 0xA5
+                    || actual[actual.size() - 2] != 0xA5 || actual.back() != 0xA5) {
+                    throw std::runtime_error("Interleaved ColorShift changed samples, source, or output guards");
+                }
+            }
+        }
+    }
+
+    const auto invalidFill = directory / "color_shift_invalid_fill.json";
+    writeText(invalidFill, R"({"fillOffset":true,"offset":[{"X":7,"Y":0},{"X":0,"Y":0},{"X":0,"Y":0}]})");
+    Context context = createContext();
+    requireResult(M_CalibrationLoadFileW(context.get(), 12, invalidFill.c_str()), context.get(), "load invalid-fill ColorShift");
+    std::array<std::uint8_t, width * height * 3> input{};
+    std::array<std::uint8_t, width * height * 3> output{};
+    if (M_CalibrationExecuteToV1(context.get(), width, height, 8, 3, input.data(), input.size(),
+        output.data(), output.size(), nullptr, 0, &options) != M_CALIBRATION_EXECUTE_FAILED) {
+        throw std::runtime_error("ColorShift accepted an invalid filled strip");
+    }
+}
+
 void verifyLargeDistortion(const std::filesystem::path& directory)
 {
     constexpr int width = 2503;
@@ -1320,6 +1387,7 @@ void runSyntheticCoverage()
     verifyRawOutputFlip(directory.path);
     verifyLargeUniformityOutput(directory.path);
     verifyLargeDistortion(directory.path);
+    verifyColorShiftInterleaved(directory.path);
     verifyLargeColorDiffOutput(directory.path);
     verifyColorDiffMixedOffsets(directory.path);
     verifyLargeMatrixColorOutput(directory.path);

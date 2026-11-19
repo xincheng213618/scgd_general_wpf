@@ -748,12 +748,23 @@ public:
                 destination.data);
 
             if (!hasChannelOffsets_) {
-                if (commonOffset_.x == 0 && commonOffset_.y == 0) {
-                    source.copyTo(output);
-                    return true;
+                applyCommonOffset(source, output, commonOffset_);
+                return true;
+            }
+
+            if (options.interleavedBgr && canGatherInterleaved(source, output)) {
+                const PixelOffset first = channelOffsets_.front();
+                if (std::all_of(channelOffsets_.begin() + 1, channelOffsets_.end(), [first](const PixelOffset& offset) {
+                        return first.x == offset.x && first.y == offset.y;
+                    })) {
+                    applyCommonOffset(source, output, first);
                 }
-                warp(source, output, commonOffset_);
-                preserveLegacyFillBehavior(output, commonOffset_);
+                else if (raw.bitsPerChannel == 8) {
+                    gatherInterleaved<std::uint8_t>(source, output);
+                }
+                else {
+                    gatherInterleaved<std::uint16_t>(source, output);
+                }
                 return true;
             }
 
@@ -815,6 +826,83 @@ private:
         , commonOffset_(source.commonOffset_)
         , channelOffsets_(source.channelOffsets_)
     {
+    }
+
+    void applyCommonOffset(const cv::Mat& source, cv::Mat& output, const PixelOffset& offset) const
+    {
+        if (offset.x == 0 && offset.y == 0) {
+            source.copyTo(output);
+            return;
+        }
+        warp(source, output, offset);
+        preserveLegacyFillBehavior(output, offset);
+    }
+
+    bool canGatherInterleaved(const cv::Mat& source, const cv::Mat& output) const
+    {
+        constexpr int maximumDimension = (std::numeric_limits<short>::max)();
+        if (source.cols >= maximumDimension || source.rows >= maximumDimension) {
+            return false;
+        }
+        if (source.depth() == CV_16U
+            && (reinterpret_cast<std::uintptr_t>(source.data) % alignof(std::uint16_t) != 0
+                || reinterpret_cast<std::uintptr_t>(output.data) % alignof(std::uint16_t) != 0)) {
+            return false;
+        }
+        return std::all_of(channelOffsets_.begin(), channelOffsets_.end(), [&](const PixelOffset& offset) {
+            return offset.x > -source.cols && offset.x < source.cols
+                && offset.y > -source.rows && offset.y < source.rows
+                // A wider filled strip fails the legacy OpenCV ROI operation.
+                && (!fillOffset_ || std::abs(offset.x) <= source.cols / 2);
+        });
+    }
+
+    template<typename Sample>
+    void gatherInterleaved(const cv::Mat& source, cv::Mat& output) const
+    {
+        const int firstInterior = (std::max)({0, channelOffsets_[0].x, channelOffsets_[1].x, channelOffsets_[2].x});
+        const int endInterior = source.cols + (std::min)({0, channelOffsets_[0].x, channelOffsets_[1].x, channelOffsets_[2].x});
+        cv::parallel_for_(cv::Range(0, source.rows), [&](const cv::Range& rows) {
+            for (int row = rows.start; row < rows.end; ++row) {
+                std::array<const Sample*, 3> shiftedRows{};
+                for (std::size_t channel = 0; channel < shiftedRows.size(); ++channel) {
+                    const int inputRow = row - channelOffsets_[channel].y;
+                    if (inputRow >= 0 && inputRow < source.rows) {
+                        shiftedRows[channel] = source.ptr<Sample>(inputRow);
+                    }
+                }
+                auto* outputRow = output.ptr<Sample>(row);
+                const auto writeEdge = [&](int column) {
+                    auto* pixel = outputRow + column * 3;
+                    for (std::size_t channel = 0; channel < shiftedRows.size(); ++channel) {
+                        const auto* input = shiftedRows[channel];
+                        int inputColumn = column - channelOffsets_[channel].x;
+                        if (inputColumn < 0 || inputColumn >= source.cols) {
+                            // Legacy filling copies the adjacent shifted strip, which samples
+                            // the same original X. It leaves the vertical zero border intact.
+                            inputColumn = fillOffset_ ? column : -1;
+                        }
+                        pixel[channel] = input && inputColumn >= 0 ? input[inputColumn * 3 + channel] : Sample{};
+                    }
+                };
+                int column = 0;
+                if (firstInterior < endInterior && shiftedRows[0] && shiftedRows[1] && shiftedRows[2]) {
+                    for (; column < firstInterior; ++column) writeEdge(column);
+                    const Sample* blue = shiftedRows[0] + (column - channelOffsets_[0].x) * 3;
+                    const Sample* green = shiftedRows[1] + (column - channelOffsets_[1].x) * 3;
+                    const Sample* red = shiftedRows[2] + (column - channelOffsets_[2].x) * 3;
+                    Sample* destination = outputRow + column * 3;
+                    const int samples = (endInterior - firstInterior) * 3;
+                    for (int index = 0; index < samples; index += 3) {
+                        destination[index] = blue[index];
+                        destination[index + 1] = green[index + 1];
+                        destination[index + 2] = red[index + 2];
+                    }
+                    column = endInterior;
+                }
+                for (; column < source.cols; ++column) writeEdge(column);
+            }
+        });
     }
 
     static void warp(const cv::Mat& source, cv::Mat& destination, const PixelOffset& offset)
