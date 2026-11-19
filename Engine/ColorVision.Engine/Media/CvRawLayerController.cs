@@ -439,6 +439,10 @@ namespace ColorVision.Engine.Media
             if (useGate) await _loadGate.WaitAsync(token);
             try
             {
+                // Cached pixels must belong to the revision that opened this view.
+                using FileStream? verifiedCache = cached.HasValue && _fileRevision is { } revision
+                    ? await Task.Run(() => revision.OpenRead(_filePath), token)
+                    : null;
                 var (bitmap, layer) = cached ?? await Task.Run(async () =>
                 {
                     // Display loaders may open the path again. Hold this revision until they finish.
@@ -488,12 +492,8 @@ namespace ColorVision.Engine.Media
             bool srgb = layerId == "cie-srgb";
             if (srgb) _srgbCache = null;
             else _channelCache = null;
-            if (bytes > DisplayCacheBudgetBytes)
-            {
-                _srgbCache = null;
-                _channelCache = null;
-                return;
-            }
+            // An uncached layer does not spend the budget of the other cached layer.
+            if (bytes > DisplayCacheBudgetBytes) return;
 
             DisplayCache? other = srgb ? _channelCache : _srgbCache;
             if (bytes + (other?.Bytes ?? 0) > DisplayCacheBudgetBytes)

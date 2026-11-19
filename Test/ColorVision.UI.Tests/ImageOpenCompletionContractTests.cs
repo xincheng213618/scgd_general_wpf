@@ -513,12 +513,15 @@ public sealed class ImageOpenCompletionContractTests(ITestOutputHelper output)
     }
 
     [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public async Task DiskCvcieRejectsNewPixelsAtTheSamePathUntilReopened(bool measurementWasLoaded)
+    [InlineData(false, false)]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    [InlineData(true, true)]
+    public async Task DiskCvcieRejectsNewPixelsAtTheSamePathUntilReopened(bool measurementWasLoaded, bool layerWasCached)
     {
         string path = Path.Combine(Path.GetTempPath(), $"cv-measurement-revision-{Guid.NewGuid():N}.cvcie");
         ImageView? view = null;
+        CvcieDisplayMode originalMode = WpfTestHost.Invoke(() => CvcieDisplayConfig.Current.DisplayMode);
         try
         {
             WriteCvcieMeasurementFixture(path, firstValue: 1);
@@ -526,6 +529,7 @@ public sealed class ImageOpenCompletionContractTests(ITestOutputHelper output)
             CVRawOpen opener = WpfTestHost.Invoke(() =>
             {
                 EnsureImageViewTestResources();
+                if (layerWasCached) CvcieDisplayConfig.Current.EnableTrueColor = true;
                 view = new ImageView();
                 return new CVRawOpen(view.EditorContext);
             });
@@ -535,13 +539,24 @@ public sealed class ImageOpenCompletionContractTests(ITestOutputHelper output)
                 return opener.OpenImageAsync(view.EditorContext, path);
             });
             await Open().WaitAsync(TimeSpan.FromSeconds(10));
+            var controller = WpfTestHost.Invoke(() => (CvRawLayerController)typeof(ImageView)
+                .GetField("_layerController", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(view)!);
+            ImageLayerDescriptor layer = controller.Layers.Single(item => item.Id == "cie-x");
+            if (layerWasCached)
+            {
+                ImageLayerDescriptor initial = WpfTestHost.Invoke(() => view!.SelectedLayer!);
+                Assert.Equal("cie-srgb", initial.Id);
+                ImageSource before = WpfTestHost.Invoke(() => view!.ViewBitmapSource);
+                await WpfTestHost.Invoke(() => controller.SelectLayerAsync(layer)).WaitAsync(TimeSpan.FromSeconds(10));
+                WpfTestHost.Invoke(() => Assert.NotSame(before, view!.ViewBitmapSource));
+                await WpfTestHost.Invoke(() => controller.SelectLayerAsync(initial)).WaitAsync(TimeSpan.FromSeconds(10));
+            }
             if (measurementWasLoaded)
                 await WpfTestHost.Invoke(() => opener.PrepareMeasurementAsync().AsTask()).WaitAsync(TimeSpan.FromSeconds(10));
             var old = WpfTestHost.Invoke(() =>
             {
-                var controller = (CvRawLayerController)typeof(ImageView).GetField("_layerController", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(view)!;
                 var profile = view!.EditorContext.ProcessingContext.ProfileMeasurementSources!.Single(option => option.Name == "CIE XYZ");
-                return (Controller: controller, Profile: profile, Bitmap: view.ViewBitmapSource, Layer: view.SelectedLayer);
+                return (Profile: profile, Bitmap: view.ViewBitmapSource, Layer: view.SelectedLayer);
             });
 
             WriteCvcieMeasurementFixture(path, firstValue: 101);
@@ -559,8 +574,7 @@ public sealed class ImageOpenCompletionContractTests(ITestOutputHelper output)
                 await Assert.ThrowsAsync<CvcieFileChangedException>(() => WpfTestHost.Invoke(() => opener.PrepareMeasurementAsync().AsTask()));
             }
             Assert.Throws<CvcieFileChangedException>(() => old.Profile.Open(default));
-            ImageLayerDescriptor layer = old.Controller.Layers.Single(item => item.Id == "cie-x");
-            await WpfTestHost.Invoke(() => old.Controller.SelectLayerAsync(layer)).WaitAsync(TimeSpan.FromSeconds(10));
+            await WpfTestHost.Invoke(() => controller.SelectLayerAsync(layer)).WaitAsync(TimeSpan.FromSeconds(10));
             WpfTestHost.Invoke(() =>
             {
                 Assert.Same(old.Bitmap, view!.ViewBitmapSource);
@@ -574,7 +588,11 @@ public sealed class ImageOpenCompletionContractTests(ITestOutputHelper output)
         }
         finally
         {
-            if (view != null) WpfTestHost.Invoke(view.Dispose);
+            WpfTestHost.Invoke(() =>
+            {
+                view?.Dispose();
+                CvcieDisplayConfig.Current.DisplayMode = originalMode;
+            });
             File.Delete(path);
         }
     }
