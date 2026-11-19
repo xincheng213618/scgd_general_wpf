@@ -37,52 +37,45 @@ internal static class ResultImageFileCandidates
 {
     public static IReadOnlyList<ResultImageFileCandidate> GetExisting(
         ProjectARVRReuslt result,
-        Func<string, bool>? fileExists = null) => GetExisting(ResultImageFilePaths.Capture(result), fileExists, default);
-
-    public static Task<IReadOnlyList<ResultImageFileCandidate>> GetExistingAsync(
-        ResultImageFilePaths paths,
-        CancellationToken cancellationToken,
-        Func<string, bool>? fileExists = null) => Task.Run(() => GetExisting(paths, fileExists, cancellationToken), cancellationToken);
-
-    private static IReadOnlyList<ResultImageFileCandidate> GetExisting(
-        ResultImageFilePaths filePaths,
-        Func<string, bool>? fileExists,
-        CancellationToken cancellationToken)
+        Func<string, bool>? fileExists = null)
     {
-        fileExists ??= path => CVFileReadCache.GetCachedLength(path).HasValue || File.Exists(path);
+        fileExists ??= Exists;
+        return GetPaths(ResultImageFilePaths.Capture(result)).Where(candidate => fileExists(candidate.FilePath)).ToArray();
+    }
 
-        List<ResultImageFileCandidate> candidates = [];
-        HashSet<string> paths = new(StringComparer.OrdinalIgnoreCase);
-        Add(filePaths.Original, ResultImageFileKind.Original);
-        Add(filePaths.SavedSource, ResultImageFileKind.SavedSource);
-        Add(filePaths.SavedResult, ResultImageFileKind.SavedResult);
-        cancellationToken.ThrowIfCancellationRequested();
-        return candidates;
+    private static bool Exists(string path) => CVFileReadCache.GetCachedLength(path).HasValue || File.Exists(path);
 
-        void Add(string? filePath, ResultImageFileKind kind)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-            if (string.IsNullOrWhiteSpace(filePath)
-                || !paths.Add(filePath)
-                || !fileExists(filePath))
-                return;
-
-            candidates.Add(new ResultImageFileCandidate(filePath, kind));
-        }
+    private static IEnumerable<ResultImageFileCandidate> GetPaths(ResultImageFilePaths paths)
+    {
+        var comparer = StringComparer.OrdinalIgnoreCase;
+        if (!string.IsNullOrWhiteSpace(paths.Original))
+            yield return new(paths.Original, ResultImageFileKind.Original);
+        if (!string.IsNullOrWhiteSpace(paths.SavedSource) && !comparer.Equals(paths.SavedSource, paths.Original))
+            yield return new(paths.SavedSource, ResultImageFileKind.SavedSource);
+        if (!string.IsNullOrWhiteSpace(paths.SavedResult) && !comparer.Equals(paths.SavedResult, paths.Original)
+            && !comparer.Equals(paths.SavedResult, paths.SavedSource))
+            yield return new(paths.SavedResult, ResultImageFileKind.SavedResult);
     }
 
     public static async Task<ResultImageFileCandidate?> OpenFirstAsync(
-        IReadOnlyList<ResultImageFileCandidate> candidates,
+        ResultImageFilePaths paths,
         Func<ResultImageFileCandidate, CancellationToken, Task<bool>> tryOpen,
         Action<ResultImageFileCandidate, Exception?>? onFailure = null,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        Func<string, bool>? fileExists = null)
     {
-        ArgumentNullException.ThrowIfNull(candidates);
         ArgumentNullException.ThrowIfNull(tryOpen);
+        fileExists ??= Exists;
 
-        foreach (ResultImageFileCandidate candidate in candidates)
+        foreach (ResultImageFileCandidate candidate in GetPaths(paths))
         {
             cancellationToken.ThrowIfCancellationRequested();
+            // A lower-priority path may be on a slow volume. Check it only when needed.
+            bool exists = await Task.Run(() => fileExists(candidate.FilePath), cancellationToken);
+            cancellationToken.ThrowIfCancellationRequested();
+            if (!exists)
+                continue;
+
             try
             {
                 if (await tryOpen(candidate, cancellationToken))
@@ -100,6 +93,7 @@ internal static class ResultImageFileCandidates
             }
         }
 
+        cancellationToken.ThrowIfCancellationRequested();
         return null;
     }
 }

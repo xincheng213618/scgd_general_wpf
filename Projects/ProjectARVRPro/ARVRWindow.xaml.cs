@@ -2392,12 +2392,10 @@ namespace ProjectARVRPro
                         if (!IsCurrentResultImageRequest(requestVersion, result))
                             return;
 
-                        IReadOnlyList<ResultImageFileCandidate> imageCandidates = await ResultImageFileCandidates.GetExistingAsync(imagePaths, requestCancellation.Token);
-                        requestCancellation.Token.ThrowIfCancellationRequested();
                         bool hasDisplaySurface = false;
                         bool renderOverlays = true;
                         ResultImageFileCandidate? openedCandidate = await ResultImageFileCandidates.OpenFirstAsync(
-                            imageCandidates,
+                            imagePaths,
                             async (candidate, cancellationToken) =>
                             {
                                 BitmapSource? loadedSource = await ResultImageLoader.OpenAsync(ImageView, candidate.FilePath, cancellationToken);

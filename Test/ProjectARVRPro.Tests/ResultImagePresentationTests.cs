@@ -44,25 +44,41 @@ public sealed class ResultImagePresentationTests
     [Fact]
     public async Task CandidateOpenContinuesAfterExistingFirstFileCannotBeOpened()
     {
-        ResultImageFileCandidate[] candidates =
-        [
-            new(@"C:\images\broken.cvraw", ResultImageFileKind.Original),
-            new(@"C:\exports\source.png", ResultImageFileKind.SavedSource),
-        ];
+        ResultImageFilePaths paths = new(@"C:\images\broken.cvraw", @"C:\exports\source.png", null);
         List<string> attempts = [];
 
         ResultImageFileCandidate? opened = await ResultImageFileCandidates.OpenFirstAsync(
-            candidates,
+            paths,
             (candidate, _) =>
             {
                 attempts.Add(candidate.FilePath);
                 return candidate.Kind == ResultImageFileKind.Original
                     ? Task.FromException<bool>(new InvalidDataException("decode failed"))
                     : Task.FromResult(true);
+            },
+            fileExists: _ => true);
+
+        Assert.Equal(new ResultImageFileCandidate(paths.SavedSource!, ResultImageFileKind.SavedSource), opened);
+        Assert.Equal([paths.Original, paths.SavedSource], attempts);
+    }
+
+    [Fact]
+    public async Task OriginalImageOpensWithoutCheckingFallbackPaths()
+    {
+        ResultImageFilePaths paths = new(@"C:\images\original.cvraw", @"D:\exports\source.png", @"D:\exports\result.png");
+        List<string> checkedPaths = [];
+
+        ResultImageFileCandidate? opened = await ResultImageFileCandidates.OpenFirstAsync(
+            paths,
+            (_, _) => Task.FromResult(true),
+            fileExists: path =>
+            {
+                checkedPaths.Add(path);
+                return true;
             });
 
-        Assert.Equal(candidates[1], opened);
-        Assert.Equal(candidates.Select(candidate => candidate.FilePath), attempts);
+        Assert.Equal(new ResultImageFileCandidate(paths.Original!, ResultImageFileKind.Original), opened);
+        Assert.Equal(paths.Original, Assert.Single(checkedPaths));
     }
 
     [Fact]
@@ -82,15 +98,10 @@ public sealed class ResultImagePresentationTests
 
                 using ImageView view = new();
                 view.IEditorToolFactory.IImageOpens[".png"] = new CommonImageOpen(view.EditorContext);
-                ResultImageFileCandidate[] candidates =
-                [
-                    new(originalPath, ResultImageFileKind.Original),
-                    new(savedPath, ResultImageFileKind.SavedResult),
-                ];
                 List<Exception?> failures = [];
                 using CancellationTokenSource watchdog = new(TimeSpan.FromSeconds(10));
                 ResultImageFileCandidate? selected = await ResultImageFileCandidates.OpenFirstAsync(
-                    candidates,
+                    new ResultImageFilePaths(originalPath, null, savedPath),
                     async (candidate, token) => await ResultImageLoader.OpenAsync(view, candidate.FilePath, token) is not null,
                     (_, exception) => failures.Add(exception),
                     watchdog.Token);
@@ -98,7 +109,7 @@ public sealed class ResultImagePresentationTests
                 Exception? failure = Assert.Single(failures);
                 Assert.NotNull(failure);
                 Assert.IsNotType<TimeoutException>(failure);
-                Assert.Equal(candidates[1], selected);
+                Assert.Equal(new ResultImageFileCandidate(savedPath, ResultImageFileKind.SavedResult), selected);
                 Assert.Equal(savedPath, view.Config.GetProperties<string>(ImageViewPropertyKeys.FilePath));
                 Assert.Equal(2, Assert.IsAssignableFrom<BitmapSource>(view.ViewBitmapSource).PixelWidth);
             }
@@ -122,7 +133,12 @@ public sealed class ResultImagePresentationTests
 
         ResultImageFilePaths paths = ResultImageFilePaths.Capture(result);
         result.FileName = null;
-        IReadOnlyList<ResultImageFileCandidate> candidates = await ResultImageFileCandidates.GetExistingAsync(paths, default, _ => true);
+        List<ResultImageFileCandidate> candidates = [];
+        Assert.Null(await ResultImageFileCandidates.OpenFirstAsync(paths, (candidate, _) =>
+        {
+            candidates.Add(candidate);
+            return Task.FromResult(false);
+        }, fileExists: _ => true));
 
         Assert.Equal(
             [
@@ -165,10 +181,16 @@ public sealed class ResultImagePresentationTests
         ResultImageFilePaths paths = new(originalPath, @"C:\exports\source.png", @"C:\exports\result.png");
         List<string> checkedPaths = [];
 
-        Task<IReadOnlyList<ResultImageFileCandidate>> candidates = ResultImageFileCandidates.GetExistingAsync(
+        bool triedOpen = false;
+        Task<ResultImageFileCandidate?> candidates = ResultImageFileCandidates.OpenFirstAsync(
             paths,
-            cancellation.Token,
-            path =>
+            (_, _) =>
+            {
+                triedOpen = true;
+                return Task.FromResult(true);
+            },
+            cancellationToken: cancellation.Token,
+            fileExists: path =>
             {
                 checkedPaths.Add(path);
                 probeEntered.TrySetResult();
@@ -189,6 +211,7 @@ public sealed class ResultImagePresentationTests
 
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() => candidates);
         Assert.Equal(originalPath, Assert.Single(checkedPaths));
+        Assert.False(triedOpen);
     }
 
     [Fact]
