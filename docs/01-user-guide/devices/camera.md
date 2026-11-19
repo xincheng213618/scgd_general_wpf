@@ -57,13 +57,13 @@ related: ["engine.devices", "operations.device-configuration", "operations.physi
 | 设置 | 默认 | 含义 |
 | --- | --- | --- |
 | `HikBayerQuality` | 3（缺字段同样为 3） | MVS 彩色拍照插值质量 0–3；视频固定使用 2 |
-| `HikOutputBgr` | 开启（缺字段同样开启） | 交换红蓝通道以匹配旧后端 BGR 输出和现有校正；关闭仅供对照，此时 BGR 校正模板的结果不能作为正常生产测量 |
+| `HikOutputBgr` | 开启（缺字段同样开启） | 按 BGR 顺序输出以匹配旧后端和现有校正；关闭仅供对照，此时 BGR 校正模板的结果不能作为正常生产测量 |
 
 MVS 拍照使用单帧软件触发、视频使用连续采集，打开时设置并读回，关闭或失败时恢复原参数，无需先在海康客户端设置 Trigger。MVS 只提供普通拍照和视频，快速/快速扩展选项禁用。
 
 LV 优先选用原生 Mono8/Mono16。单色相机缺少 Mono16 时，可将 Mono10/12/14（含支持的 Packed 格式）解包并左对齐到 16 位输出，保留有效位数。彩色相机可用 Bayer8/Bayer16 原始单通道数据，须使用对应校正。BV 仅在 Bayer 相位可确认时插值。没有可用格式时，连接返回错误。
 
-新旧后端对照时保持曝光、增益、ROI、平均次数、校正、翻转及保存设置一致，分别连接采集；本地相机管理的 `[CameraCaptureCompare]` 日志记录本次连接实际使用的 `HikUseMvs`、`HikBayerQuality`、`HikOutputBgr`，原生日志 `HikMvsOpen` / `HikMvsMode` / `HikMvsCapture` 记录实际像素格式、通道数和质量。
+新旧后端对照时保持曝光、增益、ROI、平均次数、校正、翻转及保存设置一致，分别连接采集；本地相机管理的 `[CameraCaptureCompare]` 日志记录本次连接实际使用的 `HikUseMvs`、`HikBayerQuality`、`HikOutputBgr`，原生日志 `HikMvsCapture` 的 `Route=DirectBGR16` 表示 SDK 直接交付 BGR。此路径适用于 MVS 4.6.1.3 / 4.8.2.2、9568 × 6380 BayerRG16 全幅拍照、质量档 3、BGR 输出。可按帧用 `SdkConvertMs`、`SwapMs` 和 `ConvertMs` 比较转换耗时。
 
 ### 通道数与滤光轮
 
@@ -137,7 +137,7 @@ MVS 相机切换采集模式失败并回到原视频模式时，应用会尝试�
 
 ### 海康取图测试
 
-“海康取图测试”（`HK_USB` / `HK_CARD`）是只用于定位耗时的独立诊断进程，不加载插件、设备服务或数据库，需要海康 x64 MVS 运行库及匹配驱动。使用前关闭 cvCamera、服务或视频占用的相机并停止流程。每点一次“取一张”执行一次软件触发；不校正、翻转、存图或写数据库。“取一张并保存原始帧”把原始 Mono16/Bayer16 和 `metadata.json` 存为 ZIP，需手动带回。测试日志写入 `%APPDATA%\ColorVision\Log\HikCaptureTest_*.log`，近期文件会被反馈收集器带回。
+“海康取图测试”（`HK_USB` / `HK_CARD`）是只用于定位耗时的独立诊断进程，不加载插件、设备服务或数据库，需要海康 x64 MVS 运行库及匹配驱动。使用前关闭 cvCamera、服务或视频占用的相机并停止流程。每点一次“取一张”执行一次软件触发；不校正、翻转、存图或写数据库。要核对真实 Bayer 帧，关闭主程序中该相机的连接，进入本地相机的“海康取图测试”，核对序列号、曝光、增益和质量档后连接。点击“取一张并保存原始帧”，在保存窗口选好位置，再将完整的 `HikRaw_*.zip` 作为反馈附件。彩色 ZIP 包含插值前的 Bayer16 平面，`metadata.json` 中的 `SdkReference` 记录同一帧在本次连接上的 SDK RGB16 输出校验值。导出完成后断开测试连接，可回主程序重新打开相机。单色取样保留 Mono16 和帧参数。测试日志写入 `%APPDATA%\ColorVision\Log\HikCaptureTest_*.log`，近期文件会被反馈收集器带回。
 
 测试成功只证明该独立链路有效，不能认定主程序的 SDK、占用状态或防火墙一致；原 `SCGDCamLayer.dll` 的插值和白平衡不在本仓库源码中，因此**不能证明测量结果等价**。报告字段和计时口径见 `Engine/ColorVision.Engine/Services/Devices/Camera/Diagnostics`。该入口不替换生产采集路径，诊断完成后可连同该目录及专用 SDK 引用移除。
 

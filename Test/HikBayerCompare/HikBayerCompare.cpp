@@ -2,6 +2,8 @@
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
 #include <windows.h>
+#include <bcrypt.h>
+#pragma comment(lib, "bcrypt.lib")
 #include <MvCameraControl.h>
 
 #include <algorithm>
@@ -218,7 +220,25 @@ static bool VerifyPixels(std::ostream& log, const char* candidate, const std::ve
     return different == 0;
 }
 
-static bool Compare(std::ostream& log, const fs::path& raw, const fs::path& sdkDirectory)
+// The capture hashes packed RGB16. Reuse a BGR result after its final pixel comparison.
+static bool VerifyConnectedReference(std::ostream& log, const char* candidate, std::vector<uint16_t>& bgr, const std::string& reference)
+{
+    if (reference.empty()) return true;
+    for (size_t i = 0; i < bgr.size(); i += 3) std::swap(bgr[i], bgr[i + 2]);
+    std::array<unsigned char, 32> digest{};
+    const auto status = BCryptHash(BCRYPT_SHA256_ALG_HANDLE, nullptr, 0, reinterpret_cast<unsigned char*>(bgr.data()),
+        static_cast<ULONG>(bgr.size() * sizeof(uint16_t)), digest.data(), static_cast<ULONG>(digest.size()));
+    if (status < 0) throw std::runtime_error("SHA-256 failed: " + Hex(status));
+    std::ostringstream hash;
+    hash << std::hex << std::uppercase << std::setfill('0');
+    for (auto byte : digest) hash << std::setw(2) << unsigned(byte);
+    const bool matches = hash.str() == reference;
+    log << "Candidate=" << candidate << " ConnectedRgb16Sha256=" << hash.str()
+        << " MatchesConnectedReference=" << (matches ? "true" : "false") << std::endl;
+    return matches;
+}
+
+static bool Compare(std::ostream& log, const fs::path& raw, const fs::path& sdkDirectory, const std::string& reference)
 {
     log << "Width=" << Width << " Height=" << Height << " Source=BayerRG16 Quality=3 Input="
         << (raw.empty() ? "synthetic-rggb-v1" : raw.filename().u8string()) << std::endl;
@@ -229,15 +249,18 @@ static bool Compare(std::ostream& log, const fs::path& raw, const fs::path& sdkD
     for (unsigned y = 0; y < Height; y += RowsPerStrip) firstRows.push_back(y);
     // Distinct sentinels also detect a converter that leaves a border unwritten.
     std::vector<uint16_t> output(Pixels * 3, 0x5678);
-    bool directExact, pairsExact;
+    bool directExact, pairsExact, directReference, pairsReference, baselineReference;
     {
         std::vector<uint16_t> expected(output.size(), 0x1234);
         Convert(mvs, plane, expected, false);
         Convert(mvs, plane, output, true);
         directExact = VerifyPixels(log, "SdkDirectBgr", output, expected);
+        directReference = VerifyConnectedReference(log, "SdkDirectBgr", output, reference);
         std::fill(output.begin(), output.end(), 0x9abc);
         ConvertRggbPairs(plane, output, firstRows);
         pairsExact = VerifyPixels(log, "ExperimentalRggbPairs", output, expected);
+        pairsReference = VerifyConnectedReference(log, "ExperimentalRggbPairs", output, reference);
+        baselineReference = VerifyConnectedReference(log, "SdkRgbThenSwap", expected, reference);
     }
     // After releasing the comparison buffer, warm every path on the output used for timed rounds.
     Convert(mvs, plane, output, false);
@@ -268,7 +291,7 @@ static bool Compare(std::ostream& log, const fs::path& raw, const fs::path& sdkD
     log << "Median SdkRgbMs=" << Median(rgb) << " SwapMs=" << Median(swap) << " OriginalMs=" << Median(original)
         << " DirectBgrMs=" << Median(direct) << " PairedSavedMs=" << Median(savings) << " ExperimentalPairsMs=" << Median(pairs)
         << " ExperimentalPairedSavedMs=" << Median(pairSavings) << std::endl;
-    return directExact && pairsExact;
+    return directExact && pairsExact && directReference && pairsReference && baselineReference;
 }
 
 int wmain(int argc, wchar_t** argv)
@@ -277,6 +300,7 @@ int wmain(int argc, wchar_t** argv)
     try
     {
         fs::path directory, raw, sdkDirectory;
+        std::string reference;
         for (int i = 1; i < argc; ++i)
         {
             std::wstring option = argv[i];
@@ -285,8 +309,18 @@ int wmain(int argc, wchar_t** argv)
             if (option == L"--log-dir") directory = value;
             else if (option == L"--raw") raw = value;
             else if (option == L"--sdk-dir") sdkDirectory = value;
-            else throw std::runtime_error("Usage: HikBayerCompare.exe [--log-dir directory] [--raw file] [--sdk-dir directory]");
+            else if (option == L"--reference-rgb-sha256")
+            {
+                std::wstring digest = value;
+                if (digest.size() != 64 || digest.find_first_not_of(L"0123456789ABCDEFabcdef") != std::wstring::npos)
+                    throw std::runtime_error("Expected 64 hexadecimal SHA-256 digits.");
+                reference.clear();
+                for (wchar_t c : digest)
+                    reference.push_back(static_cast<char>(c >= L'a' && c <= L'f' ? c - L'a' + L'A' : c));
+            }
+            else throw std::runtime_error("Usage: HikBayerCompare.exe [--log-dir directory] [--raw file [--reference-rgb-sha256 digest]] [--sdk-dir directory]");
         }
+        if (!reference.empty() && raw.empty()) throw std::runtime_error("A connected SDK reference requires its raw frame.");
         if (directory.empty())
         {
             const auto roaming = _wgetenv(L"APPDATA");
@@ -303,7 +337,8 @@ int wmain(int argc, wchar_t** argv)
         log.exceptions(std::ios::failbit | std::ios::badbit);
         log.open(path);
         std::wcout << L"Running offline Bayer comparison. Log: " << path.c_str() << std::endl;
-        const bool exact = Compare(log, raw, sdkDirectory);
+        if (!reference.empty()) log << "ExpectedConnectedRgb16Sha256=" << reference << std::endl;
+        const bool exact = Compare(log, raw, sdkDirectory, reference);
         log << (exact ? "Status=ok" : "Status=pixel-mismatch") << std::endl;
         return exact ? 0 : 2;
     }

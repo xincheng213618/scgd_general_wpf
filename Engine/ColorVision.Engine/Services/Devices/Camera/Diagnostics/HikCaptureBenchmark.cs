@@ -258,9 +258,10 @@ internal static class HikCaptureBenchmark
                         double exportCpu = ThreadCpuMilliseconds();
                         var exporting = Stopwatch.StartNew();
                         long imageBytes = checked((long)width * height * 2);
+                        ReadOnlySpan<byte> sdkRgb16 = format.Channels == 3 ? new ReadOnlySpan<byte>((void*)output, length) : default;
                         HikRawFrameExport.Save(request.RawExportPath, frame.pBufAddr, checked((int)frameInfo.nFrameLen), format.RawFileName, new
                         {
-                            SchemaVersion = 1, RawFile = format.RawFileName, ReceivedAt = receivedAt,
+                            RawFile = format.RawFileName, ReceivedAt = receivedAt,
                             CameraSerial = device.Serial, CameraModel = device.Model, device.Transport,
                             Run = run, Index = i, FrameId = lastFrame.Value, Width = width, Height = height,
                             PixelFormat = source.ToString(), PixelFormatCode = $"0x{(uint)source:X8}",
@@ -277,7 +278,7 @@ internal static class HikCaptureBenchmark
                             ExposureUs = actualExposure, Gain = actualGain, settings.BayerQuality,
                             SdkVersion = $"0x{MyCamera.MV_CC_GetSDKVersion_NET():X8}", CameraSettings = cameraSettings,
                             LayoutNote = "Exact SDK source payload, before output conversion/copy; no calibration, flip or normalization. If RowStrideBytes is null, inspect payload/chunk layout before decoding."
-                        }, cancellation);
+                        }, sdkRgb16, cancellation);
                         log.Report(FormattableString.Invariant($"[HikRawExport] Run={run} Index={i} FrameId={lastFrame} Path={request.RawExportPath} PayloadBytes={frameInfo.nFrameLen} ExportMs={exporting.Elapsed.TotalMilliseconds:F3} (excluded from capture timing)"));
                         cpu += ThreadCpuMilliseconds() - exportCpu;
                         capture.Start();
