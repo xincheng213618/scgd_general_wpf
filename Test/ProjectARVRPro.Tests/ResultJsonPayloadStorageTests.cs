@@ -88,6 +88,37 @@ public sealed class ResultJsonPayloadStorageTests
     }
 
     [Fact]
+    public void BulkGzipDecodingMatchesIndividualReadsAcrossBufferBoundaries()
+    {
+        using var database = new TemporaryPayloadDatabase();
+        new ResultStatisticsDataStore(database.Path).InitializeSchema();
+        using SqlSugarClient db = database.CreateClient();
+        const int bufferLength = 16 * 1024;
+        string[] inputs =
+        [
+            new string('x', bufferLength),
+            new string('a', bufferLength - 1) + "🧪" + new string('中', bufferLength),
+            "\uFEFF{\"result\":\"下一条🧪\"}",
+        ];
+        var results = new List<ProjectARVRReuslt>();
+        foreach (string input in inputs)
+        {
+            var result = new ProjectARVRReuslt { SN = "bulk" };
+            result.Id = db.Insertable(result).ExecuteReturnIdentity();
+            ResultJsonPayloadStorage.SaveViewResultJson(db, result.Id, input);
+            results.Add(result);
+        }
+
+        string?[] expected = results.Select(result => ResultJsonPayloadStorage.LoadViewResultJson(db, result.Id)).ToArray();
+        ResultJsonPayloadStorage.LoadViewResultJsons(db, results);
+        Assert.Equal(expected, results.Select(result => result.ViewResultJson));
+
+        db.Ado.ExecuteCommand($"UPDATE \"ARVRReuslt\" SET \"{ResultJsonPayloadStorage.ViewResultColumnName}\" = X'00010203' WHERE \"Id\" = @id;",
+            new SugarParameter("@id", results[^1].Id));
+        Assert.Throws<InvalidDataException>(() => ResultJsonPayloadStorage.LoadViewResultJsons(db, results));
+    }
+
+    [Fact]
     public void NewSchemaContainsOnlyCompressedPayloadColumns()
     {
         using var database = new TemporaryPayloadDatabase();

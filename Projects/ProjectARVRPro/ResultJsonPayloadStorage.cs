@@ -20,6 +20,7 @@ namespace ProjectARVRPro
 
         private const string ViewResultTableName = "ARVRReuslt";
         private const string ObjectiveResultTableName = "ObjectiveTestResultRecord";
+        private const int BulkDecodeBufferLength = 16 * 1024;
 
         internal static T RunDatabaseMaintenance<T>(Func<T> action)
         {
@@ -91,6 +92,7 @@ namespace ProjectARVRPro
             if (recordsById.Count == 0)
                 return;
 
+            char[]? decodeBuffer = null;
             string gzip = offline == null || offline.HasColumn(tableName, gzipColumn) ? $"\"{gzipColumn}\"" : "NULL";
             string legacy = offline?.HasColumn(tableName, legacyColumn) == true ? $"\"{legacyColumn}\"" : "NULL";
             foreach (int[] ids in recordsById.Keys.Chunk(500))
@@ -105,7 +107,10 @@ namespace ProjectARVRPro
 
                 while (reader.Read())
                 {
-                    string? json = Decompress(ReadBytes(reader.GetValue(1)), detectEncodingFromByteOrderMarks: offline != null)
+                    byte[]? payload = ReadBytes(reader.GetValue(1));
+                    if (payload is { Length: > 0 } && recordsById.Count > 1)
+                        decodeBuffer ??= new char[BulkDecodeBufferLength];
+                    string? json = Decompress(payload, detectEncodingFromByteOrderMarks: offline != null, decodeBuffer)
                         ?? (reader.IsDBNull(2) ? null : reader.GetString(2));
                     assign(recordsById[reader.GetInt32(0)], json);
                 }
@@ -144,7 +149,7 @@ namespace ProjectARVRPro
             return output.ToArray();
         }
 
-        internal static string? Decompress(byte[]? payload, bool detectEncodingFromByteOrderMarks = false)
+        internal static string? Decompress(byte[]? payload, bool detectEncodingFromByteOrderMarks = false, char[]? decodeBuffer = null)
         {
             if (payload == null || payload.Length == 0)
                 return null;
@@ -152,7 +157,22 @@ namespace ProjectARVRPro
             using var input = new MemoryStream(payload, writable: false);
             using var gzip = new GZipStream(input, CompressionMode.Decompress);
             using var reader = new StreamReader(gzip, Encoding.UTF8, detectEncodingFromByteOrderMarks);
-            return reader.ReadToEnd();
+            if (decodeBuffer is not { Length: > 0 })
+                return reader.ReadToEnd();
+
+            // Decode most bulk payloads straight into the shared buffer before allocating the final string.
+            int count = reader.ReadBlock(decodeBuffer, 0, decodeBuffer.Length);
+            if (count < decodeBuffer.Length || reader.Peek() < 0)
+                return new string(decodeBuffer, 0, count);
+
+            var json = new StringBuilder(count);
+            do
+            {
+                json.Append(decodeBuffer, 0, count);
+                count = reader.Read(decodeBuffer, 0, decodeBuffer.Length);
+            }
+            while (count > 0);
+            return json.ToString();
         }
 
         private static void EnsureBlobColumn(SqlSugarClient db, string tableName, string columnName)
