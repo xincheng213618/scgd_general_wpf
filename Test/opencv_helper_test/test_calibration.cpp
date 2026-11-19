@@ -1146,8 +1146,26 @@ void verifyLargeUniformityOutput(const std::filesystem::path& directory)
         requireResult(M_CalibrationExecuteRawWithFlipV1(context.get(), width, height, 16, channels,
             reinterpret_cast<std::uint8_t*>(actual.data()), bytes, &options, 0), context.get(), "large map vertical flip");
         if (actual != expected) throw std::runtime_error("Large map flip differs from scalar arithmetic");
+
+        if (darkRange == 255) {
+            // Sparse bright samples and occasional dense groups share rows with
+            // unpacked gain blocks and scalar tails.
+            for (std::size_t index = 0; index < samples; ++index) {
+                const bool bright = index % 53 == 0 || index % 1024 < 16;
+                const auto input = bright ? source[index] : static_cast<std::uint16_t>(offsets[index] / 2);
+                actual[index] = input;
+                const auto value = input < offsets[index] ? std::uint16_t{0}
+                    : static_cast<std::uint16_t>(input - offsets[index]);
+                const float corrected = factors[index] * value;
+                expected[index] = corrected > 65535.0F ? std::uint16_t{65535} : static_cast<std::uint16_t>(corrected);
+            }
+            requireResult(M_CalibrationExecute(context.get(), width, height, 16, channels,
+                reinterpret_cast<std::uint8_t*>(actual.data()), bytes, nullptr, 0, &options),
+                context.get(), "large sparse map arithmetic");
+            if (actual != expected) throw std::runtime_error("Large sparse map output differs from scalar arithmetic");
+        }
     }
-    std::cout << "calibration_large_map_exact_cases,9" << std::endl;
+    std::cout << "calibration_large_map_exact_cases,10" << std::endl;
 }
 
 void verifyLargeColorDiffOutput(const std::filesystem::path& directory)

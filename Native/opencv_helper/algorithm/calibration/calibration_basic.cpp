@@ -371,6 +371,31 @@ struct UniformityOperation {
     }
 };
 
+#if defined(_M_X64) && !defined(_M_ARM64EC)
+__m128i darkCorrectEight(const std::uint16_t* source, const std::uint8_t* offsets)
+{
+    const auto raw = _mm_loadu_si128(reinterpret_cast<const __m128i*>(source));
+    const auto dark = _mm_loadl_epi64(reinterpret_cast<const __m128i*>(offsets));
+    return _mm_subs_epu16(raw, _mm_unpacklo_epi8(dark, _mm_setzero_si128()));
+}
+
+bool hasSparseDarkCorrection(const std::uint16_t* source, const std::uint8_t* offsets, std::size_t count)
+{
+    constexpr std::size_t probes = 64;
+    const auto step = (count - 8) / (probes - 1);
+    std::size_t misses = 0;
+    for (std::size_t probe = 0; probe < probes; ++probe) {
+        const auto index = probe * step;
+        const auto dark = darkCorrectEight(source + index, offsets + index);
+        if (_mm_movemask_epi8(_mm_cmpeq_epi16(dark, _mm_setzero_si128())) != 0xFFFF
+            && ++misses > probes / 4) {
+            return false;
+        }
+    }
+    return true;
+}
+#endif
+
 // Store exact IEEE float bits as 24-bit deltas within small blocks. Blocks with
 // a wider bit range stay 32-bit; this never quantizes gains or changes arithmetic.
 class PackedUniformity {
@@ -454,7 +479,7 @@ public:
         return std::bit_cast<float>(bits);
     }
 
-    template<bool Fused, typename Pixel, typename Offset = std::uint8_t>
+    template<bool Fused, bool SkipDarkZeros = false, typename Pixel, typename Offset = std::uint8_t>
     void apply(const Pixel* source, Pixel* destination, std::size_t count, std::size_t first,
         std::size_t stride, const Offset* offsets = nullptr) const
     {
@@ -480,8 +505,20 @@ public:
                     bytes_.get() + header.offset + offset * 4, 0, dark);
             }
             else {
-                applyBlock<Fused, true>(source + done, destination + done, length,
-                    bytes_.get() + header.offset + offset * 3, header.base, dark);
+                const auto* factors = bytes_.get() + header.offset + offset * 3;
+#if defined(_M_X64) && !defined(_M_ARM64EC)
+                if constexpr (SkipDarkZeros) {
+                    static_assert(Fused && std::is_same_v<Pixel, std::uint16_t> && std::is_same_v<Offset, std::uint8_t>);
+                    // The full packed range must represent finite nonnegative floats.
+                    constexpr auto maximumGainBits = std::bit_cast<std::uint32_t>((std::numeric_limits<float>::max)());
+                    if (header.base <= maximumGainBits - 0xFFFFFFU) {
+                        applySparseDarkBlock(source + done, destination + done, length, factors, header.base, dark);
+                        done += length;
+                        continue;
+                    }
+                }
+#endif
+                applyBlock<Fused, true>(source + done, destination + done, length, factors, header.base, dark);
             }
             done += length;
         }
@@ -532,6 +569,42 @@ private:
             destination[index] = corrected > static_cast<float>(maximum) ? maximum : static_cast<Pixel>(corrected);
         }
     }
+
+#if defined(_M_X64) && !defined(_M_ARM64EC)
+    static void applySparseDarkBlock(const std::uint16_t* source, std::uint16_t* destination, std::size_t count,
+        const std::uint8_t* factors, std::uint32_t base, const std::uint8_t* offsets)
+    {
+        const auto zero = _mm_setzero_si128();
+        std::size_t index = 0;
+        for (; count - index >= 8; index += 8) {
+            const auto dark = darkCorrectEight(source + index, offsets + index);
+            // Select one bit per nonzero 16-bit lane.
+            auto active = static_cast<unsigned>(~_mm_movemask_epi8(_mm_cmpeq_epi16(dark, zero))) & 0x5555U;
+            auto* output = destination + index;
+            if (active == 0) {
+                _mm_storeu_si128(reinterpret_cast<__m128i*>(output), zero);
+                continue;
+            }
+            const auto afterFirstLane = active & (active - 1);
+            if ((afterFirstLane & (afterFirstLane - 1)) != 0) {
+                // Dense groups use the ordinary loop before writing to aliased RAW.
+                applyBlock<true, true>(source + index, output, 8, factors + index * 3, base, offsets + index);
+                continue;
+            }
+
+            _mm_storeu_si128(reinterpret_cast<__m128i*>(output), zero);
+            alignas(16) std::uint16_t darkSamples[8];
+            _mm_store_si128(reinterpret_cast<__m128i*>(darkSamples), dark);
+            for (; active != 0; active &= active - 1) {
+                const auto lane = std::countr_zero(active) / 2;
+                const auto sample = index + lane;
+                applyBlock<false, true>(darkSamples + lane, destination + sample, 1,
+                    factors + sample * 3, base, offsets + sample);
+            }
+        }
+        applyBlock<true, true>(source + index, destination + index, count - index, factors + index * 3, base, offsets + index);
+    }
+#endif
 
     static constexpr std::size_t blockSize = 256;
     struct Block { std::uint32_t base, offset; };
@@ -1240,6 +1313,12 @@ void MapCalibration<TCorrection, TOperation>::applyFusedMapRows16(
     const auto* offsets = correction_.data();
     const auto* factors = uniformity.correction_.data();
     const auto* packed = uniformity.packedUniformity_.get();
+#if defined(_M_X64) && !defined(_M_ARM64EC)
+    bool skipDarkZeros = false;
+    if constexpr (std::is_same_v<TCorrection, std::uint8_t>) {
+        skipDarkZeros = packed && hasSparseDarkCorrection(input, offsets, raw.height * rowSamples);
+    }
+#endif
     // Keep the zero clamp, float multiply, saturation, and truncation in order.
     parallelRows(raw.height, [&](std::uint32_t first, std::uint32_t end) {
         for (auto row = first; row < end; ++row) {
@@ -1250,6 +1329,15 @@ void MapCalibration<TCorrection, TOperation>::applyFusedMapRows16(
             std::memset(pixels + base, 0, span.first * sizeof(std::uint16_t));
             std::memset(pixels + base + span.end, 0, (rowSamples - span.end) * sizeof(std::uint16_t));
             if (packed) {
+#if defined(_M_X64) && !defined(_M_ARM64EC)
+                if constexpr (std::is_same_v<TCorrection, std::uint8_t>) {
+                    if (skipDarkZeros) {
+                        packed->apply<true, true>(input + base + span.first, pixels + base + span.first,
+                            span.end - span.first, base + span.first, 1, offsets + base + span.first);
+                        continue;
+                    }
+                }
+#endif
                 packed->apply<true>(input + base + span.first, pixels + base + span.first,
                     span.end - span.first, base + span.first, 1, offsets + base + span.first);
                 continue;
