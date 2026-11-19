@@ -11,6 +11,7 @@ using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.Globalization;
 using System.IO;
+using System.Runtime.InteropServices;
 
 namespace ColorVision.Engine.Media
 {
@@ -185,7 +186,8 @@ namespace ColorVision.Engine.Media
             double zFrom1 = config.H / exposure[1] / gainY;
             double zFrom2 = config.I / exposure[2] / gainZ;
 
-            float[] xyzPlanes = new float[checked(pixelCount * 3)];
+            byte[] xyzData = GC.AllocateUninitializedArray<byte>(checked(pixelCount * 3 * sizeof(float)));
+            Span<float> xyzPlanes = MemoryMarshal.Cast<byte, float>(xyzData.AsSpan());
             int yOffset = pixelCount;
             int zOffset = checked(pixelCount * 2);
 
@@ -205,8 +207,7 @@ namespace ColorVision.Engine.Media
             }
             else
             {
-                ushort[] source = new ushort[checked(pixelCount * 3)];
-                Buffer.BlockCopy(rawFile.Data, 0, source, 0, rawFile.Data.Length);
+                ReadOnlySpan<ushort> source = MemoryMarshal.Cast<byte, ushort>(rawFile.Data.AsSpan());
 
                 for (int pixelIndex = 0; pixelIndex < pixelCount; pixelIndex++)
                 {
@@ -220,9 +221,6 @@ namespace ColorVision.Engine.Media
                     xyzPlanes[zOffset + pixelIndex] = ToFiniteSingle(zFrom0 * source0 + zFrom1 * source1 + zFrom2 * source2);
                 }
             }
-
-            byte[] xyzData = new byte[checked(xyzPlanes.Length * sizeof(float))];
-            Buffer.BlockCopy(xyzPlanes, 0, xyzData, 0, xyzData.Length);
 
             RawColorTransformV1 transform = RawColorTransformV1.Create();
             transform.CalibrationType = 8;

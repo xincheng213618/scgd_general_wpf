@@ -65,12 +65,18 @@ public sealed class RawColorCalibrationTests
             ClosedPixelRegion polygon = ClosedPixelRegion.Polygon([new Point(3, 3), new Point(12, 4), new Point(7, 14)]);
             Assert.Equal(PoiMeasurementService.CalculateRegion(full, polygon, true), PoiMeasurementService.CalculateRegion(demand, polygon, true));
             Assert.Equal(0, demand.RawSource!.CachedXyzBytes);
+            Assert.False(demand.RawSource.TryGetCachedChannel(0, out _));
             // Repeated large regions promote to a reusable full buffer with the same result.
             PoiMeasurementPoint large = new(width / 2, height / 2, width, height, PoiMeasurementShape.Rect);
             Assert.Equal(PoiMeasurementService.CalculateRaw(full, [large]), PoiMeasurementService.CalculateRaw(demand, [large]));
             Assert.Equal(expected.Length, demand.RawSource.CachedXyzBytes);
+            int lastChannel = channels - 1;
+            Assert.True(demand.RawSource.TryGetCachedChannel(lastChannel, out var preview));
+            Array.Fill(demand.RawSource.CreateChannel(lastChannel), (byte)0);
             demand.Dispose();
+            Assert.True(preview.Span.SequenceEqual(expected.AsSpan(lastChannel * width * height * sizeof(float))));
             Assert.Throws<ObjectDisposedException>(() => demand.RawSource.CreateChannel(0));
+            Assert.Throws<ObjectDisposedException>(() => demand.RawSource.TryGetCachedChannel(0, out _));
         }
         finally { OpenCVCalibration.M_CalibrationDestroy(context); File.Delete(calibration); }
     }

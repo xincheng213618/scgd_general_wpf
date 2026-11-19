@@ -580,12 +580,10 @@ namespace ColorVision.Engine.Media
         {
             if (_rawColor != null)
             {
-                using CVCIEFile rawPlane = new()
-                {
-                    Cols = _rawColor.Width, Rows = _rawColor.Height, Bpp = 32, Channels = 1, FileExtType = CVType.Raw,
-                    Data = _rawColor.CreateChannel(_rawColor.Channels == 1 ? 0 : index, token),
-                };
-                return ConvertForDisplay(rawPlane, token);
+                int channel = _rawColor.Channels == 1 ? 0 : index;
+                ReadOnlyMemory<byte> samples = _rawColor.TryGetCachedChannel(channel, out var cached)
+                    ? cached : _rawColor.CreateChannel(channel, token);
+                return MediaHelper.RenderFloatChannel(samples, _rawColor.Width, _rawColor.Height, 32, token);
             }
             if (_liveXyz == null)
             {
