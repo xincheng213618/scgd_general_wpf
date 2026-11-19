@@ -1707,20 +1707,24 @@ private:
                 auto* compactBlue = compactGb.ptr<std::uint8_t>(row);
                 MapEntry* wideRed = nullptr;
                 MapEntry* wideBlue = nullptr;
+                const double deltaRow = static_cast<double>(row - centerRow);
+                const double rowSquared = std::pow(deltaRow, 2.0);
                 for (int column = 0; column < width; ++column) {
                     const double deltaColumn = static_cast<double>(column - centerColumn);
-                    const double deltaRow = static_cast<double>(row - centerRow);
-                    const double radius = std::sqrt(
-                        std::pow(deltaColumn, 2.0) + std::pow(deltaRow, 2.0));
+                    const double radius = std::sqrt(std::pow(deltaColumn, 2.0) + rowSquared);
                     const double angle = std::atan2(deltaColumn, deltaRow);
                     const double angleSin = std::sin(angle);
                     const double angleCos = std::cos(angle);
 
-                    // Both channels use the same powers. Keep the original
-                    // accumulation order in each channel before rounding coordinates.
-                    double targetRadiusGr = 0.0;
-                    double targetRadiusGb = 0.0;
-                    for (std::size_t index = 0; index < sharedTerms; ++index) {
+                    // The first two powers are exactly 1 and radius. Keep the
+                    // original accumulation order before rounding coordinates.
+                    double targetRadiusGr = 0.0 + coefficientsGr_.front();
+                    double targetRadiusGb = 0.0 + coefficientsGb_.front();
+                    if (sharedTerms > 1) {
+                        targetRadiusGr += coefficientsGr_[1] * radius;
+                        targetRadiusGb += coefficientsGb_[1] * radius;
+                    }
+                    for (std::size_t index = 2; index < sharedTerms; ++index) {
                         const double radiusPower = std::pow(radius, static_cast<int>(index));
                         targetRadiusGr += coefficientsGr_[index] * radiusPower;
                         targetRadiusGb += coefficientsGb_[index] * radiusPower;
@@ -1729,8 +1733,8 @@ private:
                     const auto computeEntry = [&](double targetRadius, const std::vector<double>& coefficients,
                                                 const std::array<double, 2>& columnRowShift) {
                         for (std::size_t index = sharedTerms; index < coefficients.size(); ++index) {
-                            targetRadius += coefficients[index]
-                                * std::pow(radius, static_cast<int>(index));
+                            const double radiusPower = index == 1 ? radius : std::pow(radius, static_cast<int>(index));
+                            targetRadius += coefficients[index] * radiusPower;
                         }
                         targetRadius = targetRadius
                             / measurementDistance_ * calibrationDistance_;
