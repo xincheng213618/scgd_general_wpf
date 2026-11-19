@@ -253,10 +253,11 @@ bool tryRemapFixedBgr16(
                     // The column check above keeps both loads inside this row.
                     const auto* top = sourcePixels + sourceY * stride + 3 * sourceX;
                     const auto* bottom = top + stride;
-                    const auto a = _mm_mul_ps(loadFourSamples(top), _mm_set1_ps(weight[0]));
-                    const auto b = _mm_mul_ps(loadFourSamples(top + 3), _mm_set1_ps(weight[1]));
-                    const auto c = _mm_mul_ps(loadFourSamples(bottom), _mm_set1_ps(weight[2]));
-                    const auto d = _mm_mul_ps(loadFourSamples(bottom + 3), _mm_set1_ps(weight[3]));
+                    const auto factors = _mm_loadu_ps(weight.val);
+                    const auto a = _mm_mul_ps(loadFourSamples(top), _mm_shuffle_ps(factors, factors, _MM_SHUFFLE(0, 0, 0, 0)));
+                    const auto b = _mm_mul_ps(loadFourSamples(top + 3), _mm_shuffle_ps(factors, factors, _MM_SHUFFLE(1, 1, 1, 1)));
+                    const auto c = _mm_mul_ps(loadFourSamples(bottom), _mm_shuffle_ps(factors, factors, _MM_SHUFFLE(2, 2, 2, 2)));
+                    const auto d = _mm_mul_ps(loadFourSamples(bottom + 3), _mm_shuffle_ps(factors, factors, _MM_SHUFFLE(3, 3, 3, 3)));
                     // Match cv::remap's float addition order before rounding to 16 bits.
                     const auto weighted = _mm_add_ps(_mm_add_ps(_mm_add_ps(a, b), c), d);
                     // SSE2 packs signed values, so shift the unsigned range first.
