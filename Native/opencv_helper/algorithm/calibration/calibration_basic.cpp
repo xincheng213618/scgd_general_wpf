@@ -755,6 +755,9 @@ public:
         const ImageView& raw,
         const ExecutionOptions& options) const override;
 
+    bool tryApplyWithNextTo(const CalibrationItem& next, const ImageView& raw,
+        const ImageView& destination, const ExecutionOptions& options) const override;
+
     bool tryApplyWithFlip(const ImageView& raw, const ExecutionOptions& options) const override
     {
         if (options.rawOutputFlip != 0 || !matchesFullBgr16(raw, options)) return false;
@@ -845,6 +848,10 @@ public:
 
 private:
     template <typename, typename> friend class MapCalibration;
+
+    template<bool distinctOutput>
+    void applyFusedMapRows16(const ImageView& raw,
+        const MapCalibration<float, UniformityOperation>& uniformity, std::uint16_t* pixels) const;
 
     bool matchesFullBgr8(const ImageView& raw, const ExecutionOptions& options) const
     {
@@ -1178,14 +1185,11 @@ bool MapCalibration<TCorrection, TOperation>::tryApplyWithNext(
             }
         }
 
-        const std::size_t rowSamples = static_cast<std::size_t>(raw.width) * raw.channels;
         auto* pixels = reinterpret_cast<std::uint16_t*>(raw.data);
-        const auto* offsets = correction_.data();
-        const auto* factors = uniformity->correction_.data();
-        const auto* packed = uniformity->packedUniformity_.get();
-        // Keep DSNU's zero clamp and Uniformity's float multiply, saturation,
-        // and truncation in order, without storing/reloading the intermediate RAW.
         if (options.rawOutputFlip == 0) {
+            const auto* offsets = correction_.data();
+            const auto* factors = uniformity->correction_.data();
+            const auto* packed = uniformity->packedUniformity_.get();
             if (packed) {
                 packed->applyVertical<true>(raw, offsets);
                 return true;
@@ -1200,33 +1204,68 @@ bool MapCalibration<TCorrection, TOperation>::tryApplyWithNext(
             });
             return true;
         }
-        parallelRows(raw.height, [&](std::uint32_t first, std::uint32_t end) {
-            for (auto row = first; row < end; ++row) {
-                const auto base = static_cast<std::size_t>(row) * rowSamples;
-                const auto span = uniformity->nonzeroSpans_.empty()
-                    ? MapCalibration<float, UniformityOperation>::NonzeroSpan{0, rowSamples}
-                    : uniformity->nonzeroSpans_[row];
-                std::memset(pixels + base, 0, span.first * sizeof(std::uint16_t));
-                std::memset(pixels + base + span.end, 0, (rowSamples - span.end) * sizeof(std::uint16_t));
-                if (packed) {
-                    packed->apply<true>(pixels + base + span.first, pixels + base + span.first,
-                        span.end - span.first, base + span.first, 1, offsets + base + span.first);
-                    continue;
-                }
-                for (std::size_t column = span.first; column < span.end; ++column) {
-                    const auto index = base + column;
-                    const auto source = pixels[index];
-                    const auto offset = offsets[index];
-                    const std::uint16_t darkCorrected = source < offset
-                        ? 0 : static_cast<std::uint16_t>(source - offset);
-                    const float corrected = factors[index] * darkCorrected;
-                    pixels[index] = corrected > 65535.0F
-                        ? 65535 : static_cast<std::uint16_t>(corrected);
-                }
-            }
-        });
+        applyFusedMapRows16<false>(raw, *uniformity, pixels);
         return true;
     }
+}
+
+template <typename TCorrection, typename TOperation>
+bool MapCalibration<TCorrection, TOperation>::tryApplyWithNextTo(
+    const CalibrationItem& next, const ImageView& raw, const ImageView& destination,
+    const ExecutionOptions& options) const
+{
+    if constexpr (!std::is_same_v<TOperation, DsnuOperation>) {
+        return false;
+    }
+    else {
+        const auto* uniformity = dynamic_cast<const MapCalibration<float, UniformityOperation>*>(&next);
+        if (uniformity == nullptr || options.rawOutputFlip != -99 || !matchesFullBgr16(raw, options)
+            || !uniformity->matchesFullBgr16(raw, options)
+            || reinterpret_cast<std::uintptr_t>(raw.data) % alignof(std::uint16_t) != 0) {
+            return false;
+        }
+        applyFusedMapRows16<true>(raw, *uniformity, reinterpret_cast<std::uint16_t*>(destination.data));
+        return true;
+    }
+}
+
+template <typename TCorrection, typename TOperation>
+template<bool distinctOutput>
+void MapCalibration<TCorrection, TOperation>::applyFusedMapRows16(
+    const ImageView& raw, const MapCalibration<float, UniformityOperation>& uniformity,
+    std::uint16_t* pixels) const
+{
+    const auto* input = distinctOutput ? reinterpret_cast<const std::uint16_t*>(raw.data) : pixels;
+    const std::size_t rowSamples = static_cast<std::size_t>(raw.width) * raw.channels;
+    const auto* offsets = correction_.data();
+    const auto* factors = uniformity.correction_.data();
+    const auto* packed = uniformity.packedUniformity_.get();
+    // Keep the zero clamp, float multiply, saturation, and truncation in order.
+    parallelRows(raw.height, [&](std::uint32_t first, std::uint32_t end) {
+        for (auto row = first; row < end; ++row) {
+            const auto base = static_cast<std::size_t>(row) * rowSamples;
+            const auto span = uniformity.nonzeroSpans_.empty()
+                ? MapCalibration<float, UniformityOperation>::NonzeroSpan{0, rowSamples}
+                : uniformity.nonzeroSpans_[row];
+            std::memset(pixels + base, 0, span.first * sizeof(std::uint16_t));
+            std::memset(pixels + base + span.end, 0, (rowSamples - span.end) * sizeof(std::uint16_t));
+            if (packed) {
+                packed->apply<true>(input + base + span.first, pixels + base + span.first,
+                    span.end - span.first, base + span.first, 1, offsets + base + span.first);
+                continue;
+            }
+            for (std::size_t column = span.first; column < span.end; ++column) {
+                const auto index = base + column;
+                const auto source = input[index];
+                const auto offset = offsets[index];
+                const std::uint16_t darkCorrected = source < offset
+                    ? 0 : static_cast<std::uint16_t>(source - offset);
+                const float corrected = factors[index] * darkCorrected;
+                pixels[index] = corrected > 65535.0F
+                    ? 65535 : static_cast<std::uint16_t>(corrected);
+            }
+        }
+    });
 }
 
 class DarkNoiseCalibration final : public CalibrationItem {

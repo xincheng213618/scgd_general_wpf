@@ -111,6 +111,13 @@ public:
         error = "Calibration does not support a distinct output buffer";
         return false;
     }
+
+    // An exact leading pair may fill the context's distinct RAW scratch.
+    virtual bool tryApplyWithNextTo(const CalibrationItem&, const ImageView&,
+        const ImageView&, const ExecutionOptions&) const
+    {
+        return false;
+    }
 };
 
 [[nodiscard]] bool isColorCalibration(CalibrationType type) noexcept;

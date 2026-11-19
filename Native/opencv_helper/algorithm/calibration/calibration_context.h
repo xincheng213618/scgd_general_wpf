@@ -34,6 +34,7 @@ private:
     // cache. Stateless algorithms share their immutable item directly;
     // geometric algorithms use a private executor over shared full-frame maps.
     std::vector<std::shared_ptr<CalibrationItem>> items_;
+    bool canSeedScratchFromPair_ = false;
     std::unique_ptr<std::uint8_t[]> rawScratch_;
     std::size_t rawScratchCapacity_ = 0;
     std::unique_ptr<std::uint8_t[]> rawScratch2_;

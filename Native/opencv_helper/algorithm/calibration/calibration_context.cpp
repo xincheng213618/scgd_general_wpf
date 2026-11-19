@@ -375,6 +375,14 @@ public:
             leasedNext != nullptr ? *leasedNext->implementation_ : next, raw, options);
     }
 
+    bool tryApplyWithNextTo(const CalibrationItem& next, const ImageView& raw,
+        const ImageView& destination, const ExecutionOptions& options) const override
+    {
+        const auto* leasedNext = dynamic_cast<const LeasedCalibrationItem*>(&next);
+        return implementation_->tryApplyWithNextTo(
+            leasedNext != nullptr ? *leasedNext->implementation_ : next, raw, destination, options);
+    }
+
 private:
     std::shared_ptr<CalibrationItem> implementation_;
     std::shared_ptr<CalibrationAssetLease> lease_;
@@ -862,6 +870,7 @@ bool CalibrationContext::clear()
 {
     std::scoped_lock lock(mutex_);
     items_.clear();
+    canSeedScratchFromPair_ = false;
     rawScratch_.reset();
     rawScratchCapacity_ = 0;
     rawScratch2_.reset();
@@ -904,6 +913,10 @@ bool CalibrationContext::load(CalibrationType type, const std::filesystem::path&
     }
 
     items_.push_back(std::move(item));
+    canSeedScratchFromPair_ = items_.size() == 3
+        && items_[0]->type() == CalibrationType::Dsnu
+        && items_[1]->type() == CalibrationType::Uniformity
+        && (type == CalibrationType::Distortion || type == CalibrationType::ColorDiff);
     return true;
 }
 
@@ -998,6 +1011,24 @@ bool CalibrationContext::execute(
     ImageView scratch = raw;
     scratch.data = rawScratch_.get();
     scratch.dataLength = rawScratchCapacity_;
+    // The leading pair can write to scratch so the sole geometry stage
+    // writes straight to RAW instead of requiring a full-frame copy.
+    if (canSeedScratchFromPair_ && options.rawOutputFlip == -99
+        && items_[0]->tryApplyWithNextTo(*items_[1], raw, scratch, calibrationOptions)) {
+        const auto restorePairOutput = [&] { std::memcpy(raw.data, scratch.data, requiredRawBytes); };
+        std::string error;
+        try {
+            if (items_[2]->applyOutOfPlace(scratch, raw, calibrationOptions, error)) return true;
+        }
+        catch (...) {
+            restorePairOutput();
+            throw;
+        }
+        // The ordinary in-place path exposes the leading corrections on failure.
+        restorePairOutput();
+        lastError_ = error.empty() ? "Basic calibration failed" : std::move(error);
+        return false;
+    }
     for (std::size_t index = 0; index < items_.size(); ++index) {
         const auto& item = items_[index];
         if (item->isColorTransform()) {
