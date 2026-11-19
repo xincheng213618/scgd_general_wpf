@@ -77,6 +77,119 @@ public class CameraCaptureSettingsTests
     }
 
     [Fact]
+    public void OwnedCameraRawUsesTheSdkPointerUntilTheLastFrameLeaseEnds()
+    {
+        using var native = new OwnedRawCapture();
+        using var frame = Assert.IsType<LocalFlowFrame>(
+            LocalCameraCaptureService.TryCaptureOwnedRawFrame(new IntPtr(42), "{}", RawLeaseMetadata(), 48, 96,
+                native.Acquire, native.Release, default, out _));
+        using var first = frame.Acquire();
+        using var last = frame.Acquire();
+        Assert.Equal(native.Pixels, first.RawPointer);
+        Assert.Equal(48, first.RawLength);
+        Assert.Equal(96, first.CieLength);
+        Assert.NotEqual(first.RawPointer, first.CiePointer);
+
+        Marshal.WriteByte(first.RawPointer, 47, 42);
+        frame.Dispose();
+        first.Dispose();
+        Assert.Equal(0, native.Releases);
+        Assert.Equal(42, Marshal.ReadByte(last.RawPointer, 47));
+        last.Dispose();
+        last.Dispose();
+        Assert.Equal(1, native.Releases);
+    }
+
+    [Fact]
+    public void EmptyUnsupportedCameraLeaseAllowsTheLegacyCapture()
+    {
+        Assert.Equal(48, Marshal.SizeOf<CameraRawFrameLeaseV1>());
+        Assert.Equal(new IntPtr(24), Marshal.OffsetOf<CameraRawFrameLeaseV1>(nameof(CameraRawFrameLeaseV1.ByteLength)));
+        Assert.Equal(new IntPtr(32), Marshal.OffsetOf<CameraRawFrameLeaseV1>(nameof(CameraRawFrameLeaseV1.Pixels)));
+        Assert.Equal(new IntPtr(40), Marshal.OffsetOf<CameraRawFrameLeaseV1>(nameof(CameraRawFrameLeaseV1.Owner)));
+        int Acquire(IntPtr handle, string json, ref CameraRawFrameLeaseV1 frame)
+        {
+            Assert.Equal(48u, frame.StructSize);
+            return CameraRawFrameLeaseV1.UnsupportedBeforeCapture;
+        }
+        Assert.Null(LocalCameraCaptureService.TryCaptureOwnedRawFrame(new IntPtr(42), "{}", RawLeaseMetadata(), 48, 0,
+            Acquire, _ => throw new InvalidOperationException("An empty owner cannot be released."), default, out _));
+    }
+
+    [Theory]
+    [InlineData("stop after capture")]
+    [InlineData("changed format")]
+    [InlineData("short buffer")]
+    [InlineData("address wraps")]
+    [InlineData("owner with unsupported result")]
+    [InlineData("managed interop failure")]
+    public void RejectedOwnedCameraRawReleasesTheOwnerAndDoesNotSignalFallback(string failure)
+    {
+        using var native = new OwnedRawCapture();
+        using var stop = new CancellationTokenSource();
+        int Acquire(IntPtr handle, string json, ref CameraRawFrameLeaseV1 frame)
+        {
+            native.Acquire(handle, json, ref frame);
+            switch (failure)
+            {
+                case "stop after capture": stop.Cancel(); break;
+                case "changed format": frame.Width--; break;
+                case "short buffer": frame.ByteLength--; break;
+                case "address wraps": frame.Pixels = new IntPtr(-2); break;
+                case "owner with unsupported result": return CameraRawFrameLeaseV1.UnsupportedBeforeCapture;
+                case "managed interop failure": throw new InvalidOperationException("Synthetic acquire failure.");
+            }
+            return cvErrorDefine.CV_ERR_SUCCESS;
+        }
+
+        Exception? error = Record.Exception(() =>
+            LocalCameraCaptureService.TryCaptureOwnedRawFrame(new IntPtr(42), "{}", RawLeaseMetadata(), 48, 0,
+                Acquire, native.Release, stop.Token, out _));
+        if (failure == "stop after capture")
+            Assert.Equal(stop.Token, Assert.IsType<OperationCanceledException>(error).CancellationToken);
+        else
+            Assert.IsType<InvalidOperationException>(error);
+        Assert.Equal(1, native.Releases);
+    }
+
+    private static LocalFrameMetadata RawLeaseMetadata() => new() { Width = 4, Height = 2, SourceBpp = 16, Channels = 3 };
+
+    private sealed class OwnedRawCapture : IDisposable
+    {
+        private static readonly IntPtr Token = new(53);
+        public IntPtr Pixels { get; private set; } = Marshal.AllocHGlobal(48);
+        public int Releases { get; private set; }
+
+        public int Acquire(IntPtr handle, string json, ref CameraRawFrameLeaseV1 frame)
+        {
+            Assert.Equal(48u, frame.StructSize);
+            frame.Width = 4;
+            frame.Height = 2;
+            frame.BitsPerChannel = 16;
+            frame.Channels = 3;
+            frame.Format = CameraRawFrameLeaseV1.PackedBgr16;
+            frame.ByteLength = 48;
+            frame.Pixels = Pixels;
+            frame.Owner = Token;
+            return cvErrorDefine.CV_ERR_SUCCESS;
+        }
+
+        public void Release(IntPtr owner)
+        {
+            Assert.Equal(Token, owner);
+            Releases++;
+            Dispose();
+        }
+
+        public void Dispose()
+        {
+            if (Pixels == IntPtr.Zero) return;
+            Marshal.FreeHGlobal(Pixels);
+            Pixels = IntPtr.Zero;
+        }
+    }
+
+    [Fact]
     public void V1AndV2ExposureTemplatesReachNativeConfigurationWithoutLosingV2Options()
     {
         var v1 = new AutoExpTimeParam { Id = 8, autoExpSaturation = 83, autoExpTimeBegin = 17, minExpTime = 0.5, maxExpTime = 1200 };

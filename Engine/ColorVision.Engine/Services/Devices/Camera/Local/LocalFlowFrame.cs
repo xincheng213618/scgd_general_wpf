@@ -79,6 +79,18 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             return new LocalFlowFrame(new SharedFrameStorage(rawLength, cieLength, rawBufferPool), metadata);
         }
 
+        internal static LocalFlowFrame AdoptCameraRaw(LocalFrameMetadata metadata, int rawLength, int cieLength,
+            IntPtr pixels, SafeHandle owner)
+        {
+            ArgumentNullException.ThrowIfNull(metadata);
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(rawLength);
+            ArgumentOutOfRangeException.ThrowIfNegative(cieLength);
+            ArgumentNullException.ThrowIfNull(owner);
+            if (pixels == IntPtr.Zero || owner.IsClosed || owner.IsInvalid)
+                throw new ArgumentException("A live camera RAW buffer and its owner are required.");
+            return new LocalFlowFrame(new SharedFrameStorage(rawLength, cieLength, null, pixels, owner), metadata);
+        }
+
         internal void PrepareForCalibration(string calibrationTemplate, int cieLength, bool hasBasicCalibration, float[]? exposure = null)
         {
             lock (flipSync)
@@ -162,6 +174,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
         {
             private readonly object bufferSync = new();
             private readonly LocalCameraRawBufferPool? rawBufferPool;
+            private readonly SafeHandle? rawOwner;
             private int referenceCount = 1;
             private int rawFlipState;
             private int cieFlipState;
@@ -169,14 +182,17 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             private IntPtr rawPointer;
             private IntPtr ciePointer;
 
-            public SharedFrameStorage(int rawLength, int cieLength, LocalCameraRawBufferPool? rawBufferPool)
+            public SharedFrameStorage(int rawLength, int cieLength, LocalCameraRawBufferPool? rawBufferPool,
+                IntPtr cameraPixels = default, SafeHandle? rawOwner = null)
             {
                 RawLength = rawLength;
                 this.cieLength = cieLength;
                 this.rawBufferPool = rawBufferPool;
+                this.rawOwner = rawOwner;
                 try
                 {
-                    if (rawLength > 0) rawPointer = rawBufferPool?.Rent(rawLength) ?? Marshal.AllocHGlobal(rawLength);
+                    if (rawOwner != null) rawPointer = cameraPixels;
+                    else if (rawLength > 0) rawPointer = rawBufferPool?.Rent(rawLength) ?? Marshal.AllocHGlobal(rawLength);
                     if (cieLength > 0) ciePointer = Marshal.AllocHGlobal(cieLength);
                 }
                 catch
@@ -253,7 +269,8 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                     IntPtr raw = Interlocked.Exchange(ref rawPointer, IntPtr.Zero);
                     if (raw != IntPtr.Zero)
                     {
-                        if (rawBufferPool != null) rawBufferPool.Return(raw, RawLength);
+                        if (rawOwner != null) rawOwner.Dispose();
+                        else if (rawBufferPool != null) rawBufferPool.Return(raw, RawLength);
                         else Marshal.FreeHGlobal(raw);
                     }
                     IntPtr cie = Interlocked.Exchange(ref ciePointer, IntPtr.Zero);
