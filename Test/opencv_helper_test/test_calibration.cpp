@@ -1494,32 +1494,38 @@ void verifyLargeColorDiffOutput(const std::filesystem::path& directory)
     for (std::size_t index = 0; index < samples; ++index)
         source[index] = static_cast<std::uint16_t>(index * 37 + 11);
     const auto pristine = source;
-    for (int row = 0; row < height; ++row) {
-        for (int column = 0; column < width; ++column) {
-            const auto pixel = (static_cast<std::size_t>(row) * width + column) * 3;
-            expected[pixel + 1] = source[pixel + 1];
-            if (row == 0 || row == height - 1 || column == 0 || column == width - 1) continue;
-            const auto mapped = [&](int dx, int dy) {
-                return (static_cast<std::size_t>(std::clamp(row + dy, 1, height - 2)) * width
-                    + std::clamp(column + dx, 1, width - 2)) * 3;
-            };
-            expected[pixel] = source[mapped(1, -2)];
-            expected[pixel + 2] = source[mapped(-2, 1) + 2];
+    const auto updateReference = [&](bool moveBlue, bool moveRed) {
+        for (int row = 0; row < height; ++row) {
+            for (int column = 0; column < width; ++column) {
+                const auto pixel = (static_cast<std::size_t>(row) * width + column) * 3;
+                expected[pixel + 1] = source[pixel + 1];
+                if (row == 0 || row == height - 1 || column == 0 || column == width - 1) continue;
+                const auto mapped = [&](int dx, int dy) {
+                    return (static_cast<std::size_t>(std::clamp(row + dy, 1, height - 2)) * width
+                        + std::clamp(column + dx, 1, width - 2)) * 3;
+                };
+                expected[pixel] = source[moveBlue ? mapped(1, -2) : pixel];
+                expected[pixel + 2] = source[(moveRed ? mapped(-2, 1) : pixel) + 2];
+            }
         }
-    }
+    };
+    updateReference(true, true);
     MCalibrationExecutionOptionsV1 options{};
     options.structSize = sizeof(options);
     options.interleavedBgr = 1;
     const auto bytes = samples * sizeof(std::uint16_t);
     std::vector<std::uint8_t> distinct(bytes + 32, 0xA5);
-    requireResult(M_CalibrationExecuteToV1(context.get(), width, height, 16, 3,
-        reinterpret_cast<const std::uint8_t*>(source.data()), bytes, distinct.data() + 2, bytes,
-        nullptr, 0, &options), context.get(), "large ColorDiff unaligned distinct output");
-    if (source != pristine || std::memcmp(distinct.data() + 2, expected.data(), bytes) != 0
-        || distinct[0] != 0xA5 || distinct[1] != 0xA5
-        || !std::all_of(distinct.begin() + bytes + 2, distinct.end(), [](auto value) { return value == 0xA5; })) {
-        throw std::runtime_error("Large ColorDiff changed pixels, source or output guards");
-    }
+    const auto checkDistinct = [&](const Context& current) {
+        requireResult(M_CalibrationExecuteToV1(current.get(), width, height, 16, 3,
+            reinterpret_cast<const std::uint8_t*>(source.data()), bytes, distinct.data() + 2, bytes,
+            nullptr, 0, &options), current.get(), "large ColorDiff unaligned distinct output");
+        if (source != pristine || std::memcmp(distinct.data() + 2, expected.data(), bytes) != 0
+            || distinct[0] != 0xA5 || distinct[1] != 0xA5
+            || !std::all_of(distinct.begin() + bytes + 2, distinct.end(), [](auto value) { return value == 0xA5; })) {
+            throw std::runtime_error("Large ColorDiff changed pixels, source or output guards");
+        }
+    };
+    checkDistinct(context);
     for (int flip : {0, 1, -1}) {
         auto reference = expected;
         cv::Mat view(height, width, CV_16UC3, reference.data());
@@ -1545,7 +1551,22 @@ void verifyLargeColorDiffOutput(const std::filesystem::path& directory)
             reinterpret_cast<std::uint8_t*>(actual.data()), bytes, &options, flip), chained.get(), "chained large ColorDiff flip");
         if (actual != reference) throw std::runtime_error("Chained large ColorDiff flip differs from pixel reference");
     }
-    std::cout << "calibration_stream_exact_cases,6" << std::endl;
+    int caseNumber = 0;
+    // Check both blend masks and the direct-copy case using the same output alignment.
+    for (const auto [moveBlue, moveRed] : {std::pair{false, true}, std::pair{true, false}, std::pair{false, false}}) {
+        const auto path = directory / ("large_color_diff_unchanged_" + std::to_string(++caseNumber) + ".json");
+        writeText(path, nlohmann::json{
+            {"CalibDis", 1}, {"MeasDis", 1}, {"CenterCol", 1500}, {"CenterRow", 932},
+            {"ColRowCoeffs_GB", moveBlue ? nlohmann::json::array({-1, 2}) : nlohmann::json::array({0, 0})},
+            {"ColRowCoeffs_GR", moveRed ? nlohmann::json::array({2, -1}) : nlohmann::json::array({0, 0})},
+            {"ColorDiffCoeffs_GB", nlohmann::json::array({0})}, {"ColorDiffCoeffs_GR", nlohmann::json::array({0})},
+            {"h", height}, {"w", width}}.dump());
+        Context selected = createContext();
+        requireResult(M_CalibrationLoadFileW(selected.get(), 14, path.c_str()), selected.get(), "load ColorDiff with an unchanged channel");
+        updateReference(moveBlue, moveRed);
+        checkDistinct(selected);
+    }
+    std::cout << "calibration_stream_exact_cases,9" << std::endl;
 }
 
 void verifyColorDiffMixedOffsets(const std::filesystem::path& directory)

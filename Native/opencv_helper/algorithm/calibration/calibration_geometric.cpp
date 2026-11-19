@@ -1556,6 +1556,17 @@ private:
         const auto* source = reinterpret_cast<const std::uint16_t*>(raw.data);
         auto* destination = reinterpret_cast<std::uint16_t*>(output.data);
         cv::parallel_for_(cv::Range(0, height), [&](const cv::Range& range) {
+            constexpr std::uint8_t identity = 0x88;
+            const auto evenBlue = _mm_setr_epi16(-1, 0, 0, -1, 0, 0, -1, 0);
+            const auto evenGreen = _mm_setr_epi16(0, -1, 0, 0, -1, 0, 0, -1);
+            const auto evenRed = _mm_setr_epi16(0, 0, -1, 0, 0, -1, 0, 0);
+            const auto isUniform = [](const std::uint8_t* map, std::uint8_t entry) {
+                static_assert(blockPixels == 32);
+                const auto code = _mm_set1_epi8(static_cast<char>(entry));
+                const auto first = _mm_loadu_si128(reinterpret_cast<const __m128i*>(map));
+                const auto second = _mm_loadu_si128(reinterpret_cast<const __m128i*>(map + 16));
+                return _mm_movemask_epi8(_mm_and_si128(_mm_cmpeq_epi8(first, code), _mm_cmpeq_epi8(second, code))) == 0xFFFF;
+            };
             alignas(16) std::uint16_t block[blockPixels * 3];
             for (int row = range.start; row < range.end; ++row) {
                 const auto* gr = mapGr.ptr<std::uint8_t>(row);
@@ -1579,6 +1590,43 @@ private:
                 for (; column < width && (reinterpret_cast<std::uintptr_t>(outputRow + column * 3) & 63U) != 0; ++column)
                     writePixel(column, outputRow + column * 3);
                 for (; column + blockPixels <= width; column += blockPixels) {
+                    // With a constant map entry, the corrected channel comes
+                    // from a contiguous run. Keep the sensor borders scalar.
+                    if (!flipRows && row != 0 && row != height - 1 && column > 0 && column + blockPixels < width) {
+                        const auto red = gr[column];
+                        const auto blue = gb[column];
+                        if ((red == identity || blue == identity) && isUniform(gb + column, blue)
+                            && isUniform(gr + column, red)) {
+                            const auto pixel = rowBase + column;
+                            const auto* original = source + pixel * 3;
+                            auto* out = outputRow + column * 3;
+                            if (red == identity && blue == identity) {
+                                for (int index = 0; index < blockPixels * 3; index += 8) {
+                                    _mm_stream_si128(reinterpret_cast<__m128i*>(out + index),
+                                        _mm_loadu_si128(reinterpret_cast<const __m128i*>(original + index)));
+                                }
+                            }
+                            else {
+                                const bool moveRed = red != identity;
+                                const auto* shifted = source + sourcePixel(moveRed ? red : blue, pixel, width) * 3;
+                                const auto firstMask = moveRed ? evenRed : evenBlue;
+                                const auto secondMask = moveRed ? evenBlue : evenGreen;
+                                const auto thirdMask = moveRed ? evenGreen : evenRed;
+                                const auto writeBlend = [&](int index, __m128i mask) {
+                                    const auto base = _mm_loadu_si128(reinterpret_cast<const __m128i*>(original + index));
+                                    const auto moved = _mm_loadu_si128(reinterpret_cast<const __m128i*>(shifted + index));
+                                    const auto corrected = _mm_or_si128(_mm_andnot_si128(mask, base), _mm_and_si128(mask, moved));
+                                    _mm_stream_si128(reinterpret_cast<__m128i*>(out + index), corrected);
+                                };
+                                for (int index = 0; index < blockPixels * 3; index += 24) {
+                                    writeBlend(index, firstMask);
+                                    writeBlend(index + 8, secondMask);
+                                    writeBlend(index + 16, thirdMask);
+                                }
+                            }
+                            continue;
+                        }
+                    }
                     for (int index = 0; index < blockPixels; ++index)
                         writePixel(column + index, block + index * 3);
                     for (int index = 0; index < blockPixels * 3; index += 8) {
