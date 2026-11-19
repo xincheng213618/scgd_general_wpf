@@ -124,6 +124,16 @@ namespace ColorVision.Engine.Media
         internal static long GetDisplayBitmapBytes(int width, int height, int bitsPerPixel)
             => (((long)width * bitsPerPixel + 31) / 32) * 4 * height;
 
+        internal static bool CanStreamRawRgb48(CVCIEFile image)
+        {
+            const int rgb48BitsPerPixel = 48;
+            return image.Rows > 0 && image.Cols > 0 && image.Channels == 3 && image.Bpp == 16
+                && image.Cols <= MediaHelper.RawRgb48StagingBytes / (rgb48BitsPerPixel / 8)
+                && (long)image.Rows * image.Cols <= Array.MaxLength / (rgb48BitsPerPixel / 8)
+                && GetDisplayBitmapBytes(image.Cols, image.Rows, rgb48BitsPerPixel) <= int.MaxValue
+                && EditableBitmapCopy.ShouldCopyInBackground(image.Cols, image.Rows, rgb48BitsPerPixel);
+        }
+
         internal static CvcieDisplaySource LoadSourceForDisplay(string filePath, out bool usesLuminance, out WriteableBitmap? bitmap,
             CancellationToken cancellationToken = default)
         {
@@ -230,12 +240,7 @@ namespace ColorVision.Engine.Media
                     if (offset <= 0 || image.Rows <= 0 || image.Cols <= 0 || image.Channels is not (1 or 3 or 4)
                         || image.Bpp is not (8 or 16 or 32 or 64)) throw new InvalidDataException("关联原图文件头无效。");
                     ValidateGeometry(image.Rows, image.Cols);
-                    const int rgb48BitsPerPixel = 48;
-                    bool streamPixels = loadPixels && streamLargeRgb48 && image.Channels == 3 && image.Bpp == 16
-                        && image.Cols <= MediaHelper.RawRgb48StagingBytes / (rgb48BitsPerPixel / 8)
-                        && (long)image.Rows * image.Cols <= Array.MaxLength / (rgb48BitsPerPixel / 8)
-                        && GetDisplayBitmapBytes(image.Cols, image.Rows, rgb48BitsPerPixel) <= int.MaxValue
-                        && EditableBitmapCopy.ShouldCopyInBackground(image.Cols, image.Rows, rgb48BitsPerPixel);
+                    bool streamPixels = loadPixels && streamLargeRgb48 && CanStreamRawRgb48(image);
                     if (!loadPixels || streamPixels)
                     {
                         long required = checked((long)image.Rows * image.Cols * image.Channels * (image.Bpp / 8));

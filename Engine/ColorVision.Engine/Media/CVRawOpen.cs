@@ -1085,7 +1085,8 @@ namespace ColorVision.Engine.Media
             CvcieBrightnessMode brightnessMode = displayConfig.BrightnessMode;
             double referenceWhite = displayConfig.ReferenceWhiteLuminance;
             ImageView view = context.ImageView;
-            bool streamInitialRgb48 = isCie && !preferSrgb && view.ViewBitmapSource == null;
+            bool initialDisplayIsEmpty = view.ViewBitmapSource == null;
+            bool streamInitialAssociatedRgb48 = isCie && !preferSrgb && initialDisplayIsEmpty;
 
             void VerifyOpenTarget()
             {
@@ -1136,9 +1137,20 @@ namespace ColorVision.Engine.Media
                     CvcieDisplaySource? associatedImage = null;
                     CvcieAssociatedSource? associatedSource = null;
                     (ImageSource? Source, long Revision, long ContentVersion)? streamedStagingTarget = null;
+
+                    Task<WriteableBitmap> PrepareStreamedDisplayAsync(CvcieDiskPixels pixels, CVCIEFile header)
+                        => view.Dispatcher.InvokeAsync(async () =>
+                        {
+                            VerifyOpenTarget();
+                            if (view.ViewBitmapSource != null)
+                                throw new OperationCanceledException("The target image changed before display preparation.", cancellationToken);
+                            streamedStagingTarget = (view.ViewBitmapSource, view.ImageRevision, view.ContentVersion);
+                            return await MediaHelper.PrepareRawRgb48DisplayAsync(pixels, header.Cols, header.Rows, cancellationToken);
+                        }, DispatcherPriority.Normal, cancellationToken).Task.Unwrap();
+
                     if (isCie && viewMetadata != null)
                     {
-                        if (streamInitialRgb48)
+                        if (streamInitialAssociatedRgb48)
                         {
                             foreach (var (snapshot, source) in CvRawLayerController.ReadAssociatedSources(requestedFilePath,
                                 viewMetadata.Header, loadPixels: true, cancellationToken, streamLargeRgb48: true))
@@ -1147,14 +1159,7 @@ namespace ColorVision.Engine.Media
                                 {
                                     try
                                     {
-                                        displayBitmap = await view.Dispatcher.InvokeAsync(async () =>
-                                        {
-                                            VerifyOpenTarget();
-                                            if (view.ViewBitmapSource != null)
-                                                throw new OperationCanceledException("The target image changed before display preparation.", cancellationToken);
-                                            streamedStagingTarget = (view.ViewBitmapSource, view.ImageRevision, view.ContentVersion);
-                                            return await MediaHelper.PrepareRawRgb48DisplayAsync(pixels, source.File.Cols, source.File.Rows, cancellationToken);
-                                        }, DispatcherPriority.Normal, cancellationToken).Task.Unwrap();
+                                        displayBitmap = await PrepareStreamedDisplayAsync(pixels, source.File);
                                     }
                                     catch (IOException error)
                                     {
@@ -1179,16 +1184,39 @@ namespace ColorVision.Engine.Media
                                 loadPixels: srgb == null, out associatedImage, cancellationToken);
                         }
                     }
-                    CVCIEFile LoadRaw()
+                    CvcieDisplaySource LoadRaw()
                     {
-                        using Stream source = CVFileReadCache.OpenRead(requestedFilePath);
-                        CVCIEFile raw = rawPixels.Read(source, requestedFilePath);
+                        Stream? source = CVFileReadCache.OpenRead(requestedFilePath);
                         try
                         {
-                            viewMetadata = ReadCvFileViewMetadata(requestedFilePath, null, source);
-                            return raw;
+                            if (initialDisplayIsEmpty && source is FileStream disk)
+                            {
+                                viewMetadata = ReadCvFileViewMetadata(requestedFilePath, null, disk);
+                                if (viewMetadata is { } metadata && metadata.Calibration?.CanReplay != true
+                                    && CvRawLayerController.CanStreamRawRgb48(metadata.Header))
+                                {
+                                    CVCIEFile header = metadata.Header;
+                                    long pixelBytes = (long)header.Cols * header.Rows * 6;
+                                    if (CvcieDiskPixels.TryLocate(disk, header, metadata.HeaderEnd, out long declared) is { } pixels
+                                        && declared == pixelBytes)
+                                    {
+                                        var streamed = new CvcieDisplaySource(header, diskRgb48: pixels);
+                                        streamed.TakePixelStream(disk);
+                                        source = null;
+                                        return streamed;
+                                    }
+                                }
+                            }
+
+                            CVCIEFile raw = rawPixels.Read(source, requestedFilePath);
+                            try
+                            {
+                                viewMetadata ??= ReadCvFileViewMetadata(requestedFilePath, null, source);
+                                return new(raw);
+                            }
+                            catch { raw.Dispose(); throw; }
                         }
-                        catch { raw.Dispose(); throw; }
+                        finally { source?.Dispose(); }
                     }
                     CVCIEFile LoadLuminance()
                     {
@@ -1197,7 +1225,7 @@ namespace ColorVision.Engine.Media
                     }
                     // A successful XYZ render validates the optional source without loading its pixels.
                     using CvcieDisplaySource? displaySource = srgb != null ? null
-                        : isRaw ? new(LoadRaw())
+                        : isRaw ? LoadRaw()
                         : !isCie || viewMetadata == null ? CvRawLayerController.LoadSourceForDisplay(requestedFilePath, out usesLuminance, out displayBitmap, cancellationToken)
                         : associatedImage ?? new(LoadLuminance());
                     cancellationToken.ThrowIfCancellationRequested();
@@ -1213,6 +1241,8 @@ namespace ColorVision.Engine.Media
                     }
                     CVCIEFile cVCIEFile = displaySource?.File ?? viewMetadata?.Header
                         ?? throw new InvalidDataException($"CVCIE 文件头无效：{requestedFilePath}");
+                    if (isRaw && displaySource?.DiskRgb48 is { } rawDiskPixels)
+                        displayBitmap = await PrepareStreamedDisplayAsync(rawDiskPixels, cVCIEFile);
                     if (displayBitmap == null && cVCIEFile.Channels == 1 && cVCIEFile.Bpp is 32 or 64)
                         displayBitmap = MediaHelper.RenderFloatChannel(cVCIEFile, cancellationToken);
                     using OpenCvSharp.Mat? loadedMat = displayBitmap == null && displaySource?.Decoded == null

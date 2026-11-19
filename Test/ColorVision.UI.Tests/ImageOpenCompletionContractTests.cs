@@ -1361,8 +1361,10 @@ public sealed class ImageOpenCompletionContractTests(ITestOutputHelper output)
         }
     }
 
-    [Fact]
-    public async Task LargeRgb48RawOpenReplacesFrozenDisplayThenReusesMutableDisplayAndPreservesNativeLease()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task LargeRgb48RawOpenReusesMutableDisplayAndPreservesNativeLease(bool startsEmpty)
     {
         const int width = 2049, height = 683, channels = 3;
         const int rowBytes = width * channels * sizeof(ushort), pixelBytes = rowBytes * height;
@@ -1377,22 +1379,34 @@ public sealed class ImageOpenCompletionContractTests(ITestOutputHelper output)
         WriteableBitmap? frozenDisplay = null;
         ImageFrameLease? oldLease = null;
         int loadedCount = 0;
+        bool sourceHeldAtPublication = false;
+        bool originalCacheEnabled = CVFileReadCache.IsEnabled;
         Matrix viewport = new(1.375, 0, 0, 1.375, -37, 21);
         TimeSpan testWait = TimeSpan.FromSeconds(10);
         try
         {
+            if (startsEmpty) CVFileReadCache.IsEnabled = false;
             WriteFixture(firstPath, firstSeed);
             WriteFixture(secondPath, secondSeed);
             Task firstOpen = WpfTestHost.Invoke(() =>
             {
                 EnsureImageViewTestResources();
                 view = new ImageView { EnableEditorImageServices = false };
-                frozenDisplay = new WriteableBitmap(width, height, 144, 120, PixelFormats.Rgb48, null);
-                frozenDisplay.Freeze();
-                view.SetImageSource(frozenDisplay);
+                if (!startsEmpty)
+                {
+                    frozenDisplay = new WriteableBitmap(width, height, 144, 120, PixelFormats.Rgb48, null);
+                    frozenDisplay.Freeze();
+                    view.SetImageSource(frozenDisplay);
+                }
                 opener = new CVRawOpen(view.EditorContext);
                 view.IEditorToolFactory.IImageOpens[".cvraw"] = opener;
-                view.ImageSourceLoaded += (_, _) => loadedCount++;
+                view.ImageSourceLoaded += (_, _) =>
+                {
+                    loadedCount++;
+                    if (!startsEmpty || loadedCount != 1) return;
+                    try { using var exclusive = new FileStream(firstPath, FileMode.Open, FileAccess.Read, FileShare.None); }
+                    catch (IOException) { sourceHeldAtPublication = true; }
+                };
                 previousMainWindow = Application.Current.MainWindow;
                 host = new System.Windows.Window
                 {
@@ -1406,6 +1420,11 @@ public sealed class ImageOpenCompletionContractTests(ITestOutputHelper output)
                 return view.ImageOpenCompletion;
             });
             await firstOpen.WaitAsync(testWait);
+            if (startsEmpty)
+            {
+                Assert.True(sourceHeldAtPublication);
+                using var exclusive = new FileStream(firstPath, FileMode.Open, FileAccess.Read, FileShare.None);
+            }
 
             byte[] pixels = new byte[pixelBytes];
             var (original, rawBuffer) = WpfTestHost.Invoke(() =>
@@ -1417,7 +1436,10 @@ public sealed class ImageOpenCompletionContractTests(ITestOutputHelper output)
                 AssertBitmap(display, firstSeed, pixels);
                 oldLease = Assert.IsType<ImageFrameLease>(view.AcquireImageFrame());
                 view.Zoombox1.RestoreView(viewport);
-                return (display, ReadRawBuffer(opener!));
+                byte[]? buffer = ReadRawBuffer(opener!);
+                if (startsEmpty) Assert.Null(buffer);
+                else Assert.NotNull(buffer);
+                return (display, buffer);
             });
 
             Task secondOpen = WpfTestHost.Invoke(() =>
@@ -1431,8 +1453,9 @@ public sealed class ImageOpenCompletionContractTests(ITestOutputHelper output)
                 host!.UpdateLayout();
                 Assert.Equal(2, loadedCount);
                 Assert.Same(opener, view!.EditorContext.IImageOpen);
-                Assert.Same(rawBuffer, ReadRawBuffer(opener!));
-                AssertSamples(rawBuffer, secondSeed, rgb: false);
+                byte[] nextRawBuffer = Assert.IsType<byte[]>(ReadRawBuffer(opener!));
+                if (!startsEmpty) Assert.Same(rawBuffer, nextRawBuffer);
+                AssertSamples(nextRawBuffer, secondSeed, rgb: false);
                 Assert.Equal(viewport, view.Zoombox1.ContentMatrix);
                 Assert.Equal(rowBytes, view.Config.GetProperties<int>(ImageViewPropertyKeys.Stride));
 
@@ -1441,9 +1464,12 @@ public sealed class ImageOpenCompletionContractTests(ITestOutputHelper output)
                 Assert.Same(next, view.Presentation.DisplaySource);
                 AssertBitmap(next, secondSeed, pixels);
                 Assert.False(view.IsCurrentImageRevision(oldLease!.Revision));
-                Assert.True(frozenDisplay!.IsFrozen);
-                frozenDisplay.CopyPixels(pixels, rowBytes, 0);
-                Assert.Equal(-1, Array.FindIndex(pixels, value => value != 0));
+                if (frozenDisplay != null)
+                {
+                    Assert.True(frozenDisplay.IsFrozen);
+                    frozenDisplay.CopyPixels(pixels, rowBytes, 0);
+                    Assert.Equal(-1, Array.FindIndex(pixels, value => value != 0));
+                }
             });
 
             HImage frame = oldLease!.Image;
@@ -1470,6 +1496,7 @@ public sealed class ImageOpenCompletionContractTests(ITestOutputHelper output)
             }
             finally
             {
+                if (startsEmpty) CVFileReadCache.IsEnabled = originalCacheEnabled;
                 File.Delete(firstPath);
                 File.Delete(secondPath);
             }
@@ -1498,12 +1525,12 @@ public sealed class ImageOpenCompletionContractTests(ITestOutputHelper output)
             }));
         }
 
-        static byte[] ReadRawBuffer(CVRawOpen opener)
+        static byte[]? ReadRawBuffer(CVRawOpen opener)
         {
             var raw = Assert.IsType<CvRawPixelBuffer>(typeof(CalibratedImageCapability)
                 .GetField("_rawPixels", BindingFlags.Instance | BindingFlags.NonPublic)?.GetValue(opener));
-            return Assert.IsType<byte[]>(typeof(CvRawPixelBuffer)
-                .GetField("pixels", BindingFlags.Instance | BindingFlags.NonPublic)?.GetValue(raw));
+            return (byte[]?)typeof(CvRawPixelBuffer)
+                .GetField("pixels", BindingFlags.Instance | BindingFlags.NonPublic)?.GetValue(raw);
         }
 
         static void AssertBitmap(WriteableBitmap bitmap, int seed, byte[] pixels)
