@@ -38,11 +38,18 @@ namespace ColorVision.Engine.Media
         public CVCIEFile File { get; } = file;
         public OpenCvSharp.Mat? Decoded { get; } = decoded;
         public CvcieDiskPixels? DiskRgb48 { get; } = diskRgb48;
+        private FileStream? _ownedPixelStream;
+
+        internal void TakePixelStream(FileStream stream) => _ownedPixelStream = stream;
 
         public void Dispose()
         {
             try { Decoded?.Dispose(); }
-            finally { File.Dispose(); }
+            finally
+            {
+                try { File.Dispose(); }
+                finally { _ownedPixelStream?.Dispose(); }
+            }
         }
     }
 
@@ -138,7 +145,21 @@ namespace ColorVision.Engine.Media
         internal static CvcieAssociatedSource? PrepareAssociatedSource(string filePath, CVCIEFile? cieHeader, bool loadPixels,
             out CvcieDisplaySource? source, CancellationToken token, bool matchCieGeometry = true)
         {
+            foreach (var (snapshot, prepared) in ReadAssociatedSources(filePath, cieHeader, loadPixels, token, matchCieGeometry))
+            {
+                source = loadPixels ? prepared : null;
+                if (source == null) prepared.Dispose();
+                return snapshot;
+            }
             source = null;
+            return null;
+        }
+
+        // Each yielded source belongs to the caller. Streaming sources retain their verified read handle.
+        internal static IEnumerable<(CvcieAssociatedSource Snapshot, CvcieDisplaySource Source)> ReadAssociatedSources(
+            string filePath, CVCIEFile? cieHeader, bool loadPixels, CancellationToken token,
+            bool matchCieGeometry = true, bool streamLargeRgb48 = false)
+        {
             string ciePath = Path.GetFullPath(filePath);
             List<string> candidates = new();
             if (!string.IsNullOrWhiteSpace(cieHeader?.SrcFileName))
@@ -152,31 +173,39 @@ namespace ColorVision.Engine.Media
             {
                 token.ThrowIfCancellationRequested();
                 if (!File.Exists(candidate)) continue;
+                FileStream? stream = null;
+                CvcieDisplaySource? prepared = null;
+                CvcieAssociatedSource? snapshot = null;
                 try
                 {
                     string path = Path.GetFullPath(candidate);
+                    string extension = Path.GetExtension(path);
                     if (string.Equals(path, ciePath, StringComparison.OrdinalIgnoreCase)
-                        || string.Equals(Path.GetExtension(path), ".cvcie", StringComparison.OrdinalIgnoreCase)) continue;
-                    using FileStream stream = new(path, FileMode.Open, FileAccess.Read, FileShare.Read);
+                        || string.Equals(extension, ".cvcie", StringComparison.OrdinalIgnoreCase)) continue;
+                    bool isRaw = string.Equals(extension, ".cvraw", StringComparison.OrdinalIgnoreCase);
+                    stream = new(path, FileMode.Open, FileAccess.Read, FileShare.Read);
                     var revision = new CvcieFileRevision(stream.Length, File.GetLastWriteTimeUtc(stream.SafeFileHandle),
                         File.GetCreationTimeUtc(stream.SafeFileHandle));
-                    CvcieDisplaySource prepared = ReadAssociatedImage(stream, filePath, matchCieGeometry ? cieHeader?.Rows : null,
-                        matchCieGeometry ? cieHeader?.Cols : null, loadPixels, token);
-                    try
+                    prepared = ReadAssociatedImage(stream, filePath, matchCieGeometry ? cieHeader?.Rows : null,
+                        matchCieGeometry ? cieHeader?.Cols : null, loadPixels, token, streamLargeRgb48 && isRaw);
+                    CVCIEFile image = prepared.File;
+                    bool supportsProfile = isRaw && image.FileExtType == CVType.Raw && image.Channels is 1 or 3 && image.Bpp is 8 or 16;
+                    snapshot = new CvcieAssociatedSource(path, revision, image.Rows, image.Cols, supportsProfile);
+                    if (prepared.DiskRgb48.HasValue)
                     {
-                        CVCIEFile image = prepared.File;
-                        bool supportsProfile = image.FileExtType == CVType.Raw && image.Channels is 1 or 3 && image.Bpp is 8 or 16
-                            && string.Equals(Path.GetExtension(path), ".cvraw", StringComparison.OrdinalIgnoreCase);
-                        var snapshot = new CvcieAssociatedSource(path, revision, image.Rows, image.Cols, supportsProfile);
-                        if (loadPixels) source = prepared;
-                        return snapshot;
+                        prepared.TakePixelStream(stream);
+                        stream = null;
                     }
-                    finally { if (source == null) prepared.Dispose(); }
                 }
                 catch (OperationCanceledException) when (token.IsCancellationRequested) { throw; }
                 catch (Exception ex) { Log.Warn($"关联原图不可用：{candidate}", ex); }
+                finally
+                {
+                    try { stream?.Dispose(); }
+                    finally { if (snapshot == null) prepared?.Dispose(); }
+                }
+                if (snapshot != null) yield return (snapshot, prepared!);
             }
-            return null;
         }
 
         private static CvcieDisplaySource ReadAssociatedImage(FileStream stream, string filePath, int? expectedRows, int? expectedCols,
