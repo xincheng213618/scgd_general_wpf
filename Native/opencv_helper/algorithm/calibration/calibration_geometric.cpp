@@ -1587,21 +1587,18 @@ public:
                 return true;
             }
 
-            // Resizing the interleaved image is channel-independent and gives
-            // the same cubic samples as the legacy split/resize path while
-            // eliminating three split/merge full-frame copies.
-            cv::resize(
-                source,
-                resized_,
-                cv::Size(resizedColumns_, resizedRows_),
-                0.0,
-                0.0,
-                cv::INTER_CUBIC);
+            // OpenCV copies the entire input when the rounded size is unchanged.
+            // The gather can read those pixels directly from its distinct source.
+            const cv::Mat* samples = &source;
+            if (source.cols != resizedColumns_ || source.rows != resizedRows_) {
+                cv::resize(source, resized_, cv::Size(resizedColumns_, resizedRows_), 0.0, 0.0, cv::INTER_CUBIC);
+                samples = &resized_;
+            }
             if (raw.bitsPerChannel == 8) {
-                render<std::uint8_t>(destination);
+                render<std::uint8_t>(*samples, destination);
             }
             else {
-                render<std::uint16_t>(destination);
+                render<std::uint16_t>(*samples, destination);
             }
             return true;
         }
@@ -1855,9 +1852,9 @@ private:
     }
 
     template<typename Sample>
-    void render(const ImageView& output)
+    void render(const cv::Mat& samples, const ImageView& output)
     {
-        const auto* source = resized_.ptr<Sample>();
+        const auto* source = samples.ptr<Sample>();
         auto* destination = reinterpret_cast<Sample*>(output.data);
         cv::parallel_for_(cv::Range(0, targetRows_), [&](const cv::Range& range) {
             for (int row = range.start; row < range.end; ++row) {

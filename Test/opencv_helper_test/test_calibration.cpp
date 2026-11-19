@@ -1829,7 +1829,7 @@ void runAngleShiftTilingCoverage()
     cv::RNG random(0x29A753);
     int number = 0;
     for (const auto size : { cv::Size(641, 479), cv::Size(131, 129), cv::Size(1, 257), cv::Size(257, 1) }) {
-        for (const double ratio : { 1.0, 1.5, 2.0, 3.0, 4.0 }) {
+        for (const double ratio : { 1.0, 1.001, 1.5, 2.0, 3.0, 4.0 }) {
             for (int variant = 0; variant < (size.width == 641 ? 3 : 1); ++variant) {
                 const auto path = directory.path / ("angle_" + std::to_string(number++) + ".json");
                 nlohmann::json config{
