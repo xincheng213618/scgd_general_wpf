@@ -222,9 +222,14 @@ const auto& fixedRemapWeights()
     return weights;
 }
 
-template<bool flipRows, bool flipColumns, bool pairAvx2 = false>
+struct OpticalRowSpan {
+    int first;
+    int end;
+};
+
+template<bool flipRows, bool flipColumns, bool pairAvx2 = false, bool opticalEdges = false>
 __declspec(noinline) void remapFixedBgr16(const cv::Mat& source, cv::Mat& result,
-    const cv::Mat& coordinates, const cv::Mat& interpolation)
+    const cv::Mat& coordinates, const cv::Mat& interpolation, std::span<const OpticalRowSpan> opticalRows = {})
 {
     const auto& weights = fixedRemapWeights();
     const auto zero = _mm_setzero_si128();
@@ -247,10 +252,19 @@ __declspec(noinline) void remapFixedBgr16(const cv::Mat& source, cv::Mat& result
             const auto* positions = coordinates.ptr<cv::Vec2s>(y);
             const auto* fractions = interpolation.ptr<std::uint16_t>(y);
             auto* out = result.ptr<std::uint16_t>(flipRows ? result.rows - 1 - y : y);
+            int first = 0, end = result.cols;
+            if constexpr (opticalEdges) {
+                static_assert(!flipRows && !flipColumns);
+                first = opticalRows[y].first;
+                end = opticalRows[y].end;
+                std::memset(out, 0, static_cast<std::size_t>(first) * 3 * sizeof(std::uint16_t));
+                std::memset(out + end * 3, 0, static_cast<std::size_t>(result.cols - end) * 3 * sizeof(std::uint16_t));
+                out += first * 3;
+            }
             // For a reversed row, decrement before each store so the pointer
             // stays within the output row after writing its first pixel.
             if constexpr (flipColumns) out += 3 * result.cols;
-            for (int x = 0; x < result.cols; ++x, out += flipColumns ? 0 : 3) {
+            for (int x = first; x < end; ++x, out += flipColumns ? 0 : 3) {
                 if constexpr (flipColumns) out -= 3;
                 const int sourceX = positions[x][0];
                 const int sourceY = positions[x][1];
@@ -258,7 +272,7 @@ __declspec(noinline) void remapFixedBgr16(const cv::Mat& source, cv::Mat& result
 #if !defined(_M_ARM64EC)
                 if constexpr (pairAvx2) {
                     static_assert(!flipRows && !flipColumns);
-                    if (x + 1 < result.cols
+                    if (x + 1 < end
                         && static_cast<unsigned>(sourceX) < static_cast<unsigned>(source.cols - 2)
                         && static_cast<unsigned>(sourceY) < static_cast<unsigned>(source.rows - 1)) {
                         const int nextX = positions[x + 1][0];
@@ -345,7 +359,8 @@ __declspec(noinline) void remapFixedBgr16(const cv::Mat& source, cv::Mat& result
 }
 
 bool tryRemapFixedBgr16(const cv::Mat& source, cv::Mat& result,
-    const cv::Mat& coordinates, const cv::Mat& interpolation, int flip)
+    const cv::Mat& coordinates, const cv::Mat& interpolation, int flip,
+    std::span<const OpticalRowSpan> opticalRows)
 {
     if (source.type() != CV_16UC3
         || reinterpret_cast<std::uintptr_t>(source.data) % alignof(std::uint16_t) != 0
@@ -353,12 +368,22 @@ bool tryRemapFixedBgr16(const cv::Mat& source, cv::Mat& result,
         || !canRemapFixedBgr16(source.size(), result.size(), coordinates, interpolation)) {
         return false;
     }
+    const bool useOpticalEdges = flip == -99 && opticalRows.size() == static_cast<std::size_t>(result.rows);
 #if !defined(_M_ARM64EC)
     if (flip == -99 && cv::checkHardwareSupport(CV_CPU_AVX2)) {
-        remapFixedBgr16<false, false, true>(source, result, coordinates, interpolation);
+        if (useOpticalEdges) {
+            remapFixedBgr16<false, false, true, true>(source, result, coordinates, interpolation, opticalRows);
+        }
+        else {
+            remapFixedBgr16<false, false, true>(source, result, coordinates, interpolation);
+        }
         return true;
     }
 #endif
+    if (useOpticalEdges) {
+        remapFixedBgr16<false, false, false, true>(source, result, coordinates, interpolation, opticalRows);
+        return true;
+    }
     switch (flip) {
     case 0: remapFixedBgr16<true, false>(source, result, coordinates, interpolation); break;
     case 1: remapFixedBgr16<false, true>(source, result, coordinates, interpolation); break;
@@ -656,6 +681,7 @@ public:
                 imageType(destination),
                 destination.data);
             cv::Mat remapSource = source;
+            cv::Rect sourceRect(0, 0, source.cols, source.rows);
 
             if (useFisheye_ && (offsetX != 0 || offsetY != 0)) {
                 // The legacy integer warp is exactly a zero-bordered view of
@@ -667,15 +693,20 @@ public:
                     output.setTo(cv::Scalar::all(0));
                     return true;
                 }
-                remapSource = source(cv::Rect(
-                    (std::max)(0, -offsetX),
-                    (std::max)(0, -offsetY),
-                    copyWidth,
-                    copyHeight));
+                sourceRect = cv::Rect((std::max)(0, -offsetX), (std::max)(0, -offsetY), copyWidth, copyHeight);
+                remapSource = source(sourceRect);
             }
 
 #if defined(_M_X64)
-            if (tryRemapFixedBgr16(remapSource, output, *selectedCoordinates, *selectedInterpolation, options.rawOutputFlip)) {
+            std::span<const OpticalRowSpan> opticalRows;
+            if (options.rawOutputFlip == -99 && options.correctedBgrRows.rows.size() == raw.height
+                && remapSource.type() == CV_16UC3) {
+                const auto mapRoi = useRoi ? options.roi : std::array<std::uint32_t, 4>{};
+                opticalRows = opticalEdgeRows(options.correctedBgrRows, mapRoi, sourceRect,
+                    output.size(), *selectedCoordinates, *selectedInterpolation);
+            }
+            if (tryRemapFixedBgr16(remapSource, output, *selectedCoordinates, *selectedInterpolation,
+                    options.rawOutputFlip, opticalRows)) {
                 return true;
             }
 #endif
@@ -697,6 +728,89 @@ public:
     }
 
 private:
+#if defined(_M_X64)
+    std::span<const OpticalRowSpan> opticalEdgeRows(BgrNonzeroRows sourceRows,
+        const std::array<std::uint32_t, 4>& roi, const cv::Rect& sourceRect, cv::Size outputSize,
+        const cv::Mat& coordinates, const cv::Mat& interpolation)
+    {
+        // Keep one plan per Distortion executor. Different ROI requests can
+        // still use the ordinary mapper without rescanning every frame.
+        if (opticalPlanAttempted_) {
+            if (opticalPlanInput_.rows.data() == sourceRows.rows.data()
+                && opticalPlanInput_.rows.size() == sourceRows.rows.size()
+                && opticalPlanInput_.firstSample == sourceRows.firstSample
+                && opticalPlanRoi_ == roi && opticalPlanSourceRect_ == sourceRect
+                && opticalPlanOutput_ == outputSize) {
+                return opticalPlanRows_;
+            }
+            return {};
+        }
+        if (!canRemapFixedBgr16(sourceRect.size(), outputSize, coordinates, interpolation)) return {};
+        opticalPlanAttempted_ = true;
+        try {
+            std::vector<OpticalRowSpan> rows(outputSize.height);
+            std::vector<OpticalRowSpan> sourceEnvelopes(static_cast<std::size_t>(sourceRect.height) + 1);
+            const auto cropFirst = sourceRows.firstSample + static_cast<std::size_t>(sourceRect.x) * 3;
+            const auto cropEnd = cropFirst + static_cast<std::size_t>(sourceRect.width) * 3;
+            const auto sourceSpan = [&](int y) -> OpticalRowSpan {
+                const auto& span = sourceRows.rows[sourceRect.y + y];
+                const auto first = (std::max)(span.first, cropFirst);
+                const auto end = (std::min)(span.end, cropEnd);
+                if (first >= end) return {0, 0};
+                // Keep whole pixels whose BGR samples touch the gain span.
+                // Shift the first possible base X one pixel left for the right tap.
+                return {static_cast<int>((first - cropFirst) / 3) - 1,
+                    static_cast<int>((end - cropFirst + 2) / 3)};
+            };
+            // Entries represent base Y from -1 through height-1. A bounding
+            // union of the two sampled rows may include gaps, which is safe.
+            OpticalRowSpan previous{0, 0};
+            for (int y = 0; y < sourceRect.height; ++y) {
+                const auto current = sourceSpan(y);
+                if (previous.first == previous.end) sourceEnvelopes[y] = current;
+                else if (current.first == current.end) sourceEnvelopes[y] = previous;
+                else sourceEnvelopes[y] = {(std::min)(previous.first, current.first),
+                    (std::max)(previous.end, current.end)};
+                previous = current;
+            }
+            sourceEnvelopes.back() = previous;
+
+            cv::parallel_for_(cv::Range(0, outputSize.height), [&](const cv::Range& range) {
+                for (int y = range.start; y < range.end; ++y) {
+                    const auto* positions = coordinates.ptr<cv::Vec2s>(y);
+                    const auto mayHaveNonzeroTap = [&](int x) {
+                        const int sourceX = positions[x][0];
+                        const auto sourceY = static_cast<std::size_t>(positions[x][1] + 1);
+                        if (sourceY >= sourceEnvelopes.size()) return false;
+                        const auto& envelope = sourceEnvelopes[sourceY];
+                        return sourceX >= envelope.first && sourceX < envelope.end;
+                    };
+                    int first = 0, end = outputSize.width;
+                    while (first < end && !mayHaveNonzeroTap(first)) ++first;
+                    while (end > first && !mayHaveNonzeroTap(end - 1)) --end;
+                    rows[y] = {first, end};
+                }
+            });
+            const bool hasEdges = std::any_of(rows.begin(), rows.end(), [&](const OpticalRowSpan& row) {
+                return row.first != 0 || row.end != outputSize.width;
+            });
+            if (!hasEdges) return {};
+            opticalPlanInput_ = sourceRows;
+            opticalPlanRoi_ = roi;
+            opticalPlanSourceRect_ = sourceRect;
+            opticalPlanOutput_ = outputSize;
+            opticalPlanRows_ = std::move(rows);
+            return opticalPlanRows_;
+        }
+        catch (const std::bad_alloc&) {
+            return {};
+        }
+        catch (const cv::Exception&) {
+            return {};
+        }
+    }
+#endif
+
     DistortionCalibration(const DistortionCalibration& source)
         : width_(source.width_)
         , height_(source.height_)
@@ -826,6 +940,14 @@ private:
     int roiWidth_ = -1;
     int roiHeight_ = -1;
 
+#if defined(_M_X64)
+    bool opticalPlanAttempted_ = false;
+    BgrNonzeroRows opticalPlanInput_{};
+    std::array<std::uint32_t, 4> opticalPlanRoi_{};
+    cv::Rect opticalPlanSourceRect_;
+    cv::Size opticalPlanOutput_;
+    std::vector<OpticalRowSpan> opticalPlanRows_;
+#endif
     cv::Mat fallbackScratch_;
 };
 

@@ -1007,6 +1007,21 @@ public:
     bool tryApplyWithNextTo(const CalibrationItem& next, const ImageView& raw,
         const ImageView& destination, const ExecutionOptions& options) const override;
 
+    BgrNonzeroRows nonzeroBgrRows(const ImageView& raw, const ExecutionOptions& options) const noexcept override
+    {
+        if constexpr (std::is_same_v<TOperation, UniformityOperation>) {
+            if (nonzeroSpans_.empty() || options.rawOutputFlip != -99) return {};
+            const std::span<const NonzeroSampleSpan> rows(nonzeroSpans_);
+            if (matchesFullBgr16(raw, options)) return {rows, 0};
+            if (raw.bitsPerChannel == 16 && raw.channels == 3 && options.interleavedBgr && options.rgbType == 0
+                && raw.width == options.roi[2] && raw.height == options.roi[3]
+                && hasLegacyRoi(options, header_.width, header_.height)) {
+                return {rows.subspan(options.roi[1], raw.height), static_cast<std::size_t>(options.roi[0]) * 3};
+            }
+        }
+        return {};
+    }
+
     bool tryApplyWithFlip(const ImageView& raw, const ExecutionOptions& options) const override
     {
         if (options.rawOutputFlip != 0 || !matchesFullBgr16(raw, options)) return false;
@@ -1339,7 +1354,7 @@ private:
     CalibrationType type_;
     MapHeader header_;
     std::vector<TCorrection> correction_;
-    struct NonzeroSpan { std::size_t first, end; };
+    using NonzeroSpan = NonzeroSampleSpan;
     std::vector<NonzeroSpan> nonzeroSpans_;
     std::unique_ptr<PackedUniformity> packedUniformity_;
     bool hasSafeGains_ = false;

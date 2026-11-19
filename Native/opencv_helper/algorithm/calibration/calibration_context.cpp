@@ -410,6 +410,11 @@ public:
             leasedNext != nullptr ? *leasedNext->implementation_ : next, raw, destination, options);
     }
 
+    BgrNonzeroRows nonzeroBgrRows(const ImageView& raw, const ExecutionOptions& options) const noexcept override
+    {
+        return implementation_->nonzeroBgrRows(raw, options);
+    }
+
     bool canFuseRawFlip(const ImageView& source, const ImageView& destination,
         const ExecutionOptions& options) const override
     {
@@ -1130,6 +1135,7 @@ bool CalibrationContext::execute(
     ImageView scratch = raw;
     scratch.data = rawScratch_.get();
     scratch.dataLength = rawScratchCapacity_;
+    BgrNonzeroRows nextDistortionRows{};
     for (std::size_t index = 0; index < items_.size(); ++index) {
         const auto& item = items_[index];
         if (item->isColorTransform()) {
@@ -1146,7 +1152,11 @@ bool CalibrationContext::execute(
                 const auto restorePairOutput = [&] { std::memcpy(raw.data, scratch.data, requiredRawBytes); };
                 std::string error;
                 try {
-                    if (geometry->applyOutOfPlace(scratch, raw, options, error)) return true;
+                    auto geometryOptions = options;
+                    if (options.rawOutputFlip == -99 && geometry->type() == CalibrationType::Distortion) {
+                        geometryOptions.correctedBgrRows = items_[index + 1]->nonzeroBgrRows(scratch, calibrationOptions);
+                    }
+                    if (geometry->applyOutOfPlace(scratch, raw, geometryOptions, error)) return true;
                 }
                 catch (...) {
                     restorePairOutput();
@@ -1163,6 +1173,9 @@ bool CalibrationContext::execute(
             && item->tryApplyWithNext(*items_[index + 1], current,
                 flipAfterPair ? options : calibrationOptions)) {
             if (flipAfterPair) fusedRawFlip = true;
+            if (index + 2 < items_.size() && items_[index + 2]->type() == CalibrationType::Distortion) {
+                nextDistortionRows = items_[index + 1]->nonzeroBgrRows(current, calibrationOptions);
+            }
             ++index;
             continue;
         }
@@ -1180,7 +1193,15 @@ bool CalibrationContext::execute(
             const bool fuseHorizontalFlip = canFuseHorizontalFlip && finalStage && destination.data == raw.data;
             const auto& stageOptions = finalStage && (fusedRawFlip || fuseHorizontalFlip)
                 ? options : calibrationOptions;
-            applied = item->applyOutOfPlace(current, destination, stageOptions, error);
+            if (!nextDistortionRows.rows.empty()) {
+                auto geometryOptions = stageOptions;
+                geometryOptions.correctedBgrRows = nextDistortionRows;
+                nextDistortionRows = {};
+                applied = item->applyOutOfPlace(current, destination, geometryOptions, error);
+            }
+            else {
+                applied = item->applyOutOfPlace(current, destination, stageOptions, error);
+            }
             if (applied) {
                 current = destination;
                 fusedRawFlip = fusedRawFlip || fuseHorizontalFlip;
