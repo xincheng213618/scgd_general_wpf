@@ -1155,6 +1155,64 @@ void verifyAdjacentMapEquivalence(const std::filesystem::path& directory, bool c
     }
 }
 
+void verifyMono16MapEquivalence(const std::filesystem::path& directory)
+{
+    constexpr std::uint32_t width = 19, height = 13;
+    constexpr std::size_t count = width * height;
+    constexpr std::uint16_t guard = 0x2A7E;
+    const std::array<std::uint16_t, 9> levels{0, 1, 3, 255, 256, 32767, 32768, 65534, 65535};
+    const std::array<float, 8> gains{0.0F, -0.0F, 0.125F, 0.9999F, 1.0F, 1.0001F, 2.0F,
+        (std::numeric_limits<float>::max)()};
+    std::vector<std::uint16_t> source(count + 2, guard);
+    std::vector<float> factors(count);
+    for (std::size_t index = 0; index < count; ++index) {
+        source[index + 1] = levels[index % levels.size()];
+        factors[index] = gains[(index / levels.size()) % gains.size()];
+    }
+    const auto uniformity = directory / "adjacent_mono_uniformity.dat";
+    writeMap(uniformity, 32, 16, factors, 1, width, height);
+
+    MCalibrationExecutionOptionsV1 options{};
+    options.structSize = sizeof(options);
+    options.interleavedBgr = 1;
+    options.roiWidth = width;
+    options.roiHeight = height;
+    options.exposureX = options.exposureY = options.exposureZ = 1;
+    const auto execute = [&](void* context, std::vector<std::uint16_t>& pixels) {
+        requireResult(M_CalibrationExecute(context, width, height, 16, 1,
+            reinterpret_cast<std::uint8_t*>(pixels.data() + 1), count * sizeof(std::uint16_t),
+            nullptr, 0, &options), context, "execute Mono16 maps");
+    };
+
+    for (bool compact : {true, false}) {
+        std::vector<std::uint16_t> offsets(count);
+        for (std::size_t index = 0; index < count; ++index)
+            offsets[index] = levels[(index / 17) % levels.size()] & (compact ? 255 : 65535);
+        const auto dsnu = directory / (compact ? "adjacent_mono_dsnu8.dat" : "adjacent_mono_dsnu16.dat");
+        writeMap(dsnu, 16, 16, offsets, 1, width, height);
+        Context dark = createContext(), gain = createContext(), combined = createContext();
+        requireResult(M_CalibrationLoadFileW(dark.get(), 4, dsnu.c_str()), dark.get(), "load Mono16 DSNU");
+        requireResult(M_CalibrationLoadFileW(gain.get(), 5, uniformity.c_str()), gain.get(), "load Mono16 Uniformity");
+        requireResult(M_CalibrationLoadFileW(combined.get(), 4, dsnu.c_str()), combined.get(), "load fused Mono16 DSNU");
+        requireResult(M_CalibrationLoadFileW(combined.get(), 5, uniformity.c_str()), combined.get(), "load fused Mono16 Uniformity");
+
+        auto expected = source;
+        execute(dark.get(), expected);
+        execute(gain.get(), expected);
+        auto actual = source;
+        execute(combined.get(), actual);
+        if (actual != expected) throw std::runtime_error("Fused Mono16 maps changed RAW samples or guard values");
+
+        cv::Mat image(height, width, CV_16UC1, expected.data() + 1);
+        cv::flip(image, image, 0);
+        actual = source;
+        requireResult(M_CalibrationExecuteRawWithFlipV1(combined.get(), width, height, 16, 1,
+            reinterpret_cast<std::uint8_t*>(actual.data() + 1), count * sizeof(std::uint16_t),
+            &options, 0), combined.get(), "execute fused Mono16 vertical flip");
+        if (actual != expected) throw std::runtime_error("Fused Mono16 vertical flip changed RAW samples or guard values");
+    }
+}
+
 void verifyLargeUniformityOutput(const std::filesystem::path& directory)
 {
     constexpr std::uint32_t width = 3001, height = 1865, channels = 3;
@@ -1644,6 +1702,7 @@ void runSyntheticCoverage()
     verifyAdjacentMapEquivalence(directory.path, false);
     verifyAdjacentMapEquivalence(directory.path, true);
     verifyAdjacentBgr8MapEquivalence(directory.path);
+    verifyMono16MapEquivalence(directory.path);
     verifyRawOutputFlip(directory.path);
     verifyLargeUniformityOutput(directory.path);
     verifyLargeDistortion(directory.path);

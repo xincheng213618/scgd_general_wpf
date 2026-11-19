@@ -811,9 +811,13 @@ public:
         , correction_(std::move(correction))
     {
         if constexpr (std::is_same_v<TOperation, UniformityOperation>) {
-            if (header_.version == 1 && header_.sourceBitsPerChannel == 8 && header_.channels == 3) {
+            bool validateGains = header_.sourceBitsPerChannel == 8 && header_.channels == 3;
+#if defined(_M_X64) && !defined(_M_ARM64EC)
+            validateGains = validateGains || (header_.sourceBitsPerChannel == 16 && header_.channels == 1);
+#endif
+            if (header_.version == 1 && validateGains) {
                 // Legacy maps can contain unusual gains. Keep their original execution path.
-                hasSafe8BitGains_ = hasFiniteNonnegativeGains(correction_);
+                hasSafeGains_ = hasFiniteNonnegativeGains(correction_);
             }
             if (header_.version == 1 && header_.sourceBitsPerChannel == 16 && header_.channels == 3) {
                 // Zero gains at the optical field's edges always produce zero,
@@ -1189,7 +1193,7 @@ private:
     struct NonzeroSpan { std::size_t first, end; };
     std::vector<NonzeroSpan> nonzeroSpans_;
     std::unique_ptr<PackedUniformity> packedUniformity_;
-    bool hasSafe8BitGains_ = false;
+    bool hasSafeGains_ = false;
 };
 
 template <typename TCorrection>
@@ -1241,6 +1245,77 @@ void applyFusedBgr8(
         pixels[index] = static_cast<std::uint8_t>((std::min)(255.0F, corrected));
     }
 }
+
+#if defined(_M_X64) && !defined(_M_ARM64EC)
+template <typename TOffset>
+void applyFusedMono16(const ImageView& raw, const TOffset* offsets, const float* gains, bool vertical)
+{
+    auto* pixels = reinterpret_cast<std::uint16_t*>(raw.data);
+    const auto width = static_cast<std::size_t>(raw.width);
+    const auto zero = _mm_setzero_si128();
+    const auto maximum = _mm_set1_ps(65535.0F);
+    const auto bias = _mm_set1_epi32(32768);
+    const auto sign = _mm_set1_epi16(-32768);
+    const auto scale = [&](__m128i samples, const float* factors) {
+        const auto scaled = _mm_mul_ps(_mm_cvtepi32_ps(samples), _mm_loadu_ps(factors));
+        // Bias into the signed range for the SSE2 pack, then restore the unsigned bits.
+        return _mm_sub_epi32(_mm_cvttps_epi32(_mm_min_ps(scaled, maximum)), bias);
+    };
+    const auto correctEight = [&](std::size_t index) {
+        __m128i dark;
+        if constexpr (std::is_same_v<TOffset, std::uint8_t>) {
+            dark = darkCorrectEight(pixels + index, offsets + index);
+        }
+        else {
+            dark = _mm_subs_epu16(_mm_loadu_si128(reinterpret_cast<const __m128i*>(pixels + index)),
+                _mm_loadu_si128(reinterpret_cast<const __m128i*>(offsets + index)));
+        }
+        const auto low = scale(_mm_unpacklo_epi16(dark, zero), gains + index);
+        const auto high = scale(_mm_unpackhi_epi16(dark, zero), gains + index + 4);
+        return _mm_xor_si128(_mm_packs_epi32(low, high), sign);
+    };
+    const auto correctOne = [&](std::size_t index) {
+        const int dark = (std::max)(0, static_cast<int>(pixels[index]) - offsets[index]);
+        return static_cast<std::uint16_t>((std::min)(65535.0F, gains[index] * dark));
+    };
+    const auto correctRun = [&](std::size_t index, std::size_t end) {
+        for (; end - index >= 8; index += 8)
+            _mm_storeu_si128(reinterpret_cast<__m128i*>(pixels + index), correctEight(index));
+        for (; index < end; ++index) pixels[index] = correctOne(index);
+    };
+
+    if (!vertical) {
+        parallelRows(raw.height, [&](std::uint32_t first, std::uint32_t end) {
+            correctRun(first * width, end * width);
+        });
+        return;
+    }
+
+    parallelRows(raw.height / 2 + raw.height % 2, [&](std::uint32_t first, std::uint32_t end) {
+        for (auto row = first; row < end; ++row) {
+            const auto top = row * width;
+            const auto bottom = (raw.height - 1 - row) * width;
+            if (top == bottom) {
+                correctRun(top, top + width);
+                continue;
+            }
+            // Read both original row segments before writing either result.
+            std::size_t column = 0;
+            for (; width - column >= 8; column += 8) {
+                const auto topValue = correctEight(top + column);
+                const auto bottomValue = correctEight(bottom + column);
+                _mm_storeu_si128(reinterpret_cast<__m128i*>(pixels + top + column), bottomValue);
+                _mm_storeu_si128(reinterpret_cast<__m128i*>(pixels + bottom + column), topValue);
+            }
+            for (; column < width; ++column) {
+                const auto topValue = correctOne(top + column);
+                pixels[top + column] = correctOne(bottom + column);
+                pixels[bottom + column] = topValue;
+            }
+        }
+    });
+}
+#endif
 
 template <typename TCorrection, typename TOperation>
 template<bool distinctOutput>
@@ -1340,7 +1415,7 @@ bool MapCalibration<TCorrection, TOperation>::tryApplyWithNext(
         if (raw.bitsPerChannel == 8) {
             if (uniformity == nullptr || options.rawOutputFlip != -99
                 || !matchesFullBgr8(raw, options) || !uniformity->matchesFullBgr8(raw, options)
-                || !uniformity->hasSafe8BitGains_) {
+                || !uniformity->hasSafeGains_) {
                 return false;
             }
 
@@ -1362,6 +1437,12 @@ bool MapCalibration<TCorrection, TOperation>::tryApplyWithNext(
         }
         if (options.rawOutputFlip != -99 && options.rawOutputFlip != 0) return false;
         if (raw.channels == 1) {
+#if defined(_M_X64) && !defined(_M_ARM64EC)
+            if (uniformity->hasSafeGains_) {
+                applyFusedMono16(raw, correction_.data(), uniformity->correction_.data(), options.rawOutputFlip == 0);
+                return true;
+            }
+#endif
             // The fused scalar loop saves memory traffic on large frames, but
             // the independent passes vectorize better with fewer workers.
             constexpr std::uint64_t minimumMonoPixels = 5'000'000;
