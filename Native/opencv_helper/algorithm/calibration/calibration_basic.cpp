@@ -926,6 +926,11 @@ private:
     void applyFusedMapRows16(const ImageView& raw,
         const MapCalibration<float, UniformityOperation>& uniformity, std::uint16_t* pixels) const;
 
+    bool tryApplyCroppedBgr16(
+        const MapCalibration<float, UniformityOperation>& uniformity,
+        const ImageView& raw,
+        const ExecutionOptions& options) const;
+
     bool matchesFullBgr8(const ImageView& raw, const ExecutionOptions& options) const
     {
         const bool fullFrame = options.roi == std::array<std::uint32_t, 4>{}
@@ -1213,6 +1218,68 @@ void applyFusedBgr8(
 }
 
 template <typename TCorrection, typename TOperation>
+bool MapCalibration<TCorrection, TOperation>::tryApplyCroppedBgr16(
+    const MapCalibration<float, UniformityOperation>& uniformity,
+    const ImageView& raw,
+    const ExecutionOptions& options) const
+{
+    if (raw.bitsPerChannel != 16 || raw.channels != 3 || !options.interleavedBgr
+        || options.rgbType != 0 || options.rawOutputFlip != -99
+        || raw.width != options.roi[2] || raw.height != options.roi[3]
+        || header_.version != 1 || header_.sourceBitsPerChannel != 16 || header_.channels != 3
+        || uniformity.header_.version != 1 || uniformity.header_.sourceBitsPerChannel != 16
+        || uniformity.header_.channels != 3
+        || header_.width != uniformity.header_.width || header_.height != uniformity.header_.height
+        || !hasLegacyRoi(options, header_.width, header_.height)) {
+        return false;
+    }
+
+    const auto rawRowSamples = static_cast<std::size_t>(raw.width) * raw.channels;
+    const auto mapRowSamples = static_cast<std::size_t>(header_.width) * raw.channels;
+    const auto cropStart = static_cast<std::size_t>(options.roi[0]) * raw.channels;
+    const auto cropEnd = cropStart + rawRowSamples;
+    auto* pixels = reinterpret_cast<std::uint16_t*>(raw.data);
+    const auto* offsets = correction_.data();
+    const auto* factors = uniformity.correction_.data();
+    const auto* packed = uniformity.packedUniformity_.get();
+    const auto& spans = uniformity.nonzeroSpans_;
+
+    parallelRows(raw.height, [&](std::uint32_t first, std::uint32_t end) {
+        for (auto row = first; row < end; ++row) {
+            const auto mapRow = static_cast<std::size_t>(options.roi[1]) + row;
+            const auto mapBase = mapRow * mapRowSamples + cropStart;
+            auto* rowPixels = pixels + row * rawRowSamples;
+            std::size_t start = 0, limit = rawRowSamples;
+            if (!spans.empty()) {
+                // Intersect the full map's nonzero span with the crop in sample coordinates.
+                const auto span = spans[mapRow];
+                start = std::clamp(span.first, cropStart, cropEnd) - cropStart;
+                limit = std::clamp(span.end, cropStart, cropEnd) - cropStart;
+                std::memset(rowPixels, 0, start * sizeof(std::uint16_t));
+                std::memset(rowPixels + limit, 0, (rawRowSamples - limit) * sizeof(std::uint16_t));
+            }
+            if (start == limit) continue;
+            if (packed) {
+                packed->apply<true>(rowPixels + start, rowPixels + start, limit - start,
+                    mapBase + start, 1, offsets + mapBase + start);
+                continue;
+            }
+            const auto* rowOffsets = offsets + mapBase;
+            const auto* rowFactors = factors + mapBase;
+            for (auto column = start; column < limit; ++column) {
+                const auto pixel = rowPixels[column];
+                const auto offset = rowOffsets[column];
+                const auto darkCorrected = pixel < offset ? std::uint16_t{0} : static_cast<std::uint16_t>(pixel - offset);
+                const float corrected = rowFactors[column] * darkCorrected;
+                rowPixels[column] = corrected > 65535.0F
+                    ? std::uint16_t{65535} : static_cast<std::uint16_t>(corrected);
+            }
+        }
+    });
+    return true;
+}
+
+template <typename TCorrection, typename TOperation>
 bool MapCalibration<TCorrection, TOperation>::tryApplyWithNext(
     const CalibrationItem& next,
     const ImageView& raw,
@@ -1241,11 +1308,11 @@ bool MapCalibration<TCorrection, TOperation>::tryApplyWithNext(
             return true;
         }
 
-        if (uniformity == nullptr || !matchesFullMap16(raw, options)
-            || !uniformity->matchesFullMap16(raw, options)
-            || (options.rawOutputFlip != -99 && options.rawOutputFlip != 0)) {
-            return false;
+        if (uniformity == nullptr) return false;
+        if (!matchesFullMap16(raw, options) || !uniformity->matchesFullMap16(raw, options)) {
+            return tryApplyCroppedBgr16(*uniformity, raw, options);
         }
+        if (options.rawOutputFlip != -99 && options.rawOutputFlip != 0) return false;
         if (raw.channels == 1) {
             // The fused scalar loop saves memory traffic on large frames, but
             // the independent passes vectorize better with fewer workers.

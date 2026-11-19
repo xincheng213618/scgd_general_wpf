@@ -981,6 +981,9 @@ void verifyAdjacentMapEquivalence(const std::filesystem::path& directory, bool c
     factors[width * channels + 2] = (std::numeric_limits<float>::min)();
     factors[width * channels * 2 - 1] = -0.0F;
     std::fill_n(factors.begin() + width * channels * 2, width * channels, 1.5F);
+    const auto cropRow = factors.begin() + width * channels * 3;
+    std::fill_n(cropRow, 3 * channels + 1, 0.0F);
+    std::fill(cropRow + 6 * channels + 2, cropRow + width * channels, 0.0F);
     const auto dsnu = directory / (compactDsnu ? "adjacent_dsnu_8.dat" : "adjacent_dsnu_16.dat");
     const auto uniformity = directory / "adjacent_uniformity.dat";
     writeMap(dsnu, 16, 16, offsets, channels, width, height);
@@ -1013,7 +1016,7 @@ void verifyAdjacentMapEquivalence(const std::filesystem::path& directory, bool c
 
     // The same ordered stages must be byte-identical both when combined and
     // when executed independently, including zero clamp, fractions and saturation.
-    // Planar and ROI layouts exercise the original path beside the full BGR path.
+    // Exercise planar BGR and both whole-frame and cropped interleaved BGR.
     for (bool reverse : { false, true }) {
         requireResult(M_CalibrationClear(combined.get()), combined.get(), "clear adjacent maps");
         requireResult(M_CalibrationLoadFileW(combined.get(), reverse ? 5 : 4,
@@ -1031,7 +1034,7 @@ void verifyAdjacentMapEquivalence(const std::filesystem::path& directory, bool c
             options.structSize = sizeof(options);
             options.interleavedBgr = layout == 1 ? 0 : 1;
             if (layout == 2) {
-                options.roiX = 1; options.roiY = 2;
+                options.roiX = 2; options.roiY = 1;
             }
             if (layout >= 2) {
                 options.roiWidth = imageWidth; options.roiHeight = imageHeight;
@@ -1073,13 +1076,17 @@ void verifyAdjacentMapEquivalence(const std::filesystem::path& directory, bool c
                     }
                 }
             }
-            if (layout == 0 || layout == 3) {
+            if (options.interleavedBgr) {
+                const auto rowSamples = imageWidth * channels;
                 for (std::size_t i = 0; i < actual.size(); ++i) {
+                    const auto mapRow = options.roiY + i / rowSamples;
+                    const auto mapIndex = (mapRow * width + options.roiX) * channels + i % rowSamples;
                     const auto applyDsnu = [&](std::uint16_t value) {
-                        return value < offsets[i] ? std::uint16_t{0} : static_cast<std::uint16_t>(value - offsets[i]);
+                        const auto offset = offsets[mapIndex];
+                        return value < offset ? std::uint16_t{0} : static_cast<std::uint16_t>(value - offset);
                     };
                     const auto applyUniformity = [&](std::uint16_t value) {
-                        const float corrected = factors[i] * value;
+                        const float corrected = factors[mapIndex] * value;
                         return corrected > 65535.0F ? std::uint16_t{65535} : static_cast<std::uint16_t>(corrected);
                     };
                     const auto value = levels[i % levels.size()];
@@ -1109,6 +1116,8 @@ void verifyLargeUniformityOutput(const std::filesystem::path& directory)
     factors[600] = -0.0F;
     factors[601] = (std::numeric_limits<float>::min)();
     factors[602] = 100.0F;
+    constexpr std::uint32_t cropX = 17, cropY = 1, cropWidth = 129, cropHeight = 13;
+    factors[(cropY * width + cropX) * channels + 25] = 0.0F;
     const auto uniformity = directory / "large_uniformity.dat";
     writeMap(uniformity, 32, 16, factors, channels, width, height);
     MCalibrationExecutionOptionsV1 options{};
@@ -1135,6 +1144,25 @@ void verifyLargeUniformityOutput(const std::filesystem::path& directory)
         requireResult(M_CalibrationExecute(context.get(), width, height, 16, channels,
             reinterpret_cast<std::uint8_t*>(actual.data()), bytes, nullptr, 0, &options), context.get(), "large map arithmetic");
         if (actual != expected) throw std::runtime_error("Large map output differs from scalar arithmetic");
+
+        if (darkRange == 255) {
+            auto cropOptions = options;
+            cropOptions.roiX = cropX; cropOptions.roiY = cropY;
+            cropOptions.roiWidth = cropWidth; cropOptions.roiHeight = cropHeight;
+            constexpr auto cropRowSamples = cropWidth * channels;
+            std::vector<std::uint16_t> cropped(cropRowSamples * cropHeight), expectedCrop(cropped.size());
+            for (std::uint32_t row = 0; row < cropHeight; ++row) {
+                const auto from = ((cropY + row) * width + cropX) * channels;
+                const auto to = row * cropRowSamples;
+                std::copy_n(source.data() + from, cropRowSamples, cropped.data() + to);
+                std::copy_n(expected.data() + from, cropRowSamples, expectedCrop.data() + to);
+            }
+            requireResult(M_CalibrationExecute(context.get(), cropWidth, cropHeight, 16, channels,
+                reinterpret_cast<std::uint8_t*>(cropped.data()), cropped.size() * sizeof(std::uint16_t),
+                nullptr, 0, &cropOptions), context.get(), "large cropped map arithmetic");
+            if (cropped != expectedCrop) throw std::runtime_error("Large cropped map output differs from scalar arithmetic");
+        }
+
         actual.assign(samples, 0xA55A);
         requireResult(M_CalibrationExecuteToV1(context.get(), width, height, 16, channels,
             reinterpret_cast<const std::uint8_t*>(source.data()), bytes,
@@ -1165,7 +1193,7 @@ void verifyLargeUniformityOutput(const std::filesystem::path& directory)
             if (actual != expected) throw std::runtime_error("Large sparse map output differs from scalar arithmetic");
         }
     }
-    std::cout << "calibration_large_map_exact_cases,10" << std::endl;
+    std::cout << "calibration_large_map_exact_cases,11" << std::endl;
 }
 
 void verifyLargeColorDiffOutput(const std::filesystem::path& directory)
