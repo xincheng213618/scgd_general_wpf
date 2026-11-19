@@ -1221,19 +1221,33 @@ namespace ProjectARVRPro
                     ResultStatisticsRecordRow[] rows = selectedRows.Where(row => recordsById.ContainsKey(row.Id)).ToArray();
                     ObjectiveTestResultRecord[] records = rows.Select(row => recordsById[row.Id]).ToArray();
 
-                    const int flowBatchSize = 64;
+                    const int maxFlowBatchRows = 64;
+                    const int flowQueryBatchSize = 500;
                     IReadOnlyDictionary<int, IReadOnlyList<ProjectARVRReuslt>>? flowResults = null;
-                    int firstFlowIndex = -1;
+                    int firstFlowIndex = 0, nextFlowIndex = 0;
                     IReadOnlyList<ProjectARVRReuslt>? GetFlowResults(int index)
                     {
-                        int start = index / flowBatchSize * flowBatchSize;
-                        if (start != firstFlowIndex)
+                        if (index < firstFlowIndex || index >= nextFlowIndex)
                         {
-                            // Release the prior decoded JSON before loading the next group.
+                            // Keep the previous row bound and avoid two SQL reads when the listed flow counts fit one.
+                            // Flow counts are estimates. The ID-based queries still enforce their own limits.
+                            int limit = index + Math.Min(maxFlowBatchRows, rows.Length - index);
+                            int end = index + 1;
+                            int expectedFlows = Math.Max(0, rows[index].FlowCount);
+                            while (end < limit)
+                            {
+                                int nextCount = Math.Max(0, rows[end].FlowCount);
+                                if (nextCount > flowQueryBatchSize - expectedFlows)
+                                    break;
+                                expectedFlows += nextCount;
+                                end++;
+                            }
+
                             flowResults = null;
-                            var chunk = new ArraySegment<ResultStatisticsRecordRow>(rows, start, Math.Min(flowBatchSize, rows.Length - start));
+                            var chunk = new ArraySegment<ResultStatisticsRecordRow>(rows, index, end - index);
                             flowResults = QueryFlowDetailsForBatchExport(db, chunk);
-                            firstFlowIndex = start;
+                            firstFlowIndex = index;
+                            nextFlowIndex = end;
                         }
                         return flowResults!.GetValueOrDefault(rows[index].Id);
                     }
