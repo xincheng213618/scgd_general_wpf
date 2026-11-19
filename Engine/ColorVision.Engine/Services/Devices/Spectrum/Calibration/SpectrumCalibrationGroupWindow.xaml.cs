@@ -2,7 +2,6 @@ using ColorVision.Engine.Services.Devices.CfwPort;
 using ColorVision.Engine.Services.Devices.Spectrum.Configs;
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
@@ -151,22 +150,8 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Calibration
             if (SelectedGroup == null)
                 return;
 
-            using var dialog = new System.Windows.Forms.OpenFileDialog
-            {
-                Filter = Properties.Resources.SpectrumCalibrationGroups_DatFileFilter,
-                RestoreDirectory = true,
-            };
-
-            var initialDirectory = PathSelectionHelper.GetExistingDirectory(currentPath);
-            if (!string.IsNullOrWhiteSpace(initialDirectory))
-                dialog.InitialDirectory = initialDirectory;
-
-            var fileName = System.IO.Directory.Exists(currentPath) ? null : PathSelectionHelper.GetFileName(currentPath);
-            if (!string.IsNullOrWhiteSpace(fileName))
-                dialog.FileName = fileName;
-
-            if (dialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
-                apply(dialog.FileName);
+            if (SpectrumCalibrationFilePicker.Browse(this, currentPath, _device.IsLocalSpectrumBackend) is string file)
+                apply(file);
         }
 
         private string CreateGroupName()
