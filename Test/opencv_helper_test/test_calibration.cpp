@@ -1169,6 +1169,7 @@ void verifyMono16MapEquivalence(const std::filesystem::path& directory)
         source[index + 1] = levels[index % levels.size()];
         factors[index] = gains[(index / levels.size()) % gains.size()];
     }
+    source[count] = 65535;
     const auto uniformity = directory / "adjacent_mono_uniformity.dat";
     writeMap(uniformity, 32, 16, factors, 1, width, height);
 
@@ -1187,7 +1188,9 @@ void verifyMono16MapEquivalence(const std::filesystem::path& directory)
     for (bool compact : {true, false}) {
         std::vector<std::uint16_t> offsets(count);
         for (std::size_t index = 0; index < count; ++index)
-            offsets[index] = levels[(index / 17) % levels.size()] & (compact ? 255 : 65535);
+            offsets[index] = levels[(index / 17) % levels.size()] & 255;
+        // Exercise a map whose only noncompact offset is in the SIMD tail.
+        if (!compact) offsets.back() = 256;
         const auto dsnu = directory / (compact ? "adjacent_mono_dsnu8.dat" : "adjacent_mono_dsnu16.dat");
         writeMap(dsnu, 16, 16, offsets, 1, width, height);
         Context dark = createContext(), gain = createContext(), combined = createContext();

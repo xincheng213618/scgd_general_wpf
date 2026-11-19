@@ -1966,6 +1966,28 @@ std::unique_ptr<CalibrationItem> loadDefectPoints(
     return std::make_unique<DefectPointCalibration>(type, std::move(points));
 }
 
+bool offsetsFitByte(const std::vector<std::uint16_t>& values)
+{
+    std::size_t index = 0;
+#if defined(_M_X64) && !defined(_M_ARM64EC)
+    const auto highBytes = _mm_set1_epi16(-256);
+    const auto zero = _mm_setzero_si128();
+    for (; values.size() - index >= 32; index += 32) {
+        const auto* samples = values.data() + index;
+        const auto first = _mm_or_si128(
+            _mm_loadu_si128(reinterpret_cast<const __m128i*>(samples)),
+            _mm_loadu_si128(reinterpret_cast<const __m128i*>(samples + 8)));
+        const auto second = _mm_or_si128(
+            _mm_loadu_si128(reinterpret_cast<const __m128i*>(samples + 16)),
+            _mm_loadu_si128(reinterpret_cast<const __m128i*>(samples + 24)));
+        // Values above 255 have at least one bit set in their high byte.
+        const auto high = _mm_and_si128(_mm_or_si128(first, second), highBytes);
+        if (_mm_movemask_epi8(_mm_cmpeq_epi8(high, zero)) != 0xFFFF) return false;
+    }
+#endif
+    return std::all_of(values.cbegin() + index, values.cend(), [](auto value) { return value <= 255; });
+}
+
 std::unique_ptr<CalibrationItem> loadDsnu(
     const std::filesystem::path& file,
     std::string& error)
@@ -1977,9 +1999,18 @@ std::unique_ptr<CalibrationItem> loadDsnu(
     }
     // Keep the file format and every offset unchanged. Small dark offsets need
     // only one byte in the shared cache and in the per-frame memory stream.
-    if (std::all_of(values.begin(), values.end(), [](auto value) { return value <= 255; })) {
+    if (offsetsFitByte(values)) {
         std::vector<std::uint8_t> compact(values.size());
-        std::transform(values.begin(), values.end(), compact.begin(), [](auto value) {
+        std::size_t index = 0;
+#if defined(_M_X64) && !defined(_M_ARM64EC)
+        for (; values.size() - index >= 16; index += 16) {
+            const auto* offsets = values.data() + index;
+            const auto low = _mm_loadu_si128(reinterpret_cast<const __m128i*>(offsets));
+            const auto high = _mm_loadu_si128(reinterpret_cast<const __m128i*>(offsets + 8));
+            _mm_storeu_si128(reinterpret_cast<__m128i*>(compact.data() + index), _mm_packus_epi16(low, high));
+        }
+#endif
+        std::transform(values.cbegin() + index, values.cend(), compact.begin() + index, [](auto value) {
             return static_cast<std::uint8_t>(value);
         });
         return std::make_unique<MapCalibration<std::uint8_t, DsnuOperation>>(
