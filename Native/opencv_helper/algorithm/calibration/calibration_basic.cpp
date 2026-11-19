@@ -394,6 +394,30 @@ bool hasSparseDarkCorrection(const std::uint16_t* source, const std::uint8_t* of
     }
     return true;
 }
+
+bool hasSparseCroppedDarkCorrection(const std::uint16_t* source, const std::uint8_t* offsets,
+    std::size_t rawRowSamples, std::size_t mapRowSamples, std::uint32_t rows)
+{
+    constexpr std::size_t probes = 64;
+    constexpr std::size_t lanes = 8;
+    const auto count = rawRowSamples * rows;
+    // Keep the probe small compared with the crop and never cross a map row.
+    if (rawRowSamples < lanes || count < probes * lanes * 8) return false;
+    const auto step = (count - lanes) / (probes - 1);
+    std::size_t misses = 0;
+    for (std::size_t probe = 0; probe < probes; ++probe) {
+        const auto index = probe * step;
+        const auto row = index / rawRowSamples;
+        const auto column = (std::min)(index % rawRowSamples, rawRowSamples - lanes);
+        const auto dark = darkCorrectEight(source + row * rawRowSamples + column,
+            offsets + row * mapRowSamples + column);
+        if (_mm_movemask_epi8(_mm_cmpeq_epi16(dark, _mm_setzero_si128())) != 0xFFFF
+            && ++misses > probes / 4) {
+            return false;
+        }
+    }
+    return true;
+}
 #endif
 
 // Store exact IEEE float bits as 24-bit deltas within small blocks. Blocks with
@@ -1245,6 +1269,16 @@ bool MapCalibration<TCorrection, TOperation>::tryApplyCroppedBgr16(
     const auto* factors = uniformity.correction_.data();
     const auto* packed = uniformity.packedUniformity_.get();
     const auto& spans = uniformity.nonzeroSpans_;
+#if defined(_M_X64) && !defined(_M_ARM64EC)
+    bool skipDarkZeros = false;
+    if constexpr (std::is_same_v<TCorrection, std::uint8_t>) {
+        if (packed) {
+            const auto firstMapSample = static_cast<std::size_t>(options.roi[1]) * mapRowSamples + cropStart;
+            skipDarkZeros = hasSparseCroppedDarkCorrection(input, offsets + firstMapSample,
+                rawRowSamples, mapRowSamples, raw.height);
+        }
+    }
+#endif
 
     parallelRows(raw.height, [&](std::uint32_t first, std::uint32_t end) {
         for (auto row = first; row < end; ++row) {
@@ -1264,6 +1298,15 @@ bool MapCalibration<TCorrection, TOperation>::tryApplyCroppedBgr16(
             }
             if (start == limit) continue;
             if (packed) {
+#if defined(_M_X64) && !defined(_M_ARM64EC)
+                if constexpr (std::is_same_v<TCorrection, std::uint8_t>) {
+                    if (skipDarkZeros) {
+                        packed->apply<true, true>(rowInput + start, rowPixels + start, limit - start,
+                            mapBase + start, 1, offsets + mapBase + start);
+                        continue;
+                    }
+                }
+#endif
                 packed->apply<true>(rowInput + start, rowPixels + start, limit - start,
                     mapBase + start, 1, offsets + mapBase + start);
                 continue;

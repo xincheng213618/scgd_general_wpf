@@ -1152,16 +1152,24 @@ void verifyLargeUniformityOutput(const std::filesystem::path& directory)
             cropOptions.roiWidth = cropWidth; cropOptions.roiHeight = cropHeight;
             constexpr auto cropRowSamples = cropWidth * channels;
             std::vector<std::uint16_t> cropped(cropRowSamples * cropHeight), expectedCrop(cropped.size());
-            for (std::uint32_t row = 0; row < cropHeight; ++row) {
-                const auto from = ((cropY + row) * width + cropX) * channels;
-                const auto to = row * cropRowSamples;
-                std::copy_n(source.data() + from, cropRowSamples, cropped.data() + to);
-                std::copy_n(expected.data() + from, cropRowSamples, expectedCrop.data() + to);
+            for (const bool lowSignal : {false, true}) {
+                for (std::uint32_t row = 0; row < cropHeight; ++row) {
+                    const auto from = ((cropY + row) * width + cropX) * channels;
+                    const auto to = row * cropRowSamples;
+                    for (std::uint32_t column = 0; column < cropRowSamples; ++column) {
+                        const auto sample = to + column;
+                        const auto mapSample = from + column;
+                        // Equal-to-DSNU samples need the cropped map stride to probe as zero.
+                        const bool dark = lowSignal && sample % 67 != 0 && sample % 1024 >= 16;
+                        cropped[sample] = dark ? offsets[mapSample] : source[mapSample];
+                        expectedCrop[sample] = dark ? std::uint16_t{0} : expected[mapSample];
+                    }
+                }
+                requireResult(M_CalibrationExecute(context.get(), cropWidth, cropHeight, 16, channels,
+                    reinterpret_cast<std::uint8_t*>(cropped.data()), cropped.size() * sizeof(std::uint16_t),
+                    nullptr, 0, &cropOptions), context.get(), "large cropped map arithmetic");
+                if (cropped != expectedCrop) throw std::runtime_error("Large cropped map output differs from scalar arithmetic");
             }
-            requireResult(M_CalibrationExecute(context.get(), cropWidth, cropHeight, 16, channels,
-                reinterpret_cast<std::uint8_t*>(cropped.data()), cropped.size() * sizeof(std::uint16_t),
-                nullptr, 0, &cropOptions), context.get(), "large cropped map arithmetic");
-            if (cropped != expectedCrop) throw std::runtime_error("Large cropped map output differs from scalar arithmetic");
         }
 
         actual.assign(samples, 0xA55A);
@@ -1194,7 +1202,7 @@ void verifyLargeUniformityOutput(const std::filesystem::path& directory)
             if (actual != expected) throw std::runtime_error("Large sparse map output differs from scalar arithmetic");
         }
     }
-    std::cout << "calibration_large_map_exact_cases,11" << std::endl;
+    std::cout << "calibration_large_map_exact_cases,12" << std::endl;
 }
 
 void verifyLargeColorDiffOutput(const std::filesystem::path& directory)
