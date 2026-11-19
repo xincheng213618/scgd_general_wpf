@@ -36,18 +36,27 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.ImagingCorrec
 
         private void Browse_Click(object sender, RoutedEventArgs e)
         {
+            string? field = (sender as Button)?.Tag as string;
+            string? currentPath = field switch
+            {
+                "dark" => Parameters.DarkFramePath,
+                "flat" => Parameters.FlatFieldPath,
+                "shading" => Parameters.ShadingReferencePath,
+                "bad" => Parameters.BadPixelMapPath,
+                _ => null,
+            };
             OpenFileDialog dialog = new()
             {
                 Filter = "图像文件|*.bmp;*.gif;*.ico;*.jpg;*.jpeg;*.png;*.tif;*.tiff;*.webp|所有文件|*.*",
                 CheckFileExists = true,
             };
-            if (dialog.ShowDialog(this) != true) return;
-            switch ((sender as Button)?.Tag as string)
+            if (OpenFilePicker.ShowDialog(dialog, this, currentPath, "ImagingCorrectionReference") is not string selectedPath) return;
+            switch (field)
             {
-                case "dark": Parameters.DarkFramePath = dialog.FileName; Parameters.EnableDarkFrame = true; break;
-                case "flat": Parameters.FlatFieldPath = dialog.FileName; Parameters.EnableFlatField = true; break;
-                case "shading": Parameters.ShadingReferencePath = dialog.FileName; Parameters.EnableShading = true; break;
-                case "bad": Parameters.BadPixelMapPath = dialog.FileName; Parameters.EnableBadPixelCorrection = true; break;
+                case "dark": Parameters.DarkFramePath = selectedPath; Parameters.EnableDarkFrame = true; break;
+                case "flat": Parameters.FlatFieldPath = selectedPath; Parameters.EnableFlatField = true; break;
+                case "shading": Parameters.ShadingReferencePath = selectedPath; Parameters.EnableShading = true; break;
+                case "bad": Parameters.BadPixelMapPath = selectedPath; Parameters.EnableBadPixelCorrection = true; break;
             }
             RefreshBindings();
         }

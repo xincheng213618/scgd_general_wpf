@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.Globalization;
-using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Windows;
@@ -215,16 +214,10 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
                 };
 
                 string? currentPath = property.GetValue(source) as string;
-                if (!string.IsNullOrWhiteSpace(currentPath))
+                if (OpenFilePicker.ShowDialog(dialog, Window.GetWindow(row), currentPath, "DisplayAlgorithm") is string selectedPath)
                 {
-                    dialog.InitialDirectory = Path.GetDirectoryName(currentPath);
-                    dialog.FileName = Path.GetFileName(currentPath);
-                }
-
-                if (dialog.ShowDialog() == true)
-                {
-                    property.SetValue(source, dialog.FileName);
-                    textBox.SetCurrentValue(TextBox.TextProperty, dialog.FileName);
+                    property.SetValue(source, selectedPath);
+                    textBox.SetCurrentValue(TextBox.TextProperty, selectedPath);
                 }
             };
 

@@ -113,13 +113,13 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
                 CheckFileExists = true,
                 Multiselect = false,
             };
-            if (dialog.ShowDialog(this) == true)
+            if (OpenFilePicker.ShowDialog(dialog, this, SourcePathBox.Text, LumFourColorCorrectionWindow.SourceFileHistoryKey) is string selectedPath)
             {
                 sourceFromTemplate = false;
-                if (string.Equals(SourcePathBox.Text, dialog.FileName, StringComparison.OrdinalIgnoreCase))
+                if (string.Equals(SourcePathBox.Text, selectedPath, StringComparison.OrdinalIgnoreCase))
                     ReloadSource();
                 else
-                    SourcePathBox.Text = dialog.FileName;
+                    SourcePathBox.Text = selectedPath;
             }
         }
 

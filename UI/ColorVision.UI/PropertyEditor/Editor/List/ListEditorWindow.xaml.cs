@@ -13,6 +13,7 @@ namespace ColorVision.UI.PropertyEditor.Editor.List
     {
         private readonly Type _elementType;
         private readonly Type? _itemEditorType;
+        private readonly string? _filePickerHistoryKey;
         private readonly System.Collections.IList _items;
         private readonly System.Collections.IList _originalItems;
         private bool UsesInlineEditor => _elementType == typeof(string);
@@ -40,6 +41,7 @@ namespace ColorVision.UI.PropertyEditor.Editor.List
             public string? TextValue { get => Value as string; set => Value = value; }
 
             public DockPanel? InlineEditor { get; internal set; }
+            internal string? FilePickerHistoryKey { get; init; }
             public object Content => (object?)InlineEditor ?? DisplayValue;
             public event PropertyChangedEventHandler? PropertyChanged;
 
@@ -67,11 +69,17 @@ namespace ColorVision.UI.PropertyEditor.Editor.List
             }
         }
         public ListEditorWindow(IList items, Type elementType, Type? itemEditorType = null)
+            : this(items, elementType, itemEditorType, null)
+        {
+        }
+
+        internal ListEditorWindow(IList items, Type elementType, Type? itemEditorType, string? filePickerHistoryKey)
         {
             InitializeComponent();
             ColorVision.Themes.ThemeManagerExtensions.ApplyCaption(this);
             _elementType = elementType;
             _itemEditorType = itemEditorType;
+            _filePickerHistoryKey = filePickerHistoryKey;
             _originalItems = items;
             
             // Isolate object items and nested collections until the list is accepted.
@@ -95,7 +103,8 @@ namespace ColorVision.UI.PropertyEditor.Editor.List
                 {
                     Index = i,
                     Type = _elementType,     
-                    Value = _items[i]
+                    Value = _items[i],
+                    FilePickerHistoryKey = _filePickerHistoryKey,
                 };
                 if (UsesInlineEditor)
                 {
@@ -192,7 +201,7 @@ namespace ColorVision.UI.PropertyEditor.Editor.List
                 SelectItem(_items.Count - 1, focusEditor: true);
                 return;
             }
-            var editor = new ListItemEditorWindow(_elementType, defaultValue, _itemEditorType);
+            var editor = new ListItemEditorWindow(_elementType, defaultValue, _itemEditorType, _filePickerHistoryKey);
             editor.Owner = this;
             
             if (editor.ShowDialog() == true)
@@ -215,7 +224,7 @@ namespace ColorVision.UI.PropertyEditor.Editor.List
             }
 
             var currentValue = _items[index];
-            var editor = new ListItemEditorWindow(_elementType, currentValue, _itemEditorType);
+            var editor = new ListItemEditorWindow(_elementType, currentValue, _itemEditorType, _filePickerHistoryKey);
             editor.Owner = this;
             
             if (editor.ShowDialog() == true)
