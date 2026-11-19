@@ -254,14 +254,27 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
 
             try
             {
+                Span<byte> nativeSha256 = stackalloc byte[SHA256.HashSizeInBytes];
                 foreach (CachedCalibrationFile file in requestedFiles)
                 {
                     // Keep the file stable while fingerprinting and loading the native resource.
                     using FileStream source = new(file.FullPath, FileMode.Open, FileAccess.Read, FileShare.Read);
                     if (source.Length != file.Length || File.GetLastWriteTimeUtc(file.FullPath).Ticks != file.LastWriteTimeUtcTicks)
                         throw new IOException("校正资源在加载前已变化，请重试。");
-                    file.Sha256 = ComputeSourceHash(source, file.Length);
-                    int loadResult = OpenCVCalibration.M_CalibrationLoadFileW(newContext, (int)file.CalibrationType, file.FullPath);
+                    int loadResult;
+                    if ((file.CalibrationType is CalibrationType.DSNU or CalibrationType.Uniformity)
+                        && OpenCVCalibration.TryLoadCalibrationMapWithSha256(
+                            newContext, (int)file.CalibrationType, file.FullPath, nativeSha256, out loadResult))
+                    {
+                        if (loadResult == OpenCVCalibration.CalibrationOk)
+                            file.Sha256 = Convert.ToHexString(nativeSha256);
+                    }
+                    else
+                    {
+                        file.Sha256 = ComputeSourceHash(source, file.Length);
+                        loadResult = OpenCVCalibration.M_CalibrationLoadFileW(newContext, (int)file.CalibrationType, file.FullPath);
+                    }
+
                     if (loadResult != OpenCVCalibration.CalibrationOk)
                     {
                         throw CreateNativeException(

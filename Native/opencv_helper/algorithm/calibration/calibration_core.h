@@ -136,6 +136,22 @@ std::unique_ptr<CalibrationItem> loadBasicCalibration(
     const std::filesystem::path& file,
     std::string& error);
 
+using CalibrationFileDigest = std::array<std::uint8_t, 32>;
+enum class MapSourceMatch { Equal, Different, Error };
+
+// Pins one opened map revision across comparison and any necessary reload.
+class VerifiedMapSource {
+public:
+    virtual ~VerifiedMapSource() = default;
+    virtual MapSourceMatch compare(const CalibrationItem&, std::string&) = 0;
+    virtual std::unique_ptr<CalibrationItem> load(CalibrationFileDigest&, std::string&) = 0;
+};
+
+std::unique_ptr<VerifiedMapSource> openVerifiedMapSource(
+    CalibrationType type,
+    const std::filesystem::path& file,
+    std::string& error);
+
 std::unique_ptr<CalibrationItem> loadColorCalibration(
     CalibrationType type,
     const std::filesystem::path& file,

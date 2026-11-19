@@ -4,6 +4,7 @@
 #define NOMINMAX
 #endif
 #include <Windows.h>
+#include <bcrypt.h>
 #include <io.h>
 #include <opencv2/core/utility.hpp>
 #include <share.h>
@@ -30,6 +31,8 @@
 #include <type_traits>
 #include <utility>
 #include <vector>
+
+#pragma comment(lib, "bcrypt.lib")
 
 namespace cvcore::calibration {
 namespace {
@@ -138,10 +141,10 @@ bool openBinary(
     const std::filesystem::path& file,
     BinaryFile& stream,
     std::uint64_t& size,
-    std::string& error)
+    std::string& error,
+    int sharing = _SH_DENYNO)
 {
-    // Match the old binary stream's wide-path open and read/write sharing.
-    stream.reset(_wfsopen(file.c_str(), L"rb", _SH_DENYNO));
+    stream.reset(_wfsopen(file.c_str(), L"rb", sharing));
     if (!stream) {
         error = "Unable to open calibration file";
         return false;
@@ -509,6 +512,31 @@ public:
         return std::bit_cast<float>(bits);
     }
 
+    bool matches(const float* source, std::size_t first, std::size_t count) const noexcept
+    {
+        for (std::size_t done = 0; done < count;) {
+            const auto index = first + done;
+            const auto block = blocks_[index / blockSize];
+            const auto offset = index % blockSize;
+            const auto length = (std::min)(blockSize - offset, count - done);
+            const auto* input = source + done;
+            if (block.base == UINT32_MAX) {
+                const auto* stored = bytes_.get() + block.offset + offset * sizeof(float);
+                if (std::memcmp(input, stored, length * sizeof(float)) != 0) return false;
+            }
+            else {
+                const auto* stored = bytes_.get() + block.offset + offset * 3;
+                for (std::size_t item = 0; item < length; ++item) {
+                    std::uint32_t delta;
+                    std::memcpy(&delta, stored + item * 3, sizeof(delta));
+                    if (std::bit_cast<std::uint32_t>(input[item]) != block.base + (delta & 0xFFFFFFU)) return false;
+                }
+            }
+            done += length;
+        }
+        return true;
+    }
+
     template<bool Fused, bool SkipDarkZeros = false, typename Pixel, typename Offset = std::uint8_t>
     void apply(const Pixel* source, Pixel* destination, std::size_t count, std::size_t first,
         std::size_t stride, const Offset* offsets = nullptr) const
@@ -751,7 +779,19 @@ struct MapHeader {
     std::uint32_t width = 0;
     std::uint32_t sourceBitsPerChannel = 0;
     std::uint32_t channels = 0;
+
+    bool operator==(const MapHeader&) const noexcept = default;
 };
+
+struct MapFileLayout {
+    MapHeader header;
+    std::array<std::uint32_t, 5> originalPrefix{};
+    std::uint64_t dataOffset = 0;
+    std::size_t valueCount = 0;
+    std::uint64_t byteCount = 0;
+};
+
+class OpenedMapSource;
 
 // Each worker owns a pair of rows. Read both corrected values before swapping
 // them, including the middle row of an odd-height image. No scratch RAW is needed.
@@ -774,29 +814,20 @@ void applyVerticalMapFlip(const ImageView& raw, const TCorrect& correct)
     });
 }
 
-template <typename TCorrection>
-bool loadMap(
-    const std::filesystem::path& file,
-    std::uint32_t requiredDataBits,
-    MapHeader& header,
-    std::vector<TCorrection>& values,
+bool readMapLayout(
+    const BinaryFile& stream,
+    std::uint64_t length,
+    std::uint64_t elementBytes,
+    MapFileLayout& layout,
     std::string& error)
 {
-    BinaryFile stream;
-    std::uint64_t length = 0;
-    if (!openBinary(file, stream, length, error)) {
-        return false;
-    }
     if (length <= 16) {
         error = "Calibration map is too short";
         return false;
     }
 
-    std::uint32_t height = 0;
-    std::uint32_t width = 0;
-    std::uint32_t dataBits = 0;
-    std::uint32_t channels = 0;
-    std::uint32_t sourceBits = 0;
+    auto& [height, width, dataBits, channels, sourceBits] = layout.originalPrefix;
+    auto& header = layout.header;
     if (!readPod(stream, height, error) || !readPod(stream, width, error)
         || !readPod(stream, dataBits, error) || !readPod(stream, channels, error)
         || !readPod(stream, sourceBits, error)) {
@@ -810,7 +841,7 @@ bool loadMap(
     std::uint64_t pixelCount = 0;
     std::uint64_t legacyBytes = 0;
     if (!checkedMultiply<std::uint64_t>(height, width, pixelCount)
-        || !checkedMultiply<std::uint64_t>(pixelCount, sizeof(TCorrection), legacyBytes)) {
+        || !checkedMultiply<std::uint64_t>(pixelCount, elementBytes, legacyBytes)) {
         error = "Calibration map dimensions overflow";
         return false;
     }
@@ -825,10 +856,9 @@ bool loadMap(
     std::uint64_t currentBytes = 0;
     std::uint64_t currentLength = 0;
     const bool currentSizeValid = checkedMultiply<std::uint64_t>(pixelCount, channels, currentValueCount)
-        && checkedMultiply<std::uint64_t>(currentValueCount, sizeof(TCorrection), currentBytes)
+        && checkedMultiply<std::uint64_t>(currentValueCount, elementBytes, currentBytes)
         && checkedAdd(currentBytes, kCurrentMapHeaderBytes, currentLength);
 
-    std::uint64_t dataOffset = 0;
     std::uint64_t valueCount = 0;
     if (length == legacyLength) {
         header.version = 0;
@@ -836,10 +866,10 @@ bool loadMap(
         header.width = width;
         header.channels = 1;
         header.sourceBitsPerChannel = 0;
-        dataOffset = kLegacyMapHeaderBytes;
+        layout.dataOffset = kLegacyMapHeaderBytes;
         valueCount = pixelCount;
     }
-    else if (currentSizeValid && length == currentLength && dataBits == requiredDataBits) {
+    else if (currentSizeValid && length == currentLength && dataBits == elementBytes * 8) {
         if (channels == 0 || (sourceBits != 8 && sourceBits != 16)) {
             error = "Calibration map has invalid channel count or source bit depth";
             return false;
@@ -849,7 +879,7 @@ bool loadMap(
         header.width = width;
         header.channels = channels;
         header.sourceBitsPerChannel = sourceBits;
-        dataOffset = kCurrentMapHeaderBytes;
+        layout.dataOffset = kCurrentMapHeaderBytes;
         valueCount = currentValueCount;
     }
     else {
@@ -861,14 +891,42 @@ bool loadMap(
         error = "Calibration map is too large for this process";
         return false;
     }
-    values.resize(static_cast<std::size_t>(valueCount));
-
-    std::uint64_t byteCount = 0;
-    if (!checkedMultiply<std::uint64_t>(valueCount, sizeof(TCorrection), byteCount)) {
+    layout.valueCount = static_cast<std::size_t>(valueCount);
+    if (!checkedMultiply<std::uint64_t>(valueCount, elementBytes, layout.byteCount)) {
         error = "Calibration map byte count overflows";
         return false;
     }
-    return seekAndRead(stream, dataOffset, values.data(), byteCount, error);
+    return true;
+}
+
+template <typename TCorrection>
+bool loadMap(
+    const BinaryFile& stream,
+    const MapFileLayout& layout,
+    std::vector<TCorrection>& values,
+    std::string& error)
+{
+    values.resize(layout.valueCount);
+    return seekAndRead(stream, layout.dataOffset, values.data(), layout.byteCount, error);
+}
+
+template <typename TCorrection>
+bool loadMap(
+    const std::filesystem::path& file,
+    MapHeader& header,
+    std::vector<TCorrection>& values,
+    std::string& error)
+{
+    BinaryFile stream;
+    std::uint64_t length = 0;
+    MapFileLayout layout;
+    if (!openBinary(file, stream, length, error)
+        || !readMapLayout(stream, length, sizeof(TCorrection), layout, error)
+        || !loadMap(stream, layout, values, error)) {
+        return false;
+    }
+    header = layout.header;
+    return true;
 }
 
 template <typename TCorrection, typename TOperation>
@@ -1018,6 +1076,7 @@ public:
 
 private:
     template <typename, typename> friend class MapCalibration;
+    friend class OpenedMapSource;
 
     template<bool distinctOutput>
     void applyFusedMapRows16(const ImageView& raw,
@@ -2057,15 +2116,8 @@ bool offsetsFitByte(const std::vector<std::uint16_t>& values)
     return std::all_of(values.cbegin() + index, values.cend(), [](auto value) { return value <= 255; });
 }
 
-std::unique_ptr<CalibrationItem> loadDsnu(
-    const std::filesystem::path& file,
-    std::string& error)
+std::unique_ptr<CalibrationItem> makeDsnu(const MapHeader& header, std::vector<std::uint16_t> values)
 {
-    MapHeader header;
-    std::vector<std::uint16_t> values;
-    if (!loadMap(file, 16, header, values, error)) {
-        return nullptr;
-    }
     // Keep the file format and every offset unchanged. Small dark offsets need
     // only one byte in the shared cache and in the per-frame memory stream.
     if (offsetsFitByte(values)) {
@@ -2089,18 +2141,211 @@ std::unique_ptr<CalibrationItem> loadDsnu(
         CalibrationType::Dsnu, header, std::move(values));
 }
 
+std::unique_ptr<CalibrationItem> loadDsnu(
+    const std::filesystem::path& file,
+    std::string& error)
+{
+    MapHeader header;
+    std::vector<std::uint16_t> values;
+    if (!loadMap(file, header, values, error)) return nullptr;
+    return makeDsnu(header, std::move(values));
+}
+
 std::unique_ptr<CalibrationItem> loadUniformity(
     const std::filesystem::path& file,
     std::string& error)
 {
     MapHeader header;
     std::vector<float> values;
-    if (!loadMap(file, 32, header, values, error)) {
+    if (!loadMap(file, header, values, error)) {
         return nullptr;
     }
     return std::make_unique<MapCalibration<float, UniformityOperation>>(
         CalibrationType::Uniformity, header, std::move(values));
 }
+
+bool hashMapSource(
+    const MapFileLayout& layout,
+    const void* values,
+    CalibrationFileDigest& digest,
+    std::string& error)
+{
+    BCRYPT_ALG_HANDLE provider = nullptr;
+    if (BCryptOpenAlgorithmProvider(&provider, BCRYPT_SHA256_ALGORITHM, nullptr, 0) != 0) {
+        error = "Unable to open calibration SHA-256 provider";
+        return false;
+    }
+    const std::unique_ptr<void, decltype([](void* handle) { BCryptCloseAlgorithmProvider(handle, 0); })> algorithm(provider);
+    BCRYPT_HASH_HANDLE hash = nullptr;
+    if (BCryptCreateHash(provider, &hash, nullptr, 0, nullptr, 0, 0) != 0) {
+        error = "Unable to initialize calibration SHA-256";
+        return false;
+    }
+    const std::unique_ptr<void, decltype([](void* handle) { BCryptDestroyHash(handle); })> hashing(hash);
+
+    auto update = [&](const void* data, ULONG count) {
+        auto* bytes = const_cast<std::uint8_t*>(static_cast<const std::uint8_t*>(data));
+        return BCryptHashData(hash, bytes, count, 0) == 0;
+    };
+    if (!update(layout.originalPrefix.data(), static_cast<ULONG>(layout.dataOffset))) {
+        error = "Unable to hash calibration file header";
+        return false;
+    }
+
+    constexpr std::uint64_t chunkBytes = 32 * 1024 * 1024;
+    const auto* bytes = static_cast<const std::uint8_t*>(values);
+    for (std::uint64_t remaining = layout.byteCount; remaining != 0;) {
+        const auto count = static_cast<ULONG>((std::min)(remaining, chunkBytes));
+        if (!update(bytes, count)) {
+            error = "Unable to hash calibration file payload";
+            return false;
+        }
+        bytes += count;
+        remaining -= count;
+    }
+    if (BCryptFinishHash(hash, digest.data(), static_cast<ULONG>(digest.size()), 0) != 0) {
+        error = "Unable to finish calibration SHA-256";
+        return false;
+    }
+    return true;
+}
+
+class OpenedMapSource final : public VerifiedMapSource {
+public:
+    OpenedMapSource(CalibrationType type, BinaryFile stream, MapFileLayout layout)
+        : type_(type), stream_(std::move(stream)), layout_(layout)
+    {
+    }
+
+    MapSourceMatch compare(const CalibrationItem& item, std::string& error) override
+    {
+        error.clear();
+        try {
+            if (type_ == CalibrationType::Dsnu) {
+                if (const auto* compact = dynamic_cast<const MapCalibration<std::uint8_t, DsnuOperation>*>(&item)) {
+                    return comparePayload<std::uint16_t>(*compact, error);
+                }
+                if (const auto* wide = dynamic_cast<const MapCalibration<std::uint16_t, DsnuOperation>*>(&item)) {
+                    return comparePayload<std::uint16_t>(*wide, error);
+                }
+            }
+            else if (const auto* uniformity = dynamic_cast<const MapCalibration<float, UniformityOperation>*>(&item)) {
+                return comparePayload<float>(*uniformity, error);
+            }
+            return MapSourceMatch::Different;
+        }
+        catch (const std::bad_alloc&) {
+            error = "Not enough memory to compare calibration data";
+        }
+        catch (const std::exception& exception) {
+            error = "Unable to compare calibration file: " + std::string(exception.what());
+        }
+        return MapSourceMatch::Error;
+    }
+
+    std::unique_ptr<CalibrationItem> load(CalibrationFileDigest& digest, std::string& error) override
+    {
+        error.clear();
+        try {
+            if (type_ == CalibrationType::Dsnu) {
+                std::vector<std::uint16_t> values;
+                CalibrationFileDigest current{};
+                if (!loadAndHash(values, current, error)) return nullptr;
+                auto item = makeDsnu(layout_.header, std::move(values));
+                digest = current;
+                return item;
+            }
+
+            std::vector<float> values;
+            CalibrationFileDigest current{};
+            if (!loadAndHash(values, current, error)) return nullptr;
+            auto item = std::make_unique<MapCalibration<float, UniformityOperation>>(
+                CalibrationType::Uniformity, layout_.header, std::move(values));
+            digest = current;
+            return item;
+        }
+        catch (const std::bad_alloc&) {
+            error = "Not enough memory to load calibration data";
+        }
+        catch (const std::exception& exception) {
+            error = "Unable to load calibration: " + std::string(exception.what());
+        }
+        return nullptr;
+    }
+
+private:
+    MapSourceMatch checkEnd(std::string& error) const
+    {
+        if (std::fgetc(stream_.get()) != EOF) return MapSourceMatch::Different;
+        if (!std::ferror(stream_.get())) return MapSourceMatch::Equal;
+        error = "Unable to read the end of calibration file";
+        return MapSourceMatch::Error;
+    }
+
+    template <typename TValue>
+    bool loadAndHash(std::vector<TValue>& values, CalibrationFileDigest& digest, std::string& error)
+    {
+        if (!loadMap(stream_, layout_, values, error)) return false;
+        const auto end = checkEnd(error);
+        if (end == MapSourceMatch::Error) return false;
+        if (end == MapSourceMatch::Different) {
+            error = "Calibration map length/header does not match V0 or V1 format";
+            return false;
+        }
+        return hashMapSource(layout_, values.data(), digest, error);
+    }
+
+    template <typename TSource, typename TCorrection, typename TOperation>
+    MapSourceMatch comparePayload(const MapCalibration<TCorrection, TOperation>& item, std::string& error)
+    {
+        // Accepted V0 prefixes consist of the two dimensions. V1 has those
+        // dimensions, the fixed element width, channel count and source depth.
+        if (item.header_ != layout_.header) return MapSourceMatch::Different;
+        const auto* packed = item.packedUniformity_.get();
+        const auto count = packed != nullptr ? packed->size() : item.correction_.size();
+        if (count != layout_.valueCount) return MapSourceMatch::Different;
+        if (_fseeki64(stream_.get(), static_cast<std::int64_t>(layout_.dataOffset), SEEK_SET) != 0) {
+            error = "Unable to seek in calibration file";
+            return MapSourceMatch::Error;
+        }
+
+        constexpr std::size_t chunkBytes = 4 * 1024 * 1024;
+        const auto capacity = (std::min)(count, chunkBytes / sizeof(TSource));
+        auto scratch = std::make_unique_for_overwrite<TSource[]>(capacity);
+        for (std::size_t first = 0; first < count;) {
+            const auto length = (std::min)(capacity, count - first);
+            const auto bytes = length * sizeof(TSource);
+            const auto* input = scratch.get();
+            if (std::fread(scratch.get(), 1, bytes, stream_.get()) != bytes) {
+                error = "Calibration file ended before all data was read";
+                return MapSourceMatch::Error;
+            }
+            if constexpr (std::is_same_v<TSource, TCorrection>) {
+                bool matches;
+                if constexpr (std::is_same_v<TSource, float>) {
+                    matches = packed != nullptr
+                        ? packed->matches(input, first, length)
+                        : std::memcmp(input, item.correction_.data() + first, bytes) == 0;
+                }
+                else {
+                    matches = std::memcmp(input, item.correction_.data() + first, bytes) == 0;
+                }
+                if (!matches) return MapSourceMatch::Different;
+            }
+            else {
+                // Test 16-bit source offsets against widened cached bytes.
+                if (!std::equal(input, input + length, item.correction_.data() + first))
+                    return MapSourceMatch::Different;
+            }
+            first += length;
+        }
+        return checkEnd(error);
+    }
+
+    CalibrationType type_;
+    BinaryFile stream_;
+    MapFileLayout layout_;
+};
 
 std::unique_ptr<CalibrationItem> loadLineArity(
     const std::filesystem::path& file,
@@ -2137,6 +2382,33 @@ std::unique_ptr<CalibrationItem> loadLineArity(
 }
 
 } // namespace
+
+std::unique_ptr<VerifiedMapSource> openVerifiedMapSource(
+    CalibrationType type,
+    const std::filesystem::path& file,
+    std::string& error)
+{
+    error.clear();
+    if (type != CalibrationType::Dsnu && type != CalibrationType::Uniformity) return nullptr;
+    try {
+        BinaryFile stream;
+        std::uint64_t length = 0;
+        MapFileLayout layout;
+        const auto elementBytes = type == CalibrationType::Dsnu ? sizeof(std::uint16_t) : sizeof(float);
+        if (!openBinary(file, stream, length, error, _SH_DENYWR)
+            || !readMapLayout(stream, length, elementBytes, layout, error)) {
+            return nullptr;
+        }
+        return std::make_unique<OpenedMapSource>(type, std::move(stream), layout);
+    }
+    catch (const std::bad_alloc&) {
+        error = "Not enough memory to open calibration data";
+    }
+    catch (const std::exception& exception) {
+        error = "Unable to open calibration file: " + std::string(exception.what());
+    }
+    return nullptr;
+}
 
 std::unique_ptr<CalibrationItem> loadBasicCalibration(
     CalibrationType type,

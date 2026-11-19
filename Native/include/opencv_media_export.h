@@ -314,6 +314,11 @@ extern "C" COLORVISIONCORE_API int __cdecl M_CalibrationLoadFileW(
     void* context,
     std::int32_t calibrationType,
     const wchar_t* filePath);
+// DSNU and Uniformity only. On success, sha256 receives the 32-byte digest
+// of the exact file contents used by the newly attached calibration item.
+extern "C" COLORVISIONCORE_API int __cdecl M_CalibrationLoadMapWithSha256V1W(
+    void* context, std::int32_t calibrationType, const wchar_t* filePath,
+    std::uint8_t* sha256, std::uint32_t sha256Size);
 // Mutable RAW compatibility entry point. RAW and CIE ranges must not overlap;
 // color-transform exposure values must be finite and positive.
 extern "C" COLORVISIONCORE_API int __cdecl M_CalibrationExecute(

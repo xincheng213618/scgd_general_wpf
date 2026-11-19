@@ -773,7 +773,7 @@ MCalibrationCacheReleaseResultV1 releaseCalibrationCache()
     return result;
 }
 
-void verifyReleaseLinearizesWithInFlightLoad(const std::filesystem::path& directory)
+void verifyReleaseLinearizesWithInFlightLoad(const std::filesystem::path& directory, bool verified)
 {
     releaseCalibrationCache();
     constexpr std::uint32_t width = 4096;
@@ -788,7 +788,11 @@ void verifyReleaseLinearizesWithInFlightLoad(const std::filesystem::path& direct
     std::atomic<int> loadResult{ 0 };
     std::string loadError;
     std::thread loader([&] {
-        const int result = M_CalibrationLoadFileW(context.get(), 4, file.c_str());
+        std::array<std::uint8_t, 32> digest{};
+        const int result = verified
+            ? M_CalibrationLoadMapWithSha256V1W(context.get(), 4, file.c_str(), digest.data(),
+                static_cast<std::uint32_t>(digest.size()))
+            : M_CalibrationLoadFileW(context.get(), 4, file.c_str());
         if (result != M_CALIBRATION_OK) {
             loadError = nativeError(context.get());
         }
@@ -963,7 +967,94 @@ void verifyProcessFileCacheAcrossGroups(const std::filesystem::path& directory)
         "active context after cache release");
 }
 
-void runSmallBudgetCacheCoverage()
+std::array<std::uint8_t, 32> loadMapAndCheckDigest(
+    void* context, int type, const std::filesystem::path& file)
+{
+    std::array<std::uint8_t, 32> digest{};
+    requireResult(M_CalibrationLoadMapWithSha256V1W(context, type, file.c_str(), digest.data(),
+        static_cast<std::uint32_t>(digest.size())), context, "load map with SHA-256");
+    std::ifstream input(file, std::ios::binary);
+    if (!input) throw std::runtime_error("Unable to open map for SHA-256 verification");
+    std::string bytes(static_cast<std::size_t>(std::filesystem::file_size(file)), '\0');
+    if (!input.read(bytes.data(), static_cast<std::streamsize>(bytes.size())))
+        throw std::runtime_error("Unable to read map for SHA-256 verification");
+    std::ostringstream actual;
+    actual << std::hex << std::uppercase << std::setfill('0');
+    for (const auto value : digest) actual << std::setw(2) << static_cast<int>(value);
+    const auto expected = sha256(bytes.data(), bytes.size());
+    requireHash("verified calibration file", actual.str(), expected.c_str());
+    return digest;
+}
+
+void verifyExactMapSourceVersions(const std::filesystem::path& directory)
+{
+    const auto dsnu = directory / "verified_dsnu.dat";
+    const auto uniformity = directory / "verified_uniformity.dat";
+    std::vector<std::uint16_t> offsets(16, 1);
+    writeMap(dsnu, 16, 16, offsets);
+    Context legacy = createContext();
+    requireResult(M_CalibrationLoadFileW(legacy.get(), 4, dsnu.c_str()), legacy.get(), "load legacy DSNU");
+
+    const auto dsnuTime = std::filesystem::last_write_time(dsnu);
+    std::fill(offsets.begin(), offsets.end(), 2);
+    writeMap(dsnu, 16, 16, offsets);
+    std::filesystem::last_write_time(dsnu, dsnuTime);
+    Context original = createContext();
+    const auto oldDigest = loadMapAndCheckDigest(original.get(), 4, dsnu);
+    requireUniformPixels(executeSyntheticSharedMap(legacy.get()), 9, "legacy DSNU generation");
+    requireUniformPixels(executeSyntheticSharedMap(original.get()), 8, "verified DSNU replacing unverified cache");
+
+    const auto beforeHit = readCalibrationCacheStats();
+    Context repeated = createContext();
+    if (loadMapAndCheckDigest(repeated.get(), 4, dsnu) != oldDigest
+        || readCalibrationCacheStats().hitCount != beforeHit.hitCount + 1) {
+        throw std::runtime_error("Verified DSNU did not reuse the identical cached source");
+    }
+
+    offsets.back() = 256;
+    writeMap(dsnu, 16, 16, offsets);
+    std::filesystem::last_write_time(dsnu, dsnuTime);
+    if (std::filesystem::last_write_time(dsnu) != dsnuTime)
+        throw std::runtime_error("DSNU fixture failed to restore LastWriteTime");
+    const auto beforeReplacement = readCalibrationCacheStats();
+    runTwoWorkersConcurrently([&](std::size_t) {
+        Context changed = createContext();
+        if (loadMapAndCheckDigest(changed.get(), 4, dsnu) == oldDigest)
+            throw std::runtime_error("Same-timestamp DSNU mutation retained its old SHA-256");
+        const auto changedPixels = executeSyntheticSharedMap(changed.get());
+        if (changedPixels.back() != 0 || changedPixels.front() != 8)
+            throw std::runtime_error("Verified DSNU did not apply the changed wide offset");
+    });
+    if (readCalibrationCacheStats().missCount != beforeReplacement.missCount + 1)
+        throw std::runtime_error("Concurrent verified loaders published duplicate replacements");
+    requireUniformPixels(executeSyntheticSharedMap(original.get()), 8, "retained DSNU generation");
+
+    std::vector<float> gains(16, 1.0F);
+    gains.back() = 0.0F;
+    writeMap(uniformity, 32, 16, gains);
+    const auto uniformityTime = std::filesystem::last_write_time(uniformity);
+    Context positiveZero = createContext(), negativeZero = createContext();
+    const auto positiveDigest = loadMapAndCheckDigest(positiveZero.get(), 5, uniformity);
+    gains.back() = -0.0F;
+    writeMap(uniformity, 32, 16, gains);
+    std::filesystem::last_write_time(uniformity, uniformityTime);
+    if (loadMapAndCheckDigest(negativeZero.get(), 5, uniformity) == positiveDigest
+        || executeSyntheticSharedMap(negativeZero.get()) != executeSyntheticSharedMap(positiveZero.get())) {
+        throw std::runtime_error("Verified gain source must compare exact bits even when pixels match");
+    }
+
+    std::array<std::uint8_t, 32> unchanged;
+    unchanged.fill(0xA5);
+    std::filesystem::resize_file(uniformity, std::filesystem::file_size(uniformity) - 1);
+    const int failed = M_CalibrationLoadMapWithSha256V1W(negativeZero.get(), 5, uniformity.c_str(),
+        unchanged.data(), static_cast<std::uint32_t>(unchanged.size()));
+    if (failed != M_CALIBRATION_LOAD_FAILED || M_CalibrationGetItemCount(negativeZero.get()) != 1
+        || !std::all_of(unchanged.begin(), unchanged.end(), [](auto value) { return value == 0xA5; })) {
+        throw std::runtime_error("A failed verified load published a map or a digest");
+    }
+}
+
+void runSmallBudgetCacheCoverage(bool verified)
 {
     TemporaryDirectory directory(
         std::filesystem::temp_directory_path()
@@ -982,20 +1073,26 @@ void runSmallBudgetCacheCoverage()
     writeMap(firstFile, 16, 16, std::vector<std::uint16_t>(pixels, 1), 1, width, height);
     writeMap(secondFile, 16, 16, std::vector<std::uint16_t>(pixels, 2), 1, width, height);
 
+    const auto load = [verified](const Context& context, const std::filesystem::path& file) {
+        if (verified) {
+            loadMapAndCheckDigest(context.get(), 4, file);
+        }
+        else {
+            requireResult(M_CalibrationLoadFileW(context.get(), 4, file.c_str()), context.get(),
+                "load active cache entry");
+        }
+    };
     Context first = createContext();
     Context second = createContext();
-    requireResult(M_CalibrationLoadFileW(first.get(), 4, firstFile.c_str()), first.get(),
-        "load active cache entry A");
-    requireResult(M_CalibrationLoadFileW(second.get(), 4, secondFile.c_str()), second.get(),
-        "load active cache entry B");
+    load(first, firstFile);
+    load(second, secondFile);
     const MCalibrationCacheStatsV1 overBudget = readCalibrationCacheStats();
     if (overBudget.entryCount != 2 || overBudget.estimatedMemoryBytes <= overBudget.budgetBytes) {
         throw std::runtime_error("Active cache assets were incorrectly forced under the soft budget");
     }
 
     Context third = createContext();
-    requireResult(M_CalibrationLoadFileW(third.get(), 4, firstFile.c_str()), third.get(),
-        "reload active cache entry A");
+    load(third, firstFile);
     const MCalibrationCacheStatsV1 afterHit = readCalibrationCacheStats();
     if (afterHit.hitCount != overBudget.hitCount + 1 || afterHit.entryCount != 2) {
         throw std::runtime_error("Active LRU entry was evicted and reloaded under budget pressure");
@@ -1242,8 +1339,8 @@ void verifyLegacyBinaryMaps(const std::filesystem::path& directory)
     writeMap(truncated, 32, 16, gains, 1, width, height);
     std::filesystem::resize_file(truncated, std::filesystem::file_size(truncated) - 1);
     Context context = createContext();
-    requireResult(M_CalibrationLoadFileW(context.get(), 4, dsnu.c_str()), context.get(), "load V0 DSNU on a Unicode path");
-    requireResult(M_CalibrationLoadFileW(context.get(), 5, uniformity.c_str()), context.get(), "load V0 Uniformity on a Unicode path");
+    loadMapAndCheckDigest(context.get(), 4, dsnu);
+    loadMapAndCheckDigest(context.get(), 5, uniformity);
     if (M_CalibrationLoadFileW(context.get(), 5, truncated.c_str()) != M_CALIBRATION_LOAD_FAILED)
         throw std::runtime_error("Truncated V1 Uniformity map was not rejected");
 
@@ -1296,7 +1393,7 @@ void verifyLargeUniformityOutput(const std::filesystem::path& directory)
             writeMap(dsnu, 16, 16, offsets, channels, width, height);
             requireResult(M_CalibrationLoadFileW(context.get(), 4, dsnu.c_str()), context.get(), "load large DSNU");
         }
-        requireResult(M_CalibrationLoadFileW(context.get(), 5, uniformity.c_str()), context.get(), "load large Uniformity");
+        loadMapAndCheckDigest(context.get(), 5, uniformity);
         for (std::size_t index = 0; index < samples; ++index) {
             const auto value = source[index] < offsets[index] ? std::uint16_t{0}
                 : static_cast<std::uint16_t>(source[index] - offsets[index]);
@@ -1364,6 +1461,22 @@ void verifyLargeUniformityOutput(const std::filesystem::path& directory)
             if (actual != expected) throw std::runtime_error("Large sparse map output differs from scalar arithmetic");
         }
     }
+    // Alter only bits above the packed delta and preserve the old metadata.
+    const auto oldTime = std::filesystem::last_write_time(uniformity);
+    std::uint32_t gainBits = 0;
+    std::memcpy(&gainBits, &factors.back(), sizeof(gainBits));
+    gainBits += 0x01000000U;
+    float changedGain = 0;
+    std::memcpy(&changedGain, &gainBits, sizeof(changedGain));
+    {
+        std::fstream file(uniformity, std::ios::binary | std::ios::in | std::ios::out);
+        file.seekp(-static_cast<std::streamoff>(sizeof(changedGain)), std::ios::end);
+        file.write(reinterpret_cast<const char*>(&changedGain), sizeof(changedGain));
+        if (!file) throw std::runtime_error("Unable to update the last packed gain");
+    }
+    std::filesystem::last_write_time(uniformity, oldTime);
+    Context changed = createContext();
+    loadMapAndCheckDigest(changed.get(), 5, uniformity);
     std::cout << "calibration_large_map_exact_cases,12" << std::endl;
 }
 
@@ -1745,8 +1858,10 @@ void runSyntheticCoverage()
         / ("colorvision_calibration_" + std::to_string(GetCurrentProcessId())));
 
     verifyConcurrentSharedMapLoad(directory.path);
-    verifyReleaseLinearizesWithInFlightLoad(directory.path);
+    verifyReleaseLinearizesWithInFlightLoad(directory.path, false);
+    verifyReleaseLinearizesWithInFlightLoad(directory.path, true);
     verifyProcessFileCacheAcrossGroups(directory.path);
+    verifyExactMapSourceVersions(directory.path);
     verifyAdjacentMapEquivalence(directory.path, false);
     verifyAdjacentMapEquivalence(directory.path, true);
     verifyAdjacentBgr8MapEquivalence(directory.path);
@@ -2981,7 +3096,8 @@ bool RunCalibrationApiSmokeTests()
 bool RunCalibrationCacheSmallBudgetTests()
 {
     try {
-        runSmallBudgetCacheCoverage();
+        runSmallBudgetCacheCoverage(false);
+        runSmallBudgetCacheCoverage(true);
         return true;
     }
     catch (const std::exception& ex) {

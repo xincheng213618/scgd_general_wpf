@@ -87,6 +87,13 @@ lease was already reserved, it is reported as active before release returns.
 The budget may be exceeded while every resident entry is active, but is trimmed
 as soon as the last owner of an over-budget entry is destroyed.
 
+`M_CalibrationLoadMapWithSha256V1W` attaches a DSNU or Uniformity map and writes
+its 32-byte SHA-256 to a caller-owned buffer. It verifies the complete source
+against any candidate cached map before returning its stored digest. The file
+handle protects the snapshot during verification or parsing. A failed call
+leaves the buffer and Context item list intact. Engine uses this optional export
+when preparing new contexts and retains the existing loader for earlier DLLs.
+
 ## POI Batch API
 
 The POI API borrows planar float CIE memory directly for the duration of one

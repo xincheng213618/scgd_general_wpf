@@ -15,7 +15,7 @@ class CalibrationContext final {
 public:
     bool clear();
     void transferWorkBuffersFrom(CalibrationContext& source);
-    bool load(CalibrationType type, const std::filesystem::path& file);
+    bool load(CalibrationType type, const std::filesystem::path& file, CalibrationFileDigest* digest = nullptr);
     bool execute(const ImageView& raw, float* cieData, std::size_t cieElementCount, const ExecutionOptions& options);
     bool executeTo(
         const ImageView& sourceRaw,
