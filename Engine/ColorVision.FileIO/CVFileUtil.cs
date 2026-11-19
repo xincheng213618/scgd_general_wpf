@@ -532,10 +532,14 @@ namespace ColorVision.FileIO
             if (channelIndex != 0) stream.Position = checked(payloadStart + channelBytes * channelIndex);
 
             byte[] data = GC.AllocateUninitializedArray<byte>((int)count);
+            // Keep cancellation checks frequent. Uncancellable cache reads can use the existing parallel copy.
+            int readChunkSize = cancellationToken.CanBeCanceled ? 81920 : data.Length;
+            if (stream is FileStream)
+                readChunkSize = Math.Min(readChunkSize, 1024 * 1024);
             for (int offset = 0; offset < data.Length;)
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                int bytesRead = stream.Read(data, offset, Math.Min(81920, data.Length - offset));
+                int bytesRead = stream.Read(data, offset, Math.Min(readChunkSize, data.Length - offset));
                 if (bytesRead == 0) return false;
                 offset += bytesRead;
             }

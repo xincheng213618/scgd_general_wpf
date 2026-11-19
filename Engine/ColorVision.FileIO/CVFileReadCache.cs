@@ -303,13 +303,13 @@ namespace ColorVision.FileIO
             }
             lock (WriteSync)
             {
-                if (saveMode == CVFileSaveMode.MemoryOnly) WriteMemoryOnly(fullPath, fileLength, write);
+                if (saveMode == CVFileSaveMode.MemoryOnly) WriteMemoryOnly(fullPath, fileLength, write, writeCommittedCache != null);
                 else WriteSynchronous(fullPath, fileLength, write, updateRawCache: true, writeCommittedCache);
             }
             return true;
         }
 
-        private static void WriteMemoryOnly(string path, long fileLength, Action<Stream> write)
+        private static void WriteMemoryOnly(string path, long fileLength, Action<Stream> write, bool immutableCapture)
         {
             lock (Sync)
             {
@@ -325,7 +325,10 @@ namespace ColorVision.FileIO
                 try
                 {
                     EnsureCapacity(staged, fileLength);
-                    using (Stream memory = OpenBuffer(staged, fileLength, FileAccess.Write))
+                    bool copyInParallel = immutableCapture && fileLength >= LargeCopyThreshold && Environment.ProcessorCount >= 2;
+                    using (Stream memory = copyInParallel
+                        ? new CaptureWriteStream(staged, fileLength)
+                        : OpenBuffer(staged, fileLength, FileAccess.Write))
                     {
                         write(memory);
                         if (memory.Position != fileLength) throw new InvalidDataException("CVRAW writer did not write its declared length.");
@@ -713,6 +716,29 @@ namespace ColorVision.FileIO
             internal long PixelStart { get; }
             internal long Offset { get; }
             internal byte[] Bytes { get; }
+        }
+
+        private sealed unsafe class CaptureWriteStream : UnmanagedMemoryStream
+        {
+            internal CaptureWriteStream(CacheEntry entry, long length)
+                : base((byte*)entry.Buffer.ToPointer(), length, entry.Capacity, FileAccess.Write)
+            {
+            }
+
+            public override void Write(ReadOnlySpan<byte> buffer)
+            {
+                long position = Position;
+                if (buffer.Length < LargeCopyThreshold || buffer.Length > Length - position)
+                {
+                    base.Write(buffer);
+                    return;
+                }
+
+                // The capture stays immutable until this write completes, and the staged buffer is private.
+                fixed (byte* source = buffer)
+                    CopyBufferInHalves((nint)source, (nint)PositionPointer, buffer.Length);
+                Position = position + buffer.Length;
+            }
         }
 
         // Do not expose UnmanagedMemoryStream.PositionPointer or writable cache memory to consumers.
