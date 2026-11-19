@@ -7,6 +7,7 @@ using log4net;
 using OpenCvSharp;
 using OpenCvSharp.WpfExtensions;
 using System;
+using System.Buffers;
 using System.IO;
 using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
@@ -422,6 +423,35 @@ namespace ColorVision.Engine.Media
         internal static Task<WriteableBitmap> PrepareDisplayBitmapAsync(this Mat source, PixelFormat format, CancellationToken cancellationToken)
             => EditableBitmapCopy.CreateAsync(source.Cols, source.Rows, 96, 96, format, null,
                 (buffer, stride) => CopyDisplayPixels(source, buffer, stride), cancellationToken);
+
+        internal const int RawRgb48StagingBytes = 4 * 1024 * 1024;
+
+        internal static Task<WriteableBitmap> PrepareRawRgb48DisplayAsync(CvcieDiskPixels pixels, int width, int height, CancellationToken token)
+            => EditableBitmapCopy.CreateAsync(width, height, 96, 96, PixelFormats.Rgb48, null,
+                (buffer, stride) => CopyRawRgb48Pixels(pixels, width, height, buffer, stride, token), token);
+
+        private static unsafe void CopyRawRgb48Pixels(CvcieDiskPixels pixels, int width, int height, IntPtr buffer, int stride, CancellationToken token)
+        {
+            int sourceStride = checked(width * 3 * sizeof(ushort));
+            int rowsPerBlock = Math.Max(1, Math.Min(height, RawRgb48StagingBytes / sourceStride));
+            byte[] staging = ArrayPool<byte>.Shared.Rent(checked(rowsPerBlock * sourceStride));
+            try
+            {
+                fixed (byte* source = staging)
+                {
+                    for (int top = 0; top < height;)
+                    {
+                        int rows = Math.Min(rowsPerBlock, height - top);
+                        pixels.ReadExactly(staging.AsSpan(0, rows * sourceStride), (long)top * sourceStride, token);
+                        token.ThrowIfCancellationRequested();
+                        using var block = Mat.FromPixelData(rows, width, MatType.CV_16UC3, (IntPtr)source, sourceStride);
+                        CopyDisplayPixels(block, (IntPtr)((byte*)buffer + (long)top * stride), stride);
+                        top += rows;
+                    }
+                }
+            }
+            finally { ArrayPool<byte>.Shared.Return(staging); }
+        }
 
         public static bool MatUpdateWriteableBitmap(this Mat srcMat, WriteableBitmap writeableBitmap)
         {

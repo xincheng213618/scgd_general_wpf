@@ -33,10 +33,11 @@ namespace ColorVision.Engine.Media
     internal sealed class CvcieAssociatedSourceChangedException(string path, Exception error)
         : IOException($"CVCIE 关联原图已改变或不可读取，请重新打开图像：{path}", error);
 
-    internal sealed class CvcieDisplaySource(CVCIEFile file, OpenCvSharp.Mat? decoded = null) : IDisposable
+    internal sealed class CvcieDisplaySource(CVCIEFile file, OpenCvSharp.Mat? decoded = null, CvcieDiskPixels? diskRgb48 = null) : IDisposable
     {
         public CVCIEFile File { get; } = file;
         public OpenCvSharp.Mat? Decoded { get; } = decoded;
+        public CvcieDiskPixels? DiskRgb48 { get; } = diskRgb48;
 
         public void Dispose()
         {
@@ -179,7 +180,7 @@ namespace ColorVision.Engine.Media
         }
 
         private static CvcieDisplaySource ReadAssociatedImage(FileStream stream, string filePath, int? expectedRows, int? expectedCols,
-            bool loadPixels, CancellationToken token)
+            bool loadPixels, CancellationToken token, bool streamLargeRgb48 = false)
         {
             token.ThrowIfCancellationRequested();
             Span<byte> magic = stackalloc byte[5];
@@ -188,6 +189,7 @@ namespace ColorVision.Engine.Media
             stream.Position = 0;
             CVCIEFile? image = null;
             OpenCvSharp.Mat? decoded = null;
+            CvcieDiskPixels? diskRgb48 = null;
             try
             {
                 if (isCvImage)
@@ -196,15 +198,21 @@ namespace ColorVision.Engine.Media
                     if (offset <= 0 || image.Rows <= 0 || image.Cols <= 0 || image.Channels is not (1 or 3 or 4)
                         || image.Bpp is not (8 or 16 or 32 or 64)) throw new InvalidDataException("关联原图文件头无效。");
                     ValidateGeometry(image.Rows, image.Cols);
-                    if (loadPixels)
-                    {
-                        if (!CVFileUtil.ReadCIEFilePixels(stream, image, offset, requireExactPayload: true, token))
-                            throw new InvalidDataException("关联原图像素长度无效。");
-                    }
-                    else
+                    const int rgb48BitsPerPixel = 48;
+                    bool streamPixels = loadPixels && streamLargeRgb48 && image.Channels == 3 && image.Bpp == 16
+                        && image.Cols <= MediaHelper.RawRgb48StagingBytes / (rgb48BitsPerPixel / 8)
+                        && (long)image.Rows * image.Cols <= Array.MaxLength / (rgb48BitsPerPixel / 8)
+                        && (((long)image.Cols * rgb48BitsPerPixel + 31) / 32) * 4 * image.Rows <= int.MaxValue
+                        && EditableBitmapCopy.ShouldCopyInBackground(image.Cols, image.Rows, rgb48BitsPerPixel);
+                    if (!loadPixels || streamPixels)
                     {
                         long required = checked((long)image.Rows * image.Cols * image.Channels * (image.Bpp / 8));
-                        CvcieDiskPixels.Locate(stream, image, offset, required, requireExactLength: true);
+                        CvcieDiskPixels pixels = CvcieDiskPixels.Locate(stream, image, offset, required, requireExactLength: true);
+                        if (streamPixels) diskRgb48 = pixels;
+                    }
+                    else if (!CVFileUtil.ReadCIEFilePixels(stream, image, offset, requireExactPayload: true, token))
+                    {
+                        throw new InvalidDataException("关联原图像素长度无效。");
                     }
                     image.FileExtType = CVType.Raw;
                 }
@@ -246,7 +254,7 @@ namespace ColorVision.Engine.Media
                 token.ThrowIfCancellationRequested();
                 image.SrcFileName = stream.Name;
                 image.FilePath = filePath;
-                return new(image, decoded);
+                return new(image, decoded, diskRgb48);
             }
             catch
             {
@@ -492,7 +500,9 @@ namespace ColorVision.Engine.Media
             if (_associatedSource is { } associated)
             {
                 using FileStream stream = associated.OpenRead();
-                using CvcieDisplaySource source = ReadAssociatedImage(stream, _filePath, associated.Rows, associated.Cols, loadPixels: true, token);
+                bool streamLargeRgb48 = string.Equals(Path.GetExtension(associated.Path), ".cvraw", StringComparison.OrdinalIgnoreCase);
+                using CvcieDisplaySource source = ReadAssociatedImage(stream, _filePath, associated.Rows, associated.Cols,
+                    loadPixels: true, token, streamLargeRgb48);
                 if (source.File.Channels < 3 && layer.SourceChannelIndex.HasValue) layer = Layers[0];
                 return (await PrepareAssociatedDisplayAsync(source, token), layer);
             }
@@ -510,6 +520,11 @@ namespace ColorVision.Engine.Media
         {
             token.ThrowIfCancellationRequested();
             CVCIEFile file = source.File;
+            if (source.DiskRgb48 is { } pixels)
+            {
+                return await _imageView.Dispatcher.InvokeAsync(() => MediaHelper.PrepareRawRgb48DisplayAsync(pixels, file.Cols, file.Rows, token),
+                    DispatcherPriority.Normal, token).Task.Unwrap();
+            }
             if (file.Channels == 1 && file.Bpp is 32 or 64) return MediaHelper.RenderFloatChannel(file, token);
             using OpenCvSharp.Mat? loaded = source.Decoded == null ? file.ToMat(showErrors: false) : null;
             OpenCvSharp.Mat mat = RequireDisplayMat(source.Decoded ?? loaded);
