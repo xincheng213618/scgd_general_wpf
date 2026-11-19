@@ -514,6 +514,10 @@ public:
 
     bool matches(const float* source, std::size_t first, std::size_t count) const noexcept
     {
+#if defined(_M_X64) && !defined(_M_ARM64EC)
+        const bool useSsse3 = cv::checkHardwareSupport(CV_CPU_SSSE3);
+        const auto unpack = _mm_setr_epi8(0, 1, 2, -1, 3, 4, 5, -1, 6, 7, 8, -1, 9, 10, 11, -1);
+#endif
         for (std::size_t done = 0; done < count;) {
             const auto index = first + done;
             const auto block = blocks_[index / blockSize];
@@ -526,11 +530,28 @@ public:
             }
             else {
                 const auto* stored = bytes_.get() + block.offset + offset * 3;
-                for (std::size_t item = 0; item < length; ++item) {
+                std::size_t item = 0;
+#if defined(_M_X64) && !defined(_M_ARM64EC)
+                if (useSsse3) {
+                    const auto base = _mm_set1_epi32(std::bit_cast<std::int32_t>(block.base));
+                    // Four gains use 12 bytes. Require six remaining samples so
+                    // a 16-byte load stays inside this compared block segment.
+                    for (; length - item >= 6; item += 4) {
+                        const auto packed = _mm_loadu_si128(reinterpret_cast<const __m128i*>(stored + item * 3));
+                        const auto expected = _mm_add_epi32(_mm_shuffle_epi8(packed, unpack), base);
+                        const auto actual = _mm_loadu_si128(reinterpret_cast<const __m128i*>(input + item));
+                        if (_mm_movemask_epi8(_mm_cmpeq_epi32(actual, expected)) != 0xFFFF) return false;
+                    }
+                }
+#endif
+                for (; item + 1 < length; ++item) {
                     std::uint32_t delta;
                     std::memcpy(&delta, stored + item * 3, sizeof(delta));
                     if (std::bit_cast<std::uint32_t>(input[item]) != block.base + (delta & 0xFFFFFFU)) return false;
                 }
+                std::uint32_t lastDelta = 0;
+                std::memcpy(&lastDelta, stored + item * 3, 3);
+                if (std::bit_cast<std::uint32_t>(input[item]) != block.base + lastDelta) return false;
             }
             done += length;
         }
@@ -2334,8 +2355,21 @@ private:
             }
             else {
                 // Test 16-bit source offsets against widened cached bytes.
-                if (!std::equal(input, input + length, item.correction_.data() + first))
-                    return MapSourceMatch::Different;
+                const auto* cached = item.correction_.data() + first;
+                std::size_t sample = 0;
+#if defined(_M_X64) && !defined(_M_ARM64EC)
+                const auto zero = _mm_setzero_si128();
+                for (; length - sample >= 16; sample += 16) {
+                    const auto compact = _mm_loadu_si128(reinterpret_cast<const __m128i*>(cached + sample));
+                    const auto low = _mm_loadu_si128(reinterpret_cast<const __m128i*>(input + sample));
+                    const auto high = _mm_loadu_si128(reinterpret_cast<const __m128i*>(input + sample + 8));
+                    const auto lowEqual = _mm_cmpeq_epi16(low, _mm_unpacklo_epi8(compact, zero));
+                    const auto highEqual = _mm_cmpeq_epi16(high, _mm_unpackhi_epi8(compact, zero));
+                    if (_mm_movemask_epi8(_mm_and_si128(lowEqual, highEqual)) != 0xFFFF)
+                        return MapSourceMatch::Different;
+                }
+#endif
+                if (!std::equal(input + sample, input + length, cached + sample)) return MapSourceMatch::Different;
             }
             first += length;
         }

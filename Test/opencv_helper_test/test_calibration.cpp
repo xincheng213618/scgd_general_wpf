@@ -1591,22 +1591,26 @@ void verifyLargeUniformityOutput(const std::filesystem::path& directory)
             if (actual != expected) throw std::runtime_error("Large sparse map output differs from scalar arithmetic");
         }
     }
-    // Alter only bits above the packed delta and preserve the old metadata.
+    // Alter only bits above the packed delta in a SIMD lane and in the scalar tail.
     const auto oldTime = std::filesystem::last_write_time(uniformity);
-    std::uint32_t gainBits = 0;
-    std::memcpy(&gainBits, &factors.back(), sizeof(gainBits));
-    gainBits += 0x01000000U;
-    float changedGain = 0;
-    std::memcpy(&changedGain, &gainBits, sizeof(changedGain));
-    {
-        std::fstream file(uniformity, std::ios::binary | std::ios::in | std::ios::out);
-        file.seekp(-static_cast<std::streamoff>(sizeof(changedGain)), std::ios::end);
-        file.write(reinterpret_cast<const char*>(&changedGain), sizeof(changedGain));
-        if (!file) throw std::runtime_error("Unable to update the last packed gain");
+    constexpr std::size_t headerBytes = 5 * sizeof(std::uint32_t);
+    for (const auto sample : {std::size_t{781}, samples - 1}) {
+        std::uint32_t gainBits = 0;
+        std::memcpy(&gainBits, &factors[sample], sizeof(gainBits));
+        gainBits += 0x01000000U;
+        {
+            std::fstream file(uniformity, std::ios::binary | std::ios::in | std::ios::out);
+            file.seekp(static_cast<std::streamoff>(headerBytes + sample * sizeof(float)));
+            file.write(reinterpret_cast<const char*>(&gainBits), sizeof(gainBits));
+            if (!file) throw std::runtime_error("Unable to update a packed gain");
+        }
+        std::filesystem::last_write_time(uniformity, oldTime);
+        const auto before = readCalibrationCacheStats();
+        Context changed = createContext();
+        loadMapAndCheckDigest(changed.get(), 5, uniformity);
+        if (readCalibrationCacheStats().missCount != before.missCount + 1)
+            throw std::runtime_error("A same-timestamp packed gain change reused stale cached bits");
     }
-    std::filesystem::last_write_time(uniformity, oldTime);
-    Context changed = createContext();
-    loadMapAndCheckDigest(changed.get(), 5, uniformity);
     std::cout << "calibration_large_map_exact_cases,12" << std::endl;
 }
 
