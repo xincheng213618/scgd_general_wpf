@@ -1123,12 +1123,18 @@ namespace ProjectARVRPro
         internal IReadOnlyDictionary<int, IReadOnlyList<ProjectARVRReuslt>> QueryFlowDetailsForBatchExport(
             IReadOnlyList<ResultStatisticsRecordRow> records)
         {
-            var idsByRecord = records.ToDictionary(record => record.Id, _ => new List<int>());
-            if (idsByRecord.Count == 0)
+            if (records.Count == 0)
                 return new Dictionary<int, IReadOnlyList<ProjectARVRReuslt>>();
 
             InitializeSchema();
             using SqlSugarClient db = CreateClient();
+            return QueryFlowDetailsForBatchExport(db, records);
+        }
+
+        private IReadOnlyDictionary<int, IReadOnlyList<ProjectARVRReuslt>> QueryFlowDetailsForBatchExport(
+            SqlSugarClient db, IReadOnlyList<ResultStatisticsRecordRow> records)
+        {
+            var idsByRecord = records.ToDictionary(record => record.Id, _ => new List<int>());
             var resultsById = new Dictionary<int, ProjectARVRReuslt>();
             var ranged = new List<ResultStatisticsRecordRow>();
             foreach (ResultStatisticsRecordRow record in records)
@@ -1181,6 +1187,76 @@ namespace ProjectARVRPro
             ResultJsonPayloadStorage.LoadViewResultJsons(db, resultsById.Values, _readOnlyDatabase);
             return idsByRecord.ToDictionary(pair => pair.Key, pair => (IReadOnlyList<ProjectARVRReuslt>)pair.Value
                 .Where(resultsById.ContainsKey).Select(id => resultsById[id]).ToArray());
+        }
+
+        internal int ExportBatchCsv(IReadOnlyList<ResultStatisticsRecordRow> selectedRows, string filePath)
+        {
+            ArgumentNullException.ThrowIfNull(selectedRows);
+            ArgumentException.ThrowIfNullOrWhiteSpace(filePath);
+            int exportedCount = 0;
+            AtomicCsvFile.Write(filePath, stagingPath =>
+            {
+                InitializeSchema();
+                using SqlSugarClient db = CreateClient();
+                db.Ado.Open();
+                // The CSV staging file is published only after the read snapshot closes.
+                db.Ado.Transaction = ((SqliteConnection)db.Ado.Connection).BeginTransaction(deferred: true);
+                try
+                {
+                    int[] ids = selectedRows.Select(row => row.Id).Where(id => id > 0).Distinct().ToArray();
+                    var recordsById = new Dictionary<int, ObjectiveTestResultRecord>(ids.Length);
+                    foreach (int[] chunk in ids.Chunk(500))
+                    {
+                        foreach (ObjectiveTestResultRecord record in Query<ObjectiveTestResultRecord>(db)
+                            .Where(item => chunk.Contains(item.Id))
+                            .Select(item => new ObjectiveTestResultRecord
+                            {
+                                Id = item.Id,
+                                SN = item.SN,
+                                CreateTime = item.CreateTime,
+                                UpdateTime = item.UpdateTime,
+                            }).ToList())
+                            recordsById.Add(record.Id, record);
+                    }
+                    ResultStatisticsRecordRow[] rows = selectedRows.Where(row => recordsById.ContainsKey(row.Id)).ToArray();
+                    ObjectiveTestResultRecord[] records = rows.Select(row => recordsById[row.Id]).ToArray();
+
+                    const int flowBatchSize = 64;
+                    IReadOnlyDictionary<int, IReadOnlyList<ProjectARVRReuslt>>? flowResults = null;
+                    int firstFlowIndex = -1;
+                    IReadOnlyList<ProjectARVRReuslt>? GetFlowResults(int index)
+                    {
+                        int start = index / flowBatchSize * flowBatchSize;
+                        if (start != firstFlowIndex)
+                        {
+                            // Release the prior decoded JSON before loading the next group.
+                            flowResults = null;
+                            var chunk = new ArraySegment<ResultStatisticsRecordRow>(rows, start, Math.Min(flowBatchSize, rows.Length - start));
+                            flowResults = QueryFlowDetailsForBatchExport(db, chunk);
+                            firstFlowIndex = start;
+                        }
+                        return flowResults!.GetValueOrDefault(rows[index].Id);
+                    }
+
+                    string? GetFallbackSummary(ObjectiveTestResultRecord record)
+                    {
+                        ResultJsonPayloadStorage.LoadObjectiveTestResultJsons(db, [record], _readOnlyDatabase);
+                        string? json = record.ObjectiveTestResultJson;
+                        record.ObjectiveTestResultJson = null;
+                        return json;
+                    }
+
+                    ObjectiveTestResultBatchCsvExporter.WriteCsv(records, GetFlowResults, stagingPath, GetFallbackSummary);
+                    db.Ado.CommitTran();
+                    exportedCount = records.Length;
+                }
+                catch
+                {
+                    db.Ado.RollbackTran();
+                    throw;
+                }
+            });
+            return exportedCount;
         }
 
         public IReadOnlyList<FlowExecutionRecordRow> QueryFlowExecutions(FlowExecutionQuery query)

@@ -317,6 +317,65 @@ public sealed class OfflineDataSourceTests
     }
 
     [Fact]
+    public void BatchCsvKeepsFirstMetricAfterMetadataOnlyRowsAndPreservesOldFileOnLaterCorruption()
+    {
+        using var fixture = new Files();
+        string path = fixture.CreateProject("legacy");
+        using (var db = new SqliteConnection($"Data Source={path};Pooling=False"))
+        {
+            db.Open();
+            Execute(db, """
+                ALTER TABLE ObjectiveTestResultRecord ADD COLUMN ObjectiveTestResultJsonGzip BLOB;
+                ALTER TABLE ARVRReuslt ADD COLUMN ViewResultJsonGzip BLOB;
+                UPDATE ObjectiveTestResultRecord SET ObjectiveTestResultJson = NULL;
+                WITH RECURSIVE ids(Id) AS (SELECT 3 UNION ALL SELECT Id + 1 FROM ids WHERE Id < 130)
+                INSERT INTO ObjectiveTestResultRecord(Id, SN, ResultId, BatchId, CreateTime, UpdateTime, TotalResult)
+                SELECT Id, 'metadata-' || Id, 0, Id, '2026-09-16 12:00:00', '2026-09-16 12:01:00', 1 FROM ids;
+                """);
+            using var command = db.CreateCommand();
+            command.CommandText = """
+                UPDATE ObjectiveTestResultRecord SET ObjectiveTestResultJsonGzip=@first WHERE Id=64;
+                UPDATE ObjectiveTestResultRecord SET ObjectiveTestResultJsonGzip=X'', ObjectiveTestResultJson=@second WHERE Id=63;
+                """;
+            command.Parameters.AddWithValue("@first", Compress("""{"DynamicTestResults":{"Csv":[{"Name":"Value","TestValue":"first"}]}}"""));
+            command.Parameters.AddWithValue("@second", """{"DynamicTestResults":{"Csv":[{"Name":"Value","TestValue":"second"}]}}""");
+            command.ExecuteNonQuery();
+        }
+
+        var store = new ResultStatisticsDataStore(path, readOnly: true);
+        var query = new ResultStatisticsQuery { From = Day, ToExclusive = Day.AddDays(1), PageSize = 150 };
+        var rows = store.QueryRecords(query);
+        Assert.Equal(130, rows.Count);
+        string csvPath = Path.Combine(fixture.Root, "batch.csv");
+        string referencePath = Path.Combine(fixture.Root, "reference.csv");
+        string sourceHash = Hash(path);
+
+        var records = store.GetRecords(rows.Select(row => row.Id)).ToDictionary(record => record.Id);
+        ObjectiveTestResultBatchCsvExporter.ExportToCsv(rows.Select(row => records[row.Id]),
+            store.QueryFlowDetailsForBatchExport(rows), referencePath);
+        Assert.Equal(130, store.ExportBatchCsv(rows, csvPath));
+        Assert.Equal(File.ReadAllBytes(referencePath), File.ReadAllBytes(csvPath));
+        string[] lines = File.ReadAllLines(csvPath);
+        Assert.EndsWith(",Csv_Value", lines[0], StringComparison.Ordinal);
+        Assert.EndsWith(",", lines[1], StringComparison.Ordinal);
+        Assert.EndsWith(",first", lines[67], StringComparison.Ordinal);
+        Assert.EndsWith(",second", lines[68], StringComparison.Ordinal);
+        Assert.Equal(sourceHash, Hash(path));
+
+        byte[] previous = File.ReadAllBytes(csvPath);
+        using (var db = new SqliteConnection($"Data Source={path};Pooling=False"))
+        {
+            db.Open();
+            Execute(db, "UPDATE ARVRReuslt SET ViewResultJsonGzip=X'00010203' WHERE Id=2");
+        }
+
+        Assert.Throws<InvalidDataException>(() => store.ExportBatchCsv(rows, csvPath));
+        Assert.Equal(previous, File.ReadAllBytes(csvPath));
+        Assert.Empty(Directory.GetFiles(fixture.Root, "*.arvrcsv.tmp"));
+    }
+
+
+    [Fact]
     public void ReadOnlyConnectionRejectsWritesAndMissingFileDoesNotCreateDatabase()
     {
         using var fixture = new Files();

@@ -1701,21 +1701,8 @@ namespace ProjectARVRPro
             try
             {
                 string fileName = dialog.FileName;
-                int[] ids = selectedRows.Select(row => row.Id).ToArray();
-                List<ObjectiveTestResultRecord> exportedRecords = await Task.Run(() =>
-                {
-                    Dictionary<int, ObjectiveTestResultRecord> recordsById = _statisticsStore.GetRecords(ids)
-                        .ToDictionary(record => record.Id);
-                    ResultStatisticsRecordRow[] rows = selectedRows.Where(row => recordsById.ContainsKey(row.Id)).ToArray();
-                    List<ObjectiveTestResultRecord> records = rows.Select(row => recordsById[row.Id]).ToList();
-                    var flowResultsByRecordId = _statisticsStore.QueryFlowDetailsForBatchExport(rows);
-                    ObjectiveTestResultBatchCsvExporter.ExportToCsv(records, flowResultsByRecordId, fileName);
-                    return records;
-                });
-
-                foreach (ObjectiveTestResultRecord record in exportedRecords)
-                    _recordCache[record.Id] = record;
-                MessageBox.Show(this, LocalizedText.Format($"已导出 {exportedRecords.Count:N0} 条记录：{fileName}"), "ColorVision", MessageBoxButton.OK, MessageBoxImage.Information);
+                int exportedCount = await Task.Run(() => _statisticsStore.ExportBatchCsv(selectedRows, fileName));
+                MessageBox.Show(this, LocalizedText.Format($"已导出 {exportedCount:N0} 条记录：{fileName}"), "ColorVision", MessageBoxButton.OK, MessageBoxImage.Information);
             }
             catch (Exception ex)
             {
