@@ -473,10 +473,13 @@ public sealed class ResultJsonPayloadStorageTests
         public void Dispose()
         {
             SqliteConnection.ClearAllPools();
-            if (File.Exists(Path))
-                File.Delete(Path);
-            if (Directory.Exists(_directory))
-                Directory.Delete(_directory);
+            if (!Directory.Exists(_directory))
+                return;
+            File.Delete(Path + "-wal");
+            File.Delete(Path + "-shm");
+            File.Delete(Path + "-journal");
+            File.Delete(Path);
+            Directory.Delete(_directory);
         }
 
         private SqliteConnection OpenConnection()
