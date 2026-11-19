@@ -1,7 +1,12 @@
 using ColorVision.Database;
 using ColorVision.Engine.FlowProcessing.Diagnostics;
 using Microsoft.Data.Sqlite;
+using Newtonsoft.Json;
 using ProjectARVRPro.Offline;
+using ProjectARVRPro.Process;
+using ProjectARVRPro.Process.OpticCenter;
+using ProjectARVRPro.Process.POI;
+using SqlSugar;
 using System.IO;
 using System.IO.Compression;
 using System.Security.Cryptography;
@@ -316,6 +321,141 @@ public sealed class OfflineDataSourceTests
         Assert.Equal(hash, Hash(path));
     }
 
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void BatchCsvReadsSummaryOnlyForRecordsWithoutFlowMetrics(bool readOnly)
+    {
+        var legacy = new ObjectiveTestResult
+        {
+            OpticCenterTestResult = new() { OptCenterRotation = new() { Name = "OptCenterRotation", Value = 17 } }
+        };
+        var flow = new OpticCenterTestResult { OptCenterRotation = new() { Name = "OptCenterRotation", Value = 23 } };
+        var snapshot = new ProjectARVRReuslt();
+        ResultProcessResolver.Capture(snapshot, new OpticCenterProcess());
+
+        using var fixture = new Files();
+        string summaryJson = JsonConvert.SerializeObject(legacy);
+        string databasePath = readOnly ? fixture.CreateProject(summaryJson) : Path.Combine(fixture.Root, "ProjectARVRPro.db");
+        var store = new ResultStatisticsDataStore(databasePath, readOnly);
+        store.InitializeSchema();
+        if (!readOnly)
+        {
+            using var writer = new SqlSugarClient(new ConnectionConfig
+            {
+                ConnectionString = $"Data Source={databasePath};Pooling=False",
+                DbType = DbType.Sqlite,
+                IsAutoCloseConnection = true,
+                InitKeyType = InitKeyType.Attribute,
+            });
+            writer.Insertable(Enumerable.Range(1, 2).Select(id => new ObjectiveTestResultRecord
+            {
+                SN = "sameSN", ResultId = id, IsFinalized = true, TotalResult = true,
+                CreateTime = Day.AddHours(12).AddMinutes(id), UpdateTime = Day.AddHours(12).AddMinutes(id).AddSeconds(1),
+            }).ToArray()).ExecuteCommand();
+            writer.Insertable(Enumerable.Range(1, 2).Select(id => new ProjectARVRReuslt
+            {
+                SN = "sameSN", Model = "PG", CreateTime = Day.AddHours(12).AddMinutes(id),
+            }).ToArray()).ExecuteCommand();
+        }
+        using (var db = new SqliteConnection($"Data Source={databasePath};Pooling=False"))
+        {
+            db.Open();
+            if (readOnly)
+            {
+                Execute(db, """
+                    ALTER TABLE ObjectiveTestResultRecord ADD COLUMN ObjectiveTestResultJsonGzip BLOB;
+                    ALTER TABLE ARVRReuslt ADD COLUMN ViewResultJsonGzip BLOB;
+                    ALTER TABLE ARVRReuslt ADD COLUMN ProcessTypeFullName TEXT;
+                    ALTER TABLE ARVRReuslt ADD COLUMN ProcessConfigJson TEXT;
+                    """);
+                store = new ResultStatisticsDataStore(databasePath, readOnly: true);
+            }
+
+            using var command = db.CreateCommand();
+            command.CommandText = """
+                UPDATE ObjectiveTestResultRecord SET ObjectiveTestResultJsonGzip = CASE Id WHEN 1 THEN @summary ELSE X'01020304' END;
+                UPDATE ARVRReuslt SET ProcessTypeFullName = @type, ProcessConfigJson = @config,
+                    ViewResultJsonGzip = CASE Id WHEN 1 THEN @empty ELSE @flow END;
+                """;
+            command.Parameters.AddWithValue("@summary", readOnly ? Array.Empty<byte>() : Compress(summaryJson));
+            command.Parameters.AddWithValue("@type", snapshot.ProcessTypeFullName!);
+            command.Parameters.AddWithValue("@config", snapshot.ProcessConfigJson!);
+            command.Parameters.AddWithValue("@empty", Compress("{}"));
+            command.Parameters.AddWithValue("@flow", Compress(JsonConvert.SerializeObject(flow)));
+            command.ExecuteNonQuery();
+        }
+
+        string hash = Hash(databasePath);
+        string csvPath = Path.Combine(fixture.Root, "batch.csv");
+        var rows = store.QueryRecords(All).OrderBy(row => row.Id).ToArray();
+        Assert.Equal(2, store.ExportBatchCsv(rows, csvPath));
+        string[] lines = File.ReadAllLines(csvPath);
+        Assert.Equal(3, lines.Length);
+        Assert.EndsWith(",Optical_Center_OptCenterRotation", lines[0]);
+        Assert.EndsWith(",17", lines[1]);
+        Assert.EndsWith(",23", lines[2]);
+        if (readOnly)
+            Assert.Equal(hash, Hash(databasePath));
+
+        // If the flow has no usable metrics, the damaged summary is needed and the old CSV stays intact.
+        using (var db = new SqliteConnection($"Data Source={databasePath};Pooling=False"))
+        {
+            db.Open();
+            Execute(db, "UPDATE ARVRReuslt SET ProcessConfigJson = NULL WHERE Id = 2;");
+        }
+        Assert.Throws<InvalidDataException>(() => store.ExportBatchCsv(rows, csvPath));
+        Assert.Equal(lines, File.ReadAllLines(csvPath));
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void BatchCsvKeepsPreviousFileWhenLaterFlowHasCorruptGzip(bool configureLaterFlow)
+    {
+        using var fixture = new Files();
+        string databasePath = fixture.CreateProject("{}");
+        string processType = typeof(PoiDynamicProcess).FullName!;
+        const string config = """{"Name":"Screen"}""";
+        Assert.NotNull(ProjectARVRResultCsvExporter.CreateReaderForTransientPayloads(
+            [new ProjectARVRReuslt { ProcessTypeFullName = processType, ProcessConfigJson = config }]));
+        Assert.Null(ProjectARVRResultCsvExporter.CreateReaderForTransientPayloads(
+            [new ProjectARVRReuslt { ProcessTypeFullName = typeof(OpticCenterProcess).FullName, ProcessConfigJson = "{}" }]));
+        using (var db = new SqliteConnection($"Data Source={databasePath};Pooling=False"))
+        {
+            db.Open();
+            Execute(db, """
+                ALTER TABLE ARVRReuslt ADD COLUMN ViewResultJsonGzip BLOB;
+                ALTER TABLE ARVRReuslt ADD COLUMN ProcessTypeFullName TEXT;
+                ALTER TABLE ARVRReuslt ADD COLUMN ProcessConfigJson TEXT;
+                """);
+            using var command = db.CreateCommand();
+            command.CommandText = """
+                UPDATE ARVRReuslt SET ProcessTypeFullName = @type, ProcessConfigJson = @config, ViewResultJsonGzip = @payload WHERE Id = 1;
+                UPDATE ARVRReuslt SET ProcessTypeFullName = @laterType, ProcessConfigJson = @laterConfig, ViewResultJsonGzip = @damaged WHERE Id = 2;
+                """;
+            command.Parameters.AddWithValue("@type", processType);
+            command.Parameters.AddWithValue("@config", config);
+            command.Parameters.AddWithValue("@payload", Compress("""{"PoixyuvDatas":[{"Name":"P","Y":42}]}"""));
+            byte[] damaged = configureLaterFlow ? Compress("!" + new string(' ', 80 * 1024)) : [0, 1, 2, 3];
+            if (configureLaterFlow)
+                damaged[^8] ^= 0x80;
+            command.Parameters.AddWithValue("@laterType", configureLaterFlow ? processType : DBNull.Value);
+            command.Parameters.AddWithValue("@laterConfig", configureLaterFlow ? config : DBNull.Value);
+            command.Parameters.AddWithValue("@damaged", damaged);
+            command.ExecuteNonQuery();
+        }
+
+        string csvPath = Path.Combine(fixture.Root, "batch.csv");
+        byte[] original = Encoding.UTF8.GetBytes("previous export");
+        File.WriteAllBytes(csvPath, original);
+        var store = new ResultStatisticsDataStore(databasePath, readOnly: true);
+        var rows = store.QueryRecords(All).OrderBy(row => row.Id).ToArray();
+        Assert.Throws<InvalidDataException>(() => store.ExportBatchCsv(rows, csvPath));
+        Assert.Equal(original, File.ReadAllBytes(csvPath));
+        Assert.Empty(Directory.EnumerateFiles(fixture.Root, "*.arvrcsv.tmp"));
+    }
+
     [Fact]
     public void BatchCsvKeepsFirstMetricAfterMetadataOnlyRowsAndPreservesOldFileOnLaterCorruption()
     {
@@ -613,6 +753,8 @@ public sealed class OfflineDataSourceTests
         }
         public void Dispose()
         {
+            using var projectPool = new SqliteConnection($"Data Source={Path.Combine(Root, "ProjectARVRPro.db")};Default Timeout=5");
+            SqliteConnection.ClearPool(projectPool);
             // Only delete the unique directory created by this fixture.
             string parent = Path.GetFullPath(Path.Combine(Path.GetTempPath(), "ColorVision.OfflineTests")) + Path.DirectorySeparatorChar;
             if (Path.GetFullPath(Root).StartsWith(parent, StringComparison.OrdinalIgnoreCase)) Directory.Delete(Root, recursive: true);

@@ -23,22 +23,27 @@ namespace ProjectARVRPro
             ArgumentException.ThrowIfNullOrWhiteSpace(filePath);
 
             List<ObjectiveTestResultRecord> recordList = records.ToList();
-            AtomicCsvFile.Write(filePath, path =>
-                WriteCsv(recordList, index => flowResultsByRecordId.GetValueOrDefault(recordList[index].Id), path));
+            AtomicCsvFile.Write(filePath, path => WriteCsv(recordList,
+                index => new FlowRow(flowResultsByRecordId.GetValueOrDefault(recordList[index].Id), null, null), path));
         }
 
+        internal readonly record struct FlowRow(
+            IReadOnlyList<ProjectARVRReuslt>? Results,
+            ProjectARVRResultCsvExporter.FlowCsvReader? Reader,
+            ResultJsonPayloadStorage.BatchViewPayloads? Payloads);
+
         internal static void WriteCsv(
-            IReadOnlyList<ObjectiveTestResultRecord> recordList,
-            Func<int, IReadOnlyList<ProjectARVRReuslt>?> getFlowResults,
+            IReadOnlyList<ObjectiveTestResultRecord> records,
+            Func<int, FlowRow> getFlowRow,
             string filePath,
             Func<ObjectiveTestResultRecord, string?>? getFallbackSummary = null)
         {
-            var flowReader = new ProjectARVRResultCsvExporter.FlowCsvReader();
+            var fallbackReader = new ProjectARVRResultCsvExporter.FlowCsvReader();
             IReadOnlyList<ObjectiveTestResultMetric> columns = Array.Empty<ObjectiveTestResultMetric>();
             int headerSourceIndex = 0;
-            for (; headerSourceIndex < recordList.Count; headerSourceIndex++)
+            for (; headerSourceIndex < records.Count; headerSourceIndex++)
             {
-                columns = CollectMetrics(recordList[headerSourceIndex], getFlowResults(headerSourceIndex), flowReader, getFallbackSummary);
+                columns = CollectMetrics(records[headerSourceIndex], getFlowRow(headerSourceIndex), fallbackReader, getFallbackSummary);
                 if (columns.Count > 0)
                     break;
             }
@@ -48,9 +53,9 @@ namespace ProjectARVRPro
             WriteRow(writer, FixedHeaders.Concat(columns.Select(column => column.Header)));
 
             Dictionary<string, string>? values = null;
-            for (int index = 0; index < recordList.Count; index++)
+            for (int index = 0; index < records.Count; index++)
             {
-                ObjectiveTestResultRecord record = recordList[index];
+                ObjectiveTestResultRecord record = records[index];
                 var row = new List<string>(3 + columns.Count)
                 {
                     record.SN ?? string.Empty,
@@ -70,15 +75,7 @@ namespace ProjectARVRPro
                 {
                     values ??= new Dictionary<string, string>(columns.Count, StringComparer.OrdinalIgnoreCase);
                     values.Clear();
-
-                    if (getFlowResults(index) is { } flowResults)
-                        flowReader.CollectMetricValues(flowResults, values);
-                    if (values.Count == 0)
-                    {
-                        string? json = getFallbackSummary == null ? record.ObjectiveTestResultJson : getFallbackSummary(record);
-                        foreach (ObjectiveTestResultMetric metric in CollectSummaryMetrics(json))
-                            values.Add(metric.Key, metric.Value);
-                    }
+                    CollectMetricValues(record, getFlowRow(index), fallbackReader, getFallbackSummary, values);
                     foreach (ObjectiveTestResultMetric column in columns)
                         row.Add(values.TryGetValue(column.Key, out string? value) ? value : string.Empty);
                 }
@@ -89,23 +86,58 @@ namespace ProjectARVRPro
 
         private static IReadOnlyList<ObjectiveTestResultMetric> CollectMetrics(
             ObjectiveTestResultRecord record,
-            IReadOnlyList<ProjectARVRReuslt>? flowResults,
-            ProjectARVRResultCsvExporter.FlowCsvReader flowReader,
+            FlowRow flowRow,
+            ProjectARVRResultCsvExporter.FlowCsvReader fallbackReader,
             Func<ObjectiveTestResultRecord, string?>? getFallbackSummary)
         {
-            if (flowResults != null)
+            if (flowRow.Results is { } flowResults)
             {
-                IReadOnlyList<ObjectiveTestResultMetric> flowMetrics = flowReader.CollectMetrics(flowResults);
-                if (flowMetrics.Count > 0)
-                    return flowMetrics;
+                try
+                {
+                    flowRow.Payloads?.Decode(flowResults);
+                    IReadOnlyList<ObjectiveTestResultMetric> flowMetrics = (flowRow.Reader ?? fallbackReader).CollectMetrics(flowResults);
+                    if (flowMetrics.Count > 0)
+                        return flowMetrics;
+                }
+                finally
+                {
+                    flowRow.Payloads?.Release(flowResults);
+                }
             }
 
-            string? json = getFallbackSummary == null ? record.ObjectiveTestResultJson : getFallbackSummary(record);
-            return CollectSummaryMetrics(json);
+            return CollectSummaryMetrics(record, getFallbackSummary);
         }
 
-        private static IReadOnlyList<ObjectiveTestResultMetric> CollectSummaryMetrics(string? json)
+        private static void CollectMetricValues(
+            ObjectiveTestResultRecord record,
+            FlowRow flowRow,
+            ProjectARVRResultCsvExporter.FlowCsvReader fallbackReader,
+            Func<ObjectiveTestResultRecord, string?>? getFallbackSummary,
+            Dictionary<string, string> values)
         {
+            if (flowRow.Results is { } flowResults)
+            {
+                try
+                {
+                    flowRow.Payloads?.Decode(flowResults);
+                    (flowRow.Reader ?? fallbackReader).CollectMetricValues(flowResults, values);
+                    if (values.Count > 0)
+                        return;
+                }
+                finally
+                {
+                    flowRow.Payloads?.Release(flowResults);
+                }
+            }
+
+            foreach (ObjectiveTestResultMetric metric in CollectSummaryMetrics(record, getFallbackSummary))
+                values.Add(metric.Key, metric.Value);
+        }
+
+        private static IReadOnlyList<ObjectiveTestResultMetric> CollectSummaryMetrics(
+            ObjectiveTestResultRecord record, Func<ObjectiveTestResultRecord, string?>? getFallbackSummary)
+        {
+            string? json = getFallbackSummary == null ? record.ObjectiveTestResultJson : getFallbackSummary(record);
             if (string.IsNullOrWhiteSpace(json))
                 return Array.Empty<ObjectiveTestResultMetric>();
 

@@ -119,6 +119,29 @@ public sealed class ResultJsonPayloadStorageTests
     }
 
     [Fact]
+    public void BatchViewPayloadsReleaseSharedFlowJsonAfterItsLastGroup()
+    {
+        using var database = new TemporaryPayloadDatabase();
+        new ResultStatisticsDataStore(database.Path).InitializeSchema();
+        using SqlSugarClient db = database.CreateClient();
+        var shared = new ProjectARVRReuslt { SN = "shared" };
+        shared.Id = db.Insertable(shared).ExecuteReturnIdentity();
+        const string json = """{"result":"报告🧪"}""";
+        ResultJsonPayloadStorage.SaveViewResultJson(db, shared.Id, json);
+        var payloads = ResultJsonPayloadStorage.ReadBatchViewPayloads(db, [shared, shared], offline: null);
+
+        Assert.Null(shared.ViewResultJson);
+        payloads.Decode([shared]);
+        string first = Assert.IsType<string>(shared.ViewResultJson);
+        Assert.Equal(json, first);
+        payloads.Release([shared]);
+        payloads.Decode([shared]);
+        Assert.Same(first, shared.ViewResultJson);
+        payloads.Release([shared]);
+        Assert.Null(shared.ViewResultJson);
+    }
+
+    [Fact]
     public void NewSchemaContainsOnlyCompressedPayloadColumns()
     {
         using var database = new TemporaryPayloadDatabase();

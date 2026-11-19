@@ -1,6 +1,7 @@
 ﻿using ColorVision.Database;
 using ColorVision.Engine.FlowProcessing;
 using SqlSugar;
+using System.IO;
 
 namespace ProjectARVRPro
 {
@@ -119,5 +120,7 @@ namespace ProjectARVRPro
         /// </summary>
         [SugarColumn(IsIgnore = true)]
         public string? ViewResultJson { get; set; }
+
+        internal TextReader? CsvJsonReader { get; set; }
     }
 }

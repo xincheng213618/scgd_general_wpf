@@ -2,6 +2,7 @@ using Newtonsoft.Json;
 using ProjectARVRPro.Process;
 using System.Collections;
 using System.Globalization;
+using System.IO;
 using System.Reflection;
 
 namespace ProjectARVRPro;
@@ -50,6 +51,31 @@ public static class ObjectiveTestCsvRowCollector
             return Array.Empty<ObjectiveTestCsvRow>();
         }
 
+        return FromObject(result, testScreen);
+    }
+
+    internal static IReadOnlyList<ObjectiveTestCsvRow> FromReader<TResult>(TextReader text, string testScreen)
+        where TResult : class
+    {
+        if (JsonConvert.DefaultSettings != null)
+            return FromJson<TResult>(text.ReadToEnd(), testScreen);
+
+        using var json = new JsonTextReader(text) { CloseInput = false };
+        var serializer = JsonSerializer.Create();
+        serializer.CheckAdditionalContent = true;
+        TResult? result;
+        try
+        {
+            result = serializer.Deserialize<TResult>(json);
+        }
+        catch (JsonException)
+        {
+            result = null;
+        }
+
+        // A JSON error or early parser exit must still surface corruption in the compressed tail.
+        Span<char> buffer = stackalloc char[1024];
+        while (text.Read(buffer) > 0) { }
         return FromObject(result, testScreen);
     }
 

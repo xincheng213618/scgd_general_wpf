@@ -1128,7 +1128,9 @@ namespace ProjectARVRPro
 
             InitializeSchema();
             using SqlSugarClient db = CreateClient();
-            return QueryFlowDetailsForBatchExport(db, records);
+            var results = QueryFlowDetailsForBatchExport(db, records);
+            ResultJsonPayloadStorage.LoadViewResultJsons(db, results.Values.SelectMany(group => group), _readOnlyDatabase);
+            return results;
         }
 
         private IReadOnlyDictionary<int, IReadOnlyList<ProjectARVRReuslt>> QueryFlowDetailsForBatchExport(
@@ -1184,7 +1186,6 @@ namespace ProjectARVRPro
                 foreach (ProjectARVRReuslt result in Query<ProjectARVRReuslt>(db).Where(item => ids.Contains(item.Id)).ToList())
                     resultsById.Add(result.Id, result);
             }
-            ResultJsonPayloadStorage.LoadViewResultJsons(db, resultsById.Values, _readOnlyDatabase);
             return idsByRecord.ToDictionary(pair => pair.Key, pair => (IReadOnlyList<ProjectARVRReuslt>)pair.Value
                 .Where(resultsById.ContainsKey).Select(id => resultsById[id]).ToArray());
         }
@@ -1224,8 +1225,10 @@ namespace ProjectARVRPro
                     const int maxFlowBatchRows = 64;
                     const int flowQueryBatchSize = 500;
                     IReadOnlyDictionary<int, IReadOnlyList<ProjectARVRReuslt>>? flowResults = null;
+                    ProjectARVRResultCsvExporter.FlowCsvReader? flowReader = null;
+                    ResultJsonPayloadStorage.BatchViewPayloads? flowPayloads = null;
                     int firstFlowIndex = 0, nextFlowIndex = 0;
-                    IReadOnlyList<ProjectARVRReuslt>? GetFlowResults(int index)
+                    ObjectiveTestResultBatchCsvExporter.FlowRow GetFlowRow(int index)
                     {
                         if (index < firstFlowIndex || index >= nextFlowIndex)
                         {
@@ -1243,13 +1246,22 @@ namespace ProjectARVRPro
                                 end++;
                             }
 
+                            // Release prior payloads before loading the next group.
                             flowResults = null;
+                            flowReader = null;
+                            flowPayloads = null;
                             var chunk = new ArraySegment<ResultStatisticsRecordRow>(rows, index, end - index);
                             flowResults = QueryFlowDetailsForBatchExport(db, chunk);
+                            var flows = flowResults.Values.SelectMany(group => group);
+                            flowReader = ProjectARVRResultCsvExporter.CreateReaderForTransientPayloads(flows);
+                            if (flowReader != null)
+                                flowPayloads = ResultJsonPayloadStorage.ReadBatchViewPayloads(db, flows, _readOnlyDatabase);
+                            else
+                                ResultJsonPayloadStorage.LoadViewResultJsons(db, flows, _readOnlyDatabase);
                             firstFlowIndex = index;
                             nextFlowIndex = end;
                         }
-                        return flowResults!.GetValueOrDefault(rows[index].Id);
+                        return new ObjectiveTestResultBatchCsvExporter.FlowRow(flowResults!.GetValueOrDefault(rows[index].Id), flowReader, flowPayloads);
                     }
 
                     string? GetFallbackSummary(ObjectiveTestResultRecord record)
@@ -1260,7 +1272,7 @@ namespace ProjectARVRPro
                         return json;
                     }
 
-                    ObjectiveTestResultBatchCsvExporter.WriteCsv(records, GetFlowResults, stagingPath, GetFallbackSummary);
+                    ObjectiveTestResultBatchCsvExporter.WriteCsv(records, GetFlowRow, stagingPath, GetFallbackSummary);
                     db.Ado.CommitTran();
                     exportedCount = records.Length;
                 }

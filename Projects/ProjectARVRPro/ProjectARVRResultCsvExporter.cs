@@ -1,3 +1,4 @@
+using Newtonsoft.Json;
 using ProjectARVRPro.Process;
 using System.IO;
 
@@ -28,7 +29,27 @@ public static class ProjectARVRResultCsvExporter
     public static IReadOnlyList<ObjectiveTestResultMetric> CollectMetrics(IEnumerable<ProjectARVRReuslt> results)
         => new FlowCsvReader().CollectMetrics(results);
 
-    internal sealed class FlowCsvReader
+    internal static FlowCsvReader? CreateReaderForTransientPayloads(IEnumerable<ProjectARVRReuslt> results)
+    {
+        if (JsonConvert.DefaultSettings != null)
+            return null;
+
+        // Resolve against the same templates used to check whether an extractor only borrows the result.
+        IProcess[] templates = ProcessManager.GetInstance().Processes.ToArray();
+        var supportedTypes = new Dictionary<string, bool>(StringComparer.Ordinal);
+        foreach (IProcess template in templates)
+        {
+            Type type = template.GetType();
+            if (type.FullName is string name)
+                supportedTypes.TryAdd(name, ResultProcessResolver.IsReadOnlyCsvExtractor(type));
+        }
+
+        return results.All(result => string.IsNullOrWhiteSpace(result.ProcessTypeFullName)
+            || string.IsNullOrWhiteSpace(result.ProcessConfigJson) || supportedTypes.GetValueOrDefault(result.ProcessTypeFullName))
+            ? new FlowCsvReader(templates) : null;
+    }
+
+    internal sealed class FlowCsvReader(IProcess[]? templates = null)
     {
         private readonly Dictionary<(string ProcessType, string? ConfigJson), IProcess> snapshots = [];
 
@@ -37,25 +58,20 @@ public static class ProjectARVRResultCsvExporter
             ArgumentNullException.ThrowIfNull(results);
 
             ProcessManager processManager = ProcessManager.GetInstance();
+            IEnumerable<IProcess> processTemplates = templates ?? (IEnumerable<IProcess>)processManager.Processes;
             var rows = new List<ObjectiveTestCsvRow>();
             foreach (ProjectARVRReuslt result in results.OrderBy(item => item.Id))
             {
                 // Exact replay requires the process and config snapshots captured with the row.
                 // Older rows fall back to the aggregate ObjectiveTestResult exporter at the caller.
-                if (string.IsNullOrWhiteSpace(result.ViewResultJson) ||
+                if ((result.CsvJsonReader == null && string.IsNullOrWhiteSpace(result.ViewResultJson)) ||
                     string.IsNullOrWhiteSpace(result.ProcessTypeFullName) ||
                     string.IsNullOrWhiteSpace(result.ProcessConfigJson))
                     continue;
 
-                IProcess? process = ResultProcessResolver.Resolve(
-                    result,
-                    processManager.Processes,
-                    processManager.GetResultProcessMappings(),
-                    snapshots);
-                if (process == null)
-                    continue;
-
-                rows.AddRange(process.GetObjectiveCsvRows(result));
+                IProcess? process = ResultProcessResolver.Resolve(result, processTemplates, processManager.GetResultProcessMappings(), snapshots);
+                if (process != null)
+                    rows.AddRange(process.GetObjectiveCsvRows(result));
             }
 
             return rows;

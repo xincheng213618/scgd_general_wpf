@@ -7,11 +7,57 @@ using ProjectARVRPro.Process.OpticCenter;
 using ProjectARVRPro.Process.POI;
 using System.Globalization;
 using System.IO;
+using System.IO.Compression;
+using System.Text;
 
 namespace ProjectARVRPro.Tests;
 
 public sealed class ProjectARVRResultCsvExporterTests
 {
+    [Theory]
+    [InlineData(" /* comment */ // end", false, false, true)]
+    [InlineData(" null", false, false, false)]
+    [InlineData("", true, true, true)]
+    [InlineData("", true, false, false)]
+    public void GzipCsvParserMatchesStringParserForCommentsExtraContentAndBom(
+        string suffix, bool utf16, bool detectBom, bool hasMetrics)
+    {
+        const string json = """{"OptCenterRotation":{"Name":"OptCenterRotation","Value":1.25}}""";
+        byte[] bytes;
+        if (utf16)
+        {
+            using var output = new MemoryStream();
+            using (var gzip = new GZipStream(output, CompressionLevel.Optimal, leaveOpen: true))
+            {
+                gzip.Write(Encoding.Unicode.GetPreamble());
+                gzip.Write(Encoding.Unicode.GetBytes(json + suffix));
+            }
+            bytes = output.ToArray();
+        }
+        else
+        {
+            bytes = ResultJsonPayloadStorage.Compress("\uFEFF" + json + suffix)!;
+        }
+
+        var expected = ObjectiveTestCsvRowCollector.FromJson<OpticCenterTestResult>(
+            ResultJsonPayloadStorage.Decompress(bytes, detectBom), "Center");
+        using var text = ResultJsonPayloadStorage.OpenGzipText(bytes, detectBom);
+        var actual = ObjectiveTestCsvRowCollector.FromReader<OpticCenterTestResult>(text, "Center");
+        Assert.Equal(expected, actual);
+        Assert.Equal(hasMetrics, actual.Count > 0);
+    }
+
+    [Fact]
+    public void StreamingCsvChecksCorruptGzipTailEvenWhenJsonFailsFirst()
+    {
+        byte[] payload = ResultJsonPayloadStorage.Compress("!" + new string(' ', 80 * 1024))!;
+        payload[^8] ^= 0x80;
+
+        using var text = ResultJsonPayloadStorage.OpenGzipText(payload, false);
+        Assert.Throws<InvalidDataException>(() =>
+            ObjectiveTestCsvRowCollector.FromReader<OpticCenterTestResult>(text, "Center"));
+    }
+
     [Fact]
     public void CsvResolverReusesOnlySuccessfullyRestoredExactSnapshots()
     {
