@@ -51,13 +51,16 @@ public static class ProjectARVRResultCsvExporter
     }
 
     public static IReadOnlyList<ObjectiveTestResultMetric> CollectMetrics(IEnumerable<ProjectARVRReuslt> results)
+        => CollectMetrics(results, includeHeaders: true);
+
+    internal static IReadOnlyList<ObjectiveTestResultMetric> CollectMetrics(IEnumerable<ProjectARVRReuslt> results, bool includeHeaders)
     {
         var metrics = new List<ObjectiveTestResultMetric>();
         var keys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         foreach (ObjectiveTestCsvRow row in CollectRows(results))
         {
             if (keys.Add(row.MetricKey))
-                metrics.Add(new ObjectiveTestResultMetric(row.MetricKey, row.MetricHeader, row.MetricValue));
+                metrics.Add(new ObjectiveTestResultMetric(row.MetricKey, includeHeaders ? row.MetricHeader : string.Empty, row.MetricValue));
         }
         return metrics;
     }
