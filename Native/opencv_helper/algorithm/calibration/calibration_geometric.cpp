@@ -1835,8 +1835,7 @@ private:
                     if (!flipRows && row != 0 && row != height - 1 && column > 0 && column + blockPixels < width) {
                         const auto red = gr[column];
                         const auto blue = gb[column];
-                        if ((red == identity || blue == identity) && isUniform(gb + column, blue)
-                            && isUniform(gr + column, red)) {
+                        if (isUniform(gb + column, blue) && isUniform(gr + column, red)) {
                             const auto pixel = rowBase + column;
                             const auto* original = source + pixel * 3;
                             auto* out = outputRow + column * 3;
@@ -1846,7 +1845,7 @@ private:
                                         _mm_loadu_si128(reinterpret_cast<const __m128i*>(original + index)));
                                 }
                             }
-                            else {
+                            else if (red == identity || blue == identity) {
                                 const bool moveRed = red != identity;
                                 const auto* shifted = source + sourcePixel(moveRed ? red : blue, pixel, width) * 3;
                                 const auto firstMask = moveRed ? evenRed : evenBlue;
@@ -1862,6 +1861,25 @@ private:
                                     writeBlend(index, firstMask);
                                     writeBlend(index + 8, secondMask);
                                     writeBlend(index + 16, thirdMask);
+                                }
+                            }
+                            else {
+                                // The clamped source coordinates and constant
+                                // offsets keep each 32-pixel load run in one row.
+                                const auto* shiftedBlue = source + sourcePixel(blue, pixel, width) * 3;
+                                const auto* shiftedRed = source + sourcePixel(red, pixel, width) * 3;
+                                const auto writeBlend = [&](int index, __m128i blueMask, __m128i greenMask, __m128i redMask) {
+                                    const auto b = _mm_loadu_si128(reinterpret_cast<const __m128i*>(shiftedBlue + index));
+                                    const auto g = _mm_loadu_si128(reinterpret_cast<const __m128i*>(original + index));
+                                    const auto r = _mm_loadu_si128(reinterpret_cast<const __m128i*>(shiftedRed + index));
+                                    const auto corrected = _mm_or_si128(_mm_and_si128(b, blueMask),
+                                        _mm_or_si128(_mm_and_si128(g, greenMask), _mm_and_si128(r, redMask)));
+                                    _mm_stream_si128(reinterpret_cast<__m128i*>(out + index), corrected);
+                                };
+                                for (int index = 0; index < blockPixels * 3; index += 24) {
+                                    writeBlend(index, evenBlue, evenGreen, evenRed);
+                                    writeBlend(index + 8, evenGreen, evenRed, evenBlue);
+                                    writeBlend(index + 16, evenRed, evenBlue, evenGreen);
                                 }
                             }
                             continue;
