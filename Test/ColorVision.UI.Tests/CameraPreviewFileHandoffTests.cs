@@ -9,6 +9,7 @@ using ColorVision.FileIO;
 using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Realtime;
 using ColorVision.ImageEditor.Settings;
+using ColorVision.ImageEditor.Tif;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -184,7 +185,10 @@ public sealed class CameraPreviewFileHandoffTests : IDisposable
             held = true;
             WpfTestHost.Invoke(() =>
             {
-                Assert.Equal(raw, Pixels((BitmapSource)view.ViewBitmapSource));
+                var display = Assert.IsType<WriteableBitmap>(view.ViewBitmapSource);
+                Assert.NotSame(preview.Bitmap, display);
+                Assert.False(display.IsFrozen);
+                Assert.Equal(raw, Pixels(display));
                 Assert.True(string.IsNullOrEmpty(view.Config.FilePath));
                 if (withCie)
                 {
@@ -200,6 +204,32 @@ public sealed class CameraPreviewFileHandoffTests : IDisposable
                 }
                 else Assert.Null(Measurement);
             });
+            if (withCie)
+            {
+                var controller = WpfTestHost.Invoke(() =>
+                {
+                    var layers = Assert.IsType<CvRawLayerController>(typeof(ImageView)
+                        .GetField("_layerController", BindingFlags.NonPublic | BindingFlags.Instance)!.GetValue(view));
+                    Assert.Same(preview.Bitmap, typeof(CvRawLayerController)
+                        .GetField("_liveSource", BindingFlags.NonPublic | BindingFlags.Instance)!.GetValue(layers));
+                    var display = Assert.IsType<WriteableBitmap>(view.ViewBitmapSource);
+                    display.WritePixels(new Int32Rect(0, 0, 1, 1), new byte[] { 101 }, 1, 0);
+                    Assert.Equal(101, Pixels(display)[0]);
+                    return layers;
+                });
+                await WpfTestHost.Invoke(() => controller.SelectLayerAsync(controller.Layers.Single(layer => layer.Id == "cie-y")))
+                    .WaitAsync(TimeSpan.FromSeconds(10));
+                await WpfTestHost.Invoke(() => controller.SelectLayerAsync(controller.Layers.Single(layer => layer.Id == "composite")))
+                    .WaitAsync(TimeSpan.FromSeconds(10));
+                WpfTestHost.Invoke(() =>
+                {
+                    var restored = Assert.IsType<WriteableBitmap>(view.ViewBitmapSource);
+                    Assert.False(restored.IsFrozen);
+                    Assert.NotSame(preview.Bitmap, restored);
+                    Assert.Equal(raw, Pixels(restored));
+                    Assert.Same(opener, view.ImageContentCapability);
+                });
+            }
             gate.Release();
             held = false;
             await OpenAsync(late);
@@ -207,6 +237,46 @@ public sealed class CameraPreviewFileHandoffTests : IDisposable
             Assert.Equal(raw, Pixels(preview.Bitmap));
         }
         finally { if (held) gate.Release(); }
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void ReentrantCapturePublicationKeepsTheNewImageOwner(bool sameBitmap)
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            using LocalFlowFrame frame = LocalFlowFrame.Allocate(new LocalFrameMetadata
+            {
+                Width = 3, Height = 2, Channels = 1, SourceBpp = 8, Exposure = [10], PrimaryBufferKind = LocalFrameBufferKind.CvCie
+            }, 6, 6 * sizeof(float));
+            using (LocalFlowFrameLease lease = frame.Acquire())
+            {
+                Marshal.Copy(new byte[] { 51, 52, 53, 54, 55, 56 }, 0, lease.RawPointer, 6);
+                Marshal.Copy(new float[] { 1, 2, 3, 4, 5, 6 }, 0, lease.CiePointer, 6);
+            }
+            LocalCameraPreview preview = LocalCameraPreview.Create(frame);
+            var replacementParameters = new ColorVisionTiffParameters { Exposure = [99] };
+            WriteableBitmap? replacement = null;
+            void ReplaceImage(object? sender, ImageViewImageSourceLoadedEventArgs args)
+            {
+                view.ImageSourceLoaded -= ReplaceImage;
+                replacement = sameBitmap ? Assert.IsType<WriteableBitmap>(view.ViewBitmapSource)
+                    : new WriteableBitmap(3, 2, 96, 96, PixelFormats.Gray8, null);
+                view.OpenImage(replacement);
+                view.SetImageParameterRecord(replacementParameters);
+            }
+            view.ImageSourceLoaded += ReplaceImage;
+            try { preview.Show(view); }
+            finally { view.ImageSourceLoaded -= ReplaceImage; }
+
+            Assert.NotNull(replacement);
+            Assert.Same(replacement, view.ViewBitmapSource);
+            Assert.Same(replacementParameters, view.Document.ParameterRecord);
+            Assert.Null(view.ImageContentCapability);
+            Assert.Null(view.EditorContext.IImageOpen);
+            Assert.Null(Measurement);
+        });
     }
 
     [Fact]
@@ -651,8 +721,8 @@ public sealed class CameraPreviewFileHandoffTests : IDisposable
     public async Task LargeFrameDisplayCopyDrawsTheSamePixelsWithoutReplacingTheSource(int channels, int depth, bool expectsProxy, bool rgb24)
     {
         PixelFormat format = rgb24 ? PixelFormats.Rgb24 : RealtimeFramePresenter.GetPixelFormat(channels, depth);
-        // Exercise full vector groups and a tail on odd-width RGB inputs, and WIC gray quantization.
-        int width = rgb24 || depth == 16 ? 19 : 3;
+        // Exercise full vector groups and a tail on odd-width color inputs, and WIC gray quantization.
+        int width = channels == 3 || depth == 16 ? 19 : 3;
         int stride = RealtimeFramePresenter.GetDefaultStride(width, format) + 5;
         byte[] samples = Enumerable.Range(0, stride * 2).Select(i => (byte)(i * 11 + 1)).ToArray();
         WpfTestHost.Invoke(() =>
@@ -674,7 +744,13 @@ public sealed class CameraPreviewFileHandoffTests : IDisposable
             }
             BitmapSource proxy = Assert.IsAssignableFrom<BitmapSource>(view.ImageShow.ActiveRenderProxy);
             Assert.True(proxy.IsFrozen);
-            Assert.Equal(Pixels(new FormatConvertedBitmap(source, PixelFormats.Bgr32, null, 0)), Pixels(proxy));
+            byte[] copiedPixels = Pixels(proxy);
+            Assert.Equal(Pixels(new FormatConvertedBitmap(source, PixelFormats.Bgr32, null, 0)), copiedPixels);
+            if (channels == 3 && depth == 8)
+            {
+                for (int index = 3; index < copiedPixels.Length; index += 4)
+                    Assert.Equal(byte.MaxValue, copiedPixels[index]);
+            }
 
             // Another publication retires the copy even before the next render pass.
             WriteableBitmap other = new(3, 2, 96, 96, PixelFormats.Gray8, null);

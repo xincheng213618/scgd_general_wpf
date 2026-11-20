@@ -222,8 +222,6 @@ public sealed class LuxProtocolTests
         Assert.Equal(123, LuxDeviceMeasurements.ReadVid(new MsgReturn { EventName = "AutoFocus", Data = new { Position = 999, VidPosition = 123 } }));
         Assert.Equal(456, LuxDeviceMeasurements.ReadVid(new MsgReturn { EventName = "GetPosition", Data = JObject.Parse("{nPosition:999,VidPos:456}") }));
         Assert.Null(LuxDeviceMeasurements.ReadVid(new MsgReturn { EventName = "AutoFocus", Data = new { Position = 999 } }));
-        var local = new SpectumResultEntity { Id = 0, LuminousFlux = 789 };
-        Assert.Equal(789, LuxDeviceMeasurements.ReadLocalSpectrumModel(JObject.FromObject(new { Model = local }))!.LuminousFlux);
     }
 
     [Fact]
@@ -253,26 +251,35 @@ public sealed class LuxProtocolTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
-    public async Task FluxWaitsForRequiredOpenAndReturnsOnlyTheMeasurementReply(bool openLocal)
+    public async Task FluxWaitsForRequiredOpenAndReturnsOnlyTheMeasurementResult(bool openLocal)
     {
-        MsgRecord open = PendingCommand("Open"), measure = PendingCommand("GetData");
-        var measured = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        MsgRecord open = PendingCommand("Open");
+        var measurementStarted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var measurement = new TaskCompletionSource<(bool Succeeded, SpectumResultEntity? Result)>(TaskCreationOptions.RunContinuationsAsynchronously);
         var commands = new List<string>();
-        Task<MsgReturn?> pending = LuxDeviceMeasurements.RequestFluxMeasurementAsync(openLocal,
+        var pending = LuxDeviceMeasurements.RequestFluxMeasurementAsync(openLocal,
             () => { commands.Add("Open"); return open; },
-            () => { commands.Add("GetData"); measured.SetResult(); return measure; }, CancellationToken.None);
+            cancellation =>
+            {
+                commands.Add("GetData");
+                measurementStarted.SetResult();
+                return measurement.Task.WaitAsync(cancellation);
+            }, CancellationToken.None);
         if (openLocal)
         {
             Assert.Equal(["Open"], commands);
-            Assert.False(measured.Task.IsCompleted);
+            Assert.False(measurementStarted.Task.IsCompleted);
             Assert.False(pending.IsCompleted);
             CompleteCommand(open, MsgRecordState.Success);
         }
-        await measured.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        await measurementStarted.Task.WaitAsync(TimeSpan.FromSeconds(5));
         Assert.Equal(openLocal ? ["Open", "GetData"] : ["GetData"], commands);
         Assert.False(pending.IsCompleted);
-        CompleteCommand(measure, MsgRecordState.Success);
-        Assert.Same(measure.MsgReturn, await pending.WaitAsync(TimeSpan.FromSeconds(5)));
+        var captured = new SpectumResultEntity { LuminousFlux = 0 };
+        measurement.SetResult((true, captured));
+        var result = await pending.WaitAsync(TimeSpan.FromSeconds(5));
+        Assert.True(result.Succeeded);
+        Assert.Same(captured, result.Result);
     }
 
     [Theory]
@@ -281,10 +288,12 @@ public sealed class LuxProtocolTests
     public async Task FluxDoesNotMeasureWhenLocalOpenFails(MsgRecordState failure)
     {
         MsgRecord open = PendingCommand("Open");
-        Task<MsgReturn?> pending = LuxDeviceMeasurements.RequestFluxMeasurementAsync(true, () => open,
-            () => throw new InvalidOperationException("Measurement must not follow failed open."), CancellationToken.None);
+        var pending = LuxDeviceMeasurements.RequestFluxMeasurementAsync(true, () => open,
+            _ => throw new InvalidOperationException("Measurement must not follow failed open."), CancellationToken.None);
         CompleteCommand(open, failure);
-        Assert.Null(await pending.WaitAsync(TimeSpan.FromSeconds(5)));
+        var result = await pending.WaitAsync(TimeSpan.FromSeconds(5));
+        Assert.False(result.Succeeded);
+        Assert.Null(result.Result);
     }
 
     [Theory]
@@ -296,9 +305,9 @@ public sealed class LuxProtocolTests
         using var cancellation = new CancellationTokenSource();
         int openCalls = 0, measurements = 0;
         if (canceledBeforeOpen) cancellation.Cancel();
-        Task<MsgReturn?> pending = LuxDeviceMeasurements.RequestFluxMeasurementAsync(true,
+        var pending = LuxDeviceMeasurements.RequestFluxMeasurementAsync(true,
             () => { openCalls++; return open; },
-            () => { measurements++; return PendingCommand("GetData"); }, cancellation.Token);
+            _ => { measurements++; return Task.FromResult<(bool, SpectumResultEntity?)>((false, null)); }, cancellation.Token);
         cancellation.Cancel();
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() => pending.WaitAsync(TimeSpan.FromSeconds(5)));
         CompleteCommand(open, MsgRecordState.Success);

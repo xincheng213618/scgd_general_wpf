@@ -1,4 +1,6 @@
+using ColorVision.Database;
 using ColorVision.Engine;
+using ColorVision.Engine.FlowProcessing;
 using ColorVision.Engine.Services;
 using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.Services.Devices.Camera.Local;
@@ -26,6 +28,36 @@ namespace ColorVision.UI.Tests;
 
 public sealed class LvCameraLocalForwardingTests
 {
+    [Fact]
+    public void ForwardedCameraKeepsItsBoundDatabaseThroughCaptureAndPublication() => StaTest.Run(() =>
+    {
+        using var scope = new CaptureScope(localOpen: true, preferLocal: true);
+        var action = new CVStartCFC("bound-camera");
+        using var resources = action.RuntimeResources;
+        MySqlConnectedEndpoint? active = null;
+        var first = new MySqlConnectedEndpoint(endpoint => ReferenceEquals(active, endpoint),
+            () => throw new InvalidOperationException("No database client is needed by the fake capture."));
+        var second = new MySqlConnectedEndpoint(endpoint => ReferenceEquals(active, endpoint),
+            () => throw new InvalidOperationException("No database client is needed by the fake capture."));
+        active = first;
+        scope.Camera.ResultDatabaseEndpoint = first;
+        new FlowMeasurementBatch(action.SerialNumber, 55, "offline-test", System.Diagnostics.Stopwatch.GetTimestamp(), first).Bind(resources);
+        var request = new CVMQTTRequest
+        {
+            SerialNumber = action.SerialNumber, DeviceCode = scope.Camera.Code, DeviceNodeCode = "camera-node", EventName = "GetData",
+            Data = new CameraData(CVImageFlipMode.None, false, 0, 0, 1, 1, [10], "")
+        };
+        using FlowLocalExecution execution = scope.CreateExecution(request, CVFileSaveMode.MemoryOnly)!;
+        execution.Bind(action);
+        execution.Execute();
+        active = second;
+        scope.Camera.ResultDatabaseEndpoint = second;
+        Assert.Equal(101, (int)JObject.FromObject(execution.Complete(action))["MasterId"]!);
+        Assert.False(first.IsCurrent);
+        Assert.Same(first, Assert.Single(scope.Services.SavedEndpoints));
+        Assert.Same(first, Assert.Single(scope.Services.PublishedEndpoints));
+    });
+
     [Theory]
     [InlineData(CVFileSaveMode.Synchronous)]
     [InlineData(CVFileSaveMode.MemoryOnly)]
@@ -668,6 +700,8 @@ public sealed class LvCameraLocalForwardingTests
         public List<LocalFlowFrame> Frames { get; } = [];
         public List<(string SerialNumber, int ZIndex)> Saved { get; } = [];
         public List<string> PublishedNodeIds { get; } = [];
+        public List<MySqlConnectedEndpoint?> SavedEndpoints { get; } = [];
+        public List<MySqlConnectedEndpoint?> PublishedEndpoints { get; } = [];
         public LocalCameraCaptureResult Capture(LocalCameraCaptureRequest request)
         {
             Requests.Add(request);
@@ -686,20 +720,23 @@ public sealed class LvCameraLocalForwardingTests
             Frames.Add(frame);
             return new LocalCameraCaptureResult { Frame = frame };
         }
-        public MeasureResultImgModel Save(CVStartCFC action, int zIndex, LocalCameraCaptureRequest request, LocalCameraCaptureResult capture)
+        public MeasureResultImgModel Save(CVStartCFC action, int zIndex, LocalCameraCaptureRequest request, LocalCameraCaptureResult capture, MySqlConnectedEndpoint? endpoint)
         {
             string path = capture.Frame.CvRawFilePath;
             Assert.True(CVFileUtil.Read(path, out CVCIEFile raw));
             using (raw) Assert.Equal(11, raw.Data[0]);
             if (FailSave) throw new InvalidOperationException("save failed");
             Saved.Add((action.SerialNumber, zIndex));
-            if (!action.PersistResults) return localServices.Save(action, zIndex, request, capture);
+            SavedEndpoints.Add(endpoint);
+            if (!action.PersistResults) return localServices.Save(action, zIndex, request, capture, endpoint);
             return new MeasureResultImgModel { Id = 100 + Saved.Count, ZIndex = zIndex, BatchId = 55 };
         }
-        public void Publish(CVStartCFC action, string nodeId, int zIndex, LocalCameraCaptureRequest request, LocalCameraCaptureResult capture, MeasureResultImgModel model)
+        public void Publish(CVStartCFC action, string nodeId, int zIndex, LocalCameraCaptureRequest request, LocalCameraCaptureResult capture,
+            MeasureResultImgModel model, MySqlConnectedEndpoint? endpoint)
         {
-            if (!action.PersistResults) localServices.Publish(action, nodeId, zIndex, request, capture, model);
+            if (!action.PersistResults) localServices.Publish(action, nodeId, zIndex, request, capture, model, endpoint);
             PublishedNodeIds.Add(nodeId);
+            PublishedEndpoints.Add(endpoint);
         }
     }
 }

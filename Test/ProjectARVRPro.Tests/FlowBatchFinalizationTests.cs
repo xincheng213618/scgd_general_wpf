@@ -1,10 +1,68 @@
+using ColorVision.Engine;
+using ColorVision.Engine.FlowProcessing;
+using SqlSugar;
 using System.ComponentModel;
+using System.IO;
 using System.Windows.Threading;
 
 namespace ProjectARVRPro.Tests;
 
 public sealed class FlowBatchFinalizationTests
 {
+    [Fact]
+    public async Task DeferredBatchOutcomeUsesTheOriginalDatabaseAndPreservesArchiveStatus()
+    {
+        DirectoryInfo directory = Directory.CreateTempSubdirectory("ARVR-batch-database-");
+        try
+        {
+            ConnectionConfig original = Database("original.db");
+            ConnectionConfig replacement = Database("replacement.db");
+            int id = Seed(original, "original");
+            Assert.Equal(id, Seed(replacement, "replacement"));
+            var batch = new MeasureBatchModel { Id = id, Code = "original", FlowStatus = FlowStatus.Completed, TotalTime = 75, Result = "original outcome" };
+            var receipt = new ArvrFlowBatchReceipt(batch, () => new SqlSugarClient(original));
+            var finalization = new FlowBatchFinalization();
+            await finalization.RunAsync(receipt.WriteOutcome);
+
+            MeasureBatchModel updated = Read(original, id);
+            Assert.Equal(("original", "original outcome", FlowStatus.Completed, ArchiveStatus.Archived, 75),
+                (updated.Code, updated.Result, updated.FlowStatus, updated.ArchiveStatus, updated.TotalTime));
+            MeasureBatchModel untouched = Read(replacement, id);
+            Assert.Equal(("replacement", "replacement", FlowStatus.Ready), (untouched.Code, untouched.Result, untouched.FlowStatus));
+
+            var mismatchedReceipt = new ArvrFlowBatchReceipt(batch, () => new SqlSugarClient(replacement));
+            await Assert.ThrowsAsync<InvalidOperationException>(() => finalization.RunAsync(mismatchedReceipt.WriteOutcome));
+            untouched = Read(replacement, id);
+            Assert.Equal(("replacement", "replacement", FlowStatus.Ready), (untouched.Code, untouched.Result, untouched.FlowStatus));
+
+            ConnectionConfig Database(string name) => new()
+            {
+                DbType = DbType.Sqlite,
+                ConnectionString = $"Data Source={Path.Combine(directory.FullName, name)};Pooling=False",
+                InitKeyType = InitKeyType.Attribute,
+                IsAutoCloseConnection = true,
+            };
+        }
+        finally
+        {
+            foreach (FileInfo file in directory.EnumerateFiles()) file.Delete();
+            directory.Delete();
+        }
+
+        static int Seed(ConnectionConfig connection, string code)
+        {
+            using var db = new SqlSugarClient(connection);
+            db.CodeFirst.InitTables<MeasureBatchModel>();
+            return db.Insertable(new MeasureBatchModel { Code = code, Result = code, ArchiveStatus = ArchiveStatus.Archived }).ExecuteReturnIdentity();
+        }
+
+        static MeasureBatchModel Read(ConnectionConfig connection, int id)
+        {
+            using var db = new SqlSugarClient(connection);
+            return Assert.IsType<MeasureBatchModel>(db.Queryable<MeasureBatchModel>().First(batch => batch.Id == id));
+        }
+    }
+
     [Fact]
     public Task DispatcherCanRespondAndDrainThePendingWriteBeforeResumingFinalization() =>
         ArvrDrawingOverlayCompatibilityTests.RunAsyncOnStaThread(async () =>

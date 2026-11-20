@@ -24,10 +24,14 @@ namespace ProjectARVRPro.Process.DemuraAOI
             ".bmp", ".jpg", ".jpeg", ".png", ".tif", ".tiff"
         };
 
-        public static Task<DemuraAoiParseResult> ParseAsync(int batchId, DemuraAoiProcessConfig config, CancellationToken cancellationToken = default)
+        public static Task<DemuraAoiParseResult> ParseAsync(int batchId, DemuraAoiProcessConfig config, CancellationToken cancellationToken = default) =>
+            ParseAsync(batchId, config, null, cancellationToken);
+
+        internal static Task<DemuraAoiParseResult> ParseAsync(int batchId, DemuraAoiProcessConfig config,
+            Func<SqlSugarClient>? openBatchDatabase, CancellationToken cancellationToken = default)
         {
             ArgumentNullException.ThrowIfNull(config);
-            return Task.Run(() => Parse(batchId, config, cancellationToken), cancellationToken);
+            return Task.Run(() => Parse(batchId, config, openBatchDatabase, cancellationToken), cancellationToken);
         }
 
         public static DemuraAoiSensorData? ParseSensorResult(int resultId, string? json)
@@ -45,7 +49,8 @@ namespace ProjectARVRPro.Process.DemuraAOI
             };
         }
 
-        private static DemuraAoiParseResult Parse(int batchId, DemuraAoiProcessConfig config, CancellationToken cancellationToken)
+        private static DemuraAoiParseResult Parse(int batchId, DemuraAoiProcessConfig config, Func<SqlSugarClient>? openBatchDatabase,
+            CancellationToken cancellationToken)
         {
             var result = new DemuraAoiParseResult { BatchId = batchId };
             if (batchId <= 0)
@@ -53,7 +58,7 @@ namespace ProjectARVRPro.Process.DemuraAOI
                 result.DataErrors.Add("批次ID无效，无法解析Demura AOI结果。");
                 return result;
             }
-            if (!MySqlControl.GetInstance().IsConnect)
+            if (openBatchDatabase == null && !MySqlControl.GetInstance().IsConnect)
             {
                 result.DataErrors.Add("数据库未连接，无法解析Demura AOI结果。");
                 return result;
@@ -62,12 +67,12 @@ namespace ProjectARVRPro.Process.DemuraAOI
             try
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                using var db = new SqlSugarClient(new ConnectionConfig
+                using var db = openBatchDatabase == null ? new SqlSugarClient(new ConnectionConfig
                 {
                     ConnectionString = MySqlControl.GetConnectionString(),
                     DbType = DbType.MySql,
                     IsAutoCloseConnection = true
-                });
+                }) : openBatchDatabase();
 
                 List<AlgResultMasterModel> masters = db.Queryable<AlgResultMasterModel>()
                     .Where(master => master.BatchId == batchId)

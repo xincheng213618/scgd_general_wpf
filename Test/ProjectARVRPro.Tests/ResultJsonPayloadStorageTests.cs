@@ -1,3 +1,4 @@
+using ColorVision.Engine;
 using Microsoft.Data.Sqlite;
 using SqlSugar;
 using System.IO;
@@ -8,6 +9,41 @@ namespace ProjectARVRPro.Tests;
 
 public sealed class ResultJsonPayloadStorageTests
 {
+    [Fact]
+    public async Task DeleteSelectedStepChecksItsSnapshotAndOnlyDeletesTheLocalResult()
+    {
+        using var database = new TemporaryPayloadDatabase();
+        using var manager = new ViewResultManager(database.Path, new ViewResultManagerConfig());
+        const string json = "{\"status\":\"original\"}";
+        var selected = new ProjectARVRReuslt { SN = "test-run", Code = "same-code", Model = "selected", BatchId = 88, ViewResultJson = json };
+        var neighbor = new ProjectARVRReuslt { SN = selected.SN, Code = selected.Code, Model = "neighbor", BatchId = 88, ViewResultJson = json };
+        manager.Save(selected);
+        manager.Save(neighbor);
+        int objectiveId = manager.SaveObjectiveTestResult(0, neighbor, new ObjectiveTestResult());
+        using (var db = database.CreateClient())
+        {
+            db.CodeFirst.InitTables<MeasureBatchModel>();
+            Assert.Equal(selected.Id, db.Insertable(new MeasureBatchModel { Code = "same-numeric-id" }).ExecuteReturnIdentity());
+        }
+
+        ArvrResultIdentity selection = ArvrResultIdentity.From(selected);
+        Assert.False(manager.DeleteResult(selection with { CreateTime = selection.CreateTime.AddMinutes(-1) }));
+        Assert.Contains(selected, manager.ViewResluts);
+        Assert.True(manager.DeleteResult(selection));
+        Assert.DoesNotContain(selected, manager.ViewResluts);
+        Assert.False(manager.DeleteResult(selection));
+
+        manager.LoadAll();
+        Assert.Equal(neighbor.Id, Assert.Single(manager.ViewResluts).Id);
+        Assert.Null(await manager.ReadHistoricalViewResultJsonAsync(selected.Id, default));
+        Assert.Equal(json, await manager.ReadHistoricalViewResultJsonAsync(neighbor.Id, default));
+        using (var db = database.CreateClient())
+        {
+            Assert.Equal("same-numeric-id", db.Queryable<MeasureBatchModel>().First(r => r.Id == selected.Id).Code);
+            Assert.Equal(objectiveId, Assert.Single(db.Queryable<ObjectiveTestResultRecord>().ToList()).Id);
+        }
+    }
+
     [Fact]
     public async Task HistoricalSelectionReadsCommittedPayloadsAndRecoversAfterCancellationOrCorruption()
     {
@@ -348,7 +384,7 @@ public sealed class ResultJsonPayloadStorageTests
         Assert.Equal("ok", database.ExecuteScalarString("PRAGMA quick_check;"));
     }
 
-    private sealed class TemporaryPayloadDatabase : IDisposable
+    internal sealed class TemporaryPayloadDatabase : IDisposable
     {
         private readonly string _directory;
 

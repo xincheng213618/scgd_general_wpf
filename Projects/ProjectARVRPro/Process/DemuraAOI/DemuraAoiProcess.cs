@@ -16,7 +16,7 @@ namespace ProjectARVRPro.Process.DemuraAOI
             try
             {
                 SetPreviewFile(ctx);
-                DemuraAoiParseResult parseResult = await DemuraAoiParser.ParseAsync(ctx.Batch.Id, Config).ConfigureAwait(false);
+                DemuraAoiParseResult parseResult = await DemuraAoiParser.ParseAsync(ctx.Batch.Id, Config, ctx.ScopedDatabaseReader).ConfigureAwait(false);
                 DemuraAoiRecipeConfig recipe = Config.RecipeConfig;
                 DemuraAoiEvaluationResult evaluation = DemuraAoiEvaluator.Evaluate(parseResult, recipe);
 

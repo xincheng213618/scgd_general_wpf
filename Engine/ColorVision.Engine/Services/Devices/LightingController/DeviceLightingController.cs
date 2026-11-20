@@ -24,8 +24,8 @@ namespace ColorVision.Engine.Services.Devices.LightingController
                     Owner = Application.Current.GetActiveWindow(),
                     WindowStartupLocation = WindowStartupLocation.CenterOwner,
                 };
-                ProtectConfigurationEditor(window);
-                window.Submitted += (_, _) => TryCommitConfiguration(window);
+                var target = ProtectConfigurationEditor(window);
+                window.Submitted += (_, _) => TryCommitConfiguration(window, expectedTarget: target);
                 window.ShowDialog();
             }, _ => CanConfigure);
         }

@@ -233,12 +233,18 @@ namespace ColorVision.Engine.Media
             => RenderFloatChannel(new FloatChannelInput(default, plane), width, height, bpp, token);
 
         private static WriteableBitmap RenderFloatChannel(FloatChannelInput source, int width, int height, int bpp, CancellationToken token)
-            => bpp == 32 ? RenderFloatChannel<float>(source, width, height, token) : RenderFloatChannel<double>(source, width, height, token);
+            => CreateFrozenDisplayBitmap(width, height, PixelFormats.Gray8, PrepareFloatChannelWriter(source, width, height, bpp, token), token);
+
+        internal static Action<IntPtr, int> PrepareFloatChannelWriter(CvcieDiskPixels plane, int width, int height, int bpp, CancellationToken token)
+            => PrepareFloatChannelWriter(new FloatChannelInput(default, plane), width, height, bpp, token);
+
+        private static Action<IntPtr, int> PrepareFloatChannelWriter(FloatChannelInput source, int width, int height, int bpp, CancellationToken token)
+            => bpp == 32 ? PrepareFloatChannelWriter<float>(source, width, height, token) : PrepareFloatChannelWriter<double>(source, width, height, token);
 
         private const int FloatChannelChunkSize = 65536;
         private readonly record struct FloatChannelInput(ReadOnlyMemory<byte> Samples, CvcieDiskPixels? File);
 
-        private static WriteableBitmap RenderFloatChannel<T>(FloatChannelInput source, int width, int height,
+        private static Action<IntPtr, int> PrepareFloatChannelWriter<T>(FloatChannelInput source, int width, int height,
             CancellationToken cancellationToken)
             where T : unmanaged, System.Numerics.IFloatingPointIeee754<T>
         {
@@ -266,9 +272,8 @@ namespace ColorVision.Engine.Media
                 minimum /= magnitude;
                 range = maximum / magnitude - minimum;
             }
-            return CreateFrozenDisplayBitmap(width, height, PixelFormats.Gray8, (buffer, stride) =>
-                RunFloatChannelChunks(chunkCount, pixelCount, workers, cancellationToken,
-                    chunk => WriteFloatChannelChunk<T>(source, pixelCount, buffer, width, stride, chunk, minimum, range, magnitude, cancellationToken)), cancellationToken);
+            return (buffer, stride) => RunFloatChannelChunks(chunkCount, pixelCount, workers, cancellationToken,
+                chunk => WriteFloatChannelChunk<T>(source, pixelCount, buffer, width, stride, chunk, minimum, range, magnitude, cancellationToken));
         }
 
         internal static WriteableBitmap CreateFrozenDisplayBitmap(int width, int height, PixelFormat format,
@@ -424,16 +429,41 @@ namespace ColorVision.Engine.Media
             => EditableBitmapCopy.CreateAsync(source.Cols, source.Rows, 96, 96, format, null,
                 (buffer, stride) => CopyDisplayPixels(source, buffer, stride), cancellationToken);
 
-        internal const int RawRgb48StagingBytes = 4 * 1024 * 1024;
+        internal const int RawDisplayStagingBytes = 4 * 1024 * 1024;
 
-        internal static Task<WriteableBitmap> PrepareRawRgb48DisplayAsync(CvcieDiskPixels pixels, int width, int height, CancellationToken token)
-            => EditableBitmapCopy.CreateAsync(width, height, 96, 96, PixelFormats.Rgb48, null,
-                (buffer, stride) => CopyRawRgb48Pixels(pixels, width, height, buffer, stride, token), token);
+        internal delegate void RawDisplayReader(Span<byte> destination, long offset, CancellationToken token);
 
-        private static unsafe void CopyRawRgb48Pixels(CvcieDiskPixels pixels, int width, int height, IntPtr buffer, int stride, CancellationToken token)
+        internal static Task<WriteableBitmap> PrepareRawDisplayAsync(RawDisplayReader readPixels, int width, int height, PixelFormat format, CancellationToken token)
+            => EditableBitmapCopy.CreateAsync(width, height, 96, 96, format, null,
+                (buffer, stride) => CopyRawDisplayPixels(readPixels, width, height, format, buffer, stride, token), token);
+
+        internal static unsafe void CopyPackedRawToLockedBitmap(ReadOnlySpan<byte> pixels, WriteableBitmap bitmap)
         {
-            int sourceStride = checked(width * 3 * sizeof(ushort));
-            int rowsPerBlock = Math.Max(1, Math.Min(height, RawRgb48StagingBytes / sourceStride));
+            int stride = bitmap.BackBufferStride;
+            var destination = new Span<byte>(bitmap.BackBuffer.ToPointer(), checked(stride * bitmap.PixelHeight));
+            EditableBitmapCopy.CopyPackedRows(pixels, destination, bitmap.PixelWidth, bitmap.PixelHeight,
+                bitmap.Format.BitsPerPixel / 8, stride, swapRedBlue16: bitmap.Format == PixelFormats.Rgb48);
+        }
+
+        private static unsafe void CopyRawDisplayPixels(RawDisplayReader readPixels, int width, int height, PixelFormat format, IntPtr buffer, int stride, CancellationToken token)
+        {
+            int sourceStride = checked(width * (format.BitsPerPixel / 8));
+            int rowsPerBlock = Math.Max(1, Math.Min(height, RawDisplayStagingBytes / sourceStride));
+            byte* target = (byte*)buffer;
+            if (format != PixelFormats.Rgb48 && stride == sourceStride)
+            {
+                // Matching grayscale and BGR24 rows can be read directly into the unpublished bitmap.
+                for (int top = 0; top < height; top += rowsPerBlock)
+                {
+                    token.ThrowIfCancellationRequested();
+                    int length = Math.Min(rowsPerBlock, height - top) * sourceStride;
+                    long offset = (long)top * sourceStride;
+                    readPixels(new Span<byte>(target + offset, length), offset, token);
+                }
+                return;
+            }
+
+            MatType type = format == PixelFormats.Rgb48 ? MatType.CV_16UC3 : format.GetPixelFormat();
             byte[] staging = ArrayPool<byte>.Shared.Rent(checked(rowsPerBlock * sourceStride));
             try
             {
@@ -441,11 +471,12 @@ namespace ColorVision.Engine.Media
                 {
                     for (int top = 0; top < height;)
                     {
-                        int rows = Math.Min(rowsPerBlock, height - top);
-                        pixels.ReadExactly(staging.AsSpan(0, rows * sourceStride), (long)top * sourceStride, token);
                         token.ThrowIfCancellationRequested();
-                        using var block = Mat.FromPixelData(rows, width, MatType.CV_16UC3, (IntPtr)source, sourceStride);
-                        CopyDisplayPixels(block, (IntPtr)((byte*)buffer + (long)top * stride), stride);
+                        int rows = Math.Min(rowsPerBlock, height - top);
+                        readPixels(staging.AsSpan(0, rows * sourceStride), (long)top * sourceStride, token);
+                        token.ThrowIfCancellationRequested();
+                        using var block = Mat.FromPixelData(rows, width, type, (IntPtr)source, sourceStride);
+                        CopyDisplayPixels(block, (IntPtr)(target + (long)top * stride), stride);
                         top += rows;
                     }
                 }

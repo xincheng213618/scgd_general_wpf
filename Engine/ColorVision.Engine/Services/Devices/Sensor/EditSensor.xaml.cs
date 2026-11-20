@@ -14,6 +14,8 @@ namespace ColorVision.Engine.Services.Devices.Sensor;
 
 public partial class EditSensor : Window
 {
+    private readonly DeviceConfigurationTarget openingTarget;
+    internal DeviceConfigurationTarget OpeningConfigurationTarget => openingTarget;
     public DeviceSensor Device { get; }
     public SensorConfigurationDraft Draft { get; }
     public ConfigSensor EditConfig => Draft.Config;
@@ -21,6 +23,7 @@ public partial class EditSensor : Window
     public EditSensor(DeviceSensor device)
     {
         Device = device;
+        openingTarget = device.CaptureConfigurationTarget();
         Draft = new SensorConfigurationDraft(device.Config, device.DisplayConfig);
         InitializeComponent();
         this.ApplyCaption();
@@ -63,6 +66,7 @@ public partial class EditSensor : Window
     private void Ok_Click(object sender, RoutedEventArgs e)
     {
         Keyboard.ClearFocus();
+        if (!Device.TryAdmitConfigurationEdit(openingTarget, this)) return;
         if (ComboBoxSensor.SelectedValue is string code)
             EditConfig.Category = code;
         if (!Draft.TryApply(Device.Config, Device.DisplayConfig, out string error))

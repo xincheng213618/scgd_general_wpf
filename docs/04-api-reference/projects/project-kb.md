@@ -33,9 +33,11 @@ related: ["projects.index","projects.capabilities"]
 
 ## 运行链路
 
-`ProjectKBWindow` 初始化 FlowEngine；选择 Flow 模板时，用模板名调用 `RecipeManager.SetCurrentTemplate(Name)`。`AutoModbusConnect` 打开时，窗口启动后连接 Modbus 并订阅 `StatusChanged`。PLC 把寄存器写为 `1` 后触发 `RunTemplate()`；SN 为空且启用 `IgnoreAutoRunWhenSnEmpty` 时，本次自动触发会被忽略并写回 `0`。Flow 完成后 `Processing()` 读取 `KB`/`KB_Raw` 和 `POI_Y`/`POI_Y_V2`，计算每个按键亮度、局部对比度、均匀性和不良点，保存数据库、txt、summary、CSV，最后 Modbus 写回 `0`，必要时调用 MES `Collect_test`。
+`ProjectKBWindow` 初始化 FlowEngine；选择 Flow 模板时，用模板名调用 `RecipeManager.SetCurrentTemplate(Name)`。`AutoModbusConnect` 打开时，窗口启动后连接 Modbus 并订阅 `StatusChanged`。PLC 把寄存器写为 `1` 后触发 `RunTemplate()`；SN 为空且启用 `IgnoreAutoRunWhenSnEmpty` 时，本次自动触发会被忽略并写回 `0`。Flow 完成后 `ProcessResultAsync()` 读取 `KB`/`KB_Raw` 和 `POI_Y`/`POI_Y_V2`，计算每个按键亮度、局部对比度、均匀性和不良点，保存数据库、txt、summary、CSV，按条件调用 MES `Collect_test`，然后请求 Modbus 写回 `0`。
 
-产品 SN 保留原值用于结果、文本内容和 MES；生成测试记录 txt 与生产汇总 txt 的文件名时，使用公共 Windows 文件名规范化规则处理非法字符。执行流程的 `Code` 继续使用独立时间戳，并与 MySQL 批次、诊断记录和完成回调保持一致。
+项目在创建原始批次时捕获数据库。支持批次绑定的宿主会把原批次交给流程启动，回写时按批次 ID 和流程编号匹配，只更新状态、耗时及流程结果。算法主记录、键位模板、POI 和失败预览图也从原批次所在的库读取。后处理遇到原批次缺失或连接失败时保存失败结果。旧宿主沿用其可用的流程启动接口，项目自身仍按建批时捕获的数据库读写。
+
+流程启动时固定产品 SN，批次、结果、导出和 MES 都使用这个原值。结果处理中录入的下一个不同 SN 会保留在输入框。生成测试记录 txt 与生产汇总 txt 的文件名时，使用公共 Windows 文件名规范化规则处理非法字符。执行流程的 `Code` 继续使用独立时间戳，并与 MySQL 批次、诊断记录和完成回调保持一致。
 
 ## 界面主题
 
@@ -51,17 +53,21 @@ related: ["projects.index","projects.capabilities"]
 | MES DLL | 固定从 `Plugins/ProjectKB/FunTestDll.dll` P/Invoke |
 | TCP Socket | 状态栏提供配置入口，当前尚未接入检测启动链 |
 
-寄存器 `0` 不是检测成功标志：空 SN 触发被忽略时会请求回写，正常 `Processing()` 到达回写分支时也会请求回写；异常或提前返回可能未到达该分支。窗口不等待 `SetRegisterValue(0)` 的异步结果，需分别检查 PLC 实际值和本次检测结果。
+寄存器 `0` 不是检测成功标志：空 SN 触发被忽略时会请求回写，正常 `ProcessResultAsync()` 到达回写分支时也会请求回写；异常或提前返回可能未到达该分支。窗口不等待 `SetRegisterValue(0)` 的异步结果，需分别检查 PLC 实际值和本次检测结果。
 
 状态栏“Socket”由 `OpenSocketConfigCommand` 打开管理员配置编辑器，只编辑 `SocketConfig`。当前 ProjectKB 初始化和主窗口没有创建 `SocketControl`，也没有把它的 `StatusChanged` 绑定到检测流程；启用配置不会自动启动监听。`Services/SocketControl.cs` 中检查消息包含 `#` 和 `*` 的接收代码不能视为已经可用的客户触发协议。
 
-MES 调用约定：`CheckWIP(Stage, SN)` 在 SN 上传或自动上传 SN 时执行，当前代码把返回 `"N"` 视为通过；`Collect_test(...)` 在测试完成且 `Summary.UseMes`、`IsCheckWIP` 为 true 时执行，参数含站别、SN、PASS/NG、设备号、线别、工号。
+手动或自动上传 SN 时执行 `CheckWIP(Stage, SN)`，返回 `"N"` 记录为当前 SN 和站别的通过凭据。启用 MES 时，仅对匹配本次检测 SN 和站别的通过凭据调用 `Collect_test(...)`，参数含站别、SN、PASS/NG、设备号、线别、工号。主窗口串行调用 MES DLL。
 
 客户 DLL 返回约定变更时，先改 MES 判断，不要先改 Flow 或 Recipe。
 
 ## 结果和判定
 
 `KBItemMaster` 是单次测试主结果，核心数据包括 SN、批次、模板、每个按键的亮度/色度/局部对比度、平均亮度、最小/最大亮度、亮度均匀性、不良点数量、结果图和最终 PASS/FAIL。
+
+运行时保存结果的像素尺寸优先读取实际结果图；图像不可读时只使用本轮批次的图像元数据。原批次没有可用尺寸时仍保存结果，宽高留空。已有有效宽高继续用于历史叠图。
+
+计算判定前，模板中的每个按键都需要在本批次的 `POI_Y` 或 `POI_Y_V2` 中按名称和宽度找到有效的亮度记录。`PixNumber` 缺省为 1，显式提供时须为正整数。有效记录的亮度可以为零。缺少批次、无法加载键位模板或有按键缺少有效亮度时，本地检测历史记录为执行失败并显示原因，跳过自动结果导出和 MES `Collect_test`。生产统计将这些记录计入执行失败。
 
 亮度计算链路里有两个容易漏掉的系数：
 
@@ -71,9 +77,11 @@ MES 调用约定：`CheckWIP(Stage, SN)` 在 SN 上传或自动上传 SN 时执�
 
 背光自动修正由 `BacklightAutotuneService.Apply()` 处理，使用 Recipe 中的 Q1/Q3 和 sigmoid 斜率。它会保留 raw 值，最终显示和判定要分清 raw 与 adjusted。
 
-`ProjectKBWindow.Processing()` 按 `EnableKeyLvLimit`、`EnableAvgLvLimit`、`EnableUniformityLimit`、`EnableKeyLcLimit` 分别启用判定；上下限使用 `>=` / `<=`，不是严格大于/小于。均匀性和局部对比度的 Recipe 百分数要除以 `100` 后比较。整体判定的最小亮度、平均亮度、均匀性通过 `BacklightAutotuneService.GetOriginal*` 取原始值，最大亮度与局部对比度则读取当前结果；不能把所有指标一概称为修正值判定。
+`ProjectKBWindow.ProcessResultAsync()` 按 `EnableKeyLvLimit`、`EnableAvgLvLimit`、`EnableUniformityLimit`、`EnableKeyLcLimit` 分别启用判定；上下限使用 `>=` / `<=`，不是严格大于/小于。均匀性和局部对比度的 Recipe 百分数要除以 `100` 后比较。整体判定的最小亮度、平均亮度、均匀性通过 `BacklightAutotuneService.GetOriginal*` 取原始值，最大亮度与局部对比度则读取当前结果；不能把所有指标一概称为修正值判定。
 
 CSV 契约由 `KBItemMasterExtensions.SaveCsv()` 维护：除固定列外，按 `Items` 追加键名列；`KBCsvDataType.Lv` 的动态列导出键位亮度，`Lc` 导出局部对比度乘 `100`，两者共享固定汇总字段，限值来自结果携带的 Recipe 快照。当前新生成的数据行中 `ColorDifference` 和 `StrayLight` 两列为空，占位字段不代表已完成色差/杂光测量；同表头的既有数据行会保留，不能据此推断所有历史行也为空。排查列内容时核对这个实现，不从表头推断能力。
+
+自动导出优先使用 `<Model>_<yyyyMMdd>-LV.csv` 或 `-LC.csv`。当天目标的表头变化时，追加到同目录的 `<Model>_<yyyyMMdd>_<表头 SHA-256 前 12 位>-LV/LC.csv`，实际路径见 `writecsv` 日志。手动导出遇到表头不匹配会提示另选文件。CSV 在目标目录完整写入临时文件后才替换目标，避免写入失败损坏已保存的记录。
 
 ## 生产统计与查询记忆
 
@@ -134,5 +142,5 @@ dotnet build Projects/ProjectKB/ProjectKB.csproj -c Release -p:Platform=x64
 | MES CheckWIP | 返回 `"N"` 时 SN 锁定成功 |
 | 结果解析 | `KB`/`POI_Y` 数据能填充每个键位 |
 | 背光自动修正 | raw 和 adjusted 都保留，判定符合 Recipe |
-| 输出留痕 | 数据库、txt、summary、`<Model>_<yyyyMMdd>.csv` 都生成 |
+| 输出留痕 | 按配置生成数据库、txt、summary 和带 `-LV.csv` 或 `-LC.csv` 后缀的日报 |
 | 交付依赖 | MES DLL、INI、README、CHANGELOG 随包交付 |

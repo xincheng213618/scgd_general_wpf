@@ -14,6 +14,10 @@ namespace ProjectARVRPro
         public int BatchId { get => _BatchId; set { _BatchId = value; OnPropertyChanged(); } }
         private int _BatchId;
 
+        [Newtonsoft.Json.JsonIgnore]
+        [SugarColumn(IsNullable = true, Length = 64)]
+        public string? BatchDatabaseKey { get; set; }
+
         public string Model { get; set; } = string.Empty;
 
         [SugarColumn(IsNullable = true)]

@@ -260,21 +260,21 @@ namespace ColorVision.Engine.Services.Devices.Camera
             });
         }
 
-        private unsafe void PublishLocalFocusPreview(LocalAutoFocusFrame source, float exposure, float gain)
+        internal void PublishLocalFocusPreview(LocalAutoFocusFrame source, float exposure, float gain)
         {
             if (IsDisposed || ExistingView == null) return;
             if (source.Pixels == IntPtr.Zero || source.Width <= 0 || source.Height <= 0 || source.Bits is not (8 or 16) || source.Channels is not (1 or 3))
                 throw new InvalidOperationException("自动对焦过程图像格式无效。");
             int length = checked(source.Width * source.Height * source.Channels * (source.Bits / 8));
-            using LocalFlowFrame frame = LocalFlowFrame.Allocate(new LocalFrameMetadata
+            LocalFrameMetadata metadata = new()
             {
                 Width = source.Width, Height = source.Height, SourceBpp = source.Bits, Channels = source.Channels,
                 Gain = gain, Exposure = source.Channels == 1 ? [exposure] : [exposure, exposure, exposure],
                 DeviceCode = Code, PrimaryBufferKind = LocalFrameBufferKind.CvRaw, FlipMode = DisplayConfig.FlipMode
-            }, length, 0, LocalCameraSession.RawBufferPool);
-            using (LocalFlowFrameLease lease = frame.Acquire()) Buffer.MemoryCopy(source.Pixels.ToPointer(), lease.RawPointer.ToPointer(), lease.RawLength, length);
-            // Publish synchronously copies a frozen snapshot before the native evaluation releases its frame.
-            PublishLocalPreview(frame, null, forceDisplay: true, focusFrame: true);
+            };
+            PublishLocalPreview((Pixels: source.Pixels, Length: length, Metadata: metadata),
+                static raw => LocalCameraPreview.CreateFromBorrowedRaw(raw.Pixels, raw.Length, raw.Metadata),
+                null, forceDisplay: true, focusFrame: true);
         }
 
         internal MsgRecord AutoExposeLocally(ParamBase template, CalibrationParam? calibration)
@@ -299,8 +299,13 @@ namespace ColorVision.Engine.Services.Devices.Camera
             });
         }
 
-        internal MsgRecord CaptureLocally(double[] exposure, CalibrationParam calibration, ParamBase autoExposure)
+        internal MsgRecord CaptureLocally(double[] exposure, CalibrationParam calibration, ParamBase autoExposure,
+            Func<LocalCameraCaptureRequest, LocalCameraCaptureResult>? captureImage = null)
         {
+            MySqlConnectedEndpoint? endpoint = ResultDatabaseEndpoint;
+            if (!OwnsResultDatabase(endpoint)) endpoint = null;
+            bool connectedWithoutOwnership = endpoint == null && MySqlControl.GetInstance().ConnectedEndpoint is { IsCurrent: true };
+
             CameraRunParam parameters = BuildLocalCameraParameters(exposure, calibration);
             string? configuration;
             try { configuration = autoExposure.Id == -1 ? null : LocalAutoExposureTemplate.BuildConfiguration(autoExposure, DisplayConfig.LocalAutoExposureConfig); }
@@ -314,32 +319,31 @@ namespace ColorVision.Engine.Services.Devices.Camera
             return RunLocalCommand("GetData", () =>
             {
                 EnsureLocalMeasurementConnected(autoConnect: false);
-                bool persistResults = MySqlSetting.IsConnect;
-                LocalCameraCaptureResult capture = LocalCameraCaptureService.Capture(request);
+                LocalCameraCaptureResult capture = captureImage == null ? LocalCameraCaptureService.Capture(request) : captureImage(request);
                 using LocalFlowFrame frame = capture.Frame;
-                if (!persistResults)
-                {
-                    PublishLocalPreview(frame, null, forceDisplay: true);
-                    return new { MasterId = 0, MasterResultType = 100 };
-                }
                 MeasureResultImgModel? model = null;
                 string serialNumber = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
                 try
                 {
-                    MeasureBatchModel batch = new() { Code = serialNumber, Name = serialNumber, ArchiveStatus = ArchiveStatus.NotArchived };
-                    int batchId = BatchResultMasterDao.Instance.SaveAndReturnId(batch);
-                    if (batchId <= 0) throw new InvalidOperationException("保存本地相机批次失败；已采集图像仍可预览。");
-                    var result = LocalCameraResultService.CreateModel(batchId, -1, frame, capture, parameters, calibration, request.IsAutoExposure);
-                    result.Id = MeasureImgResultDao.Instance.SaveAndReturnId(result);
-                    if (result.Id <= 0) throw new InvalidOperationException("保存本地相机结果失败；已采集图像仍可预览。");
-                    frame.MasterId = result.Id;
-                    model = result;
+                    if (connectedWithoutOwnership)
+                        throw new InvalidOperationException("本地相机未绑定当前数据库，请重新选择相机后取图。");
+                    if (endpoint == null)
+                        return new { MasterId = 0, MasterResultType = 100 };
+
+                    model = LocalCameraResultService.SaveInteractiveModel(endpoint, serialNumber, capture, parameters, calibration, request.IsAutoExposure);
+                    frame.MasterId = model.Id;
+                }
+                catch (Exception ex)
+                {
+                    throw new InvalidOperationException($"保存本地相机结果失败；已采集图像仍可预览。{ex.Message}", ex);
                 }
                 finally
                 {
-                    PublishLocalPreview(frame, model, forceDisplay: true);
+                    // Live pixels can still be shown when the capture no longer belongs to the visible history.
+                    bool showHistory = model != null && OwnsResultDatabase(endpoint);
+                    PublishLocalPreview(frame, showHistory ? model : null, forceDisplay: true, databaseEndpoint: showHistory ? endpoint : null);
                 }
-                ResultMessageBus.Default.PublishPersisted(ResultRoutes.Camera, ResultKinds.Image, Code, "GetData", serialNumber, string.Empty, -1, model.Id, 100);
+                ResultMessageBus.Default.PublishPersisted(ResultRoutes.Camera, ResultKinds.Image, Code, "GetData", serialNumber, string.Empty, -1, model.Id, 100, endpoint);
                 return new { MasterId = model.Id, MasterResultType = 100 };
             });
         }

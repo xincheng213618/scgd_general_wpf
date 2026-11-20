@@ -146,11 +146,12 @@ namespace ColorVision.Engine.Services.Devices.SMU
             DService.RefreshBackendStatus();
             EditCommand = new RelayCommand(a =>
             {
-                var window = new EditSMU(Config, DisplayConfig) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
-                if (window.ShowDialog() == true)
+                var window = new EditSMU(this) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
+                if (window.ShowDialog() == true && window.OpeningConfigurationTarget is { } target
+                    && TryAdmitConfigurationEdit(target, window.Owner))
                 {
                     if (window.Draft.DisplaySettingsChanged) ConfigHandler.GetInstance().Save<DisplayConfigManager>();
-                    if (window.Draft.ServiceSettingsChanged) Save();
+                    if (window.Draft.ServiceSettingsChanged) TryConfigurationAction(window.Owner, () => SaveEditedConfiguration(target, null));
                 }
             });
 

@@ -96,8 +96,8 @@ namespace ProjectARVRPro.Process.Demura
             try
             {
                 testResult.PreviewImageFile = FindPreviewImageFile(ctx);
-                var masters = AlgResultMasterDao.Instance.GetAllByBatchId(ctx.Batch.Id);
-                var candidates = CollectImageConvertCandidates(masters, Config.ImageConvertResultType);
+                var masters = ctx.ReadMasterResults();
+                var candidates = CollectImageConvertCandidates(ctx, masters, Config.ImageConvertResultType);
 
                 ApplyCandidate(testResult.W128, FindCandidate(candidates, Config.W128Keyword, Prepared128FileName));
                 DemuraTestResult? fileResult = await ReadW128FileAsync(testResult.W128).ConfigureAwait(false);
@@ -819,7 +819,7 @@ flash_address = 0x00003000
             result.ParseMessage = summary.Message;
         }
 
-        private static List<DemuraFileCandidate> CollectImageConvertCandidates(List<AlgResultMasterModel> masters, int imageConvertResultType)
+        private static List<DemuraFileCandidate> CollectImageConvertCandidates(IProcessExecutionContext ctx, List<AlgResultMasterModel> masters, int imageConvertResultType)
         {
             List<DemuraFileCandidate> candidates = new List<DemuraFileCandidate>();
 
@@ -828,7 +828,7 @@ flash_address = 0x00003000
                 AddCandidate(candidates, master, master.ImgFile, nameof(master.ImgFile));
                 AddCandidate(candidates, master, master.ResultImagFile, nameof(master.ResultImagFile));
 
-                foreach (var image in AlgResultImageDao.Instance.GetAllByPid(master.Id))
+                foreach (var image in ctx.ReadDetails(AlgResultImageDao.Instance, master.Id))
                 {
                     AddCandidate(candidates, master, image.FileName, "AlgResultImageModel.FileName");
                 }

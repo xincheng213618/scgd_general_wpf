@@ -90,6 +90,10 @@ JSON 使用 `TypeNameHandling.All` 保留多态类型和 `IJobConfig`。加载�
 
 `_mutationGate` 串行化创建、更新、删除、暂停等管理操作，并不串行化 Job 执行。是否禁止同一任务并发由 Job 自身的 `[DisallowConcurrentExecution]` 等机制决定；该属性以 `JobKey` 为界，不能防止两个不同任务名同时操作同一设备。`CameraCaptureJob`、`SpectrumGetDataJob` 和 `HeadlessFlowJob` 声明了此属性，不能据此扩展成所有 Job 都受保护。
 
+相机和光谱定时任务显示设备名称与 Code。更改所选设备或输入准确 Code 后，保存明确的 `DeviceCameraCode` 或 `DeviceSpectrumCode`。任务执行时按 Code 精确定位。仅缺少新字段的旧任务可使用 `DeviceCameraName` 或 `DeviceSpectrumName`，其值必须唯一对应一台设备的 Code 或名称。如果两个设备分别匹配旧值的 Code 和名称，或已保存的 Code 失效、清空，任务会提示重新选择设备。
+
+相机和光谱定时采集在进程内按设备类型和 Code 记录在途命令。同一逻辑设备尚有上一条定时命令时，新触发记录跳过原因，随后按计划继续。占用持续到原命令记录完成，涵盖后台释放设备占用的步骤。任务等待已结束或被取消时，仍在途的命令继续占用该设备。此规则适用于两个定时采集 Job，手动操作和 Flow 仍各自使用设备的执行规则。
+
 `TaskExecutionListener` 按 `FireInstanceId` 记录在途执行，同一 JobKey 的一个执行结束时，另一个仍在途就保持 `Running`。但 `Paused` 意图优先保留，所以列表显示 Paused 也可能仍有在途操作；不要把 `TaskInfos.Status` 当作独立的设备运行锁。
 
 ## 修改完成、回退与界面边界
@@ -113,7 +117,7 @@ JSON 使用 `TypeNameHandling.All` 保留多态类型和 `IJobConfig`。加载�
 | `Shutdown` | 调用无布尔参数的 Quartz `Shutdown()` 后释放其独立 factory，等价于不等待在途 Job 完成；同一已关闭 scheduler 不能通过 StartCommand 重启 |
 | 关闭任务/历史窗口 | 解除窗口事件与 Copilot 上下文，不关闭进程级 scheduler，也不取消 Job |
 
-例如相机任务通过 `ScheduledDeviceJobHelper.WaitForTerminalStateAsync` 等待消息 Success/Fail/Timeout，并观察 Quartz cancellation token；超时只是使等待结束并上报异常，清理的是事件订阅，没有向硬件发送停止命令。取消 token 同样不等于相机采集已停止。0 秒在该 helper 中表示无限等待，但不能将此解释为所有 Job 的实现约定；FlowJob、HeadlessFlowJob 各有自己的执行链。
+相机和光谱定时任务等待命令记录的 Success、Fail 或 Timeout，0 秒表示无限等待。支持后台完成的命令以后台终态和设备占用释放为准，独立于 WPF 状态通知。旧记录若已提交终态，任务在等待到期时采用该结果，设备占用仍等状态通知及清理完成后释放。等待到期而结果未知时，历史记录显示“本次采集结果尚未确认”。等待超时或取消只结束当前 Job 的等待，命令自身的回执和超时规则继续生效。客户端命令进入超时或因断开而结束时，设备的实际状态仍需核对。
 
 排障时要分别确认调度已暂停、Job 已返回、外部设备已停止和历史写入结果，不能为“消除 Running”未经授权结束进程或控制硬件。
 

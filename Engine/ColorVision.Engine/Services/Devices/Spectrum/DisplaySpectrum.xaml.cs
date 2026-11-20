@@ -1,6 +1,7 @@
 ﻿using LocalizedText = global::ColorVision.Engine.EngineLocalization;
 using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services.Devices.Spectrum.Configs;
+using ColorVision.Engine.Services.Devices.Spectrum.Local;
 using ColorVision.Engine.Services.Devices.Spectrum.Views;
 using ColorVision.UI;
 using log4net;
@@ -28,6 +29,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
         public string DisPlayName => Device.Config.Name;
         public string PersistenceKey => Device.Config.Code;
         private bool _isInitialized;
+        private bool _disposed;
 
         public DisplaySpectrum(DeviceSpectrum DeviceSpectrum)
         {
@@ -74,54 +76,52 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
 
         private void CalibrationGroup_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (!_isInitialized)
+            if (!_isInitialized || _disposed)
                 return;
 
+            DeviceSpectrum owner = Device;
+            DeviceConfigurationTarget target = owner.CaptureConfigurationTarget();
             if (ComboBoxCalibrationGroups.SelectedItem is not SpectrumCalibrationGroup group
-                || string.Equals(group.GroupName, Device.Config.ActiveCalibrationGroupName, StringComparison.OrdinalIgnoreCase)
-                || !Device.CalibrationGroupChangeGuard.TryBeginUserSwitch())
+                || string.Equals(group.GroupName, owner.Config.ActiveCalibrationGroupName, StringComparison.OrdinalIgnoreCase)
+                || !IsCurrentNdCommand(owner, target)
+                || !owner.CalibrationGroupChangeGuard.TryBeginUserSwitch())
             {
                 return;
             }
 
-            if (group.NDHoleIndex >= 0 && Device.Config.NDConfig.IsBingNDDevice && Device.GetBoundCfwPort() == null
-                && !(Device.Config.NDConfig.IsNDPort && Device.UsesLocalNd))
+            int previousPort = owner.DisplayConfig.PortNum;
+            if (group.NDHoleIndex >= 0 && owner.Config.NDConfig.IsBingNDDevice && owner.GetBoundCfwPort() == null
+                && !(owner.Config.NDConfig.IsNDPort && owner.UsesLocalNd))
             {
-                CompleteCalibrationGroupSwitch(group, Device.DisplayConfig.PortNum, null, null);
+                CompleteCalibrationGroupSwitch(owner, target, group, previousPort, null, null);
                 return;
             }
 
-            if (group.NDHoleIndex < 0 || (Device.SpectrumBackend.OpensLocally && !Device.Config.NDConfig.IsNDPort))
+            if (group.NDHoleIndex < 0 || (owner.SpectrumBackend.OpensLocally && !owner.Config.NDConfig.IsNDPort))
             {
-                try
-                {
-                    Device.ApplyCalibrationGroup(group, true);
-                    if (group.NDHoleIndex >= 0) Device.DisplayConfig.PortNum = group.NDHoleIndex;
-                }
-                finally
-                {
-                    Device.CalibrationGroupChangeGuard.CompleteUserSwitch();
-                }
+                CompleteCalibrationGroupSwitch(owner, target, group, previousPort, MsgRecordState.Success, null);
                 return;
             }
 
-            int previousPort = Device.DisplayConfig.PortNum;
             ComboBoxCalibrationGroups.IsEnabled = false;
 
+            int requestedHole = group.NDHoleIndex;
+            LocalSpectrumOpticalScope optics;
             MsgRecord? msgRecord;
             string? error;
             try
             {
-                if (!Device.TrySetNDPortForCalibrationGroup(group.NDHoleIndex, out msgRecord, out error) || msgRecord == null)
+                optics = owner.SnapshotNdCommandOptics();
+                if (!owner.TrySetNDPortForCalibrationGroup(requestedHole, optics, out msgRecord, out error) || msgRecord == null)
                 {
-                    CompleteCalibrationGroupSwitch(group, previousPort, null, error ?? "无法发送 ND 切换指令。");
+                    CompleteCalibrationGroupSwitch(owner, target, group, previousPort, null, error ?? "无法发送 ND 切换指令。");
                     return;
                 }
             }
             catch (Exception ex)
             {
                 logger.Error("Failed to send the ND port command for a spectrum calibration group.", ex);
-                CompleteCalibrationGroupSwitch(group, previousPort, null, ex.Message);
+                CompleteCalibrationGroupSwitch(owner, target, group, previousPort, null, ex.Message);
                 return;
             }
 
@@ -137,41 +137,59 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
 
                 msgRecord.MsgRecordStateChanged -= stateChanged;
                 string? failure = state == MsgRecordState.Success ? null : GetNDPortSwitchFailure(msgRecord, state);
-                CompleteCalibrationGroupSwitch(group, previousPort, state, failure);
+                CompleteCalibrationGroupSwitch(owner, target, group, previousPort, state, failure,
+                    () => optics.IsNdCurrent && group.NDHoleIndex == requestedHole && owner.Config.CalibrationGroups.Contains(group));
             };
 
             msgRecord.MsgRecordStateChanged += stateChanged;
             stateChanged(msgRecord, msgRecord.MsgRecordState);
         }
 
-        private void CompleteCalibrationGroupSwitch(SpectrumCalibrationGroup group, int previousPort, MsgRecordState? state, string? failure)
+        private bool IsCurrentNdCommand(DeviceSpectrum owner, DeviceConfigurationTarget target) =>
+            !_disposed && ReferenceEquals(Device, owner) && owner.IsConfigurationTargetCurrent(target);
+
+        private void CompleteCalibrationGroupSwitch(DeviceSpectrum owner, DeviceConfigurationTarget target, SpectrumCalibrationGroup group,
+            int previousPort, MsgRecordState? state, string? failure, Func<bool>? ownsRequest = null)
         {
+            bool CanApply() => IsCurrentNdCommand(owner, target) && (ownsRequest?.Invoke() ?? true);
             void Complete()
             {
                 try
                 {
+                    if (!CanApply()) return;
                     if (state == MsgRecordState.Success)
                     {
-                        Device.DisplayConfig.PortNum = group.NDHoleIndex;
-                        RefreshNDHoleMappings();
-                        Device.ApplyCalibrationGroup(group, true);
+                        try
+                        {
+                            if (owner.ApplyCalibrationGroup(group, true, false, target))
+                            {
+                                if (!CanApply()) return;
+                                if (group.NDHoleIndex >= 0) owner.DisplayConfig.PortNum = group.NDHoleIndex;
+                                RefreshNDHoleMappings();
+                                return;
+                            }
+                            failure = DeviceSpectrum.NdConfigurationChangedMessage;
+                        }
+                        catch (Exception ex)
+                        {
+                            logger.Error("Failed to apply the confirmed spectrum calibration group.", ex);
+                            failure = ex.Message;
+                        }
                     }
-                    else
-                    {
-                        Device.DisplayConfig.PortNum = previousPort;
-                        ComboBoxCalibrationGroups.SetCurrentValue(ComboBox.SelectedValueProperty, Device.Config.ActiveCalibrationGroupName);
-                        if (!string.IsNullOrWhiteSpace(failure)) MessageBox.Show(
-                            Application.Current.GetActiveWindow(),
-                            LocalizedText.Format($"切换标定分组对应的 ND 失败：{failure}"),
-                            "ColorVision",
-                            MessageBoxButton.OK,
-                            MessageBoxImage.Error);
-                    }
+                    if (!CanApply()) return;
+                    owner.DisplayConfig.PortNum = previousPort;
+                    ComboBoxCalibrationGroups.SetCurrentValue(ComboBox.SelectedValueProperty, owner.Config.ActiveCalibrationGroupName);
+                    if (!string.IsNullOrWhiteSpace(failure)) MessageBox.Show(
+                        Application.Current.GetActiveWindow(),
+                        LocalizedText.Format($"切换标定分组对应的 ND 失败：{failure}"),
+                        "ColorVision",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Error);
                 }
                 finally
                 {
-                    ComboBoxCalibrationGroups.IsEnabled = true;
-                    Device.CalibrationGroupChangeGuard.CompleteUserSwitch();
+                    owner.CalibrationGroupChangeGuard.CompleteUserSwitch();
+                    if (!_disposed && ReferenceEquals(Device, owner)) ComboBoxCalibrationGroups.IsEnabled = true;
                 }
             }
 
@@ -419,41 +437,57 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
         private void NDport_Click(object sender, RoutedEventArgs e)
         {
             if (Device.Config.NDConfig.IsBingNDDevice && Device.GetBoundCfwPort() == null) return;
-            ExecuteSpectrumCommand(sender, () => DService.SetPort(), (record, state) =>
-            {
-                if (state == MsgRecordState.Fail)
-                {
-                    MessageBox.Show(Application.Current.GetActiveWindow(), $"Fail,{record.MsgReturn.Message}", "ColorVision");
-                }
-                else if (state == MsgRecordState.Success)
-                {
-                    Application.Current.Dispatcher.Invoke(() =>
-                    {
-                        RefreshNDHoleMappings();
-                        Device.ApplyCalibrationGroupForND(Device.DisplayConfig.PortNum, true);
-                    });
-                }
-            });
+            RunManualNdCommand(sender, Device.DisplayConfig.PortNum);
         }
 
-        private void GetNDport_Click(object sender, RoutedEventArgs e)
+        private void GetNDport_Click(object sender, RoutedEventArgs e) => RunManualNdCommand(sender, null);
+
+        private void RunManualNdCommand(object sender, int? requestedPort)
         {
-            ExecuteSpectrumCommand(sender, () => DService.GetPort(), (record, state) =>
+            DeviceSpectrum owner = Device;
+            LocalSpectrumOpticalScope optics;
+            try { optics = owner.SnapshotNdCommandOptics(); }
+            catch (InvalidOperationException ex)
             {
-                if (state == MsgRecordState.Success)
+                MessageBox.Show(Application.Current.GetActiveWindow(), ex.Message, "ColorVision");
+                return;
+            }
+            DeviceConfigurationTarget target = optics.ConfigurationTarget;
+            bool CanApply() => IsCurrentNdCommand(owner, target) && optics.IsNdCurrent;
+            if (!CanApply()) return;
+            ExecuteSpectrumCommand(sender, () => owner.DService.SendNdCommand(requestedPort, optics), (record, state) => Dispatcher.Invoke(() =>
+            {
+                if (!CanApply()) return;
+                if (state != MsgRecordState.Success)
                 {
-                    int port = record.MsgReturn.Data.Port;
-                    Application.Current.Dispatcher.Invoke(() => Device.DisplayConfig.PortNum = port);
+                    if (state == MsgRecordState.Fail || !requestedPort.HasValue)
+                        MessageBox.Show(Application.Current.GetActiveWindow(), record.MsgReturn?.Message ?? "ND 指令超时。", "ColorVision");
+                    return;
+                }
+                if (requestedPort is int port)
+                {
+                    try
+                    {
+                        owner.ApplyCalibrationGroupForND(port, true, target, optics);
+                        if (CanApply()) RefreshNDHoleMappings();
+                    }
+                    catch (Exception ex)
+                    {
+                        logger.Error("Failed to apply spectrum calibration for the confirmed ND port.", ex);
+                        if (CanApply()) MessageBox.Show(Application.Current.GetActiveWindow(), ex.Message, "ColorVision");
+                    }
                 }
                 else
                 {
-                    MessageBox.Show(Application.Current.GetActiveWindow(), $"Fail,{record.MsgReturn.Message}", "ColorVision");
+                    int actualPort = record.MsgReturn.Data.Port;
+                    owner.ApplyLocalNdState(actualPort, null, target, optics);
                 }
-            });
+            }));
         }
 
         public void Dispose()
         {
+            _disposed = true;
             this.TryGetTimedButtonOperations()?.Dispose();
             DService.DeviceStatusChanged -= DService_DeviceStatusChanged;
             GC.SuppressFinalize(this);

@@ -1,15 +1,19 @@
 ﻿using ColorVision.Core;
+using ColorVision.Database;
 using ColorVision.Engine;
+using ColorVision.Engine.FlowProcessing;
 using ColorVision.Engine.FlowProcessing.Editor;
 using ColorVision.Engine.FlowProcessing.Nodes;
 using ColorVision.Engine.Services;
 using ColorVision.Engine.Services.Devices.Camera.Local;
+using ColorVision.Engine.Services.Results;
 using ColorVision.Engine.Templates.Jsons;
 using ColorVision.Engine.Templates.Jsons.Distortion2;
 using FlowEngineLib.Algorithm;
 using FlowEngineLib.Base;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using SqlSugar;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
@@ -572,6 +576,74 @@ public sealed class LocalGridDistortionNodeTests
         Assert.Throws<InvalidOperationException>(() => LocalGridDistortionResultPersistence.SaveMasterOnlyCore(master, _ => 703));
     }
 
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void GridWritesSuccessOrDiagnosticAndReadsDetailsFromTheBatchDatabaseAfterReconnect(bool accepted)
+    {
+        using var files = new FusionFixture();
+        var action = CreateAction();
+        MySqlConnectedEndpoint? current = null;
+        var original = new MySqlConnectedEndpoint(candidate => ReferenceEquals(candidate, current), () => Open("original.db"));
+        var replacement = new MySqlConnectedEndpoint(candidate => ReferenceEquals(candidate, current), () => Open("replacement.db"));
+        current = original;
+        using (var first = original.CreateDbClient()) Init(first);
+        using (var second = replacement.CreateDbClient()) Init(second);
+        var batch = new MeasureBatchModel { Code = action.SerialNumber };
+        FlowMeasurementBatch.Insert(batch, original).Bind(action.RuntimeResources);
+        using (var second = replacement.CreateDbClient())
+            Assert.Equal(batch.Id, second.Insertable(new MeasureBatchModel { Code = action.SerialNumber }).ExecuteReturnIdentity());
+
+        ResultMessage? published = null;
+        using var subscription = ResultMessageBus.Default.Subscribe(result =>
+        {
+            if (result.SerialNumber == action.SerialNumber) published = result;
+        });
+        var node = new LocalGridDistortionNode(new FakeServices
+        {
+            DetectHandler = (_, _, _) =>
+            {
+                current = replacement;
+                return accepted ? CreateDetection() : CreateDetection() with { Success = false, StatusCode = "IncompleteGrid" };
+            },
+            PersistHandler = LocalGridDistortionResultPersistence.Save,
+            PublishHandler = LocalGridDistortionNodeServices.Instance.Publish,
+        }) { ResultDirectory = files.Directory };
+
+        try
+        {
+            if (accepted) Assert.True(node.ExecuteSynchronously(action).MasterId > 0);
+            else Assert.Contains("IncompleteGrid", Assert.Throws<InvalidOperationException>(() => node.ExecuteSynchronously(action)).Message);
+
+            Assert.Same(original, Assert.IsType<ResultMessage>(published).DatabaseEndpoint);
+            using var first = original.CreateDbClient();
+            var master = Assert.Single(first.Queryable<AlgResultMasterModel>().ToList());
+            Assert.Equal(batch.Id, master.BatchId);
+            Assert.Equal(accepted ? 0 : -1, master.ResultCode);
+            Assert.Equal(master.Id, published!.Data.MasterId);
+            using var second = replacement.CreateDbClient();
+            Assert.Empty(second.Queryable<AlgResultMasterModel>().ToList());
+            master.DatabaseEndpoint = published.DatabaseEndpoint;
+            var selected = new ViewResultAlg(master, action.SerialNumber);
+            new ViewHandleDistortion2().Load(null!, selected);
+            Assert.Equal(accepted ? 1 : 0, selected.ViewResults.Count);
+        }
+        finally { action.RuntimeResources.Dispose(); }
+
+        SqlSugarClient Open(string name) => new(new ConnectionConfig
+        {
+            DbType = DbType.Sqlite, ConnectionString = $"Data Source={Path.Combine(files.Directory, name)};Pooling=False",
+            InitKeyType = InitKeyType.Attribute, IsAutoCloseConnection = true,
+        });
+
+        static void Init(SqlSugarClient db)
+        {
+            db.CodeFirst.InitTables<MeasureBatchModel>();
+            db.CodeFirst.InitTables<AlgResultMasterModel>();
+            db.CodeFirst.InitTables<DetailCommonModel>();
+        }
+    }
+
     [Fact]
     public void DetailInsertFailureRollsBackAndPreservesRollbackFailure()
     {
@@ -655,7 +727,7 @@ public sealed class LocalGridDistortionNodeTests
     private sealed class FakeServices : ILocalGridDistortionNodeServices
     {
         public Func<string, Int32Rect> LoadSearchRegionTemplateHandler { get; init; } = _ => throw new InvalidOperationException("Unexpected POI lookup");
-        public Int32Rect LoadSearchRegionTemplate(string templateName) => LoadSearchRegionTemplateHandler(templateName);
+        public Int32Rect LoadSearchRegionTemplate(string templateName, MySqlConnectedEndpoint? endpoint) => LoadSearchRegionTemplateHandler(templateName);
         public Func<string, LocalFlowFrame> LoadFrameHandler { get; init; } = _ => throw new InvalidOperationException("Unexpected file load");
         public Func<int, MeasureResultImgModel?> GetImageResultHandler { get; init; } = _ => throw new InvalidOperationException("Unexpected image result lookup");
         public Func<HImage, RoiRect, GridDistortionOptions, GridDistortionResult> DetectHandler { get; init; } = (_, _, _) => CreateDetection();
@@ -665,7 +737,7 @@ public sealed class LocalGridDistortionNodeTests
         public int PersistCount { get; private set; }
         public int PublishCount { get; private set; }
         public LocalFlowFrame LoadFrame(string path) => LoadFrameHandler(path);
-        public MeasureResultImgModel? GetImageResult(int masterId) => GetImageResultHandler(masterId);
+        public MeasureResultImgModel? GetImageResult(int masterId, MySqlConnectedEndpoint? endpoint) => GetImageResultHandler(masterId);
         public GridDistortionResult Detect(HImage image, RoiRect roi, GridDistortionOptions options) { DetectCount++; return DetectHandler(image, roi, options); }
         public LocalGridDistortionPersistenceResult Persist(LocalGridDistortionPersistenceRequest request) { PersistCount++; return PersistHandler(request); }
         public void Publish(LocalGridDistortionPublishRequest request) { PublishCount++; PublishHandler(request); }

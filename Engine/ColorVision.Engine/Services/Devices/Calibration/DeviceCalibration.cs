@@ -19,10 +19,11 @@ namespace ColorVision.Engine.Services.Devices.Calibration
     public class DeviceCalibration : DeviceService<ConfigCalibration>
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(DeviceCalibration));
-        private bool _isDisposed;
+        private volatile bool _isDisposed;
         private PhyCamera? _subscribedPhyCamera;
 
         public MQTTCalibration DService { get; set; }
+        internal bool IsDisposed => _isDisposed;
 
         public DisplayCalibrationConfig DisplayConfig => DisplayConfigManager.Instance.GetDisplayConfig<DisplayCalibrationConfig>(Config.Code);
 
@@ -44,15 +45,15 @@ namespace ColorVision.Engine.Services.Devices.Calibration
 
         public DeviceCalibration(SysResourceModel sysResourceModel) : base(sysResourceModel)
         {
-            DService = new MQTTCalibration(Config);
+            DService = new MQTTCalibration(this);
             _view = new DockViewRegistration(() => new ViewCalibration(this, deferInitialization: true), Config.Name, DisPlayManager.IsControlVisible(Config.Code, Config.Name))
                 { PersistenceKey = Config.Code };
             EditCommand = new RelayCommand(a =>
             {
                 if (!CanConfigure) return;
                 var propertyEditorWindow = new PropertyEditorWindow(Config, PropertyEditorEditMode.Transactional) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
-                ProtectConfigurationEditor(propertyEditorWindow);
-                propertyEditorWindow.Submitted += (s, e) => TryCommitConfiguration(propertyEditorWindow);
+                var target = ProtectConfigurationEditor(propertyEditorWindow);
+                propertyEditorWindow.Submitted += (_, _) => TryCommitConfiguration(propertyEditorWindow, expectedTarget: target);
                 propertyEditorWindow.ShowDialog();
             }, a => CanConfigure);
 
@@ -161,10 +162,31 @@ namespace ColorVision.Engine.Services.Devices.Calibration
             if (_isDisposed)
                 return;
 
-            AttachPhyCamera(PhyCamera);
-            if (_subscribedPhyCamera != null) Config.CameraID = _subscribedPhyCamera.Config.CameraID?.Trim() ?? string.Empty;
-            base.Save();
-            _subscribedPhyCamera?.SetCalibration(this);
+            PhyCamera? selectedCamera = null;
+            (SysResourceModel? Resource, string? Value) selectedSource = default;
+            string? selectedCode = null;
+            SaveWithConfigurationTarget(prepare: target =>
+            {
+                selectedCode = Config.CameraCode;
+                selectedCamera = PhyCamera;
+                if (selectedCamera == null) return;
+                selectedSource = (selectedCamera.SysResourceModel, selectedCamera.SysResourceModel.Value);
+                var physicalConfig = selectedCamera.ReadOwnedPhysicalConfiguration(this, target)
+                    ?? throw new DeviceConfigurationSaveException(EngineLocalization.Get("关联的物理相机已变更，请重新选择设备。"));
+
+                string? recoveredId = ReferenceEquals(_subscribedPhyCamera, selectedCamera) ? null
+                    : PhysicalCameraIdentity.FindRecoverableId(selectedCamera.Code, physicalConfig.CameraID, Config.CameraCode, Config.CameraID);
+                Config.CameraID = recoveredId ?? physicalConfig.CameraID;
+            }, apply: target =>
+            {
+                if (!target.IsCurrent(this) || !string.Equals(Config.CameraCode, selectedCode, StringComparison.Ordinal)
+                    || !ReferenceEquals(selectedCamera?.SysResourceModel, selectedSource.Resource)
+                    || !string.Equals(selectedCamera?.SysResourceModel.Value, selectedSource.Value, StringComparison.Ordinal)) return;
+                string savedCameraId = Config.CameraID;
+                AttachPhyCamera(selectedCamera);
+                if (!string.Equals(Config.CameraID, savedCameraId, StringComparison.Ordinal)) Config.CameraID = savedCameraId;
+                selectedCamera?.SetCalibration(this, target);
+            }, applyAfterNotification: true);
         }
 
 

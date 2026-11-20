@@ -5,7 +5,6 @@ using FlowEngineLib.Algorithm;
 using System;
 using ColorVision.Database;
 using FlowEngineLib.Base;
-using ColorVision.Engine.FlowProcessing;
 using ColorVision.Engine.FlowProcessing.Diagnostics;
 
 namespace ColorVision.Engine.Services.Devices.Camera.Local
@@ -13,17 +12,47 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
     internal static class LocalCameraResultService
     {
         internal static MeasureResultImgModel SaveFlowModel(CVStartCFC action, int zIndex, LocalFlowFrame frame, LocalCameraCaptureResult capture,
-            CameraRunParam? cameraParameters, CalibrationParam? calibration, bool isAutoExposure)
+            CameraRunParam? cameraParameters, CalibrationParam? calibration, bool isAutoExposure, MySqlConnectedEndpoint? endpoint)
         {
             if (!action.PersistResults)
                 return CreateModel(0, zIndex, frame, capture, cameraParameters, calibration, isAutoExposure);
-            int batchId = FlowNodeTiming.Run("ResolveBatch", () => FlowMeasurementBatch.ResolveId(action))
-                ?? throw new InvalidOperationException($"找不到流程批次：{action.SerialNumber}");
+            if (endpoint == null) throw new InvalidOperationException("保存本地相机流程结果需要连接 MySQL。");
+            int batchId = FlowNodeTiming.Run("ResolveBatch", () => LocalFlowResultPersistence.ResolveBatchId(action, endpoint));
             MeasureResultImgModel model = FlowNodeTiming.Run("BuildResultModel", () => CreateModel(batchId, zIndex, frame, capture, cameraParameters, calibration, isAutoExposure));
-            int masterId = FlowNodeTiming.Run("InsertResult", () => MeasureImgResultDao.Instance.SaveAndReturnId(model));
+            action.RuntimeResources.StopToken.ThrowIfCancellationRequested();
+            int masterId = FlowNodeTiming.Run("InsertResult", () => MeasureImgResultDao.InsertResult(endpoint, model));
             if (masterId <= 0) throw new InvalidOperationException("保存本地相机结果记录失败。");
             model.Id = masterId;
             return model;
+        }
+
+        internal static MeasureResultImgModel SaveInteractiveModel(MySqlConnectedEndpoint endpoint, string serialNumber,
+            LocalCameraCaptureResult capture, CameraRunParam? cameraParameters, CalibrationParam? calibration, bool isAutoExposure)
+        {
+            using var db = endpoint.CreateDbClient();
+            db.Ado.BeginTran();
+            try
+            {
+                var batch = new MeasureBatchModel { Code = serialNumber, Name = serialNumber, ArchiveStatus = ArchiveStatus.NotArchived };
+                int batchId = db.Insertable(batch).ExecuteReturnIdentity();
+                if (batchId <= 0) throw new InvalidOperationException("保存本地相机批次失败；已采集图像仍可预览。");
+
+                MeasureResultImgModel model = CreateModel(batchId, -1, capture.Frame, capture, cameraParameters, calibration, isAutoExposure);
+                model.Id = db.Insertable(model).ExecuteReturnIdentity();
+                if (model.Id <= 0) throw new InvalidOperationException("保存本地相机结果失败；已采集图像仍可预览。");
+
+                db.Ado.CommitTran();
+                return model;
+            }
+            catch (Exception error)
+            {
+                try { db.Ado.RollbackTran(); }
+                catch (Exception rollbackError)
+                {
+                    throw new AggregateException("保存本地相机结果失败，且数据库事务回滚失败。", error, rollbackError);
+                }
+                throw;
+            }
         }
 
         internal static MeasureResultImgModel CreateModel(int batchId, int zIndex, LocalFlowFrame frame, LocalCameraCaptureResult capture,

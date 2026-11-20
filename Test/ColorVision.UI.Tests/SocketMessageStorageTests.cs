@@ -11,6 +11,101 @@ public sealed class SocketMessageStorageTests : IDisposable
     private readonly string _tempDirectory = Directory.CreateTempSubdirectory("ColorVision-SocketMessages-").FullName;
     private string DatabasePath => Path.Combine(_tempDirectory, "SocketMessages.db");
 
+    [Theory]
+    [InlineData("maintenance")]
+    [InlineData("advanced clear")]
+    [InlineData("legacy truncate")]
+    public void WholeTableClearRetainsMessageIdHighWaterAndRejectsStaleResend(string entry)
+    {
+        StaTest.Run(() =>
+        {
+            using var manager = new SocketMessageManager(DatabasePath, new SocketMessageManagerConfig(), dispatcher: null);
+            manager.AddMessage(Message("original connection", "old body"));
+            manager.LoadAll();
+            SocketMessage cached = Assert.Single(manager.Messages);
+            Assert.Equal("old body", manager.LoadContent(cached));
+            manager.LoadAll();
+            SocketMessage unloaded = Assert.Single(manager.Messages);
+            Assert.False(unloaded.IsContentLoaded);
+
+            if (entry == "maintenance")
+            {
+                new SocketMessagesSqliteCleanupProvider(DatabasePath).CleanupAll();
+            }
+            else
+            {
+                GenericQuery<SocketMessage> query = manager.CreateGenericQuery();
+                Assert.False(query.SupportsTruncateTable);
+                if (entry == "advanced clear") query.DeleteAll();
+                else query.TruncateTable();
+                Assert.Empty(manager.Messages);
+            }
+
+            manager.AddMessage(Message("replacement connection", "new body"));
+            manager.LoadAll();
+            SocketMessage current = Assert.Single(manager.Messages);
+            Assert.True(current.Id > cached.Id);
+            Assert.Equal("replacement connection", current.ClientConnectionId);
+
+            Assert.Equal("old body", manager.LoadContent(cached));
+            Assert.Null(manager.LoadContentForResend(cached));
+            Assert.Null(manager.LoadContent(unloaded));
+            manager.DeleteMessage(cached);
+
+            var mismatchedConnection = Message("original connection", "cached different body");
+            mismatchedConnection.Id = current.Id;
+            Assert.Null(manager.LoadContentForResend(mismatchedConnection));
+            manager.DeleteMessage(mismatchedConnection);
+
+            var transient = Message("replacement connection", "transient body");
+            Assert.Equal("transient body", manager.LoadContent(transient));
+            Assert.Null(manager.LoadContentForResend(transient));
+            manager.DeleteMessage(transient);
+
+            Assert.Equal("new body", manager.LoadContentForResend(current));
+            manager.LoadAll();
+            Assert.Equal(current.Id, Assert.Single(manager.Messages).Id);
+        });
+    }
+
+    [Fact]
+    public void OpeningLegacyTableAddsNullableConnectionIdWithoutReusingDeletedIds()
+    {
+        int retainedId;
+        int deletedId;
+        using (SqlSugarClient db = CreateDbClient())
+        {
+            db.CodeFirst.InitTables<SocketMessage>();
+            SocketMessagePayloadStorage.EnsureSchema(db);
+            retainedId = db.Insertable(Message(null, "legacy body")).ExecuteReturnIdentity();
+            SocketMessagePayloadStorage.Save(db, retainedId, "legacy body");
+            deletedId = db.Insertable(Message(null, "discarded body")).ExecuteReturnIdentity();
+            db.Deleteable<SocketMessage>().Where(message => message.Id == deletedId).ExecuteCommand();
+            db.Ado.ExecuteCommand("ALTER TABLE \"SocketMessage\" DROP COLUMN \"ClientConnectionId\";");
+        }
+
+        using var manager = new SocketMessageManager(DatabasePath, new SocketMessageManagerConfig(), dispatcher: null);
+        manager.LoadAll();
+        SocketMessage retained = Assert.Single(manager.Messages);
+        Assert.Equal(retainedId, retained.Id);
+        Assert.Null(retained.ClientConnectionId);
+        Assert.Equal("legacy body", manager.LoadContent(retained));
+
+        manager.AddMessage(Message("current connection", "current body"));
+        manager.LoadAll();
+        SocketMessage current = Assert.Single(manager.Messages, message => message.ClientConnectionId == "current connection");
+        Assert.True(current.Id > deletedId);
+        Assert.Equal("current body", manager.LoadContentForResend(current));
+    }
+
+    private static SocketMessage Message(string? connectionId, string content) => new()
+    {
+        ClientEndPoint = "127.0.0.1:6666",
+        ClientConnectionId = connectionId,
+        Direction = SocketMessageDirection.Sent,
+        Content = content,
+    };
+
     [Fact]
     public void RuntimeStorageWritesOnlyGzipAndLoadsContentById()
     {

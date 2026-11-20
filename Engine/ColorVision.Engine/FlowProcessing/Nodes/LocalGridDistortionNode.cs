@@ -15,6 +15,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Windows;
 
 namespace ColorVision.Engine.FlowProcessing.Nodes;
@@ -35,6 +36,7 @@ internal sealed record LocalGridDistortionNodeResultData
 internal sealed record LocalGridDistortionPersistenceRequest
 {
     public required CVStartCFC Action { get; init; }
+    public MySqlConnectedEndpoint? DatabaseEndpoint { get; init; }
     public string? ImageFilePath { get; init; }
     public int ZIndex { get; init; }
     public int TotalTime { get; init; }
@@ -54,6 +56,7 @@ internal sealed record LocalGridDistortionPersistenceResult
 
 internal sealed record LocalGridDistortionPublishRequest
 {
+    public MySqlConnectedEndpoint? DatabaseEndpoint { get; init; }
     public required string SerialNumber { get; init; }
     public required string NodeId { get; init; }
     public int ZIndex { get; init; }
@@ -62,9 +65,9 @@ internal sealed record LocalGridDistortionPublishRequest
 
 internal interface ILocalGridDistortionNodeServices
 {
-    Int32Rect LoadSearchRegionTemplate(string templateName);
+    Int32Rect LoadSearchRegionTemplate(string templateName, MySqlConnectedEndpoint? endpoint);
     LocalFlowFrame LoadFrame(string filePath);
-    MeasureResultImgModel? GetImageResult(int masterId);
+    MeasureResultImgModel? GetImageResult(int masterId, MySqlConnectedEndpoint? endpoint);
     GridDistortionResult Detect(HImage image, RoiRect roi, GridDistortionOptions options);
     LocalGridDistortionPersistenceResult Persist(LocalGridDistortionPersistenceRequest request);
     void Publish(LocalGridDistortionPublishRequest request);
@@ -73,15 +76,20 @@ internal interface ILocalGridDistortionNodeServices
 internal sealed class LocalGridDistortionNodeServices : ILocalGridDistortionNodeServices
 {
     public static LocalGridDistortionNodeServices Instance { get; } = new();
-    public Int32Rect LoadSearchRegionTemplate(string templateName) => LocalPoiSearchRegionResolver.Load(templateName);
+    public Int32Rect LoadSearchRegionTemplate(string templateName, MySqlConnectedEndpoint? endpoint) =>
+        LocalPoiSearchRegionResolver.Load(templateName, RequireEndpoint(endpoint));
 
     public LocalFlowFrame LoadFrame(string filePath) => LocalFrameFileService.Load(filePath);
-    public MeasureResultImgModel? GetImageResult(int masterId) => MeasureImgResultDao.Instance.GetById(masterId);
+    public MeasureResultImgModel? GetImageResult(int masterId, MySqlConnectedEndpoint? endpoint) =>
+        MeasureImgResultDao.ReadResult(RequireEndpoint(endpoint), masterId);
     public GridDistortionResult Detect(HImage image, RoiRect roi, GridDistortionOptions options) => GridDistortionNative.Run(image, roi, options);
     public LocalGridDistortionPersistenceResult Persist(LocalGridDistortionPersistenceRequest request) => LocalGridDistortionResultPersistence.Save(request);
     public void Publish(LocalGridDistortionPublishRequest request) => ResultMessageBus.Default.PublishPersisted(
         ResultRoutes.LocalFlow, ResultKinds.Algorithm, string.Empty, "Distortion", request.SerialNumber,
-        request.NodeId, request.ZIndex, request.MasterId, (int)ViewResultAlgType.Distortion);
+        request.NodeId, request.ZIndex, request.MasterId, (int)ViewResultAlgType.Distortion, request.DatabaseEndpoint);
+
+    internal static MySqlConnectedEndpoint RequireEndpoint(MySqlConnectedEndpoint? endpoint) =>
+        endpoint ?? throw new InvalidOperationException("点阵畸变需要已连接的流程数据库来读取或保存结果。");
 }
 
 internal static class LocalGridDistortionResultPersistence
@@ -92,18 +100,20 @@ internal static class LocalGridDistortionResultPersistence
     public static LocalGridDistortionPersistenceResult Save(LocalGridDistortionPersistenceRequest request)
     {
         ArgumentNullException.ThrowIfNull(request);
-        MeasureBatchModel batch = BatchResultMasterDao.Instance.GetByNameOrCode(request.Action.SerialNumber)
-            ?? throw new InvalidOperationException($"找不到流程批次：{request.Action.SerialNumber}");
-        AlgResultMasterModel master = CreateMasterModel(request, batch.Id);
+        var endpoint = LocalGridDistortionNodeServices.RequireEndpoint(request.DatabaseEndpoint);
+        int batchId = LocalFlowResultPersistence.ResolveBatchId(request.Action, endpoint);
+        AlgResultMasterModel master = CreateMasterModel(request, batchId);
+        CancellationToken stop = request.Action.RuntimeResources.StopToken;
+        stop.ThrowIfCancellationRequested();
         if (request.ResultCode != 0)
-            return new() { MasterId = SaveMasterOnlyCore(master, AlgResultMasterDao.Instance.SaveAndReturnId) };
+            return new() { MasterId = SaveMasterOnlyCore(master, row => AlgResultMasterDao.InsertResult(endpoint, row)) };
 
         GridDistortionResult result = request.Result ?? throw new InvalidOperationException("成功的本地点阵畸变结果缺少明细。");
         GridDistortionAnalysis analysis = request.Analysis ?? throw new InvalidOperationException("成功的本地点阵畸变结果缺少指标分析。");
         string resultFilePath = WriteResultFile(request.ResultDirectory, BuildLegacyResultJson(result, analysis));
         try
         {
-            int masterId = SaveDatabaseCore(master, resultFilePath, static () => new SqlSugarLocalFlowResultTransaction<DetailCommonModel>());
+            int masterId = SaveDatabaseCore(master, resultFilePath, () => new SqlSugarLocalFlowResultTransaction<DetailCommonModel>(endpoint), stop);
             return new() { MasterId = masterId, ResultFilePath = resultFilePath };
         }
         catch (Exception saveException)
@@ -221,9 +231,9 @@ internal static class LocalGridDistortionResultPersistence
     }
 
     internal static int SaveDatabaseCore(AlgResultMasterModel master, string resultFilePath,
-        Func<ILocalFlowResultTransaction<DetailCommonModel>> transactionFactory) =>
+        Func<ILocalFlowResultTransaction<DetailCommonModel>> transactionFactory, CancellationToken cancellationToken = default) =>
         LocalFlowResultPersistence.SaveAlgorithmResultWithDetailsCore(master, ViewResultAlgType.Distortion,
-            masterId => new[] { CreateDetail(masterId, resultFilePath) }, transactionFactory);
+            masterId => new[] { CreateDetail(masterId, resultFilePath) }, transactionFactory, cancellationToken);
 
     private static string WriteResultFile(string configuredDirectory, string resultJson)
     {
@@ -326,14 +336,15 @@ public sealed class LocalGridDistortionNode : LocalFlowNodeBase
         int zIndex = ZIndex;
         string nodeId = NodeID;
         LocalFlowFrame? ownedFrame = null;
-        LocalFlowFrame frame = ResolveFrame(action, out ownedFrame, out string? imageFile);
+        var endpoint = LocalFlowResultPersistence.ResolveEndpoint(action);
+        LocalFlowFrame frame = ResolveFrame(action, endpoint, out ownedFrame, out string? imageFile);
         bool loadedFromFile = ownedFrame != null;
         try
         {
             using LocalFlowFrameLease lease = frame.Acquire();
             if (!lease.IsFlipApplied)
                 throw new InvalidOperationException("当前图像的方向变换尚未完成，无法计算点阵畸变。");
-            RoiRect roi = LocalFindLuminousAreaNode.ResolveRoi(string.IsNullOrWhiteSpace(configuredTemplate) ? configuredRegion : services.LoadSearchRegionTemplate(configuredTemplate), lease.Metadata.Width, lease.Metadata.Height);
+            RoiRect roi = LocalFindLuminousAreaNode.ResolveRoi(string.IsNullOrWhiteSpace(configuredTemplate) ? configuredRegion : services.LoadSearchRegionTemplate(configuredTemplate, endpoint), lease.Metadata.Width, lease.Metadata.Height);
             HImage image = FlowNodeTiming.Run("PrepareImage", () => LocalFindLuminousAreaNode.CreateBorrowedImage(lease));
             Stopwatch stopwatch = Stopwatch.StartNew();
             GridDistortionResult detection = FlowNodeTiming.Run("Algorithm", () => services.Detect(image, roi, options));
@@ -364,7 +375,7 @@ public sealed class LocalGridDistortionNode : LocalFlowNodeBase
             });
             LocalGridDistortionPersistenceRequest request = new()
             {
-                Action = action, ImageFilePath = imageFile, ZIndex = zIndex,
+                Action = action, DatabaseEndpoint = endpoint, ImageFilePath = imageFile, ZIndex = zIndex,
                 TotalTime = totalTime, Parameters = parameters, ResultDirectory = configuredDirectory
             };
             GridDistortionAnalysis analysis;
@@ -380,7 +391,7 @@ public sealed class LocalGridDistortionNode : LocalFlowNodeBase
                     ResultCode = DetectionFailureResultCode, ResultDescription = validationException.Message
                 }));
                 if (failed.MasterId <= 0) throw new InvalidOperationException("点阵畸变失败持久化返回了无效主表 ID。");
-                FlowNodeTiming.Run("PublishResult", () => services.Publish(new() { SerialNumber = action.SerialNumber, NodeId = nodeId, ZIndex = zIndex, MasterId = failed.MasterId }));
+                FlowNodeTiming.Run("PublishResult", () => services.Publish(new() { SerialNumber = action.SerialNumber, NodeId = nodeId, ZIndex = zIndex, MasterId = failed.MasterId, DatabaseEndpoint = endpoint }));
                 throw new InvalidOperationException(validationException.Message, validationException);
             }
 
@@ -410,7 +421,7 @@ public sealed class LocalGridDistortionNode : LocalFlowNodeBase
             action.Data["LocalGridDistortionMaximumTiltDegrees"] = analysis.Geometry.MaximumTiltDegrees;
             action.Data["LocalGridDistortionMaximumEdgeLengthDifferencePercent"] = analysis.Geometry.MaximumEdgeLengthDifferencePercent;
             action.MasterValue(null, persisted.MasterId, (int)ViewResultAlgType.Distortion);
-            FlowNodeTiming.Run("PublishResult", () => services.Publish(new() { SerialNumber = action.SerialNumber, NodeId = nodeId, ZIndex = zIndex, MasterId = persisted.MasterId }));
+            FlowNodeTiming.Run("PublishResult", () => services.Publish(new() { SerialNumber = action.SerialNumber, NodeId = nodeId, ZIndex = zIndex, MasterId = persisted.MasterId, DatabaseEndpoint = endpoint }));
             return new()
             {
                 MasterId = persisted.MasterId, SourceMasterId = lease.MasterId, FrameId = lease.FrameId.ToString("N"),
@@ -462,7 +473,7 @@ public sealed class LocalGridDistortionNode : LocalFlowNodeBase
             throw new InvalidOperationException("点阵畸变质量证据无效或未达到配置要求。");
     }
 
-    private LocalFlowFrame ResolveFrame(CVStartCFC action, out LocalFlowFrame? ownedFrame, out string? imageFile)
+    private LocalFlowFrame ResolveFrame(CVStartCFC action, MySqlConnectedEndpoint? endpoint, out LocalFlowFrame? ownedFrame, out string? imageFile)
     {
         ownedFrame = null;
         imageFile = null;
@@ -480,7 +491,7 @@ public sealed class LocalGridDistortionNode : LocalFlowNodeBase
         if (masterId <= 0) throw new InvalidOperationException("流程中没有可用的上游图像；请连接相机取图、校正或“加载图片”节点。");
         if (masterResultType is not (int)CVCommCore.CVResultType.Camera_Img and not (int)CVCommCore.CVResultType.Algorithm_Calibration)
             throw new InvalidOperationException($"IN 不是图像结果：MasterId={masterId}，ResultType={masterResultType}。");
-        MeasureResultImgModel input = FlowNodeTiming.Run("ResolveImageResult", () => services.GetImageResult(masterId)) ?? throw new InvalidOperationException($"找不到 IN 图像结果：{masterId}。");
+        MeasureResultImgModel input = FlowNodeTiming.Run("ResolveImageResult", () => services.GetImageResult(masterId, endpoint)) ?? throw new InvalidOperationException($"找不到 IN 图像结果：{masterId}。");
         string[] candidates = new[] { input.FileUrl, input.RawFile }.OfType<string>().Where(value => !string.IsNullOrWhiteSpace(value))
             .Select(value => Path.GetFullPath(value.Trim())).ToArray();
         string? fallbackFile = candidates.FirstOrDefault(File.Exists) ?? candidates.FirstOrDefault();

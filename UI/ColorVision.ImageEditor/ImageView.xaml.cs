@@ -896,7 +896,8 @@ namespace ColorVision.ImageEditor
             if (!TryOpenImage(filePath)) ShowUnsupportedImageFormat(filePath!);
         }
 
-        internal bool TryOpenImage(string? filePath)
+        /// <summary>Accepts a supported path without showing an unsupported-format dialog. Observe <see cref="ImageOpenCompletion"/> for the file open result.</summary>
+        public bool TryOpenImage(string? filePath)
         {
             if (string.IsNullOrWhiteSpace(filePath))
             {

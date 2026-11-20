@@ -1,5 +1,6 @@
 using ColorVision.Core;
 using ColorVision.Database;
+using ColorVision.Engine.Services.Devices.Camera.Local;
 using ColorVision.Engine.Services.Results;
 using FlowEngineLib.Base;
 using System;
@@ -10,28 +11,30 @@ namespace ColorVision.Engine.Services.Images.FileFusion;
 
 internal interface IFileFusionServices
 {
-    int ResolveBatchId(string serialNumber);
+    (int Id, MySqlConnectedEndpoint? Endpoint) ResolveBatch(CVStartCFC action);
     FileFusionResult Execute(IReadOnlyList<string> files, FileFusionMode mode, CancellationToken cancellationToken, FileFusionOptions options);
-    int SaveResult(MeasureResultImgModel model);
-    void Publish(CVStartCFC action, string nodeId, int zIndex, MeasureResultImgModel model);
+    int SaveResult(MySqlConnectedEndpoint? endpoint, MeasureResultImgModel model);
+    void Publish(CVStartCFC action, string nodeId, int zIndex, MeasureResultImgModel model, MySqlConnectedEndpoint? endpoint);
 }
 
 internal sealed class FileFusionServices : IFileFusionServices
 {
     public static FileFusionServices Instance { get; } = new();
 
-    public int ResolveBatchId(string serialNumber)
+    public (int Id, MySqlConnectedEndpoint? Endpoint) ResolveBatch(CVStartCFC action)
     {
-        MeasureBatchModel? batch = BatchResultMasterDao.Instance.GetByNameOrCode(serialNumber);
-        return batch?.Id > 0 ? batch.Id : throw new InvalidOperationException($"找不到流程批次：{serialNumber}");
+        var endpoint = LocalFlowResultPersistence.ResolveEndpoint(action)
+            ?? throw new InvalidOperationException("保存景深融合结果需要已连接的流程数据库。");
+        return (LocalFlowResultPersistence.ResolveBatchId(action, endpoint), endpoint);
     }
 
     public FileFusionResult Execute(IReadOnlyList<string> files, FileFusionMode mode, CancellationToken cancellationToken, FileFusionOptions options)
         => Core.FileFusion.Default.Execute(files, mode, cancellationToken, options);
 
-    public int SaveResult(MeasureResultImgModel model) => MeasureImgResultDao.Instance.SaveAndReturnId(model);
+    public int SaveResult(MySqlConnectedEndpoint? endpoint, MeasureResultImgModel model) =>
+        MeasureImgResultDao.InsertResult(endpoint ?? throw new ArgumentNullException(nameof(endpoint)), model);
 
-    public void Publish(CVStartCFC action, string nodeId, int zIndex, MeasureResultImgModel model)
+    public void Publish(CVStartCFC action, string nodeId, int zIndex, MeasureResultImgModel model, MySqlConnectedEndpoint? endpoint)
         => ResultMessageBus.Default.PublishPersisted(ResultRoutes.LocalFlow, ResultKinds.Image, string.Empty,
-            "Fusion", action.SerialNumber, nodeId, zIndex, model.Id, 100);
+            "Fusion", action.SerialNumber, nodeId, zIndex, model.Id, 100, endpoint);
 }

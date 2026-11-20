@@ -207,6 +207,57 @@ public sealed class FlowNodeMessageStorageTests : IDisposable
     }
 
     [Fact]
+    public void FullCleanupPreservesDiagnosticIdsAndLeavesOldMessageDetailsMissing()
+    {
+        var timestamp = new DateTime(2026, 8, 10, 3, 0, 0);
+        int selectedMessageId;
+        (string Name, long Sequence)[] originalSequences;
+        using (SqlSugarClient db = CreateDbClient())
+        {
+            FlowDiagnosticsSchemaMigrator.EnsureSchema(db);
+            InsertRunGraph(db, "first", 42, "SN-42", timestamp, FlowStatus.Completed, FlowIncidentStates.Open, null);
+            db.Insertable(new FlowTemplateSnapshot
+            {
+                TemplateId = 1,
+                ContentHash = "first",
+                Content = [1],
+                ContentLength = 1,
+                CapturedTimeUtc = timestamp.ToUniversalTime(),
+            }).ExecuteCommand();
+            selectedMessageId = db.Queryable<FlowNodeMessage>()
+                .Where(message => message.NodeRecordId != null).Single().Id;
+            FlowNodeMessagePayloadStorage.SaveRecvPayload(db, selectedMessageId, "first payload");
+            originalSequences = ReadSequences(db);
+            Assert.Equal(7, originalSequences.Length);
+        }
+
+        var cleanup = FlowDiagnosticsSqliteCleanupProvider.CleanupAllCore(DatabasePath);
+
+        using SqlSugarClient verification = CreateDbClient();
+        Assert.Contains("FlowNodeMessage: 删除 2 行", cleanup.SummaryLines);
+        Assert.Empty(verification.Queryable<FlowNodeMessage>().ToList());
+        Assert.Equal(originalSequences, ReadSequences(verification));
+        int replacementId = verification.Insertable(new FlowNodeMessage
+        {
+            BatchId = 42,
+            SerialNumber = "SN-42",
+            SendTime = timestamp.AddMinutes(1),
+            State = FlowMessageState.Success,
+        }).ExecuteReturnIdentity();
+        FlowNodeMessagePayloadStorage.SaveRecvPayload(verification, replacementId, "second payload");
+
+        Assert.True(replacementId > selectedMessageId);
+        Assert.Equal(default, FlowNodeMessagePayloadStorage.LoadPayloads(verification, selectedMessageId));
+        Assert.Equal("second payload", FlowNodeMessagePayloadStorage.LoadPayloads(verification, replacementId).RecvPayload);
+
+        static (string Name, long Sequence)[] ReadSequences(SqlSugarClient db) => db.Ado
+            .GetDataTable("SELECT name, seq FROM sqlite_sequence ORDER BY name;")
+            .Rows.Cast<DataRow>()
+            .Select(row => ((string)row["name"], Convert.ToInt64(row["seq"])))
+            .ToArray();
+    }
+
+    [Fact]
     public void MonthlyCleanupPreservesLegacyEvidenceForProtectedRuns()
     {
         using (SqlSugarClient db = CreateDbClient())

@@ -46,14 +46,14 @@ namespace ProjectARVRPro.Process.KeyedResults.LuminanceChromaticity
                     }
                 }
 
-                List<AlgResultMasterModel> masters = AlgResultMasterDao.Instance.GetAllByBatchId(ctx.Batch.Id);
+                List<AlgResultMasterModel> masters = ctx.ReadMasterResults();
                 List<PoiCandidate> candidates = new();
                 foreach (AlgResultMasterModel master in masters)
                 {
                     if (master.ImgFileType != ViewResultAlgType.POI_XYZ)
                         continue;
 
-                    List<PoiPointResultModel> points = PoiPointResultDao.Instance.GetAllByPid(master.Id);
+                    List<PoiPointResultModel> points = ctx.ReadDetails(PoiPointResultDao.Instance, master.Id);
                     candidates.Add(new PoiCandidate(master, points));
                 }
 

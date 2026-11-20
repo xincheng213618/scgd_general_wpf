@@ -209,7 +209,10 @@
     <value>Message resending failed: {0}</value>
   </data>
   <data name="ClientNotConnected" xml:space="preserve">
-    <value>Target client not connected</value>
+    <value>The original client is disconnected or its connection could not be uniquely identified.</value>
+  </data>
+  <data name="ResendContentUnavailable" xml:space="preserve">
+    <value>The original message is empty or has been cleared and cannot be resent.</value>
   </data>
   <data name="AutoScroll" xml:space="preserve">
     <value>Auto scroll</value>

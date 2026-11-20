@@ -1,5 +1,7 @@
+using ColorVision.Database;
 using ColorVision.Engine.Services.PhyCameras.Licenses;
 using SqlSugar;
+using System.IO;
 
 namespace ColorVision.UI.Tests;
 
@@ -73,6 +75,153 @@ public sealed class LicenseExpirationTests
         await Assert.ThrowsAnyAsync<Exception>(() => PhyLicenseDao.DeleteExpiredAsync(db, [1], Cutoff));
     }
 
+    [Theory]
+    [InlineData(false, false, false)]
+    [InlineData(false, true, false)]
+    [InlineData(true, false, false)]
+    [InlineData(true, true, false)]
+    [InlineData(true, false, true)]
+    public async Task DeletionUsesTheCatalogDisplayedBeforeConfirmation(bool allExpired, bool switchAtConfirmation, bool switchAfterDeletion)
+    {
+        DirectoryInfo directory = Directory.CreateTempSubdirectory("cv-license-delete-");
+        try
+        {
+            string originalConnection = $"Data Source={Path.Combine(directory.FullName, "original.db")};Pooling=False";
+            string replacementConnection = $"Data Source={Path.Combine(directory.FullName, "replacement.db")};Pooling=False";
+            using var originalDb = CreateDb(originalConnection);
+            using var replacementDb = CreateDb(replacementConnection);
+            DateTime now = DateTime.Now;
+            originalDb.Insertable(new[] { License(1, 0, now.AddDays(-5)), License(2, 1, now.AddYears(1)) }).ExecuteCommand();
+            var replacementLicense = License(1, 1, now.AddDays(-5));
+            replacementLicense.MacAddress = "REPLACEMENT-SN";
+            replacementDb.Insertable(replacementLicense).ExecuteCommand();
+
+            MySqlConnectedEndpoint? active = null;
+            int originalOpens = 0, replacementOpens = 0;
+            var replacement = new MySqlConnectedEndpoint(candidate => ReferenceEquals(candidate, active), () =>
+            {
+                replacementOpens++;
+                return OpenDb(replacementConnection);
+            });
+            var original = new MySqlConnectedEndpoint(candidate => ReferenceEquals(candidate, active), () =>
+            {
+                originalOpens++;
+                var db = OpenDb(originalConnection);
+                if (switchAfterDeletion)
+                {
+                    db.Aop.OnLogExecuted = (sql, _) =>
+                    {
+                        if (sql.TrimStart().StartsWith("DELETE", StringComparison.OrdinalIgnoreCase)) active = replacement;
+                    };
+                }
+                return db;
+            });
+            active = original;
+
+            await WpfTestHost.Invoke(async () =>
+            {
+                int confirmations = 0;
+                Action? duringConfirmation = null;
+                var manager = new LicenseManagerViewModel(() => new LicenseCatalogSource(active!), (_, _, _, _) =>
+                {
+                    confirmations++;
+                    duringConfirmation!();
+                    return true;
+                });
+                manager.SelectedLicense = manager.Licenses.Single(item => item.Id == 1);
+                duringConfirmation = () =>
+                {
+                    Assert.False(manager.DeleteSelectedCommand.CanExecute(null));
+                    Assert.False(manager.ClearExpiredCommand.CanExecute(null));
+                    if (switchAtConfirmation) active = replacement;
+                    else manager.SelectedLicense = manager.Licenses.Single(item => item.Id == 2);
+                };
+
+                if (allExpired) await manager.ClearExpiredAsync();
+                else manager.DeleteSelected();
+
+                Assert.Equal(1, confirmations);
+                Assert.Equal(0, replacementOpens);
+                if (switchAtConfirmation)
+                {
+                    Assert.Equal(1, originalOpens);
+                    Assert.Contains(LicenseCatalogSource.SourceChanged().Message, manager.OperationMessage);
+                    Assert.Equal("TEST-SN-1", manager.SelectedLicense!.MacAddress);
+                }
+                else if (switchAfterDeletion)
+                {
+                    Assert.Equal(2, originalOpens);
+                    Assert.Contains(string.Format(ColorVision.Engine.Properties.Resources.LicenseClearExpiredSuccess, 1), manager.OperationMessage);
+                    Assert.Contains(LicenseCatalogSource.SourceChanged().Message, manager.OperationMessage);
+                }
+
+                if (switchAtConfirmation || switchAfterDeletion)
+                {
+                    manager.LoadLicenses();
+                    Assert.Equal("REPLACEMENT-SN", Assert.Single(manager.Licenses).MacAddress);
+                    Assert.Null(manager.SelectedLicense);
+                }
+                else
+                {
+                    Assert.Equal(2, Assert.Single(manager.Licenses).Id);
+                    Assert.Equal(2, manager.SelectedLicense!.Id);
+                }
+            });
+
+            Assert.Equal(switchAtConfirmation ? new[] { 1, 2 } : new[] { 2 },
+                originalDb.Queryable<LicenseModel>().OrderBy(item => item.Id).Select(item => item.Id).ToArray());
+            Assert.Equal("REPLACEMENT-SN", replacementDb.Queryable<LicenseModel>().Single().MacAddress);
+        }
+        finally
+        {
+            foreach (FileInfo file in directory.EnumerateFiles()) file.Delete();
+            directory.Delete();
+        }
+    }
+
+    [Fact]
+    public void SingleDeletionReportsMissingRecordEvenWhenTheListCannotBeRefreshed()
+    {
+        DirectoryInfo directory = Directory.CreateTempSubdirectory("cv-license-missing-");
+        try
+        {
+            string connection = $"Data Source={Path.Combine(directory.FullName, "licenses.db")};Pooling=False";
+            using var db = CreateDb(connection);
+            db.Insertable(License(1, 1, Cutoff)).ExecuteCommand();
+            const string refreshFailure = "Fixture refresh failure";
+            int opens = 0;
+            var endpoint = new MySqlConnectedEndpoint(_ => true, () =>
+            {
+                if (++opens == 3) throw new InvalidOperationException(refreshFailure);
+                return OpenDb(connection);
+            });
+
+            WpfTestHost.Invoke(() =>
+            {
+                int concurrentDeletes = 0;
+                var manager = new LicenseManagerViewModel(() => new LicenseCatalogSource(endpoint), (_, _, _, _) =>
+                {
+                    concurrentDeletes = db.Deleteable<LicenseModel>().Where(item => item.Id == 1).ExecuteCommand();
+                    return true;
+                });
+                manager.SelectedLicense = Assert.Single(manager.Licenses);
+
+                manager.DeleteSelected();
+
+                Assert.Equal(1, concurrentDeletes);
+                Assert.Equal(3, opens);
+                Assert.Contains(ColorVision.Engine.EngineLocalization.Get("原许可证记录已不存在或已变更。"), manager.OperationMessage);
+                Assert.Contains(refreshFailure, manager.OperationMessage);
+                Assert.DoesNotContain(ColorVision.Engine.EngineLocalization.Get("已完成删除。"), manager.OperationMessage);
+            });
+        }
+        finally
+        {
+            foreach (FileInfo file in directory.EnumerateFiles()) file.Delete();
+            directory.Delete();
+        }
+    }
+
     private static LicenseModel License(int id, int type, DateTime? expiry) => new()
     {
         Id = id,
@@ -82,24 +231,26 @@ public sealed class LicenseExpirationTests
         CreateDate = Cutoff.AddYears(-1)
     };
 
-    private static SqlSugarClient CreateDb()
+    private static SqlSugarClient CreateDb(string connectionString = "Data Source=:memory:")
     {
-        var db = new SqlSugarClient(new ConnectionConfig
-        {
-            ConnectionString = "Data Source=:memory:",
-            DbType = DbType.Sqlite,
-            IsAutoCloseConnection = false,
-            InitKeyType = InitKeyType.Attribute,
-            ConfigureExternalServices = new ConfigureExternalServices
-            {
-                EntityService = (_, column) =>
-                {
-                    if (!column.IsPrimarykey)
-                        column.IsNullable = true;
-                }
-            }
-        });
+        var db = OpenDb(connectionString);
         db.CodeFirst.InitTables<LicenseModel>();
         return db;
     }
+
+    private static SqlSugarClient OpenDb(string connectionString) => new(new ConnectionConfig
+    {
+        ConnectionString = connectionString,
+        DbType = DbType.Sqlite,
+        IsAutoCloseConnection = false,
+        InitKeyType = InitKeyType.Attribute,
+        ConfigureExternalServices = new ConfigureExternalServices
+        {
+            EntityService = (_, column) =>
+            {
+                if (!column.IsPrimarykey)
+                    column.IsNullable = true;
+            }
+        }
+    });
 }

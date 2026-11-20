@@ -67,7 +67,7 @@ public sealed class RgbCrossProcess : ProcessWithRecipeBase<RgbCrossProcessConfi
         {
             RecipeBase? judgment = Config.RecipeConfig.EnableJudgment ? Config.RecipeConfig.EdgeSeparation
                 ?? throw new InvalidDataException("启用判定时必须配置 Recipe。") : null;
-            RgbCrossBatchInput batchInput = batchResults.Resolve(ctx.Batch?.Id ?? 0);
+            RgbCrossBatchInput batchInput = batchResults.Resolve(ctx);
             string path = batchInput.JsonFile;
             string imagePath = batchInput.ImageFile;
             byte[] bytes;

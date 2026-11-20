@@ -1,3 +1,5 @@
+using Newtonsoft.Json;
+
 namespace FlowEngineLib;
 
 public class CVServerResponse
@@ -5,6 +7,8 @@ public class CVServerResponse
 	public string Id;
 
 	public ActionStatusEnum Status;
+	[JsonIgnore]
+	public bool HasExplicitCode { get; internal set; }
 
 	public string Message;
 

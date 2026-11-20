@@ -1,4 +1,5 @@
 using ColorVision.Common.Utilities;
+using ColorVision.Engine.Services.Devices.Spectrum.Dao;
 using ColorVision.Engine.Services.Devices.Spectrum.Views;
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.Flow;
@@ -28,7 +29,7 @@ public partial class ARVRWindow
     internal async Task<(bool Busy, ObjectiveTestItem? Result)> MeasureVidForJsonAsync(string serialNumber)
     {
         Dispatcher.VerifyAccess();
-        bool waitingForSwitch = !_objectiveSessionCompleted && _pendingSwitchRequestedAt.HasValue && !_pendingSwitchAcknowledgedAt.HasValue;
+        bool waitingForSwitch = _switchPgAcknowledgement.IsAwaiting(SocketControl.Current.Stream);
         if (_isDisposed || IsTestExecutionBusy || waitingForSwitch)
             return (true, null);
 
@@ -63,6 +64,7 @@ public partial class ARVRWindow
             return null; // The original protocol has no BUSY response.
         }
 
+        ClearSocketSwitchSession();
         _luxSession = session;
         session.FlowGroup = ProcessManager.ActiveGroup?.Name;
         SocketControl.Current.Stream = stream;
@@ -181,17 +183,9 @@ public partial class ARVRWindow
             }
             else
             {
-                var (measured, spectrum) = await LuxDeviceMeasurements.MeasureFluxAsync(_luxLifetime.Token);
-                succeeded = measured && spectrum != null;
-                if (spectrum != null)
-                {
-                    var result = new ViewResultSpectrum(spectrum);
-                    BeginSave();
-                    var csvLog = new LuxCsvWriteContext(request.SerialNumber, spectrum.BatchId, request.MachineNo, session.FlowGroup, request.SocketCode);
-                    await LuxDeviceReportWriter.WriteAsync(Path.Combine(directory, Tool.SanitizeFileName($"D_{session.Request.SerialNumber}.csv")),
-                        path => LuxFluxCsvExporter.Export(path, spectrum, result), csvLog, _luxLifetime.Token);
-                }
-                session.Complete(session.Request.MeasurementResponse(measured ? spectrum?.LuminousFlux : 0));
+                var measurement = await LuxDeviceMeasurements.MeasureFluxAsync(_luxLifetime.Token);
+                if (measurement is { Succeeded: true, Result: not null }) BeginSave();
+                succeeded = await CompleteLuxFluxMeasurementAsync(session, directory, measurement, _luxLifetime.Token);
             }
             completionEvent = succeeded ? "Completed" : "Failed";
             if (!succeeded) failure = "设备测量失败，请查看设备日志。";
@@ -212,6 +206,24 @@ public partial class ARVRWindow
                 ExecutionStatus.Status = FlowExecutionStatusInfo.Finished(operation, completionEvent, failure, elapsed.ElapsedMilliseconds);
             ReleaseLuxSession(session);
         }
+    }
+
+    internal static async Task<bool> CompleteLuxFluxMeasurementAsync(LuxCommandSession session, string directory,
+        (bool Succeeded, SpectumResultEntity? Result) measurement, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        var request = session.Request;
+        if (!measurement.Succeeded || measurement.Result is not { } spectrum)
+        {
+            session.Complete(request.MeasurementResponse(measurement.Succeeded ? null : 0f));
+            return false;
+        }
+
+        var context = new LuxCsvWriteContext(request.SerialNumber, spectrum.BatchId, request.MachineNo, session.FlowGroup, request.SocketCode);
+        await LuxDeviceReportWriter.WriteAsync(Path.Combine(directory, Tool.SanitizeFileName($"D_{request.SerialNumber}.csv")),
+            path => LuxFluxCsvExporter.Export(path, spectrum, new ViewResultSpectrum(spectrum)), context, cancellationToken);
+        session.Complete(request.MeasurementResponse(spectrum.LuminousFlux));
+        return true;
     }
 
     private void ReleaseLuxSession(LuxCommandSession session)

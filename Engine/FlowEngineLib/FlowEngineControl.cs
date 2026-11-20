@@ -634,7 +634,6 @@ public class FlowEngineControl : FlowEngineAPI, IDisposable
 				logger.Error("Flow completion subscriber failed.", ex);
 			}
 		}
-		e.TrackedCompletion?.TrySetResult(e);
 	}
 
 	private void DetachNodeEditorCore()

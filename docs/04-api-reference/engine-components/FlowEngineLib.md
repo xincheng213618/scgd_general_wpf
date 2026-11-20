@@ -42,6 +42,8 @@ related: ["flow.architecture","flow.editor","flow.workspace","flow.templates","f
 
 流程执行编号会被旧服务用于结果文件名，开始入口通过 `Tool.SanitizeFileName` 将 Windows 非法文件名字符（含 `?`、路径分隔符和控制字符）替换为 `_`，去除尾部点/空格，空名与保留设备名使用安全占位/前缀。合法编号保持不变；等待完成、回调、运行状态、查找开始动作和停止均使用相同规范化编号，`FlowHeadlessExecutionRequest.SerialNumber` 也保存实际执行编号。拥有业务批次的调用方须在创建批次和诊断记录前生成此编号，不能只在某个算法请求发送时替换，否则会割裂批次、消息和完成事件的关联。客户产品 SN 是独立业务字段，保留原值用于显示、追溯和协议回传；用它生成文件名时单独格式化，不改写文件内容或历史批次。
 
+由项目创建 MySQL 批次时，可调用 `BatchResultMasterDao.InsertForFlow(batch)`。该方法在已验证连接中插入批次并返回指向原库的短生命周期客户端工厂。调用 `FlowControl.TryStartWithBatchAsync(serialNumber, batch, cancellationToken)` 时传回同一个模型，首个节点派发前会校验批次、编号和数据库维护状态。支持批次归属的节点会沿用该连接，即使连接在建批与启动之间切换。项目可用返回的工厂完成原库回写及后处理。
+
 `BaseStartNode.RequiresConnectionReady` 默认是 `false`，因此不能统一要求所有本地开始节点的 `Ready` 为真；要求连接的开始节点才通过 `Ready` 门禁。`CanAcceptStart` 还要求开始输出已连线。服务节点的 `getActionEvent` / `getBaseEvent` 构造请求，再由 `DoTransferToServer` 转交发送链。扩展方式见[节点扩展契约](../extensions/flow-node.md)。
 
 `BaseStartNode` 实现 `IDisposable`；脱离 `FlowEngineControl` 构造开始节点的读取器也必须在读取后释放节点。
@@ -122,6 +124,8 @@ flowchart TD
 节点完成通知尚未发布时，流程完成通知可延后。`CVStartCFC` 副本共享延后计数，通知采用实际结束流程的副本。开始节点向各订阅者分别传递同一终态，记录单个订阅者的异常后继续通知引擎和其余订阅者。
 
 流程结束时，`BaseStartNode.DoFinishing` 沿开始端口传递终态，供沿途节点释放运行记录；宿主后处理属于后续阶段。单次停止取消 `StopToken` 并释放运行资源，已停止的分支无法再次完成流程。资源释放失败时继续尝试其余资源，将异常写入日志，并发布已确定的终态。`CVBaseServerNode` 收到 `Completed` 时只清理并转发状态。`IgnoreErrors` 用于上游出错后的收尾，保留本节点自身的失败状态。
+
+清空或分离图、移除开始节点以及调用 `StopAll()` 会停止受影响的运行。批量清理在该次运行的资源释放后直接完成 `FlowEngineRunner` 的等待任务，返回 `Data.Status=Canceled`。先于清理确定的终态在节点完成通知发出后交付给对应的等待任务。
 
 “逻辑与”“组合”及多输入服务和本地节点只汇合同一次运行的分支。重复框内还要求轮次一致。同 SN 重新测量时，旧分支的结果和停止信号不会参与或清空新运行的待汇合输入。
 

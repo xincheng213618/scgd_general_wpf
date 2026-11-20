@@ -108,8 +108,8 @@
                                 </DockPanel>
                                 <DockPanel>
                                     <TextBlock Margin="0,0,5,0" HorizontalAlignment="Center" VerticalAlignment="Center" Text="{x:Static properties:Resources.I}" />
-                                    <TextBlock Width="30" Block.TextAlignment="Center" DockPanel.Dock="Right" Text="mA" />
-                                    <TextBox Width="50" BorderThickness="0,0,0,1" Text="{Binding DisplayConfig.I, StringFormat={}{0:F1}}" />
+                                    <TextBlock x:Name="SpectrumCurrentUnit" Width="30" Block.TextAlignment="Center" DockPanel.Dock="Right" Text="{Binding DisplayCurrentUnit}" />
+                                    <TextBox x:Name="SpectrumCurrentInput" Width="50" BorderThickness="0,0,0,1" Text="{Binding DisplayCurrent, StringFormat={}{0:G7}}" />
 
                                 </DockPanel>
                             </StackPanel>

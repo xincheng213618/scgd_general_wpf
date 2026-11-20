@@ -1864,7 +1864,7 @@
     <value>Camera Device Name</value>
   </data>
   <data name="Engine_PG_CameraDeviceNameDesc" xml:space="preserve">
-    <value>Enter the camera device name to use</value>
+    <value>選擇相機，或輸入相機的正確裝置 Code。</value>
   </data>
 
   <data name="Engine_PG_DeviceIndex" xml:space="preserve">
@@ -1886,7 +1886,7 @@
     <value>光譜儀裝置名稱</value>
   </data>
   <data name="Engine_PG_SpectrometerDeviceNameDesc" xml:space="preserve">
-    <value>選擇執行單次測試的光譜儀裝置。</value>
+    <value>選擇光譜儀，或輸入光譜儀的正確裝置 Code。</value>
   </data>
   <data name="Engine_PG_SpectrometerSettings" xml:space="preserve">
     <value>光譜儀設定</value>
@@ -2414,6 +2414,11 @@
   <data name="Cache" xml:space="preserve"><value>快取</value></data>
   <data name="Camera_BrightnessThresholdRatio" xml:space="preserve"><value>亮度閾值比例</value></data>
   <data name="Camera_CaptureFailed" xml:space="preserve"><value>取圖失敗</value></data>
+  <data name="Camera_CaptureTimedOutUnconfirmed" xml:space="preserve"><value>取圖超時，尚未確認本次取圖結果。</value></data>
+  <data name="Scheduler_DeviceReferenceAmbiguous" xml:space="preserve"><value>裝置識別碼對應多個裝置，請在排程工作設定中重新選擇裝置。</value></data>
+  <data name="Scheduler_DeviceReferenceUnavailable" xml:space="preserve"><value>找不到所選裝置，請在排程工作設定中重新選擇裝置。</value></data>
+  <data name="Scheduler_DeviceCaptureInProgress" xml:space="preserve"><value>此裝置的上一筆排程擷取命令尚未結束，已跳過本次觸發。</value></data>
+  <data name="Scheduler_DeviceReplyWaitTimedOut" xml:space="preserve"><value>排程工作等候裝置回覆逾時，本次擷取結果尚未確認。</value></data>
   <data name="Camera_ConfirmRestartService" xml:space="preserve"><value>是否重新啟動服務？</value></data>
   <data name="Camera_CrossGuide" xml:space="preserve"><value>十字導引</value></data>
   <data name="Camera_CrossGuideRegion" xml:space="preserve"><value>十字導引區域</value></data>
@@ -2774,7 +2779,7 @@
   <data name="SpectrumIntegrationTime" xml:space="preserve"><value>積分時間 (ms)</value></data>
   <data name="SpectrumNdPosition" xml:space="preserve"><value>ND 孔位</value></data>
   <data name="SpectrumVoltage" xml:space="preserve"><value>電壓 (V)</value></data>
-  <data name="SpectrumCurrent" xml:space="preserve"><value>電流 (A)</value></data>
+  <data name="SpectrumCurrent" xml:space="preserve"><value>手填電流（本機 A / 服務 mA）</value></data>
   <data name="SpectrumCalibrationFileSettingsHint" xml:space="preserve"><value>管理波長與幅值檔案；也可從標定分組視窗編輯。</value></data>
   <data name="ShutterConfig" xml:space="preserve"><value>快門設定</value></data>
   <data name="SelfAdaptionInitDark" xml:space="preserve"><value>自適應校零設定</value></data>
@@ -7179,6 +7184,7 @@
   <data name="CameraPanel_StopPreviewHint" xml:space="preserve"><value>停止連續畫面；本地相機保留連接</value></data>
   <data name="CameraPanel_PreviewRecovering" xml:space="preserve"><value>未收到新影格，正在恢復視訊…</value></data>
   <data name="CameraPanel_PreviewRecoveryFailed" xml:space="preserve"><value>視訊自動恢復失敗，預覽已停止。可重新開啟視訊。</value></data>
+  <data name="Camera_ResultImageOpenFailed" xml:space="preserve"><value>無法開啟擷取結果（ID {0}）。請檢查結果檔案和執行日誌。</value></data>
   <data name="CameraPanel_ServicePreviewHint" xml:space="preserve"><value>請先斷開服務相機，再開始本地預覽</value></data>
   <data name="CameraPanel_Averages" xml:space="preserve"><value>平均</value></data>
   <data name="CameraPanel_MotorJogLeft" xml:space="preserve"><value>向左寸動</value></data>
@@ -8258,4 +8264,10 @@
   <data name="Flow_PostProcess_InvalidConfiguration" xml:space="preserve"><value>設定無效</value></data>
   <data name="Flow_PostProcess_InvalidConfigurationHint" xml:space="preserve"><value>無法讀取已儲存的後處理參數。請編輯此項並重新設定。</value></data>
   <data name="在{0}添加设备" xml:space="preserve"><value>在{0}新增設備</value></data>
+  <data name="AlgorithmSideSaveFailures" xml:space="preserve"><value>{0} 筆結果的資料欄儲存失敗（ID {1}）。請查看執行記錄，修正問題後重新儲存這些結果。</value></data>
+  <data name="PoiHistoryDetailsUnavailable" xml:space="preserve"><value>無法載入結果明細（ID {0}）。請檢查資料庫連線和執行記錄，修復後重新選取該結果或重試儲存資料欄。</value></data>
+  <data name="数据库连接已更改，请刷新统计后再执行。" xml:space="preserve"><value>資料庫連線已變更，請重新整理統計後再執行。</value></data>
+  <data name="请连接数据库并刷新统计。" xml:space="preserve"><value>請連線至資料庫並重新整理統計。</value></data>
+  <data name="重新加载终端设备" xml:space="preserve"><value>重新載入終端設備</value></data>
+  <data name="未能提交终端设备重载请求。" xml:space="preserve"><value>未能提交終端設備重新載入請求。</value></data>
 </root>

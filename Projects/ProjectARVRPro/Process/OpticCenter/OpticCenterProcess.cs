@@ -25,7 +25,7 @@ namespace ProjectARVRPro.Process.OpticCenter
                 if (values.Count > 0)
                     ctx.Result.FileName = values[0].FileUrl;
 
-                var masters = AlgResultMasterDao.Instance.GetAllByBatchId(ctx.Batch.Id);
+                var masters = ctx.ReadMasterResults();
                 foreach (var master in masters)
                 {
 
@@ -33,7 +33,7 @@ namespace ProjectARVRPro.Process.OpticCenter
                     if (master.ImgFileType == ColorVision.Engine.ViewResultAlgType.ARVR_BinocularFusion)
                     {
                         log.Info("use ARVR_BinocularFusion");
-                        List<BinocularFusionModel> AlgResultModels = BinocularFusionDao.Instance.GetAllByPid(master.Id);
+                        List<BinocularFusionModel> AlgResultModels = ctx.ReadDetails(BinocularFusionDao.Instance, master.Id);
                         if (AlgResultModels.Count >= 1)
                         {
                             BinocularFusionModel binocularFusionModel = AlgResultModels[0];
@@ -49,7 +49,7 @@ namespace ProjectARVRPro.Process.OpticCenter
 
                     if (master.ImgFileType == ViewResultAlgType.FindCross && master.version != "2.0")
                     {
-                        var details = DeatilCommonDao.Instance.GetAllByPid(master.Id);
+                        var details = ctx.ReadDetails(DeatilCommonDao.Instance, master.Id);
                         if (details.Count == 1)
                         {
                             var find = new FindCrossDetailViewReslut(details[0]);

@@ -6,50 +6,71 @@ using Newtonsoft.Json;
 using ProjectARVRPro.PluginConfig;
 using System.Diagnostics;
 using System.Net.Sockets;
+using System.Text;
 using System.Windows;
 
 namespace ProjectARVRPro.Services
 {
     public class SocketControl
     {
+        private static readonly ILog log = LogManager.GetLogger(typeof(SocketControl));
         public static SocketControl Current { get; set; } = new SocketControl();
         public NetworkStream Stream { get; set; }
+
+        internal static void WriteSwitchResponse(NetworkStream stream, SocketResponse response, Action afterSend, bool recordEndpoint)
+        {
+            string? endpoint = null;
+            if (recordEndpoint)
+            {
+                try { endpoint = stream.Socket.RemoteEndPoint?.ToString(); }
+                catch (ObjectDisposedException) { }
+                catch (SocketException) { }
+            }
+
+            string content = JsonConvert.SerializeObject(response);
+            stream.Write(Encoding.UTF8.GetBytes(content));
+            afterSend();
+
+            try
+            {
+                log.Info(content);
+                SocketMessageManager.GetInstance().AddMessage(new SocketMessage
+                {
+                    ClientEndPoint = endpoint,
+                    Direction = SocketMessageDirection.Sent,
+                    Content = content,
+                    MessageTime = DateTime.Now,
+                    EventName = response.EventName,
+                    MsgID = response.MsgID,
+                    ResponseCode = response.Code
+                });
+            }
+            catch (Exception ex)
+            {
+                log.Error("普通切图已发送，但记录 Socket 历史失败", ex);
+            }
+        }
     }
     
     public class FlowInit : ISocketJsonHandler
     {
+        // The bundle also runs on hosts released before the send callback was added.
+        private static readonly Action<SocketResponse, Action>? SetAfterSend = typeof(SocketResponse)
+            .GetProperty(nameof(SocketResponse.AfterSend))?.SetMethod?.CreateDelegate<Action<SocketResponse, Action>>();
+
         public string EventName => "ProjectARVRInit";
 
         public SocketResponse Handle(NetworkStream stream, SocketRequest request)
         {
-            (string resolvedSerialNumber, int firstEnabledIndex) = Application.Current.Dispatcher.Invoke(() =>
+            (string resolvedSerialNumber, int firstEnabledIndex, Action? afterSend) =
+                Application.Current.Dispatcher.Invoke<(string, int, Action?)>(() =>
             {
                 bool needsShow = ProjectWindowInstance.WindowInstance == null;
                 ARVRWindow window = ProjectARVRWindowHost.GetOrCreate();
-                if (window.IsCompletingFlowBatch)
-                    return (request.SerialNumber?.Trim() ?? string.Empty, -2);
-                SocketControl.Current.Stream = stream;
                 if (needsShow)
                     window.Show();
 
-                if (window.IsResultExportPending || window.IsJsonVidRunning)
-                    return (request.SerialNumber?.Trim() ?? string.Empty, -2);
-                var processMetas = Process.ProcessManager.GetInstance().ProcessMetas;
-                int firstEnabledInternalIndex = -1;
-                for (int i = 0; i < processMetas.Count; i++)
-                {
-                    if (processMetas[i].IsEnabled)
-                    {
-                        firstEnabledInternalIndex = i;
-                        break;
-                    }
-                }
-                if (firstEnabledInternalIndex < 0)
-                    return (request.SerialNumber?.Trim() ?? string.Empty, firstEnabledInternalIndex);
-
-                string resolvedSerialNumber = window.InitTest(request.SerialNumber);
-                int externalIndex = firstEnabledInternalIndex + GetProcessEnableSocket.GetIndexOffset();
-                return (resolvedSerialNumber, externalIndex);
+                return window.PrepareSocketTestSession(stream, request.SerialNumber);
             });
             if (firstEnabledIndex == -2)
             {
@@ -73,9 +94,21 @@ namespace ProjectARVRPro.Services
                     SerialNumber = resolvedSerialNumber,
                 };
             }
-            //现在先切换PG
+            var response = new SocketResponse
+            {
+                MsgID = request.MsgID,
+                EventName = "SwitchPG",
+                SerialNumber = resolvedSerialNumber,
+                Data = new SwitchPG { ARVRTestType = firstEnabledIndex }
+            };
+            if (SetAfterSend != null)
+            {
+                SetAfterSend(response, afterSend!);
+                return response;
+            }
 
-            return new SocketResponse() { MsgID = request.MsgID, EventName = "SwitchPG", SerialNumber = resolvedSerialNumber, Data = new SwitchPG() { ARVRTestType = firstEnabledIndex } };
+            SocketControl.WriteSwitchResponse(stream, response, afterSend!, recordEndpoint: true);
+            return null;
         }
     }
 
@@ -90,7 +123,7 @@ namespace ProjectARVRPro.Services
             long queuedAt = measure ? Stopwatch.GetTimestamp() : 0;
             long startedAt = 0, finishedAt = 0;
             int? batchIdBeforeDispatch = null;
-            string outcome = "Forwarded";
+            string outcome = "Ignored";
             SocketResponse response = Application.Current.Dispatcher.Invoke<SocketResponse>(() =>
             {
                 if (measure) startedAt = Stopwatch.GetTimestamp();
@@ -103,15 +136,14 @@ namespace ProjectARVRPro.Services
                         outcome = "BatchCompleting";
                         return null;
                     }
-                    SocketControl.Current.Stream = stream;
                     if (window == null)
                     {
                         outcome = "WindowUnavailable";
                         return new SocketResponse { MsgID = request.MsgID, SerialNumber = request.SerialNumber, Code = -3, Msg = "ProjectARVR Wont Open", EventName = EventName };
                     }
 
-                    log.Debug("PG切换结束");
-                    window.SwitchPGCompleted();
+                    if (window.TryAcknowledgeSocketSwitch(stream))
+                        outcome = "Acknowledged";
                     return null;
                 }
                 finally { if (measure) finishedAt = Stopwatch.GetTimestamp(); }
@@ -145,12 +177,10 @@ namespace ProjectARVRPro.Services
                     return new SocketResponse { MsgID = request.MsgID, EventName = EventName, Code = -4, Msg = "ARVR test is busy", SerialNumber = request.SerialNumber };
                 if (window == null)
                 {
-                    SocketControl.Current.Stream = stream;
                     return new SocketResponse { MsgID = request.MsgID, EventName = EventName, Code = -3, Msg = "ProjectARVR Wont Open" };
                 }
                 if (TemplateFlow.Params.FirstOrDefault(a => a.Key == request.Params)?.Value is not FlowParam)
                 {
-                    SocketControl.Current.Stream = stream;
                     return new SocketResponse { MsgID = request.MsgID, EventName = EventName, Code = -2, Msg = $"Cant Find Flow {request.Params}" };
                 }
 

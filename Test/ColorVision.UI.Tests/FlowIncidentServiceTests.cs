@@ -1,6 +1,5 @@
 using ColorVision.Engine.FlowProcessing;
 using ColorVision.Engine.FlowProcessing.Diagnostics;
-using Microsoft.Data.Sqlite;
 using SqlSugar;
 using System.IO;
 
@@ -251,7 +250,6 @@ public sealed class FlowIncidentServiceTests
                 db.Ado.Close();
                 db.Dispose();
             }
-            SqliteConnection.ClearAllPools();
             if (File.Exists(dbPath))
                 File.Delete(dbPath);
         }
@@ -261,7 +259,7 @@ public sealed class FlowIncidentServiceTests
     {
         return new SqlSugarClient(new ConnectionConfig
         {
-            ConnectionString = $"Data Source={dbPath}",
+            ConnectionString = $"Data Source={dbPath};Pooling=False",
             DbType = DbType.Sqlite,
             IsAutoCloseConnection = true,
             InitKeyType = InitKeyType.Attribute,

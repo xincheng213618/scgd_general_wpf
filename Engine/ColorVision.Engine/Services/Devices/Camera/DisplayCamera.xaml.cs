@@ -1,5 +1,6 @@
 #pragma warning disable CA1051,CA1707,CA1863
 using ColorVision.Core;
+using ColorVision.Database;
 using ColorVision.Engine.FlowProcessing;
 using ColorVision.Engine.Media;
 using ColorVision.Engine.Messages;
@@ -1096,6 +1097,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             {
                 EnsureTimedButtonOperations();
                 MsgRecord msgRecord;
+                bool serviceOnly = !Device.CameraBackend.OpensLocally;
                 try { msgRecord = DService.Open(DService.Config.CameraID, Device.Config.TakeImageMode, (int)DService.Config.ImageBpp); }
                 catch (InvalidOperationException ex)
                 {
@@ -1103,16 +1105,14 @@ namespace ColorVision.Engine.Services.Devices.Camera
                     return;
                 }
                 TrackPanelOperation(msgRecord);
-                ServicesHelper.SendTimedCommand(this, button, msgRecord, onTerminalStateChanged: (record, state) =>
+                ServicesHelper.SendTimedCommand(this, button, msgRecord, onTerminalStateChanged: (_, state) =>
                 {
-                    if (state == MsgRecordState.Success)
-                    {
-                        RefreshPanelState();
-                    }
-                    else
-                    {
-                        MessageBox1.Show(Application.Current.GetActiveWindow(), $"{record.MsgReturn.Message}", "ColorVision");
-                    }
+                    if (state == MsgRecordState.Success) RefreshPanelState();
+                });
+                DService.TrackPanelFailure(msgRecord, serviceOnly, (_, reason) =>
+                {
+                    if (!IsDisposed) MessageBox1.Show(Application.Current.GetActiveWindow(), reason ?? string.Empty, "ColorVision");
+                    return Task.CompletedTask;
                 });
 
                 RotateTransform rotateTransform1 = new() { Angle = 0 };
@@ -1279,75 +1279,64 @@ namespace ColorVision.Engine.Services.Devices.Camera
             if (Device.Config.IsExpThree) { expTime = new double[] { Device.DisplayConfig.ExpTimeR, Device.DisplayConfig.ExpTimeG, Device.DisplayConfig.ExpTimeB }; }
             else expTime = new double[] { Device.DisplayConfig.ExpTime };
 
-            int latestMeasureResultId = MeasureImgResultDao.Instance.GetLatestId(Device.Config.Code);
+            DeviceCamera camera = Device;
+            MQTTCamera service = camera.DService;
+            var route = service.CaptureMqttRoute(pinConnection: true);
+            MySqlConnectedEndpoint? endpoint = camera.ResultDatabaseEndpoint;
+            if (!camera.OwnsResultDatabase(endpoint)) endpoint = null;
+            if (!OwnsFeedback()) return;
+
+            MsgRecord msgRecord;
+            try { msgRecord = service.CaptureRemotely(expTime, param, autoExpTimeParam); }
+            catch (InvalidOperationException error)
+            {
+                logger.Warn("Unable to start the camera capture.", error);
+                if (OwnsFeedback()) MessageBox1.Show(Application.Current.GetActiveWindow(), error.Message, "ColorVision");
+                return;
+            }
+
             EnsureTimedButtonOperations();
-            MsgRecord msgRecord = DService.GetData(expTime, param, autoExpTimeParam);
-            logger.Info($"正在取图：ExpTime{Device.DisplayConfig.ExpTime} othertime{DisplayCameraConfig.TakePictureDelay}");
-            Device.SetMsgRecordChanged(msgRecord);
+            logger.Info($"正在取图：ExpTime{camera.DisplayConfig.ExpTime} othertime{DisplayCameraConfig.TakePictureDelay}");
+            camera.SetMsgRecordChanged(msgRecord);
 
             TrackPanelOperation(msgRecord);
-            ServicesHelper.SendTimedCommand(this, Capture.TakePhotoButton, msgRecord, onTerminalStateChanged: (record, state) =>
-            {
-                if (state == MsgRecordState.Timeout)
-                {
-                    if (TryHandleCaptureTimeoutFromDatabase(latestMeasureResultId))
-                    {
-                        return;
-                    }
+            ServicesHelper.SendTimedCommand(this, Capture.TakePhotoButton, msgRecord);
+            TrackRemoteCaptureFailure(service, msgRecord, OwnsFeedback,
+                () => endpoint == null ? null : camera.ExistingView?.PrepareCaptureHistoryRefresh(endpoint, OwnsFeedback),
+                message => MessageBox1.Show(message), ShowCaptureFailureAsync);
 
-                    if (param.Id > 0 && Device?.PhyCamera?.DeviceCalibration == null)
-                    {
-                        MessageBox1.Show(Properties.Resources.CaptureTimeoutConfigureCalibration);
-                    }
-                    else
-                    {
-                        MessageBox1.Show(Properties.Resources.CaptureTimeoutResetTime);
-                    }
-                }
-                if (state == MsgRecordState.Fail)
+            bool OwnsFeedback() => !IsDisposed && ReferenceEquals(camera, Device) && service.CanPresentFeedback(camera, serviceOnly: true)
+                && route.HasSameDestination(service.CaptureMqttRoute(pinConnection: true))
+                && (endpoint == null || camera.OwnsResultDatabase(endpoint));
+        }
+
+        internal static void TrackRemoteCaptureFailure(MQTTCamera service, MsgRecord record, Func<bool> ownsFeedback,
+            Func<Func<Task>?> prepareHistoryRefresh, Action<string> showTimeout, Func<string?, Func<bool>, Task> showFailure)
+        {
+            service.TrackPanelFailure(record, serviceOnly: true, async (state, message) =>
+            {
+                if (!ownsFeedback()) return;
+                Func<Task>? refresh = null;
+                try { refresh = prepareHistoryRefresh(); }
+                catch (Exception error) { logger.Warn("Unable to prepare camera history refresh.", error); }
+
+                if (state == MsgRecordState.Timeout && ownsFeedback())
+                    showTimeout(EngineLocalization.Get("Camera_CaptureTimedOutUnconfirmed"));
+                if (refresh != null && ownsFeedback())
                 {
-                    HandleCaptureFail(record.MsgReturn?.Message);
+                    try { await refresh(); }
+                    catch (Exception error) { logger.Warn("Unable to refresh camera history after capture failure.", error); }
                 }
+                if (state == MsgRecordState.Fail && ownsFeedback()) await showFailure(message, ownsFeedback);
             });
-
         }
 
-        private bool TryHandleCaptureTimeoutFromDatabase(int latestMeasureResultId)
+        private async Task ShowCaptureFailureAsync(string? message, Func<bool> canRestart)
         {
-            MeasureResultImgModel? result = MeasureImgResultDao.Instance.GetLatestAfterId(Device.Config.Code, latestMeasureResultId);
-            if (result == null) return false;
-
-            View.SearchAll();
-            if (!IsFailedMeasureResult(result))
-            {
-                logger.Info($"取图超时后检测到数据库已生成记录，Id:{result.Id}, ResultCode:{result.ResultCode}");
-                return true;
-            }
-
-            string errorMessage = BuildMeasureResultErrorMessage(result);
-            logger.Error($"取图超时后检测到数据库失败记录：{errorMessage}");
-            HandleCaptureFail(errorMessage, refreshResults: false);
-            return true;
-        }
-
-        private static bool IsFailedMeasureResult(MeasureResultImgModel result) => result.ResultCode != 0;
-
-        private static string BuildMeasureResultErrorMessage(MeasureResultImgModel result)
-        {
-            string message = string.IsNullOrWhiteSpace(result.Result) ? Properties.Resources.Camera_UnknownError : result.Result;
-            return string.Format(Properties.Resources.Camera_DatabaseFailureRecord, result.Id, result.ResultCode, message);
-        }
-
-        private async void HandleCaptureFail(string? message, bool refreshResults = true)
-        {
-            if (refreshResults)
-            {
-                View.SearchAll();
-            }
-
             string errorMessage = string.IsNullOrWhiteSpace(message) ? Properties.Resources.Camera_CaptureFailed : message;
             string prompt = errorMessage + Environment.NewLine + Properties.Resources.TryRestartService + Environment.NewLine + Properties.Resources.Camera_ConfirmRestartService;
-            if (MessageBox.Show(Application.Current.GetActiveWindow(), prompt, "ColorVision", MessageBoxButton.YesNo, MessageBoxImage.Warning) == MessageBoxResult.Yes)
+            if (MessageBox.Show(Application.Current.GetActiveWindow(), prompt, "ColorVision", MessageBoxButton.YesNo, MessageBoxImage.Warning) == MessageBoxResult.Yes
+                && canRestart())
             {
                 try
                 {
@@ -1356,7 +1345,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 catch (Exception ex)
                 {
                     logger.Error("重启 ColorVision 服务失败", ex);
-                    MessageBox.Show(Application.Current.GetActiveWindow(), ex.Message, "ColorVision");
+                    if (canRestart()) MessageBox.Show(Application.Current.GetActiveWindow(), ex.Message, "ColorVision");
                 }
             }
         }
@@ -1437,20 +1426,9 @@ namespace ColorVision.Engine.Services.Devices.Camera
                     return;
                 }
 
-                var msgRecord = DService.GetAutoExpTime(param);
-                msgRecord.MsgRecordStateChanged += (s, e) =>
-                {
-                    if (IsDisposed) return;
-
-                    if (e == MsgRecordState.Timeout)
-                    {
-                        MessageBox1.Show(Properties.Resources.AutoExposureTimeoutCheckLog, "ColorVision");
-                    }
-                    if (e == MsgRecordState.Fail)
-                    {
-                        MessageBox1.Show(string.Format(Properties.Resources.AutoExposureFailedCheckLog, Environment.NewLine, msgRecord.MsgReturn.Message), "ColorVision");
-                    }
-                };
+                MQTTCamera service = DService;
+                var msgRecord = service.GetAutoExpTime(param);
+                service.TrackAutoExposureFailure(msgRecord, () => !IsDisposed);
                 TrackPanelOperation(msgRecord);
                 ServicesHelper.SendCommand(button, msgRecord);
             }
@@ -1704,24 +1682,23 @@ namespace ColorVision.Engine.Services.Devices.Camera
             if (sender is Button button)
             {
                 EnsureTimedButtonOperations();
-                string? runningText = Device.RoutesLocally && Device.CameraBackend.IsCommandRunning
+                bool serviceOnly = !Device.RoutesLocally;
+                string? runningText = !serviceOnly && Device.CameraBackend.IsCommandRunning
                     ? EngineLocalization.Get("CameraPanel_WaitingToClose") : null;
                 MsgRecord msgRecord = DService.Close();
                 TrackPanelOperation(msgRecord);
                 ServicesHelper.SendTimedCommand(this, button, msgRecord, runningText, onTerminalStateChanged: (_, state) =>
                 {
-                    if (state == MsgRecordState.Timeout)
+                    if (state == MsgRecordState.Success) DService_DeviceStatusChanged(this, DService.DeviceStatus);
+                });
+                DService.TrackPanelFailure(msgRecord, serviceOnly, (state, reason) =>
+                {
+                    if (!IsDisposed)
                     {
-                        MessageBox.Show(Properties.Resources.CloseCameraTimeoutCheckLog);
-                        return;
+                        if (state == MsgRecordState.Timeout) MessageBox.Show(Properties.Resources.CloseCameraTimeoutCheckLog);
+                        else MessageBox1.Show(Application.Current.GetActiveWindow(), reason ?? "相机关闭失败。", "ColorVision");
                     }
-
-                    if (state != MsgRecordState.Success)
-                    {
-                        MessageBox1.Show(Application.Current.GetActiveWindow(), msgRecord.MsgReturn?.Message ?? "相机关闭失败。", "ColorVision");
-                        return;
-                    }
-                    DService_DeviceStatusChanged(this, DService.DeviceStatus);
+                    return Task.CompletedTask;
                 });
             }
         }
@@ -1749,21 +1726,24 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         private void GetNDport_Click(object sender, RoutedEventArgs e)
         {
-            MsgRecord msgRecord = DService.GetPort();
-            msgRecord.MsgRecordStateChanged += (s, e) =>
+            MQTTCamera service = DService;
+            MsgRecord msgRecord = service.GetPort();
+            service.TrackPanelFailure(msgRecord, serviceOnly: true, (_, _) =>
             {
-                if (IsDisposed) return;
+                if (!IsDisposed) MessageBox.Show(Application.Current.GetActiveWindow(), Properties.Resources.ExecutionFailed, "ColorVision");
+                return Task.CompletedTask;
+            });
 
-                if (e == MsgRecordState.Success)
-                {
-                    int port = msgRecord.MsgReturn.Data.Port;
-                    DService.Config.NDPort = port;
-                }
-                else
-                {
-                    MessageBox.Show(Application.Current.GetActiveWindow(), ColorVision.Engine.Properties.Resources.ExecutionFailed, "ColorVision");
-                }
-            };
+            int completed = 0;
+            void ReadPort(object? _, MsgRecordState state)
+            {
+                if (!MsgRecord.IsTerminal(state) || Interlocked.Exchange(ref completed, 1) != 0) return;
+                msgRecord.MsgRecordStateChanged -= ReadPort;
+                if (state == MsgRecordState.Success && !IsDisposed && service.CanPresentFeedback(Device, serviceOnly: true))
+                    service.Config.NDPort = (int)msgRecord.MsgReturn.Data.Port;
+            }
+            msgRecord.MsgRecordStateChanged += ReadPort;
+            ReadPort(msgRecord, msgRecord.MsgRecordState);
         }
 
         internal void AttachImageView(ViewCamera view)

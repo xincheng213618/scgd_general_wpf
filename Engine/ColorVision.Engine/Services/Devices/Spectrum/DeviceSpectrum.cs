@@ -1,10 +1,12 @@
-﻿using LocalizedText = global::ColorVision.Engine.EngineLocalization;
+using LocalizedText = global::ColorVision.Engine.EngineLocalization;
 #pragma warning disable CA1863,CS8601,CS8604
 using ColorVision.Common.MVVM;
 using ColorVision.Database;
 using ColorVision.Engine.Services.Logging;
 using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services.Devices.CfwPort;
+using ColorVision.Engine.Services.Devices.SMU;
+using ColorVision.Engine.Services.Devices.SMU.Dao;
 using ColorVision.Engine.Services.Devices.Spectrum.Calibration;
 using ColorVision.Engine.Services.Devices.Spectrum.Correction;
 using ColorVision.Engine.Services.Devices.Spectrum.Configs;
@@ -35,6 +37,7 @@ using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Runtime.Serialization;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
@@ -45,11 +48,27 @@ using System.Windows.Controls;
 
 namespace ColorVision.Engine.Services.Devices.Spectrum
 {
+    internal readonly record struct SpectrumElectricalInputs(double Voltage, double CurrentValue, bool? CurrentInAmperes)
+    {
+        // An untagged legacy value keeps the original interpretation at each consumer.
+        internal double NativeCurrentAmps => CurrentInAmperes == false ? CurrentValue / 1000.0 : CurrentValue;
+        internal double LegacyRemoteCurrent => CurrentInAmperes == true ? CurrentValue * 1000.0 : CurrentValue;
+    }
+
     public class DisplaySpectrumConfig : IDisplayConfigBase
     {
         [DisplayName("启用本地光谱仪")]
         [Description("默认开启；下次打开时直接连接本机光谱仪；已打开的连接在关闭前保持当前模式。")]
-        public bool UseLocalSpectrum { get => _useLocalSpectrum; set { _useLocalSpectrum = value; OnPropertyChanged(); } }
+        public bool UseLocalSpectrum
+        {
+            get => _useLocalSpectrum;
+            set
+            {
+                _useLocalSpectrum = value;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(ManualCurrent));
+            }
+        }
         private bool _useLocalSpectrum = true;
         /// <summary>
         /// 是否光通量模式
@@ -105,12 +124,154 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
 
 
 
+        private readonly object _electricalInputsLock = new();
+        private double _manualVoltage = 5;
+        private double _manualCurrent = 1;
+        private ManualCurrentInput? _manualCurrentInput;
+        private SmuReading? _smuReading;
+
+        [JsonIgnore]
+        [Browsable(false)]
+        public double V
+        {
+            get => ReadElectricalInputs().Voltage;
+            set => ManualVoltage = value;
+        }
+
+        [JsonIgnore]
+        [Browsable(false)]
+        public double I
+        {
+            get => ReadElectricalInputs().Current;
+            set => SetManualCurrent(value, inAmperes: null);
+        }
+
+        [JsonProperty("V")]
         [DisplayName("SpectrumVoltage")]
-        public double V { get => _V; set { _V = value; OnPropertyChanged(); } }
-        private double _V = 5;
+        public double ManualVoltage
+        {
+            get { lock (_electricalInputsLock) return _manualVoltage; }
+            set
+            {
+                lock (_electricalInputsLock) { _manualVoltage = value; _smuReading = null; }
+                OnPropertyChanged();
+                NotifyElectricalInputsChanged();
+            }
+        }
+
+        [JsonIgnore]
         [DisplayName("SpectrumCurrent")]
-        public double I { get => _I; set { _I = value; OnPropertyChanged(); } }
-        private double _I = 1;
+        public double ManualCurrent
+        {
+            get
+            {
+                lock (_electricalInputsLock)
+                {
+                    var inputs = ReadManualElectricalInputs();
+                    return UseLocalSpectrum ? inputs.NativeCurrentAmps : inputs.LegacyRemoteCurrent;
+                }
+            }
+            set => SetManualCurrent(value, UseLocalSpectrum);
+        }
+
+        internal void SetManualCurrent(double value, bool? inAmperes)
+        {
+            lock (_electricalInputsLock)
+            {
+                _manualCurrent = value;
+                _manualCurrentInput = inAmperes is bool amps ? new(value, amps) : null;
+                _smuReading = null;
+            }
+            OnPropertyChanged(nameof(ManualCurrent));
+            NotifyElectricalInputsChanged();
+        }
+
+        [JsonProperty("I")]
+        private double SerializedManualCurrent
+        {
+            get { lock (_electricalInputsLock) return _manualCurrentInput?.Value ?? _manualCurrent; }
+            set { lock (_electricalInputsLock) _manualCurrent = value; }
+        }
+
+        [JsonProperty("ManualCurrentInput", NullValueHandling = NullValueHandling.Ignore)]
+        private ManualCurrentInput? SerializedManualCurrentInput
+        {
+            get { lock (_electricalInputsLock) return _manualCurrentInput; }
+            set { lock (_electricalInputsLock) _manualCurrentInput = value; }
+        }
+
+        [OnDeserializing]
+        private void ResetManualCurrentInput(StreamingContext context)
+        {
+            lock (_electricalInputsLock)
+            {
+                // Populate can load a legacy configuration over a tagged value. I and ManualCurrentInput may arrive in either order.
+                _manualCurrent = _manualCurrentInput?.Value ?? _manualCurrent;
+                _manualCurrentInput = null;
+                _smuReading = null;
+            }
+        }
+
+        [OnDeserialized]
+        private void NotifyDeserializedManualCurrent(StreamingContext context)
+        {
+            OnPropertyChanged(nameof(ManualCurrent));
+            NotifyElectricalInputsChanged();
+        }
+
+        internal (double Voltage, double Current) ReadElectricalInputs()
+        {
+            var inputs = ReadEffectiveElectricalInputs();
+            return (inputs.Voltage, inputs.CurrentValue);
+        }
+
+        internal SpectrumElectricalInputs ReadEffectiveElectricalInputs()
+        {
+            SmuReading? reading;
+            SpectrumElectricalInputs manual;
+            lock (_electricalInputsLock)
+            {
+                reading = _smuReading;
+                manual = ReadManualElectricalInputs();
+            }
+            return reading?.IsCurrent() == true ? reading.Inputs : manual;
+        }
+
+        private SpectrumElectricalInputs ReadManualElectricalInputs() =>
+            new(_manualVoltage, _manualCurrentInput?.Value ?? _manualCurrent, _manualCurrentInput?.InAmperes);
+
+        internal void ApplySmuReadings(double? voltage, double? currentMilliamps, Func<bool> isCurrent,
+            DeviceSMU? sourceDevice = null, SMUChannelType? sourceChannel = null)
+        {
+            if (!isCurrent()) return;
+            lock (_electricalInputsLock)
+            {
+                if (voltage is double v && currentMilliamps is double i && double.IsFinite(v) && double.IsFinite(i))
+                    _smuReading = new(new(v, i, CurrentInAmperes: false), isCurrent,
+                        sourceDevice == null ? null : new WeakReference<DeviceSMU>(sourceDevice), sourceChannel);
+                else if (_smuReading?.IsFrom(sourceDevice, sourceChannel) == true)
+                    _smuReading = null;
+                else return;
+            }
+            NotifyElectricalInputsChanged();
+        }
+
+        private void NotifyElectricalInputsChanged()
+        {
+            OnPropertyChanged(nameof(V));
+            OnPropertyChanged(nameof(I));
+        }
+
+        private sealed record SmuReading(SpectrumElectricalInputs Inputs, Func<bool> IsCurrent,
+            WeakReference<DeviceSMU>? SourceDevice, SMUChannelType? SourceChannel)
+        {
+            internal bool IsFrom(DeviceSMU? device, SMUChannelType? channel) => device != null && channel.HasValue
+                && SourceChannel == channel && SourceDevice?.TryGetTarget(out var target) == true && ReferenceEquals(target, device);
+        }
+
+        private sealed record ManualCurrentInput(
+            [property: JsonProperty(Required = Required.Always)] double Value,
+            [property: JsonProperty(Required = Required.Always)] bool InAmperes);
 
 
     }
@@ -152,17 +313,47 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
         }
         internal void PresentResult(Func<ViewResultSpectrum> createResult)
         {
-            ViewSpectrum? view = ExistingView;
-            if (localDisposed || !_view.IsVisible || view == null) return;
+            ViewSpectrum? view = CaptureVisibleResultView();
+            if (view == null) return;
             void Present()
             {
-                if (!localDisposed && _view.IsVisible && ReferenceEquals(ExistingView, view))
+                if (OwnsResultView(view))
                     view.AddViewResultSpectrum(createResult());
             }
             if (view.Dispatcher.CheckAccess()) Present();
             else view.Dispatcher.BeginInvoke(Present);
         }
+
+        internal Action<ViewResultSpectrum>? CaptureLiveResultPresentation()
+        {
+            ViewSpectrum? view = CaptureVisibleResultView();
+            if (view == null) return null;
+
+            var target = new WeakReference<ViewSpectrum>(view);
+            return result =>
+            {
+                if (target.TryGetTarget(out var currentView) && OwnsResultView(currentView))
+                    currentView.AddViewResultSpectrum(result);
+            };
+        }
+
+        private ViewSpectrum? CaptureVisibleResultView() => ExistingView is { } view && OwnsResultView(view) ? view : null;
+
+        private bool OwnsResultView(ViewSpectrum view) => !localDisposed && _view.IsVisible && ReferenceEquals(ExistingView, view);
+
         public DisplaySpectrumConfig DisplayConfig => DisplayConfigManager.Instance.GetDisplayConfig<DisplaySpectrumConfig>(Config.Code);
+
+        internal void ApplySmuReadings(MySqlConnectedEndpoint? endpoint, double? voltage, double? currentMilliamps,
+            Func<bool> sourceStillCurrent, DeviceSMU? sourceDevice = null, SMUChannelType? sourceChannel = null)
+        {
+            var owner = new WeakReference<DeviceSpectrum>(this);
+            bool IsCurrent() => owner.TryGetTarget(out var device) && !device.IsDisposed
+                && ReferenceEquals(device.ResultDatabaseEndpoint, endpoint)
+                && (endpoint?.IsCurrent ?? (MySqlControl.GetInstance().ConnectedEndpoint == null))
+                && sourceStillCurrent();
+
+            DisplayConfig.ApplySmuReadings(voltage, currentMilliamps, IsCurrent, sourceDevice, sourceChannel);
+        }
 
         public ObservableCollection<TemplateModel<SpectrumResourceParam>> SpectrumResourceParams { get; set; } = new ObservableCollection<TemplateModel<SpectrumResourceParam>>();
 
@@ -222,7 +413,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
 
         public DeviceSpectrum(SysResourceModel sysResourceModel) : base(sysResourceModel)
         {
-            LocalSession = new(ensureLicenseAvailable: EnsureLocalSpectrumLicense);
+            LocalSession = new();
             _view = new DockViewRegistration(() => new ViewSpectrum(this, true), Config.Name, DisPlayManager.IsControlVisible(Config.Code, Config.Name))
                 { PersistenceKey = Config.Code };
             InitializeLocalSpectrum();
@@ -235,13 +426,14 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             EditCommand = new RelayCommand(a =>
             {
                 if (!CanConfigure) return;
-                EditSpectrum window = new EditSpectrum(Config, DisplayConfig);
+                EditSpectrum window = new EditSpectrum(this);
                 window.Owner = Application.Current.GetActiveWindow();
                 window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
-                if (window.ShowDialog() == true)
+                if (window.ShowDialog() == true && window.OpeningConfigurationTarget is { } target
+                    && TryAdmitConfigurationEdit(target, window.Owner))
                 {
                     if (window.Draft.DisplaySettingsChanged) ConfigService.Instance.Save<DisplayConfigManager>();
-                    if (window.Draft.ServiceSettingsChanged) TryCommitConfiguration(window);
+                    if (window.Draft.ServiceSettingsChanged) TryCommitConfiguration(window.Owner, expectedTarget: target);
                 }
 
             }, a => CanConfigure);
@@ -290,7 +482,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
 
             try
             {
-                var host = new SpectrumCorrectionHost(CaptureCorrectionMeasurementAsync, ApplyCorrectionMagnitudeFileAsync);
+                var host = CreateSpectrumCorrectionHost(CaptureCorrectionMeasurementAsync);
                 await Application.Current.Dispatcher.InvokeAsync(() =>
                 {
                     var window = new SpectrumCorrectionWindow(host, cancellationToken)
@@ -315,10 +507,14 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             }
         }
 
-        private async Task<SpectrumMeasurementSnapshot> CaptureCorrectionMeasurementAsync(CancellationToken cancellationToken)
+        private Task<SpectrumMeasurementSnapshot> CaptureCorrectionMeasurementAsync(CancellationToken cancellationToken) =>
+            CaptureSingleResultAsync(CreateCorrectionMeasurement, cancellationToken, includeCalibrationSource: true);
+
+        private static SpectrumMeasurementSnapshot CreateCorrectionMeasurement(SpectrumCaptureResult capture)
         {
-            SpectumResultEntity entity = await CaptureSingleResultAsync(cancellationToken);
-            double[] relativeSpectrum = LoadCorrectionRelativeSpectrum(entity);
+            SpectumResultEntity entity = capture.Model;
+            CorrectionCaptureCalibration source = capture.Calibration!;
+            double[] relativeSpectrum = LoadCorrectionRelativeSpectrum(entity, capture.FileRoots);
             (double start, double end, double interval, int pointCount) = ResolveCorrectionWavelengthMetadata(entity, relativeSpectrum.Length);
             double[] croppedSpectrum = relativeSpectrum.Take(pointCount).ToArray();
 
@@ -333,19 +529,11 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                 ? entity.LuminousFlux ?? entity.fPh ?? double.NaN
                 : entity.fPh ?? double.NaN;
 
-            string magnitudeFilePath = ResolveActiveMagnitudeFilePath();
-            if (!File.Exists(magnitudeFilePath))
-                throw new InvalidOperationException($"当前幅值标定文件不存在：{magnitudeFilePath}");
-            string? sourceValidationError = ValidateCorrectionMagnitudeFile(magnitudeFilePath);
-            if (sourceValidationError != null)
-                throw new InvalidOperationException($"当前幅值标定文件不能用于校正：{sourceValidationError}");
-            string magnitudeFileSha256 = ComputeFileSha256(magnitudeFilePath);
-
             DateTime measuredAt = entity.CreateDate == default ? DateTime.Now : entity.CreateDate;
             return new SpectrumMeasurementSnapshot(
                 entity.Id,
-                entity.DeviceCode ?? Config.Code ?? string.Empty,
-                Config.SN ?? string.Empty,
+                entity.DeviceCode ?? capture.DeviceCode,
+                source.SerialNumber,
                 new DateTimeOffset(measuredAt),
                 start,
                 end,
@@ -353,66 +541,24 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                 croppedSpectrum,
                 absoluteScale,
                 photometricValue,
-                entity.IntTime ?? DisplayConfig.IntTime,
-                entity.iAveNum ?? DisplayConfig.AveNum,
+                entity.IntTime ?? capture.IntegrationTime,
+                entity.iAveNum ?? capture.Average,
                 entity.DataType ? "LuminousFlux" : "Luminance",
-                Config.ActiveCalibrationGroupName ?? string.Empty,
-                magnitudeFilePath,
-                magnitudeFileSha256);
+                source.GroupName,
+                source.MagnitudePath,
+                source.MagnitudeSha256) { SourceWavelengthPath = source.WavelengthPath };
         }
 
-        public async Task<SpectrumColorMeasurement> CaptureColorMeasurementAsync(CancellationToken cancellationToken = default)
-        {
-            if (!await correctionMeasurementGate.WaitAsync(0, cancellationToken))
-                throw new InvalidOperationException("光谱仪正在执行其他测量或校正操作。");
+        public Task<SpectrumColorMeasurement> CaptureColorMeasurementAsync(CancellationToken cancellationToken = default) =>
+            CaptureSingleResultAsync(capture => CreateColorMeasurement(capture.Model, capture.FileRoots), cancellationToken);
 
-            try
-            {
-                SpectumResultEntity entity = await CaptureSingleResultAsync(cancellationToken);
-                return CreateColorMeasurement(entity);
-            }
-            finally
-            {
-                correctionMeasurementGate.Release();
-            }
-        }
+        public async Task<IReadOnlyList<SpectrumColorMeasurementSummary>> GetRecentColorMeasurementsAsync() =>
+            await SpectrumColorMeasurementHistory.Capture(this).ReadRecentAsync();
 
-        public async Task<IReadOnlyList<SpectrumColorMeasurementSummary>> GetRecentColorMeasurementsAsync()
-        {
-            using var db = new SqlSugarClient(new ConnectionConfig
-            {
-                ConnectionString = MySqlControl.GetConnectionString(),
-                DbType = SqlSugar.DbType.MySql,
-                IsAutoCloseConnection = true,
-            });
-            string deviceCode = Config.Code;
-            return await db.Queryable<SpectumResultEntity>()
-                .Where(item => item.DeviceCode == deviceCode && !item.DataType)
-                .OrderBy(item => item.Id, OrderByType.Desc).Take(100)
-                .Select(item => new SpectrumColorMeasurementSummary
-                {
-                    ResultId = item.Id, CapturedAt = item.CreateDate, Y = item.fPh,
-                    CieX = item.fx, CieY = item.fy, PeakAd = item.fIp, NdPort = item.NDPort,
-                }).ToListAsync();
-        }
+        public async Task<SpectrumColorMeasurement> LoadColorMeasurementAsync(int resultId) =>
+            await SpectrumColorMeasurementHistory.Capture(this).LoadAsync(resultId);
 
-        public async Task<SpectrumColorMeasurement> LoadColorMeasurementAsync(int resultId)
-        {
-            using var db = new SqlSugarClient(new ConnectionConfig
-            {
-                ConnectionString = MySqlControl.GetConnectionString(),
-                DbType = SqlSugar.DbType.MySql,
-                IsAutoCloseConnection = true,
-            });
-            string deviceCode = Config.Code;
-            SpectumResultEntity? entity = await db.Queryable<SpectumResultEntity>()
-                .Where(item => item.Id == resultId && item.DeviceCode == deviceCode && !item.DataType).FirstAsync();
-            if (entity == null)
-                throw new InvalidOperationException("未找到所选光谱仪的亮度测量结果，请重新选择。");
-            return CreateColorMeasurement(entity);
-        }
-
-        internal SpectrumColorMeasurement CreateColorMeasurement(SpectumResultEntity entity)
+        internal static SpectrumColorMeasurement CreateColorMeasurement(SpectumResultEntity entity, SpectrumMeasurementFileRoots fileRoots)
         {
             if (entity.DataType)
                 throw new InvalidOperationException("四色校正需要亮度 Y，不能使用光通量 / EQE 测量结果。");
@@ -422,7 +568,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             if (!double.IsFinite(y) || !double.IsFinite(cieX) || !double.IsFinite(cieY))
                 throw new InvalidOperationException("光谱服务返回的 Y、CIE x 或 CIE y 无效。");
 
-            double[] values = LoadCorrectionRelativeSpectrum(entity);
+            double[] values = LoadCorrectionRelativeSpectrum(entity, fileRoots);
             if (values.Any(value => !double.IsFinite(value)))
                 throw new InvalidOperationException("光谱服务返回的光谱数据包含非有限数值。");
 
@@ -442,159 +588,322 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             };
         }
 
-        private async Task<SpectumResultEntity> CaptureSingleResultAsync(CancellationToken cancellationToken)
-        {
-            Config.EnsureCalibrationGroups();
-            DeviceStatusType deviceStatus = DService.DeviceStatus;
-            if (!IsCorrectionCaptureReadyStatus(deviceStatus))
-            {
-                string reason = deviceStatus switch
-                {
-                    DeviceStatusType.Opening => "光谱仪服务正在连接，请连接完成后再采集。",
-                    DeviceStatusType.Closing => "光谱仪服务正在关闭，请稍后重试。",
-                    DeviceStatusType.SP_Continuous_Mode => "光谱仪正在连续测量，请先停止连续测量。",
-                    DeviceStatusType.Closed or DeviceStatusType.UnInit => "光谱仪尚未连接，请先打开服务连接。",
-                    DeviceStatusType.OffLine => "光谱仪服务离线，暂时不能采集。",
-                    DeviceStatusType.Unauthorized => "光谱仪未授权，暂时不能采集。",
-                    _ => $"光谱仪当前状态为 {deviceStatus}，暂时不能进行单次采集。",
-                };
-                throw new InvalidOperationException(reason);
-            }
+        internal const string CorrectionCaptureSourceChangedMessage = "光谱仪或所属结果数据库已更改，请重新选择设备后采集。";
 
-            TimeSpan captureTimeout = CalculateCorrectionCaptureTimeout(
-                DisplayConfig.IntTime,
-                Config.MaxIntegralTime,
-                DisplayConfig.AveNum,
-                DisplayConfig.IsAutoIntTime,
-                DisplayConfig.IsAutoDark || DisplayConfig.IsShutter);
-            MsgRecord msgRecord;
-            MsgRecordState state;
+        private sealed record CorrectionCaptureCalibration(string SerialNumber, string GroupName, string WavelengthPath,
+            string MagnitudePath, string MagnitudeSha256);
+
+        private sealed record SpectrumCaptureResult(SpectumResultEntity Model, SpectrumMeasurementFileRoots FileRoots,
+            string DeviceCode, double IntegrationTime, int Average, CorrectionCaptureCalibration? Calibration);
+
+        private async Task<TResult> CaptureSingleResultAsync<TResult>(Func<SpectrumCaptureResult, TResult> createResult,
+            CancellationToken cancellationToken, bool includeCalibrationSource = false)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            if (!TryEnterSpectrumMeasurement(out string rejectionReason)) throw new InvalidOperationException(rejectionReason);
+
+            MsgRecord? msgRecord = null;
             try
             {
-                if (!IsCorrectionCaptureReadyStatus(DService.DeviceStatus))
+                MQTTSpectrum service = DService;
+                ConfigSpectrum config = Config;
+                DeviceConfigurationTarget configurationTarget = CaptureConfigurationTarget();
+                bool local = SpectrumBackend.OpensLocally;
+                var endpoint = local ? null : ResultDatabaseEndpoint;
+                string deviceCode = config.Code;
+                string serialNumber = config.SN;
+                string sendTopic = service.SendTopic;
+                string subscribeTopic = service.SubscribeTopic;
+
+                bool OwnsCapture() => service.OwnsDevice(this) && IsConfigurationTargetCurrent(configurationTarget)
+                    && ReferenceEquals(Config, config) && local == SpectrumBackend.OpensLocally
+                    && string.Equals(config.Code, deviceCode, StringComparison.Ordinal)
+                    && string.Equals(config.SN, serialNumber, StringComparison.Ordinal)
+                    && string.Equals(service.SendTopic, sendTopic, StringComparison.Ordinal)
+                    && string.Equals(service.SubscribeTopic, subscribeTopic, StringComparison.Ordinal)
+                    && (local || (endpoint?.IsCurrent == true && ReferenceEquals(ResultDatabaseEndpoint, endpoint)));
+                void EnsureCurrent()
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    if (!OwnsCapture()) throw new InvalidOperationException(CorrectionCaptureSourceChangedMessage);
+                }
+
+                EnsureCurrent();
+                DeviceStatusType deviceStatus = service.DeviceStatus;
+                if (!IsCorrectionCaptureReadyStatus(deviceStatus))
+                    throw new InvalidOperationException(deviceStatus switch
+                    {
+                        DeviceStatusType.Opening => "光谱仪服务正在连接，请连接完成后再采集。",
+                        DeviceStatusType.Closing => "光谱仪服务正在关闭，请稍后重试。",
+                        DeviceStatusType.SP_Continuous_Mode => "光谱仪正在连续测量，请先停止连续测量。",
+                        DeviceStatusType.Closed or DeviceStatusType.UnInit => "光谱仪尚未连接，请先打开服务连接。",
+                        DeviceStatusType.OffLine => "光谱仪服务离线，暂时不能采集。",
+                        DeviceStatusType.Unauthorized => "光谱仪未授权，暂时不能采集。",
+                        _ => $"光谱仪当前状态为 {deviceStatus}，暂时不能进行单次采集。",
+                    });
+
+                config.EnsureCalibrationGroups();
+                SpectrumMeasurementFileRoots fileRoots = CaptureSpectrumMeasurementFileRoots();
+                CorrectionCaptureCalibration? calibration = includeCalibrationSource && !local ? ReadCorrectionCaptureCalibration() : null;
+                var settings = DisplayConfig;
+                double integrationTime = settings.IntTime;
+                int average = settings.AveNum;
+                TimeSpan captureTimeout = CalculateCorrectionCaptureTimeout(integrationTime, config.MaxIntegralTime, average,
+                    settings.IsAutoIntTime, settings.IsAutoDark || settings.IsShutter);
+                EnsureCurrent();
+                if (!IsCorrectionCaptureReadyStatus(service.DeviceStatus))
                     throw new InvalidOperationException("光谱仪状态已发生变化，请等待当前操作完成后重试。");
 
-                msgRecord = DService.GetData(captureTimeout.TotalMilliseconds);
-                state = await ScheduledDeviceJobHelper.WaitForTerminalStateAsync(
-                    msgRecord,
-                    captureTimeout,
-                    cancellationToken);
-            }
-            catch (TimeoutException)
-            {
-                throw new InvalidOperationException($"光谱测量超时（{captureTimeout.TotalSeconds:0} 秒）。");
-            }
+                msgRecord = service.GetDataForCorrection(this, endpoint, captureTimeout.TotalMilliseconds, OwnsCapture);
+                MsgRecordState state;
+                try { state = await ScheduledDeviceJobHelper.WaitForTerminalStateAsync(msgRecord, captureTimeout, cancellationToken); }
+                catch (TimeoutException) { throw new InvalidOperationException($"光谱测量超时（{captureTimeout.TotalSeconds:0} 秒）。"); }
+                EnsureCurrent();
+                if (state != MsgRecordState.Success)
+                {
+                    string? detail = msgRecord.MsgReturn?.Message;
+                    throw new InvalidOperationException(string.IsNullOrWhiteSpace(detail)
+                        ? $"光谱测量失败（{state}）。" : $"光谱测量失败：{detail}");
+                }
 
-            if (state != MsgRecordState.Success)
-            {
-                string detail = msgRecord.MsgReturn?.Message;
-                throw new InvalidOperationException(string.IsNullOrWhiteSpace(detail)
-                    ? $"光谱测量失败（{state}）。"
-                    : $"光谱测量失败：{detail}");
-            }
+                SpectumResultEntity entity;
+                if (local && msgRecord.MsgReturn?.Data is Local.LocalSpectrumCommandResult localResult)
+                {
+                    entity = localResult.Model;
+                    if (includeCalibrationSource) calibration = ReadCorrectionCaptureCalibration(localResult.Capture.NdCalibration);
+                }
+                else
+                {
+                    if (endpoint == null) throw new InvalidOperationException("本地光谱仪未返回本次采集结果。");
+                    int masterId = GetCorrectionMasterId(msgRecord.MsgReturn);
+                    using var db = endpoint.CreateDbClient();
+                    EnsureCurrent();
+                    entity = await db.Queryable<SpectumResultEntity>().Where(item => item.Id == masterId).FirstAsync()
+                        ?? throw new InvalidOperationException($"未找到光谱测量结果（MasterId={masterId}）。");
+                    EnsureCurrent();
+                }
 
-            if (msgRecord.MsgReturn?.Data is Local.LocalSpectrumCommandResult localResult) return localResult.Model;
-            int masterId = GetCorrectionMasterId(msgRecord.MsgReturn);
-            using var db = new SqlSugarClient(new ConnectionConfig
-            {
-                ConnectionString = MySqlControl.GetConnectionString(),
-                DbType = SqlSugar.DbType.MySql,
-                IsAutoCloseConnection = true,
-            });
-
-            SpectumResultEntity? entity = db.Queryable<SpectumResultEntity>().Where(item => item.Id == masterId).First();
-            if (entity == null)
-                throw new InvalidOperationException($"未找到光谱测量结果（MasterId={masterId}）。");
-            if (!string.Equals(entity.DeviceCode, Config.Code, StringComparison.OrdinalIgnoreCase))
-            {
-                throw new InvalidOperationException(
-                    $"光谱结果设备不匹配：期望 {Config.Code}，实际 {entity.DeviceCode ?? "<空>"}。");
+                if (!string.Equals(entity.DeviceCode, deviceCode, StringComparison.OrdinalIgnoreCase))
+                    throw new InvalidOperationException($"光谱结果设备不匹配：期望 {deviceCode}，实际 {entity.DeviceCode ?? "<空>"}。");
+                if (fileRoots != CaptureSpectrumMeasurementFileRoots())
+                    throw new InvalidOperationException("光谱结果文件位置已更改，请重新采集后再校正。");
+                TResult result = createResult(new SpectrumCaptureResult(entity, fileRoots, deviceCode, integrationTime, average, calibration));
+                if (!local && calibration != null && calibration != ReadCorrectionCaptureCalibration())
+                    throw new InvalidOperationException("光谱标定组或标定文件在采集期间发生变化，请重新采集。");
+                EnsureCurrent();
+                return result;
             }
-            return entity;
+            finally
+            {
+                if (msgRecord == null) ReleaseSpectrumMeasurementLease();
+                else ReleaseSpectrumMeasurementWhenTerminal(msgRecord);
+            }
         }
 
+        private CorrectionCaptureCalibration ReadCorrectionCaptureCalibration(Local.LocalSpectrumNd.Calibration? actual = null)
+        {
+            var group = Config.ActiveCalibrationGroup;
+            string magnitudePath = actual?.MagnitudeFile ?? ResolveActiveMagnitudeFilePath();
+            if (!File.Exists(magnitudePath))
+                throw new InvalidOperationException($"当前幅值标定文件不存在：{magnitudePath}");
+            string? validationError = ValidateCorrectionMagnitudeFile(magnitudePath);
+            if (validationError != null)
+                throw new InvalidOperationException($"当前幅值标定文件不能用于校正：{validationError}");
+            string wavelengthFile = string.IsNullOrWhiteSpace(Config.WavelengthFile) ? group.WavelengthFile : Config.WavelengthFile;
+            string wavelengthPath = actual?.WavelengthFile ?? (SpectrumBackend.OpensLocally
+                ? Local.LocalSpectrumSession.ResolvePath(wavelengthFile)
+                : ResolveCalibrationFilePath(wavelengthFile, ServiceConfig.Instance.CVMainService_x64));
+            return new CorrectionCaptureCalibration(Config.SN ?? string.Empty, actual?.GroupName ?? group.GroupName,
+                wavelengthPath, magnitudePath, ComputeFileSha256(magnitudePath));
+        }
+
+        internal SpectrumCorrectionHost CreateSpectrumCorrectionHost(Func<CancellationToken, Task<SpectrumMeasurementSnapshot>> capture)
+        {
+            var target = CaptureConfigurationTarget();
+            ConfigSpectrum config = Config;
+            MQTTSpectrum service = DService;
+            string deviceCode = config.Code;
+            string serialNumber = config.SN;
+            string sendTopic = config.SendTopic;
+            string subscribeTopic = config.SubscribeTopic;
+            bool local = SpectrumBackend.OpensLocally;
+            SpectrumMeasurementSnapshot? measurement = null;
+            string? wavelengthFile = null;
+
+            bool IsCurrent() => IsConfigurationTargetCurrent(target) && ReferenceEquals(Config, config)
+                && service.OwnsDevice(this)
+                && string.Equals(config.Code, deviceCode, StringComparison.Ordinal)
+                && string.Equals(config.SN, serialNumber, StringComparison.OrdinalIgnoreCase)
+                && string.Equals(config.SendTopic, sendTopic, StringComparison.Ordinal)
+                && string.Equals(config.SubscribeTopic, subscribeTopic, StringComparison.Ordinal)
+                && SpectrumBackend.OpensLocally == local;
+
+            async Task<SpectrumMeasurementSnapshot> Capture(CancellationToken token)
+            {
+                measurement = null;
+                if (!IsCurrent()) throw new InvalidOperationException(CorrectionTargetChangedMessage);
+                string requestedWavelength = config.WavelengthFile;
+                SpectrumMeasurementSnapshot snapshot = await capture(token);
+                token.ThrowIfCancellationRequested();
+                if (!IsCurrent() || (!local && !string.Equals(config.WavelengthFile, requestedWavelength, StringComparison.OrdinalIgnoreCase)))
+                    throw new InvalidOperationException(CorrectionTargetChangedMessage);
+
+                wavelengthFile = local ? config.WavelengthFile : requestedWavelength;
+                measurement = snapshot;
+                return snapshot;
+            }
+
+            return new SpectrumCorrectionHost(Capture, (request, token) => ApplyCorrectionMagnitudeFileAsync(
+                request, target, measurement, wavelengthFile, local, IsCurrent, token));
+        }
+
+        private const string CorrectionTargetChangedMessage = "光谱仪或校正配置已变化，请重新打开校正窗口并采集。";
+
         private async Task<SpectrumCorrectionApplyResult> ApplyCorrectionMagnitudeFileAsync(
-            SpectrumCorrectionApplyRequest request,
-            CancellationToken cancellationToken)
+            SpectrumCorrectionApplyRequest request, DeviceConfigurationTarget target, SpectrumMeasurementSnapshot? measurement,
+            string? wavelengthFile, bool local, Func<bool> isCurrent, CancellationToken cancellationToken)
         {
             ArgumentNullException.ThrowIfNull(request);
             cancellationToken.ThrowIfCancellationRequested();
 
+            if (!isCurrent()) return SpectrumCorrectionApplyResult.Failure(CorrectionTargetChangedMessage);
+            if (measurement == null || string.IsNullOrWhiteSpace(measurement.MagnitudeFileSha256)
+                || !string.Equals(request.ExpectedSourceMagnitudeSha256, measurement.MagnitudeFileSha256, StringComparison.OrdinalIgnoreCase)
+                || !string.Equals(request.CalibrationGroupName, measurement.CalibrationGroupName, StringComparison.OrdinalIgnoreCase))
+                return SpectrumCorrectionApplyResult.Failure("缺少本次光谱采集或原幅值文件校验记录，请重新采集并生成校正文件。");
+            if (!await correctionMeasurementGate.WaitAsync(0, cancellationToken))
+                return SpectrumCorrectionApplyResult.Failure("光谱仪正在执行其他测量或校正操作，不能应用幅值标定文件。");
+
+            bool localReserved = false;
             try
             {
-                Config.EnsureCalibrationGroups();
-                if (!await correctionMeasurementGate.WaitAsync(0, cancellationToken))
-                    return SpectrumCorrectionApplyResult.Failure("光谱仪正在执行其他测量或校正操作，不能应用幅值标定文件。");
-
-                try
+                if (!isCurrent()) return SpectrumCorrectionApplyResult.Failure(CorrectionTargetChangedMessage);
+                DeviceStatusType deviceStatus = DService.DeviceStatus;
+                if (!IsCorrectionCaptureReadyStatus(deviceStatus))
                 {
-                    DeviceStatusType deviceStatus = DService.DeviceStatus;
-                    if (!IsCorrectionCaptureReadyStatus(deviceStatus))
-                    {
-                        string reason = deviceStatus switch
-                        {
-                            DeviceStatusType.SP_Continuous_Mode => "光谱仪正在连续测量，请先停止连续测量再应用幅值标定文件。",
-                            _ => $"光谱仪当前状态为 {deviceStatus}，不能安全应用幅值标定文件。",
-                        };
-                        return SpectrumCorrectionApplyResult.Failure(reason);
-                    }
-
-                    SpectrumCalibrationGroup activeGroup = Config.ActiveCalibrationGroup;
-                if (!string.IsNullOrWhiteSpace(request.CalibrationGroupName) &&
-                    !string.Equals(request.CalibrationGroupName, activeGroup.GroupName, StringComparison.OrdinalIgnoreCase))
+                    return SpectrumCorrectionApplyResult.Failure(deviceStatus == DeviceStatusType.SP_Continuous_Mode
+                        ? "光谱仪正在连续测量，请先停止连续测量再应用幅值标定文件。"
+                        : $"光谱仪当前状态为 {deviceStatus}，不能安全应用幅值标定文件。");
+                }
+                if (local)
                 {
-                    return SpectrumCorrectionApplyResult.Failure(
-                        $"当前标定组已从“{request.CalibrationGroupName}”切换为“{activeGroup.GroupName}”，请重新采集后再应用。");
+                    SpectrumBackend.BeginLocalCommand();
+                    localReserved = true;
                 }
 
-                if (string.IsNullOrWhiteSpace(request.MagnitudeFilePath))
-                    return SpectrumCorrectionApplyResult.Failure("未提供新幅值标定文件。");
-                if (string.IsNullOrWhiteSpace(request.ExpectedSourceMagnitudeSha256))
-                    return SpectrumCorrectionApplyResult.Failure("缺少原幅值标定文件校验值，请重新采集并生成校正文件。");
+                SpectrumCalibrationGroup? activeGroup = Config.CalibrationGroups.FirstOrDefault(group =>
+                    string.Equals(group.GroupName, Config.ActiveCalibrationGroupName, StringComparison.OrdinalIgnoreCase));
+                if (activeGroup == null || !string.Equals(activeGroup.GroupName, measurement.CalibrationGroupName, StringComparison.OrdinalIgnoreCase)
+                    || !CorrectionWavelengthMatches(Config.WavelengthFile, wavelengthFile, measurement, local))
+                    return SpectrumCorrectionApplyResult.Failure("标定组或波长文件已变化，请重新采集后再应用。");
+
+                string currentSourcePath = ResolveActiveMagnitudeFilePath();
+                if (!string.Equals(currentSourcePath, measurement.MagnitudeFilePath, StringComparison.OrdinalIgnoreCase)
+                    || !File.Exists(currentSourcePath))
+                    return SpectrumCorrectionApplyResult.Failure("原幅值标定路径已变化或文件不存在，请重新采集后再应用。");
+                if (string.IsNullOrWhiteSpace(request.MagnitudeFilePath) || string.IsNullOrWhiteSpace(request.ExpectedGeneratedMagnitudeSha256))
+                    return SpectrumCorrectionApplyResult.Failure("缺少新幅值标定文件或校验值，请重新生成校正文件。");
 
                 string generatedPath = Path.GetFullPath(request.MagnitudeFilePath);
+                if (string.Equals(generatedPath, currentSourcePath, StringComparison.OrdinalIgnoreCase))
+                    return SpectrumCorrectionApplyResult.Failure("请使用新生成的幅值标定文件。");
                 if (!File.Exists(generatedPath))
                     return SpectrumCorrectionApplyResult.Failure($"新幅值标定文件不存在：{generatedPath}");
 
-                string? validationError = ValidateCorrectionMagnitudeFile(generatedPath);
-                if (validationError != null)
-                    return SpectrumCorrectionApplyResult.Failure(validationError);
-
-                if (!string.IsNullOrWhiteSpace(request.ExpectedSourceMagnitudeSha256))
+                using (var source = new FileStream(currentSourcePath, FileMode.Open, FileAccess.Read, FileShare.Read))
+                using (var generated = new FileStream(generatedPath, FileMode.Open, FileAccess.Read, FileShare.Read))
                 {
-                    string currentSourcePath = ResolveActiveMagnitudeFilePath();
-                    if (!File.Exists(currentSourcePath))
-                        return SpectrumCorrectionApplyResult.Failure("原幅值标定文件已不存在，请重新采集后再应用。");
+                    if (!string.Equals(Convert.ToHexString(SHA256.HashData(source)), measurement.MagnitudeFileSha256, StringComparison.OrdinalIgnoreCase))
+                        return SpectrumCorrectionApplyResult.Failure("原幅值标定文件在采集后发生了变化，请重新采集并生成校正文件。");
+                    if (!string.Equals(Convert.ToHexString(SHA256.HashData(generated)), request.ExpectedGeneratedMagnitudeSha256, StringComparison.OrdinalIgnoreCase))
+                        return SpectrumCorrectionApplyResult.Failure("新幅值标定文件在生成后发生了变化，请重新生成校正文件。");
+                    generated.Position = 0;
+                    string? validationError = ValidateCorrectionMagnitudeFile(generated);
+                    if (validationError != null) return SpectrumCorrectionApplyResult.Failure(validationError);
 
-                    string currentHash = ComputeFileSha256(currentSourcePath);
-                    if (!string.Equals(currentHash, request.ExpectedSourceMagnitudeSha256, StringComparison.OrdinalIgnoreCase))
-                    {
-                        return SpectrumCorrectionApplyResult.Failure(
-                            "原幅值标定文件在采集后发生了变化，请重新采集并生成校正文件。");
-                    }
+                    cancellationToken.ThrowIfCancellationRequested();
+                    if (!isCurrent()) return SpectrumCorrectionApplyResult.Failure(CorrectionTargetChangedMessage);
+                    using var applyScope = CalibrationGroupChangeGuard.EnterApply();
+                    bool saved = target.TrySave(this, previous => UpdateStoredCorrectionMagnitudeFile(previous, measurement,
+                        wavelengthFile, local, generatedPath));
+                    if (!saved || !isCurrent()) return SpectrumCorrectionApplyResult.Failure(CorrectionTargetChangedMessage);
+
+                    activeGroup.MaguideFile = generatedPath;
+                    Config.MaguideFile = generatedPath;
                 }
 
-                activeGroup.MaguideFile = generatedPath;
-                Config.MaguideFile = generatedPath;
-                Save();
-                return SpectrumCorrectionApplyResult.Success(
-                    generatedPath,
-                    "新 DAT 已应用，服务正在重启；恢复后请重新采集验证。");
-                }
-                finally
+                bool restartRequested = false;
+                try
                 {
-                    correctionMeasurementGate.Release();
+                    if (!local && isCurrent()) restartRequested = RestartCalibrationService(target, request: null);
+                    if (isCurrent()) NotifyConfigChanged();
                 }
+                catch (Exception ex)
+                {
+                    log.Warn("The corrected Spectrum magnitude file was saved, but follow-up failed.", ex);
+                }
+
+                if (local) return SpectrumCorrectionApplyResult.Success(generatedPath, "新 DAT 已应用，下次采集时生效。");
+                return restartRequested
+                    ? SpectrumCorrectionApplyResult.PendingRestart(generatedPath, "新 DAT 已保存并请求服务重启；恢复后请重新采集验证。")
+                    : SpectrumCorrectionApplyResult.Success(generatedPath, "新 DAT 已保存，未发出服务重启请求。请重启服务后重新采集验证。");
             }
-            catch (OperationCanceledException)
-            {
-                throw;
-            }
+            catch (OperationCanceledException) { throw; }
             catch (Exception ex)
             {
                 log.Error("Failed to apply corrected Spectrum magnitude file.", ex);
                 return SpectrumCorrectionApplyResult.Failure($"应用新幅值标定文件失败：{ex.Message}");
             }
+            finally
+            {
+                if (localReserved) SpectrumBackend.EndLocalCommand();
+                ReleaseSpectrumMeasurementLease();
+            }
+        }
+
+        private static string UpdateStoredCorrectionMagnitudeFile(string? previous, SpectrumMeasurementSnapshot measurement,
+            string? wavelengthFile, bool local, string generatedPath)
+        {
+            if (string.IsNullOrWhiteSpace(previous)) throw new InvalidOperationException(CorrectionTargetChangedMessage);
+            using var reader = new JsonTextReader(new StringReader(previous)) { DateParseHandling = DateParseHandling.None };
+            var json = JObject.Load(reader);
+            var stored = json.ToObject<ConfigSpectrum>()!;
+            stored.SynchronizeActiveCalibrationGroupFiles();
+            string storedPath = local ? Local.LocalSpectrumSession.ResolvePath(stored.MaguideFile)
+                : ResolveCalibrationFilePath(stored.MaguideFile, ServiceConfig.Instance.CVMainService_x64);
+            if (!string.Equals(stored.SN, measurement.SerialNumber, StringComparison.OrdinalIgnoreCase)
+                || !string.Equals(stored.ActiveCalibrationGroupName, measurement.CalibrationGroupName, StringComparison.OrdinalIgnoreCase)
+                || !CorrectionWavelengthMatches(stored.WavelengthFile, wavelengthFile, measurement, local)
+                || !string.Equals(storedPath, measurement.MagnitudeFilePath, StringComparison.OrdinalIgnoreCase))
+                throw new InvalidOperationException(CorrectionTargetChangedMessage);
+
+            SetMagnitude(json);
+            if (json.GetValue(nameof(ConfigSpectrum.CalibrationGroups), StringComparison.OrdinalIgnoreCase) is JArray groups)
+            {
+                JObject? group = groups.OfType<JObject>().FirstOrDefault(item => string.Equals(
+                    (string?)item.GetValue(nameof(SpectrumCalibrationGroup.GroupName), StringComparison.OrdinalIgnoreCase),
+                    measurement.CalibrationGroupName, StringComparison.OrdinalIgnoreCase));
+                if (group != null) SetMagnitude(group);
+            }
+            return json.ToString(Formatting.None);
+
+            void SetMagnitude(JObject item)
+            {
+                var property = item.Property(nameof(ConfigSpectrum.MaguideFile), StringComparison.OrdinalIgnoreCase);
+                if (property != null) property.Value = generatedPath;
+                else item[nameof(ConfigSpectrum.MaguideFile)] = generatedPath;
+            }
+        }
+
+        private static bool CorrectionWavelengthMatches(string? wavelengthFile, string? capturedSetting,
+            SpectrumMeasurementSnapshot measurement, bool local)
+        {
+            if (string.IsNullOrWhiteSpace(measurement.SourceWavelengthPath))
+                return string.Equals(wavelengthFile, capturedSetting, StringComparison.OrdinalIgnoreCase);
+            if (string.IsNullOrWhiteSpace(wavelengthFile)) return false;
+            string path = local ? Local.LocalSpectrumSession.ResolvePath(wavelengthFile)
+                : ResolveCalibrationFilePath(wavelengthFile, ServiceConfig.Instance.CVMainService_x64);
+            return string.Equals(path, measurement.SourceWavelengthPath, StringComparison.OrdinalIgnoreCase);
         }
 
         internal static TimeSpan CalculateCorrectionCaptureTimeout(
@@ -660,21 +969,32 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
         {
             ArgumentNullException.ThrowIfNull(msgRecord);
             int released = 0;
+            if (msgRecord.WorkerCompletion != null)
+            {
+                msgRecord.TerminalStateCommitted += Complete;
+                Complete(msgRecord.MsgRecordState);
+                return;
+
+                void Complete(MsgRecordState state)
+                {
+                    if (!TryRelease(state)) return;
+                    msgRecord.TerminalStateCommitted -= Complete;
+                    ReleaseSpectrumMeasurementLease();
+                }
+            }
+
             EventHandler<MsgRecordState>? stateChanged = null;
             stateChanged = (_, state) =>
             {
-                if (state is not (MsgRecordState.Success or MsgRecordState.Fail or MsgRecordState.Timeout))
-                    return;
-
-                if (Interlocked.Exchange(ref released, 1) != 0)
-                    return;
-
+                if (!TryRelease(state)) return;
                 msgRecord.MsgRecordStateChanged -= stateChanged;
-                correctionMeasurementGate.Release();
+                ReleaseSpectrumMeasurementLease();
             };
 
             msgRecord.MsgRecordStateChanged += stateChanged;
             stateChanged(msgRecord, msgRecord.MsgRecordState);
+
+            bool TryRelease(MsgRecordState state) => MsgRecord.IsTerminal(state) && Interlocked.Exchange(ref released, 1) == 0;
         }
 
         internal void ReleaseSpectrumContinuousStartWhenTerminal(MsgRecord msgRecord)
@@ -756,12 +1076,17 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             return masterId.Value;
         }
 
-        private double[] LoadCorrectionRelativeSpectrum(SpectumResultEntity entity)
+        internal SpectrumMeasurementFileRoots CaptureSpectrumMeasurementFileRoots() =>
+            new(Config.FileServerCfg?.DataBasePath,
+                Path.GetDirectoryName(ConfigService.Instance?.GetRequiredService<ServiceConfig>()?.CVMainService_x64),
+                Environment.CurrentDirectory);
+
+        private static double[] LoadCorrectionRelativeSpectrum(SpectumResultEntity entity, SpectrumMeasurementFileRoots fileRoots)
         {
             string? json = entity.fPL;
             if (!string.IsNullOrWhiteSpace(entity.fPL_file_name))
             {
-                string spectrumPath = ResolveSpectrumResultFilePath(entity.fPL_file_name);
+                string spectrumPath = ResolveSpectrumResultFilePath(entity.fPL_file_name, fileRoots);
                 if (!File.Exists(spectrumPath))
                     throw new InvalidOperationException($"光谱数据文件不存在：{spectrumPath}");
                 json = File.ReadAllText(spectrumPath);
@@ -776,36 +1101,41 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             return spectrum;
         }
 
-        private string ResolveSpectrumResultFilePath(string path)
+        private static string ResolveSpectrumResultFilePath(string path, SpectrumMeasurementFileRoots fileRoots)
         {
             if (Path.IsPathRooted(path))
-                return Path.GetFullPath(path);
+                return Path.GetFullPath(path, fileRoots.WorkingDirectory);
 
-            string dataBasePath = Config.FileServerCfg.DataBasePath;
+            string? dataBasePath = fileRoots.DataRoot;
             if (!string.IsNullOrWhiteSpace(dataBasePath))
             {
-                string dataPath = Path.GetFullPath(Path.Combine(dataBasePath, path));
+                string dataPath = Path.GetFullPath(Path.Combine(dataBasePath, path), fileRoots.WorkingDirectory);
                 if (File.Exists(dataPath))
                     return dataPath;
             }
 
-            string? serviceDirectory = Path.GetDirectoryName(ServiceConfig.Instance.CVMainService_x64);
+            string? serviceDirectory = fileRoots.ServiceDirectory;
             if (!string.IsNullOrWhiteSpace(serviceDirectory))
             {
-                string servicePath = Path.GetFullPath(Path.Combine(serviceDirectory, path));
+                string servicePath = Path.GetFullPath(Path.Combine(serviceDirectory, path), fileRoots.WorkingDirectory);
                 if (File.Exists(servicePath))
                     return servicePath;
             }
 
             return string.IsNullOrWhiteSpace(dataBasePath)
-                ? Path.GetFullPath(path)
-                : Path.GetFullPath(Path.Combine(dataBasePath, path));
+                ? Path.GetFullPath(path, fileRoots.WorkingDirectory)
+                : Path.GetFullPath(Path.Combine(dataBasePath, path), fileRoots.WorkingDirectory);
         }
 
         internal static string? ValidateCorrectionMagnitudeFile(string path)
         {
-            const long headerSize = sizeof(ulong) + sizeof(float) + sizeof(int) + sizeof(ulong);
             using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
+            return ValidateCorrectionMagnitudeFile(stream);
+        }
+
+        private static string? ValidateCorrectionMagnitudeFile(Stream stream)
+        {
+            const long headerSize = sizeof(ulong) + sizeof(float) + sizeof(int) + sizeof(ulong);
             if (stream.Length < headerSize)
                 return $"新幅值标定文件格式错误：文件长度只有 {stream.Length} 字节。";
 
@@ -1041,33 +1371,44 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             return ServiceManager.GetInstance().DeviceServices.OfType<DeviceCfwPort>().FirstOrDefault(a => a.Code == deviceCode);
         }
 
-        internal bool TrySetNDPortForCalibrationGroup(int holeIndex, out MsgRecord? msgRecord, out string? error)
+        internal bool TrySetNDPortForCalibrationGroup(int holeIndex, Local.LocalSpectrumOpticalScope optics, out MsgRecord? msgRecord, out string? error)
         {
             msgRecord = null;
             error = null;
-            if (Config.NDConfig.IsNDPort && UsesLocalNd)
+            if (!optics.IsNdCurrent)
             {
-                msgRecord = RunLocalNdCommand("SetPort", holeIndex);
+                error = NdConfigurationChangedMessage;
+                return false;
+            }
+            var nd = optics.Configuration.NDConfig;
+            var cfwPort = optics.NdDevice;
+            if (nd.IsNDPort && (SpectrumBackend.OpensLocally || cfwPort?.CfwBackend.OpensLocally == true))
+            {
+                msgRecord = RunLocalNdCommand("SetPort", holeIndex, optics);
                 return true;
             }
-            if (Config.NDConfig.IsBingNDDevice)
+            if (nd.IsBingNDDevice)
             {
-                DeviceCfwPort? cfwPort = GetBoundCfwPort();
                 if (cfwPort == null)
                 {
-                    string deviceCode = Config.NDConfig.NDBindDeviceCode;
+                    string deviceCode = nd.NDBindDeviceCode;
                     error = string.IsNullOrWhiteSpace(deviceCode)
                         ? "当前光谱仪未绑定 ND 滤光轮服务。"
                         : $"绑定的 ND 滤光轮服务 {deviceCode} 未加载。";
                     return false;
                 }
 
-                msgRecord = cfwPort.DService.SetPort(holeIndex);
+                var service = cfwPort.DService;
+                if (!optics.IsNdCurrent)
+                {
+                    error = NdConfigurationChangedMessage;
+                    return false;
+                }
+                msgRecord = service.SetPort(holeIndex);
                 return true;
             }
 
-            DisplayConfig.PortNum = holeIndex;
-            msgRecord = DService.SetPort();
+            msgRecord = DService.SendNdCommand(holeIndex, optics);
             return true;
         }
 
@@ -1097,37 +1438,118 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
 
         public bool ApplyCalibrationGroup(SpectrumCalibrationGroup? group, bool restartService, bool forceRestart = false)
         {
-            if (group == null)
-                return false;
+            return group != null && TryApplyCalibrationSelection(CaptureConfigurationTarget(), group.GroupName,
+                group.WavelengthFile, group.MaguideFile, restartService, forceRestart, true, out bool changed) && changed;
+        }
+
+        internal bool TrySaveCalibrationGroupConfiguration(SpectrumCalibrationGroup? group, bool ndBindingChanged,
+            DeviceConfigurationTarget target)
+        {
+            if (!TryApplyCalibrationSelection(target, group?.GroupName, group?.WavelengthFile ?? Config.WavelengthFile,
+                group?.MaguideFile ?? Config.MaguideFile, true, false, true, out bool changed, persistUnchanged: true)) return false;
+            if (!changed && ndBindingChanged)
+            {
+                if (!SpectrumBackend.OpensLocally) QueueCalibrationRestart(target);
+                if (IsConfigurationTargetCurrent(target)) NotifyConfigChanged();
+            }
+            return true;
+        }
+
+        internal bool IsConfigurationTargetCurrent(DeviceConfigurationTarget target) => !localDisposed && target.IsCurrent(this);
+
+        internal bool ApplyCalibrationGroupForND(int holeIndex, bool forceRestart, DeviceConfigurationTarget target,
+            Local.LocalSpectrumOpticalScope? optics = null)
+        {
+            if (optics?.IsNdCurrent == false || !IsConfigurationTargetCurrent(target)) return false;
+            var group = Config.FindCalibrationGroupForND(holeIndex, optics == null ? GetNDHoleName(holeIndex) : optics.GetNdHoleName(holeIndex));
+            return ApplyCalibrationGroup(group, true, forceRestart, target);
+        }
+
+        internal bool ApplyCalibrationGroup(SpectrumCalibrationGroup? group, bool restartService, bool forceRestart, DeviceConfigurationTarget target)
+        {
+            return group != null && TryApplyCalibrationSelection(target, group.GroupName, group.WavelengthFile,
+                group.MaguideFile, restartService, forceRestart, false, out _);
+        }
+
+        private bool TryApplyCalibrationSelection(DeviceConfigurationTarget target, string? groupName, string wavelengthFile,
+            string magnitudeFile, bool restartService, bool forceRestart, bool saveFullConfiguration, out bool changed,
+            bool persistUnchanged = false)
+        {
+            changed = false;
+            if (!IsConfigurationTargetCurrent(target)) return false;
 
             using IDisposable applyScope = CalibrationGroupChangeGuard.EnterApply();
+            changed = (groupName != null && !string.Equals(Config.ActiveCalibrationGroupName, groupName, StringComparison.Ordinal))
+                || !string.Equals(Config.WavelengthFile, wavelengthFile, StringComparison.Ordinal)
+                || !string.Equals(Config.MaguideFile, magnitudeFile, StringComparison.Ordinal) || forceRestart;
+            if (!changed && !persistUnchanged) return true;
 
-            bool changed = !string.Equals(Config.ActiveCalibrationGroupName, group.GroupName, StringComparison.Ordinal)
-                || !string.Equals(Config.WavelengthFile, group.WavelengthFile, StringComparison.Ordinal)
-                || !string.Equals(Config.MaguideFile, group.MaguideFile, StringComparison.Ordinal);
+            string UpdateCalibration(string? previous)
+            {
+                JObject json;
+                if (saveFullConfiguration) json = JObject.FromObject(Config);
+                else if (string.IsNullOrWhiteSpace(previous)) json = new JObject();
+                else
+                {
+                    using var reader = new JsonTextReader(new StringReader(previous)) { DateParseHandling = DateParseHandling.None };
+                    json = JObject.Load(reader);
+                }
+                if (groupName != null)
+                    json[nameof(ConfigSpectrum.ActiveCalibrationGroupName)] = groupName;
+                json[nameof(ConfigSpectrum.WavelengthFile)] = wavelengthFile;
+                json[nameof(ConfigSpectrum.MaguideFile)] = magnitudeFile;
+                string? active = (string?)json[nameof(ConfigSpectrum.ActiveCalibrationGroupName)];
+                if (json[nameof(ConfigSpectrum.CalibrationGroups)] is JArray groups && active != null)
+                {
+                    var selected = groups.OfType<JObject>().FirstOrDefault(entry =>
+                        string.Equals((string?)entry[nameof(SpectrumCalibrationGroup.GroupName)], active, StringComparison.OrdinalIgnoreCase));
+                    if (selected != null)
+                    {
+                        selected[nameof(SpectrumCalibrationGroup.WavelengthFile)] = wavelengthFile;
+                        selected[nameof(SpectrumCalibrationGroup.MaguideFile)] = magnitudeFile;
+                    }
+                }
+                return json.ToString(Formatting.None);
+            }
 
-            Config.ActiveCalibrationGroupName = group.GroupName;
-            Config.WavelengthFile = group.WavelengthFile;
-            Config.MaguideFile = group.MaguideFile;
-
-            if (!changed && !forceRestart)
-                return false;
-
-            SaveConfig();
+            if (!target.TrySave(this, UpdateCalibration) || !IsConfigurationTargetCurrent(target)) return false;
+            if (!changed) return true;
+            if (groupName != null) Config.ActiveCalibrationGroupName = groupName;
+            Config.WavelengthFile = wavelengthFile;
+            Config.MaguideFile = magnitudeFile;
 
             if (restartService && !SpectrumBackend.OpensLocally)
-                QueueCalibrationRestart();
+                QueueCalibrationRestart(target);
 
             return true;
         }
 
-        private void QueueCalibrationRestart()
+        private bool RestartCalibrationService(DeviceConfigurationTarget target, CancellationTokenSource? request)
+        {
+            if (!IsConfigurationTargetCurrent(target) || SpectrumBackend.OpensLocally
+                || !target.TryResolveRestart(this, out var route)) return false;
+
+            lock (calibrationRestartSync)
+            {
+                if ((request != null && !ReferenceEquals(request, calibrationRestartCts)) || !IsConfigurationTargetCurrent(target)
+                    || SpectrumBackend.OpensLocally) return false;
+                return MqttRCService.GetInstance().TryRestartServices(route.TypeCode, route.ParentCode, route.DeviceCode);
+            }
+        }
+
+        private void QueueCalibrationRestart(DeviceConfigurationTarget target)
         {
             var restartCts = new CancellationTokenSource();
+            CancellationToken token = restartCts.Token;
             CancellationTokenSource? previousCts;
 
             lock (calibrationRestartSync)
             {
+                if (localDisposed)
+                {
+                    restartCts.Dispose();
+                    return;
+                }
                 previousCts = calibrationRestartCts;
                 calibrationRestartCts = restartCts;
             }
@@ -1135,15 +1557,16 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             previousCts?.Cancel();
             previousCts?.Dispose();
 
-            _ = RestartCalibrationServiceAfterIdleAsync(restartCts);
+            _ = RestartCalibrationServiceAfterIdleAsync(restartCts, token, target);
         }
 
-        private async Task RestartCalibrationServiceAfterIdleAsync(CancellationTokenSource restartCts)
+        private async Task RestartCalibrationServiceAfterIdleAsync(CancellationTokenSource restartCts, CancellationToken token,
+            DeviceConfigurationTarget target)
         {
             try
             {
-                await Task.Delay(CalibrationRestartDebounceMilliseconds, restartCts.Token);
-                await calibrationRestartGate.WaitAsync(restartCts.Token);
+                await Task.Delay(CalibrationRestartDebounceMilliseconds, token);
+                await calibrationRestartGate.WaitAsync(token);
             }
             catch (OperationCanceledException)
             {
@@ -1152,14 +1575,12 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
 
             try
             {
-                lock (calibrationRestartSync)
-                {
-                    if (!ReferenceEquals(restartCts, calibrationRestartCts))
-                        return;
-                }
-
-                RestartRCService();
-                await Task.Delay(CalibrationRestartCooldownMilliseconds);
+                if (RestartCalibrationService(target, restartCts))
+                    await Task.Delay(CalibrationRestartCooldownMilliseconds);
+            }
+            catch (Exception ex)
+            {
+                log.Warn("Unable to restart the spectrum service after applying calibration.", ex);
             }
             finally
             {
@@ -1271,15 +1692,19 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             };
         }
 
-        public void SelfAdaptionInitDarkSetting()
+        public void SelfAdaptionInitDarkSetting() => EditImmediateConfiguration(Config.SelfAdaptionInitDark);
+
+        public void EmissionSP100Setting() => EditImmediateConfiguration(Config.SetEmissionSP100Config);
+
+        private void EditImmediateConfiguration(object settings)
         {
-            new PropertyEditorWindow(Config.SelfAdaptionInitDark) { Owner =Application.Current.GetActiveWindow() ,WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
-            SaveConfig();
-        }
-        public void EmissionSP100Setting()
-        {
-            new PropertyEditorWindow(Config.SetEmissionSP100Config) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
-            SaveConfig();
+            var target = CaptureConfigurationTarget();
+            new PropertyEditorWindow(settings, PropertyEditorEditMode.Immediate)
+            {
+                Owner = Application.Current.GetActiveWindow(),
+                WindowStartupLocation = WindowStartupLocation.CenterOwner
+            }.ShowDialog();
+            TrySaveConfig(Application.Current.GetActiveWindow(), target);
         }
 
         public void UploadLincense()

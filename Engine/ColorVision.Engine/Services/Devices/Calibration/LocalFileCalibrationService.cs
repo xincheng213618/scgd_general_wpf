@@ -1,7 +1,5 @@
 using ColorVision.Database;
-using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.Services.Devices.Camera.Local;
-using ColorVision.Engine.Services.PhyCameras.Group;
 using log4net;
 using MQTTMessageLib.Camera;
 using Newtonsoft.Json;
@@ -20,27 +18,17 @@ namespace ColorVision.Engine.Services.Devices.Calibration
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(LocalFileCalibrationService));
 
-        public static MeasureResultImgModel Calibrate(
-            DeviceCalibration device,
-            CalibrationParam calibration,
-            string filePath,
-            string serialNumber,
-            IReadOnlyList<float> exposure)
+        public static MeasureResultImgModel Calibrate(LocalFileCalibrationRequest request)
         {
-            ArgumentNullException.ThrowIfNull(device);
-            ArgumentNullException.ThrowIfNull(calibration);
-            ArgumentNullException.ThrowIfNull(exposure);
+            ArgumentNullException.ThrowIfNull(request);
 
-            string fullPath = Path.GetFullPath(filePath);
-            float[] normalizedExposure = NormalizeExposure(exposure);
-            DeviceCamera cameraDevice = device.PhyCamera?.DeviceCamera
-                ?? throw new InvalidOperationException("本地校正需要关联相机设备；请先配置相机，或在显示配置中切换到 MQTT。");
-            if (!cameraDevice.TryGetCalibrationTemplateFiles(
-                calibration,
-                out IReadOnlyList<DeviceCameraCalibrationFile> calibrationFiles,
-                out string? errorMessage))
+            string fullPath = request.SourcePath;
+            float[] normalizedExposure = NormalizeExposure(request.Exposure);
+            foreach (var calibrationFile in request.CalibrationFiles)
             {
-                throw new InvalidOperationException(errorMessage ?? "校正模板无效。");
+                if (!File.Exists(calibrationFile.FullPath))
+                    throw new FileNotFoundException(string.Format(Properties.Resources.TemplateFileNotExist,
+                        request.TemplateName, calibrationFile.DisplayName), calibrationFile.FullPath);
             }
 
             Stopwatch stopwatch = Stopwatch.StartNew();
@@ -52,11 +40,12 @@ namespace ColorVision.Engine.Services.Devices.Calibration
 
             LocalFrameCalibrationService.CalibrateInPlace(
                 frame,
-                cameraDevice.LocalCalibrationCacheManager,
-                calibrationFiles,
-                calibration.Name,
-                LocalCalibrationRoi.ResolveForFrame(frame.Metadata, cameraDevice.PhyCamera?.Config?.CameraCfg));
-            LocalFrameFileService.SaveCapture(frame, LocalFrameFileService.CreateCapturePath(device.Config.FileServerCfg.DataBasePath, device.Code, frame.Metadata));
+                request.Cache,
+                request.CalibrationFiles,
+                request.TemplateName,
+                LocalCalibrationRoi.ResolveForFrame(frame.Metadata, request.FallbackRoi));
+            string capturePath = LocalFrameFileService.CreateCapturePath(request.OutputRoot ?? string.Empty, request.DeviceCode, frame.Metadata);
+            LocalFrameFileService.SaveCapture(frame, capturePath);
             stopwatch.Stop();
 
             string outputPath = frame.CvRawFilePath;
@@ -67,16 +56,13 @@ namespace ColorVision.Engine.Services.Devices.Calibration
 
             using LocalFlowFrameLease output = frame.Acquire();
             MeasureResultImgModel model = BuildResultModel(
-                device,
-                calibration,
-                serialNumber,
+                request,
                 fullPath,
                 outputPath,
                 normalizedExposure,
                 output,
-                cameraDevice.LocalCalibrationCacheManager.BackendName,
                 checked((int)Math.Min(stopwatch.ElapsedMilliseconds, int.MaxValue)));
-            TryPersist(serialNumber, model);
+            TryPersist(request.PersistenceEndpoint, request.SerialNumber, model);
             return model;
         }
 
@@ -100,14 +86,11 @@ namespace ColorVision.Engine.Services.Devices.Calibration
         }
 
         private static MeasureResultImgModel BuildResultModel(
-            DeviceCalibration device,
-            CalibrationParam calibration,
-            string serialNumber,
+            LocalFileCalibrationRequest request,
             string sourcePath,
             string outputPath,
             float[] exposure,
             LocalFlowFrameLease output,
-            string backendName,
             int totalTime)
         {
             return new MeasureResultImgModel
@@ -117,9 +100,9 @@ namespace ColorVision.Engine.Services.Devices.Calibration
                 NDPort = null,
                 Params = JsonConvert.SerializeObject(new
                 {
-                    Backend = backendName,
+                    Backend = request.Cache.BackendName,
                     SourceFile = sourcePath,
-                    TemplateParam = new { calibration.Id, calibration.Name },
+                    TemplateParam = new { Id = request.TemplateId, Name = request.TemplateName },
                     DeviceParam = new { exp = exposure, gain = 1 }
                 }),
                 RawFile = Path.GetFileName(outputPath),
@@ -132,53 +115,85 @@ namespace ColorVision.Engine.Services.Devices.Calibration
                     height = output.Metadata.Height,
                     channels = output.Metadata.Channels,
                     exposure,
-                    serialNumber
+                    serialNumber = request.SerialNumber
                 }),
                 ResultCode = 0,
                 Result = "ok",
                 TotalTime = totalTime,
-                DeviceCode = device.Code,
+                DeviceCode = request.DeviceCode,
                 CreateDate = DateTime.Now
             };
         }
 
-        private static void TryPersist(string serialNumber, MeasureResultImgModel model)
+        internal static void TryPersist(MySqlConnectedEndpoint? endpoint, string serialNumber, MeasureResultImgModel model)
         {
-            if (!MySqlControl.GetInstance().IsConnect)
-            {
-                return;
-            }
+            if (endpoint == null) return;
 
             try
             {
-                MeasureBatchModel? batch = BatchResultMasterDao.Instance.GetByCode(serialNumber);
-                if (batch == null)
+                using var db = endpoint.CreateDbClient();
+                db.Ado.BeginTran();
+
+                int batchId;
+                int resultId;
+                try
                 {
-                    batch = new MeasureBatchModel
+                    var batches = db.Queryable<MeasureBatchModel>().Where(batch => batch.Code == serialNumber)
+                        .Select(batch => new { batch.Id, batch.Code }).Take(2).ToList();
+                    if (batches.Count > 1 || (batches.Count == 1 && !string.Equals(batches[0].Code, serialNumber, StringComparison.Ordinal)))
+                        throw new InvalidOperationException($"无法唯一匹配本地校正批次号：{serialNumber}。");
+
+                    batchId = batches.Count == 1 ? batches[0].Id : db.Insertable(new MeasureBatchModel
                     {
                         Name = serialNumber,
                         Code = serialNumber,
                         ArchiveStatus = ArchiveStatus.NotArchived,
-                        CreateDate = DateTime.Now
-                    };
-                    if (BatchResultMasterDao.Instance.Save(batch) <= 0)
+                        CreateDate = DateTime.Now,
+                    }).ExecuteReturnIdentity();
+                    if (batchId <= 0) throw new InvalidOperationException("本地校正保存未取得有效批次 ID。");
+
+                    // Keep the generated file's result independent of the database until both writes commit.
+                    resultId = db.Insertable(CreateImageRow(model, batchId)).ExecuteReturnIdentity();
+                    if (resultId <= 0) throw new InvalidOperationException("本地校正保存未取得有效结果 ID。");
+                    db.Ado.CommitTran();
+                }
+                catch (Exception error)
+                {
+                    try { db.Ado.RollbackTran(); }
+                    catch (Exception rollbackError)
                     {
-                        log.Warn($"Local calibration batch persistence failed: {serialNumber}");
-                        return;
+                        throw new AggregateException("本地校正结果保存失败，数据库事务回滚也失败。", error, rollbackError);
                     }
+                    throw;
                 }
 
-                model.BatchId = batch.Id;
-                if (MeasureImgResultDao.Instance.Save(model) <= 0)
-                {
-                    log.Warn($"Local calibration result persistence failed: {model.FileUrl}");
-                }
+                model.BatchId = batchId;
+                model.Id = resultId;
             }
             catch (Exception ex)
             {
-                log.Warn("Local calibration persistence failed; the generated file remains available.", ex);
+                log.Warn($"Local calibration persistence failed; the generated file remains available. Batch={serialNumber}, File={model.FileUrl}", ex);
             }
         }
 
+        private static MeasureResultImgModel CreateImageRow(MeasureResultImgModel model, int batchId) => new()
+        {
+            BatchId = batchId,
+            ZIndex = model.ZIndex,
+            NDPort = model.NDPort,
+            Params = model.Params,
+            SmuDataId = model.SmuDataId,
+            IResult = model.IResult,
+            VResult = model.VResult,
+            RawFile = model.RawFile,
+            FileUrl = model.FileUrl,
+            FileType = model.FileType,
+            ImgFrameInfo = model.ImgFrameInfo,
+            ResultCode = model.ResultCode,
+            Result = model.Result,
+            TotalTime = model.TotalTime,
+            DeviceCode = model.DeviceCode,
+            CreateDate = model.CreateDate,
+        };
     }
 }

@@ -1,6 +1,7 @@
 ﻿#pragma warning disable CS8604,CS8629,CS8601
 using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
+using ColorVision.Database;
 using ColorVision.Engine.Media;
 using ColorVision.Engine.Templates.POI;
 using ColorVision.FileIO;
@@ -18,6 +19,9 @@ namespace ColorVision.Engine.Services
 {
     public class ViewResultImage : ViewModelBase
     {
+        internal MySqlConnectedEndpoint? DatabaseEndpoint { get; init; }
+        internal bool IsRemoteCapture { get; init; }
+
         private ContextMenu? _contextMenu;
         private RelayCommand? _exportCVCIECommand, _openCVCIECommand, _copyToCommand, _openContainingFolderCommand, _createToPoiCommand;
         public ContextMenu ContextMenu { get => _contextMenu ??= CreateContextMenu(); set => _contextMenu = value; }

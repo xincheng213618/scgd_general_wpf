@@ -83,6 +83,30 @@ namespace ColorVision.UI.LogImp.Controls
             return true;
         }
 
+        private void SyncPlainTextWithEntries()
+        {
+            if (!RetainsPlainText) return;
+            _plainText = BuildText(_entries);
+            TrimPlainText(keepHead: _latestAtTop);
+        }
+
+        private void AppendPlainText(IReadOnlyList<LogEntry> entries, bool latestAtTop, int removedCount)
+        {
+            bool wasEmpty = _plainText.Length == 0;
+            string appendedText = string.Empty;
+            if (removedCount > 0)
+                _plainText = BuildText(_entries);
+            else
+            {
+                appendedText = BuildText(entries);
+                _plainText = latestAtTop ? CombineText(appendedText, _plainText) : CombineText(_plainText, appendedText);
+            }
+
+            bool textTrimmed = TrimPlainText(keepHead: latestAtTop);
+            if (!UsesVirtualizedRendering)
+                UpdatePlainTextAfterAppend(appendedText, latestAtTop, wasEmpty, removedCount > 0 || textTrimmed);
+        }
+
         private void UpdatePlainTextAfterAppend(string appendedText, bool latestAtTop, bool wasPlainTextEmpty, bool forceRefresh)
         {
             if (forceRefresh || IsSearchActive)

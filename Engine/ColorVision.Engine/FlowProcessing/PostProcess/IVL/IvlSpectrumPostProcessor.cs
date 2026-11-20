@@ -1,5 +1,4 @@
 using ColorVision.Common.MVVM;
-using ColorVision.Database;
 using ColorVision.Engine.Services;
 using ColorVision.Engine.Services.Devices.SMU;
 using ColorVision.Engine.Services.Devices.SMU.Dao;
@@ -7,7 +6,6 @@ using ColorVision.Engine.Services.Devices.Spectrum.Dao;
 using ColorVision.Engine.Services.Devices.Spectrum.Views;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using log4net;
-using SqlSugar;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -47,20 +45,12 @@ namespace ColorVision.Engine.FlowProcessing.PostProcess.IVL
             try
             {
 
-                var DB = new SqlSugarClient(new ConnectionConfig
-                {
-                    ConnectionString = MySqlControl.GetConnectionString(),
-                    DbType = SqlSugar.DbType.MySql,
-                    IsAutoCloseConnection = true
-                });
-
-                foreach (var item in DB.Queryable<SMUResultModel>().Where(x => x.BatchId == ctx.Batch.Id).ToList())
+                using var db = ctx.CreateBatchDatabaseClient();
+                foreach (var item in db.Queryable<SMUResultModel>().Where(x => x.BatchId == ctx.Batch.Id).ToList())
                 {
                     testResult.SMUResultModels.Add(item);
                 }
-                var list = DB.Queryable<SpectumResultEntity>().Where(x => x.BatchId == ctx.Batch.Id).ToList();
-
-                DB.Dispose();
+                var list = db.Queryable<SpectumResultEntity>().Where(x => x.BatchId == ctx.Batch.Id).ToList();
                 ObservableCollection<ViewResultSpectrum> ViewResults = new ObservableCollection<ViewResultSpectrum>();
                 if (list.Count == 0)
                 {

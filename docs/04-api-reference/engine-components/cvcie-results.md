@@ -89,7 +89,7 @@ D65 使用 `u′=0.1978294495`、`v′=0.4683321682`。窗口同时显示平均 
 | --- | --- |
 | 图像右键 **POI** | 命令开始时取得一次配置快照，整批使用同一个数值处理函数；标注、列表、统计与 CSV 以这一批处理后的结果为输入 |
 | 数据库结果转为 `PoiResultCIExyuvData(model)` / `PoiResultCIEYData(model)` | 每次构造显示对象时读取设置；不改模型中的原始 JSON，也不回写数据库 |
-| 已加载的历史结果 | `ViewHanlePOIXZY` / `ViewHanlePOIY` 只在 `ViewResults` 为 null 时加载；再次选中同一项或执行 **保存数据列** 会复用已有值 |
+| 已加载的历史结果 | `ViewHanlePOIXZY` / `ViewHanlePOIY` 在全部明细转换成功后写入 `ViewResults`，再次选中或 **保存数据列** 会复用这些值。明细加载失败时可重试 |
 | 鼠标探针、CIE 图探针、常规 `PoiMeasurementService.Calculate` | 使用常规测量路径，不读取此替换配置 |
 | 真彩图像显示 | 使用独立的显示配置，不由 `CVCIEShowConfig` 控制 |
 

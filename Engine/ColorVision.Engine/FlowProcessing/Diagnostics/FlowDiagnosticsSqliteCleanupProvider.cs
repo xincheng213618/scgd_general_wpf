@@ -54,7 +54,7 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
                 return result;
             }
 
-            using var db = CreateDb();
+            using var db = CreateDb(databasePath);
             long databaseBytes = SqliteFileMaintenance.GetTotalStorageBytes(databasePath);
             foreach (string tableName in TableNames)
             {
@@ -83,7 +83,7 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
 
         public DatabaseCleanupExecutionResult CleanupAll()
         {
-            return RunMaintenance(CleanupAllCore);
+            return RunMaintenance(() => CleanupAllCore(GetDatabasePath()));
         }
 
         public DatabaseCleanupBackupResult CreateBackup()
@@ -234,9 +234,9 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
             return result;
         }
 
-        private static DatabaseCleanupExecutionResult CleanupAllCore()
+        internal static DatabaseCleanupExecutionResult CleanupAllCore(string databasePath)
         {
-            string databasePath = GetDatabasePath();
+            ArgumentException.ThrowIfNullOrWhiteSpace(databasePath);
             EnsureDatabaseExists(databasePath);
             int eventCount;
             int incidentCount;
@@ -246,7 +246,7 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
             int recordCount;
             int snapshotCount;
 
-            using (var db = CreateDb())
+            using (var db = CreateDb(databasePath))
             {
                 FlowDiagnosticsSchemaMigrator.EnsureSchema(db);
                 db.Ado.BeginTran();
@@ -259,10 +259,7 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
                     messageCount = db.Deleteable<FlowNodeMessage>().ExecuteCommand();
                     recordCount = db.Deleteable<FlowNodeRecord>().ExecuteCommand();
                     snapshotCount = db.Deleteable<FlowTemplateSnapshot>().ExecuteCommand();
-                    db.Ado.ExecuteCommand(
-                        "DELETE FROM sqlite_sequence WHERE name IN " +
-                        "('FlowExecutionEvent','FlowIncident','FlowNodeAttempt'," +
-                        "'FlowRunRecord','FlowNodeMessage','FlowNodeRecord','FlowTemplateSnapshot');");
+                    // Retain identity sequences for analysis views and queued writes that still hold deleted IDs.
                     db.Ado.CommitTran();
                 }
                 catch
@@ -365,11 +362,6 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
                 $"数据库大小: {SqliteFileMaintenance.FormatSize(vacuum.BeforeBytes)} → " +
                 SqliteFileMaintenance.FormatSize(vacuum.AfterBytes));
             result.SummaryLines.Add($"SQLite 完整性检查: {vacuum.IntegrityCheck}");
-        }
-
-        private static SqlSugarClient CreateDb()
-        {
-            return CreateDb(GetDatabasePath());
         }
 
         private static SqlSugarClient CreateDb(string databasePath)

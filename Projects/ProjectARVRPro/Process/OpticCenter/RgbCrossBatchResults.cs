@@ -7,14 +7,14 @@ using System.IO;
 namespace ProjectARVRPro.Process.OpticCenter;
 
 internal sealed record RgbCrossBatchInput(string JsonFile, string ImageFile, int MasterId);
-internal interface IRgbCrossBatchResults { RgbCrossBatchInput Resolve(int batchId); }
+internal interface IRgbCrossBatchResults { RgbCrossBatchInput Resolve(IProcessExecutionContext ctx); }
 internal sealed class RgbCrossBatchResults : IRgbCrossBatchResults
 {
-    public RgbCrossBatchInput Resolve(int batchId)
+    public RgbCrossBatchInput Resolve(IProcessExecutionContext ctx)
     {
+        int batchId = ctx.Batch?.Id ?? 0;
         if (batchId <= 0) throw new InvalidDataException("自动读取十字需要有效批次。");
-        return Select(AlgResultMasterDao.Instance.GetAllByBatchId(batchId), batchId,
-            id => DeatilCommonDao.Instance.GetAllByPid(id));
+        return Select(ctx.ReadMasterResults(), batchId, id => ctx.ReadDetails(DeatilCommonDao.Instance, id));
     }
 
     internal static RgbCrossBatchInput Select(IEnumerable<AlgResultMasterModel> masters, int batchId,

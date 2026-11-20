@@ -233,7 +233,7 @@ internal static class ResultImageDimensions
 {
     internal static bool TryPopulate(
         ProjectARVRReuslt result,
-        Func<int, List<MeasureResultImgModel>>? measureResultLoader = null)
+        Func<int, IReadOnlyList<MeasureResultImgModel>>? measureResultLoader = null)
     {
         ArgumentNullException.ThrowIfNull(result);
         if (result.ImageWidth is > 0 && result.ImageHeight is > 0)
@@ -244,7 +244,7 @@ internal static class ResultImageDimensions
         try
         {
             measureResultLoader ??= batchId => MeasureImgResultDao.Instance.GetAllByBatchId(batchId);
-            List<MeasureResultImgModel> images = measureResultLoader(result.BatchId) ?? [];
+            IReadOnlyList<MeasureResultImgModel> images = measureResultLoader(result.BatchId) ?? [];
             if (!TryReadFromMeasureResults(images, result.FileName, out int width, out int height))
                 return false;
 

@@ -4,13 +4,13 @@ using ColorVision.Database;
 using ColorVision.Engine.Templates.POI;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using ColorVision.Engine.Services;
+using ColorVision.Engine.Services.Results;
 using CVCommCore.CVAlgorithm;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.IO;
-using System.Text;
+using System.Linq;
 using System.Windows.Controls;
 using System.Windows.Data;
 
@@ -50,7 +50,10 @@ namespace ColorVision.Engine.Templates.Jsons.SFRFindROI
             PoiY = poiPointResultModel.PoiY;
             PoiWidth = poiPointResultModel.PoiWidth;
             PoiHeight = poiPointResultModel.PoiHeight;
-            Value = poiPointResultModel.Value == null ? new SFRFindROIValue() : JsonConvert.DeserializeObject<SFRFindROIValue>(poiPointResultModel.Value);
+            SFRFindROIValue? measurement = poiPointResultModel.Value == null ? null : JsonConvert.DeserializeObject<SFRFindROIValue>(poiPointResultModel.Value);
+            if (measurement?.Center == null)
+                throw new InvalidDataException($"SFR 寻边测点 {Id} 缺少中心坐标。");
+            Value = measurement;
         }
 
         public int Id { get; set; }
@@ -70,46 +73,32 @@ namespace ColorVision.Engine.Templates.Jsons.SFRFindROI
 
     public class ViewHandleSFRFindROI : IResultHandleBase
     {
+        private readonly Func<int, IReadOnlyList<PoiPointResultModel>?> _readDetails;
+
+        public ViewHandleSFRFindROI() : this(PoiHistoryDetails.Read) { }
+
+        internal ViewHandleSFRFindROI(Func<int, IReadOnlyList<PoiPointResultModel>?> readDetails) => _readDetails = readDetails;
+
         public override string Name => "SFRFindROI";
 
         public override List<ViewResultAlgType> CanHandle { get; } = new List<ViewResultAlgType>() { ViewResultAlgType.ARVR_SFR_FindROI };
 
         public override void SideSave(ViewResultAlg result, string selectedPath)
         {
-            string fileName = System.IO.Path.Combine(selectedPath, $"{result.ResultType}_{result.Batch}.csv");
-            var ViewResults = result.ViewResults.ToSpecificViewResults<ViewSFRFindROI>();
-
-            var csvBuilder = new StringBuilder();
-            List<string> properties = new() { "Id", Properties.Resources.Name, Properties.Resources.Position, Properties.Resources.Size, Properties.Resources.Shape, Properties.Resources.Angle, Properties.Resources.Center };
-            csvBuilder.AppendLine(string.Join(",", properties));
-
-            foreach (var item in ViewResults)
+            string[] headers = ["Id", Properties.Resources.Name, Properties.Resources.Position, Properties.Resources.Size,
+                Properties.Resources.Shape, Properties.Resources.Angle, Properties.Resources.Center];
+            var rows = PoiHistoryDetails.RequireForExport(result).OfType<ViewSFRFindROI>().Select(item => new[]
             {
-                List<string> values = new()
-                {
-                    item.Id.ToString() ?? string.Empty,
-                    item.PoiName?? string.Empty,
-                    $"{item.PoiX}|{item.PoiY}",
-                    $"{item.PoiWidth}|{item.PoiHeight}",
-                    item.PoiType.ToString(),
-                    item.Value.Angle.ToString(),
-                    $"{item.Value.Center.X}|{item.Value.Center.Y}",
-                };
-                csvBuilder.AppendLine(string.Join(",", values));
-            }
-
-
-            File.WriteAllText(fileName, csvBuilder.ToString(), Encoding.UTF8);
+                item.Id.ToString(), item.PoiName, $"{item.PoiX}|{item.PoiY}", $"{item.PoiWidth}|{item.PoiHeight}",
+                item.PoiType.ToString(), item.Value.Angle.ToString(), $"{item.Value.Center.X}|{item.Value.Center.Y}",
+            });
+            AlgorithmSideDataFiles.WriteCsv(result, selectedPath, $"{result.ResultType}_{result.Batch}.csv", headers, rows);
         }
 
         public override void Load(ViewResultContext ctx, ViewResultAlg result)
         {
-            if (result.ViewResults ==null)
+            if (result.ViewResults == null && PoiHistoryDetails.TryLoad(result, _readDetails, rows => rows.Select(item => new ViewSFRFindROI(item))))
             {
-                result.ViewResults = new ObservableCollection<IViewResult>();
-                foreach (var item in PoiPointResultDao.Instance.GetAllByPid(result.Id))
-                    result.ViewResults.Add(new ViewSFRFindROI(item));
-
                 void ExportToPoi()
                 {
                     int old1 = TemplatePoi.Params.Count;
@@ -151,8 +140,10 @@ namespace ColorVision.Engine.Templates.Jsons.SFRFindROI
         public override void Handle(ViewResultContext ctx, ViewResultAlg result)
         {
             OpenSourceImage(ctx, result);
+            var details = PoiHistoryDetails.GetForDisplay(ctx, result);
+            if (details == null) return;
 
-            foreach (var item in result.ViewResults)
+            foreach (var item in details)
             {
                 if (item is ViewSFRFindROI poiResultData)
                 {
@@ -173,7 +164,7 @@ namespace ColorVision.Engine.Templates.Jsons.SFRFindROI
                 gridView.Columns.Clear();
                 for (int i = 0; i < header.Count; i++)
                     gridView.Columns.Add(new GridViewColumn() { Header = header[i], DisplayMemberBinding = new Binding(bdHeader[i]) });
-                ctx.ListView.ItemsSource = result.ViewResults;
+                ctx.ListView.ItemsSource = details;
             }
         }
 

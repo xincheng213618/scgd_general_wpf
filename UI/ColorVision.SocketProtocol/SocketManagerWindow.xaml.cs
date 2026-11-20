@@ -4,7 +4,6 @@ using ColorVision.UI.Menus;
 using Newtonsoft.Json;
 using System.Collections.Specialized;
 using System.Globalization;
-using System.Net.Sockets;
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;
@@ -347,41 +346,46 @@ namespace ColorVision.SocketProtocol
         /// </summary>
         private void ResendMessageToClient(SocketMessage message)
         {
-            if (!TryLoadMessageContent(message, out string? content) || string.IsNullOrEmpty(content))
-                return;
-
-            TcpClient? targetClient = FindTargetClient(message);
-            if (targetClient != null && IsClientWritable(targetClient))
-            {
-                try
-                {
-                    var stream = targetClient.GetStream();
-                    byte[] data = Encoding.UTF8.GetBytes(content);
-                    stream.Write(data, 0, data.Length);
-                    var clientEndPoint = GetEndPointText(targetClient) ?? message.ClientEndPoint;
-
-                    // 记录重发消息
-                    var resendMsg = new SocketMessage
-                    {
-                        ClientEndPoint = clientEndPoint,
-                        Direction = SocketMessageDirection.Sent,
-                        Content = content,
-                        MessageTime = DateTime.Now,
-                        EventName = message.EventName,
-                        MsgID = message.MsgID
-                    };
-                    _socketManager.MessageManager.AddMessage(resendMsg);
-
-                    MessageBox.Show(Properties.Resources.ResendSuccess, "ColorVision", MessageBoxButton.OK, MessageBoxImage.Information);
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show(FormatResource(Properties.Resources.ResendFailed, ex.Message), "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error);
-                }
-            }
-            else
+            SocketServerClient? target = _socketManager.CaptureReplayTarget(message);
+            if (target == null)
             {
                 MessageBox.Show(Properties.Resources.ClientNotConnected, "ColorVision", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            try
+            {
+                string? content = _socketManager.MessageManager.LoadContentForResend(message);
+                if (string.IsNullOrEmpty(content))
+                {
+                    MessageBox.Show(Properties.Resources.ResendContentUnavailable, "ColorVision", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+
+                if (target.IsClosed || target.Session.IsStopRequested || !target.Client.Connected
+                    || target.Client.Client?.RemoteEndPoint?.ToString() is not { } clientEndPoint)
+                {
+                    MessageBox.Show(Properties.Resources.ClientNotConnected, "ColorVision", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+
+                target.Client.GetStream().Write(Encoding.UTF8.GetBytes(content));
+                _socketManager.MessageManager.AddMessage(new SocketMessage
+                {
+                    ClientEndPoint = clientEndPoint,
+                    ClientConnectionId = target.ConnectionId,
+                    Direction = SocketMessageDirection.Sent,
+                    Content = content,
+                    MessageTime = DateTime.Now,
+                    EventName = message.EventName,
+                    MsgID = message.MsgID
+                });
+
+                MessageBox.Show(Properties.Resources.ResendSuccess, "ColorVision", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(FormatResource(Properties.Resources.ResendFailed, ex.Message), "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
@@ -401,58 +405,6 @@ namespace ColorVision.SocketProtocol
                     MessageBoxButton.OK,
                     MessageBoxImage.Error);
                 return false;
-            }
-        }
-
-        private TcpClient? FindTargetClient(SocketMessage message)
-        {
-            foreach (var client in _socketManager.TcpClients)
-            {
-                var remoteEndPoint = SafeGetRemoteEndPoint(client);
-                if (!string.IsNullOrEmpty(remoteEndPoint) &&
-                    Contains(message.ClientEndPoint, remoteEndPoint) &&
-                    IsClientWritable(client))
-                {
-                    return client;
-                }
-            }
-
-            return _socketManager.TcpClients.FirstOrDefault(IsClientWritable);
-        }
-
-        private static bool IsClientWritable(TcpClient client)
-        {
-            try
-            {
-                return client.Connected && client.GetStream().CanWrite;
-            }
-            catch
-            {
-                return false;
-            }
-        }
-
-        private static string? SafeGetRemoteEndPoint(TcpClient client)
-        {
-            try
-            {
-                return client.Client.RemoteEndPoint?.ToString();
-            }
-            catch
-            {
-                return null;
-            }
-        }
-
-        private static string? GetEndPointText(TcpClient client)
-        {
-            try
-            {
-                return client.Client.RemoteEndPoint?.ToString() ?? client.Client.LocalEndPoint?.ToString();
-            }
-            catch
-            {
-                return null;
             }
         }
 

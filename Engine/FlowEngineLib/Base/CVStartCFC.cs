@@ -145,7 +145,7 @@ public class CVStartCFC : CVBaseCFC
 		}
 	}
 
-	private void DoFinishingCore()
+	private void DoFinishingCore(bool completeTrackedRun = false)
 	{
 		IsDel = true;
 		EndTime = DateTime.Now;
@@ -166,12 +166,17 @@ public class CVStartCFC : CVBaseCFC
 			{
 				logger.Error($"Failed to release runtime resources for flow {SerialNumber}.", error);
 			}
-			if (finishState.TrackedCompletion != null)
-				finishState.TrackedTerminalResult = BaseStartNode.CreateFinishedEventArgs(this);
+			if (finishState.TrackedCompletion is { } completion)
+			{
+				FlowStartEventArgs result = BaseStartNode.CreateFinishedEventArgs(this);
+				finishState.TrackedTerminalResult = result;
+				if (completeTrackedRun)
+					completion.TrySetResult(result);
+			}
 		}
 	}
 
-	internal bool TryDoFinishing(Action prepareFinishing)
+	internal bool TryDoFinishing(Action prepareFinishing, bool completeTrackedRun = false)
 	{
 		ArgumentNullException.ThrowIfNull(prepareFinishing);
 		lock (finishState.Lock)
@@ -182,7 +187,7 @@ public class CVStartCFC : CVBaseCFC
 			}
 			prepareFinishing();
 			finishState.IsFinished = true;
-			DoFinishingCore();
+			DoFinishingCore(completeTrackedRun);
 			return true;
 		}
 	}

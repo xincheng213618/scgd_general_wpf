@@ -18,6 +18,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Windows;
 
 namespace ColorVision.Engine.FlowProcessing.Nodes
@@ -63,6 +64,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
     internal sealed class LocalFindCrossPersistenceRequest
     {
         public required CVStartCFC Action { get; init; }
+        public MySqlConnectedEndpoint? DatabaseEndpoint { get; init; }
         public string? ImageFilePath { get; init; }
         public int ZIndex { get; init; }
         public int TotalTime { get; init; }
@@ -86,13 +88,14 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
         public required string NodeId { get; init; }
         public int ZIndex { get; init; }
         public int MasterId { get; init; }
+        public MySqlConnectedEndpoint? DatabaseEndpoint { get; init; }
     }
 
     internal interface ILocalFindCrossNodeServices
     {
-        Int32Rect LoadSearchRegionTemplate(string templateName);
+        Int32Rect LoadSearchRegionTemplate(string templateName, MySqlConnectedEndpoint? endpoint);
         LocalFlowFrame LoadFrame(string filePath);
-        MeasureResultImgModel? GetImageResult(int masterId);
+        MeasureResultImgModel? GetImageResult(int masterId, MySqlConnectedEndpoint? endpoint);
         LocalFindCrossDetection Detect(HImage image, RoiRect roi, string parameterJson);
         LocalFindCrossPersistenceResult Persist(LocalFindCrossPersistenceRequest request);
         void Publish(LocalFindCrossPublishRequest request);
@@ -112,11 +115,13 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
         {
         }
 
-        public Int32Rect LoadSearchRegionTemplate(string templateName) => LocalPoiSearchRegionResolver.Load(templateName);
+        public Int32Rect LoadSearchRegionTemplate(string templateName, MySqlConnectedEndpoint? endpoint) =>
+            LocalPoiSearchRegionResolver.Load(templateName, RequireEndpoint(endpoint));
 
         public LocalFlowFrame LoadFrame(string filePath) => LocalFrameFileService.Load(filePath);
 
-        public MeasureResultImgModel? GetImageResult(int masterId) => MeasureImgResultDao.Instance.GetById(masterId);
+        public MeasureResultImgModel? GetImageResult(int masterId, MySqlConnectedEndpoint? endpoint) =>
+            MeasureImgResultDao.ReadResult(RequireEndpoint(endpoint), masterId);
 
         public LocalFindCrossDetection Detect(HImage image, RoiRect roi, string parameterJson)
         {
@@ -197,8 +202,12 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                 request.NodeId,
                 request.ZIndex,
                 request.MasterId,
-                (int)ViewResultAlgType.FindCross);
+                (int)ViewResultAlgType.FindCross,
+                RequireEndpoint(request.DatabaseEndpoint));
         }
+
+        internal static MySqlConnectedEndpoint RequireEndpoint(MySqlConnectedEndpoint? endpoint) =>
+            endpoint ?? throw new InvalidOperationException("本地 FindCross 需要已连接的流程数据库来读取或保存结果。");
     }
 
     internal interface ILocalFindCrossResultTransaction : IDisposable
@@ -212,7 +221,9 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
 
     internal sealed class SqlSugarLocalFindCrossResultTransaction : ILocalFindCrossResultTransaction
     {
-        private readonly SqlSugarClient db = MySqlControl.CreateDbClient();
+        private readonly SqlSugarClient db;
+
+        internal SqlSugarLocalFindCrossResultTransaction(MySqlConnectedEndpoint endpoint) => db = endpoint.CreateDbClient();
 
         public void Begin() => db.Ado.BeginTran();
 
@@ -234,24 +245,29 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
         public static LocalFindCrossPersistenceResult Save(LocalFindCrossPersistenceRequest request)
         {
             ArgumentNullException.ThrowIfNull(request);
-            MeasureBatchModel batch = BatchResultMasterDao.Instance.GetByNameOrCode(request.Action.SerialNumber)
-                ?? throw new InvalidOperationException($"找不到流程批次：{request.Action.SerialNumber}");
-            AlgResultMasterModel master = CreateMasterModel(request, batch.Id);
+            var endpoint = LocalFindCrossNodeServices.RequireEndpoint(request.DatabaseEndpoint);
+            CancellationToken stop = request.Action.RuntimeResources.StopToken;
+            stop.ThrowIfCancellationRequested();
+            int batchId = LocalFlowResultPersistence.ResolveBatchId(request.Action, endpoint);
+            AlgResultMasterModel master = CreateMasterModel(request, batchId);
             if (request.ResultCode != 0)
             {
-                int failedMasterId = SaveMasterOnlyCore(master, AlgResultMasterDao.Instance.SaveAndReturnId);
+                stop.ThrowIfCancellationRequested();
+                int failedMasterId = SaveMasterOnlyCore(master, model => AlgResultMasterDao.InsertResult(endpoint, model));
                 return new LocalFindCrossPersistenceResult { MasterId = failedMasterId };
             }
 
             LocalFindCrossNodeItem result = request.Result
                 ?? throw new InvalidOperationException("成功的本地 FindCross 结果缺少十字明细。");
+            stop.ThrowIfCancellationRequested();
             string resultFilePath = WriteResultFile(request.ResultDirectory, BuildLegacyResultJson(result));
             try
             {
                 int masterId = SaveDatabaseCore(
                     master,
                     resultFilePath,
-                    static () => new SqlSugarLocalFindCrossResultTransaction());
+                    () => new SqlSugarLocalFindCrossResultTransaction(endpoint),
+                    stop);
                 return new LocalFindCrossPersistenceResult
                 {
                     MasterId = masterId,
@@ -349,11 +365,13 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
         internal static int SaveDatabaseCore(
             AlgResultMasterModel master,
             string resultFilePath,
-            Func<ILocalFindCrossResultTransaction> transactionFactory)
+            Func<ILocalFindCrossResultTransaction> transactionFactory,
+            CancellationToken stop = default)
         {
             ArgumentNullException.ThrowIfNull(master);
             ArgumentException.ThrowIfNullOrWhiteSpace(resultFilePath);
             ArgumentNullException.ThrowIfNull(transactionFactory);
+            stop.ThrowIfCancellationRequested();
             using ILocalFindCrossResultTransaction transaction = transactionFactory()
                 ?? throw new InvalidOperationException("无法创建本地 FindCross 结果数据库事务。");
             transaction.Begin();
@@ -362,9 +380,11 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                 int masterId = transaction.InsertMaster(master);
                 if (masterId <= 0)
                     throw new InvalidOperationException("保存本地 FindCross 结果主表失败。");
+                stop.ThrowIfCancellationRequested();
                 int inserted = transaction.InsertDetail(CreateDetail(masterId, resultFilePath));
                 if (inserted != 1)
                     throw new InvalidOperationException($"保存本地 FindCross 结果明细失败：应写入 1 条，实际写入 {inserted} 条。");
+                stop.ThrowIfCancellationRequested();
                 transaction.Commit();
                 return masterId;
             }
@@ -530,8 +550,9 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             if (string.IsNullOrWhiteSpace(ParameterJson))
                 throw new InvalidOperationException("FindCross 算法参数 JSON 不能为空。");
 
+            MySqlConnectedEndpoint? endpoint = LocalFlowResultPersistence.ResolveEndpoint(action);
             LocalFlowFrame? ownedFrame = null;
-            LocalFlowFrame frame = ResolveFrame(action, out ownedFrame, out string? imageFile);
+            LocalFlowFrame frame = ResolveFrame(action, endpoint, out ownedFrame, out string? imageFile);
             bool loadedFromFile = ownedFrame != null;
             try
             {
@@ -539,7 +560,8 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                 if (!lease.IsFlipApplied)
                     throw new InvalidOperationException("当前图像的方向变换尚未完成，无法生成可供后续映射使用的十字中心结果。");
 
-                RoiRect roi = LocalFindLuminousAreaNode.ResolveRoi(string.IsNullOrWhiteSpace(configuredTemplate) ? configuredRegion : services.LoadSearchRegionTemplate(configuredTemplate), lease.Metadata.Width, lease.Metadata.Height);
+                RoiRect roi = LocalFindLuminousAreaNode.ResolveRoi(string.IsNullOrWhiteSpace(configuredTemplate)
+                    ? configuredRegion : services.LoadSearchRegionTemplate(configuredTemplate, endpoint), lease.Metadata.Width, lease.Metadata.Height);
                 HImage image = FlowNodeTiming.Run("PrepareImage", () => LocalFindLuminousAreaNode.CreateBorrowedImage(lease));
                 Stopwatch stopwatch = Stopwatch.StartNew();
                 LocalFindCrossDetection detection = FlowNodeTiming.Run("Algorithm", () => services.Detect(image, roi, ParameterJson));
@@ -555,6 +577,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                     LocalFindCrossPersistenceResult failed = FlowNodeTiming.Run("PersistResult", () => services.Persist(new LocalFindCrossPersistenceRequest
                     {
                         Action = action,
+                        DatabaseEndpoint = endpoint,
                         ImageFilePath = imageFile,
                         ZIndex = ZIndex,
                         TotalTime = totalTime,
@@ -594,7 +617,8 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                         SerialNumber = action.SerialNumber,
                         NodeId = NodeID,
                         ZIndex = ZIndex,
-                        MasterId = failed.MasterId
+                        MasterId = failed.MasterId,
+                        DatabaseEndpoint = endpoint,
                     }));
                     throw;
                 }
@@ -625,6 +649,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                 LocalFindCrossPersistenceResult persisted = FlowNodeTiming.Run("PersistResult", () => services.Persist(new LocalFindCrossPersistenceRequest
                 {
                     Action = action,
+                    DatabaseEndpoint = endpoint,
                     ImageFilePath = imageFile,
                     ZIndex = ZIndex,
                     TotalTime = totalTime,
@@ -661,7 +686,8 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                     SerialNumber = action.SerialNumber,
                     NodeId = NodeID,
                     ZIndex = ZIndex,
-                    MasterId = persisted.MasterId
+                    MasterId = persisted.MasterId,
+                    DatabaseEndpoint = endpoint,
                 }));
                 return new LocalFindCrossNodeResultData
                 {
@@ -734,7 +760,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             return item;
         }
 
-        private LocalFlowFrame ResolveFrame(CVStartCFC action, out LocalFlowFrame? ownedFrame, out string? imageFile)
+        private LocalFlowFrame ResolveFrame(CVStartCFC action, MySqlConnectedEndpoint? endpoint, out LocalFlowFrame? ownedFrame, out string? imageFile)
         {
             ownedFrame = null;
             imageFile = null;
@@ -745,7 +771,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                 return currentFrame;
             }
 
-            string? fallbackFile = ResolveFallbackFile(action, out int sourceMasterId);
+            string? fallbackFile = ResolveFallbackFile(action, endpoint, out int sourceMasterId);
             if (fallbackFile != null)
             {
                 ownedFrame = FlowNodeTiming.Run("OpenImage", () =>
@@ -761,7 +787,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             throw new InvalidOperationException("流程中没有可用的上游图像；请连接相机取图、校正或“加载图片”节点。");
         }
 
-        private string? ResolveFallbackFile(CVStartCFC action, out int sourceMasterId)
+        private string? ResolveFallbackFile(CVStartCFC action, MySqlConnectedEndpoint? endpoint, out int sourceMasterId)
         {
             sourceMasterId = -1;
             bool hasInput = TryGetInputMasterResult(action, 0, out int masterId, out int masterResultType, out _);
@@ -778,7 +804,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                     $"IN 接收到的不是图像结果：MasterId={masterId}，ResultType={masterResultType}。请将图像或本地校正节点连接到 IN。");
             }
 
-            MeasureResultImgModel imageResult = FlowNodeTiming.Run("ResolveImageResult", () => services.GetImageResult(masterId))
+            MeasureResultImgModel imageResult = FlowNodeTiming.Run("ResolveImageResult", () => services.GetImageResult(masterId, endpoint))
                 ?? throw new InvalidOperationException($"找不到 IN 图像结果：MasterId={masterId}。");
             sourceMasterId = masterId;
             string? firstCandidate = null;

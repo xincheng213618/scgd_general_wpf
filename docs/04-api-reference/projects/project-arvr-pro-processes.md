@@ -27,6 +27,8 @@ ARVRPro 用流程组组织测试顺序，用处理类型解释 Engine 输出，�
 
 运行中的结果优先使用该次启动选定的处理实例。历史记录的解析、判定和导出优先根据保存的处理类型和配置快照恢复实例，不能假设修改今天的 Recipe 就会重新解释全部历史结果；结果图片回看在当前流程仍映射到相同处理类型时，使用当前实例的显示配置，使绘制开关和标签模板可以立即调整。
 
+流程和批次重放通过 `IProcessExecutionContext` 使用该批次的数据库读取采集图、算法主记录及明细。屏幕缺陷、POI、FOV、MTF、畸变和 Demura 等解析沿用此连接。切换数据库后，同号的图像或明细不会补入正在处理的批次；原库数据缺失或读取失败时按该解析器的缺测规则处理。独立调用无参上下文或 `DemuraAoiParser.ParseAsync(int, …)` 仍使用已配置的连接。
+
 ## 配置一个测试方案
 
 操作前应已准备目标 Flow 模板、对应结果类型及设备配置；修改方案后不要立即在未获授权的设备上运行。
@@ -87,7 +89,9 @@ MTF 处理在应用点位或分区的 Recipe 修正后检查数值。上游快�
 
 单次测试和一键执行使用同一入口生成 `Code`：按 `CodeUseSN` 拼接产品 SN 与 `CodeDateFormat` 时间部分后，规范为 Windows 文件名片段，再创建 MySQL 批次、诊断记录及启动 Flow。预处理、算法服务、结果解析和完成回调都使用此 `Code`；`SN` 保留原值用于显示和 Socket 回传。汇总 CSV 文件名也单独规范化，文件内容继续保留原始 SN。不要在 Socket 接收时把原始产品 SN 全局替换。
 
-W255 与按 Key 亮色度共用均匀性来源规则。**从修正后POI重算均匀性** 默认关闭：优先按配置的 TName 读取已有 `PoiAnalysis` 亮度/色度均匀性，缺少的项目从当前 POI 的原始 Y、u′、v′ 补算，不覆盖已读取的另一项；开启时忽略模板均匀性，使用已应用 Recipe 修正的 POI 重算两项。亮度均匀性为最小 Y / 最大 Y，色度均匀性为所有点对的最大 Δu′v′；两种来源都继续应用均匀性项目自己的 Recipe K/B 与限值，参与 PASS/FAIL。缺少 POI 分析节点不需要手动打开重算开关；需要本地计算时点数不足或数值无效则解析失败，不保留默认零值作为有效结果。普通/动态棋盘格已有缺少分析结果时的本地对比度计算，YW 亮色度始终按两组 POI 本地计算。
+W255 与按 Key 亮色度共用均匀性来源规则。**从修正后POI重算均匀性** 默认关闭：优先按配置的 TName 读取已有 `PoiAnalysis` 亮度/色度均匀性，缺少的项目从当前 POI 的原始 Y、u′、v′ 补算，不覆盖已读取的另一项；开启时忽略模板均匀性，使用已应用 Recipe 修正的 POI 重算两项。亮度均匀性为最小 Y / 最大 Y，色度均匀性为所有点对的最大 Δu′v′；两种来源都继续应用均匀性项目自己的 Recipe K/B 与限值，参与 PASS/FAIL。缺少 POI 分析节点不需要手动打开重算开关；需要本地计算时点数不足或数值无效则解析失败，不保留默认零值作为有效结果。YW 亮色度始终按两组 POI 本地计算。
+
+固定和动态棋盘格优先使用匹配的 `PoiAnalysis.result.Value`，仅在找不到匹配模板时按当前 POI 本地计算对比度。本地计算要求每个点有有限实测亮度 `Y`，模板结果要求有限实测 `Value`。明确记录的零值可以参与计算，两条路径均先检查实测数据，再应用 Recipe K/B 和限值。模板值有效且辅助 POI 不完整时，判定继续使用模板值，辅助 CSV 只保留有效点位。
 
 W255 和按 Key 亮色度的 **显示配置** 提供独立的 **亮度均匀性格式**、**色度均匀性格式**，可选择百分比或小数；默认分别为百分比、小数，旧配置省略这两个字段时保持原显示。百分比将 `TestValue` 乘 100 并使用 `%` 单位，小数使用比例值且单位为空；新结果的 `TestValue` 只含数字，单位单独存入 `Unit`，W255 读取历史带 `%` 的数值文字时只显示一次单位。`Value`、Recipe K/B、限值与判定仍保持比例数值，导出与 Socket 的格式化文本和单位随结果保存，不重写历史结果。
 
@@ -103,7 +107,7 @@ W255 和按 Key 亮色度的 **显示配置** 提供独立的 **亮度均匀性�
 
 在 **ProcessManager → 流程解析映射 → Process → 显示配置 → 图像文字颜色** 可为对应的 MTF-HV 058 实例选择数值文字颜色。重新打开结果图时应用所选颜色，适用于重新绘制的图层。已保存的标记图包含绘制后的像素。
 
-`White51Process` 不需要中心点解析 Key；它按结果类型读取 FOV 和四个发光区角点。**绘制FOV** 默认开启，直接使用已保存的 H/V/D 结果绘制四边形、中轴与对角线，不重新运行 FOV 或发光区算法；关闭时只绘制发光区边界。
+`White51Process` 按结果类型读取 FOV 和四个发光区角点。固定 W51 和按 Key 视场角均要求结果文件包含有限的 `clolorVisionH_Fov`、`clolorVisionV_Fov`、`D_Fov`。实测零值参与正常判定，缺测时判解析失败并清除该输出。**绘制FOV** 默认开启，使用历史角度和角点绘制四边形、中轴与对角线。关闭时只绘制发光区边界。
 
 普通和动态畸变默认绘制点阵连线。仅在所选九点完整、有限、互异且顺序有效时连线，包括只有坐标的旧结果。多点阵可选 `Point9` 代表点。关闭辅助连线或点序无效时保留原点标记。四角边框只是实测点连线。
 
@@ -143,24 +147,25 @@ JSON 文件限制为 32 MiB；解析检查点位数量与配置布局、编号�
 | --- | --- | --- |
 | 固定白场 | `White255Process`，`W255/` | 白场亮色度、均匀性等结果 |
 | 固定视场角 | `White51Process`，`W51/` | 读取 FOV 输出并写入 W51 结果 |
-| 黑场与 FOFO | `BlackProcess`，`Black/` | 对比度计算依赖聚合结果中已有的 W255 白场数据 |
+| 黑场与 FOFO | `BlackProcess`，`Black/` | 已有 W255 时，普通 FOFO 使用白场中心亮度和 `Key_Center` 指定的黑场中心亮度。缺少该黑场实测点时失败。`IsUsingNing` 使用全点亮度之和 |
 | 按 Key 亮色度 | `LuminanceChromaticityProcess`，`KeyedResults/LuminanceChromaticity/` | 独立输出 Key、中心点 Key；`Key=White` 同时写入 W255 兼容结果 |
 | YW 亮色度 | `LuminanceChromaticityYWProcess`，同上 | 12×7 与 8×7 两组 POI、均匀性及独立 Recipe；同批次同点数候选重复时取结果主表 Id 最大的后生成结果 |
 | 按 Key 视场角 | `FieldOfViewProcess`，`KeyedResults/FieldOfView/` | 水平、垂直、对角 FOV；`Key=White` 同时写入 W51 兼容结果 |
 | 棋盘格 | `ChessboardProcess` / `ChessboardDynamicProcess` | 固定或动态点位的棋盘格对比度 |
-| 畸变 | `DistortionProcess` / `DistortionDynamicProcess` | 固定或动态点位的几何结果 |
+| 畸变 | `DistortionProcess` / `DistortionDynamicProcess` | 至少需要一个有限实测指标。TV 比值按水平和垂直成对读取。旧点数和几何格式中缺省的可选指标不生成测试项，实测零值保留 |
 | 光学中心 | `OpticCenterProcess` / `OpticCenterDynamicProcess` | 固定或动态点位的中心结果 |
 | 光学中心（回包） | `OpticCenterLuxProcess`，`OpticCenter/` | 继承普通光学中心；选择此类型即通过回包接口返回本次三轴值，不限定设备号或流程命令，切换类型后核对 Recipe |
 | 十字 RGB 分离 | `RgbCrossProcess`，`OpticCenter/` | 与原十字/光学中心同属“光学与几何”；读取 JSON、绘制 RGB 边缘，可选在本项目判定 |
 | 圆环鬼影 | `RingGhostProcess`，`Ghost/` | 在“缺陷检测”分类读取本地圆环结果，对外输出 GMR1/GMR2，正常未检出为 0 |
 | 动态 POI | `PoiDynamicProcess`，`POI/` | 运行时点位的亮色度解析与显示 |
-| 通用 MTF | `MTFProcess`，`MTF/` | 通用 MTF 结果解析 |
+| 通用 MTF | `MTFProcess`，`MTF/` | 判定 MTF 2.0 的 `result[].mtfValue`，至少需要一个实测点。缺测或非有限值使步骤失败并清除该输出 Key。实测零值按配方判断 |
 | VR MTF 分区 | `VRMtfPartitionProcess`，`MTF/VRPartition/` | H/V 实例分别配置网格、圆环及输出 Key，各区 Min/Max/Average 使用独立 Recipe |
 | HV 特殊图案 | `MTFHVProcess` / `MTFHV048Process` / `MTFHV058Process` | 分别对应 0368、048、058 点位方案 |
-| 动态 HV | `MTFHVDynamicProcess` | HV 特殊图案的动态区域 |
+| 动态 HV | `MTFHVDynamicProcess` | 至少需要一个命名的 `resultChild` 分组，每组须有有限的 `horizontalAverage` 和 `verticalAverage`。H/V 各按配方判定，实测零值有效。缺测或无效数据清除该输出 Key 并判失败 |
 | 058 条纹 | `MTFHProcess` / `MTFVProcess` | 横条纹或竖条纹的 058 方案 |
 | 07 条纹 | `MTFH07Process` / `MTFV07Process` | 中心 0F 和四角 0.7F，共五个点位 |
-| 缺陷与 AOI | `DetectScreenDefectsProcess` / `AOIProcess` | 屏幕缺陷或 OLED AOI 结果 |
+| 屏幕缺陷 | `DetectScreenDefectsProcess` | 读取批次最新匹配的检测主记录及最新明细。内联或文件结果须含非负整数 `DefectCount`。实测为零且无缺陷框时通过，正计数判失败且缺陷框可省略。结果缺失、损坏或计数为零但存在缺陷框时，解析失败并清除当前输出 |
+| AOI | `AOIProcess` | OLED AOI 结果 |
 | Demura | `DemuraProcess` / `DemuraAoiProcess` | 补偿准备与[烧录](./project-arvr-pro-demura.md)，或补偿后的 AOI 判定 |
 | 空处理 | `BlankProcess` | 无业务解析的回退处理，不作为普通处理类型选项展示 |
 
@@ -178,9 +183,9 @@ H/V 使用两个独立实例和不同输出 Key，如 `VRMTFH`、`VRMTFV`。迁�
 
 解析 Key 用于匹配 Engine 已产生的结果名称；输出 Key 用于区分项目聚合结果中的不同画面，不能互相替代。
 
-- `LuminanceChromaticityProcessConfig` 默认 `Key=White`、`CenterKey=P_5`。若现场 W25 模板以 `P_9` 为中心，可设置 `Key=W25`、`CenterKey=P_9`；必须以实际 Flow 点位为准。
+- 按 Key 亮色度默认 `Key=White`、`CenterKey=P_5`。固定 W255 默认 `Key_Center=P_5`。若 W25 模板使用 `P_9`，按实际点名配置。中心点必须包含有限的 `Y`、`x`、`y`、`u`、`v`、`CCT` 实测值。实测零值沿用既有非正值处理和配方判断。中心色温 K/B 修正后参与步骤判定，默认范围为 6000–7000 K，边界值通过，限值为 0 的一侧不限。
 - MTF 0368 使用 0F/0.3F/0.6F/0.8F，048 使用 0F/0.4F/0.8F，058 使用 0F/0.5F/0.8F。048 的第二组是 0.4F。
-- H 表示横条纹，V 表示竖条纹；HV 是独立特殊图案。07 的每个点都有解析 Key 与 Recipe，结果按画面 Key 写入 `MTFH07TestResults` 或 `MTFV07TestResults`。
+- H 表示横条纹，V 表示竖条纹，HV 是独立特殊图案。07 的五个点各用自己的解析 Key 与 Recipe。五点均读到有限值后才按画面 Key 写入 `MTFH07TestResults` 或 `MTFV07TestResults`，实测零值参与正常判定。缺测或解析失败时，该画面判失败并清除同一输出 Key 的旧测量。
 - 同一结果字典中的重复输出 Key 会写到同一项。不同画面需要分别留存时，应配置不同输出 Key。
 
 ## 雷鸟切图

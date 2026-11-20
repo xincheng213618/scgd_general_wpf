@@ -1,3 +1,4 @@
+using ColorVision.Database;
 using ColorVision.Engine.Services.Results;
 using ColorVision.Engine.FlowProcessing.Nodes;
 using ColorVision.Engine.Services.Images.FileFusion;
@@ -17,6 +18,7 @@ public sealed class ResultMessageBusTests
     public void LocalAlgorithmsPublishByBatchAndNodeWithoutDevice(string algorithm)
     {
         string nodeId = Guid.NewGuid().ToString("N");
+        MySqlConnectedEndpoint endpoint = new(_ => true, () => throw new InvalidOperationException("Publishing must not open the database."));
         ResultMessage? received = null;
         using IDisposable subscription = ResultMessageBus.Default.Subscribe(message =>
         {
@@ -25,19 +27,26 @@ public sealed class ResultMessageBusTests
         switch (algorithm)
         {
             case "cross":
-                LocalFindCrossNodeServices.Instance.Publish(new() { NodeId = nodeId, SerialNumber = "batch", MasterId = 42, ZIndex = 3, OperatorCode = "FindCross" });
+                LocalFindCrossNodeServices.Instance.Publish(new()
+                {
+                    NodeId = nodeId, SerialNumber = "batch", MasterId = 42, ZIndex = 3, OperatorCode = "FindCross", DatabaseEndpoint = endpoint,
+                });
                 break;
             case "grid":
                 LocalGridDistortionNodeServices.Instance.Publish(new() { NodeId = nodeId, SerialNumber = "batch", MasterId = 42, ZIndex = 3 });
                 break;
             case "fov":
-                LocalFovNodeServices.Instance.Publish(new() { NodeId = nodeId, SerialNumber = "batch", MasterId = 42, ZIndex = 3 });
+                LocalFovNodeServices.Instance.Publish(new()
+                {
+                    NodeId = nodeId, SerialNumber = "batch", MasterId = 42, ZIndex = 3,
+                    DatabaseEndpoint = endpoint,
+                });
                 break;
             case "luminous":
                 LocalFindLuminousAreaNodeServices.Instance.Publish(new() { NodeId = nodeId, SerialNumber = "batch", MasterId = 42, ZIndex = 3, OperatorCode = "FindLightArea" });
                 break;
             case "fusion":
-                FileFusionServices.Instance.Publish(new CVStartCFC("batch"), nodeId, 3, new MeasureResultImgModel { Id = 42 });
+                FileFusionServices.Instance.Publish(new CVStartCFC("batch"), nodeId, 3, new MeasureResultImgModel { Id = 42 }, null);
                 break;
         }
         Assert.NotNull(received);
@@ -47,6 +56,7 @@ public sealed class ResultMessageBusTests
         Assert.Equal(3, received.ZIndex);
         Assert.Equal(42, received.Data.MasterId);
         Assert.Equal(algorithm == "fusion" ? ResultKinds.Image : ResultKinds.Algorithm, received.ResultKind);
+        if (algorithm is "cross" or "fov") Assert.Same(endpoint, received.DatabaseEndpoint);
     }
 
     [Fact]

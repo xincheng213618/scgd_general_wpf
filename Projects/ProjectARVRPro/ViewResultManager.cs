@@ -1,6 +1,7 @@
 ﻿#pragma warning disable CA1822,CS8625
 using ColorVision.Common.MVVM;
 using ColorVision.Database;
+using ColorVision.Engine;
 using ColorVision.UI;
 using Microsoft.Data.Sqlite;
 using ProjectARVRPro.Exports;
@@ -428,6 +429,12 @@ namespace ProjectARVRPro
 
     }
 
+    internal readonly record struct ArvrResultIdentity(int Id, int BatchId, string SN, string Code, string Model, DateTime CreateTime)
+    {
+        internal static ArvrResultIdentity From(ProjectARVRReuslt item) =>
+            new(item.Id, item.BatchId, item.SN, item.Code, item.Model, item.CreateTime);
+    }
+
     public class ViewResultManager : ViewModelBase,IDisposable
     {
         internal const int MaximumLiveResults = 1000;
@@ -510,39 +517,69 @@ namespace ProjectARVRPro
                     .First();
         }
 
+        internal ProjectARVRReuslt? FindByOwnedBatch(MeasureBatchModel batch, string flowName, string? databaseKey)
+        {
+            if (batch.Id <= 0 || string.IsNullOrWhiteSpace(batch.Code) || string.IsNullOrWhiteSpace(databaseKey))
+                return null;
+
+            var displayed = ViewResluts.FirstOrDefault(item => item.BatchId == batch.Id && item.Code == batch.Code
+                && item.Model == flowName && item.BatchDatabaseKey == databaseKey);
+            return displayed ?? _db.Queryable<ProjectARVRReuslt>()
+                .Where(item => item.BatchId == batch.Id && item.Code == batch.Code && item.Model == flowName && item.BatchDatabaseKey == databaseKey)
+                .OrderBy(item => item.Id, OrderByType.Desc)
+                .First();
+        }
+
+        internal bool DeleteResult(ArvrResultIdentity selection)
+        {
+            if (selection.Id <= 0) return false;
+            int deleted = ResultJsonPayloadStorage.RunDatabaseMaintenance(() => _db.Deleteable<ProjectARVRReuslt>()
+                .Where(item => item.Id == selection.Id && item.BatchId == selection.BatchId && item.SN == selection.SN
+                    && item.Code == selection.Code && item.Model == selection.Model && item.CreateTime == selection.CreateTime)
+                .ExecuteCommand());
+            if (deleted == 0) return false;
+
+            var displayed = ViewResluts.FirstOrDefault(item => ArvrResultIdentity.From(item) == selection);
+            if (displayed != null) ViewResluts.Remove(displayed);
+            return true;
+        }
+
         public void Save(ProjectARVRReuslt item) => Save(item, null);
 
-        internal void Save(ProjectARVRReuslt item, ResultSqliteWriteTiming? timing)
+        internal void Save(ProjectARVRReuslt item, ResultSqliteWriteTiming? timing = null,
+            Func<int, IReadOnlyList<MeasureResultImgModel>>? readMeasureResults = null)
         {
             if (item == null) return;
 
             bool isNew = item.Id <= 0;
             if (isNew)
-                ResultImageDimensions.TryPopulate(item);
+                ResultImageDimensions.TryPopulate(item, readMeasureResults);
 
             bool savePayload = item.ViewResultJson != null;
             timing?.PrepareMs = timing.FinishStage();
-            ResultJsonPayloadStorage.RunDatabaseMaintenance(() =>
+            bool saved = ResultJsonPayloadStorage.RunDatabaseMaintenance(() =>
             {
                 timing?.GateWaitMs = timing.FinishStage();
                 _db.Ado.BeginTran();
                 try
                 {
                     timing?.BeginMs = timing.FinishStage();
+                    bool rowWritten = isNew;
                     if (isNew)
                     {
                         item.Id = _db.Insertable(item).ExecuteReturnIdentity();
                     }
                     else
                     {
-                        _db.Updateable(item).ExecuteCommand();
+                        rowWritten = _db.Updateable(item).ExecuteCommand() > 0;
                     }
 
                     timing?.RowMs = timing.FinishStage();
-                    if (savePayload)
+                    if (rowWritten && savePayload)
                         ResultJsonPayloadStorage.SaveViewResultJson(_db, item.Id, item.ViewResultJson, timing);
                     _db.Ado.CommitTran();
                     timing?.CommitMs = timing.FinishStage();
+                    return rowWritten;
                 }
                 catch
                 {
@@ -552,6 +589,12 @@ namespace ProjectARVRPro
                     throw;
                 }
             });
+
+            if (!saved)
+            {
+                timing?.Succeeded = false;
+                return;
+            }
 
             if (isNew || !ViewResluts.Any(x => ReferenceEquals(x, item) || x.Id == item.Id))
                 AddLiveResult(ViewResluts, item);

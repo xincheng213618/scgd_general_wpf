@@ -22,6 +22,7 @@ public sealed class SpectrumMeasurementSnapshot
     public string CalibrationGroupName { get; }
     public string MagnitudeFilePath { get; }
     public string MagnitudeFileSha256 { get; }
+    internal string? SourceWavelengthPath { get; init; }
 
     public SpectrumMeasurementSnapshot(
         long resultId,
@@ -65,7 +66,10 @@ public sealed class SpectrumMeasurementSnapshot
 public sealed record SpectrumCorrectionApplyRequest(
     string MagnitudeFilePath,
     string CalibrationGroupName,
-    string ExpectedSourceMagnitudeSha256);
+    string ExpectedSourceMagnitudeSha256)
+{
+    internal string? ExpectedGeneratedMagnitudeSha256 { get; init; }
+}
 
 public enum SpectrumCorrectionApplyStatus
 {

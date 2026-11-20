@@ -47,8 +47,8 @@ namespace ColorVision.Engine.Templates.LedCheck
         {
             if (result.ViewResults == null)
             {
+                List<PoiPointResultModel> AlgResultLedcheckModels = result.ReadPersistedDetails(PoiPointResultDao.Instance);
                 result.ViewResults = new ObservableCollection<IViewResult>();
-                List<PoiPointResultModel> AlgResultLedcheckModels = PoiPointResultDao.Instance.GetAllByPid(result.Id);
                 foreach (var item in AlgResultLedcheckModels)
                 {
                     ViewResultLedCheck ledResultData = new(new Point((double)item.PoiX, (double)item.PoiY), (double)item.PoiWidth / 2);

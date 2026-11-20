@@ -1,3 +1,4 @@
+using ColorVision.Database;
 using ColorVision.Engine.FlowProcessing.Diagnostics;
 using ColorVision.Engine.PropertyEditor;
 using ColorVision.FileIO;
@@ -58,7 +59,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
     {
         private sealed record CameraExecutionParameters(DeviceCamera Device, CameraRunParam CameraParameters, CalibrationParam? Calibration,
             CVImageFlipMode FlipMode, string? AutoExposureConfiguration, bool AutoConnect, bool SaveFiles, string CalibTempName,
-            LocalCameraFocusMode FocusMode, string? AutoFocusTemplateName, LocalAutoFocusSettings? AutoFocus)
+            LocalCameraFocusMode FocusMode, string? AutoFocusTemplateName, LocalAutoFocusSettings? AutoFocus, MySqlConnectedEndpoint? DatabaseEndpoint)
         {
             public bool IsAutoExp => AutoExposureConfiguration != null;
         }
@@ -209,7 +210,9 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                 : null;
             LocalCameraFocusMode mode = FocusMode;
             var (focus, templateName) = ResolveAutoFocus(device, mode);
-            return new CameraExecutionParameters(device, cameraParameters, calibration, FlipMode, autoExposureConfiguration, AutoConnect, SaveFiles, CalibTempName, mode, templateName, focus);
+            MySqlConnectedEndpoint? endpoint = action.PersistResults ? LocalFlowResultPersistence.ResolveEndpoint(action) : null;
+            return new CameraExecutionParameters(device, cameraParameters, calibration, FlipMode, autoExposureConfiguration,
+                AutoConnect, SaveFiles, CalibTempName, mode, templateName, focus, endpoint);
         }
 
         protected override LocalNodeExecutionResult ExecuteLocal(CVStartCFC action)
@@ -219,6 +222,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             DeviceCamera device = parameters.Device;
             CameraRunParam cameraParameters = parameters.CameraParameters;
             CalibrationParam? calibration = parameters.Calibration;
+            MySqlConnectedEndpoint? endpoint = action.PersistResults ? parameters.DatabaseEndpoint : null;
             LocalCameraCaptureResult capture = captureCamera(new LocalCameraCaptureRequest
             {
                 Device = device,
@@ -243,7 +247,8 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                 LocalFrameFileService.SaveCapture(frame, frame.CvRawFilePath, parameters.SaveFiles ? CVFileSaveMode.Synchronous : CVFileSaveMode.MemoryOnly);
                 int saveTime = checked((int)Math.Min(saveTimer.ElapsedMilliseconds, int.MaxValue));
                 stopToken.ThrowIfCancellationRequested();
-                MeasureResultImgModel persistedResult = FlowNodeTiming.Run("PersistResult", () => LocalCameraResultService.SaveFlowModel(action, ZIndex, frame, capture, cameraParameters, calibration, parameters.IsAutoExp));
+                MeasureResultImgModel persistedResult = FlowNodeTiming.Run("PersistResult", () => LocalCameraResultService.SaveFlowModel(
+                    action, ZIndex, frame, capture, cameraParameters, calibration, parameters.IsAutoExp, endpoint));
                 stopToken.ThrowIfCancellationRequested();
                 int masterId = persistedResult.Id;
                 frame.MasterId = masterId;
@@ -252,7 +257,9 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                 frame = null!;
                 stopToken.ThrowIfCancellationRequested();
                 action.MasterValue(null, masterId, CameraMasterResultType);
-                FlowNodeTiming.Run("PublishResult", () => ResultMessageBus.Default.Publish(new ResultMessage(ResultRoutes.Camera, ResultKinds.Image, device.Code, OperatorCode, action.SerialNumber, NodeID, ZIndex, new ResultReference(masterId, CameraMasterResultType), persistedResult)));
+                FlowNodeTiming.Run("PublishResult", () => ResultMessageBus.Default.Publish(new ResultMessage(ResultRoutes.Camera, ResultKinds.Image,
+                    device.Code, OperatorCode, action.SerialNumber, NodeID, ZIndex, new ResultReference(masterId, CameraMasterResultType),
+                    persistedResult, databaseEndpoint: endpoint)));
                 LocalCameraNodeResultData result = new()
                 {
                     FrameId = currentFrame.FrameId.ToString("N"),

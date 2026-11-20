@@ -43,10 +43,10 @@ POI 本地 ID 使用小于 -1 的值，-1 保留为空模板；MySQL ID 保持�
 几个容易混淆的入口要分开：
 
 - `TestConnect(config)` 真实联网打开连接，再用参数化查询检查库是否存在；成功不验证全部表权限或业务读写，也不会调用全局 local_infile 修改。
-- `Connect()` 不只是探活：打开连接后查询 `@@global.local_infile`，为 0 时尝试 `SET GLOBAL local_infile = 1`；随后才设 IsConnect 并通知订阅者。它需要额外数据库权限，可能改变服务器全局设置并触发宿主后续装配，不应为文档或只读诊断随意调用。
-- `MySqlConnect` 窗口编辑当前配置的独立副本；测试连接使用草稿快照，取消或普通关窗不修改共享配置。确认将草稿复制到当前配置对象，启动后台 Connect 后关闭，不等待连接完成，也不直接调用配置服务落盘。服务管理器另外管理安装维护所需的 root 凭据，桌面端不再保存额外的 root 连接项。
+- `Connect()` 在界面线程固定本次目标，后台打开连接并查询 `@@global.local_infile`，为 0 时尝试 `SET GLOBAL local_infile = 1`。它需要额外权限，可能改变服务端全局设置并触发宿主装配，执行须有相应授权。
+- `MySqlConnect` 编辑独立草稿。测试使用草稿快照，确认才写回当前配置并关窗，连接验证在后台完成。服务管理器另外管理安装维护所需的 root 凭据。
 
-`IsConnect` 是一次 Connect 流程维护的状态，不是每条 SQL 的健康证明。业务 DAO 和直接创建的 client 仍须分别核对连接门禁。
+`IsConnect` 和 `ConnectedEndpoint` 由最新连接请求发布。新请求开始时旧连接对象立即失去当前资格，较早请求的迟到成功或失败均被丢弃。`ConnectedEndpoint.CreateDbClient()` 始终使用固定目标，持有旧对象的调用者在查询前与提交结果前检查 `IsCurrent`。`GetConnectionString()` 仍读取当前编辑配置，供使用该配置的入口创建连接。业务 DAO 和直接创建的 client 仍须分别核对连接门禁。
 
 “初始化表”按 `IInitTables` 实体逐表补齐或创建结构，一张表失败后继续其它表并汇总失败；不会在启动时自动执行。该入口使用独立 client，将 SqlSugar 生成的独立 `ALTER TABLE ... ALTER COLUMN ... SET DEFAULT (CURRENT_TIMESTAMP)` 改为兼容 MySQL 5.7 的无外层括号写法，保留时间精度，不改业务 SQL 或字符串默认值。旧库出现 `nd_port`、`version` 等缺列时，需要在确认目标库和备份后手动执行初始化表；本地代码检查不代表现场迁移已完成。
 

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace ColorVision.Engine.FlowProcessing.PostProcess
 {
@@ -96,7 +97,7 @@ namespace ColorVision.Engine.FlowProcessing.PostProcess
 
     internal static class PostProcessExecutionRunner
     {
-        public static IReadOnlyList<PostProcessExecutionResult> Execute(
+        public static async Task<IReadOnlyList<PostProcessExecutionResult>> ExecuteAsync(
             IEnumerable<PostProcessMeta> metas,
             PostProcessContext context,
             bool ambiguousLegacyBinding = false)
@@ -108,6 +109,8 @@ namespace ColorVision.Engine.FlowProcessing.PostProcess
             foreach (PostProcessMeta meta in metas)
             {
                 DateTime startedTimeUtc = DateTime.UtcNow;
+                string name = meta.Name;
+                PostProcessFailurePolicy failurePolicy = meta.FailurePolicy;
                 IPostProcessor? processor = meta.PostProcessor;
                 string? bindingFailure = ambiguousLegacyBinding && meta.FlowKey == null
                     ? EngineLocalization.Get("流程名称重复，请编辑后处理项并重新选择绑定模板。")
@@ -115,9 +118,9 @@ namespace ColorVision.Engine.FlowProcessing.PostProcess
                 if (processor == null || bindingFailure != null)
                 {
                     results.Add(new PostProcessExecutionResult(
-                        meta.Name,
+                        name,
                         meta.ProcessTypeFullName,
-                        meta.FailurePolicy,
+                        failurePolicy,
                         PostProcessExecutionStatus.Unavailable,
                         bindingFailure ?? (meta.HasUnreadableConfiguration ? meta.ProcessDescription : "后处理器不可用。"),
                         startedTimeUtc,
@@ -127,11 +130,11 @@ namespace ColorVision.Engine.FlowProcessing.PostProcess
 
                 try
                 {
-                    bool succeeded = processor.Process(context);
+                    bool succeeded = await processor.ProcessAsync(context);
                     results.Add(new PostProcessExecutionResult(
-                        meta.Name,
+                        name,
                         processor.GetType().FullName ?? processor.GetType().Name,
-                        meta.FailurePolicy,
+                        failurePolicy,
                         succeeded
                             ? PostProcessExecutionStatus.Succeeded
                             : PostProcessExecutionStatus.ReturnedFalse,
@@ -142,9 +145,9 @@ namespace ColorVision.Engine.FlowProcessing.PostProcess
                 catch (Exception ex)
                 {
                     results.Add(new PostProcessExecutionResult(
-                        meta.Name,
+                        name,
                         processor.GetType().FullName ?? processor.GetType().Name,
-                        meta.FailurePolicy,
+                        failurePolicy,
                         PostProcessExecutionStatus.ThrewException,
                         ex.Message,
                         startedTimeUtc,

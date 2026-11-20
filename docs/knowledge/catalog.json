@@ -4732,6 +4732,7 @@
         "Engine/ColorVision.Engine/Services/Devices/MQTTDeviceService.cs",
         "Engine/FlowEngineLib/MQTTHelper.cs",
         "Engine/ColorVision.Engine/Services/Core/MQTTServiceBase.cs",
+        "Engine/ColorVision.Engine/Messages/MsgRecordDataBaseHelper.cs",
         "Engine/FlowEngineLib/MQTTClientPool.cs"
       ],
       "related": [
@@ -5199,7 +5200,10 @@
         "Engine/ColorVision.Engine/Services/Devices/Algorithm/Views/ViewAlgorithmConfig.cs",
         "Engine/ColorVision.Engine/Abstractions/ViewConfigBase.cs",
         "Engine/ColorVision.Engine/Services/Results/ResultMessageBus.cs",
+        "Engine/ColorVision.Engine/Services/Results/AlgorithmResultPresenter.cs",
         "Engine/ColorVision.Engine/Services/Results/AlgorithmResultDataSaver.cs",
+        "Engine/ColorVision.Engine/Services/Results/AlgorithmSideDataFiles.cs",
+        "Engine/ColorVision.Engine/Templates/POI/AlgorithmImp/PoiHistoryDetails.cs",
         "Engine/ColorVision.Engine/Services/Devices/Algorithm/AlgorithmResultImageDimensions.cs",
         "Engine/ColorVision.Engine/Services/Core/ResultImagePresentation.cs",
         "Engine/ColorVision.Engine/Services/Devices/Algorithm/DisplayAlgorithmManager.cs",
@@ -9403,7 +9407,7 @@
       "knowledge_id": "ui.database-query",
       "knowledge_type": "topic",
       "status": "current",
-      "summary": "实体驱动的通用查询窗口：条件参数化、执行时SQL预览、结果替换与进程内会话；关闭不取消查询，清空表/截断表作用于整表而非筛选结果。",
+      "summary": "实体驱动的通用查询窗口，支持参数化筛选、调用方固定范围、前后台查询和只读模式。可写模式的表维护作用于整表。",
       "aliases": [
         "通用查询",
         "高级查询",
@@ -10807,7 +10811,7 @@
       "knowledge_id": "ui.socket-protocol",
       "knowledge_type": "topic",
       "status": "current",
-      "summary": "Socket连接管理器的监听配置、窗口关闭与服务停止、防火墙放行、消息查询和JSON/Text分发；清空消息只清列表，重发可能换客户端，Sent不证明对端执行。",
+      "summary": "Socket 监听、服务生命周期、防火墙、消息查询与 JSON/Text 分发。清空消息只清列表，历史重发固定客户端连接，Sent 表示本地发送记录。",
       "aliases": [
         "Socket端口连不上或消息没响应",
         "网络通信",

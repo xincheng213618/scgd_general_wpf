@@ -67,7 +67,8 @@ namespace ColorVision.Engine.Services.PhyCameras.Licenses
 
     public class PhyLicenseDao : LocalConfigurationDao<LicenseModel>
     {
-        public PhyLicenseDao(LocalTemplateStore? store = null, Func<bool>? isConnected = null) : base("device-license", store, isConnected) { }
+        private const string StoreKind = "device-license";
+        public PhyLicenseDao(LocalTemplateStore? store = null, Func<bool>? isConnected = null) : base(StoreKind, store, isConnected) { }
         public static PhyLicenseDao Instance { get; set; } = new PhyLicenseDao();
 
         internal static LicenseModel? FindUsableCameraLicense(IEnumerable<LicenseModel> licenses, DateTimeOffset now)
@@ -109,16 +110,32 @@ namespace ColorVision.Engine.Services.PhyCameras.Licenses
 
         public async Task<int> DeleteExpiredAsync(int[] licenseIds, DateTime cutoff)
         {
+            int[] remoteIds = System.Linq.Enumerable.ToArray(System.Linq.Enumerable.Where(licenseIds, id => id > 0));
+            if (remoteIds.Length == 0) return DeleteExpiredLocal(licenseIds, cutoff);
+
+            MySqlConnectedEndpoint? endpoint = MySqlControl.GetInstance().ConnectedEndpoint;
+            if (UseLocal || endpoint is not { IsCurrent: true })
+                throw new InvalidOperationException("MySQL 未连接，不能删除服务器许可证。");
+
+            int localDeleted = DeleteExpiredLocal(licenseIds, cutoff);
+            return localDeleted + await new LicenseCatalogSource(endpoint).DeleteExpiredAsync(remoteIds, cutoff).ConfigureAwait(false);
+        }
+
+        internal bool TryDeleteLocal(int id)
+        {
+            if (!IsLocalId(id)) return false;
+            var document = LocalStore.Find(StoreKind, checked(-1 - id));
+            return document != null && LocalStore.TryDelete(StoreKind, document);
+        }
+
+        internal int DeleteExpiredLocal(int[] licenseIds, DateTime cutoff)
+        {
             int deleted = 0;
             foreach (int id in System.Linq.Enumerable.Distinct(licenseIds))
             {
                 if (IsLocalId(id) && GetById(id) is LicenseModel model && DeleteUnchanged(model, current => current.ExpiryDate != null && current.ExpiryDate < cutoff)) deleted++;
             }
-            int[] remoteIds = System.Linq.Enumerable.ToArray(System.Linq.Enumerable.Where(licenseIds, id => id > 0));
-            if (remoteIds.Length == 0) return deleted;
-            if (UseLocal) throw new InvalidOperationException("MySQL 未连接，不能删除服务器许可证。");
-            using var db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
-            return deleted + await DeleteExpiredAsync(db, remoteIds, cutoff);
+            return deleted;
         }
 
         internal static Task<int> DeleteExpiredAsync(ISqlSugarClient db, int[] licenseIds, DateTime cutoff)
@@ -137,8 +154,11 @@ namespace ColorVision.Engine.Services.PhyCameras.Licenses
         {
            if (local ?? UseLocal) return System.Linq.Enumerable.FirstOrDefault(GetLocal(), model => string.Equals(model.MacAddress, Code, StringComparison.OrdinalIgnoreCase));
            using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
-           return  Db.Queryable<LicenseModel>().Where(x => x.MacAddress == Code).First();
+           return GetByMAC(Db, Code);
         }
+
+        internal static LicenseModel? GetByMAC(ISqlSugarClient db, string code) =>
+            db.Queryable<LicenseModel>().Where(license => license.MacAddress == code).First();
 
     }
 

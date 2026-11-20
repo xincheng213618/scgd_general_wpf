@@ -1,9 +1,7 @@
 using ColorVision.Common.MVVM;
-using ColorVision.Database;
 using ColorVision.Engine.Services.Devices.SMU.Dao;
 using ColorVision.Engine.Services.Devices.SMU.Views;
 using log4net;
-using SqlSugar;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -49,12 +47,7 @@ namespace ColorVision.Engine.FlowProcessing.PostProcess.IVL
             try
             {
                 List<SMUResultModel> smuScanResults;
-                using (var db = new SqlSugarClient(new ConnectionConfig
-                {
-                    ConnectionString = MySqlControl.GetConnectionString(),
-                    DbType = SqlSugar.DbType.MySql,
-                    IsAutoCloseConnection = true
-                }))
+                using (var db = ctx.CreateBatchDatabaseClient())
                 {
                     // Query SMU scan data by batch ID
                     smuScanResults = db.Queryable<SMUResultModel>()

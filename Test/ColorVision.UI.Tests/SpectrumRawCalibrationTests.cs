@@ -1,9 +1,17 @@
 using ColorVision.Core;
+using ColorVision.Database;
+using ColorVision.Engine;
+using ColorVision.Engine.FlowProcessing;
+using ColorVision.Engine.FlowProcessing.Nodes;
 using ColorVision.Engine.Services.Devices.Camera.Local;
+using ColorVision.Engine.Services.Devices.Spectrum.Dao;
+using ColorVision.Engine.Services.Results;
 using ColorVision.Engine.Templates.POI;
 using ColorVision.Engine.Templates.POI.POIGenCali;
 using ColorVision.FileIO;
 using CVCommCore.CVAlgorithm;
+using FlowEngineLib.Base;
+using SqlSugar;
 using System.IO;
 
 namespace ColorVision.UI.Tests;
@@ -109,6 +117,112 @@ public sealed class SpectrumRawCalibrationTests
             Assert.Equal(raw.Data, actual);
         }
         finally { File.Delete(path); }
+    }
+
+    [Theory]
+    [InlineData("success")]
+    [InlineData("foreign-batch")]
+    [InlineData("insert-error")]
+    public void NodeKeepsSpectrumAndCalibratedImageInTheFlowDatabase(string outcome)
+    {
+        DirectoryInfo directory = Directory.CreateTempSubdirectory("cv-spectrum-calibration-");
+        try
+        {
+            StaTest.Run(() =>
+            {
+                MySqlConnectedEndpoint? current = null;
+                MySqlConnectedEndpoint OpenEndpoint(string file) => new(candidate => ReferenceEquals(candidate, current),
+                    () => new SqlSugarClient(new ConnectionConfig
+                    {
+                        ConnectionString = $"Data Source={Path.Combine(directory.FullName, file)};Pooling=False",
+                        DbType = DbType.Sqlite, IsAutoCloseConnection = true, InitKeyType = InitKeyType.Attribute,
+                    }));
+                var a = OpenEndpoint("a.db");
+                var b = OpenEndpoint("b.db");
+                current = a;
+                using var dbA = a.CreateDbClient();
+                using var dbB = b.CreateDbClient();
+                Type[] tables = [typeof(MeasureBatchModel), typeof(SpectumResultEntity), typeof(MeasureResultImgModel)];
+                dbA.CodeFirst.InitTables(tables);
+                dbB.CodeFirst.InitTables(tables);
+
+                var action = new CVStartCFC(directory.Name) { PersistResults = true };
+                using var resources = action.RuntimeResources;
+                var batchA = new MeasureBatchModel { Code = action.SerialNumber };
+                FlowMeasurementBatch.Insert(batchA, a).Bind(resources);
+                var batchB = new MeasureBatchModel { Code = action.SerialNumber };
+                _ = FlowMeasurementBatch.Insert(batchB, b);
+                Assert.Equal(batchA.Id, batchB.Id);
+                int spectrumId = dbA.Insertable(new SpectumResultEntity
+                {
+                    BatchId = outcome == "foreign-batch" ? batchA.Id + 1 : batchA.Id, fx = .3f, fy = .4f, fPh = 120
+                }).ExecuteReturnIdentity();
+                int otherSpectrumId = dbB.Insertable(new SpectumResultEntity
+                {
+                    BatchId = batchB.Id, fx = .2f, fy = .3f, fPh = 240
+                }).ExecuteReturnIdentity();
+                Assert.Equal(spectrumId, otherSpectrumId);
+                if (outcome == "insert-error")
+                    dbA.Ado.ExecuteCommand("CREATE TRIGGER reject_image BEFORE INSERT ON t_scgd_measure_result_img BEGIN SELECT RAISE(ABORT, 'synthetic image insert failure'); END");
+
+                string path = Path.Combine(directory.FullName, "camera.cvraw");
+                using var raw = WriteRaw(path);
+                Snapshot(0).Save(path, true);
+                byte[] originalFile = File.ReadAllBytes(path);
+                var frame = LocalFrameFileService.Load(path);
+                action.SetCurrentFrame(frame);
+                ColorCalibrationSnapshot originalCalibration = frame.ColorCalibration!;
+
+                const int poiId = 42;
+                resources.Set(LocalPoiCalculator.ResultResourceKey(poiId),
+                    new LocalPoiResultSet { FrameId = frame.FrameId.ToString("N"), Points = [Point()] });
+                var poi = new CVStartCFC(action);
+                poi.MasterValue(null!, poiId, (int)ViewResultAlgType.POI_XYZ);
+                var spectrum = new CVStartCFC(action);
+                spectrum.MasterValue(null!, spectrumId, 300);
+                var node = new LocalSpectrumCalibrationNode();
+                node.Create();
+                using var execution = node.CreateCompatibilityExecution(new CVMQTTRequest { SerialNumber = action.SerialNumber }, null, poi, spectrum);
+                execution.Bind(action);
+                List<ResultMessage> messages = [];
+                using var subscription = ResultMessageBus.Default.Subscribe(message =>
+                {
+                    if (message.SerialNumber == action.SerialNumber) messages.Add(message);
+                });
+
+                current = b;
+                Assert.False(a.IsCurrent);
+                if (outcome == "success")
+                {
+                    execution.Execute();
+                    _ = execution.Complete(action);
+                    MeasureResultImgModel stored = Assert.Single(dbA.Queryable<MeasureResultImgModel>().ToList());
+                    Assert.Equal((batchA.Id, path, stored.Id), (stored.BatchId, stored.RawFile, frame.MasterId));
+                    Assert.Equal(120.0, ColorCalibrationSnapshot.Read(path, raw)!.SpectrumCorrection!.SpectrumXyz[1]);
+                    ResultMessage notice = Assert.Single(messages);
+                    Assert.Equal((ResultRoutes.Camera, ResultKinds.Image, stored.Id, (int)ViewResultAlgType.Calibration),
+                        (notice.Route, notice.ResultKind, notice.Data.MasterId, notice.Data.MasterResultType));
+                    Assert.Equal(stored.Id, Assert.IsType<MeasureResultImgModel>(notice.Attachment).Id);
+                    Assert.Same(a, notice.DatabaseEndpoint);
+                }
+                else
+                {
+                    Exception error = Assert.ThrowsAny<Exception>(execution.Execute);
+                    Assert.Contains(outcome == "foreign-batch" ? "光谱结果必须属于本次流程" : "synthetic image insert failure", error.ToString());
+                    Assert.Empty(dbA.Queryable<MeasureResultImgModel>().ToList());
+                    Assert.Empty(messages);
+                    Assert.Equal(originalFile, File.ReadAllBytes(path));
+                    Assert.Same(originalCalibration, frame.ColorCalibration);
+                    Assert.Equal(-1, frame.MasterId);
+                }
+                Assert.Empty(dbB.Queryable<MeasureResultImgModel>().ToList());
+            });
+        }
+        finally
+        {
+            foreach (FileInfo file in directory.EnumerateFiles()) file.Delete();
+            directory.Delete();
+        }
     }
 
     [Fact]

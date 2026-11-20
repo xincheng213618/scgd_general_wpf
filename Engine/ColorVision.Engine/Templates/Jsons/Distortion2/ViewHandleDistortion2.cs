@@ -107,8 +107,8 @@ namespace ColorVision.Engine.Templates.Jsons.Distortion2
         {
             if (result.ViewResults == null)
             {
+                List<DetailCommonModel> AlgResultModels = result.ReadPersistedDetails(DeatilCommonDao.Instance);
                 result.ViewResults = new ObservableCollection<IViewResult>();
-                List<DetailCommonModel> AlgResultModels = DeatilCommonDao.Instance.GetAllByPid(result.Id);
                 foreach (var item in AlgResultModels)
                 {
                     Distortion2View blackMuraView = new Distortion2View(item);

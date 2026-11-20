@@ -1,12 +1,11 @@
 #pragma warning disable CA1863,CS8604
 using ColorVision.Engine.Services.Devices;
-using ColorVision.Engine.Services.PhyCameras.Licenses;
+using ColorVision.Engine.Services.RC;
 using ColorVision.Engine.Services.Types;
 using ColorVision.Themes;
 using ColorVision.Themes.Controls;
 using ColorVision.UI;
-using ColorVision.UI.Authorizations;
-using Newtonsoft.Json;
+using log4net;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -21,10 +20,14 @@ namespace ColorVision.Engine.Services.Terminal
     /// </summary>
     public partial class CreateTerminal : Window
     {
+        private static readonly ILog log = LogManager.GetLogger(typeof(CreateTerminal));
+        private readonly TerminalConfigurationTarget configurationTarget;
+
         public TerminalService TerminalService { get; set; }
         public CreateTerminal(TerminalService terminalService)
         {
             TerminalService = terminalService;
+            configurationTarget = terminalService.CaptureConfigurationTarget();
             InitializeComponent();
             this.ApplyCaption();
         }
@@ -49,67 +52,96 @@ namespace ColorVision.Engine.Services.Terminal
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
-            if (!ServiceAuthorization.Can("device.create", TerminalService.SysResourceModel))
+            var terminal = TerminalService;
+            if (!configurationTarget.IsCurrent(terminal))
+            {
+                MessageBox1.Show(this, EngineLocalization.Get("终端或配置来源已变更，请重新打开创建设备窗口。"), "ColorVision");
+                return;
+            }
+            if (!ServiceAuthorization.Can("device.create", terminal.SysResourceModel))
             {
                 MessageBox1.Show(this, EngineLocalization.Get("当前权限不足，无法创建设备。"), "ColorVision");
                 return;
             }
-            SysResourceModel saveDevConfigInfo(DeviceServiceConfig deviceConfig, SysResourceModel sysResource)
-            {
-                ServiceAuthorization.Demand("device.create", TerminalService.SysResourceModel);
-                sysResource.Value = JsonConvert.SerializeObject(deviceConfig);
-                int pkId = SysResourceDao.Instance.SaveAndReturnId(sysResource);
-                sysResource.Id = pkId;
-                return sysResource;
-            }
 
-
-            var deviceS = ServiceManager.GetInstance().DeviceServices.FirstOrDefault(x => x.Code == CreateCode.Text);
-            if (deviceS != null)
+            string code = CreateCode.Text;
+            var serviceType = terminal.ServiceType;
+            if (ServiceManager.Current?.DeviceServices.Any(device => !device.IsConfigurationRetired && device.Code == code && HasSameSource(device)) == true)
             {
-                MessageBox1.Show(WindowHelpers.GetActiveWindow(), Properties.Resources.DeviceIdentifierAlreadyExists,"ColorVision");
+                MessageBox1.Show(this, Properties.Resources.DeviceIdentifierAlreadyExists, "ColorVision");
                 return;
             }
 
-            if (!DeviceServiceFactoryRegistry.TryGetFactory(TerminalService.ServiceType, out IDeviceServiceFactory? deviceServiceFactory) || deviceServiceFactory == null)
+            if (!DeviceServiceFactoryRegistry.TryGetFactory(serviceType, out IDeviceServiceFactory? factory) || factory == null)
             {
-                MessageBox1.Show(WindowHelpers.GetActiveWindow(), string.Format(Properties.Resources.UnsupportedDeviceTypeCreation, TerminalService.ServiceType), "ColorVision");
+                MessageBox1.Show(this, string.Format(Properties.Resources.UnsupportedDeviceTypeCreation, serviceType), "ColorVision");
                 return;
             }
 
-
-            SysResourceModel sysResource = new SysResourceModel();
-            sysResource.Name = CreateName.Text;
-            sysResource.Code = CreateCode.Text;
-            sysResource.Type = TerminalService.SysResourceModel.Type;
-            sysResource.Pid = TerminalService.SysResourceModel.Id;
-
-
-            DeviceServiceCreateContext createContext = new(
-                CreateCode.Text,
-                CreateName.Text,
-                TerminalService.Config.SendTopic,
-                TerminalService.Config.SubscribeTopic);
-            DeviceServiceConfig deviceConfig = deviceServiceFactory.CreateConfig(createContext);
-            if (TerminalService.ServiceType is not (ServiceTypes.Camera or ServiceTypes.Calibration or ServiceTypes.Spectrum))
+            SysResourceModel? resource;
+            try
             {
-                var licenses = SysResourceDao.IsLocalId(sysResource.Pid ?? 0) ? PhyLicenseDao.Instance.GetLocal() : PhyLicenseDao.Instance.GetAll();
-                DeviceServiceFactoryRegistry.ApplyDefaultLicense(TerminalService.ServiceType, deviceConfig, licenses, DateTimeOffset.Now);
+                ServiceAuthorization.Demand("device.create", terminal.SysResourceModel);
+                if (!TerminalDeviceCreation.TryPersist(terminal, configurationTarget, factory, code, CreateName.Text, out resource))
+                {
+                    MessageBox1.Show(this, EngineLocalization.Get("设备未创建。请确认终端和配置来源仍有效，且设备标识可用。"), "ColorVision");
+                    return;
+                }
             }
-            SysResourceModel sysDevModel = saveDevConfigInfo(deviceConfig, sysResource);
+            catch (Exception error)
+            {
+                log.Warn("Could not persist the new device configuration.", error);
+                MessageBox1.Show(this, EngineLocalization.Get("设备配置保存失败，请刷新服务列表确认后重试。"), "ColorVision");
+                return;
+            }
+
+            try
+            {
+                RegisterCreatedDevice(terminal, factory, serviceType, resource);
+            }
+            catch (Exception error)
+            {
+                log.Warn("The device was saved, but runtime registration did not complete.", error);
+                MessageBox1.Show(this, EngineLocalization.Get("设备已保存到原配置库，请从该配置库刷新服务列表以显示新设备。"), "ColorVision");
+            }
+            Close();
+        }
+
+        private bool HasSameSource(DeviceService device) => configurationTarget.Endpoint is { } endpoint
+            ? ReferenceEquals(device.ResultDatabaseEndpoint, endpoint)
+            : ReferenceEquals(device.LocalConfigurationResourceDao, configurationTarget.LocalResources);
+
+        private void RegisterCreatedDevice(TerminalService terminal, IDeviceServiceFactory factory, ServiceTypes serviceType, SysResourceModel resource)
+        {
+            var target = configurationTarget;
+            if (!target.IsCurrent(terminal))
+                throw new InvalidOperationException("Terminal configuration changed before device registration.");
+
             var displayConfigs = DisplayConfigManager.Instance;
-            bool displayInitialized = DeviceServiceFactoryRegistry.TryInitializeNewDeviceDisplayConfig(TerminalService.ServiceType, deviceConfig.Code, displayConfigs);
-            DeviceService deviceService = deviceServiceFactory.CreateService(sysDevModel);
+            string code = resource.Code!;
+            bool displayInitialized = DeviceServiceFactoryRegistry.TryInitializeNewDeviceDisplayConfig(serviceType, code, displayConfigs);
+            var device = factory.CreateService(resource);
+            device.ResultDatabaseEndpoint = target.Endpoint;
+            device.LocalConfigurationResourceDao = target.LocalResources;
+            var manager = ServiceManager.GetInstance();
+            if (!target.IsCurrent(terminal))
+            {
+                device.Dispose();
+                throw new InvalidOperationException("Terminal configuration changed during device construction.");
+            }
 
-            TerminalService.AddChild(deviceService);
-            ServiceManager.GetInstance().DeviceServices.Add(deviceService);
-            if (!SysResourceDao.IsLocalId(sysDevModel.Id))
-                RC.MqttRCService.GetInstance().RestartServices(TerminalService.ServiceType.ToString(), TerminalService.SysResourceModel.Code, sysDevModel.Code);
-            ServiceManager.GetInstance().GenDeviceDisplayControl();
+            terminal.AddChild(device);
+            manager.DeviceServices.Add(device);
+            manager.GenDeviceDisplayControl();
             if (displayInitialized && !ConfigHandler.GetInstance().TrySave(displayConfigs, out string displayError))
                 MessageBox1.Show(this, EngineLocalization.Format($"设备已创建，但本机显示配置保存失败：{displayError}"), "ColorVision");
-            Close();
 
+            if (target.ReadRemoteRoute(terminal) is { } route)
+            {
+                var deviceTarget = device.CaptureConfigurationTarget();
+                _ = MqttRCService.GetInstance().TryRestartServices(route.TypeCode, route.ServiceCode, code,
+                    () => target.IsCurrent(terminal) && deviceTarget.IsCurrent(device) && ReferenceEquals(device.Parent, terminal));
+            }
         }
 
         private void TextBox_PreviewKeyDown(object sender, KeyEventArgs e)

@@ -40,15 +40,16 @@ related: ["engine.index","platform.runtime","operations.device-configuration","e
 
 | 阶段 | 当前边界 |
 | --- | --- |
-| 清理旧对象 | 先清理设备 Copilot 上下文/映射，逐个调用当前 `DeviceServices` 的 `Dispose()`；某个 Dispose 失败会记录警告并继续，不保证该对象已释放 |
-| 清理上次生成集合 | 接着执行 `LastGenControl?.Clear()`，发生在字典与资源查询之前。它不是独立快照：`GenDeviceDisplayControl()` 最终使它引用 `DeviceServices`；`GenControl(collection)` 则直接保存调用者传入的集合，因此也可能清空调用者持有的集合 |
-| 查询与重建 | 再查询字典及本轮资源索引，依次清空/构造类型、终端、设备与子资源，最后发布 `ServiceChanged`。这些查询不是数据库事务快照，构造和通知也没有整轮回滚 |
+| 读取配置 | 先取得字典、资源和组关联。重连触发的读取在后台执行，远程资源固定使用本次已验证的连接对象 |
+| 清理旧对象 | 读取成功且请求仍是最新时，在界面线程清理设备 Copilot 上下文与映射并释放旧设备。释放失败记录警告后继续 |
+| 清理上次生成集合 | `LastGenControl?.Clear()` 在应用新配置时执行。它可能引用 `DeviceServices` 或 `GenControl(collection)` 的调用者集合 |
+| 重建 | 释放旧终端 MQTT 订阅，重建类型、终端、设备与子资源，最后发布 `ServiceChanged` |
 
-字典查询与资源查询的失败行为不同：`GetAllByPid(1)` 在连接标志为 false 或捕获查询异常时返回空列表；若后续资源查询成功，仍会重建空类型/设备集合并发布 `ServiceChanged`。所以“完成加载”日志或没有抛出异常不能证明字典查询成功，应同时查 DAO 错误日志。通用 DAO 语义见[数据库访问](../ui-components/ColorVision.Database.md)。
+字典或资源读取异常会记录失败并保留当前服务对象和集合。成功读到的空字典仍按空配置装配。重连时晚到的旧请求及来源已改变的结果会被丢弃。装配阶段发生异常时可能留下部分新集合，设备句柄及事件释放取决于具体实现。 [设备配置契约](../../01-user-guide/devices/configuration.md#导入、导出与删除)
 
-`LoadServiceResourceSnapshot` 则直接执行数据库查询，没有本地捕获；此处抛出时，旧对象可能已被 Dispose，设备集合可能因共享引用已被清空，但旧类型树或显示项仍在；更晚失败也可能留下部分新集合。不能把“加载失败”解释为旧运行状态完整保留。具体设备是否释放全部句柄和事件取决于其 Dispose 实现；删除时的清理限制集中在[设备配置契约](../../01-user-guide/devices/configuration.md#导入、导出与删除)。
+构造器和显式 `LoadServices()` 同步读取并装配。`MySqlConnectChanged` 触发后台读取，离线时读取本地配置。模板和物理相机仍由各自的连接订阅加载，切换连接和重载会影响运行设备和旧窗口。
 
-构造器始终首次重载，离线时从本地配置装配；`MySqlConnectChanged` 订阅同样调用 `LoadServices()`。断开会切换到本地资源，不能认为断开通知天然是无操作，也不要在只读诊断中用切换数据库连接或重载来试探；这些动作可能影响运行设备和旧窗口。
+新装配的设备继承读取资源时的连接对象。相机自动结果和超时回查、光谱数据库结果均使用设备持有的目标，在查询前和显示前复核连接代次。旧设备排队的结果会在连接切换后作废。本地帧和旧版光谱内联回包可直接从消息显示。 [数据库连接契约](../ui-components/ColorVision.Database.md)
 
 ## 工厂存在不等于默认可见
 
@@ -130,7 +131,7 @@ related: ["engine.index","platform.runtime","operations.device-configuration","e
 
 `ViewShell` 通过注册对象先切换到 UI Dispatcher，再取得或创建当前详情，避免后台线程持有构造锁等待 UI。详情控件和内部图形内容始终在 UI 线程创建，不在 `Task.Run` 中构造后跨线程挂载。空详情控件可能在进入 Dock 树时已触发 WPF `Initialized`，因此 `EnsureInitialized` 在 `InitializeComponent` 后显式调用原初始化处理函数，由该处理函数的状态保护避免执行两次。显式访问公开 `Device.View` 仍可构造控件，但显示管理器不会把隐藏设备的控件挂回文档；自动结果入口不使用此路径重建隐藏页。
 
-相机、算法和校准详情在轻量构造时订阅原有 MQTT 回包及 `ResultMessageBus`，无设备参数的 `AlgorithmView` 不建立这两种订阅。消息沿各自原有设备、路由、结果类型及结果 ID 规则过滤，再回到 UI Dispatcher 更新尚存在且允许显示的页面；普通未激活标签仍可接收结果，管理窗口隐藏或关闭页面后不再追加和绘图。光谱、SMU 的 `PresentResult` 只向当前页面呈现，隐藏时连结果界面模型也不构造；排队回调复核页面身份，不能把已关闭的旧页面复活。设备服务的 MQTT 通信、业务状态、结果持久化和流程执行保持原路径；各结果的过滤和失败含义仍由设备主题及[结果交接链](./result-handoff-chain.md)维护。
+相机、算法和校准详情在轻量构造时订阅 `ResultMessageBus`，远程持久化结果从匹配的原请求发布。相机详情另接收 MQTT 对焦进度。无设备参数的 `AlgorithmView` 用于历史查询。通知按设备、路由、结果类型及数据库来源过滤，再回到 UI Dispatcher 更新尚存在且允许显示的页面。未激活标签仍可接收结果，隐藏或关闭页面后停止追加和绘图。光谱、SMU 的 `PresentResult` 只为当前页面构造界面模型，执行排队回调前复核页面身份。结果的过滤和失败含义由设备主题及[结果交接链](./result-handoff-chain.md)维护。
 
 这五类详情释放时解除自身的显示、配置、主题及结果订阅，清理其图像或图表、驻留结果和配置中可能保留页面的列引用；未初始化内容安全跳过。后续显示或排队回调不会重新初始化已释放详情。兼容的旧 `UserControl` 注册路径只撤下文档，实例仍由原 owner 管理；尤其工作流程页与运行图共享对象，隐藏不销毁流程图、不取消正在执行的流程。此边界不代表设备所有资源或第三方页面都有同等释放保证。
 

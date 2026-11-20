@@ -18,14 +18,15 @@ namespace ProjectARVRPro.Services
             {
                 bool needsShow = ProjectWindowInstance.WindowInstance == null;
                 ARVRWindow window = ProjectARVRWindowHost.GetOrCreate();
-                if (!window.IsCompletingFlowBatch)
-                    SocketControl.Current.Stream = stream;
                 if (needsShow)
                     window.Show();
 
                 bool accepted = window.TryPrepareRunAllSession(request.SerialNumber, out string resolvedSerialNumber);
                 if (accepted)
+                {
+                    SocketControl.Current.Stream = stream;
                     _ = window.RunAllAsync();
+                }
                 return (accepted, resolvedSerialNumber);
             });
             if (!accepted)

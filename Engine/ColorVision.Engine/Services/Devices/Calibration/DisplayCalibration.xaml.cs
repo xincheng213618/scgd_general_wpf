@@ -220,22 +220,33 @@ namespace ColorVision.Engine.Services.Devices.Calibration
 
                     if (GetSN(ref sn, ref imgFileName, ref fileExtType))
                     {
-                        var pm = Device.PhyCamera.CalibrationParams[ComboxCalibrationTemplate.SelectedIndex].Value;
                         float[] exposure = GetExposureValues();
                         if (Device.DisplayConfig.UseLocalCalibration)
                         {
-                            await RunLocalCalibrationAsync(button, pm, imgFileName, exposure);
+                            await RunLocalCalibrationAsync(button, param, imgFileName, exposure);
                         }
                         else
                         {
-                            MsgRecord msgRecord = DeviceService.Calibration(param, imgFileName, fileExtType, pm.Id, ComboxCalibrationTemplate.Text, sn, exposure[0], exposure[1], exposure[2]);
-                            this.SendTimedCommand(button, msgRecord, onTerminalStateChanged: state =>
+                            MQTTCalibration service = DeviceService;
+                            try
                             {
-                                if (state == MsgRecordState.Fail)
+                                MsgRecord msgRecord = service.Calibration(param, imgFileName, fileExtType, param.Id, ComboxCalibrationTemplate.Text, sn, exposure[0], exposure[1], exposure[2]);
+                                this.SendTimedCommand(button, msgRecord, onTerminalStateChanged: state =>
                                 {
-                                    MessageBox.Show(Application.Current.GetActiveWindow(), $"Fail,{msgRecord.MsgReturn.Message}", "ColorVision");
-                                }
-                            });
+                                    if (_isDisposed || !ReferenceEquals(DeviceService, service)) return;
+                                    if (state is MsgRecordState.Fail or MsgRecordState.Timeout)
+                                    {
+                                        string message = msgRecord.MsgReturn?.Message ?? (state == MsgRecordState.Timeout
+                                            ? Properties.Resources.Timeout : Properties.Resources.Failure);
+                                        MessageBox.Show(Application.Current.GetActiveWindow(), message, "ColorVision");
+                                    }
+                                });
+                            }
+                            catch (Exception ex)
+                            {
+                                if (!_isDisposed && ReferenceEquals(DeviceService, service))
+                                    MessageBox.Show(Application.Current.GetActiveWindow(), ex.Message, "ColorVision");
+                            }
                         }
                     }
                 }
@@ -255,24 +266,24 @@ namespace ColorVision.Engine.Services.Devices.Calibration
         {
             TimedButtonOperationRegistry operations = EnsureTimedButtonOperations();
             TimedButtonOperationScope? operationScope = operations.Begin(button);
+            if (operationScope == null) return;
+
+            DeviceCalibration owner = Device;
+            PhyCamera? physicalCamera = owner.PhyCamera;
+            bool OwnsDisplay() => !_isDisposed && ReferenceEquals(Device, owner) && ReferenceEquals(owner.PhyCamera, physicalCamera);
             bool succeeded = false;
             try
             {
                 string serialNumber = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
-                MeasureResultImgModel result = await Task.Run(() => LocalFileCalibrationService.Calibrate(
-                    Device,
-                    calibration,
-                    imageFileName,
-                    serialNumber,
-                    exposure));
-                if (_isDisposed) return;
-
-                Device.ExistingView?.ShowResult(result);
+                var request = LocalFileCalibrationRequest.Capture(owner, physicalCamera, calibration, imageFileName, serialNumber, exposure);
+                MeasureResultImgModel result = await Task.Run(() => LocalFileCalibrationService.Calibrate(request));
+                if (OwnsDisplay() && string.Equals(owner.Code, request.DeviceCode, StringComparison.Ordinal))
+                    owner.ExistingView?.ShowResult(result);
                 succeeded = true;
             }
             catch (Exception ex)
             {
-                if (!_isDisposed)
+                if (OwnsDisplay())
                 {
                     MessageBox1.Show(Application.Current.GetActiveWindow(), ex.Message, "ColorVision");
                 }
@@ -281,7 +292,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration
             {
                 if (!_isDisposed)
                 {
-                    operationScope?.Complete(succeeded);
+                    operationScope.Complete(succeeded);
                     operations.RefreshIdleState(button);
                 }
             }

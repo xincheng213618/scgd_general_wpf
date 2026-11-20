@@ -199,54 +199,56 @@ namespace ColorVision.Engine.Services.Devices.SMU
         }
         private void MeasureDataClose_Click(object sender, RoutedEventArgs e)
         {
-            bool local = Device.SmuBackend.OpensLocally;
-            MsgRecord record = DService.CloseOutput();
+            DeviceSMU owner = Device;
+            bool local = owner.SmuBackend.OpensLocally;
+            var display = owner.DisplayConfig;
+            SMUChannelType channel = display.Channel;
+            MsgRecord record = owner.DService.CloseOutput(channel);
             if (sender is Button button) ServicesHelper.SendTimedCommand(this, button, record, onTerminalStateChanged: (reply, state) =>
             {
                 if (state == MsgRecordState.Fail) MessageBox.Show(Application.Current.GetActiveWindow(), reply.MsgReturn.Message, "ColorVision");
             });
-            if (!local) { Device.DisplayConfig.V = null; Device.DisplayConfig.I = null; }
-        }
-        private void VIScan_Click(object sender, RoutedEventArgs e)
-        {
-            if (sender is Button button && ComboxVITemplate.SelectedItem is TemplateModel<SMUParam> templateModel)
+            if (!local)
             {
-                EnsureTimedButtonOperations();
-                bool local = Device.SmuBackend.OpensLocally;
-                SMUChannelType channel = Device.DisplayConfig.Channel;
-                MsgRecord msgRecord = DService.Scan(templateModel.Value, Device.DisplayConfig.Channel);
-                if (msgRecord != null)
-                {
-                    ServicesHelper.SendTimedCommand(this, button, msgRecord, onTerminalStateChanged: async (record, state) =>
-                    {
-                        if (state == MsgRecordState.Success)
-                        {
-                            if (local) return;
-                            if (record.MsgReturn.Code != 0)
-                            {
-                                DService.CloseOutput(channel);
-                                MessageBox.Show($"GetData Eorr Code{record.MsgReturn.Code}");
-                            }
-                            else
-                            {
-                                log.Info("DelyaClose1000");
-                                await Task.Delay(1000);
-                                if (Device.SmuBackend.OpensLocally) return;
-                                DService.CloseOutput(channel);
-                                var channelConfig = channel == SMUChannelType.A ? Device.DisplayConfig.ChannelA : Device.DisplayConfig.ChannelB;
-                                channelConfig.V = null;
-                                channelConfig.I = null;
-                                if (Device.DisplayConfig.Channel == channel) { Device.DisplayConfig.V = null; Device.DisplayConfig.I = null; }
-                                log.Info("DelyaClose1000 1");
-                                await Task.Delay(1000);
-                            }
-                        }
-                        else
-                        {
-                            MessageBox.Show(Application.Current.GetActiveWindow(), $"Fail,{record.MsgReturn.Message}", "ColorVision");
-                        }
-                    });
-                }
+                owner.SmuBackend.MarkReadoutReset(channel);
+                display.V = null;
+                display.I = null;
+            }
+        }
+        private async void VIScan_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is not Button button || ComboxVITemplate.SelectedItem is not TemplateModel<SMUParam> templateModel) return;
+
+            DeviceSMU device = Device;
+            MQTTSMU service = device.DService;
+            SMUChannelType channel = device.DisplayConfig.Channel;
+            EnsureTimedButtonOperations();
+            try
+            {
+                var (scan, completion) = service.ScanFromPanel(templateModel.Value, channel, static () => Task.Delay(1000));
+                if (scan == null) return;
+
+                ServicesHelper.SendTimedCommand(this, button, scan, onTerminalStateChanged: completion == null ? ReportLocalFailure : null);
+                if (completion != null) await completion;
+            }
+            catch (Exception ex)
+            {
+                log.Warn($"源表 {device.Code} 通道 {channel} 扫描或关闭输出未完成。", ex);
+                ShowError(ex.Message);
+            }
+
+            void ReportLocalFailure(MsgRecord record, MsgRecordState state)
+            {
+                if (state is not (MsgRecordState.Fail or MsgRecordState.Timeout)) return;
+                string message = $"源表 {device.Code} 通道 {channel} 扫描失败，输出状态待确认。{record.MsgReturn?.Message}";
+                log.Warn(message);
+                ShowError(message);
+            }
+
+            void ShowError(string message)
+            {
+                if (ReferenceEquals(Device, device) && ReferenceEquals(device.DService, service) && !device.IsDisposed)
+                    MessageBox.Show(Application.Current.GetActiveWindow(), message, "ColorVision");
             }
 
         }

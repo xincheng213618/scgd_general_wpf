@@ -18,8 +18,8 @@ namespace ColorVision.Engine.Services.Devices.Motor
             {
                 if (!CanConfigure) return;
                 var propertyEditorWindow = new PropertyEditorWindow(Config, PropertyEditorEditMode.Transactional) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
-                ProtectConfigurationEditor(propertyEditorWindow);
-                propertyEditorWindow.Submitted += (s, e) => TryCommitConfiguration(propertyEditorWindow);
+                var target = ProtectConfigurationEditor(propertyEditorWindow);
+                propertyEditorWindow.Submitted += (_, _) => TryCommitConfiguration(propertyEditorWindow, expectedTarget: target);
                 propertyEditorWindow.ShowDialog();
 
             }, a => CanConfigure);

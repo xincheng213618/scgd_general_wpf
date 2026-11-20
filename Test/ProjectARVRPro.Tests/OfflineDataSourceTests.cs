@@ -453,7 +453,7 @@ public sealed class OfflineDataSourceTests
         var rows = store.QueryRecords(All).OrderBy(row => row.Id).ToArray();
         Assert.Throws<InvalidDataException>(() => store.ExportBatchCsv(rows, csvPath));
         Assert.Equal(original, File.ReadAllBytes(csvPath));
-        Assert.Empty(Directory.EnumerateFiles(fixture.Root, "*.arvrcsv.tmp"));
+        Assert.Empty(Directory.EnumerateFiles(fixture.Root, "*.arvr.tmp"));
     }
 
     [Fact]
@@ -511,7 +511,7 @@ public sealed class OfflineDataSourceTests
 
         Assert.Throws<InvalidDataException>(() => store.ExportBatchCsv(rows, csvPath));
         Assert.Equal(previous, File.ReadAllBytes(csvPath));
-        Assert.Empty(Directory.GetFiles(fixture.Root, "*.arvrcsv.tmp"));
+        Assert.Empty(Directory.GetFiles(fixture.Root, "*.arvr.tmp"));
     }
 
 

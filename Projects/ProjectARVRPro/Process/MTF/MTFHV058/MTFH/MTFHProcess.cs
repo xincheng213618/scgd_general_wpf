@@ -31,10 +31,10 @@ namespace ProjectARVRPro.Process.MTF.MTFH
                 if (values.Count > 0)
                     ctx.Result.FileName = values[0].FileUrl;
 
-                var masters = AlgResultMasterDao.Instance.GetAllByBatchId(ctx.Batch.Id);
+                var masters = ctx.ReadMasterResults();
                 foreach (var master in masters.Where(m => m.ImgFileType == ViewResultAlgType.MTF && m.version == "2.0"))
                 {
-                    var details = DeatilCommonDao.Instance.GetAllByPid(master.Id);
+                    var details = ctx.ReadDetails(DeatilCommonDao.Instance, master.Id);
                     if (details.Count == 1)
                     {
                         var mtfDetail = new MTFDetailViewReslut(details[0]);

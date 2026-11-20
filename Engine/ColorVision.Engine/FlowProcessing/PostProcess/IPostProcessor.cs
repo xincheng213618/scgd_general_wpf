@@ -1,6 +1,7 @@
 #pragma warning disable CS8603
 using ColorVision.Common.MVVM;
 using Newtonsoft.Json;
+using System.Threading.Tasks;
 
 namespace ColorVision.Engine.FlowProcessing.PostProcess
 {
@@ -10,6 +11,11 @@ namespace ColorVision.Engine.FlowProcessing.PostProcess
         /// Processes the specified completed flow batch.
         /// </summary>
         bool Process(PostProcessContext ctx);
+
+        /// <summary>
+        /// Processes the batch and completes after the post-processor's work has finished.
+        /// </summary>
+        ValueTask<bool> ProcessAsync(PostProcessContext ctx) => new(Process(ctx));
 
         /// <summary>
         /// Gets the configuration object for this post-processor.

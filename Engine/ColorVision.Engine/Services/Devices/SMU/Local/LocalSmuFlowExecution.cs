@@ -1,7 +1,10 @@
 using ColorVision.Engine.Services.Results;
+using ColorVision.Database;
+using ColorVision.Engine.Services.Devices.Camera.Local;
 using FlowEngineLib;
 using FlowEngineLib.Base;
 using FlowEngineLib.Node.SMU;
+using FlowEngineLib.SMU;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Linq;
@@ -10,7 +13,7 @@ using System.Threading.Tasks;
 
 namespace ColorVision.Engine.Services.Devices.SMU.Local;
 
-internal sealed class LocalSmuFlowExecution : FlowLocalExecution
+internal sealed class LocalSmuFlowExecution : FlowLocalExecution, ISmuFlowOutput
 {
     private readonly DeviceSMU device;
     private readonly LocalSmuConnection config;
@@ -20,6 +23,7 @@ internal sealed class LocalSmuFlowExecution : FlowLocalExecution
     private readonly bool checkLimits;
     private CancellationToken stop;
     private LocalSmuCapture? capture;
+    private MySqlConnectedEndpoint? resultDatabase;
     private bool completed;
 
     internal static bool Supports(CVBaseServerNode node) => node.NodeType == "SMU"
@@ -56,7 +60,11 @@ internal sealed class LocalSmuFlowExecution : FlowLocalExecution
         waitTime = operation == "SMU.MeasureResult" ? json.Value<int?>("WaitTime") ?? 0 : 0;
         if (waitTime < 0) throw new ArgumentException("源表读取等待时间不能为负数。");
     }
-    public override void Bind(CVStartCFC action) => stop = action.RuntimeResources.StopToken;
+    public override void Bind(CVStartCFC action)
+    {
+        stop = action.RuntimeResources.StopToken;
+        resultDatabase = LocalFlowResultPersistence.ResolveEndpoint(action);
+    }
     public override void Execute()
     {
         stop.ThrowIfCancellationRequested();
@@ -70,14 +78,14 @@ internal sealed class LocalSmuFlowExecution : FlowLocalExecution
         if (action.RuntimeResources.IsDisposed || action.IsDel || action.TryGetStopStatus(out _))
             throw new OperationCanceledException("流程已停止，丢弃本地源表结果。");
         if (capture == null) { completed = true; return new { Message = "ok" }; }
-        int id = LocalSmuResultService.Save(capture, device.Code, action, zIndex);
+        int id = LocalSmuResultService.SaveFlow(capture, device.Code, action, zIndex, resultDatabase);
         action.MasterValue(null, id, LocalSmuResultService.ResultType);
         action.Data["LocalSmu"] = capture;
         if (!capture.IsScan) action.Data["SMUResult"] = new SMUResultData((FlowEngineLib.SMUChannelType)(int)capture.Parameters.Channel,
             capture.V, capture.I, id, LocalSmuResultService.ResultType);
-        device.PublishLocalSmu(capture, id);
+        device.PublishLocalSmu(capture, id, resultDatabase);
         if (id > 0) ResultMessageBus.Default.PublishPersisted(ResultRoutes.Smu, ResultKinds.Smu, device.Code, operation,
-            action.SerialNumber, nodeId, zIndex, id, LocalSmuResultService.ResultType);
+            action.SerialNumber, nodeId, zIndex, id, LocalSmuResultService.ResultType, resultDatabase);
         completed = true;
         var result = LocalSmuResultService.Response(capture, id);
         if (operation == "ModelGetData")
@@ -87,6 +95,17 @@ internal sealed class LocalSmuFlowExecution : FlowLocalExecution
         }
         return result;
     }
+
+    public SmuLocalOutputClose? CaptureCloseOutput()
+    {
+        if (capture is not { Parameters.IsCloseOutput: false } output) return null;
+        var session = device.LocalSession;
+        var channel = output.Parameters.Channel;
+        long generation = output.Generation;
+        return new(session, (FlowEngineLib.SMUChannelType)(int)channel, () =>
+            session.CloseOutputAsync(channel, expectedGeneration: generation).GetAwaiter().GetResult());
+    }
+
     public override void Dispose()
     {
         if (!completed && capture != null && !capture.Parameters.IsCloseOutput)

@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using FlowEngineLib.Base;
 using FlowEngineLib.MQTT;
 using log4net;
+using MQTTnet;
 using Newtonsoft.Json;
 using ST.Library.UI.NodeEditor;
 
@@ -59,6 +60,12 @@ public class MQTTStartNode : BaseStartNode
 	private volatile bool isDisposed;
 
 	public override bool RequiresConnectionReady => true;
+
+	public bool MatchesConnectedBroker(MqttClientOptions options)
+	{
+		MQTTHelper helper = _MQTTHelper;
+		return HasCurrentMqttClient(helper) && helper.MatchesConnectedBroker(options);
+	}
 
 	public override bool IsExecutionReady
 	{
@@ -500,6 +507,7 @@ public class MQTTStartNode : BaseStartNode
 			if (serverSubscribers != null)
 			{
 				CVBaseDataFlowResp statusEvent = JsonConvert.DeserializeObject<CVBaseDataFlowResp>(value);
+				statusEvent.ReceivedTopic = text;
 				if (!string.IsNullOrEmpty(statusEvent.DeviceNodeCode))
 				{
 					serverSubscribers.Find(node => node.NodeID == statusEvent.DeviceNodeCode)?.DoServerStatusRecv(statusEvent);
@@ -577,8 +585,13 @@ public class MQTTStartNode : BaseStartNode
 	{
 		if (act != null)
 		{
-			_ = PublishWhenReadyAsync(act.Topic, act.Message);
+			_ = PublishWhenReadyAsync(act.Topic, act.Message, observeConnection: act.ObservePublishConnection);
 		}
+	}
+
+	internal override void PublishWithDeferredCleanup(MQActionEvent action, Func<object, Action<MQActionEvent, Func<bool>>, bool> onPublish)
+	{
+		_ = PublishWhenReadyAsync(action.Topic, action.Message, onPublish, action.ObservePublishConnection);
 	}
 
 	public override void DoSubscribe(string topic, CVBaseServerNode serverNode)
@@ -652,7 +665,9 @@ public class MQTTStartNode : BaseStartNode
 		}
 	}
 
-	private async Task PublishWhenReadyAsync(string topic, string message)
+	private async Task PublishWhenReadyAsync(string topic, string message,
+		Func<object, Action<MQActionEvent, Func<bool>>, bool> onPublish = null,
+		Action<Func<MqttClientOptions, bool>> observeConnection = null)
 	{
 		if (!TryCaptureMqttSession(out long generation, out long topicVersion, out CancellationToken sessionToken))
 		{
@@ -681,7 +696,27 @@ public class MQTTStartNode : BaseStartNode
 				logger.ErrorFormat("MQTT publish skipped because the active client is unavailable or changed => topic={0}", topic);
 				return;
 			}
-			bool published = await mqttHelper.TryPublishAsync_Client(topic, message, retained: false, linkedToken).ConfigureAwait(false);
+			bool rejected = false;
+			bool AdmitPublish(MQTTHelper.PublishConnection connection)
+			{
+				rejected = !IsMqttSessionCurrent(generation, topicVersion) || !ReferenceEquals(mqttHelper, _MQTTHelper)
+					|| (onPublish != null && !onPublish(connection.Client, (cleanup, canPublish) =>
+					{
+						bool IsOwned(MQTTHelper.PublishConnection current) => ReferenceEquals(current.Client, connection.Client)
+							&& current.OwnerGeneration == connection.OwnerGeneration && current.Epoch == connection.Epoch
+							&& IsMqttSessionCurrent(generation, topicVersion) && ReferenceEquals(mqttHelper, _MQTTHelper) && canPublish();
+						_ = PublishDeferredAsync(cleanup, mqttHelper, sessionToken, IsOwned);
+					}));
+				if (!rejected)
+					observeConnection?.Invoke(options => IsMqttSessionCurrent(generation, topicVersion)
+						&& ReferenceEquals(mqttHelper, _MQTTHelper) && mqttHelper.IsCurrentPublishConnection(connection)
+						&& mqttHelper.MatchesConnectedBroker(options));
+				return !rejected;
+			}
+
+			bool published = await mqttHelper.TryPublishAsync_Client(topic, message, retained: false, linkedToken,
+				onPublish == null && observeConnection == null ? null : AdmitPublish).ConfigureAwait(false);
+			if (rejected) return;
 			ThrowIfMqttSessionChanged(generation, topicVersion, linkedToken);
 			if (!published)
 			{
@@ -713,6 +748,31 @@ public class MQTTStartNode : BaseStartNode
 			{
 				publishLock.Release();
 			}
+		}
+	}
+
+	private async Task PublishDeferredAsync(MQActionEvent action, MQTTHelper helper, CancellationToken sessionToken,
+		Func<MQTTHelper.PublishConnection, bool> canPublish)
+	{
+		try
+		{
+			using var timeout = new CancellationTokenSource(PublishReadyTimeout);
+			using var lifetime = CancellationTokenSource.CreateLinkedTokenSource(sessionToken, timeout.Token);
+			await publishLock.WaitAsync(lifetime.Token).ConfigureAwait(false);
+			try
+			{
+				if (!await helper.TryPublishAsync_Client(action.Topic, action.Message, retained: false, lifetime.Token, canPublish).ConfigureAwait(false))
+					logger.WarnFormat("Deferred MQTT command skipped or failed on its original connection => topic={0}, event={1}", action.Topic, action.EventName);
+			}
+			finally { publishLock.Release(); }
+		}
+		catch (OperationCanceledException)
+		{
+			logger.WarnFormat("Deferred MQTT command canceled before publication => topic={0}, event={1}", action.Topic, action.EventName);
+		}
+		catch (Exception ex)
+		{
+			logger.Error($"Deferred MQTT command failed => topic={action.Topic}, event={action.EventName}", ex);
 		}
 	}
 

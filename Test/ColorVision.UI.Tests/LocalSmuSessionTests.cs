@@ -22,6 +22,41 @@ public sealed class LocalSmuSessionTests
     private static LocalSmuParameters Point(Channel channel = Channel.A) => new() { Channel = channel, MeasureValue = 5, LimitValue = 10 };
 
     [Theory]
+    [InlineData("current")]
+    [InlineData("new-output")]
+    [InlineData("reopened")]
+    public async Task PostProcessCloseUsesOnlyTheCapturedNativeSessionAndOutput(string change)
+    {
+        var sdk = new FakeNative();
+        await using var session = new LocalSmuSession(sdk);
+        var config = Config();
+        await session.OpenAsync(config);
+        if (change != "reopened")
+            await session.CaptureAsync(config, Point(Channel.B), false, false, true);
+        Func<Task> close = session.CapturePostProcessCloseOutput(Channel.B, () => true);
+
+        if (change == "reopened")
+        {
+            await session.CloseAsync();
+            await session.OpenAsync(config);
+        }
+        else if (change == "new-output")
+            await session.CaptureAsync(config, Point(Channel.B), false, false, true);
+
+        int before = sdk.ClosedOutputs.Count;
+        if (change == "current")
+        {
+            await close();
+            Assert.Equal(Channel.B, Assert.Single(sdk.ClosedOutputs.Skip(before)));
+        }
+        else
+        {
+            await Assert.ThrowsAsync<InvalidOperationException>(close);
+            Assert.Equal(before, sdk.ClosedOutputs.Count);
+        }
+    }
+
+    [Theory]
     [InlineData(false, false)]
     [InlineData(true, false)]
     [InlineData(true, true)]
@@ -65,9 +100,9 @@ public sealed class LocalSmuSessionTests
 
             WpfTestHost.Invoke(() =>
             {
-                if (newer != null) device!.PublishLocalSmu(newer, 0);
+                if (newer != null) device!.PublishLocalSmu(newer, 0, null);
                 device!.ClearLocalSmuReadings(Channel.A, all: false);
-                device.PublishLocalSmu(old, 0);
+                device.PublishLocalSmu(old, 0, null);
                 bool showReading = replaceWithNewerCapture && !closeNewerOutput;
                 Assert.Equal(showReading ? 6d : null, device.DisplayConfig.V);
                 Assert.Equal(showReading ? 34d : null, device.DisplayConfig.I);

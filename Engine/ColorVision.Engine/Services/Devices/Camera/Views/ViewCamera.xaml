@@ -26,6 +26,9 @@
             <RowDefinition x:Name="MainGridRow2" Height="Auto"/>
         </Grid.RowDefinitions>
         <im:ImageView Grid.Row="0" x:Name="ImageView"></im:ImageView>
+        <TextBlock Grid.Row="0" x:Name="HistoryImageError" Panel.ZIndex="1" Margin="16" HorizontalAlignment="Center"
+                   VerticalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" Visibility="Collapsed"
+                   IsHitTestVisible="False" AutomationProperties.LiveSetting="Polite"/>
         <Grid Grid.Row="0" x:Name="FocusChartLayer" Panel.ZIndex="1" Margin="8" ClipToBounds="True">
             <local:CameraFocusChart x:Name="FocusChart" HorizontalAlignment="Right" VerticalAlignment="Top"
                                     MaxWidth="{Binding ActualWidth, ElementName=FocusChartLayer}"

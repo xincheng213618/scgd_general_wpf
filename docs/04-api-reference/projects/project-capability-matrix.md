@@ -29,7 +29,7 @@ KB 状态栏的 Socket 配置与 Modbus 不是两条等效检测入口。当前 
 | 整组/整机 CSV | ARVRPro | `ObjectiveTestResult`、CSV exporter 与结果保存代码 | 文件名、目录、列顺序、单位、判定及旧格式兼容；LUX 文本入口另有 `C_`、`B_`、`D_` 文件 |
 | 本地 SQLite | ARVRPro、KB | 各自 `ViewResultManager`；KB 主结果为 `KBItemMaster` | SN、时间、批次、流程及结果详情；项目本地库不代替 Engine 原始批次与算法数据 |
 | 客户 XLSX | ARVRPro | `Exports/CustomTestResultExportService.cs` | 当前输出 profile、工作表字段、路径与依赖 |
-| MES | KB | `MesDll.cs`、`ProjectKBWindow.Processing()`、`Summary` | `CheckWIP` 与 `Collect_test` 的调用条件、参数和客户返回约定 |
+| MES | KB | `MesDll.cs`、`ProjectKBWindow.ProcessResultAsync()`、`Summary` | `CheckWIP` 与 `Collect_test` 的调用条件、参数和客户返回约定 |
 | Socket 响应 | ARVRPro | `Services/SocketControl.cs`、`LuxSocketDispatcher.cs` 与窗口结果发送代码 | JSON 的 ACK/最终事件与 LUX 文本响应分别核对 |
 | 单次 CSV、文本与 summary | KB；Demo 另存解析结果 JSON/CSV | KB 的 `KBItemMasterExtensions.cs`、`ViewResultManager.Config`；Demo 的 `Program.cs` | 实际保存开关、路径、动态列及结果来源；客户端导出不是服务端业务结果落库 |
 

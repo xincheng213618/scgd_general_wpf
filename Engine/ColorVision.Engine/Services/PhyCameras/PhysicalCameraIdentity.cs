@@ -17,12 +17,19 @@ internal static class PhysicalCameraIdentity
 
     internal static void RecoverFromLogical(PhyCamera physical, string? cameraCode, string? cameraId)
     {
+        if (string.IsNullOrWhiteSpace(cameraId) || string.IsNullOrWhiteSpace(cameraCode)) return;
+        if (FindRecoverableId(physical.Code, physical.Config.CameraID, cameraCode, cameraId) is { } recovered)
+            physical.Config.CameraID = recovered;
+    }
+
+    internal static string? FindRecoverableId(string physicalCode, string? physicalId, string? cameraCode, string? cameraId)
+    {
         string legacyId = cameraId?.Trim() ?? string.Empty;
-        if (legacyId.Length == 0 || !string.Equals(cameraCode, physical.Code, StringComparison.OrdinalIgnoreCase)
-            || !string.Equals(ColorVision.Common.Utilities.Tool.GetMD5(legacyId), physical.Code, StringComparison.OrdinalIgnoreCase)) return;
-        string physicalId = physical.Config.CameraID?.Trim() ?? string.Empty;
-        if (physicalId.Length == 0 || !string.Equals(ColorVision.Common.Utilities.Tool.GetMD5(physicalId), physical.Code, StringComparison.OrdinalIgnoreCase))
-            physical.Config.CameraID = legacyId;
+        if (legacyId.Length == 0 || !string.Equals(cameraCode, physicalCode, StringComparison.OrdinalIgnoreCase)
+            || !string.Equals(ColorVision.Common.Utilities.Tool.GetMD5(legacyId), physicalCode, StringComparison.OrdinalIgnoreCase)) return null;
+        physicalId = physicalId?.Trim() ?? string.Empty;
+        return physicalId.Length == 0 || !string.Equals(ColorVision.Common.Utilities.Tool.GetMD5(physicalId), physicalCode, StringComparison.OrdinalIgnoreCase)
+            ? legacyId : null;
     }
 
     internal static string ReadCameraId(SysResourceModel resource, string? currentId = null)

@@ -123,6 +123,16 @@ namespace ColorVision.FileIO
             return OpenReadCore(path, populateCache, () => OpenFile(path), publication: null);
         }
 
+        /// <summary>Visits contiguous bytes of an open cache snapshot without changing its stream position.</summary>
+        /// <remarks>The read-only span is valid only during the synchronous callback. The callback must avoid APIs
+        /// that wait for all readers, including <see cref="Release"/>. Returns false for other streams, closed snapshots,
+        /// or ranges that cross into separately stored metadata.</remarks>
+        public static bool TryUseCachedRange(Stream source, long offset, int length, Action<ReadOnlySpan<byte>> read)
+        {
+            ArgumentNullException.ThrowIfNull(read);
+            return source is CachedReadStream cached && cached.TryUseRange(offset, length, read);
+        }
+
         internal static Stream OpenImageRead(string filePath, Func<Stream, bool> canPopulate)
         {
             if (!IsRaw(filePath)) return OpenFile(filePath);
@@ -690,6 +700,20 @@ namespace ColorVision.FileIO
             return result;
         }
 
+        private static void ReleaseReader(CacheEntry entry)
+        {
+            lock (Sync)
+            {
+                entry.Readers--;
+                if (entry.IsRetired && entry.Readers == 0 && entry.Writers == 0)
+                {
+                    FreeBuffer(entry);
+                    Entries.Remove(entry);
+                }
+                Monitor.PulseAll(Sync);
+            }
+        }
+
         private sealed class CacheEntry
         {
             internal IntPtr Buffer;
@@ -747,8 +771,30 @@ namespace ColorVision.FileIO
             private CacheEntry entry;
             private readonly Stream memory;
             private readonly byte[] tail;
+            private readonly long prefixLength;
             private long position;
-            internal CachedReadStream(CacheEntry entry, Stream memory, byte[] tail) { this.entry = entry; this.memory = memory; this.tail = tail; }
+            internal CachedReadStream(CacheEntry entry, Stream memory, byte[] tail)
+            {
+                this.entry = entry;
+                this.memory = memory;
+                this.tail = tail;
+                prefixLength = memory.Length;
+            }
+
+            internal unsafe bool TryUseRange(long offset, int length, Action<ReadOnlySpan<byte>> read)
+            {
+                CacheEntry current;
+                lock (Sync)
+                {
+                    current = Volatile.Read(ref entry);
+                    if (current == null || offset < 0 || length <= 0 || offset > prefixLength - length) return false;
+                    // A delegate can throw or dispose its stream, and other writers can retire this entry.
+                    current.Readers++;
+                }
+                try { read(new ReadOnlySpan<byte>((byte*)current.Buffer.ToPointer() + offset, length)); }
+                finally { ReleaseReader(current); }
+                return true;
+            }
             ~CachedReadStream() { Dispose(false); }
             public override bool CanRead => entry != null;
             public override bool CanSeek => entry != null;
@@ -830,19 +876,7 @@ namespace ColorVision.FileIO
                 if (owned != null)
                 {
                     try { memory.Dispose(); }
-                    finally
-                    {
-                        lock (Sync)
-                        {
-                            owned.Readers--;
-                            if (owned.IsRetired && owned.Readers == 0 && owned.Writers == 0)
-                            {
-                                FreeBuffer(owned);
-                                Entries.Remove(owned);
-                            }
-                            Monitor.PulseAll(Sync);
-                        }
-                    }
+                    finally { ReleaseReader(owned); }
                 }
                 base.Dispose(disposing);
             }

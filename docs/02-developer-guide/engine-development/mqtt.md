@@ -4,7 +4,7 @@ knowledge_type: "guide"
 status: "current"
 summary: "Engine MQTT 的连接与订阅、异步发送、请求状态、迟到回包和 MsgID 复用限制；区分 Flow 客户端池与设备命令链。"
 aliases: ["MQTT请求发出为什么没有结果","MQTTControl","MQTTServiceBase","MsgRecord","MsgID","MsgReturnReceived","MQTTClientPool","MQTT迟到回包","MQTT消息超时","SubscribeCache"]
-code_paths: ["Engine/ColorVision.Engine/MQTT/MQTTControl.cs","Engine/ColorVision.Engine/MQTT/MqttInitializer.cs","Engine/ColorVision.Engine/Services/Devices/MQTTDeviceService.cs","Engine/FlowEngineLib/MQTTHelper.cs","Engine/ColorVision.Engine/Services/Core/MQTTServiceBase.cs","Engine/FlowEngineLib/MQTTClientPool.cs"]
+code_paths: ["Engine/ColorVision.Engine/MQTT/MQTTControl.cs","Engine/ColorVision.Engine/MQTT/MqttInitializer.cs","Engine/ColorVision.Engine/Services/Devices/MQTTDeviceService.cs","Engine/FlowEngineLib/MQTTHelper.cs","Engine/ColorVision.Engine/Services/Core/MQTTServiceBase.cs","Engine/ColorVision.Engine/Messages/MsgRecordDataBaseHelper.cs","Engine/FlowEngineLib/MQTTClientPool.cs"]
 related: ["engine.index","engine.devices","engine.rc-registration","flow.runtime"]
 ---
 
@@ -35,7 +35,9 @@ Engine 不读取旧 MQTT 设置段，历史地址、端口和凭据不影响连�
 3. 创建状态为 `Sended` 的 `MsgRecord`，安排后台消息入库并启动计时；默认等待 30000 ms，设备方法可以覆盖。入库与实际发布不是一个事务。
 4. 发起 `MQTTControl.PublishAsyncClient(SendTopic, json, false)`，不等待其完成便返回记录。底层在客户端不存在或未连接时直接返回，没有离线发送队列；已有请求记录仍可能随后超时。
 5. 远端服务处理请求后向返回主题发布消息，broker 将它转发给订阅者。`MQTTControl` 记录 RECV 并触发 `ApplicationMessageReceivedAsync`。
-6. 设备基类仅接收与 `SubscribeTopic` 字符串相同的主题，解析 `MsgReturn`，再按 `MsgID` 更新等待记录。通用关联不额外校验 `DeviceCode` 或 `EventName`。
+6. 普通设备回执按当前 `SubscribeTopic` 解析 `MsgReturn`，再按 `MsgID` 更新等待记录。`DeviceCode` 和 `EventName` 的业务校验由具体设备处理器承担。
+
+本地光谱借用服务滤轮时，校零命令固定发送主题、回执主题和已连接的 MQTT 会话。回复须匹配记录的主题及 `MsgID`。配置改动后恢复动作使用原路由，重连或释放后原路由失效，原命令按失败结算或等待原超时。普通设备命令继续使用当前配置。
 
 ### 请求状态与迟到回包
 
@@ -43,14 +45,17 @@ Engine 不读取旧 MQTT 设置段，历史地址、端口和凭据不影响连�
 | --- | --- |
 | `Sended` | 已创建本地追踪记录，不证明消息实际发出 |
 | SEND trace | 底层 `PublishAsync` 返回后已记录发布；不证明远端设备执行成功 |
-| `Success` / `Fail` | 匹配等待记录的回包 `Code == 0` / 非零；具体业务是否完成还需按设备协议确认 |
+| `Success` / `Fail` | 匹配等待记录的最终回包 `Code == 0` / 其他失败码。服务释放时，本地尚未取得终态的记录同样为 `Fail` |
+| `Code == 102` | 中间回包交给设备处理器，命令继续按原定时限等待最终结果 |
 | `Timeout` | 本地计时到期并移除等待记录；不发送取消命令，也不停止远端已开始的动作 |
 
-`MsgReturnReceived` 在未找到等待记录时仍会触发。因此迟到回包不能再完成已移除的原请求，却仍可能影响具体设备的状态或界面；接收器应按自己的业务规则校验身份和内容。
+普通当前主题的 `MsgReturnReceived` 在未找到等待记录时仍会触发。迟到回包可能影响设备状态或界面，接收器应按业务规则校验。等待中的固定路由回执仅交给对应命令。
 
 重试应使用新的 `MsgID`，并先确认设备是否允许重复执行。若调用者复用旧 ID，新请求可能被旧的迟到响应匹配；超时清理没有提供防重放或业务幂等保证。同一 ID 的并发请求还会与计时器字典键冲突。
 
-`MQTTServiceBase.Dispose()` 解除共享接收事件中基类自己的 `Processing` 订阅，并释放追踪计时器、清空等待记录；派生类追加的事件和后台任务需另行清理。设备或扩展必须实际调用释放逻辑，释放界面或结束流程不自动等同于该通信对象已释放。
+`MQTTServiceBase.Dispose()` 解除基类的接收订阅，释放计时器，并将剩余命令置为本地 `Fail`。回包、超时和释放只有一方可以结束同一记录。释放原因保存在 `MsgReturn.Message`，WPF 通知在释放锁之后异步派发，等待命令状态的定时任务随之结束。已派发命令的设备端结果仍需依设备协议核对。派生类负责自己追加的事件和后台任务。
+
+`MsgRecordDataBaseHelper` 在命令首次入库前开始追踪终态。先到的回包、超时或释放会补写到同一条记录。补写在后台执行，SQLite 写入等待与回包通知各自推进。写入失败时按消息 ID 记录日志。
 
 ## 修改 MQTT 行为时看哪里
 

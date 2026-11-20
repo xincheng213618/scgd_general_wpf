@@ -112,8 +112,8 @@ namespace ColorVision.Engine.Templates.Jsons.DetectScreenDefects
             if (result.ViewResults != null)
                 return;
 
+            List<DetailCommonModel> detailCommonModels = result.ReadPersistedDetails(DeatilCommonDao.Instance);
             result.ViewResults = new ObservableCollection<IViewResult>();
-            List<DetailCommonModel> detailCommonModels = DeatilCommonDao.Instance.GetAllByPid(result.Id);
             if (detailCommonModels.Count == 0)
                 return;
 

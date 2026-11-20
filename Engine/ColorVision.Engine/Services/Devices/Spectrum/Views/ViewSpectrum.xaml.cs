@@ -4,6 +4,7 @@ using cvColorVision;
 #pragma warning disable CA1805,CA1859,CS8604
 using ColorVision.Common.Utilities;
 using ColorVision.Database;
+using ColorVision.Engine.Services.Devices.Spectrum.Configs;
 using ColorVision.Engine.Services.Devices.Spectrum.Dao;
 using ColorVision.UI.Sorts;
 using ScottPlot;
@@ -17,6 +18,8 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
@@ -49,7 +52,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
     /// </summary>
     public partial class ViewSpectrum : UserControl, IDisposable
     {
-
+        private const string HistorySourceChanged = "光谱仪或结果来源已更改，请重新打开历史结果。";
         public ObservableCollection<ViewResultSpectrum> ViewResults { get; set; } = new ObservableCollection<ViewResultSpectrum>();
         public static ViewSpectrumConfig Config => ViewSpectrumConfig.Instance;
 
@@ -58,6 +61,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
         private bool _initializationStarted;
         private bool _isInitialized;
         private bool _isDisposed;
+        private CancellationTokenSource? _historyQueryCancellation;
 
         public ViewSpectrum(DeviceSpectrum device) : this(device, false) { }
 
@@ -171,6 +175,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
             if (!Dispatcher.CheckAccess()) { Dispatcher.Invoke(Dispose); return; }
             if (_isDisposed) return;
             _isDisposed = true;
+            CancelHistoryQuery();
             Loaded -= View_Loaded;
             IsVisibleChanged -= View_IsVisibleChanged;
             if (_isInitialized)
@@ -261,6 +266,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
         private void Delete()
         {
             var selected = listView1.SelectedItems.Cast<ViewResultSpectrum>().ToArray();
+            if (selected.Length > 0) CancelHistoryQuery();
             foreach (var result in selected) ViewResults.Remove(result);
             if (ViewResults.Count == 0) Clear();
             else
@@ -525,6 +531,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
 
         public void Clear()
         {
+            CancelHistoryQuery();
             ViewResults.Clear();
             LastMulSelectComparsion = null;
             if (!_isInitialized) return;
@@ -551,48 +558,181 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
         internal void ReplaceHistoryResults(IEnumerable<ViewResultSpectrum> results)
         {
             var snapshot = results.ToArray();
+            CancelHistoryQuery();
             ViewResults.Clear();
             foreach (var result in snapshot) ViewResults.Add(result);
             if (ViewResults.Count > 0) listView1.SelectedIndex = 0;
         }
-        private void Inquire_Click(object sender, RoutedEventArgs e)
+        private async void Inquire_Click(object sender, RoutedEventArgs e)
         {
+            try { await LoadRecentHistoryAsync(); }
+            catch (Exception error) { ReportHistoryFailure(error); }
+        }
+
+        internal async Task LoadRecentHistoryAsync()
+        {
+            Dispatcher.VerifyAccess();
+            var target = CaptureHistoryTarget();
+            bool fluxMode = target.Owner.DisplayConfig.IsLuminousFluxMode;
+            var order = Config.OrderByType;
+            int count = Config.Count;
+            double? minimumLuminance = ViewResultSpectrum.GetMinimumLuminance();
+            CancellationToken cancellation = BeginHistoryQuery();
+
+            bool CanApply() => !cancellation.IsCancellationRequested && OwnsHistoryTarget(target)
+                && fluxMode == target.Owner.DisplayConfig.IsLuminousFluxMode && order == Config.OrderByType && count == Config.Count;
+
             try
             {
-                using var DB = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
-
-                var query = DB.Queryable<SpectumResultEntity>().Where(x => x.DataType == DisplayConfig.IsLuminousFluxMode);
-                query = query.OrderBy(x => x.Id, Config.OrderByType);
-                var dbList = Config.Count > 0 ? query.Take(Config.Count).ToList() : query.ToList();
-                ReplaceHistoryResults(dbList.Select(item => new ViewResultSpectrum(item)));
+                var results = await Task.Run(() =>
+                {
+                    cancellation.ThrowIfCancellationRequested();
+                    if (!target.Endpoint.IsCurrent) return Array.Empty<ViewResultSpectrum>();
+                    using var db = target.Endpoint.CreateDbClient();
+                    var query = db.Queryable<SpectumResultEntity>().Where(row => row.DataType == fluxMode).OrderBy(row => row.Id, order);
+                    var rows = count > 0 ? query.Take(count).ToList() : query.ToList();
+                    return MaterializeHistoryRows(rows, target.Endpoint, minimumLuminance, cancellation).ToArray();
+                }, cancellation);
+                if (CanApply()) ReplaceHistoryResults(results);
             }
-            catch (Exception ex)
-            {
-                log4net.LogManager.GetLogger(typeof(ViewSpectrum)).Error("Spectrum history query failed; existing results retained.", ex);
-                MessageBox.Show(Application.Current.GetActiveWindow(), EngineLocalization.Get("光谱查询失败，当前列表已保留。详情请查看日志。"), "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
+            catch (Exception) when (!CanApply()) { }
+            finally { FinishHistoryQuery(cancellation); }
         }
+
         private void SearchAdvanced_Click(object sender, RoutedEventArgs e)
         {
-            using var DB = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
-
-            ObservableCollection<ViewResultSpectrum> queryResults = new();
-            GenericQuery<SpectumResultEntity, ViewResultSpectrum> genericQuery = new GenericQuery<SpectumResultEntity, ViewResultSpectrum>(DB, queryResults,
-                t =>
-                {
-                    ViewResultSpectrum viewResultSpectrum = new ViewResultSpectrum(t);
-
-                    return viewResultSpectrum;
-                }
-                );
-            genericQuery.QueryCompleted += (s, e) =>
+            CancellationToken cancellation = default;
+            try
             {
-                ReplaceHistoryResults(queryResults);
-            };
-            GenericQueryWindow genericQueryWindow = new GenericQueryWindow(genericQuery) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }; ;
-            genericQueryWindow.ShowDialog();
-            DB.Dispose();
+                var target = CaptureHistoryTarget();
+                using var db = target.Endpoint.CreateDbClient();
+                var queryResults = new List<ViewResultSpectrum>();
+                void RequireTarget()
+                {
+                    if (!OwnsHistoryTarget(target)) throw new InvalidOperationException(EngineLocalization.Get(HistorySourceChanged));
+                }
+                var query = new SpectrumHistoryQuery(db, queryResults, () =>
+                {
+                    RequireTarget();
+                    CancelHistoryQuery();
+                })
+                {
+                    BackgroundQueryClientFactory = () =>
+                    {
+                        if (!target.Endpoint.IsCurrent) throw new InvalidOperationException(EngineLocalization.Get(HistorySourceChanged));
+                        return target.Endpoint.CreateDbClient();
+                    },
+                };
+                query.PreQuery += (_, _) =>
+                {
+                    RequireTarget();
+                    cancellation = BeginHistoryQuery();
+                    CancellationToken requestCancellation = cancellation;
+                    double? minimumLuminance = ViewResultSpectrum.GetMinimumLuminance();
+                    query.BatchConverter = rows => MaterializeHistoryRows(rows, target.Endpoint, minimumLuminance, requestCancellation);
+                };
+                query.QueryCompleted += (_, _) =>
+                {
+                    cancellation.ThrowIfCancellationRequested();
+                    RequireTarget();
+                    ReplaceHistoryResults(queryResults);
+                };
+                var window = new GenericQueryWindow(query) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
+                window.ShowDialog();
+            }
+            catch (Exception error) { ReportHistoryFailure(error); }
+            finally { FinishHistoryQuery(cancellation); }
+        }
 
+        private sealed class SpectrumHistoryQuery(SqlSugarClient db, IList<ViewResultSpectrum> results, Action beforeTableMutation)
+            : GenericQuery<SpectumResultEntity, ViewResultSpectrum>(db, results, row => new ViewResultSpectrum(row))
+        {
+            public override void DeleteAll()
+            {
+                beforeTableMutation();
+                base.DeleteAll();
+            }
+
+            public override void TruncateTable()
+            {
+                beforeTableMutation();
+                base.TruncateTable();
+            }
+        }
+
+        private static IEnumerable<ViewResultSpectrum> MaterializeHistoryRows(IEnumerable<SpectumResultEntity> rows,
+            MySqlConnectedEndpoint endpoint, double? minimumLuminance, CancellationToken cancellation)
+        {
+            foreach (SpectumResultEntity row in rows)
+            {
+                cancellation.ThrowIfCancellationRequested();
+                if (!endpoint.IsCurrent) throw new InvalidOperationException(EngineLocalization.Get(HistorySourceChanged));
+                yield return new ViewResultSpectrum(row, minimumLuminance);
+            }
+        }
+
+        private HistoryTarget CaptureHistoryTarget()
+        {
+            Dispatcher.VerifyAccess();
+            DeviceSpectrum owner = Device;
+            ObjectDisposedException.ThrowIf(_isDisposed || owner.IsDisposed, this);
+            var boundEndpoint = owner.ResultDatabaseEndpoint;
+            var endpoint = boundEndpoint ?? MySqlControl.GetInstance().ConnectedEndpoint;
+            if (endpoint is not { IsCurrent: true })
+                throw new InvalidOperationException(EngineLocalization.Get("数据库未连接，无法查询光谱结果。"));
+            return new(owner, endpoint, boundEndpoint, ReferenceEquals(owner.ViewRegistration?.Current, this));
+        }
+
+        private bool OwnsHistoryTarget(HistoryTarget target) => !_isDisposed && target.IsCurrent(Device)
+            && (!target.Docked || ReferenceEquals(target.Owner.ViewRegistration.Current, this));
+
+        private sealed class HistoryTarget(DeviceSpectrum owner, MySqlConnectedEndpoint endpoint, MySqlConnectedEndpoint? boundEndpoint, bool docked)
+        {
+            private readonly ConfigSpectrum configuration = owner.Config;
+            private readonly SysResourceModel resource = owner.SysResourceModel;
+            private readonly int resourceId = owner.SysResourceModel.Id;
+            private readonly int resourceType = owner.SysResourceModel.Type;
+            private readonly int tenantId = owner.SysResourceModel.TenantId;
+            private readonly int? parentId = owner.SysResourceModel.Pid;
+            private readonly string deviceCode = owner.Code;
+
+            internal DeviceSpectrum Owner => owner;
+            internal MySqlConnectedEndpoint Endpoint => endpoint;
+            internal bool Docked => docked;
+
+            internal bool IsCurrent(DeviceSpectrum device) => ReferenceEquals(device, owner) && !owner.IsDisposed
+                && ReferenceEquals(owner.Config, configuration) && ReferenceEquals(owner.SysResourceModel, resource)
+                && resource.Id == resourceId && resource.Type == resourceType && resource.TenantId == tenantId && resource.Pid == parentId
+                && !resource.IsDelete && string.Equals(owner.Code, deviceCode, StringComparison.Ordinal)
+                && ReferenceEquals(owner.ResultDatabaseEndpoint, boundEndpoint) && endpoint.IsCurrent;
+        }
+
+        private CancellationToken BeginHistoryQuery()
+        {
+            CancelHistoryQuery();
+            _historyQueryCancellation = new();
+            return _historyQueryCancellation.Token;
+        }
+
+        private void FinishHistoryQuery(CancellationToken cancellation)
+        {
+            if (_historyQueryCancellation?.Token == cancellation) CancelHistoryQuery();
+        }
+
+        private void CancelHistoryQuery()
+        {
+            var previous = _historyQueryCancellation;
+            _historyQueryCancellation = null;
+            if (previous == null) return;
+            previous.Cancel();
+            previous.Dispose();
+        }
+
+        private void ReportHistoryFailure(Exception error)
+        {
+            if (_isDisposed) return;
+            log4net.LogManager.GetLogger(typeof(ViewSpectrum)).Error("Spectrum history query failed; existing results retained.", error);
+            MessageBox.Show(Application.Current.GetActiveWindow(), EngineLocalization.Get("光谱查询失败，当前列表已保留。详情请查看日志。"), "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error);
         }
 
 

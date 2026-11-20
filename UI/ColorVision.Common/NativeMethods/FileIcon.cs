@@ -16,6 +16,8 @@ namespace ColorVision.Common.NativeMethods
 {
     public class FileIcon
     {
+        private static readonly object ImageSourceCacheGate = new();
+
         [StructLayout(LayoutKind.Sequential)]
         public struct SHFILEINFO
         {
@@ -74,29 +76,35 @@ namespace ColorVision.Common.NativeMethods
             }
 
             string extension = Path.GetExtension(path);
-            if (FileImageSourceCache.TryGetValue(extension, out ImageSource source))
+            lock (ImageSourceCacheGate)
             {
+                var cache = FileImageSourceCache;
+                if (cache.TryGetValue(extension, out ImageSource source))
+                    return source;
+
+                Icon icon = GetFileIcon(path);
+                source = icon.ToImageSource();
+                // The process-wide cache can serve views on a different dispatcher.
+                source.Freeze();
+                cache.Add(extension, source);
                 return source;
             }
-
-            Icon icon = GetFileIcon(path);
-            source = icon.ToImageSource();
-
-            FileImageSourceCache.TryAdd(extension, source);
-            return source;
         }
 
 
         public static ImageSource? DirectoryIconImageSource { get; set; }
         public static ImageSource? GetDirectoryIconImageSource()
         {
-            if (DirectoryIconImageSource == null)
+            lock (ImageSourceCacheGate)
             {
-                Icon icon = GetDirectoryIcon();
-                DirectoryIconImageSource = icon?.ToImageSource();
+                if (DirectoryIconImageSource == null && GetDirectoryIcon() is Icon icon)
+                {
+                    ImageSource source = icon.ToImageSource();
+                    source.Freeze();
+                    DirectoryIconImageSource = source;
+                }
+                return DirectoryIconImageSource;
             }
-            return DirectoryIconImageSource;
-
         }
         /// <summary>
         /// 获取文件夹图标 

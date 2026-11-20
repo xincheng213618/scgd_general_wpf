@@ -39,7 +39,7 @@ next: false
   MySQL 连接配置与业务 DAO、POI 模板的 SQLite 自动回退，以及旧插件注册的二进制兼容。
 
 - [通用查询、条件会话与整表操作](../../04-api-reference/ui-components/database-query.md) — `ui.database-query`
-  实体驱动的通用查询窗口：条件参数化、执行时SQL预览、结果替换与进程内会话；关闭不取消查询，清空表/截断表作用于整表而非筛选结果。
+  实体驱动的通用查询窗口，支持参数化筛选、调用方固定范围、前后台查询和只读模式。可写模式的表维护作用于整表。
 
 - [共享防抖与回调生命周期](../../04-api-reference/ui-components/debounce-timer.md) — `ui.debounce-timer`
   共享防抖的同键替换、回调所有权、Dispatcher 排队取消与可复用清理边界。
@@ -90,7 +90,7 @@ next: false
   设置窗口的元数据发现、搜索定位与活对象编辑；选项/搜索入口在关闭窗口后调用保存，关窗不撤销修改，保存失败不回滚；启动检查更新是聚合开关。
 
 - [TCP 监听、协议分发与消息记录](../../04-api-reference/ui-components/ColorVision.SocketProtocol.md) — `ui.socket-protocol`
-  Socket连接管理器的监听配置、窗口关闭与服务停止、防火墙放行、消息查询和JSON/Text分发；清空消息只清列表，重发可能换客户端，Sent不证明对端执行。
+  Socket 监听、服务生命周期、防火墙、消息查询与 JSON/Text 分发。清空消息只清列表，历史重发固定客户端连接，Sent 表示本地发送记录。
 
 - [工作区创建、资源打开与文件树管理](../../04-api-reference/ui-components/ColorVision.Solution.md) — `ui.solution`
   工作区创建、打开与最近列表，文件树搜索和引用移除，切换取消及 cvsln 恢复。新建工作区保留已有文件。

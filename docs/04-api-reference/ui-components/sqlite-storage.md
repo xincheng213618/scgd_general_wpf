@@ -72,6 +72,8 @@ Socket 正常 `Load` 和 Flow 的 `LoadPayloads` 都只读压缩列；实体列�
 | Socket：`SocketMessagesSqliteCleanupProvider` | 在 `SocketMessagePayloadStorage.RunDatabaseMaintenance` 的进程内 lock 中创建备份，再执行迁移/清理；只约束遵守同一锁的路径，不停止 TCP 服务或强制关闭其它连接 |
 | Flow：`FlowDiagnosticsSqliteCleanupProvider` | 非重入调用先 `FlushPendingWrites(10s)`，成功后进入 `FlowDiagnosticsMaintenanceGate` 再备份和执行动作；确认文案要求停止流程并关闭分析窗口，但代码不自动执行这些用户动作 |
 
+Socket 消息库和 Flow 诊断库的全量清理保留自增序列。旧窗口按已删除记录的 ID 从数据库读取正文时，结果为空。之后入库的新记录使用更大的 ID。
+
 Flow 的 Flush 可触发首次初始化、schema 装配和写线程启动，因此备份位于 payload 迁移动作之前，不等于整个维护入口在备份前绝无写入。写循环会记录并吞掉动作异常，队列 barrier 完成也不证明此前每条诊断记录都成功保存；随后新入队的动作还须按维护锁排队。
 
 组合动作失败时包装异常保留已经生成的备份路径，**没有自动还原备份**。锁在退出时释放，后续遵循该锁的操作可继续进入；这不是停止/重开服务的协议，更不是库健康或所有后续写入成功的证据。Socket 的迁移后列表刷新使用 `Dispatcher.BeginInvoke`，方法返回也不证明 UI 已显示新数据。

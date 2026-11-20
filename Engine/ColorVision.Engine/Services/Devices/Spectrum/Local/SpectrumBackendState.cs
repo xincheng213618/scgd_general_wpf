@@ -85,7 +85,17 @@ internal sealed class SpectrumBackendState
             if (eventName == "Open") serviceMayOwn = true;
         }
     }
-    public void EndServiceCommand() { lock (Sync) serviceCommands--; }
+    public void EndServiceCommand()
+    {
+        bool backendChanged;
+        lock (Sync)
+        {
+            bool wasLocal = OpensLocally;
+            serviceCommands--;
+            backendChanged = wasLocal != OpensLocally;
+        }
+        if (backendChanged) Changed?.Invoke();
+    }
     public void EnsureLocalAvailable()
     {
         lock (Sync)

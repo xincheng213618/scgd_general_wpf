@@ -50,7 +50,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
         private PhyCamera? _subscribedPhyCamera;
         private readonly DockViewRegistration _view;
         private int _disposeState;
-        private bool IsDisposed => Volatile.Read(ref _disposeState) != 0;
+        internal bool IsDisposed => Volatile.Read(ref _disposeState) != 0;
         internal DockViewRegistration ViewRegistration => _view;
         internal ViewCamera? ExistingView => _view.Current as ViewCamera;
         internal ViewCamera ViewShell => (ViewCamera)_view.GetOrCreate();
@@ -64,6 +64,8 @@ namespace ColorVision.Engine.Services.Devices.Camera
             }
         }
         public MQTTCamera DService { get; set; }
+        internal bool OwnsResultDatabase(MySqlConnectedEndpoint? endpoint) => endpoint?.IsCurrent == true
+            && ReferenceEquals(ResultDatabaseEndpoint, endpoint);
         public RelayCommand FetchLatestTemperatureCommand { get; set; }
 
         public DisplayCameraConfig DisplayConfig => DisplayConfigManager.Instance.GetDisplayConfig<DisplayCameraConfig>(Config.Code);
@@ -325,28 +327,42 @@ namespace ColorVision.Engine.Services.Devices.Camera
             if (IsDisposed) return;
 
             PhyCamera? previousPhyCamera = _subscribedPhyCamera;
-            UpdatePhyCameraBinding(PhyCameraManager.GetInstance().GetPhyCamera(Config.CameraCode));
-            if (!ReferenceEquals(previousPhyCamera, PhyCamera))
-                previousPhyCamera?.ReleaseDeviceCamera();
-            if (PhyCamera != null)
+            PhyCamera? selectedCamera = null;
+            (SysResourceModel? Resource, string? Value) selectedSource = default;
+            string? selectedCode = null;
+            SaveWithConfigurationTarget(prepare: target =>
             {
-                PhyCamera.SetDeviceCamera(this);
+                selectedCode = Config.CameraCode;
+                selectedCamera = PhyCameraManager.GetInstance().GetPhyCamera(selectedCode);
+                EnsurePhyCameraBindingCanChange(selectedCamera?.Code);
+                if (selectedCamera == null) return;
+                selectedSource = (selectedCamera.SysResourceModel, selectedCamera.SysResourceModel.Value);
+                var physicalConfig = selectedCamera.ReadOwnedPhysicalConfiguration(this, target)
+                    ?? throw new DeviceConfigurationSaveException(EngineLocalization.Get("关联的物理相机已变更，请重新选择设备。"));
 
-                OnPropertyChanged(nameof(PhyCamera));
-            }
-            base.Save();
+                string? recoveredId = ReferenceEquals(previousPhyCamera, selectedCamera) ? null
+                    : PhysicalCameraIdentity.FindRecoverableId(selectedCamera.Code, physicalConfig.CameraID, Config.CameraCode, Config.CameraID);
+                physicalConfig.ApplyTo(Config, includeCameraId: false);
+                Config.CameraID = recoveredId ?? physicalConfig.CameraID;
+            }, apply: target =>
+            {
+                if (!target.IsCurrent(this) || !string.Equals(Config.CameraCode, selectedCode, StringComparison.Ordinal)
+                    || !ReferenceEquals(selectedCamera?.SysResourceModel, selectedSource.Resource)
+                    || !string.Equals(selectedCamera?.SysResourceModel.Value, selectedSource.Value, StringComparison.Ordinal)) return;
+
+                string savedCameraId = Config.CameraID;
+                PhyCamera = selectedCamera;
+                if (!string.Equals(Config.CameraID, savedCameraId, StringComparison.Ordinal)) Config.CameraID = savedCameraId;
+                if (previousPhyCamera != null && (previousPhyCamera.Id != selectedCamera?.Id
+                    || !string.Equals(previousPhyCamera.Code, selectedCamera?.Code, StringComparison.OrdinalIgnoreCase)))
+                    previousPhyCamera.ReleaseDeviceCamera(this, target);
+                selectedCamera?.SetDeviceCamera(this, target);
+                if (selectedCamera != null) OnPropertyChanged(nameof(PhyCamera));
+            });
         }
 
-        public override void Delete()
-        {
-            PhyCamera? associatedPhyCamera = _subscribedPhyCamera;
-            bool wasDisposed = IsDisposed;
-
-            base.Delete();
-
-            if (!wasDisposed && IsDisposed)
-                associatedPhyCamera?.ReleaseDeviceCamera();
-        }
+        private protected override void OnResourceDeleted(DeviceConfigurationTarget configuration)
+            => _subscribedPhyCamera?.ReleaseDeviceCamera(this, configuration);
 
         private void FetchLatestTemperature(object a)
         {
@@ -385,7 +401,8 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         public DisplayCamera GetDisplayCamera() => new DisplayCamera(this);
 
-        internal bool TryGetCalibrationTemplateFiles(CalibrationParam? param, out IReadOnlyList<DeviceCameraCalibrationFile> calibrationFiles, out string? errorMessage)
+        internal bool TryGetCalibrationTemplateFiles(CalibrationParam? param, out IReadOnlyList<DeviceCameraCalibrationFile> calibrationFiles,
+            out string? errorMessage, bool checkFiles = true)
         {
             calibrationFiles = Array.Empty<DeviceCameraCalibrationFile>();
             errorMessage = null;
@@ -423,7 +440,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 }
 
                 CalibrationResource? resource = GetCalibrationTemplateResource(param, slot);
-                if (resource == null || !TryResolveCalibrationFilePath(resource, out string fullPath, out string relativePath))
+                if (resource == null || !TryResolveCalibrationFilePath(resource, out string fullPath, out string relativePath, checkFiles))
                 {
                     string displayName = resource?.Name ?? slot.Key;
                     errorMessage = string.Format(Properties.Resources.TemplateFileNotExist, param.Name, displayName);
@@ -450,12 +467,14 @@ namespace ColorVision.Engine.Services.Devices.Camera
             return slot.FindTemplateResource(param, resources);
         }
 
-        internal bool TryResolveCalibrationFilePath(CalibrationResource resource, out string fullPath, out string relativePath)
+        internal bool TryResolveCalibrationFilePath(CalibrationResource resource, out string fullPath, out string relativePath, bool checkFile = true)
         {
             fullPath = string.Empty;
             relativePath = string.Empty;
 
-            if (PhyCamera == null || !Directory.Exists(PhyCamera.Config.FileServerCfg.FileBasePath))
+            var camera = PhyCamera;
+            string? basePath = camera?.Config.FileServerCfg.FileBasePath;
+            if (camera == null || string.IsNullOrWhiteSpace(basePath) || (checkFile && !Directory.Exists(basePath)))
             {
                 return false;
             }
@@ -466,8 +485,8 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 return false;
             }
 
-            fullPath = Path.Combine(PhyCamera.Config.FileServerCfg.FileBasePath, PhyCamera.Code, "cfg", relativePath);
-            return File.Exists(fullPath);
+            fullPath = Path.Combine(basePath, camera.Code, "cfg", relativePath);
+            return !checkFile || File.Exists(fullPath);
         }
 
         public override MQTTServiceBase? GetMQTTService()

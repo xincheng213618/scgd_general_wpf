@@ -31,14 +31,14 @@ namespace ProjectARVRPro.Process.OpticCenter
                         ctx.Result.FileName = fileUrl;
                 }
 
-                var masters = AlgResultMasterDao.Instance.GetAllByBatchId(ctx.Batch.Id);
+                var masters = ctx.ReadMasterResults();
                 foreach (var master in masters)
                 {
                     // 允许旧版的计算方案
                     if (master.ImgFileType == ViewResultAlgType.ARVR_BinocularFusion)
                     {
                         log?.Info("use ARVR_BinocularFusion");
-                        List<BinocularFusionModel> algResultModels = BinocularFusionDao.Instance.GetAllByPid(master.Id);
+                        List<BinocularFusionModel> algResultModels = ctx.ReadDetails(BinocularFusionDao.Instance, master.Id);
                         if (algResultModels.Count >= 1)
                         {
                             BinocularFusionModel binocularFusionModel = algResultModels[0];
@@ -51,7 +51,7 @@ namespace ProjectARVRPro.Process.OpticCenter
 
                     if (master.ImgFileType == ViewResultAlgType.FindCross && master.version != "2.0")
                     {
-                        var details = DeatilCommonDao.Instance.GetAllByPid(master.Id);
+                        var details = ctx.ReadDetails(DeatilCommonDao.Instance, master.Id);
                         if (details.Count == 1)
                         {
                             var find = new FindCrossDetailViewReslut(details[0]);

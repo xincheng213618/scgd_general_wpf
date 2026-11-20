@@ -10,6 +10,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Threading;
 
@@ -92,19 +93,29 @@ namespace ColorVision.Engine.Templates.POI
         public static ViewResultAlgType ResolveResultType(int channels)
             => channels == 1 ? ViewResultAlgType.POI_Y : ViewResultAlgType.POI_XYZ;
 
-        public static LocalPoiResultSet Calculate(LocalFlowFrameLease frame, PoiParam poi)
+        public static LocalPoiResultSet Calculate(LocalFlowFrameLease frame, PoiParam poi, MySqlConnectedEndpoint? endpoint = null)
         {
             ValidateFrame(frame);
             ArgumentNullException.ThrowIfNull(poi);
-            if (poi.PoiPoints.Count == 0 && poi.Id > 0) PoiParam.LoadPoiDetailFromDB(poi);
-            if (poi.PoiPoints.Count == 0) throw new InvalidOperationException($"POI 模板没有关注点：{poi.Name}");
-
-            PoiMeasurementPoint[] requests = new PoiMeasurementPoint[poi.PoiPoints.Count];
-            (int X, int Y, int Width, int Height, POIPointTypes Type)[] definitions =
-                new (int, int, int, int, POIPointTypes)[poi.PoiPoints.Count];
-            for (int index = 0; index < poi.PoiPoints.Count; index++)
+            IList<PoiPoint> points = poi.PoiPoints;
+            if (poi.PoiPoints.Count == 0 && poi.Id > 0)
             {
-                definitions[index] = ResolvePoint(poi.PoiPoints[index]);
+                if (endpoint == null) PoiParam.LoadPoiDetailFromDB(poi);
+                else
+                {
+                    using var db = endpoint.CreateDbClient();
+                    points = db.Queryable<PoiDetailModel>().Where(row => row.Pid == poi.Id).OrderBy(row => row.Id).ToList()
+                        .Select(row => new PoiPoint(row)).ToArray();
+                }
+            }
+            if (points.Count == 0) throw new InvalidOperationException($"POI 模板没有关注点：{poi.Name}");
+
+            PoiMeasurementPoint[] requests = new PoiMeasurementPoint[points.Count];
+            (int X, int Y, int Width, int Height, POIPointTypes Type)[] definitions =
+                new (int, int, int, int, POIPointTypes)[points.Count];
+            for (int index = 0; index < points.Count; index++)
+            {
+                definitions[index] = ResolvePoint(points[index]);
                 (int x, int y, int width, int height, POIPointTypes type) = definitions[index];
                 requests[index] = new PoiMeasurementPoint(x, y, width, height, ToMeasurementShape(type));
             }
@@ -125,7 +136,7 @@ namespace ColorVision.Engine.Templates.POI
             };
             for (int index = 0; index < measurements.Length; index++)
             {
-                PoiPoint point = poi.PoiPoints[index];
+                PoiPoint point = points[index];
                 (int x, int y, int width, int height, POIPointTypes type) = definitions[index];
                 PoiMeasurementResult measurement = measurements[index];
                 object value = frame.Metadata.Channels == 1
@@ -155,7 +166,7 @@ namespace ColorVision.Engine.Templates.POI
             return result;
         }
 
-        public static void SaveDetails(int masterId, LocalPoiResultSet result)
+        internal static IReadOnlyCollection<PoiPointResultModel> CreateDetails(int masterId, LocalPoiResultSet result)
         {
             if (masterId <= 0) throw new ArgumentOutOfRangeException(nameof(masterId), "POI 结果主表 ID 无效。");
             List<PoiPointResultModel> details = new(result.Points.Count);
@@ -174,16 +185,7 @@ namespace ColorVision.Engine.Templates.POI
                     Value = JsonConvert.SerializeObject(point.Value)
                 });
             }
-            int inserted = PoiPointResultDao.Instance.BulkInsert(details);
-            if (inserted != details.Count)
-            {
-                throw new InvalidOperationException($"保存 POI 明细失败：应写入 {details.Count} 条，实际写入 {inserted} 条。");
-            }
-        }
-
-        public static void DeleteDetails(int masterId)
-        {
-            if (masterId > 0) _ = PoiPointResultDao.Instance.Delete(item => item.Pid == masterId);
+            return details;
         }
 
         private static void ValidateFrame(LocalFlowFrameLease frame)

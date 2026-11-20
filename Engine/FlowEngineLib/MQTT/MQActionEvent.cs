@@ -1,4 +1,6 @@
+using MQTTnet;
 using Newtonsoft.Json;
+using System;
 
 namespace FlowEngineLib.MQTT;
 
@@ -20,6 +22,8 @@ public class MQActionEvent
 	public string NodeId { get; set; }
 
 	public string Message { get; set; }
+	[JsonIgnore]
+	internal Action<Func<MqttClientOptions, bool>> ObservePublishConnection { get; set; }
 
 	public MQActionEvent()
 		: this(string.Empty, string.Empty, string.Empty, string.Empty, string.Empty, string.Empty, string.Empty)

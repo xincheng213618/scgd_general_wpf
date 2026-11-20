@@ -187,6 +187,7 @@ namespace ColorVision.UI.LogImp.Controls
         public bool IsSearchActive => !string.IsNullOrEmpty(_searchText);
 
         public bool UsesVirtualizedRendering => _activeViewerMode == LogViewerMode.Virtualized;
+        private bool RetainsPlainText => !_viewerModeLocked || !UsesVirtualizedRendering;
 
         public void SetEntries(IEnumerable<LogEntry> entries, bool latestAtTop)
         {
@@ -202,8 +203,7 @@ namespace ColorVision.UI.LogImp.Controls
             }
 
             TrimEntries(keepHead: latestAtTop);
-            _plainText = BuildText(_entries);
-            TrimPlainText(keepHead: latestAtTop);
+            SyncPlainTextWithEntries();
             ResetSelectionState(clearSelection: true);
             RefreshActiveView();
             ScrollToLatest(latestAtTop);
@@ -221,6 +221,8 @@ namespace ColorVision.UI.LogImp.Controls
                 _entries.AddRange(LogEntryParser.FromLines(ReadTextLines(_plainText)));
                 TrimEntries(keepHead: latestAtTop);
             }
+            if (!RetainsPlainText)
+                _plainText = string.Empty;
 
             ResetSelectionState(clearSelection: true);
             RefreshActiveView();
@@ -246,34 +248,16 @@ namespace ColorVision.UI.LogImp.Controls
             if (latestAtTop)
                 displayEntries.Reverse();
 
-            var wasPlainTextEmpty = string.IsNullOrEmpty(_plainText);
             if (latestAtTop)
                 _entries.InsertRange(0, displayEntries);
             else
                 _entries.AddRange(displayEntries);
 
             var removedCount = TrimEntries(keepHead: latestAtTop);
-            string appendedText = string.Empty;
-            if (removedCount > 0)
-            {
-                _plainText = BuildText(_entries);
-            }
-            else
-            {
-                appendedText = BuildText(displayEntries);
-                _plainText = latestAtTop ? CombineText(appendedText, _plainText) : CombineText(_plainText, appendedText);
-            }
-
-            var textTrimmed = TrimPlainText(keepHead: latestAtTop);
-
+            if (RetainsPlainText)
+                AppendPlainText(displayEntries, latestAtTop, removedCount);
             if (UsesVirtualizedRendering)
-            {
                 UpdateVisibleEntriesAfterAppend(displayEntries, latestAtTop, removedCount);
-            }
-            else
-            {
-                UpdatePlainTextAfterAppend(appendedText, latestAtTop, wasPlainTextEmpty, removedCount > 0 || textTrimmed);
-            }
 
             if (autoScroll && !_suspendAutoScroll)
             {
@@ -411,6 +395,11 @@ namespace ColorVision.UI.LogImp.Controls
         private void LogViewerControl_Loaded(object sender, RoutedEventArgs e)
         {
             _viewerModeLocked = true;
+            if (UsesVirtualizedRendering)
+            {
+                _plainText = string.Empty;
+                PlainTextBox.Clear();
+            }
         }
 
         private void LogViewerControl_Unloaded(object sender, RoutedEventArgs e)
@@ -439,8 +428,7 @@ namespace ColorVision.UI.LogImp.Controls
             var removedCount = logViewer.TrimEntries(keepHead: logViewer._latestAtTop);
             if (removedCount > 0)
             {
-                logViewer._plainText = BuildText(logViewer._entries);
-                logViewer.TrimPlainText(keepHead: logViewer._latestAtTop);
+                logViewer.SyncPlainTextWithEntries();
                 logViewer.RefreshActiveView();
             }
         }

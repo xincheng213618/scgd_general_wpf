@@ -11,12 +11,14 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Calibration
     public partial class SpectrumCalibrationGroupWindow : Window
     {
         private readonly DeviceSpectrum _device;
+        private readonly DeviceConfigurationTarget _configurationTarget;
         private readonly string _initialBindDeviceCode;
         private bool _isRefreshing;
 
         public SpectrumCalibrationGroupWindow(DeviceSpectrum device)
         {
             _device = device;
+            _configurationTarget = device.CaptureConfigurationTarget();
             _initialBindDeviceCode = _device.Config.NDConfig.NDBindDeviceCode ?? string.Empty;
             InitializeComponent();
             ColorVision.Themes.ThemeManagerExtensions.ApplyCaption(this);
@@ -128,16 +130,19 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Calibration
         private void BtnSave_Click(object sender, RoutedEventArgs e)
         {
             bool ndServiceChanged = !string.Equals(_initialBindDeviceCode, _device.Config.NDConfig.NDBindDeviceCode ?? string.Empty, StringComparison.Ordinal);
-            bool groupChanged = SelectedGroup != null && _device.ApplyCalibrationGroup(SelectedGroup, true);
-            if (!groupChanged)
+            try
             {
-                if (ndServiceChanged)
-                    _device.Save();
-                else
-                    _device.SaveConfig();
+                if (_device.TrySaveCalibrationGroupConfiguration(SelectedGroup, ndServiceChanged, _configurationTarget))
+                {
+                    Close();
+                    return;
+                }
+                MessageBox.Show(this, EngineLocalization.Get("设备标定配置已变更，请重新打开后编辑。"), "ColorVision", MessageBoxButton.OK, MessageBoxImage.Warning);
             }
-
-            Close();
+            catch (Exception ex)
+            {
+                MessageBox.Show(this, EngineLocalization.Format($"保存标定配置失败：{ex.Message}"), "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
 
         private void BtnClose_Click(object sender, RoutedEventArgs e)

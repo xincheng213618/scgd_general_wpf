@@ -6,6 +6,7 @@ using SqlSugar;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 
 namespace ColorVision.Engine.Services.Devices.Camera.Local
 {
@@ -22,7 +23,13 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
     internal sealed class SqlSugarLocalFlowResultTransaction<TDetail> : ILocalFlowResultTransaction<TDetail>
         where TDetail : class, IEntity, new()
     {
-        private readonly SqlSugarClient db = MySqlControl.CreateDbClient();
+        private readonly SqlSugarClient db;
+
+        public SqlSugarLocalFlowResultTransaction(MySqlConnectedEndpoint endpoint)
+        {
+            ArgumentNullException.ThrowIfNull(endpoint);
+            db = endpoint.CreateDbClient();
+        }
 
         public void Begin() => db.Ado.BeginTran();
 
@@ -39,8 +46,22 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
 
     internal static class LocalFlowResultPersistence
     {
+        internal static MySqlConnectedEndpoint? ResolveEndpoint(CVStartCFC action)
+            => FlowMeasurementBatch.TryGetBoundEndpoint(action, out MySqlConnectedEndpoint? endpoint)
+                ? endpoint : MySqlControl.GetInstance().ConnectedEndpoint;
+
+        internal static int ResolveBatchId(CVStartCFC action, MySqlConnectedEndpoint endpoint)
+            => FlowMeasurementBatch.ResolveId(action, endpoint, serialNumber =>
+            {
+                if (string.IsNullOrWhiteSpace(serialNumber)) return null;
+                using var db = endpoint.CreateDbClient();
+                return db.Queryable<MeasureBatchModel>().Where(batch => batch.Name == serialNumber || batch.Code == serialNumber)
+                    .OrderBy(batch => batch.Id, OrderByType.Desc).First()?.Id;
+            }) ?? throw new InvalidOperationException($"找不到当前流程数据库中的批次：{action.SerialNumber}");
+
         public static int SaveAlgorithmResult(
             CVStartCFC action,
+            MySqlConnectedEndpoint endpoint,
             ViewResultAlgType resultType,
             int? templateId,
             string? templateName,
@@ -54,8 +75,9 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             string? resultVersion = null)
         {
             AlgResultMasterModel model = CreateAlgorithmResultModel(
-                action, resultType, templateId, templateName, imageFile, deviceCode, zIndex, totalTime, parameters, resultCode, result, resultVersion);
-            int masterId = AlgResultMasterDao.Instance.SaveAndReturnId(model);
+                action, endpoint, resultType, templateId, templateName, imageFile, deviceCode, zIndex, totalTime, parameters, resultCode, result, resultVersion);
+            action.RuntimeResources.StopToken.ThrowIfCancellationRequested();
+            int masterId = AlgResultMasterDao.InsertResult(endpoint, model);
             if (masterId <= 0) throw new InvalidOperationException($"保存本地算法结果失败：{resultType}。");
             return masterId;
         }
@@ -71,29 +93,34 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             int totalTime,
             object parameters,
             Func<int, IReadOnlyCollection<TDetail>> createDetails,
+            MySqlConnectedEndpoint endpoint,
             string? resultVersion = null)
             where TDetail : class, IEntity, new()
         {
             ArgumentNullException.ThrowIfNull(createDetails);
             AlgResultMasterModel model = CreateAlgorithmResultModel(
-                action, resultType, templateId, templateName, imageFile, deviceCode, zIndex, totalTime, parameters, resultVersion: resultVersion);
+                action, endpoint, resultType, templateId, templateName, imageFile, deviceCode, zIndex, totalTime, parameters,
+                resultVersion: resultVersion);
             return SaveAlgorithmResultWithDetailsCore(
                 model,
                 resultType,
                 createDetails,
-                static () => new SqlSugarLocalFlowResultTransaction<TDetail>());
+                () => new SqlSugarLocalFlowResultTransaction<TDetail>(endpoint),
+                action.RuntimeResources.StopToken);
         }
 
         internal static int SaveAlgorithmResultWithDetailsCore<TDetail>(
             AlgResultMasterModel model,
             ViewResultAlgType resultType,
             Func<int, IReadOnlyCollection<TDetail>> createDetails,
-            Func<ILocalFlowResultTransaction<TDetail>> transactionFactory)
+            Func<ILocalFlowResultTransaction<TDetail>> transactionFactory,
+            CancellationToken cancellationToken = default)
             where TDetail : class, IEntity, new()
         {
             ArgumentNullException.ThrowIfNull(model);
             ArgumentNullException.ThrowIfNull(createDetails);
             ArgumentNullException.ThrowIfNull(transactionFactory);
+            cancellationToken.ThrowIfCancellationRequested();
             using ILocalFlowResultTransaction<TDetail> transaction = transactionFactory()
                 ?? throw new InvalidOperationException("无法创建本地算法结果数据库事务。");
             transaction.Begin();
@@ -107,10 +134,12 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                     ?? throw new InvalidOperationException($"本地算法结果明细为空：{resultType}。");
                 if (details.Count == 0)
                     throw new InvalidOperationException($"本地算法结果没有可保存的明细：{resultType}。");
+                cancellationToken.ThrowIfCancellationRequested();
                 int inserted = transaction.InsertDetails(details);
                 if (inserted != details.Count)
                     throw new InvalidOperationException($"保存本地算法结果明细失败：应写入 {details.Count} 条，实际写入 {inserted} 条。");
 
+                cancellationToken.ThrowIfCancellationRequested();
                 transaction.Commit();
                 return masterId;
             }
@@ -128,13 +157,9 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             }
         }
 
-        public static void DeleteAlgorithmResult(int masterId)
-        {
-            if (masterId > 0) _ = AlgResultMasterDao.Instance.DeleteById(masterId);
-        }
-
         private static AlgResultMasterModel CreateAlgorithmResultModel(
             CVStartCFC action,
+            MySqlConnectedEndpoint endpoint,
             ViewResultAlgType resultType,
             int? templateId,
             string? templateName,
@@ -149,8 +174,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
         {
             ArgumentNullException.ThrowIfNull(action);
             ArgumentException.ThrowIfNullOrWhiteSpace(result);
-            int batchId = FlowMeasurementBatch.ResolveId(action)
-                ?? throw new InvalidOperationException($"找不到流程批次：{action.SerialNumber}");
+            int batchId = ResolveBatchId(action, endpoint);
             var model = new AlgResultMasterModel
             {
                 TId = templateId,

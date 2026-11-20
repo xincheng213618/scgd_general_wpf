@@ -450,15 +450,30 @@ public sealed class LocalCfwPortTests
             Assert.Equal(MsgRecordState.Fail, blocked.MsgRecordState);
             // Dispose the reservation, then exercise positioning on one fixed worker, as local spectrum does.
             spectrum.Dispose();
-            await Task.Run(() =>
+            using var calibrationFinished = new ManualResetEventSlim();
+            Task? calibration = null;
+            bool calibrationCompletedWhileUiWaited = WpfTestHost.Invoke(() =>
             {
-                using var operation = new LocalSpectrumFilterWheel(new ShutterConfig
-                { FilterWheelDeviceCode = device!.Code, UseFilterWheel = true, MeasurementPort = 5, DarkPort = 0 });
-                operation.SetTransmitting(false);
-                Assert.Equal(0, native.Port);
-                operation.SetTransmitting(true);
-                Assert.Equal(5, native.Port);
+                calibration = Task.Run(() =>
+                {
+                    try
+                    {
+                        using (var operation = new LocalSpectrumFilterWheel(new ShutterConfig
+                        { FilterWheelDeviceCode = device!.Code, UseFilterWheel = true, MeasurementPort = 5, DarkPort = 0 }))
+                        {
+                            operation.SetTransmitting(false);
+                            Assert.Equal(0, native.Port);
+                            operation.SetTransmitting(true);
+                            Assert.Equal(5, native.Port);
+                        }
+                        using var available = device!.DService.ReserveForCalibration();
+                    }
+                    finally { calibrationFinished.Set(); }
+                });
+                return calibrationFinished.Wait(TimeSpan.FromSeconds(5));
             });
+            await calibration!.WaitAsync(TimeSpan.FromSeconds(10));
+            Assert.True(calibrationCompletedWhileUiWaited);
             Assert.Equal(1, native.Opens);
             WpfTestHost.Invoke(() => device!.DisplayConfig.UseLocalCfwPort = false);
             Assert.True(device!.CfwBackend.OpensLocally);

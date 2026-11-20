@@ -1,6 +1,7 @@
 ﻿using LocalizedText = global::ColorVision.Engine.EngineLocalization;
 #pragma warning disable CA1720,CA1822,CA1863,CS4014,CS8602
 using ColorVision.Common.MVVM;
+using ColorVision.Database;
 using ColorVision.Engine.FlowProcessing.Diagnostics;
 using ColorVision.Engine.FlowProcessing.Editor;
 using ColorVision.Engine.FlowProcessing.Integration;
@@ -219,7 +220,7 @@ namespace ColorVision.Engine.FlowProcessing
         {
         }
 
-        internal ViewFlow(FlowEngineManager flowEngineManager, bool isStandalone)
+        internal ViewFlow(FlowEngineManager flowEngineManager, bool isStandalone, Func<MySqlConnectedEndpoint?>? getBatchEndpoint = null)
         {
             _isStandalone = isStandalone;
             FlowEngineManager = flowEngineManager;
@@ -242,7 +243,7 @@ namespace ColorVision.Engine.FlowProcessing
             _executionNavigator = new FlowExecutionNavigator(STNodeEditorMain);
             _nodeContextMenuService = new FlowNodeContextMenuService(STNodeEditorMain, _executionNavigator);
             _layoutService = new FlowGraphLayoutService(STNodeEditorMain);
-            _executionSession = new FlowExecutionSession(flowEngineManager, this);
+            _executionSession = new FlowExecutionSession(flowEngineManager, this, getBatchEndpoint);
 
             AutoSizeCommand = new RelayCommand(a => _layoutService.FitToViewport());
             RefreshCommand = new RelayCommand(a => Refresh());

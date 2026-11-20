@@ -358,6 +358,15 @@ public abstract class BaseStartNode : CVDeviceNode, IDisposable
 	{
 	}
 
+	// Register cleanup at the original command's admission point. Returning false vetoes that command.
+	internal virtual void PublishWithDeferredCleanup(MQActionEvent action, Func<object, Action<MQActionEvent, Func<bool>>, bool> onPublish)
+	{
+		if (onPublish(this, (cleanup, canPublish) =>
+		{
+			if (canPublish()) DoPublish(cleanup);
+		})) DoPublish(action);
+	}
+
 	public virtual void DoSubscribe(string topic, CVBaseServerNode serverNode)
 	{
 		if (string.IsNullOrWhiteSpace(topic) || serverNode == null)
@@ -527,8 +536,8 @@ public abstract class BaseStartNode : CVDeviceNode, IDisposable
 			{
 				try
 				{
-					action.SetActionType(ActionTypeEnum.Stop);
-					action.DoFinishing();
+					// Bulk teardown settles run waiters without publishing a Finished event.
+					action.TryDoFinishing(() => action.SetActionType(ActionTypeEnum.Stop), completeTrackedRun: true);
 				}
 				catch (Exception ex)
 				{
@@ -568,24 +577,22 @@ public abstract class BaseStartNode : CVDeviceNode, IDisposable
 			return;
 		}
 		FlowStartEventHandler finished = Finished;
-		if (finished == null)
+		if (finished == null && startAction.TrackedCompletion == null)
 			return;
 
 		FlowStartEventArgs result = startAction.TrackedTerminalResult ?? CreateFinishedEventArgs(startAction);
-		foreach (FlowStartEventHandler handler in finished.GetInvocationList())
+		foreach (FlowStartEventHandler handler in finished?.GetInvocationList() ?? Array.Empty<Delegate>())
 		{
 			try
 			{
-				handler(this, new FlowStartEventArgs(result.SerialNumber, result.Status, result.TotalTime, result.Message, result.ErrorNodeName, result.ErrorNodeId)
-				{
-					TrackedCompletion = startAction.TrackedCompletion
-				});
+				handler(this, new FlowStartEventArgs(result.SerialNumber, result.Status, result.TotalTime, result.Message, result.ErrorNodeName, result.ErrorNodeId));
 			}
 			catch (Exception error)
 			{
 				logger.Error($"Start node completion subscriber failed for flow {result.SerialNumber}.", error);
 			}
 		}
+		startAction.TrackedCompletion?.TrySetResult(result);
 	}
 
 	internal static FlowStartEventArgs CreateFinishedEventArgs(CVStartCFC startAction)

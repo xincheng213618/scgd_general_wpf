@@ -1,5 +1,7 @@
 using ColorVision.Core;
+using ColorVision.Database;
 using ColorVision.Engine;
+using ColorVision.Engine.FlowProcessing;
 using ColorVision.Engine.FlowProcessing.Nodes;
 using ColorVision.Engine.Services.Devices.Camera.Local;
 using ColorVision.Engine.Services.POI;
@@ -17,6 +19,8 @@ using ST.Library.UI.NodeEditor;
 using MQTTMessageLib.Algorithm;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using SqlSugar;
+using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Windows;
@@ -212,6 +216,45 @@ public sealed class LocalLightBeadsTests
         Assert.Throws<ArgumentOutOfRangeException>(() => LightBeadsDetector.Detect(image, new RoiRect(9, 9, 5, 5)));
     }
 
+    [Fact]
+    public void PersistedImageFallbackUsesTheFlowDatabaseAfterReconnect()
+    {
+        const string serial = "led-persisted-input";
+        string databasePath = Path.Combine(Path.GetTempPath(), $"cv-led-source-{Guid.NewGuid():N}.db");
+        string originalImage = Path.ChangeExtension(databasePath, ".cvraw");
+        string connectionString = $"Data Source={databasePath};Pooling=False";
+        SqlSugarClient OpenOriginalDatabase() => new(new ConnectionConfig
+        {
+            ConnectionString = connectionString, DbType = DbType.Sqlite,
+            IsAutoCloseConnection = true, InitKeyType = InitKeyType.Attribute,
+        });
+
+        try
+        {
+            using var db = OpenOriginalDatabase();
+            db.CodeFirst.InitTables<MeasureResultImgModel>();
+            int imageId = db.Insertable(new MeasureResultImgModel { BatchId = 1, FileUrl = originalImage }).ExecuteReturnIdentity();
+            var retired = new MySqlConnectedEndpoint(_ => false, OpenOriginalDatabase);
+            var action = new CVStartCFC(serial);
+            using var resources = action.RuntimeResources;
+            new FlowMeasurementBatch(serial, 1, connectionString, Stopwatch.GetTimestamp(), retired).Bind(resources);
+            action.MasterValue(null, imageId, (int)CVCommCore.CVResultType.Camera_Img);
+
+            using var execution = new ImagePathReaderNode().CreateCompatibilityExecution(new CVMQTTRequest
+            {
+                SerialNumber = serial, DeviceNodeCode = "led-input", EventName = "FindLightBeads",
+            }, null, [action]);
+            execution.Bind(action);
+            execution.Execute();
+
+            Assert.Equal(originalImage, JObject.FromObject(execution.Complete(action)!).Value<string>("Path"));
+        }
+        finally
+        {
+            File.Delete(databasePath);
+        }
+    }
+
     private static LocalFrameMetadata Metadata() => new() { Width = 8, Height = 8, CieBpp = 32, Channels = 1, PrimaryBufferKind = LocalFrameBufferKind.CvCie };
 
     private static LocalFlowFrame CreateCieFrame(float value)
@@ -229,5 +272,13 @@ public sealed class LocalLightBeadsTests
             action.SetCurrentFrame(CreateCieFrame(7));
             return new LocalNodeExecutionResult();
         }
+    }
+
+    private sealed class ImagePathReaderNode() : LocalFlowNodeBase("input", "input", "input")
+    {
+        protected override LocalNodeExecutionResult ExecuteLocal(CVStartCFC action) => new()
+        {
+            Data = new { Path = ResolveInputImageFilePath(action, 0) },
+        };
     }
 }

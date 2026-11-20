@@ -233,7 +233,7 @@ public sealed class AlgorithmHelpTests
     }
 
     [Fact]
-    public void EveryLocalCalculationNodeHasResolvableHelpWithoutInitializingABrowser()
+    public void LocalCalculationNodesResolveDeclaredHelpWithoutInitializingABrowser()
     {
         WpfTestHost.Invoke(() =>
         {
@@ -248,10 +248,16 @@ public sealed class AlgorithmHelpTests
             {
                 var node = (STNode)Activator.CreateInstance(type)!;
                 FlowNodeDocumentation documentation = FlowNodeDocumentationPresenter.GetDocumentation(node);
-                Assert.False(string.IsNullOrWhiteSpace(documentation.TopicId), $"Missing help topic for {type.Name}");
-                Assert.Equal(documentation.TopicId, catalog.Get(documentation.TopicId).Id);
+                Assert.False(string.IsNullOrWhiteSpace(documentation.Summary), $"Missing node documentation for {type.Name}");
                 var panel = Assert.IsType<StackPanel>(FlowNodeDocumentationPresenter.Create(node));
-                Assert.Single(panel.Children.OfType<Button>());
+                var buttons = panel.Children.OfType<Button>();
+                if (string.IsNullOrWhiteSpace(documentation.TopicId))
+                    Assert.Empty(buttons);
+                else
+                {
+                    Assert.Equal(documentation.TopicId, catalog.Get(documentation.TopicId).Id);
+                    Assert.Single(buttons);
+                }
                 Assert.DoesNotContain(panel.Children.Cast<object>(), child => child.GetType().Name == "WebView2");
             }
         });

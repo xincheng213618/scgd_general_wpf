@@ -1,5 +1,6 @@
 using ColorVision.Engine;
 using log4net;
+using SqlSugar;
 using System.Windows;
 
 namespace ProjectARVRPro.PluginConfig
@@ -52,12 +53,20 @@ namespace ProjectARVRPro.PluginConfig
         public static void ShowBatchResult(MeasureBatchModel batch, string flowName)
         {
             ArgumentNullException.ThrowIfNull(batch);
+            if (ArvrBatchHistory.CaptureDatabase(batch) is { } openBatchDatabase)
+                ShowBatchResult(batch, flowName, openBatchDatabase);
+            else
+                log.Warn($"未能确定批次的原始数据库，无法重放：BatchId={batch.Id}, Flow={flowName}");
+        }
+
+        internal static void ShowBatchResult(MeasureBatchModel batch, string flowName, Func<SqlSugarClient> openBatchDatabase)
+        {
             Application.Current.Dispatcher.BeginInvoke(async () =>
             {
                 try
                 {
                     ARVRWindow window = ShowOrActivate();
-                    await window.OpenBatchResultAsync(batch, flowName);
+                    await window.OpenBatchResultAsync(batch, flowName, openBatchDatabase);
                     window.Activate();
                 }
                 catch (Exception ex)

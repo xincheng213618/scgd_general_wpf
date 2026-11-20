@@ -9,6 +9,7 @@ using log4net;
 using Newtonsoft.Json;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Globalization;
 using System.IO;
 using System.Text;
 using System.Windows;
@@ -60,6 +61,7 @@ namespace ColorVision.Engine.Templates.Jsons.PoiAnalysis
     public class ViewHandlePoiAnalysis : IResultHandleBase
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(ViewHandlePoiAnalysis));
+        private static readonly object ExportLock = new();
 
         public override List<ViewResultAlgType> CanHandle { get; } = new List<ViewResultAlgType>() { ViewResultAlgType.PoiAnalysis };
         public override bool CanHandle1(ViewResultAlg result)
@@ -71,18 +73,27 @@ namespace ColorVision.Engine.Templates.Jsons.PoiAnalysis
 
         public override void SideSave(ViewResultAlg result, string selectedPath)
         {
-            string fileName = System.IO.Path.Combine(selectedPath, $"{result.ResultType}_{result.Batch}.csv");
-            var ViewResults = result.ViewResults.ToSpecificViewResults<PoiAnalysisDetailViewReslut>();
+            var details = result.ViewResults?.ToSpecificViewResults<PoiAnalysisDetailViewReslut>();
+            if (details?.Count != 1 || details[0].PoiAnalysisResult?.result is not { } measurement)
+                throw new InvalidDataException($"POI 分析结果 {result.Id} 缺少可导出的明细。");
 
-            var csvBuilder = new StringBuilder();
-
-            if (ViewResults.Count == 1)
+            Directory.CreateDirectory(selectedPath);
+            string fileName = Path.Combine(selectedPath, Tool.SanitizeFileName($"{result.ResultType}_{result.Batch}.csv"));
+            lock (ExportLock)
             {
-                var PoiAnalysisResult = ViewResults[0].PoiAnalysisResult;
-                csvBuilder.AppendLine("Content,Value");
-                csvBuilder.AppendLine(string.Join( PoiAnalysisResult.result.Content,PoiAnalysisResult.result.Value));
+                using FileStream file = new(fileName, FileMode.Append, FileAccess.Write, FileShare.Read);
+                using var writer = new StreamWriter(file, Encoding.UTF8);
+                using var csv = new CsvHelper.CsvWriter(writer, CultureInfo.InvariantCulture, leaveOpen: true);
+                if (file.Length == 0)
+                {
+                    csv.WriteField("Content");
+                    csv.WriteField("Value");
+                    csv.NextRecord();
+                }
 
-                File.AppendAllText(fileName, csvBuilder.ToString(), Encoding.UTF8);
+                csv.WriteField(measurement.Content);
+                csv.WriteField(measurement.Value.ToString(CultureInfo.CurrentCulture));
+                csv.NextRecord();
             }
         }
 
@@ -91,11 +102,12 @@ namespace ColorVision.Engine.Templates.Jsons.PoiAnalysis
         {
             if (result.ViewResults == null)
             {
+                if (!result.TryReadPersistedDetails(DeatilCommonDao.Instance, out var detailCommonModels)) return;
+                PoiAnalysisDetailViewReslut? mtfresult = detailCommonModels.Count == 1 ? new(detailCommonModels[0]) : null;
+                if (mtfresult != null && mtfresult.PoiAnalysisResult?.result == null) return;
                 result.ViewResults = new ObservableCollection<IViewResult>();
-                List<DetailCommonModel> detailCommonModels = DeatilCommonDao.Instance.GetAllByPid(result.Id);
-                if (detailCommonModels.Count == 1)
+                if (mtfresult != null)
                 {
-                    PoiAnalysisDetailViewReslut mtfresult = new PoiAnalysisDetailViewReslut(detailCommonModels[0]);
                     result.ViewResults.Add(mtfresult);
 
                     RelayCommand SelectrelayCommand = new RelayCommand(a =>
@@ -121,7 +133,7 @@ namespace ColorVision.Engine.Templates.Jsons.PoiAnalysis
         {
             OpenSourceImage(ctx, result);
 
-            if (result.ViewResults.Count == 1)
+            if (result.ViewResults?.Count == 1)
             {
 
                 List<string> header = new() { "Content", "Value" };

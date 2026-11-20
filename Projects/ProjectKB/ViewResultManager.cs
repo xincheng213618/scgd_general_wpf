@@ -2,6 +2,7 @@
 #pragma warning disable CS8625
 using ColorVision.Common.MVVM;
 using ColorVision.Database;
+using ColorVision.Engine;
 using ColorVision.UI;
 using ProjectKB.Auth;
 using SqlSugar;
@@ -95,20 +96,25 @@ namespace ProjectKB
 
         private readonly SqlSugarClient _db;
 
-        public ViewResultManager()
+        public ViewResultManager() : this(ConfigService.Instance.GetRequiredService<ViewResultManagerConfig>(),
+            new SqlSugarClient(new ConnectionConfig
+            {
+                ConnectionString = $"Data Source={SqliteDbPath};Default Timeout=5",
+                DbType = DbType.Sqlite,
+                IsAutoCloseConnection = true
+            }))
         {
-            Config = ConfigService.Instance.GetRequiredService<ViewResultManagerConfig>();
+        }
+
+        internal ViewResultManager(ViewResultManagerConfig config, SqlSugarClient database)
+        {
+            Config = config;
+            _db = database;
             EditConfigCommand = new RelayCommand(a => EditConfig());
             QueryCommand = new RelayCommand(a => Query());
             GenericQueryCommand = new RelayCommand(a => GenericQuery());
             SaveCommand = new RelayCommand(a => Save(KBCsvDataType.Lv));
             SaveLcCommand = new RelayCommand(a => Save(KBCsvDataType.Lc));
-            _db = new SqlSugarClient(new ConnectionConfig
-            {
-                ConnectionString = $"Data Source={SqliteDbPath};Default Timeout=5",
-                DbType = DbType.Sqlite,
-                IsAutoCloseConnection = true
-            });
             _db.Ado.ExecuteCommand("PRAGMA busy_timeout = 5000;");
             _db.Ado.ExecuteCommand("PRAGMA journal_mode = WAL;");
             // 确保表存在
@@ -169,7 +175,17 @@ namespace ProjectKB
                     dialog.FileName = csvpath;
                     dialog.RestoreDirectory = true;
                     if (dialog.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
-                    kbItemMaster.SaveCsv(dialog.FileName, dataType, Config.AppendFalloutSummary);
+                    try
+                    {
+                        kbItemMaster.SaveCsv(dialog.FileName, dataType, Config.AppendFalloutSummary);
+                    }
+                    catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+                    {
+                        MessageBox.Show(
+                            Application.Current.GetActiveWindow(),
+                            LocalizedText.Format($"CSV 导出失败：{ex.Message}"),
+                            "ProjectKB");
+                    }
                 }
             }
 
@@ -198,30 +214,34 @@ namespace ProjectKB
             }
         }
 
-        public void Save(KBItemMaster item)
+        public void Save(KBItemMaster item) => Save(item, readMeasureResults: null);
+
+        internal void Save(KBItemMaster item, Func<int, IReadOnlyList<MeasureResultImgModel>>? readMeasureResults)
         {
             if (item == null) return;
 
-            KBResultImageDimensions.TryPopulate(item);
+            KBResultImageDimensions.TryPopulate(item, readMeasureResults);
             bool isNew = item.Id <= 0;
             bool savePayload = isNew || item.IsResultPayloadLoaded;
-            KBResultPayloadStorage.RunDatabaseMaintenance(() =>
+            bool saved = KBResultPayloadStorage.RunDatabaseMaintenance(() =>
             {
                 _db.Ado.BeginTran();
                 try
                 {
+                    bool rowExists = true;
                     if (isNew)
                     {
                         item.Id = _db.Insertable(item).ExecuteReturnIdentity();
                     }
                     else
                     {
-                        _db.Updateable(item).ExecuteCommand();
+                        rowExists = _db.Updateable(item).ExecuteCommand() > 0;
                     }
 
-                    if (savePayload)
+                    if (rowExists && savePayload)
                         KBResultPayloadStorage.SaveResult(_db, item);
                     _db.Ado.CommitTran();
+                    return rowExists;
                 }
                 catch
                 {
@@ -232,6 +252,7 @@ namespace ProjectKB
                 }
             });
 
+            if (!saved) return;
             if (isNew || !ViewResluts.Any(x => ReferenceEquals(x, item) || x.Id == item.Id))
                 AddViewResult(item);
         }
@@ -246,7 +267,7 @@ namespace ProjectKB
 
             if (item.Id > 0)
             {
-                KBResultPayloadStorage.RunDatabaseMaintenance(() =>
+                int updated = KBResultPayloadStorage.RunDatabaseMaintenance(() =>
                     _db.Updateable<KBItemMaster>()
                         .SetColumns(result => new KBItemMaster
                         {
@@ -255,6 +276,7 @@ namespace ProjectKB
                         })
                         .Where(result => result.Id == item.Id)
                         .ExecuteCommand());
+                if (updated == 0) return false;
             }
 
             item.ImageWidth = width;

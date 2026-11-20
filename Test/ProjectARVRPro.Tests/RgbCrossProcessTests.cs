@@ -382,7 +382,7 @@ public sealed class RgbCrossProcessTests
 
     private sealed class BatchResults(string path) : IRgbCrossBatchResults
     {
-        public RgbCrossBatchInput Resolve(int batchId) { Assert.Equal(5,batchId);return new(path,"",42); }
+        public RgbCrossBatchInput Resolve(IProcessExecutionContext ctx) { Assert.Equal(5, ctx.Batch.Id); return new(path, "", 42); }
     }
 
     private static JObject CompactMeasurement()

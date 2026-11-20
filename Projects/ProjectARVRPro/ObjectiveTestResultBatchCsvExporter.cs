@@ -23,7 +23,7 @@ namespace ProjectARVRPro
             ArgumentException.ThrowIfNullOrWhiteSpace(filePath);
 
             List<ObjectiveTestResultRecord> recordList = records.ToList();
-            AtomicCsvFile.Write(filePath, path => WriteCsv(recordList,
+            AtomicResultFile.Write(filePath, path => WriteCsv(recordList,
                 index => new FlowRow(flowResultsByRecordId.GetValueOrDefault(recordList[index].Id), null, null), path));
         }
 

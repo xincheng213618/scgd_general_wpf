@@ -1,6 +1,7 @@
 using ColorVision.Database;
 using ColorVision.Engine;
 using ColorVision.Engine.Messages;
+using ColorVision.Engine.MQTT;
 using ColorVision.Engine.Services;
 using ColorVision.Engine.Services.Devices.CfwPort;
 using ColorVision.Engine.Services.Devices.CfwPort.Local;
@@ -16,9 +17,13 @@ using ColorVision.UI.Views;
 using cvColorVision;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using MQTTnet;
+using MQTTnet.Packets;
 using System.IO;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Text;
+using System.Threading.Channels;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Threading;
@@ -158,18 +163,40 @@ public sealed class SpectrumNdSelectionTests
     }
 
     [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public void RestoringActiveNdGroupDoesNotSendCommandsAndUserSelectionUsesItsBackend(bool local)
+    [InlineData(false, false)]
+    [InlineData(true, false)]
+    [InlineData(false, true)]
+    public async Task RestoringActiveNdGroupDoesNotSendCommandsAndUserSelectionUsesItsBackend(bool local, bool retireBeforeReply)
     {
-        WpfTestHost.Invoke(() =>
+        IMqttClient transport = DispatchProxy.Create<IMqttClient, CalibrationMqttClient>();
+        var client = (CalibrationMqttClient)(object)transport;
+        var control = new MQTTControl(transport);
+        Assert.True(await control.Connect());
+        try { await WpfTestHost.Invoke(RunOnDispatcher); }
+        finally { await control.DisconnectAsyncClient(); }
+
+        async Task RunOnDispatcher()
         {
             using var scope = new TestScope();
             using var device = CreateSpectrum();
+            MySqlConnectedEndpoint? current = null;
+            int databaseOpens = 0;
+            MySqlConnectedEndpoint Endpoint() => new(candidate => ReferenceEquals(candidate, current), () =>
+            {
+                databaseOpens++;
+                throw new InvalidOperationException("An expired calibration command must not use a database.");
+            });
+            if (retireBeforeReply)
+            {
+                device.SysResourceModel.Id = 41;
+                device.ResultDatabaseEndpoint = current = Endpoint();
+            }
             device.Config.NDConfig.IsBingNDDevice = false;
             device.SpectrumBackend.SetPreference(local);
             device.DService.Dispose();
-            using var mqtt = new RecordingSpectrum(device);
+            device.Config.SendTopic = "test/spectrum-nd/command";
+            device.Config.SubscribeTopic = "test/spectrum-nd/reply";
+            using var mqtt = new MQTTSpectrum(device, control, (_, _) => null, () => new Version(), _ => null);
             device.DService = mqtt;
             using var card = new DisplaySpectrum(device);
             var window = new Window { Content = card, Width = 350, Height = 600,
@@ -180,18 +207,43 @@ public sealed class SpectrumNdSelectionTests
                 Pump();
                 var selector = Assert.IsType<ComboBox>(card.FindName("ComboBoxCalibrationGroups"));
                 Assert.Equal("ND1", selector.SelectedValue);
-                Assert.Equal(0, mqtt.Commands);
+                Assert.Equal(0, client.Commands.Reader.Count);
                 Assert.True(selector.IsEnabled);
 
                 // A queued binding update after an internal apply must also remain passive.
                 device.Config.ActiveCalibrationGroupName = "ND2";
                 Pump();
                 Assert.Equal("ND2", selector.SelectedValue);
-                Assert.Equal(0, mqtt.Commands);
+                Assert.Equal(0, client.Commands.Reader.Count);
+                device.DisplayConfig.PortNum = 2;
                 selector.SelectedIndex = 0;
                 Pump();
-                Assert.Equal(local ? 0 : 1, mqtt.Commands);
+                Assert.Equal(local ? 0 : 1, client.Commands.Reader.Count);
                 Assert.Equal(local, selector.IsEnabled);
+                if (retireBeforeReply)
+                {
+                    Assert.Equal(2, device.DisplayConfig.PortNum);
+                    Assert.True(client.Commands.Reader.TryRead(out string? payload));
+                    var command = JObject.Parse(payload!);
+                    Assert.Equal("SetPort", command.Value<string>("EventName"));
+                    Assert.Equal(1, Assert.IsType<JObject>(command["params"]).Value<int>("PortNum"));
+
+                    // Keep the same device and resource ID while replacing its verified configuration source.
+                    device.ResultDatabaseEndpoint = current = Endpoint();
+                    await client.ReplyAsync(mqtt.SubscribeTopic, new MsgReturn
+                    {
+                        MsgID = command.Value<string>("MsgID")!, EventName = "SetPort", DeviceCode = device.Code,
+                        Code = 0, Data = new JObject { ["Port"] = 1 }
+                    });
+                    Pump();
+                    Assert.Equal("ND2", device.Config.ActiveCalibrationGroupName);
+                    Assert.Equal(2, device.DisplayConfig.PortNum);
+                    Assert.Equal(0, databaseOpens);
+                    Assert.True(selector.IsEnabled);
+                    Assert.True(device.CalibrationGroupChangeGuard.TryBeginUserSwitch());
+                    device.CalibrationGroupChangeGuard.CompleteUserSwitch();
+                    return;
+                }
                 if (local)
                 {
                     Assert.Equal("ND1", device.Config.ActiveCalibrationGroupName);
@@ -210,7 +262,7 @@ public sealed class SpectrumNdSelectionTests
                     Pump();
                     Assert.Equal(MsgRecordState.Fail, read.MsgRecordState);
                     Assert.Contains("启用 ND", (string)read.MsgReturn.Message);
-                    Assert.Equal(0, mqtt.Commands);
+                    Assert.Equal(0, client.Commands.Reader.Count);
                 }
 
                 // A missing external wheel is a passive no-op, including after a delayed binding update.
@@ -221,13 +273,13 @@ public sealed class SpectrumNdSelectionTests
                 device.Config.NDConfig.NDBindDeviceCode = "ND.NotLoaded";
                 string active = device.Config.ActiveCalibrationGroupName;
                 int port = device.DisplayConfig.PortNum;
-                int commands = mqtt.Commands;
+                int commands = client.Commands.Reader.Count;
                 selector.SelectedIndex = active == "ND1" ? 1 : 0;
                 Pump();
                 Assert.Equal(active, device.Config.ActiveCalibrationGroupName);
                 Assert.Equal(active, selector.SelectedValue);
                 Assert.Equal(port, device.DisplayConfig.PortNum);
-                Assert.Equal(commands, mqtt.Commands);
+                Assert.Equal(commands, client.Commands.Reader.Count);
             }
             finally
             {
@@ -235,7 +287,7 @@ public sealed class SpectrumNdSelectionTests
                 window.Close();
                 DockViewManager.GetInstance().RemoveView(device.ViewShell);
             }
-        });
+        }
     }
 
     [Theory]
@@ -309,7 +361,7 @@ public sealed class SpectrumNdSelectionTests
             using var scope = new TestScope();
             using var device = new DeviceCfwPort(new SysResourceModel { Id = -2, Code = "ND.Replies", Value = "{}" });
             device.DService.Dispose();
-            using var mqtt = new RecordingFilterWheel(device.Config);
+            using var mqtt = new RecordingFilterWheel(device.Config) { Device = device };
             device.DService = mqtt;
             var config = device.DisplayConfig;
             config.PortNum = 1;
@@ -328,6 +380,67 @@ public sealed class SpectrumNdSelectionTests
             mqtt.Immediate = true;
             mqtt.SetPort(4);
             Assert.Equal(4, config.PortNum);
+        });
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void WheelReadbackUpdatesOnlyItsCurrentWheelAndOriginallyBoundSpectra(bool retireWheel)
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            using var scope = new TestScope();
+            scope.AddZeroBasedPhysicalWheel();
+            var managerField = typeof(ServiceManager).GetField("_instance", BindingFlags.NonPublic | BindingFlags.Static)!;
+            object? previousManager = managerField.GetValue(null);
+            var manager = (ServiceManager)RuntimeHelpers.GetUninitializedObject(typeof(ServiceManager));
+            manager.DeviceServices = [];
+            using var wheel = new DeviceCfwPort(new SysResourceModel { Id = -2, Code = "ND.LateReply", Value = "{\"SN\":\"PHY.CFW.TEST\"}" });
+            using var original = CreateSpectrum();
+            using var unchanged = CreateSpectrum();
+            using var replacement = new DeviceSpectrum(new SysResourceModel
+            {
+                Code = original.Code,
+                Value = JsonConvert.SerializeObject(original.Config),
+            });
+            foreach (var spectrum in new[] { original, unchanged, replacement })
+            {
+                spectrum.Config.NDConfig.NDBindDeviceCode = wheel.Code;
+                spectrum.Config.NDConfig.IsBingNDDevice = true;
+                spectrum.DisplayConfig.PortNum = 1;
+            }
+            wheel.DService.Dispose();
+            using var mqtt = new RecordingFilterWheel(wheel.Config) { Device = wheel };
+            wheel.DService = mqtt;
+            wheel.DisplayConfig.PortNum = 1;
+            bool databaseCurrent = true;
+            wheel.SysResourceModel.Id = 81;
+            wheel.ResultDatabaseEndpoint = new MySqlConnectedEndpoint(_ => databaseCurrent,
+                () => throw new InvalidOperationException("Port readback must not open a database."));
+            manager.DeviceServices = [wheel, original, unchanged];
+            managerField.SetValue(null, manager);
+            try
+            {
+                using var card = new DisplayCfwPort(wheel);
+                typeof(DisplayCfwPort).GetMethod("GetPort_Click", BindingFlags.Instance | BindingFlags.NonPublic)!
+                    .Invoke(card, [card, new RoutedEventArgs()]);
+                MsgRecord record = Assert.IsType<MsgRecord>(mqtt.LastRecord);
+
+                manager.DeviceServices.Remove(original);
+                manager.DeviceServices.Add(replacement);
+                databaseCurrent = !retireWheel;
+                record.MsgReturn = new MsgReturn { Data = new JObject { ["Port"] = 4 } };
+                record.MsgRecordState = MsgRecordState.Success;
+                Pump();
+
+                Assert.Equal(retireWheel ? 1 : 4, wheel.DisplayConfig.PortNum);
+                Assert.Equal(retireWheel ? 1 : 4, unchanged.DisplayConfig.PortNum);
+                Assert.Equal(1, replacement.DisplayConfig.PortNum);
+                Assert.Equal("ND1", unchanged.Config.ActiveCalibrationGroupName);
+                Assert.Equal("ND1", replacement.Config.ActiveCalibrationGroupName);
+            }
+            finally { managerField.SetValue(null, previousManager); }
         });
     }
 
@@ -396,6 +509,128 @@ public sealed class SpectrumNdSelectionTests
             }
             finally { manager.DeviceServices.Remove(device); }
         });
+    }
+
+    [Fact]
+    public async Task ServiceFilterWheelCompletesSequentialCalibrationRepliesWhileDispatcherWaits()
+    {
+        IMqttClient transport = DispatchProxy.Create<IMqttClient, CalibrationMqttClient>();
+        var client = (CalibrationMqttClient)(object)transport;
+        var control = new MQTTControl(transport);
+        var managerField = typeof(ServiceManager).GetField("_instance", BindingFlags.NonPublic | BindingFlags.Static)!;
+        object? previousManager = managerField.GetValue(null);
+        TestScope? scope = null;
+        DeviceCfwPort? device = null;
+        List<int?> displayedPorts = [];
+        try
+        {
+            Assert.True(await control.Connect());
+            WpfTestHost.Invoke(() =>
+            {
+                scope = new TestScope();
+                scope.AddZeroBasedPhysicalWheel();
+                var manager = (ServiceManager)RuntimeHelpers.GetUninitializedObject(typeof(ServiceManager));
+                manager.DeviceServices = [];
+                managerField.SetValue(null, manager);
+                device = new DeviceCfwPort(new SysResourceModel { Id = -2, Code = "ND.ServiceCalibration", Value = "{}" });
+                device.DService.Dispose();
+                device.Config.SzComName = "COM9052";
+                device.Config.SendTopic = "test/cfw/cmd";
+                device.Config.SubscribeTopic = "test/cfw/status";
+                device.DisplayConfig.UseLocalCfwPort = false;
+                device.DService = new MQTTCfwPort(device.Config, control) { Device = device };
+                device.DisplayConfig.PortNum = 5;
+                device.DisplayConfig.PropertyChanged += (_, args) =>
+                {
+                    if (args.PropertyName == nameof(DisplayCfwPortConfig.PortNum))
+                        displayedPorts.Add(device.DisplayConfig.PortNum);
+                };
+                manager.DeviceServices.Add(device);
+            });
+
+            using var cancellation = new CancellationTokenSource(TimeSpan.FromSeconds(15));
+            Task replies = Task.Run(async () =>
+            {
+                (string Operation, int Port)[] expectedReplies = [("Open", -1), ("SetPort", 3), ("GetPort", 0)];
+                foreach (var expected in expectedReplies)
+                {
+                    string payload = await client.Commands.Reader.ReadAsync(cancellation.Token);
+                    Assert.DoesNotContain(nameof(MsgSend.CompleteWithoutDispatcher), payload);
+                    MsgSend command = JsonConvert.DeserializeObject<MsgSend>(payload)!;
+                    Assert.Equal(expected.Operation, command.EventName);
+                    if (command.EventName == "SetPort")
+                        Assert.Equal(0, ((JObject)command.Params).Value<int>("PortNum"));
+                    await client.ReplyAsync(device!.Config.SubscribeTopic, new MsgReturn
+                    {
+                        MsgID = command.MsgID, EventName = command.EventName, DeviceCode = command.DeviceCode,
+                        Code = 0, Data = new JObject { ["Port"] = expected.Port },
+                    });
+                }
+            });
+
+            using var finished = new ManualResetEventSlim();
+            Task? calibration = null;
+            bool completedWhileUiWaited = WpfTestHost.Invoke(() =>
+            {
+                calibration = Task.Run(() =>
+                {
+                    try
+                    {
+                        using (var wheel = new LocalSpectrumFilterWheel(new ShutterConfig
+                        { FilterWheelDeviceCode = device!.Code, UseFilterWheel = true, MeasurementPort = 5, DarkPort = 0 }))
+                            wheel.SetTransmitting(false);
+                        using var available = device!.DService.ReserveForCalibration();
+                    }
+                    finally { finished.Set(); }
+                });
+                return finished.Wait(TimeSpan.FromSeconds(5));
+            });
+
+            await Task.WhenAll(replies, calibration!).WaitAsync(cancellation.Token);
+            Assert.True(completedWhileUiWaited);
+            await WpfTestHost.Invoke(async () => await Dispatcher.Yield(DispatcherPriority.Background));
+            Assert.Equal(new int?[] { 0 }, displayedPorts);
+            Assert.Equal(DeviceStatusType.Opened, device!.DService.DeviceStatus);
+        }
+        finally
+        {
+            await control.DisconnectAsyncClient();
+            WpfTestHost.Invoke(() =>
+            {
+                device?.Dispose();
+                managerField.SetValue(null, previousManager);
+                scope?.Dispose();
+            });
+        }
+    }
+
+    public class CalibrationMqttClient : MQTTControlTests.ClientProxy
+    {
+        private Func<MqttApplicationMessageReceivedEventArgs, Task>? _messageReceived;
+        public Channel<string> Commands { get; } = Channel.CreateUnbounded<string>();
+
+        public Task ReplyAsync(string topic, MsgReturn response) => ReplyAsync(topic, JsonConvert.SerializeObject(response));
+
+        public Task ReplyAsync(string topic, string payload)
+        {
+            var message = new MqttApplicationMessageBuilder().WithTopic(topic).WithPayload(payload).Build();
+            return _messageReceived!(new("cfw-test", message, new MqttPublishPacket(), (_, _) => Task.CompletedTask));
+        }
+
+        protected override object? Invoke(MethodInfo? targetMethod, object?[]? args)
+        {
+            switch (targetMethod!.Name)
+            {
+                case "add_ApplicationMessageReceivedAsync":
+                    _messageReceived += (Func<MqttApplicationMessageReceivedEventArgs, Task>)args![0]!;
+                    return null;
+                case "PublishAsync":
+                    Commands.Writer.TryWrite(Encoding.UTF8.GetString(((MqttApplicationMessage)args![0]!).Payload));
+                    return Task.FromResult<MqttClientPublishResult>(null!);
+                default:
+                    return base.Invoke(targetMethod, args);
+            }
+        }
     }
 
     [Fact]
@@ -530,8 +765,9 @@ public sealed class SpectrumNdSelectionTests
     {
         public int Commands;
         public bool Immediate;
+        public MsgRecord? LastRecord;
         internal override MsgRecord PublishAsyncClient(MsgSend msg, double timeout = 30000)
-        { Commands++; return new() { MsgSend = msg, MsgRecordState = Immediate ? MsgRecordState.Success : MsgRecordState.Sended }; }
+        { Commands++; return LastRecord = new() { MsgSend = msg, MsgRecordState = Immediate ? MsgRecordState.Success : MsgRecordState.Sended }; }
     }
 
     private sealed class TestScope : IDisposable

@@ -206,7 +206,7 @@
     <value>相机设备名称</value>
   </data>
   <data name="Engine_PG_CameraDeviceNameDesc" xml:space="preserve">
-    <value>输入要使用的相机设备名称</value>
+    <value>选择相机，或输入相机的准确设备 Code。</value>
   </data>
 
   <data name="Engine_PG_DeviceIndex" xml:space="preserve">
@@ -228,7 +228,7 @@
     <value>光谱仪设备名称</value>
   </data>
   <data name="Engine_PG_SpectrometerDeviceNameDesc" xml:space="preserve">
-    <value>选择执行单次测试的光谱仪设备。</value>
+    <value>选择光谱仪，或输入光谱仪的准确设备 Code。</value>
   </data>
   <data name="Engine_PG_SpectrometerSettings" xml:space="preserve">
     <value>光谱仪设置</value>
@@ -685,6 +685,11 @@
   <data name="Cache" xml:space="preserve"><value>缓存</value></data>
   <data name="Camera_BrightnessThresholdRatio" xml:space="preserve"><value>亮度阈值比例</value></data>
   <data name="Camera_CaptureFailed" xml:space="preserve"><value>取图失败</value></data>
+  <data name="Camera_CaptureTimedOutUnconfirmed" xml:space="preserve"><value>取图超时，尚未确认本次取图结果。</value></data>
+  <data name="Scheduler_DeviceReferenceAmbiguous" xml:space="preserve"><value>设备标识对应多个设备，请在定时任务设置中重新选择设备。</value></data>
+  <data name="Scheduler_DeviceReferenceUnavailable" xml:space="preserve"><value>找不到所选设备，请在定时任务设置中重新选择设备。</value></data>
+  <data name="Scheduler_DeviceCaptureInProgress" xml:space="preserve"><value>该设备上一条定时采集命令尚未结束，本次触发已跳过。</value></data>
+  <data name="Scheduler_DeviceReplyWaitTimedOut" xml:space="preserve"><value>定时任务等待设备回执超时，本次采集结果尚未确认。</value></data>
   <data name="Camera_ConfirmRestartService" xml:space="preserve"><value>是否重启服务？</value></data>
   <data name="Camera_CrossGuide" xml:space="preserve"><value>十字导引</value></data>
   <data name="Camera_CrossGuideRegion" xml:space="preserve"><value>十字导引区域</value></data>
@@ -1046,7 +1051,7 @@
   <data name="SpectrumIntegrationTime" xml:space="preserve"><value>积分时间 (ms)</value></data>
   <data name="SpectrumNdPosition" xml:space="preserve"><value>ND 孔位</value></data>
   <data name="SpectrumVoltage" xml:space="preserve"><value>电压 (V)</value></data>
-  <data name="SpectrumCurrent" xml:space="preserve"><value>电流 (A)</value></data>
+  <data name="SpectrumCurrent" xml:space="preserve"><value>手填电流（本地 A / 服务 mA）</value></data>
   <data name="SpectrumCalibrationFileSettingsHint" xml:space="preserve"><value>管理波长与幅值文件；也可从标定分组窗口编辑。</value></data>
   <data name="ShutterConfig" xml:space="preserve"><value>快门设置</value></data>
   <data name="SelfAdaptionInitDark" xml:space="preserve"><value>自适应校零设置</value></data>
@@ -2844,6 +2849,7 @@
   <data name="CameraPanel_StopPreviewHint" xml:space="preserve"><value>停止连续画面；本地相机保留连接</value></data>
   <data name="CameraPanel_PreviewRecovering" xml:space="preserve"><value>未收到新帧，正在恢复视频…</value></data>
   <data name="CameraPanel_PreviewRecoveryFailed" xml:space="preserve"><value>视频自动恢复失败，预览已停止。可重新打开视频。</value></data>
+  <data name="Camera_ResultImageOpenFailed" xml:space="preserve"><value>无法打开采集结果（ID {0}）。请检查结果文件和运行日志。</value></data>
   <data name="CameraPanel_ServicePreviewHint" xml:space="preserve"><value>请先断开服务相机，再开始本地预览</value></data>
   <data name="CameraPanel_Averages" xml:space="preserve"><value>平均</value></data>
   <data name="CameraPanel_MotorJogLeft" xml:space="preserve"><value>向左点动</value></data>
@@ -4576,4 +4582,10 @@
   <data name="Flow_PostProcess_InvalidConfiguration" xml:space="preserve"><value>配置无效</value></data>
   <data name="Flow_PostProcess_InvalidConfigurationHint" xml:space="preserve"><value>无法读取已保存的后处理参数。请编辑此项并重新配置。</value></data>
   <data name="在{0}添加设备" xml:space="preserve"><value>在{0}添加设备</value></data>
+  <data name="AlgorithmSideSaveFailures" xml:space="preserve"><value>{0} 条结果的数据列保存失败（ID {1}）。请查看运行日志，修正问题后重新保存这些结果。</value></data>
+  <data name="PoiHistoryDetailsUnavailable" xml:space="preserve"><value>无法加载结果明细（ID {0}）。请检查数据库连接和运行日志，修复后重新选择该结果或重试保存数据列。</value></data>
+  <data name="数据库连接已更改，请刷新统计后再执行。" xml:space="preserve"><value>数据库连接已更改，请刷新统计后再执行。</value></data>
+  <data name="请连接数据库并刷新统计。" xml:space="preserve"><value>请连接数据库并刷新统计。</value></data>
+  <data name="重新加载终端设备" xml:space="preserve"><value>重新加载终端设备</value></data>
+  <data name="未能提交终端设备重载请求。" xml:space="preserve"><value>未能提交终端设备重载请求。</value></data>
 </root>

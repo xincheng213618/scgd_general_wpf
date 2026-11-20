@@ -5,9 +5,7 @@ using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Core;
 using ColorVision.Database;
-using ColorVision.Engine.Messages;
 using ColorVision.Engine.Media;
-using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.Templates.POI.BuildPoi;
 using ColorVision.Engine.Templates.POI.POIGenCali;
 using ColorVision.Engine.Services;
@@ -47,6 +45,7 @@ namespace ColorVision.Engine.Templates.POI
     public partial class EditPoiParam : Window
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(EditPoiParam));
+        private readonly PoiBackgroundCapture _backgroundCapture = new();
         private bool _isClosing;
         private bool _isLoadingPoi;
         private bool _poiLoadFailed;
@@ -66,6 +65,7 @@ namespace ColorVision.Engine.Templates.POI
             Closed += (_, _) =>
             {
                 _isClosing = true;
+                _backgroundCapture.Cancel();
                 var config = EditPoiParamConfig.Instance;
                 // Persist preferences without retaining columns or menu handlers from this window.
                 if (ReferenceEquals(config.GridViewColumnVisibilitys, GridViewColumnVisibilitys))
@@ -348,6 +348,7 @@ namespace ColorVision.Engine.Templates.POI
         private bool Init;
         private void CreateImage(int width, int height, Color color,bool IsClear = true)
         {
+            _backgroundCapture.Cancel();
             ImageView.SetLayerController(null);
             ImageView.SetImageSource(ImageUtils.CreateSolidColorDrawing(width, height, color), false, false);
             ImageView.UpdateZoomAndScale();
@@ -1495,56 +1496,8 @@ namespace ColorVision.Engine.Templates.POI
             });
         }
 
-        private void TakePhoto_Click(object sender, RoutedEventArgs e)
-        {
-            var lsit = ServiceManager.GetInstance().DeviceServices.OfType<DeviceCamera>().ToList();
-            DeviceCamera deviceCamera = lsit.FirstOrDefault();
-            
-
-            MsgRecord msgRecord = deviceCamera?.DisplayCameraControlLazy.Value.TakePhoto();
-
-            if (msgRecord != null)
-            {
-                msgRecord.MsgSucessed += (s,e) =>
-                {
-                    int masterId = Convert.ToInt32(e.Data.MasterId);
-                    List<MeasureResultImgModel> resultMaster = null;
-                    if (masterId > 0)
-                    {
-                        resultMaster = new List<MeasureResultImgModel>();
-                        MeasureResultImgModel model = MeasureImgResultDao.Instance.GetById(masterId);
-                        if (model != null)
-                            resultMaster.Add(model);
-                    }
-                    if (resultMaster != null)
-                    {
-                        foreach (MeasureResultImgModel result in resultMaster)
-                        {
-                            try
-                            {
-                                if (result.FileUrl != null)
-                                {
-                                    ImageView.OpenImage(result.FileUrl);
-                                    PoiConfig.BackgroundFilePath = result.FileUrl;
-                                }
-                                else
-                                {
-                                    MessageBox.Show(Properties.Resources.OpenLatestServiceImageFailedNoPath);
-                                }
-                            }
-                            catch (Exception ex)
-                            {
-                                MessageBox.Show(Properties.Resources.OpenLatestServiceImageFailed, ex.Message);
-                            }
-                        }
-                    }
-
-
-
-                };
-
-            }
-        }
+        private async void TakePhoto_Click(object sender, RoutedEventArgs e)
+            => await _backgroundCapture.CaptureAsync(ImageView, () => PoiConfig);
 
         private void Button_Click_3(object sender, RoutedEventArgs e)
         {

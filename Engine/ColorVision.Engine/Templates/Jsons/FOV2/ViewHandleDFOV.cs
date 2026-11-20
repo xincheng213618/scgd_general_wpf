@@ -133,8 +133,8 @@ namespace ColorVision.Engine.Templates.Jsons.FOV2
         {
             if (result.ViewResults == null)
             {
+                List<DetailCommonModel> AlgResultModels = result.ReadPersistedDetails(DeatilCommonDao.Instance);
                 result.ViewResults = new ObservableCollection<IViewResult>();
-                List<DetailCommonModel> AlgResultModels = DeatilCommonDao.Instance.GetAllByPid(result.Id);
                 foreach (var item in AlgResultModels)
                 {
                     DFovView view1 = new DFovView(item);

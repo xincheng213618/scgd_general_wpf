@@ -11,14 +11,35 @@ using System.Windows;
 namespace ColorVision.Engine.Services.Devices.CfwPort;
 
 // Local SDK commands have no MQTT timer. Consumers must wait for native completion before releasing a calibration reservation.
-internal sealed class LocalCfwPortRecord : MsgRecord { }
+internal sealed class LocalCfwPortRecord(bool completeWithoutDispatcher) : MsgRecord(completeWithoutDispatcher) { }
 
 public partial class DeviceCfwPort
 {
     internal LocalCfwPortSession LocalSession { get; }
     internal CfwPortBackendState CfwBackend { get; private set; } = null!;
-    private bool localDisposed;
+    private volatile bool localDisposed;
     private bool autoConnectAttempted;
+
+    internal Func<bool> CapturePortCommandOwnership(MQTTCfwPort service)
+    {
+        var target = CaptureConfigurationTarget();
+        var config = Config;
+        var connection = LocalCfwPortConnection.From(config);
+        var endpoint = ResultDatabaseEndpoint;
+        string? serialNumber = config.SN;
+        string sendTopic = service.SendTopic;
+        string subscribeTopic = service.SubscribeTopic;
+        var manager = ServiceManager.Current;
+        bool managed = manager?.DeviceServices.Any(device => ReferenceEquals(device, this)) == true;
+        return () => !localDisposed && !service.IsDisposed && ReferenceEquals(DService, service) && target.IsCurrent(this)
+            && ReferenceEquals(ResultDatabaseEndpoint, endpoint)
+            && ReferenceEquals(Config, config) && LocalCfwPortConnection.From(config) == connection
+            && string.Equals(config.SN, serialNumber, StringComparison.Ordinal)
+            && string.Equals(service.SendTopic, sendTopic, StringComparison.Ordinal)
+            && string.Equals(service.SubscribeTopic, subscribeTopic, StringComparison.Ordinal)
+            && (!managed || (ReferenceEquals(ServiceManager.Current, manager)
+                && manager!.DeviceServices.Any(device => ReferenceEquals(device, this))));
+    }
 
     internal bool TryBeginLocalAutoConnect()
     {
@@ -80,7 +101,10 @@ public partial class DeviceCfwPort
     {
         message.MsgID ??= Guid.NewGuid().ToString();
         message.DeviceCode ??= Code;
-        var record = new LocalCfwPortRecord { MsgID = message.MsgID, MsgSend = message, SendTime = DateTime.Now, MsgRecordState = MsgRecordState.Sended };
+        var record = new LocalCfwPortRecord(message.CompleteWithoutDispatcher)
+        {
+            MsgID = message.MsgID, MsgSend = message, SendTime = DateTime.Now, MsgRecordState = MsgRecordState.Sended
+        };
         var config = LocalCfwPortConnection.From(Config);
         async Task Run()
         {
@@ -92,24 +116,31 @@ public partial class DeviceCfwPort
                 port = await ExecuteLocalCfwAsync(message.EventName, config, requested, false, CancellationToken.None).ConfigureAwait(false);
             }
             catch (Exception ex) { failure = ex; MQTTServiceBase.log.Error(ex); }
-            void Finish()
+            var response = new MsgReturn
             {
-                record.ReciveTime = DateTime.Now;
-                record.MsgReturn = new MsgReturn { MsgID = record.MsgID, DeviceCode = message.DeviceCode, EventName = message.EventName,
-                    Code = failure == null ? 0 : -1, Message = failure?.Message ?? "ok", Data = port.HasValue ? new JObject { ["Port"] = port.Value } : new JObject() };
-                record.MsgRecordState = failure == null ? MsgRecordState.Success : MsgRecordState.Fail;
-                if (!localDisposed) SetMsgRecordChanged(record);
+                MsgID = record.MsgID, DeviceCode = message.DeviceCode, EventName = message.EventName,
+                Code = failure == null ? 0 : -1, Message = failure?.Message ?? "ok",
+                Data = port.HasValue ? new JObject { ["Port"] = port.Value } : new JObject()
+            };
+            void NotifyDevice() { if (!localDisposed) SetMsgRecordChanged(record); }
+            void Finish() { record.CompleteWithResponse(response); NotifyDevice(); }
+            var dispatcher = Application.Current?.Dispatcher;
+            if (message.CompleteWithoutDispatcher)
+            {
+                record.CompleteWithResponse(response);
+                if (dispatcher != null) _ = dispatcher.InvokeAsync(NotifyDevice);
+                else NotifyDevice();
             }
-            if (Application.Current?.Dispatcher is { } dispatcher) await dispatcher.InvokeAsync(Finish);
+            else if (dispatcher != null) await dispatcher.InvokeAsync(Finish);
             else Finish();
         }
         _ = Run(); // Enter the session before returning, preserving Open/Close ordering.
         return record;
     }
 
-    internal void UpdateLocalPort(int port)
+    internal void UpdateLocalPort(int port, Func<bool>? ownsPort = null)
     {
-        void Update() { if (!localDisposed) DisplayConfig.PortNum = port; }
+        void Update() { if (!localDisposed && (ownsPort?.Invoke() ?? true)) DisplayConfig.PortNum = port; }
         if (Application.Current?.Dispatcher is { } dispatcher && !dispatcher.CheckAccess()) dispatcher.BeginInvoke(Update);
         else Update();
     }

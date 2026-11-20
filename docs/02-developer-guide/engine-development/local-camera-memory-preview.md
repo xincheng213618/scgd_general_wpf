@@ -83,13 +83,15 @@ flowchart LR
 
 当前主面板与本地管理窗口共用 RAW 位图 helper，映射为单通道 8/16-bit → Gray8/Gray16、三通道 8/16-bit → Bgr24/Rgb48。helper 拒绝其它组合和长度不匹配，使用紧凑源 stride 和 CVRAW 解码链相同的 OpenCV 位图转换；16 位三通道 BGR 在显示副本中转为 RGB48，不交换第 2、3 通道，不修改源分量顺序或数值。实机颜色仍需核对。
 
+主面板自动对焦过程图在原生评价回调中同步从借用的 RAW 数据生成独立的冻结位图。设备的 Dispatcher 队列只接管该预览快照。回调返回后，原生数据即可释放，过程预览无需占用采集 RAW 缓冲池。
+
 后续指针 Presenter 仍须分别使用源/目标行步长，验证长度、通道排列、非对齐宽度和单/多行样例。当前 helper 复制托管数组的行为不能证明零拷贝指针寿命、并发读写或硬件通道含义正确；不要在新显示路径中重新加入没有采集协议依据的颜色转换。
 
 RAW 与 CIE 可能处于不同翻转状态：只翻转最终 CIE 的流程，原 RAW 不一定与 POI 坐标同向；无校正帧还可能延迟翻转。预览要选择对应方向的显示副本并明确坐标映射，不为显示提前改写下游还需使用的传感器数据。
 
 ### CIE 使用当前测量与图层契约
 
-`CVRawOpen.AttachLiveCvcie` 当前接收 byte[]，由 PoiMeasurementBuffer 保留托管平面 CIE，测量时短暂固定数组并交给本地 `opencv_helper.dll`；图层控制器也保留该 CIE 数据，并克隆一份原显示位图。
+`CVRawOpen.AttachLiveCvcie` 接收 byte[]，由 `PoiMeasurementBuffer` 保留托管平面 CIE，测量时短暂固定数组并交给本地 `opencv_helper.dll`。图层控制器共享该 CIE 数据。主面板保留独立的可编辑显示，恢复 Composite 时复用相机预览已经持有的冻结原图。未传入捕获快照的接入方沿用图层控制器保存原图的行为。
 
 因此 FullCie 的指针优化需要覆盖 PoiMeasurementBuffer、测量调用与图层读取的共同所有权；仅把测量接口换成 IntPtr 不能替代当前挂载链，也不能证明零拷贝或 native 已接管数据。
 

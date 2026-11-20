@@ -37,6 +37,7 @@ related: ["flow.index","flow.templates","ui.property-grid"]
 | 数据转换不像文件转换器 | `AlgDataConvertNode` 只覆盖当前枚举和上游结果转换 |
 | 图像转换输出不对 | `ImageFormat`、`Channel`、上游图像参数、输出文件名 |
 | 校准模板面板不出现 | 选中的 `DeviceCalibration` / `DeviceCamera` 是否有 `PhyCamera` |
+| MQTT 校准节点完成，视图无图像 | 核对原请求的回执、数据库来源及图像文件。 [校准结果回显](../../01-user-guide/devices/calibration.md#结果显示与历史落库不是同一件事) |
 | 旧色差校正节点找不到 | 节点已从目录隐藏；仅保留类型用于旧流程反序列化 |
 
 ## 真实入口

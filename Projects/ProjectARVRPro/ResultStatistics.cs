@@ -1201,7 +1201,7 @@ namespace ProjectARVRPro
             }
 
             int exportedCount = 0;
-            AtomicCsvFile.Write(filePath, stagingPath =>
+            AtomicResultFile.Write(filePath, stagingPath =>
             {
                 InitializeSchema();
                 using SqlSugarClient db = CreateClient();

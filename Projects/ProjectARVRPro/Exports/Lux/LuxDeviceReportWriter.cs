@@ -58,7 +58,7 @@ internal static class LuxDeviceReportWriter
         {
             path = Path.GetFullPath(path);
             Directory.CreateDirectory(Path.GetDirectoryName(path)!);
-            AtomicCsvFile.Write(path, write, cancellationToken);
+            AtomicResultFile.Write(path, write, cancellationToken);
         }
         catch (Exception ex)
         {

@@ -32,7 +32,7 @@ MQTT 传输与设备请求见[消息契约](../../02-developer-guide/engine-deve
 
 `MqttRCService` 构造时缓存订阅，MQTT 重连后恢复订阅并触发注册。
 
-允许本次注册时，`RegistCore` 清空节点 Token、`ServiceTokens`，立即更新内部 `IsConnect=false` 并在需要时将界面通知投递到 Dispatcher，随后发起发布。`RequestRegist()` 对保活超时和令牌刷新检查三秒间隔。主动连接、MQTT 重连与 `Event_NotRegist` 回包走 `Regist()`。MQTT 断开时会取消排队中的重注册并清 RC 连接状态。`Regist()` 返回 true 表示已发起发布，注册结果由后续回包更新。
+允许本次注册时，`RegistCore` 清空节点 Token、`ServiceTokens`，立即更新内部 `IsConnect=false` 并在需要时将界面通知投递到 Dispatcher，随后发起发布。`RequestRegist()` 对保活超时和令牌刷新检查三秒间隔。主动连接、MQTT 重连与 `Event_NotRegist` 回包走强制注册。MQTT 断开时取消排队中的重注册并清 RC 连接状态。延迟重注册只在所属 MQTT 连接仍然有效时启动。`Regist()` 返回 true 表示已发起发布，注册结果由后续回包更新。
 
 收到当前 `SubscribeTopic` 上的 `Event_Startup` 且 `Data.Token` 非空后，回调记录 Token 和本地接收时间，置 `IsConnect=true` 并将界面通知投递到 Dispatcher，再查询服务。`Connect()` 最多等待三秒，成功条件是共享连接标志置真。Startup 回包与等待中的注册请求没有请求 ID 关联，回调也不检查 `AccessToken` 内容。设备就绪需另行核对服务树、设备初始化及命令回包。
 
@@ -53,7 +53,7 @@ MQTT 传输与设备请求见[消息契约](../../02-developer-guide/engine-deve
 
 `DoUpdateServices` / `UpdateServiceStatus` 检查 `ServiceManager.Current`，不会为处理回包提前创建管理器。仅当实例为 null 时，才分别调用 `PendingServiceUpdateBuffer.StoreServices` / `StoreStatuses`；实例存在时直接尝试应用，不另外等待服务树“完全就绪”。
 
-缓冲持有两类对象的引用：同类新快照覆盖旧快照，不按设备合并、不逐条重放、不深拷贝或写盘。两个槽独立更新，所以可以取到服务列表 S2 和状态 T1；锁只保护存取，**不证明它们来自同一时刻、同一版本或同一远端事务。**
+缓冲持有两类对象的引用。同类新快照覆盖旧快照，两个槽独立更新。MQTT 断开或 RC 释放时清空早到槽。同一连接内的列表和状态可能来自不同时间的回包。
 
 服务初始化依次执行：
 
@@ -76,13 +76,13 @@ MQTT 传输与设备请求见[消息契约](../../02-developer-guide/engine-deve
 
 ### 顺序更新、部分生效与通知
 
-两种服务枚举不能直接按数字互换。`ApplyServices` 按名称调用 `Enum.Parse`，例如回包包含 `CVServiceType.Client` 或 `Archived` 时，本地 `ServiceTypes` 没有同名成员，会在查找本地类型之前抛出；这类条目不会因“没有本地类型”自动跳过。
+`ApplyServices` 按成员名匹配两种服务枚举。缺少本地同名成员的远端类型（如 `Client`、`Archived`）和未定义的远端枚举值跳过本地配置更新。远端目录仍可列出这些服务。
 
-`UpdateServices` 依次清空并重建 `ServiceTokens`、应用或缓冲服务列表，最后调用 `ServiceTokensUpdated`。这些步骤不是原子事务：目录重建中途异常可能留下空目录或部分目录，并阻止后续本地应用；本地应用异常可能留下新目录及部分已写入的配置，并阻止通知。通知失败也不会撤销之前的写入。因此未收到通知不等于状态未改变；收到通知也不是本地服务树已完整匹配的证明，管理器尚不存在时可能只是入槽。
+`UpdateServices` 先完整构建 `ServiceTokens` 再替换目录引用，然后应用或缓冲服务列表并调用 `ServiceTokensUpdated`。缺少服务编码或设备编码的条目跳过；缺少设备列表的有效服务保留在目录中。并行的流程读取方可继续枚举已取得的目录，下一次读取会取得当前目录。断开连接时发布空目录。目录发布、本地应用和通知分阶段完成，本地应用失败时可能已有部分配置写入。
 
-列表/状态接收分支只检查反序列化出的响应对象非空，未以响应 `Code` 为成功门禁，也没有按本次查询的 MsgId 关联。`Data=null` 仍可能进入更新委托，不能把“收到查询回包”当作有效完整快照。
+列表和状态接收分支在回包带有 `Data` 时投递更新。Dispatcher 执行更新时复核快照所属的 MQTT 连接。首个 RC Token 到达前的快照也可应用或缓冲。回包仍按主题匹配，查询的 `MsgId` 和回包 `Code` 不参与关联。
 
-`ApplyServiceStatus` 按终端 `ServiceCode`、设备 `Code` 顺序匹配，解析状态字符串后交给通信对象的 `DeviceStatus` setter。找不到对应项会跳过，保留旧状态，不自动标成离线。遇到无法解析的状态字符串等同步异常时，没有逐设备捕获或整批回滚：先前写入可以保留，后续项不再由此次调用处理。
+`ApplyServiceStatus` 按终端 `ServiceCode`、设备 `Code` 顺序匹配，把可识别的状态交给通信对象的 `DeviceStatus` setter。缺少状态项、没有设备列表或状态值未知时保留该设备的旧状态，继续处理其余匹配项。
 
 异常传播取决于入口，不能统一说成“消息回调已经捕获”或“一定导致程序退出”：
 
@@ -96,7 +96,7 @@ MQTT 传输与设备请求见[消息契约](../../02-developer-guide/engine-deve
 
 ### 存活时间不等于设备状态有效期
 
-`ApplyServiceStatus` 尝试将远端 `LiveTime` 解析为 `DateTime`，但后续未使用解析值验证新鲜度，不据此计算单设备状态过期时间。`KeepLive` 的十秒阈值检查的是本地 RC 消息接收时间 `LastAliveTime`，用于触发重注册，不是设备状态 TTL；到达当前 RC 订阅主题的消息会在 JSON 解析前刷新该时间。
+快照应用不根据远端 `LiveTime` 判定状态新鲜度。`KeepLive` 的十秒阈值基于本地 RC 消息接收时间 `LastAliveTime`，用于触发重注册。到达当前 RC 订阅主题的消息会在 JSON 解析前刷新该时间。
 
 服务树装配、实际设备许可/初始化、命令参数、匹配 MsgID 的返回结果各有检查。尤其不要把存活时间变化或 RC 状态同步直接说成“相机已经能采集”，具体条件见[相机服务](../../01-user-guide/devices/camera.md)。
 

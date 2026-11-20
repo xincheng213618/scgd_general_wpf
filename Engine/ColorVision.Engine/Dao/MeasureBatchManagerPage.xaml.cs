@@ -29,6 +29,8 @@ namespace ColorVision.Engine
 
     public class ViewBatchResult : ViewModelBase
     {
+        private bool _isExecutingPostProcess;
+
         public MeasureBatchModel MeasureBatchModel { get; set; }
 
         public ContextMenu ContextMenu { get; set; }
@@ -93,26 +95,33 @@ namespace ColorVision.Engine
             }
         }
 
-        private void ProcessMenuItem_Click(object sender, RoutedEventArgs e)
+        private async void ProcessMenuItem_Click(object sender, RoutedEventArgs e)
         {
             if (sender is MenuItem menuItem && menuItem.Tag is IPostProcessor process)
             {
-                ExecuteProcess(process);
+                menuItem.IsEnabled = false;
+                try { await ExecuteProcessAsync(process); }
+                finally { menuItem.IsEnabled = true; }
             }
         }
 
-        private void ExecuteProcess(IPostProcessor process)
+        internal async Task ExecuteProcessAsync(IPostProcessor process)
         {
+            if (_isExecutingPostProcess)
+                return;
+
+            _isExecutingPostProcess = true;
             try
             {
+                var batch = MeasureBatchModel;
                 var context = new PostProcessContext
                 {
-                    Batch = MeasureBatchModel,
+                    Batch = batch,
                     Config = PostProcessConfig.Instance,
-                    FlowName = TemplateFlow.Params.FirstOrDefault(item => item.Id == MeasureBatchModel.TId)?.Key ?? string.Empty
+                    FlowName = TemplateFlow.Params.FirstOrDefault(item => item.Id == batch.TId)?.Key ?? string.Empty
                 };
 
-                bool success = process.Process(context);
+                bool success = await process.ProcessAsync(context);
                 
                 if (success)
                 {
@@ -128,6 +137,10 @@ namespace ColorVision.Engine
             catch (Exception ex)
             {
                 MessageBox.Show(string.Format(Properties.Resources.Flow_MeasureBatch_ProcessError, ex.Message), "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            finally
+            {
+                _isExecutingPostProcess = false;
             }
         }
     }
@@ -191,11 +204,26 @@ namespace ColorVision.Engine
 
         private static List<MeasureBatchModel> QueryBatches(string? batchCode, int count, OrderByType order)
         {
-            using var db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
+            using var db = CreateHistoryDatabaseClient(out var endpoint);
             var query = db.Queryable<MeasureBatchModel>();
             if (!string.IsNullOrWhiteSpace(batchCode)) query = query.Where(item => item.Code == batchCode);
-            return query.OrderBy(item => item.Id, order).Take(count).ToList();
+            var batches = query.OrderBy(item => item.Id, order).Take(count).ToList();
+            foreach (var batch in batches) batch.DatabaseEndpoint = endpoint;
+            return batches;
         }
+
+        internal static SqlSugarClient CreateHistoryDatabaseClient(out MySqlConnectedEndpoint? endpoint)
+        {
+            endpoint = MySqlControl.GetInstance().ConnectedEndpoint;
+            return endpoint?.CreateDbClient() ?? MySqlControl.CreateDbClient();
+        }
+
+        internal GenericQuery<MeasureBatchModel, ViewBatchResult> CreateHistoryQuery(SqlSugarClient db, MySqlConnectedEndpoint? endpoint) =>
+            new(db, ViewResults, batch =>
+            {
+                batch.DatabaseEndpoint = endpoint;
+                return new ViewBatchResult(batch);
+            }) { IsReadOnly = true };
 
         private void ReplaceResults(IEnumerable<MeasureBatchModel> batches)
         {
@@ -208,12 +236,10 @@ namespace ColorVision.Engine
 
         public void GenericQuery()
         {
-            var DB = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
-
-            GenericQuery<MeasureBatchModel, ViewBatchResult> genericQuery = new GenericQuery<MeasureBatchModel, ViewBatchResult>(DB, ViewResults, t => new ViewBatchResult(t));
-            GenericQueryWindow genericQueryWindow = new GenericQueryWindow(genericQuery) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }; ;
-            genericQueryWindow.ShowDialog();
-            DB.Dispose();
+            using var db = CreateHistoryDatabaseClient(out var endpoint);
+            var window = new GenericQueryWindow(CreateHistoryQuery(db, endpoint))
+                { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
+            window.ShowDialog();
         }
 
     }
@@ -233,6 +259,7 @@ namespace ColorVision.Engine
         public Frame Frame { get; set; }
         
         private IPostProcessor _selectedProcess;
+        private bool _isExecutingPostProcess;
         private INotifyPropertyChanged _currentProcessConfig;
         private PropertyChangedEventHandler _configChangedHandler;
         private CopilotDynamicContextSession? _copilotContextSession;
@@ -494,40 +521,23 @@ namespace ColorVision.Engine
         
         private void UpdateExecuteButtonState()
         {
-            ExecuteButton.IsEnabled = listView1.SelectedItem != null && _selectedProcess != null;
+            ExecuteButton.IsEnabled = !_isExecutingPostProcess && listView1.SelectedItem != null && _selectedProcess != null;
             OpenResultButton.IsEnabled = listView1.SelectedItem != null;
             OpenAnalysisButton.IsEnabled = listView1.SelectedItem != null;
         }
         
-        private void ExecuteProcess_Click(object sender, RoutedEventArgs e)
+        private async void ExecuteProcess_Click(object sender, RoutedEventArgs e)
         {
-            if (listView1.SelectedItem is ViewBatchResult viewBatch && _selectedProcess != null)
-            {
-                try
-                {
-                    var context = new PostProcessContext
-                    {
-                        Batch = viewBatch.MeasureBatchModel,
-                        Config = PostProcessConfig.Instance,
-                        FlowName = TemplateFlow.Params.FirstOrDefault(item => item.Id == viewBatch.MeasureBatchModel.TId)?.Key ?? string.Empty
-                    };
+            if (_isExecutingPostProcess || listView1.SelectedItem is not ViewBatchResult viewBatch || _selectedProcess is not { } process)
+                return;
 
-                    bool success = _selectedProcess.Process(context);
-                    
-                    var metadata = PostProcessMetadata.FromProcess(_selectedProcess);
-                    if (success)
-                    {
-                        MessageBox.Show(string.Format(Properties.Resources.Flow_MeasureBatch_ProcessSuccess, metadata.DisplayName), "ColorVision", MessageBoxButton.OK, MessageBoxImage.Information);
-                    }
-                    else
-                    {
-                        MessageBox.Show(string.Format(Properties.Resources.Flow_MeasureBatch_ProcessFailed, metadata.DisplayName), "ColorVision", MessageBoxButton.OK, MessageBoxImage.Warning);
-                    }
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show(string.Format(Properties.Resources.Flow_MeasureBatch_ProcessError, ex.Message), "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error);
-                }
+            _isExecutingPostProcess = true;
+            UpdateExecuteButtonState();
+            try { await viewBatch.ExecuteProcessAsync(process); }
+            finally
+            {
+                _isExecutingPostProcess = false;
+                UpdateExecuteButtonState();
             }
         }
 
@@ -572,16 +582,15 @@ namespace ColorVision.Engine
 
         private void AdvanceQuery_Click(object sender, RoutedEventArgs e)
         {
-            using var DB = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
-
-            GenericQuery<MeasureBatchModel, ViewBatchResult> genericQuery = new GenericQuery<MeasureBatchModel, ViewBatchResult>(DB, ViewResults, t => new ViewBatchResult(t));
+            using var db = MeasureBatchManager.CreateHistoryDatabaseClient(out var endpoint);
+            var genericQuery = MeasureBatchManager.CreateHistoryQuery(db, endpoint);
             var queryAttempted = false;
             var querySucceeded = false;
             genericQuery.PreQuery += (_, _) => queryAttempted = true;
             genericQuery.QueryCompleted += (_, _) => querySucceeded = true;
-            GenericQueryWindow genericQueryWindow = new GenericQueryWindow(genericQuery) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }; ;
+            var genericQueryWindow = new GenericQueryWindow(genericQuery)
+                { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
             genericQueryWindow.ShowDialog();
-            DB.Dispose();
             if (queryAttempted)
             {
                 _requestedBatchCode = "<advanced>";

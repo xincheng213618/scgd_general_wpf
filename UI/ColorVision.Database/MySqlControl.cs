@@ -5,6 +5,7 @@ using SqlSugar;
 using System;
 using System.IO;
 using System.Runtime.ExceptionServices;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 
@@ -152,6 +153,9 @@ namespace ColorVision.Database
         private static readonly ILog log = LogManager.GetLogger(typeof(MySqlControl));
         private static MySqlControl _instance;
         private static readonly object _locker = new();
+        private readonly object _connectionLock = new();
+        private long _connectionAttemptId;
+        private MySqlConnectedEndpoint? _connectedEndpoint;
         public static MySqlControl GetInstance() { lock (_locker) { return _instance ??= new MySqlControl(); } }
 
         public static MySqlConfig Config => MySqlSetting.Instance.MySqlConfig;
@@ -164,86 +168,126 @@ namespace ColorVision.Database
 
         public event EventHandler MySqlConnectChanged;
 
-        public bool IsConnect
-        {
-            get => _IsConnect;
-            private set
-            {
-                _IsConnect = value;
-                if (Application.Current?.Dispatcher.CheckAccess() == true)
-                {
-                    OnPropertyChanged();
-                    MySqlConnectChanged?.Invoke(this, EventArgs.Empty);
-                }
-                else
-                {
-                    Application.Current?.Dispatcher.Invoke(() =>
-                    {
-                        OnPropertyChanged();
-                        MySqlConnectChanged?.Invoke(this, EventArgs.Empty);
-                    });
-                }
-            }
-        }
-        private bool _IsConnect;
+        public bool IsConnect => _IsConnect;
+        private volatile bool _IsConnect;
+
+        public MySqlConnectedEndpoint? ConnectedEndpoint => Volatile.Read(ref _connectedEndpoint);
 
         private static readonly char[] separator = new[] { ';' };
 
-        public Task<bool> Connect()
+        public async Task<bool> Connect() => (await ConnectWithOutcomeAsync().ConfigureAwait(false)).Outcome == MySqlConnectOutcome.Connected;
+
+        public Task<MySqlConnectionAttempt> ConnectWithOutcomeAsync() => ConnectCoreAsync(Config, ValidateConnection);
+
+        internal Task<MySqlConnectionAttempt> ConnectAsync(MySqlConfig config, Action<MySqlConnectedEndpoint> validate) =>
+            ConnectCoreAsync(config, (endpoint, _) => validate(endpoint));
+
+        private async Task<MySqlConnectionAttempt> ConnectCoreAsync(MySqlConfig config, Action<MySqlConnectedEndpoint, Func<bool>> validate)
         {
-            string connStr = GetConnectionString(Config);
+            var plan = await InConnectionContextAsync(() => BeginConnectionAttempt(config)).ConfigureAwait(false);
+
+            long attemptId = plan.Id;
+            bool IsCurrent() => IsCurrentAttempt(attemptId);
+            MySqlConnectionAttempt Result(MySqlConnectOutcome outcome) => new(outcome, plan.Host, IsCurrent);
+            if (!IsCurrent()) return Result(MySqlConnectOutcome.Superseded);
+
+            Exception? failure = null;
             try
             {
-                IsConnect = false;
-                var newConn = new MySqlConnection() { ConnectionString = connStr };
-                newConn.Open();
-
-                log.Info($"MySQL connection succeeded: {GetConnectionSummary(Config)}");
-                using var  _DB = new SqlSugarClient(new ConnectionConfig { ConnectionString = GetConnectionString(Config), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
-
-                // 检查数据库名是否为空
-                // 检查当前 local_infile 的值
-                int localInfile = _DB.Ado.GetInt("SELECT @@global.local_infile;");
-
-                if (localInfile == 0)
+                await Task.Run(() =>
                 {
-                    // 不支持则设置为 1
-                    _DB.Ado.ExecuteCommand("SET GLOBAL local_infile = 1;");
-                    log.Info("MySQL local_infile was enabled for bulk imports.");
+                    if (IsCurrent()) validate(plan.Endpoint, IsCurrent);
+                }).ConfigureAwait(false);
+            }
+            catch (Exception error)
+            {
+                failure = error;
+            }
+
+            return await InConnectionContextAsync(() =>
+            {
+                if (!PublishConnection(plan.Id, failure == null ? plan.Endpoint : null) || !IsCurrent())
+                    return Result(MySqlConnectOutcome.Superseded);
+                if (failure != null)
+                {
+                    LogConnectionFailure(plan.Summary, failure);
+                    return Result(MySqlConnectOutcome.Failed);
                 }
-                IsConnect = true;
-                newConn.Close();
-                newConn.Dispose();
-
-                return Task.FromResult(true);
-            }
-            catch (MySqlException ex)
-            {
-                IsConnect = false;
-                string detailMsg = ex.Number switch
-                {
-                    1045 => "the account name or password is invalid",
-                    1049 => "the configured database does not exist",
-                    2003 => "the MySQL server is unreachable or its port is closed",
-                    _ => $"MySQL error {ex.Number}: {ex.Message}"
-                };
-                log.Error($"MySQL connection failed: {detailMsg}. Connection: {GetConnectionSummary(Config)}");
-                log.Error(ex);
-                return Task.FromResult(false);
-            }
-            catch (Exception ex)
-            {
-                IsConnect = false;
-                log.Error($"Unexpected MySQL connection failure: {ex.Message}. Connection: {GetConnectionSummary(Config)}");
-                log.Error(ex);
-                return Task.FromResult(false);
-            }
+                log.Info($"MySQL connection succeeded: {plan.Summary}");
+                return Result(MySqlConnectOutcome.Connected);
+            }).ConfigureAwait(false);
         }
-        public static SqlSugarClient CreateDbClient()
+
+        private (long Id, string Host, string Summary, MySqlConnectedEndpoint Endpoint) BeginConnectionAttempt(MySqlConfig config)
+        {
+            string connectionString = GetConnectionString(config);
+            string host = config.Host;
+            string summary = GetConnectionSummary(config);
+            long attemptId;
+            lock (_connectionLock)
+                attemptId = Interlocked.Increment(ref _connectionAttemptId);
+            var endpoint = new MySqlConnectedEndpoint(candidate => IsCurrentAttempt(attemptId) && ReferenceEquals(candidate, ConnectedEndpoint),
+                () => CreateDbClient(connectionString));
+            PublishConnection(attemptId, null);
+            return (attemptId, host, summary, endpoint);
+        }
+
+        private bool IsCurrentAttempt(long attemptId) => Interlocked.Read(ref _connectionAttemptId) == attemptId;
+
+        private bool PublishConnection(long attemptId, MySqlConnectedEndpoint? endpoint)
+        {
+            lock (_connectionLock)
+            {
+                if (!IsCurrentAttempt(attemptId)) return false;
+                Volatile.Write(ref _connectedEndpoint, endpoint);
+                _IsConnect = endpoint != null;
+            }
+
+            if (Application.Current == null) return true;
+            try { OnPropertyChanged(nameof(IsConnect)); }
+            catch (Exception error) { log.Warn("MySQL status property notification failed.", error); }
+            foreach (EventHandler subscriber in MySqlConnectChanged?.GetInvocationList() ?? Array.Empty<Delegate>())
+            {
+                if (!IsCurrentAttempt(attemptId)) break;
+                try { subscriber(this, EventArgs.Empty); }
+                catch (Exception error) { log.Warn("MySQL connection status handler failed.", error); }
+            }
+            return true;
+        }
+
+        private static Task<T> InConnectionContextAsync<T>(Func<T> callback)
+        {
+            var dispatcher = Application.Current?.Dispatcher;
+            return dispatcher == null || dispatcher.CheckAccess() ? Task.FromResult(callback()) : dispatcher.InvokeAsync(callback).Task;
+        }
+
+        private static void ValidateConnection(MySqlConnectedEndpoint endpoint, Func<bool> isCurrent)
+        {
+            using var db = endpoint.CreateDbClient();
+            if (db.Ado.GetInt("SELECT @@global.local_infile;") != 0 || !isCurrent()) return;
+            db.Ado.ExecuteCommand("SET GLOBAL local_infile = 1;");
+            log.Info("MySQL local_infile was enabled for bulk imports.");
+        }
+
+        private static void LogConnectionFailure(string summary, Exception error)
+        {
+            string detail = (error as MySqlException)?.Number switch
+            {
+                1045 => "the account name or password is invalid",
+                1049 => "the configured database does not exist",
+                2003 => "the MySQL server is unreachable or its port is closed",
+                _ => error.Message,
+            };
+            log.Error($"MySQL connection failed: {detail}. Connection: {summary}", error);
+        }
+
+        public static SqlSugarClient CreateDbClient() => CreateDbClient(GetConnectionString());
+
+        private static SqlSugarClient CreateDbClient(string connectionString)
         {
             return new SqlSugarClient(new ConnectionConfig
             {
-                ConnectionString = GetConnectionString(),
+                ConnectionString = connectionString,
                 DbType = DbType.MySql,
                 IsAutoCloseConnection = true,
                 InitKeyType = InitKeyType.Attribute

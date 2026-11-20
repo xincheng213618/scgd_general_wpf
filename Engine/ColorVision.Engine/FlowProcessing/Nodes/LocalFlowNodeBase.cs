@@ -232,6 +232,12 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
         }
 
         protected string ResolveInputImageFilePath(CVStartCFC action, int inputIndex)
+            => ResolveInputImageFilePath(action, inputIndex, LocalFlowResultPersistence.ResolveEndpoint(action));
+
+        private protected string ResolveInputImageFilePath(CVStartCFC action, int inputIndex, MySqlConnectedEndpoint? endpoint)
+            => ResolveInputImageFilePath(action, inputIndex, id => endpoint == null ? null : MeasureImgResultDao.ReadResult(endpoint, id));
+
+        private string ResolveInputImageFilePath(CVStartCFC action, int inputIndex, Func<int, MeasureResultImgModel?> lookup)
         {
             if (activeInputSets.TryGetValue(action.SerialNumber, out LocalFlowInputSnapshot[]? inputs)
                 && inputIndex >= 0 && inputIndex < inputs.Length && action.IsSameExecutionIteration(inputs[inputIndex].Action)
@@ -247,7 +253,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                 throw new InvalidOperationException($"图像输入端接收到的不是图像结果：MasterId={masterId}，ResultType={masterResultType}。请检查图像节点的连接。");
             }
 
-            MeasureResultImgModel? imageResult = MeasureImgResultDao.Instance.GetById(masterId);
+            MeasureResultImgModel? imageResult = lookup(masterId);
             if (imageResult == null) return string.Empty;
             string? firstCandidate = null;
             foreach (string? candidate in new[] { imageResult.FileUrl, imageResult.RawFile })

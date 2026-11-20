@@ -8,9 +8,12 @@ using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using ColorVision.FileIO;
 using ColorVision.ImageEditor;
 using ColorVision.Themes.Controls;
+using log4net;
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Threading.Tasks;
 using System.Windows;
@@ -23,6 +26,7 @@ namespace ColorVision.Engine.Services
 
     public class ViewResultAlg : ViewModelBase
     {
+        private static readonly ILog log = LogManager.GetLogger(typeof(ViewResultAlg));
         public ObservableCollection<IViewResult> ViewResults { get; set; }
 
         private ContextMenu? _contextMenu;
@@ -58,8 +62,50 @@ namespace ColorVision.Engine.Services
 
         }
         public AlgResultMasterModel AlgResultMasterModel { get; set; }
-        public ViewResultAlg(AlgResultMasterModel item) : this(item, BatchResultMasterDao.Instance.GetById(item.BatchId)?.Code)
+
+        internal List<T> ReadPersistedDetails<T>(BaseTableDao<T> dao) where T : class, IEntity, new()
         {
+            if (AlgResultMasterModel?.DatabaseEndpoint is not { } endpoint) return dao.GetAllByPid(Id);
+
+            using var db = endpoint.CreateDbClient();
+            return db.Queryable<T>().Where("pid = @pid", new { pid = Id }).ToList();
+        }
+
+        internal bool TryReadPersistedDetails<T>(BaseTableDao<T> dao, [NotNullWhen(true)] out List<T>? details) where T : class, IEntity, new()
+        {
+            if (AlgResultMasterModel?.DatabaseEndpoint == null) return dao.TryGetAllByPid(Id, out details);
+            try
+            {
+                details = ReadPersistedDetails(dao);
+                return true;
+            }
+            catch (Exception error)
+            {
+                log.Warn($"算法结果明细读取失败：resultId={Id}", error);
+                details = null;
+                return false;
+            }
+        }
+
+        public ViewResultAlg(AlgResultMasterModel item) : this(item, ReadBatchCode(item))
+        {
+        }
+
+        private static string? ReadBatchCode(AlgResultMasterModel item)
+        {
+            if (item.BatchId is not > 0) return null;
+            if (item.DatabaseEndpoint is not { } endpoint) return BatchResultMasterDao.Instance.GetById(item.BatchId)?.Code;
+
+            try
+            {
+                using var db = endpoint.CreateDbClient();
+                return db.Queryable<MeasureBatchModel>().Where(batch => batch.Id == item.BatchId).Select(batch => batch.Code).First();
+            }
+            catch (Exception error)
+            {
+                log.Warn($"算法结果批次编号读取失败：batchId={item.BatchId}", error);
+                return null;
+            }
         }
 
         /// <summary>Uses the supplied batch code, including null, without querying batch metadata.</summary>

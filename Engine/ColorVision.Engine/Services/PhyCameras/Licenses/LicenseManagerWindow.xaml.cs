@@ -47,16 +47,24 @@ namespace ColorVision.Engine.Services.PhyCameras.Licenses
 
         public string OperationMessage { get => operationMessage; private set { operationMessage = value; OnPropertyChanged(); } }
         private string operationMessage = string.Empty;
-        private bool isClearingExpired;
+        private bool isDeletingLicenses;
+        private readonly Func<LicenseCatalogSource> captureSource;
+        private readonly Func<string, string, MessageBoxImage, MessageBoxResult, bool> confirmDeletion;
+        private LicenseCatalogSource? loadedSource;
 
-        public LicenseManagerViewModel()
+        public LicenseManagerViewModel() : this(LicenseCatalogSource.Capture, ConfirmDeletion) { }
+
+        internal LicenseManagerViewModel(Func<LicenseCatalogSource> captureSource,
+            Func<string, string, MessageBoxImage, MessageBoxResult, bool> confirmDeletion)
         {
+            this.captureSource = captureSource;
+            this.confirmDeletion = confirmDeletion;
             Licenses.CollectionChanged += (_, _) => UpdateSummary();
-            RefreshCommand = new RelayCommand(a => LoadLicenses(), _ => !isClearingExpired);
-            ImportCommand = new RelayCommand(a => ImportLicense(), _ => !isClearingExpired);
+            RefreshCommand = new RelayCommand(a => LoadLicenses(), _ => !isDeletingLicenses);
+            ImportCommand = new RelayCommand(a => ImportLicense(), _ => !isDeletingLicenses);
             ExportSelectedCommand = new RelayCommand(a => ExportSelected(), a => SelectedLicense != null);
-            DeleteSelectedCommand = new RelayCommand(a => DeleteSelected(), a => SelectedLicense != null && !isClearingExpired);
-            ClearExpiredCommand = new RelayCommand(async _ => await ClearExpiredAsync(), _ => !isClearingExpired && Licenses.Any(x => x.Status == LicenseStatus.Expired));
+            DeleteSelectedCommand = new RelayCommand(a => DeleteSelected(), a => SelectedLicense != null && !isDeletingLicenses);
+            ClearExpiredCommand = new RelayCommand(async _ => await ClearExpiredAsync(), _ => !isDeletingLicenses && Licenses.Any(x => x.Status == LicenseStatus.Expired));
             CopyLicenseCommand = new RelayCommand(a => CopyLicense(), a => SelectedLicense != null);
             GetCameraLicenseCommand = new RelayCommand(a=> GetCameraLicense());
             GetSpectrumLicenseCommand = new RelayCommand(async _ => await GetSpectrumLicenseAsync(), _ => !isDiscoveringSpectrometers);
@@ -255,9 +263,24 @@ namespace ColorVision.Engine.Services.PhyCameras.Licenses
 
         public void LoadLicenses()
         {
-            var licenses = PhyLicenseDao.Instance.GetAll();
-            int? selectedId = SelectedLicense?.Id;
+            try
+            {
+                LoadLicenses(captureSource());
+                OperationMessage = string.Empty;
+            }
+            catch (Exception ex)
+            {
+                log.Error("Failed to load licenses", ex);
+                OperationMessage = ex.Message;
+            }
+        }
+
+        private void LoadLicenses(LicenseCatalogSource source)
+        {
+            var licenses = source.Load();
+            int? selectedId = source.Matches(loadedSource) ? SelectedLicense?.Id : null;
             DateTime now = DateTime.Now;
+            loadedSource = source;
             Licenses.Clear();
             foreach (var license in licenses)
             {
@@ -270,6 +293,30 @@ namespace ColorVision.Engine.Services.PhyCameras.Licenses
             UpdateSummary();
         }
 
+        private void EnsureDisplayedSource(LicenseCatalogSource source)
+        {
+            if (!ReferenceEquals(loadedSource, source)) throw LicenseCatalogSource.SourceChanged();
+            source.EnsureCurrent();
+        }
+
+        private void ReloadAfterDeletion(LicenseCatalogSource source, string outcome, bool silentOnSuccess = false)
+        {
+            try
+            {
+                EnsureDisplayedSource(source);
+                LoadLicenses(source);
+                OperationMessage = silentOnSuccess ? string.Empty : outcome;
+            }
+            catch (Exception ex)
+            {
+                log.Warn("Could not refresh the license list after the deletion request", ex);
+                OperationMessage = EngineLocalization.Format($"{outcome} 无法刷新许可证列表。{ex.Message}");
+            }
+        }
+
+        private static bool ConfirmDeletion(string message, string caption, MessageBoxImage image, MessageBoxResult defaultResult) =>
+            MessageBox.Show(Application.Current.GetActiveWindow(), message, caption, MessageBoxButton.YesNo, image, defaultResult) == MessageBoxResult.Yes;
+
         private void UpdateSummary()
         {
             OnPropertyChanged(nameof(LicenseCountText));
@@ -279,7 +326,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Licenses
 
         public async Task ClearExpiredAsync()
         {
-            if (isClearingExpired)
+            if (isDeletingLicenses || loadedSource is not { } source)
                 return;
 
             DateTime cutoff = DateTime.Now;
@@ -293,19 +340,18 @@ namespace ColorVision.Engine.Services.PhyCameras.Licenses
                 return;
             }
 
-            var owner = Application.Current.GetActiveWindow();
-            if (MessageBox.Show(owner, string.Format(Properties.Resources.LicenseClearExpiredConfirm, ids.Length),
-                Properties.Resources.LicenseClearExpired, MessageBoxButton.YesNo, MessageBoxImage.Warning, MessageBoxResult.No) != MessageBoxResult.Yes)
-                return;
-
-            isClearingExpired = true;
+            isDeletingLicenses = true;
             ClearExpiredCommand.RaiseCanExecuteChanged();
-            OperationMessage = Properties.Resources.LicenseClearingExpired;
             try
             {
-                int deleted = await PhyLicenseDao.Instance.DeleteExpiredAsync(ids, cutoff);
-                LoadLicenses();
-                OperationMessage = string.Format(Properties.Resources.LicenseClearExpiredSuccess, deleted);
+                EnsureDisplayedSource(source);
+                if (!confirmDeletion(string.Format(Properties.Resources.LicenseClearExpiredConfirm, ids.Length),
+                    Properties.Resources.LicenseClearExpired, MessageBoxImage.Warning, MessageBoxResult.No)) return;
+                EnsureDisplayedSource(source);
+
+                OperationMessage = Properties.Resources.LicenseClearingExpired;
+                int deleted = await source.DeleteExpiredAsync(ids, cutoff);
+                ReloadAfterDeletion(source, string.Format(Properties.Resources.LicenseClearExpiredSuccess, deleted));
             }
             catch (Exception ex)
             {
@@ -314,7 +360,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Licenses
             }
             finally
             {
-                isClearingExpired = false;
+                isDeletingLicenses = false;
                 ClearExpiredCommand.RaiseCanExecuteChanged();
             }
         }
@@ -367,16 +413,31 @@ namespace ColorVision.Engine.Services.PhyCameras.Licenses
 
         public void DeleteSelected()
         {
-            if (SelectedLicense == null)
+            if (isDeletingLicenses || SelectedLicense is not { } selection || !Licenses.Contains(selection) || loadedSource is not { } source)
                 return;
+            int id = selection.Id;
 
-            if (MessageBox.Show(Application.Current.GetActiveWindow(), 
-                Properties.Resources.ConfirmDelete, 
-                Properties.Resources.LicenseManager, 
-                MessageBoxButton.YesNo) == MessageBoxResult.Yes)
+            isDeletingLicenses = true;
+            ClearExpiredCommand.RaiseCanExecuteChanged();
+            try
             {
-                PhyLicenseDao.Instance.DeleteById(SelectedLicense.Model.Id);
-                LoadLicenses();
+                EnsureDisplayedSource(source);
+                if (!confirmDeletion(Properties.Resources.ConfirmDelete, Properties.Resources.LicenseManager,
+                    MessageBoxImage.None, MessageBoxResult.None)) return;
+                EnsureDisplayedSource(source);
+                bool deleted = source.Delete(id);
+                string outcome = EngineLocalization.Get(deleted ? "已完成删除。" : "原许可证记录已不存在或已变更。");
+                ReloadAfterDeletion(source, outcome, silentOnSuccess: deleted);
+            }
+            catch (Exception ex)
+            {
+                log.Error("Failed to delete license", ex);
+                OperationMessage = ex.Message;
+            }
+            finally
+            {
+                isDeletingLicenses = false;
+                ClearExpiredCommand.RaiseCanExecuteChanged();
             }
         }
 

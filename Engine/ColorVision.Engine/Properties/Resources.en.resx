@@ -2973,7 +2973,7 @@ Please close camera or other programs using this serial port, or check device co
     <value>Camera Device Name</value>
   </data>
   <data name="Engine_PG_CameraDeviceNameDesc" xml:space="preserve">
-    <value>Enter the camera device name to use</value>
+    <value>Select a camera or enter its exact device code.</value>
   </data>
 
   <data name="Engine_PG_DeviceIndex" xml:space="preserve">
@@ -2995,7 +2995,7 @@ Please close camera or other programs using this serial port, or check device co
     <value>Spectrometer Device Name</value>
   </data>
   <data name="Engine_PG_SpectrometerDeviceNameDesc" xml:space="preserve">
-    <value>Select the spectrometer device for the single test.</value>
+    <value>Select a spectrometer or enter its exact device code.</value>
   </data>
   <data name="Engine_PG_SpectrometerSettings" xml:space="preserve">
     <value>Spectrometer Settings</value>
@@ -3437,6 +3437,11 @@ Please close camera or other programs using this serial port, or check device co
   <data name="Cache" xml:space="preserve"><value>Cache</value></data>
   <data name="Camera_BrightnessThresholdRatio" xml:space="preserve"><value>Brightness threshold ratio</value></data>
   <data name="Camera_CaptureFailed" xml:space="preserve"><value>Image capture failed</value></data>
+  <data name="Camera_CaptureTimedOutUnconfirmed" xml:space="preserve"><value>Image capture timed out. The result of this capture is unconfirmed.</value></data>
+  <data name="Scheduler_DeviceReferenceAmbiguous" xml:space="preserve"><value>The device reference matches multiple devices. Select the device again in the scheduled task settings.</value></data>
+  <data name="Scheduler_DeviceReferenceUnavailable" xml:space="preserve"><value>The selected device is unavailable. Select the device again in the scheduled task settings.</value></data>
+  <data name="Scheduler_DeviceCaptureInProgress" xml:space="preserve"><value>The previous scheduled acquisition command for this device is still pending. This trigger was skipped.</value></data>
+  <data name="Scheduler_DeviceReplyWaitTimedOut" xml:space="preserve"><value>The scheduled task timed out waiting for the device. The acquisition result is unconfirmed.</value></data>
   <data name="Camera_ConfirmRestartService" xml:space="preserve"><value>Restart the service?</value></data>
   <data name="Camera_CrossGuide" xml:space="preserve"><value>Crosshair guide</value></data>
   <data name="Camera_CrossGuideRegion" xml:space="preserve"><value>Crosshair guide region</value></data>
@@ -4438,7 +4443,7 @@ Please close camera or other programs using this serial port, or check device co
   <data name="SpectrumIntegrationTime" xml:space="preserve"><value>Integration time (ms)</value></data>
   <data name="SpectrumNdPosition" xml:space="preserve"><value>ND position</value></data>
   <data name="SpectrumVoltage" xml:space="preserve"><value>Voltage (V)</value></data>
-  <data name="SpectrumCurrent" xml:space="preserve"><value>Current (A)</value></data>
+  <data name="SpectrumCurrent" xml:space="preserve"><value>Manual current (local A / service mA)</value></data>
   <data name="SpectrumCalibrationFileSettingsHint" xml:space="preserve"><value>Manage wavelength and magnitude files in the calibration groups window.</value></data>
   <data name="ShutterConfig" xml:space="preserve"><value>Shutter settings</value></data>
   <data name="SelfAdaptionInitDark" xml:space="preserve"><value>Adaptive dark settings</value></data>
@@ -6229,6 +6234,7 @@ Active cache operations will finish first. Disk files will be kept, and the cach
   <data name="CameraPanel_StopPreviewHint" xml:space="preserve"><value>Stop preview; keep the local camera connected</value></data>
   <data name="CameraPanel_PreviewRecovering" xml:space="preserve"><value>No new frames. Recovering video…</value></data>
   <data name="CameraPanel_PreviewRecoveryFailed" xml:space="preserve"><value>Video recovery failed and preview stopped. Start video to try again.</value></data>
+  <data name="Camera_ResultImageOpenFailed" xml:space="preserve"><value>Could not open capture result (ID {0}). Check the result file and application log.</value></data>
   <data name="CameraPanel_ServicePreviewHint" xml:space="preserve"><value>Disconnect the service camera before starting local preview</value></data>
   <data name="CameraPanel_Averages" xml:space="preserve"><value>Avg.</value></data>
   <data name="CameraPanel_MotorJogLeft" xml:space="preserve"><value>Jog left</value></data>
@@ -7308,4 +7314,10 @@ Field: </value></data>
   <data name="Flow_PostProcess_InvalidConfiguration" xml:space="preserve"><value>Invalid configuration</value></data>
   <data name="Flow_PostProcess_InvalidConfigurationHint" xml:space="preserve"><value>The saved post-processing parameters could not be read. Edit this step and configure it again.</value></data>
   <data name="在{0}添加设备" xml:space="preserve"><value>Add device to {0}</value></data>
+  <data name="AlgorithmSideSaveFailures" xml:space="preserve"><value>Could not export data for {0} results (IDs {1}). Check the application log, then retry those results.</value></data>
+  <data name="PoiHistoryDetailsUnavailable" xml:space="preserve"><value>Could not load result details (ID {0}). Check the database connection and application log, then select this result again or retry the data export.</value></data>
+  <data name="数据库连接已更改，请刷新统计后再执行。" xml:space="preserve"><value>The database connection changed. Refresh statistics before continuing.</value></data>
+  <data name="请连接数据库并刷新统计。" xml:space="preserve"><value>Connect to the database and refresh statistics.</value></data>
+  <data name="重新加载终端设备" xml:space="preserve"><value>Reload Terminal Devices</value></data>
+  <data name="未能提交终端设备重载请求。" xml:space="preserve"><value>The reload request for terminal devices could not be submitted.</value></data>
 </root>

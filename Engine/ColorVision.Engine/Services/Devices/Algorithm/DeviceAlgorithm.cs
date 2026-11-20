@@ -11,7 +11,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
 {
     public class DeviceAlgorithm : DeviceService<ConfigAlgorithm>
     {
-        private bool _isDisposed;
+        private volatile bool _isDisposed;
 
         public MQTTAlgorithm DService { get; set; }
         private readonly DockViewRegistration _view;
@@ -34,7 +34,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
 
         public DeviceAlgorithm(SysResourceModel sysResourceModel) : base(sysResourceModel)
         {
-            DService = new MQTTAlgorithm(Config);
+            DService = new MQTTAlgorithm(this);
             _view = new DockViewRegistration(() => new AlgorithmView(this, deferInitialization: true), Config.Name, DisPlayManager.IsControlVisible(Config.Code, Config.Name))
                 { PersistenceKey = Config.Code };
             DisplayAlgorithmControlLazy = new Lazy<DisplayAlgorithm>(() => { DisplayAlgorithm ??= new DisplayAlgorithm(this); return DisplayAlgorithm; });
@@ -43,8 +43,8 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
             {
                 if (!CanConfigure) return;
                 var propertyEditorWindow = new PropertyEditorWindow(Config, PropertyEditorEditMode.Transactional) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
-                ProtectConfigurationEditor(propertyEditorWindow);
-                propertyEditorWindow.Submitted += (s, e) => TryCommitConfiguration(propertyEditorWindow);
+                var target = ProtectConfigurationEditor(propertyEditorWindow);
+                propertyEditorWindow.Submitted += (_, _) => TryCommitConfiguration(propertyEditorWindow, expectedTarget: target);
                 propertyEditorWindow.ShowDialog();
 
             }, a => CanConfigure);

@@ -1,3 +1,4 @@
+using ColorVision.Database;
 using ColorVision.Engine.Services.Devices.Camera.Templates.CameraRunParam;
 using ColorVision.Engine.Services.PhyCameras.Group;
 using ColorVision.Engine.Services.Results;
@@ -17,24 +18,24 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local;
 internal interface ILocalCameraFlowServices
 {
     LocalCameraCaptureResult Capture(LocalCameraCaptureRequest request);
-    MeasureResultImgModel Save(CVStartCFC action, int zIndex, LocalCameraCaptureRequest request, LocalCameraCaptureResult capture);
-    void Publish(CVStartCFC action, string nodeId, int zIndex, LocalCameraCaptureRequest request, LocalCameraCaptureResult capture, MeasureResultImgModel model);
+    MeasureResultImgModel Save(CVStartCFC action, int zIndex, LocalCameraCaptureRequest request, LocalCameraCaptureResult capture, MySqlConnectedEndpoint? endpoint);
+    void Publish(CVStartCFC action, string nodeId, int zIndex, LocalCameraCaptureRequest request, LocalCameraCaptureResult capture,
+        MeasureResultImgModel model, MySqlConnectedEndpoint? endpoint);
 }
 
 internal sealed class LocalCameraFlowServices : ILocalCameraFlowServices
 {
     public LocalCameraCaptureResult Capture(LocalCameraCaptureRequest request) => LocalCameraCaptureService.Capture(request, autoConnect: true);
 
-    public MeasureResultImgModel Save(CVStartCFC action, int zIndex, LocalCameraCaptureRequest request, LocalCameraCaptureResult capture)
-        => LocalCameraResultService.SaveFlowModel(action, zIndex, capture.Frame, capture, request.CameraParameters, request.Calibration, request.IsAutoExposure);
+    public MeasureResultImgModel Save(CVStartCFC action, int zIndex, LocalCameraCaptureRequest request, LocalCameraCaptureResult capture, MySqlConnectedEndpoint? endpoint)
+        => LocalCameraResultService.SaveFlowModel(action, zIndex, capture.Frame, capture, request.CameraParameters, request.Calibration, request.IsAutoExposure, endpoint);
 
-    public void Publish(CVStartCFC action, string nodeId, int zIndex, LocalCameraCaptureRequest request, LocalCameraCaptureResult capture, MeasureResultImgModel model)
+    public void Publish(CVStartCFC action, string nodeId, int zIndex, LocalCameraCaptureRequest request, LocalCameraCaptureResult capture,
+        MeasureResultImgModel model, MySqlConnectedEndpoint? endpoint)
     {
-        request.Device.PublishLocalPreview(capture.Frame, model, forceDisplay: false);
-        if (action.PersistResults)
-            ResultMessageBus.Default.PublishPersisted(ResultRoutes.Camera, ResultKinds.Image, request.Device.Code, "GetData", action.SerialNumber, nodeId, zIndex, model.Id, 100);
-        else
-            ResultMessageBus.Default.Publish(new ResultMessage(ResultRoutes.Camera, ResultKinds.Image, request.Device.Code, "GetData", action.SerialNumber, nodeId, zIndex, new ResultReference(model.Id, 100), model));
+        request.Device.PublishLocalPreview(capture.Frame, model, forceDisplay: false, databaseEndpoint: endpoint);
+        ResultMessageBus.Default.Publish(new ResultMessage(ResultRoutes.Camera, ResultKinds.Image, request.Device.Code, "GetData",
+            action.SerialNumber, nodeId, zIndex, new ResultReference(model.Id, 100), model, databaseEndpoint: endpoint));
     }
 }
 
@@ -47,6 +48,7 @@ internal sealed class LocalCameraFlowExecution : FlowLocalExecution
     private readonly string nodeId;
     private readonly int zIndex;
     private readonly CVFileSaveMode saveMode;
+    private MySqlConnectedEndpoint? resultEndpoint;
     private LocalCameraCaptureResult? capture;
     private bool frameTransferred;
     private bool disposed;
@@ -169,7 +171,11 @@ internal sealed class LocalCameraFlowExecution : FlowLocalExecution
         return cameraParameters;
     }
 
-    public override void Bind(CVStartCFC action) => captureRequest = captureRequest with { Stop = action.RuntimeResources.StopToken };
+    public override void Bind(CVStartCFC action)
+    {
+        captureRequest = captureRequest with { Stop = action.RuntimeResources.StopToken };
+        resultEndpoint = action.PersistResults ? LocalFlowResultPersistence.ResolveEndpoint(action) : null;
+    }
 
     public override void Execute()
     {
@@ -204,13 +210,14 @@ internal sealed class LocalCameraFlowExecution : FlowLocalExecution
         LocalFrameFileService.SaveCapture(frame, frame.CvRawFilePath, saveMode);
         int saveTime = checked((int)Math.Min(saveTimer.ElapsedMilliseconds, int.MaxValue));
         captureRequest.Stop.ThrowIfCancellationRequested();
-        MeasureResultImgModel model = FlowNodeTiming.Run("PersistResult", () => services.Save(action, zIndex, captureRequest, capture));
+        MeasureResultImgModel model = FlowNodeTiming.Run("PersistResult", () => services.Save(action, zIndex, captureRequest, capture, resultEndpoint));
         if (action.PersistResults && model.Id <= 0) throw new InvalidOperationException("保存本地相机结果记录失败。");
         frame.MasterId = model.Id;
         action.SetCurrentFrame(frame);
         frameTransferred = true;
         action.MasterValue(null, model.Id, 100);
-        FlowNodeTiming.Run("PublishResult", () => services.Publish(action, nodeId, zIndex, captureRequest, capture, model));
+        FlowNodeTiming.Run("PublishResult", () => services.Publish(action, nodeId, zIndex, captureRequest, capture, model,
+            action.PersistResults ? resultEndpoint : null));
         using LocalFlowFrameLease diagnosticLease = frame.Acquire();
         return new
         {

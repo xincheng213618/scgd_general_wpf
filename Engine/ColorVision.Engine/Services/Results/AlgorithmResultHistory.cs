@@ -1,3 +1,4 @@
+using ColorVision.Database;
 using log4net;
 using SqlSugar;
 using System;
@@ -11,7 +12,7 @@ internal static class AlgorithmResultHistory
     internal const int BatchIdsPerQuery = 500;
     private static readonly ILog Log = LogManager.GetLogger(typeof(AlgorithmResultHistory));
 
-    internal static List<ViewResultAlg> CreateViews(IReadOnlyList<AlgResultMasterModel> rows, SqlSugarClient? database)
+    internal static List<ViewResultAlg> CreateViews(IReadOnlyList<AlgResultMasterModel> rows, SqlSugarClient? database, MySqlConnectedEndpoint? endpoint = null)
     {
         Dictionary<int, string?> batchCodes = new();
         if (database != null)
@@ -37,6 +38,7 @@ internal static class AlgorithmResultHistory
         List<ViewResultAlg> results = new(rows.Count);
         foreach (AlgResultMasterModel row in rows)
         {
+            if (endpoint != null) row.DatabaseEndpoint = endpoint;
             string? code = row.BatchId is int id ? batchCodes.GetValueOrDefault(id) : null;
             results.Add(new ViewResultAlg(row, code));
         }

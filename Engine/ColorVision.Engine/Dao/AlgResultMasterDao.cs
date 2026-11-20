@@ -9,6 +9,9 @@ namespace ColorVision.Engine
     {
         public AlgResultMasterModel() { }
 
+        [SugarColumn(IsIgnore = true)]
+        internal MySqlConnectedEndpoint? DatabaseEndpoint { get; set; }
+
         [SugarColumn(ColumnName = "tid", IsNullable = true, ColumnDescription = "参数模板ID")]
         public int? TId { get; set; }
 
@@ -69,5 +72,11 @@ namespace ColorVision.Engine
     public class AlgResultMasterDao : BaseTableDao<AlgResultMasterModel>
     {
         public static AlgResultMasterDao Instance { get; set; } = new AlgResultMasterDao();
+
+        internal static int InsertResult(MySqlConnectedEndpoint endpoint, AlgResultMasterModel result)
+        {
+            using var db = endpoint.CreateDbClient();
+            return db.Insertable(result).ExecuteReturnIdentity();
+        }
     }
 }

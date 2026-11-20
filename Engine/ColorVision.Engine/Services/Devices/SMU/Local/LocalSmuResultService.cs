@@ -1,4 +1,5 @@
 using ColorVision.Database;
+using ColorVision.Engine.Services.Devices.Camera.Local;
 using ColorVision.Engine.Services.Devices.SMU.Dao;
 using ColorVision.Engine.Services.Devices.SMU.Views;
 using FlowEngineLib.Base;
@@ -33,13 +34,24 @@ internal static class LocalSmuResultService
         Points = capture.Voltages.Length, VResult = JsonConvert.SerializeObject(capture.Voltages),
         IResult = JsonConvert.SerializeObject(capture.Currents.Select(current => current / 1000)), ResultCode = 0, TotalTime = capture.TotalTime
     };
-    internal static int Save(LocalSmuCapture capture, string code, CVStartCFC? action = null, int zIndex = 0)
+    internal static int Save(LocalSmuCapture capture, string code, MySqlConnectedEndpoint? endpoint)
     {
-        if (!capture.HasMeasurements) return 0;
-        if (!(action?.PersistResults ?? MySqlSetting.IsConnect)) return 0;
-        int? batchId = action == null ? null : (BatchResultMasterDao.Instance.GetByNameOrCode(action.SerialNumber)
-            ?? throw new InvalidOperationException($"找不到流程批次：{action.SerialNumber}")).Id;
-        using var db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = DbType.MySql, IsAutoCloseConnection = true });
+        if (!capture.HasMeasurements || endpoint == null) return 0;
+        using var db = endpoint.CreateDbClient();
+        return Insert(db, capture, code, null, 0);
+    }
+
+    internal static int SaveFlow(LocalSmuCapture capture, string code, CVStartCFC action, int zIndex, MySqlConnectedEndpoint? endpoint)
+    {
+        if (!capture.HasMeasurements || !action.PersistResults) return 0;
+        MySqlConnectedEndpoint database = endpoint ?? throw new InvalidOperationException("保存本地源表流程结果需要已验证的 MySQL 连接。");
+        int batchId = LocalFlowResultPersistence.ResolveBatchId(action, database);
+        using var db = database.CreateDbClient();
+        return Insert(db, capture, code, batchId, zIndex);
+    }
+
+    private static int Insert(SqlSugarClient db, LocalSmuCapture capture, string code, int? batchId, int zIndex)
+    {
         bool hasDetails = capture.Details != null;
         if (hasDetails)
         {

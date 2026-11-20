@@ -1,4 +1,3 @@
-using ColorVision.Database;
 using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services;
 using ColorVision.Engine.Services.Devices.Camera;
@@ -8,13 +7,16 @@ using ColorVision.Engine.Services.Devices.Spectrum.Dao;
 using log4net;
 using Newtonsoft.Json.Linq;
 using ProjectARVRPro.ImageExport;
-using SqlSugar;
 
 namespace ProjectARVRPro.Services;
 
 internal static class LuxDeviceMeasurements
 {
     private static readonly ILog log = LogManager.GetLogger(typeof(LuxDeviceMeasurements));
+    // This project's existing version floor predates the host API that can prove result ownership.
+    private static readonly Func<MQTTSpectrum, CancellationToken, Task<(bool Succeeded, SpectumResultEntity? Result)>>? MeasureOwnedSpectrum =
+        typeof(MQTTSpectrum).GetMethod(nameof(MQTTSpectrum.GetDataResultAsync), [typeof(CancellationToken)])?
+            .CreateDelegate<Func<MQTTSpectrum, CancellationToken, Task<(bool Succeeded, SpectumResultEntity? Result)>>>();
 
     internal static async Task<(bool Succeeded, ObjectiveTestItem Item)> MeasureVidResultAsync(CancellationToken cancellationToken, VidFocusImageExport? export = null)
     {
@@ -121,50 +123,34 @@ internal static class LuxDeviceMeasurements
         };
     }
 
-    internal static async Task<(bool Succeeded, SpectumResultEntity? Result)> MeasureFluxAsync(CancellationToken cancellationToken)
+    internal static Task<(bool Succeeded, SpectumResultEntity? Result)> MeasureFluxAsync(CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
+        var measure = MeasureOwnedSpectrum ?? throw new InvalidOperationException("当前 ColorVision 宿主缺少按原采集读取光谱结果的接口，请更新宿主后重试。");
         DeviceSpectrum spectrum = ServiceManager.GetInstance().DeviceServices.OfType<DeviceSpectrum>().FirstOrDefault()
             ?? throw new InvalidOperationException("未配置光谱仪设备。");
-        // Keep the existing device API: its backend decides between local SDK and service execution.
-        bool openLocal = spectrum.IsLocalSpectrumBackend && spectrum.DService.DeviceStatus == DeviceStatusType.Closed;
-        MsgReturn? response = await RequestFluxMeasurementAsync(openLocal, () => spectrum.DService.Open(),
-            () => spectrum.DService.GetData(), cancellationToken);
-        if (response == null) return (false, null);
-        JObject data = NormalizeData(response);
-        SpectumResultEntity? model = ReadLocalSpectrumModel(data);
-        if (model == null && data.Value<int?>("MasterId") is > 0 and var masterId)
-        {
-            model = await Task.Run(() =>
-            {
-                using var db = new SqlSugarClient(new ConnectionConfig
-                {
-                    ConnectionString = MySqlControl.GetConnectionString(), DbType = DbType.MySql, IsAutoCloseConnection = true
-                });
-                return db.Queryable<SpectumResultEntity>().Where(item => item.Id == masterId).First();
-            }, cancellationToken);
-        }
-        return (true, model);
+        MQTTSpectrum service = spectrum.DService;
+        bool openLocal = spectrum.IsLocalSpectrumBackend && service.DeviceStatus == DeviceStatusType.Closed;
+        return RequestFluxMeasurementAsync(openLocal, service.Open, token => measure(service, token), cancellationToken);
     }
 
-    internal static async Task<MsgReturn?> RequestFluxMeasurementAsync(bool openLocal, Func<MsgRecord> open,
-        Func<MsgRecord> measure, CancellationToken cancellationToken)
+    internal static async Task<(bool Succeeded, SpectumResultEntity? Result)> RequestFluxMeasurementAsync(bool openLocal,
+        Func<MsgRecord> open, Func<CancellationToken, Task<(bool Succeeded, SpectumResultEntity? Result)>> measure,
+        CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
         if (openLocal)
         {
             log.Info("LUX 本地光谱仪打开开始");
-            if (await WaitForResultAsync(open(), cancellationToken) == null) return null;
+            if (await WaitForResultAsync(open(), cancellationToken) == null) return (false, null);
             log.Info("LUX 本地光谱仪打开完成");
         }
         cancellationToken.ThrowIfCancellationRequested();
         log.Info("LUX 光通量采集开始");
-        MsgReturn? result = await WaitForResultAsync(measure(), cancellationToken);
-        log.Info($"LUX 光通量采集结束: Success={result != null}");
+        var result = await measure(cancellationToken);
+        log.Info($"LUX 光通量采集结束: Success={result.Succeeded}");
         return result;
     }
-
-    internal static SpectumResultEntity? ReadLocalSpectrumModel(JObject data) => data["Model"]?.ToObject<SpectumResultEntity>();
 
     private static JObject NormalizeData(MsgReturn response) => response.Data is JObject json
         ? json : response.Data == null ? new JObject() : JObject.FromObject((object)response.Data);

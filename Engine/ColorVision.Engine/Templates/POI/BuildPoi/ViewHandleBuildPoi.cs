@@ -17,8 +17,8 @@ namespace ColorVision.Engine.Templates.POI.BuildPoi
         {
             if (result.ViewResults == null)
             {
+                List<PoiPointResultModel> AlgResultMTFModels = result.ReadPersistedDetails(PoiPointResultDao.Instance);
                 result.ViewResults = new ObservableCollection<IViewResult>();
-                List<PoiPointResultModel> AlgResultMTFModels = PoiPointResultDao.Instance.GetAllByPid(result.Id);
                 foreach (var item in AlgResultMTFModels)
                 {
                     ViewResultBuildPoi mTFResultData = new(item);

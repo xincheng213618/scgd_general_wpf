@@ -36,6 +36,7 @@ namespace ColorVision.Engine.FlowProcessing
         private FlowControl FlowControl => View.FlowControl;
         private readonly FlowRunExecutor _flowRunExecutor;
         private readonly FlowRunFinalizer _runFinalizer;
+        private readonly Func<MySqlConnectedEndpoint?> _getBatchEndpoint;
         private readonly FlowTemplateWorkspaceController
             _templateWorkspace;
         private readonly FlowExecutionJournalCoordinator _journalCoordinator =
@@ -65,12 +66,13 @@ namespace ColorVision.Engine.FlowProcessing
             }
         }
 
-        public FlowExecutionSession(FlowEngineManager flowEngineManager, ViewFlow view)
+        public FlowExecutionSession(FlowEngineManager flowEngineManager, ViewFlow view, Func<MySqlConnectedEndpoint?>? getBatchEndpoint = null)
         {
             FlowEngineManager = flowEngineManager;
             View = view;
             _flowRunExecutor = new FlowRunExecutor(FlowControl);
             _runFinalizer = new FlowRunFinalizer();
+            _getBatchEndpoint = getBatchEndpoint ?? (static () => MySqlControl.GetInstance().ConnectedEndpoint);
             _templateWorkspace =
                 new FlowTemplateWorkspaceController(
                     flowEngineManager,
@@ -213,6 +215,7 @@ namespace ColorVision.Engine.FlowProcessing
 
         private async Task<FlowRunFinalizedData?> FinalizeFlowCompletionAsync(
             FlowControlData flowControlData,
+            MeasureBatchModel? completedBatch,
             string? flowKey,
             FlowExecutionJournalScope? journalScope)
         {
@@ -221,7 +224,6 @@ namespace ColorVision.Engine.FlowProcessing
 
             _stopwatch.Stop();
             StopRuntimeTimer();
-            MeasureBatchModel? completedBatch = CurrentBatch;
             string completedFlowName = _flowName;
             long completedGeneration = Volatile.Read(ref _executionGeneration);
             string? completedErrorNodeKey = string.IsNullOrWhiteSpace(flowControlData.ErrorNodeId)
@@ -241,11 +243,7 @@ namespace ColorVision.Engine.FlowProcessing
                     completedBatch.Result = flowControlData.Params;
                     try
                     {
-                        if (completedBatch.Id > 0)
-                        {
-                            using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
-                            Db.Updateable(completedBatch).ExecuteReturnEntity();
-                        }
+                        FlowMeasurementBatch.UpdateOutcome(completedBatch);
                     }
                     catch (Exception ex)
                     {
@@ -1320,24 +1318,21 @@ namespace ColorVision.Engine.FlowProcessing
                 _stopwatch.Restart();
                 _timer.Change(0, 100); // 启动定时器
 
-                CurrentBatch = new MeasureBatchModel()
+                preparedBatch = new MeasureBatchModel
                 {
                     TId = selectedFlowParam.Id > 0 ? selectedFlowParam.Id : null,
                     Name = sn,
                     Code = sn
                 };
-                FlowControl.PersistResults = MySqlSetting.IsConnect;
-                if (FlowControl.PersistResults)
-                {
-                    using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
-                    CurrentBatch.Id = Db.Insertable(CurrentBatch).ExecuteReturnIdentity();
-                }
-                preparedBatch = CurrentBatch;
+                CurrentBatch = preparedBatch;
+                MySqlConnectedEndpoint? endpoint = _getBatchEndpoint();
+                FlowControl.PersistResults = endpoint?.IsCurrent == true;
+                FlowMeasurementBatch? databaseBatch = FlowControl.PersistResults ? FlowMeasurementBatch.Insert(preparedBatch, endpoint!) : null;
                 journalScope = TryBeginExecutionJournal(
                     selectedFlowParam,
                     flowName,
                     sn,
-                    CurrentBatch);
+                    preparedBatch);
                 _activeJournalScope = journalScope;
                 journalScope?.TryAppendEvent(
                     "pre-process-started",
@@ -1414,7 +1409,8 @@ namespace ColorVision.Engine.FlowProcessing
                         startNodeName,
                         sn,
                         executionTimeout,
-                        flowRunCts.Token);
+                        flowRunCts.Token,
+                        databaseBatch);
                 executionStarted = execution.Started;
                 executionData = execution.Data;
                 startRejected =
@@ -1439,6 +1435,7 @@ namespace ColorVision.Engine.FlowProcessing
                 FlowRunFinalizedData? finalizedResult =
                     await FinalizeFlowCompletionAsync(
                         executionData,
+                        preparedBatch,
                         executionSnapshot.FlowKey,
                         journalScope);
                 long elapsed = _stopwatch.ElapsedMilliseconds;
@@ -1549,8 +1546,7 @@ namespace ColorVision.Engine.FlowProcessing
                 batch.FlowStatus = status;
                 batch.TotalTime = (int)_stopwatch.ElapsedMilliseconds;
                 batch.Result = result;
-                using var db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
-                db.Updateable(batch).ExecuteCommand();
+                FlowMeasurementBatch.UpdateOutcome(batch);
             }
             catch (Exception ex)
             {

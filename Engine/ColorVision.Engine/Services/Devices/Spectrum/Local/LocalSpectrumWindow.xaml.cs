@@ -15,12 +15,17 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Local;
 public partial class LocalSpectrumWindow : Window
 {
     private readonly DeviceSpectrum device;
+    private readonly DeviceConfigurationTarget configurationTarget;
     private readonly ViewSpectrum results;
+    private readonly CancellationTokenSource lifetime = new();
     private LocalSpectrumCapture? latest;
     private LocalSpectrumNode? node;
+    private bool closed;
+    private bool CanUseWindow => !closed && !device.IsDisposed;
     internal LocalSpectrumWindow(DeviceSpectrum device)
     {
         this.device = device;
+        configurationTarget = device.CaptureConfigurationTarget();
         InitializeComponent();
         ColorVision.Themes.ThemeManagerExtensions.ApplyCaption(this);
         DataContext = device;
@@ -28,7 +33,23 @@ public partial class LocalSpectrumWindow : Window
         ResultHost.Content = results;
         device.LocalResultAvailable += ResultAvailable;
         device.LocalCaptureFailed += CaptureFailed;
-        Closed += (_, _) => { device.LocalResultAvailable -= ResultAvailable; device.LocalCaptureFailed -= CaptureFailed; results.Dispose(); };
+    }
+
+    protected override void OnClosed(EventArgs e)
+    {
+        closed = true;
+        lifetime.Cancel();
+        lifetime.Dispose();
+        device.LocalResultAvailable -= ResultAvailable;
+        device.LocalCaptureFailed -= CaptureFailed;
+        node = null;
+        try { results.Dispose(); }
+        finally { base.OnClosed(e); }
+    }
+
+    internal void CloseForDeviceRetirement()
+    {
+        if (!closed) Close();
     }
 
     internal void AttachNode(LocalSpectrumNode? value)
@@ -38,17 +59,22 @@ public partial class LocalSpectrumWindow : Window
     }
     private void ResultAvailable(LocalSpectrumCapture result, bool continuous)
     {
+        if (!CanUseWindow) return;
         latest = result;
         results.AddViewResultSpectrum(DeviceSpectrum.CreateLocalSpectrumView(result));
         Message.Text = LocalizedText.Format($"采集完成  {result.CapturedAt:HH:mm:ss}  积分 {result.IntegralTime:0.###} ms");
     }
-    private void CaptureFailed(string error) => Dispatcher.BeginInvoke(() => Message.Text = error);
+    private void CaptureFailed(string error) => Dispatcher.BeginInvoke(() =>
+    {
+        if (CanUseWindow) Message.Text = error;
+    });
 
     private async void Command_Click(object sender, RoutedEventArgs e)
     {
-        if (sender is not Button { Tag: string command }) return;
+        if (!CanUseWindow || sender is not Button { Tag: string command }) return;
         try
         {
+            CancellationToken cancellation = lifetime.Token;
             Message.Text = command is "GetDataAutoStop" or "Close"
                 ? "正在停止，等待当前采集返回…" : LocalizedText.Get("正在执行…");
             string eventName = command;
@@ -58,7 +84,8 @@ public partial class LocalSpectrumWindow : Window
                 eventName = transmitting != device.Config.ShutterCfg.OpenForDark ? "ShutterDoOpen" : "ShutterDoClose";
             }
             MsgRecord record = device.RunLocalSpectrumCommand(eventName);
-            MsgRecordState state = await ScheduledDeviceJobHelper.WaitForTerminalStateAsync(record, TimeSpan.FromMinutes(20), CancellationToken.None);
+            MsgRecordState state = await ScheduledDeviceJobHelper.WaitForTerminalStateAsync(record, TimeSpan.FromMinutes(20), cancellation);
+            if (!CanUseWindow) return;
             Message.Text = state == MsgRecordState.Success
                 ? LocalizedText.Get(command switch
                 {
@@ -69,12 +96,12 @@ public partial class LocalSpectrumWindow : Window
                 })
                 : record.MsgReturn?.Message ?? LocalizedText.Get("操作失败");
         }
-        catch (Exception ex) { Message.Text = ex.Message; }
+        catch (Exception ex) { if (CanUseWindow) Message.Text = ex.Message; }
     }
 
     private void ApplyNode_Click(object sender, RoutedEventArgs e)
     {
-        if (node == null) return;
+        if (!CanUseWindow || node == null || !device.IsConfigurationTargetCurrent(configurationTarget)) return;
         node.IntegralTime = (float)device.DisplayConfig.IntTime;
         node.NumberOfAverage = device.DisplayConfig.AveNum;
         node.AutoIntegration = device.DisplayConfig.IsAutoIntTime;
@@ -83,17 +110,20 @@ public partial class LocalSpectrumWindow : Window
         node.SelfAdaptionInitDark = device.DisplayConfig.IsShutter;
         node.Eqe = device.DisplayConfig.IsLuminousFluxMode;
         node.AFactor = device.DisplayConfig.Divisor;
-        node.Voltage = (float)device.DisplayConfig.V;
-        node.Current = (float)device.DisplayConfig.I;
+        var inputs = device.DisplayConfig.ReadEffectiveElectricalInputs();
+        node.Voltage = (float)inputs.Voltage;
+        node.Current = (float)(inputs.CurrentInAmperes.HasValue || device.IsLocalSpectrumBackend
+            ? inputs.NativeCurrentAmps : inputs.LegacyRemoteCurrent / 1000.0);
         Message.Text = LocalizedText.Get("参数已应用到节点，请保存流程。");
     }
 
     private void Export_Click(object sender, RoutedEventArgs e)
     {
-        if (latest == null) { Message.Text = LocalizedText.Get("请先采集一条结果。"); return; }
-        var dialog = new SaveFileDialog { Filter = "光谱结果 (*.json)|*.json", FileName = $"Spectrum-{latest.CapturedAt:yyyyMMdd-HHmmss}.json" };
-        if (dialog.ShowDialog(this) != true) return;
-        try { File.WriteAllText(dialog.FileName, JsonConvert.SerializeObject(latest, Formatting.Indented)); Message.Text = LocalizedText.Get("结果已导出。"); }
+        if (!CanUseWindow) return;
+        if (latest is not { } captured) { Message.Text = LocalizedText.Get("请先采集一条结果。"); return; }
+        var dialog = new SaveFileDialog { Filter = "光谱结果 (*.json)|*.json", FileName = $"Spectrum-{captured.CapturedAt:yyyyMMdd-HHmmss}.json" };
+        if (dialog.ShowDialog(this) != true || !CanUseWindow) return;
+        try { File.WriteAllText(dialog.FileName, JsonConvert.SerializeObject(captured, Formatting.Indented)); Message.Text = LocalizedText.Get("结果已导出。"); }
         catch (Exception ex) { Message.Text = ex.Message; }
     }
 }

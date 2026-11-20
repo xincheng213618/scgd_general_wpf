@@ -1,4 +1,5 @@
 ﻿using ColorVision.Database;
+using ColorVision.Engine.Services.Devices.Camera.Local;
 using ColorVision.Engine.Services.Devices.Spectrum.Dao;
 using FlowEngineLib.Base;
 using Newtonsoft.Json;
@@ -60,27 +61,35 @@ internal static class LocalSpectrumResultService
 
     private static float? FiniteFloat(double value) => float.IsFinite((float)value) ? (float)value : null;
 
-    internal static SpectumResultEntity Save(LocalSpectrumCapture capture, LocalSpectrumParameters parameters, CVStartCFC? action = null, int zIndex = 0)
+    internal static SpectumResultEntity Save(LocalSpectrumCapture capture, LocalSpectrumParameters parameters, MySqlConnectedEndpoint? endpoint)
     {
         var model = CreateModel(capture, parameters);
-        bool persist = action?.PersistResults ?? MySqlSetting.IsConnect;
-        if (!persist) return model;
-        if (action != null)
+        if (endpoint == null) return model;
+        using var db = endpoint.CreateDbClient();
+        return Insert(db, capture, model);
+    }
+
+    internal static SpectumResultEntity SaveFlow(LocalSpectrumCapture capture, LocalSpectrumParameters parameters,
+        CVStartCFC action, int zIndex, MySqlConnectedEndpoint? endpoint)
+    {
+        var model = CreateModel(capture, parameters);
+        if (!action.PersistResults) return model;
+        MySqlConnectedEndpoint database = endpoint ?? throw new InvalidOperationException("保存本地光谱流程结果需要已验证的 MySQL 连接。");
+        model.BatchId = LocalFlowResultPersistence.ResolveBatchId(action, database);
+        model.Zindex = zIndex;
+        if (!parameters.Eqe && action.Data.TryGetValue("SMUResult", out var value)
+            && value is FlowEngineLib.SMUResultData { MasterId: > 0, MasterResultType: 200 } smu)
         {
-            MeasureBatchModel batch = BatchResultMasterDao.Instance.GetByNameOrCode(action.SerialNumber)
-                ?? throw new InvalidOperationException($"找不到流程批次：{action.SerialNumber}");
-            model.BatchId = batch.Id;
-            model.Zindex = zIndex;
-            if (!parameters.Eqe && action.Data.TryGetValue("SMUResult", out var value)
-                && value is FlowEngineLib.SMUResultData { MasterId: > 0, MasterResultType: 200 } smu)
-            {
-                model.SmuDataId = smu.MasterId;
-                model.VResult = FiniteFloat(smu.V);
-                model.IResult = FiniteFloat(smu.I);
-            }
+            model.SmuDataId = smu.MasterId;
+            model.VResult = FiniteFloat(smu.V);
+            model.IResult = FiniteFloat(smu.I);
         }
-        // Historical results always use the existing MySQL table, never the configuration SQLite store.
-        using var db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = DbType.MySql, IsAutoCloseConnection = true });
+        using var db = database.CreateDbClient();
+        return Insert(db, capture, model);
+    }
+
+    private static SpectumResultEntity Insert(SqlSugarClient db, LocalSpectrumCapture capture, SpectumResultEntity model)
+    {
         model.Id = db.Insertable(model).ExecuteReturnIdentity();
         if (model.Id <= 0) throw new InvalidOperationException("保存本地光谱结果失败。");
         capture.MeasurementId = model.Id;

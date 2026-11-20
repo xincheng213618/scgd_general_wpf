@@ -56,6 +56,12 @@ related: ["projects.index","projects.arvr-pro-demo","projects.arvr-pro-protocol"
 
 节点诊断由 `FlowNodeExecutionRecorder` 按运行编号收尾，旧流程的迟到事件不能关闭新一轮。新批次启动前会收尾停止流程的残留记录。诊断落库超时或失败记日志，操作员可继续启动下一轮。
 
+单步和一键执行在创建批次时捕获 MySQL 连接。支持批次绑定的宿主用该批次启动。终态按批次 ID 和 Code 匹配，只更新状态、耗时和结果。后处理的主记录、明细、采集图和尺寸回填沿用原库，即使运行中切库。原库不可读或原批次缺失时报告失败。旧宿主沿用已有启动接口，若启动前已发现切库则拒绝启动。
+
+“ARVR结果查看”后处理沿用 Engine 批次的原库。SQLite 已存结果只有数据库来源、批次 ID、Code 和流程名都匹配时才可直接复用。来源由服务器、端口和库名生成，不含凭据。旧记录缺少来源时从能够确认的原库重新解析。项目结果和节拍统计打开流程历史时也核对已保存的来源和批次身份。历史记录没有 Code 时核对 SN 与批次名称。
+
+项目结果列表的删除命令在确认后按选中步骤记录的身份删除该条 SQLite 结果。整轮判定记录、Engine MySQL 批次和已导出的文件各有独立的管理入口。
+
 宿主提供 `QueueFlowRunAsync` 时，成功流程的 SQLite 诊断记录在后台收尾，生产批次和结果仍按原顺序保存。诊断队列积累到四轮时，最多等待最早一轮 5 秒，超时后后台仍继续写入。结果页和节拍统计里的“流程执行分析”会先等待选中批次的诊断写入，超时可稍后重试。`ARVRFlowPhaseTiming` 的 `FlowDiagnosticsDeferred=True` 表示 `FlowRunRecordMs`、`NodeRecorderFlushMs` 记录入队耗时。实际写入结果见同一序列号和批次的 `ARVRFlowDiagnosticsCompletion`，节拍上等待诊断队列的时间单独记录为 `FlowDiagnosticsBackpressureMs`。
 
 `ARVRFlowPhaseTiming.ResultSqliteWrites` 分别记录明细、整组汇总和完成时间的保存阶段。`GateWaitMs` 是本进程的数据库维护锁等待，`BeginMs` 包含 SQLite 开启事务时的等待，`RowMs` 是字段写入，`CompressionMs` 和 `PayloadMs` 分别是 GZip 压缩与 BLOB 写入。`CommitMs` 记录显式提交。完成时间使用单条语句，隐式提交计入 `RowMs`。明细的 `PublicationMs` 包含提交后的列表检查和同步界面回调。未取得耗时的阶段为空，`Succeeded` 记录保存调用的结果。
@@ -65,6 +71,8 @@ related: ["projects.index","projects.arvr-pro-demo","projects.arvr-pro-protocol"
 “空间不足时自动清理”默认关闭。启用后按各输出盘的剩余空间下限检查，默认 100 GiB。`ResultStorageSpaceManager` 从旧到新删除已识别的导出图像、标准 CSV 和历史日汇总 XLSX，达到阈值即停止。原始采集、数据库、快捷方式目标、未知文件、当前 SN、在途输出和当天汇总受保护。只扫描配置的结果和客户报表目录。清理后 SQLite 历史仍在，历史图像需核对候选文件。
 
 清理仅支持本地磁盘目录，跳过根目录、符号链接、联接和挂载点。阈值不小于总容量时跳过。占用、权限或容量不足等问题见清理日志，保存按原错误处理继续。CSV/XLSX 保存完成后才发送最终响应，保存期间拒绝下一轮初始化与启动。
+
+金星 1.0 抽检报表按项目和日期追加到 `yyyy-M-dTestResults+{项目名}.xlsx`。同一进程串行读取、追加并保存工作簿。新内容先写入同目录暂存文件，写入并关闭成功后才替换日报。写入或替换失败时保留原日报，暂存文件按失败路径清理。
 
 底部“设置”进入“检测设置”，结果栏齿轮进入“结果保存”，均打开“模组检测设置”。结果目录、CSV、旧格式兼容、客户报表和编号在“结果保存”。标记图、原图和快捷方式在“图像保存”，共用输出根目录。雷鸟串口及手动切图从流程处理配置的“雷鸟连接与切图”进入。
 

@@ -11,7 +11,6 @@ using log4net;
 using Microsoft.Win32;
 using Newtonsoft.Json;
 using ProjectARVRPro.LegacyARVR;
-using SqlSugar;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
@@ -1954,20 +1953,8 @@ namespace ProjectARVRPro
             }.Show();
         }
 
-        private MeasureBatchModel? GetMeasureBatch(ProjectARVRReuslt? item)
-        {
-            if (_offlineSource != null) return null;
-            if (item == null || item.BatchId <= 0)
-                return null;
-
-            using var db = new SqlSugarClient(new ConnectionConfig
-            {
-                ConnectionString = MySqlControl.GetConnectionString(),
-                DbType = DbType.MySql,
-                IsAutoCloseConnection = true
-            });
-            return db.Queryable<MeasureBatchModel>().Where(model => model.Id == item.BatchId).First();
-        }
+        private MeasureBatchModel? GetMeasureBatch(ProjectARVRReuslt? item) =>
+            _offlineSource == null ? ArvrBatchHistory.Resolve(item) : null;
 
         private void ViewTestResult(ProjectARVRReuslt? item)
         {

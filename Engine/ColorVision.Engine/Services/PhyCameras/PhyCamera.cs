@@ -493,41 +493,161 @@ namespace ColorVision.Engine.Services.PhyCameras
         }
 
         public void SetDeviceCamera(DeviceCamera deviceCamera)
+            => SetDeviceCamera(deviceCamera, deviceCamera.CaptureConfigurationTarget());
+
+        internal bool SetDeviceCamera(DeviceCamera deviceCamera, DeviceConfigurationTarget target)
         {
+            if (!TrySavePhysicalLicense(deviceCamera, target, calibration: false, deviceCamera.SysResourceModel.Id)) return false;
             DeviceCamera = deviceCamera;
-            if (CameraLicenseModel != null)
+            if (target.IsCurrent(deviceCamera) && CameraLicenseModel?.DevCaliId is int calibrationId)
             {
-
-                CameraLicenseModel.DevCameraId = deviceCamera.SysResourceModel.Id;
-                PhyLicenseDao.Instance.Save(CameraLicenseModel, SysResourceDao.IsLocalId(Id));
-                RefreshLicense();
-
-                if (CameraLicenseModel.DevCaliId is int calibrationId)
-                {
-                    DeviceCalibration? deviceCalibration = ServiceManager.Current?.DeviceServices
-                        .OfType<DeviceCalibration>()
-                        .FirstOrDefault(device => device.SysResourceModel.Id == calibrationId);
-                    deviceCalibration?.RestartRCService();
-                }
+                var companion = ServiceManager.Current?.DeviceServices.OfType<DeviceCalibration>()
+                    .FirstOrDefault(device => device.SysResourceModel.Id == calibrationId
+                        && string.Equals(device.Config.CameraCode, Code, StringComparison.OrdinalIgnoreCase)
+                        && SharesConfigurationSource(device, target));
+                if (target.IsCurrent(deviceCamera)) companion?.RestartRCService();
             }
+            return true;
+        }
+
+        internal void ReleaseDeviceCamera(DeviceCamera deviceCamera, DeviceConfigurationTarget target)
+        {
+            if (TrySavePhysicalLicense(deviceCamera, target, calibration: false, deviceId: null)
+                && ReferenceEquals(DeviceCamera, deviceCamera)) DeviceCamera = null;
         }
         public DeviceCalibration? DeviceCalibration { get; set; }
 
         public void SetCalibration(DeviceCalibration deviceCalibration)
+            => SetCalibration(deviceCalibration, deviceCalibration.CaptureConfigurationTarget());
+
+        internal bool SetCalibration(DeviceCalibration deviceCalibration, DeviceConfigurationTarget target)
         {
+            if (!TrySavePhysicalLicense(deviceCalibration, target, calibration: true, deviceCalibration.SysResourceModel.Id)) return false;
             DeviceCalibration = deviceCalibration;
-            if (CameraLicenseModel != null)
+            if (target.IsCurrent(deviceCalibration) && CameraLicenseModel?.DevCameraId is int cameraId)
             {
-                CameraLicenseModel.DevCaliId = deviceCalibration.SysResourceModel.Id;
-                PhyLicenseDao.Instance.Save(CameraLicenseModel, SysResourceDao.IsLocalId(Id));
-                RefreshLicense();
-                if (CameraLicenseModel.DevCameraId is int cameraId)
+                var companion = ServiceManager.Current?.DeviceServices.OfType<DeviceCamera>()
+                    .FirstOrDefault(device => device.SysResourceModel.Id == cameraId
+                        && string.Equals(device.Config.CameraCode, Code, StringComparison.OrdinalIgnoreCase)
+                        && SharesConfigurationSource(device, target));
+                if (target.IsCurrent(deviceCalibration)) companion?.RestartRCService();
+            }
+            return true;
+        }
+
+        private static bool SharesConfigurationSource(DeviceService device, DeviceConfigurationTarget target)
+        {
+            var companion = device.CaptureConfigurationTarget();
+            return companion.IsCurrent(device) && ReferenceEquals(companion.Endpoint, target.Endpoint)
+                && ReferenceEquals(companion.LocalResources?.LocalResourceStore, target.LocalResources?.LocalResourceStore);
+        }
+
+        internal ConfigPhyCamera? ReadOwnedPhysicalConfiguration(DeviceService device, DeviceConfigurationTarget target)
+        {
+            if (!target.IsCurrent(device)) return null;
+            var physical = SysResourceModel;
+            string? storedConfiguration = physical.Value;
+            if (target.LocalResources is { } local && SysResourceDao.IsLocalId(physical.Id))
+                return ReadCurrentSource(local.GetById(physical.Id));
+            if (target.Endpoint is not { } endpoint || physical.Id <= 0) return null;
+
+            using var db = endpoint.CreateDbClient();
+            return ReadCurrentSource(db.Queryable<SysResourceModel>().First(row => row.Id == physical.Id));
+
+            ConfigPhyCamera? ReadCurrentSource(SysResourceModel? row)
+            {
+                if (!MatchesPhysicalResource(row, physical) || !string.Equals(row!.Value, storedConfiguration, StringComparison.Ordinal)
+                    || !ReferenceEquals(SysResourceModel, physical) || !string.Equals(physical.Value, storedConfiguration, StringComparison.Ordinal)
+                    || !target.IsCurrent(device)) return null;
+
+                var configuration = ServiceObjectBaseExtensions.TryDeserializeConfig<ConfigPhyCamera>(row.Value);
+                string? liveId = Config.CameraID?.Trim();
+                bool ownsLiveId = !string.IsNullOrEmpty(liveId) && string.Equals(Tool.GetMD5(liveId), row.Code, StringComparison.OrdinalIgnoreCase);
+                configuration.CameraID = PhysicalCameraIdentity.ReadCameraId(row, ownsLiveId ? liveId : configuration.CameraID);
+                return configuration;
+            }
+        }
+
+        private static bool MatchesPhysicalResource(SysResourceModel? row, SysResourceModel expected) =>
+            row is { IsDelete: false } && row.Id == expected.Id && row.Type == (int)ServiceTypes.PhyCamera && row.Type == expected.Type
+                && row.TenantId == expected.TenantId && row.Pid == expected.Pid && !string.IsNullOrWhiteSpace(expected.Code)
+                && string.Equals(row.Code, expected.Code, StringComparison.OrdinalIgnoreCase);
+
+        private bool TrySavePhysicalLicense(DeviceService device, DeviceConfigurationTarget target, bool calibration, int? deviceId)
+        {
+            if (!target.IsCurrent(device)) return false;
+            if (CameraLicenseModel == null) return true;
+
+            try
+            {
+                if (TryUpdateOwnedLicenseLink(device, target, calibration, deviceId)) return true;
+                if (target.IsCurrent(device))
+                    log.Warn($"Device configuration was saved but the linked camera license could not be updated. Device={device.Code}, Camera={Code}.");
+            }
+            catch (Exception error)
+            {
+                log.Warn($"Device configuration was saved but updating the linked camera license failed. Device={device.Code}, Camera={Code}.", error);
+            }
+            return false;
+        }
+
+        private bool TryUpdateOwnedLicenseLink(DeviceService device, DeviceConfigurationTarget target, bool calibration, int? deviceId)
+        {
+            if (!target.IsCurrent(device)) return false;
+            var physical = SysResourceModel;
+            int physicalId = physical.Id;
+            string? code = physical.Code;
+            bool IsCurrent() => target.IsCurrent(device) && ReferenceEquals(SysResourceModel, physical)
+                && physical.Id == physicalId && string.Equals(physical.Code, code, StringComparison.OrdinalIgnoreCase);
+
+            LicenseModel? license;
+            if (target.LocalResources is { } local && SysResourceDao.IsLocalId(physicalId))
+            {
+                if (!MatchesPhysicalResource(local.GetById(physicalId), physical) || !IsCurrent()) return false;
+                var licenses = new PhyLicenseDao(local.LocalResourceStore);
+                var matches = licenses.GetLocal().Where(IsCameraLicense).Take(2).ToArray();
+                if (matches.Length > 1) return false;
+                license = matches.FirstOrDefault();
+                if (license != null && ShouldUpdate(license) && !licenses.TryUpdateLocal(license.Id, row =>
                 {
-                    DeviceCamera? deviceCamera = ServiceManager.Current?.DeviceServices
-                        .OfType<DeviceCamera>()
-                        .FirstOrDefault(device => device.SysResourceModel.Id == cameraId);
-                    deviceCamera?.RestartRCService();
+                    if (!IsCurrent() || !IsCameraLicense(row) || LinkId(row) != LinkId(license)) return false;
+                    SetLink(row);
+                    return true;
+                })) return false;
+            }
+            else if (target.Endpoint is { } endpoint && physicalId > 0)
+            {
+                using var db = endpoint.CreateDbClient();
+                if (!IsCurrent() || !MatchesPhysicalResource(db.Queryable<SysResourceModel>().First(row => row.Id == physicalId), physical)) return false;
+                var matches = db.Queryable<LicenseModel>().Where(row => row.LiceType == 0 && row.MacAddress == code).Take(2).ToList();
+                if (matches.Count > 1) return false;
+                license = matches.FirstOrDefault();
+                if (license != null && !IsCameraLicense(license)) return false;
+                if (license != null && ShouldUpdate(license))
+                {
+                    if (!IsCurrent()) return false;
+                    int? previousLink = LinkId(license);
+                    var update = db.Updateable<LicenseModel>().Where(row => row.Id == license.Id && row.LiceType == 0 && row.MacAddress == code);
+                    int changed = calibration
+                        ? update.SetColumns(row => row.DevCaliId == deviceId).Where(row => row.DevCaliId == previousLink).ExecuteCommand()
+                        : update.SetColumns(row => row.DevCameraId == deviceId).Where(row => row.DevCameraId == previousLink).ExecuteCommand();
+                    if (changed != 1) return false;
                 }
+            }
+            else return false;
+
+            if (!IsCurrent()) return false;
+            if (license != null && ShouldUpdate(license)) SetLink(license);
+            CameraLicenseModel = license;
+            return IsCurrent();
+
+            bool IsCameraLicense(LicenseModel row) => row.LiceType == 0 && string.Equals(row.MacAddress, code, StringComparison.OrdinalIgnoreCase);
+            int? LinkId(LicenseModel row) => calibration ? row.DevCaliId : row.DevCameraId;
+            bool ShouldUpdate(LicenseModel row) => LinkId(row) != deviceId && (deviceId.HasValue || LinkId(row) == device.SysResourceModel.Id);
+            void SetLink(LicenseModel row)
+            {
+                if (calibration) row.DevCaliId = deviceId;
+                else row.DevCameraId = deviceId;
             }
         }
 

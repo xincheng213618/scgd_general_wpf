@@ -23,29 +23,36 @@ using System.Windows;
 namespace ColorVision.Engine.FlowProcessing.Nodes;
 
 internal sealed record LocalRgbCrossSaveRequest(CVStartCFC Action, JsonElement Measurement,
-    string? ImageFile, string Directory, int ZIndex, int TotalTime, object Audit);
+    string? ImageFile, string Directory, int ZIndex, int TotalTime, object Audit, MySqlConnectedEndpoint? DatabaseEndpoint);
 internal sealed record LocalRgbCrossSavedResult(int MasterId, string ResultFilePath);
 internal interface ILocalRgbCrossNodeServices
 {
-    string ResolveResultDirectory(string configuredDirectory);
-    Int32Rect LoadSearchRegionTemplate(string name);
+    string ResolveResultDirectory(string configuredDirectory, MySqlConnectedEndpoint? endpoint);
+    Int32Rect LoadSearchRegionTemplate(string name, MySqlConnectedEndpoint? endpoint);
     LocalFlowFrame LoadFrame(string path);
-    MeasureResultImgModel? GetImageResult(int id);
+    MeasureResultImgModel? GetImageResult(int id, MySqlConnectedEndpoint? endpoint);
     AlgorithmResult Detect(LocalFlowFrameLease frame, AlgorithmInvocation invocation);
     LocalRgbCrossSavedResult Save(LocalRgbCrossSaveRequest request);
-    void Publish(string serialNumber, string nodeId, int zIndex, int masterId);
+    void Publish(string serialNumber, string nodeId, int zIndex, int masterId, MySqlConnectedEndpoint? endpoint);
 }
 
 internal sealed class LocalRgbCrossNodeServices : ILocalRgbCrossNodeServices
 {
-    public string ResolveResultDirectory(string configuredDirectory) => LocalAlgorithmResultDirectory.Resolve(configuredDirectory);
-    public Int32Rect LoadSearchRegionTemplate(string name) => LocalPoiSearchRegionResolver.Load(name);
+    public string ResolveResultDirectory(string configuredDirectory, MySqlConnectedEndpoint? endpoint) =>
+        LocalAlgorithmResultDirectory.Resolve(configuredDirectory, RequireEndpoint(endpoint));
+    public Int32Rect LoadSearchRegionTemplate(string name, MySqlConnectedEndpoint? endpoint) =>
+        LocalPoiSearchRegionResolver.Load(name, RequireEndpoint(endpoint));
     public LocalFlowFrame LoadFrame(string path) => LocalFrameFileService.Load(path);
-    public MeasureResultImgModel? GetImageResult(int id) => MeasureImgResultDao.Instance.GetById(id);
+    public MeasureResultImgModel? GetImageResult(int id, MySqlConnectedEndpoint? endpoint) =>
+        MeasureImgResultDao.ReadResult(RequireEndpoint(endpoint), id);
     public AlgorithmResult Detect(LocalFlowFrameLease frame, AlgorithmInvocation invocation) => LocalFlowImageAlgorithmAdapter.ExecuteRawAsync(frame, invocation).AsTask().GetAwaiter().GetResult();
     public LocalRgbCrossSavedResult Save(LocalRgbCrossSaveRequest request) => LocalRgbCrossResultPersistence.Save(request);
-    public void Publish(string serialNumber, string nodeId, int zIndex, int masterId) => ResultMessageBus.Default.PublishPersisted(
-        ResultRoutes.LocalFlow, ResultKinds.Algorithm, "", "FindCross", serialNumber, nodeId, zIndex, masterId, (int)ViewResultAlgType.FindCross);
+    public void Publish(string serialNumber, string nodeId, int zIndex, int masterId, MySqlConnectedEndpoint? endpoint) =>
+        ResultMessageBus.Default.PublishPersisted(ResultRoutes.LocalFlow, ResultKinds.Algorithm, "", "FindCross",
+            serialNumber, nodeId, zIndex, masterId, (int)ViewResultAlgType.FindCross, RequireEndpoint(endpoint));
+
+    internal static MySqlConnectedEndpoint RequireEndpoint(MySqlConnectedEndpoint? endpoint) =>
+        endpoint ?? throw new InvalidOperationException("十字 RGB 分离需要已连接的流程数据库来读取或保存结果。");
 }
 
 internal static class LocalRgbCrossResultPersistence
@@ -62,14 +69,17 @@ internal static class LocalRgbCrossResultPersistence
 
     internal static LocalRgbCrossSavedResult Save(LocalRgbCrossSaveRequest request)
     {
-        var batch = BatchResultMasterDao.Instance.GetByNameOrCode(request.Action.SerialNumber)
-            ?? throw new InvalidOperationException("找不到十字流程批次。");
+        MySqlConnectedEndpoint endpoint = LocalRgbCrossNodeServices.RequireEndpoint(request.DatabaseEndpoint);
+        int batchId = LocalFlowResultPersistence.ResolveBatchId(request.Action, endpoint);
+        var stop = request.Action.RuntimeResources.StopToken;
+        stop.ThrowIfCancellationRequested();
         string directory = Path.GetFullPath(request.Directory);
-        string file = Path.Combine(directory, $"RgbCross_{batch.Id}_{Guid.NewGuid():N}.json");
+        string file = Path.Combine(directory, $"RgbCross_{batchId}_{Guid.NewGuid():N}.json");
         RgbCrossMeasurementExporter.Write(request.Measurement, file);
         try
         {
-            int id = LocalFindCrossResultPersistence.SaveDatabaseCore(CreateMaster(request, batch.Id), file, static () => new SqlSugarLocalFindCrossResultTransaction());
+            int id = LocalFindCrossResultPersistence.SaveDatabaseCore(CreateMaster(request, batchId), file,
+                () => new SqlSugarLocalFindCrossResultTransaction(endpoint), stop);
             return new(id, file);
         }
         catch (Exception error)
@@ -114,17 +124,18 @@ public sealed class LocalRgbCrossNode : LocalFlowNodeBase
     protected override LocalNodeExecutionResult ExecuteLocal(CVStartCFC action) => new() { Data = ExecuteSynchronously(action) };
     internal LocalRgbCrossSavedResult ExecuteSynchronously(CVStartCFC action)
     {
+        MySqlConnectedEndpoint? endpoint = LocalFlowResultPersistence.ResolveEndpoint(action);
         if (!RgbCrossConfigurationDraft.TryCreate(ParameterJson, out var configuration, out string error)
             || !configuration!.TryGetParameters(out var parameters, out error)) throw new InvalidOperationException(error);
-        string poiTemplate = SearchRegionPoiTemplate.Trim(), directory = services.ResolveResultDirectory(ResultDirectory), nodeId = NodeID;
+        string poiTemplate = SearchRegionPoiTemplate.Trim(), directory = services.ResolveResultDirectory(ResultDirectory, endpoint), nodeId = NodeID;
         Int32Rect region = SearchRegion; int zIndex = ZIndex;
         LocalFlowFrame? ownedFrame = null;
-        LocalFlowFrame frame = ResolveFrame(action, out ownedFrame, out string? imageFile);
+        LocalFlowFrame frame = ResolveFrame(action, endpoint, out ownedFrame, out string? imageFile);
         try
         {
             using var lease = frame.Acquire();
             if (!lease.IsFlipApplied) throw new InvalidOperationException("当前图像方向变换尚未完成。");
-            var roi = LocalFindLuminousAreaNode.ResolveRoi(poiTemplate.Length == 0 ? region : services.LoadSearchRegionTemplate(poiTemplate), lease.Metadata.Width, lease.Metadata.Height);
+            var roi = LocalFindLuminousAreaNode.ResolveRoi(poiTemplate.Length == 0 ? region : services.LoadSearchRegionTemplate(poiTemplate, endpoint), lease.Metadata.Width, lease.Metadata.Height);
             var invocation = AlgorithmInvocation.Create(DisplayMetrologyIds.RgbCrossRegistration, parameters,
                 roi.Width == 0 ? null : new RectangleAlgorithmRoi(roi.X, roi.Y, roi.Width, roi.Height));
             var timer = Stopwatch.StartNew();
@@ -134,20 +145,20 @@ public sealed class LocalRgbCrossNode : LocalFlowNodeBase
             // The file association is taken only from the frame actually measured, never another batch image.
             var request = new LocalRgbCrossSaveRequest(action, measurement, imageFile, directory, zIndex,
                 (int)Math.Min(timer.ElapsedMilliseconds, int.MaxValue), new { Algorithm = DisplayMetrologyIds.RgbCrossRegistration.ToString(), FrameId = lease.FrameId,
-                    SourceMasterId = lease.MasterId, SearchRegionPoiTemplate = poiTemplate, SearchRegion = roi, Parameters = parameters, JsonSchema = RgbCrossMeasurementExporter.SchemaId });
+                    SourceMasterId = lease.MasterId, SearchRegionPoiTemplate = poiTemplate, SearchRegion = roi, Parameters = parameters, JsonSchema = RgbCrossMeasurementExporter.SchemaId }, endpoint);
             LocalRgbCrossSavedResult saved = FlowNodeTiming.Run("PersistResult", () => services.Save(request));
             if (saved.MasterId <= 0 || string.IsNullOrWhiteSpace(saved.ResultFilePath)) throw new InvalidOperationException("十字结果持久化返回无效记录。");
             if (ownedFrame != null) { action.SetCurrentFrame(ownedFrame); ownedFrame = null; }
             action.Data["LocalRgbCrossResultFile"] = saved.ResultFilePath;
             action.Data["LocalRgbCrossMeasurement"] = measurement.Clone();
             action.MasterValue(null, saved.MasterId, (int)ViewResultAlgType.FindCross);
-            FlowNodeTiming.Run("PublishResult", () => services.Publish(action.SerialNumber, nodeId, zIndex, saved.MasterId));
+            FlowNodeTiming.Run("PublishResult", () => services.Publish(action.SerialNumber, nodeId, zIndex, saved.MasterId, endpoint));
             return saved;
         }
         finally { ownedFrame?.Dispose(); }
     }
     protected override string BuildRunPayload(CVStartCFC action) => JsonConvert.SerializeObject(new { ServiceName = NodeName, EventName = "FindCross", action.SerialNumber, ParameterJson, SearchRegionPoiTemplate, SearchRegion, ResultDirectory });
-    private LocalFlowFrame ResolveFrame(CVStartCFC action, out LocalFlowFrame? ownedFrame, out string? imageFile)
+    private LocalFlowFrame ResolveFrame(CVStartCFC action, MySqlConnectedEndpoint? endpoint, out LocalFlowFrame? ownedFrame, out string? imageFile)
     {
         ownedFrame = null;
         imageFile = null;
@@ -165,7 +176,8 @@ public sealed class LocalRgbCrossNode : LocalFlowNodeBase
         if (masterId <= 0) throw new InvalidOperationException("流程中没有可用的上游图像；请连接相机取图、校正或“加载图片”节点。");
         if (masterResultType is not (int)CVCommCore.CVResultType.Camera_Img and not (int)CVCommCore.CVResultType.Algorithm_Calibration)
             throw new InvalidOperationException($"IN 不是图像结果：MasterId={masterId}，ResultType={masterResultType}。");
-        MeasureResultImgModel input = FlowNodeTiming.Run("ResolveImageResult", () => services.GetImageResult(masterId)) ?? throw new InvalidOperationException($"找不到 IN 图像结果：{masterId}。");
+        MeasureResultImgModel input = FlowNodeTiming.Run("ResolveImageResult", () => services.GetImageResult(masterId, endpoint))
+            ?? throw new InvalidOperationException($"找不到 IN 图像结果：{masterId}。");
         string[] candidates = new[] { input.FileUrl, input.RawFile }.OfType<string>().Where(value => !string.IsNullOrWhiteSpace(value))
             .Select(value => Path.GetFullPath(value.Trim())).ToArray();
         string? fallbackFile = candidates.FirstOrDefault(File.Exists) ?? candidates.FirstOrDefault();

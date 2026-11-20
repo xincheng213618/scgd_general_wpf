@@ -5,79 +5,101 @@ using ColorVision.Engine.Templates.Jsons;
 using ColorVision.Engine.Templates.Jsons.MTF2;
 using ColorVision.ImageEditor.Draw;
 using Newtonsoft.Json;
-using System.Collections.ObjectModel;
+using System.IO;
 using System.Text;
 
 namespace ProjectARVRPro.Process.MTF
 {
     public class MTFProcess : ProcessBase<MTFProcessConfig>
     {
+        internal Func<int, List<AlgResultMasterModel>>? ReadMasters { get; init; }
+        internal Func<int, List<DetailCommonModel>>? ReadDetails { get; init; }
+
         public override IRecipeConfig GetRecipeConfig() => Config.RecipeConfig;
 
-
-        public override async Task<bool> Execute(IProcessExecutionContext ctx)
+        public override Task<bool> Execute(IProcessExecutionContext ctx)
         {
-            if (ctx?.Batch == null || ctx.Result == null) return false;
-            var log = ctx.Log;
-            MTFViewTestResult testResult = new MTFViewTestResult();
+            if (ctx?.Result == null || ctx.ObjectiveTestResult == null)
+                return Task.FromResult(false);
 
+            string outputKey = Config.Name;
             try
             {
+                if (ctx.Batch == null)
+                    throw new InvalidDataException("MTF 缺少测量批次。");
+
                 var values = ctx.GetMeasureResults();
                 if (values.Count > 0)
                     ctx.Result.FileName = values[0].FileUrl;
 
-                var masters = AlgResultMasterDao.Instance.GetAllByBatchId(ctx.Batch.Id);
-                foreach (var master in masters.Where(m => m.ImgFileType == ViewResultAlgType.MTF && m.version == "2.0"))
+                var testResult = new MTFViewTestResult();
+                var recipe = Config.RecipeConfig.UnifiedRecipe;
+                bool allPassed = true;
+                foreach (var master in (ReadMasters?.Invoke(ctx.Batch.Id) ?? ctx.ReadMasterResults()).Where(m => m.ImgFileType == ViewResultAlgType.MTF && m.version == "2.0"))
                 {
-                    var details = DeatilCommonDao.Instance.GetAllByPid(master.Id);
-                    if (details.Count == 1)
+                    var details = ReadDetails?.Invoke(master.Id) ?? ctx.ReadDetails(DeatilCommonDao.Instance, master.Id);
+                    if (details.Count != 1)
+                        continue;
+
+                    var detail = new MTFDetailViewReslut(details[0]);
+                    if (detail.MTFResult?.result is not { Count: > 0 } measurements)
+                        continue;
+
+                    var correction = new MtfRecipeCorrection(master.Params);
+                    foreach (var mtf in measurements)
                     {
-                        var mtfDetail = new MTFDetailViewReslut(details[0]);
-                        if (mtfDetail.MTFResult?.result != null)
+                        if (mtf?.mtfValue is not double measured || !double.IsFinite(measured))
+                            throw new InvalidDataException($"MTF 结果 ID {master.Id} 的测量点 [{mtf?.name}] 缺少有限的测量值。");
+
+                        double corrected = correction.Apply(measured, recipe, mtf.name);
+                        var item = new ObjectiveTestItem
                         {
-                            var correction = new MtfRecipeCorrection(master.Params);
-                            foreach (var mtf in mtfDetail.MTFResult.result)
-                            {
-                                var hItem = new ObjectiveTestItem()
-                                {
-                                    Name = mtf.name,
-                                    Unit = Config.Unit,
-                                    Value = correction.Apply(mtf.mtfValue ?? 0, Config.RecipeConfig.UnifiedRecipe, mtf.name),
-                                    LowLimit = Config.RecipeConfig.UnifiedRecipe.Min,
-                                    UpLimit = Config.RecipeConfig.UnifiedRecipe.Max,
-                                };
-                                hItem.TestValue = hItem.Value.ToString(Config.ShowConfig);
-                                ctx.Result.Result &= hItem.TestResult;
-                                testResult.Items.Add(hItem);
-                            }
-                        }
-                        testResult.MTFDetailViewReslut = mtfDetail;
+                            Name = mtf.name,
+                            Unit = Config.Unit,
+                            Value = corrected,
+                            TestValue = corrected.ToString(Config.ShowConfig),
+                            LowLimit = recipe.Min,
+                            UpLimit = recipe.Max,
+                        };
+                        allPassed &= item.TestResult;
+                        testResult.Items.Add(item);
                     }
+                    testResult.MTFDetailViewReslut = detail;
                 }
 
-                ctx.Result.ViewResultJson = JsonConvert.SerializeObject(testResult);
+                if (testResult.Items.Count == 0)
+                    throw new InvalidDataException($"批次 {ctx.Batch.Id} 没有可判定的 MTF 2.0 测量点。");
 
-                // Add to ObjectiveTestResult via dynamic dictionary
-                if (!ctx.ObjectiveTestResult.DynamicTestResults.TryGetValue(Config.Name, out var dynamicItems))
-                {
-                    dynamicItems = new ObservableCollection<ObjectiveTestItem>();
-                    ctx.ObjectiveTestResult.DynamicTestResults[Config.Name] = dynamicItems;
-                }
-                ctx.ObjectiveTestResult.DynamicTestResults[Config.Name].Clear();
-
-                foreach (var item in testResult.Items)
-                {
-                    dynamicItems.Add(item);
-                }
-
-                return true;
+                string snapshot = JsonConvert.SerializeObject(testResult);
+                (ctx.ObjectiveTestResult.DynamicTestResults ??= new())[outputKey] = testResult.Items;
+                ctx.Result.ViewResultJson = snapshot;
+                ctx.Result.Result &= allPassed;
+                return Task.FromResult(true);
             }
-            catch (Exception ex)
+            catch (Exception error)
             {
-                log?.Error(ex);
-                return false;
+                string message = $"MTF 解析失败 [{outputKey}]：{error.Message}";
+                ctx.Log.Error(message, error);
+                Reject(ctx, outputKey, message);
+                return Task.FromResult(false);
             }
+        }
+
+        public override Task<bool> ExecuteFailure(IProcessExecutionContext ctx)
+        {
+            if (ctx?.Result != null && ctx.ObjectiveTestResult != null)
+                Reject(ctx, Config.Name, string.IsNullOrWhiteSpace(ctx.Result.Msg) ? "MTF 流程未成功完成。" : ctx.Result.Msg);
+            return Task.FromResult(false);
+        }
+
+        private static void Reject(IProcessExecutionContext ctx, string? outputKey, string message)
+        {
+            ctx.Result.Result = false;
+            ctx.Result.Msg = message;
+            ctx.Result.ViewResultJson = string.Empty;
+            ctx.ObjectiveTestResult.TotalResult = false;
+            if (outputKey != null)
+                ctx.ObjectiveTestResult.DynamicTestResults?.Remove(outputKey);
         }
 
         public override IReadOnlyList<ObjectiveTestCsvRow> GetObjectiveCsvRows(ProjectARVRReuslt result) =>

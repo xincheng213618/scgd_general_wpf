@@ -94,7 +94,7 @@ NaN/Infinity、零 CIE y、XYZ 换算溢出、采集/导入中的非法峰值 AD
 | 路径 | 输入和执行条件 | 输出与完成边界 |
 | --- | --- | --- |
 | 本地 `LocalFileCalibrationService.Calibrate` | 需要关联的 `DeviceCamera`、可解析的校准文件；曝光必须有限且大于 0；加载后必须含 RAW | 执行本地校正，写结果文件，再直接把结果模型交给视图；数据库保存是后续可失败步骤 |
-| MQTT `MQTTCalibration.Calibration` | 发送服务可访问的 `ImgFileName`、`FileType`、`TemplateParam.ID/Name`，以及 `DeviceParam.exp=[R,G,B]`、`gain=1` | `Event_GetData` 回包再按 `MasterId` 查数据库结果；回包成功不代表客户端已读到结果文件 |
+| MQTT `MQTTCalibration.Calibration` | 发送服务可访问的 `ImgFileName`、`FileType`、`TemplateParam.ID/Name`，以及 `DeviceParam.exp=[R,G,B]`、`gain=1` | 本次请求收到匹配的成功回执后，按 `MasterId` 从提交时的数据库查询图像结果 |
 
 本地入口支持能加载为 RAW 的 CVRAW、TIFF 或普通位图；当前文件服务对不含 RAW 的 CVCIE 输入会报错并提示切换 MQTT，不自动回退。仅有物理相机条目也不足以启用本地校正，还须有 `PhyCamera.DeviceCamera` 和有效本地校准资源。选择本地后端时，显示入口不以 MQTT 设备已打开为前提；这不免除本地文件和运行库依赖。
 
@@ -104,25 +104,26 @@ MQTT 请求传递文件名或路径。服务端须能访问相应文件，即使
 
 ## 结果显示与历史落库不是同一件事
 
-本地校正调用 `LocalFrameFileService.SaveCapture`，按 `Config.FileServerCfg.DataBasePath` 和校准设备 Code 保存 CVRAW，色度校正参数随文件保存；没有生成可用文件会抛错。随后创建 `MeasureResultImgModel`，文件类型与位深对应保存的 RAW，并记录源文件、模板、曝光和 `Backend` 等信息。
+本地校正在点击计算时固定关联相机、模板文件路径、曝光、备用 ROI、输出根和设备 Code。`LocalFrameFileService.SaveCapture` 将 CVRAW 写入捕获的目录，色度校正参数随文件保存。没有生成可用文件会抛错。结果模型记录源文件、模板、曝光和 `Backend`。
 
-`TryPersist` 在 MySQL 未连接时直接跳过；连接后尝试关联/创建批次并保存图像结果，失败会记日志，但已生成文件仍可用。`RunLocalCalibrationAsync` 可直接 `View.ShowResult(model)`，因此“本地操作完成并显示图像”不证明历史批次和结果记录已写入数据库。需要历史重开能力时必须另核对持久化记录及文件存续。
+启动时有设备可用的已验证 MySQL 连接，才尝试入库。中途切库仍使用原连接，查找或新建批次与写入图像结果在同一事务内完成，提交后才填写结果 ID。离线启动、批次编号重复或入库失败时，生成的 CVRAW 仍可直接打开。入库失败会记日志。结果视图直接使用生成文件，历史重开仍需核对入库记录和文件存续。
 
-MQTT 结果入口和 `ResultMessageBus` 的校准图像通知都由 `ViewCalibration` 转到 `ShowPersistedResult`：要求正数 `MasterId`，按 ID 读取 `MeasureResultImgModel`，有记录才显示。消息总线还按校准路由、图像类型和设备 Code 筛选。缺少记录、数据库不可用或 `FileUrl` 不可读，应按不同阶段诊断，而不是笼统归为“校准失败”。
+`ViewCalibration` 从 `ResultMessageBus` 接收带数据库来源的校准图像通知。手动 MQTT 校正、旧 Flow 单次校正和历史循环校正都由原请求处理匹配的成功回执。设备共用回复主题时，其他设备的回执不会触发回显。视图按设备 Code 和原数据库连接读取正数 `MasterId`，切库后丢弃旧请求的迟到结果。若未显示图像，分别核对回执、原库结果记录和 `FileUrl`。
 
 公共 MQTT 消息追踪的 `Success` 只对应匹配请求的 `Code=0`；它不会等待数据库查询和图像加载。不要用按钮完成、消息回包或列表已有旧项互相替代本次结果验收。
 
-## 三种“清理”必须分开
+设备页的“查询”和“高级查询”固定当前校准设备及其已验证的结果库。两种查询都在后台读取，最新查询成功且来源仍有效时才替换结果列表。切库或查询失败时保留原来的选中图像和列表。高级查询只读。
+
+设备历史优先按记录的 `Params.CalibrationDeviceCode` 确认校准设备，否则按记录的 `DeviceCode` 匹配。新入库的本地 Flow 校准结果记录开始处理时所属的校准设备，并保留原有相机 Code 供下游使用。仅有相机 Code 的旧记录可在批次历史中查看，后续更改设备绑定不会改变这些记录的归属。
+
+## 缓存与结果列表清理
 
 | 入口 | 实际作用与安全边界 |
 | --- | --- |
 | `ReleaseLocalCalibrationCacheCommand` / 本地缓存管理 | 按模块查看校正缓存、图像文件缓存与相机取图缓冲，支持“释放选中”和“释放全部”。图像文件缓存与全局选项共用启用开关及数量上限，默认保留 1 个 CVRAW 文件；相机取图缓冲仅释放空闲 RAW 工作内存，在用图像不受影响。释放保留磁盘标定和图像文件，但仅缓存图像会丢失；仍被活动校正上下文引用的内存不强制释放。详见[缓存管理契约](../../04-api-reference/engine-components/ColorVision.FileIO.md) |
-| `InfoCalibration.ServiceCache_Click` → `MQTTCalibration.CacheClear` | 界面先提示永久删除，再发远端 `Event_Delete_Data`；必须按远端删除操作授权，不能当作无副作用的排障动作 |
 | `ViewCalibration` 清空列表/删除结果项 | 从当前 `ViewResults` 移除，不代表删除数据库结果、输出文件或校准缓存 |
 
-远端清理的现有界面在任意 `MsgRecordStateChanged` 时都弹出“清理完成”，没有先判断 `Success`；该提示不能证明删除成功。应核对对应请求的 Code/终态及远端实际结果。本页不宣称已经修复该行为，也不建议因怀疑旧缓存就先执行删除。
-
-当前 `MQTTCalibration` 只封装校正请求与缓存删除，没有独立的原始文件列表/下载方法；不要从服务名称推断这些操作可用。
+`MQTTCalibration.CacheClear` 封装远端永久删除的 `Event_Delete_Data`。设备页只提供本地缓存管理，旧的 `InfoCalibration.ServiceCache_Click` 处理函数没有绑定到界面。
 
 ## Flow 本地校正是独立入口
 
@@ -140,7 +141,7 @@ MQTT 结果入口和 `ResultMessageBus` 的校准图像通知都由 `ViewCalibra
 
 只有“校正+实时 POI”节点兼容外部 CVRAW 把文件头曝光写成全 0 的情况：它按 `IN_IMG` 的结果 ID 读取 `MeasureResultImgModel.Params`，从根级 `ExpTime`（旧相机结果）或 `Exposure`（本地校正结果）恢复全部为有限正数的曝光值。有效文件头始终优先；文件头不是全 0、数据库记录不存在、JSON 无效或记录曝光仍非正时继续按原校正校验报错。普通“校正”节点及手动文件校正不启用该回退，避免把不匹配记录的曝光套到其他输入。
 
-“校正+实时 POI”在两种模式下均将 POI 结果保存到当前流程批次。留空模板时，POI 关联上游图像记录。选择模板时，节点另行保存校正图像结果记录。文件保存与流程终态的关系见[Flow 执行会话](../workflow/execution.md)。
+启用结果保存时，普通“校正”与“校正+实时 POI”使用本次流程批次所在的数据库读取上游图像结果并保存校正结果。重连后，设备视图只显示属于当前连接的结果。留空校正模板时，实时 POI 关联上游图像记录。选择模板时，节点另行保存校正图像结果记录。关闭结果保存时，校正帧和本地测量结果随流程继续传递。文件保存与流程终态的关系见[Flow 执行会话](../workflow/execution.md)。
 
 ## 证据与验证缺口
 
