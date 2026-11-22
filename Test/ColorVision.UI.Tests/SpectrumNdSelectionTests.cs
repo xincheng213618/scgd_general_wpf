@@ -1,3 +1,5 @@
+using System.ComponentModel;
+using ColorVision.Engine.FlowProcessing.Editor;
 using ColorVision.Database;
 using ColorVision.Engine;
 using ColorVision.Engine.Messages;
@@ -14,7 +16,6 @@ using ColorVision.Engine.Services.PhyCameras.Configs;
 using ColorVision.Themes;
 using ColorVision.UI;
 using ColorVision.UI.Views;
-using cvColorVision;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using MQTTnet;
@@ -45,7 +46,7 @@ public sealed class SpectrumNdSelectionTests
         TestScope? scope = null;
         DeviceSpectrum? spectrum = null;
         DeviceCfwPort? wheel = null;
-        var native = new NdNative();
+        var native = new NdTransport();
         string directory = Path.Combine(Path.GetTempPath(), "spectrum-nd-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(directory);
         string wave = Path.Combine(directory, "wave.dat"), first = Path.Combine(directory, "nd0.dat"), second = Path.Combine(directory, "nd1.dat");
@@ -152,14 +153,14 @@ public sealed class SpectrumNdSelectionTests
         return await completion.Task.WaitAsync(TimeSpan.FromSeconds(10));
     }
 
-    private sealed class NdNative : ILocalCfwPortNative
+    private sealed class NdTransport : ILocalCfwPortTransport
     {
         internal int Opens, Port;
         internal bool WrongRead;
-        public IntPtr Open(LocalCfwPortConnection config) { Opens++; return new IntPtr(1234); }
-        public int Close(IntPtr handle) => cvErrorDefine.CV_ERR_SUCCESS;
-        public int SetPort(IntPtr handle, int port) { Port = port; return cvErrorDefine.CV_ERR_SUCCESS; }
-        public int GetPort(IntPtr handle, ref int port) { port = WrongRead ? Port + 1 : Port; return cvErrorDefine.CV_ERR_SUCCESS; }
+        public void Open(LocalCfwPortConnection config) => Opens++;
+        public void Close() { }
+        public void SetPort(int port) => Port = port;
+        public int ReadPort(int timeout) => WrongRead ? Port + 1 : Port;
     }
 
     [Theory]
@@ -290,67 +291,174 @@ public sealed class SpectrumNdSelectionTests
         }
     }
 
-    [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public void FilterWheelSelectionsSurviveConfigurationRoundTripIndependentlyWithoutSendingCommands(bool zeroBased)
+    [Fact]
+    public void FilterWheelShowsActualPositionAndOnlySwitchesOnButtonClick()
     {
         WpfTestHost.Invoke(() =>
         {
             using var scope = new TestScope();
-            if (zeroBased) scope.AddZeroBasedPhysicalWheel();
-            (string code, int port)[] positions = [("ND.Camera", zeroBased ? 0 : 3), ("ND.Spectrum", zeroBased ? 4 : 2)];
-            string value = zeroBased ? "{\"SN\":\"PHY.CFW.TEST\"}" : "{}";
-            foreach ((string code, int port) in positions)
+            using var device = new DeviceCfwPort(new SysResourceModel { Id = -2, Code = "ND.Card", Value = "{}" });
+            device.DService.Dispose();
+            using var mqtt = new RecordingFilterWheel(device.Config) { Device = device };
+            device.DService = mqtt;
+            using var card = new DisplayCfwPort(device);
+            var window = ShowCard(card);
+            try
             {
-                using var device = new DeviceCfwPort(new SysResourceModel { Id = -2, Code = code, Value = value });
-                using var mqtt = new RecordingFilterWheel(device.Config);
+                var choice = Assert.IsType<ComboBox>(card.FindName("CombPort"));
+                var button = Assert.IsType<Button>(card.FindName("SwitchPositionButton"));
+                var position = Assert.IsType<TextBlock>(card.FindName("CurrentHoleText"));
+                var read = Assert.IsType<Button>(card.FindName("RefreshPositionButton"));
+                Assert.False(choice.IsVisible);
                 mqtt.DeviceStatus = DeviceStatusType.Opened;
-                device.DService.Dispose();
-                device.DService = mqtt;
-                using var card = new DisplayCfwPort(device);
-                var window = ShowCard(card);
-                try
-                {
-                    var selector = Assert.IsAssignableFrom<ComboBox>(card.FindName("CombPort"));
-                    Pump();
-                    Assert.True(selector.IsVisible);
-                    Assert.Null(device.DisplayConfig.PortNum);
-                    selector.SetCurrentValue(ComboBox.SelectedValueProperty, port);
-                    Pump();
-                    Assert.Equal(port, device.DisplayConfig.PortNum);
-                    Assert.Equal(0, mqtt.Commands);
-                }
-                finally { window.Content = null; window.Close(); }
+                device.UpdateConfirmedPort(1);
+                Pump();
+
+                Assert.True(choice.IsVisible);
+                Assert.Equal("ND8", position.Text);
+                Assert.Equal(88d, choice.ActualWidth, precision: 0);
+                Assert.Equal(position.TranslatePoint(new Point(0, position.ActualHeight / 2), card).Y,
+                    choice.TranslatePoint(new Point(0, choice.ActualHeight / 2), card).Y, precision: 0);
+                Assert.True(choice.TranslatePoint(default, card).X < button.TranslatePoint(default, card).X);
+                Assert.True(button.TranslatePoint(default, card).X < position.TranslatePoint(default, card).X);
+                Assert.True(position.TranslatePoint(default, card).X < read.TranslatePoint(default, card).X);
+                Assert.Equal(1, choice.SelectedValue);
+                Assert.False(button.IsEnabled);
+
+                choice.SelectedValue = 3;
+                Assert.Equal(0, mqtt.Commands);
+                Assert.Equal(3, device.DisplayConfig.TargetPortNum);
+                Assert.Equal("ND8", position.Text);
+                Assert.True(button.IsEnabled);
+
+                button.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                Assert.Equal(1, mqtt.Commands);
+                Assert.False(choice.IsEnabled);
+                Assert.Equal("ND8", position.Text);
+                var record = Assert.IsType<MsgRecord>(mqtt.LastRecord);
+                Assert.Equal(3, JObject.FromObject(record.MsgSend.Params).Value<int>("PortNum"));
+                record.MsgReturn = new MsgReturn { Data = new JObject { ["Port"] = 3 } };
+                record.MsgRecordState = MsgRecordState.Success;
+                Pump();
+                Assert.True(choice.IsEnabled);
+                Assert.False(button.IsEnabled);
+                Assert.Equal("ND1000", position.Text);
+
+                mqtt.DeviceStatus = DeviceStatusType.Closed;
+                Pump();
+                Assert.Null(device.ConfirmedPort);
+                Assert.False(choice.IsVisible);
             }
-            Assert.True(File.Exists(scope.ConfigPath), "ND selection must persist without relying on process-exit saving.");
-            var restored = new ConfigHandler { ConfigFilePath = scope.ConfigPath, IsAutoSave = false };
-            restored.LoadConfigs();
-            TestEnvironment.SetConfig(restored);
-            foreach ((string code, int port) in positions)
-            {
-                using var device = new DeviceCfwPort(new SysResourceModel { Id = -2, Code = code, Value = value });
-                using var mqtt = new RecordingFilterWheel(device.Config);
-                device.DService.Dispose();
-                device.DService = mqtt;
-                using var card = new DisplayCfwPort(device);
-                var window = ShowCard(card);
-                try
-                {
-                    Pump();
-                    var selector = Assert.IsAssignableFrom<ComboBox>(card.FindName("CombPort"));
-                    Assert.False(selector.IsVisible);
-                    mqtt.DeviceStatus = DeviceStatusType.Opened;
-                    Pump();
-                    Assert.True(selector.IsVisible);
-                    Assert.Equal(port, selector.SelectedValue);
-                    Assert.Equal(port, Assert.IsType<HoleMap>(selector.SelectedItem).HoleIndex);
-                    Assert.Equal(port, device.DisplayConfig.PortNum);
-                    Assert.Equal(0, mqtt.Commands);
-                }
-                finally { window.Content = null; window.Close(); }
-            }
+            finally { window.Content = null; window.Close(); }
         });
+    }
+
+    [Fact]
+    public void FlowWheelPositionUsesSelectedDeviceNamesAndPreservesTheSavedIndex()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            using var scope = new TestScope();
+            scope.AddZeroBasedPhysicalWheel();
+            var physical = PhyCameraManager.GetInstance().PhyCameras[0];
+            physical.Config.FilterWheelConfig.HoleMapping[2].HoleName = "专用ND";
+            using var first = new DeviceCfwPort(new SysResourceModel
+                { Id = -2, Code = "ND.Flow.Names", Value = "{\"SN\":\"PHY.CFW.TEST\"}" });
+            using var second = new DeviceCfwPort(new SysResourceModel { Id = -3, Code = "ND.Flow.Default", Value = "{}" });
+            var managerField = typeof(ServiceManager).GetField("_instance", BindingFlags.NonPublic | BindingFlags.Static)!;
+            var previous = managerField.GetValue(null);
+            var manager = (ServiceManager)RuntimeHelpers.GetUninitializedObject(typeof(ServiceManager));
+            manager.DeviceServices = [first, second];
+            managerField.SetValue(null, manager);
+            try
+            {
+                first.DService.DeviceStatus = DeviceStatusType.Opened;
+                first.UpdateConfirmedPort(2);
+                var node = new FWNode();
+                node.Create();
+                node.DeviceCode = first.Code;
+                node.Port = 11;
+                var property = typeof(FWNode).GetProperty(nameof(FWNode.Port))!;
+                Assert.Equal(typeof(FlowFilterWheelPositionEditor), FlowNodePropertyMetadataProvider.Instance.GetEditorType(property));
+                var panel = new FlowFilterWheelPositionEditor().GenProperties(property, node);
+                var combo = Assert.Single(Assert.Single(panel.Children.OfType<Grid>()).Children.OfType<ComboBox>());
+
+                Assert.Empty(combo.Items);
+                var window = ShowCard(new UserControl { Content = panel });
+                try
+                {
+                    Assert.Equal(11, combo.SelectedValue);
+                    Assert.Equal(11, node.Port);
+                    combo.SelectedValue = 2;
+                    Assert.Equal(2, node.Port);
+                    Assert.Equal(EngineLocalization.Format($"{"专用ND"}（当前）"), Label(combo.SelectedItem));
+
+                    node.DeviceCode = second.Code;
+                    Assert.Equal(2, node.Port);
+                    Assert.Equal("ND64", Label(combo.SelectedItem));
+                }
+                finally { window.Content = null; window.Close(); }
+            }
+            finally { managerField.SetValue(null, previous); }
+
+            static string Label(object item) => (string)TypeDescriptor.GetProperties(item)["Label"]!.GetValue(item)!;
+        });
+    }
+
+    [Fact]
+    public async Task LocalOpenShowsConfirmedHoleOnTheCard()
+    {
+        TestScope? scope = null;
+        DeviceCfwPort? device = null;
+        DisplayCfwPort? card = null;
+        Window? window = null;
+        var positionConfirmed = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        try
+        {
+            WpfTestHost.Invoke(() =>
+            {
+                scope = new TestScope();
+                var config = new ConfigCfwPort { SzComName = "COM5718", IsAutoOpen = false };
+                device = new DeviceCfwPort(new SysResourceModel
+                {
+                    Id = -2, Code = "ND.Local.Card", Value = JsonConvert.SerializeObject(config)
+                }, new LocalCfwPortSession(new NdTransport { Port = 3 }));
+                device.DisplayConfig.UseLocalCfwPort = true;
+                device.DisplayConfig.PropertyChanged += (_, args) =>
+                {
+                    if (args.PropertyName == nameof(DisplayCfwPortConfig.PortNum)) positionConfirmed.TrySetResult();
+                };
+
+                var editor = new EditCfwPort(device);
+                Assert.True(editor.Draft.UseLocalCfwPort);
+                Assert.Equal(config.SzComName, editor.Draft.SzComName);
+                editor.Close();
+
+                card = new DisplayCfwPort(device);
+                window = ShowCard(card);
+                Assert.IsType<Button>(card.FindName("ButtonOpen")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            });
+            await positionConfirmed.Task.WaitAsync(TimeSpan.FromSeconds(10));
+            WpfTestHost.Invoke(() =>
+            {
+                Pump();
+                Assert.Equal(DeviceStatusType.Opened, device!.DService.DeviceStatus);
+                Assert.Equal(3, device.DisplayConfig.PortNum);
+                Assert.Equal(3, device.ConfirmedPort);
+                var hole = Assert.Single(device.FilterWheelConfig.HoleMapping, item => item.HoleIndex == 3);
+                Assert.Equal(hole.HoleName, Assert.IsType<TextBlock>(card!.FindName("CurrentHoleText")).Text);
+            });
+        }
+        finally
+        {
+            WpfTestHost.Invoke(() =>
+            {
+                if (window != null) { window.Content = null; window.Close(); }
+                card?.Dispose();
+                device?.Dispose();
+                scope?.Dispose();
+            });
+        }
     }
 
     [Fact]
@@ -413,6 +521,7 @@ public sealed class SpectrumNdSelectionTests
             wheel.DService.Dispose();
             using var mqtt = new RecordingFilterWheel(wheel.Config) { Device = wheel };
             wheel.DService = mqtt;
+            mqtt.DeviceStatus = DeviceStatusType.Opened;
             wheel.DisplayConfig.PortNum = 1;
             bool databaseCurrent = true;
             wheel.SysResourceModel.Id = 81;

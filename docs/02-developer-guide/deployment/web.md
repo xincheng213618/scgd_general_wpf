@@ -10,9 +10,27 @@ related: ["delivery.backend", "delivery.backend-records", "delivery.backend-obse
 
 # Web 本地启动与 NAS 部署
 
-`Web/Run-Web.ps1` 在当前 Windows 工作区构建前端并启动 Flask；`Web/Deploy-Nas.ps1` 通过 SSH 更新已有 Windows NAS 服务。后者依赖现成的仓库、配置、数据库、运行时和计划任务，不负责从空机器安装服务。桌面程序和插件的打包发布见[构建与发布脚本](../scripts/README.md)。
+`Web/Run-Web.ps1` 在当前 Windows 工作区构建前端并启动 Flask。Windows NAS 的日常发布使用 `Web/Publish-Web.ps1`。桌面程序和插件的打包发布见[构建与发布脚本](../scripts/README.md)。
 
-下面的启动、上传和部署命令用于已获授权的目标环境。启动会使用当前 Backend 的配置和数据库；正式部署会同步远端代码、安装依赖、替换前端、重启服务并清理符合保留规则的旧文件。不要运行这些命令来检查文档是否正确。
+下面的启动、上传和部署命令用于已获授权的目标环境。发布会更新目标环境并重启服务。
+
+## NAS 发布包
+
+从仓库根运行一条命令。先用 `-Test` 验证候选版本。确认后，对同一份 ZIP 运行 `-PackagePath` 可直接交付已经验收的制品。
+
+```powershell
+.\Web\Publish-Web.ps1 -Revision '<commit>'
+.\Web\Publish-Web.ps1 -Revision '<commit>' -Test
+.\Web\Publish-Web.ps1 -PackagePath '<zip-path>'
+.\Web\Publish-Web.ps1 -Rollback -Test
+.\Web\Publish-Web.ps1 -Rollback
+```
+
+默认打包 `HEAD`。指定 Git 源码树时同时传入 `-SourceCommit`，清单记录两者。构建器从选定版本提取源码，测试并构建前端，下载锁定的 Windows Python 3.10 x64 wheels。ZIP 包含后端、静态文件、依赖和哈希清单。配置、数据库和业务文件由 NAS 本地维护。
+
+NAS 通过 `cv-publish` 接收 ZIP，校验外层 SHA-256 和包内清单，再准备依赖。依赖已准备时可复用。部署器备份共享 SQLite，启停目标计划任务，通过监听进程、版本响应头、`/api/health` 和 `/api/ready` 验收。输出分别记录构建、传输、NAS 安装和服务切换耗时。切换前的校验失败会保持当前服务。切换失败时，若共享库 schema 未变，恢复上一包并再次验收。
+
+首次接入用 `Web/Initialize-WebPackageTarget.ps1` 预备目标。测试使用独立计划任务、独立配置及数据库，监听 `127.0.0.1:19998`。正式任务保留原来的服务端口和共享数据。正式首切保留原启动动作供验收失败时恢复，第二个包上线后可用日常回退命令切回上一包。涉及向前迁移时，回退前检查 SQLite schema，备份留给人工恢复。
 
 ## 本地启动
 
@@ -50,6 +68,8 @@ related: ["delivery.backend", "delivery.backend-records", "delivery.backend-obse
 若报 `npm cannot be started`，脚本已经依次尝试 Node 所在目录、Program Files 下的 Node.js 和 PATH 中的 `npm.cmd`。先检查这些实际可执行文件及 PATH，不能只凭 `node --version` 成功判断 npm 可用。参数、配置校验与 CLI 退出语义见 [Backend 命令行参数](../backend/README.md#命令行参数)。
 
 ## NAS 部署前提与参数
+
+以下 Git 流程用于仍从 Git 工作树启动的 NAS。计划任务切换到包启动器后，旧脚本会拒绝更新。
 
 本机须能运行 OpenSSH `ssh`，目标须能执行 Windows PowerShell 和计划任务管理命令。部署账号需要访问仓库、制品目录、配置、数据库，以及停止/启动目标任务和确认监听进程的权限。
 

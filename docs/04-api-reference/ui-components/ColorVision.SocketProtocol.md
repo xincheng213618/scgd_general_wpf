@@ -154,11 +154,11 @@ Engine 内置 `FlowRunPoiSocketHandler`，通过同一 JSON 监听端口调用�
 
 `SocketTextDispatcher` 构造时发现 `ISocketTextDispatcher`。当前实现只调用发现顺序中的第一个 handler：返回非空白字符串时立即返回，空白时也立即返回 `null`，不会尝试后续处理器。没有 handler 时返回字面字符串 `No Dispatcher Hanle`。这是多处理器路由的实现缺口，新增第二个处理器不能作为后备路由，扫描顺序也没有业务优先级约定。
 
-`HandleClientCore` 将每次 `NetworkStream.Read` 的字节段直接按 UTF-8 解码，再按服务快照进入 JSON 或 Text 分发。当前没有跨读取的帧累积、长度协议或多消息拆分；大包、粘包、半包及跨读取分隔的 UTF-8 字符存在处理缺口。接入协议需要可靠消息边界时必须实现并验证分帧，不能假定一次 write 对应一次 read。
+默认按单次 `NetworkStream.Read` 解码 UTF-8，再按服务快照进入 JSON 或 Text 分发。Text 的首个处理器可通过 `FrameJsonObjects` 启用按连接缓存 JSON 对象，收齐后解码，并拆分同一次读取中的多个对象和分号终止的文本命令。无分号的文本仍按单次读取分发。 [LUX TCP 协议](../projects/project-lux-protocol.md)
 
 ## 发送记录与重发结果
 
-正常 JSON/Text 及错误响应路径均先调用 `MessageManager.AddMessage` 将 `Sent` 记录入队，再写入网络；接收记录入队后即继续业务分发。**有 Sent 不证明网络写入成功或对端已执行**；`ResponseCode` 是生成的响应内容，不是对端 ACK。接收行按读取片段登记，也不能直接用于统计业务操作次数。
+正常 JSON/Text 及错误响应路径均先调用 `MessageManager.AddMessage` 将 `Sent` 记录入队，再写入网络；接收记录入队后即继续业务分发。**有 Sent 不证明网络写入成功或对端已执行**；`ResponseCode` 是生成的响应内容，不是对端 ACK。默认按读取片段登记，Text 启用分帧时按分发的消息登记。
 
 JSON handler 可通过 `SocketResponse.AfterSend` 登记本地回调。当前连接的写入成功返回后，Socket 工作线程调用回调，再读取下一条请求。回调异常单独记日志。该属性不进入 JSON 报文。
 

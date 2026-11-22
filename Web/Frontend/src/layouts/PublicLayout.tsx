@@ -33,6 +33,7 @@ const menuItems: Array<{ key: string; icon: ReactNode; label: string; href?: str
   { key: '/plugins', icon: <AppstoreOutlined aria-hidden />, label: '插件市场' },
   { key: '/releases', icon: <CloudDownloadOutlined aria-hidden />, label: '版本中心' },
   { key: '/tools', icon: <ToolOutlined aria-hidden />, label: '工具下载' },
+  { key: '/benchmarks', icon: <DashboardOutlined aria-hidden />, label: '基准测试' },
   { key: 'docs', icon: <BookOutlined aria-hidden />, label: '文档中心', href: docsUrl },
   { key: '/transfer', icon: <InboxOutlined aria-hidden />, label: '文件中转' },
   { key: '/feedback', icon: <SafetyCertificateOutlined aria-hidden />, label: '我的反馈' },

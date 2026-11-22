@@ -3,10 +3,12 @@ using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services.Devices.Spectrum.Dao;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using ProjectARVRPro.Exports;
 using ProjectARVRPro.Process;
 using ProjectARVRPro.Process.Blank;
 using ProjectARVRPro.Process.OpticCenter;
 using ProjectARVRPro.Services;
+using System.IO;
 
 namespace ProjectARVRPro.Tests;
 
@@ -34,6 +36,68 @@ public sealed class LuxProtocolTests
     {
         var dispatcher = new LuxSocketDispatcher(() => "H03", (_, _) => throw new Exception("Invalid command dispatched"));
         Assert.Equal(expected, dispatcher.Handle(null!, wire));
+    }
+
+    [Fact]
+    public void ConfigurationAndLegacyCommandsShareTheTextDispatcher()
+    {
+        const string directory = @"\\mes-nas\results\立景;{D}";
+        var config = new ViewResultManagerConfig { CsvSavePath = @"C:\old", CustomXlsxSavePath = @"C:\reports" };
+        int writes = 0;
+        var dispatcher = new LuxSocketDispatcher(() => "H03", (_, request) => request.ResponsePrefix,
+            request => LuxConfigurationProtocol.Handle(request, config, () => false, () => writes++));
+
+        string set = JsonConvert.SerializeObject(new { method = "set", ResultSavePath = directory });
+        Assert.Equal("{\"status\":1,\"reson\":\"\"}", dispatcher.Handle(null!, set));
+        Assert.Equal("H0300,SN001,00;", dispatcher.Handle(null!, "T0000,SN001;"));
+        string? get = dispatcher.Handle(null!, """
+            {"method":"get","param":["ResultSavePath","camera_exposure","SaveImage"]}
+            """);
+        var response = JObject.Parse(Assert.IsType<string>(get));
+        Assert.Equal(1, response.Value<int>("status"));
+        Assert.Equal(directory, response.Value<string>("ResultSavePath"));
+        Assert.Equal(0, response.Value<int>("camera_exposure"));
+        Assert.Equal(string.Empty, response.Value<string>("SaveImage"));
+        Assert.Equal(1, writes);
+        var options = CustomTestResultExportOptions.Capture(config, useResultDirectory: true);
+        Assert.Equal(directory, options.Directory);
+        Assert.Equal(directory, options.CsvDirectory);
+        Assert.Equal(@"C:\reports", CustomTestResultExportOptions.Capture(config).Directory);
+    }
+
+    [Theory]
+    [InlineData("""{"method":"get","param":["ResultSavePath","unknown"]}""")]
+    [InlineData("""{"method":"get","param":[]}""")]
+    [InlineData("""{"method":"set","ResultSavePath":"relative"}""")]
+    [InlineData("""{"method":"set","ResultSavePath":"C:\\invalid|"}""")]
+    [InlineData("""{"method":"set","ResultSavePath":"C:\\result","SaveImage":"C:\\other"}""")]
+    public void InvalidSettingsRequestsReportFailureWithoutChangingTheDirectory(string request)
+    {
+        var config = new ViewResultManagerConfig { CsvSavePath = @"C:\old" };
+        var response = JObject.Parse(LuxConfigurationProtocol.Handle(request, config, () => false, () => Assert.Fail("Unexpected save")));
+        Assert.Equal(0, response.Value<int>("status"));
+        Assert.False(string.IsNullOrEmpty(response.Value<string>("reson")));
+        Assert.Null(response["ResultSavePath"]);
+        Assert.Equal(@"C:\old", config.CsvSavePath);
+    }
+
+    [Fact]
+    public void DirectoryStaysUnchangedWhileBusyOrWhenSavingFails()
+    {
+        const string set = """{"method":"set","ResultSavePath":"C:\\result"}""";
+        var config = new ViewResultManagerConfig { CsvSavePath = @"C:\old" };
+        int writes = 0;
+        void FailSave()
+        {
+            writes++;
+            throw new IOException("Disk unavailable");
+        }
+
+        Assert.Equal(0, JObject.Parse(LuxConfigurationProtocol.Handle(set, config, () => true, FailSave)).Value<int>("status"));
+        Assert.Equal(0, writes);
+        Assert.Equal(0, JObject.Parse(LuxConfigurationProtocol.Handle(set, config, () => false, FailSave)).Value<int>("status"));
+        Assert.Equal(1, writes);
+        Assert.Equal(@"C:\old", config.CsvSavePath);
     }
 
     [Fact]

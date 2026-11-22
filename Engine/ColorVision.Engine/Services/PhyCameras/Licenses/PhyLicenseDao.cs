@@ -6,6 +6,7 @@ using SqlSugar;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 using System.Threading.Tasks;
 namespace ColorVision.Engine.Services.PhyCameras.Licenses
 {
@@ -91,7 +92,22 @@ namespace ColorVision.Engine.Services.PhyCameras.Licenses
         private static bool TryGetUsableCameraLicenseExpiry(LicenseModel license, DateTimeOffset now, out DateTimeOffset expiry)
         {
             expiry = default;
-            if (license.LiceType != 0 || string.IsNullOrWhiteSpace(license.MacAddress) || string.IsNullOrWhiteSpace(license.LicenseValue)) return false;
+            return license.LiceType == 0 && !string.IsNullOrWhiteSpace(license.MacAddress)
+                && TryGetPayloadExpiry(license, out expiry) && expiry > now;
+        }
+
+        internal static bool AreBoundLicensesExpired(ISqlSugarClient db, string serialNumber, DateTimeOffset now)
+        {
+            // The service looks up licenses by SN. Conflicting historical rows cannot establish which license it rejected.
+            var matches = db.Queryable<LicenseModel>().Where(license => license.MacAddress == serialNumber)
+                .Select(license => new LicenseModel { LicenseValue = license.LicenseValue }).ToList();
+            return matches.Count > 0 && matches.All(license => TryGetPayloadExpiry(license, out var expiry) && expiry <= now);
+        }
+
+        private static bool TryGetPayloadExpiry(LicenseModel license, out DateTimeOffset expiry)
+        {
+            expiry = default;
+            if (string.IsNullOrWhiteSpace(license.LicenseValue)) return false;
             try
             {
                 // Use the actual license payload; the database expiry column can be stale.
@@ -100,7 +116,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Licenses
                 if (string.IsNullOrWhiteSpace(payload.DeviceMode)
                     || !long.TryParse(payload.ExpiryDate, NumberStyles.Integer, CultureInfo.InvariantCulture, out long seconds)) return false;
                 expiry = DateTimeOffset.FromUnixTimeSeconds(seconds);
-                return expiry > now;
+                return true;
             }
             catch (Exception ex) when (ex is FormatException or JsonException or ArgumentOutOfRangeException)
             {

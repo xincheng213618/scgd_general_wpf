@@ -101,6 +101,9 @@ namespace ColorVision.Engine.FlowProcessing.Editor
                 return typeof(CameraCalibrationGainPropertiesEditor);
 
             Type? owner = propertyInfo.DeclaringType;
+            if (owner == typeof(FWNode) && propertyInfo.Name == nameof(FWNode.Port))
+                return typeof(FlowFilterWheelPositionEditor);
+
             if (owner == typeof(SMUSweepModelNode) && propertyInfo.Name == nameof(SMUSweepModelNode.ModelName))
                 return typeof(SmuTemplatePropertiesEditor);
 

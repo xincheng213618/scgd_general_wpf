@@ -62,6 +62,13 @@ test('read-only developers can open feedback without status-management permissio
   assert.equal(getAdminDashboardCapabilities({ authenticated: true, permissions: [] }).readFeedback, false)
 })
 
+test('the benchmark leaderboard requires admin access and benchmark read permission', () => {
+  const session = { authenticated: true, is_admin: false, permissions: ['admin:access'] }
+  assert.equal(canOpenAdminRoute(session, '/admin/benchmarks'), false)
+  assert.equal(canOpenAdminRoute({ ...session, permissions: ['benchmark:read'] }, '/admin/benchmarks'), false)
+  assert.equal(canOpenAdminRoute({ ...session, permissions: ['admin:access', 'benchmark:read'] }, '/admin/benchmarks'), true)
+})
+
 test('dashboard capabilities expose only data the current role may request', () => {
   assert.deepEqual(getAdminDashboardCapabilities({
     authenticated: true,

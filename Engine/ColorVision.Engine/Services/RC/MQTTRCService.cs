@@ -364,7 +364,10 @@ namespace ColorVision.Engine.Services.RC
                     string? status = remoteDevices.FirstOrDefault(remote => remote?.Code == config.Code)?.Status;
                     if (Enum.TryParse(status, out DeviceStatusType parsed) && Enum.IsDefined(parsed)
                         && device.GetMQTTService() is { } mqttService)
+                    {
                         mqttService.DeviceStatus = parsed;
+                        device.RefreshLicenseFailure(mqttService, parsed);
+                    }
                 }
             }
         }

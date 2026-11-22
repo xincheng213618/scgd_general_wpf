@@ -8,9 +8,9 @@ internal sealed record CustomTestResultExportOptions(
     string ProjectName, bool SaveByDate, bool AutoCleanupEnabled, int MinimumFreeSpaceGB,
     LuxMtfPointFormat LuxMtfFormat, UniformityDisplayFormat LuxLuminanceUniformityFormat)
 {
-    internal static CustomTestResultExportOptions Capture(ViewResultManagerConfig config) => new(
+    internal static CustomTestResultExportOptions Capture(ViewResultManagerConfig config, bool useResultDirectory = false) => new(
         config.IsSaveCustomXlsx, config.CustomOutputProfile,
-        string.IsNullOrWhiteSpace(config.CustomXlsxSavePath) ? config.CsvSavePath : config.CustomXlsxSavePath,
+        useResultDirectory || string.IsNullOrWhiteSpace(config.CustomXlsxSavePath) ? config.CsvSavePath : config.CustomXlsxSavePath,
         config.CsvSavePath, config.CustomXlsxProjectName, config.SaveByDate, config.AutoCleanupEnabled, config.MinimumFreeSpaceGB,
         config.LuxMtfFormat, config.LuxLuminanceUniformityFormat);
 }

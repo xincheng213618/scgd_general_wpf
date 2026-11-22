@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    实验性质：验证「在服务进程内 hook cvCamera.dll 的 CM_ValiLic」是否可行。
+    必须 x64：补丁是 MS x64 ABI 的 12 字节绝对跳转。
+  -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <PlatformTarget>x64</PlatformTarget>
+    <Prefer32Bit>false</Prefer32Bit>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <AssemblyName>CVLicenseHookLab</AssemblyName>
+    <RootNamespace>ColorVision.Experimental.CVLicenseHook</RootNamespace>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <!-- LegacyServiceCameraLicenseHook.cs 面向 .NET Framework 4.7.2（无 nullable / 无分析器），
+         在本 net10 验证项目里会产生纯风格警告，按文件用途忽略即可。 -->
+    <NoWarn>$(NoWarn);CA1416;CS8625;CA1507</NoWarn>
+  </PropertyGroup>
+
+</Project>

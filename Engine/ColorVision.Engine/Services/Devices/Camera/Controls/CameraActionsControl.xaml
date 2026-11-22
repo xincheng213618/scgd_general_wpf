@@ -16,7 +16,7 @@
         </DockPanel>
         <DockPanel x:Name="ButtonUnauthorized" Margin="0,0,0,3">
             <Button Margin="0,0,3,0" Command="{Binding RefreshDeviceIdCommand}" Content="{x:Static properties:Resources.RefreshDeviceList}"/>
-            <Button Command="{Binding PhyCamera.UploadLicenseCommand}" Content="{x:Static properties:Resources.UnauthorizedOrCameraLicenseExpiredz}"/>
+            <Button Command="{Binding PhyCamera.UploadLicenseCommand}" Content="{Binding LicenseFailureText}"/>
         </DockPanel>
         <DockPanel x:Name="ButtonInit" Margin="0,0,0,3">
             <Button Margin="0,0,3,0" Command="{Binding RefreshDeviceIdCommand}" Content="{x:Static properties:Resources.RefreshDeviceList}"/>

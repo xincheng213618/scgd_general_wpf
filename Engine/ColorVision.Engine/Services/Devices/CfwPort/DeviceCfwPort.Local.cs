@@ -3,6 +3,7 @@ using ColorVision.Engine.Services.Devices.CfwPort.Local;
 using Newtonsoft.Json.Linq;
 using System;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -10,7 +11,7 @@ using System.Windows;
 
 namespace ColorVision.Engine.Services.Devices.CfwPort;
 
-// Local SDK commands have no MQTT timer. Consumers must wait for native completion before releasing a calibration reservation.
+// Local serial commands have no MQTT timer. Calibration owns the port until the command completes.
 internal sealed class LocalCfwPortRecord(bool completeWithoutDispatcher) : MsgRecord(completeWithoutDispatcher) { }
 
 public partial class DeviceCfwPort
@@ -108,6 +109,7 @@ public partial class DeviceCfwPort
         var config = LocalCfwPortConnection.From(Config);
         async Task Run()
         {
+            var elapsed = Stopwatch.StartNew();
             int? port = null;
             Exception? failure = null;
             try
@@ -115,7 +117,10 @@ public partial class DeviceCfwPort
                 int? requested = message.Params == null ? null : JObject.FromObject(message.Params).Value<int?>("PortNum");
                 port = await ExecuteLocalCfwAsync(message.EventName, config, requested, false, CancellationToken.None).ConfigureAwait(false);
             }
-            catch (Exception ex) { failure = ex; MQTTServiceBase.log.Error(ex); }
+            catch (Exception ex) { failure = ex; }
+            string timing = $"本地滤色轮 {config.PortName} {message.EventName} 耗时 {elapsed.ElapsedMilliseconds} ms";
+            if (failure == null) MQTTServiceBase.log.Info($"{timing}，孔位 {port?.ToString() ?? "—"}。");
+            else MQTTServiceBase.log.Error(timing, failure);
             var response = new MsgReturn
             {
                 MsgID = record.MsgID, DeviceCode = message.DeviceCode, EventName = message.EventName,
@@ -138,9 +143,28 @@ public partial class DeviceCfwPort
         return record;
     }
 
-    internal void UpdateLocalPort(int port, Func<bool>? ownsPort = null)
+    internal int? ConfirmedPort { get; private set; }
+
+    internal static bool HasOpenConnection(DeviceStatusType status) =>
+        status is DeviceStatusType.Opened or DeviceStatusType.LiveOpened or DeviceStatusType.Free or DeviceStatusType.Busy;
+
+    internal void ClearConfirmedPort()
     {
-        void Update() { if (!localDisposed && (ownsPort?.Invoke() ?? true)) DisplayConfig.PortNum = port; }
+        if (!ConfirmedPort.HasValue) return;
+        ConfirmedPort = null;
+        OnPropertyChanged(nameof(ConfirmedPort));
+    }
+
+    internal void UpdateConfirmedPort(int port, Func<bool>? ownsPort = null)
+    {
+        void Update()
+        {
+            if (localDisposed || ownsPort?.Invoke() == false) return;
+            DisplayConfig.PortNum = port;
+            if (!HasOpenConnection(DService.DeviceStatus) || ConfirmedPort == port) return;
+            ConfirmedPort = port;
+            OnPropertyChanged(nameof(ConfirmedPort));
+        }
         if (Application.Current?.Dispatcher is { } dispatcher && !dispatcher.CheckAccess()) dispatcher.BeginInvoke(Update);
         else Update();
     }

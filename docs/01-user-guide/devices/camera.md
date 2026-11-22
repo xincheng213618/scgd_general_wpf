@@ -63,7 +63,9 @@ MVS 拍照使用单帧软件触发、视频使用连续采集，打开时设置�
 
 LV 优先选用原生 Mono8/Mono16。单色相机缺少 Mono16 时，可将 Mono10/12/14（含支持的 Packed 格式）解包并左对齐到 16 位输出，保留有效位数。彩色相机可用 Bayer8/Bayer16 原始单通道数据，须使用对应校正。BV 仅在 Bayer 相位可确认时插值。没有可用格式时，连接返回错误。
 
-新旧后端对照时保持曝光、增益、ROI、平均次数、校正、翻转及保存设置一致，分别连接采集；本地相机管理的 `[CameraCaptureCompare]` 日志记录本次连接实际使用的 `HikUseMvs`、`HikBayerQuality`、`HikOutputBgr`，原生日志 `HikMvsCapture` 的 `Route=DirectBGR16` 表示 SDK 直接交付 BGR。此路径适用于 MVS 4.6.1.3 / 4.8.2.2、9568 × 6380 BayerRG16 全幅拍照、质量档 3、BGR 输出。对 MV-CH610-10TC-TF 的 GigE 拍照，MVS 4.6.1.3、BayerRG16、零偏移全幅、质量 3、BGR 输出、曝光 101.10 ms、界面增益 1（现场读回约 1.0052）及相机节点均与实拍样本匹配时，当前连接先用 SDK 检查测试图案和实拍首帧。两者都逐值一致后，后续帧启用本地转换，日志显示 `Route=CustomBGR16`。现场对比时单列预热帧，用后续五帧的 `ConvertMs` 和结果表用时与旧版比较。
+9568 × 6380 全幅 BayerRG16 普通拍照使用质量档 3 并启用 BGR 输出时，当前连接可自动校验加速转换。首张符合条件的实拍 RAW 先用 SDK 转成 RGB16 再交换红蓝通道，输出这份 BGR16，并以它为基准逐值校验同一帧的 SDK 直出。GigE 型号 `MV-CH610-10TC-TF` 满足零偏移、紧凑帧布局、相机参数读回及合成探针校验时，再独立比对本地 RGGB 转换。SDK 版本、曝光和增益使用当前会话的实际值，由像素校验结果决定加速路径。
+
+后续帧优先使用已通过校验的本地转换（`Route=CustomBGR16`），其次使用已通过校验的 SDK 直出（`Route=DirectBGR16`），否则使用 RGB16 加换色（`Route=RGB+Swap`）。已启用的路径出错时，按同一顺序用本帧原始数据回退。现场对照时保持曝光、增益、ROI、平均次数、校正、翻转及保存设置一致。用 `[CameraCaptureCompare]` 核对相机实际配置，在 `HikMvsCapture` 日志中单列首帧校验时间 `QualificationMs`，再比较后续帧的 `Route`、`ConvertMs` 和结果表用时。
 
 ### 通道数与滤光轮
 

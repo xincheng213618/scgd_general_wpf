@@ -336,6 +336,7 @@ public partial class DeviceSpectrum
             calibration.MagnitudeFile, calibration.GroupName != null, false, false, out _)) return false;
         if (!OwnsNd()) return false;
         DisplayConfig.PortNum = port;
+        optics?.Nd?.Device.UpdateConfirmedPort(port, OwnsNd);
         return true;
     }
 

@@ -21,7 +21,13 @@ namespace ColorVision.Engine.Services.Devices.CfwPort
             get => Device?.CfwBackend.Status ?? base.DeviceStatus;
             set { if (Device == null) base.DeviceStatus = value; else Device.CfwBackend.ObserveService(value); }
         }
-        internal void RefreshBackendStatus() => base.DeviceStatus = Device!.CfwBackend.Status;
+        internal void RefreshBackendStatus()
+        {
+            var device = Device!;
+            var status = device.CfwBackend.Status;
+            if (!DeviceCfwPort.HasOpenConnection(status)) device.ClearConfirmedPort();
+            base.DeviceStatus = status;
+        }
 
         internal override MsgRecord PublishAsyncClient(MsgSend message, double timeout = 30000)
         {
@@ -37,7 +43,13 @@ namespace ColorVision.Engine.Services.Devices.CfwPort
                     Device.CfwBackend.Begin(false, message.EventName, config.PortName);
                 }
             }
-            if (local) return Device.RunLocalCfwCommand(message);
+            if (local)
+            {
+                var ownership = message.EventName == "Open" ? Device.CapturePortCommandOwnership(this) : null;
+                var localRecord = Device.RunLocalCfwCommand(message);
+                if (ownership != null) TrackPortCommand(localRecord, null, ownership);
+                return localRecord;
+            }
             try
             {
                 var record = base.PublishAsyncClient(message, timeout);
@@ -282,7 +294,7 @@ namespace ColorVision.Engine.Services.Devices.CfwPort
                 void Apply()
                 {
                     if (ownership() && ReadPortReply(record, requestedPort) is int port)
-                        owner.DisplayConfig.PortNum = port;
+                        owner.UpdateConfirmedPort(port);
                 }
                 if (Application.Current?.Dispatcher is { } dispatcher && !dispatcher.CheckAccess())
                     dispatcher.BeginInvoke(Apply);

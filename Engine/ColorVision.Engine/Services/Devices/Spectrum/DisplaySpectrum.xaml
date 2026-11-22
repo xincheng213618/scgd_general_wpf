@@ -39,7 +39,7 @@
                     <StackPanel VerticalAlignment="Center">
                         <TextBlock x:Name="TextBlockUnknow" HorizontalAlignment="Left" Text="{x:Static properties:Resources.UnknownStatus}" />
                         <Button x:Name="TextBlockOffLine" HorizontalAlignment="Left" Height="24" Click="Button_Click_Open" Content="OffLine" />
-                        <Button x:Name="ButtonUnauthorized" HorizontalAlignment="Left" Height="24" Command="{Binding EditCommand}" Content="{x:Static properties:Resources.UnauthorizedOrLicenseExpired}" />
+                        <Button x:Name="ButtonUnauthorized" HorizontalAlignment="Left" Height="24" Command="{Binding EditCommand}" Content="{Binding LicenseFailureText}" />
                         <Button x:Name="btn_connect" HorizontalAlignment="Left" Height="24" Click="Button_Click_Open" Content="{x:Static properties:Resources.Open}" Visibility="{Binding ElementName=StackPanelContent, Path=Visibility}" />
                     </StackPanel>
                     <Button x:Name="ConfigureButton" Grid.Column="1" Margin="5,0,0,0" Width="24" Height="24" Padding="2" VerticalAlignment="Center" Command="{Binding EditCommand}" ToolTip="{x:Static properties:Resources.ModifyConfiguration}" AutomationProperties.Name="{x:Static properties:Resources.ModifyConfiguration}">

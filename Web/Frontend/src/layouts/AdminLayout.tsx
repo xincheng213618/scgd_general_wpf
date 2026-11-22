@@ -38,6 +38,7 @@ const routeTitles: Record<string, string> = {
   '/admin/jobs': '任务调度',
   '/admin/deployments': '部署历史',
   '/admin/operations/hosts': '终端运维',
+  '/admin/benchmarks': '性能排行',
   '/admin/feedback': '反馈收件箱',
   '/admin/activation': '许可证激活',
   '/admin/users': '账号管理',
@@ -83,6 +84,11 @@ const route = {
           path: '/admin/operations/hosts',
           name: '终端运维',
           icon: <DesktopOutlined />,
+        },
+        {
+          path: '/admin/benchmarks',
+          name: '性能排行',
+          icon: <DashboardOutlined />,
         },
         {
           path: '/admin/cache',

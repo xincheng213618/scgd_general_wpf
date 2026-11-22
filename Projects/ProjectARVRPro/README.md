@@ -14,7 +14,7 @@ ColorVision 的 AR/VR 光学检测项目包，运行时加载 `ProjectARVRPro.dl
 - 自动化本地 VID 聚焦的采样 CSV 需要 ColorVision 1.4.17.127 或更高版本。在“图像保存”启用“保存 VID 对焦图像”，CSV 与两张对焦图保存在本次测量的同一文件夹。
 - 需要三轴回包的步骤选择“ARVR → 光学与几何 → 光学中心（回包）”，切换后核对 Recipe 限值和 K/B；已有配置不会自动换类型。选择类型即启用回包，设备号只决定前缀、可保持默认 `H03`，SocketCode 按步骤配置，避开 `00`、`01`、`31`。三轴回包只读本次流程快照，缺值不沿用旧结果。FindCross 模板仍使用 `optCenter` / `ImageCenter` 名称区分光学中心与图像中心。
 - 普通光学中心和回包类型的“输出Key”默认 `Optical_Center`，可按需修改 CSV 与批次指标分组；修改 Key 不改变三轴回包内容。相关流程原“导出名称”统一显示为“输出Key”，旧配置字段与默认值保留。
-- 旧 LUX CSV：在“模组检测设置 → 结果保存”开启“保存客户报表”，报表格式选 `LUX_Current_CSV` 或 `LUX_Legacy_CSV`，设置报表保存目录。Legacy 的“MTF 点位格式”默认 058（0F/0.5F/0.8F），需要旧点位名称的项目可选 048（0F/0.4F/0.8F）。普通检测结束或 LUX 文本流程完成时生成 `C_<SN>.csv`，同 SN 后续命令更新该文件；留空目录使用结果输出目录。POI 没有单独限值时用默认 `0/0` 计算 pass/fail，未生成的固定字段沿用旧 LUX 模型默认值。VID/光通量仍输出原有 B_/D_ 文件。
+- 在“模组检测设置 → 结果保存”开启“保存客户报表”，选择 `LUX_Current_CSV` 或 `LUX_Legacy_CSV` 即可导出旧 LUX 格式。Legacy 的“MTF 点位格式”可选 058（0F/0.5F/0.8F，默认）或 048（0F/0.4F/0.8F）。LUX TCP 生成的 C_、VID 的 B_ 和光通量的 D_ 共用“结果输出目录”，在同一 Text 端口发送 JSON `set` / `get` 可设置或读取 `ResultSavePath`。普通 Pro 测试可设置独立报表目录，留空使用结果输出目录。POI 没有单独限值时用默认 `0/0` 计算 pass/fail，未生成的固定字段沿用旧 LUX 模型默认值。
 - 真实运行可能切换图案、控制设备及写入结果。Demura 默认“仅返回CSV”，W128 文件存在且可读取即通过；关闭该选项后，完整处理的 `BurnAfterGenerate` 默认开启，须核对源文件和目标设备操作范围。
 
 旧 AOI 模板升级时，将仅用于中转的通用传感器切图节点替换为「ProjectARVRPro → 外部切图」，核对等待超时及完成后延时，并保留外部客户端的主 Socket 连接。旧服务端 Flow 需改为宿主进程内执行。模板不会自动迁移；确认无其它指令引用后再清理专用传感器配置。协议事件名保持 `AoiSwitchPG` / `AOITestSwitchImageComplete`。

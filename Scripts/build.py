@@ -221,6 +221,24 @@ def validate_installer_runtime_dlls(
         report("Advanced Installer does not include runtime DLLs: " + ", ".join(missing_dlls))
         return False
 
+    if (runtime_path / "System.Management.dll").is_file():
+        desktop_management_paths = (
+            "System.Management.dll",
+            "runtimes/win/lib/net10.0/System.Management.dll",
+        )
+        # ServiceHost has its own copies. Validate the installed desktop paths.
+        try:
+            installed_paths = {path.casefold() for path in collect_installer_shared_files(aip_path, runtime_path)}
+        except (ElementTree.ParseError, OSError) as exc:
+            report(f"Could not validate desktop WMI runtime: {exc}")
+            return False
+        missing_management_paths = [
+            path for path in desktop_management_paths if path.casefold() not in installed_paths
+        ]
+        if missing_management_paths:
+            report("Advanced Installer does not include desktop WMI runtime files: " + ", ".join(missing_management_paths))
+            return False
+
     missing_service_host_paths = [
         relative_path
         for relative_path in REQUIRED_SERVICE_HOST_RUNTIME_PATHS

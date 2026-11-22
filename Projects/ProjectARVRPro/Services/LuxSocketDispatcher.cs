@@ -1,5 +1,6 @@
 using ColorVision.Engine.FlowProcessing;
 using ColorVision.SocketProtocol;
+using ColorVision.UI;
 using log4net;
 using ProjectARVRPro.PluginConfig;
 using ProjectARVRPro.Process;
@@ -93,21 +94,35 @@ public sealed class LuxSocketDispatcher : ISocketTextDispatcher
 {
     private readonly Func<string> _machineNo;
     private readonly Func<NetworkStream, LuxRequest, string?> _handle;
+    private readonly Func<string, string> _handleConfiguration;
+
+    public bool FrameJsonObjects => true;
 
     public LuxSocketDispatcher() : this(() => ProjectARVRProConfig.Instance.LuxMachineNo, DispatchToWindow) { }
 
-    internal LuxSocketDispatcher(Func<string> machineNo, Func<NetworkStream, LuxRequest, string?> handle)
+    internal LuxSocketDispatcher(Func<string> machineNo, Func<NetworkStream, LuxRequest, string?> handle,
+        Func<string, string>? handleConfiguration = null)
     {
         _machineNo = machineNo;
         _handle = handle;
+        _handleConfiguration = handleConfiguration ?? DispatchConfiguration;
     }
 
     public string? Handle(NetworkStream stream, string request)
     {
+        if (request.AsSpan().TrimStart().StartsWith("{", StringComparison.Ordinal)) return _handleConfiguration(request);
+
         LuxRequest? command = LuxRequest.Parse(request, _machineNo(), out string? error);
         if (command == null) return error;
         return _handle(stream, command);
     }
+
+    private static string DispatchConfiguration(string request) => Application.Current.Dispatcher.Invoke(() =>
+    {
+        var config = ConfigService.Instance;
+        return LuxConfigurationProtocol.Handle(request, config.GetRequiredService<ViewResultManagerConfig>(),
+            () => ProjectWindowInstance.WindowInstance?.IsTestExecutionBusy == true, config.SaveConfigs);
+    });
 
     private static string? DispatchToWindow(NetworkStream stream, LuxRequest command) =>
         Application.Current.Dispatcher.Invoke(() =>

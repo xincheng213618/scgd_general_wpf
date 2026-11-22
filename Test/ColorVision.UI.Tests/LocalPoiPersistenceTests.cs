@@ -121,6 +121,95 @@ public sealed class LocalPoiPersistenceTests
     }
 
     [Theory]
+    [InlineData(true, true)]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    public void CalibrationPoiReusesTheCaptureRowOnlyForTheSameRawFileAndBatch(bool sameFile, bool sameBatch) => StaTest.Run(() =>
+    {
+        DirectoryInfo folder = Directory.CreateTempSubdirectory("cv-calibration-poi-history-");
+        try
+        {
+            string databasePath = Path.Combine(folder.FullName, "results.db");
+            var endpoint = new MySqlConnectedEndpoint(_ => true, () => new SqlSugarClient(new ConnectionConfig
+            {
+                ConnectionString = $"Data Source={databasePath};Pooling=False", DbType = DbType.Sqlite,
+                IsAutoCloseConnection = true, InitKeyType = InitKeyType.Attribute,
+            }));
+            using var db = endpoint.CreateDbClient();
+            db.CodeFirst.InitTables(typeof(MeasureBatchModel), typeof(MeasureResultImgModel),
+                typeof(AlgResultMasterModel), typeof(PoiPointResultModel));
+
+            var action = new CVStartCFC("calibration-poi-history") { PersistResults = true };
+            using var resources = action.RuntimeResources;
+            MeasureBatchModel batch = new() { Name = action.SerialNumber, Code = action.SerialNumber };
+            FlowMeasurementBatch.Insert(batch, endpoint).Bind(resources);
+            int captureBatchId = batch.Id;
+            if (!sameBatch)
+            {
+                MeasureBatchModel otherBatch = new() { Name = "earlier-capture", Code = "earlier-capture" };
+                _ = FlowMeasurementBatch.Insert(otherBatch, endpoint);
+                captureBatchId = otherBatch.Id;
+            }
+            const string template = "test-color";
+            using LocalFlowFrame frame = LocalFlowFrame.Allocate(new LocalFrameMetadata
+            {
+                Width = 1, Height = 1, SourceBpp = 16, Channels = 1, Exposure = [1],
+                CalibrationTemplate = template, IsMirrorReady = true,
+            }, sizeof(ushort), 0);
+            using (LocalFlowFrameLease lease = frame.Acquire()) Marshal.WriteInt16(lease.RawPointer, 100);
+            frame.ColorCalibration = new ColorCalibrationSnapshot
+            {
+                Width = 1, Height = 1, RawBpp = 16, Channels = 1, Template = template, TransformKind = 2,
+                Coefficients = [1, 0, 0, 0, 0, 0, 0, 0, 0], Exposure = [1, 1, 1]
+            };
+            string rawPath = Path.Combine(folder.FullName, "capture.cvraw");
+            LocalFrameFileService.SaveCapture(frame, rawPath);
+            action.SetCurrentFrame(frame);
+
+            int captureId = db.Insertable(new MeasureResultImgModel
+            {
+                BatchId = captureBatchId, FileUrl = sameFile ? rawPath : Path.Combine(folder.FullName, "other.cvraw"),
+                Result = "capture",
+            }).ExecuteReturnIdentity();
+            frame.MasterId = captureId;
+            action.MasterValue(null, captureId, (int)CVCommCore.CVResultType.Camera_Img);
+            int layoutId = db.Insertable(new AlgResultMasterModel { BatchId = batch.Id, TName = "layout", CreateDate = DateTime.Now })
+                .ExecuteReturnIdentity();
+            db.Insertable(new PoiPointResultModel
+            {
+                Pid = layoutId, PoiId = 7, PoiName = "center", PoiType = POIPointTypes.SolidPoint,
+                PoiX = 0, PoiY = 0, PoiWidth = 1, PoiHeight = 1, Value = "{}",
+            }).ExecuteCommand();
+            CVStartCFC layout = new(action);
+            layout.MasterValue(null, layoutId, (int)ViewResultAlgType.BuildPOI);
+
+            var node = new LocalCalibrationRealPoiNode { CalibTempName = template };
+            using var execution = node.CreateCompatibilityExecution(new CVMQTTRequest { SerialNumber = action.SerialNumber }, null, action, layout);
+            execution.Bind(action);
+            execution.Execute();
+            var result = Assert.IsType<LocalCalibrationRealPoiNodeResultData>(execution.Complete(action));
+
+            bool reuse = sameFile && sameBatch;
+            var imageRows = db.Queryable<MeasureResultImgModel>().OrderBy(row => row.Id).ToList();
+            Assert.Equal(reuse ? 1 : 2, imageRows.Count);
+            Assert.Equal("capture", imageRows[0].Result);
+            Assert.Equal(reuse ? -1 : imageRows[1].Id, result.CalibrationMasterId);
+            Assert.Equal(reuse ? captureId : imageRows[1].Id, frame.MasterId);
+            AlgResultMasterModel poi = Assert.Single(db.Queryable<AlgResultMasterModel>().Where(row => row.Id != layoutId).ToList());
+            Assert.Equal(result.PoiMasterId, poi.Id);
+            Assert.Equal(batch.Id, poi.BatchId);
+            Assert.Equal(rawPath, poi.ImgFile);
+            Assert.Equal(frame.MasterId, JObject.Parse(poi.Params!).Value<int>("CieMasterId"));
+            Assert.Equal(7, Assert.Single(db.Queryable<PoiPointResultModel>().Where(row => row.Pid == poi.Id).ToList()).PoiId);
+        }
+        finally
+        {
+            foreach (FileInfo file in folder.EnumerateFiles()) file.Delete();
+            folder.Delete();
+        }
+    });
+
+    [Theory]
     [InlineData("commit")]
     [InlineData("short")]
     [InlineData("cancel")]

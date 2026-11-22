@@ -10,14 +10,14 @@ related: ["projects.arvr-pro","projects.arvr-pro-processes","projects.arvr-pro-p
 
 # LUX TCP 通讯协议
 
-外部产线控制程序通过 ARVRPro 的 `LuxSocketDispatcher` 发送文本命令并接收原 LUX 格式响应。现场安装 `ProjectARVRPro`，项目版本及宿主要求读取其 `.csproj` 与 manifest。旧独立 ProjectLUX 的源码、专属测试和协议说明通过仓库 `Projects/ARCHIVED.md` 的归档标签查阅，交付前用它核对差异；后续迭代在 Pro。
+外部产线控制程序通过 ARVRPro 的 `LuxSocketDispatcher` 接收原 LUX 文本响应，并可在同一 Text 端口发送 JSON 配置命令。现场安装 `ProjectARVRPro`，项目版本及宿主要求读取其 `.csproj` 与 manifest。旧独立 ProjectLUX 的源码、专属测试和协议说明通过仓库 `Projects/ARCHIVED.md` 的归档标签查阅。
 
 ## 部署与配置
 
 1. 在“通信 → 服务设置”启用 Socket Server，解析模式选择 **Text**。默认监听 `0.0.0.0:6666`，UTF-8；服务默认关闭。Pro JSON 客户端使用 Json 模式，两种模式按现场用途选择。
 2. 在“流程处理配置 → 其他配置”设置 **LUX 协议设备号**（默认 `H03`）；使用 VID 时按[单次 VID 测量](./project-arvr-pro-protocol.md#单次-vid-测量)选择相机和方式。LUX 设备号只组成回包前缀。
 3. 普通流程在活动组的 **SocketCode** 列填写命令末两位，绑定实际 Flow 模板与 Pro 实例 Recipe。旧 LUX 配置不自动迁移，现场需重新配置；流程和配置存储见 [Pro 流程组](./project-arvr-pro-processes.md)。
-4. 准备相机、光谱仪、Flow 服务和输出目录。默认在 Pro 的 CSV 输出目录生成 `C_<SN>.csv`、`B_<SN>.csv`、`D_<SN>.csv`。需要旧 LUX 格式时，在结果保存中开启 **保存客户报表**，选择 `LUX_Current_CSV` / `LUX_Legacy_CSV`；此时 C_ 文件使用报表目录，B_/D_ 保持原路径，配置与口径见 [LUX 客户 CSV](./project-arvr-pro-lux-export.md)。
+4. 准备相机、光谱仪、Flow 服务和输出目录。LUX TCP 的 `C_<SN>.csv`、`B_<SN>.csv`、`D_<SN>.csv` 都写入 **结果输出目录**。需要旧 LUX 格式时，在结果保存中开启 **保存客户报表**，选择 `LUX_Current_CSV` / `LUX_Legacy_CSV`。 [LUX 客户 CSV](./project-arvr-pro-lux-export.md)
 
 共享文本分派器只调用首个发现的 handler，不按命令遍历项目。部署时核对实际接收者，避免同时加载其它文本项目；默认缓冲和协议模式见[通用 Socket 服务](../ui-components/ColorVision.SocketProtocol.md)。协议不提供 TLS 或应用层身份认证，需在受控产线网络中使用。
 
@@ -29,9 +29,27 @@ T00XX,<SN>;
 
 客户端使用大写 `T`、两位命令编号和非空 SN。SN 不含逗号、分号、换行或 Windows 文件名非法字符；它还用于导出文件名。服务端只检查 `T00` 前缀、取命令末两字符，并按第一个逗号分开 SN；宽松解析不构成额外命令保证。
 
-服务端把一次 TCP Read 当成完整请求，不按分号拆包或缓存半包。保持一个长连接，串行完成一条命令后再发送下一条；不要主动拆分或粘连请求。**一次 Write 不保证对应一次完整 Read**，仍需在真实网络条件下核验分包与断线。
+保持一个长连接，等本条回复完成后再发下一条。文本测量命令末尾使用分号，旧客户端的无分号命令仍以单次读取为边界。JSON 配置请求以完整对象为边界。支持混合分帧的宿主会缓存 JSON 半包、按顺序分发同一次读取中的对象，并在收齐后解码 UTF-8。JSON 对象上限为 64 KiB，超限关闭该连接。
 
 客户端也需缓存半包。VID/光通量的数值位于分号之后，末尾没有结束符；流程失败会在基础响应后追加文本。看到第一个分号不能证明完整响应已到达。可变长数值没有可靠的长度/终止标记，静默等待只是接收策略，截断或缺失值不能当成有效测量。
+
+## 设置与读取结果目录
+
+在 Text 端口发送一个 UTF-8 JSON 对象。以下两行是独立请求，先收取 `set` 回包再发送 `get`。
+
+```jsonl
+{"method":"set","ResultSavePath":"C:\\result"}
+{"method":"get","param":["ResultSavePath","camera_exposure","SaveImage"]}
+```
+
+`set` 接收绝对本地目录或 UNC 路径。保存后写入项目的 **结果输出目录**，后续 LUX 测量使用同一目录。测试或导出期间，修改目录返回失败。`get` 接收非空的参数名数组，按请求字段返回当前配置。`camera_exposure` 固定回数值 `0`，`SaveImage` 固定回空字符串。
+
+```jsonl
+{"status":1,"reson":""}
+{"status":1,"reson":"","ResultSavePath":"C:\\result","camera_exposure":0,"SaveImage":""}
+```
+
+失败返回 `status: 0` 和 `reson` 原因。`set` 成功表示配置已保存，目录访问和文件写入发生在后续导出时。配置回包直接发给请求连接，客户端按完整 JSON 对象读取响应。
 
 ## 命令与响应
 

@@ -60,7 +60,7 @@ internal sealed class LocalSpectrumFilterWheel : ILocalSpectrumFilterWheelOperat
         if (Execute("GetPort", null, "读取滤色轮位置", restore) != port)
             throw new InvalidOperationException($"滤色轮未确认到达位置 {port}，停止本次操作。");
         if (scope?.IsShutterCurrent != false)
-            device.UpdateLocalPort(port, scope == null ? null : () => scope.IsShutterCurrent);
+            device.UpdateConfirmedPort(port, scope == null ? null : () => scope.IsShutterCurrent);
     }
 
     private int? Execute(string command, int? port, string description, bool restore)

@@ -123,7 +123,7 @@ public partial class ARVRWindow
             {
                 try
                 {
-                    var options = CustomTestResultExportOptions.Capture(ViewResultManager.Config);
+                    var options = CustomTestResultExportOptions.Capture(ViewResultManager.Config, useResultDirectory: true);
                     var request = session.Request;
                     var csvLog = new LuxCsvWriteContext(request.SerialNumber, CurrentFlowResult?.BatchId,
                         request.MachineNo, session.FlowGroup, request.SocketCode);

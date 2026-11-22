@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import os
 import re
 import time
 from datetime import datetime, timezone
@@ -41,6 +42,9 @@ def repo_root() -> Path:
 
 
 def docs_source_dir() -> Path:
+    override = os.environ.get("COLORVISION_WEB_DOCS_DIR")
+    if override:
+        return Path(override)
     return repo_root() / "docs"
 
 

@@ -8270,4 +8270,9 @@
   <data name="请连接数据库并刷新统计。" xml:space="preserve"><value>請連線至資料庫並重新整理統計。</value></data>
   <data name="重新加载终端设备" xml:space="preserve"><value>重新載入終端設備</value></data>
   <data name="未能提交终端设备重载请求。" xml:space="preserve"><value>未能提交終端設備重新載入請求。</value></data>
+  <data name="滤色轮配置" xml:space="preserve"><value>濾色輪設定</value></data>
+  <data name="孔位与读回" xml:space="preserve"><value>孔位與讀回</value></data>
+  <data name="服务设置" xml:space="preserve"><value>服務設定</value></data>
+  <data name="正在读取当前孔位…" xml:space="preserve"><value>正在讀取目前孔位…</value></data>
+  <data name="{0}（当前）" xml:space="preserve"><value>{0}（目前）</value></data>
 </root>

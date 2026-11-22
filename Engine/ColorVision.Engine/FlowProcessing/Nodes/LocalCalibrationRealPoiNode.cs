@@ -147,7 +147,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             {
                 MySqlConnectedEndpoint database = endpoint ?? throw new InvalidOperationException("保存校正与实时 POI 需要连接 MySQL。");
                 int inputImageMasterId = execution.Frame.MasterId;
-                if (!useInputColor)
+                if (!useInputColor && !HasMatchingRawResult(action, execution.Frame, database))
                 {
                     persistedCalibration = SaveCalibrationResult(action, execution, database);
                     calibrationMasterId = persistedCalibration.Id;
@@ -218,6 +218,20 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                     ResultHandle = handle
                 }
             };
+        }
+
+        private static bool HasMatchingRawResult(CVStartCFC action, LocalFlowFrame frame, MySqlConnectedEndpoint endpoint)
+        {
+            if (frame.MasterId <= 0 || !string.IsNullOrWhiteSpace(frame.CvCieFilePath)) return false;
+
+            string? outputPath = frame.ResolveResultImageFilePath();
+            if (!string.Equals(Path.GetExtension(outputPath), ".cvraw", StringComparison.OrdinalIgnoreCase)) return false;
+
+            // Color calibration can attach replay parameters to the capture's existing CVRAW.
+            // Reuse its row only when the frame still points to that file in this batch.
+            MeasureResultImgModel? source = MeasureImgResultDao.ReadResult(endpoint, frame.MasterId);
+            return source != null && string.Equals(source.FileUrl, outputPath, StringComparison.OrdinalIgnoreCase)
+                && source.BatchId == LocalFlowResultPersistence.ResolveBatchId(action, endpoint);
         }
 
         protected override string BuildRunPayload(CVStartCFC action)

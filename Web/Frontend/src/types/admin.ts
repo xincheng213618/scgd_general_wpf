@@ -1129,3 +1129,54 @@ export interface PublishIntegrityReport {
     indexUpdatedAt?: string | null
   }
 }
+export interface HostBenchmarkMetric {
+  id: string
+  medianMilliseconds: number
+  p95Milliseconds: number
+  referenceMilliseconds: number
+  score: number
+  timeRatio: number
+  samplesMilliseconds: number[]
+}
+
+export interface HostBenchmarkRun {
+  id: string
+  workloadVersion: string
+  scoringVersion: string
+  measuredAtUtc: string
+  appStartedAtUtc: string
+  approximateSystemStartedAtUtc: string
+  appVersion: string
+  runtime: string
+  logicalProcessors: number
+  availableMemoryMiBBefore: number
+  overallScore: number
+  metrics: HostBenchmarkMetric[]
+  receivedAtUtc?: string
+  cpuModel?: string
+  gpuModels?: string[]
+  totalMemoryMiB?: number
+}
+
+export interface HostBenchmarkDeviceRank {
+  deviceId: string
+  deviceName: string
+  runCount: number
+  score: number
+  best: HostBenchmarkRun
+  latest: HostBenchmarkRun
+}
+
+export interface HostBenchmarkLeaderboard {
+  workloadVersion: string
+  scoringVersion: string
+  referenceName: string
+  devices: HostBenchmarkDeviceRank[]
+}
+
+export interface HostBenchmarkDeviceHistory {
+  deviceId: string
+  deviceName: string
+  runCount: number
+  runs: HostBenchmarkRun[]
+}

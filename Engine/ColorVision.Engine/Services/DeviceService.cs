@@ -163,7 +163,7 @@ namespace ColorVision.Engine.Services
         }
     }
 
-    public abstract class DeviceService : ServiceObjectBase, IDisposable, ITreeViewItem, ICopilotBusinessContextSource
+    public abstract partial class DeviceService : ServiceObjectBase, IDisposable, ITreeViewItem, ICopilotBusinessContextSource
     {
         private static readonly ILog ConfigurationLog = LogManager.GetLogger(typeof(DeviceService));
         private static string RetiredConfigurationMessage => EngineLocalization.Get("原设备或配置库已失效，请关闭窗口后重新选择设备。");
@@ -550,6 +550,7 @@ namespace ColorVision.Engine.Services
         protected void NotifyConfigChanged()
         {
             OnConfigChanged();
+            OnPropertyChanged(nameof(LicenseFailureText));
             ConfigChanged?.Invoke(this, new EventArgs());
         }
 

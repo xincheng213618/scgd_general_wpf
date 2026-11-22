@@ -7320,4 +7320,9 @@ Field: </value></data>
   <data name="请连接数据库并刷新统计。" xml:space="preserve"><value>Connect to the database and refresh statistics.</value></data>
   <data name="重新加载终端设备" xml:space="preserve"><value>Reload Terminal Devices</value></data>
   <data name="未能提交终端设备重载请求。" xml:space="preserve"><value>The reload request for terminal devices could not be submitted.</value></data>
+  <data name="滤色轮配置" xml:space="preserve"><value>Filter Wheel Configuration</value></data>
+  <data name="孔位与读回" xml:space="preserve"><value>Position and Readback</value></data>
+  <data name="服务设置" xml:space="preserve"><value>Service Settings</value></data>
+  <data name="正在读取当前孔位…" xml:space="preserve"><value>Reading current position…</value></data>
+  <data name="{0}（当前）" xml:space="preserve"><value>{0} (current)</value></data>
 </root>

@@ -32,7 +32,7 @@
         <Border x:Name="DisPlayBorder" Style="{DynamicResource BorderModuleArea}" Visibility="{Binding ElementName=DisplayHeaderToggle, Path=IsChecked, Converter={StaticResource bool2VisibilityConverter}}">
             <StackPanel Margin="5">
                 <TextBlock x:Name="TextBlockUnknow" HorizontalAlignment="Left" Text="{x:Static properties:Resources.UnknownStatus}" />
-                <Button x:Name="ButtonUnauthorized" HorizontalAlignment="Left" Margin="0,0,0,3" Command="{Binding EditCommand}" Content="{x:Static properties:Resources.UnauthorizedOrLicenseExpired}" />
+                <Button x:Name="ButtonUnauthorized" HorizontalAlignment="Left" Margin="0,0,0,3" Command="{Binding EditCommand}" Content="{Binding LicenseFailureText}" />
                 <TextBlock x:Name="TextBlockOffLine" HorizontalAlignment="Left" Text="{x:Static properties:Resources.offline}" />
                 <DockPanel x:Name="StackPanelContent" Margin="0,0,0,3" LastChildFill="False">
                     <Button x:Name="ButtonSourceMeter1" DockPanel.Dock="Left" HorizontalAlignment="Left" Height="24" VerticalAlignment="Center" Click="ButtonSourceMeter1_Click" Content="{x:Static properties:Resources.Open}" />

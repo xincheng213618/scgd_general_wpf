@@ -43,6 +43,7 @@ PERMISSION_DEFINITIONS: tuple[dict[str, Any], ...] = (
     {"code": "operations:manage", "name": "终端运维", "description": "查看终端并执行受控运维操作。", "category": "系统运维", "sort_order": 120},
     {"code": "feedback:read", "name": "反馈只读", "description": "查看全部反馈与诊断附件，不可更新处理状态。", "category": "运营", "sort_order": 125},
     {"code": "feedback:manage", "name": "反馈管理", "description": "更新反馈处理状态；同时包含反馈只读能力。", "category": "运营", "sort_order": 130},
+    {"code": "benchmark:read", "name": "主机性能排行榜", "description": "查看已分享的主机性能成绩与历史。", "category": "运营", "sort_order": 135},
     {"code": "stats:read", "name": "统计查看", "description": "查看概览、访问统计与性能数据。", "category": "运营", "sort_order": 140},
     {"code": "audit:read", "name": "审计日志", "description": "查看后台操作审计记录。", "category": "安全", "sort_order": 150},
     {"code": "users:manage", "name": "用户管理", "description": "创建、启停用户并调整账号角色。", "category": "安全", "sort_order": 160},
@@ -132,7 +133,7 @@ def seed_permission_catalog(db) -> None:
                 ("admin", "developer")
                 if permission["code"] == "feedback:read"
                 else ("admin",)
-                if permission["code"] == "feedback:manage"
+                if permission["code"] in {"feedback:manage", "benchmark:read"}
                 else ("admin", "user")
             )
             for role_code in default_roles:

@@ -3,10 +3,57 @@ from __future__ import annotations
 import sqlite3
 import unittest
 
-from db.schema_version import CURRENT_SCHEMA_VERSION, ensure_schema_version
+from db.schema_version import CURRENT_SCHEMA_VERSION, _migration_v30, ensure_schema_version
 
 
 class SchemaVersionTests(unittest.TestCase):
+    def test_v31_keeps_v30_benchmark_ownership_and_existing_runs_private(self):
+        db = sqlite3.connect(":memory:")
+        db.row_factory = sqlite3.Row
+        try:
+            db.executescript(
+                """
+                CREATE TABLE schema_version (key TEXT PRIMARY KEY, value INTEGER NOT NULL);
+                INSERT INTO schema_version VALUES ('version', 30);
+                """
+            )
+            _migration_v30(db)
+            db.execute("INSERT INTO benchmark_devices VALUES ('device', '旧工位', 7)")
+            db.execute(
+                """INSERT INTO benchmark_runs VALUES
+                   ('run', 'device', 'workload', 'scoring', 'then', 'now', 100, 'original-hash', '{}')"""
+            )
+            db.commit()
+
+            self.assertEqual(ensure_schema_version(db), CURRENT_SCHEMA_VERSION)
+            self.assertEqual(ensure_schema_version(db), CURRENT_SCHEMA_VERSION)
+            owner = db.execute("SELECT owner_key_id, owner_token_hash FROM benchmark_devices").fetchone()
+            self.assertEqual(tuple(owner), (7, None))
+            run = db.execute("SELECT content_hash, publish_comparison FROM benchmark_runs").fetchone()
+            self.assertEqual(tuple(run), ("original-hash", 0))
+        finally:
+            db.close()
+
+    def test_v30_adds_benchmark_tables_to_an_existing_database(self):
+        db = sqlite3.connect(":memory:")
+        db.row_factory = sqlite3.Row
+        try:
+            db.executescript(
+                """
+                CREATE TABLE schema_version (key TEXT PRIMARY KEY, value INTEGER NOT NULL);
+                INSERT INTO schema_version VALUES ('version', 29);
+                CREATE TABLE unrelated_history (name TEXT NOT NULL);
+                INSERT INTO unrelated_history VALUES ('existing');
+                """
+            )
+            self.assertEqual(ensure_schema_version(db), CURRENT_SCHEMA_VERSION)
+            self.assertEqual(ensure_schema_version(db), CURRENT_SCHEMA_VERSION)
+            tables = set(row[0] for row in db.execute("SELECT name FROM sqlite_master WHERE type = 'table'"))
+            self.assertTrue({"benchmark_devices", "benchmark_runs"} <= tables)
+            self.assertEqual(db.execute("SELECT name FROM unrelated_history").fetchone()[0], "existing")
+        finally:
+            db.close()
+
     def test_v27_adds_persistent_password_recovery_velocity_limits(self):
         db = sqlite3.connect(":memory:")
         db.row_factory = sqlite3.Row
@@ -491,7 +538,7 @@ class SchemaVersionTests(unittest.TestCase):
             }
             self.assertEqual(
                 user_permissions,
-                admin_permissions - {"feedback:read", "feedback:manage"},
+            admin_permissions - {"feedback:read", "feedback:manage", "benchmark:read"},
             )
             self.assertIn("admin:access", user_permissions)
             self.assertIn("permissions:manage", user_permissions)

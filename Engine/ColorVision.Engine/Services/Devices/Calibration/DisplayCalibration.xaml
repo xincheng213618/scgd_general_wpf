@@ -34,7 +34,7 @@
             <StackPanel Margin="5">
                 <TextBlock x:Name="TextBlockUnknow" HorizontalAlignment="Left" Text="{x:Static properties:Resources.UnknownStatus}"  />
                 <TextBlock x:Name="TextBlockUnInit" HorizontalAlignment="Left" Text="{x:Static properties:Resources.SeviceClosed}" />
-                <Button x:Name="ButtonUnauthorized" HorizontalAlignment="Left"  Margin="0,0,0,3" Command="{Binding EditCommand}" Content="{x:Static properties:Resources.UnauthorizedOrCameraLicenseExpiredz}" />
+                <Button x:Name="ButtonUnauthorized" HorizontalAlignment="Left"  Margin="0,0,0,3" Command="{Binding EditCommand}" Content="{Binding LicenseFailureText}" />
                 <StackPanel x:Name="StackPanelContent">
                     <Grid Margin="0,0,0,3">
                         <Grid.ColumnDefinitions>

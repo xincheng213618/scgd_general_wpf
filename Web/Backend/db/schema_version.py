@@ -12,7 +12,7 @@ from __future__ import annotations
 import sqlite3
 from typing import Any
 
-CURRENT_SCHEMA_VERSION = 29
+CURRENT_SCHEMA_VERSION = 31
 
 
 def ensure_schema_version(db: sqlite3.Connection) -> int:
@@ -103,6 +103,10 @@ def _run_migrations(db: sqlite3.Connection, from_version: int):
         _migration_v28(db)
     if from_version < 29:
         _migration_v29(db)
+    if from_version < 30:
+        _migration_v30(db)
+    if from_version < 31:
+        _migration_v31(db)
 
 
 def _migration_v1(db: sqlite3.Connection):
@@ -761,6 +765,56 @@ def _migration_v29(db: sqlite3.Connection):
             code_key        BLOB NOT NULL,
             signing_key     BLOB NOT NULL
         );
+        """
+    )
+
+
+def _migration_v30(db: sqlite3.Connection):
+    """v30: Keep explicitly shared host benchmark results and station ownership."""
+    db.executescript(
+        """
+        CREATE TABLE IF NOT EXISTS benchmark_devices (
+            device_id    TEXT PRIMARY KEY,
+            device_name  TEXT NOT NULL,
+            owner_key_id INTEGER NOT NULL
+        );
+        CREATE TABLE IF NOT EXISTS benchmark_runs (
+            run_id            TEXT PRIMARY KEY,
+            device_id         TEXT NOT NULL REFERENCES benchmark_devices(device_id),
+            workload_version  TEXT NOT NULL,
+            scoring_version   TEXT NOT NULL,
+            measured_at_utc   TEXT NOT NULL,
+            received_at_utc   TEXT NOT NULL,
+            overall_score     REAL NOT NULL CHECK(overall_score > 0),
+            content_hash      TEXT NOT NULL,
+            run_json          TEXT NOT NULL
+        );
+        CREATE INDEX IF NOT EXISTS idx_benchmark_runs_device_time
+            ON benchmark_runs(device_id, measured_at_utc DESC, received_at_utc DESC, run_id DESC);
+        """
+    )
+
+
+def _migration_v31(db: sqlite3.Connection):
+    """v31: Allow account-free benchmark uploads and explicit public comparisons."""
+    _add_column_if_missing(db, "benchmark_devices", "owner_token_hash TEXT")
+    _add_column_if_missing(db, "benchmark_runs",
+                           "publish_comparison INTEGER NOT NULL DEFAULT 0 CHECK(publish_comparison IN (0, 1))")
+    db.executescript(
+        """
+        CREATE UNIQUE INDEX IF NOT EXISTS idx_benchmark_devices_token_owner
+            ON benchmark_devices(owner_token_hash) WHERE owner_token_hash IS NOT NULL;
+        CREATE INDEX IF NOT EXISTS idx_benchmark_runs_comparison
+            ON benchmark_runs(workload_version, scoring_version, device_id,
+                              overall_score DESC, measured_at_utc DESC, received_at_utc DESC, run_id DESC)
+            WHERE publish_comparison = 1;
+        CREATE TABLE IF NOT EXISTS benchmark_submit_rate_limits (
+            bucket       TEXT PRIMARY KEY,
+            window_start INTEGER NOT NULL,
+            attempt_count INTEGER NOT NULL
+        );
+        CREATE INDEX IF NOT EXISTS idx_benchmark_submit_rate_window
+            ON benchmark_submit_rate_limits(window_start);
         """
     )
 

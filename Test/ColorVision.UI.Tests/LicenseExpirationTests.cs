@@ -1,7 +1,14 @@
 using ColorVision.Database;
+using ColorVision.Engine.Properties;
+using ColorVision.Engine.Services;
+using ColorVision.Engine.Services.Devices;
 using ColorVision.Engine.Services.PhyCameras.Licenses;
+using ColorVision.UI;
 using SqlSugar;
 using System.IO;
+using System.Runtime.CompilerServices;
+using System.Windows.Controls;
+using System.Windows.Data;
 
 namespace ColorVision.UI.Tests;
 
@@ -20,6 +27,66 @@ public sealed class LicenseExpirationTests
     {
         DateTime? expiry = seconds.HasValue ? Cutoff.AddSeconds(seconds.Value) : null;
         Assert.Equal(expected, LicenseViewModel.GetStatus(expiry, Cutoff));
+    }
+
+    [Fact]
+    public void ServiceDeviceExpiryUsesOnlyMatchingLicensePayloads()
+    {
+        using var db = CreateDb();
+        DateTimeOffset now = new(Cutoff, TimeSpan.Zero);
+        LicenseModel expired = License(1, 0, Cutoff.AddDays(1));
+        expired.LicenseValue = LicensePayload(now);
+        LicenseModel invalid = License(2, 1, Cutoff.AddDays(-1));
+        invalid.LicenseValue = "invalid payload";
+        db.Insertable(new[] { expired, invalid }).ExecuteCommand();
+
+        Assert.True(PhyLicenseDao.AreBoundLicensesExpired(db, expired.MacAddress!, now));
+        Assert.False(PhyLicenseDao.AreBoundLicensesExpired(db, invalid.MacAddress!, now));
+        Assert.False(PhyLicenseDao.AreBoundLicensesExpired(db, "missing", now));
+
+        LicenseModel renewed = License(3, 1, Cutoff.AddDays(-1));
+        renewed.MacAddress = expired.MacAddress;
+        renewed.LicenseValue = LicensePayload(now.AddDays(1));
+        db.Insertable(renewed).ExecuteCommand();
+
+        Assert.False(PhyLicenseDao.AreBoundLicensesExpired(db, expired.MacAddress!, now));
+    }
+
+    [Fact]
+    public async Task BoundExpiryUpdatesWpfContentWhileTheServiceStillReportsUnauthorized()
+    {
+        await WpfTestHost.Invoke(async () =>
+        {
+            using var device = new LicenseDisplayDevice();
+            device.ResultDatabaseEndpoint = new(_ => true, () =>
+            {
+                var db = CreateDb();
+                LicenseModel expired = License(1, 0, Cutoff);
+                expired.LicenseValue = LicensePayload(DateTimeOffset.UtcNow.AddDays(-1));
+                db.Insertable(expired).ExecuteCommand();
+                return db;
+            });
+            var service = device.GetMQTTService();
+            var button = new Button();
+            button.SetBinding(ContentControl.ContentProperty, new Binding(nameof(DeviceService.LicenseFailureText)) { Source = device });
+            Assert.Equal(Resources.DeviceStatusUnauthorized, button.Content);
+
+            var labelChanged = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            device.PropertyChanged += (_, e) =>
+            {
+                if (e.PropertyName == nameof(DeviceService.LicenseFailureText)) labelChanged.TrySetResult();
+            };
+            service.DeviceStatus = DeviceStatusType.Unauthorized;
+            device.RefreshLicenseFailure(service, service.DeviceStatus);
+            await labelChanged.Task.WaitAsync(TimeSpan.FromSeconds(8));
+
+            Assert.Equal(Resources.LicenseListTagExpired, button.Content);
+            Assert.Equal(DeviceStatusType.Unauthorized, service.DeviceStatus);
+
+            service.DeviceStatus = DeviceStatusType.Closed;
+            device.RefreshLicenseFailure(service, service.DeviceStatus);
+            Assert.Equal(Resources.DeviceStatusUnauthorized, button.Content);
+        });
     }
 
     [Fact]
@@ -220,6 +287,19 @@ public sealed class LicenseExpirationTests
             foreach (FileInfo file in directory.EnumerateFiles()) file.Delete();
             directory.Delete();
         }
+    }
+
+    private static string LicensePayload(DateTimeOffset expiry) => Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(
+        $$"""{"device_mode":"TEST","expiry_date":"{{expiry.ToUnixTimeSeconds()}}"}"""));
+
+    private sealed class LicenseDisplayDevice : DeviceService
+    {
+        private readonly DeviceServiceConfig config = new() { SN = "TEST-SN-1" };
+        private readonly MQTTServiceBase service = (MQTTServiceBase)RuntimeHelpers.GetUninitializedObject(typeof(MQTTServiceBase));
+
+        public override object GetConfig() => config;
+        public override MQTTServiceBase GetMQTTService() => service;
+        public override CopilotBusinessContextBundle CaptureCopilotContext() => throw new NotSupportedException();
     }
 
     private static LicenseModel License(int id, int type, DateTime? expiry) => new()

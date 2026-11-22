@@ -171,6 +171,7 @@ internal sealed class LocalSpectrumNative : ILocalSpectrumNative
 
 internal sealed class LocalSpectrumSession : IDisposable
 {
+    private const int AlreadyClosedErrorCode = -13006;
     // A driver which failed release may still invoke its callback; retain its managed target until process exit.
     private static readonly List<LocalSpectrumSession> QuarantinedSessions = [];
     private readonly object gate = new();
@@ -594,7 +595,11 @@ internal sealed class LocalSpectrumSession : IDisposable
             List<Exception> failures = [];
             if (handle != IntPtr.Zero)
             {
-                Attempt(() => Check(native.Close(handle), "关闭光谱仪"));
+                Attempt(() =>
+                {
+                    int code = native.Close(handle);
+                    if (code != AlreadyClosedErrorCode) Check(code, "关闭光谱仪");
+                });
                 Attempt(() => Check(native.Release(handle), "释放光谱仪"));
                 if (failures.Count != 0)
                 {

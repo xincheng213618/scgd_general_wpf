@@ -36,23 +36,23 @@ namespace ColorVision.Engine.Services.Devices.CfwPort
         private int _Ports = 6;
 
 
-        [DisplayName("Delay")]
+        [DisplayName("读回延时 (ms)"), Description("发送切位命令后，等待滤色轮稳定再读回孔位。")]
         public int Delay { get => _Delay; set { _Delay = value; OnPropertyChanged(); } }
         private int _Delay;
 
-        [DisplayName("IsCVMode")]
+        [Browsable(false)] // Retained in device JSON for legacy consumers.
         public bool IsCVMode { get => _IsCVMode; set { _IsCVMode = value; OnPropertyChanged(); } }
         private bool _IsCVMode;
 
-        [DisplayName("EnableVSPHub")]
+        [Browsable(false)]
         public bool EnableVSPHub { get => _EnableVSPHub; set { _EnableVSPHub = value; OnPropertyChanged(); } }
         private bool _EnableVSPHub;
 
-        [DisplayName("VirtualPort1Name")]
+        [Browsable(false)]
         public string VirtualPort1Name { get => _VirtualPort1Name; set { _VirtualPort1Name = value; OnPropertyChanged(); } }
         private string _VirtualPort1Name;
 
-        [DisplayName("VirtualPort2Name")]
+        [Browsable(false)]
         public string VirtualPort2Name { get => _VirtualPort2Name; set { _VirtualPort2Name = value; OnPropertyChanged(); } }
         private string _VirtualPort2Name;
 

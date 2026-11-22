@@ -4,6 +4,8 @@ using ColorVision.Engine.Services.Devices.Spectrum;
 using ColorVision.Engine.Services.PhyCameras.Configs;
 using ColorVision.UI;
 using System;
+using System.ComponentModel;
+using System.Globalization;
 using System.Linq;
 using System.Threading;
 using System.Windows;
@@ -22,6 +24,8 @@ namespace ColorVision.Engine.Services.Devices.CfwPort
         private DeviceCfwPort? subscribedDevice;
         private MQTTCfwPort? subscribedService;
         private bool disposed;
+        private bool portCommandPending;
+        private bool refreshingPortMappings;
 
         public string DisPlayName => Device.Config.Code;
         public string PersistenceKey => Device.Config.Code;
@@ -39,6 +43,7 @@ namespace ColorVision.Engine.Services.Devices.CfwPort
             subscribedDevice = Device;
             subscribedService = DService;
             subscribedDevice.ConfigChanged += Device_ConfigChanged;
+            subscribedDevice.PropertyChanged += Device_PropertyChanged;
 
             DService_DeviceStatusChanged(sender, DService.DeviceStatus);
             subscribedService.DeviceStatusChanged += DService_DeviceStatusChanged;
@@ -54,17 +59,59 @@ namespace ColorVision.Engine.Services.Devices.CfwPort
 
         private void RefreshPortMappings()
         {
-            int? port = Device.DisplayConfig.PortNum;
-            CombPort.ItemsSource = Device.FilterWheelConfig.HoleMapping;
-            CombPort.DisplayMemberPath = "HoleName";
-            CombPort.SetCurrentValue(ComboBox.SelectedValueProperty, port);
+            refreshingPortMappings = true;
+            try
+            {
+                CombPort.ItemsSource = Device.FilterWheelConfig.HoleMapping;
+                CombPort.SelectedValue = Device.DisplayConfig.TargetPortNum ?? Device.ConfirmedPort;
+            }
+            finally { refreshingPortMappings = false; }
+            RefreshCurrentPosition();
+        }
+
+        private void TargetHole_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (refreshingPortMappings) return;
+            if (CombPort.SelectedValue is int port) Device.DisplayConfig.TargetPortNum = port;
+            RefreshPositionActions();
+        }
+
+        private void Device_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName != nameof(DeviceCfwPort.ConfirmedPort)) return;
+            if (!Dispatcher.CheckAccess()) { Dispatcher.BeginInvoke(() => Device_PropertyChanged(sender, e)); return; }
+            if (!disposed && ReferenceEquals(sender, Device)) RefreshCurrentPosition();
+        }
+
+        private void RefreshCurrentPosition()
+        {
+            CurrentHoleText.Text = Device.ConfirmedPort is int port
+                ? Device.FilterWheelConfig.HoleMapping.FirstOrDefault(hole => hole.HoleIndex == port)?.HoleName
+                    ?? port.ToString(CultureInfo.CurrentCulture)
+                : "—";
+            if (CombPort.SelectedItem == null && Device.ConfirmedPort is int current)
+            {
+                refreshingPortMappings = true;
+                try { CombPort.SelectedValue = current; }
+                finally { refreshingPortMappings = false; }
+            }
+            RefreshPositionActions();
+        }
+
+        private void RefreshPositionActions()
+        {
+            var status = DService.DeviceStatus;
+            PositionActions.IsEnabled = !portCommandPending && status != DeviceStatusType.Busy && DeviceCfwPort.HasOpenConnection(status);
+            SwitchPositionButton.IsEnabled = CombPort.SelectedValue is int port && Device.ConfirmedPort != port;
         }
 
         private void DService_DeviceStatusChanged(object? sender, DeviceStatusType e)
         {
             if (!Dispatcher.CheckAccess()) { Dispatcher.BeginInvoke(() => DService_DeviceStatusChanged(sender, e)); return; }
             if (disposed || !ReferenceEquals(Device, subscribedDevice) || !ReferenceEquals(DService, subscribedService)) return;
-            StackPanelOpen.IsEnabled = e is DeviceStatusType.Opened or DeviceStatusType.LiveOpened or DeviceStatusType.Free;
+            OpeningPositionText.Visibility = e == DeviceStatusType.Opening && Device.CfwBackend.OpensLocally
+                ? Visibility.Visible : Visibility.Collapsed;
+            RefreshPositionActions();
             ButtonClose.IsEnabled = e != DeviceStatusType.Closing;
             void SetVisibility(UIElement element, Visibility visibility) { if (element.Visibility != visibility) element.Visibility = visibility; }
             void HideAllButtons()
@@ -75,7 +122,7 @@ namespace ColorVision.Engine.Services.Devices.CfwPort
                 SetVisibility(ButtonOffline, Visibility.Collapsed);
                 SetVisibility(ButtonUnauthorized, Visibility.Collapsed);
                 SetVisibility(TextBlockUnknow, Visibility.Collapsed);
-                SetVisibility(StackPanelOpen, Visibility.Collapsed);
+                SetVisibility(PositionActions, Visibility.Collapsed);
             }
             HideAllButtons();
 
@@ -104,7 +151,7 @@ namespace ColorVision.Engine.Services.Devices.CfwPort
                 case DeviceStatusType.Opened:
                 case DeviceStatusType.Busy:
                 case DeviceStatusType.Free:
-                    SetVisibility(StackPanelOpen, Visibility.Visible);
+                    SetVisibility(PositionActions, DeviceCfwPort.HasOpenConnection(e) ? Visibility.Visible : Visibility.Collapsed);
                     SetVisibility(ButtonClose, Visibility.Visible);
                     break;
                 default:
@@ -121,10 +168,10 @@ namespace ColorVision.Engine.Services.Devices.CfwPort
 
         private void Open_Click(object sender, RoutedEventArgs e) => RunCommand(DService.Open);
         private void Close_Click(object sender, RoutedEventArgs e) => RunCommand(DService.Clsoe);
+
         private void SetPort_Click(object sender, RoutedEventArgs e)
         {
-            if (CombPort.SelectedItem is HoleMap holeMap)
-                RunPortCommand(holeMap.HoleIndex);
+            if (CombPort.SelectedValue is int port && Device.ConfirmedPort != port) RunPortCommand(port);
         }
 
         private void CameraOffline_Click(object sender, RoutedEventArgs e) => RunCommand(DService.Open);
@@ -133,6 +180,7 @@ namespace ColorVision.Engine.Services.Devices.CfwPort
 
         private void RunPortCommand(int? requestedPort)
         {
+            if (!PositionActions.IsEnabled) return;
             DeviceCfwPort wheel = Device;
             MQTTCfwPort service = wheel.DService;
             Func<bool> wheelOwnsCommand = wheel.CapturePortCommandOwnership(service);
@@ -145,6 +193,8 @@ namespace ColorVision.Engine.Services.Devices.CfwPort
                 .ToArray() ?? [];
 
             bool OwnsWheel() => !disposed && ReferenceEquals(wheel, Device) && wheelOwnsCommand();
+            portCommandPending = true;
+            RefreshPositionActions();
             RunCommand(() => requestedPort is int port ? service.SetPort(port) : service.GetPort(), record =>
             {
                 int actualPort = MQTTCfwPort.ReadPortReply(record, requestedPort)
@@ -161,12 +211,15 @@ namespace ColorVision.Engine.Services.Devices.CfwPort
                     spectrum.DisplayConfig.PortNum = actualPort;
                     if (OwnsBinding()) spectrum.ApplyCalibrationGroupForND(actualPort, requestedPort.HasValue, target);
                 }
-                if (requestedPort.HasValue && OwnsWheel())
-                    MessageBox.Show(Application.Current.GetActiveWindow(), Properties.Resources.Success, "ColorVision");
-            }, OwnsWheel);
+            }, OwnsWheel, () =>
+            {
+                portCommandPending = false;
+                if (!disposed) RefreshPositionActions();
+            });
         }
 
-        private void RunCommand(Func<MsgRecord> command, Action<MsgRecord>? success = null, Func<bool>? ownsReply = null)
+        private void RunCommand(Func<MsgRecord> command, Action<MsgRecord>? success = null, Func<bool>? ownsReply = null,
+            Action? finished = null)
         {
             DeviceCfwPort owner = Device;
             MQTTCfwPort service = owner.DService;
@@ -182,13 +235,14 @@ namespace ColorVision.Engine.Services.Devices.CfwPort
                     record.MsgRecordStateChanged -= Complete;
                     void Apply()
                     {
-                        if (!OwnsReply()) return;
                         try
                         {
+                            if (!OwnsReply()) return;
                             if (state == MsgRecordState.Success) success?.Invoke(record);
                             else MessageBox.Show(Application.Current.GetActiveWindow(), record.MsgReturn?.Message ?? "滤色轮命令超时。", "ColorVision");
                         }
                         catch (Exception ex) { MessageBox.Show(Application.Current.GetActiveWindow(), ex.Message, "ColorVision"); }
+                        finally { finished?.Invoke(); }
                     }
                     if (Dispatcher.CheckAccess()) Apply();
                     else Dispatcher.BeginInvoke(Apply);
@@ -196,14 +250,22 @@ namespace ColorVision.Engine.Services.Devices.CfwPort
                 record.MsgRecordStateChanged += Complete;
                 Complete(record, record.MsgRecordState);
             }
-            catch (Exception ex) { MessageBox.Show(Application.Current.GetActiveWindow(), ex.Message, "ColorVision"); }
+            catch (Exception ex)
+            {
+                finished?.Invoke();
+                MessageBox.Show(Application.Current.GetActiveWindow(), ex.Message, "ColorVision");
+            }
         }
 
         public void Dispose()
         {
             if (disposed) return;
             disposed = true;
-            if (subscribedDevice != null) subscribedDevice.ConfigChanged -= Device_ConfigChanged;
+            if (subscribedDevice != null)
+            {
+                subscribedDevice.ConfigChanged -= Device_ConfigChanged;
+                subscribedDevice.PropertyChanged -= Device_PropertyChanged;
+            }
             if (subscribedService != null) subscribedService.DeviceStatusChanged -= DService_DeviceStatusChanged;
             Loaded -= Display_Loaded;
         }

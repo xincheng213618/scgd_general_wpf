@@ -153,7 +153,7 @@ namespace ProjectARVRPro
         internal bool IsCompletingFlowBatch => BatchFinalization.IsCompleting || BatchFinalization.CloseRequested;
         internal int? CurrentFlowResultBatchId => CurrentFlowResult is { BatchId: > 0 } result ? result.BatchId : null;
 
-        private bool IsTestExecutionBusy => _isDisposed
+        internal bool IsTestExecutionBusy => _isDisposed
             || IsSwitchRun
             || _luxSession != null
             || IsJsonVidRunning

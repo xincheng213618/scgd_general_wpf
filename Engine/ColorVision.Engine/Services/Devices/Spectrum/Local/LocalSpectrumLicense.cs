@@ -8,7 +8,8 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Local;
 
 internal sealed class LocalSpectrumLicenseException : InvalidOperationException
 {
-    public LocalSpectrumLicenseException() : base(Properties.Resources.UnauthorizedOrLicenseExpired) { }
+    internal LocalSpectrumLicenseException(bool expired) : base(expired
+        ? Properties.Resources.LicenseListTagExpired : Properties.Resources.DeviceStatusUnauthorized) { }
 }
 
 internal static class LocalSpectrumLicense
@@ -48,7 +49,7 @@ internal static class LocalSpectrumLicense
     {
         // Match the expiry displayed by physical spectrum management without decoding or validating the payload.
         if (!skipValidation && (!expiryDate.HasValue || expiryDate.Value <= now))
-            throw new LocalSpectrumLicenseException();
+            throw new LocalSpectrumLicenseException(expiryDate.HasValue);
     }
 }
 

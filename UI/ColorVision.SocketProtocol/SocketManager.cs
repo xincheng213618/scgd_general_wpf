@@ -684,9 +684,21 @@ namespace ColorVision.SocketProtocol
             try
             {
                 NetworkStream stream = client.GetStream();
+                var textDispatcher = settings.SocketPhraseType == SocketPhraseType.Text ? TextDispatcher : null;
+                using var textFramer = textDispatcher?.FrameJsonObjects == true ? new SocketTextMessageFramer() : null;
                 byte[] buffer = settings.SocketBufferSize > 1024 ? new byte[settings.SocketBufferSize] : new byte[1024];
                 while ((bytesRead = stream.Read(buffer, 0, buffer.Length)) != 0)
                 {
+                    if (textDispatcher != null)
+                    {
+                        if (textFramer == null)
+                            HandleTextMessage(textDispatcher, stream, Encoding.UTF8.GetString(buffer, 0, bytesRead), clientEndPoint, connection.ConnectionId);
+                        else
+                            foreach (string frame in textFramer.Read(buffer, bytesRead))
+                                HandleTextMessage(textDispatcher, stream, frame, clientEndPoint, connection.ConnectionId);
+                        continue;
+                    }
+
                     Stopwatch receiveTiming = Stopwatch.StartNew();
                     string message = Encoding.UTF8.GetString(buffer, 0, bytesRead);
 
@@ -789,49 +801,6 @@ namespace ColorVision.SocketProtocol
                                 continue;
                             }
                             break;
-                        case SocketPhraseType.Text:
-                            try
-                            {
-                                // 持久化接收消息
-                                MessageManager.AddMessage(receivedMsg);
-
-                                var string1 = TextDispatcher.Dispatch(stream, message);
-                                if (string1 != null)
-                                {
-                                    // 创建发送消息记录并持久化
-                                    var sentMsg = new SocketMessage
-                                    {
-                                        ClientEndPoint = clientEndPoint,
-                                        ClientConnectionId = connection.ConnectionId,
-                                        Direction = SocketMessageDirection.Sent,
-                                        Content = string1,
-                                        MessageTime = DateTime.Now
-                                    };
-                                    MessageManager.AddMessage(sentMsg);
-
-                                    byte[] respBytes = Encoding.UTF8.GetBytes(string1);
-                                    stream.Write(respBytes, 0, respBytes.Length);
-                                }
-                            }
-                            catch (Exception ex)
-                            {
-                                log.Error(ex);
-
-                                // 创建错误响应消息记录并持久化
-                                var sentMsg = new SocketMessage
-                                {
-                                    ClientEndPoint = clientEndPoint,
-                                    ClientConnectionId = connection.ConnectionId,
-                                    Direction = SocketMessageDirection.Sent,
-                                    Content = ex.Message,
-                                    MessageTime = DateTime.Now
-                                };
-                                MessageManager.AddMessage(sentMsg);
-
-                                byte[] respBytes = Encoding.UTF8.GetBytes(ex.Message);
-                                stream.Write(respBytes, 0, respBytes.Length);
-                            }
-                            break;
                         default:
                             // 默认情况下也持久化消息
                             MessageManager.AddMessage(receivedMsg);
@@ -861,6 +830,40 @@ namespace ColorVision.SocketProtocol
             {
                 _serverLifecycle.ReleaseClient(connection);
             }
+        }
+
+        private void HandleTextMessage(SocketTextDispatcher dispatcher, NetworkStream stream, string message, string clientEndPoint, string connectionId)
+        {
+            log.Info("Received raw message: " + message);
+            string? response;
+            try
+            {
+                MessageManager.AddMessage(new SocketMessage
+                {
+                    ClientEndPoint = clientEndPoint,
+                    ClientConnectionId = connectionId,
+                    Direction = SocketMessageDirection.Received,
+                    Content = message,
+                    MessageTime = DateTime.Now
+                });
+                response = dispatcher.Dispatch(stream, message);
+            }
+            catch (Exception ex)
+            {
+                log.Error(ex);
+                response = ex.Message;
+            }
+
+            if (response == null) return;
+            MessageManager.AddMessage(new SocketMessage
+            {
+                ClientEndPoint = clientEndPoint,
+                ClientConnectionId = connectionId,
+                Direction = SocketMessageDirection.Sent,
+                Content = response,
+                MessageTime = DateTime.Now
+            });
+            stream.Write(Encoding.UTF8.GetBytes(response));
         }
 
         internal static void WriteJsonResponse(Stream stream, SocketResponse response, string json)

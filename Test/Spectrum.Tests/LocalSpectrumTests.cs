@@ -133,16 +133,22 @@ public sealed class LocalSpectrumTests
         state.EndLocalCommand();
     }
 
-    [Fact]
-    public void FailedInitializationReleasesNativeHandleAndAllowsRetry()
+    [Theory]
+    [InlineData(-123, 1)]
+    [InlineData(-13004, -13006)]
+    public void FailedInitializationReleasesNativeHandleAndAllowsRetry(int initCode, int closeCode)
     {
-        var native = new FakeNative { InitCode = -123 };
+        var native = new FakeNative { InitCode = initCode, CloseCode = closeCode };
         using var session = new LocalSpectrumSession(native);
-        Assert.Throws<InvalidOperationException>(() => session.Open(Config()));
+        var failure = Record.Exception(() => session.Open(Config()));
+        Assert.False(session.IsQuarantined, failure?.Message);
+        var error = Assert.IsType<InvalidOperationException>(failure);
+        Assert.Contains($"连接光谱仪失败（{initCode}）", error.Message);
         Assert.Equal(1, native.CloseCalls);
         Assert.Equal(1, native.ReleaseCalls);
         Assert.False(session.IsOpen);
         native.InitCode = 1;
+        native.CloseCode = 1;
         session.Open(Config());
         Assert.True(session.IsOpen);
     }
@@ -858,7 +864,7 @@ public sealed class LocalSpectrumTests
         var shutterPort = new FakeShutterPort([]) { DisposeFailure = failure };
         var shutter = new LocalSpectrumShutter(_ => shutterPort);
         var spectrum = new FakeNative();
-        var wheel = new FakeDirectNdNative();
+        var wheel = new FakeDirectNdTransport();
         using var session = new LocalSpectrumSession(spectrum, shutter: shutter, nd: new(directSession: new(wheel)));
         session.Open(config);
         session.ControlShutter("ShutterConnect", config);
@@ -1194,8 +1200,8 @@ public sealed class LocalSpectrumTests
             manager.DeviceServices = [];
 
             string code = $"scoped-wheel-{Guid.NewGuid():N}";
-            var oldWheelNative = new FakeDirectNdNative { Port = 1 };
-            var newWheelNative = new FakeDirectNdNative { Port = 1 };
+            var oldWheelNative = new FakeDirectNdTransport { Port = 1 };
+            var newWheelNative = new FakeDirectNdTransport { Port = 1 };
             try
             {
                 using var original = NewWheel("COM7651", oldWheelNative);
@@ -1279,7 +1285,7 @@ public sealed class LocalSpectrumTests
                 ConfigService.SetInstance(previousConfig);
             }
 
-            DeviceCfwPort NewWheel(string port, FakeDirectNdNative native)
+            DeviceCfwPort NewWheel(string port, FakeDirectNdTransport native)
             {
                 var configuration = new ConfigCfwPort { SzComName = port, IsAutoOpen = false };
                 var resource = new SysResourceModel { Id = -2, Code = code, Type = (int)ServiceTypes.FilterWheel, Value = JsonConvert.SerializeObject(configuration) };
@@ -1410,7 +1416,7 @@ public sealed class LocalSpectrumTests
 
     private sealed class FakeNative : ILocalSpectrumNative
     {
-        public int InitCode = 1, CreateCalls, CloseCalls, ReleaseCalls, CaptureCalls, DarkCalls, DarkCode = 1;
+        public int InitCode = 1, CloseCode = 1, CreateCalls, CloseCalls, ReleaseCalls, CaptureCalls, DarkCalls, DarkCode = 1;
         public float DarkTime;
         public int DarkAverage;
         public (float Time, int Average) CaptureTiming;
@@ -1431,7 +1437,7 @@ public sealed class LocalSpectrumTests
         public IntPtr Create(int type, Spectrometer.Emission_CallBack callback) { CreateCalls++; return (IntPtr)123; }
         public int Init(IntPtr h, int port, int baud) => InitCode;
         public int SerialNumber(IntPtr h, StringBuilder serial) { serial.Append(Serial); return 1; }
-        public int Close(IntPtr h) { CloseCalls++; return 1; }
+        public int Close(IntPtr h) { CloseCalls++; return CloseCode; }
         public int Release(IntPtr h) { ReleaseCalls++; return 1; }
         public int LoadWavelength(IntPtr h, string path) { Calls.Add("wave"); return 1; }
         public string? MagnitudePath;
@@ -1493,16 +1499,16 @@ public sealed class LocalSpectrumTests
         }
     }
 
-    private sealed class FakeDirectNdNative : ILocalCfwPortNative
+    private sealed class FakeDirectNdTransport : ILocalCfwPortTransport
     {
         internal int Port;
         internal List<int> Moves { get; } = [];
         internal int OpenCalls { get; private set; }
         internal int CloseCalls { get; private set; }
-        public IntPtr Open(LocalCfwPortConnection config) { OpenCalls++; return (IntPtr)456; }
-        public int Close(IntPtr handle) { CloseCalls++; return cvErrorDefine.CV_ERR_SUCCESS; }
-        public int SetPort(IntPtr handle, int port) { Moves.Add(port); Port = port; return cvErrorDefine.CV_ERR_SUCCESS; }
-        public int GetPort(IntPtr handle, ref int port) { port = Port; return cvErrorDefine.CV_ERR_SUCCESS; }
+        public void Open(LocalCfwPortConnection config) => OpenCalls++;
+        public void Close() => CloseCalls++;
+        public void SetPort(int port) { Moves.Add(port); Port = port; }
+        public int ReadPort(int timeout) => Port;
     }
 
     private sealed class FakeFilterWheel(List<string> calls, ShutterConfig config) : ILocalSpectrumFilterWheelOperation

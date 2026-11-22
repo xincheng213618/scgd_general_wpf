@@ -49,24 +49,17 @@ namespace ColorVision.Engine.Services.Devices.CfwPort
             EditCommand = new RelayCommand(a =>
             {
                 if (!CanConfigure) return;
-                var draft = CfwPortConfigurationDraft.From(Config, DisplayConfig);
-                var propertyEditorWindow = new PropertyEditorWindow(draft, PropertyEditorEditMode.Transactional) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
-                var openingTarget = ProtectConfigurationEditor(propertyEditorWindow);
-                propertyEditorWindow.Submitted += (_, _) =>
-                {
-                    if (!CanConfigure || !TryAdmitConfigurationEdit(openingTarget, propertyEditorWindow)) return;
-                    var (serviceChanged, displayChanged) = draft.Apply(Config, DisplayConfig);
-                    if (displayChanged) ConfigService.Instance.Save<DisplayConfigManager>();
-                    if (serviceChanged) TryCommitConfiguration(propertyEditorWindow, expectedTarget: openingTarget);
-                };
-                propertyEditorWindow.ShowDialog();
-
+                var window = new EditCfwPort(this) { Owner = Application.Current.GetActiveWindow() };
+                if (window.ShowDialog() != true || !CanConfigure || !TryAdmitConfigurationEdit(window.OpeningTarget, window.Owner)) return;
+                var (serviceChanged, displayChanged) = window.Draft.Apply(Config, DisplayConfig);
+                if (displayChanged) ConfigService.Instance.Save<DisplayConfigManager>();
+                if (serviceChanged) TryCommitConfiguration(window.Owner, expectedTarget: window.OpeningTarget);
             }, a => CanConfigure);
         }
 
         private void DisplayConfig_PropertyChanged(object? sender, PropertyChangedEventArgs e)
         {
-            if (e.PropertyName == nameof(DisplayCfwPortConfig.PortNum) && DisplayConfig.PortNum.HasValue)
+            if (e.PropertyName is nameof(DisplayCfwPortConfig.PortNum) or nameof(DisplayCfwPortConfig.TargetPortNum))
                 ConfigService.Instance.Save<DisplayConfigManager>();
         }
 
