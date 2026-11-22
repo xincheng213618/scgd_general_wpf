@@ -6,6 +6,11 @@ namespace ColorVision.Experimental.CVLicenseHook;
 [UnmanagedFunctionPointer(CallingConvention.Winapi)]
 internal delegate int CallWithHandle(IntPtr handle);
 
+// bool LicenseValidate(char* licenseStr, char* sn, StringBuilder deviceMode, StringBuilder resultDesc)
+// x64 下四个参数都在寄存器里；hook 后的 stub 不读取参数，因此可安全传 NULL 探针。
+[UnmanagedFunctionPointer(CallingConvention.Winapi)]
+internal delegate int CallLicenseValidate(IntPtr a, IntPtr b, IntPtr c, IntPtr d);
+
 /// <summary>
 /// 不需要相机硬件的验证程序：
 ///   A. 内存 mock：手工构造一段与真实 CM_ValiLic 入口字节一致的原生函数，
@@ -23,6 +28,11 @@ internal static class Program
 
     private static int Main(string[] args)
     {
+        // 靶进程模式：加载同一份部署版 cvCamera.dll，按 stdin 命令调用 CM_ValiLic。
+        // 供父进程验证「跨进程 hook 一个正在运行的进程」的完整链路。
+        if (args.Length >= 2 && args[0] == "--target")
+            return RunTargetProcess(args[1]);
+
         string dll = args.Length > 0 ? args[0] : DefaultDll;
 
         Console.OutputEncoding = System.Text.Encoding.UTF8;
@@ -37,6 +47,7 @@ internal static class Program
         RunFingerprintSuite(dll);
         RunRealDllSuite(dll);
         RunLegacyCompatSuite();
+        RunRemoteHookSuite(dll);
 
         Console.WriteLine();
         Console.WriteLine("===================================================================");
@@ -358,5 +369,137 @@ internal static class Program
         {
             Win32.VirtualFree(page, 0, Win32.MEM_RELEASE);
         }
+    }
+
+    // ------------------------------------------------------------------
+    // 靶进程模式 / E. 跨进程 hook 全链路（对「另一个正在运行的进程」下手）
+    // ------------------------------------------------------------------
+    private static int RunTargetProcess(string dll)
+    {
+        // 部署版 cvCamera.dll 依赖同目录的 opencv / qhyccd / licenseClientDLL 等，
+        // 子进程默认工作目录不是部署目录，必须先加入 DLL 搜索路径（与主验证 C 组一致）。
+        Win32.SetDllDirectoryW(System.IO.Path.GetDirectoryName(dll));
+
+        IntPtr module = Win32.LoadLibraryW(dll);
+        if (module == IntPtr.Zero)
+        {
+            Console.WriteLine("LOAD_FAILED " + Marshal.GetLastWin32Error());
+            return 2;
+        }
+        IntPtr fn = Win32.GetProcAddress(module, "LicenseValidate");
+        if (fn == IntPtr.Zero)
+        {
+            Console.WriteLine("NO_EXPORT");
+            return 3;
+        }
+
+        // 缓存函数指针：验证 hook 改的是函数体，缓存的指针照样生效
+        var callVali = Marshal.GetDelegateForFunctionPointer<CallLicenseValidate>(fn);
+        Console.WriteLine("READY " + Environment.ProcessId);
+        Console.Out.Flush();
+
+        string? line;
+        while ((line = Console.ReadLine()) != null)
+        {
+            if (line == "quit") break;
+            if (line == "call")
+            {
+                int result = callVali(IntPtr.Zero, IntPtr.Zero, IntPtr.Zero, IntPtr.Zero);
+                Console.WriteLine("RESULT " + result);
+                Console.Out.Flush();
+            }
+        }
+        return 0;
+    }
+
+    private static void RunRemoteHookSuite(string dll)
+    {
+        Console.WriteLine();
+        Console.WriteLine("--- E. 跨进程放行：定位运行中的进程 → LicenseValidate 默认放行 → 卸载恢复 ---");
+
+        // 交付引擎的目标是 licenseClientDLL.dll!LicenseValidate，不再触碰 CM_ValiLic。
+        string targetDll = System.IO.Path.GetFullPath(System.IO.Path.Combine(
+            System.IO.Path.GetDirectoryName(dll) ?? string.Empty, "..", "..", "licenseClientDLL.dll"));
+        if (!System.IO.File.Exists(targetDll))
+        {
+            Check("定位 licenseClientDLL.dll", false, targetDll);
+            return;
+        }
+
+        string exe = Environment.ProcessPath ?? string.Empty;
+        var psi = new System.Diagnostics.ProcessStartInfo(exe)
+        {
+            Arguments = "--target \"" + targetDll + "\"",
+            UseShellExecute = false,
+            RedirectStandardInput = true,
+            RedirectStandardOutput = true,
+            RedirectStandardError = false,
+            CreateNoWindow = true,
+        };
+
+        System.Diagnostics.Process? child = System.Diagnostics.Process.Start(psi);
+        if (child is null) { Check("启动靶进程", false, "Process.Start 返回 null"); return; }
+
+        using (child)
+        {
+            try
+            {
+                string? ready = child.StandardOutput.ReadLine();
+                Check("靶进程加载 licenseClientDLL.dll 并就绪", ready?.StartsWith("READY ") == true, ready ?? "(无输出)");
+                if (ready?.StartsWith("READY ") != true) return;
+                int pid = int.Parse(ready.Substring(6));
+
+                // 不在未 hook 时调用原函数：它会读取 licenseStr/sn，传 NULL 会崩溃。
+                // 因此用「入口字节」作为卸载恢复的判据。
+                var d = RemoteLicenseHook.Inspect(pid);
+                string originalEntry = d.EntryHex;
+                Check("远程 PE 导出表定位到 LicenseValidate", d.ValiLicRva != 0, "RVA=0x" + d.ValiLicRva.ToString("X"));
+                Check("远程入口 17 字节特征匹配", d.EntryMatches, d.EntryHex);
+                Check("远程识别为 64 位进程", d.Is64Bit, d.Is64Bit ? "x64" : "x86");
+                Check("远程读取到命名导出数", d.NamedExportCount > 0, d.NamedExportCount + " 个");
+
+                using (var hook = RemoteLicenseHook.Install(pid))
+                {
+                    Check("跨进程放行安装成功", hook.IsInstalled, "PID " + pid);
+                    Check("初始策略 fail-closed（返回 FALSE）", hook.GetPolicy(), RemoteLicenseHook.CV_ERR_CAM_LICENSE);
+
+                    const int marker = 0x2A2A2A2A;   // 原函数不可能返回的值，用于区分是否真的走了 stub
+                    hook.SetPolicy(marker);
+                    Check("策略推送后调用返回策略值", CallTarget(child), marker);
+                    Check("目标进程命中计数 = 1", (int)hook.GetHits(), 1);
+
+                    hook.SetPolicy(RemoteLicenseHook.CV_ERR_SUCCESS);
+                    Check("默认放行策略生效（返回 TRUE）", CallTarget(child), RemoteLicenseHook.CV_ERR_SUCCESS);
+                    Check("目标进程命中计数 = 2", (int)hook.GetHits(), 2);
+
+                    hook.Uninstall();
+                    var restored = RemoteLicenseHook.Inspect(pid);
+                    Check("卸载后入口 17 字节完整恢复",
+                          restored.EntryMatches && restored.EntryHex == originalEntry, restored.EntryHex);
+                    Check("卸载状态已清除", !hook.IsInstalled, "IsInstalled=false");
+                }
+
+                child.StandardInput.WriteLine("quit");
+                child.StandardInput.Flush();
+            }
+            catch (Exception ex)
+            {
+                Check("跨进程验证未抛异常", false, ex.GetType().Name + ": " + ex.Message);
+            }
+            finally
+            {
+                try { if (!child.HasExited) child.Kill(); } catch { }
+            }
+        }
+    }
+
+    private static int CallTarget(System.Diagnostics.Process child)
+    {
+        child.StandardInput.WriteLine("call");
+        child.StandardInput.Flush();
+        string? line = child.StandardOutput.ReadLine();
+        if (line is null || !line.StartsWith("RESULT "))
+            throw new InvalidOperationException("靶进程未返回结果: " + (line ?? "(EOF)"));
+        return int.Parse(line.Substring(7));
     }
 }

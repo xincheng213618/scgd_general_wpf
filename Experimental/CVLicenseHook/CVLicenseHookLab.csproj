@@ -20,4 +20,11 @@
     <NoWarn>$(NoWarn);CA1416;CS8625;CA1507</NoWarn>
   </PropertyGroup>
 
+  <!-- 跨进程 hook 引擎的正式实现放在 Engine 工程里；这里链接进来做实跑验证，
+       保证「交付给主项目的代码」与「验证过的代码」是同一份文件。 -->
+  <ItemGroup>
+    <Compile Include="../../Engine/ColorVision.Engine/Experimental/CVLicenseHook/RemoteLicenseHook.cs"
+             Link="RemoteLicenseHook.cs" />
+  </ItemGroup>
+
 </Project>
