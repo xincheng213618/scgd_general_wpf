@@ -29,6 +29,7 @@ public:
     void recordError(std::string message);
     [[nodiscard]] std::string lastError() const;
     [[nodiscard]] std::size_t itemCount() const;
+    [[nodiscard]] bool itemEstimatedBytes(std::uint32_t index, std::uint64_t& bytes) const;
     bool colorTransform(const ExecutionOptions& options, ColorTransform& transform) const;
 
 private:
@@ -81,6 +82,7 @@ inline constexpr std::uint32_t CalibrationFileCacheLoading = 1U;
 inline constexpr std::uint32_t CalibrationFileCacheReady = 2U;
 
 [[nodiscard]] CalibrationFileCacheStats calibrationFileCacheStats();
+void setCalibrationFileCacheBudget(std::uint64_t bytes);
 [[nodiscard]] bool calibrationFileCacheEntry(
     std::uint32_t index,
     CalibrationFileCacheEntry& entry);

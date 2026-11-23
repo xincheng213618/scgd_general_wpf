@@ -92,10 +92,15 @@ data and precomputed maps while keeping independent execution contexts. Size,
 last-write time, Windows file identity and change time distinguish revisions,
 including replacements that retain the original timestamp. Where a revision
 token is unavailable, Engine hashes the source and native loads reuse only
-content-verified maps. The default retained
-memory budget is 4 GiB; set `COLORVISION_CALIBRATION_CACHE_MB` before first use
-to override it (`0` disables retention). DSNU and Uniformity count the memory
-retained by the parsed maps, including lossless packed data and its indexes. Use
+content-verified maps. The default retained memory budget is 4 GiB.
+`COLORVISION_CALIBRATION_CACHE_MB` sets the initial budget in MiB before first
+use. `M_CalibrationCacheSetBudgetV1` applies the budget in bytes at runtime.
+ColorVision saves the value entered on the calibration cache page and reapplies
+it at startup. Zero disables shared retention and background warmup.
+DSNU and Uniformity count the memory retained by the parsed maps, including
+lossless packed data and its indexes. `M_CalibrationGetItemEstimatedBytesV1`
+reports the shared-cache estimate for a specific loaded stage and file revision,
+even after that revision leaves the cache index. Use
 `M_CalibrationCacheGetStatsV1`/`M_CalibrationCacheGetEntryV1` to inspect the
 cache and `M_CalibrationCacheReleaseV1` to drop cache-owned references. Releasing
 the cache never invalidates a live context; the release result reports memory

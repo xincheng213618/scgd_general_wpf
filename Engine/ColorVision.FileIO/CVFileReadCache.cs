@@ -24,7 +24,7 @@ namespace ColorVision.FileIO
         private static long allocations;
         private static long accessSequence;
         private static long cacheGeneration;
-        private static bool isEnabled;
+        private static bool isEnabled = true;
         private static int maximumEntries = 1;
         private static readonly object WriteSync = new object();
         private static readonly HashSet<string> PendingDiskWrites = new HashSet<string>(StringComparer.OrdinalIgnoreCase);

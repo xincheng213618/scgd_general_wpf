@@ -45,6 +45,8 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             ref uint sourceBpp, ref uint destinationBpp, ref uint channels, IntPtr raw, IntPtr cie);
 
         private static readonly SemaphoreSlim CaptureLock = new(1, 1);
+
+        internal static bool IsCaptureInProgress => CaptureLock.CurrentCount == 0;
         private static readonly uint RawFrameLeaseSize = (uint)Marshal.SizeOf<CameraRawFrameLeaseV1>();
         private static readonly (ImageChannelType ChannelType, int CfwPort)[] DefaultChannelOrder =
         {

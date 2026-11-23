@@ -77,8 +77,7 @@ internal sealed class FlowPerformanceSampler(Func<FlowPerformanceReading> read, 
         ThreadPool.GetAvailableThreads(out int workers, out int ioThreads);
         GCMemoryInfo gc = GC.GetGCMemoryInfo();
         IoCounters? io = GetProcessIoCounters(process.Handle, out IoCounters counters) ? counters : null;
-        SystemCpuTimes? system = GetSystemTimes(out ulong idle, out ulong kernel, out ulong user)
-            ? new(idle, kernel, user) : null;
+        SystemCpuTimes? system = ReadSystemCpu();
         MemoryStatus memory = new() { Length = (uint)Marshal.SizeOf<MemoryStatus>() };
         bool hasMemoryStatus = GlobalMemoryStatusEx(ref memory);
         bool hasProcessMemory = GetProcessMemoryInfo(process.Handle, out ProcessMemoryCounters processMemory, (uint)Marshal.SizeOf<ProcessMemoryCounters>());
@@ -101,6 +100,9 @@ internal sealed class FlowPerformanceSampler(Func<FlowPerformanceReading> read, 
             AvailableIoThreads = ioThreads, PendingWorkItems = ThreadPool.PendingWorkItemCount,
         };
     }
+
+    internal static SystemCpuTimes? ReadSystemCpu() => GetSystemTimes(out ulong idle, out ulong kernel, out ulong user)
+        ? new(idle, kernel, user) : null;
 
     [StructLayout(LayoutKind.Sequential)]
     private struct IoCounters

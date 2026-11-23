@@ -10,7 +10,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
     {
         private static readonly object settingsSync = new();
         private static readonly List<WeakReference<LocalCameraRawBufferPool>> pools = new();
-        private static bool isCacheEnabled;
+        private static bool isCacheEnabled = true;
         private readonly object sync = new();
         private IntPtr idlePointer;
         private int currentLength;

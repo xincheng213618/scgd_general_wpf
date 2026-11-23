@@ -403,7 +403,13 @@ namespace ColorVision.Core
         public static extern int M_CalibrationGetItemCount(IntPtr context);
 
         [DllImport(LibPath, CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
+        private static extern int M_CalibrationGetItemEstimatedBytesV1(IntPtr context, uint itemIndex, out ulong estimatedBytes);
+
+        [DllImport(LibPath, CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
         private static extern int M_CalibrationCacheGetStatsV1(ref CalibrationCacheStatsV1 statistics);
+
+        [DllImport(LibPath, CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
+        private static extern int M_CalibrationCacheSetBudgetV1(ulong budgetBytes);
 
         [DllImport(LibPath, CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
         private static extern int M_CalibrationCacheGetEntryV1(
@@ -452,6 +458,47 @@ namespace ColorVision.Core
                 required = result;
             }
             return required <= 1 ? string.Empty : "Native calibration error changed while being read.";
+        }
+
+        /// <summary>Reads the parsed memory estimate for the file generation loaded into this context.</summary>
+        public static ulong GetCalibrationItemEstimatedBytes(IntPtr context, uint itemIndex)
+        {
+            try
+            {
+                EnsureCalibrationCacheResult(M_CalibrationGetItemEstimatedBytesV1(context, itemIndex, out ulong bytes),
+                    nameof(M_CalibrationGetItemEstimatedBytesV1));
+                return bytes;
+            }
+            catch (Exception ex) when (ex is DllNotFoundException or EntryPointNotFoundException or BadImageFormatException)
+            {
+                throw CreateCalibrationCacheCompatibilityException(ex);
+            }
+        }
+
+        /// <summary>Reads process-wide retained memory and budget without enumerating file paths.</summary>
+        public static CalibrationSharedCacheStatistics GetCalibrationSharedCacheStatistics()
+        {
+            try
+            {
+                return ToManaged(ReadCalibrationCacheStatistics());
+            }
+            catch (Exception ex) when (ex is DllNotFoundException or EntryPointNotFoundException or BadImageFormatException)
+            {
+                throw CreateCalibrationCacheCompatibilityException(ex);
+            }
+        }
+
+        /// <summary>Applies a retention budget in bytes and immediately trims idle assets. Zero disables retention.</summary>
+        public static void SetCalibrationSharedCacheBudget(ulong budgetBytes)
+        {
+            try
+            {
+                EnsureCalibrationCacheResult(M_CalibrationCacheSetBudgetV1(budgetBytes), nameof(M_CalibrationCacheSetBudgetV1));
+            }
+            catch (Exception ex) when (ex is DllNotFoundException or EntryPointNotFoundException or BadImageFormatException)
+            {
+                throw CreateCalibrationCacheCompatibilityException(ex);
+            }
         }
 
         /// <summary>

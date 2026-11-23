@@ -6261,8 +6261,8 @@ Active cache operations will finish first. Disk files will be kept, and the cach
   <data name="CameraPanel_Region" xml:space="preserve"><value>ROI</value></data>
   <data name="CameraPanel_LocalExposure" xml:space="preserve"><value>Local settings</value></data>
   <data name="启用相机取图缓冲" xml:space="preserve"><value>Enable camera capture buffer</value></data>
-  <data name="默认关闭，流程加速时可手动开启。开启后每台相机最多保留一块空闲 RAW 缓冲；关闭时释放空闲缓冲，在用图像归还后释放。" xml:space="preserve"><value>Disabled by default; enable for faster flows. Each camera retains at most one idle RAW buffer. Disabling releases idle buffers and frees active images when returned.</value></data>
-  <data name="默认关闭，流程加速时可手动开启。关闭后读写照常执行，不保留空闲缓冲；在用缓冲归还后释放。" xml:space="preserve"><value>Disabled by default; enable for faster flows. File I/O continues normally. No idle buffers are retained; active buffers are freed when returned.</value></data>
+  <data name="默认开启，每台相机最多保留一块空闲 RAW 缓冲。关闭后释放空闲缓冲，在用图像归还时释放。" xml:space="preserve"><value>Enabled by default. Each camera retains at most one idle RAW buffer. Turning this off releases idle buffers immediately and active buffers when returned.</value></data>
+  <data name="默认开启，缓存最近使用的 CVRAW 文件。关闭后文件读写照常，空闲缓冲立即释放，在用缓冲归还时释放。" xml:space="preserve"><value>Enabled by default for recently used CVRAW files. Turning this off releases idle buffers immediately and active buffers when returned. File I/O continues normally.</value></data>
   <data name="实验功能" xml:space="preserve"><value>Experimental features</value></data>
   <data name="截图缓存" xml:space="preserve"><value>Snapshot cache</value></data>
   <data name="按图像视图统计截图导出缓冲。空闲缓冲可立即释放，在用缓冲归还后释放；已保存的截图文件保留。" xml:space="preserve"><value>Snapshot export buffers by image view. Idle buffers are released immediately; active buffers are released when returned. Saved images are kept.</value></data>
@@ -7326,4 +7326,13 @@ Field: </value></data>
   <data name="服务设置" xml:space="preserve"><value>Service Settings</value></data>
   <data name="正在读取当前孔位…" xml:space="preserve"><value>Reading current position…</value></data>
   <data name="{0}（当前）" xml:space="preserve"><value>{0} (current)</value></data>
+  <data name="相机进入测量模式后自动预热" xml:space="preserve"><value>Automatically warm up calibration in measurement mode</value></data>
+  <data name="系统空闲后，加载上次退出应用时仍在缓存中的校正计划。" xml:space="preserve"><value>When the system is idle, load the calibration plans that were still in the cache when the app last closed.</value></data>
+  <data name="进入测量模式 2 秒后开始检查空闲状态，空闲时在后台加载。" xml:space="preserve"><value>Idle checks start two seconds after the camera enters measurement mode. Calibration loads in the background when the system is idle.</value></data>
+  <data name="内存预算（MiB）" xml:space="preserve"><value>Memory budget (MiB)</value></data>
+  <data name="校正缓存预算使用率" xml:space="preserve"><value>Calibration cache budget usage</value></data>
+  <data name="校正缓存已用 {0} / 预算 {1}" xml:space="preserve"><value>Calibration cache: {0} used of {1}</value></data>
+  <data name="设置校正缓存预算失败：{0}" xml:space="preserve"><value>Could not set the calibration cache budget: {0}</value></data>
+  <data name="请输入以 MiB 为单位的非负整数。" xml:space="preserve"><value>Enter a whole number of MiB, zero or greater.</value></data>
+  <data name="设为 0 将停止保留共享缓存和自动预热。正在使用的校正计划可继续执行。" xml:space="preserve"><value>Set to 0 to stop retaining shared cache entries and turn off automatic warm-up. Calibration plans already in use can finish.</value></data>
 </root>

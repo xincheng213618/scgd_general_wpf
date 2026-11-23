@@ -546,6 +546,25 @@ extern "C" COLORVISIONCORE_API int __cdecl M_CalibrationGetItemCount(void* conte
     }
 }
 
+extern "C" COLORVISIONCORE_API int __cdecl M_CalibrationGetItemEstimatedBytesV1(
+    void* context, std::uint32_t itemIndex, std::uint64_t* estimatedBytes)
+{
+    if (context == nullptr || estimatedBytes == nullptr)
+        return fail(context, M_CALIBRATION_INVALID_ARGUMENT, "Context and item size output are required");
+    try {
+        if (!asContext(context)->itemEstimatedBytes(itemIndex, *estimatedBytes))
+            return fail(context, M_CALIBRATION_INVALID_ARGUMENT, "Calibration item index is out of range");
+        globalError.clear();
+        return M_CALIBRATION_OK;
+    }
+    catch (const std::exception& ex) {
+        return fail(context, M_CALIBRATION_INTERNAL_ERROR, ex.what());
+    }
+    catch (...) {
+        return fail(context, M_CALIBRATION_INTERNAL_ERROR, "Unknown error while reading calibration item size");
+    }
+}
+
 extern "C" COLORVISIONCORE_API int __cdecl M_CalibrationCacheGetStatsV1(
     MCalibrationCacheStatsV1* stats)
 {
@@ -573,6 +592,21 @@ extern "C" COLORVISIONCORE_API int __cdecl M_CalibrationCacheGetStatsV1(
     catch (...) {
         return fail(nullptr, M_CALIBRATION_INTERNAL_ERROR,
             "Unknown error while reading calibration cache stats");
+    }
+}
+
+extern "C" COLORVISIONCORE_API int __cdecl M_CalibrationCacheSetBudgetV1(std::uint64_t budgetBytes)
+{
+    try {
+        cvcore::calibration::setCalibrationFileCacheBudget(budgetBytes);
+        globalError.clear();
+        return M_CALIBRATION_OK;
+    }
+    catch (const std::exception& ex) {
+        return fail(nullptr, M_CALIBRATION_INTERNAL_ERROR, ex.what());
+    }
+    catch (...) {
+        return fail(nullptr, M_CALIBRATION_INTERNAL_ERROR, "Unknown error while setting the calibration cache budget");
     }
 }
 

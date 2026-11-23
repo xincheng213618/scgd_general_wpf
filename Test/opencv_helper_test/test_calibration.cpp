@@ -906,6 +906,77 @@ MCalibrationCacheReleaseResultV1 releaseCalibrationCache()
     return result;
 }
 
+void verifyRuntimeCacheBudget(const std::filesystem::path& directory)
+{
+    releaseCalibrationCache();
+    struct RestoreBudget {
+        std::uint64_t bytes;
+        ~RestoreBudget() { M_CalibrationCacheSetBudgetV1(bytes); }
+    } original{ readCalibrationCacheStats().budgetBytes };
+    const auto setBudget = [](std::uint64_t bytes) {
+        requireResult(M_CalibrationCacheSetBudgetV1(bytes), nullptr, "set runtime cache budget");
+        if (readCalibrationCacheStats().budgetBytes != bytes) throw std::runtime_error("Stale runtime cache budget");
+    };
+    const auto load = [](const std::filesystem::path& file) {
+        auto context = createContext();
+        requireResult(M_CalibrationLoadFileW(context.get(), 0, file.c_str()), context.get(), "load budget test gain");
+        return context;
+    };
+    const auto itemBytes = [](const Context& context) {
+        std::uint64_t bytes = 0;
+        requireResult(M_CalibrationGetItemEstimatedBytesV1(context.get(), 0, &bytes), context.get(), "read item size");
+        return bytes;
+    };
+    setBudget(1ULL << 33);
+    const auto a = directory / "runtime_gain_a.json";
+    const auto b = directory / "runtime_gain_b.json";
+    const auto c = directory / "runtime_gain_c.json";
+    for (const auto& path : { a, b, c }) writeText(path, R"({"DarkNoiseRatio":2})");
+    auto active = load(a);
+    const auto bytes = itemBytes(active);
+    if (bytes == 0 || bytes != readCalibrationCacheStats().estimatedMemoryBytes)
+        throw std::runtime_error("Loaded item size differs from shared cache accounting");
+    std::uint64_t unused = 0;
+    if (M_CalibrationGetItemEstimatedBytesV1(active.get(), 1, &unused) != M_CALIBRATION_INVALID_ARGUMENT
+        || M_CalibrationGetItemEstimatedBytesV1(active.get(), 0, nullptr) != M_CALIBRATION_INVALID_ARGUMENT)
+        throw std::runtime_error("Invalid calibration item size request succeeded");
+
+    load(b);
+    load(c);
+    setBudget(2 * bytes);
+    auto trimmed = readCalibrationCacheStats();
+    if (trimmed.entryCount != 2 || trimmed.estimatedMemoryBytes != 2 * bytes)
+        throw std::runtime_error("Lowering the budget did not immediately release an idle item");
+    load(c);
+    if (readCalibrationCacheStats().hitCount != trimmed.hitCount + 1)
+        throw std::runtime_error("Lowering the budget evicted the most recently accessed idle item");
+
+    setBudget(1);
+    if (readCalibrationCacheStats().estimatedMemoryBytes != bytes)
+        throw std::runtime_error("Positive budget discarded a live context's shared asset");
+    const auto generation = readCalibrationCacheStats().generation;
+    setBudget(1);
+    if (readCalibrationCacheStats().generation != generation)
+        throw std::runtime_error("Reapplying the same budget invalidated an enumeration");
+    setBudget(0);
+    if (readCalibrationCacheStats().entryCount != 0 || readCalibrationCacheStats().estimatedMemoryBytes != 0)
+        throw std::runtime_error("Zero budget retained existing calibration assets");
+    requireUniformPixels(executeSyntheticSharedMap(active.get()), 20, "live context after disabling retention");
+
+    writeText(a, std::string(4096, ' ') + R"({"DarkNoiseRatio":3})");
+    auto unretained = load(a);
+    const auto replacementBytes = itemBytes(unretained);
+    if (replacementBytes <= bytes || readCalibrationCacheStats().entryCount != 0)
+        throw std::runtime_error("New file generation under zero budget was retained or misreported");
+    setBudget(1ULL << 20);
+    auto replacement = load(a);
+    if (readCalibrationCacheStats().estimatedMemoryBytes != replacementBytes
+        || itemBytes(replacement) != replacementBytes || itemBytes(active) != bytes)
+        throw std::runtime_error("A context reported the size of a different file generation");
+    requireUniformPixels(executeSyntheticSharedMap(replacement.get()), 30, "new generation after restoring retention");
+    releaseCalibrationCache();
+}
+
 void verifyReleaseLinearizesWithInFlightLoad(const std::filesystem::path& directory, bool verified)
 {
     releaseCalibrationCache();
@@ -2417,6 +2488,7 @@ void runSyntheticCoverage()
     verifyReleaseLinearizesWithInFlightLoad(directory.path, false);
     verifyReleaseLinearizesWithInFlightLoad(directory.path, true);
     verifyProcessFileCacheAcrossGroups(directory.path);
+    verifyRuntimeCacheBudget(directory.path);
     verifyExactMapSourceVersions(directory.path);
     verifyAdjacentMapEquivalence(directory.path, false);
     verifyAdjacentMapEquivalence(directory.path, true);

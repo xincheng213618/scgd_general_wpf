@@ -7211,8 +7211,8 @@
   <data name="CameraPanel_Region" xml:space="preserve"><value>區域</value></data>
   <data name="CameraPanel_LocalExposure" xml:space="preserve"><value>本機參數</value></data>
   <data name="启用相机取图缓冲" xml:space="preserve"><value>啟用相機取圖緩衝</value></data>
-  <data name="默认关闭，流程加速时可手动开启。开启后每台相机最多保留一块空闲 RAW 缓冲；关闭时释放空闲缓冲，在用图像归还后释放。" xml:space="preserve"><value>預設關閉，流程加速時可手動開啟。開啟後每台相機最多保留一塊空閒 RAW 緩衝；關閉時釋放空閒緩衝，在用影像歸還後釋放。</value></data>
-  <data name="默认关闭，流程加速时可手动开启。关闭后读写照常执行，不保留空闲缓冲；在用缓冲归还后释放。" xml:space="preserve"><value>預設關閉，流程加速時可手動開啟。關閉後讀寫照常執行，不保留空閒緩衝；在用緩衝歸還後釋放。</value></data>
+  <data name="默认开启，每台相机最多保留一块空闲 RAW 缓冲。关闭后释放空闲缓冲，在用图像归还时释放。" xml:space="preserve"><value>預設開啟，每部相機最多保留一塊閒置 RAW 緩衝。關閉後會釋放閒置緩衝，使用中的影像於歸還時釋放。</value></data>
+  <data name="默认开启，缓存最近使用的 CVRAW 文件。关闭后文件读写照常，空闲缓冲立即释放，在用缓冲归还时释放。" xml:space="preserve"><value>預設開啟，快取最近使用的 CVRAW 檔案。關閉後檔案讀寫照常，閒置緩衝立即釋放，使用中的緩衝於歸還時釋放。</value></data>
   <data name="实验功能" xml:space="preserve"><value>實驗功能</value></data>
   <data name="截图缓存" xml:space="preserve"><value>截圖快取</value></data>
   <data name="按图像视图统计截图导出缓冲。空闲缓冲可立即释放，在用缓冲归还后释放；已保存的截图文件保留。" xml:space="preserve"><value>依影像檢視統計截圖匯出緩衝。閒置緩衝可立即釋放，使用中的緩衝歸還後釋放；已儲存的截圖檔案保留。</value></data>
@@ -8276,4 +8276,13 @@
   <data name="服务设置" xml:space="preserve"><value>服務設定</value></data>
   <data name="正在读取当前孔位…" xml:space="preserve"><value>正在讀取目前孔位…</value></data>
   <data name="{0}（当前）" xml:space="preserve"><value>{0}（目前）</value></data>
+  <data name="相机进入测量模式后自动预热" xml:space="preserve"><value>相機進入測量模式後自動預熱</value></data>
+  <data name="系统空闲后，加载上次退出应用时仍在缓存中的校正计划。" xml:space="preserve"><value>系統閒置後，載入上次關閉應用程式時仍在快取中的校正計畫。</value></data>
+  <data name="进入测量模式 2 秒后开始检查空闲状态，空闲时在后台加载。" xml:space="preserve"><value>進入測量模式 2 秒後開始檢查閒置狀態，系統閒置時於背景載入。</value></data>
+  <data name="内存预算（MiB）" xml:space="preserve"><value>記憶體預算（MiB）</value></data>
+  <data name="校正缓存预算使用率" xml:space="preserve"><value>校正快取預算使用率</value></data>
+  <data name="校正缓存已用 {0} / 预算 {1}" xml:space="preserve"><value>校正快取已用 {0}／預算 {1}</value></data>
+  <data name="设置校正缓存预算失败：{0}" xml:space="preserve"><value>無法設定校正快取預算：{0}</value></data>
+  <data name="请输入以 MiB 为单位的非负整数。" xml:space="preserve"><value>請輸入以 MiB 為單位的非負整數。</value></data>
+  <data name="设为 0 将停止保留共享缓存和自动预热。正在使用的校正计划可继续执行。" xml:space="preserve"><value>設為 0 會停止保留共用快取及自動預熱。使用中的校正計畫可繼續執行。</value></data>
 </root>

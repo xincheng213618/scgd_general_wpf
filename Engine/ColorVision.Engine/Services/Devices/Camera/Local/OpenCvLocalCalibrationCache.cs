@@ -9,6 +9,7 @@ using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
+using System.Threading;
 using Microsoft.Win32.SafeHandles;
 using ColorVision.ImageEditor.Tif;
 
@@ -26,15 +27,55 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
         // correction maps to grow with every workflow variant.
         private const int MaxCachedContexts = 2;
         private const int CalibrationHashBufferSize = 256 * 1024;
+        private static long accessSequence;
         private readonly LinkedList<CachedContext> contexts = new();
         private bool disposed;
 
         public int CachedItemCount => contexts.Sum(entry => entry.Files.Length);
 
+        internal (long LastAccess, LocalCalibrationWarmupPlan Plan)[] CaptureWarmupPlans(string deviceCode)
+            => contexts.Select(context => (context.LastAccess, new LocalCalibrationWarmupPlan(deviceCode,
+                context.Files.Select(file => new LocalCalibrationWarmupFile(
+                    file.CalibrationType, file.DisplayName, file.FullPath, file.EstimatedMemoryBytes,
+                    file.Sha256, file.Revision)).ToArray()))).ToArray();
+
+        internal void Warm(LocalCalibrationWarmupPlan plan, CalibrationSharedCacheSnapshot existing)
+        {
+            ulong budget = existing.Statistics.BudgetBytes;
+            ulong used = existing.Statistics.EstimatedMemoryBytes;
+            if (budget == 0 || used > budget) return;
+
+            var retained = existing.Entries
+                .Where(entry => (entry.Flags & CalibrationSharedCacheEntryStates.Ready) != 0)
+                .ToDictionary(entry => (entry.CalibrationType, entry.FilePath.ToUpperInvariant()),
+                    entry => entry.EstimatedMemoryBytes);
+            // The native cache indexes one generation per type and path. A replacement
+            // removes the old generation from its retained-byte total.
+            var additional = plan.Files.GroupBy(file => file.CacheKey).Select(group =>
+            {
+                ulong estimate = group.Max(file => file.EstimatedMemoryBytes);
+                ulong current = retained.GetValueOrDefault(group.Key);
+                return estimate > current ? estimate - current : 0;
+            });
+            if (!LocalCalibrationWarmupHistory.FitsWithin(additional, budget - used, out _)) return;
+
+            var assets = new LocalCalibrationAsset[plan.Files.Length];
+            for (int i = 0; i < assets.Length; i++)
+            {
+                var file = plan.Files[i];
+                var asset = CreateCachedFile(new(string.Empty, file.Type, file.DisplayName, string.Empty, file.FullPath),
+                    verifyHash: file.Revision == null);
+                if (file.Revision != null && file.Revision != asset.Revision) return;
+                if (asset.Sha256 != null && file.Sha256 != asset.Sha256) return;
+                assets[i] = asset with { Sha256 = file.Sha256 };
+            }
+            GetContext(assets);
+        }
+
         internal (LocalCalibrationAsset[] Assets, uint InputDepth) Prepare(IReadOnlyList<DeviceCameraCalibrationFile> files)
         {
             if (files.Count == 0) return ([], 0);
-            var assets = InExecutionOrder(files).Select(CreateCachedFile).ToArray();
+            var assets = InExecutionOrder(files).Select(file => CreateCachedFile(file)).ToArray();
             var context = GetContext(assets);
             return (context.Files, context.InputDepth);
         }
@@ -156,6 +197,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             LinkedListNode<CachedContext>? cachedNode = Find(contexts, requestedFiles);
             if (cachedNode != null)
             {
+                cachedNode.Value.LastAccess = Interlocked.Increment(ref accessSequence);
                 if (cachedNode != mostRecent)
                 {
                     TransferRawWorkBuffers(previous, cachedNode.Value);
@@ -167,6 +209,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
 
             // Retain working contexts if the requested revision can no longer be loaded.
             CachedContext created = CreateContext(requestedFiles);
+            created.LastAccess = Interlocked.Increment(ref accessSequence);
             contexts.AddFirst(created);
             TransferRawWorkBuffers(previous, created);
             if (contexts.Count > MaxCachedContexts) EvictLeastRecentlyUsed(contexts);
@@ -268,7 +311,13 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                     }
                     if (file.Sha256 != null && file.Sha256 != digest)
                         throw new IOException($"校正资源“{file.DisplayName}”的内容已变化，请重新准备模板。");
-                    loaded[index] = file with { Sha256 = digest };
+                    ulong estimatedMemoryBytes;
+                    try { estimatedMemoryBytes = OpenCVCalibration.GetCalibrationItemEstimatedBytes(newContext, (uint)index); }
+                    catch (NotSupportedException exception) when (exception.InnerException is EntryPointNotFoundException)
+                    {
+                        estimatedMemoryBytes = 0;
+                    }
+                    loaded[index] = file with { Sha256 = digest, EstimatedMemoryBytes = estimatedMemoryBytes };
                 }
 
                 uint inputDepth;
@@ -372,7 +421,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                 : $"{operation}，原生错误码：{result}，{detail}");
         }
 
-        private static LocalCalibrationAsset CreateCachedFile(DeviceCameraCalibrationFile file)
+        private static LocalCalibrationAsset CreateCachedFile(DeviceCameraCalibrationFile file, bool verifyHash = false)
         {
             if (!IsSupported(file.CalibrationType))
             {
@@ -389,7 +438,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                 source.Length,
                 File.GetLastWriteTimeUtc(path).Ticks,
                 revision,
-                revision == null ? ComputeSourceHash(source, source.Length) : null);
+                verifyHash || revision == null ? ComputeSourceHash(source, source.Length) : null);
         }
 
         private static bool IsSupported(CalibrationType type)
@@ -420,6 +469,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
         private sealed class CachedContext(IntPtr context, LocalCalibrationAsset[] files, uint inputDepth)
         {
             public IntPtr Context { get; set; } = context;
+            public long LastAccess { get; set; }
             public LocalCalibrationAsset[] Files { get; } = files;
             public uint InputDepth { get; } = inputDepth;
             public bool UsesRawWorkBuffers { get; } = files.Any(file => file.CalibrationType is
@@ -428,7 +478,8 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
     }
 
     internal sealed record LocalCalibrationAsset(CalibrationType CalibrationType, string DisplayName, string FullPath,
-        long Length, long LastWriteTimeUtcTicks, LocalCalibrationFileRevision? Revision, string? Sha256 = null);
+        long Length, long LastWriteTimeUtcTicks, LocalCalibrationFileRevision? Revision, string? Sha256 = null,
+        ulong EstimatedMemoryBytes = 0);
 
     // A replaced or rewritten file can retain its length and last-write timestamp. Keep the
     // same revision identity as the native asset cache; hash directly on volumes lacking it.

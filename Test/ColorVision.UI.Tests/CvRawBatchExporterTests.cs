@@ -71,6 +71,8 @@ public sealed class CvRawBatchExporterTests
         bool previousCache = CVFileReadCache.IsEnabled;
         try
         {
+            // Memory-only entries from other exports cannot be evicted by a synchronous write.
+            CVFileReadCache.IsEnabled = false;
             CVFileReadCache.IsEnabled = cacheEnabled;
             const int width = 2048, height = 1024, length = width * height * sizeof(ushort);
             using CVCIEFile raw = new() { Version = 2, Cols = width, Rows = height, Bpp = 16, Channels = 1, Data = new byte[length] };
@@ -87,7 +89,11 @@ public sealed class CvRawBatchExporterTests
             Assert.True(allocated < length, $"Export allocated {allocated:N0} managed bytes for a {length:N0}-byte RAW frame.");
             AssertNoTemporaryFiles(folder.Path);
         }
-        finally { CVFileReadCache.IsEnabled = previousCache; }
+        finally
+        {
+            CVFileReadCache.IsEnabled = false;
+            CVFileReadCache.IsEnabled = previousCache;
+        }
     }
 
     [Fact]

@@ -425,6 +425,9 @@ extern "C" COLORVISIONCORE_API int __cdecl M_CalibrationGetLastError(
     char* buffer,
     std::uint32_t bufferLength);
 extern "C" COLORVISIONCORE_API int __cdecl M_CalibrationGetItemCount(void* context);
+// Reports the estimated parsed bytes of the file generation leased by this item.
+extern "C" COLORVISIONCORE_API int __cdecl M_CalibrationGetItemEstimatedBytesV1(
+    void* context, std::uint32_t itemIndex, std::uint64_t* estimatedBytes);
 
 // Process-wide, per-file parsed calibration cache. The default budget is 4
 // GiB and may be overridden before first use with the
@@ -433,6 +436,10 @@ extern "C" COLORVISIONCORE_API int __cdecl M_CalibrationGetItemCount(void* conte
 // order, hit counts, or generation.
 extern "C" COLORVISIONCORE_API int __cdecl M_CalibrationCacheGetStatsV1(
     MCalibrationCacheStatsV1* stats);
+// Sets the process-wide retention budget in bytes and trims idle LRU entries now.
+// Live contexts keep their assets. Zero drops retained references and disables retention.
+extern "C" COLORVISIONCORE_API int __cdecl M_CalibrationCacheSetBudgetV1(
+    std::uint64_t budgetBytes);
 // Entries are ordered by most-recent access. pathCapacity is measured in
 // UTF-16 wchar_t code units. A null/undersized path buffer is not an error: no
 // partial path is copied and pathCharacterCount reports the required size.

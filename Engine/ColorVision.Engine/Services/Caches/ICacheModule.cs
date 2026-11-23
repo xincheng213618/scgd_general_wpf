@@ -40,7 +40,10 @@ namespace ColorVision.Engine.Services.Caches
         bool CanToggle,
         string DetailSummary,
         IReadOnlyList<CacheEntrySnapshot> Entries,
-        string? Error = null);
+        string? Error = null)
+    {
+        public ulong? BudgetBytes { get; init; }
+    }
 
     internal sealed record CacheModuleReleaseResult(string ModuleId, ulong ReleasedBytes, string Message, bool Succeeded);
 }

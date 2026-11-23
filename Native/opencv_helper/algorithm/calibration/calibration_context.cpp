@@ -137,7 +137,10 @@ struct CalibrationFileKeyHash {
 };
 
 struct CalibrationAssetLease {
+    explicit CalibrationAssetLease(std::uint64_t sourceBytes) : estimatedMemoryBytes(sourceBytes) {}
     std::atomic<std::uint32_t> activeOwners{ 0 };
+    // Replaced with the parsed footprint before publishing this file generation.
+    std::uint64_t estimatedMemoryBytes;
 };
 
 struct CalibrationFileEntry {
@@ -147,8 +150,7 @@ struct CalibrationFileEntry {
         std::uint64_t cacheReleaseEpoch)
         : metadata(value)
         , canonicalFile(std::move(canonicalPath))
-        , lease(std::make_shared<CalibrationAssetLease>())
-        , estimatedMemoryBytes(static_cast<std::uint64_t>(value.size))
+        , lease(std::make_shared<CalibrationAssetLease>(static_cast<std::uint64_t>(value.size)))
         , releaseEpoch(cacheReleaseEpoch)
     {
     }
@@ -160,7 +162,6 @@ struct CalibrationFileEntry {
     std::shared_ptr<CalibrationItem> prototype;
     std::optional<CalibrationFileDigest> digest;
     std::shared_ptr<CalibrationAssetLease> lease;
-    std::uint64_t estimatedMemoryBytes = 0;
     std::uint64_t hitCount = 0;
     std::uint64_t lastAccessSequence = 0;
     std::uint64_t releaseEpoch = 0;
@@ -203,9 +204,10 @@ std::filesystem::path normalizedCachePath(const std::filesystem::path& file)
 constexpr std::uint64_t DefaultCalibrationFileCacheBytes = 4ULL * 1024 * 1024 * 1024;
 constexpr std::uint64_t Megabyte = 1024ULL * 1024;
 
-std::uint64_t configuredCalibrationFileCacheBytes() noexcept
+// Access under calibrationFileCacheMutex. Read the environment only on first use.
+std::uint64_t& calibrationFileCacheBudgetBytes() noexcept
 {
-    static const std::uint64_t value = []() noexcept {
+    static std::uint64_t value = []() noexcept {
         const char* configured = std::getenv("COLORVISION_CALIBRATION_CACHE_MB");
         if (configured == nullptr || *configured == '\0') {
             return DefaultCalibrationFileCacheBytes;
@@ -251,9 +253,9 @@ void incrementCacheReleaseEpoch() noexcept
 void removeCacheAccounting(CalibrationFileEntry& entry) noexcept
 {
     if (!entry.retained) return;
-    calibrationFileCacheBytes = entry.estimatedMemoryBytes > calibrationFileCacheBytes
+    calibrationFileCacheBytes = entry.lease->estimatedMemoryBytes > calibrationFileCacheBytes
         ? 0
-        : calibrationFileCacheBytes - entry.estimatedMemoryBytes;
+        : calibrationFileCacheBytes - entry.lease->estimatedMemoryBytes;
     entry.retained = false;
 }
 
@@ -267,7 +269,7 @@ void eraseCacheEntry(
 
 void evictCalibrationFiles(CalibrationFileEntry* mostRecent)
 {
-    const std::uint64_t budget = configuredCalibrationFileCacheBytes();
+    const std::uint64_t budget = calibrationFileCacheBudgetBytes();
     while (calibrationFileCacheBytes > budget) {
         auto oldest = calibrationFileCache.end();
         for (auto iterator = calibrationFileCache.begin();
@@ -359,6 +361,7 @@ public:
     }
 
     [[nodiscard]] CalibrationType type() const noexcept override { return implementation_->type(); }
+    [[nodiscard]] std::uint64_t cacheFootprintBytes() const noexcept override { return lease_->estimatedMemoryBytes; }
     [[nodiscard]] bool isColorTransform() const noexcept override { return implementation_->isColorTransform(); }
     [[nodiscard]] std::optional<std::int32_t> requiredInputDepth() const noexcept override
     {
@@ -521,14 +524,14 @@ public:
             else {
                 entry_->prototype = prototype;
                 if (digest != nullptr) entry_->digest = *digest;
-                entry_->estimatedMemoryBytes = estimatedMemoryBytes;
+                entry_->lease->estimatedMemoryBytes = estimatedMemoryBytes;
                 entry_->lastAccessSequence = ++calibrationFileCacheAccessSequence;
                 // Reserve the producer's context owner before publishing the
                 // ready state. This closes the release-between-success-and-
                 // lease window: an explicit release either cancels this load,
                 // or reports the reserved owner as deferred active memory.
                 entry_->lease->activeOwners.fetch_add(1, std::memory_order_relaxed);
-                const bool disableRetention = configuredCalibrationFileCacheBytes() == 0;
+                const bool disableRetention = calibrationFileCacheBudgetBytes() == 0;
                 if (!disableRetention) {
                     entry_->retained = true;
                     calibrationFileCacheBytes = estimatedMemoryBytes
@@ -725,7 +728,7 @@ CalibrationFileLoadResult loadCalibrationFileOnce(
                         // A zero-budget producer can hand its ready prototype
                         // to waiters without retaining a cache entry.
                         const bool canUse = current == calibrationFileCache.end()
-                            ? configuredCalibrationFileCacheBytes() == 0
+                            ? calibrationFileCacheBudgetBytes() == 0
                             : current->second == entry;
                         if (!canUse) error = "Calibration file load was superseded by a newer generation";
                         return canUse;
@@ -883,10 +886,29 @@ CalibrationFileCacheStats calibrationFileCacheStats()
         : static_cast<std::uint32_t>(calibrationFileCache.size());
     result.generation = calibrationFileCacheGeneration;
     result.estimatedMemoryBytes = calibrationFileCacheBytes;
-    result.budgetBytes = configuredCalibrationFileCacheBytes();
+    result.budgetBytes = calibrationFileCacheBudgetBytes();
     result.hitCount = calibrationFileCacheHits;
     result.missCount = calibrationFileCacheMisses;
     return result;
+}
+
+void setCalibrationFileCacheBudget(std::uint64_t bytes)
+{
+    std::lock_guard lock(calibrationFileCacheMutex);
+    auto& budget = calibrationFileCacheBudgetBytes();
+    if (budget == bytes) return;
+    budget = bytes;
+    incrementCacheGeneration();
+    if (bytes != 0) {
+        evictCalibrationFiles(nullptr);
+        return;
+    }
+    // Match zero-budget loads: contexts keep their own references. Let in-flight
+    // producers deliver to their current waiters without retaining a prototype.
+    for (auto it = calibrationFileCache.begin(); it != calibrationFileCache.end();) {
+        if (it->second->retained) eraseCacheEntry(it++);
+        else ++it;
+    }
 }
 
 bool calibrationFileCacheEntry(
@@ -922,7 +944,7 @@ bool calibrationFileCacheEntry(
     result.file = entry.canonicalFile;
     result.generation = calibrationFileCacheGeneration;
     result.fileBytes = static_cast<std::uint64_t>(entry.metadata.size);
-    result.estimatedMemoryBytes = entry.estimatedMemoryBytes;
+    result.estimatedMemoryBytes = entry.lease->estimatedMemoryBytes;
     result.hitCount = entry.hitCount;
     result.lastAccessSequence = entry.lastAccessSequence;
     result.activeOwnerCount = entry.lease->activeOwners.load(std::memory_order_relaxed);
@@ -944,7 +966,7 @@ CalibrationFileCacheReleaseResult releaseCalibrationFileCache()
         for (auto& cached : calibrationFileCache) {
             CalibrationFileEntry& entry = *cached.second;
             if (entry.retained) {
-                result.releasedEstimatedMemoryBytes += entry.estimatedMemoryBytes;
+                result.releasedEstimatedMemoryBytes += entry.lease->estimatedMemoryBytes;
             }
 
             const bool wasLoading = entry.loading.exchange(false, std::memory_order_acq_rel);
@@ -959,7 +981,7 @@ CalibrationFileCacheReleaseResult releaseCalibrationFileCache()
             const bool deferred = wasLoading || owners != 0;
             if (deferred) {
                 ++result.activeEntryCount;
-                result.activeEstimatedMemoryBytes += entry.estimatedMemoryBytes;
+                result.activeEstimatedMemoryBytes += entry.lease->estimatedMemoryBytes;
             }
             activeOwners += owners;
             removeCacheAccounting(entry);
@@ -1553,6 +1575,14 @@ std::size_t CalibrationContext::itemCount() const
 {
     std::scoped_lock lock(mutex_);
     return items_.size();
+}
+
+bool CalibrationContext::itemEstimatedBytes(std::uint32_t index, std::uint64_t& bytes) const
+{
+    std::scoped_lock lock(mutex_);
+    if (index >= items_.size()) return false;
+    bytes = items_[index]->cacheFootprintBytes();
+    return true;
 }
 
 bool CalibrationContext::colorTransform(const ExecutionOptions& options, ColorTransform& transform) const

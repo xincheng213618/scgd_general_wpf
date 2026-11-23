@@ -3,7 +3,8 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:engine="clr-namespace:ColorVision.Engine"
         Title="{engine:EngineLang 内存缓存管理}"
-        Width="1100" Height="730" MinWidth="900" MinHeight="680"
+        Width="1040" Height="670" MinWidth="820" MinHeight="540"
+        UseLayoutRounding="True" SnapsToDevicePixels="True"
         Background="{DynamicResource GlobalBackground}"
         Closing="Window_Closing" Closed="Window_Closed">
     <Window.Resources>
@@ -15,9 +16,15 @@
             <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
         </Style>
         <Style x:Key="CacheActionButtonStyle" TargetType="Button" BasedOn="{StaticResource ButtonDefault}">
-            <Setter Property="Padding" Value="18,8"/>
-            <Setter Property="MinHeight" Value="36"/>
+            <Setter Property="Padding" Value="14,6"/>
+            <Setter Property="MinHeight" Value="32"/>
             <Setter Property="Margin" Value="10,0,0,0"/>
+        </Style>
+        <Style x:Key="CacheCardStyle" TargetType="Border">
+            <Setter Property="Background" Value="{DynamicResource CV.Surface.Control}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource CV.Border.Weak}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="6"/>
         </Style>
         <Style x:Key="CacheGridCellStyle" TargetType="DataGridCell">
             <Setter Property="Padding" Value="12,0"/>
@@ -64,10 +71,15 @@
                         <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
                         <Setter Property="BorderBrush" Value="{DynamicResource ButtonBorderBrush}"/>
                         <Setter Property="BorderThickness" Value="0,0,0,1"/>
-                        <Setter Property="Padding" Value="12,0"/>
+                        <Setter Property="Padding" Value="8,0"/>
                         <Setter Property="FontSize" Value="12"/>
                         <Setter Property="FontWeight" Value="SemiBold"/>
                         <Setter Property="HorizontalContentAlignment" Value="Left"/>
+                        <Setter Property="ContentTemplate">
+                            <Setter.Value><DataTemplate>
+                                <TextBlock Text="{Binding}" TextWrapping="Wrap" VerticalAlignment="Center" ToolTip="{Binding}"/>
+                            </DataTemplate></Setter.Value>
+                        </Setter>
                     </Style>
                 </Setter.Value>
             </Setter>
@@ -93,164 +105,215 @@
             <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
             <Setter Property="VerticalAlignment" Value="Center"/>
             <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+            <Setter Property="ToolTip" Value="{Binding Text, RelativeSource={RelativeSource Self}}"/>
         </Style>
         <Style x:Key="CacheNumberTextStyle" TargetType="TextBlock" BasedOn="{StaticResource CacheCellTextStyle}">
             <Setter Property="HorizontalAlignment" Value="Right"/>
         </Style>
         </ResourceDictionary>
     </Window.Resources>
-    <Grid Margin="20">
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
-            <RowDefinition Height="Auto"/>
-        </Grid.RowDefinitions>
-        <DockPanel Margin="0,0,0,18">
-            <Button x:Name="RefreshButton" DockPanel.Dock="Right" Content="{engine:EngineLang 刷新}" Click="RefreshButton_Click"
-                    Style="{StaticResource CacheActionButtonStyle}" ToolTip="{engine:EngineLang 重新读取当前进程的缓存清单}"/>
-            <StackPanel>
-                <TextBlock Text="{engine:EngineLang 缓存管理}" FontSize="22" FontWeight="SemiBold"/>
-                <TextBlock Text="{engine:EngineLang 当前进程的缓存与缓冲区}" Margin="0,4,0,0" Foreground="{DynamicResource SecondaryTextBrush}"/>
-            </StackPanel>
-        </DockPanel>
-        <Grid x:Name="CacheContentPanel" Grid.Row="1">
-            <Grid.ColumnDefinitions><ColumnDefinition Width="185"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
-            <ListBox x:Name="CacheNavigation" SelectionChanged="CacheNavigation_SelectionChanged" Margin="0,0,18,0"
-                     Background="Transparent" Foreground="{DynamicResource GlobalTextBrush}" BorderThickness="0" HorizontalContentAlignment="Stretch"
-                     ScrollViewer.HorizontalScrollBarVisibility="Disabled" AutomationProperties.Name="{engine:EngineLang 缓存分类}">
-                <ListBox.ItemContainerStyle>
-                    <Style TargetType="ListBoxItem">
-                        <Setter Property="Padding" Value="12,10"/>
-                        <Setter Property="Margin" Value="0,0,0,5"/>
-                        <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
-                        <Setter Property="Template">
-                            <Setter.Value>
-                                <ControlTemplate TargetType="ListBoxItem">
-                                    <Border x:Name="Surface" Background="Transparent" CornerRadius="5" Padding="{TemplateBinding Padding}">
-                                        <ContentPresenter/>
-                                    </Border>
-                                    <ControlTemplate.Triggers>
-                                        <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Surface" Property="Background" Value="{DynamicResource CV.Surface.ControlHover}"/></Trigger>
-                                        <Trigger Property="IsSelected" Value="True"><Setter TargetName="Surface" Property="Background" Value="{DynamicResource CV.Tag.Background}"/></Trigger>
-                                    </ControlTemplate.Triggers>
-                                </ControlTemplate>
-                            </Setter.Value>
-                        </Setter>
-                    </Style>
-                </ListBox.ItemContainerStyle>
-                <ListBox.ItemTemplate>
-                    <DataTemplate>
-                        <StackPanel>
-                            <TextBlock Text="{Binding Name}" Foreground="{DynamicResource GlobalTextBrush}" FontWeight="SemiBold"/>
-                            <TextBlock Text="{Binding MemoryText}" Margin="0,4,0,0" FontSize="12" Foreground="{DynamicResource SecondaryTextBrush}"/>
-                        </StackPanel>
-                    </DataTemplate>
-                </ListBox.ItemTemplate>
-            </ListBox>
-            <Grid Grid.Column="1">
+    <Grid Background="{DynamicResource GlobalBackground}">
+        <Grid.RowDefinitions><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+        <Grid x:Name="CacheContentPanel">
+            <Grid.ColumnDefinitions><ColumnDefinition Width="176"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+            <Border Background="{DynamicResource CV.Surface.Sidebar}" BorderBrush="{DynamicResource CV.Border.Weak}" BorderThickness="0,0,1,0" Padding="10,16,10,12">
+                <DockPanel>
+                    <TextBlock DockPanel.Dock="Top" Text="{engine:EngineLang 缓存分类}" FontWeight="SemiBold" FontSize="12" Margin="10,2,0,12"
+                               Foreground="{DynamicResource SecondaryTextBrush}"/>
+                    <ListBox x:Name="CacheNavigation" SelectionChanged="CacheNavigation_SelectionChanged"
+                             Background="Transparent" Foreground="{DynamicResource GlobalTextBrush}" BorderThickness="0" Padding="0"
+                             HorizontalContentAlignment="Stretch" ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                             AutomationProperties.Name="{engine:EngineLang 缓存分类}">
+                        <ListBox.ItemContainerStyle>
+                            <Style TargetType="ListBoxItem">
+                                <Setter Property="Padding" Value="10,8"/>
+                                <Setter Property="Margin" Value="0,0,0,3"/>
+                                <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                                <Setter Property="Template">
+                                    <Setter.Value>
+                                        <ControlTemplate TargetType="ListBoxItem">
+                                            <Border x:Name="Surface" Background="Transparent" CornerRadius="5" Padding="{TemplateBinding Padding}">
+                                                <Grid>
+                                                    <Border x:Name="Indicator" HorizontalAlignment="Left" Width="3" Margin="-10,0,0,0" CornerRadius="1.5"
+                                                            Background="{DynamicResource CV.Accent.Primary}" Visibility="Collapsed"/>
+                                                    <ContentPresenter/>
+                                                </Grid>
+                                            </Border>
+                                            <ControlTemplate.Triggers>
+                                                <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Surface" Property="Background" Value="{DynamicResource CV.Surface.ControlHover}"/></Trigger>
+                                                <Trigger Property="IsSelected" Value="True">
+                                                    <Setter TargetName="Surface" Property="Background" Value="{DynamicResource CV.Tag.Background}"/>
+                                                    <Setter TargetName="Indicator" Property="Visibility" Value="Visible"/>
+                                                </Trigger>
+                                            </ControlTemplate.Triggers>
+                                        </ControlTemplate>
+                                    </Setter.Value>
+                                </Setter>
+                            </Style>
+                        </ListBox.ItemContainerStyle>
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <StackPanel>
+                                    <TextBlock Text="{Binding Name}" TextWrapping="Wrap" Foreground="{DynamicResource GlobalTextBrush}" FontWeight="SemiBold"/>
+                                    <TextBlock Text="{Binding MemoryText}" Margin="0,2,0,0" FontSize="11" Foreground="{DynamicResource SecondaryTextBrush}"/>
+                                </StackPanel>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                </DockPanel>
+            </Border>
+            <Grid Grid.Column="1" Margin="20,16,20,14">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/><RowDefinition Height="Auto"/>
                     <RowDefinition Height="Auto"/><RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
-                <DockPanel Margin="0,0,0,14">
-                    <Grid DockPanel.Dock="Right" Width="230" Margin="12,0,0,0">
-                        <TextBox x:Name="CacheSearchBox" Height="34" Padding="8,6" TextChanged="CacheSearchBox_TextChanged"
-                                 AutomationProperties.Name="{engine:EngineLang 搜索当前页}"/>
+                <Grid Margin="0,0,0,12">
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="1.1*" MaxWidth="228"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                    <TextBlock x:Name="SelectedModuleTitleText" Text="{engine:EngineLang 总览}" FontSize="22" FontWeight="SemiBold"
+                               VerticalAlignment="Center" TextTrimming="CharacterEllipsis" Margin="0,0,10,0"/>
+                    <Grid Grid.Column="1">
+                        <TextBox x:Name="CacheSearchBox" Height="32" Padding="8,4" VerticalContentAlignment="Center"
+                                 TextChanged="CacheSearchBox_TextChanged" AutomationProperties.Name="{engine:EngineLang 搜索当前页}"/>
                         <TextBlock x:Name="SearchPlaceholderText" Text="{engine:EngineLang 搜索当前页…}" Margin="9,0,0,0"
                                    VerticalAlignment="Center" IsHitTestVisible="False" Foreground="{DynamicResource SecondaryTextBrush}"/>
                     </Grid>
-                    <TextBlock x:Name="SelectedModuleTitleText" Text="{engine:EngineLang 总览}" FontSize="18" FontWeight="SemiBold" VerticalAlignment="Center"/>
-                </DockPanel>
-                <StackPanel x:Name="OverviewSummaryPanel" Grid.Row="1" Margin="0,0,0,14">
-                    <TextBlock Text="{engine:EngineLang 已统计缓存内存}" Foreground="{DynamicResource SecondaryTextBrush}"/>
-                    <StackPanel Orientation="Horizontal" Margin="0,4,0,6">
-                        <TextBlock x:Name="TotalMemoryText" Text="—" FontSize="30" FontWeight="SemiBold"/>
-                        <TextBlock x:Name="ModuleCountText" Margin="16,0,0,5" VerticalAlignment="Bottom" Foreground="{DynamicResource SecondaryTextBrush}"/>
+                    <Button x:Name="RefreshButton" Grid.Column="2" Content="{engine:EngineLang 刷新}" Click="RefreshButton_Click"
+                            Style="{StaticResource CacheActionButtonStyle}" ToolTip="{engine:EngineLang 重新读取当前进程的缓存清单}"/>
+                </Grid>
+                <Border Grid.Row="1" Style="{StaticResource CacheCardStyle}" Padding="14,9" Margin="0,0,0,9"
+                        Visibility="{Binding Visibility, ElementName=OverviewSummaryPanel}">
+                    <StackPanel x:Name="OverviewSummaryPanel">
+                        <Grid ToolTip="{engine:EngineLang Key='仅统计已接入模块，不代表进程全部内存。校正内存为估算值；相机仅统计空闲缓冲。'}">
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                            <StackPanel>
+                                <TextBlock Text="{engine:EngineLang 已统计缓存内存}" FontSize="12" Foreground="{DynamicResource SecondaryTextBrush}"/>
+                                <TextBlock x:Name="TotalMemoryText" Text="—" FontSize="26" FontWeight="SemiBold"/>
+                            </StackPanel>
+                            <TextBlock x:Name="ModuleCountText" Grid.Column="1" VerticalAlignment="Center" Margin="8,0,0,0" Foreground="{DynamicResource SecondaryTextBrush}"/>
+                        </Grid>
+                        <TextBlock x:Name="OverviewWarningText" Visibility="Collapsed" Margin="0,4,0,0" TextWrapping="Wrap" Foreground="{DynamicResource CV.Status.Error}"/>
                     </StackPanel>
-                    <TextBlock Text="{engine:EngineLang Key='仅统计已接入模块，不代表进程全部内存。校正内存为估算值；相机仅统计空闲缓冲。'}"
-                               TextWrapping="Wrap" Foreground="{DynamicResource SecondaryTextBrush}" FontSize="12"/>
-                    <TextBlock x:Name="OverviewWarningText" Visibility="Collapsed" Margin="0,6,0,0" TextWrapping="Wrap" Foreground="{DynamicResource CV.Status.Error}"/>
-                </StackPanel>
-                <StackPanel x:Name="DetailsSummaryPanel" Grid.Row="1" Visibility="Collapsed" Margin="0,0,0,14">
-                    <TextBlock x:Name="SelectedModuleDescriptionText" TextWrapping="Wrap" Foreground="{DynamicResource SecondaryTextBrush}" FontSize="12"/>
-                    <TextBlock x:Name="SelectedModuleSummaryText" Margin="0,8,0,0" TextWrapping="Wrap"/>
-                    <TextBlock x:Name="SnapshotScopeText" Text="{engine:EngineLang 待归还释放是正在使用内存的一部分，不重复计入总量。}"
-                               Visibility="Collapsed" Margin="0,4,0,0" TextWrapping="Wrap" FontSize="12" Foreground="{DynamicResource SecondaryTextBrush}"/>
-                    <TextBlock x:Name="SelectedModuleErrorText" Visibility="Collapsed" Margin="0,6,0,0" TextWrapping="Wrap" Foreground="{DynamicResource CV.Status.Error}"/>
-                </StackPanel>
-                <StackPanel x:Name="CacheSettingsPanel" Grid.Row="2" Margin="0,0,0,14">
-                    <TextBlock x:Name="CacheSettingsTitle" Text="{engine:EngineLang 缓存设置}" FontWeight="SemiBold" Margin="0,0,0,8"/>
-                    <WrapPanel x:Name="ImageCacheOptionsPanel" Visibility="Collapsed">
-                        <CheckBox x:Name="ImageCacheEnabledCheckBox" Content="{engine:EngineLang 启用 CVRAW 文件缓存}" Click="ImageCacheEnabledCheckBox_Click" VerticalAlignment="Center"
-                                  ToolTip="{engine:EngineLang Key='默认关闭，流程加速时可手动开启。关闭后读写照常执行，不保留空闲缓冲；在用缓冲归还后释放。'}"/>
-                        <TextBlock Text="{engine:EngineLang 数量上限}" VerticalAlignment="Center" Margin="20,0,10,0"/>
-                        <TextBox x:Name="ImageCacheCountTextBox" Width="65" Height="32" Padding="8,5" AutomationProperties.Name="{engine:EngineLang 图像缓存数量上限}"/>
-                        <Button x:Name="ApplyImageCacheCountButton" Content="{engine:EngineLang 应用}" Click="ApplyImageCacheCountButton_Click" Padding="12,5" Margin="8,0,0,0"/>
-                    </WrapPanel>
-                    <StackPanel x:Name="CameraCacheOptionsPanel" Visibility="Collapsed" Orientation="Horizontal" Margin="0,8,0,0">
-                        <CheckBox x:Name="CameraCacheEnabledCheckBox" Content="{engine:EngineLang 启用相机取图缓冲}" Click="CameraCacheEnabledCheckBox_Click"
-                                  ToolTip="{engine:EngineLang Key='默认关闭，流程加速时可手动开启。开启后每台相机最多保留一块空闲 RAW 缓冲；关闭时释放空闲缓冲，在用图像归还后释放。'}"/>
+                </Border>
+                <Border Grid.Row="1" Style="{StaticResource CacheCardStyle}" Padding="14,10" Margin="0,0,0,9"
+                        Visibility="{Binding Visibility, ElementName=DetailsSummaryPanel}">
+                    <StackPanel x:Name="DetailsSummaryPanel" Visibility="Collapsed">
+                        <TextBlock x:Name="SelectedModuleSummaryText" TextWrapping="Wrap" FontWeight="SemiBold"/>
+                        <ProgressBar x:Name="CalibrationBudgetUsageBar" Visibility="Collapsed" Minimum="0" Maximum="100" Height="5" Margin="0,7,0,0"
+                                     AutomationProperties.Name="{engine:EngineLang 校正缓存预算使用率}" Foreground="{DynamicResource CV.Accent.Primary}">
+                            <ProgressBar.Template><ControlTemplate TargetType="ProgressBar">
+                                <Grid x:Name="PART_Track" ClipToBounds="True">
+                                    <Border Background="{DynamicResource CV.Surface.Alternate}" CornerRadius="2"/>
+                                    <Border x:Name="PART_Indicator" HorizontalAlignment="Left" Background="{TemplateBinding Foreground}" CornerRadius="2"/>
+                                </Grid>
+                            </ControlTemplate></ProgressBar.Template>
+                        </ProgressBar>
+                        <TextBlock x:Name="SelectedModuleDescriptionText" Margin="0,4,0,0" TextWrapping="Wrap" FontSize="12" Foreground="{DynamicResource SecondaryTextBrush}"/>
+                        <TextBlock x:Name="SnapshotScopeText" Text="{engine:EngineLang 待归还释放是正在使用内存的一部分，不重复计入总量。}"
+                                   Visibility="Collapsed" Margin="0,3,0,0" TextWrapping="Wrap" Foreground="{DynamicResource SecondaryTextBrush}" FontSize="12"/>
+                        <TextBlock x:Name="SelectedModuleErrorText" Visibility="Collapsed" Margin="0,4,0,0" TextWrapping="Wrap" Foreground="{DynamicResource CV.Status.Error}"/>
                     </StackPanel>
-                </StackPanel>
-                <Grid x:Name="OverviewPanel" Grid.Row="3">
-                    <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
-                    <WrapPanel Margin="0,0,0,8">
-                        <TextBlock Text="{engine:EngineLang 缓存清理}" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,14,0"/>
-                        <Button Content="{engine:EngineLang 全选当前列表}" Click="SelectVisibleModules_Click" Padding="10,4" Margin="0,0,8,0"/>
-                        <Button Content="{engine:EngineLang 取消勾选}" Click="ClearModuleSelection_Click" Padding="10,4" Margin="0,0,12,0"/>
-                        <TextBlock x:Name="ReleaseSelectionText" VerticalAlignment="Center" Foreground="{DynamicResource SecondaryTextBrush}" TextWrapping="Wrap"/>
-                    </WrapPanel>
-                    <Grid Grid.Row="1">
-                        <DataGrid x:Name="CacheModulesGrid" Style="{StaticResource CacheGridStyle}" RowHeight="40" AutomationProperties.Name="{engine:EngineLang 缓存模块}">
-                            <DataGrid.Columns>
-                                <DataGridTemplateColumn Width="40" MinWidth="40" CanUserSort="False" CellStyle="{StaticResource CacheSelectionCellStyle}">
-                                    <DataGridTemplateColumn.CellTemplate><DataTemplate>
-                                        <CheckBox IsChecked="{Binding IsMarkedForRelease, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                                  AutomationProperties.Name="{Binding Name}"
-                                                  ToolTip="{engine:EngineLang 勾选后批量释放}" VerticalAlignment="Center" HorizontalAlignment="Center"/>
-                                    </DataTemplate></DataGridTemplateColumn.CellTemplate>
-                                </DataGridTemplateColumn>
-                                <DataGridTextColumn Header="{engine:EngineLang 缓存模块}" Binding="{Binding Name}" Width="*" MinWidth="140" ElementStyle="{StaticResource CacheCellTextStyle}"/>
-                                <DataGridTextColumn Header="{engine:EngineLang 内存占用}" Binding="{Binding MemoryText}" SortMemberPath="MemoryBytes" Width="100" MinWidth="100" ElementStyle="{StaticResource CacheNumberTextStyle}"/>
-                                <DataGridTextColumn Header="{engine:EngineLang 条目或来源}" Binding="{Binding EntryCountText}" Width="90" MinWidth="90" ElementStyle="{StaticResource CacheNumberTextStyle}"/>
-                                <DataGridTextColumn Header="{engine:EngineLang 使用状态}" Binding="{Binding UsageText}" Width="135" MinWidth="135" ElementStyle="{StaticResource CacheCellTextStyle}"/>
-                                <DataGridTemplateColumn Width="140" MinWidth="140" CanUserSort="False">
-                                    <DataGridTemplateColumn.CellTemplate><DataTemplate>
-                                        <StackPanel Orientation="Horizontal">
-                                            <Button Content="{engine:EngineLang 查看}" Click="ViewModule_Click" Tag="{Binding Id}" Padding="10,4"/>
-                                            <Button Content="{engine:EngineLang 释放}" Click="ReleaseModuleRow_Click" Tag="{Binding Id}" IsEnabled="{Binding CanRelease}" Padding="10,4" Margin="6,0,0,0"/>
-                                        </StackPanel>
-                                    </DataTemplate></DataGridTemplateColumn.CellTemplate>
-                                </DataGridTemplateColumn>
-                            </DataGrid.Columns>
-                        </DataGrid>
-                        <TextBlock x:Name="EmptyModulesText" Visibility="Collapsed" Text="{engine:EngineLang 没有匹配的缓存模块。}"
-                                   HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="{DynamicResource SecondaryTextBrush}"/>
+                </Border>
+                <Border Grid.Row="2" Style="{StaticResource CacheCardStyle}" Padding="14,9" Margin="0,0,0,10"
+                        Visibility="{Binding Visibility, ElementName=CacheSettingsPanel}">
+                    <StackPanel x:Name="CacheSettingsPanel">
+                        <TextBlock x:Name="CacheSettingsTitle" Text="{engine:EngineLang 缓存设置}" FontWeight="SemiBold" Margin="0,0,0,5"/>
+                        <WrapPanel x:Name="ImageCacheOptionsPanel" Visibility="Collapsed">
+                            <CheckBox x:Name="ImageCacheEnabledCheckBox" Content="{engine:EngineLang 启用 CVRAW 文件缓存}" Click="ImageCacheEnabledCheckBox_Click" VerticalAlignment="Center"
+                                      ToolTip="{engine:EngineLang Key='默认开启，缓存最近使用的 CVRAW 文件。关闭后文件读写照常，空闲缓冲立即释放，在用缓冲归还时释放。'}"/>
+                            <TextBlock Text="{engine:EngineLang 数量上限}" VerticalAlignment="Center" Margin="20,0,10,0"/>
+                            <TextBox x:Name="ImageCacheCountTextBox" Width="65" Height="32" Padding="8,5" AutomationProperties.Name="{engine:EngineLang 图像缓存数量上限}"/>
+                            <Button x:Name="ApplyImageCacheCountButton" Content="{engine:EngineLang 应用}" Click="ApplyImageCacheCountButton_Click" Padding="12,5" Margin="8,0,0,0"/>
+                        </WrapPanel>
+                        <StackPanel x:Name="CameraCacheOptionsPanel" Visibility="Collapsed" Orientation="Horizontal" Margin="0,6,0,0">
+                            <CheckBox x:Name="CameraCacheEnabledCheckBox" Content="{engine:EngineLang 启用相机取图缓冲}" Click="CameraCacheEnabledCheckBox_Click"
+                                      ToolTip="{engine:EngineLang Key='默认开启，每台相机最多保留一块空闲 RAW 缓冲。关闭后释放空闲缓冲，在用图像归还时释放。'}"/>
+                        </StackPanel>
+                        <StackPanel x:Name="CalibrationWarmupOptionsPanel" Visibility="Collapsed">
+                            <WrapPanel x:Name="CalibrationBudgetPanel" Margin="0,0,0,4">
+                                <TextBlock Text="{engine:EngineLang 内存预算（MiB）}" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                                <TextBox x:Name="CalibrationBudgetTextBox" Width="100" Height="32" Padding="8,5" AutomationProperties.Name="{engine:EngineLang 内存预算（MiB）}"/>
+                                <Button x:Name="ApplyCalibrationBudgetButton" Content="{engine:EngineLang 应用}" Click="ApplyCalibrationBudgetButton_Click" Padding="12,5" Margin="8,0,0,0"/>
+                            </WrapPanel>
+                            <TextBlock Text="{engine:EngineLang Key='设为 0 将停止保留共享缓存和自动预热。正在使用的校正计划可继续执行。'}"
+                                       Margin="0,0,0,10" TextWrapping="Wrap" Foreground="{DynamicResource SecondaryTextBrush}"/>
+                            <CheckBox x:Name="CalibrationWarmupCheckBox" Content="{engine:EngineLang 相机进入测量模式后自动预热}" VerticalAlignment="Center"
+                                      ToolTip="{engine:EngineLang Key='进入测量模式 2 秒后开始检查空闲状态，空闲时在后台加载。'}" Click="CalibrationWarmupCheckBox_Click"/>
+                            <TextBlock Text="{engine:EngineLang 系统空闲后，加载上次退出应用时仍在缓存中的校正计划。}" Margin="0,4,0,0" TextWrapping="Wrap"
+                                       Foreground="{DynamicResource SecondaryTextBrush}"/>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+                <Border Grid.Row="3" Style="{StaticResource CacheCardStyle}" ClipToBounds="True">
+                    <Grid>
+                        <Grid x:Name="OverviewPanel">
+                            <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
+                            <DockPanel Margin="12,6">
+                                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                                    <Button Content="{engine:EngineLang 全选当前列表}" Click="SelectVisibleModules_Click" Padding="8,3"/>
+                                    <Button Content="{engine:EngineLang 取消勾选}" Click="ClearModuleSelection_Click" Padding="8,3" Margin="6,0,0,0"/>
+                                </StackPanel>
+                                <TextBlock Text="{engine:EngineLang 缓存模块}" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                            </DockPanel>
+                            <Grid Grid.Row="1">
+                                <DataGrid x:Name="CacheModulesGrid" Style="{StaticResource CacheGridStyle}" RowHeight="36" AutomationProperties.Name="{engine:EngineLang 缓存模块}">
+                                    <DataGrid.Columns>
+                                        <DataGridTemplateColumn Width="38" MinWidth="38" CanUserSort="False" CellStyle="{StaticResource CacheSelectionCellStyle}">
+                                            <DataGridTemplateColumn.CellTemplate><DataTemplate>
+                                                <CheckBox IsChecked="{Binding IsMarkedForRelease, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                          AutomationProperties.Name="{Binding Name}"
+                                                          ToolTip="{engine:EngineLang 勾选后批量释放}" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                                            </DataTemplate></DataGridTemplateColumn.CellTemplate>
+                                        </DataGridTemplateColumn>
+                                        <DataGridTextColumn Header="{engine:EngineLang 缓存模块}" Binding="{Binding Name}" Width="*" MinWidth="116" ElementStyle="{StaticResource CacheCellTextStyle}"/>
+                                        <DataGridTextColumn Header="{engine:EngineLang 内存占用}" Binding="{Binding MemoryText}" SortMemberPath="MemoryBytes" Width="94" ElementStyle="{StaticResource CacheNumberTextStyle}"/>
+                                        <DataGridTextColumn Header="{engine:EngineLang 条目或来源}" Binding="{Binding EntryCountText}" SortMemberPath="EntryCount" Width="79" ElementStyle="{StaticResource CacheNumberTextStyle}"/>
+                                        <DataGridTextColumn Header="{engine:EngineLang 使用状态}" Binding="{Binding UsageText}" Width="112" ElementStyle="{StaticResource CacheCellTextStyle}"/>
+                                        <DataGridTemplateColumn Width="Auto" MinWidth="120" CanUserSort="False">
+                                            <DataGridTemplateColumn.CellTemplate><DataTemplate>
+                                                <StackPanel Orientation="Horizontal">
+                                                    <Button Content="{engine:EngineLang 查看}" Click="ViewModule_Click" Tag="{Binding Id}" Padding="10,4"/>
+                                                    <Button Content="{engine:EngineLang 释放}" Click="ReleaseModuleRow_Click" Tag="{Binding Id}" IsEnabled="{Binding CanRelease}" Padding="10,4" Margin="6,0,0,0"/>
+                                                </StackPanel>
+                                            </DataTemplate></DataGridTemplateColumn.CellTemplate>
+                                        </DataGridTemplateColumn>
+                                    </DataGrid.Columns>
+                                </DataGrid>
+                                <TextBlock x:Name="EmptyModulesText" Visibility="Collapsed" Text="{engine:EngineLang 没有匹配的缓存模块。}"
+                                           HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="{DynamicResource SecondaryTextBrush}"/>
+                            </Grid>
+                        </Grid>
+                        <Grid x:Name="DetailsPanel" Visibility="Collapsed">
+                            <DataGrid x:Name="CacheDetailsGrid" Style="{StaticResource CacheGridStyle}" AutomationProperties.Name="{engine:EngineLang 缓存明细}"/>
+                            <TextBlock x:Name="EmptyDetailsText" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="10,22,10,0"
+                                       TextWrapping="Wrap" TextAlignment="Center" Foreground="{DynamicResource SecondaryTextBrush}"/>
+                        </Grid>
                     </Grid>
-                </Grid>
-                <Grid x:Name="DetailsPanel" Grid.Row="3" Visibility="Collapsed">
-                    <DataGrid x:Name="CacheDetailsGrid" Style="{StaticResource CacheGridStyle}" AutomationProperties.Name="{engine:EngineLang 缓存明细}"/>
-                    <TextBlock x:Name="EmptyDetailsText" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="{DynamicResource SecondaryTextBrush}"/>
-                </Grid>
+                </Border>
             </Grid>
         </Grid>
-        <Grid Grid.Row="2" Margin="0,18,0,0">
-            <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-            <TextBlock x:Name="StatusText" Text="{engine:EngineLang 尚未读取缓存状态。}" ToolTip="{Binding Text, RelativeSource={RelativeSource Self}}"
-                       VerticalAlignment="Center" Margin="0,0,12,0" TextTrimming="CharacterEllipsis" Foreground="{DynamicResource SecondaryTextBrush}" FontSize="12"/>
-            <StackPanel Grid.Column="1" Orientation="Horizontal">
-                <Button x:Name="ReleaseCurrentSnapshotButton" Content="{engine:EngineLang 释放当前窗口截图缓存}" Visibility="Collapsed"
-                        Click="ReleaseCurrentSnapshotButton_Click" Style="{StaticResource CacheActionButtonStyle}"/>
-                <Button x:Name="ReleaseSelectedButton" Content="{engine:EngineLang 释放本模块缓存}" Visibility="Collapsed" IsEnabled="False"
-                        Click="ReleaseSelectedButton_Click" Style="{StaticResource CacheActionButtonStyle}"/>
-                <Button x:Name="ReleaseMarkedButton" Content="{engine:EngineLang 释放勾选}" Click="ReleaseMarkedButton_Click" IsEnabled="False" Style="{StaticResource CacheActionButtonStyle}"/>
-                <Button x:Name="ReleaseAllButton" Content="{engine:EngineLang 释放全部缓存}" Click="ReleaseAllButton_Click" Style="{StaticResource CacheActionButtonStyle}"/>
-            </StackPanel>
-        </Grid>
-        <Border x:Name="LoadingOverlay" Grid.Row="1" Visibility="Collapsed" Background="{DynamicResource GlobalBackground}" Opacity="0.92">
+        <Border Grid.Row="1" Background="{DynamicResource CV.Surface.Control}" BorderBrush="{DynamicResource CV.Border.Weak}" BorderThickness="0,1,0,0" Padding="16,9">
+            <Grid>
+                <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                <StackPanel VerticalAlignment="Center">
+                    <TextBlock x:Name="ReleaseSelectionText" Visibility="{Binding Visibility, ElementName=OverviewPanel}"
+                               TextTrimming="CharacterEllipsis" ToolTip="{Binding Text, RelativeSource={RelativeSource Self}}"/>
+                    <TextBlock x:Name="StatusText" Text="{engine:EngineLang 尚未读取缓存状态。}" ToolTip="{Binding Text, RelativeSource={RelativeSource Self}}"
+                               Margin="0,1,8,0" TextTrimming="CharacterEllipsis" Foreground="{DynamicResource SecondaryTextBrush}" FontSize="11"/>
+                </StackPanel>
+                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                    <Button x:Name="ReleaseCurrentSnapshotButton" Content="{engine:EngineLang 释放当前窗口截图缓存}" Visibility="Collapsed"
+                            Click="ReleaseCurrentSnapshotButton_Click" Style="{StaticResource CacheActionButtonStyle}"/>
+                    <Button x:Name="ReleaseSelectedButton" Content="{engine:EngineLang 释放本模块缓存}" Visibility="Collapsed" IsEnabled="False"
+                            Click="ReleaseSelectedButton_Click" Style="{StaticResource CacheActionButtonStyle}"/>
+                    <Button x:Name="ReleaseMarkedButton" Content="{engine:EngineLang 释放勾选}" Click="ReleaseMarkedButton_Click" IsEnabled="False" Style="{StaticResource CacheActionButtonStyle}"/>
+                    <Button x:Name="ReleaseAllButton" Content="{engine:EngineLang 释放全部缓存}" Click="ReleaseAllButton_Click" Style="{StaticResource CacheActionButtonStyle}"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+        <Border x:Name="LoadingOverlay" Visibility="Collapsed" Background="{DynamicResource GlobalBackground}" Opacity="0.93">
             <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
-                <ProgressBar Width="220" Height="5" IsIndeterminate="True"/>
-                <TextBlock x:Name="LoadingText" Margin="0,12,0,0" HorizontalAlignment="Center"/>
+                <ProgressBar Width="180" Height="4" IsIndeterminate="True"/>
+                <TextBlock x:Name="LoadingText" Margin="0,9,0,0" HorizontalAlignment="Center"/>
             </StackPanel>
         </Border>
     </Grid>

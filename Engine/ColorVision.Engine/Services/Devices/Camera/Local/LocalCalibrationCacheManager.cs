@@ -14,7 +14,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
     /// Process-wide maintenance excludes execution across all devices; image
     /// frames remain owned separately by <see cref="LocalFlowFrame"/>.
     /// </summary>
-    internal sealed class LocalCalibrationCacheManager : IDisposable
+    internal sealed partial class LocalCalibrationCacheManager : IDisposable
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(LocalCalibrationCacheManager));
         private static readonly ReaderWriterLockSlim SharedCacheLifecycleGate = new(LockRecursionPolicy.NoRecursion);
@@ -49,10 +49,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
         {
             ArgumentNullException.ThrowIfNull(files);
             var selection = files.ToArray();
-            if (selection.Length == 0)
-                throw new InvalidOperationException($"校正模板“{templateName}”没有选择任何校正文件。");
-            if (selection.Count(file => LocalFrameCalibrationService.IsColorCalibration(file.CalibrationType)) > 1)
-                throw new InvalidOperationException($"校正模板“{templateName}”同时选择了多个亮度/颜色校正文件，本地校正只能使用一个。");
+            ValidateTemplate(selection, templateName);
             return WithCache(() =>
             {
                 var prepared = FlowNodeTiming.Run("LoadCalibrationResources", () => cache.Prepare(selection));
@@ -88,16 +85,31 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
 
         private T WithCache<T>(Func<T> action)
         {
-            FlowNodeTiming.Run("WaitCalibration", EnterExecution);
+            Interlocked.Increment(ref foregroundUsers);
             try
             {
-                ObjectDisposedException.ThrowIf(disposed, this);
-                return action();
+                CancelWarmup();
+                FlowNodeTiming.Run("WaitCalibration", EnterExecution);
+                try
+                {
+                    ObjectDisposedException.ThrowIf(disposed, this);
+                    return action();
+                }
+                finally
+                {
+                    ExitExecution();
+                }
             }
             finally
             {
-                ExitExecution();
+                Interlocked.Decrement(ref foregroundUsers);
             }
+        }
+
+        internal (long LastAccess, LocalCalibrationWarmupPlan Plan)[] CaptureWarmupPlans()
+        {
+            lock (executionGate)
+                return disposed ? [] : cache.CaptureWarmupPlans(deviceCode);
         }
 
         public int ReleaseCache()
@@ -105,6 +117,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             lock (executionGate)
             {
                 ObjectDisposedException.ThrowIf(disposed, this);
+                CancelWarmup();
                 return cache.Release();
             }
         }
@@ -134,6 +147,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             {
                 if (disposed) return;
                 disposed = true;
+                CancelWarmup();
                 try
                 {
                     cache.Dispose();
