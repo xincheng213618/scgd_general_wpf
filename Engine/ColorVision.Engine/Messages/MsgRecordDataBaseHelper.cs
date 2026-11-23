@@ -1,9 +1,13 @@
-﻿#pragma warning disable CS8625
-using ColorVision.UI;
+﻿using ColorVision.UI;
 using log4net;
+using Microsoft.Data.Sqlite;
+using Newtonsoft.Json;
 using SqlSugar;
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace ColorVision.Engine.Messages
 {
@@ -11,66 +15,117 @@ namespace ColorVision.Engine.Messages
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(MsgRecordDataBaseHelper));
         private static readonly object InitLocker = new();
-        private static volatile bool _isInitialized;
+        private static readonly HashSet<string> InitializedPaths = new(StringComparer.OrdinalIgnoreCase);
+        private static readonly SemaphoreSlim TerminalWrites = new(1, 1);
 
-        public static event EventHandler<MsgRecord> Inserted;
+        public static event EventHandler<MsgRecord>? Inserted;
 
         private static SqlSugarClient CreateDb(string sqliteDbPath)
         {
             return new SqlSugarClient(new ConnectionConfig
             {
-                ConnectionString = $"Data Source={sqliteDbPath}",
+                ConnectionString = new SqliteConnectionStringBuilder { DataSource = sqliteDbPath }.ToString(),
                 DbType = DbType.Sqlite,
                 IsAutoCloseConnection = true
             });
         }
 
-        public static void EnsureDatabaseInitialized(MsgRecordManagerConfig config = null)
+        public static void EnsureDatabaseInitialized(MsgRecordManagerConfig? config = null)
         {
-            if (_isInitialized) return;
+            config ??= ConfigService.Instance.GetRequiredService<MsgRecordManagerConfig>();
+            EnsureDatabaseAtPath(Path.GetFullPath(config.SqliteDbPath));
+        }
 
+        private static void EnsureDatabaseAtPath(string sqliteDbPath)
+        {
             lock (InitLocker)
             {
-                if (_isInitialized) return;
-
-                config ??= ConfigService.Instance.GetRequiredService<MsgRecordManagerConfig>();
-
-                string directoryPath = Path.GetDirectoryName(config.SqliteDbPath);
-                if (!string.IsNullOrWhiteSpace(directoryPath) && !Directory.Exists(directoryPath))
-                {
-                    Directory.CreateDirectory(directoryPath);
-                }
-
-                using var db = CreateDb(config.SqliteDbPath);
+                if (InitializedPaths.Contains(sqliteDbPath) && File.Exists(sqliteDbPath)) return;
+                Directory.CreateDirectory(Path.GetDirectoryName(sqliteDbPath)!);
+                using var db = CreateDb(sqliteDbPath);
                 db.CodeFirst.InitTables<MsgRecord>();
-                _isInitialized = true;
+                InitializedPaths.Add(sqliteDbPath);
             }
         }
 
         public static void Insert(MsgRecord item)
         {
+            if (item == null) return;
             try
             {
-                if (item == null) return;
-
-                MsgRecordManagerConfig msgRecordManagerConfig = ConfigService.Instance.GetRequiredService<MsgRecordManagerConfig>();
-                EnsureDatabaseInitialized(msgRecordManagerConfig);
-
-                using var _db = CreateDb(msgRecordManagerConfig.SqliteDbPath);
-                int id = _db.Insertable(item).ExecuteReturnIdentity();
-                item.Id = id;
-                item.MsgRecordStateChanged += (s, e) =>
-                {
-                    using var db = CreateDb(msgRecordManagerConfig.SqliteDbPath);
-                    db.Updateable(item).ExecuteCommand();
-                };
+                string sqliteDbPath = ConfigService.Instance.GetRequiredService<MsgRecordManagerConfig>().SqliteDbPath;
+                _ = InsertAndTrackTerminal(item, sqliteDbPath);
             }
             catch (Exception ex)
             {
                 log.Error(ex);
-                return;
             }
+        }
+
+        internal static Task InsertAndTrackTerminal(MsgRecord item, string sqliteDbPath)
+        {
+            sqliteDbPath = Path.GetFullPath(sqliteDbPath);
+            string messageId = item.MsgID;
+            var terminal = new TaskCompletionSource<TerminalRecord>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+            void CaptureTerminal(MsgRecordState state)
+            {
+                if (MsgRecord.IsTerminal(state) && terminal.TrySetResult(new(state, item.MsgReturn, item.ReciveTime, DateTime.Now)))
+                    item.TerminalStateCommitted -= CaptureTerminal;
+            }
+
+            item.TerminalStateCommitted += CaptureTerminal;
+            int id;
+            try
+            {
+                // Recover a reply or timeout that preceded registration on the database worker.
+                CaptureTerminal(item.MsgRecordState);
+                EnsureDatabaseAtPath(sqliteDbPath);
+                using var db = CreateDb(sqliteDbPath);
+                id = db.Insertable(item).ExecuteReturnIdentity();
+                item.Id = id;
+            }
+            catch
+            {
+                item.TerminalStateCommitted -= CaptureTerminal;
+                throw;
+            }
+
+            Task persistence = PersistTerminalAsync(sqliteDbPath, id, messageId, terminal.Task);
             Inserted?.Invoke(null, item);
-        }           
+            return persistence;
+        }
+
+        private static async Task PersistTerminalAsync(string sqliteDbPath, int id, string messageId, Task<TerminalRecord> completion)
+        {
+            // A fast response may already be available. Never write on the caller's thread.
+            TerminalRecord terminal = await completion.ConfigureAwait(ConfigureAwaitOptions.ForceYielding);
+            await TerminalWrites.WaitAsync().ConfigureAwait(false);
+            try
+            {
+                using var db = CreateDb(sqliteDbPath);
+                string replyJson = JsonConvert.SerializeObject(terminal.Reply);
+                db.Updateable<MsgRecord>()
+                    .SetColumns(_ => new MsgRecord
+                    {
+                        MsgRecordState = terminal.State,
+                        MsgReturnJson = replyJson,
+                        ReciveTime = terminal.ReceivedAt,
+                        UpdateTime = terminal.UpdatedAt,
+                    })
+                    .Where(record => record.Id == id && record.MsgID == messageId)
+                    .ExecuteCommand();
+            }
+            catch (Exception ex)
+            {
+                log.Error($"Failed to persist terminal MQTT record. MsgID={messageId}, State={terminal.State}.", ex);
+            }
+            finally
+            {
+                TerminalWrites.Release();
+            }
+        }
+
+        private readonly record struct TerminalRecord(MsgRecordState State, MsgReturn? Reply, DateTime ReceivedAt, DateTime UpdatedAt);
     }
 }

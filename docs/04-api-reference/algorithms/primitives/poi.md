@@ -5,7 +5,6 @@ status: "current"
 summary: "说明 POI 点位、伴生模板及 Flow 和 JSON 算法的消费关系。"
 aliases: ["POI点集由谁生成和消费","POI 1x1中心点","POI 50%缩进","POI自动填充","自动适配尺寸","POI边距设置","PoiPoint","PoiParam"]
 code_paths: ["Engine/ColorVision.Engine/Templates/POI/PoiPoint.cs","Engine/ColorVision.Engine/Templates/POI/PoiParam.cs","Engine/ColorVision.Engine/Templates/POI/EditPoiParam.xaml","Engine/ColorVision.Engine/Templates/POI/EditPoiParam.xaml.cs","Engine/ColorVision.Engine/Templates/POI/PoiLayoutGeometry.cs","Engine/ColorVision.Engine/FlowProcessing/Nodes/Compatibility/POI/POINode.cs","Engine/ColorVision.Engine/FlowProcessing/Nodes/Compatibility/POI/BuildPOINode.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/PoiPointModelTests.cs"]
 related: ["algorithms.index","algorithms.poi-template","flow.templates","ui.image-editor-context"]
 ---
 
@@ -52,7 +51,7 @@ POI 在当前系统里是一套共享点位原语，不是单个“检测算法�
 
 “边距设置”与“设置布点区域”位于四角坐标下方，同一操作区在宽度不足时换行；边距弹窗仍锚定“边距设置”按钮。
 
-普通四边形布点可用“按比例计算”预览并回填采样窗的像素尺寸。参考尺寸可取当前布点四边形的对边平均长度，也可取整张图像或画布的宽高。矩形宽高各按对应方向换算，圆形半径按参考宽度换算。若要以原始发光区为基准，在设置边距前换算。点击“绘制”才生成点位，模板继续保存像素尺寸。
+普通四边形布点可用“按比例计算”预览并回填采样窗的像素尺寸。参考尺寸可取当前布点四边形的对边平均长度，也可取整张图像或画布的宽高。矩形宽高各按对应方向换算，圆形半径可选择按参考宽度或高度换算。若要以原始发光区为基准，在设置边距前换算。点击“绘制”才生成点位，模板继续保存像素尺寸。
 
 手动框出布点区域可使用默认白色/矢量画布，不必先导入位图；这只绘制几何区域，不执行像素计算。选区有效期与换图取消遵循 [ImageEditor 临时 ROI 契约](../../ui-components/image-editor-context.md#临时-roi-形状、坐标与有效期)。自动寻找发光区等图像算法仍要求真实像素图。
 
@@ -106,4 +105,4 @@ Flow 的模板字段、BuildPOI 多模板入口及分析节点对应关系，统
 ## 验证入口与缺口
 
 
-点模型和几何测试不覆盖数据库整批保存或远端 POI 请求；旧模板、文件模式及服务侧协议需另外回放。
+旧模板、整批保存、文件模式和远端 POI 协议应使用目标环境回放。

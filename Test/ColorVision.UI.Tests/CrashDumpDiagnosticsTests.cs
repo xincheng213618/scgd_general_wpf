@@ -335,7 +335,9 @@ namespace ColorVision.UI.Tests
         [Theory]
         [InlineData("EventVWR")]
         [InlineData("eventvwr")]
-        public void RetiredEventViewerPluginIsNotLoaded(string pluginId)
+        [InlineData("CameraTest")]
+        [InlineData("cameratest")]
+        public void RetiredPluginsAreRecognizedCaseInsensitively(string pluginId)
         {
             Assert.True(PluginLoader.IsRetiredPlugin(pluginId));
         }

@@ -16,7 +16,8 @@ namespace ColorVision.Engine.FlowProcessing.Nodes;
 [STNode("Flow_LocalDevices", "本地光谱采集", CategoryOrder = 9900, NodeOrder = 80)]
 public sealed class LocalSpectrumNode : LocalDeviceFlowNodeBase, IRepeatParameterNode
 {
-    private sealed record ExecutionParameters(DeviceSpectrum Device, string DeviceCode, LocalSpectrumParameters Capture, bool AutoConnect, int ZIndex, string NodeId);
+    private sealed record ExecutionParameters(DeviceSpectrum Device, string DeviceCode, LocalSpectrumParameters Capture,
+        LocalSpectrumOpticalScope Optics, LocalSpectrumLicenseSource? LicenseSource, int ZIndex, string NodeId);
     private float integralTime = 100;
     private int average = 1;
     private bool autoIntegration, autoDark, adaptiveDark;
@@ -72,7 +73,7 @@ public sealed class LocalSpectrumNode : LocalDeviceFlowNodeBase, IRepeatParamete
             device.DisplayConfig.IsLuminousFluxMode = Eqe;
             device.DisplayConfig.Divisor = AFactor;
             device.DisplayConfig.V = Voltage;
-            device.DisplayConfig.I = Current;
+            device.DisplayConfig.SetManualCurrent(Current, inAmperes: true);
             device.DisplayConfig.IsWithND = IsWithND;
             device.OpenLocalSpectrumWindow(this);
         });
@@ -119,14 +120,18 @@ public sealed class LocalSpectrumNode : LocalDeviceFlowNodeBase, IRepeatParamete
             parameters.ApplySmuData(smu);
         }
         parameters.Validate();
-        return new ExecutionParameters(FindDevice(), DeviceCode, parameters, AutoConnect, ZIndex, NodeID);
+        DeviceSpectrum device = FindDevice();
+        LocalSpectrumOpticalScope optics = device.SnapshotLocalOptics(parameters.Eqe ? "EQE.GetData" : "GetData");
+        LocalSpectrumLicenseSource? licenseSource = AutoConnect ? device.CaptureOpenLicense(optics) : null;
+        return new ExecutionParameters(device, DeviceCode, parameters, optics, licenseSource, ZIndex, NodeID);
     }
 
     protected override LocalNodeExecutionResult ExecuteLocal(CVStartCFC action)
     {
         var snapshot = GetExecutionParameters<ExecutionParameters>(action);
         using var execution = new LocalSpectrumFlowExecution(snapshot.Device, snapshot.Capture,
-            snapshot.Capture.Eqe ? "EQE.GetData" : "GetData", snapshot.AutoConnect, snapshot.ZIndex, snapshot.NodeId);
+            snapshot.Capture.Eqe ? "EQE.GetData" : "GetData", snapshot.LicenseSource != null,
+            snapshot.ZIndex, snapshot.NodeId, snapshot.Optics, snapshot.LicenseSource);
         execution.Bind(action);
         execution.Execute();
         return new LocalNodeExecutionResult { Data = execution.Complete(action) };
@@ -139,7 +144,7 @@ public sealed class LocalSpectrumNode : LocalDeviceFlowNodeBase, IRepeatParamete
         return JsonConvert.SerializeObject(new
         {
             snapshot.DeviceCode, parameters.IntegralTime, parameters.NumberOfAverage, parameters.AutoIntegration,
-            parameters.AutoInitDark, parameters.SelfAdaptionInitDark, snapshot.AutoConnect,
+            parameters.AutoInitDark, parameters.SelfAdaptionInitDark, AutoConnect = snapshot.LicenseSource != null,
             parameters.IsWithND,
             parameters.Eqe, parameters.AFactor, parameters.Voltage, parameters.Current, parameters.SMUData
         });

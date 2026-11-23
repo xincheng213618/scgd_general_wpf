@@ -712,6 +712,15 @@ public class FlowPackageCompatibilityTests
     }
 
     [Fact]
+    public void LargePayloadHashMatchesUtf8Sha256AcrossUnicodeBoundaries()
+    {
+        string payload = new string('a', 65_535) + "🧪中" + new string('测', 32_768) + "\uD800";
+        string expected = Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(payload)));
+
+        Assert.Equal(expected, FlowPackageContentIdentity.ComputePayloadHash(payload));
+    }
+
+    [Fact]
     public void DetailAuditFieldsDoNotChangeSemanticIdentity()
     {
         var first = new[]

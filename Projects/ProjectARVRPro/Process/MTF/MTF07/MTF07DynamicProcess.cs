@@ -5,6 +5,7 @@ using ColorVision.Engine.Templates.Jsons.MTF2;
 using ColorVision.ImageEditor.Draw;
 using Newtonsoft.Json;
 using ProjectARVRPro.Recipe;
+using System.IO;
 using System.Text;
 using System.Windows.Media;
 
@@ -44,24 +45,34 @@ namespace ProjectARVRPro.Process.MTF.MTF07
         where TTestResult : class, IMTF07TestResult
         where TViewResult : TTestResult, IMTF07ViewTestResult, new()
     {
+        internal Func<int, List<AlgResultMasterModel>>? ReadMasters { get; init; }
+        internal Func<int, List<DetailCommonModel>>? ReadDetails { get; init; }
+
         protected abstract void WriteObjectiveResult(ObjectiveTestResult destination, string key, TTestResult result);
+        protected virtual IDictionary<string, TTestResult>? GetObjectiveResults(ObjectiveTestResult destination) => null;
 
         public override Task<bool> Execute(IProcessExecutionContext ctx)
         {
-            if (ctx?.Batch == null || ctx.Result == null || ctx.ObjectiveTestResult == null)
+            if (ctx?.Result == null || ctx.ObjectiveTestResult == null)
                 return Task.FromResult(false);
 
+            string outputKey = Config.GetOutputKey();
             try
             {
+                if (ctx.Batch == null)
+                    throw new InvalidDataException("MTF07 缺少测量批次。");
+
                 var testResult = new TViewResult();
+                HashSet<string> measuredItems = new(StringComparer.Ordinal);
+                bool allPassed = true;
                 var images = ctx.GetMeasureResults();
                 if (images.Count > 0)
                     ctx.Result.FileName = images[0].FileUrl;
 
-                foreach (var master in AlgResultMasterDao.Instance.GetAllByBatchId(ctx.Batch.Id)
+                foreach (var master in (ReadMasters?.Invoke(ctx.Batch.Id) ?? ctx.ReadMasterResults())
                     .Where(item => item.ImgFileType == ViewResultAlgType.MTF && item.version == "2.0"))
                 {
-                    var details = DeatilCommonDao.Instance.GetAllByPid(master.Id);
+                    var details = ReadDetails?.Invoke(master.Id) ?? ctx.ReadDetails(DeatilCommonDao.Instance, master.Id);
                     if (details.Count != 1)
                         continue;
 
@@ -81,23 +92,49 @@ namespace ProjectARVRPro.Process.MTF.MTF07
                         }
 
                         MTF07DynamicResultBuilder.PopulateItem(item, mtf, recipe, Config.ShowConfig, Config.Unit, correction);
-                        ctx.Result.Result &= item.TestResult;
+                        measuredItems.Add(itemName);
+                        allPassed &= item.TestResult;
                     }
                 }
 
+                string[] missing = testResult.Items.Where(item => !measuredItems.Contains(item.Name)).Select(item => item.Name).ToArray();
+                if (missing.Length != 0)
+                    throw new InvalidDataException($"MTF07 缺少测量点：{string.Join("、", missing)}。");
+
                 string viewResultJson = JsonConvert.SerializeObject(testResult);
-                ctx.Result.ViewResultJson = viewResultJson;
                 TTestResult objectiveResult = JsonConvert.DeserializeObject<TTestResult>(viewResultJson)
                     ?? throw new JsonSerializationException($"无法创建{typeof(TTestResult).Name}。");
-                string outputKey = Config.GetOutputKey();
                 WriteObjectiveResult(ctx.ObjectiveTestResult, outputKey, objectiveResult);
+                ctx.Result.ViewResultJson = viewResultJson;
+                ctx.Result.Result &= allPassed;
                 return Task.FromResult(true);
             }
-            catch (Exception ex)
+            catch (Exception error)
             {
-                ctx.Log?.Error(ex);
+                string message = $"MTF07 解析失败 [{outputKey}]：{error.Message}";
+                ctx.Log.Error(message, error);
+                Reject(ctx, outputKey, message);
                 return Task.FromResult(false);
             }
+        }
+
+        public override Task<bool> ExecuteFailure(IProcessExecutionContext ctx)
+        {
+            if (ctx?.Result != null && ctx.ObjectiveTestResult != null)
+                Reject(ctx, Config.GetOutputKey(), string.IsNullOrWhiteSpace(ctx.Result.Msg) ? "MTF07 流程未成功完成。" : ctx.Result.Msg);
+            return Task.FromResult(false);
+        }
+
+        private void Reject(IProcessExecutionContext ctx, string outputKey, string message)
+        {
+            ctx.Result.Result = false;
+            ctx.Result.Msg = message;
+            ctx.Result.ViewResultJson = string.Empty;
+            ctx.ObjectiveTestResult.TotalResult = false;
+            var results = GetObjectiveResults(ctx.ObjectiveTestResult);
+            if (results == null) return;
+            foreach (string key in results.Keys.Where(key => string.Equals(key, outputKey, StringComparison.OrdinalIgnoreCase)).ToArray())
+                results.Remove(key);
         }
 
         public override IReadOnlyList<ObjectiveTestCsvRow> GetObjectiveCsvRows(ProjectARVRReuslt result) =>

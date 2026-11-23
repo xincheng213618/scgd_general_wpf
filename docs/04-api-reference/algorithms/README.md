@@ -5,7 +5,6 @@ status: "current"
 summary: "区分统一 Runner、ImageEditor 直接 native 分析与 Engine 模板/MQTT 算法，并按任务定位专题。"
 aliases: ["算法代码在哪里","ColorVision.Algorithms","TemplateControl","MQTTAlgorithm"]
 code_paths: ["UI/ColorVision.Algorithms/AlgorithmCatalog.cs","Engine/ColorVision.Engine/Templates/TemplateControl.cs","Engine/ColorVision.Engine/Services/Devices/Algorithm/MQTTAlgorithm.cs"]
-test_paths: []
 related: ["algorithms.platform","algorithms.local-native-analysis","algorithms.find-cross","algorithms.template-overview","engine.template-design","algorithms.roi-routes","algorithms.poi-routes","engine.results"]
 ---
 
@@ -42,8 +41,8 @@ AR 波导、Micro OLED/Micro LED 与双目整机的 RGB 套色、鬼影候选、
 
 ## 检索与判断边界
 
-模板族页面回答的是当前适配层与参数契约，不承诺外部算法服务或私有 native DLL 的内部实现。按页面的 `code_paths` 定位精确符号，再用 `test_paths` 和验证缺口判断结论强度。标为 `planned` 的方案不能当作现有功能；旧链接兼容页只负责跳转，不是第二份事实源。
+模板族页面记录适配层与参数契约。外部算法服务和私有 DLL 的行为以配套实现及现场证据核对。标为 `planned` 的方案仍待实现。
 
 ## 验证入口与缺口
 
-本页为三条执行链的路由索引；验证随选中主题，不把统一 provider 测试用于证明旁路 native 工具或远端算法服务。
+先确认执行链，再使用匹配的算法服务、DLL 和数据验收。

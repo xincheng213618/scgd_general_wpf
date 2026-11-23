@@ -1,7 +1,10 @@
 using ColorVision.Core;
+using ColorVision.ImageEditor.Presentation;
 using System;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics.X86;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
@@ -10,6 +13,9 @@ namespace ColorVision.ImageEditor.Output
 {
     internal sealed class SnapshotImageBufferLease : IDisposable
     {
+        private const int ParallelConversionMinimumBytes = 128 * 1024 * 1024;
+        private static readonly log4net.ILog log = log4net.LogManager.GetLogger(typeof(SnapshotImageBufferLease));
+
         private readonly SnapshotImageBufferPool owner;
         private readonly PixelFormat format;
         private readonly Color[]? paletteColors;
@@ -33,28 +39,72 @@ namespace ColorVision.ImageEditor.Output
 
         internal HImage Image => image ?? throw new ObjectDisposedException(nameof(SnapshotImageBufferLease));
 
-        internal WriteableBitmap ToWriteableBitmap(double dpiX, double dpiY)
+        internal BitmapSource ToFrozenBitmap(double dpiX, double dpiY)
         {
             HImage buffer = Image;
             BitmapPalette? palette = paletteColors == null ? null : new BitmapPalette(paletteColors);
-            WriteableBitmap bitmap = new(
-                buffer.cols,
-                buffer.rows,
-                dpiX,
-                dpiY,
-                format,
-                palette);
             int bytesPerRow = GetPackedRowBytes(buffer.cols, format.BitsPerPixel);
-            if (buffer.stride < bytesPerRow || bitmap.BackBufferStride < bytesPerRow)
+            if (buffer.stride < bytesPerRow)
                 throw new InvalidOperationException("Snapshot image buffer stride is invalid.");
 
             int bufferSize = checked(buffer.stride * buffer.rows);
-            bitmap.WritePixels(
-                new Int32Rect(0, 0, bitmap.PixelWidth, bitmap.PixelHeight),
-                buffer.pData,
-                bufferSize,
-                buffer.stride);
+            BitmapSource bitmap;
+            if (format.BitsPerPixel % 8 == 0)
+            {
+                // This factory copies the leased pixels into independently owned WIC storage.
+                bitmap = BitmapSource.Create(buffer.cols, buffer.rows, dpiX, dpiY, format, palette,
+                    buffer.pData, bufferSize, buffer.stride);
+            }
+            else
+            {
+                // Preserve WritePixels handling of unused bits at the ends of packed rows.
+                WriteableBitmap packed = new(buffer.cols, buffer.rows, dpiX, dpiY, format, palette);
+                if (packed.BackBufferStride < bytesPerRow)
+                    throw new InvalidOperationException("Snapshot image buffer stride is invalid.");
+                packed.WritePixels(new Int32Rect(0, 0, buffer.cols, buffer.rows), buffer.pData, bufferSize, buffer.stride);
+                bitmap = packed;
+            }
+            bitmap.Freeze();
+            GC.KeepAlive(this);
             return bitmap;
+        }
+
+        internal BitmapSource? TryCreateOpaqueRgb48Bitmap(int width, int height, double dpiX, double dpiY)
+        {
+            HImage buffer = Image;
+            if (format != PixelFormats.Rgb48 || !Ssse3.IsSupported || Environment.ProcessorCount < 2
+                || buffer.cols != width || buffer.rows != height || buffer.stride < width * 6L
+                || (long)buffer.stride * height < ParallelConversionMinimumBytes
+                || width * 4L * height > int.MaxValue)
+                return null;
+
+            try
+            {
+                WriteableBitmap? scratch = SnapshotStaWorker.TakeOpaqueBackground(width, height, dpiX, dpiY);
+                WriteableBitmap bitmap = scratch ?? new(width, height, dpiX, dpiY, PixelFormats.Pbgra32, null);
+                bitmap.Lock();
+                try
+                {
+                    nint target = bitmap.BackBuffer;
+                    int targetStride = bitmap.BackBufferStride;
+                    int middleRow = height / 2;
+                    // The export worker keeps the lease until both bands finish writing the locked WPF back buffer.
+                    Parallel.Invoke(new ParallelOptions { MaxDegreeOfParallelism = 2, TaskScheduler = TaskScheduler.Default },
+                        () => ImageRenderProxy.CopyRgb48Rows(buffer.pData, buffer.stride, target, targetStride, width, 0, middleRow),
+                        () => ImageRenderProxy.CopyRgb48Rows(buffer.pData, buffer.stride, target, targetStride, width, middleRow, height));
+                    bitmap.AddDirtyRect(new Int32Rect(0, 0, width, height));
+                }
+                finally { bitmap.Unlock(); }
+                if (scratch == null)
+                    bitmap.Freeze();
+                return bitmap;
+            }
+            catch (Exception ex) when (ex is OutOfMemoryException or COMException or ArgumentException)
+            {
+                log.Warn("Unable to prepare the opaque RGB48 snapshot. Falling back to the original pixels.", ex);
+                return null;
+            }
+            finally { GC.KeepAlive(this); }
         }
 
         private static int GetPackedRowBytes(int width, int bitsPerPixel)
@@ -77,6 +127,7 @@ namespace ColorVision.ImageEditor.Output
 
     internal sealed class SnapshotImageBufferPool : IDisposable
     {
+        private const int ParallelCopyMinimumBytes = 128 * 1024 * 1024;
         private static long nextId;
         private readonly object sync = new();
         private HImage? cachedImage;
@@ -238,7 +289,30 @@ namespace ColorVision.ImageEditor.Output
                 throw new InvalidOperationException("Snapshot image buffer stride is invalid.");
 
             int bufferSize = checked(image.stride * image.rows);
-            source.CopyPixels(Int32Rect.Empty, image.pData, bufferSize, image.stride);
+            if (!TryCopyLargeRgb48(source, image, bufferSize))
+                source.CopyPixels(Int32Rect.Empty, image.pData, bufferSize, image.stride);
+        }
+
+        private static unsafe bool TryCopyLargeRgb48(WriteableBitmap source, HImage image, int bufferSize)
+        {
+            if (bufferSize < ParallelCopyMinimumBytes || Environment.ProcessorCount < 2 || source.IsFrozen
+                || source.Format != PixelFormats.Rgb48 || source.BackBufferStride != image.stride
+                || !source.TryLock(new Duration(TimeSpan.Zero)))
+                return false;
+
+            try
+            {
+                // Keep the read-only back buffer locked until both copies finish.
+                nint pixels = source.BackBuffer;
+                nint target = image.pData;
+                int first = bufferSize / 2;
+                int second = bufferSize - first;
+                Parallel.Invoke(new ParallelOptions { MaxDegreeOfParallelism = 2, TaskScheduler = TaskScheduler.Default },
+                    () => Buffer.MemoryCopy(pixels.ToPointer(), target.ToPointer(), first, first),
+                    () => Buffer.MemoryCopy((pixels + first).ToPointer(), (target + first).ToPointer(), second, second));
+                return true;
+            }
+            finally { source.Unlock(); }
         }
 
         private static int GetPackedRowBytes(int width, int bitsPerPixel)

@@ -65,6 +65,8 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
         public bool LoadedFromFile { get; }
         public bool Calibrated { get; }
         public int TotalTime { get; }
+        public string ImageDeviceCode { get; init; } = string.Empty;
+        public (DeviceCalibration Device, string Code)? CalibrationOwner { get; init; }
 
         public void TransferFrameTo(CVStartCFC action)
         {
@@ -111,6 +113,10 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
         protected override string GetCompactSummaryValue() => CompactValueOrDash(CalibTempName);
 
         private protected LocalCalibrationExecution ExecuteCalibration(CVStartCFC action, bool useInputColor)
+            => ExecuteCalibrationCore(action, useInputColor, LocalFlowResultPersistence.ResolveEndpoint(action));
+
+        private protected LocalCalibrationExecution ExecuteCalibrationCore(CVStartCFC action, bool useInputColor,
+            MySqlConnectedEndpoint? endpoint)
         {
             LocalFlowFrame sourceFrame;
             bool ownsSourceFrame;
@@ -125,7 +131,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             }
             else
             {
-                string sourceFilePath = ResolveInputImageFilePath(action, 0);
+                string sourceFilePath = ResolveInputImageFilePath(action, 0, endpoint);
                 if (string.IsNullOrWhiteSpace(sourceFilePath))
                 {
                     throw new InvalidOperationException("输入端没有本地图像内存帧，也没有可读取的图像结果。请连接相机取图或“加载图片”节点。");
@@ -144,6 +150,11 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             bool calibrated = false;
             try
             {
+                string imageDeviceCode = ResolveDeviceCode(sourceFrame.Metadata.DeviceCode);
+                var camera = ServiceManager.Current?.DeviceServices.OfType<DeviceCamera>()
+                    .FirstOrDefault(device => string.Equals(device.Code, imageDeviceCode, StringComparison.Ordinal));
+                var calibrationDevice = camera == null ? LocalCalibrationFlowRouting.Find(imageDeviceCode) : camera.PhyCamera?.DeviceCalibration;
+                var calibrationOwner = action.PersistResults ? CaptureCalibrationOwner(calibrationDevice, endpoint) : null;
                 bool canReuseExistingCie = sourceFrame.HasCie
                     && (!sourceFrame.HasRaw
                         || string.IsNullOrWhiteSpace(CalibTempName)
@@ -175,7 +186,9 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                 }
                 else if (sourceFrame.HasRaw)
                 {
-                    DeviceCamera device = ResolveDevice(sourceFrame.Metadata.DeviceCode);
+                    DeviceCamera device = camera ?? calibrationDevice?.PhyCamera?.DeviceCamera
+                        ?? throw new InvalidOperationException(string.IsNullOrWhiteSpace(imageDeviceCode)
+                            ? "校正 RAW 内存前必须选择本地相机设备。" : $"找不到本地相机设备：{imageDeviceCode}");
                     calibration = ResolveCalibration(device);
                     if (!device.TryGetCalibrationTemplateFiles(calibration, out IReadOnlyList<DeviceCameraCalibrationFile> calibrationFiles, out string? errorMessage))
                     {
@@ -187,7 +200,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                         calibrationFiles,
                         calibration.Name,
                         LocalCalibrationRoi.ResolveForFrame(sourceFrame.Metadata, device.PhyCamera?.Config?.CameraCfg),
-                        ResolveZeroExposureFallback(action, sourceFrame),
+                        ResolveZeroExposureFallback(action, sourceFrame, endpoint),
                         AllowAcceleration);
                     outputFrame = sourceFrame;
                     ownsOutputFrame = ownsSourceFrame;
@@ -209,7 +222,11 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                     sourceFrameId,
                     loadedFromFile,
                     calibrated,
-                    checked((int)Math.Min(stopwatch.ElapsedMilliseconds, int.MaxValue)));
+                    checked((int)Math.Min(stopwatch.ElapsedMilliseconds, int.MaxValue)))
+                {
+                    ImageDeviceCode = imageDeviceCode,
+                    CalibrationOwner = calibrationOwner
+                };
             }
             catch
             {
@@ -222,11 +239,10 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             }
         }
 
-        private protected MeasureResultImgModel SaveCalibrationResult(CVStartCFC action, LocalCalibrationExecution execution)
+        private protected MeasureResultImgModel SaveCalibrationResult(CVStartCFC action, LocalCalibrationExecution execution, MySqlConnectedEndpoint endpoint)
         {
             LocalFlowFrame frame = execution.Frame;
-            MeasureBatchModel batch = FlowNodeTiming.Run("ResolveBatch", () => BatchResultMasterDao.Instance.GetByNameOrCode(action.SerialNumber))
-                ?? throw new InvalidOperationException($"找不到流程批次：{action.SerialNumber}");
+            int batchId = FlowNodeTiming.Run("ResolveBatch", () => LocalFlowResultPersistence.ResolveBatchId(action, endpoint));
             string? rawFilePath = NullIfEmpty(frame.CvRawFilePath);
             string? cieFilePath = NullIfEmpty(frame.CvCieFilePath);
             string? outputFilePath = cieFilePath ?? rawFilePath;
@@ -236,7 +252,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
 
             MeasureResultImgModel model = new()
             {
-                BatchId = batch.Id,
+                BatchId = batchId,
                 ZIndex = ZIndex,
                 NDPort = -1,
                 Params = JsonConvert.SerializeObject(new
@@ -245,6 +261,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                     SourceFile = NullIfEmpty(frame.Metadata.SourceFilePath),
                     execution.LoadedFromFile,
                     execution.Calibrated,
+                    CalibrationDeviceCode = execution.CalibrationOwner?.Code,
                     MemoryOnly = outputFilePath == null,
                     OutputBuffer = frame.HasCie ? "CIE" : "RAW",
                     AllowAcceleration,
@@ -274,10 +291,11 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                 ResultCode = 0,
                 Result = "ok",
                 TotalTime = execution.TotalTime,
-                DeviceCode = ResolveDeviceCode(frame.Metadata.DeviceCode),
+                DeviceCode = execution.ImageDeviceCode,
                 CreateDate = DateTime.Now
             };
-            int masterId = FlowNodeTiming.Run("PersistResult", () => MeasureImgResultDao.Instance.SaveAndReturnId(model));
+            action.RuntimeResources.StopToken.ThrowIfCancellationRequested();
+            int masterId = FlowNodeTiming.Run("PersistResult", () => MeasureImgResultDao.InsertResult(endpoint, model));
             if (masterId <= 0) throw new InvalidOperationException("保存本地校正图像结果失败。");
             model.Id = masterId;
             return model;
@@ -299,17 +317,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
 
         private protected virtual void ValidateImageInputPath(string filePath) { }
 
-        private protected virtual float[]? ResolveZeroExposureFallback(CVStartCFC action, LocalFlowFrame sourceFrame) => null;
-
-        private protected DeviceCamera ResolveDevice(string frameDeviceCode)
-        {
-            string deviceCode = ResolveDeviceCode(frameDeviceCode);
-            if (string.IsNullOrWhiteSpace(deviceCode)) throw new InvalidOperationException("校正 RAW 内存前必须选择本地相机设备。");
-            return ServiceManager.GetInstance().DeviceServices.OfType<DeviceCamera>()
-                .FirstOrDefault(camera => string.Equals(camera.Code, deviceCode, StringComparison.Ordinal))
-                ?? LocalCalibrationFlowRouting.Find(deviceCode)?.PhyCamera?.DeviceCamera
-                ?? throw new InvalidOperationException($"找不到本地相机设备：{deviceCode}");
-        }
+        private protected virtual float[]? ResolveZeroExposureFallback(CVStartCFC action, LocalFlowFrame sourceFrame, MySqlConnectedEndpoint? endpoint) => null;
 
         private CalibrationParam ResolveCalibration(DeviceCamera device)
         {
@@ -321,16 +329,19 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
         private string ResolveDeviceCode(string frameDeviceCode)
             => string.IsNullOrWhiteSpace(DeviceCode) ? frameDeviceCode : DeviceCode;
 
-        private protected (string Route, string DeviceCode) ResolveCalibrationResultTarget(string cameraDeviceCode)
+        private static (DeviceCalibration Device, string Code)? CaptureCalibrationOwner(DeviceCalibration? calibration, MySqlConnectedEndpoint? endpoint)
         {
-            if (LocalCalibrationFlowRouting.Find(cameraDeviceCode) is { } calibration)
-                return (ResultRoutes.Calibration, calibration.Code);
-            DeviceCamera? camera = ServiceManager.Current?.DeviceServices.OfType<DeviceCamera>()
-                .FirstOrDefault(item => string.Equals(item.Code, cameraDeviceCode, StringComparison.Ordinal));
-            string? calibrationDeviceCode = camera?.PhyCamera?.DeviceCalibration?.Code;
-            return string.IsNullOrWhiteSpace(calibrationDeviceCode)
-                ? (ResultRoutes.Camera, cameraDeviceCode)
-                : (ResultRoutes.Calibration, calibrationDeviceCode);
+            return endpoint?.IsCurrent == true && calibration is { IsDisposed: false } && ReferenceEquals(calibration.ResultDatabaseEndpoint, endpoint)
+                && !string.IsNullOrWhiteSpace(calibration.Code) ? (calibration, calibration.Code) : null;
+        }
+
+        private protected void PublishCalibrationResult(CVStartCFC action, LocalCalibrationExecution execution, int masterId,
+            string nodeId, MySqlConnectedEndpoint? endpoint)
+        {
+            var owner = execution.CalibrationOwner;
+            ResultMessageBus.Default.PublishPersisted(owner.HasValue ? ResultRoutes.Calibration : ResultRoutes.Camera, ResultKinds.Image,
+                owner?.Code ?? execution.ImageDeviceCode, OperatorCode, action.SerialNumber, nodeId, ZIndex, masterId,
+                (int)ViewResultAlgType.Calibration, databaseEndpoint: endpoint, sourceDevice: owner?.Device);
         }
 
         protected static string? NullIfEmpty(string? value) => string.IsNullOrWhiteSpace(value) ? null : value;
@@ -345,15 +356,20 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
 
         protected override LocalNodeExecutionResult ExecuteLocal(CVStartCFC action)
         {
-            using LocalCalibrationExecution execution = ExecuteCalibration(action, useInputColor: false);
+            MySqlConnectedEndpoint? endpoint = LocalFlowResultPersistence.ResolveEndpoint(action);
+            using LocalCalibrationExecution execution = ExecuteCalibrationCore(action, useInputColor: false, endpoint);
             action.RuntimeResources.StopToken.ThrowIfCancellationRequested();
-            MeasureResultImgModel persistedResult = SaveCalibrationResult(action, execution);
-            int masterId = persistedResult.Id;
+            MeasureResultImgModel? persistedResult = action.PersistResults
+                ? SaveCalibrationResult(action, execution, endpoint ?? throw new InvalidOperationException("保存本地校正流程结果需要连接 MySQL。"))
+                : null;
+            int masterId = persistedResult?.Id ?? 0;
             execution.Frame.MasterId = masterId;
             action.MasterValue(null, masterId, (int)ViewResultAlgType.Calibration);
             execution.TransferFrameTo(action);
-            (string route, string deviceCode) = ResolveCalibrationResultTarget(persistedResult.DeviceCode ?? string.Empty);
-            FlowNodeTiming.Run("PublishResult", () => ResultMessageBus.Default.PublishPersisted(route, ResultKinds.Image, deviceCode, OperatorCode, action.SerialNumber, ExecutionNodeId, ZIndex, masterId, (int)ViewResultAlgType.Calibration));
+            if (persistedResult != null)
+            {
+                FlowNodeTiming.Run("PublishResult", () => PublishCalibrationResult(action, execution, masterId, ExecutionNodeId, endpoint));
+            }
             return new LocalNodeExecutionResult
             {
                 Data = new LocalCalibrationNodeResultData

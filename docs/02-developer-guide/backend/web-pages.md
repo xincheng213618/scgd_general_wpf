@@ -5,7 +5,6 @@ status: "current"
 summary: "React 页面和 VitePress 文档的托管、开发代理、缓存、Brotli/gzip 与 Range 协商、旧分块恢复及文档索引；后台索引刷新不构建网页，也不证明已部署内容最新。"
 aliases: ["Web 页面托管", "前端白屏", "静态文件压缩", "Brotli", "SPA", "Vite 开发代理", "vite:preloadError", "installChunkRecovery", "colorvision-web-chunk-reload-at", "FrontendSpaContext", "_send_static_file", "Documentation site has not been built", "Web frontend has not been built", "文档中心", "文档索引", "docs/status", "index/docs/refresh", "resolve_docs_site_file", "docs_index_signature", "get_docs_index_snapshot"]
 code_paths: ["Web/Backend/routes/frontend_spa.py", "Web/Backend/routes/docs_site.py", "Web/Backend/services/docs_site.py", "Web/Backend/routes/admin_api.py", "Web/Backend/app_setup.py", "Web/Backend/page_contexts.py", "Web/Backend/services/http_security.py", "Web/Frontend/vite.config.ts", "Web/Frontend/package.json", "Web/Frontend/src/main.tsx", "Web/Frontend/src/utils/chunkRecovery.ts", "Web/Frontend/scripts/precompress-static.mjs"]
-test_paths: ["Web/Backend/test_frontend_spa.py", "Web/Backend/test_docs_site.py", "Web/Backend/test_contracts.py", "Web/Backend/test_http_security.py", "Web/Frontend/tests/viteConfig.test.ts"]
 related: ["delivery.backend", "delivery.web-deployment", "platform.web-architecture", "delivery.artifact-delivery", "delivery.backend-public-data", "delivery.backend-auth", "governance.maintenance"]
 ---
 
@@ -44,7 +43,7 @@ Flask 只为明确注册的应用路径返回 `index.html`，不会将所有 404
 | 路径 | 行为 |
 | --- | --- |
 | `/`、`/plugins` 及其子路径、`/releases`、`/changelog`、`/updates`、`/tools` | 公共 React 入口 |
-| `/transfer`、`/transfer/share/<路径>`、`/account`、`/browse` 及其子路径 | 返回 React 入口；后续 API 仍按各自权限执行 |
+| `/transfer`、`/transfer/share/<路径>`、`/account`、`/feedback`、`/browse` 及其子路径 | 返回 React 入口；后续 API 仍按各自权限执行 |
 | `/admin`、`/admin/` 及其子路径 | 先执行注入的管理认证检查，未通过则 302 到 `/login?next=...`，next 包含当前内部路径及查询串 |
 | `/assets/<路径>` | 构建资源；成功的 200/206/304 使用 `public, max-age=31536000, immutable` |
 | `/brand/<路径>`、`/media/<路径>`、`/favicon.svg`、`/favicon.ico` | 普通静态资源，max_age 为 3600 秒；ico 映射到 `brand/colorvision.ico` |
@@ -116,6 +115,5 @@ Backend 文档索引从 Markdown 取得标题、首段摘要、路径、分类�
 
 ## 对照测试与验证范围
 
-`test_frontend_spa.py` 覆盖 React 路由、缺资源 404、HTML 重验证、Brotli/gzip/identity、406、HEAD、ETag 及 Range 表示；`viteConfig.test.ts` 核对 API 代理保留 origin，并确认 login/logout 不代理。`test_docs_site.py` 检查摘要读取，`test_contracts.py` 用临时站点覆盖文档重定向、clean URL、状态字段和索引刷新。
 
 这些用例不证明真实浏览器旧分块重载、反向代理缓存、文档条件请求或部署目录权限已验收。源码引用和文档构建也不能替代这些运行验证。

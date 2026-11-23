@@ -461,9 +461,9 @@ Download or select and install the VC++ 2013 x64 runtime in the service installa
     <value>The selected MySQL version could not be read. The operation has stopped. Select bin\mysqld.exe in the existing installation, or a valid MySQL ZIP package containing it.</value>
   </data>
   <data name="RemoveArchiveServiceMonitoring" xml:space="preserve">
-    <value>Remove archive service monitoring</value>
+    <value>Remove archive service</value>
   </data>
   <data name="RemoveArchiveServiceMonitoringToolTip" xml:space="preserve">
-    <value>Remove CVArchService from registration center monitoring; a running registration center will briefly stop and resume</value>
+    <value>Remove CVArchService from registration center monitoring and uninstall the service if present. A running registration center will briefly stop and resume.</value>
   </data>
 </root>

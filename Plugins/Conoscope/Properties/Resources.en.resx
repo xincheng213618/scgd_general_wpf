@@ -1455,4 +1455,7 @@ Choose No to discard changes, or Cancel to return.</value>
   <data name="AngularRayCounts" xml:space="preserve">
     <value>Mirrored ray samples {0}; missing references {1}</value>
   </data>
+  <data name="Conoscope_Screenshot" xml:space="preserve">
+    <value>Screenshot</value>
+  </data>
 </root>

@@ -128,6 +128,8 @@ namespace ColorVision.SocketProtocol
             // 建表和补列也必须与历史迁移串行，避免两边同时修改 SQLite schema。
             SocketMessagePayloadStorage.RunDatabaseMaintenance(() =>
             {
+                // Add the nullable connection identity to existing tables without rebuilding their row-ID sequence.
+                SocketMessagePayloadStorage.EnsureConnectionIdentityColumn(_db);
                 _db.CodeFirst.InitTables<SocketMessage>();
                 SocketMessagePayloadStorage.EnsureSchema(_db);
             });
@@ -177,6 +179,7 @@ namespace ColorVision.SocketProtocol
                 var snapshot = new SocketMessage
                 {
                     ClientEndPoint = message.ClientEndPoint,
+                    ClientConnectionId = message.ClientConnectionId,
                     Direction = message.Direction,
                     Content = message.Content,
                     MessageTime = message.MessageTime,
@@ -373,11 +376,20 @@ namespace ColorVision.SocketProtocol
             if (message.IsContentLoaded)
                 return message.Content;
 
-            string? content = SocketMessagePayloadStorage.RunDatabaseMaintenance(() =>
-                SocketMessagePayloadStorage.Load(_db, message.Id));
+            string? content = ReadStoredContent(message);
             message.Content = content;
             return content;
         }
+
+        internal string? LoadContentForResend(SocketMessage message)
+        {
+            ArgumentNullException.ThrowIfNull(message);
+            return ReadStoredContent(message);
+        }
+
+        private string? ReadStoredContent(SocketMessage message) => message.Id > 0
+            ? SocketMessagePayloadStorage.RunDatabaseMaintenance(() => SocketMessagePayloadStorage.Load(_db, message))
+            : null;
 
         /// <summary>
         /// 删除消息
@@ -387,8 +399,8 @@ namespace ColorVision.SocketProtocol
             try
             {
                 if (message == null) return;
-                SocketMessagePayloadStorage.RunDatabaseMaintenance(() =>
-                    _db.Deleteable<SocketMessage>().Where(x => x.Id == message.Id).ExecuteCommand());
+                if (message.Id > 0)
+                    SocketMessagePayloadStorage.RunDatabaseMaintenance(() => SocketMessagePayloadStorage.Delete(_db, message));
                 Messages.Remove(message);
             }
             catch (Exception ex)
@@ -402,14 +414,15 @@ namespace ColorVision.SocketProtocol
         /// </summary>
         public void GenericQuery()
         {
-            GenericQuery<SocketMessage> genericQuery = new SocketMessageGenericQuery(_db, Messages, RunAfterPendingMessages);
-            GenericQueryWindow genericQueryWindow = new GenericQueryWindow(genericQuery) 
+            GenericQueryWindow genericQueryWindow = new GenericQueryWindow(CreateGenericQuery())
             { 
                 Owner = Application.Current.GetActiveWindow(), 
                 WindowStartupLocation = WindowStartupLocation.CenterOwner 
             };
             genericQueryWindow.ShowDialog();
         }
+
+        internal GenericQuery<SocketMessage> CreateGenericQuery() => new SocketMessageGenericQuery(_db, Messages, RunAfterPendingMessages);
 
         public void Dispose()
         {
@@ -439,6 +452,8 @@ namespace ColorVision.SocketProtocol
                 _runAfterPendingMessages = runAfterPendingMessages;
             }
 
+            public override bool SupportsTruncateTable => false;
+
             public override void QueryDB()
             {
                 _runAfterPendingMessages(base.QueryDB);
@@ -446,31 +461,14 @@ namespace ColorVision.SocketProtocol
 
             public override void DeleteAll()
             {
-                _runAfterPendingMessages(base.DeleteAll);
-            }
-
-            public override void TruncateTable()
-            {
                 _runAfterPendingMessages(() =>
                 {
-                    string tableName = Db.EntityMaintenance.GetTableName<SocketMessage>();
-                    Db.Ado.BeginTran();
-                    try
-                    {
-                        Db.Deleteable<SocketMessage>().ExecuteCommand();
-                        Db.Ado.ExecuteCommand(
-                            "DELETE FROM sqlite_sequence WHERE name = @tableName",
-                            new SugarParameter("@tableName", tableName));
-                        Db.Ado.CommitTran();
-                        log.InfoFormat("Truncate SQLite table {0}", tableName);
-                    }
-                    catch
-                    {
-                        Db.Ado.RollbackTran();
-                        throw;
-                    }
+                    base.DeleteAll();
+                    ViewResluts.Clear();
                 });
             }
+
+            public override void TruncateTable() => DeleteAll();
         }
     }
 }

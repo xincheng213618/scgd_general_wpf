@@ -83,9 +83,7 @@
     <value>開發中</value>
   </data>
 
-  <data name="TransmitChannel" xml:space="preserve">
-    <value>傳送通道</value>
-  </data>  <data name="Timeout" xml:space="preserve">
+    <data name="Timeout" xml:space="preserve">
     <value>超時</value>
   </data>
 
@@ -158,14 +156,8 @@
   </data>
 
 
-  <data name="RegistryCenter" xml:space="preserve">
-    <value>註冊中心</value>
-  </data>
   <data name="Refresh" xml:space="preserve">
     <value>重新整理</value>
-  </data>
-  <data name="ReceiveChannel" xml:space="preserve">
-    <value>接收通道</value>
   </data>
   <data name="QuickPreview" xml:space="preserve">
     <value>快速預覽</value>
@@ -326,9 +318,6 @@
   <data name="CreateTime" xml:space="preserve">
     <value>測量時間</value>
   </data>
-  <data name="CreateNewConfigurationFile" xml:space="preserve">
-    <value>新建設定檔</value>
-  </data>
   <data name="CreateDevice" xml:space="preserve">
     <value>建立裝置</value>
   </data>
@@ -336,12 +325,6 @@
     <value>建立</value>
   </data>
 
-  <data name="CopyConfigurationFile" xml:space="preserve">
-    <value>複製設定檔</value>
-  </data>
-  <data name="ConnectionName" xml:space="preserve">
-    <value>連接名</value>
-  </data>
   <data name="Code" xml:space="preserve">
     <value>代碼</value>
   </data>
@@ -359,9 +342,6 @@
   </data>
   <data name="BatchNumber" xml:space="preserve">
     <value>批次號</value>
-  </data>
-  <data name="BasicInformation" xml:space="preserve">
-    <value>基本訊息</value>
   </data>
 
   <data name="AutoExposure" xml:space="preserve">
@@ -503,26 +483,14 @@
   <data name="AcquirePosition" xml:space="preserve">
     <value>取得位置</value>
   </data>
-  <data name="ResourceInformation" xml:space="preserve">
-    <value>資源資訊</value>
-  </data>
   <data name="FrameDisplayName" xml:space="preserve">
     <value>介面展示名稱</value>
-  </data>
-  <data name="HeartbeatTime" xml:space="preserve">
-    <value>心跳時間</value>
   </data>
   <data name="DeviceAutoConnect" xml:space="preserve">
     <value>裝置自動連接</value>
   </data>
   <data name="ApplySettings" xml:space="preserve">
     <value>套用設定</value>
-  </data>
-  <data name="FileCache" xml:space="preserve">
-    <value>檔案快取:</value>
-  </data>
-  <data name="CVCIEFileSave" xml:space="preserve">
-    <value>CVCIE檔案儲存:</value>
   </data>
 
 
@@ -593,9 +561,6 @@
   
   <data name="PixelLedDetect" xml:space="preserve">
     <value>像素級燈珠檢測</value>
-  </data>
-  <data name="LightBandDetection" xml:space="preserve">
-    <value>燈帶檢測</value>
   </data>
 
 
@@ -721,15 +686,6 @@
   <data name="EnableSerialPort" xml:space="preserve">
     <value>啟用串口發送</value>
   </data>
-  <data name="RegistryCenterConfig" xml:space="preserve">
-    <value>註冊中心配置</value>
-  </data>
-  <data name="RCName" xml:space="preserve">
-    <value>註冊中心名稱</value>
-  </data>
-  <data name="RCConnecteCfg" xml:space="preserve">
-    <value>註冊中心連線配置</value>
-  </data>
   <data name="ServiceCode" xml:space="preserve">
     <value>服務代碼</value>
   </data>
@@ -813,9 +769,6 @@
   <data name="DeleteGroup" xml:space="preserve">
     <value>刪除群組</value>
   </data>
-  <data name="ExportCalibration" xml:space="preserve">
-    <value>匯出校正</value>
-  </data>
   <data name="CreateCalibration" xml:space="preserve">
     <value>建立校正</value>
   </data>
@@ -892,9 +845,6 @@
 
   
 
-  <data name="UploadLic" xml:space="preserve">
-    <value>上傳許可證</value>
-  </data>
   <data name="ApaptivezeroCaliSet" xml:space="preserve">
     <value>自適應校零設定</value>
   </data>
@@ -1062,17 +1012,8 @@
     <value>測量屬性</value>
   </data>
 
-  <data name="CurrentCurve" xml:space="preserve">
-    <value>電流曲線</value>
-  </data>
-  <data name="ElectricCurrent" xml:space="preserve">
-    <value>電流(mA)</value>
-  </data>
   <data name="Voltage" xml:space="preserve">
     <value>電壓(V)</value>
-  </data>
-  <data name="VoltageCurve" xml:space="preserve">
-    <value>電壓曲線</value>
   </data>
   <data name="RelativeSpectrumCurve" xml:space="preserve">
     <value>相對光譜曲線</value>
@@ -1389,12 +1330,6 @@
   <data name="TimeoutDuration" xml:space="preserve">
     <value>超時(ms)</value>
   </data>
-  <data name="ParamInput" xml:space="preserve">
-    <value>輸入參數</value>
-  </data>
-  <data name="CreationDate" xml:space="preserve">
-    <value>建立日期</value>
-  </data>
   <data name="ProcessHandlingConfig" xml:space="preserve">
     <value>後處理設定</value>
   </data>
@@ -1486,9 +1421,6 @@
     <value>步驟</value>
   </data>
 
-  <data name="SelectExportFileLocation" xml:space="preserve">
-    <value>選擇匯出檔案位置</value>
-  </data>
   <data name="DataBaseConfig" xml:space="preserve">
     <value>資料庫配置</value>
   </data>
@@ -1616,9 +1548,6 @@
   <data name="IsSyncFrequencyEnabled" xml:space="preserve">
     <value>啟用同步頻率</value>
   </data>
-  <data name="GetSpectrSerialNumber" xml:space="preserve">
-    <value>取得光譜序號</value>
-  </data>
   <data name="EditDisplayConfig" xml:space="preserve">
     <value>編輯顯示配置</value>
   </data>
@@ -1628,9 +1557,6 @@
   </data>
   <data name="PropertyEdit" xml:space="preserve">
     <value>屬性編輯</value>
-  </data>
-  <data name="TextEdit" xml:space="preserve">
-    <value>文字編輯</value>
   </data>
   <data name="PreprocessManager" xml:space="preserve">
     <value>預處理管理</value>
@@ -1646,9 +1572,6 @@
     <value>發光區定位</value>
   </data>
 
-  <data name="TemplateEdit" xml:space="preserve">
-    <value>範本編輯</value>
-  </data>
   
   <data name="ExportSucceeded" xml:space="preserve">
     <value>匯出成功</value>
@@ -1687,15 +1610,6 @@
     <value>圖像</value>
   </data>
 
-<data name="SubPixelLedCheck" xml:space="preserve">
-    <value>亞像素燈珠偵測</value>
-  </data>
-  <data name="PixelLedCheck" xml:space="preserve">
-    <value>像素級燈珠偵測</value>
-  </data>
-  <data name="CameraTemplate" xml:space="preserve">
-    <value>相機模板</value>
-  </data>
 
   <data name="POIFilter" xml:space="preserve">
     <value>POI過濾</value>
@@ -1719,23 +1633,11 @@
   <data name="FindLightArea" xml:space="preserve">
     <value>發光區偵測</value>
   </data>
-  <data name="LedStripCheckV2" xml:space="preserve">
-    <value>燈帶偵測V2</value>
-  </data>
-  <data name="LedStripCheck" xml:space="preserve">
-    <value>燈帶偵測</value>
-  </data>
   <data name="LedCheck" xml:space="preserve">
     <value>燈珠偵測</value>
   </data>
   <data name="BinocularFusion" xml:space="preserve">
     <value>雙眼融合</value>
-  </data>
-  <data name="CrossCalc" xml:space="preserve">
-    <value>十字計算</value>
-  </data>
-  <data name="AABuildPoints" xml:space="preserve">
-    <value>AA佈點</value>
   </data>
   <data name="NodeProperty" xml:space="preserve">
     <value>節點屬性</value>
@@ -1753,27 +1655,6 @@
     <value>{0}不能包含特殊字元</value>
   </data>
 
-  <data name="ServiceLogX64" xml:space="preserve">
-    <value>x64服務日誌</value>
-  </data>
-  <data name="ServiceLogCamera" xml:space="preserve">
-    <value>相機服務日誌</value>
-  </data>
-  <data name="ServiceLogAlgorithm" xml:space="preserve">
-    <value>演算法服務日誌</value>
-  </data>
-  <data name="ServiceLogCVOLED" xml:space="preserve">
-    <value>CVOLED服務日誌</value>
-  </data>
-  <data name="ServiceLogSpectrum" xml:space="preserve">
-    <value>光譜儀服務日誌</value>
-  </data>
-  <data name="ServiceLogDev" xml:space="preserve">
-    <value>dev服務日誌</value>
-  </data>
-  <data name="ServiceLogSMU" xml:space="preserve">
-    <value>SMU服務日誌</value>
-  </data>
   <data name="Terminal" xml:space="preserve">
     <value>終端</value>
   </data>
@@ -1836,7 +1717,7 @@
   <data name="DeviceStatusSPContinuousMode" xml:space="preserve">
     <value>光譜儀連續模式</value>
   </data>
-<data name="AddPhysicalCameraFailed" xml:space="preserve"><value>新增實體相機失敗</value></data><data name="AddPhysicalCameraSuccess" xml:space="preserve"><value>新增實體相機成功</value></data><data name="AutoCopyFolderConfirm" xml:space="preserve"><value>自動複製資料夾 {0} to {1}</value></data><data name="AutoExposureFailedCheckLog" xml:space="preserve"><value>自動曝光失敗，請檢查服務日誌{0}{1}</value></data><data name="AutoExposureTimeoutCheckLog" xml:space="preserve"><value>自動曝光超時，請檢查服務日誌</value></data><data name="ButtonCalibrationEdit" xml:space="preserve"><value>校正編輯</value></data><data name="ButtonDefault" xml:space="preserve"><value>預設</value></data><data name="ButtonOK" xml:space="preserve"><value>確定</value></data><data name="ButtonOpenConfigFile" xml:space="preserve"><value>開啟配置檔案</value></data><data name="ButtonSelectAll" xml:space="preserve"><value>全選</value></data><data name="CalcAutoExposure" xml:space="preserve"><value>計算自動曝光</value></data><data name="CalculateEQE" xml:space="preserve"><value>計算 EQE</value></data><data name="CalibrationFileNotConfiguredWithTemplate" xml:space="preserve"><value>使用{0}模板，需要確認校正檔案已經配置</value></data><data name="CalibrationServiceRequiredForTemplate" xml:space="preserve"><value>使用校正模板需要先配置校正服務</value></data><data name="CameraGetDataReturnedEmpty" xml:space="preserve"><value>相機 GetData 回傳空</value></data><data name="CameraReset" xml:space="preserve"><value>復位</value></data><data name="CameraSearchFailed" xml:space="preserve"><value>失敗: {0}</value></data><data name="CameraStatusNotCreated" xml:space="preserve"><value>未建立</value></data><data name="CameraStatusOnline" xml:space="preserve"><value>線上</value></data><data name="CaptureMode" xml:space="preserve"><value>取圖模式</value></data><data name="CaptureSettings" xml:space="preserve"><value>取圖設定</value></data><data name="ClearDatabaseItems" xml:space="preserve"><value>是否清除資料庫相關項</value></data><data name="CloseCameraTimeoutCheckLog" xml:space="preserve"><value>關閉相機超時，請查看日誌並排查問題</value></data><data name="CommandSentPleaseWait" xml:space="preserve"><value>指令已經發送請稍等</value></data><data name="CreateDirectoryFailed" xml:space="preserve"><value>建立目錄失敗：{0}</value></data><data name="CreateRestoreFileFailed" xml:space="preserve"><value>建立還原檔案失敗: {0}</value></data><data name="CurrentSource" xml:space="preserve"><value>電流源</value></data><data name="DeviceSerialNumber" xml:space="preserve"><value>裝置序號: {0}</value></data><data name="EditTemplate" xml:space="preserve"><value>編輯模板</value></data><data name="ExportCalibrationSuccess" xml:space="preserve"><value>{0}匯出成功</value></data><data name="ExportFailedMessage" xml:space="preserve"><value>匯出失敗: {0}</value></data><data name="ExtractingFilePleaseWait" xml:space="preserve"><value>正在解壓檔案： 請稍後...</value></data><data name="ExtractionFailedMessage" xml:space="preserve"><value>解壓失敗</value></data><data name="FileCopyServiceRestartHint" xml:space="preserve"><value>您需要手動重啟服務，並且將原來資料夾複製到新的資料夾裡，否則不起效果，如果未複製檔案，請重置校正檔案</value></data><data name="FileDeletionPermanent" xml:space="preserve"><value>檔案刪除後不可找回</value></data><data name="FileProcessFailed" xml:space="preserve"><value>處理檔案失敗: {0}</value></data><data name="FileServiceCleanupComplete" xml:space="preserve"><value>檔案服務清理完成</value></data><data name="FolderCopyFailed" xml:space="preserve"><value>資料夾複製失敗: {0}</value></data><data name="FolderCopySucceeded" xml:space="preserve"><value>資料夾複製成功！</value></data><data name="FoundCamerasCount" xml:space="preserve"><value>找到 {0} 台相機</value></data><data name="GetCameraIdFailed" xml:space="preserve"><value>取得相機 ID 失敗</value></data><data name="GetCameraIdMd5Failed" xml:space="preserve"><value>取得相機ID MD5失敗</value></data><data name="Flow_ConfirmDeleteFlow" xml:space="preserve"><value>Confirm delete flow "{0}"?</value></data><data name="Flow_ExportFlow" xml:space="preserve"><value>Export Flow</value></data><data name="Flow_GetCanvasDataFailed" xml:space="preserve"><value>Failed to get canvas data</value></data><data name="Flow_ImportFlow" xml:space="preserve"><value>Import Flow</value></data><data name="Flow_SaveFailed" xml:space="preserve"><value>Save failed: {0}</value></data><data name="Flow_MessageList_All" xml:space="preserve"><value>All</value></data><data name="Flow_MessageList_ClearRecords" xml:space="preserve"><value>Clear Records</value></data><data name="Flow_MessageList_DisplayCount" xml:space="preserve"><value>Showing:</value></data><data name="Flow_MessageList_LoadCount" xml:space="preserve"><value>Load Count:</value></data><data name="Flow_MessageList_TotalCount" xml:space="preserve"><value>Total:</value></data><data name="Flow_NodeAnalysis_CsvHeader" xml:space="preserve"><value>BatchId,NodeName,NodeType,StartTime,EndTime,Elapsed(ms),SN</value></data><data name="Flow_NodeAnalysis_MqttCsvHeader" xml:space="preserve"><value>BatchId,Node,NodeId,EventName,MsgId,SendTopic,SendTime,RecvTopic,RecvTime,Elapsed(ms),StatusCode,StatusMessage,State</value></data><data name="Flow_NodeAnalysis_MqttMessageTrace" xml:space="preserve"><value>MQTT Message Trace</value></data><data name="Flow_NodeAnalysis_NoDataToExport" xml:space="preserve"><value>No data to export, please load batch data first</value></data><data name="Flow_PreProcess_Title" xml:space="preserve"><value>Pre-Process Configuration</value></data><data name="Flow_NoEndNode" xml:space="preserve"><value>Flow end node not found</value></data><data name="Flow_NoStartNode" xml:space="preserve"><value>Flow start node not found</value></data><data name="Flow_NoTemplateAvailable" xml:space="preserve"><value>(No templates available)</value></data><data name="Blur" xml:space="preserve"><value>Blur</value></data><data name="Dilate" xml:space="preserve"><value>Dilate</value></data><data name="Erode" xml:space="preserve"><value>Erode</value></data><data name="OpenWithImageJ" xml:space="preserve"><value>Open with ImageJ</value></data>
+<data name="AddPhysicalCameraFailed" xml:space="preserve"><value>新增實體相機失敗</value></data><data name="AddPhysicalCameraSuccess" xml:space="preserve"><value>新增實體相機成功</value></data><data name="AutoCopyFolderConfirm" xml:space="preserve"><value>自動複製資料夾 {0} to {1}</value></data><data name="AutoExposureFailedCheckLog" xml:space="preserve"><value>自動曝光失敗，請檢查服務日誌{0}{1}</value></data><data name="AutoExposureTimeoutCheckLog" xml:space="preserve"><value>自動曝光超時，請檢查服務日誌</value></data><data name="ButtonCalibrationEdit" xml:space="preserve"><value>校正編輯</value></data><data name="ButtonDefault" xml:space="preserve"><value>預設</value></data><data name="ButtonOK" xml:space="preserve"><value>確定</value></data><data name="ButtonOpenConfigFile" xml:space="preserve"><value>開啟配置檔案</value></data><data name="ButtonSelectAll" xml:space="preserve"><value>全選</value></data><data name="CalcAutoExposure" xml:space="preserve"><value>計算自動曝光</value></data><data name="CalculateEQE" xml:space="preserve"><value>計算 EQE</value></data><data name="CalibrationFileNotConfiguredWithTemplate" xml:space="preserve"><value>使用{0}模板，需要確認校正檔案已經配置</value></data><data name="CalibrationServiceRequiredForTemplate" xml:space="preserve"><value>使用校正模板需要先配置校正服務</value></data><data name="CameraGetDataReturnedEmpty" xml:space="preserve"><value>相機 GetData 回傳空</value></data><data name="CameraReset" xml:space="preserve"><value>復位</value></data><data name="CameraSearchFailed" xml:space="preserve"><value>失敗: {0}</value></data><data name="CameraStatusNotCreated" xml:space="preserve"><value>未建立</value></data><data name="CameraStatusOnline" xml:space="preserve"><value>線上</value></data><data name="CaptureMode" xml:space="preserve"><value>取圖模式</value></data><data name="CaptureSettings" xml:space="preserve"><value>取圖設定</value></data><data name="ClearDatabaseItems" xml:space="preserve"><value>是否清除資料庫相關項</value></data><data name="CloseCameraTimeoutCheckLog" xml:space="preserve"><value>關閉相機超時，請查看日誌並排查問題</value></data><data name="CommandSentPleaseWait" xml:space="preserve"><value>指令已經發送請稍等</value></data><data name="CreateDirectoryFailed" xml:space="preserve"><value>建立目錄失敗：{0}</value></data><data name="CreateRestoreFileFailed" xml:space="preserve"><value>建立還原檔案失敗: {0}</value></data><data name="CurrentSource" xml:space="preserve"><value>電流源</value></data><data name="DeviceSerialNumber" xml:space="preserve"><value>裝置序號: {0}</value></data><data name="EditTemplate" xml:space="preserve"><value>編輯模板</value></data><data name="ExportCalibrationSuccess" xml:space="preserve"><value>{0}匯出成功</value></data><data name="ExportFailedMessage" xml:space="preserve"><value>匯出失敗: {0}</value></data><data name="ExtractingFilePleaseWait" xml:space="preserve"><value>正在解壓檔案： 請稍後...</value></data><data name="ExtractionFailedMessage" xml:space="preserve"><value>解壓失敗</value></data><data name="FileCopyServiceRestartHint" xml:space="preserve"><value>您需要手動重啟服務，並且將原來資料夾複製到新的資料夾裡，否則不起效果，如果未複製檔案，請重置校正檔案</value></data><data name="FileDeletionPermanent" xml:space="preserve"><value>檔案刪除後不可找回</value></data><data name="FileProcessFailed" xml:space="preserve"><value>處理檔案失敗: {0}</value></data><data name="FileServiceCleanupComplete" xml:space="preserve"><value>檔案服務清理完成</value></data><data name="FolderCopyFailed" xml:space="preserve"><value>資料夾複製失敗: {0}</value></data><data name="FolderCopySucceeded" xml:space="preserve"><value>資料夾複製成功！</value></data><data name="FoundCamerasCount" xml:space="preserve"><value>找到 {0} 台相機</value></data><data name="GetCameraIdFailed" xml:space="preserve"><value>取得相機 ID 失敗</value></data><data name="GetCameraIdMd5Failed" xml:space="preserve"><value>取得相機ID MD5失敗</value></data><data name="Flow_ConfirmDeleteFlow" xml:space="preserve"><value>Confirm delete flow "{0}"?</value></data><data name="Flow_ExportFlow" xml:space="preserve"><value>Export Flow</value></data><data name="Flow_GetCanvasDataFailed" xml:space="preserve"><value>Failed to get canvas data</value></data><data name="Flow_ImportFlow" xml:space="preserve"><value>Import Flow</value></data><data name="Flow_SaveFailed" xml:space="preserve"><value>Save failed: {0}</value></data><data name="Flow_MessageList_All" xml:space="preserve"><value>All</value></data><data name="Flow_MessageList_ClearRecords" xml:space="preserve"><value>Clear Records</value></data><data name="Flow_MessageList_DisplayCount" xml:space="preserve"><value>Showing:</value></data><data name="Flow_MessageList_LoadCount" xml:space="preserve"><value>Load Count:</value></data><data name="Flow_MessageList_TotalCount" xml:space="preserve"><value>Total:</value></data><data name="Flow_NodeAnalysis_CsvHeader" xml:space="preserve"><value>BatchId,NodeName,NodeType,StartTime,EndTime,Elapsed(ms),SN</value></data><data name="Flow_NodeAnalysis_MqttCsvHeader" xml:space="preserve"><value>BatchId,Node,NodeId,EventName,MsgId,SendTopic,SendTime,RecvTopic,RecvTime,Elapsed(ms),StatusCode,StatusMessage,State</value></data><data name="Flow_NodeAnalysis_MqttMessageTrace" xml:space="preserve"><value>MQTT Message Trace</value></data><data name="Flow_NodeAnalysis_NoDataToExport" xml:space="preserve"><value>No data to export, please load batch data first</value></data><data name="Flow_PreProcess_Title" xml:space="preserve"><value>Pre-Process Configuration</value></data><data name="Flow_NoEndNode" xml:space="preserve"><value>Flow end node not found</value></data><data name="Flow_NoStartNode" xml:space="preserve"><value>Flow start node not found</value></data><data name="Flow_NoTemplateAvailable" xml:space="preserve"><value>(No templates available)</value></data><data name="Blur" xml:space="preserve"><value>Blur</value></data><data name="Dilate" xml:space="preserve"><value>Dilate</value></data><data name="Erode" xml:space="preserve"><value>Erode</value></data>
   <data name="Engine_Msg_ConfigFileFormatError" xml:space="preserve">
     <value>Config file format error: {0}</value>
   </data>
@@ -1983,7 +1864,7 @@
     <value>Camera Device Name</value>
   </data>
   <data name="Engine_PG_CameraDeviceNameDesc" xml:space="preserve">
-    <value>Enter the camera device name to use</value>
+    <value>選擇相機，或輸入相機的正確裝置 Code。</value>
   </data>
 
   <data name="Engine_PG_DeviceIndex" xml:space="preserve">
@@ -2005,7 +1886,7 @@
     <value>光譜儀裝置名稱</value>
   </data>
   <data name="Engine_PG_SpectrometerDeviceNameDesc" xml:space="preserve">
-    <value>選擇執行單次測試的光譜儀裝置。</value>
+    <value>選擇光譜儀，或輸入光譜儀的正確裝置 Code。</value>
   </data>
   <data name="Engine_PG_SpectrometerSettings" xml:space="preserve">
     <value>光譜儀設定</value>
@@ -2127,9 +2008,6 @@
   </data>
 
 
-  <data name="ShowOnCieDiagram" xml:space="preserve">
-    <value>Show on CIE Diagram</value>
-  </data>
   <data name="MysqlTool" xml:space="preserve">
     <value>MySQL Tool</value>
   </data>
@@ -2290,9 +2168,6 @@
   </data>
   <data name="SaveFocusPoints" xml:space="preserve">
     <value>Save Focus Points</value>
-  </data>
-  <data name="SelectFlowTemplateToImport" xml:space="preserve">
-    <value>Select flow template to import:</value>
   </data>
   <data name="SelectProcessToViewConfig" xml:space="preserve">
     <value>Select a process item to view config</value>
@@ -2487,9 +2362,6 @@
     <value>解析流程範例時出錯: {0}</value>
   </data>
 
-  <data name="Flow_PreProcess_AppliedTemplates" xml:space="preserve">
-    <value>應用模板</value>
-  </data>
 
   <data name="Flow_PreProcess_EnabledStatus" xml:space="preserve">
     <value>啟用</value>
@@ -2542,6 +2414,11 @@
   <data name="Cache" xml:space="preserve"><value>快取</value></data>
   <data name="Camera_BrightnessThresholdRatio" xml:space="preserve"><value>亮度閾值比例</value></data>
   <data name="Camera_CaptureFailed" xml:space="preserve"><value>取圖失敗</value></data>
+  <data name="Camera_CaptureTimedOutUnconfirmed" xml:space="preserve"><value>取圖超時，尚未確認本次取圖結果。</value></data>
+  <data name="Scheduler_DeviceReferenceAmbiguous" xml:space="preserve"><value>裝置識別碼對應多個裝置，請在排程工作設定中重新選擇裝置。</value></data>
+  <data name="Scheduler_DeviceReferenceUnavailable" xml:space="preserve"><value>找不到所選裝置，請在排程工作設定中重新選擇裝置。</value></data>
+  <data name="Scheduler_DeviceCaptureInProgress" xml:space="preserve"><value>此裝置的上一筆排程擷取命令尚未結束，已跳過本次觸發。</value></data>
+  <data name="Scheduler_DeviceReplyWaitTimedOut" xml:space="preserve"><value>排程工作等候裝置回覆逾時，本次擷取結果尚未確認。</value></data>
   <data name="Camera_ConfirmRestartService" xml:space="preserve"><value>是否重新啟動服務？</value></data>
   <data name="Camera_CrossGuide" xml:space="preserve"><value>十字導引</value></data>
   <data name="Camera_CrossGuideRegion" xml:space="preserve"><value>十字導引區域</value></data>
@@ -2550,8 +2427,6 @@
   <data name="Camera_MinCoverageRatio" xml:space="preserve"><value>最小覆蓋比例</value></data>
   <data name="Camera_RefreshIntervalMs" xml:space="preserve"><value>更新間隔(ms)</value></data>
   <data name="Camera_RoiRegion" xml:space="preserve"><value>ROI 區域</value></data>
-  <data name="Camera_StandardCenterX" xml:space="preserve"><value>標準中心 X</value></data>
-  <data name="Camera_StandardCenterY" xml:space="preserve"><value>標準中心 Y</value></data>
   <data name="Camera_TolerancePx" xml:space="preserve"><value>合格閾值(px)</value></data>
   <data name="Camera_UnknownError" xml:space="preserve"><value>未知錯誤</value></data>
 
@@ -2576,8 +2451,6 @@
   <data name="Flow_PreProcess_ActionName" xml:space="preserve"><value>動作名稱</value></data>
   <data name="Flow_PreProcess_Actions" xml:space="preserve"><value>前處理動作</value></data>
   <data name="Flow_PreProcess_ActionSettings" xml:space="preserve"><value>動作設定</value></data>
-  <data name="Flow_PreProcess_AllTemplatesHint" xml:space="preserve"><value>留空表示套用到所有範本；多個範本可用逗號或分號分隔。</value></data>
-  <data name="Flow_PreProcess_AppliedTemplatesFormat" xml:space="preserve"><value>套用範本：{0}</value></data>
   <data name="Flow_PreProcess_AutoSaved" xml:space="preserve"><value>已自動儲存 {0}</value></data>
   <data name="Flow_PreProcess_CategoryFormat" xml:space="preserve"><value>類別：{0}</value></data>
   <data name="Flow_PreProcess_ConfigLoaded" xml:space="preserve"><value>已載入設定 {0}</value></data>
@@ -2693,7 +2566,6 @@
   <data name="SpectrumCalibrationGroups_SaveHint" xml:space="preserve"><value>儲存會寫入目前群組的標定檔案；若標定檔案發生變更，將重新啟動光譜服務。</value></data>
   <data name="SpectrumCalibrationGroups_Title" xml:space="preserve"><value>標定檔案群組</value></data>
   <data name="SpectrumCalibrationGroups_WavelengthCalibration" xml:space="preserve"><value>波長標定</value></data>
-  <data name="TemplateEditor_ConfirmDelete" xml:space="preserve"><value>是否刪除 {0} 範本？刪除後無法復原！</value></data>
   <data name="TemplateEditor_ConfirmSetJsonAsDefault" xml:space="preserve"><value>將使用目前範本的 JSON 作為新建或重設範本時的預設參數。是否繼續？</value></data>
   <data name="TemplateEditor_DefaultParametersNotSupported" xml:space="preserve"><value>目前範本不支援設定預設參數</value></data>
   <data name="TemplateEditor_NoSearchResults" xml:space="preserve"><value>找不到與「{0}」相關的範本</value></data>
@@ -2741,8 +2613,7 @@
   <data name="VideoCrossGuide_CrossNotFoundLowBrightness" xml:space="preserve"><value>亮度過低，找不到十字</value></data>
   <data name="VideoCrossGuide_BrightCrossLinesNotFound" xml:space="preserve"><value>找不到足夠明亮的十字線</value></data>
   <data name="VideoCrossGuide_InsufficientCoverage" xml:space="preserve"><value>亮線覆蓋不足，列：{0:P0}，欄：{1:P0}</value></data>
-  <data name="Flow_CustomNodes" xml:space="preserve"><value>自訂節點</value></data><data name="Flow_LocalDevices" xml:space="preserve"><value>本機裝置</value></data><data name="Flow_LocalAlgorithms" xml:space="preserve"><value>本機演算法</value></data>
-  <data name="Flow_OtherNodes" xml:space="preserve"><value>其他</value></data>
+  <data name="Flow_LocalDevices" xml:space="preserve"><value>本機裝置</value></data><data name="Flow_LocalAlgorithms" xml:space="preserve"><value>本機演算法</value></data>
   <data name="LocalImage_FilePathDesc" xml:space="preserve"><value>本機圖片檔案路徑</value></data>
   <data name="LocalImage_PathEmpty" xml:space="preserve"><value>本機圖片路徑為空</value></data>
   <data name="LocalImage_FileNotFound" xml:space="preserve"><value>找不到本機圖片：{0}</value></data>
@@ -2844,7 +2715,8 @@
   <data name="按比例计算" xml:space="preserve"><value>按比例計算</value></data>
   <data name="当前布点区域" xml:space="preserve"><value>目前布點區域</value></data>
   <data name="整图或画布" xml:space="preserve"><value>整張影像或畫布</value></data>
-  <data name="半径（按参考宽度）" xml:space="preserve"><value>半徑（按參考寬度）</value></data>
+  <data name="按参考宽度" xml:space="preserve"><value>按參考寬度</value></data>
+  <data name="按参考高度" xml:space="preserve"><value>按參考高度</value></data>
   <data name="如需按原始发光区计算，请在设置边距前换算尺寸。" xml:space="preserve"><value>如需按原始發光區計算，請在設定邊距前換算尺寸。</value></data>
   <data name="请输入大于 0 且不超过 100 的百分比，并确认参考区域有效、换算后至少为 1 像素。" xml:space="preserve"><value>請輸入大於 0 且不超過 100 的百分比，並確認參考區域有效、換算後至少為 1 像素。</value></data>
   <data name="SpectrumSettingsTitle" xml:space="preserve"><value>光譜儀設定</value></data>
@@ -2900,8 +2772,6 @@
   <data name="SpectrumSp100Start" xml:space="preserve"><value>起始像素</value></data>
   <data name="SpectrumSp100End" xml:space="preserve"><value>結束像素</value></data>
   <data name="SpectrumSp100Threshold" xml:space="preserve"><value>平均值閾值</value></data>
-  <data name="SpectrumOpenShutter" xml:space="preserve"><value>開啟快門指令</value></data>
-  <data name="SpectrumCloseShutter" xml:space="preserve"><value>關閉快門指令</value></data>
   <data name="SpectrumFluxMode" xml:space="preserve"><value>光通量模式</value></data>
   <data name="SpectrumFluxDivisor" xml:space="preserve"><value>光通量換算係數</value></data>
   <data name="SpectrumAutoDark" xml:space="preserve"><value>自動校零</value></data>
@@ -2909,7 +2779,7 @@
   <data name="SpectrumIntegrationTime" xml:space="preserve"><value>積分時間 (ms)</value></data>
   <data name="SpectrumNdPosition" xml:space="preserve"><value>ND 孔位</value></data>
   <data name="SpectrumVoltage" xml:space="preserve"><value>電壓 (V)</value></data>
-  <data name="SpectrumCurrent" xml:space="preserve"><value>電流 (A)</value></data>
+  <data name="SpectrumCurrent" xml:space="preserve"><value>手填電流（本機 A / 服務 mA）</value></data>
   <data name="SpectrumCalibrationFileSettingsHint" xml:space="preserve"><value>管理波長與幅值檔案；也可從標定分組視窗編輯。</value></data>
   <data name="ShutterConfig" xml:space="preserve"><value>快門設定</value></data>
   <data name="SelfAdaptionInitDark" xml:space="preserve"><value>自適應校零設定</value></data>
@@ -3058,10 +2928,7 @@
   <data name="请先选择关注点模板" xml:space="preserve"><value>請先選擇關注點範本</value></data>
   <data name="Db" xml:space="preserve"><value>資料庫</value></data>
   <data name="启用 CVRAW 文件缓存" xml:space="preserve"><value>啟用 CVRAW 檔案快取</value></data>
-  <data name="存储类型" xml:space="preserve"><value>儲存類型</value></data>
   <data name="亚像素" xml:space="preserve"><value>次像素</value></data>
-  <data name="计算色温波长" xml:space="preserve"><value>計算色溫與波長</value></data>
-  <data name="POI文件" xml:space="preserve"><value>POI檔案</value></data>
   <data name="File" xml:space="preserve"><value>檔案</value></data>
   <data name="FilterWheelSetPosition" xml:space="preserve"><value>設定位置</value></data>
   <data name="FilterWheelReadPosition" xml:space="preserve"><value>讀取位置</value></data>
@@ -3132,9 +2999,6 @@
   <data name="TemplateBrowserExportHint" xml:space="preserve">
     <value>導出選中或勾選的模板</value>
   </data>
-  <data name="TemplateBrowserTemplates" xml:space="preserve">
-    <value>模板</value>
-  </data>
   <data name="TemplateBrowserSearchHint" xml:space="preserve">
     <value>按名稱搜索（Ctrl+F）</value>
   </data>
@@ -3171,14 +3035,8 @@
   <data name="TemplateBrowserFilteredCount" xml:space="preserve">
     <value>{0} / {1} 個{2}模板</value>
   </data>
-  <data name="TemplateBrowserCheckedCount" xml:space="preserve">
-    <value>已勾選 {0} 項</value>
-  </data>
   <data name="TemplateBrowserNoSelection" xml:space="preserve">
     <value>未選擇模板</value>
-  </data>
-  <data name="TemplateBrowserOneSelected" xml:space="preserve">
-    <value>已選擇 1 項</value>
   </data>
   <data name="TemplateBrowserDeleteCount" xml:space="preserve">
     <value>刪除 ({0})</value>
@@ -3263,9 +3121,6 @@
   <data name="ApertureF" xml:space="preserve">
     <value>光圈F</value>
   </data>
-  <data name="AppSecretTooltip" xml:space="preserve">
-    <value>App Secret</value>
-  </data>
   <data name="BaudRate" xml:space="preserve">
     <value>波特率</value>
   </data>
@@ -3329,9 +3184,6 @@
   <data name="ClearPOI" xml:space="preserve">
     <value>清空POI</value>
   </data>
-  <data name="CloseLocalVideo" xml:space="preserve">
-    <value>關閉本地視頻</value>
-  </data>
   <data name="CloseSourceMeter" xml:space="preserve">
     <value>關閉源表</value>
   </data>
@@ -3349,9 +3201,6 @@
   </data>
   <data name="CreateGroupFailed" xml:space="preserve">
     <value>創建失敗</value>
-  </data>
-  <data name="DebugMode" xml:space="preserve">
-    <value>調試模式</value>
   </data>
   <data name="DefaultCreateTemplateName" xml:space="preserve">
     <value>default</value>
@@ -3454,9 +3303,6 @@
   </data>
   <data name="InvalidSerialPortTitle" xml:space="preserve">
     <value>無效串口</value>
-  </data>
-  <data name="JsonConfig" xml:space="preserve">
-    <value>Json配置</value>
   </data>
   <data name="LabelBindNDDevice" xml:space="preserve">
     <value>綁定 ND 設備</value>
@@ -3584,9 +3430,6 @@
   <data name="LocalCamera" xml:space="preserve">
     <value>本地相機</value>
   </data>
-  <data name="LocalVideo" xml:space="preserve">
-    <value>本地視頻</value>
-  </data>
   <data name="LuminousEfficacy" xml:space="preserve">
     <value>光效(lm/W)</value>
   </data>
@@ -3607,12 +3450,6 @@
   </data>
   <data name="Measure" xml:space="preserve">
     <value>測量</value>
-  </data>
-  <data name="MeasuredCurrentA" xml:space="preserve">
-    <value>測量電流(A)</value>
-  </data>
-  <data name="MeasuredVoltageV" xml:space="preserve">
-    <value>測量電壓(V)</value>
   </data>
   <data name="MenuFlow" xml:space="preserve">
     <value>流程(_L)</value>
@@ -3667,9 +3504,6 @@
   </data>
   <data name="ParsingCalibrationFilePleaseWait" xml:space="preserve">
     <value>正在解析校正文件： 請稍後...</value>
-  </data>
-  <data name="ParsingManagement" xml:space="preserve">
-    <value>解析管理</value>
   </data>
   <data name="PgTemplateConfig" xml:space="preserve">
     <value>PG模板配置</value>
@@ -3833,9 +3667,6 @@
   <data name="TemplateMatching" xml:space="preserve">
     <value>模板匹配</value>
   </data>
-  <data name="ThirdPartyAlgorithm" xml:space="preserve">
-    <value>第三方算法</value>
-  </data>
   <data name="Time" xml:space="preserve">
     <value>時間</value>
   </data>
@@ -3916,9 +3747,6 @@
   </data>
   <data name="Flow_PreProcess_DisabledStatus" xml:space="preserve">
     <value>停用</value>
-  </data>
-  <data name="Flow_PreProcess_AllTemplates" xml:space="preserve">
-    <value>全部模板</value>
   </data>
   <data name="Flow_MeasureBatch_DescriptionLabel" xml:space="preserve">
     <value>描述:</value>
@@ -4282,9 +4110,6 @@
   </data>
   <data name="使用行列、边距、点类型和点尺寸生成关注点" xml:space="preserve">
     <value>使用行列、邊距、點類型和點尺寸生成關注點</value>
-  </data>
-  <data name="使用进程内优化校正；关闭后通过 MQTT 校正服务执行。" xml:space="preserve">
-    <value>使用進程內優化校正；關閉後通過 MQTT 校正服務執行。</value>
   </data>
   <data name="保存" xml:space="preserve">
     <value>保存</value>
@@ -4792,9 +4617,6 @@
   </data>
   <data name="布点类型" xml:space="preserve">
     <value>布點類型</value>
-  </data>
-  <data name="常规布局" xml:space="preserve">
-    <value>常規佈局</value>
   </data>
   <data name="幅值标定文件 (*.dat)|*.dat" xml:space="preserve">
     <value>幅值標定文件 (*.dat)|*.dat</value>
@@ -5426,9 +5248,6 @@
   </data>
   <data name="消息追踪" xml:space="preserve">
     <value>消息追蹤</value>
-  </data>
-  <data name="添加到映射后每个关注点名称之前的前缀" xml:space="preserve">
-    <value>添加到映射後每個關注點名稱之前的前綴</value>
   </data>
   <data name="清理" xml:space="preserve">
     <value>清理</value>
@@ -6088,9 +5907,6 @@
   <data name="图形回显内容" xml:space="preserve">
     <value>圖形回顯內容</value>
   </data>
-  <data name="在 json.cn 中打开…" xml:space="preserve">
-    <value>在 json.cn 中打開…</value>
-  </data>
   <data name="在文件夹中显示" xml:space="preserve">
     <value>在文件夾中顯示</value>
   </data>
@@ -6195,9 +6011,6 @@
   </data>
   <data name="曝光" xml:space="preserve">
     <value>曝光</value>
-  </data>
-  <data name="更多 ▾" xml:space="preserve">
-    <value>更多 ▾</value>
   </data>
   <data name="更多采集设置" xml:space="preserve">
     <value>更多采集設置</value>
@@ -6526,6 +6339,9 @@
   </data>
   <data name="保存 POI 模板" xml:space="preserve">
     <value>保存 POI 模板</value>
+  </data>
+  <data name="保存到模板" xml:space="preserve">
+    <value>儲存至範本</value>
   </data>
   <data name="保存修正后的校正文件（保持原格式）" xml:space="preserve">
     <value>保存修正後的校正文件（保持原格式）</value>
@@ -6992,9 +6808,6 @@
   <data name="结果 ID：{0}" xml:space="preserve">
     <value>結果 ID：{0}</value>
   </data>
-  <data name="灯条Poi中心计算" xml:space="preserve">
-    <value>燈條 POI 中心計算</value>
-  </data>
   <data name="AA布点" xml:space="preserve">
     <value>AA 布點</value>
   </data>
@@ -7028,9 +6841,6 @@
   <data name="定位算法" xml:space="preserve">
     <value>定位演算法</value>
   </data>
-  <data name="基础算法" xml:space="preserve">
-    <value>基礎演算法</value>
-  </data>
   <data name="数据提取算法" xml:space="preserve">
     <value>資料擷取演算法</value>
   </data>
@@ -7049,9 +6859,6 @@
   <data name="黑画面检测模板" xml:space="preserve">
     <value>黑畫面檢測範本</value>
   </data>
-  <data name="畸变模板" xml:space="preserve">
-    <value>畸變範本</value>
-  </data>
   <data name="键盘检测模板" xml:space="preserve">
     <value>鍵盤檢測範本</value>
   </data>
@@ -7064,20 +6871,11 @@
   <data name="双目融合模板" xml:space="preserve">
     <value>雙目融合範本</value>
   </data>
-  <data name="AA布点模板" xml:space="preserve">
-    <value>AA 布點範本</value>
-  </data>
-  <data name="AAFindPoints模板" xml:space="preserve">
-    <value>AA 點位定位範本</value>
-  </data>
   <data name="AOI模板" xml:space="preserve">
     <value>AOI 範本</value>
   </data>
   <data name="BlackMura模板" xml:space="preserve">
     <value>Black Mura 範本</value>
-  </data>
-  <data name="BuildPoi模板" xml:space="preserve">
-    <value>關注點布點範本</value>
   </data>
   <data name="FindCross模板" xml:space="preserve">
     <value>十字定位範本</value>
@@ -7097,9 +6895,6 @@
   <data name="MTF2.0模板" xml:space="preserve">
     <value>MTF 2.0 範本</value>
   </data>
-  <data name="POI分析模板" xml:space="preserve">
-    <value>POI 分析範本</value>
-  </data>
   <data name="SFR2.0模板" xml:space="preserve">
     <value>SFR 2.0 範本</value>
   </data>
@@ -7115,17 +6910,11 @@
   <data name="请先选择黑画面检测模板" xml:space="preserve">
     <value>請先選擇黑畫面檢測範本</value>
   </data>
-  <data name="请先选择畸变模板" xml:space="preserve">
-    <value>請先選擇畸變範本</value>
-  </data>
   <data name="请先选择键盘检测模板" xml:space="preserve">
     <value>請先選擇鍵盤檢測範本</value>
   </data>
   <data name="请先选择亮点检测模板" xml:space="preserve">
     <value>請先選擇亮點檢測範本</value>
-  </data>
-  <data name="请先选择模板匹配参数" xml:space="preserve">
-    <value>請先選擇範本比對參數</value>
   </data>
   <data name="请先选择屏幕缺陷检测模板" xml:space="preserve">
     <value>請先選擇螢幕缺陷檢測範本</value>
@@ -7136,20 +6925,11 @@
   <data name="请先选择双目融合模板" xml:space="preserve">
     <value>請先選擇雙目融合範本</value>
   </data>
-  <data name="请先选择AA布点模板" xml:space="preserve">
-    <value>請先選擇 AA 布點範本</value>
-  </data>
-  <data name="请先选择AAFindPoints模板" xml:space="preserve">
-    <value>請先選擇 AA 點位定位範本</value>
-  </data>
   <data name="请先选择AOI模板" xml:space="preserve">
     <value>請先選擇 AOI 範本</value>
   </data>
   <data name="请先选择BlackMura模板" xml:space="preserve">
     <value>請先選擇 Black Mura 範本</value>
-  </data>
-  <data name="请先选择BuildPoi模板" xml:space="preserve">
-    <value>請先選擇關注點布點範本</value>
   </data>
   <data name="请先选择FindCross模板" xml:space="preserve">
     <value>請先選擇十字定位範本</value>
@@ -7165,9 +6945,6 @@
   </data>
   <data name="请先选择MTF2.0模板" xml:space="preserve">
     <value>請先選擇 MTF 2.0 範本</value>
-  </data>
-  <data name="请先选择POI分析模板" xml:space="preserve">
-    <value>請先選擇 POI 分析範本</value>
   </data>
   <data name="请先选择SFR2.0模板" xml:space="preserve">
     <value>請先選擇 SFR 2.0 範本</value>
@@ -7284,9 +7061,6 @@
   <data name="Sensor_NoneHint" xml:space="preserve"><value>None 用於呼叫範本，不是指令編碼。</value></data>
   <data name="Sensor_DeleteCommand" xml:space="preserve"><value>刪除指令</value></data>
   <data name="Sensor_EmptyCommands" xml:space="preserve"><value>還沒有指令，按「新增指令」開始編輯。</value></data>
-  <data name="Sensor_DeleteType" xml:space="preserve"><value>刪除類型…</value></data>
-  <data name="Sensor_DeleteTypePrompt" xml:space="preserve"><value>刪除感測器類型「{0}」？&#10;&#10;將一併刪除該類型下的 {1} 個範本及其指令：&#10;{2}&#10;&#10;其他類型不受影響。引用這些範本的流程需另行調整，此操作無法復原。</value></data>
-  <data name="Sensor_DeleteTypeFailed" xml:space="preserve"><value>刪除類型失敗：{0}</value></data>
   <data name="Sensor_TypeNotFound" xml:space="preserve"><value>感測器類型已不存在，請重新開啟範本選單。</value></data>
   <data name="Sensor_TypeInUse" xml:space="preserve"><value>以下裝置仍使用此類型，請先更換裝置的感測器類型：{0}</value></data>
   <data name="Sensor_TypeSharedCommands" xml:space="preserve"><value>其他類型的範本仍引用此類型的指令定義，請先解除引用。</value></data>
@@ -7369,6 +7143,8 @@
   <data name="CameraPanel_Disconnected" xml:space="preserve"><value>未連接</value></data>
   <data name="CameraPanel_Ready" xml:space="preserve"><value>已連接 · 待機</value></data>
   <data name="CameraPanel_Working" xml:space="preserve"><value>操作中…</value></data>
+  <data name="CameraPanel_WaitingToClose" xml:space="preserve"><value>等待取圖結束後關閉…</value></data>
+  <data name="CameraPanel_PreviewWhileBusy" xml:space="preserve"><value>相機正在操作，請結束目前操作後再切換視訊模式。</value></data>
   <data name="CameraPanel_Previewing" xml:space="preserve"><value>預覽中</value></data>
   <data name="CameraFocusChart_Show" xml:space="preserve"><value>曲線</value></data>
   <data name="CameraFocusChart_Hide" xml:space="preserve"><value>隱藏曲線</value></data>
@@ -7389,22 +7165,26 @@
   <data name="CameraFocusChart_BestWithVid" xml:space="preserve"><value>最佳位置 {0}　評價值 {1:G6}　VID {2:G8}</value></data>
   <data name="CameraFocusChart_VideoReadout" xml:space="preserve"><value>FPS {0:F1} · 已顯示 {1:N0} 影格 · 清晰度 {2}</value></data>
   <data name="CameraFocusChart_CurrentVid" xml:space="preserve"><value>目前 VID {0:G8}</value></data>
+  <data name="CameraFocusChart_CurrentPositionAndVid" xml:space="preserve"><value>電機位置 {0}　VID {1:G8}</value></data>
   <data name="CameraFocusChart_Seconds" xml:space="preserve"><value>時間（秒）</value></data>
   <data name="CameraFocusChart_Position" xml:space="preserve"><value>馬達位置</value></data>
   <data name="CameraFocusChart_Score" xml:space="preserve"><value>評價值</value></data>
-  <data name="CameraFocusChart_AutoSave" xml:space="preserve"><value>自動儲存對焦曲線</value></data>
-  <data name="CameraFocusChart_AutoSaveHint" xml:space="preserve"><value>從相機面板執行本機自動對焦成功後，將對焦曲線儲存為 PNG。</value></data>
+  <data name="CameraFocus_UseMotorReadbackForVid" xml:space="preserve"><value>VID 使用馬達到位讀數</value></data>
+  <data name="CameraFocus_UseMotorReadbackForVidHint" xml:space="preserve"><value>預設開啟。開啟時，本機對焦結束後讀取馬達實際座標來換算 VID。關閉時，使用對焦選中的目標座標。下次對焦生效。</value></data>
+  <data name="CameraFocusChart_AutoSave" xml:space="preserve"><value>自動儲存對焦結果</value></data>
+  <data name="CameraFocusChart_AutoSaveHint" xml:space="preserve"><value>本機自動對焦或微對焦成功後，儲存最佳位置的標記圖、對焦曲線和取樣 CSV。</value></data>
   <data name="MotorConfig_FocusEarlyStopRatio" xml:space="preserve"><value>粗掃提前停止比例</value></data>
   <data name="MotorConfig_FocusEarlyStopRatioHint" xml:space="preserve"><value>本機全範圍粗掃越過峰值後，若連續若干點低於「峰值 × 此比例」且峰值前也出現過低點，即停止粗掃。0 表示關閉；建議 0.3–0.5。存在多個清晰峰時請保持關閉。</value></data>
   <data name="MotorConfig_FocusEarlyStopCount" xml:space="preserve"><value>粗掃提前停止連續低點數</value></data>
   <data name="MotorConfig_FocusEarlyStopCountHint" xml:space="preserve"><value>越過峰值後需要連續低於比例的取樣點數，至少為 1，預設 2。</value></data>
-  <data name="CameraFocusChart_SaveDirectory" xml:space="preserve"><value>對焦曲線儲存資料夾</value></data>
-  <data name="CameraFocusChart_SaveDirectoryHint" xml:space="preserve"><value>留空時使用「文件\ColorVision\AutoFocus」。曲線依裝置與日期歸檔。</value></data>
+  <data name="CameraFocusChart_SaveDirectory" xml:space="preserve"><value>對焦結果儲存資料夾</value></data>
+  <data name="CameraFocusChart_SaveDirectoryHint" xml:space="preserve"><value>留空時使用「文件\ColorVision\AutoFocus」。結果依裝置、日期與對焦時間歸檔。</value></data>
   <data name="CameraPanel_StartPreview" xml:space="preserve"><value>視訊模式</value></data>
   <data name="CameraPanel_StopPreview" xml:space="preserve"><value>關閉視訊</value></data>
   <data name="CameraPanel_StopPreviewHint" xml:space="preserve"><value>停止連續畫面；本地相機保留連接</value></data>
   <data name="CameraPanel_PreviewRecovering" xml:space="preserve"><value>未收到新影格，正在恢復視訊…</value></data>
   <data name="CameraPanel_PreviewRecoveryFailed" xml:space="preserve"><value>視訊自動恢復失敗，預覽已停止。可重新開啟視訊。</value></data>
+  <data name="Camera_ResultImageOpenFailed" xml:space="preserve"><value>無法開啟擷取結果（ID {0}）。請檢查結果檔案和執行日誌。</value></data>
   <data name="CameraPanel_ServicePreviewHint" xml:space="preserve"><value>請先斷開服務相機，再開始本地預覽</value></data>
   <data name="CameraPanel_Averages" xml:space="preserve"><value>平均</value></data>
   <data name="CameraPanel_MotorJogLeft" xml:space="preserve"><value>向左寸動</value></data>
@@ -7416,10 +7196,16 @@
   <data name="CameraPanel_MotorHome" xml:space="preserve"><value>回原點</value></data>
   <data name="CameraPanel_MotorReadPosition" xml:space="preserve"><value>讀取</value></data>
   <data name="CameraPanel_MotorPosition" xml:space="preserve"><value>位置</value></data>
+  <data name="CameraPanel_VidTarget" xml:space="preserve"><value>目標 VID (mm)</value></data>
+  <data name="CameraPanel_VidMove" xml:space="preserve"><value>按 VID 移動</value></data>
+  <data name="CameraPanel_VidMoveHint" xml:space="preserve"><value>輸入帶正負號的 VID 毫米值，在設定的馬達移動區間內依映射換算並移動馬達。</value></data>
+  <data name="CameraPanel_VidMoveInvalid" xml:space="preserve"><value>請輸入有效的 VID 毫米值。</value></data>
+  <data name="CameraPanel_VidMoveDisabled" xml:space="preserve"><value>請先啟用 VID 並設定映射檔案。</value></data>
+  <data name="CameraPanel_VidMoveUnreachable" xml:space="preserve"><value>目標 VID 在設定的馬達移動區間 {0}–{1} 內沒有可達位置。</value></data>
+  <data name="CameraPanel_MotorMoveCaptureFailed" xml:space="preserve"><value>馬達已到位置 {0}，取圖失敗：{1}</value></data>
   <data name="CameraPanel_AutoExposureND" xml:space="preserve"><value>自曝 ND</value></data>
   <data name="CameraPanel_NDHint" xml:space="preserve"><value>僅服務模式支援 ND 自動切換；本地自動曝光前請取消勾選</value></data>
   <data name="CameraPanel_PreviewSettings" xml:space="preserve"><value>預覽設定</value></data>
-  <data name="CameraPanel_NotUsed" xml:space="preserve"><value>不使用</value></data>
   <data name="CameraPanel_NoAutoExposureTemplate" xml:space="preserve"><value>不使用自動曝光範本</value></data>
   <data name="CameraPanel_NoCalibrationTemplate" xml:space="preserve"><value>不使用校正範本</value></data>
   <data name="CameraPanel_Region" xml:space="preserve"><value>區域</value></data>
@@ -7602,7 +7388,6 @@
   <data name="兴奋纯度(%)" xml:space="preserve"><value>興奮純度(%)</value></data>
   <data name="在光谱图上移动鼠标读取采样值" xml:space="preserve"><value>在光譜圖上移動滑鼠讀取取樣值</value></data>
   <data name="导出测量结果 CSV" xml:space="preserve"><value>匯出測量結果 CSV</value></data>
-  <data name="导出完整原始光谱 CSV" xml:space="preserve"><value>匯出完整原始光譜 CSV</value></data>
   <data name="每个波长一行，保留全部采样点和负值" xml:space="preserve"><value>每個波長一列，保留全部取樣點和負值</value></data>
   <data name="请先选择要导出的数据。" xml:space="preserve"><value>請先選擇要匯出的資料。</value></data>
   <data name="导出失败：{0}" xml:space="preserve"><value>匯出失敗：{0}</value></data>
@@ -7631,7 +7416,6 @@
   <data name="X / 列" xml:space="preserve"><value>X / 列</value></data>
   <data name="Y / 行" xml:space="preserve"><value>Y / 行</value></data>
   <data name="[LF] = 换行， [CR] = 回车。图案文件名、大小写及结束符需与设备协议一致。" xml:space="preserve"><value>[LF] = 換行， [CR] = 回車。圖案文件名、大小寫及結束符需與設備協議一致。</value></data>
-  <data name="串口名按服务电脑填写，例如 COM7。" xml:space="preserve"><value>串口名按服務電腦填寫，例如 COM7。</value></data>
   <data name="二进制校正" xml:space="preserve"><value>二進制校正</value></data>
   <data name="仅测量采用源表的电压表/电流表接法：源 0 A 测电压，或源 0 V 测电流，仍需接通输出。仅输出不会生成虚构的测量结果。" xml:space="preserve"><value>僅測量採用源表的電壓表/電流表接法：源 0 A 測電壓，或源 0 V 測電流，仍需接通輸出。僅輸出不會生成虛構的測量結果。</value></data>
   <data name="从第" xml:space="preserve"><value>從第</value></data>
@@ -7698,7 +7482,6 @@
   <data name="更新曲线" xml:space="preserve"><value>更新曲線</value></data>
   <data name="更新预览" xml:space="preserve"><value>更新預覽</value></data>
   <data name="最大半径(px)" xml:space="preserve"><value>最大半徑(px)</value></data>
-  <data name="最近 500 条 · 控制字符如 0D/0A 显示为 [CR]/[LF] · 接收按分片记录，完整回包见运行日志 · Ctrl+F 搜索 · Ctrl+C 复制" xml:space="preserve"><value>最近 500 條 · 控制字符如 0D/0A 顯示爲 [CR]/[LF] · 接收按分片記錄，完整回包見運行日誌 · Ctrl+F 搜索 · Ctrl+C 複製</value></data>
   <data name="本地传感器 · 通信调试" xml:space="preserve"><value>本地傳感器 · 通信調試</value></data>
   <data name="本地源表" xml:space="preserve"><value>本地源表</value></data>
   <data name="本地连接" xml:space="preserve"><value>本地連接</value></data>
@@ -8160,6 +7943,10 @@
   <data name="当前可测量" xml:space="preserve"><value>當前可測量</value></data>
   <data name="径向位移多项式的最高幂次；每个通道需提供阶数加一项系数，从常数项开始。" xml:space="preserve"><value>徑向位移多項式的最高冪次；每個通道需提供階數加一項係數，從常數項開始。</value></data>
   <data name="接收分片" xml:space="preserve"><value>接收分片</value></data>
+  <data name="显示分片" xml:space="preserve"><value>顯示分片</value></data>
+  <data name="累计接收" xml:space="preserve"><value>累計接收</value></data>
+  <data name="{0} 个分片" xml:space="preserve"><value>{0} 個分片</value></data>
+  <data name="最近 500 条原始记录 · 按指令汇总接收 · Ctrl+F 搜索 · Ctrl+C 复制" xml:space="preserve"><value>最近 500 筆原始記錄 · 依指令彙整接收 · Ctrl+F 搜尋 · Ctrl+C 複製</value></data>
   <data name="插值放大倍数" xml:space="preserve"><value>插值放大倍數</value></data>
   <data name="数" xml:space="preserve"><value>數</value></data>
   <data name="整数" xml:space="preserve"><value>整數</value></data>
@@ -8379,7 +8166,6 @@
   <data name="请先关闭相机节点的自动曝光，再设置逐轮曝光。" xml:space="preserve"><value>請先關閉相機節點的自動曝光，再設置逐輪曝光。</value></data>
   <data name="Flow_PreProcess_AddAction" xml:space="preserve"><value>新增預處理動作</value></data>
   <data name="Flow_PreProcess_ChooseActionHint" xml:space="preserve"><value>選擇要新增的動作，新增後在右側設定參數。已啟用的動作會在流程啟動前按清單順序執行。</value></data>
-  <data name="TemplateBrowserCards" xml:space="preserve"><value>卡片</value></data>
   <data name="TemplateBrowserList" xml:space="preserve"><value>清單</value></data>
   <data name="TemplateBrowserPreview" xml:space="preserve"><value>預覽</value></data>
   <data name="TemplateBrowserSelectPreview" xml:space="preserve"><value>選擇範本以查看預覽與詳細資訊</value></data>
@@ -8477,4 +8263,16 @@
   <data name="Flow_PreProcess_ConfigUnavailable" xml:space="preserve"><value>無法讀取前處理設定。請還原有效的設定檔，再點選「重新載入」。</value></data>
   <data name="Flow_PostProcess_InvalidConfiguration" xml:space="preserve"><value>設定無效</value></data>
   <data name="Flow_PostProcess_InvalidConfigurationHint" xml:space="preserve"><value>無法讀取已儲存的後處理參數。請編輯此項並重新設定。</value></data>
+  <data name="在{0}添加设备" xml:space="preserve"><value>在{0}新增設備</value></data>
+  <data name="AlgorithmSideSaveFailures" xml:space="preserve"><value>{0} 筆結果的資料欄儲存失敗（ID {1}）。請查看執行記錄，修正問題後重新儲存這些結果。</value></data>
+  <data name="PoiHistoryDetailsUnavailable" xml:space="preserve"><value>無法載入結果明細（ID {0}）。請檢查資料庫連線和執行記錄，修復後重新選取該結果或重試儲存資料欄。</value></data>
+  <data name="数据库连接已更改，请刷新统计后再执行。" xml:space="preserve"><value>資料庫連線已變更，請重新整理統計後再執行。</value></data>
+  <data name="请连接数据库并刷新统计。" xml:space="preserve"><value>請連線至資料庫並重新整理統計。</value></data>
+  <data name="重新加载终端设备" xml:space="preserve"><value>重新載入終端設備</value></data>
+  <data name="未能提交终端设备重载请求。" xml:space="preserve"><value>未能提交終端設備重新載入請求。</value></data>
+  <data name="滤色轮配置" xml:space="preserve"><value>濾色輪設定</value></data>
+  <data name="孔位与读回" xml:space="preserve"><value>孔位與讀回</value></data>
+  <data name="服务设置" xml:space="preserve"><value>服務設定</value></data>
+  <data name="正在读取当前孔位…" xml:space="preserve"><value>正在讀取目前孔位…</value></data>
+  <data name="{0}（当前）" xml:space="preserve"><value>{0}（目前）</value></data>
 </root>

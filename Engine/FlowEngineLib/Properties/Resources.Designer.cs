@@ -421,15 +421,6 @@ namespace FlowEngineLib.Properties {
         }
         
         /// <summary>
-        ///   查找类似 End 的本地化字符串。
-        /// </summary>
-        internal static string EndV5Node {
-            get {
-                return ResourceManager.GetString("EndV5Node", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 光谱&amp;EQE 的本地化字符串。
         /// </summary>
         internal static string EQE {
@@ -507,15 +498,6 @@ namespace FlowEngineLib.Properties {
         internal static string FOV {
             get {
                 return ResourceManager.GetString("FOV", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 通用传感器 的本地化字符串。
-        /// </summary>
-        internal static string GeneralSensor {
-            get {
-                return ResourceManager.GetString("GeneralSensor", resourceCulture);
             }
         }
         
@@ -1132,15 +1114,6 @@ namespace FlowEngineLib.Properties {
         }
         
         /// <summary>
-        ///   查找类似 Start 的本地化字符串。
-        /// </summary>
-        internal static string StartV5_MQTT {
-            get {
-                return ResourceManager.GetString("StartV5_MQTT", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 TIF 的本地化字符串。
         /// </summary>
         internal static string TIF {
@@ -1308,15 +1281,6 @@ namespace FlowEngineLib.Properties {
         internal static string 保存_翻转 {
             get {
                 return ResourceManager.GetString("保存/翻转", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 保存CIE文件 的本地化字符串。
-        /// </summary>
-        internal static string 保存CIE文件 {
-            get {
-                return ResourceManager.GetString("保存CIE文件", resourceCulture);
             }
         }
         
@@ -1510,24 +1474,6 @@ namespace FlowEngineLib.Properties {
         }
         
         /// <summary>
-        ///   查找类似 发光区检测 的本地化字符串。
-        /// </summary>
-        internal static string 发光区检测 {
-            get {
-                return ResourceManager.GetString("发光区检测", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 发光区检测-OLED 的本地化字符串。
-        /// </summary>
-        internal static string 发光区检测OLED {
-            get {
-                return ResourceManager.GetString("发光区检测OLED", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 发送指令 的本地化字符串。
         /// </summary>
         internal static string 发送指令 {
@@ -1677,15 +1623,6 @@ namespace FlowEngineLib.Properties {
         internal static string 图像翻转 {
             get {
                 return ResourceManager.GetString("图像翻转", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 图像裁剪 的本地化字符串。
-        /// </summary>
-        internal static string 图像裁剪 {
-            get {
-                return ResourceManager.GetString("图像裁剪", resourceCulture);
             }
         }
         
@@ -1968,15 +1905,6 @@ namespace FlowEngineLib.Properties {
         internal static string 接收指令 {
             get {
                 return ResourceManager.GetString("接收指令", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 控制命令 的本地化字符串。
-        /// </summary>
-        internal static string 控制命令 {
-            get {
-                return ResourceManager.GetString("控制命令", resourceCulture);
             }
         }
         

@@ -5,7 +5,6 @@ status: "current"
 summary: "native ABI与HImage所有权、函数族返回值，以及helper构建和CUDA发布输入；路由校准Context与POI原生参考。"
 aliases: ["新克隆构建为什么需要C++","OpenCVMediaHelper","opencv_helper.dll","opencv_cuda.dll","HImage","isDispose","HImage.Dispose","M_FindLuminousAreaV2","M_CalArtculation","M_CalibrationExecuteToV1","M_CalibrationGetLastError","M_CalibrationCacheReleaseV1","M_CalculatePoiBatchV2","opencv_helper API"]
 code_paths: [".github/workflows/dotnet.yml","build.sln","Native/README.md","Native/opencv_helper/API_Documentation.md","UI/ColorVision.Core/ColorVision.Core.csproj","UI/ColorVision.Core/OpenCVMediaHelper.cs","UI/ColorVision.Core/OpenCVCuda.cs","UI/ColorVision.Core/HImage.cs","Native/opencv_helper/opencv_helper.vcxproj","Native/include/opencv_media_export.h","Native/include/custom_structs.h","Native/include/cuda_export.h","Native/opencv_helper/opencv_media_export.cpp","Native/opencv_helper/exports/calibration_export.cpp","Native/opencv_helper/exports/poi_export.cpp","Native/opencv_helper/exports/sfr_export.cpp","Native/opencv_cuda/opencv_cuda.vcxproj","Scripts/verify_native_contracts.py","Engine/ColorVision.Engine/Media/CVRawOpen.cs"]
-test_paths: ["Scripts/tests/test_algorithm_package_contract.py","Scripts/tests/test_verify_native_contracts.py","Test/opencv_helper_test"]
 related: ["engine.index","ui.core","ui.image-frames","engine.native-bindings","engine.file-io","algorithms.local-native-analysis","engine.opencv-helper-api","delivery.native-testing"]
 ---
 
@@ -39,7 +38,9 @@ CUDA 是另一条边界：Core 通过 `OpenCvCudaBinary` 无条件打包 DLL；�
 
 共享 OpenCV 属性表默认使用 C++17；`opencv_helper` 和 `opencv_cuda` 项目使用 C++20。`opencv_cuda` 通过 `OpenCVCudaLanguageStandard=c++20` 让 Debug / Release x64 的 CUDA 编译显式传入 `--std=c++20`，与 MSVC 的语言标准保持一致。当前依赖使用 MSVC v145 构建，目录为 `packages/opencv/x64/vc18/`。OpenCV 5 将 `calib3d` 拆为 `calib`、`geometry`、`stereo` 等模块，将 `features2d` 政名为 `features`，圆点/棋盘格检测归入 `objdetect`；几何函数须显式包含 `opencv2/geometry.hpp`，不能依赖 `opencv.hpp` 间接引入。
 
-第三方构建保留共享库、非自由算法、SSE3 基线及 SSE4.1 / SSE4.2 / AVX / FP16 / AVX2 / AVX512 分派、IPP、OpenCL、FFmpeg、DirectShow、Media Foundation 和原有图像格式支持。OpenCV 自身不启用 CUDA；第一方 `opencv_cuda.dll` 源码使用 CUDA 13.4。已取消 Pascal / Volta 编译目标，支持 Turing（GTX 16 / RTX 20）及更新 GPU；Release / Debug 均使用 v145 和受支持的 CUDA 13.4 host 编译器，保留公开 ABI 和静态 cudart。MSVC 14.52 标准库要求 CUDA 13.4 或更新版本，不能仅依据 CUDA 的 MSVC 主版本检查判断兼容性，见 [MSVC 标准库版本与 CUDA 要求](https://github.com/microsoft/STL/wiki/Macro-_MSVC_STL_UPDATE)。CUDA 13.x 的驱动兼容基线为 R580，PTX/JIT 还须匹配实际工具链；本地 CUDA 13.4.2 / 驱动 610.88 / RTX 5080 已通过合成图融合 GPU 验证及同源码新旧工具链的逐像素结果对照，现场设备仍需验证。驱动要求以 [NVIDIA CUDA 兼容说明](https://docs.nvidia.com/cuda/archive/13.4.2/cuda-toolkit-release-notes/index.html#cuda-driver) 为准。OpenCV 5 不再随源码提供 OpenEXR，构建时需通过 `CMAKE_PREFIX_PATH` 提供独立 OpenEXR；当前使用静态 OpenEXR 3.4.16 / Imath 3.2.2，并保持 Release / Debug CRT 匹配。
+第三方 OpenCV 构建启用共享库、非自由算法、SSE3 基线及 SSE4.1 / SSE4.2 / AVX / FP16 / AVX2 / AVX512 分派、IPP、OpenCL、FFmpeg、DirectShow 和 Media Foundation。OpenCV 本身关闭 CUDA。构建 OpenCV 5 时，通过 `CMAKE_PREFIX_PATH` 提供静态 OpenEXR 3.4.16 / Imath 3.2.2，并匹配 Release / Debug CRT。
+
+`opencv_cuda.dll` 支持 Turing（GTX 16 / RTX 20）及更新 GPU。Debug / Release x64 使用 MSVC v145、CUDA 13.4 和静态 cudart，遵循既有 ABI。MSVC 14.52 标准库要求 CUDA 13.4 或更新版本。CUDA 13.x 的驱动兼容基线为 R580，PTX/JIT 还须匹配实际工具链。GPU 验收按目标驱动、设备和输入数据进行。 [MSVC 标准库版本与 CUDA 要求](https://github.com/microsoft/STL/wiki/Macro-_MSVC_STL_UPDATE) · [NVIDIA CUDA 兼容说明](https://docs.nvidia.com/cuda/archive/13.4.2/cuda-toolkit-release-notes/index.html#cuda-driver)
 
 两侧共享 `opencv_videoio_ffmpeg500_64.dll`。运行时内容校验从实际 NuGet 解析结果及 C++ 属性表分别定位依赖，仅在同名文件的 SHA-256 完全一致时复用一份文件；内容不同或源文件缺失仍阻止交付。供应商 SDK 所需的 `opencv_world401.dll` 属于另一条依赖链，须继续保留。
 
@@ -114,7 +115,7 @@ CUDA 是另一条边界：Core 通过 `OpenCvCudaBinary` 无条件打包 DLL；�
 
 普通Windows CI使用 `--static-native-project-only`：仍核对源码、项目XML、PE导出和包传播字节，但明确未验证求值后的MSBuild元数据，不能替代默认发布环境门禁。PE导出表不包含C参数类型；严格源码契约加字节一致性也不能证明任意替换DLL确由当前源码编译，新DLL仍须真实CUDA构建与ABI/GPU烟雾验收。
 
-`Scripts/tests/test_verify_native_contracts.py` 提供契约变异用例，`Scripts/tests/test_algorithm_package_contract.py` 覆盖打包相关契约；发布链另核对运行目录及完整更新ZIP中的CUDA字节，包含 `create_full_zip` 回归。测试文件存在或文档构建成功不代表本次已执行这些门禁。
+发布链另核对运行目录和完整更新 ZIP 中的 CUDA 字节。
 
 ## `.cvraw` / `.cvcie` 链路
 

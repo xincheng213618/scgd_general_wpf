@@ -1,3 +1,4 @@
+using ColorVision.Engine.Services.Devices.SMU.Dao;
 using System;
 
 namespace ColorVision.Engine.Services.Devices.SMU.Local;
@@ -8,12 +9,38 @@ internal sealed class SmuBackendState(bool preference)
     internal object Sync => OwnershipSync;
     private bool preferLocal = preference, serviceMayOwn;
     private int localCommands, serviceCommands;
+    private long commandGeneration;
+    private long channelAReadoutReset, channelBReadoutReset;
     private DeviceStatusType localStatus = DeviceStatusType.Closed, serviceStatus = DeviceStatusType.UnInit;
     internal event Action? Changed;
     internal bool LocalOwned { get; private set; }
+    internal long CommandGeneration { get { lock (Sync) return commandGeneration; } }
+    internal bool HasPendingServiceCommands { get { lock (Sync) return serviceCommands != 0; } }
     internal bool CanSwitch { get { lock (Sync) return !LocalOwned && !serviceMayOwn && localCommands == 0 && serviceCommands == 0; } }
     internal bool OpensLocally { get { lock (Sync) return LocalOwned || localCommands != 0 || (preferLocal && !serviceMayOwn && serviceCommands == 0); } }
     internal DeviceStatusType Status { get { lock (Sync) return LocalOwned ? localStatus : OpensLocally ? DeviceStatusType.Closed : serviceStatus; } }
+
+    internal (long A, long B) CaptureReadoutResets()
+    {
+        lock (Sync) return (channelAReadoutReset, channelBReadoutReset);
+    }
+
+    internal bool IsReadoutCurrent(SMUChannelType channel, (long A, long B) captured)
+    {
+        lock (Sync)
+            return channel == SMUChannelType.A ? channelAReadoutReset == captured.A
+                : channel == SMUChannelType.B && channelBReadoutReset == captured.B;
+    }
+
+    internal void MarkReadoutReset(SMUChannelType channel)
+    {
+        lock (Sync)
+        {
+            if (channel == SMUChannelType.A) channelAReadoutReset++;
+            else if (channel == SMUChannelType.B) channelBReadoutReset++;
+        }
+    }
+
     internal void SetPreference(bool value) { lock (Sync) preferLocal = value; Changed?.Invoke(); }
     internal void ObserveService(DeviceStatusType value)
     {
@@ -34,8 +61,25 @@ internal sealed class SmuBackendState(bool preference)
     {
         lock (Sync) if (LocalOwned || localCommands != 0) throw new InvalidOperationException("本地源表正在使用，请先关闭本地连接。");
     }
-    internal void BeginLocalCommand() { lock (Sync) { EnsureLocalAvailable(); localCommands++; } }
+    internal void BeginLocalCommand()
+    {
+        lock (Sync)
+        {
+            EnsureLocalAvailable();
+            localCommands++;
+            commandGeneration++;
+        }
+    }
     internal void EndLocalCommand() { lock (Sync) localCommands--; }
-    internal void BeginServiceCommand(string operation) { lock (Sync) { EnsureServiceAvailable(); serviceCommands++; if (operation is "Open" or "Reopen") serviceMayOwn = true; } }
+    internal void BeginServiceCommand(string operation)
+    {
+        lock (Sync)
+        {
+            EnsureServiceAvailable();
+            serviceCommands++;
+            commandGeneration++;
+            if (operation is "Open" or "Reopen") serviceMayOwn = true;
+        }
+    }
     internal void EndServiceCommand() { lock (Sync) serviceCommands--; }
 }

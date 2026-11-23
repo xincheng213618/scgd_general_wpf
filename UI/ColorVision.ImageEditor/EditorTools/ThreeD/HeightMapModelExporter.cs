@@ -1,5 +1,6 @@
 using ColorVision.ImageEditor.Output;
 using System;
+using System.Buffers.Binary;
 using System.Globalization;
 using System.IO;
 using System.Numerics;
@@ -108,23 +109,27 @@ namespace ColorVision.ImageEditor.EditorTools.ThreeD
             writer.Write("mtllib "); writer.WriteLine(materialName);
             writer.WriteLine("o HeightMap");
             writer.WriteLine("usemtl HeightMap");
-            for (int i = 0; i < geometry.Positions.Length; i++)
+            ReadOnlySpan<Vector3> positions = geometry.Positions;
+            ReadOnlySpan<Vector2> textureCoordinates = geometry.TextureCoordinates;
+            ReadOnlySpan<Vector3> normals = geometry.Normals;
+            ReadOnlySpan<int> indices = geometry.Indices;
+            for (int i = 0; i < positions.Length; i++)
             {
                 if ((i & 1023) == 0) token.ThrowIfCancellationRequested();
-                Vector3 p = geometry.Positions[i];
+                Vector3 p = positions[i];
                 WriteVector(writer, "v ", p.X, p.Y, p.Z * heightScale);
             }
-            for (int i = 0; i < geometry.TextureCoordinates.Length; i++)
+            for (int i = 0; i < textureCoordinates.Length; i++)
             {
                 if ((i & 1023) == 0) token.ThrowIfCancellationRequested();
-                Vector2 uv = geometry.TextureCoordinates[i];
+                Vector2 uv = textureCoordinates[i];
                 writer.Write("vt "); WriteNumber(writer, uv.X); writer.Write(' ');
                 WriteNumber(writer, 1 - uv.Y); writer.WriteLine();
             }
-            for (int i = 0; i < geometry.Normals.Length; i++)
+            for (int i = 0; i < normals.Length; i++)
             {
                 if ((i & 1023) == 0) token.ThrowIfCancellationRequested();
-                Vector3 normal = geometry.Normals[i];
+                Vector3 normal = normals[i];
                 // Equivalent to inverse-transpose (nx, ny, nz / height), with stable flat-height behavior.
                 double x = normal.X * heightScale, y = normal.Y * heightScale, z = normal.Z;
                 double largest = Math.Max(Math.Abs(x), Math.Max(Math.Abs(y), Math.Abs(z)));
@@ -133,20 +138,30 @@ namespace ColorVision.ImageEditor.EditorTools.ThreeD
                 double length = Math.Sqrt(x * x + y * y + z * z);
                 WriteVector(writer, "vn ", x / length, y / length, z / length);
             }
-            for (int i = 0; i < geometry.Indices.Length; i += 3)
+            // Three corners, each with the same positive Int32 index in all three slots.
+            Span<char> face = stackalloc char[100];
+            face[0] = 'f';
+            face[1] = ' ';
+            for (int i = 0; i < indices.Length; i += 3)
             {
                 if ((i & 1023) == 0) token.ThrowIfCancellationRequested();
-                writer.Write("f ");
+                int length = 2;
                 for (int corner = 0; corner < 3; corner++)
                 {
-                    int index = geometry.Indices[i + corner];
-                    ValidateIndex(index, geometry.Positions.Length);
-                    if (corner != 0) writer.Write(' ');
-                    WriteIndex(writer, index + 1); writer.Write('/');
-                    WriteIndex(writer, index + 1); writer.Write('/');
-                    WriteIndex(writer, index + 1);
+                    int index = indices[i + corner];
+                    ValidateIndex(index, positions.Length);
+                    if (corner != 0) face[length++] = ' ';
+                    (index + 1).TryFormat(face[length..], out int written, provider: CultureInfo.InvariantCulture);
+                    ReadOnlySpan<char> formatted = face.Slice(length, written);
+                    length += written;
+                    face[length++] = '/';
+                    formatted.CopyTo(face[length..]);
+                    length += written;
+                    face[length++] = '/';
+                    formatted.CopyTo(face[length..]);
+                    length += written;
                 }
-                writer.WriteLine();
+                writer.WriteLine(face[..length]);
             }
         }
 
@@ -170,17 +185,22 @@ namespace ColorVision.ImageEditor.EditorTools.ThreeD
         private static void WriteStl(HeightMapDxGeometry geometry, double heightScale, string path, CancellationToken token)
         {
             using var stream = new FileStream(path, FileMode.CreateNew, FileAccess.Write, FileShare.None, 64 * 1024, FileOptions.SequentialScan);
-            using var writer = new BinaryWriter(stream, Encoding.UTF8, leaveOpen: false);
-            byte[] header = new byte[80];
-            Encoding.ASCII.GetBytes("ColorVision display-luminance height map").CopyTo(header, 0);
-            writer.Write(header);
-            writer.Write((uint)(geometry.Indices.Length / 3));
-            for (int i = 0; i < geometry.Indices.Length; i += 3)
+            ReadOnlySpan<Vector3> positions = geometry.Positions;
+            ReadOnlySpan<int> indices = geometry.Indices;
+            Span<byte> header = stackalloc byte[84];
+            header.Clear();
+            "ColorVision display-luminance height map"u8.CopyTo(header);
+            BinaryPrimitives.WriteUInt32LittleEndian(header[80..], (uint)(indices.Length / 3));
+            stream.Write(header);
+            const int triangleBytes = 50;
+            Span<byte> buffer = stackalloc byte[triangleBytes * 128];
+            int buffered = 0;
+            for (int i = 0; i < indices.Length; i += 3)
             {
                 if ((i & 1023) == 0) token.ThrowIfCancellationRequested();
-                Vector3 a = ScaledPosition(geometry, geometry.Indices[i], heightScale);
-                Vector3 b = ScaledPosition(geometry, geometry.Indices[i + 1], heightScale);
-                Vector3 c = ScaledPosition(geometry, geometry.Indices[i + 2], heightScale);
+                Vector3 a = ScaledPosition(positions, indices[i], heightScale);
+                Vector3 b = ScaledPosition(positions, indices[i + 1], heightScale);
+                Vector3 c = ScaledPosition(positions, indices[i + 2], heightScale);
                 // Compute the normal from the actual single-precision vertices written to STL,
                 // but use double intermediates so large, valid coordinates cannot overflow a cross product.
                 double abX = (double)b.X - a.X, abY = (double)b.Y - a.Y, abZ = (double)b.Z - a.Z;
@@ -188,16 +208,26 @@ namespace ColorVision.ImageEditor.EditorTools.ThreeD
                 double nx = abY * acZ - abZ * acY, ny = abZ * acX - abX * acZ, nz = abX * acY - abY * acX;
                 double length = Math.Sqrt(nx * nx + ny * ny + nz * nz);
                 Vector3 normal = length > 0 ? new Vector3((float)(nx / length), (float)(ny / length), (float)(nz / length)) : Vector3.Zero;
-                WriteVector(writer, normal);
-                WriteVector(writer, a); WriteVector(writer, b); WriteVector(writer, c);
-                writer.Write((ushort)0);
+                Span<byte> triangle = buffer.Slice(buffered, triangleBytes);
+                WriteStlVector(triangle, normal);
+                WriteStlVector(triangle[12..], a);
+                WriteStlVector(triangle[24..], b);
+                WriteStlVector(triangle[36..], c);
+                BinaryPrimitives.WriteUInt16LittleEndian(triangle[48..], 0);
+                buffered += triangleBytes;
+                if (buffered == buffer.Length)
+                {
+                    stream.Write(buffer);
+                    buffered = 0;
+                }
             }
+            if (buffered > 0) stream.Write(buffer[..buffered]);
         }
 
-        private static Vector3 ScaledPosition(HeightMapDxGeometry geometry, int index, double heightScale)
+        private static Vector3 ScaledPosition(ReadOnlySpan<Vector3> positions, int index, double heightScale)
         {
-            ValidateIndex(index, geometry.Positions.Length);
-            Vector3 p = geometry.Positions[index];
+            ValidateIndex(index, positions.Length);
+            Vector3 p = positions[index];
             var result = new Vector3(p.X, p.Y, (float)(p.Z * heightScale));
             if (!float.IsFinite(result.X) || !float.IsFinite(result.Y) || !float.IsFinite(result.Z))
                 throw new InvalidOperationException("STL coordinates must be finite single-precision values.");
@@ -209,9 +239,11 @@ namespace ColorVision.ImageEditor.EditorTools.ThreeD
             if ((uint)index >= (uint)count) throw new ArgumentException("A triangle references a vertex outside the mesh.");
         }
 
-        private static void WriteVector(BinaryWriter writer, Vector3 value)
+        private static void WriteStlVector(Span<byte> buffer, Vector3 value)
         {
-            writer.Write(value.X); writer.Write(value.Y); writer.Write(value.Z);
+            BinaryPrimitives.WriteSingleLittleEndian(buffer, value.X);
+            BinaryPrimitives.WriteSingleLittleEndian(buffer[4..], value.Y);
+            BinaryPrimitives.WriteSingleLittleEndian(buffer[8..], value.Z);
         }
 
         private static void WriteVector(TextWriter writer, string prefix, double x, double y, double z)
@@ -225,13 +257,6 @@ namespace ColorVision.ImageEditor.EditorTools.ThreeD
             if (!double.IsFinite(value)) throw new InvalidOperationException("OBJ coordinates and normals must be finite.");
             Span<char> buffer = stackalloc char[32];
             value.TryFormat(buffer, out int written, "R", CultureInfo.InvariantCulture);
-            writer.Write(buffer[..written]);
-        }
-
-        private static void WriteIndex(TextWriter writer, int value)
-        {
-            Span<char> buffer = stackalloc char[11];
-            value.TryFormat(buffer, out int written, provider: CultureInfo.InvariantCulture);
             writer.Write(buffer[..written]);
         }
 

@@ -221,8 +221,8 @@ namespace ColorVision.Engine.Templates.Jsons.BlackMura
         {
             if (result.ViewResults == null)
             {
+                List<BlackMuraModel> AlgResultModels = result.ReadPersistedDetails(BlackMuraDao.Instance);
                 result.ViewResults = new ObservableCollection<IViewResult>();
-                List<BlackMuraModel> AlgResultModels = BlackMuraDao.Instance.GetAllByPid(result.Id);
                 foreach (var item in AlgResultModels)
                 {
                     BlackMuraView blackMuraView = new BlackMuraView(item);

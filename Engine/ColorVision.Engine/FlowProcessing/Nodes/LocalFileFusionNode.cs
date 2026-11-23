@@ -118,7 +118,8 @@ public sealed class LocalFileFusionNode : LocalFlowNodeBase
         {
             action.RuntimeResources.Set(runKey, stop);
             EnsureRunning(action, stop.Token);
-            int batchId = FlowNodeTiming.Run("ResolveBatch", () => services.ResolveBatchId(action.SerialNumber));
+            bool persist = action.PersistResults;
+            var batch = persist ? FlowNodeTiming.Run("ResolveBatch", () => services.ResolveBatch(action)) : default;
             FileFusionResult fusion = FlowNodeTiming.Run("Fusion", () => services.Execute(sourceFiles, selectedMode, stop.Token, selectedOptions));
             EnsureRunning(action, stop.Token);
             string outputPath = FlowNodeTiming.Run("SaveImage", () => SaveImage(fusion.Image, directory));
@@ -126,7 +127,7 @@ public sealed class LocalFileFusionNode : LocalFlowNodeBase
             frame = FlowNodeTiming.Run("OpenImage", () => LocalFrameFileService.Load(outputPath));
             var model = new MeasureResultImgModel
             {
-                BatchId = batchId, ZIndex = zIndex, NDPort = -1, DeviceCode = null,
+                BatchId = batch.Id, ZIndex = zIndex, NDPort = -1, DeviceCode = null,
                 RawFile = Path.GetFileName(outputPath), FileUrl = outputPath, FileType = 0,
                 ResultCode = 0, Result = "ok", CreateDate = DateTime.Now,
                 TotalTime = (int)Math.Min(fusion.TotalMs, int.MaxValue),
@@ -141,8 +142,8 @@ public sealed class LocalFileFusionNode : LocalFlowNodeBase
                 }),
             };
             EnsureRunning(action, stop.Token);
-            int masterId = FlowNodeTiming.Run("PersistResult", () => services.SaveResult(model));
-            if (masterId <= 0) throw new InvalidOperationException("保存景深融合图像记录失败。");
+            int masterId = persist ? FlowNodeTiming.Run("PersistResult", () => services.SaveResult(batch.Endpoint, model)) : 0;
+            if (persist && masterId <= 0) throw new InvalidOperationException("保存景深融合图像记录失败。");
             model.Id = masterId;
             frame.MasterId = masterId;
             EnsureRunning(action, stop.Token);
@@ -150,7 +151,7 @@ public sealed class LocalFileFusionNode : LocalFlowNodeBase
             string frameId = frame.FrameId.ToString("N");
             frame = null; // RuntimeResources owns the frame from this point.
             EnsureRunning(action, stop.Token);
-            FlowNodeTiming.Run("PublishResult", () => services.Publish(action, nodeId, zIndex, model));
+            if (masterId > 0) FlowNodeTiming.Run("PublishResult", () => services.Publish(action, nodeId, zIndex, model, batch.Endpoint));
             EnsureRunning(action, stop.Token);
             action.MasterValue(outputPath, masterId, 100);
             return new(masterId, 100, outputPath, frameId, outputPath, fusion.Files.Count, fusion.ActualMode.ToString(), fusion.TotalMs);

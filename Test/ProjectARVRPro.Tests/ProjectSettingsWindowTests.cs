@@ -64,6 +64,13 @@ public sealed class ProjectSettingsWindowTests
                 Pump();
                 Assert.Equal(LuxVidMeasurementMode.FineFocus, config.LuxVidMode);
                 Assert.Equal(4, saves);
+                var unit = FindPicker(nameof(config.LuxVidUnit));
+                Assert.Equal(LuxVidOutputUnit.Millimeters, unit.SelectedValue);
+                Assert.Equal(3, unit.Items.Count);
+                unit.SelectedValue = LuxVidOutputUnit.Diopters;
+                Pump();
+                Assert.Equal(LuxVidOutputUnit.Diopters, config.LuxVidUnit);
+                Assert.Equal(5, saves);
                 var bitmap = new RenderTargetBitmap((int)window.ActualWidth, (int)window.ActualHeight, 96, 96, PixelFormats.Pbgra32);
                 bitmap.Render(window);
                 var png = new PngBitmapEncoder();
@@ -76,7 +83,7 @@ public sealed class ProjectSettingsWindowTests
                 Assert.Equal(0, config.LuxVidB);
                 window.Close();
                 Assert.Equal(3.5, config.LuxVidB);
-                Assert.Equal(5, saves);
+                Assert.Equal(6, saves);
             }
             finally { window.Close(); }
         });
@@ -285,13 +292,27 @@ public sealed class ProjectSettingsWindowTests
                 var save = FindEditor<ToggleButton>(window, saveProperty);
                 var naming = FindEditor<ToggleButton>(window, namingProperty);
                 var template = FindEditor<TextBox>(window, templateProperty);
+                var heatmap = FindEditor<ToggleButton>(window, nameof(ViewResultManagerConfig.ResultSnapshotSaveHeatmap));
                 Assert.False(naming.IsVisible);
                 Assert.False(template.IsVisible);
+                Assert.False(heatmap.IsVisible);
+                Assert.False(heatmap.IsChecked);
 
                 save.IsChecked = true;
                 Pump();
                 Assert.True(naming.IsVisible);
                 Assert.False(template.IsVisible);
+                if (saveProperty == nameof(ViewResultManagerConfig.IsSaveImageReuslt))
+                {
+                    Assert.True(heatmap.IsVisible);
+                    heatmap.IsChecked = true;
+                    Pump();
+                    Assert.True(results.ResultSnapshotSaveHeatmap);
+                }
+                else
+                {
+                    Assert.False(heatmap.IsVisible);
+                }
 
                 naming.IsChecked = true;
                 Pump();
@@ -301,6 +322,7 @@ public sealed class ProjectSettingsWindowTests
                 Pump();
                 Assert.False(naming.IsVisible);
                 Assert.False(template.IsVisible);
+                Assert.False(heatmap.IsVisible);
 
                 save.IsChecked = true;
                 Pump();

@@ -5,7 +5,6 @@ status: "current"
 summary: "ColorVision.Engine工程的条件引用、NuGet/DLL依赖回退与资源打包；schema嵌入程序集，缺少输出散文件不等于漏包，也不保证脱离UI源码独立构建。"
 aliases: ["Engine是不是本地算法库", "ColorVision.Engine", "ColorVision.Engine.csproj", "Engine工程依赖", "资源打包", "EmbeddedResource", "UIProjectPackageVersion"]
 code_paths: ["Engine/ColorVision.Engine/ColorVision.Engine.csproj", "Directory.Build.props"]
-test_paths: []
 related: ["engine.index", "engine.native-integration", "algorithms.json-templates", "delivery.prerequisites", "delivery.scripts"]
 ---
 
@@ -53,4 +52,4 @@ dotnet build .\Engine\ColorVision.Engine\ColorVision.Engine.csproj -c Release -p
 
 该命令会生成本地产物，隐式 restore 在缺少依赖时可能访问包源；不是发布命令，不应用于仅文档改动的验收。成功编译不能证明 schema 可被每个编辑器命中、图标可显示、MySQL/broker/设备可用或交付目录完整。
 
-本页没有声明覆盖这些工程与资源事实的自动化测试。Flow 最终化和设备配置的局部测试应留在对应主题，不能作为工程资源验收；资源变更需按实际构建产物与消费入口补验，外部设备和上传仍需单独授权。
+资源变更按实际构建产物与消费入口验收。外部设备操作和上传另行授权。

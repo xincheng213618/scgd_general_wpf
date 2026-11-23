@@ -1,5 +1,6 @@
 using ColorVision.Engine.PropertyEditor;
 using ColorVision.Database;
+using ColorVision.Engine.FlowProcessing.Diagnostics;
 using ColorVision.Engine.Services.Devices.Camera.Local;
 using ColorVision.Engine.Services.Results;
 using ColorVision.Engine.Services.Results.LightArea;
@@ -26,6 +27,8 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
         public string? LayoutTemplateName { get; init; }
         public int PointCount { get; init; }
         public int TotalTime { get; init; }
+        public bool DatabasePersisted { get; init; }
+        public string? ResultHandle { get; init; }
     }
 
     [STNode("Flow_LocalDevices", "关注点布点(Re)", CategoryOrder = 9900, NodeOrder = 40)]
@@ -68,15 +71,24 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
 
         protected override LocalNodeExecutionResult ExecuteLocal(CVStartCFC action)
         {
+            MySqlConnectedEndpoint? endpoint = LocalFlowResultPersistence.ResolveEndpoint(action);
             _ = TryGetInputMasterResult(action, 0, out int sourceMasterId, out int sourceResultType, out _);
-            PoiParam template = LocalPoiTemplateResolver.ResolvePoiTemplate(RePOITemplateName, "POI 模板(Re)");
-            LocalPoiMappingPoint[] layout = ResolveLayout(sourceMasterId, sourceResultType, out string? layoutTemplateName);
+            PoiParam template = FlowNodeTiming.Run("LoadPoiTemplate", () => LocalPoiTemplateResolver.ResolvePoiTemplate(RePOITemplateName, "POI 模板(Re)"));
+            string? layoutTemplateName = null;
+            LocalPoiMappingPoint[] layout = FlowNodeTiming.Run("ResolvePoiLayout", () => ResolveLayout(sourceMasterId, sourceResultType, endpoint, out layoutTemplateName));
 
-            Stopwatch stopwatch = Stopwatch.StartNew();
-            List<LocalPoiRemappedPoint> points = LocalPoiRemappingCalculator.Remap(template, layout);
-            stopwatch.Stop();
+            List<LocalPoiRemappedPoint> points;
+            Stopwatch stopwatch;
+            using (FlowNodeTiming.Stage? remapStage = FlowNodeTiming.Measure("RemapPoi"))
+            {
+                stopwatch = Stopwatch.StartNew();
+                points = LocalPoiRemappingCalculator.Remap(template, layout);
+                stopwatch.Stop();
+                remapStage?.Complete();
+            }
             int totalTime = checked((int)Math.Min(stopwatch.ElapsedMilliseconds, int.MaxValue));
-            int masterId = LocalFlowResultPersistence.SaveAlgorithmResult(
+            action.RuntimeResources.StopToken.ThrowIfCancellationRequested();
+            int masterId = action.PersistResults ? FlowNodeTiming.Run("PersistPoiLayout", () => LocalFlowResultPersistence.SaveAlgorithmResultWithDetails(
                 action,
                 ViewResultAlgType.BuildPOI,
                 template.Id,
@@ -95,34 +107,30 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                     PointCount = points.Count,
                     ImageRead = false,
                     MemoryOnly = true
-                });
-            try
+                }, id => LocalPoiRemappingCalculator.CreateDetails(id, points),
+                endpoint: endpoint ?? throw new InvalidOperationException("保存关注点布点结果需要连接 MySQL。"))) : 0;
+            string? handle = action.PersistResults ? null : LocalPoiRemappingCalculator.StoreRuntimeLayout(action, template.Name, points);
+            action.Data["LocalBuildPoiCount"] = points.Count;
+            action.Data["LocalBuildPoiSourceMasterId"] = sourceMasterId;
+            action.MasterValue(handle, masterId, (int)ViewResultAlgType.BuildPOI);
+            if (action.PersistResults)
+                ResultMessageBus.Default.PublishPersisted(ResultRoutes.LocalFlow, ResultKinds.Algorithm, string.Empty, OperatorCode,
+                    action.SerialNumber, NodeID, ZIndex, masterId, (int)ViewResultAlgType.BuildPOI, databaseEndpoint: endpoint);
+            return new LocalNodeExecutionResult
             {
-                LocalPoiRemappingCalculator.SaveDetails(masterId, points);
-                action.Data["LocalBuildPoiCount"] = points.Count;
-                action.Data["LocalBuildPoiSourceMasterId"] = sourceMasterId;
-                action.MasterValue(null, masterId, (int)ViewResultAlgType.BuildPOI);
-                ResultMessageBus.Default.PublishPersisted(ResultRoutes.LocalFlow, ResultKinds.Algorithm, string.Empty, OperatorCode, action.SerialNumber, NodeID, ZIndex, masterId, (int)ViewResultAlgType.BuildPOI);
-                return new LocalNodeExecutionResult
+                Data = new LocalBuildPoiNodeResultData
                 {
-                    Data = new LocalBuildPoiNodeResultData
-                    {
-                        MasterId = masterId,
-                        SourceMasterId = sourceMasterId,
-                        SourceResultType = sourceResultType,
-                        TemplateName = template.Name,
-                        LayoutTemplateName = layoutTemplateName,
-                        PointCount = points.Count,
-                        TotalTime = totalTime
-                    }
-                };
-            }
-            catch
-            {
-                LocalPoiRemappingCalculator.DeleteDetails(masterId);
-                LocalFlowResultPersistence.DeleteAlgorithmResult(masterId);
-                throw;
-            }
+                    MasterId = masterId,
+                    SourceMasterId = sourceMasterId,
+                    SourceResultType = sourceResultType,
+                    TemplateName = template.Name,
+                    LayoutTemplateName = layoutTemplateName,
+                    PointCount = points.Count,
+                    TotalTime = totalTime,
+                    DatabasePersisted = action.PersistResults,
+                    ResultHandle = handle
+                }
+            };
         }
 
         protected override string BuildRunPayload(CVStartCFC action)
@@ -139,7 +147,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             });
         }
 
-        private LocalPoiMappingPoint[] ResolveLayout(int sourceMasterId, int sourceResultType, out string? layoutTemplateName)
+        private LocalPoiMappingPoint[] ResolveLayout(int sourceMasterId, int sourceResultType, MySqlConnectedEndpoint? endpoint, out string? layoutTemplateName)
         {
             if (!string.IsNullOrWhiteSpace(LayoutROITemplateName))
             {
@@ -163,9 +171,9 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             {
                 throw new InvalidOperationException($"IN 接收到的不是光区四角结果：MasterId={sourceMasterId}，ResultType={sourceResultType}；相机输入请配置布点 ROI。");
             }
-            List<AlgResultLightAreaModel> sourcePoints = AlgResultLightAreaDao.Instance.GetAllByPid(sourceMasterId)
-                .OrderBy(point => point.Id)
-                .ToList();
+            using var db = (endpoint ?? throw new InvalidOperationException("读取历史光区四角结果需要连接 MySQL。")).CreateDbClient();
+            List<AlgResultLightAreaModel> sourcePoints = db.Queryable<AlgResultLightAreaModel>()
+                .Where(point => point.Pid == sourceMasterId).OrderBy(point => point.Id).ToList();
             if (sourcePoints.Count != 4)
             {
                 throw new InvalidOperationException($"光区结果必须包含 4 个角点：MasterId={sourceMasterId}，当前为 {sourcePoints.Count} 个。");
@@ -223,6 +231,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
 
         protected override LocalNodeExecutionResult ExecuteLocal(CVStartCFC action)
         {
+            MySqlConnectedEndpoint? endpoint = LocalFlowResultPersistence.ResolveEndpoint(action);
             ParamBuildPoi parameter = LocalPoiTemplateResolver.ResolveBuildPoiTemplate(ParameterTemplateName);
             PoiParam layoutTemplate = LocalPoiTemplateResolver.ResolvePoiTemplate(LayoutROITemplateName, "布点 ROI");
 
@@ -230,7 +239,8 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             List<LocalPoiRemappedPoint> points = LocalPoiLayoutCalculator.Build(parameter, layoutTemplate);
             stopwatch.Stop();
             int totalTime = checked((int)Math.Min(stopwatch.ElapsedMilliseconds, int.MaxValue));
-            int masterId = LocalFlowResultPersistence.SaveAlgorithmResult(
+            action.RuntimeResources.StopToken.ThrowIfCancellationRequested();
+            int masterId = action.PersistResults ? LocalFlowResultPersistence.SaveAlgorithmResultWithDetails(
                 action,
                 ViewResultAlgType.BuildPOI,
                 parameter.Id,
@@ -248,31 +258,27 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                     PointCount = points.Count,
                     ImageRead = false,
                     MemoryOnly = true
-                });
-            try
+                }, id => LocalPoiRemappingCalculator.CreateDetails(id, points),
+                endpoint: endpoint ?? throw new InvalidOperationException("保存关注点布点结果需要连接 MySQL。")) : 0;
+            string? handle = action.PersistResults ? null : LocalPoiRemappingCalculator.StoreRuntimeLayout(action, parameter.Name, points);
+            action.Data["LocalBuildPoiCount"] = points.Count;
+            action.MasterValue(handle, masterId, (int)ViewResultAlgType.BuildPOI);
+            if (action.PersistResults)
+                ResultMessageBus.Default.PublishPersisted(ResultRoutes.LocalFlow, ResultKinds.Algorithm, string.Empty, OperatorCode,
+                    action.SerialNumber, NodeID, ZIndex, masterId, (int)ViewResultAlgType.BuildPOI, databaseEndpoint: endpoint);
+            return new LocalNodeExecutionResult
             {
-                LocalPoiRemappingCalculator.SaveDetails(masterId, points);
-                action.Data["LocalBuildPoiCount"] = points.Count;
-                action.MasterValue(null, masterId, (int)ViewResultAlgType.BuildPOI);
-                ResultMessageBus.Default.PublishPersisted(ResultRoutes.LocalFlow, ResultKinds.Algorithm, string.Empty, OperatorCode, action.SerialNumber, NodeID, ZIndex, masterId, (int)ViewResultAlgType.BuildPOI);
-                return new LocalNodeExecutionResult
+                Data = new LocalBuildPoiNodeResultData
                 {
-                    Data = new LocalBuildPoiNodeResultData
-                    {
-                        MasterId = masterId,
-                        TemplateName = parameter.Name,
-                        LayoutTemplateName = layoutTemplate.Name,
-                        PointCount = points.Count,
-                        TotalTime = totalTime
-                    }
-                };
-            }
-            catch
-            {
-                LocalPoiRemappingCalculator.DeleteDetails(masterId);
-                LocalFlowResultPersistence.DeleteAlgorithmResult(masterId);
-                throw;
-            }
+                    MasterId = masterId,
+                    TemplateName = parameter.Name,
+                    LayoutTemplateName = layoutTemplate.Name,
+                    PointCount = points.Count,
+                    TotalTime = totalTime,
+                    DatabasePersisted = action.PersistResults,
+                    ResultHandle = handle
+                }
+            };
         }
 
         protected override string BuildRunPayload(CVStartCFC action)

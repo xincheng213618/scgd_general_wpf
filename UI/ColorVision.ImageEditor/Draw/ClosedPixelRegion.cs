@@ -1,4 +1,5 @@
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
@@ -54,6 +55,19 @@ public sealed class ClosedPixelRegion
     /// Polygons use even-odd fill and half-open edges; returned runs never overlap.</summary>
     public IEnumerable<PixelRowRun> GetRuns(int width, int height)
     {
+        if (vertices is { Length: >= 64 } polygon && width > 0 && height > 0)
+        {
+            int firstY = (int)Math.Clamp(Math.Ceiling(Bounds.Top), 0, height);
+            int lastY = (int)Math.Clamp(Math.Floor(Bounds.Bottom), -1, height - 1);
+            // Sorting only pays off when the same edges would be scanned across many rows.
+            if ((long)lastY - firstY >= 64)
+                return GetRunsWithActiveEdges(polygon, width, firstY, lastY);
+        }
+        return GetRunsByRow(width, height);
+    }
+
+    private IEnumerable<PixelRowRun> GetRunsByRow(int width, int height)
+    {
         if (width <= 0 || height <= 0) throw new ArgumentOutOfRangeException(nameof(width));
         int firstY = (int)Math.Clamp(Math.Ceiling(Bounds.Top), 0, height);
         int lastY = (int)Math.Clamp(Math.Floor(Bounds.Bottom), -1, height - 1);
@@ -86,7 +100,7 @@ public sealed class ClosedPixelRegion
                     if ((from.Y <= y && y < to.Y) || (to.Y <= y && y < from.Y))
                         crossings.Add(from.X + (y - from.Y) / (to.Y - from.Y) * (to.X - from.X));
                 }
-                crossings.Sort();
+                SortCrossings(crossings);
                 for (int i = 0; i + 1 < crossings.Count; i += 2)
                 {
                     int start = (int)Math.Clamp(Math.Ceiling(crossings[i]), 0, width);
@@ -95,6 +109,77 @@ public sealed class ClosedPixelRegion
                 }
             }
         }
+    }
+
+    private static IEnumerable<PixelRowRun> GetRunsWithActiveEdges(Point[] points, int width, int firstY, int lastY)
+    {
+        ScanEdge[] edges = ArrayPool<ScanEdge>.Shared.Rent(points.Length);
+        try
+        {
+            int edgeCount = SortEdges(points, firstY, lastY, edges);
+            int next = 0, activeCount = 0;
+            List<double> crossings = new();
+            for (int y = firstY; y <= lastY; y++)
+            {
+                // Active edges reuse the slots already consumed from the start-ordered array.
+                while (next < edgeCount && edges[next].StartY <= y)
+                    edges[activeCount++] = edges[next++];
+
+                crossings.Clear();
+                for (int i = 0; i < activeCount;)
+                {
+                    ScanEdge edge = edges[i];
+                    if (edge.EndY <= y)
+                    {
+                        edges[i] = edges[--activeCount];
+                        continue;
+                    }
+
+                    crossings.Add(edge.From.X + (y - edge.From.Y) / edge.DeltaY * edge.DeltaX);
+                    i++;
+                }
+
+                SortCrossings(crossings);
+                for (int i = 0; i + 1 < crossings.Count; i += 2)
+                {
+                    int start = (int)Math.Clamp(Math.Ceiling(crossings[i]), 0, width);
+                    int end = (int)Math.Clamp(Math.Ceiling(crossings[i + 1]), 0, width);
+                    if (start < end) yield return new(y, start, end);
+                }
+            }
+        }
+        finally
+        {
+            ArrayPool<ScanEdge>.Shared.Return(edges);
+        }
+    }
+
+    private static void SortCrossings(List<double> crossings)
+    {
+        if (crossings.Count > 2)
+            crossings.Sort();
+        else if (crossings.Count == 2 && crossings[0].CompareTo(crossings[1]) > 0)
+            (crossings[0], crossings[1]) = (crossings[1], crossings[0]);
+    }
+
+    private static int SortEdges(Point[] points, int firstY, int lastY, ScanEdge[] edges)
+    {
+        int count = 0;
+        for (int i = 0, j = points.Length - 1; i < points.Length; j = i++)
+        {
+            Point from = points[j], to = points[i];
+            double startY = Math.Min(from.Y, to.Y);
+            double endY = Math.Max(from.Y, to.Y);
+            if (startY < endY && startY <= lastY && endY > firstY)
+                edges[count++] = new(from, to.X - from.X, to.Y - from.Y, startY, endY);
+        }
+        Array.Sort(edges, 0, count);
+        return count;
+    }
+
+    private readonly record struct ScanEdge(Point From, double DeltaX, double DeltaY, double StartY, double EndY) : IComparable<ScanEdge>
+    {
+        public int CompareTo(ScanEdge other) => StartY.CompareTo(other.StartY);
     }
 }
 

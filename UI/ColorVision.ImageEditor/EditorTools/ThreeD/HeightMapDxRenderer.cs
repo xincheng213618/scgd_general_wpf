@@ -123,10 +123,8 @@ namespace ColorVision.ImageEditor.EditorTools.ThreeD
                 double min = 255, max = 0;
                 for (int i = 0; i < sample.Gray.Length; i++)
                     if (sample.Alpha == null || sample.Alpha[i] > 127) { min = Math.Min(min, sample.Gray[i]); max = Math.Max(max, sample.Gray[i]); }
-                // Helix geometry and numeric collections are thread-neutral. Include their copies in
-                // measured CPU preparation instead of doing large collection copies on the UI thread.
-                DxMesh highMesh = CreateDxMesh(high);
-                DxMesh? lowMesh = ReferenceEquals(high, low) ? null : CreateDxMesh(low);
+                DxMesh highMesh = high.CreateMesh();
+                DxMesh? lowMesh = ReferenceEquals(high, low) ? null : low.CreateMesh();
                 cancellationToken.ThrowIfCancellationRequested();
                 return (High: high, Low: low, HighMesh: highMesh, LowMesh: lowMesh,
                     Milliseconds: clock.Elapsed.TotalMilliseconds, Min: min > max ? 0 : min, Max: max);
@@ -146,12 +144,6 @@ namespace ColorVision.ImageEditor.EditorTools.ThreeD
                 interactionGeometry.Positions.Length, interactionGeometry.Indices.Length / 3, result.Milliseconds);
             return LastBuildMetrics;
         }
-
-        private static DxMesh CreateDxMesh(HeightMapDxGeometry source) => new()
-        {
-            Positions = new Vector3Collection(source.Positions), Normals = new Vector3Collection(source.Normals),
-            TextureCoordinates = new Vector2Collection(source.TextureCoordinates), Indices = new IntCollection(source.Indices)
-        };
 
         public void SetInteracting(bool interacting)
         {

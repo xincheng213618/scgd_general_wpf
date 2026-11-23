@@ -25,6 +25,7 @@ public partial class SpectrumCorrectionWindow : Window
     private MagnitudeCalibrationFile? _currentFile;
     private SpectrumCorrectionResult? _previewResult;
     private string? _generatedFilePath;
+    private string? _generatedMagnitudeSha256;
     private string _sourceMagnitudeSha256 = string.Empty;
     private bool _operationInProgress;
 
@@ -80,8 +81,9 @@ public partial class SpectrumCorrectionWindow : Window
             if (!File.Exists(snapshot.MagnitudeFilePath))
                 throw new FileNotFoundException(EngineLocalization.Get("找不到服务本次测量使用的幅值标定文件。"), snapshot.MagnitudeFilePath);
 
+            using var source = new FileStream(snapshot.MagnitudeFilePath, FileMode.Open, FileAccess.Read, FileShare.Read);
             MagnitudeCalibrationFile currentFile = MagnitudeCalibrationFile.Load(snapshot.MagnitudeFilePath);
-            string actualHash = ComputeSha256(snapshot.MagnitudeFilePath);
+            string actualHash = Convert.ToHexString(SHA256.HashData(source));
             if (!string.IsNullOrWhiteSpace(snapshot.MagnitudeFileSha256)
                 && !string.Equals(actualHash, snapshot.MagnitudeFileSha256, StringComparison.OrdinalIgnoreCase))
             {
@@ -93,6 +95,7 @@ public partial class SpectrumCorrectionWindow : Window
             _currentFile = currentFile;
             _previewResult = null;
             _generatedFilePath = null;
+            _generatedMagnitudeSha256 = null;
             _sourceMagnitudeSha256 = actualHash;
             ApplyButton.IsEnabled = false;
 
@@ -246,8 +249,9 @@ public partial class SpectrumCorrectionWindow : Window
             if (dialog.ShowDialog(this) != true)
                 return;
 
-            string savedPath = result.CorrectedFile.SaveNew(dialog.FileName);
+            string savedPath = result.CorrectedFile.SaveNew(dialog.FileName, out string sha256);
             _generatedFilePath = savedPath;
+            _generatedMagnitudeSha256 = sha256;
             GeneratedFileText.Text = EngineLocalization.Format($"已生成：{savedPath}");
             ApplyButton.IsEnabled = true;
             StatusText.Text = EngineLocalization.Get("新 DAT 已生成，原文件未修改。") + BuildFilledPointWarning(result);
@@ -270,7 +274,7 @@ public partial class SpectrumCorrectionWindow : Window
                 new SpectrumCorrectionApplyRequest(
                     _generatedFilePath,
                     _snapshot.CalibrationGroupName,
-                    _sourceMagnitudeSha256),
+                    _sourceMagnitudeSha256) { ExpectedGeneratedMagnitudeSha256 = _generatedMagnitudeSha256 },
                 _lifetimeCts.Token);
 
             if (!result.IsAccepted)
@@ -436,6 +440,7 @@ public partial class SpectrumCorrectionWindow : Window
     {
         _previewResult = null;
         _generatedFilePath = null;
+        _generatedMagnitudeSha256 = null;
         GeneratedFileText.Text = string.Empty;
         if (!_operationInProgress)
             ApplyButton.IsEnabled = false;
@@ -480,11 +485,6 @@ public partial class SpectrumCorrectionWindow : Window
         MessageBox.Show(this, message, localizedTitle, MessageBoxButton.OK, MessageBoxImage.Warning);
     }
 
-    private static string ComputeSha256(string filePath)
-    {
-        using FileStream stream = new(filePath, FileMode.Open, FileAccess.Read, FileShare.Read);
-        return Convert.ToHexString(SHA256.HashData(stream));
-    }
 
     private static double ParsePositiveNumber(string text, string fieldName)
     {

@@ -1,5 +1,7 @@
 using ColorVision.Engine.Services.Devices.Camera.Job;
+using ColorVision.Engine.Services.Devices.Spectrum.Job;
 using ColorVision.Scheduler;
+using Newtonsoft.Json.Linq;
 using System.IO;
 
 namespace ColorVision.UI.Tests;
@@ -26,15 +28,67 @@ public class SchedulerTaskSerializationTests
 
         var config = Assert.IsType<CameraCaptureJobConfig>(task.Config);
         Assert.Equal("Camera-A", config.DeviceCameraName);
+        Assert.Null(config.DeviceCameraCode);
 
         string roundTripJson = SchedulerTaskSerializer.Serialize(tasks);
         Assert.Contains("\"$type\"", roundTripJson, StringComparison.Ordinal);
         Assert.Contains("ColorVision.Scheduler.SchedulerInfo", roundTripJson, StringComparison.Ordinal);
         Assert.Contains("CameraCaptureJobConfig", roundTripJson, StringComparison.Ordinal);
+        Assert.DoesNotContain(nameof(CameraCaptureJobConfig.DeviceCameraCode), roundTripJson, StringComparison.Ordinal);
 
         SchedulerInfo roundTrippedTask = Assert.Single(SchedulerTaskSerializer.Deserialize(roundTripJson));
         Assert.Equal(task.JobName, roundTrippedTask.JobName);
-        Assert.IsType<CameraCaptureJobConfig>(roundTrippedTask.Config);
+        var roundTrippedConfig = Assert.IsType<CameraCaptureJobConfig>(roundTrippedTask.Config);
+        Assert.Equal("Camera-A", roundTrippedConfig.DeviceCameraName);
+        Assert.Null(roundTrippedConfig.DeviceCameraCode);
+    }
+
+    [Theory]
+    [InlineData("camera-code", "spectrum-code")]
+    [InlineData("", "")]
+    public void ExplicitDeviceCodes_RoundTripAlongsideLegacyNames(string cameraCode, string spectrumCode)
+    {
+        string json = SchedulerTaskSerializer.Serialize(
+        [
+            new() { JobType = typeof(CameraCaptureJob), Config = new CameraCaptureJobConfig
+                { DeviceCameraCode = cameraCode, DeviceCameraName = "Old camera name" } },
+            new() { JobType = typeof(SpectrumGetDataJob), Config = new SpectrumGetDataJobConfig
+                { DeviceSpectrumCode = spectrumCode, DeviceSpectrumName = "Old spectrometer name" } },
+        ]);
+
+        Assert.Collection(SchedulerTaskSerializer.Deserialize(json), camera =>
+        {
+            Assert.Equal(typeof(CameraCaptureJob), camera.JobType);
+            var config = Assert.IsType<CameraCaptureJobConfig>(camera.Config);
+            Assert.Equal(cameraCode, config.DeviceCameraCode);
+            Assert.Equal("Old camera name", config.DeviceCameraName);
+        }, spectrum =>
+        {
+            Assert.Equal(typeof(SpectrumGetDataJob), spectrum.JobType);
+            var config = Assert.IsType<SpectrumGetDataJobConfig>(spectrum.Config);
+            Assert.Equal(spectrumCode, config.DeviceSpectrumCode);
+            Assert.Equal("Old spectrometer name", config.DeviceSpectrumName);
+        });
+    }
+
+    [Fact]
+    public void LegacySpectrumName_RoundTripsWithoutAnExplicitCode()
+    {
+        var document = JObject.Parse(SchedulerTaskSerializer.Serialize(
+        [
+            new() { JobType = typeof(SpectrumGetDataJob), Config = new SpectrumGetDataJobConfig { DeviceSpectrumName = "old-spectrum" } },
+        ]));
+        var legacyConfig = Assert.IsType<JObject>(document["$values"]![0]!["Config"]);
+        legacyConfig.Remove(nameof(SpectrumGetDataJobConfig.DeviceSpectrumCode));
+
+        var tasks = SchedulerTaskSerializer.Deserialize(document.ToString());
+        string roundTripJson = SchedulerTaskSerializer.Serialize(tasks);
+        Assert.DoesNotContain(nameof(SpectrumGetDataJobConfig.DeviceSpectrumCode), roundTripJson, StringComparison.Ordinal);
+        var roundTripped = Assert.Single(SchedulerTaskSerializer.Deserialize(roundTripJson));
+        Assert.Equal(typeof(SpectrumGetDataJob), roundTripped.JobType);
+        var config = Assert.IsType<SpectrumGetDataJobConfig>(roundTripped.Config);
+        Assert.Equal("old-spectrum", config.DeviceSpectrumName);
+        Assert.Null(config.DeviceSpectrumCode);
     }
 
     [Fact]

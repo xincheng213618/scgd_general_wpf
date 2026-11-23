@@ -3,20 +3,22 @@
 using ColorVision.Common.Utilities;
 using ColorVision.Database;
 using ColorVision.Engine.Media;
-using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services.Results;
 using ColorVision.FileIO;
 using ColorVision.ImageEditor;
 using ColorVision.Themes.Controls;
+using ColorVision.UI;
 using ColorVision.UI.Sorts;
 using log4net;
-using MQTTMessageLib.Calibration;
 using SqlSugar;
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
@@ -29,17 +31,24 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
     /// <summary>
     /// ViewCamera.xaml 的交互逻辑
     /// </summary>
-    public partial class ViewCalibration : UserControl, IDisposable
+    public partial class ViewCalibration : UserControl, IDisposable, IActiveDocumentStatusProvider
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(ViewCalibration));
         private bool _isInitialized;
         private bool _isInitializing;
-        private bool _isDisposed;
-        private bool _messageSubscribed;
-        private IDisposable? _localResultSubscription;
+        private volatile bool _isDisposed;
+        private readonly IDisposable _resultSubscription;
+        private CancellationTokenSource? _historyQueryCancellation;
 
         public  MQTTCalibration DeviceService => Device.DService;
         public DeviceCalibration Device { get; set; }
+
+        public event EventHandler? StatusBarItemsChanged;
+
+        public IEnumerable<StatusBarMeta> GetActiveStatusBarItems() =>
+            !_isDisposed && ImageView != null ? ImageView.GetActiveStatusBarItems() : [];
+
+        private void ImageView_StatusBarItemsChanged(object? sender, EventArgs e) => StatusBarItemsChanged?.Invoke(this, e);
 
         public ViewCalibration(DeviceCalibration device) : this(device, deferInitialization: false)
         {
@@ -48,9 +57,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
         internal ViewCalibration(DeviceCalibration device, bool deferInitialization)
         {
             Device = device;
-            DeviceService.MsgReturnReceived += DeviceService_OnMessageRecved;
-            _messageSubscribed = true;
-            _localResultSubscription = ResultMessageBus.Default.Subscribe(LocalResultPublished);
+            _resultSubscription = ResultMessageBus.Default.Subscribe(message => _ = ProcessResultAsync(message));
 
             if (deferInitialization)
             {
@@ -112,6 +119,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
                 return;
 
             _isInitialized = true;
+            ImageView.StatusBarItemsChanged += ImageView_StatusBarItemsChanged;
             listView1.ItemsSource = ViewResults;
 
             if (listView1.View is GridView gridView)
@@ -128,6 +136,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
 
         private void Delete()
         {
+            CancelHistoryQuery();
             if (listView1.SelectedItems.Count == listView1.Items.Count)
                 ViewResults.Clear();
             else
@@ -138,51 +147,47 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
             }
         }
 
-        private void ClearList_Click(object sender, RoutedEventArgs e) => ViewResults.Clear();
-        private void DeviceService_OnMessageRecved(MsgReturn arg)
+        private void ClearList_Click(object sender, RoutedEventArgs e)
         {
-            if (_isDisposed || !Device.ViewRegistration.IsVisible)
-                return;
-
-            switch (arg.EventName)
-            {
-                case MQTTCalibrationEventEnum.Event_GetData:
-                    if (arg.Data == null) return;
-                    ShowPersistedResult(Convert.ToInt32(arg.Data.MasterId));
-                    break;
-            }
-
+            CancelHistoryQuery();
+            ViewResults.Clear();
         }
-
-        private void LocalResultPublished(ResultMessage message)
+        internal async Task ProcessResultAsync(ResultMessage message)
         {
-            if (_isDisposed
-                || !Device.ViewRegistration.IsVisible
-                || message.Route != ResultRoutes.Calibration
+            int masterId = message.Data.MasterId;
+            if (message.Route != ResultRoutes.Calibration
                 || message.ResultKind != ResultKinds.Image
-                || !string.Equals(message.DeviceCode, Device.Config.Code, StringComparison.Ordinal))
+                || message.DatabaseEndpoint is not { } endpoint
+                || masterId <= 0)
                 return;
 
-            ShowPersistedResult(message.Data.MasterId);
-        }
-
-        private void ShowPersistedResult(int masterId)
-        {
-            if (_isDisposed || !Device.ViewRegistration.IsVisible || masterId <= 0) return;
-            log.Debug($"masterId:{masterId}");
-            MeasureResultImgModel? model = MeasureImgResultDao.Instance.GetById(masterId);
-            if (model == null)
+            DeviceCalibration owner = Device;
+            if (message.SourceDevice != null && !ReferenceEquals(message.SourceDevice, owner)) return;
+            MQTTCalibration service = owner.DService;
+            if (!CanApply()) return;
+            try
             {
-                log.Debug($"GetImgResult By Id is null: {masterId}");
-                return;
+                MeasureResultImgModel? model = await Task.Run(() => CanApply() ? MeasureImgResultDao.ReadResult(endpoint, masterId) : null).ConfigureAwait(false);
+                if (model == null) return;
+                await Dispatcher.InvokeAsync(() =>
+                {
+                    if (CanApply() && MatchesDevice(model.DeviceCode))
+                        ShowResult(model);
+                }).Task.ConfigureAwait(false);
+            }
+            catch (Exception error)
+            {
+                if (CanApply()) log.Warn($"无法显示校正结果。MasterId={masterId}, Error={error.GetType().Name}");
             }
 
-            log.Debug($"FileUrl：{model.FileUrl}");
-            Application.Current.Dispatcher.BeginInvoke(() =>
-            {
-                if (!_isDisposed && Device.ViewRegistration.IsVisible)
-                    ShowResult(model);
-            });
+            bool CanApply() => !_isDisposed && !owner.IsDisposed && ReferenceEquals(Device, owner) && ReferenceEquals(owner.DService, service)
+                && owner.ViewRegistration.IsVisible && string.Equals(owner.Config.Code, message.DeviceCode, StringComparison.Ordinal)
+                && ReferenceEquals(owner.ResultDatabaseEndpoint, endpoint) && endpoint.IsCurrent;
+            // Older rows may omit device_code. Local flow rows can carry the linked camera code.
+            bool MatchesDevice(string? storedCode) => string.IsNullOrEmpty(storedCode)
+                || string.Equals(storedCode, message.DeviceCode, StringComparison.Ordinal)
+                || (!string.IsNullOrWhiteSpace(owner.Config.CameraCode)
+                    && string.Equals(storedCode, owner.PhyCamera?.DeviceCamera?.Code, StringComparison.Ordinal));
         }
 
 
@@ -245,6 +250,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
         {
             if (e.Key == Key.Delete && listView1.SelectedIndex > -1)
             {
+                CancelHistoryQuery();
                 int temp = listView1.SelectedIndex;
                 ViewResults.RemoveAt(temp);
             }
@@ -261,30 +267,171 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
         }
 
 
-        private void SearchAdvanced_Click(object sender, RoutedEventArgs e)
+        private async void SearchAdvanced_Click(object sender, RoutedEventArgs e)
         {
-            ViewResults.Clear();
-            using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
+            try { await LoadRecentHistoryAsync(); }
+            catch (Exception error) { ReportHistoryFailure(error); }
+        }
 
-            var query = Db.Queryable<MeasureResultImgModel>();
-            query = query.OrderBy(x => x.Id, Config.OrderByType);
-            var dbList = Config.Count > 0 ? query.Take(Config.Count).ToList() : query.ToList();
-            foreach (var item in dbList)
+        internal async Task LoadRecentHistoryAsync()
+        {
+            var target = CaptureHistoryTarget();
+            var order = Config.OrderByType;
+            int count = Config.Count;
+            CancellationToken cancellation = BeginHistoryQuery();
+            bool CanApply() => !cancellation.IsCancellationRequested && OwnsHistoryTarget(target)
+                && Config.OrderByType == order && Config.Count == count;
+
+            try
             {
-                ViewResultImage ViewResultAlg = new(item);
-                ViewResults.Add(ViewResultAlg);
+                var results = await Task.Run(() =>
+                {
+                    cancellation.ThrowIfCancellationRequested();
+                    RequireHistoryTarget(target);
+                    using var db = target.Endpoint.CreateDbClient();
+                    RequireHistoryTarget(target);
+                    var query = CalibrationResultHistory.Query(db, target.DeviceCode).OrderBy(row => row.Id, order);
+                    var rows = count > 0 ? query.Take(count).ToList() : query.ToList();
+                    return MaterializeHistoryRows(rows, target, cancellation).ToArray();
+                }, cancellation);
+
+                if (!CanApply()) return;
+                ViewResults.Clear();
+                foreach (var result in results) ViewResults.Add(result);
             }
+            catch (Exception) when (!CanApply()) { }
+            finally { FinishHistoryQuery(cancellation); }
         }
 
 
         private void Search1_Click(object sender, RoutedEventArgs e)
         {
-            var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
-            GenericQuery<MeasureResultImgModel, ViewResultImage> genericQuery = new GenericQuery<MeasureResultImgModel, ViewResultImage>(Db, ViewResults, t => new ViewResultImage(t));
-            GenericQueryWindow genericQueryWindow = new GenericQueryWindow(genericQuery) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }; ;
-            genericQueryWindow.ShowDialog();
-            Db.Dispose();
+            try
+            {
+                var query = CreateHistoryQuery(out var finishQuery);
+                using var db = query.Db;
+                try
+                {
+                    var window = new GenericQueryWindow(query)
+                    {
+                        Owner = Application.Current.GetActiveWindow(),
+                        WindowStartupLocation = WindowStartupLocation.CenterOwner,
+                    };
+                    window.ShowDialog();
+                }
+                finally { finishQuery(); }
+            }
+            catch (Exception error) { ReportHistoryFailure(error); }
         }
+
+        internal GenericQuery<MeasureResultImgModel, ViewResultImage> CreateHistoryQuery(out Action finishQuery)
+        {
+            var target = CaptureHistoryTarget();
+            var db = target.Endpoint.CreateDbClient();
+            CancellationToken cancellation = default;
+            finishQuery = () => FinishHistoryQuery(cancellation);
+            try
+            {
+                var query = new GenericQuery<MeasureResultImgModel, ViewResultImage>(db, ViewResults, row => CreateHistoryResult(row, target.Endpoint))
+                {
+                    IsReadOnly = true,
+                    CreateBaseQuery = client =>
+                    {
+                        RequireHistoryTarget(target);
+                        return CalibrationResultHistory.Query(client, target.DeviceCode);
+                    },
+                    BackgroundQueryClientFactory = () =>
+                    {
+                        RequireHistoryTarget(target);
+                        return target.Endpoint.CreateDbClient();
+                    },
+                };
+                query.PreQuery += (_, _) =>
+                {
+                    RequireHistoryTarget(target);
+                    cancellation = BeginHistoryQuery();
+                    CancellationToken requestCancellation = cancellation;
+                    query.BatchConverter = rows => MaterializeHistoryRows(rows, target, requestCancellation);
+                    query.CanApplyBackgroundResults = () => !requestCancellation.IsCancellationRequested && OwnsHistoryTarget(target);
+                };
+                return query;
+            }
+            catch
+            {
+                db.Dispose();
+                throw;
+            }
+        }
+
+        private HistoryTarget CaptureHistoryTarget()
+        {
+            Dispatcher.VerifyAccess();
+            DeviceCalibration owner = Device;
+            ObjectDisposedException.ThrowIf(_isDisposed || owner.IsDisposed, this);
+            if (owner.ResultDatabaseEndpoint is not { IsCurrent: true } endpoint)
+                throw new InvalidOperationException(EngineLocalization.Get("数据库未连接，无法查询校准结果。"));
+            var target = new HistoryTarget(owner, endpoint, owner.Code, owner.Config, owner.DService,
+                owner.CaptureConfigurationTarget(), ReferenceEquals(owner.ViewRegistration.Current, this));
+            RequireHistoryTarget(target);
+            return target;
+        }
+
+        private bool OwnsHistoryTarget(HistoryTarget target) => !_isDisposed && !target.Owner.IsDisposed && !target.Service.IsDisposed
+            && ReferenceEquals(Device, target.Owner) && ReferenceEquals(target.Owner.Config, target.Config)
+            && ReferenceEquals(target.Owner.DService, target.Service) && target.ConfigurationTarget.IsCurrent(target.Owner)
+            && !string.IsNullOrWhiteSpace(target.DeviceCode) && string.Equals(target.Owner.Code, target.DeviceCode, StringComparison.Ordinal)
+            && ReferenceEquals(target.Owner.ResultDatabaseEndpoint, target.Endpoint) && target.Endpoint.IsCurrent
+            && target.Owner.ViewRegistration.IsVisible && (!target.Docked || ReferenceEquals(target.Owner.ViewRegistration.Current, this));
+
+        private void RequireHistoryTarget(HistoryTarget target)
+        {
+            if (!OwnsHistoryTarget(target))
+                throw new InvalidOperationException(EngineLocalization.Get("校准设备或数据库已变更，无法查询历史结果。"));
+        }
+
+        private IEnumerable<ViewResultImage> MaterializeHistoryRows(IEnumerable<MeasureResultImgModel> rows, HistoryTarget target, CancellationToken cancellation)
+        {
+            foreach (var row in rows)
+            {
+                cancellation.ThrowIfCancellationRequested();
+                RequireHistoryTarget(target);
+                yield return CreateHistoryResult(row, target.Endpoint);
+            }
+        }
+
+        private static ViewResultImage CreateHistoryResult(MeasureResultImgModel row, MySqlConnectedEndpoint endpoint) =>
+            new(row) { DatabaseEndpoint = endpoint };
+
+        private CancellationToken BeginHistoryQuery()
+        {
+            CancelHistoryQuery();
+            _historyQueryCancellation = new();
+            return _historyQueryCancellation.Token;
+        }
+
+        private void FinishHistoryQuery(CancellationToken cancellation)
+        {
+            if (_historyQueryCancellation?.Token == cancellation) CancelHistoryQuery();
+        }
+
+        private void CancelHistoryQuery()
+        {
+            var previous = _historyQueryCancellation;
+            _historyQueryCancellation = null;
+            if (previous == null) return;
+            previous.Cancel();
+            previous.Dispose();
+        }
+
+        private void ReportHistoryFailure(Exception error)
+        {
+            if (_isDisposed) return;
+            log.Warn("Calibration history query failed; existing results retained.", error);
+            MessageBox1.Show(Application.Current.GetActiveWindow(), EngineLocalization.Get("校准历史查询失败，当前列表已保留。详情请查看日志。"), "ColorVision");
+        }
+
+        private sealed record HistoryTarget(DeviceCalibration Owner, MySqlConnectedEndpoint Endpoint, string DeviceCode,
+            ConfigCalibration Config, MQTTCalibration Service, DeviceConfigurationTarget ConfigurationTarget, bool Docked);
 
         private void GridViewColumnSort(object sender, RoutedEventArgs e)
         {
@@ -304,16 +451,11 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
                 return;
 
             _isDisposed = true;
+            CancelHistoryQuery();
             Loaded -= View_Loaded;
             IsVisibleChanged -= View_IsVisibleChanged;
 
-            if (_messageSubscribed)
-            {
-                DeviceService.MsgReturnReceived -= DeviceService_OnMessageRecved;
-                _messageSubscribed = false;
-            }
-            _localResultSubscription?.Dispose();
-            _localResultSubscription = null;
+            _resultSubscription.Dispose();
 
             if (ReferenceEquals(Config.GridViewColumnVisibilitys, GridViewColumnVisibilitys))
                 Config.GridViewColumnVisibilitys = new ObservableCollection<GridViewColumnVisibility>(GridViewColumnVisibilitys.Select(column =>
@@ -325,7 +467,11 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
                 listView1.ItemsSource = null;
                 listView1.CommandBindings.Clear();
             }
-            ImageView?.Dispose();
+            if (ImageView != null)
+            {
+                ImageView.StatusBarItemsChanged -= ImageView_StatusBarItemsChanged;
+                ImageView.Dispose();
+            }
             DataContext = null;
             GC.SuppressFinalize(this);
         }

@@ -1,13 +1,18 @@
 using ColorVision.Core;
 using ColorVision.Database;
 using ColorVision.Engine;
+using ColorVision.Engine.FlowProcessing;
 using ColorVision.Engine.FlowProcessing.Nodes;
 using ColorVision.Engine.Services.Devices.Camera.Local;
+using ColorVision.Engine.Services.Results;
+using ColorVision.Engine.Services.Results.LightArea;
 using ColorVision.Engine.Templates.Jsons;
 using ColorVision.Engine.Templates.Jsons.FOV2;
 using FlowEngineLib.Base;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using SqlSugar;
+using System.IO;
 using System.Runtime.InteropServices;
 
 namespace ColorVision.UI.Tests;
@@ -203,14 +208,163 @@ public sealed class FovCalculationTests
         InputOnlyServices services = new();
         LocalFovNode node = new(services);
         CVStartCFC action = new();
+        var endpoint = new MySqlConnectedEndpoint(_ => true, () => throw new NotSupportedException());
         action.MasterValue(null!, 10, (int)ViewResultAlgType.FindLightArea);
-        LocalFovInputContext input = node.ResolveInput(action, FovMeasurementMode.CurvedBoundary);
+        LocalFovInputContext input = node.ResolveInput(action, FovMeasurementMode.CurvedBoundary, endpoint);
         Assert.Null(input.Corners);
         Assert.Equal(5, input.SourceMasterId);
         Assert.Equal(10, input.LightAreaMasterId);
         Assert.Equal(0, services.CornerReads);
-        Assert.Throws<InvalidOperationException>(() => node.ResolveInput(action, FovMeasurementMode.FourCorners));
+        Assert.Throws<InvalidOperationException>(() => node.ResolveInput(action, FovMeasurementMode.FourCorners, endpoint));
         Assert.Equal(1, services.CornerReads);
+    }
+
+    [Theory]
+    [InlineData("source ID")]
+    [InlineData("legacy path")]
+    [InlineData("calculation failure")]
+    [InlineData("detail failure")]
+    public void BoundFovReadsAndPersistsOnItsOriginalDatabase(string scenario)
+    {
+        string folder = Directory.CreateTempSubdirectory("cv-fov-database-").FullName;
+        string pathA = Path.Combine(folder, "a.db"), pathB = Path.Combine(folder, "b.db");
+        string imageA = Path.Combine(folder, "a-image.png"), imageB = Path.Combine(folder, "b-image.png");
+        string legacyPath = Path.Combine(folder, "legacy-image.raw");
+        string resultDirectory = Path.Combine(folder, "results");
+        MySqlConnectedEndpoint? active = null;
+        MySqlConnectedEndpoint a = new(endpoint => ReferenceEquals(active, endpoint), () => Open(pathA));
+        MySqlConnectedEndpoint b = new(endpoint => ReferenceEquals(active, endpoint), () => Open(pathB));
+        var action = new CVStartCFC("shared-fov-batch");
+        using var resources = action.RuntimeResources;
+        try
+        {
+            File.WriteAllBytes(imageA, []);
+            File.WriteAllBytes(imageB, []);
+            active = a;
+            var originalCorners = scenario == "calculation failure" ? Corners.Reverse().ToArray() : Corners;
+            var differentCorners = Corners.Select(point => new LuminousAreaPoint(point.X + 100, point.Y + 200)).ToArray();
+            var sourceA = Seed(a, imageA, originalCorners, scenario == "legacy path", isBound: true);
+            var sourceB = Seed(b, imageB, differentCorners, lookupByPath: false, isBound: false);
+            Assert.Equal(sourceA, sourceB);
+            action.MasterValue(null!, sourceA.AreaId, (int)ViewResultAlgType.FindLightArea);
+            active = b;
+            Assert.False(a.IsCurrent);
+
+            var node = new LocalFovNode(new LocalFovNodeServices(resultDirectory));
+            ResultMessage? received = null;
+            using IDisposable subscription = ResultMessageBus.Default.Subscribe(message =>
+            {
+                if (message.SerialNumber == action.SerialNumber) received = message;
+            });
+            if (scenario == "detail failure")
+            {
+                using (var db = a.CreateDbClient())
+                    db.Ado.ExecuteCommand("CREATE TRIGGER reject_fov_detail BEFORE INSERT ON t_scgd_algorithm_result_detail_common "
+                        + "BEGIN SELECT RAISE(ABORT, 'rejected FOV detail in fixture'); END;");
+                Exception error = Assert.ThrowsAny<Exception>(() => node.ExecuteSynchronously(action));
+                Assert.Contains("rejected FOV detail in fixture", error.ToString());
+                Assert.Null(received);
+                Assert.Empty(Directory.EnumerateFiles(resultDirectory));
+            }
+            else if (scenario == "calculation failure")
+            {
+                InvalidOperationException error = Assert.Throws<InvalidOperationException>(() => node.ExecuteSynchronously(action));
+                Assert.IsType<ArgumentException>(error.InnerException);
+                Assert.False(Directory.Exists(resultDirectory));
+            }
+            else
+            {
+                LocalFovNodeResultData result = node.ExecuteSynchronously(action);
+                Assert.Equal(sourceA.ImageId, result.SourceMasterId);
+                Assert.Equal(sourceA.AreaId, result.LightAreaMasterId);
+                Assert.Equal(imageA, result.ImageFilePath);
+                Assert.Equal(Corners, result.Calculation.Measurement.Corners);
+                Assert.True(File.Exists(result.ResultFilePath));
+            }
+
+            using var dbA = a.CreateDbClient();
+            using var dbB = b.CreateDbClient();
+            Assert.Single(dbB.Queryable<AlgResultMasterModel>().ToList());
+            Assert.Empty(dbB.Queryable<DetailCommonModel>().ToList());
+            var masters = dbA.Queryable<AlgResultMasterModel>().Where(row => row.ImgFileType == ViewResultAlgType.FOV).ToList();
+            if (scenario == "detail failure")
+            {
+                Assert.Empty(masters);
+                Assert.Empty(dbA.Queryable<DetailCommonModel>().ToList());
+                return;
+            }
+
+            var master = Assert.Single(masters);
+            Assert.Equal(sourceA.BatchId, master.BatchId);
+            Assert.Equal(imageA, master.ImgFile);
+            JObject parameters = JObject.Parse(master.Params!);
+            Assert.Equal(sourceA.ImageId, parameters.Value<int>("SourceMasterId"));
+            Assert.NotNull(received);
+            Assert.Same(a, received.DatabaseEndpoint);
+            Assert.Equal(master.Id, received.Data.MasterId);
+            Assert.Equal((int)ViewResultAlgType.FOV, received.Data.MasterResultType);
+            if (scenario == "calculation failure")
+            {
+                Assert.Equal(LocalFovNode.CalculationFailureResultCode, master.ResultCode);
+                Assert.Contains("FOV coarse corners are invalid", master.Result);
+                Assert.Equal(master.Result, parameters.Value<string>("FailureReason"));
+                Assert.Empty(dbA.Queryable<DetailCommonModel>().ToList());
+            }
+            else
+            {
+                Assert.Equal(0, master.ResultCode);
+                var detail = Assert.Single(dbA.Queryable<DetailCommonModel>().ToList());
+                Assert.Equal(master.Id, detail.PId);
+                string resultFile = JObject.Parse(detail.ResultJson).Value<string>("ResultFileName")!;
+                Assert.Equal(Assert.Single(Directory.EnumerateFiles(resultDirectory)), resultFile);
+                Assert.Equal("Success", JObject.Parse(File.ReadAllText(resultFile))["result"]?.Value<string>("message"));
+            }
+        }
+        finally
+        {
+            if (Directory.Exists(resultDirectory))
+            {
+                foreach (string resultFile in Directory.EnumerateFiles(resultDirectory))
+                    File.Delete(resultFile);
+                Directory.Delete(resultDirectory);
+            }
+            File.Delete(imageA);
+            File.Delete(imageB);
+            File.Delete(pathA);
+            File.Delete(pathB);
+            Directory.Delete(folder);
+        }
+
+        (int BatchId, int ImageId, int AreaId) Seed(MySqlConnectedEndpoint endpoint, string imageFile,
+            LuminousAreaPoint[] corners, bool lookupByPath, bool isBound)
+        {
+            using var db = endpoint.CreateDbClient();
+            db.CodeFirst.InitTables(typeof(MeasureBatchModel), typeof(MeasureResultImgModel), typeof(AlgResultMasterModel),
+                typeof(AlgResultLightAreaModel), typeof(DetailCommonModel));
+            var batch = new MeasureBatchModel { Name = action.SerialNumber, Code = action.SerialNumber };
+            var inserted = FlowMeasurementBatch.Insert(batch, endpoint);
+            if (isBound) inserted.Bind(resources);
+            int imageId = db.Insertable(new MeasureResultImgModel
+            {
+                BatchId = batch.Id, FileUrl = imageFile, RawFile = Path.GetFileName(legacyPath), CreateDate = DateTime.Now
+            }).ExecuteReturnIdentity();
+            int areaId = db.Insertable(new AlgResultMasterModel
+            {
+                BatchId = batch.Id, ImgFileType = ViewResultAlgType.FindLightArea, ImgFile = legacyPath, CreateDate = DateTime.Now,
+                Params = lookupByPath ? null : JsonConvert.SerializeObject(new { SourceMasterId = isBound ? imageId : imageId + 1000 })
+            }).ExecuteReturnIdentity();
+            db.Insertable(corners.Select(point => new AlgResultLightAreaModel
+            {
+                Pid = areaId, PosX = (float)point.X, PosY = (float)point.Y
+            }).ToList()).ExecuteCommand();
+            return (batch.Id, imageId, areaId);
+        }
+
+        static SqlSugarClient Open(string path) => new(new ConnectionConfig
+        {
+            ConnectionString = $"Data Source={path};Pooling=False", DbType = DbType.Sqlite,
+            IsAutoCloseConnection = true, InitKeyType = InitKeyType.Attribute
+        });
     }
 
     [Fact]
@@ -288,16 +442,16 @@ public sealed class FovCalculationTests
     private sealed class InputOnlyServices : ILocalFovNodeServices
     {
         public int CornerReads { get; private set; }
-        public AlgResultMasterModel? GetAlgorithmResult(int masterId) => new() { Params = "{\"SourceMasterId\":5}" };
-        public MeasureResultImgModel? GetImageResult(int masterId) => new() { Id = masterId };
-        public IReadOnlyList<LuminousAreaPoint> GetLightAreaCorners(int masterId)
+        public AlgResultMasterModel? GetAlgorithmResult(MySqlConnectedEndpoint endpoint, int masterId) => new() { Params = "{\"SourceMasterId\":5}" };
+        public MeasureResultImgModel? GetImageResult(MySqlConnectedEndpoint endpoint, int masterId) => new() { Id = masterId };
+        public IReadOnlyList<LuminousAreaPoint> GetLightAreaCorners(MySqlConnectedEndpoint endpoint, int masterId)
         {
             CornerReads++;
             throw new InvalidOperationException("Upstream corners are not available.");
         }
         public LocalFlowFrame LoadFrame(string filePath) => throw new NotSupportedException();
-        public MeasureResultImgModel? FindImageResult(string? imageFilePath) => throw new NotSupportedException();
-        public FovCameraCalibration ResolveCalibration(string? sourceCameraDeviceCode) => throw new NotSupportedException();
+        public MeasureResultImgModel? FindImageResult(MySqlConnectedEndpoint endpoint, string? imageFilePath) => throw new NotSupportedException();
+        public FovCameraCalibration ResolveCalibration(string? sourceCameraDeviceCode, MySqlConnectedEndpoint endpoint) => throw new NotSupportedException();
         public FovCalculationResult DetectAndCalculate(HImage image, RoiRect roi, double fovDist, double cameraDegrees, IReadOnlyList<LuminousAreaPoint>? coarseCorners, FovMeasurementMode mode) => throw new NotSupportedException();
         public LocalFovPersistenceResult Persist(LocalFovPersistenceRequest request) => throw new NotSupportedException();
         public void Publish(LocalFovPublishRequest request) => throw new NotSupportedException();

@@ -20,6 +20,8 @@ namespace ColorVision.ImageEditor
 
         private readonly DefaultImageViewDisplayConfig _displayDefaults = DefaultImageViewDisplayConfig.Current;
         private readonly Dictionary<FormattedTextCacheKey, CachedFormattedText> _formattedTextCache = new();
+        private readonly List<CachedFormattedText> _compiledLabels = new();
+        private long _drawingVersion;
         private DrawingGroup? _cachedDrawing;
         private ImageView? _owner;
 
@@ -40,6 +42,8 @@ namespace ColorVision.ImageEditor
             if (!TryGetRenderState(out BitmapSource? source, out Rect imageBounds, out double cellWidth, out double cellHeight, out Int32Rect visiblePixels) || source == null)
             {
                 _cachedDrawing = null;
+                if (_compiledLabels.Count > 0)
+                    ReleaseUnusedLabelDrawings(++_drawingVersion);
                 Visibility = Visibility.Collapsed;
                 InvalidateVisual();
                 return;
@@ -52,11 +56,12 @@ namespace ColorVision.ImageEditor
 
         private DrawingGroup BuildOverlayDrawing(BitmapSource source, Rect imageBounds, double cellWidth, double cellHeight, Int32Rect visiblePixels)
         {
+            long drawingVersion = ++_drawingVersion;
             DrawingGroup drawingGroup = new();
             using (DrawingContext drawingContext = drawingGroup.Open())
             {
                 double fontSize = Math.Max(8, Math.Min(cellWidth, cellHeight) * 0.42);
-                OverlayTextCache textCache = new(this, fontSize);
+                OverlayTextCache textCache = new(this, fontSize, drawingVersion);
 
                 if (source.Format == PixelFormats.Gray8 || source.Format == PixelFormats.Indexed8)
                 {
@@ -97,8 +102,12 @@ namespace ColorVision.ImageEditor
                 drawingGroup.Freeze();
             }
 
+            ReleaseUnusedLabelDrawings(drawingVersion);
             return drawingGroup;
         }
+
+        private void ReleaseUnusedLabelDrawings(long drawingVersion)
+            => _compiledLabels.RemoveAll(label => label.ReleaseIfUnused(drawingVersion));
 
         protected override void OnRender(DrawingContext drawingContext)
         {
@@ -364,17 +373,10 @@ namespace ColorVision.ImageEditor
             }
 
             Point origin = new(
-                cellRect.Left + (cellRect.Width - formattedText.FormattedText.Width) / 2,
-                cellRect.Top + (cellRect.Height - formattedText.FormattedText.Height) / 2);
+                cellRect.Left + (cellRect.Width - formattedText.Width) / 2,
+                cellRect.Top + (cellRect.Height - formattedText.Height) / 2);
 
-            Rect backgroundRect = new(
-                origin.X - TextHorizontalPadding / 2,
-                origin.Y - TextVerticalPadding / 2,
-                formattedText.FormattedText.Width + TextHorizontalPadding,
-                formattedText.FormattedText.Height + TextVerticalPadding);
-
-            drawingContext.DrawRoundedRectangle(OverlayBackgroundBrush, null, backgroundRect, 2, 2);
-            drawingContext.DrawText(formattedText.FormattedText, origin);
+            textCache.Draw(formattedText, drawingContext, origin);
         }
 
         private CachedFormattedText GetOrCreateFormattedText(string text, double fontSize, double pixelsPerDip)
@@ -459,15 +461,68 @@ namespace ColorVision.ImageEditor
 
         private sealed class CachedFormattedText
         {
+            private readonly FormattedText _formattedText;
+            private DrawingGroup? _drawing;
+            private bool _drawn;
+            private long _lastDrawingVersion;
+
             public CachedFormattedText(FormattedText formattedText, double fontSize)
             {
-                FormattedText = formattedText;
+                _formattedText = formattedText;
                 FontSize = fontSize;
+                Width = formattedText.Width;
+                Height = formattedText.Height;
             }
 
-            public FormattedText FormattedText { get; }
-
+            public double Width { get; }
+            public double Height { get; }
             public double FontSize { get; }
+
+            public bool Draw(DrawingContext context, Point origin, long drawingVersion)
+            {
+                if (!_drawn)
+                {
+                    DrawLabel(context, origin);
+                    _drawn = true;
+                    return false;
+                }
+
+                bool created = _drawing == null;
+                if (_drawing == null)
+                {
+                    DrawingGroup drawing = new();
+                    using (DrawingContext local = drawing.Open())
+                        DrawLabel(local, new Point(0, 0));
+                    drawing.Freeze();
+                    _drawing = drawing;
+                }
+
+                context.PushTransform(new TranslateTransform(origin.X, origin.Y));
+                context.DrawDrawing(_drawing);
+                context.Pop();
+                _lastDrawingVersion = drawingVersion;
+                return created;
+            }
+
+            public bool ReleaseIfUnused(long drawingVersion)
+            {
+                if (_lastDrawingVersion == drawingVersion)
+                    return false;
+                _drawing = null;
+                _drawn = false;
+                return true;
+            }
+
+            private void DrawLabel(DrawingContext context, Point origin)
+            {
+                Rect background = new(
+                    origin.X - TextHorizontalPadding / 2,
+                    origin.Y - TextVerticalPadding / 2,
+                    Width + TextHorizontalPadding,
+                    Height + TextVerticalPadding);
+                context.DrawRoundedRectangle(OverlayBackgroundBrush, null, background, 2, 2);
+                context.DrawText(_formattedText, origin);
+            }
         }
 
         private readonly record struct FormattedTextCacheKey(string Text, int FontSizeKey, int PixelsPerDipKey);
@@ -477,12 +532,20 @@ namespace ColorVision.ImageEditor
             private readonly PixelValueOverlay _owner;
             private readonly double _baseFontSize;
             private readonly double _pixelsPerDip;
+            private readonly long _drawingVersion;
 
-            public OverlayTextCache(PixelValueOverlay owner, double fontSize)
+            public OverlayTextCache(PixelValueOverlay owner, double fontSize, long drawingVersion)
             {
                 _owner = owner;
                 _baseFontSize = fontSize;
+                _drawingVersion = drawingVersion;
                 _pixelsPerDip = VisualTreeHelper.GetDpi(owner).PixelsPerDip;
+            }
+
+            public void Draw(CachedFormattedText text, DrawingContext context, Point origin)
+            {
+                if (text.Draw(context, origin, _drawingVersion))
+                    _owner._compiledLabels.Add(text);
             }
 
             public CachedFormattedText Get(string text, double fontSize)
@@ -498,13 +561,13 @@ namespace ColorVision.ImageEditor
                 }
 
                 CachedFormattedText candidate = Get(text, _baseFontSize);
-                if (Fits(candidate.FormattedText, availableWidth, availableHeight))
+                if (Fits(candidate, availableWidth, availableHeight))
                 {
                     return candidate;
                 }
 
-                double widthScale = availableWidth / Math.Max(candidate.FormattedText.Width, 1);
-                double heightScale = availableHeight / Math.Max(candidate.FormattedText.Height, 1);
+                double widthScale = availableWidth / Math.Max(candidate.Width, 1);
+                double heightScale = availableHeight / Math.Max(candidate.Height, 1);
                 double scaledFontSize = QuantizeFontSize(_baseFontSize * Math.Min(widthScale, heightScale) * 0.96);
                 if (scaledFontSize >= candidate.FontSize)
                 {
@@ -512,10 +575,10 @@ namespace ColorVision.ImageEditor
                 }
 
                 CachedFormattedText fitted = Get(text, scaledFontSize);
-                return Fits(fitted.FormattedText, availableWidth, availableHeight) ? fitted : null;
+                return Fits(fitted, availableWidth, availableHeight) ? fitted : null;
             }
 
-            private static bool Fits(FormattedText formattedText, double availableWidth, double availableHeight)
+            private static bool Fits(CachedFormattedText formattedText, double availableWidth, double availableHeight)
             {
                 return formattedText.Width <= availableWidth && formattedText.Height <= availableHeight;
             }

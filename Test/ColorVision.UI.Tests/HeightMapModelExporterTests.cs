@@ -1,4 +1,6 @@
 using ColorVision.ImageEditor.EditorTools.ThreeD;
+using HelixToolkit;
+using HelixToolkit.Maths;
 using SharpAssimp;
 using System.Globalization;
 using System.IO;
@@ -153,8 +155,7 @@ public sealed class HeightMapModelExporterTests
         using var output = new ExportDirectory();
         string path = Path.Combine(output.Path, "existing" + extension);
         await File.WriteAllTextAsync(path, "existing file");
-        HeightMapDxGeometry invalid = Triangle();
-        invalid.Indices[1] = 99;
+        HeightMapDxGeometry invalid = Triangle(secondIndex: 99);
 
         await Assert.ThrowsAsync<ArgumentException>(() =>
             HeightMapModelExporter.ExportAsync(invalid, CreateLut(), 4, path, true, CancellationToken.None));
@@ -241,18 +242,15 @@ public sealed class HeightMapModelExporterTests
         Assert.Contains("v 0.25 0.5 2", await File.ReadAllLinesAsync(path));
     }
 
-    private static HeightMapDxGeometry Triangle()
+    private static HeightMapDxGeometry Triangle(int secondIndex = 1)
     {
         Vector3 normal = Vector3.Normalize(new Vector3(-.5f, 0, 1));
-        return new HeightMapDxGeometry
-        {
-            Sample = new HeightMapSample([64, 191, 64], null, 3, 1),
-            Positions = [new(.25f, .5f, .25f), new(1.25f, .5f, .75f), new(.25f, 2.5f, .25f)],
-            Normals = [normal, normal, normal],
-            TextureCoordinates = [new(.125f, .5f), new(.375f, .5f), new(.625f, .5f)],
-            Indices = [0, 1, 2],
-            VisibleCells = [],
-        };
+        return new HeightMapDxGeometry(
+            new HeightMapSample([64, 191, 64], null, 3, 1),
+            new Vector3Collection([new(.25f, .5f, .25f), new(1.25f, .5f, .75f), new(.25f, 2.5f, .25f)]),
+            new Vector3Collection([normal, normal, normal]),
+            new Vector2Collection([new(.125f, .5f), new(.375f, .5f), new(.625f, .5f)]),
+            new IntCollection([0, secondIndex, 2]), []);
     }
 
     private static byte[] CreateLut()

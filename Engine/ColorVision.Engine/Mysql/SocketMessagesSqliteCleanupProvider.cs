@@ -18,9 +18,15 @@ namespace ColorVision.Database
         IDatabaseCleanupMaintenanceProvider,
         IDatabaseCleanupMigrationProvider
     {
+        private readonly string _databasePath;
+
+        public SocketMessagesSqliteCleanupProvider() : this(SocketMessageManager.SqliteDbPath) { }
+
+        internal SocketMessagesSqliteCleanupProvider(string databasePath) => _databasePath = Path.GetFullPath(databasePath);
+
         public string Id => "socketmessages-sqlite";
         public string DisplayName => EngineLocalization.Get("Socket 消息 SQLite");
-        public string Description => EngineLocalization.Format($"数据库文件: {SocketMessageManager.SqliteDbPath}");
+        public string Description => EngineLocalization.Format($"数据库文件: {_databasePath}");
         public int Order => 22;
         public string MigrationActionName => EngineLocalization.Get("迁移并压缩历史消息");
         public string MigrationConfirmationMessage =>
@@ -29,14 +35,14 @@ namespace ColorVision.Database
 
         public bool HasPendingMigration()
         {
-            string databasePath = SocketMessageManager.SqliteDbPath;
+            string databasePath = _databasePath;
             return File.Exists(databasePath)
                 && SocketMessagePayloadStorage.RunDatabaseMaintenance(() => LegacySocketMessageMigration.HasPendingMigration(databasePath));
         }
 
         public IReadOnlyList<DatabaseCleanupTableInfo> LoadTables()
         {
-            string databasePath = SocketMessageManager.SqliteDbPath;
+            string databasePath = _databasePath;
             var table = new DatabaseCleanupTableInfo
             {
                 TableName = SocketMessagePayloadStorage.TableName,
@@ -84,21 +90,8 @@ namespace ColorVision.Database
                 string databasePath = RequireDatabasePath();
                 int deletedRows;
                 using (SqlSugarClient db = CreateDbClient())
-                {
-                    db.Ado.BeginTran();
-                    try
-                    {
-                        deletedRows = db.Deleteable<SocketMessage>().ExecuteCommand();
-                        db.Ado.ExecuteCommand(
-                            $"DELETE FROM sqlite_sequence WHERE name = '{SocketMessagePayloadStorage.TableName}';");
-                        db.Ado.CommitTran();
-                    }
-                    catch
-                    {
-                        db.Ado.RollbackTran();
-                        throw;
-                    }
-                }
+                    // Open history can retain old IDs, so full cleanup keeps the AUTOINCREMENT high-water mark.
+                    deletedRows = db.Deleteable<SocketMessage>().ExecuteCommand();
 
                 SqliteVacuumResult vacuum = SqliteFileMaintenance.VacuumAndCheck(databasePath);
                 RefreshLoadedMessages();
@@ -164,7 +157,7 @@ namespace ColorVision.Database
             });
         }
 
-        private static DatabaseCleanupBackupResult CreateBackupCore()
+        private DatabaseCleanupBackupResult CreateBackupCore()
         {
             SqliteBackupFileResult backup = SqliteFileMaintenance.CreateVerifiedBackup(
                 RequireDatabasePath(),
@@ -178,23 +171,22 @@ namespace ColorVision.Database
             };
         }
 
-        private static SqlSugarClient CreateDbClient()
+        private SqlSugarClient CreateDbClient()
         {
             return new SqlSugarClient(new ConnectionConfig
             {
-                ConnectionString = $"Data Source={SocketMessageManager.SqliteDbPath};Default Timeout=30",
+                ConnectionString = $"Data Source={_databasePath};Default Timeout=30",
                 DbType = DbType.Sqlite,
                 IsAutoCloseConnection = true,
                 InitKeyType = InitKeyType.Attribute,
             });
         }
 
-        private static string RequireDatabasePath()
+        private string RequireDatabasePath()
         {
-            string databasePath = SocketMessageManager.SqliteDbPath;
-            if (!File.Exists(databasePath))
-                throw new FileNotFoundException(EngineLocalization.Get("Socket 消息 SQLite 数据库文件不存在。"), databasePath);
-            return databasePath;
+            if (!File.Exists(_databasePath))
+                throw new FileNotFoundException(EngineLocalization.Get("Socket 消息 SQLite 数据库文件不存在。"), _databasePath);
+            return _databasePath;
         }
 
         private static void AddVacuumSummary(
@@ -206,17 +198,20 @@ namespace ColorVision.Database
             result.SummaryLines.Add(EngineLocalization.Format($"SQLite 完整性检查: {vacuum.IntegrityCheck}"));
         }
 
-        private static void RefreshLoadedMessages()
+        private void RefreshLoadedMessages()
         {
-            if (Application.Current?.Dispatcher == null)
+            if (Application.Current?.Dispatcher is not { } dispatcher || !TargetsDefaultDatabase())
                 return;
 
-            Application.Current.Dispatcher.BeginInvoke(() =>
+            dispatcher.BeginInvoke(() =>
             {
+                if (!TargetsDefaultDatabase()) return;
                 SocketMessageManager manager = SocketMessageManager.GetInstance();
                 manager.LoadAll(manager.Config.Count);
             });
         }
+
+        private bool TargetsDefaultDatabase() => string.Equals(_databasePath, Path.GetFullPath(SocketMessageManager.SqliteDbPath), StringComparison.OrdinalIgnoreCase);
     }
 
     /// <summary>

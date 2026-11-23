@@ -5,7 +5,6 @@ status: "current"
 summary: "Copilot 任务生命周期、恢复预算与项目指令发现的契约；技能发现和调用见独立技能主题。"
 aliases: ["AGENTS.md 太长会被截断吗","Copilot 如何加载 AGENTS.md","为什么不读取 config.toml","CopilotAgentProjectInstructions","/init","初始化项目指令","CopilotProjectInitialization"]
 code_paths: ["ColorVision/Copilot/Agent/CopilotAgentRunFinalizationScope.cs","ColorVision/Copilot/Agent/CopilotAgentProjectInstructions.cs","ColorVision/Copilot/Agent/CopilotAgentProjectInstructions.Rules.cs","ColorVision/Copilot/Agent/CopilotAgentSessionCheckpoint.cs","ColorVision/Copilot/Agent/CopilotAgentTokenBudget.cs","ColorVision/Copilot/Agent/CopilotAgentTokenBudget.Estimation.cs","ColorVision/Copilot/Agent/CopilotMicrosoftAgentFrameworkRuntime.FinalAnswerRecovery.cs","ColorVision/Copilot/Agent/CopilotMicrosoftAgentFrameworkRuntime.Recovery.cs","ColorVision/Copilot/Agent/CopilotMicrosoftAgentFrameworkRuntime.Loop.cs","ColorVision/Copilot/Agent/CopilotMicrosoftAgentFrameworkRuntime.AgentStreamingLoop.cs","ColorVision/Copilot/CopilotChatMessage.cs","ColorVision/Copilot/CopilotProjectInitialization.cs"]
-test_paths: ["Test/ColorVision.Copilot.Tests/CopilotLateFinalizationCancellationTests.cs","Test/ColorVision.Copilot.Tests/CopilotFinalCheckpointAwaitCancellationTests.cs","Test/ColorVision.Copilot.Tests/CopilotAgentProjectInstructionsTests.cs","Test/ColorVision.Copilot.Tests/CopilotAgentSessionCheckpointTests.cs","Test/ColorVision.Copilot.Tests/CopilotTokenUsageMergeTests.cs","Test/ColorVision.Copilot.Tests/CopilotNonStreamingUsageTests.cs","Test/ColorVision.Copilot.Tests/CopilotFinalAnswerCancellationTests.cs","Test/ColorVision.Copilot.Tests/CopilotFinalAnswerSteeringTests.cs","Test/ColorVision.Copilot.Tests/CopilotFinalAnswerRecoverySafetyTests.cs"]
 related: ["copilot.runtime","copilot.execution","copilot.extensions","copilot.skills"]
 ---
 
@@ -38,25 +37,25 @@ ColorVision 使用独立于模型 Profile 的 Agent 上下文窗口，默认 1,0
 
 Harness 正常结束但没有产生任何 `TextContent` 时，Runtime 不再把空 Todo 账本直接判为完成。它会通过同一 Token 与传输重试中间件发起一次非流式最终总结，`ChatOptions.Tools` 固定为空，并把有界工具观察与当前任务账本作为数据交给模型；因此这个阶段不能重放业务或 Framework 工具。总结仍为空或失败时会发出固定用户提示、记录 `IncompleteOutput` 与 `provider_empty_output` blocker，保存 checkpoint，并且绝不标记 `Completed`。
 
-本轮自动收尾请求还会在原请求之后，按交付顺序加入已确认进入 Provider 的有界 steering 补充指令，保留用户对语言、格式或任务约束的最新修正；这些指令不恢复任何工具权限。尚未交付的排队输入继续走 `SteeringRecovery`，不能因进入收尾阶段就标为已消费或加入最终回答请求。`CopilotFinalAnswerSteeringTests` 使用受控 Provider 验证长度截断与空正文收尾保留已交付顺序，并验证工具预算中断时恢复未交付输入、最终 Provider 调用不暴露工具；不调用真实模型。
+本轮自动收尾请求还会在原请求之后，按交付顺序加入已确认进入 Provider 的有界 steering 补充指令，保留用户对语言、格式或任务约束的最新修正；这些指令不恢复任何工具权限。尚未交付的排队输入继续走 `SteeringRecovery`，不能因进入收尾阶段就标为已消费或加入最终回答请求。
 
 `CopilotAgentRecoveryMode.Finalize` 为这种状态以及“Provider 在任务已完成后断流”的状态提供独立恢复协议。Runtime 在验证 profile、checkpoint 和最后一次 `RunStopped` 后直接进入 no-tools Provider 调用，不发现外部 MCP、不创建 Harness、不恢复 Todo、不打开审批；不匹配的 Finalize 请求会在工具发现之前拒绝，不能降级成普通 Agent 执行。再次空输出或超时时会刷新原 session 的 journal 与对话记忆并继续保留 checkpoint；成功后旧 session checkpoint 会退役，因为旁路生成的最终回答并不存在于旧 Framework session 中，后续轮次应从包含新答案的可见历史创建新 session。
 
-只更新 journal 不会使旧执行会话重新变得可恢复。`CopilotAgentSessionCheckpoint.SessionResumeRestriction` 将未知工具结果或未闭合的 Provider 工具调用绑定到保留的 `SerializedSessionJson`；`CopyWithOutcome` 及其 journal 复制入口在替换 journal 前固化该限制，JSON 存储、快照、等价判断和 journal 裁剪继续保留它。非法限制值拒绝恢复。连续失败的 Finalize 不能靠新增无工具 run 清除限制；真正重新规划并创建新 Session 时不继承旧标记，也不会因历史 journal 中仍有未知结果而永久禁止恢复。`CopilotFinalAnswerRecoverySafetyTests` 覆盖实际恢复入口、两次失败、保存重开、复制与新 Session 对照，同时确认 Finalize 不发现或执行工具。本修复不自动迁移旧版本已经丢失会话关联限制的历史记录；这类记录仍需重新规划，不能根据缺失标记断言原操作安全。
+只更新 journal 不会使旧执行会话重新变得可恢复。`CopilotAgentSessionCheckpoint.SessionResumeRestriction` 将未知工具结果或未闭合的 Provider 工具调用绑定到保留的 `SerializedSessionJson`；`CopyWithOutcome` 及其 journal 复制入口在替换 journal 前固化该限制，JSON 存储、快照、等价判断和 journal 裁剪继续保留它。非法限制值拒绝恢复。连续失败的 Finalize 不能靠新增无工具 run 清除限制；真正重新规划并创建新 Session 时不继承旧标记，也不会因历史 journal 中仍有未知结果而永久禁止恢复。旧版本缺少会话关联限制时，需要重新规划并核对外部结果。
 
 `CopilotTokenBudgetChatClient` 基于官方 `DelegatingChatClient` 中间件包装真实模型客户端，累计同一 Agent 请求内所有供应商调用的 usage。每轮工具循环都会重读全部历史，缓存读取的费用约为新输入的十分之一，全额计入会让长任务因几乎没有计费的 Token 提前结束，因此判断预算耗尽时把供应商报告的缓存读取按 10% 计入（`BudgetChargeTokens`），调用前的估算也沿用上一次的缓存读取量；`ConsumedTokens` 和 `Reported*` 仍是原始账单值，可能超过预算值而未耗尽。子 Agent 共享池仍按原始值扣减。当已观测用量达到有效请求预算时，中间件在下一次供应商调用前抛出受控的 `CopilotAgentTokenBudgetExceededException`，由 Runtime 转成确定性的结束提示，不会再次调用模型或重放工具。供应商不返回 usage 时使用字符数近似，并在诊断中标记 `includes estimates`。这个预算是跨调用循环闸门；单个供应商响应可能使最终统计略微超过阈值。
 
-同一次流式响应的 usage 更新通过 `CopilotTokenUsage.MergeProgress` 合并，各字段保留已观测最大值，总量还须覆盖合并后的输入与输出之和；后续片段省略或降低 total 不会让用量倒退、重新开放已耗尽的预算。不同供应商调用之间仍使用 `Add` 累加。`CopilotTokenUsageMergeTests` 覆盖不完整 usage、溢出饱和、缓存计数，以及通过 Framework 流式 usage 验证下一次调用在到达供应商前被拦截。
+同一次流式响应的 usage 更新通过 `CopilotTokenUsage.MergeProgress` 合并，各字段保留已观测最大值，总量还须覆盖合并后的输入与输出之和；后续片段省略或降低 total 不会让用量倒退、重新开放已耗尽的预算。不同供应商调用之间仍使用 `Add` 累加。
 
-非流式响应通过 `ExtractResponseUsage` 读取 `ChatResponse.Usage`，并兼容消息内的 `UsageContent`；同一响应的两种表示单调合并，不能重复计数。预算中间件、最终总结和 `Finalize` 使用同一读取逻辑，不把已经返回的正式用量降为字符估算；输入、输出和缓存用量仍按不同调用累加。`CopilotNonStreamingUsageTests` 使用安装版本的官方 OpenAI Chat Completions／Responses 适配器和受控 HTTP 响应，验证预算拦截、重复表示去重、跨调用累计及完整／截断／内容过滤终态中的用量和检查点，不访问真实供应商。
+非流式响应通过 `ExtractResponseUsage` 读取 `ChatResponse.Usage`，并兼容消息内的 `UsageContent`；同一响应的两种表示单调合并，不能重复计数。预算中间件、最终总结和 `Finalize` 使用同一读取逻辑，不把已经返回的正式用量降为字符估算；输入、输出和缓存用量仍按不同调用累加。
 
 总时长由与调用方取消令牌链接的运行级计时器约束。超时或业务工具越界都会返回结构化 `BudgetExhausted` 结果，并在可能时先完成任务账本和 Session 检查点；用户主动暂停或取消的语义优先于同时发生的超时。最终 Token、供应商调用、工具调用、pass 上限、已用时长、是否使用估算以及具体预算耗尽类型都会作为 `RuntimeDiagnostic` 和 `CopilotAgentBudgetSnapshot` 写入执行记录。
 
-无工具最终总结仍属于同一次运行，也使用同一取消和总时长结算路径。总结被 `RunControl` 暂停／取消或总时长超时打断时，不把已有工具记录、用量和预算重置为空；继续完成账本与检查点收尾，并将最终回答标为未完成。否则预算已发布后的空结果会违反 Turn 生命周期的单调性校验，把可解释的停止错误转成执行故障。未提供 `RunControl` 的集成调用仅取消 caller token 时，仍按原契约向调用方抛出 `OperationCanceledException`，不伪装为总时长耗尽。`CopilotFinalAnswerCancellationTests` 用受控 Provider 与取消源验证已发生工具调用、用量、预算、检查点和 Turn reducer 的一致性。
+无工具最终总结仍属于同一次运行，也使用同一取消和总时长结算路径。总结被 `RunControl` 暂停／取消或总时长超时打断时，不把已有工具记录、用量和预算重置为空；继续完成账本与检查点收尾，并将最终回答标为未完成。否则预算已发布后的空结果会违反 Turn 生命周期的单调性校验，把可解释的停止错误转成执行故障。未提供 `RunControl` 的集成调用仅取消 caller token 时，仍按原契约向调用方抛出 `OperationCanceledException`，不伪装为总时长耗尽。
 
 最终账本和 Session 检查点收尾期间仍可接收暂停、取消或总时长耗尽；收尾前后重新识别来源，受控中断保留本轮已发生的工具、用量和预算，并在有限收尾期限内使用可用检查点。最后一个异步等待结束后才统一确定停止原因与 blocker、封存 journal 并发布完成事件；取消丢弃可执行 Session，暂停保留检查点及其原有恢复限制。只取消 caller token 的集成调用在封存前仍向上传播取消。封存后到达的取消不回写已完成终态。
 
-最终 Session 序列化的异步等待被受控中断时，Runtime 回退到已发布的最近增量检查点，不重新调用 Provider、工具或最终序列化。回退副本保留原始 Session、兼容性指纹和 `SessionResumeRestriction`，仅封存本轮终态 journal；未知工具结果不能因 journal 更新而变成可恢复会话。`CopilotLateFinalizationCancellationTests` 覆盖同步收尾边界和终态后对照；`CopilotFinalCheckpointAwaitCancellationTests` 在完整运行循环中，通过 Harness 装饰器在最终 Session 序列化入口挂起等待，验证暂停、取消、总时限、来源优先级、caller-only 传播、未知结果限制及正常释放对照。两组测试检查工具事实、用量、预算单调性及 Turn reducer；账本提供器内部异步等待期间的中断尚无直接注入覆盖。
+最终 Session 序列化的异步等待被受控中断时，Runtime 回退到已发布的最近增量检查点，不重新调用 Provider、工具或最终序列化。回退副本保留原始 Session、兼容性指纹和 `SessionResumeRestriction`，仅封存本轮终态 journal；未知工具结果不能因 journal 更新而变成可恢复会话。
 
 ## 原生任务账本与 plan/execute
 
@@ -73,7 +72,9 @@ Harness 的 `TodoProvider` 和 `AgentModeProvider` 作为标准运行时能力�
 
 ## 项目指令链
 
-非 Chat 模式按受信项目根到活动文档目录的顺序发现项目指令。单个文件不再有独立于总量的字符上限，只受总字节预算（默认 32 KiB）约束，否则指令文件末尾的约定会被静默截断。文件先按严格 UTF-8（或 BOM）解码，失败再按 GB18030，旧记事本保存的 ANSI 指令不会变成乱码。受信项目根优先取当前解决方案目录；未打开解决方案时才回退到活动文档目录。每个目录先选择一个共享入口，依次尝试 `AGENTS.override.md`、`AGENTS.md`、`CLAUDE.md` 和 `.claude/CLAUDE.md`；后两者是面向 Claude Code 项目的兼容回退，不会在同目录已有 AGENTS 指令时重复注入。项目根的 `.claude/rules/**/*.md` 是共享入口之外的模块化规则；根共享文档之后按规则相对路径稳定排序，再加载同目录非空的 `CLAUDE.local.md` 个人叠加层。local 即使已经选择 AGENTS 入口也会生效，适合不应提交的本机测试数据或工作流偏好，仓库应把它加入 `.gitignore`。随后才加载活动文档链中的嵌套共享与 local 文档，因此越靠近活动文档的内容越晚出现。文档数量或字符预算不足时，选择阶段先保留活动文档链中最具体的文档；同一作用域按 local、共享或匹配路径的规则、无条件规则决定保留顺序，序列化时仍保持从外层到内层、共享到规则再到 local 的可解释顺序。
+非 Chat 模式发现 Codex home 中首个非空的 `AGENTS.override.md` 或 `AGENTS.md`，以及受信项目根到目标文件目录的项目指令。文件先按严格 UTF-8（或 BOM）解码，失败再按 GB18030。受信项目根优先取当前解决方案目录，未打开解决方案时才回退到活动文档目录。每个项目目录选择一个共享入口，依次尝试 `AGENTS.override.md`、`AGENTS.md`、已配置的 fallback 文件、`CLAUDE.md` 和 `.claude/CLAUDE.md`。项目根的 `.claude/rules/**/*.md` 按规则相对路径排序，接在根共享指令之后。各目录的非空 `CLAUDE.local.md` 作为私有叠加层，适合本机测试数据或工作流偏好，仓库应把它加入 `.gitignore`。
+
+数量或字节预算不足时，个人指令优先保留，项目指令优先保留活动文档链中更具体的作用域。同一作用域先保留 local，再保留共享指令及匹配路径的规则，最后保留无条件规则。注入顺序仍是个人在前，项目从外到内，每个作用域按共享入口、适用规则、local 排列。
 
 ### /init 创建项目指令
 
@@ -89,7 +90,7 @@ Harness 的 `TodoProvider` 和 `AgentModeProvider` 作为标准运行时能力�
 
 rules 不含 `paths` frontmatter 时无条件适用于该受信项目根；存在 `paths` 时，只有活动文档、用户文本中的显式本地文件或文件附件在请求开始前已知、位于受信项目根内，且其根内相对路径匹配至少一个 glob 时才加载。支持 `*`、`?`、`**` 和 `{ts,tsx}` 一类花括号展开；单个规则最多 16 个模式，每个模式最多 256 个字符。绝对路径、父目录段、否定模式、控制字符、空段、重复或畸形 `paths` 会让该规则失败关闭，而不是意外变成全局规则。匹配使用 Windows 不区分大小写语义，frontmatter 只供宿主筛选，进入模型前会移除。ColorVision 当前在构造固定请求上下文时完成匹配，不会因为本轮工具稍后发现了一个此前未知文件而热注入新规则；后续新请求会按当时目标重新发现。
 
-单份原始文件最多有界读取 32,768 个字符，注入正文最多 12,000 个字符，全部正文合计最多 24,000 个字符和 4 份文档。rules 遍历最多检查 64 个目录、每目录前 256 个条目和 64 份 Markdown，frontmatter 最多读取 8,192 个字符；规则子目录、文件或 `.claude` 链上的重解析点都跳过。宿主在序列化为作用域 JSONL 后再次施加 32,768 字符硬上限，因此目录规模、路径、换行和反斜杠转义不能绕过预算。超限的最后一份文档会在保持完整 JSON 行的前提下缩短并标记 `IsTruncated`，不会截出损坏 JSON。
+单份原始文件和处理后的单份正文各以 32,768 个字符为上限。发现阶段最多选 16 份文档，合计按 UTF-8 计量，默认预算为 32 KiB，可配置为 0 至 64 KiB。rules 遍历最多检查 64 个目录、每目录前 256 个条目和 64 份 Markdown，frontmatter 最多读取 8,192 个字符，规则目录及文件路径上的重解析点会被跳过。注入阶段再按正文合计 65,536 字符和作用域 JSONL 整块 81,920 字符限制输出。被截短的文档标记 `IsTruncated`，序列化保留完整 JSON 行。
 
 为减少只面向维护者的上下文噪声，文件中代码围栏之外的 `<!-- HTML comments -->` 会在脱敏和截断前剥离；围栏内的示例原样保留。共享入口、rules 和 local 叠加层都不会展开 Claude Code 的 `@path` 导入，因此不会因为仓库指令静默扩大文件读取范围。`CLAUDE.local.md` 与 rules 使用相同的正文预算、脱敏和权限边界；“个人”或“路径匹配”都不提升可信等级。项目指令始终作为 workspace-scoped user-role 数据注入，只影响其目录范围内的行为，不能授权写入、审批、外部副作用或越界访问。这结合了 [Codex AGENTS.md](https://learn.chatgpt.com/docs/agent-configuration/agents-md) 的根到当前目录、override 与回退语义、[Codex 项目层信任](https://learn.chatgpt.com/docs/config-file/config-advanced#project-config-files-codexconfigtoml) 的配置边界，以及 [Claude Code memory](https://code.claude.com/docs/en/memory) 和 [Claude Code additional directories](https://code.claude.com/docs/en/permissions#additional-directories-grant-file-access-not-configuration) 中项目指令与额外文件访问分离的语义。
 

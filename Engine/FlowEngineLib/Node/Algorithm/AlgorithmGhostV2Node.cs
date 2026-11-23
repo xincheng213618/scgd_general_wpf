@@ -5,6 +5,7 @@ using ST.Library.UI.NodeEditor;
 namespace FlowEngineLib.Node.Algorithm;
 
 [STNode("Algorithm", CategoryOrder = 320)]
+[System.Obsolete("Retained for loading existing flows.")]
 public class AlgorithmGhostV2Node : CVBaseServerNodeHub
 {
 	[STNodeProperty("参数模板", "参数模板", true)]

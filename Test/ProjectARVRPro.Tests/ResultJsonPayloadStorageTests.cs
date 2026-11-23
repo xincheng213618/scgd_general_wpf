@@ -1,3 +1,4 @@
+using ColorVision.Engine;
 using Microsoft.Data.Sqlite;
 using SqlSugar;
 using System.IO;
@@ -8,6 +9,69 @@ namespace ProjectARVRPro.Tests;
 
 public sealed class ResultJsonPayloadStorageTests
 {
+    [Fact]
+    public async Task DeleteSelectedStepChecksItsSnapshotAndOnlyDeletesTheLocalResult()
+    {
+        using var database = new TemporaryPayloadDatabase();
+        using var manager = new ViewResultManager(database.Path, new ViewResultManagerConfig());
+        const string json = "{\"status\":\"original\"}";
+        var selected = new ProjectARVRReuslt { SN = "test-run", Code = "same-code", Model = "selected", BatchId = 88, ViewResultJson = json };
+        var neighbor = new ProjectARVRReuslt { SN = selected.SN, Code = selected.Code, Model = "neighbor", BatchId = 88, ViewResultJson = json };
+        manager.Save(selected);
+        manager.Save(neighbor);
+        int objectiveId = manager.SaveObjectiveTestResult(0, neighbor, new ObjectiveTestResult());
+        using (var db = database.CreateClient())
+        {
+            db.CodeFirst.InitTables<MeasureBatchModel>();
+            Assert.Equal(selected.Id, db.Insertable(new MeasureBatchModel { Code = "same-numeric-id" }).ExecuteReturnIdentity());
+        }
+
+        ArvrResultIdentity selection = ArvrResultIdentity.From(selected);
+        Assert.False(manager.DeleteResult(selection with { CreateTime = selection.CreateTime.AddMinutes(-1) }));
+        Assert.Contains(selected, manager.ViewResluts);
+        Assert.True(manager.DeleteResult(selection));
+        Assert.DoesNotContain(selected, manager.ViewResluts);
+        Assert.False(manager.DeleteResult(selection));
+
+        manager.LoadAll();
+        Assert.Equal(neighbor.Id, Assert.Single(manager.ViewResluts).Id);
+        Assert.Null(await manager.ReadHistoricalViewResultJsonAsync(selected.Id, default));
+        Assert.Equal(json, await manager.ReadHistoricalViewResultJsonAsync(neighbor.Id, default));
+        using (var db = database.CreateClient())
+        {
+            Assert.Equal("same-numeric-id", db.Queryable<MeasureBatchModel>().First(r => r.Id == selected.Id).Code);
+            Assert.Equal(objectiveId, Assert.Single(db.Queryable<ObjectiveTestResultRecord>().ToList()).Id);
+        }
+    }
+
+    [Fact]
+    public async Task HistoricalSelectionReadsCommittedPayloadsAndRecoversAfterCancellationOrCorruption()
+    {
+        using var database = new TemporaryPayloadDatabase();
+        using var manager = new ViewResultManager(database.Path, new ViewResultManagerConfig());
+        const string json = "{\"result\":\"历史详情🧪\"}";
+        int validId;
+        int corruptId;
+        using (SqlSugarClient db = database.CreateClient())
+        {
+            validId = db.Insertable(new ProjectARVRReuslt { SN = "history" }).ExecuteReturnIdentity();
+            corruptId = db.Insertable(new ProjectARVRReuslt { SN = "corrupt" }).ExecuteReturnIdentity();
+            ResultJsonPayloadStorage.SaveViewResultJson(db, validId, json);
+            db.Ado.ExecuteCommand(
+                $"UPDATE \"ARVRReuslt\" SET \"{ResultJsonPayloadStorage.ViewResultColumnName}\" = X'00010203' WHERE \"Id\" = @id;",
+                new SugarParameter("@id", corruptId));
+        }
+
+        using CancellationTokenSource canceled = new();
+        canceled.Cancel();
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(
+            () => manager.ReadHistoricalViewResultJsonAsync(validId, canceled.Token));
+        await Assert.ThrowsAsync<InvalidDataException>(
+            () => manager.ReadHistoricalViewResultJsonAsync(corruptId, default));
+        Assert.Equal(json, await manager.ReadHistoricalViewResultJsonAsync(validId, default));
+        Assert.Null(await manager.ReadHistoricalViewResultJsonAsync(int.MaxValue, default));
+    }
+
     [Fact]
     public void LiveListEvictionPreservesHistoryAndAnExportStillOwningTheResult()
     {
@@ -57,6 +121,60 @@ public sealed class ResultJsonPayloadStorageTests
         using var utf8 = new MemoryStream();
         gzip.CopyTo(utf8);
         Assert.Equal(Encoding.UTF8.GetBytes(json), utf8.ToArray());
+    }
+
+    [Fact]
+    public void BulkGzipDecodingMatchesIndividualReadsAcrossBufferBoundaries()
+    {
+        using var database = new TemporaryPayloadDatabase();
+        new ResultStatisticsDataStore(database.Path).InitializeSchema();
+        using SqlSugarClient db = database.CreateClient();
+        const int bufferLength = 16 * 1024;
+        string[] inputs =
+        [
+            new string('x', bufferLength),
+            new string('a', bufferLength - 1) + "🧪" + new string('中', bufferLength),
+            "\uFEFF{\"result\":\"下一条🧪\"}",
+        ];
+        var results = new List<ProjectARVRReuslt>();
+        foreach (string input in inputs)
+        {
+            var result = new ProjectARVRReuslt { SN = "bulk" };
+            result.Id = db.Insertable(result).ExecuteReturnIdentity();
+            ResultJsonPayloadStorage.SaveViewResultJson(db, result.Id, input);
+            results.Add(result);
+        }
+
+        string?[] expected = results.Select(result => ResultJsonPayloadStorage.LoadViewResultJson(db, result.Id)).ToArray();
+        ResultJsonPayloadStorage.LoadViewResultJsons(db, results);
+        Assert.Equal(expected, results.Select(result => result.ViewResultJson));
+
+        db.Ado.ExecuteCommand($"UPDATE \"ARVRReuslt\" SET \"{ResultJsonPayloadStorage.ViewResultColumnName}\" = X'00010203' WHERE \"Id\" = @id;",
+            new SugarParameter("@id", results[^1].Id));
+        Assert.Throws<InvalidDataException>(() => ResultJsonPayloadStorage.LoadViewResultJsons(db, results));
+    }
+
+    [Fact]
+    public void BatchViewPayloadsReleaseSharedFlowJsonAfterItsLastGroup()
+    {
+        using var database = new TemporaryPayloadDatabase();
+        new ResultStatisticsDataStore(database.Path).InitializeSchema();
+        using SqlSugarClient db = database.CreateClient();
+        var shared = new ProjectARVRReuslt { SN = "shared" };
+        shared.Id = db.Insertable(shared).ExecuteReturnIdentity();
+        const string json = """{"result":"报告🧪"}""";
+        ResultJsonPayloadStorage.SaveViewResultJson(db, shared.Id, json);
+        var payloads = ResultJsonPayloadStorage.ReadBatchViewPayloads(db, [shared, shared], offline: null);
+
+        Assert.Null(shared.ViewResultJson);
+        payloads.Decode([shared]);
+        string first = Assert.IsType<string>(shared.ViewResultJson);
+        Assert.Equal(json, first);
+        payloads.Release([shared]);
+        payloads.Decode([shared]);
+        Assert.Same(first, shared.ViewResultJson);
+        payloads.Release([shared]);
+        Assert.Null(shared.ViewResultJson);
     }
 
     [Fact]
@@ -266,7 +384,7 @@ public sealed class ResultJsonPayloadStorageTests
         Assert.Equal("ok", database.ExecuteScalarString("PRAGMA quick_check;"));
     }
 
-    private sealed class TemporaryPayloadDatabase : IDisposable
+    internal sealed class TemporaryPayloadDatabase : IDisposable
     {
         private readonly string _directory;
 
@@ -445,10 +563,13 @@ public sealed class ResultJsonPayloadStorageTests
         public void Dispose()
         {
             SqliteConnection.ClearAllPools();
-            if (File.Exists(Path))
-                File.Delete(Path);
-            if (Directory.Exists(_directory))
-                Directory.Delete(_directory);
+            if (!Directory.Exists(_directory))
+                return;
+            File.Delete(Path + "-wal");
+            File.Delete(Path + "-shm");
+            File.Delete(Path + "-journal");
+            File.Delete(Path);
+            Directory.Delete(_directory);
         }
 
         private SqliteConnection OpenConnection()

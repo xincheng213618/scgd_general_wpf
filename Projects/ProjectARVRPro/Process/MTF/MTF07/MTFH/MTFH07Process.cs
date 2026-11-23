@@ -9,5 +9,8 @@ namespace ProjectARVRPro.Process.MTF.MTF07.MTFH
     {
         protected override void WriteObjectiveResult(ObjectiveTestResult destination, string key, MTFH07TestResult result)
             => KeyedTestResultWriter.Write(destination, key, result);
+
+        protected override IDictionary<string, MTFH07TestResult>? GetObjectiveResults(ObjectiveTestResult destination)
+            => destination.MTFH07TestResults;
     }
 }

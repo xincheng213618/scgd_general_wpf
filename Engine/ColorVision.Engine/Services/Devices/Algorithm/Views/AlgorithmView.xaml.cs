@@ -2,12 +2,10 @@
 #pragma warning disable CA1822,CS8601,CS8604,CS8622,CS8625
 using ColorVision.Common.Utilities;
 using ColorVision.Database;
-using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services.Results;
 using ColorVision.ImageEditor;
 using ColorVision.UI.Sorts;
 using log4net;
-using SqlSugar;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -17,6 +15,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
@@ -34,9 +33,9 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
         private static readonly ILog log = LogManager.GetLogger(typeof(AlgorithmView));
         private bool _isInitialized;
         private bool _isInitializing;
-        private bool _isDisposed;
-        private bool _messageSubscribed;
-        private IDisposable? _localResultSubscription;
+        private volatile bool _isDisposed;
+        private readonly AlgorithmResultPresenter _resultPresenter = new(clearImageOnSelection: false);
+        private readonly IDisposable? _resultSubscription;
         private readonly ResultImagePlaceholderCache _resultImagePlaceholderCache = new();
         private readonly ViewAlgorithmConfig _historyConfig;
         private readonly ResultHistoryCollection<ViewResultAlg> _viewResults;
@@ -64,11 +63,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
             _historyConfig.PropertyChanged += HistoryConfig_PropertyChanged;
             Device = device;
             if (Device != null)
-            {
-                Device.DService.MsgReturnReceived += DeviceService_OnMessageRecved;
-                _messageSubscribed = true;
-                _localResultSubscription = ResultMessageBus.Default.Subscribe(LocalResultPublished);
-            }
+                _resultSubscription = ResultMessageBus.Default.Subscribe(message => _ = ProcessResultAsync(message));
 
             if (deferInitialization)
             {
@@ -249,73 +244,86 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
         public void AddAlgResultMasterModel(AlgResultMasterModel result)
         {
             if (!_isDisposed && Device?.ViewRegistration.IsVisible != false && result != null)
+                AddAlgorithmResult(new ViewResultAlg(result));
+        }
+
+        private void AddAlgorithmResult(ViewResultAlg viewResult)
+        {
+            AlgResultMasterModel result = viewResult.AlgResultMasterModel;
+            if (!_isDisposed && Device?.ViewRegistration.IsVisible != false)
             {
-                if (_viewResults.ContainsId(result.Id)) return;
+                if (_viewResults.ContainsId(result.Id))
+                {
+                    ViewResultAlg existing = ViewResults.First(item => item.Id == result.Id);
+                    if (result.DatabaseEndpoint == null || ReferenceEquals(existing.AlgResultMasterModel?.DatabaseEndpoint, result.DatabaseEndpoint))
+                        return;
+                    ViewResults.Remove(existing);
+                }
                 EnsureInitialized();
-                ViewResultAlg ViewResultAlg = new ViewResultAlg(result);
 
                 if (Config.InsertAtBeginning)
-                    ViewResults.Insert(0, ViewResultAlg);
+                    ViewResults.Insert(0, viewResult);
                 else
-                    ViewResults.Add(ViewResultAlg);
+                    ViewResults.Add(viewResult);
 
                 if (Config.AutoRefreshView && _viewResults.ContainsId(result.Id))
                 {
-                    listView1.SelectedItem = ViewResultAlg;
-                    listView1.ScrollIntoView(ViewResultAlg);
+                    listView1.SelectedItem = viewResult;
+                    listView1.ScrollIntoView(viewResult);
                 }
-                if (Config.AutoSaveSideData)
-                    SideSave(ViewResultAlg, Config.SaveSideDataDirPath);
+                if (Config.AutoSaveSideData && result.DatabaseEndpoint?.IsCurrent != false)
+                    AlgorithmResultDataSaver.TrySave(ViewResultContext, viewResult, Config.SaveSideDataDirPath);
             }
         }
 
-        private void DeviceService_OnMessageRecved(MsgReturn message)
-        {
-            object? masterIdValue = message.Data?.MasterId;
-            if (_isDisposed
-                || Device == null
-                || Device.IsDisposed
-                || !Device.ViewRegistration.IsVisible
-                || !string.Equals(message.DeviceCode, Device.Config.Code, StringComparison.Ordinal)
-                || masterIdValue == null)
-                return;
-
-            int masterId = Convert.ToInt32(masterIdValue);
-            if (masterId > 0)
-                ShowPersistedResult(masterId);
-        }
-
-        private void LocalResultPublished(ResultMessage message)
+        internal async Task ProcessResultAsync(ResultMessage message)
         {
             bool isLocalFlow = message.Route == ResultRoutes.LocalFlow;
-            if (_isDisposed
-                || Device == null
-                || Device.IsDisposed
-                || !Device.ViewRegistration.IsVisible
-                || (!isLocalFlow && message.Route != ResultRoutes.Algorithm)
+            if ((!isLocalFlow && message.Route != ResultRoutes.Algorithm)
                 || message.ResultKind != ResultKinds.Algorithm
-                || (!isLocalFlow && !string.Equals(message.DeviceCode, Device.Config.Code, StringComparison.Ordinal)))
+                || message.DatabaseEndpoint is not { } endpoint
+                || message.Data.MasterId <= 0
+                || Device is not { } device
+                || (message.SourceDevice != null && !ReferenceEquals(message.SourceDevice, device)))
                 return;
 
-            ShowPersistedResult(message.Data.MasterId);
-        }
-
-        private void ShowPersistedResult(int masterId)
-        {
-            if (_isDisposed || Device == null || Device.IsDisposed || !Device.ViewRegistration.IsVisible || masterId <= 0) return;
-            AlgResultMasterModel? model = AlgResultMasterDao.Instance.GetById(masterId);
-            if (model == null)
+            MQTTAlgorithm service = device.DService;
+            if (!CanApply()) return;
+            try
             {
-                log.Debug($"GetAlgResult By Id is null: {masterId}");
-                return;
+                ViewResultAlg? result = await Task.Run(() =>
+                {
+                    if (!CanApply()) return null;
+                    using var db = endpoint.CreateDbClient();
+                    var model = db.Queryable<AlgResultMasterModel>().First(result => result.Id == message.Data.MasterId);
+                    if (model == null || !CanApply()) return null;
+                    model.DatabaseEndpoint = endpoint;
+                    return message.SourceDevice == null
+                        ? new ViewResultAlg(model, message.SerialNumber)
+                        : AlgorithmResultHistory.CreateViews([model], db, endpoint)[0];
+                }).ConfigureAwait(false);
+                if (result == null)
+                {
+                    if (CanApply()) log.Debug($"找不到算法主结果。ResultId={message.Data.MasterId}");
+                    return;
+                }
+
+                await Dispatcher.InvokeAsync(() =>
+                {
+                    if (CanApply())
+                        AddAlgorithmResult(result);
+                }).Task.ConfigureAwait(false);
+            }
+            catch (Exception error)
+            {
+                if (CanApply()) log.Warn($"算法结果读取失败。ResultId={message.Data.MasterId}", error);
             }
 
-            log.Debug($"FileUrl：{model.ImgFile}");
-            Application.Current?.Dispatcher.BeginInvoke(() =>
-            {
-                if (!_isDisposed && !Device.IsDisposed && Device.ViewRegistration.IsVisible)
-                    AddAlgResultMasterModel(model);
-            });
+            bool CanApply() => !_isDisposed && !device.IsDisposed && ReferenceEquals(device.DService, service)
+                && device.ViewRegistration.IsVisible && endpoint.IsCurrent
+                && (isLocalFlow || string.Equals(message.DeviceCode, device.Config.Code, StringComparison.Ordinal))
+                && (ReferenceEquals(device.ResultDatabaseEndpoint, endpoint)
+                    || (message.SourceDevice == null && device.ResultDatabaseEndpoint == null));
         }
 
         public void RefreshResultListView()
@@ -329,25 +337,12 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
         }
 
 
-        private void listView1_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        private async void listView1_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (_isDisposed)
+            if (_isDisposed || !ReferenceEquals(e.Source, listView1) || ViewResultContext == null)
                 return;
 
-            listViewSide.ItemsSource = null;
-            SideTextBox.Visibility = Visibility.Collapsed;
-            SideTextBox.Clear();
-
-            if (listView1.SelectedItem is not ViewResultAlg result ||
-                ResultHandleRegistry.GetInstance().ResultHandles.FirstOrDefault(item => item.CanHandle1(result)) is not { } resultHandle)
-            {
-                ImageView.Clear();
-                return;
-            }
-
-            resultHandle.Load(ViewResultContext, result);
-            PrepareResultImageSurface(result);
-            resultHandle.Handle(ViewResultContext, result);
+            await _resultPresenter.ShowAsync(ViewResultContext, listView1.SelectedItem as ViewResultAlg, PrepareResultImageSurface);
         }
 
         private void PrepareResultImageSurface(ViewResultAlg result)
@@ -468,17 +463,12 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                 return;
 
             _isDisposed = true;
+            _resultPresenter.Invalidate();
             _historyConfig.PropertyChanged -= HistoryConfig_PropertyChanged;
             Loaded -= View_Loaded;
             IsVisibleChanged -= View_IsVisibleChanged;
 
-            if (_messageSubscribed && Device != null)
-            {
-                Device.DService.MsgReturnReceived -= DeviceService_OnMessageRecved;
-                _messageSubscribed = false;
-            }
-            _localResultSubscription?.Dispose();
-            _localResultSubscription = null;
+            _resultSubscription?.Dispose();
 
             if (ReferenceEquals(Config.GridViewColumnVisibilitys, GridViewColumnVisibilitys))
                 Config.GridViewColumnVisibilitys = new ObservableCollection<GridViewColumnVisibility>(GridViewColumnVisibilitys.Select(column =>
@@ -505,25 +495,34 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
 
         private void Inquire_Click(object sender, RoutedEventArgs e)
         {
-            ViewResults.Clear();
-            using var db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
+            if (GetHistoryEndpoint() is not { } endpoint) return;
+            using var db = endpoint.CreateDbClient();
             var query = db.Queryable<AlgResultMasterModel>();
             query = query.OrderBy(x => x.Id, Config.OrderByType);
             var dbList = Config.Count > 0 ? query.Take(Config.Count).ToList() : query.ToList();
-            _viewResults.QueryResults.AddRange(AlgorithmResultHistory.CreateViews(dbList, MySqlSetting.IsConnect ? db : null));
+            var results = AlgorithmResultHistory.CreateViews(dbList, db, endpoint);
+            ViewResults.Clear();
+            _viewResults.QueryResults.AddRange(results);
         }
 
         private void SearchAdvanced_Click(object sender, RoutedEventArgs e)
         {
-            var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
-
-            GenericQuery<AlgResultMasterModel, ViewResultAlg> genericQuery = new(Db, _viewResults.QueryResults, t => new ViewResultAlg(t))
+            if (GetHistoryEndpoint() is not { } endpoint) return;
+            using var db = endpoint.CreateDbClient();
+            GenericQuery<AlgResultMasterModel, ViewResultAlg> genericQuery = new(db, _viewResults.QueryResults, t => new ViewResultAlg(t))
             {
-                BatchConverter = rows => AlgorithmResultHistory.CreateViews(rows, MySqlSetting.IsConnect ? Db : null)
+                BatchConverter = rows => AlgorithmResultHistory.CreateViews(rows, db, endpoint)
             };
-            GenericQueryWindow genericQueryWindow = new GenericQueryWindow(genericQuery) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }; ;
+            GenericQueryWindow genericQueryWindow = new(genericQuery) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
             genericQueryWindow.ShowDialog();
-            Db.Dispose();
+        }
+
+        private static MySqlConnectedEndpoint? GetHistoryEndpoint()
+        {
+            var endpoint = MySqlControl.GetInstance().ConnectedEndpoint;
+            if (endpoint?.IsCurrent == true) return endpoint;
+            MessageBox.Show(LocalizedText.Get("数据库未连接，无法查询算法结果。"), "ColorVision");
+            return null;
         }
     }
 }

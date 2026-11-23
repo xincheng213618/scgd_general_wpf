@@ -95,6 +95,7 @@ namespace ColorVision.SocketProtocol
 
         internal SocketServerSession Session { get; }
         public TcpClient Client { get; }
+        internal string ConnectionId { get; } = Guid.NewGuid().ToString("N");
         public SocketServerSettings Settings => Session.Settings;
         public bool IsClosed => Volatile.Read(ref _closed) != 0;
 
@@ -404,6 +405,14 @@ namespace ColorVision.SocketProtocol
         {
             if (connection.Session.RemoveClient(connection))
                 CloseClient(connection);
+        }
+
+        internal IReadOnlyList<SocketServerClient> CaptureCurrentClients()
+        {
+            SocketServerSession? session;
+            lock (_stateLock)
+                session = _state == SocketServerState.Running ? _currentSession : null;
+            return session?.SnapshotClients() ?? [];
         }
 
         private void RunSession(SocketServerSession session)
@@ -913,6 +922,12 @@ namespace ColorVision.SocketProtocol
         {
             lock (_resourceLock)
                 return _clients.Remove(connection);
+        }
+
+        internal IReadOnlyList<SocketServerClient> SnapshotClients()
+        {
+            lock (_resourceLock)
+                return IsStopRequested ? [] : _clients.ToArray();
         }
 
         public IReadOnlyList<SocketServerClient> TakeClients()

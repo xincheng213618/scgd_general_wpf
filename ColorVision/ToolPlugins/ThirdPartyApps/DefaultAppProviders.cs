@@ -1,6 +1,9 @@
 ﻿using LocalizedText = global::ColorVision.DisplayText;
 using ColorVision.Common.ThirdPartyApps;
+using ColorVision.UI;
+using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -19,6 +22,11 @@ namespace ColorVision.ToolPlugins.ThirdPartyApps
 
     public class PortableAppProvider : IThirdPartyAppProvider
     {
+        private static readonly string SscomAsset = Path.Combine("Assets", "Tool", SscomLauncher.FileName);
+        private static string SscomBundledPath => Path.Combine(AppContext.BaseDirectory, SscomAsset);
+        private static string SscomRuntimeDirectory => Path.Combine(Environments.DirTools, "SSCOM");
+        private static string SscomRuntimePath => Path.Combine(SscomRuntimeDirectory, SscomLauncher.FileName);
+
         public IEnumerable<ThirdPartyAppInfo> GetThirdPartyApps()
         {
             string group = ColorVision.Engine.Properties.Resources.PortableTools;
@@ -37,10 +45,33 @@ namespace ColorVision.ToolPlugins.ThirdPartyApps
                     Group = ThirdPartyAppGroupNames.CommonTools,
                     Order = -898,
                     IsPortable = true,
-                    PortableExePath = Path.Combine("Assets", "Tool", "sscom5.13.1.exe"),
+                    PortableExePath = SscomRuntimePath,
+                    InstallDirectory = SscomRuntimeDirectory,
+                    ResourceId = SscomAsset,
+                    LaunchAction = () => LaunchSscom(),
+                    GetIconPath = GetSscomIconPath,
+                    ContextActions =
+                    {
+                        new ThirdPartyAppContextAction
+                        {
+                            Header = LocalizedText.Get("调试预设…"),
+                            Execute = SscomPresetWindow.ShowWindow,
+                        }
+                    },
                 }
             };
         }
+
+        internal static void LaunchSscom(IReadOnlyList<SscomCommandPreset>? presets = null, SscomTcpEndpoint? endpoint = null)
+        {
+            string backupDirectory = Path.Combine(Environments.DirToolPackageCache, "SSCOM");
+            SscomLauncher.Launch(SscomBundledPath, backupDirectory, SscomRuntimeDirectory, static startInfo =>
+            {
+                using var process = Process.Start(startInfo);
+            }, presets, endpoint);
+        }
+
+        private static string GetSscomIconPath() => File.Exists(SscomRuntimePath) ? SscomRuntimePath : SscomBundledPath;
     }
 
     public class KnownAppProvider : IThirdPartyAppProvider

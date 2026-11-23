@@ -4,6 +4,13 @@ namespace ProjectARVRPro.Process.KeyedResults.LuminanceChromaticity
 {
     internal static class LuminanceChromaticityCompatibility
     {
+        internal static bool IsProjectionOf(W255TestResult? legacy, LuminanceChromaticityTestResult? source)
+        {
+            return legacy != null && source != null
+                && ReferenceEquals(legacy.PoixyuvDatas, source.PoixyuvDatas)
+                && ReferenceEquals(legacy.CenterLunimance, source.CenterLuminance);
+        }
+
         public static W255TestResult ToW255TestResult(LuminanceChromaticityTestResult source)
         {
             return new W255TestResult

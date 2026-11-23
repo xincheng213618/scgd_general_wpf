@@ -22,6 +22,7 @@ namespace ColorVision.ImageEditor.Cie
         }
 
         public ToolBarLocal ToolBarLocal => ToolBarLocal.Right;
+        public bool SupportsEmptyView => true;
 
         public string? GuidId => "CIE1931";
 

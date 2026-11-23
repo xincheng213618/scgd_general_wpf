@@ -129,14 +129,14 @@ namespace ColorVision.Engine.Templates.Jsons.AAFindPoints
         {
             if (result.ResultType == ViewResultAlgType.FindLightArea)
             {
-                result.ViewResults ??= new ObservableCollection<IViewResult>(AlgResultLightAreaDao.Instance.GetAllByPid(result.Id));
+                result.ViewResults ??= new ObservableCollection<IViewResult>(result.ReadPersistedDetails(AlgResultLightAreaDao.Instance));
                 return;
             }
 
             if (result.ViewResults == null)
             {
+                List<DetailCommonModel> detailCommonModels = result.ReadPersistedDetails(DeatilCommonDao.Instance);
                 result.ViewResults = new ObservableCollection<IViewResult>();
-                List<DetailCommonModel> detailCommonModels = DeatilCommonDao.Instance.GetAllByPid(result.Id);
                 if (detailCommonModels.Count == 1)
                 {
                     AAFindPointsViewReslut mtfresult = new AAFindPointsViewReslut(detailCommonModels[0]);

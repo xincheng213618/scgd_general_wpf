@@ -26,6 +26,9 @@
             <RowDefinition x:Name="MainGridRow2" Height="Auto"/>
         </Grid.RowDefinitions>
         <im:ImageView Grid.Row="0" x:Name="ImageView"></im:ImageView>
+        <TextBlock Grid.Row="0" x:Name="HistoryImageError" Panel.ZIndex="1" Margin="16" HorizontalAlignment="Center"
+                   VerticalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" Visibility="Collapsed"
+                   IsHitTestVisible="False" AutomationProperties.LiveSetting="Polite"/>
         <Grid Grid.Row="0" x:Name="FocusChartLayer" Panel.ZIndex="1" Margin="8" ClipToBounds="True">
             <local:CameraFocusChart x:Name="FocusChart" HorizontalAlignment="Right" VerticalAlignment="Top"
                                     MaxWidth="{Binding ActualWidth, ElementName=FocusChartLayer}"
@@ -40,6 +43,7 @@
                                     <Condition Binding="{Binding Device.Config.MotorConfig.VID.IsUseVID, RelativeSource={RelativeSource AncestorType={x:Type local:ViewCamera}}}" Value="True"/>
                                 </MultiDataTrigger.Conditions>
                                 <Setter Property="MotorVid" Value="{Binding Device.Config.MotorConfig.VIDPosition, RelativeSource={RelativeSource AncestorType={x:Type local:ViewCamera}}}"/>
+                                <Setter Property="MotorPosition" Value="{Binding Device.Config.MotorConfig.Position, RelativeSource={RelativeSource AncestorType={x:Type local:ViewCamera}}}"/>
                             </MultiDataTrigger>
                         </Style.Triggers>
                     </Style>
@@ -57,6 +61,17 @@
                     </ToggleButton>
             </StackPanel>
             <StackPanel HorizontalAlignment="Right"  Orientation="Horizontal">
+                <Button x:Name="OpenSelectedImageButton" Command="{Binding SelectedItem.OpenCVCIECommand, ElementName=listView1}"
+                        ToolTip="{x:Static im:ImageViewWindow.OpenInNewWindowText}" AutomationProperties.Name="{x:Static im:ImageViewWindow.OpenInNewWindowText}">
+                    <Button.Style>
+                        <Style TargetType="Button" BasedOn="{StaticResource PanelIconButtonStyle}">
+                            <Style.Triggers>
+                                <Trigger Property="Command" Value="{x:Null}"><Setter Property="IsEnabled" Value="False"/></Trigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Button.Style>
+                    <Path Style="{StaticResource PanelActionIconPathStyle}" Data="M11,3 H15 V7 M15,3 L8,10 M8,4 H4 V14 H14 V10"/>
+                </Button>
                 <Button Style="{StaticResource PanelIconButtonStyle}" ToolTip="{x:Static properties:Resources.Inquire}" Click="Search_Click">
                     <Path Style="{StaticResource PanelActionIconPathStyle}" Data="M7.2,3.2 A4,4 0 1 1 7.2,11.2 A4,4 0 1 1 7.2,3.2 M10.2,10.2 L14.2,14.2"/>
                 </Button>
@@ -177,13 +192,6 @@
                             <GridViewColumn.CellTemplate>
                                 <DataTemplate  DataType="{x:Type se:ViewResultImage}">
                                     <TextBlock Text="{ Binding  ImgFrameInfo}" />
-                                </DataTemplate>
-                            </GridViewColumn.CellTemplate>
-                        </GridViewColumn>
-                        <GridViewColumn  Header="DeviceCode" Width="50">
-                            <GridViewColumn.CellTemplate>
-                                <DataTemplate  DataType="{x:Type se:ViewResultImage}">
-                                    <TextBlock Text="{Binding DeviceCode}"/>
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>

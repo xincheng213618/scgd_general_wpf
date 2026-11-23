@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Net;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -15,6 +17,7 @@ public class MQTTHelper
     private const string EmptyServerMessage = "MQTT服务器地址为空。";
 
     private static readonly SemaphoreSlim ClientCreationGate = new SemaphoreSlim(1, 1);
+    private static readonly ConditionalWeakTable<IMqttClient, object> PublishAdmissionLocks = new();
 
     // 回调委托
     private Action<ResultData_MQTT> _Callback;
@@ -29,6 +32,7 @@ public class MQTTHelper
     private int _active;
     private int _callbackGeneration;
     private int _lifecycleGeneration;
+    private long _connectionEpoch;
     private bool _handlersAttached;
     private static string NormalizeServer(string server)
     {
@@ -708,11 +712,47 @@ public class MQTTHelper
         await TryPublishAsync_Client(topic, msg, retained);
     }
 
-    public async Task<bool> TryPublishAsync_Client(
+    internal readonly record struct PublishConnection(IMqttClient Client, int OwnerGeneration, long Epoch);
+
+    internal bool IsCurrentPublishConnection(PublishConnection connection) =>
+        Volatile.Read(ref _active) == 1 && Volatile.Read(ref _callbackGeneration) == connection.OwnerGeneration
+        && Volatile.Read(ref _connectionEpoch) == connection.Epoch
+        && ReferenceEquals(Volatile.Read(ref _MqttClient), connection.Client) && connection.Client.IsConnected;
+
+    internal bool MatchesConnectedBroker(MqttClientOptions options)
+    {
+        IMqttClient client = Volatile.Read(ref _MqttClient);
+        if (client?.IsConnected != true || client.Options?.ChannelOptions is not MqttClientTcpOptions actual
+            || options?.ChannelOptions is not MqttClientTcpOptions expected
+            || (actual.TlsOptions?.UseTls == true) != (expected.TlsOptions?.UseTls == true))
+            return false;
+
+        var (actualHost, actualPort) = Address(actual.RemoteEndpoint);
+        var (expectedHost, expectedPort) = Address(expected.RemoteEndpoint);
+        return actualHost != null && expectedHost != null && actualPort == expectedPort
+            && (string.Equals(actualHost, expectedHost, StringComparison.OrdinalIgnoreCase)
+                || (IsLoopback(actualHost) && IsLoopback(expectedHost)));
+
+        static (string Host, int Port) Address(EndPoint endpoint) => endpoint switch
+        {
+            IPEndPoint ip => (ip.Address.ToString(), ip.Port),
+            DnsEndPoint dns => (dns.Host, dns.Port),
+            _ => (null, 0)
+        };
+
+        static bool IsLoopback(string host) => string.Equals(host.TrimEnd('.'), "localhost", StringComparison.OrdinalIgnoreCase)
+            || (IPAddress.TryParse(host, out IPAddress address)
+                && IPAddress.IsLoopback(address.IsIPv4MappedToIPv6 ? address.MapToIPv4() : address));
+    }
+
+    public Task<bool> TryPublishAsync_Client(
         string topic,
         string msg,
         bool retained,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default) => TryPublishAsync_Client(topic, msg, retained, cancellationToken, null);
+
+    internal async Task<bool> TryPublishAsync_Client(string topic, string msg, bool retained,
+        CancellationToken cancellationToken, Func<PublishConnection, bool> canPublish)
     {
         int generation = Volatile.Read(ref _callbackGeneration);
         bool success = false;
@@ -734,7 +774,22 @@ public class MQTTHelper
                     .WithRetainFlag(retained)
                     .Build();
 
-                await client.PublishAsync(applicationMessage, cancellationToken);
+                Task publish;
+                if (canPublish == null) publish = client.PublishAsync(applicationMessage, cancellationToken);
+                else
+                {
+                    // Several Start nodes may share one pooled MQTT client.
+                    lock (PublishAdmissionLocks.GetValue(client, static _ => new object()))
+                    {
+                        cancellationToken.ThrowIfCancellationRequested();
+                        if (Volatile.Read(ref _active) != 1 || Volatile.Read(ref _callbackGeneration) != generation
+                            || !ReferenceEquals(client, _MqttClient) || !client.IsConnected) return false;
+                        var connection = new PublishConnection(client, generation, Volatile.Read(ref _connectionEpoch));
+                        if (!canPublish(connection)) return false;
+                        publish = client.PublishAsync(applicationMessage, cancellationToken);
+                    }
+                }
+                await publish;
                 success = Volatile.Read(ref _active) == 1 &&
                           Volatile.Read(ref _callbackGeneration) == generation &&
                           ReferenceEquals(client, _MqttClient);
@@ -898,6 +953,7 @@ public class MQTTHelper
 
     private async Task ConnectedHandle(MqttClientConnectedEventArgs arg)
     {
+        Interlocked.Increment(ref _connectionEpoch);
         IMqttClient client = _MqttClient;
         int generation = Volatile.Read(ref _callbackGeneration);
         if (Volatile.Read(ref _active) == 0 || client == null)
@@ -933,6 +989,7 @@ public class MQTTHelper
 
     private Task DisconnectedHandle(MqttClientDisconnectedEventArgs arg)
     {
+        Interlocked.Increment(ref _connectionEpoch);
         IMqttClient client = _MqttClient;
         if (Volatile.Read(ref _active) == 0 || client == null)
         {

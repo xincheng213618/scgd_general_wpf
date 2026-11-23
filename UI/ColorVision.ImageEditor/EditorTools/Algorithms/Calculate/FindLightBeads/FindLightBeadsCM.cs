@@ -70,6 +70,8 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.FindLightBead
     }
     public class DVCMFindLightBeads : IDVContextMenu
     {
+        public AlgorithmInteractiveGroupPresentation AnalysisGroup => AlgorithmMenuGroups.Localization;
+
         private readonly ImageProcessingContext _imageContext;
         private readonly DrawEditorContext _drawContext;
         private readonly ImageViewConfig _config;

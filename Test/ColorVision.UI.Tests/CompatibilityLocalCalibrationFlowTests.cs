@@ -1,9 +1,12 @@
+using ColorVision.Database;
 using ColorVision.Engine;
+using ColorVision.Engine.FlowProcessing;
 using ColorVision.Engine.Services;
 using ColorVision.Engine.Services.Devices.Calibration;
 using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.Services.Devices.Camera.Configs;
 using ColorVision.Engine.Services.Devices.Camera.Local;
+using ColorVision.Engine.Services.PhyCameras;
 using ColorVision.Engine.FlowProcessing.Nodes;
 using ColorVision.Engine.Templates.POI;
 using ColorVision.Engine.Templates;
@@ -13,9 +16,11 @@ using FlowEngineLib.Base;
 using FlowEngineLib.End;
 using FlowEngineLib.Node.POI;
 using Newtonsoft.Json.Linq;
+using SqlSugar;
 using ST.Library.UI.NodeContainer;
 using ST.Library.UI.NodeEditor;
 using System.Reflection;
+using System.IO;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -23,6 +28,46 @@ namespace ColorVision.UI.Tests;
 
 public sealed class CompatibilityLocalCalibrationFlowTests
 {
+    [Fact]
+    public void LocalCalibrationPersistsItsOwnerWithoutReplacingTheCameraCode() => WpfTestHost.Invoke(() =>
+    {
+        using var scope = new DeviceScope();
+        string database = Path.GetTempFileName();
+        try
+        {
+            var endpoint = new MySqlConnectedEndpoint(_ => true, () => new SqlSugarClient(new ConnectionConfig
+            {
+                ConnectionString = $"Data Source={database};Pooling=False",
+                DbType = DbType.Sqlite, IsAutoCloseConnection = true, InitKeyType = InitKeyType.Attribute,
+            }));
+            using var db = endpoint.CreateDbClient();
+            db.CodeFirst.InitTables<MeasureBatchModel, MeasureResultImgModel>();
+            scope.First.ResultDatabaseEndpoint = endpoint;
+            scope.Second.ResultDatabaseEndpoint = endpoint;
+            var camera = (DeviceCamera)RuntimeHelpers.GetUninitializedObject(typeof(DeviceCamera));
+            camera.Config = new ConfigCamera { Code = "synthetic-calibration-source-camera" };
+            camera.SysResourceModel = new SysResourceModel { Code = camera.Config.Code };
+            var physicalCamera = (PhyCamera)RuntimeHelpers.GetUninitializedObject(typeof(PhyCamera));
+            physicalCamera.DeviceCalibration = scope.First;
+            typeof(DeviceCamera).GetField("_PhyCamera", BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(camera, physicalCamera);
+            scope.Manager.DeviceServices.Add(camera);
+
+            var action = new CVStartCFC("local-calibration-history") { PersistResults = true };
+            using var resources = action.RuntimeResources;
+            FlowMeasurementBatch.Insert(new MeasureBatchModel { Code = action.SerialNumber }, endpoint).Bind(resources);
+            action.SetCurrentFrame(CreateCieFrame(7));
+            var node = new LocalCalibrationNode { DeviceCode = camera.Code };
+            typeof(LocalCalibrationNode).GetMethod("ExecuteLocal", BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(node, [action]);
+
+            var stored = Assert.Single(db.Queryable<MeasureResultImgModel>().ToList());
+            Assert.Equal(camera.Code, stored.DeviceCode);
+            Assert.Equal(scope.First.Code, JObject.Parse(stored.Params!).Value<string>("CalibrationDeviceCode"));
+            Assert.Equal(stored.Id, Assert.Single(CalibrationResultHistory.Query(db, scope.First.Code).ToList()).Id);
+            Assert.Empty(CalibrationResultHistory.Query(db, scope.Second.Code).ToList());
+        }
+        finally { File.Delete(database); }
+    });
+
     [Fact]
     public void TemplatePoiFollowsCameraOwnershipAndConsumesItsMemoryFrame() => WpfTestHost.Invoke(() => // TemplatePoi.Params is bound on the shared WPF host thread
     {

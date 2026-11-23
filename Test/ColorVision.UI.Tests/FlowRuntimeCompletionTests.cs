@@ -500,6 +500,7 @@ public sealed class RuntimeTestStartNode : BaseStartNode
     }
 
     public int PublishCount => Volatile.Read(ref publishCount);
+    internal string[] SubscribedTopics => GetTopicSubscriptionsSnapshot().Topics;
 
     public Action<MQActionEvent>? OnPublish { get; set; }
 

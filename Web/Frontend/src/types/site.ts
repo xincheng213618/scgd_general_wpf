@@ -445,3 +445,22 @@ export interface CvwsContext {
   package_count: number
   tool_dir_display: string
 }
+export interface PublicBenchmarkScore {
+  label: string
+  cpuModel: string | null
+  gpuModels: string[]
+  totalMemoryMiB: number | null
+  overallScore: number
+  latestScore?: number | null
+  previousScore?: number | null
+}
+
+export interface PublicBenchmarkComparison {
+  workloadVersion: string
+  scoringVersion: string
+  referenceName: string
+  referenceScore: number
+  references: PublicBenchmarkScore[]
+  exampleReferences: PublicBenchmarkScore[]
+  selectedRun: PublicBenchmarkScore | null
+}

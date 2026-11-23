@@ -1,6 +1,5 @@
-#pragma warning disable CS0168
-using ColorVision.Database;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
+using log4net;
 using System;
 using System.Collections.ObjectModel;
 using System.IO;
@@ -10,6 +9,8 @@ namespace ColorVision.Engine.FlowProcessing.PostProcess.Poi
     [PostProcess("POI处理", "处理POI批次数据并导出CIE数据")]
     public class PoiPostProcessor : IPostProcessor
     {
+        private static readonly ILog log = LogManager.GetLogger(typeof(PoiPostProcessor));
+
         public bool Process(PostProcessContext ctx)
         {
             if (ctx?.Batch == null) return false;
@@ -18,16 +19,13 @@ namespace ColorVision.Engine.FlowProcessing.PostProcess.Poi
             var config = ctx.Config;
             try
             {
-                //var values = MeasureImgResultDao.Instance.GetAllByBatchId(ctx.Batch.Id);
-                //if (values.Count > 0)
-                //    ctx.FileName = values[0].FileUrl;
-
-                var masters = AlgResultMasterDao.Instance.GetAllByBatchId(ctx.Batch.Id);
+                using var db = ctx.CreateBatchDatabaseClient();
+                var masters = db.Queryable<AlgResultMasterModel>().Where(item => item.BatchId == ctx.Batch.Id).ToList();
                 foreach (var master in masters)
                 {
                     if (master.ImgFileType == ViewResultAlgType.POI_XYZ)
                     {
-                        var poiPoints = PoiPointResultDao.Instance.GetAllByPid(master.Id);
+                        var poiPoints = db.Queryable<PoiPointResultModel>().Where(item => item.Pid == master.Id).ToList();
 
                         ObservableCollection<PoiResultCIExyuvData> PoiResultCIExyuvDatas = new ObservableCollection<PoiResultCIExyuvData>();
 
@@ -43,7 +41,7 @@ namespace ColorVision.Engine.FlowProcessing.PostProcess.Poi
                     }
                     if (master.ImgFileType == ViewResultAlgType.POI_Y)
                     {
-                        var poiPoints = PoiPointResultDao.Instance.GetAllByPid(master.Id);
+                        var poiPoints = db.Queryable<PoiPointResultModel>().Where(item => item.Pid == master.Id).ToList();
 
                         ObservableCollection<PoiResultCIEYData> PoiResultCIEYDatas = new ObservableCollection<PoiResultCIEYData>();
 
@@ -60,6 +58,7 @@ namespace ColorVision.Engine.FlowProcessing.PostProcess.Poi
             }
             catch (Exception ex)
             {
+                log.Error("POI 后处理读取批次结果或导出失败。", ex);
                 return false;
             }
         }

@@ -5,7 +5,6 @@ status: "current"
 summary: "按控件、窗口和扩展接口定位对应 UI 源码与专题。"
 aliases: ["控件窗口源码在哪里","IEditorTool","IPropertyEditor","IEditor"]
 code_paths: ["UI/ColorVision.Common/Interfaces","UI/ColorVision.UI/PropertyEditor","UI/ColorVision.ImageEditor/EditorToolFactory.cs","UI/ColorVision.Solution/Editor/EditorManager.cs"]
-test_paths: []
 related: ["ui.index","ui.property-grid","ui.settings","ui.wizards","ui.menus","ui.hotkeys","ui.search","ui.localization","ui.status-bar","ui.discovery"]
 ---
 
@@ -62,7 +61,6 @@ related: ["ui.index","ui.property-grid","ui.settings","ui.wizards","ui.menus","u
 | 功能搜索窗口 | `UI/ColorVision.UI/Search/SearchWindow.xaml` 为标准非模态 Owner 窗口，承载同目录 `SearchControl.xaml`；可拖动缩放，不单独显示任务栏项 |
 | 插件市场 | `UI/ColorVision.UI.Desktop/Marketplace/MarketplaceWindow.xaml` |
 | 下载器 | `UI/ColorVision.UI.Desktop/Download/DownloadWindow.xaml` |
-| 菜单管理 | `UI/ColorVision.UI.Desktop/MenuItemManager/MenuItemManagerWindow.xaml` |
 | 日志 | `UI/ColorVision.UI/LogImp/WindowLog.xaml` |
 | PropertyGrid | `UI/ColorVision.UI/PropertyEditor/PropertyEditorWindow.xaml` |
 | 实体通用查询 | `UI/ColorVision.Database/GenericQueryWindow.xaml` |
@@ -90,14 +88,3 @@ related: ["ui.index","ui.property-grid","ui.settings","ui.wizards","ui.menus","u
 | 多图查看和融合工具 | `ColorVision.ImageTools` | 把工具实现放回工作区壳层 |
 | 用户、角色和权限管理 | `ColorVision.Rbac` | 把账户数据或细权限实现放进 Common |
 | 市场、下载、向导、诊断 | `ColorVision.UI.Desktop` | 当作主程序入口 |
-
-## 修改后要同步
-
-- 新增公开窗口、Provider、PropertyEditor、EditorTool、IEditor 时，同步本页或对应 DLL 页。
-- 通过反射、Provider、属性标注或插件装载发现的能力，同步 [UI 运行时组件](./ui-runtime-handoff.md)。
-- 发布相关改动同步 [UI DLL 发布](./publishing.md)。
-- 可见行为、成功条件或故障入口变化同步对应组件主题；设置/下载/向导见 [桌面辅助组件](./ColorVision.UI.Desktop.md)，宿主入口见 [主窗口装配](../../01-user-guide/interface/main-window.md)，不另维护一份 UI 使用手册。
-
-## 验证入口与缺口
-
-本页只维护任务到源码的路由；验证入口随目标专题，不把目录存在当成扩展已在运行时加载。

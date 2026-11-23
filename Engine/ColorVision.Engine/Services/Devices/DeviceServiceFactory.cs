@@ -41,8 +41,6 @@ namespace ColorVision.Engine.Services.Devices
     {
         ServiceTypes ServiceType { get; }
 
-        string? TerminalIconResourceKey { get; }
-
         DeviceServiceConfig CreateConfig(DeviceServiceCreateContext context);
 
         DeviceService CreateService(SysResourceModel sysResourceModel);
@@ -56,18 +54,14 @@ namespace ColorVision.Engine.Services.Devices
         public DeviceServiceFactory(
             ServiceTypes serviceType,
             Func<SysResourceModel, DeviceService> createService,
-            string? terminalIconResourceKey = null,
             Action<TConfig, DeviceServiceCreateContext>? configureConfig = null)
         {
             ServiceType = serviceType;
             this.createService = createService ?? throw new ArgumentNullException(nameof(createService));
-            TerminalIconResourceKey = terminalIconResourceKey;
             this.configureConfig = configureConfig;
         }
 
         public ServiceTypes ServiceType { get; }
-
-        public string? TerminalIconResourceKey { get; }
 
         public DeviceServiceConfig CreateConfig(DeviceServiceCreateContext context)
         {
@@ -170,13 +164,11 @@ namespace ColorVision.Engine.Services.Devices
 
             Register(new DeviceServiceFactory<ConfigSpectrum>(
                 ServiceTypes.Spectrum,
-                sysResourceModel => new DeviceSpectrum(sysResourceModel),
-                "DISpectrumIcon"));
+                sysResourceModel => new DeviceSpectrum(sysResourceModel)));
 
             Register(new DeviceServiceFactory<ConfigSMU>(
                 ServiceTypes.SMU,
-                sysResourceModel => new DeviceSMU(sysResourceModel),
-                "SMUDrawingImage"));
+                sysResourceModel => new DeviceSMU(sysResourceModel)));
 
             Register(new DeviceServiceFactory<ConfigSensor>(
                 ServiceTypes.Sensor,
@@ -185,29 +177,24 @@ namespace ColorVision.Engine.Services.Devices
 
             Register(new DeviceServiceFactory<ConfigAlgorithm>(
                 ServiceTypes.Algorithm,
-                sysResourceModel => new DeviceAlgorithm(sysResourceModel),
-                "DrawingImageAlgorithm"));
+                sysResourceModel => new DeviceAlgorithm(sysResourceModel)));
 
             Register(new DeviceServiceFactory<ConfigCfwPort>(
                 ServiceTypes.FilterWheel,
                 sysResourceModel => new DeviceCfwPort(sysResourceModel),
-                "CfwPortDrawingImage",
                 configureConfig: static (config, _) => config.IsAutoOpen = false));
 
             Register(new DeviceServiceFactory<ConfigCalibration>(
                 ServiceTypes.Calibration,
-                sysResourceModel => new DeviceCalibration(sysResourceModel),
-                "DICalibrationIcon"));
+                sysResourceModel => new DeviceCalibration(sysResourceModel)));
 
             Register(new DeviceServiceFactory<ConfigMotor>(
                 ServiceTypes.Motor,
-                sysResourceModel => new DeviceMotor(sysResourceModel),
-                "COMDrawingImage"));
+                sysResourceModel => new DeviceMotor(sysResourceModel)));
 
             Register(new DeviceServiceFactory<ConfigLightingController>(
                 ServiceTypes.LightingControl,
-                sysResourceModel => new DeviceLightingController(sysResourceModel),
-                "COMDrawingImage"));
+                sysResourceModel => new DeviceLightingController(sysResourceModel)));
         }
     }
 }

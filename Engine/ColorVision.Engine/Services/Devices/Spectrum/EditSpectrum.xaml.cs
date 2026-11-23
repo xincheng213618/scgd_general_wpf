@@ -24,6 +24,8 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
         private readonly ConfigSpectrum target;
         private readonly DisplaySpectrumConfig displayTarget;
         private readonly string authorizationResourceId;
+        private readonly (DeviceSpectrum Device, DeviceConfigurationTarget Target)? openingDevice;
+        internal DeviceConfigurationTarget? OpeningConfigurationTarget => openingDevice?.Target;
         private readonly bool useLocalStore = SysResourceDao.Instance.UseLocal;
         private readonly CancellationTokenSource cancellation = new();
         private readonly Dictionary<string, string> discoveries = new(StringComparer.OrdinalIgnoreCase);
@@ -34,6 +36,11 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
 
         public SpectrumConfigurationDraft Draft { get; }
         public ConfigSpectrum EditConfig => Draft.Config;
+
+        internal EditSpectrum(DeviceSpectrum device) : this(device.Config, device.DisplayConfig)
+        {
+            openingDevice = (device, device.CaptureConfigurationTarget());
+        }
 
         public EditSpectrum(ConfigSpectrum config, DisplaySpectrumConfig displayConfig)
         {
@@ -264,6 +271,11 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             if (!AccessControl.Evaluate("device.configure", PermissionMode.Administrator, authorizationResourceId).Allowed)
             {
                 error = EngineLocalization.Get("当前权限不足，无法保存设备配置。");
+                return false;
+            }
+            if (openingDevice is { } opening && !opening.Device.TryAdmitConfigurationEdit(opening.Target, this))
+            {
+                error = string.Empty;
                 return false;
             }
             return Draft.TryApply(target, out error, displayTarget);

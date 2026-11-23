@@ -5,7 +5,6 @@ status: "current"
 summary: "宿主、UI、Engine、插件与项目的职责及调用边界：UI操作不必经过Engine，程序集依赖不是统一执行顺序，构建产物不等于交付制品。"
 aliases: ["系统架构", "分层", "代码结构", "项目结构", "仓库地图", "哪里改", "模块对应", "源码参考", "API参考", "模块入口", "调用链", "组件交互", "跨模块", "UI调用边界"]
 code_paths: ["ColorVision/ColorVision.csproj", "ColorVision/App.xaml.cs", "Engine/ColorVision.Engine/ColorVision.Engine.csproj", "UI/ColorVision.ImageEditor/ColorVision.ImageEditor.csproj", "UI/ColorVision.ImageEditor/Algorithms/ImageAlgorithmPreviewSession.cs", "UI/ColorVision.Algorithms/ColorVision.Algorithms.csproj", "UI/ColorVision.UI/Plugins/PluginLoader.cs"]
-test_paths: []
 related: ["platform.architecture", "platform.runtime", "platform.service-host", "algorithms.platform", "engine.index", "flow.architecture", "plugins.model", "projects.index", "delivery.deployment"]
 ---
 

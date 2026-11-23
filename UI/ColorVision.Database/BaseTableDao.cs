@@ -3,6 +3,7 @@ using log4net;
 using SqlSugar;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -116,12 +117,19 @@ namespace ColorVision.Database
 
         public static List<T> GetAllByPid<T>(this BaseTableDao<T> dao, int pid) where T : class, IEntity, new()
         {
-            if (!EnsureConnected()) return new List<T>();
-            return ExecuteSafe(() =>
+            return dao.TryGetAllByPid(pid, out var rows) ? rows : new List<T>();
+        }
+
+        public static bool TryGetAllByPid<T>(this BaseTableDao<T> dao, int pid, [NotNullWhen(true)] out List<T>? rows) where T : class, IEntity, new()
+        {
+            rows = null;
+            if (!EnsureConnected()) return false;
+            rows = ExecuteSafe<List<T>?>(() =>
             {
                 using var db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
                 return db.Queryable<T>().Where("pid = @pid", new { pid }).ToList();
-            }, new List<T>());
+            }, null);
+            return rows != null;
         }
 
         public static T? GetById<T>(this BaseTableDao<T> dao, int? id) where T : class, IEntity, new()

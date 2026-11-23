@@ -1,3 +1,4 @@
+using ColorVision.Algorithms;
 using ColorVision.ImageEditor.Algorithms;
 #pragma warning disable CS8604
 using ColorVision.Common.MVVM;
@@ -76,6 +77,8 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.SurfaceDefect
 
     public sealed class SurfaceDefectIDVContextMenu : IDVContextMenu
     {
+        public AlgorithmInteractiveGroupPresentation AnalysisGroup => AlgorithmMenuGroups.Defects;
+
         private readonly ImageProcessingContext _imageContext;
         private readonly DrawEditorContext _drawContext;
         private readonly ImageViewConfig _config;

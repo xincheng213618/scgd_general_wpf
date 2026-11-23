@@ -42,12 +42,12 @@
                             ToolTip="{x:Static properties:Resources.DB_MoreQueryActions}"
                             AutomationProperties.Name="{x:Static properties:Resources.DB_MoreQueryActions}">
                         <Button.ContextMenu>
-                            <ContextMenu>
+                            <ContextMenu Opened="MoreMenu_Opened">
                                 <MenuItem Header="{x:Static properties:Resources.DB_AddAll}" Click="AddAllPropertyInfo_Click"/>
-                                <Separator/>
-                                <MenuItem Header="{x:Static properties:Resources.DB_TableMaintenance}">
+                                <Separator x:Name="TableMaintenanceMenuSeparator"/>
+                                <MenuItem x:Name="TableMaintenanceMenuItem" Header="{x:Static properties:Resources.DB_TableMaintenance}">
                                     <MenuItem Header="{x:Static properties:Resources.DB_ClearTable}" Click="DeleteAll_Click"/>
-                                    <MenuItem Header="{x:Static properties:Resources.DB_TruncateTable}" Click="TruncateTable_Click"/>
+                                    <MenuItem x:Name="TruncateTableMenuItem" Header="{x:Static properties:Resources.DB_TruncateTable}" Click="TruncateTable_Click"/>
                                 </MenuItem>
                             </ContextMenu>
                         </Button.ContextMenu>

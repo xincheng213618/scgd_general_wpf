@@ -25,7 +25,7 @@ namespace ProjectARVRPro.Process.POI
                 if (values.Count > 0)
                     ctx.Result.FileName = values[0].FileUrl;
 
-                var masters = AlgResultMasterDao.Instance.GetAllByBatchId(ctx.Batch.Id);
+                var masters = ctx.ReadMasterResults();
                 foreach (var master in masters)
                 {
                     if (master.ImgFileType == ViewResultAlgType.POI_XYZ)
@@ -34,7 +34,7 @@ namespace ProjectARVRPro.Process.POI
                         //{
                         //    ctx.Result.FileName = master.ImgFile;
                         //}
-                        var poiPoints = PoiPointResultDao.Instance.GetAllByPid(master.Id);
+                        var poiPoints = ctx.ReadDetails(PoiPointResultDao.Instance, master.Id);
                         if (poiPoints.Count == 0) continue;
                         int id = sourcePoixyuvDatas.Count;
                         foreach (var item in poiPoints)

@@ -171,6 +171,7 @@ internal sealed class LocalSpectrumNative : ILocalSpectrumNative
 
 internal sealed class LocalSpectrumSession : IDisposable
 {
+    private const int AlreadyClosedErrorCode = -13006;
     // A driver which failed release may still invoke its callback; retain its managed target until process exit.
     private static readonly List<LocalSpectrumSession> QuarantinedSessions = [];
     private readonly object gate = new();
@@ -197,16 +198,34 @@ internal sealed class LocalSpectrumSession : IDisposable
         this.ensureLicenseAvailable = ensureLicenseAvailable ?? (_ => { });
     }
 
-    public void Open(ConfigSpectrum config)
+    public void Open(ConfigSpectrum config, LocalSpectrumOpticalScope? opticalScope = null, LocalSpectrumLicenseSource? licenseSource = null)
     {
         lock (gate)
         {
             ObjectDisposedException.ThrowIf(disposed, this);
             if (quarantined) throw new InvalidOperationException("光谱仪释放失败，请重启程序后再连接。");
             if (handle != IntPtr.Zero) return;
-            if (string.IsNullOrWhiteSpace(config.SN)) throw new InvalidOperationException("请先选择物理光谱仪的 SN。");
+            if (licenseSource != null) LocalSpectrumLicense.ValidateSerialNumber(config.SN);
+            else if (string.IsNullOrWhiteSpace(config.SN)) throw new InvalidOperationException("请先选择物理光谱仪的 SN。");
             ConfigSpectrum snapshot = JsonConvert.DeserializeObject<ConfigSpectrum>(JsonConvert.SerializeObject(config))!;
+            opticalScope?.EnsureCurrent();
             lease = SpectrometerDriverLease.TryAcquire() ?? throw new InvalidOperationException("本机光谱仪驱动正在被其他光谱窗口或设备占用，请先断开该连接。");
+            DateTime? licenseExpiry;
+            try
+            {
+                opticalScope?.EnsureCurrent();
+                licenseExpiry = licenseSource?.Prepare(snapshot.SN);
+                opticalScope?.EnsureCurrent();
+                licenseSource?.EnsureCurrent();
+            }
+            catch
+            {
+                // Licence preparation takes place before opening any native connection.
+                lease.Dispose();
+                lease = null;
+                throw;
+            }
+
             try
             {
                 handle = native.Create((int)snapshot.SpectrometerType, callback);
@@ -218,12 +237,19 @@ internal sealed class LocalSpectrumSession : IDisposable
                     throw new InvalidOperationException($"实际连接的光谱仪 SN 为 {serial}，与所选 {snapshot.SN} 不一致。");
                 if (snapshot.SetEmissionSP100Config.IsEnabled) Check(native.Configure(handle, snapshot.SetEmissionSP100Config), "设置 SP100");
                 openedConfig = snapshot;
-                ensureLicenseAvailable(snapshot);
+                if (licenseSource == null) ensureLicenseAvailable(snapshot);
+                else
+                {
+                    licenseSource.EnsureCurrent();
+                    LocalSpectrumLicense.EnsureNotExpired(licenseExpiry, licenseSource.SkipValidation, DateTime.Now);
+                }
                 if (snapshot.NDConfig.IsNDPort)
                 {
-                    using var operation = nd.Acquire(snapshot.NDConfig);
+                    using var operation = nd.Acquire(snapshot.NDConfig, opticalScope);
                     operation.GetPort();
                 }
+                opticalScope?.EnsureCurrent();
+                licenseSource?.EnsureCurrent();
             }
             catch (Exception failure)
             {
@@ -234,13 +260,15 @@ internal sealed class LocalSpectrumSession : IDisposable
         }
     }
 
-    public LocalSpectrumCapture Capture(LocalSpectrumParameters parameters, ConfigSpectrum config, CancellationToken cancellationToken = default)
+    public LocalSpectrumCapture Capture(LocalSpectrumParameters parameters, ConfigSpectrum config, CancellationToken cancellationToken = default,
+        LocalSpectrumOpticalScope? opticalScope = null)
     {
         lock (gate)
         {
             EnsureOpen(config);
             cancellationToken.ThrowIfCancellationRequested();
             parameters.Validate();
+            opticalScope?.EnsureCurrent();
             // Freeze the selection and width together while native calls run; the UI can edit the live config.
             var configured = config.GetDataConfig;
             var settings = new GetDataConfig
@@ -257,13 +285,15 @@ internal sealed class LocalSpectrumSession : IDisposable
             SpectrumSmoothing.Validate(settings.SmoothingMethod, settings.FilterBW);
             var effective = parameters.AutoIntegration ? parameters : parameters.WithSyncFrequencyTiming(settings);
             bool withNd = parameters.IsWithND && config.NDConfig.IsNDPort;
-            using var ndOperation = config.NDConfig.IsNDPort ? nd.Acquire(config.NDConfig) : null;
+            using var ndOperation = config.NDConfig.IsNDPort ? nd.Acquire(config.NDConfig, opticalScope) : null;
             int? ndPort = ndOperation?.GetPort();
-            LocalSpectrumNd.Calibration? calibration = ndPort.HasValue ? LocalSpectrumNd.ResolveCalibration(config, ndPort.Value) : null;
+            LocalSpectrumNd.Calibration? calibration = ndPort.HasValue ? LocalSpectrumNd.ResolveCalibration(config, ndPort.Value, opticalScope) : null;
             string wave = calibration?.WavelengthFile ?? ResolvePath(config.WavelengthFile), magnitude = calibration?.MagnitudeFile ?? ResolvePath(config.MaguideFile);
             string? error = DeviceSpectrum.ValidateMeasurementCalibrationFiles(wave, magnitude);
             if (error != null) throw new InvalidOperationException(error);
-            using var lightPathOperation = config.IsShutterEnable && !SharesNdShutter(config) ? shutter.AcquireOperation(config.ShutterCfg) : null;
+            using var lightPathOperation = config.IsShutterEnable && !SharesNdShutter(config, opticalScope)
+                ? shutter.AcquireOperation(config.ShutterCfg, opticalScope) : null;
+            opticalScope?.EnsureCurrent();
             Check(native.ConfigureSmoothing(handle, settings.SmoothingMethod, settings.FilterBW), "设置光谱平滑算法");
             if (config.SetEmissionSP100Config.IsEnabled || openedConfig!.SetEmissionSP100Config.IsEnabled)
             {
@@ -280,12 +310,12 @@ internal sealed class LocalSpectrumSession : IDisposable
                 if (parameters.AutoIntegration)
                 {
                     float time = withNd
-                        ? FindNdAutoTime(ndOperation!, initialNdPort!.Value, config, cancellationToken, ref ndMoveAttempted)
-                        : FindAutoTime(config, cancellationToken);
+                        ? FindNdAutoTime(ndOperation!, initialNdPort!.Value, config, cancellationToken, ref ndMoveAttempted, opticalScope)
+                        : FindAutoTime(config, cancellationToken, opticalScope);
                     if (withNd)
                     {
                         ndPort = ndOperation!.GetPort();
-                        calibration = LocalSpectrumNd.ResolveCalibration(config, ndPort.Value);
+                        calibration = LocalSpectrumNd.ResolveCalibration(config, ndPort.Value, opticalScope);
                         wave = calibration.WavelengthFile;
                         magnitude = calibration.MagnitudeFile;
                         Check(native.LoadWavelength(handle, wave), "加载 ND 波长校正");
@@ -297,8 +327,9 @@ internal sealed class LocalSpectrumSession : IDisposable
                 }
                 cancellationToken.ThrowIfCancellationRequested();
                 if (parameters.AutoInitDark || parameters.SelfAdaptionInitDark)
-                    DarkCore(effective, config, settings.FilterBW, parameters.SelfAdaptionInitDark, ndOperation);
+                    DarkCore(effective, config, settings.FilterBW, parameters.SelfAdaptionInitDark, ndOperation, opticalScope);
                 cancellationToken.ThrowIfCancellationRequested();
+                opticalScope?.EnsureCurrent();
                 var result = native.Capture(handle, effective, settings, dark);
                 result.EffectiveAverageCount = effective.NumberOfAverage;
                 result.UsedSyncFrequency = settings.IsSyncFrequencyEnabled;
@@ -316,7 +347,7 @@ internal sealed class LocalSpectrumSession : IDisposable
                 dark = initialDark;
                 try
                 {
-                    if (ndOperation!.SetPort(port) != port)
+                    if (ndOperation!.RestorePort(port) != port)
                         throw new InvalidOperationException("ND 未确认到达初始孔位。");
                 }
                 catch (Exception restoreFailure)
@@ -328,7 +359,7 @@ internal sealed class LocalSpectrumSession : IDisposable
         }
     }
 
-    public void Dark(LocalSpectrumParameters p, ConfigSpectrum c, bool adaptive = false)
+    public void Dark(LocalSpectrumParameters p, ConfigSpectrum c, bool adaptive = false, LocalSpectrumOpticalScope? opticalScope = null)
     {
         lock (gate)
         {
@@ -337,19 +368,27 @@ internal sealed class LocalSpectrumSession : IDisposable
             var settings = c.GetDataConfig;
             var effective = p.WithSyncFrequencyTiming(settings);
             int filterWidth = settings.FilterBW;
-            using var ndOperation = !adaptive && c.NDConfig.IsNDPort ? nd.Acquire(c.NDConfig) : null;
-            DarkCore(effective, c, filterWidth, adaptive, ndOperation);
+            opticalScope?.EnsureCurrent();
+            using var ndOperation = !adaptive && c.NDConfig.IsNDPort ? nd.Acquire(c.NDConfig, opticalScope) : null;
+            DarkCore(effective, c, filterWidth, adaptive, ndOperation, opticalScope);
         }
     }
 
-    private void DarkCore(LocalSpectrumParameters p, ConfigSpectrum c, int filterWidth, bool adaptive, ILocalSpectrumNdOperation? ndOperation)
+    private void DarkCore(LocalSpectrumParameters p, ConfigSpectrum c, int filterWidth, bool adaptive, ILocalSpectrumNdOperation? ndOperation,
+        LocalSpectrumOpticalScope? opticalScope)
     {
         if (adaptive && !adaptiveDarkInitialized) throw new InvalidOperationException("请先完成自适应校零初始化，再使用自适应暗校正。");
-        using var lightPathOperation = !adaptive && c.IsShutterEnable && !SharesNdShutter(c) ? shutter.AcquireOperation(c.ShutterCfg) : null;
+        using var lightPathOperation = !adaptive && c.IsShutterEnable && !SharesNdShutter(c, opticalScope)
+            ? shutter.AcquireOperation(c.ShutterCfg, opticalScope) : null;
         var buffer = new float[10000];
-        void AcquireDark() => Check(native.Dark(handle, p.IntegralTime, p.NumberOfAverage, filterWidth, buffer, adaptive), "光谱校零");
+        void AcquireDark()
+        {
+            opticalScope?.EnsureCurrent();
+            Check(native.Dark(handle, p.IntegralTime, p.NumberOfAverage, filterWidth, buffer, adaptive), "光谱校零");
+        }
         if (adaptive) AcquireDark();
-        else WithDarkPath(c, ndOperation, AcquireDark);
+        else WithDarkPath(c, ndOperation, AcquireDark, opticalScope);
+        opticalScope?.EnsureCurrent();
         dark = buffer;
     }
 
@@ -363,7 +402,7 @@ internal sealed class LocalSpectrumSession : IDisposable
         }
     }
 
-    public void InitAutoDark(ConfigSpectrum c)
+    public void InitAutoDark(ConfigSpectrum c, LocalSpectrumOpticalScope? opticalScope = null)
     {
         lock (gate)
         {
@@ -384,31 +423,41 @@ internal sealed class LocalSpectrumSession : IDisposable
             float lastTime = settings.BeginIntegralTime + (long)settings.StepCount * settings.StepTime;
             LocalSpectrumParameters.ValidateIntegralTime(lastTime);
 
-            adaptiveDarkInitialized = false;
-            using var ndOperation = c.NDConfig.IsNDPort ? nd.Acquire(c.NDConfig) : null;
-            using var lightPathOperation = c.IsShutterEnable && !SharesNdShutter(c) ? shutter.AcquireOperation(c.ShutterCfg) : null;
-            WithDarkPath(c, ndOperation, () => Check(native.InitAutoDark(handle, settings), "自适应校零"));
+            opticalScope?.EnsureCurrent();
+            using var ndOperation = c.NDConfig.IsNDPort ? nd.Acquire(c.NDConfig, opticalScope) : null;
+            using var lightPathOperation = c.IsShutterEnable && !SharesNdShutter(c, opticalScope)
+                ? shutter.AcquireOperation(c.ShutterCfg, opticalScope) : null;
+            WithDarkPath(c, ndOperation, () =>
+            {
+                opticalScope?.EnsureCurrent();
+                adaptiveDarkInitialized = false;
+                Check(native.InitAutoDark(handle, settings), "自适应校零");
+            }, opticalScope);
+            opticalScope?.EnsureCurrent();
             adaptiveDarkInitialized = true;
         }
     }
 
-    internal int ControlNd(ConfigSpectrum config, int? port, CancellationToken token = default)
+    internal int ControlNd(ConfigSpectrum config, int? port, CancellationToken token = default, LocalSpectrumOpticalScope? opticalScope = null)
     {
         lock (gate)
         {
             ObjectDisposedException.ThrowIf(disposed, this);
             token.ThrowIfCancellationRequested();
-            using var operation = nd.Acquire(config.NDConfig);
+            opticalScope?.EnsureCurrent();
+            using var operation = nd.Acquire(config.NDConfig, opticalScope);
             int actual = port.HasValue ? operation.SetPort(port.Value) : operation.GetPort();
             if (port.HasValue && actual != port.Value) throw new InvalidOperationException($"ND 未确认到达孔位 {port.Value}，实际孔位为 {actual}。");
             token.ThrowIfCancellationRequested();
+            opticalScope?.EnsureCurrent();
             return actual;
         }
     }
 
-    private float FindAutoTime(ConfigSpectrum config, CancellationToken token)
+    private float FindAutoTime(ConfigSpectrum config, CancellationToken token, LocalSpectrumOpticalScope? opticalScope)
     {
         token.ThrowIfCancellationRequested();
+        opticalScope?.EnsureCurrent();
         float time = config.BeginIntegralTime;
         int code = native.AutoTime(handle, ref time, config, token);
         if (code == Spectrometer.AutoExposureCancelledErrorCode) throw new OperationCanceledException("光谱仪自动曝光已停止。", token);
@@ -418,7 +467,8 @@ internal sealed class LocalSpectrumSession : IDisposable
         return time;
     }
 
-    private float FindNdAutoTime(ILocalSpectrumNdOperation operation, int current, ConfigSpectrum config, CancellationToken token, ref bool moveAttempted)
+    private float FindNdAutoTime(ILocalSpectrumNdOperation operation, int current, ConfigSpectrum config, CancellationToken token,
+        ref bool moveAttempted, LocalSpectrumOpticalScope? opticalScope)
     {
         NDConfig settings = config.NDConfig;
         if (!double.IsFinite(settings.NDMinExpTime) || !double.IsFinite(settings.NDMaxExpTime)
@@ -428,10 +478,11 @@ internal sealed class LocalSpectrumSession : IDisposable
             throw new InvalidOperationException("请配置非负且不重复的 ND 倍率，每个列表位置对应同索引的物理孔位。");
         int[] ports = settings.NDRate.Select((rate, port) => (rate, port)).OrderBy(item => item.rate).Select(item => item.port).ToArray();
         // Validate every candidate before moving any hardware; a missing file must not cause an uncalibrated capture.
-        foreach (int candidate in ports) LocalSpectrumNd.ResolveCalibration(config, candidate);
+        foreach (int candidate in ports) LocalSpectrumNd.ResolveCalibration(config, candidate, opticalScope);
         if (settings.EnableResetND && current != ports[0])
         {
             token.ThrowIfCancellationRequested();
+            opticalScope?.EnsureCurrent();
             moveAttempted = true;
             current = operation.SetPort(ports[0]);
         }
@@ -440,12 +491,13 @@ internal sealed class LocalSpectrumSession : IDisposable
         {
             int index = Array.IndexOf(ports, current);
             if (index < 0) throw new InvalidOperationException($"当前 ND 孔位 {current} 未配置倍率。");
-            float time = FindAutoTime(config, token);
+            float time = FindAutoTime(config, token, opticalScope);
             int next = time < settings.NDMinExpTime ? index + 1 : time > settings.NDMaxExpTime ? index - 1 : index;
             if (next == index) return time;
             if (next < 0 || next >= ports.Length || visited.Contains(ports[next]))
                 throw new InvalidOperationException("ND 自动积分无法在配置的孔位及积分范围内收敛，请检查光路和 ND 参数。");
             token.ThrowIfCancellationRequested();
+            opticalScope?.EnsureCurrent();
             // A command without confirmed readback may still have moved the wheel.
             moveAttempted = true;
             current = operation.SetPort(ports[next]);
@@ -453,55 +505,65 @@ internal sealed class LocalSpectrumSession : IDisposable
         throw new InvalidOperationException("ND 自动积分无法收敛。");
     }
 
-    private void WithDarkPath(ConfigSpectrum config, ILocalSpectrumNdOperation? operation, Action acquireDark)
+    private void WithDarkPath(ConfigSpectrum config, ILocalSpectrumNdOperation? operation, Action acquireDark, LocalSpectrumOpticalScope? opticalScope)
     {
-        if ((config.IsShutterEnable && !SharesNdShutter(config)) || operation == null) { WithShutterBlocked(config, acquireDark); return; }
-        int darkPort = config.NDConfig.DarkNDPort >= 0 ? config.NDConfig.DarkNDPort : SharesNdShutter(config) ? config.ShutterCfg.DarkPort : -1;
+        bool sharesNdShutter = SharesNdShutter(config, opticalScope);
+        if ((config.IsShutterEnable && !sharesNdShutter) || operation == null) { WithShutterBlocked(config, acquireDark, opticalScope); return; }
+        int darkPort = config.NDConfig.DarkNDPort >= 0 ? config.NDConfig.DarkNDPort : sharesNdShutter ? config.ShutterCfg.DarkPort : -1;
         if (darkPort < 0) throw new InvalidOperationException("请配置 ND 校零孔位或启用外部快门后再校零。");
         int previous = operation.GetPort();
         if (previous == darkPort) throw new InvalidOperationException("当前 ND 位于校零孔，请先切到测量孔位。");
+        opticalScope?.EnsureCurrent();
         Exception? failure = null;
         try { operation.SetPort(darkPort); acquireDark(); }
         catch (Exception ex) { failure = ex; }
-        try { operation.SetPort(previous); }
+        try
+        {
+            if (operation.RestorePort(previous) != previous)
+                throw new InvalidOperationException("ND 未确认到达原测量孔位。");
+        }
         catch (Exception ex) { throw new InvalidOperationException($"校零后恢复 ND 测量位 {previous} 失败，请检查光路。", failure == null ? ex : new AggregateException(failure, ex)); }
         if (failure != null) ExceptionDispatchInfo.Capture(failure).Throw();
     }
 
-    private static bool SharesNdShutter(ConfigSpectrum config) => config.IsShutterEnable && config.ShutterCfg.UseFilterWheel
+    private static bool SharesNdShutter(ConfigSpectrum config, LocalSpectrumOpticalScope? opticalScope) => opticalScope?.SharesNdShutter
+        ?? (config.IsShutterEnable && config.ShutterCfg.UseFilterWheel
         && config.NDConfig.IsNDPort && config.NDConfig.IsBingNDDevice
-        && string.Equals(config.ShutterCfg.FilterWheelDeviceCode, config.NDConfig.NDBindDeviceCode, StringComparison.Ordinal);
+        && string.Equals(config.ShutterCfg.FilterWheelDeviceCode, config.NDConfig.NDBindDeviceCode, StringComparison.Ordinal));
 
-    public void ControlShutter(string eventName, ConfigSpectrum config)
+    public void ControlShutter(string eventName, ConfigSpectrum config, LocalSpectrumOpticalScope? opticalScope = null)
     {
         lock (gate)
         {
             EnsureOpen(config);
             if (eventName == "ShutterDisconnect") { shutter.Disconnect(); return; }
             if (!config.IsShutterEnable) throw new InvalidOperationException("请先在光谱仪配置中启用快门。");
-            using var lightPathOperation = shutter.AcquireOperation(config.ShutterCfg);
+            opticalScope?.EnsureCurrent();
+            using var lightPathOperation = shutter.AcquireOperation(config.ShutterCfg, opticalScope);
             switch (eventName)
             {
-                case "ShutterConnect": shutter.Connect(config.ShutterCfg); break;
-                case "ShutterDoOpen": shutter.SetTransmitting(!config.ShutterCfg.OpenForDark, config.ShutterCfg); break;
-                case "ShutterDoClose": shutter.SetTransmitting(config.ShutterCfg.OpenForDark, config.ShutterCfg); break;
+                case "ShutterConnect": shutter.Connect(config.ShutterCfg, opticalScope); break;
+                case "ShutterDoOpen": shutter.SetTransmitting(!config.ShutterCfg.OpenForDark, config.ShutterCfg, opticalScope); break;
+                case "ShutterDoClose": shutter.SetTransmitting(config.ShutterCfg.OpenForDark, config.ShutterCfg, opticalScope); break;
                 default: throw new NotSupportedException($"未知快门操作：{eventName}。");
             }
+            opticalScope?.EnsureCurrent();
         }
     }
 
-    private void WithShutterBlocked(ConfigSpectrum config, Action operation)
+    private void WithShutterBlocked(ConfigSpectrum config, Action operation, LocalSpectrumOpticalScope? opticalScope)
     {
         if (!config.IsShutterEnable) { operation(); return; }
+        opticalScope?.EnsureCurrent();
         Exception? failure = null;
         try
         {
-            shutter.SetTransmitting(false, config.ShutterCfg);
+            shutter.SetTransmitting(false, config.ShutterCfg, opticalScope);
             operation();
         }
         catch (Exception ex) { failure = ex; }
         // Even an unconfirmed blocking command may have moved the shutter. Always attempt to restore light.
-        try { shutter.SetTransmitting(true, config.ShutterCfg); }
+        try { shutter.RestoreTransmitting(config.ShutterCfg); }
         catch (Exception ex)
         {
             string restore = config.ShutterCfg.UseFilterWheel ? "恢复滤色轮测量位失败" : "恢复光闸通光状态失败";
@@ -533,7 +595,11 @@ internal sealed class LocalSpectrumSession : IDisposable
             List<Exception> failures = [];
             if (handle != IntPtr.Zero)
             {
-                Attempt(() => Check(native.Close(handle), "关闭光谱仪"));
+                Attempt(() =>
+                {
+                    int code = native.Close(handle);
+                    if (code != AlreadyClosedErrorCode) Check(code, "关闭光谱仪");
+                });
                 Attempt(() => Check(native.Release(handle), "释放光谱仪"));
                 if (failures.Count != 0)
                 {

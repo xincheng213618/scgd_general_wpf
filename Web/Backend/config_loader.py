@@ -7,6 +7,7 @@ Loads config.json over DEFAULT_CONFIG and provides validation helpers.
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 from typing import Any
 
@@ -44,13 +45,29 @@ MAX_FEEDBACK_FILES = 10
 MAX_FEEDBACK_FIELD_LENGTH = 4000
 
 
-def load_config() -> dict[str, Any]:
+def get_data_directory() -> Path:
+    """Locate the configuration and database for this backend instance."""
+    override = os.environ.get("COLORVISION_WEB_DATA_DIR")
+    if override is None:
+        return BASE_DIR
+    directory = Path(override)
+    if not directory.is_absolute() or not directory.is_dir():
+        raise ValueError("COLORVISION_WEB_DATA_DIR must be an existing absolute directory")
+    return directory
+
+
+def load_config(data_directory: Path | None = None) -> dict[str, Any]:
     """Load configuration by merging config.json over DEFAULT_CONFIG."""
     config = dict(DEFAULT_CONFIG)
     config["upload_auth"] = dict(DEFAULT_UPLOAD_AUTH)
-    config_file = BASE_DIR / "config.json"
+    data_directory = data_directory if data_directory is not None else get_data_directory()
+    config_file = data_directory / "config.json"
+    if "COLORVISION_WEB_DATA_DIR" in os.environ:
+        if not config_file.is_file():
+            raise FileNotFoundError("COLORVISION_WEB_DATA_DIR must contain config.json")
+        config["storage_path"] = str(data_directory / "storage")
     if config_file.exists():
-        with open(config_file, encoding="utf-8") as f:
+        with config_file.open(encoding="utf-8-sig") as f:
             loaded = json.load(f)
         if isinstance(loaded.get("upload_auth"), dict):
             config["upload_auth"].update(loaded["upload_auth"])

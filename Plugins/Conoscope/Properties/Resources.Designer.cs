@@ -1940,6 +1940,15 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("Conoscope_ScaleCoefficientNotConfigured", resourceCulture);
             }
         }
+
+        /// <summary>
+        ///   查找类似 截屏 的本地化字符串。
+        /// </summary>
+        public static string Conoscope_Screenshot {
+            get {
+                return ResourceManager.GetString("Conoscope_Screenshot", resourceCulture);
+            }
+        }
         
         /// <summary>
         ///   查找类似 未显示测试区域 的本地化字符串。

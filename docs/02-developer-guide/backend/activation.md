@@ -5,7 +5,6 @@ status: "current"
 summary: "用户中心的可选许可证激活、TPM 离线凭据、在线租约和后台设备名额。"
 aliases: ["许可证激活", "联网申请并激活", "使用中的设备", "释放本机", "TPM 离线", "在线租约", "ActivationService", "COLORVISION_ACTIVATION_URL"]
 code_paths: ["UI/ColorVision.Rbac/Activation", "UI/ColorVision.Rbac/ColorVision.Rbac.csproj", "UI/ColorVision.Rbac/RbacManagerWindow.xaml", "Web/Backend/routes/activation_api.py", "Web/Backend/services/activation.py", "Web/Backend/services/activation_http.py", "Web/Backend/db/repositories/activation_admin.py", "Web/Backend/routes/admin_api.py", "Web/Frontend/src/pages/ActivationPage.tsx"]
-test_paths: ["Web/Backend/test_activation.py", "Web/Backend/test_contracts.py"]
 related: ["delivery.backend", "platform.rbac"]
 ---
 

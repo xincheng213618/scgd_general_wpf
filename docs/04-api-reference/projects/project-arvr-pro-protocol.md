@@ -5,7 +5,6 @@ status: "current"
 summary: "ARVRPro TCP/JSON 对接：初始化与 RunAll、流程启用设置、切图确认、AOI 切图节点、状态码和最终结果关联；说明分帧与并发会话限制。"
 aliases: ["ARVR TCP 协议","ARVRPRO TCP 通讯协议手册","ProjectARVRInit","SwitchPG","SwitchPGCompleted","SwitchGroup","RunAll","GetProcessEnable","SetProcessEnable","ARVRTestType","Partial applied","No enabled ARVR flow","ARVR test is busy","ProjectARVRResult","AoiSwitchPG","AOITestSwitchImageComplete","外部切图","ExternalImageSwitchNode","UseLegacyARVROutput","SNlocked"]
 code_paths: ["Projects/ProjectARVRPro/Services/SocketControl.cs","Projects/ProjectARVRPro/Services/RunAllSocket.cs","Projects/ProjectARVRPro/Services/SwitchGroupSocket.cs","Projects/ProjectARVRPro/Services/ProcessEnableSocket.cs","Projects/ProjectARVRPro/Flow/ExternalImageSwitchNode.cs","Projects/ProjectARVRPro/Services/ExternalImageSwitchService.cs","Projects/ProjectARVRPro/Services/AOITestSwitchImageCompleteHandler.cs","Projects/ProjectARVRPro/ARVRWindow.xaml.cs","Projects/ProjectARVRPro/ProjectARVRProConfig.cs","Projects/ProjectARVRPro/ObjectiveTestResult.cs","Projects/ProjectARVRPro/LegacyARVR/","UI/ColorVision.SocketProtocol/SocketManager.cs","UI/ColorVision.SocketProtocol/SocketJsonDispatcher.cs","UI/ColorVision.SocketProtocol/SocketConfig.cs"]
-test_paths: []
 related: ["projects.arvr-pro","projects.arvr-pro-processes","projects.arvr-pro-demo","ui.socket-protocol"]
 ---
 
@@ -18,9 +17,9 @@ related: ["projects.arvr-pro","projects.arvr-pro-processes","projects.arvr-pro-d
 1. 在 ColorVision 中加载 `ProjectARVRPro`，确认[活动流程组、Flow 模板、解析器和 Recipe](./project-arvr-pro-processes.md)已配置，所需设备与 Flow 服务可用。
 2. 在“通信协议”设置中启用 Socket Server，选择 **Json**。默认监听 `0.0.0.0:6666`，默认接收缓冲区为 10,240 字节；服务默认未启用。
 3. 客户端连接现场配置的地址和端口，以 UTF-8 发送 JSON。端口、防火墙和协议模式不一致时，先排查[通用 Socket 服务](../ui-components/ColorVision.SocketProtocol.md)。
-4. 保持一个控制连接，串行完成当前产品的测试，再开始下一个 SN。`SocketControl.Current.Stream` 保留异步切图和结果的回包连接，仍是原来的可写属性。`ProjectARVRInit`、`RunAll`、`SwitchPGCompleted` 等执行和推进入口沿用原有赋值方式；LUX 的 `T0000` 握手、启用状态查询、启用配置和切组不写入该属性，立即响应仍发给本次请求的连接。重连后收到执行或推进消息时更新回包连接，其中 `RunAll` 忙碌重发仍返回原来的 `Code=-4`，并沿用更新 Stream 的原行为。仅 LUX 握手或查询不接管旧任务结果。最终结果在实际发送前读取当前 Stream；发送失败仍按原流程记录异常，不自动补发。
+4. 保持一个控制连接，串行完成当前产品的测试，再开始下一个 SN。`SocketControl.Current.Stream` 保存异步切图和结果的回包连接。成功步骤正在回写或收尾时，重复初始化、`RunAll`、切图确认和旧版流程启动请求都保留当前控制连接，即时响应仍发给请求方。其余阶段的执行和推进消息沿用既有重连规则，包括 `RunAll` 忙碌重发时更新 Stream。仅 LUX 握手或查询不接管旧任务结果。最终结果在发送前读取当前 Stream，发送失败会记录异常。
 
-`Test/ProjectARVRPro.Tests/SocketControlTests.cs` 用本机回环 TCP 验证配置请求的立即响应不变、异步结果仍发给原连接，以及另一站请求不妨碍外部切图确认；另验证切图断线后清理等待状态、允许再次执行。这些测试不连接相机或光谱仪，不能代替现场调度联调。
+现场调度联调需接入相机和光谱仪，核对控制连接归属及切图断线后的恢复。
 
 ### TCP 消息边界
 
@@ -80,7 +79,7 @@ RunAll 自行初始化本轮会话，不需要先发 `ProjectARVRInit`，执行�
 
 `ARVRTestType` 是活动组中步骤的**外部索引**，不保证从 0 开始，也不是固定测试类型枚举。首条启用步骤可能位于组中间；Legacy 输出还会使索引加 1，具体见[查询与设置启用状态](#查询与设置启用状态)。
 
-没有启用步骤时，返回 `EventName=ProjectARVRInit`、`Code=-2`、`Msg="No enabled ARVR flow"`，不执行本轮初始化。结果输出等待后台空间清理或保存报表期间，初始化返回 `Code=-4`、`Msg="ARVR test is busy"`，保留原会话。其它执行阶段的初始化接口仍没有 RunAll 的完整忙检查；客户端必须在上一轮结束后才调用，不能用重复初始化探测设备是否忙。
+没有启用步骤时，返回 `EventName=ProjectARVRInit`、`Code=-2`、`Msg="No enabled ARVR flow"`。成功步骤回写或结果收尾、结果输出等待后台空间清理或保存报表期间，初始化返回 `Code=-4`、`Msg="ARVR test is busy"`，保留原会话。客户端应等上一轮结束后再发送初始化请求。
 
 ### 普通切图：SwitchPG 与 SwitchPGCompleted
 
@@ -97,7 +96,9 @@ RunAll 自行初始化本轮会话，不需要先发 `ProjectARVRInit`，执行�
 
 项目窗口存在时不返回单独 ACK。服务端从当前执行位置之后查找下一条启用步骤，按配置切图/预处理并启动 Flow，处理结果后推送下一条 `SwitchPG` 或最终 `ProjectARVRResult`。后续 `SwitchPG` 的 `MsgID` 为空，`Msg` 一般为 `Switch PG`，允许失败后继续时可能带上一流程失败说明。
 
-确认请求没有用于定位步骤的索引校验，也不核验请求 SN 是否等于当前会话 SN。执行中重复确认通常只记录日志并忽略；延迟到下一空闲阶段的重复确认可能推进下一步，因此客户端必须管理自己的确认状态。项目窗口不存在时返回 `Code=-3`、`Msg="ProjectARVR Wont Open"`。
+窗口继续运行时，成功步骤完成批次回写和结果保存后，服务端解除本步骤的回写保护，再发送下一条 `SwitchPG` 或最终 `ProjectARVRResult`。客户端收到 `SwitchPG` 后可回送切图确认，收到最终结果后可发起下一轮。
+
+同一 TCP 连接写入 `SwitchPG` 成功后才开始等待确认。服务端只处理该连接对当前待确认切图的一次确认。其它连接、无待确认切图、回写及收尾期间的确认会被忽略。断线后需重新初始化。确认中的 `MsgID`、SN 和索引仍沿用原约定，客户端应确保每次切图只确认一次，避免上一条确认在下一次 `SwitchPG` 发出后才到达。项目窗口不存在时返回 `Code=-3`、`Msg="ProjectARVR Wont Open"`。
 
 ### 一键运行：RunAll
 
@@ -110,7 +111,7 @@ RunAll 自行初始化本轮会话，不需要先发 `ProjectARVRInit`，执行�
 }
 ```
 
-接受后返回 `EventName=RunAll`、相同 `MsgID`、解析后的 SN、`Code=0`、`Msg="RunAll started"`。窗口处于切图、流程启动、执行、结果处理或 RunAll 阶段时，返回 `Code=-4`、`Msg="ARVR test is busy"`。
+接受后返回 `EventName=RunAll`、相同 `MsgID`、解析后的 SN、`Code=0`、`Msg="RunAll started"`。工站正在切图、运行、保存结果或执行 LUX / JSON VID 等占用操作时，返回 `Code=-4`、`Msg="ARVR test is busy"`。忙碌判据由 `IsTestExecutionBusy` 维护。
 
 **开始确认不等于测试完成或 PASS。** 客户端应从建连起持续处理报文并等待最终事件，不依赖开始确认与异步推送的固定先后顺序。组中没有启用步骤也可能先被接受，然后产生失败的最终结果。
 
@@ -128,7 +129,13 @@ RunAll 启动时取当前启用步骤列表，依次运行。`AllowTestFailures`
 {"Version":"1.0","MsgID":"vid-001","EventName":"MeasureVID","SerialNumber":"SN001","Code":0,"Msg":"OK","Data":{"VID":123.45,"Pass":true}}
 ```
 
-在 **流程处理配置 → 其他配置** 设置 **VID 相机**、测量方式、K/B 和限值。默认使用设备列表中的第一台相机，单相机现场升级后可直接测量。手动指定的相机不存在或设备代码重复时，测量失败并提示检查配置。自动聚焦和微聚焦均使用该相机面板的对焦模板。微聚焦仅支持本地取图，从当前电机位置附近找焦。直接获取位置无需模板。与 [LUX VID 文本命令](./project-lux-protocol.md) 共用配置。JSON 命令直接测量并返回结果，不切图或保存 CSV。
+在 **流程处理配置 → 其他配置** 设置 **VID 相机**、测量方式、K/B 和限值，与 LUX VID 文本命令共用配置。默认使用设备列表中的首台相机。手选相机找不到或设备代码重复时，测量失败并提示检查配置。自动聚焦和微聚焦使用该相机面板的对焦模板，微聚焦限本地相机。直接获取位置无需模板。JSON 命令独立执行本次 VID 测量。
+
+原始 VID 为有符号毫米值。修正后的屈光度为 `C = (1000 / 原始 VID) × K + B`，其中 K 无单位、B 的单位为 D。**VID 输出单位**默认 `mm`，三个选项分别输出 `1000 / C`（mm）、`1 / C`（m）和 `C`（D）。JSON 和 LUX 文本回包沿用原数值字段，LUX `B_<SN>.csv` 记录所选单位。上下限也使用该单位，填 `0` 表示关闭对应限值。原始 VID 为 `0` 或非有限值时测量失败。修正到 `0 D` 时可直接输出 `0 D`，输出为距离时按测量失败处理。
+
+本地聚焦的原始 VID 默认按最终移动成功后的实际电机位置换算。ColorVision 1.4.17.129 起，在对应相机的“编辑显示配置 → 采集与显示”关闭“VID 使用电机到位读数”，可改用对焦选中的目标位置换算。
+
+在 **模组检测设置 → 图像保存** 开启 **保存 VID 对焦图像** 后，`MeasureVID` 和 LUX `T0001` 将本地聚焦的 `VID.png`、`FocusCurve.png` 和 `FocusSamples.csv` 归档到结果输出目录下的 SN 和测量时间文件夹。两图标注回包使用的 VID 及其对应的电机位置。CSV 按采样顺序记录目标位置 `MotorPosition` 和评价值 `Sharpness`，需要 ProjectARVRPro 1.1.8.110 和 ColorVision 1.4.17.127 或更高版本。支持双图的旧宿主仍可保存双图。保存失败记录日志，保留测量回包。
 
 | `Code` | 结果 |
 | --- | --- |
@@ -233,9 +240,7 @@ AOI 使用本地 Flow 的「外部切图」节点（右键添加节点 → Proje
 { "Version": "1.0", "MsgID": "aoi-request-001", "EventName": "AoiSwitchPG", "SerialNumber": "SN12345678", "Code": 0, "Msg": "AoiSwitchPG", "Data": { "TestType": 0 } }
 ```
 
-从项目包 `1.1.8.73` 起，`Data.TestType` 是外部切图节点中配置的整数编号，默认 `0`，可按 `0、1、2、3` 约定不同画面。例如 Demura 中两个节点分别设为 `0` 和 `1`，调用方分别显示 W128 和 W255。编号本身不表示灰阶，也不是普通 `SwitchPG.Data.ARVRTestType` 的组内步骤索引，不受 Legacy 索引偏移影响；修改模板顺序不会自动修改编号。
-
-旧模板没有该属性时保留默认 `0`。这是请求中新增的数据字段，事件名、SN/MsgID 关联和完成确认保持原约定；确认不需要回传 TestType，旧调用方仍可忽略该字段，继续按原有顺序切图并确认。新调用方按编号选择画面时，应先配置各节点编号；若未配置、多个节点均为 `0`，它们会发送相同编号。
+调用方自行约定 `Data.TestType` 对应的画面，例如用 `0` 和 `1` 区分 W128 与 W255。节点配置独立于模板顺序、普通 `SwitchPG.Data.ARVRTestType` 和 Legacy 索引偏移。旧客户端可忽略该字段，完成确认无需回传 `TestType`。
 
 外部程序实际切图完成后，使用同一连接回复：
 
@@ -247,7 +252,7 @@ AOI 使用本地 Flow 的「外部切图」节点（右键添加节点 → Proje
 
 | 节点属性 | 行为 |
 | --- | --- |
-| 切图类型 `TestType` | 默认 `0`；原样作为整数发送到 `Data.TestType`，画面含义由调用方约定 |
+| 切图类型 `TestType` | 原样作为整数发送到 `Data.TestType`，缺省值为 `0`，包括未配置该属性的旧模板 |
 | 等待超时 `TimeoutMs` | 默认 5000 ms，必须大于零；覆盖发送请求和等待确认。到期失败，不自动重发 |
 | 完成后延时 `DelayMs` | 默认 0 ms，不得为负；从收到确认后开始，等待画面稳定，不计入确认超时 |
 | 严格匹配 `RequireMatchingMsgId` | 默认关闭以兼容旧客户端自建确认 ID；开启后必须回显请求的 MsgID |
@@ -256,9 +261,9 @@ AOI 使用本地 Flow 的「外部切图」节点（右键添加节点 → Proje
 
 **旧客户端兼容模式不能区分同一连接上迟到的上一次确认与当前请求。** 客户端必须每次切图只确认一次；需要排除这种误确认时，开启严格匹配并让客户端回显 MsgID。现有 IntegrationDemo / SemiAuto 自动确认自行生成 MsgID，使用它们时保持兼容模式，或先适配客户端的回显行为。
 
-流程停止会取消确认等待及完成后延时。主 Socket 检测断线并关闭流后，节点结束等待并清理本次等待状态，重连后可再次执行；查询或 LUX `T0000` 握手不会使仍有效的切图连接失效，其它执行命令覆盖活动控制连接仍会失败。主 Socket 的半包/粘包限制仍见本页「TCP 消息边界」，新增节点不改变其接收分帧实现。
+流程停止会取消确认等待及完成后延时。主 Socket 检测断线并关闭流后，节点结束等待并清理状态，重连后可再次执行。查询或 LUX `T0000` 握手保留仍有效的切图连接，其他执行命令若覆盖活动控制连接，当前切图会失败。
 
-迁移旧模板时，将专用于中转的通用传感器切图节点替换为「外部切图」，保留上下游连线并核对原来的超时和成功后延时。旧服务端 Flow 必须改用宿主进程中的 Flow 执行，不能在旧服务里直接运行这个项目节点。确认没有其它指令引用后，才清理该专用传感器连接配置。项目不再提供中转监听，也不再在启动时关闭并重开通用传感器；旧模板不会被自动改写。
+迁移旧模板时，手动将专用于中转的通用传感器切图节点替换为「外部切图」，保留连线并核对超时和完成后延时。此节点需要在宿主进程运行。确认没有其他指令引用后，再清理专用传感器连接配置。
 
 ## 最终结果：ProjectARVRResult
 

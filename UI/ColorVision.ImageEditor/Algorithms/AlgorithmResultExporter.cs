@@ -365,15 +365,15 @@ namespace ColorVision.ImageEditor.Algorithms
             CancellationToken cancellationToken,
             Action<int> reportRows)
         {
-            await WriteRowAsync(writer, table.Columns.Select(column => column.Name), cancellationToken).ConfigureAwait(false);
+            IReadOnlyList<AlgorithmTableColumn> columns = table.Columns;
+            await WriteRowAsync(writer, columns.Select(column => column.Name), cancellationToken).ConfigureAwait(false);
             foreach (IReadOnlyDictionary<string, JsonElement> row in table.Rows)
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                bool first = true;
-                foreach (AlgorithmTableColumn column in table.Columns)
+                for (int index = 0; index < columns.Count; index++)
                 {
-                    await writer.WriteFieldAsync(row.TryGetValue(column.Name, out JsonElement value) ? JsonText(value) : null, first, cancellationToken).ConfigureAwait(false);
-                    first = false;
+                    string name = columns[index].Name;
+                    await writer.WriteFieldAsync(row.TryGetValue(name, out JsonElement value) ? JsonText(value) : null, index == 0, cancellationToken).ConfigureAwait(false);
                 }
                 await writer.AppendAsync(Environment.NewLine.AsMemory(), cancellationToken).ConfigureAwait(false);
                 reportRows(1);
@@ -496,12 +496,40 @@ namespace ColorVision.ImageEditor.Algorithms
             private readonly char[] _buffer = new char[16 * 1024];
             private int _count;
 
-            public async ValueTask WriteFieldAsync(string? value, bool first, CancellationToken cancellationToken)
+            public ValueTask WriteFieldAsync(string? value, bool first, CancellationToken cancellationToken)
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                if (!first) await AppendAsync(",".AsMemory(), cancellationToken).ConfigureAwait(false);
                 value ??= string.Empty;
-                if (value.AsSpan().IndexOfAny(CsvQuoteCharacters) < 0)
+                ReadOnlySpan<char> field = value.AsSpan();
+                bool needsQuotes = field.IndexOfAny(CsvQuoteCharacters) >= 0;
+                int available = _buffer.Length - _count - (first ? 0 : 1);
+                long maximumLength = needsQuotes ? 2L * field.Length + 2 : field.Length;
+                if (maximumLength > available)
+                    return WriteFieldSlowAsync(value, first, needsQuotes, cancellationToken);
+
+                if (!first) _buffer[_count++] = ',';
+                if (needsQuotes)
+                {
+                    _buffer[_count++] = '"';
+                    int quote;
+                    while ((quote = field.IndexOf('"')) >= 0)
+                    {
+                        field[..(quote + 1)].CopyTo(_buffer.AsSpan(_count));
+                        _count += quote + 1;
+                        _buffer[_count++] = '"';
+                        field = field[(quote + 1)..];
+                    }
+                }
+                field.CopyTo(_buffer.AsSpan(_count));
+                _count += field.Length;
+                if (needsQuotes) _buffer[_count++] = '"';
+                return ValueTask.CompletedTask;
+            }
+
+            private async ValueTask WriteFieldSlowAsync(string value, bool first, bool needsQuotes, CancellationToken cancellationToken)
+            {
+                if (!first) await AppendAsync(",".AsMemory(), cancellationToken).ConfigureAwait(false);
+                if (!needsQuotes)
                 {
                     await AppendAsync(value.AsMemory(), cancellationToken).ConfigureAwait(false);
                     return;
@@ -587,8 +615,16 @@ namespace ColorVision.ImageEditor.Algorithms
                 {
                     cancellationToken.ThrowIfCancellationRequested();
                     int count = Math.Min(pending.Length, escaped.Length / 2);
+                    ReadOnlySpan<byte> chunk = pending[..count];
+                    pending = pending[count..];
+                    // Numeric JSON arrays often fill a chunk without any quotes to escape.
+                    if (chunk.IndexOf((byte)'"') < 0)
+                    {
+                        stream.Write(chunk);
+                        continue;
+                    }
                     int written = 0;
-                    foreach (byte value in pending[..count])
+                    foreach (byte value in chunk)
                     {
                         escaped[written] = value;
                         escaped[written + 1] = value;
@@ -596,7 +632,6 @@ namespace ColorVision.ImageEditor.Algorithms
                         written += value == (byte)'"' ? 2 : 1;
                     }
                     stream.Write(escaped[..written]);
-                    pending = pending[count..];
                 }
                 _pending = 0;
             }

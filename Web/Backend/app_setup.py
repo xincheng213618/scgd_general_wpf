@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import atexit
 import os
+import re
 import sqlite3
 from dataclasses import dataclass
 from pathlib import Path
@@ -20,7 +21,7 @@ from werkzeug.exceptions import HTTPException
 
 from config_loader import (
     DEFAULT_SECRET_KEY, DEFAULT_UPLOAD_AUTH, MAX_UPLOAD_SIZE_BYTES,
-    get_upload_auth as get_upload_auth_impl, load_config,
+    get_data_directory, get_upload_auth as get_upload_auth_impl, load_config,
     validate_runtime_config as validate_runtime_config_impl,
 )
 from db_cache import (
@@ -59,6 +60,9 @@ class ColorVisionRequest(FlaskRequest):
         # This works with both Flask 3.0 and 3.1, where the request setter differs.
         if self.method == "POST" and self.path == "/api/feedback":
             return None
+        if self.method == "POST" and self.path == "/api/benchmarks/runs":
+            from routes.benchmark_api import MAX_BENCHMARK_BYTES
+            return MAX_BENCHMARK_BYTES
         if self.path == "/api/activation/secure":
             return 8192
         if self.path.startswith("/api/activation/"):
@@ -115,9 +119,9 @@ def create_app_and_context(runtime_overrides: RuntimeOverrides | None = None):
     from routes.request_context import current_request_context
     from services.auth_policy import AuthPolicy
 
-    base_dir = Path(__file__).resolve().parent
+    data_directory = get_data_directory()
     override_config = runtime_overrides.config() if runtime_overrides else None
-    config = override_config if override_config is not None else load_config()
+    config = override_config if override_config is not None else load_config(data_directory)
     override_storage = runtime_overrides.storage() if runtime_overrides else None
     storage = Path(override_storage) if override_storage is not None else Path(config["storage_path"])
 
@@ -131,8 +135,17 @@ def create_app_and_context(runtime_overrides: RuntimeOverrides | None = None):
     # public API responses without adding browser compatibility.
     app.json.ensure_ascii = False
 
+    release_id = os.environ.get("COLORVISION_WEB_RELEASE_ID", "")
+    if re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]{0,127}", release_id):
+        @app.after_request
+        def add_release_identity(response):
+            if request.path == "/api/health":
+                response.headers["X-ColorVision-Web-Release-Id"] = release_id
+                response.headers["X-ColorVision-Web-Process-Id"] = str(os.getpid())
+            return response
+
     override_db_path = runtime_overrides.db_path() if runtime_overrides else None
-    db_path = Path(override_db_path) if override_db_path is not None else base_dir / "marketplace.db"
+    db_path = Path(override_db_path) if override_db_path is not None else data_directory / "marketplace.db"
     runtime = RuntimeState(config=config, storage=storage, db_path=db_path)
 
     def active_config() -> dict[str, Any]:
@@ -358,6 +371,7 @@ def register_slow_request_logging(app, ctx: MarketplaceContext, access_recorder=
 def register_all_blueprints(app, ctx, services, helpers):
     """Register all blueprints on the app."""
     from routes.activation_api import register_activation_api
+    from routes.benchmark_api import register_benchmark_api
     from routes.public_pages import PublicPageContext, register_public_pages
     from routes.health_api import register_health_api
     from routes.public_api import register_public_api
@@ -397,6 +411,7 @@ def register_all_blueprints(app, ctx, services, helpers):
 
     # Public API (stats, feedback, legacy)
     register_public_api(app, ctx)
+    register_benchmark_api(app, cache)
     activation_key_path = os.environ.get("COLORVISION_ACTIVATION_HTTP_PRIVATE_KEY_FILE") or config.get(
         "activation_http_private_key_file",
     )

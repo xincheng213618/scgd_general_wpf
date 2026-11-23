@@ -17,6 +17,7 @@
 #include <filesystem>
 #include <limits>
 #include <new>
+#include <optional>
 #include <unordered_map>
 #include <utility>
 
@@ -153,6 +154,7 @@ struct CalibrationFileEntry {
     std::atomic<bool> loading{ true };
     std::atomic<bool> retry{ false };
     std::shared_ptr<CalibrationItem> prototype;
+    std::optional<CalibrationFileDigest> digest;
     std::shared_ptr<CalibrationAssetLease> lease;
     std::uint64_t estimatedMemoryBytes = 0;
     std::uint64_t hitCount = 0;
@@ -308,6 +310,31 @@ void releaseCalibrationAssetOwner(
     }
 }
 
+class CalibrationAssetOwnerReservation final {
+public:
+    CalibrationAssetOwnerReservation() = default;
+    CalibrationAssetOwnerReservation(const CalibrationAssetOwnerReservation&) = delete;
+    CalibrationAssetOwnerReservation& operator=(const CalibrationAssetOwnerReservation&) = delete;
+    ~CalibrationAssetOwnerReservation() { reset(); }
+
+    void reserve(const std::shared_ptr<CalibrationAssetLease>& lease) noexcept
+    {
+        lease_ = lease;
+        lease_->activeOwners.fetch_add(1, std::memory_order_relaxed);
+    }
+
+    void handOff() noexcept { lease_.reset(); }
+
+    void reset() noexcept
+    {
+        const auto lease = std::move(lease_);
+        if (lease) releaseCalibrationAssetOwner(lease);
+    }
+
+private:
+    std::shared_ptr<CalibrationAssetLease> lease_;
+};
+
 class LeasedCalibrationItem final : public CalibrationItem {
 public:
     LeasedCalibrationItem(
@@ -375,6 +402,25 @@ public:
             leasedNext != nullptr ? *leasedNext->implementation_ : next, raw, options);
     }
 
+    bool tryApplyWithNextTo(const CalibrationItem& next, const ImageView& raw,
+        const ImageView& destination, const ExecutionOptions& options) const override
+    {
+        const auto* leasedNext = dynamic_cast<const LeasedCalibrationItem*>(&next);
+        return implementation_->tryApplyWithNextTo(
+            leasedNext != nullptr ? *leasedNext->implementation_ : next, raw, destination, options);
+    }
+
+    BgrNonzeroRows nonzeroBgrRows(const ImageView& raw, const ExecutionOptions& options) const noexcept override
+    {
+        return implementation_->nonzeroBgrRows(raw, options);
+    }
+
+    bool canFuseRawFlip(const ImageView& source, const ImageView& destination,
+        const ExecutionOptions& options) const override
+    {
+        return implementation_->canFuseRawFlip(source, destination, options);
+    }
+
 private:
     std::shared_ptr<CalibrationItem> implementation_;
     std::shared_ptr<CalibrationAssetLease> lease_;
@@ -438,7 +484,8 @@ public:
     bool succeed(
         const std::shared_ptr<CalibrationItem>& prototype,
         std::uint64_t estimatedMemoryBytes,
-        std::string& error)
+        std::string& error,
+        const CalibrationFileDigest* digest = nullptr)
     {
         bool published = false;
         {
@@ -460,6 +507,7 @@ public:
             }
             else {
                 entry_->prototype = prototype;
+                if (digest != nullptr) entry_->digest = *digest;
                 entry_->estimatedMemoryBytes = estimatedMemoryBytes;
                 entry_->lastAccessSequence = ++calibrationFileCacheAccessSequence;
                 // Reserve the producer's context owner before publishing the
@@ -592,7 +640,8 @@ CalibrationFileLoadResult loadCalibrationFileOnce(
     CalibrationType type,
     const std::filesystem::path& file,
     std::shared_ptr<CalibrationItem>& result,
-    std::string& error)
+    std::string& error,
+    CalibrationFileDigest* digest)
 {
     std::filesystem::path canonicalFile;
     FileMetadata metadata;
@@ -601,6 +650,24 @@ CalibrationFileLoadResult loadCalibrationFileOnce(
     }
 
     CalibrationFileKey key{ type, normalizedCachePath(canonicalFile) };
+    const auto pathStillCurrent = [&](const std::filesystem::path& path, std::string& inspectionError) {
+        FileMetadata metadataAfter;
+        std::filesystem::path canonicalAfter;
+        if (!inspectCalibrationFile(path, canonicalAfter, metadataAfter, inspectionError)) return false;
+        if (normalizedCachePath(canonicalAfter) != key.file || !(metadataAfter == metadata)) {
+            inspectionError = "Calibration file changed while it was being loaded";
+            return false;
+        }
+        return true;
+    };
+    std::unique_ptr<VerifiedMapSource> verifiedSource;
+    if (digest != nullptr) {
+        verifiedSource = openVerifiedMapSource(type, canonicalFile, error);
+        if (!verifiedSource) return CalibrationFileLoadResult::Failure;
+        if (!pathStillCurrent(file, error)) return CalibrationFileLoadResult::Retry;
+    }
+
+    CalibrationAssetOwnerReservation comparisonOwner;
     std::shared_ptr<CalibrationFileEntry> entry;
     {
         std::unique_lock lock(calibrationFileCacheMutex);
@@ -608,9 +675,12 @@ CalibrationFileLoadResult loadCalibrationFileOnce(
         if (existing != calibrationFileCache.end()
             && existing->second->metadata == metadata) {
             entry = existing->second;
-            entry->ready.wait(lock, [&entry] {
-                return !entry->loading.load(std::memory_order_acquire);
-            });
+            const bool waitedForProducer = entry->loading.load(std::memory_order_acquire);
+            if (waitedForProducer) {
+                entry->ready.wait(lock, [&entry] {
+                    return !entry->loading.load(std::memory_order_acquire);
+                });
+            }
             if (entry->canceled
                 || entry->releaseEpoch != calibrationFileCacheReleaseEpoch) {
                 error = entry->error.empty()
@@ -618,23 +688,56 @@ CalibrationFileLoadResult loadCalibrationFileOnce(
                     : entry->error;
                 return CalibrationFileLoadResult::Failure;
             }
-            if (entry->prototype) {
-                ++entry->hitCount;
-                ++calibrationFileCacheHits;
-                entry->lastAccessSequence = ++calibrationFileCacheAccessSequence;
-                // Reserve ownership while the cache lock is still held so a
-                // concurrent release cannot miss an about-to-be-created lease.
-                entry->lease->activeOwners.fetch_add(1, std::memory_order_relaxed);
-                incrementCacheGeneration();
-                evictCalibrationFiles(entry.get());
+            if (entry->prototype && (!verifiedSource || entry->digest.has_value())) {
                 const auto prototype = entry->prototype;
                 const auto lease = entry->lease;
-                lock.unlock();
-                result = createContextCalibrationItem(
-                    prototype, lease, true, error);
-                return result
-                    ? CalibrationFileLoadResult::Success
-                    : CalibrationFileLoadResult::Failure;
+                auto match = MapSourceMatch::Equal;
+                if (verifiedSource) {
+                    const auto checkCurrentEntry = [&] {
+                        const auto current = calibrationFileCache.find(key);
+                        // A zero-budget producer can hand its ready prototype
+                        // to waiters without retaining a cache entry.
+                        const bool canUse = current == calibrationFileCache.end()
+                            ? configuredCalibrationFileCacheBytes() == 0
+                            : current->second == entry;
+                        if (!canUse) error = "Calibration file load was superseded by a newer generation";
+                        return canUse;
+                    };
+                    // An over-budget prototype may have been evicted while
+                    // the waiter was resuming after the producer published it.
+                    if (waitedForProducer && !checkCurrentEntry()) return CalibrationFileLoadResult::Retry;
+                    // A cache release must account for the prototype while it
+                    // is being compared, without blocking other file loads.
+                    comparisonOwner.reserve(lease);
+                    lock.unlock();
+                    match = verifiedSource->compare(*prototype, error);
+                    const bool fileUnchanged = pathStillCurrent(file, error);
+                    lock.lock();
+                    if (entry->canceled || entry->releaseEpoch != calibrationFileCacheReleaseEpoch) {
+                        error = "Calibration file load was canceled by cache release";
+                        return CalibrationFileLoadResult::Failure;
+                    }
+                    if (!fileUnchanged) return CalibrationFileLoadResult::Retry;
+                    if (!checkCurrentEntry()) return CalibrationFileLoadResult::Retry;
+                    if (match == MapSourceMatch::Error) return CalibrationFileLoadResult::Failure;
+                }
+                if (match == MapSourceMatch::Equal) {
+                    ++entry->hitCount;
+                    ++calibrationFileCacheHits;
+                    entry->lastAccessSequence = ++calibrationFileCacheAccessSequence;
+                    // Reserve ownership before unlocking so a concurrent
+                    // release cannot miss an about-to-be-created lease.
+                    if (!verifiedSource) lease->activeOwners.fetch_add(1, std::memory_order_relaxed);
+                    incrementCacheGeneration();
+                    evictCalibrationFiles(entry.get());
+                    const auto verifiedDigest = entry->digest;
+                    lock.unlock();
+                    if (verifiedSource) comparisonOwner.handOff();
+                    result = createContextCalibrationItem(prototype, lease, true, error);
+                    if (!result) return CalibrationFileLoadResult::Failure;
+                    if (digest != nullptr) *digest = *verifiedDigest;
+                    return CalibrationFileLoadResult::Success;
+                }
             }
             if (entry->retry.load(std::memory_order_relaxed)) {
                 error = entry->error;
@@ -644,26 +747,39 @@ CalibrationFileLoadResult loadCalibrationFileOnce(
                 error = entry->error;
                 return CalibrationFileLoadResult::Failure;
             }
+            // Waiting can release the lock, so do not replace a newer entry
+            // when the observed one had no digest and needs to be reloaded.
+            const auto current = calibrationFileCache.find(key);
+            if (verifiedSource && current != calibrationFileCache.end() && current->second != entry) {
+                error = "Calibration file load was superseded by a newer generation";
+                return CalibrationFileLoadResult::Retry;
+            }
         }
 
-        // A different metadata snapshot supersedes an older entry.  Any load
-        // already using the old snapshot continues independently and cannot
-        // publish itself over this replacement.
+        // A different snapshot, or a verified mismatch, supersedes the old
+        // entry. Existing contexts still own their immutable version.
         entry = std::make_shared<CalibrationFileEntry>(
             metadata, std::move(canonicalFile), calibrationFileCacheReleaseEpoch);
-        const auto replaced = existing == calibrationFileCache.end()
+        const auto current = calibrationFileCache.find(key);
+        const auto replaced = current == calibrationFileCache.end()
             ? std::shared_ptr<CalibrationFileEntry>{}
-            : existing->second;
+            : current->second;
         calibrationFileCache.insert_or_assign(key, entry);
         if (replaced) removeCacheAccounting(*replaced);
         ++calibrationFileCacheMisses;
         incrementCacheGeneration();
     }
     PendingCalibrationFileLoad pendingLoad(key, *entry);
+    // Releasing an owner may lock the cache to trim its retained entries.
+    comparisonOwner.reset();
 
     std::string loadError;
     std::unique_ptr<CalibrationItem> loaded;
-    if (isColorCalibration(type)) {
+    CalibrationFileDigest loadedDigest{};
+    if (verifiedSource) {
+        loaded = verifiedSource->load(loadedDigest, loadError);
+    }
+    else if (isColorCalibration(type)) {
         loaded = loadColorCalibration(type, entry->canonicalFile, loadError);
     }
     else {
@@ -677,19 +793,9 @@ CalibrationFileLoadResult loadCalibrationFileOnce(
         loadedShared = std::move(loaded);
     }
 
-    FileMetadata metadataAfter;
-    std::filesystem::path canonicalAfter;
     std::string inspectionError;
-    const bool inspectedAfter = inspectCalibrationFile(
-        entry->canonicalFile, canonicalAfter, metadataAfter, inspectionError);
-    const bool fileChanged = !inspectedAfter
-        || normalizedCachePath(canonicalAfter) != key.file
-        || !(metadataAfter == metadata);
-
-    if (fileChanged) {
-        error = inspectedAfter
-            ? "Calibration file changed while it was being loaded"
-            : std::move(inspectionError);
+    if (!pathStillCurrent(verifiedSource ? file : entry->canonicalFile, inspectionError)) {
+        error = std::move(inspectionError);
         return pendingLoad.fail(error, true)
             ? CalibrationFileLoadResult::Retry
             : CalibrationFileLoadResult::Failure;
@@ -701,31 +807,33 @@ CalibrationFileLoadResult loadCalibrationFileOnce(
         pendingLoad.fail(error, false);
         return CalibrationFileLoadResult::Failure;
     }
-    const std::uint64_t estimatedMemoryBytes = (std::max)(
-        static_cast<std::uint64_t>(metadata.size),
-        loadedShared->cacheFootprintBytes());
-    if (!pendingLoad.succeed(loadedShared, estimatedMemoryBytes, error)) {
+    const auto footprint = loadedShared->cacheFootprintBytes();
+    // Binary maps report all storage they retain after lossless packing.
+    const std::uint64_t estimatedMemoryBytes = (type == CalibrationType::Dsnu || type == CalibrationType::Uniformity)
+        ? footprint : (std::max)(static_cast<std::uint64_t>(metadata.size), footprint);
+    if (!pendingLoad.succeed(loadedShared, estimatedMemoryBytes, error, verifiedSource ? &loadedDigest : nullptr)) {
         return entry->retry.load(std::memory_order_relaxed)
             ? CalibrationFileLoadResult::Retry
             : CalibrationFileLoadResult::Failure;
     }
     result = createContextCalibrationItem(
         loadedShared, entry->lease, true, error);
-    return result
-        ? CalibrationFileLoadResult::Success
-        : CalibrationFileLoadResult::Failure;
+    if (!result) return CalibrationFileLoadResult::Failure;
+    if (digest != nullptr) *digest = loadedDigest;
+    return CalibrationFileLoadResult::Success;
 }
 
 std::shared_ptr<CalibrationItem> loadCachedCalibrationFile(
     CalibrationType type,
     const std::filesystem::path& file,
-    std::string& error)
+    std::string& error,
+    CalibrationFileDigest* digest)
 {
     // A producer validates metadata again after reading.  Retry a bounded
     // number of times if the file is atomically replaced during that window.
     for (int attempt = 0; attempt < 3; ++attempt) {
         std::shared_ptr<CalibrationItem> item;
-        const auto loadResult = loadCalibrationFileOnce(type, file, item, error);
+        const auto loadResult = loadCalibrationFileOnce(type, file, item, error, digest);
         if (loadResult == CalibrationFileLoadResult::Success) {
             return item;
         }
@@ -862,6 +970,7 @@ bool CalibrationContext::clear()
 {
     std::scoped_lock lock(mutex_);
     items_.clear();
+    canSeedScratchFromPair_ = false;
     rawScratch_.reset();
     rawScratchCapacity_ = 0;
     rawScratch2_.reset();
@@ -870,7 +979,25 @@ bool CalibrationContext::clear()
     return true;
 }
 
-bool CalibrationContext::load(CalibrationType type, const std::filesystem::path& file)
+void CalibrationContext::transferWorkBuffersFrom(CalibrationContext& source)
+{
+    if (this == &source) return;
+
+    std::scoped_lock lock(mutex_, source.mutex_);
+    const auto takeLarger = [](std::unique_ptr<std::uint8_t[]>& destinationBuffer, std::size_t& destinationCapacity,
+        std::unique_ptr<std::uint8_t[]>& sourceBuffer, std::size_t& sourceCapacity) {
+        if (sourceCapacity > destinationCapacity) {
+            destinationBuffer = std::move(sourceBuffer);
+            destinationCapacity = sourceCapacity;
+        }
+        sourceBuffer.reset();
+        sourceCapacity = 0;
+    };
+    takeLarger(rawScratch_, rawScratchCapacity_, source.rawScratch_, source.rawScratchCapacity_);
+    takeLarger(rawScratch2_, rawScratch2Capacity_, source.rawScratch2_, source.rawScratch2Capacity_);
+}
+
+bool CalibrationContext::load(CalibrationType type, const std::filesystem::path& file, CalibrationFileDigest* digest)
 {
     std::scoped_lock lock(mutex_);
     lastError_.clear();
@@ -879,6 +1006,10 @@ bool CalibrationContext::load(CalibrationType type, const std::filesystem::path&
         lastError_ = type == CalibrationType::LumColor
             ? "LumColor is a reserved legacy value and has no calibration algorithm"
             : "Unknown calibration type";
+        return false;
+    }
+    if (digest != nullptr && type != CalibrationType::Dsnu && type != CalibrationType::Uniformity) {
+        lastError_ = "Verified calibration loading supports only DSNU and Uniformity";
         return false;
     }
     if (file.empty()) {
@@ -895,8 +1026,9 @@ bool CalibrationContext::load(CalibrationType type, const std::filesystem::path&
     }
 
     std::string error;
+    CalibrationFileDigest loadedDigest{};
     std::shared_ptr<CalibrationItem> item = loadCachedCalibrationFile(
-        type, file, error);
+        type, file, error, digest != nullptr ? &loadedDigest : nullptr);
 
     if (!item) {
         lastError_ = error.empty() ? "Calibration type has no loader" : std::move(error);
@@ -904,6 +1036,11 @@ bool CalibrationContext::load(CalibrationType type, const std::filesystem::path&
     }
 
     items_.push_back(std::move(item));
+    canSeedScratchFromPair_ = items_.size() >= 3
+        && items_[items_.size() - 3]->type() == CalibrationType::Dsnu
+        && items_[items_.size() - 2]->type() == CalibrationType::Uniformity
+        && (type == CalibrationType::Distortion || type == CalibrationType::ColorDiff);
+    if (digest != nullptr) *digest = loadedDigest;
     return true;
 }
 
@@ -986,41 +1123,88 @@ bool CalibrationContext::execute(
 
     // Preserve LocalCalibrationCacheManager semantics: every basic item runs
     // in template order; the sole RAW-to-CIE transform always runs last.
-    bool fusedVerticalFlip = options.rawOutputFlip == 0 && !items_.empty()
+    bool fusedRawFlip = options.rawOutputFlip == 0 && !items_.empty()
         && items_.back()->type() == CalibrationType::ColorDiff;
+    const bool canFuseHorizontalFlip = (options.rawOutputFlip == 1 || options.rawOutputFlip == -1)
+        && options.interleavedBgr && options.rgbType == 0 && raw.channels == 3
+        && (raw.bitsPerChannel == 8 || reinterpret_cast<std::uintptr_t>(raw.data) % alignof(std::uint16_t) == 0)
+        && !items_.empty() && items_.back()->type() == CalibrationType::ColorDiff;
     ExecutionOptions calibrationOptions = options;
     calibrationOptions.rawOutputFlip = -99;
     ImageView current = raw;
     ImageView scratch = raw;
     scratch.data = rawScratch_.get();
     scratch.dataLength = rawScratchCapacity_;
+    BgrNonzeroRows nextDistortionRows{};
     for (std::size_t index = 0; index < items_.size(); ++index) {
         const auto& item = items_[index];
         if (item->isColorTransform()) {
             continue;
         }
+        // Once preceding stages have run, seed scratch from the adjacent maps
+        // so final geometry can write back to RAW without a full-frame copy.
+        if (canSeedScratchFromPair_ && colorItem == nullptr
+            && index + 3 == items_.size() && current.data == raw.data) {
+            const auto& geometry = items_.back();
+            if ((options.rawOutputFlip == -99 || fusedRawFlip || canFuseHorizontalFlip
+                    || geometry->canFuseRawFlip(scratch, raw, options))
+                && item->tryApplyWithNextTo(*items_[index + 1], current, scratch, calibrationOptions)) {
+                const auto restorePairOutput = [&] { std::memcpy(raw.data, scratch.data, requiredRawBytes); };
+                std::string error;
+                try {
+                    auto geometryOptions = options;
+                    if (options.rawOutputFlip == -99 && geometry->type() == CalibrationType::Distortion) {
+                        geometryOptions.correctedBgrRows = items_[index + 1]->nonzeroBgrRows(scratch, calibrationOptions);
+                    }
+                    if (geometry->applyOutOfPlace(scratch, raw, geometryOptions, error)) return true;
+                }
+                catch (...) {
+                    restorePairOutput();
+                    throw;
+                }
+                // The ordinary path exposes all preceding corrections on failure.
+                restorePairOutput();
+                lastError_ = error.empty() ? "Basic calibration failed" : std::move(error);
+                return false;
+            }
+        }
         const bool flipAfterPair = options.rawOutputFlip == 0 && index + 2 == items_.size();
         if (index + 1 < items_.size()
             && item->tryApplyWithNext(*items_[index + 1], current,
                 flipAfterPair ? options : calibrationOptions)) {
-            if (flipAfterPair) fusedVerticalFlip = true;
+            if (flipAfterPair) fusedRawFlip = true;
+            if (index + 2 < items_.size() && items_[index + 2]->type() == CalibrationType::Distortion) {
+                nextDistortionRows = items_[index + 1]->nonzeroBgrRows(current, calibrationOptions);
+            }
             ++index;
             continue;
         }
         if (options.rawOutputFlip == 0 && index + 1 == items_.size()
             && item->tryApplyWithFlip(current, options)) {
-            fusedVerticalFlip = true;
+            fusedRawFlip = true;
             continue;
         }
         std::string error;
         bool applied = false;
         if (item->requiresDistinctOutput()) {
             const ImageView& destination = current.data == raw.data ? scratch : raw;
-            const auto& stageOptions = fusedVerticalFlip && index + 1 == items_.size()
+            const bool finalStage = index + 1 == items_.size();
+            // With an odd stage count the existing flip also copies scratch back to RAW.
+            const bool fuseHorizontalFlip = canFuseHorizontalFlip && finalStage && destination.data == raw.data;
+            const auto& stageOptions = finalStage && (fusedRawFlip || fuseHorizontalFlip)
                 ? options : calibrationOptions;
-            applied = item->applyOutOfPlace(current, destination, stageOptions, error);
+            if (!nextDistortionRows.rows.empty()) {
+                auto geometryOptions = stageOptions;
+                geometryOptions.correctedBgrRows = nextDistortionRows;
+                nextDistortionRows = {};
+                applied = item->applyOutOfPlace(current, destination, geometryOptions, error);
+            }
+            else {
+                applied = item->applyOutOfPlace(current, destination, stageOptions, error);
+            }
             if (applied) {
                 current = destination;
+                fusedRawFlip = fusedRawFlip || fuseHorizontalFlip;
             }
         }
         else {
@@ -1039,7 +1223,7 @@ bool CalibrationContext::execute(
             return false;
         }
     }
-    if (options.rawOutputFlip != -99 && !fusedVerticalFlip) {
+    if (options.rawOutputFlip != -99 && !fusedRawFlip) {
         // With odd geometric stage counts this also replaces the final scratch
         // copy. Planar RAW must mirror each plane, not interleaved samples.
         const bool planar = !options.interleavedBgr && raw.channels == 3;

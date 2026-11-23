@@ -10,4 +10,7 @@ public sealed class DisplayCfwPortConfig : IDisplayConfigBase
 
     public int? PortNum { get => portNum; set { if (portNum == value) return; portNum = value; OnPropertyChanged(); } }
     private int? portNum;
+
+    public int? TargetPortNum { get => targetPortNum; set => SetProperty(ref targetPortNum, value); }
+    private int? targetPortNum;
 }

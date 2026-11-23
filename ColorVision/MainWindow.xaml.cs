@@ -44,7 +44,6 @@ namespace ColorVision
         private const string OpenDocumentFolderSeparatorUid = "ColorVision.OpenDocumentFolder.Separator";
 
         private static readonly ILog log = LogManager.GetLogger(typeof(MainWindow));
-        private TreeViewControl? _projectPanel;
         public DockViewManager DockViewManager => DockViewManager.GetInstance();
         public static MainWindowConfig Config => MainWindowConfig.Instance;
 
@@ -197,11 +196,11 @@ namespace ColorVision
             _ = new WorkspaceFileDropRouter(this, DockingManager1);
             // The workspace service remains available to templates and file commands;
             // only the explorer UI and its saved tree expansion wait for first display.
-            layoutManager.RegisterPanel("ProjectPanel", () => _projectPanel = new TreeViewControl(), Properties.Resources.SolutionExplorer, PanelPosition.Left);
+            layoutManager.RegisterPanel("ProjectPanel", () => new TreeViewControl(), Properties.Resources.SolutionExplorer, PanelPosition.Left, isDefaultVisible: false);
             layoutManager.RegisterPanel("AcquirePanel", StackPanelSPD.Parent, Properties.Resources.DeviceControl, PanelPosition.Left);
 
             var logOutput = new LogOutput("%date{HH:mm:ss} [%thread] %-5level %message%newline", LogPanelConfig.Instance);
-            layoutManager.RegisterPanel("LogPanel", logOutput, Properties.Resources.Log, PanelPosition.Bottom);
+            layoutManager.RegisterPanel("LogPanel", logOutput, Properties.Resources.Log, PanelPosition.Bottom, isDefaultVisible: false);
             WorkspaceManager.LayoutManager = layoutManager;
 
             // 扫描并注册所有 IDockPanelProvider 提供的面板（在 LoadLayout 之前确保所有面板正确注册）

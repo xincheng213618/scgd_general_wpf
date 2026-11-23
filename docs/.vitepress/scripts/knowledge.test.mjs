@@ -13,7 +13,7 @@ import { buildPageRecord, buildSearchEntries, normalizeMarkdownLine, readHeading
 import { affectsWebsite } from './knowledge-ci.mjs'
 
 function markdown(overrides = {}, body = '# Test topic\n\nRead `poi_batch.cpp` and `cv::Mat`.\n') {
-  const metadata = { knowledge_id: 'ui.fixture', knowledge_type: 'index', status: 'current', summary: 'Fixture cv::Mat and poi_batch.cpp', aliases: ['IViewResult', '新增结果叠加'], code_paths: ['src/example.cs'], test_paths: [], related: [], ...overrides }
+  const metadata = { knowledge_id: 'ui.fixture', knowledge_type: 'index', status: 'current', summary: 'Fixture cv::Mat and poi_batch.cpp', aliases: ['IViewResult', '新增结果叠加'], code_paths: ['src/example.cs'], related: [], ...overrides }
   return `---\n${Object.entries(metadata).map(([key, value]) => `${key}: ${JSON.stringify(value)}`).join('\n')}\n---\n\n${body}`
 }
 
@@ -118,10 +118,10 @@ test('source maps derive real module directories, preserve cross-module links, a
     ['delivery.unmapped', []],
   ]
   for (const [id, codePaths] of topics) {
-    await fs.writeFile(path.join(root, `docs/${id}.md`), markdown({ knowledge_id: id, knowledge_type: 'topic', code_paths: codePaths, test_paths: ['Test/ProjectionTests.cs'], related: ['ui.fixture'] }))
+    await fs.writeFile(path.join(root, `docs/${id}.md`), markdown({ knowledge_id: id, knowledge_type: 'topic', code_paths: codePaths, related: ['ui.fixture'] }))
   }
   const catalog = await buildCatalog(root)
-  assert.equal(catalog.schema_version, 2)
+  assert.equal(catalog.schema_version, 3)
   assert.deepEqual(catalog.entries.find((entry) => entry.knowledge_id === 'ui.exact').code_scopes, ['UI/ColorVision.UI'])
   assert.deepEqual(catalog.entries.find((entry) => entry.knowledge_id === 'platform.root-files').code_scopes, ['UI'])
   const groups = codeCatalogGroups(catalog)
@@ -134,7 +134,6 @@ test('source maps derive real module directories, preserve cross-module links, a
   assert.equal(groups.find((group) => group.root === 'Engine').entries[0].knowledge_id, 'flow.shared')
   assert.ok(groups.find((group) => group.root === '.').modules.some((module) => module.scope === null && module.entries[0].knowledge_id === 'delivery.unmapped'))
   assert.deepEqual(groups.find((group) => group.root === '.').modules.filter((module) => module.scope !== null).map((module) => module.scope), ['.', '.github/workflows', 'docs'])
-  assert.equal(groups.some((group) => group.root === 'Test'), false, 'test_paths must not become code ownership')
 
   const artifacts = generatedArtifacts(catalog)
   const sourceMap = artifacts.get('docs/knowledge/code/source-UI.md')
@@ -154,7 +153,7 @@ test('source maps derive real module directories, preserve cross-module links, a
     }
   }
   assert.ok(navigation.sidebarItems.find((item) => item.text.root === '能力领域（补充检索）'))
-  assert.equal(impactCatalog(catalog, 'Test/ProjectionTests.cs').length, topics.length, 'test references remain in impact')
+  assert.deepEqual(impactCatalog(catalog, 'Test/ProjectionTests.cs'), [])
   assert.throws(() => codeCatalogGroups({ entries: [{ knowledge_id: 'ui.legacy' }] }), /regenerate/u)
 })
 
@@ -197,7 +196,7 @@ test('current search preserves code symbols; planned/historical are opt-in and l
 })
 
 test('Chinese subject evidence locates the named subject without overriding exact identities or symbols', () => {
-  const base = { status: 'current', aliases: [], summary: '', source: 'docs/fixture.md', code_paths: [], test_paths: [] }
+  const base = { status: 'current', aliases: [], summary: '', source: 'docs/fixture.md', code_paths: [] }
   const catalog = { entries: [
     { ...base, knowledge_id: 'ui.a', title: '图像查看', aliases: ['没有图像'], code_paths: ['src/FrameStore.cs'] },
     { ...base, knowledge_id: 'ui.z', title: '打印机连接' },
@@ -214,7 +213,7 @@ test('Chinese subject evidence locates the named subject without overriding exac
 })
 
 test('quantified Chinese requests prefer the longest named subject and its title owner', () => {
-  const base = { status: 'current', aliases: [], summary: '', source: 'docs/fixture.md', code_paths: [], test_paths: [] }
+  const base = { status: 'current', aliases: [], summary: '', source: 'docs/fixture.md', code_paths: [] }
   const catalog = { entries: [
     { ...base, knowledge_id: 'ui.a', title: '工具入口', aliases: ['字段编辑器'] },
     { ...base, knowledge_id: 'ui.short', title: '字段目录', summary: '字段编辑器' },
@@ -231,7 +230,7 @@ test('quantified Chinese requests prefer the longest named subject and its title
 })
 
 test('Chinese subject prefixes cannot stand in for a compound object or an unfinished request', () => {
-  const base = { status: 'current', aliases: [], source: 'docs/fixture.md', code_paths: [], test_paths: [] }
+  const base = { status: 'current', aliases: [], source: 'docs/fixture.md', code_paths: [] }
   for (const [query, title, aliases] of [
     ['打印机配置改坏了怎么恢复', '打印机连接', []],
     ['窗口布局无法保存', '窗口主题', ['窗口']],
@@ -247,7 +246,7 @@ test('Chinese subject prefixes cannot stand in for a compound object or an unfin
 })
 
 test('Chinese subject routing falls back for alias questions, title action lists and complex queries', () => {
-  const base = { status: 'current', aliases: [], summary: '', source: 'docs/fixture.md', code_paths: [], test_paths: [] }
+  const base = { status: 'current', aliases: [], summary: '', source: 'docs/fixture.md', code_paths: [] }
   for (const title of ['参数：编辑与关闭', '参数、输出关闭', '参数（关闭说明）']) {
     const query = '关闭终端后数据还在吗'
     const catalog = { entries: [
@@ -266,7 +265,7 @@ test('Chinese subject routing falls back for alias questions, title action lists
 })
 
 test('Chinese subject matching respects query and title word boundaries', () => {
-  const base = { status: 'current', aliases: [], source: 'docs/fixture.md', code_paths: [], test_paths: [] }
+  const base = { status: 'current', aliases: [], source: 'docs/fixture.md', code_paths: [] }
   for (const [query, title] of [['控制没有响应', '控制台设置'], ['控制台没有响应', '控制设置']]) {
     const catalog = { entries: [
       { ...base, knowledge_id: 'ui.a', title, summary: '' },
@@ -277,7 +276,7 @@ test('Chinese subject matching respects query and title word boundaries', () => 
 })
 
 test('Chinese subject evidence uses only searchable entries in the requested statuses', () => {
-  const base = { status: 'current', aliases: [], summary: '', source: 'docs/fixture.md', code_paths: [], test_paths: [] }
+  const base = { status: 'current', aliases: [], summary: '', source: 'docs/fixture.md', code_paths: [] }
   const query = '打印机没有图像'
   const catalog = { entries: [
     { ...base, knowledge_id: 'ui.a', title: '参考', summary: query },
@@ -306,7 +305,7 @@ test('search finds code symbols touching Chinese text without spaces', async (t)
 test('qualified symbols fall back to bounded owners without splitting underscores or generic members', async (t) => {
   const root = await fixture(t)
   const catalog = await buildCatalog(root)
-  const base = { ...catalog.entries[0], title: 'Fixture', summary: '', code_paths: [], test_paths: [] }
+  const base = { ...catalog.entries[0], title: 'Fixture', summary: '', code_paths: [] }
   catalog.entries = [
     { ...base, knowledge_id: 'ui.target', aliases: ['StateStore', 'cv::Mat', 'poi_batch'] },
     { ...base, knowledge_id: 'ui.nearby', aliases: ['StateStoreBackup', 'Namespace', 'Save', 'at', 'batch'] },
@@ -321,7 +320,7 @@ test('qualified symbols fall back to bounded owners without splitting underscore
 })
 
 test('versioned release tags locate bounded prefixes without treating version digits as owners', () => {
-  const base = { title: 'Fixture', status: 'current', summary: '', source: 'docs/fixture.md', code_paths: [], test_paths: [] }
+  const base = { title: 'Fixture', status: 'current', summary: '', source: 'docs/fixture.md', code_paths: [] }
   const catalog = { entries: [
     { ...base, knowledge_id: 'ui.release', aliases: ['widget-v'] },
     { ...base, knowledge_id: 'ui.noise', aliases: ['widget', '8', '1.5.8', 'preview', 'upload'] },
@@ -337,7 +336,7 @@ test('versioned release tags locate bounded prefixes without treating version di
 })
 
 test('release prefix fallback preserves exact versions, boundaries, filters and deduplication', () => {
-  const base = { title: 'Fixture', status: 'current', summary: '', source: 'docs/fixture.md', code_paths: [], test_paths: [] }
+  const base = { title: 'Fixture', status: 'current', summary: '', source: 'docs/fixture.md', code_paths: [] }
   const tag = 'widget-v2.4.7'
   const query = `${tag}为什么失败`
   const catalog = { entries: [
@@ -360,7 +359,7 @@ test('release prefix fallback preserves exact versions, boundaries, filters and 
 test('full qualified evidence outranks owner context and exact whole-query aliases remain first', async (t) => {
   const root = await fixture(t)
   const catalog = await buildCatalog(root)
-  const base = { ...catalog.entries[0], title: 'Fixture', code_paths: [], test_paths: [] }
+  const base = { ...catalog.entries[0], title: 'Fixture', code_paths: [] }
   const query = 'StateStore.Save保存配置失败后如何恢复原始内容并重新加载'
   catalog.entries = [
     { ...base, knowledge_id: 'ui.owner', aliases: ['StateStore'], summary: '保存配置失败后如何恢复原始内容并重新加载' },
@@ -375,11 +374,10 @@ test('full qualified evidence outranks owner context and exact whole-query alias
 })
 
 test('qualified symbol identity outranks incidental module paths and longer namespaces', () => {
-  const base = { knowledge_id: 'ui.fixture', title: 'Fixture', status: 'current', aliases: [], summary: '', source: 'docs/fixture.md', code_paths: [], test_paths: [] }
+  const base = { knowledge_id: 'ui.fixture', title: 'Fixture', status: 'current', aliases: [], summary: '', source: 'docs/fixture.md', code_paths: [] }
   const query = '引用ColorVision.UI会自动加载插件吗'
   const context = '引用会自动加载插件吗'
   const consumers = [
-    { ...base, knowledge_id: 'ui.tests', summary: context, test_paths: ['Test/ColorVision.UI.Tests/PluginTests.cs'] },
     { ...base, knowledge_id: 'ui.desktop', summary: context, code_paths: ['UI/ColorVision.UI.Desktop/Startup.cs'] },
     { ...base, knowledge_id: 'ui.namespace', summary: context, code_paths: ['src/Namespace.ColorVision.UI.More/Feature.cs'] },
     { ...base, knowledge_id: 'ui.module-path', summary: context, code_paths: ['UI/ColorVision.UI/Runtime.cs'] },
@@ -397,7 +395,7 @@ test('qualified symbol identity outranks incidental module paths and longer name
 })
 
 test('qualified symbol identity is deduplicated and preserves full-member precedence', () => {
-  const base = { knowledge_id: 'ui.fixture', title: 'Fixture', status: 'current', aliases: [], summary: '', source: 'docs/fixture.md', code_paths: [], test_paths: [] }
+  const base = { knowledge_id: 'ui.fixture', title: 'Fixture', status: 'current', aliases: [], summary: '', source: 'docs/fixture.md', code_paths: [] }
   const catalog = { entries: [
     { ...base, knowledge_id: 'ui.a', aliases: ['Module.One'] },
     { ...base, knowledge_id: 'ui.z', aliases: ['Module.Two'] },
@@ -420,7 +418,7 @@ test('qualified symbol identity is deduplicated and preserves full-member preced
 })
 
 test('qualified symbol identity retains status filters, limits and deterministic ties', () => {
-  const base = { knowledge_id: 'ui.fixture', title: 'Fixture', status: 'current', aliases: ['Module.Core'], summary: '', source: 'docs/fixture.md', code_paths: [], test_paths: [] }
+  const base = { knowledge_id: 'ui.fixture', title: 'Fixture', status: 'current', aliases: ['Module.Core'], summary: '', source: 'docs/fixture.md', code_paths: [] }
   const catalog = { entries: [
     { ...base, knowledge_id: 'ui.z' },
     { ...base, knowledge_id: 'ui.a', aliases: ['module.core'] },
@@ -438,7 +436,7 @@ test('qualified symbol identity retains status filters, limits and deterministic
 test('repository paths normalize Windows separators and preserve concrete trailing paths', async (t) => {
   const root = await fixture(t)
   const catalog = await buildCatalog(root)
-  const base = { ...catalog.entries[0], title: 'Fixture', summary: '', code_paths: [], test_paths: [] }
+  const base = { ...catalog.entries[0], title: 'Fixture', summary: '', code_paths: [] }
   catalog.entries = [
     { ...base, knowledge_id: 'ui.exact', aliases: [], code_paths: ['Native/include/native_buffer.h'] },
     { ...base, knowledge_id: 'ui.file', aliases: ['native_buffer.h'] },
@@ -455,7 +453,7 @@ test('repository paths normalize Windows separators and preserve concrete traili
 test('qualified owners and longer path tails outrank bare names with more unrelated context', async (t) => {
   const root = await fixture(t)
   const catalog = await buildCatalog(root)
-  const base = { ...catalog.entries[0], title: 'Fixture', summary: '', code_paths: [], test_paths: [] }
+  const base = { ...catalog.entries[0], title: 'Fixture', summary: '', code_paths: [] }
   const context = '保存配置失败后如何恢复原始内容并重新加载'
   catalog.entries = [
     { ...base, knowledge_id: 'ui.short', aliases: ['StateStore', 'native_buffer.h'], summary: context },
@@ -469,7 +467,7 @@ test('qualified owners and longer path tails outrank bare names with more unrela
 test('owner fallback retains status filtering and deterministic ties', async (t) => {
   const root = await fixture(t)
   const catalog = await buildCatalog(root)
-  const base = { ...catalog.entries[0], title: 'Fixture', summary: '', aliases: ['StateStore'], code_paths: [], test_paths: [] }
+  const base = { ...catalog.entries[0], title: 'Fixture', summary: '', aliases: ['StateStore'], code_paths: [] }
   catalog.entries = [
     { ...base, knowledge_id: 'ui.z' },
     { ...base, knowledge_id: 'ui.a' },
@@ -483,7 +481,7 @@ test('owner fallback retains status filtering and deterministic ties', async (t)
 test('explicitly described owners outrank equally specific incidental source references', async (t) => {
   const root = await fixture(t)
   const catalog = await buildCatalog(root)
-  const base = { ...catalog.entries[0], title: 'Fixture', summary: '', code_paths: [], test_paths: [] }
+  const base = { ...catalog.entries[0], title: 'Fixture', summary: '', code_paths: [] }
   const context = '保存配置失败后如何恢复原始内容并重新加载'
   catalog.entries = [
     { ...base, knowledge_id: 'ui.consumer', aliases: [], code_paths: ['src/StateStore.cs'], summary: context },
@@ -496,7 +494,7 @@ test('explicitly described owners outrank equally specific incidental source ref
 })
 
 test('bare code symbols outrank generic question text regardless of query casing', () => {
-  const base = { title: 'Fixture', status: 'current', aliases: [], summary: '', source: 'docs/fixture.md', code_paths: [], test_paths: [] }
+  const base = { title: 'Fixture', status: 'current', aliases: [], summary: '', source: 'docs/fixture.md', code_paths: [] }
   const context = '保存配置失败后如何恢复原始内容并重新加载旧字典ID'
   for (const symbol of ['StateStore', 'restoreDatabaseAsync', 'HImage', 'build_dependency_sql', 'MYSQL_PWD']) {
     const catalog = { entries: [
@@ -513,7 +511,7 @@ test('bare code symbols outrank generic question text regardless of query casing
 })
 
 test('bare symbol boundaries and explicit names outrank incidental source-only evidence', () => {
-  const base = { title: 'Fixture', status: 'current', aliases: [], summary: '', source: 'docs/fixture.md', code_paths: [], test_paths: [] }
+  const base = { title: 'Fixture', status: 'current', aliases: [], summary: '', source: 'docs/fixture.md', code_paths: [] }
   const context = '保存配置失败后如何恢复原始内容并重新加载'
   const catalog = { entries: [
     { ...base, knowledge_id: 'ui.longer', aliases: ['StateStoreBackup', 'OtherStateStore', 'StateStore_legacy'], summary: context },
@@ -529,7 +527,7 @@ test('bare symbol boundaries and explicit names outrank incidental source-only e
 })
 
 test('ordinary English words and short acronyms do not gain bare-symbol priority', () => {
-  const base = { title: 'Fixture', status: 'current', aliases: [], summary: '', source: 'docs/fixture.md', code_paths: [], test_paths: [] }
+  const base = { title: 'Fixture', status: 'current', aliases: [], summary: '', source: 'docs/fixture.md', code_paths: [] }
   const context = '保存配置失败后如何恢复原始内容并重新加载'
   for (const word of ['Save', 'backup', 'ID', 'SQL', 'XML', 'README']) {
     const catalog = { entries: [
@@ -543,7 +541,7 @@ test('ordinary English words and short acronyms do not gain bare-symbol priority
 })
 
 test('broad code-shaped technology names do not displace more specific known query words', () => {
-  const base = { title: 'Fixture', status: 'current', aliases: [], summary: '', source: 'docs/fixture.md', code_paths: [], test_paths: [] }
+  const base = { title: 'Fixture', status: 'current', aliases: [], summary: '', source: 'docs/fixture.md', code_paths: [] }
   const catalog = { entries: [
     { ...base, knowledge_id: 'ui.target', aliases: ['cvsln'], summary: '打开源目录生成缓存' },
     ...Array.from({ length: 6 }, (_, index) => ({ ...base, knowledge_id: `ui.sqlite-${index}`, aliases: ['SQLite'] })),
@@ -558,7 +556,7 @@ test('broad code-shaped technology names do not displace more specific known que
 })
 
 test('rarer ordinary words only demote a code symbol when they locate a competing topic', () => {
-  const base = { title: 'Fixture', status: 'current', aliases: [], summary: '', source: 'docs/fixture.md', code_paths: [], test_paths: [] }
+  const base = { title: 'Fixture', status: 'current', aliases: [], summary: '', source: 'docs/fixture.md', code_paths: [] }
   const context = '保存配置失败后如何恢复原始内容并重新加载'
   for (const word of ['backup', 'Save', 'ID']) {
     const catalog = { entries: [
@@ -573,7 +571,7 @@ test('rarer ordinary words only demote a code symbol when they locate a competin
 })
 
 test('mixed-query disambiguation demotes broad symbols individually, not every code symbol', () => {
-  const base = { title: 'Fixture', status: 'current', aliases: [], summary: '', source: 'docs/fixture.md', code_paths: [], test_paths: [] }
+  const base = { title: 'Fixture', status: 'current', aliases: [], summary: '', source: 'docs/fixture.md', code_paths: [] }
   const catalog = { entries: [
     { ...base, knowledge_id: 'ui.type', aliases: ['StateStore'] },
     { ...base, knowledge_id: 'ui.format', aliases: ['cvsln'], summary: '源目录生成缓存' },
@@ -587,7 +585,7 @@ test('mixed-query disambiguation demotes broad symbols individually, not every c
 })
 
 test('bare symbols preserve whole-query and qualified-member precedence without splitting owners', () => {
-  const base = { title: 'Fixture', status: 'current', aliases: [], summary: '', source: 'docs/fixture.md', code_paths: [], test_paths: [] }
+  const base = { title: 'Fixture', status: 'current', aliases: [], summary: '', source: 'docs/fixture.md', code_paths: [] }
   const query = 'StateStore.Save与BackupStore的保存范围'
   const catalog = { entries: [
     { ...base, knowledge_id: 'ui.bare', aliases: ['StateStore', 'BackupStore', 'Save'], summary: '保存范围' },
@@ -604,7 +602,7 @@ test('bare symbols preserve whole-query and qualified-member precedence without 
 })
 
 test('bare symbol evidence counts complete distinct symbols before named identities', () => {
-  const base = { title: 'Fixture', status: 'current', aliases: [], summary: '', source: 'docs/fixture.md', code_paths: [], test_paths: [] }
+  const base = { title: 'Fixture', status: 'current', aliases: [], summary: '', source: 'docs/fixture.md', code_paths: [] }
   const catalog = { entries: [
     { ...base, knowledge_id: 'ui.one', aliases: ['StateStore', 'StateStore说明'] },
     { ...base, knowledge_id: 'ui.both', summary: 'StateStore BackupStore' },
@@ -615,7 +613,7 @@ test('bare symbol evidence counts complete distinct symbols before named identit
 })
 
 test('bare symbol ranking retains status filters, result limits and deterministic ties', () => {
-  const base = { title: 'Fixture', status: 'current', aliases: ['StateStore'], summary: '', source: 'docs/fixture.md', code_paths: [], test_paths: [] }
+  const base = { title: 'Fixture', status: 'current', aliases: ['StateStore'], summary: '', source: 'docs/fixture.md', code_paths: [] }
   const catalog = { entries: [
     { ...base, knowledge_id: 'ui.z' },
     { ...base, knowledge_id: 'ui.a', aliases: ['statestore'] },

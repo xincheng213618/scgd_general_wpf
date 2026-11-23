@@ -2,7 +2,6 @@
 #pragma warning disable CA1822,CA1863
 using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
-using ColorVision.Themes;
 using ColorVision.UI.Desktop.Properties;
 using ColorVision.UI.Marketplace;
 using ColorVision.UI.Plugins;
@@ -13,7 +12,6 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
-using System.Windows.Media.Imaging;
 
 namespace ColorVision.UI.Desktop.Marketplace
 {
@@ -106,7 +104,7 @@ namespace ColorVision.UI.Desktop.Marketplace
             AssemblyBuildDate = pluginInfo.AssemblyBuildDate;
 
             // Icon is now lazy-loaded from PluginInfo, with fallback to default
-            Icon = pluginInfo.Icon ?? new BitmapImage(new Uri($"pack://application:,,,/ColorVision.Themes;component/Assets/Image/{(ThemeManager.Current.CurrentUITheme == Theme.Dark ? "ColorVision1.ico" : "ColorVision.ico")}"));
+            Icon = pluginInfo.Icon ?? MarketplaceClient.GetDefaultPluginIcon();
 
             DeleteCommand = new RelayCommand(a => Delete());
             UpdateCommand = new AsyncRelayCommand(_ => UpdateAsync(), _ => !IsBusy && HasUpdate, logger: log);

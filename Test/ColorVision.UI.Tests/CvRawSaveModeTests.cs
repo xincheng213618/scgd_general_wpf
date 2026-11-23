@@ -2,6 +2,7 @@ using ColorVision.Engine.FlowProcessing.Nodes;
 using ColorVision.Engine.Services.Devices.Camera.Local;
 using ColorVision.FileIO;
 using System.IO;
+using System.Runtime.InteropServices;
 
 namespace ColorVision.UI.Tests;
 
@@ -83,13 +84,16 @@ public sealed class CvRawSaveModeTests
         byte[] pixels = (byte[])raw.Data.Clone();
         int caller = Environment.CurrentManagedThreadId;
         int writer = -1;
+        int writes = 0;
         Assert.True(CVFileUtil.WriteCVRaw(scope.Path, raw, raw.Data.Length, stream =>
         {
             writer = Environment.CurrentManagedThreadId;
+            writes++;
             if (!cacheEnabled) Assert.IsType<FileStream>(stream);
             stream.Write(raw.Data);
         }, mode));
         Assert.Equal(caller, writer);
+        Assert.Equal(1, writes);
         Array.Fill(raw.Data, (byte)99);
         CVFileMetadata.SetProperty(scope.Path, "color", 1, [1, 2, 3]);
         CVFileMetadata.SetProperty(scope.Path, "color", 2, [4, 5]);
@@ -100,6 +104,42 @@ public sealed class CvRawSaveModeTests
         AssertPixels(scope.Path, pixels);
         Assert.Equal(new byte[] { 4, 5 }, CVFileMetadata.Read(scope.Path)["color"].Value);
         Assert.Equal(2u, CVFileMetadata.Read(scope.Path)["color"].Version);
+    }
+
+    [Theory]
+    [InlineData(CVFileSaveMode.Synchronous)]
+    [InlineData(CVFileSaveMode.MemoryOnly)]
+    public void NativeSaveOwnsPixelsAndMetadataAcrossReplacementWhileReaderIsBorrowing(CVFileSaveMode mode)
+    {
+        using CacheScope scope = new();
+        using CVCIEFile raw = CreateRaw();
+        byte[] first = raw.Data;
+        byte[] second = [9, 8, 7, 6, 5, 4];
+        IntPtr pointer = Marshal.AllocHGlobal(first.Length);
+        try
+        {
+            Marshal.Copy(first, 0, pointer, first.Length);
+            var properties = new Dictionary<string, CVFileProperty> { ["color"] = new(1, [2, 3]) };
+            Assert.True(CVFileUtil.WriteCVRaw(scope.Path, raw, pointer, first.Length, mode, properties));
+            Assert.NotNull(CVFileReadCache.GetCachedLength(scope.Path));
+            using Stream borrowed = CVFileReadCache.OpenRead(scope.Path, populateCache: false);
+            byte[] complete = ReadAll(borrowed);
+
+            Marshal.Copy(second, 0, pointer, second.Length);
+            AssertPixels(scope.Path, first);
+            raw.Exp[0] = 12;
+            properties["color"] = new(2, [4, 5]);
+            Assert.True(CVFileUtil.WriteCVRaw(scope.Path, raw, pointer, second.Length, mode, properties));
+            borrowed.Position = 0;
+            Assert.Equal(complete, ReadAll(borrowed));
+        }
+        finally { Marshal.FreeHGlobal(pointer); }
+
+        Assert.Equal(mode == CVFileSaveMode.Synchronous, File.Exists(scope.Path));
+        AssertPixels(scope.Path, second);
+        Assert.Equal(2u, CVFileMetadata.Read(scope.Path)["color"].Version);
+        Assert.True(CVFileUtil.Read(scope.Path, out CVCIEFile current));
+        using (current) Assert.Equal(12f, Assert.Single(current.Exp));
     }
 
     private static CVCIEFile CreateRaw() => new()

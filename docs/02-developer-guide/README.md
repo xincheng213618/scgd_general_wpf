@@ -5,7 +5,6 @@ status: "current"
 summary: "定义宿主、插件、客户包和独立FileIO包的构建平台与制品边界，区分构建验证和远端发布。"
 aliases: ["开发入口","改代码","交付","x64","AnyCPU","ARM64","平台支持"]
 code_paths: ["Directory.Build.props","ColorVision.PlatformPolicy.targets","build.sln","Engine/ColorVision.FileIO/ColorVision.FileIO.csproj",".github/workflows/dotnet.yml","Scripts/release.bat","Scripts/verify_platform_policy.py"]
-test_paths: ["Scripts/tests/test_verify_platform_policy.py"]
 related: ["platform.system","delivery.prerequisites","delivery.testing","delivery.scripts"]
 ---
 

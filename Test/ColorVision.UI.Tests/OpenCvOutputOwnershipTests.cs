@@ -42,6 +42,46 @@ public sealed class OpenCvOutputOwnershipTests
     }
 
     [Theory]
+    [InlineData(true, AlgorithmImageFormat.Gray8)]
+    [InlineData(false, AlgorithmImageFormat.Bgr24)]
+    public async Task FormatChangingOperationsPublishIndependentPackedPixels(bool canny, AlgorithmImageFormat expectedFormat)
+    {
+        const int width = 19;
+        const int height = 13;
+        const AlgorithmImageFormat sourceFormat = AlgorithmImageFormat.Bgra64;
+        int stride = width * sourceFormat.BytesPerPixel() + 16;
+        byte[] padded = new byte[stride * height];
+        new Random(17).NextBytes(padded);
+        byte[] original = padded.ToArray();
+        using AlgorithmImageBuffer input = new(width, height, stride, sourceFormat, padded, 144, 192);
+        using Mat source = AlgorithmImageInterop.ToMat(input);
+        using Mat expected = new();
+        CannyParameters cannyParameters = new();
+        if (canny) OpenCvAlgorithmProvider.ApplyCanny(source, expected, cannyParameters);
+        else OpenCvAlgorithmProvider.ApplyHistogramEqualization(source, expected);
+        using AlgorithmImageBuffer expectedPixels = AlgorithmImageInterop.FromMat(expected);
+
+        using AlgorithmExecutionScheduler scheduler = new(cpuConcurrency: 1);
+        AlgorithmRunner runner = new(StandardAlgorithmCatalog.Create(), [new OpenCvAlgorithmProvider()], scheduler);
+        using AlgorithmResult result = await runner.RunAsync(new AlgorithmRunRequest
+        {
+            Invocation = canny ? AlgorithmInvocation.Create(StandardAlgorithmIds.Canny, cannyParameters)
+                : AlgorithmInvocation.Create(StandardAlgorithmIds.HistogramEqualization, new NoAlgorithmParameters()),
+            Inputs = [new AlgorithmInput { Name = "source", Image = input, Ownership = AlgorithmInputOwnership.Borrowed }],
+            RequiredCapabilities = AlgorithmHostCapabilities.Headless | AlgorithmHostCapabilities.Local,
+        });
+
+        Assert.Equal(AlgorithmResultStatus.Succeeded, result.Status);
+        AlgorithmImageBuffer output = Assert.IsType<AlgorithmImageArtifact>(Assert.Single(result.Artifacts)).Image;
+        Assert.Equal((width, height, width * expectedFormat.BytesPerPixel(), expectedFormat, 144d, 192d),
+            (output.Width, output.Height, output.Stride, output.Format, output.DpiX, output.DpiY));
+        Assert.True(original.AsSpan().SequenceEqual(input.Data.Span));
+        Assert.NotEqual(input.StorageId, output.StorageId);
+        input.Dispose();
+        Assert.True(expectedPixels.Data.Span.SequenceEqual(output.Data.Span));
+    }
+
+    [Theory]
     [InlineData(AlgorithmImageFormat.Bgr24, 513)]
     [InlineData(AlgorithmImageFormat.Bgra64, 1025)]
     [InlineData(AlgorithmImageFormat.Bgra128Float, 513)]

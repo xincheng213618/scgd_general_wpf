@@ -503,15 +503,14 @@ namespace ColorVision.Engine.PropertyEditor
             return camera?.PhyCamera == null ? null : new TemplateCalibrationParam(camera.PhyCamera);
         }
 
-        internal static TemplateSensor CreateSensorTemplate(object obj)
+        internal static TemplateSensor? CreateSensorTemplate(object obj)
         {
             string deviceCode = GetStringProperty(obj, nameof(IFlowDeviceNode.DeviceCode));
             var device = ServiceManager.GetInstance().DeviceServices.OfType<DeviceSensor>().FirstOrDefault(device => device.Code == deviceCode);
-            string? category = device?.Config?.Category;
-            if (string.IsNullOrWhiteSpace(category))
-                category = "Sensor.Default";
+            if (device != null && !SensorTemplateDictionaryService.IsDefaultCategory(device.Config.Category)) return null;
 
-            var template = new TemplateSensor(category);
+            var template = new TemplateSensor(SensorTemplateDictionaryService.DefaultCategoryCode);
+            if (template.TemplateDicId != SensorTemplateDictionaryService.DefaultDictionaryId) return null;
             template.Load();
             return template;
         }

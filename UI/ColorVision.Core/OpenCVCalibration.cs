@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography;
 using System.Text;
 
 namespace ColorVision.Core
@@ -164,6 +165,17 @@ namespace ColorVision.Core
         public const int CalibrationOk = 1;
         public const int PoiOk = 1;
 
+        private enum WorkBufferTransferSupport
+        {
+            Unknown,
+            Available,
+            Unavailable,
+        }
+
+        private static readonly object WorkBufferTransferProbe = new();
+        private static volatile WorkBufferTransferSupport workBufferTransferSupport;
+        private static volatile bool mapSha256LoadUnavailable;
+
         [StructLayout(LayoutKind.Sequential)]
         private struct CalibrationCacheStatsV1
         {
@@ -225,6 +237,42 @@ namespace ColorVision.Core
         [DllImport(LibPath, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Unicode, ExactSpelling = true)]
         public static extern int M_CalibrationLoadFileW(IntPtr context, int calibrationType, string filePath);
 
+        [DllImport(LibPath, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Unicode, ExactSpelling = true)]
+        private static extern unsafe int M_CalibrationLoadMapWithSha256V1W(
+            IntPtr context, int calibrationType, string filePath, byte* hash, uint hashSize);
+
+        /// <summary>
+        /// Loads a DSNU or Uniformity map and writes its source SHA-256 on native success.
+        /// </summary>
+        /// <returns>Whether the native export was called. <paramref name="result"/> contains its status.</returns>
+        public static unsafe bool TryLoadCalibrationMapWithSha256(
+            IntPtr context, int calibrationType, string filePath, Span<byte> hash, out int result)
+        {
+            if (hash.Length != SHA256.HashSizeInBytes)
+                throw new ArgumentException("A SHA-256 output buffer must contain exactly 32 bytes.", nameof(hash));
+
+            if (mapSha256LoadUnavailable)
+            {
+                result = default;
+                return false;
+            }
+
+            try
+            {
+                fixed (byte* hashPointer = hash)
+                {
+                    result = M_CalibrationLoadMapWithSha256V1W(context, calibrationType, filePath, hashPointer, (uint)hash.Length);
+                }
+                return true;
+            }
+            catch (EntryPointNotFoundException)
+            {
+                mapSha256LoadUnavailable = true;
+                result = default;
+                return false;
+            }
+        }
+
         [DllImport(LibPath, CallingConvention = CallingConvention.Cdecl)]
         public static extern int M_CalibrationExecute(
             IntPtr context,
@@ -264,6 +312,40 @@ namespace ColorVision.Core
             IntPtr cieData,
             ulong cieFloatCount,
             in CalibrationExecutionOptionsV1 options);
+
+        [DllImport(LibPath, CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
+        private static extern int M_CalibrationTransferWorkBuffersV1(IntPtr destinationContext, IntPtr sourceContext);
+
+        /// <summary>
+        /// Reuses native calibration work buffers when the installed helper exports this operation.
+        /// The caller must keep both contexts alive for the duration of the transfer.
+        /// </summary>
+        public static bool TryTransferCalibrationWorkBuffers(IntPtr destinationContext, IntPtr sourceContext)
+        {
+            if (workBufferTransferSupport == WorkBufferTransferSupport.Unknown)
+            {
+                lock (WorkBufferTransferProbe)
+                {
+                    if (workBufferTransferSupport == WorkBufferTransferSupport.Unknown)
+                    {
+                        try
+                        {
+                            int result = M_CalibrationTransferWorkBuffersV1(destinationContext, sourceContext);
+                            workBufferTransferSupport = WorkBufferTransferSupport.Available;
+                            return result == CalibrationOk;
+                        }
+                        catch (EntryPointNotFoundException)
+                        {
+                            workBufferTransferSupport = WorkBufferTransferSupport.Unavailable;
+                            return false;
+                        }
+                    }
+                }
+            }
+
+            return workBufferTransferSupport == WorkBufferTransferSupport.Available
+                && M_CalibrationTransferWorkBuffersV1(destinationContext, sourceContext) == CalibrationOk;
+        }
 
         [DllImport(LibPath, CallingConvention = CallingConvention.Cdecl)]
         public static extern int M_CalibrationGetLastError(IntPtr context, [Out] byte[]? buffer, uint bufferLength);

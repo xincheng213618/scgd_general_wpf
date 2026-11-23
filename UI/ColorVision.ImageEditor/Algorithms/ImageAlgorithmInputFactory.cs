@@ -138,9 +138,12 @@ namespace ColorVision.ImageEditor.Algorithms
             int sourceStride = image.stride == 0 ? rowBytes : image.stride;
             if (sourceStride < rowBytes)
                 throw new ArgumentException("HImage stride must be zero or at least the size of one pixel row.", nameof(image));
-            byte[] data = new byte[checked(rowBytes * image.rows)];
-            for (int row = 0; row < image.rows; row++)
-                Marshal.Copy(new IntPtr(checked(image.pData.ToInt64() + (long)row * sourceStride)), data, row * rowBytes, rowBytes);
+            byte[] data = GC.AllocateUninitializedArray<byte>(checked(rowBytes * image.rows));
+            if (sourceStride == rowBytes)
+                Marshal.Copy(image.pData, data, 0, data.Length);
+            else
+                for (int row = 0; row < image.rows; row++)
+                    Marshal.Copy(new IntPtr(checked(image.pData.ToInt64() + (long)row * sourceStride)), data, row * rowBytes, rowBytes);
             return new AlgorithmImageBuffer(image.cols, image.rows, rowBytes, format, data, dpiX, dpiY);
         }
 
@@ -151,20 +154,21 @@ namespace ColorVision.ImageEditor.Algorithms
             ArgumentNullException.ThrowIfNull(image);
             Int32Rect bounds = region ?? new Int32Rect(0, 0, image.PixelWidth, image.PixelHeight);
             int width = bounds.Width, height = bounds.Height;
-            if (image.Format == PixelFormats.Indexed8) return CopyIndexed8(image, bounds);
+            PixelFormat sourceFormat = image.Format;
+            if (sourceFormat == PixelFormats.Indexed8) return CopyIndexed8(image, bounds);
 
-            AlgorithmImageFormat format = FromPixelFormat(image.Format);
+            AlgorithmImageFormat format = FromPixelFormat(sourceFormat);
             int stride = checked(width * format.BytesPerPixel());
-            byte[] data = new byte[checked(stride * height)];
+            byte[] data = GC.AllocateUninitializedArray<byte>(checked(stride * height));
             image.CopyPixels(bounds, data, stride, 0);
-            if (image.Format == PixelFormats.Rgb24) SwapRedBlue(data, stride, width, height, 1, 3);
-            else if (image.Format == PixelFormats.Rgb48 || image.Format == PixelFormats.Rgba64)
+            if (sourceFormat == PixelFormats.Rgb24) SwapRedBlue24(data);
+            else if (sourceFormat == PixelFormats.Rgb48 || sourceFormat == PixelFormats.Rgba64)
             {
                 fixed (byte* pixels = data)
                     CopyColor16(pixels, stride, pixels, stride, width, height, format.BytesPerPixel());
             }
-            else if (image.Format == PixelFormats.Bgr32) SetOpaqueAlpha(data, stride, width, height);
-            else if (image.Format == PixelFormats.Pbgra32) UnpremultiplyAlpha(data, stride, width, height);
+            else if (sourceFormat == PixelFormats.Bgr32) SetOpaqueAlpha(data);
+            else if (sourceFormat == PixelFormats.Pbgra32) UnpremultiplyAlpha(data);
             return new AlgorithmImageBuffer(width, height, stride, format, data, image.DpiX, image.DpiY);
         }
 
@@ -282,72 +286,98 @@ namespace ColorVision.ImageEditor.Algorithms
         {
             BitmapPalette palette = image.Palette
                 ?? throw new NotSupportedException("Indexed8 input requires a palette.");
-            int sourceStride = bounds.Width;
-            byte[] indices = new byte[checked(sourceStride * bounds.Height)];
-            image.CopyPixels(bounds, indices, sourceStride, 0);
-
+            int pixelCount = checked(bounds.Width * bounds.Height);
             int targetStride = checked(bounds.Width * 4);
-            byte[] data = new byte[checked(targetStride * bounds.Height)];
-            for (int y = 0; y < bounds.Height; y++)
+            byte[] data = GC.AllocateUninitializedArray<byte>(checked(targetStride * bounds.Height));
+            // Each forward BGRA write ends before the next index in the tail of the output buffer.
+            int indicesOffset = data.Length - pixelCount;
+            image.CopyPixels(bounds, data, bounds.Width, indicesOffset);
+            var colors = palette.Colors;
+            Span<uint> paletteValues = stackalloc uint[colors.Count];
+            for (int i = 0; i < paletteValues.Length; i++)
             {
-                for (int x = 0; x < bounds.Width; x++)
-                {
-                    int index = indices[y * sourceStride + x];
-                    if (index >= palette.Colors.Count)
-                        throw new InvalidOperationException($"Indexed8 palette has no entry for index {index}.");
-                    Color color = palette.Colors[index];
-                    int target = y * targetStride + x * 4;
-                    data[target] = color.B;
-                    data[target + 1] = color.G;
-                    data[target + 2] = color.R;
-                    data[target + 3] = color.A;
-                }
+                Color color = colors[i];
+                paletteValues[i] = color.B | (uint)color.G << 8 | (uint)color.R << 16 | (uint)color.A << 24;
+            }
+            ReadOnlySpan<byte> indices = data.AsSpan(indicesOffset);
+            Span<uint> pixels = MemoryMarshal.Cast<byte, uint>(data.AsSpan());
+            for (int i = 0; i < pixels.Length; i++)
+            {
+                int index = indices[i];
+                if (index >= paletteValues.Length)
+                    throw new InvalidOperationException($"Indexed8 palette has no entry for index {index}.");
+                pixels[i] = paletteValues[index];
             }
             return new AlgorithmImageBuffer(bounds.Width, bounds.Height, targetStride, AlgorithmImageFormat.Bgra32, data, image.DpiX, image.DpiY);
         }
 
-        private static void SetOpaqueAlpha(byte[] data, int stride, int width, int height)
+        private static void SetOpaqueAlpha(byte[] data)
         {
-            for (int y = 0; y < height; y++)
-                for (int x = 0; x < width; x++)
-                    data[y * stride + x * 4 + 3] = byte.MaxValue;
+            const uint opaque = 0xff000000;
+            Span<uint> pixels = MemoryMarshal.Cast<byte, uint>(data.AsSpan());
+            int offset = 0;
+            if (Vector128.IsHardwareAccelerated)
+            {
+                Vector128<uint> alpha = Vector128.Create(opaque);
+                Span<Vector128<uint>> blocks = MemoryMarshal.Cast<uint, Vector128<uint>>(pixels);
+                for (int i = 0; i < blocks.Length; i++) blocks[i] |= alpha;
+                offset = blocks.Length * Vector128<uint>.Count;
+            }
+            for (; offset < pixels.Length; offset++) pixels[offset] |= opaque;
         }
 
-        private static void UnpremultiplyAlpha(byte[] data, int stride, int width, int height)
+        private static void UnpremultiplyAlpha(byte[] data)
         {
-            for (int y = 0; y < height; y++)
+            Span<uint> pixels = MemoryMarshal.Cast<byte, uint>(data.AsSpan());
+            byte[] values = StraightColorTable.Values;
+            for (int i = 0; i < pixels.Length; i++)
             {
-                int row = y * stride;
-                for (int x = 0; x < width; x++)
+                uint pixel = pixels[i];
+                int alpha = (int)(pixel >> 24);
+                if (alpha == byte.MaxValue) continue;
+                if (alpha == 0)
                 {
-                    int pixel = row + x * 4;
-                    int alpha = data[pixel + 3];
-                    if (alpha == 0)
-                    {
-                        data[pixel] = 0;
-                        data[pixel + 1] = 0;
-                        data[pixel + 2] = 0;
-                        continue;
-                    }
-                    for (int component = 0; component < 3; component++)
-                        data[pixel + component] = (byte)Math.Min(byte.MaxValue, (data[pixel + component] * byte.MaxValue + alpha / 2) / alpha);
+                    pixels[i] = 0;
+                    continue;
                 }
+                int offset = alpha << 8;
+                pixels[i] = (pixel & 0xff000000u) | values[offset + (byte)pixel]
+                    | (uint)values[offset + (byte)(pixel >> 8)] << 8
+                    | (uint)values[offset + (byte)(pixel >> 16)] << 16;
             }
         }
 
-        private static void SwapRedBlue(byte[] data, int stride, int width, int height, int bytesPerChannel, int channels)
+        private static class StraightColorTable
         {
-            int bytesPerPixel = checked(bytesPerChannel * channels);
-            for (int y = 0; y < height; y++)
+            public static readonly byte[] Values = Build();
+
+            private static byte[] Build()
             {
-                int row = y * stride;
-                for (int x = 0; x < width; x++)
+                var values = new byte[256 * 256];
+                // Partial-alpha rows preserve the integer rounding and clamping of the scalar conversion.
+                for (int alpha = 1; alpha < byte.MaxValue; alpha++)
+                for (int component = 0; component <= byte.MaxValue; component++)
+                    values[(alpha << 8) + component] = (byte)Math.Min(byte.MaxValue, (component * byte.MaxValue + alpha / 2) / alpha);
+                return values;
+            }
+        }
+
+        private static void SwapRedBlue24(byte[] data)
+        {
+            int offset = 0;
+            if (Ssse3.IsSupported)
+            {
+                Vector128<byte> swap = Vector128.Create((byte)2, 1, 0, 5, 4, 3, 8, 7, 6, 11, 10, 9, 128, 128, 128, 128);
+                // The packed snapshot is contiguous. Store four pixels and leave the next input bytes untouched.
+                for (; offset <= data.Length - Vector128<byte>.Count; offset += 12)
                 {
-                    int pixel = row + x * bytesPerPixel;
-                    for (int component = 0; component < bytesPerChannel; component++)
-                        (data[pixel + component], data[pixel + 2 * bytesPerChannel + component]) = (data[pixel + 2 * bytesPerChannel + component], data[pixel + component]);
+                    Vector128<byte> pixels = Ssse3.Shuffle(Unsafe.ReadUnaligned<Vector128<byte>>(ref data[offset]), swap);
+                    Unsafe.WriteUnaligned(ref data[offset], pixels.AsUInt64().GetElement(0));
+                    Unsafe.WriteUnaligned(ref data[offset + 8], pixels.AsUInt32().GetElement(2));
                 }
             }
+            for (; offset < data.Length; offset += 3)
+                (data[offset], data[offset + 2]) = (data[offset + 2], data[offset]);
         }
     }
 }

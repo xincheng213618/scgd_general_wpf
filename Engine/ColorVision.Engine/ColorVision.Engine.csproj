@@ -31,6 +31,7 @@
 		<PackageReference Include="SharpSevenZip.StrongName" Version="2.0.128" GeneratePathProperty="true" />
 		<PackageReference Include="SqlSugarCore" Version="5.1.4.221" />
 		<PackageReference Include="System.IO.Ports" Version="10.0.12" />
+		<PackageReference Include="System.Management" Version="10.0.12" />
 		<PackageReference Include="System.ServiceProcess.ServiceController" Version="10.0.12" />
 	</ItemGroup>
 
@@ -43,7 +44,6 @@
 
 
 	<ItemGroup>
-		<None Remove="Assets\Image\ColorVision.ico" />
 		<None Remove="Assets\Image\ColorVision.png" />
 		<None Remove="Assets\Image\ColorVision1.ico" />
 		<None Remove="Assets\Image\connect.png" />
@@ -90,10 +90,10 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<Resource Include="Assets\Image\ColorVision.ico" />
 		<Resource Include="Assets\Image\ColorVision.png" />
 		<Resource Include="Assets\Image\ColorVision1.ico" />
 		<Resource Include="Assets\Image\connect.png" />
+		<Resource Include="Assets\Image\BenchmarkOptics.png" />
 		<Resource Include="Assets\png\PowerToy.png" />
 	</ItemGroup>
 

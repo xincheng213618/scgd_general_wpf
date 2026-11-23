@@ -5,7 +5,6 @@ status: "current"
 summary: "独立 net48 ARVRPro TCP/JSON Demo 的公开字段、ACK 与最终完成判据、切图自动确认、逐条消息超时及 JSON/CSV 导出；正常退出不代表最终 SN 和明确 PASS 已核验。"
 aliases: ["RunAll Code=0 是否已经测试完成","客户怎么对接 ARVRPro","最终结果MsgID为什么为空","ProjectARVRPro.IntegrationDemo","JsonStreamMessageReader","ArvrClient","ResultParser","DemoOptions","ProjectARVRResult","MsgID","TotalResult"]
 code_paths: ["Projects/ProjectARVRPro.IntegrationDemo/Program.cs","Projects/ProjectARVRPro.IntegrationDemo/MainWindow.xaml.cs","Projects/ProjectARVRPro.IntegrationDemo/MainWindow.xaml","Projects/ProjectARVRPro.IntegrationDemo/ProjectARVRPro.IntegrationDemo.csproj","Scripts/publish_project_arvrpro_integration_demo.py","Scripts/publish_project_arvrpro_integration_demo.bat","Projects/ProjectARVRPro/Integration/IntegrationDemoReleaseClient.cs","Projects/ProjectARVRPro/Integration/IntegrationDemoPanel.xaml.cs","Projects/ProjectARVRPro.IntegrationDemo/Contracts/","Projects/ProjectARVRPro.IntegrationDemo/Samples/project-arvr-result.json","Projects/ProjectARVRPro/Services/RunAllSocket.cs","Projects/ProjectARVRPro/ARVRWindow.xaml.cs"]
-test_paths: ["Test/ProjectARVRPro.Tests/IntegrationDemoReleaseClientTests.cs"]
 related: ["projects.arvr-pro","projects.arvr-pro-protocol","projects.index"]
 ---
 
@@ -51,7 +50,7 @@ related: ["projects.arvr-pro","projects.arvr-pro-protocol","projects.index"]
 | --- | --- | --- | --- |
 | 建连 | `TcpClient` 连接 `host:port` | ARVRPro Socket 服务监听，默认端口 `6666` | 现场先确认端口、防火墙、宿主是否已加载 ProjectARVRPro |
 | 初始化 | 发送 `ProjectARVRInit`，带 `SerialNumber` | 宿主建立当前 SN 和流程上下文 | SN 必须和客户 MES/上位机一致，后续结果靠它追溯 |
-| 全流程 | 发送 `RunAll` | 宿主按当前流程组执行所有步骤 | 只适合已配置好流程组、Recipe、切图方式的现场 |
+| 全流程 | 发送 `RunAll` | 宿主执行当前流程组内已启用的步骤 | 预先配置流程组、Recipe 和切图方式 |
 | 普通切图确认 | 收到 `SwitchPG` 后发送 `SwitchPGCompleted` | 宿主继续下一个流程节点 | 自动确认按事件与MsgID去重，缺MsgID时回退SN和ARVRTestType；不核验实际切图完成 |
 | AOI 切图确认 | 收到 `AoiSwitchPG` 后发送 `AOITestSwitchImageComplete` | 宿主完成外部切图节点的等待 | 仅在收到请求且实际切图完成后确认；Demo 自建确认 MsgID，节点需使用默认兼容模式 |
 | 切换流程组 | 同步发送 `SwitchGroup` | 宿主按名称切换活动组并返回 `{GroupName, MetaCount}` | `Params` 是非空组名字符串 |
@@ -72,7 +71,7 @@ related: ["projects.arvr-pro","projects.arvr-pro-protocol","projects.index"]
 
 `TotalResult` 在 Demo 解析模型里可为空。当前判断是 `parsed.TotalResult == false`，不是必须为 `true`；缺失或无法解析为布尔值不会在这条判断中被明确拒绝。因此“Demo 正常退出”不能直接解释为已经严格验证结果属于本次请求且明确 PASS。
 
-客户对接应跟踪当前连接会话和服务端确认的 SN，核对最终结果确属预期测试，并按选定的标准/Legacy schema 验证必需字段与明确的最终判定。上述要求是对接契约与现有缺口，不表示 Demo 已实现严格会话匹配或缺失字段拒绝；不能把这些缺口写成已被测试覆盖。
+客户对接应跟踪当前连接会话和服务端确认的 SN，核对最终结果确属预期测试，并按选定的标准/Legacy schema 验证必需字段与明确的最终判定。上述要求是对接契约与现有缺口，不表示 Demo 已实现严格会话匹配或缺失字段拒绝。
 
 ## 命令与副作用
 
@@ -102,17 +101,15 @@ TCP reader以UTF-8增量解码、字符串/转义感知的大括号配平处理�
 
 ## 离线验证与客户产物
 
-`Test/ProjectARVRPro.Tests/IntegrationDemoReleaseClientTests.cs` 覆盖发布元数据读取、下载路径约束和包大小/SHA-256 校验，使用 HTTP stub；它不覆盖 TCP 协议、RunAll ACK 或最终结果关联。
+真实联调需核对 TCP 协议、RunAll ACK 和最终结果关联。发布资料与下载包可单独验证。
 
 `Scripts/publish_project_arvrpro_integration_demo.bat` 是独立 ZIP 发布入口：构建net48/x64、复制源码/README/样例、运行离线解析并检查CSV产物，打包后先上传并下载核对ZIP，再更新和核对 `latest.json`。`--validate-only` 仍构建和运行离线解析，但不上传。元数据 `verifiedProjectARVRProVersion` 只是构建时读取的插件版本，不是联机验收记录；客户交付仍需另存联调结果。源码旁README保留随包命令与字段说明，不能用发布脚本验证普通文档修改。
 
-验证缺口：当前未登记覆盖 `Program.cs` 的 ACK 后等待、负 Code、最终失败、超时/断连和 EventName+MsgID 匹配的专门协议自动化测试。下表是待执行的验收要求，不是既有测试成功记录。最终 SN 不匹配、缺失/不可解析 `TotalResult` 的场景还应单独建立验收，并先明确要保留还是修改当前宽松行为。
+现场核对 ACK 后等待、负 Code、最终失败、超时/断线和 EventName+MsgID 匹配。明确处理最终 SN 不匹配及 `TotalResult` 缺失或无法解析的策略。
 
-以下为本地构建/测试与客户产物生成，不上传到插件市场；会写入 bin/obj 或 publish 输出。Demo 不是 `.cvxp` 插件，不调用 `package_project.bat`。
+以下命令生成本地客户产物并写入 bin/obj 或 publish 输出。Demo 使用独立发布产物。
 
 ```powershell
-# 仅验证发布元数据与下载校验，不证明 TCP 协议通过
-dotnet test Test/ProjectARVRPro.Tests/ProjectARVRPro.Tests.csproj -c Release -p:Platform=x64 --filter FullyQualifiedName~IntegrationDemoReleaseClientTests
 dotnet publish Projects/ProjectARVRPro.IntegrationDemo/ProjectARVRPro.IntegrationDemo.csproj -c Release -f net48
 ```
 

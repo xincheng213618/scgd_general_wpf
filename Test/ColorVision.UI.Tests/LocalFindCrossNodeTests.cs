@@ -1,4 +1,5 @@
 ﻿using ColorVision.Core;
+using ColorVision.Database;
 using ColorVision.Engine;
 using ColorVision.Engine.FlowProcessing.Nodes;
 using ColorVision.Engine.Services.Devices.Camera.Local;
@@ -572,7 +573,7 @@ public sealed class LocalFindCrossNodeTests
     private sealed class FakeNodeServices : ILocalFindCrossNodeServices
     {
         public Func<string, Int32Rect> LoadSearchRegionTemplateHandler { get; init; } = _ => throw new InvalidOperationException("Unexpected POI lookup");
-        public Int32Rect LoadSearchRegionTemplate(string templateName) => LoadSearchRegionTemplateHandler(templateName);
+        public Int32Rect LoadSearchRegionTemplate(string templateName, MySqlConnectedEndpoint? endpoint) => LoadSearchRegionTemplateHandler(templateName);
         public Func<string, LocalFlowFrame> LoadFrameHandler { get; init; } = _ => throw new InvalidOperationException("File loading was not configured.");
         public Func<int, MeasureResultImgModel?> GetImageResultHandler { get; init; } = _ => throw new InvalidOperationException("Image-result loading was not configured.");
         public Func<HImage, RoiRect, string, LocalFindCrossDetection> DetectHandler { get; init; } = (_, _, _) => throw new InvalidOperationException("Detection was not configured.");
@@ -585,7 +586,7 @@ public sealed class LocalFindCrossNodeTests
 
         public LocalFlowFrame LoadFrame(string filePath) => LoadFrameHandler(filePath);
 
-        public MeasureResultImgModel? GetImageResult(int masterId) => GetImageResultHandler(masterId);
+        public MeasureResultImgModel? GetImageResult(int masterId, MySqlConnectedEndpoint? endpoint) => GetImageResultHandler(masterId);
 
         public LocalFindCrossDetection Detect(HImage image, RoiRect roi, string parameterJson)
         {

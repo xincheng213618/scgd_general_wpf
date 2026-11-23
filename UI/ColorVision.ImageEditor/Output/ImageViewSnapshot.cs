@@ -19,6 +19,7 @@ namespace ColorVision.ImageEditor
         public ImageViewSnapshotFormat Format { get; init; } = ImageViewSnapshotFormat.Png;
         public int ScaleDivisor { get; init; } = 1;
         public int JpegQuality { get; init; } = 100;
+        public bool UseHeatmap { get; init; }
     }
 
     public enum ImageViewSourceFormat

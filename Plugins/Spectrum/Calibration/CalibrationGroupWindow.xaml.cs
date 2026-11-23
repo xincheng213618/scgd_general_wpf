@@ -1,6 +1,10 @@
 using LocalizedText = global::Spectrum.DisplayText;
+using ColorVision.UI;
 using log4net;
+using Microsoft.Win32;
 using Spectrum.Configs;
+using System.ComponentModel;
+using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -183,14 +187,12 @@ namespace Spectrum.Calibration
             var group = ComboBoxGroups.SelectedItem as CalibrationGroup;
             if (group == null) return;
 
-            using var dialog = new System.Windows.Forms.OpenFileDialog();
-            dialog.Filter = "DAT files (*.dat)|*.dat|All Files|*.*";
-            if (dialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+            if (BrowseCalibrationFile(group.WavelengthFile) is string file)
             {
-                group.WavelengthFile = dialog.FileName;
-                TextBoxWavelengthFile.Text = dialog.FileName;
+                group.WavelengthFile = file;
+                TextBoxWavelengthFile.Text = file;
                 MarkUnsaved();
-                ValidateWavelength(dialog.FileName);
+                ValidateWavelength(file);
             }
         }
 
@@ -199,15 +201,39 @@ namespace Spectrum.Calibration
             var group = ComboBoxGroups.SelectedItem as CalibrationGroup;
             if (group == null) return;
 
-            using var dialog = new System.Windows.Forms.OpenFileDialog();
-            dialog.Filter = "DAT files (*.dat)|*.dat|All Files|*.*";
-            if (dialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+            if (BrowseCalibrationFile(group.MaguideFile) is string file)
             {
-                group.MaguideFile = dialog.FileName;
-                TextBoxMaguideFile.Text = dialog.FileName;
+                group.MaguideFile = file;
+                TextBoxMaguideFile.Text = file;
                 MarkUnsaved();
-                ValidateMaguide(dialog.FileName);
+                ValidateMaguide(file);
             }
+        }
+
+        private string? BrowseCalibrationFile(string? currentPath)
+        {
+            // The plugin also runs on hosts with the original PathSelectionHelper API.
+            var configService = ConfigService.Instance;
+            var preferences = configService.GetRequiredService<CalibrationFilePickerConfig>();
+            var dialog = new OpenFileDialog { Filter = "DAT files (*.dat)|*.dat|All Files|*.*", RestoreDirectory = true };
+            if (File.Exists(currentPath))
+            {
+                dialog.InitialDirectory = Path.GetDirectoryName(Path.GetFullPath(currentPath)) ?? string.Empty;
+                dialog.FileName = Path.GetFileName(currentPath);
+            }
+            else
+            {
+                dialog.InitialDirectory = Directory.Exists(preferences.LastOpenDirectory)
+                    ? preferences.LastOpenDirectory
+                    : PathSelectionHelper.GetExistingDirectory(currentPath) ?? string.Empty;
+            }
+
+            if (dialog.ShowDialog(this) != true)
+                return null;
+
+            preferences.LastOpenDirectory = Path.GetDirectoryName(dialog.FileName) ?? string.Empty;
+            configService.Save<CalibrationFilePickerConfig>();
+            return dialog.FileName;
         }
 
         private void BtnValidateWavelength_Click(object sender, RoutedEventArgs e)

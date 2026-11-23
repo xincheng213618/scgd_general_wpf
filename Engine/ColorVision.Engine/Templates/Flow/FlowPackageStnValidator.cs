@@ -1,4 +1,5 @@
 using System;
+using System.Buffers.Binary;
 using System.IO;
 using System.IO.Compression;
 using System.Threading;
@@ -321,21 +322,34 @@ internal static class FlowPackageStnValidator
             $"第 {nodeIndex + 1} 个节点的{fieldName}长度无效：{length}。");
     }
 
-    private static uint ComputeCrc32(byte[] data)
+    private static uint ComputeCrc32(ReadOnlySpan<byte> data)
     {
         uint crc = uint.MaxValue;
-        foreach (byte value in data)
+        uint[] table = Crc32Table;
+        // Each table slice gives the contribution of a byte at that position in the block.
+        while (data.Length >= sizeof(ulong))
         {
-            crc = Crc32Table[(crc ^ value) & byte.MaxValue]
-                ^ crc >> 8;
+            ulong block = BinaryPrimitives.ReadUInt64LittleEndian(data) ^ crc;
+            crc = table[7 * 256 + (byte)block]
+                ^ table[6 * 256 + (byte)(block >> 8)]
+                ^ table[5 * 256 + (byte)(block >> 16)]
+                ^ table[4 * 256 + (byte)(block >> 24)]
+                ^ table[3 * 256 + (byte)(block >> 32)]
+                ^ table[2 * 256 + (byte)(block >> 40)]
+                ^ table[1 * 256 + (byte)(block >> 48)]
+                ^ table[(byte)(block >> 56)];
+            data = data[sizeof(ulong)..];
         }
+
+        foreach (byte value in data)
+            crc = table[(crc ^ value) & byte.MaxValue] ^ crc >> 8;
         return ~crc;
     }
 
     private static uint[] CreateCrc32Table()
     {
-        uint[] table = new uint[256];
-        for (uint i = 0; i < table.Length; i++)
+        uint[] table = new uint[8 * 256];
+        for (uint i = 0; i <= byte.MaxValue; i++)
         {
             uint value = i;
             for (int bit = 0; bit < 8; bit++)
@@ -345,6 +359,17 @@ internal static class FlowPackageStnValidator
                     : value >> 1;
             }
             table[i] = value;
+        }
+
+        // Each successive slice includes one more trailing zero byte.
+        for (uint i = 0; i <= byte.MaxValue; i++)
+        {
+            uint value = table[i];
+            for (int slice = 1; slice < 8; slice++)
+            {
+                value = table[value & byte.MaxValue] ^ value >> 8;
+                table[slice * 256 + i] = value;
+            }
         }
         return table;
     }

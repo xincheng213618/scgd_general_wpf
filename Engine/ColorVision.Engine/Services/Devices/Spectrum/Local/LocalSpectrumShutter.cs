@@ -39,11 +39,11 @@ internal sealed class LocalSpectrumShutter(Func<ShutterConfig, ILocalSpectrumShu
     private int baudRate;
     private ILocalSpectrumFilterWheelOperation? filterWheel;
 
-    public IDisposable? AcquireOperation(ShutterConfig config)
+    public IDisposable? AcquireOperation(ShutterConfig config, LocalSpectrumOpticalScope? opticalScope = null)
     {
         if (!config.UseFilterWheel || filterWheel != null) return null;
         Disconnect();
-        filterWheel = acquireFilterWheel?.Invoke(config) ?? new LocalSpectrumFilterWheel(config);
+        filterWheel = acquireFilterWheel?.Invoke(config) ?? new LocalSpectrumFilterWheel(config, opticalScope);
         return new FilterWheelScope(this);
     }
 
@@ -57,9 +57,9 @@ internal sealed class LocalSpectrumShutter(Func<ShutterConfig, ILocalSpectrumShu
         }
     }
 
-    public void Connect(ShutterConfig config)
+    public void Connect(ShutterConfig config, LocalSpectrumOpticalScope? opticalScope = null)
     {
-        if (config.UseFilterWheel) { using var operation = AcquireOperation(config); return; }
+        if (config.UseFilterWheel) { using var operation = AcquireOperation(config, opticalScope); return; }
         if (port?.IsOpen == true && string.Equals(address, config.Addr, StringComparison.OrdinalIgnoreCase) && baudRate == config.BaudRate) return;
         Disconnect();
         try
@@ -77,11 +77,11 @@ internal sealed class LocalSpectrumShutter(Func<ShutterConfig, ILocalSpectrumShu
     }
 
     // Optical direction is configurable; acknowledgements follow the actuator command.
-    public void SetTransmitting(bool transmitting, ShutterConfig config)
+    public void SetTransmitting(bool transmitting, ShutterConfig config, LocalSpectrumOpticalScope? opticalScope = null)
     {
         if (config.UseFilterWheel)
         {
-            using var operation = AcquireOperation(config);
+            using var operation = AcquireOperation(config, opticalScope);
             filterWheel!.SetTransmitting(transmitting);
             return;
         }
@@ -120,6 +120,17 @@ internal sealed class LocalSpectrumShutter(Func<ShutterConfig, ILocalSpectrumShu
             Disconnect();
             throw;
         }
+    }
+
+    public void RestoreTransmitting(ShutterConfig config)
+    {
+        if (!config.UseFilterWheel)
+        {
+            SetTransmitting(true, config);
+            return;
+        }
+        if (filterWheel == null) throw new InvalidOperationException("原校零滤色轮尚未占用，无法恢复测量位。");
+        filterWheel.RestoreTransmitting();
     }
 
     public void Disconnect()

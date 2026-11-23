@@ -1,8 +1,6 @@
-using ColorVision.Database;
 using ColorVision.Engine.FlowProcessing.Diagnostics;
 using ColorVision.Engine.FlowProcessing.PostProcess;
 using log4net;
-using SqlSugar;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -251,14 +249,14 @@ namespace ColorVision.Engine.FlowProcessing
             ArgumentNullException.ThrowIfNull(batch);
             var dispatcher = Application.Current?.Dispatcher;
             if (dispatcher == null || dispatcher.CheckAccess())
-                return ExecuteCore(batch, flowName, flowKey);
+                return await ExecuteCoreAsync(batch, flowName, flowKey);
 
             return await dispatcher.InvokeAsync(
-                () => ExecuteCore(batch, flowName, flowKey));
+                () => ExecuteCoreAsync(batch, flowName, flowKey)).Task.Unwrap();
         }
 
-        private static IReadOnlyList<PostProcessExecutionResult>
-            ExecuteCore(
+        private static async Task<IReadOnlyList<PostProcessExecutionResult>>
+            ExecuteCoreAsync(
                 MeasureBatchModel batch,
                 string flowName,
                 string? flowKey)
@@ -277,7 +275,7 @@ namespace ColorVision.Engine.FlowProcessing
                 FlowName = flowName,
             };
             IReadOnlyList<PostProcessExecutionResult> results =
-                PostProcessExecutionRunner.Execute(
+                await PostProcessExecutionRunner.ExecuteAsync(
                     matchingMetas,
                     context,
                     ambiguousLegacyBinding);
@@ -329,18 +327,9 @@ namespace ColorVision.Engine.FlowProcessing
                 ? summary
                 : $"{batch.Result}{Environment.NewLine}{summary}";
 
-            if (batch.Id <= 0) return;
             try
             {
-                using var db = new SqlSugarClient(
-                    new ConnectionConfig
-                    {
-                        ConnectionString =
-                            MySqlControl.GetConnectionString(),
-                        DbType = SqlSugar.DbType.MySql,
-                        IsAutoCloseConnection = true,
-                    });
-                db.Updateable(batch).ExecuteCommand();
+                FlowMeasurementBatch.UpdateOutcome(batch);
             }
             catch (Exception ex)
             {

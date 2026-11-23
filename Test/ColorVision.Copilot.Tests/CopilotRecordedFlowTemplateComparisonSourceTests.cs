@@ -260,7 +260,7 @@ public sealed class CopilotRecordedFlowTemplateComparisonSourceTests
     }
 
     [Fact]
-    public async Task PairedReadsPreserveValidHashesInUtf16Storage()
+    public async Task PairedReadsPreserveValidHashesAndOwnTheirSnapshotBytesInUtf16Storage()
     {
         using var fixture = new DatabaseFixture(utf16: true);
         var snapshot = fixture.Snapshot([1, 2, 3]);
@@ -273,6 +273,9 @@ public sealed class CopilotRecordedFlowTemplateComparisonSourceTests
         Assert.Equal("flow_key", pair.IdentityBasis);
         Assert.Equal(snapshot.ContentHash, pair.Baseline!.Snapshot!.ContentHash);
         Assert.Equal(snapshot.ContentHash, pair.Current!.Snapshot!.ContentHash);
+        Assert.NotSame(pair.Baseline.Snapshot.Content, pair.Current.Snapshot.Content);
+        pair.Baseline.Snapshot.Content[0] ^= 1;
+        Assert.Equal(snapshot.Content, pair.Current.Snapshot.Content);
     }
 
     [Fact]

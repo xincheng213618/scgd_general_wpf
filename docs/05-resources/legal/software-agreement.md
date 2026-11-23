@@ -5,7 +5,6 @@ status: "current"
 summary: "保留原软件使用条款，补充非商业源码学习、编译和修改、书面商业授权及第三方和既有许可的边界。"
 aliases: ["软件许可协议","许可入口","license","源码使用","非商业学习","商业授权","书面授权"]
 code_paths: ["LICENSE.md","package.json","package-lock.json"]
-test_paths: []
 related: ["governance.knowledge"]
 ---
 

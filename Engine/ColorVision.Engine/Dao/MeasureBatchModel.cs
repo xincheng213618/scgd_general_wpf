@@ -18,6 +18,11 @@ namespace ColorVision.Engine
     [SugarTable("t_scgd_measure_batch")]
     public class MeasureBatchModel : ViewEntity, IInitTables
     {
+        [SugarColumn(IsIgnore = true)]
+        internal MySqlConnectedEndpoint? DatabaseEndpoint { get; set; }
+
+        [SugarColumn(IsIgnore = true)]
+        internal FlowMeasurementBatch? FlowStartReceipt { get; set; }
 
         [SugarColumn(ColumnName = "t_id", IsNullable = true, ColumnDescription = "t_scgd_measure_template_master")]
         public int? TId { get; set; }
@@ -54,6 +59,27 @@ namespace ColorVision.Engine
     public class BatchResultMasterDao : BaseTableDao<MeasureBatchModel>
     {
         public static BatchResultMasterDao Instance { get; set; } = new BatchResultMasterDao();
+
+        /// <summary>Creates the batch for a flow and returns a client factory fixed to the database that owns it.</summary>
+        public Func<SqlSugarClient> InsertForFlow(MeasureBatchModel batch) =>
+            FlowMeasurementBatch.InsertForFlow(batch, MySqlControl.GetInstance().ConnectedEndpoint);
+
+        /// <summary>Returns a client factory for a saved batch's owning database, even after the active connection changes.</summary>
+        public Func<SqlSugarClient>? TryGetOwnedDatabaseFactory(MeasureBatchModel batch)
+        {
+            ArgumentNullException.ThrowIfNull(batch);
+            return batch is { Id: > 0, DatabaseEndpoint: { } endpoint } ? endpoint.CreateDbClient : null;
+        }
+
+        /// <summary>Reads a batch and retains the connection that owns its result records.</summary>
+        public MeasureBatchModel? GetByIdForHistory(int id)
+        {
+            if (id <= 0 || MySqlControl.GetInstance().ConnectedEndpoint is not { IsCurrent: true } endpoint) return null;
+            using var db = endpoint.CreateDbClient();
+            MeasureBatchModel? batch = db.Queryable<MeasureBatchModel>().First(item => item.Id == id);
+            if (batch != null) batch.DatabaseEndpoint = endpoint;
+            return batch;
+        }
 
         public MeasureBatchModel? GetByCode(string code) 
         {

@@ -122,6 +122,15 @@ namespace ColorVision.Engine.Templates
 
         }
 
+        internal virtual void ExportTemplates(IReadOnlyList<TemplateBase> targets)
+        {
+            foreach (var target in targets)
+            {
+                int index = GetSourceIndex(target);
+                if (index >= 0) Export(index);
+            }
+        }
+
         public virtual bool CopyTo(int index)
         {
             return false;
@@ -182,6 +191,32 @@ namespace ColorVision.Engine.Templates
 
         public virtual void Delete(int index)
         {
+        }
+
+        internal virtual void DeleteTemplates(IReadOnlyList<TemplateBase> targets)
+        {
+            foreach (var target in targets)
+            {
+                int index = GetSourceIndex(target);
+                if (index >= 0) Delete(index);
+            }
+        }
+
+        protected TemplateBase[] GetMarkedTemplatesOrCurrent(int index)
+        {
+            var marked = ItemsSource.OfType<TemplateBase>().Where(item => item.IsSelected).ToArray();
+            return marked.Length == 0 ? [(TemplateBase)GetValue(index)] : marked;
+        }
+
+        internal int GetSourceIndex(TemplateBase target)
+        {
+            int index = 0;
+            foreach (var item in ItemsSource)
+            {
+                if (ReferenceEquals(item, target)) return index;
+                index++;
+            }
+            return -1;
         }
 
         public virtual void Create(string templateName)
@@ -386,42 +421,27 @@ namespace ColorVision.Engine.Templates
             }
         }
 
-        public override void Delete(int index)
+        public override void Delete(int index) => DeleteTemplates(GetMarkedTemplatesOrCurrent(index));
+
+        internal override void DeleteTemplates(IReadOnlyList<TemplateBase> targets)
         {
-            int selectedCount = TemplateParams.Count(item => item.IsSelected);
-            if (selectedCount == 1) index = TemplateParams.IndexOf(TemplateParams.First(item => item.IsSelected));
-
-            void DeleteSingle(int id)
+            foreach (var target in targets.Cast<TemplateModel<T>>())
             {
+                int id = target.Id;
                 using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
-                List<ModDetailModel> de = Db.Queryable<ModDetailModel>().Where(x => x.Pid == id).ToList();
-                int ret = Db.Deleteable<ModMasterModel>().Where(x => x.Id == id).ExecuteCommand();
+                Db.Deleteable<ModMasterModel>().Where(x => x.Id == id).ExecuteCommand();
                 Db.Deleteable<ModDetailModel>().Where(x => x.Pid == id).ExecuteCommand();
-            }
-
-            if (selectedCount <= 1)
-            {
-                int id = TemplateParams[index].Value.Id;
-                DeleteSingle(id);
-                TemplateParams.RemoveAt(index);
-            }
-            else
-            {
-                foreach (var item in TemplateParams.Where(item => item.IsSelected == true).ToList())
-                {
-                    DeleteSingle(item.Id);
-                    TemplateParams.Remove(item);
-                }
+                TemplateParams.Remove(target);
             }
         }
 
+        public override void Export(int index) => ExportTemplates(GetMarkedTemplatesOrCurrent(index));
 
-        public override void Export(int index)
+        internal override void ExportTemplates(IReadOnlyList<TemplateBase> targets)
         {
-            int selectedCount = TemplateParams.Count(item => item.IsSelected);
-            if (selectedCount == 1) index = TemplateParams.IndexOf(TemplateParams.First(item => item.IsSelected));
+            var selected = targets.Cast<TemplateModel<T>>().ToArray();
 
-            if (selectedCount <= 1)
+            if (selected.Length == 1)
             {
                 using System.Windows.Forms.SaveFileDialog sfd = new System.Windows.Forms.SaveFileDialog();
                 sfd.DefaultExt = "cfg";
@@ -430,11 +450,11 @@ namespace ColorVision.Engine.Templates
                 sfd.RestoreDirectory = true;
                 sfd.Title = ColorVision.Engine.Properties.Resources.Engine_Dlg_ExportTemplate;
                 sfd.InitialDirectory = SolutionManager.GetInstance().CurrentSolutionExplorer.DirectoryInfo.FullName;
-                sfd.FileName = Tool.SanitizeFileName(TemplateParams[index].Key);
+                sfd.FileName = Tool.SanitizeFileName(selected[0].Key);
                 if (sfd.FileName.Contains('.'))
                     sfd.FileName = sfd.FileName + ".cfg";
                 if (sfd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
-                TemplateParams[index].Value.ToJsonNFile(sfd.FileName);
+                selected[0].Value.ToJsonNFile(sfd.FileName);
             }
             else
             {
@@ -452,7 +472,7 @@ namespace ColorVision.Engine.Templates
                 try
                 {
                     // 导出所有模板文件到临时目录
-                    foreach (var kvp in TemplateParams.Where(item => item.IsSelected == true))
+                    foreach (var kvp in selected)
                     {
                         string filePath = Path.Combine(tempDirectory, $"{Tool.SanitizeFileName(kvp.Key)}.cfg");
                         kvp.Value.ToJsonNFile(filePath);

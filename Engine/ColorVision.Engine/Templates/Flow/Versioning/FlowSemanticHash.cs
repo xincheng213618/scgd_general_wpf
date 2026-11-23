@@ -1,4 +1,5 @@
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
@@ -49,7 +50,7 @@ namespace ColorVision.Engine.Templates.Flow.Versioning
                 canonical.EndGroup();
             }
 
-            return ToHash(canonical.ToString());
+            return canonical.ComputeHash();
         }
 
         public static string ComputeLayoutHash(FlowSemanticDocument document)
@@ -73,7 +74,7 @@ namespace ColorVision.Engine.Templates.Flow.Versioning
                 canonical.Add(ToInvariant(node.Height));
                 canonical.EndGroup();
             }
-            return ToHash(canonical.ToString());
+            return canonical.ComputeHash();
         }
 
         internal static string GetEdgeKey(FlowSemanticEdge edge)
@@ -86,31 +87,16 @@ namespace ColorVision.Engine.Templates.Flow.Versioning
                 edge.TargetPort);
         }
 
-        internal static string GetLayoutKey(FlowNodeLayout node)
-        {
-            return string.Join(
-                "\u001f",
-                node.NodeId,
-                ToInvariant(node.X),
-                ToInvariant(node.Y),
-                ToInvariant(node.Width),
-                ToInvariant(node.Height));
-        }
-
         private static string ToInvariant(double value)
         {
             return value.ToString("R", CultureInfo.InvariantCulture);
         }
 
-        private static string ToHash(string value)
+        private static string ToHash(ReadOnlySpan<byte> value)
         {
-            return ToHash(Encoding.UTF8.GetBytes(value));
-        }
-
-        private static string ToHash(byte[] value)
-        {
-            return Convert.ToHexString(SHA256.HashData(value))
-                .ToLowerInvariant();
+            Span<byte> digest = stackalloc byte[SHA256.HashSizeInBytes];
+            SHA256.HashData(value, digest);
+            return Convert.ToHexStringLower(digest);
         }
 
         private sealed class CanonicalTextBuilder
@@ -135,9 +121,51 @@ namespace ColorVision.Engine.Templates.Flow.Versioning
                 value.Append('|');
             }
 
-            public override string ToString()
+            public string ComputeHash()
             {
-                return value.ToString();
+                const int stackCharacterLimit = 512;
+                const int bufferSize = 64 * 1024;
+                if (value.Length <= stackCharacterLimit)
+                {
+                    Span<char> text = stackalloc char[value.Length];
+                    value.CopyTo(0, text, text.Length);
+                    Span<byte> utf8 = stackalloc byte[text.Length * 3];
+                    int length = Encoding.UTF8.GetBytes(text, utf8);
+                    return ToHash(utf8[..length]);
+                }
+
+                using var hash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
+                // A surrogate pair can span two StringBuilder chunks.
+                Encoder encoder = Encoding.UTF8.GetEncoder();
+                byte[] buffer = ArrayPool<byte>.Shared.Rent(bufferSize);
+                try
+                {
+                    Span<byte> utf8 = buffer.AsSpan(0, bufferSize);
+                    foreach (ReadOnlyMemory<char> chunk in value.GetChunks())
+                    {
+                        ReadOnlySpan<char> remaining = chunk.Span;
+                        while (!remaining.IsEmpty)
+                        {
+                            encoder.Convert(remaining, utf8, flush: false,
+                                out int consumed, out int written, out _);
+                            hash.AppendData(utf8[..written]);
+                            remaining = remaining[consumed..];
+                        }
+                    }
+
+                    encoder.Convert(ReadOnlySpan<char>.Empty, utf8, flush: true,
+                        out _, out int tailLength, out _);
+                    if (tailLength > 0)
+                        hash.AppendData(utf8[..tailLength]);
+
+                    Span<byte> digest = stackalloc byte[SHA256.HashSizeInBytes];
+                    hash.GetHashAndReset(digest);
+                    return Convert.ToHexStringLower(digest);
+                }
+                finally
+                {
+                    ArrayPool<byte>.Shared.Return(buffer, clearArray: true);
+                }
             }
         }
     }

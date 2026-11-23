@@ -5,7 +5,6 @@ status: "current"
 summary: "本地 Ghost、旋转模板匹配和双目标定融合的直接 native 操作、结果显示与生命周期限制；灯珠定位由独立主题维护。"
 aliases: ["直接native分析", "P2", "GhostLocalAnalysis", "M_DetectGhosts", "RotatedTemplateLocalAnalysis", "M_MatchRotatedTemplate", "StereoFusionDebugWindow", "M_CalStereoBinocularFusion", "P2JsonAnalysisWindow", "本地Ghost检测", "旋转模板本地匹配", "双目标定融合", "Ghost 本地分析", "设为旋转匹配模板", "运行融合", "P2 复制结果"]
 code_paths: ["UI/ColorVision.ImageEditor/EditorTools/Algorithms/Calculate/P2", "UI/ColorVision.ImageEditor/EditorToolFactory.cs", "UI/ColorVision.ImageEditor/EditorTools/Algorithms/AlgorithmsContextMenu.cs", "UI/ColorVision.ImageEditor/ImageView.xaml.cs", "UI/ColorVision.ImageEditor/ColorVision.ImageEditor.csproj", "UI/ColorVision.Core/OpenCVMediaHelper.cs", "UI/ColorVision.Core/HImageExtension.cs", "Native/include/algorithm.h", "Native/include/opencv_media_export.h", "Native/include/custom_structs.h", "Native/opencv_helper/opencv_media_export.cpp", "Native/opencv_helper/exports/p2_export.cpp"]
-test_paths: ["Test/opencv_helper_test/test_p2_algorithms.cpp"]
 related: ["algorithms.platform", "ui.image-editor", "engine.native-integration", "algorithms.led", "algorithms.light-beads"]
 ---
 
@@ -83,4 +82,4 @@ P2 overlay 通过 `DrawCanvas.AddOverlayVisual` 添加临时 `DrawingVisual`，�
 
 ## 验证依据与缺口
 
-`Test/opencv_helper_test/test_p2_algorithms.cpp` 有合成 Ghost、旋转/缩放/遮挡匹配、常量模板拒绝、已知标定五点双目和导出失败清空指针等用例。测试源码存在不代表本次运行过，也不覆盖真实相机标定、完整 WPF 菜单、模板替换、关窗期间 native 执行或关闭自动清理后的叠加残留。这些 UI/交付边界仍需专门验收；不要用统一 Runner 测试替代。
+验收应使用真实相机标定与 WPF 入口，核对模板替换、算法运行中关窗和关闭自动清理后的叠加处理。

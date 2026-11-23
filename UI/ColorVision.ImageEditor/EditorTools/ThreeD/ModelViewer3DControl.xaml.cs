@@ -351,7 +351,7 @@ namespace ColorVision.ImageEditor.EditorTools.ThreeD
                 Name = name,
                 Description = description,
                 Type = StatusBarType.Text,
-                Alignment = StatusBarAlignment.Right,
+                Alignment = StatusBarAlignment.Center,
                 Order = order,
                 Source = this,
             };

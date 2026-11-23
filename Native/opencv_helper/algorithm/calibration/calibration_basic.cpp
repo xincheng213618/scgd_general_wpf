@@ -1,27 +1,45 @@
 #include "calibration_core.h"
 
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#include <Windows.h>
+#include <bcrypt.h>
+#include <io.h>
 #include <opencv2/core/utility.hpp>
+#include <share.h>
+
+#if defined(_M_X64) && !defined(_M_ARM64EC)
+#include <emmintrin.h>
+#include <smmintrin.h>
+#include <tmmintrin.h>
+#endif
 
 #include <algorithm>
 #include <bit>
 #include <cctype>
 #include <cerrno>
 #include <cmath>
+#include <cstddef>
+#include <cstdio>
 #include <cstdlib>
 #include <cstring>
-#include <fstream>
 #include <limits>
 #include <stdexcept>
 #include <string_view>
+#include <system_error>
 #include <type_traits>
 #include <utility>
 #include <vector>
+
+#pragma comment(lib, "bcrypt.lib")
 
 namespace cvcore::calibration {
 namespace {
 
 constexpr std::uint64_t kLegacyMapHeaderBytes = 8;
 constexpr std::uint64_t kCurrentMapHeaderBytes = 20;
+constexpr std::uint32_t kMinimumParallelRows = 8;
 
 template <typename T>
 bool checkedMultiply(T left, T right, T& result)
@@ -71,55 +89,48 @@ bool checkedAdd(std::uint64_t left, std::uint64_t right, std::uint64_t& result)
     return true;
 }
 
-bool fileSize(const std::filesystem::path& file, std::uint64_t& size, std::string& error)
-{
-    std::error_code ec;
-    const auto nativeSize = std::filesystem::file_size(file, ec);
-    if (ec) {
-        error = "Unable to read calibration file size: " + ec.message();
-        return false;
-    }
-    size = static_cast<std::uint64_t>(nativeSize);
-    return true;
-}
+struct CloseBinaryFile {
+    void operator()(std::FILE* file) const noexcept { std::fclose(file); }
+};
+using BinaryFile = std::unique_ptr<std::FILE, CloseBinaryFile>;
 
 bool seekAndRead(
-    std::ifstream& stream,
+    const BinaryFile& stream,
     std::uint64_t offset,
     void* destination,
     std::uint64_t byteCount,
     std::string& error)
 {
-    if (offset > static_cast<std::uint64_t>((std::numeric_limits<std::streamoff>::max)())
-        || byteCount > static_cast<std::uint64_t>((std::numeric_limits<std::streamsize>::max)())) {
+    if (offset > static_cast<std::uint64_t>((std::numeric_limits<std::int64_t>::max)())
+        || byteCount > static_cast<std::uint64_t>((std::numeric_limits<std::ptrdiff_t>::max)())) {
         error = "Calibration file is too large for the native stream API";
         return false;
     }
 
-    stream.clear();
-    stream.seekg(static_cast<std::streamoff>(offset), std::ios::beg);
-    if (!stream) {
+    if (_fseeki64(stream.get(), static_cast<std::int64_t>(offset), SEEK_SET) != 0) {
         error = "Unable to seek in calibration file";
         return false;
     }
 
-    if (byteCount == 0) {
-        return true;
-    }
-
-    stream.read(static_cast<char*>(destination), static_cast<std::streamsize>(byteCount));
-    if (!stream || static_cast<std::uint64_t>(stream.gcount()) != byteCount) {
-        error = "Calibration file ended before all data was read";
-        return false;
+    // The MSVC binary file stream splits bulk reads into roughly 4 KiB calls.
+    constexpr std::size_t blockBytes = 32 * 1024 * 1024;
+    auto* bytes = static_cast<std::uint8_t*>(destination);
+    for (auto remaining = static_cast<std::size_t>(byteCount); remaining != 0;) {
+        const auto count = (std::min)(remaining, blockBytes);
+        if (std::fread(bytes, 1, count, stream.get()) != count) {
+            error = "Calibration file ended before all data was read";
+            return false;
+        }
+        bytes += count;
+        remaining -= count;
     }
     return true;
 }
 
 template <typename T>
-bool readPod(std::ifstream& stream, T& value, std::string& error)
+bool readPod(const BinaryFile& stream, T& value, std::string& error)
 {
-    stream.read(reinterpret_cast<char*>(&value), sizeof(value));
-    if (!stream || stream.gcount() != static_cast<std::streamsize>(sizeof(value))) {
+    if (std::fread(&value, 1, sizeof(value), stream.get()) != sizeof(value)) {
         error = "Calibration file header is incomplete";
         return false;
     }
@@ -128,24 +139,30 @@ bool readPod(std::ifstream& stream, T& value, std::string& error)
 
 bool openBinary(
     const std::filesystem::path& file,
-    std::ifstream& stream,
+    BinaryFile& stream,
     std::uint64_t& size,
-    std::string& error)
+    std::string& error,
+    int sharing = _SH_DENYNO)
 {
-    if (!fileSize(file, size, error)) {
-        return false;
-    }
-    stream.open(file, std::ios::binary);
+    stream.reset(_wfsopen(file.c_str(), L"rb", sharing));
     if (!stream) {
         error = "Unable to open calibration file";
         return false;
     }
+    const auto handle = reinterpret_cast<HANDLE>(_get_osfhandle(_fileno(stream.get())));
+    LARGE_INTEGER fileLength{};
+    if (!GetFileSizeEx(handle, &fileLength)) {
+        const auto code = GetLastError();
+        error = "Unable to read calibration file size: " + std::system_category().message(static_cast<int>(code));
+        return false;
+    }
+    size = static_cast<std::uint64_t>(fileLength.QuadPart);
     return true;
 }
 
 bool readTextFile(const std::filesystem::path& file, std::string& text, std::string& error)
 {
-    std::ifstream stream;
+    BinaryFile stream;
     std::uint64_t size = 0;
     if (!openBinary(file, stream, size, error)) {
         return false;
@@ -224,7 +241,7 @@ void parallelRows(std::uint32_t rowCount, const TAction& action)
     if (rowCount == 0) {
         return;
     }
-    if (rowCount < 8
+    if (rowCount < kMinimumParallelRows
         || rowCount > static_cast<std::uint32_t>((std::numeric_limits<int>::max)())) {
         action(0, rowCount);
         return;
@@ -318,6 +335,26 @@ struct DsnuOperation {
     }
 };
 
+bool hasFiniteNonnegativeGains(const std::vector<float>& gains)
+{
+    std::size_t index = 0;
+#if defined(_M_X64) && !defined(_M_ARM64EC)
+    const auto sign = _mm_set1_epi32(std::bit_cast<std::int32_t>(-0.0F));
+    const auto maxFinite = _mm_set1_epi32(std::bit_cast<std::int32_t>((std::numeric_limits<float>::max)()));
+    const auto limit = _mm_xor_si128(maxFinite, sign);
+    for (; gains.size() - index >= 4; index += 4) {
+        auto bits = _mm_loadu_si128(reinterpret_cast<const __m128i*>(gains.data() + index));
+        // Treat -0 as +0, then compare the IEEE bits as unsigned integers.
+        bits = _mm_andnot_si128(_mm_cmpeq_epi32(bits, sign), bits);
+        const auto invalid = _mm_cmpgt_epi32(_mm_xor_si128(bits, sign), limit);
+        if (_mm_movemask_epi8(invalid) != 0) return false;
+    }
+#endif
+    return std::all_of(gains.cbegin() + index, gains.cend(), [](float gain) {
+        return std::isfinite(gain) && gain >= 0.0F;
+    });
+}
+
 struct UniformityOperation {
     template <typename TPixel>
     static void apply(
@@ -346,6 +383,55 @@ struct UniformityOperation {
     }
 };
 
+#if defined(_M_X64) && !defined(_M_ARM64EC)
+__m128i darkCorrectEight(const std::uint16_t* source, const std::uint8_t* offsets)
+{
+    const auto raw = _mm_loadu_si128(reinterpret_cast<const __m128i*>(source));
+    const auto dark = _mm_loadl_epi64(reinterpret_cast<const __m128i*>(offsets));
+    return _mm_subs_epu16(raw, _mm_unpacklo_epi8(dark, _mm_setzero_si128()));
+}
+
+bool hasSparseDarkCorrection(const std::uint16_t* source, const std::uint8_t* offsets, std::size_t count)
+{
+    constexpr std::size_t probes = 64;
+    const auto step = (count - 8) / (probes - 1);
+    std::size_t misses = 0;
+    for (std::size_t probe = 0; probe < probes; ++probe) {
+        const auto index = probe * step;
+        const auto dark = darkCorrectEight(source + index, offsets + index);
+        if (_mm_movemask_epi8(_mm_cmpeq_epi16(dark, _mm_setzero_si128())) != 0xFFFF
+            && ++misses > probes / 4) {
+            return false;
+        }
+    }
+    return true;
+}
+
+bool hasSparseCroppedDarkCorrection(const std::uint16_t* source, const std::uint8_t* offsets,
+    std::size_t rawRowSamples, std::size_t mapRowSamples, std::uint32_t rows)
+{
+    constexpr std::size_t probes = 64;
+    constexpr std::size_t lanes = 8;
+    const auto count = rawRowSamples * rows;
+    // Keep the probe small compared with the crop and never cross a map row.
+    if (rawRowSamples < lanes || count < probes * lanes * 8) return false;
+    const auto step = (count - lanes) / (probes - 1);
+    std::size_t misses = 0;
+    for (std::size_t probe = 0; probe < probes; ++probe) {
+        const auto index = probe * step;
+        const auto row = index / rawRowSamples;
+        const auto column = (std::min)(index % rawRowSamples, rawRowSamples - lanes);
+        const auto dark = darkCorrectEight(source + row * rawRowSamples + column,
+            offsets + row * mapRowSamples + column);
+        if (_mm_movemask_epi8(_mm_cmpeq_epi16(dark, _mm_setzero_si128())) != 0xFFFF
+            && ++misses > probes / 4) {
+            return false;
+        }
+    }
+    return true;
+}
+#endif
+
 // Store exact IEEE float bits as 24-bit deltas within small blocks. Blocks with
 // a wider bit range stay 32-bit; this never quantizes gains or changes arithmetic.
 class PackedUniformity {
@@ -358,17 +444,17 @@ public:
         result->count_ = values.size();
         result->blocks_.resize((values.size() + blockSize - 1) / blockSize);
         const auto blockCount = static_cast<std::uint32_t>(result->blocks_.size());
+#if defined(_M_X64) && !defined(_M_ARM64EC)
+        const bool useSse41 = cv::checkHardwareSupport(CV_CPU_SSE4_1);
+        const bool useSsse3 = cv::checkHardwareSupport(CV_CPU_SSSE3);
+#else
+        constexpr bool useSse41 = false, useSsse3 = false;
+#endif
         parallelRows(blockCount, [&](std::uint32_t first, std::uint32_t end) {
             for (auto block = first; block < end; ++block) {
                 const auto begin = static_cast<std::size_t>(block) * blockSize;
-                const auto limit = (std::min)(begin + blockSize, values.size());
-                std::uint32_t low = UINT32_MAX, high = 0;
-                for (auto index = begin; index < limit; ++index) {
-                    const auto bits = std::bit_cast<std::uint32_t>(values[index]);
-                    low = (std::min)(low, bits);
-                    high = (std::max)(high, bits);
-                }
-                result->blocks_[block].base = high - low <= 0xFFFFFFU && low != UINT32_MAX ? low : UINT32_MAX;
+                const auto count = (std::min)(blockSize, values.size() - begin);
+                result->blocks_[block].base = packedBase(values.data() + begin, count, useSse41);
             }
         });
         std::size_t bytes = 0;
@@ -381,22 +467,29 @@ public:
         const auto originalBytes = values.size() * sizeof(float);
         // Limit decoding to large maps with at least 20% less table traffic.
         if (bytes + result->blocks_.size() * sizeof(Block) > originalBytes - originalBytes / 5) return nullptr;
-        // The last packed sample uses an unaligned 32-bit read, masked to 24 bits.
-        result->bytes_.resize(bytes + sizeof(std::uint32_t));
+        result->byteCount_ = bytes + sizeof(std::uint32_t);
+        if (cv::getNumThreads() >= 4) {
+            // Parallel packing writes every payload byte. Initialize just the
+            // padding for the last packed sample's unaligned 32-bit read.
+            result->bytes_ = std::make_unique_for_overwrite<std::uint8_t[]>(result->byteCount_);
+            std::memset(result->bytes_.get() + bytes, 0, sizeof(std::uint32_t));
+        }
+        else {
+            // With few workers, pre-initializing pages is faster than making
+            // those workers fault in the pages while packing.
+            result->bytes_ = std::make_unique<std::uint8_t[]>(result->byteCount_);
+        }
         parallelRows(blockCount, [&](std::uint32_t first, std::uint32_t end) {
             for (auto block = first; block < end; ++block) {
                 const auto header = result->blocks_[block];
                 const auto begin = static_cast<std::size_t>(block) * blockSize;
                 const auto count = (std::min)(blockSize, values.size() - begin);
-                auto* destination = result->bytes_.data() + header.offset;
+                auto* destination = result->bytes_.get() + header.offset;
                 if (header.base == UINT32_MAX) {
                     std::memcpy(destination, values.data() + begin, count * sizeof(float));
                 }
                 else {
-                    for (std::size_t index = 0; index < count; ++index) {
-                        const auto delta = std::bit_cast<std::uint32_t>(values[begin + index]) - header.base;
-                        std::memcpy(destination + index * 3, &delta, 3);
-                    }
+                    writeDeltas(values.data() + begin, count, header.base, destination, useSsse3);
                 }
             }
         });
@@ -406,7 +499,7 @@ public:
     std::size_t size() const noexcept { return count_; }
     std::uint64_t footprintBytes() const noexcept
     {
-        return sizeof(*this) + bytes_.capacity() + static_cast<std::uint64_t>(blocks_.capacity()) * sizeof(Block);
+        return sizeof(*this) + byteCount_ + static_cast<std::uint64_t>(blocks_.capacity()) * sizeof(Block);
     }
 
     float at(std::size_t index) const noexcept
@@ -414,12 +507,58 @@ public:
         const auto header = blocks_[index / blockSize];
         const bool packed = header.base != UINT32_MAX;
         std::uint32_t bits;
-        std::memcpy(&bits, bytes_.data() + header.offset + (index % blockSize) * (packed ? 3 : 4), sizeof(bits));
+        std::memcpy(&bits, bytes_.get() + header.offset + (index % blockSize) * (packed ? 3 : 4), sizeof(bits));
         if (packed) bits = (bits & 0xFFFFFFU) + header.base;
         return std::bit_cast<float>(bits);
     }
 
-    template<bool Fused, typename Pixel, typename Offset = std::uint8_t>
+    bool matches(const float* source, std::size_t first, std::size_t count) const noexcept
+    {
+#if defined(_M_X64) && !defined(_M_ARM64EC)
+        const bool useSsse3 = cv::checkHardwareSupport(CV_CPU_SSSE3);
+        const auto unpack = _mm_setr_epi8(0, 1, 2, -1, 3, 4, 5, -1, 6, 7, 8, -1, 9, 10, 11, -1);
+#endif
+        for (std::size_t done = 0; done < count;) {
+            const auto index = first + done;
+            const auto block = blocks_[index / blockSize];
+            const auto offset = index % blockSize;
+            const auto length = (std::min)(blockSize - offset, count - done);
+            const auto* input = source + done;
+            if (block.base == UINT32_MAX) {
+                const auto* stored = bytes_.get() + block.offset + offset * sizeof(float);
+                if (std::memcmp(input, stored, length * sizeof(float)) != 0) return false;
+            }
+            else {
+                const auto* stored = bytes_.get() + block.offset + offset * 3;
+                std::size_t item = 0;
+#if defined(_M_X64) && !defined(_M_ARM64EC)
+                if (useSsse3) {
+                    const auto base = _mm_set1_epi32(std::bit_cast<std::int32_t>(block.base));
+                    // Four gains use 12 bytes. Require six remaining samples so
+                    // a 16-byte load stays inside this compared block segment.
+                    for (; length - item >= 6; item += 4) {
+                        const auto packed = _mm_loadu_si128(reinterpret_cast<const __m128i*>(stored + item * 3));
+                        const auto expected = _mm_add_epi32(_mm_shuffle_epi8(packed, unpack), base);
+                        const auto actual = _mm_loadu_si128(reinterpret_cast<const __m128i*>(input + item));
+                        if (_mm_movemask_epi8(_mm_cmpeq_epi32(actual, expected)) != 0xFFFF) return false;
+                    }
+                }
+#endif
+                for (; item + 1 < length; ++item) {
+                    std::uint32_t delta;
+                    std::memcpy(&delta, stored + item * 3, sizeof(delta));
+                    if (std::bit_cast<std::uint32_t>(input[item]) != block.base + (delta & 0xFFFFFFU)) return false;
+                }
+                std::uint32_t lastDelta = 0;
+                std::memcpy(&lastDelta, stored + item * 3, 3);
+                if (std::bit_cast<std::uint32_t>(input[item]) != block.base + lastDelta) return false;
+            }
+            done += length;
+        }
+        return true;
+    }
+
+    template<bool Fused, bool SkipDarkZeros = false, typename Pixel, typename Offset = std::uint8_t>
     void apply(const Pixel* source, Pixel* destination, std::size_t count, std::size_t first,
         std::size_t stride, const Offset* offsets = nullptr) const
     {
@@ -433,6 +572,9 @@ public:
             }
             return;
         }
+#if defined(_M_X64) && !defined(_M_ARM64EC)
+        const bool useSsse3 = std::is_same_v<Pixel, std::uint16_t> && cv::checkHardwareSupport(CV_CPU_SSSE3);
+#endif
         for (std::size_t done = 0; done < count;) {
             const auto index = first + done;
             const auto header = blocks_[index / blockSize];
@@ -442,11 +584,31 @@ public:
             if constexpr (Fused) dark += done;
             if (header.base == UINT32_MAX) {
                 applyBlock<Fused, false>(source + done, destination + done, length,
-                    bytes_.data() + header.offset + offset * 4, 0, dark);
+                    bytes_.get() + header.offset + offset * 4, 0, dark);
             }
             else {
-                applyBlock<Fused, true>(source + done, destination + done, length,
-                    bytes_.data() + header.offset + offset * 3, header.base, dark);
+                const auto* factors = bytes_.get() + header.offset + offset * 3;
+#if defined(_M_X64) && !defined(_M_ARM64EC)
+                if constexpr (std::is_same_v<Pixel, std::uint16_t>) {
+                    // The full packed range must represent finite nonnegative floats.
+                    constexpr auto maximumGainBits = std::bit_cast<std::uint32_t>((std::numeric_limits<float>::max)());
+                    if (header.base <= maximumGainBits - 0xFFFFFFU) {
+                        if (useSsse3) {
+                            applyPacked16Block<Fused, SkipDarkZeros, true>(
+                                source + done, destination + done, length, factors, header.base, dark);
+                            done += length;
+                            continue;
+                        }
+                        if constexpr (SkipDarkZeros) {
+                            applyPacked16Block<true, true, false>(
+                                source + done, destination + done, length, factors, header.base, dark);
+                            done += length;
+                            continue;
+                        }
+                    }
+                }
+#endif
+                applyBlock<Fused, true>(source + done, destination + done, length, factors, header.base, dark);
             }
             done += length;
         }
@@ -482,6 +644,69 @@ public:
     }
 
 private:
+    static std::uint32_t packedBase(const float* values, std::size_t count, [[maybe_unused]] bool useSse41) noexcept
+    {
+        std::uint32_t low = UINT32_MAX, high = 0;
+        std::size_t index = 0;
+#if defined(_M_X64) && !defined(_M_ARM64EC)
+        if (useSse41) {
+            auto lows = _mm_set1_epi32(-1);
+            auto highs = _mm_setzero_si128();
+            for (; count - index >= 4; index += 4) {
+                const auto bits = _mm_loadu_si128(reinterpret_cast<const __m128i*>(values + index));
+                lows = _mm_min_epu32(lows, bits);
+                highs = _mm_max_epu32(highs, bits);
+            }
+            lows = _mm_min_epu32(lows, _mm_shuffle_epi32(lows, _MM_SHUFFLE(1, 0, 3, 2)));
+            highs = _mm_max_epu32(highs, _mm_shuffle_epi32(highs, _MM_SHUFFLE(1, 0, 3, 2)));
+            low = static_cast<std::uint32_t>(_mm_cvtsi128_si32(
+                _mm_min_epu32(lows, _mm_shuffle_epi32(lows, _MM_SHUFFLE(2, 3, 0, 1)))));
+            high = static_cast<std::uint32_t>(_mm_cvtsi128_si32(
+                _mm_max_epu32(highs, _mm_shuffle_epi32(highs, _MM_SHUFFLE(2, 3, 0, 1)))));
+        }
+#endif
+        // The unsigned ordering includes every float bit pattern, even special gains.
+        for (; index < count; ++index) {
+            const auto bits = std::bit_cast<std::uint32_t>(values[index]);
+            low = (std::min)(low, bits);
+            high = (std::max)(high, bits);
+        }
+        return high - low <= 0xFFFFFFU && low != UINT32_MAX ? low : UINT32_MAX;
+    }
+
+    static void writeDeltas(const float* values, std::size_t count, std::uint32_t base,
+        std::uint8_t* destination, [[maybe_unused]] bool useSsse3) noexcept
+    {
+        std::size_t index = 0;
+#if defined(_M_X64) && !defined(_M_ARM64EC)
+        if (useSsse3) {
+            const auto bases = _mm_set1_epi32(std::bit_cast<std::int32_t>(base));
+            const auto byteMask = _mm_setr_epi8(0, 1, 2, 4, 5, 6, 8, 9, 10, 12, 13, 14, -1, -1, -1, -1);
+            const auto packFour = [&](const float* source) {
+                const auto bits = _mm_loadu_si128(reinterpret_cast<const __m128i*>(source));
+                return _mm_shuffle_epi8(_mm_sub_epi32(bits, bases), byteMask);
+            };
+            for (; count - index >= 16; index += 16) {
+                const auto first = packFour(values + index);
+                const auto second = packFour(values + index + 4);
+                const auto third = packFour(values + index + 8);
+                const auto fourth = packFour(values + index + 12);
+                auto* output = destination + index * 3;
+                // Emit exactly 48 bytes. Blocks can be written by different workers.
+                _mm_storeu_si128(reinterpret_cast<__m128i*>(output), _mm_or_si128(first, _mm_slli_si128(second, 12)));
+                _mm_storeu_si128(reinterpret_cast<__m128i*>(output + 16),
+                    _mm_or_si128(_mm_srli_si128(second, 4), _mm_slli_si128(third, 8)));
+                _mm_storeu_si128(reinterpret_cast<__m128i*>(output + 32),
+                    _mm_or_si128(_mm_srli_si128(third, 8), _mm_slli_si128(fourth, 4)));
+            }
+        }
+#endif
+        for (; index < count; ++index) {
+            const auto delta = std::bit_cast<std::uint32_t>(values[index]) - base;
+            std::memcpy(destination + index * 3, &delta, 3);
+        }
+    }
+
     template<bool Fused, bool Packed, typename Pixel, typename Offset>
     static void applyBlock(const Pixel* source, Pixel* destination, std::size_t count,
         const std::uint8_t* factors, std::uint32_t base, const Offset* offsets)
@@ -498,11 +723,85 @@ private:
         }
     }
 
+#if defined(_M_X64) && !defined(_M_ARM64EC)
+    template<bool Fused, bool SkipDarkZeros, bool UseSsse3, typename Offset>
+    static void applyPacked16Block(const std::uint16_t* source, std::uint16_t* destination, std::size_t count,
+        const std::uint8_t* factors, std::uint32_t base, const Offset* offsets)
+    {
+        static_assert(!SkipDarkZeros || (Fused && std::is_same_v<Offset, std::uint8_t>));
+        const auto zero = _mm_setzero_si128();
+        const auto lowBytes = _mm_setr_epi8(0, 1, 2, -1, 3, 4, 5, -1, 6, 7, 8, -1, 9, 10, 11, -1);
+        const auto highBytes = _mm_setr_epi8(4, 5, 6, -1, 7, 8, 9, -1, 10, 11, 12, -1, 13, 14, 15, -1);
+        const auto baseBits = _mm_set1_epi32(std::bit_cast<std::int32_t>(base));
+        const auto maximum = _mm_set1_ps(65535.0F);
+        const auto bias = _mm_set1_epi32(32768);
+        const auto sign = _mm_set1_epi16(-32768);
+        const auto scale = [&](const __m128i samples, const __m128i packed, const __m128i select) {
+            const auto bits = _mm_add_epi32(_mm_shuffle_epi8(packed, select), baseBits);
+            const auto corrected = _mm_mul_ps(_mm_cvtepi32_ps(samples), _mm_castsi128_ps(bits));
+            return _mm_sub_epi32(_mm_cvttps_epi32(_mm_min_ps(corrected, maximum)), bias);
+        };
+        std::size_t index = 0;
+        for (; count - index >= 8; index += 8) {
+            auto values = _mm_loadu_si128(reinterpret_cast<const __m128i*>(source + index));
+            if constexpr (Fused) {
+                if constexpr (std::is_same_v<Offset, std::uint8_t>) {
+                    const auto dark = _mm_loadl_epi64(reinterpret_cast<const __m128i*>(offsets + index));
+                    values = _mm_subs_epu16(values, _mm_unpacklo_epi8(dark, zero));
+                }
+                else {
+                    const auto dark = _mm_loadu_si128(reinterpret_cast<const __m128i*>(offsets + index));
+                    values = _mm_subs_epu16(values, dark);
+                }
+            }
+
+            auto* output = destination + index;
+            if constexpr (SkipDarkZeros) {
+                // Select one bit per nonzero 16-bit lane.
+                auto active = static_cast<unsigned>(~_mm_movemask_epi8(_mm_cmpeq_epi16(values, zero))) & 0x5555U;
+                if (active == 0) {
+                    _mm_storeu_si128(reinterpret_cast<__m128i*>(output), zero);
+                    continue;
+                }
+                const auto afterFirstLane = active & (active - 1);
+                if ((afterFirstLane & (afterFirstLane - 1)) == 0) {
+                    _mm_storeu_si128(reinterpret_cast<__m128i*>(output), zero);
+                    alignas(16) std::uint16_t darkSamples[8];
+                    _mm_store_si128(reinterpret_cast<__m128i*>(darkSamples), values);
+                    for (; active != 0; active &= active - 1) {
+                        const auto lane = std::countr_zero(active) / 2;
+                        const auto sample = index + lane;
+                        applyBlock<false, true>(darkSamples + lane, destination + sample, 1,
+                            factors + sample * 3, base, offsets + sample);
+                    }
+                    continue;
+                }
+            }
+
+            if constexpr (UseSsse3) {
+                const auto* packed = factors + index * 3;
+                // The two 16-byte loads cover exactly the group's 24 bytes.
+                const auto low = scale(_mm_unpacklo_epi16(values, zero),
+                    _mm_loadu_si128(reinterpret_cast<const __m128i*>(packed)), lowBytes);
+                const auto high = scale(_mm_unpackhi_epi16(values, zero),
+                    _mm_loadu_si128(reinterpret_cast<const __m128i*>(packed + 8)), highBytes);
+                _mm_storeu_si128(reinterpret_cast<__m128i*>(output), _mm_xor_si128(_mm_packs_epi32(low, high), sign));
+            }
+            else {
+                applyBlock<Fused, true>(source + index, output, 8, factors + index * 3, base, offsets + index);
+            }
+        }
+        applyBlock<Fused, true>(source + index, destination + index, count - index, factors + index * 3, base,
+            Fused ? offsets + index : nullptr);
+    }
+#endif
+
     static constexpr std::size_t blockSize = 256;
     struct Block { std::uint32_t base, offset; };
     std::size_t count_ = 0;
     std::vector<Block> blocks_;
-    std::vector<std::uint8_t> bytes_;
+    std::unique_ptr<std::uint8_t[]> bytes_;
+    std::size_t byteCount_ = 0;
 };
 
 template <typename TCorrection, typename TOperation, typename TPixel>
@@ -549,7 +848,19 @@ struct MapHeader {
     std::uint32_t width = 0;
     std::uint32_t sourceBitsPerChannel = 0;
     std::uint32_t channels = 0;
+
+    bool operator==(const MapHeader&) const noexcept = default;
 };
+
+struct MapFileLayout {
+    MapHeader header;
+    std::array<std::uint32_t, 5> originalPrefix{};
+    std::uint64_t dataOffset = 0;
+    std::size_t valueCount = 0;
+    std::uint64_t byteCount = 0;
+};
+
+class OpenedMapSource;
 
 // Each worker owns a pair of rows. Read both corrected values before swapping
 // them, including the middle row of an odd-height image. No scratch RAW is needed.
@@ -572,29 +883,20 @@ void applyVerticalMapFlip(const ImageView& raw, const TCorrect& correct)
     });
 }
 
-template <typename TCorrection>
-bool loadMap(
-    const std::filesystem::path& file,
-    std::uint32_t requiredDataBits,
-    MapHeader& header,
-    std::vector<TCorrection>& values,
+bool readMapLayout(
+    const BinaryFile& stream,
+    std::uint64_t length,
+    std::uint64_t elementBytes,
+    MapFileLayout& layout,
     std::string& error)
 {
-    std::ifstream stream;
-    std::uint64_t length = 0;
-    if (!openBinary(file, stream, length, error)) {
-        return false;
-    }
     if (length <= 16) {
         error = "Calibration map is too short";
         return false;
     }
 
-    std::uint32_t height = 0;
-    std::uint32_t width = 0;
-    std::uint32_t dataBits = 0;
-    std::uint32_t channels = 0;
-    std::uint32_t sourceBits = 0;
+    auto& [height, width, dataBits, channels, sourceBits] = layout.originalPrefix;
+    auto& header = layout.header;
     if (!readPod(stream, height, error) || !readPod(stream, width, error)
         || !readPod(stream, dataBits, error) || !readPod(stream, channels, error)
         || !readPod(stream, sourceBits, error)) {
@@ -608,7 +910,7 @@ bool loadMap(
     std::uint64_t pixelCount = 0;
     std::uint64_t legacyBytes = 0;
     if (!checkedMultiply<std::uint64_t>(height, width, pixelCount)
-        || !checkedMultiply<std::uint64_t>(pixelCount, sizeof(TCorrection), legacyBytes)) {
+        || !checkedMultiply<std::uint64_t>(pixelCount, elementBytes, legacyBytes)) {
         error = "Calibration map dimensions overflow";
         return false;
     }
@@ -623,10 +925,9 @@ bool loadMap(
     std::uint64_t currentBytes = 0;
     std::uint64_t currentLength = 0;
     const bool currentSizeValid = checkedMultiply<std::uint64_t>(pixelCount, channels, currentValueCount)
-        && checkedMultiply<std::uint64_t>(currentValueCount, sizeof(TCorrection), currentBytes)
+        && checkedMultiply<std::uint64_t>(currentValueCount, elementBytes, currentBytes)
         && checkedAdd(currentBytes, kCurrentMapHeaderBytes, currentLength);
 
-    std::uint64_t dataOffset = 0;
     std::uint64_t valueCount = 0;
     if (length == legacyLength) {
         header.version = 0;
@@ -634,10 +935,10 @@ bool loadMap(
         header.width = width;
         header.channels = 1;
         header.sourceBitsPerChannel = 0;
-        dataOffset = kLegacyMapHeaderBytes;
+        layout.dataOffset = kLegacyMapHeaderBytes;
         valueCount = pixelCount;
     }
-    else if (currentSizeValid && length == currentLength && dataBits == requiredDataBits) {
+    else if (currentSizeValid && length == currentLength && dataBits == elementBytes * 8) {
         if (channels == 0 || (sourceBits != 8 && sourceBits != 16)) {
             error = "Calibration map has invalid channel count or source bit depth";
             return false;
@@ -647,7 +948,7 @@ bool loadMap(
         header.width = width;
         header.channels = channels;
         header.sourceBitsPerChannel = sourceBits;
-        dataOffset = kCurrentMapHeaderBytes;
+        layout.dataOffset = kCurrentMapHeaderBytes;
         valueCount = currentValueCount;
     }
     else {
@@ -659,14 +960,42 @@ bool loadMap(
         error = "Calibration map is too large for this process";
         return false;
     }
-    values.resize(static_cast<std::size_t>(valueCount));
-
-    std::uint64_t byteCount = 0;
-    if (!checkedMultiply<std::uint64_t>(valueCount, sizeof(TCorrection), byteCount)) {
+    layout.valueCount = static_cast<std::size_t>(valueCount);
+    if (!checkedMultiply<std::uint64_t>(valueCount, elementBytes, layout.byteCount)) {
         error = "Calibration map byte count overflows";
         return false;
     }
-    return seekAndRead(stream, dataOffset, values.data(), byteCount, error);
+    return true;
+}
+
+template <typename TCorrection>
+bool loadMap(
+    const BinaryFile& stream,
+    const MapFileLayout& layout,
+    std::vector<TCorrection>& values,
+    std::string& error)
+{
+    values.resize(layout.valueCount);
+    return seekAndRead(stream, layout.dataOffset, values.data(), layout.byteCount, error);
+}
+
+template <typename TCorrection>
+bool loadMap(
+    const std::filesystem::path& file,
+    MapHeader& header,
+    std::vector<TCorrection>& values,
+    std::string& error)
+{
+    BinaryFile stream;
+    std::uint64_t length = 0;
+    MapFileLayout layout;
+    if (!openBinary(file, stream, length, error)
+        || !readMapLayout(stream, length, sizeof(TCorrection), layout, error)
+        || !loadMap(stream, layout, values, error)) {
+        return false;
+    }
+    header = layout.header;
+    return true;
 }
 
 template <typename TCorrection, typename TOperation>
@@ -678,6 +1007,14 @@ public:
         , correction_(std::move(correction))
     {
         if constexpr (std::is_same_v<TOperation, UniformityOperation>) {
+            bool validateGains = header_.sourceBitsPerChannel == 8 && header_.channels == 3;
+#if defined(_M_X64) && !defined(_M_ARM64EC)
+            validateGains = validateGains || (header_.sourceBitsPerChannel == 16 && header_.channels == 1);
+#endif
+            if (header_.version == 1 && validateGains) {
+                // Legacy maps can contain unusual gains. Keep their original execution path.
+                hasSafeGains_ = hasFiniteNonnegativeGains(correction_);
+            }
             if (header_.version == 1 && header_.sourceBitsPerChannel == 16 && header_.channels == 3) {
                 // Zero gains at the optical field's edges always produce zero,
                 // including after DSNU. Find their bounds once, not per frame.
@@ -714,6 +1051,24 @@ public:
         const CalibrationItem& next,
         const ImageView& raw,
         const ExecutionOptions& options) const override;
+
+    bool tryApplyWithNextTo(const CalibrationItem& next, const ImageView& raw,
+        const ImageView& destination, const ExecutionOptions& options) const override;
+
+    BgrNonzeroRows nonzeroBgrRows(const ImageView& raw, const ExecutionOptions& options) const noexcept override
+    {
+        if constexpr (std::is_same_v<TOperation, UniformityOperation>) {
+            if (nonzeroSpans_.empty() || options.rawOutputFlip != -99) return {};
+            const std::span<const NonzeroSampleSpan> rows(nonzeroSpans_);
+            if (matchesFullBgr16(raw, options)) return {rows, 0};
+            if (raw.bitsPerChannel == 16 && raw.channels == 3 && options.interleavedBgr && options.rgbType == 0
+                && raw.width == options.roi[2] && raw.height == options.roi[3]
+                && hasLegacyRoi(options, header_.width, header_.height)) {
+                return {rows.subspan(options.roi[1], raw.height), static_cast<std::size_t>(options.roi[0]) * 3};
+            }
+        }
+        return {};
+    }
 
     bool tryApplyWithFlip(const ImageView& raw, const ExecutionOptions& options) const override
     {
@@ -805,15 +1160,43 @@ public:
 
 private:
     template <typename, typename> friend class MapCalibration;
+    friend class OpenedMapSource;
 
-    bool matchesFullBgr16(const ImageView& raw, const ExecutionOptions& options) const
+    template<bool distinctOutput>
+    void applyFusedMapRows16(const ImageView& raw,
+        const MapCalibration<float, UniformityOperation>& uniformity, std::uint16_t* pixels) const;
+
+    template<bool distinctOutput>
+    bool tryApplyCroppedBgr16(
+        const MapCalibration<float, UniformityOperation>& uniformity,
+        const ImageView& raw, std::uint16_t* pixels,
+        const ExecutionOptions& options) const;
+
+    bool matchesFullBgr8(const ImageView& raw, const ExecutionOptions& options) const
     {
-        return raw.bitsPerChannel == 16 && raw.channels == 3
-            && options.interleavedBgr && options.rgbType == 0
-            && std::all_of(options.roi.begin(), options.roi.end(), [](auto value) { return value == 0; })
+        const bool fullFrame = options.roi == std::array<std::uint32_t, 4>{}
+            || options.roi == std::array<std::uint32_t, 4>{0, 0, raw.width, raw.height};
+        return raw.bitsPerChannel == 8 && raw.channels == 3
+            && options.interleavedBgr && options.rgbType == 0 && fullFrame
+            && header_.version == 1 && header_.sourceBitsPerChannel == 8 && header_.channels == 3
+            && header_.width == raw.width && header_.height == raw.height;
+    }
+
+    bool matchesFullMap16(const ImageView& raw, const ExecutionOptions& options) const
+    {
+        // A configured ROI covering this entire map uses the full-frame path.
+        const bool fullFrame = options.roi == std::array<std::uint32_t, 4>{}
+            || options.roi == std::array<std::uint32_t, 4>{0, 0, raw.width, raw.height};
+        return raw.bitsPerChannel == 16 && (raw.channels == 1 || raw.channels == 3)
+            && options.interleavedBgr && options.rgbType == 0 && fullFrame
             && header_.version == 1 && header_.sourceBitsPerChannel == 16
             && header_.channels == raw.channels
             && header_.width == raw.width && header_.height == raw.height;
+    }
+
+    bool matchesFullBgr16(const ImageView& raw, const ExecutionOptions& options) const
+    {
+        return raw.channels == 3 && matchesFullMap16(raw, options);
     }
 
     template <typename TPixel>
@@ -1019,10 +1402,216 @@ private:
     CalibrationType type_;
     MapHeader header_;
     std::vector<TCorrection> correction_;
-    struct NonzeroSpan { std::size_t first, end; };
+    using NonzeroSpan = NonzeroSampleSpan;
     std::vector<NonzeroSpan> nonzeroSpans_;
     std::unique_ptr<PackedUniformity> packedUniformity_;
+    bool hasSafeGains_ = false;
 };
+
+template <typename TCorrection>
+void applyFusedBgr8(
+    std::uint8_t* pixels,
+    const TCorrection* __restrict offsets,
+    const float* __restrict factors,
+    std::size_t count)
+{
+    static_assert(std::is_same_v<TCorrection, std::uint8_t> || std::is_same_v<TCorrection, std::uint16_t>);
+    std::size_t index = 0;
+#if defined(_M_X64) && !defined(_M_ARM64EC)
+    const auto zero = _mm_setzero_si128();
+    const auto maximum = _mm_set1_ps(255.0F);
+    const auto applyGains = [maximum](const __m128i samples, const float* gains) {
+        const auto scaled = _mm_mul_ps(_mm_cvtepi32_ps(samples), _mm_loadu_ps(gains));
+        // Clamp before truncation, including when a finite gain overflows to +infinity.
+        return _mm_cvttps_epi32(_mm_min_ps(scaled, maximum));
+    };
+    const auto correctEight = [&](const __m128i samples, const float* gains) {
+        return _mm_packs_epi32(
+            applyGains(_mm_unpacklo_epi16(samples, zero), gains),
+            applyGains(_mm_unpackhi_epi16(samples, zero), gains + 4));
+    };
+    for (; count - index >= 16; index += 16) {
+        const auto raw = _mm_loadu_si128(reinterpret_cast<const __m128i*>(pixels + index));
+        __m128i low;
+        __m128i high;
+        if constexpr (std::is_same_v<TCorrection, std::uint8_t>) {
+            const auto dark = _mm_subs_epu8(raw,
+                _mm_loadu_si128(reinterpret_cast<const __m128i*>(offsets + index)));
+            low = _mm_unpacklo_epi8(dark, zero);
+            high = _mm_unpackhi_epi8(dark, zero);
+        }
+        else {
+            low = _mm_subs_epu16(_mm_unpacklo_epi8(raw, zero),
+                _mm_loadu_si128(reinterpret_cast<const __m128i*>(offsets + index)));
+            high = _mm_subs_epu16(_mm_unpackhi_epi8(raw, zero),
+                _mm_loadu_si128(reinterpret_cast<const __m128i*>(offsets + index + 8)));
+        }
+        const auto corrected = _mm_packus_epi16(
+            correctEight(low, factors + index), correctEight(high, factors + index + 8));
+        _mm_storeu_si128(reinterpret_cast<__m128i*>(pixels + index), corrected);
+    }
+#endif
+    for (; index < count; ++index) {
+        const int darkCorrected = (std::max)(0, static_cast<int>(pixels[index]) - offsets[index]);
+        const float corrected = factors[index] * static_cast<float>(darkCorrected);
+        pixels[index] = static_cast<std::uint8_t>((std::min)(255.0F, corrected));
+    }
+}
+
+#if defined(_M_X64) && !defined(_M_ARM64EC)
+template <typename TOffset>
+void applyFusedMono16(const ImageView& raw, const TOffset* offsets, const float* gains, bool vertical)
+{
+    auto* pixels = reinterpret_cast<std::uint16_t*>(raw.data);
+    const auto width = static_cast<std::size_t>(raw.width);
+    const auto zero = _mm_setzero_si128();
+    const auto maximum = _mm_set1_ps(65535.0F);
+    const auto bias = _mm_set1_epi32(32768);
+    const auto sign = _mm_set1_epi16(-32768);
+    const auto scale = [&](__m128i samples, const float* factors) {
+        const auto scaled = _mm_mul_ps(_mm_cvtepi32_ps(samples), _mm_loadu_ps(factors));
+        // Bias into the signed range for the SSE2 pack, then restore the unsigned bits.
+        return _mm_sub_epi32(_mm_cvttps_epi32(_mm_min_ps(scaled, maximum)), bias);
+    };
+    const auto correctEight = [&](std::size_t index) {
+        __m128i dark;
+        if constexpr (std::is_same_v<TOffset, std::uint8_t>) {
+            dark = darkCorrectEight(pixels + index, offsets + index);
+        }
+        else {
+            dark = _mm_subs_epu16(_mm_loadu_si128(reinterpret_cast<const __m128i*>(pixels + index)),
+                _mm_loadu_si128(reinterpret_cast<const __m128i*>(offsets + index)));
+        }
+        const auto low = scale(_mm_unpacklo_epi16(dark, zero), gains + index);
+        const auto high = scale(_mm_unpackhi_epi16(dark, zero), gains + index + 4);
+        return _mm_xor_si128(_mm_packs_epi32(low, high), sign);
+    };
+    const auto correctOne = [&](std::size_t index) {
+        const int dark = (std::max)(0, static_cast<int>(pixels[index]) - offsets[index]);
+        return static_cast<std::uint16_t>((std::min)(65535.0F, gains[index] * dark));
+    };
+    const auto correctRun = [&](std::size_t index, std::size_t end) {
+        for (; end - index >= 8; index += 8)
+            _mm_storeu_si128(reinterpret_cast<__m128i*>(pixels + index), correctEight(index));
+        for (; index < end; ++index) pixels[index] = correctOne(index);
+    };
+
+    if (!vertical) {
+        parallelRows(raw.height, [&](std::uint32_t first, std::uint32_t end) {
+            correctRun(first * width, end * width);
+        });
+        return;
+    }
+
+    parallelRows(raw.height / 2 + raw.height % 2, [&](std::uint32_t first, std::uint32_t end) {
+        for (auto row = first; row < end; ++row) {
+            const auto top = row * width;
+            const auto bottom = (raw.height - 1 - row) * width;
+            if (top == bottom) {
+                correctRun(top, top + width);
+                continue;
+            }
+            // Read both original row segments before writing either result.
+            std::size_t column = 0;
+            for (; width - column >= 8; column += 8) {
+                const auto topValue = correctEight(top + column);
+                const auto bottomValue = correctEight(bottom + column);
+                _mm_storeu_si128(reinterpret_cast<__m128i*>(pixels + top + column), bottomValue);
+                _mm_storeu_si128(reinterpret_cast<__m128i*>(pixels + bottom + column), topValue);
+            }
+            for (; column < width; ++column) {
+                const auto topValue = correctOne(top + column);
+                pixels[top + column] = correctOne(bottom + column);
+                pixels[bottom + column] = topValue;
+            }
+        }
+    });
+}
+#endif
+
+template <typename TCorrection, typename TOperation>
+template<bool distinctOutput>
+bool MapCalibration<TCorrection, TOperation>::tryApplyCroppedBgr16(
+    const MapCalibration<float, UniformityOperation>& uniformity,
+    const ImageView& raw, std::uint16_t* pixels,
+    const ExecutionOptions& options) const
+{
+    if (raw.bitsPerChannel != 16 || raw.channels != 3 || !options.interleavedBgr
+        || options.rgbType != 0 || options.rawOutputFlip != -99
+        || raw.width != options.roi[2] || raw.height != options.roi[3]
+        || header_.version != 1 || header_.sourceBitsPerChannel != 16 || header_.channels != 3
+        || uniformity.header_.version != 1 || uniformity.header_.sourceBitsPerChannel != 16
+        || uniformity.header_.channels != 3
+        || header_.width != uniformity.header_.width || header_.height != uniformity.header_.height
+        || !hasLegacyRoi(options, header_.width, header_.height)) {
+        return false;
+    }
+
+    const auto rawRowSamples = static_cast<std::size_t>(raw.width) * raw.channels;
+    const auto mapRowSamples = static_cast<std::size_t>(header_.width) * raw.channels;
+    const auto cropStart = static_cast<std::size_t>(options.roi[0]) * raw.channels;
+    const auto cropEnd = cropStart + rawRowSamples;
+    const auto* input = distinctOutput ? reinterpret_cast<const std::uint16_t*>(raw.data) : pixels;
+    const auto* offsets = correction_.data();
+    const auto* factors = uniformity.correction_.data();
+    const auto* packed = uniformity.packedUniformity_.get();
+    const auto& spans = uniformity.nonzeroSpans_;
+#if defined(_M_X64) && !defined(_M_ARM64EC)
+    bool skipDarkZeros = false;
+    if constexpr (std::is_same_v<TCorrection, std::uint8_t>) {
+        if (packed) {
+            const auto firstMapSample = static_cast<std::size_t>(options.roi[1]) * mapRowSamples + cropStart;
+            skipDarkZeros = hasSparseCroppedDarkCorrection(input, offsets + firstMapSample,
+                rawRowSamples, mapRowSamples, raw.height);
+        }
+    }
+#endif
+
+    parallelRows(raw.height, [&](std::uint32_t first, std::uint32_t end) {
+        for (auto row = first; row < end; ++row) {
+            const auto mapRow = static_cast<std::size_t>(options.roi[1]) + row;
+            const auto mapBase = mapRow * mapRowSamples + cropStart;
+            const auto rawBase = row * rawRowSamples;
+            const auto* rowInput = input + rawBase;
+            auto* rowPixels = pixels + rawBase;
+            std::size_t start = 0, limit = rawRowSamples;
+            if (!spans.empty()) {
+                // Intersect the full map's nonzero span with the crop in sample coordinates.
+                const auto span = spans[mapRow];
+                start = std::clamp(span.first, cropStart, cropEnd) - cropStart;
+                limit = std::clamp(span.end, cropStart, cropEnd) - cropStart;
+                std::memset(rowPixels, 0, start * sizeof(std::uint16_t));
+                std::memset(rowPixels + limit, 0, (rawRowSamples - limit) * sizeof(std::uint16_t));
+            }
+            if (start == limit) continue;
+            if (packed) {
+#if defined(_M_X64) && !defined(_M_ARM64EC)
+                if constexpr (std::is_same_v<TCorrection, std::uint8_t>) {
+                    if (skipDarkZeros) {
+                        packed->apply<true, true>(rowInput + start, rowPixels + start, limit - start,
+                            mapBase + start, 1, offsets + mapBase + start);
+                        continue;
+                    }
+                }
+#endif
+                packed->apply<true>(rowInput + start, rowPixels + start, limit - start,
+                    mapBase + start, 1, offsets + mapBase + start);
+                continue;
+            }
+            const auto* rowOffsets = offsets + mapBase;
+            const auto* rowFactors = factors + mapBase;
+            for (auto column = start; column < limit; ++column) {
+                const auto pixel = rowInput[column];
+                const auto offset = rowOffsets[column];
+                const auto darkCorrected = pixel < offset ? std::uint16_t{0} : static_cast<std::uint16_t>(pixel - offset);
+                const float corrected = rowFactors[column] * darkCorrected;
+                rowPixels[column] = corrected > 65535.0F
+                    ? std::uint16_t{65535} : static_cast<std::uint16_t>(corrected);
+            }
+        }
+    });
+    return true;
+}
 
 template <typename TCorrection, typename TOperation>
 bool MapCalibration<TCorrection, TOperation>::tryApplyWithNext(
@@ -1035,20 +1624,53 @@ bool MapCalibration<TCorrection, TOperation>::tryApplyWithNext(
     }
     else {
         const auto* uniformity = dynamic_cast<const MapCalibration<float, UniformityOperation>*>(&next);
-        if (uniformity == nullptr || !matchesFullBgr16(raw, options)
-            || !uniformity->matchesFullBgr16(raw, options)
-            || (options.rawOutputFlip != -99 && options.rawOutputFlip != 0)) {
-            return false;
+        if (raw.bitsPerChannel == 8) {
+            if (uniformity == nullptr || options.rawOutputFlip != -99
+                || !matchesFullBgr8(raw, options) || !uniformity->matchesFullBgr8(raw, options)
+                || !uniformity->hasSafeGains_) {
+                return false;
+            }
+
+            const auto rowSamples = static_cast<std::size_t>(raw.width) * raw.channels;
+            auto* pixels = reinterpret_cast<std::uint8_t*>(raw.data);
+            const auto* __restrict offsets = correction_.data();
+            const auto* __restrict factors = uniformity->correction_.data();
+            parallelRows(raw.height, [&](std::uint32_t first, std::uint32_t end) {
+                const auto start = first * rowSamples;
+                applyFusedBgr8(pixels + start, offsets + start, factors + start, (end - first) * rowSamples);
+            });
+            return true;
         }
 
-        const std::size_t rowSamples = static_cast<std::size_t>(raw.width) * raw.channels;
+        if (uniformity == nullptr) return false;
+        if (!matchesFullMap16(raw, options) || !uniformity->matchesFullMap16(raw, options)) {
+            return tryApplyCroppedBgr16<false>(*uniformity, raw,
+                reinterpret_cast<std::uint16_t*>(raw.data), options);
+        }
+        if (options.rawOutputFlip != -99 && options.rawOutputFlip != 0) return false;
+        if (raw.channels == 1) {
+#if defined(_M_X64) && !defined(_M_ARM64EC)
+            if (uniformity->hasSafeGains_) {
+                applyFusedMono16(raw, correction_.data(), uniformity->correction_.data(), options.rawOutputFlip == 0);
+                return true;
+            }
+#endif
+            // The fused scalar loop saves memory traffic on large frames, but
+            // the independent passes vectorize better with fewer workers.
+            constexpr std::uint64_t minimumMonoPixels = 5'000'000;
+            constexpr int minimumMonoThreads = 8;
+            const auto rowCount = options.rawOutputFlip == 0 ? raw.height / 2 + raw.height % 2 : raw.height;
+            if (static_cast<std::uint64_t>(raw.width) * raw.height < minimumMonoPixels
+                || rowCount < kMinimumParallelRows || cv::getNumThreads() < minimumMonoThreads) {
+                return false;
+            }
+        }
+
         auto* pixels = reinterpret_cast<std::uint16_t*>(raw.data);
-        const auto* offsets = correction_.data();
-        const auto* factors = uniformity->correction_.data();
-        const auto* packed = uniformity->packedUniformity_.get();
-        // Keep DSNU's zero clamp and Uniformity's float multiply, saturation,
-        // and truncation in order, without storing/reloading the intermediate RAW.
         if (options.rawOutputFlip == 0) {
+            const auto* offsets = correction_.data();
+            const auto* factors = uniformity->correction_.data();
+            const auto* packed = uniformity->packedUniformity_.get();
             if (packed) {
                 packed->applyVertical<true>(raw, offsets);
                 return true;
@@ -1063,33 +1685,87 @@ bool MapCalibration<TCorrection, TOperation>::tryApplyWithNext(
             });
             return true;
         }
-        parallelRows(raw.height, [&](std::uint32_t first, std::uint32_t end) {
-            for (auto row = first; row < end; ++row) {
-                const auto base = static_cast<std::size_t>(row) * rowSamples;
-                const auto span = uniformity->nonzeroSpans_.empty()
-                    ? MapCalibration<float, UniformityOperation>::NonzeroSpan{0, rowSamples}
-                    : uniformity->nonzeroSpans_[row];
-                std::memset(pixels + base, 0, span.first * sizeof(std::uint16_t));
-                std::memset(pixels + base + span.end, 0, (rowSamples - span.end) * sizeof(std::uint16_t));
-                if (packed) {
-                    packed->apply<true>(pixels + base + span.first, pixels + base + span.first,
-                        span.end - span.first, base + span.first, 1, offsets + base + span.first);
-                    continue;
-                }
-                for (std::size_t column = span.first; column < span.end; ++column) {
-                    const auto index = base + column;
-                    const auto source = pixels[index];
-                    const auto offset = offsets[index];
-                    const std::uint16_t darkCorrected = source < offset
-                        ? 0 : static_cast<std::uint16_t>(source - offset);
-                    const float corrected = factors[index] * darkCorrected;
-                    pixels[index] = corrected > 65535.0F
-                        ? 65535 : static_cast<std::uint16_t>(corrected);
-                }
-            }
-        });
+        applyFusedMapRows16<false>(raw, *uniformity, pixels);
         return true;
     }
+}
+
+template <typename TCorrection, typename TOperation>
+bool MapCalibration<TCorrection, TOperation>::tryApplyWithNextTo(
+    const CalibrationItem& next, const ImageView& raw, const ImageView& destination,
+    const ExecutionOptions& options) const
+{
+    if constexpr (!std::is_same_v<TOperation, DsnuOperation>) {
+        return false;
+    }
+    else {
+        const auto* uniformity = dynamic_cast<const MapCalibration<float, UniformityOperation>*>(&next);
+        if (uniformity == nullptr || options.rawOutputFlip != -99
+            || reinterpret_cast<std::uintptr_t>(raw.data) % alignof(std::uint16_t) != 0) {
+            return false;
+        }
+
+        auto* pixels = reinterpret_cast<std::uint16_t*>(destination.data);
+        if (!matchesFullBgr16(raw, options) || !uniformity->matchesFullBgr16(raw, options)) {
+            return tryApplyCroppedBgr16<true>(*uniformity, raw, pixels, options);
+        }
+        applyFusedMapRows16<true>(raw, *uniformity, pixels);
+        return true;
+    }
+}
+
+template <typename TCorrection, typename TOperation>
+template<bool distinctOutput>
+void MapCalibration<TCorrection, TOperation>::applyFusedMapRows16(
+    const ImageView& raw, const MapCalibration<float, UniformityOperation>& uniformity,
+    std::uint16_t* pixels) const
+{
+    const auto* input = distinctOutput ? reinterpret_cast<const std::uint16_t*>(raw.data) : pixels;
+    const std::size_t rowSamples = static_cast<std::size_t>(raw.width) * raw.channels;
+    const auto* offsets = correction_.data();
+    const auto* factors = uniformity.correction_.data();
+    const auto* packed = uniformity.packedUniformity_.get();
+#if defined(_M_X64) && !defined(_M_ARM64EC)
+    bool skipDarkZeros = false;
+    if constexpr (std::is_same_v<TCorrection, std::uint8_t>) {
+        skipDarkZeros = packed && hasSparseDarkCorrection(input, offsets, raw.height * rowSamples);
+    }
+#endif
+    // Keep the zero clamp, float multiply, saturation, and truncation in order.
+    parallelRows(raw.height, [&](std::uint32_t first, std::uint32_t end) {
+        for (auto row = first; row < end; ++row) {
+            const auto base = static_cast<std::size_t>(row) * rowSamples;
+            const auto span = uniformity.nonzeroSpans_.empty()
+                ? MapCalibration<float, UniformityOperation>::NonzeroSpan{0, rowSamples}
+                : uniformity.nonzeroSpans_[row];
+            std::memset(pixels + base, 0, span.first * sizeof(std::uint16_t));
+            std::memset(pixels + base + span.end, 0, (rowSamples - span.end) * sizeof(std::uint16_t));
+            if (packed) {
+#if defined(_M_X64) && !defined(_M_ARM64EC)
+                if constexpr (std::is_same_v<TCorrection, std::uint8_t>) {
+                    if (skipDarkZeros) {
+                        packed->apply<true, true>(input + base + span.first, pixels + base + span.first,
+                            span.end - span.first, base + span.first, 1, offsets + base + span.first);
+                        continue;
+                    }
+                }
+#endif
+                packed->apply<true>(input + base + span.first, pixels + base + span.first,
+                    span.end - span.first, base + span.first, 1, offsets + base + span.first);
+                continue;
+            }
+            for (std::size_t column = span.first; column < span.end; ++column) {
+                const auto index = base + column;
+                const auto source = input[index];
+                const auto offset = offsets[index];
+                const std::uint16_t darkCorrected = source < offset
+                    ? 0 : static_cast<std::uint16_t>(source - offset);
+                const float corrected = factors[index] * darkCorrected;
+                pixels[index] = corrected > 65535.0F
+                    ? 65535 : static_cast<std::uint16_t>(corrected);
+            }
+        }
+    });
 }
 
 class DarkNoiseCalibration final : public CalibrationItem {
@@ -1465,7 +2141,7 @@ std::unique_ptr<CalibrationItem> loadDefectPoints(
     const std::filesystem::path& file,
     std::string& error)
 {
-    std::ifstream stream;
+    BinaryFile stream;
     std::uint64_t length = 0;
     if (!openBinary(file, stream, length, error)) {
         return nullptr;
@@ -1502,20 +2178,44 @@ std::unique_ptr<CalibrationItem> loadDefectPoints(
     return std::make_unique<DefectPointCalibration>(type, std::move(points));
 }
 
-std::unique_ptr<CalibrationItem> loadDsnu(
-    const std::filesystem::path& file,
-    std::string& error)
+bool offsetsFitByte(const std::vector<std::uint16_t>& values)
 {
-    MapHeader header;
-    std::vector<std::uint16_t> values;
-    if (!loadMap(file, 16, header, values, error)) {
-        return nullptr;
+    std::size_t index = 0;
+#if defined(_M_X64) && !defined(_M_ARM64EC)
+    const auto highBytes = _mm_set1_epi16(-256);
+    const auto zero = _mm_setzero_si128();
+    for (; values.size() - index >= 32; index += 32) {
+        const auto* samples = values.data() + index;
+        const auto first = _mm_or_si128(
+            _mm_loadu_si128(reinterpret_cast<const __m128i*>(samples)),
+            _mm_loadu_si128(reinterpret_cast<const __m128i*>(samples + 8)));
+        const auto second = _mm_or_si128(
+            _mm_loadu_si128(reinterpret_cast<const __m128i*>(samples + 16)),
+            _mm_loadu_si128(reinterpret_cast<const __m128i*>(samples + 24)));
+        // Values above 255 have at least one bit set in their high byte.
+        const auto high = _mm_and_si128(_mm_or_si128(first, second), highBytes);
+        if (_mm_movemask_epi8(_mm_cmpeq_epi8(high, zero)) != 0xFFFF) return false;
     }
+#endif
+    return std::all_of(values.cbegin() + index, values.cend(), [](auto value) { return value <= 255; });
+}
+
+std::unique_ptr<CalibrationItem> makeDsnu(const MapHeader& header, std::vector<std::uint16_t> values)
+{
     // Keep the file format and every offset unchanged. Small dark offsets need
     // only one byte in the shared cache and in the per-frame memory stream.
-    if (std::all_of(values.begin(), values.end(), [](auto value) { return value <= 255; })) {
+    if (offsetsFitByte(values)) {
         std::vector<std::uint8_t> compact(values.size());
-        std::transform(values.begin(), values.end(), compact.begin(), [](auto value) {
+        std::size_t index = 0;
+#if defined(_M_X64) && !defined(_M_ARM64EC)
+        for (; values.size() - index >= 16; index += 16) {
+            const auto* offsets = values.data() + index;
+            const auto low = _mm_loadu_si128(reinterpret_cast<const __m128i*>(offsets));
+            const auto high = _mm_loadu_si128(reinterpret_cast<const __m128i*>(offsets + 8));
+            _mm_storeu_si128(reinterpret_cast<__m128i*>(compact.data() + index), _mm_packus_epi16(low, high));
+        }
+#endif
+        std::transform(values.cbegin() + index, values.cend(), compact.begin() + index, [](auto value) {
             return static_cast<std::uint8_t>(value);
         });
         return std::make_unique<MapCalibration<std::uint8_t, DsnuOperation>>(
@@ -1525,24 +2225,230 @@ std::unique_ptr<CalibrationItem> loadDsnu(
         CalibrationType::Dsnu, header, std::move(values));
 }
 
+std::unique_ptr<CalibrationItem> loadDsnu(
+    const std::filesystem::path& file,
+    std::string& error)
+{
+    MapHeader header;
+    std::vector<std::uint16_t> values;
+    if (!loadMap(file, header, values, error)) return nullptr;
+    return makeDsnu(header, std::move(values));
+}
+
 std::unique_ptr<CalibrationItem> loadUniformity(
     const std::filesystem::path& file,
     std::string& error)
 {
     MapHeader header;
     std::vector<float> values;
-    if (!loadMap(file, 32, header, values, error)) {
+    if (!loadMap(file, header, values, error)) {
         return nullptr;
     }
     return std::make_unique<MapCalibration<float, UniformityOperation>>(
         CalibrationType::Uniformity, header, std::move(values));
 }
 
+bool hashMapSource(
+    const MapFileLayout& layout,
+    const void* values,
+    CalibrationFileDigest& digest,
+    std::string& error)
+{
+    BCRYPT_ALG_HANDLE provider = nullptr;
+    if (BCryptOpenAlgorithmProvider(&provider, BCRYPT_SHA256_ALGORITHM, nullptr, 0) != 0) {
+        error = "Unable to open calibration SHA-256 provider";
+        return false;
+    }
+    const std::unique_ptr<void, decltype([](void* handle) { BCryptCloseAlgorithmProvider(handle, 0); })> algorithm(provider);
+    BCRYPT_HASH_HANDLE hash = nullptr;
+    if (BCryptCreateHash(provider, &hash, nullptr, 0, nullptr, 0, 0) != 0) {
+        error = "Unable to initialize calibration SHA-256";
+        return false;
+    }
+    const std::unique_ptr<void, decltype([](void* handle) { BCryptDestroyHash(handle); })> hashing(hash);
+
+    auto update = [&](const void* data, ULONG count) {
+        auto* bytes = const_cast<std::uint8_t*>(static_cast<const std::uint8_t*>(data));
+        return BCryptHashData(hash, bytes, count, 0) == 0;
+    };
+    if (!update(layout.originalPrefix.data(), static_cast<ULONG>(layout.dataOffset))) {
+        error = "Unable to hash calibration file header";
+        return false;
+    }
+
+    constexpr std::uint64_t chunkBytes = 32 * 1024 * 1024;
+    const auto* bytes = static_cast<const std::uint8_t*>(values);
+    for (std::uint64_t remaining = layout.byteCount; remaining != 0;) {
+        const auto count = static_cast<ULONG>((std::min)(remaining, chunkBytes));
+        if (!update(bytes, count)) {
+            error = "Unable to hash calibration file payload";
+            return false;
+        }
+        bytes += count;
+        remaining -= count;
+    }
+    if (BCryptFinishHash(hash, digest.data(), static_cast<ULONG>(digest.size()), 0) != 0) {
+        error = "Unable to finish calibration SHA-256";
+        return false;
+    }
+    return true;
+}
+
+class OpenedMapSource final : public VerifiedMapSource {
+public:
+    OpenedMapSource(CalibrationType type, BinaryFile stream, MapFileLayout layout)
+        : type_(type), stream_(std::move(stream)), layout_(layout)
+    {
+    }
+
+    MapSourceMatch compare(const CalibrationItem& item, std::string& error) override
+    {
+        error.clear();
+        try {
+            if (type_ == CalibrationType::Dsnu) {
+                if (const auto* compact = dynamic_cast<const MapCalibration<std::uint8_t, DsnuOperation>*>(&item)) {
+                    return comparePayload<std::uint16_t>(*compact, error);
+                }
+                if (const auto* wide = dynamic_cast<const MapCalibration<std::uint16_t, DsnuOperation>*>(&item)) {
+                    return comparePayload<std::uint16_t>(*wide, error);
+                }
+            }
+            else if (const auto* uniformity = dynamic_cast<const MapCalibration<float, UniformityOperation>*>(&item)) {
+                return comparePayload<float>(*uniformity, error);
+            }
+            return MapSourceMatch::Different;
+        }
+        catch (const std::bad_alloc&) {
+            error = "Not enough memory to compare calibration data";
+        }
+        catch (const std::exception& exception) {
+            error = "Unable to compare calibration file: " + std::string(exception.what());
+        }
+        return MapSourceMatch::Error;
+    }
+
+    std::unique_ptr<CalibrationItem> load(CalibrationFileDigest& digest, std::string& error) override
+    {
+        error.clear();
+        try {
+            if (type_ == CalibrationType::Dsnu) {
+                std::vector<std::uint16_t> values;
+                CalibrationFileDigest current{};
+                if (!loadAndHash(values, current, error)) return nullptr;
+                auto item = makeDsnu(layout_.header, std::move(values));
+                digest = current;
+                return item;
+            }
+
+            std::vector<float> values;
+            CalibrationFileDigest current{};
+            if (!loadAndHash(values, current, error)) return nullptr;
+            auto item = std::make_unique<MapCalibration<float, UniformityOperation>>(
+                CalibrationType::Uniformity, layout_.header, std::move(values));
+            digest = current;
+            return item;
+        }
+        catch (const std::bad_alloc&) {
+            error = "Not enough memory to load calibration data";
+        }
+        catch (const std::exception& exception) {
+            error = "Unable to load calibration: " + std::string(exception.what());
+        }
+        return nullptr;
+    }
+
+private:
+    MapSourceMatch checkEnd(std::string& error) const
+    {
+        if (std::fgetc(stream_.get()) != EOF) return MapSourceMatch::Different;
+        if (!std::ferror(stream_.get())) return MapSourceMatch::Equal;
+        error = "Unable to read the end of calibration file";
+        return MapSourceMatch::Error;
+    }
+
+    template <typename TValue>
+    bool loadAndHash(std::vector<TValue>& values, CalibrationFileDigest& digest, std::string& error)
+    {
+        if (!loadMap(stream_, layout_, values, error)) return false;
+        const auto end = checkEnd(error);
+        if (end == MapSourceMatch::Error) return false;
+        if (end == MapSourceMatch::Different) {
+            error = "Calibration map length/header does not match V0 or V1 format";
+            return false;
+        }
+        return hashMapSource(layout_, values.data(), digest, error);
+    }
+
+    template <typename TSource, typename TCorrection, typename TOperation>
+    MapSourceMatch comparePayload(const MapCalibration<TCorrection, TOperation>& item, std::string& error)
+    {
+        // Accepted V0 prefixes consist of the two dimensions. V1 has those
+        // dimensions, the fixed element width, channel count and source depth.
+        if (item.header_ != layout_.header) return MapSourceMatch::Different;
+        const auto* packed = item.packedUniformity_.get();
+        const auto count = packed != nullptr ? packed->size() : item.correction_.size();
+        if (count != layout_.valueCount) return MapSourceMatch::Different;
+        if (_fseeki64(stream_.get(), static_cast<std::int64_t>(layout_.dataOffset), SEEK_SET) != 0) {
+            error = "Unable to seek in calibration file";
+            return MapSourceMatch::Error;
+        }
+
+        constexpr std::size_t chunkBytes = 4 * 1024 * 1024;
+        const auto capacity = (std::min)(count, chunkBytes / sizeof(TSource));
+        auto scratch = std::make_unique_for_overwrite<TSource[]>(capacity);
+        for (std::size_t first = 0; first < count;) {
+            const auto length = (std::min)(capacity, count - first);
+            const auto bytes = length * sizeof(TSource);
+            const auto* input = scratch.get();
+            if (std::fread(scratch.get(), 1, bytes, stream_.get()) != bytes) {
+                error = "Calibration file ended before all data was read";
+                return MapSourceMatch::Error;
+            }
+            if constexpr (std::is_same_v<TSource, TCorrection>) {
+                bool matches;
+                if constexpr (std::is_same_v<TSource, float>) {
+                    matches = packed != nullptr
+                        ? packed->matches(input, first, length)
+                        : std::memcmp(input, item.correction_.data() + first, bytes) == 0;
+                }
+                else {
+                    matches = std::memcmp(input, item.correction_.data() + first, bytes) == 0;
+                }
+                if (!matches) return MapSourceMatch::Different;
+            }
+            else {
+                // Test 16-bit source offsets against widened cached bytes.
+                const auto* cached = item.correction_.data() + first;
+                std::size_t sample = 0;
+#if defined(_M_X64) && !defined(_M_ARM64EC)
+                const auto zero = _mm_setzero_si128();
+                for (; length - sample >= 16; sample += 16) {
+                    const auto compact = _mm_loadu_si128(reinterpret_cast<const __m128i*>(cached + sample));
+                    const auto low = _mm_loadu_si128(reinterpret_cast<const __m128i*>(input + sample));
+                    const auto high = _mm_loadu_si128(reinterpret_cast<const __m128i*>(input + sample + 8));
+                    const auto lowEqual = _mm_cmpeq_epi16(low, _mm_unpacklo_epi8(compact, zero));
+                    const auto highEqual = _mm_cmpeq_epi16(high, _mm_unpackhi_epi8(compact, zero));
+                    if (_mm_movemask_epi8(_mm_and_si128(lowEqual, highEqual)) != 0xFFFF)
+                        return MapSourceMatch::Different;
+                }
+#endif
+                if (!std::equal(input + sample, input + length, cached + sample)) return MapSourceMatch::Different;
+            }
+            first += length;
+        }
+        return checkEnd(error);
+    }
+
+    CalibrationType type_;
+    BinaryFile stream_;
+    MapFileLayout layout_;
+};
+
 std::unique_ptr<CalibrationItem> loadLineArity(
     const std::filesystem::path& file,
     std::string& error)
 {
-    std::ifstream stream;
+    BinaryFile stream;
     std::uint64_t length = 0;
     if (!openBinary(file, stream, length, error)) {
         return nullptr;
@@ -1573,6 +2479,33 @@ std::unique_ptr<CalibrationItem> loadLineArity(
 }
 
 } // namespace
+
+std::unique_ptr<VerifiedMapSource> openVerifiedMapSource(
+    CalibrationType type,
+    const std::filesystem::path& file,
+    std::string& error)
+{
+    error.clear();
+    if (type != CalibrationType::Dsnu && type != CalibrationType::Uniformity) return nullptr;
+    try {
+        BinaryFile stream;
+        std::uint64_t length = 0;
+        MapFileLayout layout;
+        const auto elementBytes = type == CalibrationType::Dsnu ? sizeof(std::uint16_t) : sizeof(float);
+        if (!openBinary(file, stream, length, error, _SH_DENYWR)
+            || !readMapLayout(stream, length, elementBytes, layout, error)) {
+            return nullptr;
+        }
+        return std::make_unique<OpenedMapSource>(type, std::move(stream), layout);
+    }
+    catch (const std::bad_alloc&) {
+        error = "Not enough memory to open calibration data";
+    }
+    catch (const std::exception& exception) {
+        error = "Unable to open calibration file: " + std::string(exception.what());
+    }
+    return nullptr;
+}
 
 std::unique_ptr<CalibrationItem> loadBasicCalibration(
     CalibrationType type,

@@ -84,7 +84,7 @@ public sealed class OfflineCameraFlowTests
         Assert.False(new CVStartCFC(action).PersistResults);
         using var frame = LocalFlowFrame.Allocate(new LocalFrameMetadata { Width = 1, Height = 1, Channels = 1, SourceBpp = 8 }, 1, 0);
         var capture = new LocalCameraCaptureResult { Frame = frame, TotalTimeMs = 15 };
-        var result = LocalCameraResultService.SaveFlowModel(action, 1, frame, capture, null, null, false);
+        var result = LocalCameraResultService.SaveFlowModel(action, 1, frame, capture, null, null, false, endpoint: null);
         Assert.True(result.Id <= 0);
         Assert.Equal(0, result.BatchId);
         Assert.Equal(15, result.TotalTime);

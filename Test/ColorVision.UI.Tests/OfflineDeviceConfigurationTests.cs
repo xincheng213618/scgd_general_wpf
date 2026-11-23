@@ -4,6 +4,7 @@ using ColorVision.Engine.Services.Terminal;
 using ColorVision.Engine.Services.Types;
 using ColorVision.Engine.Services.PhyCameras.Licenses;
 using ColorVision.Engine.Services.PhySpectrums;
+using ColorVision.UI.Authorizations;
 using Newtonsoft.Json.Linq;
 using System.IO;
 using System.Runtime.CompilerServices;
@@ -26,6 +27,7 @@ public sealed class OfflineDeviceConfigurationTests
                 SysResourceDao.Instance.Save(resource);
                 var terminal = (TerminalService)RuntimeHelpers.GetUninitializedObject(typeof(TerminalService));
                 terminal.SysResourceModel = resource;
+                terminal.LocalConfigurationResourceDao = SysResourceDao.Instance;
                 terminal.Config = new TerminalServiceConfig { Name = "Original", Code = resource.Code, ServiceType = ServiceTypes.Camera, SendTopic = "camera/CMD", SubscribeTopic = "camera/STATUS", ServiceToken = "token" };
                 var changed = new List<string?>();
                 terminal.PropertyChanged += (_, e) => changed.Add(e.PropertyName);
@@ -69,10 +71,11 @@ public sealed class OfflineDeviceConfigurationTests
                 SysResourceDao.Instance.DeleteById(resource.Id);
                 var terminal = (TerminalService)RuntimeHelpers.GetUninitializedObject(typeof(TerminalService));
                 terminal.SysResourceModel = resource;
+                terminal.LocalConfigurationResourceDao = SysResourceDao.Instance;
                 terminal.Config = new TerminalServiceConfig { Name = "Original", Code = resource.Code };
                 string? originalValue = resource.Value;
 
-                Assert.Throws<InvalidDataException>(() => terminal.Rename("Changed"));
+                Assert.Throws<InvalidOperationException>(() => terminal.Rename("Changed"));
 
                 Assert.Equal("Original", terminal.Name);
                 Assert.Equal("Original", terminal.Config.Name);
@@ -217,9 +220,15 @@ public sealed class OfflineDeviceConfigurationTests
     {
         string parent = Path.Combine(Path.GetTempPath(), "ColorVision-offline-device-tests");
         string directory = Path.GetFullPath(Path.Combine(parent, Guid.NewGuid().ToString("N")));
-        try { action(new LocalTemplateStore(Path.Combine(directory, "ColorVision.Local.db"))); }
+        Authorization? previousAuthorization = Authorization.Instance;
+        try
+        {
+            Authorization.Instance = new Authorization { PermissionMode = PermissionMode.Administrator, SubjectId = "offline-device-tests" };
+            action(new LocalTemplateStore(Path.Combine(directory, "ColorVision.Local.db")));
+        }
         finally
         {
+            Authorization.Instance = previousAuthorization!;
             Assert.StartsWith(Path.GetFullPath(parent) + Path.DirectorySeparatorChar, directory, StringComparison.OrdinalIgnoreCase);
             if (Directory.Exists(directory)) Directory.Delete(directory, true);
         }

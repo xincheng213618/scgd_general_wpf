@@ -69,13 +69,14 @@
                         <TabItem Header="{i18n:EngineLang Key='收发消息'}"/><TabItem Header="{i18n:EngineLang Key='运行日志'}"/>
                     </TabControl>
                     <Grid Grid.Row="1" Margin="0,0,0,10">
-                        <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="90"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                        <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="90"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
                         <TextBox x:Name="SearchBox" Style="{StaticResource TextBox.Small}" hc:InfoElement.Placeholder="{i18n:EngineLang Key='搜索指令或消息内容'}" TextChanged="Search_Changed" ToolTip="{i18n:EngineLang Key='搜索指令、内容、地址或十六进制'}" AutomationProperties.Name="{i18n:EngineLang Key='搜索通信记录'}"/>
                         <ComboBox x:Name="DirectionFilter" Grid.Column="1" Margin="8,0" SelectedIndex="0" SelectionChanged="Filter_Changed" Style="{StaticResource ComboBox.Small}">
                             <ComboBoxItem Content="{i18n:EngineLang Key='全部'}"/><ComboBoxItem Content="{i18n:EngineLang Key='发送'}"/><ComboBoxItem Content="{i18n:EngineLang Key='接收'}"/>
                         </ComboBox>
-                        <CheckBox x:Name="AutoScroll" Grid.Column="2" Content="{i18n:EngineLang Key='自动滚动'}" IsChecked="True" VerticalAlignment="Center" Margin="0,0,10,0"/>
-                        <Button x:Name="ClearHistoryButton" Grid.Column="3" Content="{i18n:EngineLang Key='清空'}" Click="Clear_Click" ToolTip="{i18n:EngineLang Key='清空此设备的窗口记录，已写入的应用日志保留'}"/>
+                        <CheckBox x:Name="ShowFragments" Grid.Column="2" Content="{i18n:EngineLang Key='显示分片'}" Checked="Fragments_Changed" Unchecked="Fragments_Changed" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                        <CheckBox x:Name="AutoScroll" Grid.Column="3" Content="{i18n:EngineLang Key='自动滚动'}" IsChecked="True" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                        <Button x:Name="ClearHistoryButton" Grid.Column="4" Content="{i18n:EngineLang Key='清空'}" Click="Clear_Click" ToolTip="{i18n:EngineLang Key='清空此设备的窗口记录，已写入的应用日志保留'}"/>
                     </Grid>
                     <Grid Grid.Row="2">
                         <DataGrid x:Name="MessageGrid" IsReadOnly="True" AutoGenerateColumns="False" SelectionMode="Single" SelectionUnit="FullRow"
@@ -117,6 +118,6 @@
                 </Grid>
             </Border>
         </Grid>
-        <TextBlock Grid.Row="2" Margin="0,10,0,0" Foreground="{DynamicResource SecondaryTextBrush}" Text="{i18n:EngineLang Key='最近 500 条 · 控制字符如 0D/0A 显示为 [CR]/[LF] · 接收按分片记录，完整回包见运行日志 · Ctrl+F 搜索 · Ctrl+C 复制'}"/>
+        <TextBlock Grid.Row="2" Margin="0,10,0,0" Foreground="{DynamicResource SecondaryTextBrush}" Text="{i18n:EngineLang Key='最近 500 条原始记录 · 按指令汇总接收 · Ctrl+F 搜索 · Ctrl+C 复制'}"/>
     </Grid>
 </Window>

@@ -1,3 +1,4 @@
+using ColorVision.Algorithms;
 using System;
 using System.Collections.Generic;
 using System.Windows;
@@ -45,6 +46,10 @@ namespace ColorVision.ImageEditor
     public interface IDVContextMenu
     {
         Type ContextType { get; }
+
+        /// <summary>Optional category for analysis commands in the ImageView drawing menu.</summary>
+        AlgorithmInteractiveGroupPresentation? AnalysisGroup => null;
+
         IEnumerable<MenuItem> GetContextMenuItems(object obj);
     }
 

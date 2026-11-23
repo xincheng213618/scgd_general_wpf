@@ -7,6 +7,7 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
+using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using System.Windows;
@@ -580,6 +581,38 @@ namespace ColorVision.SocketProtocol
         /// </summary>
         public ObservableCollection<TcpClient> TcpClients { get; set; } = new ObservableCollection<TcpClient>();
 
+        internal SocketServerClient? CaptureReplayTarget(SocketMessage message) =>
+            FindReplayTarget(message, _serverLifecycle.CaptureCurrentClients());
+
+        internal static SocketServerClient? FindReplayTarget(SocketMessage message, IReadOnlyList<SocketServerClient> clients)
+        {
+            if (!IPEndPoint.TryParse(message.ClientEndPoint, out var originalEndpoint) || originalEndpoint.Port == 0)
+                return null;
+
+            SocketServerClient? target = null;
+            foreach (SocketServerClient connection in clients)
+            {
+                if (connection.IsClosed || connection.Session.IsStopRequested
+                    || (message.ClientConnectionId != null && !string.Equals(message.ClientConnectionId, connection.ConnectionId, StringComparison.Ordinal)))
+                    continue;
+
+                try
+                {
+                    if (!connection.Client.Connected || !originalEndpoint.Equals(connection.Client.Client?.RemoteEndPoint)
+                        || !connection.Client.GetStream().CanWrite)
+                        continue;
+                }
+                catch (Exception ex) when (ex is SocketException or InvalidOperationException)
+                {
+                    continue;
+                }
+
+                if (target != null) return null;
+                target = connection;
+            }
+            return target;
+        }
+
         public void CheckUpdate()
         {
             if (!_serverLifecycle.StartInline(SocketServerSettings.Capture(Config)))
@@ -651,9 +684,21 @@ namespace ColorVision.SocketProtocol
             try
             {
                 NetworkStream stream = client.GetStream();
+                var textDispatcher = settings.SocketPhraseType == SocketPhraseType.Text ? TextDispatcher : null;
+                using var textFramer = textDispatcher?.FrameJsonObjects == true ? new SocketTextMessageFramer() : null;
                 byte[] buffer = settings.SocketBufferSize > 1024 ? new byte[settings.SocketBufferSize] : new byte[1024];
                 while ((bytesRead = stream.Read(buffer, 0, buffer.Length)) != 0)
                 {
+                    if (textDispatcher != null)
+                    {
+                        if (textFramer == null)
+                            HandleTextMessage(textDispatcher, stream, Encoding.UTF8.GetString(buffer, 0, bytesRead), clientEndPoint, connection.ConnectionId);
+                        else
+                            foreach (string frame in textFramer.Read(buffer, bytesRead))
+                                HandleTextMessage(textDispatcher, stream, frame, clientEndPoint, connection.ConnectionId);
+                        continue;
+                    }
+
                     Stopwatch receiveTiming = Stopwatch.StartNew();
                     string message = Encoding.UTF8.GetString(buffer, 0, bytesRead);
 
@@ -661,6 +706,7 @@ namespace ColorVision.SocketProtocol
                     var receivedMsg = new SocketMessage
                     {
                         ClientEndPoint = clientEndPoint,
+                        ClientConnectionId = connection.ConnectionId,
                         Direction = SocketMessageDirection.Received,
                         Content = message,
                         MessageTime = DateTime.Now
@@ -705,6 +751,7 @@ namespace ColorVision.SocketProtocol
                                     var sentMsg = new SocketMessage
                                     {
                                         ClientEndPoint = clientEndPoint,
+                                        ClientConnectionId = connection.ConnectionId,
                                         Direction = SocketMessageDirection.Sent,
                                         Content = respString,
                                         MessageTime = DateTime.Now,
@@ -714,7 +761,7 @@ namespace ColorVision.SocketProtocol
                                     };
                                     MessageManager.AddMessage(sentMsg);
 
-                                    stream.Write(Encoding.UTF8.GetBytes(respString));
+                                    WriteJsonResponse(stream, response, respString);
                                 }
                             }
                             catch (Exception ex)
@@ -739,6 +786,7 @@ namespace ColorVision.SocketProtocol
                                 var sentMsg = new SocketMessage
                                 {
                                     ClientEndPoint = clientEndPoint,
+                                    ClientConnectionId = connection.ConnectionId,
                                     Direction = SocketMessageDirection.Sent,
                                     Content = respString,
                                     MessageTime = DateTime.Now,
@@ -751,47 +799,6 @@ namespace ColorVision.SocketProtocol
                                 byte[] respBytes = Encoding.UTF8.GetBytes(respString);
                                 stream.Write(respBytes, 0, respBytes.Length);
                                 continue;
-                            }
-                            break;
-                        case SocketPhraseType.Text:
-                            try
-                            {
-                                // 持久化接收消息
-                                MessageManager.AddMessage(receivedMsg);
-
-                                var string1 = TextDispatcher.Dispatch(stream, message);
-                                if (string1 != null)
-                                {
-                                    // 创建发送消息记录并持久化
-                                    var sentMsg = new SocketMessage
-                                    {
-                                        ClientEndPoint = clientEndPoint,
-                                        Direction = SocketMessageDirection.Sent,
-                                        Content = string1,
-                                        MessageTime = DateTime.Now
-                                    };
-                                    MessageManager.AddMessage(sentMsg);
-
-                                    byte[] respBytes = Encoding.UTF8.GetBytes(string1);
-                                    stream.Write(respBytes, 0, respBytes.Length);
-                                }
-                            }
-                            catch (Exception ex)
-                            {
-                                log.Error(ex);
-
-                                // 创建错误响应消息记录并持久化
-                                var sentMsg = new SocketMessage
-                                {
-                                    ClientEndPoint = clientEndPoint,
-                                    Direction = SocketMessageDirection.Sent,
-                                    Content = ex.Message,
-                                    MessageTime = DateTime.Now
-                                };
-                                MessageManager.AddMessage(sentMsg);
-
-                                byte[] respBytes = Encoding.UTF8.GetBytes(ex.Message);
-                                stream.Write(respBytes, 0, respBytes.Length);
                             }
                             break;
                         default:
@@ -825,6 +832,53 @@ namespace ColorVision.SocketProtocol
             }
         }
 
+        private void HandleTextMessage(SocketTextDispatcher dispatcher, NetworkStream stream, string message, string clientEndPoint, string connectionId)
+        {
+            log.Info("Received raw message: " + message);
+            string? response;
+            try
+            {
+                MessageManager.AddMessage(new SocketMessage
+                {
+                    ClientEndPoint = clientEndPoint,
+                    ClientConnectionId = connectionId,
+                    Direction = SocketMessageDirection.Received,
+                    Content = message,
+                    MessageTime = DateTime.Now
+                });
+                response = dispatcher.Dispatch(stream, message);
+            }
+            catch (Exception ex)
+            {
+                log.Error(ex);
+                response = ex.Message;
+            }
+
+            if (response == null) return;
+            MessageManager.AddMessage(new SocketMessage
+            {
+                ClientEndPoint = clientEndPoint,
+                ClientConnectionId = connectionId,
+                Direction = SocketMessageDirection.Sent,
+                Content = response,
+                MessageTime = DateTime.Now
+            });
+            stream.Write(Encoding.UTF8.GetBytes(response));
+        }
+
+        internal static void WriteJsonResponse(Stream stream, SocketResponse response, string json)
+        {
+            stream.Write(Encoding.UTF8.GetBytes(json));
+            try
+            {
+                response.AfterSend?.Invoke();
+            }
+            catch (Exception ex)
+            {
+                log.Error($"Socket response callback failed for {response.EventName}.", ex);
+            }
+        }
+
         private void CloseClient(SocketServerClient connection)
         {
             TcpClient client = connection.Client;
@@ -848,7 +902,6 @@ namespace ColorVision.SocketProtocol
             try
             {
                 return client.Client?.RemoteEndPoint?.ToString()
-                    ?? client.Client?.LocalEndPoint?.ToString()
                     ?? $"Client:{client.GetHashCode():X8}";
             }
             catch (Exception ex)

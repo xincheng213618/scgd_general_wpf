@@ -2,6 +2,7 @@
 
 using ColorVision.Common.MVVM;
 using ColorVision.Engine.Services;
+using ColorVision.Engine.Services.Results;
 using ColorVision.Common.Utilities;
 using ColorVision.Database;
 using log4net;
@@ -9,6 +10,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Text;
+using System.Text.Json;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
@@ -31,13 +33,17 @@ namespace ColorVision.Engine.Templates.Jsons.Ghost2
 
         public override void SideSave(ViewResultAlg result, string selectedPath)
         {
-            var blackMuraViews = result.ViewResults.ToSpecificViewResults<GhostView>();
-            var csvBuilder = new StringBuilder();
-            if (blackMuraViews.Count == 1)
-            {
-                string filePath = selectedPath + "//" + result.Batch + result.ResultType + ".json";
-                File.AppendAllText(filePath, blackMuraViews[0].Result, Encoding.UTF8);
-            }
+            var views = result.ViewResults?.ToSpecificViewResults<GhostView>();
+            if (views?.Count != 1 || string.IsNullOrWhiteSpace(views[0].Result))
+                throw new InvalidDataException($"鬼影结果 {result.Id} 缺少可导出的明细 JSON。");
+
+            string json = views[0].Result;
+            using var document = JsonDocument.Parse(json);
+            if (document.RootElement.ValueKind != JsonValueKind.Object)
+                throw new InvalidDataException($"鬼影结果 {result.Id} 的明细必须是一个 JSON 对象。");
+
+            AlgorithmSideDataFiles.Write(result, selectedPath, $"{result.Batch}{result.ResultType}.json",
+                path => File.WriteAllText(path, json, Encoding.UTF8));
         }
 
 
@@ -45,12 +51,12 @@ namespace ColorVision.Engine.Templates.Jsons.Ghost2
         {
             if (result.ViewResults == null)
             {
+                if (!result.TryReadPersistedDetails(DeatilCommonDao.Instance, out var detailCommonModels)) return;
+                GhostView? ghostresult = detailCommonModels.Count == 1 ? new GhostView(detailCommonModels[0]) : null;
+                if (ghostresult != null && string.IsNullOrWhiteSpace(ghostresult.Result)) return;
                 result.ViewResults = new ObservableCollection<IViewResult>();
-
-                List<DetailCommonModel> detailCommonModels = DeatilCommonDao.Instance.GetAllByPid(result.Id);
-                if (detailCommonModels.Count == 1)
+                if (ghostresult != null)
                 {
-                    GhostView ghostresult = new GhostView(detailCommonModels[0]);
                     result.ViewResults.Add(ghostresult);
 
                     RelayCommand SelectrelayCommand = new RelayCommand(a =>

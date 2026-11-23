@@ -5,7 +5,6 @@ status: "current"
 summary: "说明本地模板匹配的节点内置配置、cvtm 导入导出与无数据库执行，以及旧服务 Matching 的请求与 AOI 结果。"
 aliases: ["模板匹配用错模板怎么查","AlgorithmTMNode","ViewHandleMatching","本地模板匹配","LocalTemplateMatchingNode","cvtm","TemplateMatchingWindow"]
 code_paths: ["Engine/ColorVision.Engine/Templates/Matching/TemplateMatch.cs", "Engine/ColorVision.Engine/Templates/Matching/ViewHandleMatching.cs", "Engine/ColorVision.Engine/Templates/Matching/AlgResultAoiDao.cs", "Engine/FlowEngineLib/Node/Algorithm/AlgorithmTMNode.cs", "Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalTemplateMatchingNode.cs", "Engine/ColorVision.Engine/Services/Algorithms/LocalTemplateMatchingService.cs", "Engine/ColorVision.Engine/PropertyEditor/LocalMatchingTemplatePropertiesEditor.cs", "UI/ColorVision.Core/TemplateMatching.cs", "UI/ColorVision.Core/TemplateMatchingFile.cs", "UI/ColorVision.ImageEditor/EditorTools/Algorithms/Calculate/P2/TemplateMatchingWindow.xaml.cs", "Native/opencv_helper/algorithm/matching/rotated_template_matching.cpp", "Native/opencv_helper/algorithm/matching/rotated_template_matching.h"]
-test_paths: ["Test/ColorVision.UI.Tests/LocalTemplateMatchingTests.cs","Test/opencv_helper_test/test_p2_algorithms.cpp"]
 related: ["algorithms.index","algorithms.template-primitives","engine.results"]
 ---
 
@@ -163,6 +162,4 @@ $F_I$ 与 $F_T$ 是所选灰度或梯度特征，$\Omega$ 是旋转参考图的�
 
 ## 验证入口与缺口
 
-`LocalTemplateMatchingTests` 覆盖文件精度与版本/损坏校验、导出失败保留原文件、带步长的 ROI 复制、真实 native 合成图匹配、节点配置快照/序列化、删除导入文件后运行、无数据库执行、编辑草稿应用/取消、内存帧所有权和失败输出边界。native 的 `test_p2_algorithms.cpp` 另含旋转、缩放与遮挡用例。保留这些回归以保护可迁移配置及流程生命周期契约，测试文件存在不表示任意环境都已执行。
-
-真实业务参考图、误检漏检范围与完整现场流程仍需单独验收；合成图不能替代这些证据。远端 Matching 请求、数据库结果以及流程宿主存储也不由本地用例验收。
+真实业务参考图、误检漏检范围与完整现场流程仍需单独验收。联调覆盖远端 Matching 请求、数据库结果和流程宿主存储。

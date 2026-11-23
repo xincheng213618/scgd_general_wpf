@@ -75,6 +75,49 @@ public sealed class LuminanceChromaticityUniformityCalculatorTests
     }
 
     [Fact]
+    public void W255ObjectiveHandoffPreservesSerializedValues()
+    {
+        var populatedView = new W255ViewTestResult
+        {
+            PoixyuvDatas =
+            [
+                new() { Id = 3, Name = "中心", X = -0d, Y = double.Epsilon, CCT = double.NaN, Wave = double.PositiveInfinity, v = 0.12 }
+            ],
+            ViewPoixyuvDatas = [new() { Id = 3, Y = 125 }],
+            HorizontalFieldOfViewAngle = Item(10),
+            VerticalFieldOfViewAngle = Item(20),
+            DiagonalFieldOfViewAngle = Item(40),
+            LuminanceUniformity = Item(0.7),
+            ColorUniformity = Item(0.03),
+            ColorCenterRmsToD65 = Item(0.02),
+            CenterCorrelatedColorTemperature = Item(double.PositiveInfinity),
+            CenterLunimance = Item(double.NegativeInfinity),
+            CenterCIE1931ChromaticCoordinatesx = Item(0.31),
+            CenterCIE1931ChromaticCoordinatesy = Item(0.32),
+            CenterCIE1976ChromaticCoordinatesu = Item(double.NaN),
+            CenterCIE1976ChromaticCoordinatesv = Item(0.42)
+        };
+
+        foreach (W255ViewTestResult view in new[] { new W255ViewTestResult(), populatedView })
+        {
+            string viewJson = JsonConvert.SerializeObject(view);
+            W255TestResult? expected = JsonConvert.DeserializeObject<W255TestResult>(viewJson);
+            W255TestResult actual = view.CreateObjectiveResult();
+
+            Assert.IsType<W255TestResult>(actual);
+            Assert.Equal(JsonConvert.SerializeObject(expected), JsonConvert.SerializeObject(actual));
+        }
+
+        static ObjectiveTestItem Item(double value) => new()
+        {
+            Value = value,
+            LowLimit = double.Epsilon,
+            UpLimit = 50,
+            TestValue = "2026-01-01T00:00:00Z"
+        };
+    }
+
+    [Fact]
     public void ExistingResultJsonInitializesColorCenterMetric()
     {
         var result = JsonConvert.DeserializeObject<W255TestResult>("{\"ColorUniformity\":{\"Value\":0.012}}");

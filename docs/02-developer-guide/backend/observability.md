@@ -5,7 +5,6 @@ status: "current"
 summary: "Backend HTTP访问、SPA体验与性能观测的统计口径、异步丢事件、每日HMAC关联边界、日界线和进程缓存；不等于真实人数或下载完成。"
 aliases: ["访问统计", "性能观测", "Access Analytics", "Statistics", "AccessAnalyticsRecorder", "SqliteAccessTrafficQuery", "build_access_event", "build_web_experience_event", "daily_visitor_key", "uniqueVisitorDays", "errorDiagnostics", "reporting_utc_offset_minutes", "access_analytics_enabled", "record_slow_request", "build_performance_summary", "slow_requests", "stats/traffic", "perf/summary", "api/v1/analytics/events"]
 code_paths: ["Web/Backend/services/access_analytics.py", "Web/Backend/services/performance_observability.py", "Web/Backend/app_setup.py", "Web/Backend/context.py", "Web/Backend/routes/public_api.py", "Web/Backend/routes/admin_api.py", "Web/Backend/config_loader.py", "Web/Backend/db/schema_version.py", "Web/Backend/db/repositories/jobs.py", "Web/Backend/services/scheduler.py", "Web/Frontend/src/pages/TrafficPage.tsx", "Web/Frontend/src/services/admin.ts"]
-test_paths: ["Web/Backend/test_access_analytics.py", "Web/Backend/test_performance_observability.py", "Web/Backend/test_schema_version.py", "Web/Backend/test_contracts.py"]
 related: ["delivery.backend", "delivery.artifact-delivery", "delivery.backend-auth"]
 ---
 
@@ -110,6 +109,5 @@ schema v6移除历史HEAD声明体积，v7给后续请求增加4xx/5xx字段且�
 
 队列参数在应用组成时读取，修改配置不自动重建recorder；`app_setup.py` 对队列大小/批量/等待间隔使用 `value or default`，数值0会回到默认值，再经构造器下限处理。慢请求阈值和100条容量是当前代码/context值，不应据此发明同名JSON配置开关。
 
-现有 `test_access_analytics.py` 覆盖事件字段清洗、日报日界线、HTTP/SPA分开聚合、未知旧错误、日历标记、队列满、按提交数据库分组、保留窗口和HTTP入口；`test_performance_observability.py` 覆盖缓冲截断及最近任务筛选。`test_schema_version.py` 覆盖v6/v7/v8迁移，`test_contracts.py` 有overview/perf响应字段用例。
 
 现有HTTP入口用例使用TESTING同步写，不证明生产202后的持久化。队列写失败/进程退出、无长度4KiB请求、统计关闭时SPA仍入库、多worker合并和代理地址真实性需要单独验证；每日key变化不保证无法关联。排查缺数先看口径、日界线、pending/dropped与页面旧结果，不应只按HTTP200或202断言数据完整。

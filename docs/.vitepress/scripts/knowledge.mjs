@@ -3,8 +3,8 @@ import path from 'node:path'
 import { createHash } from 'node:crypto'
 import { fileURLToPath } from 'node:url'
 
-export const knowledgeFields = ['knowledge_id', 'knowledge_type', 'status', 'summary', 'aliases', 'code_paths', 'test_paths', 'related']
-const arrayFields = new Set(['aliases', 'code_paths', 'test_paths', 'related'])
+export const knowledgeFields = ['knowledge_id', 'knowledge_type', 'status', 'summary', 'aliases', 'code_paths', 'related']
+const arrayFields = new Set(['aliases', 'code_paths', 'related'])
 const generatedPaths = ['docs/knowledge/index.md', 'docs/knowledge/catalog.json', 'docs/.vitepress/i18n/navigation-data.json']
 const generatedMapDirectories = ['docs/knowledge/domains', 'docs/knowledge/code']
 const skippedDirectories = new Set(['.vitepress', 'node_modules', 'en', 'zh-tw', 'ja', 'ko'])
@@ -18,12 +18,12 @@ export const domainDefinitions = [
   ['copilot', 'Copilot', 'Agent会话、工具契约、上下文、恢复和MCP边界。'],
   ['projects', '客户项目', '客户包、业务流程、协议对接与结果留存。'],
   ['plugins', '插件与扩展', '插件发现、生命周期、已有插件和集成边界。'],
-  ['delivery', '构建、测试与交付', '克隆环境、构建依赖、测试、发布脚本和更新。'],
+  ['delivery', '构建与交付', '构建环境、交付契约、发布脚本和更新。'],
   ['operations', '运行与现场排查', '安装使用、设备配置、现场故障、日志和数据管理。'],
 ].map(([key, title, summary]) => ({ key, title, summary }))
 // Presentation order only: topic membership and module names come from real
 // code_paths, never from a second manually maintained topic/module table.
-const sourceRootOrder = ['ColorVision', 'UI', 'Engine', 'Native', 'Plugins', 'Projects', 'Web', 'Scripts', 'Test']
+const sourceRootOrder = ['ColorVision', 'UI', 'Engine', 'Native', 'Plugins', 'Projects', 'Web', 'Scripts']
 const statusLabels = { current: '当前', planned: '规划', historical: '历史' }
 const typeOrder = ['index', 'topic', 'guide', 'reference', 'decision']
 
@@ -177,15 +177,13 @@ export async function buildCatalog(repoRoot) {
       if (!Object.hasOwn(statusLabels, metadata.status)) throw new Error(`${source}: invalid status ${metadata.status}`)
       const domain = metadata.knowledge_id.split('.')[0]
       if (!domainDefinitions.some((item) => item.key === domain)) throw new Error(`${source}: unknown knowledge domain ${domain}`)
-      for (const field of ['code_paths', 'test_paths']) {
-        for (const mappedPath of metadata[field]) {
-          if (!validatedPaths.has(mappedPath)) {
-            validatedPaths.set(mappedPath, await validateRepositoryPath(repoRoot, mappedPath, `${source}:${field}`, directoryCache))
-          }
+      for (const mappedPath of metadata.code_paths) {
+        if (!validatedPaths.has(mappedPath)) {
+          validatedPaths.set(mappedPath, await validateRepositoryPath(repoRoot, mappedPath, `${source}:code_paths`, directoryCache))
         }
-        metadata[field] = metadata[field].map((mappedPath) => validateRelativePath(mappedPath))
-        if (new Set(metadata[field]).size !== metadata[field].length) throw new Error(`${source}: duplicate normalized path in ${field}`)
       }
+      metadata.code_paths = metadata.code_paths.map((mappedPath) => validateRelativePath(mappedPath))
+      if (new Set(metadata.code_paths).size !== metadata.code_paths.length) throw new Error(`${source}: duplicate normalized path in code_paths`)
       if (metadata.related.includes(metadata.knowledge_id)) throw new Error(`${source}: related cannot reference itself`)
       ids.add(metadata.knowledge_id)
       const codeScopes = [...new Set(metadata.code_paths.map((mappedPath) => {
@@ -204,7 +202,7 @@ export async function buildCatalog(repoRoot) {
   }
   if (errors.length) throw new Error(errors.join('\n'))
   entries.sort((left, right) => left.knowledge_id.localeCompare(right.knowledge_id, 'en'))
-  return { schema_version: 2, language: 'zh-CN', source_of_truth: 'Markdown frontmatter and body; verify implementation against mapped code and tests.', entries }
+  return { schema_version: 3, language: 'zh-CN', source_of_truth: 'Markdown frontmatter and body; verify implementation against the source.', entries }
 }
 
 // Reading cost alarm, not a page-length target: over-budget topics may only shrink.
@@ -453,14 +451,14 @@ export function searchCatalog(catalog, query, { all = false, limit = 12 } = {}) 
   // Save, backup and ID remain lexical; camel/Pascal boundaries and snake_case
   // supply the extra evidence. This is metadata matching, not source parsing.
   const codeSymbols = new Set(entries.flatMap((entry) =>
-    [entry.title, ...entry.aliases, entry.summary, ...entry.code_paths, ...entry.test_paths]
+    [entry.title, ...entry.aliases, entry.summary, ...entry.code_paths]
       .flatMap((value) => value.match(/[a-zA-Z_][a-zA-Z0-9_]*/gu) ?? [])
       .filter((value) => /[a-z][A-Z]|[A-Z]{2}[a-z]|[a-zA-Z0-9]_[a-zA-Z0-9]/u.test(value))
       .map((value) => value.toLocaleLowerCase())))
   const searchEntries = entries.map((entry) => {
     const exact = [entry.knowledge_id, entry.title, ...entry.aliases].map((value) => value.toLocaleLowerCase())
     const description = [...exact, entry.summary].join('\n').toLocaleLowerCase()
-    const fields = [description, entry.source, ...entry.code_paths, ...entry.test_paths].join('\n').toLocaleLowerCase()
+    const fields = [description, entry.source, ...entry.code_paths].join('\n').toLocaleLowerCase()
     return { entry, exact, description, fields }
   })
   // Keep qualified tokens intact: never turn UnknownStore.Save into Save.
@@ -529,7 +527,7 @@ export function impactCatalog(catalog, changedPath) {
   const query = validateRelativePath(changedPath.replace(/\\/gu, '/'), 'impact')
   const intersects = (mapped) => mapped === query || query.startsWith(`${mapped}/`) || mapped.startsWith(`${query}/`)
   return catalog.entries.map((entry) => ({ ...entry,
-    matched_paths: [...entry.code_paths, ...entry.test_paths, entry.source].filter(intersects),
+    matched_paths: [...entry.code_paths, entry.source].filter(intersects),
   })).filter((entry) => entry.matched_paths.length)
 }
 
@@ -628,7 +626,7 @@ async function main() {
       if (command === 'impact') console.log(`  mapped: ${entry.matched_paths.join(', ')}`)
       else console.log(`  match: ${entry.match_kind}`)
     }
-    if (command === 'search') console.log('Search reads metadata. Read the selected topic for source/test mappings; owner-fallback does not verify the requested member or release tag.')
+    if (command === 'search') console.log('Search reads metadata. Read the selected topic for implementation entry points; owner-fallback does not verify the requested member or release tag.')
     const count = matches.length < candidates.length ? `${matches.length} of ${candidates.length} match(es) shown (limit ${limit})` : `${matches.length} match(es)`
     console.log(`${count}. Index is a locator, not proof of current behavior; verify source and tests. Use check to detect stale metadata.`)
     return

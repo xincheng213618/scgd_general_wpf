@@ -4,8 +4,7 @@ knowledge_type: "topic"
 status: "current"
 summary: "Flow本地诊断SQLite快照、节点尝试与Incident事件列表的读写边界；快照不保证包含未保存画布，终态持久化与业务结果分开，中断恢复不续跑节点，心跳不是判死条件。"
 aliases: ["离线节点分析","FlowAnalysisDataSource","流程运行诊断","流程 Incident 管理","复制稳定标识","定位当前画布节点","NodeExecutionFailed","NodeTimeout","PostProcessFailed","流程诊断快照","FlowTemplateSnapshotFactory","进程中断恢复","流程心跳","节点执行尝试","诊断记录未完成","Incident确认关闭","异常事件管理","FlowExecutionJournal","FlowExecutionJournalCoordinator","FlowExecutionJournalScope","FlowRunRecord","FlowNodeAttempt","FlowTemplateSnapshot","FlowIncidentService","FlowIncidentManagementWindow","FlowOwnerProcessState","RunRecovered","流程执行分析","阶段耗时","FlowNodeTiming","InspectFlowIncident","inspect_flow_incident","诊断选中事故","ListFlowIncidents","list_flow_incidents","InspectRecordedFlowTemplate","inspect_recorded_flow_template","留存流程模板","InspectFlowRunHistory","inspect_flow_run_history","流程运行历史对照","CompareRecordedFlowTemplates","compare_recorded_flow_templates","留存流程配置差异","InspectFlowRunEvents","inspect_flow_run_events","流程运行事件续读","ListFlowRuns","list_flow_runs","留存流程运行发现","InspectFlowRunAttempts","inspect_flow_run_attempts","运行节点尝试续读"]
-code_paths: ["Engine/ColorVision.Engine/FlowProcessing/Diagnostics/FlowAnalysisDataSource.cs","Engine/ColorVision.Engine/FlowProcessing/Diagnostics/FlowExecutionJournal.cs","Engine/ColorVision.Engine/FlowProcessing/Diagnostics/IFlowExecutionJournal.cs","Engine/ColorVision.Engine/FlowProcessing/Diagnostics/FlowExecutionJournalCoordinator.cs","Engine/ColorVision.Engine/FlowProcessing/Diagnostics/FlowExecutionRecovery.cs","Engine/ColorVision.Engine/FlowProcessing/Diagnostics/FlowIncidentService.cs","Engine/ColorVision.Engine/FlowProcessing/Diagnostics/FlowIncidentManagementWindow.xaml.cs","Engine/ColorVision.Engine/FlowProcessing/Diagnostics/FlowIncidentManagementWindow.xaml","Engine/ColorVision.Engine/FlowProcessing/Runtime/ViewFlow.xaml.cs","Engine/ColorVision.Engine/FlowProcessing/Diagnostics/FlowDiagnosticsSchemaMigrator.cs","Engine/ColorVision.Engine/FlowProcessing/Diagnostics/FlowNodeRecordConfig.cs","Engine/ColorVision.Engine/FlowProcessing/Diagnostics/FlowTemplateSnapshot.cs","Engine/ColorVision.Engine/FlowProcessing/Diagnostics/FlowTemplateSnapshotFactory.cs","Engine/ColorVision.Engine/FlowProcessing/Runtime/FlowTemplateWorkspaceController.cs","Engine/ColorVision.Engine/FlowProcessing/Diagnostics/FlowRunRecord.cs","Engine/ColorVision.Engine/FlowProcessing/Diagnostics/FlowExecutionEvent.cs","Engine/ColorVision.Engine/FlowProcessing/Diagnostics/FlowNodeAttempt.cs","Engine/ColorVision.Engine/FlowProcessing/Diagnostics/FlowIncident.cs","Engine/ColorVision.Engine/FlowProcessing/Runtime/FlowExecutionSession.cs","Engine/ColorVision.Engine/FlowProcessing/Runtime/FlowRunFinalizer.cs","Engine/ColorVision.Engine/FlowProcessing/Diagnostics/FlowNodeAnalysisPage.xaml","Engine/ColorVision.Engine/FlowProcessing/Diagnostics/FlowNodeAnalysisPage.xaml.cs","Engine/ColorVision.Engine/FlowProcessing/Diagnostics/FlowNodeTiming.cs","Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalFlowNodeBase.cs","Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalFindLuminousAreaNode.cs","Engine/ColorVision.Engine/Services/Devices/Camera/Local/LocalFrameFileService.cs","Engine/ColorVision.Engine/Services/FlowDiagnostics/FlowIncidentInspectionReader.cs","ColorVision/Copilot/Capabilities/CopilotFlowIncidentInspectionService.cs","ColorVision/Copilot/Agent/Tools/Application/CopilotInspectFlowIncidentTool.cs","ColorVision/Copilot/Mcp/CopilotMcpToolDispatcher.FlowIncident.cs","UI/ColorVision.Common/Interfaces/Copilot/CopilotFlowIncidentContext.cs","ColorVision/Copilot/Capabilities/CopilotFlowIncidentQueryService.cs","ColorVision/Copilot/Agent/Tools/Application/CopilotListFlowIncidentsTool.cs","ColorVision/Copilot/Mcp/CopilotMcpToolDispatcher.FlowIncidents.cs","ColorVision/Copilot/Capabilities/CopilotRecordedFlowTemplateInspectionService.cs","ColorVision/Copilot/Agent/Tools/Application/CopilotInspectRecordedFlowTemplateTool.cs","ColorVision/Copilot/Mcp/CopilotMcpToolDispatcher.RecordedFlowTemplate.cs","Engine/ColorVision.Engine/Services/FlowDiagnostics/FlowRecordedTemplateReader.cs","Engine/ColorVision.Engine/Services/FlowDiagnostics/RecordedFlowTemplateGraphReader.cs","Engine/ColorVision.Engine/Services/FlowDiagnostics/FlowRunHistoryReader.cs","ColorVision/Copilot/Capabilities/CopilotFlowRunHistoryInspectionService.cs","ColorVision/Copilot/Agent/Tools/Application/CopilotInspectFlowRunHistoryTool.cs","ColorVision/Copilot/Mcp/CopilotMcpToolDispatcher.FlowRunHistory.cs","Engine/ColorVision.Engine/Services/FlowDiagnostics/FlowJournalHashSql.cs","Engine/ColorVision.Engine/Services/FlowDiagnostics/RecordedFlowTemplateComparer.cs","ColorVision/Copilot/Capabilities/CopilotRecordedFlowTemplateComparisonService.cs","ColorVision/Copilot/Agent/Tools/Application/CopilotCompareRecordedFlowTemplatesTool.cs","ColorVision/Copilot/Mcp/CopilotMcpToolDispatcher.RecordedFlowTemplateComparison.cs","ColorVision/Copilot/Capabilities/CopilotRecordedFlowTemplateComparisonService.Cursor.cs","Engine/ColorVision.Engine/Services/FlowDiagnostics/FlowRunEventReader.cs","ColorVision/Copilot/Capabilities/CopilotFlowRunEventInspectionService.cs","ColorVision/Copilot/Capabilities/CopilotFlowRunEventInspectionService.Cursor.cs","ColorVision/Copilot/Agent/Tools/Application/CopilotInspectFlowRunEventsTool.cs","ColorVision/Copilot/Mcp/CopilotMcpToolDispatcher.FlowRunEvents.cs","Engine/ColorVision.Engine/FlowProcessing/Integration/FlowCopilotService.cs","UI/ColorVision.Common/Interfaces/Copilot/CopilotSensitiveTextRedactor.cs","Engine/ColorVision.Engine/Services/FlowDiagnostics/FlowRunQueryReader.cs","ColorVision/Copilot/Capabilities/CopilotFlowRunQueryService.cs","ColorVision/Copilot/Agent/Tools/Application/CopilotListFlowRunsTool.cs","ColorVision/Copilot/Mcp/CopilotMcpToolDispatcher.FlowRuns.cs","ColorVision/Copilot/Skills/colorvision-flow-diagnostics","Engine/ColorVision.Engine/Services/FlowDiagnostics/FlowRunAttemptReader.cs","ColorVision/Copilot/Capabilities/CopilotFlowRunAttemptInspectionService.cs","ColorVision/Copilot/Capabilities/CopilotFlowRunAttemptInspectionService.Cursor.cs","ColorVision/Copilot/Agent/Tools/Application/CopilotInspectFlowRunAttemptsTool.cs","ColorVision/Copilot/Mcp/CopilotMcpToolDispatcher.FlowRunAttempts.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/FlowExecutionJournalTests.cs","Test/ColorVision.UI.Tests/FlowExecutionJournalCoordinatorTests.cs","Test/ColorVision.UI.Tests/FlowExecutionRecoveryTests.cs","Test/ColorVision.UI.Tests/FlowIncidentServiceTests.cs","Test/ColorVision.UI.Tests/FlowDiagnosticsSchemaTests.cs","Test/ColorVision.UI.Tests/FlowRunFinalizerTests.cs","Test/ColorVision.UI.Tests/FlowNodeTimingTests.cs","Test/ColorVision.UI.Tests/LocalFindLuminousAreaNodeTests.cs","Test/ColorVision.Copilot.Tests/CopilotFlowIncidentReadSourceTests.cs","Test/ColorVision.Copilot.Tests/CopilotFlowIncidentInspectionServiceTests.cs","Test/ColorVision.Copilot.Tests/CopilotFlowIncidentToolTests.cs","Test/ColorVision.UI.Tests/CopilotFlowIncidentContextTests.cs","Test/ColorVision.Copilot.Tests/CopilotFlowIncidentQueryServiceTests.cs","Test/ColorVision.Copilot.Tests/CopilotFlowIncidentQueryToolTests.cs","Test/ColorVision.Copilot.Tests/CopilotRecordedFlowTemplateSourceTests.cs","Test/ColorVision.Copilot.Tests/CopilotRecordedFlowTemplateServiceTests.cs","Test/ColorVision.Copilot.Tests/CopilotRecordedFlowTemplateToolTests.cs","Test/ColorVision.Copilot.Tests/CopilotRecordedFlowTemplateGraphTests.cs","Test/ColorVision.Copilot.Tests/CopilotFlowRunHistorySourceTests.cs","Test/ColorVision.Copilot.Tests/CopilotFlowRunHistoryServiceTests.cs","Test/ColorVision.Copilot.Tests/CopilotFlowRunHistoryToolTests.cs","Test/ColorVision.Copilot.Tests/CopilotRecordedFlowTemplateComparisonSourceTests.cs","Test/ColorVision.Copilot.Tests/CopilotRecordedFlowTemplateComparisonGraphTests.cs","Test/ColorVision.Copilot.Tests/CopilotRecordedFlowTemplateComparisonToolTests.cs","Test/ColorVision.Copilot.Tests/CopilotRecordedFlowTemplateComparisonServiceTests.cs","Test/ColorVision.Copilot.Tests/CopilotRecordedFlowTemplateComparisonServiceTests.Pagination.cs","Test/ColorVision.Copilot.Tests/CopilotFlowRunEventsToolTests.cs","Test/ColorVision.Copilot.Tests/CopilotFlowRunEventSourceTests.cs","Test/ColorVision.Copilot.Tests/CopilotFlowRunEventServiceTests.cs","Test/ColorVision.UI.Tests/CopilotFlowLogProjectionPrivacyTests.cs","Test/ColorVision.Copilot.Tests/CopilotFlowRunQuerySourceTests.cs","Test/ColorVision.Copilot.Tests/CopilotFlowRunQueryServiceTests.cs","Test/ColorVision.Copilot.Tests/CopilotFlowRunQueryToolTests.cs","Test/ColorVision.Copilot.Tests/CopilotFlowRunDiscoveryWorkflowTests.cs","Test/ColorVision.Copilot.Tests/CopilotFlowRunAttemptSourceTests.cs","Test/ColorVision.Copilot.Tests/CopilotFlowRunAttemptServiceTests.cs","Test/ColorVision.Copilot.Tests/CopilotFlowRunAttemptsToolTests.cs"]
+code_paths: ["Engine/ColorVision.Engine/FlowProcessing/Diagnostics","Engine/ColorVision.Engine/FlowProcessing/Runtime/ViewFlow.xaml.cs","Engine/ColorVision.Engine/FlowProcessing/Runtime/FlowTemplateWorkspaceController.cs","Engine/ColorVision.Engine/FlowProcessing/Runtime/FlowExecutionSession.cs","Engine/ColorVision.Engine/FlowProcessing/Runtime/FlowRunFinalizer.cs","Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalFlowNodeBase.cs","Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalFindLuminousAreaNode.cs","Engine/ColorVision.Engine/Services/Devices/Camera/Local/LocalFrameFileService.cs","Engine/ColorVision.Engine/Services/FlowDiagnostics","ColorVision/Copilot/Capabilities/CopilotFlowIncidentInspectionService.cs","ColorVision/Copilot/Agent/Tools/Application/CopilotInspectFlowIncidentTool.cs","ColorVision/Copilot/Mcp/CopilotMcpToolDispatcher.FlowIncident.cs","UI/ColorVision.Common/Interfaces/Copilot/CopilotFlowIncidentContext.cs","ColorVision/Copilot/Capabilities/CopilotFlowIncidentQueryService.cs","ColorVision/Copilot/Agent/Tools/Application/CopilotListFlowIncidentsTool.cs","ColorVision/Copilot/Mcp/CopilotMcpToolDispatcher.FlowIncidents.cs","ColorVision/Copilot/Capabilities/CopilotRecordedFlowTemplateInspectionService.cs","ColorVision/Copilot/Agent/Tools/Application/CopilotInspectRecordedFlowTemplateTool.cs","ColorVision/Copilot/Mcp/CopilotMcpToolDispatcher.RecordedFlowTemplate.cs","ColorVision/Copilot/Capabilities/CopilotFlowRunHistoryInspectionService.cs","ColorVision/Copilot/Agent/Tools/Application/CopilotInspectFlowRunHistoryTool.cs","ColorVision/Copilot/Mcp/CopilotMcpToolDispatcher.FlowRunHistory.cs","ColorVision/Copilot/Capabilities/CopilotRecordedFlowTemplateComparisonService.cs","ColorVision/Copilot/Agent/Tools/Application/CopilotCompareRecordedFlowTemplatesTool.cs","ColorVision/Copilot/Mcp/CopilotMcpToolDispatcher.RecordedFlowTemplateComparison.cs","ColorVision/Copilot/Capabilities/CopilotRecordedFlowTemplateComparisonService.Cursor.cs","ColorVision/Copilot/Capabilities/CopilotFlowRunEventInspectionService.cs","ColorVision/Copilot/Capabilities/CopilotFlowRunEventInspectionService.Cursor.cs","ColorVision/Copilot/Agent/Tools/Application/CopilotInspectFlowRunEventsTool.cs","ColorVision/Copilot/Mcp/CopilotMcpToolDispatcher.FlowRunEvents.cs","Engine/ColorVision.Engine/FlowProcessing/Integration/FlowCopilotService.cs","UI/ColorVision.Common/Interfaces/Copilot/CopilotSensitiveTextRedactor.cs","ColorVision/Copilot/Capabilities/CopilotFlowRunQueryService.cs","ColorVision/Copilot/Agent/Tools/Application/CopilotListFlowRunsTool.cs","ColorVision/Copilot/Mcp/CopilotMcpToolDispatcher.FlowRuns.cs","ColorVision/Copilot/Skills/colorvision-flow-diagnostics","ColorVision/Copilot/Capabilities/CopilotFlowRunAttemptInspectionService.cs","ColorVision/Copilot/Capabilities/CopilotFlowRunAttemptInspectionService.Cursor.cs","ColorVision/Copilot/Agent/Tools/Application/CopilotInspectFlowRunAttemptsTool.cs","ColorVision/Copilot/Mcp/CopilotMcpToolDispatcher.FlowRunAttempts.cs"]
 related: ["flow.session","flow.templates","flow.headless","operations.data","ui.sqlite-storage","copilot.mcp-server"]
 ---
 
@@ -44,89 +43,34 @@ related: ["flow.session","flow.templates","flow.headless","operations.data","ui.
 
 ## Copilot 正式事故诊断
 
-在事故管理窗口选中记录后，点击“诊断选中事故”会新建 Diagnose 对话并发送只读诊断请求。窗口仅提供 IncidentId、RunRecordId、AttemptId、NodeId、State、Kind、Severity 身份元数据；换选时清空旧引用，异步详情返回须仍属于当前选择，关闭窗口释放上下文。多个窗口由当前激活会话决定来源。字符串沿用既有有界脱敏格式，并明确作为不受信数据；选中快照本身不证明正式证据已经读取。
+在事故窗口选中记录并点击“诊断选中事故”，会新建 Diagnose 对话。窗口附上当前事故/运行/尝试身份，关闭或改变选择会释放旧引用。这些有界脱敏的 UI 数据供定位，正式证据需要下表的只读工具。流程编辑器的“问 AI 分析当前流程”则使用当前 UI 中的运行消息，先脱敏完整文本，再截尾并提取异常线索。
 
-流程编辑器的“问 AI 分析当前流程”与自动 Flow 上下文采集从当前 UI 运行消息生成 Copilot 日志投影：先对完整消息脱敏，再保留最后6,000字符并提取最多8条失败线索。运行消息、失败摘要与失败证据均来自这份已脱敏投影，避免截尾或单独抽行丢失引号内敏感值的识别上下文。UI 原始日志与节点参数原值保留；这些线索的来源是当前编辑器 UI，不代表按精确运行 ID 读取的历史事件。
+| 用途 | Agent / 本机 MCP 工具 | 关联与证据边界 |
+| --- | --- | --- |
+| 查运行 | `ListFlowRuns` / `list_flow_runs` | 不依赖 Incident。`flow_key` 如提供须完整、去前后空白并按大小写精确匹配。按运行 ID 降序读，ID 顺序不等于实际执行顺序。未知状态、缺 FlowKey 及 legacy 记录仍可参与未筛选的列表。 |
+| 查事故 | `ListFlowIncidents` / `list_flow_incidents` | 默认 `active` 排除精确 `Resolved`，保留未知状态。按发现时间与 ID 降序。 |
+| 读事故详情 | `InspectFlowIncident` / `inspect_flow_incident` | 传入精确 Int64 `incident_id`，严格沿 `Incident.RunRecordId` 关联。同一快照中取最新事件与最多 50 个节点尝试，保留存在的关联尝试。记录字段可缺失或被截断。 |
+| 续读事件 | `InspectFlowRunEvents` / `inspect_flow_run_events` | 传入精确 `run_record_id`。首窗取最新事件，页内按序号及 ID 升序；续页向更早记录读取。 |
+| 续读节点尝试 | `InspectFlowRunAttempts` / `inspect_flow_run_attempts` | 传入精确 `run_record_id`，可用精确、区分大小写的 `node_id` 筛选。页内按 Int64 `attempt_id` 升序，向更早 ID 续读。保留重复尝试和循环。 |
+| 读留存模板 | `InspectRecordedFlowTemplate` / `inspect_recorded_flow_template` | 精确运行引用确定 `SnapshotId`。可用标准非零 `node_id` GUID 限制焦点和可核验相邻节点。不实例化节点。 |
+| 查历史与耗时参照 | `InspectFlowRunHistory` / `inspect_flow_run_history` | 以较小的记录 ID 取此前窗口。完整 FlowKey 归一化后严格匹配，双方都没有键时用同一正 TemplateId 给出弱参考。身份全缺时只交付目标。 |
+| 比较留存配置 | `CompareRecordedFlowTemplates` / `compare_recorded_flow_templates` | 精确提供有序的 baseline/current run ID。同一读取快照中核对关联、完整 FlowKey 或双方无 FlowKey 时的同一正 TemplateId。 |
 
-需要查找普通、成功或慢运行而尚无精确运行 ID 时，使用 `ListFlowRuns`（Agent）或 `list_flow_runs`（本机 MCP）；该入口不依赖 Incident 表或事故记录。可选 `flow_key` 为1–256字符的非空白完整记录键，双方按 Unicode 空白 `Trim` 后作大小写敏感的 Binary／Ordinal 精确匹配，不按名称、前缀、TemplateId 或 legacy 身份回退。省略筛选时包含全部留存运行，也包含缺失 FlowKey、legacy 身份及未知状态；显示字段被脱敏或截断时，不能用其片段构造完整筛选。`max_results` 默认20，范围1–100；可选 `cursor` 为不超过4,096字符的非空 opaque 游标，须原样回传，相同规范筛选下可调整页大小。
+各工具按本机 MCP schema 声明的参数范围调用。运行 ID 从运行列表、已读正式证据或用户取得。UI 中截断或脱敏的片段、SN、批次号和当前画布都无法提供精确身份。诊断工具只读配置中的本地库，不创建库、迁移、写入、处置事故或重跑设备。缺库、缺 schema 或精确引用不可用时明确失败。具备所需表且没有匹配数据时才成功返回空结果。
 
-列表按 `run_record_id DESC` 分页，记录 ID 顺序不保证实际启动或完成先后。每页来自一次只读数据库快照，跨页查询实时留存数据，不冻结全库，也不保证所有执行都曾持久化。游标绑定来源路径哈希、规范筛选的指纹及实际交付末条运行 ID；换来源、换规范筛选、锚点被删除或不再属于筛选时返回 `Validation`，要求不带游标重新查询。输出保持最多18,000字符的完整 JSON，为正文预算缩页时只按实际交付末行推进，不跳过尚未交付记录。缺数据库文件为 `NotFound`，缺必需运行 metadata schema 或记录 metadata 非法为 `Validation`，访问拒绝为 `Authorization`，I/O 暂不可读为 `Transient`，不能解释为无运行；有合法存储且确无匹配记录时允许成功空页。
+分页使用原样返回的 `next_cursor`，每页独立读取实时留存数据。游标绑定来源、规范筛选和锚点。源或筛选变化、锚点删除或排序值变动后，需要不带游标从头读取。事故时间的原始存储表示参与排序。比较游标另绑定有序运行、两侧引用、已校验的 hash 和身份类型。最多 18,000 字符的结果预算可能缩页，按**实际交付**边界续读。查询结束只表示到达当前留存边界，不能证明执行曾完整落盘。
 
-根对象为 `source=local_flow_journal_runs`、`flow_key`、`runs`、`has_more` 和 `next_cursor`。每行保留精确正 Int32 `run_record_id`，交付有界脱敏的流程身份、状态／终态、耗时、时间及模板身份字段；`null` 或未知终态不补为成功，`content_hash_status=valid_format` 仅说明完整 hash 格式，并未验证快照内容。`coverage` 说明交付数、缺 FlowKey／未知状态条数、文本脱敏／截断、正文限制、排序和查询范围，`snapshot_content_verified=false` 明确未读取模板字节。不读取 SN、操作员、payload 或快照 BLOB，不执行流程、确认事故或写库。选定记录后将其确切 `run_record_id` 交给运行历史、事件或留存模板工具；列表本身不确定根因、全库成功率或客户 PASS/FAIL。
+事件和尝试中的未知或截断终态保持未知。起止时间完整且顺序有效才计算时长；失败的 attempt 也不证明流程停止。历史摘要只有在完整同 FlowKey、格式有效的同 hash、明确 `Completed` 且 `Succeeded` 或 `SucceededWithWarnings`、完成时间及耗时有效并无恢复标记时，才纳入确认成功参照。每节点最多交付 10 条尝试，只有实际交付且完整成功、有有效耗时的集合才累计作样本，重叠时段仍相加。历史统计按实际交付记录计算，不用来推断客户 PASS/FAIL 或全库成功率。
 
-没有明确事故编号时，先用 `ListFlowIncidents`（Agent）或 `list_flow_incidents`（本机 MCP）发现记录，再将列表交付的完整 `incident_id` 传给详情工具。`state` 可选 `active`、`open`、`acknowledged`、`resolved`、`all`，默认 `active`；`active` 只排除存储中精确的标准值 `Resolved`，保留未知状态，不将其默认为已关闭。`max_results` 默认20，范围1–100；续页使用上次返回的 opaque `cursor`，长度最多4,096字符，须原样传回，不能自行解析或修改。
+留存模板按运行的精确引用、身份、长度和 SHA-256 校验，BLOB 至多 8 MiB，解压至多 32 MiB。列表与事故详情只验证 hash 字段格式，不验证模板字节。模板结果仅交付节点身份、字段名和具有可验证端口布局的连线。字段值和原始 STN 不交付。比较另报告完整差异计数和视图、顺序、字节变化，页内明细受行数与正文预算约束。布局缺失时标记不可比较，不能推断零差异。留存数据可用于对照，实际运行画布另按快照来源确认。 [快照来源](#快照是否对应本次画布)
 
-列表按 `detected_time_utc`、`id` 降序使用 keyset 分页。每页来自单次只读 SQLite 快照，跨页读取的是实时记录，不是冻结的全库或完整事故历史；期间新增、删除或改态可能改变后续页面。游标绑定规范化数据库路径的哈希、查询 `state`、锚点 ID／时间及日期原始排序值的 SHA-256 指纹；不能换数据源或状态后复用。锚点被删除、发现时间改变、原始排序值表示变化或绑定失效时，工具明确要求不带游标重新查询，不返回假空页。日期从 ISO 文本重编码为空格分隔文本即使解析后的 ticks 相同，也可能改变 SQLite 排序位置，因此同样使旧游标失效。路径绑定不表示在原路径替换数据库文件后仍能识别同一份历史。
-
-成功列表正文是最多18,000字符的完整 JSON，仅含有界脱敏的发现元数据，不读取 SN、操作员、原始详情或消息 payload。文本或页结果被限制时明确说明覆盖范围；若输出预算使本页比请求数量更少，下一游标取实际交付的最后一条记录，尚未交付的记录留给续页。`has_more` 和游标只说明当前查询边界后的继续读取方向，不证明全库已检查。缺数据库文件或必需 schema 明确失败，不能据此声称没有事故。
-
-`InspectFlowIncident`（Agent）和 `inspect_flow_incident`（本机 MCP）使用相同只读实现。`incident_id` 必须是明确的正整数，支持完整 64 位编号；`max_events` 可省略，默认40，范围1–100。工具不接收数据库路径、SQL 或凭据，读取配置中的本地诊断库。与打开管理窗口的服务不同，`FlowIncidentInspectionReader` 使用只读连接和同一读取快照，不创建库、不迁移 schema、不触发遗留运行恢复，也不确认或关闭事故。
-
-关联严格遵循 `Incident.Id → Incident.RunRecordId`；节点尝试和事件都须属于该精确运行。不会用 SN、批次号、节点名称或当前画布回退关联。最多返回最新50个节点尝试，并保留存在且属于同一运行的关联 attempt；事件取最新指定数量，再按序号／ID升序呈现。成功正文为完整 JSON，最多18,000个字符；输出预算不足时继续缩减较旧记录，保留关联尝试和最新事件。诊断字符串有界并脱敏，截断、缺关联运行、缺关联 attempt 均在 `coverage` 中说明；没有事件不证明运行成功，记录内容也不自动证明根因。
-
-详情的 `run.template_revision`、`run.content_hash`、`run.snapshot_id` 来自该运行留存的身份字段，未知值保留 `null`。`content_hash` 仅接受完整64个十六进制字符的 SHA-256 格式，否则返回 `null` 并在 `coverage.run_template_identity` 说明缺失或无效；非法 hash 不会截成合法前缀。这一步不读取模板内容，格式校验不替代内容完整性验证。运行的数字版本、首次留存快照行的版本和当前图的 `Revision` 来自不同证据，不能互相替代。
-
-事故详情的 `coverage.events_truncated=true` 或需要更早事件时，使用正式运行列表、事故详情、已读历史或用户明确提供的精确 `run_record_id` 调用 `InspectFlowRunEvents`（Agent）或 `inspect_flow_run_events`（本机 MCP）。运行 ID 必填，范围1–2,147,483,647，不从当前画布、SN 或节点猜测关联；`max_events` 默认40，范围1–100。可选 `cursor` 为不超过4,096字符的非空 opaque 游标，须原样回传；工具不接受数据库路径或 SQL，只读配置中的本地诊断库。
-
-首次取最新事件窗口，各页内按 `sequence_no`、`id` 升序交付，再通过 `has_more`／`next_cursor` 向更早事件续读。正文保持最多18,000字符的完整 JSON；预算不足时缩减旧端，以实际交付的最早事件生成下一游标，未交付的旧事件留给续页。游标绑定规范来源路径的哈希、精确运行 ID 及锚点事件 ID／序号；换来源或运行、锚点删除或序号改变时返回 `Validation`，要求不带游标重新查询。每页独立只读快照，跨页实时读取，不冻结全库或保证期间记录不变。
-
-根对象为 `source=local_flow_journal_run_events`、`run_record_id`、`events`、`has_more` 和 `next_cursor`。`coverage.events_returned` 说明交付数量，`text_truncated`／`text_redacted` 说明字符串限制与脱敏，`output_limited` 说明正文预算缩页；`page_includes_latest_events` 区分首窗与续页，`reached_oldest_retained_event` 仅表示此次查询到达当前留存下界。`ordering`、`query_scope` 明确页内排序和实时快照范围。最后一页不包含前页，读到留存下界也不证明执行期间全部事件曾被持久化，不能当作完整运行历史。
-
-可查询的精确运行确实没有事件时允许返回成功空页；缺数据库文件、必需 schema 或运行均明确失败，不能解释为没有事件。事件读取不查询 SN、操作员或 `data_json`，不执行流程、不确认事故或写库。输出只代表交付窗口内的诊断观察，缺事件不证明成功，事件本身也不自动确定故障根因。
-
-需要事故详情最多50条尝试或历史工具每节点最多10条尝试之外的详细结果、时间和错误时，按需调用 `InspectFlowRunAttempts`（Agent）或 `inspect_flow_run_attempts`（本机 MCP）。必填 `run_record_id` 为1–2,147,483,647的精确留存运行 ID，可来自运行列表、事故／历史／事件证据或用户；不能把事故 ID、SN 或当前画布当作运行关联。可选 `node_id` 为1–128字符的非空白精确标识，大小写敏感、不 trim、不要求 GUID；省略时读取该运行所有节点的尝试。`max_attempts` 默认40，范围1–100；可选 `cursor` 为不超过4,096字符的非空 opaque 游标，原样续传，相同运行和节点筛选下可调整页大小。
-
-源按 `attempt_id DESC` 选最新窗口，每页以 `attempt_id ASC` 交付，再向更早 ID 续页；记录 ID 顺序不保证执行时间先后。完整正 Int64 `attempt_id` 保留，重复 `attempt_no` 是不同尝试，不按编号或节点去重；可将事件里的真实 `attempt_id` 与结果行关联，并按需续读定位。游标绑定来源路径哈希、运行 ID、精确节点筛选指纹及实际交付的最小 attempt ID；改变绑定、锚点删除或不再属于该运行／筛选时为 `Validation`，须从无游标请求重新查询。正文最多18,000字符，预算不足时省略窗口旧端，按实际交付的最早行推进，未交付行留给续页；单行仍无法容纳时明确失败且不推进游标。
-
-根对象为 `source=local_flow_journal_run_attempts`、`run_record_id`、`node_id`、`attempts`、`has_more` 和 `next_cursor`。每行交付 attempt／run／node 身份、尝试编号、开始／结束 UTC、`duration_ms`／`duration_valid`、Outcome 和有界脱敏错误；Outcome／错误码各最多128字符，错误信息最多2,048字符。仅在存在完成时间且不早于开始时间时给出时长，否则保留未知。`outcome_truncated` 标明 Outcome 前缀不完整，`outcome_recognized` 仅在该行完整且精确匹配已知结果（包含恢复产生的 `Interrupted`）时为真；不把未知前缀补成 `Succeeded`，其他错误文本的截断也不使完整已知 Outcome 变成未知。该证据不记录 `ContinueOnFail`、参数或实际执行画布，失败 attempt 不证明运行停止，也不证明根因、测量或客户 PASS/FAIL。
-
-`coverage` 给出 `attempts_returned`、`text_truncated`／`text_redacted`、`output_limited`、`page_includes_latest_attempts`、`reached_oldest_retained_attempt`、`unknown_outcome_attempts`／`unknown_duration_attempts` 及排序／查询范围。每页是独立只读实时快照；最后一页仅触及当前留存下界，不包含前页，也不证明所有执行都被持久化或没有交付尝试的节点未执行。缺数据库文件或首次缺运行为 `NotFound`，缺必需 run／attempt schema 或非法记录为 `Validation`；续页运行消失为失效游标，不能当作空结果。确有运行与有效 schema、但没有匹配尝试时可成功返回空页。输出节点 ID 被脱敏或截断时，不从显示片段重构或猜测精确关联。不读取 SN、操作员、invocation／legacy ID、payload 或模板 BLOB，不迁移、写库、控制设备或重跑流程。
-
-需要核对历史模板时，从用户、正式运行列表或事故详情取得精确 `run_record_id`，再调用 `InspectRecordedFlowTemplate`（Agent）或 `inspect_recorded_flow_template`（本机 MCP）。`run_record_id` 必填，范围1–2,147,483,647；`max_nodes` 默认80，范围1–200；可选 `node_id` 只接受长度36的非零标准 GUID `D` 格式，不接受空串、模糊名称或前缀。工具按该运行的 `SnapshotId` 精确链接本地留存模板，不按当前模板、SN 或节点名称回退，不实例化节点、不加载编辑器、不执行流程。关联核对完整 FlowKey 与两侧内容 hash；缺 FlowKey 的兼容记录按 TemplateId 核对。同一 FlowKey 与相同字节可以复用首次留存快照，数字版本或 TemplateId 不同本身不否定这种复用。
-
-读取器限制 BLOB 为8 MiB，验证留存字节的 SHA-256 与长度，解压上限32 MiB；结构检查还限制每节点4,096个属性、全图100,000个属性及1,000,000个保存端口，超过上限时在相应对象分配前拒绝。没有运行、快照引用或对应行时报告 `NotFound`；缺必需 schema、身份／完整性不匹配、格式不支持或内容损坏报告 `Validation`，不能降级为当前画布或假空图。成功正文为最多18,000字符的完整 JSON，仅返回节点身份（NodeId、ModelKey、TypeKey、Title）、保存属性名和可核验的保存连线；不返回属性值或原始模板正文。属性名每节点最多32项、每项96字符，每节点合计1,024字符。
-
-不传 `node_id` 时交付保存顺序的节点前缀；传入时交付焦点及可核验的直接相邻节点，仍受 `max_nodes` 和输出预算约束。连线只来自已保存且可解析的端口布局，只返回交付节点之间的连线，最多200条并继续受正文预算限制。缺端口布局、legacy 格式或裁剪时，`coverage` 说明全图／焦点窗口、节点与连线的证据限制，不猜测连接关系。当前 `InspectFlowGraph` / `get_flow_graph` 读取活动画布，其图 revision 与留存模板的数字版本、内容 hash 不同；留存模板也[不保证包含运行前未保存的画布修改](#快照是否对应本次画布)，不能据 ID、版本或 hash 宣称与实际运行画布一致。
-
-需要历史状态或耗时对照时，使用用户、正式运行列表或事故详情中的精确 `run_record_id` 调用 `InspectFlowRunHistory`（Agent）或 `inspect_flow_run_history`（本机 MCP）。`run_record_id` 必填，范围1–2,147,483,647；`max_runs` 默认10，范围1–50；可选 `node_id` 为1–128字符的非空白精确节点标识，不限于 GUID，不去首尾空白，也不做名称或前缀匹配。工具使用同一只读事务读取运行摘要及所选节点尝试，不读 BLOB、SN、操作员或原始 payload，不执行流程或写库。
-
-历史身份优先比较完整、经 Unicode `Trim` 归一化且严格相同的 FlowKey，不能用截断展示前缀判同。仅在双方 FlowKey 均缺失且为同一个正 TemplateId 时，才标为 `legacy_template_id` 参考记录，不纳入确认成功参照；不能用缺失或不同的 FlowKey、同名流程或 SN 混入 canonical 历史。目标的流程身份全缺时仅交付目标，明确标记历史不可用及部分证据，不返回“没有同流程历史”的确定结论。此前窗口按 `id < 目标.id`、ID 倒序取最多请求条数并多读一条判定限制；“此前”指更小的记录 ID，不保证实际启动或完成先后。正文最多18,000字符，缩减交付范围会明确说明，原始状态计数和统计只基于实际交付条目，不代表全库总体或全库成功率。
-
-传入 `node_id` 时，每个运行最多交付最新10条精确同节点的尝试，保留重复执行和循环。缺少尝试 schema 时仍可返回运行摘要，并以 `coverage.node_attempts_available=false` 说明节点证据不可用；没有交付尝试不能解释为节点未执行。节点累计耗时以每次运行作为一个样本：只有所需尝试均完整交付、未截断且成功状态、时间和耗时有效时，才累计这些尝试的总时长；不会按 NodeId 去掉循环或重试，重叠区间仍相加，不按并发重叠或循环次数归一化。
-
-确认成功参照须同时满足：同一 canonical FlowKey、同一个格式有效的记录 hash、运行 `Completed`、明确 `Succeeded` 或 `SucceededWithWarnings`、正式完成 UTC 和其他时间有效、耗时非负且没有恢复标记。这里仅检查 hash 格式，不读取快照字节核验。`null`、未知或矛盾终态不补为成功；带 warnings 的记录单独计数。结果给出样本数 `sample_count`、参与运行 `run_record_ids` 及均值、中位数、最小值、最大值；目标只有自身也满足确认成功条件时才给出与参照的差值／比例，中位数为0时比例保留 `null`。这些是已交付诊断记录的对照，不是客户 PASS/FAIL 判定；相同 hash 也不能证明实际运行画布相同。
-
-需要比较留存配置差异时，先从正式运行列表、已读运行历史或用户输入选取确切的参照与当前运行 ID，再调用 `CompareRecordedFlowTemplates`（Agent）或 `compare_recorded_flow_templates`（本机 MCP）。`baseline_run_record_id`、`current_run_record_id` 均必填，范围1–2,147,483,647；`max_changes` 默认50，范围1–200，限制每页节点变化、增加边、删除边三类详细行的合计数量，不是每类各自的上限，也不计全局 flags，续页时可调整。可选 `cursor` 为不超过4,096字符的非空 opaque 游标，须原样传回，不能修改或交换 baseline／current ID 及其顺序。两侧运行及其 `SnapshotId` 在同一数据库读取快照内精确读取校验，不按当前画布、同名节点或 hash 搜索替代引用。只允许完整归一化 FlowKey 相同，或双方无 FlowKey 且为同一正 TemplateId 的 `legacy_template_id` 弱身份比较；不同或不可用身份返回 `Validation`；首次查询缺运行或快照返回 `NotFound`。
-
-每侧保留8 MiB BLOB、32 MiB 解压上限及长度／SHA-256 校验。比较不实例化节点、不加载编辑器、不执行流程或写库；交付节点新增／删除／修改、字段名新增／删除及保存字节是否变化，绝不交付字段值、字段 hash 或原始 STN。边集合只比较可验证的保存连接；缺端口布局或 legacy 连接无法核验时明确标记不可比，不猜测边，也不把无法解析解释为已确认的零差异。
-
-结果另给出 `same_recorded_bytes`、`canvas_view_changed`、`node_order_changed`、`connection_order_changed` 全局 flags。完整差异计数在源预算内对两份完整模板解析后计算，不因 `max_changes` 或18,000字符完整 JSON 正文预算裁剪明细而缩小；覆盖说明区分总差异与实际交付明细，未交付部分不能宣称无变化。字节不同但模型明细为0，不证明语义配置相同，仍须查看视图、顺序及未建模内容的限制。这些仅是留存数据差异，不证明实际执行画布、故障根因或执行分支；既有[快照与画布来源限制](#快照是否对应本次画布)继续适用。
-
-明细按确定顺序续读：先交付按 Guid 排序的节点变化，再交付排序后的增加边和删除边。根对象的 `has_more` 与 `next_cursor` 指示是否可续读；`coverage.page_offset`、`detailed_change_rows_returned` 分别给出本页偏移和实际交付行数，`details_truncated`、`field_names_truncated`、`comparison_complete` 说明响应覆盖范围。需要更多差异时按需续读，首段不能当作全部。正文预算缩页时只按实际交付行推进，下一页继续尚未交付的行；无法交付任何一行时明确失败，不能以零行且 `has_more=true` 让调用方循环。最后一页若偏移大于0，`comparison_complete` 仍为 `false`，因为该响应只交付明细子集。没有 `next_cursor` 仅表示行流结束，不保证单节点字段名完整；每节点32项、每项96字符、合计1,024字符等既有输出限制仍生效。
-
-游标绑定规范数据库路径的哈希（不含原路径）、有序的两个运行 ID、两侧 SnapshotId、实际校验的内容 hash、身份依据类型（`flow_key`／`legacy_template_id`）及明细偏移。每次续页重新只读校验来源和同流程关系；更换来源路径、引用、内容 hash、身份依据类型或交换两个运行 ID 均使游标失效，返回 `Validation` 并要求从首段重新查询。游标不冻结完整 FlowKey 或全部展示 metadata：绑定项未变且仍满足同流程校验时，标签或数字版本改变不妨碍续读同一留存字节差异流。合法游标所依赖的运行记录、快照引用或快照行被删除时，同样返回 `Validation` 并要求从首段重新查询；数据库源不可用时仍沿用既有失败分类，不能解释为无差异。跨页不冻结来源，也不把路径哈希当作数据库实例标识；已绑定项未变时可稳定续读，全范围差异计数保持一致。
-
-发现与详情工具均不控制设备、不重跑流程、不执行处置或写库。不查询独立的 SN、操作员、原始 DetailsJson／DataJson 或消息 payload 字段。数据库文件或必需 schema 不可用时明确失败，不把它解释为没有事故；只有在可查询的事故表中找不到精确 ID 才报告该记录不存在。`CopilotFlowIncidentReadSourceTests` 使用隔离 SQLite 验证关联、列表状态、同时间排序与续页、锚点变更、截断及未写入；`CopilotFlowIncidentInspectionServiceTests` 验证有界可解析详情、缺失证据与私有字段排除；`CopilotFlowIncidentQueryServiceTests` 验证游标绑定、实际交付末行续页、合法空结果及源失效；`CopilotFlowIncidentToolTests`、`CopilotFlowIncidentQueryToolTests` 验证 Agent/MCP 的详情与发现协议；`CopilotFlowIncidentContextTests` 验证选中引用、窗口生命周期及实际按钮派发。这些离线验证不等于真实模型或现场事故诊断验收。
-
-运行发现的验证入口为 `CopilotFlowRunQuerySourceTests`（完整 FlowKey、ID 分页、未知／legacy 状态及只读来源）、`CopilotFlowRunQueryServiceTests`（实际交付续页、正文预算、游标绑定和失败分类）、`CopilotFlowRunQueryToolTests`（Agent/MCP 同协议）及 `CopilotFlowRunDiscoveryWorkflowTests`（无 Incident 表下发现运行、读取精确 History／Events，并按事件 attempt ID 续读详细尝试）。引用测试不代表真实模型、客户运行记录或现场验收。
-
-留存模板验证入口为 `CopilotRecordedFlowTemplateSourceTests`（精确引用、FlowKey 兼容复用、hash／长度和只读存储边界）、`CopilotRecordedFlowTemplateGraphTests`（保存节点身份、端口与连接、缺失／legacy 布局、结构及解压预算，不解析插件类型）、`CopilotRecordedFlowTemplateServiceTests`（有界 JSON、焦点邻域、未知连线与明确失败）及 `CopilotRecordedFlowTemplateToolTests`（Agent/MCP 同协议与参数准入）。这些用例不加载真实设备或恢复现场画布。
-
-运行历史对照的验证入口为 `CopilotFlowRunHistorySourceTests`（完整身份、此前记录窗口、重复节点尝试及只读存储边界）、`CopilotFlowRunHistoryServiceTests`（实际交付样本、确认成功条件、统计与覆盖说明）和 `CopilotFlowRunHistoryToolTests`（Agent/MCP 参数、默认值、分类及取消交接）；引用测试不代表真实客户数据或现场基线验收。
-
-留存配置差异的验证入口为 `CopilotRecordedFlowTemplateComparisonSourceTests`（同一读取快照内的精确引用、完整身份及两侧完整性）、`CopilotRecordedFlowTemplateComparisonGraphTests`（节点／字段名及边集合差异、视图与顺序 flags、不可比布局和不泄漏字段值）、`CopilotRecordedFlowTemplateComparisonServiceTests`（合计明细与正文预算、完整计数、游标续读及来源失效）和 `CopilotRecordedFlowTemplateComparisonToolTests`（Agent/MCP 同协议、参数与取消交接）。这些测试不证明留存模板等同实际执行画布。
-
-运行事件续读的验证入口为 `CopilotFlowRunEventSourceTests`（精确运行关联、升序窗口与向旧续页、锚点及只读存储边界）、`CopilotFlowRunEventServiceTests`（实际交付锚点、输出预算、游标失效及覆盖说明）和 `CopilotFlowRunEventsToolTests`（Agent/MCP 参数、默认值、分类与取消交接）；这些边界测试不证明真实流程事件完整持久化。
-
-详细节点尝试的验证入口为 `CopilotFlowRunAttemptSourceTests`（精确 run／node、Int64 ID、重复尝试、源字段裁切与只读边界）、`CopilotFlowRunAttemptServiceTests`（逐窗实际交付、游标绑定、Outcome 识别、有效时间差及明确失败）和 `CopilotFlowRunAttemptsToolTests`（Agent/MCP 同协议、默认值、参数与取消传递）；这些用例不证明执行策略、根因或现场验收。
+实现从 `Engine/ColorVision.Engine/Services/FlowDiagnostics/` 的各 reader 及 `RecordedFlowTemplateComparer` 定位。参数、调用方式和字段结构见本机 MCP 说明及当前 `tools/list`。 [MCP 工具用途与效果](../../02-developer-guide/core-concepts/colorvision-mcp.md#工具用途与效果)
 
 ## 节点耗时与消息明细
 
-在“流程执行分析”的概览中打开节点，选择本次执行的一条消息，在接收 Payload 中直接查看 `Timing` JSON。消息列表按内容收紧，较多消息可滚动；右侧历史列表用于切换执行记录。没有增加单独的阶段图表。
+在“流程执行分析”打开本次节点消息，在接收 Payload 中查看 `Timing`。概览按 Batch + SN 关联，旧记录缺 BatchId 时按完整 SN 匹配，重复 SN 可能歧义。当前批次无节点时可刷新，后台耗时查 `FlowAnalysisLoad` 和 `FlowAnalysisNavigation`。
 
-分析先展示当前批次。阶段事件按 Batch + SN 关联，无 SN 分组只关联无 SN 的运行。同流程历史按当前运行的流程身份筛选，以 Batch + SN 区分各批。旧记录缺批次号时仍按 SN 匹配，当前批次缺日志时仅以唯一旧记录确定流程身份。导航就绪后启用按钮。概览先显示节点汇总，再绘制时序图，节点详情跳过此图。首次选批与加载共用一次写入等待，刷新也有界等待。超时无节点时可刷新。刷新、切换或关闭使旧结果失效，后台耗时见 `FlowAnalysisLoad` 和 `FlowAnalysisNavigation` 日志。
-
-定时器 `Timer` 按每次实际等待发送本地开始和结束事件，接入相同的节点耗时、消息记录和标题进度显示。每次调用使用独立消息 ID，重复框内的各轮分别保留记录；本次等待时长通过 `ExpectedDurationMs` 交给共享执行会话，首次运行也能显示进度，不依赖历史耗时。耗时在向下游转交前结束，不包含后续采集；零等待仍有成对记录，停止、释放运行资源或替换同一等待会完成取消记录，不再输出迟到的运行数据。诊断订阅者异常不会中断等待和转交。生命周期回归见 `Test/ColorVision.UI.Tests/TimerRepeatTests.cs`；记录写入和界面刷新仍遵守上述边界。
+定时器 `Timer` 按每次实际等待发送本地开始和结束事件，接入相同的节点耗时、消息记录和标题进度显示。每次调用使用独立消息 ID，重复框内的各轮分别保留记录；本次等待时长通过 `ExpectedDurationMs` 交给共享执行会话，首次运行也能显示进度，不依赖历史耗时。耗时在向下游转交前结束，不包含后续采集；零等待仍有成对记录，停止、释放运行资源或替换同一等待会完成取消记录，不再输出迟到的运行数据。诊断订阅者异常不会中断等待和转交。记录写入和界面刷新仍遵守上述边界。
 
 概览节点行和节点页的“跨批次比对”集中显示同流程、同 NodeId 的执行与消息。列表包含 Batch、SN、时间、节点耗时和消息状态，可按批次、SN、事件、消息 ID 或状态消息筛选。选择消息后点击“设为比对基准”，随后选择其他批次；下方并排展示基准与当前选择的响应或发送正文和 Topic，JSON 自动格式化。没有消息的执行保留在列表中，超时不显示节点耗时；正文只读取当前选择和基准，不全量解压历史消息。
 
@@ -136,7 +80,7 @@ related: ["flow.session","flow.templates","flow.headless","operations.data","ui.
 
 ARVRPro 的现场只读窗口可将数据库路径、来源标签和完整运行标识传入 `FlowExecutionAnalysisWindow`。`FlowAnalysisDataSource` 将概览、节点历史、运行切换、事件及惰性正文读取固定到该文件；缺失的可选诊断表返回空集合，不查询本机运行库。来源标签始终显示，清理入口隐藏且处理函数拒绝写入。未传离线来源的原有入口继续使用运行库。离线未结束节点以快照中最后节点时间为显示截止点，不随查看时刻累计等待时间。
 
-`LocalFlowNodeBase` 为每次执行单独创建内存计时上下文；成功和异常完成消息均追加 `Timing`，保留已经完成或失败的阶段。相机取图、打开本地图片、校正、发光区定位、FindCross、FOV、点阵畸变的主要路径已接入。其他本地节点至少记录 `ExecuteLocal` 总体阶段，新增明细须在所属实现的实际操作处接入。L/BV 相机转发在本地成功响应中附带同结构计时；其执行异常仍沿用服务节点错误响应，不保证包含阶段明细。远端服务内部未提供的计时不能由客户端补造。
+`LocalFlowNodeBase` 为每次本地执行记录独立 `Timing`，成功与失败的完成消息都保留已到达的阶段。没有细分的本地节点只报告 `ExecuteLocal`。L/BV 本地转发的错误响应和远端服务可能缺少明细，解释耗时时应保留这个缺口。
 
 | JSON 字段 | 含义 |
 | --- | --- |
@@ -147,33 +91,25 @@ ARVRPro 的现场只读窗口可将数据库路径、来源标签和完整运行
 | `ElapsedMs` / `Status` | 阶段实际墙钟耗时，以及 `Completed`、`Failed`、`Canceled`、`Skipped`；若在阶段尚未结束时取得快照，则为 `Running`。0 ms 不等于未执行，跳过操作由 `Skipped` 表示 |
 | `OmittedStages` | 每次最多记录 256 个阶段，超过上限只累计省略数；用于限制日志体积，不中断业务 |
 
-**图像输入与算法耗时：**发光区定位、FindCross、FOV 和点阵畸变优先使用上游内存帧，此时 `OpenImage` 为 `Skipped`；没有内存帧、回退到文件时，`OpenImage` 包含文件存在性检查及实际加载。共享文件加载器进一步记录 `ReadImageHeader`、`ReadImageData`（CVRAW/CVCIE）或 `DecodeImage`（位图）及缓冲区复制。`Algorithm` 单独记录算法调用；模板更新、结果持久化和发布分别记录为 `UpdatePoiTemplate`、`PersistResult`、`PublishResult`。异常阶段会保留失败状态；后续未执行的操作不会补写为 0。
+有内存帧时 `OpenImage` 记为 `Skipped`；回退到文件才包含存在性检查、读盘或解码。`Algorithm`、模板更新、落库和发布分别计时。未运行阶段不补写 0。
 
-**相机与校正：**本地相机记录连接、锁等待、参数设置、自动曝光、源图尺寸查询（`GetSourceFrameInfo`）、帧分配、SDK 取图等边界。`CaptureFrame` 是整个 SDK 调用，不能进一步推断实际曝光、读出与传输。L/BV 本地响应同时保留 `Backend=Local`、设备编号、图像尺寸/位深/通道、实际曝光/增益、平均次数、RAW/CIE 缓冲区字节数及校正后端，供相同负载之间比较；这些字段不证明服务配置开关的状态。校正记录资源加载/缓存检查和算法执行；存图记录数据复制及 RAW/CIE 文件写入。`PublishPreview` / `PublishResult` 表示向界面或结果链提交的调用，不是屏幕实际绘制完成时间。
-
-本地相机启用结果持久化时，`PersistResult` 内进一步记录 `ResolveBatch`（按 SN 查询批次）、`BuildResultModel`（组装及序列化图像记录）和 `InsertResult`（保存记录并取得 ID）。数据库阶段包含客户端调用及连接等待，不能直接当作数据库服务端 SQL 执行时间；父阶段已经包含这些子阶段，不能重复相加。相机结果插入使用公共 DAO；慢写或失败时另有 `DatabaseCommandTiming`，成功插入可按其 `Result` 对应相机 `MasterId`，进一步区分连接取得和命令执行（包含自动提交），不记录 SQL 正文或参数。登记仍先于存图完成，计时不改变结果交接顺序，也不额外写库。
+相机 `CaptureFrame` 包含整个 SDK 调用，不能区分曝光、读出与传输。`PersistResult` 的 `ResolveBatch`、`BuildResultModel`、`InsertResult` 为子阶段，不能与父阶段重复累加。落库包含客户端和连接等待，要区分连接与命令执行可按 `MasterId` 关联 `DatabaseCommandTiming` 的 `Result`。`PublishPreview` 和 `PublishResult` 只代表提交调用。
 
 原有 `TotalTime`、`CaptureTime`、`CalibrationTime`、`SaveTime` 的含义和业务结果结构保持兼容。例如发光区节点原有 `TotalTime` 仍是算法耗时，打开文件时间查看新 `Timing`；不能把两者相加。`Timing` 为完成日志保留字段，扩展本地节点时不要将其用作业务结果字段。
 
 计时只在已激活的执行上下文中收集时间戳和有限条目，使用完成消息一次性保存，经[SQLite Payload 存储](../ui-components/sqlite-storage.md)压缩并按所选消息惰性读取。不逐阶段写文件/数据库，不在像素循环中打点，不全量读取历史 Payload；旧日志没有阶段数据时不会回填。
 
-`FlowNodeTimingTests` 验证并发执行隔离、父子阶段、失败/取消、条目上限以及真实本地节点完成事件中的 JSON。`LocalFindLuminousAreaNodeTests` 用临时位图与替代算法/持久化服务验证文件回退、内存复用和保存失败阶段。不启动设备或读取真实历史数据库，当前套件也不生成分析页面预览。
+`PreProcessTiming` 和 `SocketMessageUiTiming` 的 INFO 门槛只控制日志输出，与业务超时、判定无关。日志级别和覆盖阶段从节点和窗口实现核对。
 
-执行日志在默认 INFO 级别保留流程开始/完成、协议消息及落库耗时、ARVR 阶段汇总、图像快照准备与导出耗时、实际清理汇总、重试和错误。已连接提示、逐节点正常转交、预处理匹配/开始、每个删除成功文件及导图准备提示使用 DEBUG，避免重复已经落库或汇总的信息。预处理动作成功且耗时至少 100 ms 时以 `PreProcessTiming` 保留动作类型、流程、SN 和耗时；失败与异常始终记录。正常 Socket 界面投影使用 DEBUG，排队至少 1000 ms 或更新至少 100 ms 时仍以 INFO 记录 `SocketMessageUiTiming`；这些是日志输出条件，不是业务超时或 PASS/FAIL 阈值。
+`FlowPerformanceSampler` 在引擎完成后尝试后台采样，两类入口共用 30 秒节流。请求、采样的时间分别看 `RequestedAt`、`SampledAt`；`QueueDelayMs` 有助识别线程池拥塞。直接用 `FlowControl` 的入口可能没有业务批次或模板名，需按 SN、起始节点和时间关联。采样缺失可能来自首样本、并发占用或读取失败。持续未完成的流程没有中途样本。
 
-`FlowPerformanceSampler` 在 `FlowExecutionSession` 或 `FlowControl` 收到引擎完成事件时，通过 `QueueIfDue` 尝试提交后台采样，两个入口共用进程内的 30 秒节流。完成回调只做节流和无等待提交；计数器读取、指标计算、JSON 序列化及 INFO `FlowPerformanceSample` 写入全部在线程池执行，不等待采样或日志完成，没有轮询线程或定时器。最多一个请求处于排队、读取或写日志状态，忙时跳过，避免慢日志积压任务；后台实际开始后重新计算节流起点，失败重试也受节流。
-
-日志带进程、序列号、起始节点、请求时间 `RequestedAt`、后台实际采样开始时间 `SampledAt` 和排队耗时 `QueueDelayMs`，通过请求上下文与实际时间识别延迟样本。`FlowExecutionSession` 还提供模板名称和业务批次 ID，直接使用 `FlowControl` 的入口（包括 ARVR）没有这两个值时保留 null，通过序列号、起始节点及时间关联其他阶段记录，不伪造批次或模板名。样本包含窗口内的进程/系统 CPU 使用率、进程读写 MiB/s、当前工作集/私有内存、托管堆、分配速率、GC 次数及线程池可用线程/待处理任务。CPU、I/O 速率和 GC 次数使用两次实际读取之间的窗口；内存和线程池状态是在后台读取期间取得的快照，不代表流程结束的精确瞬间，也不是所有字段原子地同时读取。线程池状态包含采样工作本身。
-
-进程 CPU 按 `Environment.ProcessorCount` 归一化；系统 CPU 使用 `GetSystemTimes`，超过 64 个逻辑处理器时仅代表调用线程所在处理器组。进程 I/O 包含文件、网络与设备操作，不能解释为物理磁盘带宽或磁盘队列；GC 暂停比例来自最近一次 GC 的运行时快照。第一次采样或计数器不可用时，速率/区间增量为 null，不能当作 0。`SamplingMs` 只包含计数器读取耗时，不包含指标计算、JSON 序列化和日志写入。
-
-采样竞争或失败时跳过，不改写业务结果。线程池拥塞时样本可能延后，慢计数器或慢日志仍会占用一个后台工作线程，但完成通知不等待它。长流程尚未完成时不会产生中途样本，日志不含 CPU 频率/温度，不能直接证明降频或定位某个外部进程。`FlowPerformanceSamplerTests` 验证窗口计算、节流、后台请求上下文和时间、忙时跳过、读数或日志阻塞不阻塞提交、失败恢复、缺失数据与只读进程采样，不替代现场性能验收。
+CPU / I/O 速率基于两次实际读取之间的窗口。进程 I/O 包括文件、网络与设备活动，不能当作磁盘物理吞吐。系统 CPU 在超过 64 个逻辑处理器时只代表调用线程所在的处理器组。内存和线程池是读取时快照；`SamplingMs` 只计读取。日志不含频率或温度，判断降频仍需独立现场证据。
 
 ## 确认和关闭
 
 确认与关闭是独立的处置写入，需要相应授权；它们不会改变 Run / Attempt 的结果，也不重跑流程。操作人字段默认填当前系统用户名，服务只接收字符串，不据此认证身份。
 
-**当前窗口的线程访问限制：**确认和关闭处理函数在 `Task.Run` 中读取 `OperatorTextBox.Text`、`ActionNoteTextBox.Text`，违反 WPF 控件的线程访问要求。出现“调用线程无法访问此对象，因为另一个线程拥有该对象”时，处置方法尚未被调用，不能将下表的服务能力视为按钮已经可用。该问题位于 `FlowIncidentManagementWindow.xaml.cs`；底层服务测试不覆盖这条点击路径。
+**当前窗口的线程访问限制。**确认和关闭处理函数在 `Task.Run` 中读取 WPF 文本框。出现“调用线程无法访问此对象，因为另一个线程拥有该对象”时，服务尚未收到处置调用，入口见 `FlowIncidentManagementWindow.xaml.cs`。
 
 | 服务操作 | 输入与状态转换 |
 | --- | --- |
@@ -240,15 +176,4 @@ journal 会校验重复键对应的内容，不是拿相同键就能覆盖旧事
 
 ## 验证入口与缺口
 
-| 测试 | 已有用例的范围 |
-| --- | --- |
-| `FlowExecutionJournalTests` | 快照复用、每轮事件顺序、稳定键和终态冲突 |
-| `FlowExecutionJournalCoordinatorTests` | 用替身检查初始化失败、心跳与相同终态重试 |
-| `FlowExecutionRecoveryTests` | 临时 SQLite、可控进程探针下的 owner 判定、单条恢复回滚与幂等；另检查本测试进程启动时间的数据库往返 |
-| `FlowIncidentServiceTests` | 筛选、详情、Open 确认后关闭、输入校验；直接调用服务，不操作窗口 |
-| `FlowDiagnosticsSchemaTests` | 解码字节 hash、无效 Base64、旧表迁移 |
-| `FlowRunFinalizerTests` | 后处理策略，以及后处理先于 legacy fallback 持久化；不是到真实 journal 的组合测试 |
-
-窗口查询/分页/定位、确认/关闭点击、当前画布与快照一致性，以及 Incident 直接关闭 Open、重复动作、未知状态和在途并发等边界，没有被上述用例逐项覆盖。正文分别依据窗口、服务、journal 与执行会话源码，不把服务层测试当成完整界面或跨库验证。
-
-这些测试不连接现场业务库或设备，也不证明真实断电时刻、硬件停止、跨进程/跨数据库事务或客户交付完整。没有诊断结果时先核对记录阶段、存储初始化/写入异常和 owner 证据，不能据此授权重跑可能已产生副作用的流程。
+验收时按实际窗口、运行记录和现场状态核对异常时间、画布来源、操作权限、硬件停止和跨进程恢复。没有诊断结果时先核对记录阶段、存储初始化和写入异常以及 owner 证据。重跑可能已产生副作用的流程前需另行确认。

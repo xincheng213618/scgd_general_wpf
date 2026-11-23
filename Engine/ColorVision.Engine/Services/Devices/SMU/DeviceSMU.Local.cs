@@ -1,7 +1,7 @@
+using ColorVision.Database;
 using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services.Devices.SMU.Dao;
 using ColorVision.Engine.Services.Devices.SMU.Local;
-using ColorVision.Engine.Services.Devices.Spectrum;
 using Newtonsoft.Json.Linq;
 using System;
 using System.ComponentModel;
@@ -20,6 +20,7 @@ public partial class DeviceSMU
     internal SmuBackendState SmuBackend { get; private set; } = null!;
     internal LocalSmuSession LocalSession { get; }
     private bool localDisposed;
+    internal bool IsDisposed => localDisposed;
     private LocalSmuWindow? localWindow;
     internal event Action<LocalSmuCapture>? LocalResultAvailable;
     [CommandDisplay("本地源表", Order = -2, CategoryOrder = 0), Category("DeviceConnection")]
@@ -129,6 +130,7 @@ public partial class DeviceSMU
 
     internal MsgRecord RunLocalSmuCommand(MsgSend message)
     {
+        var resultDatabase = CaptureLocalResultDatabase();
         message.MsgID ??= Guid.NewGuid().ToString(); message.DeviceCode ??= Code;
         var record = new MsgRecord { MsgID = message.MsgID, SendTime = DateTime.Now, MsgSend = message, MsgRecordState = MsgRecordState.Sended };
         var config = LocalSmuConnection.From(Config);
@@ -152,15 +154,16 @@ public partial class DeviceSMU
                 capture = await ExecuteLocalSmuAsync(message.EventName, config, parameters!, false, checkLimits, CancellationToken.None).ConfigureAwait(false);
                 if (capture != null)
                 {
-                    id = await Task.Run(() => LocalSmuResultService.Save(capture, Code)).ConfigureAwait(false);
+                    id = await Task.Run(() => LocalSmuResultService.Save(capture, Code, resultDatabase)).ConfigureAwait(false);
                     result = LocalSmuResultService.Response(capture, id);
                 }
             }
             catch (Exception ex) { failure = ex; MQTTServiceBase.log.Error(ex); }
             void Finish()
             {
-                if (!localDisposed && capture != null) PublishLocalSmu(capture, id);
-                if (!localDisposed && failure == null && message.EventName is "Close" or "CloseOutput") ClearLocalSmuReadings(parameters!.Channel, message.EventName == "Close");
+                if (!localDisposed && capture != null) PublishLocalSmu(capture, id, resultDatabase);
+                if (OwnsLocalReadout(resultDatabase) && failure == null && message.EventName is "Close" or "CloseOutput")
+                    ClearLocalSmuReadings(parameters!.Channel, message.EventName == "Close");
                 record.ReciveTime = DateTime.Now;
                 record.MsgReturn = new MsgReturn { MsgID = record.MsgID, EventName = message.EventName, DeviceCode = Code,
                     Code = failure == null ? 0 : -1, Message = failure?.Message ?? "ok", Data = result! };
@@ -174,15 +177,24 @@ public partial class DeviceSMU
         _ = Run();
         return record;
     }
-    internal void PublishLocalSmu(LocalSmuCapture capture, int id)
+    internal MySqlConnectedEndpoint? CaptureLocalResultDatabase() =>
+        ResultDatabaseEndpoint is { IsCurrent: true } endpoint ? endpoint : null;
+
+    private bool OwnsLocalReadout(MySqlConnectedEndpoint? endpoint) => !localDisposed
+        && ReferenceEquals(ResultDatabaseEndpoint, endpoint)
+        && (endpoint?.IsCurrent ?? (MySqlControl.GetInstance().ConnectedEndpoint == null));
+
+    internal void PublishLocalSmu(LocalSmuCapture capture, int id, MySqlConnectedEndpoint? endpoint)
     {
+        var captureChannel = capture.Parameters.Channel;
+        Func<bool> sourceStillCurrent = CaptureLocalReadoutSource(this, endpoint, captureChannel, capture.Generation);
+
         void Update()
         {
             if (localDisposed) return;
-            var captureChannel = capture.Parameters.Channel;
             if (LocalSession.CanApplyReadout(captureChannel, capture.Generation)) LocalResultAvailable?.Invoke(capture);
             if (capture.HasMeasurements) PresentResult(() => LocalSmuResultService.CreateView(capture, Code, id));
-            if (!LocalSession.CanApplyReadout(captureChannel, capture.Generation)) return;
+            if (!sourceStillCurrent()) return;
             if (!capture.HasMeasurements) { ClearLocalSmuReadings(captureChannel, false, capture.Generation); return; }
             if (!capture.IsScan || capture.Parameters.SourceValues != null)
             {
@@ -191,8 +203,7 @@ public partial class DeviceSMU
                 if (captureChannel == DisplayConfig.Channel)
                 {
                     DisplayConfig.V = capture.V; DisplayConfig.I = capture.I;
-                    foreach (var spectrum in ServiceManager.Current?.DeviceServices.OfType<DeviceSpectrum>() ?? Enumerable.Empty<DeviceSpectrum>())
-                    { spectrum.DisplayConfig.V = capture.V; spectrum.DisplayConfig.I = capture.I; }
+                    DService.SyncSpectrumReadings(this, endpoint, captureChannel, capture.V, capture.I, sourceStillCurrent);
                 }
             }
             if (capture.Parameters.IsCloseOutput) ClearLocalSmuReadings(captureChannel, false, capture.Generation);
@@ -200,8 +211,17 @@ public partial class DeviceSMU
         if (Application.Current?.Dispatcher is { } dispatcher && !dispatcher.CheckAccess()) dispatcher.BeginInvoke(Update);
         else Update();
     }
+
+    private static Func<bool> CaptureLocalReadoutSource(DeviceSMU owner, MySqlConnectedEndpoint? endpoint,
+        SMUChannelType channel, long generation)
+    {
+        var source = new WeakReference<DeviceSMU>(owner);
+        return () => source.TryGetTarget(out var device) && device.OwnsLocalReadout(endpoint)
+            && device.LocalSession.CanApplyReadout(channel, generation);
+    }
     internal void ClearLocalSmuReadings(SMUChannelType channel, bool all, long? expectedGeneration = null)
     {
+        if (!OwnsLocalReadout(ResultDatabaseEndpoint)) return;
         bool clearA = (all || channel == SMUChannelType.A) && LocalSession.CanApplyReadout(SMUChannelType.A, expectedGeneration);
         bool clearB = (all || channel == SMUChannelType.B) && LocalSession.CanApplyReadout(SMUChannelType.B, expectedGeneration);
         if (!clearA && !clearB) return;

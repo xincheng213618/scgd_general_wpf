@@ -46,7 +46,7 @@ namespace ColorVision.ImageEditor.Output
             int pixelWidth = checked((int)Math.Ceiling(width * dpiX / 96));
             int pixelHeight = checked((int)Math.Ceiling(height * dpiY / 96));
             RenderTargetBitmap renderTargetBitmap = new(pixelWidth, pixelHeight, dpiX, dpiY, PixelFormats.Pbgra32);
-            renderTargetBitmap.Render(surface);
+            surface.RenderSnapshot(renderTargetBitmap);
             renderTargetBitmap.Freeze();
             return renderTargetBitmap;
         }

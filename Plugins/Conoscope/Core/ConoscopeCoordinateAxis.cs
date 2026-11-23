@@ -96,7 +96,7 @@ namespace Conoscope.Core
 
         [Display(Name = "Con_Axis_Color", GroupName = "Con_Category_CoordAxis", ResourceType = typeof(Properties.Resources)), JsonIgnore]
         public Brush AxisBrush { get => _AxisBrush; set { _AxisBrush = value; OnPropertyChanged(); if (Pen != null) Pen.Brush = value; } }
-        private Brush _AxisBrush = new SolidColorBrush(Color.FromArgb(112, 226, 232, 240));
+        private Brush _AxisBrush = new SolidColorBrush(Color.FromArgb(235, 255, 221, 93));
 
         [Display(Name = "Con_Axis_RefMode", GroupName = "Con_Category_RefLine", ResourceType = typeof(Properties.Resources))]
         public ConoscopeCoordinateReferenceMode ReferenceMode { get => _ReferenceMode; set { _ReferenceMode = value; OnPropertyChanged(); } }
@@ -177,6 +177,7 @@ namespace Conoscope.Core
             new Vector(1, 1)
         };
         private static readonly Brush TextOutlineBrush = CreateFrozenBrush(Color.FromArgb(224, 0, 0, 0));
+        private static readonly Brush PolarGridOutlineBrush = CreateFrozenBrush(Color.FromArgb(215, 28, 25, 20));
         private readonly SolidColorBrush clearBrush = new SolidColorBrush(Color.FromArgb(1, 255, 255, 255));
         public ConoscopeCoordinateAxisParam Attribute { get; set; }
 
@@ -251,8 +252,9 @@ namespace Conoscope.Core
             else
             {
                 DrawMask(dc, new EllipseGeometry(center, AxisRadius, AxisRadius));
-                DrawConcentricCircles(dc, center, axisPen);
-                DrawAzimuthLines(dc, center, axisPen);
+                DrawPolarGrid(dc, center, axisPen, ratio);
+                DrawAzimuthLabels(dc, center);
+                DrawPolarRadiusLabels(dc, center);
                 DrawReference(dc, center, referencePen);
             }
         }
@@ -557,34 +559,76 @@ namespace Conoscope.Core
                 && Math.Abs(verticalAngle) <= Attribute.MaxAngle + angularTolerance;
         }
 
-        private void DrawConcentricCircles(DrawingContext dc, Point center, Pen axisPen)
+        private void DrawPolarGrid(DrawingContext dc, Point center, Pen axisPen, double ratio)
         {
-            double step = Math.Max(1, Attribute.PolarStep);
-            for (double radiusAngle = step; radiusAngle <= Attribute.MaxAngle + 0.001; radiusAngle += step)
+            GeometryGroup grid = new();
+            double polarStep = Math.Max(1, Attribute.PolarStep);
+            for (double radiusAngle = polarStep; radiusAngle <= Attribute.MaxAngle + 0.001; radiusAngle += polarStep)
             {
                 double radius = RadiusFromAngle(radiusAngle);
-                dc.DrawEllipse(null, axisPen, center, radius, radius);
+                grid.Children.Add(new EllipseGeometry(center, radius, radius));
             }
+
+            double azimuthStep = Math.Max(1, Attribute.AzimuthStep);
+            for (double angle = 0; angle < 360; angle += azimuthStep)
+            {
+                grid.Children.Add(new LineGeometry(center, GetPointOnAxis(center, AxisRadius, angle)));
+            }
+
+            grid.Freeze();
+            dc.DrawGeometry(null, new Pen(PolarGridOutlineBrush, axisPen.Thickness + 1.1 / ratio), grid);
+            dc.DrawGeometry(null, axisPen, grid);
         }
 
-        private void DrawAzimuthLines(DrawingContext dc, Point center, Pen axisPen)
+        private void DrawAzimuthLabels(DrawingContext dc, Point center)
         {
-            double step = Math.Max(1, Attribute.AzimuthStep);
-            for (double angle = 0; angle < 360; angle += step)
-            {
-                Point end = GetPointOnAxis(center, AxisRadius, angle);
-                dc.DrawLine(axisPen, center, end);
-            }
-
             if (!Attribute.IsTextVisible)
             {
                 return;
             }
 
+            double step = Math.Max(1, Attribute.AzimuthStep);
             for (double angle = 0; angle <= 180 + 0.001; angle += step)
             {
                 DrawAngleLabel(dc, center, angle);
             }
+        }
+
+        private void DrawPolarRadiusLabels(DrawingContext dc, Point center)
+        {
+            double maxAngle = Attribute.MaxAngle;
+            if (!Attribute.IsTextVisible || maxAngle <= 0)
+            {
+                return;
+            }
+
+            double ratio = Ratio <= double.Epsilon ? 1 : Ratio;
+            double spacing = 5 / ratio;
+            string outerLabel = $"{maxAngle:0.##}°";
+            FormattedText outerText = CreateFormattedText(outerLabel, Attribute.TextBrush);
+            double outerX = center.X + AxisRadius - outerText.Width - spacing;
+
+            const string centerLabel = "0°";
+            FormattedText centerText = CreateFormattedText(centerLabel, Attribute.TextBrush);
+            double centerX = center.X - centerText.Width / 2;
+            double labelY = center.Y - outerText.Height - spacing;
+            DrawOutlinedText(dc, centerLabel, new Point(centerX, labelY), Attribute.TextBrush);
+
+            double nextX = centerX + centerText.Width + spacing;
+            double step = Math.Max(1, Attribute.PolarStep);
+            for (double angle = step; angle < maxAngle - 0.001; angle += step)
+            {
+                string label = $"{angle:0.##}°";
+                FormattedText text = CreateFormattedText(label, Attribute.TextBrush);
+                double x = center.X + RadiusFromAngle(angle) - text.Width - spacing;
+                if (x >= nextX && x + text.Width + spacing <= outerX)
+                {
+                    DrawOutlinedText(dc, label, new Point(x, labelY), Attribute.TextBrush);
+                    nextX = x + text.Width + spacing;
+                }
+            }
+
+            DrawOutlinedText(dc, outerLabel, new Point(outerX, labelY), Attribute.TextBrush);
         }
 
         private void DrawReference(DrawingContext dc, Point center, Pen referencePen)

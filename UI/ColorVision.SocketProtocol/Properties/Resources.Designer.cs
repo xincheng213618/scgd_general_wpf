@@ -133,7 +133,7 @@ namespace ColorVision.SocketProtocol.Properties {
         }
         
         /// <summary>
-        ///   查找类似 目标客户端未连接 的本地化字符串。
+        ///   查找类似 原客户端未连接，或无法唯一核对目标连接。 的本地化字符串。
         /// </summary>
         public static string ClientNotConnected {
             get {
@@ -376,7 +376,7 @@ namespace ColorVision.SocketProtocol.Properties {
         }
         
         /// <summary>
-        ///   查找类似 网络通信(_C) 的本地化字符串。
+        ///   查找类似 通信(_C) 的本地化字符串。
         /// </summary>
         public static string MenuNetworkCommunication {
             get {
@@ -570,6 +570,15 @@ namespace ColorVision.SocketProtocol.Properties {
         public static string Resend {
             get {
                 return ResourceManager.GetString("Resend", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 该记录的原文为空或已清理，无法重发。 的本地化字符串。
+        /// </summary>
+        public static string ResendContentUnavailable {
+            get {
+                return ResourceManager.GetString("ResendContentUnavailable", resourceCulture);
             }
         }
         

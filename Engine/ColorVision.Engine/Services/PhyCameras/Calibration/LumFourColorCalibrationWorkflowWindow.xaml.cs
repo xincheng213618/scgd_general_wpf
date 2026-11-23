@@ -113,13 +113,13 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
                 CheckFileExists = true,
                 Multiselect = false,
             };
-            if (dialog.ShowDialog(this) == true)
+            if (OpenFilePicker.ShowDialog(dialog, this, SourcePathBox.Text, LumFourColorCorrectionWindow.SourceFileHistoryKey) is string selectedPath)
             {
                 sourceFromTemplate = false;
-                if (string.Equals(SourcePathBox.Text, dialog.FileName, StringComparison.OrdinalIgnoreCase))
+                if (string.Equals(SourcePathBox.Text, selectedPath, StringComparison.OrdinalIgnoreCase))
                     ReloadSource();
                 else
-                    SourcePathBox.Text = dialog.FileName;
+                    SourcePathBox.Text = selectedPath;
             }
         }
 
@@ -464,6 +464,10 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
                 return;
             }
 
+            var configurationTarget = spectrum.CaptureConfigurationTarget();
+            var spectrumService = spectrum.DService;
+            var resultDatabase = spectrum.ResultDatabaseEndpoint;
+            bool local = spectrum.SpectrumBackend.OpensLocally;
             await RunCaptureAsync($"正在采集 {sample.Name} 的光谱...", async token =>
             {
                 sample.ClearSpectrum();
@@ -471,6 +475,11 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
                 LumFourColorSpectrumCapture result = await new DeviceLumFourColorSpectrumCaptureProvider(spectrum)
                     .CaptureAsync(sample.Target, token);
                 token.ThrowIfCancellationRequested();
+                if (!IsSelectedSpectrum(sample, spectrum)) return;
+                if (!spectrum.IsConfigurationTargetCurrent(configurationTarget) || !spectrumService.OwnsDevice(spectrum)
+                    || local != spectrum.SpectrumBackend.OpensLocally
+                    || (!local && (resultDatabase?.IsCurrent != true || !ReferenceEquals(spectrum.ResultDatabaseEndpoint, resultDatabase))))
+                    throw new InvalidOperationException(DeviceSpectrum.CorrectionCaptureSourceChangedMessage);
                 sample.SetSpectrumMeasurement(result);
                 InvalidateCalculation();
                 StatusText.Text = LocalizedText.Get("采集完成");
@@ -694,14 +703,16 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
             CancelDrawMode();
             try
             {
-                var results = await device.GetRecentColorMeasurementsAsync();
-                if (closed) return;
+                var history = SpectrumColorMeasurementHistory.Capture(device);
+                var results = await history.ReadRecentAsync();
+                if (!CanApplySpectrumHistory(sample, device, history)) return;
                 var dialog = new LumFourColorSpectrumSelectionWindow(device.Name, sample.Name, results) { Owner = this };
                 if (dialog.ShowDialog() != true || dialog.SelectedResult == null) return;
+                if (!CanApplySpectrumHistory(sample, device, history)) return;
                 sample.ClearSpectrum();
                 RefreshSelectedSample();
-                var result = await device.LoadColorMeasurementAsync(dialog.SelectedResult.ResultId);
-                if (closed) return;
+                var result = await history.LoadAsync(dialog.SelectedResult.ResultId);
+                if (!CanApplySpectrumHistory(sample, device, history)) return;
                 sample.SetSpectrumMeasurement(LumFourColorSpectrumCapture.FromMeasurement(result));
                 StatusText.Text = LocalizedText.Get("已选择光谱");
                 RefreshSelectedSample();
@@ -715,6 +726,16 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
                 if (!closed) SetBusy(false, null);
             }
         }
+
+        private bool CanApplySpectrumHistory(LumFourColorCalibrationSample sample, DeviceSpectrum device, SpectrumColorMeasurementHistory history)
+        {
+            if (!IsSelectedSpectrum(sample, device)) return false;
+            history.RequireCurrent();
+            return true;
+        }
+
+        private bool IsSelectedSpectrum(LumFourColorCalibrationSample sample, DeviceSpectrum device) =>
+            !closed && ReferenceEquals(SelectedSample, sample) && ReferenceEquals(SpectrumCombo.SelectedItem, device);
 
         private void Close_Click(object sender, RoutedEventArgs e) => Close();
 

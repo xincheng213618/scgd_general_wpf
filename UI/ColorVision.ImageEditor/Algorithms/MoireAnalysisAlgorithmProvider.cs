@@ -91,8 +91,8 @@ namespace ColorVision.ImageEditor.Algorithms
                 double maximumProminence = candidates.Length == 0 ? 1 : candidates.Max(value => value.Prominence);
                 double score = 100 * Math.Sqrt(candidateFraction * Math.Max(0, 1 - 1 / maximumProminence));
 
-                (byte[] magnitude, _) = FrequencySpectrumAlgorithmProvider.CreateDisplays(
-                    spectrum, windowSum, aggregation.MaximumMagnitude, aggregation.MaximumPower, spectrumParameters, cancellationToken, context.Progress);
+                byte[] magnitude = new byte[checked(source.Width * source.Height)];
+                FrequencySpectrumAlgorithmProvider.FillDisplays(spectrum, windowSum, aggregation, spectrumParameters, magnitude, null, cancellationToken, context.Progress);
                 byte[] heatmap = BuildHeatmap(source.Width, source.Height, candidates, parameters, cancellationToken);
                 spectrumImage = new AlgorithmImageBuffer(source.Width, source.Height, source.Width, AlgorithmImageFormat.Gray8, magnitude, 96, 96);
                 heatmapImage = new AlgorithmImageBuffer(source.Width, source.Height, source.Width, AlgorithmImageFormat.Gray8, heatmap, 96, 96);
@@ -228,6 +228,20 @@ namespace ColorVision.ImageEditor.Algorithms
             FrequencySpectrumAlgorithmProvider.FillSpatial(spatial, source, onesX, onesY, mean, cancellationToken, null);
             using Mat spectrum = new();
             Cv2.Dft(spatial, spectrum, DftFlags.ComplexOutput);
+            var centers = new (double X, double Y)[candidates.Length * 2];
+            for (int index = 0; index < candidates.Length; index++)
+            {
+                var peak = candidates[index].Peak;
+                centers[index * 2] = (peak.FrequencyX, peak.FrequencyY);
+                centers[index * 2 + 1] = (-peak.FrequencyX, -peak.FrequencyY);
+            }
+            var rowNotches = new (double CenterX, double DistanceYSquared)[centers.Length];
+            double sigmaSquared2 = 2 * parameters.NotchSigmaCyclesPerPixel * parameters.NotchSigmaCyclesPerPixel;
+            double attenuation = parameters.NotchAttenuation;
+            // With attenuation in [0,1], subtracting exp(-40) or less rounds to exactly 1 in binary64.
+            double distanceLimit = sigmaSquared2 > 0 && attenuation is >= 0 and <= 1
+                ? 40 * sigmaSquared2
+                : double.PositiveInfinity;
             double retainedAtCandidates = 0;
             int retainedCount = 0;
             int rows = spectrum.Rows;
@@ -236,18 +250,21 @@ namespace ColorVision.ImageEditor.Algorithms
             {
                 if ((y & 15) == 0) cancellationToken.ThrowIfCancellationRequested();
                 double fy = FrequencySpectrumAlgorithmProvider.SignedBin(y, rows) / (double)rows;
+                ReadOnlySpan<(double CenterX, double DistanceYSquared)> activeNotches = SelectRowNotches(fy, centers, rowNotches, distanceLimit);
+                if (activeNotches.IsEmpty) continue;
                 float* row = (float*)spectrum.Ptr(y);
                 for (int x = 0; x < cols; x++)
                 {
                     double fx = FrequencySpectrumAlgorithmProvider.SignedBin(x, cols) / (double)cols;
-                    double response = NotchResponse(fx, fy, candidates, parameters);
+                    double response = NotchResponse(fx, activeNotches, sigmaSquared2, attenuation, distanceLimit);
                     row[x * 2] *= (float)response;
                     row[x * 2 + 1] *= (float)response;
                 }
             }
             foreach (MoireCandidate candidate in candidates)
             {
-                double response = NotchResponse(candidate.Peak.FrequencyX, candidate.Peak.FrequencyY, candidates, parameters);
+                var activeNotches = SelectRowNotches(candidate.Peak.FrequencyY, centers, rowNotches, distanceLimit);
+                double response = NotchResponse(candidate.Peak.FrequencyX, activeNotches, sigmaSquared2, attenuation, distanceLimit);
                 retainedAtCandidates += response * response;
                 retainedCount++;
             }
@@ -268,24 +285,32 @@ namespace ColorVision.ImageEditor.Algorithms
                 retainedCount == 0 ? 1 : retainedAtCandidates / retainedCount);
         }
 
-        private static double NotchResponse(double fx, double fy, MoireCandidate[] candidates, MoireAnalysisParameters parameters)
+        private static ReadOnlySpan<(double CenterX, double DistanceYSquared)> SelectRowNotches(
+            double fy, ReadOnlySpan<(double X, double Y)> centers, Span<(double CenterX, double DistanceYSquared)> destination, double distanceLimit)
         {
-            double sigmaSquared2 = 2 * parameters.NotchSigmaCyclesPerPixel * parameters.NotchSigmaCyclesPerPixel;
-            double response = 1;
-            for (int index = 0; index < candidates.Length; index++)
+            int count = 0;
+            foreach (var (centerX, centerY) in centers)
             {
-                MoireCandidate candidate = candidates[index];
-                response *= One(candidate.Peak.FrequencyX, candidate.Peak.FrequencyY);
-                response *= One(-candidate.Peak.FrequencyX, -candidate.Peak.FrequencyY);
+                double dy = WrappedFrequencyDistance(fy, centerY);
+                double dySquared = dy * dy;
+                if (dySquared > distanceLimit) continue;
+                destination[count++] = (centerX, dySquared);
+            }
+            return destination[..count];
+        }
+
+        private static double NotchResponse(double fx, ReadOnlySpan<(double CenterX, double DistanceYSquared)> notches,
+            double sigmaSquared2, double attenuation, double distanceLimit)
+        {
+            double response = 1;
+            foreach (var (centerX, dySquared) in notches)
+            {
+                double dx = WrappedFrequencyDistance(fx, centerX);
+                double distanceSquared = dx * dx + dySquared;
+                if (distanceSquared > distanceLimit) continue;
+                response *= 1 - attenuation * Math.Exp(-distanceSquared / sigmaSquared2);
             }
             return response;
-
-            double One(double cx, double cy)
-            {
-                double dx = WrappedFrequencyDistance(fx, cx);
-                double dy = WrappedFrequencyDistance(fy, cy);
-                return 1 - parameters.NotchAttenuation * Math.Exp(-(dx * dx + dy * dy) / sigmaSquared2);
-            }
         }
 
         private static double WrappedFrequencyDistance(double left, double right)

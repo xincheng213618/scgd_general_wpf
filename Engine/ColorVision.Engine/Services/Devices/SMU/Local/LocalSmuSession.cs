@@ -82,7 +82,8 @@ internal sealed class LocalSmuSession : IAsyncDisposable
             if (connection?.Endpoint != config.Endpoint) ReleaseEndpoint(config.Endpoint);
             throw;
         }
-        lock (sync) connection = config;
+        // Each native open has its own connection identity, even when its settings are reused.
+        lock (sync) connection = config with { };
         SetStatus(DeviceStatusType.Opening);
         string stage = "打开连接";
         try
@@ -212,11 +213,40 @@ internal sealed class LocalSmuSession : IAsyncDisposable
         if (handle < 0) throw new InvalidOperationException("请先打开本地源表。");
         // A discarded flow result must not switch off a later measurement on the same channel.
         if (expectedGeneration.HasValue && (!outputGenerations.TryGetValue(channel, out long current) || current != expectedGeneration)) return false;
+        CloseOutputCore(channel);
+        return true;
+    }, token, flowOwner);
+
+    internal Func<Task> CapturePostProcessCloseOutput(SMUChannelType channel, Func<bool> ownsDevice)
+    {
+        LocalSmuConnection? source;
+        long generation;
+        lock (sync)
+        {
+            ObjectDisposedException.ThrowIf(disposed, this);
+            if (connection == null && status == DeviceStatusType.Closed && !quarantined)
+                return () => Task.CompletedTask;
+            source = connection;
+            generation = outputGenerations.GetValueOrDefault(channel);
+        }
+
+        return () => RunAsync(() =>
+        {
+            if (!ownsDevice() || handle < 0 || source == null || !ReferenceEquals(connection, source)
+                || outputGenerations.GetValueOrDefault(channel) != generation)
+                throw new InvalidOperationException("本地源表的连接或通道输出已变更。");
+
+            CloseOutputCore(channel);
+            return true;
+        }, CancellationToken.None);
+    }
+
+    private void CloseOutputCore(SMUChannelType channel)
+    {
         try { CloseChannel(channel); }
         catch { SetStatus(DeviceStatusType.Unknown); throw; }
         SetStatus(DeviceStatusType.Opened);
-        return true;
-    }, token, flowOwner);
+    }
 
     internal Task<LocalSmuCapture> CaptureAdvancedAsync(LocalSmuConnection config, LocalSmuSettings settings, bool checkLimits,
         CancellationToken token = default, object? flowOwner = null)
@@ -356,7 +386,7 @@ internal sealed class LocalSmuSession : IAsyncDisposable
     {
         outputChannels.Add(channel);
         long generation = ++nextGeneration;
-        outputGenerations[channel] = generation;
+        lock (sync) outputGenerations[channel] = generation;
         return generation;
     }
 
@@ -370,8 +400,11 @@ internal sealed class LocalSmuSession : IAsyncDisposable
     private void ConfirmOutputClosed(SMUChannelType channel)
     {
         outputChannels.Remove(channel);
-        outputGenerations.Remove(channel);
-        lock (sync) readoutGenerations.Remove(channel);
+        lock (sync)
+        {
+            outputGenerations.Remove(channel);
+            readoutGenerations.Remove(channel);
+        }
     }
 
     private async Task<T> RunAsync<T>(Func<T> work, CancellationToken token, object? flowOwner = null)

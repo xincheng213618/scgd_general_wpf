@@ -76,6 +76,70 @@ public sealed class JinxingInspectionXlsxExporterTests
         }
     }
 
+    [Fact]
+    public async Task Export_ConcurrentAppendsFromDifferentInstancesKeepEveryInspection()
+    {
+        DirectoryInfo directory = Directory.CreateTempSubdirectory("ProjectARVRPro_Jinxing_Concurrent_");
+        try
+        {
+            string path = new JinxingInspectionXlsxExporter().Export(CreateContext(directory.FullName, "SN-000", 0));
+            string[] serials = Enumerable.Range(1, 8).Select(index => $"SN-{index:D3}").ToArray();
+            Task<string>[] appends = serials.Select((serial, index) => Task.Run(() =>
+                new JinxingInspectionXlsxExporter().Export(CreateContext(directory.FullName, serial, index + 1)))).ToArray();
+
+            Assert.All(await Task.WhenAll(appends), result => Assert.Equal(path, result));
+            Assert.Equal("inspection.xlsx", Path.GetFileName(path));
+            Assert.Equal(path, Assert.Single(Directory.EnumerateFiles(directory.FullName)));
+            Assert.Equal(serials.Prepend("SN-000"), ReadSerialNumbers(path).Order(StringComparer.Ordinal));
+        }
+        finally
+        {
+            DeleteExportDirectory(directory);
+        }
+    }
+
+    [Fact]
+    public void Export_LockedWorkbookRetainsPublishedBytesAndCanBeRetried()
+    {
+        DirectoryInfo directory = Directory.CreateTempSubdirectory("ProjectARVRPro_Jinxing_Locked_");
+        try
+        {
+            var exporter = new JinxingInspectionXlsxExporter();
+            string path = exporter.Export(CreateContext(directory.FullName, "SN-001", 0));
+            byte[] published = File.ReadAllBytes(path);
+            var next = CreateContext(directory.FullName, "SN-002", 1);
+
+            Exception? error;
+            using (File.Open(path, FileMode.Open, FileAccess.Read, FileShare.Read))
+                error = Record.Exception(() => exporter.Export(next));
+
+            Assert.True(error is IOException or UnauthorizedAccessException, error?.ToString());
+            Assert.Equal(published, File.ReadAllBytes(path));
+            Assert.Equal(path, Assert.Single(Directory.EnumerateFiles(directory.FullName)));
+            Assert.Equal(path, exporter.Export(next));
+            Assert.Equal(["SN-001", "SN-002"], ReadSerialNumbers(path));
+        }
+        finally
+        {
+            DeleteExportDirectory(directory);
+        }
+    }
+
+    private static string[] ReadSerialNumbers(string path)
+    {
+        using FileStream input = File.OpenRead(path);
+        using var workbook = new XSSFWorkbook(input);
+        ISheet sheet = workbook.GetSheet("雷鸟光机测试结果表");
+        return Enumerable.Range(2, sheet.LastRowNum - 1).Select(index => sheet.GetRow(index).GetCell(2).StringCellValue).ToArray();
+    }
+
+    private static void DeleteExportDirectory(DirectoryInfo directory)
+    {
+        foreach (FileInfo file in directory.EnumerateFiles())
+            file.Delete();
+        directory.Delete();
+    }
+
     private static ObjectiveTestResultExportContext CreateContext(string outputDirectory, string serialNumber, double offset)
     {
         return new ObjectiveTestResultExportContext

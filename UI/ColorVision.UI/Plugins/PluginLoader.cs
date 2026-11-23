@@ -15,7 +15,8 @@ namespace ColorVision.UI.Plugins
         private static PluginLoadReport _lastReport = PluginLoadReport.Empty;
         private static readonly HashSet<string> RetiredPluginIds = new(StringComparer.OrdinalIgnoreCase)
         {
-            "EventVWR"
+            "EventVWR",
+            "CameraTest"
         };
 
         public static PluginLoaderConfig Config => PluginLoaderConfig.Instance;
@@ -229,7 +230,7 @@ namespace ColorVision.UI.Plugins
                             pluginInfo.Enabled = false;
                             pluginInfo.Name = manifest.Name;
                             pluginInfo.Description = manifest.Description;
-                            log.Info($"Skipped retired plugin '{manifest.Id}'. Its functionality is built into ColorVision.");
+                            log.Info($"Skipped retired plugin '{manifest.Id}'.");
                             Record(PluginLoadStatus.Retired);
                             continue;
                         }

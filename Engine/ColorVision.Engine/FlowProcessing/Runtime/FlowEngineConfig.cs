@@ -14,7 +14,7 @@ public sealed class FlowEngineConfig : ViewModelBase, IConfig
     private int _lastSelectFlow;
 
     [DisplayName("Flow Post-processing Time (ms)")]
-    [ConfigSetting(Name = "Flow Post-processing Time (ms)", Order = 50, Section = ConfigSettingConstants.SectionBasic)]
+    [ConfigSetting(Name = "Flow Post-processing Time (ms)", Order = 50, Section = ConfigSettingConstants.SectionOther)]
     public int FlowEndDelayMilliseconds
     {
         get => _flowEndDelayMilliseconds;

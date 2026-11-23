@@ -19,6 +19,31 @@ public sealed class CopilotPartialEvidencePresentationTests : IDisposable
     private readonly DirectoryInfo _directory = Directory.CreateTempSubdirectory("CopilotPartialEvidence-");
 
     [Fact]
+    public void ActivityPresenceUsesVisibleTracesAsTheMessageChanges()
+    {
+        var message = new CopilotChatMessage(CopilotChatRole.Assistant, string.Empty);
+        message.AgentTraceEntries.Add(new CopilotAgentTraceEntry
+        {
+            ToolName = "WebSearch",
+            State = CopilotToolExecutionState.Failed,
+        });
+        Assert.False(message.HasAgentTraceEntries);
+        Assert.Empty(message.VisibleAgentTraceEntries);
+
+        var visible = new CopilotAgentTraceEntry
+        {
+            ToolName = "ReadLocalFile",
+            State = CopilotToolExecutionState.Failed,
+        };
+        message.AgentTraceEntries.Add(visible);
+        Assert.True(message.HasAgentTraceEntries);
+        Assert.Same(visible, Assert.Single(message.VisibleAgentTraceEntries));
+
+        message.AgentTraceEntries.Remove(visible);
+        Assert.False(message.HasAgentTraceEntries);
+    }
+
+    [Fact]
     public async Task PartialCoverageSurvivesSnapshotsAndConversationRecovery()
     {
         var result = await CreatePartialResult("mixed-read");

@@ -197,7 +197,7 @@ public sealed class FlowTemplateWorkspaceEditingTests
     }
 
     [Fact]
-    public void FirstSaveDuringConfirmationKeepsNewerDebouncedSelectionAndRejectsOldRequest()
+    public void FirstSaveDuringConfirmationKeepsNewerQueuedSelectionAndRejectsOldRequest()
     {
         WithFixture(fixture =>
         {
@@ -259,6 +259,25 @@ public sealed class FlowTemplateWorkspaceEditingTests
             Assert.Equal(1, fixture.ConfirmCalls);
             Assert.False(fixture.Controller.IsConfirmingDocumentReplacement);
         }, associateInitialTemplate: false);
+    }
+
+    [Fact]
+    public void ConsecutiveSelectionsInTheSameDispatcherTurnOnlyLoadTheLatestTemplate()
+    {
+        WithFixture(fixture =>
+        {
+            fixture.Controller.OnFlowSelectionChanged(fixture.B);
+            fixture.Controller.OnFlowSelectionChanged(fixture.C);
+            Assert.Same(fixture.A.Value, fixture.Controller.ActiveFlowParam);
+
+            var latest = fixture.Controller.WaitForExecutionSnapshotAsync();
+            PumpUntil(latest);
+
+            Assert.Equal(fixture.C.Id, latest.Result.Snapshot!.TemplateId);
+            Assert.Same(fixture.C.Value, fixture.Controller.ActiveFlowParam);
+            Assert.Equal("C node", Assert.Single(fixture.Editor.Nodes.Cast<STNode>()).Title);
+            Assert.Equal(1, fixture.CloseCalls);
+        });
     }
 
     [Fact]

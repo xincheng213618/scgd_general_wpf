@@ -1,7 +1,6 @@
 using ColorVision.Common.MVVM;
 using ColorVision.UI;
 using ColorVision.UI.Authorizations;
-using ColorVision.UI.Extension;
 using System;
 using System.Windows;
 using System.Windows.Controls;
@@ -17,8 +16,6 @@ namespace ColorVision.Engine.Services.Devices.LightingController
         public DeviceLightingController(SysResourceModel sysResourceModel) : base(sysResourceModel)
         {
             DService = new MQTTLightingController(Config);
-            this.SetIconResource("COMDrawingImage");
-
             EditCommand = new RelayCommand(_ =>
             {
                 if (!CanConfigure) return;
@@ -27,8 +24,8 @@ namespace ColorVision.Engine.Services.Devices.LightingController
                     Owner = Application.Current.GetActiveWindow(),
                     WindowStartupLocation = WindowStartupLocation.CenterOwner,
                 };
-                ProtectConfigurationEditor(window);
-                window.Submitted += (_, _) => TryCommitConfiguration(window);
+                var target = ProtectConfigurationEditor(window);
+                window.Submitted += (_, _) => TryCommitConfiguration(window, expectedTarget: target);
                 window.ShowDialog();
             }, _ => CanConfigure);
         }

@@ -1,6 +1,8 @@
 using FlowEngineLib.Algorithm;
 using OpenCvSharp;
 using System;
+using System.Buffers;
+using System.Threading.Tasks;
 
 namespace ColorVision.Engine.Services.Devices.Camera.Local
 {
@@ -10,6 +12,8 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
     /// </summary>
     internal static class LocalFrameMirrorService
     {
+        private const int ParallelCieMinimumBytes = 64 * 1024 * 1024;
+
         public static void ApplyPending(LocalFlowFrame frame)
         {
             ArgumentNullException.ThrowIfNull(frame);
@@ -93,11 +97,19 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             if (pointer == IntPtr.Zero) throw new ArgumentException("CIE pointer is null.", nameof(pointer));
             if (width <= 0 || height <= 0) throw new ArgumentOutOfRangeException(nameof(width), "Image dimensions must be positive.");
             if (channels is not (1 or 3)) throw new NotSupportedException($"Mirror supports one- or three-plane CIE; actual planes: {channels}.");
-            int planeBytes = checked(width * height * sizeof(float));
+            int rowBytes = checked(width * sizeof(float));
+            int planeBytes = checked(rowBytes * height);
             int requiredLength = checked(planeBytes * channels);
             if (byteLength < requiredLength)
             {
                 throw new ArgumentException($"CIE buffer is too small: required {requiredLength}, actual {byteLength}.", nameof(byteLength));
+            }
+
+            if (flipMode == CVImageFlipMode.X && requiredLength >= ParallelCieMinimumBytes
+                && rowBytes is >= 1024 and <= 64 * 1024 && height >= 8 && Environment.ProcessorCount > 1)
+            {
+                FlipCieRows(pointer, rowBytes, height, channels);
+                return;
             }
 
             OpenCvSharp.FlipMode openCvFlipMode = ToOpenCvFlipMode(flipMode);
@@ -106,6 +118,38 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                 using Mat plane = Mat.FromPixelData(height, width, MatType.CV_32FC1, IntPtr.Add(pointer, checked(channel * planeBytes)));
                 Cv2.Flip(plane, plane, openCvFlipMode);
             }
+        }
+
+        private static unsafe void FlipCieRows(IntPtr pointer, int rowBytes, int height, int channels)
+        {
+            int planeBytes = rowBytes * height;
+            int pairsPerPlane = height / 2;
+            int pairs = channels * pairsPerPlane;
+            int workers = Math.Min(4, Environment.ProcessorCount);
+            Parallel.For(0, workers, new ParallelOptions { TaskScheduler = TaskScheduler.Default }, worker =>
+            {
+                int begin = (int)((long)worker * pairs / workers);
+                int end = (int)((long)(worker + 1) * pairs / workers);
+                byte[] rented = ArrayPool<byte>.Shared.Rent(rowBytes);
+                try
+                {
+                    Span<byte> temporary = rented.AsSpan(0, rowBytes);
+                    for (int index = begin; index < end; index++)
+                    {
+                        int plane = Math.DivRem(index, pairsPerPlane, out int row);
+                        byte* origin = (byte*)pointer + plane * planeBytes;
+                        Span<byte> upper = new(origin + row * rowBytes, rowBytes);
+                        Span<byte> lower = new(origin + (height - 1 - row) * rowBytes, rowBytes);
+                        upper.CopyTo(temporary);
+                        lower.CopyTo(upper);
+                        temporary.CopyTo(lower);
+                    }
+                }
+                finally
+                {
+                    ArrayPool<byte>.Shared.Return(rented);
+                }
+            });
         }
 
         private static int GetCieChannelCount(int byteLength, int width, int height)

@@ -67,6 +67,52 @@ void addPixel(
     ++average.count;
 }
 
+template <typename Consumer>
+void forEachCirclePixel(
+    const RequestV1& request,
+    std::int32_t imageWidth,
+    std::int32_t imageHeight,
+    bool includeBoundary,
+    Consumer&& consume)
+{
+    const std::int32_t diameter = request.type == 0 ? 2 : request.width;
+    if (diameter == 1 || (diameter == 2 && !includeBoundary)) {
+        consume(static_cast<std::size_t>(request.y) * imageWidth + request.x);
+        return;
+    }
+
+    const std::int32_t radiusFloor = diameter / 2;
+    const std::int32_t firstRow = (std::max)(0, request.y - radiusFloor);
+    const std::int32_t lastRow = request.y + (std::min)(imageHeight - 1 - request.y, radiusFloor);
+    const std::int32_t maximumExtent = (std::min)(radiusFloor, (std::max)(request.x, imageWidth - 1 - request.x));
+    // Integer pixel distances obey 4 * distanceSquared < diameter² for strict circles.
+    const std::int64_t maximumDistanceSquared = (static_cast<std::int64_t>(diameter) * diameter - (includeBoundary ? 0 : 1)) / 4;
+    std::int32_t extent = 0;
+    for (std::int32_t row = firstRow; row <= lastRow; ++row) {
+        const std::int64_t dy = static_cast<std::int64_t>(row) - request.y;
+        const std::int64_t remaining = maximumDistanceSquared - dy * dy;
+        if (remaining < 0) continue;
+
+        // Each scanline is contiguous. Its extent grows toward the center and shrinks afterward.
+        if (row <= request.y) {
+            while (extent < maximumExtent && static_cast<std::int64_t>(extent + 1) * (extent + 1) <= remaining) {
+                ++extent;
+            }
+        }
+        else {
+            while (static_cast<std::int64_t>(extent) * extent > remaining) {
+                --extent;
+            }
+        }
+        const std::int32_t firstColumn = (std::max)(0, request.x - extent);
+        const std::int32_t lastColumn = request.x + (std::min)(imageWidth - 1 - request.x, extent);
+        const std::size_t rowStart = static_cast<std::size_t>(row) * imageWidth;
+        for (std::int32_t column = firstColumn; column <= lastColumn; ++column) {
+            consume(rowStart + column);
+        }
+    }
+}
+
 ChannelAverage calculateCircle(
     const float* channelX,
     const float* channelY,
@@ -74,34 +120,12 @@ ChannelAverage calculateCircle(
     std::int32_t imageWidth,
     std::int32_t imageHeight,
     std::int32_t channels,
-    std::int32_t centerX,
-    std::int32_t centerY,
-    double radius) noexcept
+    const RequestV1& request) noexcept
 {
     ChannelAverage average;
-    if (radius > 0.0) {
-        const auto firstRow = static_cast<std::int32_t>(std::max(0.0, static_cast<double>(centerY) - radius));
-        const auto lastRow = static_cast<std::int32_t>(std::min(
-            static_cast<double>(imageHeight - 1), static_cast<double>(centerY) + radius));
-        const auto firstColumn = static_cast<std::int32_t>(std::max(0.0, static_cast<double>(centerX) - radius));
-        const auto lastColumn = static_cast<std::int32_t>(std::min(
-            static_cast<double>(imageWidth - 1), static_cast<double>(centerX) + radius));
-        const double radiusSquared = radius * radius;
-        for (std::int32_t row = firstRow; row <= lastRow; ++row) {
-            for (std::int32_t column = firstColumn; column <= lastColumn; ++column) {
-                const double distance = (row - centerY) * (row - centerY)
-                    + (column - centerX) * (column - centerX);
-                if (distance < radiusSquared) {
-                    addPixel(average, channelX, channelY, channelZ,
-                        static_cast<std::size_t>(row) * imageWidth + column, channels);
-                }
-            }
-        }
-    }
-    if (average.count == 0) {
-        addPixel(average, channelX, channelY, channelZ,
-            static_cast<std::size_t>(centerY) * imageWidth + centerX, channels);
-    }
+    forEachCirclePixel(request, imageWidth, imageHeight, false, [&](std::size_t index) {
+        addPixel(average, channelX, channelY, channelZ, index, channels);
+    });
     return average;
 }
 
@@ -224,8 +248,7 @@ bool calculateBatchV1(
         const ChannelAverage average = request.type == 2
             ? calculateRectangle(channelX, channelY, channelZ, width, height, channels,
                 request.x, request.y, request.width, request.height)
-            : calculateCircle(channelX, channelY, channelZ, width, height, channels,
-                request.x, request.y, request.type == 0 ? 1.0 : request.width / 2.0);
+            : calculateCircle(channelX, channelY, channelZ, width, height, channels, request);
 
         ResultV1 result{};
         if (channels == 1) {
@@ -280,38 +303,6 @@ bool validateOptions(const OptionsV2& options, std::int32_t channels) noexcept
         if (options.filterMode == 0 || options.maxPercent < 0.0F || options.maxPercent > 1.0F) return false;
     }
     return options.filterMode != 2 || options.xyzChannel < channels;
-}
-
-template <typename Consumer>
-void forEachCirclePixel(
-    const RequestV1& request,
-    std::int32_t imageWidth,
-    std::int32_t imageHeight,
-    bool includeBoundary,
-    Consumer&& consume)
-{
-    const double radius = request.type == 0 ? 1.0 : request.width / 2.0;
-    const double firstRowValue = std::max(0.0, static_cast<double>(request.y) - radius);
-    const double lastRowValue = std::min(static_cast<double>(imageHeight - 1), static_cast<double>(request.y) + radius);
-    const double firstColumnValue = std::max(0.0, static_cast<double>(request.x) - radius);
-    const double lastColumnValue = std::min(static_cast<double>(imageWidth - 1), static_cast<double>(request.x) + radius);
-    const auto firstRow = static_cast<std::int32_t>(firstRowValue);
-    const auto lastRow = static_cast<std::int32_t>(lastRowValue);
-    const auto firstColumn = static_cast<std::int32_t>(firstColumnValue);
-    const auto lastColumn = static_cast<std::int32_t>(lastColumnValue);
-    const double radiusSquared = radius * radius;
-    for (std::int32_t row = firstRow; row <= lastRow; ++row) {
-        const double deltaY = static_cast<double>(row) - request.y;
-        for (std::int32_t column = firstColumn; column <= lastColumn; ++column) {
-            const double deltaX = static_cast<double>(column) - request.x;
-            const double distanceSquared = deltaY * deltaY + deltaX * deltaX;
-            if ((includeBoundary && distanceSquared <= radiusSquared)
-                || (!includeBoundary && distanceSquared < radiusSquared)) {
-                consume(static_cast<std::size_t>(row) * static_cast<std::size_t>(imageWidth)
-                    + static_cast<std::size_t>(column));
-            }
-        }
-    }
 }
 
 template <typename Consumer>
@@ -468,8 +459,7 @@ std::array<float, 3> calculateUnfilteredAverages(
     const ChannelAverage average = request.type == 2
         ? calculateRectangle(channelX, channelY, channelZ, width, height, channels,
             request.x, request.y, request.width, request.height)
-        : calculateCircle(channelX, channelY, channelZ, width, height, channels,
-            request.x, request.y, request.type == 0 ? 1.0 : request.width / 2.0);
+        : calculateCircle(channelX, channelY, channelZ, width, height, channels, request);
     if (channels == 1) return { 0.0F, static_cast<float>(average.y / average.count), 0.0F };
     return {
         static_cast<float>(average.x / average.count),

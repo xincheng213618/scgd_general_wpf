@@ -1,4 +1,5 @@
 using LocalizedText = global::ColorVision.Engine.EngineLocalization;
+using ColorVision.Algorithms;
 using ColorVision.ImageEditor.Algorithms;
 using ColorVision.Common.MVVM;
 using ColorVision.Core;
@@ -241,6 +242,8 @@ namespace ColorVision.Engine.Templates.Jsons.FOV2
 
     public sealed class DVCMFovV2(EditorContext editorContext, ImageViewConfig config) : IDVContextMenu
     {
+        public AlgorithmInteractiveGroupPresentation AnalysisGroup => AlgorithmMenuGroups.FieldGeometry;
+
         public Type ContextType => typeof(IRectangle);
 
         public IEnumerable<MenuItem> GetContextMenuItems(object obj)

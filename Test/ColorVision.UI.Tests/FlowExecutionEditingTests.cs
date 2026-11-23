@@ -20,6 +20,7 @@ using FlowEngineLib.End;
 using FlowEngineLib.Logical;
 using FlowEngineLib.Start;
 using Quartz;
+using SqlSugar;
 using ST.Library.UI.NodeEditor;
 using System.Collections.ObjectModel;
 using System.Globalization;
@@ -36,6 +37,99 @@ namespace ColorVision.UI.Tests;
 public sealed class FlowExecutionEditingTests
 {
     private static readonly FieldInfo ConfigHandlerInstance = typeof(ConfigHandler).GetField("_instance", BindingFlags.Static | BindingFlags.NonPublic)!;
+
+    [Theory]
+    [InlineData(FlowStatus.Completed)]
+    [InlineData(FlowStatus.Canceled)]
+    [InlineData(FlowStatus.Failed)]
+    public void BatchOutcomeStaysWithTheDatabaseThatCreatedItAfterReconnect(FlowStatus terminalStatus)
+    {
+        DirectoryInfo directory = Directory.CreateTempSubdirectory("ColorVision-flow-batch-affinity-");
+        try
+        {
+            MySqlConnectedEndpoint? connected = null;
+            MySqlConnectedEndpoint CreateEndpoint(string fileName) => new(endpoint => ReferenceEquals(endpoint, connected),
+                () => new SqlSugarClient(new ConnectionConfig
+                {
+                    ConnectionString = $"Data Source={Path.Combine(directory.FullName, fileName)};Pooling=False",
+                    DbType = DbType.Sqlite, InitKeyType = InitKeyType.Attribute, IsAutoCloseConnection = true,
+                }));
+            MySqlConnectedEndpoint first = CreateEndpoint("a.db");
+            MySqlConnectedEndpoint second = CreateEndpoint("b.db");
+            using (var firstDb = first.CreateDbClient()) firstDb.CodeFirst.InitTables<MeasureBatchModel>();
+            int otherBatchId;
+            using (var secondDb = second.CreateDbClient())
+            {
+                secondDb.CodeFirst.InitTables<MeasureBatchModel>();
+                otherBatchId = secondDb.Insertable(new MeasureBatchModel { Name = "other run", Code = "B", Result = "unchanged" }).ExecuteReturnIdentity();
+            }
+
+            connected = first;
+            WithFixture(fixture =>
+            {
+                TimeSpan deadline = TimeSpan.FromSeconds(10);
+                Task<FlowRunFinalizedData?> run = fixture.Session.RunFlowAndWaitForFinalizationAsync();
+                fixture.Run = run;
+                PumpUntil(Task.WhenAny(fixture.PreProcess.Entered.Task, run).WaitAsync(deadline));
+                Assert.True(fixture.PreProcess.Entered.Task.IsCompleted);
+                MeasureBatchModel startingBatch = ReadBatch(first, otherBatchId);
+                Assert.NotEqual("B", startingBatch.Code);
+                Assert.Equal(FlowStatus.Ready, startingBatch.FlowStatus);
+                using (var db = first.CreateDbClient())
+                {
+                    startingBatch.ArchiveStatus = ArchiveStatus.Archived;
+                    db.Updateable(startingBatch).UpdateColumns(batch => batch.ArchiveStatus).ExecuteCommand();
+                }
+
+                // The original flow stays active while a second database with the same batch ID becomes current.
+                connected = second;
+                if (terminalStatus == FlowStatus.Canceled)
+                    fixture.Session.StopFlow(updateSummary: false);
+                fixture.PreProcess.Release.SetResult(true);
+
+                if (terminalStatus != FlowStatus.Canceled)
+                {
+                    PumpUntil(Task.WhenAny(fixture.Sink.Started.Task, run).WaitAsync(deadline));
+                    Assert.True(fixture.Sink.Started.Task.IsCompletedSuccessfully);
+                    CVStartCFC action = fixture.Sink.Started.Task.GetAwaiter().GetResult();
+                    Assert.True(FlowMeasurementBatch.TryGetBoundEndpoint(action, out var owner));
+                    Assert.Same(first, owner);
+                    Assert.Equal(otherBatchId, FlowMeasurementBatch.ResolveId(action, first, _ => throw new InvalidOperationException()));
+                    Assert.Null(FlowMeasurementBatch.ResolveId(action, second, _ => throw new InvalidOperationException()));
+
+                    fixture.Start.Complete(action);
+                    PumpUntil(Task.WhenAny(fixture.PostProcess.Entered.Task, run).WaitAsync(deadline));
+                    Assert.True(fixture.PostProcess.Entered.Task.IsCompleted);
+                    Assert.Equal(FlowStatus.Completed, ReadBatch(first, otherBatchId).FlowStatus);
+                    DateTime now = DateTime.UtcNow;
+                    fixture.PostProcess.Release.SetResult(terminalStatus == FlowStatus.Failed
+                        ? [new PostProcessExecutionResult("Synthetic required postprocess", "Test", PostProcessFailurePolicy.Required,
+                            PostProcessExecutionStatus.ReturnedFalse, "synthetic error", now, now)]
+                        : []);
+                }
+
+                PumpUntil(run.WaitAsync(deadline));
+                MeasureBatchModel finished = ReadBatch(first, otherBatchId);
+                Assert.Equal(startingBatch.Code, finished.Code);
+                Assert.Equal(ArchiveStatus.Archived, finished.ArchiveStatus);
+                Assert.Equal(terminalStatus, finished.FlowStatus);
+                if (terminalStatus == FlowStatus.Failed) Assert.Contains("synthetic error", finished.Result);
+                MeasureBatchModel untouched = ReadBatch(second, otherBatchId);
+                Assert.Equal(("B", "unchanged", FlowStatus.Ready), (untouched.Code, untouched.Result, untouched.FlowStatus));
+            }, () => connected);
+        }
+        finally
+        {
+            foreach (FileInfo file in directory.EnumerateFiles()) file.Delete();
+            directory.Delete();
+        }
+
+        static MeasureBatchModel ReadBatch(MySqlConnectedEndpoint endpoint, int id)
+        {
+            using var db = endpoint.CreateDbClient();
+            return Assert.IsType<MeasureBatchModel>(db.Queryable<MeasureBatchModel>().First(batch => batch.Id == id));
+        }
+    }
 
     [Fact]
     public void CopilotFlowSnapshotIdentityIsStableAcrossRevisionsAndDistinctForOtherHosts()
@@ -339,10 +433,26 @@ public sealed class FlowExecutionEditingTests
         {
             ViewFlow view = fixture.Manager.View;
             view.ShowExecutionSummary("Previous run completed");
+            var statusItem = Assert.Single(((IActiveDocumentStatusProvider)view).GetActiveStatusBarItems());
+            var toolbar = Assert.IsType<ContentPresenter>(statusItem.ContentFactory!());
+            toolbar.ApplyTemplate();
+            var statusName = Assert.IsType<TextBlock>(toolbar.ContentTemplate.FindName("StatusFlowName", toolbar));
+            var statusRun = Assert.IsType<Button>(toolbar.ContentTemplate.FindName("StatusRunButton", toolbar));
+            var statusProgress = Assert.IsType<ProgressBar>(toolbar.ContentTemplate.FindName("StatusFlowProgress", toolbar));
+            fixture.Manager.SelectedFlowParam = new FlowParam { Name = "Status workflow" };
             AssertExecutionControls(view, active: false, stopping: false, indeterminate: true);
+            Assert.Equal("Status workflow", statusName.Text);
+            Assert.Same(view.RunFlowCommand, statusRun.Command);
+            Assert.Equal(Visibility.Collapsed, statusProgress.Visibility);
 
             Task.Run(() => fixture.Manager.FlowControl.IsFlowRun = true).GetAwaiter().GetResult();
             AssertExecutionControls(view, active: true, stopping: false, indeterminate: false);
+            Assert.Equal(Visibility.Visible, statusProgress.Visibility);
+            Assert.True(statusProgress.IsIndeterminate);
+            Assert.False(statusRun.IsEnabled);
+            fixture.Manager.BatchProgress = 42;
+            Assert.Equal(42, statusProgress.Value);
+            Assert.False(statusProgress.IsIndeterminate);
 
             // Queue stale transitions without pumping; both notifications must present the final current state.
             Task.Run(() =>
@@ -352,6 +462,8 @@ public sealed class FlowExecutionEditingTests
                 fixture.Manager.FlowControl.IsFlowRun = false;
             }).GetAwaiter().GetResult();
             AssertExecutionControls(view, active: false, stopping: false, indeterminate: true);
+            Assert.Equal(Visibility.Collapsed, statusProgress.Visibility);
+            Assert.True(statusRun.IsEnabled);
             view.StopFlowCommand.Execute(null);
             Assert.Equal("Previous run completed", view.logTextBox.Text);
         });
@@ -1230,7 +1342,7 @@ public sealed class FlowExecutionEditingTests
     internal static void WithCopilotGraph(Action<FlowCopilotService, STNodeEditor> action)
         => WithFixture(fixture => action(fixture.Manager.Copilot, fixture.Manager.View.STNodeEditorMain));
 
-    private static void WithFixture(Action<EditingFixture> action)
+    private static void WithFixture(Action<EditingFixture> action, Func<MySqlConnectedEndpoint?>? getBatchEndpoint = null)
     {
         WpfTestHost.Invoke(() =>
         {
@@ -1247,7 +1359,7 @@ public sealed class FlowExecutionEditingTests
             {
                 Application.Current.Resources.MergedDictionaries.Add(theme);
                 Assert.False(MySqlSetting.IsConnect, "This fixture must not run against a connected result database.");
-                using var fixture = new EditingFixture();
+                using var fixture = new EditingFixture(getBatchEndpoint);
                 action(fixture);
             }
             finally
@@ -1308,7 +1420,7 @@ public sealed class FlowExecutionEditingTests
         public StartSinkNode Sink { get; } = new();
         public Task? Run { get; set; }
 
-        public EditingFixture()
+        public EditingFixture(Func<MySqlConnectedEndpoint?>? getBatchEndpoint = null)
         {
             // Supply a healthy in-memory action list without touching the user's configuration.
             var preProcessManager = (PreProcessManager)RuntimeHelpers.GetUninitializedObject(typeof(PreProcessManager));
@@ -1317,7 +1429,7 @@ public sealed class FlowExecutionEditingTests
             typeof(PreProcessManager).GetField("<Processes>k__BackingField", BindingFlags.Instance | BindingFlags.NonPublic)!
                 .SetValue(preProcessManager, new ObservableCollection<PreProcessAction> { new(PreProcess) { IsEnabled = true } });
             PreProcessInstance.SetValue(null, preProcessManager);
-            View = new ViewFlow(Manager, isStandalone: true);
+            View = new ViewFlow(Manager, isStandalone: true, getBatchEndpoint);
             View.FlowEngineControl.AttachNodeEditor(View.STNodeEditorMain);
             Session = (FlowExecutionSession)typeof(ViewFlow).GetField("_executionSession", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(View)!;
             MainSession = (FlowExecutionSession)typeof(ViewFlow).GetField("_executionSession", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(Manager.View)!;
@@ -1325,7 +1437,8 @@ public sealed class FlowExecutionEditingTests
             SessionJournal.SetValue(Session, journalCoordinator);
             SessionJournal.SetValue(MainSession, journalCoordinator);
             typeof(FlowExecutionSession).GetField("_runFinalizer", BindingFlags.Instance | BindingFlags.NonPublic)!
-                .SetValue(Session, new FlowRunFinalizer(PostProcess, new NoPersistence()));
+                .SetValue(Session, new FlowRunFinalizer(PostProcess,
+                    getBatchEndpoint == null ? new NoPersistence() : new DefaultFlowRunFinalizationPersistence()));
             typeof(FlowExecutionSession).GetField("_runFinalizer", BindingFlags.Instance | BindingFlags.NonPublic)!
                 .SetValue(MainSession, new FlowRunFinalizer(PostProcess, new NoPersistence()));
             Start.Create();

@@ -1,3 +1,4 @@
+using ColorVision.Database;
 using ColorVision.Engine;
 using ColorVision.Engine.Services;
 using ColorVision.Engine.Services.Results;
@@ -26,13 +27,15 @@ public sealed class AlgorithmResultHistoryTests
         ];
         int queries = 0;
         db.Aop.OnLogExecuting = (_, _) => queries++;
+        var origin = new MySqlConnectedEndpoint(_ => true, CreateDatabase);
 
-        var views = AlgorithmResultHistory.CreateViews(rows, db);
+        var views = AlgorithmResultHistory.CreateViews(rows, db, origin);
 
         Assert.Equal(1, queries);
         Assert.Equal(rows.Select(row => row.Id), views.Select(view => view.Id));
         Assert.Equal(new string?[] { "batch-one", null, "batch-one", "", null, null, null, null }, views.Select(view => view.Batch));
         for (int index = 0; index < rows.Length; index++) Assert.Same(rows[index], views[index].AlgResultMasterModel);
+        Assert.All(views, view => Assert.Same(origin, view.AlgResultMasterModel.DatabaseEndpoint));
         Assert.Equal("template", views[0].POITemplateName);
         Assert.Equal("diagnostic", views[0].ResultDesc);
         Assert.Equal("2.0", views[0].Version);

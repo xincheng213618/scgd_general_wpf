@@ -6,12 +6,58 @@ using System.Net;
 using System.Net.Sockets;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Text;
 
 namespace ColorVision.UI.Tests;
 
 public sealed class SocketShutdownTests
 {
     private static readonly TimeSpan TestTimeout = TimeSpan.FromSeconds(5);
+
+    [Fact]
+    public async Task TextModeRepliesToLegacyAndFragmentedJsonOnTheSameConnection()
+    {
+        string databasePath = Path.Combine(Path.GetTempPath(), $"ColorVision-Socket-{Guid.NewGuid():N}.db");
+        try
+        {
+            using var messages = new SocketMessageManager(databasePath, new SocketMessageManagerConfig(), dispatcher: null);
+            using var listener = new LoopbackListener();
+            var manager = CreateManager(new SocketWorkerTracker(), new SingleListenerFactory(listener),
+                messageManager: messages, textHandler: new EchoJsonTextDispatcher());
+            try
+            {
+                manager.StartServer();
+                Assert.True(listener.Started.Wait(TestTimeout));
+                using var deadline = new CancellationTokenSource(TestTimeout);
+                using var client = new TcpClient();
+                await client.ConnectAsync(IPAddress.Loopback, listener.Port, deadline.Token);
+                NetworkStream stream = client.GetStream();
+                const string expectedHandshake = "T0000,SN001;";
+                await stream.WriteAsync("T0000,SN001;{\"method\":\"get\","u8.ToArray(), deadline.Token);
+                var handshake = new byte[Encoding.UTF8.GetByteCount(expectedHandshake)];
+                await stream.ReadExactlyAsync(handshake, deadline.Token);
+                Assert.Equal(expectedHandshake, Encoding.UTF8.GetString(handshake));
+
+                await stream.WriteAsync("\"param\":[\"ResultSavePath\"]}T0000,SN002;"u8.ToArray(), deadline.Token);
+                const string expected = """{"method":"get","param":["ResultSavePath"]}T0000,SN002;""";
+                var replies = new byte[Encoding.UTF8.GetByteCount(expected)];
+                await stream.ReadExactlyAsync(replies, deadline.Token);
+                Assert.Equal(expected, Encoding.UTF8.GetString(replies));
+            }
+            finally { Assert.True(manager.Shutdown(TestTimeout)); }
+        }
+        finally
+        {
+            Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
+            File.Delete(databasePath);
+        }
+    }
+
+    private sealed class EchoJsonTextDispatcher : ISocketTextDispatcher
+    {
+        public bool FrameJsonObjects => true;
+        public string Handle(NetworkStream stream, string request) => request;
+    }
 
     [Fact]
     public void WorkerTrackerUsesOneFiniteDeadlineAndRepeatedShutdownConverges()
@@ -843,11 +889,13 @@ public sealed class SocketShutdownTests
         ISocketServerListenerFactory listenerFactory,
         int serverPort = 0,
         Action<Action>? queueShutdownWork = null,
-        SocketConfig? config = null)
+        SocketConfig? config = null,
+        SocketMessageManager? messageManager = null,
+        ISocketTextDispatcher? textHandler = null)
     {
-        var messageManager = (SocketMessageManager)RuntimeHelpers.GetUninitializedObject(typeof(SocketMessageManager));
+        messageManager ??= (SocketMessageManager)RuntimeHelpers.GetUninitializedObject(typeof(SocketMessageManager));
         var jsonDispatcher = (SocketJsonDispatcher)RuntimeHelpers.GetUninitializedObject(typeof(SocketJsonDispatcher));
-        var textDispatcher = (SocketTextDispatcher)RuntimeHelpers.GetUninitializedObject(typeof(SocketTextDispatcher));
+        var textDispatcher = new SocketTextDispatcher(textHandler == null ? [] : [textHandler]);
         config ??= new SocketConfig
         {
             IPAddress = IPAddress.Loopback.ToString(),

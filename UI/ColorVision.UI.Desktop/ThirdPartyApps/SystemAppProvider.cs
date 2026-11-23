@@ -11,20 +11,6 @@ namespace ColorVision.UI.Desktop.ThirdPartyApps
             {
                 new ThirdPartyAppInfo
                 {
-                    Name = "CMD",
-                    Group = group,
-                    Category = ThirdPartyAppCategory.System,
-                    LaunchPath = "cmd.exe",
-                },
-                new ThirdPartyAppInfo
-                {
-                    Name = "PowerShell",
-                    Group = group,
-                    Category = ThirdPartyAppCategory.System,
-                    LaunchPath = "C:\\Windows\\SysWOW64\\WindowsPowerShell\\v1.0\\powershell.exe",
-                },
-                new ThirdPartyAppInfo
-                {
                     Name = "Control Panel",
                     Group = group,
                     Category = ThirdPartyAppCategory.System,
@@ -44,36 +30,6 @@ namespace ColorVision.UI.Desktop.ThirdPartyApps
                     Category = ThirdPartyAppCategory.System,
                     LaunchPath = "mmc.exe",
                     LaunchArguments = "gpedit.msc",
-                },
-                new ThirdPartyAppInfo
-                {
-                    Name = "System Information",
-                    Group = group,
-                    Category = ThirdPartyAppCategory.System,
-                    LaunchPath = "msinfo32.exe",
-                },
-                new ThirdPartyAppInfo
-                {
-                    Name = "Remote Desktop",
-                    Group = group,
-                    Category = ThirdPartyAppCategory.System,
-                    LaunchPath = "mstsc.exe",
-                },
-                new ThirdPartyAppInfo
-                {
-                    Name = "Event Viewer",
-                    Group = group,
-                    Category = ThirdPartyAppCategory.System,
-                    LaunchPath = "mmc.exe",
-                    LaunchArguments = "eventvwr.msc",
-                },
-                new ThirdPartyAppInfo
-                {
-                    Name = "Task Scheduler",
-                    Group = group,
-                    Category = ThirdPartyAppCategory.System,
-                    LaunchPath = "mmc.exe",
-                    LaunchArguments = "taskschd.msc",
                 },
                 new ThirdPartyAppInfo
                 {

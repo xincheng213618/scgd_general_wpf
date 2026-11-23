@@ -8,14 +8,14 @@ namespace ProjectKB;
 
 internal static class KBResultImageDimensions
 {
-    public static bool TryPopulate(KBItemMaster result)
+    public static bool TryPopulate(KBItemMaster result, Func<int, IReadOnlyList<MeasureResultImgModel>>? readMeasureResults = null)
     {
         ArgumentNullException.ThrowIfNull(result);
         if (ResultImageDimensions.IsValid(result.ImageWidth, result.ImageHeight))
             return false;
 
         bool found = TryReadFromFile(result.ResultImagFile, out int width, out int height)
-            || TryReadFromMeasureResults(result.BatchId, result.ResultImagFile, out width, out height);
+            || TryReadFromMeasureResults(result.BatchId, result.ResultImagFile, out width, out height, readMeasureResults);
         if (!found)
             return false;
 
@@ -54,7 +54,8 @@ internal static class KBResultImageDimensions
         }
     }
 
-    public static bool TryReadFromMeasureResults(int batchId, string? expectedFilePath, out int width, out int height)
+    public static bool TryReadFromMeasureResults(int batchId, string? expectedFilePath, out int width, out int height,
+        Func<int, IReadOnlyList<MeasureResultImgModel>>? readMeasureResults = null)
     {
         width = 0;
         height = 0;
@@ -63,7 +64,10 @@ internal static class KBResultImageDimensions
 
         try
         {
-            List<MeasureResultImgModel> images = MeasureImgResultDao.Instance.GetAllByBatchId(batchId);
+            // An explicit reader owns the source database even when its results are empty.
+            IReadOnlyList<MeasureResultImgModel> images = readMeasureResults == null
+                ? MeasureImgResultDao.Instance.GetAllByBatchId(batchId)
+                : readMeasureResults(batchId);
             MeasureResultImgModel? exact = images.FirstOrDefault(item => PathsEqual(item.FileUrl, expectedFilePath));
             if (exact != null && ResultImageDimensions.TryReadFrameInfo(exact.ImgFrameInfo, out width, out height))
                 return true;

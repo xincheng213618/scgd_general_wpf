@@ -65,26 +65,37 @@ namespace ColorVision.Engine.FlowProcessing.Editor
 
         private static bool IsPathExists(IEnumerable<STNode> startNodes, HashSet<STNode> endNodes, ConnectionInfo[] connections)
         {
-            var children = connections
-                .Where(connection => connection.Output.DataType == typeof(CVStartCFC) && connection.Input.DataType == typeof(CVStartCFC))
-                .GroupBy(connection => connection.Output.Owner)
-                .ToDictionary(
-                    group => group.Key,
-                    group => group.Select(connection => connection.Input.Owner).Distinct().ToArray());
+            var children = new Dictionary<STNode, List<STNode>>();
+            foreach (ConnectionInfo connection in connections)
+            {
+                if (connection.Output.DataType != typeof(CVStartCFC) || connection.Input.DataType != typeof(CVStartCFC))
+                    continue;
+
+                STNode source = connection.Output.Owner;
+                if (!children.TryGetValue(source, out List<STNode>? targets))
+                    children.Add(source, targets = new List<STNode>(1));
+                targets.Add(connection.Input.Owner);
+            }
+
             var visited = new HashSet<STNode>();
-            var queue = new Queue<STNode>(startNodes);
+            var queue = new Queue<STNode>();
+            foreach (STNode start in startNodes)
+            {
+                if (visited.Add(start))
+                    queue.Enqueue(start);
+            }
 
             while (queue.Count > 0)
             {
                 STNode current = queue.Dequeue();
                 if (endNodes.Contains(current))
                     return true;
-                if (!visited.Add(current) || !children.TryGetValue(current, out STNode[]? nextNodes))
+                if (!children.TryGetValue(current, out List<STNode>? nextNodes))
                     continue;
 
                 foreach (STNode child in nextNodes)
                 {
-                    if (!visited.Contains(child))
+                    if (visited.Add(child))
                         queue.Enqueue(child);
                 }
             }

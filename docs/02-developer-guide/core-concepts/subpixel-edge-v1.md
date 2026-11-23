@@ -5,7 +5,6 @@ status: "current"
 summary: "SubpixelEdge 保留实现的参数、结果与验证契约；默认运行时由 Experimental 门禁拒绝执行。"
 aliases: ["亚像素边缘如何采样、为什么默认不可执行","SubpixelEdge","SubpixelEdgeAlgorithmProvider"]
 code_paths: ["UI/ColorVision.ImageEditor/Algorithms/SubpixelEdgeAlgorithmProvider.cs","UI/ColorVision.ImageEditor/Algorithms/StandardAlgorithmCatalog.cs","UI/ColorVision.ImageEditor/Algorithms/ImageAlgorithmPlatform.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/AlgorithmReleaseGateTests.cs"]
 related: ["algorithms.platform","algorithms.index"]
 ---
 
@@ -64,4 +63,4 @@ ImageView 的“算法调用 → 亚像素边缘”提供水平卡尺、垂直�
 
 Provider 只读 Runner 提供的中立帧，不创建第二份整图、不取得 borrowed 输入所有权。每条卡尺仅分配与该卡尺采样数成线性的 profile、两块平滑工作区和响应数组；三次 box pass 是 `O(samples)`，不随 Sigma 扩成二次卷积。卡尺数、单卡尺采样数、总采样数和 overlay 数都有显式上限。取消在卡尺、采样和平滑 pass 内轮询，Runner 在成功、失败或取消后按统一规则释放 transferred input。
 
-数值测试使用已知 31.35 px 的 logistic 边缘，在全部九种 canonical 格式上以 0.18 px 容差验证同一坐标；同时覆盖方向极性、物理坐标、多卡尺、带宽越界/钳位、NaN、弱边缘、短卡尺、资源上限、输入只读、取消与所有权，以及 ImageView/Batch/Flow 的 artifact 和 Visual 生命周期。
+验收使用已知坐标的边缘，按实际位深、方向极性与物理单位核对结果。

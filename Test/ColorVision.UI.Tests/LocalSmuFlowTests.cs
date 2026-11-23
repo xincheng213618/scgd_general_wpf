@@ -82,13 +82,12 @@ public sealed class LocalSmuFlowTests
                 FlowLocalExecution.CanExecuteLocally = LocalSmuFlowExecution.Supports;
                 int completed = 0, closed = 0;
                 CVStartCFC? completedAction = null;
+                var session = new object();
                 FlowLocalExecution.CreateForNode = (_, request) =>
                 {
-                    return new FakeExecution(request.EventName == "CloseOutput" ? () =>
-                    {
-                        if (kind == 5) Assert.Equal(1, Newtonsoft.Json.Linq.JObject.FromObject(request.Data).Value<int>("Channel"));
-                        closed++;
-                    } : () => { }, action => { completed++; completedAction = action; }, request.EventName == "ModelGetData");
+                    Assert.NotEqual("CloseOutput", request.EventName);
+                    return new FakeExecution(session, () => closed++, action => { completed++; completedAction = action; },
+                        request.EventName == "ModelGetData");
                 };
                 using var container = new CVNodeContainer();
                 var start = new RuntimeTestStartNode();
@@ -489,9 +488,19 @@ public sealed class LocalSmuFlowTests
         public int Close(int handle) => 1;
     }
 
-    private sealed class FakeExecution(Action execute, Action<CVStartCFC> complete, bool model) : FlowLocalExecution
+    private sealed class FakeExecution(object session, Action close, Action<CVStartCFC> complete, bool model)
+        : FlowLocalExecution, FlowEngineLib.SMU.ISmuFlowOutput
     {
-        public override void Execute() => execute();
+        private bool executed;
+
+        public override void Execute() => executed = true;
+
+        public FlowEngineLib.SMU.SmuLocalOutputClose CaptureCloseOutput()
+        {
+            Assert.True(executed);
+            return new(session, model ? FlowEngineLib.SMUChannelType.B : FlowEngineLib.SMUChannelType.A, close);
+        }
+
         public override object Complete(CVStartCFC action)
         {
             complete(action);

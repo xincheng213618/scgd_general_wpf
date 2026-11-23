@@ -30,6 +30,12 @@ public sealed class SensorConfigurationDraft
     {
         ServiceSettingsChanged = false;
         DisplaySettingsChanged = false;
+        if (string.IsNullOrWhiteSpace(Config.Category))
+        {
+            error = string.Format(Properties.Resources.FieldCannotBeBlank, Properties.Resources.传感器类型);
+            return false;
+        }
+
         var serviceSettings = JObject.FromObject(Config);
         bool serviceEdited = !JToken.DeepEquals(initialServiceSettings, serviceSettings);
         bool displayEdited = !JToken.DeepEquals(initialDisplaySettings, JObject.FromObject(DisplayConfig));

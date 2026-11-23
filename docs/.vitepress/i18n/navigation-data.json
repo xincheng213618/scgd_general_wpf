@@ -97,12 +97,6 @@
         },
         {
           "text": {
-            "root": "Test"
-          },
-          "link": "/knowledge/code/source-Test"
-        },
-        {
-          "text": {
             "root": "AndroidWebViewApp"
           },
           "link": "/knowledge/code/source-AndroidWebViewApp"
@@ -201,7 +195,7 @@
         },
         {
           "text": {
-            "root": "构建、测试与交付"
+            "root": "构建与交付"
           },
           "link": "/knowledge/domains/delivery"
         },

@@ -5,7 +5,6 @@ status: "current"
 summary: "完整圆环与偏心弱环的区域平均信号比、GMR 阶次及 Flow 正常未检出零值约定；不自动证明光路阶次或现场精度。"
 aliases: ["圆环鬼影", "LocalRingGhostNode", "GMR1", "GMR2", "RingGhostMeasurementParameters", "ring-ghost/1.0", "平均信号比"]
 code_paths: ["UI/ColorVision.ImageEditor/Algorithms/DisplayMetrology/DisplayRingGhost.cs", "UI/ColorVision.ImageEditor/Algorithms/DisplayMetrology/DisplayRingGhostRefinement.cs", "UI/ColorVision.ImageEditor/Algorithms/DisplayMetrology/DisplayRingGhostSaturation.cs", "UI/ColorVision.ImageEditor/Algorithms/DisplayMetrology/RingGhostMeasurementParameters.cs", "UI/ColorVision.ImageEditor/Algorithms/RingGhostOverlayRenderer.cs", "Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalRingGhostNode.cs", "Engine/ColorVision.Engine/Templates/Jsons/RingGhost"]
-test_paths: ["Test/ColorVision.UI.Tests/RingGhostMeasurementTests.cs", "Test/ProjectARVRPro.Tests/GhostFlowAndProcessTests.cs"]
 related: ["algorithms.display-metrology", "projects.arvr-pro-processes", "engine.results", "flow.node-extension"]
 ---
 
@@ -104,6 +103,8 @@ Flow 节点采用当前客户光波导方案“一阶必有、正常未检出输
 
 节点输入优先上游原位深内存帧，没有内存帧时从 IN 的图像/校正记录读取原图；本地图片通过“加载图片”节点输入。当前输入是线性 8/16 位 RAW、灰度 TIFF 或指定 RGB 的 G 通道相对信号；主缓冲为 CVCIE 时明确拒绝，避免把原图绑定到 CIE、数值却取自 RAW。成功后按 `Ghost` 类型、`ring-ghost/1.0` 版本保存主记录及唯一公共文件明细，结果文件含原图尺寸、测量区域与内部诊断；未配置目录时使用本机 LocalAppData 下的 `ColorVision/Results/RingGhost`。数据库事务提交后才更新流程输出和发布结果，保存失败清理本次未引用文件，不发布成功消息。历史处理器 `ViewHandleRingGhost` 只处理此版本，避免被远端 Ghost2.0 的处理器解析。项目配方、对外数据及判定见 [ARVRPro 流程与解析配置](../../projects/project-arvr-pro-processes.md)。
 
+持久化图像读取、主从记录写入和结果通知沿用原批次的连接。连接切换后，设备视图忽略原连接的迟到通知。
+
 ## 独立验证与现场一致性
 
-瑞淀公开 Ghosting 示例报告 ghost/parent 亮度比与位移，但使用点阵，未公开本圆环图的物理阶次与 ROI 统计细节，因此不能将上述自动环带均值宣称为瑞淀等效实现。参考 [Radiant 官方资料第 63 页](https://www.radiantvisionsystems.com/sites/default/files/library-documents/Radiant_WBR_P2P-Automotive-Displays_%28GlobalSpec%29_FINAL.pdf#page=63)。`Test/ColorVision.UI.Tests/RingGhostMeasurementTests.cs` 覆盖弱环比值、曝光/尺寸/椭圆变化、阶次映射和残弧/缺环/主像无效边界；仍需客户标注的光路阶次和同图瑞淀输出验证现场一致性。搜索仍从主像内侧约 0.15～0.90 倍半径的峰开始；外侧、交叠、没有足够圆周证据或无法与主像光晕分离的鬼影不保证检出。新增大尺寸、偏心单/双环和偏心残弧回归不能代替现场计量验收。
+瑞淀公开 Ghosting 示例报告 ghost/parent 亮度比与位移，但使用点阵，未公开本圆环图的物理阶次与 ROI 统计细节，因此不能将上述自动环带均值宣称为瑞淀等效实现。参考 [Radiant 官方资料第 63 页](https://www.radiantvisionsystems.com/sites/default/files/library-documents/Radiant_WBR_P2P-Automotive-Displays_%28GlobalSpec%29_FINAL.pdf#page=63)。 现场需要客户标注的光路阶次和同图瑞淀输出。搜索从主像内侧约 0.15～0.90 倍半径的峰开始。外侧、交叠、圆周证据不足或与主像光晕难以分离的鬼影可能漏检。

@@ -4,8 +4,7 @@ knowledge_type: "topic"
 status: "current"
 summary: "WindowsServicePlugin的在线选包与缓存、本机完整安装、数据库版本切换和恢复边界；下载、日志完成、备份与实际服务状态不能互相替代。"
 aliases: ["Windows 服务管理器", "CVWindowsService 本机安装", "服务包在线下载", "WindowsServicePlugin", "ServiceInstallViewModel", "ServiceManagerAppProvider", "ServiceManagerConfig", "ServicePackageVersionResolver", "ServiceDatabaseVersionMap", "ServiceHostWindowsServiceController", "InstallServiceManager", "AutoUpdateDatabase", "UpdateServerUrl", "DownloadLocation", "IsFullServicePackageZip", "FindCachedCvWindowsServicePackage", "GetLatestCvWindowsServicePackageAsync", "ServiceManagerWindow", "ServiceOperationLog"]
-code_paths: ["Plugins/WindowsServicePlugin/WindowsServicePlugin.csproj", "Plugins/WindowsServicePlugin/manifest.json", "Plugins/WindowsServicePlugin/App.xaml.cs", "Plugins/Directory.Build.props", "Plugins/WindowsServicePlugin/ServiceManager/MenuServiceManager.cs", "Plugins/WindowsServicePlugin/ServiceManager/InstallServiceManager.cs", "Plugins/WindowsServicePlugin/ServiceManager/ServiceInstallViewModel.cs", "Plugins/WindowsServicePlugin/ServiceManager/ServiceInstallViewModel.Install.cs", "Plugins/WindowsServicePlugin/ServiceManager/ServiceInstallViewModel.Backup.cs", "Plugins/WindowsServicePlugin/ServiceManager/ServiceInstallWindow.xaml", "Plugins/WindowsServicePlugin/ServiceManager/ServiceInstallWindow.xaml.cs", "Plugins/WindowsServicePlugin/ServiceManager/ServiceManagerConfig.cs", "Plugins/WindowsServicePlugin/ServiceManager/ServiceManagerViewModel.Config.cs", "Plugins/WindowsServicePlugin/ServiceManager/ServiceManagerViewModel.Logs.cs", "Plugins/WindowsServicePlugin/ServiceManager/ServiceManagerViewModel.MySql.cs", "Plugins/WindowsServicePlugin/ServiceManager/ServiceHostWindowsServiceController.cs", "Plugins/WindowsServicePlugin/ServiceManager/ServiceLogCleanup.cs", "Plugins/WindowsServicePlugin/ServiceManager/ServiceDatabaseVersionMap.cs", "Plugins/WindowsServicePlugin/ServiceManager/Mysql/MySqlServiceManager.cs", "Plugins/WindowsServicePlugin/ServiceManager/MySqlServiceHelper.cs", "Plugins/WindowsServicePlugin/ServiceManager/Mqtt/MqttServiceManager.cs", "Plugins/WindowsServicePlugin/Menus", "UI/ColorVision.UI/Menus/MenuManager.cs", "UI/ColorVision.UI/Marketplace/MarketplaceConfig.cs", "ColorVision/MainWindow.xaml.cs", "Engine/ColorVision.Engine/Mysql/MySqlDatabaseMaintenanceService.cs", "Plugins/WindowsServicePlugin/ServiceManager/ServiceManagerWindow.xaml", "Plugins/WindowsServicePlugin/ServiceManager/ServiceManagerWindow.xaml.cs", "Plugins/WindowsServicePlugin/ServiceManager/ServiceManagerStyles.xaml", "Plugins/WindowsServicePlugin/ServiceManager/ServiceOperationLog.xaml", "Plugins/WindowsServicePlugin/ServiceManager/ServiceOperationLog.xaml.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/ServiceDatabaseVersionMapTests.cs","Test/ColorVision.UI.Tests/ServiceInstallDownloadTests.cs","Test/ColorVision.UI.Tests/MySqlBackupRestoreSafetyTests.cs","Test/ColorVision.UI.Tests/ThirdPartyAppInfoTests.cs","Test/ColorVision.UI.Tests/ServiceHostServicePolicyTests.cs"]
+code_paths: ["Plugins/WindowsServicePlugin/WindowsServicePlugin.csproj","Plugins/WindowsServicePlugin/manifest.json","Plugins/WindowsServicePlugin/App.xaml.cs","Plugins/Directory.Build.props","Plugins/WindowsServicePlugin/ServiceManager","Plugins/WindowsServicePlugin/Menus","UI/ColorVision.UI/Menus/MenuManager.cs","UI/ColorVision.UI/Marketplace/MarketplaceConfig.cs","ColorVision/MainWindow.xaml.cs","Engine/ColorVision.Engine/Mysql/MySqlDatabaseMaintenanceService.cs"]
 related: ["plugins.index", "plugins.getting-started", "delivery.cvwindowsservice", "platform.service-host", "engine.mysql-recovery", "ui.menus", "ui.wizards"]
 ---
 
@@ -23,24 +22,17 @@ related: ["plugins.index", "plugins.getting-started", "delivery.cvwindowsservice
 - `Menus` 中的服务日志菜单提供 localhost REST 日志导出入口，不属于 Backend CVWS API。
 - `InstallServiceManager` 是向导步骤，点击“安装”直接打开模态 `ServiceInstallWindow`，确认安装目录及 MySQL、MQTT、服务组件后再执行安装。关闭窗口后刷新描述与配置状态；`ConfigurationStatus` 仅检查 BaseLocation 非空且目录存在，不检查数据库、服务安装或健康。
 - `ServiceHostWindowsServiceController` 将安装/卸载/启停交给 `ColorVisionServiceHostClient`，返回bool并记录代理缺失、旧版本或失败。执行仍需兼容的代理及服务、文件、数据库权限。
-- “终止”沿用已有客户端入口，服务端已接入[通用进程终止](../../../03-architecture/components/service-host.md#通用进程终止)。服务端检查固定服务名和对应程序名白名单：已注册服务按系统 PID 和注册路径定位，清单内未注册残留仍按完整路径定位；进程树结束后仍核对服务状态，正常“停止”是另一条操作。白名单不固定程序所在目录，不增加调用方授信步骤。
+- “终止”通过权限代理按服务进程白名单结束进程树，随后核对服务状态。常规启停使用服务控制器。 [通用进程终止](../../../03-architecture/components/service-host.md#通用进程终止)
 - 项目虽为WinExe，当前 `App.Application_Startup` 初始化配置/日志/主题、加载Engine后即Shutdown，不是另一套独立服务管理器交付入口。
 
 安装、SQL、备份恢复和服务启停均须明确目标与授权。查看主题或下载元数据不授权这些动作；配置和日志可能含敏感内容，不为排障打印实际密码或完整配置。
 
 ## 窗口与操作分层
 
-服务管理、安装和首次配置选择窗口共用 `ServiceManagerStyles.xaml`，沿用检查更新窗口的 `ColorVision.Themes/Themes/Components/Dialog.xaml` 语义颜色和按钮样式，随宿主切换明暗主题。
-
-- 管理窗口顶部保留“打开目录”，安装根路径放在该入口的提示中；“管理设置”提供目录设置、更新配置和刷新状态。服务行显示名称、版本、服务名及状态，按运行状态显示启动或停止，另保留重启；打开服务目录、安装、卸载和终止放在“更多操作”菜单。停止/未安装使用次要文字色，运行中使用主题强调色，状态文字始终可见。
-- MySQL 页默认显示服务状态和启停；连接、账号、数据库与 SQL 设置以及服务维护分别展开。MQTT 页保留状态和启停，完整可复制路径按需展开。
-- 管理窗口的“服务日志”是 MQTT 后的最后一个标签页，日志占据该页的内容区域，不在服务首页保留日志面板。
-- 安装窗口是操作表单，不显示重复的大标题和说明；顶部直接显示安装根路径、选包和组件选择，数据库升级、数据库手动备份/恢复及保存位置全部平铺。组件是否需要安装仍沿用已有检测结果。忙碌时禁用安装表单，底部固定进度和安装按钮；中间的安装日志始终可见并占据剩余空间，安装成功后自动关闭窗口，失败时保留窗口查看日志。
-- `ServiceOperationLog` 使用 `ModuleLogViewerBinder` 记录本模块日志。两个窗口在初始化完成后调用 `StartCapture()`，在 `OnClosed` 中释放绑定；采集不依赖日志控件的 Loaded/Unloaded 或标签选择状态。管理窗口首次进入日志页之前，以及离开日志页之后产生的记录都会保留，切换标签不会重复绑定或清空日志。
-- “服务日志”页提供两个不同范围的清理入口：“清空当前记录”只清空当前窗口内存中的操作记录，不删除磁盘文件、不启停服务；“一键清空服务日志”清理三个受管理 CVWindowsService 目录中的 `log` 文件。每个服务行的“更多操作”也可只清理该服务日志。磁盘清理前必须确认；原本运行的服务会先通过 ServiceHost 停止，完成后恢复，注册中心优先停止、最后恢复，避免它在清理主服务日志时自动拉起目标服务。
-- `ServiceLogCleanup` 只接受名称为 `log` 的最终目录，只删除其中的普通文件并保留目录结构，递归枚举时跳过重解析点；从配置根目录回退解析服务路径时还要求目标仍位于根目录内。单文件失败会继续处理并汇总，恢复启动失败会明确告警。清理结果不等于服务健康，特别是出现恢复失败时仍须立即核对实际服务状态。
-
-这些调整只改变信息层级与界面交互。服务命令可用条件、安装/备份默认值、数据库和服务处理顺序仍由各 ViewModel 及已有服务实现负责；不能把界面上的状态颜色或日志展开当作操作成功判据。
+- “管理设置”提供目录、更新配置与状态刷新入口。服务行提供启停和重启，单项安装、卸载、终止和日志清理位于“更多操作”。窗口与样式由 `ServiceManagerWindow.xaml`、`ServiceInstallWindow.xaml` 和 `ServiceManagerStyles.xaml` 定义。
+- 安装窗口选择目录、服务包、组件和数据库选项。安装期间禁用表单，成功后自动关闭，失败时保留日志。`ServiceOperationLog` 随窗口开始和结束采集，切换标签时保留记录。
+- “服务日志”页的“清空当前记录”只清窗口内存。“一键清空服务日志”清理三个受管理服务的磁盘日志，服务行可单独清理。磁盘清理需确认，并通过 ServiceHost 停止后恢复原本运行的服务。注册中心先停后启，避免提前拉起主服务。
+- `ServiceLogCleanup` 仅清理目标 `log` 目录内的普通文件，保留目录并跳过重解析点。由安装根目录推导出的路径必须位于根目录内。单文件删除失败会汇总，恢复启动失败时需核对服务状态。
 
 ## 在线选包、回退与缓存
 
@@ -86,11 +78,13 @@ MySQL ZIP安装位置与服务根同级，默认业务用户cv。`MySqlServiceHe
 
 重置 MySQL `root` 密码前会等待 `mysqld` 进程退出。若进程退出超时，安装日志会列出仍运行的进程 ID，供操作员确认应停止的实例。
 
-配置来自ServiceManagerConfig、MySqlServiceConfig和RC设置，写到实际服务目录cfg/MySql.config、WinService.config等；现有MQTT.config固定同步为127.0.0.1:1883、空用户名和密码。MQTT服务对象只保存安装及运行状态。注册中心监控列表还会同步到当前 `RCName` 引用的 `t_scgd_sys_config_monitor` 记录，因为注册中心启动时以数据库值为准并回写本地文件：常规配置同步固定只写 `MySQL,CVMainService_x64,CVMainService_dev`，数据库记录和 `cfg/WinService.config` 的 `Monitor.Services` 保持一致；本地缺少该键时补齐。数据库中找不到当前注册中心对应的监控记录或匹配多个监控记录会使配置同步失败，避免修改错误目标。其它已存在的受管理配置写异常也可传播到安装编排、阻止后续启动，但缺配置文件会跳过。不能沿用“所有同步失败都阻止带旧配置启动”的保证。
+服务管理器将数据库配置写入服务目录的 `cfg/MySql.config`，将与桌面端共用的 MQTT 和注册中心默认参数写入现有的 `cfg/MQTT.config` 和 `cfg/WinService.config`。注册中心启动时以数据库监控列表为准并回写本地文件，因此常规配置同步将 `MySQL,CVMainService_x64,CVMainService_dev` 同步到默认注册中心 `RC_local` 对应的 `t_scgd_sys_config_monitor` 记录和本地 `Monitor.Services`，缺少本地键时补齐。数据库缺少记录或匹配多条记录会使同步失败。其它已存在的受管理配置写异常也可传播到安装编排、阻止后续启动，缺少配置文件时跳过该文件。
 
-服务管理器的 CVWindowsService 页在“注册中心服务”的“更多操作”菜单中提供“移除归档服务检测”，其它服务行不显示此入口，用于旧部署仍按 `Monitor.Services` 反复尝试启动 `CVArchService` 的情况。`ServiceManagerViewModel.Monitoring.cs` 优先从已注册的注册中心程序路径定位 `cfg/WinService.config`，未注册时回退到安装根目录；`RegistrationCenterMonitorConfiguration` 从当前 `RCName` 对应数据库列表中，仅按完整服务名忽略大小写移除归档项，保留其它监控服务，并将清理后的数据库列表同步到本地文件，保留检测周期等其它配置。配置里的非空 `NodeName` 必须与当前 `RCName` 一致；缺文件、缺监控记录或匹配多个记录都报错。
+服务管理器的 CVWindowsService 页在“注册中心服务”的“更多操作”菜单中提供“移除归档服务”。`ServiceManagerViewModel.Monitoring.cs` 优先从已注册的注册中心程序路径定位 `cfg/WinService.config`，未注册时回退到安装根目录。`RegistrationCenterMonitorConfiguration` 从默认注册中心对应的数据库列表中移除 `CVArchService` 并同步到本地文件，保留其它监控服务及检测周期。文件中的非空 `NodeName` 必须与默认注册中心名称一致。缺文件、缺监控记录或匹配多个记录均报错。
 
-点击后先确认运行状态变化：原来运行的注册中心通过 ServiceHost 停止，保存后恢复；原来停止的保持停止。停止失败不会写配置。数据库更新使用事务，本地文件先以临时文件替换，数据库提交失败时尝试恢复原文件；普通写入失败不报告成功。这不是跨数据库和文件的崩溃原子事务，双重恢复失败会明确提示核对两处配置。保存失败仍尝试恢复原先运行的注册中心；保存成功但恢复启动失败会明确提示“配置已保存”和服务状态待处理。此操作不卸载归档服务、不删除归档库或数据，也不要求重装服务包；执行仍须具备数据库、目录写权限和兼容的后台代理。
+从仍使用可编辑 RC 配置的版本升级时，需同步更新已安装的 Windows 服务管理插件。旧插件依赖主程序原有的 RC 配置类型。
+
+确认后，先通过 ServiceHost 停止原先运行的注册中心。保存监控配置成功后，如果本机仍安装 `CVArchService`，通过 ServiceHost 停止并卸载它。保存或卸载失败时也会尝试恢复原先运行的注册中心，原来停止的注册中心保持停止。数据库提交失败时尝试恢复原配置文件，两处恢复状态由错误提示说明。卸载失败时保留已保存的监控配置并提示重试。归档数据库和文件保留。执行需要数据库和目录写权限及兼容的后台代理。
 
 `ServiceManagerConfig.BaseLocation` 是安装根，`MySqlPort` 默认3306；安装窗口的 `InstallServiceChecked/InstallMySqlChecked/InstallMqttChecked` 直接代理同名配置字段，初始缺省分别true/false/false。`AutoUpdateDatabase` 和所选包路径则是安装ViewModel自己的状态，不能把勾选项一律当作已保存配置或已完成动作。
 
@@ -118,12 +112,4 @@ dotnet build .\Plugins\WindowsServicePlugin\WindowsServicePlugin.csproj -c Relea
 .\Scripts\package_plugin.bat WindowsServicePlugin
 ```
 
-- `ServiceDatabaseVersionMapTests` 覆盖主版本数据库映射、包名解析、嵌入exe版本优先及配置回退，不执行真库升级或证明远端包可信。
-- `ServiceInstallDownloadTests` 覆盖发布元数据的真实文件名传递、版本接口的ZIP名称回退，以及单项下载失败时保留其它成功结果；不连接远端、不安装组件。
-- 不卸载本机运行库，也不替代干净Windows机器上的安装验收。
-- `MySqlBackupRestoreSafetyTests` 中插件相关用例检查恢复/重置委托Engine的源码边界，另有恢复阶段失败摘要和临时配置文件测试；不是安装、真库迁移或故障回滚验收。
-- `ThirdPartyAppInfoTests` 包含服务管理器提供器元数据检查，不证明应用角色、Windows权限及后台代理全链可用。
-- `ServiceHostServicePolicyTests` 验证三个业务服务的程序名准入，以及旧归档服务仅允许卸载、拒绝安装或启动的策略边界，不执行真实 SCM 操作。
-- `RegistrationCenterMonitorConfigurationTests` 用内存数据库和临时 XML 验证归档项精确移除、其它注册中心与配置保留、重复清理、缺键补齐、目标拒绝和提交失败时恢复原文件；用替身验证停止失败不写入、保存后恢复以及保存/恢复失败摘要，不执行真实 SCM 操作或连接现场 MySQL。
-
-这些是现存测试范围，不是执行通过声明。客户端源回退/包排序/缓存、完整包识别、下载中断、服务安装/启动失败汇总的真实SCM链路、部分备份、真实SQL迁移和恢复尚不能由这些测试认证；需在获授权的隔离环境逐层验证，不由文档构建替代。
+在获授权的隔离 Windows 环境核对源回退、包识别与下载中断、服务安装及失败汇总、真实 SQL 迁移和备份恢复。

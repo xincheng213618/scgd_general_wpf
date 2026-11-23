@@ -2,6 +2,7 @@ using ColorVision.Engine.Messages;
 using ColorVision.Scheduler;
 using Quartz;
 using System;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Threading;
@@ -14,15 +15,28 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Job
     [DisallowConcurrentExecution]
     public class SpectrumGetDataJob : IJob, IConfigurableJob
     {
+        private readonly Func<IEnumerable<DeviceSpectrum>> devices;
+        private readonly Func<DeviceSpectrum, MsgRecord?> capture;
+
+        public SpectrumGetDataJob() : this(
+            () => ServiceManager.GetInstance().DeviceServices.OfType<DeviceSpectrum>(),
+            device => device.DService.GetData()) { }
+
+        internal SpectrumGetDataJob(Func<IEnumerable<DeviceSpectrum>> devices, Func<DeviceSpectrum, MsgRecord?> capture)
+        {
+            this.devices = devices;
+            this.capture = capture;
+        }
+
         public Type ConfigType => typeof(SpectrumGetDataJobConfig);
 
         public IJobConfig CreateDefaultConfig()
         {
             var config = new SpectrumGetDataJobConfig();
-            var firstDevice = ServiceManager.GetInstance().DeviceServices.OfType<DeviceSpectrum>().FirstOrDefault();
+            var firstDevice = devices().FirstOrDefault(device => !string.IsNullOrWhiteSpace(device.Code));
             if (firstDevice != null)
             {
-                config.DeviceSpectrumName = firstDevice.Config.Name;
+                config.DeviceSpectrumCode = firstDevice.Code;
             }
             return config;
         }
@@ -35,21 +49,12 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Job
             Dispatcher dispatcher = ScheduledDeviceJobHelper.GetApplicationDispatcher();
             MsgRecord? msgRecord = await dispatcher.InvokeAsync(() =>
             {
-                DeviceSpectrum? deviceSpectrum = null;
-                if (schedulerInfo.Config is SpectrumGetDataJobConfig config &&
-                    !string.IsNullOrEmpty(config.DeviceSpectrumName))
-                {
-                    deviceSpectrum = ServiceManager.GetInstance().DeviceServices
-                        .OfType<DeviceSpectrum>()
-                        .FirstOrDefault(d => d.Config.Name == config.DeviceSpectrumName);
-                }
+                if (schedulerInfo.Config is not SpectrumGetDataJobConfig config)
+                    throw ScheduledDeviceJobHelper.CreateDeviceSelectionException(ambiguous: false);
 
-                if (deviceSpectrum == null)
-                {
-                    throw new JobExecutionException(Properties.Resources.Failure);
-                }
-
-                return deviceSpectrum.DService.GetData();
+                var device = ScheduledDeviceJobHelper.ResolveDevice(devices(), config.DeviceSpectrumCode, config.DeviceSpectrumName, out bool ambiguous)
+                    ?? throw ScheduledDeviceJobHelper.CreateDeviceSelectionException(ambiguous);
+                return ScheduledDeviceJobHelper.DispatchCapture(device, capture);
             }, DispatcherPriority.Normal, cancellationToken).Task;
 
             if (msgRecord == null)
@@ -67,7 +72,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Job
             }
             catch (TimeoutException ex)
             {
-                throw new JobExecutionException(Properties.Resources.Timeout, ex);
+                throw new JobExecutionException(EngineLocalization.Get("Scheduler_DeviceReplyWaitTimedOut"), ex);
             }
 
             if (terminalState != MsgRecordState.Success)

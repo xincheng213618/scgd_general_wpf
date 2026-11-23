@@ -1,4 +1,5 @@
 using LocalizedText = global::ColorVision.ImageEditor.DisplayText;
+using ColorVision.Algorithms;
 using ColorVision.ImageEditor.Algorithms;
 using ColorVision.Common.MVVM;
 using ColorVision.Core;
@@ -414,6 +415,8 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.FindCross
 
     public sealed class DVCMFindCrossLocal : IDVContextMenu
     {
+        public AlgorithmInteractiveGroupPresentation AnalysisGroup => AlgorithmMenuGroups.Localization;
+
         private readonly ImageProcessingContext _imageContext;
         private readonly DrawEditorContext _drawContext;
         private readonly ImageViewConfig _config;

@@ -9,6 +9,9 @@
 #include <nlohmann/json.hpp>
 
 #include <array>
+#if defined(_M_X64) && !defined(_M_ARM64EC)
+#include <xmmintrin.h>
+#endif
 #include <algorithm>
 #include <atomic>
 #include <chrono>
@@ -297,11 +300,12 @@ std::vector<std::uint8_t> referenceDistortion(
     int channels,
     bool fisheye,
     int roiX,
-    int roiY)
+    int roiY,
+    float focalLength = 10.0F)
 {
     std::array<float, 9> cameraValues{
-        10.0F, 0.0F, static_cast<float>(fisheye ? width / 2 : cameraCenterX - roiX),
-        0.0F, 10.0F, static_cast<float>(fisheye ? height / 2 : cameraCenterY - roiY),
+        focalLength, 0.0F, static_cast<float>(fisheye ? width / 2 : cameraCenterX - roiX),
+        0.0F, focalLength, static_cast<float>(fisheye ? height / 2 : cameraCenterY - roiY),
         0.0F, 0.0F, 1.0F
     };
     std::array<float, 5> distortionValues{ 0.01F, -0.003F, 0.0001F, 0.0002F, 0.0F };
@@ -346,6 +350,107 @@ std::vector<std::uint8_t> referenceDistortion(
     return bytes;
 }
 
+void verifyColorShiftInterleaved(const std::filesystem::path& directory)
+{
+    constexpr int width = 13;
+    constexpr int height = 7;
+    const std::array<std::array<std::pair<int, int>, 3>, 3> variants{{
+        {{{2, -1}, {0, 0}, {-3, -2}}},
+        {{{2, 1}, {2, 1}, {2, 1}}},
+        {{{6, 0}, {0, 0}, {-6, 0}}},
+    }};
+    MCalibrationExecutionOptionsV1 options{};
+    options.structSize = sizeof(options);
+    options.interleavedBgr = 1;
+    int caseNumber = 0;
+    for (const auto& shifts : variants) {
+        for (bool fill : {false, true}) {
+            const auto path = directory / ("color_shift_interleaved_" + std::to_string(caseNumber++) + ".json");
+            auto offsets = nlohmann::json::array();
+            for (const auto& [x, y] : shifts) offsets.push_back({{"X", x}, {"Y", y}});
+            writeText(path, nlohmann::json{{"fillOffset", fill}, {"offset", offsets}}.dump());
+            Context context = createContext();
+            requireResult(M_CalibrationLoadFileW(context.get(), 12, path.c_str()), context.get(), "load interleaved ColorShift");
+            for (std::uint32_t bits : {8U, 16U}) {
+                const std::size_t bytesPerSample = bits / 8;
+                std::vector<std::uint8_t> input(width * height * 3 * bytesPerSample);
+                for (std::size_t i = 0; i < input.size(); ++i) input[i] = static_cast<std::uint8_t>(13 + 23 * i);
+                const auto before = input;
+                std::vector<std::uint8_t> expected(input.size());
+                for (int row = 0; row < height; ++row) {
+                    for (int column = 0; column < width; ++column) {
+                        for (int channel = 0; channel < 3; ++channel) {
+                            const auto [dx, dy] = shifts[channel];
+                            const int sourceRow = row - dy;
+                            int sourceColumn = column - dx;
+                            if (fill && (sourceColumn < 0 || sourceColumn >= width)) sourceColumn = column;
+                            if (sourceRow >= 0 && sourceRow < height && sourceColumn >= 0 && sourceColumn < width) {
+                                const auto sourceSample = (sourceRow * width + sourceColumn) * 3 + channel;
+                                const auto outputSample = (row * width + column) * 3 + channel;
+                                std::memcpy(expected.data() + outputSample * bytesPerSample,
+                                    input.data() + sourceSample * bytesPerSample, bytesPerSample);
+                            }
+                        }
+                    }
+                }
+                std::vector<std::uint8_t> actual(input.size() + 4, 0xA5);
+                requireResult(M_CalibrationExecuteToV1(context.get(), width, height, bits, 3, input.data(), input.size(),
+                    actual.data() + 2, input.size(), nullptr, 0, &options), context.get(), "apply interleaved ColorShift");
+                if (input != before || !std::equal(expected.begin(), expected.end(), actual.begin() + 2)
+                    || actual[0] != 0xA5 || actual[1] != 0xA5
+                    || actual[actual.size() - 2] != 0xA5 || actual.back() != 0xA5) {
+                    throw std::runtime_error("Interleaved ColorShift changed samples, source, or output guards");
+                }
+
+                if (bits == 16) {
+                    constexpr std::size_t pixelCount = width * height;
+                    std::vector<std::uint8_t> planar(input.size());
+                    for (std::size_t pixel = 0; pixel < pixelCount; ++pixel) {
+                        for (std::size_t channel = 0; channel < 3; ++channel) {
+                            const auto planarSample = (2 - channel) * pixelCount + pixel;
+                            const auto interleavedSample = pixel * 3 + channel;
+                            std::memcpy(planar.data() + planarSample * bytesPerSample,
+                                input.data() + interleavedSample * bytesPerSample, bytesPerSample);
+                        }
+                    }
+                    const auto planarBefore = planar;
+                    auto planarOptions = options;
+                    planarOptions.interleavedBgr = 0;
+                    requireResult(M_CalibrationExecuteToV1(context.get(), width, height, bits, 3, planar.data(), planar.size(),
+                        actual.data() + 2, input.size(), nullptr, 0, &planarOptions), context.get(), "apply planar ColorShift");
+                    if (planar != planarBefore || !std::equal(expected.begin(), expected.end(), actual.begin() + 2)) {
+                        throw std::runtime_error("Planar ColorShift changed source or output samples");
+                    }
+
+                    // Reuse the old planar input as caller-owned memory. An odd
+                    // output address forces BGR through the split/warp fallback.
+                    std::fill(planar.begin(), planar.end(), 0x5A);
+                    std::fill(actual.begin(), actual.end(), 0xA5);
+                    requireResult(M_CalibrationExecuteToV1(context.get(), width, height, bits, 3, input.data(), input.size(),
+                        actual.data() + 1, input.size(), nullptr, 0, &options), context.get(), "apply BGR ColorShift after planar");
+                    if (!std::all_of(planar.begin(), planar.end(), [](std::uint8_t value) { return value == 0x5A; })
+                        || input != before || !std::equal(expected.begin(), expected.end(), actual.begin() + 1)
+                        || actual.front() != 0xA5 || actual[actual.size() - 3] != 0xA5
+                        || actual[actual.size() - 2] != 0xA5 || actual.back() != 0xA5) {
+                        throw std::runtime_error("BGR ColorShift reused a previous planar input");
+                    }
+                }
+            }
+        }
+    }
+
+    const auto invalidFill = directory / "color_shift_invalid_fill.json";
+    writeText(invalidFill, R"({"fillOffset":true,"offset":[{"X":7,"Y":0},{"X":0,"Y":0},{"X":0,"Y":0}]})");
+    Context context = createContext();
+    requireResult(M_CalibrationLoadFileW(context.get(), 12, invalidFill.c_str()), context.get(), "load invalid-fill ColorShift");
+    std::array<std::uint8_t, width * height * 3> input{};
+    std::array<std::uint8_t, width * height * 3> output{};
+    if (M_CalibrationExecuteToV1(context.get(), width, height, 8, 3, input.data(), input.size(),
+        output.data(), output.size(), nullptr, 0, &options) != M_CALIBRATION_EXECUTE_FAILED) {
+        throw std::runtime_error("ColorShift accepted an invalid filled strip");
+    }
+}
+
 template<typename T>
 void writeBinaryValue(std::ofstream& output, const T& value)
 {
@@ -371,6 +476,193 @@ void writeMap(
     output.write(reinterpret_cast<const char*>(values.data()),
         static_cast<std::streamsize>(values.size() * sizeof(T)));
     if (!output) throw std::runtime_error("Unable to write synthetic map calibration");
+}
+
+void verifyLargeDistortion(const std::filesystem::path& directory)
+{
+    constexpr int width = 2503;
+    constexpr int height = 2001;
+    constexpr int centerX = 1251;
+    constexpr int centerY = 1000;
+    constexpr float focalLength = 1400.0F;
+    const auto path = directory / "large_distortion.json";
+    writeText(path, R"({"alpha":0,"cameraMatrix":[1400,0,1251,0,1400,1000,0,0,1],"distCoeffs":[0.01,-0.003,0.0001,0.0002,0],"w":2503,"h":2001,"useFisheye":false})");
+    Context context = createContext();
+    requireResult(M_CalibrationLoadFileW(context.get(), 11, path.c_str()), context.get(), "load large distortion");
+
+    std::vector<std::uint8_t> source(static_cast<std::size_t>(width) * height * 6);
+    std::uint32_t generator = 42;
+    for (std::size_t i = 0; i < source.size(); i += sizeof(std::uint16_t)) {
+        generator = 1664525U * generator + 1013904223U;
+        const auto value = i % 26 == 0 ? std::uint16_t{0}
+            : i % 34 == 0 ? std::uint16_t{65535} : static_cast<std::uint16_t>(generator >> 16);
+        std::memcpy(source.data() + i, &value, sizeof(value));
+    }
+    const auto expected = referenceDistortion(source, width, height, centerX, centerY, 16, 3,
+        false, 0, 0, focalLength);
+    auto actual = source;
+
+    MCalibrationExecutionOptionsV1 options{};
+    options.structSize = sizeof(options);
+    options.interleavedBgr = 1;
+    requireResult(M_CalibrationExecuteToV1(context.get(), width, height, 16, 3,
+        source.data(), source.size(), actual.data(), actual.size(), nullptr, 0, &options),
+        context.get(), "execute large distortion");
+    if (actual != expected) throw std::runtime_error("Large 16-bit distortion changed fixed-map interpolation");
+
+    const auto dsnu = directory / "large_distortion_dsnu.dat";
+    const auto uniformity = directory / "large_distortion_uniformity.dat";
+    const std::size_t samples = source.size() / sizeof(std::uint16_t);
+    writeMap(dsnu, 16, 16, std::vector<std::uint16_t>(samples, 0), 3, width, height);
+    writeMap(uniformity, 32, 16, std::vector<float>(samples, 1.0F), 3, width, height);
+    requireResult(M_CalibrationClear(context.get()), context.get(), "clear large distortion");
+    requireResult(M_CalibrationLoadFileW(context.get(), 4, dsnu.c_str()), context.get(), "load large distortion DSNU");
+    requireResult(M_CalibrationLoadFileW(context.get(), 5, uniformity.c_str()), context.get(), "load large distortion Uniformity");
+    requireResult(M_CalibrationLoadFileW(context.get(), 11, path.c_str()), context.get(), "load large seeded distortion");
+
+    options.roiWidth = width;
+    options.roiHeight = height;
+    for (int flip : {0, 1, -1}) {
+        auto mirrored = expected;
+        cv::Mat reference(height, width, CV_16UC3, mirrored.data());
+        cv::flip(reference, reference, flip);
+        actual = source;
+        requireResult(M_CalibrationExecuteRawWithFlipV1(context.get(), width, height, 16, 3,
+            actual.data(), actual.size(), &options, flip), context.get(), "execute large seeded distortion mirror");
+        if (actual != mirrored) throw std::runtime_error("Large distortion mirror changed fixed-map pixels");
+    }
+}
+
+template<typename Worker>
+void runTwoWorkersConcurrently(Worker worker);
+
+void verifyDistortionOpticalEdgesAtTrueRoi(const std::filesystem::path& directory)
+{
+    constexpr std::uint32_t sensorWidth = 2505, sensorHeight = 2003;
+    constexpr std::uint32_t cropWidth = 2503, cropHeight = 2001, channels = 3;
+    constexpr std::size_t rowSamples = sensorWidth * channels;
+    constexpr std::size_t samples = rowSamples * sensorHeight;
+    constexpr std::size_t leftZeroSamples = 301 * channels + 1;
+    constexpr std::size_t rightZeroSamples = 350 * channels + 2;
+    constexpr std::uint32_t emptyRow = 1004;
+    const auto dsnu = directory / "optical_edge_dsnu.dat";
+    const auto uniformity = directory / "optical_edge_uniformity.dat";
+    const auto shiftedUniformity = directory / "optical_edge_shifted_uniformity.dat";
+    const auto distortion = directory / "optical_edge_fisheye.json";
+    writeMap(dsnu, 16, 16, std::vector<std::uint16_t>(samples, 7), channels, sensorWidth, sensorHeight);
+
+    std::vector<float> gains(samples, 1.0F);
+    for (std::uint32_t row = 0; row < sensorHeight; ++row) {
+        auto first = gains.begin() + row * rowSamples;
+        // Leave nonzero channels in the first and last active pixels.
+        std::fill_n(first, leftZeroSamples, 0.0F);
+        std::fill_n(first + rowSamples - rightZeroSamples, rightZeroSamples, 0.0F);
+        if (row == emptyRow) std::fill_n(first, rowSamples, 0.0F);
+    }
+    writeMap(uniformity, 32, 16, gains, channels, sensorWidth, sensorHeight);
+    // Move both edges without changing any row's active sample count.
+    constexpr std::size_t shift = 220 * channels;
+    for (std::uint32_t row = 0; row < sensorHeight; ++row) {
+        if (row == emptyRow) continue;
+        auto first = gains.begin() + row * rowSamples;
+        std::fill_n(first + leftZeroSamples - shift, shift, 1.0F);
+        std::fill_n(first + rowSamples - rightZeroSamples - shift, shift, 0.0F);
+    }
+    writeMap(shiftedUniformity, 32, 16, gains, channels, sensorWidth, sensorHeight);
+    writeText(distortion, R"({"alpha":0,"cameraMatrix":[1400,0,1257,0,1400,1006,0,0,1],"distCoeffs":[0.17,0.04,-0.02,0.02,0],"w":2505,"h":2003,"useFisheye":true})");
+
+    const auto load = [](void* context, int type, const std::filesystem::path& path) {
+        requireResult(M_CalibrationLoadFileW(context, type, path.c_str()), context, "load optical-edge calibration");
+    };
+    const auto loadChain = [&](const std::filesystem::path& gainFile) {
+        Context context = createContext();
+        load(context.get(), 4, dsnu);
+        load(context.get(), 5, gainFile);
+        load(context.get(), 11, distortion);
+        return context;
+    };
+    const Context combined = loadChain(uniformity);
+    std::array<Context, 3> individual{createContext(), createContext(), createContext()};
+    const std::array paths{dsnu, uniformity, distortion};
+    const std::array types{4, 5, 11};
+    for (std::size_t index = 0; index < types.size(); ++index) {
+        load(individual[index].get(), types[index], paths[index]);
+    }
+    for (bool crop : {true, false}) {
+        const auto width = crop ? cropWidth : sensorWidth;
+        const auto height = crop ? cropHeight : sensorHeight;
+        MCalibrationExecutionOptionsV1 options{};
+        options.structSize = sizeof(options);
+        options.interleavedBgr = 1;
+        options.roiX = options.roiY = crop ? 1 : 0;
+        options.roiWidth = width;
+        options.roiHeight = height;
+        std::vector<std::uint16_t> pixels(static_cast<std::size_t>(width) * height * channels);
+        const auto resetPixels = [&] {
+            for (std::size_t index = 0; index < pixels.size(); ++index) {
+                pixels[index] = static_cast<std::uint16_t>(100 + index % 4093);
+            }
+        };
+        resetPixels();
+        auto expected = pixels;
+        const auto execute = [&](void* context, std::vector<std::uint16_t>& raw) {
+            requireResult(M_CalibrationExecute(context, width, height, 16, channels,
+                reinterpret_cast<std::uint8_t*>(raw.data()), raw.size() * sizeof(raw.front()),
+                nullptr, 0, &options), context, "execute optical-edge geometry");
+        };
+        const auto compare = [&](const Context& context, const auto& reference, const char* error) {
+            resetPixels();
+            execute(context.get(), pixels);
+            if (pixels != reference) throw std::runtime_error(error);
+        };
+        for (const auto& context : individual) execute(context.get(), expected);
+        compare(combined, expected, "Optical zero edges changed cropped or full fixed-map pixels");
+        if (crop) {
+            // This call warmed the cropped fisheye maps. Subsequent mirrors
+            // can use the fixed-map kernel over a strided source view.
+            const cv::Mat corrected(height, width, CV_16UC3, expected.data());
+            cv::Mat mirrored;
+            const auto rawBytes = pixels.size() * sizeof(pixels.front());
+            for (int flip : {0, 1, -1}) {
+                resetPixels();
+                cv::flip(corrected, mirrored, flip);
+                requireResult(M_CalibrationExecuteRawWithFlipV1(combined.get(), width, height, 16, channels,
+                    reinterpret_cast<std::uint8_t*>(pixels.data()), rawBytes, &options, flip),
+                    combined.get(), "execute mirrored cropped fisheye calibration");
+                if (std::memcmp(pixels.data(), mirrored.data, rawBytes) != 0)
+                    throw std::runtime_error("Mirrored cropped fisheye calibration differs from separately mirrored pixels");
+            }
+            continue;
+        }
+
+        const std::array<Context, 2> fullContexts{loadChain(uniformity), loadChain(uniformity)};
+        resetPixels();
+        runTwoWorkersConcurrently([&](std::size_t index) {
+            auto corrected = pixels;
+            execute(fullContexts[index].get(), corrected);
+            if (corrected != expected)
+                throw std::runtime_error("Concurrent full-frame Distortion contexts produced different optical edge pixels");
+        });
+
+        options.roiWidth = options.roiHeight = 0;
+        const Context inherited = loadChain(uniformity);
+        compare(inherited, expected, "Explicit and implicit full-frame optical edges differ across contexts");
+
+        const Context shiftedGain = createContext();
+        load(shiftedGain.get(), 5, shiftedUniformity);
+        resetPixels();
+        auto shiftedExpected = pixels;
+        execute(individual[0].get(), shiftedExpected);
+        execute(shiftedGain.get(), shiftedExpected);
+        execute(individual[2].get(), shiftedExpected);
+        const auto newlyActive = std::mismatch(expected.begin(), expected.end(), shiftedExpected.begin(),
+            [](std::uint16_t original, std::uint16_t shifted) { return original != 0 || shifted == 0; });
+        if (newlyActive.first == expected.end())
+            throw std::runtime_error("Shifted optical-edge fixture did not expose a previously zero output pixel");
+        const Context shifted = loadChain(shiftedUniformity);
+        compare(shifted, shiftedExpected, "A different Uniformity edge span reused the wrong Distortion plan");
+        compare(inherited, expected, "A different Uniformity edge span changed the original Distortion output");
+    }
 }
 
 void runOne(
@@ -613,7 +905,7 @@ MCalibrationCacheReleaseResultV1 releaseCalibrationCache()
     return result;
 }
 
-void verifyReleaseLinearizesWithInFlightLoad(const std::filesystem::path& directory)
+void verifyReleaseLinearizesWithInFlightLoad(const std::filesystem::path& directory, bool verified)
 {
     releaseCalibrationCache();
     constexpr std::uint32_t width = 4096;
@@ -628,7 +920,11 @@ void verifyReleaseLinearizesWithInFlightLoad(const std::filesystem::path& direct
     std::atomic<int> loadResult{ 0 };
     std::string loadError;
     std::thread loader([&] {
-        const int result = M_CalibrationLoadFileW(context.get(), 4, file.c_str());
+        std::array<std::uint8_t, 32> digest{};
+        const int result = verified
+            ? M_CalibrationLoadMapWithSha256V1W(context.get(), 4, file.c_str(), digest.data(),
+                static_cast<std::uint32_t>(digest.size()))
+            : M_CalibrationLoadFileW(context.get(), 4, file.c_str());
         if (result != M_CALIBRATION_OK) {
             loadError = nativeError(context.get());
         }
@@ -803,7 +1099,94 @@ void verifyProcessFileCacheAcrossGroups(const std::filesystem::path& directory)
         "active context after cache release");
 }
 
-void runSmallBudgetCacheCoverage()
+std::array<std::uint8_t, 32> loadMapAndCheckDigest(
+    void* context, int type, const std::filesystem::path& file)
+{
+    std::array<std::uint8_t, 32> digest{};
+    requireResult(M_CalibrationLoadMapWithSha256V1W(context, type, file.c_str(), digest.data(),
+        static_cast<std::uint32_t>(digest.size())), context, "load map with SHA-256");
+    std::ifstream input(file, std::ios::binary);
+    if (!input) throw std::runtime_error("Unable to open map for SHA-256 verification");
+    std::string bytes(static_cast<std::size_t>(std::filesystem::file_size(file)), '\0');
+    if (!input.read(bytes.data(), static_cast<std::streamsize>(bytes.size())))
+        throw std::runtime_error("Unable to read map for SHA-256 verification");
+    std::ostringstream actual;
+    actual << std::hex << std::uppercase << std::setfill('0');
+    for (const auto value : digest) actual << std::setw(2) << static_cast<int>(value);
+    const auto expected = sha256(bytes.data(), bytes.size());
+    requireHash("verified calibration file", actual.str(), expected.c_str());
+    return digest;
+}
+
+void verifyExactMapSourceVersions(const std::filesystem::path& directory)
+{
+    const auto dsnu = directory / "verified_dsnu.dat";
+    const auto uniformity = directory / "verified_uniformity.dat";
+    std::vector<std::uint16_t> offsets(16, 1);
+    writeMap(dsnu, 16, 16, offsets);
+    Context legacy = createContext();
+    requireResult(M_CalibrationLoadFileW(legacy.get(), 4, dsnu.c_str()), legacy.get(), "load legacy DSNU");
+
+    const auto dsnuTime = std::filesystem::last_write_time(dsnu);
+    std::fill(offsets.begin(), offsets.end(), 2);
+    writeMap(dsnu, 16, 16, offsets);
+    std::filesystem::last_write_time(dsnu, dsnuTime);
+    Context original = createContext();
+    const auto oldDigest = loadMapAndCheckDigest(original.get(), 4, dsnu);
+    requireUniformPixels(executeSyntheticSharedMap(legacy.get()), 9, "legacy DSNU generation");
+    requireUniformPixels(executeSyntheticSharedMap(original.get()), 8, "verified DSNU replacing unverified cache");
+
+    const auto beforeHit = readCalibrationCacheStats();
+    Context repeated = createContext();
+    if (loadMapAndCheckDigest(repeated.get(), 4, dsnu) != oldDigest
+        || readCalibrationCacheStats().hitCount != beforeHit.hitCount + 1) {
+        throw std::runtime_error("Verified DSNU did not reuse the identical cached source");
+    }
+
+    offsets.back() = 256;
+    writeMap(dsnu, 16, 16, offsets);
+    std::filesystem::last_write_time(dsnu, dsnuTime);
+    if (std::filesystem::last_write_time(dsnu) != dsnuTime)
+        throw std::runtime_error("DSNU fixture failed to restore LastWriteTime");
+    const auto beforeReplacement = readCalibrationCacheStats();
+    runTwoWorkersConcurrently([&](std::size_t) {
+        Context changed = createContext();
+        if (loadMapAndCheckDigest(changed.get(), 4, dsnu) == oldDigest)
+            throw std::runtime_error("Same-timestamp DSNU mutation retained its old SHA-256");
+        const auto changedPixels = executeSyntheticSharedMap(changed.get());
+        if (changedPixels.back() != 0 || changedPixels.front() != 8)
+            throw std::runtime_error("Verified DSNU did not apply the changed wide offset");
+    });
+    if (readCalibrationCacheStats().missCount != beforeReplacement.missCount + 1)
+        throw std::runtime_error("Concurrent verified loaders published duplicate replacements");
+    requireUniformPixels(executeSyntheticSharedMap(original.get()), 8, "retained DSNU generation");
+
+    std::vector<float> gains(16, 1.0F);
+    gains.back() = 0.0F;
+    writeMap(uniformity, 32, 16, gains);
+    const auto uniformityTime = std::filesystem::last_write_time(uniformity);
+    Context positiveZero = createContext(), negativeZero = createContext();
+    const auto positiveDigest = loadMapAndCheckDigest(positiveZero.get(), 5, uniformity);
+    gains.back() = -0.0F;
+    writeMap(uniformity, 32, 16, gains);
+    std::filesystem::last_write_time(uniformity, uniformityTime);
+    if (loadMapAndCheckDigest(negativeZero.get(), 5, uniformity) == positiveDigest
+        || executeSyntheticSharedMap(negativeZero.get()) != executeSyntheticSharedMap(positiveZero.get())) {
+        throw std::runtime_error("Verified gain source must compare exact bits even when pixels match");
+    }
+
+    std::array<std::uint8_t, 32> unchanged;
+    unchanged.fill(0xA5);
+    std::filesystem::resize_file(uniformity, std::filesystem::file_size(uniformity) - 1);
+    const int failed = M_CalibrationLoadMapWithSha256V1W(negativeZero.get(), 5, uniformity.c_str(),
+        unchanged.data(), static_cast<std::uint32_t>(unchanged.size()));
+    if (failed != M_CALIBRATION_LOAD_FAILED || M_CalibrationGetItemCount(negativeZero.get()) != 1
+        || !std::all_of(unchanged.begin(), unchanged.end(), [](auto value) { return value == 0xA5; })) {
+        throw std::runtime_error("A failed verified load published a map or a digest");
+    }
+}
+
+void runSmallBudgetCacheCoverage(bool verified)
 {
     TemporaryDirectory directory(
         std::filesystem::temp_directory_path()
@@ -822,20 +1205,26 @@ void runSmallBudgetCacheCoverage()
     writeMap(firstFile, 16, 16, std::vector<std::uint16_t>(pixels, 1), 1, width, height);
     writeMap(secondFile, 16, 16, std::vector<std::uint16_t>(pixels, 2), 1, width, height);
 
+    const auto load = [verified](const Context& context, const std::filesystem::path& file) {
+        if (verified) {
+            loadMapAndCheckDigest(context.get(), 4, file);
+        }
+        else {
+            requireResult(M_CalibrationLoadFileW(context.get(), 4, file.c_str()), context.get(),
+                "load active cache entry");
+        }
+    };
     Context first = createContext();
     Context second = createContext();
-    requireResult(M_CalibrationLoadFileW(first.get(), 4, firstFile.c_str()), first.get(),
-        "load active cache entry A");
-    requireResult(M_CalibrationLoadFileW(second.get(), 4, secondFile.c_str()), second.get(),
-        "load active cache entry B");
+    load(first, firstFile);
+    load(second, secondFile);
     const MCalibrationCacheStatsV1 overBudget = readCalibrationCacheStats();
     if (overBudget.entryCount != 2 || overBudget.estimatedMemoryBytes <= overBudget.budgetBytes) {
         throw std::runtime_error("Active cache assets were incorrectly forced under the soft budget");
     }
 
     Context third = createContext();
-    requireResult(M_CalibrationLoadFileW(third.get(), 4, firstFile.c_str()), third.get(),
-        "reload active cache entry A");
+    load(third, firstFile);
     const MCalibrationCacheStatsV1 afterHit = readCalibrationCacheStats();
     if (afterHit.hitCount != overBudget.hitCount + 1 || afterHit.entryCount != 2) {
         throw std::runtime_error("Active LRU entry was evicted and reloaded under budget pressure");
@@ -855,6 +1244,25 @@ void runSmallBudgetCacheCoverage()
     if (afterAllOwners.entryCount != 0 || afterAllOwners.estimatedMemoryBytes != 0) {
         throw std::runtime_error("Cache remained over budget after all active owners ended");
     }
+
+    constexpr std::uint32_t compactWidth = 768;
+    const auto compactFile = directory.path / "compact_dsnu.dat";
+    writeMap(compactFile, 16, 16, std::vector<std::uint16_t>(compactWidth * height, 1), 1, compactWidth, height);
+    Context compact = createContext();
+    load(compact, compactFile);
+    compact.reset();
+    const auto retained = readCalibrationCacheStats();
+    if (std::filesystem::file_size(compactFile) <= retained.budgetBytes || retained.entryCount != 1
+        || retained.estimatedMemoryBytes < compactWidth * height || retained.estimatedMemoryBytes > retained.budgetBytes) {
+        throw std::runtime_error("A compact DSNU map that fits in memory was evicted at its source file size");
+    }
+    Context reopened = createContext();
+    load(reopened, compactFile);
+    const auto compactHit = readCalibrationCacheStats();
+    if (compactHit.hitCount != retained.hitCount + 1 || compactHit.missCount != retained.missCount) {
+        throw std::runtime_error("Reopening a retained compact DSNU map reloaded it");
+    }
+    reopened.reset();
     releaseCalibrationCache();
 }
 
@@ -877,6 +1285,9 @@ void verifyAdjacentMapEquivalence(const std::filesystem::path& directory, bool c
     factors[width * channels + 2] = (std::numeric_limits<float>::min)();
     factors[width * channels * 2 - 1] = -0.0F;
     std::fill_n(factors.begin() + width * channels * 2, width * channels, 1.5F);
+    const auto cropRow = factors.begin() + width * channels * 3;
+    std::fill_n(cropRow, 3 * channels + 1, 0.0F);
+    std::fill(cropRow + 6 * channels + 2, cropRow + width * channels, 0.0F);
     const auto dsnu = directory / (compactDsnu ? "adjacent_dsnu_8.dat" : "adjacent_dsnu_16.dat");
     const auto uniformity = directory / "adjacent_uniformity.dat";
     writeMap(dsnu, 16, 16, offsets, channels, width, height);
@@ -885,16 +1296,76 @@ void verifyAdjacentMapEquivalence(const std::filesystem::path& directory, bool c
     requireResult(M_CalibrationLoadFileW(first.get(), 4, dsnu.c_str()), first.get(), "load adjacent DSNU");
     requireResult(M_CalibrationLoadFileW(second.get(), 5, uniformity.c_str()), second.get(), "load adjacent Uniformity");
 
+    const auto distortion = directory / "adjacent_distortion.json";
+    writeText(distortion, R"({"alpha":0,"cameraMatrix":[14,0,8,0,13,5,0,0,1],"distCoeffs":[0.07,-0.004,0.003,0.001,0],"w":17,"h":11,"useFisheye":false})");
+    const auto colorDiff = directory / "adjacent_color_diff.json";
+    writeText(colorDiff, R"({"CalibDis":1,"MeasDis":1,"CenterCol":8,"CenterRow":5,"ColRowCoeffs_GB":[-1,1],"ColRowCoeffs_GR":[1,-1],"ColorDiffCoeffs_GB":[0],"ColorDiffCoeffs_GR":[0],"h":11,"w":17})");
+    const auto mismatchedDistortion = directory / "adjacent_invalid_distortion.json";
+    // This map also excludes the cropped fixture's right edge.
+    writeText(mismatchedDistortion, R"({"alpha":0,"cameraMatrix":[14,0,3,0,13,5,0,0,1],"distCoeffs":[0.07,-0.004,0.003,0.001,0],"w":6,"h":11,"useFisheye":false})");
+    const auto mismatchedColorDiff = directory / "adjacent_invalid_color_diff.json";
+    writeText(mismatchedColorDiff, R"({"CalibDis":1,"MeasDis":1,"CenterCol":3,"CenterRow":5,"ColRowCoeffs_GB":[-1,1],"ColRowCoeffs_GR":[1,-1],"ColorDiffCoeffs_GB":[0],"ColorDiffCoeffs_GR":[0],"h":11,"w":6})");
+    const auto darkNoise = directory / "adjacent_dark_noise.json";
+    writeText(darkNoise, R"({"bpp":16,"Texp_x":1.0,"DarkNoiseRatio":2.0})");
+    constexpr std::uint32_t defectX = 4, defectY = 4;
+    const auto defect = directory / "adjacent_defect.dat";
+    {
+        std::ofstream output(defect, std::ios::binary);
+        writeBinaryValue(output, std::uint32_t{1});
+        writeBinaryValue(output, defectY);
+        writeBinaryValue(output, defectX);
+    }
+    // Preserve a sample changed by DarkNoise through the otherwise zero first row.
+    const auto prefixedUniformity = directory / "adjacent_prefixed_uniformity.dat";
+    auto prefixedFactors = factors;
+    prefixedFactors[2] = 1.5F;
+    writeMap(prefixedUniformity, 32, 16, prefixedFactors, channels, width, height);
+    const auto loadDarkNoise = [&](void* context) {
+        requireResult(M_CalibrationLoadFileW(context, 0, darkNoise.c_str()), context, "load adjacent DarkNoise");
+    };
+    const auto loadDefect = [&](void* context) {
+        requireResult(M_CalibrationLoadFileW(context, 3, defect.c_str()), context, "load adjacent DefectPoint");
+    };
+    const auto loadGeometry = [](void* context, int type, const std::filesystem::path& file) {
+        requireResult(M_CalibrationLoadFileW(context, type, file.c_str()), context, "load adjacent geometry");
+    };
+    const auto loadOddChain = [&](int type, const std::filesystem::path& file, bool withPrefix = false) {
+        Context context = createContext();
+        if (withPrefix) {
+            loadDarkNoise(context.get());
+            loadDefect(context.get());
+        }
+        requireResult(M_CalibrationLoadFileW(context.get(), 4, dsnu.c_str()), context.get(), "load odd chain DSNU");
+        const auto& gainFile = withPrefix ? prefixedUniformity : uniformity;
+        requireResult(M_CalibrationLoadFileW(context.get(), 5, gainFile.c_str()), context.get(), "load odd chain Uniformity");
+        loadGeometry(context.get(), type, file);
+        return context;
+    };
+    std::array<Context, 2> geometry{createContext(), createContext()};
+    loadGeometry(geometry[0].get(), 11, distortion);
+    loadGeometry(geometry[1].get(), 14, colorDiff);
+    const std::array<Context, 2> oddChains{loadOddChain(11, distortion), loadOddChain(14, colorDiff)};
+    const Context badChain = loadOddChain(11, mismatchedDistortion);
+    const std::array<Context, 2> prefixedChains{
+        loadOddChain(11, distortion, true), loadOddChain(14, colorDiff, true)};
+    const std::array<Context, 2> badPrefixedChains{
+        loadOddChain(11, mismatchedDistortion, true), loadOddChain(14, mismatchedColorDiff, true)};
+    const Context dark = createContext(), defects = createContext(), prefixedGain = createContext();
+    loadDarkNoise(dark.get());
+    loadDefect(defects.get());
+    requireResult(M_CalibrationLoadFileW(prefixedGain.get(), 5, prefixedUniformity.c_str()),
+        prefixedGain.get(), "load adjacent prefixed Uniformity");
+
     // The same ordered stages must be byte-identical both when combined and
     // when executed independently, including zero clamp, fractions and saturation.
-    // Planar and ROI layouts exercise the original path beside the full BGR path.
+    // Exercise planar BGR and both whole-frame and cropped interleaved BGR.
     for (bool reverse : { false, true }) {
         requireResult(M_CalibrationClear(combined.get()), combined.get(), "clear adjacent maps");
         requireResult(M_CalibrationLoadFileW(combined.get(), reverse ? 5 : 4,
             (reverse ? uniformity : dsnu).c_str()), combined.get(), "load adjacent first");
         requireResult(M_CalibrationLoadFileW(combined.get(), reverse ? 4 : 5,
             (reverse ? dsnu : uniformity).c_str()), combined.get(), "load adjacent second");
-        for (int layout = 0; layout < 3; ++layout) {
+        for (int layout = 0; layout < 4; ++layout) {
             const std::uint32_t imageWidth = layout == 2 ? 5 : width;
             const std::uint32_t imageHeight = layout == 2 ? 5 : height;
             std::vector<std::uint16_t> expected(imageWidth * imageHeight * channels);
@@ -905,7 +1376,9 @@ void verifyAdjacentMapEquivalence(const std::filesystem::path& directory, bool c
             options.structSize = sizeof(options);
             options.interleavedBgr = layout == 1 ? 0 : 1;
             if (layout == 2) {
-                options.roiX = 1; options.roiY = 2;
+                options.roiX = 2; options.roiY = 1;
+            }
+            if (layout >= 2) {
                 options.roiWidth = imageWidth; options.roiHeight = imageHeight;
             }
             const auto run = [&](void* context, std::vector<std::uint16_t>& pixels) {
@@ -925,13 +1398,111 @@ void verifyAdjacentMapEquivalence(const std::filesystem::path& directory, bool c
                 nullptr, 0, &options), combined.get(), "execute adjacent maps to distinct output");
             if (readOnlySource != source || distinct != expected)
                 throw std::runtime_error("Adjacent maps changed read-only source or distinct output");
-            if (layout == 0) {
+            if (!reverse && options.interleavedBgr) {
+                for (std::size_t index = 0; index < oddChains.size(); ++index) {
+                    auto geometryExpected = expected;
+                    auto corrected = source;
+                    run(geometry[index].get(), geometryExpected);
+                    run(oddChains[index].get(), corrected);
+                    if (corrected != geometryExpected)
+                        throw std::runtime_error("A leading map pair followed by geometry changed RAW output");
+                }
+                if (layout == 0 || layout == 2) {
+                    auto corrected = source;
+                    const int result = M_CalibrationExecute(badChain.get(), imageWidth, imageHeight, 16, channels,
+                        reinterpret_cast<std::uint8_t*>(corrected.data()), corrected.size() * sizeof(std::uint16_t),
+                        nullptr, 0, &options);
+                    if (result != M_CALIBRATION_EXECUTE_FAILED || corrected != expected
+                        || nativeError(badChain.get()) != "RAW dimensions do not match the distortion calibration") {
+                        throw std::runtime_error("Failed geometry did not preserve the preceding RAW corrections");
+                    }
+                }
+
+                auto prefixSource = source;
+                const auto defectIndex = ((defectY - options.roiY) * imageWidth + defectX - options.roiX) * channels;
+                std::fill_n(prefixSource.begin() + defectIndex, channels, std::uint16_t{65535});
+                auto prefixExpected = prefixSource;
+                run(dark.get(), prefixExpected);
+                run(defects.get(), prefixExpected);
+                if (prefixExpected[defectIndex] == prefixSource[defectIndex])
+                    throw std::runtime_error("Prefixed geometry fixture did not exercise DefectPoint");
+                run(first.get(), prefixExpected);
+                run(prefixedGain.get(), prefixExpected);
+                if (layout == 0 && prefixExpected[2] != 300)
+                    throw std::runtime_error("Prefixed geometry fixture did not preserve the DarkNoise correction");
+
+                const auto execute = [&](void* context, std::vector<std::uint16_t>& pixels, bool mirror) {
+                    auto* data = reinterpret_cast<std::uint8_t*>(pixels.data());
+                    const auto bytes = pixels.size() * sizeof(std::uint16_t);
+                    return mirror ? M_CalibrationExecuteRawWithFlipV1(context, imageWidth, imageHeight, 16,
+                        channels, data, bytes, &options, 1)
+                        : M_CalibrationExecute(context, imageWidth, imageHeight, 16,
+                            channels, data, bytes, nullptr, 0, &options);
+                };
+                for (std::size_t index = 0; index < prefixedChains.size(); ++index) {
+                    auto geometryExpected = prefixExpected;
+                    run(geometry[index].get(), geometryExpected);
+                    auto mirrored = geometryExpected;
+                    cv::Mat image(imageHeight, imageWidth, CV_16UC3, mirrored.data());
+                    cv::flip(image, image, 1);
+                    // An unprepared cropped Distortion map must also work with the final-flip fallback.
+                    auto corrected = prefixSource;
+                    void* context = prefixedChains[index].get();
+                    requireResult(execute(context, corrected, true), context, "execute prefixed geometry with horizontal mirror");
+                    if (corrected != mirrored)
+                        throw std::runtime_error("Prefixed geometry with mirror changed RAW output");
+                    corrected = prefixSource;
+                    run(context, corrected);
+                    if (corrected != geometryExpected)
+                        throw std::runtime_error("Prefixed geometry changed RAW output");
+
+                    void* bad = badPrefixedChains[index].get();
+                    const char* error = index == 0 ? "RAW dimensions do not match the distortion calibration"
+                        : "RAW dimensions do not match the ColorDiff calibration";
+                    for (bool mirror : {false, true}) {
+                        corrected = prefixSource;
+                        if (execute(bad, corrected, mirror) != M_CALIBRATION_EXECUTE_FAILED
+                            || corrected != prefixExpected || nativeError(bad) != error) {
+                            throw std::runtime_error("Failed geometry did not preserve the prefixed RAW corrections");
+                        }
+                    }
+                }
+                if (compactDsnu && layout == 0) {
+                    // Color is applied after geometry even when registered before the map pair.
+                    const auto colorFile = directory / "adjacent_eight_bit_color.json";
+                    writeText(colorFile, R"({"bpp":8,"Texp_x":1.0,"Texp_y":1.0,"Texp_z":1.0,"Gain_x":1.0,"Gain_y":1.0,"Gain_z":1.0,"a":1.0,"b":0.0,"c":0.0,"d":0.0,"e":1.0,"f":0.0,"g":0.0,"h":0.0,"i":1.0})");
+                    const Context withColor = createContext();
+                    for (const auto& [type, path] : std::array{
+                            std::pair{8, colorFile}, std::pair{4, dsnu},
+                            std::pair{5, uniformity}, std::pair{11, distortion}}) {
+                        requireResult(M_CalibrationLoadFileW(withColor.get(), type, path.c_str()),
+                            withColor.get(), "load geometry with a color stage");
+                    }
+                    auto corrected = source;
+                    std::vector<float> cie(source.size(), -1.0F);
+                    auto colorOptions = options;
+                    colorOptions.exposureX = colorOptions.exposureY = colorOptions.exposureZ = 1.0F;
+                    const int result = M_CalibrationExecute(withColor.get(), imageWidth, imageHeight, 16, channels,
+                        reinterpret_cast<std::uint8_t*>(corrected.data()), corrected.size() * sizeof(std::uint16_t),
+                        cie.data(), cie.size(), &colorOptions);
+                    if (result != M_CALIBRATION_EXECUTE_FAILED || corrected != expected
+                        || nativeError(withColor.get()) != "LumFourColor calibration expects 8-bit RAW data"
+                        || !std::all_of(cie.begin(), cie.end(), [](float value) { return value == -1.0F; })) {
+                        throw std::runtime_error("Color failure after geometry changed the visible correction state");
+                    }
+                }
+            }
+            if (options.interleavedBgr) {
+                const auto rowSamples = imageWidth * channels;
                 for (std::size_t i = 0; i < actual.size(); ++i) {
+                    const auto mapRow = options.roiY + i / rowSamples;
+                    const auto mapIndex = (mapRow * width + options.roiX) * channels + i % rowSamples;
                     const auto applyDsnu = [&](std::uint16_t value) {
-                        return value < offsets[i] ? std::uint16_t{0} : static_cast<std::uint16_t>(value - offsets[i]);
+                        const auto offset = offsets[mapIndex];
+                        return value < offset ? std::uint16_t{0} : static_cast<std::uint16_t>(value - offset);
                     };
                     const auto applyUniformity = [&](std::uint16_t value) {
-                        const float corrected = factors[i] * value;
+                        const float corrected = factors[mapIndex] * value;
                         return corrected > 65535.0F ? std::uint16_t{65535} : static_cast<std::uint16_t>(corrected);
                     };
                     const auto value = levels[i % levels.size()];
@@ -941,6 +1512,112 @@ void verifyAdjacentMapEquivalence(const std::filesystem::path& directory, bool c
             }
         }
     }
+}
+
+void verifyMono16MapEquivalence(const std::filesystem::path& directory)
+{
+    constexpr std::uint32_t width = 19, height = 13;
+    constexpr std::size_t count = width * height;
+    constexpr std::uint16_t guard = 0x2A7E;
+    const std::array<std::uint16_t, 9> levels{0, 1, 3, 255, 256, 32767, 32768, 65534, 65535};
+    const std::array<float, 8> gains{0.0F, -0.0F, 0.125F, 0.9999F, 1.0F, 1.0001F, 2.0F,
+        (std::numeric_limits<float>::max)()};
+    std::vector<std::uint16_t> source(count + 2, guard);
+    std::vector<float> factors(count);
+    for (std::size_t index = 0; index < count; ++index) {
+        source[index + 1] = levels[index % levels.size()];
+        factors[index] = gains[(index / levels.size()) % gains.size()];
+    }
+    source[count] = 65535;
+    const auto uniformity = directory / "adjacent_mono_uniformity.dat";
+    writeMap(uniformity, 32, 16, factors, 1, width, height);
+
+    MCalibrationExecutionOptionsV1 options{};
+    options.structSize = sizeof(options);
+    options.interleavedBgr = 1;
+    options.roiWidth = width;
+    options.roiHeight = height;
+    options.exposureX = options.exposureY = options.exposureZ = 1;
+    const auto execute = [&](void* context, std::vector<std::uint16_t>& pixels) {
+        requireResult(M_CalibrationExecute(context, width, height, 16, 1,
+            reinterpret_cast<std::uint8_t*>(pixels.data() + 1), count * sizeof(std::uint16_t),
+            nullptr, 0, &options), context, "execute Mono16 maps");
+    };
+
+    for (bool compact : {true, false}) {
+        std::vector<std::uint16_t> offsets(count);
+        for (std::size_t index = 0; index < count; ++index)
+            offsets[index] = levels[(index / 17) % levels.size()] & 255;
+        // Exercise a map whose only noncompact offset is in the SIMD tail.
+        if (!compact) offsets.back() = 256;
+        const auto dsnu = directory / (compact ? "adjacent_mono_dsnu8.dat" : "adjacent_mono_dsnu16.dat");
+        writeMap(dsnu, 16, 16, offsets, 1, width, height);
+        Context dark = createContext(), gain = createContext(), combined = createContext();
+        requireResult(M_CalibrationLoadFileW(dark.get(), 4, dsnu.c_str()), dark.get(), "load Mono16 DSNU");
+        requireResult(M_CalibrationLoadFileW(gain.get(), 5, uniformity.c_str()), gain.get(), "load Mono16 Uniformity");
+        requireResult(M_CalibrationLoadFileW(combined.get(), 4, dsnu.c_str()), combined.get(), "load fused Mono16 DSNU");
+        requireResult(M_CalibrationLoadFileW(combined.get(), 5, uniformity.c_str()), combined.get(), "load fused Mono16 Uniformity");
+
+        auto expected = source;
+        execute(dark.get(), expected);
+        execute(gain.get(), expected);
+        auto actual = source;
+        execute(combined.get(), actual);
+        if (actual != expected) throw std::runtime_error("Fused Mono16 maps changed RAW samples or guard values");
+
+        cv::Mat image(height, width, CV_16UC1, expected.data() + 1);
+        cv::flip(image, image, 0);
+        actual = source;
+        requireResult(M_CalibrationExecuteRawWithFlipV1(combined.get(), width, height, 16, 1,
+            reinterpret_cast<std::uint8_t*>(actual.data() + 1), count * sizeof(std::uint16_t),
+            &options, 0), combined.get(), "execute fused Mono16 vertical flip");
+        if (actual != expected) throw std::runtime_error("Fused Mono16 vertical flip changed RAW samples or guard values");
+    }
+}
+
+void verifyLegacyBinaryMaps(const std::filesystem::path& directory)
+{
+    constexpr std::uint32_t width = 9, height = 5;
+    constexpr std::size_t count = width * height;
+    const auto dsnu = directory / L"\u53bb\u6697\u573a-v0.dat";
+    const auto uniformity = directory / L"\u5747\u5300\u6027-v0.dat";
+    const auto writeLegacyMap = [&](const auto& path, const auto& values) {
+        std::ofstream output(path, std::ios::binary);
+        writeBinaryValue(output, height);
+        writeBinaryValue(output, width);
+        output.write(reinterpret_cast<const char*>(values.data()),
+            static_cast<std::streamsize>(values.size() * sizeof(values.front())));
+        if (!output) throw std::runtime_error("Unable to write V0 calibration map");
+    };
+    std::vector<std::uint16_t> offsets(count, 5);
+    offsets.front() = 200;
+    offsets.back() = 256;
+    std::vector<float> gains(count, 2.0F);
+    gains.back() = 1.5F;
+    writeLegacyMap(dsnu, offsets);
+    writeLegacyMap(uniformity, gains);
+
+    const auto truncated = directory / "truncated_uniformity_v1.dat";
+    writeMap(truncated, 32, 16, gains, 1, width, height);
+    std::filesystem::resize_file(truncated, std::filesystem::file_size(truncated) - 1);
+    Context context = createContext();
+    loadMapAndCheckDigest(context.get(), 4, dsnu);
+    loadMapAndCheckDigest(context.get(), 5, uniformity);
+    if (M_CalibrationLoadFileW(context.get(), 5, truncated.c_str()) != M_CALIBRATION_LOAD_FAILED)
+        throw std::runtime_error("Truncated V1 Uniformity map was not rejected");
+
+    MCalibrationExecutionOptionsV1 options{};
+    options.structSize = sizeof(options);
+    options.interleavedBgr = 1;
+    options.exposureX = options.exposureY = options.exposureZ = 1;
+    std::vector<std::uint16_t> pixels(count, 400);
+    requireResult(M_CalibrationExecute(context.get(), width, height, 16, 1,
+        reinterpret_cast<std::uint8_t*>(pixels.data()), count * sizeof(std::uint16_t), nullptr, 0, &options),
+        context.get(), "execute V0 calibration maps");
+    auto expected = std::vector<std::uint16_t>(count, 790);
+    expected.front() = 400;
+    expected.back() = 216;
+    if (pixels != expected) throw std::runtime_error("V0 calibration payload or failed load changed pixels");
 }
 
 void verifyLargeUniformityOutput(const std::filesystem::path& directory)
@@ -961,6 +1638,8 @@ void verifyLargeUniformityOutput(const std::filesystem::path& directory)
     factors[600] = -0.0F;
     factors[601] = (std::numeric_limits<float>::min)();
     factors[602] = 100.0F;
+    constexpr std::uint32_t cropX = 17, cropY = 1, cropWidth = 129, cropHeight = 13;
+    factors[(cropY * width + cropX) * channels + 25] = 0.0F;
     const auto uniformity = directory / "large_uniformity.dat";
     writeMap(uniformity, 32, 16, factors, channels, width, height);
     MCalibrationExecutionOptionsV1 options{};
@@ -976,7 +1655,7 @@ void verifyLargeUniformityOutput(const std::filesystem::path& directory)
             writeMap(dsnu, 16, 16, offsets, channels, width, height);
             requireResult(M_CalibrationLoadFileW(context.get(), 4, dsnu.c_str()), context.get(), "load large DSNU");
         }
-        requireResult(M_CalibrationLoadFileW(context.get(), 5, uniformity.c_str()), context.get(), "load large Uniformity");
+        loadMapAndCheckDigest(context.get(), 5, uniformity);
         for (std::size_t index = 0; index < samples; ++index) {
             const auto value = source[index] < offsets[index] ? std::uint16_t{0}
                 : static_cast<std::uint16_t>(source[index] - offsets[index]);
@@ -987,6 +1666,33 @@ void verifyLargeUniformityOutput(const std::filesystem::path& directory)
         requireResult(M_CalibrationExecute(context.get(), width, height, 16, channels,
             reinterpret_cast<std::uint8_t*>(actual.data()), bytes, nullptr, 0, &options), context.get(), "large map arithmetic");
         if (actual != expected) throw std::runtime_error("Large map output differs from scalar arithmetic");
+
+        if (darkRange == 255) {
+            auto cropOptions = options;
+            cropOptions.roiX = cropX; cropOptions.roiY = cropY;
+            cropOptions.roiWidth = cropWidth; cropOptions.roiHeight = cropHeight;
+            constexpr auto cropRowSamples = cropWidth * channels;
+            std::vector<std::uint16_t> cropped(cropRowSamples * cropHeight), expectedCrop(cropped.size());
+            for (const bool lowSignal : {false, true}) {
+                for (std::uint32_t row = 0; row < cropHeight; ++row) {
+                    const auto from = ((cropY + row) * width + cropX) * channels;
+                    const auto to = row * cropRowSamples;
+                    for (std::uint32_t column = 0; column < cropRowSamples; ++column) {
+                        const auto sample = to + column;
+                        const auto mapSample = from + column;
+                        // Equal-to-DSNU samples need the cropped map stride to probe as zero.
+                        const bool dark = lowSignal && sample % 67 != 0 && sample % 1024 >= 16;
+                        cropped[sample] = dark ? offsets[mapSample] : source[mapSample];
+                        expectedCrop[sample] = dark ? std::uint16_t{0} : expected[mapSample];
+                    }
+                }
+                requireResult(M_CalibrationExecute(context.get(), cropWidth, cropHeight, 16, channels,
+                    reinterpret_cast<std::uint8_t*>(cropped.data()), cropped.size() * sizeof(std::uint16_t),
+                    nullptr, 0, &cropOptions), context.get(), "large cropped map arithmetic");
+                if (cropped != expectedCrop) throw std::runtime_error("Large cropped map output differs from scalar arithmetic");
+            }
+        }
+
         actual.assign(samples, 0xA55A);
         requireResult(M_CalibrationExecuteToV1(context.get(), width, height, 16, channels,
             reinterpret_cast<const std::uint8_t*>(source.data()), bytes,
@@ -998,8 +1704,46 @@ void verifyLargeUniformityOutput(const std::filesystem::path& directory)
         requireResult(M_CalibrationExecuteRawWithFlipV1(context.get(), width, height, 16, channels,
             reinterpret_cast<std::uint8_t*>(actual.data()), bytes, &options, 0), context.get(), "large map vertical flip");
         if (actual != expected) throw std::runtime_error("Large map flip differs from scalar arithmetic");
+
+        if (darkRange == 255) {
+            // Sparse bright samples and occasional dense groups share rows with
+            // unpacked gain blocks and scalar tails.
+            for (std::size_t index = 0; index < samples; ++index) {
+                const bool bright = index % 53 == 0 || index % 1024 < 16;
+                const auto input = bright ? source[index] : static_cast<std::uint16_t>(offsets[index] / 2);
+                actual[index] = input;
+                const auto value = input < offsets[index] ? std::uint16_t{0}
+                    : static_cast<std::uint16_t>(input - offsets[index]);
+                const float corrected = factors[index] * value;
+                expected[index] = corrected > 65535.0F ? std::uint16_t{65535} : static_cast<std::uint16_t>(corrected);
+            }
+            requireResult(M_CalibrationExecute(context.get(), width, height, 16, channels,
+                reinterpret_cast<std::uint8_t*>(actual.data()), bytes, nullptr, 0, &options),
+                context.get(), "large sparse map arithmetic");
+            if (actual != expected) throw std::runtime_error("Large sparse map output differs from scalar arithmetic");
+        }
     }
-    std::cout << "calibration_large_map_exact_cases,9" << std::endl;
+    // Alter only bits above the packed delta in a SIMD lane and in the scalar tail.
+    const auto oldTime = std::filesystem::last_write_time(uniformity);
+    constexpr std::size_t headerBytes = 5 * sizeof(std::uint32_t);
+    for (const auto sample : {std::size_t{781}, samples - 1}) {
+        std::uint32_t gainBits = 0;
+        std::memcpy(&gainBits, &factors[sample], sizeof(gainBits));
+        gainBits += 0x01000000U;
+        {
+            std::fstream file(uniformity, std::ios::binary | std::ios::in | std::ios::out);
+            file.seekp(static_cast<std::streamoff>(headerBytes + sample * sizeof(float)));
+            file.write(reinterpret_cast<const char*>(&gainBits), sizeof(gainBits));
+            if (!file) throw std::runtime_error("Unable to update a packed gain");
+        }
+        std::filesystem::last_write_time(uniformity, oldTime);
+        const auto before = readCalibrationCacheStats();
+        Context changed = createContext();
+        loadMapAndCheckDigest(changed.get(), 5, uniformity);
+        if (readCalibrationCacheStats().missCount != before.missCount + 1)
+            throw std::runtime_error("A same-timestamp packed gain change reused stale cached bits");
+    }
+    std::cout << "calibration_large_map_exact_cases,12" << std::endl;
 }
 
 void verifyLargeColorDiffOutput(const std::filesystem::path& directory)
@@ -1016,32 +1760,38 @@ void verifyLargeColorDiffOutput(const std::filesystem::path& directory)
     for (std::size_t index = 0; index < samples; ++index)
         source[index] = static_cast<std::uint16_t>(index * 37 + 11);
     const auto pristine = source;
-    for (int row = 0; row < height; ++row) {
-        for (int column = 0; column < width; ++column) {
-            const auto pixel = (static_cast<std::size_t>(row) * width + column) * 3;
-            expected[pixel + 1] = source[pixel + 1];
-            if (row == 0 || row == height - 1 || column == 0 || column == width - 1) continue;
-            const auto mapped = [&](int dx, int dy) {
-                return (static_cast<std::size_t>(std::clamp(row + dy, 1, height - 2)) * width
-                    + std::clamp(column + dx, 1, width - 2)) * 3;
-            };
-            expected[pixel] = source[mapped(1, -2)];
-            expected[pixel + 2] = source[mapped(-2, 1) + 2];
+    const auto updateReference = [&](bool moveBlue, bool moveRed) {
+        for (int row = 0; row < height; ++row) {
+            for (int column = 0; column < width; ++column) {
+                const auto pixel = (static_cast<std::size_t>(row) * width + column) * 3;
+                expected[pixel + 1] = source[pixel + 1];
+                if (row == 0 || row == height - 1 || column == 0 || column == width - 1) continue;
+                const auto mapped = [&](int dx, int dy) {
+                    return (static_cast<std::size_t>(std::clamp(row + dy, 1, height - 2)) * width
+                        + std::clamp(column + dx, 1, width - 2)) * 3;
+                };
+                expected[pixel] = source[moveBlue ? mapped(1, -2) : pixel];
+                expected[pixel + 2] = source[(moveRed ? mapped(-2, 1) : pixel) + 2];
+            }
         }
-    }
+    };
+    updateReference(true, true);
     MCalibrationExecutionOptionsV1 options{};
     options.structSize = sizeof(options);
     options.interleavedBgr = 1;
     const auto bytes = samples * sizeof(std::uint16_t);
     std::vector<std::uint8_t> distinct(bytes + 32, 0xA5);
-    requireResult(M_CalibrationExecuteToV1(context.get(), width, height, 16, 3,
-        reinterpret_cast<const std::uint8_t*>(source.data()), bytes, distinct.data() + 2, bytes,
-        nullptr, 0, &options), context.get(), "large ColorDiff unaligned distinct output");
-    if (source != pristine || std::memcmp(distinct.data() + 2, expected.data(), bytes) != 0
-        || distinct[0] != 0xA5 || distinct[1] != 0xA5
-        || !std::all_of(distinct.begin() + bytes + 2, distinct.end(), [](auto value) { return value == 0xA5; })) {
-        throw std::runtime_error("Large ColorDiff changed pixels, source or output guards");
-    }
+    const auto checkDistinct = [&](const Context& current) {
+        requireResult(M_CalibrationExecuteToV1(current.get(), width, height, 16, 3,
+            reinterpret_cast<const std::uint8_t*>(source.data()), bytes, distinct.data() + 2, bytes,
+            nullptr, 0, &options), current.get(), "large ColorDiff unaligned distinct output");
+        if (source != pristine || std::memcmp(distinct.data() + 2, expected.data(), bytes) != 0
+            || distinct[0] != 0xA5 || distinct[1] != 0xA5
+            || !std::all_of(distinct.begin() + bytes + 2, distinct.end(), [](auto value) { return value == 0xA5; })) {
+            throw std::runtime_error("Large ColorDiff changed pixels, source or output guards");
+        }
+    };
+    checkDistinct(context);
     for (int flip : {0, 1, -1}) {
         auto reference = expected;
         cv::Mat view(height, width, CV_16UC3, reference.data());
@@ -1051,7 +1801,140 @@ void verifyLargeColorDiffOutput(const std::filesystem::path& directory)
             reinterpret_cast<std::uint8_t*>(actual.data()), bytes, &options, flip), context.get(), "large ColorDiff flip");
         if (actual != reference) throw std::runtime_error("Large ColorDiff flip differs from pixel reference");
     }
-    std::cout << "calibration_stream_exact_cases,4" << std::endl;
+    // Two distinct stages return the final ColorDiff output straight to RAW.
+    // The identity ColorShift keeps the same independent pixel reference.
+    const auto identity = directory / "large_color_diff_identity_shift.json";
+    writeText(identity, R"({"fillOffset":false,"offset":{"X":0,"Y":0}})");
+    Context chained = createContext();
+    requireResult(M_CalibrationLoadFileW(chained.get(), 12, identity.c_str()), chained.get(), "load identity ColorShift");
+    requireResult(M_CalibrationLoadFileW(chained.get(), 14, file.c_str()), chained.get(), "load chained large ColorDiff");
+    for (int flip : {1, -1}) {
+        auto reference = expected;
+        cv::Mat view(height, width, CV_16UC3, reference.data());
+        cv::flip(view, view, flip);
+        auto actual = source;
+        requireResult(M_CalibrationExecuteRawWithFlipV1(chained.get(), width, height, 16, 3,
+            reinterpret_cast<std::uint8_t*>(actual.data()), bytes, &options, flip), chained.get(), "chained large ColorDiff flip");
+        if (actual != reference) throw std::runtime_error("Chained large ColorDiff flip differs from pixel reference");
+    }
+    int caseNumber = 0;
+    // Check both blend masks and the direct-copy case using the same output alignment.
+    for (const auto [moveBlue, moveRed] : {std::pair{false, true}, std::pair{true, false}, std::pair{false, false}}) {
+        const auto path = directory / ("large_color_diff_unchanged_" + std::to_string(++caseNumber) + ".json");
+        writeText(path, nlohmann::json{
+            {"CalibDis", 1}, {"MeasDis", 1}, {"CenterCol", 1500}, {"CenterRow", 932},
+            {"ColRowCoeffs_GB", moveBlue ? nlohmann::json::array({-1, 2}) : nlohmann::json::array({0, 0})},
+            {"ColRowCoeffs_GR", moveRed ? nlohmann::json::array({2, -1}) : nlohmann::json::array({0, 0})},
+            {"ColorDiffCoeffs_GB", nlohmann::json::array({0})}, {"ColorDiffCoeffs_GR", nlohmann::json::array({0})},
+            {"h", height}, {"w", width}}.dump());
+        Context selected = createContext();
+        requireResult(M_CalibrationLoadFileW(selected.get(), 14, path.c_str()), selected.get(), "load ColorDiff with an unchanged channel");
+        updateReference(moveBlue, moveRed);
+        checkDistinct(selected);
+    }
+    std::cout << "calibration_stream_exact_cases,9" << std::endl;
+}
+
+void verifyColorDiffMixedOffsets(const std::filesystem::path& directory)
+{
+    constexpr int width = 51;
+    constexpr int height = 55;
+    constexpr int centerX = 10;
+    constexpr int centerY = 16;
+    constexpr double curve = 0.004013;
+    const auto file = directory / "mixed_color_diff_offsets.json";
+    // The red map fits in the compact layout throughout some rows. In other
+    // rows a long valid prefix precedes an out-of-range offset.
+    writeText(file, R"json({"CalibDis":1,"MeasDis":1,"CenterCol":10,"CenterRow":16,"ColRowCoeffs_GB":[-1,1],"ColRowCoeffs_GR":[1,0],"ColorDiffCoeffs_GB":[0],"ColorDiffCoeffs_GR":[0,0,0.004013],"h":55,"w":51})json");
+    Context context = createContext();
+    requireResult(M_CalibrationLoadFileW(context.get(), 14, file.c_str()), context.get(), "load mixed-offset ColorDiff");
+
+    std::vector<std::uint16_t> source(width * height * 3), actual(source.size()), expected(source.size());
+    for (std::size_t index = 0; index < source.size(); ++index) {
+        source[index] = static_cast<std::uint16_t>(index * 37 + 11);
+    }
+    for (int row = 0; row < height; ++row) {
+        for (int column = 0; column < width; ++column) {
+            const auto pixel = (row * width + column) * 3;
+            expected[pixel + 1] = source[pixel + 1];
+            if (row == 0 || row == height - 1 || column == 0 || column == width - 1) continue;
+
+            const auto deltaX = column - centerX;
+            const auto deltaY = row - centerY;
+            const auto radialFactor = curve * std::sqrt(deltaX * deltaX + deltaY * deltaY);
+            const int redX = std::clamp(static_cast<int>(column - radialFactor * deltaX - 1 + 0.5), 1, width - 2);
+            const int redY = std::clamp(static_cast<int>(row - radialFactor * deltaY + 0.5), 1, height - 2);
+            const int blueX = (std::min)(column + 1, width - 2);
+            const int blueY = (std::max)(row - 1, 1);
+            expected[pixel] = source[(blueY * width + blueX) * 3];
+            expected[pixel + 2] = source[(redY * width + redX) * 3 + 2];
+        }
+    }
+    MCalibrationExecutionOptionsV1 options{};
+    options.structSize = sizeof(options);
+    options.interleavedBgr = 1;
+    const auto byteCount = source.size() * sizeof(source[0]);
+    requireResult(M_CalibrationExecuteToV1(context.get(), width, height, 16, 3,
+        reinterpret_cast<const std::uint8_t*>(source.data()), byteCount,
+        reinterpret_cast<std::uint8_t*>(actual.data()), byteCount, nullptr, 0, &options),
+        context.get(), "execute mixed-offset ColorDiff");
+    if (actual != expected) throw std::runtime_error("Mixed-offset ColorDiff differs from the pixel reference");
+}
+
+void verifyAdjacentBgr8MapEquivalence(const std::filesystem::path& directory)
+{
+    constexpr std::uint32_t width = 33, height = 21, channels = 3;
+    constexpr std::size_t sampleCount = width * height * channels;
+    const std::array<std::uint8_t, 8> levels{ 0, 1, 31, 100, 127, 128, 254, 255 };
+    const std::array<std::uint16_t, 8> darkOffsets{ 0, 1, 10, 127, 255, 256, 1024, 65535 };
+    const std::array<float, 10> gains{
+        0.0F, -0.0F, 0.125F, 0.9999F, 1.0F, 1.0001F, 1.5F, 2.0F,
+        (std::numeric_limits<float>::min)(), (std::numeric_limits<float>::max)()
+    };
+    std::vector<std::uint8_t> input(sampleCount);
+    std::vector<float> factors(sampleCount);
+    for (std::size_t index = 0; index < sampleCount; ++index) {
+        input[index] = levels[index % levels.size()];
+        factors[index] = gains[(index / (levels.size() * darkOffsets.size())) % gains.size()];
+    }
+    const auto uniformity = directory / "adjacent_bgr8_uniformity.dat";
+    writeMap(uniformity, 32, 8, factors, channels, width, height);
+    Context second = createContext();
+    requireResult(M_CalibrationLoadFileW(second.get(), 5, uniformity.c_str()), second.get(), "load 8-bit Uniformity");
+
+    for (bool compact : { true, false }) {
+        std::vector<std::uint16_t> offsets(sampleCount);
+        for (std::size_t index = 0; index < sampleCount; ++index) {
+            const auto offset = darkOffsets[(index / levels.size()) % darkOffsets.size()];
+            offsets[index] = compact ? (std::min)(offset, std::uint16_t{255}) : offset;
+        }
+        const auto dsnu = directory / (compact ? "adjacent_bgr8_compact.dat" : "adjacent_bgr8_wide.dat");
+        writeMap(dsnu, 16, 8, offsets, channels, width, height);
+        Context first = createContext(), combined = createContext();
+        requireResult(M_CalibrationLoadFileW(first.get(), 4, dsnu.c_str()), first.get(), "load 8-bit DSNU");
+        requireResult(M_CalibrationLoadFileW(combined.get(), 4, dsnu.c_str()), combined.get(), "load 8-bit pair DSNU");
+        requireResult(M_CalibrationLoadFileW(combined.get(), 5, uniformity.c_str()), combined.get(), "load 8-bit pair Uniformity");
+
+        for (bool explicitRoi : { false, true }) {
+            MCalibrationExecutionOptionsV1 options{};
+            options.structSize = sizeof(options);
+            options.interleavedBgr = 1;
+            if (explicitRoi) {
+                options.roiWidth = width;
+                options.roiHeight = height;
+            }
+            const auto run = [&](void* context, std::vector<std::uint8_t>& pixels) {
+                requireResult(M_CalibrationExecute(context, width, height, 8, channels,
+                    pixels.data(), pixels.size(), nullptr, 0, &options), context, "execute 8-bit adjacent maps");
+            };
+            auto expected = input;
+            auto actual = input;
+            run(first.get(), expected);
+            run(second.get(), expected);
+            run(combined.get(), actual);
+            if (actual != expected) throw std::runtime_error("8-bit adjacent maps changed ordered calibration output");
+        }
+    }
 }
 
 void verifyRawOutputFlip(const std::filesystem::path& directory)
@@ -1095,16 +1978,19 @@ void verifyRawOutputFlip(const std::filesystem::path& directory)
             }
             // BGR, planar RGB, and individual R/G/B exercise distinct writers.
             for (int layout = 0; layout < 5; ++layout) {
-                for (bool roi : { false, true }) {
-                    const int width = roi ? 9 : 17, height = roi ? 7 : 13;
+                for (int roiMode = 0; roiMode < 3; ++roiMode) {
+                    const bool cropped = roiMode == 1;
+                    const int width = cropped ? 9 : 17, height = cropped ? 7 : 13;
                     const int channels = layout < 2 ? 3 : 1;
                     MCalibrationExecutionOptionsV1 options{};
                     options.structSize = sizeof(options);
                     options.interleavedBgr = layout != 1;
                     options.rgbType = layout < 2 ? 0 : layout - 1;
                     options.exposureX = options.exposureY = options.exposureZ = 1;
-                    if (roi) {
+                    if (cropped) {
                         options.roiX = 2; options.roiY = 1;
+                    }
+                    if (roiMode != 0) {
                         options.roiWidth = width; options.roiHeight = height;
                     }
                     std::vector<std::uint8_t> source(width * height * channels * bits / 8);
@@ -1146,6 +2032,110 @@ void verifyRawOutputFlip(const std::filesystem::path& directory)
         actual.data(), actual.size(), &options, 0) != M_CALIBRATION_EXECUTE_FAILED || actual != source)
         throw std::runtime_error("RAW-only mirror entry accepted a CIE template or modified RAW on rejection");
     std::cout << "calibration_mirror_exact_cases," << cases << std::endl;
+
+    Context donor = createContext(), recipient = createContext();
+    requireResult(M_CalibrationLoadFileW(donor.get(), 11, distortion.c_str()), donor.get(), "load donor distortion");
+    requireResult(M_CalibrationLoadFileW(donor.get(), 14, colorDiff.c_str()), donor.get(), "load donor ColorDiff");
+    requireResult(M_CalibrationLoadFileW(donor.get(), 8, color.c_str()), donor.get(), "load donor color transform");
+    requireResult(M_CalibrationLoadFileW(recipient.get(), 14, colorDiff.c_str()), recipient.get(), "load recipient ColorDiff");
+    requireResult(M_CalibrationLoadFileW(recipient.get(), 8, color.c_str()), recipient.get(), "load recipient color transform");
+    const auto executeWithScratch = [&](void* context) {
+        std::vector<float> cie(17 * 13 * 3);
+        requireResult(M_CalibrationExecuteToV1(context, 17, 13, 16, 3, source.data(), source.size(),
+            nullptr, 0, cie.data(), cie.size(), &options), context, "execute calibration with work buffers");
+        return cie;
+    };
+    const auto expectedDonor = executeWithScratch(donor.get());
+    const auto expectedRecipient = executeWithScratch(recipient.get());
+    if (M_CalibrationTransferWorkBuffersV1(nullptr, donor.get()) != M_CALIBRATION_INVALID_ARGUMENT
+        || nativeError(nullptr).empty()
+        || M_CalibrationTransferWorkBuffersV1(recipient.get(), nullptr) != M_CALIBRATION_INVALID_ARGUMENT
+        || nativeError(recipient.get()).empty()) {
+        throw std::runtime_error("Work buffer transfer accepted a null context or lost its error");
+    }
+    requireResult(M_CalibrationTransferWorkBuffersV1(donor.get(), donor.get()), donor.get(), "transfer work buffers to self");
+    requireResult(M_CalibrationTransferWorkBuffersV1(recipient.get(), donor.get()), recipient.get(), "transfer work buffers");
+    requireResult(M_CalibrationTransferWorkBuffersV1(recipient.get(), donor.get()), recipient.get(), "transfer empty work buffers");
+    if (M_CalibrationGetItemCount(donor.get()) != 3 || M_CalibrationGetItemCount(recipient.get()) != 2
+        || executeWithScratch(donor.get()) != expectedDonor
+        || executeWithScratch(recipient.get()) != expectedRecipient) {
+        throw std::runtime_error("Work buffer transfer changed calibration items or computation");
+    }
+}
+
+void verifyLargeMatrixColorOutput(const std::filesystem::path& directory)
+{
+    constexpr std::uint32_t width = 2503;
+    constexpr std::uint32_t height = 2000;
+    constexpr std::size_t pixels = static_cast<std::size_t>(width) * height;
+    constexpr std::size_t cacheLine = 64;
+    constexpr std::size_t lineFloats = cacheLine / sizeof(float);
+    static_assert(pixels >= 5'000'000 && pixels % lineFloats == 0);
+    constexpr std::array<double, 9> matrix{
+        1.234567891, -0.5, 0.03125, -0.25, 1.765432109, 0.125, 0.0625, -0.1875, 1.5
+    };
+    constexpr std::array<double, 3> gain{1.25, 0.75, 2.5};
+    constexpr std::array<float, 3> exposure{2.5F, 13.75F, 7.125F};
+    constexpr float guard = -12345.0F;
+    const auto sample = [](std::size_t index) {
+        if (index % 23 == 0) return std::uint16_t{0};
+        if (index % 31 == 0) return std::uint16_t{65535};
+        return static_cast<std::uint16_t>((index * 0x9e3779b9U) ^ (index >> 7));
+    };
+    std::vector<std::uint16_t> raw(pixels * 3);
+    for (std::size_t index = 0; index < raw.size(); ++index) raw[index] = sample(index);
+
+    std::vector<float> storage(pixels * 3 + lineFloats * 3, guard);
+    const auto address = reinterpret_cast<std::uintptr_t>(storage.data());
+    const auto alignment = (cacheLine - address % cacheLine) % cacheLine / sizeof(float);
+    // Offset all planes to exercise both scalar edges around the streaming blocks.
+    auto* const cie = storage.data() + alignment + 7;
+    const auto isGuard = [](float value) { return value == guard; };
+
+    MCalibrationExecutionOptionsV1 options{};
+    options.structSize = sizeof(options);
+    options.interleavedBgr = 1;
+    options.exposureX = exposure[0];
+    options.exposureY = exposure[1];
+    options.exposureZ = exposure[2];
+
+    for (const bool multiColor : {false, true}) {
+        const auto path = directory / (multiColor ? "large_multi_color.json" : "large_four_color.json");
+        writeText(path, multiColor
+            ? R"({"bpp":16,"Gain":[1.25,0.75,2.5],"pa":[1.234567891,-0.5,0.03125,-0.25,1.765432109,0.125,0.0625,-0.1875,1.5]})"
+            : R"({"bpp":16,"a":1.234567891,"b":-0.5,"c":0.03125,"d":-0.25,"e":1.765432109,"f":0.125,"g":0.0625,"h":-0.1875,"i":1.5})");
+        Context context = createContext();
+        requireResult(M_CalibrationLoadFileW(context.get(), multiColor ? 9 : 8, path.c_str()),
+            context.get(), "load large matrix calibration");
+        requireResult(M_CalibrationExecuteToV1(context.get(), width, height, 16, 3,
+            reinterpret_cast<const std::uint8_t*>(raw.data()), raw.size() * sizeof(raw[0]),
+            nullptr, 0, cie, pixels * 3, &options), context.get(), "execute large matrix calibration");
+
+        std::array<double, 9> factor{};
+        for (std::size_t index = 0; index < factor.size(); ++index) {
+            const auto channel = index % 3;
+            const double coefficient = multiColor ? static_cast<float>(matrix[index]) : matrix[index];
+            factor[index] = coefficient / exposure[channel];
+            if (multiColor) factor[index] /= gain[channel];
+        }
+        for (std::size_t pixel = 0; pixel < pixels; ++pixel) {
+            const auto* bgr = raw.data() + pixel * 3;
+            if (bgr[0] != sample(pixel * 3) || bgr[1] != sample(pixel * 3 + 1) || bgr[2] != sample(pixel * 3 + 2))
+                throw std::runtime_error("Large matrix calibration modified the input RAW");
+            for (std::size_t plane = 0; plane < 3; ++plane) {
+                const auto* coefficient = factor.data() + plane * 3;
+                const double redGreen = coefficient[0] * bgr[2] + coefficient[1] * bgr[1];
+                const float expected = static_cast<float>(redGreen + coefficient[2] * bgr[0]);
+                if (std::memcmp(&expected, cie + plane * pixels + pixel, sizeof(expected)) != 0) {
+                    throw std::runtime_error("Large matrix calibration changed a scalar XYZ value in " + path.string());
+                }
+            }
+        }
+        if (!std::all_of(storage.data(), cie, isGuard)
+            || !std::all_of(cie + pixels * 3, storage.data() + storage.size(), isGuard)) {
+            throw std::runtime_error("Large matrix calibration overwrote a CIE buffer guard");
+        }
+    }
 }
 
 void runSyntheticCoverage()
@@ -1155,13 +2145,23 @@ void runSyntheticCoverage()
         / ("colorvision_calibration_" + std::to_string(GetCurrentProcessId())));
 
     verifyConcurrentSharedMapLoad(directory.path);
-    verifyReleaseLinearizesWithInFlightLoad(directory.path);
+    verifyReleaseLinearizesWithInFlightLoad(directory.path, false);
+    verifyReleaseLinearizesWithInFlightLoad(directory.path, true);
     verifyProcessFileCacheAcrossGroups(directory.path);
+    verifyExactMapSourceVersions(directory.path);
     verifyAdjacentMapEquivalence(directory.path, false);
     verifyAdjacentMapEquivalence(directory.path, true);
+    verifyAdjacentBgr8MapEquivalence(directory.path);
+    verifyMono16MapEquivalence(directory.path);
+    verifyLegacyBinaryMaps(directory.path);
     verifyRawOutputFlip(directory.path);
     verifyLargeUniformityOutput(directory.path);
+    verifyLargeDistortion(directory.path);
+    verifyDistortionOpticalEdgesAtTrueRoi(directory.path);
+    verifyColorShiftInterleaved(directory.path);
     verifyLargeColorDiffOutput(directory.path);
+    verifyColorDiffMixedOffsets(directory.path);
+    verifyLargeMatrixColorOutput(directory.path);
 
     const auto dark = directory.path / "dark.json";
     writeText(dark, R"({"bpp":16,"Texp_x":1.0,"DarkNoiseRatio":2.0})");
@@ -1370,6 +2370,26 @@ void runSyntheticCoverage()
         }
     }
 
+    const auto unequalColorDiffGr = directory.path / "color_diff_gr_degree.json";
+    const auto unequalColorDiffGb = directory.path / "color_diff_gb_degree.json";
+    writeText(unequalColorDiffGr, R"({"CalibDis":1,"MeasDis":1,"CenterCol":2,"CenterRow":2,"ColRowCoeffs_GB":[0,0],"ColRowCoeffs_GR":[0,0],"ColorDiffCoeffs_GB":[0],"ColorDiffCoeffs_GR":[0,1],"h":4,"w":4})");
+    writeText(unequalColorDiffGb, R"({"CalibDis":1,"MeasDis":1,"CenterCol":2,"CenterRow":2,"ColRowCoeffs_GB":[0,0],"ColRowCoeffs_GR":[0,0],"ColorDiffCoeffs_GB":[0,1],"ColorDiffCoeffs_GR":[0],"h":4,"w":4})");
+    // With targetRadius == radius, the longer polynomial maps its channel
+    // to the center while the shorter polynomial keeps the interior pixel.
+    constexpr std::size_t interior = (1 * 4 + 1) * 3, center = (2 * 4 + 2) * 3;
+    for (const auto& [file, channel] : std::array<std::pair<std::filesystem::path, int>, 2>{{
+        { unequalColorDiffGr, 2 }, { unequalColorDiffGb, 0 }
+    }}) {
+        std::memcpy(geometricRaw.data(), geometricPixels.data(), geometricRaw.size());
+        runOne(14, file, 4, 4, 16, 3, geometricRaw);
+        std::array<std::uint16_t, 3> pixel{};
+        std::memcpy(pixel.data(), geometricRaw.data() + interior * sizeof(std::uint16_t), sizeof(pixel));
+        for (int index = 0; index < 3; ++index) {
+            if (pixel[index] != geometricPixels[(index == channel ? center : interior) + index])
+                throw std::runtime_error("ColorDiff changed a channel with a different polynomial degree");
+        }
+    }
+
     Context geometricChain = createContext();
     requireResult(M_CalibrationLoadFileW(geometricChain.get(), 11, distortion.c_str()),
         geometricChain.get(), "load chained Distortion");
@@ -1499,13 +2519,14 @@ void runSyntheticCoverage()
     }
 
     constexpr int fisheyeWidth = 12;
-    constexpr int fisheyeHeight = 10;
+    constexpr int fisheyeHeight = 27;
+    constexpr int middleRow = fisheyeHeight / 2;
     const std::array<std::pair<int, int>, 5> fisheyeCenters{{
-        { 6, 5 },   // zero offset
-        { 4, 4 },   // positive X/Y offset
-        { 8, 7 },   // negative X/Y offset
-        { -6, 5 },  // positive X offset equals width
-        { 6, 15 },  // negative Y offset equals height
+        { 6, middleRow },                   // zero offset
+        { 4, middleRow - 1 },               // positive X/Y offset
+        { 8, middleRow + 2 },               // negative X/Y offset
+        { -6, middleRow },                  // positive X offset equals width
+        { 6, middleRow + fisheyeHeight },   // negative Y offset equals height
     }};
     for (bool fisheye : { false, true }) {
         for (std::size_t index = 0; index < fisheyeCenters.size(); ++index) {
@@ -1527,7 +2548,7 @@ void runSyntheticCoverage()
                 for (int channels : { 1, 3 }) {
                     for (bool roi : { false, true }) {
                         const int width = roi ? 8 : fisheyeWidth;
-                        const int height = roi ? 6 : fisheyeHeight;
+                        const int height = roi ? 19 : fisheyeHeight;
                         MCalibrationExecutionOptionsV1 options{};
                         options.structSize = sizeof(options);
                         options.interleavedBgr = 1;
@@ -1648,7 +2669,7 @@ void runAngleShiftTilingCoverage()
     cv::RNG random(0x29A753);
     int number = 0;
     for (const auto size : { cv::Size(641, 479), cv::Size(131, 129), cv::Size(1, 257), cv::Size(257, 1) }) {
-        for (const double ratio : { 1.0, 1.5, 2.0, 3.0, 4.0 }) {
+        for (const double ratio : { 1.0, 1.001, 1.5, 2.0, 3.0, 4.0 }) {
             for (int variant = 0; variant < (size.width == 641 ? 3 : 1); ++variant) {
                 const auto path = directory.path / ("angle_" + std::to_string(number++) + ".json");
                 nlohmann::json config{
@@ -1852,6 +2873,16 @@ void runPoiV2SyntheticCoverage()
         || std::fabs(boundaryResults[1].X - 17.615385F) > 0.0001F
         || boundaryResults[2].X != 15.5F || boundaryResults[3].X != 10.5F) {
         throw std::runtime_error("POI V1 boundary ROI clipping changed");
+    }
+
+    const MPoiRequestV1 latticeCircle{ 1, 0, 0, 10, 10 };
+    options = {};
+    options.structSize = sizeof(options);
+    options.filterMode = 1;
+    if (M_CalculatePoiBatchV1(width, height, 32, 3, cie.data(), cie.size(), &latticeCircle, 1, v1.data()) != M_POI_OK
+        || M_CalculatePoiBatchV2(width, height, 32, 3, cie.data(), cie.size(), &latticeCircle, 1, &options, v2.data()) != M_POI_OK
+        || v1[0].X != static_cast<float>(256.0 / 22.0) || v2[0].X != 12.5F) {
+        throw std::runtime_error("POI circle sampling changed at the clipped 3-4-5 boundary");
     }
 
     std::array<MPoiRequestV1, 1> invalidRequest{{ { 2, -1, 0, 1, 1 } }};
@@ -2175,6 +3206,91 @@ bool RunPoiBatchBaselineComparison(const std::filesystem::path& baselineDll)
     }
 }
 
+static void verifyLargeRawPoiBatch()
+{
+    constexpr int width = 321;
+    constexpr int height = 265;
+    std::vector<std::uint16_t> raw(width * height * 3);
+    for (std::size_t i = 0; i < raw.size(); ++i)
+        raw[i] = static_cast<std::uint16_t>((i * 2654435761U) ^ (i >> 3));
+
+    MRawColorTransformV1 transform{};
+    transform.structSize = sizeof(transform);
+    transform.channels = 3;
+    transform.interleavedBgr = 1;
+    for (std::size_t i = 0; i < 9; ++i)
+        transform.coefficients[i] = (static_cast<int>(i) - 2) / 13.0;
+
+    MPoiOptionsV2 options{};
+    options.structSize = sizeof(options);
+    options.flags = M_POI_OPTION_PRESERVE_NON_POSITIVE_VALUES;
+    const std::array<MPoiRequestV1, 16> requests{{
+        {0, 27, 32, 1, 1}, {0, 0, 0, 1, 1},
+        {1, 0, 0, 480, 1}, {1, 160, 132, 360, 360},
+        {2, width - 1, height - 1, 240, 180}, {2, 152, 112, 320, 260},
+        {1, 0, 100, 320, 320}, {1, 251, 3, 260, 260},
+        {0, width - 1, height - 1, 1, 1}, {1, 32, 32, 1, 1},
+        {2, 30, 220, 160, 140}, {2, 300, 4, 300, 150},
+        {1, 159, 140, 200, 200}, {1, 155, 48, 220, 220},
+        {0, 159, 100, 1, 1}, {2, 5, 250, 320, 260}
+    }};
+    const auto invoke = [&](const std::uint16_t* pixels, const MPoiRequestV1* points, std::uint32_t count, MPoiResultV1* output) {
+        return M_CalculateRawPoiBatchV1(width, height, 16, pixels, raw.size() * sizeof(raw[0]),
+            &transform, points, count, &options, output);
+    };
+    const auto serial = [&](const std::uint16_t* pixels, MPoiResultV1* output) {
+        for (std::size_t i = 0; i < requests.size(); ++i) {
+            if (invoke(pixels, &requests[i], 1, &output[i]) != M_POI_OK) return false;
+        }
+        return true;
+    };
+    constexpr auto count = static_cast<std::uint32_t>(requests.size());
+    std::array<MPoiResultV1, count> expected{}, actual{};
+#if defined(_M_X64) && !defined(_M_ARM64EC)
+    const unsigned original = _mm_getcsr();
+    for (unsigned rounding : {0U, 0x2000U}) {
+        // Also seed a sticky flag that must survive successful calculation.
+        const unsigned initial = 0x1f84U | rounding;
+        _mm_setcsr(initial);
+        const bool expectedOk = serial(raw.data(), expected.data());
+        const unsigned expectedState = _mm_getcsr();
+        _mm_setcsr(initial);
+        const int status = invoke(raw.data(), requests.data(), count, actual.data());
+        const unsigned actualState = _mm_getcsr();
+        _mm_setcsr(original);
+        if (!expectedOk || status != M_POI_OK || expectedState != actualState
+            || std::memcmp(actual.data(), expected.data(), sizeof(actual)) != 0)
+            throw std::runtime_error("Large RAW POI batch differs from serial output or floating-point state");
+    }
+#else
+    if (!serial(raw.data(), expected.data()) || invoke(raw.data(), requests.data(), count, actual.data()) != M_POI_OK
+        || std::memcmp(actual.data(), expected.data(), sizeof(actual)) != 0)
+        throw std::runtime_error("Large RAW POI batch differs from serial output");
+#endif
+
+    // The second point sees RAW samples replaced by the first result.
+    std::vector<std::uint16_t> aliasExpected = raw;
+    std::vector<std::uint16_t> aliasActual = raw;
+    auto* const expectedOverlap = reinterpret_cast<MPoiResultV1*>(aliasExpected.data());
+    auto* const actualOverlap = reinterpret_cast<MPoiResultV1*>(aliasActual.data());
+    if (!serial(aliasExpected.data(), expectedOverlap)
+        || invoke(aliasActual.data(), requests.data(), count, actualOverlap) != M_POI_OK
+        || aliasExpected != aliasActual)
+        throw std::runtime_error("Large RAW POI overlap changed the serial layout");
+
+    const auto prior = actual;
+    auto invalid = requests;
+    invalid.back().x = width;
+    if (invoke(raw.data(), invalid.data(), count, actual.data()) != M_POI_INVALID_ARGUMENT
+        || std::memcmp(actual.data(), prior.data(), sizeof(actual)) != 0)
+        throw std::runtime_error("Invalid RAW POI request wrote results before batch validation");
+
+    options.reserved[0] = 1;
+    if (invoke(raw.data(), requests.data(), count, actual.data()) != M_POI_INVALID_ARGUMENT
+        || std::memcmp(actual.data(), prior.data(), sizeof(actual)) != 0)
+        throw std::runtime_error("Invalid RAW POI options wrote results");
+}
+
 static void runRawColorApiCoverage()
 {
     static_assert(sizeof(MRawColorTransformV1) == 96);
@@ -2247,6 +3363,7 @@ bool RunCalibrationApiSmokeTests()
         runAngleShiftTilingCoverage();
         runPoiV2SyntheticCoverage();
         runRawColorApiCoverage();
+        verifyLargeRawPoiBatch();
         std::array<wchar_t, 32768> baselinePath{};
         const DWORD baselinePathLength = GetEnvironmentVariableW(
             L"COLORVISION_POI_BATCH_BASELINE_DLL", baselinePath.data(), static_cast<DWORD>(baselinePath.size()));
@@ -2267,7 +3384,8 @@ bool RunCalibrationApiSmokeTests()
 bool RunCalibrationCacheSmallBudgetTests()
 {
     try {
-        runSmallBudgetCacheCoverage();
+        runSmallBudgetCacheCoverage(false);
+        runSmallBudgetCacheCoverage(true);
         return true;
     }
     catch (const std::exception& ex) {

@@ -1,11 +1,9 @@
-using ColorVision.Database;
 using ColorVision.Engine;
 using ColorVision.Engine.Media;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using ColorVision.FileIO;
 using Newtonsoft.Json;
 using OpenCvSharp;
-using SqlSugar;
 using log4net;
 using System.Collections.ObjectModel;
 using System.IO;
@@ -92,7 +90,7 @@ namespace ProjectARVRPro.Process.AOI
                     ExportOriginalImages(values, exportDir, Config.ExportOriginalAsTif, log);
                 }
 
-                var masters = AlgResultMasterDao.Instance.GetAllByBatchId(ctx.Batch.Id);
+                var masters = ctx.ReadMasterResults();
 
 
                 foreach (var master in masters)
@@ -100,8 +98,7 @@ namespace ProjectARVRPro.Process.AOI
 
                     if (master.ImgFileType == ViewResultAlgType.ImageConvert)
                     {
-                        using var db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
-                        var list = db.Queryable<AlgResultImageModel>().Where(it => it.Pid == master.Id).ToList();
+                        var list = ctx.ReadDetails(AlgResultImageDao.Instance, master.Id);
 
                         foreach (var imageModel in list)
                         {
@@ -130,8 +127,7 @@ namespace ProjectARVRPro.Process.AOI
 
                     if (Config.ExportCieFile && master.ImgFileType == ViewResultAlgType.OLED_RebuildPixelsMem)
                     {
-                        using var db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
-                        var list = db.Queryable<AlgResultPoiCieFileModel>().Where(it => it.Pid == master.Id).ToList();
+                        var list = ctx.ReadDetails(AlgResultPoiCieFileDao.Instance, master.Id);
 
                         foreach (var ciefile in list)
                         {

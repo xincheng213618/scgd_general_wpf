@@ -1,5 +1,6 @@
 ﻿using ColorVision.Common.Utilities;
 using ColorVision.UI;
+using ColorVision.UI.PropertyEditor.Editor.List;
 using System.IO;
 using System.Reflection;
 using System.Windows;
@@ -11,6 +12,7 @@ namespace System.ComponentModel
     {
         public DockPanel GenProperties(PropertyInfo property, object obj)
         {
+            string historyKey = (obj as ListEditorWindow.ListItemViewModel)?.FilePickerHistoryKey ?? $"PropertyGrid:{obj.GetType().FullName}";
             var rm = PropertyEditorHelper.GetResourceManager(obj);
             var dockPanel = new DockPanel();
             var textBlock = PropertyEditorHelper.CreateLabel(property, rm);
@@ -22,24 +24,11 @@ namespace System.ComponentModel
             var selectBtn = new Button { Content = "...", Margin = new Thickness(5, 0, 0, 0) };
             selectBtn.Click += (_, __) =>
             {
-                var ofd = new Microsoft.Win32.OpenFileDialog();
                 var path = property.GetValue(obj) as string;
-                var initialDirectory = PathSelectionHelper.GetExistingDirectory(path);
-                if (!string.IsNullOrWhiteSpace(initialDirectory))
+                if (BrowseFile(Window.GetWindow(dockPanel), path, historyKey) is string selectedPath)
                 {
-                    ofd.InitialDirectory = initialDirectory;
-                }
-
-                var fileName = Directory.Exists(path) ? null : PathSelectionHelper.GetFileName(path);
-                if (!string.IsNullOrWhiteSpace(fileName))
-                {
-                    ofd.FileName = fileName;
-                }
-
-                if (ofd.ShowDialog() == true)
-                {
-                    property.SetValue(obj, ofd.FileName);
-                    textbox.Text = ofd.FileName;
+                    property.SetValue(obj, selectedPath);
+                    textbox.Text = selectedPath;
                 }
             };
 
@@ -69,5 +58,8 @@ namespace System.ComponentModel
             dockPanel.Children.Add(textbox);
             return dockPanel;
         }
+
+        protected virtual string? BrowseFile(Window? owner, string? currentPath, string historyKey) =>
+            OpenFilePicker.ShowDialog(new Microsoft.Win32.OpenFileDialog(), owner, currentPath, historyKey);
     }
 }

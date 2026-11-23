@@ -73,7 +73,8 @@ namespace System.ComponentModel
                     return;
 
                 var collectionEditorAttr = property.GetCustomAttribute<CollectionEditorTypeAttribute>();
-                var editorWindow = new ListEditorWindow(list, elementType, collectionEditorAttr?.ItemEditorType)
+                string historyKey = $"PropertyGrid:{property.DeclaringType?.FullName}.{property.Name}";
+                var editorWindow = new ListEditorWindow(list, elementType, collectionEditorAttr?.ItemEditorType, historyKey)
                 {
                     Owner = Window.GetWindow(dockPanel)
                 };

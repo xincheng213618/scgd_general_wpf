@@ -15,7 +15,10 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
             ArgumentNullException.ThrowIfNull(dataBase64);
 
             byte[] content = Convert.FromBase64String(dataBase64);
-            return Create(templateId, content, templateRevision, capturedTimeUtc, flowKey);
+            // The decoder may share its empty result. Keep each snapshot's array independent.
+            if (content.Length == 0)
+                content = (byte[])content.Clone();
+            return CreateSnapshot(templateId, content, templateRevision, capturedTimeUtc, flowKey);
         }
 
         public static FlowTemplateSnapshot Create(
@@ -27,13 +30,24 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
         {
             ArgumentNullException.ThrowIfNull(content);
 
-            byte[] stableContent = (byte[])content.Clone();
+            return CreateSnapshot(templateId, (byte[])content.Clone(), templateRevision, capturedTimeUtc, flowKey);
+        }
+
+        private static FlowTemplateSnapshot CreateSnapshot(
+            int templateId,
+            byte[] stableContent,
+            int? templateRevision,
+            DateTime? capturedTimeUtc,
+            string? flowKey)
+        {
+            Span<byte> hash = stackalloc byte[SHA256.HashSizeInBytes];
+            SHA256.HashData(stableContent, hash);
             return new FlowTemplateSnapshot
             {
                 TemplateId = templateId,
                 FlowKey = string.IsNullOrWhiteSpace(flowKey) ? null : flowKey.Trim(),
                 TemplateRevision = templateRevision,
-                ContentHash = Convert.ToHexString(SHA256.HashData(stableContent)).ToLowerInvariant(),
+                ContentHash = Convert.ToHexStringLower(hash),
                 Content = stableContent,
                 ContentLength = stableContent.Length,
                 CapturedTimeUtc = capturedTimeUtc ?? DateTime.UtcNow,

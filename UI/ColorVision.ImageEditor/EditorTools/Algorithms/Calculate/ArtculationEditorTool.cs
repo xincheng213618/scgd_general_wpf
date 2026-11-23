@@ -1,3 +1,5 @@
+using ColorVision.ImageEditor.Algorithms;
+using ColorVision.Algorithms;
 using ColorVision.Core;
 using ColorVision.ImageEditor.Draw;
 using ColorVision.UI;
@@ -24,6 +26,8 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate
     /// </summary>
     public class DVRectangleDVContextMenu : IDVContextMenu
     {
+        public AlgorithmInteractiveGroupPresentation AnalysisGroup => AlgorithmMenuGroups.ImageQuality;
+
         private readonly ImageProcessingContext _imageContext;
 
         public DVRectangleDVContextMenu(ImageProcessingContext imageContext)

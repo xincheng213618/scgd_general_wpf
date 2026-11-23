@@ -5,7 +5,6 @@ status: "current"
 summary: "CVWindowsService 服务包的发布、LATEST_RELEASE、缓存与按版本选包；文件名通过不证明ZIP有效，发布不等于本机安装。"
 aliases: ["CVWindowsService服务包发布", "服务包最新版本", "CVWS", "CVWS_PACKAGE_RE", "CVWS_RELEASES_CACHE_KEY", "choose_target_filename", "save_cvws_package", "update_cvws_latest_release", "build_cvws_page_context", "CvwsPublishPanel", "getCvwsContext", "publishCvwsPackage"]
 code_paths: ["Web/Backend/routes/cvws_api.py", "Web/Backend/cvwindowsservice_publish.py", "Web/Backend/services/storage_events.py", "Web/Backend/storage_paths.py", "Web/Backend/routes/artifact_delivery.py", "Web/Backend/app_setup.py", "Web/Backend/config_loader.py", "Web/Frontend/src/pages/PublishPage.tsx", "Web/Frontend/src/services/site.ts", "Web/Frontend/src/types/site.ts", "Web/Frontend/src/utils/permissions.ts"]
-test_paths: ["Web/Backend/test_cvwindowsservice_publish.py", "Web/Backend/test_cvws_web.py", "Web/Backend/test_contracts.py"]
 related: ["delivery.backend", "delivery.backend-public-data", "delivery.backend-auth", "delivery.artifact-delivery", "plugins.windows-service"]
 ---
 
@@ -60,7 +59,7 @@ related: ["delivery.backend", "delivery.backend-public-data", "delivery.backend-
 
 成功201包含 `message/latestVersion/result/releases`，其中 `result.isLatest` 只是本次 `set_latest` 布尔值：未要求写指针但版本恰等于现指针仍可为false；并发发布后指针也可已改变。它不是“该文件是此版本下载胜者”“全站已刷新”或“所有客户端可用”的证明。这里也没有发行版本只能升不能降的门禁。
 
-历史 `PUT /upload/<path>` 是另一个存储上传链（`marketplace_api_routes.py::legacy_upload`），已有测试使用它写入 `Tool/CVWindowsService`；不能把本节专门发布的字段、冲突重命名、指针更新和权限规则套到那个端点。
+历史 `PUT /upload/<path>` 属于 `marketplace_api_routes.py::legacy_upload` 管理的通用存储上传链。专门发布接口的字段、冲突重命名、版本指针和权限规则各自在所属接口解释。
 
 ## 网页调用与本机安装分层
 
@@ -70,8 +69,6 @@ React `PublishPage.tsx::CvwsPublishPanel` 在 `getAdminPublishCapabilities().pub
 
 ## 验证与诊断
 
-`test_cvwindowsservice_publish.py` 覆盖名称/版本正则、推断、顺序冲突后缀、直接保存、latest写入和context字段；`test_cvws_web.py` 覆盖未认证/浏览器挑战、Session上传、显式set_latest真假、基础列表/latest/下载及legacy PUT。`test_contracts.py` 另覆盖不存在版本404、撤销发布Session及普通角色缺少release:publish。测试名含“without_set_latest”的用例实际传的是 `"false"`，不能当作省略字段的覆盖证据。
-
-测试里的 `import app` 发生在临时路径替换之前，不能因为 setUp 有临时目录就推定整个导入过程隔离。并发占名/文件替换、官方名与手填版本冲突、缓存同秒失效、RAR平局、symlink边界、发布后失败回滚和真实服务安装均没有由上述用例证明。
+部署前分别检查省略 `set_latest` 与显式传 `false`，核对并发占名、版本冲突、缓存失效及发布失败后的恢复。真实服务安装须独立验收。
 
 排查先分清：latest文本、扫描列表、按版本选中的文件、工具索引、客户端缓存、实际安装状态。获得目标存储与发布授权后才考虑重传/改指针；重新发布不是无副作用的验证方法。

@@ -14,6 +14,8 @@ namespace ColorVision.SocketProtocol
     {
         private readonly List<ISocketTextDispatcher> _handlers = new List<ISocketTextDispatcher>();
 
+        internal bool FrameJsonObjects => _handlers.FirstOrDefault()?.FrameJsonObjects == true;
+
         public SocketTextDispatcher()
         {
             foreach (var type in AssemblyService.Instance.GetImplementationTypes(typeof(ISocketTextDispatcher)))
@@ -23,6 +25,11 @@ namespace ColorVision.SocketProtocol
                     _handlers.Add(handler);
                 }
             }
+        }
+
+        internal SocketTextDispatcher(params ISocketTextDispatcher[] handlers)
+        {
+            _handlers.AddRange(handlers);
         }
 
         /// <summary>

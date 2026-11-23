@@ -1,3 +1,5 @@
+using ColorVision.Database;
+using SqlSugar;
 using System;
 
 namespace ColorVision.Engine.FlowProcessing.PostProcess
@@ -31,5 +33,13 @@ namespace ColorVision.Engine.FlowProcessing.PostProcess
         /// Gets or sets the batch of measurements associated with the current operation.
         /// </summary>
         public MeasureBatchModel Batch { get; set; }
+
+        internal SqlSugarClient CreateBatchDatabaseClient()
+        {
+            if (Batch is not { Id: > 0 } batch)
+                throw new InvalidOperationException("后处理需要已保存的测量批次。");
+
+            return batch.DatabaseEndpoint?.CreateDbClient() ?? MySqlControl.CreateDbClient();
+        }
     }
 }

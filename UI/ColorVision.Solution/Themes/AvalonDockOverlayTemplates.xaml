@@ -1,0 +1,167 @@
+<!-- Native template parts and target layout adapted from Dirkster99/AvalonDock 5.0.1
+     under the Microsoft Public License. See AvalonDock.LICENSE.txt. -->
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:dock="clr-namespace:ColorVision.Solution.Themes"
+                    xmlns:controls="clr-namespace:AvalonDock.Controls;assembly=AvalonDock"
+                    xmlns:reskeys="clr-namespace:AvalonDock.Themes.VS2013.Themes;assembly=AvalonDock.Themes.VS2013">
+    <Style x:Key="DockingGuideSplitCell" TargetType="{x:Type dock:DockingGuideCell}">
+        <Setter Property="Width" Value="{DynamicResource {x:Static reskeys:ResourceKeys.DockingButtonWidthKey}}" />
+        <Setter Property="Height" Value="{DynamicResource {x:Static reskeys:ResourceKeys.DockingButtonHeightKey}}" />
+        <Setter Property="Focusable" Value="False" />
+        <Setter Property="Foreground" Value="{DynamicResource {x:Static reskeys:ResourceKeys.DockingButtonForegroundBrushKey}}" />
+        <Setter Property="Background" Value="{DynamicResource {x:Static reskeys:ResourceKeys.DockingButtonStarBackgroundBrushKey}}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource {x:Static reskeys:ResourceKeys.DockingButtonStarBorderBrushKey}}" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type dock:DockingGuideCell}">
+                    <Border Margin="2" CornerRadius="3" BorderThickness="1" BorderBrush="{TemplateBinding BorderBrush}" Background="{TemplateBinding Background}">
+                        <Canvas Width="24" Height="24" HorizontalAlignment="Center" VerticalAlignment="Center">
+                            <Path x:Name="Pane" Fill="{TemplateBinding Foreground}" Opacity="0.12" />
+                            <Rectangle Canvas.Left="0.5" Canvas.Top="0.5" Width="23" Height="23" RadiusX="1" RadiusY="1"
+                                       StrokeThickness="1" Stroke="{TemplateBinding Foreground}" />
+                            <Path Data="M1,3.5 H23" Stroke="{TemplateBinding Foreground}" StrokeThickness="1.25" />
+                            <Path x:Name="Divider" Stroke="{TemplateBinding Foreground}" StrokeThickness="1" StrokeDashArray="1,1.5" />
+                        </Canvas>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="Side" Value="Left">
+                            <Setter TargetName="Pane" Property="Data" Value="M1,4 H12 V23 H1 Z" />
+                            <Setter TargetName="Divider" Property="Data" Value="M12,4 V23" />
+                        </Trigger>
+                        <Trigger Property="Side" Value="Top">
+                            <Setter TargetName="Pane" Property="Data" Value="M1,4 H23 V13 H1 Z" />
+                            <Setter TargetName="Divider" Property="Data" Value="M1,13 H23" />
+                        </Trigger>
+                        <Trigger Property="Side" Value="Right">
+                            <Setter TargetName="Pane" Property="Data" Value="M12,4 H23 V23 H12 Z" />
+                            <Setter TargetName="Divider" Property="Data" Value="M12,4 V23" />
+                        </Trigger>
+                        <Trigger Property="Side" Value="Bottom">
+                            <Setter TargetName="Pane" Property="Data" Value="M1,13 H23 V23 H1 Z" />
+                            <Setter TargetName="Divider" Property="Data" Value="M1,13 H23" />
+                        </Trigger>
+                        <!-- A solid divider denotes docking a tool at an edge; document splits use a dotted divider. -->
+                        <Trigger Property="Tag" Value="Edge">
+                            <Setter TargetName="Divider" Property="StrokeDashArray" Value="{x:Null}" />
+                            <Setter TargetName="Pane" Property="Opacity" Value="0.23" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+        <Style.Triggers>
+            <Trigger Property="IsHighlighted" Value="True">
+                <Setter Property="Foreground" Value="{DynamicResource {x:Static reskeys:ResourceKeys.PreviewBoxBorderBrushKey}}" />
+                <Setter Property="BorderBrush" Value="{DynamicResource {x:Static reskeys:ResourceKeys.PreviewBoxBorderBrushKey}}" />
+                <Setter Property="Background" Value="{DynamicResource {x:Static reskeys:ResourceKeys.DockingButtonBackgroundBrushKey}}" />
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
+    <Style x:Key="DockingGuideEdgeCell" TargetType="{x:Type dock:DockingGuideCell}" BasedOn="{StaticResource DockingGuideSplitCell}">
+        <Setter Property="Tag" Value="Edge" />
+    </Style>
+
+    <Style x:Key="DockingGuidePlate" TargetType="Path">
+        <Setter Property="Stretch" Value="Uniform" />
+        <Setter Property="Stroke" Value="{DynamicResource {x:Static reskeys:ResourceKeys.DockingButtonStarBorderBrushKey}}" />
+        <Setter Property="StrokeThickness" Value="1" />
+        <Setter Property="Fill" Value="{DynamicResource {x:Static reskeys:ResourceKeys.DockingButtonStarBackgroundBrushKey}}" />
+    </Style>
+
+    <Style TargetType="{x:Type controls:OverlayWindow}">
+        <Setter Property="UseLayoutRounding" Value="True" />
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type controls:OverlayWindow}">
+                    <dock:DockingGuideCanvas x:Name="PART_DropTargetsContainer" Opacity="0.9"
+                                             HasPreview="{Binding IsVisible, ElementName=PART_PreviewBox}">
+                        <Path x:Name="PART_PreviewBox" Visibility="Hidden" StrokeThickness="0.5"
+                              Fill="{DynamicResource {x:Static reskeys:ResourceKeys.PreviewBoxBackgroundBrushKey}}"
+                              Stroke="{DynamicResource {x:Static reskeys:ResourceKeys.PreviewBoxBorderBrushKey}}" />
+                        <Grid x:Name="PART_DockingManagerDropTargets">
+                            <dock:DockingGuideCell x:Name="PART_DockingManagerDropTargetLeft" Style="{StaticResource DockingGuideEdgeCell}"
+                                                   Side="Left" Margin="10" HorizontalAlignment="Left" VerticalAlignment="Center" />
+                            <dock:DockingGuideCell x:Name="PART_DockingManagerDropTargetTop" Style="{StaticResource DockingGuideEdgeCell}"
+                                                   Side="Top" Margin="10" HorizontalAlignment="Center" VerticalAlignment="Top" />
+                            <dock:DockingGuideCell x:Name="PART_DockingManagerDropTargetRight" Style="{StaticResource DockingGuideEdgeCell}"
+                                                   Side="Right" Margin="10" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                            <dock:DockingGuideCell x:Name="PART_DockingManagerDropTargetBottom" Style="{StaticResource DockingGuideEdgeCell}"
+                                                   Side="Bottom" Margin="10" HorizontalAlignment="Center" VerticalAlignment="Bottom" />
+                        </Grid>
+                        <Grid x:Name="PART_AnchorablePaneDropTargets">
+                            <Path Style="{StaticResource DockingGuidePlate}" Height="122" Data="{DynamicResource DockPaneEmpty}" />
+                            <Grid HorizontalAlignment="Center" VerticalAlignment="Center">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition />
+                                    <ColumnDefinition />
+                                    <ColumnDefinition />
+                                </Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition />
+                                    <RowDefinition />
+                                    <RowDefinition />
+                                </Grid.RowDefinitions>
+                                <dock:DockingGuideCell x:Name="PART_AnchorablePaneDropTargetLeft" Grid.Row="1" Grid.Column="0" Side="Left" Style="{StaticResource DockingGuideEdgeCell}" />
+                                <dock:DockingGuideCell x:Name="PART_AnchorablePaneDropTargetTop" Grid.Row="0" Grid.Column="1" Side="Top" Style="{StaticResource DockingGuideEdgeCell}" />
+                                <dock:DockingGuideCell x:Name="PART_AnchorablePaneDropTargetRight" Grid.Row="1" Grid.Column="2" Side="Right" Style="{StaticResource DockingGuideEdgeCell}" />
+                                <dock:DockingGuideCell x:Name="PART_AnchorablePaneDropTargetBottom" Grid.Row="2" Grid.Column="1" Side="Bottom" Style="{StaticResource DockingGuideEdgeCell}" />
+                                <dock:DockingGuideCell x:Name="PART_AnchorablePaneDropTargetInto" Grid.Row="1" Grid.Column="1" Style="{StaticResource DockingGuideSplitCell}" />
+                            </Grid>
+                        </Grid>
+                        <Grid x:Name="PART_DocumentPaneDropTargets">
+                            <Path Style="{StaticResource DockingGuidePlate}" Height="122" Data="{DynamicResource DockPaneEmpty}" />
+                            <Grid HorizontalAlignment="Center" VerticalAlignment="Center">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition />
+                                    <ColumnDefinition />
+                                    <ColumnDefinition />
+                                </Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition />
+                                    <RowDefinition />
+                                    <RowDefinition />
+                                </Grid.RowDefinitions>
+                                <dock:DockingGuideCell x:Name="PART_DocumentPaneDropTargetLeft" Grid.Row="1" Grid.Column="0" Side="Left" Style="{StaticResource DockingGuideSplitCell}" />
+                                <dock:DockingGuideCell x:Name="PART_DocumentPaneDropTargetTop" Grid.Row="0" Grid.Column="1" Side="Top" Style="{StaticResource DockingGuideSplitCell}" />
+                                <dock:DockingGuideCell x:Name="PART_DocumentPaneDropTargetRight" Grid.Row="1" Grid.Column="2" Side="Right" Style="{StaticResource DockingGuideSplitCell}" />
+                                <dock:DockingGuideCell x:Name="PART_DocumentPaneDropTargetBottom" Grid.Row="2" Grid.Column="1" Side="Bottom" Style="{StaticResource DockingGuideSplitCell}" />
+                                <dock:DockingGuideCell x:Name="PART_DocumentPaneDropTargetInto" Grid.Row="1" Grid.Column="1" Style="{StaticResource DockingGuideSplitCell}" />
+                            </Grid>
+                        </Grid>
+                        <Grid x:Name="PART_DocumentPaneFullDropTargets">
+                            <Path Style="{StaticResource DockingGuidePlate}" Width="204" Data="{DynamicResource DockPaneLargeEmpty}" />
+                            <Grid HorizontalAlignment="Center" VerticalAlignment="Center">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition />
+                                    <ColumnDefinition />
+                                    <ColumnDefinition />
+                                    <ColumnDefinition />
+                                    <ColumnDefinition />
+                                </Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition />
+                                    <RowDefinition />
+                                    <RowDefinition />
+                                    <RowDefinition />
+                                    <RowDefinition />
+                                </Grid.RowDefinitions>
+                                <dock:DockingGuideCell x:Name="PART_DocumentPaneFullDropTargetLeft" Grid.Row="2" Grid.Column="1" Side="Left" Style="{StaticResource DockingGuideSplitCell}" />
+                                <dock:DockingGuideCell x:Name="PART_DocumentPaneFullDropTargetTop" Grid.Row="1" Grid.Column="2" Side="Top" Style="{StaticResource DockingGuideSplitCell}" />
+                                <dock:DockingGuideCell x:Name="PART_DocumentPaneFullDropTargetRight" Grid.Row="2" Grid.Column="3" Side="Right" Style="{StaticResource DockingGuideSplitCell}" />
+                                <dock:DockingGuideCell x:Name="PART_DocumentPaneFullDropTargetBottom" Grid.Row="3" Grid.Column="2" Side="Bottom" Style="{StaticResource DockingGuideSplitCell}" />
+                                <dock:DockingGuideCell x:Name="PART_DocumentPaneFullDropTargetInto" Grid.Row="2" Grid.Column="2" Style="{StaticResource DockingGuideSplitCell}" />
+                                <dock:DockingGuideCell x:Name="PART_DocumentPaneDropTargetLeftAsAnchorablePane" Grid.Row="2" Grid.Column="0" Side="Left" Style="{StaticResource DockingGuideEdgeCell}" />
+                                <dock:DockingGuideCell x:Name="PART_DocumentPaneDropTargetTopAsAnchorablePane" Grid.Row="0" Grid.Column="2" Side="Top" Style="{StaticResource DockingGuideEdgeCell}" />
+                                <dock:DockingGuideCell x:Name="PART_DocumentPaneDropTargetRightAsAnchorablePane" Grid.Row="2" Grid.Column="4" Side="Right" Style="{StaticResource DockingGuideEdgeCell}" />
+                                <dock:DockingGuideCell x:Name="PART_DocumentPaneDropTargetBottomAsAnchorablePane" Grid.Row="4" Grid.Column="2" Side="Bottom" Style="{StaticResource DockingGuideEdgeCell}" />
+                            </Grid>
+                        </Grid>
+                    </dock:DockingGuideCanvas>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+</ResourceDictionary>

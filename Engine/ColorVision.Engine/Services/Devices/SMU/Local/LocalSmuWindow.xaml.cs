@@ -106,6 +106,7 @@ public partial class LocalSmuWindow : Window
         }
         Keyboard.ClearFocus();
         var snapshot = settings.Clone();
+        var resultDatabase = device.CaptureLocalResultDatabase();
         operation = new CancellationTokenSource();
         ParameterTabs.IsEnabled = false; ExecuteButton.IsEnabled = false;
         LocalSmuCapture? acquired = null;
@@ -121,8 +122,8 @@ public partial class LocalSmuWindow : Window
             {
                 acquired = capture;
                 // Retain acquired data if persistence fails, while still reporting the failure.
-                device.PublishLocalSmu(capture, 0);
-                int id = await System.Threading.Tasks.Task.Run(() => LocalSmuResultService.Save(capture, device.Code));
+                device.PublishLocalSmu(capture, 0, resultDatabase);
+                int id = await System.Threading.Tasks.Task.Run(() => LocalSmuResultService.Save(capture, device.Code, resultDatabase));
                 operation.Token.ThrowIfCancellationRequested();
                 Message.Text = capture.HasMeasurements ? EngineLocalization.Format($"完成：{capture.Voltages.Length} 点，{capture.TotalTime} ms，结果 ID {id}。") : EngineLocalization.Get("输出设置完成；本次未执行测量。");
             }

@@ -262,7 +262,8 @@ internal static class ProjectImageExportService
 
     internal static ImageViewSnapshotSaveOptions CreateRenderedOptions(
         ResultImageFormat format,
-        ImageExportSize size)
+        ImageExportSize size,
+        bool useHeatmap = false)
     {
         return new ImageViewSnapshotSaveOptions
         {
@@ -271,6 +272,7 @@ internal static class ProjectImageExportService
                 : ImageViewSnapshotFormat.Png,
             ScaleDivisor = GetScaleDivisor(size),
             JpegQuality = ResultJpegQuality,
+            UseHeatmap = useHeatmap,
         };
     }
 

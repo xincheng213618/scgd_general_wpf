@@ -1,4 +1,3 @@
-using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -62,7 +61,7 @@ namespace ColorVision.UI.LogImp
 
         public static string NormalizeSearchText(string? searchText)
         {
-            return searchText?.ToLower(CultureInfo.CurrentCulture) ?? string.Empty;
+            return searchText ?? string.Empty;
         }
 
         public static void ApplySearchFilter(string searchText, LogViewerControl logViewer, Control searchInput, Brush? defaultBrush)

@@ -1274,6 +1274,7 @@
   <data name="名称不能为空，且不能与其他流程组重复。" xml:space="preserve"><value>名称不能为空，且不能与其他流程组重复。</value></data>
   <data name="组名不能包含换行或控制字符。" xml:space="preserve"><value>组名不能包含换行或控制字符。</value></data>
   <data name="保存失败，请检查磁盘空间和写入权限后重试。" xml:space="preserve"><value>保存失败，请检查磁盘空间和写入权限后重试。</value></data>
+  <data name="将流程组“{0}”中的“{1}”从第 {2} 项移到第 {3} 项。是否保存新顺序？" xml:space="preserve"><value>将流程组“{0}”中的“{1}”从第 {2} 项移到第 {3} 项。是否保存新顺序？</value></data>
   <data name="流程组已不存在，请关闭后重新选择。" xml:space="preserve"><value>流程组已不存在，请关闭后重新选择。</value></data>
   <data name="等待" xml:space="preserve"><value>等待</value></data>
   <data name="执行中" xml:space="preserve"><value>执行中</value></data>

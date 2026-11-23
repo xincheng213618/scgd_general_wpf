@@ -30,6 +30,9 @@ namespace ColorVision.Engine.Messages
         //MsgID,用来做消息同步确认的，如果是单方向发送的话，可以传空
         public string MsgID { get; set; }
 
+        [JsonIgnore]
+        internal bool CompleteWithoutDispatcher { get; set; }
+
         /// <summary>
         /// 参数
         /// </summary>

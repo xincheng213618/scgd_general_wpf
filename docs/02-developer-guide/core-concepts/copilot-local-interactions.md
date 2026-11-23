@@ -5,7 +5,6 @@ status: "current"
 summary: "Copilot 命令目录、输入与引用、会话导航及消息/桌宠呈现；本地入口不等于无副作用。"
 aliases: ["Copilot 快捷键", "Copilot 输入框", "Slash 命令", "@关联", "公式显示", "桌宠活动", "CopilotLocalCommandCatalog", "CopilotPermissionCommand", "/permissions", "/context", "/queue", "/tasks", "/mention", "/multiline", "/follow-up"]
 code_paths: ["ColorVision/Copilot/Agent/CopilotWebPageBrowserRenderer.cs","ColorVision/Copilot/Agent/CopilotWebPageToolSupport.Rendering.cs","ColorVision/Copilot/CopilotChatPanel.xaml.cs","ColorVision/Copilot/CopilotChatViewModel.Conversations.cs","ColorVision/Copilot/CopilotLocalCommandCatalog.cs","ColorVision/Copilot/CopilotLocalCommandAvailabilityPolicy.cs","ColorVision/Copilot/CopilotChatViewModel.LocalCommandWorkflows.cs","ColorVision/Copilot/CopilotChatViewModel.Composer.cs","ColorVision/Copilot/CopilotChatViewModel.PromptHistory.cs","ColorVision/Copilot/CopilotChatViewModel.ComposerReferences.cs","ColorVision/Copilot/CopilotChatViewModel.AttachmentCommands.cs","ColorVision/Copilot/Agent/CopilotWebPageToolSupport.cs","ColorVision/Copilot/Capabilities/CopilotBoundedHttpContentReader.cs","ColorVision/Copilot/CopilotChatViewModel.TurnExecution.cs","ColorVision/Copilot/CopilotChatViewModel.AttachmentLifecycle.cs","ColorVision/Copilot/Context/CopilotImageAttachmentAdmission.cs","ColorVision/Copilot/CopilotChatPanel.Composer.cs","ColorVision/Copilot/CopilotTextInputWindow.xaml","ColorVision/Copilot/CopilotTextInputWindow.xaml.cs","ColorVision/Copilot/State/CopilotComposerEditorSnapshot.cs","ColorVision/Copilot/CopilotChatViewModel.DiagnosticsCommands.cs","ColorVision/Copilot/CopilotChatViewModel.QueuedFollowUps.cs","ColorVision/Copilot/Presentation","ColorVision/Copilot/State/CopilotComposerStash.cs","ColorVision/Copilot/CopilotKeyboardShortcutHelp.cs","ColorVision/Copilot/CopilotMarkdownMath.cs","ColorVision/Copilot/CopilotMarkdownView.xaml.cs","ColorVision/Copilot/CopilotMarkdownTable.cs","ColorVision/Copilot/CopilotComposerReferences.cs","ColorVision/Copilot/CopilotMarkdownView.SpecialContent.cs","ColorVision/FloatingBall/DesktopPetCopilotBridge.cs","ColorVision/FloatingBall/DesktopPetCopilotActivityTracker.cs","ColorVision/FloatingBallWindow.xaml.cs","ColorVision/Copilot/CopilotChatViewModel.ConversationDataCommands.cs","ColorVision/Copilot/CopilotChatViewModel.Messages.cs","ColorVision/Copilot/CopilotChatViewModel.RequestAdmission.cs","ColorVision/Copilot/CopilotChatViewModel.MessageInteraction.cs","ColorVision/Copilot/Context/CopilotImageInputBudget.cs","ColorVision/Copilot/Context/CopilotImageUnderstandingService.cs","ColorVision/Copilot/CopilotChatViewModel.WorkspaceCommands.cs","ColorVision/Copilot/CopilotLocalGitDiffService.cs","ColorVision/Copilot/CopilotChatPanel.xaml","ColorVision/Copilot/CopilotChatPanel.AttachmentsAndScroll.cs","ColorVision/Copilot/CopilotChatViewModel.ComposerAndRuntimeState.cs","ColorVision/Copilot/CopilotChatViewModel.cs"]
-test_paths: ["Test/ColorVision.Copilot.Tests/CopilotWebPageRenderingTests.cs","Test/ColorVision.Copilot.Tests/CopilotPromptHistorySearchBehaviorTests.cs","Test/ColorVision.Copilot.Tests/CopilotGitDiffFeedbackTests.cs","Test/ColorVision.Copilot.Tests/CopilotLocalGitDiffConsistencyTests.cs","Test/ColorVision.Copilot.Tests/CopilotBackgroundStopFeedbackTests.cs","Test/ColorVision.Copilot.Tests/CopilotLocalCommandAvailabilityTests.cs","Test/ColorVision.Copilot.Tests/CopilotComposerSessionTests.cs","Test/ColorVision.Copilot.Tests/CopilotExpandedComposerEditorTests.cs","Test/ColorVision.Copilot.Tests/CopilotComposerPagingTests.cs","Test/ColorVision.Copilot.Tests/CopilotCodexMentionsV2FeatureTests.cs","Test/ColorVision.Copilot.Tests/CopilotChatViewModelProfileIsolationTests.cs","Test/ColorVision.Copilot.Tests/CopilotMarkdownViewTests.cs","Test/ColorVision.Copilot.Tests/CopilotMarkdownTableBoundaryTests.cs","Test/ColorVision.Copilot.Tests/CopilotImageAttachmentAdmissionTests.cs","Test/ColorVision.Copilot.Tests/CopilotAttachmentPathTests.cs","Test/ColorVision.Copilot.Tests/CopilotConversationDeletionPersistenceTests.cs","Test/ColorVision.Copilot.Tests/CopilotRequestAdmissionLifetimeTests.cs","Test/ColorVision.Copilot.Tests/CopilotMessageEditAdmissionTests.cs","Test/ColorVision.Copilot.Tests/CopilotWebPageDeadlineTests.cs","Test/ColorVision.Copilot.Tests/CopilotWebPageAttachmentAdmissionTests.cs","Test/ColorVision.Copilot.Tests/CopilotAttachmentRemovalEditLifetimeTests.cs","Test/ColorVision.Copilot.Tests/CopilotImagePayloadValidationTests.cs","Test/ColorVision.Copilot.Tests/CopilotImageInputBudgetTests.cs","Test/ColorVision.Copilot.Tests/CopilotComposerMentionRangeTests.cs","Test/ColorVision.Copilot.Tests/CopilotChatPanelScrollLifetimeTests.cs","Test/ColorVision.Copilot.Tests/CopilotMarkdownRenderSchedulingTests.cs","Test/ColorVision.Copilot.Tests/CopilotPartialEvidencePresentationTests.cs","Test/ColorVision.Copilot.Tests/CopilotLocalFileLinkNavigationTests.cs", "Test/ColorVision.Copilot.Tests/CopilotConversationExportFileNameTests.cs"]
 related: ["copilot.runtime", "copilot.configuration", "copilot.view-model", "copilot.lifecycle", "copilot.session-tools", "copilot.execution", "copilot.tool-contracts", "ui.desktop-pet"]
 ---
 
@@ -61,7 +60,7 @@ related: ["copilot.runtime", "copilot.configuration", "copilot.view-model", "cop
 | 活动 Agent 新增附件 | 文本与附件整体进入后续队列，即使选了 steering；队满/校验失败保留全部输入，不降级成只送文本 |
 | Ctrl+Enter 立即接管 | 先登记下一轮再请求取消当前轮，登记失败不先取消；等待当前轮收尾，不证明工具已停稳 |
 
-生命周期细节以 `CopilotRequestAdmissionLifetimeTests`、`CopilotImageAttachmentAdmissionTests`、`CopilotWebPageAttachmentAdmissionTests`、`CopilotComposerMentionRangeTests` 与 `CopilotWebPageRenderingTests` 定位；真实调度/网页/桌面边界不能由受控结果替代。
+实际调度、网页与桌面交互按部署环境验证。
 
 ## 草稿编辑与历史恢复
 
@@ -75,7 +74,7 @@ related: ["copilot.runtime", "copilot.configuration", "copilot.view-model", "cop
 
 `/history`/输入框 Ctrl+R 只搜可见 user Content，默认当前会话，可切全部本地会话；不搜隐藏请求/附件正文/trace。Enter/Tab/点击只恢复完整请求到草稿，Esc 恢复打开前草稿，不发送。搜索词不是草稿，也不参与模型上下文计量；外部请求、队列移回编辑先核对真实草稿保护，再关闭搜索交接。侧栏 Ctrl+R 是重命名候选，语义不同。
 
-搜索去重/评分/候选上限直接查 `CopilotPromptHistorySearchBehaviorTests`；正文相同但来源更新仍应刷新来源，后台刷新保留有效选择，不把输入框变成第二份历史。计量归属见[输入时的上下文计量](./copilot-view-model-architecture.md#输入时的上下文计量)。编辑回归为 `CopilotMessageEditAdmissionTests`、`CopilotExpandedComposerEditorTests`。
+历史正文相同但来源改变时仍刷新来源，后台刷新保持有效选择。 [输入时的上下文计量](./copilot-view-model-architecture.md#输入时的上下文计量)
 
 ## 会话导航、回顾与出口
 
@@ -102,9 +101,9 @@ related: ["copilot.runtime", "copilot.configuration", "copilot.view-model", "cop
 
 导出与反馈仅取完成且可见的消息/附件引用，不含隐藏请求、reasoning、trace、附件正文或 Composer 草稿；有界反馈仍可能含实际可见用户数据，发送前审阅。反馈临时附件随窗口清理。范围与费用见[用量观察](./copilot-agent-execution.md#用量观察与分支去重)。
 
-查找刷新更新高亮但不重复拉回当前匹配；主动导航优先于流式滚底，向上阅读取消待滚底，旧会话/卸载/已关闭查找的回调失效。延迟排版增高只在原本靠底且无向上位移时继续跟随，初始零尺寸不证明原位置；历史阅读保持位置。滚底不用末行定位，避免超高消息被滚到行首。实现/回归定位 `CopilotChatPanelScrollLifetimeTests`，不在正文维护 Dispatcher 顺序和像素阈值。
+查找刷新更新高亮但不重复拉回当前匹配；主动导航优先于流式滚底，向上阅读取消待滚底，旧会话/卸载/已关闭查找的回调失效。延迟排版增高只在原本靠底且无向上位移时继续跟随，初始零尺寸不证明原位置；历史阅读保持位置。滚底不用末行定位，避免超高消息被滚到行首。
 
-删除/附件回退的验证入口为 `CopilotConversationDeletionPersistenceTests`、`CopilotAttachmentRemovalEditLifetimeTests`；它们不修复旧版本已丢失数据。
+旧版本已丢失的数据须另行恢复。
 
 ## 诊断、设置与任务控制不是同一种命令
 
@@ -117,20 +116,20 @@ related: ["copilot.runtime", "copilot.configuration", "copilot.view-model", "cop
 
 ## 消息显示与桌宠活动
 
-本地文件链接可用工作区内绝对/相对路径、file URI 及行列定位，含空格用 Markdown 尖括号路径。点击时重查当前工作区/显式受信根和存在性，普通链接不因诊断命令的额外受信根获授权；非法行列不退化成普通打开。只给同路径活动编辑器定位，独立查看器不能定位时保留旧光标并提示，不假称完成。定位具体格式见 `CopilotLocalFileLinkNavigationTests`。
+本地文件链接可用工作区内绝对/相对路径、file URI 及行列定位，含空格用 Markdown 尖括号路径。点击时重查当前工作区/显式受信根和存在性，普通链接不因诊断命令的额外受信根获授权；非法行列不退化成普通打开。只给同路径活动编辑器定位，独立查看器不能定位时保留旧光标并提示，不假称完成。
 
 输入框接应用保存路由，普通状态暂存/恢复，历史搜索时改范围；默认 Ctrl+S 随应用配置变化。无 ViewModel 拒绝并停止路由，不能误保存别的文档。会话 Ctrl+F 与主窗口 Ctrl+Shift+P 功能搜索分开。
 
 `/transcript` 仅展开已有 trace 展示，不创造/导出新隐藏推理；`/compact-mode` 改间距，不压模型上下文；timestamps 只改时间显示。工具成功与覆盖完整独立，partial 标题/展开理由和续读方向随会话保存，真实失败优先；旧记录不凭摘要补造 partial，也不由工具成功证明任务完成。
 
-Markdown 保留代码字面语义与复制内容：围栏优先于公式/表格，正确处理同字符闭合、缩进、空块和未闭合块；行内代码需同长度反引号配对，不解析内部公式/链接，转义竖线不当表格边界。公式支持常用行内/块分隔符，失败回退文本，显示不代表数学验证。语法细节与复制边界直接查 `CopilotMarkdownViewTests`、`CopilotMarkdownTableBoundaryTests`。
+Markdown 保留代码字面语义与复制内容：围栏优先于公式/表格，正确处理同字符闭合、缩进、空块和未闭合块；行内代码需同长度反引号配对，不解析内部公式/链接，转义竖线不当表格边界。公式支持常用行内/块分隔符，失败回退文本，显示不代表数学验证。
 
-流式回答不能每次更新都重建全文：3 万字符时单次重建和布局约 265ms，超过 100ms 的刷新间隔，UI 线程会一直被占满。因此 `CopilotMarkdownView` 只重建最后一个稳定边界之后的块；代码块和公式之外已结束的空行不携带解析状态，之前的块也不依赖其后文本，所以前缀不变时复用已完成的块及其选区和代码视口。内容被改写、宽度变化或换了消息时仍整篇重建。查看器关闭撤销，否则从已挂载文档移除块时 WPF 会序列化被删元素，公式控件会因此抛异常。刷新间隔随渲染耗时在 100ms 到 1s 间调整，单个超长代码块也不会占满 UI 线程。等价性由 `CopilotMarkdownRenderSchedulingTests` 逐字符对比整篇重建来保证。
+`CopilotMarkdownView` 只重建最后一个稳定边界之后的块，前缀不变时保留已完成块的选区与代码视口。正文改写、换消息或影响布局的宽度变化可触发整篇重建。关闭查看器的撤销记录可避免 WPF 序列化已删除的公式控件。渲染间隔随耗时调整。
 
-渲染合并连续更新但不因每片新文本无限推迟；宽度变化可重排，流式更新/同正文重排尽量保留可核对选区，歧义不猜。消息容器换消息清掉旧正文/代码选择与滚动，即使正文相同；同消息重载可保留。代码焦点仅在原控件仍持焦点且窗口活动时恢复，不从输入框抢焦点。渲染仍在 UI 线程，合并间隔不是繁忙 UI 延迟保证。定位 `CopilotMarkdownRenderSchedulingTests`。
+渲染合并连续更新但不因每片新文本无限推迟；宽度变化可重排，流式更新/同正文重排尽量保留可核对选区，歧义不猜。消息容器换消息清掉旧正文/代码选择与滚动，即使正文相同；同消息重载可保留。代码焦点仅在原控件仍持焦点且窗口活动时恢复，不从输入框抢焦点。渲染仍在 UI 线程，合并间隔不是繁忙 UI 延迟保证。
 
 桌宠启用集成后只从 TaskHost/confirmation store 投影有界多会话活动，优先级 `NeedsInput → Blocked → Ready → Running`；打开 Ready/Blocked 消除待查看，NeedsInput 不因打开而消失，取消队列不覆盖活动导航目标。批准卡先显示原生完整确认并重查上下文，图标不授予执行权；投影不改变调度/审批/恢复。启用与素材见[桌面宠物](../../04-api-reference/ui-components/desktop-pet.md)。
 
 ## 验证范围
 
-frontmatter 映射测试保护命令发现/执行分离、输入生命周期、引用/分页、持久化与活动投影。测试引用不表示本次通过，受控 STA/磁盘/渲染检查不替代真实焦点、系统剪贴板/保存窗口、字体布局和桌宠确认交互。修改命令须同时核对 Catalog、AvailabilityPolicy、ViewModel handler 和 Panel 键盘路由，不能只改帮助文字。
+修改命令时核对 Chat 与 Agent 的实际执行范围。在目标环境分别验收真实焦点、系统剪贴板、保存窗口、字体布局和桌宠确认。

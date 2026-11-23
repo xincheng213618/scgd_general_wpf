@@ -3,14 +3,19 @@ using System.Reflection;
 using System.ComponentModel;
 using ColorVision.Engine.PropertyEditor;
 using ColorVision.Core;
+using ColorVision.Database;
 using ColorVision.Engine;
+using ColorVision.Engine.FlowProcessing;
 using ColorVision.Engine.FlowProcessing.Nodes;
+using ColorVision.Engine.Services;
 using ColorVision.Engine.Services.Devices.Camera.Local;
 using ColorVision.Engine.Services.Results.LightArea;
+using ColorVision.Engine.Services.Results.LocalFindLuminousArea;
 using ColorVision.Engine.Templates.POI;
 using ColorVision.ImageEditor;
 using FlowEngineLib.Base;
 using Newtonsoft.Json.Linq;
+using SqlSugar;
 using System.IO;
 using System.Text;
 using System.Windows;
@@ -21,6 +26,81 @@ namespace ColorVision.UI.Tests;
 
 public sealed class LocalFindLuminousAreaNodeTests
 {
+    [Fact]
+    public void LuminousTemplateAndResultDetailsStayWithTheBatchDatabase()
+    {
+        using var files = new FusionFixture();
+        MySqlConnectedEndpoint? current = null;
+        var original = new MySqlConnectedEndpoint(candidate => ReferenceEquals(candidate, current), () => Open("original.db"));
+        var replacement = new MySqlConnectedEndpoint(candidate => ReferenceEquals(candidate, current), () => Open("replacement.db"));
+        current = original;
+        Init(original);
+        Init(replacement);
+        var action = new CVStartCFC("same-code");
+        var batch = new MeasureBatchModel { Code = action.SerialNumber };
+        FlowMeasurementBatch.Insert(batch, original).Bind(action.RuntimeResources);
+        using (var second = replacement.CreateDbClient())
+            Assert.Equal(batch.Id, second.Insertable(new MeasureBatchModel { Code = action.SerialNumber }).ExecuteReturnIdentity());
+
+        current = replacement;
+        LocalLuminousAreaCorner[] corners =
+        [
+            new() { Name = "LT", X = 4, Y = 5 }, new() { Name = "RT", X = 24, Y = 5 },
+            new() { Name = "RB", X = 24, Y = 20 }, new() { Name = "LB", X = 4, Y = 20 },
+        ];
+
+        try
+        {
+            var services = LocalFindLuminousAreaNodeServices.Instance;
+            Assert.Equal(LocalLuminousAreaPoiTemplateShape.LeftTopRectangle, services.UpdatePoiTemplate("same-template", corners, original));
+            Assert.Equal(new Int32Rect(4, 5, 21, 16), LocalPoiSearchRegionResolver.Load("same-template", original));
+            Assert.Equal(new Int32Rect(30, 30, 3, 4), LocalPoiSearchRegionResolver.Load("same-template", replacement));
+
+            int masterId = services.Persist(new LocalFindLuminousAreaPersistenceRequest
+            {
+                Action = action, Algorithm = "RobustV2", DatabaseEndpoint = original, Parameters = new { }, Corners = corners,
+            });
+            using var first = original.CreateDbClient();
+            var master = Assert.Single(first.Queryable<AlgResultMasterModel>().ToList());
+            Assert.Equal(masterId, master.Id);
+            Assert.Equal(batch.Id, master.BatchId);
+            using var second = replacement.CreateDbClient();
+            Assert.Empty(second.Queryable<AlgResultMasterModel>().ToList());
+            master.DatabaseEndpoint = original;
+            var result = new ViewResultAlg(master, action.SerialNumber);
+            new ViewHandleLocalFindLuminousArea().Load(null!, result);
+            Assert.Equal(4, result.ViewResults.Count);
+        }
+        finally { action.RuntimeResources.Dispose(); }
+
+        SqlSugarClient Open(string name) => new(new ConnectionConfig
+        {
+            DbType = DbType.Sqlite, ConnectionString = $"Data Source={Path.Combine(files.Directory, name)};Pooling=False",
+            InitKeyType = InitKeyType.Attribute, IsAutoCloseConnection = true,
+        });
+
+        static void Init(MySqlConnectedEndpoint endpoint)
+        {
+            using var db = endpoint.CreateDbClient();
+            db.CodeFirst.InitTables<MeasureBatchModel>();
+            db.CodeFirst.InitTables<AlgResultMasterModel>();
+            db.CodeFirst.InitTables<AlgResultLightAreaModel>();
+            db.CodeFirst.InitTables<PoiMasterModel>();
+            db.CodeFirst.InitTables<PoiDetailModel>();
+            int id = db.Insertable(new PoiMasterModel
+            {
+                Name = "same-template", Type = 0, Width = 64, Height = 48, CfgJson = "{}", Remark = string.Empty,
+                LeftTopX = 0, LeftTopY = 0, RightTopX = 63, RightTopY = 0,
+                RightBottomX = 63, RightBottomY = 47, LeftBottomX = 0, LeftBottomY = 47,
+            }).ExecuteReturnIdentity();
+            db.Insertable(new PoiDetailModel
+            {
+                Pid = id, Name = "region", Type = (GraphicTypes)LocalLuminousAreaPoiTemplateUpdater.LeftTopRectPointType,
+                PixX = 30, PixY = 30, PixWidth = 3, PixHeight = 4,
+            }).ExecuteCommand();
+        }
+    }
+
     [Fact]
     public void NodeDefaultsToAutomaticFullFrameDetection()
     {
@@ -1062,7 +1142,7 @@ public sealed class LocalFindLuminousAreaNodeTests
             return LoadFrameHandler(filePath);
         }
 
-        public MeasureResultImgModel? GetImageResult(int masterId)
+        public MeasureResultImgModel? GetImageResult(int masterId, MySqlConnectedEndpoint? endpoint)
         {
             GetImageResultCount++;
             return GetImageResultHandler(masterId);
@@ -1076,7 +1156,8 @@ public sealed class LocalFindLuminousAreaNodeTests
 
         public LocalLuminousAreaPoiTemplateShape UpdatePoiTemplate(
             string templateName,
-            IReadOnlyList<LocalLuminousAreaCorner> corners)
+            IReadOnlyList<LocalLuminousAreaCorner> corners,
+            MySqlConnectedEndpoint? endpoint)
         {
             UpdatePoiTemplateCount++;
             return UpdatePoiTemplateHandler(templateName, corners);

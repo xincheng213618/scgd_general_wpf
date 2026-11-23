@@ -1,6 +1,7 @@
 using ColorVision.UI;
 using Newtonsoft.Json;
 using ProjectARVRPro.ImageExport;
+using ProjectARVRPro.Process;
 using System.ComponentModel;
 using System.Reflection;
 using System.IO;
@@ -30,6 +31,7 @@ internal sealed class ProjectSettingsSession
         internal object? SavedValue { get; set; } = InitialValue;
     }
     private readonly List<Setting> _settings = [];
+    private readonly ProjectARVRProConfig _project;
 
     internal ProjectARVRProConfig Project { get; } = new();
     internal ViewResultManagerConfig Results { get; } = new();
@@ -38,6 +40,7 @@ internal sealed class ProjectSettingsSession
 
     internal ProjectSettingsSession(ProjectARVRProConfig project, ViewResultManagerConfig results, bool sourceImageSupportsBmp)
     {
+        _project = project;
         CopyToDraft(project, Project);
         CopyToDraft(results, Results);
         // The two format selectors are UI adapters for one stored value. Copying both would turn BMP into TIFF.
@@ -111,6 +114,8 @@ internal sealed class ProjectSettingsSession
                 return "LUX 协议设备号不能为空或包含逗号、分号、换行。";
             if (property == nameof(ProjectARVRProConfig.LuxVidMode) && value is LuxVidMeasurementMode mode && !Enum.IsDefined(mode))
                 return "请选择有效的 VID 测量方式。";
+            if (property == nameof(ProjectARVRProConfig.LuxVidUnit) && value is LuxVidOutputUnit unit && !Enum.IsDefined(unit))
+                return "请选择有效的 VID 输出单位。";
             if (property.StartsWith("LuxVid", StringComparison.Ordinal) && value is double vid && !double.IsFinite(vid))
                 return "VID 参数必须是有效数值。";
             if (property == nameof(ProjectARVRProConfig.TryCountMax) && value is int count && count < 0) return "最大尝试次数不能小于0。";
@@ -163,7 +168,7 @@ internal sealed class ProjectSettingsSession
         SaveSettings(_settings, persist);
     }
 
-    private static void SaveSettings(IEnumerable<Setting> settings, Action persist)
+    private void SaveSettings(IEnumerable<Setting> settings, Action persist)
     {
         var changes = settings.Where(setting => !Equals(setting.SavedValue, setting.Property.GetValue(setting.Draft)))
             .Select(setting => (Setting: setting, Previous: setting.Property.GetValue(setting.Source))).ToArray();
@@ -180,6 +185,19 @@ internal sealed class ProjectSettingsSession
             foreach (var (setting, previous) in changes)
                 setting.Property.SetValue(setting.Source, previous);
             throw;
+        }
+
+        foreach (var (setting, previous) in changes)
+        {
+            if (setting.Source is not ViewResultManagerConfig || setting.Property.Name is not
+                (nameof(ViewResultManagerConfig.CsvSavePath) or nameof(ViewResultManagerConfig.CustomXlsxSavePath)
+                or nameof(ViewResultManagerConfig.CustomOutputProfile) or nameof(ViewResultManagerConfig.IsSaveCustomXlsx)
+                or nameof(ViewResultManagerConfig.IsSaveCsv) or nameof(ViewResultManagerConfig.UseLegacyARVROutput)
+                or nameof(ViewResultManagerConfig.LuxMtfFormat) or nameof(ViewResultManagerConfig.LuxLuminanceUniformityFormat)))
+                continue;
+
+            ProjectConfigurationLog.Saved(_project.LuxMachineNo, ProcessManager.CurrentActiveGroupName,
+                setting.Property.Name, previous, setting.Property.GetValue(setting.Source));
         }
     }
 }

@@ -254,6 +254,7 @@ public sealed class ImageViewHostLifecycleTests(ITestOutputHelper output)
     [Theory]
     [InlineData("file")]
     [InlineData("result")]
+    [InlineData("canvas")]
     [InlineData("keyboard")]
     [InlineData("multi")]
     public async Task StandalonePreviewOwnersDisposeTheirImageView(string kind)
@@ -286,6 +287,10 @@ public sealed class ImageViewHostLifecycleTests(ITestOutputHelper output)
                     case "result":
                         new ViewResultImage { FileUrl = file.Path }.Open();
                         break;
+                    case "canvas":
+                        Assert.True(ImageViewWindow.OpenCurrentImageCommand.CanExecute(null, ownerView));
+                        ImageViewWindow.OpenCurrentImageCommand.Execute(null, ownerView);
+                        break;
                     case "keyboard":
                         typeof(EditPoiParam1).GetMethod("ShowKeyboardResultPreview", BindingFlags.Instance | BindingFlags.NonPublic)!
                             .Invoke(owner, [new JArray()]);
@@ -309,6 +314,14 @@ public sealed class ImageViewHostLifecycleTests(ITestOutputHelper output)
             WpfTestHost.Invoke(() =>
             {
                 Assert.NotNull(openedPreview.ViewBitmapSource);
+                if (kind == "canvas")
+                {
+                    var source = Assert.IsAssignableFrom<BitmapSource>(ownerView!.ViewBitmapSource);
+                    var copy = Assert.IsAssignableFrom<BitmapSource>(openedPreview.ViewBitmapSource);
+                    Assert.NotSame(source, copy);
+                    Assert.Equal((source.PixelWidth, source.PixelHeight), (copy.PixelWidth, copy.PixelHeight));
+                    Assert.Same(source, ownerView.ViewBitmapSource);
+                }
                 using (openedPreview.AcquireImageFrame()) { }
                 openedWindow.Close();
                 PumpDispatcher();
@@ -337,6 +350,31 @@ public sealed class ImageViewHostLifecycleTests(ITestOutputHelper output)
                 finally { scope?.Dispose(); }
             });
         }
+    }
+
+    [Fact]
+    public void ResultPreviewCommandsRequireAnAvailableImage()
+    {
+        using var image = new ImageFile();
+        string nonImagePath = System.IO.Path.ChangeExtension(image.Path, ".txt");
+        File.WriteAllText(nonImagePath, "not an image");
+        try
+        {
+            WpfTestHost.Invoke(() =>
+            {
+                using var scope = new PresentationScope();
+                var camera = new ViewResultImage { FileUrl = image.Path + ".missing.png" };
+                Assert.False(camera.OpenCVCIECommand.CanExecute(null));
+                camera.FileUrl = image.Path;
+                Assert.True(camera.OpenCVCIECommand.CanExecute(null));
+
+                var algorithm = new ViewResultAlg { FilePath = nonImagePath };
+                Assert.False(algorithm.OpenInNewWindowCommand.CanExecute(null));
+                algorithm.ResultImagFile = image.Path;
+                Assert.True(algorithm.OpenInNewWindowCommand.CanExecute(null));
+            });
+        }
+        finally { File.Delete(nonImagePath); }
     }
 
     [Fact]

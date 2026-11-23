@@ -5,7 +5,6 @@ status: "current"
 summary: "从启动、配置、日志、设备、流程和结果现象定位代码责任，区分已完成阶段与待验证阶段，避免用重启或改数据代替诊断。"
 aliases: ["操作入口", "使用手册", "操作工作流", "我该看哪里", "运行故障归属", "常见问题", "启动失败", "故障排查"]
 code_paths: ["ColorVision/MainWindow.xaml.cs", "ColorVision/Recovery", "UI/ColorVision.UI/ConfigHandler.cs", "UI/ColorVision.UI/LogImp", "Engine/ColorVision.Engine/FlowProcessing/Runtime", "UI/ColorVision.SocketProtocol"]
-test_paths: []
 related: ["platform.system", "ui.configuration", "operations.logs", "ui.discovery", "engine.results", "flow.session", "operations.data", "operations.exports", "operations.acceptance"]
 ---
 
@@ -48,6 +47,6 @@ related: ["platform.system", "ui.configuration", "operations.logs", "ui.discover
 
 ## 从诊断到验证
 
-需要验收时，从目标主题选择最小验证，并按[现场证据规范](./field-operation-acceptance.md)记录输入、观察和未覆盖事项。能定位失败只说明诊断路径有效，不代表业务验收通过；本页没有声明跨模块自动化测试覆盖。
+从目标专题选择现场验收内容，记录输入、观察和未覆盖事项。 [现场证据规范](./field-operation-acceptance.md)
 
 如果现有主题不足以回答，沿其源码入口收窄到具体分支并补充那份规范主题。新增知识应说明条件、结果与验证缺口，而不是再增加一个面向另一种读者的“常见问题”副本。

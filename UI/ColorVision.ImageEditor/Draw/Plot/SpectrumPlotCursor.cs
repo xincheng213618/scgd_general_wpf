@@ -21,17 +21,34 @@ public readonly record struct SpectrumCursorReading(int SampleIndex, double Wave
 public static class SpectrumCursorSamples
 {
     public static bool TryRead(IReadOnlyList<float> samples, float start, float interval, float scale, double wavelength, out SpectrumCursorReading reading)
+        => new Grid(start, interval).TryRead(samples, scale, wavelength, out reading);
+
+    internal readonly struct Grid
     {
-        reading = default;
-        if (samples.Count == 0 || !float.IsFinite(start) || start <= 0 || !float.IsFinite(interval) || interval <= 0 || !double.IsFinite(wavelength)) return false;
-        double first = double.Parse(start.ToString("R", CultureInfo.InvariantCulture), CultureInfo.InvariantCulture);
-        double step = double.Parse(interval.ToString("R", CultureInfo.InvariantCulture), CultureInfo.InvariantCulture);
-        double position = (wavelength - first) / step;
-        if (position < -1e-8 || position > samples.Count - 1 + 1e-8) return false;
-        int index = Math.Clamp((int)Math.Round(position, MidpointRounding.AwayFromZero), 0, samples.Count - 1);
-        float relative = samples[index];
-        reading = new(index, first + step * index, relative, (double)relative * scale);
-        return true;
+        private readonly double first;
+        private readonly double step;
+
+        public Grid(float start, float interval)
+        {
+            if (!float.IsFinite(start) || start <= 0 || !float.IsFinite(interval) || interval <= 0) return;
+
+            // Use the reported decimal grid, so 0.1f spacing still reaches the specified endpoint.
+            first = double.Parse(start.ToString("R", CultureInfo.InvariantCulture), CultureInfo.InvariantCulture);
+            step = double.Parse(interval.ToString("R", CultureInfo.InvariantCulture), CultureInfo.InvariantCulture);
+        }
+
+        public bool TryRead(IReadOnlyList<float> samples, float scale, double wavelength, out SpectrumCursorReading reading)
+        {
+            reading = default;
+            int count = samples.Count;
+            if (count == 0 || step <= 0 || !double.IsFinite(wavelength)) return false;
+            double position = (wavelength - first) / step;
+            if (position < -1e-8 || position > count - 1 + 1e-8) return false;
+            int index = Math.Clamp((int)Math.Round(position, MidpointRounding.AwayFromZero), 0, count - 1);
+            float relative = samples[index];
+            reading = new(index, first + step * index, relative, (double)relative * scale);
+            return true;
+        }
     }
 }
 
@@ -41,7 +58,8 @@ public sealed class SpectrumPlotCursor : IDisposable
     private readonly WpfPlot control;
     private readonly Action<SpectrumCursorReading?> changed;
     private float[] samples = Array.Empty<float>();
-    private float start, interval, scale;
+    private SpectrumCursorSamples.Grid grid;
+    private float scale;
     private readonly bool absolute;
     private VerticalLine? line;
     private Marker? marker;
@@ -60,7 +78,8 @@ public sealed class SpectrumPlotCursor : IDisposable
     {
         Clear();
         samples = values == null ? Array.Empty<float>() : (float[])values.Clone();
-        start = startWavelength; interval = sampleInterval; scale = absoluteScale;
+        if (samples.Length != 0) grid = new(startWavelength, sampleInterval);
+        scale = absoluteScale;
     }
 
     private void MouseMove(object sender, MouseEventArgs e)
@@ -76,7 +95,7 @@ public sealed class SpectrumPlotCursor : IDisposable
         if (disposed) return;
         var rect = control.Plot.LastRender.DataRect;
         if (pixel.X < rect.Left || pixel.X > rect.Right || pixel.Y < rect.Top || pixel.Y > rect.Bottom
-            || !SpectrumCursorSamples.TryRead(samples, start, interval, scale, control.Plot.GetCoordinates(pixel).X, out var reading))
+            || !grid.TryRead(samples, scale, control.Plot.GetCoordinates(pixel).X, out var reading))
         { Hide(); return; }
         if (line == null || !control.Plot.PlottableList.Contains(line))
             line = control.Plot.Add.VerticalLine(reading.Wavelength, 1, ScottPlot.Colors.Gray, LinePattern.Dashed);
@@ -103,6 +122,7 @@ public sealed class SpectrumPlotCursor : IDisposable
     public void Clear()
     {
         samples = Array.Empty<float>();
+        grid = default;
         if (line != null) control.Plot.Remove(line);
         if (marker != null) control.Plot.Remove(marker);
         line = null; marker = null;

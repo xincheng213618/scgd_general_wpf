@@ -5,7 +5,6 @@ status: "current"
 summary: "Android原生运维入口、现场HTTPS与固定签名中继的职责边界；连接、可见证据和操作授权不能互相替代。"
 aliases: ["AndroidWebViewApp","Android运维伴侣","现场运维","OperationsActivity","AppNavigationPolicy","OperationsTriagePresentation","OperationsRelayPolicy","OperationsPinnedTlsPolicy"]
 code_paths: ["AndroidWebViewApp/README.md","AndroidWebViewApp/app/build.gradle","AndroidWebViewApp/app/src/main/AndroidManifest.xml","AndroidWebViewApp/app/src/main/res/xml/network_security_config.xml","AndroidWebViewApp/app/src/main/java/com/colorvision/xcviewer/MainActivity.java","AndroidWebViewApp/app/src/main/java/com/colorvision/xcviewer/AppNavigationPolicy.java","AndroidWebViewApp/app/src/main/java/com/colorvision/xcviewer/OperationsActivity.java","AndroidWebViewApp/app/src/main/java/com/colorvision/xcviewer/OperationsTriagePresentation.java","AndroidWebViewApp/app/src/main/java/com/colorvision/xcviewer/OperationsRelayPolicy.java","AndroidWebViewApp/app/src/main/java/com/colorvision/xcviewer/OperationsPinnedTlsPolicy.java","AndroidWebViewApp/app/src/main/java/com/colorvision/xcviewer/OperationsWatchService.java","AndroidWebViewApp/app/src/main/java/com/colorvision/xcviewer/OperationsWatchPolicy.java","AndroidWebViewApp/app/src/main/java/com/colorvision/xcviewer/AndroidUpdateClient.java","AndroidWebViewApp/app/src/main/java/com/colorvision/xcviewer/AndroidUpdatePolicy.java","UI/ColorVision.UI.Desktop/Operations/OperationsSecureHostService.cs","UI/ColorVision.UI.Desktop/Operations/OperationsSecureApiRouter.cs","UI/ColorVision.UI.Desktop/Operations/OperationsRelayClientService.cs","Web/Backend/routes/operations_relay.py","Web/Backend/services/operations_device_relay.py"]
-test_paths: ["AndroidWebViewApp/app/src/test/java/com/colorvision/xcviewer/AppNavigationPolicyTest.java","AndroidWebViewApp/app/src/test/java/com/colorvision/xcviewer/OperationsPinnedTlsPolicyTest.java","AndroidWebViewApp/app/src/test/java/com/colorvision/xcviewer/OperationsRelayPolicyTest.java","AndroidWebViewApp/app/src/test/java/com/colorvision/xcviewer/OperationsTriagePresentationTest.java","AndroidWebViewApp/app/src/test/java/com/colorvision/xcviewer/OperationsWatchPolicyTest.java","AndroidWebViewApp/app/src/test/java/com/colorvision/xcviewer/AndroidUpdatePolicyTest.java","Web/Backend/test_operations_relay.py"]
 related: ["delivery.backend"]
 ---
 
@@ -49,6 +48,5 @@ related: ["delivery.backend"]
 - 入口/导航不符：先查 `MainActivity`、`AppNavigationPolicy` 与保存的配对状态，而不是从目录名推断 WebView。
 - 直连失败：查固定证书、配对和请求认证；中继失败：另查固定 URL 策略、签名与快照新鲜度，不用停留在“网络能通”。
 - 动作缺失或禁用：查当前通道的 capability 与页面 action 的不同白名单、运行状态及确认条件；旧日志、旧快照与旧版本 README 均不直接授权操作。
-- `AppNavigationPolicyTest`、`OperationsPinnedTlsPolicyTest`、`OperationsRelayPolicyTest`、`OperationsTriagePresentationTest`、`OperationsWatchPolicyTest`、`AndroidUpdatePolicyTest` 提供相应纯逻辑边界；后端 `test_operations_relay.py` 是另一层协议测试。文件存在不是本次运行通过的声明。
 
 本主题不是 Android/桌面/后端全部运维 API 的完整安全审计。实际手机权限、系统后台限制、配对撤销、证书轮换、跨网络切换、更新签名和真实作业回执仍需分别取得授权后专项验收，不能由文档构建替代。

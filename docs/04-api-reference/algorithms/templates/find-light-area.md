@@ -5,15 +5,14 @@ status: "current"
 summary: "AA 模板与本地发光区定位(V2)的入口、图像来源、POI保存模板和结果边界。"
 aliases: ["寻找AA区","AA发光区定位","TemplateAAFindPoints","AaFindPointsTemplatePropertiesEditor","本地发光区定位(V2)","本地发光区定位V2为什么拒绝","原生亮区四角点置信度","发光区检测失败原因","POI保存模板","SavePOITempName","最小置信度","搜索区域","cvnative::luminous","FindLuminousAreaV2Result","hasCorners","LocalFindLuminousAreaNode","M_FindLuminousAreaV2","RobustV2"]
 code_paths: ["Engine/ColorVision.Engine/Templates/Jsons/AAFindPoints","Engine/ColorVision.Engine/FlowProcessing/Nodes/Compatibility/Algorithm/AlgorithmFindLightAreaNode.cs","Engine/ColorVision.Engine/PropertyEditor/FlowTemplatePropertiesEditors.cs","Engine/ColorVision.Engine/Abstractions/ViewResultAlgType.cs","Engine/cvColorVision/CVCommCore/CVResultType.cs","Engine/FlowEngineLib/Node/Algorithm/CVResultType.cs","Engine/cvColorVision/MQTTMessageLib/Algorithm/MQTTAlgorithmEventEnum.cs","Engine/ColorVision.Engine/Services/Results/LightArea","Engine/ColorVision.Engine/Services/Results/LocalFindLuminousArea","Engine/ColorVision.Engine/Templates/ITemplate.cs","Engine/ColorVision.Engine/Templates/POI/LocalLuminousAreaPoiTemplateUpdater.cs","Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalFindLuminousAreaNode.cs","Engine/ColorVision.Engine/Services/Devices/Camera/Local/LocalFlowResultPersistence.cs","Engine/ColorVision.Engine/Services/Devices/Camera/Local/LocalFrameFileService.cs","UI/ColorVision.Core/LuminousAreaDetection.cs","UI/ColorVision.ImageEditor/EditorTools/Algorithms/Calculate/FindLuminousArea","UI/ColorVision.ImageEditor/EditorTools/GraphicEditing/GraphicEditingWindow.xaml.cs","Native/opencv_helper/algorithm/luminous_area/luminous_area_v2.h","Native/opencv_helper/algorithm/luminous_area/luminous_area_v2.cpp","Native/include/opencv_media_export.h","Native/opencv_helper/opencv_media_export.cpp"]
-test_paths: ["Test/ColorVision.UI.Tests/CompatibilityNodeMigrationTests.cs","Test/ColorVision.UI.Tests/CompatibilityCameraPropertyEditorTests.cs","Test/ColorVision.UI.Tests/LocalFindLuminousAreaNodeTests.cs","Test/ColorVision.UI.Tests/LightAreaResultHandlerTests.cs","Test/ColorVision.UI.Tests/FindLuminousAreaManualResultTests.cs","Test/opencv_helper_test/test_find_luminous_area.cpp"]
 related: ["algorithms.index","algorithms.roi-routes","algorithms.template-management","engine.native-integration","engine.results"]
 ---
 
 # 发光区定位：AA 模板与本地 V2
 
-发光区定位节点使用 AA JSON 模板；**参数模板**字段内直接选择模板，旁边的按钮提供参数编辑和模板管理。节点类型、已有连线、模板名称、图像文件、POI 保存模板及角点顺序的持久化契约不变。`TemplateAAFindPoints` 的字典号为 `42`、编码为 `FindLightArea`。
+发光区定位节点在 **参数模板** 字段选择、编辑 AA JSON 模板。`TemplateAAFindPoints` 的字典号为 `42`，编码为 `FindLightArea`。
 
-旧定位字典 `31` 与 FocusPoints 字典 `15` 的数据不会自动转换成 AA JSON，也不会由界面清理。保留旧模板的流程需要人工选择 AA 模板；服务端权限独立于主程序，本次主程序移除入口不代表服务端实现已移除。通用旧算法枚举编号 `7/8/9` 保留空位，其中 `9` 是已退役项目的 JND 计算入口；旧流程不能将它们误解释为后续算子，执行时明确拒绝。
+旧定位字典 `31` 和 FocusPoints 字典 `15` 原样保留。使用这些模板的流程须手动选择 AA 模板。通用算法编号 `7/8/9` 为保留位，旧流程使用这些编号时拒绝执行。
 
 **本地发光区定位(V2)** 使用本机 `RobustV2` 算法，不需要检测参数模板。本地计算不依赖远端算法服务；本地 Flow 节点的结果保存仍依赖 MySQL 和已有流程批次。两条 Engine 链路共用角点模型、DAO 和点位明细表；AA 与本地 V2 分别由各自的结果处理器加载和展示。
 
@@ -100,7 +99,7 @@ $$
 
 下游本地十字定位和本地点阵畸变 V2 的“搜索区域关注点”可选择同一模板，按最新保存明细生成搜索矩形，优先于节点固定区域。四角点取外接矩形，不透视裁正；模板读写遵循服务点类型数值。节点不缓存坐标，但模板不携带帧身份，也不能证明本轮前序检测成功；流程必须保证前序成功后再执行，并行流程使用不同模板以避免互相覆盖。
 
-POI 回写有自己的事务，且在算法结果事务之前提交。后续结果保存失败不会撤销已提交的 POI 修改；这两步不是一个整体事务。
+持久化图像回查、POI 模板回写和算法结果保存均使用所属批次的数据库连接。POI 回写在独立事务中先提交，随后算法结果使用另一个事务提交。
 
 ### 结果提交与失败状态
 
@@ -165,8 +164,8 @@ ImageEditor、POI 还可显式选择 `FovLuminanceBoundary`（界面名 **实验
 
 ## 验证入口与边界
 
-`LocalFindLuminousAreaNodeTests.cs` 使用替代检测、保存、发布服务和事务对象检查节点输入优先级、POI 更新次序、四角顺序、失败主结果及提交/回滚流程，不能代替真实数据库或 native 验证。`FindLuminousAreaManualResultTests.cs` 检查手动诊断消息内容；`LightAreaResultHandlerTests.cs` 检查处理器归属互斥、旧本地记录兼容、公共模型的新命名空间与数据库契约及 JSON 角点映射，不连接真实数据库。
+真实数据库与原生算法需在对应运行环境核对。
 
-普通 ABI 反射检查不等于执行了导出函数。C++ 合成回归位于 `Test/opencv_helper_test/test_find_luminous_area.cpp`。
+原生 ABI 验收需实际调用目标 DLL 的导出函数。
 
-现场验收应保留有预期结果的图像集，覆盖透视、旋转、16 位输入、暗角、漏光、饱和、噪声、遮挡、裁边和多候选；分别检查成功角点误差、拒绝原因与事务落库。测试文件存在、native 返回正数或单张叠图都不表示这些链路已通过验收。
+现场验收应保留有预期结果的图像集，覆盖透视、旋转、16 位输入、暗角、漏光、饱和、噪声、遮挡、裁边和多候选；分别检查成功角点误差、拒绝原因与事务落库。对照角点、拒绝原因和落库结果判断是否通过。

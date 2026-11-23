@@ -1,4 +1,5 @@
 import json
+import os
 import tempfile
 import unittest
 from pathlib import Path
@@ -67,6 +68,56 @@ class ConfigLoaderTests(unittest.TestCase):
                 config = load_config()
         self.assertEqual(config["upload_auth"]["username"], "u1")
         self.assertEqual(config["upload_auth"]["password"], "admin")  # default preserved
+
+    def test_data_directory_override_keeps_storage_and_db_separate(self):
+        from app_setup import create_app_and_context
+        from routes.health_api import health_api
+        from services.docs_site import docs_dist_dir, docs_source_dir
+
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            data = root / "data"
+            data.mkdir()
+            storage = root / "artifacts"
+            docs = root / "docs"
+            (data / "config.json").write_text(json.dumps({
+                "storage_path": str(storage),
+                "secret_key": "fixture-key",
+                "upload_auth": {"username": "fixture-user", "password": "fixture-password"},
+            }), encoding="utf-8-sig")
+            with patch.dict(os.environ, {
+                "COLORVISION_WEB_DATA_DIR": str(data),
+                "COLORVISION_WEB_DOCS_DIR": str(docs),
+                "COLORVISION_WEB_RELEASE_ID": "fixture-20261122",
+            }):
+                app, ctx, _, helpers = create_app_and_context()
+                self.addCleanup(helpers["access_recorder"].close)
+                self.assertEqual(docs_source_dir(), docs)
+                self.assertEqual(docs_dist_dir(), docs / ".vitepress" / "dist")
+
+            app.register_blueprint(health_api)
+            with patch("routes.health_api._ctx", ctx):
+                client = app.test_client()
+                health = client.get("/api/health")
+                ready = client.get("/api/ready")
+
+            self.assertTrue((data / "marketplace.db").is_file())
+            self.assertEqual(health.status_code, 200)
+            self.assertEqual(health.get_json()["storagePath"], str(storage))
+            self.assertEqual(health.get_json()["dbPath"], str(data / "marketplace.db"))
+            self.assertEqual(health.headers["X-ColorVision-Web-Release-Id"], "fixture-20261122")
+            self.assertEqual(health.headers["X-ColorVision-Web-Process-Id"], str(os.getpid()))
+            self.assertEqual(ready.status_code, 200)
+            self.assertTrue(ready.get_json()["ready"])
+
+    def test_data_directory_override_requires_an_absolute_directory_with_config(self):
+        with patch.dict(os.environ, {"COLORVISION_WEB_DATA_DIR": "relative"}):
+            with self.assertRaisesRegex(ValueError, "existing absolute directory"):
+                load_config()
+
+        with tempfile.TemporaryDirectory() as td, patch.dict(os.environ, {"COLORVISION_WEB_DATA_DIR": td}):
+            with self.assertRaisesRegex(FileNotFoundError, "config.json"):
+                load_config()
 
     def test_get_upload_auth_extracts_credentials(self):
         config = {"upload_auth": {"username": "testuser", "password": "testpass"}}

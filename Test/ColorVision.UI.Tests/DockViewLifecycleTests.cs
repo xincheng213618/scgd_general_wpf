@@ -1,6 +1,7 @@
 using AvalonDock.Layout;
 using DockingManager = AvalonDock.DockingManager;
 using AvalonDock.Serializer.Xml;
+using ColorVision.Database;
 using ColorVision.Engine;
 using ColorVision.Engine.Media;
 using ColorVision.Engine.Services;
@@ -33,6 +34,7 @@ using System.ComponentModel;
 using System.IO;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -501,6 +503,30 @@ public sealed class DockViewLifecycleTests
     }
 
     [Fact]
+    public void DockedCameraReportsItsDisplayedImageAsTheActiveDocument() => WpfTestHost.Invoke(() =>
+    {
+        using var scope = new Scope();
+        using var camera = new DeviceCamera(Resource("image-status"));
+        DockViewManager.GetInstance().OpenView(camera.ViewRegistration);
+        var view = camera.View;
+        var provider = Assert.IsAssignableFrom<IActiveDocumentStatusProvider>(Assert.Single(scope.Pane.Children).Content);
+        Assert.Same(view, provider);
+        Assert.Empty(provider.GetActiveStatusBarItems());
+
+        object? updateSource = null;
+        provider.StatusBarItemsChanged += (sender, _) => updateSource = sender;
+        view.ImageView.SetImageSource(new WriteableBitmap(4, 3, 96, 96, PixelFormats.Gray8, null));
+        Assert.Same(provider, updateSource);
+        var imageStatus = Assert.Single(provider.GetActiveStatusBarItems());
+        Assert.Same(Assert.Single(view.ImageView.GetActiveStatusBarItems()).Source, imageStatus.Source);
+
+        updateSource = null;
+        view.ImageView.Clear();
+        Assert.Same(provider, updateSource);
+        Assert.Empty(provider.GetActiveStatusBarItems());
+    });
+
+    [Fact]
     public void QueuedPreviewUsesTheNewViewAfterCloseAndReopen()
     {
         WpfTestHost.Invoke(() =>
@@ -521,6 +547,109 @@ public sealed class DockViewLifecycleTests
             Assert.NotSame(previous, current);
             Assert.Null(previous.ImageView.ViewBitmapSource);
             Assert.Equal(4, Assert.IsAssignableFrom<BitmapSource>(current.ImageView.ViewBitmapSource).PixelWidth);
+        });
+    }
+
+    [Fact]
+    public void QueuedCameraFlowPreviewIsDiscardedAfterItsDatabaseRetires() => WpfTestHost.Invoke(() =>
+    {
+        using var scope = new Scope();
+        using var camera = new DeviceCamera(Resource("fixed-preview-database"));
+        DockViewManager.GetInstance().OpenView(camera.ViewRegistration);
+        var view = camera.View;
+        MySqlConnectedEndpoint? active = null;
+        MySqlConnectedEndpoint first = new(endpoint => ReferenceEquals(active, endpoint), () => throw new InvalidOperationException());
+        MySqlConnectedEndpoint second = new(endpoint => ReferenceEquals(active, endpoint), () => throw new InvalidOperationException());
+        active = first;
+        camera.ResultDatabaseEndpoint = first;
+        using var frame = LocalFlowFrame.Allocate(new LocalFrameMetadata { Width = 2, Height = 1, SourceBpp = 8, Channels = 1 }, 2, 0);
+        camera.PublishLocalPreview(frame, new MeasureResultImgModel { Id = 51, Result = "stale" }, forceDisplay: true, databaseEndpoint: first);
+        active = second;
+        camera.ResultDatabaseEndpoint = second;
+        Pump();
+        Assert.Empty(view.ViewResults);
+        Assert.Null(view.ImageView.ViewBitmapSource);
+
+        camera.PublishLocalPreview(frame, new MeasureResultImgModel { Id = 51, Result = "current" }, forceDisplay: true, databaseEndpoint: second);
+        Pump();
+        Assert.Equal("current", Assert.Single(view.ViewResults).ResultMsg);
+        Assert.Equal(2, Assert.IsType<WriteableBitmap>(view.ImageView.ViewBitmapSource).PixelWidth);
+    });
+
+    [Theory]
+    [InlineData(8, 1, CVImageFlipMode.None)]
+    [InlineData(8, 3, CVImageFlipMode.Y)]
+    [InlineData(16, 1, CVImageFlipMode.X)]
+    [InlineData(16, 3, CVImageFlipMode.XY)]
+    public void AutofocusProgressKeepsPixelsAfterTheNativeCallbackBufferIsFreed(int bits, int channels, CVImageFlipMode flip)
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            using var scope = new Scope();
+            using var camera = new DeviceCamera(Resource("focus-preview"));
+            DockViewManager.GetInstance().OpenView(camera.ViewRegistration);
+            var view = camera.View.ImageView;
+            camera.DisplayConfig.FlipMode = flip;
+
+            const int width = 5, height = 3;
+            int sampleBytes = bits / 8, pixelBytes = channels * sampleBytes, rowBytes = width * pixelBytes;
+            byte[] raw = Enumerable.Range(1, rowBytes * height).Select(index => (byte)index).ToArray();
+            byte[] expected = new byte[raw.Length];
+            bool reverseRows = flip is CVImageFlipMode.X or CVImageFlipMode.XY;
+            bool reverseColumns = flip is CVImageFlipMode.Y or CVImageFlipMode.XY;
+            bool swapRedBlue = bits == 16 && channels == 3;
+            for (int y = 0; y < height; y++)
+                for (int x = 0; x < width; x++)
+                {
+                    int sourceY = reverseRows ? height - 1 - y : y;
+                    int sourceX = reverseColumns ? width - 1 - x : x;
+                    int sourcePixel = sourceY * rowBytes + sourceX * pixelBytes;
+                    int destinationPixel = y * rowBytes + x * pixelBytes;
+                    for (int channel = 0; channel < channels; channel++)
+                    {
+                        int sourceChannel = swapRedBlue ? 2 - channel : channel;
+                        raw.AsSpan(sourcePixel + sourceChannel * sampleBytes, sampleBytes)
+                            .CopyTo(expected.AsSpan(destinationPixel + channel * sampleBytes, sampleBytes));
+                    }
+                }
+
+            bool previousCache = LocalCameraRawBufferPool.IsCacheEnabled;
+            LocalCameraRawBufferPool.IsCacheEnabled = true;
+            try
+            {
+                // An intermediate pooled RAW frame would evict this slot and return a full-frame allocation.
+                var pool = camera.LocalCameraSession.RawBufferPool;
+                pool.Return(pool.Rent(1), 1);
+                IntPtr borrowed = Marshal.AllocHGlobal(raw.Length);
+                try
+                {
+                    Marshal.Copy(raw, 0, borrowed, raw.Length);
+                    camera.PublishLocalFocusPreview(new(borrowed, width, height, bits, channels), exposure: 10f, gain: 3f);
+                    Assert.Null(view.ViewBitmapSource);
+                    byte[] unchanged = new byte[raw.Length];
+                    Marshal.Copy(borrowed, unchanged, 0, unchanged.Length);
+                    Assert.Equal(raw, unchanged);
+                    Marshal.Copy(new byte[raw.Length], 0, borrowed, raw.Length);
+                }
+                finally { Marshal.FreeHGlobal(borrowed); }
+
+                Pump();
+                var displayed = Assert.IsType<WriteableBitmap>(view.ViewBitmapSource);
+                Assert.False(displayed.IsFrozen);
+                Assert.Equal((width, height), (displayed.PixelWidth, displayed.PixelHeight));
+                Assert.Equal((bits, channels) switch
+                {
+                    (8, 1) => PixelFormats.Gray8, (8, 3) => PixelFormats.Bgr24,
+                    (16, 1) => PixelFormats.Gray16, _ => PixelFormats.Rgb48
+                }, displayed.Format);
+                byte[] displayedPixels = new byte[raw.Length];
+                displayed.CopyPixels(displayedPixels, rowBytes, 0);
+                Assert.Equal(expected, displayedPixels);
+                Assert.Equal(1, pool.IdleBytes);
+                Assert.Equal(3f, view.Document.ParameterRecord!.Gain);
+                Assert.Equal(Enumerable.Repeat(10f, channels), view.Document.ParameterRecord.Exposure);
+            }
+            finally { LocalCameraRawBufferPool.IsCacheEnabled = previousCache; }
         });
     }
 
@@ -608,16 +737,20 @@ public sealed class DockViewLifecycleTests
             camera.Config.MotorConfig.IsUseMotor = true;
             camera.Config.MotorConfig.VID.IsUseVID = true;
             camera.Config.MotorConfig.VIDPosition = 42.5;
+            camera.Config.MotorConfig.Position = 107921;
             Pump();
             Assert.Null(view.FocusChart.MotorVid);
+            Assert.Null(view.FocusChart.MotorPosition);
 
             camera.CameraBackend.SetLocalStatus(DeviceStatusType.Opened);
             Pump();
             Assert.Equal(42.5, view.FocusChart.MotorVid);
+            Assert.Equal(107921, view.FocusChart.MotorPosition);
 
             camera.Config.MotorConfig.VID.IsUseVID = false;
             Pump();
             Assert.Null(view.FocusChart.MotorVid);
+            Assert.Null(view.FocusChart.MotorPosition);
         });
     }
 

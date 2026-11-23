@@ -11,8 +11,8 @@
             <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
         </Style>
         <Style x:Key="EditorAction" TargetType="Button">
-            <Setter Property="Padding" Value="10,5"/><Setter Property="Margin" Value="0,0,6,0"/>
-            <Setter Property="MinHeight" Value="30"/>
+            <Setter Property="Padding" Value="8,4"/><Setter Property="Margin" Value="0,0,4,0"/>
+            <Setter Property="MinHeight" Value="28"/>
             <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
             <Setter Property="Template"><Setter.Value>
                 <ControlTemplate TargetType="Button">
@@ -28,9 +28,16 @@
                 </ControlTemplate>
             </Setter.Value></Setter>
         </Style>
+        <Style x:Key="EditorIconAction" TargetType="Button" BasedOn="{StaticResource EditorAction}">
+            <Setter Property="Width" Value="28"/>
+            <Setter Property="Height" Value="28"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="FontFamily" Value="Segoe Fluent Icons, Segoe MDL2 Assets"/>
+            <Setter Property="FontSize" Value="14"/>
+        </Style>
         <Style x:Key="ModeTab" TargetType="RadioButton">
             <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
-            <Setter Property="Padding" Value="16,6"/>
+            <Setter Property="Padding" Value="9,4"/>
             <Setter Property="Template"><Setter.Value>
                 <ControlTemplate TargetType="RadioButton">
                     <Border x:Name="Chrome" CornerRadius="4" Padding="{TemplateBinding Padding}" Background="Transparent" BorderThickness="1" BorderBrush="Transparent">
@@ -53,7 +60,7 @@
     <Border BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="8" Background="{DynamicResource GlobalBackground}">
         <Grid>
             <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
-            <Border BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,0,1" Padding="12,7">
+            <Border BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,0,1" Padding="12,5">
                 <Grid>
                     <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
                     <StackPanel VerticalAlignment="Center" Margin="0,0,10,0">
@@ -61,32 +68,29 @@
                                    ToolTip="{Binding Text, RelativeSource={RelativeSource Self}}"/>
                         <TextBlock x:Name="EditorSubtitleText" Text="{display:EngineLang Key='属性与 JSON 内容同步'}" FontSize="11" Opacity="0.6" Margin="0,2,0,0" TextTrimming="CharacterEllipsis"/>
                     </StackPanel>
-                    <WrapPanel x:Name="FuncStackPanel" Grid.Column="1" VerticalAlignment="Center">
-
-                    <Button x:Name="ValidateButton" Content="{display:EngineLang Key='检查语法'}" Style="{StaticResource EditorAction}" Click="Validate_Click" ToolTip="{display:EngineLang Key='检查 JSON 语法，不执行算法或完整 Schema 校验'}"/>
-                    <Button x:Name="FormatButton" Content="{display:EngineLang Key='格式化'}" Style="{StaticResource EditorAction}" Click="Format_Click" ToolTip="{display:EngineLang Key='格式化 JSON，支持 Ctrl+Z 撤销'}"/>
-                    <Button x:Name="SearchButton" Content="{display:EngineLang Key='查找'}" Style="{StaticResource EditorAction}" Click="Search_Click" ToolTip="{display:EngineLang Key='查找 JSON 文本 · Ctrl+F'}"/>
-                    <Button Content="{display:EngineLang Key='更多 ▾'}" Style="{StaticResource EditorAction}" Click="More_Click">
-                        <Button.ContextMenu><ContextMenu>
-                            <MenuItem Header="{display:EngineLang Key='复制当前 JSON'}" Click="CopyJson_Click"/>
-                            <MenuItem Header="{display:EngineLang Key='在 json.cn 中打开…'}" Click="Button_Click_1"/>
-                            <Separator/>
-                            <MenuItem Header="{display:EngineLang Key='恢复默认参数…'}" Click="Reset_Click"/>
-                        </ContextMenu></Button.ContextMenu>
-                    </Button>
-                    <Button x:Name="AskCopilotButton" Content="{x:Static properties:Resources.Copilot_Ask}" Style="{StaticResource EditorAction}" Click="AskCopilotButton_Click">
-                <Button.ContextMenu>
-                    <ContextMenu>
-                        <MenuItem Header="{x:Static properties:Resources.ExplainTemplate}" Click="AskCopilotExplainTemplate_Click" />
-                        <MenuItem Header="{x:Static properties:Resources.ExplainParameters}" Click="AskCopilotExplainParameters_Click" />
-                        <MenuItem Header="{x:Static properties:Resources.CheckConfigAnomaly}" Click="AskCopilotDiagnoseTemplate_Click" />
-                        <Separator />
-                        <MenuItem Header="{x:Static properties:Resources.Copilot_SendWithEllipsis}" Click="AskCopilotOpenPanel_Click" />
-                    </ContextMenu>
-                </Button.ContextMenu>
-
-                    </Button>
-                    </WrapPanel>
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                        <Button Content="&#xE8C8;" Style="{StaticResource EditorIconAction}" Click="CopyJson_Click"
+                                ToolTip="{display:EngineLang Key='复制当前 JSON'}" AutomationProperties.Name="{display:EngineLang Key='复制当前 JSON'}"/>
+                        <Button Content="&#xE72C;" Style="{StaticResource EditorIconAction}" Click="Reset_Click"
+                                ToolTip="{display:EngineLang Key='恢复默认参数…'}" AutomationProperties.Name="{display:EngineLang Key='恢复默认参数'}"/>
+                        <Button Content="&#xE73E;" Style="{StaticResource EditorIconAction}" Click="Validate_Click"
+                                ToolTip="{display:EngineLang Key='检查 JSON 语法，不执行算法或完整 Schema 校验'}" AutomationProperties.Name="{display:EngineLang Key='检查语法'}"/>
+                        <Button x:Name="FormatButton" Content="&#xE8E4;" Style="{StaticResource EditorIconAction}" Click="Format_Click"
+                                ToolTip="{display:EngineLang Key='格式化 JSON，支持 Ctrl+Z 撤销'}" AutomationProperties.Name="{display:EngineLang Key='格式化'}"/>
+                        <Button x:Name="SearchButton" Content="&#xE721;" Style="{StaticResource EditorIconAction}" Click="Search_Click"
+                                ToolTip="{display:EngineLang Key='查找 JSON 文本 · Ctrl+F'}" AutomationProperties.Name="{display:EngineLang Key='查找'}"/>
+                        <Button Content="{x:Static properties:Resources.Copilot_Ask}" Style="{StaticResource EditorAction}" Click="AskCopilotButton_Click">
+                            <Button.ContextMenu>
+                                <ContextMenu>
+                                    <MenuItem Header="{x:Static properties:Resources.ExplainTemplate}" Click="AskCopilotExplainTemplate_Click"/>
+                                    <MenuItem Header="{x:Static properties:Resources.ExplainParameters}" Click="AskCopilotExplainParameters_Click"/>
+                                    <MenuItem Header="{x:Static properties:Resources.CheckConfigAnomaly}" Click="AskCopilotDiagnoseTemplate_Click"/>
+                                    <Separator/>
+                                    <MenuItem Header="{x:Static properties:Resources.Copilot_SendWithEllipsis}" Click="AskCopilotOpenPanel_Click"/>
+                                </ContextMenu>
+                            </Button.ContextMenu>
+                        </Button>
+                    </StackPanel>
                     <Border Grid.Column="2" Background="{DynamicResource SecondaryRegionBrush}" CornerRadius="5" Padding="2" VerticalAlignment="Center" Margin="4,0,0,0">
                         <StackPanel Orientation="Horizontal">
                             <RadioButton x:Name="PropertyModeButton" Content="{display:EngineLang Key='参数'}" GroupName="EditorMode" Style="{StaticResource ModeTab}" Click="PropertyMode_Click"/>

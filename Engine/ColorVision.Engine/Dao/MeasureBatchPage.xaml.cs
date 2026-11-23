@@ -7,7 +7,10 @@ using ColorVision.Engine.Services.Results;
 using ColorVision.ImageEditor;
 using ColorVision.UI;
 using ColorVision.UI.Sorts;
+using log4net;
+using SqlSugar;
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Globalization;
 using System.IO;
@@ -25,6 +28,8 @@ namespace ColorVision.Engine
     /// </summary>
     public partial class MeasureBatchPage : Page, IDisposable
     {
+        private static readonly ILog Log = LogManager.GetLogger(typeof(MeasureBatchPage));
+
         public Frame Frame { get; set; }
         public MeasureBatchModel MeasureBatchModel { get; set; }
         private CopilotDynamicContextSession? _copilotContextSession;
@@ -36,6 +41,7 @@ namespace ColorVision.Engine
         private string _lastSelectedResultKind = string.Empty;
         private readonly ObservableCollection<GridViewColumnVisibility> _algorithmDetailColumnVisibilitys = new();
         private readonly ResultImagePlaceholderCache _resultImagePlaceholderCache = new();
+        private readonly AlgorithmResultPresenter _algorithmResultPresenter = new(clearImageOnSelection: true);
         private readonly ViewResultContext _algorithmResultContext;
 
         public MeasureBatchPage(Frame frame, MeasureBatchModel measureBatchModel)
@@ -91,16 +97,8 @@ namespace ColorVision.Engine
                 return;
 
             ViewResultImages.Clear();
-            foreach (var item in MeasureImgResultDao.Instance.GetAllByBatchId(MeasureBatchModel.Id))
-            {
-                ViewResultImages.Add(new ViewResultImage(item));
-            }
-
             ViewResultAlgs.Clear();
-            foreach (var item in AlgResultMasterDao.Instance.GetAllByBatchId(MeasureBatchModel.Id))
-            {
-                ViewResultAlgs.Add(new ViewResultAlg(item, MeasureBatchModel.Code));
-            }
+            LoadPersistedResults(MeasureBatchModel);
 
             if (ViewResultImages.Count > 0)
                 listView1.SelectedIndex = 0;
@@ -109,10 +107,55 @@ namespace ColorVision.Engine
 
             ResultTabs.SelectedIndex = ViewResultImages.Count > 0 || ViewResultAlgs.Count == 0 ? 0 : 1;
             _lastSelectedResultKind = ResultTabs.SelectedIndex == 0 ? "image" : "algorithm";
-            ShowSelectedImageResult();
-            ShowSelectedAlgorithmResult();
             EnsureCopilotContextRegistered();
             PublishCopilotContext();
+        }
+
+        private void LoadPersistedResults(MeasureBatchModel batch)
+        {
+            MySqlConnectedEndpoint? endpoint = batch.DatabaseEndpoint;
+            if (endpoint == null)
+            {
+                endpoint = MySqlControl.GetInstance().ConnectedEndpoint;
+                if (endpoint?.IsCurrent != true) return;
+                batch.DatabaseEndpoint = endpoint;
+            }
+
+            List<MeasureResultImgModel> images;
+            List<AlgResultMasterModel> algorithms;
+            int batchId = batch.Id;
+            try
+            {
+                using var db = endpoint.CreateDbClient();
+                images = ReadBatchRows<MeasureResultImgModel>(db, batchId);
+                algorithms = ReadBatchRows<AlgResultMasterModel>(db, batchId);
+            }
+            catch (Exception error)
+            {
+                Log.Warn($"批次结果读取失败：batchId={batchId}", error);
+                return;
+            }
+
+            foreach (var item in images)
+                ViewResultImages.Add(new ViewResultImage(item));
+            foreach (var item in algorithms)
+            {
+                item.DatabaseEndpoint = endpoint;
+                ViewResultAlgs.Add(new ViewResultAlg(item, batch.Code));
+            }
+        }
+
+        private static List<T> ReadBatchRows<T>(SqlSugarClient db, int batchId) where T : class, IEntity, new()
+        {
+            try
+            {
+                return db.Queryable<T>().Where("batch_id = @batchId", new { batchId }).ToList();
+            }
+            catch (Exception error)
+            {
+                Log.Warn($"批次结果读取失败：batchId={batchId}, table={typeof(T).Name}", error);
+                return [];
+            }
         }
 
         private void Page_Unloaded(object sender, RoutedEventArgs e)
@@ -121,7 +164,7 @@ namespace ColorVision.Engine
                 return;
 
             imagePreview.Clear();
-            ClearAlgorithmResultSurface();
+            _algorithmResultPresenter.Clear(_algorithmResultContext);
             ViewResultImages.Clear();
             ViewResultAlgs.Clear();
             ReleaseCopilotContext();
@@ -151,7 +194,7 @@ namespace ColorVision.Engine
             listView2.ItemsSource = null;
             ViewResultImages.Clear();
             ViewResultAlgs.Clear();
-            ClearAlgorithmResultSurface();
+            _algorithmResultPresenter.Clear(_algorithmResultContext);
             imagePreview.Dispose();
             algorithmImagePreview.Dispose();
             AlgorithmView?.Dispose();
@@ -183,20 +226,26 @@ namespace ColorVision.Engine
 
         }
 
-        private void listView1_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        private async void listView1_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (ReferenceEquals(sender, listView1) && listView1.SelectedItem != null)
+            if (_isDisposed || !ReferenceEquals(e.Source, sender))
+                return;
+
+            Task presentation = Task.CompletedTask;
+            if (ReferenceEquals(sender, listView1))
             {
-                _lastSelectedResultKind = "image";
+                if (listView1.SelectedItem != null) _lastSelectedResultKind = "image";
                 ShowSelectedImageResult();
             }
-            else if (ReferenceEquals(sender, listView2) && listView2.SelectedItem != null)
+            else if (ReferenceEquals(sender, listView2) && _algorithmResultContext != null)
             {
-                _lastSelectedResultKind = "algorithm";
-                ShowSelectedAlgorithmResult();
+                var result = listView2.SelectedItem as ViewResultAlg;
+                if (result != null) _lastSelectedResultKind = "algorithm";
+                presentation = _algorithmResultPresenter.ShowAsync(_algorithmResultContext, result, PrepareAlgorithmResultImageSurface);
             }
             _copilotContextSession?.Activate();
             PublishCopilotContext();
+            await presentation;
         }
 
         private void ResultTabs_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -220,29 +269,6 @@ namespace ColorVision.Engine
                 : File.Exists(result.FilePath) ? result.FilePath : null;
             if (filePath != null)
                 imagePreview.OpenImage(filePath);
-        }
-
-        private void ShowSelectedAlgorithmResult()
-        {
-            ClearAlgorithmResultSurface();
-            if (listView2.SelectedItem is not ViewResultAlg result ||
-                ResultHandleRegistry.GetInstance().ResultHandles.FirstOrDefault(item => item.CanHandle1(result)) is not { } resultHandle)
-                return;
-
-            resultHandle.Load(_algorithmResultContext, result);
-            PrepareAlgorithmResultImageSurface(result);
-            resultHandle.Handle(_algorithmResultContext, result);
-        }
-
-        private void ClearAlgorithmResultSurface()
-        {
-            algorithmDetailListView.ItemsSource = null;
-            if (algorithmDetailListView.View is GridView gridView)
-                gridView.Columns.Clear();
-            _algorithmDetailColumnVisibilitys.Clear();
-            algorithmDetailTextBox.Clear();
-            algorithmDetailTextBox.Visibility = Visibility.Collapsed;
-            algorithmImagePreview.Clear();
         }
 
         private void PrepareAlgorithmResultImageSurface(ViewResultAlg result)
@@ -335,7 +361,7 @@ namespace ColorVision.Engine
             }
             catch (Exception ex)
             {
-                log4net.LogManager.GetLogger(typeof(MeasureBatchPage)).Warn("注册检测结果 Copilot 上下文失败，结果页面将继续运行", ex);
+                Log.Warn("注册检测结果 Copilot 上下文失败，结果页面将继续运行", ex);
             }
         }
 

@@ -11,6 +11,7 @@ namespace ColorVision.ImageEditor.Cie
 {
     public static class CieBackgroundRenderer
     {
+        private const int DisplayChannelBins = 4096;
         private static readonly int[] WavelengthLabels = { 380, 420, 460, 470, 480, 490, 500, 520, 540, 560, 580, 600, 620, 700 };
 
         public static BitmapSource Render(CieDiagramProfile profile, bool dark = false)
@@ -38,44 +39,48 @@ namespace ColorVision.ImageEditor.Cie
 
         private static BitmapSource RenderColorField(CieDiagramProfile profile, int width, int height, bool dark)
         {
-            WriteableBitmap bitmap = new(width, height, 96, 96, PixelFormats.Bgra32, null);
             int stride = width * 4;
-            byte[] pixels = new byte[stride * height];
+            uint[] pixels = new uint[width * height];
             List<CieChromaticity> locus = GetDiagramLocus(profile);
+            Span<double> intersections = stackalloc double[locus.Count];
+            Rect plot = profile.PlotAreaPixels;
+            Rect axes = profile.AxisBounds;
+            uint background = dark ? 0xFF00_0000u : 0xFFFF_FFFFu;
+            uint outsideSpectrum = dark ? background : 0xFFF8_F8F8u;
 
             for (int y = 0; y < height; y++)
             {
+                double diagramY = axes.Top + (plot.Bottom - y) / plot.Height * axes.Height;
+                int intersectionCount = GetRowIntersections(diagramY, locus, intersections);
+                ReadOnlySpan<double> rowIntersections = intersections[..intersectionCount];
                 for (int x = 0; x < width; x++)
                 {
-                    int offset = y * stride + x * 4;
-                    Color color = dark ? Colors.Black : Colors.White;
+                    uint pixel = background;
 
-                    if (profile.PlotAreaPixels.Contains(new Point(x, y)))
+                    if (plot.Contains(new Point(x, y)))
                     {
-                        CieChromaticity diagramPoint = ImagePixelToDiagramPoint(profile, new Point(x, y));
-                        if (profile.ContainsDiagramPoint(diagramPoint) && IsPointInPolygon(diagramPoint, locus))
+                        double diagramX = axes.Left + (x - plot.Left) / plot.Width * axes.Width;
+                        CieChromaticity diagramPoint = new(diagramX, diagramY);
+                        if (profile.ContainsDiagramPoint(diagramPoint) && IsInsideSpectrum(diagramX, rowIntersections))
                         {
                             CieChromaticity xy = profile.Kind == CieDiagramKind.Cie1976uv
                                 ? CieColorConverter.Uv1976ToXy(diagramPoint)
                                 : profile.Kind == CieDiagramKind.Cie1960uv
                                 ? CieColorConverter.Uv1960ToXy(diagramPoint)
                                 : diagramPoint;
-                            color = XyToDisplayColor(xy);
+                            pixel = XyToDisplayPixel(xy);
                         }
                         else
                         {
-                            color = dark ? Colors.Black : Color.FromRgb(248, 248, 248);
+                            pixel = outsideSpectrum;
                         }
                     }
 
-                    pixels[offset] = color.B;
-                    pixels[offset + 1] = color.G;
-                    pixels[offset + 2] = color.R;
-                    pixels[offset + 3] = 255;
+                    pixels[y * width + x] = pixel;
                 }
             }
 
-            bitmap.WritePixels(new Int32Rect(0, 0, width, height), pixels, stride, 0);
+            BitmapSource bitmap = BitmapSource.Create(width, height, 96, 96, PixelFormats.Bgra32, null, pixels, stride);
             bitmap.Freeze();
             return bitmap;
         }
@@ -191,14 +196,6 @@ namespace ColorVision.ImageEditor.Cie
             DrawText(dc, yLabel, new Point(plot.Left - 34, plot.Top - 4), textBrush, 18);
         }
 
-        private static CieChromaticity ImagePixelToDiagramPoint(CieDiagramProfile profile, Point pixel)
-        {
-            Rect plot = profile.PlotAreaPixels;
-            double x = profile.AxisBounds.Left + (pixel.X - plot.Left) / plot.Width * profile.AxisBounds.Width;
-            double y = profile.AxisBounds.Top + (plot.Bottom - pixel.Y) / plot.Height * profile.AxisBounds.Height;
-            return new CieChromaticity(x, y);
-        }
-
         private static List<CieChromaticity> GetDiagramLocus(CieDiagramProfile profile)
         {
             return CieSpectrumLocus.Points
@@ -207,29 +204,34 @@ namespace ColorVision.ImageEditor.Cie
                 .ToList();
         }
 
-        private static bool IsPointInPolygon(CieChromaticity point, IReadOnlyList<CieChromaticity> polygon)
+        private static int GetRowIntersections(double y, IReadOnlyList<CieChromaticity> polygon, Span<double> intersections)
         {
-            bool inside = false;
+            int count = 0;
             for (int i = 0, j = polygon.Count - 1; i < polygon.Count; j = i++)
             {
                 CieChromaticity pi = polygon[i];
                 CieChromaticity pj = polygon[j];
-                bool intersect = ((pi.Y > point.Y) != (pj.Y > point.Y)) &&
-                                 (point.X < (pj.X - pi.X) * (point.Y - pi.Y) / (pj.Y - pi.Y) + pi.X);
-                if (intersect)
-                {
-                    inside = !inside;
-                }
+                // Match the half-open edge test at polygon vertices.
+                if ((pi.Y > y) != (pj.Y > y))
+                    intersections[count++] = (pj.X - pi.X) * (y - pi.Y) / (pj.Y - pi.Y) + pi.X;
             }
 
+            return count;
+        }
+
+        private static bool IsInsideSpectrum(double x, ReadOnlySpan<double> intersections)
+        {
+            bool inside = false;
+            foreach (double intersection in intersections)
+                inside ^= x < intersection;
             return inside;
         }
 
-        private static Color XyToDisplayColor(CieChromaticity xy)
+        private static uint XyToDisplayPixel(CieChromaticity xy)
         {
             if (!xy.IsFinite || xy.Y <= 0)
             {
-                return Colors.White;
+                return 0xFFFF_FFFFu;
             }
 
             double x = xy.X / xy.Y;
@@ -248,16 +250,50 @@ namespace ColorVision.ImageEditor.Cie
                 blue /= max;
             }
 
-            return Color.FromRgb(ToByte(red), ToByte(green), ToByte(blue));
+            // Bgra32 consumes the low byte first.
+            return 0xFF00_0000u | (uint)ToByte(red) << 16 | (uint)ToByte(green) << 8 | ToByte(blue);
         }
 
         private static byte ToByte(double linear)
         {
-            double clamped = Math.Clamp(linear, 0, 1);
-            double encoded = clamped <= 0.0031308
-                ? 12.92 * clamped
-                : 1.055 * Math.Pow(clamped, 1 / 2.4) - 0.055;
+            if (linear <= 0) return 0;
+            if (linear >= 1) return byte.MaxValue;
+            if (!double.IsNaN(linear))
+            {
+                short code = DisplayChannelLookup.Codes[(int)(linear * DisplayChannelBins)];
+                if (code >= 0) return (byte)code;
+            }
+            return EncodeChannel(linear);
+        }
+
+        private static byte EncodeChannel(double linear)
+        {
+            double encoded = linear <= 0.0031308
+                ? 12.92 * linear
+                : 1.055 * Math.Pow(linear, 1 / 2.4) - 0.055;
             return (byte)Math.Round(Math.Clamp(encoded, 0, 1) * 255);
+        }
+
+        private static class DisplayChannelLookup
+        {
+            public static readonly short[] Codes = Build();
+
+            private static short[] Build()
+            {
+                Span<byte> endpoints = stackalloc byte[DisplayChannelBins + 1];
+                for (int i = 0; i < endpoints.Length; i++)
+                    endpoints[i] = EncodeChannel(i / (double)DisplayChannelBins);
+
+                short[] codes = new short[DisplayChannelBins];
+                for (int i = 0; i < codes.Length; i++)
+                {
+                    // Leave a neighboring bin on each side of a rounding boundary to use the original calculation.
+                    byte lower = endpoints[Math.Max(0, i - 1)];
+                    byte upper = endpoints[Math.Min(DisplayChannelBins, i + 2)];
+                    codes[i] = lower == upper ? lower : (short)-1;
+                }
+                return codes;
+            }
         }
 
         private static void DrawText(DrawingContext dc, string text, Point point, Brush brush, double fontSize, bool outline = false)

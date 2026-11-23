@@ -1,4 +1,3 @@
-using ColorVision.Database;
 using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services;
 using ColorVision.Engine.Services.Devices.Camera;
@@ -7,30 +6,63 @@ using ColorVision.Engine.Services.Devices.Spectrum;
 using ColorVision.Engine.Services.Devices.Spectrum.Dao;
 using log4net;
 using Newtonsoft.Json.Linq;
-using SqlSugar;
+using ProjectARVRPro.ImageExport;
 
 namespace ProjectARVRPro.Services;
 
 internal static class LuxDeviceMeasurements
 {
     private static readonly ILog log = LogManager.GetLogger(typeof(LuxDeviceMeasurements));
+    // This project's existing version floor predates the host API that can prove result ownership.
+    private static readonly Func<MQTTSpectrum, CancellationToken, Task<(bool Succeeded, SpectumResultEntity? Result)>>? MeasureOwnedSpectrum =
+        typeof(MQTTSpectrum).GetMethod(nameof(MQTTSpectrum.GetDataResultAsync), [typeof(CancellationToken)])?
+            .CreateDelegate<Func<MQTTSpectrum, CancellationToken, Task<(bool Succeeded, SpectumResultEntity? Result)>>>();
 
-    internal static async Task<(bool Succeeded, ObjectiveTestItem Item)> MeasureVidResultAsync(CancellationToken cancellationToken)
+    internal static async Task<(bool Succeeded, ObjectiveTestItem Item)> MeasureVidResultAsync(CancellationToken cancellationToken, VidFocusImageExport? export = null)
     {
         var config = ProjectARVRProConfig.Instance;
         double min = config.LuxVidMin, max = config.LuxVidMax;
         double factor = config.LuxVidFix, offset = config.LuxVidB;
-        double? measured = await MeasureVidAsync(cancellationToken);
-        double value = measured.HasValue ? measured.Value * factor + offset : 0;
-        if (!double.IsFinite(value)) throw new InvalidOperationException("VID 结果不是有效数值。");
+        LuxVidOutputUnit unit = config.LuxVidUnit;
+        string unitLabel = unit switch
+        {
+            LuxVidOutputUnit.Millimeters => "mm",
+            LuxVidOutputUnit.Meters => "m",
+            LuxVidOutputUnit.Diopters => "D",
+            _ => throw new InvalidOperationException("请选择有效的 VID 输出单位。")
+        };
+        double? measured = await MeasureVidAsync(cancellationToken, export);
+        double value = measured.HasValue ? CorrectVid(measured.Value, factor, offset, unit) : 0;
+        if (measured.HasValue && export != null) await export.SaveAsync(value, unitLabel, cancellationToken);
 
         return (measured.HasValue, new ObjectiveTestItem
         {
-            Name = "VID", Unit = "cd/m^2", Value = value, LowLimit = min, UpLimit = max
+            Name = "VID", Unit = unitLabel, Value = value, LowLimit = min, UpLimit = max
         });
     }
 
-    internal static async Task<double?> MeasureVidAsync(CancellationToken cancellationToken)
+    private static double CorrectVid(double measuredMm, double factor, double offset, LuxVidOutputUnit unit)
+    {
+        if (!double.IsFinite(measuredMm) || measuredMm == 0)
+            throw new InvalidOperationException("原始 VID 必须为非零有限毫米值，才能换算为屈光度。");
+        if (!double.IsFinite(factor) || !double.IsFinite(offset))
+            throw new InvalidOperationException("VID 修正参数 K 和 B 必须为有限数值。");
+
+        // Preserve the original distance exactly when no correction is configured.
+        if (factor == 1 && offset == 0 && unit != LuxVidOutputUnit.Diopters)
+            return unit == LuxVidOutputUnit.Meters ? measuredMm / 1000d : measuredMm;
+
+        double diopters = 1000d / measuredMm * factor + offset;
+        if (!double.IsFinite(diopters)) throw new InvalidOperationException("修正后的 VID 屈光度不是有限数值。");
+        if (unit == LuxVidOutputUnit.Diopters) return diopters;
+        if (diopters == 0) throw new InvalidOperationException("修正后的 VID 为 0 D，无法表示为有限距离。");
+
+        double distance = (unit == LuxVidOutputUnit.Meters ? 1d : 1000d) / diopters;
+        if (!double.IsFinite(distance)) throw new InvalidOperationException("修正后的 VID 距离不是有限数值。");
+        return distance;
+    }
+
+    internal static async Task<double?> MeasureVidAsync(CancellationToken cancellationToken, VidFocusImageExport? export = null)
     {
         cancellationToken.ThrowIfCancellationRequested();
         var config = ProjectARVRProConfig.Instance;
@@ -68,9 +100,15 @@ internal static class LuxDeviceMeasurements
             if (opened == null) return null;
         }
         cancellationToken.ThrowIfCancellationRequested();
-        MsgRecord command = template == null ? camera.DService.GetPosition()
+        bool captureEvidence = export != null && template != null && camera.RoutesLocally && VidFocusImageExport.HostSupportsEvidence;
+        if (export != null && !captureEvidence)
+            log.Warn("VID 对焦图像需要支持图像导出的宿主和本地相机聚焦模式。");
+        MsgRecord command = captureEvidence ? VidFocusImageExport.Measure(camera, template!, cancellationToken, fineFocus)
+            : template == null ? camera.DService.GetPosition()
             : localFocus?.Measure(camera, template, cancellationToken) ?? camera.DService.AutoFocus(template);
         MsgReturn? response = await WaitForResultAsync(command, cancellationToken);
+        if (response != null && captureEvidence && export!.TryCaptureResult(response, out double? vid))
+            return vid;
         return response == null ? null : ReadVid(response);
     }
 
@@ -85,50 +123,34 @@ internal static class LuxDeviceMeasurements
         };
     }
 
-    internal static async Task<(bool Succeeded, SpectumResultEntity? Result)> MeasureFluxAsync(CancellationToken cancellationToken)
+    internal static Task<(bool Succeeded, SpectumResultEntity? Result)> MeasureFluxAsync(CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
+        var measure = MeasureOwnedSpectrum ?? throw new InvalidOperationException("当前 ColorVision 宿主缺少按原采集读取光谱结果的接口，请更新宿主后重试。");
         DeviceSpectrum spectrum = ServiceManager.GetInstance().DeviceServices.OfType<DeviceSpectrum>().FirstOrDefault()
             ?? throw new InvalidOperationException("未配置光谱仪设备。");
-        // Keep the existing device API: its backend decides between local SDK and service execution.
-        bool openLocal = spectrum.IsLocalSpectrumBackend && spectrum.DService.DeviceStatus == DeviceStatusType.Closed;
-        MsgReturn? response = await RequestFluxMeasurementAsync(openLocal, () => spectrum.DService.Open(),
-            () => spectrum.DService.GetData(), cancellationToken);
-        if (response == null) return (false, null);
-        JObject data = NormalizeData(response);
-        SpectumResultEntity? model = ReadLocalSpectrumModel(data);
-        if (model == null && data.Value<int?>("MasterId") is > 0 and var masterId)
-        {
-            model = await Task.Run(() =>
-            {
-                using var db = new SqlSugarClient(new ConnectionConfig
-                {
-                    ConnectionString = MySqlControl.GetConnectionString(), DbType = DbType.MySql, IsAutoCloseConnection = true
-                });
-                return db.Queryable<SpectumResultEntity>().Where(item => item.Id == masterId).First();
-            }, cancellationToken);
-        }
-        return (true, model);
+        MQTTSpectrum service = spectrum.DService;
+        bool openLocal = spectrum.IsLocalSpectrumBackend && service.DeviceStatus == DeviceStatusType.Closed;
+        return RequestFluxMeasurementAsync(openLocal, service.Open, token => measure(service, token), cancellationToken);
     }
 
-    internal static async Task<MsgReturn?> RequestFluxMeasurementAsync(bool openLocal, Func<MsgRecord> open,
-        Func<MsgRecord> measure, CancellationToken cancellationToken)
+    internal static async Task<(bool Succeeded, SpectumResultEntity? Result)> RequestFluxMeasurementAsync(bool openLocal,
+        Func<MsgRecord> open, Func<CancellationToken, Task<(bool Succeeded, SpectumResultEntity? Result)>> measure,
+        CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
         if (openLocal)
         {
             log.Info("LUX 本地光谱仪打开开始");
-            if (await WaitForResultAsync(open(), cancellationToken) == null) return null;
+            if (await WaitForResultAsync(open(), cancellationToken) == null) return (false, null);
             log.Info("LUX 本地光谱仪打开完成");
         }
         cancellationToken.ThrowIfCancellationRequested();
         log.Info("LUX 光通量采集开始");
-        MsgReturn? result = await WaitForResultAsync(measure(), cancellationToken);
-        log.Info($"LUX 光通量采集结束: Success={result != null}");
+        var result = await measure(cancellationToken);
+        log.Info($"LUX 光通量采集结束: Success={result.Succeeded}");
         return result;
     }
-
-    internal static SpectumResultEntity? ReadLocalSpectrumModel(JObject data) => data["Model"]?.ToObject<SpectumResultEntity>();
 
     private static JObject NormalizeData(MsgReturn response) => response.Data is JObject json
         ? json : response.Data == null ? new JObject() : JObject.FromObject((object)response.Data);

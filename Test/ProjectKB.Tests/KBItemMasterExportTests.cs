@@ -1,6 +1,7 @@
 using ColorVision.Engine.Templates.Jsons.KB;
 using System.Collections.ObjectModel;
 using System.IO;
+using System.Text;
 using Xunit;
 
 namespace ProjectKB.Tests;
@@ -143,4 +144,105 @@ public class KBItemMasterExportTests
         Assert.Equal(@"C:\Exports\Lv\MODELA_20260812-LV.csv", lvPath);
         Assert.Equal(@"C:\Exports\Lc\MODELA_20260812-LC.csv", lcPath);
     }
+
+    [Fact]
+    public void DailyCsvKeepsTheExistingLayoutAndAppendsToTheMatchingAlternate()
+    {
+        DirectoryInfo root = Directory.CreateTempSubdirectory("ProjectKB-Layout-");
+        string directory = Path.Combine(root.FullName, "exports");
+        try
+        {
+            var original = CreateResult("ORIGINAL", "A");
+            var first = CreateResult("FIRST,\n\"quoted\"", "B\n1", result: false);
+            var second = CreateResult("SECOND", "B\n1");
+            string path = ViewResultManager.BuildCsvPath(original, directory, KBCsvDataType.Lv);
+
+            Assert.Equal(path, original.SaveDailyCsv(path, KBCsvDataType.Lv, appendFalloutSummary: true));
+            byte[] originalBytes = File.ReadAllBytes(path);
+
+            IOException error = Assert.Throws<IOException>(() => first.SaveCsv(path, KBCsvDataType.Lv));
+            Assert.Contains(path, error.Message);
+            string alternate = first.SaveDailyCsv(path, KBCsvDataType.Lv, appendFalloutSummary: true);
+            Assert.Equal(alternate, second.SaveDailyCsv(path, KBCsvDataType.Lv, appendFalloutSummary: true));
+
+            Assert.Matches(@"^MODEL-A_20261120_[0-9A-F]{12}-LV\.csv$", Path.GetFileName(alternate));
+            Assert.Equal(originalBytes, File.ReadAllBytes(path));
+            Assert.True(File.ReadAllBytes(alternate).AsSpan().StartsWith(Encoding.UTF8.Preamble));
+            string csv = File.ReadAllText(alternate);
+            Assert.Contains("\"B\n1\"", csv);
+            Assert.Contains("\"FIRST,\n\"\"quoted\"\"\"", csv);
+            Assert.Contains(",SECOND,", csv);
+            Assert.EndsWith($"Fallout=,50.00% (1/2){Environment.NewLine}", csv);
+        }
+        finally
+        {
+            if (Directory.Exists(directory))
+            {
+                foreach (string file in Directory.EnumerateFiles(directory))
+                    File.Delete(file);
+                Directory.Delete(directory);
+            }
+            root.Delete();
+        }
+    }
+
+    [Fact]
+    public void ConcurrentCsvAppendsKeepEveryResultAndOneFalloutSummary()
+    {
+        string path = Path.Combine(Path.GetTempPath(), $"ProjectKB-Concurrent-{Guid.NewGuid():N}.csv");
+        try
+        {
+            Parallel.For(0, 16, index =>
+                CreateResult($"SN-{index}", "A", result: index % 2 == 0)
+                    .SaveCsv(path, KBCsvDataType.Lv, appendFalloutSummary: true));
+
+            string[] lines = File.ReadAllLines(path);
+            Assert.Equal(18, lines.Length);
+            Assert.Equal("Fallout=,50.00% (8/16)", lines[^1]);
+            Assert.Equal(16, lines[1..^1].Select(line => line.Split(',')[2]).Distinct().Count());
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
+    [Fact]
+    public void FailedCsvReplacementLeavesExistingBytesAndRemovesTheStagingFile()
+    {
+        DirectoryInfo directory = Directory.CreateTempSubdirectory("ProjectKB-FileInUse-");
+        string path = Path.Combine(directory.FullName, "results.csv");
+        try
+        {
+            CreateResult("ORIGINAL", "A").SaveCsv(path, KBCsvDataType.Lv);
+            byte[] original = File.ReadAllBytes(path);
+
+            Exception? error;
+            using (File.Open(path, FileMode.Open, FileAccess.Read, FileShare.Read))
+                error = Record.Exception(() => CreateResult("SECOND", "A").SaveCsv(path, KBCsvDataType.Lv));
+
+            Assert.True(error is IOException or UnauthorizedAccessException, error?.ToString());
+            Assert.Equal(original, File.ReadAllBytes(path));
+            Assert.Equal(path, Assert.Single(Directory.EnumerateFiles(directory.FullName)));
+        }
+        finally
+        {
+            foreach (string file in Directory.EnumerateFiles(directory.FullName))
+                File.Delete(file);
+            directory.Delete();
+        }
+    }
+
+    private static KBItemMaster CreateResult(string serialNumber, string keyName, bool result = true)
+        => new()
+        {
+            Model = "MODEL-A",
+            SN = serialNumber,
+            CreateTime = new DateTime(2026, 11, 20),
+            Result = result,
+            Items = new ObservableCollection<KBItem>
+            {
+                new() { Name = keyName, Lv = 5, Lc = 0.10, Result = result },
+            },
+        };
 }

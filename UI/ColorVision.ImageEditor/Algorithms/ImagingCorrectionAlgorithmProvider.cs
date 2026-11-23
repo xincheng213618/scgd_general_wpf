@@ -464,6 +464,7 @@ namespace ColorVision.ImageEditor.Algorithms
             int sourceChannels = source.Format.Channels();
             int sampleBits = source.Format.BitsPerChannel();
             int rowBytes = checked(source.Width * sourceChannels * (sampleBits / 8));
+            bool copyIntegerRows = (sampleBits is 8 or 16) && dark == null && flat == null && shading == null;
             for (int y = 0; y < source.Height; y++)
             {
                 if ((y & 15) == 0)
@@ -476,6 +477,12 @@ namespace ColorVision.ImageEditor.Algorithms
                 ReadOnlySpan<byte> flatRow = flat == null ? ReadOnlySpan<byte>.Empty : flat.Data.Span.Slice(y * flat.Stride, flat.Stride);
                 ReadOnlySpan<byte> shadingRow = shading == null ? ReadOnlySpan<byte>.Empty : shading.Data.Span.Slice(y * shading.Stride, shading.Stride);
                 Span<byte> outputRow = destination.AsSpan(y * rowBytes, rowBytes);
+                // With only a bad-pixel map, integer samples round-trip through normalization unchanged.
+                if (copyIntegerRows)
+                {
+                    sourceRow[..rowBytes].CopyTo(outputRow);
+                    continue;
+                }
                 for (int x = 0; x < source.Width; x++)
                 {
                     bool pixelValid = true;
@@ -573,7 +580,18 @@ namespace ColorVision.ImageEditor.Algorithms
             int sampleBits = source.Format.BitsPerChannel();
             int rowBytes = checked(source.Width * channels * (sampleBits / 8));
             double threshold = parameters.BadPixelThresholdNormalized;
-            List<double> neighborhood = new((parameters.BadPixelRadius * 2 + 1) * (parameters.BadPixelRadius * 2 + 1));
+            // Compare normalized byte codes once to preserve the strict threshold at code boundaries.
+            int firstMarkedValue = 0;
+            while (firstMarkedValue <= byte.MaxValue && firstMarkedValue / 255d <= threshold)
+                firstMarkedValue++;
+
+            // The original neighbor comparison excludes no samples when the threshold is NaN.
+            int firstInvalidNeighbor = double.IsNaN(threshold) ? byte.MaxValue + 1 : firstMarkedValue;
+            int radius = parameters.BadPixelRadius;
+            int diameter = radius * 2 + 1;
+            List<double> neighborhood = new(diameter * diameter);
+            int[] neighborSamples = new int[diameter * diameter];
+            ReadOnlySpan<byte> map = badMap.Data.Span;
             for (int y = 0; y < source.Height; y++)
             {
                 if ((y & 15) == 0)
@@ -581,28 +599,42 @@ namespace ColorVision.ImageEditor.Algorithms
                     cancellationToken.ThrowIfCancellationRequested();
                     progress?.Report(new AlgorithmProgress(0.76 + 0.18 * y / Math.Max(1, source.Height), "imaging-correction.bad-pixels"));
                 }
-                ReadOnlySpan<byte> mapRow = badMap.Data.Span.Slice(y * badMap.Stride, badMap.Stride);
+                if (firstMarkedValue > byte.MaxValue) continue;
+                int neighborTop = Math.Max(0, y - radius);
+                int neighborBottom = y + Math.Min(radius, source.Height - 1 - y);
+                ReadOnlySpan<byte> mapRow = map.Slice(y * badMap.Stride, source.Width);
                 for (int x = 0; x < source.Width; x++)
                 {
-                    if (ReadSample(mapRow, 8, x) <= threshold) continue;
+                    if (mapRow[x] < firstMarkedValue)
+                    {
+                        int next = mapRow[(x + 1)..].IndexOfAnyInRange((byte)firstMarkedValue, byte.MaxValue);
+                        if (next < 0) break;
+                        x += next + 1;
+                    }
                     statistics.BadPixelsMarked++;
-                    bool resolved = true;
-                    for (int channel = 0; channel < correctedChannels; channel++)
+                    int neighborCount = 0;
+                    int neighborLeft = Math.Max(0, x - radius);
+                    int neighborRight = x + Math.Min(radius, source.Width - 1 - x);
+                    for (int neighborY = neighborTop; neighborY <= neighborBottom; neighborY++)
+                    {
+                        ReadOnlySpan<byte> neighborMap = map.Slice(neighborY * badMap.Stride, source.Width);
+                        int neighborRow = neighborY * source.Width;
+                        for (int neighborX = neighborLeft; neighborX <= neighborRight; neighborX++)
+                        {
+                            if (neighborX == x && neighborY == y) continue;
+                            if (neighborMap[neighborX] >= firstInvalidNeighbor) continue;
+                            int neighborPixel = neighborRow + neighborX;
+                            if (validity[neighborPixel] == 0) continue;
+                            neighborSamples[neighborCount++] = neighborPixel * channels;
+                        }
+                    }
+
+                    bool resolved = neighborCount != 0;
+                    for (int channel = 0; resolved && channel < correctedChannels; channel++)
                     {
                         neighborhood.Clear();
-                        for (int neighborY = Math.Max(0, y - parameters.BadPixelRadius); neighborY <= Math.Min(source.Height - 1, y + parameters.BadPixelRadius); neighborY++)
-                        {
-                            ReadOnlySpan<byte> neighborMap = badMap.Data.Span.Slice(neighborY * badMap.Stride, badMap.Stride);
-                            ReadOnlySpan<byte> outputRow = destination.AsSpan(neighborY * rowBytes, rowBytes);
-                            for (int neighborX = Math.Max(0, x - parameters.BadPixelRadius); neighborX <= Math.Min(source.Width - 1, x + parameters.BadPixelRadius); neighborX++)
-                            {
-                                if (neighborX == x && neighborY == y) continue;
-                                if (ReadSample(neighborMap, 8, neighborX) > threshold) continue;
-                                if (validity[neighborY * source.Width + neighborX] == 0) continue;
-                                neighborhood.Add(ReadSample(outputRow, sampleBits, neighborX * channels + channel));
-                            }
-                        }
-                        if (neighborhood.Count == 0) { resolved = false; break; }
+                        foreach (int sample in neighborSamples.AsSpan(0, neighborCount))
+                            neighborhood.Add(ReadSample(destination, sampleBits, sample + channel));
                         neighborhood.Sort();
                         int middle = neighborhood.Count / 2;
                         double median = neighborhood.Count % 2 == 0

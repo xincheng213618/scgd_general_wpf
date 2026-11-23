@@ -5,6 +5,7 @@ using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.Services.Devices.Camera.Views;
 using ColorVision.Engine.Services.Results;
+using ColorVision.Engine.Templates.Jsons.RingGhost;
 using ColorVision.Database;
 using Microsoft.VisualBasic.FileIO;
 using Newtonsoft.Json;
@@ -20,6 +21,53 @@ namespace ColorVision.UI.Tests;
 
 public sealed class ResultHistoryTests
 {
+    [Fact]
+    public void SavingSelectedDataContinuesAfterMalformedDetailsAndLockedOutput()
+    {
+        DirectoryInfo directory = Directory.CreateTempSubdirectory("cv-result-save-");
+        try
+        {
+            string lockedPath = Path.Combine(directory.FullName, "locked_Ghost.json");
+            File.WriteAllText(lockedPath, "previous result");
+            var missingDetails = CreateRingGhostResult(11, "missing");
+            missingDetails.ViewResults.Clear();
+            var locked = CreateRingGhostResult(12, "locked");
+            var valid = CreateRingGhostResult(13, "valid");
+            var context = new ViewResultContext();
+            using (File.Open(lockedPath, FileMode.Open, FileAccess.Read, FileShare.Read))
+            {
+                Assert.Equal(new[] { 11, 12 }, AlgorithmResultDataSaver.SaveSelected(context, [missingDetails, locked, valid], directory.FullName));
+                Assert.Equal("previous result", File.ReadAllText(lockedPath));
+                Assert.False(File.Exists(Path.Combine(directory.FullName, "missing_Ghost.json")));
+                Assert.Contains("\"GMR1\":1.25", File.ReadAllText(Path.Combine(directory.FullName, "valid_Ghost.json")));
+            }
+
+            Assert.True(AlgorithmResultDataSaver.TrySave(context, locked, directory.FullName));
+            Assert.Contains("\"GMR2\":0.5", File.ReadAllText(lockedPath));
+        }
+        finally
+        {
+            foreach (FileInfo file in directory.EnumerateFiles()) file.Delete();
+            directory.Delete();
+        }
+    }
+
+    private static ViewResultAlg CreateRingGhostResult(int id, string batch) => new()
+    {
+        Id = id,
+        Batch = batch,
+        ResultType = ViewResultAlgType.Ghost,
+        Version = LocalRingGhostResult.ResultVersion,
+        ViewResults =
+        [
+            new RingGhostView
+            {
+                Measurement = new LocalRingGhostResult { GMR1 = 1.25, GMR2 = 0.5 },
+                ResultFilePath = string.Empty
+            }
+        ]
+    };
+
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
@@ -302,13 +350,14 @@ public sealed class ResultHistoryTests
             Assert.Null(typeof(ViewResultImage).GetField("_contextMenu", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(camera));
             Assert.Null(typeof(ViewResultAlg).GetField("_exportCVCIECommand", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(algorithm));
             Assert.Null(typeof(ViewResultImage).GetField("_exportCVCIECommand", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(camera));
-            Assert.Equal(3, camera.ContextMenu.Items.Count);
-            Assert.Same(camera.ContextMenu, camera.ContextMenu);
-            Assert.Same(camera.ExportCVCIECommand, ((MenuItem)camera.ContextMenu.Items[1]).Command);
+            ContextMenu cameraMenu = camera.ContextMenu;
+            Assert.Same(cameraMenu, camera.ContextMenu);
+            Assert.Single(cameraMenu.Items.OfType<MenuItem>(), item => ReferenceEquals(item.Command, camera.OpenCVCIECommand));
+            Assert.Single(cameraMenu.Items.OfType<MenuItem>(), item => ReferenceEquals(item.Command, camera.ExportCVCIECommand));
             AlgorithmResultDataSaver.EnsureContextMenu(algorithm);
             AlgorithmResultDataSaver.EnsureContextMenu(algorithm);
-            Assert.Single(algorithm.ContextMenu.Items.OfType<MenuItem>(), item => ReferenceEquals(item.Command, AlgorithmResultDataSaver.SaveCommand));
-            Assert.Same(algorithm, algorithm.ContextMenu.Items.OfType<MenuItem>().Last().CommandParameter);
+            MenuItem saveEntry = Assert.Single(algorithm.ContextMenu.Items.OfType<MenuItem>(), item => ReferenceEquals(item.Command, AlgorithmResultDataSaver.SaveCommand));
+            Assert.Same(algorithm, saveEntry.CommandParameter);
         });
     }
 

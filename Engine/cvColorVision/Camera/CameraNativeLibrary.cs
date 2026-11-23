@@ -4,6 +4,7 @@ using System.IO;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Threading;
 
 namespace cvColorVision;
 
@@ -11,6 +12,7 @@ internal static class CameraNativeLibrary
 {
     private static readonly object LoadLock = new();
     private static IntPtr library;
+    internal static IntPtr LoadedModule => Volatile.Read(ref library);
 
 #pragma warning disable CA2255 // Every device binding in this assembly shares the same native resolver.
     [ModuleInitializer]
@@ -40,8 +42,9 @@ internal static class CameraNativeLibrary
                 // SCGDCamLayer and other vendor SDKs call LoadLibrary by name after initialization.
                 // Keep their directory in the process search path, including for those later calls.
                 if (!SetDllDirectory(directory)) throw new Win32Exception(Marshal.GetLastWin32Error());
-                library = NativeLibrary.Load(path, assembly, DllImportSearchPath.UseDllDirectoryForDependencies | DllImportSearchPath.SafeDirectories);
-                return library;
+                IntPtr loaded = NativeLibrary.Load(path, assembly, DllImportSearchPath.UseDllDirectoryForDependencies | DllImportSearchPath.SafeDirectories);
+                Volatile.Write(ref library, loaded);
+                return loaded;
             }
         }
 

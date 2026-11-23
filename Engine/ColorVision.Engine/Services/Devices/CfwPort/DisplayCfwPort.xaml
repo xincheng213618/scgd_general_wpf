@@ -3,6 +3,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:displayUi="clr-namespace:ColorVision.UI;assembly=ColorVision.UI"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:i18n="clr-namespace:ColorVision.Engine"
              xmlns:local="clr-namespace:ColorVision.Engine.Services.Devices.CfwPort"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:properties="clr-namespace:ColorVision.Engine.Properties"
@@ -22,7 +23,7 @@
     </UserControl.Resources>
     <StackPanel>
         <DockPanel Margin="0,0,5,0">
-            <Button DockPanel.Dock="Right" Style="{DynamicResource ButtonProperty}" Command="{Binding PropertyCommand}" ToolTip="{x:Static properties:Resources.Property}" />
+            <Button DockPanel.Dock="Right" Style="{DynamicResource ButtonProperty.OnDeviceRow}" Command="{Binding PropertyCommand}" ToolTip="{x:Static properties:Resources.Property}" />
 
             <displayUi:DisplayPinButton DockPanel.Dock="Right"/>
 
@@ -36,7 +37,7 @@
                             <TextBlock HorizontalAlignment="Center" Text="{x:Static properties:Resources.UnknownStatus}" />
                         </DockPanel>
                         <DockPanel x:Name="ButtonUnauthorized" HorizontalAlignment="Left">
-                            <Button Height="24" Command="{Binding EditCommand}" Content="{x:Static properties:Resources.UnauthorizedOrLicenseExpired}" />
+                            <Button Height="24" Command="{Binding EditCommand}" Content="{Binding LicenseFailureText}" />
                         </DockPanel>
                         <DockPanel x:Name="ButtonInit" HorizontalAlignment="Left">
                             <Button Height="24" Command="{Binding EditCommand}" Content="{x:Static properties:Resources.SetSnFirst}" />
@@ -48,14 +49,21 @@
                     <Button x:Name="ConfigureButton" DockPanel.Dock="Left" Margin="5,0,0,0" Width="24" Height="24" Padding="2" VerticalAlignment="Center" Command="{Binding EditCommand}" ToolTip="{x:Static properties:Resources.ModifyConfiguration}" AutomationProperties.Name="{x:Static properties:Resources.ModifyConfiguration}">
                         <TextBlock Text="&#xE713;" FontFamily="Segoe MDL2 Assets" FontSize="14" HorizontalAlignment="Center"/>
                     </Button>
+                    <TextBlock x:Name="OpeningPositionText" DockPanel.Dock="Left" Margin="8,0,0,0"
+                               Text="{i18n:EngineLang Key='正在读取当前孔位…'}" Visibility="Collapsed" />
                 </DockPanel>
-                <StackPanel x:Name="StackPanelOpen" Margin="0,3,0,0">
-                    <DockPanel>
-                        <Button Click="GetPort_Click" Content="{x:Static properties:Resources.FilterWheelReadPosition}" DockPanel.Dock="Right" />
-                        <Button Click="SetPort_Click" Content="{x:Static properties:Resources.FilterWheelSetPosition}" DockPanel.Dock="Right" />
-                        <ComboBox x:Name="CombPort" Width="150" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}"
-                                     SelectedValuePath="HoleIndex" SelectedValue="{Binding DisplayConfig.PortNum, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-                    </DockPanel>
+                <StackPanel x:Name="PositionActions" Orientation="Horizontal" Margin="0,5,0,0" Visibility="Collapsed">
+                    <ComboBox x:Name="CombPort" Width="88" Height="24" Style="{StaticResource ComboBox.Small}"
+                              SelectedValuePath="HoleIndex" DisplayMemberPath="HoleName" SelectionChanged="TargetHole_SelectionChanged"
+                              AutomationProperties.Name="{x:Static properties:Resources.FilterWheelSetPosition}"/>
+                    <Button x:Name="SwitchPositionButton" Height="24" Margin="5,0,0,0" Click="SetPort_Click"
+                            Content="{x:Static properties:Resources.Switch}"/>
+                    <TextBlock x:Name="CurrentHoleText" Margin="12,0,0,0" MaxWidth="64" FontWeight="SemiBold" Text="—"/>
+                    <Button x:Name="RefreshPositionButton" Margin="4,0,0,0" Width="24" Height="24" Padding="2"
+                            Click="GetPort_Click" ToolTip="{x:Static properties:Resources.FilterWheelReadPosition}"
+                            AutomationProperties.Name="{x:Static properties:Resources.FilterWheelReadPosition}">
+                        <TextBlock Text="&#xE72C;" FontFamily="Segoe MDL2 Assets" FontSize="13" HorizontalAlignment="Center"/>
+                    </Button>
                 </StackPanel>
 
             </StackPanel>

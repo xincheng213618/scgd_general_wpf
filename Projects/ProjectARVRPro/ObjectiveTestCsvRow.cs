@@ -1,8 +1,11 @@
 using Newtonsoft.Json;
 using ProjectARVRPro.Process;
+using System.Buffers;
 using System.Collections;
 using System.Globalization;
+using System.IO;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 
 namespace ProjectARVRPro;
 
@@ -16,6 +19,8 @@ public sealed record ObjectiveTestCsvRow(
     string UpperLimit,
     string TestResult)
 {
+    private static readonly SearchValues<char> CsvSpecialCharacters = SearchValues.Create(",\"\r\n");
+
     public string MetricKey => TestScreen + ObjectiveTestResultMetricCollector.KeySeparator + TestItem;
     public string MetricHeader => $"{TestScreen}_{TestItem}";
 
@@ -23,12 +28,12 @@ public sealed record ObjectiveTestCsvRow(
 
     internal static string FormatCsvLine(params string?[] fields) => string.Join(",", fields.Select(EscapeCsvField));
 
-    private static string EscapeCsvField(string? field)
+    internal static string EscapeCsvField(string? field)
     {
         if (field == null)
             return string.Empty;
 
-        return field.IndexOfAny([',', '"', '\r', '\n']) < 0 ? field : $"\"{field.Replace("\"", "\"\"")}\"";
+        return field.AsSpan().IndexOfAny(CsvSpecialCharacters) < 0 ? field : $"\"{field.Replace("\"", "\"\"")}\"";
     }
 }
 
@@ -50,6 +55,31 @@ public static class ObjectiveTestCsvRowCollector
             return Array.Empty<ObjectiveTestCsvRow>();
         }
 
+        return FromObject(result, testScreen);
+    }
+
+    internal static IReadOnlyList<ObjectiveTestCsvRow> FromReader<TResult>(TextReader text, string testScreen)
+        where TResult : class
+    {
+        if (JsonConvert.DefaultSettings != null)
+            return FromJson<TResult>(text.ReadToEnd(), testScreen);
+
+        using var json = new JsonTextReader(text) { CloseInput = false };
+        var serializer = JsonSerializer.Create();
+        serializer.CheckAdditionalContent = true;
+        TResult? result;
+        try
+        {
+            result = serializer.Deserialize<TResult>(json);
+        }
+        catch (JsonException)
+        {
+            result = null;
+        }
+
+        // A JSON error or early parser exit must still surface corruption in the compressed tail.
+        Span<char> buffer = stackalloc char[1024];
+        while (text.Read(buffer) > 0) { }
         return FromObject(result, testScreen);
     }
 
@@ -98,14 +128,8 @@ public static class ObjectiveTestCsvRowCollector
             return;
         }
 
-        PropertyInfo[] properties = source.GetType()
-            .GetProperties(BindingFlags.Public | BindingFlags.Instance)
-            .OrderBy(property => property.MetadataToken)
-            .ToArray();
-        bool hasMultiplePoiCollections = properties.Count(property =>
-            typeof(IEnumerable<PoixyuvData>).IsAssignableFrom(property.PropertyType)) > 1;
-
-        foreach (PropertyInfo property in properties)
+        ResultPropertySet properties = ResultPropertySet.For(source.GetType());
+        foreach (PropertyInfo property in properties.OrderedProperties)
         {
             object? value;
             try
@@ -131,7 +155,7 @@ public static class ObjectiveTestCsvRowCollector
             }
             else if (value is IEnumerable<PoixyuvData> pois)
             {
-                string poiTestScreen = hasMultiplePoiCollections
+                string poiTestScreen = properties.HasMultiplePoiCollections
                     ? $"{testScreen}_{GetPoiGroupName(property.Name)}"
                     : testScreen;
                 foreach (PoixyuvData? poi in pois)
@@ -153,13 +177,14 @@ public static class ObjectiveTestCsvRowCollector
     private static ObjectiveTestCsvRow CreateItemRow(string testScreen, string fallbackItemName, ObjectiveTestItem item)
     {
         string itemName = string.IsNullOrWhiteSpace(item.Name) ? fallbackItemName : item.Name;
+        string formattedValue = item.Value.ToString("R", CultureInfo.InvariantCulture);
         string metricValue = string.IsNullOrWhiteSpace(item.TestValue)
-            ? item.Value.ToString("R", CultureInfo.InvariantCulture)
+            ? formattedValue
             : item.TestValue;
         return new ObjectiveTestCsvRow(
             testScreen,
             itemName,
-            item.Value.ToString("R", CultureInfo.InvariantCulture),
+            formattedValue,
             metricValue,
             item.Unit ?? string.Empty,
             item.LowLimit.ToString("R", CultureInfo.InvariantCulture),
@@ -190,4 +215,23 @@ public static class ObjectiveTestCsvRowCollector
             ? propertyName[prefix.Length..]
             : propertyName;
     }
+}
+
+internal sealed class ResultPropertySet
+{
+    private static readonly ConditionalWeakTable<Type, ResultPropertySet> Cache = new();
+
+    internal PropertyInfo[] OrderedProperties { get; }
+    internal bool HasMultiplePoiCollections { get; }
+
+    private ResultPropertySet(Type type)
+    {
+        OrderedProperties = type.GetProperties(BindingFlags.Public | BindingFlags.Instance)
+            .OrderBy(property => property.MetadataToken)
+            .ToArray();
+        HasMultiplePoiCollections = OrderedProperties.Count(property =>
+            typeof(IEnumerable<PoixyuvData>).IsAssignableFrom(property.PropertyType)) > 1;
+    }
+
+    internal static ResultPropertySet For(Type type) => Cache.GetValue(type, static key => new ResultPropertySet(key));
 }

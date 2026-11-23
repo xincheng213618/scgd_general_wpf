@@ -22,17 +22,39 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
         {
             using LocalFlowFrameLease lease = frame.Acquire();
             LocalFrameMetadata metadata = lease.Metadata;
-            // Borrow RAW only during the synchronous copy into an independently owned display bitmap.
-            CVImageFlipMode displayFlip = frame.IsRawFlipApplied ? CVImageFlipMode.None : metadata.FlipMode;
-            WriteableBitmap bitmap = CreateRawBitmap(lease.RawPointer, lease.RawLength, metadata.SourceBpp, metadata.Channels,
-                metadata.Width, metadata.Height, displayFlip);
-            bitmap.Freeze();
             return new LocalCameraPreview
             {
-                Bitmap = bitmap, CieData = lease.CopyCieToArray(), Metadata = metadata,
+                Bitmap = CreateBitmap(lease, frame.IsRawFlipApplied), CieData = lease.CopyCieToArray(), Metadata = metadata,
                 Exposure = (float[])metadata.Exposure.Clone(),
                 Parameters = CameraFileMetadata.CreateParameters(metadata, lease.ColorCalibration, lease.CalibrationProvenance)
             };
+        }
+
+        internal static LocalCameraPreview CreateFromBorrowedRaw(IntPtr pixels, int length, LocalFrameMetadata metadata)
+            => new()
+            {
+                Bitmap = CreateFrozenRawBitmap(pixels, length, metadata, metadata.FlipMode), CieData = [], Metadata = metadata,
+                Exposure = (float[])metadata.Exposure.Clone(), Parameters = CameraFileMetadata.CreateParameters(metadata, null, null)
+            };
+
+        internal static BitmapSource CreateBitmap(LocalFlowFrame frame)
+        {
+            using LocalFlowFrameLease lease = frame.Acquire();
+            return CreateBitmap(lease, frame.IsRawFlipApplied);
+        }
+
+        private static WriteableBitmap CreateBitmap(LocalFlowFrameLease lease, bool flipApplied)
+        {
+            LocalFrameMetadata metadata = lease.Metadata;
+            CVImageFlipMode displayFlip = flipApplied ? CVImageFlipMode.None : metadata.FlipMode;
+            return CreateFrozenRawBitmap(lease.RawPointer, lease.RawLength, metadata, displayFlip);
+        }
+
+        private static WriteableBitmap CreateFrozenRawBitmap(IntPtr pixels, int length, LocalFrameMetadata metadata, CVImageFlipMode displayFlip)
+        {
+            WriteableBitmap bitmap = CreateRawBitmap(pixels, length, metadata.SourceBpp, metadata.Channels, metadata.Width, metadata.Height, displayFlip);
+            bitmap.Freeze();
+            return bitmap;
         }
 
         internal static unsafe WriteableBitmap CreateRawBitmap(byte[] raw, int bpp, int channels, int width, int height)
@@ -79,12 +101,18 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             view.IEditorToolFactory.ApplyImageOpenTools(null);
             view.SetLayerController(null);
             view.Config.ClearProperties();
-            view.OpenImage(copyBitmap ? new WriteableBitmap(Bitmap) : Bitmap);
+            WriteableBitmap display = copyBitmap ? new WriteableBitmap(Bitmap) : Bitmap;
+            long revision = view.ImageRevision;
+            long contentVersion = view.ContentVersion;
+            var fileOpen = view.ImageOpenCompletion;
+            view.OpenImage(display);
+            if (!view.IsCurrentImageRevision(revision + 1) || view.ContentVersion != contentVersion + 1
+                || !ReferenceEquals(view.ViewBitmapSource, display) || !ReferenceEquals(view.ImageOpenCompletion, fileOpen)) return;
             if (CieData.Length > 0 && view.IEditorToolFactory.IImageOpens.TryGetValue(".cvcie", out var opener) && opener is CVRawOpen cvRaw)
             {
                 int cieChannels = CieData.Length / checked(Metadata.Width * Metadata.Height * sizeof(float));
-                cvRaw.AttachLiveCvcie(view, (uint)Metadata.Width, (uint)Metadata.Height, (uint)Metadata.CieBpp,
-                    (uint)cieChannels, CieData, (float[])Exposure.Clone());
+                if (!cvRaw.TryAttachLiveCvcie(view, (uint)Metadata.Width, (uint)Metadata.Height, (uint)Metadata.CieBpp,
+                    (uint)cieChannels, CieData, (float[])Exposure.Clone(), Bitmap)) return;
             }
             view.SetImageParameterRecord(Parameters);
         }

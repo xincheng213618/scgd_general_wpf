@@ -5,7 +5,6 @@ status: "current"
 summary: "按交付范围验收启动、设备、流程、数据和外部协议；明确通过、失败、未测和不适用，记录同一轮证据及回退材料与演练状态。"
 aliases: ["现场验收","交付检查","真机验证","交付验收表","未测","回退验证"]
 code_paths: ["Engine/ColorVision.Engine/Services/Devices","Engine/ColorVision.Engine/FlowProcessing/Runtime"]
-test_paths: []
 related: ["engine.devices","delivery.testing","operations.exports","flow.session","ui.socket-protocol"]
 ---
 

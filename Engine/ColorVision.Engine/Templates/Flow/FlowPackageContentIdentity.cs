@@ -2,6 +2,7 @@ using ColorVision.Database;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
@@ -50,7 +51,7 @@ namespace ColorVision.Engine.Templates.Flow
         public static string ComputePayloadHash(string payloadJson)
         {
             ArgumentNullException.ThrowIfNull(payloadJson);
-            return ComputeHash(Encoding.UTF8.GetBytes(payloadJson));
+            return ComputeHash(payloadJson);
         }
 
         public static string ComputeContentHash(
@@ -66,7 +67,7 @@ namespace ColorVision.Engine.Templates.Flow
                 details,
                 nameMap);
             string canonical = signature.ToString(Formatting.None);
-            return ComputeHash(Encoding.UTF8.GetBytes(canonical));
+            return ComputeHash(canonical);
         }
 
         public static string ComputeContentHash(
@@ -325,10 +326,49 @@ namespace ColorVision.Engine.Templates.Flow
                 }).ToList();
         }
 
-        private static string ComputeHash(byte[] data)
+        private static string ComputeHash(string text)
         {
-            return Convert.ToHexString(SHA256.HashData(data))
-                .ToLowerInvariant();
+            const int bufferSize = 64 * 1024;
+            const int stackBufferSize = 1024;
+            const int maxUtf8BytesPerChar = 3;
+            bool fitsInBuffer = text.Length <= bufferSize / maxUtf8BytesPerChar;
+            int capacity = fitsInBuffer ? text.Length * maxUtf8BytesPerChar : bufferSize;
+            byte[]? rented = null;
+            Span<byte> utf8 = capacity <= stackBufferSize
+                ? stackalloc byte[capacity]
+                : (rented = ArrayPool<byte>.Shared.Rent(capacity)).AsSpan(0, capacity);
+            Span<byte> hash = stackalloc byte[SHA256.HashSizeInBytes];
+
+            try
+            {
+                if (fitsInBuffer)
+                {
+                    int length = Encoding.UTF8.GetBytes(text, utf8);
+                    SHA256.HashData(utf8[..length], hash);
+                }
+                else
+                {
+                    using var incrementalHash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
+                    Encoder encoder = Encoding.UTF8.GetEncoder();
+                    ReadOnlySpan<char> remaining = text;
+                    bool completed;
+                    do
+                    {
+                        encoder.Convert(remaining, utf8, flush: true,
+                            out int charsUsed, out int bytesUsed, out completed);
+                        incrementalHash.AppendData(utf8[..bytesUsed]);
+                        remaining = remaining[charsUsed..];
+                    }
+                    while (!completed);
+                    incrementalHash.GetHashAndReset(hash);
+                }
+                return Convert.ToHexStringLower(hash);
+            }
+            finally
+            {
+                if (rented != null)
+                    ArrayPool<byte>.Shared.Return(rented, clearArray: true);
+            }
         }
     }
 }

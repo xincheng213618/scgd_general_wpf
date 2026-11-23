@@ -3,7 +3,9 @@
 #include <nlohmann/json.hpp>
 #include <opencv2/core.hpp>
 
+#include <algorithm>
 #include <array>
+#include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <fstream>
@@ -13,6 +15,10 @@
 #include <stdexcept>
 #include <string>
 #include <utility>
+
+#if defined(_M_X64) && !defined(_M_ARM64EC)
+#include <immintrin.h>
+#endif
 
 #ifdef _MSC_VER
 #pragma float_control(precise, on, push)
@@ -396,6 +402,95 @@ private:
     std::array<double, 4> coefficient_;
 };
 
+#if defined(_M_X64) && !defined(_M_ARM64EC)
+__declspec(noinline) void streamMatrixBlocks(
+    const std::uint16_t* source, float* outX, float* outY, float* outZ, std::size_t pixels,
+    const std::array<double, 9>& factor)
+{
+    // Four BGR48 pixels occupy exactly 24 bytes. Shuffle their channels
+    // into separate 16-bit lanes after a 16-byte and an 8-byte load.
+    const auto blueLow = _mm_setr_epi8(0, 1, 6, 7, 12, 13, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1);
+    const auto blueHigh = _mm_setr_epi8(-1, -1, -1, -1, -1, -1, 2, 3, -1, -1, -1, -1, -1, -1, -1, -1);
+    const auto greenLow = _mm_setr_epi8(2, 3, 8, 9, 14, 15, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1);
+    const auto greenHigh = _mm_setr_epi8(-1, -1, -1, -1, -1, -1, 4, 5, -1, -1, -1, -1, -1, -1, -1, -1);
+    const auto redLow = _mm_setr_epi8(4, 5, 10, 11, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1);
+    const auto redHigh = _mm_setr_epi8(-1, -1, -1, -1, 0, 1, 6, 7, -1, -1, -1, -1, -1, -1, -1, -1);
+    const auto zero = _mm_setzero_si128();
+    const auto xr = _mm256_set1_pd(factor[0]);
+    const auto xg = _mm256_set1_pd(factor[1]);
+    const auto xb = _mm256_set1_pd(factor[2]);
+    const auto yr = _mm256_set1_pd(factor[3]);
+    const auto yg = _mm256_set1_pd(factor[4]);
+    const auto yb = _mm256_set1_pd(factor[5]);
+    const auto zr = _mm256_set1_pd(factor[6]);
+    const auto zg = _mm256_set1_pd(factor[7]);
+    const auto zb = _mm256_set1_pd(factor[8]);
+    for (std::size_t index = 0; index < pixels; index += 4, source += 12) {
+        const auto low = _mm_loadu_si128(reinterpret_cast<const __m128i*>(source));
+        const auto high = _mm_loadl_epi64(reinterpret_cast<const __m128i*>(source + 8));
+        const auto decode = [=](__m128i lowMask, __m128i highMask) {
+            const auto samples = _mm_or_si128(_mm_shuffle_epi8(low, lowMask), _mm_shuffle_epi8(high, highMask));
+            return _mm256_cvtepi32_pd(_mm_unpacklo_epi16(samples, zero));
+        };
+        const auto red = decode(redLow, redHigh);
+        const auto green = decode(greenLow, greenHigh);
+        const auto blue = decode(blueLow, blueHigh);
+        const auto dotProduct = [=](__m256d r, __m256d g, __m256d b) {
+            // Match the scalar double-precision multiply and left-to-right add order.
+            const auto redGreen = _mm256_add_pd(_mm256_mul_pd(r, red), _mm256_mul_pd(g, green));
+            return _mm256_cvtpd_ps(_mm256_add_pd(redGreen, _mm256_mul_pd(b, blue)));
+        };
+        _mm_stream_ps(outX + index, dotProduct(xr, xg, xb));
+        _mm_stream_ps(outY + index, dotProduct(yr, yg, yb));
+        _mm_stream_ps(outZ + index, dotProduct(zr, zg, zb));
+    }
+    _mm_sfence();
+    _mm256_zeroupper();
+}
+
+bool tryStreamInterleavedMatrix(
+    const std::uint16_t* source, float* destination, std::size_t pixels,
+    const std::array<double, 9>& factor)
+{
+    constexpr std::size_t cacheLineBytes = 64;
+    constexpr std::size_t pixelsPerBlock = cacheLineBytes / sizeof(float);
+    constexpr std::size_t minimumPixels = 5'000'000;
+    const auto address = reinterpret_cast<std::uintptr_t>(destination);
+    // Keep exceptional legacy arithmetic on the scalar path.
+    constexpr double maxFactor = (std::numeric_limits<double>::max)() / 262144.0;
+    if (pixels < minimumPixels || pixels % pixelsPerBlock != 0
+        || pixels / pixelsPerBlock > static_cast<std::size_t>((std::numeric_limits<int>::max)())
+        || address % alignof(float) != 0
+        || reinterpret_cast<std::uintptr_t>(source) % alignof(std::uint16_t) != 0
+        || !cv::checkHardwareSupport(CV_CPU_AVX2) || !cv::checkHardwareSupport(CV_CPU_SSSE3)
+        || !std::all_of(factor.begin(), factor.end(), [](double value) { return std::abs(value) <= maxFactor; })) {
+        return false;
+    }
+
+    auto* outX = destination;
+    auto* outY = destination + pixels;
+    auto* outZ = destination + pixels * 2;
+    // All three planes have the same alignment. The workers write whole cache
+    // lines, and the scalar prefix and tail never share one of those lines.
+    const std::size_t prefix = (cacheLineBytes - address % cacheLineBytes) % cacheLineBytes / sizeof(float);
+    const auto blockCount = static_cast<int>((pixels - prefix) / pixelsPerBlock);
+    const auto scalar = [&](std::size_t begin, std::size_t count) {
+        transformInterleavedPlane(source, outX, begin, count, factor[0], factor[1], factor[2]);
+        transformInterleavedPlane(source, outY, begin, count, factor[3], factor[4], factor[5]);
+        transformInterleavedPlane(source, outZ, begin, count, factor[6], factor[7], factor[8]);
+    };
+    if (prefix != 0) scalar(0, prefix);
+    cv::parallel_for_(cv::Range(0, blockCount), [&](const cv::Range& range) {
+        const auto begin = prefix + static_cast<std::size_t>(range.start) * pixelsPerBlock;
+        const auto count = static_cast<std::size_t>(range.size()) * pixelsPerBlock;
+        streamMatrixBlocks(source + begin * 3, outX + begin, outY + begin, outZ + begin, count, factor);
+    }, 4.0 * cv::getNumThreads());
+    const auto tail = prefix + static_cast<std::size_t>(blockCount) * pixelsPerBlock;
+    if (tail != pixels) scalar(tail, pixels - tail);
+    return true;
+}
+#endif
+
 class MatrixColorCalibration final : public ColorCalibrationItem {
 public:
     MatrixColorCalibration(
@@ -444,7 +539,14 @@ public:
             applyTyped(reinterpret_cast<const std::uint8_t*>(raw.data), cieData, raw, options.interleavedBgr, factor);
         }
         else {
-            applyTyped(reinterpret_cast<const std::uint16_t*>(raw.data), cieData, raw, options.interleavedBgr, factor);
+            const auto* source = reinterpret_cast<const std::uint16_t*>(raw.data);
+#if defined(_M_X64) && !defined(_M_ARM64EC)
+            if (options.interleavedBgr && tryStreamInterleavedMatrix(
+                source, cieData, static_cast<std::size_t>(raw.width) * raw.height, factor)) {
+                return true;
+            }
+#endif
+            applyTyped(source, cieData, raw, options.interleavedBgr, factor);
         }
         return true;
     }
@@ -467,9 +569,6 @@ private:
         parallelRows(raw.height, [=, &factor](std::uint32_t row) {
             const std::size_t begin = static_cast<std::size_t>(row) * width;
             if (interleavedBgr) {
-                // Keep the legacy three-pass row ordering. Fusing these loops
-                // changes the optimized DLL's access/timing behavior and makes
-                // bit-level regression analysis unnecessarily ambiguous.
                 transformInterleavedPlane(source, outX, begin, width, factor[0], factor[1], factor[2]);
                 transformInterleavedPlane(source, outY, begin, width, factor[3], factor[4], factor[5]);
                 transformInterleavedPlane(source, outZ, begin, width, factor[6], factor[7], factor[8]);

@@ -1,5 +1,10 @@
 using log4net;
 using Newtonsoft.Json;
+using ProjectARVRPro.Process.Chessboard;
+using ProjectARVRPro.Process.MTF.MTFHV058;
+using ProjectARVRPro.Process.POI;
+using ProjectARVRPro.Process.W51;
+using ProjectARVRPro.Process.W255;
 
 namespace ProjectARVRPro.Process
 {
@@ -8,6 +13,7 @@ namespace ProjectARVRPro.Process
     /// </summary>
     public static class ResultProcessResolver
     {
+        private const int MaxReusableCsvSnapshots = 128;
         private static readonly ILog log = LogManager.GetLogger(typeof(ResultProcessResolver));
 
         public static void Capture(ProjectARVRReuslt result, IProcess? process)
@@ -33,6 +39,13 @@ namespace ProjectARVRPro.Process
             ProjectARVRReuslt result,
             IEnumerable<IProcess> processTemplates,
             IEnumerable<ProcessMeta> legacyProcessMetas)
+            => Resolve(result, processTemplates, legacyProcessMetas, csvSnapshots: null);
+
+        internal static IProcess? Resolve(
+            ProjectARVRReuslt result,
+            IEnumerable<IProcess> processTemplates,
+            IEnumerable<ProcessMeta> legacyProcessMetas,
+            Dictionary<(string ProcessType, string? ConfigJson), IProcess>? csvSnapshots)
         {
             ArgumentNullException.ThrowIfNull(result);
             ArgumentNullException.ThrowIfNull(processTemplates);
@@ -40,7 +53,7 @@ namespace ProjectARVRPro.Process
 
             if (!string.IsNullOrWhiteSpace(result.ProcessTypeFullName))
             {
-                IProcess? process = CreateProcess(result.ProcessTypeFullName, result.ProcessConfigJson, processTemplates);
+                IProcess? process = CreateProcess(result.ProcessTypeFullName, result.ProcessConfigJson, processTemplates, csvSnapshots);
                 if (process != null)
                     return process;
 
@@ -93,8 +106,16 @@ namespace ProjectARVRPro.Process
         private static IProcess? CreateProcess(
             string processTypeFullName,
             string? processConfigJson,
-            IEnumerable<IProcess> processTemplates)
+            IEnumerable<IProcess> processTemplates,
+            Dictionary<(string ProcessType, string? ConfigJson), IProcess>? csvSnapshots)
         {
+            if (csvSnapshots != null && JsonConvert.DefaultSettings != null)
+                csvSnapshots = null;
+
+            var key = (processTypeFullName, processConfigJson);
+            if (csvSnapshots?.TryGetValue(key, out IProcess? restored) == true)
+                return restored;
+
             IProcess[] templates = processTemplates as IProcess[] ?? processTemplates.ToArray();
             IProcess? template = templates.FirstOrDefault(
                 process => string.Equals(process.GetType().FullName, processTypeFullName, StringComparison.Ordinal));
@@ -122,11 +143,24 @@ namespace ProjectARVRPro.Process
                 catch (Exception ex)
                 {
                     log.Warn($"恢复结果解析配置快照失败，将使用默认配置: {processTypeFullName}", ex);
+                    return processInstance;
                 }
+
+                // Reuse only private, fully restored instances with reviewed CSV extractors.
+                Type type = processInstance.GetType();
+                if (csvSnapshots is { Count: < MaxReusableCsvSnapshots } && !ReferenceEquals(processInstance, template)
+                    && type == template?.GetType() && type.FullName == processTypeFullName
+                    && IsReadOnlyCsvExtractor(type))
+                    csvSnapshots.Add(key, processInstance);
             }
 
             return processInstance;
         }
+
+        // These read-only overrides all use the shared ProcessBase CSV reader.
+        internal static bool IsReadOnlyCsvExtractor(Type type)
+            => type == typeof(PoiDynamicProcess) || type == typeof(White51Process) || type == typeof(White255Process)
+                || type == typeof(MTFHV058Process) || type == typeof(ChessboardProcess);
 
         private static string GetClassName(string processTypeFullName)
         {

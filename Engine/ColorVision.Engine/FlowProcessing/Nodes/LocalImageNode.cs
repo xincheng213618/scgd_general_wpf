@@ -70,20 +70,19 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             if (!File.Exists(fileUrl))
                 throw new FileNotFoundException(string.Format(Properties.Resources.LocalImage_FileNotFound, fileUrl), fileUrl);
 
-            string batchName = action.SerialNumber;
-            MeasureBatchModel batch = action.PersistResults ? FlowNodeTiming.Run("ResolveBatch", () => BatchResultMasterDao.Instance.GetByNameOrCode(batchName))
-                ?? throw new InvalidOperationException(string.Format(Properties.Resources.Flow_BatchNotFound, batchName))
-                : new MeasureBatchModel();
-            if (action.PersistResults && batch.Id <= 0)
-                throw new InvalidOperationException(string.Format(Properties.Resources.Flow_BatchNotFound, batchName));
+            MySqlConnectedEndpoint? endpoint = action.PersistResults
+                ? LocalFlowResultPersistence.ResolveEndpoint(action)
+                    ?? throw new InvalidOperationException(string.Format(Properties.Resources.Flow_BatchNotFound, action.SerialNumber))
+                : null;
+            int batchId = endpoint != null ? FlowNodeTiming.Run("ResolveBatch", () => LocalFlowResultPersistence.ResolveBatchId(action, endpoint)) : 0;
 
             LocalFlowFrame? frame = null;
             try
             {
                 frame = FlowNodeTiming.Run("OpenImage", () => LocalFrameFileService.Load(fileUrl));
-                MeasureResultImgModel model = FlowNodeTiming.Run("BuildImageResult", () => BuildMeasureResultImgModel(batch.Id, fileUrl));
-                int masterId = action.PersistResults ? FlowNodeTiming.Run("PersistResult", () => MeasureImgResultDao.Instance.SaveAndReturnId(model)) : 0;
-                if (action.PersistResults && masterId <= 0)
+                MeasureResultImgModel model = FlowNodeTiming.Run("BuildImageResult", () => BuildMeasureResultImgModel(batchId, fileUrl));
+                int masterId = endpoint != null ? FlowNodeTiming.Run("PersistResult", () => MeasureImgResultDao.InsertResult(endpoint, model)) : 0;
+                if (endpoint != null && masterId <= 0)
                     throw new InvalidOperationException(string.Format(Properties.Resources.LocalImage_WriteResultFailed, fileUrl));
                 model.Id = masterId;
 
@@ -92,7 +91,9 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                 LocalFlowFrame currentFrame = frame;
                 frame = null;
                 action.MasterValue(null, masterId, LocalImageMasterResultType);
-                if (masterId > 0) FlowNodeTiming.Run("PublishResult", () => ResultMessageBus.Default.PublishPersisted(ResultRoutes.LocalFlow, ResultKinds.Image, model.DeviceCode ?? string.Empty, OperatorCode, action.SerialNumber, NodeID, ZIndex, masterId, LocalImageMasterResultType));
+                if (masterId > 0)
+                    FlowNodeTiming.Run("PublishResult", () => ResultMessageBus.Default.PublishPersisted(ResultRoutes.LocalFlow, ResultKinds.Image,
+                        model.DeviceCode ?? string.Empty, OperatorCode, action.SerialNumber, NodeID, ZIndex, masterId, LocalImageMasterResultType, endpoint));
                 return new LocalNodeExecutionResult
                 {
                     Data = new LocalImageResultData

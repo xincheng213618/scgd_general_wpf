@@ -2,6 +2,8 @@
 using ColorVision.Common.Utilities;
 using ColorVision.Common.MVVM;
 using ColorVision.UI.Authorizations;
+using ColorVision.Themes.Controls;
+using log4net;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Windows;
@@ -11,6 +13,7 @@ namespace ColorVision.Engine.Services
 {
     public class ServiceObjectBase : ViewModelBase
     {
+        private static readonly ILog ResourceLog = LogManager.GetLogger(typeof(ServiceObjectBase));
         protected virtual string? AuthorizationResourceId => null;
 
         internal bool CanDelete => AccessControl.Evaluate("resource.delete", PermissionMode.Administrator, AuthorizationResourceId).Allowed;
@@ -23,6 +26,31 @@ namespace ColorVision.Engine.Services
             catch (AccessDeniedException)
             {
                 MessageBox.Show(EngineLocalization.Get("当前权限不足，无法删除此资源。"), "ColorVision", MessageBoxButton.OK, MessageBoxImage.Warning);
+            }
+        }
+
+        protected void DeleteOwnedResource(Func<Func<bool>, bool> delete)
+        {
+            var owner = Application.Current.GetActiveWindow();
+            bool? confirmed = null;
+            try
+            {
+                if (delete(ConfirmDeletion) || confirmed == false) return;
+
+                MessageBox1.Show(owner, EngineLocalization.Get("原资源或配置库已变更，请重新选择后再删除。"), "ColorVision");
+            }
+            catch (Exception error) when (error is not AccessDeniedException)
+            {
+                ResourceLog.Warn("Could not delete the service configuration resource.", error);
+                MessageBox1.Show(owner, EngineLocalization.Get("删除资源失败，请查看日志。"), "ColorVision");
+            }
+
+            bool ConfirmDeletion()
+            {
+                bool accepted = MessageBox1.Show(owner, Properties.Resources.AvoidDeletionUnlessNecessary, "ColorVision", MessageBoxButton.OKCancel)
+                    == MessageBoxResult.OK;
+                confirmed = accepted;
+                return accepted;
             }
         }
 

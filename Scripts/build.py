@@ -221,6 +221,24 @@ def validate_installer_runtime_dlls(
         report("Advanced Installer does not include runtime DLLs: " + ", ".join(missing_dlls))
         return False
 
+    if (runtime_path / "System.Management.dll").is_file():
+        desktop_management_paths = (
+            "System.Management.dll",
+            "runtimes/win/lib/net10.0/System.Management.dll",
+        )
+        # ServiceHost has its own copies. Validate the installed desktop paths.
+        try:
+            installed_paths = {path.casefold() for path in collect_installer_shared_files(aip_path, runtime_path)}
+        except (ElementTree.ParseError, OSError) as exc:
+            report(f"Could not validate desktop WMI runtime: {exc}")
+            return False
+        missing_management_paths = [
+            path for path in desktop_management_paths if path.casefold() not in installed_paths
+        ]
+        if missing_management_paths:
+            report("Advanced Installer does not include desktop WMI runtime files: " + ", ".join(missing_management_paths))
+            return False
+
     missing_service_host_paths = [
         relative_path
         for relative_path in REQUIRED_SERVICE_HOST_RUNTIME_PATHS
@@ -241,6 +259,14 @@ def validate_installer_runtime_dlls(
 
     report("Verified root and win-x64 native runtime DLLs plus the complete ServiceHost and OperationsWatchdog runtimes in Advanced Installer.")
     return True
+
+
+def validate_installer_shortcut_icons(aip_path: Path) -> None:
+    for row in ElementTree.parse(aip_path).iterfind(".//ROW[@Shortcut]"):
+        if row.get("Target") != "[#ColorVision.exe]" or row.get("Directory_") not in ("SHORTCUTDIR", "DesktopFolder"):
+            continue
+        if row.get("Icon_") or row.get("IconIndex") not in (None, "", "0"):
+            raise ValueError(f"Shortcut {row.get('Shortcut')} in {aip_path} must use its target executable's default icon. Clear its custom icon in Advanced Installer.")
 
 
 def rebuild_project(msbuild_path: Path, solution_path: Path, advanced_installer_path: Path, aip_path: Path) -> bool:
@@ -271,9 +297,10 @@ def rebuild_project(msbuild_path: Path, solution_path: Path, advanced_installer_
             return False
 
         try:
+            validate_installer_shortcut_icons(aip_path)
             validate_basic_template_runtime(runtime_directory, collect_installer_shared_files(aip_path, runtime_directory))
         except (OSError, ValueError, ElementTree.ParseError) as exc:
-            print(f"Built-in template delivery check failed: {exc}")
+            print(f"Installer delivery check failed: {exc}")
             return False
 
         print(f"Running Advanced Installer: {advanced_installer_path} /rebuild {aip_path}")

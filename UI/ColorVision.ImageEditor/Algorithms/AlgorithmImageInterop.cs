@@ -29,19 +29,36 @@ namespace ColorVision.ImageEditor.Algorithms
             int stride = checked(width * format.BytesPerPixel());
             int length = checked(stride * height);
             cancellationToken.ThrowIfCancellationRequested();
-            byte[] data = new byte[length];
+            byte[] data = GC.AllocateUninitializedArray<byte>(length);
             CopyRows(mat, data, stride, height, cancellationToken);
             return new AlgorithmImageBuffer(width, height, stride, format, data, dpiX, dpiY);
         }
 
         private static unsafe void CopyRows(Mat source, byte[] destination, int rowBytes, int height, CancellationToken cancellationToken)
         {
-            for (int row = 0; row < height; row++)
+            byte* start = (byte*)source.Data;
+            long step = height == 1 ? rowBytes : source.Step();
+            if (step == rowBytes)
             {
-                cancellationToken.ThrowIfCancellationRequested();
-                ReadOnlySpan<byte> sourceRow = new((void*)source.Ptr(row), rowBytes);
-                sourceRow.CopyTo(destination.AsSpan(row * rowBytes, rowBytes));
+                // Bound each copy so a large packed frame still observes cancellation during transfer.
+                const int blockBytes = 1024 * 1024;
+                for (int offset = 0; offset < destination.Length;)
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    int count = Math.Min(blockBytes, destination.Length - offset);
+                    new ReadOnlySpan<byte>(start + offset, count).CopyTo(destination.AsSpan(offset, count));
+                    offset += count;
+                }
             }
+            else
+            {
+                for (int row = 0; row < height; row++)
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    new ReadOnlySpan<byte>(start + row * step, rowBytes).CopyTo(destination.AsSpan(row * rowBytes, rowBytes));
+                }
+            }
+            GC.KeepAlive(source);
             cancellationToken.ThrowIfCancellationRequested();
         }
 

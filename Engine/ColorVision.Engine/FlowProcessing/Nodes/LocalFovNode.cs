@@ -32,30 +32,27 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
 
     internal static class FovCameraCalibrationResolver
     {
-        public static FovCameraCalibration Resolve(string? preferredCameraDeviceCode)
+        public static FovCameraCalibration Resolve(string? preferredCameraDeviceCode, MySqlConnectedEndpoint endpoint)
         {
             if (string.IsNullOrWhiteSpace(preferredCameraDeviceCode))
                 return new FovCameraCalibration { CameraDeviceCode = string.Empty };
 
-            DeviceCamera[] deviceCameras = ServiceManager.Current?.DeviceServices.OfType<DeviceCamera>().ToArray()
-                ?? Array.Empty<DeviceCamera>();
-            if (!string.IsNullOrWhiteSpace(preferredCameraDeviceCode))
-            {
-                DeviceCamera? selected = deviceCameras.FirstOrDefault(camera =>
-                    string.Equals(camera.Code, preferredCameraDeviceCode, StringComparison.OrdinalIgnoreCase));
-                if (selected != null) return FromDevice(selected);
+            DeviceCamera[] deviceCameras = ServiceManager.Current?.DeviceServices.OfType<DeviceCamera>()
+                .Where(camera => camera.ResultDatabaseEndpoint == null || ReferenceEquals(camera.ResultDatabaseEndpoint, endpoint))
+                .ToArray() ?? Array.Empty<DeviceCamera>();
+            DeviceCamera? selected = deviceCameras.FirstOrDefault(camera =>
+                string.Equals(camera.Code, preferredCameraDeviceCode, StringComparison.OrdinalIgnoreCase));
+            if (selected != null) return FromDevice(selected);
 
-                selected = deviceCameras.FirstOrDefault(camera =>
-                    string.Equals(camera.Config.CameraCode, preferredCameraDeviceCode, StringComparison.OrdinalIgnoreCase));
-                if (selected != null) return FromDevice(selected);
-            }
+            selected = deviceCameras.FirstOrDefault(camera =>
+                string.Equals(camera.Config.CameraCode, preferredCameraDeviceCode, StringComparison.OrdinalIgnoreCase));
+            if (selected != null) return FromDevice(selected);
 
-            var physicalCameras = PhyCameraManager.GetInstance().PhyCameras.ToArray();
-            if (!string.IsNullOrWhiteSpace(preferredCameraDeviceCode))
+            if (endpoint.IsCurrent)
             {
-                var physical = physicalCameras.FirstOrDefault(camera =>
+                var physical = PhyCameraManager.Current?.PhyCameras.FirstOrDefault(camera =>
                     string.Equals(camera.Code, preferredCameraDeviceCode, StringComparison.OrdinalIgnoreCase));
-                if (physical != null)
+                if (physical != null && endpoint.IsCurrent)
                 {
                     return new FovCameraCalibration
                     {
@@ -66,7 +63,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             }
             return new FovCameraCalibration
             {
-                CameraDeviceCode = preferredCameraDeviceCode?.Trim() ?? string.Empty
+                CameraDeviceCode = preferredCameraDeviceCode.Trim()
             };
         }
 
@@ -105,6 +102,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
 
     internal sealed record LocalFovPersistenceRequest
     {
+        public required MySqlConnectedEndpoint DatabaseEndpoint { get; init; }
         public int BatchId { get; init; }
         public string? ImageFilePath { get; init; }
         public int ZIndex { get; init; }
@@ -123,6 +121,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
 
     internal sealed record LocalFovPublishRequest
     {
+        public required MySqlConnectedEndpoint DatabaseEndpoint { get; init; }
         public required string SerialNumber { get; init; }
         public required string NodeId { get; init; }
         public int ZIndex { get; init; }
@@ -132,11 +131,11 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
     internal interface ILocalFovNodeServices
     {
         LocalFlowFrame LoadFrame(string filePath);
-        MeasureResultImgModel? GetImageResult(int masterId);
-        MeasureResultImgModel? FindImageResult(string? imageFilePath);
-        AlgResultMasterModel? GetAlgorithmResult(int masterId);
-        IReadOnlyList<LuminousAreaPoint> GetLightAreaCorners(int masterId);
-        FovCameraCalibration ResolveCalibration(string? sourceCameraDeviceCode);
+        MeasureResultImgModel? GetImageResult(MySqlConnectedEndpoint endpoint, int masterId);
+        MeasureResultImgModel? FindImageResult(MySqlConnectedEndpoint endpoint, string? imageFilePath);
+        AlgResultMasterModel? GetAlgorithmResult(MySqlConnectedEndpoint endpoint, int masterId);
+        IReadOnlyList<LuminousAreaPoint> GetLightAreaCorners(MySqlConnectedEndpoint endpoint, int masterId);
+        FovCameraCalibration ResolveCalibration(string? sourceCameraDeviceCode, MySqlConnectedEndpoint endpoint);
         FovCalculationResult DetectAndCalculate(
             HImage image,
             RoiRect roi,
@@ -148,20 +147,21 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
         void Publish(LocalFovPublishRequest request);
     }
 
-    internal sealed class LocalFovNodeServices : ILocalFovNodeServices
+    internal sealed class LocalFovNodeServices(string? resultDirectory = null) : ILocalFovNodeServices
     {
         public static LocalFovNodeServices Instance { get; } = new();
 
         public LocalFlowFrame LoadFrame(string filePath) => LocalFrameFileService.Load(filePath);
-        public MeasureResultImgModel? GetImageResult(int masterId) => MeasureImgResultDao.Instance.GetById(masterId);
-        public MeasureResultImgModel? FindImageResult(string? imageFilePath)
+        public MeasureResultImgModel? GetImageResult(MySqlConnectedEndpoint endpoint, int masterId) =>
+            MeasureImgResultDao.ReadResult(endpoint, masterId);
+        public MeasureResultImgModel? FindImageResult(MySqlConnectedEndpoint endpoint, string? imageFilePath)
         {
-            if (string.IsNullOrWhiteSpace(imageFilePath) || !MySqlControl.GetInstance().IsConnect) return null;
+            if (string.IsNullOrWhiteSpace(imageFilePath)) return null;
             try
             {
                 string fullPath = Path.GetFullPath(imageFilePath.Trim());
                 string fileName = Path.GetFileName(fullPath);
-                using SqlSugarClient db = MySqlControl.CreateDbClient();
+                using SqlSugarClient db = endpoint.CreateDbClient();
                 return db.Queryable<MeasureResultImgModel>()
                     .Where(item => item.FileUrl == fullPath || item.RawFile == fullPath || item.RawFile == fileName)
                     .OrderBy(item => item.Id, OrderByType.Desc)
@@ -172,14 +172,23 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                 return null;
             }
         }
-        public AlgResultMasterModel? GetAlgorithmResult(int masterId) => AlgResultMasterDao.Instance.GetById(masterId);
-        public IReadOnlyList<LuminousAreaPoint> GetLightAreaCorners(int masterId) =>
-            AlgResultLightAreaDao.Instance.GetAllByPid(masterId)
+        public AlgResultMasterModel? GetAlgorithmResult(MySqlConnectedEndpoint endpoint, int masterId)
+        {
+            using var db = endpoint.CreateDbClient();
+            return db.Queryable<AlgResultMasterModel>().First(item => item.Id == masterId);
+        }
+        public IReadOnlyList<LuminousAreaPoint> GetLightAreaCorners(MySqlConnectedEndpoint endpoint, int masterId)
+        {
+            using var db = endpoint.CreateDbClient();
+            return db.Queryable<AlgResultLightAreaModel>()
+                .Where(item => item.Pid == masterId)
                 .OrderBy(item => item.Id)
+                .ToList()
                 .Select(item => new LuminousAreaPoint(item.PosX, item.PosY))
                 .ToArray();
-        public FovCameraCalibration ResolveCalibration(string? sourceCameraDeviceCode) =>
-            FovCameraCalibrationResolver.Resolve(sourceCameraDeviceCode);
+        }
+        public FovCameraCalibration ResolveCalibration(string? sourceCameraDeviceCode, MySqlConnectedEndpoint endpoint) =>
+            FovCameraCalibrationResolver.Resolve(sourceCameraDeviceCode, endpoint);
         public FovCalculationResult DetectAndCalculate(
             HImage image,
             RoiRect roi,
@@ -195,29 +204,36 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                 mode,
                 LocalFindLuminousAreaNode.DefaultMinimumConfidence,
                 coarseCorners: coarseCorners);
-        public LocalFovPersistenceResult Persist(LocalFovPersistenceRequest request) => LocalFovResultPersistence.Save(request);
+        public LocalFovPersistenceResult Persist(LocalFovPersistenceRequest request) => LocalFovResultPersistence.Save(request, resultDirectory);
         public void Publish(LocalFovPublishRequest request) => ResultMessageBus.Default.PublishPersisted(
             ResultRoutes.LocalFlow, ResultKinds.Algorithm, string.Empty, "FOV", request.SerialNumber,
-            request.NodeId, request.ZIndex, request.MasterId, (int)ViewResultAlgType.FOV);
+            request.NodeId, request.ZIndex, request.MasterId, (int)ViewResultAlgType.FOV, databaseEndpoint: request.DatabaseEndpoint);
     }
 
     internal static class LocalFovResultPersistence
     {
         internal const string ResultVersion = "2.0";
 
-        public static LocalFovPersistenceResult Save(LocalFovPersistenceRequest request)
+        public static LocalFovPersistenceResult Save(LocalFovPersistenceRequest request, string? resultDirectory)
         {
             ArgumentNullException.ThrowIfNull(request);
             AlgResultMasterModel master = CreateMasterModel(request);
             if (request.ResultCode != 0)
-                return new LocalFovPersistenceResult { MasterId = SaveMasterOnlyCore(master, AlgResultMasterDao.Instance.SaveAndReturnId) };
+            {
+                using var db = request.DatabaseEndpoint.CreateDbClient();
+                int masterId = db.Insertable(master).ExecuteReturnIdentity();
+                if (masterId <= 0) throw new InvalidOperationException("保存 FOV 失败主记录失败。");
+                return new LocalFovPersistenceResult { MasterId = masterId };
+            }
 
             FovMeasurement measurement = request.Measurement
                 ?? throw new InvalidOperationException("成功的本地 FOV 结果缺少测量值。");
-            string resultFilePath = WriteResultFile(BuildLegacyResultJson(measurement));
+            string resultFilePath = WriteResultFile(BuildLegacyResultJson(measurement), resultDirectory);
             try
             {
-                int masterId = SaveDatabaseCore(master, resultFilePath, static () => new SqlSugarLocalFlowResultTransaction<DetailCommonModel>());
+                int masterId = LocalFlowResultPersistence.SaveAlgorithmResultWithDetailsCore(
+                    master, ViewResultAlgType.FOV, id => new[] { CreateDetail(id, resultFilePath) },
+                    () => new SqlSugarLocalFlowResultTransaction<DetailCommonModel>(request.DatabaseEndpoint));
                 return new LocalFovPersistenceResult { MasterId = masterId, ResultFilePath = resultFilePath };
             }
             catch (Exception saveException)
@@ -273,15 +289,6 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             };
         }
 
-        internal static int SaveMasterOnlyCore(AlgResultMasterModel master, Func<AlgResultMasterModel, int> saveMaster)
-        {
-            if (master.ResultCode.GetValueOrDefault() == 0)
-                throw new InvalidOperationException("成功的 FOV 结果不能省略结果明细。");
-            int masterId = saveMaster(master);
-            if (masterId <= 0) throw new InvalidOperationException("保存 FOV 失败主记录失败。");
-            return masterId;
-        }
-
         internal static DetailCommonModel CreateDetail(int masterId, string resultFilePath)
         {
             if (masterId <= 0) throw new ArgumentOutOfRangeException(nameof(masterId));
@@ -293,19 +300,9 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             };
         }
 
-        internal static int SaveDatabaseCore(
-            AlgResultMasterModel master,
-            string resultFilePath,
-            Func<ILocalFlowResultTransaction<DetailCommonModel>> transactionFactory) =>
-            LocalFlowResultPersistence.SaveAlgorithmResultWithDetailsCore(
-                master,
-                ViewResultAlgType.FOV,
-                masterId => new[] { CreateDetail(masterId, resultFilePath) },
-                transactionFactory);
-
-        private static string WriteResultFile(string resultJson)
+        private static string WriteResultFile(string resultJson, string? directory)
         {
-            string directory = Path.Combine(
+            directory ??= Path.Combine(
                 Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
                 "ColorVision", "Results", "FOV");
             Directory.CreateDirectory(directory);
@@ -399,11 +396,12 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
         internal LocalFovNodeResultData ExecuteSynchronously(CVStartCFC action)
         {
             ArgumentNullException.ThrowIfNull(action);
+            MySqlConnectedEndpoint? endpoint = LocalFlowResultPersistence.ResolveEndpoint(action);
             double configuredFovDist = FovDist;
             double selectedCameraDegrees = CameraDegrees;
             FovMeasurementMode selectedMode = MeasurementMode;
             FovCalculator.ValidateCalibration(configuredFovDist, selectedCameraDegrees);
-            LocalFovInputContext input = ResolveInput(action, selectedMode);
+            LocalFovInputContext input = ResolveInput(action, selectedMode, endpoint);
             LocalFlowFrame? ownedFrame = null;
             LocalFlowFrameLease? lease = null;
             string? imageFile = null;
@@ -431,10 +429,10 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                 }
 
                 string? sourceCameraDeviceCode = FirstNonEmpty(frameCameraDeviceCode, input.ImageResult?.DeviceCode);
-                FovCameraCalibration calibration = FlowNodeTiming.Run("ResolveCalibration", () => services.ResolveCalibration(sourceCameraDeviceCode));
+                MySqlConnectedEndpoint database = RequireEndpoint(endpoint);
+                FovCameraCalibration calibration = FlowNodeTiming.Run("ResolveCalibration", () => services.ResolveCalibration(sourceCameraDeviceCode, database));
                 double selectedFovDist = configuredFovDist;
-                MeasureBatchModel batch = BatchResultMasterDao.Instance.GetByNameOrCode(action.SerialNumber)
-                    ?? throw new InvalidOperationException($"找不到流程批次：{action.SerialNumber}");
+                int batchId = LocalFlowResultPersistence.ResolveBatchId(action, database);
                 int zIndex = ZIndex;
                 string nodeId = NodeID;
 
@@ -459,7 +457,8 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                     object failedParameters = BuildParameters(input, sourceMasterId, frameId, imageFile, calibration, selectedFovDist, selectedCameraDegrees, selectedMode, null, calculationException.Message);
                     LocalFovPersistenceResult failed = FlowNodeTiming.Run("PersistResult", () => services.Persist(new LocalFovPersistenceRequest
                     {
-                        BatchId = batch.Id,
+                        DatabaseEndpoint = database,
+                        BatchId = batchId,
                         ImageFilePath = imageFile,
                         ZIndex = zIndex,
                         TotalTime = failedTime,
@@ -469,6 +468,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                     }));
                     FlowNodeTiming.Run("PublishResult", () => services.Publish(new LocalFovPublishRequest
                     {
+                        DatabaseEndpoint = database,
                         SerialNumber = action.SerialNumber,
                         NodeId = nodeId,
                         ZIndex = zIndex,
@@ -482,7 +482,8 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                 object parameters = BuildParameters(input, successfulSourceMasterId, frameId, imageFile, calibration, selectedFovDist, selectedCameraDegrees, selectedMode, calculation, null);
                 LocalFovPersistenceResult persisted = FlowNodeTiming.Run("PersistResult", () => services.Persist(new LocalFovPersistenceRequest
                 {
-                    BatchId = batch.Id,
+                    DatabaseEndpoint = database,
+                    BatchId = batchId,
                     ImageFilePath = imageFile,
                     ZIndex = zIndex,
                     TotalTime = totalTime,
@@ -503,6 +504,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                 action.MasterValue(null, persisted.MasterId, (int)ViewResultAlgType.FOV);
                 FlowNodeTiming.Run("PublishResult", () => services.Publish(new LocalFovPublishRequest
                 {
+                    DatabaseEndpoint = database,
                     SerialNumber = action.SerialNumber,
                     NodeId = nodeId,
                     ZIndex = zIndex,
@@ -537,7 +539,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             Localization = MeasurementMode == FovMeasurementMode.CurvedBoundary ? "CurvedBoundary" : "GeometricCorners"
         });
 
-        internal LocalFovInputContext ResolveInput(CVStartCFC action, FovMeasurementMode mode)
+        internal LocalFovInputContext ResolveInput(CVStartCFC action, FovMeasurementMode mode, MySqlConnectedEndpoint? endpoint)
         {
             bool hasInput = TryGetInputMasterResult(action, 0, out int masterId, out int masterResultType, out _);
             if (!hasInput)
@@ -549,7 +551,8 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
 
             if (masterResultType is (int)CVCommCore.CVResultType.Camera_Img or (int)CVCommCore.CVResultType.Algorithm_Calibration)
             {
-                MeasureResultImgModel imageResult = FlowNodeTiming.Run("ResolveImageResult", () => services.GetImageResult(masterId))
+                MySqlConnectedEndpoint database = RequireEndpoint(endpoint);
+                MeasureResultImgModel imageResult = FlowNodeTiming.Run("ResolveImageResult", () => services.GetImageResult(database, masterId))
                     ?? throw new InvalidOperationException($"找不到 IN 图像结果：MasterId={masterId}。");
                 return new LocalFovInputContext
                 {
@@ -562,16 +565,17 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
 
             if (masterResultType == (int)ViewResultAlgType.FindLightArea)
             {
-                AlgResultMasterModel areaResult = FlowNodeTiming.Run("ResolveAlgorithmResult", () => services.GetAlgorithmResult(masterId))
+                MySqlConnectedEndpoint database = RequireEndpoint(endpoint);
+                AlgResultMasterModel areaResult = FlowNodeTiming.Run("ResolveAlgorithmResult", () => services.GetAlgorithmResult(database, masterId))
                     ?? throw new InvalidOperationException($"找不到 IN 发光区结果：MasterId={masterId}。");
                 IReadOnlyList<LuminousAreaPoint>? corners = mode == FovMeasurementMode.CurvedBoundary
-                    ? null : FlowNodeTiming.Run("LoadCorners", () => services.GetLightAreaCorners(masterId));
+                    ? null : FlowNodeTiming.Run("LoadCorners", () => services.GetLightAreaCorners(database, masterId));
                 if (corners != null && corners.Count != 4)
                     throw new InvalidOperationException($"IN 发光区结果必须包含 4 个角点，当前为 {corners.Count} 个。");
                 int sourceMasterId = ReadSourceMasterId(areaResult.Params);
                 MeasureResultImgModel? imageResult = sourceMasterId > 0
-                    ? FlowNodeTiming.Run("ResolveImageResult", () => services.GetImageResult(sourceMasterId))
-                    : FlowNodeTiming.Run("ResolveImageResult", () => services.FindImageResult(areaResult.ImgFile));
+                    ? FlowNodeTiming.Run("ResolveImageResult", () => services.GetImageResult(database, sourceMasterId))
+                    : FlowNodeTiming.Run("ResolveImageResult", () => services.FindImageResult(database, areaResult.ImgFile));
                 return new LocalFovInputContext
                 {
                     InputMasterId = masterId,
@@ -587,6 +591,9 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             throw new InvalidOperationException(
                 $"IN 不是图像或发光区结果：MasterId={masterId}，ResultType={masterResultType}。");
         }
+
+        private static MySqlConnectedEndpoint RequireEndpoint(MySqlConnectedEndpoint? endpoint) =>
+            endpoint ?? throw new InvalidOperationException("本地 FOV 流程需要连接 MySQL。");
 
         private LocalFlowFrame ResolveFrame(
             CVStartCFC action,

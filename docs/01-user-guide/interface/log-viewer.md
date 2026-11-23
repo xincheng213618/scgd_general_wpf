@@ -5,7 +5,6 @@ status: "current"
 summary: "区分log4net输出、历史文件读取与UI筛选，说明刷新、截断和原生日志采集边界；没有显示不等于动作未发生。"
 aliases: ["日志查看器","查看日志","日志搜索","日志等级","历史日志","日志丢失","原生日志","开始捕获","暂停显示","AllToday","SinceStartup","正则变红","自动刷新","自动滚动","WindowLog","LogOutput","LogLocalOutput","LogLoadState","LogHistoryReader","LogSearchHelper","LogViewerAppender","NativeLogWindow"]
 code_paths: ["UI/ColorVision.UI/LogImp","ColorVision/log4net.config","ColorVision/EntryClass.cs","ColorVision/App.xaml.cs","ColorVision/MainWindow.xaml.cs","ColorVision/NativeLogging","UI/ColorVision.Core/NativeLogBridge.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/LogHistoryReaderTests.cs","Test/ColorVision.UI.Tests/LogSearchHelperTests.cs","Test/ColorVision.UI.Tests/LogEntryParserTests.cs","Test/ColorVision.UI.Tests/NativeLogPendingBufferTests.cs","Test/ColorVision.UI.Tests/ContextualFindRouterTests.cs","Test/ColorVision.UI.Tests/FeedbackLogCollectorTests.cs"]
 related: ["operations.index","ui.framework","ui.configuration","ui.core"]
 ---
 
@@ -22,14 +21,16 @@ related: ["operations.index","ui.framework","ui.configuration","ui.core"]
 
 ## 日志从哪里来
 
-独立日志窗口进入后聚焦日志查看区域，Esc 先收起已打开的搜索栏，再关闭窗口。原生日志窗口进入后聚焦等级选择；下拉列表先处理 Esc，随后 Esc 可关闭窗口并释放原有采集会话。两个窗口的 Tab / Shift+Tab 均在窗口内循环，菜单访问键见[帮助菜单](../../04-api-reference/ui-components/menus.md#帮助菜单的键盘入口)。
+独立日志窗口进入后聚焦日志查看区域，Esc 先收起已打开的搜索栏，再关闭窗口。按 `Alt+V` 后按 `N` 可打开原生日志窗口。窗口进入后聚焦等级选择，下拉列表先处理 Esc，随后 Esc 可关闭窗口并释放采集会话。两个窗口的 Tab / Shift+Tab 均在窗口内循环。独立日志窗口的菜单访问键见[帮助菜单](../../04-api-reference/ui-components/menus.md#帮助菜单的键盘入口)。
 
 | 入口 | 数据来源与边界 |
 | --- | --- |
 | 帮助 > 日志（`WindowLog`，快捷键可配置） | 给 log4net 根 logger 附加 `LogViewerAppender` 接收新事件，并在初始化时读取当前文件历史；每次菜单执行创建新窗口 |
-| `LogOutput`，主窗口等嵌入式面板 | 同样接收 log4net 新事件，本身不加载文件历史；`ModuleLogViewerBinder` 的模块面板只接受指定 logger 名或其点分隔子名称 |
+| 视图 > 日志（主窗口 `LogOutput`） | 按需打开，接收 log4net 新事件，本身不加载文件历史；`ModuleLogViewerBinder` 的模块面板只接受指定 logger 名或其点分隔子名称 |
+| 视图 > 原生日志（`NativeLogWindow`） | 独立的 `NativeLogBridge` 回调与采集会话 |
 | `WindowLogLocal` / `LogLocalOutput` | 读取调用方指定的外部文件，不接收 log4net 事件；编码可由调用方指定，默认 `Encoding.Default` |
-| 帮助 > 原生日志（`NativeLogWindow`） | 独立的 `NativeLogBridge` 回调与采集会话，不是从托管日志文件读回 native 历史 |
+
+主窗口“视图 > 日志”面板右上角的齿轮可打开本面板的“通用设置”。
 
 主程序通过 `EntryClass.cs` 的 `XmlConfigurator` 加载并监视 `ColorVision/log4net.config`。当前配置包含控制台和按日期滚动的 UTF-8 文件输出，文件配置前缀为 `log\`；当入口检查到当前工作目录包含 `C:\Program Files` 时，会改到应用数据目录下的 `ColorVision\Log\`。定位应读取当前 appender 的 `File`，不能只猜安装目录或将主面板当作完整日志文件。
 
@@ -39,7 +40,6 @@ related: ["operations.index","ui.framework","ui.configuration","ui.core"]
 
 目录转为绝对路径、忽略大小写和末尾分隔符后去重。ZIP 中分别使用 `AppLogs/AppData/`、`AppLogs/Installation/` 和 `AppLogs/Current/`，保留不同目录内同名的日志；当前目录与前两者重合时只收一次。所有来源沿用所选时间范围（默认最近 7 天）、按 `LastWriteTimeUtc` 过滤、单文件不超过 50 MiB 和只读顶层文件的规则。缺失目录会跳过，某个目录无法读取或某个文件复制失败不会阻止收集其他来源。“打开日志目录”仍指向当前 appender 所在目录，打包范围更广。
 
-`FeedbackLogCollectorTests` 使用临时目录覆盖两处同名日志同时保留、当前目录去重、自定义当前目录、时间范围和其他目录缺失时仍收集安装目录日志；不依赖现场管理员权限或生产日志。
 
 ## 全局输出等级不是本地筛选
 
@@ -67,17 +67,17 @@ related: ["operations.index","ui.framework","ui.configuration","ui.core"]
 
 `LogLocalOutput` 初次读取默认保留末尾 `1000` 行，再按记录解析；`MaxLines <= 0` 才读全量。适用编码使用向后查找换行的尾读，UTF-16/UTF-32 等情形退回从头读取。限制的是物理行，边界可能切掉一条多行记录的开头，不保证整条异常都在视图中。
 
-自动刷新通过定时器（默认 `500 ms`）和文件监视跟踪变化。文件变短或可读取的文件标识改变时重新加载，同一文件追加内容则从已读取的字节位置继续。尾部读取和增量读取沿用文件 BOM 检出的编码。原文件原地截断后若在两次读取之间恢复长度，仍可能需要手动刷新。初次文件缺失或读取失败会显示消息，后续读取异常可能表现为暂无新日志。
+自动刷新通过定时器（默认 `500 ms`）和文件监视跟踪变化。文件在后台串行读取，每批解码截至打开时取得的文件长度，连续触发合并为后续读取。文件变短或可读取的文件标识改变时重新加载，同一文件追加内容则从已读取的字节位置继续。尾部读取和增量读取沿用文件 BOM 检出的编码。原文件原地截断后若在两次读取之间恢复长度，仍可能需要手动刷新。初次文件缺失或读取失败会显示消息，后续读取异常可能表现为暂无新日志。
 
 ## 刷新、滚动、清空与生命周期
 
 - 托管 `LogViewerAppender` 默认约每 `100 ms` 将缓冲调度到 UI；刷新间隔可配置。关闭其自动刷新会直接跳过这段时间的新 UI 事件，并非无损暂停队列；重新开启只接收之后的事件，不自动补读文件。文件输出是否继续取决于日志源与文件 appender，不由 UI 刷新开关决定。
 - 外部文件的自动刷新暂停的是读取，读取位置保留；恢复后可以读尚在同一文件中的追加内容，仍受轮转与显示裁剪限制。不要把这与托管事件跳过或 native 暂停混为一谈。
 - `AutoScrollToEnd` 只决定追加后的视口跟随，不控制日志产生、接收或落盘；鼠标选择/滚轮会临时暂停跟随，约两秒后解除暂停。关闭自动滚动也不防止旧内容被容量裁剪。
-- “清空”只清除控件文本、条目和选择，不删除源文件、不停止业务或全局日志，也不等于清空 appender 尚待刷新的缓冲。复制只取得当前显示中选中的内容，不是完整日志导出；本页这些查看控件没有自动保存当前视图的契约。
+- “清空”只清除控件文本、条目和选择，不删除源文件、不停止业务或全局日志，也不等于清空 appender 尚待刷新的缓冲。外部文件视图清空时，仍在读取的一批只推进读取位置，后续文件追加照常读取。复制只取得当前显示中选中的内容，不是完整日志导出；本页这些查看控件没有自动保存当前视图的契约。
 - `LogOutput` 在加载/卸载时挂接/移除 appender，`Dispose` 另解除事件与搜索控制器；`WindowLog` 关闭时移除并释放 appender。模块 binder 也必须释放，否则仍订阅根 logger。`LogLocalOutput` 卸载时停止定时器/监视器，最终 `Dispose` 才解除配置订阅并释放监视器，独立窗口关闭会调用它。
 
-`LogViewerControl` 默认 TextBox；Virtualized 使用条目视图与等级颜色。模式在控件第一次 `Loaded` 后锁定，修改配置需新建相应控件/窗口才能切换。视图中被裁掉的内容不能靠清空搜索恢复；要追溯应按权限读取仍保留的源文件。
+`LogViewerControl` 默认 TextBox；Virtualized 使用条目视图与等级颜色。模式在控件第一次 `Loaded` 后锁定，修改配置需新建相应控件/窗口才能切换。锁定后的 Virtualized 模式直接按条目刷新、筛选和复制，持续追加时无需拼接整段纯文本。视图中被裁掉的内容不能靠清空搜索恢复；要追溯应按权限读取仍保留的源文件。
 
 ## 搜索与失败语义
 
@@ -87,7 +87,7 @@ related: ["operations.index","ui.framework","ui.configuration","ui.core"]
 
 - 普通搜索按空格拆词，每个词必须在同一被匹配文本中出现，忽略大小写。TextBox 按行过滤，Virtualized 按整条 `LogEntry.Text` 过滤，因此多行异常的匹配和保留范围会不同。
 - 含 `. * + ? ^ $ ( ) [ ] { } | \` 中任一字符就自动转为正则；不存在独立的“纯文本/正则”开关，文件名中的点和 Windows 路径也会触发。要匹配文件名中的字面点可写 `camera\.log`；`error|fatal` 表示任一关键词。正则使用 `IgnoreCase`，每次匹配超时为 `250 ms`，不是全量搜索总时限。
-- UI 的 `NormalizeSearchText` 会先按当前文化转成小写，再传给 helper；不能承诺任意正则原样执行，例如 `\D` 会变为 `\d`。复杂模式需核对这条调用链，不能只看 helper 测试。
+- UI 原样传入正则表达式，保留 `\D`、`\S` 等转义的大小写。匹配本身按忽略大小写执行。
 - 正则解析失败或匹配超时时返回 `false`；直接应用搜索时边框变红，控件保留原可见结果，而不是显示“匹配为零”。无效搜索串仍是当前搜索条件，后续追加可能继续筛选失败；先修正或清空再判断日志是否缺失。
 
 `LogSearchHelper` 仅缓存最近的有效正则及无效模式，不缓存完整文件或历史搜索结果。控件另保留原始条目/文本与可见结果，清空搜索只能恢复当前仍在内存中的内容。
@@ -100,9 +100,6 @@ native 的“暂停显示”仅暂停显示队列取出，采集仍继续；“�
 
 ## 证据与验证缺口
 
-- `LogHistoryReaderTests` 用合成文本验证启动时间边界、续行与顺/倒序字符裁剪；`LogEntryParserTests` 验证部分等级识别和多行归组。
-- `LogSearchHelperTests` 验证普通词 AND、正则、非法语法、行/对象匹配；没有据此证明 UI 防抖、变红、超时后的可见状态或大小写规范化都已验证。
-- `ContextualFindRouterTests` 使用独立控件与日志搜索控制器检查标准 Find 显示搜索栏及 Detach 解绑；不挂接生产日志 appender，不读取现场日志。
-- `NativeLogPendingBufferTests` 验证容量淘汰、批量读取、清空和 fake controller 会话暂停；`NativeLogWindowTests` 只验证菜单与编译 XAML 存在，不是 native DLL 或真实窗口交互验收。
+用实际宿主核对搜索反馈、标准查找焦点和窗口生命周期。原生日志还须核对生产 DLL、有效回调和日志源。反馈收集在目标账户权限及实际日志目录下验证。
 
 当前主题未声明外部文件轮转/编码组合、实际文件写入保留、UI 生命周期压力或生产日志不丢失的端到端覆盖。最小人工复核应使用获准的合成日志与隔离环境；不为文档校验开启真实采集。对外分享前脱敏路径、客户标识、设备数据与凭据，不删除现场日志来“清理”排障证据。

@@ -51,8 +51,9 @@ public sealed class DockingTabBorder : Border
     {
         if (TemplatedParent is not TabItem tab || VisualTreeHelper.GetParent(tab) is not Panel panel) return;
         Point origin = tab.TranslatePoint(new Point(), panel);
-        bool start = origin.X <= 0.01;
-        bool end = origin.X + tab.ActualWidth >= panel.ActualWidth - 0.01;
+        // An inset strip leaves room for a shoulder even on its first or last tab.
+        bool start = panel.Margin.Left <= 0 && origin.X <= 0.01;
+        bool end = panel.Margin.Right <= 0 && origin.X + tab.ActualWidth >= panel.ActualWidth - 0.01;
         if (joinsStart == start && joinsEnd == end) return;
         joinsStart = start;
         joinsEnd = end;

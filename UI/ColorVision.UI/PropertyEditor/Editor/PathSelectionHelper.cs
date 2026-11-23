@@ -4,6 +4,25 @@ namespace System.ComponentModel
 {
     public static class PathSelectionHelper
     {
+        public static (string? Directory, string? FileName) GetFileDialogStart(string? currentPath, string? lastOpenDirectory)
+        {
+            if (File.Exists(currentPath))
+                return (Path.GetDirectoryName(Path.GetFullPath(currentPath)), Path.GetFileName(currentPath));
+            if (Directory.Exists(currentPath))
+                return (Path.GetFullPath(currentPath), null);
+
+            string? expandedPath = string.IsNullOrWhiteSpace(currentPath) ? null : Environment.ExpandEnvironmentVariables(currentPath.Trim().Trim('"'));
+            if (!string.Equals(expandedPath, currentPath, StringComparison.Ordinal))
+            {
+                if (File.Exists(expandedPath))
+                    return (Path.GetDirectoryName(Path.GetFullPath(expandedPath)), Path.GetFileName(expandedPath));
+                if (Directory.Exists(expandedPath))
+                    return (Path.GetFullPath(expandedPath), null);
+            }
+
+            return (Directory.Exists(lastOpenDirectory) ? lastOpenDirectory : GetExistingDirectory(currentPath), null);
+        }
+
         public static string? GetExistingDirectory(string? path)
         {
             if (string.IsNullOrWhiteSpace(path))

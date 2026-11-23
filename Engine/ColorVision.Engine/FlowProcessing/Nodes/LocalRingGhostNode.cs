@@ -20,26 +20,31 @@ using System.Linq;
 namespace ColorVision.Engine.FlowProcessing.Nodes;
 
 internal sealed record LocalRingGhostSaveRequest(CVStartCFC Action, LocalRingGhostResult Measurement,
-    string? ImageFile, string Directory, int ZIndex, int TotalTime, object Parameters);
+    string? ImageFile, string Directory, int ZIndex, int TotalTime, object Parameters, MySqlConnectedEndpoint? DatabaseEndpoint);
 internal sealed record LocalRingGhostSavedResult(int MasterId, string ResultFilePath);
 internal interface ILocalRingGhostNodeServices
 {
     LocalFlowFrame LoadFrame(string path);
-    MeasureResultImgModel? GetImageResult(int id);
+    MeasureResultImgModel? GetImageResult(int id, MySqlConnectedEndpoint? endpoint);
     AlgorithmResult Detect(LocalFlowFrameLease frame, AlgorithmInvocation invocation);
     LocalRingGhostSavedResult Save(LocalRingGhostSaveRequest request);
-    void Publish(string serialNumber, string nodeId, int zIndex, int masterId);
+    void Publish(string serialNumber, string nodeId, int zIndex, int masterId, MySqlConnectedEndpoint? endpoint);
 }
 
 internal sealed class LocalRingGhostNodeServices : ILocalRingGhostNodeServices
 {
     public LocalFlowFrame LoadFrame(string path) => LocalFrameFileService.Load(path);
-    public MeasureResultImgModel? GetImageResult(int id) => MeasureImgResultDao.Instance.GetById(id);
+    public MeasureResultImgModel? GetImageResult(int id, MySqlConnectedEndpoint? endpoint) =>
+        MeasureImgResultDao.ReadResult(RequireEndpoint(endpoint), id);
     public AlgorithmResult Detect(LocalFlowFrameLease frame, AlgorithmInvocation invocation) =>
         LocalFlowImageAlgorithmAdapter.ExecuteRawAsync(frame, invocation).AsTask().GetAwaiter().GetResult();
     public LocalRingGhostSavedResult Save(LocalRingGhostSaveRequest request) => LocalRingGhostResultPersistence.Save(request);
-    public void Publish(string serialNumber, string nodeId, int zIndex, int masterId) => ResultMessageBus.Default.PublishPersisted(
-        ResultRoutes.LocalFlow, ResultKinds.Algorithm, "", "Ghost", serialNumber, nodeId, zIndex, masterId, (int)ViewResultAlgType.Ghost);
+    public void Publish(string serialNumber, string nodeId, int zIndex, int masterId, MySqlConnectedEndpoint? endpoint) =>
+        ResultMessageBus.Default.PublishPersisted(ResultRoutes.LocalFlow, ResultKinds.Algorithm, string.Empty, "Ghost",
+            serialNumber, nodeId, zIndex, masterId, (int)ViewResultAlgType.Ghost, RequireEndpoint(endpoint));
+
+    internal static MySqlConnectedEndpoint RequireEndpoint(MySqlConnectedEndpoint? endpoint) =>
+        endpoint ?? throw new InvalidOperationException("圆环鬼影需要已连接的流程数据库来读取或保存结果。");
 }
 
 internal static class LocalRingGhostResultPersistence
@@ -64,12 +69,12 @@ internal static class LocalRingGhostResultPersistence
 
     internal static LocalRingGhostSavedResult Save(LocalRingGhostSaveRequest request)
     {
-        var batch = BatchResultMasterDao.Instance.GetByNameOrCode(request.Action.SerialNumber)
-            ?? throw new InvalidOperationException("找不到鬼影流程批次。");
-        AlgResultMasterModel master = CreateMaster(request, batch.Id);
+        var endpoint = LocalRingGhostNodeServices.RequireEndpoint(request.DatabaseEndpoint);
+        int batchId = LocalFlowResultPersistence.ResolveBatchId(request.Action, endpoint);
+        AlgResultMasterModel master = CreateMaster(request, batchId);
         string directory = Path.GetFullPath(request.Directory);
         Directory.CreateDirectory(directory);
-        string file = Path.Combine(directory, $"RingGhost_{batch.Id}_{Guid.NewGuid():N}.json");
+        string file = Path.Combine(directory, $"RingGhost_{batchId}_{Guid.NewGuid():N}.json");
         bool created = false;
         try
         {
@@ -78,7 +83,7 @@ internal static class LocalRingGhostResultPersistence
                 created = true;
                 System.Text.Json.JsonSerializer.Serialize(stream, request.Measurement);
             }
-            int id = SaveDatabaseCore(master, file, static () => new SqlSugarLocalFlowResultTransaction<DetailCommonModel>());
+            int id = SaveDatabaseCore(master, file, () => new SqlSugarLocalFlowResultTransaction<DetailCommonModel>(endpoint));
             return new(id, file);
         }
         catch (Exception error)
@@ -129,8 +134,9 @@ public sealed class LocalRingGhostNode : LocalFlowNodeBase
             ? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "ColorVision", "Results", "RingGhost")
             : Path.GetFullPath(ResultDirectory.Trim());
         string nodeId = NodeID; int zIndex = ZIndex;
+        var endpoint = LocalFlowResultPersistence.ResolveEndpoint(action);
         LocalFlowFrame? ownedFrame = null;
-        LocalFlowFrame frame = ResolveFrame(action, out ownedFrame, out string? imageFile);
+        LocalFlowFrame frame = ResolveFrame(action, endpoint, out ownedFrame, out string? imageFile);
         try
         {
             using var lease = frame.Acquire();
@@ -149,14 +155,14 @@ public sealed class LocalRingGhostNode : LocalFlowNodeBase
                 {
                     Algorithm = DisplayMetrologyIds.RingGhost.Value, FrameId = lease.FrameId, SourceMasterId = lease.MasterId,
                     Parameters = parameters, FirstOrderAlwaysPresent = true, NormalNonDetectionValue = 0
-                });
+                }, endpoint);
             var saved = FlowNodeTiming.Run("PersistResult", () => services.Save(request));
             if (saved.MasterId <= 0 || string.IsNullOrWhiteSpace(saved.ResultFilePath)) throw new InvalidOperationException("鬼影结果保存返回无效记录。");
             if (ownedFrame != null) { action.SetCurrentFrame(ownedFrame); ownedFrame = null; }
             action.Data["GMR1"] = measurement.GMR1;
             action.Data["GMR2"] = measurement.GMR2;
             action.MasterValue(null, saved.MasterId, (int)ViewResultAlgType.Ghost);
-            FlowNodeTiming.Run("PublishResult", () => services.Publish(action.SerialNumber, nodeId, zIndex, saved.MasterId));
+            FlowNodeTiming.Run("PublishResult", () => services.Publish(action.SerialNumber, nodeId, zIndex, saved.MasterId, endpoint));
             return (saved, measurement);
         }
         finally { ownedFrame?.Dispose(); }
@@ -165,7 +171,7 @@ public sealed class LocalRingGhostNode : LocalFlowNodeBase
     protected override string BuildRunPayload(CVStartCFC action) => JsonConvert.SerializeObject(new
     { ServiceName = NodeName, EventName = "Ghost", action.SerialNumber, OrderMapping, ResultDirectory });
 
-    private LocalFlowFrame ResolveFrame(CVStartCFC action, out LocalFlowFrame? ownedFrame, out string? imageFile)
+    private LocalFlowFrame ResolveFrame(CVStartCFC action, MySqlConnectedEndpoint? endpoint, out LocalFlowFrame? ownedFrame, out string? imageFile)
     {
         ownedFrame = null; imageFile = null;
         if (action.TryGetCurrentFrame(out LocalFlowFrame? current) && current != null)
@@ -180,7 +186,7 @@ public sealed class LocalRingGhostNode : LocalFlowNodeBase
         }
         if (masterId <= 0 || resultType is not (int)CVCommCore.CVResultType.Camera_Img and not (int)CVCommCore.CVResultType.Algorithm_Calibration)
             throw new InvalidOperationException("流程中没有可用的上游图像；请连接相机取图、校正或“加载图片”节点。");
-        var input = FlowNodeTiming.Run("ResolveImageResult", () => services.GetImageResult(masterId))
+        var input = FlowNodeTiming.Run("ResolveImageResult", () => services.GetImageResult(masterId, endpoint))
             ?? throw new InvalidOperationException($"找不到 IN 图像结果：{masterId}。");
         string[] files = new[] { input.FileUrl, input.RawFile }.OfType<string>().Where(f => !string.IsNullOrWhiteSpace(f))
             .Select(f => Path.GetFullPath(f.Trim())).ToArray();

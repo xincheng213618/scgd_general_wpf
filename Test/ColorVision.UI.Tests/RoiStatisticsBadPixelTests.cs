@@ -11,6 +11,29 @@ namespace ColorVision.UI.Tests;
 
 public sealed class RoiStatisticsBadPixelTests
 {
+    [Fact]
+    public async Task UnsortedPercentilesInterpolateAcrossUnoccupiedGray16Bins()
+    {
+        using AlgorithmImageBuffer image = new(2, 1, 4, AlgorithmImageFormat.Gray16, [0, 0, 255, 255]);
+        using AlgorithmResult result = await ImageAlgorithmPlatform.Runner.RunAsync(new AlgorithmRunRequest
+        {
+            Invocation = AlgorithmInvocation.Create(StandardAlgorithmIds.RoiStatistics,
+                new RoiStatisticsParameters { Percentiles = [75, 0, 25, 100, 50], DetectBadPixelCandidates = false },
+                new RectangleAlgorithmRoi(0, 0, 2, 1)),
+            Inputs = [new AlgorithmInput { Name = "source", Image = image }],
+            RequiredCapabilities = AlgorithmHostCapabilities.Headless | AlgorithmHostCapabilities.Local | AlgorithmHostCapabilities.Roi,
+        });
+
+        Assert.Equal(AlgorithmResultStatus.Succeeded, result.Status);
+        AlgorithmTableArtifact table = result.GetArtifact<AlgorithmTableArtifact>("roi-statistics-summary")!;
+        Assert.Equal(new[] { "P75", "P0", "P25", "P100", "P50" }, table.Columns.TakeLast(5).Select(column => column.Name));
+        var row = Assert.Single(table.Rows);
+        double[] expected = [49151.25, 0, 16383.75, 65535, 32767.5];
+        Assert.Equal(expected, table.Columns.TakeLast(5).Select(column => row[column.Name].GetDouble()));
+        Assert.Equal(expected, result.GetArtifact<AlgorithmMeasurementArtifact>("roi-statistics")!.Measurements
+            .Where(measurement => measurement.Name == "channel.percentile").Select(measurement => measurement.Value));
+    }
+
     [Theory]
     [InlineData("rectangle")]
     [InlineData("physical circle")]

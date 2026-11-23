@@ -5,7 +5,6 @@ status: "current"
 summary: "灯珠亮点定位、完整规则网格与不亮偏暗判定，覆盖运行内存 POI、可选 CSV 及旧 native 暗区候选的限制。"
 aliases: ["灯珠不良", "坏点坐标", "LightBeadsInspector", "LocalLightBeadsNode", "DensePointVisual", "FindLightBeads", "M_FindLightBeads", "FindLightBeadsConfig", "BlackCenters", "MissingCount", "本地灯珠检测", "灯珠数量统计", "缺失数量", "灯珠定位算法原理", "偏暗比例", "标准行列数"]
 code_paths: ["UI/ColorVision.Core/LightBeadsDetection.cs", "UI/ColorVision.Core/LightBeadsInspection.cs", "UI/ColorVision.ImageEditor/Draw/DensePointVisual.cs", "UI/ColorVision.ImageEditor/Draw/ImageDrawingPresentation.cs", "UI/ColorVision.ImageEditor/EditorTools/Algorithms/Calculate/FindLightBeads/LightBeadsResultWindow.cs", "Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalLightBeadsNode.cs", "Engine/ColorVision.Engine/Services/POI/LocalFlowPoiPointSet.cs", "Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalPoiNode.cs", "Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalRealPoiNode.cs", "UI/ColorVision.ImageEditor/EditorTools/Algorithms/Calculate/FindLightBeads/FindLightBeadsCM.cs", "UI/ColorVision.ImageEditor/EditorTools/Algorithms/Calculate/FindLightBeads/README.md", "UI/ColorVision.ImageEditor/EditorTools/GraphicEditing/GraphicEditingWindow.xaml.cs", "Native/opencv_helper/algorithm.cpp", "Native/opencv_helper/opencv_media_export.cpp", "Native/include/opencv_media_export.h"]
-test_paths: ["Test/ColorVision.UI.Tests/LocalLightBeadsTests.cs", "Test/ColorVision.UI.Tests/LightBeadsInspectionTests.cs"]
 related: ["flow.node-extension", "algorithms.led", "ui.image-editor", "engine.native-integration"]
 ---
 
@@ -81,6 +80,8 @@ related: ["flow.node-extension", "algorithms.led", "ui.image-editor", "engine.na
 输出是本次运行拥有的 POI 点集，流程消息只传唯一句柄和数量摘要。点集随运行结束或重复轮次回收；跨运行、过期句柄和图像尺寸/镜像方向不一致会被拒绝，不回退查询数据库。圆、矩形或点形 POI 的尺寸是测量区域，和检测轮廓的最小/最大尺寸分别配置。
 
 单输入链为 `校正图像 → 灯珠定位 → 本地 POI`，后者无需选择 POI 模板；双输入链把定位结果接“本地实时 POI”的 `IN_POI`，相同尺寸、方向的校正图像接 `IN_CIE`。原“关注点算法”和“实时关注点算法”直接连接该定位节点时也使用本地分支。灯珠点集对应的测量结果继续保存在运行内存，不写 POI 结果主从表，也不把完整点数组复制到节点诊断 JSON；可选“本地结果目录”将测量值导出 CSV。普通已保存 POI 模板与旧数据库布点结果保留原持久化行为。历史查询和仅接受持久化 MasterId 的服务端分析不消费这些运行期句柄。
+
+通过持久化图像 ID 查找文件时，灯珠定位沿用流程批次的原连接。已有内存帧时直接使用该帧。
 
 ### 判定公式与结果读数 {#light-beads-metrics}
 
@@ -194,6 +195,6 @@ native 在调用期间借用帧，托管 `using (lease)` 在调用结束或异�
 
 ## 验证依据与缺口
 
-`LightBeadsInspectionTests` 覆盖完整网格、不亮与偏暗、分数灯距、中心偏移、浮点亮度量程和整行缺失时的标准行列校验。`LocalLightBeadsTests` 覆盖运行期句柄隔离与过期、本地 POI/实时 POI 的真实采样与输入分支、离线流程、CSV 输出及静态批量图层的缩放不重建、一次撤销、跨图块显示与后台快照。这些用例不证明所有屏幕的检测精度或完整 UI 菜单已验收；多 ROI、同 revision 并发、换图丢弃、RGB/调色板/Alpha 和真实相机输入仍需对应样本核对。本说明不授权启动设备、发布 DLL 或改动用户图像。
+现场核对使用覆盖多 ROI、并发、换图、RGB/调色板/Alpha 和真实相机输入的代表性样本。生产菜单与检测精度应在目标宿主验收。
 
 远端灯条与灯珠契约见 [LED 检测模板](../templates/led-detection.md)。

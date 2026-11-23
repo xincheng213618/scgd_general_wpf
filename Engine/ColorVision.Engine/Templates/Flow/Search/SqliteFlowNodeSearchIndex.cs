@@ -69,8 +69,7 @@ namespace ColorVision.Engine.Templates.Flow.Search
                         delete.ExecuteNonQuery();
                     }
 
-                    foreach (FlowNodeSearchEntry entry in stable)
-                        Insert(transaction, entry);
+                    InsertRevision(transaction, key, revision, stable);
                     transaction.Commit();
                 }
                 catch
@@ -138,6 +137,7 @@ namespace ColorVision.Engine.Templates.Flow.Search
                         "$text",
                         $"%{EscapeLike(normalized.Text)}%");
                 }
+                sql.AppendLine();
                 sql.AppendLine("""
                     ORDER BY revision DESC, flow_key, node_path
                     LIMIT $limit;
@@ -218,10 +218,15 @@ namespace ColorVision.Engine.Templates.Flow.Search
             command.ExecuteNonQuery();
         }
 
-        private void Insert(
+        private void InsertRevision(
             SqliteTransaction transaction,
-            FlowNodeSearchEntry entry)
+            string flowKey,
+            int revision,
+            IReadOnlyList<FlowNodeSearchEntry> entries)
         {
+            if (entries.Count == 0)
+                return;
+
             using SqliteCommand command = connection.CreateCommand();
             command.Transaction = transaction;
             command.CommandText = """
@@ -238,33 +243,33 @@ namespace ColorVision.Engine.Templates.Flow.Search
                     $device_code, $service_code, $tags, $search_text
                 );
                 """;
-            command.Parameters.AddWithValue("$flow_key", entry.FlowKey);
-            command.Parameters.AddWithValue("$revision", entry.Revision);
-            command.Parameters.AddWithValue(
-                "$source_node_guid",
-                entry.SourceNodeGuid.ToString("N"));
-            command.Parameters.AddWithValue("$node_path", entry.NodePath);
-            command.Parameters.AddWithValue(
-                "$node_type_key",
-                entry.NodeTypeKey);
-            AddNullable(command, "$display_name", entry.DisplayName);
-            AddNullable(command, "$title", entry.Title);
-            AddNullable(command, "$template_name", entry.TemplateName);
-            AddNullable(command, "$device_code", entry.DeviceCode);
-            AddNullable(command, "$service_code", entry.ServiceCode);
-            command.Parameters.AddWithValue("$tags", entry.Tags);
-            command.Parameters.AddWithValue(
-                "$search_text",
-                entry.SearchText);
-            command.ExecuteNonQuery();
-        }
+            command.Parameters.AddWithValue("$flow_key", flowKey);
+            command.Parameters.AddWithValue("$revision", revision);
+            SqliteParameter sourceNodeGuid = command.Parameters.Add("$source_node_guid", SqliteType.Text);
+            SqliteParameter nodePath = command.Parameters.Add("$node_path", SqliteType.Text);
+            SqliteParameter nodeTypeKey = command.Parameters.Add("$node_type_key", SqliteType.Text);
+            SqliteParameter displayName = command.Parameters.Add("$display_name", SqliteType.Text);
+            SqliteParameter title = command.Parameters.Add("$title", SqliteType.Text);
+            SqliteParameter templateName = command.Parameters.Add("$template_name", SqliteType.Text);
+            SqliteParameter deviceCode = command.Parameters.Add("$device_code", SqliteType.Text);
+            SqliteParameter serviceCode = command.Parameters.Add("$service_code", SqliteType.Text);
+            SqliteParameter tags = command.Parameters.Add("$tags", SqliteType.Text);
+            SqliteParameter searchText = command.Parameters.Add("$search_text", SqliteType.Text);
 
-        private static void AddNullable(
-            SqliteCommand command,
-            string name,
-            string? value)
-        {
-            command.Parameters.AddWithValue(name, value ?? (object)DBNull.Value);
+            foreach (FlowNodeSearchEntry entry in entries)
+            {
+                sourceNodeGuid.Value = entry.SourceNodeGuid.ToString("N");
+                nodePath.Value = entry.NodePath;
+                nodeTypeKey.Value = entry.NodeTypeKey;
+                displayName.Value = (object?)entry.DisplayName ?? DBNull.Value;
+                title.Value = (object?)entry.Title ?? DBNull.Value;
+                templateName.Value = (object?)entry.TemplateName ?? DBNull.Value;
+                deviceCode.Value = (object?)entry.DeviceCode ?? DBNull.Value;
+                serviceCode.Value = (object?)entry.ServiceCode ?? DBNull.Value;
+                tags.Value = entry.Tags;
+                searchText.Value = entry.SearchText;
+                command.ExecuteNonQuery();
+            }
         }
 
         private static string? GetNullableString(

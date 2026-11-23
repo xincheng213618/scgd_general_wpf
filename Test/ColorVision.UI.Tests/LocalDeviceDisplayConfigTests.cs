@@ -9,6 +9,7 @@ using ColorVision.Engine.Services.Devices.Sensor;
 using ColorVision.Engine.Services.Devices.SMU;
 using ColorVision.Engine.Services.Devices.Spectrum;
 using ColorVision.Engine.Services.Types;
+using ColorVision.ImageEditor.Draw.Special;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.ComponentModel;
@@ -44,6 +45,43 @@ public class LocalDeviceDisplayConfigTests
         var properties = PropertyEditorHelper.GetEditableProperties(typeof(DisplaySpectrumConfig));
         Assert.Contains(properties, property => property.Name == nameof(DisplaySpectrumConfig.UseLocalSpectrum));
         Assert.Contains(properties, property => property.Name == nameof(DisplaySpectrumConfig.IsLuminousFluxMode));
+    }
+
+    [Theory]
+    [InlineData("4", ReferenceLineMode.SimpleCross)]
+    [InlineData("5", ReferenceLineMode.SimpleCross)]
+    [InlineData("\"CrossMask\"", ReferenceLineMode.SimpleCross)]
+    [InlineData("\"GridLines\"", ReferenceLineMode.SimpleCross)]
+    [InlineData("3", ReferenceLineMode.DiagonalCross)]
+    public void CameraReferenceLineModeReloadPreservesTheOtherSettings(string modeJson, ReferenceLineMode expected)
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            var manager = new DisplayConfigManager
+            {
+                Object = new JObject
+                {
+                    ["camera"] = new JObject
+                    {
+                        [nameof(DisplayCameraConfig.UseLocalCamera)] = false,
+                        [nameof(DisplayCameraConfig.ReferenceLineParam)] = new JObject
+                        {
+                            [nameof(ReferenceLineParam.Mode)] = JToken.Parse(modeJson),
+                            [nameof(ReferenceLineParam.PointX)] = 123.5,
+                            [nameof(ReferenceLineParam.IsMapping)] = true,
+                            ["MaskSize"] = 75
+                        }
+                    }
+                }
+            };
+
+            var config = manager.GetDisplayConfig<DisplayCameraConfig>("camera");
+            Assert.False(config.UseLocalCamera);
+            Assert.Equal(expected, config.ReferenceLineParam.Mode);
+            Assert.Equal(123.5, config.ReferenceLineParam.PointX);
+            Assert.True(config.ReferenceLineParam.IsMapping);
+            Assert.Equal((int)expected, (int?)JObject.FromObject(config.ReferenceLineParam)[nameof(ReferenceLineParam.Mode)]);
+        });
     }
 
     private static void VerifyCreationPreference<T>(ServiceTypes serviceType, string propertyName) where T : IDisplayConfig, new()

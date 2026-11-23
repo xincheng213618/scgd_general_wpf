@@ -89,11 +89,39 @@ namespace ColorVision.Engine.Services
             return model.Id;
         }
 
+        internal bool TryUpdateLocal(int id, Func<T, bool> update)
+        {
+            if (!IsLocalId(id)) return false;
+            LocalTemplateDocument? document = LocalStore.Find(kind, checked(-1 - id));
+            if (document == null) return false;
+
+            T model = Decode(document);
+            return update(model) && LocalStore.TryUpdate(kind, document, typeof(T).Name, 1,
+                JsonConvert.SerializeObject(model, JsonSettings));
+        }
+
+        protected int TryInsertLocalChild(int parentId, T child, Func<T, bool> matchesParent, Func<T, bool> conflicts,
+            Func<bool> isCurrent)
+        {
+            if (!IsLocalId(parentId)) return 0;
+            int id = LocalStore.TryInsertChild(kind, checked(-1 - parentId), typeof(T).Name, 1,
+                JsonConvert.SerializeObject(child, JsonSettings), document => matchesParent(Decode(document)),
+                document => conflicts(Decode(document)), isCurrent);
+            return id == 0 ? 0 : checked(-id - 1);
+        }
+
         public int DeleteById(int id)
         {
             if (IsLocalId(id)) { LocalStore.Delete(kind, checked(-id - 1)); return 1; }
             if (UseLocal) throw new InvalidOperationException("MySQL 未连接，不能删除服务器配置。");
             return BaseTableDaoExtensions.DeleteById(this, id);
+        }
+
+        protected bool TryDeleteLocal(int id, Func<T, bool> matches, Func<T, bool>? isRelated, Func<bool> isCurrent)
+        {
+            if (!IsLocalId(id)) return false;
+            return LocalStore.TryDelete(kind, checked(-1 - id), document => matches(Decode(document)),
+                isRelated == null ? null : document => isRelated(Decode(document)), isCurrent);
         }
 
         protected bool DeleteUnchanged(T model, Func<T, bool> canDelete)

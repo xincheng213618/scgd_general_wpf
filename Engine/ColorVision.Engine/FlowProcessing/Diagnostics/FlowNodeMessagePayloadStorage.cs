@@ -1,7 +1,6 @@
 using ColorVision.Database;
 using SqlSugar;
 using System;
-using System.Data;
 
 namespace ColorVision.Engine.FlowProcessing.Diagnostics
 {
@@ -77,18 +76,25 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
             if (messageId <= 0)
                 return default;
 
-            DataTable table = db.Ado.GetDataTable(
+            object sendGzip, sendLength, recvGzip, recvLength;
+            using (var reader = db.Ado.GetDataReader(
                 $"SELECT \"{SendGzipColumnName}\", \"{SendLengthColumnName}\", " +
                 $"\"{RecvGzipColumnName}\", \"{RecvLengthColumnName}\" " +
                 $"FROM \"{TableName}\" WHERE \"{IdColumnName}\" = @id LIMIT 1;",
-                new SugarParameter("@id", messageId));
-            if (table.Rows.Count == 0)
-                return default;
+                new SugarParameter("@id", messageId)))
+            {
+                if (!reader.Read())
+                    return default;
+                sendGzip = reader.GetValue(0);
+                sendLength = reader.GetValue(1);
+                recvGzip = reader.GetValue(2);
+                recvLength = reader.GetValue(3);
+            }
 
-            DataRow row = table.Rows[0];
+            // Release the database reader before either payload is decompressed.
             return new FlowNodeMessagePayloads(
-                Decode(row[SendGzipColumnName], row[SendLengthColumnName]),
-                Decode(row[RecvGzipColumnName], row[RecvLengthColumnName]));
+                Decode(sendGzip, sendLength),
+                Decode(recvGzip, recvLength));
         }
 
         private static string? Decode(object gzipValue, object lengthValue)

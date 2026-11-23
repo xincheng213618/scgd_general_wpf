@@ -30,14 +30,23 @@ public sealed class WindowServiceListTests
         Assert.Equal(expected == 1 ? 2 : 1, config.ShowType2);
         config.ToggleListMode();
         Assert.Equal(expected, config.ShowType2);
-        Assert.Equal(1, new WindowServiceConfig().ShowType2);
+        Assert.Equal(2, new WindowServiceConfig().ShowType2);
+    }
+
+    [Fact]
+    public void NewDeviceNamesUseTheTypeAndFirstAvailableNumericSuffix()
+    {
+        Assert.Equal("Camera", CreateTerminal.SuggestDeviceName(ServiceTypes.Camera, ["DEV.Camera.Default"]));
+        Assert.Equal("Camera1", CreateTerminal.SuggestDeviceName(ServiceTypes.Camera, ["camera", "Camera2"]));
+        Assert.Equal("Camera2", CreateTerminal.SuggestDeviceName(ServiceTypes.Camera, ["Camera", "Camera1"]));
+        Assert.Equal("SMU", CreateTerminal.SuggestDeviceName(ServiceTypes.SMU, []));
     }
 
     [Theory]
-    [InlineData("zh-Hans", "滤色轮", "算法服务", "新建服务配置并添加设备")]
-    [InlineData("en-US", "Filter wheel", "Algorithm service", "Create service configuration and add device")]
-    [InlineData("zh-Hant", "濾色輪", "演算法服務", "新增服務設定並新增設備")]
-    public void CreationKeepsExistingServicesAndEmptyTypesWithoutRenamingDatabaseData(string culture, string filterName, string algorithmName, string createName)
+    [InlineData("zh-Hans", "滤色轮", "算法服务", "在客户服务配置添加设备", "新建服务配置并添加设备")]
+    [InlineData("en-US", "Filter wheel", "Algorithm service", "Add device to 客户服务配置", "Create service configuration and add device")]
+    [InlineData("zh-Hant", "濾色輪", "演算法服務", "在客户服务配置新增設備", "新增服務設定並新增設備")]
+    public void CreationKeepsExistingServicesAndEmptyTypesWithoutRenamingDatabaseData(string culture, string filterName, string algorithmName, string addDeviceName, string createName)
     {
         WpfTestHost.Invoke(() =>
         {
@@ -62,7 +71,7 @@ public sealed class WindowServiceListTests
                 Assert.Equal(filterName, groups[0].Header);
                 Assert.Equal(algorithmName, groups[1].Header);
                 var existing = Assert.IsType<MenuItem>(groups[0].Items[0]);
-                Assert.Equal("客户服务配置", existing.Header);
+                Assert.Equal(addDeviceName, existing.Header);
                 Assert.Same(terminal.OpenCreateWindowCommand, existing.Command);
                 existing.Command.Execute(null);
                 Assert.Equal(1, existingInvocations);

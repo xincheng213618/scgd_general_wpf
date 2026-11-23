@@ -53,6 +53,42 @@ public sealed class CopilotPromptHistorySearchBehaviorTests
         Assert.All(results, item => Assert.Equal("alpha beta", item.Preview, ignoreCase: true));
     }
 
+    [Fact]
+    public void PrefixCompletionTracksNewestMatchingUserPromptAsHistoryChanges()
+    {
+        const string prefix = "inspect ";
+        var messages = CreateConversation("Prefix",
+            new CopilotChatMessage(CopilotChatRole.User, "inspect old image"),
+            new CopilotChatMessage(CopilotChatRole.User, "inspect new image"),
+            new CopilotChatMessage(CopilotChatRole.User, prefix),
+            new CopilotChatMessage(CopilotChatRole.Assistant, "inspect assistant result")).Messages;
+
+        Assert.True(CopilotPromptHistoryPrefixCompletionResolver.TryResolve(messages, prefix, out var completion));
+        Assert.Equal(new CopilotPromptHistoryPrefixCompletion("inspect new image", "new image"), completion);
+
+        messages.RemoveAt(1);
+
+        Assert.True(CopilotPromptHistoryPrefixCompletionResolver.TryResolve(messages, prefix, out completion));
+        Assert.Equal(new CopilotPromptHistoryPrefixCompletion("inspect old image", "old image"), completion);
+    }
+
+    [Fact]
+    public void ConversationPreviewPrefersASingleSourceAndKeepsCrossSourceLabelsInQueryOrder()
+    {
+        var conversation = CreateConversation("alpha title");
+        conversation.DraftText = "beta draft";
+        string[] terms = ["beta", "alpha"];
+
+        Assert.True(CopilotConversationSearchPreview.TryBuild(conversation, terms, out string preview));
+        Assert.Equal("匹配 · 草稿、标题", preview);
+
+        conversation.Messages.Add(new CopilotChatMessage(CopilotChatRole.User, "alpha beta in history"));
+        conversation.PreviewText = string.Empty;
+
+        Assert.True(CopilotConversationSearchPreview.TryBuild(conversation, terms, out preview));
+        Assert.Equal("历史消息 · alpha beta in history", preview);
+    }
+
     private static CopilotConversationRecord CreateConversation(string title, params CopilotChatMessage[] messages)
     {
         var conversation = CopilotConversationRecord.CreateEmpty("profile", "Profile");

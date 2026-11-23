@@ -1,17 +1,13 @@
 ﻿#pragma warning disable CA1725,CS8602,CS8604,CS8629
 using ColorVision.Common.MVVM;
-using ColorVision.Database;
 using ColorVision.Engine.Templates.POI;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using ColorVision.Engine.Services;
-using log4net;
+using ColorVision.Engine.Services.Results;
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
-using System.Text;
-using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Media.Imaging;
@@ -20,56 +16,28 @@ namespace ColorVision.Engine.Templates.Jsons.KB
 {
     public class ViewHandleKB : IResultHandleBase
     {
-        private static ILog log = LogManager.GetLogger(nameof(ViewHandleKB));
+        private readonly Func<int, IReadOnlyList<PoiPointResultModel>?> _readDetails;
+
+        public ViewHandleKB() : this(PoiHistoryDetails.Read) { }
+
+        internal ViewHandleKB(Func<int, IReadOnlyList<PoiPointResultModel>?> readDetails) => _readDetails = readDetails;
+
         public override List<ViewResultAlgType> CanHandle { get; } = new List<ViewResultAlgType>() { ViewResultAlgType.KB , ViewResultAlgType.KB_Raw};
 
         public override void SideSave(ViewResultAlg result, string selectedPath)
         {
-            if (!File.Exists(result.ResultImagFile)) return;
-            try
-            {
-                // 获取文件名
-                string fileName = Path.GetFileName(result.ResultImagFile);
-
-                // 组合目标路径
-                string destinationFilePath = Path.Combine(selectedPath, fileName);
-
-                // 复制文件
-                File.Copy(result.ResultImagFile, destinationFilePath, true);
-
-                var csvBuilder = new StringBuilder();
-                List<string> properties = new() { "PoiName", "Value" };
-
-                // 写入列头
-                csvBuilder.AppendLine(string.Join(",", properties));
-
-                // 写入数据行
-                foreach (var item in result.ViewResults.OfType<PoiPointResultModel>())
-                {
-                    List<string> values = new()
-                {
-                    item.PoiName,
-                    item.Value
-                };
-
-                    csvBuilder.AppendLine(string.Join(",", values));
-                }
-
-                File.WriteAllText(selectedPath + "//" + result.Batch + ".csv", csvBuilder.ToString(), Encoding.UTF8);
-
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show(ex.Message);
-            }
+            var details = PoiHistoryDetails.RequireForExport(result);
+            if (string.IsNullOrWhiteSpace(result.ResultImagFile))
+                throw new FileNotFoundException($"Keyboard result {result.Id} has no annotated image.");
+            var rows = details.OfType<PoiPointResultModel>().Select(item => new[] { item.PoiName, item.Value });
+            AlgorithmSideDataFiles.WriteCsv(result, selectedPath, $"{result.Batch}.csv", ["PoiName", "Value"], rows, result.ResultImagFile);
         }
 
 
         public override void Load(ViewResultContext ctx, ViewResultAlg result)
         {
-            if (result.ViewResults == null)
+            if (result.ViewResults == null && PoiHistoryDetails.TryLoad(result, _readDetails))
             {
-                result.ViewResults ??= new ObservableCollection<IViewResult>(PoiPointResultDao.Instance.GetAllByPid(result.Id));
                 result.ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.Debug, Command = new RelayCommand(a => DisplayAlgorithmManager.GetInstance().SetType(new DisplayAlgorithmParam() { Type = typeof(AlgorithmKB), ImageFilePath = result.FilePath })) });
             }
         }
@@ -94,8 +62,11 @@ namespace ColorVision.Engine.Templates.Jsons.KB
                 OpenSourceImage(ctx, result);
             }
 
+            var details = PoiHistoryDetails.GetForDisplay(ctx, result);
+            if (details == null) return;
+
             List<PoiPoint> poiPoints = new();
-            foreach (var item in result.ViewResults)
+            foreach (var item in details)
             {
                 if (item is PoiPointResultModel poiPointResultModel)
                 {
@@ -116,7 +87,7 @@ namespace ColorVision.Engine.Templates.Jsons.KB
                 gridView.Columns.Clear();
                 for (int i = 0; i < header.Count; i++)
                     gridView.Columns.Add(new GridViewColumn() { Header = header[i], DisplayMemberBinding = new Binding(bdHeader[i]) });
-                ctx.ListView.ItemsSource = result.ViewResults;
+                ctx.ListView.ItemsSource = details;
             }
         }
     }

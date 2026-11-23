@@ -332,11 +332,7 @@ namespace ColorVision.UI.Desktop.Marketplace
             }
         }
 
-        public static ImageSource GetDefaultPluginIcon()
-        {
-            var iconName = ThemeManager.Current.CurrentUITheme == Theme.Dark ? "ColorVision1.ico" : "ColorVision.ico";
-            return new BitmapImage(new Uri($"pack://application:,,,/ColorVision.Themes;component/Assets/Image/{iconName}"));
-        }
+        public static ImageSource GetDefaultPluginIcon() => ThemeManagerExtensions.LoadDefaultIcon();
 
         public static async Task<ImageSource?> GetPluginIconAsync(string? iconUrl)
         {

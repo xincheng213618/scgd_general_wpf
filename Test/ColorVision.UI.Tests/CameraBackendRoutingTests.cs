@@ -5,6 +5,7 @@ using ColorVision.Engine.Services.Devices.Camera.Local;
 using ColorVision.Engine.Services.RC;
 using cvColorVision;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
@@ -30,11 +31,13 @@ public class CameraBackendRoutingTests
         var busy = ColorVision.Engine.Services.Devices.Camera.Controls.CameraPanelState.Create(backend, false, false);
         Assert.True(busy.Busy);
         Assert.False(busy.CanCapture);
+        Assert.True(busy.ShowCapture);
         if (local) backend.EndLocalCommand();
         else backend.EndServiceCommand();
         var ready = ColorVision.Engine.Services.Devices.Camera.Controls.CameraPanelState.Create(backend, false, false);
         Assert.False(ready.Busy);
         Assert.True(ready.CanCapture);
+        Assert.Equal(ready.ShowPreview, busy.ShowPreview);
         Assert.Equal(2, notifications);
     }
 
@@ -109,6 +112,18 @@ public class CameraBackendRoutingTests
         Assert.False(state.RoutesLocally);
         Assert.False(state.OpensLocally);
         Assert.Equal(DeviceStatusType.Opened, state.Status);
+    }
+
+    [Fact]
+    public void VidReadbackDefaultsOnForOldDisplayConfigsAndPersistsWhenTurnedOff()
+    {
+        var manager = new DisplayConfigManager { Object = JObject.Parse("""{"VID100":{}}""") };
+        var camera = manager.GetDisplayConfig<DisplayCameraConfig>("VID100");
+        Assert.True(camera.UseMotorReadbackForVid);
+
+        camera.UseMotorReadbackForVid = false;
+        var reloaded = new DisplayConfigManager { Object = manager.Object };
+        Assert.False(reloaded.GetDisplayConfig<DisplayCameraConfig>("VID100").UseMotorReadbackForVid);
     }
 
     [Fact]
@@ -228,9 +243,9 @@ public class CameraBackendRoutingTests
         state.ObserveService(DeviceStatusType.Opened);
         state.BeginLocalCommand();
         state.EndLocalCommand();
-        state.BeginLocalCommand(closing: true);
+        Assert.True(state.BeginLocalClose().IsCompletedSuccessfully);
         state.SetLocalStatus(DeviceStatusType.Closed);
-        state.EndLocalCommand();
+        state.EndLocalClose();
         state.SetPreference(false);
         Assert.Equal(DeviceStatusType.Opened, state.Status);
     }

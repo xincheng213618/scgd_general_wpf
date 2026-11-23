@@ -191,11 +191,9 @@ namespace ColorVision.Copilot
                 builder.Append("## ").Append(EscapeMarkdownText(speaker)).Append(" · ").AppendLine(message.CreatedAt.ToString("yyyy-MM-dd HH:mm:ss"));
                 builder.AppendLine();
 
-                if (!string.IsNullOrWhiteSpace(message.Content))
-                {
-                    builder.AppendLine(message.Content.Trim());
-                    builder.AppendLine();
-                }
+                var content = message.Content.AsSpan().Trim();
+                if (!content.IsEmpty)
+                    builder.Append(content).AppendLine().AppendLine();
 
                 if (!string.IsNullOrWhiteSpace(message.ResponseInterruptionText))
                 {
@@ -215,7 +213,12 @@ namespace ColorVision.Copilot
                 }
             }
 
-            return builder.ToString().TrimEnd() + Environment.NewLine;
+            var length = builder.Length;
+            while (length > 0 && char.IsWhiteSpace(builder[length - 1]))
+                length--;
+
+            builder.Length = length;
+            return builder.AppendLine().ToString();
         }
 
         private static bool IsExportableMessage(CopilotChatMessage message)

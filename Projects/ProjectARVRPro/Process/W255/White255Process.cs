@@ -1,15 +1,16 @@
 #pragma warning disable CS8601,CS8602
 using ColorVision.Common.Algorithms;
-using ColorVision.Database;
-using ColorVision.Engine; // AlgResultMasterDao, MeasureImgResultDao, DeatilCommonDao
+using ColorVision.Engine;
 using ColorVision.Engine.Media;
 using ColorVision.Engine.Services.Results.LightArea;
-using ColorVision.Engine.Templates.Jsons; // DetailCommonModel
+using ColorVision.Engine.Templates.Jsons;
 using ColorVision.Engine.Templates.Jsons.FOV2;
 using ColorVision.Engine.Templates.Jsons.PoiAnalysis; // PoiAnalysisDetailViewReslut
 using ColorVision.Engine.Templates.POI.AlgorithmImp; // PoiPointResultModel
 using ColorVision.ImageEditor.Draw;
 using Newtonsoft.Json;
+using ProjectARVRPro.Process.KeyedResults;
+using ProjectARVRPro.Process.KeyedResults.LuminanceChromaticity;
 using ProjectARVRPro.Process.Uniformity;
 using System.IO;
 using System.Windows;
@@ -19,17 +20,22 @@ namespace ProjectARVRPro.Process.W255
 {
     public class White255Process : ProcessWithRecipeBase<W255ProcessConfig, W255RecipeConfig>
     {
-        public override async Task<bool> Execute(IProcessExecutionContext ctx)
+        internal LuminanceChromaticityBatchResults BatchResults { get; init; } = new();
+
+        public override Task<bool> Execute(IProcessExecutionContext ctx)
         {
-            if (ctx?.Batch == null || ctx.Result == null) return false;
+            if (ctx?.Result == null || ctx.ObjectiveTestResult == null) return Task.FromResult(false);
             var log = ctx.Log;
             W255RecipeConfig recipeConfig = Config.RecipeConfig;
             W255ViewTestResult testResult = new W255ViewTestResult();
+            bool hasCenter = false;
             bool hasLuminanceUniformity = false;
             bool hasColorUniformity = false;
 
             try
             {
+                if (ctx.Batch == null)
+                    throw new InvalidDataException("W255 缺少测量批次。");
                 var values = ctx.GetMeasureResults();
                 bool calculateUniformityFromCorrectedPoi = Config.CalculateUniformityFromCorrectedPoi;
                 string luminanceUniformityResultName = Config.GetLuminanceUniformityResultName();
@@ -37,12 +43,12 @@ namespace ProjectARVRPro.Process.W255
                 if (values.Count > 0)
                     ctx.Result.FileName = values[0].FileUrl;
 
-                var masters = AlgResultMasterDao.Instance.GetAllByBatchId(ctx.Batch.Id);
+                var masters = BatchResults.ReadMasters?.Invoke(ctx.Batch.Id) ?? ctx.ReadMasterResults();
                 foreach (var master in masters)
                 {
                     if (master.ImgFileType == ColorVision.Engine.ViewResultAlgType.FindLightArea)
                     {
-                        testResult.AlgResultLightAreaModels = AlgResultLightAreaDao.Instance.GetAllByPid(master.Id);
+                        testResult.AlgResultLightAreaModels = BatchResults.ReadLightAreas?.Invoke(master.Id) ?? ctx.ReadDetails(AlgResultLightAreaDao.Instance, master.Id);
                     }
 
                     if (master.ImgFileType == ViewResultAlgType.POI_XYZ)
@@ -51,13 +57,17 @@ namespace ProjectARVRPro.Process.W255
                         {
                             ctx.Result.FileName = master.ImgFile;
                         }
-                        var poiPoints = PoiPointResultDao.Instance.GetAllByPid(master.Id);
+                        var poiPoints = BatchResults.ReadPoints?.Invoke(master.Id) ?? ctx.ReadDetails(PoiPointResultDao.Instance, master.Id);
                         if (poiPoints.Count == 0) continue;
 
                         int id = 0;
                         testResult.ViewPoixyuvDatas.Clear();
                         foreach (var item in poiPoints)
                         {
+                            bool isCenter = !string.IsNullOrWhiteSpace(Config.Key_Center) && item.PoiName == Config.Key_Center;
+                            if (isCenter)
+                                LuminanceChromaticityBatchResults.RequireCenterValue(item);
+
                             var poi = new PoiResultCIExyuvData(item) { Id = id++ };
                             poi.CCT = recipeConfig.CenterCorrelatedColorTemperature.Apply(poi.CCT);
                             poi.Y = recipeConfig.CenterLunimance.Apply(poi.Y);
@@ -68,8 +78,10 @@ namespace ProjectARVRPro.Process.W255
                             testResult.ViewPoixyuvDatas.Add(poi);
                             testResult.PoixyuvDatas.Add(new PoixyuvData() { Id =poi.Id,Name =poi.Name,X =poi.X,Y=poi.Y,Z=poi.Z,x =poi.x,y =poi.y,u =poi.u,v =poi.v,CCT =poi.CCT,Wave =poi.Wave});
                             
-                            if (item.PoiName == Config.Key_Center)
+                            if (isCenter)
                             {
+                                LuminanceChromaticityBatchResults.RequireFiniteCenter(poi);
+                                hasCenter = true;
                                 testResult.CenterLunimance = new ObjectiveTestItem
                                 {
                                     Name = "CenterLunimance",  
@@ -116,6 +128,7 @@ namespace ProjectARVRPro.Process.W255
 
                                 testResult.CenterCorrelatedColorTemperature.TestValue = testResult.CenterCorrelatedColorTemperature.Value.ToString("F4") + " K";
 
+                                ctx.Result.Result &= testResult.CenterCorrelatedColorTemperature.TestResult;
                                 ctx.Result.Result &= testResult.CenterLunimance.TestResult;
                                 ctx.Result.Result &= testResult.CenterCIE1931ChromaticCoordinatesx.TestResult;
                                 ctx.Result.Result &= testResult.CenterCIE1931ChromaticCoordinatesy.TestResult;
@@ -133,7 +146,7 @@ namespace ProjectARVRPro.Process.W255
 
                         if (isLuminanceUniformity)
                         {
-                            var details = DeatilCommonDao.Instance.GetAllByPid(master.Id);
+                            var details = BatchResults.ReadDetails?.Invoke(master.Id) ?? ctx.ReadDetails(DeatilCommonDao.Instance, master.Id);
                             if (details.Count == 1)
                             {
                                 var view = new PoiAnalysisDetailViewReslut(details[0]);
@@ -146,7 +159,7 @@ namespace ProjectARVRPro.Process.W255
                         }
                         else if (isColorUniformity)
                         {
-                            var details = DeatilCommonDao.Instance.GetAllByPid(master.Id);
+                            var details = BatchResults.ReadDetails?.Invoke(master.Id) ?? ctx.ReadDetails(DeatilCommonDao.Instance, master.Id);
                             if (details.Count == 1)
                             {
                                 var view = new PoiAnalysisDetailViewReslut(details[0]);
@@ -161,7 +174,7 @@ namespace ProjectARVRPro.Process.W255
 
                     if (master.ImgFileType == ViewResultAlgType.FOV)
                     {
-                        var algResultModels = DeatilCommonDao.Instance.GetAllByPid(master.Id);
+                        var algResultModels = BatchResults.ReadDetails?.Invoke(master.Id) ?? ctx.ReadDetails(DeatilCommonDao.Instance, master.Id);
                         if (algResultModels.Count == 1)
                         {
                             DFovView view1 = new DFovView(algResultModels[0]);
@@ -196,24 +209,43 @@ namespace ProjectARVRPro.Process.W255
                     }
                 }
 
+                LuminanceChromaticityBatchResults.RequireMeasuredCenter(hasCenter, Config.Key_Center);
                 if (!TryPopulateColorCenterRmsToD65(testResult, recipeConfig, testResult.ViewPoixyuvDatas))
                     log?.Warn("W255色彩中心指标计算失败：没有有效的u'v' POI数据。");
                 else
                     ctx.Result.Result &= testResult.ColorCenterRmsToD65.TestResult;
 
                 if (!TryPopulateUniformity(ctx, testResult, hasLuminanceUniformity, hasColorUniformity))
-                    return false;
+                    throw new InvalidDataException("未能计算有效的亮度和色度均匀性。");
 
                 ctx.Result.ViewResultJson = JsonConvert.SerializeObject(testResult);
-                ctx.ObjectiveTestResult.W255TestResult = JsonConvert.DeserializeObject<W255TestResult>(ctx.Result.ViewResultJson) ?? new W255TestResult();
+                // The view model is local to Execute. Its objective items now belong to the session result.
+                ctx.ObjectiveTestResult.W255TestResult = testResult.CreateObjectiveResult();
 
-                return true;
+                return Task.FromResult(true);
             }
-            catch (Exception ex)
+            catch (Exception error)
             {
-                log?.Error(ex);
-                return false;
+                string message = $"W255 亮色度解析失败：{error.Message}";
+                log.Error(message, error);
+                Reject(ctx, message);
+                return Task.FromResult(false);
             }
+        }
+
+        public override Task<bool> ExecuteFailure(IProcessExecutionContext ctx)
+        {
+            if (ctx?.Result != null && ctx.ObjectiveTestResult != null)
+                Reject(ctx, string.IsNullOrWhiteSpace(ctx.Result.Msg) ? "W255 流程未成功完成。" : ctx.Result.Msg);
+            return Task.FromResult(false);
+        }
+
+        private static void Reject(IProcessExecutionContext ctx, string message)
+        {
+            LuminanceChromaticityBatchResults.Reject(ctx, message);
+            var objective = ctx.ObjectiveTestResult;
+            objective.W255TestResult = KeyedTestResultDictionary.TryGetValue(objective.LuminanceChromaticityTestResults, "White", out var white) && white != null
+                ? LuminanceChromaticityCompatibility.ToW255TestResult(white) : null!;
         }
 
         internal bool TryPopulateUniformity(IProcessExecutionContext ctx, W255ViewTestResult testResult, bool hasLuminanceUniformity, bool hasColorUniformity)

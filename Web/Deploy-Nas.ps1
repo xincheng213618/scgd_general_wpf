@@ -413,7 +413,10 @@ try {
             throw "Required deployment path does not exist: $requiredPath"
         }
     }
-    Get-ScheduledTask -TaskPath $taskPath -TaskName $taskName | Out-Null
+    $scheduledWebTask = Get-ScheduledTask -TaskPath $taskPath -TaskName $taskName
+    if (@($scheduledWebTask.Actions | Where-Object { $_.Arguments -match '[\\/]Start-WebPackage\.ps1"?(?:\s|$)' }).Count -gt 0) {
+        throw 'This task now uses ZIP releases. Run Web\Publish-Web.ps1 instead.'
+    }
 
     $currentBranch = Get-NativeText -FilePath $gitExe -ArgumentList @('-C', $repoPath, 'branch', '--show-current')
     if ($currentBranch -ne $branch) {

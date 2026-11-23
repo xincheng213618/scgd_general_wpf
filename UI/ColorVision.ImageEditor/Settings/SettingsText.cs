@@ -78,6 +78,8 @@ namespace ColorVision.ImageEditor.Settings
         public static string FontStretch => Get(nameof(FontStretch));
         public static string FlowDirection => Get(nameof(FlowDirection));
         public static string PseudoHint => Get(nameof(PseudoHint));
+        public static string PseudoAutoRange => Get(nameof(PseudoAutoRange));
+        public static string PseudoAutoRangeDescription => Get(nameof(PseudoAutoRangeDescription));
         public static string FilterBasics => Get(nameof(FilterBasics));
         public static string FilterWhiteBalance => Get(nameof(FilterWhiteBalance));
         public static string FilterTone => Get(nameof(FilterTone));

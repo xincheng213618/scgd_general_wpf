@@ -31,8 +31,8 @@ namespace ColorVision.Database
             current.UserName = MySqlConfig.UserName;
             current.UserPwd = PasswordBox1.Password;
             current.Database = MySqlConfig.Database;
-            _ = Task.Run(() => MySqlControl.GetInstance().Connect());
             Close();
+            _ = MySqlControl.GetInstance().Connect();
         }
 
         private void Test_Click(object sender, RoutedEventArgs e)

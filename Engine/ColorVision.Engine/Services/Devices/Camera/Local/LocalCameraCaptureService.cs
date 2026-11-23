@@ -3,12 +3,14 @@ using ColorVision.Engine.Services.Devices.Camera.Templates.CameraRunParam;
 using ColorVision.Engine.Services.PhyCameras.Group;
 using cvColorVision;
 using FlowEngineLib.Algorithm;
+using Microsoft.Win32.SafeHandles;
 using Newtonsoft.Json;
 using ColorVision.ImageEditor.Tif;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Threading;
 
 namespace ColorVision.Engine.Services.Devices.Camera.Local
@@ -43,6 +45,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             ref uint sourceBpp, ref uint destinationBpp, ref uint channels, IntPtr raw, IntPtr cie);
 
         private static readonly SemaphoreSlim CaptureLock = new(1, 1);
+        private static readonly uint RawFrameLeaseSize = (uint)Marshal.SizeOf<CameraRawFrameLeaseV1>();
         private static readonly (ImageChannelType ChannelType, int CfwPort)[] DefaultChannelOrder =
         {
             (ImageChannelType.Gray_Y, 0),
@@ -203,14 +206,17 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                     FlipMode = request.FlipMode,
                     IsMirrorReady = calibrationFiles.Count > 0
                 };
-                frame = FlowNodeTiming.Run("AllocateFrame", () => LocalFlowFrame.Allocate(metadata, rawLength, cieLength, device.LocalCameraSession.RawBufferPool));
-
-                using (LocalFlowFrameLease lease = frame.Acquire())
+                if (sourceBpp == 16 && channels == 3 && device.LocalCameraSession.OpenedMode == TakeImageMode.Measure_Normal
+                    && cvCameraCSLib.TryGetRawFrameLeaseV1(out var acquireRaw, out var releaseRaw))
                 {
+                    frame = TryCaptureOwnedRawFrame(cameraHandle, captureJson, metadata, rawLength, cieLength,
+                        acquireRaw, releaseRaw, request.Stop, out captureTimeMs);
+                }
+                if (frame == null)
+                {
+                    frame = FlowNodeTiming.Run("AllocateFrame", () => LocalFlowFrame.Allocate(metadata, rawLength, cieLength, device.LocalCameraSession.RawBufferPool));
+                    using LocalFlowFrameLease lease = frame.Acquire();
                     Stopwatch captureStopwatch = Stopwatch.StartNew();
-                    // CM_GetFrame is retained for its CFW and averaging acquisition pipeline.
-                    // Auto-exposure was resolved above so metadata and calibration use the actual exposure. BuildRawCaptureJson deliberately supplies no
-                    // calibration items; all calibration runs once below on these buffers.
                     using var captureStage = FlowNodeTiming.Measure("CaptureFrame");
                     CaptureRawFrame(cameraHandle, captureJson, lease, cvCameraCSLib.CM_GetFrame, request.Stop);
                     captureStopwatch.Stop();
@@ -262,6 +268,79 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             {
                 frame?.Dispose();
                 throw;
+            }
+        }
+
+        internal static LocalFlowFrame? TryCaptureOwnedRawFrame(IntPtr cameraHandle, string captureJson,
+            LocalFrameMetadata metadata, int rawLength, int cieLength,
+            cvCameraCSLib.AcquireRawFrameV1 acquire, cvCameraCSLib.ReleaseRawFrameV1 release,
+            CancellationToken stop, out int captureTimeMs)
+        {
+            captureTimeMs = 0;
+            stop.ThrowIfCancellationRequested();
+            CameraRawFrameOwner? owner = new(release);
+            try
+            {
+                CameraRawFrameLeaseV1 descriptor = new() { StructSize = RawFrameLeaseSize };
+                Stopwatch stopwatch = Stopwatch.StartNew();
+                using var captureStage = FlowNodeTiming.Measure("CaptureRawFrameLease");
+                int result;
+                try
+                {
+                    result = acquire(cameraHandle, captureJson, ref descriptor);
+                }
+                finally
+                {
+                    owner.Attach(descriptor.Owner);
+                }
+
+                // The native owner is held even if a stop or format change is
+                // reported just after the camera returns.
+                stop.ThrowIfCancellationRequested();
+                if (result == CameraRawFrameLeaseV1.UnsupportedBeforeCapture)
+                {
+                    if (descriptor.StructSize != RawFrameLeaseSize || descriptor.Owner != IntPtr.Zero
+                        || descriptor.Pixels != IntPtr.Zero || descriptor.ByteLength != 0 || descriptor.Format != 0
+                        || descriptor.Width != 0 || descriptor.Height != 0 || descriptor.BitsPerChannel != 0 || descriptor.Channels != 0)
+                        throw new InvalidOperationException("本地相机返回了无效的 RAW 采集回退结果。");
+                    captureStage?.Complete();
+                    return null;
+                }
+                if (result != cvErrorDefine.CV_ERR_SUCCESS)
+                    throw CreateNativeException("本地相机取图失败", result);
+                ulong address = unchecked((ulong)descriptor.Pixels.ToInt64());
+                if (descriptor.StructSize != RawFrameLeaseSize || owner.IsInvalid
+                    || address == 0 || (address & 1) != 0 || address > ulong.MaxValue - descriptor.ByteLength
+                    || descriptor.Format != CameraRawFrameLeaseV1.PackedBgr16
+                    || descriptor.Width != metadata.Width || descriptor.Height != metadata.Height
+                    || descriptor.BitsPerChannel != metadata.SourceBpp || descriptor.Channels != metadata.Channels
+                    || descriptor.ByteLength != (ulong)rawLength)
+                {
+                    throw new InvalidOperationException("本地相机返回的 RAW 缓冲格式与预计规格不一致。请重新连接相机。");
+                }
+
+                stopwatch.Stop();
+                captureTimeMs = ToMilliseconds(stopwatch.ElapsedMilliseconds);
+                captureStage?.Complete();
+                LocalFlowFrame frame = LocalFlowFrame.AdoptCameraRaw(metadata, rawLength, cieLength, descriptor.Pixels, owner);
+                owner = null;
+                return frame;
+            }
+            finally
+            {
+                owner?.Dispose();
+            }
+        }
+
+        private sealed class CameraRawFrameOwner(cvCameraCSLib.ReleaseRawFrameV1 release)
+            : SafeHandleZeroOrMinusOneIsInvalid(ownsHandle: true)
+        {
+            public void Attach(IntPtr owner) => SetHandle(owner);
+
+            protected override bool ReleaseHandle()
+            {
+                release(handle);
+                return true;
             }
         }
 

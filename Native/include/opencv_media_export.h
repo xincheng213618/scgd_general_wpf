@@ -50,6 +50,7 @@ extern "C" COLORVISIONCORE_API int M_PseudoColorAutoRange(HImage img, HImage* ou
 extern "C" COLORVISIONCORE_API int M_PseudoColorInto(HImage img, HImage outImage, uint min, uint max, cv::ColormapTypes types = cv::ColormapTypes::COLORMAP_JET, int channel = -1);
 extern "C" COLORVISIONCORE_API int M_PseudoColorAutoRangeInto(HImage img, HImage outImage, uint min, uint max, cv::ColormapTypes types, int channel, uint dataMin, uint dataMax);
 extern "C" COLORVISIONCORE_API int M_GetMinMax(HImage img, uint* outMin, uint* outMax, int channel = -1);
+extern "C" COLORVISIONCORE_API int M_GetRgbMinMax(HImage img, uint* outMin, uint* outMax);
 
 extern "C" COLORVISIONCORE_API int M_AutoLevelsAdjust(HImage img, HImage* outImage);
 
@@ -304,10 +305,20 @@ static_assert(sizeof(MCalibrationCacheReleaseResultV1) == 40, "Calibration cache
 extern "C" COLORVISIONCORE_API int __cdecl M_CalibrationCreate(void** context);
 extern "C" COLORVISIONCORE_API int __cdecl M_CalibrationDestroy(void* context);
 extern "C" COLORVISIONCORE_API int __cdecl M_CalibrationClear(void* context);
+// Keeps the larger allocation in each corresponding RAW work buffer slot at
+// the destination and empties the distinct source slots. Both contexts keep
+// their calibration items. Passing the same context twice succeeds as a no-op.
+extern "C" COLORVISIONCORE_API int __cdecl M_CalibrationTransferWorkBuffersV1(
+    void* destinationContext, void* sourceContext);
 extern "C" COLORVISIONCORE_API int __cdecl M_CalibrationLoadFileW(
     void* context,
     std::int32_t calibrationType,
     const wchar_t* filePath);
+// DSNU and Uniformity only. On success, sha256 receives the 32-byte digest
+// of the exact file contents used by the newly attached calibration item.
+extern "C" COLORVISIONCORE_API int __cdecl M_CalibrationLoadMapWithSha256V1W(
+    void* context, std::int32_t calibrationType, const wchar_t* filePath,
+    std::uint8_t* sha256, std::uint32_t sha256Size);
 // Mutable RAW compatibility entry point. RAW and CIE ranges must not overlap;
 // color-transform exposure values must be finite and positive.
 extern "C" COLORVISIONCORE_API int __cdecl M_CalibrationExecute(

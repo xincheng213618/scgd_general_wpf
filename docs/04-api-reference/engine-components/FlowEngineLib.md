@@ -4,8 +4,7 @@ knowledge_type: "reference"
 status: "current"
 summary: "节点图加载、服务绑定、弃用节点兼容、完成事件和隔离 RuntimeHost 的执行边界。"
 aliases: ["上游DLL更新", "反编译比对", "只提供DLL", "节点类型映射","跨程序集节点名称匹配","流程节点结束为什么业务还没完成","FlowEngineLib","FlowEngineAPI","FlowEngineControl","CVStartCFC","FlowRuntimeHost","弃用节点兼容","合规验证旧流程","AlgComplianceMathNode","AlgComplianceContrastNode","AlgComplianceJudgmentNode","ComplianceMathType","Compliance_Math","Compliance_Contrast","Compliance.Judgment"]
-code_paths: ["Engine/FlowEngineLib/README.md","Engine/FlowEngineLib/FlowEngineLib.csproj","Engine/FlowEngineLib/FlowEngineAPI.cs","Engine/FlowEngineLib/FlowEngineControl.cs","Engine/FlowEngineLib/FlowEngineEventArgs.cs","Engine/FlowEngineLib/Start/BaseStartNode.cs","Engine/FlowEngineLib/Base/CVBaseServerNode.cs","Engine/FlowEngineLib/Base/CVStartCFC.cs","Engine/FlowEngineLib/End/CVEndNode.cs","Engine/FlowEngineLib/Runtime/FlowRuntimeHost.cs","Engine/FlowEngineLib/Node/Algorithm/AlgComplianceMathNode.cs","Engine/FlowEngineLib/Node/Algorithm/AlgComplianceContrastNode.cs","Engine/FlowEngineLib/Node/Algorithm/AlgComplianceJudgmentNode.cs","Engine/FlowEngineLib/Node/Algorithm/ComplianceMathType.cs","Engine/FlowEngineLib/Algorithm/ComplianceMathParam.cs","Engine/FlowEngineLib/Algorithm/ComplianceContrastParam.cs","Engine/FlowEngineLib/Algorithm/ComplianceJudgmentParam.cs","Engine/ST.Library.UI/NodeEditor/STNodeTypeRegistry.cs","Engine/ST.Library.UI/NodeEditor/STNodeTreeView.cs","Engine/FlowEngineLib/CalcEQEParam.cs","Engine/FlowEngineLib/AlgorithmEQENode.cs","Engine/FlowEngineLib/Node/Spectrum/SpectrumEQENode.cs","Engine/FlowEngineLib/LightingSensorNode.cs","Engine/FlowEngineLib/LightingSensorData.cs","Engine/FlowEngineLib/LightingChannel.cs","Engine/FlowEngineLib/LightingCommand.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/CompatibilityNodeMigrationTests.cs", "Test/ColorVision.UI.Tests/LvCameraNodeMigrationTests.cs","Test/ColorVision.UI.Tests/FlowEngineControlLifecycleTests.cs","Test/ColorVision.UI.Tests/FlowRuntimeCompletionTests.cs","Test/ColorVision.UI.Tests/FlowRuntimeHostTests.cs","Test/ColorVision.UI.Tests/FlowUpstreamProtocolTests.cs","Test/ColorVision.UI.Tests/LocalSpectrumFlowTests.cs"]
+code_paths: ["Engine/FlowEngineLib","Engine/ST.Library.UI/NodeEditor/STNodeTypeRegistry.cs","Engine/ST.Library.UI/NodeEditor/STNodeTreeView.cs"]
 related: ["flow.architecture","flow.editor","flow.workspace","flow.templates","flow.session","flow.headless","flow.node-extension"]
 ---
 
@@ -22,6 +21,7 @@ related: ["flow.architecture","flow.editor","flow.workspace","flow.templates","f
 | 开始按钮点了但没跑 | `GetStartNodeName()`、`startNodeNames`、`IsExecutionReady`、`CanAcceptStart` |
 | 服务节点没有设备 | `FlowNodeManager.UpdateDevice`、`MQTTServiceInfo`、节点 `NodeType` |
 | 节点执行但流程不结束 | 是否连接 `CVEndNode`，是否走到 `CVStartCFC.FireFinished()` |
+| 最后一个节点结束后固定多等一段时间 | “设置 → 其他 → 流程后处理时间（毫秒）”及最后节点到完成事件的间隔 |
 | `Finished` 重复触发 | `clear()` 是否解绑旧 `BaseStartNode.Finished` |
 | 项目包收不到结果 | `FlowEngineControl.Finished` 到宿主 `FlowCompleted` 的桥接 |
 | UI 选择和节点参数不一致 | 属性元数据、`FlowPropertyEditorRegistry` 与选择器绑定；专用补充面板再查 `NodeConfiguration/` |
@@ -42,6 +42,8 @@ related: ["flow.architecture","flow.editor","flow.workspace","flow.templates","f
 
 流程执行编号会被旧服务用于结果文件名，开始入口通过 `Tool.SanitizeFileName` 将 Windows 非法文件名字符（含 `?`、路径分隔符和控制字符）替换为 `_`，去除尾部点/空格，空名与保留设备名使用安全占位/前缀。合法编号保持不变；等待完成、回调、运行状态、查找开始动作和停止均使用相同规范化编号，`FlowHeadlessExecutionRequest.SerialNumber` 也保存实际执行编号。拥有业务批次的调用方须在创建批次和诊断记录前生成此编号，不能只在某个算法请求发送时替换，否则会割裂批次、消息和完成事件的关联。客户产品 SN 是独立业务字段，保留原值用于显示、追溯和协议回传；用它生成文件名时单独格式化，不改写文件内容或历史批次。
 
+由项目创建 MySQL 批次时，可调用 `BatchResultMasterDao.InsertForFlow(batch)`。该方法在已验证连接中插入批次并返回指向原库的短生命周期客户端工厂。调用 `FlowControl.TryStartWithBatchAsync(serialNumber, batch, cancellationToken)` 时传回同一个模型，首个节点派发前会校验批次、编号和数据库维护状态。支持批次归属的节点会沿用该连接，即使连接在建批与启动之间切换。项目可用返回的工厂完成原库回写及后处理。
+
 `BaseStartNode.RequiresConnectionReady` 默认是 `false`，因此不能统一要求所有本地开始节点的 `Ready` 为真；要求连接的开始节点才通过 `Ready` 门禁。`CanAcceptStart` 还要求开始输出已连线。服务节点的 `getActionEvent` / `getBaseEvent` 构造请求，再由 `DoTransferToServer` 转交发送链。扩展方式见[节点扩展契约](../extensions/flow-node.md)。
 
 `BaseStartNode` 实现 `IDisposable`；脱离 `FlowEngineControl` 构造开始节点的读取器也必须在读取后释放节点。
@@ -56,9 +58,11 @@ related: ["flow.architecture","flow.editor","flow.workspace","flow.templates","f
 | `CVEndNode` | `TryDoFinishing()` 接受首次终止后调用 `FireFinished()`，重复到达不会再次结束 |
 | `AlgorithmNode` / `AlgorithmARVRNode` | 把模板、图像、颜色、POI、SMU 数据打包成算法请求 |
 
+`FlowEndDelayMilliseconds` 是运行级配置。执行已满 500 ms、仍在运行且未收到停止请求时，`CVEndNode` 在发布完成事件前另等配置的 1–1000 ms。配置为 0 时直接进入完成检查。分析流程节拍时可分别比较最后节点结束到完成事件、完成事件到下一轮启动的间隔。修改现场配置后，用实际流程核对结果完整性和外部联动时序。
+
 大部分节点构建并转发执行参数，由服务完成算法。`LightingSensorNode` 复用现有 `LightingControl` 服务，支持 A/B 通道开关和查询，不另建连接或本地后端。
 
-`AlgorithmEQENode` 请求中的 `SMUData` 携带电气分支的结果 ID 和类型，同时保留旧 `SMU_MasterId` 字段兼容既有算法服务。`SpectrumEQENode` 的服务路径按紧邻前步结果构造关联；本地路径保留实际 SMU 量测关联、V/mA 单位和缺失输入校验，不能套用服务的零值占位。源码见 `Engine/FlowEngineLib/CalcEQEParam.cs`、`AlgorithmEQENode.cs` 和 `Node/Spectrum/SpectrumEQENode.cs`；`FlowUpstreamProtocolTests` 保护请求与保存边界。
+`AlgorithmEQENode` 请求中的 `SMUData` 携带电气分支的结果 ID 和类型，同时保留旧 `SMU_MasterId` 字段兼容既有算法服务。`SpectrumEQENode` 的服务路径按紧邻前步结果构造关联；本地路径保留实际 SMU 量测关联、V/mA 单位和缺失输入校验，不能套用服务的零值占位。源码见 `Engine/FlowEngineLib/CalcEQEParam.cs`、`AlgorithmEQENode.cs` 和 `Node/Spectrum/SpectrumEQENode.cs`。
 
 ## 节点类型加载
 
@@ -70,13 +74,13 @@ STND v1 的结点属性新增 `__STNode.PortLayout`，保存标题、输入/输�
 
 早期 STND v1 没有每结点的端口定义，全局端口编号无法唯一反推出缺失类型的端口数量。遇到这种缺失结点时整组旧连线暂不绘制，原始编号与原结点顺序封存在 `__STNode.LegacyConnections`，不会猜接其他结点。恢复全部所需组件并重新打开后可恢复旧连线；手动删除或替换占位后需自行确认并重新连线。占位存在期间仍可保存原始结点数据与封存连线。这是旧数据的信息缺口，不表示算法能被自动替代。
 
-相关实现位于 `Engine/ST.Library.UI/NodeEditor/STNodeSavedState.cs`、`STMissingNode.cs` 和 `STNodeCanvasReader.cs`。`Test/ColorVision.UI.Tests/MissingFlowNodeTests.cs` 覆盖缺失类型、二进制参数与原身份保留、保存重开、旧连线封存与恢复、复制以及阻止启动；这是持久化和执行边界的回归，不代替真实第三方插件或设备验收。
+持久化实现位于 `Engine/ST.Library.UI/NodeEditor/STNodeSavedState.cs`、`STMissingNode.cs` 和 `STNodeCanvasReader.cs`。第三方插件或设备按实际交付组合验收。
 
 普通 BV/LV 节点在 `ColorVision.Engine` 中实现，保留 `FlowEngineLib.LVCameraNode` 完整类型名，并声明稳定保存标识 `FlowEngineLib.dll|FlowEngineLib.LVCameraNode`。新宿主直接调用 Engine 的本地取图实现，未选中本地路径时沿用原服务请求。旧端继续加载自己的旧版 FlowEngineLib：GUID 不同时仍可按这个完整模型标识找到旧类，按原参数构造服务请求。只保留 namespace 而保存 Engine DLL 名不足以兼容这种旧加载器，也不应固定某一版本自动生成的 GUID。
 
 曾保存为 Engine 模型标识的画布可在新宿主中按名称回退加载，再保存或通过数据库工具“更新流程节点”写回旧端可识别的模型；旧端自身不具备跨 DLL 名称回退。这里兼容的是流程数据，并不提供 CLR 类型转发：旧端保持整套旧 DLL 不变；跟随新宿主升级且直接引用迁出节点的项目包需引用 Engine 并重新编译。需要 Engine 属性编辑器的相机、校准、POI、SMU、传感器和算法节点位于 `FlowProcessing/Nodes/Compatibility/`，保留原 namespace；普通参数节点和公共执行基类仍在 FlowEngineLib。属性编辑器元数据直接引用 Engine 实现，不属于旧流程保存契约。
 
-`LvCameraNodeMigrationTests` 使用移动前节点保存的双节点画布，检查编辑器、运行容器、编译往返、名称映射及参数/连线保留。`CompatibilityNodeMigrationTests` 使用迁移前保存、排除退役节点后的 28 节点合成画布核对属性、27 条连线、菜单可见性和构造请求；自动尺寸节点在编辑器中会重新测量宽高，运行容器往返则保留全部字段。跨版本验收还应将新节点实际保存的合成画布交给目标旧 DLL 的 `FlowEngineControl.LoadFromBase64`，核对旧类实例、参数、连线及构造的请求字段；只加载和构造数据，不启动流程或连接设备。这些检查不代表已验证所有现场流程或真实采集。
+跨版本验收应将新节点实际保存的画布交给目标旧 DLL 的 `FlowEngineControl.LoadFromBase64`，核对旧类身份、参数、连线和请求字段。此步骤只加载和构造数据，真实流程或采集另行验收。
 
 ## 上游 DLL 更新核对
 
@@ -121,6 +125,8 @@ flowchart TD
 
 流程结束时，`BaseStartNode.DoFinishing` 沿开始端口传递终态，供沿途节点释放运行记录；宿主后处理属于后续阶段。单次停止取消 `StopToken` 并释放运行资源，已停止的分支无法再次完成流程。资源释放失败时继续尝试其余资源，将异常写入日志，并发布已确定的终态。`CVBaseServerNode` 收到 `Completed` 时只清理并转发状态。`IgnoreErrors` 用于上游出错后的收尾，保留本节点自身的失败状态。
 
+清空或分离图、移除开始节点以及调用 `StopAll()` 会停止受影响的运行。批量清理在该次运行的资源释放后直接完成 `FlowEngineRunner` 的等待任务，返回 `Data.Status=Canceled`。先于清理确定的终态在节点完成通知发出后交付给对应的等待任务。
+
 “逻辑与”“组合”及多输入服务和本地节点只汇合同一次运行的分支。重复框内还要求轮次一致。同 SN 重新测量时，旧分支的结果和停止信号不会参与或清空新运行的待汇合输入。
 
 共享会话的 `RunFinalized`、后处理失败策略及项目兼容链见[执行会话](../../01-user-guide/workflow/execution.md)；隔离运行的状态映射见[无界面执行](../algorithms/templates/flow-engine.md)。它们不是 FlowEngineLib 内核自动附带的业务阶段。
@@ -153,8 +159,4 @@ FlowEngineLib 只知道节点图和引擎执行状态，不拥有模板数据库
 
 ## 验证入口与缺口
 
-关联测试：`Test/ColorVision.UI.Tests/FlowEngineControlLifecycleTests.cs`、`Test/ColorVision.UI.Tests/FlowRuntimeCompletionTests.cs`、`Test/ColorVision.UI.Tests/FlowRuntimeHostTests.cs`。
-
-`FlowEngineControlLifecycleTests` 分别核对本地开始节点无需连接就绪、连接型开始节点的目标就绪门禁、重复挂接和节点移除等行为；测试路径不是本次执行结果。
-
-关联测试未专门声明旧合规画布和旧算法服务的端到端覆盖，交付兼容需要使用对应存量流程另行验证。执行内核测试不能替代宿主后处理或项目判定；需要最终业务状态时另外验证 RunFinalized 所属链。
+交付兼容需使用对应存量流程和目标服务验证。项目判定及业务终态应沿宿主后处理和 `RunFinalized` 链核对。

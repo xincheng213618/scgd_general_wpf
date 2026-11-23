@@ -461,16 +461,48 @@ namespace ColorVision.ImageEditor.Algorithms
         {
             if (interpolation == ImageProfileInterpolation.Nearest)
             {
-                ReadRaw(image, NearestPixel(x, image.Width), NearestPixel(y, image.Height), result);
+                int pixelX = NearestPixel(x, image.Width);
+                int pixelY = NearestPixel(y, image.Height);
+                if (image.Source != null)
+                {
+                    for (int channel = 0; channel < result.Length; channel++)
+                        result[channel] = image.Source.Read(pixelX, pixelY, channel);
+                }
+                else
+                {
+                    int bytesPerChannel = image.Format.BitsPerChannel() / 8;
+                    ReadOnlySpan<byte> data = image.Buffer!.Data.Span;
+                    int offset = PixelOffset(image, pixelX, pixelY, result.Length * bytesPerChannel);
+                    for (int channel = 0; channel < result.Length; channel++, offset += bytesPerChannel)
+                        result[channel] = ReadSample(data, offset, bytesPerChannel);
+                }
                 return;
             }
 
             var (x0, y0, x1, y1, tx, ty) = BilinearFootprint(image, x, y);
-            for (int channel = 0; channel < result.Length; channel++)
+            if (image.Source != null)
             {
-                double top = Lerp(ReadRaw(image, x0, y0, channel), ReadRaw(image, x1, y0, channel), tx);
-                double bottom = Lerp(ReadRaw(image, x0, y1, channel), ReadRaw(image, x1, y1, channel), tx);
-                result[channel] = Lerp(top, bottom, ty);
+                for (int channel = 0; channel < result.Length; channel++)
+                {
+                    double top = Lerp(image.Source.Read(x0, y0, channel), image.Source.Read(x1, y0, channel), tx);
+                    double bottom = Lerp(image.Source.Read(x0, y1, channel), image.Source.Read(x1, y1, channel), tx);
+                    result[channel] = Lerp(top, bottom, ty);
+                }
+            }
+            else
+            {
+                int bytesPerChannel = image.Format.BitsPerChannel() / 8;
+                int pixelBytes = result.Length * bytesPerChannel;
+                ReadOnlySpan<byte> data = image.Buffer!.Data.Span;
+                int topLeft = PixelOffset(image, x0, y0, pixelBytes);
+                int bottomLeft = PixelOffset(image, x0, y1, pixelBytes);
+                int columnDistance = (x1 - x0) * pixelBytes;
+                for (int channel = 0; channel < result.Length; channel++, topLeft += bytesPerChannel, bottomLeft += bytesPerChannel)
+                {
+                    double top = Lerp(ReadSample(data, topLeft, bytesPerChannel), ReadSample(data, topLeft + columnDistance, bytesPerChannel), tx);
+                    double bottom = Lerp(ReadSample(data, bottomLeft, bytesPerChannel), ReadSample(data, bottomLeft + columnDistance, bytesPerChannel), tx);
+                    result[channel] = Lerp(top, bottom, ty);
+                }
             }
         }
 
@@ -491,25 +523,16 @@ namespace ColorVision.ImageEditor.Algorithms
             return start + (end - start) * amount;
         }
 
-        private static void ReadRaw(ProfileRaster image, int x, int y, Span<double> values)
-        {
-            for (int channel = 0; channel < values.Length; channel++) values[channel] = ReadRaw(image, x, y, channel);
-        }
+        private static int PixelOffset(ProfileRaster image, int x, int y, int pixelBytes)
+            => checked((y - image.OriginY) * image.Buffer!.Stride + (x - image.OriginX) * pixelBytes);
 
-        private static double ReadRaw(ProfileRaster image, int x, int y, int channel)
+        private static double ReadSample(ReadOnlySpan<byte> data, int offset, int bytesPerChannel) => bytesPerChannel switch
         {
-            if (image.Source != null) return image.Source.Read(x, y, channel);
-            ReadOnlySpan<byte> data = image.Buffer!.Data.Span;
-            int bytesPerChannel = image.Format.BitsPerChannel() / 8;
-            int offset = checked((y - image.OriginY) * image.Buffer.Stride + (x - image.OriginX) * image.Format.BytesPerPixel() + channel * bytesPerChannel);
-            return image.Format.BitsPerChannel() switch
-            {
-                8 => data[offset],
-                16 => BinaryPrimitives.ReadUInt16LittleEndian(data.Slice(offset, 2)),
-                32 => BitConverter.Int32BitsToSingle(BinaryPrimitives.ReadInt32LittleEndian(data.Slice(offset, 4))),
-                _ => throw new ArgumentOutOfRangeException(nameof(image)),
-            };
-        }
+            1 => data[offset],
+            2 => BinaryPrimitives.ReadUInt16LittleEndian(data.Slice(offset, 2)),
+            4 => BinaryPrimitives.ReadSingleLittleEndian(data.Slice(offset, 4)),
+            _ => throw new ArgumentOutOfRangeException(nameof(bytesPerChannel)),
+        };
 
         private static ChannelDefinition[] Channels(AlgorithmImageFormat format, ImageProfileParameters parameters)
         {

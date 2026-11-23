@@ -13,6 +13,7 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
 using WpfBrush = System.Windows.Media.SolidColorBrush;
@@ -37,7 +38,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
 
     public class ViewResultSpectrum : ViewModelBase
     {
-        private static int No = 1;
+        private static int nextLiveResultId;
         public ContextMenu ContextMenu { get; set; }
 
         [DisplayName("SerialNumber1")]
@@ -126,13 +127,15 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
             };
         }
 
-        public void Gen()
+        public void Gen() => Gen(GetMinimumLuminance());
+
+        private void Gen(double? minimumLuminance)
         {
             CaptureStoredSpectrum();
             try
             {
                 IP = Math.Round(fIp / 65535 * 100, 2).ToString() + "%";
-                float safeLuminance = GetSafeLuminanceValue(fPh);
+                float safeLuminance = minimumLuminance is double minimum && fPh < minimum ? (float)minimum : fPh;
                 Lv = safeLuminance.ToString();
 
                 if (fPL == null || fPL.Length == 0) { UpdateRenderingMetrics(); return; }
@@ -222,14 +225,10 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
             _ => "显色性不可用：光谱为空、全零、负值或非有限值"
         });
 
-        private static float GetSafeLuminanceValue(float rawLuminance)
+        internal static double? GetMinimumLuminance()
         {
-            ViewSpectrumConfig config = ViewSpectrumConfig.Instance;
-            if (config.EnableNegativeLuminanceGuard && rawLuminance < config.MinLuminanceValue)
-            {
-                return (float)config.MinLuminanceValue;
-            }
-            return rawLuminance;
+            var config = global::ColorVision.UI.ConfigService.Instance?.GetRequiredService<ViewSpectrumConfig>();
+            return config?.EnableNegativeLuminanceGuard == true ? config.MinLuminanceValue : null;
         }
 
 
@@ -308,7 +307,9 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
 
         }
 
-        public ViewResultSpectrum(SpectumResultEntity item)
+        public ViewResultSpectrum(SpectumResultEntity item) : this(item, GetMinimumLuminance()) { }
+
+        internal ViewResultSpectrum(SpectumResultEntity item, double? minimumLuminance)
         {
             Id = item.Id;
             BatchID = item.BatchId;
@@ -422,7 +423,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
             //    }
             //}
 
-            Gen();
+            Gen(minimumLuminance);
 
             RelayCommand relayCommand = new RelayCommand(a => CalculateEqe());
             //ContextMenu = new ContextMenu();
@@ -468,7 +469,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
 
         public ViewResultSpectrum(COLOR_PARA item)
         {
-            Id = No++; 
+            Id = Interlocked.Increment(ref nextLiveResultId);
             fx = item.fx;
             fy = item.fy;
             fu = item.fu;

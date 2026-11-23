@@ -34,6 +34,10 @@ namespace ColorVision.SocketProtocol
         [SugarColumn(ColumnName = "ClientEndPoint", IsNullable = true)]
         public string ClientEndPoint { get; set; }
 
+        [Browsable(false)]
+        [SugarColumn(ColumnName = "ClientConnectionId", IsNullable = true, ColumnDataType = "text")]
+        public string? ClientConnectionId { get; set; }
+
         /// <summary>
         /// 消息方向
         /// </summary>

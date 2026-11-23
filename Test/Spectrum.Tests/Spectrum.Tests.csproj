@@ -22,6 +22,7 @@
 
   <ItemGroup>
     <Using Include="Xunit" />
+    <Compile Include="..\ColorVision.UI.Tests\WpfTestHost.cs" Link="WpfTestHost.cs" />
     <EmbeddedResource Include="ReferenceData\chromaticity.json" LogicalName="Spectrum.Tests.chromaticity.json" />
     <EmbeddedResource Include="ReferenceData\spectrum-display-rgb.json" LogicalName="Spectrum.Tests.spectrum-display-rgb.json" />
     <EmbeddedResource Include="ReferenceData\color-rendering.json" LogicalName="Spectrum.Tests.color-rendering.json" />

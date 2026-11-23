@@ -1,3 +1,4 @@
+using ColorVision.ImageEditor.Algorithms;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
@@ -46,6 +47,32 @@ public static class EditableBitmapCopy
         }
         finally { target.Unlock(); }
         return target;
+    }
+
+    /// <summary>Copies complete packed rows into a strided destination. Optionally swaps red and blue in packed 16-bit color.</summary>
+    public static unsafe void CopyPackedRows(ReadOnlySpan<byte> pixels, Span<byte> destination, int width, int height,
+        int bytesPerPixel, int destinationStride, bool swapRedBlue16)
+    {
+        if (width <= 0 || height <= 0 || bytesPerPixel <= 0 || (swapRedBlue16 && bytesPerPixel != 6))
+            throw new ArgumentException("The packed pixel layout is invalid.");
+        int rowBytes = checked(width * bytesPerPixel);
+        if (destinationStride < rowBytes || pixels.Length != checked(rowBytes * height)
+            || destination.Length < checked(destinationStride * height) || pixels.Overlaps(destination))
+            throw new ArgumentException("The packed pixel buffers do not match the requested layout.");
+
+        // Once copying begins there is no allocation, I/O, cancellation or callback.
+        if (swapRedBlue16)
+        {
+            fixed (byte* source = pixels)
+            fixed (byte* target = destination)
+                ImageAlgorithmInputFactory.CopyColor16(source, rowBytes, target, destinationStride, width, height, bytesPerPixel);
+        }
+        else if (rowBytes == destinationStride) pixels.CopyTo(destination);
+        else
+        {
+            for (int row = 0; row < height; row++)
+                pixels.Slice(row * rowBytes, rowBytes).CopyTo(destination.Slice(row * destinationStride, rowBytes));
+        }
     }
 
     internal static unsafe void CopyPixels(BitmapSource source, Int32Rect bounds, IntPtr buffer, int stride,

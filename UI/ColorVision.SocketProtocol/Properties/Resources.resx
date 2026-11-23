@@ -137,7 +137,7 @@
     <value>Socket 连接管理器</value>
   </data>
   <data name="MenuNetworkCommunication" xml:space="preserve">
-    <value>网络通信(_C)</value>
+    <value>通信(_C)</value>
   </data>
   <data name="Query" xml:space="preserve">
     <value>查询</value>
@@ -189,7 +189,10 @@
     <value>消息重发失败: {0}</value>
   </data>
   <data name="ClientNotConnected" xml:space="preserve">
-    <value>目标客户端未连接</value>
+    <value>原客户端未连接，或无法唯一核对目标连接。</value>
+  </data>
+  <data name="ResendContentUnavailable" xml:space="preserve">
+    <value>该记录的原文为空或已清理，无法重发。</value>
   </data>
   <data name="AutoScroll" xml:space="preserve">
     <value>自动滚动</value>

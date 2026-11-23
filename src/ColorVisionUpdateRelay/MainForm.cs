@@ -9,12 +9,9 @@ namespace ColorVisionUpdateRelay
 {
     public sealed class MainForm : Form
     {
-        private const string DefaultServerHost = "xc213618.ddns.me";
-        private const int DefaultPort = 9998;
-
         private readonly TextBox _ipBox = new TextBox { Multiline = true, ReadOnly = true, ScrollBars = ScrollBars.Vertical, Dock = DockStyle.Fill, Font = new Font("Consolas", 10.5f) };
-        private readonly TextBox _serverBox = new TextBox { Text = DefaultServerHost, Width = 220 };
-        private readonly TextBox _portBox = new TextBox { Text = DefaultPort.ToString(CultureInfo.InvariantCulture), Width = 70 };
+        private readonly TextBox _serverBox = new TextBox { Text = RelayOperations.DefaultServerHost, Width = 220 };
+        private readonly TextBox _portBox = new TextBox { Text = RelayOperations.DefaultPort.ToString(CultureInfo.InvariantCulture), Width = 70 };
         private readonly TextBox _relayIpBox = new TextBox { Width = 160 };
         private readonly Label _clientStatus = new Label { AutoSize = true, Padding = new Padding(0, 6, 0, 0) };
         private readonly Label _relayStatus = new Label { AutoSize = true, Padding = new Padding(0, 6, 0, 0) };
@@ -104,8 +101,8 @@ namespace ColorVisionUpdateRelay
         }
 
         // Inputs are captured on the UI thread before each action, because actions run on a worker thread.
-        private string ServerHost = DefaultServerHost;
-        private int Port = DefaultPort;
+        private string ServerHost = RelayOperations.DefaultServerHost;
+        private int Port = RelayOperations.DefaultPort;
         private string RelayInput = "";
 
         private void CaptureInputs()
@@ -113,7 +110,7 @@ namespace ColorVisionUpdateRelay
             ServerHost = _serverBox.Text.Trim();
             if (!int.TryParse(_portBox.Text.Trim(), NumberStyles.None, CultureInfo.InvariantCulture, out int port) || port <= 0 || port >= 65536)
             {
-                port = DefaultPort;
+                port = RelayOperations.DefaultPort;
                 _portBox.Text = port.ToString(CultureInfo.InvariantCulture);
             }
             Port = port;
@@ -160,7 +157,7 @@ namespace ColorVisionUpdateRelay
             foreach (string ip in RelayOperations.GetLocalIPv4()) Log("  " + ip);
         }
 
-        private void RemoveRelay() => RelayOperations.DisableForward(Port, Log);
+        private void RemoveRelay() => RelayOperations.DisableForward(ServerHost, Port, Log);
 
         private void TestRelay()
         {

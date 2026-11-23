@@ -1,4 +1,8 @@
+using ColorVision.Database;
+using ColorVision.Engine.FlowProcessing;
 using ColorVision.Engine.FlowProcessing.Nodes;
+using ColorVision.Engine.Services.Devices.Spectrum;
+using ColorVision.Engine.Services.Devices.Spectrum.Configs;
 using ColorVision.Engine.Services.Devices.Spectrum.Local;
 using FlowEngineLib;
 using FlowEngineLib.Base;
@@ -7,11 +11,35 @@ using FlowEngineLib.Node.Spectrum;
 using FlowEngineLib.Start;
 using ST.Library.UI.NodeContainer;
 using ST.Library.UI.NodeEditor;
+using System.Reflection;
+using System.Runtime.CompilerServices;
 
 namespace ColorVision.UI.Tests;
 
 public sealed class LocalSpectrumFlowTests
 {
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void PersistedFlowCannotUseADifferentDatabasesDevice(bool replacementDevice)
+    {
+        MySqlConnectedEndpoint original = new(_ => false, () => throw new InvalidOperationException("No DB access is needed during binding."));
+        MySqlConnectedEndpoint replacement = new(_ => true, () => throw new InvalidOperationException("No DB access is needed during binding."));
+        var action = new CVStartCFC("spectrum-ownership") { PersistResults = true };
+        using var resources = action.RuntimeResources;
+        new FlowMeasurementBatch(action.SerialNumber, 12, "offline-test", 0, original).Bind(resources);
+
+        var device = (DeviceSpectrum)RuntimeHelpers.GetUninitializedObject(typeof(DeviceSpectrum));
+        device.Config = new ConfigSpectrum { Code = "same-spectrum" };
+        device.SysResourceModel = new() { Id = 18, Code = device.Config.Code };
+        device.ResultDatabaseEndpoint = replacementDevice ? replacement : original;
+        typeof(DeviceSpectrum).GetField("<SpectrumBackend>k__BackingField", BindingFlags.Instance | BindingFlags.NonPublic)!
+            .SetValue(device, new SpectrumBackendState(true));
+        using var execution = new LocalSpectrumFlowExecution(device, new LocalSpectrumParameters(), "GetData", true, 0, "node");
+        if (replacementDevice) Assert.Contains("结果库不一致", Assert.Throws<InvalidOperationException>(() => execution.Bind(action)).Message);
+        else execution.Bind(action);
+    }
+
     // Keep the historical SMU mA request contract separate from the native EQE A input.
     [Theory]
     [InlineData(false)]

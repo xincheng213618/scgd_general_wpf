@@ -1,16 +1,24 @@
 using System;
+using Newtonsoft.Json;
 
 namespace FlowEngineLib.Base;
 
 public class CVBaseDataFlowResp
 {
-	public int Code { get; set; }
+	private int code;
+	public int Code { get => code; set { code = value; HasExplicitCode = true; } }
+	[JsonIgnore]
+	internal bool HasExplicitCode { get; private set; }
 
 	public string Message { get; set; }
 
 	public string Version { get; set; }
 
 	public string ServiceName { get; set; }
+	[JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
+	public string DeviceCode { get; set; }
+	[JsonIgnore]
+	public string ReceivedTopic { get; set; }
 
 	public string DeviceNodeCode { get; set; }
 

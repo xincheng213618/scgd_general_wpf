@@ -5,7 +5,6 @@ status: "current"
 summary: "位图读取时借用原图内存与复制像素的区别、租约释放责任和缓存版本；原图修改须显式失效，复制HImage不延长租约。"
 aliases: ["图像帧租约", "图像内存所有权", "像素缓存失效", "借用图像", "复制图像", "SourceImageFrame", "ImageFrameStore", "ImageFrameLease", "HImageExtension", "ForHImage", "ToHImage", "NotifySourcePixelsChanged", "ImageDocument", "CommitSourcePixels"]
 code_paths: ["UI/ColorVision.Core/SourceImageFrame.cs", "UI/ColorVision.Core/HImage.cs", "UI/ColorVision.Core/HImageExtension.cs", "UI/ColorVision.ImageEditor/ImageView.xaml.cs", "UI/ColorVision.ImageEditor/Documents/ImageDocument.cs", "UI/ColorVision.ImageEditor/Presentation/ImageStreamPresentation.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/ImageFrameOwnerTests.cs","Test/ColorVision.UI.Tests/HImageExtensionCopyTests.cs", "Test/ColorVision.UI.Tests/ImageDocumentSourceSnapshotTests.cs"]
 related: ["ui.core", "ui.image-editor", "engine.native-integration", "algorithms.platform"]
 ---
 
@@ -71,8 +70,4 @@ related: ["ui.core", "ui.image-editor", "engine.native-integration", "algorithms
 
 ## 测试证据与缺口
 
-`ImageFrameOwnerTests` 覆盖最后租约释放、重复 Dispose、借用副本、revision 失效、候选竞争、并发取得/失效/关闭。多数用例使用合成指针和释放计数，不解引用真实 native 图像；另有小 WPF 位图切换及原地修改用例，测试主动调用 Invalidate，不证明修改字节会被自动监听。
-
-`ImageDocumentSourceSnapshotTests` 用于检查不创建 native 缓存的源状态捕获、仅观察源状态后裸换源的版本失效、保有旧 native 租约时的退役读取，以及失效回调中嵌套捕获和再次换源的绑定核对；算法私有输入与会话启动拒绝重绑也在同一测试入口验证。测试关联不表示已经运行或通过。
-
-`HImageExtensionCopyTests` 覆盖冻结/可变位图复制、紧密/带 padding 的行、Bgr32 四通道校验。`ToHImage` 用例释放生成的拥有型副本；以 HImage 为输入的转换/更新用例使用借用描述符并自行清理缓冲，不验证拥有型输入的全部成功/失败释放分支。任意格式的色彩正确性、Dispatcher 故障、完整 ImageView 交互及实际 native 运行仍不在这些测试的覆盖范围内。
+色彩正确性、Dispatcher 故障、完整 ImageView 交互及 native 运行仍需对应环境核对。

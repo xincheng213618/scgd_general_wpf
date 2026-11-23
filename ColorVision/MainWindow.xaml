@@ -96,9 +96,6 @@
                 </Setter.Value>
             </Setter>
         </Style>
-        <DataTemplate x:Key="DocumentHeaderTemplate">
-            <TextBlock Text="{Binding Title}" TextTrimming="CharacterEllipsis" />
-        </DataTemplate>
     </Window.Resources>
     <Grid x:Name="Root">
         <Grid.RowDefinitions>
@@ -145,12 +142,11 @@
             <Border x:Name="NativeCaptionButtonsPlaceholder" Grid.Column="1" Width="0" IsHitTestVisible="False" />
         </Grid>
 
-        <xcad:DockingManager x:Name="DockingManager1" Grid.Row="1" Margin="-2,-3,-2,-2" Padding="0" BorderThickness="0" Background="{DynamicResource GlobalBackground}" DocumentHeaderTemplate="{StaticResource DocumentHeaderTemplate}" AllowMixedOrientation="True">
+        <xcad:DockingManager x:Name="DockingManager1" Grid.Row="1" Margin="-2,-3,-2,-2" Padding="0" BorderThickness="0" Background="{DynamicResource GlobalBackground}" AllowMixedOrientation="True">
             <xcad:LayoutRoot x:Name="_layoutRoot">
                 <xcad:LayoutPanel Orientation="Horizontal">
                     <xcad:LayoutAnchorablePaneGroup x:Name="LeftPaneGroup" DockWidth="303">
                         <xcad:LayoutAnchorablePane x:Name="LeftPane">
-                            <xcad:LayoutAnchorable Title="{x:Static properties:Resources.SolutionExplorer}" CanAutoHide="True" CanClose="True" CanFloat="True" ContentId="ProjectPanel" />
                             <xcad:LayoutAnchorable Title="{x:Static properties:Resources.DeviceControl}" CanAutoHide="True" CanClose="True" CanFloat="True" ContentId="AcquirePanel">
                                 <ui:DisPlayControlPanel x:Name="ScrollViewerDisplay"
                                                        Background="{DynamicResource GlobalBackground}"

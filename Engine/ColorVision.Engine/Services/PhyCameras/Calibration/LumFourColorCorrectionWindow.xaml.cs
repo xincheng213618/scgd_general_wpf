@@ -4,6 +4,7 @@ using ColorVision.Common.MVVM;
 using ColorVision.Engine.Media;
 using ColorVision.Engine.FlowProcessing;
 using ColorVision.Themes;
+using ColorVision.UI;
 using ColorVision.UI.Authorizations;
 using Microsoft.Win32;
 using System;
@@ -99,12 +100,14 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
                 CheckFileExists = true,
                 Multiselect = false,
             };
-            if (dialog.ShowDialog(this) == true)
+            if (OpenFilePicker.ShowDialog(dialog, this, SourcePathBox.Text, SourceFileHistoryKey) is string selectedPath)
             {
-                SourcePathBox.Text = dialog.FileName;
+                SourcePathBox.Text = selectedPath;
                 ResetResult();
             }
         }
+
+        internal const string SourceFileHistoryKey = "CameraColorCalibrationSource";
 
         private void CorrectionMode_Checked(object sender, RoutedEventArgs e)
         {

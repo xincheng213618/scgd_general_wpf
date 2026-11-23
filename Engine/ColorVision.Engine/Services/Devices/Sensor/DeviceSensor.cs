@@ -36,10 +36,11 @@ namespace ColorVision.Engine.Services.Devices.Sensor
                 EditSensor window = new(this);
                 window.Owner = Application.Current.GetActiveWindow();
                 window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
-                if (window.ShowDialog() == true)
+                if (window.ShowDialog() == true && TryAdmitConfigurationEdit(window.OpeningConfigurationTarget, window.Owner))
                 {
                     if (window.Draft.DisplaySettingsChanged) ConfigHandler.GetInstance().Save<DisplayConfigManager>();
-                    if (window.Draft.ServiceSettingsChanged) Save();
+                    if (window.Draft.ServiceSettingsChanged) TryConfigurationAction(window.Owner,
+                        () => SaveEditedConfiguration(window.OpeningConfigurationTarget, null));
                 }
             });
 

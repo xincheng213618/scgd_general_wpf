@@ -26,6 +26,8 @@ import type {
   FeedbackInboxResponse,
   FeedbackStatus,
   FeedbackStatusUpdate,
+  HostBenchmarkDeviceHistory,
+  HostBenchmarkLeaderboard,
   PublishIntegrityReport,
   PerformanceSummary,
   IndexRefreshResult,
@@ -101,6 +103,14 @@ export function getFeedbackSummary(signal?: AbortSignal) {
 
 export function getPerformanceSummary(signal?: AbortSignal) {
   return getJson<PerformanceSummary>('/api/admin/perf/summary', signal)
+}
+
+export function getHostBenchmarkLeaderboard(signal?: AbortSignal) {
+  return getJson<HostBenchmarkLeaderboard>('/api/admin/benchmarks/leaderboard', signal)
+}
+
+export function getHostBenchmarkDeviceHistory(deviceId: string, signal?: AbortSignal) {
+  return getJson<HostBenchmarkDeviceHistory>(`/api/admin/benchmarks/devices/${encodeURIComponent(deviceId)}`, signal)
 }
 
 export function getOperationsOverview(signal?: AbortSignal, params: { hostLimit?: number; activityLimit?: number; hostId?: string } = {}) {

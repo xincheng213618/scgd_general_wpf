@@ -1,85 +1,93 @@
 using System.Globalization;
+using System.Runtime.CompilerServices;
+using System.Text;
 using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Threading;
 
 namespace ColorVision.Solution.Terminal
 {
-    /// <summary>
-    /// High-performance custom terminal view using OnRender for colored text rendering.
-    /// Supports ANSI colors, cursor display, URL detection with Ctrl+Click, text selection.
-    /// Uses MeasureOverride for proper ScrollViewer integration.
-    /// </summary>
-    internal partial class TerminalView : FrameworkElement
+    internal sealed partial class TerminalView : FrameworkElement, IScrollInfo
     {
-        // Rendering constants
-        private const double DefaultFontSize = 14;
-        private static readonly Typeface DefaultTypeface = new(new FontFamily("Cascadia Mono, Consolas, Courier New"), FontStyles.Normal, FontWeights.Normal, FontStretches.Normal);
-        private static readonly Typeface BoldTypeface = new(new FontFamily("Cascadia Mono, Consolas, Courier New"), FontStyles.Normal, FontWeights.Bold, FontStretches.Normal);
+        internal const double FontSize = 14;
 
-        private static readonly Color FallbackDefaultForegroundColor = SystemColors.WindowTextColor;
-        private static readonly Color FallbackDefaultBackgroundColor = SystemColors.WindowColor;
-        private static readonly Brush FallbackDefaultForegroundBrush = CreateFrozenBrush(FallbackDefaultForegroundColor);
-        private static readonly Brush FallbackDefaultBackgroundBrush = CreateFrozenBrush(FallbackDefaultBackgroundColor);
-        private static readonly Brush FallbackCursorBrush = SystemColors.ControlTextBrush;
-        private static readonly Brush FallbackSelectionBrush = SystemColors.HighlightBrush;
-        private static readonly Brush FallbackUrlBrush = SystemColors.HotTrackBrush;
+        private static readonly FontFamily TerminalFont = new("Cascadia Mono, Consolas, Courier New");
+        private static readonly Typeface[] Typefaces =
+        [
+            new(TerminalFont, FontStyles.Normal, FontWeights.Normal, FontStretches.Normal),
+            new(TerminalFont, FontStyles.Normal, FontWeights.Bold, FontStretches.Normal),
+            new(TerminalFont, FontStyles.Italic, FontWeights.Normal, FontStretches.Normal),
+            new(TerminalFont, FontStyles.Italic, FontWeights.Bold, FontStretches.Normal)
+        ];
 
-        // State
-        private List<TerminalLine> _lines = new();
+        private static readonly Color[] LightAnsiForeground = MakePalette(
+            0x20242B, 0xA12622, 0x21633E, 0x735000, 0x17519D, 0x85257E, 0x006272, 0x4D545C,
+            0x616B76, 0xB4212C, 0x196C42, 0x795300, 0x075CB4, 0x933387, 0x006A79, 0x303640);
+
+        private static readonly Color[] DarkAnsiForeground = MakePalette(
+            0x838B97, 0xF07070, 0x53CF94, 0xE3C66E, 0x75AAFF, 0xD88DD3, 0x61C8DD, 0xCDD3DA,
+            0x9BA4B0, 0xFF9B9B, 0x83EBB5, 0xFFE785, 0xA0C6FF, 0xF1A8EB, 0x97E3F1, 0xF3F5F7);
+
+        private static readonly GlyphTypeface?[] GlyphTypefaces = Typefaces.Select(typeface =>
+        {
+            typeface.TryGetGlyphTypeface(out var glyphTypeface);
+            return glyphTypeface;
+        }).ToArray();
+
+        private static readonly int[]?[] AsciiGlyphMap = GlyphTypefaces.Select(CreateAsciiGlyphMap).ToArray();
+
+        private static readonly Regex UrlRegex = CreateUrlRegex();
+
+        private readonly TerminalHistoryLayout _lines = new();
+        private IReadOnlyList<TerminalLine> _sourceLines = Array.Empty<TerminalLine>();
+        private ConditionalWeakTable<TerminalLine, DrawingGroup> _drawings = new();
+        private readonly ConditionalWeakTable<TerminalLine, Link[]> _links = new();
+        private readonly Dictionary<Color, SolidColorBrush> _brushes = new();
+        private (double Y, TranslateTransform? Transform)[] _rowTransforms = [];
+        private double _lastRenderOffset;
         private int _cursorLine;
         private int _cursorCol;
-        private double _charWidth;
-        private double _lineHeight;
-
-        // URL detection
-        private static readonly Regex UrlRegex = CreateUrlRegex();
-        private readonly List<UrlHitRegion> _urlRegions = new();
-        private UrlHitRegion? _hoveredUrl;
-
-        // Selection
-        private bool _isSelecting;
-        private int _selStartLine, _selStartCol;
-        private int _selEndLine, _selEndCol;
-        private bool _hasSelection;
-        private Brush? _defaultBackgroundBrushCache;
-        private Color _defaultBackgroundBrushCacheColor;
-        private Pen? _urlPenCache;
-        private Brush? _urlPenBrushSource;
-
-        public event Action<string>? UrlClicked;
+        private bool _cursorVisible;
+        private bool _inputFocused;
+        private bool _alternateScreen;
+        private int _scrollbackCount;
+        private int _columns;
+        private long _discardedLines;
+        private double _pixelsPerDip;
+        private bool _followingOutput = true;
+        private (int Line, int Column) _selectionStart;
+        private (int Line, int Column) _selectionEnd;
+        private bool _hasSelectionAnchor;
+        private bool _selecting;
+        private Point _selectionPointer;
+        private readonly DispatcherTimer _selectionScroll = new(DispatcherPriority.Input)
+        {
+            Interval = TimeSpan.FromMilliseconds(40)
+        };
 
         public static readonly DependencyProperty DefaultBackgroundColorProperty = DependencyProperty.Register(
-            nameof(DefaultBackgroundColor),
-            typeof(Color),
-            typeof(TerminalView),
-            new FrameworkPropertyMetadata(FallbackDefaultBackgroundColor, FrameworkPropertyMetadataOptions.AffectsRender));
+            nameof(DefaultBackgroundColor), typeof(Color), typeof(TerminalView),
+            new FrameworkPropertyMetadata(SystemColors.WindowColor, FrameworkPropertyMetadataOptions.AffectsRender, OnDrawingResourceChanged));
 
         public static readonly DependencyProperty DefaultForegroundColorProperty = DependencyProperty.Register(
-            nameof(DefaultForegroundColor),
-            typeof(Color),
-            typeof(TerminalView),
-            new FrameworkPropertyMetadata(FallbackDefaultForegroundColor, FrameworkPropertyMetadataOptions.AffectsRender));
+            nameof(DefaultForegroundColor), typeof(Color), typeof(TerminalView),
+            new FrameworkPropertyMetadata(SystemColors.WindowTextColor, FrameworkPropertyMetadataOptions.AffectsRender, OnDrawingResourceChanged));
 
         public static readonly DependencyProperty CursorBrushProperty = DependencyProperty.Register(
-            nameof(CursorBrush),
-            typeof(Brush),
-            typeof(TerminalView),
-            new FrameworkPropertyMetadata(FallbackCursorBrush, FrameworkPropertyMetadataOptions.AffectsRender));
+            nameof(CursorBrush), typeof(Brush), typeof(TerminalView),
+            new FrameworkPropertyMetadata(SystemColors.ControlTextBrush, FrameworkPropertyMetadataOptions.AffectsRender));
 
         public static readonly DependencyProperty SelectionBrushProperty = DependencyProperty.Register(
-            nameof(SelectionBrush),
-            typeof(Brush),
-            typeof(TerminalView),
-            new FrameworkPropertyMetadata(FallbackSelectionBrush, FrameworkPropertyMetadataOptions.AffectsRender));
+            nameof(SelectionBrush), typeof(Brush), typeof(TerminalView),
+            new FrameworkPropertyMetadata(SystemColors.HighlightBrush, FrameworkPropertyMetadataOptions.AffectsRender));
 
         public static readonly DependencyProperty UrlBrushProperty = DependencyProperty.Register(
-            nameof(UrlBrush),
-            typeof(Brush),
-            typeof(TerminalView),
-            new FrameworkPropertyMetadata(FallbackUrlBrush, FrameworkPropertyMetadataOptions.AffectsRender));
+            nameof(UrlBrush), typeof(Brush), typeof(TerminalView),
+            new FrameworkPropertyMetadata(SystemColors.HotTrackBrush, FrameworkPropertyMetadataOptions.AffectsRender));
 
         public Color DefaultBackgroundColor
         {
@@ -93,417 +101,513 @@ namespace ColorVision.Solution.Terminal
             set => SetValue(DefaultForegroundColorProperty, value);
         }
 
-        public Brush? CursorBrush
+        public Brush CursorBrush
         {
-            get => (Brush?)GetValue(CursorBrushProperty);
+            get => (Brush)GetValue(CursorBrushProperty);
             set => SetValue(CursorBrushProperty, value);
         }
 
-        public Brush? SelectionBrush
+        public Brush SelectionBrush
         {
-            get => (Brush?)GetValue(SelectionBrushProperty);
+            get => (Brush)GetValue(SelectionBrushProperty);
             set => SetValue(SelectionBrushProperty, value);
         }
 
-        public Brush? UrlBrush
+        public Brush UrlBrush
         {
-            get => (Brush?)GetValue(UrlBrushProperty);
+            get => (Brush)GetValue(UrlBrushProperty);
             set => SetValue(UrlBrushProperty, value);
         }
 
-        public TerminalView()
-        {
-            Focusable = true;
-            FocusVisualStyle = null;
-            Cursor = Cursors.IBeam;
-            ClipToBounds = true;
-
-            var ft = new FormattedText("M", CultureInfo.CurrentCulture,
-                FlowDirection.LeftToRight, DefaultTypeface, DefaultFontSize, FallbackDefaultForegroundBrush, 1.0);
-            _charWidth = ft.WidthIncludingTrailingWhitespace;
-            _lineHeight = ft.Height;
-        }
-
-        public double CharWidth => _charWidth;
-        public double LineHeight => _lineHeight;
+        public double CharWidth { get; private set; }
+        public double LineHeight { get; private set; }
         public int CursorLine => _cursorLine;
         public int CursorCol => _cursorCol;
-        public double CursorY => _cursorLine * _lineHeight;
+        public double CursorY => _cursorLine * LineHeight;
+        public bool HasSelection => _selectionStart != _selectionEnd;
 
-        private static SolidColorBrush CreateFrozenBrush(Color color)
+        public event Action<string>? UrlClicked;
+        public event Action? FontMetricsChanged;
+        public event Action? InputRequested;
+
+        public TerminalView()
         {
-            var brush = new SolidColorBrush(color);
-            brush.Freeze();
-            return brush;
+            Cursor = Cursors.IBeam;
+            ClipToBounds = true;
+            UpdateFontMetrics(1);
+            _selectionScroll.Tick += SelectionScroll_Tick;
         }
 
-        private Brush GetDefaultBackgroundBrush()
+        public void SetInputFocus(bool focused)
         {
-            var color = DefaultBackgroundColor;
-            if (_defaultBackgroundBrushCache != null && _defaultBackgroundBrushCacheColor == color)
-                return _defaultBackgroundBrushCache;
-
-            _defaultBackgroundBrushCacheColor = color;
-            _defaultBackgroundBrushCache = color == FallbackDefaultBackgroundColor
-                ? FallbackDefaultBackgroundBrush
-                : CreateFrozenBrush(color);
-            return _defaultBackgroundBrushCache;
-        }
-
-        private Brush GetCursorRenderBrush() => CursorBrush ?? FallbackCursorBrush;
-
-        private Brush GetSelectionRenderBrush() => SelectionBrush ?? FallbackSelectionBrush;
-
-        private Pen GetUrlPen()
-        {
-            var brush = UrlBrush ?? FallbackUrlBrush;
-            if (_urlPenCache != null && ReferenceEquals(_urlPenBrushSource, brush))
-                return _urlPenCache;
-
-            _urlPenBrushSource = brush;
-            _urlPenCache = new Pen(brush, 1);
-            return _urlPenCache;
-        }
-
-        /// <summary>
-        /// Update the view with new terminal data. Triggers re-measure and re-render.
-        /// </summary>
-        public void UpdateContent(List<TerminalLine> lines, int cursorLine, int cursorCol)
-        {
-            _lines = lines;
-            _cursorLine = cursorLine;
-            _cursorCol = cursorCol;
-            InvalidateMeasure();
+            _inputFocused = focused;
             InvalidateVisual();
+        }
+
+        public void UpdateContent(IReadOnlyList<TerminalLine> lines, int cursorLine, int cursorCol,
+            bool cursorVisible, bool alternateScreen, long discardedLines, int scrollbackCount, int columns)
+        {
+            double retainedOffset = VerticalOffset;
+            if (_alternateScreen != alternateScreen)
+                ResetViewport();
+
+            int evicted = (int)Math.Clamp(discardedLines - _discardedLines, 0, int.MaxValue);
+            bool layoutChanged = evicted != 0 || scrollbackCount != _scrollbackCount || columns != _columns;
+            int topLine = (int)(VerticalOffset / LineHeight);
+            var anchor = !_followingOutput && layoutChanged ? _lines.GetSourcePosition(topLine) : default;
+            var start = layoutChanged && _hasSelectionAnchor ? _lines.GetSourcePosition(_selectionStart.Line, _selectionStart.Column) : default;
+            var end = layoutChanged && _hasSelectionAnchor ? _lines.GetSourcePosition(_selectionEnd.Line, _selectionEnd.Column) : default;
+            if (columns != _columns && _hasSelectionAnchor && (start.Row >= _scrollbackCount || end.Row >= _scrollbackCount))
+                ClearSelection();
+
+            _lines.Update(lines, scrollbackCount, columns, discardedLines);
+            _sourceLines = lines;
+            if (!_followingOutput && layoutChanged)
+            {
+                int newTop = _lines.GetDisplayPosition(Math.Max(0, anchor.Row - evicted), anchor.Row < evicted ? 0 : anchor.Column).Line;
+                retainedOffset = newTop * LineHeight + (VerticalOffset - topLine * LineHeight);
+            }
+            if (layoutChanged && _hasSelectionAnchor)
+            {
+                _selectionStart = RelocateSelection(start, evicted);
+                _selectionEnd = RelocateSelection(end, evicted);
+            }
+            (_cursorLine, _cursorCol) = _lines.GetDisplayPosition(cursorLine, cursorCol);
+            _cursorVisible = cursorVisible;
+            _alternateScreen = alternateScreen;
+            _columns = columns;
+            _scrollbackCount = scrollbackCount;
+            _discardedLines = discardedLines;
+            UpdateScrollExtent(ViewportWidth, ViewportHeight, retainedOffset);
+            InvalidateVisual();
+        }
+
+        private (int Line, int Column) RelocateSelection((int Row, int Column) position, int evicted) =>
+            position.Row < evicted ? (0, 0) : _lines.GetDisplayPosition(position.Row - evicted, position.Column);
+
+        public void ResetViewport()
+        {
+            ClearSelection();
+            _followingOutput = true;
+            _discardedLines = 0;
+        }
+
+        public void FollowOutput()
+        {
+            ClearSelection();
+            _followingOutput = true;
+            SetOffset(MaximumOffset);
         }
 
         public string GetSelectedText()
         {
-            if (!_hasSelection) return string.Empty;
+            if (!HasSelection)
+                return string.Empty;
 
-            int startLine = _selStartLine, startCol = _selStartCol;
-            int endLine = _selEndLine, endCol = _selEndCol;
-
-            if (startLine > endLine || (startLine == endLine && startCol > endCol))
+            var (start, end) = SelectionRange();
+            var text = new StringBuilder();
+            for (int index = start.Line; index <= end.Line && index < _lines.Count; index++)
             {
-                (startLine, endLine) = (endLine, startLine);
-                (startCol, endCol) = (endCol, startCol);
+                var line = _lines[index];
+                int from = index == start.Line ? start.Column : 0;
+                int to = index == end.Line ? end.Column : line.Length;
+                line.AppendText(text, from, to);
+                if (index < end.Line && !line.IsWrapped)
+                    text.AppendLine();
             }
-
-            var sb = new System.Text.StringBuilder();
-            for (int line = startLine; line <= endLine && line < _lines.Count; line++)
-            {
-                var tl = _lines[line];
-                int from = (line == startLine) ? startCol : 0;
-                int to = (line == endLine) ? endCol : tl.Length;
-                from = Math.Max(0, Math.Min(from, tl.Length));
-                to = Math.Max(from, Math.Min(to, tl.Length));
-
-                for (int c = from; c < to; c++)
-                    sb.Append(tl.Cells[c].Char);
-
-                if (line < endLine)
-                    sb.AppendLine();
-            }
-            return sb.ToString();
+            return text.ToString();
         }
 
-        #region Layout & Rendering
+        protected override void OnDpiChanged(DpiScale oldDpi, DpiScale newDpi)
+        {
+            base.OnDpiChanged(oldDpi, newDpi);
+            UpdateFontMetrics(newDpi.PixelsPerDip);
+            InvalidateMeasure();
+            FontMetricsChanged?.Invoke();
+        }
 
-        /// <summary>
-        /// Report full content height so ScrollViewer knows the scrollable extent.
-        /// </summary>
+        private void UpdateFontMetrics(double pixelsPerDip)
+        {
+            double topLine = LineHeight > 0 ? VerticalOffset / LineHeight : 0;
+            _pixelsPerDip = pixelsPerDip;
+            var text = FormatText("M", Typefaces[0], Brushes.Black);
+            CharWidth = text.WidthIncludingTrailingWhitespace;
+            LineHeight = Math.Ceiling((text.Height + 1) * pixelsPerDip) / pixelsPerDip;
+            VerticalOffset = topLine * LineHeight;
+            _drawings = new();
+        }
+
+        private static void OnDrawingResourceChanged(DependencyObject sender, DependencyPropertyChangedEventArgs e)
+        {
+            var view = (TerminalView)sender;
+            view._drawings = new();
+            view._brushes.Clear();
+        }
+
         protected override Size MeasureOverride(Size availableSize)
         {
-            double width = double.IsInfinity(availableSize.Width) ? 800 : availableSize.Width;
-            double height = Math.Max(_lines.Count * _lineHeight, _lineHeight);
+            double width = double.IsFinite(availableSize.Width) ? availableSize.Width : 0;
+            double height = double.IsFinite(availableSize.Height) ? availableSize.Height : 0;
+            UpdateScrollExtent(width, height);
             return new Size(width, height);
         }
 
-        /// <summary>
-        /// Get the parent ScrollViewer's viewport info for determining visible lines.
-        /// </summary>
-        private (double scrollOffset, double viewportHeight) GetViewportInfo()
+        protected override Size ArrangeOverride(Size finalSize)
         {
-            DependencyObject parent = VisualTreeHelper.GetParent(this);
-            while (parent != null)
-            {
-                if (parent is ScrollViewer sv)
-                    return (sv.VerticalOffset, sv.ViewportHeight);
-                parent = VisualTreeHelper.GetParent(parent);
-            }
-            return (0, RenderSize.Height);
+            UpdateScrollExtent(finalSize.Width, finalSize.Height);
+            return finalSize;
         }
 
         protected override void OnRender(DrawingContext dc)
         {
-            var (scrollOffset, viewportHeight) = GetViewportInfo();
-            if (viewportHeight <= 0) viewportHeight = RenderSize.Height;
-            var defaultBackgroundBrush = GetDefaultBackgroundBrush();
-            var urlPen = GetUrlPen();
+            dc.DrawRectangle(GetBrush(DefaultBackgroundColor), null, new Rect(RenderSize));
+            double offset = VerticalOffset;
+            int first = Math.Max(0, (int)(offset / LineHeight));
+            int end = Math.Min(_lines.Count, (int)Math.Ceiling((offset + RenderSize.Height) / LineHeight));
+            // Moving by fractional rows usually changes every translation.
+            bool reuseTranslations = offset == _lastRenderOffset || offset == Math.Round(offset / LineHeight) * LineHeight;
+            _lastRenderOffset = offset;
+            int visibleRows = end - first;
+            if (reuseTranslations && visibleRows > _rowTransforms.Length)
+                Array.Resize(ref _rowTransforms, Math.Max(visibleRows, _rowTransforms.Length * 2));
 
-            // Background for visible area (+ buffer to avoid edge flicker)
-            double bgTop = Math.Max(0, scrollOffset - _lineHeight);
-            double bgBottom = scrollOffset + viewportHeight + _lineHeight;
-            dc.DrawRectangle(defaultBackgroundBrush, null, new Rect(0, bgTop, RenderSize.Width, bgBottom - bgTop));
-
-            if (_lines.Count == 0) return;
-
-            // Only render visible lines for performance
-            int firstVisible = Math.Max(0, (int)(scrollOffset / _lineHeight) - 1);
-            int lastVisible = Math.Min(_lines.Count - 1, (int)((scrollOffset + viewportHeight) / _lineHeight) + 2);
-
-            double pixelsPerDip = VisualTreeHelper.GetDpi(this).PixelsPerDip;
-
-            _urlRegions.Clear();
-
-            for (int lineIdx = firstVisible; lineIdx <= lastVisible; lineIdx++)
+            for (int index = first; index < end; index++)
             {
-                double y = lineIdx * _lineHeight; // absolute local coordinates
-                var line = _lines[lineIdx];
-
-                string lineText = line.Text;
-                var urls = UrlRegex.Matches(lineText);
-
-                DrawLineBackgrounds(dc, line, y);
-
-                if (_hasSelection)
-                    DrawSelectionHighlight(dc, lineIdx, y, line.Length);
-
-                DrawLineText(dc, line, y, pixelsPerDip);
-
-                // URL underlines
-                foreach (Match m in urls)
+                var line = _lines[index];
+                double y = index * LineHeight - offset;
+                dc.PushTransform(reuseTranslations ? GetRowTranslation(index - first, y) : new TranslateTransform(0, y));
+                dc.DrawDrawing(_drawings.GetOrAdd(line, static (row, view) => view.RenderLine(row), this));
+                var (links, sourceColumn) = GetSourceLinks(index);
+                foreach (var link in links)
                 {
-                    double ux = m.Index * _charWidth;
-                    double uw = m.Length * _charWidth;
-                    double underlineY = y + _lineHeight - 2;
-                    dc.DrawLine(urlPen, new Point(ux, underlineY), new Point(ux + uw, underlineY));
-
-                    _urlRegions.Add(new UrlHitRegion
-                    {
-                        Url = m.Value,
-                        Rect = new Rect(ux, y, uw, _lineHeight),
-                        Line = lineIdx,
-                        StartCol = m.Index,
-                        EndCol = m.Index + m.Length
-                    });
+                    int start = Math.Max(0, link.Start - sourceColumn);
+                    int linkEnd = Math.Min(line.Length, link.End - sourceColumn);
+                    if (linkEnd > start)
+                        DrawUnderline(dc, UrlBrush, start, linkEnd);
                 }
-
-                // Cursor block
-                if (lineIdx == _cursorLine)
+                if (HasSelection)
+                    DrawSelection(dc, index, line.Length);
+                if (_cursorVisible && index == _cursorLine)
                 {
-                    double cursorX = _cursorCol * _charWidth;
-                    dc.DrawRectangle(GetCursorRenderBrush(), null, new Rect(cursorX, y, Math.Max(_charWidth, 2), _lineHeight));
+                    double x = _cursorCol * CharWidth;
+                    var cursor = _inputFocused
+                        ? new Rect(x, 1, 2 / _pixelsPerDip, LineHeight - 2)
+                        : new Rect(x, LineHeight - 3, CharWidth, 1 / _pixelsPerDip);
+                    dc.DrawRectangle(CursorBrush, null, cursor);
                 }
+                dc.Pop();
             }
         }
 
-        private void DrawLineBackgrounds(DrawingContext dc, TerminalLine line, double y)
+        private TranslateTransform GetRowTranslation(int row, double y)
         {
-            int col = 0;
-            while (col < line.Length)
+            ref var cached = ref _rowTransforms[row];
+            if (cached.Transform == null || cached.Y != y)
             {
-                var cell = line.Cells[col];
-                Color bg = GetEffectiveBackgroundColor(cell);
-                if (bg == DefaultBackgroundColor)
+                var translation = new TranslateTransform(0, y);
+                translation.Freeze();
+                cached = (y, translation);
+            }
+            return cached.Transform;
+        }
+
+        private DrawingGroup RenderLine(TerminalLine line)
+        {
+            var drawing = new DrawingGroup();
+            using var dc = drawing.Open();
+
+            var cells = line.Cells;
+            for (int start = 0; start < line.Length;)
+            {
+                var style = cells[start];
+                int end = start + 1;
+                while (end < line.Length && (cells[end].IsContinuation ||
+                    (cells[end].Fg == style.Fg && cells[end].Bg == style.Bg && cells[end].Flags == style.Flags)))
+                    end++;
+
+                Color background = GetColor(style.Bg, DefaultBackgroundColor);
+                Color foreground = GetForeground(style.Fg, background);
+                if (style.IsInverse)
+                    (foreground, background) = (background, foreground);
+                if (style.IsDim)
+                    foreground = Blend(foreground, background);
+
+                if (background != DefaultBackgroundColor)
+                    dc.DrawRectangle(GetBrush(background), null, new Rect(start * CharWidth, 0, (end - start) * CharWidth, LineHeight));
+
+                int font = (style.IsBold ? 1 : 0) | (style.IsItalic ? 2 : 0);
+                Brush brush = GetBrush(foreground);
+                DrawTextRun(dc, cells[start..end], start, font, brush);
+                if (style.IsUnderline)
+                    DrawUnderline(dc, brush, start, end);
+                start = end;
+            }
+
+            dc.Close();
+            if (drawing.CanFreeze)
+                drawing.Freeze();
+
+            return drawing;
+        }
+
+        private void DrawTextRun(DrawingContext dc, ReadOnlySpan<TerminalCell> cells, int start, int font, Brush brush)
+        {
+            var glyphTypeface = GlyphTypefaces[font];
+            var glyphIndices = AsciiGlyphMap[font];
+            int position = 0;
+            while (position < cells.Length)
+            {
+                var cell = cells[position];
+                if (cell.IsContinuation || (cell.Char == ' ' && cell.Glyph == null))
                 {
-                    col++;
+                    position++;
                     continue;
                 }
 
-                int start = col;
-                while (col < line.Length)
+                if (glyphTypeface != null && glyphIndices != null && IsSimpleCell(cell) && glyphIndices[cell.Char] >= 0)
                 {
-                    var c = line.Cells[col];
-                    Color cbg = GetEffectiveBackgroundColor(c);
-                    if (cbg != bg) break;
-                    col++;
+                    int end = position + 1;
+                    while (end < cells.Length && IsSimpleCell(cells[end]) && glyphIndices[cells[end].Char] >= 0)
+                        end++;
+
+                    var indices = new ushort[end - position];
+                    var advances = new double[indices.Length];
+                    for (int i = 0; i < indices.Length; i++)
+                    {
+                        indices[i] = (ushort)glyphIndices[cells[position + i].Char];
+                        advances[i] = CharWidth;
+                    }
+                    var baseline = new Point((start + position) * CharWidth, glyphTypeface.Baseline * FontSize);
+                    var glyphs = new GlyphRun(glyphTypeface, 0, false, FontSize, (float)_pixelsPerDip, indices, baseline,
+                        advances, null, null, null, null, null, null);
+                    dc.DrawGlyphRun(brush, glyphs);
+                    position = end;
+                    continue;
                 }
 
-                var brush = new SolidColorBrush(bg);
-                brush.Freeze();
-                dc.DrawRectangle(brush, null, new Rect(start * _charWidth, y, (col - start) * _charWidth, _lineHeight));
+                var formatted = FormatText(cell.Glyph ?? cell.Char.ToString(), Typefaces[font], brush);
+                double x = (start + position) * CharWidth;
+                double width = Math.Max(1, cell.DisplayWidth) * CharWidth;
+                bool clip = formatted.WidthIncludingTrailingWhitespace > width;
+                if (clip)
+                    dc.PushClip(new RectangleGeometry(new Rect(x, 0, width, LineHeight)));
+                dc.DrawText(formatted, new Point(x, 0));
+                if (clip)
+                    dc.Pop();
+                position++;
             }
         }
 
-        private void DrawLineText(DrawingContext dc, TerminalLine line, double y, double pixelsPerDip)
+        private static int[]? CreateAsciiGlyphMap(GlyphTypeface? typeface)
         {
-            int col = 0;
-            while (col < line.Length)
+            if (typeface == null) return null;
+            var glyphs = typeface.CharacterToGlyphMap;
+            var indices = new int['~' + 1];
+            for (char character = ' '; character <= '~'; character++)
+                indices[character] = glyphs.TryGetValue(character, out ushort index) ? index : -1;
+            return indices;
+        }
+
+        private static bool IsSimpleCell(TerminalCell cell) => cell.Glyph == null && cell.Char is >= ' ' and <= '~';
+
+        private FormattedText FormatText(string text, Typeface typeface, Brush brush) =>
+            new(text, CultureInfo.InvariantCulture, FlowDirection.LeftToRight, typeface, FontSize, brush, _pixelsPerDip);
+
+        private void DrawUnderline(DrawingContext dc, Brush brush, int start, int end)
+        {
+            double thickness = 1 / _pixelsPerDip;
+            dc.DrawRectangle(brush, null, new Rect(start * CharWidth, LineHeight - 2 * thickness, (end - start) * CharWidth, thickness));
+        }
+
+        private Color GetForeground(int code, Color background)
+        {
+            bool darkBackground = (0.2126 * background.R + 0.7152 * background.G + 0.0722 * background.B) < 128;
+            if (code is >= 1 and <= 16)
+                return (darkBackground ? DarkAnsiForeground : LightAnsiForeground)[code - 1];
+
+            return GetColor(code, DefaultForegroundColor);
+        }
+
+        private static Color GetColor(int code, Color fallback)
+        {
+            if (code == 0)
+                return fallback;
+            if (code >= 0x1000000)
+                return Rgb(code);
+            var color = TerminalScreenBuffer.Get256Color(code - 1);
+            return Color.FromRgb(color.R, color.G, color.B);
+        }
+
+        private SolidColorBrush GetBrush(Color color)
+        {
+            if (_brushes.TryGetValue(color, out var brush))
+                return brush;
+
+            brush = new SolidColorBrush(color);
+            brush.Freeze();
+            if (_brushes.Count >= 256)
+                _brushes.Clear();
+            _brushes.Add(color, brush);
+            return brush;
+        }
+
+        private static Color[] MakePalette(params int[] colors) => Array.ConvertAll(colors, Rgb);
+        private static Color Rgb(int rgb) => Color.FromRgb((byte)(rgb >> 16), (byte)(rgb >> 8), (byte)rgb);
+        private static Color Blend(Color a, Color b) => Color.FromRgb((byte)((a.R + b.R) / 2), (byte)((a.G + b.G) / 2), (byte)((a.B + b.B) / 2));
+
+        private void DrawSelection(DrawingContext dc, int lineIndex, int lineLength)
+        {
+            var (start, end) = SelectionRange();
+            if (lineIndex < start.Line || lineIndex > end.Line)
+                return;
+
+            int from = lineIndex == start.Line ? start.Column : 0;
+            int to = lineIndex == end.Line ? end.Column : Math.Max(lineLength, 1);
+            if (to > from)
+                dc.DrawRectangle(SelectionBrush, null, new Rect(from * CharWidth, 0, (to - from) * CharWidth, LineHeight));
+        }
+
+        private ((int Line, int Column) Start, (int Line, int Column) End) SelectionRange() =>
+            _selectionStart.CompareTo(_selectionEnd) <= 0 ? (_selectionStart, _selectionEnd) : (_selectionEnd, _selectionStart);
+
+        private void ClearSelection()
+        {
+            bool hadSelection = HasSelection;
+            _selectionStart = _selectionEnd = default;
+            _hasSelectionAnchor = false;
+            if (_selecting)
             {
-                var cell = line.Cells[col];
-                Color fg = GetEffectiveForegroundColor(cell);
-                byte flags = cell.Flags;
-                bool isBold = cell.IsBold;
-
-                int start = col;
-                var runChars = new System.Text.StringBuilder();
-                while (col < line.Length)
-                {
-                    var c = line.Cells[col];
-                    Color cfTmp = GetEffectiveForegroundColor(c);
-                    if (cfTmp != fg || c.Flags != flags) break;
-                    runChars.Append(c.Char);
-                    col++;
-                }
-
-                var brush = new SolidColorBrush(fg);
-                brush.Freeze();
-                var typeface = isBold ? BoldTypeface : DefaultTypeface;
-
-                var ft = new FormattedText(runChars.ToString(), CultureInfo.CurrentCulture,
-                    FlowDirection.LeftToRight, typeface, DefaultFontSize, brush, pixelsPerDip);
-
-                dc.DrawText(ft, new Point(start * _charWidth, y));
+                EndSelectionDrag();
+                ReleaseMouseCapture();
             }
+            if (hadSelection)
+                InvalidateVisual();
         }
 
-        private void DrawSelectionHighlight(DrawingContext dc, int lineIdx, double y, int lineLength)
+        private (int Line, int Column) HitTestCell(Point point, bool nearestEdge)
         {
-            int startLine = _selStartLine, startCol = _selStartCol;
-            int endLine = _selEndLine, endCol = _selEndCol;
+            if (_lines.Count == 0)
+                return default;
 
-            if (startLine > endLine || (startLine == endLine && startCol > endCol))
+            int index = Math.Clamp((int)Math.Floor((point.Y + VerticalOffset) / LineHeight), 0, _lines.Count - 1);
+            var line = _lines[index];
+            double column = Math.Max(0, point.X / CharWidth);
+            int cell = Math.Min((int)column, line.Length);
+            if (cell == line.Length)
+                return (index, cell);
+
+            while (cell > 0 && line.Cells[cell].IsContinuation)
+                cell--;
+            int width = Math.Max(1, line.Cells[cell].DisplayWidth);
+            return (index, nearestEdge && column - cell >= width / 2.0 ? Math.Min(line.Length, cell + width) : cell);
+        }
+
+        internal void SelectWordAt(Point point)
+        {
+            var (index, column) = HitTestCell(point, nearestEdge: false);
+            _hasSelectionAnchor = true;
+            _selectionStart = _selectionEnd = (index, column);
+            if (_lines.Count == 0 || column == _lines[index].Length)
             {
-                (startLine, endLine) = (endLine, startLine);
-                (startCol, endCol) = (endCol, startCol);
+                InvalidateVisual();
+                return;
             }
 
-            if (lineIdx < startLine || lineIdx > endLine) return;
-
-            int from = (lineIdx == startLine) ? startCol : 0;
-            int to = (lineIdx == endLine) ? endCol : Math.Max(lineLength, 1);
-
-            double x = from * _charWidth;
-            double w = (to - from) * _charWidth;
-            if (w <= 0) return;
-
-            dc.DrawRectangle(GetSelectionRenderBrush(), null, new Rect(x, y, w, _lineHeight));
-        }
-
-        private Color GetEffectiveForegroundColor(TerminalCell cell)
-        {
-            if (cell.IsInverse)
-                return cell.Bg == 0 ? DefaultBackgroundColor : GetCellBgColor(cell.Bg);
-
-            return GetCellFgColor(cell.Fg, cell.IsBold);
-        }
-
-        private Color GetEffectiveBackgroundColor(TerminalCell cell)
-        {
-            if (cell.IsInverse)
-                return cell.Fg == 0 ? DefaultForegroundColor : GetCellFgColor(cell.Fg, cell.IsBold);
-
-            return GetCellBgColor(cell.Bg);
-        }
-
-        private Color GetCellFgColor(byte fg, bool bold)
-        {
-            if (fg == 0) return DefaultForegroundColor;
-
-            int index = fg - 1;
-            if (bold && index < 8) index += 8;
-
-            if (index < 16)
+            var cells = _lines[index].Cells;
+            bool blank = char.IsWhiteSpace(cells[column].Char);
+            int start = column;
+            int end = column + cells[column].DisplayWidth;
+            while (start > 0)
             {
-                var c = TerminalScreenBuffer.GetAnsiColor(index);
-                return Color.FromRgb(c.R, c.G, c.B);
+                int previous = cells[start - 1].IsContinuation ? start - 2 : start - 1;
+                if (char.IsWhiteSpace(cells[previous].Char) != blank)
+                    break;
+                start = previous;
             }
+            while (end < cells.Length && char.IsWhiteSpace(cells[end].Char) == blank)
+                end += cells[end].DisplayWidth;
 
-            var c256 = TerminalScreenBuffer.Get256Color(index);
-            return Color.FromRgb(c256.R, c256.G, c256.B);
-        }
-
-        private Color GetCellBgColor(byte bg)
-        {
-            if (bg == 0) return DefaultBackgroundColor;
-
-            int index = bg - 1;
-            if (index < 16)
-            {
-                var c = TerminalScreenBuffer.GetAnsiColor(index);
-                return Color.FromRgb(c.R, c.G, c.B);
-            }
-
-            var c256 = TerminalScreenBuffer.Get256Color(index);
-            return Color.FromRgb(c256.R, c256.G, c256.B);
-        }
-
-        #endregion
-
-        #region Mouse Interaction (Selection + URL clicking)
-
-        private (int line, int col) HitTest(Point pos)
-        {
-            // pos is in absolute local coordinates (ScrollViewer handles translation)
-            int line = (int)(pos.Y / _lineHeight);
-            int col = (int)(pos.X / _charWidth);
-            line = Math.Clamp(line, 0, Math.Max(0, _lines.Count - 1));
-            col = Math.Max(0, col);
-            return (line, col);
+            _selectionStart = (index, start);
+            _selectionEnd = (index, end);
+            _followingOutput = false;
+            InvalidateVisual();
         }
 
         protected override void OnMouseLeftButtonDown(MouseButtonEventArgs e)
         {
             base.OnMouseLeftButtonDown(e);
-            CaptureMouse();
-            Focus();
-
-            var pos = e.GetPosition(this);
-
-            if (Keyboard.Modifiers == ModifierKeys.Control)
+            var point = e.GetPosition(this);
+            if (Keyboard.Modifiers == ModifierKeys.Control && FindLink(point) is string url)
             {
-                var url = FindUrl(pos);
-                if (url != null)
-                {
-                    UrlClicked?.Invoke(url);
-                    e.Handled = true;
-                    return;
-                }
+                UrlClicked?.Invoke(url);
+                e.Handled = true;
+                return;
             }
 
-            var (line, col) = HitTest(pos);
-            _selStartLine = line;
-            _selStartCol = col;
-            _selEndLine = line;
-            _selEndCol = col;
-            _hasSelection = false;
-            _isSelecting = true;
+            if (e.ClickCount == 2 && Keyboard.Modifiers == ModifierKeys.None)
+            {
+                SelectWordAt(point);
+            }
+            else
+            {
+                var cell = HitTestCell(point, nearestEdge: true);
+                if (!_hasSelectionAnchor || !Keyboard.Modifiers.HasFlag(ModifierKeys.Shift))
+                    _selectionStart = cell;
+                _hasSelectionAnchor = true;
+                _selectionEnd = cell;
+                if (HasSelection)
+                    _followingOutput = false;
+                _selecting = CaptureMouse();
+            }
+            InputRequested?.Invoke();
+            e.Handled = true;
             InvalidateVisual();
         }
 
         protected override void OnMouseMove(MouseEventArgs e)
         {
             base.OnMouseMove(e);
-            var pos = e.GetPosition(this);
+            var point = e.GetPosition(this);
+            Cursor = !_selecting && Keyboard.Modifiers == ModifierKeys.Control && FindLink(point) != null
+                ? Cursors.Hand : Cursors.IBeam;
+            if (!_selecting)
+                return;
 
-            var url = FindUrl(pos);
-            if (url != null && Keyboard.Modifiers == ModifierKeys.Control)
+            _selectionPointer = point;
+            if (point.Y < 0 || point.Y >= ViewportHeight)
             {
-                Cursor = Cursors.Hand;
-                if (_hoveredUrl == null || _hoveredUrl.Url != url)
+                if (!_selectionScroll.IsEnabled)
                 {
-                    _hoveredUrl = _urlRegions.FirstOrDefault(u => u.Url == url);
-                    InvalidateVisual();
+                    SelectionScroll_Tick(null, EventArgs.Empty);
+                    _selectionScroll.Start();
                 }
             }
             else
             {
-                if (_hoveredUrl != null)
-                {
-                    _hoveredUrl = null;
-                    InvalidateVisual();
-                }
-                Cursor = Cursors.IBeam;
+                _selectionScroll.Stop();
+                UpdateSelectionEnd(point);
             }
+        }
 
-            if (_isSelecting)
+        private void SelectionScroll_Tick(object? sender, EventArgs e)
+        {
+            double edge = _selectionPointer.Y < 0 ? 0 : Math.Max(0, ViewportHeight - 1 / _pixelsPerDip);
+            double distance = _selectionPointer.Y - edge;
+            double rows = Math.Clamp(Math.Ceiling(Math.Abs(distance) / LineHeight), 1, 8);
+            SetVerticalOffset(VerticalOffset + Math.CopySign(rows * LineHeight, distance));
+            UpdateSelectionEnd(new Point(_selectionPointer.X, edge));
+            if (HasSelection)
+                _followingOutput = false;
+        }
+
+        private void UpdateSelectionEnd(Point point)
+        {
+            var cell = HitTestCell(point, nearestEdge: true);
+            if (cell != _selectionEnd)
             {
-                var (line, col) = HitTest(pos);
-                _selEndLine = line;
-                _selEndCol = col;
-                _hasSelection = _selStartLine != _selEndLine || _selStartCol != _selEndCol;
+                _selectionEnd = cell;
+                if (HasSelection)
+                    _followingOutput = false;
                 InvalidateVisual();
             }
         }
@@ -511,34 +615,137 @@ namespace ColorVision.Solution.Terminal
         protected override void OnMouseLeftButtonUp(MouseButtonEventArgs e)
         {
             base.OnMouseLeftButtonUp(e);
-            _isSelecting = false;
-            ReleaseMouseCapture();
+            if (IsMouseCaptured)
+                ReleaseMouseCapture();
         }
 
-        private string? FindUrl(Point pos)
+        protected override void OnLostMouseCapture(MouseEventArgs e)
         {
-            foreach (var region in _urlRegions)
+            base.OnLostMouseCapture(e);
+            EndSelectionDrag();
+        }
+
+        private void EndSelectionDrag()
+        {
+            _selecting = false;
+            _selectionScroll.Stop();
+        }
+
+        protected override void OnMouseWheel(MouseWheelEventArgs e)
+        {
+            base.OnMouseWheel(e);
+            ScrollWheel(e.Delta / (double)Mouse.MouseWheelDeltaForOneLine);
+            e.Handled = true;
+        }
+
+        private string? FindLink(Point point)
+        {
+            if (_lines.Count == 0 || point.X < 0 || point.Y < 0 || point.Y >= ViewportHeight)
+                return null;
+
+            int index = (int)((point.Y + VerticalOffset) / LineHeight);
+            if (index >= _lines.Count)
+                return null;
+
+            int column = (int)(point.X / CharWidth);
+            if (column >= _lines[index].Length)
+                return null;
+
+            var (links, sourceColumn) = GetSourceLinks(index);
+            foreach (var link in links)
             {
-                if (region.Rect.Contains(pos))
-                    return region.Url;
+                if (column + sourceColumn >= link.Start && column + sourceColumn < link.End)
+                    return link.Url;
             }
             return null;
         }
 
-        #endregion
-
-
-
-        private class UrlHitRegion
+        private (Link[] Links, int SourceColumn) GetSourceLinks(int displayLine)
         {
-            public string Url = "";
-            public Rect Rect;
-            public int Line;
-            public int StartCol;
-            public int EndCol;
+            var (row, column) = _lines.GetSourcePosition(displayLine);
+            return (_links.GetValue(_sourceLines[row], FindLinks), column);
         }
 
-        [GeneratedRegex(@"https?://[^\s<>""'\]）》]+", RegexOptions.Compiled)]
+        private static Link[] FindLinks(TerminalLine line)
+        {
+            var text = line.Text;
+            if (!text.Contains("http", StringComparison.OrdinalIgnoreCase))
+                return [];
+
+            return UrlRegex.Matches(text).Select(match => new Link(
+                line.GetColumnForTextOffset(match.Index),
+                line.GetColumnForTextOffset(match.Index + match.Length, roundUp: true),
+                match.Value)).ToArray();
+        }
+
+        public ScrollViewer? ScrollOwner { get; set; }
+        public bool CanVerticallyScroll { get; set; }
+        public bool CanHorizontallyScroll { get; set; }
+        public double ExtentWidth => ViewportWidth;
+        public double ExtentHeight { get; private set; }
+        public double ViewportWidth { get; private set; }
+        public double ViewportHeight { get; private set; }
+        public double HorizontalOffset => 0;
+        public double VerticalOffset { get; private set; }
+        private double MaximumOffset => Math.Max(0, ExtentHeight - ViewportHeight);
+        private double PageHeight(double viewportHeight) => Math.Max(1, Math.Floor(viewportHeight / LineHeight)) * LineHeight;
+
+        private void UpdateScrollExtent(double width, double height, double? retainedOffset = null)
+        {
+            // Reserve the partial row below the live screen instead of exposing a clipped
+            // scrollback row above the current page when following output.
+            double extent = height + Math.Max(0, _lines.Count * LineHeight - PageHeight(height));
+            bool changed = ViewportWidth != width || ViewportHeight != height || ExtentHeight != extent;
+            ViewportWidth = width;
+            ViewportHeight = height;
+            ExtentHeight = extent;
+            if (!SetOffset(_followingOutput ? MaximumOffset : retainedOffset ?? VerticalOffset) && changed)
+                ScrollOwner?.InvalidateScrollInfo();
+        }
+
+        private bool SetOffset(double offset)
+        {
+            double next = Math.Clamp(offset, 0, MaximumOffset);
+            if (VerticalOffset == next)
+                return false;
+            VerticalOffset = next;
+            ScrollOwner?.InvalidateScrollInfo();
+            InvalidateVisual();
+            return true;
+        }
+
+        public void SetVerticalOffset(double offset)
+        {
+            SetOffset(offset);
+            _followingOutput = VerticalOffset >= MaximumOffset;
+        }
+
+        public void LineUp() => SetVerticalOffset(VerticalOffset - LineHeight);
+        public void LineDown() => SetVerticalOffset(VerticalOffset + LineHeight);
+        public void PageUp() => SetVerticalOffset(VerticalOffset - PageHeight(ViewportHeight));
+        public void PageDown() => SetVerticalOffset(VerticalOffset + PageHeight(ViewportHeight));
+        public void MouseWheelUp() => ScrollWheel(1);
+        public void MouseWheelDown() => ScrollWheel(-1);
+
+        private void ScrollWheel(double steps)
+        {
+            int lines = SystemParameters.WheelScrollLines;
+            double distance = lines < 0 ? PageHeight(ViewportHeight) : lines * LineHeight;
+            if (distance > 0)
+                SetVerticalOffset(VerticalOffset - steps * distance);
+        }
+        public void LineLeft() { }
+        public void LineRight() { }
+        public void PageLeft() { }
+        public void PageRight() { }
+        public void MouseWheelLeft() { }
+        public void MouseWheelRight() { }
+        public void SetHorizontalOffset(double offset) { }
+        public Rect MakeVisible(Visual visual, Rect rectangle) => Rect.Empty;
+
+        private readonly record struct Link(int Start, int End, string Url);
+
+        [GeneratedRegex(@"https?://[^\s<>""'\]）》]+", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
         private static partial Regex CreateUrlRegex();
     }
 }

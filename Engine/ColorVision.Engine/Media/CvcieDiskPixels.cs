@@ -22,6 +22,9 @@ internal readonly record struct CvcieDiskPixels(SafeFileHandle Handle, long Offs
     }
 
     public static CvcieDiskPixels? TryLocate(FileStream stream, CVCIEFile header, int headerEnd, out long declared)
+        => TryGetPayloadOffset(stream, header, headerEnd, out declared) is long offset ? new CvcieDiskPixels(stream.SafeFileHandle, offset) : null;
+
+    internal static long? TryGetPayloadOffset(Stream stream, CVCIEFile header, int headerEnd, out long declared)
     {
         declared = 0;
         int prefixLength = header.Version == 2 ? sizeof(long) : sizeof(int);
@@ -32,8 +35,7 @@ internal readonly record struct CvcieDiskPixels(SafeFileHandle Handle, long Offs
         using var reader = new BinaryReader(stream, Encoding.UTF8, leaveOpen: true);
         declared = header.Version == 2 ? reader.ReadInt64() : reader.ReadInt32();
         long payloadStart = stream.Position;
-        if (declared <= 0 || declared > stream.Length - payloadStart) return null;
-        return new CvcieDiskPixels(stream.SafeFileHandle, payloadStart);
+        return declared > 0 && declared <= stream.Length - payloadStart ? payloadStart : null;
     }
 
     public void ReadExactly(Span<byte> destination, long offset, CancellationToken token)

@@ -283,11 +283,39 @@ cv::Mat Create16BitSource(cv::Mat& storage)
     }
     return source;
 }
+
+bool VerifyColorAutoRange(int depth)
+{
+    const int scale = depth == CV_16U ? 257 : 1;
+    cv::Mat storage(1083, 1927, CV_MAKETYPE(depth, 3), cv::Scalar::all(0));
+    cv::Mat source = storage(cv::Rect(3, 1, 1921, 1081));
+    source.setTo(cv::Scalar(44 * scale, 60 * scale, 120 * scale));
+    source(cv::Rect(0, 0, 1, 1)).setTo(cv::Scalar(90 * scale, 30 * scale, 20 * scale));
+    source(cv::Rect(source.cols - 1, source.rows - 1, 1, 1)).setTo(cv::Scalar(250 * scale, 230 * scale, 200 * scale));
+    const HImage view = MakeImageView(source);
+    for (const auto conversion : {cv::COLOR_BGR2GRAY, cv::COLOR_RGB2GRAY}) {
+        cv::Mat gray;
+        cv::cvtColor(source, gray, conversion);
+        double expectedMin, expectedMax;
+        cv::minMaxLoc(gray, &expectedMin, &expectedMax);
+        uint minimum, maximum;
+        const int result = conversion == cv::COLOR_RGB2GRAY
+            ? M_GetRgbMinMax(view, &minimum, &maximum)
+            : M_GetMinMax(view, &minimum, &maximum, -1);
+        if (result != 0 || minimum != expectedMin || maximum != expectedMax) {
+            std::cerr << "Pseudo-color auto range differs on padded color input." << std::endl;
+            return false;
+        }
+    }
+    return true;
+}
 }
 
 bool RunPseudoColorTests()
 {
     bool success = true;
+    success &= VerifyColorAutoRange(CV_8U);
+    success &= VerifyColorAutoRange(CV_16U);
     cv::Mat storage8;
     cv::Mat source8 = Create8BitSource(storage8);
     cv::Mat single8Storage(source8.rows, source8.cols + 2, CV_8U);

@@ -255,13 +255,14 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
                 if (run.Status != FlowStatus.Runing || run.CompletedTimeUtc != null)
                     throw new InvalidOperationException($"流程运行记录 {run.Id} 已结束，不能新增节点尝试。");
 
-                FlowNodeAttempt? last = db.Queryable<FlowNodeAttempt>()
+                int lastAttemptNo = db.Queryable<FlowNodeAttempt>()
                     .Where(item =>
                         item.RunRecordId == attempt.RunRecordId
                         && item.NodeId == attempt.NodeId)
                     .OrderByDescending(item => item.AttemptNo)
+                    .Select(item => item.AttemptNo)
                     .First();
-                attempt.AttemptNo = (last?.AttemptNo ?? 0) + 1;
+                attempt.AttemptNo = lastAttemptNo + 1;
                 attempt.Id = db.Insertable(attempt).ExecuteReturnBigIdentity();
                 return attempt;
             });
@@ -499,11 +500,12 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
                 return existing;
             }
 
-            FlowExecutionEvent? last = db.Queryable<FlowExecutionEvent>()
+            long lastSequenceNo = db.Queryable<FlowExecutionEvent>()
                 .Where(item => item.RunRecordId == executionEvent.RunRecordId)
                 .OrderByDescending(item => item.SequenceNo)
+                .Select(item => item.SequenceNo)
                 .First();
-            executionEvent.SequenceNo = (last?.SequenceNo ?? 0) + 1;
+            executionEvent.SequenceNo = lastSequenceNo + 1;
             executionEvent.Id = db.Insertable(executionEvent).ExecuteReturnBigIdentity();
             return executionEvent;
         }

@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
+using System.IO.Enumeration;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -221,27 +222,40 @@ namespace ColorVision.ImageEditor.BatchProcessing
 
         private static BatchImageItem[] ScanFolderInputs(string root, bool includeSubfolders, HashSet<string> extensions, CancellationToken cancellationToken)
         {
-            var directories = new Stack<DirectoryInfo>();
-            directories.Push(new DirectoryInfo(root));
+            var directories = new Stack<string>();
+            directories.Push(root);
             var paths = new List<string>();
-            while (directories.TryPop(out DirectoryInfo? directory))
+            var extensionLookup = extensions.GetAlternateLookup<ReadOnlySpan<char>>();
+            // Match DirectoryInfo.EnumerateFileSystemInfos, including hidden entries and access errors.
+            var options = new EnumerationOptions { AttributesToSkip = 0, IgnoreInaccessible = false };
+            FileSystemEnumerable<(string Path, bool IsDirectory)>.FindPredicate include = ShouldInclude;
+            while (directories.TryPop(out string? directory))
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                foreach (FileSystemInfo entry in directory.EnumerateFileSystemInfos())
+                var entries = new FileSystemEnumerable<(string Path, bool IsDirectory)>(directory,
+                    static (ref FileSystemEntry entry) => (entry.ToFullPath(), entry.IsDirectory), options)
                 {
-                    cancellationToken.ThrowIfCancellationRequested();
-                    if (entry is DirectoryInfo child)
-                    {
-                        if (includeSubfolders && (child.Attributes & FileAttributes.ReparsePoint) == 0)
-                            directories.Push(child);
-                    }
-                    else if (extensions.Contains(entry.Extension))
-                    {
-                        paths.Add(entry.FullName);
-                    }
+                    ShouldIncludePredicate = include,
+                };
+                foreach (var entry in entries)
+                {
+                    if (entry.IsDirectory) directories.Push(entry.Path);
+                    else paths.Add(entry.Path);
                 }
             }
             return paths.OrderBy(path => path, StringComparer.OrdinalIgnoreCase).Select(path => new BatchImageItem(path, root)).ToArray();
+
+            bool ShouldInclude(ref FileSystemEntry entry)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                if (entry.IsDirectory)
+                    return includeSubfolders && (entry.Attributes & FileAttributes.ReparsePoint) == 0;
+
+                // FileSystemInfo.Extension preserves a trailing dot in extended-length paths.
+                ReadOnlySpan<char> fileName = entry.FileName;
+                int dot = fileName.LastIndexOf('.');
+                return extensionLookup.Contains(dot < 0 ? ReadOnlySpan<char>.Empty : fileName[dot..]);
+            }
         }
 
         private void EnsureCanAddInputs()

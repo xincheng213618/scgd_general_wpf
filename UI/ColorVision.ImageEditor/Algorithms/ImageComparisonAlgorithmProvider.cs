@@ -86,7 +86,8 @@ namespace ColorVision.ImageEditor.Algorithms
             cancellationToken.ThrowIfCancellationRequested();
             int channels = reference.Format.Channels();
             int bytesPerChannel = reference.Format.BitsPerChannel() / 8;
-            int exactStride = checked(reference.Width * reference.Format.BytesPerPixel());
+            int pixelBytes = channels * bytesPerChannel;
+            int exactStride = checked(reference.Width * pixelBytes);
             AlgorithmImageFormat signedFormat = SignedFormat(channels);
             int signedStride = checked(reference.Width * signedFormat.BytesPerPixel());
             int visualStride = checked(reference.Width * 3);
@@ -123,18 +124,37 @@ namespace ColorVision.ImageEditor.Algorithms
                 : null;
             ChannelMetrics[] perChannel = Enumerable.Range(0, channels).Select(_ => new ChannelMetrics()).ToArray();
             ChannelMetrics aggregate = new();
-            double nominalPeak = reference.Format.IsFloatingPoint() ? parameters.FloatPeakValue : reference.Format.BitsPerChannel() == 8 ? byte.MaxValue : ushort.MaxValue;
+            bool isFloat = reference.Format.IsFloatingPoint();
+            double nominalPeak = isFloat ? parameters.FloatPeakValue : bytesPerChannel == 1 ? byte.MaxValue : ushort.MaxValue;
             double displayMaximum = parameters.HeatmapMaximum > 0 ? parameters.HeatmapMaximum : nominalPeak;
             ReadOnlySpan<byte> left = reference.Data.Span;
             ReadOnlySpan<byte> right = candidate.Data.Span;
-            double[] differences = new double[4];
+            Span<double> differences = stackalloc double[4];
             long floatArtifactOverflowCount = 0;
             bool metricsOnly = requestedOutputs == ImageComparisonArtifactOutputs.None;
+            bool writeDifferenceVisual = absoluteVisualData != null || signedVisualData != null;
+            bool trackArtifactOverflow = isFloat && signedData != null;
+            bool useByteVisualTables = bytesPerChannel == 1 && (writeDifferenceVisual || heatmapData != null);
+            Span<ushort> differenceColors = useByteVisualTables && writeDifferenceVisual ? stackalloc ushort[511] : [];
+            Span<uint> heatmapColors = useByteVisualTables && heatmapData != null ? stackalloc uint[256] : [];
+            for (int i = 0; i < differenceColors.Length; i++)
+            {
+                int difference = i - byte.MaxValue;
+                differenceColors[i] = (ushort)(VisualChannel(difference, displayMaximum, false)
+                    | VisualChannel(difference, displayMaximum, true) << 8);
+            }
+            for (int i = 0; i < heatmapColors.Length; i++)
+                heatmapColors[i] = HeatmapColor(i, displayMaximum);
+            int comparedChannelCount = channels == 4 && !parameters.IncludeAlphaInMetrics ? 3 : channels;
+            int scannedChannelCount = metricsOnly ? comparedChannelCount : channels;
             var samplingBounds = region.GetSamplingBounds(reference);
             int minimumX = metricsOnly ? samplingBounds.MinimumX : 0;
             int minimumY = metricsOnly ? samplingBounds.MinimumY : 0;
             int maximumXExclusive = metricsOnly ? samplingBounds.MaximumXExclusive : reference.Width;
             int maximumYExclusive = metricsOnly ? samplingBounds.MaximumYExclusive : reference.Height;
+            bool coversScan = region.Geometry.Kind == AlgorithmGeometryKind.Rectangle
+                && region.Contains(minimumX, minimumY)
+                && region.Contains(maximumXExclusive - 1, maximumYExclusive - 1);
 
             for (int y = minimumY; y < maximumYExclusive; y++)
             {
@@ -150,39 +170,42 @@ namespace ColorVision.ImageEditor.Algorithms
                 int visualRow = y * visualStride;
                 for (int x = minimumX; x < maximumXExclusive; x++)
                 {
-                    bool inRegion = region.Contains(x, y);
+                    bool inRegion = coversScan || region.Contains(x, y);
+                    if (metricsOnly && !inRegion) continue;
                     bool displayInvalid = false;
                     bool heatmapInvalid = false;
                     double pixelMaximum = 0;
-                    for (int channel = 0; channel < channels; channel++)
+                    int pixelOffset = x * pixelBytes;
+                    int signedPixelOffset = x * channels * sizeof(float);
+                    for (int channel = 0; channel < scannedChannelCount; channel++)
                     {
-                        int leftOffset = referenceRow + (x * channels + channel) * bytesPerChannel;
-                        int rightOffset = candidateRow + (x * channels + channel) * bytesPerChannel;
-                        double leftValue = Read(reference.Format, left, leftOffset);
-                        double rightValue = Read(reference.Format, right, rightOffset);
+                        int sampleOffset = pixelOffset + channel * bytesPerChannel;
+                        double leftValue = ReadSample(left, referenceRow + sampleOffset, bytesPerChannel);
+                        double rightValue = ReadSample(right, candidateRow + sampleOffset, bytesPerChannel);
                         double difference = leftValue - rightValue;
-                        differences[channel] = difference;
-                        if (!double.IsFinite(difference)) displayInvalid = true;
+                        bool finite = !isFloat || double.IsFinite(difference);
+                        if (writeDifferenceVisual)
+                        {
+                            differences[channel] = difference;
+                            displayInvalid |= !finite;
+                        }
                         double absolute = Math.Abs(difference);
-                        if (signedData != null
-                            && reference.Format.IsFloatingPoint()
-                            && double.IsFinite(difference)
-                            && absolute > float.MaxValue)
+                        if (trackArtifactOverflow && finite && absolute > float.MaxValue)
                         {
                             floatArtifactOverflowCount++;
                         }
                         if (absoluteData != null)
-                            WriteAbsolute(reference.Format, absoluteData, absoluteRow + (x * channels + channel) * bytesPerChannel, absolute);
+                            WriteAbsolute(absoluteData, absoluteRow + sampleOffset, bytesPerChannel, absolute);
                         if (signedData != null)
-                            BinaryPrimitives.WriteSingleLittleEndian(signedData.AsSpan(signedRow + (x * channels + channel) * 4, 4), (float)difference);
+                            BinaryPrimitives.WriteSingleLittleEndian(signedData.AsSpan(signedRow + signedPixelOffset + channel * sizeof(float), sizeof(float)), (float)difference);
 
-                        bool include = channel != 3 || parameters.IncludeAlphaInMetrics;
-                        if (!include || !inRegion) continue;
-                        if (double.IsFinite(difference))
+                        if (channel >= comparedChannelCount || !inRegion) continue;
+                        if (finite)
                         {
-                            perChannel[channel].Add(difference);
-                            aggregate.Add(difference);
-                            pixelMaximum = Math.Max(pixelMaximum, absolute);
+                            perChannel[channel].Add(difference, absolute);
+                            aggregate.Add(difference, absolute);
+                            if (heatmapData != null)
+                                pixelMaximum = Math.Max(pixelMaximum, absolute);
                         }
                         else
                         {
@@ -192,11 +215,26 @@ namespace ColorVision.ImageEditor.Algorithms
                         }
                     }
                     if (absoluteVisualData != null)
-                        WriteVisualPixel(absoluteVisualData, visualRow + x * 3, differences, channels, displayMaximum, false, displayInvalid);
+                    {
+                        if (useByteVisualTables)
+                            WriteByteVisualPixel(absoluteVisualData, visualRow + x * 3, differences, channels, differenceColors, 0);
+                        else
+                            WriteVisualPixel(absoluteVisualData, visualRow + x * 3, differences, channels, displayMaximum, false, displayInvalid);
+                    }
                     if (signedVisualData != null)
-                        WriteVisualPixel(signedVisualData, visualRow + x * 3, differences, channels, displayMaximum, true, displayInvalid);
+                    {
+                        if (useByteVisualTables)
+                            WriteByteVisualPixel(signedVisualData, visualRow + x * 3, differences, channels, differenceColors, 8);
+                        else
+                            WriteVisualPixel(signedVisualData, visualRow + x * 3, differences, channels, displayMaximum, true, displayInvalid);
+                    }
                     if (heatmapData != null)
-                        WriteHeatmapPixel(heatmapData, visualRow + x * 3, pixelMaximum, displayMaximum, inRegion, heatmapInvalid);
+                    {
+                        if (useByteVisualTables)
+                            WritePackedColor(heatmapData, visualRow + x * 3, inRegion ? heatmapColors[(int)pixelMaximum] : 0);
+                        else
+                            WriteHeatmapPixel(heatmapData, visualRow + x * 3, pixelMaximum, displayMaximum, inRegion, heatmapInvalid);
+                    }
                 }
             }
 
@@ -508,11 +546,20 @@ namespace ColorVision.ImageEditor.Algorithms
         private static byte[] AllocateOutput(long bytes, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            return new byte[checked((int)bytes)];
+            // Requested images are written across the whole frame before publication.
+            return GC.AllocateUninitializedArray<byte>(checked((int)bytes));
         }
 
         private static bool Has(ImageComparisonArtifactOutputs outputs, ImageComparisonArtifactOutputs requested)
             => (outputs & requested) != 0;
+
+        private static void WriteByteVisualPixel(byte[] output, int offset, ReadOnlySpan<double> differences, int channels, ReadOnlySpan<ushort> colors, int shift)
+        {
+            byte first = (byte)(colors[(int)differences[0] + byte.MaxValue] >> shift);
+            output[offset] = first;
+            output[offset + 1] = channels == 1 ? first : (byte)(colors[(int)differences[1] + byte.MaxValue] >> shift);
+            output[offset + 2] = channels == 1 ? first : (byte)(colors[(int)differences[2] + byte.MaxValue] >> shift);
+        }
 
         private static void WriteVisualPixel(byte[] output, int offset, ReadOnlySpan<double> differences, int channels, double maximum, bool signed, bool invalid)
         {
@@ -526,10 +573,15 @@ namespace ColorVision.ImageEditor.Algorithms
             for (int color = 0; color < 3; color++)
             {
                 int sourceChannel = channels == 1 ? 0 : color;
-                double normalized = differences[sourceChannel] / maximum;
-                double mapped = signed ? 127.5 + Math.Clamp(normalized, -1, 1) * 127.5 : Math.Clamp(Math.Abs(normalized), 0, 1) * 255;
-                output[offset + color] = (byte)Math.Round(mapped, MidpointRounding.AwayFromZero);
+                output[offset + color] = VisualChannel(differences[sourceChannel], maximum, signed);
             }
+        }
+
+        private static byte VisualChannel(double difference, double maximum, bool signed)
+        {
+            double normalized = difference / maximum;
+            double mapped = signed ? 127.5 + Math.Clamp(normalized, -1, 1) * 127.5 : Math.Clamp(Math.Abs(normalized), 0, 1) * 255;
+            return (byte)Math.Round(mapped, MidpointRounding.AwayFromZero);
         }
 
         private static void WriteHeatmapPixel(byte[] output, int offset, double value, double maximum, bool included, bool invalid)
@@ -548,26 +600,38 @@ namespace ColorVision.ImageEditor.Algorithms
                 output[offset + 2] = 255;
                 return;
             }
+            WritePackedColor(output, offset, HeatmapColor(value, maximum));
+        }
+
+        private static void WritePackedColor(byte[] output, int offset, uint color)
+        {
+            output[offset] = (byte)color;
+            output[offset + 1] = (byte)(color >> 8);
+            output[offset + 2] = (byte)(color >> 16);
+        }
+
+        private static uint HeatmapColor(double value, double maximum)
+        {
             double t = Math.Clamp(value / maximum, 0, 1);
-            output[offset] = Color(1.5 - Math.Abs(4 * t - 1));
-            output[offset + 1] = Color(1.5 - Math.Abs(4 * t - 2));
-            output[offset + 2] = Color(1.5 - Math.Abs(4 * t - 3));
+            return Color(1.5 - Math.Abs(4 * t - 1))
+                | (uint)Color(1.5 - Math.Abs(4 * t - 2)) << 8
+                | (uint)Color(1.5 - Math.Abs(4 * t - 3)) << 16;
         }
 
         private static byte Color(double value) => (byte)Math.Round(Math.Clamp(value, 0, 1) * 255, MidpointRounding.AwayFromZero);
 
-        private static double Read(AlgorithmImageFormat format, ReadOnlySpan<byte> data, int offset) => format.BitsPerChannel() switch
+        private static double ReadSample(ReadOnlySpan<byte> data, int offset, int bytesPerChannel) => bytesPerChannel switch
         {
-            8 => data[offset],
-            16 => BinaryPrimitives.ReadUInt16LittleEndian(data.Slice(offset, 2)),
-            32 when format.IsFloatingPoint() => BinaryPrimitives.ReadSingleLittleEndian(data.Slice(offset, 4)),
-            _ => throw new ArgumentOutOfRangeException(nameof(format)),
+            1 => data[offset],
+            2 => BinaryPrimitives.ReadUInt16LittleEndian(data.Slice(offset, 2)),
+            4 => BinaryPrimitives.ReadSingleLittleEndian(data.Slice(offset, 4)),
+            _ => throw new ArgumentOutOfRangeException(nameof(bytesPerChannel)),
         };
 
-        private static void WriteAbsolute(AlgorithmImageFormat format, byte[] output, int offset, double value)
+        private static void WriteAbsolute(byte[] output, int offset, int bytesPerChannel, double value)
         {
-            if (format.IsFloatingPoint()) BinaryPrimitives.WriteSingleLittleEndian(output.AsSpan(offset, 4), (float)value);
-            else if (format.BitsPerChannel() == 16) BinaryPrimitives.WriteUInt16LittleEndian(output.AsSpan(offset, 2), checked((ushort)value));
+            if (bytesPerChannel == 4) BinaryPrimitives.WriteSingleLittleEndian(output.AsSpan(offset, 4), (float)value);
+            else if (bytesPerChannel == 2) BinaryPrimitives.WriteUInt16LittleEndian(output.AsSpan(offset, 2), checked((ushort)value));
             else output[offset] = checked((byte)value);
         }
 
@@ -613,7 +677,7 @@ namespace ColorVision.ImageEditor.Algorithms
             public double MeanSquaredError => Count == 0 ? double.NaN : _sumSquared / Count;
             public double RootMeanSquaredError => Math.Sqrt(MeanSquaredError);
 
-            public void Add(double difference)
+            public void Add(double difference, double absolute)
             {
                 double squared = difference * difference;
                 double adjusted = squared - _compensation;
@@ -621,7 +685,7 @@ namespace ColorVision.ImageEditor.Algorithms
                 _compensation = (total - _sumSquared) - adjusted;
                 _sumSquared = total;
                 Count++;
-                MaximumAbsoluteDifference = Math.Max(MaximumAbsoluteDifference, Math.Abs(difference));
+                MaximumAbsoluteDifference = Math.Max(MaximumAbsoluteDifference, absolute);
             }
 
             public void AddInvalid() => InvalidCount++;

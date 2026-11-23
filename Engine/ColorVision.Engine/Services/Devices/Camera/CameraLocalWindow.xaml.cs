@@ -29,6 +29,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
         private bool _isConnected;
         private bool _isRefreshingCameraIds;
         private bool _closeAfterCameraIdRefresh;
+        private readonly DeviceConfigurationTarget _configurationTarget;
         private readonly LocalCameraNode? _sourceNode;
         private bool _isInitializingNodeSettings;
         private bool _isCapturing;
@@ -64,6 +65,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
         public CameraLocalWindow(DeviceCamera deviceCamera, LocalCameraNode? sourceNode = null)
         {
             Device = deviceCamera;
+            _configurationTarget = deviceCamera.CaptureConfigurationTarget();
             _sourceNode = sourceNode;
             _isInitializingNodeSettings = sourceNode != null;
             ApplyNodeSettingsToWindow();
@@ -253,10 +255,14 @@ namespace ColorVision.Engine.Services.Devices.Camera
             ConfigHandler.GetInstance().Save<DisplayConfigManager>();
         }
 
-        private void SaveDeviceConfig()
+        private bool SaveDeviceConfig(Action? prepare = null)
         {
-            Device.Config.CameraID = ResolveWindowCameraId(Device.Config.CameraID);
-            Device.SaveConfig();
+            if (!_configurationTarget.IsCurrent(Device)) return false;
+            return Device.TrySaveConfig(this, _configurationTarget, () =>
+            {
+                prepare?.Invoke();
+                Device.Config.CameraID = ResolveWindowCameraId(Device.Config.CameraID);
+            });
         }
 
         private string ResolveWindowCameraId(string? selectedId = null)
@@ -267,10 +273,11 @@ namespace ColorVision.Engine.Services.Devices.Camera
             return Device.ResolveCameraId(selectedId);
         }
 
-        private void SaveLocalPreferences()
+        private bool SaveLocalPreferences(Action? prepare = null)
         {
-            SaveDeviceConfig();
+            if (!SaveDeviceConfig(prepare)) return false;
             ConfigHandler.GetInstance().SaveConfigs();
+            return true;
         }
 
         private void RefreshChannelsFromCamera()
@@ -375,10 +382,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 ApplyCameraIdOptions(cameraIds);
                 string selectedCameraId = GetSelectedCameraId();
                 if (!string.IsNullOrWhiteSpace(selectedCameraId))
-                {
-                    Device.Config.CameraID = ResolveWindowCameraId(selectedCameraId);
-                    SaveDeviceConfig();
-                }
+                    SaveDeviceConfig(() => Device.Config.CameraID = ResolveWindowCameraId(selectedCameraId));
                 log.Info($"Camera ID scan completed. Model={cameraModel}, Count={summary.Cameras.Count}, Took={summary.Elapsed.TotalMilliseconds:F0}ms.");
             }
             catch (Exception ex)
@@ -441,10 +445,12 @@ namespace ColorVision.Engine.Services.Devices.Camera
             }
 
             _localRealtimePipeline.Stop(resetRealtime: true);
-            SynchronizeSessionMode();
-            UpdateCurrentConfigFromUi(GetSelectedCameraId());
-            UpdateNodeSettingsFromWindow();
-            SaveLocalPreferences();
+            if (!SaveLocalPreferences(() =>
+            {
+                SynchronizeSessionMode();
+                UpdateCurrentConfigFromUi(GetSelectedCameraId());
+                UpdateNodeSettingsFromWindow();
+            })) return;
             SaveDisplayConfig();
         }
 
@@ -799,8 +805,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 ReportCameraSettingFailure(result, "设置本地相机 ID 失败", showMessage: true);
                 return;
             }
-            Device.Config.CameraID = cameraId;
-            SaveDeviceConfig();
+            SaveDeviceConfig(() => Device.Config.CameraID = cameraId);
         }
 
         private async void cb_get_mode_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -904,15 +909,13 @@ namespace ColorVision.Engine.Services.Devices.Camera
                     this.Title = "Model: COLOR VISION " + mode;
 
                     ApplyCurrentCameraSettings();
-                    UpdateCurrentConfigFromUi(cameraId);
-                    SaveLocalPreferences();
+                    SaveLocalPreferences(() => UpdateCurrentConfigFromUi(cameraId));
                     UpdateConnectionState(true);
                 }
                 else
                 {
                     ApplyCurrentCameraSettings();
-                    UpdateCurrentConfigFromUi(cameraId);
-                    SaveLocalPreferences();
+                    SaveLocalPreferences(() => UpdateCurrentConfigFromUi(cameraId));
                     AttachLiveCallback();
                     UpdateConnectionState(true);
                 }

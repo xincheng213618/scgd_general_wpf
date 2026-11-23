@@ -27,9 +27,9 @@ public class PostProcessFinalOutcomeTests
     }
 
     [Fact]
-    public void WarningFailureProducesSucceededWithWarnings()
+    public async Task WarningFailureProducesSucceededWithWarnings()
     {
-        IReadOnlyList<PostProcessExecutionResult> results = Run(
+        IReadOnlyList<PostProcessExecutionResult> results = await RunAsync(
             Meta("warning", PostProcessFailurePolicy.Warning, new StubPostProcessor(() => false)));
 
         FlowFinalOutcome outcome = FlowFinalOutcomeResolver.Resolve(
@@ -43,9 +43,9 @@ public class PostProcessFinalOutcomeTests
     }
 
     [Fact]
-    public void RequiredFailureProducesFailed()
+    public async Task RequiredFailureProducesFailed()
     {
-        IReadOnlyList<PostProcessExecutionResult> results = Run(
+        IReadOnlyList<PostProcessExecutionResult> results = await RunAsync(
             Meta("required", PostProcessFailurePolicy.Required, new StubPostProcessor(() => false)));
 
         FlowFinalOutcome outcome = FlowFinalOutcomeResolver.Resolve(
@@ -59,11 +59,11 @@ public class PostProcessFinalOutcomeTests
     [InlineData(StatusTypeEnum.Failed, FlowFinalOutcome.Failed)]
     [InlineData(StatusTypeEnum.Canceled, FlowFinalOutcome.Canceled)]
     [InlineData(StatusTypeEnum.OverTime, FlowFinalOutcome.TimedOut)]
-    public void RequiredPostProcessFailureDoesNotHideEngineTerminalOutcome(
+    public async Task RequiredPostProcessFailureDoesNotHideEngineTerminalOutcome(
         StatusTypeEnum engineStatus,
         FlowFinalOutcome expectedOutcome)
     {
-        IReadOnlyList<PostProcessExecutionResult> results = Run(
+        IReadOnlyList<PostProcessExecutionResult> results = await RunAsync(
             Meta(
                 "required",
                 PostProcessFailurePolicy.Required,
@@ -77,10 +77,10 @@ public class PostProcessFinalOutcomeTests
     }
 
     [Fact]
-    public void RunnerRecordsFalseAndExceptionAndContinuesInOrder()
+    public async Task RunnerRecordsFalseAndExceptionAndContinuesInOrder()
     {
         int finalStepRuns = 0;
-        IReadOnlyList<PostProcessExecutionResult> results = Run(
+        IReadOnlyList<PostProcessExecutionResult> results = await RunAsync(
             Meta("first", PostProcessFailurePolicy.Warning, new StubPostProcessor(() => false)),
             Meta(
                 "second",
@@ -156,9 +156,9 @@ public class PostProcessFinalOutcomeTests
         Assert.Equal(PostProcessFailurePolicy.Required, persisted.FailurePolicy);
     }
 
-    private static IReadOnlyList<PostProcessExecutionResult> Run(params PostProcessMeta[] metas)
+    private static Task<IReadOnlyList<PostProcessExecutionResult>> RunAsync(params PostProcessMeta[] metas)
     {
-        return PostProcessExecutionRunner.Execute(
+        return PostProcessExecutionRunner.ExecuteAsync(
             metas,
             new PostProcessContext(new PostProcessConfig())
             {

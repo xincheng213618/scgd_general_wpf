@@ -9,6 +9,13 @@ namespace ColorVision.Engine.Services.Devices.Sensor.Templates
 {
     public static class SensorCommandTextFormatter
     {
+        /// <summary>Returns the bytes a stored command sends, for use in external debugging tools.</summary>
+        public static byte[] GetTemplateRequestBytes(string? storedCommand)
+        {
+            var command = Local.LocalSensorCommand.FromTemplate(storedCommand);
+            return command.Encode(command.Request);
+        }
+
         // Use the same encodings as the service's CmdStringTool, but reject lossy conversions.
         public static string ConvertEncoding(string? text, SensorCmdType source, SensorCmdType target)
         {

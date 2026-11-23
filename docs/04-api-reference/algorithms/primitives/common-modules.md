@@ -5,7 +5,6 @@ status: "current"
 summary: "路由 Engine 模板中的 ROI、POI、Matching 共享构件并区分统一算法平台。"
 aliases: ["ROI POI Matching如何复用","TemplateRoi","TemplatePoi","TemplateMatch"]
 code_paths: ["Engine/ColorVision.Engine/Templates/FindLightArea","Engine/ColorVision.Engine/Templates/POI","Engine/ColorVision.Engine/Templates/Matching"]
-test_paths: []
 related: ["algorithms.index","algorithms.roi-routes","algorithms.poi-routes","algorithms.matching","algorithms.platform"]
 ---
 

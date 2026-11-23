@@ -536,7 +536,7 @@ namespace WindowsServicePlugin.Properties {
         }
         
         /// <summary>
-        ///   查找类似 移除归档服务检测 的本地化字符串。
+        ///   查找类似 移除归档服务 的本地化字符串。
         /// </summary>
         public static string RemoveArchiveServiceMonitoring {
             get {
@@ -545,7 +545,7 @@ namespace WindowsServicePlugin.Properties {
         }
 
         /// <summary>
-        ///   查找类似 从注册中心监控列表移除 CVArchService；运行中的注册中心会短暂停止并恢复 的本地化字符串。
+        ///   查找类似 移除注册中心对 CVArchService 的监控，并卸载已安装的归档服务。运行中的注册中心会短暂停止并恢复。 的本地化字符串。
         /// </summary>
         public static string RemoveArchiveServiceMonitoringToolTip {
             get {

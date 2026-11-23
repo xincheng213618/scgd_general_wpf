@@ -105,9 +105,10 @@ namespace ColorVision.ImageEditor.BatchProcessing
                 directory ?? Environment.CurrentDirectory,
                 $".__colorvision_{Guid.NewGuid():N}.tmp{extension}");
             bool supportsHighDepth = extension is ".png" or ".tif" or ".tiff";
-            bool supportsDepth = image.Depth() == MatType.CV_8U
-                || supportsHighDepth && image.Depth() == MatType.CV_16U
-                || extension is ".tif" or ".tiff" && (image.Depth() == MatType.CV_32F || image.Depth() == MatType.CV_64F);
+            MatType inputDepth = image.Depth();
+            bool supportsDepth = inputDepth == MatType.CV_8U
+                || supportsHighDepth && inputDepth == MatType.CV_16U
+                || extension is ".tif" or ".tiff" && (inputDepth == MatType.CV_32F || inputDepth == MatType.CV_64F);
             Mat writable = image;
             Mat? convertedDepth = null;
             Mat? convertedChannels = null;
@@ -116,8 +117,16 @@ namespace ColorVision.ImageEditor.BatchProcessing
                 if (!supportsDepth)
                 {
                     convertedDepth = new Mat();
-                    Cv2.Normalize(image, convertedDepth, 0, supportsHighDepth ? ushort.MaxValue : byte.MaxValue, NormTypes.MinMax);
-                    convertedDepth.ConvertTo(convertedDepth, supportsHighDepth ? MatType.CV_16U : MatType.CV_8U);
+                    if (inputDepth == MatType.CV_16U)
+                    {
+                        // The normalized values already fit in a byte. Quantize directly to the encoder's depth.
+                        Cv2.Normalize(image, convertedDepth, 0, byte.MaxValue, NormTypes.MinMax, MatType.CV_8U);
+                    }
+                    else
+                    {
+                        Cv2.Normalize(image, convertedDepth, 0, supportsHighDepth ? ushort.MaxValue : byte.MaxValue, NormTypes.MinMax);
+                        convertedDepth.ConvertTo(convertedDepth, supportsHighDepth ? MatType.CV_16U : MatType.CV_8U);
+                    }
                     writable = convertedDepth;
                 }
 

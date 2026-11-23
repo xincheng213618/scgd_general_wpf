@@ -65,7 +65,7 @@ public sealed class LocalSmuAdvancedTests
         var connection = Connection(); await session.OpenAsync(connection);
         var result = await session.CaptureAdvancedAsync(connection,new() { Operation=SmuOperation.SourceOnly,CloseOutput=false },true);
         Assert.False(result.HasMeasurements); Assert.Empty(result.Voltages);Assert.Empty(result.Currents);
-        Assert.Equal(0,LocalSmuResultService.Save(result,"test"));
+        Assert.Equal(0,LocalSmuResultService.Save(result,"test", null));
         Assert.False(LocalSmuResultService.Response(result,0).Value<bool>("HasMeasurements"));
     }
 

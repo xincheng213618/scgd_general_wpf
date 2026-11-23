@@ -11,7 +11,7 @@ namespace ColorVision.UI.Tests;
 public sealed class CvRawLayerCacheTests
 {
     [Fact]
-    public void DisplayCacheBoundsCombinedPixelsAndDropsOldEntriesForOversizedLayers()
+    public void DisplayCacheBoundsCombinedPixelsAndPreservesTheOtherLayerForOversizedImages()
     {
         WpfTestHost.Invoke(() =>
         {
@@ -47,7 +47,7 @@ public sealed class CvRawLayerCacheTests
 
         var oversized = new WriteableBitmap(4096, 4097, 96, 96, PixelFormats.Rgba64, null);
         Store(controller, "cie-x", oversized);
-        Assert.Null(Cached(controller, "_srgbCache"));
+        Assert.Same(replacement, Cached(controller, "_srgbCache"));
         Assert.Null(Cached(controller, "_channelCache"));
     }
 

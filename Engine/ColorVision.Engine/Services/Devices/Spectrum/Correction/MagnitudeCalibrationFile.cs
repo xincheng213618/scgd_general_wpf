@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
+using System.Security.Cryptography;
 
 namespace ColorVision.Engine.Services.Devices.Spectrum.Correction;
 
@@ -128,7 +129,11 @@ public sealed class MagnitudeCalibrationFile
     /// <summary>
     /// Writes a new file and refuses to replace any existing path, including the source file.
     /// </summary>
-    public string SaveNew(string outputPath)
+    public string SaveNew(string outputPath) => SaveNewCore(outputPath, includeSha256: false, out _);
+
+    internal string SaveNew(string outputPath, out string sha256) => SaveNewCore(outputPath, includeSha256: true, out sha256);
+
+    private string SaveNewCore(string outputPath, bool includeSha256, out string sha256)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(outputPath);
         string fullPath = Path.GetFullPath(outputPath);
@@ -139,7 +144,7 @@ public sealed class MagnitudeCalibrationFile
         if (string.IsNullOrEmpty(directory) || !Directory.Exists(directory))
             throw new DirectoryNotFoundException($"Output directory does not exist: {directory}");
 
-        using FileStream stream = new(fullPath, FileMode.CreateNew, FileAccess.Write, FileShare.None);
+        using FileStream stream = new(fullPath, FileMode.CreateNew, includeSha256 ? FileAccess.ReadWrite : FileAccess.Write, FileShare.None);
         using BinaryWriter writer = new(stream);
         writer.Write(DataLength);
         writer.Write(ExposureTime);
@@ -152,6 +157,12 @@ public sealed class MagnitudeCalibrationFile
         if (stream.Length != checked((long)DataLength))
             throw new IOException($"Written magnitude calibration length {stream.Length} does not match expected length {DataLength}.");
 
+        sha256 = string.Empty;
+        if (includeSha256)
+        {
+            stream.Position = 0;
+            sha256 = Convert.ToHexString(SHA256.HashData(stream));
+        }
         return fullPath;
     }
 

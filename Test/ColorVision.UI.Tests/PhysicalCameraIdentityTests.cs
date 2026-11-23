@@ -4,13 +4,16 @@ using ColorVision.Engine;
 using ColorVision.Engine.Services;
 using ColorVision.Engine.Services.Devices;
 using ColorVision.Engine.Services.Devices.Calibration;
+using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.Services.Devices.Camera.Configs;
 using ColorVision.Engine.Services.PhyCameras;
 using ColorVision.Engine.Services.PhyCameras.Configs;
+using ColorVision.Engine.Services.PhyCameras.Licenses;
 using ColorVision.Engine.Services.Types;
 using cvColorVision;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using SqlSugar;
 using System.IO;
 using System.Runtime.CompilerServices;
 
@@ -162,6 +165,149 @@ public sealed class PhysicalCameraIdentityTests : IDisposable
         latest.IsDelete = true;
         PhysicalCameraIdentity.SynchronizeDiscovered(Discover("bound-id"), [physical], [latest], [], _ => throw new InvalidOperationException("must not save"));
         Assert.True(latest.IsDelete);
+    }
+
+    [Fact]
+    public void CameraLicenseBindingUsesTheDeviceSourceAndKeepsNewerLinks()
+    {
+        const string physicalCode = "same-physical-camera";
+        var (physicalRow, logicalRow, licenseId) = Seed("original", "original customer", CameraModel.HK_USB);
+        var (otherPhysical, otherLogical, otherLicenseId) = Seed("replacement", "replacement customer", CameraModel.TOUP_USB);
+        Assert.Equal((physicalRow.Id, logicalRow.Id, licenseId), (otherPhysical.Id, otherLogical.Id, otherLicenseId));
+
+        MySqlConnectedEndpoint? current = null;
+        int replacementOpens = 0;
+        var original = new MySqlConnectedEndpoint(candidate => ReferenceEquals(candidate, current), () => Open("original"));
+        var replacement = new MySqlConnectedEndpoint(candidate => ReferenceEquals(candidate, current), () =>
+        {
+            replacementOpens++;
+            return Open("replacement");
+        });
+        current = original;
+
+        var camera = (DeviceCamera)RuntimeHelpers.GetUninitializedObject(typeof(DeviceCamera));
+        camera.SysResourceModel = logicalRow;
+        camera.Config = new ConfigCamera { CameraCode = physicalCode };
+        camera.ResultDatabaseEndpoint = original;
+        var physical = CreatePhysical(physicalRow);
+        physical.CameraLicenseModel = ReadLicense("original");
+        var target = camera.CaptureConfigurationTarget();
+        physical.Config.CameraModel = CameraModel.TOUP_USB;
+        Assert.Equal(CameraModel.HK_USB, physical.ReadOwnedPhysicalConfiguration(camera, target)?.CameraModel);
+
+        Assert.True(physical.SetDeviceCamera(camera, target));
+        Assert.Same(camera, physical.DeviceCamera);
+        Assert.Equal(logicalRow.Id, ReadLicense("original").DevCameraId);
+        Assert.Equal("original customer", ReadLicense("original").CusTomerName);
+        physical.ReleaseDeviceCamera(camera, target);
+        Assert.Null(ReadLicense("original").DevCameraId);
+
+        Assert.True(physical.SetDeviceCamera(camera, target));
+        int newerLink = logicalRow.Id + 10;
+        using (var db = Open("original"))
+            Assert.Equal(1, db.Updateable<LicenseModel>().SetColumns(row => row.DevCameraId == newerLink)
+                .Where(row => row.Id == licenseId).ExecuteCommand());
+        physical.ReleaseDeviceCamera(camera, target);
+        Assert.Equal(newerLink, ReadLicense("original").DevCameraId);
+
+        current = replacement;
+        camera.ResultDatabaseEndpoint = replacement;
+        Assert.Null(physical.ReadOwnedPhysicalConfiguration(camera, target));
+        Assert.False(physical.SetDeviceCamera(camera, target));
+        physical.ReleaseDeviceCamera(camera, target);
+        Assert.Equal(newerLink, ReadLicense("original").DevCameraId);
+        Assert.Null(ReadLicense("replacement").DevCameraId);
+        Assert.Equal("replacement customer", ReadLicense("replacement").CusTomerName);
+        Assert.Equal(0, replacementOpens);
+
+        (SysResourceModel Physical, SysResourceModel Logical, int LicenseId) Seed(string source, string customer, CameraModel model)
+        {
+            using var db = Open(source);
+            db.CodeFirst.InitTables<SysResourceModel>();
+            db.CodeFirst.InitTables<LicenseModel>();
+            var physicalResource = new SysResourceModel
+            {
+                Type = (int)ServiceTypes.PhyCamera,
+                Code = physicalCode,
+                Value = JsonConvert.SerializeObject(new ConfigPhyCamera { CameraModel = model })
+            };
+            var logicalResource = new SysResourceModel { Type = (int)ServiceTypes.Camera, Code = "same-logical-camera" };
+            physicalResource.Id = db.Insertable(physicalResource).ExecuteReturnIdentity();
+            logicalResource.Id = db.Insertable(logicalResource).ExecuteReturnIdentity();
+            int id = db.Insertable(new LicenseModel { MacAddress = physicalCode, CusTomerName = customer }).ExecuteReturnIdentity();
+            return (physicalResource, logicalResource, id);
+        }
+
+        LicenseModel ReadLicense(string source)
+        {
+            using var db = Open(source);
+            return db.Queryable<LicenseModel>().InSingle(licenseId);
+        }
+
+        SqlSugarClient Open(string source) => new(new ConnectionConfig
+        {
+            ConnectionString = $"Data Source={Path.Combine(directory, source + ".db")};Pooling=False",
+            DbType = DbType.Sqlite,
+            InitKeyType = InitKeyType.Attribute,
+            IsAutoCloseConnection = true,
+            ConfigureExternalServices = new ConfigureExternalServices
+            {
+                EntityService = (_, column) =>
+                {
+                    if (!column.IsPrimarykey) column.IsNullable = true;
+                }
+            }
+        });
+    }
+
+    [Fact]
+    public void AutomaticStatusDiscoveryOnlyScansConfiguredSupportedModelsWithUnopenedCameras()
+    {
+        var hik = CreateStatusCamera("hik", CameraModel.HK_USB);
+        var hik2 = CreateStatusCamera("hik2", CameraModel.HK_USB);
+        var qhy = CreateStatusCamera("qhy", CameraModel.QHY_USB);
+        var other = CreateStatusCamera("other", CameraModel.TOUP_USB);
+
+        Assert.Empty(PhyCameraManager.GetAutomaticDiscoveryModels([]));
+        Assert.Equal([CameraModel.HK_USB], PhyCameraManager.GetAutomaticDiscoveryModels([hik]));
+        Assert.Equal([CameraModel.QHY_USB], PhyCameraManager.GetAutomaticDiscoveryModels([qhy]));
+        Assert.Equal([CameraModel.HK_USB, CameraModel.QHY_USB], PhyCameraManager.GetAutomaticDiscoveryModels([hik, hik2, qhy, other]));
+
+        hik.ConnectionStatus = PhysicalCameraStatus.Opened;
+        Assert.Empty(PhyCameraManager.GetAutomaticDiscoveryModels([hik, other]));
+        Assert.Equal([CameraModel.HK_USB], PhyCameraManager.GetAutomaticDiscoveryModels([hik, hik2]));
+    }
+
+    [Fact]
+    public void StatusDiscoveryMatchesConfiguredModelAndCodeAndPreservesOpenedCameras()
+    {
+        var hik = CreateStatusCamera("hik", CameraModel.HK_USB);
+        var unopened = CreateStatusCamera("unopened", CameraModel.HK_USB);
+        var opened = CreateStatusCamera("opened", CameraModel.HK_USB);
+        var qhy = CreateStatusCamera("qhy", CameraModel.QHY_USB);
+        var other = CreateStatusCamera("hik", CameraModel.TOUP_USB);
+        opened.ConnectionStatus = PhysicalCameraStatus.Opened;
+        qhy.ConnectionStatus = PhysicalCameraStatus.Online;
+        var summary = Discover("hik");
+        summary.Cameras[0].MD5Id = summary.Cameras[0].MD5Id.ToLowerInvariant();
+        summary.Models.Add(new() { CameraModel = CameraModel.QHY_USB, Success = false });
+        PhyCamera[] cameras = [hik, unopened, opened, qhy, other];
+
+        Assert.True(PhyCameraManager.ApplyDiscoveryStatus(summary, cameras));
+        Assert.Equal(PhysicalCameraStatus.Online, hik.ConnectionStatus);
+        Assert.Equal(PhysicalCameraStatus.Offline, unopened.ConnectionStatus);
+        Assert.Equal(PhysicalCameraStatus.Opened, opened.ConnectionStatus);
+        Assert.Equal(PhysicalCameraStatus.Unknown, qhy.ConnectionStatus);
+        Assert.Equal(PhysicalCameraStatus.Unknown, other.ConnectionStatus);
+        Assert.All(cameras, camera => Assert.Equal("Offline", camera.SysResourceModel.Remark));
+        Assert.False(PhyCameraManager.ApplyDiscoveryStatus(summary, cameras));
+    }
+
+    private static PhyCamera CreateStatusCamera(string cameraId, CameraModel model)
+    {
+        var camera = CreatePhysical(new SysResourceModel { Code = Tool.GetMD5(cameraId), Value = "{}", Remark = "Offline" });
+        camera.Config.CameraModel = model;
+        return camera;
     }
 
     private static cvCameraCSLib.CameraDiscoverySummary Discover(string cameraId)

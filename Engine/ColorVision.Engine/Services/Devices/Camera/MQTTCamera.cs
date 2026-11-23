@@ -1,8 +1,10 @@
 ﻿#pragma warning disable CS0168
 using ColorVision.Engine.Messages;
+using ColorVision.Engine.MQTT;
 using ColorVision.Engine.Services.Devices.Camera.Configs;
 using ColorVision.Engine.Services.Devices.Camera.Templates.AutoFocus;
 using ColorVision.Engine.Services.PhyCameras.Group;
+using ColorVision.Engine.Services.Results;
 using ColorVision.Engine.Templates;
 using ColorVision.Themes.Controls;
 using cvColorVision;
@@ -10,6 +12,8 @@ using MQTTMessageLib;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Windows;
 
 namespace ColorVision.Engine.Services.Devices.Camera
@@ -17,11 +21,25 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
     public class MQTTCamera : MQTTDeviceService<ConfigCamera>
     {
+        private const string CaptureEvent = "GetData";
+        private const int CameraImageResultType = 100;
+        private readonly object _uiQueueLock = new();
+        private readonly Queue<Func<Task>> _uiQueue = new();
+        private readonly Action<string, string?> _showAutoExposureMessage;
+        private bool _uiDrainScheduled;
+        private volatile bool _retired;
+
         public DeviceCamera Device { get; set; }
 
-        public MQTTCamera(DeviceCamera deviceCamera) : base(deviceCamera.Config)
+        public MQTTCamera(DeviceCamera deviceCamera) : this(deviceCamera, MQTTControl.GetInstance(), ShowAutoExposureMessage)
+        {
+        }
+
+        internal MQTTCamera(DeviceCamera deviceCamera, MQTTControl mqttControl, Action<string, string?> showAutoExposureMessage)
+            : base(deviceCamera.Config, mqttControl)
         {
             Device = deviceCamera;
+            _showAutoExposureMessage = showAutoExposureMessage;
 
             MsgReturnReceived += MQTTCamera_MsgReturnChanged;
             DeviceStatus = DeviceStatusType.UnInit;
@@ -41,14 +59,17 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         internal override MsgRecord PublishAsyncClient(MsgSend msg, double timeout = 30000)
         {
+            DeviceCamera owner = Device;
             lock (Local.CameraBackendState.OwnershipSync)
             {
-                Device.CameraBackend.EnsureServiceAvailable();
-                Device.EnsureServiceCameraAvailable();
-                Device.CameraBackend.BeginServiceCommand(msg.EventName);
+                owner.CameraBackend.EnsureServiceAvailable();
+                owner.EnsureServiceCameraAvailable();
+                owner.CameraBackend.BeginServiceCommand(msg.EventName);
             }
             try
             {
+                if (msg.EventName == CaptureEvent) return PublishCapture(msg, owner, timeout);
+
                 MsgRecord record = base.PublishAsyncClient(msg, timeout);
                 bool completed = false;
                 void Complete(object? sender, MsgRecordState state)
@@ -56,7 +77,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
                     if (completed || state is not (MsgRecordState.Success or MsgRecordState.Fail or MsgRecordState.Timeout)) return;
                     completed = true;
                     record.MsgRecordStateChanged -= Complete;
-                    Device.CameraBackend.EndServiceCommand();
+                    owner.CameraBackend.EndServiceCommand();
                     if (state == MsgRecordState.Success && msg.EventName is "Open" or "Close")
                         DeviceStatus = msg.EventName == "Close" ? DeviceStatusType.Closed
                             : Config.TakeImageMode == TakeImageMode.Live ? DeviceStatusType.LiveOpened : DeviceStatusType.Opened;
@@ -65,14 +86,251 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 Complete(record, record.MsgRecordState);
                 return record;
             }
-            catch { Device.CameraBackend.EndServiceCommand(); throw; }
+            catch { owner.CameraBackend.EndServiceCommand(); throw; }
+        }
+
+        private MsgRecord PublishCapture(MsgSend msg, DeviceCamera owner, double timeout)
+        {
+            var route = CaptureMqttRoute(pinConnection: true);
+            var target = owner.CaptureConfigurationTarget();
+            var endpoint = owner.ResultDatabaseEndpoint is { IsCurrent: true } verifiedEndpoint ? verifiedEndpoint : null;
+            string? serialNumber = msg.SerialNumber;
+
+            bool OwnsCapture(bool beforeDispatch)
+            {
+                var current = CaptureMqttRoute(pinConnection: true);
+                return CanPresentFeedback(owner, serviceOnly: true) && target.IsCurrent(owner)
+                    && (endpoint == null || owner.OwnsResultDatabase(endpoint))
+                    && route.HasSameDestination(current) && IsMqttRouteUsable(route)
+                    && (!beforeDispatch || string.Equals(route.ServiceToken, current.ServiceToken, StringComparison.Ordinal));
+            }
+
+            if ((!string.IsNullOrEmpty(msg.DeviceCode) && !string.Equals(msg.DeviceCode, route.DeviceCode, StringComparison.Ordinal))
+                || !OwnsCapture(beforeDispatch: true))
+                throw new InvalidOperationException(EngineLocalization.Get("原相机设备或 MQTT 连接已失效，请重新选择设备后重试。"));
+
+            msg.CompleteWithoutDispatcher = true;
+            return PublishOnMqttRoute(msg, route, timeout, canDispatch: () => OwnsCapture(beforeDispatch: true),
+                dispatchLock: Local.CameraBackendState.OwnershipSync,
+                acceptsReply: reply => AcceptsCaptureReply(reply, route.DeviceCode, serialNumber), beforeDispatch: PrepareRecord);
+
+            void PrepareRecord(MsgRecord record)
+            {
+                record.BeforeWorkerCompletion(_ => owner.CameraBackend.EndServiceCommand());
+                record.TerminalStateCommitted += PublishCaptureResult;
+
+                void PublishCaptureResult(MsgRecordState state)
+                {
+                    record.TerminalStateCommitted -= PublishCaptureResult;
+                    try
+                    {
+                        if (state != MsgRecordState.Success || endpoint == null || !OwnsCapture(beforeDispatch: false)
+                            || record.MsgReturn is not { HasCode: true, Code: 0 } reply || reply.Data is not JObject data
+                            || !MsgReturn.TryReadInteger(data["MasterId"], out int masterId) || masterId <= 0) return;
+
+                        int resultType = MsgReturn.TryReadInteger(data["MasterResultType"], out int reportedType)
+                            ? reportedType : CameraImageResultType;
+                        ResultMessageBus.Default.PublishPersisted(ResultRoutes.Camera, ResultKinds.Image, route.DeviceCode,
+                            CaptureEvent, string.IsNullOrWhiteSpace(serialNumber) ? reply.SerialNumber : serialNumber,
+                            string.Empty, reply.ZIndex, masterId, resultType, databaseEndpoint: endpoint,
+                            sourceDevice: owner, sourceService: this);
+                    }
+                    catch (Exception error) { log.Warn("Unable to report the camera capture result.", error); }
+                }
+            }
+        }
+
+        private static bool AcceptsCaptureReply(MsgReturn reply, string deviceCode, string? serialNumber)
+        {
+            if (!reply.HasCode || (!string.IsNullOrEmpty(reply.DeviceCode) && !string.Equals(reply.DeviceCode, deviceCode, StringComparison.Ordinal))
+                || (!string.IsNullOrEmpty(reply.EventName) && !string.Equals(reply.EventName, CaptureEvent, StringComparison.Ordinal))
+                || (!string.IsNullOrWhiteSpace(serialNumber) && !string.IsNullOrEmpty(reply.SerialNumber)
+                    && !string.Equals(reply.SerialNumber, serialNumber, StringComparison.Ordinal))) return false;
+
+            // Older services can acknowledge a successful capture without a persisted image reference.
+            if (reply.Code == 0 && reply.Data is JObject data && data["MasterId"] is { Type: not (JTokenType.Null or JTokenType.Undefined) } id)
+                return MsgReturn.TryReadInteger(id, out _);
+
+            return true;
         }
 
         public override void Dispose()
         {
+            lock (_uiQueueLock)
+            {
+                _retired = true;
+                _uiQueue.Clear();
+            }
+            MsgReturnReceived -= MQTTCamera_MsgReturnChanged;
             base.Dispose();
             GC.SuppressFinalize(this);     
         }
+
+        internal void TrackAutoExposureFailure(MsgRecord record, Func<bool> canShow)
+        {
+            TrackPanelFailure(record, serviceOnly: true, (state, reason) =>
+            {
+                string message = state == MsgRecordState.Timeout ? Properties.Resources.AutoExposureTimeoutCheckLog
+                    : string.Format(Properties.Resources.AutoExposureFailedCheckLog, Environment.NewLine, reason);
+                if (canShow()) _showAutoExposureMessage(message, "ColorVision");
+                return Task.CompletedTask;
+            });
+        }
+
+        internal void TrackPanelFailure(MsgRecord record, bool serviceOnly, Func<MsgRecordState, string?, Task> present)
+        {
+            int completed = 0;
+            void Complete(object? sender, MsgRecordState state)
+            {
+                if (!MsgRecord.IsTerminal(state) || Interlocked.Exchange(ref completed, 1) != 0)
+                    return;
+                record.MsgRecordStateChanged -= Complete;
+                if (state == MsgRecordState.Success)
+                    return;
+
+                string? reason = record.MsgReturn?.Message;
+                QueuePanelFeedback(serviceOnly, () => present(state, reason));
+            }
+
+            record.MsgRecordStateChanged += Complete;
+            Complete(record, record.MsgRecordState);
+        }
+
+        private void QueueAutoExposureResult(object? payload)
+        {
+            JArray? items = payload as JArray ?? (payload as JObject)?["ExpTime"] as JArray;
+            bool useThreeExposures = Config.IsExpThree;
+            int count = useThreeExposures ? 3 : 1;
+            if (items == null || items.Count < count)
+                return;
+
+            var readings = new AutoExposureReading[count];
+            int? ndPort;
+            try
+            {
+                for (int i = 0; i < count; i++)
+                {
+                    if (items[i] is not JObject reading || reading["result"] is not JValue { Value: not null } exposure
+                        || reading["resultSaturation"] is not JValue { Value: not null } saturation)
+                        return;
+                    readings[i] = new(exposure.Value<double>(), saturation.Value<double>());
+                }
+                ndPort = (payload as JObject)?.Value<int?>("NDPort");
+            }
+            catch (Exception error)
+            {
+                log.Warn("Invalid camera auto-exposure response.", error);
+                return;
+            }
+
+            EnqueueAutoExposureUi(camera =>
+            {
+                if (Config.IsExpThree != useThreeExposures)
+                    return;
+                var display = camera.DisplayConfig;
+                if (useThreeExposures)
+                {
+                    var channels = Config.CFW.ChannelCfgs;
+                    if (channels.Count < readings.Length)
+                        return;
+                    for (int i = 0; i < readings.Length; i++)
+                    {
+                        AutoExposureReading reading = readings[i];
+                        switch (channels[i].Chtype)
+                        {
+                            case ImageChannelType.Gray_X:
+                                display.ExpTimeR = reading.ExposureTime;
+                                display.SaturationR = reading.Saturation;
+                                break;
+                            case ImageChannelType.Gray_Y:
+                                display.ExpTimeG = reading.ExposureTime;
+                                display.SaturationG = reading.Saturation;
+                                break;
+                            case ImageChannelType.Gray_Z:
+                                display.ExpTimeB = reading.ExposureTime;
+                                display.SaturationB = reading.Saturation;
+                                break;
+                        }
+                    }
+                }
+                else
+                {
+                    display.ExpTime = readings[0].ExposureTime;
+                    display.Saturation = readings[0].Saturation;
+                }
+                if (ndPort is { } port)
+                    Config.NDPort = port;
+
+                string message = useThreeExposures
+                    ? $"SaturationR:{display.SaturationR}  ExpTime:{display.ExpTimeR}{Environment.NewLine}"
+                        + $"SaturationG:{display.SaturationG}  ExpTime:{display.ExpTimeG}{Environment.NewLine}"
+                        + $"SaturationB:{display.SaturationB}  ExpTime:{display.ExpTimeB}{Environment.NewLine}"
+                    : $"Saturation:{display.Saturation}  ExpTime:{display.ExpTime}";
+                _showAutoExposureMessage(message, null);
+            });
+        }
+
+        private void EnqueueAutoExposureUi(Action<DeviceCamera> present)
+        {
+            DeviceCamera camera = Device;
+            QueuePanelFeedback(serviceOnly: true, () =>
+            {
+                present(camera);
+                return Task.CompletedTask;
+            });
+        }
+
+        internal bool CanPresentFeedback(DeviceCamera camera, bool serviceOnly) => !_retired && !camera.IsDisposed
+            && ReferenceEquals(camera, Device) && ReferenceEquals(camera.DService, this)
+            && (!serviceOnly || camera.ServiceControlsEnabled);
+
+        internal void QueuePanelFeedback(bool serviceOnly, Func<Task> present)
+        {
+            if (Application.Current?.Dispatcher is not { } dispatcher)
+                return;
+            DeviceCamera camera = Device;
+            lock (_uiQueueLock)
+            {
+                if (_retired)
+                    return;
+                _uiQueue.Enqueue(() =>
+                {
+                    return CanPresentFeedback(camera, serviceOnly) ? present() : Task.CompletedTask;
+                });
+                if (_uiDrainScheduled)
+                    return;
+                _uiDrainScheduled = true;
+            }
+
+            dispatcher.BeginInvoke(() => { _ = DrainPanelFeedbackAsync(); });
+        }
+
+        private async Task DrainPanelFeedbackAsync()
+        {
+            // Keep the drain scheduled while a modal pumps Dispatcher messages so dialogs cannot nest.
+            while (true)
+            {
+                Func<Task>? present;
+                lock (_uiQueueLock)
+                {
+                    if (!_uiQueue.TryDequeue(out present))
+                    {
+                        _uiDrainScheduled = false;
+                        return;
+                    }
+                }
+                try { await present(); }
+                catch (Exception error) { log.Error("Unable to present camera command feedback.", error); }
+            }
+        }
+
+        private static void ShowAutoExposureMessage(string message, string? caption)
+        {
+            if (caption == null) MessageBox1.Show(Application.Current.GetActiveWindow(), message);
+            else MessageBox1.Show(message, caption);
+        }
+
+        private readonly record struct AutoExposureReading(double ExposureTime, double Saturation);
 
         private void MQTTCamera_MsgReturnChanged(MsgReturn msg)
         {
@@ -109,98 +367,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 switch (msg.EventName)
                 {
                     case "GetAutoExpTime":
-                        if (msg.Data == null) break;
-                        try
-                        {
-                            if (msg.Data[0].result != null)
-                            {
-                                Application.Current.Dispatcher.Invoke(() =>
-                                {
-                                    if (Config.IsExpThree)
-                                    {
-                                        for (int i = 0; i < 3; i++)
-                                        {
-                                            if (Config.CFW.ChannelCfgs[i].Chtype == ImageChannelType.Gray_X)
-                                            {
-                                                Device.DisplayConfig.ExpTimeR = msg.Data[i].result;
-                                                Device.DisplayConfig.SaturationR = msg.Data[i].resultSaturation;
-                                            }
-                                            if (Config.CFW.ChannelCfgs[i].Chtype == ImageChannelType.Gray_Y)
-                                            {
-                                                Device.DisplayConfig.ExpTimeG = msg.Data[i].result;
-                                                Device.DisplayConfig.SaturationG = msg.Data[i].resultSaturation;
-                                            }
-
-                                            if (Config.CFW.ChannelCfgs[i].Chtype == ImageChannelType.Gray_Z)
-                                            {
-                                                Device.DisplayConfig.ExpTimeB = msg.Data[i].result;
-                                                Device.DisplayConfig.SaturationB = msg.Data[i].resultSaturation;
-                                            }
-                                        }
-
-                                        string Msg = $"SaturationR:{Device.DisplayConfig.SaturationR}  ExpTime:{Device.DisplayConfig.ExpTimeR}" + Environment.NewLine +
-                                                     $"SaturationG:{Device.DisplayConfig.SaturationG}  ExpTime:{Device.DisplayConfig.ExpTimeG}" + Environment.NewLine +
-                                                     $"SaturationB:{Device.DisplayConfig.SaturationB}  ExpTime:{Device.DisplayConfig.ExpTimeB}" + Environment.NewLine;
-                                        MessageBox1.Show(Application.Current.GetActiveWindow(), Msg);
-                                    }
-                                    else
-                                    {
-                                        Device.DisplayConfig.ExpTime = msg.Data[0].result;
-                                        Device.DisplayConfig.Saturation = msg.Data[0].resultSaturation;
-
-                                        string Msg = $"Saturation:{Device.DisplayConfig.Saturation}  ExpTime:{Device.DisplayConfig.ExpTime}";
-                                        MessageBox1.Show(Application.Current.GetActiveWindow(), Msg);
-                                    }
-                                });
-                            }
-                        }
-                        catch(Exception ex)
-                        {
-                            log.Info("ND高版本支持");
-                            Application.Current.Dispatcher.Invoke(() =>
-                            {
-                                if (Config.IsExpThree)
-                                {
-                                    for (int i = 0; i < 3; i++)
-                                    {
-                                        if (Config.CFW.ChannelCfgs[i].Chtype == ImageChannelType.Gray_X)
-                                        {
-                                            Device.DisplayConfig.ExpTimeR = msg.Data.ExpTime[i].result;
-                                            Device.DisplayConfig.SaturationR = msg.Data.ExpTime[i].resultSaturation;
-                                        }
-                                        if (Config.CFW.ChannelCfgs[i].Chtype == ImageChannelType.Gray_Y)
-                                        {
-                                            Device.DisplayConfig.ExpTimeG = msg.Data.ExpTime[i].result;
-                                            Device.DisplayConfig.SaturationG = msg.Data.ExpTime[i].resultSaturation;
-                                        }
-
-                                        if (Config.CFW.ChannelCfgs[i].Chtype == ImageChannelType.Gray_Z)
-                                        {
-                                            Device.DisplayConfig.ExpTimeB = msg.Data.ExpTime[i].result;
-                                            Device.DisplayConfig.SaturationB = msg.Data.ExpTime[i].resultSaturation;
-                                        }
-                                    }
-
-                                    string Msg = $"SaturationR:{Device.DisplayConfig.SaturationR}  ExpTime:{Device.DisplayConfig.ExpTimeR}" + Environment.NewLine +
-                                                 $"SaturationG:{Device.DisplayConfig.SaturationG}  ExpTime:{Device.DisplayConfig.ExpTimeG}" + Environment.NewLine +
-                                                 $"SaturationB:{Device.DisplayConfig.SaturationB}  ExpTime:{Device.DisplayConfig.ExpTimeB}" + Environment.NewLine;
-                                    MessageBox1.Show(Application.Current.GetActiveWindow(), Msg);
-                                }
-                                else
-                                {
-                                    Device.DisplayConfig.ExpTime = msg.Data.ExpTime[0].result;
-                                    Device.DisplayConfig.Saturation = msg.Data.ExpTime[0].resultSaturation;
-
-                                    string Msg = $"Saturation:{Device.DisplayConfig.Saturation}  ExpTime:{Device.DisplayConfig.ExpTime}";
-                                    MessageBox1.Show(Application.Current.GetActiveWindow(), Msg);
-                                }
-                                if (msg.Data.NDPort != null)
-                                {
-                                    Config.NDPort = msg.Data.NDPort;
-                                }
-                            });
-                        }
-
+                        QueueAutoExposureResult((object?)msg.Data);
                         break;
                     case "AutoFocus":
                         Application.Current.Dispatcher.Invoke(() =>
@@ -292,12 +459,17 @@ namespace ColorVision.Engine.Services.Devices.Camera
         public MsgRecord GetData(double[] expTime, CalibrationParam param, ParamBase autoExpTimeParam)
         {
             if (Device.RoutesLocally) return Device.CaptureLocally(expTime, param, autoExpTimeParam);
+            return CaptureRemotely(expTime, param, autoExpTimeParam);
+        }
+
+        internal MsgRecord CaptureRemotely(double[] expTime, CalibrationParam param, ParamBase autoExpTimeParam)
+        {
             string SerialNumber = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
             var Params = new Dictionary<string, object>() { };
             MsgSend msg;
             msg = new MsgSend
             {
-                EventName = "GetData",
+                EventName = CaptureEvent,
                 SerialNumber = SerialNumber,
                 Params = Params
             };

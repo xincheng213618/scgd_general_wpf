@@ -5,7 +5,6 @@ status: "current"
 summary: "ProjectARVRPro Demura 烧录的 PG TCP 连接、GECS 帧、配置默认值、逐步回包和故障定位；写入成功回包不等于光学效果验收。"
 aliases: ["Demura", "Demura 烧录", "生成后自动烧录", "PG 烧录", "GecsProtocol", "DemuraProcess", "DemuraProcessConfig", "BurnAfterGenerate", "SENDFILE", "DemuraDynamic.bin"]
 code_paths: ["Projects/ProjectARVRPro/Process/Demura/", "Projects/ProjectARVRPro/ARVRWindow.xaml.cs"]
-test_paths: []
 related: ["projects.arvr-pro", "operations.device-configuration"]
 ---
 
@@ -146,4 +145,4 @@ $demuraPacket = [byte[]](
 
 `DemuraViewTestResult` 保存本次处理模式、实际源/目标、设备及连接信息、命令文本与 HEX、回包和烧录结果；对外的 `DemuraTestResult` 仅含文件名与原文。实现入口是 `DemuraProcess.cs` 的 `BurnDemuraBinAsync` / `SendCommandAndWaitAsync`；组帧在 `GecsProtocol.cs`。
 
-`DemuraResultJsonTests` 覆盖仅返回 CSV 的默认配置、W128 文件存在/缺失判定、完整处理要求的保留、失败不下电，以及文件原文的 JSON 传输契约；不代表已验证烧录链。PG 的文件读取、FLASH 实现、通道解释及设备效果需由 PG 协议和获授权的现场验证确认。
+按 PG 协议核对文件读取、FLASH、通道及设备效果。烧录验收使用获授权的现场环境。

@@ -53,8 +53,13 @@ public sealed class PseudoColorProviderTests
         foreach (PseudoColorParameters p in Parameters(-1))
         {
             using Mat expected = PseudoColorReference.Apply(source.Mat, p);
-            using AlgorithmResult result = await RunAsync(provider, input, p);
-            Assert.Equal(Bytes(expected), Output(result).Data.ToArray());
+            byte[] expectedPixels = Bytes(expected);
+            // The first two calls establish the cache entry. The third must use the same mapping.
+            for (int repeat = 0; repeat < 3; repeat++)
+            {
+                using AlgorithmResult result = await RunAsync(provider, input, p);
+                Assert.Equal(expectedPixels, Output(result).Data.ToArray());
+            }
         }
     }
 

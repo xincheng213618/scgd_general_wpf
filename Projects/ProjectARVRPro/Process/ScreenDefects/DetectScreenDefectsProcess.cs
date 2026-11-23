@@ -5,6 +5,7 @@ using ColorVision.Engine.Templates.Jsons.DetectScreenDefects;
 using ColorVision.ImageEditor.Draw;
 using Newtonsoft.Json;
 using System.Globalization;
+using System.IO;
 using System.Text;
 using System.Windows;
 using System.Windows.Media;
@@ -13,13 +14,19 @@ namespace ProjectARVRPro.Process.ScreenDefects
 {
     public sealed class DetectScreenDefectsProcess : ProcessBase<DetectScreenDefectsProcessConfig>
     {
+        internal Func<int, List<AlgResultMasterModel>>? ReadMasters { get; init; }
+        internal Func<int, List<DetailCommonModel>?>? ReadDetails { get; init; }
+
         public override Task<bool> Execute(IProcessExecutionContext ctx)
         {
-            if (ctx?.Batch == null || ctx.Result == null || ctx.ObjectiveTestResult == null)
+            if (ctx?.Result == null || ctx.ObjectiveTestResult == null)
                 return Task.FromResult(false);
 
             try
             {
+                if (ctx.Batch == null)
+                    throw new InvalidDataException("缺少测量批次。");
+
                 SetPreviewFile(ctx);
                 ScreenDefectsData result = LoadLatestResult(ctx);
                 ctx.Result.ViewResultJson = JsonConvert.SerializeObject(result, Formatting.None, new JsonSerializerSettings
@@ -30,15 +37,34 @@ namespace ProjectARVRPro.Process.ScreenDefects
                 ctx.ObjectiveTestResult.DynamicScreenDefectResults ??= new Dictionary<string, ScreenDefectsData>();
                 ctx.ObjectiveTestResult.DynamicScreenDefectResults[GetOutputName()] = result;
 
-                ctx.Result.Result = result.DefectCount == 0;
+                ctx.Result.Result &= result.DefectCount == 0;
+                ctx.ObjectiveTestResult.TotalResult &= ctx.Result.Result;
 
                 return Task.FromResult(true);
             }
             catch (Exception ex)
             {
-                ctx.Log?.Error("屏幕缺陷检测结果解析异常", ex);
+                string message = $"屏幕缺陷检测解析失败 [{GetOutputName()}]：{ex.Message}";
+                ctx.Log.Error(message, ex);
+                Reject(ctx, message);
                 return Task.FromResult(false);
             }
+        }
+
+        public override Task<bool> ExecuteFailure(IProcessExecutionContext ctx)
+        {
+            if (ctx?.Result != null && ctx.ObjectiveTestResult != null)
+                Reject(ctx, string.IsNullOrWhiteSpace(ctx.Result.Msg) ? "屏幕缺陷检测流程未成功完成。" : ctx.Result.Msg);
+            return Task.FromResult(false);
+        }
+
+        private void Reject(IProcessExecutionContext ctx, string message)
+        {
+            ctx.Result.Result = false;
+            ctx.Result.Msg = message;
+            ctx.Result.ViewResultJson = string.Empty;
+            ctx.ObjectiveTestResult.TotalResult = false;
+            ctx.ObjectiveTestResult.DynamicScreenDefectResults?.Remove(GetOutputName());
         }
 
         public override void Render(IProcessExecutionContext ctx)
@@ -126,32 +152,29 @@ namespace ProjectARVRPro.Process.ScreenDefects
 
         private ScreenDefectsData LoadLatestResult(IProcessExecutionContext ctx)
         {
-            IEnumerable<AlgResultMasterModel> masters = AlgResultMasterDao.Instance.GetAllByBatchId(ctx.Batch.Id)
+            var master = (ReadMasters?.Invoke(ctx.Batch.Id) ?? ctx.ReadMasterResults())
                 .Where(master => master.ImgFileType == ViewResultAlgType.ARVR_DetectScreenDefects && ShouldParse(master))
-                .OrderByDescending(master => master.Id);
+                .MaxBy(master => master.Id)
+                ?? throw new InvalidDataException($"批次 {ctx.Batch.Id} 缺少匹配的屏幕缺陷检测结果。");
 
-            foreach (AlgResultMasterModel master in masters)
+            if (!string.IsNullOrWhiteSpace(master.ImgFile))
+                ctx.Result.FileName = master.ImgFile;
+
+            var details = (ReadDetails != null ? ReadDetails(master.Id) : ctx.TryReadDetails(DeatilCommonDao.Instance, master.Id))
+                ?? throw new InvalidDataException($"无法读取屏幕缺陷检测结果 {master.Id} 的明细。");
+            var detail = details.MaxBy(detail => detail.Id)
+                ?? throw new InvalidDataException($"屏幕缺陷检测结果 {master.Id} 缺少明细。");
+            try
             {
-                if (!string.IsNullOrWhiteSpace(master.ImgFile))
-                    ctx.Result.FileName = master.ImgFile;
-
-                IEnumerable<DetailCommonModel> details = DeatilCommonDao.Instance.GetAllByPid(master.Id).OrderByDescending(detail => detail.Id);
-                foreach (DetailCommonModel detail in details)
-                {
-                    try
-                    {
-                        DetectScreenDefectsResult? parsed = ScreenDefectsResultParser.Parse(detail.ResultJson, out _);
-                        if (parsed != null)
-                            return CreateCleanResult(parsed);
-                    }
-                    catch (Exception ex)
-                    {
-                        ctx.Log?.Warn($"屏幕缺陷检测明细解析失败，MasterId={master.Id}, DetailId={detail.Id}: {ex.Message}");
-                    }
-                }
+                var parsed = ScreenDefectsResultParser.Parse(detail.ResultJson, out string? file);
+                if (parsed == null)
+                    throw new InvalidDataException(file == null ? "结果内容为空。" : $"结果文件无内容或无法读取：{file}");
+                return CreateCleanResult(parsed);
             }
-
-            return new ScreenDefectsData();
+            catch (Exception ex)
+            {
+                throw new InvalidDataException($"结果 {master.Id} 明细 {detail.Id}：{ex.Message}", ex);
+            }
         }
 
         private bool ShouldParse(AlgResultMasterModel master)

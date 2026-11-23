@@ -73,14 +73,14 @@ namespace ColorVision.Copilot
 
         private sealed class PendingSegment
         {
-            private readonly StringBuilder _reasoning = new();
-            private readonly StringBuilder _content = new();
+            private CopilotStreamDelta _first;
+            private StringBuilder? _combined;
 
             public PendingSegment(CopilotStreamDelta delta)
             {
+                _first = delta;
                 HasReasoning = delta.HasReasoning;
                 HasContent = delta.HasContent;
-                Append(delta);
             }
 
             public bool HasReasoning { get; }
@@ -89,10 +89,13 @@ namespace ColorVision.Copilot
 
             public void Append(CopilotStreamDelta delta)
             {
-                if (delta.ReasoningContent != null)
-                    _reasoning.Append(delta.ReasoningContent);
-                if (delta.Content != null)
-                    _content.Append(delta.Content);
+                if (_combined == null)
+                {
+                    _combined = new StringBuilder(HasReasoning ? _first.ReasoningContent : _first.Content);
+                    _first = default;
+                }
+
+                _combined.Append(HasReasoning ? delta.ReasoningContent : delta.Content);
             }
 
             public bool CanAppend(CopilotStreamDelta delta) =>
@@ -100,7 +103,14 @@ namespace ColorVision.Copilot
                 && HasReasoning == delta.HasReasoning
                 && HasContent == delta.HasContent;
 
-            public CopilotStreamDelta ToDelta() => new(_reasoning.ToString(), _content.ToString());
+            public CopilotStreamDelta ToDelta()
+            {
+                if (_combined == null)
+                    return new(_first.ReasoningContent ?? string.Empty, _first.Content ?? string.Empty);
+
+                string text = _combined.ToString();
+                return HasReasoning ? new(text, string.Empty) : new(string.Empty, text);
+            }
         }
     }
 }

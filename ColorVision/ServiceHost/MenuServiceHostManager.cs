@@ -7,7 +7,7 @@ namespace ColorVision.ServiceHost
     {
         public override string OwnerGuid => MenuItemConstants.Help;
 
-        public override string Header => LocalizedMenuAccessKey.Format("ColorVision Service Host", 'S');
+        public override string Header => LocalizedMenuAccessKey.Format("Servicee Host", 'S');
 
         public override int Order => 1003;
 

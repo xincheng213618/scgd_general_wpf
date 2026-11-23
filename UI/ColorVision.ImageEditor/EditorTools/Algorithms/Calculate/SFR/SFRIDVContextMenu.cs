@@ -1,4 +1,6 @@
 using LocalizedText = global::ColorVision.ImageEditor.DisplayText;
+using ColorVision.ImageEditor.Algorithms;
+using ColorVision.Algorithms;
 using ColorVision.Core;
 using ColorVision.ImageEditor.Draw;
 using System;
@@ -65,6 +67,8 @@ internal static class SfrAnalysisRunner
 
 public sealed class SFRIDVContextMenu : IDVContextMenu
 {
+    public AlgorithmInteractiveGroupPresentation AnalysisGroup => AlgorithmMenuGroups.ImageQuality;
+
     private readonly ImageProcessingContext _image;
     public SFRIDVContextMenu(ImageProcessingContext imageContext, ImageViewConfig config) => _image = imageContext;
     public Type ContextType => typeof(IRectangle);

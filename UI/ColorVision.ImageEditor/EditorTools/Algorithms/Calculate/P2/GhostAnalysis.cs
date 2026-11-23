@@ -1,4 +1,5 @@
 using LocalizedText = global::ColorVision.ImageEditor.DisplayText;
+using ColorVision.Algorithms;
 using ColorVision.ImageEditor.Algorithms;
 using ColorVision.Common.MVVM;
 using ColorVision.Core;
@@ -39,6 +40,8 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.P2
 
     public sealed class GhostLocalAnalysisIDVContextMenu : IDVContextMenu
     {
+        public AlgorithmInteractiveGroupPresentation AnalysisGroup => AlgorithmMenuGroups.Defects;
+
         private readonly ImageProcessingContext _imageContext;
         private readonly DrawEditorContext _drawContext;
         private readonly ImageViewConfig _config;

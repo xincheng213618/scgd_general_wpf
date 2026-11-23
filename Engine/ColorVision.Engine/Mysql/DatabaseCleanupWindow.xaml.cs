@@ -1,6 +1,7 @@
 using ColorVision.Themes;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -12,6 +13,7 @@ namespace ColorVision.Database
         private readonly DatabaseCleanupWindowViewModel _viewModel;
         private readonly bool _refreshOnLoad;
         private bool _hasLoaded;
+        private MySqlControl? _mysqlControl;
 
         public DatabaseCleanupWindow() : this(new DatabaseCleanupWindowViewModel(), refreshOnLoad: true)
         {
@@ -69,8 +71,26 @@ namespace ColorVision.Database
                 return;
 
             _hasLoaded = true;
+            if (_viewModel.Sources.Any(source => source.HasDatabaseTarget))
+            {
+                _mysqlControl = MySqlControl.GetInstance();
+                _mysqlControl.MySqlConnectChanged += MySqlConnectChanged;
+            }
             if (_refreshOnLoad)
                 await _viewModel.RefreshAllAsync();
+        }
+
+        protected override void OnClosed(EventArgs e)
+        {
+            if (_mysqlControl != null)
+                _mysqlControl.MySqlConnectChanged -= MySqlConnectChanged;
+            base.OnClosed(e);
+        }
+
+        private void MySqlConnectChanged(object? sender, EventArgs e)
+        {
+            foreach (var source in _viewModel.Sources)
+                source.InvalidateRetiredTarget();
         }
 
         private void CleanupTablesGrid_Loaded(object sender, RoutedEventArgs e)

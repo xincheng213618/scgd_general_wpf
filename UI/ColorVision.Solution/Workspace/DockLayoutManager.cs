@@ -44,6 +44,7 @@ namespace ColorVision.Solution.Workspace
         /// 面板元数据注册表，存储每个面板的标题和默认位置信息。
         /// </summary>
         private readonly Dictionary<string, PanelInfo> _panelInfoRegistry = new();
+        private readonly Dictionary<string, (LayoutAnchorable Panel, PanelPosition Position)> _transientPanels = new();
 
         /// <summary>
         /// 文档注册表，存储 LayoutDocument 的内容信息。
@@ -166,7 +167,7 @@ namespace ColorVision.Solution.Workspace
                 else if (args.Model is LayoutDocument && args.Model.ContentId is { } id && DockViewManagerHost.TryRestoreView(id, out var view))
                     args.Content = view;
                 else
-                    args.Cancel = true; // Ignore unregistered dynamic editor tabs instead of restoring empty content.
+                    args.Cancel = true; // Unregistered editor tabs and tool sessions have no content to restore.
             };
             serializer.Deserialize(reader);
 
@@ -328,6 +329,10 @@ namespace ColorVision.Solution.Workspace
                     if (DocumentTabPinManager.IsPinned(editor)) DocumentTabPinManager.MoveToFixedBoundary(editor);
                 }
 
+                var activeTransient = _dockingManager.Layout.ActiveContent as LayoutAnchorable;
+                foreach (var (panel, position) in _transientPanels.Values)
+                    MoveTransientPanel(defaultLayout, panel, position);
+
                 _dockingManager.Layout = defaultLayout;
 
                 // 更新 WorkspaceManager 的引用
@@ -342,6 +347,10 @@ namespace ColorVision.Solution.Workspace
                 {
                     activeEditor.IsSelected = true;
                     activeEditor.IsActive = true;
+                }
+                else if (activeTransient is { Root: var activeRoot } && activeRoot == defaultLayout)
+                {
+                    activeTransient.IsActive = true;
                 }
 
                 log.Info("主窗口布局已重置");
@@ -387,7 +396,7 @@ namespace ColorVision.Solution.Workspace
                     CanFloat = true
                 };
 
-                AddAnchorableToPosition(newAnchorable, position);
+                AddAnchorableToPosition(_dockingManager.Layout, newAnchorable, position);
                 newAnchorable.Show();
             }
         }
@@ -432,9 +441,51 @@ namespace ColorVision.Solution.Workspace
                     CanFloat = true
                 };
 
-                AddAnchorableToPosition(newAnchorable, position);
+                AddAnchorableToPosition(_dockingManager.Layout, newAnchorable, position);
                 newAnchorable.Show();
                 newAnchorable.IsActive = true;
+            }
+        }
+
+        /// <summary>Opens a live tool session with a close button, outside the persistent panel registry.</summary>
+        internal void ShowTransientPanel(string contentId, object content, string title, PanelPosition position, Action onClosed)
+        {
+            var layout = _dockingManager.Layout;
+            if (_transientPanels.TryGetValue(contentId, out var existing))
+            {
+                if (_dockingManager.IsDetached(existing.Panel))
+                {
+                    _dockingManager.GetLayoutItemFromModel(existing.Panel)?.ActivateCommand.Execute(null);
+                    return;
+                }
+
+                if (existing.Panel.Root != layout)
+                    MoveTransientPanel(layout, existing.Panel, existing.Position);
+                existing.Panel.IsActive = true;
+                return;
+            }
+
+            var panel = new LayoutAnchorable
+            {
+                ContentId = contentId,
+                Title = title,
+                Content = content,
+                CanClose = true,
+                CanHide = false,
+                CanAutoHide = false,
+                CanFloat = true
+            };
+            panel.Closed += PanelClosed;
+            AddAnchorableToPosition(layout, panel, position, dockedOnly: true);
+            _transientPanels.Add(contentId, (panel, position));
+            panel.IsActive = true;
+
+            void PanelClosed(object? sender, EventArgs e)
+            {
+                panel.Closed -= PanelClosed;
+                _transientPanels.Remove(contentId);
+                panel.Content = null;
+                onClosed();
             }
         }
 
@@ -533,19 +584,27 @@ namespace ColorVision.Solution.Workspace
             }
         }
 
-        /// <summary>
-        /// 在布局树中按 ContentId 查找可停靠面板（包括隐藏的）
-        /// </summary>
+        private void MoveTransientPanel(LayoutRoot layout, LayoutAnchorable panel, PanelPosition position)
+        {
+            if (_dockingManager.IsDetached(panel))
+                _dockingManager.ReattachAnchorable(panel);
+            panel.Parent?.RemoveChild(panel);
+            var previous = (ILayoutPreviousContainer)panel;
+            previous.PreviousContainer = null;
+            previous.PreviousContainerId = null;
+            AddAnchorableToPosition(layout, panel, position, dockedOnly: true);
+        }
+
         /// <summary>
         /// 根据注册的位置信息，将面板添加到布局树中正确的位置。
         /// 优先查找同位置的已有面板组，否则创建新的面板组。
         /// </summary>
-        private void AddAnchorableToPosition(LayoutAnchorable anchorable, PanelPosition position)
+        private void AddAnchorableToPosition(LayoutRoot layout, LayoutAnchorable anchorable, PanelPosition position, bool dockedOnly = false)
         {
-            if (_dockingManager.Layout.RootPanel == null) return;
+            if (layout.RootPanel == null) return;
 
             // 查找同位置的已有面板，将新面板添加到同一个 Pane 中
-            var samePosPane = FindPaneForPosition(position);
+            var samePosPane = FindPaneForPosition(layout, position, dockedOnly);
             if (samePosPane != null)
             {
                 samePosPane.Children.Add(anchorable);
@@ -561,23 +620,23 @@ namespace ColorVision.Solution.Workspace
             {
                 case PanelPosition.Left:
                     group.DockWidth = new GridLength(DefaultSidePaneWidth);
-                    _dockingManager.Layout.RootPanel.Children.Insert(0, group);
+                    layout.RootPanel.Children.Insert(0, group);
                     break;
                 case PanelPosition.Right:
                     group.DockWidth = new GridLength(DefaultSidePaneWidth);
-                    _dockingManager.Layout.RootPanel.Children.Add(group);
+                    layout.RootPanel.Children.Add(group);
                     break;
                 case PanelPosition.Bottom:
                 default:
                     group.DockHeight = new GridLength(DefaultBottomPaneHeight);
                     // 底部面板插入到中央面板的 Vertical 容器中
-                    var verticalPanel = _dockingManager.Layout.RootPanel.Descendents()
+                    var verticalPanel = layout.RootPanel.Descendents()
                         .OfType<LayoutPanel>()
                         .FirstOrDefault(p => p.Orientation == System.Windows.Controls.Orientation.Vertical);
                     if (verticalPanel != null)
                         verticalPanel.Children.Add(group);
                     else
-                        _dockingManager.Layout.RootPanel.Children.Add(group);
+                        layout.RootPanel.Children.Add(group);
                     break;
             }
 
@@ -587,15 +646,21 @@ namespace ColorVision.Solution.Workspace
         /// <summary>
         /// 根据位置信息查找已有的、包含同位置面板的 LayoutAnchorablePane。
         /// </summary>
-        private LayoutAnchorablePane? FindPaneForPosition(PanelPosition position)
+        private LayoutAnchorablePane? FindPaneForPosition(LayoutRoot layout, PanelPosition position, bool dockedOnly)
         {
-            foreach (var existingAnchorable in _dockingManager.Layout.Descendents().OfType<LayoutAnchorable>())
+            ILayoutContainer container = dockedOnly ? layout.RootPanel : layout;
+            foreach (var anchorable in container.Descendents().OfType<LayoutAnchorable>())
             {
-                if (existingAnchorable.ContentId != null &&
-                    _panelInfoRegistry.TryGetValue(existingAnchorable.ContentId, out var existingInfo) &&
-                    existingInfo.Position == position)
+                if (anchorable.ContentId is not string id)
+                    continue;
+
+                var pane = anchorable.Parent as LayoutAnchorablePane;
+                if (_panelInfoRegistry.TryGetValue(id, out var info) && info.Position == position && (!dockedOnly || pane != null))
+                    return pane;
+
+                if (pane != null && !anchorable.IsFloating && _transientPanels.TryGetValue(id, out var transient) && transient.Position == position)
                 {
-                    return existingAnchorable.Parent as LayoutAnchorablePane;
+                    return pane;
                 }
             }
             return null;

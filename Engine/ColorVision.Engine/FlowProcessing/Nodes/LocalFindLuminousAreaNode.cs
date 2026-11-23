@@ -74,6 +74,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
     internal sealed class LocalFindLuminousAreaPersistenceRequest
     {
         public required CVStartCFC Action { get; init; }
+        public MySqlConnectedEndpoint? DatabaseEndpoint { get; init; }
         public required string Algorithm { get; init; }
         public string? ImageFilePath { get; init; }
         public int ZIndex { get; init; }
@@ -89,6 +90,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
 
     internal sealed class LocalFindLuminousAreaPublishRequest
     {
+        public MySqlConnectedEndpoint? DatabaseEndpoint { get; init; }
         public required string OperatorCode { get; init; }
         public required string SerialNumber { get; init; }
         public required string NodeId { get; init; }
@@ -99,9 +101,9 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
     internal interface ILocalFindLuminousAreaNodeServices
     {
         LocalFlowFrame LoadFrame(string filePath);
-        MeasureResultImgModel? GetImageResult(int masterId);
+        MeasureResultImgModel? GetImageResult(int masterId, MySqlConnectedEndpoint? endpoint);
         LuminousAreaDetectionResult Detect(HImage image, RoiRect roi, double minimumConfidence);
-        LocalLuminousAreaPoiTemplateShape UpdatePoiTemplate(string templateName, IReadOnlyList<LocalLuminousAreaCorner> corners);
+        LocalLuminousAreaPoiTemplateShape UpdatePoiTemplate(string templateName, IReadOnlyList<LocalLuminousAreaCorner> corners, MySqlConnectedEndpoint? endpoint);
         int Persist(LocalFindLuminousAreaPersistenceRequest request);
         void Publish(LocalFindLuminousAreaPublishRequest request);
     }
@@ -116,25 +118,30 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
 
         public LocalFlowFrame LoadFrame(string filePath) => LocalFrameFileService.Load(filePath);
 
-        public MeasureResultImgModel? GetImageResult(int masterId) => MeasureImgResultDao.Instance.GetById(masterId);
+        public MeasureResultImgModel? GetImageResult(int masterId, MySqlConnectedEndpoint? endpoint) =>
+            MeasureImgResultDao.ReadResult(RequireEndpoint(endpoint), masterId);
 
         public LuminousAreaDetectionResult Detect(HImage image, RoiRect roi, double minimumConfidence) =>
             LuminousAreaNative.DetectV2(image, roi, minimumConfidence);
 
         public LocalLuminousAreaPoiTemplateShape UpdatePoiTemplate(
             string templateName,
-            IReadOnlyList<LocalLuminousAreaCorner> corners) =>
+            IReadOnlyList<LocalLuminousAreaCorner> corners,
+            MySqlConnectedEndpoint? endpoint) =>
             LocalLuminousAreaPoiTemplateUpdater.Update(
                 templateName,
-                corners.Select(corner => new LuminousAreaPoint(corner.X, corner.Y)).ToArray());
+                corners.Select(corner => new LuminousAreaPoint(corner.X, corner.Y)).ToArray(),
+                RequireEndpoint(endpoint));
 
         public int Persist(LocalFindLuminousAreaPersistenceRequest request)
         {
             ArgumentNullException.ThrowIfNull(request);
+            MySqlConnectedEndpoint endpoint = RequireEndpoint(request.DatabaseEndpoint);
             if (request.ResultCode != 0)
             {
                 return LocalFlowResultPersistence.SaveAlgorithmResult(
                     request.Action,
+                    endpoint,
                     ViewResultAlgType.FindLightArea,
                     null,
                     request.Algorithm,
@@ -158,6 +165,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                 request.TotalTime,
                 request.Parameters,
                 request.CreateDetails,
+                endpoint,
                 resultVersion: LocalLuminousAreaResultPersistence.ResultVersion);
         }
 
@@ -173,8 +181,12 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                 request.NodeId,
                 request.ZIndex,
                 request.MasterId,
-                (int)ViewResultAlgType.FindLightArea);
+                (int)ViewResultAlgType.FindLightArea,
+                request.DatabaseEndpoint);
         }
+
+        private static MySqlConnectedEndpoint RequireEndpoint(MySqlConnectedEndpoint? endpoint) =>
+            endpoint ?? throw new InvalidOperationException("发光区定位需要已连接的流程数据库来读取或保存结果。");
     }
 
     internal static class LocalLuminousAreaResultPersistence
@@ -281,7 +293,8 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             ArgumentNullException.ThrowIfNull(action);
             ValidateMinimumConfidence(MinimumConfidence);
             LocalFlowFrame? ownedFrame = null;
-            LocalFlowFrame frame = ResolveFrame(action, out ownedFrame, out string? imageFile);
+            var endpoint = LocalFlowResultPersistence.ResolveEndpoint(action);
+            LocalFlowFrame frame = ResolveFrame(action, endpoint, out ownedFrame, out string? imageFile);
             bool loadedFromFile = ownedFrame != null;
             try
             {
@@ -305,6 +318,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                     int failedMasterId = FlowNodeTiming.Run("PersistResult", () => services.Persist(new LocalFindLuminousAreaPersistenceRequest
                     {
                         Action = action,
+                        DatabaseEndpoint = endpoint,
                         Algorithm = detection.Algorithm,
                         ImageFilePath = imageFile,
                         ZIndex = ZIndex,
@@ -343,18 +357,21 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                         SerialNumber = action.SerialNumber,
                         NodeId = NodeID,
                         ZIndex = ZIndex,
+                        DatabaseEndpoint = endpoint,
                         MasterId = failedMasterId
                     }));
                     throw;
                 }
                 double confidence = detection.Confidence!.Value;
                 string? savePoiTemplateName = string.IsNullOrWhiteSpace(SavePOITempName) ? null : SavePOITempName.Trim();
+                action.RuntimeResources.StopToken.ThrowIfCancellationRequested();
                 LocalLuminousAreaPoiTemplateShape? savePoiTemplateShape = savePoiTemplateName == null
                     ? null
-                    : FlowNodeTiming.Run("UpdatePoiTemplate", () => services.UpdatePoiTemplate(savePoiTemplateName, corners));
+                    : FlowNodeTiming.Run("UpdatePoiTemplate", () => services.UpdatePoiTemplate(savePoiTemplateName, corners, endpoint));
                 int masterId = FlowNodeTiming.Run("PersistResult", () => services.Persist(new LocalFindLuminousAreaPersistenceRequest
                 {
                     Action = action,
+                    DatabaseEndpoint = endpoint,
                     Algorithm = detection.Algorithm,
                     ImageFilePath = imageFile,
                     ZIndex = ZIndex,
@@ -409,6 +426,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                     SerialNumber = action.SerialNumber,
                     NodeId = NodeID,
                     ZIndex = ZIndex,
+                    DatabaseEndpoint = endpoint,
                     MasterId = masterId
                 }));
                 return new LocalFindLuminousAreaNodeResultData
@@ -566,7 +584,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             };
         }
 
-        private LocalFlowFrame ResolveFrame(CVStartCFC action, out LocalFlowFrame? ownedFrame, out string? imageFile)
+        private LocalFlowFrame ResolveFrame(CVStartCFC action, MySqlConnectedEndpoint? endpoint, out LocalFlowFrame? ownedFrame, out string? imageFile)
         {
             ownedFrame = null;
             imageFile = null;
@@ -577,7 +595,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                 return currentFrame;
             }
 
-            string? fallbackFile = ResolveFallbackFile(action, out int sourceMasterId);
+            string? fallbackFile = ResolveFallbackFile(action, endpoint, out int sourceMasterId);
             if (fallbackFile != null)
             {
                 ownedFrame = FlowNodeTiming.Run("OpenImage", () =>
@@ -593,7 +611,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             throw new InvalidOperationException("流程中没有可用的上游图像；请连接相机取图、校正或“加载图片”节点。");
         }
 
-        private string? ResolveFallbackFile(CVStartCFC action, out int sourceMasterId)
+        private string? ResolveFallbackFile(CVStartCFC action, MySqlConnectedEndpoint? endpoint, out int sourceMasterId)
         {
             sourceMasterId = -1;
             bool hasInput = TryGetInputMasterResult(action, 0, out int masterId, out int masterResultType, out _);
@@ -610,7 +628,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                     $"IN 接收到的不是图像结果：MasterId={masterId}，ResultType={masterResultType}。请将图像或本地校正节点连接到 IN。");
             }
 
-            MeasureResultImgModel imageResult = FlowNodeTiming.Run("ResolveImageResult", () => services.GetImageResult(masterId))
+            MeasureResultImgModel imageResult = FlowNodeTiming.Run("ResolveImageResult", () => services.GetImageResult(masterId, endpoint))
                 ?? throw new InvalidOperationException($"找不到 IN 图像结果：MasterId={masterId}。");
             sourceMasterId = masterId;
             string? firstCandidate = null;

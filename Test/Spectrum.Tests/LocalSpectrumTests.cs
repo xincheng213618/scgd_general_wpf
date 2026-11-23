@@ -1,18 +1,31 @@
 using ColorVision.Engine.Services;
 using ColorVision.Engine;
+using ColorVision.Database;
+using ColorVision.Engine.Messages;
+using ColorVision.Engine.MQTT;
 using ColorVision.Engine.Services.PhyCameras.Licenses;
 using ColorVision.Engine.Services.Devices.Spectrum.Configs;
 using ColorVision.Engine.Services.Devices.Spectrum.Local;
 using ColorVision.Engine.Services.Devices.Spectrum;
+using ColorVision.Engine.Services.Devices.Spectrum.Dao;
+using ColorVision.Engine.Services.Devices.CfwPort;
 using ColorVision.Engine.Services.Devices.CfwPort.Local;
+using ColorVision.Engine.Services.Devices.SMU;
+using ColorVision.Engine.Services.Devices.SMU.Dao;
+using ColorVision.Engine.Services.PhyCameras.Configs;
+using ColorVision.Engine.Services.Types;
 using ColorVision.UI;
+using ColorVision.UI.Tests;
 using ColorVision.UI.Views;
 using cvColorVision;
+using MQTTnet;
+using Newtonsoft.Json;
 using EngineSettings = ColorVision.Engine.Services.Devices.Spectrum.Configs.GetDataConfig;
 using System.IO;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text;
+using SqlSugar;
 
 namespace Spectrum.Tests;
 
@@ -120,16 +133,22 @@ public sealed class LocalSpectrumTests
         state.EndLocalCommand();
     }
 
-    [Fact]
-    public void FailedInitializationReleasesNativeHandleAndAllowsRetry()
+    [Theory]
+    [InlineData(-123, 1)]
+    [InlineData(-13004, -13006)]
+    public void FailedInitializationReleasesNativeHandleAndAllowsRetry(int initCode, int closeCode)
     {
-        var native = new FakeNative { InitCode = -123 };
+        var native = new FakeNative { InitCode = initCode, CloseCode = closeCode };
         using var session = new LocalSpectrumSession(native);
-        Assert.Throws<InvalidOperationException>(() => session.Open(Config()));
+        var failure = Record.Exception(() => session.Open(Config()));
+        Assert.False(session.IsQuarantined, failure?.Message);
+        var error = Assert.IsType<InvalidOperationException>(failure);
+        Assert.Contains($"连接光谱仪失败（{initCode}）", error.Message);
         Assert.Equal(1, native.CloseCalls);
         Assert.Equal(1, native.ReleaseCalls);
         Assert.False(session.IsOpen);
         native.InitCode = 1;
+        native.CloseCode = 1;
         session.Open(Config());
         Assert.True(session.IsOpen);
     }
@@ -250,16 +269,15 @@ public sealed class LocalSpectrumTests
             // Use the actual result and request paths without constructing the runtime device services or UI.
             var device = (DeviceSpectrum)RuntimeHelpers.GetUninitializedObject(typeof(DeviceSpectrum));
             device.Config = files.Config;
+            device.SysResourceModel = new SysResourceModel { Code = files.Config.Code };
             var view = new DockViewRegistration(() => throw new InvalidOperationException(), "Spectrum", isVisible: false);
             typeof(DeviceSpectrum).GetField("_view", BindingFlags.NonPublic | BindingFlags.Instance)!.SetValue(device, view);
-            var display = typeof(DeviceSpectrum).GetMethod("DisplayLocalSpectrum", BindingFlags.NonPublic | BindingFlags.Instance)!
-                .CreateDelegate<Action<LocalSpectrumCapture, bool>>(device);
             device.DisplayConfig.IntTime = 4;
             device.DisplayConfig.AveNum = 2;
             device.DisplayConfig.IsAutoIntTime = !synchronized;
 
             var first = session.Capture(device.BuildLocalSpectrumParameters(), files.Config);
-            display(first, false);
+            device.DisplayLocalSpectrum(first, false, device.CaptureConfigurationTarget(), null);
             var nextRequest = device.BuildLocalSpectrumParameters();
             var second = session.Capture(nextRequest, files.Config);
 
@@ -270,6 +288,176 @@ public sealed class LocalSpectrumTests
             Assert.Equal(nextRequestTime, device.DisplayConfig.IntTime);
         }
         finally { ConfigService.SetInstance(previous); }
+    }
+
+    [Fact]
+    public async Task OwnedGetDataResultPreservesElectricalUnitsAndMeasuredZeroFromOfflineLocalEqe()
+    {
+        using var files = new CalibrationFiles();
+        files.Config.Code = $"SPECTRUM-OFFLINE-{Guid.NewGuid():N}";
+        var native = new FakeNative { EqeData = new COLOR_PARA_EQE { dIm = 0, dEqe = .12 } };
+        using var session = new LocalSpectrumSession(native);
+        session.Open(files.Config);
+        var previous = ConfigService.Instance;
+        ConfigService.SetInstance(new ConfigHandler { IsAutoSave = false });
+        try
+        {
+            Assert.Null(MySqlControl.GetInstance().ConnectedEndpoint);
+            await WpfTestHost.Invoke(async () =>
+            {
+                var device = (DeviceSpectrum)RuntimeHelpers.GetUninitializedObject(typeof(DeviceSpectrum));
+                device.Config = files.Config;
+                device.SysResourceModel = new SysResourceModel { Id = 0, Code = files.Config.Code };
+                var backend = new SpectrumBackendState(true);
+                backend.SetLocalStatus(DeviceStatusType.Opened);
+                typeof(DeviceSpectrum).GetField("<SpectrumBackend>k__BackingField", BindingFlags.NonPublic | BindingFlags.Instance)!.SetValue(device, backend);
+                typeof(DeviceSpectrum).GetField("<LocalSession>k__BackingField", BindingFlags.NonPublic | BindingFlags.Instance)!.SetValue(device, session);
+                using var registration = new DockViewRegistration(() => throw new InvalidOperationException("No spectrum view should be created."), device.Code, false);
+                typeof(DeviceSpectrum).GetField("_view", BindingFlags.NonPublic | BindingFlags.Instance)!.SetValue(device, registration);
+                using var client = new MqttClientFactory().CreateMqttClient();
+                using var service = new MQTTSpectrum(device, new MQTTControl(client), (_, _) => throw new InvalidOperationException("Offline results must not query a database."),
+                    () => new Version(), _ => null);
+                device.DService = service;
+                device.DisplayConfig.IsLuminousFluxMode = true;
+                device.DisplayConfig.V = 4.5;
+                device.DisplayConfig.I = .025;
+                var source = (DeviceSMU)RuntimeHelpers.GetUninitializedObject(typeof(DeviceSMU));
+                bool sourceCurrent = true;
+                ApplySmuCurrent(17);
+
+                await AssertCaptureAsync(expectedVoltage: 2.5f, expectedAmps: .017f, expectedMilliamps: 17f);
+
+                sourceCurrent = false;
+                await AssertCaptureAsync(expectedVoltage: 4.5f, expectedAmps: .025f, expectedMilliamps: 25f);
+
+                sourceCurrent = true;
+                double?[] invalidCurrents = [null, double.NaN];
+                foreach (double? invalidCurrent in invalidCurrents)
+                {
+                    ApplySmuCurrent(17);
+                    ApplySmuCurrent(invalidCurrent);
+                    await AssertCaptureAsync(expectedVoltage: 4.5f, expectedAmps: .025f, expectedMilliamps: 25f);
+                }
+
+                Assert.Equal(2 + invalidCurrents.Length, native.CaptureCalls);
+                Assert.False(client.IsConnected);
+                Assert.Equal(DeviceStatusType.Opened, backend.Status);
+
+                void ApplySmuCurrent(double? current) => device.ApplySmuReadings(null, 2.5, current, () => sourceCurrent,
+                    sourceDevice: source, sourceChannel: SMUChannelType.A);
+
+                async Task AssertCaptureAsync(float expectedVoltage, float expectedAmps, float expectedMilliamps)
+                {
+                    var (succeeded, result) = await service.GetDataResultAsync().WaitAsync(TimeSpan.FromSeconds(5));
+
+                    Assert.True(succeeded);
+                    var model = Assert.IsType<SpectumResultEntity>(result);
+                    Assert.Equal(0, model.Id);
+                    Assert.Equal(device.Code, model.DeviceCode);
+                    Assert.True(model.DataType);
+                    Assert.Equal(0f, model.LuminousFlux);
+                    Assert.Null(model.LuminousEfficacy);
+                    Assert.Equal(.12, model.Eqe);
+                    Assert.Equal((expectedVoltage, expectedAmps), native.EqeElectricalInputs);
+                    Assert.Equal(expectedVoltage, model.VResult);
+                    Assert.Equal(expectedMilliamps, model.IResult);
+                }
+            });
+        }
+        finally { ConfigService.SetInstance(previous); }
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task LocalCommandKeepsTheInFlightSampleOnTheAdmittedDatabase(bool continuous)
+    {
+        using var files = new CalibrationFiles();
+        files.Config.Code = $"SPECTRUM-COMMAND-{Guid.NewGuid():N}";
+        DirectoryInfo directory = Directory.CreateTempSubdirectory("cv-spectrum-command-");
+        var previous = ConfigService.Instance;
+        ConfigService.SetInstance(new ConfigHandler { IsAutoSave = false });
+        try
+        {
+            MySqlConnectedEndpoint? active = null;
+            MySqlConnectedEndpoint Endpoint(string name) => new(candidate => ReferenceEquals(candidate, active),
+                () => new SqlSugarClient(new ConnectionConfig
+                {
+                    ConnectionString = $"Data Source={Path.Combine(directory.FullName, name)};Pooling=False",
+                    DbType = DbType.Sqlite, InitKeyType = InitKeyType.Attribute, IsAutoCloseConnection = true,
+                }));
+            MySqlConnectedEndpoint first = Endpoint("a.db"), second = Endpoint("b.db");
+            active = first;
+            using var a = first.CreateDbClient();
+            using var b = second.CreateDbClient();
+            a.CodeFirst.InitTables<SpectumResultEntity>();
+            b.CodeFirst.InitTables<SpectumResultEntity>();
+            int otherId = b.Insertable(new SpectumResultEntity { DeviceCode = "different-device", IntTime = 88 }).ExecuteReturnIdentity();
+
+            var native = new FakeNative();
+            using var session = new LocalSpectrumSession(native);
+            session.Open(files.Config);
+            var device = (DeviceSpectrum)RuntimeHelpers.GetUninitializedObject(typeof(DeviceSpectrum));
+            device.Config = files.Config;
+            device.SysResourceModel = new SysResourceModel { Id = 1, Code = files.Config.Code };
+            device.ResultDatabaseEndpoint = first;
+            var backend = new SpectrumBackendState(true);
+            backend.SetLocalStatus(DeviceStatusType.Opened);
+            typeof(DeviceSpectrum).GetField("<SpectrumBackend>k__BackingField", BindingFlags.NonPublic | BindingFlags.Instance)!.SetValue(device, backend);
+            typeof(DeviceSpectrum).GetField("<LocalSession>k__BackingField", BindingFlags.NonPublic | BindingFlags.Instance)!.SetValue(device, session);
+
+            var loopStopped = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            backend.Changed += () =>
+            {
+                if (backend.Status == DeviceStatusType.Opened && !first.IsCurrent)
+                    loopStopped.TrySetResult();
+            };
+            native.OnCapture = () =>
+            {
+                active = second;
+                device.ResultDatabaseEndpoint = second;
+            };
+
+            var commandFinished = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            try
+            {
+                var record = WpfTestHost.Invoke(() =>
+                {
+                    var pending = device.RunLocalSpectrumCommand(continuous ? "GetDataAuto" : "GetData");
+                    pending.MsgRecordStateChanged += (_, state) =>
+                    {
+                        if (state is MsgRecordState.Success or MsgRecordState.Fail) commandFinished.TrySetResult();
+                    };
+                    if (pending.MsgRecordState is MsgRecordState.Success or MsgRecordState.Fail) commandFinished.TrySetResult();
+                    return pending;
+                });
+                await commandFinished.Task.WaitAsync(TimeSpan.FromSeconds(5));
+                Assert.True(record.MsgRecordState == MsgRecordState.Success, record.MsgReturn.Message);
+                if (continuous) await loopStopped.Task.WaitAsync(TimeSpan.FromSeconds(5));
+
+                Assert.Equal(1, native.CaptureCalls);
+                Assert.False(first.IsCurrent);
+                var saved = a.Queryable<SpectumResultEntity>().Single();
+                Assert.Equal(otherId, saved.Id);
+                Assert.Equal(device.Code, saved.DeviceCode);
+                var untouched = b.Queryable<SpectumResultEntity>().Single();
+                Assert.Equal("different-device", untouched.DeviceCode);
+                Assert.Equal(88, untouched.IntTime);
+                if (!continuous)
+                {
+                    var result = Assert.IsType<LocalSpectrumCommandResult>((object)record.MsgReturn.Data);
+                    Assert.Equal(saved.Id, result.MasterId);
+                    Assert.Equal(saved.Id, result.Capture.MeasurementId);
+                }
+            }
+            finally { await backend.StopLocalCommandAsync().WaitAsync(TimeSpan.FromSeconds(5)); }
+        }
+        finally
+        {
+            ConfigService.SetInstance(previous);
+            foreach (FileInfo file in directory.EnumerateFiles()) file.Delete();
+            directory.Delete();
+        }
     }
 
     [Fact]
@@ -548,6 +736,7 @@ public sealed class LocalSpectrumTests
         var native = new FakeNative { DarkCode = darkCode };
         bool Confirm(bool transmitting) => transmitting ? !reopenFails : !closeFails;
         var wheel = new FakeFilterWheel(native.Calls, files.Config.ShutterCfg) { Confirm = Confirm };
+        int wheelAcquisitions = 0;
         var shutter = new LocalSpectrumShutter(_ => new FakeShutterPort(native.Calls)
         {
             Reply = command =>
@@ -555,7 +744,7 @@ public sealed class LocalSpectrumTests
                 bool transmitting = command == "b";
                 return [Confirm(transmitting) == transmitting ? "turn off" : "turn on"];
             }
-        }, _ => wheel, _ => { });
+        }, _ => { wheelAcquisitions++; return wheel; }, _ => { });
         using var session = new LocalSpectrumSession(native, shutter: shutter);
         session.Open(files.Config);
         var error = Assert.Throws<InvalidOperationException>(() => session.Capture(new() { AutoInitDark = true }, files.Config));
@@ -565,6 +754,8 @@ public sealed class LocalSpectrumTests
         Assert.Equal(0, native.CaptureCalls);
         if (reopenFails) Assert.Contains(useFilterWheel ? "恢复滤色轮测量位失败" : "恢复光闸通光状态失败", error.Message);
         if (darkCode != 1) Assert.Contains("光谱校零失败", error.Message);
+        Assert.Equal(useFilterWheel ? 1 : 0, wheelAcquisitions);
+        Assert.Equal(useFilterWheel ? 1 : 0, wheel.RestoreCalls);
         if (useFilterWheel) Assert.True(wheel.Disposed);
     }
 
@@ -599,6 +790,38 @@ public sealed class LocalSpectrumTests
         session.Capture(new() { SelfAdaptionInitDark = true }, files.Config);
         Assert.Equal(new[] { "smoothing", "wave", "magnitude", "dark", "capture" }, native.Calls);
         Assert.True(native.LastDarkAdaptive);
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void AdaptiveDarkIsInvalidatedOnlyOnceTheSdkAttemptsToReplaceIt(bool failBeforeSdk)
+    {
+        using var files = new CalibrationFiles();
+        files.Config.IsShutterEnable = true;
+        files.Config.ShutterCfg.UseFilterWheel = true;
+        var native = new FakeNative();
+        bool rejectSetup = false;
+        var shutter = new LocalSpectrumShutter(acquireFilterWheel: config => rejectSetup
+            ? throw new InvalidOperationException("Wheel unavailable") : new FakeFilterWheel(native.Calls, config));
+        using var session = new LocalSpectrumSession(native, shutter: shutter);
+        session.Open(files.Config);
+        session.InitAutoDark(files.Config);
+
+        rejectSetup = failBeforeSdk;
+        native.InitAutoDarkCode = 0;
+        native.Calls.Clear();
+        Assert.Throws<InvalidOperationException>(() => session.InitAutoDark(files.Config));
+        Assert.Equal(!failBeforeSdk, native.Calls.Contains("init-adaptive"));
+
+        rejectSetup = false;
+        var adaptive = new LocalSpectrumParameters { SelfAdaptionInitDark = true };
+        if (failBeforeSdk)
+        {
+            session.Capture(adaptive, files.Config);
+            Assert.True(native.LastDarkAdaptive);
+        }
+        else Assert.Contains("初始化", Assert.Throws<InvalidOperationException>(() => session.Capture(adaptive, files.Config)).Message);
     }
 
     [Fact]
@@ -641,7 +864,7 @@ public sealed class LocalSpectrumTests
         var shutterPort = new FakeShutterPort([]) { DisposeFailure = failure };
         var shutter = new LocalSpectrumShutter(_ => shutterPort);
         var spectrum = new FakeNative();
-        var wheel = new FakeDirectNdNative();
+        var wheel = new FakeDirectNdTransport();
         using var session = new LocalSpectrumSession(spectrum, shutter: shutter, nd: new(directSession: new(wheel)));
         session.Open(config);
         session.ControlShutter("ShutterConnect", config);
@@ -865,10 +1088,13 @@ public sealed class LocalSpectrumTests
         ConfigureNd(files.Config, files.Config);
         var wheel = new FakeNd { Port = 1, FailRestore = restoreFails };
         var native = new FakeNative { DarkCode = 0 };
-        using var session = new LocalSpectrumSession(native, nd: new(_ => wheel));
+        int wheelAcquisitions = 0;
+        using var session = new LocalSpectrumSession(native, nd: new(_ => { wheelAcquisitions++; return wheel; }));
         session.Open(files.Config);
         var error = Assert.Throws<InvalidOperationException>(() => session.Capture(new() { IsWithND = true, AutoInitDark = true }, files.Config));
         Assert.Equal(new[] { 4, 1 }, wheel.Moves);
+        Assert.Equal(1, Assert.Single(wheel.Restores));
+        Assert.Equal(2, wheelAcquisitions);
         Assert.Equal(0, native.CaptureCalls);
         Assert.Contains(restoreFails ? "恢复 ND" : "光谱校零", error.Message);
         Assert.True(wheel.Disposed);
@@ -890,6 +1116,7 @@ public sealed class LocalSpectrumTests
         if (cancel) Assert.Throws<OperationCanceledException>(() => session.Capture(parameters, files.Config, stopped.Token));
         else Assert.Contains("收敛", Assert.Throws<InvalidOperationException>(() => session.Capture(parameters, files.Config)).Message);
         Assert.Equal(new[] { 1, 0 }, wheel.Moves);
+        Assert.Equal(0, Assert.Single(wheel.Restores));
         Assert.Equal(0, wheel.Port);
         Assert.Equal(0, native.DarkCalls);
         Assert.Equal(0, native.CaptureCalls);
@@ -911,12 +1138,14 @@ public sealed class LocalSpectrumTests
         session.Open(files.Config);
         session.Dark(new(), files.Config);
         wheel.Moves.Clear();
+        wheel.Restores.Clear();
         wheel.FailRestore = restoreFails;
         native.DarkValue = 7;
 
         var error = Assert.Throws<InvalidOperationException>(() => session.Capture(new() { IsWithND = true, AutoIntegration = true, AutoInitDark = true }, files.Config));
 
         Assert.Equal(new[] { 0, 4, 0, 1 }, wheel.Moves);
+        Assert.Equal(new[] { 0, 1 }, wheel.Restores);
         Assert.Equal(restoreFails ? 0 : 1, wheel.Port);
         Assert.Equal(1, native.CaptureCalls);
         Assert.Equal(7, native.LastCaptureDark[0]);
@@ -952,6 +1181,121 @@ public sealed class LocalSpectrumTests
         Assert.Equal(Path.GetFullPath(files.Config.MaguideFile), LocalSpectrumNd.ResolveCalibration(files.Config, 1).MagnitudeFile);
     }
 
+    [Theory]
+    [InlineData("before open")]
+    [InlineData("ND dark")]
+    [InlineData("shutter dark")]
+    [InlineData("continuous")]
+    public async Task ScopedOpticsNeverAdoptAReplacementWheelAndRestoreOnlyTheOriginal(string timing)
+    {
+        using var files = new CalibrationFiles();
+        await WpfTestHost.Invoke<Task>(async () =>
+        {
+            var managerField = typeof(ServiceManager).GetField("_instance", BindingFlags.Static | BindingFlags.NonPublic)!;
+            object? previousManager = managerField.GetValue(null);
+            var manager = (ServiceManager)RuntimeHelpers.GetUninitializedObject(typeof(ServiceManager));
+            var previousConfig = ConfigService.Instance;
+            ConfigService.SetInstance(new ConfigHandler { IsAutoSave = false });
+            managerField.SetValue(null, manager);
+            manager.DeviceServices = [];
+
+            string code = $"scoped-wheel-{Guid.NewGuid():N}";
+            var oldWheelNative = new FakeDirectNdTransport { Port = 1 };
+            var newWheelNative = new FakeDirectNdTransport { Port = 1 };
+            try
+            {
+                using var original = NewWheel("COM7651", oldWheelNative);
+                using var replacement = NewWheel("COM7652", newWheelNative);
+                ConfigSpectrum config = files.Config;
+                config.Code = $"scoped-spectrum-{Guid.NewGuid():N}";
+                var spectrum = (DeviceSpectrum)RuntimeHelpers.GetUninitializedObject(typeof(DeviceSpectrum));
+                spectrum.SysResourceModel = new SysResourceModel { Id = -3, Code = config.Code, Type = (int)ServiceTypes.Spectrum };
+                spectrum.Config = config;
+                typeof(DeviceSpectrum).GetField("<SpectrumBackend>k__BackingField", BindingFlags.Instance | BindingFlags.NonPublic)!
+                    .SetValue(spectrum, new SpectrumBackendState(true));
+                spectrum.DService = (MQTTSpectrum)RuntimeHelpers.GetUninitializedObject(typeof(MQTTSpectrum));
+                spectrum.DService.Device = spectrum;
+                manager.DeviceServices = [spectrum, original];
+
+                if (timing == "shutter dark")
+                {
+                    config.IsShutterEnable = true;
+                    config.ShutterCfg.UseFilterWheel = true;
+                    config.ShutterCfg.FilterWheelDeviceCode = code;
+                    config.ShutterCfg.DarkPort = 4;
+                    config.ShutterCfg.MeasurementPort = 1;
+                }
+                else
+                {
+                    ConfigureNd(config, config);
+                    config.NDConfig.IsBingNDDevice = true;
+                    config.NDConfig.NDBindDeviceCode = code;
+                }
+
+                void ReplaceWheel() => manager.DeviceServices = [spectrum, replacement];
+                var native = new FakeNative { OnDark = ReplaceWheel };
+                using var session = new LocalSpectrumSession(native);
+                var scope = LocalSpectrumOpticalScope.Capture(spectrum, config);
+                if (timing == "before open")
+                {
+                    ReplaceWheel();
+                    Assert.Throws<InvalidOperationException>(() => session.Open(config, opticalScope: scope));
+                    Assert.Equal(0, native.CreateCalls);
+                    Assert.Equal(0, oldWheelNative.OpenCalls);
+                    Assert.Empty(oldWheelNative.Moves);
+                }
+                else if (timing == "continuous")
+                {
+                    session.Open(config, opticalScope: scope);
+                    typeof(DeviceSpectrum).GetField("<LocalSession>k__BackingField", BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(spectrum, session);
+                    using var registration = new DockViewRegistration(() => throw new InvalidOperationException("No chart should be created."), config.Code, false);
+                    typeof(DeviceSpectrum).GetField("_view", BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(spectrum, registration);
+                    native.OnCapture = ReplaceWheel;
+                    spectrum.SpectrumBackend.SetLocalStatus(DeviceStatusType.Opened);
+                    spectrum.DisplayConfig.PortNum = 5;
+                    int delivered = 0;
+                    var failure = new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously);
+                    spectrum.LocalResultAvailable += (_, _) => delivered++;
+                    spectrum.LocalCaptureFailed += error => failure.TrySetResult(error);
+                    try
+                    {
+                        spectrum.RunLocalSpectrumCommand("GetDataAuto");
+                        Assert.Contains("绑定滤色轮已更改", await failure.Task.WaitAsync(TimeSpan.FromSeconds(10)));
+                        Assert.Equal(1, native.CaptureCalls);
+                        Assert.Equal(1, delivered);
+                        Assert.Equal(5, spectrum.DisplayConfig.PortNum);
+                    }
+                    finally { await spectrum.SpectrumBackend.StopLocalCommandAsync().WaitAsync(TimeSpan.FromSeconds(10)); }
+                }
+                else
+                {
+                    session.Open(config, opticalScope: scope);
+                    Assert.Throws<InvalidOperationException>(() => session.Capture(new() { AutoInitDark = true }, config, opticalScope: scope));
+                    Assert.Equal(new[] { 4, 1 }, oldWheelNative.Moves);
+                    Assert.Equal(1, oldWheelNative.Port);
+                    Assert.Equal(0, native.CaptureCalls);
+                    Assert.Equal(1, native.DarkCalls);
+                }
+                Assert.Equal(0, newWheelNative.OpenCalls);
+                Assert.Empty(newWheelNative.Moves);
+            }
+            finally
+            {
+                managerField.SetValue(null, previousManager);
+                ConfigService.SetInstance(previousConfig);
+            }
+
+            DeviceCfwPort NewWheel(string port, FakeDirectNdTransport native)
+            {
+                var configuration = new ConfigCfwPort { SzComName = port, IsAutoOpen = false };
+                var resource = new SysResourceModel { Id = -2, Code = code, Type = (int)ServiceTypes.FilterWheel, Value = JsonConvert.SerializeObject(configuration) };
+                var wheel = new DeviceCfwPort(resource, new LocalCfwPortSession(native));
+                wheel.DisplayConfig.UseLocalCfwPort = true;
+                return wheel;
+            }
+        });
+    }
+
     private static void ConfigureNd(ConfigSpectrum first, ConfigSpectrum second)
     {
         first.NDConfig.IsNDPort = true;
@@ -968,6 +1312,7 @@ public sealed class LocalSpectrumTests
         public int Port;
         public bool Disposed, FailRestore;
         public List<int> Moves = [];
+        public List<int> Restores = [];
         public int GetPort() => Port;
         public int SetPort(int port)
         {
@@ -975,6 +1320,7 @@ public sealed class LocalSpectrumTests
             if (FailRestore && Moves.Count > 1 && port == 1) throw new InvalidOperationException("restore failed");
             return Port = port;
         }
+        public int RestorePort(int port) { Restores.Add(port); return SetPort(port); }
         public void Dispose() => Disposed = true;
     }
 
@@ -1070,14 +1416,17 @@ public sealed class LocalSpectrumTests
 
     private sealed class FakeNative : ILocalSpectrumNative
     {
-        public int InitCode = 1, CreateCalls, CloseCalls, ReleaseCalls, CaptureCalls, DarkCalls, DarkCode = 1;
+        public int InitCode = 1, CloseCode = 1, CreateCalls, CloseCalls, ReleaseCalls, CaptureCalls, DarkCalls, DarkCode = 1;
         public float DarkTime;
         public int DarkAverage;
         public (float Time, int Average) CaptureTiming;
         public float DarkValue;
+        public Action? OnDark;
         public float[] LastCaptureDark = [];
         public bool LastDarkAdaptive;
         public bool CaptureFails;
+        public COLOR_PARA_EQE? EqeData;
+        public (float Voltage, float Current) EqeElectricalInputs;
         public Action? OnCapture;
         public int SmoothingCode = 1;
         public (SpectrumSmoothingMethod Method, int Width) Smoothing;
@@ -1088,7 +1437,7 @@ public sealed class LocalSpectrumTests
         public IntPtr Create(int type, Spectrometer.Emission_CallBack callback) { CreateCalls++; return (IntPtr)123; }
         public int Init(IntPtr h, int port, int baud) => InitCode;
         public int SerialNumber(IntPtr h, StringBuilder serial) { serial.Append(Serial); return 1; }
-        public int Close(IntPtr h) { CloseCalls++; return 1; }
+        public int Close(IntPtr h) { CloseCalls++; return CloseCode; }
         public int Release(IntPtr h) { ReleaseCalls++; return 1; }
         public int LoadWavelength(IntPtr h, string path) { Calls.Add("wave"); return 1; }
         public string? MagnitudePath;
@@ -1102,23 +1451,25 @@ public sealed class LocalSpectrumTests
         public int AutoTime(IntPtr h, ref float time, ConfigSpectrum c, CancellationToken cancellationToken)
         { Calls.Add("auto"); OnAutoTime?.Invoke(cancellationToken); time = AutoTimes?.Dequeue() ?? 240; return AutoTimeCode; }
         public int Dark(IntPtr h, float time, int avg, int filter, float[] data, bool adaptive)
-        { Calls.Add("dark"); DarkCalls++; DarkTime = time; DarkAverage = avg; LastDarkAdaptive = adaptive; Array.Fill(data, DarkValue); return DarkCode; }
+        { Calls.Add("dark"); DarkCalls++; DarkTime = time; DarkAverage = avg; LastDarkAdaptive = adaptive; Array.Fill(data, DarkValue); OnDark?.Invoke(); return DarkCode; }
         public (float Start, int Step, int Count, int Average) AdaptiveDarkSettings;
+        public int InitAutoDarkCode = 1;
         public int InitAutoDark(IntPtr h, SelfAdaptionInitDark c)
         {
             Calls.Add("init-adaptive");
             AdaptiveDarkSettings = (c.BeginIntegralTime, c.StepTime, c.StepCount, c.NumberOfAverage);
-            return 1;
+            return InitAutoDarkCode;
         }
         public LocalSpectrumCapture Capture(IntPtr h, LocalSpectrumParameters p, EngineSettings settings, float[] dark)
         {
+            if (p.Eqe) EqeElectricalInputs = (p.Voltage, p.Current);
             CaptureSmoothing = (settings.SmoothingMethod, settings.FilterBW);
             CaptureTiming = (p.IntegralTime, p.NumberOfAverage);
             LastCaptureDark = dark.ToArray();
             Calls.Add("capture"); CaptureCalls++;
             OnCapture?.Invoke();
             if (CaptureFails) throw new InvalidOperationException("Native failure");
-            return new() { IntegralTime = p.IntegralTime, Data = NativeData() };
+            return new() { IntegralTime = p.IntegralTime, Data = NativeData(), EqeData = p.Eqe ? EqeData : null };
         }
     }
 
@@ -1148,19 +1499,22 @@ public sealed class LocalSpectrumTests
         }
     }
 
-    private sealed class FakeDirectNdNative : ILocalCfwPortNative
+    private sealed class FakeDirectNdTransport : ILocalCfwPortTransport
     {
+        internal int Port;
+        internal List<int> Moves { get; } = [];
         internal int OpenCalls { get; private set; }
         internal int CloseCalls { get; private set; }
-        public IntPtr Open(LocalCfwPortConnection config) { OpenCalls++; return (IntPtr)456; }
-        public int Close(IntPtr handle) { CloseCalls++; return cvErrorDefine.CV_ERR_SUCCESS; }
-        public int SetPort(IntPtr handle, int port) => cvErrorDefine.CV_ERR_SUCCESS;
-        public int GetPort(IntPtr handle, ref int port) { port = 0; return cvErrorDefine.CV_ERR_SUCCESS; }
+        public void Open(LocalCfwPortConnection config) => OpenCalls++;
+        public void Close() => CloseCalls++;
+        public void SetPort(int port) { Moves.Add(port); Port = port; }
+        public int ReadPort(int timeout) => Port;
     }
 
     private sealed class FakeFilterWheel(List<string> calls, ShutterConfig config) : ILocalSpectrumFilterWheelOperation
     {
         public bool Disposed;
+        public int RestoreCalls;
         public List<int> Ports = [];
         public Func<bool, bool> Confirm = _ => true;
         public void SetTransmitting(bool transmitting)
@@ -1170,6 +1524,7 @@ public sealed class LocalSpectrumTests
             Ports.Add(transmitting ? config.MeasurementPort : config.DarkPort);
             if (!Confirm(transmitting)) throw new InvalidOperationException("滤色轮未确认到位。");
         }
+        public void RestoreTransmitting() { RestoreCalls++; SetTransmitting(true); }
         public void Dispose() => Disposed = true;
     }
 

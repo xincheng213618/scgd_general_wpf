@@ -199,7 +199,7 @@ namespace ColorVision.Copilot
         public bool HasThinkingContent => !string.IsNullOrWhiteSpace(ThinkingContent);
 
         [JsonIgnore]
-        public bool HasAgentTraceEntries => VisibleAgentTraceEntries.Count > 0;
+        public bool HasAgentTraceEntries => AgentTraceEntries.Any(static entry => entry != null && entry.IsVisibleInActivity);
 
         [JsonIgnore]
         public IReadOnlyList<CopilotAgentTraceEntry> VisibleAgentTraceEntries => AgentTraceEntries

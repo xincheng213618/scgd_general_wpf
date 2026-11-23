@@ -6,6 +6,7 @@ using System.Windows;
 using System.IO;
 using System.Windows.Interop;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 namespace ColorVision.Common.Utilities
@@ -13,6 +14,7 @@ namespace ColorVision.Common.Utilities
 
     public static partial class ImageUtils
     {
+        private const int HistogramBinCount = 256;
 
         public static void DrawHistogram(int[] histogram, Color color, DrawingContext drawingContext, double width, double height)
         {
@@ -31,9 +33,9 @@ namespace ColorVision.Common.Utilities
 
         public static (int[] c1, int[] c2, int[] c3) RenderHistogram(BitmapSource bitmapSource)
         {
-            int[] channel1 = new int[256];
-            int[] channel2 = new int[256];
-            int[] channel3 = new int[256];
+            int[] channel1 = new int[HistogramBinCount];
+            int[] channel2 = new int[HistogramBinCount];
+            int[] channel3 = new int[HistogramBinCount];
             PixelFormat format = bitmapSource.Format;
             if (bitmapSource.Palette != null)
             {
@@ -52,7 +54,12 @@ namespace ColorVision.Common.Utilities
             int stride = checked(width * pixelBytes);
             const int targetBufferBytes = 64 * 1024;
             int rowsPerChunk = Math.Min(height, Math.Max(1, targetBufferBytes / stride));
-            byte[] pixelData = ArrayPool<byte>.Shared.Rent(checked(rowsPerChunk * stride));
+            int chunkBytes = checked(rowsPerChunk * stride);
+            // Independent counters let repeated gray values accumulate without serializing every update.
+            Span<int> grayScratch = isGray && chunkBytes >= 4 * pixelBytes
+                ? stackalloc int[HistogramBinCount * 3] : Span<int>.Empty;
+            grayScratch.Clear();
+            byte[] pixelData = ArrayPool<byte>.Shared.Rent(chunkBytes);
             try
             {
                 for (int top = 0; top < height;)
@@ -62,17 +69,11 @@ namespace ColorVision.Common.Utilities
                     int length = rowCount * stride;
                     if (isGray)
                     {
-                        for (int i = pixelBytes - 1; i < length; i += pixelBytes)
-                            channel1[pixelData[i]]++;
+                        CountGrayscale(pixelData.AsSpan(0, length), pixelBytes, channel1, grayScratch);
                     }
                     else if (pixelBytes == 4)
                     {
-                        foreach (uint pixel in MemoryMarshal.Cast<byte, uint>(pixelData.AsSpan(0, length)))
-                        {
-                            channel1[(pixel >> 16) & 255]++;
-                            channel2[(pixel >> 8) & 255]++;
-                            channel3[pixel & 255]++;
-                        }
+                        CountBgr32(pixelData.AsSpan(0, length), channel1, channel2, channel3);
                     }
                     else if (isWideRgb)
                     {
@@ -103,12 +104,61 @@ namespace ColorVision.Common.Utilities
                 ArrayPool<byte>.Shared.Return(pixelData);
             }
 
+            if (!grayScratch.IsEmpty)
+            {
+                for (int i = 0; i < HistogramBinCount; i++)
+                    channel1[i] += grayScratch[i] + grayScratch[HistogramBinCount + i] + grayScratch[2 * HistogramBinCount + i];
+            }
+
             if (format == PixelFormats.Gray8)
             {
                 channel1.CopyTo(channel2, 0);
                 channel1.CopyTo(channel3, 0);
             }
             return (channel1, channel2, channel3);
+        }
+
+        private static void CountBgr32(ReadOnlySpan<byte> pixels, int[] red, int[] green, int[] blue)
+        {
+            // RenderHistogram supplies 256 bins per channel, and every index is one byte.
+            ref int redBase = ref MemoryMarshal.GetArrayDataReference(red);
+            ref int greenBase = ref MemoryMarshal.GetArrayDataReference(green);
+            ref int blueBase = ref MemoryMarshal.GetArrayDataReference(blue);
+            foreach (uint pixel in MemoryMarshal.Cast<byte, uint>(pixels))
+            {
+                Unsafe.Add(ref redBase, (byte)(pixel >> 16))++;
+                Unsafe.Add(ref greenBase, (byte)(pixel >> 8))++;
+                Unsafe.Add(ref blueBase, (byte)pixel)++;
+            }
+        }
+
+        private static void CountGrayscale(ReadOnlySpan<byte> pixels, int pixelBytes, int[] bins, Span<int> scratch)
+        {
+            if (pixelBytes == 1)
+            {
+                foreach (uint packed in MemoryMarshal.Cast<byte, uint>(pixels))
+                {
+                    bins[(byte)packed]++;
+                    scratch[(byte)(packed >> 8)]++;
+                    scratch[HistogramBinCount + (byte)(packed >> 16)]++;
+                    scratch[2 * HistogramBinCount + (byte)(packed >> 24)]++;
+                }
+            }
+            else
+            {
+                // The high byte of each little-endian Gray16 sample determines its bin.
+                foreach (ulong packed in MemoryMarshal.Cast<byte, ulong>(pixels))
+                {
+                    bins[(byte)(packed >> 8)]++;
+                    scratch[(byte)(packed >> 24)]++;
+                    scratch[HistogramBinCount + (byte)(packed >> 40)]++;
+                    scratch[2 * HistogramBinCount + (byte)(packed >> 56)]++;
+                }
+            }
+
+            int groupBytes = pixelBytes * 4;
+            for (int i = pixels.Length / groupBytes * groupBytes + pixelBytes - 1; i < pixels.Length; i += pixelBytes)
+                bins[pixels[i]]++;
         }
 
 

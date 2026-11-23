@@ -1,6 +1,16 @@
+using ColorVision.Database;
 using ColorVision.Engine;
+using ColorVision.Engine.Services;
+using ColorVision.Engine.Services.Results;
+using ColorVision.Engine.Templates.Jsons;
+using ColorVision.Engine.Templates.Jsons.FOV2;
+using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using ColorVision.ImageEditor;
 using ColorVision.Themes;
+using Microsoft.VisualBasic.FileIO;
+using Newtonsoft.Json;
+using SqlSugar;
+using System.IO;
 using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
@@ -12,6 +22,190 @@ namespace ColorVision.UI.Tests;
 
 public sealed class MeasureBatchPageLifecycleTests
 {
+    [Fact]
+    public void AdvancedBatchHistoryFiltersWithoutAllowingTableMaintenance()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            using var resources = new PresentationResources();
+            using var db = new SqlSugarClient(new ConnectionConfig
+            {
+                ConnectionString = "Data Source=:memory:", DbType = SqlSugar.DbType.Sqlite,
+                InitKeyType = InitKeyType.Attribute, IsAutoCloseConnection = false
+            });
+            db.CodeFirst.InitTables(typeof(MeasureBatchModel), typeof(MeasureResultImgModel), typeof(AlgResultMasterModel));
+            const string selectedCode = "selected-batch";
+            int selectedId = db.Insertable(new MeasureBatchModel { Code = selectedCode }).ExecuteReturnIdentity();
+            db.Insertable(new MeasureBatchModel { Code = "other-batch" }).ExecuteCommand();
+            db.Insertable(new MeasureResultImgModel { BatchId = selectedId }).ExecuteCommand();
+            db.Insertable(new AlgResultMasterModel { BatchId = selectedId, CreateDate = DateTime.Now }).ExecuteCommand();
+
+            var manager = new MeasureBatchManager();
+            var query = manager.CreateHistoryQuery(db, endpoint: null);
+            query.AddPropertyInfo(typeof(MeasureBatchModel).GetProperty(nameof(MeasureBatchModel.Code))!);
+            Assert.Single(query.QueryConditions).InputText = selectedCode;
+            query.QueryDB();
+            Assert.Equal(selectedId, Assert.Single(manager.ViewResults).MeasureBatchModel.Id);
+
+            Assert.True(query.IsReadOnly);
+            Assert.False(query.DeleteAllCommand.CanExecute(null));
+            Assert.False(query.TruncateTableCommand.CanExecute(null));
+            query.DeleteAllCommand.Execute(null);
+            query.TruncateTableCommand.Execute(null);
+            query.DeleteAll();
+            query.TruncateTable();
+
+            Assert.Equal(2, db.Queryable<MeasureBatchModel>().Count());
+            Assert.Equal(1, db.Queryable<MeasureResultImgModel>().Where(row => row.BatchId == selectedId).Count());
+            Assert.Equal(1, db.Queryable<AlgResultMasterModel>().Where(row => row.BatchId == selectedId).Count());
+        });
+    }
+
+    [Fact]
+    public async Task BoundBatchKeepsItsImagesFovDetailsAndExportAfterDatabaseSwitch()
+    {
+        DirectoryInfo files = Directory.CreateTempSubdirectory("cv-batch-history-");
+        string exportDirectory = files.CreateSubdirectory("export").FullName;
+        try
+        {
+            await WpfTestHost.Invoke(async () =>
+            {
+                using var resources = new PresentationResources();
+                MySqlConnectedEndpoint? active = null;
+                MySqlConnectedEndpoint Endpoint(string label) => new(endpoint => ReferenceEquals(active, endpoint), () => new SqlSugarClient(new ConnectionConfig
+                {
+                    ConnectionString = $"Data Source={Path.Combine(files.FullName, label + ".db")};Pooling=False",
+                    DbType = SqlSugar.DbType.Sqlite, InitKeyType = InitKeyType.Attribute, IsAutoCloseConnection = true
+                }));
+                MySqlConnectedEndpoint original = Endpoint("original");
+                MySqlConnectedEndpoint replacement = Endpoint("replacement");
+                active = original;
+                var selected = Seed(original, "original", width: 3, fov: 17);
+                var other = Seed(replacement, "replacement", width: 7, fov: 83);
+                Assert.Equal((selected.Batch.Id, selected.ImageId, selected.MasterId), (other.Batch.Id, other.ImageId, other.MasterId));
+                active = replacement;
+                Assert.False(original.IsCurrent);
+
+                using var page = new MeasureBatchPage(new Frame(), selected.Batch);
+                page.RaiseEvent(new RoutedEventArgs(FrameworkElement.LoadedEvent, page));
+                ViewResultImage image = Assert.Single(page.ViewResultImages);
+                ViewResultAlg algorithm = Assert.Single(page.ViewResultAlgs);
+                Assert.Equal(selected.ImageId, image.Id);
+                Assert.Equal(selected.ImageFile, image.FileUrl);
+                Assert.Equal(selected.MasterId, algorithm.Id);
+                Assert.Equal(selected.Batch.Code, algorithm.Batch);
+                Assert.Equal(selected.ImageFile, algorithm.FilePath);
+                Assert.Same(original, algorithm.AlgResultMasterModel.DatabaseEndpoint);
+                var imagePreview = Preview(page, "imagePreview");
+                var algorithmPreview = Preview(page, "algorithmImagePreview");
+                await Task.WhenAll(imagePreview.ImageOpenCompletion, algorithmPreview.ImageOpenCompletion).WaitAsync(TimeSpan.FromSeconds(15));
+                Assert.Equal(3, Assert.IsAssignableFrom<BitmapSource>(imagePreview.ViewBitmapSource).PixelWidth);
+                Assert.Equal(3, Assert.IsAssignableFrom<BitmapSource>(algorithmPreview.ViewBitmapSource).PixelWidth);
+                Assert.Equal(17, Assert.IsType<DFovView>(Assert.Single(algorithm.ViewResults)).D_Fov);
+
+                // Exercise the export's own lazy database read after B became current.
+                algorithm.ViewResults = null;
+                AlgorithmResultDataSaver.Save(new ViewResultContext(), algorithm, exportDirectory);
+                string output = Assert.Single(Directory.GetFiles(exportDirectory, "*.csv"));
+                using var csv = new TextFieldParser(output);
+                csv.SetDelimiters(",");
+                string[] header = csv.ReadFields()!;
+                int fov = Array.IndexOf(header, nameof(DFovView.D_Fov));
+                Assert.True(fov >= 0);
+                Assert.Equal("17", csv.ReadFields()![fov]);
+                Assert.True(csv.EndOfData);
+            });
+        }
+        finally
+        {
+            foreach (string output in Directory.EnumerateFiles(exportDirectory)) File.Delete(output);
+            Directory.Delete(exportDirectory);
+            foreach (FileInfo file in files.EnumerateFiles()) file.Delete();
+            files.Delete();
+        }
+
+        (MeasureBatchModel Batch, int ImageId, int MasterId, string ImageFile) Seed(
+            MySqlConnectedEndpoint endpoint, string label, int width, double fov)
+        {
+            string imageFile = Path.Combine(files.FullName, label + ".png");
+            var encoder = new PngBitmapEncoder();
+            encoder.Frames.Add(BitmapFrame.Create(new WriteableBitmap(width, 2, 96, 96, PixelFormats.Gray8, null)));
+            using (FileStream stream = File.Create(imageFile)) encoder.Save(stream);
+            string resultFile = Path.Combine(files.FullName, label + ".json");
+            File.WriteAllText(resultFile, JsonConvert.SerializeObject(new ResDFov { result = new CameraFOV { D_Fov = fov } }));
+
+            using var db = endpoint.CreateDbClient();
+            db.CodeFirst.InitTables(typeof(MeasureBatchModel), typeof(MeasureResultImgModel), typeof(AlgResultMasterModel), typeof(DetailCommonModel));
+            var batch = new MeasureBatchModel { Code = "shared-code", Name = label };
+            batch.Id = db.Insertable(batch).ExecuteReturnIdentity();
+            batch.DatabaseEndpoint = endpoint;
+            int imageId = db.Insertable(new MeasureResultImgModel { BatchId = batch.Id, FileUrl = imageFile }).ExecuteReturnIdentity();
+            int masterId = db.Insertable(new AlgResultMasterModel
+            {
+                BatchId = batch.Id, ImgFileType = ViewResultAlgType.FOV, version = "2.0", ImgFile = imageFile, CreateDate = DateTime.Now
+            }).ExecuteReturnIdentity();
+            db.Insertable(new DetailCommonModel
+            {
+                PId = masterId, ResultJson = JsonConvert.SerializeObject(new ResultFile { ResultFileName = resultFile })
+            }).ExecuteCommand();
+            return (batch, imageId, masterId, imageFile);
+        }
+    }
+
+    [Fact]
+    public void CorruptAlgorithmResultClearsBatchDetailsAndAllowsAnotherSelection()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            using var resources = new PresentationResources();
+            using var page = CreateOfflinePage(new Frame());
+            var rows = Assert.IsType<ListView>(page.FindName("listView2"));
+            var details = Assert.IsType<ListView>(page.FindName("algorithmDetailListView"));
+            var message = Assert.IsType<TextBox>(page.FindName("algorithmDetailTextBox"));
+            var image = Preview(page, "algorithmImagePreview");
+            DirectoryInfo files = Directory.CreateTempSubdirectory("ColorVision-batch-result-test-");
+            string goodFile = Path.Combine(files.FullName, "good.png");
+            string corruptFile = Path.Combine(files.FullName, "corrupt.png");
+            try
+            {
+                var encoder = new PngBitmapEncoder();
+                encoder.Frames.Add(BitmapFrame.Create(new WriteableBitmap(2, 2, 96, 96, PixelFormats.Gray8, null)));
+                using (FileStream file = File.Create(goodFile)) encoder.Save(file);
+                File.WriteAllText(corruptFile, "truncated image");
+                ViewResultAlg valid = new() { Id = 1, ResultType = ViewResultAlgType.KB, FilePath = goodFile, ResultImagFile = goodFile, ViewResults = [] };
+                ViewResultAlg corrupt = new() { Id = 2, ResultType = ViewResultAlgType.KB, FilePath = goodFile, ResultImagFile = corruptFile, ViewResults = [] };
+                page.ViewResultAlgs.Add(valid);
+                page.ViewResultAlgs.Add(corrupt);
+
+                rows.SelectedItem = valid;
+                Assert.IsAssignableFrom<BitmapSource>(image.ViewBitmapSource);
+                Assert.Same(valid.ViewResults, details.ItemsSource);
+
+                rows.SelectedItem = corrupt;
+                Assert.Null(image.ViewBitmapSource);
+                Assert.Null(details.ItemsSource);
+                Assert.Empty(Assert.IsType<GridView>(details.View).Columns);
+                Assert.Equal(Visibility.Visible, message.Visibility);
+                Assert.Contains("ID 2", message.Text);
+
+                rows.SelectedItem = valid;
+                Assert.IsAssignableFrom<BitmapSource>(image.ViewBitmapSource);
+                Assert.Same(valid.ViewResults, details.ItemsSource);
+                Assert.Equal(Visibility.Collapsed, message.Visibility);
+
+                rows.SelectedIndex = -1;
+                Assert.Null(image.ViewBitmapSource);
+                Assert.Null(details.ItemsSource);
+            }
+            finally
+            {
+                File.Delete(corruptFile);
+                File.Delete(goodFile);
+                files.Delete();
+            }
+        });
+    }
+
     [Theory]
     [InlineData(false)]
     [InlineData(true)]

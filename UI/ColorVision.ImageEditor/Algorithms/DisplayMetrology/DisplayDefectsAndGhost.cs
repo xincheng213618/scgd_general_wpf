@@ -31,6 +31,8 @@ public sealed partial class DisplayMetrologyProvider
         var shapes = new List<AlgorithmGeometry>();
         var classification = new byte[signal.Length];
         var residual = new float[signal.Length];
+        var mask = new byte[signal.Length];
+        var componentQueue = new int[signal.Length];
         int brightPoints = 0, darkPoints = 0, lines = 0, mura = 0;
         // Two scales: narrow residual for points/lines, smoothed residual for low-frequency mura.
         foreach (bool lowFrequency in new[] { false, true })
@@ -38,7 +40,6 @@ public sealed partial class DisplayMetrologyProvider
             for (int i = 0; i < signal.Length; i++) residual[i] = lowFrequency ? smoothed[i] - background[i] : signal[i] - smoothed[i];
             foreach (int sign in new[] { 1, -1 })
             {
-                var mask = new byte[signal.Length];
                 for (int y = margin; y < height - margin; y++)
                 {
                     token.ThrowIfCancellationRequested();
@@ -49,7 +50,8 @@ public sealed partial class DisplayMetrologyProvider
                         if (sign * residual[i] > threshold) mask[i] = 255;
                     }
                 }
-                foreach (var region in Components(mask, residual, width, height, token))
+                // Components clears the candidate mask before the next pass.
+                foreach (var region in Components(mask, residual, width, height, token, componentQueue))
                 {
                     double aspect = (double)Math.Max(region.Bounds.Width, region.Bounds.Height) / Math.Min(region.Bounds.Width, region.Bounds.Height);
                     string kind;

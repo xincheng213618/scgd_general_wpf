@@ -1195,7 +1195,7 @@ namespace ColorVision.UI.Desktop.Properties {
         }
         
         /// <summary>
-        ///   查找类似 浏览商店 的本地化字符串。
+        ///   查找类似 商店 的本地化字符串。
         /// </summary>
         public static string Marketplace {
             get {
@@ -1689,6 +1689,15 @@ namespace ColorVision.UI.Desktop.Properties {
             }
         }
         
+        /// <summary>
+        ///   查找类似 反馈 的本地化字符串。
+        /// </summary>
+        public static string MenuFeedback {
+            get {
+                return ResourceManager.GetString("MenuFeedback", resourceCulture);
+            }
+        }
+
         /// <summary>
         ///   查找类似 菜单管理器 的本地化字符串。
         /// </summary>

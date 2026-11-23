@@ -315,7 +315,8 @@ namespace ColorVision.Database
 
                 string dependencySql = MySqlLocalServicesManager.BuildMigrationDictionaryDependencyStatements(
                     MySqlControl.GetConnectionString(sourceConfig, 5),
-                    logCallback);
+                    logCallback,
+                    requireSensorDependencies: existingTables.Contains("t_scgd_mod_param_master") && existingTables.Contains("t_scgd_mod_param_detail"));
                 if (!string.IsNullOrWhiteSpace(dependencySql))
                 {
                     string dependencyScript = MySqlProtocolDefaults.CreateScript(

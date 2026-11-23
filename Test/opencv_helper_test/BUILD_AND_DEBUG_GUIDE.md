@@ -1,6 +1,6 @@
 # opencv_helper_test 构建与调试
 
-完整的构建步骤、专项参数、样本前提、结果判断和故障排查维护在[原生 helper 测试与调试](../../docs/02-developer-guide/engine-development/native-testing.md)。本文件是测试源码旁的入口；单独复制测试目录时，请读取匹配源码版本的完整说明。
+从本目录的项目文件和参数分派核对构建配置、专项参数及样本前提。再按下列条件检查实际装载的库。 [原生调试](../../docs/02-developer-guide/engine-development/native-testing.md)
 
 ## 必要前提
 
@@ -11,4 +11,4 @@
 - 构建会写输出并通过 helper 复制 native runtime 到主程序构建目录。测试可能创建/清理临时文件、加载指定 DLL 或调用 GPU；样本和运行环境须符合所选专项的前提。
 - 默认运行会跳过缺失的可选样本，普通图片演示不能可靠地以退出码表示算法失败。保留完整命令、退出码、实际 DLL 与跳过信息。
 
-API 和资源释放见[opencv_helper API 参考](../../docs/04-api-reference/engine-components/opencv-helper-api.md)。`build_test_find_luminous.bat` 的单文件/旧依赖编译方式不适用于当前 runner；使用项目构建并按完整指南核对 DLL、PDB 和样本。
+`build_test_find_luminous.bat` 的单文件编译方式使用旧依赖。调试当前 runner 时构建项目，并核对 DLL、PDB 和样本。 [opencv_helper API 参考](../../docs/04-api-reference/engine-components/opencv-helper-api.md)

@@ -82,6 +82,18 @@
         </Setter>
     </Style>
 
+    <Style x:Key="ButtonProperty.OnDeviceRow" TargetType="{x:Type Button}" BasedOn="{StaticResource ButtonProperty}">
+        <Setter Property="Opacity" Value="0"/>
+        <Style.Triggers>
+            <DataTrigger Binding="{Binding IsMouseOver, RelativeSource={RelativeSource AncestorType=UserControl}}" Value="True">
+                <Setter Property="Opacity" Value="1"/>
+            </DataTrigger>
+            <DataTrigger Binding="{Binding IsKeyboardFocusWithin, RelativeSource={RelativeSource AncestorType=UserControl}}" Value="True">
+                <Setter Property="Opacity" Value="1"/>
+            </DataTrigger>
+        </Style.Triggers>
+    </Style>
+
     <Style x:Key="ToggleButtonDefault" TargetType="{x:Type ToggleButton}">
         <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}" />
         <Setter Property="Background" Value="{DynamicResource ButtonBackground}"/>

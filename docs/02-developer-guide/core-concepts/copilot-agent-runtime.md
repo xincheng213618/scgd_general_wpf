@@ -5,7 +5,6 @@ status: "current"
 summary: "ColorVision Copilot 的 Agent Framework 执行层、宿主策略边界和按任务检索的专题路由。"
 aliases: ["Copilot 架构从哪里看","Agent Framework","CopilotMicrosoftAgentFrameworkRuntime","ICopilotTurnRuntime"]
 code_paths: ["ColorVision/Copilot/Agent/CopilotMicrosoftAgentFrameworkRuntime.cs","ColorVision/Copilot/Runtime/ICopilotTurnRuntime.cs","ColorVision/Copilot/Runtime/CopilotTurnRuntime.cs"]
-test_paths: ["Test/ColorVision.Copilot.Tests/ColorVision.Copilot.Tests.csproj"]
 related: ["copilot.configuration","copilot.execution","copilot.lifecycle","copilot.extensions","copilot.tool-contracts","copilot.interactions","copilot.view-model","copilot.session-tools","copilot.mcp-server"]
 ---
 
@@ -44,9 +43,8 @@ ColorVision Copilot 使用 Microsoft Agent Framework 作为唯一 Agent 执行�
 
 ## 验证
 
-先运行受影响专题在 `test_paths` 中列出的定向测试；下面是更宽的本地验证入口，会写编译/测试产物，不上传或发布。不要为陈旧测试恢复运行时读取全局/项目 `config.toml`：ColorVision 自己管理 provider、model、tools 与 approval，保留的是 AGENTS.md / CLAUDE.md 指令发现。
+从受影响的实现定位验证。ColorVision 自己管理 provider、model、tools 与 approval，保留 AGENTS.md / CLAUDE.md 指令发现。构建会写本地产物。
 
 ```powershell
-dotnet test Test/ColorVision.Copilot.Tests/ColorVision.Copilot.Tests.csproj -p:Platform=x64
 dotnet build ColorVision/ColorVision.csproj -p:Platform=x64
 ```

@@ -90,7 +90,9 @@ namespace ProjectARVRPro.Process
         public virtual IReadOnlyList<ObjectiveTestCsvRow> GetObjectiveCsvRows(ProjectARVRReuslt result) => Array.Empty<ObjectiveTestCsvRow>();
 
         protected IReadOnlyList<ObjectiveTestCsvRow> GetObjectiveCsvRows<TResult>(ProjectARVRReuslt result, string testScreen)
-            where TResult : class => ObjectiveTestCsvRowCollector.FromJson<TResult>(result?.ViewResultJson, testScreen);
+            where TResult : class => result?.CsvJsonReader is { } reader
+                ? ObjectiveTestCsvRowCollector.FromReader<TResult>(reader, testScreen)
+                : ObjectiveTestCsvRowCollector.FromJson<TResult>(result?.ViewResultJson, testScreen);
 
         /// <summary>
         /// Sets the process configuration from a JSON string.

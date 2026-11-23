@@ -2,10 +2,13 @@ using ColorVision.Common.Utilities;
 using ColorVision.Database;
 using ColorVision.Engine;
 using ColorVision.FileIO;
+using ColorVision.ImageEditor;
 using Newtonsoft.Json.Linq;
 using ProjectARVRPro.ImageExport;
+using System.Diagnostics;
 using System.IO;
 using System.Windows.Media;
+using System.Windows.Media.Imaging;
 
 namespace ProjectARVRPro;
 
@@ -21,45 +24,58 @@ internal readonly record struct ResultImageFileCandidate(string FilePath, Result
     public bool RequiresOverlayRendering => Kind != ResultImageFileKind.SavedResult;
 }
 
+internal readonly record struct ResultImageFilePaths(string? Original, string? SavedSource, string? SavedResult)
+{
+    public static ResultImageFilePaths Capture(ProjectARVRReuslt result)
+    {
+        ArgumentNullException.ThrowIfNull(result);
+        return new(result.FileName, result.SavedSourceImageFileName, result.SavedResultImageFileName);
+    }
+}
+
 internal static class ResultImageFileCandidates
 {
     public static IReadOnlyList<ResultImageFileCandidate> GetExisting(
         ProjectARVRReuslt result,
         Func<string, bool>? fileExists = null)
     {
-        ArgumentNullException.ThrowIfNull(result);
-        fileExists ??= path => CVFileReadCache.GetCachedLength(path).HasValue || File.Exists(path);
+        fileExists ??= Exists;
+        return GetPaths(ResultImageFilePaths.Capture(result)).Where(candidate => fileExists(candidate.FilePath)).ToArray();
+    }
 
-        List<ResultImageFileCandidate> candidates = [];
-        HashSet<string> paths = new(StringComparer.OrdinalIgnoreCase);
-        Add(result.FileName, ResultImageFileKind.Original);
-        Add(result.SavedSourceImageFileName, ResultImageFileKind.SavedSource);
-        Add(result.SavedResultImageFileName, ResultImageFileKind.SavedResult);
-        return candidates;
+    private static bool Exists(string path) => CVFileReadCache.GetCachedLength(path).HasValue || File.Exists(path);
 
-        void Add(string? filePath, ResultImageFileKind kind)
-        {
-            if (string.IsNullOrWhiteSpace(filePath)
-                || !paths.Add(filePath)
-                || !fileExists(filePath))
-                return;
-
-            candidates.Add(new ResultImageFileCandidate(filePath, kind));
-        }
+    private static IEnumerable<ResultImageFileCandidate> GetPaths(ResultImageFilePaths paths)
+    {
+        var comparer = StringComparer.OrdinalIgnoreCase;
+        if (!string.IsNullOrWhiteSpace(paths.Original))
+            yield return new(paths.Original, ResultImageFileKind.Original);
+        if (!string.IsNullOrWhiteSpace(paths.SavedSource) && !comparer.Equals(paths.SavedSource, paths.Original))
+            yield return new(paths.SavedSource, ResultImageFileKind.SavedSource);
+        if (!string.IsNullOrWhiteSpace(paths.SavedResult) && !comparer.Equals(paths.SavedResult, paths.Original)
+            && !comparer.Equals(paths.SavedResult, paths.SavedSource))
+            yield return new(paths.SavedResult, ResultImageFileKind.SavedResult);
     }
 
     public static async Task<ResultImageFileCandidate?> OpenFirstAsync(
-        IReadOnlyList<ResultImageFileCandidate> candidates,
+        ResultImageFilePaths paths,
         Func<ResultImageFileCandidate, CancellationToken, Task<bool>> tryOpen,
         Action<ResultImageFileCandidate, Exception?>? onFailure = null,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        Func<string, bool>? fileExists = null)
     {
-        ArgumentNullException.ThrowIfNull(candidates);
         ArgumentNullException.ThrowIfNull(tryOpen);
+        fileExists ??= Exists;
 
-        foreach (ResultImageFileCandidate candidate in candidates)
+        foreach (ResultImageFileCandidate candidate in GetPaths(paths))
         {
             cancellationToken.ThrowIfCancellationRequested();
+            // A lower-priority path may be on a slow volume. Check it only when needed.
+            bool exists = await Task.Run(() => fileExists(candidate.FilePath), cancellationToken);
+            cancellationToken.ThrowIfCancellationRequested();
+            if (!exists)
+                continue;
+
             try
             {
                 if (await tryOpen(candidate, cancellationToken))
@@ -77,7 +93,67 @@ internal static class ResultImageFileCandidates
             }
         }
 
+        cancellationToken.ThrowIfCancellationRequested();
         return null;
+    }
+}
+
+internal static class ResultImageLoader
+{
+    private static readonly TimeSpan OpenTimeout = TimeSpan.FromSeconds(30);
+
+    public static BitmapSource? GetCurrentBitmap(ImageView imageView) =>
+        imageView.ViewBitmapSource as BitmapSource ?? imageView.ImageShow.Source as BitmapSource;
+
+    public static async Task<BitmapSource?> OpenAsync(ImageView imageView, string filePath, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        bool samePath = IsRequestedPath();
+        Task openCompletion = imageView.ImageOpenCompletion;
+        if (samePath && openCompletion.IsCompletedSuccessfully && GetCurrentBitmap(imageView) is BitmapSource currentSource)
+            return currentSource;
+
+        TaskCompletionSource<ImageViewImageSourceLoadedEventArgs> imageLoaded = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        EventHandler<ImageViewImageSourceLoadedEventArgs> onImageLoaded = (_, e) => imageLoaded.TrySetResult(e);
+        imageView.ImageSourceLoaded += onImageLoaded;
+        try
+        {
+            if (!samePath || openCompletion.IsCompleted)
+            {
+                imageView.OpenImage(filePath);
+                openCompletion = imageView.ImageOpenCompletion;
+            }
+
+            if (!IsRequestedPath())
+                return null;
+
+            long waitStarted = Stopwatch.GetTimestamp();
+            // Older openers can return from OpenImage before posting their pixels.
+            if (!openCompletion.IsCompletedSuccessfully
+                && await Task.WhenAny(openCompletion, imageLoaded.Task).WaitAsync(OpenTimeout, cancellationToken) == openCompletion)
+            {
+                await openCompletion;
+            }
+
+            TimeSpan remaining = OpenTimeout - Stopwatch.GetElapsedTime(waitStarted);
+            ImageViewImageSourceLoadedEventArgs loaded = await imageLoaded.Task.WaitAsync(
+                remaining > TimeSpan.Zero ? remaining : TimeSpan.Zero,
+                cancellationToken);
+            cancellationToken.ThrowIfCancellationRequested();
+            return IsRequestedPath() && imageView.IsCurrentImageRevision(loaded.ImageRevision)
+                ? loaded.Source as BitmapSource
+                : null;
+        }
+        catch (OperationCanceledException ex) when (!cancellationToken.IsCancellationRequested)
+        {
+            throw new IOException("The image opener canceled before publishing the result image.", ex);
+        }
+        finally
+        {
+            imageView.ImageSourceLoaded -= onImageLoaded;
+        }
+
+        bool IsRequestedPath() => string.Equals(filePath, imageView.Config.GetProperties<string>(ImageViewPropertyKeys.FilePath), StringComparison.OrdinalIgnoreCase);
     }
 }
 
@@ -157,7 +233,7 @@ internal static class ResultImageDimensions
 {
     internal static bool TryPopulate(
         ProjectARVRReuslt result,
-        Func<int, List<MeasureResultImgModel>>? measureResultLoader = null)
+        Func<int, IReadOnlyList<MeasureResultImgModel>>? measureResultLoader = null)
     {
         ArgumentNullException.ThrowIfNull(result);
         if (result.ImageWidth is > 0 && result.ImageHeight is > 0)
@@ -168,7 +244,7 @@ internal static class ResultImageDimensions
         try
         {
             measureResultLoader ??= batchId => MeasureImgResultDao.Instance.GetAllByBatchId(batchId);
-            List<MeasureResultImgModel> images = measureResultLoader(result.BatchId) ?? [];
+            IReadOnlyList<MeasureResultImgModel> images = measureResultLoader(result.BatchId) ?? [];
             if (!TryReadFromMeasureResults(images, result.FileName, out int width, out int height))
                 return false;
 

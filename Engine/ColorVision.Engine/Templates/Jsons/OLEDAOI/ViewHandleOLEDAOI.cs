@@ -151,8 +151,8 @@ namespace ColorVision.Engine.Templates.Jsons.OLEDAOI
         {
             if (result.ViewResults == null)
             {
+                List<DetailCommonModel> detailCommonModels = result.ReadPersistedDetails(DeatilCommonDao.Instance);
                 result.ViewResults = new ObservableCollection<IViewResult>();
-                List<DetailCommonModel> detailCommonModels = DeatilCommonDao.Instance.GetAllByPid(result.Id);
                 if (detailCommonModels.Count == 1)
                 {
                     OLEDAOIDetailViewReslut oledaoiresult = new OLEDAOIDetailViewReslut(detailCommonModels[0]);

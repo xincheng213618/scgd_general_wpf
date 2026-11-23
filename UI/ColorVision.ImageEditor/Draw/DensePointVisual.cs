@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
@@ -12,10 +11,8 @@ public sealed class DensePointVisual : DrawingVisual
 {
     private const int TileSize = 512;
     private const int MaxCachedTileDimension = 1024;
-    private readonly Point[] centers;
-    private readonly Point[] candidates;
 
-    public int PointCount => centers.Length + candidates.Length;
+    public int PointCount { get; }
     public int RenderedPointCount => PointCount;
     internal DrawingGroup FrozenDrawing { get; }
     internal int TileCount => Children.Count;
@@ -27,13 +24,14 @@ public sealed class DensePointVisual : DrawingVisual
         ArgumentNullException.ThrowIfNull(centers);
         ArgumentNullException.ThrowIfNull(candidates);
         if (!double.IsFinite(radius) || radius <= 0) throw new ArgumentOutOfRangeException(nameof(radius));
-        this.centers = centers.ToArray();
-        this.candidates = candidates.ToArray();
-        if (this.centers.Concat(this.candidates).Any(point => !double.IsFinite(point.X) || !double.IsFinite(point.Y)))
+        var centerTiles = CollectTiles(centers, out int centerCount, out bool validCenters);
+        var candidateTiles = CollectTiles(candidates, out int candidateCount, out bool validCandidates);
+        if (!validCenters || !validCandidates)
             throw new ArgumentException("点坐标必须是有限数值。");
+        PointCount = centerCount + candidateCount;
         FrozenDrawing = new DrawingGroup();
-        AddTiles(this.centers, normalBrush ?? Brushes.Red, radius);
-        AddTiles(this.candidates, defectBrush ?? Brushes.Yellow, radius);
+        AddTiles(centerTiles, normalBrush ?? Brushes.Red, radius);
+        AddTiles(candidateTiles, defectBrush ?? Brushes.Yellow, radius);
         FrozenDrawing.Freeze();
     }
 
@@ -46,15 +44,29 @@ public sealed class DensePointVisual : DrawingVisual
     protected override HitTestResult? HitTestCore(PointHitTestParameters hitTestParameters) => null;
     protected override GeometryHitTestResult? HitTestCore(GeometryHitTestParameters hitTestParameters) => null;
 
-    private void AddTiles(Point[] points, Brush color, double radius)
+    private static Dictionary<(long X, long Y), List<Point>> CollectTiles(IEnumerable<Point> points, out int count, out bool valid)
     {
         var tiles = new Dictionary<(long X, long Y), List<Point>>();
+        count = 0;
+        valid = true;
         foreach (Point point in points)
         {
+            if (!double.IsFinite(point.X) || !double.IsFinite(point.Y))
+            {
+                valid = false;
+                continue;
+            }
+
             var key = ((long)Math.Floor(point.X / TileSize), (long)Math.Floor(point.Y / TileSize));
             if (!tiles.TryGetValue(key, out List<Point>? tile)) tiles[key] = tile = new();
             tile.Add(point);
+            count++;
         }
+        return tiles;
+    }
+
+    private void AddTiles(Dictionary<(long X, long Y), List<Point>> tiles, Brush color, double radius)
+    {
         var pen = new Pen(color.IsFrozen ? color : color.CloneCurrentValue(), 1);
         pen.Freeze();
         foreach (var (key, pointsInTile) in tiles)

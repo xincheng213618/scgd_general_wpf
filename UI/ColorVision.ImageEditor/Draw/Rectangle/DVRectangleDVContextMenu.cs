@@ -26,8 +26,9 @@ namespace ColorVision.ImageEditor.Draw
 
         public IEnumerable<MenuItem> GetContextMenuItems(object obj)
         {
-            List<MenuItem> menuItems = new();
-            if (obj is not IRectangle dvRectangle) return menuItems;
+            if (obj is not IRectangle dvRectangle) return [];
+
+            var crop = new MenuItem { Header = LocalizedText.Get("裁剪") };
 
             var cropSave = new MenuItem { Header = LocalizedText.Get("裁剪并另存...") };
             cropSave.Click += (s, e) =>
@@ -56,7 +57,7 @@ namespace ColorVision.ImageEditor.Draw
                     }
                 }
             };
-            menuItems.Add(cropSave);
+            crop.Items.Add(cropSave);
 
             var cropClipboard = new MenuItem { Header = LocalizedText.Get("裁剪复制到剪贴板") };
             cropClipboard.Click += (s, e) =>
@@ -76,7 +77,7 @@ namespace ColorVision.ImageEditor.Draw
                     MessageBox.Show(LocalizedText.Format($"复制失败: {ex.Message}"), LocalizedText.Get("裁剪"), MessageBoxButton.OK, MessageBoxImage.Error);
                 }
             };
-            menuItems.Add(cropClipboard);
+            crop.Items.Add(cropClipboard);
 
             var cropReplace = new MenuItem { Header = LocalizedText.Get("裁剪并替换当前图像") };
             cropReplace.Click += (s, e) =>
@@ -90,9 +91,9 @@ namespace ColorVision.ImageEditor.Draw
                 _imageContext.SetImageSource(new WriteableBitmap(cropped));
                 _drawCanvas.Clear();
             };
-            menuItems.Add(cropReplace);
+            crop.Items.Add(cropReplace);
 
-            return menuItems;
+            return [crop];
         }
 
         private static bool TryGetCropBitmap(DrawCanvas drawCanvas, IRectangle dvRectangle, out BitmapSource? cropped, out string? error)

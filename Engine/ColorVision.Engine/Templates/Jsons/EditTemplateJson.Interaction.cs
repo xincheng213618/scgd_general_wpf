@@ -6,7 +6,6 @@ using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
 
@@ -76,7 +75,7 @@ public partial class EditTemplateJson
     public bool TryCommitPendingEdits()
     {
         if (IEditTemplateJson == null) return true;
-        if (_isInPropertyEditorMode && !propertyEditor.ValidateJson())
+        if (_isInPropertyEditorMode && propertyEditor.HasValidationErrors)
         {
             ShowStatusError("有错误输入尚未应用，请先修正后再保存或切换模板。");
             return false;
@@ -86,7 +85,9 @@ public partial class EditTemplateJson
             ShowStatusError(error + "。草稿已保留，请修正后再保存或切换模板。");
             return false;
         }
-        IEditTemplateJson.JsonValue = textEditor.Text;
+        string json = textEditor.Text;
+        if (IEditTemplateJson is not TemplateJsonParam param || param.TemplateJsonModel.JsonVal != json)
+            IEditTemplateJson.JsonValue = json;
         return true;
     }
 
@@ -101,12 +102,15 @@ public partial class EditTemplateJson
         if (StatusText == null || IEditTemplateJson == null) return;
         if (_isInPropertyEditorMode && propertyEditor.HasValidationErrors) { ShowStatusError("有错误输入尚未应用"); return; }
         if (!TryReadDraft(out _, out var error)) { ShowStatusError(error + " · 草稿尚未应用"); return; }
-        bool modified;
+        bool modified = _loadedJsonSnapshot != textEditor.Text;
         try
         {
-            using var original = JsonDocument.Parse(_loadedJsonSnapshot);
-            using var current = JsonDocument.Parse(textEditor.Text);
-            modified = JsonSerializer.Serialize(original.RootElement) != JsonSerializer.Serialize(current.RootElement);
+            if (modified)
+            {
+                using var original = JsonDocument.Parse(_loadedJsonSnapshot);
+                using var current = JsonDocument.Parse(textEditor.Text);
+                modified = JsonSerializer.Serialize(original.RootElement) != JsonSerializer.Serialize(current.RootElement);
+            }
         }
         catch (JsonException) { modified = true; }
         StatusText.SetResourceReference(TextBlock.ForegroundProperty, "GlobalTextBrush");
@@ -145,11 +149,6 @@ public partial class EditTemplateJson
     {
         _searchPanel?.Open();
         _searchPanel?.Reactivate();
-    }
-
-    private void More_Click(object sender, RoutedEventArgs e)
-    {
-        if (sender is Button { ContextMenu: { } menu } button) { menu.PlacementTarget = button; menu.Placement = PlacementMode.Bottom; menu.IsOpen = true; }
     }
 
     private void CopyJson_Click(object sender, RoutedEventArgs e)

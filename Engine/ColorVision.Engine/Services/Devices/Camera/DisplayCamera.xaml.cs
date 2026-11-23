@@ -1,5 +1,6 @@
 #pragma warning disable CA1051,CA1707,CA1863
 using ColorVision.Core;
+using ColorVision.Database;
 using ColorVision.Engine.FlowProcessing;
 using ColorVision.Engine.Media;
 using ColorVision.Engine.Messages;
@@ -88,6 +89,10 @@ namespace ColorVision.Engine.Services.Devices.Camera
         [Category("AcquisitionDisplay"), DisplayName("本地取图保存文件")]
         [Description("默认开启。主面板本地取图及 L/BV 节点本地转发保存 CVRAW，包含已执行的色度校正参数。关闭后仍显示图像并保存结果记录。")]
         public bool SaveLocalCaptureFiles { get; set; } = true;
+
+        [Category("AcquisitionDisplay"), LocalizedDisplayName("CameraFocus_UseMotorReadbackForVid")]
+        [LocalizedDescription("CameraFocus_UseMotorReadbackForVidHint")]
+        public bool UseMotorReadbackForVid { get; set; } = true;
 
         [Category("AcquisitionDisplay"), LocalizedDisplayName("CameraFocusChart_AutoSave")]
         [LocalizedDescription("CameraFocusChart_AutoSaveHint")]
@@ -305,6 +310,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
         private bool _isOpeningLocalVideo;
         private MsgRecord? _panelOperation;
         private CancellationTokenSource? _panelAutoFocusCancellation;
+        private Button? _panelAutoFocusButton;
         private Configs.ConfigCamera? _panelConfig;
         private DVRectangleText? _localVideoRoiVisual;
         private bool _isSyncingLocalVideoRoi;
@@ -375,6 +381,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             Capture.FineFocusButton.Click += (sender, _) => StartAutoFocus(sender, fineOnly: true);
             Capture.EditFocusButton.Click += EditAutoFocus;
             Capture.MoveButton.Click += Move_Click;
+            Capture.MoveToVidButton.Click += MoveToVid_Click;
             Capture.JogLeftButton.Click += JogMotor_Click;
             Capture.JogRightButton.Click += JogMotor_Click;
             Capture.ApertureButton.Click += Move1_Click;
@@ -987,21 +994,21 @@ namespace ColorVision.Engine.Services.Devices.Camera
             if (IsDisposed) return;
             if (!Dispatcher.CheckAccess()) { Dispatcher.BeginInvoke(RefreshPanelState); return; }
             bool previewing = DisplayCameraConfig.IsLocalVideoOpen;
-            CameraPanelState state = CameraPanelState.Create(Device.CameraBackend, previewing, _isOpeningLocalVideo || _panelOperation != null);
+            bool panelOperating = _isOpeningLocalVideo || _panelOperation != null;
+            CameraPanelState state = CameraPanelState.Create(Device.CameraBackend, previewing, panelOperating);
             static Visibility Visible(bool value) => value ? Visibility.Visible : Visibility.Collapsed;
             if (_templateOptionsAreLocal != Device.RoutesLocally) RefreshAutoExpTimeTemplateOptions();
-            CameraPanelState idle = CameraPanelState.Create(Device.CameraBackend, previewing, false);
             bool opening = _panelOperation?.MsgSend?.EventName == "Open";
             bool closing = _panelOperation?.MsgSend?.EventName == "Close";
             Actions.ToolTip = state.Busy ? EngineLocalization.Get(state.StatusKey) : null;
-            Actions.OpenButton.Visibility = Visible(opening || (!state.Connected && !closing && (idle.CanConnect || state.Busy)));
+            Actions.OpenButton.Visibility = Visible(opening || (!state.Connected && !closing && (state.CanConnect || state.Busy)));
             Actions.OpenButton.IsEnabled = state.CanConnect;
             Actions.CloseButton.Visibility = Visible(!opening && (state.Connected || closing));
-            Actions.CloseButton.IsEnabled = !state.Busy;
-            Actions.LocalVideoButton.IsEnabled = state.CanPreview;
+            Actions.CloseButton.IsEnabled = !state.Busy || CanQueueLocalClose;
+            Actions.LocalVideoButton.IsEnabled = state.CanPreview || (CanQueueLocalClose && state.ShowPreview);
             Capture.TakePhotoButton.IsEnabled = state.CanCapture;
-            Actions.LocalVideoButton.Visibility = Visible(idle.CanPreview || (state.Busy && Device.CameraBackend.LocalOwned));
-            Capture.TakePhotoButton.Visibility = Visible(!previewing && (idle.CanCapture || (state.Busy && !Device.CameraBackend.VideoOwned)));
+            Actions.LocalVideoButton.Visibility = Visible(state.ShowPreview || (panelOperating && Device.RoutesLocally));
+            Capture.TakePhotoButton.Visibility = Visible(!previewing && state.ShowCapture);
             Actions.VideoColumn.Width = Actions.LocalVideoButton.Visibility == Visibility.Visible ? GridLength.Auto : new GridLength(0);
             Actions.LocalVideoButton.ToolTip = state.ShowServiceSettings && state.Connected
                 ? EngineLocalization.Get("CameraPanel_ServicePreviewHint") : null;
@@ -1012,19 +1019,19 @@ namespace ColorVision.Engine.Services.Devices.Camera
             Actions.ButtonInit.Visibility = Visible(showProblem && status == DeviceStatusType.UnInit);
             Actions.ButtonOffline.Visibility = Visible(showProblem && status == DeviceStatusType.OffLine);
             Capture.Visibility = Visible(state.ShowParameters);
-            Capture.IsEnabled = !state.Busy;
-            StopAutoFocusButton.Visibility = Visible(_panelAutoFocusCancellation != null);
-            if (_panelAutoFocusCancellation != null)
-            {
-                StopAutoFocusButton.IsEnabled = _panelOperation?.IsSend == true && !_panelAutoFocusCancellation.IsCancellationRequested;
-                StopAutoFocusButton.Content = EngineLocalization.Get(_panelAutoFocusCancellation.IsCancellationRequested
-                    ? "CameraPanel_AutoFocusStopping" : "CameraPanel_StopAutoFocus");
-            }
+            bool stoppingFocus = _panelAutoFocusCancellation?.IsCancellationRequested == true;
+            Capture.SetFocusOperationState(panelOperating, state.Busy, _panelAutoFocusButton,
+                _panelOperation?.IsSend == true && !stoppingFocus, stoppingFocus);
+            Capture.ReadFilterButton.IsEnabled = !state.Busy;
+            Capture.ChangeFilterButton.IsEnabled = !state.Busy;
             Capture.AutoExposureButton.IsEnabled = state.CanCapture;
             Capture.AutoExposureButton.Visibility = Visible(_autoExpTimeTemplateOptions.Count > 0);
             Capture.AutoExposureButton.ToolTip = Device.RoutesLocally ? null : EngineLocalization.Get("独立自曝沿用相机当前增益；拍前自曝使用本次取图增益");
             Capture.CaptureOnlyPanel.Visibility = Visible(!previewing && !Device.CameraBackend.VideoOwned);
             Capture.FineFocusButton.Visibility = Visible(Device.RoutesLocally);
+            var motor = Device.PhyCamera?.Config.MotorConfig ?? Device.Config.MotorConfig;
+            Capture.VidTargetPanel.Visibility = Visible(Device.CameraBackend.LocalOwned && !previewing && !Device.CameraBackend.VideoOwned
+                && motor.IsUseMotor && motor.VID?.IsUseVID == true);
             Capture.AveragePanel.Visibility = Visible(!previewing && !Device.CameraBackend.VideoOwned);
             bool calibrationGain = DisplayCameraConfig.IsGainControlledByCalibrationGroup;
             Capture.GainPanel.IsEnabled = previewing || !calibrationGain;
@@ -1044,6 +1051,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         private void TrackPanelOperation(MsgRecord record)
         {
+            if (_panelOperation != null) _panelOperation.MsgRecordStateChanged -= PanelOperation_StateChanged;
             _panelOperation = record;
             record.MsgRecordStateChanged += PanelOperation_StateChanged;
             RefreshPanelState();
@@ -1059,6 +1067,8 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 if (!ReferenceEquals(_panelOperation, sender)) return;
                 bool canceledByUser = state == MsgRecordState.Fail && _panelAutoFocusCancellation?.IsCancellationRequested == true
                     && sender is MsgRecord canceled && canceled.MsgReturn.Code == DeviceCamera.LocalAutoFocusCanceledCode;
+                if (_panelAutoFocusButton is { } focusButton) Capture.ResetFocusButton(focusButton);
+                _panelAutoFocusButton = null;
                 _panelAutoFocusCancellation = null;
                 _panelOperation = null;
                 RefreshPanelState();
@@ -1087,6 +1097,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             {
                 EnsureTimedButtonOperations();
                 MsgRecord msgRecord;
+                bool serviceOnly = !Device.CameraBackend.OpensLocally;
                 try { msgRecord = DService.Open(DService.Config.CameraID, Device.Config.TakeImageMode, (int)DService.Config.ImageBpp); }
                 catch (InvalidOperationException ex)
                 {
@@ -1094,16 +1105,14 @@ namespace ColorVision.Engine.Services.Devices.Camera
                     return;
                 }
                 TrackPanelOperation(msgRecord);
-                ServicesHelper.SendTimedCommand(this, button, msgRecord, onTerminalStateChanged: (record, state) =>
+                ServicesHelper.SendTimedCommand(this, button, msgRecord, onTerminalStateChanged: (_, state) =>
                 {
-                    if (state == MsgRecordState.Success)
-                    {
-                        RefreshPanelState();
-                    }
-                    else
-                    {
-                        MessageBox1.Show(Application.Current.GetActiveWindow(), $"{record.MsgReturn.Message}", "ColorVision");
-                    }
+                    if (state == MsgRecordState.Success) RefreshPanelState();
+                });
+                DService.TrackPanelFailure(msgRecord, serviceOnly, (_, reason) =>
+                {
+                    if (!IsDisposed) MessageBox1.Show(Application.Current.GetActiveWindow(), reason ?? string.Empty, "ColorVision");
+                    return Task.CompletedTask;
                 });
 
                 RotateTransform rotateTransform1 = new() { Angle = 0 };
@@ -1270,75 +1279,64 @@ namespace ColorVision.Engine.Services.Devices.Camera
             if (Device.Config.IsExpThree) { expTime = new double[] { Device.DisplayConfig.ExpTimeR, Device.DisplayConfig.ExpTimeG, Device.DisplayConfig.ExpTimeB }; }
             else expTime = new double[] { Device.DisplayConfig.ExpTime };
 
-            int latestMeasureResultId = MeasureImgResultDao.Instance.GetLatestId(Device.Config.Code);
+            DeviceCamera camera = Device;
+            MQTTCamera service = camera.DService;
+            var route = service.CaptureMqttRoute(pinConnection: true);
+            MySqlConnectedEndpoint? endpoint = camera.ResultDatabaseEndpoint;
+            if (!camera.OwnsResultDatabase(endpoint)) endpoint = null;
+            if (!OwnsFeedback()) return;
+
+            MsgRecord msgRecord;
+            try { msgRecord = service.CaptureRemotely(expTime, param, autoExpTimeParam); }
+            catch (InvalidOperationException error)
+            {
+                logger.Warn("Unable to start the camera capture.", error);
+                if (OwnsFeedback()) MessageBox1.Show(Application.Current.GetActiveWindow(), error.Message, "ColorVision");
+                return;
+            }
+
             EnsureTimedButtonOperations();
-            MsgRecord msgRecord = DService.GetData(expTime, param, autoExpTimeParam);
-            logger.Info($"正在取图：ExpTime{Device.DisplayConfig.ExpTime} othertime{DisplayCameraConfig.TakePictureDelay}");
-            Device.SetMsgRecordChanged(msgRecord);
+            logger.Info($"正在取图：ExpTime{camera.DisplayConfig.ExpTime} othertime{DisplayCameraConfig.TakePictureDelay}");
+            camera.SetMsgRecordChanged(msgRecord);
 
             TrackPanelOperation(msgRecord);
-            ServicesHelper.SendTimedCommand(this, Capture.TakePhotoButton, msgRecord, onTerminalStateChanged: (record, state) =>
-            {
-                if (state == MsgRecordState.Timeout)
-                {
-                    if (TryHandleCaptureTimeoutFromDatabase(latestMeasureResultId))
-                    {
-                        return;
-                    }
+            ServicesHelper.SendTimedCommand(this, Capture.TakePhotoButton, msgRecord);
+            TrackRemoteCaptureFailure(service, msgRecord, OwnsFeedback,
+                () => endpoint == null ? null : camera.ExistingView?.PrepareCaptureHistoryRefresh(endpoint, OwnsFeedback),
+                message => MessageBox1.Show(message), ShowCaptureFailureAsync);
 
-                    if (param.Id > 0 && Device?.PhyCamera?.DeviceCalibration == null)
-                    {
-                        MessageBox1.Show(Properties.Resources.CaptureTimeoutConfigureCalibration);
-                    }
-                    else
-                    {
-                        MessageBox1.Show(Properties.Resources.CaptureTimeoutResetTime);
-                    }
-                }
-                if (state == MsgRecordState.Fail)
+            bool OwnsFeedback() => !IsDisposed && ReferenceEquals(camera, Device) && service.CanPresentFeedback(camera, serviceOnly: true)
+                && route.HasSameDestination(service.CaptureMqttRoute(pinConnection: true))
+                && (endpoint == null || camera.OwnsResultDatabase(endpoint));
+        }
+
+        internal static void TrackRemoteCaptureFailure(MQTTCamera service, MsgRecord record, Func<bool> ownsFeedback,
+            Func<Func<Task>?> prepareHistoryRefresh, Action<string> showTimeout, Func<string?, Func<bool>, Task> showFailure)
+        {
+            service.TrackPanelFailure(record, serviceOnly: true, async (state, message) =>
+            {
+                if (!ownsFeedback()) return;
+                Func<Task>? refresh = null;
+                try { refresh = prepareHistoryRefresh(); }
+                catch (Exception error) { logger.Warn("Unable to prepare camera history refresh.", error); }
+
+                if (state == MsgRecordState.Timeout && ownsFeedback())
+                    showTimeout(EngineLocalization.Get("Camera_CaptureTimedOutUnconfirmed"));
+                if (refresh != null && ownsFeedback())
                 {
-                    HandleCaptureFail(record.MsgReturn?.Message);
+                    try { await refresh(); }
+                    catch (Exception error) { logger.Warn("Unable to refresh camera history after capture failure.", error); }
                 }
+                if (state == MsgRecordState.Fail && ownsFeedback()) await showFailure(message, ownsFeedback);
             });
-
         }
 
-        private bool TryHandleCaptureTimeoutFromDatabase(int latestMeasureResultId)
+        private async Task ShowCaptureFailureAsync(string? message, Func<bool> canRestart)
         {
-            MeasureResultImgModel? result = MeasureImgResultDao.Instance.GetLatestAfterId(Device.Config.Code, latestMeasureResultId);
-            if (result == null) return false;
-
-            View.SearchAll();
-            if (!IsFailedMeasureResult(result))
-            {
-                logger.Info($"取图超时后检测到数据库已生成记录，Id:{result.Id}, ResultCode:{result.ResultCode}");
-                return true;
-            }
-
-            string errorMessage = BuildMeasureResultErrorMessage(result);
-            logger.Error($"取图超时后检测到数据库失败记录：{errorMessage}");
-            HandleCaptureFail(errorMessage, refreshResults: false);
-            return true;
-        }
-
-        private static bool IsFailedMeasureResult(MeasureResultImgModel result) => result.ResultCode != 0;
-
-        private static string BuildMeasureResultErrorMessage(MeasureResultImgModel result)
-        {
-            string message = string.IsNullOrWhiteSpace(result.Result) ? Properties.Resources.Camera_UnknownError : result.Result;
-            return string.Format(Properties.Resources.Camera_DatabaseFailureRecord, result.Id, result.ResultCode, message);
-        }
-
-        private async void HandleCaptureFail(string? message, bool refreshResults = true)
-        {
-            if (refreshResults)
-            {
-                View.SearchAll();
-            }
-
             string errorMessage = string.IsNullOrWhiteSpace(message) ? Properties.Resources.Camera_CaptureFailed : message;
             string prompt = errorMessage + Environment.NewLine + Properties.Resources.TryRestartService + Environment.NewLine + Properties.Resources.Camera_ConfirmRestartService;
-            if (MessageBox.Show(Application.Current.GetActiveWindow(), prompt, "ColorVision", MessageBoxButton.YesNo, MessageBoxImage.Warning) == MessageBoxResult.Yes)
+            if (MessageBox.Show(Application.Current.GetActiveWindow(), prompt, "ColorVision", MessageBoxButton.YesNo, MessageBoxImage.Warning) == MessageBoxResult.Yes
+                && canRestart())
             {
                 try
                 {
@@ -1347,7 +1345,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 catch (Exception ex)
                 {
                     logger.Error("重启 ColorVision 服务失败", ex);
-                    MessageBox.Show(Application.Current.GetActiveWindow(), ex.Message, "ColorVision");
+                    if (canRestart()) MessageBox.Show(Application.Current.GetActiveWindow(), ex.Message, "ColorVision");
                 }
             }
         }
@@ -1428,20 +1426,9 @@ namespace ColorVision.Engine.Services.Devices.Camera
                     return;
                 }
 
-                var msgRecord = DService.GetAutoExpTime(param);
-                msgRecord.MsgRecordStateChanged += (s, e) =>
-                {
-                    if (IsDisposed) return;
-
-                    if (e == MsgRecordState.Timeout)
-                    {
-                        MessageBox1.Show(Properties.Resources.AutoExposureTimeoutCheckLog, "ColorVision");
-                    }
-                    if (e == MsgRecordState.Fail)
-                    {
-                        MessageBox1.Show(string.Format(Properties.Resources.AutoExposureFailedCheckLog, Environment.NewLine, msgRecord.MsgReturn.Message), "ColorVision");
-                    }
-                };
+                MQTTCamera service = DService;
+                var msgRecord = service.GetAutoExpTime(param);
+                service.TrackAutoExposureFailure(msgRecord, () => !IsDisposed);
                 TrackPanelOperation(msgRecord);
                 ServicesHelper.SendCommand(button, msgRecord);
             }
@@ -1493,7 +1480,17 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         private void StartAutoFocus(object sender, bool fineOnly = false)
         {
-            if (IsDisposed || _panelOperation != null || _isOpeningLocalVideo || (fineOnly && !Device.CameraBackend.OpensLocally)) return;
+            if (IsDisposed || sender is not Button button) return;
+            if (ReferenceEquals(button, _panelAutoFocusButton))
+            {
+                if (_panelOperation?.IsSend == true && _panelAutoFocusCancellation is { IsCancellationRequested: false } active)
+                {
+                    active.Cancel();
+                    RefreshPanelState();
+                }
+                return;
+            }
+            if (_panelOperation != null || _isOpeningLocalVideo || (fineOnly && !Device.CameraBackend.OpensLocally)) return;
             if (!CameraTemplateSelection.TryResolveRequired(Capture.ComboxAutoFocus.SelectedItem, out AutoFocusParam param))
             {
                 ShowRequiredTemplateMessage(Properties.Resources.AutoFocusTemplate);
@@ -1506,6 +1503,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 try { msgRecord = Device.AutoFocusLocally(param, cancellation.Token, fineOnly); }
                 catch { cancellation.Dispose(); throw; }
                 _panelAutoFocusCancellation = cancellation;
+                _panelAutoFocusButton = button;
                 msgRecord.MsgRecordStateChanged += DisposeCancellation;
                 DisposeCancellation(null, msgRecord.MsgRecordState);
 
@@ -1521,14 +1519,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 msgRecord = DService.AutoFocus(param);
             }
             TrackPanelOperation(msgRecord);
-            ServicesHelper.SendCommand(sender, msgRecord);
-        }
-
-        private void StopLocalAutoFocus_Click(object sender, RoutedEventArgs e)
-        {
-            if (_panelOperation?.IsSend != true || _panelAutoFocusCancellation is not { IsCancellationRequested: false } cancellation) return;
-            cancellation.Cancel();
-            RefreshPanelState();
+            if (_panelAutoFocusButton == null) ServicesHelper.SendCommand(button, msgRecord);
         }
 
         private void MenuItem_Template(object sender, RoutedEventArgs e)
@@ -1603,15 +1594,11 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         private void Move_Click(object sender, RoutedEventArgs e)
         {
-            if (sender is Button button)
-            {
-                if (int.TryParse(Capture.TextPos.Text, out int pos))
-                {
-                    var msgRecord = DService.Move(pos, Capture.CheckBoxIsAbs.IsChecked ?? true);
-                    TrackPanelOperation(msgRecord);
-                    ServicesHelper.SendCommand(button, msgRecord);
-                }
-            }
+            if (sender is not Button button || !int.TryParse(Capture.TextPos.Text, out int pos)) return;
+            bool absolute = Capture.CheckBoxIsAbs.IsChecked ?? true;
+            MsgRecord record = Device.CameraBackend.OpensLocally ? Device.MoveMotorAndCaptureLocally(pos, absolute) : DService.Move(pos, absolute);
+            TrackPanelOperation(record);
+            ServicesHelper.SendCommand(button, record);
         }
 
 
@@ -1627,7 +1614,26 @@ namespace ColorVision.Engine.Services.Devices.Camera
             }
 
             int offset = ReferenceEquals(sender, Capture.JogLeftButton) ? -step : step;
-            TrackPanelOperation(DService.Move(offset, IsbAbs: false));
+            MsgRecord record = Device.CameraBackend.OpensLocally
+                ? Device.MoveMotorAndCaptureLocally(offset, absolute: false) : DService.Move(offset, IsbAbs: false);
+            TrackPanelOperation(record);
+        }
+
+        private void MoveToVid_Click(object sender, RoutedEventArgs e)
+        {
+            if (IsDisposed || !Device.CameraBackend.LocalOwned || _panelOperation != null || _isOpeningLocalVideo
+                || DisplayCameraConfig.IsLocalVideoOpen || Device.CameraBackend.VideoOwned) return;
+            if (!double.TryParse(Capture.VidTargetBox.Text, out double targetMm) || !double.IsFinite(targetMm))
+            {
+                MessageBox.Show(Application.Current.GetActiveWindow(), EngineLocalization.Get("CameraPanel_VidMoveInvalid"), "ColorVision");
+                Capture.VidTargetBox.Focus();
+                Capture.VidTargetBox.SelectAll();
+                return;
+            }
+
+            MsgRecord record = Device.MoveToVidLocally(targetMm);
+            TrackPanelOperation(record);
+            ServicesHelper.SendCommand(sender, record);
         }
 
         private void GoHome_Click(object sender, RoutedEventArgs e)
@@ -1650,9 +1656,12 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 TrackPanelOperation(DService.MoveDiaphragm(pos));
         }
 
+        private bool CanQueueLocalClose => Device.RoutesLocally && !_isOpeningLocalVideo
+            && (_panelOperation == null || _panelOperation.MsgSend?.EventName == "GetData");
+
         private async void Close_Click(object sender, RoutedEventArgs e)
         {
-            if (_panelOperation != null || _isOpeningLocalVideo) return;
+            if (IsDisposed || ((_panelOperation != null || _isOpeningLocalVideo) && !CanQueueLocalClose)) return;
             if (Device.CameraBackend.VideoOwned)
             {
                 _isOpeningLocalVideo = true;
@@ -1673,22 +1682,23 @@ namespace ColorVision.Engine.Services.Devices.Camera
             if (sender is Button button)
             {
                 EnsureTimedButtonOperations();
+                bool serviceOnly = !Device.RoutesLocally;
+                string? runningText = !serviceOnly && Device.CameraBackend.IsCommandRunning
+                    ? EngineLocalization.Get("CameraPanel_WaitingToClose") : null;
                 MsgRecord msgRecord = DService.Close();
                 TrackPanelOperation(msgRecord);
-                ServicesHelper.SendTimedCommand(this, button, msgRecord, onTerminalStateChanged: (_, state) =>
+                ServicesHelper.SendTimedCommand(this, button, msgRecord, runningText, onTerminalStateChanged: (_, state) =>
                 {
-                    if (state == MsgRecordState.Timeout)
+                    if (state == MsgRecordState.Success) DService_DeviceStatusChanged(this, DService.DeviceStatus);
+                });
+                DService.TrackPanelFailure(msgRecord, serviceOnly, (state, reason) =>
+                {
+                    if (!IsDisposed)
                     {
-                        MessageBox.Show(Properties.Resources.CloseCameraTimeoutCheckLog);
-                        return;
+                        if (state == MsgRecordState.Timeout) MessageBox.Show(Properties.Resources.CloseCameraTimeoutCheckLog);
+                        else MessageBox1.Show(Application.Current.GetActiveWindow(), reason ?? "相机关闭失败。", "ColorVision");
                     }
-
-                    if (state != MsgRecordState.Success)
-                    {
-                        MessageBox1.Show(Application.Current.GetActiveWindow(), msgRecord.MsgReturn?.Message ?? "相机关闭失败。", "ColorVision");
-                        return;
-                    }
-                    DService_DeviceStatusChanged(this, DService.DeviceStatus);
+                    return Task.CompletedTask;
                 });
             }
         }
@@ -1716,21 +1726,24 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         private void GetNDport_Click(object sender, RoutedEventArgs e)
         {
-            MsgRecord msgRecord = DService.GetPort();
-            msgRecord.MsgRecordStateChanged += (s, e) =>
+            MQTTCamera service = DService;
+            MsgRecord msgRecord = service.GetPort();
+            service.TrackPanelFailure(msgRecord, serviceOnly: true, (_, _) =>
             {
-                if (IsDisposed) return;
+                if (!IsDisposed) MessageBox.Show(Application.Current.GetActiveWindow(), Properties.Resources.ExecutionFailed, "ColorVision");
+                return Task.CompletedTask;
+            });
 
-                if (e == MsgRecordState.Success)
-                {
-                    int port = msgRecord.MsgReturn.Data.Port;
-                    DService.Config.NDPort = port;
-                }
-                else
-                {
-                    MessageBox.Show(Application.Current.GetActiveWindow(), ColorVision.Engine.Properties.Resources.ExecutionFailed, "ColorVision");
-                }
-            };
+            int completed = 0;
+            void ReadPort(object? _, MsgRecordState state)
+            {
+                if (!MsgRecord.IsTerminal(state) || Interlocked.Exchange(ref completed, 1) != 0) return;
+                msgRecord.MsgRecordStateChanged -= ReadPort;
+                if (state == MsgRecordState.Success && !IsDisposed && service.CanPresentFeedback(Device, serviceOnly: true))
+                    service.Config.NDPort = (int)msgRecord.MsgReturn.Data.Port;
+            }
+            msgRecord.MsgRecordStateChanged += ReadPort;
+            ReadPort(msgRecord, msgRecord.MsgRecordState);
         }
 
         internal void AttachImageView(ViewCamera view)
@@ -1798,6 +1811,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             _panelConfig = null;
             if (_panelOperation?.IsSend == true) _panelAutoFocusCancellation?.Cancel();
             _panelAutoFocusCancellation = null;
+            _panelAutoFocusButton = null;
             if (_panelOperation != null) _panelOperation.MsgRecordStateChanged -= PanelOperation_StateChanged;
             _panelOperation = null;
             PhyCameraManager.GetInstance().Loaded -= PhyCameraManager_Loaded;
@@ -2065,7 +2079,13 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         private async void Video1_Click(object sender, RoutedEventArgs e)
         {
-            if (IsDisposed || _panelOperation != null || _isOpeningLocalVideo || sender is not Button button) return;
+            if (IsDisposed || _isOpeningLocalVideo || sender is not Button button) return;
+            if (CanQueueLocalClose && (_panelOperation != null || Device.CameraBackend.IsCommandRunning))
+            {
+                HandyControl.Controls.Growl.Info(EngineLocalization.Get("CameraPanel_PreviewWhileBusy"));
+                return;
+            }
+            if (_panelOperation != null) return;
             TimedButtonOperationRegistry operations = EnsureTimedButtonOperations();
             if (Device.DisplayConfig.IsLocalVideoOpen)
             {

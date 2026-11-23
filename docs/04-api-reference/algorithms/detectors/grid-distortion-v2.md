@@ -5,7 +5,6 @@ status: "current"
 summary: "本地点阵畸变 V2 单次定位、TV/九点多口径及相对光学估计，覆盖 ImageView、Flow 和 ARVR 2.0 适配；光学估计不等同于标定结果。"
 aliases: ["点阵畸变分析(V2)","本地点阵畸变(V2)","漏光畸变失败","7x7畸变","GridDistortionAnalysis","LocalGridDistortionNode","M_CalDistortionGridV2","HorizontalTVDistortion","VerticalTVDistortion","Optic_Distortion","KeystoneHoriz","KeystoneVert","DIFF_H","DIFF_V"]
 code_paths: ["Native/opencv_helper/algorithm/distortion","Native/include/opencv_media_export.h","Native/opencv_helper/opencv_media_export.cpp","UI/ColorVision.Core/GridDistortion.cs","UI/ColorVision.Core/GridDistortionAnalysis.cs","UI/ColorVision.Core/GridDistortionOpticalModel.cs","UI/ColorVision.ImageEditor/EditorTools/Algorithms/Calculate/GridDistortion","UI/ColorVision.ImageEditor/EditorTools/Algorithms/Calculate/AlgorithmResultOverlay.cs","Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalGridDistortionNode.cs","Engine/ColorVision.Engine/Templates/Jsons/Distortion2","Projects/ProjectARVRPro/Process/Distortion"]
-test_paths: ["Test/opencv_helper_test/test_grid_distortion_v2.cpp", "Test/opencv_helper_test/benchmark_grid_distortion.py", "Test/opencv_helper_test/benchmark_public_grid_distortion.py", "Test/ColorVision.UI.Tests/GridDistortionTests.cs", "Test/ColorVision.UI.Tests/GridDistortionAnalysisTests.cs", "Test/ColorVision.UI.Tests/LocalGridDistortionNodeTests.cs", "Test/ColorVision.UI.Tests/DistortionHistoryOverlayTests.cs"]
 related: ["algorithms.arvr","algorithms.find-light-area","algorithms.find-cross","engine.native-integration","engine.results","flow.node-extension"]
 ---
 
@@ -35,13 +34,13 @@ V2 用一次点阵定位得到完整点位，再由 `GridDistortionAnalysis.Calc
 
 “搜索区域关注点”可选择寻找发光区写入的 POI 模板，每次执行读取数据库最新内容，优先于固定“搜索区域”；两者属于同一配置组，选中关注点后隐藏手动区域，清空后恢复显示且保留原矩形值。结果目录支持文件夹选择器。支持单个中心矩形 Rect、左上角矩形 LTRect、按 LT/RT/RB/LB 保存的四角点外接矩形（宽高包含两端像素），不做透视裁正。模板不存在、形状无效或区域越界时停止，不回退全图。结果参数记录模板名和有效搜索矩形。模板没有帧身份，需让前序定位成功后串行执行，并行流程使用独立模板。
 
-节点自动输出 TV、九点及有效的相对光学估计，完整分析保存全部口径，无需配置输出选择。`TV_distortion` 和 `LocalGridDistortionMetrics.TV` 固定使用标准 TV，`Point9_distortion` 和 `LocalGridDistortionMetrics.Point9` 固定使用对边均值九点，沿用原默认口径供后续 ARVR 读取和判定。
+`TV_distortion` 和 `LocalGridDistortionMetrics.TV` 使用标准 TV，`Point9_distortion` 和 `LocalGridDistortionMetrics.Point9` 使用对边均值九点。完整分析保留全部口径。
 
-流程执行会写入既有结果数据库和节点结果目录，需要已有流程批次及数据库连接；ImageView 单次分析不要求数据库。成功记录的类型为 `Distortion`（9）、版本为 `2.0`，一条 `DetailCommon` 指向唯一结果 JSON 文件。默认把对边均值九点的六项数值写入既有 `Point9_distortion` 字段名，`TV_distortion`、`Point9_distortion`、`Optic_Distortion` 保持 `Distortion2View` 与 ProjectARVRPro 消费的 JSON 结构；兼容的是读取格式，不代表沿用旧 P9 公式或旧梯形轴定义。数值已经是百分数，不再乘 100。
+流程执行使用所属批次的数据库连接读取持久化图像、POI 搜索区域和批次，并保存成功或失败记录。成功记录的类型为 `Distortion`（9）、版本为 `2.0`，`DetailCommon` 指向结果 JSON。`Distortion2View` 与 ProjectARVRPro 读取 `TV_distortion`、`Point9_distortion`、`Optic_Distortion`，数值单位为百分数。ImageView 单次分析不要求数据库。
 
 主程序历史结果标注 P 编号和原图坐标，完整有序点阵显示行列连线及四角参考框；较大点阵需保存的行列元数据，不猜测旧结果布局。侧栏先列主要指标，再保留完整原始 JSON；仅对明确声明百分数的结果标 `%`，不改变历史数值。等待原图加载后才画叠图，切换结果时丢弃迟到绘制；非法或越界点不画标记，也不拼接残缺网格。
 
-全部分析同时保存在 `LocalGridDistortionAnalysis`、结果文件和主记录参数中。节点共用一次定位和分析，自动输出 TV、九点以及通过残差校验的相对光学估计；`Optic_Distortion` 仍标明是未标定估计，并省略含义未确认的 `t`。光学模型无效时该字段为 null，CSV 留空，不补零。旧节点配置可继续加载，其中的光学输出开关和 `TvFormula` / `Point9Formula` 选择均忽略，重新保存后不再写入；原先选择半值 TV 或旧 P9 三跨度的节点统一使用上述默认口径，其他口径保留在完整分析中。原有客户配方、判定限和协议字段由 ProjectARVRPro 负责。
+`Optic_Distortion` 是未标定的相对光学估计。残差校验不通过时写 `null`，CSV 留空。旧配置中的光学输出开关和 `TvFormula`／`Point9Formula` 不参与计算，重新保存时省略。客户配方和判定由 ProjectARVRPro 维护。
 
 算法结构化拒绝和分析几何退化可保存失败主记录，不生成成功明细，也不替换上游有效主记录引用；事务提交后才更新当前结果引用。提交后的消息发布失败不撤销已保存结果。帧加载、方向/ROI 等前置错误及未包装的意外异常不保证产生失败主记录。`TotalTime` 记录定位调用耗时，不含派生分析、文件、数据库和通知。
 
@@ -259,20 +258,4 @@ Flow 当前直接开放行列数、亮点模式、搜索区域和最小对比度
 
 ## 验证和复现
 
-原生定向测试覆盖输入类型、亮暗点、ROI 原图坐标、漏光、强反光、缺点拒绝及几何公式；托管测试覆盖 ABI 包装、多口径计算、结果窗口、Flow 参数快照与 ARVR JSON 映射；光学模型使用独立前向生成的 ±12% 真值（3×3、7×7、15×15 与矩形点阵）、旋转、透视及亚像素噪声验证，并覆盖非参考点离群、高阶模型失配及失效光学项不发布。测试目录的基准脚本分别调用同一 DLL 的旧、新 ABI，用固定种子合成图及可选实图比较。
-
-以下命令只构建/运行本地测试并写入指定输出，不运行设备或生产数据库。Python 脚本需要已安装的 NumPy 和 OpenCV Python；DLL 先按原生构建约定编译 Release/x64。
-
-```powershell
-python .\Test\opencv_helper_test\benchmark_grid_distortion.py --dll .\x64\Release\opencv_helper.dll --sample C:\Samples\distortion.cvraw --output .\artifacts\grid-distortion-benchmark
-
-python .\Test\opencv_helper_test\benchmark_public_grid_distortion.py --dll .\x64\Release\opencv_helper.dll --dataset C:\Samples\opencv-circles --output .\artifacts\grid-distortion-public
-
-dotnet test .\Test\ColorVision.UI.Tests\ColorVision.UI.Tests.csproj -c Release -p:Platform=x64 --filter 'FullyQualifiedName~GridDistortionTests'
-```
-
-当前托管套件不包含真实样本、原生合成图或 WPF 结果窗口渲染宿主；上述 Python 基准与托管契约测试也不是现有用户窗口截图。现场复核需要显式提供样本、DLL 与独立输出目录。
-
-公开图脚本读取已准备好的 OpenCV `opencv_extra/testdata/cv/cameracalibration/circles` 中 14 对 `circlesN.png` 和 `circles_cornersN.dat`，不自动下载。使用固定 7×7、暗点和整图配置，同时比较新旧原生接口与 OpenCV 默认检测；输出目录必须为空，记录输入、参考和 DLL 哈希。参考点来自 OpenCV 回归数据，允许未标方向正方点阵的八种整体对称对齐，不做任意点重排或坐标拟合。参考差异用于回归比较，不代表有独立计量真值；用于修复的公开图应视为开发回归集，不能再作为未见数据的通过率证明。
-
-合成正确性门限同时要求完整行列对应、最大点误差不超过 1 px、有效跨度、按各自公式计算的最大指标误差不超过 0.1 个百分点；不能只数 `success=true`。性能包含原生调用、JSON 字节复制和释放，不含读图、JSON 解析、派生分析、UI 或数据库。单张实图和合成扰动只能验证这些案例，不能推算量产失败率或承诺固定加速倍数。
+现场复核应固定原图、ROI、DLL 版本和计算口径，对照完整的行列对应、点位误差、有效跨度及畸变指标。保留输入与 DLL 哈希，输出写独立目录。若比较耗时，分别记录原生调用与整条流程。OpenCV 公开点阵可作定位对照，客户验收仍需独立实测样本及计量基准。

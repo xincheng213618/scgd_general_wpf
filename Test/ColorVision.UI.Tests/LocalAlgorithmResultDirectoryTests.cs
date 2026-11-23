@@ -1,8 +1,28 @@
 ﻿using ColorVision.Engine.Services.Devices.Algorithm;
+using ColorVision.Database;
+
 namespace ColorVision.UI.Tests;
 
 public sealed class LocalAlgorithmResultDirectoryTests
 {
+    [Fact]
+    public void DefaultDirectoryCannotUseTheReplacementDatabaseService()
+    {
+        MySqlConnectedEndpoint original = new(_ => false, () => throw new InvalidOperationException("Directory selection must not open the database."));
+        MySqlConnectedEndpoint replacement = new(_ => true, () => throw new InvalidOperationException("Directory selection must not open the database."));
+        var originalConfig = new ConfigAlgorithm { Code = "DEV.Algorithm.Default" };
+        originalConfig.FileServerCfg.DataBasePath = @"D:\Original";
+        var replacementConfig = new ConfigAlgorithm { Code = "DEV.Algorithm.Default" };
+        replacementConfig.FileServerCfg.DataBasePath = @"E:\Replacement";
+        DateTime date = new(2026, 9, 18);
+
+        Assert.Equal(@"D:\Original\DEV.Algorithm.Default\Data\2026-09-18",
+            LocalAlgorithmResultDirectory.ResolveOwnedDirectory(original, [(replacement, replacementConfig), (original, originalConfig)], date));
+        Assert.Throws<InvalidOperationException>(() =>
+            LocalAlgorithmResultDirectory.ResolveOwnedDirectory(original, [(replacement, replacementConfig)], date));
+        Assert.Equal(@"C:\Results", LocalAlgorithmResultDirectory.Resolve(@"C:\Results", original));
+    }
+
     [Fact]
     public void UsesConfiguredDefaultServiceRootAndRunDate()
     {

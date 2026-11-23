@@ -39,7 +39,7 @@ next: false
   MySQL 连接配置与业务 DAO、POI 模板的 SQLite 自动回退，以及旧插件注册的二进制兼容。
 
 - [通用查询、条件会话与整表操作](../../04-api-reference/ui-components/database-query.md) — `ui.database-query`
-  实体驱动的通用查询窗口：条件参数化、执行时SQL预览、结果替换与进程内会话；关闭不取消查询，清空表/截断表作用于整表而非筛选结果。
+  实体驱动的通用查询窗口，支持参数化筛选、调用方固定范围、前后台查询和只读模式。可写模式的表维护作用于整表。
 
 - [共享防抖与回调生命周期](../../04-api-reference/ui-components/debounce-timer.md) — `ui.debounce-timer`
   共享防抖的同键替换、回调所有权、Dispatcher 排队取消与可复用清理边界。
@@ -74,8 +74,8 @@ next: false
 - [界面语言：资源发现、配置与重启](../../04-api-reference/ui-components/localization.md) — `ui.localization`
   界面语言的资源发现、系统语言回退、设置绑定和重启切换；语言下拉框不证明插件翻译完整，修改配置值不等于刷新窗口。
 
-- [菜单：发现、显示、执行与管理提交](../../04-api-reference/ui-components/menus.md) — `ui.menus`
-  菜单管理器的可见性（Visible）、位置、排序和全目标重置（Reset）；插件 DLL 发现、类型缓存、父子树和管理提交；IHotKey 提示随运行时键位更新，隐藏不禁用快捷键，Apply 成功提示不保证配置落盘，菜单入口不构成统一鉴权。
+- [菜单：发现、显示、执行与配置](../../04-api-reference/ui-components/menus.md) — `ui.menus`
+  插件菜单发现、类型缓存、菜单树、显示覆盖与执行权限。启动时加载可见性、顺序和父级配置，快捷键独立注册。
 
 - [PropertyGrid 属性编辑契约](../../04-api-reference/ui-components/property-grid.md) — `ui.property-grid`
   属性面板的字段生成、编辑器选择和 Flow 适配；区分直接修改、工作副本、关闭、重置与宿主持久化。
@@ -90,7 +90,7 @@ next: false
   设置窗口的元数据发现、搜索定位与活对象编辑；选项/搜索入口在关闭窗口后调用保存，关窗不撤销修改，保存失败不回滚；启动检查更新是聚合开关。
 
 - [TCP 监听、协议分发与消息记录](../../04-api-reference/ui-components/ColorVision.SocketProtocol.md) — `ui.socket-protocol`
-  Socket连接管理器的监听配置、窗口关闭与服务停止、防火墙放行、消息查询和JSON/Text分发；清空消息只清列表，重发可能换客户端，Sent不证明对端执行。
+  Socket 监听、服务生命周期、防火墙、消息查询与 JSON/Text 分发。清空消息只清列表，历史重发固定客户端连接，Sent 表示本地发送记录。
 
 - [工作区创建、资源打开与文件树管理](../../04-api-reference/ui-components/ColorVision.Solution.md) — `ui.solution`
   工作区创建、打开与最近列表，文件树搜索和引用移除，切换取消及 cvsln 恢复。新建工作区保留已有文件。
@@ -126,4 +126,4 @@ next: false
   UI类库的职责、依赖与目标框架/版本兼容；包版本可独立于主程序，ScottPlot与SkiaSharp保持已验证的资产组合。
 
 - [图像设置：作用范围、保存和扩展](../../02-developer-guide/core-concepts/image-editor-settings-plan.md) — `ui.image-editor-settings-plan`
-  图像设置的作用范围、显式默认值与标定档案保存、当前视图隔离和扩展协议；主设置独立入口与旧接口清理仍待实施。
+  图像设置的作用范围、默认值与标定档案保存、视图隔离和扩展入口。

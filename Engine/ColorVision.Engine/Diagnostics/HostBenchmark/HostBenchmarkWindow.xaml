@@ -1,0 +1,258 @@
+<Window x:Class="ColorVision.Engine.Diagnostics.HostBenchmark.HostBenchmarkWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="基准测试" Width="788" MinWidth="560" MinHeight="390" SizeToContent="Height"
+        WindowStartupLocation="CenterOwner" Background="#090E1C" Foreground="#EDF3FF" FontSize="14"
+        UseLayoutRounding="True" Loaded="Window_Loaded" Closing="Window_Closing" Closed="Window_Closed">
+    <Window.Resources>
+        <SolidColorBrush x:Key="Secondary" Color="#AFBEDA" />
+        <SolidColorBrush x:Key="Panel" Color="#111A2D" />
+        <SolidColorBrush x:Key="PanelBorder" Color="#2A3855" />
+        <SolidColorBrush x:Key="AccentText" Color="#AFCBFF" />
+
+        <Style x:Key="BenchmarkAction" TargetType="Button">
+            <Setter Property="Foreground" Value="#F3F7FF" />
+            <Setter Property="Background" Value="#1B2944" />
+            <Setter Property="BorderBrush" Value="#405171" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+            <Setter Property="Padding" Value="13,7" />
+            <Setter Property="MinHeight" Value="34" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Surface" Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="9" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                              VerticalAlignment="Center" RecognizesAccessKey="True" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Surface" Property="BorderBrush" Value="#879FEB" />
+                            </Trigger>
+                            <Trigger Property="IsKeyboardFocused" Value="True">
+                                <Setter TargetName="Surface" Property="BorderBrush" Value="#C9D6FF" />
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Surface" Property="Opacity" Value="0.8" />
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="Surface" Property="Opacity" Value="0.48" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style x:Key="PrimaryAction" TargetType="Button" BasedOn="{StaticResource BenchmarkAction}">
+            <Setter Property="Background">
+                <Setter.Value>
+                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,0.7">
+                        <GradientStop Color="#6B49D6" Offset="0" />
+                        <GradientStop Color="#405CB1" Offset="1" />
+                    </LinearGradientBrush>
+                </Setter.Value>
+            </Setter>
+            <Setter Property="BorderBrush" Value="#A498EE" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+        </Style>
+
+        <Style x:Key="BenchmarkTab" TargetType="TabItem">
+            <Setter Property="Foreground" Value="{StaticResource Secondary}" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="VerticalContentAlignment" Value="Top" />
+            <Setter Property="Padding" Value="15,8" />
+            <Setter Property="Margin" Value="0,0,5,0" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TabItem">
+                        <Border x:Name="Surface" Background="Transparent" BorderBrush="Transparent" BorderThickness="1"
+                                CornerRadius="9" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter ContentSource="Header" RecognizesAccessKey="True" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Surface" Property="Background" Value="#16213A" />
+                            </Trigger>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="Surface" Property="Background" Value="#202B4A" />
+                                <Setter TargetName="Surface" Property="BorderBrush" Value="#45567A" />
+                                <Setter Property="Foreground" Value="#FFFFFF" />
+                            </Trigger>
+                            <Trigger Property="IsKeyboardFocused" Value="True">
+                                <Setter TargetName="Surface" Property="BorderBrush" Value="#C9D6FF" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="HistoryCard" TargetType="ListBoxItem">
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="Foreground" Value="#EDF3FF" />
+            <Setter Property="Padding" Value="14,9" />
+            <Setter Property="Margin" Value="0,0,0,6" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ListBoxItem">
+                        <Border x:Name="Surface" Background="#152039" BorderBrush="#273754" BorderThickness="1"
+                                CornerRadius="10" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Surface" Property="Background" Value="#1B2946" />
+                            </Trigger>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="Surface" Property="Background" Value="#202C4B" />
+                                <Setter TargetName="Surface" Property="BorderBrush" Value="#6479AD" />
+                            </Trigger>
+                            <Trigger Property="IsKeyboardFocused" Value="True">
+                                <Setter TargetName="Surface" Property="BorderBrush" Value="#C9D6FF" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+
+    <Grid Margin="22,15,22,17">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Focusable="False">
+            <TabControl Background="Transparent" BorderThickness="0" ItemContainerStyle="{StaticResource BenchmarkTab}">
+                <TabControl.Template>
+                    <ControlTemplate TargetType="TabControl">
+                        <DockPanel>
+                            <TabPanel DockPanel.Dock="Top" IsItemsHost="True" Margin="0,0,0,11" KeyboardNavigation.TabIndex="0" />
+                            <ContentPresenter x:Name="PART_SelectedContentHost" ContentSource="SelectedContent" />
+                        </DockPanel>
+                    </ControlTemplate>
+                </TabControl.Template>
+
+                <TabItem Header="运行测试">
+                    <StackPanel>
+                        <Border CornerRadius="17" BorderBrush="{StaticResource PanelBorder}" BorderThickness="1">
+                            <Border.Background>
+                                <ImageBrush ImageSource="/ColorVision.Engine;component/Assets/Image/BenchmarkOptics.png"
+                                            Stretch="UniformToFill" AlignmentX="Right" />
+                            </Border.Background>
+                            <Border CornerRadius="16" Padding="26,25,26,22">
+                                <Border.Background>
+                                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,0.14">
+                                        <GradientStop Color="#F70A1020" Offset="0" />
+                                        <GradientStop Color="#E0090E1C" Offset="0.44" />
+                                        <GradientStop Color="#18090E1C" Offset="1" />
+                                    </LinearGradientBrush>
+                                </Border.Background>
+                                <StackPanel HorizontalAlignment="Left" MinHeight="156">
+                                    <TextBlock Text="图像处理基准" FontSize="33" FontWeight="Bold" Foreground="#FFFFFF" />
+                                    <TextBlock Text="测量 CPU 与内存处理全幅图像的速度" Foreground="#CFDCF7"
+                                               Margin="0,6,0,19" TextWrapping="Wrap" />
+                                    <StackPanel Orientation="Horizontal">
+                                        <Button x:Name="RunButton" Style="{StaticResource PrimaryAction}" Content="开始测试"
+                                                MinWidth="142" MinHeight="42" Padding="20,6" FontSize="15"
+                                                Click="Run_Click" IsEnabled="False" />
+                                        <Button x:Name="CancelButton" Style="{StaticResource BenchmarkAction}" Content="取消"
+                                                Margin="8,0,0,0" Click="Cancel_Click" Visibility="Collapsed" />
+                                    </StackPanel>
+                                    <ProgressBar x:Name="RunProgress" Height="4" Margin="0,11,0,0" IsIndeterminate="True"
+                                                 Foreground="#99C3FF" Background="#263756" Visibility="Collapsed"
+                                                 AutomationProperties.Name="基准测试正在运行" />
+                                </StackPanel>
+                            </Border>
+                        </Border>
+
+                        <Button x:Name="LatestResultButton" Style="{StaticResource BenchmarkAction}" Margin="0,13,0,0"
+                                Padding="17,12" BorderBrush="{StaticResource PanelBorder}" Background="{StaticResource Panel}"
+                                HorizontalContentAlignment="Stretch" Visibility="Collapsed" Click="LatestResult_Click"
+                                AutomationProperties.Name="打开最近一次成绩">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <StackPanel VerticalAlignment="Center">
+                                    <TextBlock Text="最近一次成绩" FontWeight="SemiBold" />
+                                    <TextBlock x:Name="LatestResultTimeText" FontSize="12" Margin="0,4,0,0"
+                                               Foreground="{StaticResource Secondary}" />
+                                </StackPanel>
+                                <TextBlock x:Name="LatestResultScoreText" Grid.Column="1" Margin="12,0,13,0"
+                                           VerticalAlignment="Center" FontSize="26" FontWeight="SemiBold"
+                                           Foreground="{StaticResource AccentText}" />
+                                <TextBlock Grid.Column="2" Text="›" FontSize="24" VerticalAlignment="Center"
+                                           Foreground="{StaticResource Secondary}" />
+                            </Grid>
+                        </Button>
+                    </StackPanel>
+                </TabItem>
+
+                <TabItem x:Name="HistoryTab" Header="历史成绩">
+                    <Border CornerRadius="14" Padding="13" Background="{StaticResource Panel}"
+                            BorderBrush="{StaticResource PanelBorder}" BorderThickness="1">
+                        <StackPanel>
+                            <TextBlock x:Name="EmptyHistoryText" Text="完成测试后，成绩会出现在这里。"
+                                       Foreground="{StaticResource Secondary}" Margin="7,18" TextWrapping="Wrap" />
+                            <ListBox x:Name="HistoryList" MaxHeight="316" Background="Transparent" BorderThickness="0"
+                                     Visibility="Collapsed" ItemContainerStyle="{StaticResource HistoryCard}"
+                                     ScrollViewer.HorizontalScrollBarVisibility="Disabled" ScrollViewer.VerticalScrollBarVisibility="Auto"
+                                     VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.VirtualizationMode="Recycling"
+                                     SelectionChanged="HistoryList_SelectionChanged" MouseDoubleClick="HistoryList_DoubleClick"
+                                     KeyDown="HistoryList_KeyDown" AutomationProperties.Name="测试历史">
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <Grid ToolTip="{Binding StartupSummary}" AutomationProperties.HelpText="{Binding StartupSummary}">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
+                                            <StackPanel VerticalAlignment="Center">
+                                                <TextBlock Text="{Binding MeasuredAt, StringFormat='{}{0:yyyy-MM-dd HH:mm:ss}'}"
+                                                           FontWeight="SemiBold" />
+                                                <TextBlock Text="{Binding Status}" Margin="0,3,0,0" FontSize="12"
+                                                           Foreground="{StaticResource Secondary}" />
+                                            </StackPanel>
+                                            <TextBlock Grid.Column="1" Text="{Binding ScoreText}" Margin="10,0,0,0"
+                                                       VerticalAlignment="Center" FontSize="22" FontWeight="SemiBold"
+                                                       Foreground="{StaticResource AccentText}" />
+                                        </Grid>
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
+
+                            <WrapPanel x:Name="HistoryActions" Margin="0,7,0,0" Visibility="Collapsed">
+                                <Button x:Name="OpenHistoryResultButton" Style="{StaticResource PrimaryAction}" Content="查看成绩"
+                                        Margin="0,0,7,4" Click="OpenHistoryResult_Click" IsEnabled="False" />
+                                <Button x:Name="MakeReferenceButton" Style="{StaticResource BenchmarkAction}" Content="设为导出参考"
+                                        Margin="0,0,7,4" Click="MakeReference_Click" IsEnabled="False" />
+                                <Button x:Name="ExportButton" Style="{StaticResource BenchmarkAction}" Content="导出 JSON"
+                                        Margin="0,0,0,4" Click="Export_Click" IsEnabled="False" />
+                            </WrapPanel>
+                        </StackPanel>
+                    </Border>
+                </TabItem>
+            </TabControl>
+        </ScrollViewer>
+
+        <TextBlock x:Name="StatusText" Grid.Row="1" Margin="0,8,0,0" Text="正在读取测试历史…"
+                   TextWrapping="Wrap" Foreground="{StaticResource Secondary}" AutomationProperties.LiveSetting="Polite">
+            <TextBlock.Style>
+                <Style TargetType="TextBlock">
+                    <Style.Triggers>
+                        <Trigger Property="Text" Value="">
+                            <Setter Property="Visibility" Value="Collapsed" />
+                        </Trigger>
+                    </Style.Triggers>
+                </Style>
+            </TextBlock.Style>
+        </TextBlock>
+    </Grid>
+</Window>

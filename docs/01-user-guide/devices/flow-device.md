@@ -5,7 +5,6 @@ status: "current"
 summary: "旧 Flow 与第三方算法资源的协议值、装配过滤和流程节点读取兼容；资源记录与远端服务状态分别核对。"
 aliases: ["流程设备", "ServiceTypes.Flow", "流程设备为什么不显示", "远端流程服务", "ThirdPartyAlgorithms", "第三方算法设备", "旧流程第三方算法", "TPAlgorithmNode", "TPAlgorithm2Node"]
 code_paths: ["Engine/ColorVision.Engine/Services/Devices/DeviceServiceFactory.cs", "Engine/ColorVision.Engine/Services/ServiceManager.cs", "Engine/ColorVision.Engine/Services/Type/TypeService.cs", "Engine/ColorVision.Engine/Services/RC/MQTTRCService.cs", "Engine/ColorVision.Engine/PropertyEditor/DeviceNameEditor.cs", "Engine/FlowEngineLib/Node/Algorithm/TPAlgorithmNode.cs", "Engine/FlowEngineLib/Node/Algorithm/TPAlgorithm2Node.cs", "Engine/ColorVision.Engine/FlowProcessing/Runtime/FlowControl.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/LegacyThirdPartyAlgorithmNodeTests.cs"]
 related: ["engine.devices", "operations.device-configuration", "engine.mqtt", "flow.session", "flow.runtime"]
 ---
 
@@ -27,4 +26,4 @@ related: ["engine.devices", "operations.device-configuration", "engine.mqtt", "f
 
 ## 验证范围
 
-`LegacyThirdPartyAlgorithmNodeTests` 使用内存画布验证两个旧节点的类型、设备编码、算子和模板名称在保存后仍可读取，不连接设备。自动化验证不替代现场历史资源、旧流程和外部插件清点；真实流程执行或服务重启仍须在明确授权的隔离环境验证。
+迁移前清点现场历史资源、旧流程和外部插件，并核对旧节点的类型、设备编码、算子和模板能正确读取。真实流程执行或服务重启须在明确授权的隔离环境验证。

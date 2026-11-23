@@ -638,7 +638,8 @@ namespace ColorVision.UI.Desktop.Operations
         {
             Directory.CreateDirectory(Path.GetDirectoryName(_path)!);
             string temp = _path + ".tmp";
-            File.WriteAllText(temp, JsonSerializer.Serialize(_state, JsonOptions));
+            using (FileStream stream = File.Open(temp, FileMode.Create, FileAccess.Write, FileShare.Read))
+                JsonSerializer.Serialize(stream, _state, JsonOptions);
             File.Move(temp, _path, true);
         }
 

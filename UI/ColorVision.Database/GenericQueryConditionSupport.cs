@@ -336,8 +336,13 @@ namespace ColorVision.Database
         }
 
         public static ISugarQueryable<T> ApplyConditions<T>(ISugarQueryable<T> query, IEnumerable<QueryCondition> conditions)
+            => ApplyCapturedConditions(query, CaptureConditions(conditions));
+
+        internal readonly record struct CapturedCondition(string Predicate, Dictionary<string, object> Parameters);
+
+        internal static IReadOnlyList<CapturedCondition> CaptureConditions(IEnumerable<QueryCondition> conditions)
         {
-            var index = 0;
+            List<CapturedCondition> captured = new();
             foreach (var condition in conditions)
             {
                 ClearError(condition);
@@ -363,11 +368,17 @@ namespace ColorVision.Database
                 else if (condition.Operator == QueryOperator.Like)
                     value = $"%{value}%";
 
-                var parameterName = $"queryValue{index++}";
+                var parameterName = $"queryValue{captured.Count}";
                 var parameters = new Dictionary<string, object> { [parameterName] = value! };
-                query = query.Where($"{GetColumnName(condition.Property)} {condition.Operator.ToDescription()} @{parameterName}", parameters);
+                captured.Add(new($"{GetColumnName(condition.Property)} {condition.Operator.ToDescription()} @{parameterName}", parameters));
             }
+            return captured;
+        }
 
+        internal static ISugarQueryable<T> ApplyCapturedConditions<T>(ISugarQueryable<T> query, IReadOnlyList<CapturedCondition> conditions)
+        {
+            foreach (CapturedCondition condition in conditions)
+                query = query.Where(condition.Predicate, condition.Parameters);
             return query;
         }
 
