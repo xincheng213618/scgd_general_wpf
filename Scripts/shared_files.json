@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generated_at": "2026-11-10T03:24:29.677615+00:00",
+  "generated_at": "2026-11-23T00:29:01.277323+00:00",
   "shared_files": [
     "Anthropic.dll",
     "Assets/Help/algorithm-help.css",
@@ -262,6 +262,7 @@
     "System.DirectoryServices.Protocols.dll",
     "System.IO.Ports.dll",
     "System.IdentityModel.Tokens.Jwt.dll",
+    "System.Management.dll",
     "System.Memory.Data.dll",
     "System.Numerics.Tensors.dll",
     "System.Runtime.Caching.dll",
@@ -480,6 +481,7 @@
     "runtimes/win-x86/native/libHarfBuzzSharp.dll",
     "runtimes/win-x86/native/libSkiaSharp.dll",
     "runtimes/win/lib/net10.0/System.IO.Ports.dll",
+    "runtimes/win/lib/net10.0/System.Management.dll",
     "runtimes/win/lib/net10.0/System.ServiceProcess.ServiceController.dll",
     "runtimes/win/lib/net8.0/Microsoft.Data.SqlClient.dll",
     "runtimes/win/lib/net8.0/System.DirectoryServices.Protocols.dll",
