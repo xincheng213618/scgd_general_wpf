@@ -58,7 +58,13 @@ namespace ColorVision.Database
         public IReadOnlyList<LocalTemplateDocument> List(string kind)
         {
             using var connection = Open();
+            return List(connection, kind, null);
+        }
+
+        private static List<LocalTemplateDocument> List(SqliteConnection connection, string kind, SqliteTransaction? transaction)
+        {
             using var command = connection.CreateCommand();
+            command.Transaction = transaction;
             command.CommandText = "SELECT id,name,schema_version,payload,created_utc FROM local_templates WHERE kind=$kind ORDER BY sort_order,id";
             command.Parameters.AddWithValue("$kind", kind);
             using var reader = command.ExecuteReader();
@@ -73,7 +79,13 @@ namespace ColorVision.Database
         public LocalTemplateDocument? Find(string kind, int id)
         {
             using var connection = Open();
+            return Find(connection, kind, id, null);
+        }
+
+        private static LocalTemplateDocument? Find(SqliteConnection connection, string kind, int id, SqliteTransaction? transaction)
+        {
             using var command = connection.CreateCommand();
+            command.Transaction = transaction;
             command.CommandText = "SELECT id,name,schema_version,payload,created_utc FROM local_templates WHERE kind=$kind AND id=$id";
             command.Parameters.AddWithValue("$kind", kind);
             command.Parameters.AddWithValue("$id", id);
@@ -89,7 +101,14 @@ namespace ColorVision.Database
         public int Save(string kind, int? id, string name, int schemaVersion, string payload)
         {
             using var connection = Open();
+            return Save(connection, null, kind, id, name, schemaVersion, payload);
+        }
+
+        private static int Save(SqliteConnection connection, SqliteTransaction? transaction, string kind,
+            int? id, string name, int schemaVersion, string payload)
+        {
             using var command = connection.CreateCommand();
+            command.Transaction = transaction;
             command.CommandText = id.HasValue
                 ? "UPDATE local_templates SET name=$name,schema_version=$version,payload=$payload WHERE kind=$kind AND id=$id RETURNING id"
                 : "INSERT INTO local_templates(kind,name,schema_version,payload,sort_order,created_utc) VALUES($kind,$name,$version,$payload,COALESCE((SELECT MAX(sort_order)+1 FROM local_templates WHERE kind=$kind),0),$created) RETURNING id";
@@ -100,6 +119,25 @@ namespace ColorVision.Database
             command.Parameters.AddWithValue("$version", schemaVersion);
             command.Parameters.AddWithValue("$payload", payload);
             return checked(Convert.ToInt32(command.ExecuteScalar() ?? throw new InvalidDataException("模板已被删除，无法保存。")));
+        }
+
+        /// <summary>Inserts a document under an existing parent and checks competing documents in the same transaction.</summary>
+        public int TryInsertChild(string kind, int parentId, string name, int schemaVersion, string payload,
+            Func<LocalTemplateDocument, bool> matchesParent, Func<LocalTemplateDocument, bool> conflicts, Func<bool> isCurrent)
+        {
+            if (!isCurrent()) return 0;
+            using var connection = Open();
+            using var transaction = connection.BeginTransaction(deferred: false);
+            LocalTemplateDocument? parent = Find(connection, kind, parentId, transaction);
+            if (parent == null || !matchesParent(parent)) return 0;
+            foreach (var document in List(connection, kind, transaction))
+                if (document.Id != parentId && conflicts(document)) return 0;
+            if (!isCurrent()) return 0;
+
+            int id = Save(connection, transaction, kind, null, name, schemaVersion, payload);
+            if (!isCurrent()) return 0;
+            transaction.Commit();
+            return id;
         }
 
         public void Delete(string kind, int id)
@@ -143,6 +181,37 @@ namespace ColorVision.Database
             command.Parameters.AddWithValue("$version", expected.SchemaVersion);
             command.Parameters.AddWithValue("$payload", expected.Payload);
             return command.ExecuteNonQuery() == 1;
+        }
+
+        /// <summary>Deletes a matching document and optional related documents of the same kind in one transaction.</summary>
+        public bool TryDelete(string kind, int id, Func<LocalTemplateDocument, bool> matches,
+            Func<LocalTemplateDocument, bool>? isRelated, Func<bool> isCurrent)
+        {
+            if (!isCurrent()) return false;
+            using var connection = Open();
+            // Reserve the write lock before checking identity or selecting related rows.
+            using var transaction = connection.BeginTransaction(deferred: false);
+            LocalTemplateDocument? document = Find(connection, kind, id, transaction);
+            if (document == null || !matches(document)) return false;
+
+            using var command = connection.CreateCommand();
+            command.Transaction = transaction;
+            command.CommandText = "DELETE FROM local_templates WHERE kind=$kind AND id=$id";
+            command.Parameters.AddWithValue("$kind", kind);
+            var documentId = command.Parameters.AddWithValue("$id", id);
+            if (isRelated != null)
+            {
+                foreach (var candidate in List(connection, kind, transaction))
+                {
+                    if (candidate.Id == id || !isRelated(candidate)) continue;
+                    documentId.Value = candidate.Id;
+                    if (command.ExecuteNonQuery() != 1) return false;
+                }
+            }
+            documentId.Value = id;
+            if (command.ExecuteNonQuery() != 1 || !isCurrent()) return false;
+            transaction.Commit();
+            return true;
         }
 
         public void SwapOrder(string kind, int first, int second)

@@ -231,7 +231,8 @@ namespace ColorVision.Copilot
                 CopilotPanelService.PanelId,
                 panelService.GetOrCreatePanel,
                 CopilotUiText.CopilotPanelTitle,
-                PanelPosition.Right);
+                PanelPosition.Right,
+                isDefaultVisible: false);
         }
     }
 

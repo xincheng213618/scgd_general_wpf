@@ -2,16 +2,15 @@
 knowledge_id: "ui.socket-protocol"
 knowledge_type: "topic"
 status: "current"
-summary: "Socket连接管理器的监听配置、窗口关闭与服务停止、防火墙放行、消息查询和JSON/Text分发；清空消息只清列表，重发可能换客户端，Sent不证明对端执行。"
+summary: "Socket 监听、服务生命周期、防火墙、消息查询与 JSON/Text 分发。清空消息只清列表，历史重发固定客户端连接，Sent 表示本地发送记录。"
 aliases: ["Socket端口连不上或消息没响应", "网络通信", "Socket 连接管理器", "Socket服务设置", "通信协议", "文本模式", "发送消息记录", "消息重发", "Socket消息搜索", "关闭Socket窗口", "停止Socket服务", "清空消息", "防火墙放行", "防火墙专用公用", "ColorVision.SocketProtocol", "SocketManager", "SocketManagerWindow", "SocketConfig", "SocketServerLifecycle", "SocketServerSettings", "SocketManagerApplicationLifetime", "SocketWorkerTracker", "SocketJsonDispatcher", "SocketTextDispatcher", "ISocketJsonHandler", "ISocketTextDispatcher", "SocketMessageManager", "SocketMessageManagerConfig", "SocketRequest", "SocketResponse", "SocketFirewallService", "WindowsFirewallStatusReader", "FirewallCommandService"]
 code_paths: ["UI/ColorVision.SocketProtocol", "src/ColorVisionServiceHost/FirewallCommandService.cs", "ColorVision/App.xaml.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/SocketServerLifecycleTests.cs", "Test/ColorVision.UI.Tests/SocketShutdownTests.cs", "Test/ColorVision.UI.Tests/SocketManagerProjectionTests.cs", "Test/ColorVision.UI.Tests/SocketMessageStorageTests.cs", "Test/ColorVision.UI.Tests/SocketMessageAsyncProjectionTests.cs"]
 related: ["ui.index", "ui.discovery", "ui.database-query", "ui.sqlite-storage", "engine.database-maintenance", "platform.service-host"]
 ---
 
 # TCP 监听、协议分发与消息记录
 
-`ColorVision.SocketProtocol` 为桌面宿主提供 TCP 监听、JSON/Text 指令分发和收发记录。通过 **帮助 → 网络通信**（`Alt+H` 后按 `C`）查看与管理，窗口保留完整标题“Socket 连接管理器”；启用服务后，也可点击状态栏的 Socket 服务图标进入。MES、PLC 和客户设备的业务字段、权限及动作约束由各项目协议负责。
+`ColorVision.SocketProtocol` 为桌面宿主提供 TCP 监听、JSON/Text 指令分发和收发记录。通过 **帮助 → 通信**（`Alt+H` 后按 `C`）打开“Socket 连接管理器”。启用服务后，也可点击状态栏的 Socket 服务图标进入。MES、PLC 和客户设备的业务字段、权限及动作约束由各项目协议负责。
 
 打开窗口后焦点位于消息搜索框，Tab / Shift+Tab 在窗口内循环。Ctrl+F 回到搜索，Esc 有筛选时先清除筛选，无筛选时关闭窗口；关闭仍只释放窗口订阅，不停止通信服务。
 
@@ -147,19 +146,21 @@ Engine 内置 `FlowRunPoiSocketHandler`，通过同一 JSON 监听端口调用�
 | `500` | 流程或必需后处理失败、执行异常、POI 查询或解析失败 |
 | `503` | 主程序或 MySQL 结果批次不可用 |
 
-已取得最终执行结果的失败响应保留 `Data` 中的批次身份和状态，`Poi` 为空；启动前拒绝时 `Data` 为空。协议与结果隔离回归见 `Test/ColorVision.UI.Tests/FlowRunPoiSocketTests.cs`；设备采集、真实 MySQL 明细可见性和对端收包仍需现场联调。TCP 消息边界继续遵守下节的当前实现限制。
+已取得最终执行结果的失败响应保留 `Data` 中的批次身份和状态，`Poi` 为空；启动前拒绝时 `Data` 为空。 设备采集、MySQL 明细可见性和对端收包需现场联调。TCP 消息边界见下节。
 
-独立 net48/x64 调用逻辑、WPF 窗口及兼容命令行示例位于 `SDK/ColorVision.FlowPoi.Client.Net48/`：客户端仅依赖 Newtonsoft.Json，提供 `RunByNameAsync`、`RunByIdAsync`，每次建立一条连接，按 `EventName + MsgID` 匹配完整 JSON 响应。600 秒默认超时和取消只终止客户端等待，不自动重发，也不保证主程序流程已停止。线上 `X/x`、`Y/y` 分别映射为三刺激值和 `ChromaticityX/ChromaticityY`。窗口支持按名称/ID 执行、取消等待、离线样例与 JSON/CSV 导出，`FlowPoiResponse.Parse` 复用联机校验解析离线响应。现场操作和独立编译前提见该目录 `README.md`，客户报文与字段手册为 `API.md`；`Scripts/package_flow_poi_demo.ps1` 只生成包含 Binaries/Source 的本地客户 ZIP，不上传。net48 回环及已打包 Demo 回归位于 `Test/ColorVision.FlowPoi.Net48.Tests/`。
+独立 net48/x64 调用逻辑、WPF 窗口及兼容命令行示例位于 `SDK/ColorVision.FlowPoi.Client.Net48/`：客户端仅依赖 Newtonsoft.Json，提供 `RunByNameAsync`、`RunByIdAsync`，每次建立一条连接，按 `EventName + MsgID` 匹配完整 JSON 响应。600 秒默认超时和取消只终止客户端等待，不自动重发，也不保证主程序流程已停止。线上 `X/x`、`Y/y` 分别映射为三刺激值和 `ChromaticityX/ChromaticityY`。窗口支持按名称/ID 执行、取消等待、离线样例与 JSON/CSV 导出，`FlowPoiResponse.Parse` 复用联机校验解析离线响应。现场操作和独立编译前提见该目录 `README.md`，客户报文与字段手册为 `API.md`；`Scripts/package_flow_poi_demo.ps1` 只生成包含 Binaries/Source 的本地客户 ZIP，不上传。
 
 ## Text 分发与 TCP 消息边界
 
 `SocketTextDispatcher` 构造时发现 `ISocketTextDispatcher`。当前实现只调用发现顺序中的第一个 handler：返回非空白字符串时立即返回，空白时也立即返回 `null`，不会尝试后续处理器。没有 handler 时返回字面字符串 `No Dispatcher Hanle`。这是多处理器路由的实现缺口，新增第二个处理器不能作为后备路由，扫描顺序也没有业务优先级约定。
 
-`HandleClientCore` 将每次 `NetworkStream.Read` 的字节段直接按 UTF-8 解码，再按服务快照进入 JSON 或 Text 分发。当前没有跨读取的帧累积、长度协议或多消息拆分；大包、粘包、半包及跨读取分隔的 UTF-8 字符存在处理缺口。接入协议需要可靠消息边界时必须实现并验证分帧，不能假定一次 write 对应一次 read。
+默认按单次 `NetworkStream.Read` 解码 UTF-8，再按服务快照进入 JSON 或 Text 分发。Text 的首个处理器可通过 `FrameJsonObjects` 启用按连接缓存 JSON 对象，收齐后解码，并拆分同一次读取中的多个对象和分号终止的文本命令。无分号的文本仍按单次读取分发。 [LUX TCP 协议](../projects/project-lux-protocol.md)
 
 ## 发送记录与重发结果
 
-正常 JSON/Text 及错误响应路径均先调用 `MessageManager.AddMessage` 将 `Sent` 记录入队，再写入网络；接收记录入队后即继续业务分发。**有 Sent 不证明网络写入成功或对端已执行**；`ResponseCode` 是生成的响应内容，不是对端 ACK。接收行按读取片段登记，也不能直接用于统计业务操作次数。
+正常 JSON/Text 及错误响应路径均先调用 `MessageManager.AddMessage` 将 `Sent` 记录入队，再写入网络；接收记录入队后即继续业务分发。**有 Sent 不证明网络写入成功或对端已执行**；`ResponseCode` 是生成的响应内容，不是对端 ACK。默认按读取片段登记，Text 启用分帧时按分发的消息登记。
+
+JSON handler 可通过 `SocketResponse.AfterSend` 登记本地回调。当前连接的写入成功返回后，Socket 工作线程调用回调，再读取下一条请求。回调异常单独记日志。该属性不进入 JSON 报文。
 
 `AddMessage` 复制消息元数据和正文引用，分配进程内 `RecordSequence` 后进入单个后台写入队列；调用方不等待存储锁、SQLite 提交或 UI。后台按入队顺序在同一事务内写入元数据和压缩正文，成功提交后才以 `Background` 优先级投递列表更新。队列为内存队列，不是持久化日志；数据库持续不可写时待写消息会积压，进程强制结束可能丢失未提交记录。数据库及 UI 发布异常被捕获记入日志，单条失败不终止后续写入；方法返回不证明已落库。JSON 正常分支出错后进入异常分支，还可能再次登记同一接收内容。
 
@@ -181,16 +182,16 @@ UI 仍可能因其它绘图或用户发起的数据库查询延迟业务 handler
 
 ### 重新发送一条记录
 
-重发可能触发外部业务动作。操作前应核对正文、当前连接和重复执行影响；原端点不存在且有多个连接时，界面没有供用户指定接收方的步骤。
+重发可能触发外部业务动作。操作前应核对正文和重复执行的影响。
 
 `SocketManagerWindow.ResendMessageToClient` 的顺序是：
 
-1. 加载所选记录的原始正文。Received 和 Sent 行都可重发，内容直接发给客户端，不会重新进入本地 handler。
-2. 查找原记录端点文字包含的可写客户端远端地址；找不到则使用客户端集合中第一个可写连接。没有可用连接时提示未连接。
-3. 将 UTF-8 正文写入所选连接，再追加一条 `Sent`。沿用原 `EventName/MsgID`，使用当前时间，不复制 `ResponseCode`，不修改原记录。
-4. 显示重发结果。成功提示只表示该网络写入调用返回，不等待对端确认，也不保证新增记录持久化。
+1. 在监听会话仍在运行时，查找唯一匹配原远端 IP 和端口的可写连接。带 `ClientConnectionId` 的记录同时要求匹配原连接 ID，客户端以相同端点重连后也无法重发这些记录。旧记录只有端点时按完整端点匹配，缺少端点或存在多个匹配时停止并提示。
+2. 读取数据库里原记录的完整正文。记录已清理或正文为空时提示无法重发。Received 和 Sent 行都走这条路径，正文直接写给客户端。
+3. 将 UTF-8 正文写入已选连接，再追加 `Sent` 记录。新记录含该客户端的端点及连接 ID，沿用原 `EventName/MsgID`，采用当前时间。写入失败时结束本次重发。
+4. 显示重发结果。成功提示表示本地网络写入调用返回。对端确认和记录持久化分别核对。
 
-新记录的端点优先取当前连接远端，可能回退到本地端点或原记录文字，不能独立证明实际接收方。重发没有生成新的业务请求 ID；重复执行的幂等性由具体协议负责。
+每次接受 TCP 客户端连接时生成连接 ID。连接 ID 只用于定位本应用记录中的原客户端。重复执行的幂等性由具体协议负责。
 
 ## 排查常见问题
 
@@ -201,22 +202,13 @@ UI 仍可能因其它绘图或用户发起的数据库查询延迟业务 handler
 | 能连接但没有响应 | 检查模式、JSON 事件/程序集或 Text 首个 handler，再检查读取片段与分帧 |
 | 搜索不到某条消息 | 先重置筛选，再核对查询数量/排序；关键词只搜索元数据与预览，正文读取失败另查存储日志 |
 | 清空后记录又出现 | “清空消息”只影响内存列表，查询会重新读取数据库；删除单条和整表操作另有入口 |
-| 有 Sent 或重发成功，对端没有结果 | 核对网络写入异常、当前目标和业务回执；检查是否因端点未匹配而选到其它客户端 |
+| 有 Sent 或重发成功，对端没有结果 | 核对本地网络写入日志、已匹配的客户端和业务回执 |
 | 升级后有列表、详情却为空 | 检查 gzip 正文与旧 TEXT 迁移情况，按 SQLite 维护主题处理 |
 
 ## 实现与验证
 
 模块工程 `UI/ColorVision.SocketProtocol/ColorVision.SocketProtocol.csproj` 同时面向 `net8.0-windows7.0` 和 `net10.0-windows7.0`，依赖 `ColorVision.UI`、`ColorVision.Database`、`log4net`、`Newtonsoft.Json`。交付时应匹配宿主目标框架与依赖；项目可编译不替代真实监听、协议处理和业务响应验证。
 
-| 现有测试 | 覆盖范围 |
-| --- | --- |
-| `SocketServerLifecycleTests` | 启停代次、配置快照、绑定/停止失败、客户端资源清理 |
-| `SocketShutdownTests` | 共用关闭期限、延迟创建、worker 等待、清理重试和隔离 loopback 关闭 |
-| `SocketManagerProjectionTests` | WPF 状态投影、旧状态抑制、停止错误不被禁用配置掩盖 |
-| `SocketManagerWindowLayoutTests` | 筛选与空状态、详情格式化、多窗口独立筛选/关闭、维护入口及布局 |
-| `SocketMessageStorageTests` | 临时库的 gzip 写入、列表不取正文、按 ID 读取和旧 TEXT 迁移 |
-| `SocketMessageAsyncProjectionTests` | 提交与显示顺序、重新查询不重复、清空不复活、释放及 Dispatcher 退出后保留数据库记录 |
+真实防火墙 COM 写入和现场连通性应在获授权环境核对。
 
-`FirewallApplicationAccessTests` 使用内存规则验证按程序完整路径和网络类型解除阻止、保留其它范围、重复放行、写入失败及读回核验，保护规则修改的权限与作用范围边界；不修改运行测试的电脑的防火墙。真实 COM 写入及现场连通性需独立验证环境。
-
-尚缺直接覆盖 JSON 大小写/重复名、Text 多处理器分发、TCP 分帧、网络写失败后的 Sent、重发目标与回执的专项验证。补充验证应使用临时库、隔离客户端和无设备副作用的 handler。现有测试覆盖范围不等于现场业务已验收。
+用隔离客户端和临时库核查 JSON 大小写/重复名、Text 分发、TCP 分帧、发送失败状态与重发回执。

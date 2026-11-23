@@ -32,12 +32,13 @@ namespace ColorVision.Engine.Templates.POI
 
         public static LocalLuminousAreaPoiTemplateShape Update(
             string templateName,
-            IReadOnlyList<LuminousAreaPoint> corners)
+            IReadOnlyList<LuminousAreaPoint> corners,
+            MySqlConnectedEndpoint endpoint)
         {
             if (string.IsNullOrWhiteSpace(templateName))
                 throw new ArgumentException("POI 保存模板名称不能为空。", nameof(templateName));
 
-            using SqlSugarClient db = MySqlControl.CreateDbClient();
+            using SqlSugarClient db = endpoint.CreateDbClient();
             db.Ado.BeginTran();
             try
             {

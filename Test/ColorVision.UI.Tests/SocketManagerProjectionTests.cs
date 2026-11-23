@@ -98,7 +98,7 @@ public sealed class SocketManagerProjectionTests
         };
         var messageManager = (SocketMessageManager)RuntimeHelpers.GetUninitializedObject(typeof(SocketMessageManager));
         var jsonDispatcher = (SocketJsonDispatcher)RuntimeHelpers.GetUninitializedObject(typeof(SocketJsonDispatcher));
-        var textDispatcher = (SocketTextDispatcher)RuntimeHelpers.GetUninitializedObject(typeof(SocketTextDispatcher));
+        var textDispatcher = new SocketTextDispatcher([]);
         return new SocketManager(
             config,
             new ThrowingListenerFactory(),

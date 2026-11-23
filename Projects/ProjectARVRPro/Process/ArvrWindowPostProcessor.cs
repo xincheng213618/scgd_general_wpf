@@ -1,5 +1,5 @@
+using ColorVision.Engine;
 using ColorVision.Engine.FlowProcessing.PostProcess;
-using ColorVision.Engine.Templates.Flow;
 using ProjectARVRPro.PluginConfig;
 
 namespace ProjectARVRPro.Process
@@ -13,18 +13,25 @@ namespace ProjectARVRPro.Process
     {
         public bool Process(PostProcessContext ctx)
         {
-            if (ctx?.Batch == null)
+            if (ctx?.Batch is not { Id: > 0 } batch)
+                return false;
+
+            var openDatabase = ArvrBatchHistory.CaptureDatabase(batch);
+            if (openDatabase == null)
                 return false;
 
             string flowName = ctx.FlowName?.Trim() ?? string.Empty;
-            if (string.IsNullOrWhiteSpace(flowName) && ctx.Batch.TId is int templateId)
+            if (flowName.Length == 0 && batch.TId is int templateId && templateId > 0)
             {
-                flowName = TemplateFlow.Params.FirstOrDefault(template => template.Id == templateId)?.Key ?? string.Empty;
+                using var db = openDatabase();
+                flowName = db.Queryable<ModMasterModel>()
+                    .Where(template => template.Id == templateId && template.Pid == 11 && template.TenantId == 0 && !template.IsDelete)
+                    .Select(template => template.Name).First()?.Trim() ?? string.Empty;
             }
-            if (string.IsNullOrWhiteSpace(flowName))
+            if (flowName.Length == 0)
                 return false;
 
-            ProjectARVRWindowHost.ShowBatchResult(ctx.Batch, flowName);
+            ProjectARVRWindowHost.ShowBatchResult(batch, flowName, openDatabase);
             return true;
         }
     }

@@ -12,6 +12,58 @@ namespace ColorVision.UI.Tests;
 
 public sealed class ListEditorIsolationTests
 {
+    [Fact]
+    public void FileRowsShareHistoryWithinTheirOriginalCollection()
+    {
+        WithResources(() =>
+        {
+            var source = new FileCollections();
+            var editor = (HistoryRecordingFileEditor)PropertyEditorHelper.GetOrCreateEditor(typeof(HistoryRecordingFileEditor));
+            editor.HistoryKeys.Clear();
+
+            foreach (string propertyName in new[] { nameof(FileCollections.Images), nameof(FileCollections.References) })
+            {
+                var property = typeof(FileCollections).GetProperty(propertyName)!;
+                DockPanel panel = new CollectionJsonEditor().GenProperties(property, source);
+                Button edit = Assert.Single(panel.Children.OfType<Button>());
+                DuringModal<ListEditorWindow>(() => Click(edit), listWindow =>
+                {
+                    var rows = (ListBox)listWindow.FindName("ItemsListBox");
+                    foreach (var row in rows.Items.Cast<ListEditorWindow.ListItemViewModel>())
+                    {
+                        var browse = row.InlineEditor!.Children.OfType<Button>().Single(button => Equals(button.Content, "..."));
+                        Click(browse);
+                    }
+                    Click((Button)listWindow.FindName("CancelButton"));
+                });
+            }
+
+            Assert.Equal(3, editor.HistoryKeys.Count);
+            Assert.Equal(editor.HistoryKeys[0], editor.HistoryKeys[1]);
+            Assert.NotEqual(editor.HistoryKeys[0], editor.HistoryKeys[2]);
+        });
+    }
+
+    private sealed class FileCollections
+    {
+        [CollectionEditorType(typeof(HistoryRecordingFileEditor))]
+        public List<string> Images { get; set; } = ["one.dat", "two.dat"];
+
+        [CollectionEditorType(typeof(HistoryRecordingFileEditor))]
+        public List<string> References { get; set; } = ["reference.dat"];
+    }
+
+    public sealed class HistoryRecordingFileEditor : TextSelectFilePropertiesEditor
+    {
+        public List<string> HistoryKeys { get; } = [];
+
+        protected override string? BrowseFile(Window? owner, string? currentPath, string historyKey)
+        {
+            HistoryKeys.Add(historyKey);
+            return null;
+        }
+    }
+
     [Theory]
     [InlineData(false, true)]
     [InlineData(true, false)]

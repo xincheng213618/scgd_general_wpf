@@ -28,7 +28,7 @@ public sealed class ViewHandleRingGhost : IResultHandleBase
     public override void Load(ViewResultContext context, ViewResultAlg result)
     {
         if (result.ViewResults != null) return;
-        var details = DeatilCommonDao.Instance.GetAllByPid(result.Id);
+        var details = result.ReadPersistedDetails(DeatilCommonDao.Instance);
         if (details.Count != 1 || details[0].PId != result.Id) throw new InvalidDataException("鬼影结果需要唯一明细。");
         string? file = JsonConvert.DeserializeObject<ResultFile>(details[0].ResultJson)?.ResultFileName;
         if (string.IsNullOrWhiteSpace(file) || !Path.IsPathFullyQualified(file)) throw new InvalidDataException("鬼影结果文件路径无效。");

@@ -5,7 +5,6 @@ status: "current"
 summary: "区分完整安装制品、增量更新和源码输出，定位安装后缺依赖、配置与启动问题。"
 aliases: ["安装失败","如何安装","部署","安装包","缺DLL"]
 code_paths: ["ColorVision/ColorVision.csproj","ColorVision/Update","Scripts/release.bat"]
-test_paths: []
 related: ["delivery.prerequisites","delivery.deployment","delivery.update","operations.first-run"]
 ---
 

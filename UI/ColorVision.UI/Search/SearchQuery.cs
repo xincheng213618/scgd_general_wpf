@@ -9,10 +9,11 @@ public static class SearchQuery
     {
         if (limit <= 0 || perSourceLimit <= 0) return [];
         string[] terms = query.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        string? normalizedQuery = terms.Length == 0 ? null : string.Join(" ", terms);
         var candidates = staticItems.Select(item => (Item: item, ProviderMatched: false))
             .Concat(dynamicItems.Select(item => (Item: item, ProviderMatched: true)))
             .Where(entry => string.IsNullOrEmpty(category) || string.Equals(entry.Item.CategoryKey, category, StringComparison.OrdinalIgnoreCase))
-            .Select((entry, index) => (entry.Item, Index: index, Score: Score(entry.Item, terms, entry.ProviderMatched, recentIds)))
+            .Select((entry, index) => (entry.Item, Index: index, Score: Score(entry.Item, terms, normalizedQuery, entry.ProviderMatched, recentIds)))
             .Where(entry => entry.Score >= 0)
             .OrderBy(entry => entry.Item.CategoryKey == "External")
             .ThenByDescending(entry => entry.Score)
@@ -32,7 +33,7 @@ public static class SearchQuery
         return results;
     }
 
-    private static int Score(SearchResultItem item, string[] terms, bool providerMatched, IReadOnlyList<string>? recentIds)
+    private static int Score(SearchResultItem item, string[] terms, string? normalizedQuery, bool providerMatched, IReadOnlyList<string>? recentIds)
     {
         int score = 0;
         foreach (string term in terms)
@@ -46,7 +47,7 @@ public static class SearchQuery
             if (termScore == 0 && !providerMatched) return -1;
             score += termScore;
         }
-        if (terms.Length > 0 && string.Equals(item.Title, string.Join(" ", terms), StringComparison.OrdinalIgnoreCase)) score += 2000;
+        if (normalizedQuery != null && string.Equals(item.Title, normalizedQuery, StringComparison.OrdinalIgnoreCase)) score += 2000;
         if (recentIds != null)
         {
             for (int i = 0; i < Math.Min(10, recentIds.Count); i++)
@@ -61,7 +62,10 @@ public static class SearchQuery
     }
 
     private static int Match(string value, string term, int exact, int prefix, int contains)
-        => string.Equals(value, term, StringComparison.OrdinalIgnoreCase) ? exact
-        : value.StartsWith(term, StringComparison.OrdinalIgnoreCase) ? prefix
-        : value.Contains(term, StringComparison.OrdinalIgnoreCase) ? contains : 0;
+    {
+        int index = value.IndexOf(term, StringComparison.OrdinalIgnoreCase);
+        if (index == 0)
+            return value.Length == term.Length ? exact : prefix;
+        return index > 0 ? contains : 0;
+    }
 }

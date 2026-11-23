@@ -3751,4 +3751,6 @@ ORB 特征上限: {6:N0}    最少匹配/内点: {7}/{8}    重投影阈值: {9:
   <data name="颜色" xml:space="preserve"><value>颜色</value></data>
   <data name="高级设置" xml:space="preserve"><value>高级设置</value></data>
   <data name="在文件夹中选择文件" xml:space="preserve"><value>在文件夹中选择文件</value></data>
+  <data name="在新窗口中打开图像" xml:space="preserve"><value>在新窗口中打开图像</value></data>
+  <data name="打开图像失败：{0}" xml:space="preserve"><value>打开图像失败：{0}</value></data>
 </root>

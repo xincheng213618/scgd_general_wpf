@@ -7,6 +7,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Security.AccessControl;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace ColorVision.FileIO
 {
@@ -16,6 +17,8 @@ namespace ColorVision.FileIO
         private static readonly object Sync = new object();
         private static readonly List<CacheEntry> Entries = new List<CacheEntry>();
         private const int MetadataReserve = 64 * 1024;
+        private const int LargeCopyThreshold = 128 * 1024 * 1024;
+        private const int LargeDiskReadBufferSize = 1024 * 1024;
         private static long hits;
         private static long misses;
         private static long allocations;
@@ -120,6 +123,16 @@ namespace ColorVision.FileIO
             return OpenReadCore(path, populateCache, () => OpenFile(path), publication: null);
         }
 
+        /// <summary>Visits contiguous bytes of an open cache snapshot without changing its stream position.</summary>
+        /// <remarks>The read-only span is valid only during the synchronous callback. The callback must avoid APIs
+        /// that wait for all readers, including <see cref="Release"/>. Returns false for other streams, closed snapshots,
+        /// or ranges that cross into separately stored metadata.</remarks>
+        public static bool TryUseCachedRange(Stream source, long offset, int length, Action<ReadOnlySpan<byte>> read)
+        {
+            ArgumentNullException.ThrowIfNull(read);
+            return source is CachedReadStream cached && cached.TryUseRange(offset, length, read);
+        }
+
         internal static Stream OpenImageRead(string filePath, Func<Stream, bool> canPopulate)
         {
             if (!IsRaw(filePath)) return OpenFile(filePath);
@@ -189,19 +202,27 @@ namespace ColorVision.FileIO
             try
             {
                 if (entry == null && committedWrite) return Stream.Null;
-                file = openFile();
+                Action<Stream> writeCache = publication?.WriteCache;
+                if (writeCache == null) file = openFile();
                 if (entry == null) return file;
-                long length = file.Length;
+                long length = writeCache != null ? publication.Value.Length : file.Length;
                 if (length <= 0 || length > int.MaxValue) return file;
                 lock (Sync) EnsureCapacity(entry, length);
-                if (committedWrite) file.ReadExactly(new Span<byte>(entry.Buffer.ToPointer(), (int)length));
+                if (writeCache != null)
+                {
+                    using Stream destination = OpenBuffer(entry, length, FileAccess.Write);
+                    writeCache(destination);
+                    if (destination.Position != length) throw new EndOfStreamException("Incomplete CVRAW cache snapshot.");
+                }
+                else if (committedWrite) CopyCommittedFile(file, entry.Buffer, (int)length);
                 else using (Stream destination = OpenBuffer(entry, length, FileAccess.Write))
                 {
-                    file.CopyTo(destination);
+                    if (length >= LargeCopyThreshold) file.CopyTo(destination, LargeDiskReadBufferSize);
+                    else file.CopyTo(destination);
                     if (destination.Position != length) throw new EndOfStreamException("Incomplete CVRAW cache snapshot.");
                 }
                 DateTime? lastWriteTimeUtc = file is FileStream disk ? TryGetLastWriteTimeUtc(disk) : publication?.LastWriteTimeUtc;
-                file.Dispose();
+                file?.Dispose();
                 file = null;
                 lock (Sync)
                 {
@@ -240,6 +261,34 @@ namespace ColorVision.FileIO
             }
         }
 
+        private static unsafe void CopyCommittedFile(Stream file, IntPtr target, int length)
+        {
+            if (length < LargeCopyThreshold || Environment.ProcessorCount < 2 || file is not MemoryMappedViewStream view)
+            {
+                file.ReadExactly(new Span<byte>(target.ToPointer(), length));
+                return;
+            }
+
+            // The cache entry remains pinned until both halves of the staged snapshot are copied.
+            var handle = view.SafeMemoryMappedViewHandle;
+            byte* pointer = null;
+            handle.AcquirePointer(ref pointer);
+            try
+            {
+                CopyBufferInHalves((nint)(pointer + view.PointerOffset), target, length);
+            }
+            finally { handle.ReleasePointer(); }
+        }
+
+        private static unsafe void CopyBufferInHalves(nint source, nint target, int length)
+        {
+            int firstLength = length / 2;
+            int secondLength = length - firstLength;
+            Parallel.Invoke(new ParallelOptions { MaxDegreeOfParallelism = 2, TaskScheduler = TaskScheduler.Default },
+                () => Buffer.MemoryCopy(source.ToPointer(), target.ToPointer(), firstLength, firstLength),
+                () => Buffer.MemoryCopy((source + firstLength).ToPointer(), (target + firstLength).ToPointer(), secondLength, secondLength));
+        }
+
         /// <summary>Returns the cached length without accessing the disk file, or null on a miss.</summary>
         public static long? GetCachedLength(string filePath)
         {
@@ -248,7 +297,8 @@ namespace ColorVision.FileIO
         }
 
         // Save on the calling thread; disk I/O never holds the cache lookup lock.
-        internal static bool WriteFile(string path, long fileLength, Action<Stream> write, CVFileSaveMode saveMode = CVFileSaveMode.Synchronous)
+        internal static bool WriteFile(string path, long fileLength, Action<Stream> write,
+            CVFileSaveMode saveMode = CVFileSaveMode.Synchronous, Action<Stream> writeCommittedCache = null)
         {
             // Previously compiled callers may still pass the retired asynchronous value.
             if ((int)saveMode == 1) saveMode = CVFileSaveMode.Synchronous;
@@ -263,13 +313,13 @@ namespace ColorVision.FileIO
             }
             lock (WriteSync)
             {
-                if (saveMode == CVFileSaveMode.MemoryOnly) WriteMemoryOnly(fullPath, fileLength, write);
-                else WriteSynchronous(fullPath, fileLength, write, updateRawCache: true);
+                if (saveMode == CVFileSaveMode.MemoryOnly) WriteMemoryOnly(fullPath, fileLength, write, writeCommittedCache != null);
+                else WriteSynchronous(fullPath, fileLength, write, updateRawCache: true, writeCommittedCache);
             }
             return true;
         }
 
-        private static void WriteMemoryOnly(string path, long fileLength, Action<Stream> write)
+        private static void WriteMemoryOnly(string path, long fileLength, Action<Stream> write, bool immutableCapture)
         {
             lock (Sync)
             {
@@ -285,7 +335,10 @@ namespace ColorVision.FileIO
                 try
                 {
                     EnsureCapacity(staged, fileLength);
-                    using (Stream memory = OpenBuffer(staged, fileLength, FileAccess.Write))
+                    bool copyInParallel = immutableCapture && fileLength >= LargeCopyThreshold && Environment.ProcessorCount >= 2;
+                    using (Stream memory = copyInParallel
+                        ? new CaptureWriteStream(staged, fileLength)
+                        : OpenBuffer(staged, fileLength, FileAccess.Write))
                     {
                         write(memory);
                         if (memory.Position != fileLength) throw new InvalidDataException("CVRAW writer did not write its declared length.");
@@ -307,7 +360,8 @@ namespace ColorVision.FileIO
             }
         }
 
-        private static void WriteSynchronous(string path, long fileLength, Action<Stream> write, bool updateRawCache)
+        private static void WriteSynchronous(string path, long fileLength, Action<Stream> write, bool updateRawCache,
+            Action<Stream> writeCommittedCache = null)
         {
             string temporary = Path.Combine(Path.GetDirectoryName(path), ".__colorvision_" + Guid.NewGuid().ToString("N") + ".tmp");
             bool registered = false;
@@ -337,9 +391,14 @@ namespace ColorVision.FileIO
                         throw new InvalidDataException("ColorVision image writer did not write its declared length.");
                 }
 
-                // Keep an exact read-only view without an open file handle blocking File.Replace.
+                // Other writers need a view of the bytes already written. An immutable capture
+                // can fill the private cache directly after commit.
+                bool cacheFromCapture = populateCache && writeCommittedCache != null;
                 DateTime? lastWriteTimeUtc = null;
-                using (Stream saved = populateCache ? TryMapStagedFile(temporary, fileLength, out lastWriteTimeUtc) : null)
+                bool stagingOpened = false;
+                using (Stream saved = populateCache
+                    ? OpenStagedFileForCache(temporary, fileLength, mapPixels: !cacheFromCapture, out lastWriteTimeUtc, out stagingOpened)
+                    : null)
                 {
                     if (replaceExisting)
                     {
@@ -351,7 +410,10 @@ namespace ColorVision.FileIO
                     committed = true;
                     if (updateRawCache)
                     {
-                        using (OpenReadCore(path, saved != null, () => saved, new CommittedWrite(generation, lastWriteTimeUtc))) { }
+                        cacheFromCapture &= stagingOpened;
+                        var publication = new CommittedWrite(generation, lastWriteTimeUtc, fileLength,
+                            cacheFromCapture ? writeCommittedCache : null);
+                        using (OpenReadCore(path, saved != null || cacheFromCapture, () => saved, publication)) { }
                     }
                 }
             }
@@ -417,17 +479,22 @@ namespace ColorVision.FileIO
             }
         }
 
-        private static Stream TryMapStagedFile(string path, long length, out DateTime? lastWriteTimeUtc)
+        private static Stream OpenStagedFileForCache(string path, long length, bool mapPixels,
+            out DateTime? lastWriteTimeUtc, out bool opened)
         {
             lastWriteTimeUtc = null;
+            opened = false;
             try
             {
-                using (FileStream file = OpenFile(path))
-                using (MemoryMappedFile map = MemoryMappedFile.CreateFromFile(file, null, 0, MemoryMappedFileAccess.Read, HandleInheritability.None, leaveOpen: true))
-                {
-                    lastWriteTimeUtc = TryGetLastWriteTimeUtc(file);
-                    return map.CreateViewStream(0, length, MemoryMappedFileAccess.Read);
-                }
+                using FileStream file = OpenFile(path);
+                opened = true;
+                lastWriteTimeUtc = TryGetLastWriteTimeUtc(file);
+                if (!mapPixels)
+                    return null;
+                // The view survives after the file handle is closed and can be read after File.Replace.
+                using MemoryMappedFile map = MemoryMappedFile.CreateFromFile(file, null, 0, MemoryMappedFileAccess.Read,
+                    HandleInheritability.None, leaveOpen: true);
+                return map.CreateViewStream(0, length, MemoryMappedFileAccess.Read);
             }
             catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException || ex is OutOfMemoryException)
             {
@@ -633,6 +700,20 @@ namespace ColorVision.FileIO
             return result;
         }
 
+        private static void ReleaseReader(CacheEntry entry)
+        {
+            lock (Sync)
+            {
+                entry.Readers--;
+                if (entry.IsRetired && entry.Readers == 0 && entry.Writers == 0)
+                {
+                    FreeBuffer(entry);
+                    Entries.Remove(entry);
+                }
+                Monitor.PulseAll(Sync);
+            }
+        }
+
         private sealed class CacheEntry
         {
             internal IntPtr Buffer;
@@ -651,7 +732,7 @@ namespace ColorVision.FileIO
             internal bool IsLoading;
         }
 
-        private readonly record struct CommittedWrite(long Generation, DateTime? LastWriteTimeUtc);
+        private readonly record struct CommittedWrite(long Generation, DateTime? LastWriteTimeUtc, long Length, Action<Stream> WriteCache);
 
         internal sealed class FileTail
         {
@@ -661,14 +742,59 @@ namespace ColorVision.FileIO
             internal byte[] Bytes { get; }
         }
 
+        private sealed unsafe class CaptureWriteStream : UnmanagedMemoryStream
+        {
+            internal CaptureWriteStream(CacheEntry entry, long length)
+                : base((byte*)entry.Buffer.ToPointer(), length, entry.Capacity, FileAccess.Write)
+            {
+            }
+
+            public override void Write(ReadOnlySpan<byte> buffer)
+            {
+                long position = Position;
+                if (buffer.Length < LargeCopyThreshold || buffer.Length > Length - position)
+                {
+                    base.Write(buffer);
+                    return;
+                }
+
+                // The capture stays immutable until this write completes, and the staged buffer is private.
+                fixed (byte* source = buffer)
+                    CopyBufferInHalves((nint)source, (nint)PositionPointer, buffer.Length);
+                Position = position + buffer.Length;
+            }
+        }
+
         // Do not expose UnmanagedMemoryStream.PositionPointer or writable cache memory to consumers.
         private sealed class CachedReadStream : Stream
         {
             private CacheEntry entry;
             private readonly Stream memory;
             private readonly byte[] tail;
+            private readonly long prefixLength;
             private long position;
-            internal CachedReadStream(CacheEntry entry, Stream memory, byte[] tail) { this.entry = entry; this.memory = memory; this.tail = tail; }
+            internal CachedReadStream(CacheEntry entry, Stream memory, byte[] tail)
+            {
+                this.entry = entry;
+                this.memory = memory;
+                this.tail = tail;
+                prefixLength = memory.Length;
+            }
+
+            internal unsafe bool TryUseRange(long offset, int length, Action<ReadOnlySpan<byte>> read)
+            {
+                CacheEntry current;
+                lock (Sync)
+                {
+                    current = Volatile.Read(ref entry);
+                    if (current == null || offset < 0 || length <= 0 || offset > prefixLength - length) return false;
+                    // A delegate can throw or dispose its stream, and other writers can retire this entry.
+                    current.Readers++;
+                }
+                try { read(new ReadOnlySpan<byte>((byte*)current.Buffer.ToPointer() + offset, length)); }
+                finally { ReleaseReader(current); }
+                return true;
+            }
             ~CachedReadStream() { Dispose(false); }
             public override bool CanRead => entry != null;
             public override bool CanSeek => entry != null;
@@ -700,8 +826,18 @@ namespace ColorVision.FileIO
 #endif
             }
 #if NETCOREAPP
-            public override int Read(Span<byte> destination)
+            public override unsafe int Read(Span<byte> destination)
             {
+                if (destination.Length >= LargeCopyThreshold && Environment.ProcessorCount >= 2
+                    && entry is CacheEntry current && destination.Length <= memory.Length - position)
+                {
+                    // The reader pins the cached prefix and the destination stays fixed until both copies finish.
+                    fixed (byte* target = destination)
+                        CopyBufferInHalves((nint)((byte*)current.Buffer.ToPointer() + position), (nint)target, destination.Length);
+                    position += destination.Length;
+                    return destination.Length;
+                }
+
                 int read = 0;
                 if (position < memory.Length)
                 {
@@ -740,19 +876,7 @@ namespace ColorVision.FileIO
                 if (owned != null)
                 {
                     try { memory.Dispose(); }
-                    finally
-                    {
-                        lock (Sync)
-                        {
-                            owned.Readers--;
-                            if (owned.IsRetired && owned.Readers == 0 && owned.Writers == 0)
-                            {
-                                FreeBuffer(owned);
-                                Entries.Remove(owned);
-                            }
-                            Monitor.PulseAll(Sync);
-                        }
-                    }
+                    finally { ReleaseReader(owned); }
                 }
                 base.Dispose(disposing);
             }

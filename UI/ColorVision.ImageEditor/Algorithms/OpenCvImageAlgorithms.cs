@@ -71,6 +71,7 @@ namespace ColorVision.ImageEditor.Algorithms
                 return;
             }
 
+            bool floating = depth == MatType.CV_32F || depth == MatType.CV_64F;
             Mat[] channels = Cv2.Split(source);
             try
             {
@@ -78,7 +79,11 @@ namespace ColorVision.ImageEditor.Algorithms
                 for (int index = 0; index < 3; index++)
                 {
                     Mat channel = channels[index];
-                    ApplyToneAdjustment(channel, () => channel, alpha, beta, gammaValue, maximum, cancellationToken);
+                    // Split already owns detached floating planes at their working depth.
+                    if (floating)
+                        AdjustNormalizedTone(channel, depth, alpha, beta, gammaValue, cancellationToken);
+                    else
+                        ApplyToneAdjustment(channel, () => channel, alpha, beta, gammaValue, maximum, cancellationToken);
                 }
 
                 Mat destination = RequestDestination(createDestination, cancellationToken);
@@ -162,32 +167,58 @@ namespace ColorVision.ImageEditor.Algorithms
 
         private static void ApplyBilateral(Mat source, Mat destination, int diameter, double sigmaColor, double sigmaSpace)
         {
-            if (source.Depth() != MatType.CV_8U && source.Depth() != MatType.CV_32F)
+            MatType depth = source.Depth();
+            int channels = source.Channels();
+            if (channels == 4 && (depth == MatType.CV_8U || depth == MatType.CV_16U || depth == MatType.CV_32F))
+            {
+                ApplyBilateralBgra(source, destination, depth, diameter, sigmaColor, sigmaSpace);
+                return;
+            }
+
+            if (depth != MatType.CV_8U && depth != MatType.CV_32F)
             {
                 using Mat converted = new();
                 using Mat filtered = new();
-                source.ConvertTo(converted, MatType.MakeType(MatType.CV_32F, source.Channels()));
+                source.ConvertTo(converted, MatType.MakeType(MatType.CV_32F, channels));
                 // The BGRA path filters separate color data and can reuse the converted storage.
-                Mat output = source.Channels() == 4 ? converted : filtered;
+                Mat output = channels == 4 ? converted : filtered;
                 ApplyBilateral(converted, output, diameter, sigmaColor, sigmaSpace);
                 output.ConvertTo(destination, source.Type());
                 return;
             }
 
-            if (source.Channels() != 4)
+            Cv2.BilateralFilter(source, destination, diameter, sigmaColor, sigmaSpace);
+        }
+
+        private static void ApplyBilateralBgra(Mat source, Mat destination, MatType depth, int diameter, double sigmaColor, double sigmaSpace)
+        {
+            using Mat color = new();
+            Cv2.CvtColor(source, color, ColorConversionCodes.BGRA2BGR);
+            // Bilateral filtering needs float for 16-bit color. Alpha remains in the source format.
+            using Mat? converted = depth == MatType.CV_16U ? new Mat() : null;
+            if (converted != null) color.ConvertTo(converted, MatType.CV_32FC3);
+            using Mat filteredColor = new();
+            Cv2.BilateralFilter(converted ?? color, filteredColor, diameter, sigmaColor, sigmaSpace);
+
+            Mat result = filteredColor;
+            if (converted != null)
             {
-                Cv2.BilateralFilter(source, destination, diameter, sigmaColor, sigmaSpace);
-                return;
+                filteredColor.ConvertTo(color, MatType.CV_16UC3);
+                result = color;
             }
 
-            using Mat color = new();
-            using Mat filteredColor = new();
-            using Mat alpha = new();
-            Cv2.CvtColor(source, color, ColorConversionCodes.BGRA2BGR);
-            Cv2.ExtractChannel(source, alpha, 3);
-            Cv2.BilateralFilter(color, filteredColor, diameter, sigmaColor, sigmaSpace);
-            Cv2.CvtColor(filteredColor, destination, ColorConversionCodes.BGR2BGRA);
-            Cv2.InsertChannel(alpha, destination, 3);
+            destination.Create(source.Rows, source.Cols, source.Type());
+            if (OverlapsAtDifferentOffsets(source, destination))
+            {
+                // A shifted ROI can overwrite alpha pixels that have not been read yet.
+                using Mat alpha = new();
+                Cv2.ExtractChannel(source, alpha, 3);
+                Cv2.MixChannels([result, alpha], [destination], [0, 0, 1, 1, 2, 2, 3, 3]);
+            }
+            else
+            {
+                Cv2.MixChannels([result, source], [destination], [0, 0, 1, 1, 2, 2, 6, 3]);
+            }
         }
 
         private static int EnsureOdd(int value)
@@ -256,6 +287,16 @@ namespace ColorVision.ImageEditor.Algorithms
                 : MatType.MakeType(MatType.CV_32F, source.Channels());
             using Mat normalized = new();
             source.ConvertTo(normalized, workingType, 1 / maximum);
+            AdjustNormalizedTone(normalized, workingType, alpha, beta, gamma, cancellationToken);
+
+            Mat destination = RequestDestination(createDestination, cancellationToken);
+            normalized.ConvertTo(destination, sourceType, maximum);
+            cancellationToken.ThrowIfCancellationRequested();
+        }
+
+        private static void AdjustNormalizedTone(Mat normalized, MatType workingType, double alpha, double beta, double gamma,
+            CancellationToken cancellationToken)
+        {
             cancellationToken.ThrowIfCancellationRequested();
             normalized.ConvertTo(normalized, workingType, alpha, beta);
             cancellationToken.ThrowIfCancellationRequested();
@@ -264,11 +305,6 @@ namespace ColorVision.ImageEditor.Algorithms
             Cv2.Pow(normalized, 1 / gamma, normalized);
             cancellationToken.ThrowIfCancellationRequested();
             Cv2.Min(normalized, 1, normalized);
-            cancellationToken.ThrowIfCancellationRequested();
-
-            Mat destination = RequestDestination(createDestination, cancellationToken);
-            normalized.ConvertTo(destination, sourceType, maximum);
-            cancellationToken.ThrowIfCancellationRequested();
         }
 
         private static double GetNominalMaximum(MatType depth)

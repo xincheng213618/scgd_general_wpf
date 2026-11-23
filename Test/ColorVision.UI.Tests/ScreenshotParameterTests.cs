@@ -17,6 +17,65 @@ namespace ColorVision.UI.Tests;
 public sealed class ScreenshotParameterTests
 {
     [Theory]
+    [InlineData(1, 31, 19, 192, 48)]
+    [InlineData(2, 31, 19, 192, 48)]
+    [InlineData(2, 32, 20, 96, 96)]
+    [InlineData(2, 32, 20, 192, 48)]
+    [InlineData(2, 31, 20, 96, 96)]
+    public async Task Rgb48ResultPngMatchesWpfRenderingWithFractionalOverlayEdges(
+        int divisor, int width, int height, double dpiX, double dpiY)
+    {
+        string path = Path.Combine(Path.GetTempPath(), $"cv-rgb48-shot-{Guid.NewGuid():N}.png");
+        var (captured, expected, outputWidth, outputHeight) = WpfTestHost.Invoke(() =>
+        {
+            ushort[] pixels = new ushort[width * height * 3];
+            for (int i = 0; i < pixels.Length; i++)
+                pixels[i] = (ushort)((i * 31_997) % 65_536);
+            BitmapSource source = BitmapSource.Create(width, height, dpiX, dpiY, PixelFormats.Rgb48, null, pixels, width * 6);
+            source.Freeze();
+
+            DrawingGroup overlay = new();
+            using (DrawingContext context = overlay.Open())
+                context.DrawEllipse(new SolidColorBrush(Color.FromArgb(122, 10, 189, 74)),
+                    new Pen(Brushes.Yellow, 0.65), new Point(source.Width / 2 + 0.3, source.Height / 2), 5.3, 7.1);
+            overlay.Freeze();
+
+            Size sceneSize = new(source.Width, source.Height);
+            int outputWidth = (width + divisor - 1) / divisor;
+            int outputHeight = (height + divisor - 1) / divisor;
+            DrawingVisual reference = new();
+            using (DrawingContext context = reference.RenderOpen())
+            {
+                context.PushTransform(new ScaleTransform(outputWidth / (double)width, outputHeight / (double)height));
+                context.DrawImage(source, new Rect(sceneSize));
+                context.DrawDrawing(overlay);
+                context.Pop();
+            }
+            RenderTargetBitmap baseline = new(outputWidth, outputHeight, dpiX, dpiY, PixelFormats.Pbgra32);
+            baseline.Render(reference);
+            byte[] expected = new byte[outputWidth * outputHeight * 4];
+            baseline.CopyPixels(expected, outputWidth * 4, 0);
+            return (ImageViewSnapshot.Create(overlay, source, width, height, dpiX, dpiY, sceneSize), expected, outputWidth, outputHeight);
+        });
+
+        using ImageViewSnapshot snapshot = captured;
+        try
+        {
+            await ImageView.SaveSnapshotWithOptionsAsync(snapshot, path, new() { ScaleDivisor = divisor });
+            WpfTestHost.Invoke(() =>
+            {
+                using var stream = File.OpenRead(path);
+                BitmapSource frame = BitmapDecoder.Create(stream, BitmapCreateOptions.PreservePixelFormat, BitmapCacheOption.OnLoad).Frames[0];
+                Assert.Equal((outputWidth, outputHeight), (frame.PixelWidth, frame.PixelHeight));
+                byte[] actual = new byte[expected.Length];
+                new FormatConvertedBitmap(frame, PixelFormats.Pbgra32, null, 0).CopyPixels(actual, outputWidth * 4, 0);
+                Assert.Equal(expected, actual);
+            });
+        }
+        finally { File.Delete(path); }
+    }
+
+    [Theory]
     [InlineData(192, 48, 1)]
     [InlineData(48, 192, 2)]
     public async Task BackgroundScreenshotPreservesImageEdgesAndOverlayAlignmentAtNonDefaultDpi(double dpiX, double dpiY, int divisor)
@@ -48,6 +107,49 @@ public sealed class ScreenshotParameterTests
             WpfTestHost.Invoke(() => AssertDpiFixture(Assert.IsAssignableFrom<BitmapSource>(view.CaptureSnapshot()), 1, 192, 48, fromPng: false));
         }
         finally { WpfTestHost.Invoke(view.Dispose); }
+    }
+
+    [Theory]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    [InlineData(true, true)]
+    public async Task MarkedSnapshotUsesTheSelectedBaseImageAndKeepsTheSnapshotOverlay(bool useHeatmap, bool includeOverlay)
+    {
+        string directory = Directory.CreateTempSubdirectory("cv-heatmap-").FullName;
+        string path = Path.Combine(directory, "marked.png");
+        ImageView view = WpfTestHost.Invoke(CreateView);
+        try
+        {
+            await PublishDpiFixture(view, 192, 48);
+            ImageViewSnapshot snapshot = WpfTestHost.Invoke(() => Assert.IsType<ImageViewSnapshot>(view.CaptureSnapshotForBackgroundSave(includeOverlay)));
+            await ImageView.SaveSnapshotExportsAsync(snapshot, new()
+            {
+                RenderedFileName = path,
+                RenderedOptions = new() { ScaleDivisor = 2, UseHeatmap = useHeatmap },
+            });
+            Assert.Equal(path, Assert.Single(Directory.GetFiles(directory)));
+            WpfTestHost.Invoke(() =>
+            {
+                using var stream = File.OpenRead(path);
+                BitmapSource frame = BitmapDecoder.Create(stream, BitmapCreateOptions.PreservePixelFormat, BitmapCacheOption.OnLoad).Frames[0];
+                Assert.Equal((4, 4), (frame.PixelWidth, frame.PixelHeight));
+                BitmapSource image = new FormatConvertedBitmap(frame, PixelFormats.Bgra32, null, 0);
+
+                Color ReadPixel(int x, int y)
+                {
+                    byte[] pixel = new byte[4];
+                    image.CopyPixels(new Int32Rect(x, y, 1, 1), pixel, 4, 0);
+                    return Color.FromArgb(pixel[3], pixel[2], pixel[1], pixel[0]);
+                }
+
+                Color high = useHeatmap ? Color.FromRgb(128, 0, 0) : Colors.Red;
+                Color low = useHeatmap ? Color.FromRgb(0, 0, 128) : Colors.Blue;
+                Assert.Equal(high, ReadPixel(0, 3));
+                Assert.Equal(low, ReadPixel(3, 0));
+                Assert.Equal(includeOverlay ? Colors.Lime : low, ReadPixel(2, 2));
+            });
+        }
+        finally { WpfTestHost.Invoke(view.Dispose); File.Delete(path); Directory.Delete(directory); }
     }
 
     private static Task PublishDpiFixture(ImageView view, double dpiX, double dpiY) => WpfTestHost.Invoke(async () =>

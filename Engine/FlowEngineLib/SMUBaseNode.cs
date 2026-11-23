@@ -1,11 +1,13 @@
 #pragma warning disable CA1708
+using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using FlowEngineLib.Base;
 using FlowEngineLib.MQTT;
+using FlowEngineLib.Node.SMU;
 using FlowEngineLib.SMU;
-using FlowEngineLib.Start;
 using log4net;
 using Newtonsoft.Json;
 using ST.Library.UI.NodeEditor;
@@ -15,6 +17,25 @@ namespace FlowEngineLib;
 public class SMUBaseNode : CVBaseServerNode, ICVLoopNextNode
 {
 	private static readonly ILog logger = LogManager.GetLogger(typeof(SMUBaseNode));
+	private static readonly object OutputOwnership = new();
+	private static readonly ConditionalWeakTable<object, List<WeakReference<RemoteOutput>>> RemoteOutputs = new();
+	private readonly ConditionalWeakTable<CVTransAction, RunOutputs> runOutputs = new();
+
+	private sealed record RemoteTarget(string Topic, string Service, string Device);
+	private sealed record RemoteOutput(
+		RemoteTarget Target, string MessageId, string SerialNumber, string Token, int ZIndex,
+		Action<MQActionEvent, Func<bool>> Publish)
+	{
+		public SMUChannelType? Channel { get; set; }
+		public bool IsCurrent { get; set; } = true;
+	}
+
+	private sealed class RunOutputs
+	{
+		public bool Released { get; set; }
+		public List<RemoteOutput> Remote { get; } = new();
+		public Dictionary<(object Session, SMUChannelType Channel), Action> Local { get; } = new();
+	}
 
 	protected STNodeOption m_in_next;
 
@@ -149,38 +170,108 @@ public class SMUBaseNode : CVBaseServerNode, ICVLoopNextNode
 		updateUI();
 	}
 
-	private void SendToCloseOutput(CVTransAction trans)
+	protected override void DispatchRemoteCommand(CVTransAction trans, MQActionEvent action, CVBaseEventCmd command)
 	{
-		CVStartCFC trans_action = trans.trans_action;
-		SendToCloseOutput(trans_action.SerialNumber, trans.trans_action.GetStartNode());
+		var start = trans.trans_action.GetStartNode();
+		RemoteFlowResultTracking.TrackRegistered(trans.trans_action, start, action, command, RemoteResultBinderOverride);
+		CVMQTTRequest request = command.cmd;
+		var target = new RemoteTarget(action.Topic, request.ServiceCode, request.DeviceCode);
+		SMUChannelType? channel = (request.Data as SMUData)?.Channel;
+		bool closeOutput = _IsCloseOutput;
+		start.PublishWithDeferredCleanup(action, (publisher, publish) =>
+		{
+			lock (OutputOwnership)
+			{
+				RunOutputs run = runOutputs.GetValue(trans, static _ => new());
+				if (run.Released || !OwnsCommand(trans, command))
+					return false;
+
+				RetireRemoteOutputs(publisher, target, channel);
+				run.Remote.RemoveAll(output => !output.IsCurrent);
+				if (closeOutput)
+				{
+					var output = new RemoteOutput(target, request.MsgID, request.SerialNumber, request.Token, request.ZIndex, publish)
+					{
+						Channel = channel
+					};
+					run.Remote.Add(output);
+					RemoteOutputs.GetValue(publisher, static _ => new()).Add(new(output));
+				}
+				return true;
+			}
+		});
 	}
 
-	private void SendToCloseOutput(string serialNumber, BaseStartNode startNode)
+	internal static void DispatchRemoteSweep(CVTransAction trans, MQActionEvent action, CVBaseEventCmd command, RemoteFlowResultBinder binder)
 	{
-		if (logger.IsDebugEnabled)
+		var start = trans.trans_action.GetStartNode();
+		RemoteFlowResultTracking.TrackRegistered(trans.trans_action, start, action, command, binder);
+		var target = new RemoteTarget(action.Topic, command.cmd.ServiceCode, command.cmd.DeviceCode);
+		var channel = (command.cmd.Data as SMUSweepParam)?.DeviceParam?.Channel;
+		start.PublishWithDeferredCleanup(action, (publisher, _) =>
 		{
-			logger.Debug("Send To Server CloseOutput");
-		}
-		string token = GetToken();
-		SMUCloseOutputRequestParam data = new SMUCloseOutputRequestParam
-		{
-			Channel = _channel
-		};
-		CVMQTTRequest cVMQTTRequest = new CVMQTTRequest(GetServiceName(), m_deviceCode, "CloseOutput", serialNumber, data, token, base.ZIndex);
-		if (FlowLocalExecution.CanExecuteLocally?.Invoke(this) == true)
-		{
-			try
+			lock (OutputOwnership)
 			{
-				using FlowLocalExecution execution = FlowLocalExecution.CreateForNode?.Invoke(this, cVMQTTRequest);
-				if (execution == null) throw new System.InvalidOperationException("本地源表关闭输出后端不可用。");
-				execution.Execute();
+				if (!OwnsCommand(trans, command))
+					return false;
+				RetireRemoteOutputs(publisher, target, channel);
+				return true;
 			}
-			catch (System.Exception ex) { logger.Error("本地源表关闭输出失败", ex); }
+		});
+	}
+
+	private static bool OwnsCommand(CVTransAction trans, CVBaseEventCmd command) =>
+		!trans.IsCanceled && !trans.trans_action.RuntimeResources.IsDisposed
+		&& trans.TryGetActionCommand(command.cmd.MsgID, out CVBaseEventCmd pending) && ReferenceEquals(command, pending);
+
+	private static void RetireRemoteOutputs(object publisher, RemoteTarget target, SMUChannelType? channel)
+	{
+		if (!RemoteOutputs.TryGetValue(publisher, out List<WeakReference<RemoteOutput>> outputs))
 			return;
+
+		// A template command can use either channel until its correlated reply identifies the output.
+		outputs.RemoveAll(reference =>
+		{
+			if (!reference.TryGetTarget(out RemoteOutput previous) || !previous.IsCurrent)
+				return true;
+			if (previous.Target != target || (channel.HasValue && previous.Channel.HasValue && channel != previous.Channel))
+				return false;
+			previous.IsCurrent = false;
+			return true;
+		});
+	}
+
+	protected override void ExecuteLocalCommand(CVTransAction trans, FlowLocalExecution execution)
+	{
+		bool closeOutput = _IsCloseOutput;
+		base.ExecuteLocalCommand(trans, execution);
+		if (!closeOutput || execution is not ISmuFlowOutput source || source.CaptureCloseOutput() is not { } output)
+			return;
+
+		lock (OutputOwnership)
+		{
+			RunOutputs run = runOutputs.GetValue(trans, static _ => new());
+			if (!run.Released && !trans.IsCanceled && !trans.trans_action.RuntimeResources.IsDisposed)
+				run.Local[(output.Session, output.Channel)] = output.Close;
 		}
-		string message = JsonConvert.SerializeObject(cVMQTTRequest, Formatting.None);
-		MQActionEvent act = new MQActionEvent(cVMQTTRequest.MsgID, m_nodeName, m_deviceCode, GetSendTopic(), cVMQTTRequest.EventName, message, token);
-		startNode.DoPublish(act);
+	}
+
+	protected void RecordTemplateOutputChannel(CVStartCFC action, string messageId, SMUChannelType channel)
+	{
+		CVTransAction trans = null;
+		if (!Enum.IsDefined(channel) || !HasTransAction(action.SerialNumber, ref trans)
+			|| !ReferenceEquals(action.RuntimeResources, trans.trans_action.RuntimeResources))
+			return;
+
+		lock (OutputOwnership)
+		{
+			if (runOutputs.TryGetValue(trans, out RunOutputs run) && !run.Released)
+			{
+				RemoteOutput output = run.Remote.Find(item => item.IsCurrent && item.MessageId == messageId);
+				if (output != null)
+					output.Channel = channel;
+			}
+		}
 	}
 
 	private void m_in_next_DataTransfer(object sender, STNodeOptionEventArgs e)
@@ -332,23 +423,75 @@ public class SMUBaseNode : CVBaseServerNode, ICVLoopNextNode
 	protected override void Reset(CVStartCFC action)
 	{
 		IsStarted = false;
-		if (logger.IsDebugEnabled)
+	}
+
+	protected override void Reset(CVTransAction trans)
+	{
+		base.Reset(trans);
+		if (trans == null)
+			return;
+
+		RunOutputs run;
+		lock (OutputOwnership)
 		{
-			logger.DebugFormat("[{0}]Reset,IsCloseOutput={1}", ToShortString(), _IsCloseOutput);
+			run = runOutputs.GetValue(trans, static _ => new());
+			if (run.Released)
+				return;
+			run.Released = true;
 		}
-		if (_IsCloseOutput)
+
+		foreach (Action close in run.Local.Values)
 		{
-			string serialNumber = action.SerialNumber;
-			BaseStartNode startNode = action.GetStartNode();
-			if (FlowLocalExecution.CanExecuteLocally?.Invoke(this) == true)
+			try { close(); }
+			catch (Exception ex) { logger.Error("本地源表关闭输出失败", ex); }
+		}
+		foreach (RemoteOutput output in run.Remote)
+		{
+			if (trans.trans_action.FlowStatus == StatusTypeEnum.OverTime || trans.IsCanceled)
+				logger.WarnFormat("源表采集结束时设备输出状态待确认，将尝试在原路由关闭输出。Device={0}, SN={1}",
+					output.Target.Device, output.SerialNumber);
+			ObserveCloseOutputTask(CloseRemoteOutputAsync(output));
+		}
+	}
+
+	protected virtual Task WaitForCloseOutputDelayAsync() => Task.Delay(500);
+
+	protected virtual void ObserveCloseOutputTask(Task task)
+	{
+		_ = task.ContinueWith(failed => logger.Error("服务源表关闭输出失败", failed.Exception),
+			TaskContinuationOptions.OnlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously);
+	}
+
+	private async Task CloseRemoteOutputAsync(RemoteOutput output)
+	{
+		SMUChannelType channel;
+		lock (OutputOwnership)
+		{
+			if (!output.IsCurrent)
+				return;
+			if (!output.Channel.HasValue)
 			{
-				SendToCloseOutput(serialNumber, startNode);
+				output.IsCurrent = false;
+				logger.WarnFormat("源表 {0} 未确认模板输出通道，无法发送关闭输出命令。SN={1}", output.Target.Device, output.SerialNumber);
 				return;
 			}
-			Task.Delay(500).ContinueWith(delegate
-			{
-				SendToCloseOutput(serialNumber, startNode);
-			});
+			channel = output.Channel.Value;
 		}
+
+		await WaitForCloseOutputDelayAsync().ConfigureAwait(false);
+		var request = new CVMQTTRequest(output.Target.Service, output.Target.Device, "CloseOutput", output.SerialNumber,
+			new SMUCloseOutputRequestParam { Channel = channel }, output.Token, output.ZIndex);
+		var action = new MQActionEvent(request.MsgID, output.Target.Service, output.Target.Device, output.Target.Topic,
+			request.EventName, JsonConvert.SerializeObject(request, Formatting.None), output.Token);
+		output.Publish(action, () =>
+		{
+			lock (OutputOwnership)
+			{
+				if (!output.IsCurrent)
+					return false;
+				output.IsCurrent = false;
+				return true;
+			}
+		});
 	}
 }

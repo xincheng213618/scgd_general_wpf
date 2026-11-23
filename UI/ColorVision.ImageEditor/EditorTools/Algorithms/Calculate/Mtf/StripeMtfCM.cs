@@ -138,6 +138,8 @@ public sealed class CMStripeMtf(EditorContext editor) : IIEditorToolContextMenu
 
 public sealed class DVCMStripeMtf(EditorContext editor) : IDVContextMenu
 {
+    public AlgorithmInteractiveGroupPresentation AnalysisGroup => AlgorithmMenuGroups.ImageQuality;
+
     public Type ContextType => typeof(IRectangle);
     public IEnumerable<MenuItem> GetContextMenuItems(object obj)
     {

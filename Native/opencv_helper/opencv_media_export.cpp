@@ -561,25 +561,66 @@ struct CoTaskMemBufferDeleter
 
 using CoTaskMemBuffer = std::unique_ptr<unsigned char, CoTaskMemBufferDeleter>;
 
-int SelectSingleChannelSource(const cv::Mat& mat, int channel, cv::Mat& temp, cv::Mat& source)
+cv::Mat SelectRangeChannel(const cv::Mat& mat, int channel, cv::ColorConversionCodes grayConversion, cv::Mat& temp)
 {
-	if (mat.empty()) {
-		return -1;
-	}
-
-	if (mat.channels() == 1) {
-		source = mat;
-		return 0;
-	}
+	if (mat.channels() == 1) return mat;
 
 	if (channel >= 0 && channel < mat.channels()) {
 		cv::extractChannel(mat, temp, channel);
 	}
 	else {
-		cv::cvtColor(mat, temp, cv::COLOR_BGR2GRAY);
+		cv::cvtColor(mat, temp, grayConversion);
 	}
 
-	source = temp;
+	return temp;
+}
+
+void FindIntegerColorRange(const cv::Mat& mat, int channel, cv::ColorConversionCodes grayConversion, double& minimum, double& maximum)
+{
+	constexpr size_t tileBytes = 512 * 1024;
+	const int rowsPerTile = static_cast<int>(std::max(size_t{1}, tileBytes / (mat.cols * mat.elemSize1())));
+	const int tileCount = 1 + (mat.rows - 1) / rowsPerTile;
+	std::vector<cv::Vec2d> extrema(tileCount);
+	cv::parallel_for_(cv::Range(0, tileCount), [&](const cv::Range& range) {
+		cv::Mat temp;
+		for (int tile = range.start; tile < range.end; ++tile) {
+			const int top = tile * rowsPerTile;
+			const int bottom = top + std::min(rowsPerTile, mat.rows - top);
+			const cv::Mat source = SelectRangeChannel(mat.rowRange(top, bottom), channel, grayConversion, temp);
+			cv::minMaxLoc(source, &extrema[tile][0], &extrema[tile][1]);
+		}
+	});
+	minimum = extrema[0][0];
+	maximum = extrema[0][1];
+	for (const cv::Vec2d& tile : extrema) {
+		minimum = std::min(minimum, tile[0]);
+		maximum = std::max(maximum, tile[1]);
+	}
+}
+
+int GetImageRange(const HImage& image, uint* outMin, uint* outMax, int channel, cv::ColorConversionCodes grayConversion)
+{
+	if (outMin != nullptr) *outMin = 0;
+	if (outMax != nullptr) *outMax = 0;
+	if (outMin == nullptr || outMax == nullptr) return ExportInvalidArgument;
+
+	const cv::Mat mat = CreateMatView(image);
+	if (mat.empty()) return -1;
+
+	double minimum, maximum;
+	if (mat.total() >= 2'000'000 && (mat.channels() == 3 || mat.channels() == 4)
+		&& (mat.depth() == CV_8U || mat.depth() == CV_16U)) {
+		// Reduce each temporary gray tile before reading the next one.
+		FindIntegerColorRange(mat, channel, grayConversion, minimum, maximum);
+	}
+	else {
+		cv::Mat temp;
+		const cv::Mat gray = SelectRangeChannel(mat, channel, grayConversion, temp);
+		cv::minMaxLoc(gray, &minimum, &maximum);
+	}
+
+	*outMin = (uint)std::max(minimum, 0.0);
+	*outMax = (uint)std::max(maximum, 0.0);
 	return 0;
 }
 
@@ -926,37 +967,12 @@ COLORVISIONCORE_API int M_PseudoColorAutoRangeInto(HImage img, HImage outImage, 
 
 COLORVISIONCORE_API int M_GetMinMax(HImage img, uint* outMin, uint* outMax, int channel)
 {
-	return GuardIntExport([&]() -> int {
-		if (outMin != nullptr) {
-			*outMin = 0;
-		}
-		if (outMax != nullptr) {
-			*outMax = 0;
-		}
+	return GuardIntExport([&]() { return GetImageRange(img, outMin, outMax, channel, cv::COLOR_BGR2GRAY); });
+}
 
-		if (outMin == nullptr || outMax == nullptr) {
-			return ExportInvalidArgument;
-		}
-
-		cv::Mat mat = CreateMatView(img);
-
-		if (mat.empty())
-			return -1;
-
-		cv::Mat temp;
-		cv::Mat gray;
-		int sourceRet = SelectSingleChannelSource(mat, channel, temp, gray);
-		if (sourceRet != 0)
-			return sourceRet;
-
-		double minVal, maxVal;
-		cv::minMaxLoc(gray, &minVal, &maxVal);
-
-		*outMin = (uint)std::max(minVal, 0.0);
-		*outMax = (uint)std::max(maxVal, 0.0);
-
-		return 0;
-		});
+COLORVISIONCORE_API int M_GetRgbMinMax(HImage img, uint* outMin, uint* outMax)
+{
+	return GuardIntExport([&]() { return GetImageRange(img, outMin, outMax, -1, cv::COLOR_RGB2GRAY); });
 }
 
 COLORVISIONCORE_API int M_AutoLevelsAdjust(HImage img, HImage* outImage)

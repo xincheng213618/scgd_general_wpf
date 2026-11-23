@@ -78,9 +78,17 @@ namespace ColorVision.Engine.Templates.POI
 
         public override void Delete(int index)
         {
-            var value = TemplateParams[index].Value;
-            (value.Storage ?? storage).Delete(value.Id);
-            TemplateParams.RemoveAt(index);
+            DeleteTemplates([TemplateParams[index]]);
+        }
+
+        internal override void DeleteTemplates(IReadOnlyList<TemplateBase> targets)
+        {
+            foreach (var target in targets.Cast<TemplateModel<PoiParam>>())
+            {
+                var value = target.Value;
+                (value.Storage ?? storage).Delete(value.Id);
+                TemplateParams.Remove(target);
+            }
         }
 
         public override bool CopyTo(int index)
@@ -118,11 +126,12 @@ namespace ColorVision.Engine.Templates.POI
             return TryPrepareFlowPackageImport(ImportName, File.ReadAllText(filePath));
         }
 
-        public override void Export(int index)
+        public override void Export(int index) => ExportTemplates(GetMarkedTemplatesOrCurrent(index));
+
+        internal override void ExportTemplates(IReadOnlyList<TemplateBase> targets)
         {
-            var selected = TemplateParams.Where(x => x.IsSelected).ToList();
-            if (selected.Count == 0) selected.Add(TemplateParams[index]);
-            bool multiple = selected.Count > 1;
+            var selected = targets.Cast<TemplateModel<PoiParam>>().ToArray();
+            bool multiple = selected.Length > 1;
             var dialog = new Microsoft.Win32.SaveFileDialog
             {
                 Filter = multiple ? "POI 模板包 (*.zip)|*.zip" : "POI 模板 (*.cfg)|*.cfg",

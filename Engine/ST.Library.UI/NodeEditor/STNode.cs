@@ -1223,28 +1223,25 @@ public abstract partial class STNode : INotifyPropertyChanged
 		PropertyInfo[] properties = type.GetProperties();
 		foreach (PropertyInfo propertyInfo in properties)
 		{
-			object[] customAttributes = propertyInfo.GetCustomAttributes(inherit: true);
-			object[] array = customAttributes;
-			foreach (object obj in array)
+			foreach (STNodePropertyAttribute attribute in propertyInfo.GetCustomAttributes(typeof(STNodePropertyAttribute), inherit: true))
 			{
-				if (!(obj is STNodePropertyAttribute))
+				Type descriptorType = attribute.DescriptorType;
+				STNodePropertyDescriptor descriptor = null;
+				if (descriptorType != typeof(STNodePropertyDescriptor))
 				{
-					continue;
+					// Keep plugin descriptor construction and validation in the original order.
+					if (Activator.CreateInstance(descriptorType) is not STNodePropertyDescriptor)
+						throw new InvalidOperationException("[STNodePropertyAttribute.Type]参数值必须为[STNodePropertyDescriptor]或者其子类的类型");
+					descriptor = (STNodePropertyDescriptor)Activator.CreateInstance(descriptorType);
+					descriptor.Node = this;
+					descriptor.PropertyInfo = propertyInfo;
 				}
-				STNodePropertyAttribute sTNodePropertyAttribute = obj as STNodePropertyAttribute;
-				object obj2 = Activator.CreateInstance(sTNodePropertyAttribute.DescriptorType);
-				if (!(obj2 is STNodePropertyDescriptor))
-				{
-					throw new InvalidOperationException("[STNodePropertyAttribute.Type]参数值必须为[STNodePropertyDescriptor]或者其子类的类型");
-				}
-				STNodePropertyDescriptor sTNodePropertyDescriptor = (STNodePropertyDescriptor)Activator.CreateInstance(sTNodePropertyAttribute.DescriptorType);
-				sTNodePropertyDescriptor.Node = this;
-				sTNodePropertyDescriptor.PropertyInfo = propertyInfo;
 				try
 				{
-					if (dic.ContainsKey(propertyInfo.Name))
+					if (dic.TryGetValue(propertyInfo.Name, out byte[] savedValue))
 					{
-						sTNodePropertyDescriptor.SetValue(dic[propertyInfo.Name]);
+						descriptor ??= new STNodePropertyDescriptor { Node = this, PropertyInfo = propertyInfo };
+						descriptor.SetValue(savedValue);
 					}
 				}
 				catch (Exception ex)

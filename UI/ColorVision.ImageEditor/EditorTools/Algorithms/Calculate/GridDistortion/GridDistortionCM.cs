@@ -1,4 +1,5 @@
 using LocalizedText = global::ColorVision.ImageEditor.DisplayText;
+using ColorVision.Algorithms;
 using ColorVision.ImageEditor.Algorithms;
 using ColorVision.Common.MVVM;
 using ColorVision.Core;
@@ -125,6 +126,8 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.GridDistortio
 
     public sealed class DVCMGridDistortion : IDVContextMenu
     {
+        public AlgorithmInteractiveGroupPresentation AnalysisGroup => AlgorithmMenuGroups.FieldGeometry;
+
         private readonly ImageProcessingContext _imageContext;
         private readonly DrawEditorContext _drawContext;
         private readonly ImageViewConfig _config;

@@ -55,11 +55,11 @@ public sealed class RingGhostViewTestResult : RingGhostTestResult
 }
 
 internal sealed record RingGhostBatchInput(string JsonFile, string ImageFile, int MasterId);
-internal interface IRingGhostBatchResults { RingGhostBatchInput Resolve(int batchId); }
+internal interface IRingGhostBatchResults { RingGhostBatchInput Resolve(IProcessExecutionContext ctx); }
 internal sealed class RingGhostBatchResults : IRingGhostBatchResults
 {
-    public RingGhostBatchInput Resolve(int batchId) => Select(AlgResultMasterDao.Instance.GetAllByBatchId(batchId), batchId,
-        id => DeatilCommonDao.Instance.GetAllByPid(id));
+    public RingGhostBatchInput Resolve(IProcessExecutionContext ctx) => Select(ctx.ReadMasterResults(), ctx.Batch.Id,
+        id => ctx.ReadDetails(DeatilCommonDao.Instance, id));
     internal static RingGhostBatchInput Select(IEnumerable<AlgResultMasterModel> masters, int batchId, Func<int, List<DetailCommonModel>> loadDetails)
     {
         if (batchId <= 0) throw new InvalidDataException("读取鬼影需要有效批次。");
@@ -88,7 +88,7 @@ public sealed class RingGhostProcess : ProcessWithRecipeBase<RingGhostProcessCon
         var saved = new RingGhostViewTestResult { OutputKey = KeyedTestResultDictionary.NormalizeKey(Config.OutputKey, "RingGhost") };
         try
         {
-            var input = results.Resolve(ctx.Batch.Id);
+            var input = results.Resolve(ctx);
             var measurement = LocalRingGhostResult.Read(input.JsonFile);
             saved.Measurement = measurement; saved.SourceMasterId = input.MasterId;
             saved.GMR1 = CreateItem("GMR1", measurement.GMR1, Config.RecipeConfig.GMR1);

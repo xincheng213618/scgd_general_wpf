@@ -12,6 +12,8 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
 using System.Reflection;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
@@ -83,6 +85,8 @@ namespace ColorVision.Database
 
         public RelayCommand DeleteAllCommand { get; }
         public RelayCommand TruncateTableCommand { get; }
+        public bool IsReadOnly { get; init; }
+        public virtual bool SupportsTruncateTable => true;
         public event EventHandler? PreQuery;
         public event EventHandler<QueryCompletedEventArgs>? QueryCompleted;
         public event EventHandler? ConditionsChanged;
@@ -91,8 +95,8 @@ namespace ColorVision.Database
         public GenericQueryBase(SqlSugarClient db)
         {
             Db = db;
-            DeleteAllCommand = new RelayCommand(_ => DeleteAll());
-            TruncateTableCommand = new RelayCommand(_ => TruncateTable());
+            DeleteAllCommand = new RelayCommand(_ => { if (!IsReadOnly) DeleteAll(); }, _ => !IsReadOnly);
+            TruncateTableCommand = new RelayCommand(_ => { if (!IsReadOnly) TruncateTable(); }, _ => !IsReadOnly);
         }
         protected virtual void OnPreQuery() => PreQuery?.Invoke(this, EventArgs.Empty);
         protected virtual void OnQueryCompleted(QueryCompletedEventArgs e) => QueryCompleted?.Invoke(this, e);
@@ -119,6 +123,14 @@ namespace ColorVision.Database
         public virtual void AddAllPropertyInfos() { }
         internal virtual void SaveSessionState() { }
         public virtual void QueryDB() => OnPreQuery();
+        internal virtual bool RunsQueryInBackground => false;
+
+        internal virtual Task QueryDBAsync(CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            QueryDB();
+            return Task.CompletedTask;
+        }
 
         public virtual void DeleteAll() { }
         public virtual void TruncateTable() { }
@@ -253,6 +265,7 @@ namespace ColorVision.Database
         /// </summary>
         public override void DeleteAll()
         {
+            if (IsReadOnly) return;
             var tableName = Db.EntityMaintenance.GetTableName<T>();
             Db.Deleteable<T>().ExecuteCommand();
             log.InfoFormat("Delete all rows from {0}", tableName);
@@ -263,6 +276,7 @@ namespace ColorVision.Database
         /// </summary>
         public override void TruncateTable()
         {
+            if (IsReadOnly) return;
             var tableName = Db.EntityMaintenance.GetTableName<T>();
             var sql = $"TRUNCATE TABLE {tableName}";
             Db.Ado.ExecuteCommand(sql);
@@ -275,11 +289,19 @@ namespace ColorVision.Database
     {
         public ISugarQueryable<T> Query { get; set; } = null!;
         public IList<T1> ViewResluts { get; set; }
+        /// <summary>Creates a scoped query before editable conditions, sorting, and row limits are applied.</summary>
+        public Func<SqlSugarClient, ISugarQueryable<T>>? CreateBaseQuery { get; init; }
         /// <summary>Optionally converts one query's ordered, limited rows together instead of invoking the row converter.</summary>
         public Func<IReadOnlyList<T>, IEnumerable<T1>>? BatchConverter { get; set; }
+        /// <summary>Opts the dialog into background reads and conversion with a fresh, owned client for each query.</summary>
+        public Func<SqlSugarClient>? BackgroundQueryClientFactory { get; set; }
+        /// <summary>Checks whether a completed background query may replace the current results.</summary>
+        public Func<bool>? CanApplyBackgroundResults { get; set; }
+        internal override bool RunsQueryInBackground => BackgroundQueryClientFactory != null;
         internal ObservableCollection<QueryCondition> QueryConditions { get; } = new();
         Func<T, T1> Converter { get; set; }
         private bool _sessionStateLoaded;
+        private long _backgroundQueryVersion;
 
         public GenericQuery(SqlSugarClient db, IList<T1> viewResluts,Func<T, T1> converter) :base (db)
         {
@@ -384,7 +406,8 @@ namespace ColorVision.Database
             Stopwatch _stopwatch = Stopwatch.StartNew();
 
 
-            var query = GenericQueryConditionSupport.ApplyConditions(Db.Queryable<T>(), QueryConditions);
+            var baseQuery = CreateBaseQuery is { } createQuery ? createQuery(Db) : Db.Queryable<T>();
+            var query = GenericQueryConditionSupport.ApplyConditions(baseQuery, QueryConditions);
             query = query.OrderBy(x => x.Id, QueryConfig.OrderByType);
             Sql = query.ToSqlString(); // 触发SQL生成
             log.InfoFormat("GenericQuery SQL: {0}", Sql);
@@ -398,12 +421,64 @@ namespace ColorVision.Database
             OnQueryCompleted(new QueryCompletedEventArgs() { Sql =Sql,ResultCount = dbList.Count,Elapsed = _stopwatch.Elapsed });
         }
 
+        internal override async Task QueryDBAsync(CancellationToken cancellationToken)
+        {
+            if (BackgroundQueryClientFactory is not { } createDb)
+            {
+                await base.QueryDBAsync(cancellationToken);
+                return;
+            }
+
+            cancellationToken.ThrowIfCancellationRequested();
+            long version = Interlocked.Increment(ref _backgroundQueryVersion);
+            OnPreQuery();
+            var stopwatch = Stopwatch.StartNew();
+            var conditions = GenericQueryConditionSupport.CaptureConditions(QueryConditions);
+            var order = QueryConfig.OrderByType;
+            int count = QueryConfig.Count;
+            var batchConverter = BatchConverter;
+            var converter = Converter;
+            var canApplyResults = CanApplyBackgroundResults;
+            IList<T1> output = ViewResluts;
+
+            var result = await Task.Run(() =>
+            {
+                using var db = createDb();
+                var baseQuery = CreateBaseQuery is { } createQuery ? createQuery(db) : db.Queryable<T>();
+                var query = GenericQueryConditionSupport.ApplyCapturedConditions(baseQuery, conditions)
+                    .OrderBy(row => row.Id, order);
+                string sql = query.ToSqlString();
+                log.InfoFormat("GenericQuery SQL: {0}", sql);
+                var rows = count > 0 ? query.Take(count).ToList() : query.ToList();
+                cancellationToken.ThrowIfCancellationRequested();
+                var converted = batchConverter is { } batch ? batch(rows) : rows.Select(converter);
+                var materialized = new List<T1>(rows.Count);
+                using var items = converted.GetEnumerator();
+                while (true)
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    if (version != Volatile.Read(ref _backgroundQueryVersion) || !items.MoveNext()) break;
+                    materialized.Add(items.Current);
+                }
+                return (Sql: sql, RowCount: rows.Count, Converted: materialized);
+            }, cancellationToken);
+
+            cancellationToken.ThrowIfCancellationRequested();
+            if (version != _backgroundQueryVersion || !ReferenceEquals(output, ViewResluts)) return;
+            if (canApplyResults?.Invoke() == false) throw new OperationCanceledException();
+            Sql = result.Sql;
+            output.Clear();
+            AddResults(output, result.Converted);
+            OnQueryCompleted(new QueryCompletedEventArgs { Sql = Sql, ResultCount = result.RowCount, Elapsed = stopwatch.Elapsed });
+        }
+
 
         /// <summary>
         /// 清空表数据（Delete All Rows, 保留表结构，自增不重置）
         /// </summary>
         public override void DeleteAll()
         {
+            if (IsReadOnly) return;
             var tableName = Db.EntityMaintenance.GetTableName<T>();
             Db.Deleteable<T>().ExecuteCommand();
             log.InfoFormat("Delete all rows from {0}", tableName);
@@ -414,6 +489,7 @@ namespace ColorVision.Database
         /// </summary>
         public override void TruncateTable()
         {
+            if (IsReadOnly) return;
             var tableName = Db.EntityMaintenance.GetTableName<T>();
             var sql = $"TRUNCATE TABLE {tableName}";
             Db.Ado.ExecuteCommand(sql);
@@ -428,6 +504,8 @@ namespace ColorVision.Database
     /// </summary>
     public partial class GenericQueryWindow : Window
     {
+        private readonly CancellationTokenSource _queryLifetime = new();
+        private bool _closed;
         public GenericQueryBase GenericQueryBase { get; set; }
         public GenericQueryWindow(GenericQueryBase genericQueryBase)
         {
@@ -467,20 +545,31 @@ namespace ColorVision.Database
             StatusText.Text = Properties.Resources.DB_Querying;
             ApplyFilterButton.IsEnabled = false;
             Mouse.OverrideCursor = Cursors.Wait;
+            bool backgroundQuery = GenericQueryBase.RunsQueryInBackground;
+            if (backgroundQuery) MoreButton.IsEnabled = false;
             try
             {
-                await Dispatcher.Yield(DispatcherPriority.Background);
-                GenericQueryBase.QueryDB();
-                GenericQueryBase.SaveSessionState();
+                if (!backgroundQuery) await Dispatcher.Yield(DispatcherPriority.Background);
+                if (_closed) return;
+                await GenericQueryBase.QueryDBAsync(_queryLifetime.Token);
+                if (!_closed) GenericQueryBase.SaveSessionState();
+            }
+            catch (OperationCanceledException) when (backgroundQuery)
+            {
+                if (!_closed) StatusText.Text = string.Empty;
             }
             catch (Exception ex)
             {
-                StatusText.Text = string.Format(Properties.Resources.DB_QueryFailed, ex.Message);
+                if (!_closed) StatusText.Text = string.Format(Properties.Resources.DB_QueryFailed, ex.Message);
             }
             finally
             {
-                Mouse.OverrideCursor = null;
-                ApplyFilterButton.IsEnabled = true;
+                if (!_closed)
+                {
+                    Mouse.OverrideCursor = null;
+                    ApplyFilterButton.IsEnabled = true;
+                    if (backgroundQuery) MoreButton.IsEnabled = true;
+                }
             }
         }
 
@@ -518,6 +607,10 @@ namespace ColorVision.Database
 
         protected override void OnClosed(EventArgs e)
         {
+            _closed = true;
+            _queryLifetime.Cancel();
+            _queryLifetime.Dispose();
+            if (!ApplyFilterButton.IsEnabled) Mouse.OverrideCursor = null;
             GenericQueryBase.ConditionsChanged -= GenericQueryBase_ConditionsChanged;
             GenericQueryBase.QueryCompleted -= GenericQueryBase_QueryCompleted;
             base.OnClosed(e);
@@ -546,8 +639,17 @@ namespace ColorVision.Database
             MoreButton.ContextMenu.IsOpen = true;
         }
 
+        private void MoreMenu_Opened(object sender, RoutedEventArgs e)
+        {
+            var maintenanceVisibility = GenericQueryBase.IsReadOnly ? Visibility.Collapsed : Visibility.Visible;
+            TableMaintenanceMenuSeparator.Visibility = maintenanceVisibility;
+            TableMaintenanceMenuItem.Visibility = maintenanceVisibility;
+            TruncateTableMenuItem.Visibility = GenericQueryBase.SupportsTruncateTable ? Visibility.Visible : Visibility.Collapsed;
+        }
+
         private void DeleteAll_Click(object sender, RoutedEventArgs e)
         {
+            if (GenericQueryBase.IsReadOnly) return;
             if (MessageBox.Show(Properties.Resources.DB_ClearTableConfirm, Properties.Resources.DB_TableMaintenance,
                 MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
                 return;
@@ -557,6 +659,7 @@ namespace ColorVision.Database
 
         private void TruncateTable_Click(object sender, RoutedEventArgs e)
         {
+            if (GenericQueryBase.IsReadOnly || !GenericQueryBase.SupportsTruncateTable) return;
             if (MessageBox.Show(Properties.Resources.DB_TruncateTableConfirm, Properties.Resources.DB_TableMaintenance,
                 MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
                 return;
@@ -566,6 +669,7 @@ namespace ColorVision.Database
 
         private void RunTableOperation(Action operation)
         {
+            if (GenericQueryBase.IsReadOnly) return;
             try
             {
                 operation();

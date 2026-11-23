@@ -28,11 +28,11 @@ namespace ColorVision.ImageEditor.Algorithms
             ArgumentNullException.ThrowIfNull(image);
             ArgumentNullException.ThrowIfNull(draw);
             ArgumentNullException.ThrowIfNull(result);
-            Dictionary<string, (AlgorithmGeometry Geometry, AlgorithmCoordinateSpace Space)> geometries = result.Artifacts
-                .OfType<AlgorithmGeometryArtifact>()
-                .SelectMany(artifact => artifact.Geometries.Select(geometry => (geometry.Id, geometry, artifact.CoordinateSpace)))
-                .GroupBy(item => item.Id, StringComparer.Ordinal)
-                .ToDictionary(group => group.Key, group => (group.Last().geometry, group.Last().CoordinateSpace), StringComparer.Ordinal);
+            Dictionary<string, (AlgorithmGeometry Geometry, AlgorithmCoordinateSpace Space)> geometries = new(StringComparer.Ordinal);
+            foreach (AlgorithmGeometryArtifact artifact in result.Artifacts.OfType<AlgorithmGeometryArtifact>())
+            foreach (AlgorithmGeometry geometry in artifact.Geometries)
+                geometries[geometry.Id] = (geometry, artifact.CoordinateSpace);
+
             Guid documentInstanceId = image.DocumentInstanceId;
             long sourceRevision = image.ImageRevision;
             List<IAlgorithmOverlayRegistration> registrations = new();
@@ -41,12 +41,13 @@ namespace ColorVision.ImageEditor.Algorithms
                 foreach (AlgorithmOverlayArtifact overlay in result.Artifacts.OfType<AlgorithmOverlayArtifact>())
                 {
                     DrawingVisual visual = new();
+                    OverlayPaint paint = default;
                     using (DrawingContext context = visual.RenderOpen())
                     {
                         foreach (AlgorithmOverlayItem item in overlay.Items)
                         {
                             if (!geometries.TryGetValue(item.GeometryId, out var entry)) continue;
-                            DrawGeometry(context, entry.Geometry, entry.Space, item.Style, image, draw.ZoomRatio);
+                            DrawGeometry(context, entry.Geometry, entry.Space, item.Style, image, draw.ZoomRatio, ref paint);
                         }
                     }
                     if (image.TryRegisterAlgorithmOverlay(
@@ -75,14 +76,14 @@ namespace ColorVision.ImageEditor.Algorithms
             AlgorithmCoordinateSpace space,
             AlgorithmOverlayStyle style,
             ImageProcessingContext image,
-            double zoom)
+            double zoom,
+            ref OverlayPaint paint)
         {
             double dpiX = image.ViewBitmapSource is BitmapSource bitmap ? bitmap.DpiX : 96;
             double dpiY = image.ViewBitmapSource is BitmapSource bitmapY ? bitmapY.DpiY : 96;
             AlgorithmPoint[] points = geometry.Points.Select(point => AlgorithmCoordinates.ToPixel(point, space, dpiX, dpiY)).ToArray();
             double safeZoom = double.IsFinite(zoom) && zoom > 0 ? zoom : 1;
-            Pen pen = new(ParseBrush(style.Stroke, Brushes.Orange), Math.Max(0.25, style.StrokeWidth) / safeZoom);
-            Brush? fill = string.IsNullOrWhiteSpace(style.Fill) ? null : ParseBrush(style.Fill, Brushes.Transparent);
+            var (pen, fill) = paint.Get(style, Math.Max(0.25, style.StrokeWidth) / safeZoom);
             switch (geometry.Kind)
             {
                 case AlgorithmGeometryKind.Point when points.Length >= 1:
@@ -143,6 +144,29 @@ namespace ColorVision.ImageEditor.Algorithms
             }
             catch (FormatException) { }
             return fallback;
+        }
+
+        // Consecutive markers often use the same paint. Keep a single entry per overlay.
+        private struct OverlayPaint
+        {
+            private (string Stroke, string? Fill, double Width) _key;
+            private Pen? _pen;
+            private Brush? _fill;
+
+            public (Pen Pen, Brush? Fill) Get(AlgorithmOverlayStyle style, double width)
+            {
+                var key = (style.Stroke, style.Fill, width);
+                if (_pen != null && _key == key)
+                {
+                    if (!_pen.IsFrozen) _pen.Freeze();
+                    return (_pen, _fill);
+                }
+
+                _pen = new Pen(ParseBrush(style.Stroke, Brushes.Orange), width);
+                _fill = string.IsNullOrWhiteSpace(style.Fill) ? null : ParseBrush(style.Fill, Brushes.Transparent);
+                _key = key;
+                return (_pen, _fill);
+            }
         }
 
         private sealed class RenderSession(IReadOnlyList<IAlgorithmOverlayRegistration> registrations) : IDisposable

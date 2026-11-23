@@ -403,18 +403,40 @@ namespace ColorVision.Engine.MQTT
         public async Task PublishAsyncClient(string topic, string msg, bool retained)
         {
             if (MQTTClient.IsConnected)
-            {
-                var message = new MqttApplicationMessageBuilder()
-                    .WithTopic(topic)
-                    .WithPayload(msg)
-                    .WithRetainFlag(retained)
-                    .Build();
+                await PublishCoreAsync(topic, msg, retained);
+        }
 
-                await MQTTClient.PublishAsync(message);
-                AddMessageTrace("SEND", topic, msg, message.QualityOfServiceLevel.ToString(), message.Retain);
-                RecordRuntimeActivity(RuntimeActivity.Outbound);
-                log.Logger.Log(typeof(MQTTControl), log4net.Core.Level.Debug, $"{DateTime.Now:HH:mm:ss.fff} Published to '{topic}', message: '{msg}'", null);
+        internal async Task<bool> TryPublishOnConnectionAsync(MqttClientOptions expectedOptions, string topic, string msg,
+            Func<bool> canDispatch, object? dispatchLock = null)
+        {
+            await _clientGate.WaitAsync().ConfigureAwait(false);
+            try
+            {
+                Task? publish;
+                if (dispatchLock == null) publish = StartPublish();
+                else lock (dispatchLock) publish = StartPublish();
+                if (publish == null) return false;
+                await publish.ConfigureAwait(false);
+                return true;
             }
+            finally { _clientGate.Release(); }
+
+            Task? StartPublish() => MQTTClient.IsConnected && ReferenceEquals(MQTTClient.Options, expectedOptions) && canDispatch()
+                ? PublishCoreAsync(topic, msg, retained: false) : null;
+        }
+
+        private async Task PublishCoreAsync(string topic, string msg, bool retained)
+        {
+            var message = new MqttApplicationMessageBuilder()
+                .WithTopic(topic)
+                .WithPayload(msg)
+                .WithRetainFlag(retained)
+                .Build();
+
+            await MQTTClient.PublishAsync(message).ConfigureAwait(false);
+            AddMessageTrace("SEND", topic, msg, message.QualityOfServiceLevel.ToString(), message.Retain);
+            RecordRuntimeActivity(RuntimeActivity.Outbound);
+            log.Logger.Log(typeof(MQTTControl), log4net.Core.Level.Debug, $"{DateTime.Now:HH:mm:ss.fff} Published to '{topic}', message: '{msg}'", null);
         }
 
         private void RecordRuntimeActivity(RuntimeActivity activity)

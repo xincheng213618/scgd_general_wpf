@@ -13,13 +13,15 @@ namespace ColorVision.ImageEditor.Tooling
     internal sealed class EditorToolbarComposer
     {
         private readonly Func<ToolBarLocal, ToolBar?> _resolveToolbar;
+        private readonly DrawCanvas _canvas;
         private readonly List<FrameworkElement> _generatedToolElements = new();
         private readonly HashSet<ButtonBase> _generatedIconHosts = new();
 
-        internal EditorToolbarComposer(Func<ToolBarLocal, ToolBar?> resolveToolbar)
+        internal EditorToolbarComposer(Func<ToolBarLocal, ToolBar?> resolveToolbar, DrawCanvas canvas)
         {
             ArgumentNullException.ThrowIfNull(resolveToolbar);
             _resolveToolbar = resolveToolbar;
+            _canvas = canvas;
         }
 
         internal void Refresh(IEnumerable<IEditorTool> tools)
@@ -40,6 +42,11 @@ namespace ColorVision.ImageEditor.Tooling
                 foreach (IEditorTool tool in group.OrderBy(t => t.Order))
                 {
                     FrameworkElement btn = CreateToolControl(tool);
+                    if (!tool.SupportsEmptyView &&
+                        group.Key is ToolBarLocal.Top or ToolBarLocal.Left or ToolBarLocal.LeftTop or ToolBarLocal.Right or ToolBarLocal.RightBottom)
+                    {
+                        btn.SetBinding(UIElement.IsEnabledProperty, new Binding(nameof(DrawCanvas.HasImage)) { Source = _canvas });
+                    }
                     if (hasExistingItems || index++ > 0)
                     {
                         btn.Margin = margin;
@@ -60,6 +67,8 @@ namespace ColorVision.ImageEditor.Tooling
         {
             foreach (FrameworkElement element in _generatedToolElements)
             {
+                if (BindingOperations.GetBinding(element, UIElement.IsEnabledProperty)?.Source == _canvas)
+                    BindingOperations.ClearBinding(element, UIElement.IsEnabledProperty);
                 if (element is ButtonBase buttonBase && _generatedIconHosts.Remove(buttonBase))
                 {
                     buttonBase.Content = null;

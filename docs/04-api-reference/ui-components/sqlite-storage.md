@@ -5,7 +5,6 @@ status: "current"
 summary: "Socket 与 Flow 的 SQLite 正文 gzip 编解码、按ID读写、旧TEXT逐批迁移、WAL备份与VACUUM；通用工具不自动停写/备份/恢复，失败可能已有批次提交。"
 aliases: ["ReadOnlySqliteDatabase","现场SQLite只读","SQLite文本压缩", "gzip正文", "明文迁移", "数据库压缩", "数据库文件大小", "消息库维护", "备份恢复", "停止写入", "VACUUM", "WAL", "quick_check", "GzipTextPayloadCodec", "SqliteGzipTextPayloadStore", "SqliteGzipTextMigration", "SqliteFileMaintenance", "SocketMessagePayloadStorage", "SocketMessagesSqliteCleanupProvider", "FlowNodeMessagePayloadStorage", "FlowDiagnosticsSqliteCleanupProvider"]
 code_paths: ["UI/ColorVision.Database/ReadOnlySqliteDatabase.cs","UI/ColorVision.Database/GzipTextPayloadCodec.cs", "UI/ColorVision.Database/SqliteGzipTextPayloadStore.cs", "UI/ColorVision.Database/SqliteGzipTextMigration.cs", "UI/ColorVision.Database/SqliteFileMaintenance.cs", "UI/ColorVision.SocketProtocol/SocketMessagePayloadStorage.cs", "Engine/ColorVision.Engine/Mysql/SocketMessagesSqliteCleanupProvider.cs", "Engine/ColorVision.Engine/Mysql/DatabaseCleanupWindowViewModel.cs", "Engine/ColorVision.Engine/FlowProcessing/Diagnostics/FlowNodeMessagePayloadStorage.cs", "Engine/ColorVision.Engine/FlowProcessing/Diagnostics/LegacyFlowNodeMessagePayloadMigration.cs", "Engine/ColorVision.Engine/FlowProcessing/Diagnostics/FlowDiagnosticsSqliteCleanupProvider.cs", "Engine/ColorVision.Engine/FlowProcessing/Diagnostics/FlowDiagnosticsMaintenanceGate.cs", "Engine/ColorVision.Engine/FlowProcessing/Diagnostics/FlowNodeRecordDataBaseHelper.cs"]
-test_paths: ["Test/ProjectARVRPro.Tests/OfflineDataSourceTests.cs","Test/ColorVision.UI.Tests/SqliteGzipTextMigrationTests.cs","Test/ColorVision.UI.Tests/SocketMessageStorageTests.cs","Test/ColorVision.UI.Tests/FlowNodeMessageStorageTests.cs"]
 related: ["ui.database", "ui.database-query", "engine.database-maintenance", "ui.socket-protocol", "operations.data", "flow.session"]
 ---
 
@@ -37,7 +36,7 @@ related: ["ui.database", "ui.database-query", "engine.database-maintenance", "ui
 
 Socket 正常 `Load` 和 Flow 的 `LoadPayloads` 都只读压缩列；实体列表不负责加载完整正文。混有旧 TEXT 的库需要显式迁移，不能承诺正常读取时明文与 gzip 自动混读或双写。业务层按 ID 取全文与发送/显示的责任见 [Socket 消息记录](./ColorVision.SocketProtocol.md)。
 
-现场资料的 `ReadOnlySqliteDatabase` 是独立读取路径：以 SQLite `Mode=ReadOnly` 和 `query_only` 打开指定现有文件，不迁移、不创建数据库、不执行应用初始化。它按实际表结构将缺失的可选实体列投影为 NULL，由调用方声明必要列；正文按单条 ID 读取，优先 gzip，兼容旧 TEXT。该兼容行为只用于离线诊断，不改变正常运行库的迁移要求；需要多次查询共享快照时使用延迟只读事务，不能使用默认申请写锁的 SQLite 事务。
+现场资料的 `ReadOnlySqliteDatabase` 是独立读取路径：以 SQLite `Mode=ReadOnly` 和 `query_only` 打开指定现有文件，不迁移、不创建数据库、不执行应用初始化。它按实际表结构将缺失的可选实体列投影为 NULL，由调用方声明必要列。离线流程消息详情通过 `ReadPayloadPair` 在一次查询中读取同一条 ID 的发送和接收正文，每个字段优先 gzip，兼容旧 TEXT。该兼容行为只用于离线诊断，不改变正常运行库的迁移要求；需要多次查询共享快照时使用延迟只读事务，不能使用默认申请写锁的 SQLite 事务。
 
 ## 旧 TEXT 迁移：可重跑，但不是全库原子操作
 
@@ -56,7 +55,7 @@ Socket 正常 `Load` 和 Flow 的 `LoadPayloads` 都只读压缩列；实体列�
 
 ## 完整文件备份与空间回收
 
-`SqliteFileMaintenance.CreateVerifiedBackup` 对来源做 `quick_check`，通过 SQLite `BackupDatabase` API 写入带 `.part` 后缀的目标，再检查目标并改名为最终时间戳 `.db`。这不是只复制主库文件；已有测试覆盖 WAL 中已提交记录进入备份。失败路径尝试清理 `.part`，不会恢复来源库。
+`SqliteFileMaintenance.CreateVerifiedBackup` 对来源做 `quick_check`，通过 SQLite `BackupDatabase` API 写入带 `.part` 后缀的目标，再检查目标并改名为最终时间戳 `.db`。备份包含 WAL 中已提交的记录。失败路径尝试清理 `.part`，不会恢复来源库。
 
 工具仅检查备份目录名和前缀非空，不提供任意输入路径的包含性校验；调用方必须控制目标。它也不负责停写、自动清理旧备份、跨库/外部结果文件备份或恢复流程。`quick_check` 是数据库结构检查，不验证所有业务记录、图片或协议结果正确，当前 helper 读取的是该 PRAGMA 的首个结果值。
 
@@ -73,6 +72,8 @@ Socket 正常 `Load` 和 Flow 的 `LoadPayloads` 都只读压缩列；实体列�
 | Socket：`SocketMessagesSqliteCleanupProvider` | 在 `SocketMessagePayloadStorage.RunDatabaseMaintenance` 的进程内 lock 中创建备份，再执行迁移/清理；只约束遵守同一锁的路径，不停止 TCP 服务或强制关闭其它连接 |
 | Flow：`FlowDiagnosticsSqliteCleanupProvider` | 非重入调用先 `FlushPendingWrites(10s)`，成功后进入 `FlowDiagnosticsMaintenanceGate` 再备份和执行动作；确认文案要求停止流程并关闭分析窗口，但代码不自动执行这些用户动作 |
 
+Socket 消息库和 Flow 诊断库的全量清理保留自增序列。旧窗口按已删除记录的 ID 从数据库读取正文时，结果为空。之后入库的新记录使用更大的 ID。
+
 Flow 的 Flush 可触发首次初始化、schema 装配和写线程启动，因此备份位于 payload 迁移动作之前，不等于整个维护入口在备份前绝无写入。写循环会记录并吞掉动作异常，队列 barrier 完成也不证明此前每条诊断记录都成功保存；随后新入队的动作还须按维护锁排队。
 
 组合动作失败时包装异常保留已经生成的备份路径，**没有自动还原备份**。锁在退出时释放，后续遵循该锁的操作可继续进入；这不是停止/重开服务的协议，更不是库健康或所有后续写入成功的证据。Socket 的迁移后列表刷新使用 `Dispatcher.BeginInvoke`，方法返回也不证明 UI 已显示新数据。
@@ -81,8 +82,4 @@ Flow 的 Flush 可触发首次初始化、schema 装配和写线程启动，因�
 
 ## 验证证据与缺口
 
-- `SqliteGzipTextMigrationTests.cs`：编解码/null/空串、损坏与长度限制、补列和按 ID 存储、超过 500 行的跨批迁移、重跑幂等、匹配/不匹配的旧值残留、已提交 WAL 备份、指定测试数据的 VACUUM 回收。
-- `SocketMessageStorageTests.cs`、`FlowNodeMessageStorageTests.cs`：隔离临时库的压缩写入、列表不取正文、按 ID 读取及迁移；Flow 另含损坏正文和保护记录清理。
-- 组合维护的 fake 测试范围见[维护宿主验证](../engine-components/database-maintenance.md#验证证据)，不作为真实数据库整体原子性的证据。
-
-引用这些测试不表示本次运行。它们不覆盖生产库停写/重开、其它进程占用、磁盘耗尽、进程崩溃、后续批次失败的全库恢复或真实维护窗口的端到端验收；文档与检索构建通过也不能替代这些检查。
+在授权环境核对停写/重开、进程占用、磁盘耗尽、崩溃、后续批次失败的恢复及实际维护界面。

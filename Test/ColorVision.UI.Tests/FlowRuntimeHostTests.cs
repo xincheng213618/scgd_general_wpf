@@ -38,6 +38,110 @@ public sealed class FlowRuntimeHostTests
         });
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void ClearingOrDetachingGraphSettlesTrackedRunAfterResourceDisposal(bool detach)
+    {
+        RunInSta(async () =>
+        {
+            using var container = new CVNodeContainer();
+            using var control = new FlowEngineControl(container, isAutoStartName: false, new FlowNodeManager());
+            control.Load(CreateCanvas(new HeadlessNeverEndNode()), waitReady: false);
+            var start = Assert.Single(container.Nodes.Cast<STNode>().OfType<HeadlessTestStartNode>());
+            var end = Assert.Single(container.Nodes.Cast<STNode>().OfType<HeadlessNeverEndNode>());
+            int startNotifications = 0;
+            int engineNotifications = 0;
+            start.Finished += (_, _) => startNotifications++;
+            control.Finished += (_, _) => engineNotifications++;
+
+            using var testCancellation = new CancellationTokenSource();
+            var runner = new FlowEngineRunner(control);
+            Task<FlowEngineRunResult> run = runner.RunAsync(start.NodeName, "SN-CLEANUP", LifecycleTestTimeout,
+                cancellationToken: testCancellation.Token);
+            try
+            {
+                CVStartCFC action = Assert.IsType<CVStartCFC>(end.LastStartedAction);
+                bool? completedDuringDisposal = null;
+                using var registration = action.RuntimeResources.StopToken.Register(
+                    () => completedDuringDisposal = action.TrackedCompletion.Task.IsCompleted);
+
+                if (detach)
+                    control.DetachNodeEditor();
+                else
+                    control.FlowClear();
+
+                Assert.False(completedDuringDisposal);
+                Assert.True(action.RuntimeResources.IsDisposed);
+                Assert.True(action.TrackedCompletion.Task.IsCompletedSuccessfully);
+                Assert.Equal(0, startNotifications);
+                Assert.Equal(0, engineNotifications);
+
+                FlowEngineRunResult result = await run.WaitAsync(LifecycleTestTimeout);
+                Assert.True(result.Started);
+                Assert.Equal(FlowEngineRunTermination.Completed, result.Termination);
+                Assert.Equal(StatusTypeEnum.Canceled, result.Data.Status);
+                Assert.False(control.IsRunning);
+            }
+            finally
+            {
+                if (!run.IsCompleted)
+                {
+                    testCancellation.Cancel();
+                    await run.WaitAsync(LifecycleTestTimeout);
+                }
+            }
+        });
+    }
+
+    [Fact]
+    public void DetachingGraphPreservesDeferredTerminalResultUntilNotification()
+    {
+        RunInSta(async () =>
+        {
+            using var container = new CVNodeContainer();
+            using var control = new FlowEngineControl(container, isAutoStartName: false, new FlowNodeManager());
+            control.Load(CreateCanvas(new HeadlessNeverEndNode()), waitReady: false);
+            var end = Assert.Single(container.Nodes.Cast<STNode>().OfType<HeadlessNeverEndNode>());
+            int engineNotifications = 0;
+            control.Finished += (_, _) => engineNotifications++;
+
+            using var testCancellation = new CancellationTokenSource();
+            var runner = new FlowEngineRunner(control);
+            Task<FlowEngineRunResult> run = runner.RunAsync("HeadlessStart", "SN-DETACH-TERMINAL", LifecycleTestTimeout,
+                cancellationToken: testCancellation.Token);
+            try
+            {
+                CVStartCFC action = Assert.IsType<CVStartCFC>(end.LastStartedAction);
+                using var deferred = action.DeferFlowCompletionNotification();
+                action.Failed("terminal result before detach", "FailedNode", action.StartTime, "failed-id");
+                Assert.True(action.TryDoFinishing());
+                action.FireFinished();
+
+                control.DetachNodeEditor();
+
+                Assert.False(action.TrackedCompletion.Task.IsCompleted);
+                deferred.Dispose();
+                Assert.True(action.TrackedCompletion.Task.IsCompletedSuccessfully);
+                Assert.Equal(0, engineNotifications);
+
+                FlowEngineRunResult result = await run.WaitAsync(LifecycleTestTimeout);
+                Assert.Equal(FlowEngineRunTermination.Completed, result.Termination);
+                Assert.Equal(StatusTypeEnum.Failed, result.Data.Status);
+                Assert.Equal("terminal result before detach", result.Data.Message);
+                Assert.Equal("failed-id", result.Data.ErrorNodeId);
+            }
+            finally
+            {
+                if (!run.IsCompleted)
+                {
+                    testCancellation.Cancel();
+                    await run.WaitAsync(LifecycleTestTimeout);
+                }
+            }
+        });
+    }
+
     [Fact]
     public void BusyStartNodeRejectsNewDispatchWithoutWaitingOnAnUnstartedRun()
     {

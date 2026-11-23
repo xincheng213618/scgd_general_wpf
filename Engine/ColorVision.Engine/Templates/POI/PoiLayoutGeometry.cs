@@ -105,7 +105,7 @@ namespace ColorVision.Engine.Templates.POI
             ((points[1] - points[0]).Length + (points[2] - points[3]).Length) / 2,
             ((points[3] - points[0]).Length + (points[2] - points[1]).Length) / 2);
 
-        public static bool TryGetPercentagePointSize(Size reference, GraphicTypes pointType, double widthPercent, double heightPercent, out Size size)
+        public static bool TryGetPercentagePointSize(Size reference, GraphicTypes pointType, double widthPercent, double heightPercent, out Size size, bool radiusByHeight = false)
         {
             size = default;
             if (!double.IsFinite(reference.Width) || !double.IsFinite(reference.Height) || reference.Width <= 0 || reference.Height <= 0)
@@ -113,12 +113,12 @@ namespace ColorVision.Engine.Templates.POI
             if (!IsValidPercentage(widthPercent))
                 return false;
 
-            double width = Math.Round(reference.Width * (widthPercent / 100), MidpointRounding.AwayFromZero);
             if (pointType == GraphicTypes.Circle)
             {
-                // The input is a radius. Keep the diameter in the same size representation used by auto-fit.
-                double diameter = 2 * width;
-                if (width < 1 || diameter > int.MaxValue)
+                double referenceLength = radiusByHeight ? reference.Height : reference.Width;
+                double radius = Math.Round(referenceLength * (widthPercent / 100), MidpointRounding.AwayFromZero);
+                double diameter = 2 * radius;
+                if (radius < 1 || diameter > int.MaxValue)
                     return false;
 
                 size = new Size(diameter, diameter);
@@ -128,6 +128,7 @@ namespace ColorVision.Engine.Templates.POI
             if (pointType != GraphicTypes.Rect || !IsValidPercentage(heightPercent))
                 return false;
 
+            double width = Math.Round(reference.Width * (widthPercent / 100), MidpointRounding.AwayFromZero);
             double height = Math.Round(reference.Height * (heightPercent / 100), MidpointRounding.AwayFromZero);
             if (width < 1 || height < 1 || width > int.MaxValue || height > int.MaxValue)
                 return false;

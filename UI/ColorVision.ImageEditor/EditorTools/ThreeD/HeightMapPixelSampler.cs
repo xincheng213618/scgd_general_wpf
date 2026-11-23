@@ -29,17 +29,26 @@ namespace ColorVision.ImageEditor.EditorTools.ThreeD
             }
 
             (int targetWidth, int targetHeight) = CalculateFitSize(sourceWidth, sourceHeight, maxWidth, maxHeight);
-            bool isGray = source.Format == PixelFormats.Gray8;
-            bool isOpaque = isGray || source.Format == PixelFormats.Bgr24 || source.Format == PixelFormats.Bgr32;
-            bool canCopyDirectly = isOpaque || source.Format == PixelFormats.Bgra32;
-            BitmapSource pixels = canCopyDirectly ? source : new FormatConvertedBitmap(source, PixelFormats.Bgra32, null, 0);
+            double scaleY = (double)(sourceHeight - 1) / Math.Max(targetHeight - 1, 1);
+            bool copyStrips = scaleY <= 2;
+            PixelFormat sourceFormat = source.Format;
+            bool isGray16 = sourceFormat == PixelFormats.Gray16;
+            bool isGray = sourceFormat == PixelFormats.Gray8 || isGray16;
+            bool isOpaqueColor = sourceFormat == PixelFormats.Bgr24 || sourceFormat == PixelFormats.Bgr32;
+            bool isOpaque = isGray || isOpaqueColor;
+            // Gray16-to-Bgra32 conversion is faster for the small, disjoint row copies in sparse sampling.
+            PixelFormat copyFormat = isGray && (!isGray16 || copyStrips) ? PixelFormats.Gray8
+                : isOpaqueColor ? sourceFormat : PixelFormats.Bgra32;
+            BitmapSource pixels = sourceFormat == copyFormat ? source : new FormatConvertedBitmap(source, copyFormat, null, 0);
+            if (targetWidth == sourceWidth && targetHeight == sourceHeight)
+                return SampleAtSourceSize(pixels, copyFormat == PixelFormats.Gray8, isOpaque, cancellationToken);
+
             int bytesPerPixel = pixels.Format.BitsPerPixel / 8;
             int sourceStride = checked(sourceWidth * bytesPerPixel);
 
-            double scaleY = (double)(sourceHeight - 1) / Math.Max(targetHeight - 1, 1);
             // Dense sampling benefits from a bounded strip. Sparse sampling copies only each
             // required row pair, avoiding conversion of all the skipped source rows.
-            int bufferRows = scaleY <= 2
+            int bufferRows = copyStrips
                 ? Math.Min(sourceHeight, Math.Max(2, CopyBufferBytes / sourceStride))
                 : Math.Min(sourceHeight, 2);
             byte[] rows = new byte[checked(sourceStride * bufferRows)];
@@ -69,6 +78,7 @@ namespace ColorVision.ImageEditor.EditorTools.ThreeD
                 int top = (int)sourceY;
                 int bottom = Math.Min(top + 1, sourceHeight - 1);
                 double yFraction = sourceY - top;
+                double topWeight = 1 - yFraction;
 
                 if (top < copiedTop || bottom > copiedBottom)
                 {
@@ -86,24 +96,83 @@ namespace ColorVision.ImageEditor.EditorTools.ThreeD
                     int leftOffset = x0[x];
                     int rightOffset = x1[x];
                     double xWeight = xFraction[x];
+                    double leftWeight = 1 - xWeight;
 
-                    byte topLeftGray = ReadGray(rows, topOffset + leftOffset, isGray);
-                    byte topRightGray = ReadGray(rows, topOffset + rightOffset, isGray);
-                    byte bottomLeftGray = ReadGray(rows, bottomOffset + leftOffset, isGray);
-                    byte bottomRightGray = ReadGray(rows, bottomOffset + rightOffset, isGray);
+                    byte topLeftGray, topRightGray, bottomLeftGray, bottomRightGray;
+                    if (isGray)
+                    {
+                        topLeftGray = rows[topOffset + leftOffset];
+                        topRightGray = rows[topOffset + rightOffset];
+                        bottomLeftGray = rows[bottomOffset + leftOffset];
+                        bottomRightGray = rows[bottomOffset + rightOffset];
+                    }
+                    else
+                    {
+                        topLeftGray = ReadColorGray(rows, topOffset + leftOffset);
+                        topRightGray = ReadColorGray(rows, topOffset + rightOffset);
+                        bottomLeftGray = ReadColorGray(rows, bottomOffset + leftOffset);
+                        bottomRightGray = ReadColorGray(rows, bottomOffset + rightOffset);
+                    }
 
                     int index = targetOffset + x;
-                    gray[index] = Interpolate(topLeftGray, topRightGray, bottomLeftGray, bottomRightGray, xWeight, yFraction);
+                    gray[index] = Interpolate(topLeftGray, topRightGray, bottomLeftGray, bottomRightGray,
+                        leftWeight, xWeight, topWeight, yFraction);
                     if (alpha != null)
                     {
                         alpha[index] = Interpolate(rows[topOffset + leftOffset + 3], rows[topOffset + rightOffset + 3],
-                            rows[bottomOffset + leftOffset + 3], rows[bottomOffset + rightOffset + 3], xWeight, yFraction);
+                            rows[bottomOffset + leftOffset + 3], rows[bottomOffset + rightOffset + 3],
+                            leftWeight, xWeight, topWeight, yFraction);
                         hasTransparency |= alpha[index] < byte.MaxValue;
                     }
                 }
             }
 
             return new HeightMapSample(gray, hasTransparency ? alpha : null, targetWidth, targetHeight);
+        }
+
+        private static HeightMapSample SampleAtSourceSize(BitmapSource pixels, bool isGray, bool isOpaque,
+            CancellationToken cancellationToken)
+        {
+            int width = pixels.PixelWidth;
+            int height = pixels.PixelHeight;
+            int bytesPerPixel = pixels.Format.BitsPerPixel / 8;
+            int stride = checked(width * bytesPerPixel);
+            int rowsPerStrip = Math.Min(height, Math.Max(1, CopyBufferBytes / stride));
+            byte[] gray = new byte[checked(width * height)];
+            byte[]? alpha = isOpaque ? null : new byte[gray.Length];
+            byte[] rows = isGray ? gray : new byte[checked(stride * rowsPerStrip)];
+            bool hasTransparency = false;
+
+            // At integer coordinates each output needs only its corresponding source pixel.
+            for (int top = 0; top < height;)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                int rowCount = Math.Min(rowsPerStrip, height - top);
+                pixels.CopyPixels(new Int32Rect(0, top, width, rowCount), rows, stride, isGray ? top * stride : 0);
+                if (!isGray)
+                {
+                    for (int row = 0; row < rowCount; row++)
+                    {
+                        cancellationToken.ThrowIfCancellationRequested();
+                        int sourceOffset = row * stride;
+                        int targetOffset = (top + row) * width;
+                        for (int x = 0; x < width; x++, sourceOffset += bytesPerPixel)
+                        {
+                            int index = targetOffset + x;
+                            gray[index] = (byte)Math.Round(rows[sourceOffset] * 0.114
+                                + rows[sourceOffset + 1] * 0.587 + rows[sourceOffset + 2] * 0.299);
+                            if (alpha != null)
+                            {
+                                alpha[index] = rows[sourceOffset + 3];
+                                hasTransparency |= alpha[index] < byte.MaxValue;
+                            }
+                        }
+                    }
+                }
+                top += rowCount;
+            }
+            cancellationToken.ThrowIfCancellationRequested();
+            return new HeightMapSample(gray, hasTransparency ? alpha : null, width, height);
         }
 
         internal static (int Width, int Height) CalculateFitSize(int sourceWidth, int sourceHeight, int maxWidth, int maxHeight)
@@ -119,20 +188,26 @@ namespace ColorVision.ImageEditor.EditorTools.ThreeD
             return (width, height);
         }
 
-        private static byte ReadGray(byte[] pixels, int offset, bool isGray)
+        private static byte ReadColorGray(byte[] pixels, int offset)
         {
-            if (isGray) return pixels[offset];
-            return (byte)Math.Clamp(Math.Round(pixels[offset] * 0.114 + pixels[offset + 1] * 0.587 + pixels[offset + 2] * 0.299), 0, 255);
+            int blue = pixels[offset];
+            int green = pixels[offset + 1];
+            int red = pixels[offset + 2];
+            int weighted = blue * 114 + green * 587 + red * 299 + 500;
+            int gray = weighted / 1000;
+            // Only an exact midpoint can be rounded differently by the original floating-point expression.
+            return weighted != gray * 1000 ? (byte)gray : (byte)Math.Round(blue * 0.114 + green * 0.587 + red * 0.299);
         }
 
         private static byte Interpolate(byte topLeft, byte topRight, byte bottomLeft, byte bottomRight,
-            double xFraction, double yFraction)
+            double leftWeight, double rightWeight, double topWeight, double bottomWeight)
         {
-            double value = topLeft * (1 - xFraction) * (1 - yFraction)
-                         + topRight * xFraction * (1 - yFraction)
-                         + bottomLeft * (1 - xFraction) * yFraction
-                         + bottomRight * xFraction * yFraction;
-            return (byte)Math.Clamp(Math.Round(value), 0, 255);
+            // Keep the original multiplication order for values close to a rounding midpoint.
+            double value = topLeft * leftWeight * topWeight
+                         + topRight * rightWeight * topWeight
+                         + bottomLeft * leftWeight * bottomWeight
+                         + bottomRight * rightWeight * bottomWeight;
+            return (byte)Math.Round(value);
         }
     }
 }

@@ -3,7 +3,9 @@ using ColorVision.Engine.PropertyEditor;
 using ColorVision.Engine.FlowProcessing.Nodes;
 using ColorVision.Engine.Services.Devices.Calibration;
 using FlowEngineLib.Base;
+using FlowEngineLib.MQTT;
 using ST.Library.UI.NodeEditor;
+using System;
 
 namespace FlowEngineLib.Algorithm;
 
@@ -13,14 +15,23 @@ namespace FlowEngineLib.Algorithm;
     Notes = "保留原参数、端口和结果类型。本地分支使用输入图像曝光及校正模板，等待内部调用完成；失败不补发服务请求。")]
 public class CalibrationNode : CVBaseServerNode
 {
-	public override bool RequiresRemoteService => !LocalCalibrationFlowRouting.UsesLocalCalibration(DeviceCode);
+	private readonly Func<string, DeviceCalibration> findDevice;
+	private readonly CalibrationResultBinder bindResult;
+
+	public override bool RequiresRemoteService => findDevice(DeviceCode)?.DisplayConfig.UseLocalCalibration != true;
 
 	protected override FlowLocalExecution CreateLocalExecution(CVMQTTRequest request)
 	{
-		if (!LocalCalibrationFlowRouting.UsesLocalCalibration(request.DeviceCode)) return null;
+		if (findDevice(request.DeviceCode)?.DisplayConfig.UseLocalCalibration != true) return null;
 		CalibrationData data = (CalibrationData)request.Data;
 		return new LocalCalibrationNode { DeviceCode = request.DeviceCode, CalibTempName = data.TemplateParam?.Name ?? string.Empty }
 			.CreateCompatibilityExecution(request, data.ImgFileName);
+	}
+
+	protected override void DispatchRemoteCommand(CVTransAction trans, MQActionEvent action, CVBaseEventCmd command)
+	{
+		CalibrationFlowResultTracking.Track(trans.trans_action, action, command, bindResult);
+		base.DispatchRemoteCommand(trans, action, command);
 	}
 
 	[STNodeProperty("参数模板", "参数模板", true)]
@@ -54,9 +65,15 @@ public class CalibrationNode : CVBaseServerNode
 		}
 	}
 
-	public CalibrationNode()
+	public CalibrationNode() : this(LocalCalibrationFlowRouting.Find)
+	{
+	}
+
+	internal CalibrationNode(Func<string, DeviceCalibration> findDevice)
 		: base("校正", "Calibration", "SVR.Calibration.Default", "DEV.Calibration.Default")
 	{
+		this.findDevice = findDevice;
+		bindResult = RemoteCalibrationFlowResult.CreateBinder(findDevice);
 		operatorCode = "Calibration";
 		_MaxTime = 10000;
 	}

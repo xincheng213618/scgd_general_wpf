@@ -16,11 +16,17 @@ namespace ColorVision.Database
     public sealed class DatabaseCleanupSourceViewModel : ViewModelBase
     {
         private readonly IDatabaseCleanupSourceProvider _provider;
+        private readonly IDatabaseCleanupTargetProvider? _targetProvider;
         private readonly IDatabaseCleanupSelectionProvider? _selectionProvider;
         private readonly IDatabaseCleanupBackupProvider? _backupProvider;
-        private readonly IDatabaseCleanupMaintenanceProvider? _maintenanceProvider;
         private readonly IDatabaseCleanupMigrationProvider? _migrationProvider;
         private readonly IDatabaseCleanupOptimizationProvider? _optimizationProvider;
+        private readonly Func<string, MessageBoxImage, bool>? _confirmOverride;
+        private readonly Action<string, MessageBoxImage>? _messageOverride;
+        private DatabaseCleanupTarget? _statisticsTarget;
+
+        private sealed record CleanupPlan(IDatabaseCleanupSourceProvider Provider, DatabaseCleanupTarget? Target, bool BackupBeforeCleanup);
+        private sealed class CleanupTargetChangedException() : InvalidOperationException(TargetChangedMessage) { }
 
         private string _description = string.Empty;
         private string _keepMonthsText = "3";
@@ -30,27 +36,37 @@ namespace ColorVision.Database
         private bool _hasPendingMigration;
         private bool _suppressTableStateNotifications;
 
-        public DatabaseCleanupSourceViewModel(IDatabaseCleanupSourceProvider provider)
+        public DatabaseCleanupSourceViewModel(IDatabaseCleanupSourceProvider provider) : this(provider, null, null)
+        {
+        }
+
+        internal DatabaseCleanupSourceViewModel(IDatabaseCleanupSourceProvider provider,
+            Func<string, MessageBoxImage, bool>? confirmOverride, Action<string, MessageBoxImage>? messageOverride)
         {
             _provider = provider;
+            _targetProvider = provider as IDatabaseCleanupTargetProvider;
             _selectionProvider = provider as IDatabaseCleanupSelectionProvider;
             _backupProvider = provider as IDatabaseCleanupBackupProvider;
-            _maintenanceProvider = provider as IDatabaseCleanupMaintenanceProvider;
             _migrationProvider = provider as IDatabaseCleanupMigrationProvider;
             _optimizationProvider = provider as IDatabaseCleanupOptimizationProvider;
-            _description = provider.Description;
+            _confirmOverride = confirmOverride;
+            _messageOverride = messageOverride;
+            _description = _targetProvider == null ? provider.Description : string.Empty;
             _backupBeforeCleanup = false;
 
             RefreshCommand = new RelayCommand(_ => _ = RefreshAsync(), _ => !IsBusy);
-            BackupCommand = new RelayCommand(_ => _ = ExecuteBackupAsync(), _ => !IsBusy && SupportsBackup);
-            SelectAllCommand = new RelayCommand(_ => SetAllExistingTablesSelected(true), _ => !IsBusy && SupportsTableCleanup && ExistingTableCount > 0);
+            BackupCommand = new RelayCommand(_ => _ = ExecuteBackupAsync(), _ => CanRunOperation && SupportsBackup);
+            SelectAllCommand = new RelayCommand(_ => SetAllExistingTablesSelected(true), _ => CanRunOperation && SupportsTableCleanup && ExistingTableCount > 0);
             ClearSelectionCommand = new RelayCommand(_ => SetAllExistingTablesSelected(false), _ => !IsBusy && SelectedTableCount > 0);
-            CleanupSelectedCommand = new RelayCommand(_ => ExecuteCleanupSelected(), _ => !IsBusy && SupportsTableCleanup && SelectedTableCount > 0);
-            CleanupHistoryCommand = new RelayCommand(_ => ExecuteCleanupHistory(), _ => !IsBusy && ExistingTableCount > 0 && IsKeepMonthsValid);
-            CleanupAllCommand = new RelayCommand(_ => ExecuteCleanupAll(), _ => !IsBusy && ExistingTableCount > 0);
-            MigrationCommand = new RelayCommand(_ => ExecuteMigration(), _ => !IsBusy && SupportsMigration && HasPendingMigration && ExistingTableCount > 0);
-            OptimizationCommand = new RelayCommand(_ => ExecuteOptimization(), _ => !IsBusy && SupportsOptimization && ExistingTableCount > 0);
+            CleanupSelectedCommand = new RelayCommand(_ => ExecuteCleanupSelected(), _ => CanRunOperation && SupportsTableCleanup && SelectedTableCount > 0);
+            CleanupHistoryCommand = new RelayCommand(_ => ExecuteCleanupHistory(), _ => CanRunOperation && ExistingTableCount > 0 && IsKeepMonthsValid);
+            CleanupAllCommand = new RelayCommand(_ => ExecuteCleanupAll(), _ => CanRunOperation && ExistingTableCount > 0);
+            MigrationCommand = new RelayCommand(_ => ExecuteMigration(), _ => CanRunOperation && SupportsMigration && HasPendingMigration && ExistingTableCount > 0);
+            OptimizationCommand = new RelayCommand(_ => ExecuteOptimization(), _ => CanRunOperation && SupportsOptimization && ExistingTableCount > 0);
         }
+
+        internal bool HasDatabaseTarget => _targetProvider != null;
+        private bool CanRunOperation => !IsBusy && (!HasDatabaseTarget || _statisticsTarget?.IsCurrent == true);
 
         public string SourceId => _provider.Id;
         public string DisplayName => _provider.DisplayName;
@@ -165,24 +181,51 @@ namespace ColorVision.Database
             if (IsBusy)
                 return;
 
+            DatabaseCleanupTarget? previousTarget = _statisticsTarget;
             var selectedTableNames = GetSelectedTableNames().ToHashSet(StringComparer.OrdinalIgnoreCase);
             SetBusy(true);
             SetStatus(EngineLocalization.Get("正在统计表数据..."));
 
             try
             {
-                SetDescription(_provider.Description);
-                var (snapshot, hasPendingMigration) = await Task.Run(LoadSnapshot).ConfigureAwait(false);
-                ApplySnapshot(snapshot, selectedTableNames);
-                SetHasPendingMigration(hasPendingMigration);
+                var target = _targetProvider?.CaptureCurrentTarget();
+                if (HasDatabaseTarget && target == null)
+                {
+                    ClearTargetStatistics(EngineLocalization.Get("请连接数据库并刷新统计。"));
+                    return;
+                }
 
-                int existingCount = snapshot.Count(item => item.Exists);
-                SetStatus(existingCount > 0
-                    ? EngineLocalization.Format($"已加载 {existingCount:N0} 张可清理数据表。")
-                    : EngineLocalization.Get("当前没有找到可清理数据表。"));
+                var provider = target?.Provider ?? _provider;
+                var (snapshot, hasPendingMigration) = await Task.Run(() =>
+                    ExecuteForCurrentTarget(target, () => LoadSnapshot(provider))).ConfigureAwait(false);
+                RunOnUi(() =>
+                {
+                    if (target?.IsCurrent == false)
+                    {
+                        ClearTargetStatistics(TargetChangedMessage);
+                        return;
+                    }
+
+                    if (previousTarget?.IsCurrent == false)
+                        selectedTableNames.Clear();
+
+                    _statisticsTarget = target;
+                    Description = target?.Description ?? provider.Description;
+                    ApplySnapshot(snapshot, selectedTableNames);
+                    HasPendingMigration = hasPendingMigration;
+                    int existingCount = snapshot.Count(item => item.Exists);
+                    Status = existingCount > 0
+                        ? EngineLocalization.Format($"已加载 {existingCount:N0} 张可清理数据表。")
+                        : EngineLocalization.Get("当前没有找到可清理数据表。");
+                });
+            }
+            catch (CleanupTargetChangedException)
+            {
+                ClearTargetStatistics(TargetChangedMessage);
             }
             catch (Exception ex)
             {
+                if (HasDatabaseTarget) ClearTargetStatistics(EngineLocalization.Get("加载统计失败。"));
                 SetStatus(EngineLocalization.Get("加载统计失败。"));
                 ShowMessage(EngineLocalization.Format($"{DisplayName} 统计失败：{ex.Message}"), MessageBoxImage.Error);
             }
@@ -194,7 +237,8 @@ namespace ColorVision.Database
 
         private async Task ExecuteBackupAsync()
         {
-            if (_backupProvider == null || IsBusy)
+            var plan = CreateOperationPlan();
+            if (plan?.Provider is not IDatabaseCleanupBackupProvider backupProvider)
                 return;
 
             SetBusy(true);
@@ -202,9 +246,13 @@ namespace ColorVision.Database
 
             try
             {
-                var backup = await Task.Run(_backupProvider.CreateBackup).ConfigureAwait(false);
+                var backup = await Task.Run(() => ExecuteForCurrentTarget(plan.Target, backupProvider.CreateBackup)).ConfigureAwait(false);
                 SetStatus(backup.StatusMessage);
-                ShowMessage($"{backup.StatusMessage}{Environment.NewLine}{backup.FilePath}", MessageBoxImage.Information);
+                ShowMessage(DescribeTarget(plan, $"{backup.StatusMessage}{Environment.NewLine}{backup.FilePath}"), MessageBoxImage.Information);
+            }
+            catch (CleanupTargetChangedException)
+            {
+                ClearTargetStatistics(TargetChangedMessage);
             }
             catch (Exception ex)
             {
@@ -219,6 +267,8 @@ namespace ColorVision.Database
 
         private void ExecuteCleanupHistory()
         {
+            var plan = CreateOperationPlan();
+            if (plan == null || ExistingTableCount == 0) return;
             if (!TryGetKeepMonths(out int keepMonths))
             {
                 ShowMessage(EngineLocalization.Get("保留月数必须是大于 0 的整数。"), MessageBoxImage.Warning);
@@ -227,20 +277,21 @@ namespace ColorVision.Database
 
             string confirmMessage =
                 EngineLocalization.Format($"将保留最近 {keepMonths} 个月的数据，并清理其余历史结果。") + Environment.NewLine + Environment.NewLine +
-                BuildBackupNotice() + Environment.NewLine + Environment.NewLine +
+                BuildBackupNotice(plan) + Environment.NewLine + Environment.NewLine +
                 EngineLocalization.Get("是否继续？");
 
-            if (!ConfirmCleanup(confirmMessage, MessageBoxImage.Warning))
+            if (!ConfirmCleanup(plan, confirmMessage, MessageBoxImage.Warning))
                 return;
 
             _ = ExecuteCleanupAsync(
-                () => _provider.CleanupHistory(keepMonths),
+                plan, () => plan.Provider.CleanupHistory(keepMonths),
                 EngineLocalization.Format($"正在清理 {DisplayName} 历史数据..."));
         }
 
         private void ExecuteCleanupSelected()
         {
-            if (_selectionProvider == null)
+            var plan = CreateOperationPlan();
+            if (plan?.Provider is not IDatabaseCleanupSelectionProvider selectionProvider)
                 return;
 
             var selectedTableNames = GetSelectedTableNames();
@@ -253,71 +304,75 @@ namespace ColorVision.Database
             string confirmMessage =
                 EngineLocalization.Format($"将清空以下 {selectedTableNames.Count:N0} 张数据表：") + Environment.NewLine +
                 BuildTableList(selectedTableNames) + Environment.NewLine + Environment.NewLine +
-                BuildBackupNotice() + Environment.NewLine + Environment.NewLine +
+                BuildBackupNotice(plan) + Environment.NewLine + Environment.NewLine +
                 EngineLocalization.Get("此操作不可撤销，是否继续？");
 
-            if (!ConfirmCleanup(confirmMessage, MessageBoxImage.Warning))
+            if (!ConfirmCleanup(plan, confirmMessage, MessageBoxImage.Warning))
                 return;
 
             _ = ExecuteCleanupAsync(
-                () => _selectionProvider.CleanupTables(selectedTableNames),
+                plan, () => selectionProvider.CleanupTables(selectedTableNames),
                 EngineLocalization.Format($"正在清空选中的 {selectedTableNames.Count:N0} 张数据表..."));
         }
 
         private void ExecuteCleanupAll()
         {
+            var plan = CreateOperationPlan();
+            if (plan == null || ExistingTableCount == 0) return;
             var existingTableNames = GetExistingTableNames();
             string confirmMessage =
                 EngineLocalization.Format($"将清空 {DisplayName} 中全部 {existingTableNames.Count:N0} 张可用数据表。") + Environment.NewLine + Environment.NewLine +
-                BuildBackupNotice() + Environment.NewLine + Environment.NewLine +
+                BuildBackupNotice(plan) + Environment.NewLine + Environment.NewLine +
                 EngineLocalization.Get("全部数据清理后无法撤销，是否确定继续？");
 
-            if (!ConfirmCleanup(confirmMessage, MessageBoxImage.Warning))
+            if (!ConfirmCleanup(plan, confirmMessage, MessageBoxImage.Warning))
                 return;
 
-            _ = ExecuteCleanupAsync(_provider.CleanupAll, EngineLocalization.Format($"正在清空 {DisplayName} 全部数据..."));
+            _ = ExecuteCleanupAsync(plan, plan.Provider.CleanupAll, EngineLocalization.Format($"正在清空 {DisplayName} 全部数据..."));
         }
 
         private void ExecuteMigration()
         {
-            if (_migrationProvider == null)
+            var plan = CreateOperationPlan();
+            if (plan?.Provider is not IDatabaseCleanupMigrationProvider migrationProvider || !HasPendingMigration || ExistingTableCount == 0)
                 return;
 
-            if (_backupProvider == null)
+            if (plan.Provider is not IDatabaseCleanupBackupProvider)
             {
                 ShowMessage(EngineLocalization.Get("该迁移没有可用的完整备份能力，已拒绝执行。"), MessageBoxImage.Error);
                 return;
             }
 
             string confirmMessage =
-                _migrationProvider.MigrationConfirmationMessage + Environment.NewLine + Environment.NewLine +
-                BuildBackupNotice(forceBackup: true) + Environment.NewLine + Environment.NewLine +
+                migrationProvider.MigrationConfirmationMessage + Environment.NewLine + Environment.NewLine +
+                BuildBackupNotice(plan, forceBackup: true) + Environment.NewLine + Environment.NewLine +
                 EngineLocalization.Get("是否继续？");
-            if (!ConfirmCleanup(confirmMessage, MessageBoxImage.Warning))
+            if (!ConfirmCleanup(plan, confirmMessage, MessageBoxImage.Warning))
                 return;
 
             _ = ExecuteCleanupAsync(
-                _migrationProvider.ExecuteMigration,
+                plan, migrationProvider.ExecuteMigration,
                 EngineLocalization.Format($"正在执行 {DisplayName} 数据迁移并释放空间..."),
                 "迁移",
                 forceBackup: true,
-                preflight: _migrationProvider.HasPendingMigration);
+                preflight: migrationProvider.HasPendingMigration);
         }
 
         private void ExecuteOptimization()
         {
-            if (_optimizationProvider == null)
+            var plan = CreateOperationPlan();
+            if (plan?.Provider is not IDatabaseCleanupOptimizationProvider optimizationProvider || ExistingTableCount == 0)
                 return;
 
             string confirmMessage =
-                _optimizationProvider.OptimizationConfirmationMessage + Environment.NewLine + Environment.NewLine +
+                optimizationProvider.OptimizationConfirmationMessage + Environment.NewLine + Environment.NewLine +
                 EngineLocalization.Get("此操作不会删除业务数据，也不会自动创建完整备份。") + Environment.NewLine + Environment.NewLine +
                 EngineLocalization.Get("是否继续？");
-            if (!ConfirmCleanup(confirmMessage, MessageBoxImage.Warning))
+            if (!ConfirmCleanup(plan, confirmMessage, MessageBoxImage.Warning))
                 return;
 
             _ = ExecuteCleanupAsync(
-                _optimizationProvider.ExecuteOptimization,
+                plan, optimizationProvider.ExecuteOptimization,
                 EngineLocalization.Format($"正在执行 {DisplayName} 索引优化..."),
                 "索引优化",
                 allowOptionalBackup: false,
@@ -325,6 +380,7 @@ namespace ColorVision.Database
         }
 
         private async Task ExecuteCleanupAsync(
+            CleanupPlan plan,
             Func<DatabaseCleanupExecutionResult> action,
             string busyStatus,
             string operationName = "清理",
@@ -333,7 +389,7 @@ namespace ColorVision.Database
             bool refreshTables = true,
             Func<bool>? preflight = null)
         {
-            if (IsBusy)
+            if (IsBusy || !ValidateOperationPlan(plan))
                 return;
 
             string localizedOperationName = EngineLocalization.Get(operationName);
@@ -348,9 +404,9 @@ namespace ColorVision.Database
                     bool shouldExecute;
                     try
                     {
-                        shouldExecute = await Task.Run(preflight).ConfigureAwait(false);
+                        shouldExecute = await Task.Run(() => ExecuteForCurrentTarget(plan.Target, preflight)).ConfigureAwait(false);
                     }
-                    catch (Exception ex)
+                    catch (Exception ex) when (ex is not CleanupTargetChangedException)
                     {
                         SetStatus(EngineLocalization.Get("迁移状态检查失败。"));
                         ShowMessage(EngineLocalization.Format($"{DisplayName} 迁移状态检查失败：{ex.Message}"), MessageBoxImage.Error);
@@ -365,21 +421,21 @@ namespace ColorVision.Database
                     }
                 }
 
-                if ((forceBackup || (allowOptionalBackup && BackupBeforeCleanup)) && _backupProvider != null)
+                if ((forceBackup || (allowOptionalBackup && plan.BackupBeforeCleanup))
+                    && plan.Provider is IDatabaseCleanupBackupProvider backupProvider)
                 {
-                    if (_maintenanceProvider != null)
+                    if (plan.Provider is IDatabaseCleanupMaintenanceProvider maintenanceProvider)
                     {
                         SetStatus(EngineLocalization.Format($"正在同一维护操作中创建完整备份并执行{localizedOperationName}..."));
                         try
                         {
-                            var maintenanceResult = await Task.Run(() => ExecuteBackupAndCleanup(
-                                _backupProvider,
-                                _maintenanceProvider,
-                                action)).ConfigureAwait(false);
+                            var maintenanceResult = await Task.Run(() => ExecuteForCurrentTarget(plan.Target, () =>
+                                ExecuteBackupAndCleanup(backupProvider, maintenanceProvider,
+                                    () => ExecuteForCurrentTarget(plan.Target, action)))).ConfigureAwait(false);
                             backup = maintenanceResult.Backup;
                             result = maintenanceResult.Cleanup;
                         }
-                        catch (Exception ex)
+                        catch (Exception ex) when (ex is not CleanupTargetChangedException)
                         {
                             SetStatus(EngineLocalization.Format($"完整备份与{localizedOperationName}组合操作失败。"));
                             ShowMessage(
@@ -394,9 +450,9 @@ namespace ColorVision.Database
                         SetStatus(EngineLocalization.Format($"正在创建{localizedOperationName}前完整备份..."));
                         try
                         {
-                            backup = await Task.Run(_backupProvider.CreateBackup).ConfigureAwait(false);
+                            backup = await Task.Run(() => ExecuteForCurrentTarget(plan.Target, backupProvider.CreateBackup)).ConfigureAwait(false);
                         }
-                        catch (Exception ex)
+                        catch (Exception ex) when (ex is not CleanupTargetChangedException)
                         {
                             SetStatus(EngineLocalization.Format($"备份失败，未执行{localizedOperationName}。"));
                             ShowMessage(EngineLocalization.Format($"{localizedOperationName}前完整备份失败，数据尚未更改：{ex.Message}"), MessageBoxImage.Error);
@@ -410,9 +466,9 @@ namespace ColorVision.Database
                     SetStatus(busyStatus);
                     try
                     {
-                        result = await Task.Run(action).ConfigureAwait(false);
+                        result = await Task.Run(() => ExecuteForCurrentTarget(plan.Target, action)).ConfigureAwait(false);
                     }
-                    catch (Exception ex)
+                    catch (Exception ex) when (ex is not CleanupTargetChangedException)
                     {
                         SetStatus(EngineLocalization.Format($"{localizedOperationName}失败。"));
                         ShowMessage(EngineLocalization.Format($"{DisplayName} {localizedOperationName}失败：{ex.Message}"), MessageBoxImage.Error);
@@ -425,10 +481,20 @@ namespace ColorVision.Database
                 {
                     try
                     {
-                        SetDescription(_provider.Description);
-                        var (snapshot, hasPendingMigration) = await Task.Run(LoadSnapshot).ConfigureAwait(false);
-                        ApplySnapshot(snapshot, GetSelectedTableNames().ToHashSet(StringComparer.OrdinalIgnoreCase));
-                        SetHasPendingMigration(hasPendingMigration);
+                        var (snapshot, hasPendingMigration) = await Task.Run(() =>
+                            ExecuteForCurrentTarget(plan.Target, () => LoadSnapshot(plan.Provider))).ConfigureAwait(false);
+                        RunOnUi(() =>
+                        {
+                            if (plan.Target?.IsCurrent == false) throw new CleanupTargetChangedException();
+                            Description = plan.Target?.Description ?? plan.Provider.Description;
+                            ApplySnapshot(snapshot, GetSelectedTableNames().ToHashSet(StringComparer.OrdinalIgnoreCase));
+                            HasPendingMigration = hasPendingMigration;
+                        });
+                    }
+                    catch (CleanupTargetChangedException ex)
+                    {
+                        ClearTargetStatistics(TargetChangedMessage);
+                        refreshError = ex;
                     }
                     catch (Exception ex)
                     {
@@ -443,7 +509,9 @@ namespace ColorVision.Database
                 {
                     status += EngineLocalization.Get(" 表统计刷新失败，请稍后手动刷新。");
                 }
-                SetStatus(status);
+                RunOnUi(() => Status = plan.Target?.IsCurrent == false
+                    ? $"{status} {TargetChangedMessage}"
+                    : status);
 
                 var messageLines = new List<string>();
                 if (backup != null)
@@ -459,7 +527,17 @@ namespace ColorVision.Database
                     messageLines.Add(EngineLocalization.Format($"数据已完成{localizedOperationName}，但统计刷新失败：{refreshError.Message}"));
                 }
 
-                ShowMessage(string.Join(Environment.NewLine, messageLines), refreshError == null ? MessageBoxImage.Information : MessageBoxImage.Warning);
+                ShowMessage(DescribeTarget(plan, string.Join(Environment.NewLine, messageLines)),
+                    refreshError == null ? MessageBoxImage.Information : MessageBoxImage.Warning);
+            }
+            catch (CleanupTargetChangedException)
+            {
+                ClearTargetStatistics(TargetChangedMessage);
+                if (backup != null)
+                    ShowMessage(DescribeTarget(plan, $"{TargetChangedMessage}{Environment.NewLine}{backup.StatusMessage}{Environment.NewLine}{backup.FilePath}"), MessageBoxImage.Warning);
+                else if (forceBackup || (allowOptionalBackup && plan.BackupBeforeCleanup))
+                    ShowMessage(DescribeTarget(plan, TargetChangedMessage + Environment.NewLine +
+                        EngineLocalization.Get("如备份已经生成，备份文件会保留；请刷新统计后确认当前数据状态。")), MessageBoxImage.Warning);
             }
             finally
             {
@@ -485,11 +563,60 @@ namespace ColorVision.Database
             };
         }
 
-        private (IReadOnlyList<DatabaseCleanupTableInfo> Snapshot, bool HasPendingMigration) LoadSnapshot()
+        private static (IReadOnlyList<DatabaseCleanupTableInfo> Snapshot, bool HasPendingMigration) LoadSnapshot(IDatabaseCleanupSourceProvider provider)
         {
-            IReadOnlyList<DatabaseCleanupTableInfo> snapshot = _provider.LoadTables();
-            bool hasPendingMigration = _migrationProvider?.HasPendingMigration() ?? false;
+            IReadOnlyList<DatabaseCleanupTableInfo> snapshot = provider.LoadTables();
+            bool hasPendingMigration = provider is IDatabaseCleanupMigrationProvider migrationProvider && migrationProvider.HasPendingMigration();
             return (snapshot, hasPendingMigration);
+        }
+
+        private static string TargetChangedMessage => EngineLocalization.Get("数据库连接已更改，请刷新统计后再执行。");
+
+        private CleanupPlan? CreateOperationPlan()
+        {
+            if (IsBusy) return null;
+            if (!HasDatabaseTarget) return new CleanupPlan(_provider, null, BackupBeforeCleanup);
+            if (_statisticsTarget is { IsCurrent: true } target)
+                return new CleanupPlan(target.Provider, target, BackupBeforeCleanup);
+
+            InvalidateRetiredTarget();
+            return null;
+        }
+
+        internal void InvalidateRetiredTarget()
+        {
+            RunOnUi(() =>
+            {
+                if (_statisticsTarget?.IsCurrent == false)
+                    ClearTargetStatistics(TargetChangedMessage);
+            });
+        }
+
+        private void ClearTargetStatistics(string status)
+        {
+            RunOnUi(() =>
+            {
+                _statisticsTarget = null;
+                Description = string.Empty;
+                ApplySnapshot([], new HashSet<string>());
+                HasPendingMigration = false;
+                Status = status;
+            });
+        }
+
+        private bool ValidateOperationPlan(CleanupPlan plan)
+        {
+            if (plan.Target == null || (ReferenceEquals(plan.Target, _statisticsTarget) && plan.Target.IsCurrent))
+                return true;
+
+            InvalidateRetiredTarget();
+            return false;
+        }
+
+        private static T ExecuteForCurrentTarget<T>(DatabaseCleanupTarget? target, Func<T> action)
+        {
+            if (target?.IsCurrent == false) throw new CleanupTargetChangedException();
+            return action();
         }
 
         private bool TryGetKeepMonths(out int keepMonths)
@@ -497,15 +624,15 @@ namespace ColorVision.Database
             return int.TryParse(KeepMonthsText, out keepMonths) && keepMonths > 0;
         }
 
-        private string BuildBackupNotice(bool forceBackup = false)
+        private static string BuildBackupNotice(CleanupPlan plan, bool forceBackup = false)
         {
-            if (!SupportsBackup)
+            if (plan.Provider is not IDatabaseCleanupBackupProvider)
                 return EngineLocalization.Get("当前数据源不支持自动备份，请确认已有可恢复副本。");
 
             if (forceBackup)
                 return EngineLocalization.Get("本次迁移会强制先创建完整备份；备份失败时不会执行迁移。");
 
-            return BackupBeforeCleanup
+            return plan.BackupBeforeCleanup
                 ? EngineLocalization.Get("操作前会先创建完整备份；备份失败时不会继续。")
                 : EngineLocalization.Get("本次操作不会自动创建备份。");
         }
@@ -592,29 +719,48 @@ namespace ColorVision.Database
             CommandManager.InvalidateRequerySuggested();
         }
 
-        private bool ConfirmCleanup(string message, MessageBoxImage image)
+        private bool ConfirmCleanup(CleanupPlan plan, string message, MessageBoxImage image)
         {
-            return RunOnUi(() => MessageBox1.Show(
-                Application.Current.GetActiveWindow(),
-                message,
-                DisplayName,
-                MessageBoxButton.OKCancel,
-                image) == MessageBoxResult.OK);
+            if (!ValidateOperationPlan(plan)) return false;
+            message = DescribeTarget(plan, message);
+
+            return RunOnUi(() =>
+            {
+                IsBusy = true;
+                try
+                {
+                    bool confirmed = _confirmOverride?.Invoke(message, image) ?? (MessageBox1.Show(
+                        Application.Current.GetActiveWindow(),
+                        message,
+                        DisplayName,
+                        MessageBoxButton.OKCancel,
+                        image) == MessageBoxResult.OK);
+                    bool stillCurrent = ValidateOperationPlan(plan);
+                    return confirmed && stillCurrent;
+                }
+                finally
+                {
+                    IsBusy = false;
+                }
+            });
         }
 
-        private void SetDescription(string description) => RunOnUi(() => Description = description);
+        private static string DescribeTarget(CleanupPlan plan, string message) => plan.Target == null
+            ? message : plan.Target.Description + Environment.NewLine + Environment.NewLine + message;
+
         private void SetStatus(string status) => RunOnUi(() => Status = status);
         private void SetBusy(bool isBusy) => RunOnUi(() => IsBusy = isBusy);
         private void SetHasPendingMigration(bool hasPendingMigration) => RunOnUi(() => HasPendingMigration = hasPendingMigration);
 
         private void ShowMessage(string message, MessageBoxImage image)
         {
-            RunOnUi(() => MessageBox1.Show(
-                Application.Current.GetActiveWindow(),
-                message,
-                DisplayName,
-                MessageBoxButton.OK,
-                image));
+            RunOnUi(() =>
+            {
+                if (_messageOverride != null)
+                    _messageOverride(message, image);
+                else
+                    MessageBox1.Show(Application.Current.GetActiveWindow(), message, DisplayName, MessageBoxButton.OK, image);
+            });
         }
 
         private static string FormatSize(long bytes)

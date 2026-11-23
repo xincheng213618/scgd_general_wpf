@@ -1,10 +1,12 @@
 using ColorVision.ImageEditor;
+using ColorVision.ImageEditor.Tif;
 using ColorVision.Engine;
 using ColorVision.FileIO;
 using ProjectARVRPro.ImageExport;
 using ProjectARVRPro.Process;
 using System.IO;
 using System.Windows.Media;
+using System.Windows.Media.Imaging;
 
 namespace ProjectARVRPro.Tests;
 
@@ -42,29 +44,85 @@ public sealed class ResultImagePresentationTests
     [Fact]
     public async Task CandidateOpenContinuesAfterExistingFirstFileCannotBeOpened()
     {
-        ResultImageFileCandidate[] candidates =
-        [
-            new(@"C:\images\broken.cvraw", ResultImageFileKind.Original),
-            new(@"C:\exports\source.png", ResultImageFileKind.SavedSource),
-        ];
+        ResultImageFilePaths paths = new(@"C:\images\broken.cvraw", @"C:\exports\source.png", null);
         List<string> attempts = [];
 
         ResultImageFileCandidate? opened = await ResultImageFileCandidates.OpenFirstAsync(
-            candidates,
+            paths,
             (candidate, _) =>
             {
                 attempts.Add(candidate.FilePath);
                 return candidate.Kind == ResultImageFileKind.Original
                     ? Task.FromException<bool>(new InvalidDataException("decode failed"))
                     : Task.FromResult(true);
-            });
+            },
+            fileExists: _ => true);
 
-        Assert.Equal(candidates[1], opened);
-        Assert.Equal(candidates.Select(candidate => candidate.FilePath), attempts);
+        Assert.Equal(new ResultImageFileCandidate(paths.SavedSource!, ResultImageFileKind.SavedSource), opened);
+        Assert.Equal([paths.Original, paths.SavedSource], attempts);
     }
 
     [Fact]
-    public void ExistingImageCandidatesPreferOriginalThenSavedSourceThenSavedResult()
+    public async Task OriginalImageOpensWithoutCheckingFallbackPaths()
+    {
+        ResultImageFilePaths paths = new(@"C:\images\original.cvraw", @"D:\exports\source.png", @"D:\exports\result.png");
+        List<string> checkedPaths = [];
+
+        ResultImageFileCandidate? opened = await ResultImageFileCandidates.OpenFirstAsync(
+            paths,
+            (_, _) => Task.FromResult(true),
+            fileExists: path =>
+            {
+                checkedPaths.Add(path);
+                return true;
+            });
+
+        Assert.Equal(new ResultImageFileCandidate(paths.Original!, ResultImageFileKind.Original), opened);
+        Assert.Equal(paths.Original, Assert.Single(checkedPaths));
+    }
+
+    [Fact]
+    public Task CorruptOriginalPngFallsBackUsingTheOpenFailureWithoutWaitingForPublication() =>
+        ArvrDrawingOverlayCompatibilityTests.RunAsyncOnStaThread(async () =>
+        {
+            string directory = CreateTemporaryDirectory();
+            string originalPath = Path.Combine(directory, "corrupt.png");
+            string savedPath = Path.Combine(directory, "saved-result.png");
+            try
+            {
+                File.WriteAllText(originalPath, "invalid PNG");
+                PngBitmapEncoder encoder = new();
+                encoder.Frames.Add(BitmapFrame.Create(BitmapSource.Create(2, 1, 96, 96, PixelFormats.Gray8, null, new byte[] { 11, 99 }, 2)));
+                using (FileStream saved = File.Create(savedPath))
+                    encoder.Save(saved);
+
+                using ImageView view = new();
+                view.IEditorToolFactory.IImageOpens[".png"] = new CommonImageOpen(view.EditorContext);
+                List<Exception?> failures = [];
+                using CancellationTokenSource watchdog = new(TimeSpan.FromSeconds(10));
+                ResultImageFileCandidate? selected = await ResultImageFileCandidates.OpenFirstAsync(
+                    new ResultImageFilePaths(originalPath, null, savedPath),
+                    async (candidate, token) => await ResultImageLoader.OpenAsync(view, candidate.FilePath, token) is not null,
+                    (_, exception) => failures.Add(exception),
+                    watchdog.Token);
+
+                Exception? failure = Assert.Single(failures);
+                Assert.NotNull(failure);
+                Assert.IsNotType<TimeoutException>(failure);
+                Assert.Equal(new ResultImageFileCandidate(savedPath, ResultImageFileKind.SavedResult), selected);
+                Assert.Equal(savedPath, view.Config.GetProperties<string>(ImageViewPropertyKeys.FilePath));
+                Assert.Equal(2, Assert.IsAssignableFrom<BitmapSource>(view.ViewBitmapSource).PixelWidth);
+            }
+            finally
+            {
+                File.Delete(originalPath);
+                File.Delete(savedPath);
+                Directory.Delete(directory);
+            }
+        });
+
+    [Fact]
+    public async Task ExistingImageCandidatesPreferOriginalThenSavedSourceThenSavedResult()
     {
         ProjectARVRReuslt result = new()
         {
@@ -73,7 +131,14 @@ public sealed class ResultImagePresentationTests
             SavedResultImageFileName = @"C:\exports\result.png",
         };
 
-        IReadOnlyList<ResultImageFileCandidate> candidates = ResultImageFileCandidates.GetExisting(result, _ => true);
+        ResultImageFilePaths paths = ResultImageFilePaths.Capture(result);
+        result.FileName = null;
+        List<ResultImageFileCandidate> candidates = [];
+        Assert.Null(await ResultImageFileCandidates.OpenFirstAsync(paths, (candidate, _) =>
+        {
+            candidates.Add(candidate);
+            return Task.FromResult(false);
+        }, fileExists: _ => true));
 
         Assert.Equal(
             [
@@ -82,6 +147,7 @@ public sealed class ResultImagePresentationTests
                 ResultImageFileKind.SavedResult,
             ],
             candidates.Select(candidate => candidate.Kind));
+        Assert.Equal(paths.Original, candidates[0].FilePath);
         Assert.True(candidates[0].RequiresOverlayRendering);
         Assert.True(candidates[1].RequiresOverlayRendering);
         Assert.False(candidates[2].RequiresOverlayRendering);
@@ -103,6 +169,49 @@ public sealed class ResultImagePresentationTests
 
         Assert.Equal(ResultImageFileKind.SavedSource, candidate.Kind);
         Assert.True(candidate.RequiresOverlayRendering);
+    }
+
+    [Fact]
+    public async Task CanceledProbeSkipsRemainingCandidatePathsAfterCurrentCheckReturns()
+    {
+        using CancellationTokenSource cancellation = new();
+        using ManualResetEventSlim releaseProbe = new();
+        TaskCompletionSource probeEntered = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        string originalPath = @"C:\images\original.cvraw";
+        ResultImageFilePaths paths = new(originalPath, @"C:\exports\source.png", @"C:\exports\result.png");
+        List<string> checkedPaths = [];
+
+        bool triedOpen = false;
+        Task<ResultImageFileCandidate?> candidates = ResultImageFileCandidates.OpenFirstAsync(
+            paths,
+            (_, _) =>
+            {
+                triedOpen = true;
+                return Task.FromResult(true);
+            },
+            cancellationToken: cancellation.Token,
+            fileExists: path =>
+            {
+                checkedPaths.Add(path);
+                probeEntered.TrySetResult();
+                Assert.True(releaseProbe.Wait(TimeSpan.FromSeconds(10)));
+                return true;
+            });
+
+        try
+        {
+            await probeEntered.Task.WaitAsync(TimeSpan.FromSeconds(10));
+            Assert.False(candidates.IsCompleted);
+            cancellation.Cancel();
+        }
+        finally
+        {
+            releaseProbe.Set();
+        }
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => candidates);
+        Assert.Equal(originalPath, Assert.Single(checkedPaths));
+        Assert.False(triedOpen);
     }
 
     [Fact]

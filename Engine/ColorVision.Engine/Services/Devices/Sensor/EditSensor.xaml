@@ -40,7 +40,16 @@
                         </DockPanel>
                         <DockPanel Margin="0,3">
                             <TextBlock Text="{i18n:EngineLang Key='传感器类型'}" Width="125" Foreground="{DynamicResource GlobalTextBrush}" VerticalAlignment="Center"/>
-                            <hc:ComboBox x:Name="ComboBoxSensor" IsEditable="True" AutoComplete="True" DisplayMemberPath="Key" Text="{Binding Category}" Style="{StaticResource ComboBox.Small}" hc:InfoElement.ShowClearButton="True"/>
+                            <hc:ComboBox x:Name="ComboBoxSensor" SelectedValuePath="Code" Style="{StaticResource ComboBox.Small}">
+                                <hc:ComboBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="{Binding Code}"/>
+                                            <TextBlock Text="{Binding Name}" Margin="10,0,0,0" Opacity="0.7"/>
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </hc:ComboBox.ItemTemplate>
+                            </hc:ComboBox>
                         </DockPanel>
                         <StackPanel x:Name="LocalFields"/>
                         <DockPanel Margin="0,6,0,10">

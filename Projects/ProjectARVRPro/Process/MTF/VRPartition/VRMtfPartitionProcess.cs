@@ -34,14 +34,14 @@ public sealed class VRMtfPartitionProcess : ProcessWithRecipeBase<VRMtfPartition
         {
             var images = ctx.GetMeasureResults();
             if (images.Count > 0) ctx.Result.FileName = images[0].FileUrl;
-            var masters = AlgResultMasterDao.Instance.GetAllByBatchId(ctx.Batch.Id)
+            var masters = ctx.ReadMasterResults()
                 .Where(master => master.ImgFileType == ViewResultAlgType.MTF && master.version == "2.0"
                     && (string.IsNullOrWhiteSpace(Config.ResultName)
                         || string.Equals(master.TName, Config.ResultName.Trim(), StringComparison.OrdinalIgnoreCase)))
                 .ToList();
             if (masters.Count != 1)
                 throw new ArgumentException($"VR分区需要一份MTF 2.0结果，实际匹配{masters.Count}份，请配置MTF结果名称。");
-            var details = DeatilCommonDao.Instance.GetAllByPid(masters[0].Id);
+            var details = ctx.ReadDetails(DeatilCommonDao.Instance, masters[0].Id);
             if (details.Count != 1)
                 throw new ArgumentException($"VR分区结果详情数量应为1，实际为{details.Count}。");
 

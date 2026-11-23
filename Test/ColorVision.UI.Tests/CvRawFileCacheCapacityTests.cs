@@ -65,6 +65,42 @@ public sealed class CvRawFileCacheCapacityTests
         AssertPaths(files.A);
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void CachedRangeRetainsItsBytesThroughSnapshotDisposalAndRetirement(bool callbackThrows)
+    {
+        using CacheFiles files = new(maximumEntries: 1);
+        using CVCIEFile image = CacheFiles.CreateRaw(71);
+        Assert.True(CVFileUtil.WriteCVRaw(files.A, image, CVFileSaveMode.MemoryOnly));
+        long prefix;
+        using (Stream beforeMetadata = CVFileReadCache.OpenRead(files.A)) prefix = beforeMetadata.Length;
+        CVFileMetadata.SetProperty(files.A, "calibration", 1, [2, 3, 5]);
+
+        using Stream snapshot = CVFileReadCache.OpenRead(files.A);
+        snapshot.Position = 4;
+        Assert.True(snapshot.Length > prefix);
+        Assert.False(CVFileReadCache.TryUseCachedRange(snapshot, prefix - 1, 2, _ => Assert.Fail("The range spans two buffers.")));
+        Assert.False(CVFileReadCache.TryUseCachedRange(Stream.Null, 0, 1, _ => Assert.Fail("A regular stream cannot expose cached bytes.")));
+        var error = new InvalidOperationException("reader failure");
+        Action<ReadOnlySpan<byte>> read = pixels =>
+        {
+            Assert.Equal(4, snapshot.Position);
+            CVFileReadCache.IsEnabled = false;
+            snapshot.Dispose();
+            Assert.Equal(1, CVFileReadCache.GetSnapshot().ActiveReaders);
+            Assert.Equal(image.Data, pixels.ToArray());
+            if (callbackThrows) throw error;
+        };
+        if (callbackThrows)
+            Assert.Same(error, Assert.Throws<InvalidOperationException>(() =>
+                CVFileReadCache.TryUseCachedRange(snapshot, prefix - image.Data.Length, image.Data.Length, read)));
+        else
+            Assert.True(CVFileReadCache.TryUseCachedRange(snapshot, prefix - image.Data.Length, image.Data.Length, read));
+        Assert.Empty(CVFileReadCache.GetSnapshot().Entries);
+        Assert.False(CVFileReadCache.TryUseCachedRange(snapshot, 0, 1, _ => Assert.Fail("The snapshot has closed.")));
+    }
+
     [Fact]
     public void SingleEntryLimitReusesBufferWhenOpeningAnotherFile()
     {

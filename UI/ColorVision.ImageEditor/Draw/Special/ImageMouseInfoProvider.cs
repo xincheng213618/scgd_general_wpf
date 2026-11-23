@@ -60,8 +60,10 @@ namespace ColorVision.ImageEditor.Draw.Special
 
         private static ImagePixelSample CreatePixelSample(BitmapSource bitmap, Point viewPosition, int pixelX, int pixelY)
         {
-            byte[] rawPixel = ReadRawPixel(bitmap, pixelX, pixelY);
             PixelFormat format = bitmap.Format;
+            int bytesPerPixel = Math.Max(1, (format.BitsPerPixel + 7) / 8);
+            byte[] rawPixel = new byte[bytesPerPixel];
+            bitmap.CopyPixels(new Int32Rect(pixelX, pixelY, 1, 1), rawPixel, bytesPerPixel, 0);
             (bool hasRgbChannels, int red, int green, int blue) = ReadRgbChannels(format, rawPixel);
 
             return new ImagePixelSample
@@ -75,14 +77,6 @@ namespace ColorVision.ImageEditor.Draw.Special
                 HasRgbSourceChannels = hasRgbChannels,
                 Rgb16 = IsRgb16(format) ? ((ushort)red, (ushort)green, (ushort)blue) : null,
             };
-        }
-
-        private static byte[] ReadRawPixel(BitmapSource bitmap, int pixelX, int pixelY)
-        {
-            int bytesPerPixel = Math.Max(1, (bitmap.Format.BitsPerPixel + 7) / 8);
-            byte[] pixelData = new byte[bytesPerPixel];
-            bitmap.CopyPixels(new Int32Rect(pixelX, pixelY, 1, 1), pixelData, bytesPerPixel, 0);
-            return pixelData;
         }
 
         private static (bool hasRgbChannels, int red, int green, int blue) ReadRgbChannels(PixelFormat format, byte[] pixelData)
@@ -116,7 +110,7 @@ namespace ColorVision.ImageEditor.Draw.Special
         {
             if (hasRgbChannels)
             {
-                return string.Format(CultureInfo.InvariantCulture, "R:{0}  G:{1}  B:{2}", red, green, blue);
+                return string.Create(CultureInfo.InvariantCulture, $"R:{red}  G:{green}  B:{blue}");
             }
 
             if (format == PixelFormats.Gray8)

@@ -5,7 +5,6 @@ status: "current"
 summary: "UI NuGet整批与Algorithms单包发布、Release标签和版本预检；预检不预留版本，逐包上传没有整批回滚或逐条失败检查。"
 aliases: ["如何发布UI NuGet包","NuGet发布失败","NuGet版本已占用","UIProjectPackageVersion","algorithms-v","Algorithms单包发布","Release标签","Verify scoped Algorithms release","Publish to NuGet","verify_nuget_package_versions.py"]
 code_paths: [".github/workflows/dotnet.yml","UI/Directory.Build.props","UI/ColorVision.Algorithms/ColorVision.Algorithms.csproj","UI/ColorVision.Themes/ColorVision.Themes.csproj","UI/ColorVision.Core/ColorVision.Core.csproj","UI/ColorVision.ImageEditor/ColorVision.ImageEditor.csproj","Engine/ColorVision.Engine/ColorVision.Engine.csproj","Scripts/verify_nuget_package_versions.py"]
-test_paths: ["Scripts/tests/test_verify_nuget_package_versions.py","Scripts/tests/test_algorithm_package_contract.py"]
 related: ["ui.index","ui.package-boundaries","algorithms.platform","delivery.index","delivery.scripts","engine.host"]
 ---
 
@@ -97,10 +96,4 @@ python Scripts\verify_nuget_package_versions.py "UI/ColorVision.Algorithms/bin/x
 
 ## 自动化覆盖与缺口
 
-| 验证入口 | 已定义的覆盖范围 |
-| --- | --- |
-| `test_verify_nuget_package_versions.py` | 临时 nuspec 包与模拟版本列表：已占用、新版本、重复身份及未命中 glob；不访问真实 NuGet，不覆盖所有网络异常 |
-| `test_algorithm_package_contract.py` 的声明/工作流测试 | 项目元数据、发布分支、顺序、标签与包身份、预检失败不输出路径、restore/build 维度；不执行真实 GitHub 上传，也不验证整批 PowerShell 中途失败传播 |
-| 该文件中的隔离包测试 | 在临时目录构建 native helper 和托管包，检查 Algorithms 双 TFM、ImageEditor 的 Algorithms 依赖及 helper 不重复入包；独立消费者在 .NET 8/10 验证 Algorithms 强名称与参数序列化，不代表完整 WPF 消费验证 |
-
-隔离包测试需要 Visual Studio MSBuild、C++ 工作负载、对应 SDK 与签名条件；实际执行会构建和还原依赖。它不会用仓库残留 helper 代替隔离 native 产物。测试文件存在、源码审查和文档构建通过，都不能表述为这些包测试、NuGet 上传或现场运行已完成。
+用 .NET 8 和 .NET 10 的隔离消费者核对包依赖、签名和序列化。native 构建需要 Visual Studio MSBuild、C++ 工作负载及项目声明的 SDK 与签名输入。

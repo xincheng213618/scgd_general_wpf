@@ -45,7 +45,6 @@
 		<None Remove="Assets\Image\CIE1931xy.png" />
 		<None Remove="Assets\Image\CIE1931xy1.png" />
 		<None Remove="Assets\Image\CIE_1976_UCS.png" />
-		<None Remove="Assets\Image\ColorVision.ico" />
 		<None Remove="Assets\Image\ColorVision.png" />
 		<None Remove="Assets\Image\ColorVision1.ico" />
 		<None Remove="Assets\Image\connect.png" />
@@ -112,7 +111,6 @@
 		<Resource Include="Assets\Image\CIE1931xy.png" />
 		<Resource Include="Assets\Image\CIE1931xy1.png" />
 		<Resource Include="Assets\Image\CIE_1976_UCS.png" />
-		<Resource Include="Assets\Image\ColorVision.ico" />
 		<Resource Include="Assets\Image\ColorVision.png" />
 		<Resource Include="Assets\Image\ColorVision1.ico" />
 		<Resource Include="Assets\Image\connect.png" />

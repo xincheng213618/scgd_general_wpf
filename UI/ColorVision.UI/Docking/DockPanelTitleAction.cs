@@ -5,7 +5,11 @@ using System.Windows.Input;
 namespace ColorVision.UI.Docking;
 
 /// <summary>Describes one command shown alongside the native AvalonDock pane-title commands.</summary>
-public sealed record DockPanelTitleAction(ICommand Command, string Glyph, string ToolTip, object? CommandParameter = null);
+public sealed record DockPanelTitleAction(ICommand Command, string Glyph, string ToolTip, object? CommandParameter = null)
+{
+    /// <summary>Passes the caption button to commands that anchor a popup to it.</summary>
+    public bool PassButtonAsParameter { get; init; }
+}
 
 /// <summary>Implemented by dock panel content that contributes commands to its pane title.</summary>
 public interface IDockPanelTitleActionProvider

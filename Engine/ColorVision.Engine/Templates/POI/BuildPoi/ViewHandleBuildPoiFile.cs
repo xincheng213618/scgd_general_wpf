@@ -109,8 +109,8 @@ namespace ColorVision.Engine.Templates.POI.BuildPoi
         {
             if (result.ViewResults == null)
             {
+                List<PoiCieFileModel> models = result.ReadPersistedDetails(PoiCieFileDao.Instance);
                 result.ViewResults = new ObservableCollection<IViewResult>();
-                List<PoiCieFileModel> models = PoiCieFileDao.Instance.GetAllByPid(result.Id);
                 foreach (var item in models)
                 {
                     result.ViewResults.Add(item);

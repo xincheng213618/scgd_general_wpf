@@ -69,48 +69,60 @@ namespace ColorVision.Engine
 
         public static MeasureImgResultDao Instance { get;} = new MeasureImgResultDao();
 
-        public int GetLatestId(string? deviceCode)
-        {
-            if (!MySqlControl.GetInstance().IsConnect) return -1;
+        public int GetLatestId(string? deviceCode) => GetLatestId(MySqlControl.GetInstance().ConnectedEndpoint, deviceCode);
 
+        internal int GetLatestId(MySqlConnectedEndpoint? endpoint, string? deviceCode)
+        {
+            if (endpoint?.IsCurrent != true) return -1;
             try
             {
-                using var db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
-                var query = db.Queryable<MeasureResultImgModel>();
-                if (!string.IsNullOrWhiteSpace(deviceCode))
-                {
-                    query = query.Where(x => x.DeviceCode == deviceCode);
-                }
-
-                return query.OrderBy(x => x.Id, OrderByType.Desc).First()?.Id ?? 0;
+                int id = ReadLatestResult(endpoint, deviceCode, null)?.Id ?? 0;
+                return endpoint.IsCurrent ? id : -1;
             }
             catch (Exception ex)
             {
-                log.Error(ex);
+                log.Warn($"Unable to read the latest camera result ID. Error={ex.GetType().Name}");
                 return -1;
             }
         }
 
-        public MeasureResultImgModel? GetLatestAfterId(string? deviceCode, int id)
-        {
-            if (id < 0 || !MySqlControl.GetInstance().IsConnect) return null;
+        public MeasureResultImgModel? GetLatestAfterId(string? deviceCode, int id) =>
+            GetLatestAfterId(MySqlControl.GetInstance().ConnectedEndpoint, deviceCode, id);
 
+        internal MeasureResultImgModel? GetLatestAfterId(MySqlConnectedEndpoint? endpoint, string? deviceCode, int id)
+        {
+            if (id < 0 || endpoint?.IsCurrent != true) return null;
             try
             {
-                using var db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
-                var query = db.Queryable<MeasureResultImgModel>().Where(x => x.Id > id);
-                if (!string.IsNullOrWhiteSpace(deviceCode))
-                {
-                    query = query.Where(x => x.DeviceCode == deviceCode);
-                }
-
-                return query.OrderBy(x => x.Id, OrderByType.Desc).First();
+                MeasureResultImgModel? result = ReadLatestResult(endpoint, deviceCode, id);
+                return endpoint.IsCurrent ? result : null;
             }
             catch (Exception ex)
             {
-                log.Error(ex);
+                log.Warn($"Unable to look up a camera result after timeout. Error={ex.GetType().Name}");
                 return null;
             }
+        }
+
+        internal static MeasureResultImgModel? ReadResult(MySqlConnectedEndpoint endpoint, int id)
+        {
+            using var db = endpoint.CreateDbClient();
+            return db.Queryable<MeasureResultImgModel>().First(result => result.Id == id);
+        }
+
+        internal static int InsertResult(MySqlConnectedEndpoint endpoint, MeasureResultImgModel result)
+        {
+            using var db = endpoint.CreateDbClient();
+            return db.Insertable(result).ExecuteReturnIdentity();
+        }
+
+        private static MeasureResultImgModel? ReadLatestResult(MySqlConnectedEndpoint endpoint, string? deviceCode, int? lowerBound)
+        {
+            using var db = endpoint.CreateDbClient();
+            var query = db.Queryable<MeasureResultImgModel>();
+            if (!string.IsNullOrWhiteSpace(deviceCode)) query = query.Where(result => result.DeviceCode == deviceCode);
+            if (lowerBound is int id) query = query.Where(result => result.Id > id);
+            return query.OrderBy(result => result.Id, OrderByType.Desc).First();
         }
     }
 }

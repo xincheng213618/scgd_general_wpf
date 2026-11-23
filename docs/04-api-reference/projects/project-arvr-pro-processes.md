@@ -5,7 +5,6 @@ status: "current"
 summary: "配置 ARVRPro 流程组、流程解析映射、实例 Recipe、外部相机参数与雷鸟切图，说明运行时覆盖、结果快照、配置保存和有效迁移规则。"
 aliases: ["ARVR 流程组", "流程解析映射", "ARVR Recipe", "实例 Recipe", "外部相机参数", "相机参数覆盖", "FlowCameraParameterOverrideConfig", "ReadCanvasSnapshot", "雷鸟切图", "PictureSwitchConfig", "ProcessWithRecipeBase", "ResultParserMetas", "ResultProcessResolver", "ProjectARVRProProcessGroups.json", "ProcessGroups.json", "MTFH07", "MTFV07", "MTFHV048", "VR MTF 分区", "VRMtfPartitionProcess", "VRMTFH", "VRMTFV", "W25", "鬼影解析", "RingGhostProcess", "RingGhostTestResults", "GMR1", "GMR2"]
 code_paths: ["Projects/ProjectARVRPro/Process/", "Projects/ProjectARVRPro/Recipe/", "Projects/ProjectARVRPro/Services/PictureSwitchService.cs", "Projects/ProjectARVRPro/ARVRWindow.xaml.cs", "Engine/ST.Library.UI/NodeEditor/STNodeCanvasSnapshot.cs"]
-test_paths: ["Test/ProjectARVRPro.Tests/FlowCameraParameterOverrideServiceTests.cs", "Test/ProjectARVRPro.Tests/ProcessManagerPersistenceTests.cs", "Test/ProjectARVRPro.Tests/EmbeddedRecipeConfigTests.cs", "Test/ProjectARVRPro.Tests/LegacyRecipeImporterTests.cs", "Test/ProjectARVRPro.Tests/ProcessStepProjectionTests.cs", "Test/ProjectARVRPro.Tests/MTF07DynamicResultBuilderTests.cs", "Test/ProjectARVRPro.Tests/VRMtfPartitionTests.cs", "Test/ProjectARVRPro.Tests/ProcessOverlayDisplayConfigTests.cs", "Test/ProjectARVRPro.Tests/GhostFlowAndProcessTests.cs"]
 related: ["projects.arvr-pro", "projects.arvr-pro-demura", "flow.templates", "ui.property-grid"]
 ---
 
@@ -28,6 +27,8 @@ ARVRPro 用流程组组织测试顺序，用处理类型解释 Engine 输出，�
 
 运行中的结果优先使用该次启动选定的处理实例。历史记录的解析、判定和导出优先根据保存的处理类型和配置快照恢复实例，不能假设修改今天的 Recipe 就会重新解释全部历史结果；结果图片回看在当前流程仍映射到相同处理类型时，使用当前实例的显示配置，使绘制开关和标签模板可以立即调整。
 
+流程和批次重放通过 `IProcessExecutionContext` 使用该批次的数据库读取采集图、算法主记录及明细。屏幕缺陷、POI、FOV、MTF、畸变和 Demura 等解析沿用此连接。切换数据库后，同号的图像或明细不会补入正在处理的批次；原库数据缺失或读取失败时按该解析器的缺测规则处理。独立调用无参上下文或 `DemuraAoiParser.ParseAsync(int, …)` 仍使用已配置的连接。
+
 ## 配置一个测试方案
 
 操作前应已准备目标 Flow 模板、对应结果类型及设备配置；修改方案后不要立即在未获授权的设备上运行。
@@ -37,11 +38,11 @@ ARVRPro 用流程组组织测试顺序，用处理类型解释 Engine 输出，�
 3. 需要让操作员在 Flow 外调整单相机曝光或校正模板时，在流程模板下勾选 **覆盖相机参数**。界面会从当前模板同步节点值，再显示可编辑项。
 4. 在 **Process** 中配置解析 Key、输出 Key、结果图显示内容及该处理类型的行为参数，在 **Recipe** 中填写限值和修正系数。
 5. 需要执行前切图时，在 **切图** 中启用并配置串口指令、期望返回值、超时和稳定时间。全局串口参数与手动调试从顶部 **雷鸟连接与切图** 进入；**保存连接设置** 只保存串口、波特率、超时和切图时自动连接选项，不连接设备、不发送指令。实际连接和手动切图仍需分别操作，并确认设备授权。
-6. 用启用框决定 RunAll 是否包含该步骤；通过上移、下移或拖动调整顺序。复制步骤或流程组后重新核对模板、外部相机值、Key 和切图指令。
+6. 用启用框决定 RunAll 是否包含该步骤。上移、下移和拖动均需确认保存，保存成功后应用新顺序。复制步骤或流程组后重新核对模板、外部相机值、Key 和切图指令。
 7. 需要独立的模板解析规则时，切到 **流程解析映射** 添加映射，并编辑其自己的 Process/Recipe。不要用增加执行步骤的方式代替解析映射。
 8. 检查保存错误提示和日志，导出配置留存，再在授权环境验证实际顺序、解析值和结果输出。
 
-流程组、步骤和解析映射的编辑会触发持久化。Recipe 编辑器直接修改当前实例；关闭窗口不能作为撤销操作。
+流程组、步骤和解析映射的编辑会触发持久化。Recipe 编辑器直接修改当前实例；关闭窗口不能作为撤销操作。排查配置写入时间时，在反馈的应用日志中搜索“已保存 ARVRPro 流程配置”。
 
 流程模板按名称关联，忽略大小写。模板改名或删除后，原配置名称会保留；配置列表中的模板名显示为红色并带警告图标，右侧说明缺失的模板及修改入口。在流程步骤中点击 **重新选择流程模板**，或在解析映射中点击 **编辑映射**，选择实际模板后提示解除。编辑器不会用列表第一项替代找不到的旧模板；仅修改处理类型时保留原模板名。配置窗口打开期间，模板增删或改名会刷新提示。运行时遇到缺失模板会终止本次测试，报错直接指出流程项、模板名和重新配置的位置。
 
@@ -60,19 +61,19 @@ ARVRPro 用流程组组织测试顺序，用处理类型解释 Engine 输出，�
 
 Flow 执行、项目解析和最终判定分别有状态。`IProcess.Execute` 返回的布尔值表示处理是否完成；测量项与聚合结果的 PASS/FAIL 仍由结果数据及 Recipe 决定，不能只看方法是否返回成功。
 
-处理配置统一使用 **输出Key** 表示结果分组标识，CSV 的 `Test_Screen` 与相应结果字典沿用此值；旧配置中部分字段仍以 `Name` 持久化，界面名称统一不改变原字段或默认值。普通光学中心及“光学中心（回包）”新增 `Key`，默认 `Optical_Center`，留空也使用该默认值；Key 随结果快照保存，标准/LUX CSV、批次指标与报表值查找使用同一分组标识，修改当前配置不重命名历史结果。它不改变三轴回包中的数值或设备前缀。
+处理配置的 **输出Key** 用于结果字典、CSV `Test_Screen`、批次指标及报表分组，部分类型将它保存为 `Name`。普通光学中心与“光学中心（回包）”使用 `Key`，缺省或留空时为 `Optical_Center`。Key 随结果快照保存，三轴回包的数值和设备前缀独立于该字段。
 
 ## 外部相机参数覆盖
 
 **覆盖相机参数** 位于流程模板下方。勾选时，界面加载当前模板，从默认 Start 的执行链中找到唯一的 `LVCameraNode` 或 `LocalCameraNode`，把节点的曝光与校正模板同步到步骤配置，再显示节点同款的数值编辑器和校正模板选择器。取消勾选会隐藏编辑项，并恢复为关闭、曝光 `100 ms`、空模板；切换流程模板也会关闭旧覆盖，防止参数与新模板错配。仅切换流程步骤不会重新覆盖已经保存的外部值。
 
-单流程和 RunAll 都在 `Refresh()` 完成之后、切图和预处理之前，从本次默认 Start 沿输出连线查找可达的 `LVCameraNode`（L/BV 相机）与 `LocalCameraNode`（本地相机取图）。画布上的孤立测试节点不计入；只有当前执行链中二者合计恰好一个时才应用：L/BV 节点直接设置 `ExpTime` / `CaliTempName`，本地节点直接设置 `ExpTime` / `CalibTempName`。其他 Camera 分类节点不计入当前范围。
+单流程与 RunAll 都在已加载的执行链上查找相机。同一流程只支持从默认 Start 可达的唯一 `LVCameraNode` 或 `LocalCameraNode`，孤立相机和其他相机节点不参与。
 
 关闭开关时不扫描节点。开启后如找不到执行入口或目标、存在多台受支持的取图节点、曝光值无效，或者本地相机节点找不到所填校正模板，只记录跳过原因，原 Flow 继续执行，不把这类条件当成检测失败，也不发生部分覆盖。L/BV 节点沿用既有语义，将模板名交给远端相机服务确认；本机模板列表不能作为远端能力的硬门禁。多相机的目标选择与逐节点参数留待后续扩展。
 
-修改只发生在已经加载的运行实例上；代码不调用 Flow 保存，也不改数据库模板。节点属性变化会清除 Flow 的已加载画布缓存，因此下次 `Refresh()` 会重新从模板装载原始值。配置界面的校正模板选择器复用节点编辑器，并按同步得到的 `DeviceCode` 读取对应相机模板；留空在两个节点上都表示本次不校正。本地节点执行前会按目标节点的 `DeviceCode` 校验归属，L/BV 节点由远端服务解释模板名。
+覆盖只应用于本次运行，模板不保存。校正模板按目标 `DeviceCode` 选择，留空表示本次不校正。L/BV 的模板名由远端服务解释，本地节点在执行前校验归属。
 
-勾选时通过 `STNodeEditor.ReadCanvasSnapshot` 读取一次模板配置；快照会构造节点并还原持久化属性，但不连接端口、不挂入编辑器，也不调用 `OnEditorLoadCompleted()`，读取后立即释放。执行时直接使用 `Refresh()` 已加载的节点。关闭开关的运行开销是常量判断；开启时仅做连线可达性检查、本地模板归属查询和属性赋值，不增加数据库、MQTT 或相机调用。实际测试时间仍会随曝光和校正模板变化；历史预计时间缓存按外部参数指纹隔离。
+勾选时只读取模板的画布快照，无设备或 MQTT 命令。预计时间缓存区分外部相机参数，实际耗时仍取决于曝光与校正。
 
 从流程下拉框手动执行时，只有该模板唯一对应一个处理项才使用其外部相机参数；同一模板对应多个处理项时保持原流程参数。批量执行始终使用当前处理项的配置。
 
@@ -82,13 +83,15 @@ Flow 执行、项目解析和最终判定分别有状态。`IProcess.Execute` �
 
 `RecipeBase` 使用 `Min` / `Max` 表示限值，`Fix` / `B` 表示线性修正，`Apply(value) = value × Fix + B`。具体 Process 决定对哪些值应用修正和怎样聚合判定，不能把所有客户判定都推断为统一公式。
 
-Recipe 编辑器按 `[下限] ≤ x ≤ [上限]` 排列限值，`x` 表示应用 K/B 修正后的判定值，两端包含等于；某侧限值为 `0` 表示该侧不限。后面的 K、B 使用较窄的输入框，并与限值区留出间隔，分别对应 `Fix` 与 `B`。
+Recipe 按 `[下限] ≤ x ≤ [上限]` 判定修正值 `x`，某侧限值为 `0` 表示该侧不限。
 
 MTF 处理在应用点位或分区的 Recipe 修正后检查数值。上游快照明确记录归一化比例或百分数时，范围分别为 0～1 或 0～100。旧服务缺少明确输出尺度时只检查修正值是否有限。越界会使该次解析失败，日志记录点位、原值、修正值及 K/B。
 
 单次测试和一键执行使用同一入口生成 `Code`：按 `CodeUseSN` 拼接产品 SN 与 `CodeDateFormat` 时间部分后，规范为 Windows 文件名片段，再创建 MySQL 批次、诊断记录及启动 Flow。预处理、算法服务、结果解析和完成回调都使用此 `Code`；`SN` 保留原值用于显示和 Socket 回传。汇总 CSV 文件名也单独规范化，文件内容继续保留原始 SN。不要在 Socket 接收时把原始产品 SN 全局替换。
 
-W255 与按 Key 亮色度共用均匀性来源规则。**从修正后POI重算均匀性** 默认关闭：优先按配置的 TName 读取已有 `PoiAnalysis` 亮度/色度均匀性，缺少的项目从当前 POI 的原始 Y、u′、v′ 补算，不覆盖已读取的另一项；开启时忽略模板均匀性，使用已应用 Recipe 修正的 POI 重算两项。亮度均匀性为最小 Y / 最大 Y，色度均匀性为所有点对的最大 Δu′v′；两种来源都继续应用均匀性项目自己的 Recipe K/B 与限值，参与 PASS/FAIL。缺少 POI 分析节点不需要手动打开重算开关；需要本地计算时点数不足或数值无效则解析失败，不保留默认零值作为有效结果。普通/动态棋盘格已有缺少分析结果时的本地对比度计算，YW 亮色度始终按两组 POI 本地计算。
+W255 与按 Key 亮色度共用均匀性来源规则。**从修正后POI重算均匀性** 默认关闭：优先按配置的 TName 读取已有 `PoiAnalysis` 亮度/色度均匀性，缺少的项目从当前 POI 的原始 Y、u′、v′ 补算，不覆盖已读取的另一项；开启时忽略模板均匀性，使用已应用 Recipe 修正的 POI 重算两项。亮度均匀性为最小 Y / 最大 Y，色度均匀性为所有点对的最大 Δu′v′；两种来源都继续应用均匀性项目自己的 Recipe K/B 与限值，参与 PASS/FAIL。缺少 POI 分析节点不需要手动打开重算开关；需要本地计算时点数不足或数值无效则解析失败，不保留默认零值作为有效结果。YW 亮色度始终按两组 POI 本地计算。
+
+固定和动态棋盘格优先使用匹配的 `PoiAnalysis.result.Value`，仅在找不到匹配模板时按当前 POI 本地计算对比度。本地计算要求每个点有有限实测亮度 `Y`，模板结果要求有限实测 `Value`。明确记录的零值可以参与计算，两条路径均先检查实测数据，再应用 Recipe K/B 和限值。模板值有效且辅助 POI 不完整时，判定继续使用模板值，辅助 CSV 只保留有效点位。
 
 W255 和按 Key 亮色度的 **显示配置** 提供独立的 **亮度均匀性格式**、**色度均匀性格式**，可选择百分比或小数；默认分别为百分比、小数，旧配置省略这两个字段时保持原显示。百分比将 `TestValue` 乘 100 并使用 `%` 单位，小数使用比例值且单位为空；新结果的 `TestValue` 只含数字，单位单独存入 `Unit`，W255 读取历史带 `%` 的数值文字时只显示一次单位。`Value`、Recipe K/B、限值与判定仍保持比例数值，导出与 Socket 的格式化文本和单位随结果保存，不重写历史结果。
 
@@ -104,11 +107,11 @@ W255 和按 Key 亮色度的 **显示配置** 提供独立的 **亮度均匀性�
 
 在 **ProcessManager → 流程解析映射 → Process → 显示配置 → 图像文字颜色** 可为对应的 MTF-HV 058 实例选择数值文字颜色。重新打开结果图时应用所选颜色，适用于重新绘制的图层。已保存的标记图包含绘制后的像素。
 
-`White51Process` 不需要中心点解析 Key；它按结果类型读取 FOV 和四个发光区角点。**绘制FOV** 默认开启，直接使用已保存的 H/V/D 结果绘制四边形、中轴与对角线，不重新运行 FOV 或发光区算法；关闭时只绘制发光区边界。
+`White51Process` 按结果类型读取 FOV 和四个发光区角点。固定 W51 和按 Key 视场角均要求结果文件包含有限的 `clolorVisionH_Fov`、`clolorVisionV_Fov`、`D_Fov`。实测零值参与正常判定，缺测时判解析失败并清除该输出。**绘制FOV** 默认开启，使用历史角度和角点绘制四边形、中轴与对角线。关闭时只绘制发光区边界。
 
-普通和动态畸变处理的 **绘制点阵连线** 默认开启。先保留原有圆标记和坐标文本，再从所选“9点来源”的已保存坐标追加青色行列连线与橙红色四角参考边框，与 ImageView 点阵计算共用绘图实现，不重新检测或计算畸变。只有完整、有限、无重复且行列顺序有效的九点才连接；旧版只有点坐标的结果同样适用。其它点数或无效点序保留原有点标记，多点阵可选择 `Point9` 来源绘制九个代表点；关闭此选项只关闭辅助连线。四角边框是实测角点之间的参考弦，不表示已标定的理想网格。
+普通和动态畸变默认绘制点阵连线。仅在所选九点完整、有限、互异且顺序有效时连线，包括只有坐标的旧结果。多点阵可选 `Point9` 代表点。关闭辅助连线或点序无效时保留原点标记。四角边框只是实测点连线。
 
-普通和动态畸变同时读取本地点阵 V2 结果的 `Analysis.Geometry`，追加 `MaximumTiltDegrees`（最大倾斜角，°）和 `MaximumEdgeLengthDifferencePercent`（最大边长差比例，%）。角度包含相对原图水平/垂直方向的整体旋转；边长差始终采用两对边平均长度，不受旧 P9 输出口径及原有梯形项修正影响。两个配方位于 **Recipe > 四角几何**，分别使用既有 `RecipeBase` 的 K/B 修正后按包含等于的上下限判定；默认两侧限值均为 0，表示不限。新增项进入普通结果对象或动态 `Items`，参与结果详情、文本、标准 CSV、批次指标及嵌套项目 JSON；动态显示格式沿用 `ShowConfig`，新增项单位固定为 °/%，不使用原有畸变项的自定义 `Unit`。原始测量不改写。旧结果或缺失字段保留为空并省略对应新测试项，不补零或从已修正的旧梯形指标推算；原始值非有限、为负或倾斜角超过 90° 时解析失败，不生成有效零结果。历史固定 Legacy 输出字段保持不变。
+普通与动态畸变从本地点阵 V2 的 `Analysis.Geometry` 读取 `MaximumTiltDegrees`（最大倾斜角，°）和 `MaximumEdgeLengthDifferencePercent`（最大边长差比例，%）。角度包含整体旋转，边长差使用两对边平均长度，与 P9 输出和梯形项修正无关。**Recipe > 四角几何** 对两项分别应用 K/B，默认上下限均为 `0`。显示使用 `ShowConfig`，单位固定为 ° 和 %。结果保存在普通结果对象或动态 `Items`，用于详情、文本、标准 CSV、批次指标和嵌套项目 JSON。字段缺失时省略对应测试项，原始值非有限、为负或倾斜角大于 90° 时解析失败。Legacy 固定字段维持原格式。
 
 十字 RGB 分离使用独立的 `RgbCrossProcess`，与原十字定位/光学中心放在同一个“光学与几何”分类。执行时按当前批次读取唯一 `FindCross=63`、`version=2.0` 主记录，再由公共明细的 `ResultFileName` 找到 JSON，原图取该记录的 `ImgFile`。没有手填 JSON、模板名称筛选或原图覆盖入口。零条、多条、失败状态或不完整明细均报错，不扫描目录或回退到旧批次；原单十字解析跳过 2.0 九点记录。
 
@@ -116,7 +119,7 @@ Process 的“输出Key”默认 `RgbCross`，用于 CSV 分组和 `ObjectiveTes
 
 通用 artifact JSON 的算法 ID 为 `colorvision.display.rgb-cross-registration`。算法版本 `1.1.0` / `1.2.0` / `1.3.0` 读取 `RGB-cross-separation` 与 `rgb-cross-regions`，`1.4.0` / `1.5.0` / `1.6.0` / `1.6.2` 读取结构化测量并核对算法版本与执行标识。其他算法版本及现场验证脚本的 `measurements.json` 不接受。
 
-生产节点与 ImageView 的“导出十字 JSON”使用 `colorvision.rgb-cross-measurement` 对接格式，只输出测量、绘图数据与有效性。当前 schema `1.2.0` 要求 `grid.rows/columns`、`referenceChannel` 为 `G`，以及每点 `comparisons.R-G/B-G`，四条带符号的对应边缘偏移及其绝对最大值须与通道几何一致。继续接受原 3×3 `1.0.0` 和可变布局 `1.1.0`，旧结果从通道几何推导 R-G、B-G，三通道极差有独立口径。结果快照保存布局，判定按配置点数检查完整性。客户判定授权由交付和宿主承担，JSON 的 `capabilityProfile` 仅标识测量能力。
+当前对接 schema `1.2.0` 见十字 RGB 的导出契约。项目继续接受 3×3 `1.0.0` 和可变布局 `1.1.0`，旧结果从通道几何推导 R-G、B-G。结果快照固定布局，判定按配置点数核对完整性。`capabilityProfile` 仅标识测量能力。 [十字 RGB 导出契约](../algorithms/detectors/rgb-cross.md)
 
 独立实现方也可使用精简 JSON：根字段 `width/height/points`，默认九点 `id=1..9`，其他布局需增加 `grid: {rows, columns}` 并连续编号到全部点数，各点 `R/G/B` 通道含 `horizontal/vertical` 的 `[x,y,width,height]` 矩形，`separation` 为最大对应边缘差。无效通道为 `null`，点位分离为 `null` 且必须给出 `reason`。此格式不要求提供宿主项目、数据库或算法实现元数据；解析后沿用相同几何校验、判定和渲染，保留原格式兼容。
 
@@ -124,9 +127,9 @@ JSON 文件限制为 32 MiB；解析检查点位数量与配置布局、编号�
 
 **Recipe > 在本项目判定** 默认关闭，运行消息为 `Completed`，结果文本显示“完成”；快照保留 `MEASURED`/`INVALID` 测量有效性；此设置是业务配置，不是对外授权开关。开启时使用与其他项目相同的 `RecipeBase` 编辑器：下限、上限、K、B。各点的 R-G、B-G 两个最大绝对边缘偏移分别按 `原值 × K + B` 后调用 `ObjectiveTestItem` 的上下限规则；某侧限值为 0 表示该侧不限，边界包含等于。上下限与 K/B 必须有限，两侧都非零时下限不得高于上限。配置的全部点位均有效且修正值满足范围才为 `PASS`，超限为 `FAIL`，存在无效点为 `INVALID`。解析失败为 `DATA_ERROR`。旧单上限配置不迁移，使用者重新配置 `EdgeSeparation`。R-G、B-G 原始值与修正值分别保存在 `Comparisons` 字典的 `Value` / `JudgedValue`，旧三通道极差保留在 `MaximumEdgeSeparation`，不得修改输入 JSON 或通道几何。关闭判定不改变已有总结果，包含部分无效测量也完成执行并保留空值；开启判定时无效点才导致项目判定失败。文件/解析错误始终失败，不把错误显示成完成，不用零代替缺失值。CSV 每点输出 `Pn_R-G`、`Pn_B-G` 两行；动态指标导出使用同样的两组键，并保留各自状态。
 
-绘图标签仅显示点号与 px 数值，例如 `P1 R-G 2.100 px  B-G 3.200 px`，缺失通道对显示 `— px`；不附带 PASS/FAIL/INVALID。右侧结果区显示完成或判定状态以及每点 R-G、B-G 两组 px 数值；仅开启判定时显示逐点判定状态；不显示判定公式、上下限说明、重复的原始值或饱和诊断警告。保存的数据和判定逻辑不受显示精简影响。
+标签显示点号和各通道对的 px 数值，缺失用 `—`。开启项目判定后，右侧结果区才显示逐点判定。
 
-历史 `ViewResultJson` 保存来源主记录 ID、原测量、JSON 摘要、原图绑定、本次使用的 Recipe 副本、修正值和逐点状态，回看/导出读取快照。当前显示开关可控制叠图，修改 Recipe 不会静默重新判定历史数据。`RgbCrossProcessTests` 覆盖真实算法导出到解析的衔接、无效数据拒绝、可选判定、CSV 状态和 WPF 图元替换；节点和批次选择的自动测试使用数据库替身；此验证不替代现场真实数据库、原图身份和客户许可验收。
+历史 `ViewResultJson` 保存来源主记录 ID、原测量、JSON 摘要、原图绑定、本次使用的 Recipe 副本、修正值和逐点状态，回看/导出读取快照。当前显示开关可控制叠图，修改 Recipe 不会静默重新判定历史数据。 现场验收需核对实际数据库、原图身份与客户许可。
 
 ## 选择处理类型
 
@@ -136,7 +139,7 @@ JSON 文件限制为 32 MiB；解析检查点位数量与配置布局、编号�
 
 对外测量项只有 `GMR1`、`GMR2`，单位 `%`；正常未检出按 0 输出，定位、饱和、分级或数据错误保持空项并置 `DATA_ERROR`，同时清除该输出 Key 的旧成功值。节点当前采用“一阶必有，单环归一阶”的方案约定，默认外侧一阶、内侧二阶，仍需客户核对光路。候选、背景、径向曲线和测量区域属于内部结果，不增加客户测量参数。输出 Key 默认 `RingGhost`，不同画面可配置不同 Key，项目 JSON 写入 `ObjectiveTestResult.RingGhostTestResults[Key]` 的两个 `ObjectiveTestItem`，标准 CSV、批次指标和自定义值查找也只导出这两项。
 
-每个实例独立配置 GMR1/GMR2 Recipe，默认上限分别为 1%、0.5%，等于上限时通过；零限值仍表示该侧不限。非零测量沿用 K/B 修正，正常未检出的 0 保持 0。`Execute` 完成与配方 PASS/FAIL 分开，超限可完成解析但总结果为失败。历史记录保存原始测量、源主记录、已应用限值和修正值，导出按快照恢复；修改当前 Recipe 不重新判定历史。绘制测量区域默认开启，只重放保存的原图几何，不重新运行算法，图像尺寸不符时跳过叠图。`GhostFlowAndProcessTests` 验证原位深节点、零值/异常边界、来源与版本选择、历史导出、配方和叠图生命周期；不替代真实 MySQL、硬件及瑞淀对照验收。
+每个实例独立配置 GMR1/GMR2 Recipe，默认上限分别为 1%、0.5%，等于上限时通过；零限值仍表示该侧不限。非零测量沿用 K/B 修正，正常未检出的 0 保持 0。`Execute` 完成与配方 PASS/FAIL 分开，超限可完成解析但总结果为失败。历史记录保存原始测量、源主记录、已应用限值和修正值，导出按快照恢复；修改当前 Recipe 不重新判定历史。绘制测量区域默认开启，只重放保存的原图几何，不重新运行算法，图像尺寸不符时跳过叠图。 现场验收需核对 MySQL、测量硬件与瑞淀对照输出。
 
 类型由 `ProcessManager.LoadProcesses` 从已加载程序集发现，界面分类由 `ProcessTypeCatalog` 提供。下表用于定位处理实现，实际能否测量还取决于绑定的 Flow 输出、设备和 Recipe。
 
@@ -144,24 +147,25 @@ JSON 文件限制为 32 MiB；解析检查点位数量与配置布局、编号�
 | --- | --- | --- |
 | 固定白场 | `White255Process`，`W255/` | 白场亮色度、均匀性等结果 |
 | 固定视场角 | `White51Process`，`W51/` | 读取 FOV 输出并写入 W51 结果 |
-| 黑场与 FOFO | `BlackProcess`，`Black/` | 对比度计算依赖聚合结果中已有的 W255 白场数据 |
+| 黑场与 FOFO | `BlackProcess`，`Black/` | 已有 W255 时，普通 FOFO 使用白场中心亮度和 `Key_Center` 指定的黑场中心亮度。缺少该黑场实测点时失败。`IsUsingNing` 使用全点亮度之和 |
 | 按 Key 亮色度 | `LuminanceChromaticityProcess`，`KeyedResults/LuminanceChromaticity/` | 独立输出 Key、中心点 Key；`Key=White` 同时写入 W255 兼容结果 |
 | YW 亮色度 | `LuminanceChromaticityYWProcess`，同上 | 12×7 与 8×7 两组 POI、均匀性及独立 Recipe；同批次同点数候选重复时取结果主表 Id 最大的后生成结果 |
 | 按 Key 视场角 | `FieldOfViewProcess`，`KeyedResults/FieldOfView/` | 水平、垂直、对角 FOV；`Key=White` 同时写入 W51 兼容结果 |
 | 棋盘格 | `ChessboardProcess` / `ChessboardDynamicProcess` | 固定或动态点位的棋盘格对比度 |
-| 畸变 | `DistortionProcess` / `DistortionDynamicProcess` | 固定或动态点位的几何结果 |
+| 畸变 | `DistortionProcess` / `DistortionDynamicProcess` | 至少需要一个有限实测指标。TV 比值按水平和垂直成对读取。旧点数和几何格式中缺省的可选指标不生成测试项，实测零值保留 |
 | 光学中心 | `OpticCenterProcess` / `OpticCenterDynamicProcess` | 固定或动态点位的中心结果 |
 | 光学中心（回包） | `OpticCenterLuxProcess`，`OpticCenter/` | 继承普通光学中心；选择此类型即通过回包接口返回本次三轴值，不限定设备号或流程命令，切换类型后核对 Recipe |
 | 十字 RGB 分离 | `RgbCrossProcess`，`OpticCenter/` | 与原十字/光学中心同属“光学与几何”；读取 JSON、绘制 RGB 边缘，可选在本项目判定 |
 | 圆环鬼影 | `RingGhostProcess`，`Ghost/` | 在“缺陷检测”分类读取本地圆环结果，对外输出 GMR1/GMR2，正常未检出为 0 |
 | 动态 POI | `PoiDynamicProcess`，`POI/` | 运行时点位的亮色度解析与显示 |
-| 通用 MTF | `MTFProcess`，`MTF/` | 通用 MTF 结果解析 |
+| 通用 MTF | `MTFProcess`，`MTF/` | 判定 MTF 2.0 的 `result[].mtfValue`，至少需要一个实测点。缺测或非有限值使步骤失败并清除该输出 Key。实测零值按配方判断 |
 | VR MTF 分区 | `VRMtfPartitionProcess`，`MTF/VRPartition/` | H/V 实例分别配置网格、圆环及输出 Key，各区 Min/Max/Average 使用独立 Recipe |
 | HV 特殊图案 | `MTFHVProcess` / `MTFHV048Process` / `MTFHV058Process` | 分别对应 0368、048、058 点位方案 |
-| 动态 HV | `MTFHVDynamicProcess` | HV 特殊图案的动态区域 |
+| 动态 HV | `MTFHVDynamicProcess` | 至少需要一个命名的 `resultChild` 分组，每组须有有限的 `horizontalAverage` 和 `verticalAverage`。H/V 各按配方判定，实测零值有效。缺测或无效数据清除该输出 Key 并判失败 |
 | 058 条纹 | `MTFHProcess` / `MTFVProcess` | 横条纹或竖条纹的 058 方案 |
 | 07 条纹 | `MTFH07Process` / `MTFV07Process` | 中心 0F 和四角 0.7F，共五个点位 |
-| 缺陷与 AOI | `DetectScreenDefectsProcess` / `AOIProcess` | 屏幕缺陷或 OLED AOI 结果 |
+| 屏幕缺陷 | `DetectScreenDefectsProcess` | 读取批次最新匹配的检测主记录及最新明细。内联或文件结果须含非负整数 `DefectCount`。实测为零且无缺陷框时通过，正计数判失败且缺陷框可省略。结果缺失、损坏或计数为零但存在缺陷框时，解析失败并清除当前输出 |
+| AOI | `AOIProcess` | OLED AOI 结果 |
 | Demura | `DemuraProcess` / `DemuraAoiProcess` | 补偿准备与[烧录](./project-arvr-pro-demura.md)，或补偿后的 AOI 判定 |
 | 空处理 | `BlankProcess` | 无业务解析的回退处理，不作为普通处理类型选项展示 |
 
@@ -173,15 +177,15 @@ H/V 使用两个独立实例和不同输出 Key，如 `VRMTFH`、`VRMTFV`。迁�
 
 区域测量使用实例 Recipe 判定，并并入当前流程总结果；这与旧 LUX 只写区域项限值、未合并总判定的行为不同。网格点数不符、非有限数值、无效分区参数或空区域会使解析失败，并清除该输出 Key 的旧成功值。结果进入 Pro 的标准 CSV、结果详情和历史快照导出；不额外写旧版可选的 `SN_MTFH_Result.csv` / `SN_MTFV_Result.csv`。原点名统一保留来源下划线，旧 H 曾删除下划线的命名不再沿用。
 
-`VRMtfPartitionTests` 保护 H/V 区域统计、边界归属、失败清理及结果导出；配置完成后仍需用现场 Flow 和测量批次核对点名排序及网格方向。
+配置完成后用现场 Flow 和测量批次核对点名排序及网格方向。
 
 ### 解析 Key 与输出 Key
 
 解析 Key 用于匹配 Engine 已产生的结果名称；输出 Key 用于区分项目聚合结果中的不同画面，不能互相替代。
 
-- `LuminanceChromaticityProcessConfig` 默认 `Key=White`、`CenterKey=P_5`。若现场 W25 模板以 `P_9` 为中心，可设置 `Key=W25`、`CenterKey=P_9`；必须以实际 Flow 点位为准。
+- 按 Key 亮色度默认 `Key=White`、`CenterKey=P_5`。固定 W255 默认 `Key_Center=P_5`。若 W25 模板使用 `P_9`，按实际点名配置。中心点必须包含有限的 `Y`、`x`、`y`、`u`、`v`、`CCT` 实测值。实测零值沿用既有非正值处理和配方判断。中心色温 K/B 修正后参与步骤判定，默认范围为 6000–7000 K，边界值通过，限值为 0 的一侧不限。
 - MTF 0368 使用 0F/0.3F/0.6F/0.8F，048 使用 0F/0.4F/0.8F，058 使用 0F/0.5F/0.8F。048 的第二组是 0.4F。
-- H 表示横条纹，V 表示竖条纹；HV 是独立特殊图案。07 的每个点都有解析 Key 与 Recipe，结果按画面 Key 写入 `MTFH07TestResults` 或 `MTFV07TestResults`。
+- H 表示横条纹，V 表示竖条纹，HV 是独立特殊图案。07 的五个点各用自己的解析 Key 与 Recipe。五点均读到有限值后才按画面 Key 写入 `MTFH07TestResults` 或 `MTFV07TestResults`，实测零值参与正常判定。缺测或解析失败时，该画面判失败并清除同一输出 Key 的旧测量。
 - 同一结果字典中的重复输出 Key 会写到同一项。不同画面需要分别留存时，应配置不同输出 Key。
 
 ## 雷鸟切图
@@ -208,7 +212,7 @@ H/V 使用两个独立实例和不同输出 Key，如 `VRMTFH`、`VRMTFV`。迁�
 | 入口 / 来源 | 当前行为 |
 | --- | --- |
 | 导出配置 | 生成 `.arvrprocess.json`，包含流程组和解析配置，供对应项目导入 |
-| 导入配置 | 读取并校验配置后应用；持久化失败时保留原内存和磁盘配置，见 `ProcessManagerPersistenceTests` |
+| 导入配置 | 读取并校验配置后应用；持久化失败时保留原内存和磁盘配置 |
 | 启动加载 | 优先读取 `ProjectARVRProProcessGroups.json`；文件不存在时，只从能明确识别为 ARVRPro 的旧共享 `ProcessGroups.json` 或 `ProcessMetas.json` 复制迁移 |
 | 低于版本 3 的组配置 | 从各组按模板名补建解析映射，跳过空处理及已有映射，并保存迁移结果 |
 
@@ -218,9 +222,5 @@ H/V 使用两个独立实例和不同输出 Key，如 `VRMTFH`、`VRMTFV`。迁�
 
 ## 验证入口
 
-- `ProcessManagerPersistenceTests`：独立复制、组名校验与保存失败保护、顺序、保存重载、解析映射、ARVRPro/LUX 文件隔离及导入失败保护。
-- `FlowCameraParameterOverrideServiceTests`：两种相机的直接修改、关闭开关、缺失/多相机/无效参数跳过，以及重新加载恢复模板原值。
-- `EmbeddedRecipeConfigTests`：实例 Recipe、空值兼容、配置快照、原子替换及备份。
-- `LegacyRecipeImporterTests`：历史 Recipe 数据兼容解析；`ProcessStepProjectionTests`：启用步骤投影；`MTF07DynamicResultBuilderTests`：07 结果构建。
 
-这些测试位于 `Test/ProjectARVRPro.Tests/`。串口切图、Flow 实际输出和客户阈值仍需在授权环境验证；测试入口的存在不代表该方案已通过现场验收。
+串口切图、Flow 实际输出和客户阈值应在授权环境验证。

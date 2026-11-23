@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -34,64 +35,7 @@ namespace ColorVision.ImageEditor.Draw.Special
         /// <summary>
         /// 斜十字模式 - 显示相对当前角度偏移45°的对角线十字（X形）
         /// </summary>
-        DiagonalCross = 3,
-
-        /// <summary>
-        /// 十字遮罩模式 - 显示十字参考线和中心透明遮罩
-        /// </summary>
-        CrossMask = 4,
-
-        /// <summary>
-        /// 网格模式 - 旧版参考线
-        /// </summary>
-        GridLines = 5
-    }
-
-    /// <summary>
-    /// 遮罩形状
-    /// </summary>
-    public enum MaskShape
-    {
-        /// <summary>
-        /// 圆形遮罩
-        /// </summary>
-        Circle = 0,
-
-        /// <summary>
-        /// 矩形遮罩
-        /// </summary>
-        Rectangle = 1,
-
-        /// <summary>
-        /// 人脸形状（保留）
-        /// </summary>
-        Face = 2,
-
-        /// <summary>
-        /// 国徽形状（保留）
-        /// </summary>
-        Emblem = 3
-    }
-
-    /// <summary>
-    /// 中心覆盖形状（光栅圆/矩形）
-    /// </summary>
-    public enum CenterOverlayShape
-    {
-        /// <summary>
-        /// 无覆盖
-        /// </summary>
-        None = 0,
-
-        /// <summary>
-        /// 圆形光栅
-        /// </summary>
-        Circle = 1,
-
-        /// <summary>
-        /// 矩形光栅
-        /// </summary>
-        Rectangle = 2
+        DiagonalCross = 3
     }
 
     public class DVLineDVContextMenu : IDVContextMenu
@@ -130,10 +74,6 @@ namespace ColorVision.ImageEditor.Draw.Special
     
     public class ReferenceLine: DrawingVisualBase<ReferenceLineParam>
     {
-        public DefalutTextAttribute? Calibration { get; set; }
-        // Constants for shape approximations
-        private const double FaceShapeWidthRatio = 0.8;
-        
         public Pen Pen { get => Attribute.Pen; set => Attribute.Pen = value; }
 
         public ReferenceLine()
@@ -152,7 +92,6 @@ namespace ColorVision.ImageEditor.Draw.Special
         public double Ratio { get; set; } = 1;
         public double ActualWidth { get; set; }
         public double ActualHeight { get; set; }
-        public Rect VisibleRect { get; set; } = Rect.Empty;
 
         public bool IsRMouseDown { get; set; }
         public bool IsLMouseDown { get; set; }
@@ -303,120 +242,6 @@ namespace ColorVision.ImageEditor.Draw.Special
                 FormattedText formattedText = new(angle.ToString("F3") + "°", CultureInfo.CurrentCulture, textAttribute.FlowDirection, new Typeface(textAttribute.FontFamily, textAttribute.FontStyle, textAttribute.FontWeight, textAttribute.FontStretch), textAttribute.FontSize, textAttribute.Brush, VisualTreeHelper.GetDpi(this).PixelsPerDip);
                 dc.DrawText(formattedText, RMouseDownP + new Vector(a, a));
             }
-            else if (Mode == ReferenceLineMode.CrossMask)
-            {
-                // 十字遮罩模式：绘制十字参考线，边缘遮罩，中心保持透明用于对焦
-                
-                // 1. 绘制边缘遮罩，保留中间透明区域
-                double maskSize = Attribute.MaskSize;
-
-                // 创建外部矩形（整个画布区域）
-                // 修改：将矩形范围向外扩展（例如各方向扩展 2 像素），防止因抗锯齿或精度问题导致边缘出现未遮盖的细线
-                RectangleGeometry outerRect = new RectangleGeometry(new Rect(-5, -5, ActualWidth +10, ActualHeight +10));
-                
-                // 根据遮罩形状创建中心透明区域
-                Geometry innerGeometry;
-                switch (Attribute.MaskShape)
-                {
-                    case MaskShape.Circle:
-                        innerGeometry = new EllipseGeometry(CenterPoint, maskSize, maskSize);
-                        break;
-                    case MaskShape.Rectangle:
-                        innerGeometry = new RectangleGeometry(new Rect(
-                            CenterPoint.X - maskSize, 
-                            CenterPoint.Y - maskSize, 
-                            maskSize * 2, 
-                            maskSize * 2));
-                        break;
-                    case MaskShape.Face:
-                        // 人脸形状（保留）- 目前用椭圆近似
-                        innerGeometry = new EllipseGeometry(CenterPoint, maskSize * FaceShapeWidthRatio, maskSize);
-                        break;
-                    case MaskShape.Emblem:
-                        // 国徽形状（保留）- 目前用圆形近似
-                        innerGeometry = new EllipseGeometry(CenterPoint, maskSize, maskSize);
-                        break;
-                    default:
-                        innerGeometry = new EllipseGeometry(CenterPoint, maskSize, maskSize);
-                        break;
-                }
-                
-                // 使用GeometryGroup配合EvenOdd填充规则创建带孔的遮罩
-                // EvenOdd规则：重叠区域变透明，实现边缘遮罩、中心透明的效果
-                GeometryGroup maskGeometry = new GeometryGroup();
-                maskGeometry.FillRule = FillRule.EvenOdd;
-                maskGeometry.Children.Add(outerRect);
-                maskGeometry.Children.Add(innerGeometry);
-
-                
-                // 2. 绘制十字参考线（红色）
-                List<Point> intersectionPoints = ReferenceLine.CalculateIntersectionPoints(ActualHeight, ActualWidth, CenterPoint, angle);
-                if (intersectionPoints.Count == 4)
-                {
-                    dc.DrawLine(pen, intersectionPoints[0], intersectionPoints[1]); // 水平线
-                    dc.DrawLine(pen, intersectionPoints[2], intersectionPoints[3]); // 垂直线
-                }
-
-                // 绘制半透明黑色遮罩（边缘黑色，中心透明）
-                SolidColorBrush maskBrush = new SolidColorBrush(Color.FromArgb(Attribute.MaskOpacity, Attribute.Color.R, Attribute.Color.G, Attribute.Color.B));
-                dc.DrawGeometry(maskBrush, null, maskGeometry);
-
-                // 3. 绘制中心覆盖光栅（黄色）
-                if (Attribute.CenterOverlay != CenterOverlayShape.None)
-                {
-                    double overlaySize = Attribute.CenterOverlaySize;
-                    
-                    // 如果设置了物理尺寸，则根据像素/单位转换
-                    if (Attribute.PhysicalSizeX > double.Epsilon && Attribute.PixelPerUnit > double.Epsilon)
-                    {
-                        overlaySize = Attribute.PhysicalSizeX * Attribute.PixelPerUnit;
-                    }
-                    
-                    Pen overlayPen = new Pen(Attribute.OverlayBrush, Attribute.LineWidth / Ratio);
-                    
-                    if (Attribute.CenterOverlay == CenterOverlayShape.Circle)
-                    {
-                        double overlaySizeY = overlaySize;
-                        if (Attribute.PhysicalSizeY > double.Epsilon && Attribute.PixelPerUnit > double.Epsilon)
-                        {
-                            overlaySizeY = Attribute.PhysicalSizeY * Attribute.PixelPerUnit;
-                        }
-                        dc.DrawEllipse(null, overlayPen, CenterPoint, overlaySize, overlaySizeY);
-                    }
-                    else if (Attribute.CenterOverlay == CenterOverlayShape.Rectangle)
-                    {
-                        double overlaySizeY = overlaySize;
-                        if (Attribute.PhysicalSizeY > double.Epsilon && Attribute.PixelPerUnit > double.Epsilon)
-                        {
-                            overlaySizeY = Attribute.PhysicalSizeY * Attribute.PixelPerUnit;
-                        }
-                        dc.DrawRectangle(null, overlayPen, new Rect(
-                            CenterPoint.X - overlaySize, 
-                            CenterPoint.Y - overlaySizeY, 
-                            overlaySize * 2, 
-                            overlaySizeY * 2));
-                    }
-                }
-                
-                // 4. 显示文本信息
-                TextAttribute textAttribute = new();
-
-                textAttribute.FontSize = 15 / Ratio;
-                double a = 15 / Ratio;
-                
-                if (IsRMouseDown || IsLMouseDown)
-                {
-                    FormattedText formattedRText = new($"({(int)RMouseDownP.X},{(int)RMouseDownP.Y})", CultureInfo.CurrentCulture, textAttribute.FlowDirection, new Typeface(textAttribute.FontFamily, textAttribute.FontStyle, textAttribute.FontWeight, textAttribute.FontStretch), textAttribute.FontSize, textAttribute.Brush, VisualTreeHelper.GetDpi(this).PixelsPerDip);
-                    dc.DrawText(formattedRText, RMouseDownP + new Vector(a, 2 * a));
-                }
-                
-                FormattedText angleText = new(angle.ToString("F3") + "°", CultureInfo.CurrentCulture, textAttribute.FlowDirection, new Typeface(textAttribute.FontFamily, textAttribute.FontStyle, textAttribute.FontWeight, textAttribute.FontStretch), textAttribute.FontSize, textAttribute.Brush, VisualTreeHelper.GetDpi(this).PixelsPerDip);
-                dc.DrawText(angleText, RMouseDownP + new Vector(a, a));
-            }
-            else if (Mode == ReferenceLineMode.GridLines)
-            {
-                DrawGridLines(dc, pen);
-            }
 
             if (Attribute.IsMapping)
             {
@@ -473,37 +298,6 @@ namespace ColorVision.ImageEditor.Draw.Special
                 );
                 double padding = 8 / Ratio;
                 dc.DrawText(lockText, new Point(Math.Max(padding, ActualWidth - lockText.Width - padding), padding));
-            }
-        }
-
-        private void DrawGridLines(DrawingContext dc, Pen pen)
-        {
-            if (ActualWidth <= 0 || ActualHeight <= 0) return;
-
-            double ratio = Math.Max(Ratio, 0.0001);
-            Rect visible = VisibleRect.IsEmpty ? new Rect(0, 0, ActualWidth, ActualHeight) : VisibleRect;
-            double step = Math.Max(1, 40 / ratio);
-            if (step > 1) step = (int)step;
-
-            TextAttribute textAttribute = new();
-            textAttribute.FontSize = 15 / ratio;
-            double textOffset = 4 / ratio;
-            DefalutTextAttribute calibration = Calibration ?? DefalutTextAttribute.Defalut;
-            double actualLength = calibration.IsUsePhysicalUnit ? calibration.ActualLength : 1;
-            Typeface typeface = new(textAttribute.FontFamily, textAttribute.FontStyle, textAttribute.FontWeight, textAttribute.FontStretch);
-
-            for (double y = Math.Max(0, Math.Floor(visible.Top / step) * step); y <= Math.Min(ActualHeight, visible.Bottom); y += step)
-            {
-                dc.DrawLine(pen, new Point(0, y), new Point(ActualWidth, y));
-                FormattedText text = new((y * actualLength).ToString("F0"), CultureInfo.CurrentCulture, textAttribute.FlowDirection, typeface, textAttribute.FontSize, textAttribute.Brush, VisualTreeHelper.GetDpi(this).PixelsPerDip);
-                dc.DrawText(text, new Point(Math.Max(0, visible.Left) + textOffset, y + textOffset));
-            }
-
-            for (double x = Math.Max(0, Math.Floor(visible.Left / step) * step); x <= Math.Min(ActualWidth, visible.Right); x += step)
-            {
-                dc.DrawLine(pen, new Point(x, 0), new Point(x, ActualHeight));
-                FormattedText text = new((x * actualLength).ToString("F0"), CultureInfo.CurrentCulture, textAttribute.FlowDirection, typeface, textAttribute.FontSize, textAttribute.Brush, VisualTreeHelper.GetDpi(this).PixelsPerDip);
-                dc.DrawText(text, new Point(x + textOffset, Math.Max(0, visible.Top) + textOffset));
             }
         }
 
@@ -615,8 +409,16 @@ namespace ColorVision.ImageEditor.Draw.Special
         public Pen Pen { get => _Pen; set { _Pen = value; OnPropertyChanged(); } }
         private Pen _Pen;
 
-        [DisplayName("模式")]
-        public ReferenceLineMode Mode { get => _Mode; set { _Mode = value; OnPropertyChanged(); } }
+        [DisplayName("模式"), JsonConverter(typeof(ReferenceLineModeReader))]
+        public ReferenceLineMode Mode
+        {
+            get => _Mode;
+            set
+            {
+                _Mode = Enum.IsDefined(value) ? value : ReferenceLineMode.SimpleCross;
+                OnPropertyChanged();
+            }
+        }
         private ReferenceLineMode _Mode = ReferenceLineMode.SimpleCross;
 
         [DisplayName("颜色"), JsonIgnore]
@@ -653,53 +455,25 @@ namespace ColorVision.ImageEditor.Draw.Special
         [Category("Mapping"), DisplayName("MappingH"), PropertyVisibility(nameof(IsMapping))]
         public double MappingH { get => _MappingH; set { _MappingH = value; OnPropertyChanged(); } }
         private double _MappingH = 1080.0;
-
-
-
-
-        // 遮罩相关属性
-        [Category("遮罩设置"), DisplayName("遮罩形状"),PropertyVisibility(nameof(Mode), ReferenceLineMode.CrossMask)]
-        public MaskShape MaskShape { get => _MaskShape; set { _MaskShape = value; OnPropertyChanged(); } }
-        private MaskShape _MaskShape = MaskShape.Circle;
-
-        [Category("遮罩设置"), DisplayName("遮罩透明区大小"), PropertyVisibility(nameof(Mode), ReferenceLineMode.CrossMask)]
-        public double MaskSize { get => _MaskSize; set { _MaskSize = value; OnPropertyChanged(); } }
-        private double _MaskSize = 100.0;
-
-        [Category("遮罩设置"), DisplayName("遮罩不透明度(0-255)"), PropertyVisibility(nameof(Mode), ReferenceLineMode.CrossMask)]
-        public byte MaskOpacity { get => _MaskOpacity; set { _MaskOpacity = value; OnPropertyChanged(); } }
-        private byte _MaskOpacity = 180;
-
-        [Category("遮罩设置"), DisplayName("Color"), PropertyVisibility(nameof(Mode), ReferenceLineMode.CrossMask)]
-        public Color Color { get; set; } = Color.FromArgb(255,0,0,0);
-        // 中心覆盖光栅相关属性
-        [Category("中心覆盖"), DisplayName("覆盖形状"), PropertyVisibility(nameof(Mode), ReferenceLineMode.CrossMask)]
-        public CenterOverlayShape CenterOverlay { get => _CenterOverlay; set { _CenterOverlay = value; OnPropertyChanged(); } }
-        private CenterOverlayShape _CenterOverlay = CenterOverlayShape.None;
-
-        [Category("中心覆盖"), DisplayName("覆盖颜色"), JsonIgnore, PropertyVisibility(nameof(Mode), ReferenceLineMode.CrossMask)]
-        public Brush OverlayBrush { get => _OverlayBrush; set { _OverlayBrush = value; OnPropertyChanged(); } }
-        private Brush _OverlayBrush = Brushes.Yellow;
-
-        [Category("中心覆盖"), DisplayName("覆盖大小"), PropertyVisibility(nameof(Mode), ReferenceLineMode.CrossMask)]
-        public double CenterOverlaySize { get => _CenterOverlaySize; set { _CenterOverlaySize = value; OnPropertyChanged(); } }
-        private double _CenterOverlaySize = 50.0;
-
-        // 物理尺寸转换
-        [Category("物理尺寸"), DisplayName("物理尺寸X(mm)"), PropertyVisibility(nameof(Mode), ReferenceLineMode.CrossMask)]
-        public double PhysicalSizeX { get => _PhysicalSizeX; set { _PhysicalSizeX = value; OnPropertyChanged(); } }
-        private double _PhysicalSizeX;
-
-        [Category("物理尺寸"), DisplayName("物理尺寸Y(mm)"), PropertyVisibility(nameof(Mode), ReferenceLineMode.CrossMask)]
-        public double PhysicalSizeY { get => _PhysicalSizeY; set { _PhysicalSizeY = value; OnPropertyChanged(); } }
-        private double _PhysicalSizeY;
-
-        [Category("物理尺寸"), DisplayName("像素/单位(px/mm)"), PropertyVisibility(nameof(Mode), ReferenceLineMode.CrossMask)]
-        public double PixelPerUnit { get => _PixelPerUnit; set { _PixelPerUnit = value; OnPropertyChanged(); } }
-        private double _PixelPerUnit = 1.0;
-
     }
 
+
+    internal sealed class ReferenceLineModeReader : StringEnumConverter
+    {
+        public override bool CanWrite => false;
+
+        public override object? ReadJson(JsonReader reader, Type objectType, object? existingValue, JsonSerializer serializer)
+        {
+            // Older camera display configurations can contain either the numeric values or their names.
+            if (reader.Value is string name &&
+                (name.Equals("CrossMask", StringComparison.OrdinalIgnoreCase) ||
+                 name.Equals("GridLines", StringComparison.OrdinalIgnoreCase)))
+            {
+                return ReferenceLineMode.SimpleCross;
+            }
+            return base.ReadJson(reader, objectType, existingValue, serializer);
+        }
+    }
 
     public class ToolReferenceLine : IEditorToggleToolBase, IDisposable
     {
@@ -713,7 +487,6 @@ namespace ColorVision.ImageEditor.Draw.Special
         public ToolReferenceLine(DrawEditorContext editorContext)
         {
             EditorContext = editorContext;
-            ReferenceLine.Calibration = editorContext.Calibration;
             ToolBarLocal = ToolBarLocal.Top;
             Order = 550;
             Icon = IEditorToolFactory.TryFindResource("ConcentricCirclesDrawImg");
@@ -748,7 +521,6 @@ namespace ColorVision.ImageEditor.Draw.Special
                     Image.PreviewMouseLeftButtonDown += PreviewMouseLeftButtonDown;
                     Image.PreviewMouseUp += PreviewMouseUp;
                     ZoomboxSub.LayoutUpdated += ZoomboxSub_LayoutUpdated;
-                    EditorContext.Calibration.PropertyChanged += Defalut_PropertyChanged;
 
                 }
                 else
@@ -758,7 +530,6 @@ namespace ColorVision.ImageEditor.Draw.Special
                     Image.PreviewMouseLeftButtonDown -= PreviewMouseLeftButtonDown;
                     Image.PreviewMouseUp -= PreviewMouseUp;
                     ZoomboxSub.LayoutUpdated -= ZoomboxSub_LayoutUpdated;
-                    EditorContext.Calibration.PropertyChanged -= Defalut_PropertyChanged;
                     ReferenceLine.IsRMouseDown = false;
                     ReferenceLine.IsLMouseDown = false;
                 }
@@ -786,33 +557,15 @@ namespace ColorVision.ImageEditor.Draw.Special
             }
         }
 
-        private void Defalut_PropertyChanged(object? sender, PropertyChangedEventArgs e)
-        {
-            if (!IsChecked || ReferenceLine.Mode != ReferenceLineMode.GridLines) return;
-            ReferenceLine.Render();
-        }
-
         private void UpdateReferenceLineView()
         {
-            ReferenceLine.Calibration = EditorContext.Calibration;
             Matrix matrix = ZoomboxSub.ContentMatrix;
             double ratio = Math.Max(matrix.M11, 0.0001);
             ReferenceLine.Ratio = ratio;
             ReferenceLine.ActualWidth = Image.ActualWidth;
             ReferenceLine.ActualHeight = Image.ActualHeight;
-            ReferenceLine.VisibleRect = GetVisibleRect(matrix, ratio);
             ReferenceLine.Attribute.Pen = new Pen(ReferenceLine.Attribute.Brush, ReferenceLine.Attribute.LineWidth / ratio);
         }
-
-        private Rect GetVisibleRect(Matrix matrix, double ratio)
-        {
-            double x = Math.Max(0, -matrix.OffsetX / ratio);
-            double y = Math.Max(0, -matrix.OffsetY / ratio);
-            double right = Math.Min(Image.ActualWidth, x + ZoomboxSub.ActualWidth / ratio);
-            double bottom = Math.Min(Image.ActualHeight, y + ZoomboxSub.ActualHeight / ratio);
-            return new Rect(x, y, Math.Max(0, right - x), Math.Max(0, bottom - y));
-        }
-
 
         /// <summary>
         /// Handles mouse left button down event.

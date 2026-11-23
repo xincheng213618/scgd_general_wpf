@@ -39,6 +39,7 @@ public class MenuDiscoveryExclusionTests
     [InlineData("ColorVision.Solution.Workspace.MenuSaveLayout")]
     [InlineData("ColorVision.Solution.Workspace.MenuApplyLayout")]
     [InlineData("ColorVision.ExportMenuViewMax")]
+    [InlineData("ColorVision.Guidance.MenuNewUserGuide")]
     public void RemovedMenuType_IsAbsent(string typeName)
     {
         Assembly[] menuAssemblies =

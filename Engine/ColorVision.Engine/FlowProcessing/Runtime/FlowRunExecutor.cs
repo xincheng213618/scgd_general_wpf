@@ -38,7 +38,8 @@ namespace ColorVision.Engine.FlowProcessing
             string startNodeName,
             string serialNumber,
             TimeSpan? executionTimeout,
-            CancellationToken cancellationToken = default)
+            CancellationToken cancellationToken = default,
+            FlowMeasurementBatch? batch = null)
         {
             ArgumentException.ThrowIfNullOrWhiteSpace(startNodeName);
             ArgumentException.ThrowIfNullOrWhiteSpace(serialNumber);
@@ -76,9 +77,10 @@ namespace ColorVision.Engine.FlowProcessing
             {
                 try
                 {
-                    started = await _flowControl
-                        .TryStartAsync(startNodeName, serialNumber, cancellationToken)
-                        .ConfigureAwait(false);
+                    Task<bool> start = batch == null
+                        ? _flowControl.TryStartAsync(startNodeName, serialNumber, cancellationToken)
+                        : _flowControl.TryStartWithBatchAsync(startNodeName, serialNumber, batch, cancellationToken);
+                    started = await start.ConfigureAwait(false);
                 }
                 catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
                 {

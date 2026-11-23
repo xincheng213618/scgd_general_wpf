@@ -60,6 +60,44 @@ public sealed class FlowSemanticDiffTests
     }
 
     [Fact]
+    public void PropertyDiffIncludesNullAdditionsAndRemovalsInOrdinalOrder()
+    {
+        FlowSemanticDocument before = CreateFullDocument();
+        FlowSemanticDocument after = CreateFullDocument();
+        before.Nodes[0].Properties["z-removed"] = null;
+        before.Nodes[0].Properties["Mode"] = "before";
+        after.Nodes[0].Properties["a-added"] = null;
+        after.Nodes[0].Properties["Mode"] = "after";
+
+        FlowSemanticDiffResult diff = FlowSemanticDiff.Compare(before, after);
+
+        Assert.Equal(
+            new FlowPropertyChange[]
+            {
+                new("node-a", "Mode", "before", "after"),
+                new("node-a", "a-added", null, null),
+                new("node-a", "z-removed", null, null),
+            },
+            diff.PropertyChanges);
+    }
+
+    [Fact]
+    public void LayoutDiffDistinguishesSignedZeroInNodeCoordinates()
+    {
+        FlowSemanticDocument before = CreateFullDocument();
+        FlowSemanticDocument after = CreateFullDocument();
+        before.Layout.Nodes[0].X = -0.0;
+        after.Layout.Nodes[0].X = 0.0;
+
+        FlowSemanticDiffResult diff = FlowSemanticDiff.Compare(before, after);
+
+        FlowLayoutChange change = Assert.Single(diff.LayoutChanges);
+        Assert.Equal("node-a", change.NodeId);
+        Assert.Equal(long.MinValue, BitConverter.DoubleToInt64Bits(change.Before!.X));
+        Assert.Equal(0L, BitConverter.DoubleToInt64Bits(change.After!.X));
+    }
+
+    [Fact]
     public void HashesAreStableWhenCollectionsAreReordered()
     {
         FlowSemanticDocument first = CreateFullDocument();
@@ -74,6 +112,44 @@ public sealed class FlowSemanticDiffTests
         Assert.Equal(
             FlowSemanticHash.ComputeLayoutHash(first),
             FlowSemanticHash.ComputeLayoutHash(reordered));
+    }
+
+    [Fact]
+    public void CanonicalHashesMatchExistingRevisionsWithLongUnicodeValues()
+    {
+        const string nodeId = "node-🧪";
+        var document = new FlowSemanticDocument
+        {
+            Nodes =
+            [
+                new FlowSemanticNode
+                {
+                    NodeId = nodeId,
+                    TypeKey = "类型",
+                    Properties = new Dictionary<string, string?>
+                    {
+                        ["Mode"] = "切换",
+                        ["Null"] = null,
+                        ["Notes"] = new string('x', 16_383) + "🧪中\uD800" + new string('λ', 32_770) + "\uDC00",
+                    },
+                },
+            ],
+            Layout = new FlowLayoutDocument
+            {
+                ViewportX = 1.25,
+                ViewportY = -2.5,
+                Scale = 0.75,
+                Nodes =
+                [
+                    new FlowNodeLayout { NodeId = nodeId, X = -0.0, Y = 2.25, Width = 128.125, Height = 42 },
+                ],
+            },
+        };
+
+        Assert.Equal("9ae9e65f7a516b030ac3de062c46ab92214cb38ed81d10798bb568bb6128f513",
+            FlowSemanticHash.ComputeSemanticHash(document));
+        Assert.Equal("29da13f3f2c8c4b55908491d7830118b9884e9f56584a9cbc0560fddd1a38152",
+            FlowSemanticHash.ComputeLayoutHash(document));
     }
 
     [Fact]

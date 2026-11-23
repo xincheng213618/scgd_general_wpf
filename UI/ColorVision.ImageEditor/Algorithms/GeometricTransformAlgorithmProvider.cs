@@ -1,9 +1,12 @@
 using ColorVision.Algorithms;
 using OpenCvSharp;
 using System;
+using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Numerics;
+using System.Runtime.Intrinsics;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
@@ -82,7 +85,10 @@ namespace ColorVision.ImageEditor.Algorithms
             try
             {
                 using AlgorithmImageMatLease input = AlgorithmImageInterop.BorrowReadOnly(source);
-                using Mat output = new();
+                int stride = checked(width * source.Format.BytesPerPixel());
+                byte[] outputData = GC.AllocateUninitializedArray<byte>(checked(stride * height));
+                using Mat output = Mat.FromPixelData(height, width, input.Mat.Type(), outputData, stride);
+                IntPtr outputAddress = output.Data;
                 using Mat matrix = CreateMatrix(effective, parameters.Kind);
                 InterpolationFlags interpolation = parameters.Interpolation == GeometricTransformInterpolation.Nearest
                     ? InterpolationFlags.Nearest
@@ -99,7 +105,10 @@ namespace ColorVision.ImageEditor.Algorithms
                 cancellationToken.ThrowIfCancellationRequested();
                 context.Progress?.Report(new AlgorithmProgress(0.78, "transform.mask"));
                 (byte[] mask, long validPixels) = BuildValidityMask(width, height, source.Width, source.Height, inverse, cancellationToken, context.Progress);
-                transformed = AlgorithmImageInterop.FromMat(output, source.DpiX, source.DpiY, cancellationToken);
+                // Constant and replicate borders fill the destination. Honor a native reallocation if it occurs.
+                transformed = output.Data == outputAddress && output.Step() == stride
+                    ? new AlgorithmImageBuffer(width, height, stride, source.Format, outputData, source.DpiX, source.DpiY)
+                    : AlgorithmImageInterop.FromMat(output, source.DpiX, source.DpiY, cancellationToken);
                 validityMask = new AlgorithmImageBuffer(width, height, width, AlgorithmImageFormat.Gray8, mask, source.DpiX, source.DpiY);
                 artifacts.Add(new AlgorithmImageArtifact("transformed-image", "primary", transformed,
                     new Dictionary<string, string>
@@ -243,6 +252,22 @@ namespace ColorVision.ImageEditor.Algorithms
             byte[] mask = new byte[checked(width * height)];
             long valid = 0;
             const double tolerance = 1e-9;
+            bool axesAligned = inverse[1] == 0 && inverse[3] == 0;
+            bool axesSwapped = !axesAligned && inverse[0] == 0 && inverse[4] == 0;
+            double constantDenominator = inverse[8];
+            bool separable = (axesAligned || axesSwapped) && inverse[6] == 0 && inverse[7] == 0
+                && inverse.All(double.IsFinite) && Math.Abs(constantDenominator) > DenominatorTolerance(inverse, 0, 0);
+            int columnSourceLength = axesSwapped ? sourceHeight : sourceWidth;
+            int rowSourceLength = axesSwapped ? sourceWidth : sourceHeight;
+            double columnScale = inverse[axesSwapped ? 3 : 0];
+            double columnOffset = inverse[axesSwapped ? 5 : 2];
+            double rowScale = inverse[axesSwapped ? 1 : 4];
+            double rowOffset = inverse[axesSwapped ? 2 : 5];
+            int vectorColumns = !separable && Vector256.IsHardwareAccelerated && width >= 128
+                ? width - width % Vector256<double>.Count
+                : 0;
+            int firstColumn = 0;
+            int lastColumn = 0;
             for (int y = 0; y < height; y++)
             {
                 if ((y & 31) == 0)
@@ -251,7 +276,30 @@ namespace ColorVision.ImageEditor.Algorithms
                     progress?.Report(new AlgorithmProgress(0.78 + 0.18 * y / Math.Max(1, height), "transform.mask"));
                 }
                 int row = y * width;
-                for (int x = 0; x < width; x++)
+                if (separable)
+                {
+                    // Each source coordinate is monotone in one destination axis. Find the
+                    // contiguous column interval once using the same pixel-center comparisons.
+                    if (y == 0)
+                    {
+                        while (firstColumn < width && !IsInsideAxis(firstColumn, columnScale, columnOffset, columnSourceLength))
+                            firstColumn++;
+                        lastColumn = firstColumn;
+                        while (lastColumn < width && IsInsideAxis(lastColumn, columnScale, columnOffset, columnSourceLength))
+                            lastColumn++;
+                    }
+
+                    if (IsInsideAxis(y, rowScale, rowOffset, rowSourceLength))
+                    {
+                        int length = lastColumn - firstColumn;
+                        mask.AsSpan(row + firstColumn, length).Fill(byte.MaxValue);
+                        valid += length;
+                    }
+                    continue;
+                }
+                if (vectorColumns != 0)
+                    valid += WriteProjectedMaskColumns(mask.AsSpan(row, vectorColumns), y, sourceWidth, sourceHeight, inverse, tolerance);
+                for (int x = vectorColumns; x < width; x++)
                 {
                     double denominator = inverse[6] * x + inverse[7] * y + inverse[8];
                     if (!double.IsFinite(denominator) || Math.Abs(denominator) <= DenominatorTolerance(inverse, x, y)) continue;
@@ -265,6 +313,57 @@ namespace ColorVision.ImageEditor.Algorithms
             }
             cancellationToken.ThrowIfCancellationRequested();
             return (mask, valid);
+
+            bool IsInsideAxis(int coordinate, double scale, double offset, int length)
+            {
+                double mapped = (scale * coordinate + offset) / constantDenominator;
+                return mapped >= -tolerance && mapped <= length - 1 + tolerance;
+            }
+        }
+
+        private static int WriteProjectedMaskColumns(Span<byte> row, int y, int sourceWidth, int sourceHeight, double[] inverse, double tolerance)
+        {
+            double rowToSourceX = inverse[1] * y, rowToSourceY = inverse[4] * y, rowToDenominator = inverse[7] * y;
+            double maximumX = sourceWidth - 1 + tolerance, maximumY = sourceHeight - 1 + tolerance;
+            int count = 0;
+            // Store a byte for each lane in the same order as the scalar scan.
+            ReadOnlySpan<uint> maskBytes =
+            [
+                0x00000000, 0x000000ff, 0x0000ff00, 0x0000ffff,
+                0x00ff0000, 0x00ff00ff, 0x00ffff00, 0x00ffffff,
+                0xff000000, 0xff0000ff, 0xff00ff00, 0xff00ffff,
+                0xffff0000, 0xffff00ff, 0xffffff00, 0xffffffff,
+            ];
+            Vector256<double> columns = Vector256.Create(0d, 1d, 2d, 3d);
+            Vector256<double> step = Vector256.Create(4d);
+            Vector256<double> xScale = Vector256.Create(inverse[0]), yScale = Vector256.Create(inverse[3]);
+            Vector256<double> xRow = Vector256.Create(rowToSourceX), yRow = Vector256.Create(rowToSourceY);
+            Vector256<double> xOffset = Vector256.Create(inverse[2]), yOffset = Vector256.Create(inverse[5]);
+            Vector256<double> denominatorScale = Vector256.Create(inverse[6]);
+            Vector256<double> denominatorRow = Vector256.Create(rowToDenominator), denominatorOffset = Vector256.Create(inverse[8]);
+            Vector256<double> absoluteRow = Vector256.Create(Math.Abs(rowToDenominator)), absoluteOffset = Vector256.Create(Math.Abs(inverse[8]));
+            Vector256<double> relativeTolerance = Vector256.Create(MatrixTolerance);
+            Vector256<double> minimum = Vector256.Create(-tolerance);
+            Vector256<double> upperX = Vector256.Create(maximumX), upperY = Vector256.Create(maximumY);
+            Vector256<double> largest = Vector256.Create(double.MaxValue);
+            for (int x = 0; x < row.Length; x += Vector256<double>.Count, columns += step)
+            {
+                // Preserve the operation order at the scalar tolerance boundaries.
+                Vector256<double> columnDenominator = denominatorScale * columns;
+                Vector256<double> denominator = (columnDenominator + denominatorRow) + denominatorOffset;
+                Vector256<double> absolute = Vector256.Abs(denominator);
+                Vector256<double> threshold = ((Vector256.Abs(columnDenominator) + absoluteRow) + absoluteOffset) * relativeTolerance;
+                Vector256<double> validDenominator = Vector256.LessThanOrEqual(absolute, largest)
+                    & ~Vector256.LessThanOrEqual(absolute, threshold);
+                Vector256<double> sourceX = ((xScale * columns + xRow) + xOffset) / denominator;
+                Vector256<double> sourceY = ((yScale * columns + yRow) + yOffset) / denominator;
+                Vector256<double> outside = Vector256.LessThan(sourceX, minimum) | Vector256.LessThan(sourceY, minimum)
+                    | Vector256.GreaterThan(sourceX, upperX) | Vector256.GreaterThan(sourceY, upperY);
+                uint flags = (validDenominator & ~outside).ExtractMostSignificantBits();
+                BinaryPrimitives.WriteUInt32LittleEndian(row[x..], maskBytes[(int)flags]);
+                count += BitOperations.PopCount(flags);
+            }
+            return count;
         }
 
         private static AlgorithmMeasurementArtifact BuildMeasurements(

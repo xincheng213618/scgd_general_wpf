@@ -8,7 +8,6 @@ using ColorVision.Engine.Services.Devices.Camera.Local;
 using ColorVision.Engine.Services.Results;
 using ColorVision.Engine.Templates.Jsons;
 using ColorVision.Engine.Templates.Jsons.MTF2;
-using ColorVision.Engine.Templates.POI;
 using FlowEngineLib.Base;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -24,7 +23,7 @@ using System.Windows;
 namespace ColorVision.Engine.FlowProcessing.Nodes;
 
 internal sealed record LocalMtfPersistenceRequest(CVStartCFC Action, string TemplateName, string? ImageFilePath,
-    int ZIndex, int TotalTime, object Parameters, JObject Result, string ResultDirectory);
+    int ZIndex, int TotalTime, object Parameters, JObject Result, string ResultDirectory, MySqlConnectedEndpoint DatabaseEndpoint);
 internal sealed record LocalMtfPersistenceResult(int MasterId, string ResultFilePath);
 internal sealed record LocalMtfNodeResultData(int MasterId, int SourceMasterId, int PoiSourceMasterId,
     string? ImageFilePath, string ResultFilePath, int TotalTime)
@@ -34,40 +33,35 @@ internal sealed record LocalMtfNodeResultData(int MasterId, int SourceMasterId, 
 
 internal interface ILocalMtfNodeServices
 {
-    LocalRealPoiParameters LoadPoi(int masterId, int resultType, string templateName);
+    LocalRealPoiParameters LoadPoi(int masterId, int resultType, MySqlConnectedEndpoint endpoint);
     LocalFlowFrame LoadFrame(string path);
     JObject Calculate(HImage image, StripeMtfParameters parameters, MtfRoi[] regions);
     LocalMtfPersistenceResult Persist(LocalMtfPersistenceRequest request);
-    void Publish(string serialNumber, string nodeId, int zIndex, int masterId);
+    void Publish(string serialNumber, string nodeId, int zIndex, int masterId, MySqlConnectedEndpoint endpoint);
 }
 
 internal sealed class LocalMtfNodeServices : ILocalMtfNodeServices
 {
     public static LocalMtfNodeServices Instance { get; } = new();
-    public LocalRealPoiParameters LoadPoi(int masterId, int resultType, string templateName)
-    {
-        LocalRealPoiParameters parameters = LocalRealPoiInputResolver.Resolve(masterId, resultType, "IN_IMG");
-        if (parameters.Poi.PoiPoints.Count == 0 && parameters.Poi.Id > 0) PoiParam.LoadPoiDetailFromDB(parameters.Poi);
-        return parameters;
-    }
+    public LocalRealPoiParameters LoadPoi(int masterId, int resultType, MySqlConnectedEndpoint endpoint)
+        => LocalRealPoiInputResolver.Resolve(masterId, resultType, "IN_IMG", endpoint);
     public LocalFlowFrame LoadFrame(string path) => LocalFrameFileService.Load(path);
     public JObject Calculate(HImage image, StripeMtfParameters parameters, MtfRoi[] regions) => StripeMtfAnalyzer.Calculate(image, parameters, regions);
     public LocalMtfPersistenceResult Persist(LocalMtfPersistenceRequest request) => LocalMtfResultPersistence.Save(request);
-    public void Publish(string serialNumber, string nodeId, int zIndex, int masterId) => ResultMessageBus.Default.PublishPersisted(
-        ResultRoutes.LocalFlow, ResultKinds.Algorithm, string.Empty, "MTF", serialNumber, nodeId, zIndex, masterId, (int)ViewResultAlgType.MTF);
+    public void Publish(string serialNumber, string nodeId, int zIndex, int masterId, MySqlConnectedEndpoint endpoint) => ResultMessageBus.Default.PublishPersisted(
+        ResultRoutes.LocalFlow, ResultKinds.Algorithm, string.Empty, "MTF", serialNumber, nodeId, zIndex, masterId, (int)ViewResultAlgType.MTF, endpoint);
 }
 
 internal static class LocalMtfResultPersistence
 {
     public static LocalMtfPersistenceResult Save(LocalMtfPersistenceRequest request)
     {
-        MeasureBatchModel batch = BatchResultMasterDao.Instance.GetByNameOrCode(request.Action.SerialNumber)
-            ?? throw new InvalidOperationException($"找不到流程批次：{request.Action.SerialNumber}");
-        AlgResultMasterModel master = CreateMaster(request, batch.Id);
+        int batchId = LocalFlowResultPersistence.ResolveBatchId(request.Action, request.DatabaseEndpoint);
+        AlgResultMasterModel master = CreateMaster(request, batchId);
         string directory = string.IsNullOrWhiteSpace(request.ResultDirectory)
             ? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "ColorVision", "Results", "MTF")
             : Path.GetFullPath(request.ResultDirectory.Trim());
-        return SaveCore(master, request.Result, directory, static () => new SqlSugarLocalFlowResultTransaction<DetailCommonModel>());
+        return SaveCore(master, request.Result, directory, () => new SqlSugarLocalFlowResultTransaction<DetailCommonModel>(request.DatabaseEndpoint));
     }
 
     internal static AlgResultMasterModel CreateMaster(LocalMtfPersistenceRequest request, int batchId)
@@ -152,14 +146,16 @@ public sealed class LocalMtfNode : LocalFlowNodeBase
         int zIndex = ZIndex;
         if (templateName.Length == 0) throw new InvalidOperationException("请填写 MTF 结果名称。");
         StripeMtfParameters parameters = StripeMtfParameters.FromJson(ParameterJson);
+        MySqlConnectedEndpoint endpoint = LocalFlowResultPersistence.ResolveEndpoint(action)
+            ?? throw new InvalidOperationException("保存本地 MTF 流程结果需要已验证的 MySQL 连接。");
         _ = TryGetInputMasterResult(action, 1, out int poiMasterId, out int poiResultType, out _);
-        LocalRealPoiParameters? poi = poiMasterId > 0 ? services.LoadPoi(poiMasterId, poiResultType, string.Empty) : null;
+        LocalRealPoiParameters? poi = poiMasterId > 0 ? services.LoadPoi(poiMasterId, poiResultType, endpoint) : null;
         LocalFlowFrame? ownedFrame = null;
         try
         {
             if (!action.TryGetCurrentFrame(out LocalFlowFrame? frame) || frame == null)
             {
-                string path = ResolveInputImageFilePath(action, 0);
+                string path = ResolveInputImageFilePath(action, 0, endpoint);
                 if (string.IsNullOrWhiteSpace(path)) throw new InvalidOperationException("IN_IMG 没有本地图像帧或已保存的图像结果。");
                 frame = ownedFrame = FlowNodeTiming.Run("OpenImage", () => services.LoadFrame(path));
                 _ = TryGetInputMasterResult(action, 0, out int imageMasterId, out _, out _);
@@ -191,9 +187,9 @@ public sealed class LocalMtfNode : LocalFlowNodeBase
                 ImageRead = ownedFrame != null, MemoryOnly = string.IsNullOrWhiteSpace(imageFile)
             };
             LocalMtfPersistenceResult saved = FlowNodeTiming.Run("SaveResult", () => services.Persist(
-                new(action, templateName, imageFile, zIndex, elapsed, audit, result, outputDirectory)));
+                new(action, templateName, imageFile, zIndex, elapsed, audit, result, outputDirectory, endpoint)));
             if (saved.MasterId <= 0 || string.IsNullOrWhiteSpace(saved.ResultFilePath)) throw new InvalidOperationException("MTF 结果持久化未返回有效记录。");
-            FlowNodeTiming.Run("PublishResult", () => services.Publish(action.SerialNumber, nodeId, zIndex, saved.MasterId));
+            FlowNodeTiming.Run("PublishResult", () => services.Publish(action.SerialNumber, nodeId, zIndex, saved.MasterId, endpoint));
             action.Data["LocalMtfResultFile"] = saved.ResultFilePath;
             action.MasterValue(null, saved.MasterId, (int)ViewResultAlgType.MTF);
             return new(saved.MasterId, lease.MasterId, poi?.SourceMasterId ?? 0, imageFile, saved.ResultFilePath, elapsed);

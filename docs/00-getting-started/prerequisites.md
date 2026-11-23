@@ -5,7 +5,6 @@ status: "current"
 summary: "Windows x64 运行与源码构建前提：Desktop Runtime、SDK、C++ 工具集及已有 native DLL 的选择。"
 aliases: ["环境要求","系统要求","干净克隆","只装.NET SDK能编译吗","opencv_helper.dll","OpenCvHelperBinary","MSBuild","Microsoft.WindowsDesktop.App","Desktop Runtime","Windows 7","Visual Studio 2026"]
 code_paths: ["Directory.Build.props","ColorVision/ColorVision.csproj","UI/ColorVision.Core/ColorVision.Core.csproj","Engine/ColorVision.Engine/ColorVision.Engine.csproj","Engine/cvColorVision/cvColorVision.csproj","Native/opencv_helper/opencv_helper.vcxproj","Native/AGENTS.md","build.sln","package.json","package-lock.json"]
-test_paths: ["Scripts/tests/test_verify_platform_policy.py"]
 related: ["delivery.start","delivery.testing","delivery.native-testing","engine.native-integration","delivery.installation","operations.first-run"]
 ---
 
@@ -78,7 +77,7 @@ dotnet build .\ColorVision\ColorVision.csproj -p:Platform=x64
 if ($LASTEXITCODE -ne 0) { throw '构建失败；检查实际项目与缺失输入。' }
 ```
 
-首次构建或完整解决方案构建使用 Visual Studio Developer PowerShell。在 IDE 中开发 .NET 10 需要 Visual Studio 2026 18.0+，具体 SDK 对应关系见 [Microsoft 工具链要求](https://learn.microsoft.com/en-us/dotnet/core/install/windows#net-versions-and-visual-studio)；C++ 仍须安装项目指定工具集：helper 使用 `v143`，原生测试项目使用 `v145`，Windows SDK 为 `10.0`。测试项目和解决方案的配置差异见[原生测试指南](../02-developer-guide/engine-development/native-testing.md)。
+首次构建或完整解决方案构建使用 Visual Studio Developer PowerShell。IDE、.NET SDK 的配套版本按 Microsoft 工具链要求确认。C++ 的工具集与 Windows SDK 版本以实际 `.vcxproj` 为准。 [Microsoft 工具链要求](https://learn.microsoft.com/en-us/dotnet/core/install/windows#net-versions-and-visual-studio) · [原生调试](../02-developer-guide/engine-development/native-testing.md)
 
 以下命令会还原依赖并生成本地产物，不运行主程序，也不发布：
 
@@ -108,4 +107,4 @@ if ($LASTEXITCODE -ne 0) { throw '解决方案构建失败；检查失败项目�
 
 ## 验证范围
 
-`test_verify_platform_policy.py` 检查平台声明与制品约定，不验证每台机器的 SDK、安装器或设备依赖。文档中的路径与项目声明不证明构建、启动或现场采集已执行；实际结果随任务报告。安装制品选择见[安装指南](./installation.md)，启动检查见[首次运行](./first-steps.md)，发布入口见[构建与发布脚本](../02-developer-guide/scripts/README.md)。
+在目标环境分别确认 SDK、依赖、安装和启动。构建、启动及现场采集结果随任务报告。 [安装指南](./installation.md) · [首次运行](./first-steps.md) · [构建与发布脚本](../02-developer-guide/scripts/README.md)

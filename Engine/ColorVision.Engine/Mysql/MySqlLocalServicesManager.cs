@@ -8,6 +8,7 @@ using ColorVision.UI;
 using ColorVision.UI.ServiceHost;
 using log4net;
 using Microsoft.Win32;
+using MySqlConnector;
 using SqlSugar;
 using System;
 using System.Collections.Generic;
@@ -149,6 +150,7 @@ namespace ColorVision.Database
         private const string RegistrationCenterServiceName = "RegistrationCenterService";
         private static readonly SemaphoreSlim DatabaseMaintenanceGate = new(1, 1);
         private static readonly AsyncLocal<int> DatabaseMaintenanceDepth = new();
+        private static long lastMaintenanceCompletedAt;
         private static readonly TimeSpan MySqlCommandTimeout = TimeSpan.FromHours(2);
         private const string ResultMasterTableName = "t_scgd_algorithm_result_master";
         private const string MeasureBatchTableName = "t_scgd_measure_batch";
@@ -184,7 +186,7 @@ namespace ColorVision.Database
             finally
             {
                 DatabaseMaintenanceDepth.Value = 0;
-                DatabaseMaintenanceGate.Release();
+                ReleaseDatabaseMaintenanceGate();
             }
         }
 
@@ -203,8 +205,18 @@ namespace ColorVision.Database
             finally
             {
                 DatabaseMaintenanceDepth.Value = 0;
-                DatabaseMaintenanceGate.Release();
+                ReleaseDatabaseMaintenanceGate();
             }
+        }
+
+        internal static bool CanReuseBatchFrom(long batchInsertStartedAt) =>
+            batchInsertStartedAt > 0 && DatabaseMaintenanceGate.CurrentCount != 0
+            && batchInsertStartedAt > Volatile.Read(ref lastMaintenanceCompletedAt);
+
+        private static void ReleaseDatabaseMaintenanceGate()
+        {
+            Volatile.Write(ref lastMaintenanceCompletedAt, System.Diagnostics.Stopwatch.GetTimestamp());
+            DatabaseMaintenanceGate.Release();
         }
 
         private static T RunNestedDatabaseMaintenance<T>(Func<T> maintenanceAction)
@@ -509,7 +521,9 @@ namespace ColorVision.Database
 
         private Task BackupAllWithFeedbackAsync()
         {
-            return BackupWithFeedbackAsync(BackupAllMysql);
+            MySqlConnectedEndpoint? endpoint = MySqlControl.GetInstance().ConnectedEndpoint;
+            return BackupWithFeedbackAsync(() => BackupAllMysql(endpoint
+                ?? throw new InvalidOperationException("完整备份需要已验证的 MySQL 连接。")));
         }
 
         private async Task BackupWithFeedbackAsync(Func<string> backupAction)
@@ -648,7 +662,7 @@ namespace ColorVision.Database
             {
                 DatabaseMaintenanceDepth.Value--;
                 if (ownsMaintenanceGate)
-                    DatabaseMaintenanceGate.Release();
+                    ReleaseDatabaseMaintenanceGate();
             }
         }
 
@@ -1110,7 +1124,50 @@ namespace ColorVision.Database
         //备份所有数据
         public string BackupAllMysql()
         {
-            return RunDatabaseMaintenance(() => CreateMySqlBackup("All", GetTableNames(), replaceExistingRows: false));
+            MySqlConnectedEndpoint endpoint = MySqlControl.GetInstance().ConnectedEndpoint
+                ?? throw new InvalidOperationException("完整备份需要已验证的 MySQL 连接。");
+            return BackupAllMysql(endpoint);
+        }
+
+        internal string BackupAllMysql(MySqlConnectedEndpoint endpoint)
+        {
+            ArgumentNullException.ThrowIfNull(endpoint);
+            return RunDatabaseMaintenance(() =>
+            {
+                EnsureBackupEndpointCurrent(endpoint);
+                MySqlConfig target = CaptureVerifiedDumpConfig(endpoint);
+                List<string> tables;
+                using (var db = endpoint.CreateDbClient()) tables = GetTableNames(db, target.Database);
+                EnsureBackupEndpointCurrent(endpoint);
+                return CreateMySqlBackup("All", tables, replaceExistingRows: false, verifiedTarget: target);
+            });
+        }
+
+        internal static MySqlConnectionStringBuilder GetVerifiedConnectionOptions(MySqlConnectedEndpoint endpoint)
+        {
+            using var db = endpoint.CreateDbClient();
+            var options = new MySqlConnectionStringBuilder(db.CurrentConnectionConfig.ConnectionString);
+            if (string.IsNullOrWhiteSpace(options.Server) || options.Server.Contains(','))
+                throw new InvalidOperationException("MySQL 维护需要配置单一数据库主机。");
+            return options;
+        }
+
+        internal static MySqlConfig CaptureVerifiedDumpConfig(MySqlConnectedEndpoint endpoint)
+        {
+            var options = GetVerifiedConnectionOptions(endpoint);
+            return new MySqlConfig
+            {
+                Host = options.Server,
+                Port = checked((int)options.Port),
+                Database = options.Database,
+                UserName = options.UserID,
+                UserPwd = options.Password,
+            };
+        }
+
+        private static void EnsureBackupEndpointCurrent(MySqlConnectedEndpoint endpoint)
+        {
+            if (!endpoint.IsCurrent) throw new InvalidOperationException("MySQL 连接已更改，请刷新后重新确认备份目标。");
         }
 
         //备份Mysql资源
@@ -1138,9 +1195,10 @@ namespace ColorVision.Database
             string prefix,
             IReadOnlyCollection<string> tableNames,
             bool replaceExistingRows,
-            Action<string>? preparePartFile = null)
+            Action<string>? preparePartFile = null,
+            MySqlConfig? verifiedTarget = null)
         {
-            string backupFile = CreateMySqlBackupFile(BackupPath, prefix, tableNames, replaceExistingRows, preparePartFile);
+            string backupFile = CreateMySqlBackupFile(BackupPath, prefix, tableNames, replaceExistingRows, preparePartFile, verifiedTarget);
             RunOnUi(() => Backups.Add(new MysqlBack(backupFile)));
             return backupFile;
         }
@@ -1150,7 +1208,8 @@ namespace ColorVision.Database
             string prefix,
             IReadOnlyCollection<string> tableNames,
             bool replaceExistingRows,
-            Action<string>? preparePartFile)
+            Action<string>? preparePartFile,
+            MySqlConfig? verifiedTarget = null)
         {
             Directory.CreateDirectory(outputDirectory);
             string backupFile = Path.Combine(outputDirectory, $"{prefix}_{DateTime.Now:yyyyMMddHHmmssfff}_{Guid.NewGuid():N}.sql");
@@ -1158,7 +1217,9 @@ namespace ColorVision.Database
 
             try
             {
-                RunMysqlDump(partFile, tableNames, replaceExistingRows);
+                MySqlConfig target = verifiedTarget ?? MySqlControl.Config;
+                RunMysqlDumpAsync(partFile, tableNames, replaceExistingRows, target, Config.MysqldumpPath,
+                    forceTcp: verifiedTarget != null).GetAwaiter().GetResult();
                 preparePartFile?.Invoke(partFile);
 
                 FileInfo partInfo = new(partFile);
@@ -1176,44 +1237,16 @@ namespace ColorVision.Database
             return backupFile;
         }
 
-        private static void RunMysqlDump(string outputFile, IReadOnlyCollection<string> tableNames, bool replaceExistingRows)
-        {
-            RunMysqlDumpAsync(outputFile, tableNames, replaceExistingRows).GetAwaiter().GetResult();
-        }
-
-        private static Task RunMysqlDumpAsync(string outputFile, IReadOnlyCollection<string> tableNames, bool replaceExistingRows)
-        {
-            return RunMysqlDumpAsync(outputFile, tableNames, replaceExistingRows, MySqlSetting.Instance.MySqlConfig, Config.MysqldumpPath);
-        }
-
         internal static async Task RunMysqlDumpAsync(
             string outputFile,
             IReadOnlyCollection<string> tableNames,
             bool replaceExistingRows,
             MySqlConfig config,
             string mysqldumpPath,
-            bool dataOnly = false)
+            bool dataOnly = false,
+            bool forceTcp = false)
         {
-            ProcessStartInfo startInfo = CreateMySqlProcessStartInfo(mysqldumpPath, config, redirectStandardInput: false);
-            if (dataOnly)
-            {
-                startInfo.ArgumentList.Add("--single-transaction");
-                startInfo.ArgumentList.Add("--quick");
-                startInfo.ArgumentList.Add("--skip-triggers");
-                startInfo.ArgumentList.Add("--skip-lock-tables");
-                startInfo.ArgumentList.Add("--skip-add-locks");
-                startInfo.ArgumentList.Add("--no-create-info");
-                startInfo.ArgumentList.Add("--complete-insert");
-            }
-            if (replaceExistingRows)
-                startInfo.ArgumentList.Add("--replace");
-
-            startInfo.ArgumentList.Add(config.Database);
-            foreach (string tableName in tableNames)
-            {
-                startInfo.ArgumentList.Add(tableName);
-            }
-
+            ProcessStartInfo startInfo = CreateMysqlDumpStartInfo(mysqldumpPath, config, tableNames, replaceExistingRows, dataOnly, forceTcp);
             using FileStream output = new(outputFile, new FileStreamOptions
             {
                 Mode = FileMode.CreateNew,
@@ -1235,6 +1268,38 @@ namespace ColorVision.Database
                 throw CreateMySqlProcessException("mysqldump", process.ExitCode, standardError);
         }
 
+        internal static ProcessStartInfo CreateMysqlDumpStartInfo(string mysqldumpPath, MySqlConfig config,
+            IReadOnlyCollection<string> tableNames, bool replaceExistingRows, bool dataOnly, bool forceTcp)
+        {
+            ProcessStartInfo startInfo = CreateMySqlProcessStartInfo(mysqldumpPath, config, redirectStandardInput: false);
+            if (forceTcp)
+            {
+                startInfo.ArgumentList.Insert(0, "--no-defaults");
+                startInfo.ArgumentList.Add("--protocol=TCP");
+            }
+            if (dataOnly)
+            {
+                startInfo.ArgumentList.Add("--single-transaction");
+                startInfo.ArgumentList.Add("--quick");
+                startInfo.ArgumentList.Add("--skip-triggers");
+                startInfo.ArgumentList.Add("--skip-lock-tables");
+                startInfo.ArgumentList.Add("--skip-add-locks");
+                startInfo.ArgumentList.Add("--no-create-info");
+                startInfo.ArgumentList.Add("--complete-insert");
+            }
+            if (replaceExistingRows)
+                startInfo.ArgumentList.Add("--replace");
+
+            if (forceTcp) startInfo.ArgumentList.Add("--");
+            startInfo.ArgumentList.Add(config.Database);
+            foreach (string tableName in tableNames)
+            {
+                startInfo.ArgumentList.Add(tableName);
+            }
+
+            return startInfo;
+        }
+
         private static void TryDeletePartialBackup(string partFile)
         {
             try
@@ -1249,11 +1314,15 @@ namespace ColorVision.Database
         }
         public List<string> GetTableNames()
         {
-            var dbName = MySqlSetting.Instance.MySqlConfig.Database;
+            string dbName = MySqlControl.Config.Database;
+            using var db = MySqlControl.CreateDbClient();
+            return GetTableNames(db, dbName);
+        }
+
+        private static List<string> GetTableNames(SqlSugarClient db, string dbName)
+        {
             var sql = @"SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = @dbName AND TABLE_TYPE = 'BASE TABLE'";
-            using var DB = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
-            var result = DB.Ado.SqlQuery<string>(sql, new { dbName });
-            return result;
+            return db.Ado.SqlQuery<string>(sql, new { dbName });
         }
 
         public List<string> GetFilteredResourceTableNames()
@@ -1288,25 +1357,23 @@ namespace ColorVision.Database
         }
 
         public static string BuildMigrationDictionaryDependencyStatements(string connectionString, Action<string>? logCallback = null)
+            => BuildMigrationDictionaryDependencyStatements(connectionString, logCallback, requireSensorDependencies: false);
+
+        internal static string BuildMigrationDictionaryDependencyStatements(string connectionString, Action<string>? logCallback, bool requireSensorDependencies)
         {
             try
             {
                 using var db = new SqlSugarClient(new ConnectionConfig { ConnectionString = connectionString, DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
+                string sensorSql = SensorTemplateMigrationSqlBuilder.Build(db);
                 StringBuilder sql = new();
-                AppendReferencedRowsSql(
-                    db,
-                    sql,
-                    DictionaryMasterTableName,
-                    $@"EXISTS (
+                try
+                {
+                    AppendReferencedRowsSql(db, sql, DictionaryMasterTableName, $@"EXISTS (
                            SELECT 1
                            FROM {QuoteIdentifier(ModParamMasterTableName)} m
                            WHERE m.{QuoteIdentifier("mm_id")} = {QuoteIdentifier(DictionaryMasterTableName)}.{QuoteIdentifier("id")})
                        AND COALESCE({QuoteIdentifier(DictionaryMasterTableName)}.{QuoteIdentifier("mod_type")}, 0) <> 5");
-                AppendReferencedRowsSql(
-                    db,
-                    sql,
-                    DictionaryItemTableName,
-                    $@"EXISTS (
+                    AppendReferencedRowsSql(db, sql, DictionaryItemTableName, $@"EXISTS (
                            SELECT 1
                            FROM {QuoteIdentifier(ModParamDetailTableName)} d
                            WHERE d.{QuoteIdentifier("cc_pid")} = {QuoteIdentifier(DictionaryItemTableName)}.{QuoteIdentifier("id")})
@@ -1315,7 +1382,13 @@ namespace ColorVision.Database
                            FROM {QuoteIdentifier(DictionaryMasterTableName)} dm
                            WHERE dm.{QuoteIdentifier("id")} = {QuoteIdentifier(DictionaryItemTableName)}.{QuoteIdentifier("pid")}
                              AND dm.{QuoteIdentifier("mod_type")} = 5)");
-                sql.Append(SensorTemplateMigrationSqlBuilder.Build(db));
+                }
+                catch (Exception ex)
+                {
+                    logCallback?.Invoke(string.Format(ColorVision.Engine.Properties.Resources.Mysql_DictionaryDependenciesAddFailed, ex.Message));
+                    sql.Clear();
+                }
+                sql.Append(sensorSql);
 
                 if (sql.Length == 0)
                 {
@@ -1325,7 +1398,7 @@ namespace ColorVision.Database
                 logCallback?.Invoke(ColorVision.Engine.Properties.Resources.Mysql_DictionaryDependenciesAdded);
                 return sql.ToString();
             }
-            catch (Exception ex)
+            catch (Exception ex) when (!requireSensorDependencies)
             {
                 logCallback?.Invoke(string.Format(ColorVision.Engine.Properties.Resources.Mysql_DictionaryDependenciesAddFailed, ex.Message));
                 return string.Empty;

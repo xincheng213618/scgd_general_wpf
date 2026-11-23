@@ -76,7 +76,8 @@ public abstract class CVBaseLoopServerNode<T> : CVBaseServerNode
 
 	protected virtual CVBaseEventObj BuildCmd(CVStartCFC start, T property)
 	{
-		return new CVBaseEventObj(operatorCode, getBaseEventData(start, property));
+		object data = getBaseEventData(start, property);
+		return new CVBaseEventObj(operatorCode, data);
 	}
 
 	protected abstract object getBaseEventData(CVStartCFC start, T property);

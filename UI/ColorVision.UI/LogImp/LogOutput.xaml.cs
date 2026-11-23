@@ -1,4 +1,5 @@
-﻿using log4net;
+﻿using ColorVision.UI.Docking;
+using log4net;
 using log4net.Core;
 using log4net.Layout;
 using log4net.Repository.Hierarchy;
@@ -10,13 +11,15 @@ namespace ColorVision.UI.LogImp
     /// <summary>
     /// LogOutput.xaml 的交互逻辑
     /// </summary>
-    public partial class LogOutput : UserControl,IDisposable
+    public partial class LogOutput : UserControl, IDisposable, IDockPanelTitleActionProvider
     {
         private string? Pattern;
         private bool _isAppenderAttached;
         private bool _isDisposed;
         private readonly LogViewConfig _viewConfig;
         private LogTextViewController? _logTextView;
+
+        public IReadOnlyList<DockPanelTitleAction> TitleActions { get; }
 
         public LogOutput(string? pattern = null) : this(pattern, new RealtimeLogViewConfig())
         {
@@ -26,6 +29,7 @@ namespace ColorVision.UI.LogImp
         {
             Pattern = pattern ?? LogConstants.DefaultLogPattern;
             _viewConfig = viewConfig ?? throw new ArgumentNullException(nameof(viewConfig));
+            TitleActions = [new(_viewConfig.EditCommand, "\uE713", Properties.Resources.GeneralSettings)];
             InitializeComponent();
             Loaded += LogOutput_Loaded;
             Unloaded += LogOutput_Unloaded;

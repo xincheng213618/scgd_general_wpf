@@ -247,6 +247,7 @@ namespace ColorVision.Themes.Controls
         public enum DWMWINDOWATTRIBUTE
         {
             DWMWA_USE_IMMERSIVE_DARK_MODE = 20,
+            DWMWA_BORDER_COLOR = 34,
             DWMWA_SYSTEMBACKDROP_TYPE = 38
         }
         public enum BlurMode

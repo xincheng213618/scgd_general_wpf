@@ -1,6 +1,7 @@
 ﻿#pragma warning disable CS8604,CS8629,CS8601
 using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
+using ColorVision.Database;
 using ColorVision.Engine.Media;
 using ColorVision.Engine.Templates.POI;
 using ColorVision.FileIO;
@@ -18,11 +19,18 @@ namespace ColorVision.Engine.Services
 {
     public class ViewResultImage : ViewModelBase
     {
+        internal MySqlConnectedEndpoint? DatabaseEndpoint { get; init; }
+        internal bool IsRemoteCapture { get; init; }
+
         private ContextMenu? _contextMenu;
         private RelayCommand? _exportCVCIECommand, _openCVCIECommand, _copyToCommand, _openContainingFolderCommand, _createToPoiCommand;
         public ContextMenu ContextMenu { get => _contextMenu ??= CreateContextMenu(); set => _contextMenu = value; }
         public RelayCommand ExportCVCIECommand { get => _exportCVCIECommand ??= new RelayCommand(a => Export(), a => File.Exists(FileUrl)); set => _exportCVCIECommand = value; }
-        public RelayCommand OpenCVCIECommand { get => _openCVCIECommand ??= new RelayCommand(a => Open(), a => File.Exists(FileUrl)); set => _openCVCIECommand = value; }
+        public RelayCommand OpenCVCIECommand
+        {
+            get => _openCVCIECommand ??= new RelayCommand(async _ => await ImageViewWindow.OpenFileAsync(FileUrl), _ => ImageViewWindow.CanOpenFile(FileUrl));
+            set => _openCVCIECommand = value;
+        }
         public RelayCommand CopyToCommand { get => _copyToCommand ??= new RelayCommand(a => CopyTo(), a => File.Exists(FileUrl)); set => _copyToCommand = value; }
         public RelayCommand OpenContainingFolderCommand { get => _openContainingFolderCommand ??= new RelayCommand(a => System.Diagnostics.Process.Start("explorer.exe", $"/select,{FileUrl}"), a => File.Exists(FileUrl)); set => _openContainingFolderCommand = value; }
         public RelayCommand CreateToPoiCommand { get => _createToPoiCommand ??= new RelayCommand(a => CreateToPoi(), a => File.Exists(FileUrl)); set => _createToPoiCommand = value; }
@@ -30,6 +38,7 @@ namespace ColorVision.Engine.Services
         private ContextMenu CreateContextMenu()
         {
             ContextMenu menu = new();
+            menu.Items.Add(new MenuItem { Header = ImageViewWindow.OpenInNewWindowText, Command = OpenCVCIECommand });
             menu.Items.Add(new MenuItem { Header = Properties.Resources.SelectFileInFolder, Command = OpenContainingFolderCommand });
             menu.Items.Add(new MenuItem { Header = Properties.Resources.Export, Command = ExportCVCIECommand });
             menu.Items.Add(new MenuItem { Header = Properties.Resources.CreatePoiAsBaseImage, Command = CreateToPoiCommand });

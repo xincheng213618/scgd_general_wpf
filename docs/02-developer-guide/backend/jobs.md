@@ -5,7 +5,6 @@ status: "current"
 summary: "Backend内置任务的后台轮询、同步手动执行、SQLite单飞和启动恢复；禁用/停止不取消运行中handler，任务返回不证明历史落盘或副作用回滚。"
 aliases: ["Backend调度", "Backend任务", "后台任务启停", "Scheduled Jobs", "SchedulerThread", "run_job_now", "scheduled_jobs", "job_runs", "SqliteJobRepository", "single-flight", "interrupted", "next_run_at", "job_history_retention", "startup_index_check", "plugin_index_check_interval_seconds"]
 code_paths: ["Web/Backend/services/scheduler.py", "Web/Backend/services/artifact_index.py", "Web/Backend/ports/jobs.py", "Web/Backend/db/repositories/jobs.py", "Web/Backend/db/schema_version.py", "Web/Backend/db_cache.py", "Web/Backend/routes/admin_api.py", "Web/Backend/app.py"]
-test_paths: ["Web/Backend/test_jobs_repository.py", "Web/Backend/test_schema_version.py", "Web/Backend/test_contracts.py", "Web/Backend/test_admin_data_retention.py"]
 related: ["delivery.backend", "delivery.backend-auth", "delivery.backend-retention", "delivery.plugin-catalog", "delivery.backend-observability", "delivery.file-transfer"]
 ---
 
@@ -93,6 +92,6 @@ related: ["delivery.backend", "delivery.backend-auth", "delivery.backend-retenti
 
 `job_history_retention` 读取 `job_run_retention_days`（默认30，范围1–3650），用UTC当前时刻减天数作为cutoff。删除条件是 `started_at < cutoff`、非running，且不是该job的最大ID；不是按finished_at，也不会删除每job的最后一条记录。配置更新顺序见[保留策略](./backup-retention.md)。
 
-`test_jobs_repository.py` 有默认元数据更新不重置运行状态、单飞、分页/计数、interrupted恢复、启停、完成结果与next_run_at同事务、保留latest/running及重复手动run用例；`test_schema_version.py` 有重复running迁移与唯一索引；`test_contracts.py` 有jobs读/写权限、分页参数、缺失job、409冲突及启停HTTP用例；每日备份注册/执行关联 `test_admin_data_retention.py`。
+部署时核对任务配置、恢复后的任务状态、执行历史及每日备份调度。
 
 真实后台线程计时、停止中的长任务、多进程启动恢复竞争、完成记录提交失败后HTTP结果等需要单独验证。

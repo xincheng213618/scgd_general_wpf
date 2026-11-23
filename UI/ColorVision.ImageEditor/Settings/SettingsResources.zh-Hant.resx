@@ -66,6 +66,8 @@
   <data name="FilePath" xml:space="preserve"><value>完整路徑</value></data>
   <data name="Technical" xml:space="preserve"><value>技術詳細資料</value></data>
   <data name="PseudoHint" xml:space="preserve"><value>配色與自動範圍偏好保留在此視圖。切換圖像後重新計算範圍，偽彩效果需重新啟用。</value></data>
+  <data name="PseudoAutoRange" xml:space="preserve"><value>自動範圍</value></data>
+  <data name="PseudoAutoRangeDescription" xml:space="preserve"><value>開啟為自動範圍，按目前圖層的像素最小值和最大值初始化。關閉為手動範圍。</value></data>
   <data name="FilterBasics" xml:space="preserve"><value>基礎顯示</value></data>
   <data name="FilterWhiteBalance" xml:space="preserve"><value>白平衡與通道</value></data>
   <data name="FilterTone" xml:space="preserve"><value>色調調整</value></data>

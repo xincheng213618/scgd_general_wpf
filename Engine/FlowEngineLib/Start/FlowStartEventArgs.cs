@@ -1,5 +1,4 @@
 using System;
-using System.Threading.Tasks;
 using FlowEngineLib.Base;
 
 namespace FlowEngineLib.Start;
@@ -17,7 +16,6 @@ public class FlowStartEventArgs : EventArgs
 	public string ErrorNodeName { get; set; }
 
 	public string ErrorNodeId { get; set; }
-	internal TaskCompletionSource<FlowStartEventArgs> TrackedCompletion { get; init; }
 
 	public FlowStartEventArgs(
 		string serialNumber,

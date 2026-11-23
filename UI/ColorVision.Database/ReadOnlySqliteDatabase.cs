@@ -27,19 +27,29 @@ namespace ColorVision.Database
             }.ToString();
             using var connection = new SqliteConnection(ConnectionString);
             connection.Open();
-            using var tables = connection.CreateCommand();
-            tables.CommandText = "SELECT name FROM sqlite_master WHERE type='table'";
-            var names = new List<string>();
-            using (var reader = tables.ExecuteReader())
-                while (reader.Read()) names.Add(reader.GetString(0));
-            foreach (string table in names)
+            using var command = connection.CreateCommand();
+            // The fresh temp schema keeps a main table from shadowing the pragma function.
+            command.CommandText = """
+                SELECT tables.rowid, tables.name, columns.name
+                FROM sqlite_master AS tables
+                LEFT JOIN temp.pragma_table_info(tables.name, 'main') AS columns
+                WHERE tables.type='table'
+                ORDER BY tables.rowid
+                """;
+            using var reader = command.ExecuteReader();
+            long previousTableId = 0;
+            HashSet<string>? found = null;
+            while (reader.Read())
             {
-                using var columns = connection.CreateCommand();
-                columns.CommandText = $"PRAGMA table_info({Quote(table)})";
-                using var reader = columns.ExecuteReader();
-                var found = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-                while (reader.Read()) found.Add(reader.GetString(1));
-                _schema.Add(table, found);
+                long tableId = reader.GetInt64(0);
+                if (found == null || tableId != previousTableId)
+                {
+                    found = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                    _schema.Add(reader.GetString(1), found);
+                    previousTableId = tableId;
+                }
+                if (!reader.IsDBNull(2))
+                    found.Add(reader.GetString(2));
             }
         }
 
@@ -82,26 +92,49 @@ namespace ColorVision.Database
 
         public ISugarQueryable<T> Query<T>(SqlSugarClient db) where T : class, new() => db.SqlQueryable<T>(SelectSql<T>());
 
-        public string? ReadPayload(string table, string idColumn, int id, string legacyColumn, string gzipColumn)
+        public string? ReadPayload(string table, string idColumn, int id, string legacyColumn, string gzipColumn) =>
+            ReadPayloads(table, idColumn, id, (legacyColumn, gzipColumn), null).First;
+
+        /// <summary>Reads two payloads from the same row and read-only snapshot.</summary>
+        public (string? First, string? Second) ReadPayloadPair(string table, string idColumn, int id,
+            (string Legacy, string Gzip) first, (string Legacy, string Gzip) second) =>
+            ReadPayloads(table, idColumn, id, first, second);
+
+        private (string? First, string? Second) ReadPayloads(string table, string idColumn, int id,
+            (string Legacy, string Gzip) first, (string Legacy, string Gzip)? second)
         {
             RequireColumns(table, idColumn);
-            string legacy = HasColumn(table, legacyColumn) ? Quote(legacyColumn) : "NULL";
-            string gzip = HasColumn(table, gzipColumn) ? Quote(gzipColumn) : "NULL";
+            string columns = PayloadProjection(table, first);
+            if (second is { } next)
+                columns += ", " + PayloadProjection(table, next);
+
             using var connection = new SqliteConnection(ConnectionString);
             connection.Open();
             using var command = connection.CreateCommand();
-            command.CommandText = $"SELECT {gzip}, {legacy} FROM {Quote(table)} WHERE {Quote(idColumn)}=@id LIMIT 1";
+            command.CommandText = $"SELECT {columns} FROM {Quote(table)} WHERE {Quote(idColumn)}=@id LIMIT 1";
             command.Parameters.AddWithValue("@id", id);
             using var reader = command.ExecuteReader();
-            if (!reader.Read()) return null;
-            if (!reader.IsDBNull(0) && reader.GetValue(0) is byte[] bytes && bytes.Length > 0)
+            if (!reader.Read()) return default;
+            return (DecodePayload(reader, 0), second.HasValue ? DecodePayload(reader, 2) : null);
+        }
+
+        private string PayloadProjection(string table, (string Legacy, string Gzip) columns)
+        {
+            string legacy = HasColumn(table, columns.Legacy) ? Quote(columns.Legacy) : "NULL";
+            string gzip = HasColumn(table, columns.Gzip) ? Quote(columns.Gzip) : "NULL";
+            return $"{gzip}, {legacy}";
+        }
+
+        private static string? DecodePayload(SqliteDataReader reader, int column)
+        {
+            if (!reader.IsDBNull(column) && reader.GetValue(column) is byte[] bytes && bytes.Length > 0)
             {
                 using var input = new MemoryStream(bytes, writable: false);
                 using var stream = new GZipStream(input, CompressionMode.Decompress);
                 using var text = new StreamReader(stream, Encoding.UTF8);
                 return text.ReadToEnd();
             }
-            return reader.IsDBNull(1) ? null : reader.GetString(1);
+            return reader.IsDBNull(column + 1) ? null : reader.GetString(column + 1);
         }
 
         private static string Quote(string value) => "\"" + value.Replace("\"", "\"\"") + "\"";

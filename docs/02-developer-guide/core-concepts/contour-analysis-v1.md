@@ -5,7 +5,6 @@ status: "current"
 summary: "ContourAnalysis 保留实现的参数、结果与验证契约；默认运行时由 Experimental 门禁拒绝执行。"
 aliases: ["轮廓提取返回什么、为什么当前未开放","ContourAnalysis","ContourAnalysisAlgorithmProvider"]
 code_paths: ["UI/ColorVision.ImageEditor/Algorithms/ContourAnalysisAlgorithmProvider.cs","UI/ColorVision.ImageEditor/Algorithms/StandardAlgorithmCatalog.cs","UI/ColorVision.ImageEditor/Algorithms/ImageAlgorithmPlatform.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/AlgorithmReleaseGateTests.cs"]
 related: ["algorithms.platform","algorithms.index"]
 ---
 
@@ -67,8 +66,8 @@ ImageView 的“算法调用 → 轮廓提取”提供整图、矩形、圆和�
 
 ## 数值、性能与所有权门禁
 
-测试覆盖已知矩形的面积/周长/质心/点集、孔洞 Tree 层级、External 检索、None/Simple 点压缩、Gray16/float/NaN、全图坐标 ROI、稳定过滤原因、候选/点数/overlay 上限、ImageView 实际 Visual、Batch 与本地 Flow 一致性，以及成功、失败、取消时 transferred input 释放。输入帧始终只读。
+依据已知几何核对面积、周长、质心与孔洞层级。输入帧始终只读。
 
 执行只分配一个 Gray8 二值 mask，OpenCV 直接借用该工作缓冲区提取轮廓；随后只保存最终点集和结构化 artifact。取消在 mask 扫描和候选测量循环中轮询，并在 native `findContours` 前后检查；正在进行的单次 native 调用不能被中途打断，这是当前明确的 provider 边界。
 
-2026-08-27 在当前 x64 Debug 测试宿主对 3840×2160 空前景执行 opt-in probe：Gray16 为 629.6 ms、托管分配 8,376,056 B；Bgra32 为 1,163.2 ms、托管分配 9,819,600 B。两者的理论 mask 都是 8,294,400 B，满足“一个整帧 Gray8 mask + 16 MiB 固定余量”的门禁。Bgra32 单次观测到约 84 MiB private working-set 增量，而 Gray16 为约 0.5 MiB；private working set 受 OpenCV allocator/进程缓存影响，不把该单次差值当作稳定 SLA，但它是彩色 4K 路径需持续跟踪的真实风险。复杂前景的点集与层级还会按轮廓数量增长，因此必须保留候选和总点数上限。
+彩色 4K 输入的原生工作集可能明显高于灰度。复杂前景的点集和层级会随轮廓数增长，现场按目标分辨率、位深和实际内容复核峰值内存，保留候选与总点数上限。

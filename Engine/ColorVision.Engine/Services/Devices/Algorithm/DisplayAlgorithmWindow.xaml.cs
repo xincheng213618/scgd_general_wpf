@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Data;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm
 {
@@ -157,13 +158,14 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
 
         private static Button CreateUnauthorizedButton(DeviceAlgorithm device)
         {
-            return new Button
+            var button = new Button
             {
-                Content = Properties.Resources.UnauthorizedOrLicenseExpired,
                 Command = device.EditCommand,
                 HorizontalAlignment = HorizontalAlignment.Left,
                 Margin = new Thickness(4)
             };
+            button.SetBinding(ContentControl.ContentProperty, new Binding(nameof(DeviceService.LicenseFailureText)) { Source = device });
+            return button;
         }
 
         private void ReleaseView()

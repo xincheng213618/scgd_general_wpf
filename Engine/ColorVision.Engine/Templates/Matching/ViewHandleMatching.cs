@@ -20,7 +20,7 @@ namespace ColorVision.Engine.Templates.Matching
         {
             if (result.ViewResults == null)
             {
-                result.ViewResults = new ObservableCollection<IViewResult>(AlgResultAoiDao.Instance.GetAllByPid(result.Id));
+                result.ViewResults = new ObservableCollection<IViewResult>(result.ReadPersistedDetails(AlgResultAoiDao.Instance));
             }
         }
 

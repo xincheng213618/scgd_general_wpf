@@ -37,6 +37,7 @@ public sealed class ImageHistogramTests
 
     [Theory]
     [InlineData("Rgb24")]
+    [InlineData("Bgra32")]
     [InlineData("Rgba64")]
     [InlineData("Indexed8")]
     public void CountsDisplayedColorChannelsForAdditionalImageFormats(string formatName)
@@ -51,6 +52,10 @@ public sealed class ImageHistogramTests
                 case "Rgb24":
                     format = PixelFormats.Rgb24;
                     pixels = [11, 22, 33, 44, 55, 66];
+                    break;
+                case "Bgra32":
+                    format = PixelFormats.Bgra32;
+                    pixels = [33, 22, 11, 0, 66, 55, 44, 255];
                     break;
                 case "Rgba64":
                     format = PixelFormats.Rgba64;
@@ -105,6 +110,42 @@ public sealed class ImageHistogramTests
             Assert.Equal(width * height, red.Sum());
             Assert.Equal(width * height, green.Sum());
             Assert.Equal(width * height, blue.Sum());
+        });
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void GrayscaleCountsEverySampleAcrossChunksAndPartialGroups(bool gray16)
+    {
+        StaTest.Run(() =>
+        {
+            const int width = 257;
+            const int height = 259;
+            int sampleBytes = gray16 ? 2 : 1;
+            int stride = width * sampleBytes + 3;
+            byte[] pixels = new byte[height * stride];
+            int[] expected = new int[256];
+
+            for (int y = 0; y < height; y++)
+            for (int x = 0; x < width; x++)
+            {
+                byte bin = (byte)((x + y * 17) % 251);
+                int offset = y * stride + x * sampleBytes;
+                pixels[offset] = gray16 ? (byte)255 : bin;
+                if (gray16)
+                    pixels[offset + 1] = bin;
+                expected[bin]++;
+            }
+
+            PixelFormat format = gray16 ? PixelFormats.Gray16 : PixelFormats.Gray8;
+            BitmapSource source = BitmapSource.Create(width, height, 96, 96, format, null, pixels, stride);
+            var (red, green, blue) = ImageUtils.RenderHistogram(source);
+
+            int[] expectedOtherChannels = gray16 ? new int[256] : expected;
+            Assert.Equal(expected, red);
+            Assert.Equal(expectedOtherChannels, green);
+            Assert.Equal(expectedOtherChannels, blue);
         });
     }
 

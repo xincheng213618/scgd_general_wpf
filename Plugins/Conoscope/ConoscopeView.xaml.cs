@@ -332,6 +332,62 @@ namespace Conoscope
             ImageView.FocusCircleEditRequested += ImageView_FocusCircleEditRequested;
             ImageView.FocusCirclesChanged += ImageView_FocusCirclesChanged;
             ImageView.FocusCircleSelectionChanged += ImageView_FocusCircleSelectionChanged;
+            ImageView.ScreenshotRequested += ImageView_ScreenshotRequested;
+        }
+
+        private async void ImageView_ScreenshotRequested(object? sender, EventArgs e)
+        {
+            if (Window.GetWindow(this) is not Window owner)
+            {
+                return;
+            }
+
+            try
+            {
+                SaveFileDialog dialog = new()
+                {
+                    Title = Properties.Resources.Conoscope_Screenshot,
+                    Filter = "PNG (*.png)|*.png",
+                    DefaultExt = ".png",
+                    AddExtension = true,
+                    FileName = $"{Path.GetFileNameWithoutExtension(FileName)}_{DateTime.Now:yyyyMMdd_HHmmss}.png"
+                };
+                if (dialog.ShowDialog(owner) != true || disposed || ImageView.Source == null)
+                {
+                    return;
+                }
+
+                BitmapSource bitmap = CaptureImageSnapshot();
+                string path = dialog.FileName;
+                await Task.Run(() =>
+                {
+                    PngBitmapEncoder encoder = new();
+                    encoder.Frames.Add(BitmapFrame.Create(bitmap));
+                    ConoscopeAtomicFile.WriteStream(path, encoder.Save);
+                });
+            }
+            catch (Exception ex)
+            {
+                log.Error("Failed to save Conoscope screenshot.", ex);
+                if (!disposed)
+                {
+                    MessageBox.Show(owner, string.Format(Properties.Resources.MsgExportFailed, ex.Message),
+                        Properties.Resources.TitleError, MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            }
+        }
+
+        private BitmapSource CaptureImageSnapshot()
+        {
+            ImageSnapshotSurface.UpdateLayout();
+            DpiScale dpi = VisualTreeHelper.GetDpi(ImageSnapshotSurface);
+            RenderTargetBitmap bitmap = new(
+                Math.Max(1, (int)Math.Ceiling(ImageSnapshotSurface.ActualWidth * dpi.DpiScaleX)),
+                Math.Max(1, (int)Math.Ceiling(ImageSnapshotSurface.ActualHeight * dpi.DpiScaleY)),
+                dpi.PixelsPerInchX, dpi.PixelsPerInchY, PixelFormats.Pbgra32);
+            bitmap.Render(ImageSnapshotSurface);
+            bitmap.Freeze();
+            return bitmap;
         }
 
         public void OpenConoscope(string filename, string? exposureSummary = null)
@@ -754,6 +810,7 @@ namespace Conoscope
             ImageView.FocusCircleEditRequested -= ImageView_FocusCircleEditRequested;
             ImageView.FocusCirclesChanged -= ImageView_FocusCirclesChanged;
             ImageView.FocusCircleSelectionChanged -= ImageView_FocusCircleSelectionChanged;
+            ImageView.ScreenshotRequested -= ImageView_ScreenshotRequested;
             cieWindow?.Close();
             cieWindow = null;
             SnapshotRequested = null;

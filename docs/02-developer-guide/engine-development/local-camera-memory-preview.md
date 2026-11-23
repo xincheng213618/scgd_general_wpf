@@ -5,7 +5,6 @@ status: "planned"
 summary: "设备视图已接入 RAW/CIE 独立快照；记录有界调度、预览模式和更低复制成本等后续优化及验收缺口。"
 aliases: ["本地相机内存预览设计", "不保存文件能在设备视图预览吗", "相机内存预览怎样验收", "内存预览租约何时释放", "设备级Preview Publisher", "LocalFrameImagePresenter", "latest-wins", "FullCie", "RAW预览行步长", "预览与校正并发", "内存帧过期"]
 code_paths: ["Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalCameraNode.cs", "Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalCalibrationNode.cs", "Engine/ColorVision.Engine/Services/Devices/Camera/Local/LocalFlowFrame.cs", "Engine/ColorVision.Engine/Services/Devices/Camera/Local/LocalCameraCaptureService.cs", "Engine/ColorVision.Engine/Services/Devices/Camera/Local/LocalFrameCalibrationService.cs", "Engine/ColorVision.Engine/Services/Devices/Camera/Views/ViewCamera.xaml.cs", "Engine/ColorVision.Engine/Services/Devices/Camera/CameraLocalWindow.xaml.cs", "Engine/FlowEngineLib/Base/CVStartCFC.cs", "Engine/FlowEngineLib/Base/FlowRuntimeResources.cs", "Engine/ColorVision.Engine/Media/CVRawOpen.cs", "Engine/ColorVision.Engine/Media/CvRawLayerController.cs", "Engine/ColorVision.Engine/Services/POI/PoiMeasurementService.cs", "UI/ColorVision.ImageEditor/ImageView.xaml.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/LocalFrameMirrorTests.cs","Test/ColorVision.UI.Tests/PoiMeasurementServiceTests.cs"]
 related: ["engine.index", "operations.camera"]
 ---
 
@@ -82,7 +81,9 @@ flowchart LR
 
 `CameraLocalWindow.CaptureAndPrepareDisplay` 当前把 RAW/CIE 复制为托管数组，用 `LocalCameraPreview.CreateRawBitmap` 生成并 Freeze 位图，在后台完成这些独立数据后释放流程帧，再把结果交给 UI。ShowImageInView 负责重置 opener、工具、图层和属性，随后打开位图；像素转换并不在 ShowImageInView 中。
 
-当前主面板与本地管理窗口共用 RAW 位图 helper，映射为单通道 8/16-bit → Gray8/Gray16、三通道 8/16-bit → Bgr24/Rgb48。helper 拒绝其它组合和长度不匹配，使用紧凑源 stride 和 CVRAW 解码链相同的 OpenCV 位图转换；16 位三通道 BGR 在显示副本中转为 RGB48，不交换第 2、3 通道，不修改源分量顺序或数值。`LocalCameraResultTests` 对照 CVRAW 解码链检查位图格式和像素，并覆盖奇数宽度多行；实机颜色仍需核对。
+当前主面板与本地管理窗口共用 RAW 位图 helper，映射为单通道 8/16-bit → Gray8/Gray16、三通道 8/16-bit → Bgr24/Rgb48。helper 拒绝其它组合和长度不匹配，使用紧凑源 stride 和 CVRAW 解码链相同的 OpenCV 位图转换；16 位三通道 BGR 在显示副本中转为 RGB48，不交换第 2、3 通道，不修改源分量顺序或数值。实机颜色仍需核对。
+
+主面板自动对焦过程图在原生评价回调中同步从借用的 RAW 数据生成独立的冻结位图。设备的 Dispatcher 队列只接管该预览快照。回调返回后，原生数据即可释放，过程预览无需占用采集 RAW 缓冲池。
 
 后续指针 Presenter 仍须分别使用源/目标行步长，验证长度、通道排列、非对齐宽度和单/多行样例。当前 helper 复制托管数组的行为不能证明零拷贝指针寿命、并发读写或硬件通道含义正确；不要在新显示路径中重新加入没有采集协议依据的颜色转换。
 
@@ -90,7 +91,7 @@ RAW 与 CIE 可能处于不同翻转状态：只翻转最终 CIE 的流程，原
 
 ### CIE 使用当前测量与图层契约
 
-`CVRawOpen.AttachLiveCvcie` 当前接收 byte[]，由 PoiMeasurementBuffer 保留托管平面 CIE，测量时短暂固定数组并交给本地 `opencv_helper.dll`；图层控制器也保留该 CIE 数据，并克隆一份原显示位图。
+`CVRawOpen.AttachLiveCvcie` 接收 byte[]，由 `PoiMeasurementBuffer` 保留托管平面 CIE，测量时短暂固定数组并交给本地 `opencv_helper.dll`。图层控制器共享该 CIE 数据。主面板保留独立的可编辑显示，恢复 Composite 时复用相机预览已经持有的冻结原图。未传入捕获快照的接入方沿用图层控制器保存原图的行为。
 
 因此 FullCie 的指针优化需要覆盖 PoiMeasurementBuffer、测量调用与图层读取的共同所有权；仅把测量接口换成 IntPtr 不能替代当前挂载链，也不能证明零拷贝或 native 已接管数据。
 
@@ -135,4 +136,4 @@ RAW 与 CIE 可能处于不同翻转状态：只翻转最终 CIE 的流程，原
 | 预览转换失败 | 流程业务结果不被改判，状态可诊断，不留下半更新视图 |
 | 生产分辨率、多设备与长期运行 | 峰值内存、保留资源和延迟满足预先指定预算，而非只看短时平均帧率 |
 
-LocalFrameMirrorTests 检查方向和校正准备；PoiMeasurementServiceTests 检查托管 CIE 测量及 Dispose 后拒绝访问。它们只是实现基础，不覆盖本方案的 Publisher、合并队列、模式切换、异步并发和现场性能，也不证明 RAW 转换 helper 正确。实施后再登记对应自动化用例与设备条件，验证记录留在测试产物或 Git/任务报告，不逐轮追加到正文。
+实现后在目标设备验收发布、队列合并、模式切换、异步并发和 RAW 转换。运行证据随任务保留。

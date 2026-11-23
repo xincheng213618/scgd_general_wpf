@@ -1,4 +1,5 @@
 using ColorVision.Algorithms;
+using ColorVision.Database;
 using ColorVision.Engine;
 using ColorVision.Engine.FlowProcessing.Algorithms;
 using ColorVision.Engine.FlowProcessing.Nodes;
@@ -173,7 +174,7 @@ public sealed class GhostFlowAndProcessTests
     private static IProcessExecutionContext Context() => new() { Batch = new() { Id = 5 }, Result = new() { Result = true }, ObjectiveTestResult = new() };
     private static void Write(string path, LocalRingGhostResult measurement) => File.WriteAllText(path, System.Text.Json.JsonSerializer.Serialize(measurement));
     private sealed class BatchResults(string path) : IRingGhostBatchResults
-    { public RingGhostBatchInput Resolve(int batchId) => new(path, "", 42); }
+    { public RingGhostBatchInput Resolve(IProcessExecutionContext ctx) => new(path, "", 42); }
 
     private sealed class NodeServices : ILocalRingGhostNodeServices, IDisposable
     {
@@ -181,7 +182,7 @@ public sealed class GhostFlowAndProcessTests
         public LocalRingGhostSaveRequest? Request;
         private readonly List<string> files = [];
         public LocalFlowFrame LoadFrame(string path) { Opened++; return PatternFrame(1); }
-        public ColorVision.Engine.MeasureResultImgModel? GetImageResult(int id) => new() { Id = id, FileUrl = ImageFile };
+        public ColorVision.Engine.MeasureResultImgModel? GetImageResult(int id, MySqlConnectedEndpoint? endpoint) => new() { Id = id, FileUrl = ImageFile };
         public AlgorithmResult Detect(LocalFlowFrameLease frame, AlgorithmInvocation invocation) =>
             LocalFlowImageAlgorithmAdapter.ExecuteRawAsync(frame, invocation).AsTask().GetAwaiter().GetResult();
         public LocalRingGhostSavedResult Save(LocalRingGhostSaveRequest request)
@@ -190,7 +191,7 @@ public sealed class GhostFlowAndProcessTests
             Request = request; string path = Path.Combine(Path.GetTempPath(), Guid.NewGuid() + ".json"); files.Add(path);
             Write(path, request.Measurement); return new(42, path);
         }
-        public void Publish(string serialNumber, string nodeId, int zIndex, int masterId) => Published++;
+        public void Publish(string serialNumber, string nodeId, int zIndex, int masterId, MySqlConnectedEndpoint? endpoint) => Published++;
         public void Dispose() { foreach (string file in files) File.Delete(file); }
     }
 

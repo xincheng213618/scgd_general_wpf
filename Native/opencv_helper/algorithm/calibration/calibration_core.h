@@ -5,6 +5,7 @@
 #include <cstdint>
 #include <filesystem>
 #include <memory>
+#include <span>
 #include <string>
 
 namespace cvcore::calibration {
@@ -38,6 +39,17 @@ struct ImageView {
     std::size_t dataLength = 0;
 };
 
+struct NonzeroSampleSpan {
+    std::size_t first;
+    std::size_t end;
+};
+
+struct BgrNonzeroRows {
+    // One span per RAW row. Columns remain in Uniformity's sensor sample coordinates.
+    std::span<const NonzeroSampleSpan> rows;
+    std::size_t firstSample = 0;
+};
+
 struct ExecutionOptions {
     // Legacy local calibration uses interleaved BGR and rgbType == 0, but the
     // fields remain explicit so the new module does not narrow the old ABI.
@@ -48,6 +60,7 @@ struct ExecutionOptions {
     std::array<float, 3> exposure{};
     // Internal execution request; the public V1 options layout stays unchanged.
     std::int32_t rawOutputFlip = -99; // -99: none, 0: vertical, 1: horizontal, -1: both
+    BgrNonzeroRows correctedBgrRows{}; // Set only for the Distortion immediately after the fused map pair.
 };
 
 struct ColorTransform {
@@ -111,6 +124,25 @@ public:
         error = "Calibration does not support a distinct output buffer";
         return false;
     }
+
+    // An exact leading pair may fill the context's distinct RAW scratch.
+    virtual bool tryApplyWithNextTo(const CalibrationItem&, const ImageView&,
+        const ImageView&, const ExecutionOptions&) const
+    {
+        return false;
+    }
+
+    // Exact edge spans used when this item completed an adjacent fused map pair.
+    virtual BgrNonzeroRows nonzeroBgrRows(const ImageView&, const ExecutionOptions&) const noexcept
+    {
+        return {};
+    }
+
+    // A preflight before seeding scratch for geometry that can consume the flip.
+    virtual bool canFuseRawFlip(const ImageView&, const ImageView&, const ExecutionOptions&) const
+    {
+        return false;
+    }
 };
 
 [[nodiscard]] bool isColorCalibration(CalibrationType type) noexcept;
@@ -119,6 +151,22 @@ public:
 // Each group owns only its algorithms. The context tries the matching group;
 // nullptr with an empty error means "not handled by this group".
 std::unique_ptr<CalibrationItem> loadBasicCalibration(
+    CalibrationType type,
+    const std::filesystem::path& file,
+    std::string& error);
+
+using CalibrationFileDigest = std::array<std::uint8_t, 32>;
+enum class MapSourceMatch { Equal, Different, Error };
+
+// Pins one opened map revision across comparison and any necessary reload.
+class VerifiedMapSource {
+public:
+    virtual ~VerifiedMapSource() = default;
+    virtual MapSourceMatch compare(const CalibrationItem&, std::string&) = 0;
+    virtual std::unique_ptr<CalibrationItem> load(CalibrationFileDigest&, std::string&) = 0;
+};
+
+std::unique_ptr<VerifiedMapSource> openVerifiedMapSource(
     CalibrationType type,
     const std::filesystem::path& file,
     std::string& error);

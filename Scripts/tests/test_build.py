@@ -11,6 +11,7 @@ from Scripts.build import (
     publish_primary_release,
     rebuild_project,
     validate_installer_runtime_dlls,
+    validate_installer_shortcut_icons,
     validate_runtime_copy_integrity,
 )
 from Scripts.service_host_runtime import REQUIRED_SERVICE_HOST_RUNTIME_PATHS
@@ -18,6 +19,21 @@ from Scripts.operations_watchdog_runtime import REQUIRED_OPERATIONS_WATCHDOG_RUN
 
 
 class InstallerRuntimeValidationTests(unittest.TestCase):
+    def test_launcher_shortcuts_follow_executable_icon_after_incremental_update(self) -> None:
+        aip = self.root / "ColorVision.aip"
+        for shortcut_directory in ("SHORTCUTDIR", "DesktopFolder"):
+            with self.subTest(directory=shortcut_directory):
+                rows = f'''<DOCUMENT>
+<ROW Shortcut="ColorVision" Directory_="{shortcut_directory}" Target="[#ColorVision.exe]" />
+<ROW Shortcut="OtherTool" Directory_="{shortcut_directory}" Target="[#Tool.exe]" Icon_="Tool.ico" />
+<ROW Property="ARPPRODUCTICON" Value="ColorVision_1.exe" />
+</DOCUMENT>'''
+                aip.write_text(rows, encoding="utf-8")
+                validate_installer_shortcut_icons(aip)
+                aip.write_text(rows.replace('Shortcut="ColorVision"', 'Shortcut="ColorVision" Icon_="ColorVision_1.exe"'), encoding="utf-8")
+                with self.assertRaisesRegex(ValueError, "default icon"):
+                    validate_installer_shortcut_icons(aip)
+
     def test_native_integrity_failure_prevents_installer_build(self) -> None:
         with mock.patch("Scripts.build.subprocess.run") as run, \
              mock.patch("Scripts.build.ensure_runtime_copy_integrity", return_value=True), \

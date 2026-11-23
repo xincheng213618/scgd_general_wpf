@@ -144,6 +144,26 @@ public sealed class ImageComparisonV1Tests
     }
 
     [Fact]
+    public async Task ByteVisualizationsPreserveSignedRoundingAndHeatmapClamping()
+    {
+        using AlgorithmImageBuffer reference = Gray8([0, 0, 40, 50, 255], 5, 1);
+        using AlgorithmImageBuffer candidate = Gray8([255, 50, 40, 0, 0], 5, 1);
+        using AlgorithmResult result = await RunAsync(reference, candidate, new ImageComparisonParameters
+        {
+            HeatmapMaximum = 100,
+            EnableSsim = false,
+            EnableAlignmentPrecheck = false,
+        }, outputs: ImageComparisonArtifactOutputs.InteractiveVisualizations);
+
+        Assert.Equal(new byte[] { 255, 255, 255, 128, 128, 128, 0, 0, 0, 128, 128, 128, 255, 255, 255 },
+            Image(result, "absolute-difference-visualization").Data.ToArray());
+        Assert.Equal(new byte[] { 0, 0, 0, 64, 64, 64, 128, 128, 128, 191, 191, 191, 255, 255, 255 },
+            Image(result, "signed-difference-visualization").Data.ToArray());
+        Assert.Equal(new byte[] { 0, 0, 128, 128, 255, 128, 128, 0, 0, 128, 255, 128, 0, 0, 128 },
+            Image(result, "difference-heatmap").Data.ToArray());
+    }
+
+    [Fact]
     public async Task ExcludedNonFiniteAlphaDoesNotContaminateMetricHeatmap()
     {
         using AlgorithmImageBuffer reference = Floats([10, 20, 30, 1], 1, 1, AlgorithmImageFormat.Bgra128Float);

@@ -1,0 +1,94 @@
+<UserControl x:Class="ColorVision.ImageEditor.ImageStatusBarView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="clr-namespace:ColorVision.ImageEditor"
+             xmlns:settings="clr-namespace:ColorVision.ImageEditor.Settings"
+             Foreground="{DynamicResource GlobalTextBrush}" SnapsToDevicePixels="True">
+    <UserControl.Resources>
+        <Style x:Key="StatusButton" TargetType="Button">
+            <Setter Property="Height" Value="26"/>
+            <Setter Property="Padding" Value="6,0"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="BorderBrush" Value="Transparent"/>
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Surface" CornerRadius="4" Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}">
+                            <ContentPresenter Margin="{TemplateBinding Padding}" HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                              VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Surface" Property="Background" Value="{DynamicResource ListViewItemBackgroundPointerOver}"/>
+                            </Trigger>
+                            <Trigger Property="IsKeyboardFocused" Value="True">
+                                <Setter TargetName="Surface" Property="BorderBrush" Value="{DynamicResource PrimaryBrush}"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="Surface" Property="Opacity" Value="0.45"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </UserControl.Resources>
+    <Grid Margin="0,0,4,0" VerticalAlignment="Center">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="Auto"/>
+        </Grid.ColumnDefinitions>
+        <Button x:Name="SummaryButton" Style="{StaticResource StatusButton}" Click="SummaryButton_Click"
+                MouseEnter="DetailsAnchor_MouseEnter" MouseLeave="DetailsArea_MouseLeave"
+                AutomationProperties.Name="{x:Static settings:SettingsText.Information}"
+                AutomationProperties.HelpText="{Binding Summary}">
+            <TextBlock FontSize="12" Text="{Binding Summary}" TextTrimming="CharacterEllipsis"/>
+        </Button>
+        <Button x:Name="RevealButton" Grid.Column="1" Style="{StaticResource StatusButton}" Width="27" Padding="0"
+                HorizontalContentAlignment="Center" Click="RevealButton_Click"
+                ToolTip="{local:DisplayText Key='在文件夹中选择文件'}" AutomationProperties.Name="{local:DisplayText Key='在文件夹中选择文件'}">
+            <Rectangle Width="16" Height="16" Fill="{DynamicResource DIOpenFolder}"/>
+        </Button>
+        <Popup x:Name="DetailsPopup" PlacementTarget="{Binding ElementName=SummaryButton}" Placement="Top"
+               StaysOpen="True" AllowsTransparency="True" VerticalOffset="-4" Opened="DetailsPopup_Opened" Closed="DetailsPopup_Closed"
+               DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}">
+            <Border x:Name="DetailsPanel" Focusable="True" KeyboardNavigation.TabNavigation="Cycle" PreviewKeyDown="DetailsPanel_PreviewKeyDown"
+                    MouseEnter="DetailsPanel_MouseEnter" MouseLeave="DetailsArea_MouseLeave"
+                    IsKeyboardFocusWithinChanged="DetailsPanel_IsKeyboardFocusWithinChanged"
+                    AutomationProperties.Name="{x:Static settings:SettingsText.Information}"
+                    Width="420" Padding="14,12" CornerRadius="8" BorderThickness="1"
+                    Background="{DynamicResource GlobalBackground}" BorderBrush="{DynamicResource BorderBrush}">
+                <StackPanel>
+                    <TextBlock Text="{Binding DisplayName}" FontSize="14" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"
+                               Foreground="{DynamicResource GlobalTextBrush}" ToolTip="{Binding DisplayName}"/>
+                    <Border Height="1" Margin="0,8" Background="{DynamicResource BorderBrush}"/>
+                    <ScrollViewer MaxHeight="390" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                        <ItemsControl ItemsSource="{Binding Fields}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Grid Margin="0,3,0,3">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="108"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Text="{Binding Label}" Margin="0,0,10,0" TextWrapping="Wrap" VerticalAlignment="Top"
+                                                   Foreground="{DynamicResource SecondaryTextBrush}" FontSize="12"/>
+                                        <TextBox Grid.Column="1" Text="{Binding Value, Mode=OneWay}" IsReadOnly="True" TextWrapping="Wrap"
+                                                 MinHeight="0" Padding="0" BorderThickness="0" Background="Transparent" FontSize="12"
+                                                 Foreground="{DynamicResource GlobalTextBrush}" AutomationProperties.Name="{Binding Label}"/>
+                                    </Grid>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+                </StackPanel>
+            </Border>
+        </Popup>
+    </Grid>
+</UserControl>

@@ -1,6 +1,7 @@
 ﻿using LocalizedText = global::ColorVision.Engine.EngineLocalization;
 #pragma warning disable CA1720,CA1822,CA1863,CS4014,CS8602
 using ColorVision.Common.MVVM;
+using ColorVision.Database;
 using ColorVision.Engine.FlowProcessing.Diagnostics;
 using ColorVision.Engine.FlowProcessing.Editor;
 using ColorVision.Engine.FlowProcessing.Integration;
@@ -12,12 +13,14 @@ using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.Flow;
 using ColorVision.Engine.Templates.Flow.Versioning;
 using ColorVision.UI;
+using ColorVision.UI.Menus;
 using ColorVision.UI.Views;
 using FlowEngineLib;
 using FlowEngineLib.Base;
 using log4net;
 using ST.Library.UI.NodeEditor;
 using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
 using System.Linq;
@@ -35,7 +38,7 @@ namespace ColorVision.Engine.FlowProcessing
     /// <summary>
     /// CVFlowView.xaml 的交互逻辑
     /// </summary>
-    public partial class ViewFlow : System.Windows.Controls.UserControl, IDisposable, INotifyPropertyChanged
+    public partial class ViewFlow : System.Windows.Controls.UserControl, IDisposable, INotifyPropertyChanged, IActiveDocumentStatusProvider
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(ViewFlow));
 
@@ -135,6 +138,35 @@ namespace ColorVision.Engine.FlowProcessing
 
         public event PropertyChangedEventHandler? PropertyChanged;
 
+        // The toolbar has fixed items. Its controls bind directly to the current flow and execution state.
+        event EventHandler IActiveDocumentStatusProvider.StatusBarItemsChanged
+        {
+            add { }
+            remove { }
+        }
+
+        IEnumerable<StatusBarMeta> IActiveDocumentStatusProvider.GetActiveStatusBarItems()
+        {
+            if (_isStandalone) return [];
+
+            return
+            [
+                new StatusBarMeta
+                {
+                    Id = "Flow.RunToolbar",
+                    Name = Properties.Resources.Workflow,
+                    TargetName = MenuItemConstants.MainWindowTarget,
+                    Alignment = StatusBarAlignment.Center,
+                    Order = 100,
+                    ContentFactory = () => new ContentPresenter
+                    {
+                        Content = this,
+                        ContentTemplate = (DataTemplate)Resources["FlowStatusBarTemplate"]
+                    },
+                },
+            ];
+        }
+
         internal void NotifyExecutionStateChanged()
         {
             if (_disposed || Dispatcher.HasShutdownStarted) return;
@@ -188,7 +220,7 @@ namespace ColorVision.Engine.FlowProcessing
         {
         }
 
-        internal ViewFlow(FlowEngineManager flowEngineManager, bool isStandalone)
+        internal ViewFlow(FlowEngineManager flowEngineManager, bool isStandalone, Func<MySqlConnectedEndpoint?>? getBatchEndpoint = null)
         {
             _isStandalone = isStandalone;
             FlowEngineManager = flowEngineManager;
@@ -211,7 +243,7 @@ namespace ColorVision.Engine.FlowProcessing
             _executionNavigator = new FlowExecutionNavigator(STNodeEditorMain);
             _nodeContextMenuService = new FlowNodeContextMenuService(STNodeEditorMain, _executionNavigator);
             _layoutService = new FlowGraphLayoutService(STNodeEditorMain);
-            _executionSession = new FlowExecutionSession(flowEngineManager, this);
+            _executionSession = new FlowExecutionSession(flowEngineManager, this, getBatchEndpoint);
 
             AutoSizeCommand = new RelayCommand(a => _layoutService.FitToViewport());
             RefreshCommand = new RelayCommand(a => Refresh());

@@ -10,18 +10,7 @@ ColorVision 是一个 Windows WPF 视觉检测平台，包含设备集成、可�
 
 ## 用 AI 理解和维护仓库
 
-拉取仓库后，在此目录打开 Codex 并直接提出问题。[AGENTS.md](AGENTS.md) 提供工作规则，[知识地图](docs/knowledge/index.md)按实际源码职责定位主题、实现和测试。不需要先构建项目或网站，也不依赖维护者的个人记忆。
-
-例如：“新增属性编辑器从哪里扩展？先核对契约和测试，不修改代码。”或“首次构建缺什么环境？先检查，不执行发布。”
-
-安装了 Node.js 时可只读查询，无需安装 npm 依赖：
-
-```powershell
-node docs/.vitepress/scripts/knowledge.mjs search "属性编辑器" --limit 5
-node docs/.vitepress/scripts/knowledge.mjs impact "UI/ColorVision.UI/PropertyEditor"
-```
-
-没有 Node.js 时直接读取 Markdown 或用 `rg` 搜索即可。工具只提供定位候选，回答前仍需阅读主题和实际代码；详细边界见[知识使用约定](docs/README.md)。
+拉取仓库后，在此目录打开 Codex 即可提问。代码定位从类名、界面文字、日志或协议字段入手，沿实现查调用和测试。需要设计理由、兼容规则和现场口径时再读专题。入口不明确时可查知识地图。 [AGENTS.md](AGENTS.md) · [知识地图](docs/knowledge/index.md) · [知识使用约定](docs/README.md)
 
 ## 仓库结构
 
@@ -39,7 +28,7 @@ node docs/.vitepress/scripts/knowledge.mjs impact "UI/ColorVision.UI/PropertyEdi
 
 ## 测试
 
-从改动主题的 `test_paths` 和[测试与验证](docs/02-developer-guide/testing.md)选择相关 managed、native、脚本或后端检查。一次构建或局部测试通过，不代表设备、数据库或正式交付已验收。
+从改动的实现和调用方定位相关测试。验证范围按改动和运行环境选择。 [测试与验证](docs/02-developer-guide/testing.md)
 
 ## 文档
 

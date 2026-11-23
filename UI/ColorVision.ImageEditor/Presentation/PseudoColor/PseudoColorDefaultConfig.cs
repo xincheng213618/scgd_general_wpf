@@ -1,7 +1,9 @@
 using ColorVision.Common.MVVM;
 using ColorVision.Core;
+using ColorVision.ImageEditor.Settings;
 using ColorVision.UI;
 using System.ComponentModel;
+using System.ComponentModel.DataAnnotations;
 
 // ConfigHandler persists Type.FullName; keep this identity so saved defaults remain readable.
 namespace ColorVision.ImageEditor.EditorTools.PseudoColor
@@ -62,7 +64,7 @@ namespace ColorVision.ImageEditor.EditorTools.PseudoColor
         }
         private ColormapTypes _defaultColormapTypes = ColormapTypes.COLORMAP_JET;
 
-        [DisplayName("默认自动范围")]
+        [Display(Name = nameof(SettingsText.PseudoAutoRange), Description = nameof(SettingsText.PseudoAutoRangeDescription), ResourceType = typeof(SettingsText))]
         public bool IsAutoSetRangeByDefault
         {
             get => _isAutoSetRangeByDefault;
@@ -72,6 +74,6 @@ namespace ColorVision.ImageEditor.EditorTools.PseudoColor
                 OnPropertyChanged();
             }
         }
-        private bool _isAutoSetRangeByDefault;
+        private bool _isAutoSetRangeByDefault = true;
     }
 }

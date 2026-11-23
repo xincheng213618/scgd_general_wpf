@@ -13,7 +13,7 @@ namespace ColorVision.Engine.Services.Devices.Sensor.Templates
 
         public override void Execute()
         {
-            new TemplateEditorWindow(new TemplateSensor("Sensor.Default")) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+            new TemplateEditorWindow(new TemplateSensor(SensorTemplateDictionaryService.DefaultCategoryCode)) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         }
     }
 

@@ -149,20 +149,27 @@ public sealed class RegistrationCenterMonitorConfigurationTests
     }
 
     [Theory]
-    [InlineData(true, true, false, true, "stop,save,start", "")]
-    [InlineData(false, true, false, true, "save", "")]
-    [InlineData(false, true, true, true, "save", "save failed")]
-    [InlineData(true, false, false, true, "stop", "未修改监控配置")]
-    [InlineData(true, true, true, true, "stop,save,start", "save failed")]
-    [InlineData(true, true, false, false, "stop,save,start", "配置已保存")]
-    [InlineData(true, true, true, false, "stop,save,start", "更新失败")]
-    public async Task ConfigurationChangePausesAndRestoresOnlyARunningRegistrationCenter(bool running, bool canStop, bool saveFails, bool canStart, string expectedCalls, string expectedError)
+    [InlineData(true, true, false, false, true, "stop,save,uninstall,start", "")]
+    [InlineData(false, true, false, false, true, "save,uninstall", "")]
+    [InlineData(false, true, true, false, true, "save", "save failed")]
+    [InlineData(true, false, false, false, true, "stop", "未修改监控配置")]
+    [InlineData(true, true, true, false, true, "stop,save,start", "save failed")]
+    [InlineData(true, true, false, false, false, "stop,save,uninstall,start", "配置已保存")]
+    [InlineData(true, true, true, false, false, "stop,save,start", "更新失败")]
+    [InlineData(true, true, false, true, true, "stop,save,uninstall,start", "uninstall failed")]
+    [InlineData(true, true, false, true, false, "stop,save,uninstall,start", "uninstall failed")]
+    public async Task ArchiveRemovalSavesMonitoringBeforeUninstallAndRestoresARunningRegistrationCenter(bool running, bool canStop, bool saveFails, bool uninstallFails, bool canStart, string expectedCalls, string expectedError)
     {
         List<string> calls = [];
         Func<Task<bool>> stop = () => { calls.Add("stop"); return Task.FromResult(canStop); };
         Action save = () => { calls.Add("save"); if (saveFails) throw new IOException("save failed"); };
+        Func<Task> uninstall = () =>
+        {
+            calls.Add("uninstall");
+            return uninstallFails ? Task.FromException(new IOException("uninstall failed")) : Task.CompletedTask;
+        };
         Func<Task<bool>> start = () => { calls.Add("start"); return Task.FromResult(canStart); };
-        var task = (Task)typeof(ServiceManagerViewModel).GetMethod("ApplyMonitoringChangeAsync", BindingFlags.Static | BindingFlags.NonPublic)!.Invoke(null, [running, stop, save, start])!;
+        var task = (Task)typeof(ServiceManagerViewModel).GetMethod("ApplyMonitoringChangeAsync", BindingFlags.Static | BindingFlags.NonPublic)!.Invoke(null, [running, stop, save, uninstall, start])!;
         Exception? error = await Record.ExceptionAsync(() => task);
         Assert.Equal(expectedCalls, string.Join(",", calls));
         if (expectedError.Length == 0)

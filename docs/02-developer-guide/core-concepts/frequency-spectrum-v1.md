@@ -5,7 +5,6 @@ status: "current"
 summary: "FrequencySpectrum 保留实现的参数、结果与验证契约；默认运行时由 Experimental 门禁拒绝执行。"
 aliases: ["如何读取 FFT 频谱、为什么 FFT 默认不可执行","FrequencySpectrum","FrequencySpectrumAlgorithmProvider"]
 code_paths: ["UI/ColorVision.ImageEditor/Algorithms/FrequencySpectrumAlgorithmProvider.cs","UI/ColorVision.ImageEditor/Algorithms/StandardAlgorithmCatalog.cs","UI/ColorVision.ImageEditor/Algorithms/ImageAlgorithmPlatform.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/AlgorithmReleaseGateTests.cs"]
 related: ["algorithms.platform","algorithms.index"]
 ---
 
@@ -72,6 +71,6 @@ Runner 在成功、结构化失败、异常和取消后释放 `Transferred` 输�
 ## 验证与性能预算
 
 
-可选 `FrequencySpectrumPipelineProbe` 在 4K Gray16、4K Bgra32 与 8K Gray16 上记录延迟、managed allocation、private-memory delta 和两张显示图的 retained bytes。实现只保留两张 Gray8 显示图；单通道 float spatial、双通道 complex spectrum 与 inverse Mat 都是执行期 native 工作集，结果中不复制整幅 float magnitude/power。管理分配预算是两张结果图加 64 MiB，private 工作集预算是 32 bytes/pixel 加 256 MiB，单次上限 120 秒。该预算是回归门禁，不是所有硬件的实时承诺。
+结果只保留两张 Gray8 图。单通道 spatial、复数频谱和逆变换 Mat 属于运行期原生内存。大图验收分别记录延迟、托管分配、原生工作集和结果保留大小。
 
 频域分析不做多通道分别 DFT、非均匀 FFT、GPU provider、流式/分块近似、相位解包或频域编辑；这些能力需要各自的数值和坐标契约，不能以隐藏转换加入 V1。

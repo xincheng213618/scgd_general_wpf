@@ -39,7 +39,7 @@ internal sealed class LocalCfwPortFlowExecution : FlowLocalExecution
     {
         if (action.RuntimeResources.IsDisposed || action.IsDel || action.TryGetStopStatus(out _)) throw new OperationCanceledException("流程已停止，丢弃滤色轮结果。");
         if (!actualPort.HasValue) throw new InvalidOperationException("滤色轮没有返回确认孔位。");
-        device.UpdateLocalPort(actualPort.Value);
+        device.UpdateConfirmedPort(actualPort.Value);
         return new JObject { ["Port"] = actualPort.Value };
     }
     public override void Dispose() { } // This is the shared device connection, also used by spectrum calibration.

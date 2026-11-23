@@ -1,4 +1,5 @@
 using ColorVision.Core;
+using ColorVision.Database;
 using ColorVision.Engine;
 using ColorVision.Engine.FlowProcessing.Nodes;
 using ColorVision.Engine.Services.Devices.Camera.Local;
@@ -108,6 +109,28 @@ public sealed class LocalFileFusionNodeTests
     }
 
     [Fact]
+    public void OfflineFusionHandsOffTheImageWithoutAccessingResultStorage()
+    {
+        using var fixture = new FusionFixture();
+        var action = new CVStartCFC("offline-fusion") { PersistResults = false };
+        var services = new FakeServices();
+        var node = new LocalFileFusionNode(services)
+        {
+            InputMode = FileFusionInputMode.FileList, Files = [fixture.Add("a.png"), fixture.Add("b.png")],
+            ResultDirectory = Path.Combine(fixture.Directory, "results"),
+        };
+        try
+        {
+            LocalFileFusionResultData result = node.ExecuteSynchronously(action);
+            Assert.Equal(["Fusion"], services.Events);
+            Assert.Equal(0, result.MasterId);
+            Assert.True(File.Exists(result.ImageFilePath));
+            Assert.True(action.TryGetCurrentFrame(out _));
+        }
+        finally { action.RuntimeResources.Dispose(); }
+    }
+
+    [Fact]
     public void PersistenceFailureDoesNotReplaceUpstreamResultOrPublish()
     {
         using var fixture = new FusionFixture();
@@ -139,12 +162,13 @@ public sealed class LocalFileFusionNodeTests
 
     private sealed class FakeServices : IFileFusionServices
     {
+        private readonly MySqlConnectedEndpoint endpoint = new(_ => true, () => throw new InvalidOperationException("Requires offline mock storage."));
         public List<string> Events { get; } = new();
         public string[] Files { get; private set; } = [];
         public MeasureResultImgModel? Model { get; private set; }
         public int PersistedId { get; init; } = 42;
         public Action? DuringFusion { get; init; }
-        public int ResolveBatchId(string serialNumber) { Events.Add("Batch"); return 17; }
+        public (int Id, MySqlConnectedEndpoint? Endpoint) ResolveBatch(CVStartCFC action) { Events.Add("Batch"); return (17, endpoint); }
         public FileFusionResult Execute(IReadOnlyList<string> files, FileFusionMode mode, CancellationToken cancellationToken, FileFusionOptions options)
         {
             Events.Add("Fusion");
@@ -154,10 +178,17 @@ public sealed class LocalFileFusionNodeTests
             image.Freeze();
             return new(image, Files, FileFusionMode.CPU, 1, 2, 3, 6) { Options = options with { } };
         }
-        public int SaveResult(MeasureResultImgModel model) { Events.Add("Save"); Model = model; return PersistedId; }
-        public void Publish(CVStartCFC action, string nodeId, int zIndex, MeasureResultImgModel model)
+        public int SaveResult(MySqlConnectedEndpoint? endpoint, MeasureResultImgModel model)
+        {
+            Assert.Same(this.endpoint, endpoint);
+            Events.Add("Save");
+            Model = model;
+            return PersistedId;
+        }
+        public void Publish(CVStartCFC action, string nodeId, int zIndex, MeasureResultImgModel model, MySqlConnectedEndpoint? endpoint)
         {
             Events.Add("Publish");
+            Assert.Same(this.endpoint, endpoint);
             Assert.Equal(PersistedId, model.Id);
             Assert.True(action.TryGetCurrentFrame(out _));
         }

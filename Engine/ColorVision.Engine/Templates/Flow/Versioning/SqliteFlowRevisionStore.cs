@@ -204,7 +204,8 @@ namespace ColorVision.Engine.Templates.Flow.Versioning
                         FlowRevisionStoreRules.CreateRevision(request, head);
                     Insert(transaction, revision);
                     transaction.Commit();
-                    return revision.DeepClone();
+                    // The revision owns its data and the store retains only the persisted values.
+                    return revision;
                 }
                 catch (SqliteException ex)
                     when (ex.SqliteErrorCode == 19

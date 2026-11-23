@@ -5,7 +5,6 @@ status: "current"
 summary: "独立 PluginKit 的项目命名、CLI/config 参数、构建与发布模式、包内容和失败排查；显式 config 的上传行为与无参数运行不同。"
 aliases: ["ColorVision.PluginKit","cvplugin","cvplugin.exe","pluginkit.config.json","插件 SDK","外部插件 SDK","PluginKit SDK打包","auto_mode","keepPackageAfterUpload","buildCommand","buildWorkingDir","pluginName","srcDir","sharedFiles","targetHostVersion","远端共享清单","check-shared-files","Plugin DLL not found","Cannot read version from","No .csproj file found under"]
 code_paths: ["SDK/ColorVision.Plugin.SDK.md","SDK/ColorVision.PluginKit/README.md","SDK/ColorVision.PluginKit/docs/ColorVision.Plugin.SDK.md","SDK/ColorVision.PluginKit/examples/YoloWpfDemo.Commands.md","SDK/ColorVision.PluginKit/scripts/package_cvxp.py","SDK/ColorVision.PluginKit/scripts/shared_manifest.py","SDK/ColorVision.PluginKit/cvplugin.spec","SDK/ColorVision.PluginKit/build.bat"]
-test_paths: ["Scripts/tests/test_pluginkit_shared_manifest.py","Scripts/tests/test_pluginkit_executable.py"]
 related: ["plugins.getting-started","delivery.scripts"]
 ---
 
@@ -145,6 +144,6 @@ SDK 先上传 `.cvxp`，再上传 `LATEST_RELEASE`。任一步失败会抛错，
 
 ## 验证范围
 
-`Scripts/tests/test_pluginkit_shared_manifest.py` 覆盖版本/路径校验、下载限制、缓存隔离、失败回退、显式本地清单、检查/构建模式以及共享/私有 DLL 的包内边界；远端请求使用替身。设置 `COLORVISION_TEST_CVPLUGIN_EXE` 为已构建 EXE 的绝对路径后，`Scripts/tests/test_pluginkit_executable.py` 使用临时目录和仅监听回环地址的 HTTP 服务验证真实 EXE 的在线刷新、离线读取和错误阻断；未设置时跳过。两者都不证明生产清单已经发布。根 `Scripts/tests/test_package_cvxp.py` 不等于覆盖这份 SDK 脚本。构建 exe、执行配置、打包、上传与清理验收须分别取得授权，不为验证 Markdown 自动运行。
+隔离环境可用实际 SDK 可执行文件核对在线刷新、离线读取和错误阻断。生产清单和包单独验收。构建、配置、打包、上传与清理各按实际副作用确认授权。
 
 实际 exe 依赖打入情况、不同项目/程序集命名、配置模式组合、两段上传部分失败与清理结果，仍需隔离环境专项验收。文档构建与静态核对不证明插件已在目标宿主加载。

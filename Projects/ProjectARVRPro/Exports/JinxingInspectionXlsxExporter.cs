@@ -10,6 +10,7 @@ namespace ProjectARVRPro.Exports
     {
         private const string ResultSheetName = "雷鸟光机测试结果表";
         private const string SpecSheetName = "Sheet1";
+        private static readonly object WorkbookWriteGate = new();
 
         public CustomTestResultOutputProfile Profile => CustomTestResultOutputProfile.金星1_0光机抽检规格_视彩成像色度计;
 
@@ -21,17 +22,26 @@ namespace ProjectARVRPro.Exports
             Directory.CreateDirectory(context.OutputDirectory);
 
             string outputPath = Path.Combine(context.OutputDirectory, GetFileName(context));
-            using IWorkbook workbook = OpenOrCreateWorkbook(outputPath);
-            ISheet sheet = workbook.GetSheet(ResultSheetName)
-                ?? (workbook.NumberOfSheets > 0 ? workbook.GetSheetAt(0) : workbook.CreateSheet(ResultSheetName));
-            int dataRowIndex = GetNextDataRowIndex(sheet);
-            IRow row = sheet.GetRow(dataRowIndex) ?? sheet.CreateRow(dataRowIndex);
+            string destination = Path.GetFullPath(outputPath);
+            // Each append needs the newest committed workbook, including writes from another exporter instance.
+            lock (WorkbookWriteGate)
+            {
+                AtomicResultFile.Write(destination, stagingPath =>
+                {
+                    using IWorkbook workbook = OpenOrCreateWorkbook(destination);
+                    ISheet sheet = workbook.GetSheet(ResultSheetName)
+                        ?? (workbook.NumberOfSheets > 0 ? workbook.GetSheetAt(0) : workbook.CreateSheet(ResultSheetName));
+                    int dataRowIndex = GetNextDataRowIndex(sheet);
+                    IRow row = sheet.GetRow(dataRowIndex) ?? sheet.CreateRow(dataRowIndex);
 
-            var styles = ExportStyles.Create(workbook);
-            WriteDataRow(row, dataRowIndex - 1, context, styles);
+                    var styles = ExportStyles.Create(workbook);
+                    WriteDataRow(row, dataRowIndex - 1, context, styles);
 
-            using FileStream output = File.Create(outputPath);
-            workbook.Write(output);
+                    using FileStream output = File.Create(stagingPath);
+                    workbook.Write(output, leaveOpen: true);
+                    output.Flush(flushToDisk: true);
+                });
+            }
             return outputPath;
         }
 
@@ -47,6 +57,7 @@ namespace ProjectARVRPro.Exports
             if (File.Exists(outputPath))
             {
                 using FileStream input = File.Open(outputPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+                // Stream-backed workbooks do not save to the original path when closed.
                 return new XSSFWorkbook(input);
             }
 

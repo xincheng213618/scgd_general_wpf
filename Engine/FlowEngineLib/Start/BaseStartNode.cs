@@ -358,6 +358,15 @@ public abstract class BaseStartNode : CVDeviceNode, IDisposable
 	{
 	}
 
+	// Register cleanup at the original command's admission point. Returning false vetoes that command.
+	internal virtual void PublishWithDeferredCleanup(MQActionEvent action, Func<object, Action<MQActionEvent, Func<bool>>, bool> onPublish)
+	{
+		if (onPublish(this, (cleanup, canPublish) =>
+		{
+			if (canPublish()) DoPublish(cleanup);
+		})) DoPublish(action);
+	}
+
 	public virtual void DoSubscribe(string topic, CVBaseServerNode serverNode)
 	{
 		if (string.IsNullOrWhiteSpace(topic) || serverNode == null)
@@ -452,7 +461,7 @@ public abstract class BaseStartNode : CVDeviceNode, IDisposable
 
 	public bool TryStart(string serialNumber) => TryStartRun(serialNumber, trackCompletion: false) != null;
 
-	internal CVStartCFC TryStartRun(string serialNumber, bool trackCompletion)
+	internal CVStartCFC TryStartRun(string serialNumber, bool trackCompletion, Action<FlowRuntimeResources> initializeRuntimeResources = null)
 	{
 		serialNumber = ColorVision.Common.Utilities.Tool.SanitizeFileName(serialNumber);
 		if (!CanAcceptStart)
@@ -461,11 +470,23 @@ public abstract class BaseStartNode : CVDeviceNode, IDisposable
 			return null;
 		}
 		CVStartCFC start = new CVStartCFC(serialNumber) { PersistResults = PersistResults };
-		if (trackCompletion)
-			start.TrackCompletion();
-		DoDispatch(start);
-		// A downstream node can finish synchronously before dispatch returns.
-		return start.WasDispatched ? start : null;
+		try
+		{
+			initializeRuntimeResources?.Invoke(start.RuntimeResources);
+			if (trackCompletion)
+				start.TrackCompletion();
+			DoDispatch(start);
+			// A downstream node can finish synchronously before dispatch returns.
+			return start.WasDispatched ? start : null;
+		}
+		finally
+		{
+			if (!start.WasDispatched)
+			{
+				try { start.RuntimeResources.Dispose(); }
+				catch (Exception error) { logger.Error($"Failed to release resources for rejected flow {serialNumber}.", error); }
+			}
+		}
 	}
 
 	protected void DoDispatch(CVStartCFC start)
@@ -515,8 +536,8 @@ public abstract class BaseStartNode : CVDeviceNode, IDisposable
 			{
 				try
 				{
-					action.SetActionType(ActionTypeEnum.Stop);
-					action.DoFinishing();
+					// Bulk teardown settles run waiters without publishing a Finished event.
+					action.TryDoFinishing(() => action.SetActionType(ActionTypeEnum.Stop), completeTrackedRun: true);
 				}
 				catch (Exception ex)
 				{
@@ -556,24 +577,22 @@ public abstract class BaseStartNode : CVDeviceNode, IDisposable
 			return;
 		}
 		FlowStartEventHandler finished = Finished;
-		if (finished == null)
+		if (finished == null && startAction.TrackedCompletion == null)
 			return;
 
 		FlowStartEventArgs result = startAction.TrackedTerminalResult ?? CreateFinishedEventArgs(startAction);
-		foreach (FlowStartEventHandler handler in finished.GetInvocationList())
+		foreach (FlowStartEventHandler handler in finished?.GetInvocationList() ?? Array.Empty<Delegate>())
 		{
 			try
 			{
-				handler(this, new FlowStartEventArgs(result.SerialNumber, result.Status, result.TotalTime, result.Message, result.ErrorNodeName, result.ErrorNodeId)
-				{
-					TrackedCompletion = startAction.TrackedCompletion
-				});
+				handler(this, new FlowStartEventArgs(result.SerialNumber, result.Status, result.TotalTime, result.Message, result.ErrorNodeName, result.ErrorNodeId));
 			}
 			catch (Exception error)
 			{
 				logger.Error($"Start node completion subscriber failed for flow {result.SerialNumber}.", error);
 			}
 		}
+		startAction.TrackedCompletion?.TrySetResult(result);
 	}
 
 	internal static FlowStartEventArgs CreateFinishedEventArgs(CVStartCFC startAction)

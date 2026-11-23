@@ -5,7 +5,6 @@ status: "current"
 summary: "按插件、菜单、属性面板、设备、Flow、算法和结果扩展任务定位实现与当前契约。"
 aliases: ["扩展开发","扩展入口","增加扩展应放在哪一层","扩展功能应该实现哪个接口"]
 code_paths: ["UI/ColorVision.Common/Interfaces/","UI/ColorVision.UI/Plugins/PluginLoader.cs","UI/ColorVision.UI/PropertyEditor/PropertyEditorTypeAttribute.cs","UI/ColorVision.UI/PropertyEditor/PropertyEditors.cs","Engine/FlowEngineLib/Base/CVBaseServerNode.cs","Engine/ColorVision.Engine/Templates/","Engine/ColorVision.Engine/Abstractions/IResultHandlers.cs","Engine/ColorVision.Engine/Services/ResultHandleRegistry.cs"]
-test_paths: []
 related: ["plugins.index","plugins.model","engine.index","engine.results","ui.index","ui.menus","ui.property-grid","algorithms.platform","flow.node-extension","engine.devices","engine.template-design"]
 ---
 

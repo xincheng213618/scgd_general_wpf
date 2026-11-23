@@ -5,7 +5,6 @@ status: "current"
 summary: "灰度/RGB、CVCIE 及带校正参数 CVRAW 的多通道叠加剖面、主题适配、统计和完整 JSON/CSV 导出；包含精度、单位、失效规则及预算。"
 aliases: ["CIE Y", "CIE Yxy", "CIE x/y", "原始亮度剖面", "灰度与颜色剖面", "水平剖面", "垂直剖面", "任意折线剖面", "切面图", "截面图", "剖面采样参数", "剖面导出", "剖面采样数据", "剖面曲线", "ImageProfile", "LineProfile", "SectionalDrawing", "ImageProfileAlgorithmProvider", "ImageProfileParameters", "ImageProfileEditorTool", "ImageProfileResultWindow", "ProfileDataExtractor", "ProfileData", "ProfileChartWindow", "ImageProfileInterpolation", "ImageProfileBoundaryMode", "SampleSpacingPixels", "IncludeLuminance", "IncludeAlpha", "ImageProfileParameters.MaximumSamples", "ImageProfileParameters.ClosePath", "ImageProfileParameters.BoundaryMode", "ImageProfileParameters.Interpolation", "profile_path_required", "profile_path_degenerate", "profile_path_point_limit_exceeded", "profile_sample_limit_exceeded", "profile_execution_sample_budget_exceeded", "profile_result_budget_exceeded", "profile_sample_out_of_bounds", "profile_no_samples"]
 code_paths: ["UI/ColorVision.ImageEditor/Algorithms/IImageProfileMeasurementSource.cs", "Engine/ColorVision.Engine/Media/CvcieProfileSource.cs", "Engine/ColorVision.Engine/Media/CvRawProfileSource.cs", "Engine/ColorVision.Engine/Media/CombinedProfileSource.cs", "Engine/ColorVision.Engine/Media/CVRawOpen.cs", "UI/ColorVision.ImageEditor/Algorithms/ImageProfileAlgorithmProvider.cs", "UI/ColorVision.ImageEditor/Algorithms/ImageProfileParameters.cs", "UI/ColorVision.ImageEditor/Algorithms/StandardAlgorithmCatalog.cs", "UI/ColorVision.ImageEditor/Algorithms/ImageAlgorithmPlatform.cs", "UI/ColorVision.ImageEditor/Algorithms/ImageAlgorithmInputFactory.cs", "UI/ColorVision.ImageEditor/Algorithms/AlgorithmImageInterop.cs", "UI/ColorVision.ImageEditor/Algorithms/AlgorithmResultExporter.cs", "UI/ColorVision.ImageEditor/EditorTools/Algorithms/Calculate/ImageProfile", "UI/ColorVision.ImageEditor/TransientRoiSelectionSession.cs", "UI/ColorVision.ImageEditor/EditorToolFactory.cs", "UI/ColorVision.ImageEditor/Draw/Line/ProfileDataExtractor.cs", "UI/ColorVision.ImageEditor/Draw/Line/ProfileData.cs", "UI/ColorVision.ImageEditor/Draw/Line/ProfileChartWindow.xaml", "UI/ColorVision.ImageEditor/Draw/Line/ProfileChartWindow.xaml.cs", "UI/ColorVision.ImageEditor/Draw/Line/DVLineDVContextMenu.cs", "UI/ColorVision.ImageEditor/Draw/Polygon/DVPolygonDVContextMenu.cs", "UI/ColorVision.ImageEditor/BatchProcessing/BatchAlgorithmAnalysisProcessor.cs", "Engine/ColorVision.Engine/FlowProcessing/Algorithms/LocalFlowImageAlgorithmAdapter.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/CvRawProfileTests.cs","Test/ColorVision.UI.Tests/CalibratedRawDisplayTests.cs","Test/ColorVision.UI.Tests/ProfileDataExtractorTests.cs"]
 related: ["algorithms.platform", "algorithms.index", "algorithms.roi-statistics", "algorithms.image-comparison"]
 ---
 
@@ -184,6 +183,6 @@ Indexed8 按调色板返回 RGB 和 Rec.601 亮度曲线。
 
 ## 验证范围
 
-`ProfileDataExtractorTests` 覆盖旧接口的 Gray8、Bgr24、Rgb48、Indexed8、闭合和 Skip；默认 500 步的极短路径仍需验证。
+剖面验证须包含实际位深与短路径。默认 500 步在极短路径上的表现需单独观察。
 
 这验证共享选择器，不证明“任意折线”入口已支持这些路径。现有用例也不能替代完整鼠标流程、预览遗漏尖峰、导出关闭/提交竞态和极短路径容差的验证。交付门禁见[统一平台](./image-algorithm-platform-v1.md#m0-验收门禁)。

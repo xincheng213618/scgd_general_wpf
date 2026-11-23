@@ -4,7 +4,7 @@ import filecmp
 import re
 import tempfile
 import zipfile
-from pathlib import PurePosixPath
+from pathlib import Path, PurePosixPath
 
 try:
     from .backend_client import upload_file_to_folder
@@ -14,6 +14,7 @@ try:
         validate_operations_watchdog_runtime,
     )
     from .service_host_runtime import REQUIRED_SERVICE_HOST_RUNTIME_PATHS, validate_service_host_runtime
+    from .verify_release import verify_release
 except ImportError:
     from backend_client import upload_file_to_folder
     from native_runtime_integrity import ensure_native_runtime_integrity, validate_native_archive
@@ -22,6 +23,7 @@ except ImportError:
         validate_operations_watchdog_runtime,
     )
     from service_host_runtime import REQUIRED_SERVICE_HOST_RUNTIME_PATHS, validate_service_host_runtime
+    from verify_release import verify_release
 
 ALLOWED_RUNTIME_PREFIXES = (
     'runtimes/win/',
@@ -259,10 +261,6 @@ def create_full_zip(version_dir, output_zip, *, native_hashes=None):
 
 def make_incremental_zip(old_zip, new_version_dir, incremental_zip, *, native_hashes=None):
     """制作增量更新包"""
-    if not os.path.exists(old_zip):
-        create_full_zip(new_version_dir, incremental_zip.replace('Update', ''), native_hashes=native_hashes)
-        return
-
     with tempfile.TemporaryDirectory(prefix='colorvision-old-version-', ignore_cleanup_errors=True) as old_version_dir:
         with zipfile.ZipFile(old_zip, 'r') as zipf:
             zipf.extractall(old_version_dir)
@@ -341,10 +339,12 @@ def main() -> int:
     create_directory_if_not_exists(update_dir)
 
     old_zip = find_incremental_baseline(history_dir, version)
-    print(f"Incremental baseline: {old_zip or 'none (full installer only)'}")
-    incremental_zip = os.path.join(update_dir, f'ColorVision-Update-[{version}].cvx')
+    full_zip = Path(history_dir) / f'ColorVision-[{version}].zip'
+    incremental_zip = None
 
     if old_zip:
+        print(f"Incremental baseline: {old_zip}")
+        incremental_zip = Path(update_dir) / f'ColorVision-Update-[{version}].cvx'
         print(f"创建增量包: {incremental_zip}")
         try:
             make_incremental_zip(old_zip, new_version_dir, incremental_zip, native_hashes=native_hashes)
@@ -354,10 +354,12 @@ def main() -> int:
         if not upload_file(incremental_zip, "ColorVision/Update"):
             print("增量包上传失败，终止发布。")
             return 1
-    print("创建全量包")
-    full_zip = os.path.join(history_dir, f'ColorVision-[{version}].zip')
+
+    print(f"创建全量包: {full_zip}")
     create_full_zip(new_version_dir, full_zip, native_hashes=native_hashes)
-    return 0
+    if incremental_zip is None:
+        print(f"当前版本建立增量基线: {full_zip}")
+    return verify_release(version, full_zip, incremental_zip)
 
 
 if __name__ == "__main__":

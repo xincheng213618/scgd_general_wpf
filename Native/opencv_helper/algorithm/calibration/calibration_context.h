@@ -14,7 +14,8 @@ namespace cvcore::calibration {
 class CalibrationContext final {
 public:
     bool clear();
-    bool load(CalibrationType type, const std::filesystem::path& file);
+    void transferWorkBuffersFrom(CalibrationContext& source);
+    bool load(CalibrationType type, const std::filesystem::path& file, CalibrationFileDigest* digest = nullptr);
     bool execute(const ImageView& raw, float* cieData, std::size_t cieElementCount, const ExecutionOptions& options);
     bool executeTo(
         const ImageView& sourceRaw,
@@ -34,6 +35,7 @@ private:
     // cache. Stateless algorithms share their immutable item directly;
     // geometric algorithms use a private executor over shared full-frame maps.
     std::vector<std::shared_ptr<CalibrationItem>> items_;
+    bool canSeedScratchFromPair_ = false;
     std::unique_ptr<std::uint8_t[]> rawScratch_;
     std::size_t rawScratchCapacity_ = 0;
     std::unique_ptr<std::uint8_t[]> rawScratch2_;

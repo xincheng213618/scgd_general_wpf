@@ -5,7 +5,6 @@ status: "current"
 summary: "图像比较的操作、参数范围、ROI、差分/SSIM/对齐结果和PNG/JSON/CSV导出；对齐预检使用有硬采样预算的均匀网格，192MiB仅限制图像输出。"
 aliases: ["图像比较", "ImageComparison", "CompareImage", "ImageDiff", "ImageComparisonAlgorithmProvider", "ImageComparisonParameters", "ImageComparisonEditorTool", "ImageComparisonResultWindow", "ImageComparisonQualityAnalyzer", "ImageComparisonOutputPlan", "差分热力图", "有符号差", "SSIM", "PSNR", "对齐预检", "IncludeAlphaInMetrics", "FloatPeakValue", "HeatmapMaximum", "EnableSsim", "SsimWindowSize", "SsimK1", "SsimK2", "SsimMinimumValidFraction", "EnableAlignmentPrecheck", "AlignmentSearchRadius", "AlignmentWarningThresholdPixels", "AlignmentMinimumOverlapFraction", "AlignmentMaximumSamples", "comparison_output_budget_exceeded", "float_difference_artifact_overflow", "alignment_precheck_inconclusive", "comparison_roi_empty", "comparison_roi_clipped", "comparison_output_plan_invalid", "colorvision.image-comparison.requested-artifacts"]
 code_paths: ["UI/ColorVision.ImageEditor/Algorithms/ImageComparisonAlgorithmProvider.cs", "UI/ColorVision.ImageEditor/Algorithms/ImageComparisonQualityAnalyzer.cs", "UI/ColorVision.ImageEditor/Algorithms/ImageComparisonParameterMigrator.cs", "UI/ColorVision.ImageEditor/Algorithms/ImageComparisonOutputPlan.cs", "UI/ColorVision.ImageEditor/Algorithms/StandardAlgorithmParameters.cs", "UI/ColorVision.ImageEditor/Algorithms/StandardAlgorithmCatalog.cs", "UI/ColorVision.ImageEditor/Algorithms/ImageAlgorithmPlatform.cs", "UI/ColorVision.ImageEditor/Algorithms/ImageAlgorithmInputFactory.cs", "UI/ColorVision.ImageEditor/Algorithms/AlgorithmPixelRoi.cs", "UI/ColorVision.ImageEditor/Algorithms/AlgorithmResultExporter.cs", "UI/ColorVision.ImageEditor/EditorTools/Algorithms/Calculate/ImageComparison"]
-test_paths: ["Test/ColorVision.UI.Tests/ImageComparisonV1Tests.cs","Test/ColorVision.UI.Tests/ImageComparisonAdvancedV1Tests.cs"]
 related: ["algorithms.platform","algorithms.index","algorithms.image-registration","algorithms.lens-distortion-correction"]
 ---
 
@@ -165,8 +164,8 @@ ImageView 固定请求三张显示图，参数窗口没有输出计划开关。�
 | `comparison_output_budget_exceeded` | 输出计划和全图尺寸；ROI 不减少分配，192 MiB 不包括输入内存 |
 | SSIM 为 N/A、偏移为零 | 分别检查 EnableSsim/有效窗口数、对齐 Status/Confidence，不能直接判定图像相同 |
 
-`ImageComparisonV1Tests` 覆盖基础指标、整数/浮点差分、非有限与溢出、输入验证、输出选择/预算、取消及输入/结果释放；`ImageComparisonAdvancedV1Tests` 覆盖 schema 迁移、ROI、SSIM、已知偏移、低纹理及结果窗口/overlay。界面测试验证控件存在和生命周期，不等于覆盖文件选择、全部解码器、PNG/CSV 操作或实际 Blink/Split 交互。
+用真实窗口核对文件选择、参数预览、差分结果、导出和图层生命周期。
 
-采样数量测试覆盖 257×257 方形、水平/竖直狭长区域及 86×86 的取整边界，并用仅末端含纹理的输入验证采样仍覆盖整个区域；参数测试不能替代每个边界值的完整验证。当前托管套件不包含 4K/8K 性能探针，比较性能时须保持输入与配置一致，并分别记录 CPU、内存、对齐、SSIM、heatmap 和三图窗口成本。
+比较性能时保持输入与配置一致，分别记录 CPU、内存、对齐、SSIM、heatmap 和三图窗口成本。
 
 交付验证还应遵循[平台验收门禁](./image-algorithm-platform-v1.md#m0-验收门禁)。

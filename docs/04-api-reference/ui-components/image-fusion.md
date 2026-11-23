@@ -5,7 +5,6 @@ status: "current"
 summary: "景深融合窗口与本地流程节点共用文件执行器；输入顺序、CPU/CUDA门禁、取消、结果保存及下游图像交接。"
 aliases: ["景深融合", "执行融合", "融合结果", "GPU 异步 (CUDA Async)", "焦点堆栈", "focus stacking", "FusionWindow", "FusionMode", "FusionFolderMenuContribution", "ImageCompute", "M_Fusion", "CM_Fusion", "CM_Fusion_Async", "融合耗时", "FileFusion", "LocalFileFusionNode", "流程景深融合", "有序文件列表"]
 code_paths: ["UI/ColorVision.Core/FileFusion.cs", "UI/ColorVision.Core/FileFusionOptions.cs", "Native/include/fusion_options.h", "Native/include/fusion_request.h", "Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalFileFusionNode.cs", "Engine/ColorVision.Engine/Services/Images/FileFusion/FileFusionServices.cs", "UI/ColorVision.ImageTools/Fusion/FusionWindow.xaml", "UI/ColorVision.ImageTools/Fusion/FusionWindow.xaml.cs", "UI/ColorVision.ImageTools/Fusion/FusionFolderMenuContribution.cs", "UI/ColorVision.ImageTools/ImageResourceFileTypes.cs", "UI/ColorVision.Core/ImageCompute.cs", "UI/ColorVision.Core/OpenCVMediaHelper.cs", "UI/ColorVision.Core/OpenCVCuda.cs", "Native/include/opencv_media_export.h", "Native/include/cuda_export.h", "Native/opencv_helper/opencv_media_export.cpp", "Native/opencv_helper/fusion.cpp", "Native/opencv_cuda/cuda_export.cpp", "Native/opencv_cuda/Fusion.h", "Native/opencv_cuda/cudamath.h"]
-test_paths: ["Test/ColorVision.UI.Tests/FileFusionTests.cs", "Test/ColorVision.UI.Tests/LocalFileFusionNodeTests.cs", "Test/opencv_helper_test/test_find_luminous_area.cpp", "Test/opencv_helper_test/test_cuda_fusion.cpp"]
 related: ["ui.image-tools", "ui.core", "ui.image-editor", "ui.documents", "engine.native-integration"]
 ---
 
@@ -15,7 +14,7 @@ related: ["ui.image-tools", "ui.core", "ui.image-editor", "ui.documents", "engin
 
 ## 景深融合算法原理 {#algorithm-principles}
 
-景深融合将一组不同焦点的本地图片融合为一张图像。独立窗口和本地流程节点共同调用 `ColorVision.Core.FileFusion`，读取磁盘文件，不使用编辑器未保存的修改或流程连续采集帧。算法不依赖远端服务；流程图像结果登记仍依赖已有流程批次和 MySQL。
+景深融合将一组不同焦点的本地图片融合为一张图像。独立窗口和本地流程节点共同调用 `ColorVision.Core.FileFusion`，读取磁盘文件，不使用编辑器未保存的修改或流程连续采集帧。启用流程持久化时，图像结果登记使用所属批次的 MySQL 连接。
 
 不同焦点的图片在不同位置包含清晰细节。当前算法先为每张图计算局部清晰度，再在同一像素位置对各帧强度作加权融合。输入应保持同一视场和位置，并按焦点顺序、近似等间隔采集；**尺寸相同不代表已配准**，当前不会自动对齐、去重影或控制电机采集。
 
@@ -94,7 +93,7 @@ $$
 | 计算模式 | Auto、CPU、GPU、GPUAsync |
 | 结果目录 | 留空使用当前用户 `LocalAppData/ColorVision/Results/Fusion`；不得等于任一输入文件的父目录 |
 
-例如：开始 → 景深融合 → 十字定位 → 结束。每次执行保存一张带唯一名称的 PNG，以现有图像结果类型 `100` 登记，并通过 `SetCurrentFrame` 交给后续本地节点。`MasterId` 指向图像记录，`MasterValue` 和记录 `FileUrl` 指向保存后的图片。远端节点仍按自己的文件访问及结果引用契约工作，不因本地保存而自动获得远端文件可见性。
+例如：开始 → 景深融合 → 十字定位 → 结束。每次执行保存一张带唯一名称的 PNG，并通过 `SetCurrentFrame` 交给后续本地节点。持久化模式按图像结果类型 `100` 登记，`MasterId` 指向原库中的记录。离线运行的 `MasterId` 为 `0`，下游可以读取内存帧和 `MasterValue` 指向的本地 PNG。远端节点仍按自己的文件访问及结果引用契约工作。
 
 窗口和流程节点使用同一组参数，默认值保持清晰度窗口 5、可信度平滑窗口 3、拟合间隔 2、α=0.2、阈值 13。窗口参数编辑器按“常用/高级”分类，提供作用说明与恢复默认值；窗口摘要显示本次设置，耗时列表保存每次执行的参数，便于调参比较。流程节点将参数随 STN 保存，并将实际执行参数写入结果记录的 `Params.FusionOptions`。
 
@@ -162,10 +161,8 @@ Auto 只在执行前选路，不在 GPU 失败后重试 CPU。CUDA 驱动检查�
 
 ## 验证入口与缺口
 
-- `FileFusionTests`：文件夹自然顺序、显式顺序、输入锁、格式/尺寸/重复拒绝、Auto 小图组选路、强制 GPU 拒绝、取消后丢弃、native 失败不重试，以及两张合成灰度图的真实 CPU 调用。
-- `LocalFileFusionNodeTests`：节点端口、包含逗号和中文路径的 STN 往返、文件夹/列表输入、真实 PNG 保存和帧交接、登记失败及停止后丢弃。数据库与消息发布使用替身，不访问真实数据库。
-- `Test/opencv_helper_test/test_find_luminous_area.cpp` 的 `smokeFusionReturnsOwnedHImage` 检查 CPU 单图输出和释放；`test_cuda_fusion.cpp` 提供 CUDA DLL 验证和比较入口，覆盖旧数组/新参数请求、同步/异步一致性、非法参数和短图组/平坦图像。CUDA DLL 内的 `M_Fusion` 是 GPU 别名，该入口比较不等于 CPU/GPU 数值一致性。
+- CUDA DLL 内的 `M_Fusion` 是 GPU 别名。CPU/GPU 数值一致性需分别调用相应实现比对。
 
-测试入口不是本次已通过声明；窗口人工操作、真实数据库历史显示、CUDA 驱动/native 依赖、大图资源和真实焦点堆栈融合质量需分别验收。Native/CUDA 测试会创建隔离图像并加载真实 DLL，不能用窗口响应或托管替身测试代替它们。
+窗口实际操作、数据库历史显示、CUDA 驱动/native 依赖、大图资源和焦点堆栈融合质量需分别验收。
 
 图像另存与 source/rendered 的差别见[图像编辑器](./ColorVision.ImageEditor.md)。

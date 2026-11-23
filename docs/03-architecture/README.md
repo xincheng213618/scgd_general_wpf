@@ -5,7 +5,6 @@ status: "current"
 summary: "按启动、跨模块调用、流程、模板与权限问题定位架构契约。"
 aliases: ["架构设计","模块关系"]
 code_paths: ["ColorVision/App.xaml.cs","Engine/ColorVision.Engine/FlowProcessing"]
-test_paths: []
 related: ["platform.system","platform.runtime","flow.architecture","platform.service-integration-roadmap"]
 ---
 
@@ -26,4 +25,4 @@ related: ["platform.system","platform.runtime","flow.architecture","platform.ser
 | 哪些授权真正存在，哪些没有统一接入？ | [权限边界](./security/overview.md)、[RBAC](./security/rbac.md) |
 | 如何让配套服务逐步成为 ColorVision 的内部组件？ | [服务整合演进规划](./service-integration-roadmap.md)（规划，非当前能力声明） |
 
-具体组件及源码关联见[生成的知识地图](../knowledge/index.md)。修改前核对目标主题的实现、测试和验证缺口；编号目录保留为稳定地址，不另规定阅读顺序。
+从实际调用链确认职责，编号目录保留为稳定地址。 [源码与专题地图](../knowledge/index.md)

@@ -461,9 +461,9 @@
     <value>無法讀取所選 MySQL 的版本，已停止操作。請選擇原安裝目錄中的 bin\mysqld.exe，或包含該程式的有效 MySQL ZIP 安裝套件。</value>
   </data>
   <data name="RemoveArchiveServiceMonitoring" xml:space="preserve">
-    <value>移除歸檔服務檢測</value>
+    <value>移除歸檔服務</value>
   </data>
   <data name="RemoveArchiveServiceMonitoringToolTip" xml:space="preserve">
-    <value>從註冊中心監控清單移除 CVArchService；執行中的註冊中心會短暫停止並恢復</value>
+    <value>移除註冊中心對 CVArchService 的監控，並解除安裝已安裝的歸檔服務。執行中的註冊中心會短暫停止並恢復。</value>
   </data>
 </root>

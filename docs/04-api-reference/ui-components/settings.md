@@ -5,7 +5,6 @@ status: "current"
 summary: "设置窗口的元数据发现、搜索定位与活对象编辑；选项/搜索入口在关闭窗口后调用保存，关窗不撤销修改，保存失败不回滚；启动检查更新是聚合开关。"
 aliases: ["设置窗口", "选项", "设置搜索", "定位设置项", "自定义设置页", "启动检查更新", "SettingWindow", "SettingWindowController", "SettingRowFactory", "SettingMetadataResolver", "SettingEntryCatalog", "SettingSearchProvider", "SettingNavigation", "NavigateToSetting", "ConfigSettingManager", "IConfigSettingProvider", "ConfigSettingMetadata", "AggregatedBoolSetting", "MenuOptions"]
 code_paths: ["UI/ColorVision.UI.Desktop/Settings", "UI/ColorVision.UI/ConfigSetting/ConfigSettingManager.cs", "UI/ColorVision.Common/Interfaces/ConfigSetting", "UI/ColorVision.UI/AssemblyHandler.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/ConfigServiceAdaptersTests.cs","Test/ColorVision.UI.Tests/StorageMaintenanceTests.cs","Test/ColorVision.UI.Tests/SettingSearchProviderTests.cs"]
 related: ["ui.desktop", "ui.configuration", "ui.property-grid", "ui.discovery", "ui.hotkeys", "ui.search", "ui.localization", "operations.exports", "delivery.update", "ui.storage-maintenance", "ui.desktop-pet"]
 ---
 
@@ -47,7 +46,7 @@ related: ["ui.desktop", "ui.configuration", "ui.property-grid", "ui.discovery", 
 
 ## 侧栏、搜索与自定义页面
 
-主题模式、预设、颜色、字体和启动页主题使用独立 `Appearance` 导航组，紧跟常规。常规页保留语言、启动恢复窗口和 Windows 经典菜单，仍使用 `Appearance` 分区，显示为“界面”；聚合启动更新、更新前快照和代理设置使用 `Updates`，日志级别使用 `Diagnostics`；其它设置继续沿用原分区。侧栏固定宽度，内容区限制最大宽度，标题与设置内容共用纵向滚动和左边界；切换导航组或更新搜索会滚动回顶部。分组标题加粗，行标题使用普通字重，说明使用次要颜色；分隔线在卡片内部缩进，说明单行省略，悬停可读完整内容。
+主题模式、预设、颜色、字体和启动页主题使用独立 `Appearance` 导航组，紧跟常规。常规页保留语言、启动恢复窗口和 Windows 经典菜单，仍使用 `Appearance` 分区，显示为“界面”；日志级别使用 `Diagnostics`，排在更新与网络之前。聚合启动更新、更新前快照和代理设置使用 `Updates`；流程后处理时间和实验功能位于“其他”（`Other`）。侧栏固定宽度，内容区限制最大宽度，标题与设置内容共用纵向滚动和左边界；切换导航组或更新搜索会滚动回顶部。分组标题加粗，行标题使用普通字重，说明使用次要颜色；分隔线在卡片内部缩进，说明单行省略，悬停可读完整内容。
 
 普通输入框使用 200 DIP 容器；开关、单个下拉框及 `ConfigSettingLayout.InlineAuto` 编辑器按内容宽度右对齐，下拉框最大宽度为 320 DIP。`Wide` 继续跨行显示空间较大的编辑器。生成单个编辑器后清除原属性面板的标签间距，不再叠加子控件最小宽度；否则 WPF 可能将超出布局槽的左边框裁切。复合属性编辑器保留其内部尺寸规则，不递归强制每个子输入框的宽度。设置行使用显式的 `SettingsComboBoxStyle`：圆角按钮和浮层、浅色悬停、选中项右侧勾选，并保留原生 ComboBox 的绑定、可编辑输入、键盘和滚动行为。它不作为自定义页的隐式样式，避免影响维护等页面的小型选择器。
 
@@ -104,10 +103,6 @@ related: ["ui.desktop", "ui.configuration", "ui.property-grid", "ui.discovery", 
 | 活对象编辑、自定义页面复用 | `Settings/SettingRowFactory.cs`、`SettingEntry.cs` |
 | 设置发现与失效范围 | `UI/ColorVision.UI/ConfigSetting/ConfigSettingManager.cs` |
 
-上表省略前缀的 `Settings/` 路径均相对于 `UI/ColorVision.UI.Desktop/`。`ConfigServiceAdaptersTests` 中名称含 `ConfigSettingManager_WorksWith...` 的用例只模拟对象解析，未构造 manager，不能作为设置发现或窗口集成测试。
+上表省略前缀的 `Settings/` 路径均相对于 `UI/ColorVision.UI.Desktop/`。
 
-`StorageMaintenanceTests` 通过注入独立元数据构造真实设置窗口，覆盖分区标题、搜索、切组回顶、说明文本、编辑器边框裁切和设置值写回后切组保留，并检查中英文、深浅主题与窄窗口下的维护控件布局。该入口不调用生产设置发现，也不操作真实配置或缓存；它不替代真实 provider 发现、关窗保存、配置重载重绑定或更新安装验证。文档检索与网站校验不填补这些运行时缺口；实际修改设置和更新检查应在获授权的隔离环境中单独验证。
-
-应用委托及键位数据是隔离替身，不调用生产配置或业务操作，具体覆盖与 Win32 验证边界见[快捷键契约](./hotkeys.md)。
-
-`SettingSearchProviderTests` 通过注入元数据和导航回调，覆盖目录投影不读取属性值/构造自定义页面、稳定 ID 与去重、聚合项，以及仅按 ID 请求导航。它不调用生产配置发现、真实设置窗口、菜单保存或自定义页面业务，也不证明真实窗口滚动、筛选清理、分组选择、动态属性可见性或所有插件设置均可定位。列出测试不表示已运行通过。
+在获授权的隔离环境核对生产 provider 发现、关窗保存、配置重载重新绑定和更新安装。

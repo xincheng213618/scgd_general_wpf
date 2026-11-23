@@ -4,13 +4,85 @@ using Newtonsoft.Json.Linq;
 using ProjectARVRPro.Exports;
 using ProjectARVRPro.Process;
 using ProjectARVRPro.Process.OpticCenter;
+using ProjectARVRPro.Process.POI;
 using System.Globalization;
 using System.IO;
+using System.IO.Compression;
+using System.Text;
 
 namespace ProjectARVRPro.Tests;
 
 public sealed class ProjectARVRResultCsvExporterTests
 {
+    [Theory]
+    [InlineData(" /* comment */ // end", false, false, true)]
+    [InlineData(" null", false, false, false)]
+    [InlineData("", true, true, true)]
+    [InlineData("", true, false, false)]
+    public void GzipCsvParserMatchesStringParserForCommentsExtraContentAndBom(
+        string suffix, bool utf16, bool detectBom, bool hasMetrics)
+    {
+        const string json = """{"OptCenterRotation":{"Name":"OptCenterRotation","Value":1.25}}""";
+        byte[] bytes;
+        if (utf16)
+        {
+            using var output = new MemoryStream();
+            using (var gzip = new GZipStream(output, CompressionLevel.Optimal, leaveOpen: true))
+            {
+                gzip.Write(Encoding.Unicode.GetPreamble());
+                gzip.Write(Encoding.Unicode.GetBytes(json + suffix));
+            }
+            bytes = output.ToArray();
+        }
+        else
+        {
+            bytes = ResultJsonPayloadStorage.Compress("\uFEFF" + json + suffix)!;
+        }
+
+        var expected = ObjectiveTestCsvRowCollector.FromJson<OpticCenterTestResult>(
+            ResultJsonPayloadStorage.Decompress(bytes, detectBom), "Center");
+        using var text = ResultJsonPayloadStorage.OpenGzipText(bytes, detectBom);
+        var actual = ObjectiveTestCsvRowCollector.FromReader<OpticCenterTestResult>(text, "Center");
+        Assert.Equal(expected, actual);
+        Assert.Equal(hasMetrics, actual.Count > 0);
+    }
+
+    [Fact]
+    public void StreamingCsvChecksCorruptGzipTailEvenWhenJsonFailsFirst()
+    {
+        byte[] payload = ResultJsonPayloadStorage.Compress("!" + new string(' ', 80 * 1024))!;
+        payload[^8] ^= 0x80;
+
+        using var text = ResultJsonPayloadStorage.OpenGzipText(payload, false);
+        Assert.Throws<InvalidDataException>(() =>
+            ObjectiveTestCsvRowCollector.FromReader<OpticCenterTestResult>(text, "Center"));
+    }
+
+    [Fact]
+    public void CsvResolverReusesOnlySuccessfullyRestoredExactSnapshots()
+    {
+        var template = new PoiDynamicProcess();
+        var snapshots = new Dictionary<(string ProcessType, string? ConfigJson), IProcess>();
+        string exactType = typeof(PoiDynamicProcess).FullName!;
+        const string firstConfig = """{"Name":"First"}""";
+
+        IProcess? Resolve(string type, string config) => ResultProcessResolver.Resolve(
+            new ProjectARVRReuslt { ProcessTypeFullName = type, ProcessConfigJson = config }, [template], [], snapshots);
+
+        var first = Assert.IsType<PoiDynamicProcess>(Resolve(exactType, firstConfig));
+        var second = Assert.IsType<PoiDynamicProcess>(Resolve(exactType, """{"Name":"Second"}"""));
+        Assert.NotSame(template, first);
+        Assert.Equal("First", first.Config.Name);
+        Assert.Equal("Second", second.Config.Name);
+        Assert.Same(first, Resolve(exactType, firstConfig));
+
+        const string malformed = "{invalid";
+        Assert.NotSame(Resolve(exactType, malformed), Resolve(exactType, malformed));
+        string oldType = $"Legacy.{nameof(PoiDynamicProcess)}";
+        Assert.NotSame(Resolve(oldType, firstConfig), Resolve(oldType, firstConfig));
+        Assert.Equal(2, snapshots.Count);
+    }
+
     [Theory]
     [InlineData(true)]
     [InlineData(false)]

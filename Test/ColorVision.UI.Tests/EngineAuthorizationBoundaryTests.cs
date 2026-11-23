@@ -1,4 +1,5 @@
 using ColorVision.Engine;
+using ColorVision.Engine.Properties;
 using ColorVision.Engine.Services;
 using ColorVision.Engine.Services.Devices;
 using ColorVision.Engine.Services.Devices.Camera.Local;
@@ -133,8 +134,11 @@ public sealed class EngineAuthorizationBoundaryTests
                 }
                 else
                 {
-                    Assert.Throws<LocalCameraLicenseException>(() => LocalCameraLicense.EnsureAvailable(expiry, skipValidation, now));
-                    Assert.Throws<LocalSpectrumLicenseException>(() => LocalSpectrumLicense.EnsureNotExpired(expiry, skipValidation, now));
+                    string expectedMessage = expiry.HasValue ? Resources.LicenseListTagExpired : Resources.DeviceStatusUnauthorized;
+                    var cameraError = Assert.Throws<LocalCameraLicenseException>(() => LocalCameraLicense.EnsureAvailable(expiry, skipValidation, now));
+                    var spectrumError = Assert.Throws<LocalSpectrumLicenseException>(() => LocalSpectrumLicense.EnsureNotExpired(expiry, skipValidation, now));
+                    Assert.Equal(expectedMessage, cameraError.Message);
+                    Assert.Equal(expectedMessage, spectrumError.Message);
                 }
             }
             LocalCameraLicense.EnsureAvailable(now.AddSeconds(1), skipValidation, now);

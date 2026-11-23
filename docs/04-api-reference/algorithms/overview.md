@@ -5,7 +5,6 @@ status: "current"
 summary: "说明 Engine 模板发现、手动算法宿主、MQTT 请求和 Flow 接入链。"
 aliases: ["Engine算法是在本地执行吗","DisplayAlgorithmBase","TemplateControl","MQTTAlgorithm"]
 code_paths: ["Engine/ColorVision.Engine/Templates/TemplateControl.cs","Engine/ColorVision.Engine/Abstractions/IDisplayAlgorithm.cs","Engine/ColorVision.Engine/Services/Devices/Algorithm/DisplayAlgorithmManager.cs","Engine/ColorVision.Engine/Services/Devices/Algorithm/DisplayAlgorithmControl.xaml.cs"]
-test_paths: []
 related: ["algorithms.index","engine.template-design","flow.templates","engine.results"]
 ---
 
@@ -46,4 +45,4 @@ JSON 模板与强类型模板仍然并存；POI 是多个分支共享的上游�
 
 ## 验证入口与缺口
 
-验证缺口：未登记贯穿模板发现、手动宿主、MQTT 服务与结果回放的专门自动化测试；应按具体模板保存请求样例并进行有依赖环境的联调。
+按具体模板保留请求样例，在对应环境联调模板发现、手动宿主、MQTT 服务与结果回放。

@@ -5,7 +5,6 @@ status: "current"
 summary: "按设置JSON、Engine MySQL、模块SQLite和结果文件定位数据所有者；有记录、有图片、已导出和已备份不是同一状态。"
 aliases: ["数据管理", "数据在哪里", "数据库文件位置", "备份包含哪些数据", "ConfigFilePath", "SqliteDbPath", "MsgRecords.db", "FlowNodeRecords.db", "SocketMessages.db", "Spectrum.db", "ProjectARVRPro.db", "数据没保存"]
 code_paths: ["UI/ColorVision.UI/ConfigHandler.cs", "UI/ColorVision.Database/MySqlControl.cs", "Engine/ColorVision.Engine/Dao/SysResourceModel.cs", "Engine/ColorVision.Engine/Dao/AlgResultMasterDao.cs", "Engine/ColorVision.Engine/Messages/MessagesListManager.cs", "Engine/ColorVision.Engine/Messages/MsgRecordManagerConfig.cs", "Engine/ColorVision.Engine/FlowProcessing/Diagnostics/FlowNodeRecordDataBaseHelper.cs", "Engine/ColorVision.Engine/FlowProcessing/Diagnostics/FlowNodeRecordConfig.cs", "UI/ColorVision.SocketProtocol/SocketMessageManager.cs", "Plugins/Spectrum/Data/ViewResultManager.cs", "Projects/ProjectARVRPro/ViewResultManager.cs"]
-test_paths: []
 related: ["ui.database", "ui.database-query", "engine.database-maintenance", "engine.mysql-maintenance", "engine.mysql-recovery", "ui.sqlite-storage", "ui.configuration", "operations.exports", "operations.device-configuration", "engine.results", "flow.templates", "flow.diagnostics", "ui.socket-protocol", "plugins.spectrum", "projects.arvr-pro"]
 ---
 
@@ -76,4 +75,4 @@ MQTT/Flow 的 `SqliteDbPath` 是 `DirectoryPath` 加固定文件名的只读属�
 
 需要加载SQL备份、重置数据库或确认服务切库时，进入 [MySQL恢复与资源保留](../../04-api-reference/engine-components/mysql-recovery.md)：恢复失败可能发生在导入之后，资源迁移备份不包含历史结果，不能替代完整备份与验收。
 
-本页是跨模块定位入口，未声明覆盖上述所有存储、迁移和断电恢复的统一测试。对应主题引用的局部测试也不证明跨 MySQL、SQLite、文件和外部协议存在一个共同事务。
+跨 MySQL、SQLite、文件和外部协议的迁移、写入中断和恢复按各自阶段验收。

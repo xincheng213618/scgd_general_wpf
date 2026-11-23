@@ -56,7 +56,7 @@ namespace Conoscope
 
             EditorContext = new DrawEditorContext(ImageCanvas, ZoomBox);
             EditorContext.SelectionVisual = new SelectEditorVisual(EditorContext);
-            focusCircleEditor = new FocusCircleEditor(EditorContext);
+            focusCircleEditor = new FocusCircleEditor(EditorContext, () => ScreenshotRequested?.Invoke(this, EventArgs.Empty));
             focusCircleEditor.CalculationRequested += FocusCircleEditor_CalculationRequested;
             focusCircleEditor.EditRequested += FocusCircleEditor_EditRequested;
             focusCircleEditor.CirclesChanged += FocusCircleEditor_CirclesChanged;
@@ -81,6 +81,7 @@ namespace Conoscope
         public event EventHandler? FocusCirclesChanged;
         public event EventHandler? FocusCircleSelectionChanged;
         public event EventHandler? ZoomChanged;
+        internal event EventHandler? ScreenshotRequested;
 
         public FocusCircleInteractionMode InteractionMode
         {
@@ -209,6 +210,7 @@ namespace Conoscope
             FocusCirclesChanged = null;
             FocusCircleSelectionChanged = null;
             ZoomChanged = null;
+            ScreenshotRequested = null;
             GC.SuppressFinalize(this);
         }
 
@@ -284,6 +286,7 @@ namespace Conoscope
             private readonly MenuItem editByPolarMenuItem = new();
             private readonly MenuItem calculateMenuItem = new();
             private readonly MenuItem clearMenuItem = new();
+            private readonly MenuItem screenshotMenuItem = new();
             private readonly HashSet<DVCircleText> trackedCircles = new();
             private readonly FocusCircleDrawTool drawTool;
             private readonly EraseManager eraseTool;
@@ -300,7 +303,7 @@ namespace Conoscope
             private Point boundaryCenter;
             private double boundaryRadius;
 
-            public FocusCircleEditor(DrawEditorContext editorContext)
+            public FocusCircleEditor(DrawEditorContext editorContext, Action requestScreenshot)
             {
                 this.editorContext = editorContext;
                 canvas = editorContext.DrawCanvas;
@@ -317,6 +320,8 @@ namespace Conoscope
                 };
 
                 changedTimer.Tick += ChangedTimer_Tick;
+                screenshotMenuItem.Header = Properties.Resources.Conoscope_Screenshot;
+                screenshotMenuItem.Click += (_, _) => requestScreenshot();
                 InitializeContextMenu();
                 editorContext.SelectionVisual.SelectionChanged += SelectionVisual_SelectionChanged;
                 canvas.PreviewMouseRightButtonDown += Canvas_PreviewMouseRightButtonDown;
@@ -624,13 +629,20 @@ namespace Conoscope
             private void Canvas_ContextMenuOpening(object sender, ContextMenuEventArgs e)
             {
                 contextMenu.Items.Clear();
-                IReadOnlyList<DVCircleText> circles = Circles;
-                if (circles.Count == 0)
+                if (canvas.Source == null)
                 {
                     e.Handled = true;
                     return;
                 }
 
+                contextMenu.Items.Add(screenshotMenuItem);
+                IReadOnlyList<DVCircleText> circles = Circles;
+                if (circles.Count == 0)
+                {
+                    return;
+                }
+
+                contextMenu.Items.Add(new Separator());
                 if (contextMenuCircle == null)
                 {
                     contextMenuCircle = FindCircle(Mouse.GetPosition(canvas));

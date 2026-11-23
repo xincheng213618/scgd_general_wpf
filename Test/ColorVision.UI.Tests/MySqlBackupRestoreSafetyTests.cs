@@ -1,4 +1,5 @@
 using ColorVision.Database;
+using SqlSugar;
 using System.IO;
 using System.Reflection;
 
@@ -45,6 +46,56 @@ public sealed class MySqlBackupRestoreSafetyTests
         {
             File.Delete(executablePath);
         }
+    }
+
+    [Fact]
+    public void VerifiedFullBackupTakesHostPortAndSchemaFromItsCapturedEndpoint()
+    {
+        string executablePath = Path.Combine(Path.GetTempPath(), $"mysqldump-test-{Guid.NewGuid():N}.exe");
+        File.WriteAllBytes(executablePath, [0]);
+        try
+        {
+            MySqlConnectedEndpoint? current = null;
+            MySqlConnectedEndpoint CreateEndpoint(string host, int port, string schema) => new(
+                endpoint => ReferenceEquals(endpoint, current),
+                () => new SqlSugarClient(new ConnectionConfig
+                {
+                    ConnectionString = $"Server={host};Port={port};Database={schema};User ID=synthetic-user;Password=synthetic-password",
+                    DbType = DbType.MySql,
+                    IsAutoCloseConnection = true,
+                }));
+
+            var original = CreateEndpoint("original.invalid", 3317, "original_results");
+            current = original;
+            var dumpTarget = MySqlLocalServicesManager.CaptureVerifiedDumpConfig(original);
+            current = CreateEndpoint("replacement.invalid", 3318, "replacement_results");
+            Assert.False(original.IsCurrent);
+
+            var startInfo = MySqlLocalServicesManager.CreateMysqlDumpStartInfo(executablePath, dumpTarget,
+                ["t_scgd_measure_batch"], replaceExistingRows: false, dataOnly: false, forceTcp: true);
+
+            Assert.Equal(["--no-defaults", "--user", "synthetic-user", "--host", "original.invalid", "--port", "3317",
+                MySqlProtocolDefaults.DefaultCharacterSetArgument, "--protocol=TCP", "--", "original_results", "t_scgd_measure_batch"],
+                startInfo.ArgumentList.ToArray());
+            Assert.Equal("synthetic-password", startInfo.Environment["MYSQL_PWD"]);
+        }
+        finally
+        {
+            File.Delete(executablePath);
+        }
+    }
+
+    [Fact]
+    public void VerifiedFullBackupRejectsAConnectionThatCanRotateBetweenHosts()
+    {
+        MySqlConnectedEndpoint endpoint = new(_ => true, () => new SqlSugarClient(new ConnectionConfig
+        {
+            ConnectionString = "Server=first.invalid,second.invalid;Database=result_store;User ID=synthetic-user",
+            DbType = DbType.MySql,
+            IsAutoCloseConnection = true,
+        }));
+
+        Assert.Throws<InvalidOperationException>(() => MySqlLocalServicesManager.CaptureVerifiedDumpConfig(endpoint));
     }
 
     [Fact]

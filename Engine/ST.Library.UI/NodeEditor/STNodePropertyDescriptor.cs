@@ -43,9 +43,6 @@ public class STNodePropertyDescriptor
 
 	public STNodePropertyDescriptor()
 	{
-		m_sf = new StringFormat();
-		m_sf.LineAlignment = StringAlignment.Center;
-		m_sf.FormatFlags = StringFormatFlags.NoWrap;
 		IsEditEnable = true;
 		IsReadOnly = false;
 	}
@@ -229,6 +226,7 @@ public class STNodePropertyDescriptor
 		rectangleR.Width--;
 		rectangleR.Height--;
 		solidBrush.Color = Control.ForeColor;
+		m_sf ??= new StringFormat { LineAlignment = StringAlignment.Center, FormatFlags = StringFormatFlags.NoWrap };
 		graphics.DrawString(GetStringFromValue(isLang: true), control.Font, solidBrush, RectangleR, m_sf);
 		if (PropertyInfo.PropertyType.IsEnum || PropertyInfo.PropertyType == m_t_bool)
 		{

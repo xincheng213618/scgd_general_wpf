@@ -14,6 +14,39 @@
              Background="{DynamicResource GlobalBackground}"
              Initialized="UserControl_Initialized">
     <UserControl.Resources>
+        <DataTemplate x:Key="FlowStatusBarTemplate">
+            <Grid Margin="6,0,4,0" VerticalAlignment="Center">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock x:Name="StatusFlowName" MaxWidth="240" Margin="0,0,8,0"
+                           VerticalAlignment="Center" TextTrimming="CharacterEllipsis"
+                           Foreground="{DynamicResource GlobalTextBrush}" ToolTip="{Binding Text, RelativeSource={RelativeSource Self}}"
+                           Text="{Binding FlowEngineManager.SelectedFlowParam.Name,
+                                          FallbackValue={x:Static properties:Resources.请选择流程模板},
+                                          TargetNullValue={x:Static properties:Resources.请选择流程模板}}"/>
+                <Button x:Name="StatusRunButton" Grid.Column="1" Height="24" Padding="8,0"
+                        VerticalAlignment="Center" Content="{x:Static properties:Resources.ExecutionProcess}"
+                        Command="{Binding RunFlowCommand}"/>
+                <ProgressBar x:Name="StatusFlowProgress" Grid.Column="2" Width="112" Height="6" Margin="8,0,0,0"
+                             VerticalAlignment="Center" Maximum="100" Style="{DynamicResource ProgressBarFlat}"
+                             AutomationProperties.Name="{x:Static properties:Resources.ExecutionProcess}"
+                             Visibility="{Binding IsExecutionActive, Converter={StaticResource bool2VisibilityConverter}}"
+                             IsIndeterminate="{Binding IsExecutionProgressIndeterminate}"
+                             Value="{Binding FlowEngineManager.BatchProgress}"/>
+            </Grid>
+            <DataTemplate.Triggers>
+                <MultiDataTrigger>
+                    <MultiDataTrigger.Conditions>
+                        <Condition Binding="{Binding IsExecutionActive}" Value="True"/>
+                        <Condition Binding="{Binding FlowEngineManager.BatchProgress}" Value="0"/>
+                    </MultiDataTrigger.Conditions>
+                    <Setter TargetName="StatusFlowProgress" Property="IsIndeterminate" Value="True"/>
+                </MultiDataTrigger>
+            </DataTemplate.Triggers>
+        </DataTemplate>
         <Style x:Key="ExecutionActionButtonStyle" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
             <Setter Property="Height" Value="32"/>
             <Setter Property="Padding" Value="10,3"/>

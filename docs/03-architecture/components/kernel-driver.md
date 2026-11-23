@@ -5,7 +5,6 @@ status: "current"
 summary: "ColorVisionDriver 实验性 WDM 驱动骨架的两个 IOCTL、WDK 构建输入与接入边界；尚未接入主程序、服务宿主或正式发布链。"
 aliases: ["ColorVisionDriver","内核驱动","驱动骨架","IOCTL_CVDRV_PING","IOCTL_CVDRV_GET_VERSION","CVDRV_ABI_VERSION","CVDRV_PING_RESPONSE","CVDRV_VERSION_INFO"]
 code_paths: ["Drivers/ColorVisionDriver","build.sln","scgd_general_wpf.sln"]
-test_paths: []
 related: ["platform.system","platform.service-host"]
 ---
 

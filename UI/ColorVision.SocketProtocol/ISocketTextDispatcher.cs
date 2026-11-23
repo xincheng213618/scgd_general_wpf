@@ -8,6 +8,9 @@ namespace ColorVision.SocketProtocol
     /// </summary>
     public interface ISocketTextDispatcher
     {
+        /// <summary>Frame JSON objects alongside semicolon-terminated text commands.</summary>
+        bool FrameJsonObjects => false;
+
         string? Handle(NetworkStream stream, string request);
     }
 }

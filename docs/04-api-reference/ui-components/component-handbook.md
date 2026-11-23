@@ -5,7 +5,6 @@ status: "current"
 summary: "UI类库的职责、依赖与目标框架/版本兼容；包版本可独立于主程序，ScottPlot与SkiaSharp保持已验证的资产组合。"
 aliases: ["应该改哪个UI类库","UI包依赖","UI类库版本","目标框架兼容","ColorVision.Algorithms","ColorVision.Common","ColorVision.Core","ColorVision.ImageTools","ScottPlot.WPF","SkiaSharp.Views.WPF","netcoreapp3.1","net462"]
 code_paths: ["ColorVision/ColorVision.csproj","Plugins/Spectrum/Spectrum.csproj","Projects/ProjectARVRPro/ProjectARVRPro.csproj","Projects/ProjectKB/ProjectKB.csproj","UI/Directory.Build.props","UI/ColorVision.Algorithms/ColorVision.Algorithms.csproj","UI/ColorVision.Common/ColorVision.Common.csproj","UI/ColorVision.Core/ColorVision.Core.csproj","UI/ColorVision.Database/ColorVision.Database.csproj","UI/ColorVision.ImageEditor/ColorVision.ImageEditor.csproj","UI/ColorVision.ImageTools/ColorVision.ImageTools.csproj","UI/ColorVision.Rbac/ColorVision.Rbac.csproj","UI/ColorVision.Scheduler/ColorVision.Scheduler.csproj","UI/ColorVision.SocketProtocol/ColorVision.SocketProtocol.csproj","UI/ColorVision.Solution/ColorVision.Solution.csproj","UI/ColorVision.Themes/ColorVision.Themes.csproj","UI/ColorVision.UI/ColorVision.UI.csproj","UI/ColorVision.UI.Desktop/ColorVision.UI.Desktop.csproj"]
-test_paths: ["Scripts/tests/test_algorithm_package_contract.py","Scripts/tests/test_verify_platform_policy.py"]
 related: ["ui.index","ui.publishing","algorithms.platform","delivery.index"]
 ---
 
@@ -61,10 +60,4 @@ related: ["ui.index","ui.publishing","algorithms.platform","delivery.index"]
 
 在出现新解法前，不再把 ScottPlot/SkiaSharp 列为常规依赖升级候选。解除冻结至少需要满足以下一项：新包提供与当前 Windows TFM 兼容且不会回退到 `net4x` 的 WPF 资产；仓库明确提高 Windows 最低版本并完成安装环境核验；或替换绘图库。候选方案还必须在还原后检查 `obj/project.assets.json` 与实际编译引用，并覆盖主程序、`ColorVision.ImageEditor`、Spectrum、ProjectKB 和 ProjectARVRPro 的构建及代表性绘图运行验证。
 
-发布预检、包顺序、NuGet 版本占用及消费方验证统一见[发布契约](./publishing.md)。选择验证范围时先确认此次任务允许的操作：源码/包检查不需要启动主程序；窗口、设备与外部服务的验证使用对应主题的前提和完成条件。
-
-## 验证入口与缺口
-
-关联测试：`Scripts/tests/test_algorithm_package_contract.py`、`Scripts/tests/test_verify_platform_policy.py`。
-
-包契约与平台规则不覆盖所有 UI 行为；项目引用与目标框架以当前 csproj 为准，公开签名修改需验证实际消费者。
+发布预检、包顺序、NuGet 版本占用及消费方验证见[发布契约](./publishing.md)。

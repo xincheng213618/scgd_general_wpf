@@ -52,9 +52,6 @@ next: false
 - [代码行数与 Git 历史统计](../../02-developer-guide/scripts/code-statistics.md) — `delivery.code-statistics`
   统计当前工作区的项目、目录和文件规模，并分析 Git 提交历史与时段；内置离线网页模板，工作区含未提交修改，历史快照不含。
 
-- [原生 helper 测试与调试](../../02-developer-guide/engine-development/native-testing.md) — `delivery.native-testing`
-  opencv\_helper\_test 的实际入口、工具集与配置映射、专项参数、DLL/样本前提和退出码边界；默认运行与真实样本验收不同。
-
 - [系统要求与首次构建](../../00-getting-started/prerequisites.md) — `delivery.prerequisites`
   Windows x64 运行与源码构建前提：Desktop Runtime、SDK、C++ 工具集及已有 native DLL 的选择。
 
@@ -68,7 +65,7 @@ next: false
   定义按需知识扩展的元数据、更新流程和按变更选择的验证范围。
 
 - [测试与验证](../../02-developer-guide/testing.md) — `delivery.testing`
-  按改动范围选择managed、native、脚本、后端和知识验证，不以局部通过代表完整验收。
+  从实际代码选择验证范围，区分离线检查、硬件联调与交付验收。
 
 - [软件许可协议](../../05-resources/legal/software-agreement.md) — `platform.license`
   保留原软件使用条款，补充非商业源码学习、编译和修改、书面商业授权及第三方和既有许可的边界。
@@ -88,7 +85,7 @@ next: false
   UI NuGet整批与Algorithms单包发布、Release标签和版本预检；预检不预留版本，逐包上传没有整批回滚或逐条失败检查。
 
 - [测试与验证](../../02-developer-guide/testing.md) — `delivery.testing`
-  按改动范围选择managed、native、脚本、后端和知识验证，不以局部通过代表完整验收。
+  从实际代码选择验证范围，区分离线检查、硬件联调与交付验收。
 
 ## docs {#module-646f6373}
 
@@ -108,11 +105,6 @@ next: false
 
 - [知识维护规范](../maintenance.md) — `governance.maintenance`
   定义按需知识扩展的元数据、更新流程和按变更选择的验证范围。
-
-- [知识检索与问答验收](../retrieval-checks.md) — `governance.retrieval`
-  定义本地知识查询的 CLI、匹配契约和独立问题抽样方法，供检索工具维护时使用。
-
-## docs/knowledge {#module-646f63732f6b6e6f776c65646765}
 
 - [知识检索与问答验收](../retrieval-checks.md) — `governance.retrieval`
   定义本地知识查询的 CLI、匹配契约和独立问题抽样方法，供检索工具维护时使用。

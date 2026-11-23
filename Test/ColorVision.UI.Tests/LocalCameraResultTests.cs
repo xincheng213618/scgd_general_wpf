@@ -1,20 +1,195 @@
+using ColorVision.Database;
+using ColorVision.Engine;
+using ColorVision.Engine.FlowProcessing;
+using ColorVision.Engine.FlowProcessing.Nodes;
 using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.Services.Devices.Camera.Configs;
 using ColorVision.Engine.Services.Devices.Camera.Local;
 using ColorVision.Engine.Services.Devices.Camera.Templates.CameraRunParam;
+using ColorVision.Engine.Services.Results;
 using FlowEngineLib.Algorithm;
+using FlowEngineLib.Base;
 using Newtonsoft.Json.Linq;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using System.IO;
 using ColorVision.Engine.Media;
 using ColorVision.FileIO;
 using Newtonsoft.Json;
 using OpenCvSharp.WpfExtensions;
+using SqlSugar;
 
 namespace ColorVision.UI.Tests;
 
 public class LocalCameraResultTests
 {
+    [Theory]
+    [InlineData(false, true)]
+    [InlineData(true, true)]
+    [InlineData(true, false)]
+    public void LocalImageResultsKeepTheBoundDatabaseAndRespectNoWrite(bool calibration, bool persist) => StaTest.Run(() =>
+    {
+        string directory = Directory.CreateTempSubdirectory("cv-local-image-result-").FullName;
+        string firstPath = Path.Combine(directory, "a.db"), secondPath = Path.Combine(directory, "b.db");
+        MySqlConnectedEndpoint? active = null;
+        MySqlConnectedEndpoint first = new(endpoint => ReferenceEquals(active, endpoint), () => Open(firstPath));
+        MySqlConnectedEndpoint second = new(endpoint => ReferenceEquals(active, endpoint), () => Open(secondPath));
+        var action = new CVStartCFC("fixed-local-image") { PersistResults = persist };
+        using var resources = action.RuntimeResources;
+        try
+        {
+            Prepare(first);
+            Prepare(second);
+            active = first;
+            var batchA = new MeasureBatchModel { Code = action.SerialNumber };
+            var batchB = new MeasureBatchModel { Code = action.SerialNumber };
+            FlowMeasurementBatch.Insert(batchA, first).Bind(resources);
+            _ = FlowMeasurementBatch.Insert(batchB, second);
+            Assert.Equal(batchA.Id, batchB.Id);
+
+            var frame = LocalFlowFrame.Allocate(new LocalFrameMetadata
+            {
+                Width = 1, Height = 1, SourceBpp = 16, Channels = 1, DeviceCode = "synthetic-image-result",
+                PrimaryBufferKind = LocalFrameBufferKind.CvCie
+            }, 0, sizeof(float));
+            action.SetCurrentFrame(frame);
+            active = second;
+            Assert.False(first.IsCurrent);
+            Assert.Same(first, LocalFlowResultPersistence.ResolveEndpoint(action));
+            if (calibration)
+            {
+                List<ResultMessage> messages = [];
+                using var subscription = ResultMessageBus.Default.Subscribe(message =>
+                {
+                    if (string.Equals(message.SerialNumber, action.SerialNumber, StringComparison.Ordinal)) messages.Add(message);
+                });
+                var node = new LocalCalibrationNode();
+                object execution = typeof(LocalCalibrationNode).GetMethod("ExecuteLocal", BindingFlags.Instance | BindingFlags.NonPublic)!
+                    .Invoke(node, [action])!;
+                var output = Assert.IsType<LocalCalibrationNodeResultData>(execution.GetType().GetProperty("Data")!.GetValue(execution));
+                Assert.Equal(persist ? 1 : 0, output.MasterId);
+                Assert.Equal(output.MasterId, frame.MasterId);
+                Assert.True(output.HasCie);
+                Assert.True(action.TryGetCurrentFrame(out LocalFlowFrame? outputFrame));
+                Assert.Same(frame, outputFrame);
+                if (persist) Assert.Same(first, Assert.Single(messages).DatabaseEndpoint);
+                else Assert.Empty(messages);
+            }
+            else
+            {
+                var capture = new LocalCameraCaptureResult { Frame = frame, TotalTimeMs = 17 };
+                Assert.Throws<InvalidOperationException>(() => LocalCameraResultService.SaveFlowModel(action, 2, frame, capture, null, null, false, second));
+                MeasureResultImgModel result = LocalCameraResultService.SaveFlowModel(action, 2, frame, capture, null, null, false, first);
+                Assert.Equal((1, batchA.Id, 17), (result.Id, result.BatchId, result.TotalTime));
+            }
+
+            using var dbA = first.CreateDbClient();
+            using var dbB = second.CreateDbClient();
+            var resultsA = dbA.Queryable<MeasureResultImgModel>().ToList();
+            if (persist)
+            {
+                MeasureResultImgModel row = Assert.Single(resultsA);
+                Assert.Equal(batchA.Id, row.BatchId);
+                Assert.Equal("synthetic-image-result", row.DeviceCode);
+                JObject parameters = JObject.Parse(row.Params!);
+                if (calibration) Assert.Equal("CIE", (string?)parameters["OutputBuffer"]);
+                else Assert.Equal(17, (int)parameters["Timing"]!["Total"]!);
+            }
+            else Assert.Empty(resultsA);
+            Assert.Empty(dbB.Queryable<MeasureResultImgModel>().ToList());
+        }
+        finally
+        {
+            File.Delete(firstPath);
+            File.Delete(secondPath);
+            Directory.Delete(directory);
+        }
+
+        static SqlSugarClient Open(string path) => new(new ConnectionConfig
+        {
+            ConnectionString = $"Data Source={path};Pooling=False", DbType = DbType.Sqlite,
+            InitKeyType = InitKeyType.Attribute, IsAutoCloseConnection = true
+        });
+
+        static void Prepare(MySqlConnectedEndpoint endpoint)
+        {
+            using var db = endpoint.CreateDbClient();
+            db.CodeFirst.InitTables(typeof(MeasureBatchModel), typeof(MeasureResultImgModel));
+        }
+    });
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void PanelCapturePersistsBatchAndImageTogetherOnTheOriginalDatabase(bool rejectImage)
+    {
+        DirectoryInfo directory = Directory.CreateTempSubdirectory("cv-panel-capture-db-");
+        try
+        {
+            MySqlConnectedEndpoint? current = null;
+            MySqlConnectedEndpoint Endpoint(string fileName) => new(candidate => ReferenceEquals(candidate, current),
+                () => new SqlSugarClient(new ConnectionConfig
+                {
+                    ConnectionString = $"Data Source={Path.Combine(directory.FullName, fileName)};Pooling=False",
+                    DbType = DbType.Sqlite, InitKeyType = InitKeyType.Attribute, IsAutoCloseConnection = true,
+                }));
+            var original = Endpoint("original.db");
+            var replacement = Endpoint("replacement.db");
+            using var originalDb = original.CreateDbClient();
+            using var replacementDb = replacement.CreateDbClient();
+            Type[] tables = [typeof(MeasureBatchModel), typeof(MeasureResultImgModel)];
+            originalDb.CodeFirst.InitTables(tables);
+            replacementDb.CodeFirst.InitTables(tables);
+            const string serialNumber = "panel-capture";
+            const string replacementCamera = "different-camera";
+            int otherBatchId = replacementDb.Insertable(new MeasureBatchModel { Code = serialNumber, Name = "untouched batch" })
+                .ExecuteReturnIdentity();
+            int otherImageId = replacementDb.Insertable(new MeasureResultImgModel { BatchId = otherBatchId, DeviceCode = replacementCamera })
+                .ExecuteReturnIdentity();
+            if (rejectImage)
+                originalDb.Ado.ExecuteCommand("CREATE TRIGGER reject_image BEFORE INSERT ON t_scgd_measure_result_img BEGIN SELECT RAISE(ABORT, 'synthetic panel image failure'); END");
+
+            current = original;
+            MySqlConnectedEndpoint commandEndpoint = current;
+            using var frame = LocalFlowFrame.Allocate(new LocalFrameMetadata
+            {
+                Width = 2, Height = 1, SourceBpp = 8, Channels = 1, DeviceCode = "panel-camera",
+                PrimaryBufferKind = LocalFrameBufferKind.CvRaw,
+            }, 2, 0);
+            var capture = new LocalCameraCaptureResult { Frame = frame, TotalTimeMs = 63 };
+            current = replacement;
+            Assert.False(commandEndpoint.IsCurrent);
+
+            if (rejectImage)
+            {
+                Exception error = Assert.ThrowsAny<Exception>(() => LocalCameraResultService.SaveInteractiveModel(
+                    commandEndpoint, serialNumber, capture, null, null, false));
+                Assert.Contains("synthetic panel image failure", error.ToString());
+                Assert.Empty(originalDb.Queryable<MeasureBatchModel>().ToList());
+                Assert.Empty(originalDb.Queryable<MeasureResultImgModel>().ToList());
+            }
+            else
+            {
+                MeasureResultImgModel result = LocalCameraResultService.SaveInteractiveModel(commandEndpoint, serialNumber, capture, null, null, false);
+                MeasureBatchModel batch = Assert.Single(originalDb.Queryable<MeasureBatchModel>().ToList());
+                MeasureResultImgModel image = Assert.Single(originalDb.Queryable<MeasureResultImgModel>().ToList());
+                Assert.Equal(otherBatchId, batch.Id);
+                Assert.Equal(otherImageId, image.Id);
+                Assert.Equal((serialNumber, serialNumber, ArchiveStatus.NotArchived), (batch.Code, batch.Name, batch.ArchiveStatus));
+                Assert.Equal((result.Id, batch.Id, "panel-camera", 63), (image.Id, image.BatchId, image.DeviceCode, image.TotalTime));
+                Assert.Equal(-1, image.ZIndex);
+            }
+            Assert.Equal("untouched batch", Assert.Single(replacementDb.Queryable<MeasureBatchModel>().ToList()).Name);
+            Assert.Equal(replacementCamera, Assert.Single(replacementDb.Queryable<MeasureResultImgModel>().ToList()).DeviceCode);
+            Assert.Equal(-1, frame.MasterId);
+        }
+        finally
+        {
+            foreach (FileInfo file in directory.EnumerateFiles()) file.Delete();
+            directory.Delete();
+        }
+    }
+
     [Fact]
     public void MainPanelLocalCaptureDefaultsToSavingAndPersistsOptOut()
     {

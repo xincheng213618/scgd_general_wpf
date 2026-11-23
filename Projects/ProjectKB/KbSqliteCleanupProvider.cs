@@ -15,10 +15,18 @@ namespace ProjectKB
     {
         private const string CleanupTableName = "KBItemMaster";
         private const string SessionTableName = "KBProductionSession";
+        private readonly string _databasePath;
+
+        public KbSqliteCleanupProvider() : this(ViewResultManager.SqliteDbPath) { }
+
+        internal KbSqliteCleanupProvider(string databasePath)
+        {
+            _databasePath = Path.GetFullPath(databasePath);
+        }
 
         public string Id => "projectkb-sqlite";
         public string DisplayName => "KB SQLite";
-        public string Description => $"数据库文件: {ViewResultManager.SqliteDbPath}";
+        public string Description => $"数据库文件: {_databasePath}";
         public int Order => 20;
         public string MigrationActionName => "迁移并压缩历史结果";
         public string MigrationConfirmationMessage =>
@@ -33,7 +41,7 @@ namespace ProjectKB
             var tableInfo = new DatabaseCleanupTableInfo
             {
                 TableName = CleanupTableName,
-                Exists = File.Exists(ViewResultManager.SqliteDbPath),
+                Exists = File.Exists(_databasePath),
             };
 
             if (!tableInfo.Exists)
@@ -41,7 +49,7 @@ namespace ProjectKB
 
             using var db = CreateDbClient();
             tableInfo.RowCount = db.Queryable<KBItemMaster>().Count();
-            tableInfo.SizeBytes = new FileInfo(ViewResultManager.SqliteDbPath).Length;
+            tableInfo.SizeBytes = new FileInfo(_databasePath).Length;
             return new[] { tableInfo };
         }
 
@@ -50,9 +58,9 @@ namespace ProjectKB
             return KBResultPayloadStorage.RunDatabaseMaintenance(() => CleanupHistoryCore(keepMonths));
         }
 
-        private static DatabaseCleanupExecutionResult CleanupHistoryCore(int keepMonths)
+        private DatabaseCleanupExecutionResult CleanupHistoryCore(int keepMonths)
         {
-            if (!File.Exists(ViewResultManager.SqliteDbPath))
+            if (!File.Exists(_databasePath))
             {
                 return new DatabaseCleanupExecutionResult
                 {
@@ -62,10 +70,7 @@ namespace ProjectKB
 
             DateTime cutoffDate = DateTime.Now.AddMonths(-keepMonths);
             using var db = CreateDbClient();
-            int deletedRows = db.Deleteable<KBItemMaster>().Where(item => item.CreateTime < cutoffDate).ExecuteCommand();
-            int deletedSessions = db.Deleteable<KBProductionSession>()
-                .Where(item => item.StartTime < cutoffDate)
-                .ExecuteCommand();
+            var (deletedRows, deletedSessions) = DeleteRows(db, cutoffDate);
             TryVacuum(db);
             RefreshKbWindowIfOpen();
 
@@ -83,9 +88,9 @@ namespace ProjectKB
             return KBResultPayloadStorage.RunDatabaseMaintenance(CleanupAllCore);
         }
 
-        private static DatabaseCleanupExecutionResult CleanupAllCore()
+        private DatabaseCleanupExecutionResult CleanupAllCore()
         {
-            if (!File.Exists(ViewResultManager.SqliteDbPath))
+            if (!File.Exists(_databasePath))
             {
                 return new DatabaseCleanupExecutionResult
                 {
@@ -94,12 +99,7 @@ namespace ProjectKB
             }
 
             using var db = CreateDbClient();
-            int deletedRows = db.Deleteable<KBItemMaster>().ExecuteCommand();
-            DateTime today = DateTime.Today;
-            int deletedSessions = db.Deleteable<KBProductionSession>()
-                .Where(item => item.EndTime != null || item.StartTime < today)
-                .ExecuteCommand();
-            TryResetIdentity(db);
+            var (deletedRows, deletedSessions) = DeleteRows(db, cutoffDate: null);
             TryVacuum(db);
             RefreshKbWindowIfOpen();
 
@@ -112,14 +112,45 @@ namespace ProjectKB
             return result;
         }
 
+        private static (int DeletedResults, int DeletedSessions) DeleteRows(SqlSugarClient db, DateTime? cutoffDate)
+        {
+            db.Ado.BeginTran();
+            try
+            {
+                var results = db.Deleteable<KBItemMaster>();
+                var sessions = db.Deleteable<KBProductionSession>();
+                if (cutoffDate is DateTime cutoff)
+                {
+                    results = results.Where(item => item.CreateTime < cutoff);
+                    sessions = sessions.Where(item => item.StartTime < cutoff);
+                }
+                else
+                {
+                    DateTime today = DateTime.Today;
+                    sessions = sessions.Where(item => item.EndTime != null || item.StartTime < today);
+                }
+
+                // Open result views can still hold deleted IDs. Keep SQLite's sequence monotonic.
+                int deletedResults = results.ExecuteCommand();
+                int deletedSessions = sessions.ExecuteCommand();
+                db.Ado.CommitTran();
+                return (deletedResults, deletedSessions);
+            }
+            catch
+            {
+                db.Ado.RollbackTran();
+                throw;
+            }
+        }
+
         public DatabaseCleanupBackupResult CreateBackup()
         {
             return KBResultPayloadStorage.RunDatabaseMaintenance(CreateBackupCore);
         }
 
-        private static DatabaseCleanupBackupResult CreateBackupCore()
+        private DatabaseCleanupBackupResult CreateBackupCore()
         {
-            string databasePath = ViewResultManager.SqliteDbPath;
+            string databasePath = _databasePath;
             if (!File.Exists(databasePath))
                 throw new FileNotFoundException("KB SQLite 数据库文件不存在。", databasePath);
 
@@ -209,10 +240,10 @@ namespace ProjectKB
             return KBResultPayloadStorage.RunDatabaseMaintenance(ExecuteMigrationCore);
         }
 
-        private static DatabaseCleanupExecutionResult ExecuteMigrationCore()
+        private DatabaseCleanupExecutionResult ExecuteMigrationCore()
         {
             IReadOnlyDictionary<string, KBRecipeConfig> recipes = RecipeManager.GetInstance().RecipeConfigs;
-            LegacyKbResultMigrationReport report = LegacyKbResultMigration.Execute(ViewResultManager.SqliteDbPath, recipes);
+            LegacyKbResultMigrationReport report = LegacyKbResultMigration.Execute(_databasePath, recipes);
             RefreshKbWindowIfOpen();
 
             var result = new DatabaseCleanupExecutionResult
@@ -228,26 +259,20 @@ namespace ProjectKB
             return result;
         }
 
-        private static SqlSugarClient CreateDbClient()
+        private SqlSugarClient CreateDbClient()
         {
             return new SqlSugarClient(new ConnectionConfig
             {
-                ConnectionString = $"Data Source={ViewResultManager.SqliteDbPath};Default Timeout=5",
+                ConnectionString = new SqliteConnectionStringBuilder
+                {
+                    DataSource = _databasePath,
+                    DefaultTimeout = 5,
+                    Pooling = false,
+                }.ToString(),
                 DbType = DbType.Sqlite,
                 IsAutoCloseConnection = true,
                 InitKeyType = InitKeyType.Attribute,
             });
-        }
-
-        private static void TryResetIdentity(SqlSugarClient db)
-        {
-            try
-            {
-                db.Ado.ExecuteCommand($"DELETE FROM sqlite_sequence WHERE name = '{CleanupTableName}';");
-            }
-            catch
-            {
-            }
         }
 
         private static void TryVacuum(SqlSugarClient db)
@@ -261,17 +286,20 @@ namespace ProjectKB
             }
         }
 
-        private static void RefreshKbWindowIfOpen()
+        private void RefreshKbWindowIfOpen()
         {
-            if (ProjectWindowInstance.WindowInstance == null || Application.Current?.Dispatcher == null)
+            if (ProjectWindowInstance.WindowInstance == null || Application.Current?.Dispatcher == null || !IsCurrentDatabase())
                 return;
 
             Application.Current.Dispatcher.BeginInvoke(() =>
             {
+                if (!IsCurrentDatabase()) return;
                 var manager = ViewResultManager.GetInstance();
                 manager.LoadAll(manager.Config.Count);
             });
         }
+
+        private bool IsCurrentDatabase() => string.Equals(_databasePath, ViewResultManager.SqliteDbPath, StringComparison.OrdinalIgnoreCase);
 
         private static string FormatSize(long bytes)
         {

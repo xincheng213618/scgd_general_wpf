@@ -119,8 +119,8 @@ namespace ColorVision.Engine.Templates.Jsons.LEDStripDetectionV2
         {
             if (result.ViewResults == null)
             {
+                List<DetailCommonModel> detailCommonModels = result.ReadPersistedDetails(DeatilCommonDao.Instance);
                 result.ViewResults = new ObservableCollection<IViewResult>();
-                List<DetailCommonModel> detailCommonModels = DeatilCommonDao.Instance.GetAllByPid(result.Id);
                 log.Info($"查询到 {detailCommonModels.Count} 条 DetailCommonModel 记录，Pid={result.Id}");
 
                 if (detailCommonModels.Count >= 1)

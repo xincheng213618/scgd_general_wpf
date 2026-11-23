@@ -1,14 +1,13 @@
 #pragma warning disable CS8601
 using ColorVision.Common.Algorithms;
 using ColorVision.Core;
-using ColorVision.Database;
-using ColorVision.Engine; // AlgResultMasterDao, MeasureImgResultDao, DeatilCommonDao
 using ColorVision.Engine.Services.Results.LightArea;
-using ColorVision.Engine.Templates.Jsons; // DetailCommonModel
-using ColorVision.Engine.Templates.Jsons.FOV2;
 using ColorVision.ImageEditor.Draw;
 using ColorVision.ImageEditor.EditorTools.Algorithms.Calculate;
 using Newtonsoft.Json;
+using ProjectARVRPro.Process.KeyedResults;
+using ProjectARVRPro.Process.KeyedResults.FieldOfView;
+using System.IO;
 using System.Windows;
 using System.Windows.Media;
 
@@ -16,74 +15,61 @@ namespace ProjectARVRPro.Process.W51
 {
     public class White51Process : ProcessWithRecipeBase<W51ProcessConfig, W51RecipeConfig>
     {
-        public override async Task<bool> Execute(IProcessExecutionContext ctx)
+        internal FovBatchResults BatchResults { get; init; } = new();
+
+        public override Task<bool> Execute(IProcessExecutionContext ctx)
         {
-            if (ctx?.Batch == null || ctx.Result == null) return false;
-            var log = ctx.Log;
-            W51RecipeConfig recipeConfig = Config.RecipeConfig;
-            W51ViewTestResult testResult = new W51ViewTestResult();
+            if (ctx?.Result == null || ctx.ObjectiveTestResult == null)
+                return Task.FromResult(false);
 
             try
             {
-                var values = ctx.GetMeasureResults();
-                if (values.Count > 0)
-                    ctx.Result.FileName = values[0].FileUrl;
+                if (ctx.Batch == null)
+                    throw new InvalidDataException("W51 缺少测量批次。");
+                var images = ctx.GetMeasureResults();
+                if (images.Count > 0)
+                    ctx.Result.FileName = images[0].FileUrl;
 
-                var masters = AlgResultMasterDao.Instance.GetAllByBatchId(ctx.Batch.Id);
-                foreach (var master in masters)
+                var (angles, corners) = BatchResults.Load(ctx);
+                var testResult = new W51ViewTestResult { AlgResultLightAreaModels = corners };
+                var recipe = Config.RecipeConfig;
+                bool allPassed = true;
+                foreach (var measurement in angles)
                 {
-                    if (master.ImgFileType == ColorVision.Engine.ViewResultAlgType.FindLightArea)
-                    {  
-                        testResult.AlgResultLightAreaModels = AlgResultLightAreaDao.Instance.GetAllByPid(master.Id);
-                    }
-
-
-                    if (master.ImgFileType == ViewResultAlgType.FOV)
-                    {
-                        var algResultModels = DeatilCommonDao.Instance.GetAllByPid(master.Id);
-                        if (algResultModels.Count == 1)
-                        {
-                            DFovView view1 = new DFovView(algResultModels[0]);
-
-
-                            view1.Result.result.D_Fov = recipeConfig.DiagonalFieldOfViewAngle.Apply(view1.Result.result.D_Fov);
-                            view1.Result.result.ClolorVisionH_Fov = recipeConfig.HorizontalFieldOfViewAngle.Apply(view1.Result.result.ClolorVisionH_Fov);
-                            view1.Result.result.ClolorVisionV_Fov = recipeConfig.VerticalFieldOfViewAngle.Apply(view1.Result.result.ClolorVisionV_Fov);
-
-
-                            testResult.DiagonalFieldOfViewAngle.LowLimit = recipeConfig.DiagonalFieldOfViewAngle.Min;
-                            testResult.DiagonalFieldOfViewAngle.UpLimit = recipeConfig.DiagonalFieldOfViewAngle.Max;
-                            testResult.DiagonalFieldOfViewAngle.Value = view1.Result.result.D_Fov;
-                            testResult.DiagonalFieldOfViewAngle.TestValue = view1.Result.result.D_Fov.ToString("F4");
-
-                            testResult.HorizontalFieldOfViewAngle.LowLimit = recipeConfig.HorizontalFieldOfViewAngle.Min;
-                            testResult.HorizontalFieldOfViewAngle.UpLimit = recipeConfig.HorizontalFieldOfViewAngle.Max;
-                            testResult.HorizontalFieldOfViewAngle.Value = view1.Result.result.ClolorVisionH_Fov;
-                            testResult.HorizontalFieldOfViewAngle.TestValue = view1.Result.result.ClolorVisionH_Fov.ToString("F4");
-
-                            testResult.VerticalFieldOfViewAngle.LowLimit = recipeConfig.VerticalFieldOfViewAngle.Min;
-                            testResult.VerticalFieldOfViewAngle.UpLimit = recipeConfig.VerticalFieldOfViewAngle.Max;
-                            testResult.VerticalFieldOfViewAngle.Value = view1.Result.result.ClolorVisionV_Fov;
-                            testResult.VerticalFieldOfViewAngle.TestValue = view1.Result.result.ClolorVisionV_Fov.ToString("F4");
-
-                            ctx.Result.Result = ctx.Result.Result && testResult.DiagonalFieldOfViewAngle.TestResult;
-                            ctx.Result.Result = ctx.Result.Result && testResult.HorizontalFieldOfViewAngle.TestResult;
-                            ctx.Result.Result = ctx.Result.Result && testResult.VerticalFieldOfViewAngle.TestResult;
-
-                        }
-
-                    }
+                    allPassed &= FovBatchResults.ApplyRecipe(testResult.DiagonalFieldOfViewAngle, measurement.Diagonal, recipe.DiagonalFieldOfViewAngle);
+                    allPassed &= FovBatchResults.ApplyRecipe(testResult.HorizontalFieldOfViewAngle, measurement.Horizontal, recipe.HorizontalFieldOfViewAngle);
+                    allPassed &= FovBatchResults.ApplyRecipe(testResult.VerticalFieldOfViewAngle, measurement.Vertical, recipe.VerticalFieldOfViewAngle);
                 }
-                ctx.Result.ViewResultJson = JsonConvert.SerializeObject(testResult);
-                ctx.ObjectiveTestResult.W51TestResult = JsonConvert.DeserializeObject<W51TestResult>(ctx.Result.ViewResultJson) ?? new W51TestResult();
 
-                return true;
+                string snapshot = JsonConvert.SerializeObject(testResult);
+                ctx.ObjectiveTestResult.W51TestResult = JsonConvert.DeserializeObject<W51TestResult>(snapshot)
+                    ?? throw new JsonSerializationException("无法生成 W51 测量结果。");
+                ctx.Result.ViewResultJson = snapshot;
+                ctx.Result.Result &= allPassed;
+                return Task.FromResult(true);
             }
-            catch (Exception ex)
+            catch (Exception error)
             {
-                log?.Error(ex);
-                return false;
+                string message = $"W51 视场角解析失败：{error.Message}";
+                ctx.Log.Error(message, error);
+                Reject(ctx, message);
+                return Task.FromResult(false);
             }
+        }
+
+        public override Task<bool> ExecuteFailure(IProcessExecutionContext ctx)
+        {
+            if (ctx?.Result != null && ctx.ObjectiveTestResult != null)
+                Reject(ctx, string.IsNullOrWhiteSpace(ctx.Result.Msg) ? "W51 流程未成功完成。" : ctx.Result.Msg);
+            return Task.FromResult(false);
+        }
+
+        private static void Reject(IProcessExecutionContext ctx, string message)
+        {
+            FovBatchResults.Reject(ctx, message);
+            var objective = ctx.ObjectiveTestResult;
+            objective.W51TestResult = KeyedTestResultDictionary.TryGetValue(objective.FieldOfViewTestResults, "White", out var white) && white != null
+                ? FieldOfViewCompatibility.ToW51TestResult(white) : null!;
         }
 
         public override IReadOnlyList<ObjectiveTestCsvRow> GetObjectiveCsvRows(ProjectARVRReuslt result) =>

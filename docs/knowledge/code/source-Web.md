@@ -84,9 +84,6 @@ next: false
 - [Web 本地启动与 NAS 部署](../../02-developer-guide/deployment/web.md) — `delivery.web-deployment`
   Web 本地启动与 Windows NAS 部署的前提、参数、构建和健康检查、Git bundle 交付、备份保留及失败恢复；SkipTests 仍运行前端测试，失败不保证回退代码或数据库。
 
-- [测试与验证](../../02-developer-guide/testing.md) — `delivery.testing`
-  按改动范围选择managed、native、脚本、后端和知识验证，不以局部通过代表完整验收。
-
 ## Web/Frontend {#module-5765622f46726f6e74656e64}
 
 - [插件市场后端](../../02-developer-guide/backend/README.md) — `delivery.backend`

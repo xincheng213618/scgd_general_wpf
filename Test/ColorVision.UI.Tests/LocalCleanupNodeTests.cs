@@ -78,6 +78,30 @@ public sealed class LocalCleanupNodeTests
     }
 
     [Fact]
+    public void ScanCountsUnmatchedFilesAndDeletesOnlyTheFirstMatchingPathOnATimeTie()
+    {
+        using var folder = new TestFolder();
+        string first = folder.AddFile("a.CVRAW", -2);
+        string second = folder.AddFile("b.cvraw", -2);
+        string ignored = folder.AddFile("unmatched", -3);
+        string subdirectory = Directory.CreateDirectory(System.IO.Path.Combine(folder.Path, "sub")).FullName;
+        string nested = System.IO.Path.Combine(subdirectory, "image.cvraw");
+        File.WriteAllBytes(nested, new byte[100]);
+        File.SetLastWriteTimeUtc(second, File.GetLastWriteTimeUtc(first));
+
+        FolderCleanupResult result = FolderCleanupService.Execute([folder.Path], ".cvraw", false, 100, 100);
+
+        Assert.Equal(3, result.ScannedFiles);
+        Assert.Equal(1, result.DeletedFiles);
+        Assert.Equal(100, result.DeletedBytes);
+        Assert.Equal(100, result.RemainingBytes);
+        Assert.False(File.Exists(first));
+        Assert.True(File.Exists(second));
+        Assert.True(File.Exists(ignored));
+        Assert.True(File.Exists(nested));
+    }
+
+    [Fact]
     public void CancellationStopsBeforeDeletionAndDoesNotReportSuccess()
     {
         using var folder = new TestFolder();

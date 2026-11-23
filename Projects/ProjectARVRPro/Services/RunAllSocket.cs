@@ -14,25 +14,19 @@ namespace ProjectARVRPro.Services
 
         public SocketResponse Handle(NetworkStream stream, SocketRequest request)
         {
-            SocketControl.Current.Stream = stream;
-            if (ProjectWindowInstance.WindowInstance == null)
-            {
-                Application.Current.Dispatcher.Invoke(() =>
-                {
-                    ProjectWindowInstance.WindowInstance = new ARVRWindow
-                    {
-                        WindowStartupLocation = WindowStartupLocation.CenterOwner
-                    };
-                    ProjectWindowInstance.WindowInstance.Closed += (s, e) => ProjectWindowInstance.WindowInstance = null;
-                    ProjectWindowInstance.WindowInstance.Show();
-                });
-            }
-
             (bool accepted, string resolvedSerialNumber) = Application.Current.Dispatcher.Invoke(() =>
             {
-                bool accepted = ProjectWindowInstance.WindowInstance.TryPrepareRunAllSession(request.SerialNumber, out string resolvedSerialNumber);
+                bool needsShow = ProjectWindowInstance.WindowInstance == null;
+                ARVRWindow window = ProjectARVRWindowHost.GetOrCreate();
+                if (needsShow)
+                    window.Show();
+
+                bool accepted = window.TryPrepareRunAllSession(request.SerialNumber, out string resolvedSerialNumber);
                 if (accepted)
-                    _ = ProjectWindowInstance.WindowInstance.RunAllAsync();
+                {
+                    SocketControl.Current.Stream = stream;
+                    _ = window.RunAllAsync();
+                }
                 return (accepted, resolvedSerialNumber);
             });
             if (!accepted)

@@ -27,29 +27,43 @@ namespace ColorVision.Copilot
                 return false;
             }
 
-            var sources = EnumerateSources(conversation).ToArray();
-            var matchingSources = normalizedTerms
-                .Select(term => sources.Where(source => source.Contains(term)).ToArray())
-                .ToArray();
-            if (matchingSources.Any(matches => matches.Length == 0))
+            var firstLabels = new string?[normalizedTerms.Length];
+            int unmatchedTerms = normalizedTerms.Length;
+            foreach (var source in EnumerateSources(conversation))
+            {
+                if (string.IsNullOrWhiteSpace(source.SearchText))
+                    continue;
+
+                bool matchesAll = true;
+                for (int index = 0; index < normalizedTerms.Length; index++)
+                {
+                    if (!source.SearchText.Contains(normalizedTerms[index], StringComparison.OrdinalIgnoreCase))
+                    {
+                        matchesAll = false;
+                        continue;
+                    }
+
+                    if (firstLabels[index] == null)
+                    {
+                        firstLabels[index] = source.Label;
+                        unmatchedTerms--;
+                    }
+                }
+
+                if (matchesAll)
+                {
+                    preview = BuildPreview(source.Label, source.DisplayText);
+                    return true;
+                }
+            }
+
+            if (unmatchedTerms != 0)
             {
                 preview = string.Empty;
                 return false;
             }
 
-            var singleSource = sources.FirstOrDefault(source =>
-                normalizedTerms.All(source.Contains));
-            if (singleSource != null)
-            {
-                preview = BuildPreview(singleSource.Label, singleSource.DisplayText);
-                return true;
-            }
-
-            var labels = matchingSources
-                .Select(matches => matches[0].Label)
-                .Distinct(StringComparer.Ordinal)
-                .ToArray();
-            preview = BuildPreview("匹配", string.Join("、", labels));
+            preview = BuildPreview("匹配", string.Join("、", firstLabels.Distinct(StringComparer.Ordinal)));
             return true;
         }
 
@@ -68,14 +82,18 @@ namespace ColorVision.Copilot
                 conversation.Goal?.Objective);
             yield return new SearchSource("最近消息", conversation.PreviewText, conversation.PreviewText);
 
-            foreach (var message in (conversation.Messages ?? []).Reverse())
+            if (conversation.Messages is { } messages)
             {
-                if (message == null)
-                    continue;
+                for (int index = messages.Count - 1; index >= 0; index--)
+                {
+                    var message = messages[index];
+                    if (message == null)
+                        continue;
 
-                yield return new SearchSource("历史消息", message.Content, message.Content);
-                foreach (var attachment in message.Attachments ?? [])
-                    yield return BuildAttachmentSource("消息附件", attachment);
+                    yield return new SearchSource("历史消息", message.Content, message.Content);
+                    foreach (var attachment in message.Attachments ?? [])
+                        yield return BuildAttachmentSource("消息附件", attachment);
+                }
             }
 
             foreach (var attachment in conversation.Attachments ?? [])
@@ -137,14 +155,6 @@ namespace ColorVision.Copilot
                     (char[]?)null,
                     StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));
 
-        private sealed record SearchSource(
-            string Label,
-            string? SearchText,
-            string? DisplayText)
-        {
-            internal bool Contains(string term) =>
-                !string.IsNullOrWhiteSpace(SearchText)
-                && SearchText.Contains(term, StringComparison.OrdinalIgnoreCase);
-        }
+        private readonly record struct SearchSource(string Label, string? SearchText, string? DisplayText);
     }
 }

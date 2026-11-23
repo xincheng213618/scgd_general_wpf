@@ -33,7 +33,6 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
-            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
         <WrapPanel Margin="0,0,0,12">
             <StackPanel x:Name="CommandSelectionPanel" Orientation="Horizontal" Margin="0,0,16,4">
@@ -116,6 +115,5 @@
                 </Expander>
             </StackPanel>
         </ScrollViewer>
-        <Button x:Name="DeleteTypeButton" Grid.Row="2" Content="{x:Static properties:Resources.Sensor_DeleteType}" HorizontalAlignment="Right" Margin="0,12,0,0" Click="DeleteType_Click"/>
     </Grid>
 </UserControl>

@@ -30,6 +30,9 @@ namespace ColorVisionUpdateRelay
     public static class RelayOperations
     {
         public const string FirewallRuleName = "ColorVision Update Relay";
+        internal const string DefaultServerHost = "xc213618.ddns.me";
+        internal const int DefaultPort = 9998;
+        private const string ListenAddress = "0.0.0.0";
         private const string IpHelperService = "iphlpsvc";
         private const string PortProxyKey = @"SYSTEM\CurrentControlSet\Services\PortProxy\v4tov4\tcp";
 
@@ -91,8 +94,9 @@ namespace ColorVisionUpdateRelay
 
         public static void EnableForward(string serverHost, int port, Action<string> log)
         {
+            FindCompatibleForward(serverHost, port);
             log("确保 IP Helper 服务（端口转发依赖它）自动启动并运行……");
-            RunTool("sc.exe", "config " + IpHelperService + " start= auto", log);
+            Require(RunTool("sc.exe", "config " + IpHelperService + " start= auto", log), "配置 IP Helper 服务");
             using (var service = new ServiceController(IpHelperService))
             {
                 if (service.Status != ServiceControllerStatus.Running)
@@ -102,35 +106,68 @@ namespace ColorVisionUpdateRelay
                 }
             }
 
-            PortProxyEntry existing = FindForward(port);
-            if (existing != null)
+            bool addedForward = FindCompatibleForward(serverHost, port) == null;
+            if (addedForward)
             {
-                log("先删除原有端口转发：" + existing);
-                RunTool("netsh.exe", "interface portproxy delete v4tov4 listenport=" + port + " listenaddress=" + existing.ListenAddress, log);
+                log("添加端口转发 " + ListenAddress + ":" + port + " → " + serverHost + ":" + port);
+                Require(RunTool("netsh.exe", "interface portproxy add v4tov4 listenaddress=" + ListenAddress + " listenport=" + port + " connectaddress=" + serverHost + " connectport=" + port, log), "添加端口转发");
             }
-            log("添加端口转发 0.0.0.0:" + port + " → " + serverHost + ":" + port);
-            Require(RunTool("netsh.exe", "interface portproxy add v4tov4 listenaddress=0.0.0.0 listenport=" + port + " connectaddress=" + serverHost + " connectport=" + port, log), "添加端口转发");
-
-            log("放行入站防火墙 TCP " + port);
-            RunTool("netsh.exe", "advfirewall firewall delete rule name=\"" + FirewallRuleName + "\"", null);
-            Require(RunTool("netsh.exe", "advfirewall firewall add rule name=\"" + FirewallRuleName + "\" dir=in action=allow protocol=TCP localport=" + port + " profile=any", log), "添加防火墙规则");
+            try
+            {
+                log("放行入站防火墙 TCP " + port);
+                RemoveFirewallRule(log);
+                Require(RunTool("netsh.exe", "advfirewall firewall add rule name=\"" + FirewallRuleName + "\" dir=in action=allow protocol=TCP localport=" + port + " profile=any", log), "添加防火墙规则");
+            }
+            catch
+            {
+                if (addedForward && GetPortProxies().Any(entry => IsMatchingForward(entry, serverHost, port)))
+                {
+                    log("还原刚添加的端口转发。");
+                    if (RemoveForward(port, log) != 0) log("无法还原端口转发，请检查当前转发规则。");
+                }
+                throw;
+            }
         }
 
-        public static void DisableForward(int port, Action<string> log)
+        public static void DisableForward(string serverHost, int port, Action<string> log)
         {
-            PortProxyEntry existing = FindForward(port);
+            PortProxyEntry existing = FindCompatibleForward(serverHost, port);
             if (existing == null) log("没有找到端口 " + port + " 的转发。");
             else
             {
                 log("删除端口转发：" + existing);
-                Require(RunTool("netsh.exe", "interface portproxy delete v4tov4 listenport=" + port + " listenaddress=" + existing.ListenAddress, log), "删除端口转发");
+                Require(RemoveForward(port, log), "删除端口转发");
             }
+            RemoveFirewallRule(log);
+            log("IP Helper 服务保持原状（其他功能也可能依赖它）。");
+        }
+
+        private static PortProxyEntry FindCompatibleForward(string serverHost, int port)
+        {
+            PortProxyEntry matching = null;
+            foreach (PortProxyEntry entry in GetPortProxies().Where(entry => entry.ListenPort == port))
+            {
+                if (!IsMatchingForward(entry, serverHost, port))
+                    throw new InvalidOperationException("端口 " + port + " 有其他转发规则：" + entry + "。请由管理员确认原规则后再操作。");
+                matching = entry;
+            }
+            return matching;
+        }
+
+        private static bool IsMatchingForward(PortProxyEntry entry, string serverHost, int port) =>
+            entry.ListenAddress == ListenAddress && entry.ListenPort == port && entry.ConnectPort == port
+            && string.Equals(entry.ConnectAddress, serverHost, StringComparison.OrdinalIgnoreCase);
+
+        private static int RemoveForward(int port, Action<string> log) =>
+            RunTool("netsh.exe", "interface portproxy delete v4tov4 listenport=" + port + " listenaddress=" + ListenAddress, log);
+
+        private static void RemoveFirewallRule(Action<string> log)
+        {
             if (FirewallRuleExists())
             {
                 log("删除防火墙规则 " + FirewallRuleName);
-                RunTool("netsh.exe", "advfirewall firewall delete rule name=\"" + FirewallRuleName + "\"", log);
+                Require(RunTool("netsh.exe", "advfirewall firewall delete rule name=\"" + FirewallRuleName + "\"", log), "删除防火墙规则");
             }
-            log("IP Helper 服务保持原状（其他功能也可能依赖它）。");
         }
 
         /// <summary>A relay whose own hosts points the update host at a relay would forward to itself.</summary>

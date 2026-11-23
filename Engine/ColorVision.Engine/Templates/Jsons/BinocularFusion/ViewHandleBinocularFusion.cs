@@ -57,8 +57,8 @@ namespace ColorVision.Engine.Templates.Jsons.BinocularFusion
         {
             if (result.ViewResults == null)
             {
+                List<BinocularFusionModel> AlgResultModels = result.ReadPersistedDetails(BinocularFusionDao.Instance);
                 result.ViewResults = new ObservableCollection<IViewResult>();
-                List<BinocularFusionModel> AlgResultModels = BinocularFusionDao.Instance.GetAllByPid(result.Id);
                 foreach (var item in AlgResultModels)
                 {
                     result.ViewResults.Add(item);

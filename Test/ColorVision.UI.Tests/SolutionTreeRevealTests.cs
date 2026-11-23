@@ -1,3 +1,4 @@
+using ColorVision.Common.NativeMethods;
 using ColorVision.Solution;
 using ColorVision.Solution.Explorer;
 using ColorVision.Themes;
@@ -14,9 +15,13 @@ namespace ColorVision.UI.Tests;
 
 public sealed class SolutionTreeRevealTests
 {
+    private const string TestFileExtension = ".cv-reveal-test";
+
     [Fact]
     public void RevealScrollsToAnUnrealizedFileInsideAnUnrealizedFolder()
     {
+        // Prime the process-wide icon cache before entering the WPF test dispatcher.
+        ImageSource cachedIcon = FileIcon.GetFileIconImageSource("test" + TestFileExtension);
         WpfTestHost.Invoke(() =>
         {
             var managerField = typeof(SolutionManager).GetField("_instance", BindingFlags.Static | BindingFlags.NonPublic)!;
@@ -42,9 +47,11 @@ public sealed class SolutionTreeRevealTests
                 root.VisualChildren.Add(folder);
                 AddFiles(folder, 70);
                 SolutionNode target = folder.VisualChildren[^1];
+                Assert.Same(cachedIcon, target.Icon);
 
                 tree.ItemsSource = new[] { root };
                 Layout(control);
+                Assert.True(cachedIcon.IsFrozen);
                 var rootContainer = Assert.IsType<TreeViewItem>(tree.ItemContainerGenerator.ContainerFromItem(root));
                 Assert.Null(rootContainer.ItemContainerGenerator.ContainerFromItem(folder));
 
@@ -74,7 +81,7 @@ public sealed class SolutionTreeRevealTests
     {
         for (int index = 0; index < count; index++)
         {
-            var file = new FileInfo(Path.Combine(Path.GetTempPath(), $"colorvision-reveal-{parent.Name}-{index:D3}.txt"));
+            var file = new FileInfo(Path.Combine(Path.GetTempPath(), $"colorvision-reveal-{parent.Name}-{index:D3}{TestFileExtension}"));
             parent.VisualChildren.Add(new FileNode(file) { Parent = parent });
         }
     }

@@ -4,9 +4,11 @@ using PixelType = HikMvsSdk::MvCamCtrl.NET.MyCamera.MvGvspPixelType;
 using ColorVision.Engine.Services.Devices.Camera.Diagnostics;
 using cvColorVision;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using System.IO;
 using System.IO.Compression;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography;
 using System.Text;
 
 namespace ColorVision.UI.Tests;
@@ -97,19 +99,38 @@ public sealed class HikCaptureBenchmarkTests
     public void RawExportKeepsExactSourceBytesAndTheDeclaredEntry(string rawFile)
     {
         string path = Path.Combine(Path.GetTempPath(), $"HikRawTest-{Guid.NewGuid():N}.zip");
-        byte[] payload = [0, 1, 128, 255, 0, 0, 12, 34];
+        bool color = rawFile == "frame.bayer16.raw";
+        byte[] payload = color ? new byte[512 * 512 * sizeof(ushort)] : [0, 1, 128, 255, 0, 0, 12, 34];
+        byte[] reference = color ? new byte[payload.Length * 3] : [];
+        if (color)
+        {
+            var random = new Random(31);
+            random.NextBytes(payload);
+            random.NextBytes(reference);
+        }
         IntPtr buffer = Marshal.AllocHGlobal(payload.Length);
         try
         {
             Marshal.Copy(payload, 0, buffer, payload.Length);
-            HikRawFrameExport.Save(path, buffer, payload.Length, rawFile, new { RawFile = rawFile }, CancellationToken.None);
+            HikRawFrameExport.Save(path, buffer, payload.Length, rawFile, new { RawFile = rawFile }, reference, CancellationToken.None);
             using var zip = ZipFile.OpenRead(path);
             using var source = zip.GetEntry(rawFile)!.Open();
             using var output = new MemoryStream();
             source.CopyTo(output);
             Assert.Equal(payload, output.ToArray());
             using var metadata = new StreamReader(zip.GetEntry("metadata.json")!.Open());
-            Assert.Contains(rawFile, metadata.ReadToEnd());
+            var manifest = JObject.Parse(metadata.ReadToEnd());
+            Assert.Equal(rawFile, manifest.Value<string>("RawFile"));
+            Assert.Equal(color ? 2 : 1, manifest.Value<int>("SchemaVersion"));
+            if (color)
+            {
+                var sdk = Assert.IsType<JObject>(manifest["SdkReference"]);
+                Assert.Equal("RGB16_Packed", sdk.Value<string>("PixelFormat"));
+                Assert.Equal("little-endian", sdk.Value<string>("ByteOrder"));
+                Assert.Equal(reference.Length, sdk.Value<int>("ByteLength"));
+                Assert.Equal(Convert.ToHexString(SHA256.HashData(reference)), sdk.Value<string>("Sha256"));
+            }
+            else Assert.Null(manifest["SdkReference"]);
             Assert.Equal(2, zip.Entries.Count);
         }
         finally

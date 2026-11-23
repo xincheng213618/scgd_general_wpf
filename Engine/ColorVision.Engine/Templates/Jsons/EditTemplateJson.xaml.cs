@@ -76,11 +76,7 @@ namespace ColorVision.Engine.Templates.Jsons
             InitializeComponent();
             PropertyModeButton.GroupName = TextModeButton.GroupName = _copilotContextSourceId;
             this.Width = double.IsNaN(EditTemplateJsonConfig.Instance.Width) ? 740 : Math.Max(480, EditTemplateJsonConfig.Instance.Width);
-            this.SizeChanged += (s, e) =>
-            {
-                EditTemplateJsonConfig.Instance.Width = this.ActualWidth;
-                FuncStackPanel.MaxWidth = Math.Max(160, ActualWidth - 250);
-            };
+            this.SizeChanged += (s, e) => EditTemplateJsonConfig.Instance.Width = this.ActualWidth;
             textEditor.TextArea.IndentationStrategy = new ICSharpCode.AvalonEdit.Indentation.DefaultIndentationStrategy();
             textEditor.ShowLineNumbers = true;
             textEditor.TextChanged += TextEditor_TextChanged;
@@ -143,15 +139,17 @@ namespace ColorVision.Engine.Templates.Jsons
         {
             if (param is IEditTemplateJson editTemplateJson)
             {
-                RegisterCopilotEditor();
                 this.DataContext = param; 
                 if (IEditTemplateJson !=null)
                     IEditTemplateJson.JsonValueChanged -= IEditTemplateJson_JsonValueChanged;
                 if (!ReferenceEquals(IEditTemplateJson, editTemplateJson)) propertyEditor.ResetNavigation();
                 IEditTemplateJson = editTemplateJson;
-                _schemaInfo = TryLoadTemplateSchema(GetTemplateCode(editTemplateJson));
+                var templateCode = GetTemplateCode(editTemplateJson);
+                if (_schemaInfo == null || !_schemaInfo.SchemaPath.StartsWith("resource://", StringComparison.Ordinal) ||
+                    !string.Equals(_schemaInfo.Code, templateCode, StringComparison.OrdinalIgnoreCase))
+                    _schemaInfo = TryLoadTemplateSchema(templateCode);
                 _loadedJsonSnapshot = IEditTemplateJson.JsonValue ?? string.Empty;
-                SetTextSilently(IEditTemplateJson.JsonValue);
+                SetTextSilently(_loadedJsonSnapshot);
                 IEditTemplateJson.JsonValueChanged += IEditTemplateJson_JsonValueChanged;
                 if (_isInPropertyEditorMode)
                 {
@@ -339,17 +337,6 @@ namespace ColorVision.Engine.Templates.Jsons
 
             value = property.GetString() ?? string.Empty;
             return !string.IsNullOrWhiteSpace(value);
-        }
-
-        private void Button_Click_1(object sender, RoutedEventArgs e)
-        {
-            if (!TryCommitPendingEdits()) return;
-            Process.Start(new ProcessStartInfo
-            {
-                FileName = "https://www.json.cn/",
-                UseShellExecute = true
-            });
-            Common.Clipboard.SetText(textEditor.Text);
         }
 
         private void PropertyMode_Click(object sender, RoutedEventArgs e) => SwitchToPropertyEditorMode();

@@ -2,8 +2,11 @@ using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Text;
 using System.Threading;
 
 namespace ColorVision.Engine.FlowProcessing.Diagnostics;
@@ -90,16 +93,55 @@ internal sealed class FlowNodeTiming
     internal string SerializePayload(object? data)
     {
         FlowNodeTimingSnapshot timing = Finish();
-        string result = data == null ? "{}" : JsonConvert.SerializeObject(data, Formatting.None);
-        string timingJson = JsonConvert.SerializeObject(timing, Formatting.None);
-        ReadOnlySpan<char> json = result.AsSpan().Trim();
-        // Preserve existing response fields without building a second JSON object tree for large POI results.
-        if (json.Length >= 2 && json[0] == '{' && json[^1] == '}')
+        var payload = new StringBuilder(256);
+        if (data == null)
         {
-            string separator = json[1..^1].Trim().IsEmpty ? "\"Timing\":" : ",\"Timing\":";
-            return string.Concat(json[..^1], separator, timingJson, "}");
+            payload.Append('{');
         }
-        return $"{{\"Data\":{result},\"Timing\":{timingJson}}}";
+        else
+        {
+            AppendJson(payload, data);
+            int start = SkipWhitespace(payload, 0, payload.Length);
+            int end = payload.Length;
+            while (end > start && char.IsWhiteSpace(payload[end - 1]))
+                end--;
+
+            // Keep an object's original fields and preserve literal JSON from custom converters.
+            if (end - start >= 2 && payload[start] == '{' && payload[end - 1] == '}')
+            {
+                bool hasMember = SkipWhitespace(payload, start + 1, end - 1) < end - 1;
+                payload.Length = end - 1;
+                if (start > 0)
+                    payload.Remove(0, start);
+                if (hasMember)
+                    payload.Append(',');
+            }
+            else
+            {
+                payload.Insert(0, "{\"Data\":");
+                payload.Append(',');
+            }
+        }
+
+        payload.Append("\"Timing\":");
+        AppendJson(payload, timing);
+        return payload.Append('}').ToString();
+    }
+
+    private static int SkipWhitespace(StringBuilder value, int start, int end)
+    {
+        while (start < end && char.IsWhiteSpace(value[start]))
+            start++;
+        return start;
+    }
+
+    private static void AppendJson(StringBuilder output, object value)
+    {
+        JsonSerializer serializer = JsonSerializer.CreateDefault();
+        serializer.Formatting = Formatting.None;
+        using var text = new StringWriter(output, CultureInfo.InvariantCulture);
+        using var writer = new JsonTextWriter(text) { Formatting = Formatting.None };
+        serializer.Serialize(writer, value);
     }
 
     private static double Milliseconds(long start, long end) => Math.Round((end - start) * 1000d / Stopwatch.Frequency, 3);

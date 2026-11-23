@@ -8,6 +8,7 @@ using FlowEngineLib.Base;
 using Newtonsoft.Json;
 using System.IO;
 using System.Reflection;
+using System.Windows;
 
 namespace ColorVision.UI.Tests;
 
@@ -95,13 +96,101 @@ public sealed class PostProcessManagerPersistenceTests
         public void RecordFallbackRun(MeasureBatchModel batch, string flowName, FlowControlData result, FlowStatus status, long elapsedMilliseconds) { }
     }
 
+    [Fact]
+    public async Task FinalizerAwaitsRequiredPostProcessBeforeRunningLaterSteps()
+    {
+        const string flowKey = "flow:async-post-process";
+        DirectoryInfo directory = Directory.CreateTempSubdirectory("ColorVision-AsyncPostProcess-");
+        string path = Path.Combine(directory.FullName, "PostProcessConfig.json");
+        FieldInfo managerInstance = typeof(PostProcessManager).GetField("_instance", BindingFlags.Static | BindingFlags.NonPublic)!;
+        object? previousManager = managerInstance.GetValue(null);
+        var started = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var terminal = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        int laterExecutions = 0;
+        try
+        {
+            WpfTestHost.Invoke(() =>
+            {
+                var manager = new PostProcessManager(path);
+                manager.ProcessMetas.Add(new PostProcessMeta
+                {
+                    Name = "Close", FlowKey = flowKey, FailurePolicy = PostProcessFailurePolicy.Required,
+                    PostProcessor = new PendingPostProcessor(started, terminal.Task)
+                });
+                manager.ProcessMetas.Add(new PostProcessMeta
+                {
+                    Name = "Later report", FlowKey = flowKey,
+                    PostProcessor = new CallbackPostProcessor(() =>
+                    {
+                        Application.Current.Dispatcher.VerifyAccess();
+                        laterExecutions++;
+                    })
+                });
+                managerInstance.SetValue(null, manager);
+            });
+
+            var finalizer = new FlowRunFinalizer(new DefaultFlowPostProcessExecutor(), new NoPersistence());
+            Task<FlowRunFinalizedData> finalization = finalizer.FinalizeAsync(new FlowRunFinalizationRequest(
+                new FlowControlData { Status = StatusTypeEnum.Completed }, new MeasureBatchModel(), "Inspection", 0) { FlowKey = flowKey },
+                journalScope: null);
+            Assert.Same(started.Task, await Task.WhenAny(started.Task, finalization).WaitAsync(TimeSpan.FromSeconds(5)));
+            WpfTestHost.Invoke(() =>
+            {
+                Assert.False(finalization.IsCompleted);
+                Assert.Equal(0, laterExecutions);
+                PostProcessManager.GetInstance().ProcessMetas[0].FailurePolicy = PostProcessFailurePolicy.Warning;
+                terminal.SetException(new InvalidOperationException("close failed"));
+            });
+
+            FlowRunFinalizedData result = await finalization.WaitAsync(TimeSpan.FromSeconds(5));
+            Assert.Equal(FlowFinalOutcome.Failed, result.FinalOutcome);
+            Assert.Collection(result.PostProcessResults,
+                failure =>
+                {
+                    Assert.Equal(PostProcessFailurePolicy.Required, failure.FailurePolicy);
+                    Assert.Equal(PostProcessExecutionStatus.ThrewException, failure.Status);
+                    Assert.Equal("close failed", failure.Message);
+                },
+                later => Assert.True(later.Succeeded));
+            Assert.Equal(1, laterExecutions);
+        }
+        finally
+        {
+            terminal.TrySetResult(false);
+            WpfTestHost.Invoke(() => managerInstance.SetValue(null, previousManager));
+            File.Delete(path);
+            directory.Delete();
+        }
+    }
+
+    private sealed class PendingPostProcessor(TaskCompletionSource started, Task<bool> terminal) : IPostProcessor
+    {
+        public bool Process(PostProcessContext ctx) => throw new InvalidOperationException("Called the synchronous entry point.");
+
+        public ValueTask<bool> ProcessAsync(PostProcessContext ctx)
+        {
+            Application.Current.Dispatcher.VerifyAccess();
+            started.SetResult();
+            return new ValueTask<bool>(terminal);
+        }
+    }
+
+    private sealed class CallbackPostProcessor(Action callback) : IPostProcessor
+    {
+        public bool Process(PostProcessContext ctx)
+        {
+            callback();
+            return true;
+        }
+    }
+
     [Theory]
     [InlineData(PostProcessFailurePolicy.Required, FlowFinalOutcome.Failed)]
     [InlineData(PostProcessFailurePolicy.Warning, FlowFinalOutcome.SucceededWithWarnings)]
-    public void UnreadableConfigurationPreservesOrderAndItsFailurePolicy(
+    public async Task UnreadableConfigurationPreservesOrderAndItsFailurePolicy(
         PostProcessFailurePolicy policy, FlowFinalOutcome expectedOutcome)
     {
-        WpfTestHost.Invoke(() =>
+        await WpfTestHost.Invoke(async () =>
         {
             DirectoryInfo directory = Directory.CreateTempSubdirectory("ColorVision-PostProcess-");
             string path = Path.Combine(directory.FullName, "PostProcessConfig.json");
@@ -139,7 +228,7 @@ public sealed class PostProcessManagerPersistenceTests
                 var later = Assert.IsType<TrackingPostProcessor>(manager.ProcessMetas[2].PostProcessor);
                 Assert.Equal(9, later.Config.Value);
 
-                var results = PostProcessExecutionRunner.Execute(
+                var results = await PostProcessExecutionRunner.ExecuteAsync(
                     manager.ProcessMetas.Where(meta => meta.TemplateName == "Flow"),
                     new PostProcessContext(new PostProcessConfig()) { FlowName = "Flow" });
                 Assert.Collection(results,

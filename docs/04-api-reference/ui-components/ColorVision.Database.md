@@ -5,7 +5,6 @@ status: "current"
 summary: "MySQL 连接配置与业务 DAO、POI 模板的 SQLite 自动回退，以及旧插件注册的二进制兼容。"
 aliases: ["数据库操作", "数据库浏览器", "连接数据库", "SQL", "MySQL", "SQLite", "ColorVision.Database", "BaseTableDao", "MySqlControl", "BatchExecuteNonQuery", "数据库事务回滚", "LegacyDatabaseBrowserRegistration", "ColorVision.Local.db", "POI 本地模板", "PoiTemplateStorage"]
 code_paths: ["UI/ColorVision.Database", "UI/ColorVision.Database/Compatibility/LegacyDatabaseBrowserRegistration.cs", "Engine/ColorVision.Engine/Mysql/MySqlConnect.xaml", "Engine/ColorVision.Engine/Mysql/MySqlConnect.xaml.cs", "Engine/ColorVision.Engine/Templates/POI/PoiTemplateStorage.cs", "Engine/ColorVision.Engine/Media/PoiImageViewComponent.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/BatchExecuteNonQueryTests.cs", "Test/ColorVision.UI.Tests/LegacyDatabaseBrowserRegistrationTests.cs", "Test/ColorVision.UI.Tests/LocalPoiTemplateStorageTests.cs", "Test/ColorVision.UI.Tests/ConfigTypeNamePersistenceTests.cs"]
 related: ["ui.database-query", "ui.sqlite-storage", "engine.database-maintenance", "operations.data", "ui.configuration", "ui.desktop", "flow.session"]
 ---
 
@@ -15,7 +14,7 @@ related: ["ui.database-query", "ui.sqlite-storage", "engine.database-maintenance
 
 `LocalTemplateStore` 管理当前用户 `ApplicationData/ColorVision/Config/ColorVision.Local.db`，SQLite 引擎随应用提供，无需安装数据库服务。首次使用自动建库；`local_templates` 按 `kind` 区分配置类型，保存名称、业务 schema 版本、完整 JSON、顺序和可空的 created_utc。新建文档记录 UTC 创建时间，更新、重命名及交换顺序不改变该时间；旧库自动新增可空列，已有记录保留未知日期，不按迁移时刻回填。当前接入 POI、流程、设备资源与许可证配置，后续类型由各 owner 定义 payload；该库只保存配置，不保存图片、检测结果、运行日志或执行记录。POI 及其全部点位作为一个文档原子保存，点位保留小数坐标；流程保存完整 STN 与稳定身份，并通过条件更新防止并发覆盖。读取失败和不支持的业务版本必须报错，不能当成空模板。
 
-POI 的 `PoiTemplateStorage` 在 MySQL 未连接或列表查询失败时自动使用本地库，不主动调用 `MySqlControl.Connect()`。ImageView 底部模板框旁的管理图标打开现有模板管理器，并选中当前模板；保存图标将当前图上的 POI 区域保存到所选模板，未选模板时输入名称新建。保存保留当前画布，支持矩形、圆形和已有点位；旋转矩形、椭圆及不能完整还原的形状会提示调整，避免改变保存后的几何。模板下拉箭头保留，工具栏无溢出项目时隐藏“更多”箭头。下拉框右键可编辑当前模板或刷新，管理器标题和下拉框提示标识当前存储。新建、编辑、重命名、复制、删除、排序和 `.cfg` 导入导出均走该存储入口。文件导入及导出不要求宿主 Solution 初始化。
+POI 的 `PoiTemplateStorage` 在 MySQL 未连接或列表查询失败时自动使用本地库，不主动调用 `MySqlControl.Connect()`。ImageView 底部模板下拉框的右键菜单提供保存、编辑、管理和刷新。管理器打开时选中当前模板，标题和下拉框提示标识当前存储。新建、编辑、重命名、复制、删除、排序和 `.cfg` 导入导出均走该存储入口。文件导入及导出不要求宿主 Solution 初始化。
 
 POI 本地 ID 使用小于 -1 的值，-1 保留为空模板；MySQL ID 保持正数，两库同名模板独立，不自动同步。已经打开的本地模板即使 MySQL 恢复也继续读写本地；重新打开/刷新模板列表重新判定可用后端。POI 服务器保存失败时，只有已完整加载明细的模板才能保留为新的本地副本，并显示本地保存提示，不能拿服务器 ID 覆盖本地同号记录。未加载明细的服务器模板断线后禁止保存不完整副本，重新打开列表即可使用本地模板。流程按其所属存储保存，服务器流程断线时保留失败，不自动生成本地副本；其本地管理、STN 导入与运行限制见流程模板主题。其他 DAO、服务算法和 MySQL 表结构保持原有契约。
 
@@ -44,10 +43,10 @@ POI 本地 ID 使用小于 -1 的值，-1 保留为空模板；MySQL ID 保持�
 几个容易混淆的入口要分开：
 
 - `TestConnect(config)` 真实联网打开连接，再用参数化查询检查库是否存在；成功不验证全部表权限或业务读写，也不会调用全局 local_infile 修改。
-- `Connect()` 不只是探活：打开连接后查询 `@@global.local_infile`，为 0 时尝试 `SET GLOBAL local_infile = 1`；随后才设 IsConnect 并通知订阅者。它需要额外数据库权限，可能改变服务器全局设置并触发宿主后续装配，不应为文档或只读诊断随意调用。
-- `MySqlConnect` 窗口编辑当前配置的独立副本；测试连接使用草稿快照，取消或普通关窗不修改共享配置。确认将草稿复制到当前配置对象，启动后台 Connect 后关闭，不等待连接完成，也不直接调用配置服务落盘。服务管理器另外管理安装维护所需的 root 凭据，桌面端不再保存额外的 root 连接项。
+- `Connect()` 在界面线程固定本次目标，后台打开连接并查询 `@@global.local_infile`，为 0 时尝试 `SET GLOBAL local_infile = 1`。它需要额外权限，可能改变服务端全局设置并触发宿主装配，执行须有相应授权。
+- `MySqlConnect` 编辑独立草稿。测试使用草稿快照，确认才写回当前配置并关窗，连接验证在后台完成。服务管理器另外管理安装维护所需的 root 凭据。
 
-`IsConnect` 是一次 Connect 流程维护的状态，不是每条 SQL 的健康证明。业务 DAO 和直接创建的 client 仍须分别核对连接门禁。
+`IsConnect` 和 `ConnectedEndpoint` 由最新连接请求发布。新请求开始时旧连接对象立即失去当前资格，较早请求的迟到成功或失败均被丢弃。`ConnectedEndpoint.CreateDbClient()` 始终使用固定目标，持有旧对象的调用者在查询前与提交结果前检查 `IsCurrent`。`GetConnectionString()` 仍读取当前编辑配置，供使用该配置的入口创建连接。业务 DAO 和直接创建的 client 仍须分别核对连接门禁。
 
 “初始化表”按 `IInitTables` 实体逐表补齐或创建结构，一张表失败后继续其它表并汇总失败；不会在启动时自动执行。该入口使用独立 client，将 SqlSugar 生成的独立 `ALTER TABLE ... ALTER COLUMN ... SET DEFAULT (CURRENT_TIMESTAMP)` 改为兼容 MySQL 5.7 的无外层括号写法，保留时间精度，不改业务 SQL 或字符串默认值。旧库出现 `nd_port`、`version` 等缺列时，需要在确认目标库和备份后手动执行初始化表；本地代码检查不代表现场迁移已完成。
 
@@ -61,10 +60,9 @@ POI 本地 ID 使用小于 -1 的值，-1 保留为空模板；MySQL ID 保持�
 
 ## 验证入口与缺口
 
-- `LocalPoiTemplateStorageTests.cs` 在隔离临时 SQLite 文件验证离线读写、重启恢复、精度、导入导出、排序、存储隔离及 ImageView 编辑保存链；MySQL 故障通过禁止访问/抛错的 factory 模拟，不验证真实 MySQL 权限或硬件。
-- `BatchExecuteNonQueryTests.cs` 用 fake executor 核对事务阶段、失败诊断和清理语义，不连接真实 MySQL，也不证明 DDL 可以回滚。
-- `LegacyDatabaseBrowserRegistrationTests.cs` 按旧插件的精确类型、构造函数和方法签名反射绑定，再用禁止调用的路径/client factory 验证注册无数据库副作用；它不承诺旧浏览器的全部公开 API 继续可用。
-- `ConfigTypeNamePersistenceTests.cs` 在隔离配置文件覆盖旧设置读取、当前连接凭据加密保存和重载，以及旧连接列表被忽略的兼容边界；不连接真实 MySQL。
-- 数据库清理窗口的独立接口和窗口测试见[维护窗口契约](../engine-components/database-maintenance.md)。真实账号权限、连接生命周期、恢复和数据完整性仍由各业务 owner 验证。
+- 用真实 MySQL 与设备确认现场权限及采集。
+- 单独核对目标数据库的 DDL 回滚能力。
+- 使用匹配版本的旧插件核对加载与数据库副作用。兼容层仅保留旧插件启动所需的接口。
+- 现场验收须核对账号权限、连接生命周期、恢复和数据完整性。 [维护窗口契约](../engine-components/database-maintenance.md)
 
 目标框架和依赖以 `ColorVision.Database.csproj` 为准：当前 WPF 多目标 `net8.0-windows7.0;net10.0-windows7.0`，依赖 SqlSugar、SQLite runtime、Newtonsoft.Json、log4net 和 ColorVision.UI。缺 DLL、连接失败、真实库结构不符以及业务结果未完成应分别定位；该模块本身不安装数据库服务。

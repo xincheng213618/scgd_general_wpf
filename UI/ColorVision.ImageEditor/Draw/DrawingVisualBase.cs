@@ -171,32 +171,29 @@ namespace ColorVision.ImageEditor.Draw
 
         public IEnumerable<MenuItem> GetContextMenuItems(object obj)
         {
-            List<MenuItem> MenuItems = new List<MenuItem>();
-            if (obj is DrawingVisualBase visual)
+            if (obj is not DrawingVisualBase visual) return [];
+
+            MenuItem edit = new() { Header = ColorVision.ImageEditor.Properties.Resources.Draw_Edit };
+            edit.Click += (_, _) =>
             {
-                MenuItem menuIte2 = new MenuItem() { Header = ColorVision.ImageEditor.Properties.Resources.Draw_Delete };
-                menuIte2.Click += (s, e) =>
+                new PropertyEditorWindow(visual.BaseAttribute)
                 {
-                    _drawContext.DrawCanvas.RemoveVisualCommand(visual);
-                    _drawContext.SelectionVisual.ClearRender();
-                };
-                MenuItems.Add(menuIte2);
+                    Owner = Application.Current.GetActiveWindow(),
+                    WindowStartupLocation = WindowStartupLocation.CenterOwner
+                }.ShowDialog();
+            };
 
-                MenuItem menuIte3 = new MenuItem() { Header = "Top" };
-                menuIte3.Click += (s, e) =>
-                {
-                    _drawContext.DrawCanvas.TopVisual(visual);
-                };
-                MenuItems.Add(menuIte3);
+            MenuItem top = new() { Header = "Top" };
+            top.Click += (_, _) => _drawContext.DrawCanvas.TopVisual(visual);
 
-                MenuItem menuItem4 = new MenuItem() { Header = ColorVision.ImageEditor.Properties.Resources.Draw_Edit };
-                menuItem4.Click += (s, e) =>
-                {
-                    new PropertyEditorWindow(visual.BaseAttribute) { Owner =Application.Current.GetActiveWindow(),WindowStartupLocation =WindowStartupLocation.CenterOwner}.ShowDialog();
-                };
-                MenuItems.Add(menuItem4);
-            }
-            return MenuItems;
+            MenuItem delete = new() { Header = ColorVision.ImageEditor.Properties.Resources.Draw_Delete };
+            delete.Click += (_, _) =>
+            {
+                _drawContext.DrawCanvas.RemoveVisualCommand(visual);
+                _drawContext.SelectionVisual.ClearRender();
+            };
+
+            return [edit, top, delete];
         }
     }
 }

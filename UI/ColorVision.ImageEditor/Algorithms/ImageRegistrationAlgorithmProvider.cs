@@ -108,7 +108,11 @@ namespace ColorVision.ImageEditor.Algorithms
             {
                 context.Progress?.Report(new AlgorithmProgress(0.74, "registration.warp"));
                 using AlgorithmImageMatLease movingLease = AlgorithmImageInterop.BorrowReadOnly(moving);
-                using Mat output = new();
+                cancellationToken.ThrowIfCancellationRequested();
+                int stride = checked(reference.Width * moving.Format.BytesPerPixel());
+                byte[] outputData = GC.AllocateUninitializedArray<byte>(checked(stride * reference.Height));
+                using Mat output = Mat.FromPixelData(reference.Height, reference.Width, movingLease.Mat.Type(), outputData, stride);
+                IntPtr outputAddress = output.Data;
                 using Mat transform = GeometricTransformAlgorithmProvider.CreateMatrix(matrix, GeometricTransformKind.Perspective);
                 Cv2.WarpPerspective(
                     movingLease.Mat,
@@ -121,7 +125,10 @@ namespace ColorVision.ImageEditor.Algorithms
                 cancellationToken.ThrowIfCancellationRequested();
                 (byte[] mask, long validPixels) = GeometricTransformAlgorithmProvider.BuildValidityMask(
                     reference.Width, reference.Height, moving.Width, moving.Height, inverse, cancellationToken, context.Progress);
-                registered = AlgorithmImageInterop.FromMat(output, reference.DpiX, reference.DpiY, cancellationToken);
+                // The warp fills its private destination. Read the actual Mat if OpenCV replaced its storage.
+                registered = output.Data == outputAddress && output.Step() == stride
+                    ? new AlgorithmImageBuffer(reference.Width, reference.Height, stride, moving.Format, outputData, reference.DpiX, reference.DpiY)
+                    : AlgorithmImageInterop.FromMat(output, reference.DpiX, reference.DpiY, cancellationToken);
                 validityMask = new AlgorithmImageBuffer(reference.Width, reference.Height, reference.Width, AlgorithmImageFormat.Gray8, mask, reference.DpiX, reference.DpiY);
                 double photometricRmse = PhotometricRmse(referenceGray, output, moving.Format, mask, validPixels);
                 double inverseResidual = GeometricTransformAlgorithmProvider.InverseResidual(matrix, inverse);
@@ -654,28 +661,42 @@ namespace ColorVision.ImageEditor.Algorithms
         private static Mat ToNormalizedGray(AlgorithmImageBuffer image)
         {
             using AlgorithmImageMatLease lease = AlgorithmImageInterop.BorrowReadOnly(image);
-            using Mat gray = new();
-            if (image.Format.Channels() == 1) lease.Mat.CopyTo(gray);
-            else Cv2.CvtColor(lease.Mat, gray, image.Format.Channels() == 3 ? ColorConversionCodes.BGR2GRAY : ColorConversionCodes.BGRA2GRAY);
+            return CreateNormalizedGray(lease.Mat, image.Format);
+        }
+
+        private static Mat CreateNormalizedGray(Mat source, AlgorithmImageFormat format)
+        {
+            int channels = format.Channels();
+            double peak = format.IsFloatingPoint() ? 1 : format.BitsPerChannel() == 8 ? byte.MaxValue : ushort.MaxValue;
             Mat normalized = new();
-            double peak = image.Format.IsFloatingPoint() ? 1 : image.Format.BitsPerChannel() == 8 ? byte.MaxValue : ushort.MaxValue;
-            gray.ConvertTo(normalized, MatType.CV_32FC1, 1 / peak);
-            return normalized;
+            try
+            {
+                if (channels == 1)
+                {
+                    source.ConvertTo(normalized, MatType.CV_32FC1, 1 / peak);
+                }
+                else
+                {
+                    Cv2.CvtColor(source, normalized, channels == 3 ? ColorConversionCodes.BGR2GRAY : ColorConversionCodes.BGRA2GRAY);
+                    if (!format.IsFloatingPoint())
+                        normalized.ConvertTo(normalized, MatType.CV_32FC1, 1 / peak);
+                }
+                return normalized;
+            }
+            catch
+            {
+                normalized.Dispose();
+                throw;
+            }
         }
 
         private static double PhotometricRmse(Mat referenceGray, Mat registered, AlgorithmImageFormat format, byte[] mask, long validPixels)
         {
             if (validPixels == 0) return double.NaN;
-            using Mat registeredGray = new();
-            if (format.Channels() == 1) registered.CopyTo(registeredGray);
-            else Cv2.CvtColor(registered, registeredGray, format.Channels() == 3 ? ColorConversionCodes.BGR2GRAY : ColorConversionCodes.BGRA2GRAY);
-            using Mat normalized = new();
-            double peak = format.IsFloatingPoint() ? 1 : format.BitsPerChannel() == 8 ? byte.MaxValue : ushort.MaxValue;
-            registeredGray.ConvertTo(normalized, MatType.CV_32FC1, 1 / peak);
-            using Mat difference = new();
-            using Mat squared = new();
-            Cv2.Absdiff(referenceGray, normalized, difference);
-            Cv2.Multiply(difference, difference, squared);
+            // Reuse the owned gray image for the difference and squared residual.
+            using Mat squared = CreateNormalizedGray(registered, format);
+            Cv2.Absdiff(referenceGray, squared, squared);
+            Cv2.Multiply(squared, squared, squared);
             using Mat maskMat = Mat.FromPixelData(referenceGray.Rows, referenceGray.Cols, MatType.CV_8UC1, mask);
             return Math.Sqrt(Cv2.Mean(squared, maskMat).Val0);
         }

@@ -47,6 +47,8 @@ double median(std::vector<double> values)
 
 cv::Mat grayFloat(const cv::Mat& image)
 {
+    // Detection and refinement only read the grayscale pixels.
+    if (image.type() == CV_32FC1) return image;
     cv::Mat converted, gray;
     image.convertTo(converted, CV_32F);
     if (converted.channels() == 1) return converted;
@@ -54,10 +56,8 @@ cv::Mat grayFloat(const cv::Mat& image)
     return gray;
 }
 
-std::vector<Candidate> detectCandidates(const cv::Mat& gray8, double threshold, const Options& options)
+std::vector<Candidate> detectCandidates(const cv::Mat& mask, const Options& options)
 {
-    cv::Mat mask;
-    cv::threshold(gray8, mask, threshold, 255, cv::THRESH_BINARY);
     std::vector<std::vector<cv::Point>> contours;
     std::vector<cv::Vec4i> hierarchy;
     // Keep foreground components inside a surrounding frame or ring. CCOMP
@@ -65,14 +65,14 @@ std::vector<Candidate> detectCandidates(const cv::Mat& gray8, double threshold, 
     // their component, so a ring's inner edge cannot become a second dot.
     cv::findContours(mask, contours, hierarchy, cv::RETR_CCOMP, cv::CHAIN_APPROX_SIMPLE);
     std::vector<Candidate> candidates;
-    const double maxWidth = gray8.cols * 0.75 / std::max(2, options.cols - 1);
-    const double maxHeight = gray8.rows * 0.75 / std::max(2, options.rows - 1);
+    const double maxWidth = mask.cols * 0.75 / std::max(2, options.cols - 1);
+    const double maxHeight = mask.rows * 0.75 / std::max(2, options.rows - 1);
     for (size_t i = 0; i < contours.size(); ++i) {
         if (hierarchy[i][3] >= 0) continue;
         const auto& contour = contours[i];
         const cv::Rect bounds = cv::boundingRect(contour);
         if (bounds.width < 3 || bounds.height < 3 || bounds.width > maxWidth || bounds.height > maxHeight) continue;
-        if (bounds.x <= 0 || bounds.y <= 0 || bounds.br().x >= gray8.cols || bounds.br().y >= gray8.rows) continue;
+        if (bounds.x <= 0 || bounds.y <= 0 || bounds.br().x >= mask.cols || bounds.br().y >= mask.rows) continue;
         const double area = cv::contourArea(contour);
         const double perimeter = cv::arcLength(contour, true);
         const double extent = area / (bounds.width * bounds.height);
@@ -261,7 +261,7 @@ bool refinePoint(const cv::Mat& source, const Candidate& candidate, double sx, d
     const int x1 = std::min(source.cols, static_cast<int>(std::ceil(candidate.bounds.br().x / sx + margin)));
     const int y1 = std::min(source.rows, static_cast<int>(std::ceil(candidate.bounds.br().y / sy + margin)));
     if (x1 - x0 < 3 || y1 - y0 < 3) return false;
-    cv::Mat patch = grayFloat(source(cv::Rect(x0, y0, x1 - x0, y1 - y0)));
+    const cv::Mat patch = grayFloat(source(cv::Rect(x0, y0, x1 - x0, y1 - y0)));
     if (!cv::checkRange(patch)) return false;
     std::vector<cv::Point3d> border;
     for (int x = 0; x < patch.cols; ++x) { border.emplace_back(x, 0, patch.at<float>(0, x)); border.emplace_back(x, patch.rows - 1, patch.at<float>(patch.rows - 1, x)); }
@@ -398,7 +398,8 @@ json calculateGridDistortionV2(const cv::Mat& image, const json& config, const c
     if (scale < 1.0) cv::resize(image, small, cv::Size(std::max(1, cvRound(image.cols * scale)), std::max(1, cvRound(image.rows * scale))), 0, 0, cv::INTER_AREA);
     else small = image;
     const double sx = static_cast<double>(small.cols) / image.cols, sy = static_cast<double>(small.rows) / image.rows;
-    cv::Mat gray = grayFloat(small), gray8;
+    const cv::Mat gray = grayFloat(small);
+    cv::Mat gray8;
     result["quality"]["processingScale"] = scale;
     if (!cv::checkRange(gray)) return finish("invalid_image", "Image contains non-finite intensities.");
     double minimum = 0, maximum = 0;
@@ -407,7 +408,7 @@ json calculateGridDistortionV2(const cv::Mat& image, const json& config, const c
     if (!std::isfinite(range) || range <= 1e-12) return finish("uniform_image", "Image has no measurable contrast.");
     // Estimate low-frequency leakage on a bounded secondary thumbnail. Candidate
     // thresholds operate on local background residuals, not absolute image gray.
-    cv::Mat backgroundSmall, background, signal, localScale;
+    cv::Mat backgroundSmall, background, signal;
     const double backgroundScale = std::min(1.0, 400.0 / std::max(gray.cols, gray.rows));
     cv::resize(gray, backgroundSmall, cv::Size(std::max(1, cvRound(gray.cols * backgroundScale)), std::max(1, cvRound(gray.rows * backgroundScale))), 0, 0, cv::INTER_AREA);
     const double sigma = std::max(2.0, std::min(static_cast<double>(backgroundSmall.cols) / options.cols, static_cast<double>(backgroundSmall.rows) / options.rows) * 0.12);
@@ -417,14 +418,22 @@ json calculateGridDistortionV2(const cv::Mat& image, const json& config, const c
     // Preserve high local contrast at dim points even when an unrelated saturated
     // reflection dominates a 16-bit/float image's global range. Global min/max is
     // only a numerical floor; it must not quantize those point amplitudes to zero.
-    cv::Mat grayMagnitude = cv::abs(gray), backgroundMagnitude = cv::abs(background);
-    cv::max(grayMagnitude, backgroundMagnitude, localScale);
-    cv::max(localScale, range * 1e-6, localScale);
-    cv::divide(signal, localScale, signal);
+    // Reuse the background buffer for the local scale after computing the signal.
+    if (image.depth() == CV_8U || image.depth() == CV_16U) {
+        // Gray conversion, blurring and interpolation preserve nonnegative intensities.
+        cv::max(gray, background, background);
+    }
+    else {
+        const cv::Mat grayMagnitude = cv::abs(gray);
+        cv::absdiff(background, cv::Scalar::all(0), background);
+        cv::max(grayMagnitude, background, background);
+    }
+    cv::max(background, range * 1e-6, background);
+    cv::divide(signal, background, signal);
     signal.convertTo(gray8, CV_8U, 255.0);
     result["timings"]["preprocessMs"] = elapsed(stage);
-    cv::Mat ignored;
-    const double otsu = cv::threshold(gray8, ignored, 0, 255, cv::THRESH_BINARY | cv::THRESH_OTSU);
+    cv::Mat mask;
+    const double otsu = cv::threshold(gray8, mask, 0, 255, cv::THRESH_BINARY | cv::THRESH_OTSU);
     const double floor = std::max(1.0, options.minimumContrast * 255.0 * 0.5);
     const std::array<double, 3> thresholds = { std::max(otsu, floor), std::max(otsu * 0.35, floor), std::max(otsu * 0.10, floor) };
     std::vector<Candidate> candidates;
@@ -435,7 +444,10 @@ json calculateGridDistortionV2(const cv::Mat& image, const json& config, const c
     for (int attempt = 0; attempt < static_cast<int>(thresholds.size()); ++attempt) {
         if (attempt > 0 && std::abs(thresholds[attempt] - thresholds[attempt - 1]) < 0.5) continue;
         stage = Clock::now();
-        candidates = detectCandidates(gray8, thresholds[attempt], options);
+        if (attempt != 0 || thresholds[attempt] != otsu) {
+            cv::threshold(gray8, mask, thresholds[attempt], 255, cv::THRESH_BINARY);
+        }
+        candidates = detectCandidates(mask, options);
         candidateMs += elapsed(stage);
         maxCandidates = std::max(maxCandidates, static_cast<int>(candidates.size()));
         stage = Clock::now();

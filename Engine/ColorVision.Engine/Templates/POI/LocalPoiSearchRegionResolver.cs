@@ -11,11 +11,11 @@ namespace ColorVision.Engine.Templates.POI;
 internal static class LocalPoiSearchRegionResolver
 {
     // Read persisted service point types directly: editor GraphicTypes has different values.
-    public static Int32Rect Load(string templateName)
+    public static Int32Rect Load(string templateName, MySqlConnectedEndpoint? endpoint = null)
     {
         string name = templateName.Trim();
         if (name.Length == 0) throw new ArgumentException("搜索区域关注点模板名称不能为空。", nameof(templateName));
-        using SqlSugarClient db = MySqlControl.CreateDbClient();
+        using SqlSugarClient db = endpoint?.CreateDbClient() ?? MySqlControl.CreateDbClient();
         PoiMasterModel? master = db.Queryable<PoiMasterModel>()
             .Where(item => item.Name == name && item.TenantId == 0 && item.IsDelete == false)
             .OrderBy(item => item.Id).First();

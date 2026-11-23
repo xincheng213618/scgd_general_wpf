@@ -19,17 +19,14 @@ const status = computed(() => labels[frontmatter.value.status] ?? '状态待核�
     </div>
     <p>{{ frontmatter.summary }}</p>
     <details>
-      <summary>查看源码与测试映射</summary>
-      <p class="knowledge-caveat">以下均为仓库相对路径。当前知识不等于默认启用；引用测试不代表测试已通过。修改前核对当前分支源码。</p>
+      <summary>查看实现入口</summary>
+      <p class="knowledge-caveat">路径相对于仓库根目录。修改前核对当前分支的实现与启用条件。</p>
       <dl>
         <dt>知识正文</dt>
         <dd><code>docs/{{ page.relativePath }}</code></dd>
         <dt>实现入口</dt>
         <dd v-for="source in frontmatter.code_paths" :key="source"><code>{{ source }}</code></dd>
         <dd v-if="!frontmatter.code_paths?.length">未声明实现入口。</dd>
-        <dt>验证入口</dt>
-        <dd v-for="test in frontmatter.test_paths" :key="test"><code>{{ test }}</code></dd>
-        <dd v-if="!frontmatter.test_paths?.length">未声明自动化覆盖；验证缺口见正文。</dd>
       </dl>
     </details>
   </aside>

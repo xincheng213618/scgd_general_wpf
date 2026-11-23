@@ -14,6 +14,8 @@ namespace ColorVision.Database
     {
         public const int DefaultMaximumUtf8Bytes = 64 * 1024 * 1024;
         private const int Utf8BufferSize = 64 * 1024;
+        private const int StackUtf8BufferSize = 1024;
+        private const int MaximumUtf8BytesPerChar = 3;
         private static readonly UTF8Encoding StrictUtf8 = new(false, true);
 
         public static GzipTextPayload Encode(string? text)
@@ -30,11 +32,24 @@ namespace ColorVision.Database
 
         private static int WriteUtf8(GZipStream gzip, string text)
         {
-            if (text.Length <= Utf8BufferSize / 3)
+            if (text.Length <= Utf8BufferSize / MaximumUtf8BytesPerChar)
             {
-                byte[] utf8 = StrictUtf8.GetBytes(text);
-                gzip.Write(utf8);
-                return utf8.Length;
+                int capacity = text.Length * MaximumUtf8BytesPerChar;
+                byte[]? rented = null;
+                Span<byte> utf8 = capacity <= StackUtf8BufferSize
+                    ? stackalloc byte[capacity]
+                    : (rented = ArrayPool<byte>.Shared.Rent(capacity));
+                try
+                {
+                    int length = StrictUtf8.GetBytes(text.AsSpan(), utf8);
+                    gzip.Write(utf8[..length]);
+                    return length;
+                }
+                finally
+                {
+                    if (rented != null)
+                        ArrayPool<byte>.Shared.Return(rented, clearArray: true);
+                }
             }
 
             byte[] buffer = ArrayPool<byte>.Shared.Rent(Utf8BufferSize);
@@ -84,6 +99,9 @@ namespace ColorVision.Database
             {
                 using var input = new MemoryStream(compressedBytes, writable: false);
                 using var gzip = new GZipStream(input, CompressionMode.Decompress);
+                if (expectedUtf8Length is int expected && expected <= Utf8BufferSize)
+                    return DecodeSmallKnownLength(gzip, expected, maximumUtf8Bytes);
+
                 using var output = new MemoryStream(expectedUtf8Length.GetValueOrDefault());
                 byte[] buffer = ArrayPool<byte>.Shared.Rent(Utf8BufferSize);
                 try
@@ -114,6 +132,40 @@ namespace ColorVision.Database
             catch (Exception ex) when (ex is IOException or DecoderFallbackException)
             {
                 throw new InvalidDataException("GZip 文本载荷损坏或不是有效的 UTF-8。", ex);
+            }
+        }
+
+        private static string DecodeSmallKnownLength(GZipStream gzip, int expected, int maximumUtf8Bytes)
+        {
+            byte[] buffer = ArrayPool<byte>.Shared.Rent(Utf8BufferSize);
+            byte[]? rented = null;
+            try
+            {
+                Span<byte> output = expected <= StackUtf8BufferSize
+                    ? stackalloc byte[expected]
+                    : (rented = ArrayPool<byte>.Shared.Rent(expected)).AsSpan(0, expected);
+                int length = 0;
+                int read;
+                // Keep the same read size and check the full stream before reporting a length mismatch.
+                while ((read = gzip.Read(buffer, 0, Utf8BufferSize)) != 0)
+                {
+                    if (read > maximumUtf8Bytes - length)
+                        throw new InvalidDataException($"解压后的载荷超过允许上限 {maximumUtf8Bytes:N0} 字节。");
+                    if (read <= expected - length)
+                        buffer.AsSpan(0, read).CopyTo(output[length..]);
+                    length += read;
+                }
+
+                if (length != expected)
+                    throw new InvalidDataException(
+                        $"解压后的 UTF-8 长度不一致，期望 {expected:N0}，实际 {length:N0} 字节。");
+                return StrictUtf8.GetString(output);
+            }
+            finally
+            {
+                ArrayPool<byte>.Shared.Return(buffer);
+                if (rented != null)
+                    ArrayPool<byte>.Shared.Return(rented, clearArray: true);
             }
         }
 

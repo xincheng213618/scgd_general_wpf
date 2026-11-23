@@ -90,7 +90,9 @@ public class SMUModelNode : SMUBaseNode
 		{
 			if (resp.EventName == "ModelGetData" && resp.Data != null && resp.Data.ScanRequestParam != null)
 			{
-				_channel = (SMUChannelType)resp.Data.ScanRequestParam.Channel;
+				SMUChannelType channel = (SMUChannelType)resp.Data.ScanRequestParam.Channel;
+				RecordTemplateOutputChannel(startCFC, resp.Id, channel);
+				_channel = channel;
 				_source = ((!(bool)resp.Data.ScanRequestParam.IsSourceV) ? SourceType.Current_I : SourceType.Voltage_V);
 				m_begin_val = (float)resp.Data.ScanRequestParam.BeginValue;
 				m_end_val = (float)resp.Data.ScanRequestParam.EndValue;

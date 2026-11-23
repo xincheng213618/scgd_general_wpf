@@ -121,8 +121,8 @@ namespace ColorVision.Engine.Templates.Jsons.SFR2
         {
             if (result.ViewResults == null)
             {
+                List<DetailCommonModel> detailCommonModels = result.ReadPersistedDetails(DeatilCommonDao.Instance);
                 result.ViewResults = new ObservableCollection<IViewResult>();
-                List<DetailCommonModel> detailCommonModels = DeatilCommonDao.Instance.GetAllByPid(result.Id);
                 if (detailCommonModels.Count == 1)
                 {
                     SFRDetailViewReslut sfrresult = new SFRDetailViewReslut(detailCommonModels[0]);

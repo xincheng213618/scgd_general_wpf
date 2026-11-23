@@ -1,0 +1,35 @@
+<UserControl x:Class="ColorVision.Notifications.NotificationPanel"
+             x:ClassModifier="internal"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="clr-namespace:ColorVision.Notifications"
+             Foreground="{DynamicResource GlobalTextBrush}"
+             FontFamily="{DynamicResource CV.Font.UI}"
+             UseLayoutRounding="True">
+    <UserControl.Resources>
+        <ResourceDictionary Source="/ColorVision.Themes;component/Themes/Components/Dialog.xaml" />
+    </UserControl.Resources>
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <Border BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,0,1" Padding="10,3">
+            <DockPanel>
+                <Button DockPanel.Dock="Right"
+                        Style="{StaticResource CV.Button.Text}"
+                        Foreground="{DynamicResource CV.Accent.Primary}"
+                        Margin="8,0,0,0"
+                        Content="{x:Static local:NotificationText.ClearAll}"
+                        IsEnabled="False" />
+                <TextBlock Text="{x:Static local:NotificationText.TotalCount}"
+                           VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+            </DockPanel>
+        </Border>
+
+        <TextBlock Grid.Row="1" Text="{x:Static local:NotificationText.Empty}"
+                   HorizontalAlignment="Center" VerticalAlignment="Center"
+                   TextAlignment="Center" TextWrapping="Wrap" Margin="12" />
+    </Grid>
+</UserControl>

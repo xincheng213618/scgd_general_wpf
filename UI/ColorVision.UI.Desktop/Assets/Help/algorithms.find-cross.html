@@ -181,6 +181,7 @@
 <li>成功后保存 FindCross 主结果、一条公共明细及 UTF-8 JSON 文件。结果目录为空时使用 <code>%LOCALAPPDATA%\ColorVision\Results\FindCross</code>；文件名带时间和 GUID。历史底图需要上游保存与实际帧一致的文件，节点不把已校正/翻转的内存结果自动关联到未经处理的源图。</li>
 <li>下游 <code>action.Data</code> 可读取 <code>LocalFindCrossResult</code>、<code>LocalFindCrossCenterX/Y</code>、<code>LocalFindCrossRotationAngle</code>、<code>LocalFindCrossTiltX/Y</code>、<code>LocalFindCrossDiagnostics</code>、<code>LocalFindCrossResultFile</code>；有内容时还保存 <code>LocalFindCrossRawJson</code> 和 <code>LocalFindCrossInteropDiagnostic</code>。这些中心标量来自兼容结果项，仍是上述取整中心。</li>
 </ul>
+<p>持久化图像、搜索区域关注点和成功或失败结果使用同一个批次连接。节点通知携带该连接，设备视图切库后不会用旧通知中的结果 ID 打开新库记录。</p>
 <p>检测拒绝或结果校验失败时会尝试保存失败主记录并发布到结果页，随后节点仍失败；不会生成成功明细/JSON，也不把失败主记录作为下游有效 <code>MasterValue</code>。输入缺失等前置错误可能更早发生；数据库或发布本身失败时不能假定结果页已有记录。</p>
 <p>生产入口输出单十字结果，数据库类型为 <code>63</code>、版本为 <code>1.0</code>，文件沿用 <code>result[]</code>。成功主记录的 <code>TName</code> 使用既有 <code>optCenter</code> 解析标识，使这组结果进入光轴校准的倾角与旋转结果；失败主记录保持 <code>LocalFindCross</code>。参数中的 <code>Algorithm=LocalFindCross</code> 保留本地实现身份。<code>Name</code> 仅标识 JSON 中的结果项，设置为 <code>ImageCenter</code> 也不会增加或切换测量指标；本地十字节点不生成独立的 <code>ImageCenter</code> 主记录。</p>
 <p>倾角所用的标准中心是配置或整幅图像中心，不是算法独立测得的镜头光轴。要把角度偏差用于光轴校准，需使图卡参考点、标准中心和测量装置标定符合现场测量定义。Flow 画布上未接入执行链的结点不会执行，也不会保存结果。</p>

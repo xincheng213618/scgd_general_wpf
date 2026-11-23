@@ -624,14 +624,6 @@ namespace ProjectARVRPro
     {
         private const string SerialNumberFilterSql = "\"SN\" LIKE @SN ESCAPE '\\'";
 
-        // Unfinished batches still delimit ownership of the flow rows they already saved.
-        private const string RecordFlowBoundariesSql = """
-            SELECT "Id", "SN", "ResultId", "CreateTime", "UpdateTime", "TotalResult",
-                   "LastModel", "BatchId", "Msg", "IsFinalized",
-                   COALESCE(LAG("ResultId") OVER (PARTITION BY TRIM("SN") ORDER BY "Id"), 0) AS "PreviousResultId"
-            FROM "ObjectiveTestResultRecord"
-            """;
-
         private static readonly Lazy<ResultStatisticsDataStore> LazyInstance = new(() => new ResultStatisticsDataStore());
         private readonly string? _databasePath;
         private readonly ReadOnlySqliteDatabase? _readOnlyDatabase;
@@ -851,7 +843,7 @@ namespace ProjectARVRPro
                                OVER SerialNumberHistory AS "ExecutionIndex"
                     FROM "ObjectiveTestResultRecord"
                     WHERE TRIM("SN") IN (SELECT TRIM("SN") FROM PageRecords)
-                       OR ("SN" IS NULL AND EXISTS (SELECT 1 FROM PageRecords WHERE "SN" IS NULL))
+                       OR (TRIM("SN") IS NULL AND EXISTS (SELECT 1 FROM PageRecords WHERE "SN" IS NULL))
                     WINDOW SerialNumberHistory AS (PARTITION BY TRIM("SN") ORDER BY "Id" ROWS UNBOUNDED PRECEDING)
                 )
                 SELECT P."Id", R."ExecutionIndex", P."SN", P."StartTime", P."EndTime", P."Result",
@@ -1042,12 +1034,19 @@ namespace ProjectARVRPro
                                     AND F."Id" <= R."ResultId"), 0)
                         ELSE 0 END AS "FlowRunTimeMilliseconds"
                     """;
+            // Unfinished batches delimit flow ownership, while only completed batches advance the execution index.
             string sql = $$"""
                 WITH {{candidateRecordsSql}}
                 RecordFlowBoundaries AS
                 (
-                    {{RecordFlowBoundariesSql}}
+                    SELECT "Id", "SN", "ResultId", "CreateTime", "UpdateTime", "TotalResult",
+                           "LastModel", "BatchId", "Msg", "IsFinalized",
+                           COALESCE(LAG("ResultId") OVER SerialNumberHistory, 0) AS "PreviousResultId",
+                           COUNT(CASE WHEN "IsFinalized" = 1 OR "IsFinalized" IS NULL THEN 1 END)
+                               OVER SerialNumberHistory AS "ExecutionIndex"
+                    FROM "ObjectiveTestResultRecord"
                     {{(restrictHistory ? candidateHistoryFilter : string.Empty)}}
+                    WINDOW SerialNumberHistory AS (PARTITION BY TRIM("SN") ORDER BY "Id" ROWS UNBOUNDED PRECEDING)
                 ),
                 RankedRecords AS
                 (
@@ -1061,7 +1060,7 @@ namespace ProjectARVRPro
                            "ResultId",
                            "Msg",
                            "PreviousResultId",
-                           ROW_NUMBER() OVER (PARTITION BY TRIM("SN") ORDER BY "Id") AS "ExecutionIndex",
+                           "ExecutionIndex",
                            COALESCE((SELECT P."Id"
                                      FROM "ObjectiveTestResultRecord" AS P
                                      WHERE P."Id" < B."Id"
@@ -1123,12 +1122,20 @@ namespace ProjectARVRPro
         internal IReadOnlyDictionary<int, IReadOnlyList<ProjectARVRReuslt>> QueryFlowDetailsForBatchExport(
             IReadOnlyList<ResultStatisticsRecordRow> records)
         {
+            InitializeSchema();
+            using SqlSugarClient db = CreateClient();
+            var results = QueryFlowDetailsForBatchExport(db, records);
+            ResultJsonPayloadStorage.LoadViewResultJsons(db, results.Values.SelectMany(group => group), _readOnlyDatabase);
+            return results;
+        }
+
+        private IReadOnlyDictionary<int, IReadOnlyList<ProjectARVRReuslt>> QueryFlowDetailsForBatchExport(
+            SqlSugarClient db, IReadOnlyList<ResultStatisticsRecordRow> records)
+        {
             var idsByRecord = records.ToDictionary(record => record.Id, _ => new List<int>());
             if (idsByRecord.Count == 0)
                 return new Dictionary<int, IReadOnlyList<ProjectARVRReuslt>>();
 
-            InitializeSchema();
-            using SqlSugarClient db = CreateClient();
             var resultsById = new Dictionary<int, ProjectARVRReuslt>();
             var ranged = new List<ResultStatisticsRecordRow>();
             foreach (ResultStatisticsRecordRow record in records)
@@ -1178,9 +1185,108 @@ namespace ProjectARVRPro
                 foreach (ProjectARVRReuslt result in Query<ProjectARVRReuslt>(db).Where(item => ids.Contains(item.Id)).ToList())
                     resultsById.Add(result.Id, result);
             }
-            ResultJsonPayloadStorage.LoadViewResultJsons(db, resultsById.Values, _readOnlyDatabase);
             return idsByRecord.ToDictionary(pair => pair.Key, pair => (IReadOnlyList<ProjectARVRReuslt>)pair.Value
                 .Where(resultsById.ContainsKey).Select(id => resultsById[id]).ToArray());
+        }
+
+        internal int ExportBatchCsv(IReadOnlyList<ResultStatisticsRecordRow> selectedRows, string filePath)
+        {
+            ArgumentNullException.ThrowIfNull(selectedRows);
+            ArgumentException.ThrowIfNullOrWhiteSpace(filePath);
+            int[] ids = selectedRows.Select(row => row.Id).Where(id => id > 0).Distinct().ToArray();
+            if (ids.Length == 0)
+            {
+                ObjectiveTestResultBatchCsvExporter.ExportToCsv([], filePath);
+                return 0;
+            }
+
+            int exportedCount = 0;
+            AtomicResultFile.Write(filePath, stagingPath =>
+            {
+                InitializeSchema();
+                using SqlSugarClient db = CreateClient();
+                // Use one snapshot for all reads, and close it before the staging file is published.
+                db.Ado.Open();
+                db.Ado.Transaction = ((SqliteConnection)db.Ado.Connection).BeginTransaction(deferred: true);
+                try
+                {
+                    var recordsById = new Dictionary<int, ObjectiveTestResultRecord>(ids.Length);
+                    foreach (int[] chunk in ids.Chunk(500))
+                    {
+                        foreach (ObjectiveTestResultRecord record in Query<ObjectiveTestResultRecord>(db)
+                            .Where(item => chunk.Contains(item.Id))
+                            .Select(item => new ObjectiveTestResultRecord
+                            {
+                                Id = item.Id,
+                                SN = item.SN,
+                                CreateTime = item.CreateTime,
+                                UpdateTime = item.UpdateTime,
+                            }).ToList())
+                            recordsById.Add(record.Id, record);
+                    }
+                    ResultStatisticsRecordRow[] rows = selectedRows.Where(row => recordsById.ContainsKey(row.Id)).ToArray();
+                    ObjectiveTestResultRecord[] records = rows.Select(row => recordsById[row.Id]).ToArray();
+                    const int maxFlowBatchRows = 64;
+                    const int flowQueryBatchSize = 500;
+                    IReadOnlyDictionary<int, IReadOnlyList<ProjectARVRReuslt>>? flowResults = null;
+                    ProjectARVRResultCsvExporter.FlowCsvReader? flowReader = null;
+                    ResultJsonPayloadStorage.BatchViewPayloads? flowPayloads = null;
+                    int firstFlowIndex = 0, nextFlowIndex = 0;
+                    ObjectiveTestResultBatchCsvExporter.FlowRow GetFlowRow(int index)
+                    {
+                        if (index < firstFlowIndex || index >= nextFlowIndex)
+                        {
+                            // Keep the previous row bound and avoid two SQL reads when the listed flow counts fit one.
+                            // Flow counts are estimates. The ID-based queries still enforce their own limits.
+                            int limit = index + Math.Min(maxFlowBatchRows, rows.Length - index);
+                            int end = index + 1;
+                            int expectedFlows = Math.Max(0, rows[index].FlowCount);
+                            while (end < limit)
+                            {
+                                int nextCount = Math.Max(0, rows[end].FlowCount);
+                                if (nextCount > flowQueryBatchSize - expectedFlows)
+                                    break;
+                                expectedFlows += nextCount;
+                                end++;
+                            }
+
+                            // Release prior payloads before loading the next group.
+                            flowResults = null;
+                            flowReader = null;
+                            flowPayloads = null;
+                            var chunk = new ArraySegment<ResultStatisticsRecordRow>(rows, index, end - index);
+                            flowResults = QueryFlowDetailsForBatchExport(db, chunk);
+                            var flows = flowResults.Values.SelectMany(group => group);
+                            flowReader = ProjectARVRResultCsvExporter.CreateReaderForTransientPayloads(flows);
+                            if (flowReader != null)
+                                flowPayloads = ResultJsonPayloadStorage.ReadBatchViewPayloads(db, flows, _readOnlyDatabase);
+                            else
+                                ResultJsonPayloadStorage.LoadViewResultJsons(db, flows, _readOnlyDatabase);
+                            firstFlowIndex = index;
+                            nextFlowIndex = end;
+                        }
+                        return new ObjectiveTestResultBatchCsvExporter.FlowRow(flowResults!.GetValueOrDefault(rows[index].Id), flowReader, flowPayloads);
+                    }
+
+                    string? GetFallbackSummary(ObjectiveTestResultRecord record)
+                    {
+                        ResultJsonPayloadStorage.LoadObjectiveTestResultJsons(db, [record], _readOnlyDatabase);
+                        string? json = record.ObjectiveTestResultJson;
+                        record.ObjectiveTestResultJson = null;
+                        return json;
+                    }
+
+                    ObjectiveTestResultBatchCsvExporter.WriteCsv(records, GetFlowRow, stagingPath, GetFallbackSummary);
+                    db.Ado.CommitTran();
+                    exportedCount = records.Length;
+                }
+                catch
+                {
+                    db.Ado.RollbackTran();
+                    throw;
+                }
+            });
+            return exportedCount;
         }
 
         public IReadOnlyList<FlowExecutionRecordRow> QueryFlowExecutions(FlowExecutionQuery query)

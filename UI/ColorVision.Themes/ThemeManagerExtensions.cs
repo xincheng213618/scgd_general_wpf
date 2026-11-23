@@ -8,6 +8,8 @@ namespace ColorVision.Themes
 {
     public static class ThemeManagerExtensions
     {
+        private const string DefaultIconUri = "pack://application:,,,/ColorVision.Themes;component/Assets/Image/ColorVision1.ico";
+
         /// <summary>
         /// 更新主题
         /// </summary>
@@ -32,7 +34,6 @@ namespace ColorVision.Themes
             private readonly Window window;
             private readonly bool useDefaultIcon;
             private ThemeManager? publisher;
-            private BitmapImage? packageIcon;
             private IntPtr hwnd;
             private bool closed;
 
@@ -51,8 +52,9 @@ namespace ColorVision.Themes
             {
                 window.SourceInitialized -= SourceInitialized;
                 hwnd = new WindowInteropHelper(window).Handle;
-                packageIcon = TryLoadPackageIcon(window);
-                if (packageIcon != null) window.Icon = packageIcon;
+                BitmapSource? icon = TryLoadPackageIcon(window);
+                if (icon == null && useDefaultIcon) icon = TryLoadDefaultWindowIcon();
+                if (icon != null) window.Icon = icon;
                 publisher = ThemeManager.Current;
                 publisher.CurrentUIThemeChanged += Apply;
                 Apply(publisher.CurrentUITheme);
@@ -66,7 +68,6 @@ namespace ColorVision.Themes
                     return;
                 }
                 if (closed) return;
-                if (useDefaultIcon && packageIcon == null && TryCreateDefaultIcon(theme) is { } defaultIcon) window.Icon = defaultIcon;
                 ThemeManager.SetWindowTitleBarColor(hwnd, theme);
             }
 
@@ -81,13 +82,23 @@ namespace ColorVision.Themes
             }
         }
 
-        private static BitmapImage? TryCreateDefaultIcon(Theme theme)
+        /// <summary>Loads the default application icon for any theme.</summary>
+        public static BitmapImage LoadDefaultIcon()
+        {
+            BitmapImage icon = new(new Uri(DefaultIconUri));
+            if (icon.CanFreeze) icon.Freeze();
+            return icon;
+        }
+
+        /// <summary>Keeps the ICO frames available so WPF can select each native window icon size.</summary>
+        public static BitmapSource LoadDefaultWindowIcon() =>
+            BitmapFrame.Create(new Uri(DefaultIconUri), BitmapCreateOptions.None, BitmapCacheOption.OnLoad);
+
+        private static BitmapSource? TryLoadDefaultWindowIcon()
         {
             try
             {
-                BitmapImage image = new(new Uri($"pack://application:,,,/ColorVision.Themes;component/Assets/Image/{(theme == Theme.Dark ? "ColorVision1.ico" : "ColorVision.ico")}"));
-                if (image.CanFreeze) image.Freeze();
-                return image;
+                return LoadDefaultWindowIcon();
             }
             catch
             {

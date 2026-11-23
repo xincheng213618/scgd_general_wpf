@@ -29,7 +29,9 @@ public sealed class EngineSpectrumResultTests
             {"EventName":"{{{eventName}}}","Code":102,"DeviceCode":"SPECTRUM.A","data":{"MasterId":{{{notifiedId}}} }}
             """)!;
 
-        var result = MQTTSpectrum.ReadServiceContinuousResult(db, (JObject)notification.Data);
+        int id = Assert.IsType<int>(MQTTSpectrum.ReadServiceResultId((JObject)notification.Data));
+        Assert.Equal(notifiedId, id);
+        var result = MQTTSpectrum.ReadServiceResult(db, id);
 
         Assert.NotNull(result);
         Assert.Equal(notifiedId, result.Id);
@@ -49,7 +51,8 @@ public sealed class EngineSpectrumResultTests
         using var db = CreateSpectrumDatabase();
         db.Insertable(new SpectumResultEntity { DeviceCode = "SPECTRUM.A", IntTime = 40 }).ExecuteReturnIdentity();
 
-        Assert.Null(MQTTSpectrum.ReadServiceContinuousResult(db, data == null ? null : JObject.Parse(data)));
+        int? id = MQTTSpectrum.ReadServiceResultId(data == null ? null : JObject.Parse(data));
+        Assert.Null(id is { } resultId ? MQTTSpectrum.ReadServiceResult(db, resultId) : null);
     }
 
     private static SqlSugarClient CreateSpectrumDatabase()

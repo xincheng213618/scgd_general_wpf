@@ -4,7 +4,8 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local;
 
 internal sealed class LocalCameraLicenseException : InvalidOperationException
 {
-    public LocalCameraLicenseException() : base(Properties.Resources.UnauthorizedOrCameraLicenseExpiredz) { }
+    internal LocalCameraLicenseException(bool expired) : base(expired
+        ? Properties.Resources.LicenseListTagExpired : Properties.Resources.DeviceStatusUnauthorized) { }
 }
 
 internal static class LocalCameraLicense
@@ -13,6 +14,6 @@ internal static class LocalCameraLicense
     {
         // Use the expiry shown by physical camera management; do not decode or validate the license payload.
         if (!skipValidation && (!expiryDate.HasValue || expiryDate.Value <= now))
-            throw new LocalCameraLicenseException();
+            throw new LocalCameraLicenseException(expiryDate.HasValue);
     }
 }

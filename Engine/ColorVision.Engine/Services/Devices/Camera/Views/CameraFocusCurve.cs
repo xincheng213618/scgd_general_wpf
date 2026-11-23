@@ -4,7 +4,6 @@ using ScottPlot;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
-using System.IO;
 using System.Linq;
 
 namespace ColorVision.Engine.Services.Devices.Camera.Views;
@@ -18,8 +17,8 @@ internal static class CameraFocusCurve
     }
 
     internal static string BestReadout(LocalAutoFocusResult result) => result.VidPosition is double vid
-        ? string.Format(CultureInfo.CurrentCulture, EngineLocalization.Get("CameraFocusChart_BestWithVid"), result.Position, result.Score, vid)
-        : string.Format(CultureInfo.CurrentCulture, EngineLocalization.Get("CameraFocusChart_Best"), result.Position, result.Score);
+        ? string.Format(CultureInfo.CurrentCulture, EngineLocalization.Get("CameraFocusChart_BestWithVid"), result.MotorPosition, result.Score, vid)
+        : string.Format(CultureInfo.CurrentCulture, EngineLocalization.Get("CameraFocusChart_Best"), result.MotorPosition, result.Score);
 
     internal static void ConfigureAxes(Plot chart, bool video)
     {
@@ -46,24 +45,9 @@ internal static class CameraFocusCurve
         chart.Axes.AutoScale();
     }
 
-    internal static string SavePng(string? directory, string deviceCode, string evaluation,
-        IReadOnlyDictionary<int, double> samples, LocalAutoFocusResult bestFocus, DateTime completedAt)
+    internal static void RenderPng(string path, string deviceCode, string evaluation,
+        IReadOnlyDictionary<int, double> samples, LocalAutoFocusResult bestFocus)
     {
-        if (samples.Count == 0) throw new ArgumentException("An autofocus curve requires at least one sample.", nameof(samples));
-        string deviceFolder = deviceCode;
-        foreach (char invalid in Path.GetInvalidFileNameChars())
-            deviceFolder = deviceFolder.Replace(invalid, '_');
-        deviceFolder = deviceFolder.Trim().TrimEnd('.');
-        if (deviceFolder.Length == 0) deviceFolder = "Camera";
-
-        string root = string.IsNullOrWhiteSpace(directory)
-            ? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "ColorVision", "AutoFocus")
-            : directory.Trim();
-        string day = completedAt.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
-        string timestamp = completedAt.ToString("yyyyMMdd_HHmmss_fff", CultureInfo.InvariantCulture);
-        string folder = Path.GetFullPath(Path.Combine(root, deviceFolder, day));
-        Directory.CreateDirectory(folder);
-
         using var plot = new Plot();
         SpectrumPlotStyle.ApplyTheme(plot, dark: false);
         string heading = $"{Title(evaluation)} · {deviceCode}\n{BestReadout(bestFocus)}";
@@ -73,27 +57,6 @@ internal static class CameraFocusCurve
         var points = samples.OrderBy(sample => sample.Key).Select(sample => new Coordinates(sample.Key, sample.Value)).ToArray();
         AddSamples(plot, points, showMarkers: true, bestFocus);
 
-        string temporary = Path.Combine(folder, $".{Guid.NewGuid():N}.partial");
-        try
-        {
-            plot.SavePng(temporary, 1120, 660);
-            string file = Path.Combine(folder, timestamp + ".png");
-            for (int suffix = 2; ; suffix++)
-            {
-                try
-                {
-                    File.Move(temporary, file);
-                    return file;
-                }
-                catch (IOException) when (File.Exists(file))
-                {
-                    file = Path.Combine(folder, FormattableString.Invariant($"{timestamp}_{suffix}.png"));
-                }
-            }
-        }
-        finally
-        {
-            File.Delete(temporary);
-        }
+        plot.SavePng(path, 1120, 660);
     }
 }

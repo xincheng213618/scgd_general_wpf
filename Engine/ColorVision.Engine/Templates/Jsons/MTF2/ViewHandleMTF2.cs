@@ -5,6 +5,7 @@ using ColorVision.Common.Utilities;
 using ColorVision.Database;
 using ColorVision.Engine.Templates.POI;
 using ColorVision.Engine.Services;
+using ColorVision.Engine.Services.Results;
 using ColorVision.ImageEditor.Draw;
 using ColorVision.Solution.Editor.AvalonEditor;
 using log4net;
@@ -12,7 +13,7 @@ using Newtonsoft.Json;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
-using System.Text;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
@@ -108,47 +109,26 @@ namespace ColorVision.Engine.Templates.Jsons.MTF2
 
         public override void SideSave(ViewResultAlg result, string selectedPath)
         {
-            string filePath = selectedPath + "//" + result.Batch + result.ResultType + ".csv";
+            var details = result.ViewResults?.ToSpecificViewResults<MTFDetailViewReslut>();
+            if (details?.Count != 1 || details[0].MTFResult is not { } data)
+                throw new InvalidDataException($"MTF 结果 {result.Id} 缺少可导出的明细。");
 
-            var MTFDetailViewResluts = result.ViewResults.ToSpecificViewResults<MTFDetailViewReslut>();
-            var csvBuilder = new StringBuilder();
-            csvBuilder.AppendLine($"name,x,y,w,h,mtfValue");
-            if (MTFDetailViewResluts.Count == 1)
+            IEnumerable<string?[]> rows = data.resultChild is { } grouped
+                ? GetGroupedExportRows(grouped)
+                : (data.result ?? throw new InvalidDataException($"MTF 结果 {result.Id} 缺少可导出的测点。"))
+                    .Select(item => new[] { item.name, item.x.ToString(), item.y.ToString(), item.w.ToString(), item.h.ToString(), item.mtfValue?.ToString() });
+            AlgorithmSideDataFiles.WriteCsv(result, selectedPath, $"{result.Batch}{result.ResultType}.csv", ["name", "x", "y", "w", "h", "mtfValue"], rows);
+        }
+
+        private static IEnumerable<string?[]> GetGroupedExportRows(IEnumerable<ResultChildItem> groups)
+        {
+            foreach (var child in groups)
             {
-                var resultChilds = MTFDetailViewResluts[0].MTFResult.resultChild;
-                if (resultChilds != null)
-                {
-
-                    foreach (var child in resultChilds)
-                    {
-                        // child.name 这一组的 name
-                        if (child.childRects != null && child.childRects.Count > 0)
-                        {
-                            foreach (var rect in child.childRects)
-                            {
-                                csvBuilder.AppendLine($"{child.name},{rect.x},{rect.y},{rect.w},{rect.h},{rect.mtfValue},{rect.id}");
-                            }
-                        }
-                        // 如果你还需要写入平均值，可以单独加一行（如不需要可移除）
-                        csvBuilder.AppendLine($"{child.name},,,,HorizontalAverage,{child.horizontalAverage}");
-                        csvBuilder.AppendLine($"{child.name},,,,verticalAverage,{child.verticalAverage}");
-                        csvBuilder.AppendLine($"{child.name},,,,Average,{child.Average}");
-
-                    }
-                }
-                else
-                {
-                    var mtfs = MTFDetailViewResluts[0].MTFResult?.result;
-                    if (mtfs != null)
-                    {
-                        foreach (var item in mtfs)
-                        {
-                            csvBuilder.AppendLine($"{item.name},{item.x},{item.y},{item.w},{item.h},{item.mtfValue}");
-                        }
-                    }
-                }
-
-                File.WriteAllText(filePath, csvBuilder.ToString(), Encoding.UTF8);
+                foreach (var rect in child.childRects ?? [])
+                    yield return [child.name, rect.x.ToString(), rect.y.ToString(), rect.w.ToString(), rect.h.ToString(), rect.mtfValue?.ToString(), rect.id.ToString()];
+                yield return [child.name, "", "", "", "HorizontalAverage", child.horizontalAverage.ToString()];
+                yield return [child.name, "", "", "", "verticalAverage", child.verticalAverage.ToString()];
+                yield return [child.name, "", "", "", "Average", child.Average.ToString()];
             }
         }
 
@@ -157,9 +137,9 @@ namespace ColorVision.Engine.Templates.Jsons.MTF2
         {
             if (result.ViewResults == null)
             {
-                result.ViewResults = new ObservableCollection<IViewResult>();
-                List<DetailCommonModel> detailCommonModels = DeatilCommonDao.Instance.GetAllByPid(result.Id);
+                List<DetailCommonModel> detailCommonModels = result.ReadPersistedDetails(DeatilCommonDao.Instance);
                 log.Info($"查询到 {detailCommonModels.Count} 条 DetailCommonModel 记录，Pid={result.Id}");
+                result.ViewResults = new ObservableCollection<IViewResult>();
 
                 if (detailCommonModels.Count > 0)
                 {

@@ -5,7 +5,6 @@ status: "current"
 summary: "流程编辑器的打开与保存步骤、导出/删除范围、切换提示和工作区隔离；区分当前画布与已保存模板。"
 aliases: ["流程设计","拖节点","节点参数","保存流程","ViewFlow","FlowEditorCanvas","ActiveFlowParam","FlowTemplateWorkspaceController","流程编辑器","流程引擎模板管理","自动对齐","适应全部节点"]
 code_paths: ["Engine/ColorVision.Engine/FlowProcessing/Runtime/ViewFlow.xaml.cs","Engine/ColorVision.Engine/FlowProcessing/Runtime/FlowEngineManager.cs","Engine/ColorVision.Engine/FlowProcessing/Runtime/FlowTemplateWorkspaceController.cs","Engine/ColorVision.Engine/FlowProcessing/Editor/FlowEditorCanvas.xaml","Engine/ColorVision.Engine/FlowProcessing/Editor/FlowEditorCanvas.xaml.cs","Engine/ColorVision.Engine/FlowProcessing/Editor/FlowEngineToolWindow.xaml.cs","Engine/ColorVision.Engine/FlowProcessing/Editor/FlowEditorOperations.cs","Engine/ColorVision.Engine/FlowProcessing/Editor/FlowNodeContextMenuService.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/FlowTemplateWorkspaceControllerTests.cs","Test/ColorVision.UI.Tests/ViewFlowDocumentBehaviorTests.cs","Test/ColorVision.UI.Tests/FlowLocalShortcutTests.cs","Test/ColorVision.UI.Tests/STNodeCopyPasteTests.cs"]
 related: ["flow.architecture","flow.editor","flow.templates","flow.session","flow.headless","ui.property-grid"]
 ---
 
@@ -25,7 +24,7 @@ related: ["flow.architecture","flow.editor","flow.templates","flow.session","flo
 
 ## 打开并编辑流程
 
-1. 从“模板 > 流程”打开“流程引擎模板管理”，双击目标流程进入编辑器。“工作流程”区域的模板下拉框右侧依次为刷新和设置按钮；设置齿轮打开模板管理，刷新按当前模板重新加载画布并重新绑定服务。通过 `.stn` / `.cvflow` 文件打开的窗口则使用文件文档模式。
+1. 从“模板 > 流程”或左侧“工作流程”下拉框旁的齿轮打开“流程引擎模板管理”，双击目标流程进入编辑器。使用画布左上工具栏的“刷新”按当前模板重新加载画布并重新绑定服务。通过 `.stn` / `.cvflow` 文件打开的窗口则使用文件文档模式。
 2. 在画布空白处右击添加节点。选中节点后编辑属性，再核对端口连接、设备 Code 和模板绑定。
 3. 用“自动对齐”（画布内 Ctrl+L）整理位置，用“适应全部节点”查看完整图。布局和视口调整不会代替保存。
 4. 核对窗口标题及下表中的保存目标，点击“保存”。切换模板或刷新时，若画布有未保存修改，会询问保存、放弃或取消；选择保存时，需保存成功才继续。导出前仍需自行确认保存成功。
@@ -83,7 +82,7 @@ ARVRPro、KB 的流程编辑按钮在未选择模板时仍可打开空白独立�
 
 每轮从进入该框时的上游输入开始，框内按连接顺序执行；多个框串联时，前框全部完成才进入后框，不将次数相乘。异常、取消、超时沿用原流程状态与清理链，停止后不再启动下一轮。这里的覆盖指流程上下文与传给后续节点的结果；节点既有的采集保存、数据库记录和执行诊断策略不因重复框改变。本地图像与 POI 的中间轮次运行资源会在换轮时释放，上游输入及最后一轮资源保留到原有生命周期结束。
 
-实现入口为 `FlowNodeContextMenuService.Repeat.cs`、`FlowRepeatRegionWindow`、`RepeatRegionEditSession`、`FlowEngineLib/Repeat/FlowRepeatRegion.cs` 和 `STNodeEditor.Groups.cs`。`FlowRepeatRegionTests` 保护最终结果只放行一次、多框顺序、停止与资源回收；`RepeatParameterRuntimeTests` 与 `RepeatRegionEditorTests` 保护数组隔离、校验、编辑事务、保存与复制边界，不代替真实仪器验收。
+实现入口为 `FlowNodeContextMenuService.Repeat.cs`、`FlowRepeatRegionWindow`、`RepeatRegionEditSession`、`FlowEngineLib/Repeat/FlowRepeatRegion.cs` 和 `STNodeEditor.Groups.cs`。
 
 普通设备/模板字段使用 属性上的 `PropertyEditorTypeAttribute`；多模板族、随算法类型变化的补充面板归 `Editor/NodeConfiguration/`。选择顺序、缓存和降级规则只在 [PropertyGrid 契约](../../04-api-reference/ui-components/property-grid.md)维护。
 
@@ -131,6 +130,4 @@ UI 手动运行及未指定模板的运行接口读取当前画布，可执行�
 | 快速切模板显示错对象 | generation、latest-wins 和失败恢复，不只看下拉框文字 |
 | 图能运行但参数不对 | 节点属性、设备/模板绑定及输入来源；再进入[执行诊断](./execution.md) |
 
-`FlowTemplateWorkspaceControllerTests` 覆盖选择、起点、刷新门禁与快照身份；`ViewFlowDocumentBehaviorTests` 覆盖命令分流与修改文档替换决定；`STNodeCopyPasteTests` 实际覆盖节点保存/加载、类型重定位和损坏画布不替换旧图，不能仅凭文件名声称模块导入 UI 已验证。这些测试不证明完整 WPF 保存交互或真实 MySQL 已验收。需要相应验证时，检查新增节点/参数保存重开、模块插入、快速 A→B 选择、坏模板失败恢复、独立窗口不污染主窗口，以及取消/保存失败不丢文档。
-
-`FlowLocalShortcutTests` 只测试自动排列的纯键位判断，覆盖修饰键组合和非目标主键；不构造 `ViewFlow`、不移动节点，也不代替真实键盘与排列结果验收。
+验收编辑工作区时，检查新增节点和参数保存重开、模块插入、快速 A→B 选择、坏模板恢复、独立窗口互不影响，以及取消或保存失败后文档仍在。自动排列用实际快捷键核对画布结果，模板保存核对现场数据库。

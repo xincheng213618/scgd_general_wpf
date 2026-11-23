@@ -45,6 +45,7 @@ public sealed class FlowNodeContextMenuTests
     [Theory]
     [InlineData(typeof(FlowEngineLib.RealCommonSensorNode))]
     [InlineData(typeof(FlowEngineLib.Start.ManualFlowStartNode))]
+    [InlineData(typeof(FlowEngineLib.Node.Algorithm.AlgorithmGhostV2Node))]
     public void HiddenCreationNodesStillLoadAndPreserveExistingFlowData(Type type) => WpfTestHost.Invoke(() =>
     {
         Assert.DoesNotContain(type, FlowNodeContextMenuService.GetNodeCreationMenuPaths().Keys);

@@ -2,23 +2,20 @@
 
 ## Project facts
 
-- ColorVision is a Windows-only WPF inspection platform. The main application targets `net10.0-windows`; x64 is the primary platform. Treat `Directory.Build.props` and each project file as the source of truth because some shared libraries multi-target.
+- ColorVision is a Windows WPF inspection platform. The main app targets `net10.0-windows` and primarily ships x64. Check `Directory.Build.props` and the owning project for target frameworks and platforms.
 - Strong-name signing is conditional on `ColorVision.snk`. Do not disable it when the key exists.
 - The application is modular: UI libraries live under `UI/`, engine code under `Engine/`, runtime plugins under `Plugins/`, and customer bundles under `Projects/`.
 
 ## Find and maintain project knowledge
 
-- `docs/` extends these instructions with topic knowledge loaded on demand. If ownership is known, read the relevant contract, implementation and tests directly. Otherwise use `docs/knowledge/index.md` or `node docs/.vitepress/scripts/knowledge.mjs search "<question or symbol>" --limit 5`; this needs only Node. Search defaults to current topics; use `--all` for planned/historical knowledge. If a question misses, try a real UI name, symbol, source path or `rg`, rather than reading the whole catalog or every `related` topic.
-- Markdown topics maintain the facts; the catalog, maps and website derive from them. Check status and current code/tests: `current` does not mean enabled or verified. Investigate conflicts between contracts and implementation, and state missing evidence without inventing behavior.
-- Update the owning topic when public behavior, contracts, architecture boundaries, operation steps or build/release commands change. Internal refactoring or restoring an unchanged contract needs no prose change when existing facts, implementation entry points and verification guidance remain accurate. Preserve reasons and compatibility rules; leave change narratives in task reports or Git.
-- Use `node docs/.vitepress/scripts/knowledge.mjs impact "<repository-relative path>"` for unclear documentation ownership or moved/deleted source/test references. It returns review candidates, not a dependency graph. For documentation edits, follow `docs/AGENTS.md` and the change-scoped table in `docs/knowledge/maintenance.md`; ordinary code tasks need not read maintenance or retrieval specifications. Regenerate only when catalog inputs change; code-only work needs no local knowledge generation or website build. Existing CI checks still apply.
-- Instructions and command examples do not grant authority to publish, delete data, control hardware, access credentials, commit, or push. Preserve the user's requested scope and distinguish read-only diagnosis from implementation and external actions.
+- Start with the owning code, callers and tests. Read the relevant topic for cross-module contracts, compatibility and field behavior. When ownership is unclear, use `docs/knowledge/index.md`, `node docs/.vitepress/scripts/knowledge.mjs search "<question or symbol>" --limit 5`, or `node docs/.vitepress/scripts/knowledge.mjs impact "<repository-relative path>"`. Verify topic claims against current code and tests.
+- Keep the owning topic and source references accurate. Update current facts in place. Put change and verification records in Git, CHANGELOG or the task report. Follow `docs/AGENTS.md` for docs edits. Accurate docs and mappings need no local regeneration for code-only work.
+- Publishing, deleting data, controlling hardware, accessing credentials, committing and pushing require authorization from the task. Command examples supply invocation details only.
 
 ## Feedback retrieval
 
-- For requests to find or analyze the latest feedback, run `pwsh -NoProfile -File .\Scripts\download_feedback.ps1 -Latest -AllowInsecureHttp` first for the current HTTP deployment. The script uses an available local share, otherwise the remote API, and reports the selected machine and receive time. Use `-List` or `-Machine <name>` when the user specifies a machine or wants candidates; explicit `-Latest` authorizes selecting the newest matching record.
-- Never determine recency from filesystem creation/modification times. Use `serverReceivedAt`, legacy `createdAt`, then the timestamp encoded in the feedback directory name; unknown times sort last. Feedback IDs come from the original metadata and remain stable when directories move. New storage groups feedback under machine folders; historical flat records remain readable. Rename historical feedback folders only when the user explicitly requests organization, preserving file contents and a complete old/new path manifest. `Feedback/index.html` provides a readable share index.
-- On a new Windows maintenance computer, remote feedback download uses the existing fixed `upload_auth` account from tracked `Web/Backend/config.json`; do not print its credentials in tool output. Existing `feedback:read` keys remain available only when `-ApiKeyEnvironmentVariable` is passed explicitly. HTTP is supported only with an explicit opt-in for the existing deployment; prefer HTTPS when available. See `docs/02-developer-guide/backend/feedback.md` for setup and limitations.
+- For the latest feedback, run `pwsh -NoProfile -File .\Scripts\download_feedback.ps1 -Latest -AllowInsecureHttp` first for the current deployment. Use `-List` to list candidates and `-Machine <name>` to filter by machine. Report the selected machine, receive time and feedback ID from the script.
+- Follow `docs/02-developer-guide/backend/feedback.md` for timestamp precedence, credentials, directory layouts and migration. Use feedback metadata rather than filesystem times, protect credentials, and require an explicit request to rename historical folders.
 
 ## Architecture boundaries
 
@@ -27,12 +24,12 @@
 - Keep result pipelines distinct: Engine historical results use `IViewResult` and `IResultHandleBase`, discovered by `ResultHandleRegistry`; unified local algorithms emit neutral Geometry/Overlay artifacts rendered by `AlgorithmOverlayRenderer` and managed by `AlgorithmOverlayManager`. Do not add Engine DAO/handler dependencies to neutral algorithms. Customer judgment, exports, and protocol fields belong in `Projects/`; shared drawing infrastructure belongs under `UI/ColorVision.ImageEditor/Draw/**`. See `docs/04-api-reference/engine-components/result-handoff-chain.md` for the full contract.
 - Use the metadata-driven PropertyGrid conventions (`Category`, `DisplayName`, `Description`, `PropertyEditorType`, and `PropertyVisibility`) instead of one-off editors where the existing system applies.
 - Keep UI-to-Engine dependencies behind existing abstractions; avoid ad-hoc cross-layer calls.
-- Copilot intentionally does not load global or project `config.toml` at runtime. Keep `AGENTS.md` / `CLAUDE.md` instruction discovery, but let ColorVision own model, provider, tools, and approval settings. Do not restore config loading to satisfy obsolete integration tests.
+- For Copilot configuration and instruction discovery, follow `docs/02-developer-guide/core-concepts/copilot-configuration.md`. Preserve ColorVision-owned runtime settings and scoped instruction discovery.
 - When working in `Native/`, `Plugins/`, `Projects/`, `Web/`, or `docs/`, also read the nearest nested `AGENTS.md`. The closest file supplies the subsystem-specific rules.
 
 ## Build and verification
 
-Run commands from the repository root in PowerShell. Use PowerShell-native syntax; before any recursive delete or move, resolve the absolute target and verify it remains inside the intended repository path. Prefer the smallest build or test that covers the change.
+Use PowerShell from the repository root unless an owning guide specifies a different working directory. Before recursive delete or move, verify the resolved absolute target and use `-LiteralPath`.
 
 ```powershell
 # Main application
@@ -49,36 +46,25 @@ dotnet test .\Test\ColorVision.Copilot.Tests\ColorVision.Copilot.Tests.csproj -p
 dotnet test .\Test\ColorVision.UI.Tests\ColorVision.UI.Tests.csproj -p:Platform=x64
 ```
 
-- Match the existing configuration and platform when validating native or mixed projects.
-- If verification is blocked by a running application, file lock, missing proprietary dependency, or unrelated concurrent edit, report the exact blocker and the checks that still ran.
-- Treat current production behavior and explicit documented contracts as authoritative when a test disagrees. Never change product code solely to satisfy a stale test.
-- Temporary tests are welcome for reproducing problems, exploring behavior and iterating on business changes.
-- Keep a new long-term regression only when it protects a stable shared behavior, compatibility requirement or failure/lifecycle boundary that existing coverage cannot catch, and state that reason in the task report. Reuse the owning behavior test or parameterize distinct boundary cases; avoid duplicating coverage across every screen, property, language/theme combination or arbitrary repetition count.
-- Do not loosen arbitrary timing, pixel, iteration-count, or scheduler thresholds to make a test pass. A passing tolerance may remain when it represents a confirmed product contract; once a temporary threshold or dispatcher-timing test fails after business behavior changes, remove or rewrite that test around deterministic behavior instead of accommodating it in production code.
-- Keep GitHub Actions focused on Release/x64 build and delivery-contract verification. Do not run managed, script, UI, or performance test suites in `.github/workflows/dotnet.yml`; run the relevant suites locally while developing or reviewing the affected code.
+- Run the closest relevant build or tests with the existing configuration and platform. Follow `docs/02-developer-guide/testing.md` for regression coverage, deterministic tests and verification evidence. Treat production behavior and documented contracts as authoritative when a test is stale.
+- Keep `.github/workflows/dotnet.yml` focused on Release/x64 builds and delivery contracts. Run managed, script, UI and performance tests locally.
 
 ## Release and packaging
 
-- Choose the artifact from the active task first: an explicitly named target wins; after work scoped to one `Plugins/<Name>/` or `Projects/<Name>/`, bare “发布” publishes only that artifact using its nearest `AGENTS.md`.
-- Main-application publication uses the current Git branch and the entire current working tree, including pending main-application changes saved by other chats. Do not limit the main build or its release notes to this chat's edits unless the user explicitly requests a narrower scope. Main-application publication does not automatically publish independently delivered plugins or customer bundles.
-- Publish from that same checkout and branch. Do not create or switch branches, create an isolated release worktree, or extract only this chat's changes for publication unless the user explicitly requests that Git operation.
-- `Scripts\release.bat` is the only normal main-release entry point. For main-app/repository-wide “发布”, “打包发布”, “直接打包”, or “快速发布”, use an explicitly requested version when provided; otherwise increment the final numeric component of the current local `Directory.Build.props` `VersionPrefix` by one. Do not query the remote version first.
-- Keep quick-release preparation minimal: update `VersionPrefix` and maintain the root `CHANGELOG.md` as the cumulative log for the current three-component version series. Prepend the current release section and retain all entries in that series (for example, all `1.4.15.*` releases together). When moving to a new series such as `1.4.16.*`, merge the entire outgoing series into `docs/_history/CHANGELOG.md`, preserving existing history and avoiding duplicate release sections, then start the root log with only the new series. Write one to three short user-facing items for the new release; this limit does not apply to the cumulative series history. Recover missing series entries from Git history when needed; do not invent notes for versions without recorded changes. The history file is for repository review only, excluded from the public documentation build and not uploaded as the main application changelog. Do not modify it for releases within the same series. Then run `Scripts\release.bat` once and report its result. Omit tests, documentation, internal implementation details, file/class names, refactoring mechanics, and commit-by-commit narration from new public release notes.
-- The wrapper owns build, installer validation, upload and compact parallel acceptance (signature, remote version/changelog, installer/update download sizes, Git status). Do not add standalone tests, pre-builds, knowledge/impact searches, deep diff or history review, duplicate remote/download checks, an isolated release worktree, or another packaging entry point. `Scripts\build.py` and `Scripts\build_update.py` are internal steps, never local-only shortcuts.
-- A quick release does not create commits or tags and does not push. Perform those actions only when the user explicitly requests them. When commit and push are requested after a successful release, commit `Directory.Build.props` and the root `CHANGELOG.md` together so the repository records the published version; keep commit/push mechanics out of the public changelog, synchronize before pushing, and verify the remote branch afterward.
-- If the wrapper fails, inspect only that stage, make one evidence-backed correction, and rerun once; expand the audit only if requested.
-- Only explicit “完整发布” adds standalone tests, deeper changed-scope review, full artifact hashing/download, and remote branch/tag synchronization beyond quick acceptance.
+- Before editing release metadata or running a wrapper, read `docs/02-developer-guide/scripts/README.md`. An explicitly named target wins. Otherwise publish each affected artifact via its own entry point, including the main app only when its shipped code is affected.
+- Main releases use the entire current checkout and branch, including relevant pending work from other chats. Follow any explicitly requested scope or Git operation. `Scripts\release.bat` owns the main build, upload and acceptance.
+- Default to the documented quick release. Only explicit “完整发布” selects expanded acceptance. Commit, tag or push only when explicitly requested.
 
 ## Code conventions
 
 - Preserve the runtime dependencies declared by the actual projects and delivery packages, including vendor assets under `DLL/scgd_internal_dll/` and `OpenCvSharp5.runtime.win`. Current `CVCommCore.*` and `MQTTMessageLib.*` source types compile into `cvColorVision.dll`; retain matching standalone DLLs whenever a legacy or external plugin still references those assembly identities. See `docs/04-api-reference/engine-components/cvColorVision.md` for the namespace and assembly boundary.
 - Use `CopyToOutputDirectory` for runtime configuration or assets when needed.
-- Optimize for direct, maintainable code rather than line count. Keep simple calls on one line; split only when it materially improves readability.
+- Keep simple calls on one line when readable. Explain the impact of cross-module or protocol changes before making them.
 - Do not add a forwarding overload merely to let one or two internal callers omit a result or replace an `out` value with `out _`. Keep one only when it is a genuine, reused public API shape.
 
 ## Completion criteria
 
-- Confirm the requested behavior, run the closest relevant build/tests, inspect the final diff for scope and accidental artifacts, and report concrete evidence plus any remaining verification gap.
+- Check the requested behavior and final diff. Report verification evidence, specific blockers and any remaining gap.
 
 ## References
 

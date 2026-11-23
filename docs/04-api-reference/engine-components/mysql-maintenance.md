@@ -5,7 +5,6 @@ status: "current"
 summary: "MySQL 结果表的手动关联索引优化、历史删除、整表截断和SQL备份；在线DDL、并发、部分成功、备份与恢复边界分别说明。"
 aliases: ["MySQL结果清理", "删除批次", "历史结果清理", "结果关联索引", "索引优化", "优化结果查询索引", "ALGORITHM=INPLACE", "LOCK=NONE", "GET_LOCK", "结果表备份", "完整SQL备份", "清理事务回滚", "主从表清理", "清理管理员权限", "MySqlResultCleanupProvider", "ExecuteOptimization", "CleanupHistory", "CleanupTables", "FindUnknownDetailTables", "ValidateCleanupTableNames", "MySqlLocalServicesManager", "BackupAllMysql", "mysqldump", "FOREIGN_KEY_CHECKS", "t_scgd_algorithm_result_master", "t_scgd_measure_batch"]
 code_paths: ["Engine/ColorVision.Engine/Mysql/MySqlResultCleanupProvider.cs", "Engine/ColorVision.Engine/Mysql/MySqlLocalServicesManager.cs", "Engine/ColorVision.Engine/Mysql/MySqlToolWindow.xaml", "Engine/ColorVision.Engine/Mysql/MySqlToolWindow.xaml.cs", "Engine/ColorVision.Engine/Mysql/DatabaseCleanupWindowViewModel.cs", "UI/ColorVision.Database/MySqlControl.cs", "UI/ColorVision.Database/MySqlSetting.cs", "UI/ColorVision.Database/MySqlProtocolDefaults.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/MySqlBackupRestoreSafetyTests.cs"]
 related: ["engine.database-maintenance", "engine.mysql-recovery", "engine.results", "ui.database", "ui.sqlite-storage", "operations.data"]
 ---
 
@@ -51,11 +50,13 @@ provider 在同一数据库会话取得命名 advisory lock 后逐表串行执�
 
 该动作不执行 `DELETE` / `TRUNCATE`，也不自动创建完整备份；维护窗口即使勾选“清理前备份”，优化入口也不会套用该选项。没有业务数据删除不等于 schema 变更无风险。应优先安排低负载时段，先确认表引擎、版本、长事务与 metadata lock，并为索引构建、在线 DDL 日志及临时排序预留空间；磁盘空间紧张时不要把 `LOCK=NONE` 当成可直接在生产运行的许可。
 
-## 统计不是清理预览，连接也未冻结
+## 表统计与确认目标
 
 `LoadTables` 从 `INFORMATION_SCHEMA.TABLES` 取白名单表的 data/index 大小，再逐表 Count。返回的是整表统计，不按将要使用的保留月数过滤；多个查询没有共同快照，统计行数不是将要删除的行数。清理执行会重新读取表/列信息，并非照着之前的统计逐行删除。
 
-client 和 schema 查询都从当前 `MySqlSetting.Instance.MySqlConfig` 取配置；组合维护门不会冻结配置对象。不能只凭弹窗中曾显示的数据库名保证备份、删除和后续统计始终使用同一配置，应在维护期间禁止其它路径改变目标并核对实际连接。
+窗口在刷新统计时捕获已验证的 MySQL 端点，将主机、端口和库名显示在统计区及确认框。选表、备份、清理和索引优化使用该端点。连接切换后旧统计和勾选失效，需先刷新再重新确认。即使切回同一地址，重新验证得到的连接仍需要重新统计。
+
+provider 等待维护锁后再次检查端点，并在首次变更前复核。组合动作还会在备份完成后复核，端点失效时保留备份并停止清理。已开始的 SQL 继续使用原目标。维护入口要求配置一个明确的主机，拒绝会在多个主机之间选择连接的配置。
 
 ## 按月历史删除
 
@@ -80,19 +81,19 @@ client 和 schema 查询都从当前 `MySqlSetting.Instance.MySqlConfig` 取配�
 
 实际顺序与按月清理不同：算法明细 → 测量明细 → 算法主表 → 测量批次；同组再按表名。代码先发 `SET FOREIGN_KEY_CHECKS = 0`，逐表 `TRUNCATE TABLE`，finally 尝试设置回 1。没有整体事务、自动备份或自动恢复，也不保存并恢复进入时的检查开关值；异常可能发生在已有表清空之后，finally 失败也不是补偿成功。
 
-**当前实现缺口：** 选中主表时并不强制同时选择所有关联明细；选表和全部截断也不调用未知明细检测。XAML 的“需同时选择所有现存关联明细表”只是提示，白名单和排序不足以保证选择完整，恢复外键检查也不是已清空数据的恢复。不能在 AI 操作计划中把这个前提省略，或把上述实现描述为已经安全处理任意扩展表。本轮只记录源码事实，未修复产品逻辑。
+选表和全部截断不检查未知明细表，也不强制随主表选择所有关联明细。清空前须核对当前库的实际表关系与勾选范围。
 
 ## 维护门、完整备份与恢复的区别
 
 `MySqlLocalServicesManager.RunDatabaseMaintenance` 使用进程内 `SemaphoreSlim`，以 `AsyncLocal<int>` 允许同一维护调用链嵌套。它串行化使用该入口的维护动作，不停止采集/流程，不阻止其它 DAO、浏览器、直接 SQL 或外部进程写入，也不是数据库事务。等待入口没有用户取消协议。
 
-`CreateBackup()` 调用 `BackupAllMysql()`；组合 `ExecuteCleanupWithBackup` 在同一维护门内先备份，再执行传入动作。普通清理是否自动备份由[维护窗口策略](./database-maintenance.md#备份、执行与失败分层)决定。provider 自身的 `CleanupHistory` / `CleanupTables` / `CleanupAll` 不先备份。
+`CreateBackup()` 将已验证端点传给 `BackupAllMysql`。组合 `ExecuteCleanupWithBackup` 在同一维护门内先备份，复核端点后执行传入动作。普通清理是否自动备份由[维护窗口策略](./database-maintenance.md#备份、执行与失败分层)决定。provider 自身的 `CleanupHistory` / `CleanupTables` / `CleanupAll` 直接执行清理。
 
 索引优化不走 `ExecuteCleanupWithBackup`，也不读取“清理前备份”选项。它与普通清理共享“没有自动恢复、失败后先确认实际状态”的原则，但完成边界是逐表 DDL 及跳过汇总，不是删除行数或清理统计刷新。
 
 完整 SQL 备份的实际过程是：
 
-- 从当前库枚举 `BASE TABLE`，将库名和表名交给配置的 `mysqldump.exe`；不是仅备份清理白名单，也不是 MySQL 服务器上所有库或整个项目工作区。
+- 从已验证的库枚举 `BASE TABLE`，将同一目标的主机、端口、库名和表名交给配置的 `mysqldump.exe`。完整备份使用 `--protocol=TCP`，以 `--no-defaults` 跳过常规客户端选项文件。范围覆盖该库的基础表。
 - 写入默认“我的文档/ColorVision/Backup”下的唯一 `.sql.part`，正常完成并确认非空后改名为最终 `.sql`，再加入管理器备份列表。路径以实际 `BackupPath` 为准；失败尝试删除临时文件。
 - 不试恢复、不逐表比对导出内容或验证业务数据一致性；“退出码为零 + 非空文件”不是恢复演练通过。
 
@@ -110,6 +111,4 @@ MySQL 进程使用 `ProcessStartInfo.ArgumentList`，不通过 shell 拼接重�
 
 ## 验证范围
 
-它没有证明真实主从选择闭包、数据库事务或现场在线 DDL。`MySqlBackupRestoreSafetyTests.cs` 检查进程参数、字符集、密码不在命令行、方法返回路径的类型、进程内维护门串行/嵌套，以及源码中入口/防护代码的存在。
-
-这些测试不是实际 `mysqldump/mysql`、生产表引擎、并发写入、metadata lock、索引构建临时空间、DDL 部分成功、删除后恢复、截断中途异常或断电恢复演练。
+通过隔离演练核对实际 `mysqldump/mysql`、主从选择、生产表引擎、并发写入、metadata lock、索引构建临时空间、DDL 部分成功、删除后恢复、截断或断电后的恢复。

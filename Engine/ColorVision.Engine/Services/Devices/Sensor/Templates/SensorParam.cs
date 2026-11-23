@@ -2,7 +2,6 @@
 using ColorVision.Common.MVVM;
 using ColorVision.Database;
 using ColorVision.Engine.Templates;
-using log4net;
 using log4net.Util;
 using MQTTMessageLib.Sensor;
 using Newtonsoft.Json;
@@ -21,8 +20,6 @@ namespace ColorVision.Engine.Services.Devices.Sensor.Templates
 {
     public class TemplateSensor : ITemplate<SensorParam>, ITemplateCreatePresetProvider
     {
-        private static readonly ILog log = LogManager.GetLogger(typeof(TemplateSensor));
-
         // SensorParam builds its command sequence directly from the detail collection.
         protected override bool PreserveDetailReadOrder => true;
 
@@ -33,49 +30,33 @@ namespace ColorVision.Engine.Services.Devices.Sensor.Templates
         public TemplateSensor(string code)
         {
             Code = code;
-            try
+            if (SensorTemplateDictionaryService.IsDefaultCategory(code))
+                TemplateDicId = SensorTemplateDictionaryService.GetDefaultDictionary()?.Id ?? -1;
+            if (TemplateDicId == SensorTemplateDictionaryService.DefaultDictionaryId)
             {
-                var model = SysDictionaryModMasterDao.Instance.GetByCode(code);
-                if (model != null && model.Id>=0)
+                if (!Params.TryGetValue(SensorTemplateDictionaryService.DefaultCategoryCode, out var templatesParams))
                 {
-                    TemplateDicId = model.Id;
-
+                    templatesParams = new ObservableCollection<TemplateModel<SensorParam>>();
+                    Params.Add(SensorTemplateDictionaryService.DefaultCategoryCode, templatesParams);
                 }
-                else
-                {
-                    log.Info("找不到传感器code 对应的字典，正在添加字典");
-                    SysDictionaryModModel sysDictionaryModModel = new SysDictionaryModModel() { Code = code, Name = code, ModType = 5 ,CreateDate =DateTime.Now};
-                    SysDictionaryModMasterDao.Instance.Save(sysDictionaryModModel);
-                    TemplateDicId = sysDictionaryModModel.Id;
-
-                }
-
-            }
-            catch (Exception ex)
-            {
-                log.Error(ex);
-            }
-            if (Params.TryGetValue(Code, out var templatesParams))
-            {
                 TemplateParams = templatesParams;
-            }
-            else
-            {
-                templatesParams = new ObservableCollection<TemplateModel<SensorParam>>();
-                TemplateParams = templatesParams;
-                Params.Add(Code, templatesParams);
             }
 
             IsUserControl = true;
         }
 
-        public override IEnumerable<TemplateCreatePreset> GetCreatePresets() => Code == "Sensor.Default"
+        public override void Load()
+        {
+            if (TemplateDicId == SensorTemplateDictionaryService.DefaultDictionaryId) base.Load();
+        }
+
+        public override IEnumerable<TemplateCreatePreset> GetCreatePresets() => SensorTemplateDictionaryService.IsDefaultCategory(Code)
             ? SensorTemplatePresets.All.Select(preset => preset.Source)
             : Enumerable.Empty<TemplateCreatePreset>();
 
         public override bool ApplyCreatePreset(string presetId)
         {
-            if (Code != "Sensor.Default") return false;
+            if (!SensorTemplateDictionaryService.IsDefaultCategory(Code)) return false;
             SensorTemplatePreset? preset = SensorTemplatePresets.Find(presetId);
             if (preset == null) return false;
             ImportTemp = SensorTemplatePresets.CreateDraft(preset: preset);
@@ -147,20 +128,16 @@ namespace ColorVision.Engine.Services.Devices.Sensor.Templates
             }
         }
 
-        internal static void EnsureDefaultCommandDefinition(int templateDicId)
-        {
-            SensorTemplateDictionaryService.GetOrCreateCommandDefinitions(templateDicId);
-        }
-
         internal static (ModMasterModel Master, List<SysDictionaryModDetaiModel> Definitions) InsertTemplate(SqlSugarClient db, int dictionaryId, string name, SensorParam? draft)
         {
-            if (dictionaryId <= 0) throw new InvalidOperationException("找不到传感器模板类型。");
+            if (dictionaryId != SensorTemplateDictionaryService.DefaultDictionaryId || SensorTemplateDictionaryService.GetDefaultDictionary(db) == null)
+                throw new InvalidOperationException(SensorTemplateDictionaryService.GetUnavailableMessage(SensorTemplateDictionaryService.DefaultCategoryCode));
             var master = new ModMasterModel { Pid = dictionaryId, Name = name, TenantId = 0 };
             db.Ado.BeginTran();
             try
             {
                 master.Id = db.Insertable(master).ExecuteReturnIdentity();
-                var definitions = SensorTemplateDictionaryService.GetOrCreateCommandDefinitions(db, dictionaryId);
+                var definitions = SensorTemplateDictionaryService.GetOrCreateDefaultCommandDefinitions(db);
                 db.Insertable(BuildCreationDetails(draft, master.Id, definitions)).ExecuteCommand();
                 db.Ado.CommitTran();
                 return (master, definitions);

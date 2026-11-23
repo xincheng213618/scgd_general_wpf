@@ -4,25 +4,33 @@ using ColorVision.Engine.Templates.Jsons;
 using ColorVision.Engine.Templates.Jsons.MTF2;
 using ColorVision.ImageEditor.Draw;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using ProjectARVRPro.Recipe;
 using System.Collections.ObjectModel;
+using System.Globalization;
+using System.IO;
 using System.Text;
 
 namespace ProjectARVRPro.Process.MTF.MTFHVDynamic
 {
     public class MTFHVDynamicProcess : ProcessBase<MTFHVDynamicProcessConfig>
     {
+        internal Func<int, List<AlgResultMasterModel>>? ReadMasters { get; init; }
+        internal Func<int, List<DetailCommonModel>>? ReadDetails { get; init; }
+
         public override IRecipeConfig GetRecipeConfig() => Config.RecipeConfig;
 
-        public override async Task<bool> Execute(IProcessExecutionContext ctx)
+        public override Task<bool> Execute(IProcessExecutionContext ctx)
         {
-            if (ctx?.Batch == null || ctx.Result == null) return false;
-            var log = ctx.Log;
-            MTFHVDynamicViewTestResult testResult = new MTFHVDynamicViewTestResult();
+            if (ctx?.Result == null || ctx.ObjectiveTestResult == null)
+                return Task.FromResult(false);
 
+            string outputName = GetOutputName();
             try
             {
-                string outputName = GetOutputName();
+                if (ctx.Batch == null)
+                    throw new InvalidDataException("MTF-HV 缺少测量批次。");
+
                 var values = ctx.GetMeasureResults();
                 if (values.Count > 0)
                 {
@@ -31,41 +39,108 @@ namespace ProjectARVRPro.Process.MTF.MTFHVDynamic
                         ctx.Result.FileName = fileUrl;
                 }
 
-                Dictionary<string, ObjectiveTestItem> itemMap = new Dictionary<string, ObjectiveTestItem>(StringComparer.OrdinalIgnoreCase);
-
-                var masters = AlgResultMasterDao.Instance.GetAllByBatchId(ctx.Batch.Id);
-                foreach (var master in masters.Where(m => m.ImgFileType == ViewResultAlgType.MTF && m.version == "2.0"))
+                var testResult = new MTFHVDynamicViewTestResult();
+                var recipe = Config.RecipeConfig;
+                Dictionary<string, ObjectiveTestItem> itemMap = new(StringComparer.OrdinalIgnoreCase);
+                bool allPassed = true;
+                foreach (var master in (ReadMasters?.Invoke(ctx.Batch.Id) ?? ctx.ReadMasterResults()).Where(m => m.ImgFileType == ViewResultAlgType.MTF && m.version == "2.0"))
                 {
-                    var details = DeatilCommonDao.Instance.GetAllByPid(master.Id);
+                    var details = ReadDetails?.Invoke(master.Id) ?? ctx.ReadDetails(DeatilCommonDao.Instance, master.Id);
                     if (details.Count != 1)
                         continue;
 
-                    var mtfDetail = new MTFDetailViewReslut(details[0]);
-                    testResult.MTFDetailViewReslut = mtfDetail;
-                    if (mtfDetail.MTFResult?.resultChild == null)
+                    string? path = JsonConvert.DeserializeObject<ResultFile>(details[0].ResultJson)?.ResultFileName;
+                    if (!File.Exists(path))
                         continue;
 
+                    var document = JObject.Parse(File.ReadAllText(path));
+                    var groupData = document.GetValue(nameof(MTFResult.resultChild), StringComparison.OrdinalIgnoreCase);
+                    if (groupData == null || groupData.Type == JTokenType.Null)
+                        continue;
+                    if (groupData is not JArray groups)
+                        throw new InvalidDataException($"MTF 结果 ID {master.Id} 的 resultChild 不是分组列表。");
+
                     var correction = new MtfRecipeCorrection(master.Params);
-                    foreach (var mtf in mtfDetail.MTFResult.resultChild)
+                    bool hasMeasuredGroup = false;
+                    foreach (var entry in groups)
                     {
-                        if (string.IsNullOrWhiteSpace(mtf.name))
+                        if (entry is not JObject group)
+                            throw new InvalidDataException($"MTF 结果 ID {master.Id} 包含无效分组。");
+                        string? name = group.GetValue(nameof(ResultChildItem.name), StringComparison.OrdinalIgnoreCase)?.Value<string>();
+                        if (string.IsNullOrWhiteSpace(name))
                             continue;
 
-                        AddItem(ctx, itemMap, BuildItem("H", mtf.name, mtf.horizontalAverage, Config.RecipeConfig.HRecipe, correction));
-                        AddItem(ctx, itemMap, BuildItem("V", mtf.name, mtf.verticalAverage, Config.RecipeConfig.VRecipe, correction));
+                        double horizontal = ReadAverage(group, nameof(ResultChildItem.horizontalAverage), master.Id, name);
+                        double vertical = ReadAverage(group, nameof(ResultChildItem.verticalAverage), master.Id, name);
+                        var hItem = BuildItem("H", name, horizontal, recipe.HRecipe, correction);
+                        var vItem = BuildItem("V", name, vertical, recipe.VRecipe, correction);
+                        itemMap[hItem.Name] = hItem;
+                        itemMap[vItem.Name] = vItem;
+                        allPassed &= hItem.TestResult && vItem.TestResult;
+                        hasMeasuredGroup = true;
+                    }
+
+                    if (hasMeasuredGroup)
+                    {
+                        testResult.MTFDetailViewReslut = new MTFDetailViewReslut
+                        {
+                            DetailCommonModel = details[0],
+                            ResultFileName = path,
+                            MTFResult = document.ToObject<MTFResult>(),
+                        };
                     }
                 }
 
+                if (itemMap.Count == 0)
+                    throw new InvalidDataException($"批次 {ctx.Batch.Id} 没有可判定的 MTF-HV 分组测量。");
+
                 testResult.Items = new ObservableCollection<ObjectiveTestItem>(itemMap.Values);
-                ctx.Result.ViewResultJson = JsonConvert.SerializeObject(testResult);
-                ctx.ObjectiveTestResult.DynamicTestResults[outputName] = testResult.Items;  
-                return true;
+                string snapshot = JsonConvert.SerializeObject(testResult);
+                (ctx.ObjectiveTestResult.DynamicTestResults ??= new())[outputName] = testResult.Items;
+                ctx.Result.ViewResultJson = snapshot;
+                ctx.Result.Result &= allPassed;
+                return Task.FromResult(true);
             }
-            catch (Exception ex)
+            catch (Exception error)
             {
-                log?.Error(ex);
-                return false;
+                string message = $"MTF-HV 解析失败 [{outputName}]：{error.Message}";
+                ctx.Log.Error(message, error);
+                Reject(ctx, outputName, message);
+                return Task.FromResult(false);
             }
+        }
+
+        public override Task<bool> ExecuteFailure(IProcessExecutionContext ctx)
+        {
+            if (ctx?.Result != null && ctx.ObjectiveTestResult != null)
+                Reject(ctx, GetOutputName(), string.IsNullOrWhiteSpace(ctx.Result.Msg) ? "MTF-HV 流程未成功完成。" : ctx.Result.Msg);
+            return Task.FromResult(false);
+        }
+
+        private static void Reject(IProcessExecutionContext ctx, string outputName, string message)
+        {
+            ctx.Result.Result = false;
+            ctx.Result.Msg = message;
+            ctx.Result.ViewResultJson = string.Empty;
+            ctx.ObjectiveTestResult.TotalResult = false;
+            ctx.ObjectiveTestResult.DynamicTestResults?.Remove(outputName);
+        }
+
+        private static double ReadAverage(JObject group, string field, int resultId, string name)
+        {
+            var token = group.GetValue(field, StringComparison.OrdinalIgnoreCase);
+            if (token?.Type is JTokenType.Float or JTokenType.Integer)
+            {
+                double value = token.Value<double>();
+                if (double.IsFinite(value)) return value;
+            }
+            else if (token?.Type == JTokenType.String && double.TryParse(token.Value<string>(), NumberStyles.Float | NumberStyles.AllowThousands,
+                CultureInfo.InvariantCulture, out double parsed) && double.IsFinite(parsed))
+            {
+                return parsed;
+            }
+
+            throw new InvalidDataException($"MTF 结果 ID {resultId} 的分组 [{name}] 缺少有限的实测字段 {field}。");
         }
 
         public override IReadOnlyList<ObjectiveTestCsvRow> GetObjectiveCsvRows(ProjectARVRReuslt result) =>
@@ -121,12 +196,6 @@ namespace ProjectARVRPro.Process.MTF.MTFHVDynamic
                 LowLimit = recipe.Min,
                 UpLimit = recipe.Max
             };
-        }
-
-        private static void AddItem(IProcessExecutionContext ctx, Dictionary<string, ObjectiveTestItem> itemMap, ObjectiveTestItem item)
-        {
-            itemMap[item.Name] = item;
-            ctx.Result.Result &= item.TestResult;
         }
 
         private string GetOutputName()

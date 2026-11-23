@@ -138,8 +138,10 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                     if (!CVFileUtil.WriteCVRaw(
                         rawPath,
                         rawFile,
+                        lease.RawPointer,
                         lease.RawLength,
-                        stream => WriteUnmanagedBuffer(stream, lease.RawPointer, lease.RawLength), saveMode, properties))
+                        saveMode,
+                        properties))
                     {
                         throw new IOException($"保存 CVRAW 失败：{rawPath}");
                     }
@@ -304,31 +306,15 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
         private static unsafe void CopyStreamToPointer(Stream stream, IntPtr destination, int length)
         {
             Span<byte> pixels = new(destination.ToPointer(), length);
-            while (pixels.Length > CopyBufferSize)
-            {
-                stream.ReadExactly(pixels[..CopyBufferSize]);
-                pixels = pixels[CopyBufferSize..];
-            }
-            stream.ReadExactly(pixels);
-        }
-
-        private static unsafe void WriteUnmanagedBuffer(Stream stream, IntPtr source, int length)
-        {
-            if (source == IntPtr.Zero || length <= 0)
-                throw new ArgumentException("The source image buffer is empty.", nameof(source));
-
-            // The writer consumes this span before returning, including cache-only saves.
-            // The frame lease covers the entire save call.
-            ReadOnlySpan<byte> pixels = new(source.ToPointer(), length);
             if (stream is FileStream)
             {
                 while (pixels.Length > CopyBufferSize)
                 {
-                    stream.Write(pixels[..CopyBufferSize]);
+                    stream.ReadExactly(pixels[..CopyBufferSize]);
                     pixels = pixels[CopyBufferSize..];
                 }
             }
-            stream.Write(pixels);
+            stream.ReadExactly(pixels);
         }
     }
 }

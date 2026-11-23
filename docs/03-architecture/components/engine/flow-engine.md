@@ -5,7 +5,6 @@ status: "current"
 summary: "区分 Flow 底层画布、节点内核、模板存储、编辑工作区、共享会话与隔离执行的所有权。"
 aliases: ["Flow架构","工作流程","自动化流程","节点结束是不是流程结束","FlowRuntimeHost","FlowCompleted","RunFinalized"]
 code_paths: ["Engine/FlowEngineLib/FlowEngineControl.cs","Engine/FlowEngineLib/Runtime","Engine/ColorVision.Engine/Templates/Flow/TemplateFlow.cs","Engine/ColorVision.Engine/FlowProcessing/Editor/FlowEditorCanvas.xaml.cs","Engine/ColorVision.Engine/FlowProcessing/Runtime/FlowExecutionSession.cs","Engine/ColorVision.Engine/FlowProcessing/Runtime/FlowHeadlessExecutionService.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/FlowFinalizedExecutionApiTests.cs","Test/ColorVision.UI.Tests/FlowRuntimeHostTests.cs","Test/ColorVision.UI.Tests/FlowTemplateWorkspaceControllerTests.cs"]
 related: ["flow.index","flow.editor","flow.runtime","flow.templates","flow.workspace","flow.session","flow.headless"]
 ---
 
@@ -66,4 +65,4 @@ UI/FlowJob → ViewFlow → FlowExecutionSession → 批次/前处理/门禁
 
 ## 验证边界
 
-`FlowRuntimeHostTests` 覆盖隔离宿主，`FlowTemplateWorkspaceControllerTests` 覆盖工作区状态，`FlowFinalizedExecutionApiTests` 覆盖共享最终化接口。它们是不同层的证据，不代表整个架构、设备链或项目输出已经验证。改动应沿上表定位最小测试，并另行记录真实数据库、MQTT、设备和项目兼容入口的缺口。
+沿变更涉及的执行层验证，并分别记录真实数据库、MQTT、设备、项目兼容入口和项目输出的验证范围。

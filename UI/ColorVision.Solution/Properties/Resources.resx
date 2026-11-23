@@ -412,6 +412,9 @@
   <data name="Terminal_NewCmd" xml:space="preserve">
     <value>新建 CMD</value>
   </data>
+  <data name="Terminal_PasteWithNewlines" xml:space="preserve">
+    <value>粘贴的内容包含换行，终端可能立即执行这些命令。继续粘贴？</value>
+  </data>
   <data name="Sol_ClearScreen" xml:space="preserve">
     <value>清屏</value>
   </data>
@@ -766,9 +769,9 @@
   <data name="Sol_UserCenter_ActivityMore" xml:space="preserve"><value>多</value></data>
   <data name="Sol_DocumentTabPin" xml:space="preserve"><value>固定选项卡</value></data>
   <data name="Sol_DocumentTabUnpin" xml:space="preserve"><value>取消固定选项卡</value></data>
-  <data name="Sol_View_More" xml:space="preserve"><value>更多</value></data>
   <data name="Sol_Terminal_Title" xml:space="preserve"><value>终端</value></data>
   <data name="Sol_Terminal_Run" xml:space="preserve"><value>运行</value></data>
+  <data name="Terminal_NewTerminal" xml:space="preserve"><value>新建终端</value></data>
   <data name="Enter 跳转 · Esc 取消" xml:space="preserve">
     <value>Enter 跳转 · Esc 取消</value>
   </data>
@@ -1368,4 +1371,7 @@
   <data name="文本编辑器" xml:space="preserve"><value>文本编辑器</value></data>
   <data name="显示" xml:space="preserve"><value>显示</value></data>
   <data name="保存当前文件并在下方运行终端中执行" xml:space="preserve"><value>保存当前文件并在下方运行终端中执行</value></data>
+  <data name="Terminal_ProjectCommands" xml:space="preserve">
+    <value>项目命令</value>
+  </data>
 </root>

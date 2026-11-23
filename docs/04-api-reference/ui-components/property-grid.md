@@ -4,8 +4,7 @@ knowledge_type: "topic"
 status: "current"
 summary: "属性面板的字段生成、编辑器选择和 Flow 适配；区分直接修改、工作副本、关闭、重置与宿主持久化。"
 aliases: ["属性面板", "属性编辑器窗口", "修改参数", "编辑器显示成文本", "如何新增属性编辑器", "自定义编辑器", "属性编辑器为什么不显示", "IPropertyEditor", "GenProperties", "PropertyEditorType", "PropertyVisibility", "PropertyEditSession", "PropertyEditorWindow", "FlowPropertyEditorRegistry", "FlowNodePropertyEditorRegistration", "FlowTemplatePropertiesEditors", "取消修改", "关闭回滚", "枚举下拉显示英文", "EnumPropertiesEditor", "命令自动生成", "GenCommand", "CommandDisplay", "按钮分类", "IP地址编辑器", "四段IP输入", "IPAddressBox", "NetworkAddressPropertiesEditor"]
-code_paths: ["UI/ColorVision.UI/PropertyEditor/PropertyEditors.cs", "UI/ColorVision.UI/PropertyEditor/PropertyEditorHelper.cs", "UI/ColorVision.UI/PropertyEditor/PropertyEditorRegistry.cs", "UI/ColorVision.UI/PropertyEditor/PropertyEditorTypeAttribute.cs", "UI/ColorVision.UI/PropertyEditor/PropertyEditSession.cs", "UI/ColorVision.UI/PropertyEditor/PropertyEditorWindow.xaml", "UI/ColorVision.UI/PropertyEditor/PropertyEditorWindow.xaml.cs", "UI/ColorVision.UI/PropertyEditor/Editor/EnumPropertiesEditor.cs", "UI/ColorVision.Common/Utilities/EnumUtils.cs", "Engine/FlowEngineLib/PropertyEditor/FlowNodePropertyEditors.cs", "Engine/ColorVision.Engine/PropertyEditor/FlowNodePropertyEditorRegistration.cs", "Engine/ColorVision.Engine/PropertyEditor/FlowTemplatePropertiesEditors.cs", "Engine/ColorVision.Engine/PropertyEditor/CameraCalibrationGainPropertiesEditor.cs", "UI/ColorVision.UI/PropertyEditor/PropertyEditorCommands.cs", "UI/ColorVision.UI/PropertyEditor/CommandPanelStyles.xaml", "UI/ColorVision.Themes/Controls/IPAddressBox.xaml", "UI/ColorVision.Themes/Controls/IPAddressBox.xaml.cs", "UI/ColorVision.UI/PropertyEditor/Editor/IPAddressPropertiesEditor.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/CompatibilityNodeMigrationTests.cs","Test/ColorVision.UI.Tests/CompatibilityCameraPropertyEditorTests.cs","Test/ColorVision.UI.Tests/CameraCalibrationGainTests.cs","Test/ColorVision.UI.Tests/PropertyEditSessionTests.cs","Test/ColorVision.UI.Tests/DeviceCommandMetadataTests.cs","Test/ColorVision.UI.Tests/IPAddressBoxTests.cs"]
+code_paths: ["UI/ColorVision.UI/PropertyEditor","UI/ColorVision.Common/Utilities/EnumUtils.cs","Engine/FlowEngineLib/PropertyEditor/FlowNodePropertyEditors.cs","Engine/ColorVision.Engine/PropertyEditor/FlowNodePropertyEditorRegistration.cs","Engine/ColorVision.Engine/PropertyEditor/FlowTemplatePropertiesEditors.cs","Engine/ColorVision.Engine/PropertyEditor/CameraCalibrationGainPropertiesEditor.cs","UI/ColorVision.Themes/Controls/IPAddressBox.xaml","UI/ColorVision.Themes/Controls/IPAddressBox.xaml.cs"]
 related: ["ui.index", "ui.configuration", "ui.discovery", "flow.templates", "algorithms.template-management"]
 ---
 
@@ -48,8 +47,6 @@ public RelayCommand RefreshDeviceIdCommand { get; set; }
 
 相机、光谱仪和校正模块的“编辑显示配置”统一归入“设备与连接”，分组顺序为 `0`，与修改配置等设备设置入口放在一起。
 
-`DeviceCommandMetadataTests` 核对上述设备类型的分类和中文标签，不构建设备或操作硬件。
-
 ## 设置行呈现
 
 属性编辑器生成控件时按需读取当前应用主题资源。启动时缺少样式的字段，可在资源加载后重新打开面板恢复。新生成的控件使用最新的样式。
@@ -62,7 +59,7 @@ public RelayCommand RefreshDeviceIdCommand { get; set; }
 
 `IPAddressBox` 位于共享 `ColorVision.Themes.Controls` 层，可直接用于 XAML；PropertyGrid 在 `ColorVision.UI` 层用 `[PropertyEditorType(typeof(IPAddressPropertiesEditor))]` 选择 IPv4 编辑器。四段分别输入 0～255，输入点号或三位数字可进入下一段，左右箭头/退格支持跨段移动，支持粘贴完整 IPv4 或单段数字。无效输入不截断、不钳位；清空某段会将不完整草稿传入双向绑定，由宿主负责提交校验。`IsReadOnly` 禁止输入与粘贴，元数据编辑器也遵守 `ReadOnly`。
 
-接受主机名、IPv6 或串口混合地址的字段选择 `NetworkAddressPropertiesEditor`（直接控件使用 `AllowTextMode=true`），已有非 IPv4 值自动显示文本输入；右侧“⋯”可切换 IPv4 与文本模式。已有字段及序列化格式保持原样，不增加 DHCP、DNS 或操作系统网卡配置。当前接入源表、传感器、MQTT/MySQL 连接、Socket 协议、视频连接、Windows 服务插件及 ProjectKB 的相关地址项；网卡地址列表仍使用原有选择控件，独立 .NET Framework 示例保持自身输入方式。通用属性面板中的 PG `Addr` / `Port` 使用 `PGConnectionPropertiesEditor`，按 `IsNet` 和 `CH431.I2C` 类型切换网络、串口和设备索引的编辑器与标签，不改写存储值；独立 PG 配置窗口按类型显示单套字段，草稿隔离与保存规则见[设备服务链](../engine-components/device-service-chain.md)。`IPAddressBoxTests` 保护输入边界、双向绑定、只读和兼容文本模式。
+接受主机名、IPv6 或串口混合地址的字段选择 `NetworkAddressPropertiesEditor`（直接控件使用 `AllowTextMode=true`），已有非 IPv4 值自动显示文本输入；右侧“⋯”可切换 IPv4 与文本模式。已有字段及序列化格式保持原样，不增加 DHCP、DNS 或操作系统网卡配置。当前接入源表、传感器、MQTT/MySQL 连接、Socket 协议、视频连接、Windows 服务插件及 ProjectKB 的相关地址项；网卡地址列表仍使用原有选择控件，独立 .NET Framework 示例保持自身输入方式。通用属性面板中的 PG `Addr` / `Port` 使用 `PGConnectionPropertiesEditor`，按 `IsNet` 和 `CH431.I2C` 类型切换网络、串口和设备索引的编辑器与标签，不改写存储值；独立 PG 配置窗口按类型显示单套字段，草稿隔离与保存规则见[设备服务链](../engine-components/device-service-chain.md)。
 
 ## 接口与注册
 
@@ -76,6 +73,8 @@ public interface IPropertyEditor
 ```
 
 属性级选择使用 `[PropertyEditorType(typeof(MyEditor))]`；`MyEditor` 在此只是占位类型名，实际实现应从现有编辑器复制必要模式。可参考 `Editor/TextSelectFilePropertiesEditor.cs`：每次调用创建新面板，使用 `CreateLabel`、`CreateTwoWayBinding(obj, property)` 和共享小控件样式。
+
+文件选择优先显示当前文件所在目录。当前文件为空或找不到时，使用 `FilePickerHistoryConfig.LastOpenDirectories` 中同一用途上次成功选择的目录，再回退到可用的父目录或系统默认位置。属性表的普通文件字段按配置类型共享记录，文件列表按所属集合属性记录。确认选择即保存浏览位置，业务配置仍以外层窗口的确认和取消为准。
 
 集合元素的编辑方式在集合属性上用 `CollectionEditorTypeAttribute` 声明。字符串列表在“编辑列表”窗口中直接逐行编辑，普通文本默认使用文本框；目录列表标注 `[CollectionEditorType(typeof(TextSelectFolderPropertiesEditor))]`，文件列表标注 `TextSelectFilePropertiesEditor`，行内复用相应的选择和打开位置按钮，使用者无需再选择编辑器类型。缓存大小预处理的 `FolderPaths` 使用目录标记。添加后自动选中新行并聚焦文本框；修改、增删和排序只作用于工作列表，确定后才写回原集合，取消或关闭丢弃本次修改。非字符串元素继续使用项编辑窗口，对象项和嵌套列表在列表窗口与项窗口分别使用配置工作副本，并保留对象中 `Browsable(false)` 的可写配置属性；项窗口确定只更新外层工作列表，外层列表确定才提交原属性，因此内层取消或内层确定后再取消外层都不修改原配置。普通列表不显示索引列，字典仍按 Key/Value 编辑。
 
@@ -103,8 +102,6 @@ Engine 模板和量程编辑器可直接构造，不需要代理注册。公共 
 类型注册内部先找精确类型，再按注册顺序寻找第一个命中的谓词。谓词抛异常会记录警告并跳过该谓词。`TryGenerateEditor` 在构造或 `GenProperties` 失败时记录错误并返回空，让外层按上述路径继续；**不保证任意未知类型或所有编辑器失败后都会出现文本框**。
 
 异常边界不能混为一谈：元数据 Provider 的 `GetEditorType` 回调在 `TryGenerateEditor` 之外。该回调自身抛异常时，外层 `TryCreatePropertyDockPanel` 记录错误并返回 `false`，不会继续尝试属性标注；可见性绑定等外层步骤抛异常也会终止该行。新增 Provider 时需单独验证这些异常路径。
-
-不要把该测试扩大解释成全部失败路径都会成功降级。
 
 ## 实例、绑定与可见性
 
@@ -163,14 +160,4 @@ Flow 的单模板、多模板族下拉框及算法补充面板在已保存名称
 
 ## 验证入口与缺口
 
-| 测试文件，均在 `Test/ColorVision.UI.Tests/` | 覆盖契约 |
-| --- | --- |
-| `PropertyEditSessionTests.cs` | 配置数据工作副本隔离、嵌套提交、重置、直接写入模式，以及 WPF 运行时引用保留 |
-
-可在 Windows/x64 上运行最接近的测试，例如：
-
-```powershell
-dotnet test Test/ColorVision.UI.Tests/ColorVision.UI.Tests.csproj -p:Platform=x64 --filter "FullyQualifiedName~PropertyEditSessionTests"
-```
-
-这些是验证入口，不是运行通过记录；会话单元测试不等于窗口关闭、`Submitted` 订阅或持久化链路的端到端验证。自定义编辑器仍需在目标宿主检查样式、键盘操作、错误提示、订阅释放和保存重开；新增公开签名还要验证实际插件 DLL 的二进制兼容性。
+自定义编辑器仍需在目标宿主检查样式、键盘操作、错误提示、订阅释放和保存重开；新增公开签名还要验证实际插件 DLL 的二进制兼容性。

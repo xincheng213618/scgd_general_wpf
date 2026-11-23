@@ -9,35 +9,13 @@ namespace ColorVision.Solution.Workspace
     /// </summary>
     public class ViewPanelMenuItemProvider : IMenuItemProvider
     {
-        private const string MorePanelsGuid = "DockPanel_More";
-        private const string ServiceLogPanelPrefix = "ServiceLog_";
-
         public IEnumerable<MenuItemMetadata> GetMenuItems()
         {
             var layoutManager = WorkspaceManager.LayoutManager;
             if (layoutManager == null)
                 return Enumerable.Empty<MenuItemMetadata>();
 
-            var panels = layoutManager.GetRegisteredPanels();
-            var items = panels
-                .Select((panel, index) => CreateMenuItem(panel, index))
-                .ToList();
-
-            if (panels.Any(IsMorePanel))
-            {
-                items.Add(new MenuItemMetadata
-                {
-                    TargetName = MenuItemConstants.MainWindowTarget,
-                    OwnerGuid = MenuItemConstants.View,
-                    GuidId = MorePanelsGuid,
-                    Header = Properties.Resources.Sol_View_More,
-                    Order = 90,
-                    Visibility = Visibility.Visible,
-                    Command = new RelayCommand(_ => { })
-                });
-            }
-
-            return items;
+            return layoutManager.GetRegisteredPanels().Select(CreateMenuItem);
         }
 
         private static MenuItemMetadata CreateMenuItem(RegisteredPanelInfo panel, int index)
@@ -47,7 +25,7 @@ namespace ColorVision.Solution.Workspace
             return new MenuItemMetadata
             {
                 TargetName = MenuItemConstants.MainWindowTarget,
-                OwnerGuid = IsMorePanel(panel) ? MorePanelsGuid : MenuItemConstants.View,
+                OwnerGuid = MenuItemConstants.View,
                 GuidId = $"DockPanel_{contentId}",
                 Header = panel.Title,
                 Order = GetOrder(panel.Position, index),
@@ -57,11 +35,6 @@ namespace ColorVision.Solution.Workspace
                     WorkspaceManager.LayoutManager?.ShowPanel(contentId);
                 })
             };
-        }
-
-        private static bool IsMorePanel(RegisteredPanelInfo panel)
-        {
-            return panel.ContentId.StartsWith(ServiceLogPanelPrefix, StringComparison.Ordinal);
         }
 
         private static int GetOrder(PanelPosition position, int index)

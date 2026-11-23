@@ -1,5 +1,6 @@
 using ColorVision.Algorithms;
 using System;
+using System.Buffers;
 using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Linq;
@@ -47,11 +48,18 @@ namespace ColorVision.ImageEditor.Algorithms
             long invalidWindows = 0;
             if (parameters.EnableSsim)
             {
+                var bounds = region.GetSamplingBounds(reference);
+                SsimSums[]? columns = null;
                 for (int index = 0; index < channels.Length; index++)
                 {
                     int channel = channels[index];
                     progress?.Report(new AlgorithmProgress(0.80 + 0.10 * index / Math.Max(1, channels.Length), "comparison.ssim", ChannelName(reference.Format, channel)));
-                    SsimAccumulator result = ComputeSsim(reference, candidate, region, channel, parameters, cancellationToken);
+                    cancellationToken.ThrowIfCancellationRequested();
+                    if (columns == null)
+                        columns = new SsimSums[bounds.MaximumXExclusive - bounds.MinimumX];
+                    else
+                        Array.Clear(columns);
+                    SsimAccumulator result = ComputeSsim(reference, candidate, region, channel, parameters, bounds, columns, cancellationToken);
                     channelResults.Add(new ImageComparisonChannelSsim(channel, ChannelName(reference.Format, channel), result.Mean, result.ValidCount, result.InvalidCount));
                     if (result.ValidCount > 0) aggregate.Add(result.Mean * result.ValidCount);
                     validWindows += result.ValidCount;
@@ -77,23 +85,17 @@ namespace ColorVision.ImageEditor.Algorithms
             AlgorithmPixelRoi region,
             int channel,
             ImageComparisonParameters parameters,
+            (int MinimumX, int MinimumY, int MaximumXExclusive, int MaximumYExclusive) bounds,
+            SsimSums[] columns,
             CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            int width = reference.Width;
-            var (minimumX, minimumY, maximumXExclusive, maximumYExclusive) = region.GetSamplingBounds(reference);
+            var (minimumX, minimumY, _, maximumYExclusive) = bounds;
             int radius = parameters.SsimWindowSize / 2;
-            double[] sumX = new double[width];
-            double[] sumY = new double[width];
-            double[] sumX2 = new double[width];
-            double[] sumY2 = new double[width];
-            double[] sumXY = new double[width];
-            int[] counts = new int[width];
-            int[] possibleCounts = new int[width];
             // Samples outside the ROI never enter a window. Skip their zero-valued
             // rows/columns while preserving the original order of nonzero additions.
             for (int row = minimumY; row <= Math.Min(minimumY + radius, maximumYExclusive - 1); row++)
-                AddRow(reference, candidate, region, channel, row, 1, sumX, sumY, sumX2, sumY2, sumXY, counts, possibleCounts);
+                AddRow(reference, candidate, region, channel, row, 1, minimumX, columns);
 
             double peak = reference.Format.IsFloatingPoint() ? parameters.FloatPeakValue
                 : reference.Format.BitsPerChannel() == 8 ? byte.MaxValue : ushort.MaxValue;
@@ -109,45 +111,36 @@ namespace ColorVision.ImageEditor.Algorithms
                 {
                     int remove = y - radius - 1;
                     int add = y + radius;
-                    if (remove >= minimumY) AddRow(reference, candidate, region, channel, remove, -1, sumX, sumY, sumX2, sumY2, sumXY, counts, possibleCounts);
-                    if (add < maximumYExclusive) AddRow(reference, candidate, region, channel, add, 1, sumX, sumY, sumX2, sumY2, sumXY, counts, possibleCounts);
+                    if (remove >= minimumY) AddRow(reference, candidate, region, channel, remove, -1, minimumX, columns);
+                    if (add < maximumYExclusive) AddRow(reference, candidate, region, channel, add, 1, minimumX, columns);
                 }
 
-                double windowX = 0;
-                double windowY = 0;
-                double windowX2 = 0;
-                double windowY2 = 0;
-                double windowXY = 0;
-                int windowCount = 0;
-                int possibleWindowCount = 0;
-                for (int column = minimumX; column <= Math.Min(minimumX + radius, maximumXExclusive - 1); column++)
-                    AddColumn(column, 1, sumX, sumY, sumX2, sumY2, sumXY, counts, possibleCounts,
-                        ref windowX, ref windowY, ref windowX2, ref windowY2, ref windowXY, ref windowCount, ref possibleWindowCount);
+                SsimSums window = default;
+                for (int column = 0; column <= Math.Min(radius, columns.Length - 1); column++)
+                    window.AddColumn(in columns[column], 1);
 
-                for (int x = minimumX; x < maximumXExclusive; x++)
+                for (int column = 0; column < columns.Length; column++)
                 {
-                    if (x > minimumX)
+                    if (column > 0)
                     {
-                        int remove = x - radius - 1;
-                        int add = x + radius;
-                        if (remove >= minimumX) AddColumn(remove, -1, sumX, sumY, sumX2, sumY2, sumXY, counts, possibleCounts,
-                            ref windowX, ref windowY, ref windowX2, ref windowY2, ref windowXY, ref windowCount, ref possibleWindowCount);
-                        if (add < maximumXExclusive) AddColumn(add, 1, sumX, sumY, sumX2, sumY2, sumXY, counts, possibleCounts,
-                            ref windowX, ref windowY, ref windowX2, ref windowY2, ref windowXY, ref windowCount, ref possibleWindowCount);
+                        int remove = column - radius - 1;
+                        int add = column + radius;
+                        if (remove >= 0) window.AddColumn(in columns[remove], -1);
+                        if (add < columns.Length) window.AddColumn(in columns[add], 1);
                     }
-                    if (!region.Contains(x, y)) continue;
-                    int required = Math.Max(1, (int)Math.Ceiling(possibleWindowCount * parameters.SsimMinimumValidFraction));
-                    if (windowCount < required)
+                    if (!region.Contains(minimumX + column, y)) continue;
+                    int required = Math.Max(1, (int)Math.Ceiling(window.PossibleCount * parameters.SsimMinimumValidFraction));
+                    if (window.Count < required)
                     {
                         invalid++;
                         continue;
                     }
 
-                    double meanX = windowX / windowCount;
-                    double meanY = windowY / windowCount;
-                    double varianceX = Math.Max(0, windowX2 / windowCount - meanX * meanX);
-                    double varianceY = Math.Max(0, windowY2 / windowCount - meanY * meanY);
-                    double covariance = windowXY / windowCount - meanX * meanY;
+                    double meanX = window.X / window.Count;
+                    double meanY = window.Y / window.Count;
+                    double varianceX = Math.Max(0, window.X2 / window.Count - meanX * meanX);
+                    double varianceY = Math.Max(0, window.Y2 / window.Count - meanY * meanY);
+                    double covariance = window.XY / window.Count - meanX * meanY;
                     double denominator = (meanX * meanX + meanY * meanY + c1) * (varianceX + varianceY + c2);
                     double ssim = denominator <= 0 ? double.NaN
                         : ((2 * meanX * meanY + c1) * (2 * covariance + c2)) / denominator;
@@ -170,56 +163,52 @@ namespace ColorVision.ImageEditor.Algorithms
             int channel,
             int row,
             int direction,
-            double[] sumX,
-            double[] sumY,
-            double[] sumX2,
-            double[] sumY2,
-            double[] sumXY,
-            int[] counts,
-            int[] possibleCounts)
+            int minimumX,
+            SsimSums[] columns)
         {
-            var samplingBounds = region.GetSamplingBounds(reference);
-            for (int x = samplingBounds.MinimumX; x < samplingBounds.MaximumXExclusive; x++)
+            int bytesPerChannel = reference.Format.BitsPerChannel() / 8;
+            int bytesPerPixel = reference.Format.Channels() * bytesPerChannel;
+            int firstSample = checked(minimumX * bytesPerPixel + channel * bytesPerChannel);
+            ReadOnlySpan<byte> referenceRow = reference.Data.Span[checked(row * reference.Stride + firstSample)..];
+            ReadOnlySpan<byte> candidateRow = candidate.Data.Span[checked(row * candidate.Stride + firstSample)..];
+            for (int column = 0, offset = 0; column < columns.Length; column++, offset += bytesPerPixel)
             {
+                int x = minimumX + column;
                 if (!region.Contains(x, row)) continue;
-                possibleCounts[x] += direction;
-                double left = Read(reference, x, row, channel);
-                double right = Read(candidate, x, row, channel);
+                ref SsimSums sums = ref columns[column];
+                sums.PossibleCount += direction;
+                double left = ReadSample(referenceRow, offset, bytesPerChannel);
+                double right = ReadSample(candidateRow, offset, bytesPerChannel);
                 if (!double.IsFinite(left) || !double.IsFinite(right)) continue;
-                sumX[x] += direction * left;
-                sumY[x] += direction * right;
-                sumX2[x] += direction * left * left;
-                sumY2[x] += direction * right * right;
-                sumXY[x] += direction * left * right;
-                counts[x] += direction;
+                sums.X += direction * left;
+                sums.Y += direction * right;
+                sums.X2 += direction * left * left;
+                sums.Y2 += direction * right * right;
+                sums.XY += direction * left * right;
+                sums.Count += direction;
             }
         }
 
-        private static void AddColumn(
-            int column,
-            int direction,
-            double[] sumX,
-            double[] sumY,
-            double[] sumX2,
-            double[] sumY2,
-            double[] sumXY,
-            int[] counts,
-            int[] possibleCounts,
-            ref double windowX,
-            ref double windowY,
-            ref double windowX2,
-            ref double windowY2,
-            ref double windowXY,
-            ref int windowCount,
-            ref int possibleWindowCount)
+        private struct SsimSums
         {
-            windowX += direction * sumX[column];
-            windowY += direction * sumY[column];
-            windowX2 += direction * sumX2[column];
-            windowY2 += direction * sumY2[column];
-            windowXY += direction * sumXY[column];
-            windowCount += direction * counts[column];
-            possibleWindowCount += direction * possibleCounts[column];
+            public double X;
+            public double Y;
+            public double X2;
+            public double Y2;
+            public double XY;
+            public int Count;
+            public int PossibleCount;
+
+            public void AddColumn(in SsimSums column, int direction)
+            {
+                X += direction * column.X;
+                Y += direction * column.Y;
+                X2 += direction * column.X2;
+                Y2 += direction * column.Y2;
+                XY += direction * column.XY;
+                Count += direction * column.Count;
+                PossibleCount += direction * column.PossibleCount;
+            }
         }
 
         private static ImageComparisonAlignmentPrecheck ComputeAlignment(
@@ -238,18 +227,48 @@ namespace ColorVision.ImageEditor.Algorithms
             while (step < maximumStep)
             {
                 int candidateStep = step + (maximumStep - step) / 2;
-                long samples = ((width + (long)candidateStep - 1) / candidateStep) * ((height + (long)candidateStep - 1) / candidateStep);
-                if (samples <= parameters.AlignmentMaximumSamples) maximumStep = candidateStep;
+                long candidateSampleCount = ((width + (long)candidateStep - 1) / candidateStep) * ((height + (long)candidateStep - 1) / candidateStep);
+                if (candidateSampleCount <= parameters.AlignmentMaximumSamples) maximumStep = candidateStep;
                 else step = candidateStep + 1;
             }
-            long potential = 0;
-            for (int y = region.MinimumY; y < region.MaximumYExclusive; y += step)
+            int gridWidth = 1 + (width - 1) / step;
+            int gridHeight = 1 + (height - 1) / step;
+            AlignmentSample[] samples = ArrayPool<AlignmentSample>.Shared.Rent(checked(gridWidth * gridHeight));
+            try
             {
-                cancellationToken.ThrowIfCancellationRequested();
-                for (int x = region.MinimumX; x < region.MaximumXExclusive; x += step)
-                    if (region.Contains(x, y) && double.IsFinite(Luminance(reference, x, y))) potential++;
+                // Every trial shift uses the same finite reference samples in scan order.
+                int channels = reference.Format.Channels();
+                int bytesPerChannel = reference.Format.BitsPerChannel() / 8;
+                int bytesPerPixel = channels * bytesPerChannel;
+                int count = 0;
+                ReadOnlySpan<byte> data = reference.Data.Span;
+                for (int y = region.MinimumY; y < region.MaximumYExclusive; y += step)
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    ReadOnlySpan<byte> row = data[(y * reference.Stride)..];
+                    for (int x = region.MinimumX; x < region.MaximumXExclusive; x += step)
+                    {
+                        if (!region.Contains(x, y)) continue;
+                        double luminance = Luminance(row, x * bytesPerPixel, channels, bytesPerChannel);
+                        if (double.IsFinite(luminance)) samples[count++] = new(x, y, luminance);
+                    }
+                }
+                return FindAlignment(candidate, samples.AsSpan(0, count), parameters, step, cancellationToken);
             }
-            if (potential < 4)
+            finally
+            {
+                ArrayPool<AlignmentSample>.Shared.Return(samples);
+            }
+        }
+
+        private static ImageComparisonAlignmentPrecheck FindAlignment(
+            AlgorithmImageBuffer candidate,
+            ReadOnlySpan<AlignmentSample> samples,
+            ImageComparisonParameters parameters,
+            int step,
+            CancellationToken cancellationToken)
+        {
+            if (samples.Length < 4)
                 return new ImageComparisonAlignmentPrecheck("insufficient_samples", 0, 0, 0, double.NaN, double.NaN, double.NaN, 0, 0, 0, step);
 
             CorrelationCandidate? best = null;
@@ -261,43 +280,40 @@ namespace ColorVision.ImageEditor.Algorithms
                 cancellationToken.ThrowIfCancellationRequested();
                 for (int dx = -radius; dx <= radius; dx++)
                 {
-                    CorrelationCandidate value = Correlate(reference, candidate, region, dx, dy, step, potential, cancellationToken);
+                    CorrelationCandidate value = Correlate(candidate, samples, dx, dy, cancellationToken);
                     if (dx == 0 && dy == 0) zero = value;
                     if (value.OverlapFraction < parameters.AlignmentMinimumOverlapFraction || !double.IsFinite(value.Correlation)) continue;
-                    if (best == null || value.Correlation > best.Correlation)
+                    if (best is not CorrelationCandidate bestValue || value.Correlation > bestValue.Correlation)
                     {
                         second = best;
                         best = value;
                     }
-                    else if (second == null || value.Correlation > second.Correlation)
+                    else if (second is not CorrelationCandidate secondValue || value.Correlation > secondValue.Correlation)
                     {
                         second = value;
                     }
                 }
             }
-            if (best == null)
+            if (best is not CorrelationCandidate peak)
             {
-                string status = zero == null || zero.SampleCount < 4 ? "insufficient_overlap" : "low_texture";
+                string status = (zero?.SampleCount ?? 0) < 4 ? "insufficient_overlap" : "low_texture";
                 return new ImageComparisonAlignmentPrecheck(status, 0, 0, 0, double.NaN, zero?.Correlation ?? double.NaN, double.NaN, 0,
                     zero?.OverlapFraction ?? 0, zero?.SampleCount ?? 0, step);
             }
 
-            double margin = second == null ? 0 : best.Correlation - second.Correlation;
-            double confidence = Math.Clamp((best.Correlation + 1) / 2, 0, 1) * Math.Clamp(margin / 0.05, 0, 1);
-            double magnitude = Math.Sqrt(best.Dx * best.Dx + best.Dy * best.Dy);
+            double margin = second is CorrelationCandidate runnerUp ? peak.Correlation - runnerUp.Correlation : 0;
+            double confidence = Math.Clamp((peak.Correlation + 1) / 2, 0, 1) * Math.Clamp(margin / 0.05, 0, 1);
+            double magnitude = Math.Sqrt(peak.Dx * peak.Dx + peak.Dy * peak.Dy);
             return new ImageComparisonAlignmentPrecheck(
-                "ok", best.Dx, best.Dy, magnitude, best.Correlation, zero?.Correlation ?? double.NaN,
-                margin, confidence, best.OverlapFraction, best.SampleCount, step);
+                "ok", peak.Dx, peak.Dy, magnitude, peak.Correlation, zero?.Correlation ?? double.NaN,
+                margin, confidence, peak.OverlapFraction, peak.SampleCount, step);
         }
 
         private static CorrelationCandidate Correlate(
-            AlgorithmImageBuffer reference,
             AlgorithmImageBuffer candidate,
-            AlgorithmPixelRoi region,
+            ReadOnlySpan<AlignmentSample> samples,
             int dx,
             int dy,
-            int step,
-            long potential,
             CancellationToken cancellationToken)
         {
             double sumX = 0;
@@ -306,56 +322,52 @@ namespace ColorVision.ImageEditor.Algorithms
             double sumY2 = 0;
             double sumXY = 0;
             long count = 0;
-            int cancellationCounter = 0;
-            for (int y = region.MinimumY; y < region.MaximumYExclusive; y += step)
+            int channels = candidate.Format.Channels();
+            int bytesPerChannel = candidate.Format.BitsPerChannel() / 8;
+            int bytesPerPixel = channels * bytesPerChannel;
+            ReadOnlySpan<byte> data = candidate.Data.Span;
+            for (int i = 0; i < samples.Length; i++)
             {
-                int candidateY = y + dy;
-                if (candidateY < 0 || candidateY >= candidate.Height) continue;
-                for (int x = region.MinimumX; x < region.MaximumXExclusive; x += step)
-                {
-                    if ((cancellationCounter++ & 1023) == 0) cancellationToken.ThrowIfCancellationRequested();
-                    if (!region.Contains(x, y)) continue;
-                    int candidateX = x + dx;
-                    if (candidateX < 0 || candidateX >= candidate.Width) continue;
-                    double left = Luminance(reference, x, y);
-                    double right = Luminance(candidate, candidateX, candidateY);
-                    if (!double.IsFinite(left) || !double.IsFinite(right)) continue;
-                    sumX += left;
-                    sumY += right;
-                    sumX2 += left * left;
-                    sumY2 += right * right;
-                    sumXY += left * right;
-                    count++;
-                }
+                if ((i & 1023) == 0) cancellationToken.ThrowIfCancellationRequested();
+                ref readonly AlignmentSample sample = ref samples[i];
+                int x = sample.X + dx;
+                int y = sample.Y + dy;
+                if ((uint)x >= (uint)candidate.Width || (uint)y >= (uint)candidate.Height) continue;
+                double right = Luminance(data, y * candidate.Stride + x * bytesPerPixel, channels, bytesPerChannel);
+                if (!double.IsFinite(right)) continue;
+                double left = sample.Luminance;
+                sumX += left;
+                sumY += right;
+                sumX2 += left * left;
+                sumY2 += right * right;
+                sumXY += left * right;
+                count++;
             }
-            if (count < 4) return new CorrelationCandidate(dx, dy, double.NaN, count, potential == 0 ? 0 : count / (double)potential);
+            double overlap = count / (double)samples.Length;
+            if (count < 4) return new CorrelationCandidate(dx, dy, double.NaN, count, overlap);
             double covariance = sumXY - sumX * sumY / count;
             double varianceX = sumX2 - sumX * sumX / count;
             double varianceY = sumY2 - sumY * sumY / count;
             double denominator = Math.Sqrt(Math.Max(0, varianceX) * Math.Max(0, varianceY));
             double correlation = denominator <= 1e-20 ? double.NaN : Math.Clamp(covariance / denominator, -1, 1);
-            return new CorrelationCandidate(dx, dy, correlation, count, potential == 0 ? 0 : count / (double)potential);
+            return new CorrelationCandidate(dx, dy, correlation, count, overlap);
         }
 
-        private static double Luminance(AlgorithmImageBuffer image, int x, int y)
+        private static double Luminance(ReadOnlySpan<byte> data, int offset, int channels, int bytesPerChannel)
         {
-            if (image.Format.Channels() == 1) return Read(image, x, y, 0);
-            return 0.114 * Read(image, x, y, 0) + 0.587 * Read(image, x, y, 1) + 0.299 * Read(image, x, y, 2);
+            double first = ReadSample(data, offset, bytesPerChannel);
+            if (channels == 1) return first;
+            return 0.114 * first + 0.587 * ReadSample(data, offset + bytesPerChannel, bytesPerChannel)
+                + 0.299 * ReadSample(data, offset + 2 * bytesPerChannel, bytesPerChannel);
         }
 
-        private static double Read(AlgorithmImageBuffer image, int x, int y, int channel)
+        private static double ReadSample(ReadOnlySpan<byte> data, int offset, int bytesPerChannel) => bytesPerChannel switch
         {
-            int bytesPerChannel = image.Format.BitsPerChannel() / 8;
-            int offset = checked(y * image.Stride + (x * image.Format.Channels() + channel) * bytesPerChannel);
-            ReadOnlySpan<byte> data = image.Data.Span;
-            return image.Format.BitsPerChannel() switch
-            {
-                8 => data[offset],
-                16 => BinaryPrimitives.ReadUInt16LittleEndian(data.Slice(offset, 2)),
-                32 when image.Format.IsFloatingPoint() => BinaryPrimitives.ReadSingleLittleEndian(data.Slice(offset, 4)),
-                _ => throw new ArgumentOutOfRangeException(nameof(image)),
-            };
-        }
+            1 => data[offset],
+            2 => BinaryPrimitives.ReadUInt16LittleEndian(data.Slice(offset, 2)),
+            4 => BinaryPrimitives.ReadSingleLittleEndian(data.Slice(offset, 4)),
+            _ => throw new ArgumentOutOfRangeException(nameof(bytesPerChannel)),
+        };
 
         private static IEnumerable<int> ComparedChannelIndexes(AlgorithmImageFormat format, bool includeAlpha)
             => Enumerable.Range(0, includeAlpha || format.Channels() < 4 ? format.Channels() : 3);
@@ -372,7 +384,8 @@ namespace ColorVision.ImageEditor.Algorithms
             => new("disabled", 0, 0, 0, double.NaN, double.NaN, double.NaN, 0, 0, 0, 0);
 
         private readonly record struct SsimAccumulator(double Mean, long ValidCount, long InvalidCount);
-        private sealed record CorrelationCandidate(int Dx, int Dy, double Correlation, long SampleCount, double OverlapFraction);
+        private readonly record struct AlignmentSample(int X, int Y, double Luminance);
+        private readonly record struct CorrelationCandidate(int Dx, int Dy, double Correlation, long SampleCount, double OverlapFraction);
 
         private sealed class KahanSum
         {

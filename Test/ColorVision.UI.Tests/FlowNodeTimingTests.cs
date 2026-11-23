@@ -2,6 +2,7 @@ using ColorVision.Engine.FlowProcessing.Diagnostics;
 using ColorVision.Engine.FlowProcessing.Nodes;
 using FlowEngineLib;
 using FlowEngineLib.Base;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.Reflection;
 using ColorVision.Engine.Services.Devices.Camera.Local;
@@ -63,6 +64,42 @@ public class FlowNodeTimingTests
         Assert.NotNull(parsed["Timing"]);
         parsed.Remove("Timing");
         Assert.True(JToken.DeepEquals(original, original is JObject ? parsed : parsed["Data"]));
+    }
+
+    [Fact]
+    public void AppendingTimingWithoutResponseProducesAnObject()
+    {
+        var timing = new FlowNodeTiming();
+        JObject payload = JObject.Parse(timing.SerializePayload(null));
+
+        Assert.Equal("Timing", Assert.Single(payload.Properties()).Name);
+    }
+
+    [Theory]
+    [InlineData(" \u00a0{\t }\u2002", "{\t \"Timing\":")]
+    [InlineData(" {\"custom\":1  } ", "{\"custom\":1  ,\"Timing\":")]
+    [InlineData(" [1]\r\n", "{\"Data\": [1]\r\n,\"Timing\":")]
+    public void AppendingTimingPreservesLiteralJsonFromAConverter(string json, string expectedPrefix)
+    {
+        var timing = new FlowNodeTiming();
+        string payload = timing.SerializePayload(new LiteralResponse(json));
+
+        Assert.StartsWith(expectedPrefix, payload, StringComparison.Ordinal);
+        Assert.NotNull(JObject.Parse(payload)["Timing"]);
+    }
+
+    [JsonConverter(typeof(LiteralResponseConverter))]
+    private sealed record LiteralResponse(string Json);
+
+    private sealed class LiteralResponseConverter : JsonConverter<LiteralResponse>
+    {
+        public override void WriteJson(JsonWriter writer, LiteralResponse? value, JsonSerializer serializer) =>
+            writer.WriteRaw(value?.Json);
+
+        public override LiteralResponse ReadJson(JsonReader reader, Type objectType, LiteralResponse? existingValue,
+            bool hasExistingValue, JsonSerializer serializer) => throw new NotSupportedException();
+
+        public override bool CanRead => false;
     }
 
     [Fact]

@@ -5,7 +5,6 @@ status: "current"
 summary: "JSON模板的分组参数与文本编辑、语法检查、输入草稿、保存保护和默认参数；Schema提供字段提示而不补默认值或执行完整校验。"
 aliases: ["JSON模板","JSON模板保存和V2结果如何对应","属性编辑","文本编辑","校验Json","设置为默认参数","无法重置，请检查数据库相关配置","JSON Schema默认值","Schema default","JSON模板重置","ITemplateJson","TemplateJsonParam","EditTemplateJson","JsonPropertyEditorControl","JsonEditorSchemaDocument","CanHandle1","SchemaIndexResourceName","TryLoadTemplateSchema"]
 code_paths: ["Engine/ColorVision.Engine/Templates/Jsons","Engine/ColorVision.Engine/Templates/TemplateEditorWindow.xaml.cs","UI/ColorVision.UI/PropertyEditor/Json","UI/ColorVision.UI/Utilities/JsonHelper.cs","UI/ColorVision.Common/Utilities/DebounceTimer.cs"]
-test_paths: []
 related: ["algorithms.index","algorithms.template-management","engine.host","engine.template-design","engine.results","copilot.tool-contracts"]
 ---
 
@@ -23,7 +22,7 @@ JSON 模板将一条参数保存为数据库 `ModMasterModel.JsonVal`，由 `ITe
 4. 输入变化立即尝试应用到内存对象。错误数值或数组保留原始输入并就地显示错误，搜索或换组后仍保留草稿；**定位错误输入** 返回首个错误字段。有效字段可继续编辑。
 5. 使用宿主 **保存** 或 `Ctrl+S` 写数据库。现有编辑宿主会在保存、切换记录前调用 `ITemplateEditorValidation.TryCommitPendingEdits()`；创建宿主在最终创建前调用同一接口。错误输入阻止这些操作，也阻止切换到另一种编辑视图。成功保存返回后更新当前编辑器的修改基线。
 
-标题与操作共用一行，分组与搜索共用一行；窄窗口下操作按钮自动换行。参数行使用紧凑间距，说明区按需展开，错误提示仍独立显示。
+标题与操作图标共用一行，鼠标悬停可查看操作名称。分组与参数搜索共用一行，说明区按需展开。
 
 编辑器的状态栏区分“无新修改”“已修改”和“错误输入尚未应用”。它比较当前内容与本次加载/保存的快照，不是数据库持久化成功的独立证据；具体保存仍受下文数据库边界限制。
 
@@ -34,9 +33,8 @@ JSON 模板将一条参数保存为数据库 `ModMasterModel.JsonVal`，由 `ITe
 | **检查语法** | 检查当前草稿是否为语法有效的 JSON 对象/数组，显示错误行和 UTF-8 字节位置。失败时保留原文，不再用上次有效模型覆盖草稿；不执行完整 Schema 校验或算法 |
 | **格式化** | JSON 视图中格式化有效文本，通过 AvalonEdit 文档修改保留撤销记录 |
 | **查找** / `Ctrl+F` | JSON 视图使用 AvalonEdit 搜索面板；参数视图快捷键聚焦全局参数搜索 |
-| **更多 → 复制当前 JSON** | 校验当前输入后复制到剪贴板 |
-| **更多 → 恢复默认参数** | 确认后按当前记录的 `Pid` 查询字典 `SysDictionaryModModel.JsonVal`，替换内存参数并同步两个视图；需要另行保存。字典缺失或没有字符串默认值时提示“无法重置，请检查数据库相关配置” |
-| **更多 → 在 json.cn 中打开** | 检查当前输入后打开网站并复制当前 JSON；代码不自动粘贴或上传文本 |
+| **复制当前 JSON** | 校验当前输入后复制到剪贴板 |
+| **恢复默认参数** | 确认后按当前记录的 `Pid` 查询字典 `SysDictionaryModModel.JsonVal`，替换内存参数并同步两个视图；需要另行保存。字典缺失或没有字符串默认值时提示“无法重置，请检查数据库相关配置” |
 | **询问Copilot** | 保持现有模板上下文、说明、诊断和发送入口；有错误属性输入时拒绝应用补丁。预览、应用和保存仍是不同操作，见[模板 JSON 预览与应用](../../../02-developer-guide/core-concepts/copilot-agent-tool-contracts.md#模板-json-预览与应用) |
 
 文本输入不使用跨实例防抖键，有效输入在本次事件内提交。参数对象发出 `JsonValueChanged` 时同时刷新文本和可见属性视图；解析新对象失败会清空旧字段，不能继续把旧对象当成新内容编辑。
@@ -85,7 +83,7 @@ JSON 模板将一条参数保存为数据库 `ModMasterModel.JsonVal`，由 `ITe
 
 `EditTemplateJson.TryLoadTemplateSchema` 按当前 `TemplateJsonModel.Code` 查找，Code 为空时不加载；字典 ID 和算法结果版本不参与匹配。
 
-1. 先读当前 Engine 程序集的 `Templates/Jsons/Schemas/schema-index.json`，在 `schemas` 中按忽略大小写的 `code` 匹配，再按条目 `file` 读取嵌入资源。
+1. 先读当前 Engine 程序集的 `Templates/Jsons/Schemas/schema-index.json`，在 `schemas` 中按忽略大小写的 `code` 匹配，再按条目 `file` 读取嵌入资源。同一编辑器连续切换相同 Code 的模板时，复用已读取的嵌入 Schema。
 2. 嵌入资源未命中才查磁盘：分别从 `AppContext.BaseDirectory`、`Environment.CurrentDirectory` 向上最多八层，在每层尝试 `Templates/Jsons/Schemas/schema-index.json` 和 `Engine/ColorVision.Engine/Templates/Jsons/Schemas/schema-index.json`。
 3. 磁盘条目的 `file` 相对索引所属的 `Jsons` 目录解析。路径去重后逐个尝试；文件缺失、索引解析/读取失败或 Code 未匹配时继续下一候选，全部未命中则不提供 Schema。
 
@@ -117,7 +115,7 @@ JSON 模板将一条参数保存为数据库 `ModMasterModel.JsonVal`，由 `ITe
 | 导入、新建 | 文件导入读取 UTF-8 `.cfg` 并反序列化为 `T`，准备创建来源，尚未插入数据库。反序列化为 `null` 也可返回成功；不能凭布尔返回值认定载荷完整。最终新建以目标字典重建 `Code`、`Pid` 并使用新名称，不是恢复源数据库身份 |
 | 删除 | 按主记录 ID 物理删除；多选分支逐项写数据库，但移除界面项时复用同一个集合索引，可能移除错误项或越界，不能视为可靠的原子批量删除 |
 
-宿主关闭会调用 `Load()`，但这不等于完整回滚；共享对象、离线和旧集合项的限制仍然存在。删除、导出、设置默认等动作还要核对当前勾选集合与过滤后的显示索引，见[模板宿主选择规则](./template-management.md#搜索后的显示位置不总是源位置)。数据库操作出现异常时应先核对已写入的记录，不能假设整批都没有生效。
+宿主关闭会调用 `Load()`，但这不等于完整回滚；共享对象、离线和旧集合项的限制仍然存在。删除、导出、设置默认等动作还要核对当前选中的行与过滤后的显示索引，见[模板宿主选择规则](./template-management.md#搜索后的显示位置不总是源位置)。数据库操作出现异常时应先核对已写入的记录，不能假设整批都没有生效。
 
 ## 常见模板标识与结果版本
 
@@ -140,7 +138,5 @@ JSON 模板将一条参数保存为数据库 `ModMasterModel.JsonVal`，由 `ITe
 同名算法可同时存在 JSON 与强类型模板。结果显示失败时，沿实际模板、MQTT 事件名、结果 `Version`、`ViewHandle*.CanHandle1` 逐项检查；Schema 索引中的版本不是结果 handler 的匹配条件。结果发现与分发统一见[结果处理链](../../engine-components/result-handoff-chain.md)。
 
 ## 验证入口与缺口
-
-测试可以通过 `JSON_EDITOR_PREVIEW_DIR` 输出鬼影 Schema 默认参数的浅色、深色和窄窗口 WPF 渲染图。
 
 本地示例和内存参数验证不替代真实数据库保存后重新读取、默认字典查询或算法执行。Schema 交付另核对 Code、索引、实际文件、程序集资源名及无 Schema 回退；导入导出需比较有效载荷和目标字典身份，结果链需实际事件/版本样本。

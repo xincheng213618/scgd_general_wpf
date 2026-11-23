@@ -146,7 +146,7 @@ cv::Mat ConvertToGrayFloat(const cv::Mat& input)
     return output;
 }
 
-cv::Mat BuildSignedResponse(const cv::Mat& gray, PatternPolarity polarity)
+cv::Mat BlurBackground(const cv::Mat& gray)
 {
     const double sigma = std::clamp(
         std::min(gray.rows, gray.cols) * 0.012,
@@ -154,6 +154,11 @@ cv::Mat BuildSignedResponse(const cv::Mat& gray, PatternPolarity polarity)
         32.0);
     cv::Mat background;
     cv::GaussianBlur(gray, background, cv::Size(), sigma, sigma, cv::BORDER_REPLICATE);
+    return background;
+}
+
+cv::Mat BuildSignedResponse(const cv::Mat& gray, const cv::Mat& background, PatternPolarity polarity)
+{
     cv::Mat residual = polarity == PatternPolarity::Dark
         ? background - gray
         : gray - background;
@@ -502,6 +507,7 @@ bool SampleAxis(
     const cv::Point2d& coarseCenter,
     const cv::Point2d& direction,
     const PatternCrossConfig& config,
+    double minimumPeak,
     AxisFit& fit)
 {
     const cv::Point2d normal(-direction.y, direction.x);
@@ -514,14 +520,8 @@ bool SampleAxis(
             std::min(response.rows, response.cols) * 0.22),
         std::min(response.rows, response.cols) * 0.46);
     const double step = std::clamp(config.minArmLengthPixels / 24.0, 2.0, 8.0);
-    cv::Scalar mean;
-    cv::Scalar standardDeviation;
-    cv::meanStdDev(response, mean, standardDeviation);
-    const double minimumPeak = std::max(
-        config.minContrast * 0.20,
-        mean[0] + standardDeviation[0] * 0.30);
-
     std::vector<AxisSample> samples;
+    std::vector<double> profile(2 * normalHalfWidth + 1);
     std::array<int, 2> attemptsWithinRequired{};
     std::array<int, 2> validWithinRequired{};
     for (int side = 0; side < 2; ++side) {
@@ -534,12 +534,11 @@ bool SampleAxis(
                 || base.y >= response.rows - normalHalfWidth - 1) break;
             if (distance <= config.minArmLengthPixels + centerGap) attemptsWithinRequired[side]++;
 
-            std::vector<double> profile;
             double peak = 0.0;
             for (int offset = -normalHalfWidth; offset <= normalHalfWidth; ++offset) {
                 const cv::Point2d point = base + normal * offset;
                 const double value = BilinearSample(response, point.x, point.y);
-                profile.push_back(value);
+                profile[offset + normalHalfWidth] = value;
                 peak = std::max(peak, value);
             }
             if (peak < minimumPeak) {
@@ -632,15 +631,21 @@ PatternCrossResult RefineCandidate(
         result.failureReason = "UnsupportedImage";
         return result;
     }
-    const cv::Mat response = BuildSignedResponse(gray, coarse.polarity);
+    const cv::Mat response = BuildSignedResponse(gray, BlurBackground(gray), coarse.polarity);
+    cv::Scalar mean;
+    cv::Scalar standardDeviation;
+    cv::meanStdDev(response, mean, standardDeviation);
+    const double minimumPeak = std::max(
+        config.minContrast * 0.20,
+        mean[0] + standardDeviation[0] * 0.30);
     const cv::Point2d patchCenter = fullCenter - cv::Point2d(left, top);
     const double angleRadians = coarse.angleDegrees * kDegreesToRadians;
     const cv::Point2d primaryDirection(std::cos(angleRadians), std::sin(angleRadians));
     const cv::Point2d secondaryDirection(-primaryDirection.y, primaryDirection.x);
     AxisFit primary;
     AxisFit secondary;
-    if (!SampleAxis(response, patchCenter, primaryDirection, config, primary)
-        || !SampleAxis(response, patchCenter, secondaryDirection, config, secondary)) {
+    if (!SampleAxis(response, patchCenter, primaryDirection, config, minimumPeak, primary)
+        || !SampleAxis(response, patchCenter, secondaryDirection, config, minimumPeak, secondary)) {
         result.failureReason = "InsufficientFullResolutionInliers";
         return result;
     }
@@ -806,15 +811,32 @@ PatternCrossResult FindPatternCross(const cv::Mat& image, const PatternCrossConf
 
     std::vector<CoarseCandidate> candidates;
     const double coarseStep = config.angleToleranceDegrees <= 1.0 ? 0.20 : 0.50;
-    for (PatternPolarity polarity : ResolvePolarities(config.polarity)) {
-        const cv::Mat response = BuildSignedResponse(coarseGray, polarity);
-        const double firstAngle = config.expectedAngleDegrees - config.angleToleranceDegrees;
-        const double lastAngle = config.expectedAngleDegrees + config.angleToleranceDegrees;
-        for (double angle = firstAngle; angle <= lastAngle + 1e-9; angle += coarseStep) {
-            const CoarseCandidatePair angleCandidates = EvaluateAngle(
-                response, angle, polarity, config, scale);
-            if (angleCandidates.best.valid) candidates.push_back(angleCandidates.best);
-            if (angleCandidates.second.valid) candidates.push_back(angleCandidates.second);
+    const double firstAngle = config.expectedAngleDegrees - config.angleToleranceDegrees;
+    const double lastAngle = config.expectedAngleDegrees + config.angleToleranceDegrees;
+    std::vector<double> angles;
+    for (double angle = firstAngle; angle <= lastAngle + 1e-9; angle += coarseStep) {
+        angles.push_back(angle);
+    }
+    std::vector<CoarseCandidatePair> angleCandidates(angles.size());
+    // Each angle creates a rotated response. Bound the number that can coexist
+    // when a large processing image is requested.
+    constexpr size_t alignedImageBudget = 48 * 1024 * 1024;
+    const int maxConcurrentAngles = static_cast<int>(std::clamp(
+        alignedImageBudget / (coarseGray.total() * coarseGray.elemSize()), size_t(1), size_t(8)));
+    {
+        const cv::Mat background = BlurBackground(coarseGray);
+        for (PatternPolarity polarity : ResolvePolarities(config.polarity)) {
+            const cv::Mat response = BuildSignedResponse(coarseGray, background, polarity);
+            cv::parallel_for_(cv::Range(0, static_cast<int>(angles.size())), [&](const cv::Range& range) {
+                for (int index = range.start; index < range.end; ++index) {
+                    angleCandidates[index] = EvaluateAngle(response, angles[index], polarity, config, scale);
+                }
+            }, maxConcurrentAngles);
+            // Preserve the serial evaluation order, including equal scores.
+            for (const CoarseCandidatePair& pair : angleCandidates) {
+                if (pair.best.valid) candidates.push_back(pair.best);
+                if (pair.second.valid) candidates.push_back(pair.second);
+            }
         }
     }
     std::sort(candidates.begin(), candidates.end(), [](const auto& left, const auto& right) {

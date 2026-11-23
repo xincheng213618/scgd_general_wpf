@@ -9,6 +9,23 @@ namespace ProjectARVRPro.Process.W255
         public List<AlgResultLightAreaModel> AlgResultLightAreaModels { get; set; } = new List<AlgResultLightAreaModel>();
 
         public List<PoiResultCIExyuvData> ViewPoixyuvDatas { get; set; } = new List<PoiResultCIExyuvData>();
+
+        internal W255TestResult CreateObjectiveResult() => new W255TestResult
+        {
+            PoixyuvDatas = PoixyuvDatas,
+            HorizontalFieldOfViewAngle = HorizontalFieldOfViewAngle,
+            VerticalFieldOfViewAngle = VerticalFieldOfViewAngle,
+            DiagonalFieldOfViewAngle = DiagonalFieldOfViewAngle,
+            LuminanceUniformity = LuminanceUniformity,
+            ColorUniformity = ColorUniformity,
+            ColorCenterRmsToD65 = ColorCenterRmsToD65,
+            CenterCorrelatedColorTemperature = CenterCorrelatedColorTemperature,
+            CenterLunimance = CenterLunimance,
+            CenterCIE1931ChromaticCoordinatesx = CenterCIE1931ChromaticCoordinatesx,
+            CenterCIE1931ChromaticCoordinatesy = CenterCIE1931ChromaticCoordinatesy,
+            CenterCIE1976ChromaticCoordinatesu = CenterCIE1976ChromaticCoordinatesu,
+            CenterCIE1976ChromaticCoordinatesv = CenterCIE1976ChromaticCoordinatesv
+        };
     }
 
     public class W255TestResult : ViewModelBase

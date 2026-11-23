@@ -4,8 +4,7 @@ knowledge_type: "topic"
 status: "current"
 summary: "主窗口菜单、搜索、状态栏与工作区装配；Windows 11 使用紧凑主窗口，Windows 10 保持原生窗口。"
 aliases: ["主窗口","菜单不见了","搜索框消失","工作区","MainWindow","CompactMainWindow","MainWindowFactory","紧凑主窗口","紧凑标题栏","标题栏合并菜单","标题栏更多","标题栏按钮位置","标题栏图标颜色","Windows build 22000","MainWindowActionButtonStyle","TitleBarActionForeground","TitleBarActionInactiveForeground","最大化闪烁","还原闪烁","CompactTitleBarChrome","CompactTitleBarLayout","CompactTitleBarActions","AvalonDock","VS2026","停靠标题","文档标签","固定选项卡","固定标签","图钉","DocumentTabPinManager","浮动窗口主题","浮窗最大化","停靠导航器","停靠预览","工具面板三段色","标题右键菜单","菜单整行点击","标签栏空白背景","文档标签溢出","当前标签不可见","StableDocumentPaneTabPanel","设备控制滚动条","单工具面板空白","ToolTabStrip","工具标题命令","IDockPanelTitleActionProvider","DockPanelTitleAction","新手引导","界面导览","产品导览","首次欢迎","NewUserGuideOverlay","HasShownNewUserGuide"]
-code_paths: ["ColorVision/MainWindow.FullScreen.cs","ColorVision/MainWindow.xaml","ColorVision/MainWindow.xaml.cs","ColorVision/MainWindow.NewUserGuide.cs","ColorVision/Guidance","ColorVision/MainWindow.Hotkeys.cs","ColorVision/CompactMainWindow.cs","ColorVision/MainWindowFactory.cs","ColorVision/StartWindow.xaml.cs","ColorVision/MainWindowConfig.cs","ColorVision/Windowing/CompactTitleBarChrome.cs","ColorVision/Windowing/CompactTitleBarVisibilityGuard.cs","ColorVision/Windowing/CompactTitleBarLayout.cs","ColorVision/Windowing/CompactTitleBarActions.cs","ColorVision/Themes/AvalonDockTheme.cs","UI/ColorVision.Solution/Themes/AvalonDockTheme.cs","UI/ColorVision.Solution/Themes/AvalonDockModernLight.xaml","UI/ColorVision.Solution/Themes/AvalonDockModernDark.xaml","UI/ColorVision.Solution/Themes/AvalonDockModernTemplates.xaml","UI/ColorVision.Solution/Themes/AvalonDockGripTemplates.xaml","UI/ColorVision.Solution/Themes/DockingSurfaceBorder.cs","UI/ColorVision.Solution/Themes/DockingTabBorder.cs","UI/ColorVision.Solution/Themes/StableDocumentPaneTabPanel.cs","UI/ColorVision.Themes/Themes/White.xaml","UI/ColorVision.Themes/Themes/Dark.xaml","UI/ColorVision.Themes/Themes/Controls/Menu.xaml","UI/ColorVision.UI/Menus","UI/ColorVision.UI/Search/ContextualFindRouter.cs","UI/ColorVision.UI/Search/SearchWindow.xaml","UI/ColorVision.UI/Search/SearchWindow.xaml.cs","UI/ColorVision.UI/Search/SearchWindowHotkeyBridge.cs","UI/ColorVision.UI/Docking/DockPanelTitleAction.cs","UI/ColorVision.UI/Display/DisPlayControlPanel.cs","UI/ColorVision.Solution/Workspace","UI/ColorVision.Solution/Workspace/DocumentTabPinManager.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/StartupFileOpenPolicyTests.cs","Test/ColorVision.UI.Tests/ContextualFindRouterTests.cs"]
+code_paths: ["ColorVision/MainWindow.FullScreen.cs","ColorVision/MainWindow.xaml","ColorVision/MainWindow.xaml.cs","ColorVision/MainWindow.NewUserGuide.cs","ColorVision/Guidance","ColorVision/Notifications","ColorVision/MainWindow.Hotkeys.cs","ColorVision/CompactMainWindow.cs","ColorVision/MainWindowFactory.cs","ColorVision/StartWindow.xaml.cs","ColorVision/MainWindowConfig.cs","ColorVision/Windowing/CompactTitleBarChrome.cs","ColorVision/Windowing/CompactTitleBarVisibilityGuard.cs","ColorVision/Windowing/CompactTitleBarLayout.cs","ColorVision/Windowing/CompactTitleBarActions.cs","ColorVision/Themes/AvalonDockTheme.cs","UI/ColorVision.Solution/Themes/AvalonDockTheme.cs","UI/ColorVision.Solution/Themes/AvalonDockModernLight.xaml","UI/ColorVision.Solution/Themes/AvalonDockModernDark.xaml","UI/ColorVision.Solution/Themes/AvalonDockModernTemplates.xaml","UI/ColorVision.Solution/Themes/AvalonDockOverlayTemplates.xaml","UI/ColorVision.Solution/Themes/DockingGuideCanvas.cs","UI/ColorVision.Solution/Themes/DocumentTabCaption.cs","UI/ColorVision.Solution/Themes/AvalonDockGripTemplates.xaml","UI/ColorVision.Solution/Themes/FloatingWindowFrame.cs","UI/ColorVision.Solution/Themes/FloatingDocumentCaption.cs","UI/ColorVision.Solution/Themes/AutoHideTabOpenConverter.cs","UI/ColorVision.Solution/Themes/DockingSurfaceBorder.cs","UI/ColorVision.Solution/Themes/DockingTabBorder.cs","UI/ColorVision.Solution/Themes/StableDocumentPaneTabPanel.cs","UI/ColorVision.Themes/Themes/White.xaml","UI/ColorVision.Themes/Themes/Dark.xaml","UI/ColorVision.Themes/Themes/Controls/Menu.xaml","UI/ColorVision.UI/Menus","UI/ColorVision.UI/Search/ContextualFindRouter.cs","UI/ColorVision.UI/Search/SearchWindow.xaml","UI/ColorVision.UI/Search/SearchWindow.xaml.cs","UI/ColorVision.UI/Search/SearchWindowHotkeyBridge.cs","UI/ColorVision.UI/Docking/DockPanelTitleAction.cs","UI/ColorVision.UI/Display/DisPlayControlPanel.cs","UI/ColorVision.Solution/Workspace","UI/ColorVision.Solution/Workspace/DocumentTabPinManager.cs"]
 related: ["ui.discovery","ui.menus","ui.hotkeys","ui.search","ui.status-bar","ui.solution","ui.documents","ui.themes","platform.runtime","operations.index","ui.desktop-pet"]
 ---
 
@@ -15,26 +14,32 @@ related: ["ui.discovery","ui.menus","ui.hotkeys","ui.search","ui.status-bar","ui
 
 主窗口首次启动的默认尺寸为 `1920 × 1280` WPF 逻辑单位，固定最小尺寸为 `800 × 600`，普通窗口与紧凑主窗口共用，不提供最小尺寸配置项。启用“启动时恢复窗口布局”时优先恢复已保存的尺寸、位置和窗口状态；恢复尺寸受相同最小值约束，没有有效保存尺寸时使用默认值，并适配到屏幕工作区域。
 
+默认停靠布局左侧显示设备控制，中间显示工作流程和已注册的设备视图。可从“视图”打开解决方案资源管理器、日志和 Copilot，或选择“重置窗口布局”恢复默认布局。
+
+底部状态栏随当前文档显示操作和信息。工作流程页显示当前已加载的流程名称和“执行流程”，运行时显示与流程页一致的进度。相机页显示当前图像的尺寸、通道和位深，选中其他文档或清除图像后更新状态栏。
+
+点击主窗口状态栏最右侧的铃铛，或选择“视图 → 通知”，可打开通知面板。首次打开时面板停靠在右侧。可用标题栏图钉在固定和自动隐藏之间切换，自动隐藏时从右侧竖排“通知”标签展开，关闭后也可从原入口重新打开。当前显示“总数为 0”和空状态，“全部消除”保持禁用，尚未接入通知来源。
+
 ## 可见现象与实现入口
 
 | 现象或行为 | 当前实现与检查点 |
 | --- | --- |
-| 主窗口布局 | `ColorVision/MainWindow.xaml` 定义菜单区、停靠区和状态栏；工作区内容由具体编辑器和扩展提供。设备控制列表宿主不另加顶部外边距，项目间距由显示控件装配层统一放在每项下方；“新建分组”与停靠窗格顶部的原生命令对齐，不再占用滚动内容底部或底部工具标签 |
-| 首次认识界面 | 新配置在主窗口首次渲染并完成基础装配后显示一次欢迎卡片；开始后依次聚焦顶部菜单、左侧设备/解决方案面板、活动工作区和底部状态栏。左侧步骤说明“设备控制”与“解决方案资源管理器”共用面板并可从底部切换。导览不自动执行命令、不等待业务任务，也不修改流程或控制设备；退出后可从“帮助 → 界面导览”直接重新开始 |
+| 主窗口布局 | `ColorVision/MainWindow.xaml` 定义菜单区、停靠区和状态栏。编辑器和扩展提供工作区内容 |
+| 首次认识界面 | 新配置在主窗口首次渲染并完成基础装配后显示一次欢迎卡片；开始后依次聚焦顶部菜单、左侧设备控制、活动工作区和底部状态栏。左侧步骤说明可从“视图”菜单打开解决方案资源管理器。导览只介绍界面位置和用途 |
 | 桌面宠物的显示与素材 | `MainWindowConfig.OpenFloatingBall` 控制独立窗口，启用、选择和创建入口见[桌面宠物](../../04-api-reference/ui-components/desktop-pet.md) |
 | 查找功能或当前内容 | Ctrl+Shift+P 打开应用搜索；Ctrl+F 按当前内容分流到局部查找或应用搜索 |
 | 搜索存在但找不到候选或执行不符合预期 | `MainWindow.Hotkeys.cs` 负责承载与聚焦；Ctrl+F 是场景查找，先交给当前内容，没有局部查找的普通页面才打开应用搜索。候选来源、排序、类型开关和执行检查归[产品搜索](../../04-api-reference/ui-components/search.md)，不是宿主布局问题 |
 | 菜单提示了组合键但按键无响应 | `LoadHotKeyFromAssembly()` 独立接入[快捷键注册](../../04-api-reference/ui-components/hotkeys.md)；提示文字不创建注册，先核对具体宿主与模式 |
 | 菜单不出现 | `MenuManager.LoadMenuForWindow(MenuItemConstants.MainWindowTarget, Menu1)` 为宿主装配菜单；按[菜单契约](../../04-api-reference/ui-components/menus.md)核对类型缓存、目标窗口、父子可达性和显示过滤，命令检查另行判断 |
 | 文档或面板位置不对 | 主窗口给 `WorkspaceManager` 设置布局对象，再挂接 `DockViewManagerHost`；文档分发和布局持久化属于 Solution 工作区 |
-| 固定文档标签 | 选中或悬停标签后点击图钉，或右键选择“固定选项卡”；标签进入当前文档窗格最前方的固定组，实心图钉常驻且继续保留关闭按钮。取消固定后移到固定组末尾之后 |
+| 固定文档标签 | [图钉、右键菜单和固定状态](#停靠外观与主题边界) |
 | 关闭标签不应清空图像 | `MenuClose.CloseDocumentCommand` 只在活动 LayoutDocument 允许关闭时调用其 Close，沿用未保存确认；不把 ApplicationCommands.Close 的图像清空语义当作关标签 |
 | 状态栏缺项或显示旧状态 | 首次渲染后后台优先级调用 `StatusBarManager.Init`，活动文档变化转给 `OnActiveDocumentChanged`；按[状态栏契约](../../04-api-reference/ui-components/status-bar.md)分开查实例缓存、绑定值和文档快照，不把显示状态当成设备完成证明 |
 | 窗口已显示但某个模块未就绪 | `LoadIMainWindowInitialized` 按 `Order` 调用扩展初始化并记录启动阶段；主窗口出现不等于所有扩展完成初始化 |
 
 ## 界面导览
 
-主窗口使用 `NewUserGuideOverlay` 提供轻量界面导览。自动导览由 `MainWindowConfig.HasShownNewUserGuide` 布尔值控制：程序在首帧后显示欢迎卡片之前先把它设为 `true`，确认保存成功后才显示，并记录配置路径和节名。主程序保存到 `ColorVision.MainWindowConfig`，Spectrum 保存到 `Spectrum.MainWindowConfig`；读取旧短键的兼容规则见[配置持久化](../../04-api-reference/ui-components/configuration.md)。后续启动和正常升级不再自动显示。重置主窗口偏好会清除新旧配置节并重置该状态；“帮助 → 界面导览”入口始终保留，手动打开时直接进入第一步，不再显示欢迎卡片，也不修改自动展示状态。
+主窗口使用 `NewUserGuideOverlay` 提供轻量界面导览。自动导览由 `MainWindowConfig.HasShownNewUserGuide` 布尔值控制：程序在首帧后显示欢迎卡片之前先把它设为 `true`，确认保存成功后才显示，并记录配置路径和节名。主程序保存到 `ColorVision.MainWindowConfig`，Spectrum 保存到 `Spectrum.MainWindowConfig`；读取旧短键的兼容规则见[配置持久化](../../04-api-reference/ui-components/configuration.md)。重置主窗口偏好会清除新旧配置节，并在下次启动时重新展示欢迎卡片。
 
 导览步骤只提供“上一步/下一步”和界面说明，不把点击高亮区域当作完成条件。遮罩由目标四周的独立区域组成，高亮孔内仍可点击原控件；目标因布局或可见性无法解析时，退化为全屏遮罩和居中说明，不阻止退出。当前步骤仅定位主窗口视觉树中的稳定区域，不跨 AvalonDock 浮动窗口、右键菜单、下拉弹层或其它独立窗口。
 
@@ -48,83 +53,39 @@ related: ["ui.discovery","ui.menus","ui.hotkeys","ui.search","ui.status-bar","ui
 
 `SetWindowFull` 把 `IFullScreenState.IsFull` 与 `WindowFullScreenSession` 连接起来；一个宿主只注册一次，重复状态通知不覆盖原窗口快照，关闭后解绑。紧凑 chrome 同时监听共享全屏状态，在更改窗口样式前暂停，恢复窗口后重挂。图像预览有键盘焦点或鼠标位于图像预览内时，F11 优先进入图像全屏；主窗口在按键冒泡阶段处理剩余的 F11。全屏期间的退出键由当前最内层会话统一处理，详见[图像全屏与恢复](../../04-api-reference/ui-components/ColorVision.ImageEditor.md#图像全屏与恢复)。
 
-真实浮层点击、混合 DPI、多屏切换和生产工作区还需交互验证。
-
 ## 紧凑主窗口与标题栏
 
 主窗口按系统版本选择：Windows 11（build 22000 或更高版本）使用紧凑主窗口，Windows 10 使用普通原生窗口。紧凑主窗口保留系统按钮和原生外边框，把主窗口菜单和右侧入口放进原标题栏的高度范围，为工作区留出更多垂直空间。
 
-`StartWindow` 在无 `--feature` 或未找到匹配功能时调用 `MainWindowFactory.Create()`。工厂使用与标题栏控制器相同的系统版本门禁：低于 build 22000 时直接创建 `MainWindow`，通过门禁时创建 `CompactMainWindow : MainWindow`。已经匹配的 `IFeatureLauncher` 路径不变。普通 `MainWindow` 的公开构造函数始终走原生外观。派生窗口调用受保护的基类构造函数复用 `MainWindow.xaml` 和初始化代码，再附加紧凑外观；没有第二份工作区 XAML，也不再次调用 `InitializeComponent`。菜单、状态栏、快捷键、文档和布局服务仍沿用同一套实现，不同时创建两个主窗口。
+启动从 `MainWindowFactory` 选择普通窗口或紧凑窗口。专用 `IFeatureLauncher` 保留自己的入口。紧凑窗口复用原主窗口的工作区、菜单、状态栏与文档服务，不创建第二个工作区。
 
-系统版本门禁通过后，工厂构造 `CompactMainWindow`。它在 `SourceInitialized` 已取得 HWND 后调用 `CompactTitleBarChrome.TryAttach`；控制器再次检查 build 22000 门禁，作为直接构造该类型、测试或启动状态变化时的二次防御，而不是依赖工厂成为唯一保护。控制器还要求 DWM 合成已启用的普通 `SingleBorderWindow`，不接管已有 `WindowChrome`、`AllowsTransparency=true` 或无边框窗口。通过工厂启动的低版本不会先构造 `CompactMainWindow` 再回退；版本已支持但其它条件不满足，或初始化抛出异常时，才在同一个 `CompactMainWindow` 实例恢复原生外观并写入日志，不重新构造 `MainWindow`，避免重复初始化全局工作区和快捷键。窗口类型为 `CompactMainWindow` 不等于本次已经附加成功；DWM 属性请求的返回码不作为逐项视觉生效证明，仍需检查实际外观。
+`CompactTitleBarChrome` 在取得 HWND 后检查 Windows 版本、DWM 和原生边框条件。系统版本过低直接使用普通窗口，已构造的紧凑窗口附加失败时在同一实例恢复原生外观并记录日志。窗口类型和 DWM 属性返回码不足以判断实际附加效果，应查看日志及窗口外观。
 
-紧凑外观复用 `Menu1`、`IRightMenuItemProvider` 入口及菜单命令，不改造 `BaseWindow`、关于窗口、搜索窗口或 AvalonDock 浮动窗口。标题栏只把菜单、更新入口、右侧按钮和“更多”标为客户区命中；空白区域交给 `WindowChrome` 的非客户区处理。附加成功后显示宽度为 120 DIP 的 `CompactDragRegion`，以 `GlobalBackground` 和更高绘制层级保留顶层不透明留白，阻止菜单或通知越界占用拖动命中区；保留 WPF 命中并将 `WindowChrome.IsHitTestVisibleInChrome` 设为 false，明确交给原生标题栏处理，而非把命中穿透给底下控件。菜单容器裁切越界绘制，系统按钮还有独立透明占位。最小化、最大化/还原、关闭按钮保留 DWM 绘制与命中，不以 WPF 按钮仿制；按钮占位按窗口 DPI 与可取得的 DWM 边界计算。实际 Snap 菜单、双击、拖动及键盘系统菜单仍需真机验收。
+紧凑标题区保留系统绘制的最小化、最大化、关闭按钮，空白留作系统拖动区。标题栏配色跟随实际主题和激活状态。窗口与任务栏优先使用客户包图标，默认使用 `ColorVision1.ico`。菜单或右侧入口仍调用原命令。 [窗口主题与图标](../../04-api-reference/ui-components/ColorVision.Themes.md#窗口外观与生命周期)
 
-右侧下载、第三方应用、账户等快捷入口共用 `MainWindowActionButtonStyle`：普通 `RightMenuItemPanel` 的隐式按钮样式和 `CompactTitleBarActionButtonStyle` 均基于它。默认图标使用 `TitleBarActionForeground`（浅色 `#303030`、深色 `#D8D8D8`），所属窗口非活动时使用 `TitleBarActionInactiveForeground`（`#808080`）；悬停、按下或获得键盘焦点时恢复 `GlobalTextBrush`，同时保留轻量状态背景、键盘焦点边框和完整点击区域。画刷由 `White.xaml` / `Dark.xaml` 动态提供；`NormalizeRightMenuIcon` 让文本字形绑定祖先按钮的 `Foreground`，使普通与紧凑窗口使用同一套状态配色。图片与 `Viewbox` 只统一尺寸，不将位图内容当作可换色字形。
+变窄时，右侧快捷入口先收入“更多”，随后折叠更新文字并以蓝点、提示与辅助功能名称保留更新提醒。恢复宽度后重新显示。更新状态由 `CombinedUpdateCoordinator` 提供，布局折叠不改变该状态。左侧主菜单没有对应的溢出导航。
 
-快捷入口字形尺寸为 15 DIP；普通 `MainWindow` 的按钮保留 20 DIP 宽度，紧凑外观使用 32×28 DIP 的平面按钮。共同的 `CreateRightMenuButton` 将 provider 的 `Header` 用作 ToolTip 和辅助功能名称，不因紧凑样式更换业务命令。紧凑外观下，可用宽度足够时，快捷入口和待更新文字全部显示；宽度不足时，先把快捷入口收进 `CompactActionsOverflowButton`（“更多”），保留可容纳的更新文字；更窄时更新文字也收进“更多”，并用 `CompactUpdateBadge` 蓝点、包含更新提示的 ToolTip 和辅助功能名称提醒。窗口变宽后恢复相应入口。右侧快捷入口与更新有溢出菜单，左侧主菜单仍没有溢出导航，不承诺极窄窗口仍能完整显示全部主菜单。
+标题区透明层和工作区不透明背景分别维护，避免遮住 DWM 按钮。紧凑路径在全屏时暂停 chrome，退出后恢复。普通窗口与回退路径保留原工作区边距、主题和窗口位置策略。
 
-内部辅助类 `CompactTitleBarActions` 为“更多”生成菜单：快捷项绑定原按钮的 `Command`、`CommandParameter`、`CommandTarget` 和 `IsEnabled`；命令目标为空时以原按钮作为目标。有待更新内容时，菜单用原更新按钮文字生成更新项，复用该按钮的 `Click` 管线，不另造下载或更新逻辑。更新可用性取自 `CombinedUpdateCoordinator.HasPendingStartupUpdate`，不以更新文字是否因布局折叠作为业务状态。
-
-快捷入口组紧靠右侧系统按钮占位，空间不足时由同位置的“更多”替代。120 DIP 拖动留白位于快捷入口组左边，不隔在快捷入口与最小化、最大化/还原、关闭按钮之间。DockPanel 先分配“更多”和快捷入口，再分配拖动区；各自有独立绘制层级，避免极窄布局中较长菜单覆盖右侧按钮。
-
-紧凑标题栏附加成功后，`CompactMainWindow.SetCompactHeaderAlignment` 将 `Menu1` 和“发现更新”按钮使用同一条光学对齐规则：在标题行内部垂直居中，并在各自原上外边距基础上增加 4 DIP，使两者可见中心都相对居中位置下移约 2 DIP；不通过修改工作区外边距补偿文字位置。它分别保存菜单和更新按钮的原外边距与垂直对齐，失败回退和全屏模式恢复原值，退出全屏后再接回紧凑对齐。普通 `MainWindow` 不应用该调整。
-
-窄栏的宽度判断集中在内部辅助类 `CompactTitleBarLayout`，由 `CompactMainWindow` 和隔离的真实 XAML 布局测试共用。它测量菜单、拖动区、快捷入口、待更新文字和“更多”的自然期望宽度；已折叠元素在测量期间暂用 Hidden，随后恢复，不依赖其零宽度或当前分配宽度判断能否显示。待更新状态独立传入，所以窗口变宽即可恢复被布局隐藏的提示，无需等待下一次更新事件；异步提示变化也使用同一套规则，不另加高频 Render 循环。
-
-标题区延伸采用仅顶部的 `WindowChrome.GlassFrameThickness`，不启用全窗模糊、Acrylic 或透明分层窗口。附加期间 `Window.Background` 临时为 Transparent，但 `AllowsTransparency` 保持 false；`Root`、顶栏容器和系统按钮占位不覆盖 DWM 按钮，菜单区域、停靠管理器和状态栏分别用 `GlobalBackground` 保持内容不透明。`CompactTitleBarChrome` 监听窗口背景属性变化，在紧凑模式下同步恢复透明值：WPF 属性或资源失效可能清除 `SetCurrentValue` 的覆盖值，且不一定触发主题变化事件，仅在 `ApplyTheme` 中恢复会使最小化、最大化/还原、关闭按钮被不透明背景遮住。该监听在全屏时暂停保护，释放时解除，保留原动态资源在全屏和原生回退后的更新能力，不使用逐帧轮询。紧凑路径把 `DockingManager1.Margin` 从普通窗口的 `-2,-3,-2,-2` 改为 0，隔开工作区与玻璃标题区，防止负外边距使内容绘制覆盖系统按钮；原生回退时恢复普通外边距，全屏保持 0。
-
-颜色由捕获的 `ThemeManager.CurrentUIThemeChanged` 驱动并切回 UI 线程；紧凑路径不并行运行普通 `ApplyCaption`，避免后者重置其标题色。窗口与任务栏图标通过公共只读辅助方法 `ThemeManagerExtensions.TryLoadPackageIcon` 读取并缓存，优先保留包图标；没有包图标时才按实际主题选用默认深浅图标。紧凑标题栏不重复绘制软件图标，菜单直接从标题栏左侧开始；窗口图标与任务栏图标仍按原有主题和客户包图标逻辑设置。详见[窗口主题与图标](../../04-api-reference/ui-components/ColorVision.Themes.md#窗口外观与生命周期)。外边框使用 DWM 默认颜色，不把窗口是否激活绑定到内部文档的选中或活动状态。控制器复用同一个 `WindowChrome`，普通最大化/还原时同步调整客户区内缩，不在下一轮 Loaded 后再改内容边距；标题高度、DPI 或系统设置变化仍合并刷新相关尺寸，不在普通位置变化时重建窗口或模板。窗口状态变化不重复写入 DWM 主题属性；这些实现约束不等于已测得生产工作区性能无退步。
-
-在相同 DPI 与标题内容高度下，最大化/还原共用稳定的 `GlassFrameThickness.Top` 和 `CaptionHeight` 上界。改变这两个属性会让 WPF 重算非客户区并触发 `SWP_FRAMECHANGED`，因此不能随着普通/最大化的客户区内缩反复变化。普通窗口中，上界超出真实标题下沿的窄条属于工作区：控制器仅对此窄条的 `WM_NCHITTEST` 返回 `HTCLIENT`，并排除左右缩放边缘；真正标题留白、系统按钮和其余缩放行为继续交给 `WindowChrome`/DWM。全屏暂停时不做窄条修正，恢复 chrome 后重新建立 hook 顺序。边框重复刷新、内容布局次数和 GPU 实际黑帧是不同指标，消息计数下降不等于所有设备上的动画或黑帧已经验收通过。
-
-`WindowChromeWorker` 更新系统菜单时会临时清除、恢复 `WS_VISIBLE`，包括最大化的 `WM_SIZE` 与状态改变的 `WM_WINDOWPOSCHANGED`；这与窗口尺寸消息次数是不同路径，可能干扰 DWM 过渡画面。`CompactTitleBarVisibilityGuard` 用当前 HWND、当前 UI 线程的 subclass 回调，仅在预期系统菜单更新的直接调用帧内，阻止一次只清除 `WS_VISIBLE` 的样式修改；不吞掉尺寸消息、系统命令或菜单更新。普通同状态缩放没有拦截额度；真实 `WM_SHOWWINDOW(false)` / `SWP_HIDEWINDOW` 撤销在途额度，WPF `Hide()` 与原生 `ShowWindow(SW_HIDE)` 仍可执行。它不处理改标题/图标的显隐路径，不改变 DWM 动画设置或 `WM_NCCALCSIZE` 返回值。该规避针对 .NET 10 `WindowChromeWorker` 的消息顺序，升级 WPF 时需重跑显隐、菜单状态与生命周期测试；不能当作所有第三方原生 hook 都兼容的保证。
-
-全屏由 `SetWindowFull` 连接共享会话控制窗口样式与状态。紧凑窗口先注册自己的配置处理器，再注册该共享全屏处理器：进入前暂停 chrome 和显隐保护，恢复普通标题行尺寸与按钮占位，工作区外边距保持 0，并隐藏拖动区；退出并恢复原样式后，通过 Dispatcher 在 Loaded 优先级接回同一 chrome 实例，并同步显隐保护的菜单状态。关闭取消时不提前拆除 chrome；真正 `Closed` 后解除所捕获配置对象和主题管理器上的订阅，并释放窗口 hook 与 subclass；原生 `WM_NCDESTROY` 也清理 subclass。显隐保护附加失败时回退普通外观。窗口位置保存与恢复仍沿用 `WindowConfig`，没有另建一套 DPI 或屏幕布局持久化规则。
-
-共享全屏会话通过无边框普通状态与完整显示器像素矩形定位，避免沿用最大化的任务栏工作区；从最大化进入后，退出仍恢复最大化。菜单属于应用内容，保留可见与点击能力，不随原生标题栏一起隐藏。
+为减少最大化和还原时的闪烁，紧凑窗口保持原生标题尺寸稳定，仅修正超出真实标题下沿的狭窄命中区。 `CompactTitleBarVisibilityGuard` 只在预期系统菜单更新期间保护短暂的可见位变化，用户或业务主动隐藏窗口仍生效。该规避依赖当前 WPF 消息顺序，升级 WPF 时复核系统菜单、全屏和显隐行为。真正关闭后清理订阅与原生 hook。
 
 ## 独立搜索窗口与焦点
 
-`SearchWindow` 是承载 `SearchControl` 的独立 WPF `Window`，不是主窗口内浮层。初始大小为 720×560，最小 420×320；使用 `SingleBorderWindow` 标准标题栏、`CanResize` 和 `CenterOwner`，可直接拖动、调整大小。主窗口设置 `Owner=this`，以非模态 `Show()` 打开，`ShowInTaskbar=false`，不阻止继续操作主窗口。构造或显示窗口本身不查询候选，宿主随后显式调用 `Open` 开始会话。
-
-两项搜索快捷键复用同一个尚未关闭的窗口，重复打开激活并聚焦原输入框，保留查询与原命令目标；已最小化时先恢复。关闭后清除宿主引用，下次才创建新窗口。入口保存当前内容焦点和原活动文档，焦点位于菜单时读取主窗口焦点域记住的内容，不能改为任意活动文档。
-
-点击外部、搜索窗口失焦或主窗口移动/缩放不会关闭搜索。Esc、标准标题栏关闭按钮或提交结果结束搜索会话；主窗口关闭通过 WPF Owner 关系一并关闭搜索窗口。`Closed` 取消当前查询、释放键位桥接。仅在主窗口仍活动、原活动文档与宿主记住的焦点均未改变，且原目标仍在宿主中可用时恢复焦点；用户切到文档 B 后不抢回 A。原内容隐藏或文档已切换时，旧 RoutedCommand 结果被拒绝，不改发给新文档；普通应用命令不受这项文档检查限制，详见[搜索执行契约](../../04-api-reference/ui-components/search.md)。
-
-搜索窗口活动时主窗口通常不活动，`SearchWindowHotkeyBridge` 因此检查搜索窗口自身活动状态，只将当前已注册、属于主窗口的两项应用内搜索动作组合映射为“聚焦已有窗口”。它不执行任意其他业务回调，忽略 IME 占位键、消费重复按键，并沿用快捷键录入/尾键门禁；当前配置清空、改绑、未注册或属于其他宿主时不会用硬编码组合补回。两窗均不活动时入口不主动激活应用，即使动作被配置为系统全局键也一样。搜索仍打开但焦点回到主窗口内容时，Ctrl+F 仍优先局部查找；标准命令、Copilot 适配及原生 Ctrl+F 保留规则归[快捷键](../../04-api-reference/ui-components/hotkeys.md)。
+`MainWindow.Hotkeys.cs` 为应用搜索提供独立的 `SearchWindow`。重复打开会复用窗口和查询，Esc 结束会话。候选、命令目标、焦点恢复与快捷键转接见[产品搜索](../../04-api-reference/ui-components/search.md)。
 
 ## 停靠外观与主题边界
 
-工作区使用 AvalonDock 4.74.1，停靠标题、文档标签和工具面板边框采用参考 VS2026 的深浅色外观：中性背景、圆角标签与面板、紫色活动边框。文档标题继承标签前景色，长标题省略；普通未选中标签为图钉和关闭按钮保留位置，悬停不改变标签宽度。工具面板只剩一个标签时不显示底部标签栏；多个标签时，选中标签沿面板轮廓向下延伸，而不是在标签下画独立下划线。`MainWindow.xaml` 的停靠管理器默认使用外边距 `-2,-3,-2,-2`，仅成功附加紧凑标题栏时由 `CompactMainWindow` 设为 0；背景动态引用 `GlobalBackground`。除固定动作外，停靠视觉状态本身不改变模型、布局持久化、启动配置或业务命令。
+点击文档标签的图钉，或右键选择“固定选项卡”。`DocumentTabPinManager` 将固定标签排在同一窗格前方，阻止拖动或浮动，关闭仍走文档确认。取消固定后恢复原拖动能力。固定状态只跟随当前打开的标签，重开文档或重启后须重新固定。
 
-活动、最后聚焦或鼠标悬停的文档标签显示图钉；点击图钉或在标签右键菜单选择“固定选项卡”，`DocumentTabPinManager` 将文档移到同一 `LayoutDocumentPane` 固定组的末尾，该组始终位于普通标签之前。固定后图钉改为实心并常驻，关闭按钮仍按原 `CanClose` 规则显示和执行；文档的 `CanMove` 暂时设为 false，避免拖出或浮动。取消固定会恢复固定前的 `CanMove` 值，并把标签放到其余固定标签之后。多组文档窗格分别维护自己的固定前缀，不跨窗格重排。
+单工具页隐藏底部标签栏。文档窗格可通过 `ShowHeader` 隐藏标题行，两种情况下标签容器都要参与首次布局才能显示选中内容。长文档名在标签中间省略，保留首尾及扩展名。标签放不下时，右端箭头上方出现短线；菜单显示完整标题并勾选当前页。切换标签保留文档顺序。实例和布局恢复见[文档生命周期](../../04-api-reference/ui-components/editor-document-lifecycle.md#停靠注册、布局恢复和重置)。
 
-固定状态只跟随当前打开的 `LayoutDocument` 实例，不写入 `MainWindowDockLayout.xml`，关闭后重新创建标签或重启应用不会自动恢复固定状态。固定也不绕过关闭确认：图钉旁的关闭按钮、Ctrl+W 和右键关闭仍走原文档关闭管线。
+文档标签栏的空白处右键作用于当前选中文档。拖动浮窗时，命中的停靠格从灰色变为蓝色，半透明蓝色区域显示松手后的布局。独立文档窗口显示宿主图标与当前文件名，宽度足够时加上宿主名称。同窗分屏时，标题跟随本窗最近激活的文档。浮窗和分离窗口最大化时，标题与内容位于当前显示器的工作区内。
 
-单工具页通过将 `ToolTabStrip.Height` 设为 0 隐藏标签栏的占位，保留该容器的 Visible 状态和 `IsItemsHost` 面板参与布局，仍让 WPF 生成 `TabItem` 并建立选择绑定。不能将包含 ItemsHost 的外层设为 Collapsed：首次布局尚未生成标签容器时，模型虽已选中，控件的 `SelectedContent` 和标题仍可能为空，延迟内容也无法进入 Loaded。恢复多个工具页后标签栏重新取得正常高度。面板内容在关闭重开和布局恢复之间的实例所有权另见[停靠注册、布局恢复和重置](../../04-api-reference/ui-components/editor-document-lifecycle.md#停靠注册、布局恢复和重置)。
+自动隐藏栏用色条标出当前展开的工具页。工具标题可通过 `IDockPanelTitleActionProvider.TitleActions` 提供面板命令，例如 `DisPlayControlPanel` 的设备配置和控制管理。
 
-停靠内容控件可实现 `IDockPanelTitleActionProvider`，通过 `TitleActions` 返回零个或多个 `DockPanelTitleAction`；每项包含命令、命令参数、提示和图标。`AnchorablePaneTitle` 从当前 `LayoutAnchorable.Content` 读取该接口，把动作按返回顺序放在上方标题栏的下拉、固定、关闭按钮之前，并复用原生 24×24 DIP 按钮样式。未实现接口的内容得到空动作集合，不显示额外按钮，也不会产生缺失属性绑定错误。面板有实际配置时，在这里提供设置齿轮和明确的用途提示；没有配置时不显示占位入口，选中对象的“属性”仍属于工具栏或右键菜单。当前设备控制由 `DisPlayControlPanel` 提供 `DisPlayManager.ConfigureDevicesCommand`（`E710`，添加/配置设备）和 `DisPlayManager.ManageControlsCommand`（`E713`，管理设备控制）。命令行为及持久化由相应模块负责，主窗口仅放置内容控件；各个 `IDisPlayControl` 仍只参与内部列表装配。
+主程序与 Spectrum 共用 `UI/ColorVision.Solution/Themes/AvalonDockTheme.cs`。颜色取 `GlobalBackground`、`DockingChromeBackground` 和 `DockingSurfaceBackground`，边框和标签实现见 `DockingSurfaceBorder`、`DockingTabBorder`。主程序继续提供 `ColorVision.AvalonDockTheme`、`/ColorVision;component/Themes/` 入口及公开控件类型转发。
 
-停靠主题为管理器、工具面板模板底板、工具标题、选中底部标签和工具浮窗的标题/主体提供动态引用应用 `GlobalBackground` 的默认背景。文档标签栏单独使用 `DockingChromeBackground` 形成一整条浅灰/深灰底板，选中文档标签及内容面板继续使用 `DockingSurfaceBackground`，因此标签后的空白区不会直接透出内容或窗口背景。`MainWindow.xaml` 中的停靠管理器、状态栏和设备控制 `ScrollViewerDisplay` 外层也显式引用 `GlobalBackground`；启用紧凑标题栏时窗口背景暂为透明，业务内容仍有自己的不透明底色。颜色来源是 `UI/ColorVision.Themes/Themes/Palettes/Light.xaml` 和 `Dark.xaml` 的全局资源（旧 White/Dark 入口保留兼容），不在停靠主题中复制一份全局配色。该统一只针对停靠外壳：流程网格、图像画布、编辑器和设备卡片等内容继续保留各自的背景资源，不批量改写内容背景。
-
-文档标签最小高度为 26 DIP，内部原生标签布局最小高度为 25 DIP，标签圆角为 3 DIP；工具标签圆角仍为 4 DIP。`IsSelected` 只决定选中页的轮廓与背景，只有 `IsActive` 才给文档标签、标签栏主线和内容面板紫色边框，并令标题文字使用 `SemiBold`。焦点转到工具面板后，文档仍可保持选中及 `IsLastFocusedDocument`，但恢复中性边框和普通字重；多个文档分组也不同时强调各自选中页。这里只读取 AvalonDock 状态改变外观，不重新激活文档或抢回键盘焦点。标题字重仅设置在 `LayoutDocumentTabItem` 模板的 `DocumentHeader` 内容呈现器上，不设置整个 `TabItem` 的字重，避免右键菜单、菜单项及其他子控件继承粗体；原生菜单和命令继续复用。
-
-`DockingTabBorder` 为顶部文档标签与底部工具标签绘制同一轮廓的上下镜像：远离面板的一端为凸圆角，连接面板的两侧为凹肩，选中标签与面板接缝处不重复描边。未选中标签绘制时，在连接面板的一侧留出 1 DIP 的主线区域，启用布局舍入时按当前 DPI 舍入该厚度，防止悬停底色覆盖主线；这只裁切装饰绘制，不缩小原生标签布局或命中区，也不改变选中标签的凹肩。标签贴靠标签栏首/尾边缘时，对应一侧不再向外绘制凹肩。关闭前方相邻标签或重排可能只移动标签而不改变其尺寸，因此仅已加载且选中的真实 `TabItem` 跟踪布局事件，比对贴边状态变化后才调用 `InvalidateVisual`，不在每次布局时重绘。凹肩可以绘制到布局矩形之外，但 `HitTestCore` 将命中范围限制在自身布局矩形内，不抢相邻标签的点击。
-
-文档内容外框的顶部两角默认使用 4 DIP 圆角，标签栏主线由同一外框绘制，避免直线覆盖圆角。`StableDocumentPaneTabPanel.IsSelectedTabAtStart` 根据实际可见标签的位置更新：选中标签贴靠左边时，只取消内容外框的左上圆角，让标签与外框连续衔接；选中其他位置的标签时，露出的左上角恢复圆角。标签溢出、关闭或重排后仍按可见位置判断，不依赖文档在模型中的索引。
-
-WPF `Border.CornerRadius` 只约束边框自身绘制，不会自动裁切子内容。`DockingSurfaceBorder` 在布局时按边框厚度、内边距、DPI 与圆角计算内轮廓，只裁切模板拥有的 `ContentPresenter` 或 `Grid`，避免方形内容覆盖面板圆角；不直接改写实际编辑器的 `Clip`。尺寸或圆角变化后重新计算该裁切。标题和浮窗按钮使用 Windows 系统字体 `Segoe Fluent Icons`，以 `Segoe MDL2 Assets` 为回退，图标字号为 12 DIP；停靠标题按钮提供 24×24 DIP 命中区，工具浮窗标题高度为 32 DIP、标题按钮为 28×28 DIP，均使用透明默认背景并只在悬停/按下时显示状态底色，文档标签关闭按钮单独使用 22×22 DIP。
-
-`ColorVision.Solution.Themes.AvalonDockTheme` 是主程序与 Spectrum 共用的主题入口，实际字典和三个标签/边框控件位于 `UI/ColorVision.Solution/Themes/`。主程序保留 `ColorVision.AvalonDockTheme` 包装、旧 `/ColorVision;component/Themes/` 字典入口及公开控件的类型转发，既有调用无需改成依赖 Spectrum；Spectrum 直接引用 Solution 公共库，不依赖主程序 EXE。该入口按“VS2013 基础字典 → `AvalonDockModernLight.xaml` / `AvalonDockModernDark.xaml` 调色板 → `AvalonDockModernTemplates.xaml` 模板”合并资源。VS2013 基础仍提供停靠菜单、命令和图标，不是更换停靠引擎。现代模板内合并保留原文件名的 `AvalonDockGripTemplates.xaml`；该文件现在承载无点状握柄的工具浮动窗口模板，并先合并上游 `Generic.xaml`。不要在现代模板之后再次合并上游通用字典，否则同名浮动窗口样式可能覆盖自定义模板。
-
-上游 `DockingManager` 样式用 `StaticResource` 固定了面板样式，仅添加隐式 `TabItem` 或面板样式不能保证生效。现代管理器样式因此显式重新设置 `DocumentPaneControlStyle`、`AnchorablePaneControlStyle` 和标题模板。`AvalonDockGripTemplates.xaml` 先以唯一键 `ColorVisionBaseDockingManagerStyle` 捕获上游管理器样式，现代样式再基于此键保留整套上游菜单及其余默认 Setter，避免依赖同键查找顺序。颜色通过动态主题资源引用；模板覆盖放在 Theme 字典内，工具背景从应用全局字典取色，使独立加载主题的浮动窗口也能取得同一资源，不依靠主窗口局部资源、Loaded 后遍历修补或关闭绑定诊断。
-
-模板保留 AvalonDock 的真实标题控件、内容宿主、菜单数据上下文和关闭、隐藏、自动隐藏命令；文档图钉与标签右键菜单复用同一固定命令，不可关闭但可隐藏的工具文档仍走隐藏命令。普通工具浮窗由外层窗口绘制唯一的 1 DIP 活动边框，直接承载的工具面板不再叠加第二层轮廓，主体只保留 1 DIP 内缩；最大化后取消外边框、圆角、缩放装饰和主体内缩，使内容贴合可用区域，最大化/还原/关闭命令与底部工具标签栏仍保留。`WindowChrome` 继续提供标题命中区和 5 DIP 缩放命中范围，去掉可见缩放留白不等于取消拖动或缩放。文档浮动窗口保持原模板，自动隐藏标签等未替换的上游模板仅通过调色板协调颜色。覆盖模板来源和许可证保留在 `ColorVision/Themes/`；升级 AvalonDock 时应复核模板部件、命令和资源解析顺序。
-
-拖动文档或工具浮窗时继续使用 AvalonDock 的真实停靠目标和放置命令，只调整导航器及目标预览的主题资源。浅色导航器使用不透出底层细节的浅灰底、蓝色方向图形和深色箭头；深色导航器使用深灰底、中性灰图形和浅色箭头，避免沿用浅色蓝白外观。命中落点后两种主题都显示低透明度蓝色区域预览和清晰边线；颜色变化不改变可停靠位置、命中范围或布局结果。
-
-标题与标签的右键菜单和拖动入口使用 AvalonDock 原生 `DropDownControlArea` 与真实标题/标签控件，命中区域覆盖文字及其周围空白，而不是只让文字可点。文档标签栏在标签面板下方另放同一原生菜单承载控件：具体标签位于其上方并由标签自身处理右键，标签后的空白区则作用于当前选中文档，因此整行都有一致的菜单入口。圆角和凹肩等装饰层不参与命中，标签内边距放在真实原生标签控件内部，避免空白区域由装饰边框截获。菜单和菜单项显式使用正常字重与横向拉伸，每一项的整行空白都可点击，活动标签只加粗自己的标题文字；标题按钮仍保留各自的命令和命中区域，菜单继续使用上游资源及正确的 `LayoutItem` 数据上下文，不另造一套停靠命令或菜单模型。文档数量超过标签栏宽度时，`StableDocumentPaneTabPanel` 移动可见窗口以露出当前选中标签，但不调用布局模型的子项重排，因此切换文件不会改变固定分组或文档的逻辑顺序。
+主题按 VS2013 基础字典、深浅调色板、窗格模板、停靠指示器模板的顺序合并。`AvalonDockGripTemplates.xaml` 用 `ColorVisionBaseDockingManagerStyle` 引用上游基础样式。在现代模板之后重新合并上游通用字典可能覆盖浮窗样式。
 
 ## 故障定位顺序
 
@@ -135,20 +96,12 @@ WPF `Border.CornerRadius` 只约束边框自身绘制，不会自动裁切子内
 
 ## 验证范围
 
-从真实主窗口 XAML 提取隔离标题布局，调用 `CompactTitleBarLayout`，检查窄宽往返、异步更新提示、自动高度、分级收纳及“更多”和拖动区命中。测试不固定启动源码写法、完整 XAML 层级或包图标缓存实现。`CompactTitleBarChromeTests` 使用隔离窗口和 HWND，检查附加前提、既有 chrome 保留、原生窗口能力、主题刷新、全屏往返、关闭取消及 Dispose 后释放，不加载生产配置、工作区或设备。系统不支持紧凑标题栏时，只覆盖普通窗口分支。测试引用不表示本次已经执行。
+用目标 Windows 版本及显示器核对紧凑标题栏、原生按钮和主题刷新。系统不支持紧凑标题栏时走普通窗口分支。
 
-普通与紧凑按钮使用真实 WPF 控件检查字形继承同一 `Foreground` 画刷、默认配色随浅深主题刷新，以及离屏窗口实际 `IsActive=false` 时的非活动前景与资源刷新；悬停、按下、键盘焦点的前景恢复和覆盖非活动状态的顺序属于模板触发器契约检查。深浅主题下的实际悬停、键盘焦点、蓝点和辅助功能体验仍需视觉与真实输入验收；不应实际执行下载、登录或更新来证明布局正确。
+在深浅主题和活动或非活动状态下，用真实输入核对悬停、键盘焦点、蓝点和辅助功能。布局验收使用可见反馈，无需实际下载、登录或更新。
 
-显隐回归由 `CompactTitleBarChromeTests` 向自有 HWND 发出系统最大化/还原命令，记录实际 `WM_STYLECHANGED`，验证切换中不清除可见位，且原生系统菜单的最大化/还原可用状态正确；覆盖全屏暂停后恢复、WPF 与原生隐藏/显示、最小化，以及业务在普通缩放或最大化的 `SizeChanged` 回调中主动隐藏。只检查最终 `IsVisible=true` 不足以证明没有中途显隐。
+诊断最大化和还原时的闪烁，可查看 `WM_STYLECHANGED` 中间状态和系统菜单可用项。只看切换结束时的可见状态会漏掉过程中的显隐。
 
-启用前后的交互与性能验收应使用相同机器、显示器缩放、主题、窗口尺寸和已加载内容，分别比较普通移动、实时缩放、菜单打开、流程编辑与图像操作，而不是用空白窗口推断生产工作区。性能对照应排除 Visual Studio 调试器与 XAML Hot Reload 注入的额外工作，不能只折叠应用内调试工具栏；这并不表示所有闪烁都由调试器导致。至少检查深浅色 × 活动/非活动、最小化与恢复、最大化与还原、关闭被未保存确认取消、标题空白拖动/双击、Snap、系统菜单、窄窗口、全屏往返、多屏混合 DPI 与位置恢复、WebView2 文档，以及 AvalonDock 浮动/重新停靠。自动合约或 HWND 测试不证明这些真实输入、视觉和性能条件已经不退步；发现回归时可关闭“紧凑主窗口”并重启，回到保留的旧主窗口。
+用同一机器、显示器缩放、主题、窗口尺寸和业务内容对照启用前后的交互。排除 Visual Studio 调试器与 XAML Hot Reload 的额外开销。检查活动状态、系统菜单、Snap、窄窗口、全屏往返、多屏 DPI、位置恢复、WebView2 与浮动停靠。出现回归可关闭“紧凑主窗口”并重启。
 
-关联的 `StartupFileOpenPolicyTests` 覆盖启动文件打开策略；`AvalonDockThemeBindingTests` 在隔离合成工作区中检查主题切换不丢内容、活动/选中状态、延迟内容生命周期、真实命令菜单及绑定错误，并验证固定标签前移成组、实心图钉、关闭按钮保留、右键取消固定和原 `CanMove` 恢复。浮窗专项用例还检查普通/最大化的边框、圆角、主体内缩、标题按钮与内层工具面板轮廓，并锁定停靠导航器深浅色的差异及预览透明度；其余模板层级和接缝像素仍不作为契约。停靠外观及真实鼠标交互仍需视觉验收，合成工作区测试不启动生产主窗口或设备。
-
-单工具页回归使用真实主题与离屏 WPF 窗口，从首次布局就只有一个已选工具项开始，检查标签容器、`SelectedContent`、标题、延迟宿主 Loaded 和工厂仅创建一次；再覆盖同一管理器的 1→2→1 工具页变化与主题替换。不直接调用 `Materialize`、强设 UI 的 `SelectedIndex` 或改写测试中的标签栏属性来绕过容器生成问题。
-
-背景与命中路由的验证应加载应用实际深浅色字典，而不是只给合成内容填入与停靠模板相同的测试颜色；分别核对停靠管理器、工具面板底板、工具标题、选中底部标签及浮窗背景解析为 `GlobalBackground`，文档标签栏空白区解析为 `DockingChromeBackground`。文档选择验证应区分 `IsSelected`、`IsActive` 与 `IsLastFocusedDocument`，覆盖文档→工具→另一文档和多文档分组切换：检查真实标题文字的字重、标签/主线/面板边框及未被修改的选择状态，不通过重新激活文档满足外观断言。悬停像素验证应在不同 DPI 和选中项切换后检查主线仍连续，同时保留原有凹肩与命中边界检查。右键路由用例应从标题和标签的文字区、内边距空白区以及标签栏整行空白区分别发起，检查命中原生控件、打开正确菜单并带有正确 `LayoutItem`；菜单打开后检查菜单及菜单项仍为普通字重，同时检查装饰层不截获事件。这些资源与路由测试不能替代真实鼠标拖出、浮动、重新停靠或设备内容交互验收。
-
-这些测试不覆盖所有菜单、状态栏、窗口布局或插件初始化，也不证明真实拖拽和浮动窗口最大化已通过。对宿主交互的修改仍需在获准启动应用的环境中检查目标入口、窄窗口、文档切换、自动隐藏、浮动/重新停靠和日志；只读文档核对不能记为这些交互已通过。
-
-`ContextualFindRouterTests` 用隔离内容检查局部查找、禁用状态、菜单焦点和跨面板边界。会话测试注入合成查询，检查关闭取消和窗口关闭后才执行结果，不运行真实 provider 或生产 MainWindow。列出这些用例不表示它们已经执行；真实输入法、多屏 DPI、拖动和业务文档交互仍需对应运行时验收。
+用实际工作区核对启动文件、主题切换、固定标签、背景与选中态、标题栏右键菜单以及浮窗外观。实际输入法、鼠标拖出与重新停靠、业务文档和设备内容须现场验证。

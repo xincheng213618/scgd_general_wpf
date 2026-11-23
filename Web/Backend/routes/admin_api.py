@@ -101,6 +101,8 @@ ENDPOINT_SCOPES: dict[str, list[str]] = {
     "bulk_feedback_status": ["feedback:manage"],
     "feedback_handling": ["feedback:read"],
     "save_feedback_handling": ["feedback:manage"],
+    "benchmark_leaderboard": ["benchmark:read"],
+    "benchmark_device_history": ["benchmark:read"],
     "stats_overview": ["stats:read"],
     "traffic_stats": ["stats:read"],
     "list_users": ["users:manage"],
@@ -264,6 +266,29 @@ def register_admin_api_routes(app, ctx: AdminApiContext):
             result = _require_admin_auth(required)
             if result is not None:
                 return result
+
+
+@admin_api.get("/benchmarks/leaderboard")
+def benchmark_leaderboard():
+    from db.repositories.benchmarks import SqliteBenchmarkRepository
+
+    result = SqliteBenchmarkRepository(_get_ctx().cache.get_db).leaderboard()
+    return jsonify(result), 200, {"Cache-Control": "no-store"}
+
+
+@admin_api.get("/benchmarks/devices/<device_id>")
+def benchmark_device_history(device_id: str):
+    from db.repositories.benchmarks import SqliteBenchmarkRepository
+    from services.benchmark_service import parse_benchmark_id
+
+    try:
+        device_id = parse_benchmark_id(device_id, "deviceId")
+    except ValueError:
+        return jsonify({"error": "Benchmark device not found"}), 404
+    result = SqliteBenchmarkRepository(_get_ctx().cache.get_db).device_history(device_id)
+    if result is None:
+        return jsonify({"error": "Benchmark device not found"}), 404
+    return jsonify(result), 200, {"Cache-Control": "no-store"}
 
 
 # ---------------------------------------------------------------------------

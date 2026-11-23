@@ -68,15 +68,12 @@ internal static class STNodeCanvasReader
         byte[] compressed = ReadToEnd(
             stream,
             MaximumCompressedGraphLength);
-        byte[] decompressed = DecompressGZip(compressed);
-        using var bodyStream = new MemoryStream(
-            decompressed,
-            writable: false);
+        ReadOnlySpan<byte> body = DecompressGZip(compressed);
         var document = new Document
         {
-            CanvasOffsetX = ReadSingle(bodyStream),
-            CanvasOffsetY = ReadSingle(bodyStream),
-            CanvasScale = ReadSingle(bodyStream),
+            CanvasOffsetX = ReadSingle(ref body),
+            CanvasOffsetY = ReadSingle(ref body),
+            CanvasScale = ReadSingle(ref body),
         };
         if (float.IsNaN(document.CanvasOffsetX)
             || float.IsInfinity(document.CanvasOffsetX)
@@ -89,7 +86,7 @@ internal static class STNodeCanvasReader
             throw new InvalidDataException("画布视图参数无效");
         }
 
-        int nodeCount = ReadCount(bodyStream, MaximumNodeCount, "节点");
+        int nodeCount = ReadCount(ref body, MaximumNodeCount, "节点");
         var options = new Dictionary<long, STNodeOption>();
         var indexedOptions = new HashSet<STNodeOption>();
         STNodeLegacyConnections legacyConnections = null;
@@ -98,7 +95,7 @@ internal static class STNodeCanvasReader
         long totalNodeDataLength = 0;
         for (int i = 0; i < nodeCount; i++)
         {
-            int nodeDataLength = ReadInt32(bodyStream);
+            int nodeDataLength = ReadInt32(ref body);
             if (nodeDataLength <= 0 || nodeDataLength > MaximumNodeDataLength)
             {
                 throw new InvalidDataException(
@@ -111,7 +108,7 @@ internal static class STNodeCanvasReader
             STNode node;
             try
             {
-                STNodeSavedState state = STNodeSavedState.Parse(ReadBytes(bodyStream, nodeDataLength));
+                STNodeSavedState state = STNodeSavedState.Parse(ReadBodyBytes(ref body, nodeDataLength));
                 states.Add(state);
                 if (state.Properties.TryGetValue(STNodeSavedState.LegacyConnectionsKey, out byte[] archive))
                 {
@@ -146,7 +143,7 @@ internal static class STNodeCanvasReader
         }
 
         int connectionCount = ReadCount(
-            bodyStream,
+            ref body,
             MaximumConnectionCount,
             "连接");
         var connectionKeys = new HashSet<long>();
@@ -156,7 +153,7 @@ internal static class STNodeCanvasReader
         var packedConnections = new long[connectionCount];
         for (int i = 0; i < connectionCount; i++)
         {
-            long packed = ReadInt64(bodyStream);
+            long packed = ReadInt64(ref body);
             packedConnections[i] = packed;
             long outputIndex = packed >> 32;
             long inputIndex = unchecked((uint)packed);
@@ -177,7 +174,7 @@ internal static class STNodeCanvasReader
             document.Connections.Add(new Connection(output, input));
         }
 
-        if (bodyStream.ReadByte() != -1)
+        if (!body.IsEmpty)
             throw new InvalidDataException("流程数据包含未识别的尾部内容");
 
         if (archiveOriginalConnections)
@@ -287,29 +284,33 @@ internal static class STNodeCanvasReader
     }
 
     private static int ReadCount(
-        Stream stream,
+        ref ReadOnlySpan<byte> body,
         int maximum,
         string valueName)
     {
-        int count = ReadInt32(stream);
+        int count = ReadInt32(ref body);
         if (count < 0 || count > maximum)
             throw new InvalidDataException($"{valueName}数量无效：{count}");
         return count;
     }
 
-    private static float ReadSingle(Stream stream)
-    {
-        return BitConverter.ToSingle(ReadBytes(stream, sizeof(float)), 0);
-    }
+    private static float ReadSingle(ref ReadOnlySpan<byte> body) =>
+        BitConverter.ToSingle(ReadBodyBytes(ref body, sizeof(float)));
 
-    private static int ReadInt32(Stream stream)
-    {
-        return BitConverter.ToInt32(ReadBytes(stream, sizeof(int)), 0);
-    }
+    private static int ReadInt32(ref ReadOnlySpan<byte> body) =>
+        BitConverter.ToInt32(ReadBodyBytes(ref body, sizeof(int)));
 
-    private static long ReadInt64(Stream stream)
+    private static long ReadInt64(ref ReadOnlySpan<byte> body) =>
+        BitConverter.ToInt64(ReadBodyBytes(ref body, sizeof(long)));
+
+    private static ReadOnlySpan<byte> ReadBodyBytes(ref ReadOnlySpan<byte> body, int count)
     {
-        return BitConverter.ToInt64(ReadBytes(stream, sizeof(long)), 0);
+        if (count > body.Length)
+            throw new EndOfStreamException("流程数据意外结束");
+
+        ReadOnlySpan<byte> value = body[..count];
+        body = body[count..];
+        return value;
     }
 
     private static byte[] ReadBytes(Stream stream, int count)

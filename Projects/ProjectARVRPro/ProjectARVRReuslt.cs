@@ -1,6 +1,7 @@
 ﻿using ColorVision.Database;
 using ColorVision.Engine.FlowProcessing;
 using SqlSugar;
+using System.IO;
 
 namespace ProjectARVRPro
 {
@@ -12,6 +13,10 @@ namespace ProjectARVRPro
     {
         public int BatchId { get => _BatchId; set { _BatchId = value; OnPropertyChanged(); } }
         private int _BatchId;
+
+        [Newtonsoft.Json.JsonIgnore]
+        [SugarColumn(IsNullable = true, Length = 64)]
+        public string? BatchDatabaseKey { get; set; }
 
         public string Model { get; set; } = string.Empty;
 
@@ -119,5 +124,7 @@ namespace ProjectARVRPro
         /// </summary>
         [SugarColumn(IsIgnore = true)]
         public string? ViewResultJson { get; set; }
+
+        internal TextReader? CsvJsonReader { get; set; }
     }
 }

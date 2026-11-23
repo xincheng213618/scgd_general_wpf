@@ -12,6 +12,7 @@
 namespace {
 
 using cvcore::calibration::CalibrationContext;
+using cvcore::calibration::CalibrationFileDigest;
 using cvcore::calibration::CalibrationType;
 using cvcore::calibration::ExecutionOptions;
 using cvcore::calibration::ImageView;
@@ -164,6 +165,25 @@ extern "C" COLORVISIONCORE_API int __cdecl M_CalibrationClear(void* context)
     }
 }
 
+extern "C" COLORVISIONCORE_API int __cdecl M_CalibrationTransferWorkBuffersV1(
+    void* destinationContext, void* sourceContext)
+{
+    if (destinationContext == nullptr || sourceContext == nullptr) {
+        return fail(destinationContext, M_CALIBRATION_INVALID_ARGUMENT, "Calibration destination or source context is null");
+    }
+    try {
+        asContext(destinationContext)->transferWorkBuffersFrom(*asContext(sourceContext));
+        globalError.clear();
+        return M_CALIBRATION_OK;
+    }
+    catch (const std::exception& ex) {
+        return fail(destinationContext, M_CALIBRATION_INTERNAL_ERROR, ex.what());
+    }
+    catch (...) {
+        return fail(destinationContext, M_CALIBRATION_INTERNAL_ERROR, "Unknown error while transferring calibration work buffers");
+    }
+}
+
 extern "C" COLORVISIONCORE_API int __cdecl M_CalibrationLoadFileW(
     void* context,
     std::int32_t calibrationType,
@@ -197,6 +217,38 @@ extern "C" COLORVISIONCORE_API int __cdecl M_CalibrationLoadFileW(
     }
     catch (...) {
         return fail(context, M_CALIBRATION_INTERNAL_ERROR, "Unknown error while loading calibration file");
+    }
+}
+
+extern "C" COLORVISIONCORE_API int __cdecl M_CalibrationLoadMapWithSha256V1W(
+    void* context, std::int32_t calibrationType, const wchar_t* filePath,
+    std::uint8_t* sha256, std::uint32_t sha256Size)
+{
+    CalibrationFileDigest digest{};
+    if (context == nullptr || filePath == nullptr || *filePath == L'\0'
+        || sha256 == nullptr || sha256Size != digest.size()) {
+        return fail(context, M_CALIBRATION_INVALID_ARGUMENT, "Calibration context, file path, or SHA-256 buffer is invalid");
+    }
+
+    const auto type = static_cast<CalibrationType>(calibrationType);
+    if (type != CalibrationType::Dsnu && type != CalibrationType::Uniformity) {
+        return fail(context, M_CALIBRATION_UNSUPPORTED, "Verified map loading supports DSNU and Uniformity");
+    }
+    try {
+        if (!asContext(context)->load(type, std::filesystem::path(filePath), &digest)) {
+            cvnative::LogFailure(cvnative::LogLevel::Warn, "calibration.export", __func__, M_CALIBRATION_LOAD_FAILED);
+            return M_CALIBRATION_LOAD_FAILED;
+        }
+        std::copy(digest.begin(), digest.end(), sha256);
+        globalError.clear();
+        cvnative::LogEvent(cvnative::LogLevel::Info, "calibration.lifecycle", __func__, "calibration loaded");
+        return M_CALIBRATION_OK;
+    }
+    catch (const std::exception& ex) {
+        return fail(context, M_CALIBRATION_INTERNAL_ERROR, ex.what());
+    }
+    catch (...) {
+        return fail(context, M_CALIBRATION_INTERNAL_ERROR, "Unknown error while verifying a calibration map");
     }
 }
 

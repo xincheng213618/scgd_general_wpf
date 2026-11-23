@@ -132,6 +132,21 @@ namespace ColorVision.Database
     }
 
     /// <summary>
+    /// Optional capability for a source whose active database can change while the window is open.
+    /// </summary>
+    internal interface IDatabaseCleanupTargetProvider
+    {
+        DatabaseCleanupTarget? CaptureCurrentTarget();
+    }
+
+    internal sealed class DatabaseCleanupTarget(IDatabaseCleanupSourceProvider provider, string description, Func<bool> isCurrent)
+    {
+        public IDatabaseCleanupSourceProvider Provider { get; } = provider;
+        public string Description { get; } = description;
+        public bool IsCurrent => isCurrent();
+    }
+
+    /// <summary>
     /// Optional capability for cleanup sources that can clear an explicit table selection.
     /// </summary>
     public interface IDatabaseCleanupSelectionProvider

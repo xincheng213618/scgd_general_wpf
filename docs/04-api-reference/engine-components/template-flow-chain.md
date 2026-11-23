@@ -5,7 +5,6 @@ status: "current"
 summary: "Flow 本地 SQLite 与 MySQL 配置存储、保存基线、导出/删除勾选范围、cvflow v3 包兼容，以及版本/搜索侧车的失败边界。"
 aliases: ["Flow模板保存后参数为什么丢失","TemplateFlow","FlowPackageHelper","cvflow","FlowKey","FlowTemplateSaveCondition","FlowTemplateConcurrencyException","导入流程","关联模板","流程删除范围","流程多选导出","模板勾选项","StnV1NeutralCodec","动态端口索引","逻辑与索引警告","本地流程","离线流程模板","LocalFlowTemplateStorage","流程封面","流程平铺","FlowTemplateManagerWindow"]
 code_paths: ["Engine/ColorVision.Engine/Templates/TemplateControl.cs","Engine/ColorVision.Engine/Templates/Flow/TemplateFlow.cs","Engine/ColorVision.Engine/Templates/Flow/LocalFlowTemplateStorage.cs","Engine/ColorVision.Engine/Templates/Flow/FlowParam.cs","Engine/ColorVision.Engine/Templates/Flow/FlowTemplateSaveCondition.cs","Engine/ColorVision.Engine/Templates/Flow/FlowPackageHelper.cs","Engine/ColorVision.Engine/Templates/Flow/FlowTemplateManagerWindow.cs","Engine/ColorVision.Engine/Templates/Browser","Engine/ColorVision.Engine/Templates/Flow/FlowTemplateCover.cs","Engine/ColorVision.Engine/Templates/Flow/FlowTemplateCoverService.cs","Engine/ColorVision.Engine/Templates/Flow/Versioning","Engine/ColorVision.Engine/FlowProcessing/Compilation/FlowCanvasCatalogBuilder.cs","Engine/ColorVision.Engine/FlowProcessing/Compilation/StnV1NeutralCodec.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/StartupFlowTemplateLoadingTests.cs","Test/ColorVision.UI.Tests/LocalFlowTemplateStorageTests.cs","Test/ColorVision.UI.Tests/FlowPackageCompatibilityTests.cs","Test/ColorVision.UI.Tests/FlowTemplateIdentityTests.cs","Test/ColorVision.UI.Tests/FlowCatalogServiceTests.cs","Test/ColorVision.UI.Tests/FlowTemplateCoverTests.cs","Test/ColorVision.UI.Tests/FlowTemplateBrowserOrderTests.cs"]
 related: ["flow.architecture","flow.workspace","flow.session","flow.headless","engine.template-design","engine.results"]
 ---
 
@@ -33,7 +32,7 @@ MySQL 未连接时，启动仍加载本地流程；MySQL 流程列表查询失�
 
 “排序”支持模板保存顺序、名称自然排序及日期，均可切换升降序；“分组依据”支持名称、日期和不分组，组标题可折叠。名称按 0–9、A–H、I–P、Q–Z、中文及其他分段；日期按今天、昨天、本周、上周、本月、上月、今年及更早等日历范围分段。日期取 MySQL 主记录的 create_date 或本地文档记录的 UTC 创建时间（按本机时区显示）；旧本地文档没有日期时显示“日期未知”，日期排序始终将未知项置后，不根据 ID、文件时间或打开时刻补造。排序、分组和筛选仅作用于管理窗口，不改变主窗口下拉框的共享顺序、模板 ID 或保存内容。只有按保存顺序且不分组时开放拖放交换。流程与 POI 分别通过 TemplateSetting 记住视图模式、图标尺寸、排序方向和分组设置，随应用配置保存。
 
-“查看 → 预览”独立控制可调宽度的右侧预览栏，图标和列表均可使用；每次打开管理窗口时默认关闭，展开后才读取、刷新当前项信息，折叠时取消加载并清空内容。选中流程后显示已保存结构、存储位置、执行次数、预计耗时、节点数、连接数及已有的修订版本，不打开编辑器或执行流程。切换选择、隐藏预览或关闭窗口会使旧加载结果失效，损坏预览不阻止编辑。执行次数统计 `FlowNodeRecordConfig` 指向的本机诊断库中保留的匹配运行记录，包含失败与未结束记录，不代表跨机器或全部历史总次数。身份沿用 `FlowIdentity` 的稳定 FlowKey 与旧记录兼容规则；预计耗时取当前已保存内容 hash 对应的最近至多 20 次正常完成记录平均耗时，排除失败、取消和仍在运行的样本，无可用样本显示“暂无数据”。无内容 hash 的旧模板使用同身份历史；有 hash 但历史缺少该列时不估算。`FlowTemplateUsageReader` 只读汇总字段，不初始化数据库、不启动写入队列、不读取节点 Payload；未展开预览时不查询统计。`TemplateBrowserPreviewTests` 与 `FlowTemplateUsageReaderTests` 验证折叠零刷新、异步失效、身份隔离和样本口径。
+“查看 → 预览”独立控制可调宽度的右侧预览栏，图标和列表均可使用；每次打开管理窗口时默认关闭，展开后才读取、刷新当前项信息，折叠时取消加载并清空内容。选中流程后显示已保存结构、存储位置、执行次数、预计耗时、节点数、连接数及已有的修订版本，不打开编辑器或执行流程。切换选择、隐藏预览或关闭窗口会使旧加载结果失效，损坏预览不阻止编辑。执行次数统计 `FlowNodeRecordConfig` 指向的本机诊断库中保留的匹配运行记录，包含失败与未结束记录，不代表跨机器或全部历史总次数。身份沿用 `FlowIdentity` 的稳定 FlowKey 与旧记录兼容规则；预计耗时取当前已保存内容 hash 对应的最近至多 20 次正常完成记录平均耗时，排除失败、取消和仍在运行的样本，无可用样本显示“暂无数据”。无内容 hash 的旧模板使用同身份历史；有 hash 但历史缺少该列时不估算。`FlowTemplateUsageReader` 只读汇总字段，不初始化数据库、不启动写入队列、不读取节点 Payload；未展开预览时不查询统计。
 
 流程新建窗口的“创建来源”只提供“内置流程”和“现有模板”两个分区，页签显示当前搜索匹配数量；不列出默认模板或文件来源卡片。打开时选中首个可用内置流程并显示预览；现有模板分区按源索引准备独立副本。切换分区和搜索保留手动输入的名称；空分区或搜索无匹配时清空旧预览并禁用创建，Enter 也不能使用隐藏的旧来源创建。管理窗口原有导入入口及已准备的复制/导入来源仍可使用。内置库不可用时显示错误，只允许使用现有模板，不回退到默认模板。
 
@@ -43,7 +42,7 @@ MySQL 未连接时，启动仍加载本地流程；MySQL 流程列表查询失�
 
 基础流程统一使用 `MQTTStartNode`（Start），服务器和端口取应用统一 MQTT 默认值，与右键新建 Start 一致。仅包含本地执行节点的流程可直接通过运行命令启动，无需 MQTT 就绪；其设备、结果存储或校正依赖仍由具体节点决定。均匀性与棋盘格流程中的服务端 `POIAnalysisNode` 通过开始节点发布请求，运行前须确保对应 MQTT 服务可用、配置算法设备并选择分析参数模板。所有预设都是待配置的业务起点，不能将结构预览或本地创建成功视为设备可运行。
 
-拖拽以目标卡片标记提示交换位置，只交换源项和目标项，中间流程不动。提交成功后同步共享模板集合与主窗口下拉框，保留当前选中对象，管理窗口的保存顺序视图随之更新。MySQL 按现有序号约定，在事务内交换主记录 ID 和全部明细 Pid，流程名称、保存内容和资源标识跟随原模板；本地流程交换 SQLite sort_order，ID 不变。保存异步执行，失败在窗口内提示重新打开核对。再次打开按已记住的浏览设置展示；旧 flow_template_browser_order 本机偏好不参与排序，封面缓存仍独立保留。事务与身份边界见[模板持久化与排序](../../03-architecture/components/templates/design.md)。搜索后的编辑、复制、删除和导出按源对象定位；删除确认显示实际勾选范围，包括被搜索隐藏的勾选。`FlowTemplateBrowserOrderTests` 覆盖正负 ID 下的倒序浏览、筛选和源对象定位，以及数据库交换事务边界。
+拖拽以目标卡片标记提示交换位置，只交换源项和目标项，中间流程不动。提交成功后同步共享模板集合与主窗口下拉框，保留当前选中对象，管理窗口的保存顺序视图随之更新。MySQL 按现有序号约定，在事务内交换主记录 ID 和全部明细 Pid，流程名称、保存内容和资源标识跟随原模板；本地流程交换 SQLite sort_order，ID 不变。保存异步执行，失败在窗口内提示重新打开核对。再次打开按已记住的浏览设置展示；旧 flow_template_browser_order 本机偏好不参与排序，封面缓存仍独立保留。事务与身份边界见[模板持久化与排序](../../03-architecture/components/templates/design.md)。搜索后的编辑、复制、删除和导出按源对象定位；删除确认显示实际勾选范围，包括被搜索隐藏的勾选。
 
 平铺封面直接采用已保存 STN 的节点坐标、尺寸和连接端口，不自动布局，也不改写流程。`FlowTemplateCoverRenderer` 从节点默认显示元信息读取字体、标题色、端口形状和控件位置，结合保存的标题、端口名称和普通控件显示值绘制圆角节点；连线复用编辑器的贝塞尔路由，按实际输入/输出端口位置连接，保留回连路径，不显示运行状态或全部节点参数。控件值按普通属性的本地化标签只读匹配，无法匹配的值显示“—”，不将构造时默认值当作保存值。仅请求可见区域的封面，后台串行生成固定 640×360 PNG，以包含布局的完整内容、显示配置和渲染版本校验缓存；保存后重新激活管理窗口或再次显示该项时按新内容取图。`FlowTemplateCoverService` 使用 `ColorVision.Local.db` 中独立的 `flow_template_covers` 表保存 PNG BLOB，最多保留最近生成的 1000 份可重建封面；同时保留最近使用的 64 份已解码、冻结的图片，重新打开窗口时直接复用，避免反复排队读取、解码和闪现占位提示。进程重启或内存缓存未命中时显示“正在加载预览…”，先读磁盘缓存，缺失或损坏才重新生成。封面跟随 `FlowEditorSettings` 的实际画布主题、网格、圆角和连线弯曲度；明暗主题及自定义配色、界面语言分别缓存，切换主题或显示设置会刷新卡片和已展开的预览，未展开的信息栏不查询或刷新详情。相同内容与显示配置可共享封面，重命名不需重新生成；缓存读写失败仍尝试显示内存预览，损坏流程或缺失节点类型显示“预览不可用”，不阻止打开编辑器。生成使用中性 STN 解码与 `STNode.CapturePreviewAppearance` 显示快照：可能为端口结构和显示元信息创建默认节点，但不恢复节点属性、不调用属性 setter、不连接运行节点、不调用 `OnEditorLoadCompleted`。新建流程预览复用同一渲染器，直接生成图片，不写封面缓存。封面缓存不改变流程的 MySQL/本地归属，也不代表服务器流程或依赖参数已经离线可用。
 
@@ -71,7 +70,7 @@ MySQL 未连接时，启动仍加载本地流程；MySQL 流程列表查询失�
 
 `Save2DB` 成功后更新运行身份和加载 hash，再尝试记录本地 catalog revision / 搜索投影。`TryRecordCatalogRevision` 的失败只记录 `WARN` 并清空本次侧车 revision 信息，明确提示流程已保存、仅版本历史/节点搜索索引未更新，不影响流程保存和执行。保存成功与“版本/搜索索引可用”是两个检查点；该警告不表示主存储保存失败，也不表示索引功能已恢复。
 
-本机版本历史恢复目标版本的完整 STN 快照，并追加新版本；重复框成员、重复次数和逐轮参数随快照恢复。用户确认替换未保存修改后，主流程与独立编辑窗口直接加载恢复内容，不再经过普通刷新的保存提示，避免旧画布再次保存覆盖恢复结果。历史窗口等待画布加载完成，加载失败会提示版本已保存但编辑器刷新失败；若用户已切换到另一份文档，不替换那份画布。`FlowVersionRestoreServiceTests`、`FlowTemplateWorkspaceEditingTests` 与 `ViewFlowDocumentBehaviorTests` 覆盖快照往返及两种编辑窗口的替换边界，不代表现场硬件已验收。
+本机版本历史恢复目标版本的完整 STN 快照，并追加新版本；重复框成员、重复次数和逐轮参数随快照恢复。用户确认替换未保存修改后，主流程与独立编辑窗口直接加载恢复内容，不再经过普通刷新的保存提示，避免旧画布再次保存覆盖恢复结果。历史窗口等待画布加载完成，加载失败会提示版本已保存但编辑器刷新失败；若用户已切换到另一份文档，不替换那份画布。
 
 `FlowCanvasCatalogBuilder` 从 STND v1 构建语义、布局和搜索投影，不修改源画布，也不建立 live editor graph；codec 可短暂实例化节点发现默认 option schema。`STNodeInHub`、`STNodeOutHub`、`STNodeHub` 及其派生节点按各自保存的 `count` 扩展输入、输出或成对端口，保留空闲端口及原有端口顺序；类型缓存只保存默认结构，不把一个实例的端口数量套给另一个实例。索引恢复不调用 `OnLoadNode`、属性 setter 或真实连线事件，避免触发设备/MQTT行为。缺失、非四字节或非正数的动态数量会拒绝；整张画布最多分配 1,000,000 个端口，分配前检查预算。
 
@@ -131,12 +130,6 @@ MySQL 删除直接修改主表、明细和对应资源，没有 `Save2DB` 的事
 | 图正常但属性缺选择器 | [工作区](../../01-user-guide/workflow/design.md)及[PropertyGrid 契约](../ui-components/property-grid.md)，不是包格式问题 |
 | 引擎结束但业务结果未完成 | [执行会话](../../01-user-guide/workflow/execution.md)的最终化判据，不在模板保存层补等待 |
 
-`FlowPackageCompatibilityTests` 覆盖包完整性、旧版本、未来版本拒绝、模板去重和引用替换；`FlowTemplateIdentityTests` 覆盖身份及窗口保存条件；这些局部测试不等于真实 MySQL 事务、全部旧流程语料或现场导入已通过。
-
-`Test/ColorVision.UI.Tests/LocalFlowTemplateStorageTests.cs` 使用临时 SQLite 验证本地模板操作、STN 画布编辑后的节点/连线恢复、身份与 POI 隔离、并发保存、删除后旧窗口保存及损坏内容拒绝；MySQL 读取失败用抛错的 client factory 模拟，不代表真实服务器或设备执行验收。
-
-它不操作用户的本地库或真实相机。
-
-`Test/ColorVision.UI.Tests/FlowTemplatePresetTests.cs` 验证全部基础流程的节点与连线往返、设备/路径引用留空、预览不落库、取消和独立创建身份，以及 Start 到结束的本地执行生命周期；不代表真实 MQTT、MySQL 或相机/算法服务已经验收。
+交付时在对应 MySQL、现场模板库和目标版本的设备服务中核对导入、保存、连线和关联引用。
 
 授权验证至少核对：新增节点/参数保存后重开、并发窗口保存冲突、单流程包重导入不重复创建模板、冲突模板及二级引用正确、多选 zip 不被误认为完整迁移包。结果模型的历史 handler / 中立 overlay / 项目输出分流由[结果契约](./result-handoff-chain.md)维护。

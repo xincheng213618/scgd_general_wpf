@@ -1,5 +1,4 @@
 using ColorVision.Common.MVVM;
-using ColorVision.Database;
 using ColorVision.Engine.Services;
 using ColorVision.Engine.Services.Devices.SMU;
 using ColorVision.Engine.Services.Devices.SMU.Dao;
@@ -7,7 +6,6 @@ using ColorVision.Engine.Services.Devices.Spectrum.Dao;
 using ColorVision.Engine.Services.Devices.Spectrum.Views;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using log4net;
-using SqlSugar;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -125,13 +123,14 @@ namespace ColorVision.Engine.FlowProcessing.PostProcess.IVL
             IVLViewTestResult testResult = new IVLViewTestResult();
             try
             {
-                var masters = AlgResultMasterDao.Instance.GetAllByBatchId(ctx.Batch.Id);
+                using var db = ctx.CreateBatchDatabaseClient();
+                var masters = db.Queryable<AlgResultMasterModel>().Where(item => item.BatchId == ctx.Batch.Id).ToList();
                 int cout = 0;
                 foreach (var master in masters)
                 {
                     if (master.ImgFileType == ViewResultAlgType.POI_XYZ)
                     {
-                        var poiPoints = PoiPointResultDao.Instance.GetAllByPid(master.Id);
+                        var poiPoints = db.Queryable<PoiPointResultModel>().Where(item => item.Pid == master.Id).ToList();
                         cout = poiPoints.Count;
                         foreach (var item in poiPoints)
                         {
@@ -140,17 +139,10 @@ namespace ColorVision.Engine.FlowProcessing.PostProcess.IVL
                     }
                 }
 
-                var DB = new SqlSugarClient(new ConnectionConfig
-                {
-                    ConnectionString = MySqlControl.GetConnectionString(),
-                    DbType = SqlSugar.DbType.MySql,
-                    IsAutoCloseConnection = true
-                });
-                foreach (var item in DB.Queryable<SMUResultModel>().Where(x => x.BatchId == ctx.Batch.Id).ToList())
+                foreach (var item in db.Queryable<SMUResultModel>().Where(x => x.BatchId == ctx.Batch.Id).ToList())
                 {
                     testResult.SMUResultModels.Add(item);
                 }
-                DB.Dispose();
                 string timeStr = DateTime.Now.ToString("yyyyMMdd_HHmmss");
                 
                 // Save Camera CSV if enabled
@@ -184,15 +176,7 @@ namespace ColorVision.Engine.FlowProcessing.PostProcess.IVL
                     File.WriteAllLines(filePath, rows);
                 }
 
-                var DB1 = new SqlSugarClient(new ConnectionConfig
-                {
-                    ConnectionString = MySqlControl.GetConnectionString(),
-                    DbType = SqlSugar.DbType.MySql,
-                    IsAutoCloseConnection = true
-                });
-
-                var list = DB1.Queryable<SpectumResultEntity>().Where(x => x.BatchId == ctx.Batch.Id).ToList();
-                DB1.Dispose();
+                var list = db.Queryable<SpectumResultEntity>().Where(x => x.BatchId == ctx.Batch.Id).ToList();
                 ObservableCollection<ViewResultSpectrum> ViewResults = new ObservableCollection<ViewResultSpectrum>();
                 if (list.Count == 0)
                 {

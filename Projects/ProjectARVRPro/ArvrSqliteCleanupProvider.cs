@@ -121,9 +121,9 @@ namespace ProjectARVRPro
             db.Ado.BeginTran();
             try
             {
+                // Open history and export views may still read payloads by their original row IDs.
                 deletedResultRows = db.Deleteable<ProjectARVRReuslt>().ExecuteCommand();
                 deletedObjectiveRows = db.Deleteable<ObjectiveTestResultRecord>().ExecuteCommand();
-                TryResetIdentity(db);
                 db.Ado.CommitTran();
             }
             catch
@@ -276,18 +276,6 @@ namespace ProjectARVRPro
                 IsAutoCloseConnection = true,
                 InitKeyType = InitKeyType.Attribute,
             });
-        }
-
-        private static void TryResetIdentity(SqlSugarClient db)
-        {
-            try
-            {
-                db.Ado.ExecuteCommand(
-                    $"DELETE FROM sqlite_sequence WHERE name IN ('{ResultTableName}', '{ObjectiveResultTableName}');");
-            }
-            catch
-            {
-            }
         }
 
         private static void TryVacuum(SqlSugarClient db)

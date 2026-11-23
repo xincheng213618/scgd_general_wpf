@@ -5,7 +5,6 @@ status: "current"
 summary: "ColorVision 的设备、流程、图像分析、结果、插件与客户项目能力，以及从任务进入文档的方法。"
 aliases: ["ColorVision是什么","视觉检测平台","ColorVision有哪些功能","产品概览"]
 code_paths: ["ColorVision/ColorVision.csproj","Engine/ColorVision.Engine/ColorVision.Engine.csproj","UI/ColorVision.ImageEditor/ColorVision.ImageEditor.csproj","UI/ColorVision.Algorithms/ColorVision.Algorithms.csproj"]
-test_paths: []
 related: ["platform.system","delivery.start","algorithms.index","engine.results","projects.index","plugins.index","copilot.runtime"]
 ---
 

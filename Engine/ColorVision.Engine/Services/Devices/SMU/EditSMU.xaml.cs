@@ -11,8 +11,15 @@ namespace ColorVision.Engine.Services.Devices.SMU
     {
         private readonly ConfigSMU target;
         private readonly DisplaySMUConfig displayTarget;
+        private readonly (DeviceSMU Device, DeviceConfigurationTarget Target)? openingDevice;
+        internal DeviceConfigurationTarget? OpeningConfigurationTarget => openingDevice?.Target;
         public SmuConfigurationDraft Draft { get; }
         public ConfigSMU EditConfig => Draft.Config;
+
+        internal EditSMU(DeviceSMU device) : this(device.Config, device.DisplayConfig)
+        {
+            openingDevice = (device, device.CaptureConfigurationTarget());
+        }
 
         public EditSMU(ConfigSMU config, DisplaySMUConfig displayConfig)
         {
@@ -72,6 +79,7 @@ namespace ColorVision.Engine.Services.Devices.SMU
         private void Ok_Click(object sender, RoutedEventArgs e)
         {
             Keyboard.ClearFocus();
+            if (openingDevice is { } opening && !opening.Device.TryAdmitConfigurationEdit(opening.Target, this)) return;
             if (!Draft.TryApply(target, displayTarget, out string error))
             {
                 StatusText.Text = error;

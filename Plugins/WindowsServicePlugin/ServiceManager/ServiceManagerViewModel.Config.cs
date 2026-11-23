@@ -1,4 +1,5 @@
 using ColorVision.Database;
+using ColorVision.Engine.Services.RC;
 using MySqlConnector;
 using System.IO;
 using System.Windows;
@@ -95,11 +96,10 @@ namespace WindowsServicePlugin.ServiceManager
 
         private void UpdateRegistrationCenterMonitorServices(string monitorServices)
         {
-            string rcCode = ColorVision.Engine.Services.RC.RCSetting.Instance.Config.RCName;
             using var connection = new MySqlConnection(MySqlControl.GetConnectionString(MySqlSetting.Instance.MySqlConfig, timeout: 5));
             connection.Open();
             using var transaction = connection.BeginTransaction(System.Data.IsolationLevel.Serializable);
-            RegistrationCenterMonitorConfiguration.UpdateDatabaseServices(connection, transaction, rcCode, _ => monitorServices);
+            RegistrationCenterMonitorConfiguration.UpdateDatabaseServices(connection, transaction, MqttRCService.RCNodeName, _ => monitorServices);
             transaction.Commit();
             log.Info($"更新注册中心数据库监控服务: {monitorServices}");
         }
@@ -271,7 +271,6 @@ namespace WindowsServicePlugin.ServiceManager
                 if (settings == null)
                     throw new InvalidDataException($"WinService.config 缺少 appSettings: {configPath}");
 
-                var rcConfig = ColorVision.Engine.Services.RC.RCSetting.Instance.Config;
                 if (isRC && monitorServices != null)
                     RegistrationCenterMonitorConfiguration.SetMonitorServices(doc, monitorServices);
                 foreach (var setting in settings)
@@ -280,10 +279,10 @@ namespace WindowsServicePlugin.ServiceManager
                     if (key == null) continue;
                     string? value = key switch
                     {
-                        "RCNodeName" => rcConfig.RCName,
-                        "NodeName" when isRC => rcConfig.RCName,
-                        "NodeAppId" => rcConfig.AppId,
-                        "NodeKey" => rcConfig.AppSecret,
+                        "RCNodeName" => MqttRCService.RCNodeName,
+                        "NodeName" when isRC => MqttRCService.RCNodeName,
+                        "NodeAppId" => MqttRCService.AppId,
+                        "NodeKey" => MqttRCService.AppSecret,
                         "Monitor.Services" when isRC => monitorServices,
                         "Monitor.UIServices" when isRC => string.Empty,
                         _ => null

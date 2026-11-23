@@ -5,7 +5,6 @@ status: "current"
 summary: "Copilot 技能的项目/用户/内置发现路径、显式调用、同名选择、开关、按需加载、使用统计和 MCP 依赖配置。"
 aliases: ["技能", "内置技能", "Skill 什么时候加载", "/skills", "SKILL.md", "SKILL.json", ".agents/skills", "allow_implicit_invocation", "Skill 没有出现","技能说明乱码", "CopilotAgentSkills", "CopilotAgentSkillCatalog", "CopilotAgentSkillMetadata", "CopilotAgentSkillReference", "CopilotAgentSkillOverrideConfig", "CopilotAgentSkillUsageStore", "Skill MCP 依赖", "colorvision-flow-diagnostics", "colorvision-script-automation"]
 code_paths: ["ColorVision/Copilot/Agent/CopilotAgentSkills.cs", "ColorVision/Copilot/Agent/CopilotAgentSkillCatalog.cs", "ColorVision/Copilot/Agent/CopilotAgentSkillCatalogMonitor.cs", "ColorVision/Copilot/Agent/CopilotAgentSkillMetadata.cs", "ColorVision/Copilot/Agent/CopilotAgentSkillSelectionPolicy.cs", "ColorVision/Copilot/Agent/CopilotAgentSkillUsageStore.cs", "ColorVision/Copilot/Agent/CopilotAgentSkillReference.cs", "ColorVision/Copilot/Agent/CopilotAgentSkillCommand.cs", "ColorVision/Copilot/Agent/CopilotAgentSkillDiagnostics.cs", "ColorVision/Copilot/Agent/CopilotAgentSkillMcpDependencyPolicy.cs", "ColorVision/Copilot/Agent/CopilotAgentSkillMcpDependencyInstaller.cs", "ColorVision/Copilot/Config/CopilotAgentSkillOverrideConfig.cs", "ColorVision/Copilot/CopilotChatViewModel.SupportCommands.cs", "ColorVision/Copilot/CopilotChatViewModel.SkillMcpDependencies.cs", "ColorVision/Copilot/CopilotChatViewModel.ConfigPersistence.cs", "ColorVision/Copilot/CopilotSettingsViewModel.Diagnostics.cs", "ColorVision/Copilot/CopilotSettingsWindow.xaml", "ColorVision/Copilot/Skills", "ColorVision/ColorVision.csproj"]
-test_paths: ["Test/ColorVision.Copilot.Tests/CopilotAgentSkillCatalogTests.cs"]
 related: ["copilot.lifecycle", "copilot.configuration", "copilot.interactions", "copilot.extensions", "copilot.tool-contracts"]
 ---
 
@@ -27,7 +26,7 @@ ColorVision 使用自己的配置、作用域和工具审批，技能内容不�
 
 每个搜索根下使用 `<skill-name>/SKILL.md`，也支持一层分组目录 `<group>/<skill-name>/SKILL.md`。不会遍历任意深度，也不默认查找 `.codex/skills` 或整个用户目录。附件、显式文件形成的额外可读搜索根不会自动成为项目技能源。
 
-聊天目录保留同名技能的不同路径。运行时默认按搜索顺序选择同名的第一份；从补全候选中选定具体文件后，结构化 `CopilotAgentSkillReference` 可以指向另一份已发现的同名技能。名称和完整路径都必须匹配，引用不能引入搜索根之外的文件。多条排队请求恢复到空草稿时，每项引用都有效、名称与规范化路径一致，且合并正文仍明确调用该技能，才保留共同的精确引用；同名不同路径或缺失引用不挑选首项，也不覆盖较新草稿的选择。重新发送仍由运行时检查可信发现范围、显式调用和技能开关，不把恢复引用当成新的授权。`CopilotChatViewModelProfileIsolationTests` 通过真实目录发现、公开补全与排队、Save／Load 和显式重发验证精确路径交接，`CopilotAgentSkillCatalogTests` 保护单项恢复、冲突和缺失引用；这不等同于真实模型加载验收。要切换同名实现，应选择目标路径，不假定禁用一份后一定自动落到另一份。
+聊天目录保留同名技能的不同路径。运行时默认按搜索顺序选择同名的第一份；从补全候选中选定具体文件后，结构化 `CopilotAgentSkillReference` 可以指向另一份已发现的同名技能。名称和完整路径都必须匹配，引用不能引入搜索根之外的文件。多条排队请求恢复到空草稿时，每项引用都有效、名称与规范化路径一致，且合并正文仍明确调用该技能，才保留共同的精确引用；同名不同路径或缺失引用不挑选首项，也不覆盖较新草稿的选择。重新发送仍由运行时检查可信发现范围、显式调用和技能开关，不把恢复引用当成新的授权。切换同名实现时显式选择目标路径。
 
 ## 添加与调用
 
@@ -135,4 +134,4 @@ MCP 依赖写在 `dependencies.tools` 中，使用 `type: mcp`、服务标识 `v
 4. 使用 `$name` 或 `/name` 再观察；单纯提到名称、候选相关性不足或预算省略都可能导致不加载。
 5. 区分目录项、运行时已选择、正文已加载、工具已执行及最终业务成功；分别查看 `/skills`、任务诊断和真实工具结果。
 
-`CopilotAgentSkillCatalogTests` 覆盖项目/用户/内置来源、嵌套路径、同名选择、路径覆盖、监视器与 MCP 依赖计划。测试文件存在不表示本轮已运行，也不能替代真实界面或外部 MCP 服务验收。
+真实界面、模型加载和外部 MCP 服务各自在目标环境验收。

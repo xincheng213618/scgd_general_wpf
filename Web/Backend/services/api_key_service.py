@@ -35,6 +35,7 @@ API_KEY_SCOPE_DEFINITIONS: tuple[dict[str, str], ...] = (
     {"value": "jobs:write", "label": "任务执行", "description": "运行、启用或禁用后台任务。", "category": "系统运维", "access": "write"},
     {"value": "stats:read", "label": "统计查看", "description": "读取概览、访问统计和性能摘要。", "category": "系统运维", "access": "read"},
     {"value": "feedback:read", "label": "反馈只读", "description": "按明确编号或查询条件读取反馈清单与诊断附件。", "category": "运营", "access": "read"},
+    {"value": "benchmark:submit", "label": "提交主机性能成绩", "description": "上传明确分享的 CPU 和内存基准成绩，不含排行榜读取权限。", "category": "运营", "access": "write"},
     {"value": "plugin:read", "label": "插件目录读取", "description": "读取插件目录与公开元数据。", "category": "发布", "access": "read"},
     {"value": "plugin:publish", "label": "插件发布", "description": "上传并发布插件安装包。", "category": "发布", "access": "write"},
     {"value": "release:publish", "label": "主程序发布", "description": "上传并发布主程序版本。", "category": "发布", "access": "write"},

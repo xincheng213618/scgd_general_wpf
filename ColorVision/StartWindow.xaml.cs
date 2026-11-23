@@ -15,7 +15,6 @@ using System.Reflection;
 using System.Threading.Tasks;
 using System.Threading;
 using System.Windows;
-using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 
 namespace ColorVision
@@ -68,15 +67,8 @@ namespace ColorVision
             }
 
             _subscribedThemeManager = ThemeManager.Current;
-            _subscribedThemeManager.SystemThemeChanged += ThemeManager_SystemThemeChanged;
-            if (_subscribedThemeManager.SystemTheme == Theme.Dark)
-                Icon = new BitmapImage(new Uri("pack://application:,,,/ColorVision;component/Assets/Image/ColorVision1.ico"));
+            Icon = ThemeManagerExtensions.LoadDefaultWindowIcon();
             InitializePresentation();
-        }
-
-        private void ThemeManager_SystemThemeChanged(Theme theme)
-        {
-            Icon = new BitmapImage(new Uri($"pack://application:,,,/ColorVision;component/Assets/Image/{(theme == Theme.Light ? "ColorVision.ico" : "ColorVision1.ico")}"));
         }
 
         protected override void OnClosed(EventArgs e)
@@ -84,11 +76,7 @@ namespace ColorVision
             _startupCancellation.Cancel();
             ReleasePresentation();
             _startupProgressTimer.Stop();
-            if (_subscribedThemeManager != null)
-            {
-                _subscribedThemeManager.SystemThemeChanged -= ThemeManager_SystemThemeChanged;
-                _subscribedThemeManager = null;
-            }
+            _subscribedThemeManager = null;
 
             base.OnClosed(e);
         }

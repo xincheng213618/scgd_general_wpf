@@ -2,6 +2,7 @@
 using ColorVision.Engine.Cache;
 using ColorVision.Engine.PropertyEditor;
 using ColorVision.Engine.Services.Devices.CfwPort;
+using ColorVision.Engine.Services.Devices.Spectrum.Calibration;
 using ColorVision.Engine.Services.PhySpectrums;
 using ColorVision.UI;
 using Newtonsoft.Json;
@@ -32,12 +33,12 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Configs
         public string GroupName { get => _GroupName; set { _GroupName = value; OnPropertyChanged(); } }
         private string _GroupName = "Default";
 
-        [PropertyEditorType(typeof(TextSelectFilePropertiesEditor))]
+        [PropertyEditorType(typeof(SpectrumCalibrationFilePropertiesEditor))]
         [DisplayName("WaveLengthFile")]
         public string WavelengthFile { get => _WavelengthFile; set { _WavelengthFile = value; OnPropertyChanged(); } }
         private string _WavelengthFile = "WavaLength.dat";
 
-        [PropertyEditorType(typeof(TextSelectFilePropertiesEditor))]
+        [PropertyEditorType(typeof(SpectrumCalibrationFilePropertiesEditor))]
         [DisplayName("AmplitudeFile")]
         public string MaguideFile { get => _MaguideFile; set { _MaguideFile = value; OnPropertyChanged(); } }
         private string _MaguideFile = "Magiude.dat";
@@ -148,7 +149,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Configs
         private bool _IsAutoOpen;
 
         [DisplayName("WaveLengthFile")]
-        [PropertyEditorType(typeof(TextSelectFilePropertiesEditor))]
+        [PropertyEditorType(typeof(SpectrumCalibrationFilePropertiesEditor))]
         [Category("SpectrumCalibrationCorrection")]
         public string WavelengthFile
         {
@@ -166,7 +167,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Configs
         private string _WavelengthFile;
 
         [DisplayName("AmplitudeFile")]
-        [PropertyEditorType(typeof(TextSelectFilePropertiesEditor))]
+        [PropertyEditorType(typeof(SpectrumCalibrationFilePropertiesEditor))]
         [Category("SpectrumCalibrationCorrection")]
         public string MaguideFile
         {

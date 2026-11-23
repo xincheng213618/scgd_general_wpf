@@ -1,11 +1,9 @@
 ﻿#pragma warning disable CA1707,CA1725,CS8601,CS8602
 
-using ColorVision.Database;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using ColorVision.Engine.Services;
 using OpenCvSharp;
 using OpenCvSharp.WpfExtensions;
-using SqlSugar;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
@@ -36,30 +34,14 @@ namespace ColorVision.Engine.Templates.Jsons.LedCheck2
 
         public override void Load(ViewResultContext ctx, ViewResultAlg result)
         {
-            if (result.ViewResults == null)
+            if (result.ViewResults != null) return;
+
+            var files = result.ReadPersistedDetails(AlgResultPoiCieFileDao.Instance);
+            result.ViewResults = new ObservableCollection<IViewResult>(files);
+            if (files.Count == 1 && files[0].FileUrl is { Length: > 0 } path && !path.Contains("Y.tif"))
             {
-                result.ViewResults = new ObservableCollection<IViewResult>();
-                using var db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
-                var list  = db.Queryable<AlgResultPoiCieFileModel>().Where(it => it.Pid == result.Id).ToList();
-
-                foreach (var item in list)
-                {
-                    result.ViewResults.Add(item);
-                }
-                if(list.Count == 1)
-                {
-                    if (list[0].FileUrl.Contains("Y.tif"))
-                    {
-
-
-                    }
-                    else
-                    {
-                        result.FilePath = list[0].FileUrl;
-                        result.AlgResultMasterModel.ImgFile = list[0].FileUrl;
-                        //db.Updateable(result.AlgResultMasterModel).ExecuteCommand();
-                    }
-                }
+                result.FilePath = path;
+                result.AlgResultMasterModel.ImgFile = path;
             }
         }
          

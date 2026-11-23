@@ -18,12 +18,16 @@ public partial class JsonPropertyEditorControl : UserControl
     private JObject? _document;
     private string? _originalJson;
     private JsonEditorSchemaDocument? _schema;
+    private string? _schemaJson;
+    private string? _schemaTitle;
     private readonly Dictionary<string, string> _errors = new(StringComparer.Ordinal);
     private readonly Dictionary<string, bool> _expansion = new(StringComparer.Ordinal);
     private readonly List<ParameterGroup> _groups = [];
     private bool _loading;
     private readonly List<ParameterEntry> _entries = [];
     private readonly Dictionary<string, string> _drafts = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, Action<JToken>> _refreshEditors = new(StringComparer.Ordinal);
+    private bool _unfilteredRows;
     private sealed record ParameterEntry(string Path, string Name, string Group, string GroupName, string SearchText);
 
     private sealed record ParameterGroup(Expander Element, string Path, string SearchText);
@@ -42,53 +46,86 @@ public partial class JsonPropertyEditorControl : UserControl
     {
         bool hadNavigation = _entries.Count > 0 && GroupSelector.SelectedIndex >= 0;
         var previousGroup = (GroupSelector.SelectedItem as ComboBoxItem)?.Tag;
+        bool sameSchema = _schemaJson == schemaJson && _schemaTitle == schemaTitle;
+        if (!sameSchema)
+        {
+            _schemaJson = schemaJson;
+            _schemaTitle = schemaTitle;
+            _schema = JsonEditorSchemaDocument.TryParse(schemaJson, schemaTitle);
+        }
+
+        JObject? document = null;
+        string? parseError = null;
+        try
+        {
+            document = ParseToken(json) as JObject;
+            if (document == null) parseError = "属性视图需要 JSON 对象。数组等内容请使用 JSON 视图。";
+        }
+        catch (JsonException ex)
+        {
+            parseError = ex.Message;
+        }
+
+        // Keep the visual tree for templates with the same fields and editor types.
+        bool refreshRows = sameSchema && document != null && _document != null && _errors.Count == 0 &&
+            _unfilteredRows && _refreshEditors.Count == _entries.Count && _groups.All(group => group.Element.IsExpanded) &&
+            HaveSameFieldShape(_document, document);
         _loading = true;
         try
         {
             _originalJson = json;
-            _document = null;
-            _schema = JsonEditorSchemaDocument.TryParse(schemaJson, schemaTitle);
+            _document = document;
             _errors.Clear();
             _drafts.Clear();
-            _entries.Clear();
-            _groups.Clear();
-            PropertyPanel.Children.Clear();
-            GroupSelector.Items.Clear();
-            GroupSelector.Items.Add(new ComboBoxItem { Content = LocalizedText.Get("全部分组") });
-            GroupSelector.SelectedIndex = 0;
-            _document = ParseToken(json) as JObject;
-            if (_document == null)
-                throw new JsonReaderException("属性视图需要 JSON 对象。数组等内容请使用 JSON 视图。");
-
-            foreach (var property in _document.Properties())
+            if (refreshRows)
             {
-                var group = property.Value is JObject or JArray ? property.Value.Path : "";
-                IndexEntries(property.Value, property.Name, group, group.Length > 0 ? Title(group, property.Name) : "常规参数");
+                GroupSelector.SelectedIndex = 0;
+                foreach (var (path, refresh) in _refreshEditors)
+                    refresh(document!.SelectToken(path)!);
             }
-            foreach (var grouping in _entries.GroupBy(entry => entry.Group))
-                GroupSelector.Items.Add(new ComboBoxItem { Content = $"{grouping.First().GroupName}  ·  {grouping.Count()}", Tag = grouping.Key });
-            if (hadNavigation && GroupSelector.Items.OfType<ComboBoxItem>().FirstOrDefault(item => Equals(item.Tag, previousGroup)) is { } previousSelection)
-                GroupSelector.SelectedItem = previousSelection;
+            else
+            {
+                _entries.Clear();
+                GroupSelector.Items.Clear();
+                GroupSelector.Items.Add(new ComboBoxItem { Content = LocalizedText.Get("全部分组") });
+                GroupSelector.SelectedIndex = 0;
+                if (document != null)
+                {
+                    foreach (var property in document.Properties())
+                    {
+                        var group = property.Value is JObject or JArray ? property.Value.Path : "";
+                        IndexEntries(property.Value, property.Name, group, group.Length > 0 ? Title(group, property.Name) : "常规参数");
+                    }
+                    foreach (var grouping in _entries.GroupBy(entry => entry.Group))
+                        GroupSelector.Items.Add(new ComboBoxItem { Content = $"{grouping.First().GroupName}  ·  {grouping.Count()}", Tag = grouping.Key });
+                    if (hadNavigation && GroupSelector.Items.OfType<ComboBoxItem>().FirstOrDefault(item => Equals(item.Tag, previousGroup)) is { } previousSelection)
+                        GroupSelector.SelectedItem = previousSelection;
+                }
+            }
             DetailPathText.Text = _schema?.Title ?? LocalizedText.Get("参数说明");
             DetailText.Text = _schema == null
                 ? LocalizedText.Get("选择参数查看路径。未提供字段说明时，仍可编辑现有参数。")
                 : LocalizedText.Get("选择参数查看完整说明、范围和示例。");
             DetailPathText.ToolTip = _schema?.SourceSummary;
-            if (_document.Count == 0)
-                PropertyPanel.Children.Add(new TextBlock { Text = LocalizedText.Get("对象中还没有参数，请在 JSON 视图添加。"), Margin = new Thickness(0, 16, 0, 16) });
-        }
-        catch (JsonException ex)
-        {
-            _document = null;
-            PropertyPanel.Children.Clear();
-            ShowError(ex.Message);
+            if (parseError != null) ShowError(parseError);
         }
         finally
         {
             _loading = false;
-            ApplyFilter();
+            if (!refreshRows) ApplyFilter();
             UpdateErrors();
         }
+    }
+
+    private static bool HaveSameFieldShape(JToken previous, JToken current)
+    {
+        if (previous.Type != current.Type) return false;
+        if (previous is JObject oldObject && current is JObject newObject)
+            return oldObject.Count == newObject.Count && oldObject.Properties().Zip(newObject.Properties()).All(pair =>
+                pair.First.Name == pair.Second.Name && HaveSameFieldShape(pair.First.Value, pair.Second.Value));
+        if (previous is JArray oldArray && current is JArray newArray)
+            return oldArray.Count == newArray.Count && oldArray.Zip(newArray).All(pair => HaveSameFieldShape(pair.First, pair.Second));
+        return previous is JValue;
     }
 
     public void ResetNavigation()
@@ -183,6 +220,7 @@ public partial class JsonPropertyEditorControl : UserControl
             var check = new CheckBox { IsChecked = token.Value<bool>(), Content = token.Value<bool>() ? LocalizedText.Get("已启用") : LocalizedText.Get("已关闭"), MinHeight = 30, VerticalContentAlignment = VerticalAlignment.Center };
             check.Checked += (_, _) => { check.Content = LocalizedText.Get("已启用"); UpdateValue(path, new JValue(true)); };
             check.Unchecked += (_, _) => { check.Content = LocalizedText.Get("已关闭"); UpdateValue(path, new JValue(false)); };
+            _refreshEditors.Add(path, value => check.IsChecked = value.Value<bool>());
             return check;
         }
         if (token is JArray booleans && booleans.Count > 0 && booleans.All(item => item.Type == JTokenType.Boolean))
@@ -199,9 +237,10 @@ public partial class JsonPropertyEditorControl : UserControl
             }
             return panel;
         }
+        JTokenType tokenType = token.Type;
         var box = new TextBox
         {
-            Text = token.Type == JTokenType.String ? token.Value<string>() ?? "" : token.ToString(Formatting.None),
+            Text = GetEditorText(token),
             MinHeight = 30, Padding = new Thickness(8, 4, 8, 4), VerticalContentAlignment = VerticalAlignment.Center,
             TextAlignment = token.Type is JTokenType.Integer or JTokenType.Float ? TextAlignment.Right : TextAlignment.Left,
             TextWrapping = TextWrapping.Wrap, ToolTip = token is JArray ? LocalizedText.Get("使用 JSON 数组格式，例如 [60, 40]。字符串需要双引号。") : schema?.BuildHint(path)
@@ -215,18 +254,19 @@ public partial class JsonPropertyEditorControl : UserControl
         }
         box.TextChanged += (_, _) =>
         {
+            if (_loading) return;
             _drafts[path] = box.Text;
             try
             {
                 JToken replacement;
-                if (token.Type == JTokenType.String) replacement = new JValue(box.Text);
-                else if (token.Type == JTokenType.Integer)
+                if (tokenType == JTokenType.String) replacement = new JValue(box.Text);
+                else if (tokenType == JTokenType.Integer)
                 {
                     if (!BigInteger.TryParse(box.Text, NumberStyles.Integer, CultureInfo.InvariantCulture, out var integer))
                         throw new FormatException("请输入整数。");
                     replacement = integer >= long.MinValue && integer <= long.MaxValue ? new JValue((long)integer) : new JValue(integer);
                 }
-                else if (token.Type == JTokenType.Float)
+                else if (tokenType == JTokenType.Float)
                 {
                     if (!double.TryParse(box.Text, NumberStyles.Float, CultureInfo.InvariantCulture, out var number) || !double.IsFinite(number))
                         throw new FormatException("请输入有效数字（小数点使用 .）。");
@@ -235,8 +275,8 @@ public partial class JsonPropertyEditorControl : UserControl
                 else
                 {
                     replacement = ParseToken(box.Text);
-                    if (token is JArray && replacement is not JArray) throw new FormatException("请输入完整数组，例如 [60, 40]。");
-                    if (token is JObject && replacement is not JObject) throw new FormatException("请输入 JSON 对象。");
+                    if (tokenType == JTokenType.Array && replacement is not JArray) throw new FormatException("请输入完整数组，例如 [60, 40]。");
+                    if (tokenType == JTokenType.Object && replacement is not JObject) throw new FormatException("请输入 JSON 对象。");
                 }
                 if (schema?.HasRange == true && replacement.Type is JTokenType.Integer or JTokenType.Float &&
                     !schema.IsInRange((double)replacement))
@@ -262,13 +302,30 @@ public partial class JsonPropertyEditorControl : UserControl
         {
             if (e.Key == Key.Enter) { box.MoveFocus(new TraversalRequest(FocusNavigationDirection.Next)); e.Handled = true; }
         };
+        _refreshEditors.Add(path, value =>
+        {
+            // Do not let Undo restore a value from the previous template.
+            string text = GetEditorText(value);
+            if (box.Text != text || box.CanUndo || box.CanRedo)
+            {
+                bool undoEnabled = box.IsUndoEnabled;
+                box.IsUndoEnabled = false;
+                box.Text = text;
+                box.IsUndoEnabled = undoEnabled;
+            }
+            box.Select(0, 0);
+        });
         return box;
     }
 
+    private static string GetEditorText(JToken token) => token.Type == JTokenType.String ? token.Value<string>() ?? "" : token.ToString(Formatting.None);
+
     private void UpdateValue(string path, JToken replacement)
     {
+        if (_loading) return;
         var current = _document?.SelectToken(path);
         if (current == null || JToken.DeepEquals(current, replacement)) return;
+        if (!HaveSameFieldShape(current, replacement)) _unfilteredRows = false;
         current.Replace(replacement);
         JsonValueChanged?.Invoke(this, _document!.ToString(Formatting.Indented));
     }
@@ -300,6 +357,7 @@ public partial class JsonPropertyEditorControl : UserControl
     {
         var query = SearchTextBox.Text.Trim();
         var group = (GroupSelector.SelectedItem as ComboBoxItem)?.Tag as string;
+        _unfilteredRows = SearchTextBox.Text.Length == 0 && group == null;
         SearchPlaceholder.Visibility = query.Length == 0 ? Visibility.Visible : Visibility.Collapsed;
         ClearSearchButton.Visibility = query.Length == 0 ? Visibility.Collapsed : Visibility.Visible;
         var entries = _entries.Where(entry => query.Length == 0
@@ -308,6 +366,7 @@ public partial class JsonPropertyEditorControl : UserControl
               (_document?.SelectToken(entry.Path)?.ToString().Contains(query, StringComparison.OrdinalIgnoreCase) == true)).ToList();
         PropertyPanel.Children.Clear();
         _groups.Clear();
+        _refreshEditors.Clear();
         foreach (var section in entries.GroupBy(entry => entry.Group))
         {
             var panel = new StackPanel();

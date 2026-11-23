@@ -5,7 +5,6 @@ status: "current"
 summary: "本地十字 RGB 三通道边缘测量、G 参考偏移、原图坐标与独立有效状态；像素结果不等同于已标定角度色差。"
 aliases: ["十字RGB分离", "九点十字", "RGB分离", "LocalRgbCrossNode", "RgbCrossRegistrationParameters", "RgbCrossMeasurementExporter", "rToGMaximumEdge_px", "bToGMaximumEdge_px"]
 code_paths: ["UI/ColorVision.ImageEditor/Algorithms/DisplayMetrology/DisplayRgbCross.cs", "UI/ColorVision.ImageEditor/Algorithms/DisplayMetrology/RgbCrossMeasurementExporter.cs", "UI/ColorVision.ImageEditor/EditorTools/Algorithms/RgbCrossConfigurationDraft.cs", "UI/ColorVision.ImageEditor/EditorTools/Algorithms/RgbCrossConfigurationWindow.xaml", "Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalRgbCrossNode.cs", "Scripts/validate_rgb_cross.ps1", "Engine/ColorVision.Engine/Templates/Jsons/FindCross"]
-test_paths: ["Test/ColorVision.UI.Tests/LocalRgbCrossNodeTests.cs", "Test/ColorVision.UI.Tests/LocalRgbCrossConfigurationTests.cs", "Test/ColorVision.UI.Tests/RgbCrossProfileTests.cs", "Test/ColorVision.UI.Tests/RgbCrossPoolingTests.cs", "Test/ColorVision.UI.Tests/RgbCrossLocatorStatisticsTests.cs", "Test/ColorVision.UI.Tests/LocalRgbCrossHistoryTests.cs"]
 related: ["algorithms.display-metrology", "algorithms.find-cross", "engine.results", "flow.node-extension"]
 ---
 
@@ -117,11 +116,13 @@ ImageView 独立执行不入库；结果窗口关闭后保留 `rgb-cross-measure
 
 Flow 使用 `LocalRgbCrossNode`，通过“算法参数 → 编辑…”配置独立的十字检测参数，不选择或读取 FindCross 算法模板；该模板保留给外部实现使用。旧流程保存的 `TemplateName` 加载时忽略。图像优先使用上游内存帧，没有内存帧时读取 IN 图像结果对应的文件；本地图片通过“加载图片”节点输入。独立配置窗口提供中文表单和 JSON 切换，包含行列数、前景阈值、最小十字跨度、轴带阈值、臂截面覆盖率、最小信号跨度和输入解码指数；行列数各支持 1–16，默认 3×3，单十字设为 1×1；始终使用 RGB 三通道，产品判定留在结果解析中。参数保存于节点 `ParameterJson`，旧节点缺少该字段时使用默认值；应用前与执行前均校验，取消不回写，无效或未知字段不静默忽略。搜索区域优先读取发光区 POI，其次固定矩形，最后整图。关注点和手动区域属于同一组：配置关注点时隐藏手动区域，清空后恢复显示并保留原矩形值。结果文件写入配置目录；留空时读取算法服务 `FileServerCfg.DataBasePath`，按 `<数据基础路径>/<服务 Code>/Data/yyyy-MM-dd` 保存，每次运行读取配置和当天日期。优先使用 `DEV.Algorithm.Default`，否则使用唯一的算法服务；无服务或存在歧义时提示配置，手动结果目录可覆盖默认路径。主记录复用 `FindCross=63`、版本 `2.0`，本地记录 `TId=null`、`TName=LocalRgbCross`，保存 `BatchId/Zindex/ImgFile`，公共明细保存 `ResultFileName`；主表与明细使用同一事务，入库失败清理新建 JSON。检测完成但部分点无效仍保存可复核的 `INVALID` 测量，不伪造产品通过结论。只有持久化成功后才设置下游结果 ID 并发布通知。ARVRPro 的十字 RGB 解析按同一类型和版本读取，原单十字使用原格式。
 
+持久化图像和发光区模板从原批次所在的库读取。主从记录在原库提交，通知沿用同一个连接。结果目录留空时，只使用原批次连接所属的算法服务。原连接的服务已移除时，须在节点中填写结果目录。
+
 主程序算法历史列表由独立的 `FindCross 2.0` 处理器读取保存的十字 JSON，展示原图、RGB 边缘、编号、R-G/B-G 和逐点诊断；不重算算法或套用客户配方。它与 `1.0` 单十字处理器按版本隔离。叠图等待当前原图完成加载，并核对选择、路径与尺寸；缺图时明确显示白色坐标底图，坏 JSON 保留诊断，切换结果后迟到回调不能画入新图。
 
 ## 独立原生入口与验证
 
-可独立交付的 C++ 测量实现位于 `Native/opencv_helper/algorithm/find_cross/rgb_cross.h/.cpp`，无 WPF、数据库或合格判定依赖，使用 C++17 与 nlohmann/json；`Test/opencv_helper_test/rgb_cross_standalone` 可用 CMake 编译 CLI 和合成自测。生产 ImageView/Flow 目前继续调用托管实现，C++ 是同口径独立入口，并非现有 `M_FindCrossLocal` 导出的替换。独立 C++ 入口目前没有托管 1.6.1 的多峰外包络、覆盖不足保留数值及暗臂范围恢复策略，相同输入的有效性可能不同。交付验证应逐点对比两端几何、有效性和分离值，不能只比较汇总计数。
+独立 C++ 测量入口为 `Native/opencv_helper/algorithm/find_cross/rgb_cross.cpp`，CMake 目标为 `rgb_cross_cli`，依赖 C++17 和 nlohmann/json。多峰外包络、覆盖不足保留数值和暗臂范围恢复由托管实现提供。两种入口的交付结果应逐点核对几何、有效性和分离值。
 
 没有直接调用单十字 `FindCrossLocal`：`pattern_cross.cpp` 的 `ConvertToGrayFloat` 会混合颜色，而 `PatternCrossResult` 提供轴交点、角度、端点和臂质量，不提供通道对应的双侧阈值边缘。其 `SampleAxis` 内部有原图背景滤除、单目标候选及光学坐标语义，也不是可直接调用的中立边缘 API。这里采用独立的逐通道截面质量检查与中位数测量；单十字功能及 Engine 结果链保持独立。当前没有像素到角度的自动换算，不能替代相机/镜头色差基线与现场误报漏报验收。
 

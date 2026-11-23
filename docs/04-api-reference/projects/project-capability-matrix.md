@@ -5,7 +5,6 @@ status: "current"
 summary: "比较 ARVRPro、KB 和 IntegrationDemo 的检测触发、测试完成判据、流程配置与结果出口。"
 aliases: ["哪个项目使用 Modbus","哪些项目输出 MES 或 Socket","ProjectARVRPro","ProjectKB","ProjectARVRPro.IntegrationDemo","项目协议对比","项目结果出口","项目流程配置","测试完成确认"]
 code_paths: ["Projects/ProjectARVRPro/","Projects/ProjectARVRPro.IntegrationDemo/","Projects/ProjectKB/"]
-test_paths: ["Test/ProjectARVRPro.Tests/ProjectARVRPro.Tests.csproj","Test/ProjectKB.Tests/ProjectKB.Tests.csproj"]
 related: ["projects.index","projects.arvr-pro","projects.arvr-pro-demo","projects.kb","projects.lux-protocol"]
 ---
 
@@ -17,7 +16,7 @@ related: ["projects.index","projects.arvr-pro","projects.arvr-pro-demo","project
 
 | 项目 | 业务定位 | 入口与协议 | 完成确认 |
 | --- | --- | --- | --- |
-| [ProjectARVRPro](./project-arvr-pro.md) | AR/VR 流程组、Recipe、切图与光学测试，承接 LUX 的 VID、光通量 | Socket JSON：`ProjectARVRInit`、`RunAll`、`SwitchGroup`；LUX 客户端选择 Text `T00XX,SN;`；另有雷鸟串口切图、AOI 外部切图节点 | JSON 等待最终 `ProjectARVRResult` 并检查业务判定；LUX 固定 `00` 不表示 PASS。分别见 [JSON 对接契约](./project-arvr-pro-integration-demo.md)与 [LUX 协议](./project-lux-protocol.md) |
+| [ProjectARVRPro](./project-arvr-pro.md) | AR/VR 流程组、Recipe、切图与光学测试，承接 LUX 的 VID、光通量 | Socket JSON：`ProjectARVRInit`、`RunAll`、`SwitchGroup`；LUX 客户端选择 Text `T00XX,SN;`；另有雷鸟串口切图、AOI 外部切图节点 | JSON 等待最终 `ProjectARVRResult` 并检查业务判定；LUX 固定 `00` 不表示 PASS。分别见 [JSON 对接契约](./project-arvr-pro-protocol.md)与 [LUX 协议](./project-lux-protocol.md) |
 | [ProjectKB](./project-kb.md) | 键盘背光亮度、均匀性、局部对比度及背光修正 | Modbus TCP 触发检测；MES DLL 用于 SN 检查与结果回传 | 寄存器回 `0` 也可能是忽略空 SN 触发；需分别核对检测结果、PLC 读回和已启用的 MES 输出 |
 | [IntegrationDemo](./project-arvr-pro-integration-demo.md) | 独立 ARVRPro TCP/JSON 对接客户端 | 主动连接服务端，默认端口 `6666`；支持离线解析样例、联机命令及切图确认 | 联机测试等待最终结果；离线解析成功只说明样例可读取，不证明宿主、设备或协议联调通过 |
 
@@ -30,7 +29,7 @@ KB 状态栏的 Socket 配置与 Modbus 不是两条等效检测入口。当前 
 | 整组/整机 CSV | ARVRPro | `ObjectiveTestResult`、CSV exporter 与结果保存代码 | 文件名、目录、列顺序、单位、判定及旧格式兼容；LUX 文本入口另有 `C_`、`B_`、`D_` 文件 |
 | 本地 SQLite | ARVRPro、KB | 各自 `ViewResultManager`；KB 主结果为 `KBItemMaster` | SN、时间、批次、流程及结果详情；项目本地库不代替 Engine 原始批次与算法数据 |
 | 客户 XLSX | ARVRPro | `Exports/CustomTestResultExportService.cs` | 当前输出 profile、工作表字段、路径与依赖 |
-| MES | KB | `MesDll.cs`、`ProjectKBWindow.Processing()`、`Summary` | `CheckWIP` 与 `Collect_test` 的调用条件、参数和客户返回约定 |
+| MES | KB | `MesDll.cs`、`ProjectKBWindow.ProcessResultAsync()`、`Summary` | `CheckWIP` 与 `Collect_test` 的调用条件、参数和客户返回约定 |
 | Socket 响应 | ARVRPro | `Services/SocketControl.cs`、`LuxSocketDispatcher.cs` 与窗口结果发送代码 | JSON 的 ACK/最终事件与 LUX 文本响应分别核对 |
 | 单次 CSV、文本与 summary | KB；Demo 另存解析结果 JSON/CSV | KB 的 `KBItemMasterExtensions.cs`、`ViewResultManager.Config`；Demo 的 `Program.cs` | 实际保存开关、路径、动态列及结果来源；客户端导出不是服务端业务结果落库 |
 
@@ -47,7 +46,7 @@ ARVRPro 的 LUX 文本入口按活动组首个 `SocketCode` 匹配项运行其�
 
 ## 交付与验证
 
-1. 先用对应项目页列出的自动化测试、样例和构建入口验证改动范围。测试项目存在或离线解析成功不代表现场联调完成。
+1. 按对应项目页准备构建、样例与现场依赖。现场联调需使用真实设备与接口。
 2. 真实 Modbus、MES、Socket、切图和设备测试会推进生产动作或写入外部系统；确认操作范围后，使用同一 SN/时间关联最终结果与已启用的输出。不能仅凭 ACK、寄存器归零或文件出现放行。
 3. 交付前核对配置与依赖：ARVRPro 关注流程组、切图、Recipe 和结果格式，Text 入口另核对 `SocketCode`、设备参数和输出目录；KB 关注 `FunTestDll.dll`、Modbus、MES 与 Recipe。
 

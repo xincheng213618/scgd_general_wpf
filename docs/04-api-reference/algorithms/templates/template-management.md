@@ -5,7 +5,6 @@ status: "current"
 summary: "TemplateEditorWindow与TemplateCreateView的共享参数、创建来源、预览、索引和关闭语义；关闭不是通用回滚，筛选后的操作目标需单独核对。"
 aliases: ["模板类存在但列表不显示","模板编辑","模板创建","取消模板编辑","模板搜索后删除","TemplateEditorWindow","TemplateCreate","TemplateCreateView","TemplateCreateSourceKind","ApplyTemplateSource","IsUserControl","IsSideHide","TemplateSearchProvider","TemplatesExtension","放弃修改","放弃更改","模板未保存","关闭模板窗口","创建副本"]
 code_paths: ["Engine/ColorVision.Engine/Templates/TemplateEditorWindow.xaml.cs","Engine/ColorVision.Engine/Templates/TemplateEditorWindow.xaml","Engine/ColorVision.Engine/Templates/TemplateCreate.xaml.cs","Engine/ColorVision.Engine/Templates/TemplateCreateView.xaml.cs","Engine/ColorVision.Engine/Templates/ITemplate.cs","Engine/ColorVision.Engine/Templates/TemplateModel.cs","Engine/ColorVision.Engine/Templates/TemplateSearchProvider.cs","Engine/ColorVision.Engine/Templates/TemplatesExtension.cs"]
-test_paths: []
 related: ["engine.template-design","algorithms.template-menus","algorithms.json-templates","flow.workspace","ui.property-grid","ui.configuration"]
 ---
 
@@ -18,7 +17,7 @@ related: ["engine.template-design","algorithms.template-menus","algorithms.json-
 ## 编辑已有模板
 
 1. 从[模板菜单、算法面板或应用搜索](./template-menu-entries.md)进入目标模板。普通模板在右侧显示参数，专用模板可能提供独立编辑控件或双击入口。
-2. 按名称和记录 ID 确认条目，再修改参数。准备重命名、删除、导出或设为默认时，先清空列表搜索、重新选中目标，并核对全部勾选项；下文说明筛选索引的限制。
+2. 点击名称选择条目，按住 `Ctrl` 或 `Alt` 单击可切换单行的选中状态，按住 `Shift` 单击可选择连续多行。数据库“序号”默认隐藏，需要时右键列头显示。列表获得焦点时按 `Ctrl+F` 打开搜索，按 `Esc` 关闭并清除筛选。
 3. 点击 **保存**，窗口会在 `Save()` 返回后关闭；使用保存快捷命令时窗口保留。重新打开并核对实际参数，具体数据库保存规则取决于模板类型。
 
 通用 JSON 编辑器实现 `ITemplateEditorValidation`。保存、切换记录和最终创建前，宿主先检查编辑器草稿；有错误输入时保留当前编辑内容并阻止操作，避免保存上次有效值却表现为保存了当前草稿。该保护只适用于实现接口的编辑器，不改变其它模板的保存契约。
@@ -52,7 +51,7 @@ related: ["engine.template-design","algorithms.template-menus","algorithms.json-
 
 点击 **新建**，选择默认模板、内置业务预设、现有模板副本或导入文件等可用来源；修改名称和预览参数后点击 **创建**。名称会去除首尾空白，必须非空且通过该模板的重名检查。来源列表表示当前实现提供的准备方式，最终内容以实际预览和具体模板的创建结果为准。
 
-已有条目的 **创建副本** 和列表底部的 **导入** 会先准备内容，再打开创建窗口。导入窗口隐藏来源选择；文件已选好仍需完成创建。创建后列表数量变化时，宿主清空搜索并选择新条目；应核对条目名称及参数，不能只看列表数量。
+已有条目的 **创建副本** 和列表顶部的 **导入** 会先准备内容，再打开创建窗口。导入窗口隐藏来源选择；文件已选好仍需完成创建。创建后列表数量变化时，宿主清空搜索并选择新条目；应核对条目名称及参数，不能只看列表数量。
 
 `TemplateCreateView.Initialize` 构建来源列表；是否展示现有副本、文件导入，取决于反射判断 `CopyTo(int)` / `Import()` 是否被覆写，不是运行能力测试。普通模板列出默认来源；`UseCatalogCreateSources=true` 的模板只列出内置和现有分区，不提供 Default/File 来源卡片。Flow 启用该模式，打开时优先选择首个可用内置流程；空分区和无匹配搜索清除旧草稿与预览并禁用创建，不能从隐藏项创建。已准备的复制/导入内容仍以 Prepared 接入。已有暂存内容时增加 Prepared；请求 Existing 时先找指定索引，找不到再找同类首项，请求类别不存在才回退 Prepared、Default。
 
@@ -82,9 +81,9 @@ Flow 单独处理 `flow-recipe` 载荷，由固定节点类型构建实际连线
 
 ## 搜索后的显示位置不总是源位置
 
-编辑窗口的搜索把 `ListView.ItemsSource` 换成过滤结果。选择、鼠标双击、创建副本与拖动使用对象引用查找源索引；但当前删除、导出、部分重命名和“设为默认”入口仍直接使用可见 `SelectedIndex`，没有全部经过该映射。
+筛选结果按模板对象定位。搜索框按 `Enter` 打开当前结果并收起搜索。顶部操作栏以图标和文字显示新建、保存、导入、导出和删除，删除和导出作用于当前选中的行。列表获得焦点时，`Alt+Delete` 也可打开删除确认，确认框列出目标名称。批量导出沿用模板原有的打包格式。
 
-这是现有实现风险，不是推荐行为：筛选后的第零行未必是源集合第零项。再加上具体 `Delete/Export` 可能优先使用集合的 `IsSelected` 勾选项，不能宣称操作一定只作用于当前可见选中项。执行写入或删除前，应清空筛选、重新选择，并核对记录 ID 与全部勾选项。搜索框的 Enter 入口也先清空筛选再读取 `SelectedIndex`，没有保持原对象的索引映射；需要打开已筛选条目时，鼠标双击会按对象找源索引。
+编辑参数时，单按 `Delete` 由当前编辑控件处理。删除模板请用工具栏或列表右键菜单的“删除”，也可在列表中按 `Alt+Delete`。
 
 列头排序改变源集合顺序。拖动按源对象找到两个目标，一次异步交换这两个模板的数据库顺序，中间项不动；不会逐项交换拖动经过的记录。保存期间禁用窗口交互并阻止关闭，提交成功后共享集合和下拉列表同步，失败提示重新打开核对。MySQL 的主记录 ID 与明细 `Pid` 在同一事务中交换，本地模板则交换 SQLite `sort_order`，具体约束见[模板持久化与排序](../../../03-architecture/components/templates/design.md)。
 
@@ -94,10 +93,10 @@ Flow 单独处理 `flow-recipe` 载荷，由固定节点类型构建实际连线
 
 应用搜索按注册键与条目名称标识候选，执行时重新解析当前注册并查找索引；打开普通编辑器或专用入口的规则统一见[模板入口](./template-menu-entries.md)。搜索目录与窗口加载属于不同阶段，候选可见不代表数据库内容已经刷新。
 
-`TemplateSetting` 由 `ConfigService` 解析，是共享窗口配置，例如列表列可见性；取得配置对象不等于已保存文件，它也不同于数据库模板参数。该配置的保存与重载见[软件配置契约](../../ui-components/configuration.md)。
+`TemplateSetting` 由 `ConfigService` 解析，保存模板窗口设置。普通编辑列表每次打开默认显示名称列，列头菜单可临时调整列的可见性。公共窗口的操作栏与列表使用当前主题资源，右侧挂载各模板自己的参数编辑器。设置的保存与重载见[软件配置契约](../../ui-components/configuration.md)。
 
 ## 验证入口与缺口
 
-`SensorTemplatePresetTests` 覆盖传感器预设来源切换、可读预览、取消及基础库加载失败的降级行为；`ParameterTemplatePresetTests` 覆盖同代码不同存储格式隔离、按 symbol 映射、曝光名称与参数一致、JSON 草稿隔离和模块指引；`FlowTemplatePresetTests` 覆盖流程连线往返、无现场设备绑定、取消不落库、独立创建身份及预览清单。它们不证明所有模板子类的共享对象取消、过滤后目标选择、控件复用或普通数据库 CRUD 正确；这些边界仍需按具体实现核对。
+通用模板取消、筛选后目标选择、控件复用和数据库增删改查按具体实现核对。
 
 有授权时，应以隔离数据库和非敏感样例分别验证：打开/关闭、真实目标身份、默认/副本/文件来源、预览失败、保存部分失败与旧引用。记录已执行的最小用例和缺口；不要通过重置现场数据库、启动真实流程或删除模板来验证文档。

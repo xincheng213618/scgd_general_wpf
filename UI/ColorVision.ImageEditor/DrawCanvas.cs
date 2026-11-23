@@ -46,6 +46,7 @@ namespace ColorVision.ImageEditor
         // The image has its own rendering surface. Annotation collections, selection and
         // undo history contain only editor visuals, while Image still owns layout/stretch.
         private readonly DrawingVisual imageVisual = new();
+        private DrawingGroup? _rgb48ImageDrawing;
         private BitmapSource? _renderProxy;
         private ImageSource? _renderProxyOwner;
         // 使用只读集合，防止外部直接修改
@@ -198,6 +199,13 @@ namespace ColorVision.ImageEditor
         protected override Visual GetVisualChild(int index) => index == 0 ? imageVisual : visuals[index - 1];
         protected override int VisualChildrenCount => visuals.Count + 1;
 
+        private static readonly DependencyPropertyKey HasImagePropertyKey = DependencyProperty.RegisterReadOnly(
+            nameof(HasImage), typeof(bool), typeof(DrawCanvas), new PropertyMetadata(false));
+
+        public static readonly DependencyProperty HasImageProperty = HasImagePropertyKey.DependencyProperty;
+
+        public bool HasImage => (bool)GetValue(HasImageProperty);
+
         protected override void OnPropertyChanged(DependencyPropertyChangedEventArgs e)
         {
             base.OnPropertyChanged(e);
@@ -205,6 +213,11 @@ namespace ColorVision.ImageEditor
             {
                 if (!ReferenceEquals(_renderProxyOwner, e.NewValue)) SetRenderProxy(null, null);
                 ClearImageDrawing();
+                if ((e.OldValue == null) != (e.NewValue == null))
+                {
+                    SetValue(HasImagePropertyKey, e.NewValue != null);
+                    CommandManager.InvalidateRequerySuggested();
+                }
             }
         }
 
@@ -212,18 +225,61 @@ namespace ColorVision.ImageEditor
         {
             // Unloaded controls do not render again, so invalidating Source alone
             // leaves the old bitmap referenced by this separate drawing surface.
+            _rgb48ImageDrawing = null;
             using DrawingContext imageContext = imageVisual.RenderOpen();
         }
 
         protected override void OnRender(DrawingContext drawingContext)
         {
+            _rgb48ImageDrawing = null;
             using DrawingContext imageContext = imageVisual.RenderOpen();
             if (ActiveRenderProxy is BitmapSource proxy)
             {
                 imageContext.DrawImage(proxy, new Rect(new Point(), RenderSize));
                 return;
             }
+            if (Source is BitmapSource bitmap && bitmap.Format == PixelFormats.Rgb48)
+            {
+                DrawingGroup imageDrawing = new();
+                using (DrawingContext image = imageDrawing.Open())
+                    base.OnRender(image);
+                imageContext.DrawDrawing(imageDrawing);
+                _rgb48ImageDrawing = imageDrawing;
+                return;
+            }
             base.OnRender(imageContext);
+        }
+
+        internal void RenderSnapshot(RenderTargetBitmap target)
+        {
+            if (_rgb48ImageDrawing is not { } imageDrawing || Source is not BitmapSource bitmap
+                || ActiveRenderProxy != null || Effect != null || CacheMode != null || OpacityMask != null
+                || RenderTransform?.Value.IsIdentity == false || LayoutTransform?.Value.IsIdentity == false
+                || FlowDirection != FlowDirection.LeftToRight
+                || target.PixelWidth != bitmap.PixelWidth || target.PixelHeight != bitmap.PixelHeight
+                || RenderSize.Width != bitmap.PixelWidth * 96.0 / target.DpiX
+                || RenderSize.Height != bitmap.PixelHeight * 96.0 / target.DpiY)
+            {
+                target.Render(this);
+                return;
+            }
+
+            // WPF can freeze the recorded drawing. Swap only the base image commands
+            // during the synchronous capture and restore the original drawing afterwards.
+            DrawingGroup snapshotImage = new();
+            RenderOptions.SetBitmapScalingMode(snapshotImage, BitmapScalingMode.NearestNeighbor);
+            snapshotImage.Children.Add(imageDrawing);
+            try
+            {
+                using (DrawingContext context = imageVisual.RenderOpen())
+                    context.DrawDrawing(snapshotImage);
+                target.Render(this);
+            }
+            finally
+            {
+                using DrawingContext context = imageVisual.RenderOpen();
+                context.DrawDrawing(imageDrawing);
+            }
         }
 
         internal BitmapSource? ActiveRenderProxy => ReferenceEquals(_renderProxyOwner, Source) ? _renderProxy : null;

@@ -5,7 +5,6 @@ status: "current"
 summary: "opencv_helper 英文 API 参考：校准/POI、图像处理、SFR、检测与内存释放；核对真实参数单位和函数族错误码，声明的选项不等于当前 Engine 提供操作入口。"
 aliases: ["opencv_helper API", "原生函数参考", "图像拼接", "伪彩原位输出", "POI 批量计算", "校准共享缓存", "StitchingErrorCode", "RoiRect", "COLORVISION_CALIBRATION_CACHE_MB", "M_CalibrationExecuteToV1", "M_CalibrationCacheReleaseV1", "M_CalculatePoiBatchV1", "M_CalculatePoiBatchV2", "MPoiOptionsV2", "PoiOptionsFlagsV2", "M_POI_OPTION_PRESERVE_NON_POSITIVE_VALUES", "PoiMeasurementService", "M_AutoLevelsAdjust", "M_AutomaticColorAdjustment", "M_AutomaticToneAdjustment", "M_PseudoColor", "M_PseudoColorAutoRange", "M_PseudoColorInto", "M_GetMinMax", "M_ExtractChannel", "M_GetWhiteBalance", "M_ApplyGammaCorrection", "M_AdjustBrightnessContrast", "M_InvertImage", "M_Threshold", "M_RemoveMoire", "M_ConvertImage", "M_ConvertGray32Float", "M_DrawPoiImage", "M_StitchImages", "M_Fusion", "M_ApplyGaussianBlur", "M_ApplyMedianBlur", "M_ApplySharpen", "M_ApplyCannyEdgeDetection", "M_ApplyHistogramEqualization", "M_CalSFRMultiChannel", "M_AnalyzeSfrV2", "斜边清晰度", "ESF", "MTF50", "MTF10", "RGB 子像素", "M_CalArtculation", "M_FindLuminousArea", "M_FindLuminousAreaV2", "M_FindLightBeads", "M_DetectKeyRegions", "FreeResult", "M_FreeHImageData", "M_PseudoColorAutoRangeInto"]
 code_paths: ["Native/opencv_helper/API_Documentation.md", "Native/include/opencv_media_export.h", "Native/include/custom_structs.h", "Native/opencv_helper/opencv_media_export.cpp", "Native/opencv_helper/algorithm.cpp", "Native/opencv_helper/exports/calibration_export.cpp", "Native/opencv_helper/exports/poi_export.cpp", "Native/opencv_helper/exports/sfr_export.cpp", "Native/opencv_helper/exports/p2_export.cpp", "Native/opencv_helper/algorithm/calibration", "Native/opencv_helper/algorithm/poi/poi_batch.cpp", "Native/opencv_helper/algorithm/sfr/sfr_slanted.cpp", "Native/opencv_helper/algorithm/luminous_area/luminous_area_v2.cpp", "UI/ColorVision.Core/OpenCVMediaHelper.cs", "UI/ColorVision.Core/SfrAnalysis.cs", "UI/ColorVision.ImageEditor/EditorTools/Algorithms/Calculate/SFR", "UI/ColorVision.Core/OpenCVCalibration.cs", "UI/ColorVision.Core/HImage.cs", "Engine/ColorVision.Engine/Services/POI/PoiMeasurementService.cs"]
-test_paths: ["Test/opencv_helper_test/test_sfr_analysis.cpp","Test/opencv_helper_test/test_find_luminous_area.cpp","Test/opencv_helper_test/test_calibration.cpp","Test/opencv_helper_test/test_pseudo_color.cpp","Test/opencv_helper_test/test_p2_algorithms.cpp","Test/ColorVision.UI.Tests/PoiMeasurementServiceTests.cs"]
 related: ["engine.native-integration", "ui.core", "ui.image-frames", "algorithms.local-native-analysis", "algorithms.poi-routes", "algorithms.find-cross"]
 ---
 
@@ -13,167 +12,38 @@ related: ["engine.native-integration", "ui.core", "ui.image-frames", "algorithms
 
 ## Overview
 
-`opencv_helper.dll` is a C++ dynamic link library that provides computer vision and image processing functions for the ColorVision WPF application. It serves as a bridge between OpenCV algorithms and C# code via P/Invoke.
-
-本页保留英文函数参考，集中说明参数、结构布局、返回值和资源释放。按函数名或中文功能词检索即可定位章节；这不是自动生成的全部导出清单。
-
-Start with the [native integration guide](../../02-developer-guide/engine-development/opencv-integration.md) for build inputs and module boundaries. Header declarations, implementations and managed declarations must agree. ImageEditor execution and drawing are covered by [local native analysis](../algorithms/local-native-analysis.md). Examples are call patterns with caller-provided images/buffers, not ready-to-run hardware tests.
-
----
-
-## Table of Contents
-
-- [Data Structures](#data-structures)
-- [Calibration Context API](#calibration-context-api)
-- [POI Batch API](#poi-batch-api)
-- [Image Processing Functions](#image-processing-functions)
-- [Filter Functions](#filter-functions)
-- [SFR Functions](#sfr-spatial-frequency-response-functions)
-- [Focus Evaluation](#focus-evaluation-functions)
-- [Detection Functions](#detection-functions)
-- [Utility Functions](#utility-functions)
-- [P2 Local Analysis](#p2-local-analysis-functions)
-- [Error Codes](#error-codes)
-- [Thread Safety](#thread-safety)
-- [Memory Management](#memory-management)
-- [Build Information](#build-information)
-
----
+`opencv_helper.dll` exposes OpenCV algorithms to ColorVision through C exports. Use `Native/include/opencv_media_export.h` and `Native/include/custom_structs.h` for signatures and layout. Managed declarations are in `UI/ColorVision.Core/OpenCVMediaHelper.cs`, `OpenCVCalibration.cs` and `HImage.cs`. This page records behavior that matters when crossing the ABI. [Native integration](../../02-developer-guide/engine-development/opencv-integration.md) · [ImageEditor native analysis](../algorithms/local-native-analysis.md)
 
 ## Data Structures
 
 ### HImage
 
-Image data structure used for passing images between C# and C++.
+The shared image descriptor is declared in `Native/include/custom_structs.h` and `UI/ColorVision.Core/HImage.cs`. On x64 it uses pack 8 and is 32 bytes. `isDispose` is a one-byte bool at offset 20 and `pData` is at offset 24. `depth` is the sample width (`8/16/32/64`), and `stride` is bytes per row (`0` for tightly packed, negative invalid).
 
-```cpp
-#pragma pack(push, 8)
-struct HImage {
-    int rows;           // Image height
-    int cols;           // Image width
-    int channels;       // Shared conversion: 1..CV_CN_MAX; algorithms may restrict this
-    int depth;          // 8=CV_8U, 16=CV_16U, 32=CV_32F, 64=CV_64F
-    int stride;         // Bytes per row; 0 means tightly packed, negative is invalid
-    bool isDispose = false; // true: borrowed buffer; managed Dispose must not free it
-    unsigned char* pData;  // Pointer to pixel data
-};
-#pragma pack(pop)
-```
-
-**C# Equivalent:**
-```csharp
-[StructLayout(LayoutKind.Sequential, Pack = 8)]
-public struct HImage : IDisposable
-{
-    public int rows;
-    public int cols;
-    public int channels;
-    public int depth;
-    public int stride;
-    [MarshalAs(UnmanagedType.I1)]
-    public bool isDispose;
-    public IntPtr pData;
-    // ... methods
-}
-```
-
-Use the actual definitions in `Native/include/custom_structs.h` and
-`UI/ColorVision.Core/HImage.cs`, not a separately maintained interop struct. On
-x64 the native layout is 32 bytes, with `isDispose` at offset 20 and `pData` at
-offset 24; the bool is one byte. Native assertions guard the layout.
-
-`isDispose` is not a "please free" flag: the managed `Dispose()` frees a non-null
-`pData` with `FreeCoTaskMem` only when `isDispose == false`, then clears that
-struct's pointer. With `true`, the buffer is borrowed and its owner must keep it
-valid for the native call. Copying an `HImage` does not clone its pixels or make
-two independent owners; do not dispose two owning copies of the same pointer.
+`isDispose=false` marks a buffer owned by the descriptor. Managed `Dispose()` frees it with `FreeCoTaskMem` and clears that descriptor's pointer. `true` borrows the buffer, which the owner keeps valid until the call returns. Copies share the pointer and must not be disposed as independent owners.
 
 ### RoiRect
 
-Region of Interest rectangle structure.
-
-```cpp
-#pragma pack(push, 1)
-struct RoiRect {
-    int x;      // Top-left X coordinate
-    int y;      // Top-left Y coordinate
-    int width;  // Rectangle width
-    int height; // Rectangle height
-};
-#pragma pack(pop)
-```
-
-**C# Equivalent:**
-```csharp
-[StructLayout(LayoutKind.Sequential, Pack = 1)]
-public struct RoiRect
-{
-    public int X;
-    public int Y;
-    public int Width;
-    public int Height;
-}
-```
+`RoiRect` uses pack 1 and four signed 32-bit fields for the top-left coordinates, width and height. Read the declaration in `Native/include/custom_structs.h` and `UI/ColorVision.Core/HImage.cs`. The behavior of empty or invalid ROIs is export-specific.
 
 ### FocusAlgorithm (Enum)
 
-Focus evaluation algorithm types.
-
-```cpp
-enum FocusAlgorithm {
-    Variance = 0,              // Variance of pixel values
-    StandardDeviation = 1,     // Standard deviation
-    Tenengrad = 2,             // Tenengrad (Sobel-based)
-    Laplacian = 3,             // Laplacian operator
-    VarianceOfLaplacian = 4,   // Variance of Laplacian
-    EnergyOfGradient = 5,      // Energy of gradient
-    SpatialFrequency = 6       // Spatial frequency
-};
-```
+Use the persisted enum values in `Native/include/opencv_media_export.h` and their managed counterparts in `OpenCVMediaHelper.cs`. The focus score semantics are described under [M_CalArtculation](#m-calartculation).
 
 ## Calibration Context API
 
-The calibration API keeps parsed correction tables, distortion maps, and scratch
-buffers alive across frames. Rebuild a context only when the ordered calibration
-file list, file contents, or source layout changes.
-
-```cpp
-// All image buffers, dimensions and options are supplied by the caller.
-void* context = nullptr;
-int status = M_CalibrationCreate(&context);
-if (status != M_CALIBRATION_OK) return status;
-status = M_CalibrationLoadFileW(context, calibrationType, filePath);
-if (status == M_CALIBRATION_OK) {
-    status = M_CalibrationExecuteToV1(
-        context, width, height, bitsPerChannel, channels,
-        sourceRawData, rawByteLength,
-        correctedRawData, correctedRawByteLength,
-        cieData, cieFloatCount, &options);
-}
-// Capture the last error here, before destroying the context, if status failed.
-int destroyStatus = M_CalibrationDestroy(context);
-return status == M_CALIBRATION_OK ? destroyStatus : status;
-```
+Reuse the calibration context while the ordered correction files, their contents and the source layout are unchanged. Create with `M_CalibrationCreate`, load the ordered files with `M_CalibrationLoadFileW`, execute, read the last error before destroying the context on failure, and release it with `M_CalibrationDestroy`. Caller-owned buffers and lifetime rules are below.
 
 Supported legacy calibration values are `0` through `9` and `11` through `15`:
 DarkNoise, three defect-point variants, DSNU, Uniformity, Luminance, OneColor,
 FourColor, MultiColor, Distortion, ColorShift, LineArity, ColorDiff, and
 AngleShift. Value `10` (`LumColor`) is reserved and intentionally rejected.
 
-Execution preserves template order for RAW corrections. If one luminance/color
-transform is loaded, it runs last and writes planar float CIE (`X`, then `Y`,
-then `Z`); Luminance writes one float plane. At most one color transform may be
-selected. Color-transform exposure values must be finite and positive.
-`rawByteLength` and `cieFloatCount` are validated before processing.
-Geometric transforms that cannot safely run in place share one context-owned
-RAW-sized work buffer and ping-pong through it. Consecutive Distortion and
-ColorDiff therefore require no intermediate full-frame copy.
+RAW corrections run in template order. At most one luminance/color transform runs afterward and writes float planes (`X`, `Y`, `Z` in order, or one plane for luminance). Color-transform exposures must be finite and positive. Check size arguments in bytes for RAW and float elements for CIE.
 
-`M_CalibrationExecuteRawWithFlipV1(context, width, height, bitsPerChannel, channels, rawData, rawByteLength, options, flipMode)` 是仅输出 RAW 的校正加翻转入口：`flipMode` 为 `0`（上下）、`1`（左右）或 `-1`（两者），结果等价于先执行原校正再翻转。它拒绝含亮度/色度转换的模板；平面 RAW 逐通道翻转，失败后不能消费输出。最后一步为 `ColorDiff` 且上下翻转时直接按目标行写出；其他组合保留末尾翻转，也可与末尾工作缓冲复制合并。原执行接口和 `MCalibrationExecutionOptionsV1` 的布局、行为保持不变。
+`M_CalibrationExecuteRawWithFlipV1` is equivalent to applying RAW correction and then flipping (`0` up/down, `1` left/right, `-1` both). It rejects templates containing luminance/color conversion. Planar RAW is flipped plane by plane. Failed calls leave unusable output.
 
-Engine 仅在 `opencv_helper` 后端、包含常规校正且主输出为 RAW、该帧尚未翻转时使用新入口；成功后登记 RAW 的翻转状态。生成完整 CIE、仅追加色度参数、旧版校正后端和无翻转配置保持原路径，后续生成 CIE 继承已有 RAW 方向。合并路径的翻转耗时计入 `CalibrationAlgorithm`，独立 `MirrorImage` 记为跳过；比较性能时应合计这两个阶段。
-
-`AngleShift` 保留整数/小数光心、各通道多项式、整数采样坐标及越界补零规则。16-bit 三通道输入在 IPP 启用且 `interpolate_ratio` 为 2、3、4 时，可缓存分块区域与局部采样坐标，只对需要的区域执行同一套 `INTER_CUBIC`；裁剪区域包含完整插值邻域，不把分块边缘当作图像边缘。复用的分块图像缓冲总计不超过 64 MiB（不含坐标表和 RAW 工作缓冲）。8-bit、其他倍率、IPP 关闭，或分块会增加处理量/需要过大区域时，保留完整图像放大路径；执行上下文切换这些条件时重建对应坐标，不改进程全局线程或 IPP 设置。`Test/opencv_helper_test/test_calibration.cpp` 的校准 smoke 覆盖随机/极值图、边缘、光心小数、后端与位深切换，并要求与完整放大参考逐字节一致。
+Engine uses this entry for an unflipped RAW frame when the helper backend runs standard correction. Full CIE, metadata-only and legacy paths retain their existing behavior. For performance comparisons add `CalibrationAlgorithm` and `MirrorImage`, because the fused path includes mirroring in the former. `AngleShift` uses the same coordinate and zero-fill rules in full-frame and tiled interpolation. Its implementation controls the IPP and buffer thresholds.
 
 `M_CalibrationExecuteToV1` borrows a read-only source RAW pointer. It can write
 corrected RAW, planar CIE, or both without first copying the source in managed
@@ -183,6 +53,14 @@ older `M_CalibrationExecute` mutable-buffer entry point remains available for
 ABI compatibility; its RAW and CIE ranges must also be distinct. Output buffers
 are undefined after a failed ExecuteTo call; do not consume partially written
 outputs as valid calibration results.
+
+`M_CalibrationTransferWorkBuffersV1(destination, source)` moves reusable RAW
+working allocations between two live contexts. Each destination slot keeps the
+larger allocation and the corresponding source slot becomes empty. Passing the
+same context twice succeeds without moving buffers. Calibration files and
+geometry maps stay with their owning context. Engine uses this optional export
+when switching cached geometry contexts and keeps independent buffers with
+older helpers.
 
 All functions use `__cdecl`. Calls on a live context are serialized internally,
 but `M_CalibrationDestroy` must not overlap another call on the same context.
@@ -199,7 +77,8 @@ canonical file path, so different camera/template groups reuse the same file
 data and precomputed maps while keeping independent execution contexts. File
 size and last-write time invalidate stale generations. The default retained
 memory budget is 4 GiB; set `COLORVISION_CALIBRATION_CACHE_MB` before first use
-to override it (`0` disables retention). Use
+to override it (`0` disables retention). DSNU and Uniformity count the memory
+retained by the parsed maps, including lossless packed data and its indexes. Use
 `M_CalibrationCacheGetStatsV1`/`M_CalibrationCacheGetEntryV1` to inspect the
 cache and `M_CalibrationCacheReleaseV1` to drop cache-owned references. Releasing
 the cache never invalidates a live context; the release result reports memory
@@ -208,6 +87,13 @@ has not published its context lease is canceled at the release boundary; if a
 lease was already reserved, it is reported as active before release returns.
 The budget may be exceeded while every resident entry is active, but is trimmed
 as soon as the last owner of an over-budget entry is destroyed.
+
+`M_CalibrationLoadMapWithSha256V1W` attaches a DSNU or Uniformity map and writes
+its 32-byte SHA-256 to a caller-owned buffer. It verifies the complete source
+against any candidate cached map before returning its stored digest. The file
+handle protects the snapshot during verification or parsing. A failed call
+leaves the buffer and Context item list intact. Engine uses this optional export
+when preparing new contexts and retains the existing loader for earlier DLLs.
 
 ## POI Batch API
 
@@ -264,101 +150,31 @@ An HImage passed by value still shares its pixel pointer. Automatic color/tone a
 
 ### M_AutoLevelsAdjust
 
-Automatic levels adjustment using histogram stretching.
-
-```cpp
-COLORVISIONCORE_API int M_AutoLevelsAdjust(HImage img, HImage* outImage);
-```
-
-**Parameters:**
-- `img` - BGR or BGRA input; the export prepares BGR8 (normalizing non-8-bit data), so output does not retain the original depth or alpha.
-- `outImage` - Output image pointer
-
-**Returns:** 0 on success; negative on failure, including common export-guard errors.
-
-**C# Usage:**
-```csharp
-[DllImport(LibPath, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Unicode)]
-public static extern int M_AutoLevelsAdjust(HImage image, out HImage hImage);
-```
+Histogram stretching on BGR/BGRA input. The export prepares BGR8, which may normalize the input and drops alpha.
 
 ---
 
 ### M_AutomaticColorAdjustment
 
-Automatic color balance adjustment in Lab color space.
-
-```cpp
-COLORVISIONCORE_API int M_AutomaticColorAdjustment(HImage img, HImage* outImage);
-```
-
-**Parameters:**
-- `img` - BGR or BGRA input; the export prepares BGR8 (normalizing non-8-bit data), so output does not retain the original depth or alpha.
-- `outImage` - Output image pointer
-
-**Returns:** 0 on success; negative on failure, including common export-guard errors.
+Lab color balance. It prepares BGR8 from BGR/BGRA input and may modify shared BGR8 pixels.
 
 ---
 
 ### M_AutomaticToneAdjustment
 
-Automatic tone adjustment using histogram clipping.
-
-```cpp
-COLORVISIONCORE_API int M_AutomaticToneAdjustment(HImage img, HImage* outImage);
-```
-
-**Parameters:**
-- `img` - BGR or BGRA input; the export prepares BGR8 (normalizing non-8-bit data), so output does not retain the original depth or alpha.
-- `outImage` - Output image pointer
-
-**Returns:** 0 on success; negative on failure, including common export-guard errors.
+Histogram-clipped tone adjustment. It prepares BGR8 from BGR/BGRA input and may modify shared BGR8 pixels.
 
 ---
 
 ### M_PseudoColor
 
-Apply pseudo-color (false color) mapping to grayscale image.
-
-```cpp
-COLORVISIONCORE_API int M_PseudoColor(HImage img, HImage* outImage,
-    uint min, uint max, cv::ColormapTypes types, int channel);
-```
-
-**Parameters:**
-- `img` - Input image
-- `outImage` - Output image pointer
-- `min` - Minimum threshold for colormap
-- `max` - Maximum threshold for colormap
-- `types` - OpenCV colormap type (COLORMAP_JET, COLORMAP_HOT, etc.)
-- `channel` - Channel to extract (-1 for grayscale conversion)
-
-**Returns:** 0 on success; negative on failure, including common export-guard errors.
-
-**C# Usage:**
-```csharp
-[DllImport(LibPath, CallingConvention = CallingConvention.Cdecl)]
-public static extern int M_PseudoColor(HImage image, out HImage hImage,
-    uint min, uint max, ColormapTypes colormapTypes, int channel);
-```
+False-color mapping. `min` and `max` set the mapping thresholds, `types` selects an OpenCV colormap, and `channel=-1` requests grayscale conversion.
 
 ---
 
 ### M_PseudoColorAutoRange
 
-Apply pseudo-color using a caller-supplied data range. This function does not compute dataMin/dataMax itself.
-
-```cpp
-COLORVISIONCORE_API int M_PseudoColorAutoRange(HImage img, HImage* outImage,
-    uint min, uint max, cv::ColormapTypes types, int channel,
-    uint dataMin, uint dataMax);
-```
-
-**Parameters:**
-- `dataMin` - Actual data minimum for scaling
-- `dataMax` - Actual data maximum for scaling
-
-For 16-bit input, normal mode scales pixels by 1/257 and shifts min/max thresholds by 8 bits; auto-range mode uses the supplied data range and stretches the LUT. Floating-point input is min/max-normalized to 8-bit, and auto-range resets its thresholds to 0/255; supplied dataMin/dataMax do not control that float branch. Output is BGR8.
+Uses caller-supplied `dataMin` and `dataMax`. For 16-bit input, normal mapping scales by 1/257 and shifts thresholds by 8 bits. Auto-range instead stretches the LUT using the supplied range. Float inputs are normalized to 8 bit and auto-range uses thresholds 0/255 independently of the supplied range. Output is BGR8.
 
 ### M_PseudoColorInto and M_PseudoColorAutoRangeInto
 
@@ -368,149 +184,61 @@ These variants take the destination `HImage` by value and reuse caller-owned sto
 
 ### M_GetMinMax
 
-Get minimum and maximum pixel values from image.
+对单通道直接统计最小值和最大值，并按有效索引统计彩色通道。彩色输入的索引无效时按 BGR 顺序转成灰度。接口借用源缓冲，返回的无符号值将负数截到零并舍去小数。
 
-```cpp
-COLORVISIONCORE_API int M_GetMinMax(HImage img, uint* outMin, uint* outMax, int channel);
-```
+### M_GetRgbMinMax
 
-**Parameters:**
-- `img` - Input image
-- `outMin` - Output minimum value
-- `outMax` - Output maximum value
-- `channel` - Valid channel index selects that channel. For multi-channel input, any index outside the valid range falls back to BGR-to-gray conversion; -1 does not compute extrema across every plane. Single-channel input is used directly.
-
-The uint outputs clamp negative extrema to zero and discard fractional parts; they are not a lossless floating-point min/max API.
-
-**Returns:** 0 on success; negative on failure, including common export-guard errors.
+ImageView 的 RGB24/RGB48 Composite 自动范围使用此接口。按 RGB 顺序统计灰度范围，沿用 `M_GetMinMax` 的缓冲区和返回值契约。
 
 ---
 
 ### M_ExtractChannel
 
-Extract a specific channel from multi-channel image.
-
-```cpp
-COLORVISIONCORE_API int M_ExtractChannel(HImage img, HImage* outImage, int channel);
-```
-
-**Parameters:**
-- `img` - Input image
-- `outImage` - Output single-channel image
-- `channel` - Zero-based index, `0 <= channel < img.channels`; out-of-range values fail. BGR channel indices are 0=B, 1=G, 2=R.
-
-**Returns:** 0 on success; negative on failure, including common export-guard errors.
+The channel index is zero-based and must exist. BGR order is B, G, R. Output has one channel.
 
 ---
 
 ### M_GetWhiteBalance
 
-Apply white balance correction with RGB gain factors.
-
-```cpp
-COLORVISIONCORE_API int M_GetWhiteBalance(HImage img, HImage* outImage,
-    double redBalance, double greenBalance, double blueBalance);
-```
-
-**Parameters:**
-- `redBalance` - Red channel gain
-- `greenBalance` - Green channel gain
-- `blueBalance` - Blue channel gain
-
-Input must have three channels and gains must be finite. The implementation applies B/G/R gains and caps values at 255 for 8-bit input, otherwise at 65535; it does not preserve an arbitrary floating-point intensity range.
+Requires three channels and finite gains. Gains are passed as R/G/B and applied in pixel order B/G/R. Values are capped at 255 for 8-bit input, at 65535 otherwise.
 
 ---
 
 ### M_ApplyGammaCorrection
 
-Apply gamma correction to image.
-
-```cpp
-COLORVISIONCORE_API int M_ApplyGammaCorrection(HImage img, HImage* outImage, double gamma);
-```
-
-**Parameters:**
-- `gamma` - Finite value greater than zero. The implementation uses `pow(value / maximum, 1 / gamma) * maximum`, with maximum 255 or 65535. Only 8-bit and 16-bit unsigned input is implemented; other depths raise an OpenCV error handled by the export guard.
+Accepts 8-bit and 16-bit unsigned input and finite `gamma > 0`. Uses `pow(value / maximum, 1 / gamma) * maximum` with the maximum for that input width.
 
 ---
 
 ### M_AdjustBrightnessContrast
 
-Adjust brightness and contrast using linear transformation.
-
-```cpp
-COLORVISIONCORE_API int M_AdjustBrightnessContrast(HImage img, HImage* outImage,
-    double alpha, double beta);
-```
-
-**Parameters:**
-- `alpha` - Contrast factor (gain)
-- `beta` - Brightness offset
-
-**Formula:** `output = alpha * input + beta`
+Uses `output = alpha * input + beta`, with `alpha` as gain and `beta` as offset.
 
 ---
 
 ### M_InvertImage
 
-Invert image colors (bitwise NOT operation).
-
-```cpp
-COLORVISIONCORE_API int M_InvertImage(HImage img, HImage* outImage);
-```
+Bitwise inversion.
 
 ---
 
 ### M_Threshold
 
-Apply binary threshold to image.
-
-```cpp
-COLORVISIONCORE_API int M_Threshold(HImage img, HImage* outImage,
-    double thresh, double maxval, int type);
-```
-
-**Parameters:**
-- `thresh` - Threshold value
-- `maxval` - Maximum value for binary thresholding
-- `type` - Threshold type (THRESH_BINARY, THRESH_BINARY_INV, etc.)
+Uses the supplied OpenCV threshold mode. See the native declaration for argument types.
 
 ---
 
 ### M_RemoveMoire
 
-Remove moire patterns from image using multi-scale processing.
-
-```cpp
-COLORVISIONCORE_API int M_RemoveMoire(HImage img, HImage* outImage);
-```
-
-**Algorithm:** Gaussian blur → Downsample → Blur → Upsample → Sharpen
+Multi-scale moiré reduction. Read the filter sequence in the native implementation.
 
 ---
 
 ### M_ConvertImage
 
-Convert image to downsampled grayscale byte array for display.
+Returns downsampled grayscale bytes. `targetPixelsX/Y` are positive area hints and `scaleFactout` reports the chosen scale. Output samples the source at the chosen stride rather than resizing to an exact target size. Color input is converted to gray and non-8-bit data is normalized to 8 bit. Ties between candidate scales choose the smaller scale. Output length is `max(width / scale, 1) × max(height / scale, 1)`.
 
-```cpp
-COLORVISIONCORE_API int M_ConvertImage(HImage img, uchar** rowGrayPixels,
-    int* length, int* scaleFactout, int targetPixelsX, int targetPixelsY);
-```
-
-**Parameters:**
-- `rowGrayPixels` - Output byte array pointer allocated with `CoTaskMemAlloc`
-- `length` - Output array length
-- `scaleFactout` - Actual scale factor used
-- `targetPixelsX/Y` - Positive target-area hints (header defaults 512/512), not exact output dimensions. The implementation chooses a scale and samples source pixels; it does not resize to exactly targetPixelsX by targetPixelsY.
-
-输入支持单通道、三通道和四通道；彩色先转灰度，非 8 位值按最小值/最大值归一化到 8 位。尺度依据原图面积与目标面积之比的平方根取整，再从 `1, 2, 4, …, 2048` 中选择最近值；等距时保留较小尺度。候选遍历长度由实际数组推导，不读取数组末尾之外的数据。返回长度为 `max(width / scale, 1) × max(height / scale, 1)`，像素从原图对应步长位置采样，不承诺精确输出目标宽高。
-
-`opencv_helper_test.exe --image-helpers-only` 覆盖紧密/填充步长、尺度选择与等距边界、采样像素、缓冲区释放和失败输出清零；这是离线内存与采样契约验证，不代替大图性能或现场显示验收。
-
-**Memory:** Caller must release `rowGrayPixels` with `M_FreeHImageData()`.
-
-**C# safe wrapper:** Prefer `OpenCVMediaHelper.ConvertImageToGrayPixels(...)`, which copies the bytes to a managed `byte[]` and releases the native buffer in `finally`.
+Use `M_FreeHImageData` for `rowGrayPixels`. `OpenCVMediaHelper.ConvertImageToGrayPixels` copies the payload into a managed array and releases the native buffer.
 
 ---
 
@@ -518,36 +246,18 @@ COLORVISIONCORE_API int M_ConvertImage(HImage img, uchar** rowGrayPixels,
 
 Convert `CV_32FC1` to unsigned 16-bit grayscale. If min >= 0 and max <= 5, multiply by 65535 with saturation (values above 1 saturate). Otherwise, require max > min and map the full min/max range to 0/65535. A constant value outside the first branch fails; this is not a universal fixed-scale scientific conversion.
 
-```cpp
-COLORVISIONCORE_API int M_ConvertGray32Float(HImage img, HImage* outImage);
-```
 
 ---
 
 ### M_DrawPoiImage
 
-Draw circles at specified points on image.
-
-```cpp
-COLORVISIONCORE_API int M_DrawPoiImage(HImage img, HImage* outImage,
-    int radius, int* points, int pointCount, int thickness);
-```
-
-**Parameters:**
-- `radius` - Circle radius
-- `points` - Array of [x1, y1, x2, y2, ...] coordinates
-- `pointCount` - Number of coordinate integers, **twice the number of points**. It must be non-negative and even; for three points pass 6, not 3.
-- `thickness` - Must be at least -1; -1 requests filled circles. Radius must be positive and a non-empty coordinate array must be valid. The export accepts one or three channels and returns a three-channel image.
+Accepts one or three input channels and returns a three-channel image. `points` is an interleaved x/y integer array. `pointCount` counts coordinate integers, so three points take 6. It must be non-negative and even. Radius must be positive, a nonempty array must be valid, and `thickness=-1` requests filled circles.
 
 ---
 
 ### M_StitchImages
 
 Combine vertical strips from same-size, same-type images. Output keeps one input image's dimensions; it is not a concatenated panorama. For N images of width W, start with the last image, then replace strip i of width floor(W/N) from image i for i=0..N-2. The final strip and any remainder stay from the last image.
-
-```cpp
-COLORVISIONCORE_API int M_StitchImages(const char* config, HImage* outImage);
-```
 
 **Config JSON Format:**
 ```json
@@ -560,12 +270,7 @@ COLORVISIONCORE_API int M_StitchImages(const char* config, HImage* outImage);
 
 ### M_Fusion
 
-Multi-focus image fusion using focus measure algorithm.
-
-```cpp
-COLORVISIONCORE_API int M_Fusion(const char* fusionjson, HImage* outImage);
-```
-
+Multi-focus fusion. The config is a JSON array of input image paths.
 **Config JSON Format:**
 ```json
 ["image1.jpg", "image2.jpg", "image3.jpg"]
@@ -577,46 +282,19 @@ COLORVISIONCORE_API int M_Fusion(const char* fusionjson, HImage* outImage);
 
 ### M_ApplyGaussianBlur
 
-Apply Gaussian blur filter.
-
-```cpp
-COLORVISIONCORE_API int M_ApplyGaussianBlur(HImage img, HImage* outImage,
-    int kernelSize, double sigma);
-```
-
-**Parameters:**
-- `kernelSize` - Must be odd number (3, 5, 7, ...)
-- `sigma` - Standard deviation (0 for auto)
+Use an odd `kernelSize`, with `sigma=0` for automatic selection.
 
 ---
 
 ### M_ApplyMedianBlur
 
-Apply median blur filter (salt-and-pepper noise removal).
-
-```cpp
-COLORVISIONCORE_API int M_ApplyMedianBlur(HImage img, HImage* outImage, int kernelSize);
-```
-
-**Parameters:**
-- `kernelSize` - Must be odd number
+Use an odd `kernelSize`.
 
 ---
 
 ### M_ApplySharpen
 
-Apply sharpening filter using Laplacian kernel.
-
-```cpp
-COLORVISIONCORE_API int M_ApplySharpen(HImage img, HImage* outImage);
-```
-
-**Kernel:**
-```
-[ 0 -1  0]
-[-1  5 -1]
-[ 0 -1  0]
-```
+Laplacian sharpening. The native implementation owns the kernel.
 
 ---
 
@@ -624,10 +302,6 @@ COLORVISIONCORE_API int M_ApplySharpen(HImage img, HImage* outImage);
 
 Apply Canny edge detection to an 8-bit gray working image. Three/four-channel input is converted to gray; non-8-bit data uses the fixed 255/65535 scale. The output is a single-channel 8-bit edge image.
 
-```cpp
-COLORVISIONCORE_API int M_ApplyCannyEdgeDetection(HImage img, HImage* outImage,
-    double threshold1, double threshold2);
-```
 
 ---
 
@@ -635,9 +309,6 @@ COLORVISIONCORE_API int M_ApplyCannyEdgeDetection(HImage img, HImage* outImage,
 
 Apply histogram equalization to an 8-bit gray working image. Three/four-channel input is converted to gray; non-8-bit input uses a fixed 255/65535 scale rather than per-image min/max normalization. Output is single-channel 8-bit.
 
-```cpp
-COLORVISIONCORE_API int M_ApplyHistogramEqualization(HImage img, HImage* outImage);
-```
 
 ---
 
@@ -657,31 +328,12 @@ V2 正返回值为包含末尾 NUL 的 UTF-8 JSON 字节数，由 `FreeResult` �
 
 窗口同时列出 L/R/G/B 的 MTF50、MTF10、指定频率响应、Nyquist 响应和指定响应交点；提供 ROI 与拟合线、质量表、完整 MTF 数据、ESF/LSF 和术语说明。CSV 输出完整曲线，JSON 另包含完整诊断、采集时间、文档/帧版本、ROI、输入尺寸及参数。未知编码、削顶或显示对象提示独立于可计算状态，不能误当成产品“合格”。这一路径与 Engine 历史 SFR/SFR2、远端 MTF 模板及统一平台 `FieldSfr` 的输入/结果契约独立，不替换服务算法或历史 DAO。
 
-验证使用 `opencv_helper_test.exe --sfr-only`（V2 合成图及既有 sfrmat5/旧 ABI 回归）。当前托管套件不再包含实际 P/Invoke 与 WPF 快照释放宿主；合成图通过也不等于客户显示屏样本或 ISO 12233 一致性认证。概念依据可参阅 [Imatest sharpness](https://www.imatest.com/imaging/sharpness/) 与 [MTF measurement consistency](https://www.imatest.com/docs/mtf-measurement-consistency/)。
+Compare the results on representative customer display samples before using this mode for acceptance. The implementation does not certify ISO 12233 conformance. [Imatest sharpness](https://www.imatest.com/imaging/sharpness/) · [MTF measurement consistency](https://www.imatest.com/docs/mtf-measurement-consistency/)
 
 ### M_CalSFRMultiChannel
 
 Calculate slanted-edge SFR for one gray channel or four reported R/G/B/L curves from BGR/BGRA input. This description does not certify optical conformance to a standard.
 For color images, luminance follows the sfrmat5 default weights: 0.213*R + 0.715*G + 0.072*B.
-
-```cpp
-COLORVISIONCORE_API int M_CalSFRMultiChannel(
-    HImage img,
-    double del,
-    RoiRect roi,
-    double* freq,
-    double* sfr_r,
-    double* sfr_g,
-    double* sfr_b,
-    double* sfr_l,
-    int    maxLen,
-    int*   outLen,
-    int*   channelCount,
-    double* mtf10_norm_r, double* mtf50_norm_r, double* mtf10_cypix_r, double* mtf50_cypix_r,
-    double* mtf10_norm_g, double* mtf50_norm_g, double* mtf10_cypix_g, double* mtf50_cypix_g,
-    double* mtf10_norm_b, double* mtf50_norm_b, double* mtf10_cypix_b, double* mtf50_cypix_b,
-    double* mtf10_norm_l, double* mtf50_norm_l, double* mtf10_cypix_l, double* mtf50_cypix_l);
-```
 
 **Parameters:**
 - `del` - Finite positive sampling pitch. The implementation does not impose a physical unit; output frequency uses the inverse of the supplied unit. Use del=1 for cycles/pixel, or a physical pitch with consistent downstream units.
@@ -703,24 +355,6 @@ The caller owns all output arrays and must allocate their stated capacities. Mon
 - -3 on calculation failure
 - -4 on OpenCV exception, -5 on standard exception, -6 on unknown exception (`GuardSfrExport`)
 
-**C# Usage:**
-```csharp
-[DllImport(LibPath, CallingConvention = CallingConvention.Cdecl)]
-public static extern int M_CalSFRMultiChannel(
-    HImage img, double del, RoiRect roi,
-    [Out] double[] freq, [Out] double[] sfr_r, [Out] double[] sfr_g,
-    [Out] double[] sfr_b, [Out] double[] sfr_l,
-    int maxLen, out int outLen, out int channelCount,
-    out double mtf10_norm_r, out double mtf50_norm_r,
-    out double mtf10_cypix_r, out double mtf50_cypix_r,
-    out double mtf10_norm_g, out double mtf50_norm_g,
-    out double mtf10_cypix_g, out double mtf50_cypix_g,
-    out double mtf10_norm_b, out double mtf50_norm_b,
-    out double mtf10_cypix_b, out double mtf50_cypix_b,
-    out double mtf10_norm_l, out double mtf50_norm_l,
-    out double mtf10_cypix_l, out double mtf50_cypix_l);
-```
-
 ---
 
 ### C++ Implementation Notes
@@ -735,15 +369,7 @@ SFR is implemented behind C exports. New diagnostic callers use `M_AnalyzeSfrV2`
 
 Calculate image sharpness/focus measure using various algorithms.
 
-```cpp
-COLORVISIONCORE_API double M_CalArtculation(HImage img, FocusAlgorithm type, RoiRect roi);
-```
-
-**Parameters:**
-- `img` - Input image
-- `type` - Focus algorithm type (see FocusAlgorithm enum)
-- `roi` - A positive intersection with the image is cropped; a partially overlapping ROI is clipped. When there is no positive intersection, including an entirely outside or zero-size ROI, the implementation evaluates the full image.
-
+An overlapping ROI is clipped to the image. A zero-sized or disjoint ROI uses the full image.
 **Returns:** Raw pixel-unit focus measure value (higher = sharper). The value is not normalized to `0..1`.
 
 Input-preparation failure, a non-finite result, or an exception caught by
@@ -753,27 +379,7 @@ return `0`, so zero alone is not a failure indicator.
 
 There is no single industry-standard numeric scale or threshold for these general-purpose focus measures. Values depend on the selected algorithm, bit depth, exposure, ROI, demosaicing/preprocessing, and target content. Use the SFR/MTF APIs when a calibrated optical-resolution measurement is required.
 
-**Algorithms:**
-
-| Type | Description | Best For |
-|------|-------------|----------|
-| Variance | Variance of pixel values | General purpose |
-| StandardDeviation | Std dev of pixel values | General purpose |
-| Tenengrad | Sobel gradient magnitude | Edge detection |
-| Laplacian | Mean absolute Laplacian response | Fine detail |
-| VarianceOfLaplacian | Variance of Laplacian response | Focus comparison under controlled conditions |
-| EnergyOfGradient | Gradient energy | Texture analysis |
-| SpatialFrequency | Row/Column frequency | Periodic patterns |
-
-For example, `VarianceOfLaplacian` returns the variance of the Laplacian response in the input image's pixel units. An 8-bit image and a 16-bit image are therefore not expected to share the same threshold unless the caller explicitly normalizes them before or after this API call.
-
-**C# Usage:**
-```csharp
-[DllImport(LibPath, EntryPoint = "M_CalArtculation",
-    CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
-public unsafe static extern double M_CalArtculation(
-    HImage image, FocusAlgorithm evaFunc, RoiRect roi);
-```
+Select the measure using the declared `FocusAlgorithm`. Compare scores only under controlled input conditions. In particular, `VarianceOfLaplacian` depends on the input pixel units, so a threshold from an 8-bit image does not transfer directly to 16-bit input.
 
 ---
 
@@ -782,11 +388,6 @@ public unsafe static extern double M_CalArtculation(
 ### M_FindLuminousArea
 
 Detect luminous area in image using threshold and contour analysis.
-
-```cpp
-COLORVISIONCORE_API int M_FindLuminousArea(HImage img, RoiRect roi,
-    const char* config, char** result);
-```
 
 **Config JSON Format:**
 ```json
@@ -818,47 +419,18 @@ multi-scale coarse candidates, multiple edge candidates per caliper, robust
 four-line fitting, and independent per-side quality checks. It does not fall
 back to `M_FindLuminousArea`.
 
-```cpp
-COLORVISIONCORE_API int M_FindLuminousAreaV2(HImage image, RoiRect roi,
-    const char* configJson, char** resultJson);
-```
-
 The recommended automatic configuration is an empty object:
 
 ```json
 {}
 ```
 
-Most callers should expose only `MinConfidence` (default `0.25`). Advanced
-optional keys are `MinAreaRatio`, `MaxAreaRatio`, `SearchWidthRatio`,
-`MinEdgeContrast`, `CaliperCount`, `MaxProcessingSize`, and `AllowBorder`
-(default `true`; set it to `false` only when border-touching candidates must be
-excluded). `MaxAreaRatio` defaults to `0.999`, so a near-full-frame display is
-still detectable when its four boundaries remain observable.
+Most callers should expose only `MinConfidence` (default `0.25`). The native config parser owns the advanced keys. `AllowBorder` defaults to true and `MaxAreaRatio` to `0.999`, so near-full-frame displays qualify when four boundaries remain recoverable.
 
 Only an all-zero RoiRect selects the full image in V2. Any other ROI must have positive dimensions and lie fully inside the image, unlike the legacy fallback. Corners are ordered `LT, RT, RB, LB`. When an ROI is supplied, corner
 coordinates are ROI-local, as with the legacy detector.
 
-```json
-{
-  "Success": true,
-  "Algorithm": "RobustV2",
-  "Corners": [
-    {"X": 100.1, "Y": 50.2},
-    {"X": 300.0, "Y": 48.8},
-    {"X": 305.4, "Y": 201.0},
-    {"X": 96.2, "Y": 203.1}
-  ],
-  "Confidence": 0.93,
-  "SideQuality": [
-    {"Name": "Top", "Coverage": 1.0, "InlierRatio": 0.95,
-     "ContrastP10": 0.21, "FitRms": 0.42, "MaxGap": 0.03,
-     "Confidence": 0.91, "SampleCount": 40, "InlierCount": 38}
-  ],
-  "FailureReason": "",
-  "Warnings": []
-}
-```
+The JSON gives `Success`, `Algorithm`, ordered `Corners`, `Confidence`, `SideQuality`, `FailureReason` and `Warnings`. Treat warnings and per-side evidence as part of the result.
 
 A positive return value always means JSON was allocated, including normal
 algorithm rejection (`Success=false`, for example `NoSignal`, `NoCandidate`,
@@ -885,11 +457,6 @@ The [local FindCross reference](../algorithms/detectors/find-cross.md) owns `M_F
 
 Detect LED/light bead positions in grid pattern.
 
-```cpp
-COLORVISIONCORE_API int M_FindLightBeads(HImage img, RoiRect roi,
-    const char* config, char** result);
-```
-
 **Config JSON Format:**
 ```json
 {"Threshold": 20, "MinSize": 2, "MaxSize": 20, "Rows": 650, "Cols": 850}
@@ -914,11 +481,6 @@ The values above illustrate the JSON shape, not a measured test result. Defaults
 ### M_DetectKeyRegions
 
 Automatically detect keyboard key regions in image.
-
-```cpp
-COLORVISIONCORE_API int M_DetectKeyRegions(HImage img, RoiRect roi,
-    const char* config, char** result);
-```
 
 **Config JSON Format:**
 ```json
@@ -945,30 +507,13 @@ Threshold < 0 uses Otsu; MaxArea <= 0 uses 25% of the working image area. Margin
 
 Free memory allocated for JSON result strings.
 
-```cpp
-COLORVISIONCORE_API int FreeResult(char* result);
-```
-
-**C# Usage:**
-```csharp
-[DllImport(LibPath, CallingConvention = CallingConvention.Cdecl)]
-public static extern int FreeResult(IntPtr str);
-
-// Usage
-IntPtr resultPtr;
-int len = M_FindLuminousArea(img, roi, config, out resultPtr);
-string json = OpenCVMediaHelper.PtrToStringAnsiAndFree(resultPtr);
-```
+Use `OpenCVMediaHelper.PtrToStringAnsiAndFree` or `PtrToStringUtf8AndFree` according to the export's encoding. Release non-null results even when the status reports failure.
 
 ---
 
 ### M_FreeHImageData
 
 Free image data allocated by DLL.
-
-```cpp
-void M_FreeHImageData(unsigned char* data);
-```
 
 Use this for every buffer that the DLL returns from `CoTaskMemAlloc`, including `HImage.pData` and the `rowGrayPixels` buffer returned by `M_ConvertImage`.
 
@@ -981,14 +526,16 @@ The P2 APIs are stateless native algorithms. They use the common signature
 `CoTaskMemAlloc`. A positive return value is the buffer size including the null
 terminator; release the buffer with `FreeResult`.
 
-| Function | Purpose | Main config fields |
-|----------|---------|--------------------|
-| `M_DetectGhosts` | Bright-source and secondary ghost candidate measurement | Threshold/grid/area limits; optional `normalizeExposure`, percentile bounds, `backgroundKernel`, `multiScaleLevels`, `multiScaleFactor`, `multiScaleThresholdFactor`, `opticalCenter`, and directional-confidence limits |
-| `M_AnalyzeKeyboardHalo` | Per-key inner brightness and surrounding halo ratio | `keyRects` (optional), `innerInsetRatio`, `haloGapRatio`, `haloWidthRatio`, `excludeKeyRectsFromHalo`, `gray`; `detection` controls automatic key detection when `keyRects` is omitted |
-| `M_AnalyzeLedArray` | LED grid ordering, missing/extra points, spacing, rotation, brightness and area | `rows`, `cols`, assignment gates, brightness/area limits, `gray`; `detections` can be supplied or `detection` can drive automatic connected-component detection |
-| `M_MatchRotatedTemplate` | Multi-angle/scale template matching with NMS and optional robust occlusion scoring | Angle fields, `scaleMin`, `scaleMax`, `scaleStep`, `featureMode` (`intensity`/`gradient`), `occlusionTolerance`, `scoreThreshold`, `maxMatches`, `nmsRadius`, `pyramidLevels`, `subpixel` |
-| `M_CalBinocularFusion` | Five-cross selection and binocular geometry metrics | `threshold` (0–255; <= 0 uses Otsu), `blurKernel`, `morphKernel`, area limits, `pixelSize` (um), `focalLength` (mm), `virtualImageDistance` (mm), `opticalCenter`, `maxCandidates` |
-| `M_CalStereoBinocularFusion` | Calibrated left/right five-cross detection, undistortion, triangulation, and reprojection validation | `leftDetection`, `rightDetection`, `calibration` (`leftCameraMatrix`, `rightCameraMatrix`, distortion arrays, `rotation`, `translation`), `minimumParallaxPixels`, `maximumReprojectionErrorPixels`, `requirePositiveDepth` |
+| Function | Purpose |
+| --- | --- |
+| `M_DetectGhosts` | Bright source and secondary ghost candidates |
+| `M_AnalyzeKeyboardHalo` | Per-key brightness and halo ratio |
+| `M_AnalyzeLedArray` | LED grid assignment, geometry and brightness |
+| `M_MatchRotatedTemplate` | Rotation and scale matching |
+| `M_CalBinocularFusion` | Five-cross and binocular geometry |
+| `M_CalStereoBinocularFusion` | Calibrated 3D reconstruction and reprojection validation |
+
+For the managed/native parameter definitions and interactive routing, see [Local Native Analysis](../algorithms/local-native-analysis.md).
 
 Rectangles and points in JSON use object form (`x`, `y`, `width`, `height`).
 Configured `keyRects`, LED `detections`, and all reported coordinates are in the
@@ -1010,17 +557,7 @@ and distortion vectors accept OpenCV's 4/5/8/12/14 layouts. Stereo output keeps
 the left/right 2D detection diagnostics and reports per-point parallax,
 reprojection error, validity, and confidence.
 
-Example:
-
-```csharp
-string config = "{\"rows\":3,\"cols\":4,\"detection\":{\"threshold\":0.5,\"minArea\":10}}";
-int length = OpenCVMediaHelper.M_AnalyzeLedArray(image, roi, config, out IntPtr result);
-// The copy-and-free helper releases non-null output even if the native status failed.
-string json = OpenCVMediaHelper.PtrToStringUtf8AndFree(result);
-if (length <= 0) throw new InvalidOperationException($"LED analysis failed: {length}");
-// Parse json and inspect its success/diagnostics separately.
-```
-
+Pass a separate output pointer for each call. Copy and release any result before interpreting the native status, then inspect `success` and diagnostics separately.
 P2 export errors are `-1` invalid arguments, `-3` allocation failure, `-4`
 invalid JSON/config shape, `-5` OpenCV exception, `-6` standard exception, and
 `-7` unknown exception. A valid algorithm run returns JSON even when
@@ -1060,18 +597,7 @@ describe an algorithm rejection. Focus evaluation returns a score.
 
 ### Stitching Errors
 
-```cpp
-enum class StitchingErrorCode {
-    SUCCESS = 0,
-    EMPTY_INPUT = -1,
-    FILE_NOT_FOUND = -2,
-    DIFFERENT_DIMENSIONS = -3,
-    DIFFERENT_TYPE = -4,
-    NO_VALID_IMAGES = -5
-};
-```
-
-The enum is declared in `Native/include/opencv_media_export.h`. The current stitching body also returns DIFFERENT_DIMENSIONS for a type mismatch (DIFFERENT_TYPE is declared but not used there). Export-layer invalid JSON (-4), allocation (-3) and exception codes can overlap these values; interpret the failing stage rather than treating every negative value as a unique stitching diagnosis.
+`StitchingErrorCode` is declared in `Native/include/opencv_media_export.h`. The current body returns `DIFFERENT_DIMENSIONS` for type mismatches too. Export-layer invalid JSON (`-4`), allocation (`-3`) and exception codes overlap these values, so inspect the failing stage.
 
 ### SFR Errors
 
@@ -1104,40 +630,7 @@ The enum is declared in `Native/include/opencv_media_export.h`. The current stit
 
 ### Example Memory Lifecycle
 
-```csharp
-// Owned, tightly packed BGR8 input; dimensions/pixelData must be valid.
-int stride = checked(width * 3);
-int byteCount = checked(stride * height);
-HImage img = new HImage
-{
-    rows = height,
-    cols = width,
-    channels = 3,
-    depth = 8,
-    stride = stride,
-    isDispose = false,
-    pData = Marshal.AllocCoTaskMem(byteCount)
-};
-HImage outImg = default;
-
-try
-{
-    // Copy data to unmanaged memory
-    Marshal.Copy(pixelData, 0, img.pData, byteCount);
-
-    // Process
-    int status = OpenCVMediaHelper.M_AutoLevelsAdjust(img, out outImg);
-    if (status != 0 || outImg.pData == IntPtr.Zero)
-        throw new InvalidOperationException($"AutoLevels failed: {status}");
-
-    // Copy/use result while outImg is still alive.
-}
-finally
-{
-    outImg.Dispose(); // Also covers an allocated output on a failure path.
-    img.Dispose();
-}
-```
+Use an owned input and a fresh output slot. Keep the input valid through the native call, copy or consume valid output before disposal, then release both owned buffers in `finally`. For actual marshaling code, start from the corresponding wrapper in `OpenCVMediaHelper.cs`.
 
 ---
 

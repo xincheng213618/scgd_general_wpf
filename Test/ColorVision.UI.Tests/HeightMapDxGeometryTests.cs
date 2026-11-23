@@ -1,4 +1,5 @@
 using ColorVision.ImageEditor.EditorTools.ThreeD;
+using HelixToolkit;
 using System.Numerics;
 
 namespace ColorVision.UI.Tests;
@@ -19,6 +20,31 @@ public sealed class HeightMapDxGeometryTests
         foreach (int index in field.Indices) Assert.InRange(index, 0, field.Positions.Length - 1);
     }
 
+    [Theory]
+    [InlineData(false, 6)]
+    [InlineData(true, 0)]
+    public void CreateMesh_SharesCpuBuffersWithExactElementCounts(bool hidden, int indexCount)
+    {
+        var sample = new HeightMapSample([0, 64, 128, 255], hidden ? [127, 127, 127, 127] : null, 2, 2);
+        var geometry = HeightMapDxGeometry.Build(sample, 1, 1, CancellationToken.None);
+
+        var mesh = geometry.CreateMesh();
+
+        AssertSharedBuffer(geometry.Positions, mesh.Positions, 4);
+        AssertSharedBuffer(geometry.Normals, mesh.Normals, 4);
+        AssertSharedBuffer(geometry.TextureCoordinates, mesh.TextureCoordinates, 4);
+        AssertSharedBuffer(geometry.Indices, mesh.Indices, indexCount);
+    }
+
+    private static void AssertSharedBuffer<T>(ReadOnlySpan<T> cpuBuffer, FastList<T>? meshBuffer, int count)
+    {
+        Assert.NotNull(meshBuffer);
+        Assert.Equal(count, cpuBuffer.Length);
+        Assert.Equal(count, meshBuffer.Count);
+        if (count != 0)
+            Assert.True(cpuBuffer.Overlaps(meshBuffer.GetInternalArray().AsSpan(0, count), out int offset) && offset == 0);
+    }
+
     [Fact]
     public void Build_UsesAlphaThresholdAndDropsTheWholeQuad()
     {
@@ -27,7 +53,7 @@ public sealed class HeightMapDxGeometryTests
 
         var hole = visible with { Alpha = [128, 128, 127, 128] };
         var geometry = HeightMapDxGeometry.Build(hole, 1, 1, CancellationToken.None);
-        Assert.Empty(geometry.Indices);
+        Assert.True(geometry.Indices.IsEmpty);
         Assert.False(geometry.TryIntersect(new Vector3(.5f, .5f, 2), -Vector3.UnitZ, 1, 1, 1, out _));
     }
 
@@ -42,7 +68,7 @@ public sealed class HeightMapDxGeometryTests
 
         Assert.All(reduced.Alpha!, item => Assert.Equal(255, item));
         var geometry = HeightMapDxGeometry.Build(reduced, 4, 4, CancellationToken.None, source);
-        Assert.Empty(geometry.Indices);
+        Assert.True(geometry.Indices.IsEmpty);
     }
 
     [Theory]

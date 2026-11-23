@@ -78,6 +78,7 @@ namespace ColorVision.Engine.Templates.Flow
         private const long MaxManifestBytes = 4 * 1024 * 1024;
         private const long MaxFlowBytes =
             FlowPackageStnValidator.MaximumStndLength;
+        private const int MaxInitialFlowReadBytes = 1024 * 1024;
         private const long MaxTemplatePayloadBytes = 16 * 1024 * 1024;
         private const int MaxTemplateCount = 4096;
         private const int MaxArchiveEntryCount = 8192;
@@ -264,9 +265,11 @@ namespace ColorVision.Engine.Templates.Flow
             {
                 ValidateEntrySize(stnEntry, MaxFlowBytes, "flow.stn");
                 using var stream = stnEntry.Open();
-                using var ms = new MemoryStream();
-                stream.CopyTo(ms);
-                stnData = ms.ToArray();
+                // Cap initial allocation because the ZIP directory supplies the length.
+                int capacity = stnEntry.Length <= MaxInitialFlowReadBytes ? (int)stnEntry.Length : 0;
+                using var buffer = new MemoryStream(capacity);
+                stream.CopyTo(buffer);
+                stnData = buffer.Length == buffer.Capacity ? buffer.GetBuffer() : buffer.ToArray();
             }
 
             entries.TryGetValue("manifest.json", out var manifestEntry);

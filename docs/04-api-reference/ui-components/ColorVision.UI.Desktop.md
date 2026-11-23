@@ -3,9 +3,8 @@ knowledge_id: "ui.desktop"
 knowledge_type: "reference"
 status: "current"
 summary: "桌面辅助壳层而非产品主入口：定位设置、市场下载、第三方工具、反馈和特权崩溃诊断。"
-aliases: ["设置窗口和插件市场在哪里","ColorVision.UI.Desktop","SettingWindow","MarketplacePackageDownloadService","下载管理器","断点续传","Aria2cDownloadManager"]
-code_paths: ["UI/ColorVision.UI.Desktop/ColorVision.UI.Desktop.csproj","UI/ColorVision.UI.Desktop/App.xaml","UI/ColorVision.UI.Desktop/App.xaml.cs","UI/ColorVision.UI.Desktop/MainWindow.xaml","UI/ColorVision.UI.Desktop/MainWindow.xaml.cs","UI/ColorVision.UI.Desktop/Settings/SettingWindow.xaml.cs","UI/ColorVision.UI.Desktop/Marketplace","UI/ColorVision.UI.Desktop/Download","UI/ColorVision.UI.Desktop/Wizards","UI/ColorVision.UI.Desktop/ThirdPartyApps","UI/ColorVision.UI.Desktop/Diagnostics","UI/ColorVision.UI.Desktop/Feedback","UI/ColorVision.UI.Desktop/README.md"]
-test_paths: ["Test/ColorVision.UI.Tests/MarketplacePackageDownloadServiceTests.cs","Test/ColorVision.UI.Tests/DownloadManagerLifecycleTests.cs","Test/ColorVision.UI.Tests/DownloadInfrastructureTests.cs","Test/ColorVision.UI.Tests/DownloadAria2IntegrationTests.cs","Test/ColorVision.UI.Tests/FeedbackLogCollectorTests.cs","Test/ColorVision.UI.Tests/NetworkAdapterPriorityServiceTests.cs"]
+aliases: ["设置窗口和插件市场在哪里","ColorVision.UI.Desktop","SettingWindow","MarketplacePackageDownloadService","下载管理器","断点续传","Aria2cDownloadManager","SSCOM","sscom51.ini","SSCOM 调试预设","多条字符串发送"]
+code_paths: ["UI/ColorVision.UI.Desktop/ColorVision.UI.Desktop.csproj","UI/ColorVision.UI.Desktop/App.xaml","UI/ColorVision.UI.Desktop/App.xaml.cs","UI/ColorVision.UI.Desktop/MainWindow.xaml","UI/ColorVision.UI.Desktop/MainWindow.xaml.cs","UI/ColorVision.UI.Desktop/Settings/SettingWindow.xaml.cs","UI/ColorVision.UI.Desktop/Marketplace","UI/ColorVision.UI.Desktop/Download","UI/ColorVision.UI.Desktop/Wizards","UI/ColorVision.UI.Desktop/ThirdPartyApps","UI/ColorVision.UI.Desktop/Diagnostics","UI/ColorVision.UI.Desktop/Feedback","Engine/ColorVision.Engine/Mysql/CameraCaptureTimingFeedbackCollector.cs","UI/ColorVision.UI.Desktop/README.md","ColorVision/ToolPlugins/ThirdPartyApps/SscomLauncher.cs","ColorVision/ToolPlugins/ThirdPartyApps/SscomPresetWindow.xaml.cs","ColorVision/ToolPlugins/ThirdPartyApps/SscomPresetIni.cs","ColorVision/ToolPlugins/ThirdPartyApps/SscomSensorPresets.cs","ColorVision/ToolPlugins/ThirdPartyApps/SscomArvrPresets.cs"]
 related: ["ui.index","ui.framework","ui.settings","ui.wizards","ui.menus","ui.configuration","ui.database","plugins.getting-started","platform.runtime"]
 ---
 
@@ -32,18 +31,23 @@ related: ["ui.index","ui.framework","ui.settings","ui.wizards","ui.menus","ui.co
 | --- | --- | --- |
 | 设置窗口 | `Settings/SettingWindow.xaml.cs` | [侧栏、搜索、活对象编辑与关窗保存](./settings.md)，不是 Tab 或取消事务 |
 | 向导流程 | `WizardManager`、`WizardWindow`、`WizardWindowConfig` | [步骤发现、应用、初始化与完成标记](./wizards.md)，完成不等于所有组件健康 |
-| 菜单项管理 | `MenuItemManagerConfig`、`MenuItemManagerWindow` | [显示覆盖、编辑草稿与应用/保存边界](./menus.md)；不编辑快捷键 |
+| 菜单显示覆盖 | `MenuItemManagerConfig`、`MenuItemManagerInitialized` | [启动时加载可见性、顺序与父级配置](./menus.md) |
 | 插件市场 | `MarketplaceWindow`、`MarketplaceClient`、`MarketplacePackageDownloadService` | 展示市场内容、Markdown、下载和安装入口 |
 | 下载管理 | `Aria2cDownloadManager`、`DownloadWindow` | 使用内置 `aria2c.exe` 管理下载 |
-| 第三方应用 | `SystemAppProvider`、`CustomAppProvider`、`ThirdPartyAppsWindow` | 系统工具、自定义应用和磁盘 Treemap 入口 |
+| 系统工具 | `SystemAppProvider` | 控制面板、组策略、网络连接、注册表编辑器 |
+| 第三方应用 | `CustomAppProvider`、`ThirdPartyAppsWindow` | 自定义应用和磁盘 Treemap 入口 |
 | 主程序工具贡献 | `ColorVision/ToolPlugins/ThirdPartyApps/` | 通过 `IThirdPartyAppProvider` 向第三方应用窗口补充主程序工具；“上网网卡选择”可读取 IPv4、DNS、网关和 Metric，修改所选接口的 Metric，或将 DNS 设为 `114.114.114.114` 后刷新缓存 |
 | 崩溃诊断 | `Diagnostics/CrashDumpSettingsControl`、`CrashDumpConfiguration` | 通过通用属性反射生成 WER LocalDumps 设置，由后台特权服务写入 HKLM；支持手动保存当前进程 Dump 和反馈包收集 |
 | 反馈诊断 | `Feedback/`、`Feedback/Collectors/WindowsEventLogCollector`、`ColorVision.UI/LogImp/Collectors/ConfigurationSnapshotCollector` | 打包应用日志、系统信息、脱敏配置快照、Dump 和 Windows Application/System 警告或错误；可从反馈窗口清理旧的应用、更新、服务日志和 ColorVision Dump |
 | 诊断窗口 | `ViewDllVersionsWindow` | 查看已加载程序集版本、产品版本和路径 |
 
-应用与工具窗口使用与更新、恢复窗口一致的主题资源，顶部提供搜索、添加应用、添加快捷脚本和刷新入口；分类以可换行的标签展示，应用以图标与名称组成的紧凑卡片展示。双击启动、右键操作、分类过滤与权限过滤沿用原入口；深浅主题同时覆盖窗口背景、文字和选择状态。
+“应用与工具”支持搜索、分类筛选、添加自定义应用和快捷脚本。双击启动，右键显示可用操作。列表和启动命令均检查应用角色。
 
-“内部工具”提供“CVRAW 批量导出 TIFF”（`ColorVision/ToolPlugins/CvRawExport/`）。选择文件夹后点击“执行”，后台递归检索 `.cvraw`（扩展名不区分大小写，不跟随目录链接），将原始图像导出为同目录、同主文件名的 `.tif`；已有目标直接跳过，不覆盖、不重新编码。并发数可选 1～32，默认使用 CPU 逻辑处理器数的一半，最低 1、最高 4；大图像可降低并发以减少内存占用。保留位深、通道、像素值及既有 TIFF 图像参数，单文件失败后继续处理并列出文件和原因。界面显示成功、跳过、失败与总进度；取消或关窗会停止后续任务，等待正在进行的读取／编码返回，已完成文件保留。`Engine/ColorVision.Engine/Media/Export/CvRawBatchExporter.cs` 先写同目录临时 TIFF，完成后以不覆盖方式移入目标，避免中断残留被下次误认为已导出；边界验证见 `Test/ColorVision.UI.Tests/CvRawBatchExporterTests.cs`。
+“常用工具”中的 SSCOM 从 `%APPDATA%\ColorVision\Tools\SSCOM\sscom5.13.1.exe` 启动，使用同一目录保存 `sscom51.ini` 等设置。启动时先以安装目录 `Assets\Tool` 的 EXE 核对 `%APPDATA%\ColorVision\PackageCache\Tools\SSCOM` 的备份，再使用备份补齐或修复运行目录的 EXE。随备份保存的 SHA-256 可在安装目录缺少该 EXE 时校验备份。安装源和可校验的备份均不可用时，启动会提示修复安装。校验和修复只涉及 EXE 与备份摘要，运行目录已有的设置文件保留。
+
+首次双击 SSCOM 时，ColorVision 在运行目录创建缺失的 `sscom51.ini`，预置 PG 常用指令和 ARVR Pro TCP/JSON 指令，打开即可在「多条字符串发送」中看到。已有配置继续使用其现有指令和设置。右键 SSCOM 选择「调试预设」，可把 PG 常用指令、当前已加载的通用传感器模板或 ARVR Pro 指令添加到空槽位，再打开 SSCOM。选用 ARVR Pro 时，可填写 IPv4、端口和测试 SN，并设置 TCP 客户端。新增槽位的循环顺序为 0，首次启动和应用 TCP 预设时关闭自动连接。每条指令需要手动发送。文件使用 CP936 和 CRLF，发送栏使用 HEX 保留实际字节，单个文件最多 99 条。
+
+“内部工具”提供“CVRAW 批量导出 TIFF”（`ColorVision/ToolPlugins/CvRawExport/`）。选择文件夹后点击“执行”，后台递归检索 `.cvraw`（扩展名不区分大小写，不跟随目录链接），将原始图像导出为同目录、同主文件名的 `.tif`；已有目标直接跳过，不覆盖、不重新编码。并发数可选 1～32，默认使用 CPU 逻辑处理器数的一半，最低 1、最高 4；大图像可降低并发以减少内存占用。保留位深、通道、像素值及既有 TIFF 图像参数，单文件失败后继续处理并列出文件和原因。界面显示成功、跳过、失败与总进度；取消或关窗会停止后续任务，等待正在进行的读取／编码返回，已完成文件保留。`Engine/ColorVision.Engine/Media/Export/CvRawBatchExporter.cs` 先写同目录临时 TIFF，完成后以不覆盖方式移入目标，避免中断残留被下次误认为已导出。
 
 ## 下载任务与文件保护
 
@@ -59,7 +63,7 @@ RPC 只连接回环地址，后台进程使用随机的实例密钥；启动等�
 
 ## 运行链路
 
-帮助菜单的插件市场与反馈入口支持菜单访问键，见[帮助菜单键盘入口](./menus.md#帮助菜单的键盘入口)。插件市场进入后聚焦列表，Esc 优先收起详情并回到列表，再次按下关闭窗口。反馈窗口初始聚焦正文输入框，保留多行 Enter 换行及原有默认发送、Esc 取消行为；Tab / Shift+Tab 在窗口内循环。
+帮助菜单的“商店”和“反馈”入口支持菜单访问键，见[帮助菜单键盘入口](./menus.md#帮助菜单的键盘入口)。插件市场进入后聚焦列表，Esc 优先收起详情并回到列表，再次按下关闭窗口。反馈窗口初始聚焦正文输入框，保留多行 Enter 换行及原有默认发送、Esc 取消行为；Tab / Shift+Tab 在窗口内循环。
 
 | 链路 | 关键路径 |
 | --- | --- |
@@ -69,14 +73,14 @@ RPC 只连接回环地址，后台进程使用随机的实例密钥；启动等�
 | 下载链 | `DownloadWindow` -> `Aria2cDownloadManager` -> `aria2c.exe` / RPC daemon |
 | 崩溃诊断链 | `SettingWindow` 的“配置 → 崩溃转储” -> `CrashDumpSettingsProvider` -> 通用属性编辑器 -> `ColorVisionServiceHost` / WER LocalDumps / `DumpHelper` |
 | 反馈收集链 | `FeedbackWindow` -> `IFeedbackLogCollector` -> 应用日志、系统信息、脱敏配置快照、Dump、Windows 事件日志 -> 匿名 `/api/feedback` |
-| 菜单管理链 | [MenuItemManagerWindow → 草稿 → CommitEditingSnapshot → 运行时覆盖/重建 → 尝试保存](./menus.md) |
+| 菜单覆盖加载 | [`MenuItemManagerInitialized` → `ApplySettings` → 更新覆盖并按需重建菜单](./menus.md) |
 | DLL 诊断链 | `ViewDllVersionsWindow` |
 
 反馈主窗口固定显示诊断项摘要、日志范围、打开来源目录、清理历史文件和打包入口，附件区滚动不会带走这些操作。“选择项目”打开独立的紧凑列表，支持按名称或说明搜索、全部选中／取消和恢复默认选择；这些批量操作作用于全部项目，不受搜索过滤影响，关闭或按 Esc 保留选择。范围统一应用于实现 `IFeedbackLogTimeRangeCollector` 的日志和数据库来源，目录菜单也仅列出该接口提供的目录，不支持的来源保持自己的收集规则。清理与打包勾选独立，仅交给实现 `IFeedbackDiagnosticCleanupSource` 的来源；无对应能力时禁用入口。打包期间禁止修改诊断选项或启动清理，避免修改正在使用的收集器。
 
-Engine 提供默认勾选的“MVS 日志”来源，沿用统一天数范围，把本机已有的海康 SDK 与客户端 `.log`（含数字轮转后缀）复制到 ZIP 的 `MVS/` 下。SDK 来源优先读取日志服务安装目录的 `Path.ini`，只访问其中指定根目录下的 `MvSDKLog`；同时检查 Windows／当前用户临时目录和应用目录下的 `MvSDKLog`，以及用户目录、ProgramData 下的 `MVS/Log`，不扫描整个临时目录或相机图像目录。服务的 `Path.ini`、`LogServer.ini` 不按日志天数过滤。单文件最多 50 MiB、总日志最多 200 MiB；活动日志允许共享读取，只复制打开时的长度，属于尽力采集，不保证跨文件一致快照。`MVS/collection.json` 记录采集时间、来源路径、日志查看器位置、缺失目录、访问／复制失败和大小限制跳过原因。收集不提权、不连接相机、不修改日志设置，也不参与“清理历史文件”；SDK 系统日志无读取权限时仍附状态说明，其他诊断项继续打包。实现与回归入口为 `Engine/ColorVision.Engine/Services/Devices/Camera/Diagnostics/MvsLogCollector.cs`、`Test/ColorVision.UI.Tests/MvsDiagnosticsTests.cs`。
+Engine 提供默认勾选的“MVS 日志”来源，沿用统一天数范围，把本机已有的海康 SDK 与客户端 `.log`（含数字轮转后缀）复制到 ZIP 的 `MVS/` 下。SDK 来源优先读取日志服务安装目录的 `Path.ini`，只访问其中指定根目录下的 `MvSDKLog`；同时检查 Windows／当前用户临时目录和应用目录下的 `MvSDKLog`，以及用户目录、ProgramData 下的 `MVS/Log`，不扫描整个临时目录或相机图像目录。服务的 `Path.ini`、`LogServer.ini` 不按日志天数过滤。单文件最多 50 MiB、总日志最多 200 MiB；活动日志允许共享读取，只复制打开时的长度，属于尽力采集，不保证跨文件一致快照。`MVS/collection.json` 记录采集时间、来源路径、日志查看器位置、缺失目录、访问／复制失败和大小限制跳过原因。收集不提权、不连接相机、不修改日志设置，也不参与“清理历史文件”；SDK 系统日志无读取权限时仍附状态说明，其他诊断项继续打包。 实现见 `Engine/ColorVision.Engine/Services/Devices/Camera/Diagnostics/MvsLogCollector.cs`。
 
-“当前进程内存转储”是独立的诊断来源，默认不勾选；手动选择后，由 `Feedback/Collectors/CurrentProcessDumpCollector.cs` 在打包时抓取运行中进程的完整内存快照。它不读取或修改 WER 崩溃转储配置，也不按日志天数或历史 Dump 的 100 MiB 上限筛选。快照写入临时文件后直接以最高 ZIP 压缩级别写入反馈包的 `ProcessDump/`，不会生成嵌套 ZIP；压缩率取决于内存内容。打包结束会清理临时快照，采集失败会清理未完成文件并尽量加入 `ProcessDump/collection-error.txt`，其他来源继续打包。服务器确认提交成功、上传文件流释放后，反馈窗口清理本次生成的诊断 ZIP；失败或取消上传时保留 ZIP 以便重试或离线复制，用户手动添加的原始附件不在清理列表内。回归入口为 `Test/ColorVision.UI.Tests/CrashDumpDiagnosticsTests.cs`，原生快照成功与真实提交后的清理仍需运行应用验收。
+“当前进程内存转储”是独立的诊断来源，默认不勾选；手动选择后，由 `Feedback/Collectors/CurrentProcessDumpCollector.cs` 在打包时抓取运行中进程的完整内存快照。它不读取或修改 WER 崩溃转储配置，也不按日志天数或历史 Dump 的 100 MiB 上限筛选。快照写入临时文件后直接以最高 ZIP 压缩级别写入反馈包的 `ProcessDump/`，不会生成嵌套 ZIP；压缩率取决于内存内容。打包结束会清理临时快照，采集失败会清理未完成文件并尽量加入 `ProcessDump/collection-error.txt`，其他来源继续打包。服务器确认提交成功、上传文件流释放后，反馈窗口清理本次生成的诊断 ZIP；失败或取消上传时保留 ZIP 以便重试或离线复制，用户手动添加的原始附件不在清理列表内。 在实际应用中确认原生快照能够生成，且服务器接收成功后正确清理。
 
 打开物理相机管理时，通过 SDK 环境变量、MVS 安装注册表信息和系统 Program Files 目录定位 LogViewer，优先 Win64、其次 Win32。找到时，工具栏显示“MVS 日志”。启动时以查看器所在目录作为工作目录，并保留厂商程序要求的管理员权限；取消 UAC 不报告启动错误。该入口与反馈收集共用 `MvsDiagnosticsPaths` 的安装位置发现，但收集文件不依赖成功打开查看器。
 
@@ -92,42 +96,23 @@ Engine 提供默认勾选的“MVS 日志”来源，沿用统一天数范围，
 
 数据库按记录自身的本地时间／UTC 字段筛选，保留关联运行、节点、事件、异常、模板快照和结果，因此部分关联记录可以早于所选起始时间。输出是反馈 ZIP 的 `Database/` 下可直接查询的独立 SQLite 文件，保留原字段、ID、索引及完整压缩正文，不跟随结果中的图片路径收集图片。源库以只读模式在单个读取事务中访问，包含读取快照时 WAL 中已提交的数据；不同数据库之间不提供统一事务快照，尚未落库的写入队列不属于导出范围。
 
-每个数据库附带同名 `.export.json`，记录所选时间范围（含时区）、各表条数、缺失表和失败原因。旧库缺少新诊断表时仍导出可用表并标为 `partial`；无法识别时间字段或数据库不可读时只附错误说明，不回退为全库收集。导出逻辑与模块筛选分别位于 `UI/ColorVision.Database/SqliteFeedbackCollector.cs` 和各模块的反馈收集器；回归入口为 `Test/ColorVision.UI.Tests/SqliteFeedbackCollectorTests.cs`、`Test/ProjectARVRPro.Tests/ProjectARVRProFeedbackCollectorTests.cs`。打包与发送沿用反馈窗口入口，附件上传按流读取；离线时仍可选中压缩包并打开所在目录。
+每个数据库附带同名 `.export.json`，记录所选时间范围（含时区）、各表条数、缺失表和失败原因。旧库缺少新诊断表时仍导出可用表并标为 `partial`；无法识别时间字段或数据库不可读时只附错误说明，不回退为全库收集。导出逻辑与模块筛选分别位于 `UI/ColorVision.Database/SqliteFeedbackCollector.cs` 和各模块的反馈收集器 打包与发送沿用反馈窗口入口，附件上传按流读取。离线时可选中压缩包并打开所在目录。
+
+“相机取图与校正耗时”默认勾选。发送反馈时，客户端按所选时间范围读取现场 MySQL 的 `t_scgd_measure_result_img`，写入 `Database/CameraCaptureTiming.json`。升级前已保存且仍在库内的结果也能导出，选中覆盖拍摄日期的范围即可。打开附件，在 `Rows` 里按 `DeviceCode`、`CreatedAt` 或 `RawFile` 找到对应帧。对照同一 `CalibrationTemplate` 和曝光 `ExposureMs`，读取 `Timing` 中的 `Capture`（取图）、`Calibration`（校正）、`Save`（保存）和 `Total`（总耗时），单位均为毫秒。
+
+旧记录缺少分段计时时，`Timing` 为 `null`，`TotalTimeMs` 保留数据库中的总耗时。附件的 `From` 和 `To` 给出实际查询范围。`Status` 为 `ok` 且 `Count` 为 0 表示查询成功、范围内没有相机结果，`error` 表示读取失败。
 
 “清理历史文件”先要求用户确认，再调用实现 `IFeedbackDiagnosticCleanupSource` 的诊断来源。应用和服务日志保留各活动目录中最新的文件，其他来源只返回点击清理前已经存在的历史文件；删除失败的占用或无权限文件会计入跳过数量。清理仅删除来源明确声明的文件，不删除目录、配置、数据库、反馈附件或已经打包的 ZIP；共享的 WER Dump 目录中也只匹配当前 ColorVision 进程命名的 `.dmp`。
 
-## 新增功能检查
-
-窗口能打开只证明入口可用，不等于[配置已持久化和发布](./configuration.md)、[安装替换成功](../../02-developer-guide/plugin-development/getting-started.md)或插件已加载。观察下载日志、目标路径和包版本是诊断；下载替换、安装更新、修改配置和系统状态需要相应授权，不因为“验证”而自动执行。
-
-| 要做什么 | 检查点 |
-| --- | --- |
-| 新增设置页 | 按[设置契约](./settings.md)检查发现缓存、搜索、绑定、页面生命周期与保存调用者 |
-| 新增向导步骤 | 按[向导契约](./wizards.md)检查排序、Refresh/Apply 副作用、initializer 时序与完成条件 |
-| 新增市场/下载能力 | 核对任务结果、目标文件及服务提供的完整性/版本校验；下载成功不等于宿主已加载插件，装载问题继续查 PluginLoader 与 manifest。WebView2、Markdown CSS、`aria2c.exe`、目录权限和错误提示分别验证 |
-| 新增第三方应用入口 | 路径、权限、图标、分组、右键入口和不存在时的提示都验证 |
-| 修改崩溃诊断 | 普通用户通过 `ColorVisionServiceHost` 写入/清除 HKLM；手动保存不提权；反馈包只收集大小和时间范围内的文件 |
-| 修改反馈文件清理 | 每个来源只枚举自己拥有的普通文件，保留活动日志并限制 Dump 的进程名前缀；验证去重、释放空间统计、占用/权限跳过和最小窗口布局 |
-
 ## 发布验收
 
-| 验收项 | 要查什么 |
-| --- | --- |
-| 目标框架 | `ColorVision.UI.Desktop.csproj` 的 `net10.0-windows7.0`、`OutputType=WinExe` |
-| 包内 README | `PackageReadmeFile`、包根目录 |
-| 项目依赖 | `ColorVision.UI`、`ColorVision.Database` 等基础壳层依赖 |
-| WebView/Markdown | `Microsoft.Web.WebView2`、`Markdig.Signed`、`Assets/css/github-markdown.css` |
-| 下载工具 | `Assets/Tool/aria2c.exe` 能进入输出目录并可启动 |
-| 设置窗口 | 设置分组、搜索、懒加载 View、保存和重启恢复正常 |
-| 向导窗口 | `IWizardStep` 能发现，排序和完成状态正常 |
-| 诊断窗口 | 能列出程序集版本、文件版本、产品版本和路径 |
-| 崩溃诊断 | 设置页可发现；Mini/Full/Custom 保存成功；旧 `EventVWR` 插件即使残留也不会再加载 |
+检查 `ColorVision.UI.Desktop.csproj` 的目标框架与包内 README、WebView2/Markdown 依赖，以及 `Assets/css/github-markdown.css`、`Assets/Tool/aria2c.exe` 的输出路径。共用流程见[UI DLL 发布](./publishing.md)。
 
 ## 边界
 
 - 本项目的 `App.xaml.cs` 为空实现，`App.xaml` 未设置 `StartupUri`；`MainWindow.xaml` 仅有空 `Grid`，构造器只调用 `InitializeComponent()`。声明 `WinExe` 不代表包含完整产品启动、单实例、首次向导或 AvalonDock 主窗口；真正的[宿主启动链](../../03-architecture/overview/runtime.md)在 `ColorVision/`。
-- Windows 事件查看器直接由“第三方应用”启动 `eventvwr.msc`。
 - 普通用户模式下，写入或清除 `HKLM\SOFTWARE\Microsoft\Windows\Windows Error Reporting\LocalDumps` 由 `ColorVisionServiceHost` 执行；管理员模式可直接写入，手动保存 Dump 不修改系统配置。
+- `PluginLoader` 跳过残留的 `EventVWR` 插件。
 - 特权服务的 `registry-set-values` / `registry-delete-key` 是通用 HKLM 写入接口，不限制到 WER 路径，并支持显式选择 32/64 位注册表视图；所有调用仍须通过调用方身份校验、单次 Broker Ticket，并写入不含值数据的审计日志。
 - 这里是窗口和管理工具集合，不是所有菜单、插件或配置运行时的唯一中心。
 
@@ -137,7 +122,7 @@ Engine 提供默认勾选的“MVS 日志”来源，沿用统一天数范围，
 | --- | --- |
 | 设置窗口 | `Settings/SettingWindow.xaml.cs`、`Settings/SettingWindowController.cs` |
 | 向导流程 | `Wizards/WizardWindow.xaml.cs`、`Wizards/WizardWindowConfig.cs` |
-| 菜单管理 | `MenuItemManager/MenuItemManagerConfig.cs`、`MenuItemManagerWindow.xaml.cs` |
+| 菜单显示覆盖 | `MenuItemManager/MenuItemManagerInitialized.cs`、`MenuItemManagerService.cs` |
 | 插件市场和下载 | `Marketplace/`、`Download/`、`WebViewService.cs` |
 | 第三方应用 | `ThirdPartyApps/SystemAppProvider.cs`、`ThirdPartyAppsWindow.xaml.cs` |
 | 主程序网卡工具 | `ColorVision/ToolPlugins/ThirdPartyApps/InternalAppProvider.cs`、`NetworkAdapterPriorityService.cs`、`NetworkAdapterPriorityWindow.xaml.cs` |
@@ -145,5 +130,4 @@ Engine 提供默认勾选的“MVS 日志”来源，沿用统一天数范围，
 
 ## 验证入口与缺口
 
-
-下载生命周期测试使用临时 SQLite 与模拟 RPC，覆盖迟到响应、暂停恢复、同名任务、文件保护、内容校验、分页和磁力子任务。`DownloadAria2IntegrationTests` 使用随包的真实 aria2 与临时本地 HTTP 服务，验证下载、暂停续传及完成文件提升；它不访问外部站点，不能替代真实 P2P、代理环境、大文件吞吐量或窗口交互验收。其他自动化测试只覆盖各自受测服务；外部联网下载、HKLM 写入、DNS 修改和反馈上传都需明确授权，不能作为默认文档验证步骤。
+实际 P2P、代理环境、大文件吞吐量或窗口交互应在目标环境验收。外部联网下载、HKLM 写入、DNS 修改和反馈上传需要明确授权。

@@ -12,6 +12,16 @@ namespace ColorVision.ImageEditor.Draw.Special
     /// </summary>
     public class MouseMagnifierManager : IEditorToggleToolBase
     {
+        private static readonly Typeface LabelTypeface = new(new FontFamily("Arial"), FontStyles.Normal, FontWeights.Normal, FontStretches.Normal);
+        private static readonly SolidColorBrush BackgroundBrush = new(Color.FromArgb(0xAA, 0, 0, 0));
+        private static readonly Pen BackgroundPen = new(Brushes.White, 0);
+
+        static MouseMagnifierManager()
+        {
+            BackgroundBrush.Freeze();
+            BackgroundPen.Freeze();
+        }
+
         private DrawEditorContext EditorContext { get; }
         private readonly ImageMouseInfoProvider _mouseInfoProvider;
         
@@ -62,7 +72,8 @@ namespace ColorVision.ImageEditor.Draw.Special
             if (Image.Source is BitmapSource bitmapImage && pixelPosition.X > 60 && pixelPosition.X < bitmapImage.PixelWidth - 60 && pixelPosition.Y > 45 && pixelPosition.Y < bitmapImage.PixelHeight - 45)
             {
                 using DrawingContext dc = DrawVisualImage.RenderOpen();
-                var transform = new MatrixTransform(1 / ZoomboxSub.ContentMatrix.M11, ZoomboxSub.ContentMatrix.M12, ZoomboxSub.ContentMatrix.M21, 1 / ZoomboxSub.ContentMatrix.M22, (1 - 1 / ZoomboxSub.ContentMatrix.M11) * viewPosition.X, (1 - 1 / ZoomboxSub.ContentMatrix.M22) * viewPosition.Y);
+                Matrix matrix = ZoomboxSub.ContentMatrix;
+                var transform = new MatrixTransform(1 / matrix.M11, matrix.M12, matrix.M21, 1 / matrix.M22, (1 - 1 / matrix.M11) * viewPosition.X, (1 - 1 / matrix.M22) * viewPosition.Y);
                 dc.PushTransform(transform);
 
                 double x1 = viewPosition.X;
@@ -74,13 +85,14 @@ namespace ColorVision.ImageEditor.Draw.Special
                 height -= 2;
 
                 Brush brush = Brushes.White;
-                FontFamily fontFamily = new("Arial");
+                var culture = System.Globalization.CultureInfo.CurrentCulture;
+                double pixelsPerDip = VisualTreeHelper.GetDpi(DrawVisualImage).PixelsPerDip;
                 double fontSize = 10;
-                FormattedText formattedText = new(pixelSample.ValueText, System.Globalization.CultureInfo.CurrentCulture, FlowDirection.LeftToRight, new Typeface(fontFamily, FontStyles.Normal, FontWeights.Normal, FontStretches.Normal), fontSize, brush, VisualTreeHelper.GetDpi(DrawVisualImage).PixelsPerDip);
-                FormattedText formattedTex1 = new(pixelSample.CoordinateText, System.Globalization.CultureInfo.CurrentCulture, FlowDirection.LeftToRight, new Typeface(fontFamily, FontStyles.Normal, FontWeights.Normal, FontStretches.Normal), fontSize, brush, VisualTreeHelper.GetDpi(DrawVisualImage).PixelsPerDip);
+                FormattedText formattedText = new(pixelSample.ValueText, culture, FlowDirection.LeftToRight, LabelTypeface, fontSize, brush, pixelsPerDip);
+                FormattedText formattedTex1 = new(pixelSample.CoordinateText, culture, FlowDirection.LeftToRight, LabelTypeface, fontSize, brush, pixelsPerDip);
                 double width = Math.Max(formattedText.Width, formattedTex1.Width) + 10;
 
-                dc.DrawRectangle(new SolidColorBrush((Color)ColorConverter.ConvertFromString("#AA000000")), new Pen(Brushes.White, 0), new Rect(x1 - 1, y1 + height + 1, width + 2, 30));
+                dc.DrawRectangle(BackgroundBrush, BackgroundPen, new Rect(x1 - 1, y1 + height + 1, width + 2, 30));
 
                 dc.DrawText(formattedText, new Point(x1 + 5, y1 + height + 5));
                 dc.DrawText(formattedTex1, new Point(x1 + 5, y1 + height + 18));

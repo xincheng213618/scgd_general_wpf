@@ -46,6 +46,7 @@ namespace ColorVision.UI
         public void LoadItems(IEnumerable<StatusBarMeta> items)
         {
             LeftItemsPanel.Children.Clear();
+            CenterItemsPanel.Children.Clear();
             RightItemsPanel.Children.Clear();
             _contextMenu.Items.Clear();
             _itemContainers.Clear();
@@ -54,19 +55,12 @@ namespace ColorVision.UI
             var itemList = items.ToList();
             _loadedItems.AddRange(itemList);
 
-            var leftItems = itemList
-                .Where(i => i.Alignment == StatusBarAlignment.Left)
-                .OrderBy(i => i.Order);
-
-            var rightItems = itemList
-                .Where(i => i.Alignment == StatusBarAlignment.Right)
-                .OrderBy(i => i.Order);
-
-            foreach (var meta in leftItems)
-                AddItem(meta, LeftItemsPanel);
-
-            foreach (var meta in rightItems)
-                AddItem(meta, RightItemsPanel);
+            foreach (var alignment in new[] { StatusBarAlignment.Left, StatusBarAlignment.Center, StatusBarAlignment.Right })
+            {
+                var panel = GetItemsPanel(alignment);
+                foreach (var meta in itemList.Where(item => item.Alignment == alignment).OrderBy(item => item.Order))
+                    AddItem(meta, panel);
+            }
 
             // 添加分隔线 + 隐藏状态栏选项
             if (_contextMenu.Items.Count > 0)
@@ -83,7 +77,7 @@ namespace ColorVision.UI
         public void AddStatusBarItem(StatusBarMeta meta)
         {
             _loadedItems.Add(meta);
-            var panel = meta.Alignment == StatusBarAlignment.Left ? LeftItemsPanel : RightItemsPanel;
+            var panel = GetItemsPanel(meta.Alignment);
 
             // 找到正确的插入位置(按Order)
             int insertIndex = 0;
@@ -115,7 +109,7 @@ namespace ColorVision.UI
         {
             if (_itemContainers.TryGetValue(id, out var container))
             {
-                if (container.Parent is StackPanel panel)
+                if (container.Parent is Panel panel)
                     panel.Children.Remove(container);
                 _itemContainers.Remove(id);
             }
@@ -137,7 +131,14 @@ namespace ColorVision.UI
             return meta.Id ?? meta.Name ?? meta.GetHashCode().ToString();
         }
 
-        private void AddItem(StatusBarMeta meta, StackPanel panel)
+        private Panel GetItemsPanel(StatusBarAlignment alignment) => alignment switch
+        {
+            StatusBarAlignment.Left => LeftItemsPanel,
+            StatusBarAlignment.Center => CenterItemsPanel,
+            _ => RightItemsPanel,
+        };
+
+        private void AddItem(StatusBarMeta meta, Panel panel)
         {
             var container = CreateItemContainer(meta);
             container.Tag = meta;
@@ -149,6 +150,16 @@ namespace ColorVision.UI
 
         private FrameworkElement CreateItemContainer(StatusBarMeta meta)
         {
+            if (meta.ContentFactory is { } factory)
+            {
+                var content = factory();
+                if (meta.Source != null)
+                    content.DataContext = meta.Source;
+                if (!meta.IsVisible)
+                    content.Visibility = Visibility.Collapsed;
+                return content;
+            }
+
             var border = new Border
             {
                 Padding = new Thickness(6, 0, 6, 0),

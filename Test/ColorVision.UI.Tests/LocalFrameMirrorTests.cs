@@ -48,6 +48,65 @@ public sealed class LocalFrameMirrorTests
         Assert.False(frame.IsRawFlipApplied);
     }
 
+    [Fact]
+    public void ApplyPendingFlipsLargeCieRowsBitForBitAndKeepsTheMiddleRow()
+    {
+        const int width = 2049;
+        const int height = 2731;
+        const int planes = 3;
+        const int rowBytes = width * sizeof(float);
+        const short rawSample = 12345;
+        LocalFrameMetadata metadata = new()
+        {
+            Width = width,
+            Height = height,
+            SourceBpp = 16,
+            Channels = 3,
+            PrimaryBufferKind = LocalFrameBufferKind.CvCie,
+            FlipMode = CVImageFlipMode.X,
+            IsMirrorReady = true
+        };
+        using LocalFlowFrame frame = LocalFlowFrame.Allocate(metadata, sizeof(short), rowBytes * height * planes);
+        int[] rowBuffer = new int[width];
+        using (LocalFlowFrameLease input = frame.Acquire())
+        {
+            Marshal.WriteInt16(input.RawPointer, rawSample);
+            for (int plane = 0; plane < planes; plane++)
+            {
+                for (int row = 0; row < height; row++)
+                {
+                    for (int col = 0; col < width; col++) rowBuffer[col] = PixelBits(plane, row, col);
+                    Marshal.Copy(rowBuffer, 0, input.CiePointer + (plane * height + row) * rowBytes, width);
+                }
+            }
+        }
+
+        LocalFrameMirrorService.ApplyPending(frame);
+
+        using LocalFlowFrameLease result = frame.Acquire();
+        Assert.Equal(rawSample, Marshal.ReadInt16(result.RawPointer));
+        Assert.True(result.IsCieFlipApplied);
+        for (int plane = 0; plane < planes; plane++)
+        {
+            for (int row = 0; row < height; row++)
+            {
+                Marshal.Copy(result.CiePointer + (plane * height + row) * rowBytes, rowBuffer, 0, width);
+                for (int col = 0; col < width; col++)
+                {
+                    int expected = PixelBits(plane, height - 1 - row, col);
+                    if (rowBuffer[col] != expected) Assert.Equal(expected, rowBuffer[col]);
+                }
+            }
+        }
+
+        static int PixelBits(int plane, int row, int column) => column switch
+        {
+            0 => int.MinValue, // Negative zero
+            1 => 0x7FC00000 + plane * height + row, // NaN with a row-dependent payload
+            _ => (plane * height + row) * width + column
+        };
+    }
+
     [Theory]
     [InlineData(CVImageFlipMode.X, new short[] { 4, 5, 6, 1, 2, 3 })]
     [InlineData(CVImageFlipMode.Y, new short[] { 3, 2, 1, 6, 5, 4 })]

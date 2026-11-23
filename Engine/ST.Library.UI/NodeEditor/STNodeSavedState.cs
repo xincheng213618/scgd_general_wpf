@@ -1,4 +1,5 @@
 using System;
+using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -27,25 +28,55 @@ public sealed class STNodeSavedState
     public static STNodeSavedState Parse(byte[] data)
     {
         ArgumentNullException.ThrowIfNull(data);
-        using var reader = new BinaryReader(new MemoryStream(data), Encoding.UTF8);
-        string model = Encoding.UTF8.GetString(ReadBytes(reader, reader.ReadByte()));
-        string type = Encoding.UTF8.GetString(ReadBytes(reader, reader.ReadByte()));
+        return Parse(data.AsSpan());
+    }
+
+    internal static STNodeSavedState Parse(ReadOnlySpan<byte> data)
+    {
+        string model = ReadText(ref data, ReadLengthByte(ref data));
+        string type = ReadText(ref data, ReadLengthByte(ref data));
         var properties = new Dictionary<string, byte[]>(StringComparer.Ordinal);
-        while (reader.BaseStream.Position < reader.BaseStream.Length)
+        while (!data.IsEmpty)
         {
-            string name = Encoding.UTF8.GetString(ReadBytes(reader, reader.ReadInt32()));
-            byte[] value = ReadBytes(reader, reader.ReadInt32());
+            string name = ReadText(ref data, ReadLengthInt32(ref data));
+            byte[] value = ReadBytes(ref data, ReadLengthInt32(ref data)).ToArray();
             if (!properties.TryAdd(name, value))
                 throw new InvalidDataException($"节点数据包含重复属性：{name}");
         }
         return new STNodeSavedState(model, type, properties);
     }
 
-    private static byte[] ReadBytes(BinaryReader reader, int length)
+    private static string ReadText(ref ReadOnlySpan<byte> data, int length) =>
+        Encoding.UTF8.GetString(ReadBytes(ref data, length));
+
+    private static byte ReadLengthByte(ref ReadOnlySpan<byte> data)
     {
-        if (length < 0 || length > reader.BaseStream.Length - reader.BaseStream.Position)
+        if (data.IsEmpty)
+            ThrowTruncatedLength();
+        byte length = data[0];
+        data = data[1..];
+        return length;
+    }
+
+    private static int ReadLengthInt32(ref ReadOnlySpan<byte> data)
+    {
+        if (data.Length < sizeof(int))
+            ThrowTruncatedLength();
+        int length = BinaryPrimitives.ReadInt32LittleEndian(data);
+        data = data[sizeof(int)..];
+        return length;
+    }
+
+    // ReadExactly supplies the same localized EOF exception as BinaryReader.
+    private static void ThrowTruncatedLength() => Stream.Null.ReadExactly(stackalloc byte[1]);
+
+    private static ReadOnlySpan<byte> ReadBytes(ref ReadOnlySpan<byte> data, int length)
+    {
+        if (length < 0 || length > data.Length)
             throw new InvalidDataException("节点属性长度无效。");
-        return reader.ReadBytes(length);
+        ReadOnlySpan<byte> value = data[..length];
+        data = data[length..];
+        return value;
     }
 
     public static byte[] Write(string modelKey, string typeKey, IReadOnlyDictionary<string, byte[]> properties)

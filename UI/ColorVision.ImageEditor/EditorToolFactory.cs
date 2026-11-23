@@ -58,7 +58,7 @@ namespace ColorVision.ImageEditor
 
         public IEditorToolFactory(ImageView imageView, EditorContext context)
         {
-            _toolbarComposer = new EditorToolbarComposer(imageView.GetRegionToolBar);
+            _toolbarComposer = new EditorToolbarComposer(imageView.GetRegionToolBar, context.DrawCanvas);
             _context = context;
 
             var assemblyService = AssemblyHandler.GetInstance();

@@ -12,16 +12,12 @@
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
-        <DockPanel Margin="2,0,2,14">
-            <Image x:Name="DeviceIcon" Width="28" Height="28" Margin="0,0,10,0"
-                   VerticalAlignment="Center" Stretch="Uniform"/>
-            <StackPanel VerticalAlignment="Center">
-                <TextBlock x:Name="DeviceTitle" FontSize="22" FontWeight="SemiBold"
-                           Foreground="{DynamicResource GlobalTextBrush}" TextWrapping="Wrap"/>
-                <TextBlock x:Name="DeviceCode" FontSize="12" Margin="0,3,0,0" Opacity="0.65"
-                           Foreground="{DynamicResource GlobalTextBrush}" TextWrapping="Wrap"/>
-            </StackPanel>
-        </DockPanel>
+        <StackPanel Margin="2,0,2,14" VerticalAlignment="Center">
+            <TextBlock x:Name="DeviceTitle" FontSize="22" FontWeight="SemiBold"
+                       Foreground="{DynamicResource GlobalTextBrush}" TextWrapping="Wrap"/>
+            <TextBlock x:Name="DeviceCode" FontSize="12" Margin="0,3,0,0" Opacity="0.65"
+                       Foreground="{DynamicResource GlobalTextBrush}" TextWrapping="Wrap"/>
+        </StackPanel>
 
         <Border Grid.Row="1" Background="{DynamicResource RegionBrush}"
                 BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"

@@ -1,11 +1,15 @@
 #pragma warning disable CA1707,CA1861
+using ColorVision.Database;
+using ColorVision.Engine;
 using ColorVision.Engine.FlowProcessing;
 using ColorVision.Engine.MQTT;
 using FlowEngineLib;
 using FlowEngineLib.Base;
 using FlowEngineLib.Start;
+using SqlSugar;
 using ST.Library.UI.NodeEditor;
 using System.Diagnostics;
+using System.IO;
 using System.Windows.Threading;
 
 namespace ColorVision.UI.Tests;
@@ -121,6 +125,114 @@ public class FlowEngineControlLifecycleTests
             Assert.False(selected.Running);
             Assert.False(flowControl.IsFlowRun);
         });
+    }
+
+    [Fact]
+    public void MeasurementBatchIsAvailableAtFirstDispatchAndIsolatedAcrossRunsWithTheSameCode()
+    {
+        StaTest.Run(() =>
+        {
+            using var editor = new STNodeEditor();
+            using var engineControl = new InspectableFlowEngineControl(editor, false, new FlowNodeManager());
+            var start = CreateStartNode("Batch");
+            var sink = new StartSinkNode();
+            sink.Create();
+            editor.Nodes.Add(start);
+            editor.Nodes.Add(sink);
+            Assert.Equal(ConnectionStatus.Connected, start.m_op_start.ConnectOption(sink.Input));
+            var flowControl = new FlowControl(MQTTControl.GetInstance(), engineControl, () => []);
+            string connectionString = MySqlControl.GetConnectionString();
+            List<int?> dispatchedBatchIds = [];
+            sink.Input.DataTransfer += (_, args) =>
+            {
+                if (args.TargetOption.Data is CVStartCFC { IsRunning: true } action)
+                    dispatchedBatchIds.Add(FlowMeasurementBatch.ResolveId(new CVStartCFC(action), _ => null));
+            };
+
+            Assert.True(flowControl.TryStartWithBatchAsync("SN?1", 41, connectionString, Stopwatch.GetTimestamp()).GetAwaiter().GetResult());
+            Assert.False(flowControl.TryStartWithBatchAsync("SN?1", 42, connectionString, Stopwatch.GetTimestamp()).GetAwaiter().GetResult());
+            flowControl.Stop();
+            Assert.True(flowControl.TryStartWithBatchAsync("SN?1", 43, connectionString, Stopwatch.GetTimestamp()).GetAwaiter().GetResult());
+            flowControl.Stop();
+            Assert.True(flowControl.TryStartAsync("SN?1").GetAwaiter().GetResult());
+            flowControl.Stop();
+            flowControl.PersistResults = false;
+            Assert.True(flowControl.TryStartWithBatchAsync("SN?1", 44, connectionString, Stopwatch.GetTimestamp()).GetAwaiter().GetResult());
+            flowControl.Stop();
+
+            Assert.Equal(new int?[] { 41, 43, null, null }, dispatchedBatchIds);
+        });
+    }
+
+    [Fact]
+    public void PersistedBatchReceiptKeepsItsDatabaseWhenReconnectPrecedesStart()
+    {
+        DirectoryInfo directory = Directory.CreateTempSubdirectory("cv-flow-batch-start-");
+        try
+        {
+            StaTest.Run(() =>
+            {
+                MySqlConnectedEndpoint? current = null;
+                MySqlConnectedEndpoint MakeEndpoint(string file) => new(endpoint => ReferenceEquals(endpoint, current),
+                    () => new SqlSugarClient(new ConnectionConfig
+                    {
+                        ConnectionString = $"Data Source={Path.Combine(directory.FullName, file)};Pooling=False",
+                        DbType = DbType.Sqlite, InitKeyType = InitKeyType.Attribute, IsAutoCloseConnection = true,
+                    }));
+                var original = MakeEndpoint("original.db");
+                var replacement = MakeEndpoint("replacement.db");
+                using var originalDb = original.CreateDbClient();
+                using var replacementDb = replacement.CreateDbClient();
+                originalDb.CodeFirst.InitTables<MeasureBatchModel>();
+                replacementDb.CodeFirst.InitTables<MeasureBatchModel>();
+
+                current = original;
+                var batch = new MeasureBatchModel { Code = "SN_1", Name = "original" };
+                Func<SqlSugarClient> createOriginalClient = FlowMeasurementBatch.InsertForFlow(batch, original);
+                var other = new MeasureBatchModel { Code = batch.Code, Name = "replacement" };
+                other.Id = replacementDb.Insertable(other).ExecuteReturnIdentity();
+                Assert.Equal(batch.Id, other.Id);
+                current = replacement;
+                Assert.False(original.IsCurrent);
+                using (var client = createOriginalClient())
+                    Assert.Equal("original", Assert.Single(client.Queryable<MeasureBatchModel>().ToList()).Name);
+
+                using var editor = new STNodeEditor();
+                using var engineControl = new InspectableFlowEngineControl(editor, false, new FlowNodeManager());
+                var start = CreateStartNode("Batch");
+                var sink = new StartSinkNode();
+                sink.Create();
+                editor.Nodes.Add(start);
+                editor.Nodes.Add(sink);
+                Assert.Equal(ConnectionStatus.Connected, start.m_op_start.ConnectOption(sink.Input));
+                var control = new FlowControl(MQTTControl.GetInstance(), engineControl, () => []);
+                List<(MySqlConnectedEndpoint? Endpoint, int? OriginalId, int? ReplacementId)> dispatched = [];
+                sink.Input.DataTransfer += (_, args) =>
+                {
+                    if (args.TargetOption.Data is not CVStartCFC { IsRunning: true } action) return;
+                    FlowMeasurementBatch.TryGetBoundEndpoint(action, out MySqlConnectedEndpoint? endpoint);
+                    dispatched.Add((endpoint, FlowMeasurementBatch.ResolveId(action, original, _ => null),
+                        FlowMeasurementBatch.ResolveId(action, replacement, _ => other.Id)));
+                };
+
+                Assert.True(control.TryStartWithBatchAsync("SN?1", batch).GetAwaiter().GetResult());
+                var first = Assert.Single(dispatched);
+                Assert.Same(original, first.Endpoint);
+                Assert.Equal(batch.Id, first.OriginalId);
+                Assert.Null(first.ReplacementId);
+                control.Stop();
+
+                Assert.Throws<InvalidOperationException>(() => control.TryStartWithBatchAsync("SN?1", other).GetAwaiter().GetResult());
+                Assert.Throws<InvalidOperationException>(() => control.TryStartWithBatchAsync("different", batch).GetAwaiter().GetResult());
+                Assert.False(control.IsFlowRun);
+                Assert.Single(dispatched);
+            });
+        }
+        finally
+        {
+            foreach (FileInfo file in directory.EnumerateFiles()) file.Delete();
+            directory.Delete();
+        }
     }
 
     [Fact]

@@ -2,6 +2,7 @@ using ColorVision.Engine.Messages;
 using ColorVision.Scheduler;
 using Quartz;
 using System;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Threading;
@@ -14,15 +15,28 @@ namespace ColorVision.Engine.Services.Devices.Camera.Job
     [DisallowConcurrentExecution]
     public class CameraCaptureJob : IJob, IConfigurableJob
     {
+        private readonly Func<IEnumerable<DeviceCamera>> devices;
+        private readonly Func<DeviceCamera, MsgRecord?> capture;
+
+        public CameraCaptureJob() : this(
+            () => ServiceManager.GetInstance().DeviceServices.OfType<DeviceCamera>(),
+            device => device.DisplayCameraControlLazy.Value.GetData()) { }
+
+        internal CameraCaptureJob(Func<IEnumerable<DeviceCamera>> devices, Func<DeviceCamera, MsgRecord?> capture)
+        {
+            this.devices = devices;
+            this.capture = capture;
+        }
+
         public Type ConfigType => typeof(CameraCaptureJobConfig);
 
         public IJobConfig CreateDefaultConfig()
         {
             var config = new CameraCaptureJobConfig();
-            var firstDevice = ServiceManager.GetInstance().DeviceServices.OfType<DeviceCamera>().FirstOrDefault();
+            var firstDevice = devices().FirstOrDefault(device => !string.IsNullOrWhiteSpace(device.Code));
             if (firstDevice != null)
             {
-                config.DeviceCameraName = firstDevice.Config.Name;
+                config.DeviceCameraCode = firstDevice.Code;
             }
             return config;
         }
@@ -35,21 +49,12 @@ namespace ColorVision.Engine.Services.Devices.Camera.Job
             Dispatcher dispatcher = ScheduledDeviceJobHelper.GetApplicationDispatcher();
             MsgRecord? msgRecord = await dispatcher.InvokeAsync(() =>
             {
-                DeviceCamera? deviceCamera = null;
-                if (schedulerInfo.Config is CameraCaptureJobConfig config &&
-                    !string.IsNullOrEmpty(config.DeviceCameraName))
-                {
-                    deviceCamera = ServiceManager.GetInstance().DeviceServices
-                        .OfType<DeviceCamera>()
-                        .FirstOrDefault(d => d.Config.Name == config.DeviceCameraName);
-                }
+                if (schedulerInfo.Config is not CameraCaptureJobConfig config)
+                    throw ScheduledDeviceJobHelper.CreateDeviceSelectionException(ambiguous: false);
 
-                if (deviceCamera == null)
-                {
-                    throw new JobExecutionException(Properties.Resources.NoAvailableCameraDevice);
-                }
-
-                return deviceCamera.DisplayCameraControlLazy.Value.GetData();
+                var device = ScheduledDeviceJobHelper.ResolveDevice(devices(), config.DeviceCameraCode, config.DeviceCameraName, out bool ambiguous)
+                    ?? throw ScheduledDeviceJobHelper.CreateDeviceSelectionException(ambiguous);
+                return ScheduledDeviceJobHelper.DispatchCapture(device, capture);
             }, DispatcherPriority.Normal, cancellationToken).Task;
 
             if (msgRecord == null)
@@ -67,7 +72,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Job
             }
             catch (TimeoutException ex)
             {
-                throw new JobExecutionException(Properties.Resources.Timeout, ex);
+                throw new JobExecutionException(EngineLocalization.Get("Scheduler_DeviceReplyWaitTimedOut"), ex);
             }
 
             if (terminalState != MsgRecordState.Success)

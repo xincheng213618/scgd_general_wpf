@@ -5,7 +5,6 @@ status: "current"
 summary: "定位 Flow 数据转换、图像转换、校准及属性选择器。"
 aliases: ["找不到图像转换或校准模板","AlgDataConvertNode","LocalCalibrationRealPoiNode","CalibrationTemplatePropertiesEditor"]
 code_paths: ["Engine/FlowEngineLib/Node/Algorithm/AlgDataConvertNode.cs","Engine/ColorVision.Engine/FlowProcessing/Nodes/Compatibility/Calibration/CalibrationNode.cs","Engine/ColorVision.Engine/FlowProcessing/Nodes/Compatibility/POI/RealPOINode.cs","Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalCalibrationNode.cs","Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalRealPoiNode.cs","Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalCalibrationRealPoiNode.cs","Engine/ColorVision.Engine/Services/Devices/Calibration","Engine/ColorVision.Engine/PropertyEditor/FlowNodePropertyEditorRegistration.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/CompatibilityNodeMigrationTests.cs","Test/ColorVision.UI.Tests/CompatibilityLocalCalibrationFlowTests.cs"]
 related: ["flow.index","flow.templates","ui.property-grid"]
 ---
 
@@ -21,13 +20,15 @@ related: ["flow.index","flow.templates","ui.property-grid"]
 
 实时关注点从 `IN_CIE` 沿图像分支查找最近的校正服务；直接相机输入通过物理相机关联校正服务。没有对应上游设备时使用默认校正服务，或唯一的校正服务；无法唯一确定时使用原服务。多个校正服务的开关分别生效。原节点类型、输入端口及参数保存格式保持不变，校正结果类型仍为 `30`。本地实时关注点按实际明细使用三通道 `POI_XYZ=1` / 单通道 `POI_Y=2`，入库主表、流程输出、通知及下游关注点分析均使用同一类型；不能为兼容旧节点而覆盖成服务端 `RealPOI=18`，否则下游可能将已有点误判为空。原服务分支继续沿用服务返回的结果类型。
 
-校正并实时测量上游 POI 使用本地 `LocalCalibrationRealPoiNode`（“本地设备 → 校正+实时 POI”），图像接 `IN_IMG`，布点结果接 `IN_POI`。包含旧服务端双输入校正节点的流程需要手动替换为此本地节点并重新选择校正资源、核对连线；两者配置语义不同，不自动映射旧节点。
+校正并实时测量上游 POI 使用本地 `LocalCalibrationRealPoiNode`（“本地设备 → 校正+实时 POI”），图像接 `IN_IMG`，布点结果接 `IN_POI`。迁移旧服务端双输入节点时，手动替换并重新选择校正资源、核对连线。外部 CVRAW 曝光全零的兼容条件见校正专题。 [Flow 本地校正](../../01-user-guide/devices/calibration.md#flow-本地校正是独立入口)
 
 “灯珠定位”输出运行内存点集时，应使用单输入本地 POI，或分开校正后接本地实时 POI；这些分支不创建 POI 模板或逐点结果记录，可选本地 CSV。原“关注点算法”和“实时关注点算法”直接连接灯珠定位节点时也转为本地执行。该例外及运行期句柄的消费范围见[本地灯珠分析](../algorithms/local-native-analysis.md#flow-内存点集与本地测量)；普通数据库布点结果仍沿用上文的持久化链。
 
 该节点直接按 `IN_POI` 提供的点位、形状和尺寸测量，输入点位须对应当前图像坐标。旧流程保存的 `UseROI` 字段在加载时忽略，重新保存时不再写入；之前依赖全幅坐标转换的流程，需在上游布点时提供当前图像坐标。物理相机 ROI 采集及校正文件区域匹配仍由相机和本地校正链路负责。
 
 本地“关注点布点(Re)”沿用 POI 模板中的点名。旧流程保存的 `PrefixName` 在加载时忽略，重新保存时省略。按带前缀点名匹配的下游需改用模板点名。
+
+节点诊断将重映射布点分成 `LoadPoiTemplate`、`ResolvePoiLayout`、`RemapPoi`、`PersistPoiLayoutMaster` 和 `PersistPoiLayoutDetails`。下游读取已保存的点位时，`ReadPoiLayoutDetails` 记录 MySQL 明细查询。使用旧版布点文件时还会记录 `FindPoiLayoutFiles`，实际解析的文件分别记为 `ReadPoiLayoutFile`。这些阶段已包含在节点的 `ExecuteLocal` 中。
 
 ## 先查什么
 
@@ -36,6 +37,7 @@ related: ["flow.index","flow.templates","ui.property-grid"]
 | 数据转换不像文件转换器 | `AlgDataConvertNode` 只覆盖当前枚举和上游结果转换 |
 | 图像转换输出不对 | `ImageFormat`、`Channel`、上游图像参数、输出文件名 |
 | 校准模板面板不出现 | 选中的 `DeviceCalibration` / `DeviceCamera` 是否有 `PhyCamera` |
+| MQTT 校准节点完成，视图无图像 | 核对原请求的回执、数据库来源及图像文件。 [校准结果回显](../../01-user-guide/devices/calibration.md#结果显示与历史落库不是同一件事) |
 | 旧色差校正节点找不到 | 节点已从目录隐藏；仅保留类型用于旧流程反序列化 |
 
 ## 真实入口
@@ -105,4 +107,4 @@ related: ["flow.index","flow.templates","ui.property-grid"]
 
 ## 验证入口与缺口
 
-`CompatibilityNodeMigrationTests.cs` 覆盖旧校准节点字段忽略、重新保存、请求精简及画布连线兼容。`CompatibilityLocalCalibrationFlowTests.cs` 覆盖后端开关联动、单/三通道测量经内部交接传给关注点分析的结果类型、输入内存帧选择、停止后的交接拒绝及内部失败不发送 MQTT。真实设备、数据库入库和完整服务协议仍需独立集成验证。
+真实设备、数据库入库和完整服务协议需独立集成验证。

@@ -14,4 +14,4 @@ onMounted(() => {
 
 # 页面已整理
 
-`EventVWR` 已并入主程序，参见 [ColorVision.UI.Desktop](../../ui-components/ColorVision.UI.Desktop.md)。
+崩溃诊断和转储配置见 [ColorVision.UI.Desktop](../../ui-components/ColorVision.UI.Desktop.md)。

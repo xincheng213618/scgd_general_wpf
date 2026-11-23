@@ -1,11 +1,11 @@
 ﻿using ColorVision.Engine.Services.Devices.Camera.Diagnostics;
 using ColorVision.Themes;
 using ColorVision.UI;
-using ColorVision.UI.Menus;
 using System;
 using System.Collections;
 using System.Globalization;
 using System.Linq;
+using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
@@ -17,21 +17,13 @@ namespace ColorVision.Engine.Services.PhyCameras
     {
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            string status = value as string;
-            if (string.IsNullOrEmpty(status))
-                return ColorVision.Engine.Properties.Resources.DeviceStatusUnknown;
-
-            switch (status.ToLowerInvariant())
+            return value switch
             {
-                case "online":
-                    return ColorVision.Engine.Properties.Resources.Online;
-                case "offline":
-                    return ColorVision.Engine.Properties.Resources.offline;
-                case "unknown":
-                    return ColorVision.Engine.Properties.Resources.DeviceStatusUnknown;
-                default:
-                    return status;
-            }
+                PhysicalCameraStatus.Opened => Properties.Resources.DeviceStatusOpened,
+                PhysicalCameraStatus.Online => Properties.Resources.Online,
+                PhysicalCameraStatus.Offline => Properties.Resources.offline,
+                _ => Properties.Resources.DeviceStatusUnknown
+            };
         }
 
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
@@ -55,16 +47,11 @@ namespace ColorVision.Engine.Services.PhyCameras
 
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            string status = value as string;
-            if (string.IsNullOrWhiteSpace(status))
-                return UnknownBrush;
-
-            return status.ToLowerInvariant() switch
+            return value switch
             {
-                "online" => OnlineBrush,
-                "offline" => OfflineBrush,
-                "unknown" => UnknownBrush,
-                _ => UnknownBrush,
+                PhysicalCameraStatus.Opened or PhysicalCameraStatus.Online => OnlineBrush,
+                PhysicalCameraStatus.Offline => OfflineBrush,
+                _ => UnknownBrush
             };
         }
 
@@ -80,26 +67,14 @@ namespace ColorVision.Engine.Services.PhyCameras
         {
             if (x is PhyCamera a && y is PhyCamera b)
             {
-                bool aOnline = string.Equals(a.SysResourceModel?.Remark, "Online", StringComparison.OrdinalIgnoreCase);
-                bool bOnline = string.Equals(b.SysResourceModel?.Remark, "Online", StringComparison.OrdinalIgnoreCase);
+                bool aOnline = a.IsOnline;
+                bool bOnline = b.IsOnline;
 
                 if (aOnline && !bOnline) return -1;
                 if (!aOnline && bOnline) return 1;
                 return a.Id.CompareTo(b.Id);
             }
             return 0;
-        }
-    }
-
-    public class ExportPhyCamerManager : MenuItemBase
-    {
-        public override string OwnerGuid => MenuItemConstants.Tool;
-        public override string Header => Properties.Resources.MenuPhyCameraManager;
-        public override int Order => 2;
-
-        public override void Execute()
-        {
-            new PhyCameraManagerWindow() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterScreen }.ShowDialog();
         }
     }
 
@@ -116,6 +91,7 @@ namespace ColorVision.Engine.Services.PhyCameras
     /// </summary>
     public partial class PhyCameraManagerWindow : Window
     {
+        private readonly CancellationTokenSource _statusScanCancellation = new();
         public static PhyCameraManagerWindowConfig Config  => ConfigService.Instance.GetRequiredService<PhyCameraManagerWindowConfig>();
         public PhyCameraManagerWindow()
         {
@@ -141,9 +117,27 @@ namespace ColorVision.Engine.Services.PhyCameras
             ShowSelectedCameraDetails();
         }
 
+        protected override async void OnContentRendered(EventArgs e)
+        {
+            base.OnContentRendered(e);
+            try
+            {
+                await PhyCameraManager.GetInstance().RefreshLocalCameraStatusAsync(_statusScanCancellation.Token);
+            }
+            catch (OperationCanceledException) when (_statusScanCancellation.IsCancellationRequested)
+            {
+            }
+        }
+
+        protected override void OnClosed(EventArgs e)
+        {
+            _statusScanCancellation.Cancel();
+            _statusScanCancellation.Dispose();
+            base.OnClosed(e);
+        }
+
         private void OnPhyCamerasCollectionChanged(object? sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
         {
-            ApplyOnlineSorting();
             if (CameraList.SelectedItem == null)
             {
                 CameraList.SelectedItem = PhyCameraManager.GetInstance().PhyCameras.FirstOrDefault();
@@ -156,7 +150,10 @@ namespace ColorVision.Engine.Services.PhyCameras
             var view = CollectionViewSource.GetDefaultView(PhyCameraManager.GetInstance().PhyCameras);
             if (view is ListCollectionView listView)
             {
+                if (listView.CustomSort is PhyCameraOnlineComparer) return;
                 listView.CustomSort = new PhyCameraOnlineComparer();
+                listView.LiveSortingProperties.Add(nameof(PhyCamera.ConnectionStatus));
+                listView.IsLiveSorting = true;
             }
         }
 

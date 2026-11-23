@@ -307,6 +307,12 @@ namespace ColorVision.ImageEditor.Realtime
                                 continue;
                             }
 
+                            if (!frame.SourceIsBgr48 && pixelBytes is 1 or 3 or 4)
+                            {
+                                CopyMirroredRow(sourceRow, targetRow, frame.Width, pixelBytes);
+                                continue;
+                            }
+
                             for (int x = 0; x < frame.Width; x++)
                             {
                                 byte* source = sourceRow + (frame.Width - 1 - x) * pixelBytes;
@@ -333,6 +339,29 @@ namespace ColorVision.ImageEditor.Realtime
                     bitmap.Unlock();
                 }
             }
+        }
+
+        private static unsafe void CopyMirroredRow(byte* sourceRow, byte* targetRow, int width, int pixelBytes)
+        {
+            if (pixelBytes == 3)
+            {
+                byte* source = sourceRow + (width - 1) * 3;
+                byte* target = targetRow;
+                for (int x = 0; x < width; x++, source -= 3, target += 3)
+                {
+                    target[0] = source[0];
+                    target[1] = source[1];
+                    target[2] = source[2];
+                }
+                return;
+            }
+
+            int rowBytes = width * pixelBytes;
+            Buffer.MemoryCopy(sourceRow, targetRow, rowBytes, rowBytes);
+            if (pixelBytes == 1)
+                new Span<byte>(targetRow, width).Reverse();
+            else
+                new Span<uint>(targetRow, width).Reverse();
         }
 
         private void UpdateImageMetadata(FrameInfo frame)

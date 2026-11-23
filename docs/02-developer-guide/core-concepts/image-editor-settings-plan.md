@@ -2,10 +2,9 @@
 knowledge_id: "ui.image-editor-settings-plan"
 knowledge_type: "decision"
 status: "current"
-summary: "图像设置的作用范围、显式默认值与标定档案保存、当前视图隔离和扩展协议；主设置独立入口与旧接口清理仍待实施。"
-aliases: ["图像设置重构", "图像设置规划", "当前有效", "全局与当前", "外接设置", "设置作用范围", "设置提供方", "ImageViewSettingsEntry", "ImageViewSettingsWindow", "标定状态隔离", "ImageSettingsSession"]
+summary: "图像设置的作用范围、默认值与标定档案保存、视图隔离和扩展入口。"
+aliases: ["图像设置", "当前有效", "全局与当前", "外接设置", "设置作用范围", "设置提供方", "ImageViewSettingsEntry", "ImageViewSettingsWindow", "标定状态隔离", "ImageSettingsSession"]
 code_paths: ["UI/ColorVision.ImageEditor/Settings", "UI/ColorVision.ImageEditor/ImageView.xaml.cs", "UI/ColorVision.ImageEditor/ImageViewConfig.cs", "UI/ColorVision.ImageEditor/EditorTools/Filters", "UI/ColorVision.ImageEditor/EditorTools/PseudoColor", "UI/ColorVision.ImageEditor/Draw/Ruler", "UI/ColorVision.ImageEditor/Draw/Text/DefalutTextAttribute.cs", "UI/ColorVision.ImageEditor/Draw/Special/ToolReferenceLine.cs", "UI/ColorVision.UI/PropertyEditor/SettingsPropertyPresenter.cs", "Engine/ColorVision.Engine/Media/CvcieDisplaySettingProvider.cs", "Engine/ColorVision.Engine/Media/CvcieMouseProbeSettingProvider.cs", "Engine/ColorVision.Engine/Media/CvcieMouseProbeOptions.cs", "UI/ColorVision.ImageEditor/Presentation/ImageShaderPresentation.cs", "UI/ColorVision.ImageEditor/Presentation/ImageDisplayEffects.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/ImageSettingsScopeTests.cs", "Test/ColorVision.UI.Tests/CvcieDisplaySettingsTests.cs", "Test/ColorVision.UI.Tests/ImageDisplayEffectsTests.cs"]
 related: ["ui.image-editor", "ui.image-editor-context", "ui.configuration", "ui.property-grid", "engine.file-io"]
 ---
 
@@ -29,7 +28,7 @@ related: ["ui.image-editor", "ui.image-editor-context", "ui.configuration", "ui.
 
 窗口按稳定页面 ID 导航，只有旧兼容条目回退到分组文本。搜索匹配页面、条目和可编辑属性名称。普通页面使用一个主滚动容器；当前值与默认值不依据“恰有两个条目”自动左右并排。
 
-`SettingsPropertyPresenter` 位于 `ColorVision.UI`，沿用现有属性编辑器、验证和可见性绑定，提供统一说明和紧凑控件列；同时读取 `Display` 资源元数据及 `DisplayName / Description`。属性可通过本地化 `Display.GroupName`（没有时回退 `Category`）形成分区；带 `Range` 且显式选择 `SliderPropertiesEditor` 的数值项同时提供滑动调节和精确文本输入。ImageEditor 不依赖 Desktop 或 Engine。主应用设置尚未迁移到这个公共行呈现器。
+`SettingsPropertyPresenter` 位于 `ColorVision.UI`，复用属性编辑器、验证和可见性绑定，读取 `Display` 资源元数据及 `DisplayName / Description`。属性按本地化的 `Display.GroupName` 或 `Category` 分区。带 `Range` 且显式选择 `SliderPropertiesEditor` 的数值项提供滑块和文本输入。
 
 ## 局部状态和默认值
 
@@ -41,7 +40,7 @@ related: ["ui.image-editor", "ui.image-editor-context", "ui.configuration", "ui.
 
 统一滤镜页把“应用默认值”和“将当前设为默认”放在参数卡片之前，避免长参数列表把动作隐藏到滚动区域底部。参数按基础显示、白平衡与通道、色调调整、阈值与高亮、滤镜伪彩分区；有界数值在滑块拖动时立即更新当前视图，右侧文本框保留键盘精确输入。
 
-`Temperature` 和 `Tint` 是默认值均为 `0`、范围为 `-1..1` 的显示白平衡快捷控制。正色温提高红色并降低蓝色，正色调提高红蓝并降低绿色；负值方向相反。它们在 C# 侧转换成保持几何平均值为 1 的 RGB 增益，再与手动 RGB 增益相乘，因此不增加 Pixel Shader 2.0 的指令数。当前不在相机回调、文件打开链路或显示滤镜中提供通道重排；如真实设备验证后仍需要固定入口纠正，再单独引入配置。
+`Temperature` 和 `Tint` 是默认值均为 `0`、范围为 `-1..1` 的显示白平衡控制。正色温提高红色并降低蓝色，正色调提高红蓝并降低绿色。负值方向相反。两者转换为 RGB 增益后与手动增益相乘，只改变显示。
 
 显示滤镜保留 `ImagePresentation.SceneEffect` 的完整画布作用范围，图像与叠加内容一起受影响；滤镜状态变化会立即重绘，不提交源像素，也不保证后台 source 输出包含该效果。图像/叠加承载与输出限制见[ImageEditor](../../04-api-reference/ui-components/ColorVision.ImageEditor.md)。
 
@@ -57,7 +56,7 @@ CVCIE 探针对象缓存在 `Configs`，切换文件不丢失此视图的半径/
 
 ### 标定
 
-`ImageCalibrationConfig.Profiles` 保存档案；每个 `ImageViewConfig.Calibration` 保存独立有效值。该对象由比例尺、画布中的 `DrawingVisualRuler` 和参考网格共同读取，修改一个视图不会影响另一个视图。
+`ImageCalibrationConfig.Profiles` 保存档案；每个 `ImageViewConfig.Calibration` 保存独立有效值。该对象由比例尺和画布中的 `DrawingVisualRuler` 读取，修改一个视图不会影响另一个视图。
 
 `ApplyToView` 解析显式 `CalibrationSourceKey`，否则使用相机厂家/型号键，再回退 `Default`。`CalibrationProfileKey` 保存解析结果，不能回填成显式输入键，否则后续相机信息会被旧键遮蔽。读取未知来源回退默认档案而不创建持久档案；同一来源再次应用默认保留局部调整，`reload: true` 才重新应用档案。来源变化只更新所属视图。
 
@@ -101,17 +100,8 @@ new ImageViewSettingsEntry(SettingsText.FileOpening, "CVCIE", config,
 
 外接模块与 ImageEditor 只共享协议，不共享业务控制器。自定义 `CreateView` 必须自己保证只读契约及资源生命周期；通用宿主无法推断专用控件是否写入数据。
 
-## 后续迭代
-
-以下内容尚未实施，不能作为当前能力：
-
-1. 将无视图依赖的默认值提供方抽出，在主应用设置中复用；打开全局默认页不需要创建完整 `ImageView`。
-2. 逐项迁移第三方旧条目，清理静态标定 API 和旧专用窗口；保持外部二进制兼容，不能仅按仓库内无引用删除。
-3. 为特殊源/图层建立更明确的身份与有效范围策略，并刷新已打开窗口的适用页面。目前来源变化采用禁用旧目标并重新打开的保守策略。
-4. 在共用行布局稳定后迁移 Desktop 设置；如需真正“取消”，应另行引入可回滚编辑事务，不能给当前即时编辑换一个按钮名称。
-
 ## 验证
 
-`ImageSettingsScopeTests` 覆盖双视图 Shader/标定隔离、白平衡默认值持久化、来源切换、探针/伪彩换图、仅保存改动、失败重试、无修改关闭零写入、注册注销及配置实例替换。`CvcieDisplaySettingsTests` 覆盖无图可见、共享全局对象和文件打开页归属。
+用实际宿主确认多视图的局部设置互不影响，校验跨窗口保存与重开。
 
-相邻回归入口是比例尺弱事件、尺子渲染、实时伪彩 generation、打开完成及工具工厂生命周期测试。控件布局和主题需使用实际 WPF 资源验证；输出更高 DPI 的截图不等同于跨显示器 DPI 运行验收，真实设备图像与外部二进制宿主也需分别验证。
+用实际 WPF 资源核对布局和主题。跨屏 DPI、真实设备图像与外部二进制宿主分别验收。

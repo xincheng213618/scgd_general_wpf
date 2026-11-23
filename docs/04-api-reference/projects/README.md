@@ -5,7 +5,6 @@ status: "current"
 summary: "按客户业务代码、独立对接示例、旧项目归档与构建发布边界定位 Projects 的权威主题。"
 aliases: ["应该改哪个客户项目","客户项目包源码在哪里","客户项目如何构建","项目包和插件有什么区别","ProjectARVRPro","ProjectARVRPro.IntegrationDemo","ProjectKB","ProjectLUX","ProcessGroup","ProcessMeta","归档项目","已停用项目","ProjectARVRLite","ProjectARVR","ProjectBlackMura","ProjectHeyuan","ProjectShiyuan"]
 code_paths: ["Projects/","PluginProject.HostCopy.targets","Scripts/package_project.bat","Scripts/package_cvxp.py"]
-test_paths: ["Test/ProjectARVRPro.Tests/ProjectARVRPro.Tests.csproj","Test/ProjectKB.Tests/ProjectKB.Tests.csproj"]
 related: ["projects.capabilities","projects.arvr-pro","projects.arvr-pro-demo","projects.kb","projects.lux-protocol","plugins.model","plugins.getting-started"]
 ---
 
@@ -34,7 +33,7 @@ related: ["projects.capabilities","projects.arvr-pro","projects.arvr-pro-demo","
 
 ## 本地构建与发布不是同一动作
 
-各项目页保留自己的构建、测试和交付命令，本入口不复制命令。项目包的 `VersionPrefix` 独立于宿主版本；打包器按已构建主 DLL 的文件版本同步 manifest，不能以主程序版本或 manifest 文本单独证明当前交付内容。
+各项目页保留自己的构建与交付命令，本入口不复制命令。项目包的 `VersionPrefix` 独立于宿主版本；打包器按已构建主 DLL 的文件版本同步 manifest，不能以主程序版本或 manifest 文本单独证明当前交付内容。
 
 - 本地构建不上传，但会写入编译产物；KB 的 `PluginProject.HostCopy.targets` 在 `SolutionDir` 有效时复制宿主输出，ARVRPro 自有 PostBuild 还可从项目路径回推仓库目录。不要把构建理解为不会触碰宿主 `bin/.../Plugins/`。
 - 常规 `Scripts/package_project.bat <ProjectName>` 调用强制加 `--build`，随后打包并上传包与版本文件；`--no-upload` 被拒绝。进入上传阶段后，`package_cvxp.py` 在 `finally` 清理本地 `.cvxp`，上传失败也可能清理。只有明确发布授权才走此入口，问答、排障和本地编译不构成授权。
@@ -44,8 +43,8 @@ related: ["projects.capabilities","projects.arvr-pro","projects.arvr-pro-demo","
 
 ## 维护与验证责任
 
-- 项目主题维护客户对象、实际入口、外部触发、流程/模板绑定、判定与结果出口，并提供具体源码和测试定位；客户口头要求或未落地方案不得写成当前实现承诺。
+- 项目主题维护客户对象、实际入口、外部触发、流程/模板绑定、判定与结果出口，并提供源码入口；客户口头要求或未落地方案不得写成当前实现承诺。
 - 新增可装载项目包时维护 `.csproj`、README、CHANGELOG、manifest、配置/资源和 docs 主题；独立示例按自身产物与公开契约维护，不强行为它添加插件 manifest。
 - 修改协议、流程组、Recipe/Fix、导出字段、依赖或打包行为时，同步对应项目主题和项目自有说明；跨项目变化再更新 `projects.capabilities`，不要在本入口复制实现细节。
 
-本页的测试项目路径只是验证入口，不代表所有业务、协议或现场设备链路均被覆盖。具体自动化范围和人工缺口以各项目主题及测试实现为准；目录存在、知识校验通过或发布成功都不能替代业务验收。
+各项目按实际外部协议和设备链路验收。

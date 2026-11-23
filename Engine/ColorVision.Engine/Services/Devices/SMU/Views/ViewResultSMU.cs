@@ -1,6 +1,7 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Engine.Services.Devices.SMU.Dao;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using ScottPlot;
 using System;
 using System.Collections.ObjectModel;
@@ -26,8 +27,8 @@ namespace ColorVision.Engine.Services.Devices.SMU.Views
             LimitEnd = item.SrcEnd??0;
             ProtectionLimit = item.LimitValue;
 
-            VList = JsonConvert.DeserializeObject<double[]>(item.VResult??string.Empty)?? Array.Empty<Double>();
-            IList = JsonConvert.DeserializeObject<double[]>(item.IResult ?? string.Empty) ?? Array.Empty<Double>();
+            VList = ReadScanValues(item.VResult);
+            IList = ReadScanValues(item.IResult);
             if (VList != null && IList != null)
             {
                 for (int i = 0; i < Math.Min(VList.Length, IList.Length); i++)
@@ -148,6 +149,15 @@ namespace ColorVision.Engine.Services.Devices.SMU.Views
 
         // Scan storage/payloads retain A; the chart and table use mA, like single-point results.
         private double DisplayCurrent(double current) => Type == "Scan" ? current * 1000 : current;
+
+        private static double[] ReadScanValues(string? json)
+        {
+            if (string.IsNullOrWhiteSpace(json)) return [];
+            var payload = JToken.Parse(json);
+            return payload.Type == JTokenType.String
+                ? JsonConvert.DeserializeObject<double[]>(payload.Value<string>() ?? string.Empty) ?? []
+                : payload.ToObject<double[]>() ?? [];
+        }
 
         private static (double Minimum, double Maximum) PaddedRange(double minimum, double maximum)
         {

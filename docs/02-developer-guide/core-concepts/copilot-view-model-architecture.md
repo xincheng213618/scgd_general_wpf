@@ -5,7 +5,6 @@ status: "current"
 summary: "Copilot 界面状态的所有权、异步输入交接、检查点提交及会话保存完成边界。"
 aliases: ["CopilotChatViewModel 太大从哪里改","聊天状态属于哪个对象","CopilotConversationSession","CopilotComposerSession","CopilotComposerCaptureToken","CommitScheduled","CopilotPreparedHostedTurn","ICopilotTurnRuntime","CopilotApprovalCoordinator","CopilotChatStatePersistenceCoordinator","SaveSynchronouslyAndStop","TrySetAgentSessionCheckpoint","TryCommitAgentRunState","CurrentAgentTaskEventJournal","CopilotTurnCheckpointLifecycleState"]
 code_paths: ["ColorVision/Copilot/CopilotChatViewModel.RequestAdmission.cs","ColorVision/Copilot/CopilotChatViewModel.AttachmentCommands.cs","ColorVision/Copilot/CopilotChatViewModel.ComposerAndRuntimeState.cs","ColorVision/Copilot/CopilotChatViewModel.UsagePresentation.cs","ColorVision/Copilot/CopilotChatViewModel.AttachmentLifecycle.cs","ColorVision/Copilot/CopilotConversationCompaction.cs","ColorVision/Copilot/Context/CopilotConversationAutoCompactionPolicy.cs","ColorVision/Copilot/CopilotChatViewModel.cs","ColorVision/Copilot/CopilotChatViewModel.Conversations.cs","ColorVision/Copilot/CopilotChatViewModel.TurnExecution.cs","ColorVision/Copilot/CopilotChatViewModel.MessageInteraction.cs","ColorVision/Copilot/CopilotChatViewModel.TurnEvents.cs","ColorVision/Copilot/CopilotChatViewModel.QueuedFollowUps.cs","ColorVision/Copilot/CopilotChatViewModel.Permissions.cs","ColorVision/Copilot/CopilotChatViewModel.Lifecycle.cs","ColorVision/Copilot/State/CopilotConversationSession.cs","ColorVision/Copilot/State/CopilotComposerSession.cs","ColorVision/Copilot/Agent/CopilotQueuedFollowUpCoordinator.cs","ColorVision/Copilot/Agent/CopilotAgentTaskHost.cs","ColorVision/Copilot/Agent/CopilotAgentTaskIndex.cs","ColorVision/Copilot/Runtime/CopilotApprovalCoordinator.cs","ColorVision/Copilot/Runtime/CopilotPreparedHostedTurn.cs","ColorVision/Copilot/Runtime/CopilotTurnRuntimeConfigSnapshot.cs","ColorVision/Copilot/Runtime/ICopilotTurnRuntime.cs","ColorVision/Copilot/Runtime/CopilotTurnRuntime.cs","ColorVision/Copilot/Runtime/CopilotTurnCheckpointLifecycleState.cs","ColorVision/Copilot/CopilotConversationRecord.cs","ColorVision/Copilot/CopilotConversationRecord.Validation.cs","ColorVision/Copilot/State/CopilotChatStateContracts.cs","ColorVision/Copilot/State/CopilotChatStatePersistenceCoordinator.cs","ColorVision/Copilot/State/CopilotChatStateSaveScheduler.cs","ColorVision/Copilot/CopilotChatPanel.xaml.cs","ColorVision/Copilot/Agent/CopilotHostedAgentRun.cs"]
-test_paths: ["Test/ColorVision.Copilot.Tests/CopilotCodexAutoCompactionTests.cs","Test/ColorVision.Copilot.Tests/CopilotConversationSurfaceProjectionTests.cs","Test/ColorVision.Copilot.Tests/CopilotConversationSessionTests.cs","Test/ColorVision.Copilot.Tests/CopilotComposerSessionTests.cs","Test/ColorVision.Copilot.Tests/CopilotAttachmentRemovalEditLifetimeTests.cs","Test/ColorVision.Copilot.Tests/CopilotRequestAdmissionLifetimeTests.cs","Test/ColorVision.Copilot.Tests/CopilotQueuedFollowUpCoordinatorTests.cs","Test/ColorVision.Copilot.Tests/CopilotPreparedHostedTurnTests.cs","Test/ColorVision.Copilot.Tests/CopilotApprovalCoordinatorTests.cs","Test/ColorVision.Copilot.Tests/CopilotChatStatePersistenceCoordinatorTests.cs","Test/ColorVision.Copilot.Tests/CopilotTurnCheckpointLifecycleTests.cs","Test/ColorVision.Copilot.Tests/CopilotAgentSessionCheckpointTests.cs","Test/ColorVision.Copilot.Tests/CopilotAgentTaskEventJournalIntegrityTests.cs","Test/ColorVision.Copilot.Tests/CopilotQueuedCommandSuccessorCancellationTests.cs","Test/ColorVision.Copilot.Tests/CopilotConversationPromptEditBranchTests.cs"]
 related: ["copilot.runtime","copilot.interactions","copilot.session-tools","copilot.configuration","copilot.tool-contracts"]
 ---
 
@@ -32,7 +31,7 @@ related: ["copilot.runtime","copilot.interactions","copilot.session-tools","copi
 
 `CopilotChatState` 是保存到磁盘的状态集合，各对象只管理自己的字段。Composer 不持有附件，也不会自行把输入写回 conversation：ViewModel 的 `SynchronizeSelectedConversationComposerDraft` 同步 `DraftText`、`DraftRequestMode`、`DraftWorkspaceReviewTarget` 和 `DraftAgentSkillReference`，附件提交另行按对象引用处理。
 
-会话加载时，`CopilotConversationRecord.EnsureValid` 为重复消息 ID 生成新 ID。若重复的 ID 同时被 `Compaction.ThroughMessageId` 用作摘要边界，边界已无法唯一确定，只丢弃该摘要并保留完整消息和已记录用量；不能把摘要猜接到较早的同 ID 消息上，否则正常请求或较早分支可能带入后续历史。唯一可定位的摘要边界保持原样。`CopilotConversationPromptEditBranchTests` 经 JSON 重载、实际分支创建和请求历史装配验证歧义边界及正常摘要对照。
+会话加载时，`CopilotConversationRecord.EnsureValid` 为重复消息 ID 生成新 ID。若重复的 ID 同时被 `Compaction.ThroughMessageId` 用作摘要边界，边界已无法唯一确定，只丢弃该摘要并保留完整消息和已记录用量；不能把摘要猜接到较早的同 ID 消息上，否则正常请求或较早分支可能带入后续历史。唯一可定位的摘要边界保持原样。
 
 消息编辑备份是 ViewModel 的临时内存状态，其对象身份也是旧异步操作是否仍有效的依据；它与持久化 `ComposerStash` 不同。取消编辑、发送失败、附件移除与备份恢复的完整规则见[草稿编辑与历史恢复](./copilot-local-interactions.md#草稿编辑与历史恢复)。
 
@@ -92,7 +91,7 @@ ViewModel 对选择分两条路径处理：
 
 排队的 `/init`、`/review`、`/verify`、`/retry`、`/compact` 和带任务参数的 `/plan` 显式传递执行上下文，不临时切换选中会话、清除忙碌状态或借用当前 Composer。预算中的 Goal 也取自目标会话。异步准备后复核原会话、宿主准入和取消；后继任务准入只由明确传入的队列执行上下文获得，普通发送和重试不能借用正在等待的队列命令。无参数 `/plan` 及仍依赖界面的本地命令保留同步选择适配，在执行时保留目标会话当前的模型选择；该适配不是跨 `await` 的隐式请求上下文。
 
-TaskHost 在同一调度锁内提交取消状态、复核本地命令的后继准入及判断正常完成后的自动分派。取消中的命令即使尚未退出，也不能再接受新的后继；取消令牌请求和事件发布留在锁外。取消前已经获准的后继及独立排队请求继续遵循原有调度规则，不把取消父命令解释为撤销全部队列。`CopilotQueuedCommandSuccessorCancellationTests` 用实际宿主和受控收尾验证预览准入、实际执行及两类对照。
+TaskHost 在同一调度锁内提交取消状态、复核本地命令的后继准入及判断正常完成后的自动分派。取消中的命令即使尚未退出，也不能再接受新的后继；取消令牌请求和事件发布留在锁外。取消前已经获准的后继及独立排队请求继续遵循原有调度规则，不把取消父命令解释为撤销全部队列。
 
 `FollowUpCoordinator.TrySchedule` 成功后，恢复记录先存在 `CopilotChatState.QueuedFollowUpRecoveries` 的内存集合中。ViewModel 提交匹配的输入 token，并请求立即保存；这里没有等待 Flush，所以不能把“已排队”当成磁盘耐久化回执。
 
@@ -100,7 +99,7 @@ TaskHost 在同一调度锁内提交取消状态、复核本地命令的后继�
 
 Chat 与 Agent 的流式 UI 更新通过现有同步上下文合并相邻片段；在 UI 线程收到片段时也只安排一次待处理提交，达到缓冲上限时同步刷新。正文重置和保存屏障先 Flush，正常结束、取消或失败在应用终态前 Complete，保留片段顺序及尾部文本。没有同步上下文时仍直接应用。ViewModel 在目标 UI 线程释放接线，以及应用退出同步保存前，会先刷新当前轮次已接受的 UI 更新；这不表示等待 Provider 结束或确认外部操作结果。缓冲已开始 Complete、仍有提交待处理时，目标线程仍可 Flush，后续 Enqueue 继续被拒绝。
 
-独立的空格、换行和制表符也是正文或思考片段，必须原样保留；它们不刷新 Chat 的既有首响应或流式更新超时，整份回答只有空白时仍报告没有可显示文本。Chat 已转交片段后即使随后断流也不自动重放，包括仅转交了空白的情况，避免把两次响应拼接。`CopilotStreamDeltaBufferTests` 和 `CopilotChatConnectionRecoveryTests` 覆盖分批呈现、受控 HTTP 流及失败边界。
+独立的空格、换行和制表符也是正文或思考片段，必须原样保留；它们不刷新 Chat 的既有首响应或流式更新超时，整份回答只有空白时仍报告没有可显示文本。Chat 已转交片段后即使随后断流也不自动重放，包括仅转交了空白的情况，避免把两次响应拼接。
 
 ## 检查点与任务事件的所有权
 
@@ -164,12 +163,12 @@ Approval store 发事件时，coordinator 立即捕获不可变 transition；Vie
 
 ## 排障与验证入口
 
-| 现象 | 先核对 | 相关测试源码 |
-| --- | --- | --- |
-| 切换会话后输入被旧请求清空 | Composer 的会话 ID/版本、真实切换与重复选择分支、附件是否按原对象消费 | `CopilotConversationSessionTests`、`CopilotComposerSessionTests`、`CopilotAttachmentRemovalEditLifetimeTests` |
-| 等待中的请求用了新 Profile 或新页面 | 入队捕获、prepared 参数引用及执行时仅刷新历史的边界 | `CopilotPreparedHostedTurnTests`、`CopilotQueuedFollowUpCoordinatorTests`；具体队列恢复见[会话与工具](./copilot-agent-session-and-tools.md) |
-| 显示已排队或输入已清空，重启却未恢复 | 保存请求是否真正完成、Flush 是否失败；不要只看 TrySchedule 返回值 | `CopilotChatStatePersistenceCoordinatorTests` |
-| checkpoint 被拒绝或 steering 未消费 | 候选的接受结果与 changed、身份/时间、水位和仍保留的事件内容 | `CopilotTurnCheckpointLifecycleTests`、`CopilotAgentSessionCheckpointTests`、`CopilotAgentTaskEventJournalIntegrityTests` |
-| 审批数量不一致或 trace 串会话 | 作用域投影、事件捕获时刻与 Dispatcher 应用时刻 | `CopilotApprovalCoordinatorTests` |
+| 现象 | 先核对 |
+| --- | --- |
+| 切换会话后输入被旧请求清空 | Composer 的会话 ID/版本、真实切换与重复选择分支、附件是否按原对象消费 |
+| 等待中的请求用了新 Profile 或新页面 | 入队捕获、prepared 参数引用及执行时仅刷新历史的边界。 [会话与工具](./copilot-agent-session-and-tools.md) |
+| 显示已排队或输入已清空，重启却未恢复 | 核对保存请求的完成状态和 Flush 结果 |
+| checkpoint 被拒绝或 steering 未消费 | 查候选接受结果、身份、时间、水位和保留的事件 |
+| 审批数量不一致或 trace 串会话 | 核对作用域投影、事件捕获与 Dispatcher 应用时刻 |
 
-测试源码是定位与预期契约的依据，不代表当前已经执行。行为改动应选对应 owner 测试和必要的 ViewModel 交接测试；较宽的构建/测试入口见 [Runtime 验证](./copilot-agent-runtime.md#验证)。纯文档整理使用知识与站点检查，无需启动应用、模型或审批服务。
+本地验证按实际改动和 owner 选择。文档整理用知识与站点检查。 [Runtime 验证](./copilot-agent-runtime.md#验证)

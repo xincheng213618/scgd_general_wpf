@@ -20,6 +20,64 @@ namespace ColorVision.UI.Tests
         }
 
         [Fact]
+        public void SavesLogOnlyCommittedChangedSectionsWithoutTheirValues()
+        {
+            string path = Path.Combine(_rootDirectory, "ColorVisionConfig.json");
+            WriteConfig(path, "first-on-disk", "item", "initial-second");
+            var handler = new ConfigHandler { ConfigFilePath = path };
+            handler.LoadConfigs();
+            FirstConfig first = handler.GetRequiredService<FirstConfig>();
+            SecondConfig second = handler.GetRequiredService<SecondConfig>();
+            var logger = (Logger)LogManager.GetLogger(typeof(ConfigHandler).Assembly, typeof(ConfigHandler)).Logger;
+            var hierarchy = Assert.IsType<Hierarchy>(logger.Repository);
+            bool wasConfigured = hierarchy.Configured;
+            Level previousLevel = logger.Level;
+            var appender = new MemoryAppender();
+            try
+            {
+                hierarchy.Configured = true;
+                logger.Level = Level.Info;
+                logger.AddAppender(appender);
+
+                handler.SaveConfigs();
+                first.Value = "changed-first";
+                handler.SaveConfigs(Path.Combine(_rootDirectory, "export.json"));
+                handler.SaveConfigs();
+                second.Value = "changed-second";
+                Assert.True(handler.TrySave(second, out string error), error);
+                Assert.True(handler.TrySave(second, out error), error);
+
+                File.WriteAllText(path, "{");
+                first.Value = "failed-write";
+                Assert.False(handler.TrySave(first, out _));
+
+                LoggingEvent[] messages = appender.GetEvents().Where(entry => entry.Level == Level.Info).ToArray();
+                Assert.Equal(2, messages.Length);
+                Assert.Equal(typeof(FirstConfig).FullName, ReadChangedSection(messages[0]));
+                Assert.Equal(typeof(SecondConfig).FullName, ReadChangedSection(messages[1]));
+            }
+            finally
+            {
+                logger.RemoveAppender(appender);
+                appender.Close();
+                logger.Level = previousLevel;
+                hierarchy.Configured = wasConfigured;
+            }
+
+            string? ReadChangedSection(LoggingEvent message)
+            {
+                Assert.DoesNotContain("changed-first", message.RenderedMessage);
+                Assert.DoesNotContain("changed-second", message.RenderedMessage);
+                var payload = JObject.Parse(message.RenderedMessage);
+                Assert.Equal("ConfigSectionsSaved", (string?)payload["Event"]);
+                Assert.Equal(path, (string?)payload["File"]);
+                Assert.Equal(Environment.MachineName, (string?)payload["Machine"]);
+                Assert.NotNull(payload["Timestamp"]);
+                return (string?)Assert.Single(Assert.IsType<JArray>(payload["Sections"]));
+            }
+        }
+
+        [Fact]
         public void ReloadFromDiskRebindsMaterializedConfigsAndLoadsLatestValues()
         {
             string configFilePath = Path.Combine(_rootDirectory, "ColorVisionConfig.json");

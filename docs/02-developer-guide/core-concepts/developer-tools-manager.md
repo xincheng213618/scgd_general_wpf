@@ -5,7 +5,6 @@ status: "current"
 summary: "开发工具管理的Python/Node检测、当前应用与新终端命令路径、官方版本选择和安装校验；下载等待30分钟，关窗停止后续安装但不取消下载或终止安装器。"
 aliases: ["开发工具管理", "系统开发工具", "Python安装", "Node.js安装", "npm版本", "命令路径详情", "当前应用", "新终端参考", "随附包管理器", "刷新检测", "获取可安装版本", "下载并安装", "npmmirror", "NVM_HOME", "FNM_DIR", "VOLTA_HOME", "DeveloperToolsAppProvider", "DeveloperToolsWindow", "DeveloperToolPageModel", "DeveloperToolDiscoveryService", "DeveloperToolCatalogService", "DeveloperToolInstallerService", "DeveloperToolRelease", "ResolvePathCommand", "PrepareInstaller", "VerifiedInstaller", "官网SHA256", "下载服务返回了意外的文件路径", "安装向导已退出"]
 code_paths: ["ColorVision/ToolPlugins/DeveloperTools", "Engine/ColorVision.Engine/Services/DeveloperTools", "UI/ColorVision.Common/ThirdPartyApps/ThirdPartyAppManager.cs", "UI/ColorVision.UI/Download/IDownloadService.cs", "UI/ColorVision.UI/Environments.cs", "UI/ColorVision.UI.Desktop/Download/Aria2cDownloadService.cs", "UI/ColorVision.UI.Desktop/Download/Aria2cDownloadManager.cs", "UI/ColorVision.UI.Desktop/Download/DownloadWindow.xaml.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/DeveloperToolSafetyTests.cs"]
 related: ["ui.common", "ui.desktop", "ui.storage-maintenance"]
 ---
 
@@ -15,7 +14,7 @@ related: ["ui.common", "ui.desktop", "ui.storage-maintenance"]
 
 ## 查看安装与命令路径
 
-1. 在“第三方应用”的“常用工具”中打开“开发工具管理”。同一应用复用已打开的窗口；再次打开会还原最小化窗口并激活。
+1. 在“应用与工具 → 内部工具”中打开“开发工具管理”。再次打开会激活已打开的窗口，并还原最小化状态。
 2. 选择 **Python** 或 **Node.js / npm** 页，查看“系统中发现的安装”：版本、随附包管理器、解释器路径和发现方式。路径省略时可悬停查看完整值。
 3. 展开“命令路径详情”，对比“当前应用”和“新终端参考”。发现多处安装不代表其中最高版本就是默认命令。
 4. 安装或修改环境后点击“刷新检测”。窗口加载、激活时也会检测；可见且未最小化时每 15 秒检测一次，关闭后停止。检测不运行解释器、launcher、shell profile 或 npm 命令，也不写 PATH。
@@ -114,6 +113,6 @@ Python 的 `.sigstore` 在这里仅提供通过官网 HTTPS 取得的摘要，�
 
 `DeveloperToolsAppProvider` 以 Guest 所需级别向第三方应用链贡献入口；授权与 provider 装载遵循[共享工具契约](../../04-api-reference/ui-components/ColorVision.Common.md)。主程序 ToolPlugins 负责窗口与等待生命周期，Engine Services 负责发现、版本目录和安装包校验，Desktop 下载器负责文件任务；这些能力没有后台环境管理服务。
 
-`DeveloperToolSafetyTests` 使用合成目录/元数据检查版本筛选、精确文件名、缺失或不支持的摘要、篡改/未签名文件拒绝、失败后句柄释放以及 PATH 首项与不执行文件。`DeveloperToolsWindowTests` 检查明暗主题下两页初始无版本选择、不可安装；它不证明已加载窗口的在线检测、自动刷新或真实安装流程。
+在线检测、自动刷新和真实安装须在目标 Windows 与网络环境验收。
 
-现有测试未覆盖完整成功签名/发布者链、官网格式变化、暂停/超时/关窗与回调竞争、安装器子进程及真实 UAC、系统 PATH、版本管理器共存。产品验收需要允许改变环境的测试机；文档和检索校验不执行这些操作。
+用获授权的 Windows 环境验收签名、官网资源格式、系统 PATH、真实 UAC、安装子进程、版本管理器共存及窗口取消。

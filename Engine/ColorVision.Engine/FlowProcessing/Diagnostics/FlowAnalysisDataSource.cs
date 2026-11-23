@@ -69,10 +69,16 @@ internal sealed class FlowAnalysisDataSource
         return Read<FlowNodeMessage>(q => q.Where(x => x.NodeId == nodeId && ids.Contains(x.BatchId)).OrderByDescending(x => x.SendTime),
             () => FlowNodeRecordDataBaseHelper.GetHistoryMessagesByNodeId(nodeId, ids));
     }
-    internal FlowNodeMessagePayloads GetMessagePayloads(int id) => _database == null
-        ? FlowNodeRecordDataBaseHelper.GetMessagePayloads(id)
-        : new(_database.ReadPayload("FlowNodeMessage", "id", id, "send_payload", "send_payload_gzip"),
-            _database.ReadPayload("FlowNodeMessage", "id", id, "recv_payload", "recv_payload_gzip"));
+    internal FlowNodeMessagePayloads GetMessagePayloads(int id)
+    {
+        if (_database == null)
+            return FlowNodeRecordDataBaseHelper.GetMessagePayloads(id);
+
+        var (send, recv) = _database.ReadPayloadPair(FlowNodeMessagePayloadStorage.TableName, FlowNodeMessagePayloadStorage.IdColumnName, id,
+            (FlowNodeMessagePayloadStorage.SendLegacyColumnName, FlowNodeMessagePayloadStorage.SendGzipColumnName),
+            (FlowNodeMessagePayloadStorage.RecvLegacyColumnName, FlowNodeMessagePayloadStorage.RecvGzipColumnName));
+        return new(send, recv);
+    }
     internal FlowNodeComparisonHistory GetNodeComparisonHistory(FlowExecutionAnalysisSession session, FlowNodeRecord record)
     {
         FlowRunRecord? run = session.Run;

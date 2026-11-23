@@ -28,6 +28,16 @@ public partial class CameraFocusChart : UserControl
         set => SetValue(MotorVidProperty, value);
     }
 
+    public static readonly DependencyProperty MotorPositionProperty = DependencyProperty.Register(
+        nameof(MotorPosition), typeof(int?), typeof(CameraFocusChart),
+        new PropertyMetadata(null, (sender, _) => ((CameraFocusChart)sender).RefreshMotorVid(openWhenEntering: false)));
+
+    public int? MotorPosition
+    {
+        get => (int?)GetValue(MotorPositionProperty);
+        set => SetValue(MotorPositionProperty, value);
+    }
+
     private const double VideoWindowSeconds = 30;
     private const double VideoSampleInterval = 0.2;
     private readonly SortedDictionary<int, double> focusSamples = new();
@@ -135,10 +145,14 @@ public partial class CameraFocusChart : UserControl
     {
         if (mode == ChartMode.Video) return;
         string? currentVid = MotorVid is double vid && double.IsFinite(vid)
-            ? FormatReadout("CameraFocusChart_CurrentVid", vid) : null;
+            ? MotorPosition is int position
+                ? FormatReadout("CameraFocusChart_CurrentPositionAndVid", position, vid)
+                : FormatReadout("CameraFocusChart_CurrentVid", vid)
+            : null;
         if (mode == ChartMode.AutoFocus)
         {
-            SetDetailReadout(bestFocus?.VidPosition is double bestVid && bestVid == MotorVid ? null : currentVid);
+            SetDetailReadout(bestFocus?.VidPosition is double bestVid && bestVid == MotorVid
+                && (MotorPosition == null || bestFocus.Position == MotorPosition) ? null : currentVid);
             return;
         }
 
@@ -233,7 +247,7 @@ public partial class CameraFocusChart : UserControl
     private void SetOpen(bool open)
     {
         redrawTimer.Stop();
-        Width = open ? mode switch { ChartMode.Video => 320, ChartMode.Motor => 168, _ => 376 } : double.NaN;
+        Width = open ? mode switch { ChartMode.Video => 320, ChartMode.Motor => 248, _ => 376 } : double.NaN;
         ChartPanel.Visibility = open ? Visibility.Visible : Visibility.Collapsed;
         UpdatePanelHeight();
         ShowChartButton.Content = mode == ChartMode.Motor ? "VID" : EngineLocalization.Get("CameraFocusChart_Show");

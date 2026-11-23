@@ -29,6 +29,8 @@ public partial class ImageView
         ObjectDisposedException.ThrowIf(_document.IsDisposed, this);
         _document.ParameterRecord = parameters;
         Opentif.ApplyColorVisionMetadata(Config, parameters);
+        if (_publishingDecodedContent) _statusBarImageRevision = -1;
+        else if (_statusBarImageInfo != null) RefreshImageStatusBar();
     }
 
     public IDisposable BeginImageContentPublication() => BeginImageContentPublication(null);

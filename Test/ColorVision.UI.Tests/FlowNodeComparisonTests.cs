@@ -52,6 +52,28 @@ public sealed class FlowNodeComparisonTests : IDisposable
     }
 
     [Fact]
+    public void OfflineMessageDetailReadsBothPayloadsFromPartiallyMigratedDatabase()
+    {
+        string path = Path.Combine(_directory, "partial-payloads.db");
+        using (var connection = new Microsoft.Data.Sqlite.SqliteConnection($"Data Source={path};Pooling=False"))
+        {
+            connection.Open();
+            using var command = connection.CreateCommand();
+            command.CommandText = """
+                CREATE TABLE FlowNodeRecord (id INTEGER, batch_id INTEGER, serial_number TEXT, node_id TEXT, start_time TEXT, elapsed_ms INTEGER);
+                CREATE TABLE FlowNodeMessage (id INTEGER PRIMARY KEY, send_payload TEXT, recv_payload_gzip BLOB);
+                INSERT INTO FlowNodeMessage VALUES (1, 'legacy send', @recv);
+                """;
+            command.Parameters.AddWithValue("@recv", ColorVision.Database.GzipTextPayloadCodec.Encode("压缩接收正文").CompressedBytes!);
+            command.ExecuteNonQuery();
+        }
+
+        var source = new FlowAnalysisDataSource(path);
+        Assert.Equal(new FlowNodeMessagePayloads("legacy send", "压缩接收正文"), source.GetMessagePayloads(1));
+        Assert.Equal(default, source.GetMessagePayloads(2));
+    }
+
+    [Fact]
     public void LegacyRunWithoutBatchIdUsesFullSerialAndRetainsMissingMessageExecutions()
     {
         string path = Path.Combine(_directory, "legacy.db");
@@ -125,6 +147,19 @@ public sealed class FlowNodeComparisonTests : IDisposable
         var secondItem = Assert.Single(history, item => item.Record.Id == second.Id);
         Assert.Equal(FlowNodeExecutionOutcome.Failed, secondItem.Outcome);
         Assert.True(secondItem.IsTimedOut);
+    }
+
+    [Fact]
+    public void HistoryAssignsEquidistantLegacyTimeoutToEarliestStartThenLowestId()
+    {
+        FlowNodeRecord first = new() { Id = 8, BatchId = 1, SerialNumber = "sn", NodeId = "fov", StartTime = _time, EndTime = _time.AddSeconds(1) };
+        FlowNodeRecord second = new() { Id = 9, BatchId = 1, SerialNumber = "sn", NodeId = "fov", StartTime = _time, EndTime = _time.AddSeconds(1) };
+        FlowNodeRecord later = new() { Id = 1, BatchId = 1, SerialNumber = "sn", NodeId = "fov", StartTime = _time.AddMilliseconds(500), EndTime = _time.AddSeconds(1) };
+        FlowNodeMessage timeout = new() { Id = 1, BatchId = 1, SerialNumber = "sn", NodeId = "fov", SendTime = _time.AddMilliseconds(250), State = FlowMessageState.Timeout };
+
+        var history = FlowExecutionAnalysisPresentation.BuildNodeHistoryItems([later, second, first], [timeout], _time.AddSeconds(2));
+
+        Assert.Same(first, Assert.Single(history, item => item.IsTimedOut).Record);
     }
 
     [Fact]

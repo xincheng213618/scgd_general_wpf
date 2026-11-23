@@ -246,6 +246,38 @@ public sealed class FlowRevisionSidecarTests
     }
 
     [Fact]
+    public void SqliteAppendKeepsRequestResultAndPersistedDataIndependent()
+    {
+        using var store = new SqliteFlowRevisionStore("Data Source=:memory:");
+        byte[] snapshot = [7, 8];
+        FlowSemanticDocument document = CreateDocument("original", x: 10);
+        FlowRevision revision = store.Append(new FlowRevisionAppendRequest
+        {
+            FlowKey = "flow:ownership",
+            FullSnapshot = snapshot,
+            SemanticDocument = document,
+            Source = FlowRevisionSource.Editor,
+            Condition = FlowRevisionWriteCondition.Initial,
+            BinaryHash = FlowSemanticHash.ComputeBinaryHash(snapshot),
+            SemanticHash = FlowSemanticHash.ComputeSemanticHash(document),
+            LayoutHash = FlowSemanticHash.ComputeLayoutHash(document),
+        });
+
+        snapshot[0] = 0;
+        document.Nodes.Single().Properties["Mode"] = "modified request";
+        Assert.Equal([7, 8], revision.FullSnapshot);
+        Assert.Equal("original", revision.SemanticDocument.Nodes.Single().Properties["Mode"]);
+
+        revision.FullSnapshot[0] = 1;
+        revision.SemanticDocument.Nodes.Single().Properties["Mode"] = "modified result";
+        revision.SemanticDocument.Layout.Nodes.Single().X = 99;
+        FlowRevision persisted = store.GetRevision(revision.FlowKey, revision.Revision)!;
+        Assert.Equal([7, 8], persisted.FullSnapshot);
+        Assert.Equal("original", persisted.SemanticDocument.Nodes.Single().Properties["Mode"]);
+        Assert.Equal(10, persisted.SemanticDocument.Layout.Nodes.Single().X);
+    }
+
+    [Fact]
     public void StoreRejectsSnapshotWhoseDeclaredHashesWereTampered()
     {
         var store = new InMemoryFlowRevisionStore();

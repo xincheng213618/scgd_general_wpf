@@ -1,4 +1,5 @@
 using LocalizedText = global::ColorVision.ImageEditor.DisplayText;
+using ColorVision.Algorithms;
 using ColorVision.Core;
 using ColorVision.ImageEditor.Algorithms;
 using ColorVision.ImageEditor.Draw;
@@ -227,6 +228,8 @@ internal static class BmwDrawingAnalysisRunner
 
 public sealed class BmwSfrRectangleContextMenu(ImageProcessingContext image,DrawEditorContext draw) : IDVContextMenu
 {
+    public AlgorithmInteractiveGroupPresentation AnalysisGroup => AlgorithmMenuGroups.ImageQuality;
+
     public Type ContextType=>typeof(IRectangle);
     public IEnumerable<MenuItem> GetContextMenuItems(object obj)
     {

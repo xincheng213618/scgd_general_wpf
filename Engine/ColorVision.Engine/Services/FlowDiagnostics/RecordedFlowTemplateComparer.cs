@@ -36,9 +36,18 @@ public static class RecordedFlowTemplateComparer
         ArgumentNullException.ThrowIfNull(baseline);
         ArgumentNullException.ThrowIfNull(current);
         cancellationToken.ThrowIfCancellationRequested();
-        var sameBytes = baseline.AsSpan().SequenceEqual(current);
+        if (baseline.AsSpan().SequenceEqual(current))
+        {
+            var graph = RecordedFlowTemplateGraphReader.Read(baseline, cancellationToken);
+            cancellationToken.ThrowIfCancellationRequested();
+            return new RecordedFlowTemplateComparison(graph, graph, [], [], [],
+                SameRecordedBytes: true, ConnectionsComparable: graph.ConnectionsComplete,
+                CanvasViewChanged: false, NodeOrderChanged: false,
+                ConnectionOrderChanged: graph.ConnectionsComplete ? false : null);
+        }
+
         var before = RecordedFlowTemplateGraphReader.ReadForComparison(baseline, cancellationToken);
-        var after = sameBytes ? before : RecordedFlowTemplateGraphReader.ReadForComparison(current, cancellationToken);
+        var after = RecordedFlowTemplateGraphReader.ReadForComparison(current, cancellationToken);
         var beforeNodes = before.Graph.Nodes.ToDictionary(node => node.NodeId);
         var afterNodes = after.Graph.Nodes.ToDictionary(node => node.NodeId);
         var nodeChanges = new List<RecordedFlowTemplateNodeChange>();
@@ -88,7 +97,7 @@ public static class RecordedFlowTemplateComparer
         }
         cancellationToken.ThrowIfCancellationRequested();
         return new RecordedFlowTemplateComparison(before.Graph, after.Graph, nodeChanges.AsReadOnly(),
-            Array.AsReadOnly(addedEdges), Array.AsReadOnly(removedEdges), sameBytes, comparable,
+            Array.AsReadOnly(addedEdges), Array.AsReadOnly(removedEdges), false, comparable,
             before.View != after.View,
             !before.Graph.Nodes.Select(node => node.NodeId).SequenceEqual(after.Graph.Nodes.Select(node => node.NodeId)),
             comparable ? !before.Graph.Edges.SequenceEqual(after.Graph.Edges) : null);

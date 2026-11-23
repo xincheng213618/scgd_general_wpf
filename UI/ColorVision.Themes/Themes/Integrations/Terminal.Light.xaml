@@ -9,7 +9,7 @@
 
     <SolidColorBrush x:Key="TerminalForegroundBrush" Color="{StaticResource TerminalForegroundColor}"/>
 
-    <SolidColorBrush x:Key="TerminalCursorBrush" Color="#8037475A"/>
+    <SolidColorBrush x:Key="TerminalCursorBrush" Color="#37475A"/>
 
     <SolidColorBrush x:Key="TerminalSelectionBrush" Color="#663A8DDE"/>
 

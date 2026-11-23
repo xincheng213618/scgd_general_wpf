@@ -75,7 +75,9 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
             _batchWindowPresenter = batchWindowPresenter;
         }
 
-        public List<MenuItemMetadata> GetContextMenuItems()
+        public List<MenuItemMetadata> GetContextMenuItems() => GetContextMenuItems(hasImage: true);
+
+        public List<MenuItemMetadata> GetContextMenuItems(bool hasImage)
         {
             List<MenuItemMetadata> items =
             [
@@ -87,17 +89,22 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
                 },
                 new()
                 {
-                    GuidId = "AlgorithmsCall",
-                    Order = 104,
-                    Header = ColorVision.ImageEditor.Properties.Resources.Algorithm_AlgorithmCalls,
-                },
-                new()
-                {
                     OwnerGuid = "Algorithms",
                     GuidId = "BatchImageProcessing",
                     Order = 0,
                     Header = ColorVision.ImageEditor.Properties.Resources.ImageView_BatchProcessing,
                     Command = new RelayCommand(_ => ShowBatchWindow()),
+                },
+            ];
+            if (!hasImage) return items;
+
+            items.AddRange(
+            [
+                new()
+                {
+                    GuidId = "AlgorithmsCall",
+                    Order = 104,
+                    Header = ColorVision.ImageEditor.Properties.Resources.Algorithm_AlgorithmCalls,
                 },
                 new()
                 {
@@ -115,7 +122,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
                     Header = ColorVision.ImageEditor.Properties.Resources.Artculation_MenuHeader,
                     Command = new RelayCommand(_ => new ArtculationEditorTool(imageContext).Execute()),
                 },
-            ];
+            ]);
 
             items.Add(new MenuItemMetadata
             {

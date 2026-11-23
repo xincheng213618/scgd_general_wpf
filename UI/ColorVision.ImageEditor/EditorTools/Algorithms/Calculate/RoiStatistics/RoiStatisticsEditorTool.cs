@@ -260,6 +260,8 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.RoiStatistics
 
     public sealed class RoiStatisticsRectangleDrawingContextMenu(ImageProcessingContext image, DrawEditorContext draw) : IDVContextMenu, IAlgorithmCatalogBoundMenu
     {
+        public AlgorithmInteractiveGroupPresentation AnalysisGroup => AlgorithmMenuGroups.Statistics;
+
         public AlgorithmId AlgorithmId => StandardAlgorithmIds.RoiStatistics;
 
         public bool RequiresRoi => true;
@@ -278,6 +280,8 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.RoiStatistics
 
     public sealed class RoiStatisticsCircleDrawingContextMenu(ImageProcessingContext image, DrawEditorContext draw) : IDVContextMenu, IAlgorithmCatalogBoundMenu
     {
+        public AlgorithmInteractiveGroupPresentation AnalysisGroup => AlgorithmMenuGroups.Statistics;
+
         public AlgorithmId AlgorithmId => StandardAlgorithmIds.RoiStatistics;
 
         public bool RequiresRoi => true;
@@ -296,6 +300,8 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.RoiStatistics
 
     public sealed class RoiStatisticsPolygonDrawingContextMenu(ImageProcessingContext image, DrawEditorContext draw) : IDVContextMenu, IAlgorithmCatalogBoundMenu
     {
+        public AlgorithmInteractiveGroupPresentation AnalysisGroup => AlgorithmMenuGroups.Statistics;
+
         public AlgorithmId AlgorithmId => StandardAlgorithmIds.RoiStatistics;
 
         public bool RequiresRoi => true;

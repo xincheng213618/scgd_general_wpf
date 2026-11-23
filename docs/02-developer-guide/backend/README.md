@@ -5,7 +5,6 @@ status: "current"
 summary: "Flask 后端的组成、配置、CLI 参数、管理入口与探测边界；--storage 不隔离配置或 SQLite，命令退出 0 仍须核对业务结果。"
 aliases: ["插件市场后端","上传401","Flask","marketplace.db","api/ready","create_app_and_context","RuntimeOverrides","AuthPolicy","Session权限","角色权限","Backend CLI","命令行参数","--storage","--refresh-all-indexes","--reconcile-history","--reconcile-plugin-history","--prune-updates","--run-job","--create-api-key","cache/status","cache/cleanup","--refresh-index","--refresh-plugin-index","--cleanup-cache","--scopes","--port","--debug","api/stats","后台管理页面"]
 code_paths: ["Web/Backend/app.py","Web/Backend/app_setup.py","Web/Backend/cli.py","Web/Backend/config_loader.py","Web/Backend/runtime_health.py","Web/Backend/routes/health_api.py","Web/Backend/routes/auth_adapters.py","Web/Backend/services/auth_policy.py","Web/Backend/services/auth_middleware.py","Web/Backend/services/permission_service.py","Web/Backend/marketplace_api_routes.py","Web/Backend/services/marketplace_api.py","Web/Backend/services/scheduler.py","Web/Backend/services/storage_events.py","Web/Backend/marketplace_services.py","Web/Backend/app_releases.py","Web/Backend/plugin_marketplace.py","Web/Backend/update_retention.py","Web/Backend/routes/admin_api.py","Web/Backend/db_cache.py","Web/Backend/services/artifact_index.py","Web/Backend/routes/public_api.py","Web/Frontend/src/App.tsx"]
-test_paths: ["Web/Backend/test_app.py","Web/Backend/test_app_releases.py","Web/Backend/test_upload_services.py","Web/Backend/test_config_loader.py","Web/Backend/test_auth_policy.py","Web/Backend/test_artifact_index.py"]
 related: ["delivery.scripts","plugins.index","delivery.file-transfer","delivery.plugin-catalog","delivery.backend-accounts","delivery.backend-auth","delivery.artifact-delivery","delivery.backend-public-data","delivery.backend-observability","delivery.backend-jobs","delivery.backend-retention","delivery.backend-records","delivery.backend-feedback","delivery.backend-operations","delivery.cvwindowsservice","platform.web-architecture","delivery.web-deployment","delivery.web-pages"]
 ---
 
@@ -177,6 +176,7 @@ CLI 在非 debug 模式发现默认 session 密钥、默认或空上传凭证等
 | `/admin/deployments` | [部署历史](./management-records.md) |
 | `/admin/operations/hosts` | [终端运维](./operations-relay.md) |
 | `/admin/feedback` | [反馈收件箱](./feedback.md) |
+| `/admin/activation` | 配置管理员查看[许可证与设备名额](./activation.md) |
 | `/admin/users` / `/admin/login-security` | [账号管理与账号安全](./accounts.md) |
 | `/admin/permissions` | [角色权限](./authentication.md) |
 | `/admin/api-keys` | [API key](./authentication.md) |
@@ -198,12 +198,6 @@ cache/status 包含实际数据库/存储路径；数据库状态读取失败可
 
 ## 测试与边界
 
-```powershell
-Push-Location Web\Backend
-python -m unittest test_app test_app_releases test_page_contexts test_upload_services
-Pop-Location
-```
+命令行参数与分支按 `cli.py` 和所调用服务核对。构建脚本是发布入口，后端接收和组织制品。`marketplace.db` 存储目录信息，包内容来自制品文件。
 
-`test_artifact_index.py` 覆盖部分缓存接口认证及权限；当前未登记 CLI 解析和全部一次性分支的专门测试，命令行参考按 `cli.py` 与所调用服务核对。改上传、索引、认证、发布接口或存储路径后，至少跑相关后端测试。构建脚本是发布入口，后端只接收和组织制品；`marketplace.db` 不是插件包内容来源，WPF 客户端行为不在后端文档里展开。
-
-`test_config_loader.py` 覆盖配置默认值、合并和已实现的校验，`test_auth_policy.py` 覆盖认证方式、普通角色参与条件、scope 与改密限制；它们不是实际部署、完整浏览器链或生产权限审计的证明。测试路径表示关联证据，不表示已经执行；本地测试也须先核对测试自己的配置/数据库隔离方式，不能只看命令中的临时制品目录。
+本地运行前核对实际配置、数据库和存储隔离。部署、浏览器链和生产权限各自验收。

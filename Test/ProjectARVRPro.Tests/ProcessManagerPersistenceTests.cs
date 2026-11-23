@@ -1,3 +1,7 @@
+using log4net;
+using log4net.Appender;
+using log4net.Core;
+using log4net.Repository.Hierarchy;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using ProjectARVRPro.Process;
@@ -16,6 +20,53 @@ public sealed class ProcessManagerPersistenceTestGroup
 [Collection(ProcessManagerPersistenceTestGroup.Name)]
 public sealed class ProcessManagerPersistenceTests
 {
+    [Fact]
+    public void ActiveGroupChangeIsLoggedOnlyAfterPersistenceSucceeds()
+    {
+        RunInTemporaryPersistenceDirectory(() =>
+        {
+            var manager = new ProcessManager();
+            string originalGroup = Assert.Single(manager.ProcessGroups).Name;
+            Assert.True(manager.TryAddGroup("Other model", out string error), error);
+            var logger = (Logger)LogManager.GetLogger(typeof(ProcessManager).Assembly, typeof(ProjectConfigurationLog)).Logger;
+            var hierarchy = Assert.IsType<Hierarchy>(logger.Repository);
+            bool configured = hierarchy.Configured;
+            Level previousLevel = logger.Level;
+            var appender = new MemoryAppender();
+            try
+            {
+                hierarchy.Configured = true;
+                logger.Level = Level.Info;
+                logger.AddAppender(appender);
+
+                using (new FileStream(ProcessManager.GroupPersistFilePath, FileMode.Open, FileAccess.Read, FileShare.None))
+                {
+                    manager.ActiveGroupIndex = 0;
+                    Assert.Empty(appender.GetEvents());
+                }
+
+                Assert.True(manager.TrySaveProcessGroups());
+                manager.SaveProcessGroups();
+                var entry = Assert.Single(appender.GetEvents());
+                var fields = JObject.Parse(entry.RenderedMessage);
+                Assert.Equal(Level.Info, entry.Level);
+                Assert.Equal("ArvrConfigurationSaved", fields.Value<string>("Event"));
+                Assert.Equal(nameof(manager.ActiveGroup), fields.Value<string>("Property"));
+                Assert.Equal(Environment.MachineName, fields.Value<string>("Machine"));
+                Assert.Equal("Other model", fields.Value<string>("OldValue"));
+                Assert.Equal(originalGroup, fields.Value<string>("NewValue"));
+                Assert.Equal(originalGroup, fields.Value<string>("FlowGroup"));
+            }
+            finally
+            {
+                logger.RemoveAppender(appender);
+                appender.Close();
+                logger.Level = previousLevel;
+                hierarchy.Configured = configured;
+            }
+        });
+    }
+
     [Fact]
     public void CameraOverrideMappingRequiresOneProcessForTheFlowTemplate()
     {
@@ -125,11 +176,40 @@ public sealed class ProcessManagerPersistenceTests
             group.ProcessMetas.Add(second);
             group.ProcessMetas.Add(third);
 
-            Assert.True(manager.MoveMetaToIndex(first, 2));
+            Assert.True(manager.MoveMetaToIndex(first, 2, _ => true, out string? error), error);
 
             Assert.Equal("Second,Third,First", string.Join(',', group.ProcessMetas.Select(meta => meta.Name)));
             Assert.Same(first, manager.SelectedProcessMeta);
-            Assert.False(manager.MoveMetaToIndex(first, 2));
+            Assert.Equal("Second,Third,First", string.Join(',', new ProcessManager().ProcessMetas.Select(meta => meta.Name)));
+            Assert.False(manager.MoveMetaToIndex(first, 2, _ => throw new InvalidOperationException("No move to confirm."), out _));
+        });
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void MoveMetaToIndexKeepsOriginalOrderWhenDeclinedOrSaveFails(bool confirm)
+    {
+        RunInTemporaryPersistenceDirectory(() =>
+        {
+            var manager = new ProcessManager();
+            var first = new ProcessMeta { Name = "First" };
+            var second = new ProcessMeta { Name = "Second" };
+            manager.ProcessMetas.Add(first);
+            manager.ProcessMetas.Add(second);
+            manager.SelectedProcessMeta = first;
+            string filePath = ProcessManager.GroupPersistFilePath;
+            string originalJson = File.ReadAllText(filePath);
+
+            using (new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.None))
+            {
+                Assert.False(manager.MoveMetaToIndex(first, 1, _ => confirm, out string? error));
+                Assert.Equal(confirm, error != null);
+            }
+
+            Assert.Equal(new[] { first, second }, manager.ProcessMetas);
+            Assert.Same(first, manager.SelectedProcessMeta);
+            Assert.Equal(originalJson, File.ReadAllText(filePath));
         });
     }
 

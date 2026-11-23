@@ -5,7 +5,6 @@ status: "current"
 summary: "MySQL恢复后更新流程节点标识，再同步配置和重启注册中心；支持独立更新按钮。SQL导入不回滚，迁移备份不含结果。"
 aliases: ["MySQL数据库恢复", "加载SQL备份", "数据库重置", "资源迁移备份", "恢复失败但数据已改变", "恢复后重启", "更新流程节点", "UpdateRestoredFlowNodes", "FlowNodeIdentityNormalizer", "Sensor字典ID重映射", "MySqlDatabaseMaintenanceService", "RestoreAndRestartAsync", "RestoreSqlFileAsync", "RestoreMysql", "ResetDatabaseFromSqlFileAsync", "SynchronizeInstalledServiceConfigs", "UpdateConfigFile", "MigrationBackupTableNames", "BuildMigrationDictionaryDependencyStatements", "SensorTemplateMigrationSqlBuilder", "MySqlRestoreProgressWindow"]
 code_paths: ["Engine/ColorVision.Engine/Mysql/MySqlDatabaseMaintenanceService.cs", "Engine/ColorVision.Engine/Mysql/MySqlLocalServicesManager.cs", "Engine/ColorVision.Engine/Mysql/MySqlRestoreProgressWindow.xaml", "Engine/ColorVision.Engine/Mysql/MySqlRestoreProgressWindow.xaml.cs", "Engine/ColorVision.Engine/Mysql/MySqlToolWindow.xaml", "Engine/ColorVision.Engine/Mysql/MySqlToolWindow.xaml.cs", "Engine/ColorVision.Engine/Templates/Flow/FlowNodeIdentityNormalizer.cs", "Engine/ColorVision.Engine/Mysql/SensorTemplateMigrationSqlBuilder.cs", "Engine/ColorVision.Engine/Services/RC/RCInitializer.cs", "UI/ColorVision.Database/MySqlControl.cs", "UI/ColorVision.Database/MySqlSetting.cs", "UI/ColorVision.Database/MySqlProtocolDefaults.cs", "UI/ColorVision.UI/ServiceHost/IColorVisionServiceHostClient.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/MySqlBackupRestoreSafetyTests.cs", "Test/ColorVision.UI.Tests/MySqlMigrationBackupTableTests.cs", "Test/ColorVision.UI.Tests/SensorTemplateMigrationTests.cs", "Test/ColorVision.UI.Tests/LvCameraNodeMigrationTests.cs"]
 related: ["engine.mysql-maintenance", "engine.database-maintenance", "plugins.windows-service", "platform.service-host", "operations.data", "engine.template-design"]
 ---
 
@@ -63,9 +62,9 @@ SQL导入、节点更新、配置写入和注册中心重启不在同一事务�
 
 导出后追加字典依赖再将part改名为SQL；失败尝试删除part，已完成的SQL文件不因后续重置失败而自动删除。这条私有备份链不加入管理器 `Backups` 列表，也没有普通 `CreateMySqlBackupFile` 的显式非空文件门禁；外部工具正常退出不等于内容完整或可恢复。
 
-`BuildMigrationDictionaryDependencyStatements` 补充普通模板实际引用的字典主档/项，排除 `mod_type=5` 的通用Sensor字典，生成 `INSERT IGNORE`；这不是全部字典备份，同ID目标行已存在时也不是覆盖更新。Sensor另由 `SensorTemplateMigrationSqlBuilder` 按业务code和命令symbol生成引用重映射，兼顾旧 `Sensor.*` 名称推导及缺失命令补位，不直接照抄旧字典ID。
+`BuildMigrationDictionaryDependencyStatements` 为普通模板补充实际引用的字典主档和明细，使用 `INSERT IGNORE` 并排除 `mod_type=5` 的传感器分类。`SensorTemplateMigrationSqlBuilder` 将原属标准分类的模板绑定到目标库已有的 `50 / Sensor.Default`，并按指令 symbol 恢复分类下的明细引用。旧的第二组及识别出的历史传感器模板保留 ID、名称、指令和读写参数，将 `mm_id` 和指令的 `cc_pid` 置空，防止旧数字 ID 指向新库占用该 ID 的其他类型。迁移 SQL 只查询标准传感器分类，模板内容和设备配置来自原资源备份。
 
-依赖SQL是在dump之后另行查询，不和dump共享事务。依赖构建异常会记录并返回空字符串，重置可继续使用没有补充依赖的资源SQL；不能将“资源备份完成”解释为全部模板依赖已验证。Sensor的默认命令补位也不是恢复丢失命令的原始内容。
+依赖 SQL 在 dump 后另行查询，两者使用独立事务。服务升级备份包含模板主档及明细时，传感器依赖构建失败会在执行重置 SQL 前中止。普通字典依赖和普通迁移备份仍记录相应异常。标准组命令缺少旧字典明细时，引用指向目标库现有的 `defaultcommand`，无可用定义时将引用置空，指令内容由资源备份恢复。
 
 ## 重置执行与失败位置
 
@@ -73,7 +72,7 @@ SQL导入、节点更新、配置写入和注册中心重启不在同一事务�
 
 1. 拒绝空源/目标库名及不存在的脚本。`rootConfig` 空值、路径解析等发生在内部try之前，不能承诺所有错误都返回false。
 2. 使用不指定业务库的服务器连接查询 `INFORMATION_SCHEMA.SCHEMATA`，区分“源库不存在”和服务器/凭据连接失败。查询本身失败由外层捕获并返回false，不会被当成新装初始化。
-3. 源库存在时备份实际存在的资源表；同名源/目标库都未创建时跳过备份，按新安装继续执行脚本；跨库更新缺少源库时返回false，不执行重置SQL。备份阶段抛出的异常同样阻止执行重置SQL，但前述依赖构建内部吞错不属于这项门禁。
+3. 源库存在时备份实际存在的资源表。备份同时包含模板主档和明细时须成功生成传感器依赖 SQL。同名源库和目标库都未创建时按新安装执行脚本，跨库更新缺少源库或备份失败时在重置前返回 false。
 4. 调用底层导入，`selectDatabase: false`，不把源库作为mysql的默认数据库参数；实际创建、删除或选库由脚本内容决定，并非helper自动替换脚本中的库名。
 5. 脚本执行后，对传入目标库执行连接/`SELECT 1` 检查。失败返回false，**不撤销已经执行的脚本**；检查通过只说明能连接，甚至不证明该库由本次脚本新建或schema正确。
 6. 有保留SQL时以 `selectDatabase: true` 回写目标库，再更新回写流程的节点标识；没有保留SQL或属于新安装初始化则直接返回true。导入或节点更新过程异常返回false，可能已有部分写入，没有整体事务、自动重试或回滚。
@@ -92,9 +91,4 @@ SQL导入、节点更新、配置写入和注册中心重启不在同一事务�
 
 底层导入只检查路径、`.sql`扩展名、存在和非空，按流输入 `mysql.exe`；默认库参数不会限制脚本中的 `USE`、DDL或跨库语句。成功返回脚本完整路径，不返回业务行数校验结果；进程非零/流失败可能发生在部分SQL已经执行之后。字符集、密码传递、两小时预算及尝试终止子进程树的规则见[外部工具边界](./mysql-maintenance.md#外部工具与错误边界)，终止客户端不构成数据库回滚。
 
-- `MySqlBackupRestoreSafetyTests` 包括进程参数、维护门、入口源码检查、恢复阶段失败摘要及临时XML更新；返回路径用例实际只检查方法返回类型，阶段摘要用例也不执行真实恢复或服务重启。
-- `MySqlMigrationBackupTableTests` 检查九张保留表组合及其与结果清理表分离，不验证真库存在、导出内容或schema兼容。
-- `SensorTemplateMigrationTests` 对合成数据生成SQL，检查业务code推导、ID冲突重映射和健康命令保留的字符串；没有在MySQL中执行生成脚本。
-- `LvCameraNodeMigrationTests` 使用迁移前保存的BV/LV流程验证标识写回、参数与连线保留、重复执行不变，以及未知/歧义类型、插件不透明属性、损坏数据和禁止实例化节点；没有在MySQL中执行更新语句。
-
-现存这些测试不覆盖真实dump/import、缺依赖仍成功、配置缺键/部分写失败、并发切配置或服务重启失败后的恢复验收。
+在获授权的隔离环境演练真实 dump/import，核对依赖、配置缺键及部分写失败，验证并发切配置或服务重启失败后的恢复。

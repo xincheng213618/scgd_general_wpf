@@ -5,7 +5,6 @@ status: "current"
 summary: "ColorVision.UI壳层责任入口：按配置、插件、菜单、热键、搜索、语言、状态栏、属性编辑和日志定位规范主题，业务行为仍归所属模块。"
 aliases: ["菜单和属性编辑器在哪个模块", "ColorVision.UI", "壳层基础设施", "ConfigSettingManager"]
 code_paths: ["UI/ColorVision.UI/README.md", "UI/ColorVision.UI/ColorVision.UI.csproj", "UI/ColorVision.UI/ConfigHandler.cs", "UI/ColorVision.UI/Plugins/PluginLoader.cs", "UI/ColorVision.UI/Menus/MenuManager.cs", "UI/ColorVision.UI/PropertyEditor/PropertyEditorHelper.cs", "UI/ColorVision.UI/LogImp", "UI/ColorVision.UI/HotKey", "UI/ColorVision.UI/Languages", "UI/ColorVision.UI/Search", "UI/ColorVision.UI/StatusBar/StatusBarManager.cs"]
-test_paths: []
 related: ["ui.index", "ui.configuration", "plugins.model", "ui.property-grid", "ui.discovery", "ui.menus", "ui.hotkeys", "ui.search", "ui.localization", "ui.status-bar", "operations.logs", "ui.desktop"]
 ---
 

@@ -20,6 +20,7 @@ const documentTitles: Record<string, string> = {
   '/changelog': '更新说明 - ColorVision',
   '/updates': '增量更新 - ColorVision',
   '/tools': '工具下载 - ColorVision',
+  '/benchmarks': '基准测试对比 - ColorVision',
   '/transfer': '文件中转 - ColorVision',
   '/login': '登录 / 注册 - ColorVision',
   '/account': '个人中心 - ColorVision',
@@ -31,6 +32,7 @@ const documentTitles: Record<string, string> = {
   '/admin/jobs': '任务调度 - ColorVision',
   '/admin/deployments': '部署历史 - ColorVision',
   '/admin/operations/hosts': '终端运维 - ColorVision',
+  '/admin/benchmarks': '性能排行 - ColorVision',
   '/admin/feedback': '反馈收件箱 - ColorVision',
   '/admin/activation': '许可证激活 - ColorVision',
   '/admin/users': '账号管理 - ColorVision',
@@ -81,6 +83,7 @@ const AccountPage = lazy(() => import('./pages/AccountPage').then((module) => ({
 const ActivationPage = lazy(() => import('./pages/ActivationPage').then((module) => ({ default: module.ActivationPage })))
 const ApiKeysPage = lazy(() => import('./pages/ApiKeysPage').then((module) => ({ default: module.ApiKeysPage })))
 const AuditPage = lazy(() => import('./pages/AuditPage').then((module) => ({ default: module.AuditPage })))
+const BenchmarksPage = lazy(() => import('./pages/BenchmarksPage').then((module) => ({ default: module.BenchmarksPage })))
 const BrowsePage = lazy(() => import('./pages/BrowsePage').then((module) => ({ default: module.BrowsePage })))
 const CachePage = lazy(() => import('./pages/CachePage').then((module) => ({ default: module.CachePage })))
 const ChangelogPage = lazy(() => import('./pages/ChangelogPage').then((module) => ({ default: module.ChangelogPage })))
@@ -97,6 +100,7 @@ const UsersPage = lazy(() => import('./pages/UsersPage').then((module) => ({ def
 const LoginPage = lazy(() => import('./pages/LoginPage').then((module) => ({ default: module.LoginPage })))
 const PluginDetailPage = lazy(() => import('./pages/PluginDetailPage').then((module) => ({ default: module.PluginDetailPage })))
 const PluginsPage = lazy(() => import('./pages/PluginsPage').then((module) => ({ default: module.PluginsPage })))
+const PublicBenchmarksPage = lazy(() => import('./pages/PublicBenchmarksPage').then((module) => ({ default: module.PublicBenchmarksPage })))
 const PublishPage = lazy(() => import('./pages/PublishPage').then((module) => ({ default: module.PublishPage })))
 const ReleasesPage = lazy(() => import('./pages/ReleasesPage').then((module) => ({ default: module.ReleasesPage })))
 const SettingsPage = lazy(() => import('./pages/SettingsPage').then((module) => ({ default: module.SettingsPage })))
@@ -296,6 +300,7 @@ function App() {
               <Route path="changelog" element={<ChangelogPage />} />
               <Route path="updates" element={<UpdatesPage />} />
               <Route path="tools" element={<ToolsPage />} />
+              <Route path="benchmarks" element={<PublicBenchmarksPage />} />
               <Route path="browse/*" element={<BrowsePage />} />
               <Route path="transfer" element={<TransferPage session={session} />} />
               <Route path="account" element={<AccountPage session={session} onSessionChanged={refreshSession} />} />
@@ -318,6 +323,7 @@ function App() {
               <Route path="jobs" element={<JobsPage session={session} />} />
               <Route path="deployments" element={<DeploymentHistoryPage />} />
               <Route path="operations/hosts" element={<OperationsPage />} />
+              <Route path="benchmarks" element={<BenchmarksPage />} />
               <Route path="feedback" element={<FeedbackPage session={session} />} />
               <Route path="activation" element={<ActivationPage />} />
               <Route path="users" element={<UsersPage />} />

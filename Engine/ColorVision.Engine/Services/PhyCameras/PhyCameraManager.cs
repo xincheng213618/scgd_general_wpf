@@ -1,6 +1,7 @@
 #pragma warning disable CA1822,CA1826,CA1863,CS8602
 using ColorVision.Common.MVVM;
 using ColorVision.Database;
+using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.Services.Devices.Camera.Diagnostics;
 using ColorVision.Engine.Services.PhyCameras.Configs;
 using ColorVision.Engine.Services.PhyCameras.Group;
@@ -17,6 +18,7 @@ using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 
@@ -145,7 +147,7 @@ namespace ColorVision.Engine.Services.PhyCameras
         public int Count { get => _Count; set { _Count = value; OnPropertyChanged(); } }
         private int _Count;
 
-        public int OnlineCameraCount => PhyCameras.Count(IsOnline);
+        public int OnlineCameraCount => PhyCameras.Count(camera => camera.IsOnline);
 
         public int AttentionCameraCount => PhyCameras.Count(RequiresAttention);
 
@@ -251,6 +253,75 @@ namespace ColorVision.Engine.Services.PhyCameras
         }
 
         private bool _isSearchingCameras;
+        private readonly SemaphoreSlim _discoveryGate = new(1, 1);
+
+        internal async Task RefreshLocalCameraStatusAsync(CancellationToken cancellationToken)
+        {
+            RefreshOpenedCameraStatus();
+            CameraModel[] cameraModels = GetAutomaticDiscoveryModels(PhyCameras);
+            if (cameraModels.Length == 0) return;
+
+            var summary = await DiscoverCamerasAsync(cameraModels, cancellationToken);
+            cancellationToken.ThrowIfCancellationRequested();
+            RefreshOpenedCameraStatus();
+            if (ApplyDiscoveryStatus(summary, PhyCameras)) RefreshCameraSummary();
+        }
+
+        internal static CameraModel[] GetAutomaticDiscoveryModels(IEnumerable<PhyCamera> cameras) =>
+            cameras.Where(camera => camera.ConnectionStatus != PhysicalCameraStatus.Opened).Select(camera => camera.Config.CameraModel)
+                .Intersect(cvCameraCSLib.DefaultFastSearchCameraModels).ToArray();
+
+        private void RefreshOpenedCameraStatus()
+        {
+            var openedCameras = ServiceManager.Current?.DeviceServices.OfType<DeviceCamera>()
+                .Where(device => (device.CameraBackend.VideoOwned && device.DisplayConfig.IsLocalVideoOpen)
+                    || device.CameraBackend.Status is DeviceStatusType.Opened or DeviceStatusType.LiveOpened or DeviceStatusType.Busy or DeviceStatusType.Free)
+                .Select(device => device.PhyCamera).OfType<PhyCamera>().ToHashSet() ?? [];
+            bool changed = false;
+            foreach (PhyCamera camera in PhyCameras)
+            {
+                var status = openedCameras.Contains(camera) ? PhysicalCameraStatus.Opened
+                    : camera.ConnectionStatus == PhysicalCameraStatus.Opened ? PhysicalCameraStatus.Unknown : camera.ConnectionStatus;
+                if (status == camera.ConnectionStatus) continue;
+
+                camera.ConnectionStatus = status;
+                changed = true;
+            }
+            if (changed) RefreshCameraSummary();
+        }
+
+        private async Task<cvCameraCSLib.CameraDiscoverySummary> DiscoverCamerasAsync(CameraModel[] models, CancellationToken cancellationToken)
+        {
+            await _discoveryGate.WaitAsync(cancellationToken);
+            try
+            {
+                return await Task.Run(() => cvCameraCSLib.SearchCameraIds(models), cancellationToken);
+            }
+            finally
+            {
+                _discoveryGate.Release();
+            }
+        }
+
+        internal static bool ApplyDiscoveryStatus(cvCameraCSLib.CameraDiscoverySummary summary, IEnumerable<PhyCamera> cameras)
+        {
+            var scannedModels = summary.Models.ToDictionary(result => result.CameraModel, result => result.Success);
+            var detectedCodes = summary.Cameras.ToLookup(result => result.CameraModel, result => result.MD5Id);
+            bool changed = false;
+            foreach (PhyCamera camera in cameras)
+            {
+                CameraModel model = camera.Config.CameraModel;
+                if (camera.ConnectionStatus == PhysicalCameraStatus.Opened || !scannedModels.TryGetValue(model, out bool success)) continue;
+
+                var status = !success ? PhysicalCameraStatus.Unknown
+                    : detectedCodes[model].Contains(camera.Code, StringComparer.OrdinalIgnoreCase) ? PhysicalCameraStatus.Online : PhysicalCameraStatus.Offline;
+                if (status == camera.ConnectionStatus) continue;
+
+                camera.ConnectionStatus = status;
+                changed = true;
+            }
+            return changed;
+        }
 
         public async void SearchCameraIds()
         {
@@ -280,7 +351,7 @@ namespace ColorVision.Engine.Services.PhyCameras
             _isSearchingCameras = true;
             try
             {
-                var summary = await Task.Run(() => cvCameraCSLib.SearchCameraIds(selectedCameraModels));
+                var summary = await DiscoverCamerasAsync(selectedCameraModels, CancellationToken.None);
                 LoadPhyCamera();
                 SynchronizeDiscoveredCameraIdentities(summary);
 
@@ -304,6 +375,8 @@ namespace ColorVision.Engine.Services.PhyCameras
 
         internal void SynchronizeDiscoveredCameraIdentities(cvCameraCSLib.CameraDiscoverySummary summary)
         {
+            RefreshOpenedCameraStatus();
+            if (ApplyDiscoveryStatus(summary, PhyCameras)) RefreshCameraSummary();
             PhysicalCameraIdentity.SynchronizeDiscovered(summary, PhyCameras, SysResourceDao.Instance.GetAll(),
                 ServiceManager.Current?.DeviceServices.AsEnumerable() ?? Enumerable.Empty<DeviceService>(), row => SysResourceDao.Instance.Save(row));
         }
@@ -528,14 +601,9 @@ namespace ColorVision.Engine.Services.PhyCameras
             RefreshCameraSummary();
         }
 
-        private static bool IsOnline(PhyCamera camera)
-        {
-            return string.Equals(camera.SysResourceModel?.Remark, "Online", StringComparison.OrdinalIgnoreCase);
-        }
-
         private static bool RequiresAttention(PhyCamera camera)
         {
-            return !IsOnline(camera) || camera.HasLicenseAlert || camera.VisualChildren.Count == 0;
+            return !camera.IsOnline || camera.HasLicenseAlert || camera.VisualChildren.Count == 0;
         }
 
         private static void LoadPhyCameraResources(PhyCamera phyCamera)

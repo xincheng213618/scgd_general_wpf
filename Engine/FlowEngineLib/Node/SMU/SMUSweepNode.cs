@@ -1,4 +1,5 @@
 using FlowEngineLib.Base;
+using FlowEngineLib.MQTT;
 using log4net;
 using ST.Library.UI.NodeEditor;
 
@@ -239,4 +240,7 @@ public class SMUSweepNode : CVBaseServerNode
 		sMUSweepParam.DeviceParam = deviceParam;
 		return sMUSweepParam;
 	}
+
+	protected override void DispatchRemoteCommand(CVTransAction trans, MQActionEvent action, CVBaseEventCmd command) =>
+		SMUBaseNode.DispatchRemoteSweep(trans, action, command, RemoteResultBinderOverride);
 }

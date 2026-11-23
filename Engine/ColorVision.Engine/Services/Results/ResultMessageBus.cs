@@ -1,3 +1,4 @@
+using ColorVision.Database;
 using log4net;
 using System;
 using System.Collections.Generic;
@@ -53,7 +54,10 @@ namespace ColorVision.Engine.Services.Results
             string nodeId,
             int zIndex,
             ResultReference data,
-            object? attachment)
+            object? attachment,
+            MySqlConnectedEndpoint? databaseEndpoint = null,
+            DeviceService? sourceDevice = null,
+            MQTTServiceBase? sourceService = null)
         {
             ProtocolVersion = CurrentProtocolVersion;
             MessageId = Guid.NewGuid().ToString("N");
@@ -66,6 +70,9 @@ namespace ColorVision.Engine.Services.Results
             ZIndex = zIndex;
             Data = data;
             Attachment = attachment;
+            DatabaseEndpoint = databaseEndpoint;
+            SourceDevice = sourceDevice;
+            SourceService = sourceService;
         }
 
         public string ProtocolVersion { get; }
@@ -85,11 +92,15 @@ namespace ColorVision.Engine.Services.Results
         /// Optional process-local data. PublishPersisted leaves this null; local camera nodes attach their result model.
         /// </summary>
         public object? Attachment { get; }
+
+        internal MySqlConnectedEndpoint? DatabaseEndpoint { get; }
+        internal DeviceService? SourceDevice { get; }
+        internal MQTTServiceBase? SourceService { get; }
     }
 
     /// <summary>
-    /// In-process result transport. Receivers select messages by result kind and device code,
-    /// then resolve the persisted record through their own DAO.
+    /// In-process result transport. Receivers select messages by result kind and device code
+    /// and resolve persisted records in the supplied database when the message identifies one.
     /// </summary>
     public sealed class ResultMessageBus
     {
@@ -137,7 +148,10 @@ namespace ColorVision.Engine.Services.Results
             string nodeId,
             int zIndex,
             int masterId,
-            int masterResultType)
+            int masterResultType,
+            MySqlConnectedEndpoint? databaseEndpoint = null,
+            DeviceService? sourceDevice = null,
+            MQTTServiceBase? sourceService = null)
         {
             ArgumentException.ThrowIfNullOrWhiteSpace(route);
             ArgumentException.ThrowIfNullOrWhiteSpace(resultKind);
@@ -151,7 +165,10 @@ namespace ColorVision.Engine.Services.Results
                 nodeId ?? string.Empty,
                 zIndex,
                 new ResultReference(masterId, masterResultType),
-                attachment: null));
+                attachment: null,
+                databaseEndpoint: databaseEndpoint,
+                sourceDevice: sourceDevice,
+                sourceService: sourceService));
         }
 
         internal void Publish(ResultMessage message)

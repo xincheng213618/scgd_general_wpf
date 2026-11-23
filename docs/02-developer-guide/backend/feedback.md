@@ -5,7 +5,6 @@ status: "current"
 summary: "反馈提交按服务端账号归属，普通用户只读本人记录，研发只读账号/API key可下载全部诊断附件，管理员独立更新状态；新目录使用北京时间和机器标识。"
 aliases: ["反馈收件箱", "我的反馈", "Feedback Inbox", "反馈上传", "feedback:read", "feedback:manage", "feedback_attachment_download", "download_feedback.ps1", "ownerUserId", "machineName", "serverReceivedAt", "feedback.json", ".admin.json"]
 code_paths: ["Web/Backend/feedback_service.py", "Web/Backend/services/feedback_admin.py", "Web/Backend/routes/public_api.py", "Web/Backend/routes/admin_api.py", "Web/Backend/services/permission_service.py", "Web/Backend/services/api_key_service.py", "Web/Frontend/src/pages/FeedbackPage.tsx", "Web/Frontend/src/services/admin.ts", "Scripts/download_feedback.ps1", "Scripts/configure_feedback.ps1", "UI/ColorVision.UI.Desktop/Feedback"]
-test_paths: ["Web/Backend/test_feedback_service.py","Web/Backend/test_feedback_admin.py","Web/Backend/test_feedback_routes.py","Web/Backend/test_feedback_download_script.py","Web/Frontend/tests/feedback.test.ts"]
 related: ["delivery.backend", "delivery.backend-auth", "delivery.backend-accounts", "delivery.artifact-delivery", "ui.desktop"]
 ---
 
@@ -94,7 +93,7 @@ pwsh -NoProfile -File .\Scripts\download_feedback.ps1 -List -AllowInsecureHttp
 
 ## 其他电脑下载
 
-在新电脑拉取仓库并安装 PowerShell 7 后，直接运行下载脚本；固定账号跟随仓库中的 `Web/Backend/config.json` 分发，无需登录或配置环境变量。此账号目前是服务端 `upload_auth` 管理账号，Basic 认证不区分使用它的电脑，也不提供反馈只读权限隔离；附件请求仍按账号、反馈编号、附件名、IP 和时间写入 SQLite 审计。服务端更改 `upload_auth` 后，维护电脑也需同步配置。已有的只读 API key 仍可显式指定 `-ApiKeyEnvironmentVariable COLORVISION_FEEDBACK_API_KEY` 使用，旧的 `Scripts/configure_feedback.ps1` 仅用于这条兼容路径。
+在新电脑拉取仓库并安装 PowerShell 7 后，直接运行下载脚本。固定账号跟随仓库中的 `Web/Backend/config.json` 分发，无需登录或配置环境变量。工具输出和报告不得显示凭据。此账号目前是服务端 `upload_auth` 管理账号，Basic 认证不区分使用它的电脑，也不提供反馈只读权限隔离。附件请求仍按账号、反馈编号、附件名、IP 和时间写入 SQLite 审计。服务端更改 `upload_auth` 后，维护电脑也需同步配置。已有的只读 API key 仍可显式指定 `-ApiKeyEnvironmentVariable COLORVISION_FEEDBACK_API_KEY` 使用，旧的 `Scripts/configure_feedback.ps1` 仅用于这条兼容路径。
 
 ```powershell
 # 远程获取最新反馈；现有服务地址使用 HTTP，需要显式允许
@@ -134,4 +133,4 @@ HTTPS 始终优先。现有 HTTP 部署只能在用户明确选择 `-AllowInsecu
 
 ## 验证范围
 
-`test_feedback_service.py` 覆盖北京时间跨日、同秒唯一 ID、机器名清洗/长度、稳定归属、伪造 owner、内部文件名和 metadata 替换失败。`test_feedback_admin.py` 覆盖历史记录、owner 范围先于统计/搜索/分页、机器/版本/时间筛选、hash、路径穿越和状态原子替换。`test_feedback_routes.py` 使用独立临时配置、账号数据库和 storage，覆盖两个账号隔离、匿名/撤销/强制改密 Session、研发只读、有效/撤销/过期 API key、直链越权与登录提交归属。`test_feedback_download_script.py` 用本机模拟 HTTP 服务验证正常、重复和截断下载；真实反向代理、TLS、超大现场 ZIP 与 ARVRPro 离线读取仍需部署前现场验证。
+真实反向代理、TLS、超大现场 ZIP 与 ARVRPro 离线读取仍需部署前现场验证。

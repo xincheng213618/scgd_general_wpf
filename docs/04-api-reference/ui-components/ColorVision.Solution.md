@@ -4,8 +4,7 @@ knowledge_type: "topic"
 status: "current"
 summary: "工作区创建、打开与最近列表，文件树搜索和引用移除，切换取消及 cvsln 恢复。新建工作区保留已有文件。"
 aliases: ["ColorVision.Solution", "SolutionManager", "ResourceOpenService", "OpenSolutionAsync", "OpenWith", "OpenManyAsync", "PrivateWorkspaceService", "SolutionConfigStore", "SolutionConfigStore.Load", "SolutionCache", "MruPathService", "MruPathService.Touch", "cvsln", "cvproj", "打开文件夹工作区", "取消切换工作区", "批量打开图片和项目", "工作区文件树缓存", "解决方案备份恢复", "默认打开方式保存失败", "解决方案资源管理器", "文件系统视图", "与活动文档同步", "全部折叠", "TreeViewControl", "OpenSolutionWindow", "NewCreateWindow", "CreateSolutionAsync", "SolutionSetting", "DefaultCreatName", "SolutionConfig", "SolutionSearchService", "SolutionOperationHistory", "ProjectProviderRegistry", "创建工程", "最近工作区列表", "从解决方案中移除", "移除解决方案文件夹"]
-code_paths: ["UI/ColorVision.Solution/README.md", "UI/ColorVision.Solution/ColorVision.Solution.csproj", "UI/ColorVision.Solution/Themes/", "UI/ColorVision.Solution/SolutionManager.cs", "UI/ColorVision.Solution/SolutionManagerInitializer.cs", "UI/ColorVision.Solution/StartupResourceOpenInitializer.cs", "ColorVision/ForwardedCommandLineHandler.cs", "ColorVision/MainWindow.Setting.cs", "UI/ColorVision.Solution/OpenSolutionWindow.xaml", "UI/ColorVision.Solution/OpenSolutionWindow.xaml.cs", "UI/ColorVision.Solution/NewCreatWindow.xaml", "UI/ColorVision.Solution/NewCreatWindow.xaml.cs", "UI/ColorVision.Solution/SolutionSetting.cs", "UI/ColorVision.Solution/SolutionMenuItems.cs", "UI/ColorVision.Solution/CommandInitializer.cs", "UI/ColorVision.Solution/Editor/ResourceOpenService.cs", "UI/ColorVision.Solution/Editor/ResourcePathIdentityComparer.cs", "UI/ColorVision.Solution/Editor/CommandLineResourceOpenRequest.cs", "UI/ColorVision.Solution/Workspace/PrivateWorkspaceService.cs", "UI/ColorVision.Solution/Explorer", "UI/ColorVision.Solution/Mru", "UI/ColorVision.Solution/TreeViewControl.xaml", "UI/ColorVision.Solution/TreeViewControl.xaml.cs", "UI/ColorVision.Solution/TreeViewControl.Navigation.cs", "UI/ColorVision.Solution/TreeViewControl.ViewMode.cs", "UI/ColorVision.Solution/TreeViewControl.Search.cs", "UI/ColorVision.Solution/TreeViewControl.Command.cs", "UI/ColorVision.Solution/TreeViewControl.WorkspaceState.cs", "UI/ColorVision.Solution/SolutionFeatureVisibility.cs", "UI/ColorVision.UI/FileProcessorFactory.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/MruPathServiceTests.cs"]
+code_paths: ["UI/ColorVision.Solution","ColorVision/ForwardedCommandLineHandler.cs","ColorVision/MainWindow.Setting.cs","UI/ColorVision.UI/FileProcessorFactory.cs"]
 related: ["ui.index", "ui.documents", "operations.terminal", "operations.first-run", "operations.main-window", "ui.configuration", "ui.hotkeys"]
 ---
 
@@ -63,7 +62,7 @@ related: ["ui.index", "ui.documents", "operations.terminal", "operations.first-r
 - “全部折叠”清除搜索并折叠已加载的子节点，保留根节点展开；不为折叠而递归加载整个目录。“刷新”针对当前视图根节点。“属性”作用于单个选中节点，设置入口位于“更多选项”。
 - 自动发现模式在后台读取项目，完成后更新解决方案级“运行”和“调试”的可用状态。执行命令时按当前项目文件解析启动项目。
 
-工具栏和树采用紧凑布局；选中行的中性灰圆角背景与左侧主题色标记固定在可见区域，横向滚动长文件名时仍保留标记。滚动条保留主题模板、拖动范围及自动显隐，由局部 `ExplorerScrollBarBehavior` 调整透明度，不修改全局主题资源。
+工具栏与搜索框采用紧凑布局。树的选中行使用灰色背景和左侧主题色标记，焦点行另有轮廓，拖入目标以主题色描边。这些提示跟随可见区域，横向滚动长文件名时仍然可见。滚动条沿用主题模板，由局部 `ExplorerScrollBarBehavior` 调整透明度。
 
 解决方案树继续保存原有的展开/选中状态；文件系统视图的状态仅在当前控件生命周期保留，不覆盖解决方案状态文件。两种视图的功能边界不同，外观参考 VS 不意味着增加了 `.sln` 导入、Git 状态或构建/调试支持。
 
@@ -183,10 +182,8 @@ Load 仅在主配置缺失或已读到损坏内容时尝试 `.bak`。占用、�
 
 ## 验证入口与缺口
 
-这些测试不启动主窗口、不加载用户工作区；离屏渲染不能替代当前运行窗口的实际点击验收。
+在实际运行窗口核对点击行为。
 
-`Test/ColorVision.UI.Tests/MruPathServiceTests.cs` 覆盖大小写去重、别名移除、固定项顺序/容量、一次通知和 JSON 往返/坏 JSON 回退。它没有覆盖工作区异步竞争、取消后的文件写入、共享配置备份恢复、Provider 命令或事件失败后状态。
+工作区切换竞争、同名目录覆盖及配置恢复应使用合成工作区与独立状态目录复核。分别核对返回值、内存状态和实际文件，涉及删除或执行项目命令时使用受控环境。
 
-尚缺直接覆盖 SolutionManager/ResourceOpenService 真实切换竞争、创建同名目录覆盖及配置自动恢复的专项测试。其它测试中的隔离或反射替换不验证这些流程。补充验证应使用合成工作区与独立状态目录，分别检查返回值、内存状态及实际文件变化；涉及文件删除或项目命令的集成应在受控环境执行。
-
-`SolutionClipboardFileOperationsTests` 用隔离目录验证同名编号、复制失败不发布及带尾部分隔符的移动。实际拖放、剪贴板交互和跨卷操作需单独验证。
+实际拖放、剪贴板交互和跨卷操作需单独验证。

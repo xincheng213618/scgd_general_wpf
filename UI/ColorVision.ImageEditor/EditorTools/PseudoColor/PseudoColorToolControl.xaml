@@ -13,14 +13,6 @@
         <ToggleButton Margin="0,0,0,2" IsChecked="{Binding IsEnabled, Mode=TwoWay}">
             <Image Margin="-5" Source="/ColorVision.ImageEditor;component/Assets/png/PowerToy.png" Style="{StaticResource ToolBarImage}" />
         </ToggleButton>
-        <ToggleButton Margin="0,0,0,2"
-                      Padding="3"
-                      HorizontalAlignment="Stretch"
-                      Content="A"
-                      FontSize="9"
-                      IsChecked="{Binding IsAutoSetRange, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                      ToolTip="Auto Range"
-                      Visibility="{Binding IsEnabled, Converter={StaticResource BooleanToVisibilityConverter}}" />
         <Grid Height="120" Visibility="{Binding IsEnabled, Converter={StaticResource BooleanToVisibilityConverter}}">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto" />

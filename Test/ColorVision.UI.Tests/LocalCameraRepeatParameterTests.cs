@@ -128,7 +128,9 @@ public sealed class LocalCameraRepeatParameterTests
             using var scope = new CameraScope();
             bool enabled = mode != LocalCameraFocusMode.FocusDisabled;
             var template = new TemplateModel<AutoFocusParam>("capture-focus-" + Guid.NewGuid(), new AutoFocusParam());
-            TemplateAutoFocus.Params.Add(template);
+            var previousTemplates = TemplateAutoFocus.Params;
+            // A camera view on the shared WPF dispatcher can still be bound to this collection.
+            TemplateAutoFocus.Params = [template];
             try
             {
                 var requestReady = new TaskCompletionSource<LocalCameraCaptureRequest>(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -172,7 +174,7 @@ public sealed class LocalCameraRepeatParameterTests
                 }
                 else Assert.Null(request.AutoFocus);
             }
-            finally { TemplateAutoFocus.Params.Remove(template); }
+            finally { TemplateAutoFocus.Params = previousTemplates; }
         });
     }
 

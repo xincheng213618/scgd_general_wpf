@@ -5,7 +5,6 @@ status: "current"
 summary: "从模板菜单、算法面板或应用搜索打开模板；说明选择索引、流程设计器直达和菜单发现的边界。"
 aliases: ["模板编辑入口在哪里","MenuItemTemplateBase","DisplayAlgorithmTemplateSelection","ShowTemplateWindow","模板搜索入口","模板菜单没有算法","搜索模板打开流程设计器"]
 code_paths: ["Engine/ColorVision.Engine/Templates/Menus/MenuTemplate.cs","Engine/ColorVision.Engine/Templates/Menus/MenuItemTemplateBase.cs","Engine/ColorVision.Engine/Services/Devices/Algorithm/DisplayAlgorithmConfiguration.cs","UI/ColorVision.UI/Menus/MenuManager.cs","Engine/ColorVision.Engine/Templates/POI/MenuItemPoiParam.cs","Engine/ColorVision.Engine/Templates/Flow/TemplateFlow.cs","Engine/ColorVision.Engine/Templates/TemplateSearchProvider.cs","Engine/ColorVision.Engine/Services/Devices/Algorithm/DisplayAlgorithmManager.cs","Engine/ColorVision.Engine/Services/Devices/Algorithm/DisplayAlgorithmControl.xaml.cs","ColorVision/MainWindow.Hotkeys.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/MenuDiscoveryExclusionTests.cs","Test/ColorVision.UI.Tests/TemplateSearchProviderTests.cs"]
 related: ["algorithms.index","algorithms.template-management","ui.discovery","ui.menus","ui.search"]
 ---
 
@@ -20,6 +19,7 @@ related: ["algorithms.index","algorithms.template-management","ui.discovery","ui
 | 要做的事 | 操作 |
 | --- | --- |
 | 管理 POI 或流程模板 | 打开 **模板 → POI模板** 或 **模板 → 流程**，在模板窗口选择条目 |
+| 管理通用传感器模板 | 打开 **模板 → 传感器模板**。配置和兼容规则见[传感器专题](../../engine-components/generic-sensor.md) |
 | 编辑当前手动算法使用的模板 | 进入算法设备的手动面板，选择算法及模板，再使用该模板旁的编辑命令 |
 | 按已知名称找模板 | 默认按 **Ctrl+Shift+P** 打开[应用搜索](../../ui-components/search.md)，输入模板名称并执行匹配项；自定义快捷键以当前配置为准 |
 
@@ -48,7 +48,7 @@ related: ["algorithms.index","algorithms.template-management","ui.discovery","ui
 
 `DisplayAlgorithmManager` 查找带 `DisplayAlgorithmAttribute` 的 `IDisplayAlgorithm` 实现；`DisplayAlgorithmControl` 根据算法 `Configuration` 生成界面，执行按钮调用 `Execute()`；请求后的结果处理见[结果链](../../engine-components/result-handoff-chain.md)。
 
-设备面板直接列出全部算法并恢复上次选择，算法下拉框固定宽度靠左，“计算”在同排右侧，中间留白；按钮随当前算法切换。图像和主模板行省略左侧标签，输入区域保持原大小并靠左排列，主模板下拉框与编辑齿轮继续保留；附加的关注点等模板保留各自名称、布局和编辑入口，CIE 等其他文件行也保留标签。独立调试窗口在配置上方保留自己的计算按钮。
+设备面板恢复上次选中的算法。选择图像和模板后点击 **计算**。主模板旁的齿轮打开模板编辑器，附加模板各有编辑入口。
 
 `DisplayAlgorithmTemplateSelection` 保存模板与条目来源，提供 `SelectedIndex`、`SelectedValue`、`SelectedName`、`IsSelectionValid`、`TryGetValue<T>`。它的 `EditCommand` 将 `SelectedIndex + editorIndexOffset` 传给 `Template.CreateManagerWindow`；主 POI 和流程进入专用浏览窗口，其他模板仍使用 `TemplateEditorWindow`；空项或特殊条目来源需检查索引偏移，不能照搬另一个算法的选中索引。
 
@@ -76,6 +76,4 @@ related: ["algorithms.index","algorithms.template-management","ui.discovery","ui
 | 搜索结果缺失或旧结果无法执行 | 当前模板注册与名称、搜索类型开关，以及目录是否已刷新 |
 | 窗口能打开但不能保存 | 继续检查目标 `ITemplate` 的保存/导入导出，不归菜单层 |
 
-`MenuDiscoveryExclusionTests` 检查指定菜单类型不存在、两个保留类型通过候选谓词，以及 MySQL 工具的 Owner/Order；没有实际装配模板菜单树。`TemplateSearchProviderTests` 用内存模板验证同名条目身份稳定、替换注册后使用新实例、移除注册后旧命令失效。
-
-这些测试不构造真实模板编辑窗口，也不验证数据库保存。窗口能打开、选择正确和保存成功应分别核对；实际保存行为属于目标 `ITemplate`。
+窗口能打开、选择正确和保存成功应分别核对；实际保存行为属于目标 `ITemplate`。

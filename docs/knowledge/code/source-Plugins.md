@@ -19,16 +19,14 @@ next: false
 - [插件装配与模块知识入口](../../04-api-reference/plugins/README.md) — `plugins.index`
   按程序集装载、产物交付、插件能力比较和模块操作定位权威主题与源码。
 
+- [相机生产调试已退役 \[历史\]](../../04-api-reference/plugins/standard-plugins/camera-test.md) — `plugins.camera-test`
+  CameraTest 相机生产调试已退役。归档标签保留原插件、独立程序、测试与打包资料。
+
 - [插件产物、安装与交付](../../02-developer-guide/plugin-development/getting-started.md) — `plugins.getting-started`
   插件项目构建、HostCopy、市场与本地安装、备份回退和提取插件；DLL目录替换、依赖补回及重启后加载的完成条件，正式打包会上传。
 
 - [WindowsServicePlugin：选包、本机安装与恢复](../../04-api-reference/plugins/standard-plugins/windows-service.md) — `plugins.windows-service`
   WindowsServicePlugin的在线选包与缓存、本机完整安装、数据库版本切换和恢复边界；下载、日志完成、备份与实际服务状态不能互相替代。
-
-## Plugins/CameraTest {#module-506c7567696e732f43616d65726154657374}
-
-- [相机生产调试](../../04-api-reference/plugins/standard-plugins/camera-test.md) — `plugins.camera-test`
-  CameraTest 相机生产调试：直接 SDK 取图、BMW 四边 SFR、RGB 位移、调焦趋势、可选判定与按设备编号存档；不主动连接 MySQL 或服务，POI 支持 SQLite 本地模板。
 
 ## Plugins/Conoscope {#module-506c7567696e732f436f6e6f73636f7065}
 

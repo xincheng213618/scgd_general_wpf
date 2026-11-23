@@ -9,9 +9,7 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Automation;
 using System.Windows.Controls;
-using System.Windows.Data;
 using System.Windows.Media;
 
 namespace ColorVision.Engine.Media
@@ -51,7 +49,6 @@ namespace ColorVision.Engine.Media
         public void Execute(ImageView imageView)
         {
             ComboBox? poiTemplateComboBox = null;
-            SelectionChangedEventHandler? selectionChangedHandler = null;
             int loadVersion = 0;
             bool populating = false;
             bool saving = false;
@@ -76,12 +73,13 @@ namespace ColorVision.Engine.Media
 
                 poiTemplateComboBox = new ComboBox
                 {
-                    Width = 96,
+                    Width = 84,
                     Height = 22,
                     MinHeight = 0,
                     FontSize = 12,
                     Padding = new Thickness(5, 0, 4, 0),
-                    Margin = new Thickness(0),
+                    Margin = new Thickness(4, 0, 5, 5),
+                    Opacity = 0.9,
                     VerticalAlignment = VerticalAlignment.Center,
                     HorizontalAlignment = HorizontalAlignment.Left,
                     DisplayMemberPath = "Key",
@@ -89,17 +87,17 @@ namespace ColorVision.Engine.Media
                     Style = Application.Current.TryFindResource("ComboBox.Small") as Style
                 };
 
-                selectionChangedHandler = (_, _) =>
+                poiTemplateComboBox.SelectionChanged += (_, _) =>
                 {
                     if (populating) return;
                     try { ApplySelectedTemplate(imageView, poiTemplateComboBox, ClearDrawingVisuals); }
                     catch (Exception ex) { MessageBox.Show(Window.GetWindow(imageView), ex.Message, LocalizedText.Get("POI 模板"), MessageBoxButton.OK, MessageBoxImage.Warning); }
                 };
-                poiTemplateComboBox.SelectionChanged += selectionChangedHandler;
                 imageView.ToolBarAl.Items.Add(poiTemplateComboBox);
                 poiTemplateComboBox.Name = "PoiTemplateSelector";
                 var menu = new ContextMenu();
-                var edit = new MenuItem { Header = LocalizedText.Get("编辑当前 POI 模板…") };
+                var save = new MenuItem { Name = "PoiTemplateSave", Header = LocalizedText.Get("保存到模板") };
+                var edit = new MenuItem { Name = "PoiTemplateEdit", Header = LocalizedText.Get("编辑当前 POI 模板…") };
                 edit.Click += (_, _) =>
                 {
                     if (poiTemplateComboBox.SelectedValue is not PoiParam value || value.Id == -1) return;
@@ -107,32 +105,25 @@ namespace ColorVision.Engine.Media
                     editor.Closed += (_, _) => LoadTemplates(++loadVersion);
                     editor.Show();
                 };
-                var manage = new MenuItem { Header = LocalizedText.Get("管理 POI 模板…") };
+                var manage = new MenuItem { Name = "PoiTemplateManager", Header = LocalizedText.Get("管理 POI 模板…") };
                 manage.Click += (_, _) => OpenManager();
-                var refresh = new MenuItem { Header = LocalizedText.Get("刷新模板") };
+                var refresh = new MenuItem { Name = "PoiTemplateRefresh", Header = LocalizedText.Get("刷新模板") };
                 refresh.Click += (_, _) => LoadTemplates(++loadVersion);
-                menu.Opened += (_, _) => edit.IsEnabled = poiTemplateComboBox.SelectedValue is PoiParam p && p.Id != -1;
-                menu.Items.Add(edit); menu.Items.Add(manage); menu.Items.Add(refresh);
-                poiTemplateComboBox.ContextMenu = menu;
-                var button = CreateIconButton("PoiTemplateManager", "DrawingImageList", "POI 管理");
-                button.Click += (_, _) => OpenManager();
-                imageView.ToolBarAl.Items.Add(button);
-                var save = CreateIconButton("PoiTemplateSave", "DrawingImageSave", "保存当前图上的 POI 区域");
-                var saveStyle = new Style(typeof(Button), imageView.ToolBarAl.TryFindResource(ToolBar.ButtonStyleKey) as Style);
-                var noImageTrigger = new DataTrigger
+                menu.Opened += (_, _) =>
                 {
-                    Binding = new Binding(nameof(Image.Source)) { Source = imageView.ImageShow },
-                    Value = null
+                    save.Visibility = CanSave() ? Visibility.Visible : Visibility.Collapsed;
+                    edit.Visibility = poiTemplateComboBox.SelectedValue is PoiParam p && p.Id != -1 ? Visibility.Visible : Visibility.Collapsed;
                 };
-                noImageTrigger.Setters.Add(new Setter(UIElement.VisibilityProperty, Visibility.Collapsed));
-                saveStyle.Triggers.Add(noImageTrigger);
-                save.Style = saveStyle;
+                menu.Items.Add(save);
+                menu.Items.Add(edit);
+                menu.Items.Add(manage);
+                menu.Items.Add(refresh);
+                poiTemplateComboBox.ContextMenu = menu;
                 save.Click += async (_, _) =>
                 {
-                    if (saving) return;
+                    if (!CanSave()) return;
                     saving = true;
-                    UpdateSaveAvailability();
-                    poiTemplateComboBox.IsEnabled = button.IsEnabled = false;
+                    poiTemplateComboBox.IsEnabled = false;
                     try
                     {
                         var selected = poiTemplateComboBox.SelectedValue as PoiParam;
@@ -154,24 +145,20 @@ namespace ColorVision.Engine.Media
                             await Task.Run(() => destination.Save(snapshot));
                         }
                         LoadTemplates(++loadVersion, snapshot.Id, false);
-                        save.ToolTip = PoiTemplateStorage.IsLocalId(snapshot.Id) ? LocalizedText.Get("已保存到本地 POI 模板库") : LocalizedText.Get("POI 模板已保存");
+                        string status = PoiTemplateStorage.IsLocalId(snapshot.Id) ? LocalizedText.Get("已保存到本地 POI 模板库") : LocalizedText.Get("POI 模板已保存");
+                        poiTemplateComboBox.ToolTip = $"{poiTemplateComboBox.ToolTip}{Environment.NewLine}{status}";
                     }
                     catch (Exception ex) { MessageBox.Show(Window.GetWindow(imageView), ex.Message, LocalizedText.Get("保存 POI 模板"), MessageBoxButton.OK, MessageBoxImage.Warning); }
                     finally
                     {
                         saving = false;
-                        poiTemplateComboBox.IsEnabled = button.IsEnabled = true;
-                        UpdateSaveAvailability();
+                        poiTemplateComboBox.IsEnabled = true;
                     }
                 };
-                imageView.ToolBarAl.Items.Add(save);
-                imageView.EditorContext.DrawingVisualLists.CollectionChanged += (_, _) => UpdateSaveAvailability();
-                imageView.ImageShow.IsEnabledChanged += (_, _) => UpdateSaveAvailability();
-                UpdateSaveAvailability();
-
                 imageView.ToolBarAl.Padding = new Thickness(0);
 
-                void UpdateSaveAvailability() => save.IsEnabled = !saving && imageView.ImageShow.IsEnabled && imageView.EditorContext.DrawingVisualLists.Count > 0;
+                bool CanSave() => !saving && imageView.ImageShow.IsEnabled && imageView.ImageShow.Source != null &&
+                    imageView.EditorContext.DrawingVisualLists.Count > 0;
 
                 void OpenManager()
                 {
@@ -226,20 +213,6 @@ namespace ColorVision.Engine.Media
                 }
                 finally { populating = false; }
             }
-        }
-
-        private static Button CreateIconButton(string name, string resourceKey, string label)
-        {
-            var image = new Image { Width = 14, Height = 14 };
-            image.SetResourceReference(Image.SourceProperty, resourceKey);
-            var button = new Button
-            {
-                Name = name, Content = image, Width = 22, Height = 22, MinWidth = 0, MinHeight = 0,
-                Padding = new Thickness(3), Margin = new Thickness(2, 0, 0, 0), ToolTip = label,
-                VerticalAlignment = VerticalAlignment.Center
-            };
-            AutomationProperties.SetName(button, label);
-            return button;
         }
 
         private static void ApplySelectedTemplate(ImageView imageView, ComboBox comboBox, Action clearDrawingVisuals)

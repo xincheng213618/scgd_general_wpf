@@ -5,13 +5,12 @@ status: "current"
 summary: "按实际代码职责路由 Engine 的设备、消息、模板、Flow、结果与工程依赖；契约和验证由各主题维护。"
 aliases: ["Engine代码在哪里","Engine问题该从哪里查","看到Engine类名应该查哪里","修改Engine要先看什么"]
 code_paths: ["Engine/ColorVision.Engine/ColorVision.Engine.csproj","Engine/ColorVision.Engine/Services/ServiceManager.cs","Engine/ColorVision.Engine/Templates/TemplateControl.cs","Engine/FlowEngineLib/FlowEngineControl.cs"]
-test_paths: []
 related: ["engine.host", "engine.devices", "engine.mqtt", "engine.rc-registration", "engine.template-design", "flow.templates", "flow.session", "flow.diagnostics", "engine.results"]
 ---
 
 # Engine 知识入口
 
-`Engine/` 承接设备、模板、Flow、服务消息与结果。按问题直接选择权威主题，再核对其中的源码和验证入口；功能扩展与故障排查按下表进入同一份权威契约。
+`Engine/` 承接设备、模板、Flow、服务消息与结果。有类名、字段或日志时先搜源码。只有现象时，可从下表的源码起点和专题入手。
 
 ## 按问题检索
 
@@ -19,7 +18,7 @@ related: ["engine.host", "engine.devices", "engine.mqtt", "engine.rc-registratio
 | --- | --- | --- |
 | 设备没有出现、服务类型或 MQTT 控制器不匹配 | [设备服务链](./device-service-chain.md) | `DeviceServiceFactoryRegistry`、`ServiceManager` |
 | MQTT topic、请求、回复或超时关联不正确 | [MQTT 消息链](../../02-developer-guide/engine-development/mqtt.md) | `MQTTControl`、`MQTTServiceBase`、`MsgRecord` |
-| RC 连接测试、令牌、早到服务列表与状态不一致 | [RC 注册与服务快照](./rc-registration.md) | `MqttRCService`、`PendingServiceUpdateBuffer`、`RCServiceConnect` |
+| RC 默认注册参数、令牌、早到服务列表与状态不一致 | [RC 注册与服务快照](./rc-registration.md) | `MqttRCService`、`PendingServiceUpdateBuffer` |
 | 新增模板、模板未加载或参数保存异常 | [模板核心契约](../../03-architecture/components/templates/design.md)、[编辑与创建宿主](../algorithms/templates/template-management.md) | `TemplateControl`、`ITemplate<T>`；JSON 分支见 [JSON 模板](../algorithms/templates/json-templates.md) |
 | Flow 保存、导入或节点关联参数不正确 | [Flow 模板持久化](./template-flow-chain.md) | `TemplateFlow`、`FlowParam`、`FlowPackageHelper` |
 | 流程未启动、停止后仍处理结果或结束信号不一致 | [Flow 会话与最终化](../../01-user-guide/workflow/execution.md) | `FlowExecutionSession`、`FlowRunFinalizer`；对象责任见 [Flow 架构](../../03-architecture/components/engine/flow-engine.md) |
@@ -35,29 +34,8 @@ related: ["engine.host", "engine.devices", "engine.mqtt", "engine.rc-registratio
 
 ## 按模块定位
 
-| 模块 | 源码目录 | 职责 | 文档 |
-| --- | --- | --- | --- |
-| ColorVision.Engine | `Engine/ColorVision.Engine/` | 设备、模板、流程宿主、MQTT、结果 | [工程与依赖](./ColorVision.Engine.md) |
-| FlowEngineLib | `Engine/FlowEngineLib/` | 公共节点、执行控制、Flow 参数 | [FlowEngineLib](./FlowEngineLib.md) |
-| cvColorVision | `Engine/cvColorVision/` | native 接口封装 | [cvColorVision](./cvColorVision.md) |
-| ColorVision.FileIO | `Engine/ColorVision.FileIO/` | CVRAW/CVCIE 文件读写 | [FileIO](./ColorVision.FileIO.md) |
-| ST.Library.UI | `Engine/ST.Library.UI/` | 节点画布和基础控件 | [节点编辑器](./ST.Library.UI.md) |
-| ColorVision.ShellExtension | `Engine/ColorVision.ShellExtension/` | Windows Shell 缩略图扩展 | [ShellExtension](./ColorVision.ShellExtension.md) |
+从源码目录和调用方确认模块职责。需要补查相关专题时可用源码地图，或用根 `AGENTS.md` 的 `impact` 命令反查。 [Engine 源码地图](../../knowledge/code/source-Engine.md)
 
 ## 不要合并的边界
 
 Engine 的历史 `IViewResult`/handler、统一算法的中立 Result/overlay、客户项目的判定与导出是不同契约。前两者的汇合位置见结果链；客户规则留在 `Projects/`，不要因为最终都显示在 ImageEditor 就合并模型或注册机制。
-
-一项改动跨越多个模块时，从具体源码路径查询关联主题，再检查调用者；源码关联只提示复核范围，不是自动证明的调用图。从仓库根目录执行下面的只读命令，将示例路径换成实际改动位置，无需启动产品或构建网页：
-
-```powershell
-node docs/.vitepress/scripts/knowledge.mjs impact "Engine/ColorVision.Engine/FlowProcessing/Runtime/FlowExecutionSession.cs"
-```
-
-## 待实施设计
-
-本地相机内存预览仍是 `planned`，不表示当前设备已支持该发布器或生命周期；设计、生命周期与验收统一维护在[本地相机内存帧预览方案](../../02-developer-guide/engine-development/local-camera-memory-preview.md)。
-
-## 验证入口与缺口
-
-索引页只确定实现归属；到目标主题读取测试入口，按[测试范围](../../02-developer-guide/testing.md)选择最小验证。设备动作、数据库写入和外部发布另行授权，编译通过不能代替业务验收。仅维护本文档与索引，不需要启动应用、broker 或设备。

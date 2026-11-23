@@ -39,12 +39,15 @@ public sealed class LocalSpectrumCalibrationNode : LocalFlowNodeBase
         if (!TryGetInputMasterResult(action, 1, out int spectrumId, out int spectrumType, out _)
             || spectrumId <= 0 || spectrumType != 300)
             throw new InvalidOperationException("IN_SPE 必须连接本次光谱仪的亮度测量结果。");
-        MeasureBatchModel batch = BatchResultMasterDao.Instance.GetByCode(action.SerialNumber)
+        MySqlConnectedEndpoint endpoint = LocalFlowResultPersistence.ResolveEndpoint(action)
+            ?? throw new InvalidOperationException("未连接流程数据库，无法读取光谱参考结果。");
+        using var db = endpoint.CreateDbClient();
+        int batchId = FlowMeasurementBatch.ResolveId(action, endpoint,
+            code => db.Queryable<MeasureBatchModel>().Where(batch => batch.Code == code).First()?.Id)
             ?? throw new InvalidOperationException($"找不到本次流程批次：{action.SerialNumber}");
-        using var db = MySqlControl.CreateDbClient();
         SpectumResultEntity spectrum = db.Queryable<SpectumResultEntity>().Where(item => item.Id == spectrumId).First()
             ?? throw new InvalidOperationException("找不到输入的光谱结果。");
-        if (spectrum.BatchId != batch.Id || spectrum.DataType || spectrum.fx == null || spectrum.fy == null || spectrum.fPh == null)
+        if (spectrum.BatchId != batchId || spectrum.DataType || spectrum.fx == null || spectrum.fy == null || spectrum.fPh == null)
             throw new InvalidOperationException("光谱结果必须属于本次流程，且为含 x、y、亮度的测量；不支持光通量/EQE 数据。");
         LocalPoiPointResult point = SpectrumRawCalibrationService.SelectPoint(poi, POIPointName);
         Stopwatch watch = Stopwatch.StartNew();
@@ -62,7 +65,7 @@ public sealed class LocalSpectrumCalibrationNode : LocalFlowNodeBase
             };
             MeasureResultImgModel model = new()
             {
-                BatchId = batch.Id, ZIndex = ZIndex, DeviceCode = frame.Metadata.DeviceCode,
+                BatchId = batchId, ZIndex = ZIndex, DeviceCode = frame.Metadata.DeviceCode,
                 RawFile = frame.CvRawFilePath, FileUrl = frame.CvRawFilePath, FileType = 0,
                 Params = JsonConvert.SerializeObject(parameters), ResultCode = 0, Result = "光谱参考校正完成",
                 ImgFrameInfo = JsonConvert.SerializeObject(new { rows = frame.Metadata.Height, cols = frame.Metadata.Width,
@@ -74,12 +77,12 @@ public sealed class LocalSpectrumCalibrationNode : LocalFlowNodeBase
                     throw new OperationCanceledException("流程已停止，取消保存光谱参考校正结果。");
                 model.TotalTime = checked((int)Math.Min(watch.ElapsedMilliseconds, int.MaxValue));
                 model.CreateDate = DateTime.Now;
-                return model.Id = MeasureImgResultDao.Instance.SaveAndReturnId(model);
+                return model.Id = db.Insertable(model).ExecuteReturnIdentity();
             });
             action.MasterValue(null, masterId, (int)ViewResultAlgType.Calibration);
             action.SetCurrentFrame(frame);
             ResultMessageBus.Default.Publish(new ResultMessage(ResultRoutes.Camera, ResultKinds.Image, frame.Metadata.DeviceCode,
-                OperatorCode, action.SerialNumber, NodeID, ZIndex, new ResultReference(masterId, (int)ViewResultAlgType.Calibration), model));
+                OperatorCode, action.SerialNumber, NodeID, ZIndex, new ResultReference(masterId, (int)ViewResultAlgType.Calibration), model, endpoint));
             return new LocalNodeExecutionResult { Data = new { MasterId = masterId, MasterResultType = (int)ViewResultAlgType.Calibration,
                 FrameId = frame.FrameId.ToString("N"), CvRawFilePath = frame.CvRawFilePath, HasCie = false, corrected.SpectrumCorrection } };
         }

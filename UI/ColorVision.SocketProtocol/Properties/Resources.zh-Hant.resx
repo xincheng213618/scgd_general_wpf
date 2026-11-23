@@ -157,7 +157,7 @@
     <value>Socket 連線管理器</value>
   </data>
   <data name="MenuNetworkCommunication" xml:space="preserve">
-    <value>網路通訊(_C)</value>
+    <value>通訊(_C)</value>
   </data>
   <data name="Query" xml:space="preserve">
     <value>查詢</value>
@@ -209,7 +209,10 @@
     <value>訊息重發失敗: {0}</value>
   </data>
   <data name="ClientNotConnected" xml:space="preserve">
-    <value>目標客戶端未連接</value>
+    <value>原客戶端未連線，或無法唯一確認目標連線。</value>
+  </data>
+  <data name="ResendContentUnavailable" xml:space="preserve">
+    <value>該記錄的原文為空或已清除，無法重發。</value>
   </data>
   <data name="AutoScroll" xml:space="preserve">
     <value>自動捲動</value>

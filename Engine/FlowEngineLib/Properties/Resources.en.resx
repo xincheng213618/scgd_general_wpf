@@ -81,13 +81,7 @@
   <data name="EndNode" xml:space="preserve">
     <value>End</value>
   </data>
-  <data name="EndV5Node" xml:space="preserve">
-    <value>End</value>
-  </data>
   <data name="Start_MQTT" xml:space="preserve">
-    <value>Start</value>
-  </data>
-  <data name="StartV5_MQTT" xml:space="preserve">
     <value>Start</value>
   </data>
   <data name="Timer" xml:space="preserve">
@@ -152,9 +146,6 @@
   </data>
   <data name="图像转换" xml:space="preserve">
     <value>ImageConvert</value>
-  </data>
-  <data name="图像裁剪" xml:space="preserve">
-    <value>ImageCropping</value>
   </data>
   <data name="图像格式" xml:space="preserve">
     <value>ImageFormat</value>
@@ -420,12 +411,6 @@
   <data name="发光区定位" xml:space="preserve">
     <value>LightArea-Localization</value>
   </data>
-  <data name="发光区检测" xml:space="preserve">
-    <value>AA-Inspection</value>
-  </data>
-  <data name="发光区检测OLED" xml:space="preserve">
-    <value>OLED-AA-Inspection</value>
-  </data>
   <data name="灰尘检测及修补" xml:space="preserve">
     <value>OLED Dust Detection&amp;Repair</value>
   </data>
@@ -453,9 +438,6 @@
   <data name="CIE_BUZ" xml:space="preserve">
     <value>CIE_BUZ</value>
   </data>
-  <data name="保存CIE文件" xml:space="preserve">
-    <value>SaveCIEFile</value>
-  </data>
   <data name="色温/波长" xml:space="preserve">
     <value>CCT/Wave</value>
   </data>
@@ -481,9 +463,6 @@
     <value>Init-Dark</value>
   </data>
   <data name="通用传感器" xml:space="preserve">
-    <value>General Sensor</value>
-  </data>
-  <data name="GeneralSensor" xml:space="preserve">
     <value>General Sensor</value>
   </data>
   <data name="通用传感器-指令" xml:space="preserve">
@@ -830,9 +809,6 @@
   </data>
   <data name="接收指令" xml:space="preserve">
     <value>RecvCmd</value>
-  </data>
-  <data name="控制命令" xml:space="preserve">
-    <value>Command</value>
   </data>
   <data name="命令" xml:space="preserve">
     <value>Command</value>

@@ -131,20 +131,45 @@ public static class StripeMtfAnalyzer
     {
         int bins = image.Depth() == MatType.CV_8U ? 256 : 65536;
         Array.Clear(histogram, 0, bins);
-        int min = bins - 1, max = 0;
         int rows = image.Rows, cols = image.Cols;
+        int count = checked(rows * cols);
+        // A small 16-bit ROI is cheaper to track directly than to scan all 65,536 bins.
+        bool deriveBoundsFromHistogram = bins == 256 || count >= bins;
+        int min = bins - 1, max = 0;
         byte* data = (byte*)image.Data;
         long stride = image.Step();
         for (int y = 0; y < rows; y++)
         {
             byte* row = data + y * stride;
-            for (int x = 0; x < cols; x++)
+            if (bins == 256)
             {
-                int value = bins == 256 ? row[x] : ((ushort*)row)[x];
-                histogram[value]++; min = Math.Min(min, value); max = Math.Max(max, value);
+                for (int x = 0; x < cols; x++) histogram[row[x]]++;
+            }
+            else
+            {
+                ushort* wideRow = (ushort*)row;
+                if (deriveBoundsFromHistogram)
+                {
+                    for (int x = 0; x < cols; x++) histogram[wideRow[x]]++;
+                }
+                else
+                {
+                    for (int x = 0; x < cols; x++)
+                    {
+                        int value = wideRow[x];
+                        histogram[value]++;
+                        min = Math.Min(min, value);
+                        max = Math.Max(max, value);
+                    }
+                }
             }
         }
-        int count = checked(rows * cols);
+        if (deriveBoundsFromHistogram)
+        {
+            Span<int> counts = histogram.AsSpan(0, bins);
+            min = counts.IndexOfAnyExcept(0);
+            max = counts.LastIndexOfAnyExcept(0);
+        }
         int take = options.Method == StripeMtfMethod.TailMean ? Math.Max(1, (int)(count * options.TailRatio)) : 1;
         int skipLow = (int)(count * options.BlackNoiseRatio), skipHigh = (int)(count * options.WhiteNoiseRatio);
         if (2L * take + skipLow + skipHigh > count) throw new InvalidOperationException("MTF 区域太小，无法取得互不重叠的明暗样本。");

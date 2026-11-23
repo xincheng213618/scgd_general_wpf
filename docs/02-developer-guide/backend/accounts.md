@@ -5,7 +5,6 @@ status: "current"
 summary: "Backend注册、角色权限、改密与找回、数据库Session撤销；配置管理员不走auth_version，跨服务安全操作可能部分成功。"
 aliases: ["Web账号", "公开注册", "public_registration_enabled", "auth_version", "must_change_password", "配置管理员", "强制改密", "密码找回", "user_sessions", "角色权限", "replace_role_permissions", "force_logout", "password_changed_at"]
 code_paths: ["Web/Backend/routes/public_pages.py", "Web/Backend/routes/admin_api.py", "Web/Backend/services/auth_service.py", "Web/Backend/services/session_service.py", "Web/Backend/services/permission_service.py", "Web/Backend/services/account_settings.py", "Web/Backend/services/config_persistence.py", "Web/Backend/services/login_throttle_service.py", "Web/Backend/services/registration_rate_limit_service.py", "Web/Backend/services/password_recovery_service.py", "Web/Backend/services/account_activity_service.py", "Web/Backend/services/account_security_cleanup.py", "Web/Backend/config_loader.py", "Web/Backend/db/schema_version.py", "Web/Backend/db_cache.py"]
-test_paths: ["Web/Backend/test_contracts.py", "Web/Backend/test_auth_service.py", "Web/Backend/test_auth_policy.py", "Web/Backend/test_account_settings.py", "Web/Backend/test_login_throttle_service.py", "Web/Backend/test_registration_rate_limit_service.py", "Web/Backend/test_password_recovery_service.py", "Web/Backend/test_account_security_cleanup.py", "Web/Backend/test_schema_version.py"]
 related: ["delivery.backend", "delivery.backend-auth"]
 ---
 
@@ -121,6 +120,6 @@ Session活动最多按5分钟间隔更新，IP或User-Agent改变时也会更新
 
 ## 验证范围与缺口
 
-`test_contracts.py` 有默认注册、强制改密、角色缩权即时生效、revision冲突、个人Session撤销、禁用/启用、配置shadow保护、当前管理员自重置保留当前会话、批量逐项处理及删除确认等HTTP用例。`test_auth_service.py` 覆盖密码长度、临时密码状态、秘密未改变时不能清门禁及删除；注册/登录限流、找回、账号清理和schema迁移各有元数据所列专项测试。
+部署验收需核对数据库迁移、登录和找回限流、会话撤销及权限收缩后的实际效果。
 
 配置凭据轮换后旧管理员cookie仍不走数据库撤销、旧cookie自动补建Session、跨服务提交后失败等边界需要专门的故障注入、浏览器和多进程部署验证。账号行为变更需分别验证数据库账号、配置管理员、已有cookie和全新登录，不能用单一身份的成功替代全部身份。

@@ -1,10 +1,37 @@
+using ColorVision.Engine.FlowProcessing.Compilation;
 using ColorVision.Engine.Templates.Flow.Search;
 using ColorVision.Engine.Templates.Flow.Versioning;
+using ST.Library.UI.NodeEditor;
+using System.IO;
 
 namespace ColorVision.UI.Tests;
 
 public sealed class FlowCatalogServiceTests
 {
+    [Fact]
+    public void CanvasCatalogExcludesNormalizedSensitivePropertyNames()
+    {
+        var properties = new Dictionary<string, byte[]>
+        {
+            ["Guid"] = Guid.NewGuid().ToByteArray(),
+            ["Left"] = BitConverter.GetBytes(0),
+            ["Top"] = BitConverter.GetBytes(0),
+            ["Width"] = BitConverter.GetBytes(200),
+            ["Height"] = BitConverter.GetBytes(100),
+            ["OpticalMode"] = [],
+            ["A.P.I_Key"] = [],
+            ["PA\u0301SS-word"] = [],
+            [new string('x', 257) + "Coo.kIE"] = [],
+        };
+        byte[] node = STNodeSavedState.Write("MissingCatalogFixture.dll|Uninstalled.CatalogNode", "unknown", properties);
+        using var canvas = new MemoryStream();
+        STNodeCanvasWriter.WriteRaw(canvas, [node], [], 0, 0, 1);
+
+        var document = new FlowCanvasCatalogBuilder().Build(canvas.ToArray()).SemanticDocument;
+
+        Assert.Equal("OpticalMode", Assert.Single(Assert.Single(document.Nodes).Properties.Keys));
+    }
+
     [Fact]
     public void RecordEditorSaveIsIdempotentAndIndexesOnlyLatestRevision()
     {

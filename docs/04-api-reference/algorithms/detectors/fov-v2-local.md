@@ -5,7 +5,6 @@ status: "current"
 summary: "本地 FOV V2 的默认四角与独立轮廓模式、相机角度参数、中心截线及包络口径、叠图和 FOV 2.0 结果兼容契约。"
 aliases: ["本地FOV计算(V2)","FOV 计算 (V2)","FovDist","cameraDegrees","LocalFovNode","FovCalculator","FovImageViewRunner","HorizontalFieldOfViewAngle","DiagonalFieldOfViewAngle"]
 code_paths: ["UI/ColorVision.Core/FovCalculation.cs","UI/ColorVision.Core/FovCurvedBoundaryDetection.cs","Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalFovNode.cs","Engine/ColorVision.Engine/PropertyEditor/CameraDegreesPropertiesEditor.cs","Engine/ColorVision.Engine/Templates/Jsons/FOV2","UI/ColorVision.ImageEditor/EditorTools/Algorithms/Calculate/AlgorithmResultOverlay.cs","UI/ColorVision.ImageEditor/Draw/FovOverlayRenderer.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/AlgorithmResultOverlayTests.cs","Test/ColorVision.UI.Tests/FovCalculationTests.cs"]
 related: ["algorithms.find-light-area","algorithms.roi-routes","engine.results","flow.node-extension"]
 ---
 
@@ -139,7 +138,9 @@ D_Fov, H_Fov, V_FOV, clolorVisionH_Fov, clolorVisionV_Fov,
 leftDownToRightUp, leftUpToRightDown, message
 ```
 
-流程运行的七项测量值保存在结果文件中；角点、相机编码、`FovDist`、`cameraDegrees`、`MeasurementMode`、`BoundaryMode`（`UpstreamCorners`、`RobustV2` 或 `CurvedBoundary`）及定位诊断保存在主记录参数中，便于追溯。轮廓模式额外保存 `Boundary`（轮廓、中心及水平/垂直/斜向端点），角点为空。下游业务判定、导出和协议字段仍由原有结果处理器及客户项目负责。流程保存要求已有批次和可用数据库连接；ImageView 不进入这条持久化链。
+流程运行的七项测量值保存在结果文件中；角点、相机编码、`FovDist`、`cameraDegrees`、`MeasurementMode`、`BoundaryMode`（`UpstreamCorners`、`RobustV2` 或 `CurvedBoundary`）及定位诊断保存在主记录参数中，便于追溯。轮廓模式额外保存 `Boundary`（轮廓、中心及水平/垂直/斜向端点），角点为空。下游业务判定、导出和协议字段仍由原有结果处理器及客户项目负责。
+
+流程保存要求已有批次和可用数据库连接。节点在开始时取得该批次绑定的数据库，独立调用时使用当时已验证的连接。上游图像、发光区主记录和角点、批次查询、结果写入及通知均沿用该数据库。失败的定位或角点计算保留诊断主记录与原始错误；成功的主记录与明细共同提交，写入失败时清理尚未引用的结果文件。ImageView 不进入这条持久化链。
 
 内存帧若直接来自普通图片且未经过校正或翻转，主记录 `ImgFile` 会保存该原始图片路径，结果列表的“文件”列可正常关联原图。若当前主缓冲区已校正或翻转，只使用与当前缓冲区严格对应的 `CvRawFilePath` / `CvCieFilePath`；没有这类已保存文件时保持为空，避免历史叠图错误加载变换前的源图。
 
@@ -149,10 +150,4 @@ leftDownToRightUp, leftUpToRightDown, message
 
 ## 验证边界
 
-托管回归覆盖默认四角兼容、轮廓独立读图、8/16 位及浮点/行跨度输入只读、非四边形截线、ROI 坐标与裁边/孔洞失败边界、Flow 上游角点绕过，以及叠图使用真实端点；不承担原生定位或现场精度验收。最小相关检查为：
-
-```powershell
-dotnet test .\Test\ColorVision.UI.Tests\ColorVision.UI.Tests.csproj -p:Platform=x64 --filter "FullyQualifiedName~FovCalculationTests|FullyQualifiedName~AlgorithmResultOverlayTests"
-```
-
-正式同位替换验收仍应在获授权环境覆盖旋转、暗角、漏光、低对比、饱和和裁边样本，比较四角、七项 FOV、重复性、耗时、出厂判定、结果落库与历史读取；文档检查和叠图单测不能代替这些证据。
+正式同位替换验收仍应在获授权环境覆盖旋转、暗角、漏光、低对比、饱和和裁边样本，比较四角、七项 FOV、重复性、耗时、出厂判定、结果落库与历史读取。

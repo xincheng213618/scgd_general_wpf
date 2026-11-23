@@ -18,6 +18,13 @@ public sealed class StableDocumentPaneTabPanel : AvalonDock.Controls.DocumentPan
 
     public bool IsSelectedTabAtStart => (bool)GetValue(IsSelectedTabAtStartProperty);
 
+    private static readonly DependencyPropertyKey HasOverflowPropertyKey = DependencyProperty.RegisterReadOnly(
+        nameof(HasOverflow), typeof(bool), typeof(StableDocumentPaneTabPanel), new PropertyMetadata(false));
+
+    public static readonly DependencyProperty HasOverflowProperty = HasOverflowPropertyKey.DependencyProperty;
+
+    public bool HasOverflow => (bool)GetValue(HasOverflowProperty);
+
     private int _firstVisibleIndex;
 
     public StableDocumentPaneTabPanel()
@@ -35,7 +42,9 @@ public sealed class StableDocumentPaneTabPanel : AvalonDock.Controls.DocumentPan
             if (child.Visibility == Visibility.Collapsed)
                 continue;
 
-            child.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+            // Even the only visible tab has to fit the strip. Measuring it wider
+            // makes WPF clip the suffix and caption buttons during Arrange.
+            child.Measure(new Size(availableSize.Width, double.PositiveInfinity));
             desiredWidth += child.DesiredSize.Width;
             desiredHeight = Math.Max(desiredHeight, child.DesiredSize.Height);
         }
@@ -52,6 +61,7 @@ public sealed class StableDocumentPaneTabPanel : AvalonDock.Controls.DocumentPan
         {
             _firstVisibleIndex = 0;
             SetValue(IsSelectedTabAtStartPropertyKey, false);
+            SetValue(HasOverflowPropertyKey, false);
             return finalSize;
         }
 
@@ -93,7 +103,7 @@ public sealed class StableDocumentPaneTabPanel : AvalonDock.Controls.DocumentPan
             TabItem tab = tabs[index];
             double width = widths[index];
             bool beforeWindow = index < _firstVisibleIndex;
-            bool exceedsWindow = offset > 0 && offset + width > availableWidth;
+            bool exceedsWindow = index > _firstVisibleIndex && offset + width > availableWidth;
             if (beforeWindow || overflowed || exceedsWindow)
             {
                 tab.Visibility = Visibility.Hidden;
@@ -111,6 +121,7 @@ public sealed class StableDocumentPaneTabPanel : AvalonDock.Controls.DocumentPan
         // Only the visible selection can join the pane's left edge; overflow may
         // place a later document here without changing the model's item order.
         SetValue(IsSelectedTabAtStartPropertyKey, selectedTabAtStart);
+        SetValue(HasOverflowPropertyKey, _firstVisibleIndex > 0 || overflowed);
         return finalSize;
     }
 

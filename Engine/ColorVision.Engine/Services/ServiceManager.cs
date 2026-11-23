@@ -19,7 +19,9 @@ using System.Data;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Threading;
 
 namespace ColorVision.Engine.Services
 {
@@ -29,6 +31,8 @@ namespace ColorVision.Engine.Services
         private static readonly ILog log = LogManager.GetLogger(typeof(ServiceManager));
         private static ServiceManager _instance;
         private static readonly object _locker = new();
+        private readonly Dispatcher _dispatcher;
+        private long _reloadGeneration;
         private readonly Dictionary<IDisPlayControl, DeviceService> _copilotDisplayDevices = new();
         private IDisposable? _copilotAgentExtensionRegistration;
         private DeviceService? _currentCopilotDisplayDevice;
@@ -67,13 +71,24 @@ namespace ColorVision.Engine.Services
 
         public event EventHandler ServiceChanged;
 
-        public ServiceManager()
+        public ServiceManager() : this(Application.Current.Dispatcher)
         {
             DisPlayManager.GetInstance().SelectedControlChanged += DisPlayManager_SelectedControlChanged;
             DeviceServices.CollectionChanged += DeviceServices_CollectionChanged;
-            Application.Current.Dispatcher.Invoke(() => LoadServices());
-            MySqlControl.GetInstance().MySqlConnectChanged += (s, e) =>
-                Application.Current.Dispatcher.Invoke(() => LoadServices());
+            _dispatcher.Invoke(LoadServices);
+            MySqlControl.GetInstance().MySqlConnectChanged += MySqlConnectionChanged;
+        }
+
+        internal ServiceManager(Dispatcher dispatcher) => _dispatcher = dispatcher;
+
+        internal void ForgetDeletedDevice(DeviceService device)
+        {
+            _dispatcher.VerifyAccess();
+            var controls = _copilotDisplayDevices.Where(entry => ReferenceEquals(entry.Value, device)).Select(entry => entry.Key).ToArray();
+            foreach (var control in controls) DisPlayManager.GetInstance().IDisPlayControls.Remove(control);
+            foreach (var group in GroupResources.Where(group => ReferenceEquals(group.Parent, device)).ToArray()) GroupResources.Remove(group);
+            if (!ReferenceEquals(LastGenControl, DeviceServices)) LastGenControl?.Remove(device);
+            DeviceServices.Remove(device);
         }
 
         public void GenControl(ObservableCollection<DeviceService> MQTTDevices)
@@ -149,11 +164,91 @@ namespace ColorVision.Engine.Services
 
         public void LoadServices()
         {
+            if (!_dispatcher.CheckAccess())
+            {
+                _dispatcher.Invoke(LoadServices);
+                return;
+            }
+
+            long generation = ++_reloadGeneration;
             Stopwatch totalStopwatch = Stopwatch.StartNew();
+            ServiceLoadSource source;
+            ServiceHierarchySnapshot snapshot;
+            try
+            {
+                source = ServiceLoadSource.Capture();
+                snapshot = ReadServiceHierarchy(source);
+            }
+            catch (Exception error)
+            {
+                LogReadFailure(error);
+                return;
+            }
+
+            if (generation == _reloadGeneration && source.IsCurrent())
+                ApplyServiceHierarchy(snapshot, totalStopwatch);
+        }
+
+        private async void MySqlConnectionChanged(object? sender, EventArgs args)
+        {
+            try
+            {
+                ServiceLoadSource source = ServiceLoadSource.Capture();
+                await ReloadServicesAsync(() => ReadServiceHierarchy(source), source.IsCurrent);
+            }
+            catch (Exception error)
+            {
+                LogReadFailure(error);
+            }
+        }
+
+        internal async Task<bool> ReloadServicesAsync(Func<ServiceHierarchySnapshot> read, Func<bool> sourceIsCurrent)
+        {
+            _dispatcher.VerifyAccess();
+            long generation = ++_reloadGeneration;
+            Stopwatch totalStopwatch = Stopwatch.StartNew();
+            ServiceHierarchySnapshot snapshot;
+            try
+            {
+                snapshot = await Task.Run(read).ConfigureAwait(false);
+            }
+            catch (Exception error)
+            {
+                LogReadFailure(error);
+                return false;
+            }
+
+            try
+            {
+                return await _dispatcher.InvokeAsync(() =>
+                {
+                    if (generation != _reloadGeneration || !sourceIsCurrent()) return false;
+                    ApplyServiceHierarchy(snapshot, totalStopwatch);
+                    return true;
+                }, DispatcherPriority.Background).Task.ConfigureAwait(false);
+            }
+            catch (OperationCanceledException) when (_dispatcher.HasShutdownStarted)
+            {
+                return false;
+            }
+            catch (Exception error)
+            {
+                log.Error("Failed to apply the loaded service hierarchy.", error);
+                return false;
+            }
+        }
+
+        private static void LogReadFailure(Exception error) =>
+            log.Error("Failed to read the service hierarchy. Existing services were retained.", error);
+
+        private void ApplyServiceHierarchy(ServiceHierarchySnapshot snapshot, Stopwatch totalStopwatch)
+        {
+            _dispatcher.VerifyAccess();
             ClearCurrentCopilotDeviceContext();
             ResetCopilotDisplayDeviceMap();
             foreach (DeviceService deviceService in DeviceServices.ToArray())
             {
+                deviceService.RetireConfiguration();
                 try
                 {
                     deviceService.Dispose();
@@ -165,15 +260,10 @@ namespace ColorVision.Engine.Services
             }
             LastGenControl?.Clear();
             Stopwatch phaseStopwatch = Stopwatch.StartNew();
-            List<SysDictionaryModel> SysDictionaryModels = SysResourceDao.Instance.UseLocal
-                ? Enum.GetValues<ServiceTypes>().Where(type => (int)type >= 1 && (int)type <= 16).Select(type => new SysDictionaryModel { Pid = 1, Value = (int)type, Name = type.ToString(), Key = type.ToString(), IsEnable = true }).ToList()
-                : SysDictionaryDao.Instance.GetAllByPid(1);
-            long dictionaryLoadMs = phaseStopwatch.ElapsedMilliseconds;
-            ServiceResourceSnapshot resourceSnapshot = LoadServiceResourceSnapshot();
+            ServiceResourceSnapshot resourceSnapshot = snapshot.Resources;
 
-            phaseStopwatch.Restart();
             TypeServices.Clear();
-            foreach (var sysDictionaryModel in SysDictionaryModels)
+            foreach (var sysDictionaryModel in snapshot.Dictionary)
             {
                 if (sysDictionaryModel.Value == (int)ServiceTypes.FileServer
                     || sysDictionaryModel.Value == (int)ServiceTypes.FocusRing
@@ -191,13 +281,19 @@ namespace ColorVision.Engine.Services
             }
 
 
+            foreach (TerminalService terminalService in TerminalServices.ToArray())
+                terminalService.RetireConfiguration();
             TerminalServices.Clear();
 
             foreach (var typeService1 in TypeServices)
             {
                 foreach (SysResourceModel sysResourceModel in resourceSnapshot.GetRootServices((int)typeService1.ServiceTypes))
                 {
-                    TerminalService terminalService = new TerminalService(sysResourceModel);
+                    TerminalService terminalService = new(sysResourceModel)
+                    {
+                        ResourceDatabaseEndpoint = snapshot.Endpoint,
+                        LocalConfigurationResourceDao = snapshot.LocalResourceDao
+                    };
                     typeService1.AddChild(terminalService);
                     TerminalServices.Add(terminalService);
                 }
@@ -223,6 +319,9 @@ namespace ColorVision.Engine.Services
 
                     if (deviceService != null  )
                     {
+                        deviceService.ResultDatabaseEndpoint = snapshot.Endpoint;
+                        if (snapshot.LocalResourceDao != null)
+                            deviceService.LocalConfigurationResourceDao = snapshot.LocalResourceDao;
                         terminalService.AddChild(deviceService);
                         DeviceServices.Add(deviceService);
                     }
@@ -267,26 +366,53 @@ namespace ColorVision.Engine.Services
             string deviceTimings = string.Join(", ", deviceCreationStats
                 .OrderByDescending(item => item.Value.Milliseconds)
                 .Select(item => $"{item.Key}={item.Value.Count}/{item.Value.Milliseconds}ms"));
-            log.Info($"Service hierarchy loaded. Types={TypeServices.Count}, Terminals={TerminalServices.Count}, Devices={DeviceServices.Count}, Groups={GroupResources.Count}, Dictionary={dictionaryLoadMs}ms, Terminals={terminalBuildMs}ms, Devices={deviceBuildMs}ms [{deviceTimings}], Children={childResourceBuildMs}ms, Total={totalStopwatch.ElapsedMilliseconds}ms.");
+            log.Info($"Service hierarchy loaded. Types={TypeServices.Count}, Terminals={TerminalServices.Count}, Devices={DeviceServices.Count}, Groups={GroupResources.Count}, Dictionary={snapshot.DictionaryMilliseconds}ms, Terminals={terminalBuildMs}ms, Devices={deviceBuildMs}ms [{deviceTimings}], Children={childResourceBuildMs}ms, Total={totalStopwatch.ElapsedMilliseconds}ms.");
         }
 
-        private static ServiceResourceSnapshot LoadServiceResourceSnapshot()
+        private sealed class ServiceLoadSource(SysResourceDao resourceDao, MySqlConnectedEndpoint? endpoint)
         {
-            if (SysResourceDao.Instance.UseLocal)
+            internal SysResourceDao ResourceDao { get; } = resourceDao;
+            internal MySqlConnectedEndpoint? Endpoint { get; } = endpoint;
+
+            internal static ServiceLoadSource Capture()
             {
-                var resources = SysResourceDao.Instance.GetLocal();
-                return new ServiceResourceSnapshot(
+                SysResourceDao resourceDao = SysResourceDao.Instance;
+                if (resourceDao.UseLocal) return new(resourceDao, null);
+                MySqlConnectedEndpoint? endpoint = MySqlControl.GetInstance().ConnectedEndpoint;
+                if (endpoint is not { IsCurrent: true })
+                    throw new InvalidOperationException("A verified MySQL connection is required for the remote service hierarchy.");
+                return new(resourceDao, endpoint);
+            }
+
+            internal bool IsCurrent() => ReferenceEquals(ResourceDao, SysResourceDao.Instance)
+                && (Endpoint == null ? ResourceDao.UseLocal : Endpoint.IsCurrent && !ResourceDao.UseLocal);
+        }
+
+        internal sealed record ServiceHierarchySnapshot(IReadOnlyList<SysDictionaryModel> Dictionary,
+            ServiceResourceSnapshot Resources, long DictionaryMilliseconds, MySqlConnectedEndpoint? Endpoint = null,
+            SysResourceDao? LocalResourceDao = null);
+
+        private static ServiceHierarchySnapshot ReadServiceHierarchy(ServiceLoadSource source)
+        {
+            Stopwatch stopwatch = Stopwatch.StartNew();
+            if (source.Endpoint is not { } endpoint)
+            {
+                var localDictionary = Enum.GetValues<ServiceTypes>().Where(type => (int)type >= 1 && (int)type <= 16)
+                    .Select(type => new SysDictionaryModel { Pid = 1, Value = (int)type, Name = type.ToString(), Key = type.ToString(), IsEnable = true }).ToList();
+                long localDictionaryMs = stopwatch.ElapsedMilliseconds;
+                var resources = source.ResourceDao.GetLocal();
+                var snapshot = new ServiceResourceSnapshot(
                     resources.Where(r => r.Pid == null && r.TenantId == 0 && !r.IsDelete).ToList(),
                     resources.Where(r => r.Pid != null && r.IsEnable && !r.IsDelete).ToList(),
-                    SysResourceDao.Instance.GetLocalGroupLinks(), resources);
+                    source.ResourceDao.GetLocalGroupLinks(), resources);
+                return new(localDictionary, snapshot, localDictionaryMs, LocalResourceDao: source.ResourceDao);
             }
-            Stopwatch stopwatch = Stopwatch.StartNew();
-            using var db = new SqlSugarClient(new ConnectionConfig
-            {
-                ConnectionString = MySqlControl.GetConnectionString(),
-                DbType = SqlSugar.DbType.MySql,
-                IsAutoCloseConnection = true
-            });
+            using var db = endpoint.CreateDbClient();
+
+            // A failed dictionary read must abort the snapshot instead of publishing an empty hierarchy.
+            List<SysDictionaryModel> dictionary = db.Queryable<SysDictionaryModel>().Where("pid = @pid", new { pid = 1 }).ToList();
+            long dictionaryLoadMs = stopwatch.ElapsedMilliseconds;
+            stopwatch.Restart();
 
             List<SysResourceModel> rootServices = db.Queryable<SysResourceModel>()
                 .Where(resource => resource.Pid == null && resource.TenantId == 0 && resource.IsDelete == false)
@@ -307,7 +433,7 @@ namespace ColorVision.Engine.Services
 
             stopwatch.Stop();
             log.Info($"Service resource snapshot loaded. Roots={rootServices.Count}, ActiveChildren={activeChildren.Count}, GroupLinks={groupLinks.Count}, Queries=4, Took={stopwatch.ElapsedMilliseconds} ms.");
-            return new ServiceResourceSnapshot(rootServices, activeChildren, groupLinks, linkedResources);
+            return new(dictionary, new ServiceResourceSnapshot(rootServices, activeChildren, groupLinks, linkedResources), dictionaryLoadMs, endpoint);
         }
 
         private void LoadGroupResource(
@@ -351,7 +477,7 @@ namespace ColorVision.Engine.Services
             }
         }
 
-        private sealed class ServiceResourceSnapshot
+        internal sealed class ServiceResourceSnapshot
         {
             private readonly ILookup<int, SysResourceModel> _rootServicesByType;
             private readonly ILookup<int, SysResourceModel> _activeChildrenByParentId;

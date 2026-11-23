@@ -5,7 +5,6 @@
         xmlns:core="clr-namespace:ColorVision.Engine.Services.PhyCameras.Group"
         xmlns:terminal="clr-namespace:ColorVision.Engine.Services.Terminal"
         xmlns:properties="clr-namespace:ColorVision.Engine.Properties"
-        xmlns:uiProperties="clr-namespace:ColorVision.UI.Properties;assembly=ColorVision.UI"
         Title="{x:Static properties:Resources.WindowServiceTitle}"
         Height="680" Width="1040" MinHeight="520" MinWidth="820"
         FontFamily="Segoe UI, Microsoft YaHei UI" FontSize="13"
@@ -175,16 +174,10 @@
                         </TreeView.ContextMenu>
                         <TreeView.Resources>
                             <HierarchicalDataTemplate DataType="{x:Type terminal:TerminalService}" ItemsSource="{Binding VisualChildren}">
-                                <DockPanel Margin="0,1">
-                                    <Image Source="{Binding Icon}" Height="16" HorizontalAlignment="Left" Margin="0,0,3,0"/>
-                                    <TextBlock Text="{Binding Config.Name}" VerticalAlignment="Center"/>
-                                </DockPanel>
+                                <TextBlock Text="{Binding Config.Name}" VerticalAlignment="Center" Margin="0,1"/>
                             </HierarchicalDataTemplate>
                             <HierarchicalDataTemplate DataType="{x:Type devices:DeviceService}">
-                                <DockPanel Margin="0,1">
-                                    <Image Source="{Binding Icon}" Height="16" HorizontalAlignment="Left" Margin="0,0,3,0"/>
-                                    <TextBlock Text="{Binding Config.Name}" VerticalAlignment="Center"/>
-                                </DockPanel>
+                                <TextBlock Text="{Binding Config.Name}" VerticalAlignment="Center" Margin="0,1"/>
                             </HierarchicalDataTemplate>
                             <HierarchicalDataTemplate DataType="{x:Type core:GroupResource}" ItemsSource="{Binding VisualChildren}">
                                 <TextBlock Text="{Binding Name}" Margin="0,1"/>
@@ -209,16 +202,8 @@
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
                     <StackPanel x:Name="DetailHeader" Margin="3,0,3,14">
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="Auto"/>
-                            </Grid.ColumnDefinitions>
-                            <TextBlock x:Name="DetailTitle" Text="{Binding Name}" FontSize="19" FontWeight="SemiBold" TextWrapping="Wrap"
-                                       Foreground="{DynamicResource GlobalTextBrush}" VerticalAlignment="Center"/>
-                            <Button x:Name="RenameServiceButton" Grid.Column="1" Style="{StaticResource NavButton}" Margin="12,0,0,0"
-                                    Content="{x:Static uiProperties:Resources.Rename}" Command="{Binding EditCommand}"/>
-                        </Grid>
+                        <TextBlock x:Name="DetailTitle" Text="{Binding Name}" FontSize="19" FontWeight="SemiBold" TextWrapping="Wrap"
+                                   Foreground="{DynamicResource GlobalTextBrush}" VerticalAlignment="Center"/>
                         <TextBlock x:Name="DetailSubtitle" FontSize="12" Margin="0,4,0,0" Opacity="0.65"
                                    Foreground="{DynamicResource GlobalTextBrush}" TextWrapping="Wrap"/>
                     </StackPanel>

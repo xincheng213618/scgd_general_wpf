@@ -5,7 +5,6 @@ status: "current"
 summary: "区分灯条、灯珠强类型与 JSON V2 模板、事件、POI 输入和结果限制。"
 aliases: ["LED灯条和灯珠检测该用哪个模板","TemplateLedCheck","TemplateLEDStripDetectionV2","ViewHandleLedCheck"]
 code_paths: ["Engine/ColorVision.Engine/Templates/LEDStripDetection/AlgorithmLEDStripDetection.cs","Engine/ColorVision.Engine/Templates/LedCheck/AlgorithmLedCheck.cs","Engine/ColorVision.Engine/Templates/LedCheck/ViewHandleMTF.cs","Engine/ColorVision.Engine/Templates/Jsons/LEDStripDetectionV2","Engine/ColorVision.Engine/Templates/Jsons/LedCheck2"]
-test_paths: []
 related: ["algorithms.index","algorithms.json-templates","engine.results"]
 ---
 

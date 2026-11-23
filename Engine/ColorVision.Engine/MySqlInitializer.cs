@@ -6,6 +6,7 @@ using System;
 using System.IO;
 using System.ServiceProcess;
 using System.Threading.Tasks;
+using System.Windows;
 
 namespace ColorVision.Engine
 {
@@ -20,15 +21,15 @@ namespace ColorVision.Engine
 
         public override async Task InitializeAsync()
         {
-            bool isConnect = await MySqlControl.GetInstance().Connect();
-            if (isConnect)
+            MySqlConnectionAttempt attempt = await MySqlControl.GetInstance().ConnectWithOutcomeAsync();
+            if (!ShouldRepairLocalConnection(attempt))
                 return;
 
-            if (!IsLocalMySqlHost(MySqlControl.Config.Host))
-                return;
-
-            await TryRepairLocalMySqlViaServiceHostAsync();
+            await TryRepairLocalMySqlViaServiceHostAsync(attempt);
         }
+
+        internal static bool ShouldRepairLocalConnection(MySqlConnectionAttempt attempt) =>
+            attempt.Outcome == MySqlConnectOutcome.Failed && attempt.IsCurrent && IsLocalMySqlHost(attempt.Host);
 
         private static bool IsLocalMySqlHost(string? host)
         {
@@ -36,7 +37,7 @@ namespace ColorVision.Engine
                 || string.Equals(host, "localhost", StringComparison.OrdinalIgnoreCase);
         }
 
-        private static async Task TryRepairLocalMySqlViaServiceHostAsync()
+        private static async Task TryRepairLocalMySqlViaServiceHostAsync(MySqlConnectionAttempt attempt)
         {
             string serviceName = ResolveMySqlServiceName();
 
@@ -50,6 +51,7 @@ namespace ColorVision.Engine
                         return;
                     }
 
+                    if (!attempt.IsCurrent) return;
                     log.Info($"检测MySQL服务 {serviceName}，状态{status}，正在通过ColorVisionServiceHost启动服务。");
                     ServiceHostResponse response = await ColorVisionServiceHostClient.Default.StartServiceAsync(
                         serviceName,
@@ -62,12 +64,11 @@ namespace ColorVision.Engine
                         return;
                     }
 
-                    if (!await MySqlControl.GetInstance().Connect())
-                        log.Warn("MySQL服务已启动，但数据库仍无法连接。");
+                    await RetryAfterLocalRepairAsync(attempt, "MySQL服务已启动，但数据库仍无法连接。");
                 }
                 else
                 {
-                    await RepairMissingMySqlServiceViaServiceHostAsync(serviceName);
+                    await RepairMissingMySqlServiceViaServiceHostAsync(serviceName, attempt);
                 }
             }
             catch (Exception ex)
@@ -103,7 +104,7 @@ namespace ColorVision.Engine
             }
         }
 
-        private static async Task RepairMissingMySqlServiceViaServiceHostAsync(string serviceName)
+        private static async Task RepairMissingMySqlServiceViaServiceHostAsync(string serviceName, MySqlConnectionAttempt attempt)
         {
             string mysqldPath = MySqlLocalConfig.Instance.MysqldPath;
             if (string.IsNullOrWhiteSpace(mysqldPath) || !File.Exists(mysqldPath))
@@ -112,6 +113,7 @@ namespace ColorVision.Engine
                 return;
             }
 
+            if (!attempt.IsCurrent) return;
             log.Info($"MySQL服务 {serviceName} 未安装，正在通过ColorVisionServiceHost静默注册并启动服务。");
             ServiceHostResponse response = await ColorVisionServiceHostClient.Default.RepairMySqlServiceAsync(
                 serviceName,
@@ -125,8 +127,21 @@ namespace ColorVision.Engine
                 return;
             }
 
-            if (!await MySqlControl.GetInstance().Connect())
-                log.Warn("MySQL服务已修复并启动，但数据库仍无法连接。");
+            await RetryAfterLocalRepairAsync(attempt, "MySQL服务已修复并启动，但数据库仍无法连接。");
+        }
+
+        private static async Task RetryAfterLocalRepairAsync(MySqlConnectionAttempt attempt, string failureMessage)
+        {
+            async Task<MySqlConnectionAttempt?> ConnectIfCurrentAsync() => attempt.IsCurrent
+                ? await MySqlControl.GetInstance().ConnectWithOutcomeAsync()
+                : null;
+
+            var dispatcher = Application.Current?.Dispatcher;
+            MySqlConnectionAttempt? retry = dispatcher == null || dispatcher.CheckAccess()
+                ? await ConnectIfCurrentAsync()
+                : await dispatcher.InvokeAsync(ConnectIfCurrentAsync).Task.Unwrap();
+            if (retry is { Outcome: MySqlConnectOutcome.Failed, IsCurrent: true })
+                log.Warn(failureMessage);
         }
     }
 }

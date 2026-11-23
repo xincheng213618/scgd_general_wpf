@@ -169,6 +169,99 @@ public class KBResultPayloadStorageTests
         }
     }
 
+    [Fact]
+    public void FullCleanupKeepsResultIdsMonotonicAndPreservesTodaysOpenSession()
+    {
+        string databasePath = CreateDatabasePath();
+        try
+        {
+            using var manager = new ViewResultManager(new ViewResultManagerConfig(), CreateDbClient(databasePath));
+            using SqlSugarClient db = CreateDbClient(databasePath);
+
+            DateTime today = DateTime.Today;
+            int currentSessionId = db.Insertable(new KBProductionSession { StartTime = today }).ExecuteReturnIdentity();
+            db.Insertable(new KBProductionSession { StartTime = today, EndTime = today.AddHours(1) }).ExecuteCommand();
+            db.Insertable(new KBProductionSession { StartTime = today.AddDays(-1) }).ExecuteCommand();
+            var original = new KBItemMaster { SN = "old", Items = [new KBItem { Name = "old key" }] };
+            manager.Save(original);
+            KBItemMaster stale = db.Queryable<KBItemMaster>().Single();
+
+            new KbSqliteCleanupProvider(databasePath).CleanupAll();
+
+            Assert.Empty(db.Queryable<KBItemMaster>().ToList());
+            Assert.Equal(currentSessionId, db.Queryable<KBProductionSession>().Single().Id);
+            manager.LoadAll();
+            var replacement = new KBItemMaster { SN = "new", Items = [new KBItem { Name = "new key" }] };
+            manager.Save(replacement);
+
+            Assert.True(replacement.Id > original.Id);
+            KBResultPayloadStorage.LoadResult(db, stale);
+            Assert.Equal("old", stale.SN);
+            Assert.Empty(stale.Items);
+            manager.Save(stale);
+            Assert.False(manager.UpdateImageDimensions(stale, 1920, 1080));
+            Assert.Null(stale.ImageWidth);
+            Assert.Null(stale.ImageHeight);
+            Assert.Same(replacement, Assert.Single(manager.ViewResluts));
+
+            KBItemMaster current = db.Queryable<KBItemMaster>().Single();
+            KBResultPayloadStorage.LoadResult(db, current);
+            Assert.Equal("new", current.SN);
+            Assert.Equal("new key", Assert.Single(current.Items).Name);
+            Assert.Null(current.ImageWidth);
+            Assert.Null(current.ImageHeight);
+        }
+        finally
+        {
+            DeleteDatabase(databasePath);
+        }
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void SessionDeleteFailureRollsBackResultDelete(bool historyOnly)
+    {
+        string databasePath = CreateDatabasePath();
+        try
+        {
+            using SqlSugarClient db = CreateDbClient(databasePath);
+            db.CodeFirst.InitTables<KBItemMaster, KBProductionSession>();
+            DateTime old = DateTime.Today.AddYears(-1);
+            int sessionId = db.Insertable(new KBProductionSession { StartTime = old, EndTime = old.AddHours(1) }).ExecuteReturnIdentity();
+            int resultId = db.Insertable(new KBItemMaster { SN = "retained", CreateTime = old, ProductionSessionId = sessionId }).ExecuteReturnIdentity();
+            db.Ado.ExecuteCommand("""
+                CREATE TRIGGER reject_session_delete BEFORE DELETE ON "KBProductionSession"
+                BEGIN
+                    SELECT RAISE(ABORT, 'KB session delete rejected');
+                END;
+                """);
+            var provider = new KbSqliteCleanupProvider(databasePath);
+
+            void Cleanup()
+            {
+                if (historyOnly)
+                    provider.CleanupHistory(3);
+                else
+                    provider.CleanupAll();
+            }
+
+            Exception failure = Assert.ThrowsAny<Exception>(Cleanup);
+            Assert.Contains("KB session delete rejected", failure.ToString(), StringComparison.Ordinal);
+            Assert.Equal(resultId, db.Queryable<KBItemMaster>().Single().Id);
+            Assert.Equal(sessionId, db.Queryable<KBProductionSession>().Single().Id);
+
+            db.Ado.ExecuteCommand("DROP TRIGGER reject_session_delete;");
+            Cleanup();
+            Assert.Empty(db.Queryable<KBItemMaster>().ToList());
+            Assert.Empty(db.Queryable<KBProductionSession>().ToList());
+        }
+        finally
+        {
+            DeleteDatabase(databasePath);
+        }
+    }
+
     private static string CreateDatabasePath()
     {
         return Path.Combine(Path.GetTempPath(), $"ProjectKB-Payload-{Guid.NewGuid():N}.db");

@@ -162,13 +162,43 @@ namespace ColorVision.Engine.FlowProcessing
             }
         }
 
-        public async Task<bool> TryStartAsync(string sn, CancellationToken cancellationToken = default)
+        public async Task<bool> TryStartAsync(string sn, CancellationToken cancellationToken = default) =>
+            await TryStartCoreAsync(flowEngine.GetStartNodeName(), sn, null, cancellationToken);
+
+        public Task<bool> TryStartAsync(string startNodeName, string sn, CancellationToken cancellationToken = default) =>
+            TryStartCoreAsync(startNodeName, sn, null, cancellationToken);
+
+        internal Task<bool> TryStartWithBatchAsync(string startNodeName, string sn, FlowMeasurementBatch batch, CancellationToken cancellationToken) =>
+            TryStartCoreAsync(startNodeName, sn, batch.Bind, cancellationToken);
+
+        /// <summary>Starts a flow whose measurement batch has already been persisted by the caller.</summary>
+        public Task<bool> TryStartWithBatchAsync(string sn, int batchId, string connectionString, long batchInsertStartedAt, CancellationToken cancellationToken = default)
         {
-            string startNodeName = flowEngine.GetStartNodeName();
-            return await TryStartAsync(startNodeName, sn, cancellationToken);
+            string serialNumber = ColorVision.Common.Utilities.Tool.SanitizeFileName(sn);
+            FlowMeasurementBatch? batch = PersistResults && batchId > 0
+                ? FlowMeasurementBatch.CapturePersisted(serialNumber, batchId, connectionString, batchInsertStartedAt)
+                : null;
+            Action<FlowRuntimeResources>? initializeRuntimeResources = batch == null ? null : batch.Bind;
+            return TryStartCoreAsync(flowEngine.GetStartNodeName(), serialNumber, initializeRuntimeResources, cancellationToken);
         }
 
-        public async Task<bool> TryStartAsync(string startNodeName, string sn, CancellationToken cancellationToken = default)
+        /// <summary>Starts a flow using the database identity captured by <see cref="BatchResultMasterDao.InsertForFlow"/>.</summary>
+        public Task<bool> TryStartWithBatchAsync(string sn, MeasureBatchModel batch, CancellationToken cancellationToken = default)
+        {
+            ArgumentNullException.ThrowIfNull(batch);
+            string serialNumber = ColorVision.Common.Utilities.Tool.SanitizeFileName(sn);
+            FlowMeasurementBatch? receipt = batch.FlowStartReceipt;
+            return TryStartCoreAsync(flowEngine.GetStartNodeName(), serialNumber, BindReceipt, cancellationToken);
+
+            void BindReceipt(FlowRuntimeResources resources)
+            {
+                if (receipt == null || !receipt.MatchesPersistedBatch(batch, serialNumber))
+                    throw new InvalidOperationException("流程批次与本次启动不匹配，或批次已在数据库维护后失效。");
+                receipt.Bind(resources);
+            }
+        }
+
+        private async Task<bool> TryStartCoreAsync(string startNodeName, string sn, Action<FlowRuntimeResources>? initializeRuntimeResources, CancellationToken cancellationToken)
         {
             if (string.IsNullOrWhiteSpace(startNodeName))
                 return false;
@@ -183,7 +213,7 @@ namespace ColorVision.Engine.FlowProcessing
                 if (readinessSucceeded)
                 {
                     cancellationToken.ThrowIfCancellationRequested();
-                    started = TryStart(startNodeName, sn);
+                    started = TryStart(startNodeName, sn, initializeRuntimeResources);
                 }
                 return started;
             }
@@ -201,7 +231,7 @@ namespace ColorVision.Engine.FlowProcessing
             }
         }
 
-        private bool TryStart(string startNodeName, string sn)
+        private bool TryStart(string startNodeName, string sn, Action<FlowRuntimeResources>? initializeRuntimeResources)
         {
             sn = ColorVision.Common.Utilities.Tool.SanitizeFileName(sn);
             lock (lifecycleLock)
@@ -223,7 +253,7 @@ namespace ColorVision.Engine.FlowProcessing
                 try
                 {
                     flowEngine.PersistResults = PersistResults;
-                    if (!flowEngine.TryStartNode(startNodeName, sn, serviceTokens))
+                    if (!flowEngine.TryStartNode(startNodeName, sn, serviceTokens, PersistResults ? initializeRuntimeResources : null))
                     {
                         FlowRuntimeActivityRegistry.MarkCompleted(this, FlowStatus.Failed, 0);
                         flowEngine.Finished -= FinishedAsync;

@@ -1,4 +1,5 @@
 ﻿using System;
+using ColorVision.Database;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
@@ -8,11 +9,22 @@ namespace ColorVision.Engine.Services.Devices.Algorithm;
 
 internal static class LocalAlgorithmResultDirectory
 {
-    internal static string Resolve(string configuredDirectory)
+    internal static string Resolve(string configuredDirectory, MySqlConnectedEndpoint endpoint)
     {
         if (!string.IsNullOrWhiteSpace(configuredDirectory)) return Path.GetFullPath(configuredDirectory.Trim());
-        var configurations = ServiceManager.GetInstance().DeviceServices.OfType<DeviceAlgorithm>().Select(device => device.Config).ToArray();
-        return Resolve(configuredDirectory, configurations, DateTime.Now);
+        var services = ServiceManager.GetInstance().DeviceServices.OfType<DeviceAlgorithm>()
+            .Where(device => !device.IsDisposed)
+            .Select(device => (device.ResultDatabaseEndpoint, device.Config)).ToArray();
+        return ResolveOwnedDirectory(endpoint, services, DateTime.Now);
+    }
+
+    internal static string ResolveOwnedDirectory(MySqlConnectedEndpoint endpoint,
+        IEnumerable<(MySqlConnectedEndpoint? Endpoint, ConfigAlgorithm Config)> services, DateTime date)
+    {
+        var configurations = services.Where(service => ReferenceEquals(service.Endpoint, endpoint)).Select(service => service.Config).ToArray();
+        if (configurations.Length == 0)
+            throw new InvalidOperationException("原批次数据库没有可用的算法服务，请为本地 RGB 十字节点指定结果目录。");
+        return Resolve(string.Empty, configurations, date);
     }
 
     internal static string Resolve(string configuredDirectory, IEnumerable<ConfigAlgorithm> configurations, DateTime date)

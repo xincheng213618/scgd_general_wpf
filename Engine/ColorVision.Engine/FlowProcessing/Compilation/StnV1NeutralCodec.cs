@@ -1,4 +1,5 @@
 using System;
+using System.Buffers;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
@@ -223,11 +224,6 @@ internal static class StnV1NeutralCodec
             canvas.Nodes.Add(node);
         }
 
-        Dictionary<long, NeutralPort> optionsByIndex =
-            BuildOptionsByIndex(canvas.Nodes);
-        Dictionary<NeutralNode, int> nodeIndices = canvas.Nodes
-            .Select((node, index) => (node, index))
-            .ToDictionary(item => item.node, item => item.index);
         int connectionCount = ReadCount(
             body,
             options.MaximumConnectionCount,
@@ -238,6 +234,9 @@ internal static class StnV1NeutralCodec
                 && STNodeSavedState.ReadPortLayout(STNodeSavedState.Parse(node.Payload).Properties) == null
                 && !STNodeSavedState.Parse(node.Payload).Properties.ContainsKey(STNodeSavedState.LegacyPlaceholderKey))
             && !canvas.Nodes.Any(node => STNodeSavedState.Parse(node.Payload).Properties.ContainsKey("__STNode.LegacyConnections"));
+        List<NeutralPort> optionsByIndex = connectionCount > 0 && !skipLegacyConnections
+            ? BuildOptionsByIndex(canvas.Nodes)
+            : [];
         for (int i = 0; i < connectionCount; i++)
         {
             long packed = ReadInt64(body);
@@ -249,20 +248,13 @@ internal static class StnV1NeutralCodec
                     || !packedConnections.Add(packed)) throw new InvalidDataException("旧流程连接编号无效或重复。");
                 continue;
             }
-            if (!optionsByIndex.TryGetValue(
-                    outputIndex,
-                    out NeutralPort? output)
-                || !optionsByIndex.TryGetValue(
-                    inputIndex,
-                    out NeutralPort? inputPort))
+            if (outputIndex < 0 || outputIndex >= optionsByIndex.Count || inputIndex >= optionsByIndex.Count)
             {
                 throw new InvalidDataException(
                     $"第 {i + 1} 条连接引用了不存在的端口。");
             }
-            var connection = new NeutralConnection(output, inputPort);
-            ValidateConnection(
-                connection,
-                nodeIndices);
+            var connection = new NeutralConnection(optionsByIndex[(int)outputIndex], optionsByIndex[(int)inputIndex]);
+            ValidateConnection(connection, nodeIndices: null);
             if (!packedConnections.Add(packed))
             {
                 throw new InvalidDataException(
@@ -289,7 +281,7 @@ internal static class StnV1NeutralCodec
             "节点类型标识");
         int guidValueOffset = -1;
         Guid nodeId = Guid.Empty;
-        byte[]? hubPortCount = null;
+        ReadOnlySpan<byte> hubPortCount = default;
         var propertyNames = new HashSet<string>(
             StringComparer.Ordinal);
         while (offset < payload.Length)
@@ -314,7 +306,7 @@ internal static class StnV1NeutralCodec
                 ref offset,
                 "属性值长度");
             int valueOffset = offset;
-            byte[] value = ReadBytes(
+            ReadOnlySpan<byte> value = ReadBytes(
                 payload,
                 ref offset,
                 valueLength,
@@ -386,7 +378,7 @@ internal static class StnV1NeutralCodec
 
     private static NeutralNodeSchema RestoreHubPortSchema(
         NeutralNodeSchema schema,
-        byte[]? countData,
+        ReadOnlySpan<byte> countData,
         int remainingPortCount)
     {
         bool pairedHub = typeof(ISTNodeHub).IsAssignableFrom(schema.NodeType);
@@ -396,9 +388,9 @@ internal static class StnV1NeutralCodec
         int outputCount = schema.Outputs.Length;
         if (pairedHub || inputHub || outputHub)
         {
-            if (countData == null || countData.Length != sizeof(int))
+            if (countData.Length != sizeof(int))
                 throw new InvalidDataException("动态节点缺少有效的端口数量。");
-            int count = BitConverter.ToInt32(countData, 0);
+            int count = BitConverter.ToInt32(countData);
             if (count < 1 || count > remainingPortCount)
                 throw new InvalidDataException($"动态节点端口数量无效或超过限制：{count}。");
 
@@ -584,29 +576,31 @@ internal static class StnV1NeutralCodec
         }
     }
 
-    private static Dictionary<long, NeutralPort> BuildOptionsByIndex(
+    private static List<NeutralPort> BuildOptionsByIndex(
         IReadOnlyList<NeutralNode> nodes)
     {
-        var options = new Dictionary<long, NeutralPort>();
-        NeutralPort? sharedEmpty = null;
-        long nextIndex = 0;
+        var options = new List<NeutralPort>();
+        bool hasSharedEmpty = false;
         foreach (NeutralNode node in nodes)
         {
-            foreach (NeutralPort port in node.Inputs.Concat(node.Outputs))
+            AddPorts(node.Inputs);
+            AddPorts(node.Outputs);
+        }
+        return options;
+
+        void AddPorts(NeutralPort[] ports)
+        {
+            foreach (NeutralPort port in ports)
             {
                 if (port.Schema.IsEmpty)
                 {
-                    if (sharedEmpty == null)
-                    {
-                        sharedEmpty = port;
-                        options.Add(nextIndex++, port);
-                    }
-                    continue;
+                    if (hasSharedEmpty)
+                        continue;
+                    hasSharedEmpty = true;
                 }
-                options.Add(nextIndex++, port);
+                options.Add(port);
             }
         }
-        return options;
     }
 
     private static Dictionary<NeutralPort, long> BuildOptionIndices(
@@ -635,7 +629,7 @@ internal static class StnV1NeutralCodec
 
     private static void ValidateConnection(
         NeutralConnection connection,
-        Dictionary<NeutralNode, int> nodeIndices)
+        Dictionary<NeutralNode, int>? nodeIndices)
     {
         if (connection.Output.IsInput
             || !connection.Input.IsInput
@@ -644,8 +638,9 @@ internal static class StnV1NeutralCodec
             || ReferenceEquals(
                 connection.Output.Node,
                 connection.Input.Node)
-            || !nodeIndices.ContainsKey(connection.Output.Node)
-            || !nodeIndices.ContainsKey(connection.Input.Node))
+            || (nodeIndices != null
+                && (!nodeIndices.ContainsKey(connection.Output.Node)
+                    || !nodeIndices.ContainsKey(connection.Input.Node))))
         {
             throw new InvalidDataException("流程连接方向无效。");
         }
@@ -655,23 +650,37 @@ internal static class StnV1NeutralCodec
         Stream source,
         int maximumLength)
     {
+        const int bufferSize = 81_920;
         var output = new MemoryStream();
-        byte[] buffer = new byte[81_920];
-        while (true)
+        byte[] buffer = ArrayPool<byte>.Shared.Rent(bufferSize);
+        int usedLength = 0;
+        try
         {
-            int read = source.Read(buffer, 0, buffer.Length);
-            if (read <= 0)
-                break;
-            if (output.Length + read > maximumLength)
+            while (true)
             {
-                output.Dispose();
-                throw new InvalidDataException(
-                    "解压后的流程数据超过限制。");
+                int read = source.Read(buffer, 0, bufferSize);
+                if (read <= 0)
+                    break;
+                usedLength = Math.Max(usedLength, read);
+                if (output.Length + read > maximumLength)
+                    throw new InvalidDataException("解压后的流程数据超过限制。");
+                output.Write(buffer, 0, read);
             }
-            output.Write(buffer, 0, read);
+            output.Position = 0;
+            return output;
         }
-        output.Position = 0;
-        return output;
+        catch
+        {
+            // A failed stream read can write bytes before throwing.
+            usedLength = bufferSize;
+            output.Dispose();
+            throw;
+        }
+        finally
+        {
+            buffer.AsSpan(0, usedLength).Clear();
+            ArrayPool<byte>.Shared.Return(buffer);
+        }
     }
 
     private static int ReadCount(
@@ -687,40 +696,41 @@ internal static class StnV1NeutralCodec
 
     private static float ReadSingle(Stream stream)
     {
-        return BitConverter.ToSingle(
-            ReadBytes(stream, sizeof(float)),
-            0);
+        Span<byte> bytes = stackalloc byte[sizeof(float)];
+        ReadBytes(stream, bytes);
+        return BitConverter.ToSingle(bytes);
     }
 
     private static int ReadInt32(Stream stream)
     {
-        return BitConverter.ToInt32(
-            ReadBytes(stream, sizeof(int)),
-            0);
+        Span<byte> bytes = stackalloc byte[sizeof(int)];
+        ReadBytes(stream, bytes);
+        return BitConverter.ToInt32(bytes);
     }
 
     private static long ReadInt64(Stream stream)
     {
-        return BitConverter.ToInt64(
-            ReadBytes(stream, sizeof(long)),
-            0);
+        Span<byte> bytes = stackalloc byte[sizeof(long)];
+        ReadBytes(stream, bytes);
+        return BitConverter.ToInt64(bytes);
     }
 
     private static byte[] ReadBytes(Stream stream, int count)
     {
         byte[] value = new byte[count];
-        int offset = 0;
-        while (offset < count)
+        ReadBytes(stream, value);
+        return value;
+    }
+
+    private static void ReadBytes(Stream stream, Span<byte> destination)
+    {
+        while (!destination.IsEmpty)
         {
-            int read = stream.Read(
-                value,
-                offset,
-                count - offset);
+            int read = stream.Read(destination);
             if (read <= 0)
                 throw new EndOfStreamException("流程数据意外结束。");
-            offset += read;
+            destination = destination[read..];
         }
-        return value;
     }
 
     private static string ReadByteLengthString(
@@ -745,13 +755,12 @@ internal static class StnV1NeutralCodec
                 data,
                 ref offset,
                 sizeof(int),
-                name),
-            0);
+                name));
     }
 
-    private static byte[] ReadBytes(
+    private static ReadOnlySpan<byte> ReadBytes(
         byte[] data,
-        ref int offset,
+        scoped ref int offset,
         int length,
         string name)
     {
@@ -762,8 +771,7 @@ internal static class StnV1NeutralCodec
             throw new InvalidDataException(
                 $"{name}长度无效：{length}。");
         }
-        byte[] value = new byte[length];
-        Buffer.BlockCopy(data, offset, value, 0, length);
+        ReadOnlySpan<byte> value = data.AsSpan(offset, length);
         offset += length;
         return value;
     }

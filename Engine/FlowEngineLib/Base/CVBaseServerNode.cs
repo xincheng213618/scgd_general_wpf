@@ -34,6 +34,7 @@ public class CVBaseServerNode : CVDeviceNode
 	protected bool _ContinueOnFail;
 
 	internal IFlowServiceResolver RuntimeServiceResolver { get; set; }
+	internal RemoteFlowResultBinder RemoteResultBinderOverride { get; set; }
 
 	protected STNodeOption m_op_svr_out_act;
 
@@ -461,7 +462,8 @@ public class CVBaseServerNode : CVDeviceNode
 		}
 		if (m_in_act_status == null || m_in_act_status.ConnectionCount == 0)
 		{
-			trans.trans_action.GetStartNode().DoSubscribe(GetRecvTopic(), this);
+			cmd.ReplyTopic = GetRecvTopic();
+			trans.trans_action.GetStartNode().DoSubscribe(cmd.ReplyTopic, this);
 		}
 		trans.ResetStartTime();
 		if (m_op_svr_out_act != null && m_op_svr_out_act.ConnectionCount > 0)
@@ -471,7 +473,7 @@ public class CVBaseServerNode : CVDeviceNode
 		}
 		else
 		{
-			trans.trans_action.GetStartNode().DoPublish(act);
+			DispatchRemoteCommand(trans, act, cmd);
 		}
 
 		// Waiter is already asynchronous; keeping the task directly avoids
@@ -487,6 +489,15 @@ public class CVBaseServerNode : CVDeviceNode
 
 	protected virtual FlowLocalExecution CreateLocalExecution(CVMQTTRequest request) => FlowLocalExecution.CreateForNode?.Invoke(this, request);
 
+	protected virtual void DispatchRemoteCommand(CVTransAction trans, MQActionEvent action, CVBaseEventCmd command)
+	{
+		var start = trans.trans_action.GetStartNode();
+		RemoteFlowResultTracking.TrackRegistered(trans.trans_action, start, action, command, RemoteResultBinderOverride);
+		start.DoPublish(action);
+	}
+
+	protected virtual void ExecuteLocalCommand(CVTransAction trans, FlowLocalExecution execution) => execution.Execute();
+
 	private async Task ExecuteLocalAsync(CVTransAction trans, CVBaseEventCmd cmd, FlowLocalExecution execution, Exception failure)
 	{
 		using (execution)
@@ -497,7 +508,7 @@ public class CVBaseServerNode : CVDeviceNode
 				if (failure == null)
 				{
 					execution.Bind(trans.trans_action);
-					await Task.Run(execution.Execute).ConfigureAwait(false);
+					await Task.Run(() => ExecuteLocalCommand(trans, execution)).ConfigureAwait(false);
 				}
 			}
 			catch (Exception ex) { failure = ex; }
@@ -589,7 +600,12 @@ public class CVBaseServerNode : CVDeviceNode
 		CVTransAction cVTransByEvent = GetCVTransByEvent(serialNumber, eventName);
 		if (cVTransByEvent != null)
 		{
+			if (string.IsNullOrEmpty(statusEvent.MsgID)
+				|| !cVTransByEvent.TryGetActionCommand(statusEvent.MsgID, out CVBaseEventCmd pendingCommand)
+				|| pendingCommand.RemoteResult?.CanAccept(statusEvent) == false)
+				return false;
 			CVServerResponse cVServerResponse = BuildServerResponse(cVTransByEvent, statusEvent);
+			cVServerResponse.HasExplicitCode = statusEvent.HasExplicitCode;
 			if (cVServerResponse.Status != ActionStatusEnum.Pending
 				&& cVTransByEvent.TryTakeActionCommand(
 					cVServerResponse.Id,
@@ -604,6 +620,7 @@ public class CVBaseServerNode : CVDeviceNode
 					OnServerResponse(
 						cVServerResponse,
 						cVTransByEvent.trans_action);
+					RemoteFlowResultTracking.Complete(cVTransByEvent.trans_action, cVBaseEventCmd, cVServerResponse);
 				}
 				catch (Exception ex)
 				{

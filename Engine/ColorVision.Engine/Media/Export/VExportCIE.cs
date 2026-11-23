@@ -297,7 +297,7 @@ namespace ColorVision.Engine.Media
             finally { source?.Dispose(); }
         }
 
-        internal static unsafe Mat ReadRawBatchExportImage(string path, CancellationToken cancellationToken,
+        internal static Mat ReadRawBatchExportImage(string path, CancellationToken cancellationToken,
             out ColorVisionTiffParameters parameters)
         {
             using Stream input = CVFileReadCache.OpenRead(path, populateCache: false);
@@ -306,10 +306,7 @@ namespace ColorVision.Engine.Media
             if (index <= 0 || raw.Channels <= 0) throw new InvalidDataException("无法读取 CVRAW 文件头。");
             int planeBytes = GetSingleChannelByteCount(raw);
             long imageBytes = (long)planeBytes * raw.Channels;
-            input.Position = index;
-            using var reader = new BinaryReader(input, Encoding.UTF8, leaveOpen: true);
-            long declaredBytes = raw.Version == 2 ? reader.ReadInt64() : reader.ReadInt32();
-            if (declaredBytes < imageBytes || declaredBytes > Array.MaxLength || declaredBytes > input.Length - input.Position)
+            if (ReadRawExportPayloadLength(input, index, raw.Version) < imageBytes)
                 throw new InvalidDataException("无法读取完整的 CVRAW 图像数据。");
 
             var properties = ReadExportProperties(input);
@@ -323,11 +320,50 @@ namespace ColorVision.Engine.Media
                 parameters.Exposure = (float[])calibration.Exposure.Clone();
             }
 
+            return ReadRawExportMat(input, raw, planeBytes, (int)imageBytes, calibration, cancellationToken);
+        }
+
+        private static long ReadRawExportPayloadLength(Stream input, int index, uint version)
+        {
+            input.Position = index;
+            using var reader = new BinaryReader(input, Encoding.UTF8, leaveOpen: true);
+            long declaredBytes = version == 2 ? reader.ReadInt64() : reader.ReadInt32();
+            return declaredBytes <= Array.MaxLength && declaredBytes <= input.Length - input.Position ? declaredBytes : -1;
+        }
+
+        private static Mat? TryReadExactRgb48Source(Stream input, int index, CVCIEFile raw,
+            ColorCalibrationSnapshot? calibration)
+        {
+            if (raw is not { Rows: > 0, Cols: > 0, Bpp: 16, Channels: 3 })
+                return null;
+
+            long pixelCount = (long)raw.Rows * raw.Cols;
+            if (pixelCount > Array.MaxLength / (3 * sizeof(ushort)))
+                return null;
+
+            int planeBytes = (int)pixelCount * sizeof(ushort);
+            int imageBytes = planeBytes * 3;
+            try
+            {
+                if (ReadRawExportPayloadLength(input, index, raw.Version) != imageBytes)
+                    return null;
+
+                return ReadRawExportMat(input, raw, planeBytes, imageBytes, calibration, CancellationToken.None);
+            }
+            catch (EndOfStreamException)
+            {
+                return null;
+            }
+        }
+
+        private static unsafe Mat ReadRawExportMat(Stream input, CVCIEFile raw, int planeBytes, int imageBytes,
+            ColorCalibrationSnapshot? calibration, CancellationToken cancellationToken)
+        {
             cancellationToken.ThrowIfCancellationRequested();
             Mat? image = new(raw.Rows, raw.Cols, MatType.MakeType(raw.Depth, raw.Channels));
             try
             {
-                Span<byte> pixels = new((void*)image.Data, (int)imageBytes);
+                Span<byte> pixels = new((void*)image.Data, imageBytes);
                 while (!pixels.IsEmpty)
                 {
                     cancellationToken.ThrowIfCancellationRequested();
@@ -437,6 +473,16 @@ namespace ColorVision.Engine.Media
                 case CVType.Raw:
                 case CVType.Src:
                     if (!exportSource && selectedMeasurementCount == 0) break;
+                    if (fileType == CVType.Raw && exportSource && export.IsPng
+                        && TryReadExactRgb48Source(input, index, cvcie, recordedCalibration) is Mat rawSource)
+                    {
+                        using (rawSource)
+                        {
+                            input.Dispose();
+                            SaveImage(rawSource, "_Src", cvcie, "Src");
+                        }
+                        break;
+                    }
                     if (!CVFileUtil.ReadCIEFileData(input, cvcie, index))
                         throw new InvalidDataException($"Unable to read the CIE image data: {fileName}");
                     if (fileType == CVType.Src) properties = ReadExportProperties(input);

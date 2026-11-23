@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices;
 
 namespace ColorVision.ImageEditor.Cie;
 
@@ -69,40 +70,66 @@ public static class CieGamutGeometry
         if (!point.IsFinite || polygon.Count < 3) return false;
         bool inside = false;
         for (int i = 0, j = polygon.Count - 1; i < polygon.Count; j = i++)
+            if (IsOnEdgeOrUpdateCrossing(point, polygon[j], polygon[i], ref inside)) return true;
+        return inside;
+    }
+
+    private static bool Contains(CieChromaticity point, ReadOnlySpan<CieSpectrumPoint> polygon)
+    {
+        if (!point.IsFinite || polygon.Length < 3) return false;
+        bool inside = false;
+        CieChromaticity previous = polygon[^1].Chromaticity;
+        foreach (ref readonly CieSpectrumPoint entry in polygon)
         {
-            CieChromaticity a = polygon[j], b = polygon[i];
-            if (Math.Abs(Cross(a, b, point)) < 1e-10 &&
-                point.X >= Math.Min(a.X, b.X) - 1e-10 && point.X <= Math.Max(a.X, b.X) + 1e-10 &&
-                point.Y >= Math.Min(a.Y, b.Y) - 1e-10 && point.Y <= Math.Max(a.Y, b.Y) + 1e-10) return true;
-            if ((a.Y > point.Y) != (b.Y > point.Y) && point.X < (b.X - a.X) * (point.Y - a.Y) / (b.Y - a.Y) + a.X)
-                inside = !inside;
+            CieChromaticity current = entry.Chromaticity;
+            if (IsOnEdgeOrUpdateCrossing(point, previous, current, ref inside)) return true;
+            previous = current;
         }
         return inside;
     }
 
+    private static bool IsOnEdgeOrUpdateCrossing(CieChromaticity point, CieChromaticity a, CieChromaticity b, ref bool inside)
+    {
+        if (Math.Abs(Cross(a, b, point)) < 1e-10 &&
+            point.X >= Math.Min(a.X, b.X) - 1e-10 && point.X <= Math.Max(a.X, b.X) + 1e-10 &&
+            point.Y >= Math.Min(a.Y, b.Y) - 1e-10 && point.Y <= Math.Max(a.Y, b.Y) + 1e-10) return true;
+        if ((a.Y > point.Y) != (b.Y > point.Y) && point.X < (b.X - a.X) * (point.Y - a.Y) / (b.Y - a.Y) + a.X)
+            inside = !inside;
+        return false;
+    }
+
     public static CieWavelengthResult? Wavelength(CieChromaticity sample, CieChromaticity white, IReadOnlyList<CieSpectrumPoint> locus)
     {
-        CieChromaticity[] boundary = locus.Select(p => p.Chromaticity).ToArray();
-        if (!Contains(sample, boundary) || !Contains(white, boundary) || CieAnalysisMath.Distance(sample, white) < 1e-8) return null;
+        ReadOnlySpan<CieSpectrumPoint> points = locus switch
+        {
+            List<CieSpectrumPoint> list => CollectionsMarshal.AsSpan(list),
+            CieSpectrumPoint[] array => array,
+            _ => locus.ToArray()
+        };
+        if (!Contains(sample, points) || !Contains(white, points) || CieAnalysisMath.Distance(sample, white) < 1e-8) return null;
         double dx = sample.X - white.X, dy = sample.Y - white.Y;
-        var hit = RayHit(white, dx, dy, locus, true);
+        var hit = RayHit(white, dx, dy, points, true);
         if (hit == null || hit.Value.T < 1 - 1e-7) return null;
-        bool complementary = hit.Value.Index == locus.Count - 1;
-        var spectral = complementary ? RayHit(white, -dx, -dy, locus, false) : hit;
+        bool complementary = hit.Value.Index == points.Length - 1;
+        var spectral = complementary ? RayHit(white, -dx, -dy, points, false) : hit;
         if (spectral == null) return null;
         int i = spectral.Value.Index;
-        double wave = locus[i].Wavelength + spectral.Value.Fraction * (locus[i + 1].Wavelength - locus[i].Wavelength);
+        double wave = points[i].Wavelength + spectral.Value.Fraction * (points[i + 1].Wavelength - points[i].Wavelength);
         return new(wave, complementary, Math.Clamp(1 / hit.Value.T, 0, 1), hit.Value.Point, spectral.Value.Point);
     }
 
     private static (int Index, double Fraction, double T, CieChromaticity Point)? RayHit(CieChromaticity origin, double dx, double dy,
-        IReadOnlyList<CieSpectrumPoint> locus, bool includePurple)
+        ReadOnlySpan<CieSpectrumPoint> locus, bool includePurple)
     {
         (int Index, double Fraction, double T, CieChromaticity Point)? best = null;
-        int count = includePurple ? locus.Count : locus.Count - 1;
+        int locusCount = locus.Length;
+        int count = includePurple ? locusCount : locusCount - 1;
+        CieChromaticity first = locus[0].Chromaticity;
+        CieChromaticity previous = first;
         for (int i = 0; i < count; i++)
         {
-            CieChromaticity a = locus[i].Chromaticity, b = locus[(i + 1) % locus.Count].Chromaticity;
+            CieChromaticity a = previous, b = i + 1 == locusCount ? first : locus[i + 1].Chromaticity;
+            previous = b;
             double ex = b.X - a.X, ey = b.Y - a.Y, determinant = dx * ey - dy * ex;
             if (Math.Abs(determinant) < 1e-14) continue;
             double ax = a.X - origin.X, ay = a.Y - origin.Y;

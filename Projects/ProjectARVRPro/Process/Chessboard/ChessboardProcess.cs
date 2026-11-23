@@ -1,11 +1,8 @@
 #pragma warning disable CS8601,CS8602
-using ColorVision.Database;
-using ColorVision.Engine; // DAOs
+using ColorVision.Engine;
 using ColorVision.Engine.Media;
-using ColorVision.Engine.Templates.Jsons; // DetailCommonModel
-using ColorVision.Engine.Templates.Jsons.PoiAnalysis; // PoiAnalysisDetailViewReslut
-using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using Newtonsoft.Json;
+using ProjectARVRPro.Process.KeyedResults;
 using System.Globalization;
 using System.IO;
 
@@ -13,9 +10,11 @@ namespace ProjectARVRPro.Process.Chessboard
 {
     public class ChessboardProcess : ProcessWithRecipeBase<ChessboardProcessConfig, ChessboardRecipeConfig>
     {
+        internal ChessboardBatchResults BatchResults { get; init; } = new();
+
         public override async Task<bool> Execute(IProcessExecutionContext ctx)
         {
-            if (ctx?.Batch == null || ctx.Result == null) return false;
+            if (ctx?.Batch == null || ctx.Result == null || ctx.ObjectiveTestResult == null) return false;
             var log = ctx.Log;
             ChessboardRecipeConfig recipeConfig = Config.RecipeConfig;
             ChessboardViewTestResult testResult = new ChessboardViewTestResult();
@@ -23,9 +22,8 @@ namespace ProjectARVRPro.Process.Chessboard
                 ? "Chessboard_Contrast"
                 : Config.ChessboardContrastResultName.Trim();
             bool databaseContrastFound = false;
-            bool databaseContrastLoaded = false;
+            string? invalidPoiData = null;
             ChessboardContrastCalculationResult? calculation = null;
-
 
             try
             {
@@ -35,69 +33,47 @@ namespace ProjectARVRPro.Process.Chessboard
                 if (values.Count > 0)
                     ctx.Result.FileName = values[0].FileUrl;
 
-                var masters = AlgResultMasterDao.Instance.GetAllByBatchId(ctx.Batch.Id);
+                var masters = BatchResults.ReadMasters?.Invoke(ctx.Batch.Id) ?? ctx.ReadMasterResults();
                 foreach (var master in masters)
                 {
                     if (master.ImgFileType == ViewResultAlgType.POI_XYZ)
                     {
-                        if(File.Exists(master.ImgFile))
-                        {
+                        if (File.Exists(master.ImgFile))
                             ctx.Result.FileName = master.ImgFile;
-                        }
-                        var poiPoints = PoiPointResultDao.Instance.GetAllByPid(master.Id);
-                        int id = 0;
-                        foreach (var item in poiPoints)
-                        {
-                            var poi = new PoiResultCIExyuvData(item) { Id = id++ };
-                            testResult.PoixyuvDatas.Add(poi);
-                        }
+                        string? pointError = BatchResults.AppendMeasuredPoints(ctx, master.Id, testResult.PoixyuvDatas);
+                        invalidPoiData ??= pointError;
                     }
 
                     if (master.ImgFileType == ViewResultAlgType.PoiAnalysis && master.TName?.Contains(contrastResultName, StringComparison.Ordinal) == true)
                     {
                         databaseContrastFound = true;
-                        var details = DeatilCommonDao.Instance.GetAllByPid(master.Id);
-                        if (details.Count == 1)
+                        double measured = BatchResults.ReadTemplateContrast(ctx, master.Id, contrastResultName);
+                        double corrected = ChessboardBatchResults.ApplyRecipe(measured, recipeConfig.ChessboardContrast);
+                        var contrast = new ObjectiveTestItem
                         {
-                            var view = new PoiAnalysisDetailViewReslut(details[0]);
-                            view.PoiAnalysisResult.result.Value = recipeConfig.ChessboardContrast.Apply(view.PoiAnalysisResult.result.Value);
-                            var contrast = new ObjectiveTestItem
-                            {
-                                Name = contrastResultName,
-                                LowLimit = recipeConfig.ChessboardContrast.Min,
-                                UpLimit = recipeConfig.ChessboardContrast.Max,
-                                Value = view.PoiAnalysisResult.result.Value,
-                                TestValue = view.PoiAnalysisResult.result.Value.ToString("F3")
-                            };
-                            testResult.ChessboardContrast = contrast;
-                            ctx.Result.Result &= contrast.TestResult;
-                            databaseContrastLoaded = true;
-                            log?.Info($"Chessboard对比度来源: database, resultName={contrastResultName}");
-                        }
-                        else
-                            log?.Error($"Chessboard数据库结果明细无效: resultName={contrastResultName}, detailCount={details.Count}");
+                            Name = contrastResultName,
+                            LowLimit = recipeConfig.ChessboardContrast.Min,
+                            UpLimit = recipeConfig.ChessboardContrast.Max,
+                            Value = corrected,
+                            TestValue = corrected.ToString("F3")
+                        };
+                        testResult.ChessboardContrast = contrast;
+                        ctx.Result.Result &= contrast.TestResult;
+                        log?.Info($"Chessboard对比度来源: database, resultName={contrastResultName}");
                     }
                 }
 
-                if (databaseContrastFound && !databaseContrastLoaded)
-                    return false;
-
                 if (!databaseContrastFound || Config.SaveCsv)
                 {
-                    calculation = ChessboardContrastCalculator.Calculate(
-                        testResult.PoixyuvDatas,
-                        Config.RowCount,
-                        Config.ColumnCount,
-                        Config.FirstPointColor,
-                        Config.StrayLightCoefficient,
-                        Config.AllowNegativeCorrectedDarkLuminance);
+                    calculation = invalidPoiData == null
+                        ? ChessboardContrastCalculator.Calculate(
+                            testResult.PoixyuvDatas, Config.RowCount, Config.ColumnCount, Config.FirstPointColor,
+                            Config.StrayLightCoefficient, Config.AllowNegativeCorrectedDarkLuminance)
+                        : new ChessboardContrastCalculationResult { ErrorMessage = invalidPoiData };
                     if (!calculation.Success)
                     {
                         if (!databaseContrastFound)
-                        {
-                            log?.Error($"Chessboard本地计算失败: resultName={contrastResultName}, message={calculation.ErrorMessage}");
-                            return false;
-                        }
+                            throw new InvalidDataException(calculation.ErrorMessage);
 
                         log?.Warn($"Chessboard本地CSV分析失败，保留数据库对比度并导出基础POI数据: resultName={contrastResultName}, message={calculation.ErrorMessage}");
                     }
@@ -105,7 +81,7 @@ namespace ProjectARVRPro.Process.Chessboard
 
                 if (!databaseContrastFound && calculation?.Success == true)
                 {
-                    double correctedContrast = recipeConfig.ChessboardContrast.Apply(calculation.CorrectedContrast);
+                    double correctedContrast = ChessboardBatchResults.ApplyRecipe(calculation.CorrectedContrast, recipeConfig.ChessboardContrast);
                     testResult.AverageBlackLuminance = new ObjectiveTestItem
                     {
                         Name = "Average_Black_Luminance",
@@ -155,9 +131,26 @@ namespace ProjectARVRPro.Process.Chessboard
             }
             catch (Exception ex)
             {
-                log?.Error(ex);
+                string message = $"棋盘格解析失败 [{contrastResultName}]：{ex.Message}";
+                log?.Error(message, ex);
+                Reject(ctx, message);
                 return false;
             }
+        }
+
+        public override Task<bool> ExecuteFailure(IProcessExecutionContext ctx)
+        {
+            if (ctx?.Result != null && ctx.ObjectiveTestResult != null)
+                Reject(ctx, string.IsNullOrWhiteSpace(ctx.Result.Msg) ? "棋盘格流程未成功完成。" : ctx.Result.Msg);
+            return Task.FromResult(false);
+        }
+
+        private static void Reject(IProcessExecutionContext ctx, string message)
+        {
+            ChessboardBatchResults.Reject(ctx, message);
+            var objective = ctx.ObjectiveTestResult;
+            objective.ChessboardTestResult = KeyedTestResultDictionary.TryGetValue(objective.ChessboardTestResults, "Chessboard", out var available)
+                ? available! : null!;
         }
 
         public override IReadOnlyList<ObjectiveTestCsvRow> GetObjectiveCsvRows(ProjectARVRReuslt result) =>

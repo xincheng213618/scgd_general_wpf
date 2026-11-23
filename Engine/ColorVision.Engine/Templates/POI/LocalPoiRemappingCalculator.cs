@@ -1,6 +1,6 @@
-using ColorVision.Database;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using CVCommCore.CVAlgorithm;
+using FlowEngineLib.Base;
 using System;
 using System.Collections.Generic;
 
@@ -22,6 +22,24 @@ namespace ColorVision.Engine.Templates.POI
     internal static class LocalPoiRemappingCalculator
     {
         private const double SingularTolerance = 1e-10;
+        private const string LayoutHandlePrefix = "local-poi-layout:";
+
+        internal static string StoreRuntimeLayout(CVStartCFC action, string name, IReadOnlyCollection<LocalPoiRemappedPoint> points)
+        {
+            PoiParam layout = new() { Name = name };
+            foreach (LocalPoiRemappedPoint point in points)
+            {
+                layout.PoiPoints.Add(new PoiPoint { Id = point.PoiId, Name = point.Name, PointType = point.PointType.ToPoiShape(),
+                    PixX = point.X, PixY = point.Y, PixWidth = point.Width, PixHeight = point.Height });
+            }
+            string handle = LayoutHandlePrefix + Guid.NewGuid().ToString("N");
+            action.SetRuntimeResource(handle, layout);
+            return handle;
+        }
+
+        internal static PoiParam? ReadRuntimeLayout(CVStartCFC action, string? handle)
+            => handle != null && handle.StartsWith(LayoutHandlePrefix, StringComparison.Ordinal)
+                && action.RuntimeResources.TryGet<PoiParam>(handle, out var layout) ? layout : null;
 
         public static List<LocalPoiRemappedPoint> Remap(PoiParam template, LocalPoiMappingPoint[] layout)
         {
@@ -51,7 +69,7 @@ namespace ColorVision.Engine.Templates.POI
             return result;
         }
 
-        public static void SaveDetails(int masterId, IReadOnlyCollection<LocalPoiRemappedPoint> points)
+        internal static IReadOnlyCollection<PoiPointResultModel> CreateDetails(int masterId, IReadOnlyCollection<LocalPoiRemappedPoint> points)
         {
             if (masterId <= 0) throw new ArgumentOutOfRangeException(nameof(masterId), "关注点布点结果主表 ID 无效。");
             ArgumentNullException.ThrowIfNull(points);
@@ -71,13 +89,7 @@ namespace ColorVision.Engine.Templates.POI
                     Value = null
                 });
             }
-            int inserted = PoiPointResultDao.Instance.BulkInsert(details);
-            if (inserted != details.Count) throw new InvalidOperationException($"保存关注点布点明细失败：应写入 {details.Count} 条，实际写入 {inserted} 条。");
-        }
-
-        public static void DeleteDetails(int masterId)
-        {
-            if (masterId > 0) _ = PoiPointResultDao.Instance.Delete(item => item.Pid == masterId);
+            return details;
         }
 
         private static LocalPoiMappingPoint[] GetReferencePoints(PoiParam template)

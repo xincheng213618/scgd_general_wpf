@@ -7,7 +7,6 @@ namespace ColorVision.Common.ThirdPartyApps
     {
         public const string Launcher = "\uE74C";        // Classic toolbar launcher
         public const string Default = "\uE71D";         // AllApps
-        public const string MenuManager = "\uEDE3";     // ButtonMenu
         public const string NetworkAdapter = "\uEDA3";  // NetworkAdapter
         public const string DataFile = "\uE8A5";        // Document
         public const string Export = "\uEDE1";          // Export

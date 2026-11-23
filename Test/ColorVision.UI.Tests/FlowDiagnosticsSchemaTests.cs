@@ -8,19 +8,17 @@ namespace ColorVision.UI.Tests;
 
 public class FlowDiagnosticsSchemaTests
 {
-    [Fact]
-    public void SnapshotHashUsesDecodedStnBytesAndOwnsAStableCopy()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void SnapshotHashUsesStnBytesAndOwnsAStableCopy(bool useBase64)
     {
         byte[] content = [83, 84, 78, 68, 1, 10, 20, 30];
-        string dataBase64 = Convert.ToBase64String(content);
         DateTime captured = new(2026, 7, 31, 12, 0, 0, DateTimeKind.Utc);
 
-        FlowTemplateSnapshot snapshot = FlowTemplateSnapshotFactory.Create(
-            templateId: 42,
-            dataBase64,
-            templateRevision: 7,
-            capturedTimeUtc: captured,
-            flowKey: "flow-stable-key");
+        FlowTemplateSnapshot snapshot = useBase64
+            ? FlowTemplateSnapshotFactory.Create(42, Convert.ToBase64String(content), 7, captured, "flow-stable-key")
+            : FlowTemplateSnapshotFactory.Create(42, content, 7, captured, "flow-stable-key");
 
         string expectedHash = Convert.ToHexString(SHA256.HashData(content)).ToLowerInvariant();
         Assert.Equal(expectedHash, snapshot.ContentHash);

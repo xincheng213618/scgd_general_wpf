@@ -111,20 +111,30 @@ public sealed class SensorTemplatePresetTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
-    public void SavingDraftCommitsAllCommandsOrRollsBackMasterAndDefinitionRepair(bool fail)
+    public void SavingDraftCommitsAllCommandsOrRollsBackItsNewDefinition(bool fail)
     {
         using var db = new SqlSugarClient(new ConnectionConfig { ConnectionString = "Data Source=:memory:", DbType = DbType.Sqlite, IsAutoCloseConnection = false });
         // Production is MySQL; adapt only its insert-ignore syntax in this isolated transaction test.
         db.Aop.OnExecutingChangeSql = (sql, parameters) => new KeyValuePair<string, SugarParameter[]>(sql.Replace("INSERT IGNORE", "INSERT OR IGNORE"), parameters);
-        db.CodeFirst.InitTables<ModMasterModel, ModDetailModel, SysDictionaryModDetaiModel>();
-        int oldId = db.Insertable(new ModMasterModel { Pid = 1, Name = "Existing" }).ExecuteReturnIdentity();
+        db.CodeFirst.InitTables<ModMasterModel, ModDetailModel, SysDictionaryModModel, SysDictionaryModDetaiModel>();
+        db.Ado.ExecuteCommand("""
+            INSERT INTO t_scgd_sys_dictionary_mod_master
+                (id, code, name, pid, p_type, mod_type, cfg_json, version, create_date, is_enable, is_delete, remark, tenant_id)
+            VALUES
+                (50, 'Sensor.Default', 'Default', 0, 0, 5, '{}', '', CURRENT_TIMESTAMP, 1, 0, '', 0),
+                (1000, 'Sensor.Default', 'Legacy', 0, 0, 5, '{}', '', CURRENT_TIMESTAMP, 1, 0, '', 0)
+            """);
+        int oldId = db.Insertable(new ModMasterModel { Pid = 50, Name = "Existing" }).ExecuteReturnIdentity();
         db.Insertable(new ModDetailModel { Pid = oldId, SysPid = 999, ValueA = "old" }).ExecuteCommand();
         var draft = SensorTemplatePresets.CreateDraft(preset: SensorTemplatePresets.Find("pg-power-on")!);
         draft.ModDetailModels.Add(new ModDetailModel { ValueA = "C,D,Ascii,1000/0,0", ValueB = "metadata" });
+        Assert.Equal(50, SensorTemplateDictionaryService.GetDefaultDictionary(db)?.Id);
+        Assert.Throws<InvalidOperationException>(() => TemplateSensor.InsertTemplate(db, 1000, "Wrong type", draft));
+        Assert.Empty(db.Queryable<SysDictionaryModDetaiModel>().ToList());
         if (fail)
         {
             db.Ado.ExecuteCommand("CREATE TRIGGER fail_save BEFORE INSERT ON t_scgd_mod_param_detail BEGIN SELECT RAISE(ABORT,'simulated failure'); END");
-            Assert.ThrowsAny<Exception>(() => TemplateSensor.InsertTemplate(db, 1, "New", draft));
+            Assert.ThrowsAny<Exception>(() => TemplateSensor.InsertTemplate(db, 50, "New", draft));
             Assert.Equal(1, db.Queryable<ModMasterModel>().Count());
             Assert.Equal(1, db.Queryable<ModDetailModel>().Count());
             Assert.Empty(db.Queryable<SysDictionaryModDetaiModel>().ToList());
@@ -132,13 +142,14 @@ public sealed class SensorTemplatePresetTests
         }
         else
         {
-            var (master, definitions) = TemplateSensor.InsertTemplate(db, 1, "New", draft);
+            var (master, definitions) = TemplateSensor.InsertTemplate(db, 50, "New", draft);
             var rows = db.Queryable<ModDetailModel>().Where(row => row.Pid == master.Id).OrderBy(row => row.Id).ToList();
             Assert.Equal(2, rows.Count);
             Assert.Equal(draft.ModDetailModels.Select(row => row.ValueA), rows.Select(row => row.ValueA));
             Assert.All(rows, row => Assert.Equal(Assert.Single(definitions).Id, row.SysPid));
             Assert.Equal("metadata", rows[1].ValueB);
             Assert.All(draft.ModDetailModels, row => Assert.Equal(0, row.Id));
+            Assert.Equal(999, db.Queryable<ModDetailModel>().Where(row => row.Pid == oldId).Single().SysPid);
         }
     }
 

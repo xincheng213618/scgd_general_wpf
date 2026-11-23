@@ -178,6 +178,7 @@ export const adminRoutePermissions: Record<string, string[]> = {
   '/admin/jobs': ['jobs:read'],
   '/admin/deployments': ['deployments:read'],
   '/admin/operations/hosts': ['operations:manage'],
+  '/admin/benchmarks': ['benchmark:read'],
   '/admin/feedback': ['feedback:read', 'feedback:manage'],
   '/admin/activation': ['admin:*'],
   '/admin/users': ['users:manage'],

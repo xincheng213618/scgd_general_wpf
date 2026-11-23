@@ -31,6 +31,7 @@ using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using System.Windows.Threading;
 
 namespace ColorVision.Engine.Media
 {
@@ -593,8 +594,26 @@ namespace ColorVision.Engine.Media
         }
 
         public void AttachLiveCvcie(ImageView imageView, uint width, uint height, uint bpp, uint channels, byte[] xyzData, float[] exposure)
+            => TryAttachLiveCvcie(imageView, width, height, bpp, channels, xyzData, exposure, frozenComposite: null);
+
+        internal bool TryAttachLiveCvcie(ImageView imageView, uint width, uint height, uint bpp, uint channels, byte[] xyzData,
+            float[] exposure, WriteableBitmap? frozenComposite)
         {
+            var display = imageView.ViewBitmapSource as WriteableBitmap;
+            if (frozenComposite != null && (!frozenComposite.IsFrozen || display == null || frozenComposite.Format != display.Format
+                || frozenComposite.PixelWidth != display.PixelWidth || frozenComposite.PixelHeight != display.PixelHeight))
+                throw new ArgumentException("The frozen composite must match the published capture bitmap.", nameof(frozenComposite));
+
+            long revision = imageView.ImageRevision;
+            long contentVersion = imageView.ContentVersion;
+            Task fileOpen = imageView.ImageOpenCompletion;
+
+            bool OwnsDisplay(long version) => frozenComposite == null
+                || (imageView.IsCurrentImageRevision(revision) && imageView.ContentVersion == version
+                    && ReferenceEquals(imageView.ViewBitmapSource, display) && ReferenceEquals(imageView.ImageOpenCompletion, fileOpen));
+
             imageView.ReleaseImageContent();
+            if (!OwnsDisplay(contentVersion + 1)) return false;
             PoiMeasurementBuffer measurementBuffer = new(
                 xyzData,
                 checked((int)width),
@@ -616,6 +635,7 @@ namespace ColorVision.Engine.Media
             imageView.EditorContext.IImageOpen = this;
             imageView.AttachImageContentCapability(this);
 
+            if (!OwnsDisplay(contentVersion + 2)) return false;
             if (imageView.ViewBitmapSource is WriteableBitmap source)
             {
                 CVCIEFile xyz = new()
@@ -623,7 +643,8 @@ namespace ColorVision.Engine.Media
                     Cols = checked((int)width), Rows = checked((int)height), Bpp = checked((int)bpp),
                     Channels = checked((int)channels), FileExtType = CVType.CIE, Data = xyzData,
                 };
-                imageView.SetLayerController(CvRawLayerController.CreateLive(imageView, xyz, source, "composite"));
+                imageView.SetLayerController(CvRawLayerController.CreateLive(imageView, xyz, frozenComposite ?? source, "composite"));
+                if (!OwnsDisplay(contentVersion + 2)) return false;
                 if (CvcieDisplayConfig.Current.EnableTrueColor && CvcieSrgbRenderer.Supports(xyz.Channels, xyz.Bpp))
                 {
                     foreach (ColorVision.ImageEditor.Layers.ImageLayerDescriptor layer in imageView.ComboBoxLayers.Items)
@@ -636,6 +657,9 @@ namespace ColorVision.Engine.Media
                     }
                 }
             }
+            // Initial layer selection can change the display revision while retaining this CIE owner.
+            return frozenComposite == null || (imageView.ContentVersion == contentVersion + 2
+                && ReferenceEquals(imageView.ImageContentCapability, this) && ReferenceEquals(imageView.ImageOpenCompletion, fileOpen));
         }
 
 
@@ -1084,14 +1108,25 @@ namespace ColorVision.Engine.Media
             CvcieBrightnessMode brightnessMode = displayConfig.BrightnessMode;
             double referenceWhite = displayConfig.ReferenceWhiteLuminance;
             ImageView view = context.ImageView;
+            var initialTarget = (Source: view.ViewBitmapSource, Revision: view.ImageRevision, ContentVersion: view.ContentVersion);
+            var reusableRawLayout = initialTarget.Source is WriteableBitmap { IsFrozen: false } bitmap
+                ? (bitmap.PixelWidth, bitmap.PixelHeight, bitmap.Format) : default;
 
-            void VerifyOpenTarget()
+            void VerifyOpenTarget(bool checkCancellation = true)
             {
-                cancellationToken.ThrowIfCancellationRequested();
+                if (checkCancellation) cancellationToken.ThrowIfCancellationRequested();
                 string? activeFilePath = context.Config.GetProperties<string>(ImageViewPropertyKeys.FilePath);
                 if (requestId != Volatile.Read(ref _latestOpenRequest)
                     || !string.Equals(activeFilePath, requestedFilePath, StringComparison.OrdinalIgnoreCase))
                     throw new OperationCanceledException("Image open request was superseded.", cancellationToken);
+            }
+
+            void VerifyStagingTarget((ImageSource? Source, long Revision, long ContentVersion)? target, bool checkCancellation = true)
+            {
+                VerifyOpenTarget(checkCancellation);
+                if (target is { } expected && (!view.IsCurrentImageRevision(expected.Revision)
+                    || view.ContentVersion != expected.ContentVersion || !ReferenceEquals(view.ViewBitmapSource, expected.Source)))
+                    throw new OperationCanceledException("The target image changed during display preparation.", cancellationToken);
             }
 
             bool gateEntered = false;
@@ -1117,7 +1152,8 @@ namespace ColorVision.Engine.Media
                     {
                         try
                         {
-                            srgb = CvRawLayerController.LoadSrgb(requestedFilePath, brightnessMode, referenceWhite, cancellationToken);
+                            srgb = await CvcieSrgbRenderer.RenderFileForDisplayAsync(requestedFilePath, brightnessMode, referenceWhite,
+                                view.Dispatcher, CvRawLayerController.DisplayCacheBudgetBytes, cancellationToken);
                         }
                         catch (OperationCanceledException) { throw; }
                         catch (Exception ex)
@@ -1131,29 +1167,134 @@ namespace ColorVision.Engine.Media
                     using FileStream? publicationRead = fileRevision?.OpenRead(requestedFilePath);
                     CvFileViewMetadata? viewMetadata = isCie ? ReadCvFileViewMetadata(requestedFilePath, pointsPath, publicationRead) : null;
                     CvcieDisplaySource? associatedImage = null;
-                    CvcieAssociatedSource? associatedSource = isCie && viewMetadata != null ? CvRawLayerController.PrepareAssociatedSource(requestedFilePath,
-                        viewMetadata.Header, loadPixels: srgb == null, out associatedImage, cancellationToken) : null;
-                    CVCIEFile LoadRaw()
+                    CvcieAssociatedSource? associatedSource = null;
+
+                    Task<WriteableBitmap> PrepareStreamedDisplayAsync(MediaHelper.RawDisplayReader readPixels, CVCIEFile header, PixelFormat format)
+                        => view.Dispatcher.InvokeAsync(async () =>
+                        {
+                            VerifyStagingTarget(initialTarget);
+                            return await MediaHelper.PrepareRawDisplayAsync(readPixels, header.Cols, header.Rows, format, cancellationToken);
+                        }, DispatcherPriority.Normal, cancellationToken).Task.Unwrap();
+
+                    if (isCie && viewMetadata != null)
                     {
-                        using Stream source = CVFileReadCache.OpenRead(requestedFilePath);
-                        CVCIEFile raw = rawPixels.Read(source, requestedFilePath);
+                        if (srgb == null)
+                        {
+                            foreach (var (snapshot, source) in CvRawLayerController.ReadAssociatedSources(requestedFilePath,
+                                viewMetadata.Header, loadPixels: true, cancellationToken, streamLargeRaw: true, reusableRawLayout: reusableRawLayout))
+                            {
+                                if (source.StreamedRaw is { } raw)
+                                {
+                                    try
+                                    {
+                                        displayBitmap = await PrepareStreamedDisplayAsync(raw.Pixels.ReadExactly, source.File, raw.Format);
+                                    }
+                                    catch (IOException error)
+                                    {
+                                        source.Dispose();
+                                        log.Warn($"关联原图不可用：{snapshot.Path}", error);
+                                        continue;
+                                    }
+                                    catch
+                                    {
+                                        source.Dispose();
+                                        throw;
+                                    }
+                                }
+                                associatedSource = snapshot;
+                                associatedImage = source;
+                                break;
+                            }
+                        }
+                        else
+                        {
+                            associatedSource = CvRawLayerController.PrepareAssociatedSource(requestedFilePath, viewMetadata.Header,
+                                loadPixels: false, out _, cancellationToken);
+                        }
+                    }
+                    (MediaHelper.RawDisplayReader ReadPixels, PixelFormat Format)? stagedRaw = null;
+                    (Stream Snapshot, long Offset, int Length)? cachedRawReuse = null;
+                    CvcieDisplaySource LoadRaw()
+                    {
+                        Stream? source = CVFileReadCache.OpenRead(requestedFilePath);
                         try
                         {
                             viewMetadata = ReadCvFileViewMetadata(requestedFilePath, null, source);
-                            return raw;
+                            if (viewMetadata is { } metadata && metadata.Calibration?.CanReplay != true
+                                && CvRawLayerController.TryGetStreamedRawFormat(metadata.Header, out PixelFormat format))
+                            {
+                                CVCIEFile header = metadata.Header;
+                                int pixelBytes = checked(header.Cols * header.Rows * (format.BitsPerPixel / 8));
+                                if (CvcieDiskPixels.TryGetPayloadOffset(source, header, metadata.HeaderEnd, out long declared) is long payloadStart
+                                    && declared == pixelBytes)
+                                {
+                                    bool reusesBitmap = (header.Cols, header.Rows, format) == reusableRawLayout;
+                                    // A visible bitmap can only be filled from a verified contiguous snapshot with no further I/O.
+                                    if (reusesBitmap && !CVFileReadCache.TryUseCachedRange(source, payloadStart, pixelBytes, static _ => { }))
+                                        return new(rawPixels.Read(source, requestedFilePath));
+
+                                    Stream snapshot = source;
+                                    if (reusesBitmap) cachedRawReuse = (snapshot, payloadStart, pixelBytes);
+                                    else
+                                    {
+                                        MediaHelper.RawDisplayReader readPixels = snapshot is FileStream disk
+                                            ? new CvcieDiskPixels(disk.SafeFileHandle, payloadStart).ReadExactly : ReadCachedBlock;
+                                        stagedRaw = (readPixels, format);
+                                    }
+                                    var streamed = new CvcieDisplaySource(header);
+                                    streamed.TakePixelStream(snapshot);
+                                    source = null;
+                                    return streamed;
+
+                                    void ReadCachedBlock(Span<byte> destination, long offset, CancellationToken token)
+                                    {
+                                        // One display writer reads the borrowed snapshot, including after cache replacement.
+                                        token.ThrowIfCancellationRequested();
+                                        snapshot.Position = checked(payloadStart + offset);
+                                        snapshot.ReadExactly(destination);
+                                    }
+                                }
+                            }
+
+                            return new(rawPixels.Read(source, requestedFilePath));
                         }
-                        catch { raw.Dispose(); throw; }
+                        finally { source?.Dispose(); }
                     }
-                    CVCIEFile LoadLuminance()
+                    bool stagedLuminance = false;
+                    async Task<CVCIEFile> LoadLuminanceAsync()
                     {
                         usesLuminance = true;
-                        return CvRawLayerController.LoadFileChannel(requestedFilePath, 1, out displayBitmap, cancellationToken);
+                        CVCIEFile plane = CvRawLayerController.ReadFileChannel(requestedFilePath, publicationRead!, 1, cancellationToken, out CvcieDiskPixels? pixels);
+                        try
+                        {
+                            if (pixels is not { } source) return plane;
+                            int width = plane.Cols;
+                            int height = plane.Rows;
+                            if (EditableBitmapCopy.ShouldCopyInBackground(width, height, PixelFormats.Gray8.BitsPerPixel))
+                            {
+                                // Initial Y is never put in the layer cache. Fill the editable display directly.
+                                Action<IntPtr, int> writer = MediaHelper.PrepareFloatChannelWriter(source, width, height, plane.Bpp, cancellationToken);
+                                displayBitmap = await view.Dispatcher.InvokeAsync(() =>
+                                {
+                                    VerifyStagingTarget(initialTarget);
+                                    return EditableBitmapCopy.CreateAsync(width, height, 96, 96, PixelFormats.Gray8, null, writer, cancellationToken);
+                                }, DispatcherPriority.Normal, cancellationToken).Task.Unwrap();
+                                stagedLuminance = true;
+                            }
+                            else displayBitmap = MediaHelper.RenderFloatChannel(source, width, height, plane.Bpp, cancellationToken);
+                            return plane;
+                        }
+                        catch
+                        {
+                            plane.Dispose();
+                            throw;
+                        }
                     }
                     // A successful XYZ render validates the optional source without loading its pixels.
                     using CvcieDisplaySource? displaySource = srgb != null ? null
-                        : isRaw ? new(LoadRaw())
+                        : isRaw ? LoadRaw()
                         : !isCie || viewMetadata == null ? CvRawLayerController.LoadSourceForDisplay(requestedFilePath, out usesLuminance, out displayBitmap, cancellationToken)
-                        : associatedImage ?? new(LoadLuminance());
+                        : associatedImage ?? new(await LoadLuminanceAsync());
                     cancellationToken.ThrowIfCancellationRequested();
                     if (!isCie && !isRaw) viewMetadata = ReadCvFileViewMetadata(requestedFilePath, pointsPath);
                     else if (isCie && viewMetadata != null)
@@ -1167,20 +1308,27 @@ namespace ColorVision.Engine.Media
                     }
                     CVCIEFile cVCIEFile = displaySource?.File ?? viewMetadata?.Header
                         ?? throw new InvalidDataException($"CVCIE 文件头无效：{requestedFilePath}");
+                    if (stagedRaw is { } rawDisplay)
+                    {
+                        displayBitmap = await PrepareStreamedDisplayAsync(rawDisplay.ReadPixels, cVCIEFile, rawDisplay.Format);
+                        // Publication callbacks may release the cache synchronously.
+                        displaySource!.ReleaseCachedPixelStream();
+                    }
                     if (displayBitmap == null && cVCIEFile.Channels == 1 && cVCIEFile.Bpp is 32 or 64)
                         displayBitmap = MediaHelper.RenderFloatChannel(cVCIEFile, cancellationToken);
-                    using OpenCvSharp.Mat? loadedMat = displayBitmap == null && displaySource?.Decoded == null
+                    using OpenCvSharp.Mat? loadedMat = displayBitmap == null && !cachedRawReuse.HasValue && displaySource?.Decoded == null
                         ? cVCIEFile.ToMat(showErrors: false) : null;
                     OpenCvSharp.Mat? mat = displayBitmap == null ? displaySource?.Decoded ?? loadedMat : null;
-                    if (displayBitmap == null && (mat == null || mat.Empty()))
+                    if (displayBitmap == null && !cachedRawReuse.HasValue && (mat == null || mat.Empty()))
                         throw new InvalidDataException("The file contains no displayable image pixels.");
                     cancellationToken.ThrowIfCancellationRequested();
 
                     await view.Dispatcher.InvokeAsync(async () =>
                     {
                         VerifyOpenTarget();
-                        WriteableBitmap? editableDisplay = null;
-                        (ImageSource? Source, long Revision, long ContentVersion)? stagingTarget = null;
+                        WriteableBitmap? editableDisplay = displaySource?.StreamedRaw != null || stagedRaw.HasValue || stagedLuminance ? displayBitmap : null;
+                        (ImageSource? Source, long Revision, long ContentVersion)? stagingTarget =
+                            editableDisplay == null && !cachedRawReuse.HasValue ? null : initialTarget;
                         if (displayBitmap is { IsFrozen: true } frozen && EditableBitmapCopy.ShouldCopyInBackground(frozen))
                         {
                             editableDisplay = await EditableBitmapCopy.CreateAsync(frozen, cancellationToken);
@@ -1194,11 +1342,11 @@ namespace ColorVision.Engine.Media
                             editableDisplay = await mat.PrepareDisplayBitmapAsync(format, cancellationToken);
                         }
 
-                        VerifyStagingTarget();
+                        VerifyStagingTarget(stagingTarget);
                         bool published = false;
                         using var publication = view.BeginImageContentPublication(() => published);
-                        int displayWidth = displayBitmap?.PixelWidth ?? mat!.Cols;
-                        int displayHeight = displayBitmap?.PixelHeight ?? mat!.Rows;
+                        int displayWidth = displayBitmap?.PixelWidth ?? mat?.Cols ?? cVCIEFile.Cols;
+                        int displayHeight = displayBitmap?.PixelHeight ?? mat?.Rows ?? cVCIEFile.Rows;
                         context.Config.SetImageMetadata(ImageViewPropertyKeys.FileSource, requestedFilePath, nameof(CVRawOpen), "打开器接收到的源文件路径");
                         context.Config.SetImageMetadata(ImageViewPropertyKeys.FileName, Path.GetFileName(requestedFilePath), nameof(CVRawOpen), "当前文件名");
                         context.Config.SetImageMetadata(ImageViewPropertyKeys.ImageWidth, displayWidth, nameof(CVRawOpen), "当前显示位图宽度");
@@ -1216,14 +1364,37 @@ namespace ColorVision.Engine.Media
                             ? associatedSource != null : !usesLuminance);
                         CvRawLayerController? controller = InitializeCvFileView(view, requestedFilePath,
                             srgb != null ? "cie-srgb" : usesLuminance ? "cie-y" : "composite", hasRgbLayers, viewMetadata, cVCIEFile, fileRevision);
-                        VerifyStagingTarget();
+                        VerifyStagingTarget(stagingTarget);
                         if (srgb != null) controller?.CacheSrgb(srgb, brightnessMode, referenceWhite);
 
                         WriteableBitmap source;
                         bool preservesView = false;
-                        if (editableDisplay != null || displayBitmap != null)
+                        bool cachedPixelsCommitted = false;
+                        if (cachedRawReuse is { } rawReuse)
                         {
-                            source = editableDisplay ?? displayBitmap!.Clone();
+                            source = (WriteableBitmap)initialTarget.Source!;
+                            var bounds = new Int32Rect(0, 0, displayWidth, displayHeight);
+                            source.Lock();
+                            try
+                            {
+                                if (!CVFileReadCache.TryUseCachedRange(rawReuse.Snapshot, rawReuse.Offset, rawReuse.Length, pixels =>
+                                {
+                                    VerifyStagingTarget(initialTarget);
+                                    MediaHelper.CopyPackedRawToLockedBitmap(pixels, source);
+                                })) throw new InvalidDataException("The cached RAW pixels are no longer available.");
+
+                                cachedPixelsCommitted = true;
+                                // Return the cache reference before unlocking or notifying the view.
+                                displaySource!.ReleaseCachedPixelStream();
+                                source.AddDirtyRect(bounds);
+                            }
+                            finally { source.Unlock(); }
+                            VerifyStagingTarget(initialTarget, checkCancellation: false);
+                            preservesView = true;
+                        }
+                        else if (editableDisplay != null || displayBitmap != null)
+                        {
+                            source = editableDisplay ?? (displayBitmap!.IsFrozen ? displayBitmap.Clone() : displayBitmap);
                         }
                         else if (view.ViewBitmapSource is WriteableBitmap current && mat!.MatUpdateWriteableBitmap(current))
                         {
@@ -1239,9 +1410,9 @@ namespace ColorVision.Engine.Media
                         long contentVersion = view.ContentVersion;
                         if (preservesView)
                         {
-                            int displayChannels = mat!.Channels();
-                            int displayDepth = checked((int)mat.ElemSize1() * 8);
-                            int displayStride = checked(mat.Cols * displayChannels * (displayDepth / 8));
+                            int displayChannels = mat?.Channels() ?? cVCIEFile.Channels;
+                            int displayDepth = mat == null ? cVCIEFile.Bpp : checked((int)mat.ElemSize1() * 8);
+                            int displayStride = checked(displayWidth * displayChannels * (displayDepth / 8));
                             context.Config.SetImageMetadata(ImageViewPropertyKeys.PixelFormat, source.Format, nameof(CVRawOpen), "当前显示位图像素格式");
                             context.Config.SetImageMetadata(ImageViewPropertyKeys.Channel, displayChannels, nameof(CVRawOpen), "当前显示位图通道数");
                             context.Config.SetImageMetadata(ImageViewPropertyKeys.Depth, displayDepth, nameof(CVRawOpen), "当前显示位图位深");
@@ -1250,7 +1421,8 @@ namespace ColorVision.Engine.Media
                             context.Config.SetImageMetadata(ImageViewPropertyKeys.DpiY, source.DpiY, nameof(CVRawOpen), "当前 CVCIE 图像垂直 DPI");
                             // Publish the reused source before revision callbacks observe the update.
                             context.ProcessingContext.Presentation.Publish(source, context.FunctionImage);
-                            VerifyOpenTarget();
+                            if (cachedPixelsCommitted) VerifyStagingTarget(initialTarget, checkCancellation: false);
+                            else VerifyOpenTarget();
                             var profileSources = context.ProcessingContext.ProfileMeasurementSources;
                             context.CommitSourcePixels(source);
                             VerifyPublishedSource();
@@ -1265,25 +1437,18 @@ namespace ColorVision.Engine.Media
                         }
                         VerifyPublishedSource();
                         view.AttachImageContentCapability(this);
-                        VerifyOpenTarget();
+                        VerifyOpenTarget(checkCancellation: !cachedPixelsCommitted);
                         published = true;
-
-                        void VerifyStagingTarget()
-                        {
-                            VerifyOpenTarget();
-                            if (stagingTarget is { } target && (!view.IsCurrentImageRevision(target.Revision)
-                                || view.ContentVersion != target.ContentVersion || !ReferenceEquals(view.ViewBitmapSource, target.Source)))
-                                throw new OperationCanceledException("The target image changed during display preparation.", cancellationToken);
-                        }
 
                         void VerifyPublishedSource()
                         {
-                            VerifyOpenTarget();
+                            VerifyOpenTarget(checkCancellation: !cachedPixelsCommitted);
                             if (!view.IsCurrentImageRevision(revision + 1) || view.ContentVersion != contentVersion + 1
                                 || !ReferenceEquals(view.ViewBitmapSource, source))
                                 throw new OperationCanceledException("The target image changed during source publication.", cancellationToken);
                         }
                     }).Task.Unwrap().ConfigureAwait(false);
+                    if (stagedRaw.HasValue || cachedRawReuse.HasValue) rawPixels.Clear();
                 }, cancellationToken);
             }
             catch (OperationCanceledException) { throw; }

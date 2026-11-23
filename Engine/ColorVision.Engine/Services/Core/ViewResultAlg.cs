@@ -6,10 +6,14 @@ using ColorVision.Engine.Media;
 using ColorVision.Engine.Templates.POI;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using ColorVision.FileIO;
+using ColorVision.ImageEditor;
 using ColorVision.Themes.Controls;
+using log4net;
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Threading.Tasks;
 using System.Windows;
@@ -22,11 +26,15 @@ namespace ColorVision.Engine.Services
 
     public class ViewResultAlg : ViewModelBase
     {
+        private static readonly ILog log = LogManager.GetLogger(typeof(ViewResultAlg));
         public ObservableCollection<IViewResult> ViewResults { get; set; }
 
         private ContextMenu? _contextMenu;
         private RelayCommand? _exportCVCIECommand, _copyToCommand, _openContainingFolderCommand, _exportToPoiCommand;
+        private RelayCommand? _openInNewWindowCommand;
         public ContextMenu ContextMenu { get => _contextMenu ??= CreateContextMenu(); set => _contextMenu = value; }
+        public RelayCommand OpenInNewWindowCommand => _openInNewWindowCommand ??= new RelayCommand(
+            async _ => await ImageViewWindow.OpenFileAsync(FindAvailableImagePath()), _ => FindAvailableImagePath() != null);
         public RelayCommand ExportCVCIECommand { get => _exportCVCIECommand ??= new RelayCommand(a => Export(), a => File.Exists(FilePath)); set => _exportCVCIECommand = value; }
         public RelayCommand CopyToCommand { get => _copyToCommand ??= new RelayCommand(a => CopyTo(), a => File.Exists(FilePath)); set => _copyToCommand = value; }
         public RelayCommand OpenContainingFolderCommand { get => _openContainingFolderCommand ??= new RelayCommand(a => OpenContainingFolder()); set => _openContainingFolderCommand = value; }
@@ -35,6 +43,7 @@ namespace ColorVision.Engine.Services
         private ContextMenu CreateContextMenu()
         {
             ContextMenu menu = new();
+            menu.Items.Add(new MenuItem { Header = ImageViewWindow.OpenInNewWindowText, Command = OpenInNewWindowCommand });
             menu.Items.Add(new MenuItem { Header = Properties.Resources.Selected, Command = OpenContainingFolderCommand });
             menu.Items.Add(new MenuItem { Header = Properties.Resources.Export, Command = ExportCVCIECommand });
             menu.Items.Add(new MenuItem { Header = Properties.Resources.CreateToPOI, Command = ExportToPoiCommand });
@@ -42,13 +51,61 @@ namespace ColorVision.Engine.Services
             return menu;
         }
 
+        private string? FindAvailableImagePath()
+        {
+            if (ImageViewWindow.CanOpenFile(FilePath)) return FilePath;
+            return ImageViewWindow.CanOpenFile(ResultImagFile) ? ResultImagFile : null;
+        }
+
         public ViewResultAlg()
         {
 
         }
         public AlgResultMasterModel AlgResultMasterModel { get; set; }
-        public ViewResultAlg(AlgResultMasterModel item) : this(item, BatchResultMasterDao.Instance.GetById(item.BatchId)?.Code)
+
+        internal List<T> ReadPersistedDetails<T>(BaseTableDao<T> dao) where T : class, IEntity, new()
         {
+            if (AlgResultMasterModel?.DatabaseEndpoint is not { } endpoint) return dao.GetAllByPid(Id);
+
+            using var db = endpoint.CreateDbClient();
+            return db.Queryable<T>().Where("pid = @pid", new { pid = Id }).ToList();
+        }
+
+        internal bool TryReadPersistedDetails<T>(BaseTableDao<T> dao, [NotNullWhen(true)] out List<T>? details) where T : class, IEntity, new()
+        {
+            if (AlgResultMasterModel?.DatabaseEndpoint == null) return dao.TryGetAllByPid(Id, out details);
+            try
+            {
+                details = ReadPersistedDetails(dao);
+                return true;
+            }
+            catch (Exception error)
+            {
+                log.Warn($"算法结果明细读取失败：resultId={Id}", error);
+                details = null;
+                return false;
+            }
+        }
+
+        public ViewResultAlg(AlgResultMasterModel item) : this(item, ReadBatchCode(item))
+        {
+        }
+
+        private static string? ReadBatchCode(AlgResultMasterModel item)
+        {
+            if (item.BatchId is not > 0) return null;
+            if (item.DatabaseEndpoint is not { } endpoint) return BatchResultMasterDao.Instance.GetById(item.BatchId)?.Code;
+
+            try
+            {
+                using var db = endpoint.CreateDbClient();
+                return db.Queryable<MeasureBatchModel>().Where(batch => batch.Id == item.BatchId).Select(batch => batch.Code).First();
+            }
+            catch (Exception error)
+            {
+                log.Warn($"算法结果批次编号读取失败：batchId={item.BatchId}", error);
+                return null;
+            }
         }
 
         /// <summary>Uses the supplied batch code, including null, without querying batch metadata.</summary>

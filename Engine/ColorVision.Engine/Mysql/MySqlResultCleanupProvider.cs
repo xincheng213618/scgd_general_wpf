@@ -6,12 +6,17 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Threading;
 
 namespace ColorVision.Database
 {
-    public sealed class MySqlResultCleanupProvider : IDatabaseCleanupSourceProvider, IDatabaseCleanupSelectionProvider, IDatabaseCleanupBackupProvider, IDatabaseCleanupMaintenanceProvider, IDatabaseCleanupOptimizationProvider
+    public sealed class MySqlResultCleanupProvider : IDatabaseCleanupSourceProvider, IDatabaseCleanupSelectionProvider, IDatabaseCleanupBackupProvider, IDatabaseCleanupMaintenanceProvider, IDatabaseCleanupOptimizationProvider, IDatabaseCleanupTargetProvider
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(MySqlResultCleanupProvider));
+        private static readonly AsyncLocal<MySqlConnectedEndpoint?> BackupCleanupEndpoint = new();
+        private readonly Func<MySqlConnectedEndpoint?> _getCurrentEndpoint;
+        private readonly MySqlConnectedEndpoint? _boundEndpoint;
+        private readonly string? _boundDescription;
 
         private const string ResultMasterTableName = "t_scgd_algorithm_result_master";
         private const string MeasureBatchTableName = "t_scgd_measure_batch";
@@ -56,27 +61,82 @@ namespace ColorVision.Database
 
         public static IReadOnlyList<string> ResultTableNames { get; } = CleanupTableDefinitions.Select(item => item.TableName).ToArray();
 
+        public MySqlResultCleanupProvider() : this(() => MySqlControl.GetInstance().ConnectedEndpoint)
+        {
+        }
+
+        internal MySqlResultCleanupProvider(Func<MySqlConnectedEndpoint?> getCurrentEndpoint)
+        {
+            _getCurrentEndpoint = getCurrentEndpoint;
+        }
+
+        private MySqlResultCleanupProvider(MySqlConnectedEndpoint endpoint, string description)
+            : this(() => endpoint)
+        {
+            _boundEndpoint = endpoint;
+            _boundDescription = description;
+        }
+
         public string Id => "mysql-results";
         public string DisplayName => EngineLocalization.Get("MySQL 结果表");
         public int Order => 10;
         public string OptimizationActionName => EngineLocalization.Get("优化结果关联索引");
         public string OptimizationConfirmationMessage => EngineLocalization.Get("将为现存 MySQL 结果表的 batch_id / pid 关联列创建缺失索引。操作逐表执行，会占用数据库 I/O 和临时磁盘空间，并可能短暂等待元数据锁。请先暂停生产测试并确认 MySQL 临时目录与数据目录空间充足。");
-        public string Description
+        public string Description => _boundDescription ?? CaptureCurrentTarget()?.Description
+            ?? EngineLocalization.Get("MySQL 连接尚未验证。");
+
+        DatabaseCleanupTarget? IDatabaseCleanupTargetProvider.CaptureCurrentTarget() => CaptureCurrentTarget();
+
+        private DatabaseCleanupTarget? CaptureCurrentTarget()
         {
-            get
+            MySqlConnectedEndpoint? endpoint = ResolveEndpoint();
+            if (endpoint?.IsCurrent != true) return null;
+            var options = MySqlLocalServicesManager.GetVerifiedConnectionOptions(endpoint);
+            if (!endpoint.IsCurrent) return null;
+            string description = EngineLocalization.Format($"数据库: {options.Database}    主机: {options.Server}:{options.Port}");
+            return new DatabaseCleanupTarget(new MySqlResultCleanupProvider(endpoint, description), description, () => endpoint.IsCurrent);
+        }
+
+        private MySqlConnectedEndpoint? ResolveEndpoint()
+        {
+            MySqlConnectedEndpoint? approved = BackupCleanupEndpoint.Value;
+            if (_boundEndpoint != null && approved != null && !ReferenceEquals(_boundEndpoint, approved))
+                throw new InvalidOperationException(EngineLocalization.Get("备份与清理必须使用同一个 MySQL 数据库。"));
+            return _boundEndpoint ?? approved ?? _getCurrentEndpoint();
+        }
+
+        private MySqlConnectedEndpoint RequireCurrentEndpoint()
+        {
+            MySqlConnectedEndpoint endpoint = ResolveEndpoint()
+                ?? throw new InvalidOperationException(EngineLocalization.Get("MySQL 连接尚未验证，请连接数据库并刷新统计。"));
+            EnsureCurrentEndpoint(endpoint);
+            return endpoint;
+        }
+
+        private static void EnsureCurrentEndpoint(MySqlConnectedEndpoint endpoint)
+        {
+            if (!endpoint.IsCurrent)
+                throw new InvalidOperationException(EngineLocalization.Get("MySQL 连接已更改，请刷新统计并重新确认。"));
+        }
+
+        private T RunMaintenance<T>(Func<MySqlConnectedEndpoint, T> action)
+        {
+            MySqlConnectedEndpoint endpoint = RequireCurrentEndpoint();
+            return MySqlLocalServicesManager.RunDatabaseMaintenance(() =>
             {
-                var config = MySqlSetting.Instance.MySqlConfig;
-                return EngineLocalization.Format($"数据库: {config.Database}    主机: {config.Host}:{config.Port}");
-            }
+                EnsureCurrentEndpoint(endpoint);
+                return action(endpoint);
+            });
         }
 
         public IReadOnlyList<DatabaseCleanupTableInfo> LoadTables()
         {
-            using var db = CreateDbClient(timeout: 15);
+            MySqlConnectedEndpoint endpoint = RequireCurrentEndpoint();
+            using var db = CreateDbClient(endpoint, 15, out string databaseName);
 
             var tableStats = db.Queryable<DatabaseTableStatusRow>()
                 .AS("INFORMATION_SCHEMA.TABLES")
-                .Where(row => row.TableSchema == MySqlSetting.Instance.MySqlConfig.Database && CleanupTableDefinitions.Select(item => item.TableName).Contains(row.TableName))
+                .Where(row => row.TableSchema == databaseName && CleanupTableDefinitions.Select(item => item.TableName).Contains(row.TableName))
                 .Select(row => new DatabaseTableStatusRow
                 {
                     TableName = row.TableName,
@@ -104,20 +164,21 @@ namespace ColorVision.Database
                 result.Add(info);
             }
 
+            EnsureCurrentEndpoint(endpoint);
             return result;
         }
 
         public DatabaseCleanupExecutionResult CleanupHistory(int keepMonths)
         {
-            return MySqlLocalServicesManager.RunDatabaseMaintenance(() => CleanupHistoryCore(keepMonths));
+            return RunMaintenance(endpoint => CleanupHistoryCore(endpoint, keepMonths));
         }
 
-        private static DatabaseCleanupExecutionResult CleanupHistoryCore(int keepMonths)
+        private static DatabaseCleanupExecutionResult CleanupHistoryCore(MySqlConnectedEndpoint endpoint, int keepMonths)
         {
             DateTime cutoffDate = DateTime.Now.AddMonths(-keepMonths);
-            using var db = CreateDbClient(timeout: 30);
+            using var db = CreateDbClient(endpoint, 30, out string databaseName);
 
-            var existingTables = GetExistingTables(db);
+            var existingTables = GetExistingTables(db, databaseName);
             var unknownDetailTables = FindUnknownDetailTables(existingTables);
             if (unknownDetailTables.Count > 0)
             {
@@ -126,7 +187,7 @@ namespace ColorVision.Database
                     EngineLocalization.Get("检测到未登记的结果明细表，无法安全清理历史数据。请先确认这些表与主表的关联关系：") + Environment.NewLine + tableList);
             }
 
-            var columnsByTable = GetColumnsByTable(db, existingTables);
+            var columnsByTable = GetColumnsByTable(db, existingTables, databaseName);
             var result = new DatabaseCleanupExecutionResult
             {
                 StatusMessage = EngineLocalization.Format($"已保留最近 {keepMonths} 个月的 MySQL 结果数据。")
@@ -135,6 +196,7 @@ namespace ColorVision.Database
             string? resultMasterTimeColumn = ResolveTimeColumn(columnsByTable, ResultMasterTableName);
             string? measureBatchTimeColumn = ResolveTimeColumn(columnsByTable, MeasureBatchTableName);
 
+            EnsureCurrentEndpoint(endpoint);
             foreach (var definition in CleanupTableDefinitions.Where(item => item.Kind == CleanupTableKind.AlgorithmDetail && existingTables.Contains(item.TableName)))
             {
                 int deletedRows = 0;
@@ -191,57 +253,66 @@ namespace ColorVision.Database
 
         public DatabaseCleanupExecutionResult CleanupAll()
         {
-            return MySqlLocalServicesManager.RunDatabaseMaintenance(() => CleanupTablesCore(ResultTableNames, isCompleteCleanup: true));
+            return RunMaintenance(endpoint => CleanupTablesCore(endpoint, ResultTableNames, isCompleteCleanup: true));
         }
 
         public DatabaseCleanupExecutionResult CleanupTables(IReadOnlyCollection<string> tableNames)
         {
             var validatedTableNames = ValidateCleanupTableNames(tableNames);
-            return MySqlLocalServicesManager.RunDatabaseMaintenance(() => CleanupTablesCore(validatedTableNames, isCompleteCleanup: false));
+            return RunMaintenance(endpoint => CleanupTablesCore(endpoint, validatedTableNames, isCompleteCleanup: false));
         }
 
-        public DatabaseCleanupBackupResult CreateBackup()
+        public DatabaseCleanupBackupResult CreateBackup() => RunMaintenance(CreateBackupCore);
+
+        private static DatabaseCleanupBackupResult CreateBackupCore(MySqlConnectedEndpoint endpoint)
         {
-            return MySqlLocalServicesManager.RunDatabaseMaintenance(() =>
+            string backupPath = MySqlLocalServicesManager.GetInstance().BackupAllMysql(endpoint);
+            return new DatabaseCleanupBackupResult
             {
-                string backupPath = MySqlLocalServicesManager.GetInstance().BackupAllMysql();
-                return new DatabaseCleanupBackupResult
-                {
-                    FilePath = backupPath,
-                    StatusMessage = EngineLocalization.Format($"完整备份已创建：{Path.GetFileName(backupPath)}")
-                };
-            });
+                FilePath = backupPath,
+                StatusMessage = EngineLocalization.Format($"完整备份已创建：{Path.GetFileName(backupPath)}")
+            };
         }
 
         public DatabaseCleanupMaintenanceResult ExecuteCleanupWithBackup(Func<DatabaseCleanupExecutionResult> cleanupAction)
+            => ExecuteCleanupWithBackup(CreateBackupCore, cleanupAction);
+
+        internal DatabaseCleanupMaintenanceResult ExecuteCleanupWithBackup(
+            Func<MySqlConnectedEndpoint, DatabaseCleanupBackupResult> createBackup, Func<DatabaseCleanupExecutionResult> cleanupAction)
         {
             ArgumentNullException.ThrowIfNull(cleanupAction);
 
-            return MySqlLocalServicesManager.RunDatabaseMaintenance(() =>
+            return RunMaintenance(endpoint =>
             {
-                var backup = CreateBackup();
-                var cleanup = cleanupAction();
-                return new DatabaseCleanupMaintenanceResult
+                var backup = createBackup(endpoint);
+                EnsureCurrentEndpoint(endpoint);
+                // The original callback API also accepts methods on an unbound provider.
+                MySqlConnectedEndpoint? previous = BackupCleanupEndpoint.Value;
+                BackupCleanupEndpoint.Value = endpoint;
+                try
                 {
-                    Backup = backup,
-                    Cleanup = cleanup
-                };
+                    return new DatabaseCleanupMaintenanceResult { Backup = backup, Cleanup = cleanupAction() };
+                }
+                finally
+                {
+                    BackupCleanupEndpoint.Value = previous;
+                }
             });
         }
 
         public DatabaseCleanupExecutionResult ExecuteOptimization()
         {
-            return MySqlLocalServicesManager.RunDatabaseMaintenance(ExecuteOptimizationCore);
+            return RunMaintenance(ExecuteOptimizationCore);
         }
 
-        private static DatabaseCleanupExecutionResult ExecuteOptimizationCore()
+        private static DatabaseCleanupExecutionResult ExecuteOptimizationCore(MySqlConnectedEndpoint endpoint)
         {
             Stopwatch totalStopwatch = Stopwatch.StartNew();
             var createdIndexes = new List<string>();
             string? currentTable = null;
             bool maintenanceLockAcquired = false;
 
-            using var db = CreateDbClient(timeout: 30, autoCloseConnection: false);
+            using var db = CreateDbClient(endpoint, 30, out _, autoCloseConnection: false);
             db.Ado.CommandTimeOut = OptimizationCommandTimeoutSeconds;
 
             try
@@ -336,6 +407,7 @@ namespace ColorVision.Database
                         string.Join(Environment.NewLine, preflightErrors.Select(error => $"- {error}")));
                 }
 
+                EnsureCurrentEndpoint(endpoint);
                 foreach (OptimizationIndexDefinition definition in pendingIndexes)
                 {
                     currentTable = definition.TableName;
@@ -570,10 +642,10 @@ namespace ColorVision.Database
                 .ToArray();
         }
 
-        private static DatabaseCleanupExecutionResult CleanupTablesCore(IReadOnlyCollection<string> tableNames, bool isCompleteCleanup)
+        private static DatabaseCleanupExecutionResult CleanupTablesCore(MySqlConnectedEndpoint endpoint, IReadOnlyCollection<string> tableNames, bool isCompleteCleanup)
         {
-            using var db = CreateDbClient(timeout: 30);
-            var existingTables = GetExistingTables(db);
+            using var db = CreateDbClient(endpoint, 30, out string databaseName);
+            var existingTables = GetExistingTables(db, databaseName);
 
             var requestedTables = tableNames.ToHashSet(StringComparer.OrdinalIgnoreCase);
             var definitions = CleanupTableDefinitions
@@ -584,6 +656,7 @@ namespace ColorVision.Database
             var result = new DatabaseCleanupExecutionResult();
             int clearedTableCount = 0;
 
+            EnsureCurrentEndpoint(endpoint);
             db.Ado.ExecuteCommand("SET FOREIGN_KEY_CHECKS = 0;");
             try
             {
@@ -620,20 +693,22 @@ namespace ColorVision.Database
             return result;
         }
 
-        private static SqlSugarClient CreateDbClient(int timeout, bool autoCloseConnection = true)
+        private static SqlSugarClient CreateDbClient(MySqlConnectedEndpoint endpoint, uint timeout, out string databaseName, bool autoCloseConnection = true)
         {
+            var options = MySqlLocalServicesManager.GetVerifiedConnectionOptions(endpoint);
+            databaseName = options.Database;
+            options.ConnectionTimeout = timeout;
             return new SqlSugarClient(new ConnectionConfig
             {
-                ConnectionString = MySqlControl.GetConnectionString(MySqlSetting.Instance.MySqlConfig, timeout),
+                ConnectionString = options.ConnectionString,
                 DbType = DbType.MySql,
                 IsAutoCloseConnection = autoCloseConnection,
                 InitKeyType = InitKeyType.Attribute,
             });
         }
 
-        private static HashSet<string> GetExistingTables(SqlSugarClient db, string? databaseName = null)
+        private static HashSet<string> GetExistingTables(SqlSugarClient db, string databaseName)
         {
-            databaseName ??= MySqlSetting.Instance.MySqlConfig.Database;
             var registeredTableNames = ResultTableNames.ToHashSet(StringComparer.OrdinalIgnoreCase);
             return db.Queryable<DatabaseTableStatusRow>()
                 .AS("INFORMATION_SCHEMA.TABLES")
@@ -654,12 +729,11 @@ namespace ColorVision.Database
             return tableName.StartsWith(MeasureDetailTablePrefix, StringComparison.OrdinalIgnoreCase);
         }
 
-        private static Dictionary<string, HashSet<string>> GetColumnsByTable(SqlSugarClient db, HashSet<string> existingTables, string? databaseName = null)
+        private static Dictionary<string, HashSet<string>> GetColumnsByTable(SqlSugarClient db, HashSet<string> existingTables, string databaseName)
         {
             if (existingTables.Count == 0)
                 return new Dictionary<string, HashSet<string>>(StringComparer.OrdinalIgnoreCase);
 
-            databaseName ??= MySqlSetting.Instance.MySqlConfig.Database;
             return db.Queryable<DatabaseColumnRow>()
                 .AS("INFORMATION_SCHEMA.COLUMNS")
                 .Where(row => row.TableSchema == databaseName && existingTables.Contains(row.TableName))

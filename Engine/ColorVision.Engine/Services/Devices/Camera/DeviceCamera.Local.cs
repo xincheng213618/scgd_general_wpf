@@ -1,3 +1,4 @@
+using ColorVision.Database;
 using ColorVision.Engine.Services.Devices.Camera.Local;
 using ColorVision.Engine.Services.Devices.Camera.Templates.CameraRunParam;
 using ColorVision.Engine.Services.Devices.Camera.Views;
@@ -48,38 +49,49 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         internal CameraBackendState CameraBackend { get; }
         private readonly object previewSync = new();
-        private (ViewCamera View, MeasureResultImgModel? Model, LocalCameraPreview Preview, bool Force, bool FocusFrame)? pendingPreview;
+        private readonly record struct PendingLocalPreview(ViewCamera View, MeasureResultImgModel? Model,
+            LocalCameraPreview Preview, bool Force, bool FocusFrame, MySqlConnectedEndpoint? Endpoint);
+        private PendingLocalPreview? pendingPreview;
         private bool previewQueued;
         private long previewVersion;
 
-        internal void PublishLocalPreview(LocalFlowFrame frame, MeasureResultImgModel? model, bool forceDisplay, bool focusFrame = false)
+        internal void PublishLocalPreview(LocalFlowFrame frame, MeasureResultImgModel? model, bool forceDisplay, bool focusFrame = false,
+            MySqlConnectedEndpoint? databaseEndpoint = null)
+            => PublishLocalPreview(frame, LocalCameraPreview.Create, model, forceDisplay, focusFrame, databaseEndpoint);
+
+        private void PublishLocalPreview<T>(T source, Func<T, LocalCameraPreview> createPreview, MeasureResultImgModel? model,
+            bool forceDisplay, bool focusFrame, MySqlConnectedEndpoint? databaseEndpoint = null)
         {
             ViewCamera? view = ExistingView;
             if (IsDisposed || !_view.IsVisible || Application.Current == null || view == null) return;
+            if (databaseEndpoint != null && !OwnsResultDatabase(databaseEndpoint)) return;
             // Skip the full RAW/CIE snapshot for automatic captures while refresh is disabled.
             if (!forceDisplay && !ViewCameraConfig.Instance.AutoRefreshView) return;
             long version = Interlocked.Increment(ref previewVersion);
             try
             {
-                LocalCameraPreview preview = LocalCameraPreview.Create(frame);
+                // Consume borrowed camera pixels here, before returning to the native callback. Queue only the detached preview.
+                LocalCameraPreview preview = createPreview(source);
                 lock (previewSync)
                 {
                     if (IsDisposed || !_view.IsVisible || !ReferenceEquals(ExistingView, view) || version != Volatile.Read(ref previewVersion)) return;
-                    pendingPreview = (view, model, preview, forceDisplay, focusFrame);
+                    if (databaseEndpoint != null && !OwnsResultDatabase(databaseEndpoint)) return;
+                    pendingPreview = new(view, model, preview, forceDisplay, focusFrame, databaseEndpoint);
                     if (previewQueued) return;
                     previewQueued = true;
                 }
                 Application.Current.Dispatcher.BeginInvoke(() =>
                 {
-                    (ViewCamera View, MeasureResultImgModel? Model, LocalCameraPreview Preview, bool Force, bool FocusFrame)? pending;
+                    PendingLocalPreview? pending;
                     lock (previewSync)
                     {
                         pending = pendingPreview;
                         pendingPreview = null;
                         previewQueued = false;
                     }
-                    if (IsDisposed || !_view.IsVisible || pending == null || !ReferenceEquals(ExistingView, pending.Value.View)) return;
-                    try { pending.Value.View.ShowLocalResult(pending.Value.Model, pending.Value.Preview, pending.Value.Force, pending.Value.FocusFrame); }
+                    if (IsDisposed || !_view.IsVisible || pending is not { } update || !ReferenceEquals(ExistingView, update.View)) return;
+                    if (update.Endpoint != null && !OwnsResultDatabase(update.Endpoint)) return;
+                    try { update.View.ShowLocalResult(update.Model, update.Preview, update.Force, update.FocusFrame, update.Endpoint); }
                     catch (Exception ex) { MQTTServiceBase.log.Error("本地相机预览显示失败。", ex); }
                 });
             }

@@ -295,6 +295,8 @@ internal sealed class DisplayMetrologyResultWindow : Window, IDisposable
 /// <summary>Run directly inside a drawn rectangle without changing or cropping the source document.</summary>
 public sealed class RgbCrossRectangleContextMenu(ImageProcessingContext image, DrawEditorContext draw) : IDVContextMenu, IAlgorithmCatalogBoundMenu
 {
+    public AlgorithmInteractiveGroupPresentation AnalysisGroup => AlgorithmMenuGroups.ColorRegistration;
+
     public AlgorithmId AlgorithmId => DisplayMetrologyIds.RgbCrossRegistration;
     public bool RequiresRoi => true;
     public Type ContextType => typeof(IRectangle);

@@ -1,5 +1,6 @@
 ﻿using ColorVision.Common.Utilities;
 using System;
+using ColorVision.Engine.MQTT;
 using System.Windows;
 
 namespace ColorVision.Engine.Services.Devices
@@ -46,7 +47,11 @@ namespace ColorVision.Engine.Services.Devices
 
         public override string ServiceToken { get => Config.ServiceToken; set => Config.ServiceToken = value; }
 
-        public MQTTDeviceService(T config) : base()
+        public MQTTDeviceService(T config) : this(config, MQTTControl.GetInstance())
+        {
+        }
+
+        internal MQTTDeviceService(T config, MQTTControl mqttControl) : base(mqttControl)
         {
             Config = config;
             SendTopic = Config.SendTopic;

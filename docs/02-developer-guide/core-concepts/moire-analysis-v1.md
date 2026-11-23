@@ -5,7 +5,6 @@ status: "current"
 summary: "MoireAnalysis 保留实现的参数、结果与验证契约；默认运行时由 Experimental 门禁拒绝执行。"
 aliases: ["摩尔纹分析与 RemoveMoire 有什么区别","MoireAnalysis","MoireAnalysisAlgorithmProvider"]
 code_paths: ["UI/ColorVision.ImageEditor/Algorithms/MoireAnalysisAlgorithmProvider.cs","UI/ColorVision.ImageEditor/Algorithms/StandardAlgorithmCatalog.cs","UI/ColorVision.ImageEditor/Algorithms/ImageAlgorithmPlatform.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/AlgorithmReleaseGateTests.cs"]
 related: ["algorithms.platform","algorithms.index"]
 ---
 
@@ -83,6 +82,6 @@ Runner 继续拥有解析、参数验证、provider 选择、调度、取消、�
 ## 测试和性能门禁
 
 
-可选 `MoireAnalysisPipelineProbe` 对 4K Gray16、4K Bgra32 与 8K Gray16 启用 notch，记录延迟、managed allocation、private-memory delta 和结果 retained bytes。结果上限按两张 Gray8 加一张 Gray32Float，即 6 bytes/pixel；管理分配预算是 retained bytes 加 64 MiB，native/private 工作集预算是 48 bytes/pixel 加 256 MiB，单次上限 180 秒。执行期仍需要频域分析的 spatial/complex DFT Mat，并在启用滤波时创建第二组 DFT/reconstruction 工作区；这些不进入 Result，也没有额外整幅 managed magnitude/power 副本。
+结果上限按两张 Gray8 加一张 Gray32Float 计算，为 6 bytes/pixel。启用滤波还会创建第二组执行期 DFT 与重建工作区。大图验收须分别量测结果占用、托管分配、原生工作集和延迟。
 
 摩尔纹分析不做自动因果判定、时序视频摩尔纹跟踪、彩色通道分别滤波、盲反卷积、非均匀 FFT、GPU provider 或自动提交滤波图。每项若加入都需要独立数值、色彩和所有权契约。

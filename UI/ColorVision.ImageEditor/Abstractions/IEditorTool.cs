@@ -34,6 +34,7 @@ namespace ColorVision.ImageEditor
         int Order { get; }
         object? Icon { get; }
         ICommand? Command { get; }
+        bool SupportsEmptyView => false;
     }
 
     /// <summary>
@@ -75,6 +76,9 @@ namespace ColorVision.ImageEditor
     public interface IIEditorToolContextMenu
     {
         List<MenuItemMetadata> GetContextMenuItems();
+
+        /// <summary>Tools that can run without a displayed image may contribute to the empty view.</summary>
+        List<MenuItemMetadata> GetContextMenuItems(bool hasImage) => hasImage ? GetContextMenuItems() : [];
     }
 
     /// <summary>Marks a specialized compatibility menu as executable only when its runtime owns the matching descriptor/provider.</summary>

@@ -1,17 +1,19 @@
 using ColorVision.Common.MVVM;
+using ColorVision.Database;
 using ColorVision.Engine.Services.Devices;
 using ColorVision.Engine.Services.RC;
 using ColorVision.Engine.Services.Types;
-using ColorVision.Themes.Controls;
 using ColorVision.UI;
 using ColorVision.UI.Authorizations;
-using ColorVision.UI.Extension;
+using log4net;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Media;
 
 
 namespace ColorVision.Engine.Services.Terminal
@@ -32,9 +34,17 @@ namespace ColorVision.Engine.Services.Terminal
         }
     }
 
-    public class TerminalService : TerminalServiceBase, IIcon
+    public class TerminalService : TerminalServiceBase
     {
+        private static readonly ILog log = LogManager.GetLogger(typeof(TerminalService));
+        private int retired;
+        internal bool IsConfigurationRetired => Volatile.Read(ref retired) != 0;
+
         public SysResourceModel SysResourceModel { get; set; }
+        internal MySqlConnectedEndpoint? ResourceDatabaseEndpoint { get; set; }
+        internal SysResourceDao? LocalConfigurationResourceDao { get; set; }
+        internal Func<(string TypeCode, string ServiceCode), IReadOnlyList<string>, Func<bool>, bool>? ReloadRequest { get; set; }
+        internal TerminalConfigurationTarget CaptureConfigurationTarget() => new(this);
         protected override string? AuthorizationResourceId => ServiceAuthorization.ResourceId(SysResourceModel);
         public TerminalServiceConfig Config { get; set; }
 
@@ -46,14 +56,16 @@ namespace ColorVision.Engine.Services.Terminal
 
         public string Code { get => SysResourceModel.Code ?? string.Empty; set { SysResourceModel.Code = value; OnPropertyChanged(); } }
 
-        public ImageSource Icon { get; set; }
-
         public RelayCommand RefreshCommand { get; set; }
         public RelayCommand EditCommand { get; set; }
         public RelayCommand OpenCreateWindowCommand { get; set; }
-        public TerminalService(SysResourceModel sysResourceModel) : base()
+        public TerminalService(SysResourceModel sysResourceModel) : this(sysResourceModel, transport: null) { }
+
+        internal TerminalService(SysResourceModel sysResourceModel, MQTTServiceTerminalBase? transport)
         {
             SysResourceModel = sysResourceModel;
+            if (sysResourceModel.Id > 0) ResourceDatabaseEndpoint = MySqlControl.GetInstance().ConnectedEndpoint;
+            else if (SysResourceDao.IsLocalId(sysResourceModel.Id)) LocalConfigurationResourceDao = SysResourceDao.Instance;
 
 
             Config = ServiceObjectBaseExtensions.TryDeserializeConfig<TerminalServiceConfig>(SysResourceModel.Value);
@@ -61,22 +73,34 @@ namespace ColorVision.Engine.Services.Terminal
             Config.Code = Code;
             Config.Name = Name;
 
-            RefreshCommand = new RelayCommand(a => Save());
+            SaveCommand = new RelayCommand(_ => RunTerminalCommand(Save));
+            RefreshCommand = new RelayCommand(_ => RunTerminalCommand(() =>
+            {
+                if (!TryReloadDevices())
+                    MessageBox.Show(Application.Current.GetActiveWindow(), EngineLocalization.Get("未能提交终端设备重载请求。"), "ColorVision",
+                        MessageBoxButton.OK, MessageBoxImage.Information);
+            }), _ => ResourceDatabaseEndpoint?.IsCurrent == true && !IsConfigurationRetired);
             EditCommand = new RelayCommand(a =>
             {
                 if (!ServiceAuthorization.Can("service.configure", SysResourceModel)) return;
+                var target = CaptureConfigurationTarget();
                 var nameConfig = new BaseConfig { Name = Name };
                 PropertyEditorWindow window = new PropertyEditorWindow(nameConfig);
                 window.Title = $"{Properties.Resources.MenuEdit} {Properties.Resources.ServiceName}";
                 window.Owner = Application.Current.GetActiveWindow();
                 window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
-                window.Submitted += (_, _) =>
+                window.Submitting += (_, args) =>
                 {
-                    if (!ServicesHelper.IsInvalidPath(nameConfig.Name, Properties.Resources.ResourceName)) return;
-                    try { Rename(nameConfig.Name); }
+                    if (!ServicesHelper.IsInvalidPath(nameConfig.Name, Properties.Resources.ResourceName))
+                    {
+                        args.Cancel = true;
+                        return;
+                    }
+                    try { Rename(nameConfig.Name, target); }
                     catch (Exception exception)
                     {
-                        MessageBox.Show(window, exception.Message, Properties.Resources.MenuEdit, MessageBoxButton.OK, MessageBoxImage.Error);
+                        args.Cancel = true;
+                        args.ErrorMessage = exception.Message;
                     }
                 };
                 window.ShowDialog();
@@ -91,72 +115,112 @@ namespace ColorVision.Engine.Services.Terminal
                 createTerminal.ShowDialog();
             }, a => ServiceAuthorization.Can("device.create", SysResourceModel));
 
-            if (DeviceServiceFactoryRegistry.TryGetFactory(ServiceType, out IDeviceServiceFactory? deviceServiceFactory)
-                && !string.IsNullOrWhiteSpace(deviceServiceFactory?.TerminalIconResourceKey))
-            {
-                this.SetIconResource(deviceServiceFactory.TerminalIconResourceKey);
-            }
-            MQTTServiceTerminalBase = new MQTTServiceTerminalBase<TerminalServiceConfig>(Config);
+            MQTTServiceTerminalBase = transport ?? new MQTTServiceTerminalBase<TerminalServiceConfig>(Config);
 
             ContextMenu = new ContextMenu();
             ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.Create, Command = OpenCreateWindowCommand });
             ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.MenuEdit, Command = EditCommand });
-            ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.RestartService, Command = RefreshCommand });
+            ContextMenu.Items.Add(new MenuItem() { Header = EngineLocalization.Get("重新加载终端设备"), Command = RefreshCommand });
             ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.MenuDelete, Command = DeleteCommand });
         }
 
-        public override void Delete()
+        public override void Delete() => DeleteOwnedResource(DeleteWithConfirmation);
+
+        internal bool DeleteWithConfirmation(Func<bool> confirm)
         {
             DemandDeleteAccess();
-            if (MessageBox1.Show(Application.Current.GetActiveWindow(),Properties.Resources.AvoidDeletionUnlessNecessary, "ColorVision", MessageBoxButton.OKCancel) == MessageBoxResult.Cancel) return;
-            base.Delete();
-            Parent.RemoveChild(this);
-            if (SysResourceModel != null)
-            {
-                foreach (var child in SysResourceDao.Instance.GetAllByPid(SysResourceModel.Id)) SysResourceDao.Instance.DeleteById(child.Id);
-                SysResourceDao.Instance.DeleteById(SysResourceModel.Id);
+            var target = CaptureConfigurationTarget();
+            var parent = Parent;
+            bool IsCurrent() => target.IsCurrent(this);
 
+            if (!IsCurrent() || !confirm()) return false;
+            DemandDeleteAccess();
+            if (!IsCurrent()) return false;
+
+            var devices = VisualChildren.OfType<DeviceService>().Where(device => ReferenceEquals(device.Parent, this)).ToArray();
+            if (!target.Resource.TryDelete(includeDirectChildren: true, IsCurrent)) return false;
+
+            RetireConfiguration();
+            foreach (var child in devices) child.CompleteResourceDeletion();
+            try
+            {
+                parent?.RemoveChild(this);
+                ServiceManager.Current?.TerminalServices.Remove(this);
             }
-            ServiceManager.GetInstance().TerminalServices.Remove(this);
+            catch (Exception error) { log.Warn("Terminal resources were deleted, but the service tree could not be updated.", error); }
+            return true;
         }
 
+        internal void RetireConfiguration()
+        {
+            if (Interlocked.Exchange(ref retired, 1) != 0) return;
+            try { MQTTServiceTerminalBase.Dispose(); }
+            catch (Exception error) { log.Warn("Could not dispose retired terminal transport.", error); }
+        }
 
         public override UserControl GenDeviceControl() => new TerminalServiceControl(this);
 
-        internal void Rename(string name)
+        internal void Rename(string name, TerminalConfigurationTarget? expectedTarget = null)
         {
             ServiceAuthorization.Demand("service.configure", SysResourceModel);
-            if (Name == name) return;
-            var storedConfig = string.IsNullOrWhiteSpace(SysResourceModel.Value) ? new JObject()
-                : JsonConvert.DeserializeObject<JObject>(SysResourceModel.Value, new JsonSerializerSettings { DateParseHandling = DateParseHandling.None }) ?? new JObject();
-            storedConfig[nameof(BaseConfig.Name)] = name;
-            string? originalName = SysResourceModel.Name;
-            string? originalValue = SysResourceModel.Value;
-            SysResourceModel.Name = name;
-            SysResourceModel.Value = storedConfig.ToString(Formatting.None);
-            try
+            var target = expectedTarget ?? CaptureConfigurationTarget();
+            SaveConfiguration(target, row =>
             {
-                if (SysResourceDao.Instance.Save(SysResourceModel) <= 0)
-                    throw new InvalidOperationException(Properties.Resources.TemplateBrowserSaveFailed);
-            }
-            catch
-            {
-                SysResourceModel.Name = originalName;
-                SysResourceModel.Value = originalValue;
-                throw;
-            }
-            Config.Name = name;
-            OnPropertyChanged(nameof(Name));
+                if (string.Equals(row.Name, name, StringComparison.Ordinal)) return;
+                var storedConfig = string.IsNullOrWhiteSpace(row.Value) ? new JObject()
+                    : JsonConvert.DeserializeObject<JObject>(row.Value, new JsonSerializerSettings { DateParseHandling = DateParseHandling.None }) ?? new JObject();
+                storedConfig[nameof(BaseConfig.Name)] = name;
+                row.Name = name;
+                row.Value = storedConfig.ToString(Formatting.None);
+            });
         }
 
         public override void Save()
         {
-            base.Save();
-            SysResourceModel.Name = Config.Name;
-            SysResourceModel.Code = Config.Code;
-            SysResourceModel.Value = JsonConvert.SerializeObject(Config);
-            SysResourceDao.Instance.Save(SysResourceModel);
-            if (!SysResourceDao.IsLocalId(SysResourceModel.Id)) MqttRCService.GetInstance().RestartServices(Config.ServiceType.ToString());
+            var target = CaptureConfigurationTarget();
+            var config = Config;
+            SaveConfiguration(target, row =>
+            {
+                row.Code = config.Code;
+                row.Name = config.Name;
+                row.Value = JsonConvert.SerializeObject(config);
+            });
+        }
+
+        private void SaveConfiguration(TerminalConfigurationTarget target, Action<SysResourceModel> update)
+        {
+            var saved = target.Resource.UpdateConfiguration(update, () => target.IsCurrent(this));
+            if (saved == null)
+                throw new InvalidOperationException(EngineLocalization.Get("终端或配置库已变更，请重新打开后再保存。"));
+            if (!target.IsCurrent(this)) return;
+
+            bool nameChanged = !string.Equals(SysResourceModel.Name, saved.Name, StringComparison.Ordinal);
+            bool codeChanged = !string.Equals(SysResourceModel.Code, saved.Code, StringComparison.Ordinal);
+            SysResourceModel.Code = saved.Code;
+            SysResourceModel.Name = saved.Name;
+            SysResourceModel.Value = saved.Value;
+            Config.Name = Name;
+            if (nameChanged) OnPropertyChanged(nameof(Name));
+            if (codeChanged) OnPropertyChanged(nameof(Code));
+        }
+
+        internal bool TryReloadDevices(TerminalConfigurationTarget? expectedTarget = null)
+        {
+            var target = expectedTarget ?? CaptureConfigurationTarget();
+            bool OwnsRequest() => target.IsCurrent(this);
+            if (target.ReadRemoteRoute(this, includeDevices: true) is not { DeviceCodes.Count: > 0 } route) return false;
+            return ReloadRequest is { } request ? request((route.TypeCode, route.ServiceCode), route.DeviceCodes, OwnsRequest)
+                : MqttRCService.GetInstance().TryReloadServiceDevices(route.TypeCode, route.ServiceCode, route.DeviceCodes, OwnsRequest);
+        }
+
+        private static void RunTerminalCommand(Action command)
+        {
+            try { command(); }
+            catch (Exception error)
+            {
+                log.Warn("Terminal command failed.", error);
+                MessageBox.Show(Application.Current.GetActiveWindow(), error.Message, "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
     }
 }

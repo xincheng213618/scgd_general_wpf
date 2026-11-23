@@ -14,4 +14,4 @@ onMounted(() => {
 
 # 页面已整理
 
-源码参考从[生成的知识地图](../knowledge/index.md)定位模块、主题和测试。
+源码参考可从[生成的知识地图](../knowledge/index.md)补查相关模块和专题。

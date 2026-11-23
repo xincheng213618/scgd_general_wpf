@@ -5,7 +5,6 @@ status: "current"
 summary: "公共站点首页、发行归档、日志、工具、Android更新和目录浏览的读模型；compact路径不同，GET可写缓存或修复旧更新目录。"
 aliases: ["公共站点读模型", "首页汇总", "发行归档分页", "changelog分页", "Android更新清单", "文件浏览", "api/site/home", "api/site/releases", "api/site/changelog", "api/site/browse", "get_compact_releases_from_index", "get_compact_home_releases_from_index", "build_index_page_context", "paginate_changelog_markdown", "build_android_update_manifest", "select_latest_android_release", "is_public_storage_path", "available_count"]
 code_paths: ["Web/Backend/routes/pages.py", "Web/Backend/marketplace_services.py", "Web/Backend/page_contexts.py", "Web/Backend/services/artifact_index.py", "Web/Backend/services/storage_events.py", "Web/Backend/app_releases.py", "Web/Backend/app_changelog.py", "Web/Backend/storage_browser.py", "Web/Backend/services/public_storage.py", "Web/Backend/services/android_update.py", "Web/Backend/services/app_latest_version_cache.py", "Web/Backend/update_retention.py", "Web/Backend/services/spectrum_release.py", "Web/Backend/services/docs_site.py"]
-test_paths: ["Web/Backend/test_app.py", "Web/Backend/test_artifact_index.py", "Web/Backend/test_page_contexts.py", "Web/Backend/test_app_releases.py", "Web/Backend/test_setup_download.py"]
 related: ["delivery.backend", "delivery.plugin-catalog", "delivery.artifact-delivery", "delivery.file-transfer", "delivery.backend-auth"]
 ---
 
@@ -92,6 +91,5 @@ updates索引命中只返回已索引规范包，`other_update_files` / `other_u
 
 ## 验证与排查
 
-`test_artifact_index.py` 有ready快路径不调用旧builder、5000条Android归档分页、组跨页总量、update/tool索引读取、browse过滤先于分页等用例；`test_page_contexts.py` 覆盖投影形状与仅为本页构造详细目录记录；`test_app.py` 覆盖分页参数夹取/非法整数、compact日志输出、Android清单与固定下载。`test_app_releases.py` 覆盖发行文件扫描和Android分组。
 
 跨索引一致性、并行文件替换、失效Android最高候选不回退、公开GET修复旧目录等分支需要生产环境或故障注入验证。排查时先辨别快路径/回退、过滤总量/页内总量、文件存在/索引可见，再决定是否需要获准的刷新或文件维护。

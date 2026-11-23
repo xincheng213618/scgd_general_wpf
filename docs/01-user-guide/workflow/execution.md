@@ -5,13 +5,14 @@ status: "current"
 summary: "从工作流程面板或流程编辑器开始执行；流程停止请求与结果返回按启动准备、引擎和前后处理收尾分阶段判断，区分当前画布、诊断快照、执行耗时和结果落库；停止请求不保证设备停稳。"
 aliases: ["工作流程","流程编辑器","流程启动","流程运行","流程卡住","流程没结束","执行流程","停止流程","已经取消执行","执行耗时","流程后处理","RunFlowCommand","StopFlowCommand","RunFinalized","执行调试","StopFlow","CVBaseServerNode","FlowExecutionSession","FlowJob"]
 code_paths: ["Engine/ColorVision.Engine/FlowProcessing/Runtime/DisplayFlow.xaml","Engine/ColorVision.Engine/FlowProcessing/Runtime/ViewFlow.xaml","Engine/ColorVision.Engine/FlowProcessing/Runtime/ViewFlow.xaml.cs","Engine/ColorVision.Engine/FlowProcessing/Runtime/FlowExecutionSession.cs","Engine/ColorVision.Engine/FlowProcessing/Runtime/FlowRunExecutor.cs","Engine/ColorVision.Engine/FlowProcessing/Runtime/FlowRunFinalizer.cs","Engine/ColorVision.Engine/FlowProcessing/Runtime/FlowControl.cs","Engine/ColorVision.Engine/FlowProcessing/PostProcess/PostProcessExecution.cs","Engine/ColorVision.Engine/FlowProcessing/Scheduling/FlowJob.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/OfflineCameraFlowTests.cs","Test/ColorVision.UI.Tests/FlowFinalizedExecutionApiTests.cs","Test/ColorVision.UI.Tests/FlowRunFinalizerTests.cs"]
 related: ["flow.architecture","flow.templates","flow.workspace","flow.headless","flow.diagnostics"]
 ---
 
 # 流程执行：启动、停止与最终化
 
 从“工作流程”面板或“流程编辑器”点击“执行流程”，运行对应工作区的节点图。本页说明启动前提、停止行为，以及如何区分引擎结束、后处理完成和结果落库。共享业务链由 `FlowExecutionSession` 编排；项目窗口直接持有 `FlowControl` 的入口可能使用自己的完成规则。
+
+主窗口选中“工作流程”标签时，底部状态栏显示已加载的流程和“执行流程”按钮。它与流程编辑器使用同一执行命令，运行期间显示进度；尚无进度估算时显示活动动画。
 
 `ViewFlow.NodeExecutionCompleted` 在会话接受当前运行的一次节点结束通知后发布，携带批次 ID、SN、节点身份和状态码；旧 SN、未匹配的节点尝试及重复结束通知不会发布。该事件表示节点收尾，整图完成、后处理和诊断写入各自有独立时序。订阅者须快速返回，将耗时工作转交后台。订阅者异常会被隔离记录，不中断流程节点收尾。
 
@@ -52,7 +53,11 @@ related: ["flow.architecture","flow.templates","flow.workspace","flow.headless",
 
 等待取图队列或同一相机上的手动操作时，停止请求可撤销尚未开始的取图。已进入 SDK 的连接、模式切换或采集调用仍须等待返回。
 
-未连接 MySQL 时，一次运行在启动时固定 `PersistResults=false`：相机及本地图片节点保留内存帧，供当前流程后续节点使用；相机仍可预览，节点启用保存文件时仍按原有目录保存图像。它们不会创建 MySQL 图像结果主表，也不会把结果写进 `ColorVision.Local.db`。现有诊断记录使用独立的诊断库，不能作为图像结果历史查询。
+未连接 MySQL 时，一次运行在启动时固定 `PersistResults=false`。相机、本地图片和景深融合将图像帧交给下游。相机仍可预览，已配置的文件输出照常保存。仅驻留内存的结果没有 MySQL 主记录，现有诊断记录存放在独立诊断库。
+
+共享会话用启动时已验证的 MySQL 连接创建业务批次。运行中切换连接时，该批次的正常结束、启动前取消及必需后处理失败仍写回创建它的数据库。原库不可用时记录更新失败，新库的同号批次保持原样。
+
+本地相机、图片输入、景深融合、本地相机校正、光谱和源表的流程结果沿用所属批次的连接。启用持久化时，在采集或解码前确定目标并用该目标查找批次和写结果。持久化通知携带同一个连接对象，相机和校正视图只接收当前设备连接所属的通知。
 
 此边界覆盖本地相机取图和本地图片输入，不代表所有带“本地”名称的算法已经脱离结果数据库。依赖 MySQL 模板/结果明细、校准数据、远端服务的节点，以及用户配置的前后处理，仍须满足各自依赖；不能直接把完整服务流程视为离线流程。真实 SDK、许可证和硬件采集需单独验收。
 
@@ -60,7 +65,7 @@ related: ["flow.architecture","flow.templates","flow.workspace","flow.headless",
 
 1. 确认所在工作区、模板、起始节点和节点绑定。运行会创建业务批次，也可能控制设备或写外部系统，使用已获授权的输入和目标。
 2. 需要按保存版本复现时，先确认保存成功。UI 手动运行和未指定模板的运行接口可使用未保存的画布；程序化指定模板时，若当前画布有未保存修改则拒绝切换，不弹保存对话框，也不继续运行旧图。`FlowJob` 使用主工作区，不跟随任意独立窗口的激活状态。完整输入差异见[当前画布与已保存版本](./design.md#当前画布与已保存版本)。
-3. 点击“执行流程”，记录实际生成的 SN、批次和开始时间。进度及当前节点用于定位阶段，不作为成功凭据。
+3. 点击“执行流程”，记录 SN、批次和开始时间。剩余时间估算使用当前进程中最近使用的 100 个流程的耗时缓存，缺少历史时在后台读取。
 4. 等待共享链最终化，再核对最终状态、后处理结果和本流程负责的输出。API 调用方使用 `RunFlowAndWaitForFinalizationAsync()`；事件订阅方使用 `RunFinalized`。
 5. 执行过程中需要中止时点击“停止流程”，按下节确认后续状态；不要仅凭停止提示判断设备停稳或数据写入已停止。
 
@@ -94,7 +99,11 @@ related: ["flow.architecture","flow.templates","flow.workspace","flow.headless",
 
 引擎成功时，必需后处理失败使 `FinalOutcome` 为 `Failed`；仅警告级失败为 `SucceededWithWarnings`；没有失败则为 `Succeeded`。引擎本身失败、取消或超时时，后处理不会将其提升为成功。后处理调度整体抛错会作为一项警告结果返回，需查看 `PostProcessResults`，不能只读取引擎状态。
 
-共享默认后处理按流程模板的稳定标识匹配配置并依次调用处理器。模板改名后，已绑定的处理项继续跟随同一模板。单项返回失败或抛错会被记录，后续项继续执行。处理器自行启动的后台任务和外部交付仍需单独核对。
+共享默认后处理按流程模板的稳定标识匹配配置，并依次等待处理器返回。批次右键菜单和手动后处理页签也等待所选处理器。旧同步处理器由 `IPostProcessor.ProcessAsync` 默认调用。模板改名后，已绑定的处理项继续跟随同一模板。单项失败按执行时的失败策略记录，后续项继续执行。处理器自行启动的后台任务和外部交付仍需单独核对。
+
+**源表关闭** 在开始时固定设备和通道。本地通过原生会话关闭一次，依据 SDK 返回判断结果。服务模式在原 MQTT 路由收到首次成功回执后等待 500 毫秒，再核对归属并等待第二次关闭的回执。失败、超时或归属变更按后处理失败记录。已发出的 MQTT 命令可能在等待超时后才被设备处理。
+
+内置 POI、IV Scan 和 IVL 后处理从批次保存时的连接读取结果。通过已验证连接查询到的历史批次也保留来源，因此手动处理先前打开的批次仍读取原库。若原库不可读，处理会报告失败。
 
 旧配置使用不区分大小写的名称匹配。名称唯一对应到已保存模板时，系统补记绑定。通过模板管理器改名前，涉及的旧绑定必须先保存。遇到重复名称时，未绑定的处理项按原失败策略报告为不可用，可在后处理窗口重新选择正确模板。
 
@@ -114,7 +123,7 @@ related: ["flow.architecture","flow.templates","flow.workspace","flow.headless",
 
 ## 耗时与落库状态
 
-“流程结果管理”读取 MySQL 批次历史。普通查询按设置中的批次序号顺序和查询数量读取，输入完整批次编号后按 Enter 或点击“搜索”应用条件；“重置”返回未指定批次的列表，高级查询保留独立条件入口。输入过程中不查询数据库，读取失败时保留原列表并显示错误。顶部概览只统计本次查询结果：完成数为 `Completed`，失败/超时数为 `Failed` 与 `OverTime`，平均耗时只取已完成批次；不代表全部历史产量或项目良率。
+“流程结果管理”读取 MySQL 批次历史。普通查询按设置中的批次序号顺序和查询数量读取，输入完整批次编号后按 Enter 或点击“搜索”应用条件；“重置”返回未指定批次的列表。高级查询提供独立筛选条件，并以只读模式打开。输入过程中不查询数据库，读取失败时保留原列表并显示错误。顶部概览只统计本次查询结果：完成数为 `Completed`，失败/超时数为 `Failed` 与 `OverTime`，平均耗时只取已完成批次；不代表全部历史产量或项目良率。
 
 列表与详情将批次耗时由毫秒换算为秒，时间采用 24 小时制。选中记录后可查看完整结果信息、打开测量结果或流程执行分析；手动后处理位于独立页签，仍需选中批次与处理器后执行。查询设置只展示查询数量和排列顺序，旧配置中的 `AutoRefreshView`、`InsertAtBeginning` 字段继续兼容读取，但不控制历史查询。
 
@@ -166,6 +175,6 @@ related: ["flow.architecture","flow.templates","flow.workspace","flow.headless",
 
 `DisplayFlow.xaml` 的执行/停止命令绑定到 `ViewFlow`。同目录 `FlowExecutionSession.cs` 负责启动与收尾，`FlowRunExecutor.cs` 负责等待和取消，`FlowControl.cs` 连接底层引擎；`FlowRunFinalizer.cs` 和 `PostProcess/PostProcessExecution.cs` 负责后处理及最终状态。
 
-`FlowFinalizedExecutionApiTests.cs` 核对事件/API 类型与 `FlowJob` 结果映射，不是实际会话的时序测试。`FlowRunFinalizerTests.cs` 用替身核对后处理策略、调度异常和后处理先于 legacy fallback 持久化；不验证真实 MySQL/SQLite 写入。停止阶段、耗时范围及当前画布与诊断快照差异依据上述源码链，现有这两组测试没有覆盖完整组合。
+验收时用实际会话检查后处理与旧版持久化的顺序、停止阶段与耗时范围、当前画布与诊断快照的差异，并确认结果写入目标 MySQL 或 SQLite。
 
 诊断相关测试及缺口见[诊断验证边界](../../04-api-reference/engine-components/flow-diagnostics.md#验证入口与缺口)。真实设备停止、注册中心连接和项目外部输出仍需在获授权的环境验证；当前没有单步或断点调试能力的承诺。

@@ -5,7 +5,6 @@ status: "current"
 summary: "插件项目构建、HostCopy、市场与本地安装、备份回退和提取插件；DLL目录替换、依赖补回及重启后加载的完成条件，正式打包会上传。"
 aliases: ["新插件怎么创建","HostCopy 为什么没执行","插件安装失败","插件更新回滚","插件备份","导出插件依赖","提取插件","浏览商店","PluginProject.HostCopy.targets","package_plugin.bat","PluginUpdater","PluginExtractor","PluginRecoveryBackupService","stripped_files.json"]
 code_paths: ["Plugins/Directory.Build.props","Plugins/SystemMonitor/SystemMonitor.csproj","PluginProject.HostCopy.targets","Scripts/package_cvxp.py","Scripts/package_plugin.bat","UI/ColorVision.UI/Plugins/PluginManifest.cs","UI/ColorVision.UI.Desktop/Plugins/PluginUpdater.cs","UI/ColorVision.UI.Desktop/Plugins/PluginDirectoryTransactionBatchScript.cs","UI/ColorVision.UI.Desktop/Plugins/PluginRecoveryBackupService.cs","UI/ColorVision.UI/Plugins/PluginExtractor.cs","UI/ColorVision.UI.Desktop/Update/ApplicationUpdateProcessCoordinator.cs","UI/ColorVision.UI.Desktop/Update/ExternalUpdateBatchScript.cs","UI/ColorVision.UI.Desktop/Marketplace/MarketplacePackagePreflight.cs","UI/ColorVision.UI.Desktop/Marketplace/MarketplacePackageDownloadService.cs","UI/ColorVision.UI.Desktop/Marketplace/MarketplaceClient.cs","UI/ColorVision.UI.Desktop/Marketplace/MenuPluginManager.cs","UI/ColorVision.UI.Desktop/Marketplace/MarketplaceWindow.xaml","UI/ColorVision.UI.Desktop/Marketplace/MarketplaceManager.cs","UI/ColorVision.UI.Desktop/Marketplace/MarketplaceDetailContext.cs","UI/ColorVision.UI.Desktop/Marketplace/PluginInfoVM.cs","UI/ColorVision.UI.Desktop/Properties/Resources.resx","ColorVision/Update/UpdatePackageFileProcessors.cs"]
-test_paths: ["Scripts/tests/test_package_cvxp.py","Test/ColorVision.UI.Tests/MarketplacePackageDownloadServiceTests.cs","Test/ColorVision.UI.Tests/PluginUpdaterBatchTests.cs","Test/ColorVision.UI.Tests/PluginRecoveryBackupServiceTests.cs","Test/ColorVision.UI.Tests/UpdaterBatchExecutionTests.cs"]
 related: ["plugins.index","plugins.model","delivery.scripts","delivery.update"]
 ---
 
@@ -19,7 +18,7 @@ related: ["plugins.index","plugins.model","delivery.scripts","delivery.update"]
 
 | 任务 | 操作 | 预期结果 |
 | --- | --- | --- |
-| 从市场安装 | 打开 **帮助 → 浏览商店**，选择插件及版本，点击安装并确认 | 下载或复用缓存，完成适用的摘要检查和 manifest 预检后发起安装；菜单声明需要程序内 `Administrator` 权限 |
+| 从市场安装 | 打开 **帮助 → 商店**，选择插件及版本，点击安装并确认 | 下载或复用缓存，完成适用的摘要检查和 manifest 预检后发起安装；菜单声明需要程序内 `Administrator` 权限 |
 | 安装本地包 | 在同一窗口的 **更多操作 → 安装包** 中选择 `.cvxp` 或 `.zip`，确认文件选择 | 直接进入 `PluginUpdater` 准备安装，不经过市场请求 ID/hash 预检；确认文件选择后即开始准备 |
 | 打开插件包文件 | 应用文件打开路由识别 `.cvxp`；`.zip` 需含根目录或一层包装目录中的 `manifest.json` | 包就绪后发起插件安装；无 manifest 的旧 `.zip` 可通过上面的“安装包”入口处理 |
 | 更新已安装插件 | 使用[检查更新](../deployment/auto-update.md#检查并安装更新)选择主程序与插件更新项 | 按兼容版本生成更新计划；组合更新的主程序差异片段由更新主题负责 |
@@ -133,7 +132,7 @@ python .\Scripts\package_cvxp.py --project-file .\Plugins\SystemMonitor\SystemMo
 
 “提取插件”将已安装的插件复制到选定文件夹，并尝试补回打包时剥离的宿主依赖，适合查看或转交当前文件集合。
 
-1. 在 **浏览商店** 的已安装插件列表中，右键目标插件，选择 **提取插件**。
+1. 从 **帮助 → 商店** 打开窗口，在 **已安装** 列表中右键目标插件，选择 **提取插件**。
 2. 选择目标文件夹。文件夹非空时，界面使用其下以插件 ID（缺失时使用名称）命名的子目录；该子目录可能已存在，选新空目录可避免旧文件混入。
 3. 完成提示后查看自动打开的输出目录，并检查日志中补回和跳过的依赖。
 
@@ -161,10 +160,5 @@ Spectrum 的独立 ZIP + `.cvxp` 有专用双通道发布入口，主程序使�
 
 ## 验证入口与范围
 
-- `Scripts/tests/test_package_cvxp.py`：manifest 身份/路径、DLL 版本同步、包根目录、私有依赖保留及默认共享清单漂移阻断。
-- `MarketplacePackageDownloadServiceTests`：通过替身验证下载/摘要失败及 ID 预检阻止安装调用；不执行真实安装。
-- `PluginUpdaterBatchTests`：暂存目录归一、重复 ID/坏包拒绝、manifest/legacy 分离和生成脚本文本；回滚分支存在不等于故障注入已覆盖。
-- `PluginRecoveryBackupServiceTests`：备份内容、软件或插件更新后仅备份一次、重启后跳过且不读取被占用的源文件和 payload、失败重试、旧格式兼容、损坏识别、候选与已验证备份区别、安装隔离、保留策略和恢复脚本生成。
-- `UpdaterBatchExecutionTests`：在隔离临时目录执行脚本，覆盖完整插件目录替换、旧文件移除、其它插件保留与 legacy 布局；不是正式安装目录验收。
 
-这些测试分别覆盖包结构、流程调用和隔离目录中的脚本执行，不证明真实安装成功。HostCopy 双配置复制、真实文件占用/UAC、崩溃中断、回退失败及 `PluginExtractor` 的清单/路径风险仍需专项验证。
+安装验收须在目标目录核对 HostCopy、文件占用、UAC、异常中断和回退。包解压按 `PluginExtractor` 的清单与路径规则复核。

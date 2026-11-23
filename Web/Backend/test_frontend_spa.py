@@ -95,6 +95,19 @@ class FrontendSpaTests(unittest.TestCase):
                     "no-cache, must-revalidate",
                 )
 
+    def test_benchmark_comparison_page_is_public(self):
+        frontend_spa_module._ctx = FrontendSpaContext(check_auth=lambda: False, dist_dir=self.dist)
+        public = self.client.get("/benchmarks")
+        public_trailing_slash = self.client.get("/benchmarks/")
+        admin = self.client.get("/admin/benchmarks")
+        self.responses.extend((public, public_trailing_slash, admin))
+
+        for response in (public, public_trailing_slash):
+            self.assertEqual(response.status_code, 200)
+            self.assertIn(b'<div id="root">', response.data)
+        self.assertEqual(admin.status_code, 302)
+        self.assertTrue(admin.location.startswith("/login?"))
+
     def test_assets_negotiate_precompressed_representations(self):
         brotli = self.client.get(
             "/assets/app-deadbeef.js",

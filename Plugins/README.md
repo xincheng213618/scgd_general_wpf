@@ -7,6 +7,7 @@
 - [插件装配与模块知识](../docs/04-api-reference/plugins/README.md)：按问题定位当前模块与具体主题。
 - [插件装载与扩展发现](../docs/02-developer-guide/plugin-development/overview.md)：manifest、依赖预检、程序集加载与扩展发现的契约。
 - [构建与发布脚本](../docs/02-developer-guide/scripts/README.md)：普通插件、Spectrum 和客户包的交付入口与副作用。
+- [已退役插件](./ARCHIVED.md)记录归档版本与查看方法。
 
 实际项目身份、依赖与输出以本目录下各项目的 `.csproj`、`manifest.json`、`Directory.Build.props` 及根 `PluginProject.HostCopy.targets` 为准。进入具体模块后继续读取其 README；原有模块/包说明可以保持原语言。
 

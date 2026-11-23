@@ -1,4 +1,5 @@
 using ColorVision.Database;
+using log4net;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -8,6 +9,8 @@ namespace ColorVision.Engine.Services.Devices.Algorithm;
 
 internal static class AlgorithmResultImageDimensions
 {
+    private static readonly ILog log = LogManager.GetLogger(typeof(AlgorithmResultImageDimensions));
+
     public static bool TryRecoverFromMeasureResults(ViewResultAlg result, out int width, out int height)
     {
         ArgumentNullException.ThrowIfNull(result);
@@ -22,7 +25,26 @@ internal static class AlgorithmResultImageDimensions
             return false;
         }
 
-        List<MeasureResultImgModel> measureResults = MeasureImgResultDao.Instance.GetAllByBatchId(batchId.Value);
+        List<MeasureResultImgModel> measureResults;
+        try
+        {
+            if (result.AlgResultMasterModel?.DatabaseEndpoint is { } endpoint)
+            {
+                using var db = endpoint.CreateDbClient();
+                measureResults = db.Queryable<MeasureResultImgModel>().Where(item => item.BatchId == batchId.Value).ToList();
+            }
+            else
+            {
+                measureResults = MeasureImgResultDao.Instance.GetAllByBatchId(batchId.Value);
+            }
+        }
+        catch (Exception error)
+        {
+            log.Warn($"算法结果图像尺寸读取失败：batchId={batchId}", error);
+            width = 0;
+            height = 0;
+            return false;
+        }
         return TrySelectFromMeasureResults(
             measureResults,
             SplitPaths(result.FilePath),

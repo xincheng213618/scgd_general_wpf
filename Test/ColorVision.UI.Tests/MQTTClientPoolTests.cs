@@ -1,4 +1,5 @@
 using FlowEngineLib;
+using FlowEngineLib.MQTT;
 using FlowEngineLib.Start;
 using MQTTnet;
 using System.Reflection;
@@ -403,6 +404,136 @@ public class MQTTClientPoolTests
         Assert.True(
             SpinWait.SpinUntil(() => proxy.DisposeCalls == 1, TimeSpan.FromSeconds(2)),
             "The detached helper did not release its pool reference after readiness was canceled.");
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task DeferredCommandPublishesOnlyOnTheOriginalPhysicalSession(bool reconnect)
+    {
+        string server = $"mqtt-deferred-{Guid.NewGuid():N}";
+        const int port = 1883;
+        const string userName = "test-user";
+        var (client, proxy) = CreateTrackingClient(isConnected: true);
+        MQTTClientPool.SetActiveEndpoint(server, port, userName);
+        Assert.True(MQTTClientPool.Register(client, server, port, userName));
+        MQTTClientPool.Release(client);
+
+        var helper = new MQTTHelper();
+        using var start = new MQTTStartNode();
+        start.Create();
+        const BindingFlags fields = BindingFlags.Instance | BindingFlags.NonPublic;
+        FieldInfo helperField = typeof(MQTTStartNode).GetField("_MQTTHelper", fields)!;
+        var publishLock = (SemaphoreSlim)typeof(MQTTStartNode).GetField("publishLock", fields)!.GetValue(start)!;
+        try
+        {
+            Assert.Equal(1, (await helper.CreateMQTTClientAndStart(server, port, userName, string.Empty, _ => { })).ResultCode);
+            helperField.SetValue(start, helper);
+            typeof(MQTTStartNode).GetMethod("BeginMqttSession", fields)!.Invoke(start, null);
+            Assert.True(await start.EnsureReadyAsync());
+
+            var captured = new TaskCompletionSource<Action<MQActionEvent, Func<bool>>>(TaskCreationOptions.RunContinuationsAsynchronously);
+            var command = new MQActionEvent { Topic = "test/smu", EventName = "GetData", Message = "reading" };
+            start.PublishWithDeferredCleanup(command, (transport, publish) =>
+            {
+                Assert.Same(client, transport);
+                return captured.TrySetResult(publish);
+            });
+            var deferred = await captured.Task.WaitAsync(TimeSpan.FromSeconds(3));
+            await DrainPublishAsync();
+            Assert.Equal(1, proxy.PublishCalls);
+
+            if (reconnect)
+            {
+                proxy.IsConnected = false;
+                await proxy.RaiseDisconnectedAsync();
+                proxy.IsConnected = true;
+                await proxy.RaiseConnectedAsync();
+                Assert.True(proxy.IsConnected);
+            }
+
+            deferred(new MQActionEvent { Topic = "test/smu", EventName = "CloseOutput", Message = "close" }, static () => true);
+            await DrainPublishAsync();
+            Assert.Equal(reconnect ? 1 : 2, proxy.PublishCalls);
+        }
+        finally
+        {
+            helperField.SetValue(start, null);
+            await helper.DisconnectAsync_Client();
+            MQTTClientPool.SetActiveEndpoint(server + "-retired", port, userName);
+        }
+
+        async Task DrainPublishAsync()
+        {
+            Assert.True(await publishLock.WaitAsync(TimeSpan.FromSeconds(3)));
+            publishLock.Release();
+        }
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task PublishObserverMatchesOnlyTheOriginalBrokerAndConnection(bool hasDeferredCleanup)
+    {
+        string server = $"mqtt-result-observer-{Guid.NewGuid():N}";
+        const int port = 1883;
+        const string userName = "test-user";
+        var (client, proxy) = CreateTrackingClient(isConnected: true);
+        MQTTClientPool.SetActiveEndpoint(server, port, userName);
+        Assert.True(MQTTClientPool.Register(client, server, port, userName));
+        MQTTClientPool.Release(client);
+
+        var helper = new MQTTHelper();
+        var replacement = new MQTTHelper();
+        using var start = new MQTTStartNode();
+        start.Create();
+        const BindingFlags fields = BindingFlags.Instance | BindingFlags.NonPublic;
+        FieldInfo helperField = typeof(MQTTStartNode).GetField("_MQTTHelper", fields)!;
+        var publishLock = (SemaphoreSlim)typeof(MQTTStartNode).GetField("publishLock", fields)!.GetValue(start)!;
+        try
+        {
+            Assert.Equal(1, (await helper.CreateMQTTClientAndStart(server, port, userName, string.Empty, _ => { })).ResultCode);
+            Assert.Equal(1, (await replacement.CreateMQTTClientAndStart(server, port, userName, string.Empty, _ => { })).ResultCode);
+            helperField.SetValue(start, helper);
+            typeof(MQTTStartNode).GetMethod("BeginMqttSession", fields)!.Invoke(start, null);
+            Assert.True(await start.EnsureReadyAsync());
+
+            var admitted = new TaskCompletionSource<Func<MqttClientOptions, bool>>(TaskCreationOptions.RunContinuationsAsynchronously);
+            var command = new MQActionEvent
+            {
+                Topic = "test/measurement", EventName = hasDeferredCleanup ? "GetData" : "MTF", Message = "test-request",
+                ObservePublishConnection = matchesBroker => admitted.SetResult(matchesBroker)
+            };
+            if (hasDeferredCleanup) start.PublishWithDeferredCleanup(command, static (_, _) => true);
+            else start.DoPublish(command);
+            var matchesBroker = await admitted.Task.WaitAsync(TimeSpan.FromSeconds(3));
+            Assert.True(await publishLock.WaitAsync(TimeSpan.FromSeconds(3)));
+            publishLock.Release();
+            Assert.Equal(1, proxy.PublishCalls);
+
+            var sameBroker = new MqttClientOptionsBuilder().WithTcpServer("127.0.0.1", port).Build();
+            Assert.True(matchesBroker(sameBroker));
+            Assert.False(matchesBroker(new MqttClientOptionsBuilder().WithTcpServer("127.0.0.1", port + 1).Build()));
+            Assert.False(matchesBroker(new MqttClientOptionsBuilder().WithTcpServer("127.0.0.1", port)
+                .WithTlsOptions(tls => tls.UseTls(true)).Build()));
+
+            helperField.SetValue(start, replacement);
+            Assert.True(start.MatchesConnectedBroker(sameBroker));
+            Assert.False(matchesBroker(sameBroker));
+            helperField.SetValue(start, helper);
+            Assert.True(matchesBroker(sameBroker));
+
+            await proxy.RaiseConnectedAsync();
+            Assert.True(start.MatchesConnectedBroker(sameBroker));
+            Assert.False(matchesBroker(sameBroker));
+        }
+        finally
+        {
+            helperField.SetValue(start, null);
+            await replacement.DisconnectAsync_Client();
+            await helper.DisconnectAsync_Client();
+            MQTTClientPool.SetActiveEndpoint(server + "-retired", port, userName);
+        }
     }
 
     [Fact]

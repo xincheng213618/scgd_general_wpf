@@ -23,14 +23,14 @@
     </UserControl.Resources>
     <StackPanel>
         <DockPanel Margin="0,0,5,0">
-            <Button DockPanel.Dock="Right" Style="{DynamicResource ButtonProperty}" Command="{Binding PropertyCommand}" ToolTip="{x:Static properties:Resources.Property}" />
+            <Button DockPanel.Dock="Right" Style="{DynamicResource ButtonProperty.OnDeviceRow}" Command="{Binding PropertyCommand}" ToolTip="{x:Static properties:Resources.Property}" />
             <displayUi:DisplayPinButton DockPanel.Dock="Right"/>
             <ToggleButton x:Name="DisplayHeaderToggle" Content="{Binding Config.Name}" FontSize="15" IsChecked="True" Style="{StaticResource ButtonPageControl1}" ToolTip="{Binding DService.DeviceStatus}" />
         </DockPanel>
         <Border x:Name="DisPlayBorder" Style="{DynamicResource BorderModuleArea}" Visibility="{Binding ElementName=DisplayHeaderToggle, Path=IsChecked, Converter={StaticResource bool2VisibilityConverter}}">
             <StackPanel Margin="5">
                 <TextBlock x:Name="TextBlockUnknow" HorizontalAlignment="Left" Text="{x:Static properties:Resources.UnknownStatus}" />
-                <Button x:Name="ButtonUnauthorized" HorizontalAlignment="Left" Margin="0,0,0,3" Command="{Binding EditCommand}" Content="{x:Static properties:Resources.UnauthorizedOrLicenseExpired}" />
+                <Button x:Name="ButtonUnauthorized" HorizontalAlignment="Left" Margin="0,0,0,3" Command="{Binding EditCommand}" Content="{Binding LicenseFailureText}" />
                 <TextBlock x:Name="TextBlockOffLine" HorizontalAlignment="Left" Text="{x:Static properties:Resources.offline}" />
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
                     <Button x:Name="ButtonOpen" HorizontalAlignment="Left" MinWidth="70" Click="Open_Click" Content="{x:Static properties:Resources.Open}" />
@@ -41,7 +41,7 @@
                     <Button Margin="5,0,0,0" Padding="6,2" Command="{Binding DiagnosticsCommand}" Content="{i18n:EngineLang Key='通信调试'}" ToolTip="{i18n:EngineLang Key='查看本地传感器收发消息与运行日志'}"/>
                 </StackPanel>
                 <StackPanel x:Name="StackPanelContent" Margin="0,5,0,0">
-                    <Grid>
+                    <Grid x:Name="TemplateControls" ToolTipService.ShowOnDisabled="True">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*" />
                             <ColumnDefinition Width="Auto" />

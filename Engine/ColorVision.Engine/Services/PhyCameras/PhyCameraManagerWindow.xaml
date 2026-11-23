@@ -178,21 +178,38 @@
                                                     <ColumnDefinition Width="Auto"/>
                                                 </Grid.ColumnDefinitions>
                                                 <TextBlock Text="{Binding DeviceModeDisplayText}" Style="{StaticResource CameraListPrimaryTextStyle}" Margin="0,0,8,0"/>
-                                                <TextBlock Grid.Column="1" Text="{Binding SysResourceModel.Remark, Converter={StaticResource StatusToTextConverter}}"
-                                                           Foreground="{Binding SysResourceModel.Remark, Converter={StaticResource StatusToBrushConverter}}"
+                                                <TextBlock Grid.Column="1" Text="{Binding ConnectionStatus, Converter={StaticResource StatusToTextConverter}}"
+                                                           Foreground="{Binding ConnectionStatus, Converter={StaticResource StatusToBrushConverter}}"
                                                            FontSize="11" FontWeight="SemiBold"/>
                                             </Grid>
                                             <TextBlock Text="{Binding Code}" Style="{StaticResource CameraListSecondaryTextStyle}"
                                                        FontFamily="Consolas" FontSize="10" Margin="0,6,0,0"/>
-                                            <TextBlock Text="{Binding CameraListMetaText, Mode=OneWay}" Style="{StaticResource CameraListSecondaryTextStyle}" Margin="0,4,0,0"/>
-                                            <DockPanel Margin="0,6,0,0">
-                                                <TextBlock DockPanel.Dock="Right" Text="{Binding LicenseListTagText}" Foreground="{Binding LicenseListTagBrush}"
+                                            <Grid Margin="0,4,0,0">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                </Grid.ColumnDefinitions>
+                                                <TextBlock Text="{Binding CameraListMetaText}" Style="{StaticResource CameraListSecondaryTextStyle}" FontSize="10" Margin="0,0,8,0"/>
+                                                <TextBlock Grid.Column="1" Style="{StaticResource CameraListSecondaryTextStyle}" FontSize="10">
+                                                    <TextBlock.Text>
+                                                        <MultiBinding StringFormat="{}{0:D} bit · {1:D} ch">
+                                                            <Binding Path="Config.ImageBpp"/>
+                                                            <Binding Path="Config.Channel"/>
+                                                        </MultiBinding>
+                                                    </TextBlock.Text>
+                                                </TextBlock>
+                                            </Grid>
+                                            <Grid Margin="0,6,0,0">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                </Grid.ColumnDefinitions>
+                                                <TextBlock Text="{Binding CameraLicenseModel.ExpiryDate, StringFormat={}{0:yyyy-MM-dd}, TargetNullValue='', FallbackValue=''}"
+                                                           Style="{StaticResource CameraListSecondaryTextStyle}" FontSize="10" Margin="0,0,8,0"/>
+                                                <TextBlock Grid.Column="1" Text="{Binding LicenseListTagText}" Foreground="{Binding LicenseListTagBrush}"
                                                            Visibility="{Binding ShowLicenseListTag, Converter={StaticResource BooleanToVisibilityConverter}}"
                                                            FontSize="10" FontWeight="SemiBold"/>
-                                                <TextBlock Style="{StaticResource CameraListSecondaryTextStyle}" FontSize="10">
-                                                    <Run Text="ID "/><Run Text="{Binding Id}"/>
-                                                </TextBlock>
-                                            </DockPanel>
+                                            </Grid>
                                         </StackPanel>
                                     </Grid>
                                 </Border>

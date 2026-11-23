@@ -3,9 +3,8 @@ knowledge_id: "projects.arvr-pro"
 knowledge_type: "reference"
 status: "current"
 summary: "ARVRPro 项目入口、Socket 自动化、输出与历史结果查询；流程组、实例 Recipe 和 Demura 各有对应操作主题。"
-aliases: ["现场数据库离线查看", "打开现场数据", "ArvrOfflineDataSource", "ARVR 历史原图删了还能看结果吗", "保存结果图会不会重复画标记", "ProjectARVRPro", "ResultImageFileCandidates", "SavedSourceImageFileName", "SavedResultImageFileName", "结果统计", "统计日期记忆", "CycleTimeStatisticsWindow", "ARVR 项目", "算法实证", "同图算法比对"]
+aliases: ["现场数据库离线查看", "打开现场数据", "打开资料文件夹", "ArvrOfflineDataSource", "ARVR 历史原图删了还能看结果吗", "保存结果图会不会重复画标记", "ProjectARVRPro", "ResultImageFileCandidates", "SavedSourceImageFileName", "SavedResultImageFileName", "结果统计", "平均单侧运行时间", "平均全批次运行时间", "统计日期记忆", "CycleTimeStatisticsWindow", "ARVR 项目", "算法实证", "同图算法比对"]
 code_paths: ["Projects/ProjectARVRPro/Offline/", "Projects/ProjectARVRPro/ARVRWindow.xaml", "Projects/ProjectARVRPro/TestResultViewWindow.xaml", "Projects/ProjectARVRPro/ThunderbirdSerialDebugWindow.xaml", "Projects/ProjectARVRPro/ARVRWindow.xaml.cs", "Projects/ProjectARVRPro/FlowRuntimeEstimateCache.cs", "Projects/ProjectARVRPro/FlowRunningNodeTracker.cs", "Projects/ProjectARVRPro/ResultImagePresentation.cs", "Projects/ProjectARVRPro/ProjectARVRReuslt.cs", "Projects/ProjectARVRPro/ViewResultManager.cs", "Projects/ProjectARVRPro/Services/SocketControl.cs", "Projects/ProjectARVRPro/Services/SwitchGroupSocket.cs", "Projects/ProjectARVRPro/Services/RunAllSocket.cs", "Projects/ProjectARVRPro/Flow/ExternalImageSwitchNode.cs", "Projects/ProjectARVRPro/CycleTimeStatisticsWindow.xaml", "Projects/ProjectARVRPro/CycleTimeStatisticsWindow.xaml.cs", "Projects/ProjectARVRPro/ResultStatisticsTheme.xaml", "Projects/ProjectARVRPro/ResultStatistics.cs", "Projects/ProjectARVRPro/ResultTimeline.cs", "Projects/ProjectARVRPro/ProjectARVRProConfig.cs", "Projects/ProjectARVRPro/AlgorithmEvidence", "UI/ColorVision.ImageEditor/Algorithms/Evidence"]
-test_paths: ["Test/ProjectARVRPro.Tests/OfflineDataSourceTests.cs", "Test/ProjectARVRPro.Tests/ProjectARVRPro.Tests.csproj", "Test/ProjectARVRPro.Tests/ResultImagePresentationTests.cs", "Test/ProjectARVRPro.Tests/ResultJsonPayloadStorageTests.cs", "Test/ProjectARVRPro.Tests/ResultStatisticsTests.cs", "Test/ProjectARVRPro.Tests/FlowPhaseTimingPersistenceTests.cs", "Test/ProjectARVRPro.Tests/FlowRuntimeEstimateCacheTests.cs", "Test/ProjectARVRPro.Tests/FlowRunningNodeTrackerTests.cs", "Test/ProjectARVRPro.Tests/OfflineFileMaintenanceTests.cs", "Test/ProjectARVRPro.Tests/AlgorithmEvidenceTests.cs"]
 related: ["projects.index","projects.arvr-pro-demo","projects.arvr-pro-protocol","projects.arvr-pro-processes","projects.arvr-pro-demura","projects.capabilities"]
 ---
 
@@ -13,7 +12,7 @@ related: ["projects.index","projects.arvr-pro-demo","projects.arvr-pro-protocol"
 
 `Projects/ProjectARVRPro/` 是当前主力 AR/VR 专业测试项目包，运行时以 `ProjectARVRPro.dll` 加载。维护时优先看流程组、Socket 自动化、切图、Recipe 和输出格式。
 
-排查整组取图、切图和流程耗时时，可从反馈窗口收集本地运行数据库。项目加载后自动提供默认选中的“ARVRPro 测试与阶段耗时记录”，按 `ViewResultManager.SqliteDbPath` 读取结果库，默认最近 7 天，保留阶段时间、关联整组结果与完整压缩 JSON；同时默认收集“ARVRPro 流程配置”，按 `ProcessManager.GroupPersistFilePath` 读取当前已保存的 `ProjectARVRProProcessGroups.json`，经脱敏后保留流程组、切图等待、相机覆盖参数与 Recipe，不受 7 天限制。与流程节点、MQTT 及 Socket 记录的打包、时间筛选和失败说明统一见[反馈诊断](../ui-components/ColorVision.UI.Desktop.md)。导出不会触发检测或修改源数据库、源配置；现场性能结论仍需基于实际记录分析。
+排查整组取图、切图和流程耗时时，在反馈窗口选择“ARVRPro 测试与阶段耗时记录”和“ARVRPro 流程配置”。前者默认收集最近 7 天的本地结果库，后者脱敏后保留当前已保存的流程组、切图设置、相机覆盖参数与 Recipe。导出只读，结合节点、MQTT 和 Socket 记录归因。 [反馈诊断](../ui-components/ColorVision.UI.Desktop.md)
 
 ## 按任务查找
 
@@ -30,7 +29,7 @@ related: ["projects.index","projects.arvr-pro-demo","projects.arvr-pro-protocol"
 | Demura 烧录失败 | [PG 连接、GECS 指令及烧录诊断](./project-arvr-pro-demura.md) |
 | 重启后配置丢失 | `%APPDATA%/ColorVision/Config/ProjectARVRProProcessGroups.json` 和 Recipe 配置；升级时核对旧共享文件迁移日志 |
 
-结果列表工具栏通过“缓存管理”按钮打开 Engine 的进程级总览，左侧分类页查看截图缓存、图像文件缓存、校正缓存和相机取图缓冲。进入管理窗口时传递当前 ImageView 的稳定来源 ID，截图页标记当前窗口并提供当前窗口/全部截图缓存两种释放范围，重复打开会更新该来源。截图释放不删除已保存文件，在用缓冲归还后释放；总览的“释放全部缓存”逐项处理所有模块。相机取图缓冲只清理空闲工作内存，不影响在用图像；图像文件缓存默认关闭，启用后的数量上限默认为 1，可调整。结果图片按数据库记录中的文件路径先查缓存，命中后直接读取内存，不要求磁盘文件存在；未命中才进入原有文件及缺图处理。图片仍通过 `ImageView.OpenImage` → `CVRawOpen` 打开，并沿用显示位图的复用逻辑。
+结果工具栏的“缓存管理”打开进程级总览，并标记当前窗口的截图缓存。可释放当前窗口或全部缓存，已保存文件与在用帧受保护。结果图片按数据库路径查缓存，命中时可直接加载，无需原文件仍在磁盘。 [缓存与图像读取](../engine-components/ColorVision.FileIO.md)
 
 ## 项目边界和版本
 
@@ -41,13 +40,13 @@ related: ["projects.index","projects.arvr-pro-demo","projects.arvr-pro-protocol"
 
 客户项目判定逻辑应留在 `Projects/ProjectARVRPro/Process/` 和 Recipe 体系里，不要回写到 Engine 通用模板或 UI 基础库。手工维护项目 `ProjectARVRPro.csproj` 的 `VersionPrefix`；打包器从主 DLL 的文件版本生成 manifest 版本，不手工同步 `manifest.json`。最低宿主要求读取 manifest 的 `requires`。
 
-ARVRPro 也可承接原 LUX 文本客户端：现场只安装 ARVRPro，在“网络通信 → 服务设置”将解析模式设为现有的 `Text`，由 Pro 的 `LuxSocketDispatcher` 接收。在“流程处理配置 → 其他配置”填写 **LUX 协议设备号**（默认 `H03`，AR 光学中心站用 `H03AR`）、VID 测量方式、限值和 K/B，再在流程组的 **SocketCode** 列填写 `T00XX` 的末两位。设备号仅组成回包前缀，不是 Engine 批次 `Code`，也不是步骤索引；旧配置不迁移，现场重新配置。原 Pro 对接继续使用 `Json`，不新增公共协议模式或多处理器路由。
+原 LUX 客户端可直接对接 ARVRPro。将“通信 → 服务设置”的解析模式设为 `Text`，再在“流程处理配置 → 其他配置”填写设备号和 VID 参数，在流程组填写 `SocketCode`。设备号是回包前缀，旧配置由现场重新填写。Pro 客户端继续使用 `Json`。 [LUX TCP 协议](./project-lux-protocol.md)
 
-LUX 命令、回包、流程匹配、设备测量和并发限制统一见 [LUX TCP 协议](./project-lux-protocol.md)。原独立项目的源码、测试和协议文档通过仓库 `Projects/ARCHIVED.md` 中的 Git 标签恢复，供交付前核对；后续迭代均在 Pro。
+原独立项目通过仓库 `Projects/ARCHIVED.md` 的 Git 标签回溯，后续迭代在 Pro。
 
-`T0000` 在检测窗口尚未创建时直接回握手；`T0001`、`T0031` 复用后台检测实例，不自动显示或激活窗口，其它 Flow 指令沿用原窗口行为。[VID](./project-arvr-pro-protocol.md#单次-vid-测量) 使用选定相机，等待设备命令结束后按 `VID × K + B` 修正和限值生成 CSV。检测窗口已打开时显示执行状态与耗时，并在测量期间禁用测试、流程选择和配置操作。
+`T0000` 可在窗口创建前回握手。`T0001` 和 `T0031` 通过后台实例测量，窗口已打开时显示状态与耗时，并在测量期间锁定测试和配置。 [单次 VID 测量](./project-arvr-pro-protocol.md#单次-vid-测量)
 
-协议入口位于 `Services/LuxSocketDispatcher.cs`，设备调用位于 `Services/LuxDeviceMeasurements.cs`，单流程适配位于 `ARVRWindow.Lux.cs`；`Test/ProjectARVRPro.Tests/LuxProtocolTests.cs` 保护原报文字面值和异步完成边界，流程配置测试同时检查 SocketCode 的复制、保存重载及活动组查找。这些隔离测试不替代相机、光谱仪和客户客户端的真机联调。
+协议入口位于 `Services/LuxSocketDispatcher.cs`，设备调用位于 `Services/LuxDeviceMeasurements.cs`，单流程适配位于 `ARVRWindow.Lux.cs`。
 
 ## 主链路
 
@@ -55,45 +54,60 @@ LUX 命令、回包、流程匹配、设备测量和并发限制统一见 [LUX T
 
 上方“测试”按钮在单流程实际运行时显示“停止”；启动准备和结果收尾期间暂不可点击。点击“停止”调用现有流程停止接口，再以 `Failed`、原因“用户停止测试”进入同一单流程失败处理，执行解析器失败处理、保存失败结果和整组汇总，并按 `AllowTestFailures` 决定发送下一项 `SwitchPG` 或结束测试。停止与自然结束重叠时只收尾一次，迟到的旧流程结束事件不能影响下一轮。“一键执行”仍使用原有执行路径，上方按钮在该路径中不提供停止操作。
 
-直接执行 FlowEngine 的节点统计由窗口持有的 `FlowNodeExecutionRecorder` 记录。正常收尾、启动失败和一键执行异常退出均结束该记录；即使当前结果或产品 SN 已被初始化清空，也通过 `CompleteRunAsync()` 收尾记录器实际持有的运行。指定运行编号的结束调用仍须匹配当前记录，避免迟到的旧流程结束新流程。启动入口通过现有执行状态检查后，创建新批次前会收尾已停止流程的残留诊断；诊断落库超时或失败记录日志，不把残留诊断当作仍在执行，也不要求重启软件。`Test/ProjectARVRPro.Tests/FlowNodeExecutionRecorderTests.cs` 使用存储替身验证缺失当前编号时的收尾、下一轮启动、旧事件隔离和落库失败边界，不代替现场设备运行验收。
+节点诊断由 `FlowNodeExecutionRecorder` 按运行编号收尾，旧流程的迟到事件不能关闭新一轮。新批次启动前会收尾停止流程的残留记录。诊断落库超时或失败记日志，操作员可继续启动下一轮。
+
+单步和一键执行在创建批次时捕获 MySQL 连接。支持批次绑定的宿主用该批次启动。终态按批次 ID 和 Code 匹配，只更新状态、耗时和结果。后处理的主记录、明细、采集图和尺寸回填沿用原库，即使运行中切库。原库不可读或原批次缺失时报告失败。旧宿主沿用已有启动接口，若启动前已发现切库则拒绝启动。
+
+“ARVR结果查看”后处理沿用 Engine 批次的原库。SQLite 已存结果只有数据库来源、批次 ID、Code 和流程名都匹配时才可直接复用。来源由服务器、端口和库名生成，不含凭据。旧记录缺少来源时从能够确认的原库重新解析。项目结果和节拍统计打开流程历史时也核对已保存的来源和批次身份。历史记录没有 Code 时核对 SN 与批次名称。
+
+项目结果列表的删除命令在确认后按选中步骤记录的身份删除该条 SQLite 结果。整轮判定记录、Engine MySQL 批次和已导出的文件各有独立的管理入口。
+
+宿主提供 `QueueFlowRunAsync` 时，成功流程的 SQLite 诊断记录在后台收尾，生产批次和结果仍按原顺序保存。诊断队列积累到四轮时，最多等待最早一轮 5 秒，超时后后台仍继续写入。结果页和节拍统计里的“流程执行分析”会先等待选中批次的诊断写入，超时可稍后重试。`ARVRFlowPhaseTiming` 的 `FlowDiagnosticsDeferred=True` 表示 `FlowRunRecordMs`、`NodeRecorderFlushMs` 记录入队耗时。实际写入结果见同一序列号和批次的 `ARVRFlowDiagnosticsCompletion`，节拍上等待诊断队列的时间单独记录为 `FlowDiagnosticsBackpressureMs`。
+
+`ARVRFlowPhaseTiming.ResultSqliteWrites` 分别记录明细、整组汇总和完成时间的保存阶段。`GateWaitMs` 是本进程的数据库维护锁等待，`BeginMs` 包含 SQLite 开启事务时的等待，`RowMs` 是字段写入，`CompressionMs` 和 `PayloadMs` 分别是 GZip 压缩与 BLOB 写入。`CommitMs` 记录显式提交。完成时间使用单条语句，隐式提交计入 `RowMs`。明细的 `PublicationMs` 包含提交后的列表检查和同步界面回调。未取得耗时的阶段为空，`Succeeded` 记录保存调用的结果。
 
 ## 界面主题
 
-“结果保存”中的“空间不足时自动清理”默认关闭；开启后，“保留磁盘空间（GB）”默认100，必须大于0，按1 GB = 1024³字节计算。这是输出盘的剩余空间阈值，不是结果目录的容量上限。图像、原图快捷方式、CSV及客户XLSX保存前检查各自输出盘；空间充足时不扫描目录，不足时由 `ResultStorageSpaceManager` 按文件最后写入时间从旧到新删除已识别的ARVR导出图像、标准CSV和历史日汇总XLSX，达到阈值即停止。只检查配置的结果输出目录及已启用的客户报表目录；原始采集文件、数据库、快捷方式目标、未知文件及后台暂存文件不参与清理，不整目录删除。当前SN目录、正在写入的输出及当天XLSX汇总受保护；后台图像导出的保护保持到正式文件替换完成。所有保存入口均异步等待后台清理；CSV/XLSX 导出完成后才发送测试完成响应，等待期间拒绝下一轮初始化/启动，避免串用 SN 或结果。自动删除的导出文件不会回收，SQLite历史记录仍保留，历史图像能否显示继续取决于其候选文件是否存在。
+“空间不足时自动清理”默认关闭。启用后按各输出盘的剩余空间下限检查，默认 100 GiB。`ResultStorageSpaceManager` 从旧到新删除已识别的导出图像、标准 CSV 和历史日汇总 XLSX，达到阈值即停止。原始采集、数据库、快捷方式目标、未知文件、当前 SN、在途输出和当天汇总受保护。只扫描配置的结果和客户报表目录。清理后 SQLite 历史仍在，历史图像需核对候选文件。
 
-连续保存最多复用30秒内的已排序候选清单，最多缓存4个输出根目录；新增文件在清单到期后的下一次低空间检查中纳入，已删除候选及时移除。当前写入保护在每次删除前重新核对，大小/最后写入时间变化或路径变成目录链接的候选跳过，待重新扫描。每次保存仍读取真实剩余空间，每删除一个文件仍检查是否已达到阈值，不通过额外多删文件换取速度。逐文件删除日志为 Debug，Info 汇总包含候选数、删除数、缓存命中以及扫描/删除耗时，供现场对比。
+清理仅支持本地磁盘目录，跳过根目录、符号链接、联接和挂载点。阈值不小于总容量时跳过。占用、权限或容量不足等问题见清理日志，保存按原错误处理继续。CSV/XLSX 保存完成后才发送最终响应，保存期间拒绝下一轮初始化与启动。
 
-自动清理仅支持本地磁盘目录，不跟随符号链接、目录联接或挂载点，也不允许直接清理磁盘根目录；阈值不小于磁盘总容量时跳过清理。文件占用、目录无权限、无法读取磁盘容量或可清理文件不足时记录日志并沿用原有保存尝试与错误处理。阈值在写入前检查，单次写入及其它程序仍可能消耗剩余空间。`Test/ProjectARVRPro.Tests/ResultStorageSpaceManagerTests.cs` 使用隔离临时目录验证删除顺序、停止条件、异步串行与写入保护、候选缓存到期、文件变化、文件锁和目录联接边界；设置测试验证旧配置默认值、数值校验、自动保存和条件显示，不能代替现场磁盘容量与实际导出验收。
+金星 1.0 抽检报表按项目和日期追加到 `yyyy-M-dTestResults+{项目名}.xlsx`。同一进程串行读取、追加并保存工作簿。新内容先写入同目录暂存文件，写入并关闭成功后才替换日报。写入或替换失败时保留原日报，暂存文件按失败路径清理。
 
-主窗口底部“设置”和结果栏齿轮统一打开“模组检测设置”（`ProjectSettingsWindow`）：底部入口定位“检测设置”，齿轮定位“结果保存”。保持左侧目录、右侧设置内容的布局；检测设置、界面显示、结果保存、图像保存按单列连续排列，统一纵向滚动。左侧目录只定位对应段落、不切换或隐藏其它分类，滚动时同步高亮当前位置。结果输出目录、CSV、旧格式兼容、客户报表和结果编号规则直接显示在“结果保存”，不设折叠区；标记图、原图和原图快捷方式归入“图像保存”，共用结果输出目录。`TextSavePath` 没有 ARVRPro 输出消费者，仅保留旧配置字段，不在界面显示。雷鸟串口参数和手动切图统一从流程处理配置的“雷鸟连接与切图”进入。
+底部“设置”进入“检测设置”，结果栏齿轮进入“结果保存”，均打开“模组检测设置”。结果目录、CSV、旧格式兼容、客户报表和编号在“结果保存”。标记图、原图和快捷方式在“图像保存”，共用输出根目录。雷鸟串口及手动切图从流程处理配置的“雷鸟连接与切图”进入。
 
-`Ctrl+F` 聚焦左侧搜索框，`Esc` 清空搜索。搜索匹配分类、属性名称、代码名和说明，同时筛选内容和目录。原图格式按打开设置时源图的 BMP 支持能力提供选项。
+`Ctrl+F` 搜索设置，`Esc` 清空。可用原图格式取决于源图的 BMP 支持。
 
-“图像保存”按通道配置命名，旧配置沿用原命名。标记图默认 `{FlowName}`，原图默认 `{FlowName}_source`。兼容 ProjectLUX 可选 PNG，例如 `White51_Test.png`。模板支持固定文字、`{FlowName}`（流程模板名）和 `{SN}`。扩展名取自图像格式，关闭保存时保留命名设置。遇到本次输入图（含目录联接或符号链接指向的同一位置）时，标记图追加 `_result`，原图追加 `_source`；两张导出图重名时原图继续追加 `_source`。重测可覆盖上次导出，自动清理沿用既有命名规则。
+“图像保存”按通道配置命名，旧配置沿用原命名。标记图默认 `{FlowName}`，原图默认 `{FlowName}_source`。兼容 ProjectLUX 可选 PNG，例如 `White51_Test.png`。模板支持固定文字、`{FlowName}`（流程模板名）和 `{SN}`（序列号）。路径与本次输入图冲突时（含目录联接或符号链接）追加通道后缀。标记图和原图重名时给原图追加 `_source`。重测可覆盖上次导出。
 
-`ProjectSettingsSession` 将开关和下拉选择逐项自动保存，文字、数字及目录在失焦或结束输入时校验并保存。关闭会提交最后一个有效输入。无效输入就地标红，持久化失败恢复该项的运行值并提供重试。关闭时需确认是否放弃未保存项。“恢复默认设置”经确认后一次保存，失败时恢复运行值。自动保存保留未编辑项、雷鸟连接参数和文本目录，运行中的后台导出继续使用已捕获的设置。两种配置的序列化身份和属性名保持兼容。验证入口为 `Test/ProjectARVRPro.Tests/ProjectSettingsSessionTests.cs`、`ProjectSettingsWindowTests.cs` 和 `ProjectImageExportServiceTests.cs`。
+启用“标记图使用热力图底图”后，按输出灰度范围生成 Jet 底图并叠加标记。仍保存一张同名、同格式、同尺寸标记图，`HeatmapMs` 记录额外处理耗时。
 
-主窗口测试工具栏下方使用 `ColorVision.UI.Controls.FlowExecutionStatus`，与 KB 共用紧凑执行状态栏：普通提示保持一行，运行时显示当前节点，运行中和结束后的耗时均显示整数毫秒（ms）；长错误最多占两行，窄窗口优先保留提示并隐藏辅助耗时。“详情”浮层可查看、选择和复制完整提示、流程名、节点与精确耗时，按 Esc 关闭，不挤压结果区域。上次耗时和预计剩余时间只在详情内显示，单位同为 ms；预计剩余时间仅作为历史参考。状态图标同时配中文文字，错误保留至后续执行更新，已排队的定时刷新不得覆盖最终状态。“流程执行完成”只表示 Flow 完成，不代替检测结果的 PASS/FAIL 判定。
+用 `BatchId` 和 `ResultId` 关联同一次后台图像保存的日志。核对连续生产时的节拍，查看发起与结束时的在途数量，以及最后一次导出何时完成。各层的总耗时包含各自子段。
 
-单独测试与一键执行的运行中状态统一按 100 ms 间隔请求刷新，节点事件也会请求更新；UI 忙时合并待处理请求，执行时读取最新节点与秒表值，不积压逐次刷新。实际显示节奏受 UI 调度影响。刷新只更新状态显示，不触发采集、算法或结果查询；结束状态单独读取停止后的秒表，不按刷新间隔取整。
+- `ARVRImageSnapshotTiming` 记录 UI 捕获的 `CaptureMs`。随后 `ImageSnapshotExportTiming` 将 `QueueMs` 中的工作槽等待和渲染线程等待分别记为 `EncodeSlotWaitMs`、`StaWaitMs`。从提交编码到编码回调启动的 `EncodeDispatchWaitMs` 已包含在 `EncodeWriteMs`。未进入的等待阶段为 0。准备成功时 `PixelAlignedRgb48Png` 表示是否使用全尺寸 RGB48 对齐路径。`AdaptivePng=True` 表示大尺寸带标记结果图通过透明度及压缩采样检查并采用了快速无损 PNG 编码，解码像素、DPI 及 ColorVision 显示记录沿用原有结果图约定。
+- `ARVRImagePublicationTiming` 记录空间检查 `StorageWaitMs`、后台处理 `SnapshotPipelineMs`、正式文件替换和暂存清理 `FilePublishMs`、结果路径回写 `ResultPathPersistMs`。`TotalMs` 从 UI 捕获之后的导出提交计至任务结束。结合发布标志和 `PathUpdateStatus` 区分正式文件落盘与路径回写完成。
 
-“正在执行”同时列出本次流程内尚未结束的节点，以逗号分隔；节点结束后从列表移除，其余并行节点继续显示。同一节点有多次重叠执行时，只显示一个名称，直到这些执行全部结束才移除；名称相同的不同节点分别跟踪。列表过长时主提示省略，悬停提示和详情保留完整名单。重新准备、切换流程和关闭窗口时清空运行列表，结束状态保留最后启动节点用于诊断；上一轮执行的迟到事件不更新本轮列表。
+全尺寸和半尺寸的大幅 RGB48 标记图都可使用快速 PNG 编码，压缩样本较密集的半尺寸结果图使用 WPF 编码。`HalfPrescaledRgb48=True` 表示底图逐像素对齐且宽高可精确减半，WPF 先缩放底图再叠加原有标记。
 
-主界面分隔线、结果明细表格、流程配置提示和串口调试界面使用 [ColorVision.Themes](../ui-components/ColorVision.Themes.md) 的动态画刷。切换黑白主题时，普通背景、说明文字和按钮状态随主题更新；断开连接后的状态文字也保留动态资源引用。结果明细的隔行背景在行样式中设置，避免覆盖选中与悬停高亮。明细选中行的结果文字跟随行前景色，未选中时保留 PASS/FAIL 业务颜色；连接状态和图像标记保留各自的业务颜色。
+设置逐项自动保存，文字和数字在结束输入时提交。无效值标红，保存失败恢复该项运行值并可重试。关窗时确认是否放弃未保存项。恢复默认经确认一次写入。未编辑项、雷鸟参数及旧文本路径保留，在途导出沿用启动时的设置。
+
+执行状态栏显示当前节点与整数毫秒耗时。“详情”可复制完整错误、流程名和精确耗时，并查看历史估计。错误保留至后续执行更新。界面的“流程执行完成”只表示 Flow 完成，产品判定以 PASS/FAIL 结果为准。
+
+“正在执行”列出尚未结束的并行节点。重叠执行的同一节点全部结束后才移除，悬停和详情可看完整列表。上一轮迟到事件不改变当前状态。
+
+页面使用动态画刷，结果、连接和图像标记保留业务色含义。 [ColorVision.Themes](../ui-components/ColorVision.Themes.md)
 
 ## 长期运行与结果视图刷新
 
-运行中追加结果时，主窗口列表最多驻留最近 1,000 条，避免结果 JSON 和列表对象随生产次数持续累积；从列表淘汰不删除 SQLite 历史，也不修改仍被后台图像导出持有的结果对象。手动历史查询仍按“默认查询条数”加载，下一次追加实时结果时恢复驻留上限。只读结果文本不保留撤销历史。
+主窗口实时最多保留最近 1,000 条，列表淘汰不删除 SQLite 或在途导出的结果。手动历史查询仍按配置数量，恢复实时追加后重新限量。
 
-`ARVRFlowPhaseTiming` 同时记录 `DisplayedResultCount` 和 `AwaitingAutomaticImageSnapshotCount`，后者仅表示尚未交给图像快照处理的结果，不是正在编码的任务数；`OutstandingImageExportCount` 统计已启动而未完成的导出任务，包含空间检查、排队、编码、写盘及路径登记，不能直接当作同时编码数。进程的 `FlowPerformanceSample` 每 30 秒至多后台采样一次，记录系统可用物理内存、内存负载、GC 碎片、CVRAW 缓存容量/条数/借用数，进程页面错误速率 `ProcessPageFaultsPerSecond`，以及相邻采样间的 `WindowGcPauseMs` / `WindowGcPausePercent`。原 `GcPausePercent` 仍为进程启动以来累计比例，不能用来排除短时停顿；页面错误包含软缺页，不能直接认定磁盘换页；这些指标帮助归因，不等同于对象堆快照或硬缺页证据。
+在主窗口结果表用鼠标左键拖动列头可改变列顺序，例如将 `SN` 拖到第一列。关闭模组检测窗口时保存列顺序，重新打开时恢复。已有配置缺少列顺序时沿用默认布局，升级新增的列追加在已保存列之后。
 
-所有继承 `ViewConfigBase` 的读图与结果视图都保留 `AutoRefreshView` 开关，便于调试时自动打开最新图像或绘制结果。ARVRPro 主窗口结果列表工具栏提供“视图刷新管理”：窗口从已注册配置和当前设备控制项动态发现相机、算法、校正、光谱、SMU、第三方算法等视图，不把范围写死为三个类型；同类配置存在多个设备实例时合并为一项并列出实际影响数量和名称。
+`ARVRFlowPhaseTiming` 的待快照数和未结束导出数都不能视为实际并发编码数。排查短时卡顿优先看 `FlowPerformanceSample` 的窗口 GC 停顿，进程累计百分比会稀释短时事件。页面错误数包含软缺页，需独立证据区分磁盘换页。
 
-窗口中的逐项开关和“一键关闭全部刷新”只修改草稿，点击“确定并保存”后才统一应用并通过 `ConfigService.SaveConfigs` 写入配置文件，下次启动继续保持；取消不改变运行配置。当前已加载且仍开启自动刷新的项目使用橙色行背景与汇总警示，主窗口入口同时显示开启项数量；未加载的配置仍可预先关闭并持久化，但不计入运行时警示。保存失败时必须恢复进入窗口前的运行值并明确提示，不得出现本次运行已经关闭而文件未保存的半应用状态。关闭自动刷新不关闭视图、不修改查询数量，也不禁止之后重新开启调试功能。
+结果工具栏的“视图刷新管理”汇总已接入的 `AutoRefreshView` 开关，同类设备合并显示并列出影响范围。
 
-结果区和各设备结果列表的高度仍由分隔条调整并写回配置，供下次启动恢复；这类运行时布局值不再显示在属性编辑器中，避免用户输入与界面实际布局互相覆盖。
-
-`ProjectARVRProConfig.StepIndex` 与 `SN` 由主窗口进度条和 SN 输入框绑定并在运行流程中更新，因此也不在属性编辑器中显示；隐藏只影响设置窗口，绑定、属性通知和现有序列化兼容规则保持不变。
+逐项调整或“一键关闭全部刷新”后点击“确定并保存”才生效，取消或保存失败恢复原状态。只有已加载且仍开启的项目计入运行警示。关闭自动刷新保留视图与查询配置。
 
 ## 关键目录和配置
 
@@ -115,29 +129,19 @@ LUX 命令、回包、流程匹配、设备测量和并发限制统一见 [LUX T
 
 ## Socket 自动化
 
-ARVRPro 通过 `ColorVision.SocketProtocol` 的 JSON 模式接入外部系统。常规节奏是 `ProjectARVRInit` 初始化，软件返回 `SwitchPG`，外部切图后发 `SwitchPGCompleted`，软件运行当前 Flow 和 `IProcess`，全部完成后返回 `ProjectARVRResult`。
-
-| EventName | 作用 |
-| --- | --- |
-| `ProjectARVRInit` | 初始化测试并返回第一步切图信息 |
-| `SwitchPGCompleted` | 外部确认切图完成，触发当前步骤 |
-| `SwitchGroup` | 切换当前流程组 |
-| `RunAll` | 一键执行当前组内启用步骤 |
-| `AOITestSwitchImageComplete` | AOI 切图完成信号，完成当前外部切图节点的等待 |
-
-详细请求与响应、索引约定、状态码、并发限制及 AOI 切图见 [TCP 通讯协议](./project-arvr-pro-protocol.md)，可运行的客户端示例见 [Integration Demo](./project-arvr-pro-integration-demo.md)。
+JSON 请求、切图确认、最终结果和并发边界见 [TCP 通讯协议](./project-arvr-pro-protocol.md)。可运行的客户端见 [Integration Demo](./project-arvr-pro-integration-demo.md)。
 
 ## 输出和兼容
 
 标准 CSV 为七列，文本按规则转义，数值用小数点。批量横向 CSV 用首条有指标的记录定列。`UseLegacyARVROutput` 影响 CSV 和 Socket `ProjectARVRResult.Data`，改字段前先确认客户格式。
 
-新版嵌套畸变结果按项目结果属性名输出，光学畸变字段为 `DistortionTestResult.OpticDistortion`，新生成的测试项 `Name` 也为 `OpticDistortion`。算法原始结果中的 `Optic_Distortion` 由 Engine 在解析入口映射，项目输出不沿用该原始字段名。读取历史项目结果时仍兼容 `Optic_Distortion`，重新序列化只输出 `OpticDistortion`；两个字段同时存在且标准字段非空时以标准字段为准。
+嵌套畸变结果的属性和测试项 `Name` 都是 `OpticDistortion`。Engine 映射算法原始字段 `Optic_Distortion`。`DistortionTestResult` 也可读取历史项目结果中的 `Optic_Distortion`，并优先采用非空的 `OpticDistortion`。
 
-W255 和键化亮色度 `LuminanceChromaticityTestResults[配置 Key]` 保留原有 `ColorUniformity`（所有 POI 两两之间的最大 Δu′v′），并在其后输出独立的 `ColorCenterRmsToD65`。该指标对各流程已应用色度修正的有效 POI 直接计算相对 D65 的等权 RMS Δu′v′，不匹配或读取 `PoiAnalysis` 中的均匀性结果，在模板均匀性和本地均匀性两种模式下都会计算。计算值再应用自身 Recipe 的 K/B 修正与 Min/Max 限值，默认 Min/Max 均为 `0`，表示不约束；设置非零限值后按对应上下限参与该流程 PASS/FAIL 判定。亮色度 Key 为 `White` 时，该指标同步到 W255 兼容结果。旧配置没有该字段时使用此默认值，已保存的限值保持原值；没有有效 u′v′ POI 时记录警告并保留默认测试项，不增加限值判定。公式、D65 常量和 POI 样本边界见 [CVCIE POI 结果数值](../engine-components/cvcie-results.md#色彩中心与-d65-rms)。
+W255 和 `LuminanceChromaticityTestResults[配置 Key]` 输出 `ColorUniformity` 和 `ColorCenterRmsToD65`。D65 指标对色度修正后的有效 POI 等权计算，独立于 `PoiAnalysis` 的均匀性结果，再应用本项 Recipe 的 K/B 和非零限值。上下限默认 `0`，表示不限。缺少有效 POI 时记录警告并保留默认测试项。Key 为 `White` 时同步到 W255 兼容结果。公式和样本边界见 [CVCIE POI 结果数值](../engine-components/cvcie-results.md#色彩中心与-d65-rms)。
 
 ## 历史结果图回退与持久化
 
-历史记录的原始图像不在原路径时，不应立即判定“无法查看结果”。`Projects/ProjectARVRPro/ResultImagePresentation.cs` 中 `ResultImageFileCandidates.GetExisting` 按下列顺序收集存在且去重的路径，`OpenFirstAsync` 在解码失败、超时或未得到图像时继续尝试下一候选；取消仍中止当前请求。
+历史记录的原始图像不在原路径时，继续尝试已保存的图像。`Projects/ProjectARVRPro/ResultImagePresentation.cs` 按下列顺序检查并打开候选图，跳过重复路径。打开任务报告解码失败时立即检查下一候选。打开器迟迟未发布图像时，每个候选最多等待 30 秒。用户切换选择会取消当前请求。
 
 | 顺序 | 字段/条件 | 显示规则 |
 | --- | --- | --- |
@@ -147,61 +151,57 @@ W255 和键化亮色度 `LuminanceChromaticityTestResults[配置 Key]` 保留原
 | 4 | 候选均不可用，但能确认结果宽高 | 使用相同尺寸的白色画布承载历史标记 |
 | 5 | 候选均不可用且尺寸未知 | 清除旧底图并记录失败，不能继续显示上一条结果的图 |
 
-`ARVRWindow.xaml.cs` 负责实际加载、请求版本仲裁和 `RenderResultImage` / `ShowSavedResultImage` 分流。两个保存路径是 `ProjectARVRReuslt` 的可空列；`ViewResultManager` 通过现有 `CodeFirst.InitTables<ProjectARVRReuslt, ObjectiveTestResultRecord>()` 为旧库补列，不能要求用户删库或手工编辑 SQLite。旧磁盘 PNG 不会被自动扫描回填；只有实际成功导出的通道才更新对应路径。
+`ARVRWindow.xaml.cs` 负责实际加载、请求版本仲裁和 `RenderResultImage` / `ShowSavedResultImage` 分流。选中结果时先记录三个图片路径。每张候选图的存在性检查在后台执行，当前候选缺失或打开失败时才检查下一张。快速切换时，已取消的请求等正在执行的文件检查返回后即停止，随后处理当前选择。两个保存路径是 `ProjectARVRReuslt` 的可空列；`ViewResultManager` 通过现有 `CodeFirst.InitTables<ProjectARVRReuslt, ObjectiveTestResultRecord>()` 为旧库补列，不能要求用户删库或手工编辑 SQLite。旧磁盘 PNG 不会被自动扫描回填；只有实际成功导出的通道才更新对应路径。
 
-内置结果解析器通过单次 `IProcessExecutionContext` 复用当前 batch 已读取的 `MeasureResultImgModel` 列表，并在 `Execute` 返回、最终 `FileName` 确定后从 `ImgFrameInfo` 写入 `ImageWidth` / `ImageHeight`。新结果已有两个正数尺寸时，`ViewResultManager.Save` 不再为读取尺寸重复查询 MySQL；尺寸缺失、无效、多尺寸无法唯一确定，或外部解析器既未写入有效尺寸也未使用该上下文缓存时，仍保留原数据库查询作为兼容回退。回退失败不会阻止结果保存，尺寸继续保持可空，也不需要现场数据库迁移。
+内置解析器复用当前批次已经读到的图像尺寸，需要时仍回查数据库兼容外部解析器和历史缺失值。查不到宽高仍可保存结果。实现见 `IProcessExecutionContext` 和 `ViewResultManager.Save`。
 
-验证入口：`Test/ProjectARVRPro.Tests/ResultImagePresentationTests.cs` 覆盖候选顺序、缺失/重复路径、首图加载失败后继续、标记图不重复绘制，以及尺寸缓存、最终路径匹配和兼容回退短路契约；`ResultJsonPayloadStorageTests.cs` 覆盖结果持久化相关兼容。自动测试不等于已验证现场历史文件仍存在，现场排查还须只读核对记录路径与文件可读性。
+在主窗口结果工具栏、右键菜单或本机 PG 明细打开“算法实证”，需宿主算法组件与项目包配套。可分析历史查询快照或手选本地图。历史图按原图、无标记备用图顺序读取，缺图跳过。现场资料只读窗口不开放该功能。“上传当前原图”仅加入云盘队列，需在云盘点击“开始 / 继续上传”才分享。
 
-主窗口结果工具栏、右键菜单及本机 PG 明细提供“算法实证”，需配套更新项目包与宿主算法组件。支持发光区、十字 RGB、点阵畸变，历史模式只遍历当前查询快照，优先读取原图和无标记备用图，缺图跳过，不用标记图或占位图计算；现场资料只读窗口不开放此入口。也可“选择图像”多选本机文件，切换算法保留自选来源，报告不赋予历史 ID/SN。“云盘”复用现有上传队列；“上传当前原图”将实际读取的磁盘文件带入队列，点击云盘的“开始 / 继续上传”后分享。右键“在文件夹中选择文件”定位当前文件，无磁盘文件时不可用。
-
-发光区提供 RobustV2（红）、经典兼容（蓝）及服务端 AA（黄）；十字 RGB 复用当前本地算法，可配置参数及原图搜索矩形，逐点显示 R-G/B-G 与覆盖、饱和提示；点阵畸变提供本地 GridV2 和服务端旧版，两者参数独立。新旧畸变的公式及点位可能不同，服务端各分项保留各自点位和原始值，不直接相减判优劣。
+发光区可比 RobustV2、经典兼容和服务端 AA。十字 RGB 显示逐点 R-G/B-G 及覆盖、饱和信息。点阵畸变可比本地 GridV2 和服务端旧版本，各用自己的参数。如果两版公式或点位不同，应分别读原值。
 
 AA 与旧版畸变调用可选 x64 `CV_algorithm.dll`，需配套 `opencv_world401.dll` 和 VC++ 运行库；从主服务发现或手选库。默认标为**参考参数（非历史参数）**，可选模板或导入 JSON，不自动还原历史参数。报告记录库路径、SHA256、实际参数及原始结果。只接受 8/16 位 Gray/BGR，BGRA 去 alpha，浮点图不自动缩放；不输出调试图、不请求设备或改写 POI、历史结果。
 
-打开窗口、换图和更改算法只加载原图，不自动计算；点击“开始验证”才运行，未计算的图片不写入验证报告。算法共用像素快照，可写接口另用私有副本。结果页可独立隐藏叠图、查看诊断。“算法接受”不等于人工确认或产品通过。单个托管异常不阻止其它算法；缺库、非成功返回码或无效几何不画有效叠图。native 崩溃可能终止宿主，只应加载可信匹配库。读图失败可继续下一张；关闭取消后续调用，native 输入保留至返回，迟到结果不画到新图。
+换图或换算法只更新载入内容，点击“开始验证”才运行。失败、缺库或无效几何不叠加，迟到结果不画到新图。原生 DLL 崩溃可终止宿主，只加载可信且版本匹配的库。算法接受状态不能作为客户产品判定。
 
-“导出本次报告”保存已查看结果、来源、算法身份、参数和缺图清单，不重新采集或写库。共享适配器返回中立 artifacts，项目层负责历史筛选；离线验证不能替代真机或人工验收。
+报告只导出已计算并查看的结果、来源、算法身份、参数和缺图清单，不重新采集或写库。
 
 ## 结果统计与查询记忆
 
 ### 启动准备与预计时间
 
-自动切图确认、手动单步和 RunAll 启动均不为“上次执行 / 预计剩余时间”查询本地历史数据库。`FlowRuntimeEstimateCache` 只保存本窗口已经完成且耗时为正的流程，按模板名称匹配，并核对启动时捕获的模板内容；模板内容变化、名称变化或新窗口没有命中时，先只显示已经执行时间。该缓存只影响预计时间显示，不参与 PG 稳定等待、采集、超时、PASS/FAIL 或历史结果保存。
+“上次执行 / 预计剩余时间”按同一窗口、同名称和相同内容的已完成模板估算，不查询历史库。缓存未命中先显示实际经过时间；估计不参与稳定等待、判定、超时或保存。
 
-主窗口的 `Controls/ProcessStepProgress` 按当前组启用顺序显示流程项，以共享 `CircularProgressIndicator` 自绘圆环，固定两行：24 DIP 圆环和流程名，控件主体高 42 DIP。等待与结束时圆心显示启用步骤序号，只有执行中的节点临时换成 0–99 的进度整数、不加百分号；外圈同步呈现当前流程的估算进度。未知耗时以旋转弧和数字 0 表示运行中，估算来源和已用时间放在悬停提示。收到流程完成事件后恢复序号并显示绿色闭合圆环，失败或停止恢复序号并显示红色闭合圆环，不把未执行的后续步骤标为完成。圆环只表示流程执行进度，完成并不等于检测 PASS；判断仍沿用原结果链。
+圆环显示启用步骤顺序与运行进度，未知耗时使用旋转弧。完成、失败和停止使用各自状态，后续未执行的步骤仍保持原状。
 
-所有启用步骤在一行内均分控件的可用宽度，增加步骤或缩小窗口时，每项自动收窄；执行步骤切换时布局位置保持不变。流程名使用各自节点的可用宽度，超出时单行省略，悬停显示完整名称、模板、状态及估算说明。圆心数字使用主题正文色，外圈颜色表示状态；键盘聚焦时显示细轮廓。双击节点或按 Enter 打开该项的流程模板编辑器，右键“编辑配置”打开流程管理并选中同一 `ProcessMeta` 实例，定位到 Recipe/Process/切图面板；执行、切图等待或结果导出期间禁用该配置入口。`ProcessStepProjectionTests` 覆盖步骤增减与窗口缩放时的等宽布局、禁用步骤映射、未知耗时、估算上限、失败状态保留及未执行步骤不误报完成。
-
-流程图仍通过原 `Refresh` 路径加载，保留设备更新、节点事件解绑/挂接及已有图内容命中规则，不跨模板复用可变运行节点。`FlowRuntimeEstimateCacheTests` 覆盖首次无缓存、完成后更新、内容/名称/窗口隔离及无效耗时；实际 CT 收益还须使用相同方向、同一组模板的现场日志验证，不能从缓存命中推导固定节省秒数。
+双击步骤或按 Enter 编辑模板，右键“编辑配置”进入该 `ProcessMeta` 的 Recipe/Process/切图。执行、切图等待和导出期间配置入口禁用。
 
 ### 统计口径与阶段归因
 
-`CycleTimeStatisticsWindow` 默认提供首页指标与 CT 趋势、批次记录及流程查询；顶部右侧“统计设置”可启用 L/R 联合统计，选择会保存到窗口专属的 `CycleTimeStatisticsWindowConfig` 并在重新打开应用后恢复，不写入 `ProjectARVRProConfig`。启用后增加“全批次记录”页面并在首页追加一行紧凑的全批次指标。该窗口配置同时保存主统计窗口的位置和尺寸；界面使用与启动恢复窗口相同的主题调色板、标题层级和弱边框圆角卡片，样式在项目包本地的 `ResultStatisticsTheme.xaml` 中定义，不依赖宿主 `ColorVision` 程序集的资源。筛选区在窗口变窄时换行，表格保留分页、虚拟化、右键操作和详情入口。
+在“统计设置”启用 L/R 联合统计后，首页显示全批次指标，并可打开“全批次记录”。本机统计的开关存于 `CycleTimeStatisticsWindowConfig`，离线窗口的开关只在当前窗口生效。
 
-首页图表右上角可切换“累计产量”和“每小时产量”，默认显示逐条批次 CT 与累计产量。小时模式按结束时间归入 `[整点, 下一整点)`，柱形表示该小时完成的批次数（包含 PASS 和 FAIL），折线表示这些批次的平均 CT；空小时产量为 0，平均 CT 留空。日、周、月查询均支持小时模式，L/R 联合统计开启时按完整全批次的结束时间计数；“全部”周期继续显示月度汇总。同一应用会话内重新打开本机窗口会恢复图表选择，离线窗口保留独立状态；切换只重绘已查询的数据，不重新读取数据库。
+首页可切换累计或每小时产量。小时产量按结束时间归入 `[整点, 下一整点)` 并包含 PASS 和 FAIL，平均 CT 只按实际完成批次计算。空小时产量为 0，CT 留空。“全部”仍按月汇总。切换统计图只重绘现有查询结果。
 
-查看现场反馈时，在结果统计顶部选择“打开现场数据”（反馈 ZIP 或 `ProjectARVRPro.db`），也可用“打开资料文件夹”选择数据库所在目录或包含 `Database` 的上级目录。`ArvrOfflineDataSource` 在 `%LOCALAPPDATA%/ColorVision/OfflineData/<独立标识>/` 准备独立副本，新窗口标注来源和“只读”，默认显示该资料最新记录所在日期。ZIP 只提取结果库与同目录的 `FlowNodeRecords.db`、`SocketMessages.db`、`MsgRecords.db` 及导出说明；文件夹/数据库导入使用 SQLite backup 包含已提交的 WAL 内容。它不覆盖本机运行库、不改全局数据库路径、不启动写入队列，也不共用本机统计窗口的查询状态。副本保留在本地供排查，位置可从来源提示查看。项目包通过 `IFileMaintenanceProvider` 向宿主独立文件缓存窗口提供“现场数据副本”类别，默认不勾选、保留 7 天；仅扫描独立标识目录内四个已知数据库及其导出说明。新导入时在目录旁记录创建进程和启动时间，整个创建进程仍存活时保留副本，包括窗口已关闭但查询仍在完成的情况；标记异常时保守保留。未带标记的历史副本在另一 ColorVision 进程运行时保留，新目录还按创建时间保护，避免 ZIP 内旧文件时间导致误删。清理执行前重新核对保护与文件身份，原 ZIP、源目录和聚合资料不参与清理；目录及 ownership 标记保留。`OfflineFileMaintenanceTests` 以隔离目录验证已结束会话的白名单、活跃会话保护和确认后重新保护，不代表已清理真实现场资料。
+在结果统计用“打开现场数据”选反馈 ZIP 或 `ProjectARVRPro.db`，用“打开资料文件夹”选择直接或通过 `Database` 子目录包含该库的文件夹。`ArvrOfflineDataSource` 从副本读取可用的配套库，数据库文件或目录导入包含已提交 WAL。离线窗口默认定位到资料最新日期。缓存管理的“现场数据副本”仅清理未被使用的副本，保留原 ZIP、源目录和聚合资料。
 
 同一设备的多次反馈可用 `Scripts/merge_feedback.py` 手动聚合，以扩展可查询的历史范围。需要 Python 3.11 或更新版本，仅使用标准库。从仓库根目录运行 `py .\Scripts\merge_feedback.py "D:\Feedback\<机器名>"` 只预览；需要生成或更新时手动加 `--apply`。`--feedback-id <原始 feedbackId>` 可重复使用以选择部分反馈。脚本核对 `SystemInfo.txt` / 反馈元数据中的机器名与设备目录名，以原始 `feedbackId` 识别来源，按 `serverReceivedAt`、旧 `createdAt`、目录时间依次确定快照顺序，不使用文件修改时间，也不使用反馈上传客户端的版本代替采集时主程序版本。接收反馈、启动程序和打开统计窗口均不会触发聚合。
 
 执行后在设备目录下建立 `_aggregate`：`Sources/<feedbackId>/` 保存各次日志、配置和导出说明；`versions/<版本>/Database/` 保存结果、节点、Socket 和 MQTT 的聚合只读资料；`aggregate.json` 指向最近完整发布的版本，记录原 ZIP 路径、SHA-256、接收时间、各库导出范围及去重计数。原反馈文件不改写。重复行保留原编号，先核对运行身份，再选用较晚接收的快照；同 SN 的不同执行不按 SN 合并，缺失的新字段不编造值。每行保留来源关联，原始正文可追溯到原包。编号对应的身份不同、字段类型不兼容、导出失败或已导入原包发生变化时停止，不自动重新编号、跨机器拼接或覆盖旧聚合。较早无结果库的反馈仍保存日志，但无法补出不存在的结果记录；各库时间覆盖仍须查看清单，不能把区间并集视为无缺口的连续数据。
 
-后续手动重复执行只导入新增反馈，未变化的已导入包不会再次计数。更新先在独立版本准备和校验数据库，再一次替换清单指针；失败留下的 `.pending_*` 仅供排查，不供统计窗口读取。旧版本保留，因此聚合占用额外磁盘。查看时用“打开资料文件夹”选择设备下的 `_aggregate`，读取器先固定一个已发布版本，再复制到独立离线目录；已打开的窗口不随后续更新切换。原有“打开现场数据”也可直接选择该版本 `Database/ProjectARVRPro.db`。`Scripts/tests/test_merge_feedback.py` 覆盖重叠去重、状态更新、旧结构/压缩正文、增量与补录、身份冲突、原包保护、路径与机器校验；`FeedbackAggregateDataSourceTests` 验证聚合入口和窗口数据副本隔离。合成测试及现场目录预览不等于已经执行真实资料合并或验收全量历史统计。
+重复执行只导入尚未合并的反馈。更新先准备并校验独立版本，再替换清单指针。`.pending_*` 仅供排查，已发布版本会保留并占用磁盘。用“打开资料文件夹”选择 `_aggregate`，或用“打开现场数据”选定某个版本的 `Database/ProjectARVRPro.db`。窗口读取打开时选定的副本。
 
 离线窗口复用整轮结果、PG 明细、时间轴与导出。选中一轮后可打开“本轮相关消息”；Socket/MQTT 按本轮前后各 1 秒筛选候选消息，必须结合 SN、MsgID 和连接地址核对，不能仅凭时间邻近认定业务归属。PG 明细右键的执行分析先在同一份节点库按 `BatchId` 查找，再核对项目 SN 与 Flow 的“SN＋启动时间”，要求唯一运行标识；无匹配或多匹配明确提示，不回退到本机 MySQL。节点历史、消息正文和流程切换仍限定同一数据源；离线窗口隐藏清理操作，禁止批次 MySQL 查询及打开现场绝对图片路径。各库是独立导出快照，缺库/缺记录不表示现场没有执行；反馈不含原图，不能承诺查看图像。
 
-离线读取兼容旧 TEXT 与 gzip 正文，缺失的可选阶段字段显示为不可用，必要表或关联字段缺失时拒绝加载并列出原因。只读库不会执行 CodeFirst、补列或建索引。`OfflineDataSourceTests` 使用临时旧结构、同 ID 的不同来源、WAL 和压缩正文验证数据隔离及不改源库；设置 `COLORVISION_OFFLINE_FEEDBACK_ROOT` 可对指定反馈目录执行整轮到消息的验证，`COLORVISION_OFFLINE_PREVIEW_DIR` 可输出深浅主题预览。现场反馈验证不替代完整宿主安装验收。
+离线库兼容旧 TEXT 和 gzip。可选阶段字段缺失显示不可用，缺少必要表或关联字段则拒绝打开并说明原因。初始化只读，无需补列或建索引。
 
 本机旧库首次打开时自动补齐索引并保留原记录，大库可能打开较慢。统计首页的单侧汇总和趋势共用一个已提交数据快照，查询可与本机 WAL 写入并行。离线资料保持只读。
 
-批次记录优先显示 SN、整组 CT、流程运行时间、结束时间和流程数；流程数显示为纯数字，测试次数放在末列。批次、全批次和流程查询表格按内容确定列宽，空间不足时可横向滚动，悬停单元格可查看完整内容。右侧流程明细优先显示流程名、结果、耗时和时间，其余字段保留在后方；可拖动可见的分隔条调整左右宽度及明细与时间轴的高度。批次记录与全批次记录的右侧流程明细提供相同右键菜单：复制、打开文件位置、流程结果查询、流程执行分析和查看测试结果；操作使用当前表格中选中的流程，离线资料仍禁用本机文件位置和 MySQL 流程结果查询。选中批次后，右侧下方时间轴以整组开始和最终化时间为同一横轴，按流程显示 PG 应答、本地切图与稳定等待、预处理、流程执行、执行后处理与保存，以及无法归因的间隔。时间轴摘要与长流程名换行显示，流程行超出可用高度时纵向滚动；鼠标悬停阶段条可查看起止时间和耗时。
+在批次记录或全批次记录选中一轮，下方时间轴用相同的起止区间展示各流程，悬停阶段可查耗时。右键流程明细可打开执行分析或测试结果；离线资料中的本机文件位置和 MySQL 查询入口不可用。
 
 联合统计只读结果库。全局记录按 ID 相邻、均已最终化、SN 主体相同且后缀依次为 `_L_HHmmss` 和 `_R_HHmmss` 的两条记录组成全批次。单侧记录均保留在“批次记录”。全批次仅在两侧均 PASS 时为 PASS，按 R 最终化时间归入所选周期。跨期时也按 R 的实际前一条记录确认配对，允许 L 在范围外完成。
 
-全批次 CT 从 L 收到 Init 并创建整组记录的时间开始，到 R 结果最终化结束，包含 L 单侧 CT、L 完成到 R Init 的等待以及 R 单侧 CT。全批次详情将 L、橙色的 L→R 等待和 R 映射到同一横轴，并列出 L Init、L 完成、R Init、R 完成四个里程碑；首页同时保留单侧批次指标，联合统计行显示全批次数、PASS/FAIL、成功率、平均全批次 CT、平均 L→R 等待和平均全批次运行时间，趋势在开关启用时改用全批次口径，避免把约 20–24 秒单侧基线与左右合计时间混为一谈。
+全批次 CT 从 L 收到 Init 并创建记录，到 R 结果最终化，包含两侧 CT 和 L 完成到 R Init 的等待。全批次时间轴标出 L Init、L 完成、R Init、R 完成。联合视图仍保留单侧指标，趋势切换为全批次口径。
 
-首页的“平均单侧运行时间（不含 PG）”代替本小时和今日计数：先按每条最终化批次的 SN 与前后结果 ID 边界汇总关联流程的 `RunTime`，再在所选日/周/月/全部周期内按批次取平均。“平均全批次运行时间”同样先将每个完整 L/R 配对的左右流程运行时间相加，再按全批次取平均。运行时间仅包含流程实际执行，不包含 PG 应答、切图与准备、执行后处理或 L→R 等待，与墙钟 CT 分开显示；没有关联流程记录的单侧批次、任一侧缺少流程记录的全批次均不计入运行时间平均值，无可用样本时显示 `-`。
+首页的“平均单侧运行时间（不含 PG）”按每条最终化批次的 SN 与前后结果 ID 边界汇总关联流程的 `RunTime`，再按所选周期取平均。“平均全批次运行时间（不含 PG）”先合计每个完整 L/R 配对的左右流程运行时间，再按全批次取平均。运行时间仅包含流程实际执行，不包含 PG 应答、切图与准备、执行后处理或 L→R 等待。无关联流程记录的单侧批次或任一侧缺记录的全批次不计入平均值，无可用样本时显示 `-`。
 
 整组 CT 是 `ObjectiveTestResult.SessionStartTime` 到结果记录最终化的墙钟时间。统计界面中的“PG→执行结束”按每步 `SwitchPG` 发送到该步流程执行结束累计，内部包含 PG 应答、启动准备和流程执行；它与单独显示的绿色执行时间是包含关系，不能再次相加。整组 CT 减去这些 PG 周期后，才是执行结束后的结果处理、保存与无法归因空档。后台结果图导出可与后续流程重叠，也不能仅凭单张导出耗时推断其占用了同等 CT。
 
@@ -216,36 +216,27 @@ AA 与旧版畸变调用可选 x64 `CV_algorithm.dll`，需配套 `opencv_world4
 | 流程执行 | `FlowStartedAt` → `FlowCompletedAt` | 与流程运行 stopwatch 对应的主执行段 |
 | 执行后处理/保存 | `FlowCompletedAt` → `ResultProcessingCompletedAt` | 流程收尾、客户结果读取与解析、结果记录保存；旧日志不能把整段等同于纯解析耗时 |
 
-每个成功流程还会输出一条 `ARVRFlowPhaseTiming` 结构化 INFO 日志，并携带 `SN`、`Model` 和 `BatchId`。其中 `SwitchWaitMs`、`SwitchPreparationMs`、`PictureSwitchMs`、`PreProcessingMs` 和 `FlowMs` 对应启动前与执行阶段；`FlowFinalizeMs`、`BatchLookupMs`、`ProcessExecuteMs`、`ViewResultSaveMs`、`ObjectiveResultSaveMs`、`LinkSaveMs` 和 `ResultProcessingTimestampPersistMs` 用于继续拆分流程结束后的约束路径。`FlowFinalizeMs` 内进一步分为 `FlowRunRecordMs`（SQLite 运行记录入队并等待写入结果，包含排队或超时等待）、`BatchFinalizeMs`（MySQL 批次查询/回写）和 `NodeRecorderFlushMs`（结束节点记录并等待 SQLite 队列刷新）；`NodeRecorderFlushed` 保留刷新返回结果，未取得结果时为 null。这些子阶段已包含在父阶段中，不能重复相加。批次创建/回写的慢调用还会输出 `DatabaseCommandTiming`，区分打开连接和 SQL 调用，按流程 Code 关联。`ResultProcessingTimestampPersisted` 用于确认阶段终点是否写回 SQLite，`ImageExportIncludedInCt` 明确后台图像导出不属于该阶段的 CT 归因。后续反馈诊断应优先按同一 `SN + Model + BatchId` 汇总这些字段，而不是从相邻日志行估算。
+`ARVRFlowPhaseTiming` 用 `SN + Model + BatchId` 关联耗时。`FlowFinalizeMs` 已包含运行记录、批次回写和节点刷新，不应与子段重复相加。数据库慢调用对照 `DatabaseCommandTiming` 区分打开连接和 SQL；核对阶段终点是否落盘再分析时间轴。
 
-`ResultImageDimensionsFromProcessCache` 表示本次结果保存前已从解析阶段的 batch 图像查询中解析出有效宽高。正常内置流程该字段为 `true` 时，`ViewResultSaveMs` 不再包含第二次尺寸查询；若为 `false`，保存层可能因兼容回退仍访问 MySQL，应结合 `ViewResultSaveMs` 和尺寸数据继续诊断。
+`ResultImageDimensionsFromProcessCache` 为 `false` 时，保存可能因兼容回退再查 MySQL，可结合 `ViewResultSaveMs` 及图像尺寸定位。
 
-启动软件段另有以下日志字段，单位为保留三位小数的毫秒，仅增加日志、不增加结果库列：
+支持批次传递的宿主在流程启动前把已插入的批次 ID 交给本轮动作。本地相机、本地校正及使用 `LocalFlowResultPersistence` 的节点用该 ID 写入结果。旧入口、批次编号或数据库连接不匹配，以及插入后经过本进程 MySQL 维护的情况，沿用按编号查询。动作携带的批次信息只在本进程内使用。
 
-| 字段 | 范围与相加规则 |
-| --- | --- |
-| `StartupWorkMs` | 进入本次单步启动方法或 RunAll 迭代，到本地切图开始；单步不含进入方法前的步骤选择，因此不强求等于 `SwitchPreparationMs` |
-| `RuntimeEstimateCacheHit` / `RuntimeEstimateLookupMs` | 显示用预计耗时是否命中，以及捕获模板身份/查运行内缓存耗时；不访问历史库 |
-| `RefreshServicesMs` | 服务查询请求的发送调用，不等于服务应答耗时 |
-| `RefreshDetachNodesMs` | 解绑旧节点显示与诊断事件 |
-| `RefreshLoadGraphMs` | 读取模板内容、加载流程图和更新设备信息 |
-| `RefreshAttachNodesMs` | 枚举新节点并挂接显示、诊断事件 |
-| `RefreshTotalMs` | 上述四项 Refresh 子段之和；不能再与其子段相加 |
-| `StartupOtherMs` | `StartupWorkMs - RefreshTotalMs - RuntimeEstimateLookupMs` 的非负余项；包括本轮上下文准备等，不能全部解释成线程等待 |
-| `BatchCreateMs` | `FlowStartedAt` 后创建批次模型、构造 MySQL 客户端、插入并取得批次 ID 的耗时；包含在 `FlowMs` 中，不属于 `StartupWorkMs`，也不是服务端纯 SQL 耗时 |
-| `NodeRecorderStartMs` | 批次建立后初始化节点记录器和运行节点跟踪状态的耗时，包含在 `FlowMs` 中；此调用本身不写 SQLite |
+成功流程的批次终态在后台回写，解析器等待回写结束后再读取批次。回写和结果收尾期间，新测试返回忙碌。操作员关闭窗口时，当前步骤先完成回写、解析和结果保存，再关闭窗口，后续步骤停止启动。宿主强制退出时会等待已开始的 MySQL 写入结束。`BatchFinalizeMs` 包含任务调度和恢复处理的等待，`DatabaseCommandTiming` 继续单独记录连接与 SQL 执行。
+
+启动阶段的字段以 `ARVRWindow.xaml.cs` 中 `ARVRFlowPhaseTiming` 为准。`StartupWorkMs` 可能省略单步方法进入之前的步骤选择。`RefreshTotalMs` 已包含服务发送、解绑、图加载和事件挂接。`BatchCreateMs`、`NodeRecorderStartMs` 属于 `FlowMs`，不计入启动段。服务发送时间不能用来估算设备应答。
 
 原始回包到业务派发应结合宿主的 [Socket 计时](../ui-components/ColorVision.SocketProtocol.md#回包派发与界面刷新计时)，不能把消息列表后台排队时间重复计入 PG 或 CT。
 
+`ARVRSwitchDispatchTiming` 通过 `MsgID` 和 `SerialNumber` 对照 `SwitchPGCompleted` 的 Socket 日志。`DispatcherQueueMs` 统计请求派发到 UI 回调开始的等待，`DispatcherCallbackMs` 统计 UI 回调返回前的同步工作。后续异步启动使用 `ARVRFlowPhaseTiming` 分析。`BatchIdBeforeDispatch` 对应回调进入时窗口持有的流程结果，窗口尚无流程结果时为空。
+
 旧记录没有上述阶段字段时，时间轴只用 `CreateTime - RunTime` 推算流程执行段，并把剩余部分明确显示为“未归因间隔”；旧数据不能事后可靠拆分切图、预处理和结果保存。任何缺失、逆序或超出整组范围的阶段边界都不能被强行归类。
 
-- 软件每次重新启动后，三个页面默认“按天／今天”，筛选文本和结果条件回到初始状态。同一次软件运行中关闭、重新打开统计窗口，保留当前标签、周期、日期和筛选条件。
-- `ProjectARVRProConfig.ResultStatisticsWindowState` 仅作为运行内状态，标注 `[JsonIgnore]`；旧配置 JSON 中的同名字段不再恢复，关闭统计窗口也不会为查询条件写入配置。此规则只涉及查询条件，不会删除或截断历史结果数据。
+- 本机统计在程序启动后首次打开时默认“按天／今天”。同一次程序运行中关闭、重新打开窗口，保留当前标签、周期、日期和筛选条件。
+- 查询条件只保存在运行内的 `ProjectARVRProConfig.ResultStatisticsWindowState`（`[JsonIgnore]`）。历史结果保存在结果库。
 - 手动切换仍支持按天、按周、按月和全部。按天使用所选日期的 `00:00` 到次日 `00:00`，按周使用周一到下周一，按月使用月初到下月初，统一为包含起点、不含终点的区间；不是滚动 24 小时或最近 7 天。
 - “今天／本周／本月”返回当前周期并保留筛选，“全部”隐藏日期导航。“重置”清空筛选。SN 和流程名按字面子串匹配，`_`、`%` 作为普通字符。
-- 首页与批次记录按整组结束时间统计，流程查询按流程 `CreateTime` 统计，不能把跨午夜完成的整组记录误算到开始日。首页“今日产量”和“本小时产量”是所选查询范围中落入当前日期/小时的子集；查看不包含今天的历史范围时这两个值为零。
-
-验证入口：`ResultStatisticsTests.cs` 覆盖自然周期、日期前后切换、分页、配置 JSON 忽略与运行内状态，以及三个查询在午夜的包含/排除边界。测试使用临时 SQLite；界面布局另需检查浅色/深色、最小窗口宽度、日期弹出日历和筛选操作。只加载 XAML 的合成预览不能替代真实窗口的查询与重开验证。
+- 首页与批次记录按整组结束时间统计，流程查询使用流程 `CreateTime`。跨午夜的整组记录归入完成日。
 
 ## 验收
 
@@ -263,11 +254,10 @@ AA 与旧版畸变调用可选 x64 `CV_algorithm.dll`，需配套 `opencv_world4
 
 ## 本地构建与测试
 
-下列命令编译和运行本地测试，会写入本地构建/测试产物，不上传包。项目版本读取 `ProjectARVRPro.csproj` 的 `VersionPrefix`，与主程序版本独立。
+以下命令写入本地编译产物。项目版本读取 `ProjectARVRPro.csproj` 的 `VersionPrefix`，与主程序版本独立。
 
 ```powershell
 dotnet build Projects/ProjectARVRPro/ProjectARVRPro.csproj -c Release -p:Platform=x64
-dotnet test Test/ProjectARVRPro.Tests/ProjectARVRPro.Tests.csproj -c Release -p:Platform=x64
 ```
 
 ## 打包上传（需明确发布授权）

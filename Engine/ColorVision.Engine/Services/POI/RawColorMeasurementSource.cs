@@ -60,6 +60,25 @@ namespace ColorVision.Engine.Services.POI
             transform = snapshot.ToNative();
         }
 
+        internal bool TryGetCachedChannel(int channel, out ReadOnlyMemory<byte> samples)
+        {
+            lock (sync)
+            {
+                ThrowIfDisposed();
+                if (channel < 0 || channel >= Channels) throw new ArgumentOutOfRangeException(nameof(channel));
+                if (xyz == null)
+                {
+                    samples = default;
+                    return false;
+                }
+
+                int length = checked(Width * Height * sizeof(float));
+                // The snapshot is read-only. A view retains its backing array if the cache is replaced.
+                samples = xyz.AsMemory(checked(channel * length), length);
+                return true;
+            }
+        }
+
         internal unsafe byte[] CreateChannel(int channel, CancellationToken cancellationToken = default)
         {
             lock (sync)

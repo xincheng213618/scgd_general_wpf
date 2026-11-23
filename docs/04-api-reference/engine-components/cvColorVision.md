@@ -5,7 +5,6 @@ status: "current"
 summary: "定位供应商 native DLL 的相机、光谱、PG 与源表绑定契约，以及内部版的交付边界。"
 aliases: ["设备SDK入口在哪里","cvColorVision","cvCameraCSLib","CVCommCore","MQTTMessageLib","CVCommCore.dll","MQTTMessageLib.dll"]
 code_paths: ["Engine/cvColorVision/README.md","Engine/cvColorVision/Camera","Engine/cvColorVision/CVCommCore","Engine/cvColorVision/MQTTMessageLib","Engine/cvColorVision/Devices/Spectrometer/Spectrometer.cs","Engine/cvColorVision/cvColorVision.csproj"]
-test_paths: []
 related: ["engine.index","engine.native-integration","ui.core"]
 ---
 
@@ -15,15 +14,15 @@ related: ["engine.index","engine.native-integration","ui.core"]
 
 本地相机取图由 `CM_GetFrame` 提供 RAW，校正由 `LocalFrameCalibrationService` 调用本地 `opencv_helper.dll`；POI 的 XYZ、xy/uv、CCT 和主波长测量由 `PoiMeasurementService` 通过 `OpenCVCalibration.M_CalculatePoiBatchV2` 或 RAW 测量入口计算，缓冲寿命由当前帧或 `PoiMeasurementBuffer` 管理。旧插件若引用早期 `cvColorVision.dll` 的句柄式 XYZ 采样 API，需要迁移到本地测量接口并重新编译；当前托管程序集不保证这些旧 API 的二进制兼容。
 
-托管绑定不再提供旧 `FovImgCentre` / `FovImgCentreEX`、`SFRCalculation`、`GhostGlareDectect` 和 `cvCalArticulation` 入口，图像测量使用现有本地算法。对应原生维护源码已删除旧 FOV、SFR、畸变、鬼影入口及清晰度导出包装；自动对焦仍需要的公共计算实现保留。Simple 源码保留用于同步上游，但不参与当前 DLL 构建，其旧算法调用迁移前不能重新启用。原生构建与替换交付 DLL 是两个步骤，源码清理不代表已发布；更新 DLL 时须使用匹配版本，不能再依赖这些退役导出或原有导出序号。
+FOV、SFR、畸变、鬼影与清晰度测量使用本地算法。依赖 `FovImgCentre`／`FovImgCentreEX`、`SFRCalculation`、`GhostGlareDectect` 或 `cvCalArticulation` 的旧调用方须迁移后重编译，并核对 DLL 版本和导出序号。Simple 源码用于同步上游，不参与 DLL 构建。
 
 ## 绑定与交付前提
 
 当前工程目标是 `net10.0-windows7.0`。`cvColorVision.csproj` 从 `DLL/scgd_internal_dll/` 复制和打包供应商 DLL，不在本工程编译这些 native 实现。全部 21 个 DLL 的工程链接、构建/发布输出和 NuGet 包路径统一为 `runtimes/win-x64/native/`，包含 `cvCamera.dll`、CommLibrary、OpenCV 及相机和光谱仪 SDK 的间接依赖。供应商原始输入继续保存在 `DLL/scgd_internal_dll/`。主程序与 PluginKit 的共享文件清单使用相同相对路径，安装工程也须从该目录取文件并安装到对应目录。具体功能还受设备驱动与部署配置约束。校正文件创建由主程序执行，本地校正统一使用 `opencv_helper.dll`；`cvCamera.dll` 继续负责相机等设备接口。
 
-`CameraNativeLibrary` 为本程序集的所有 `cvCamera.dll` P/Invoke 注册统一解析器，在首次调用时优先查找托管程序集旁、其次宿主旁的 `runtimes/win-x64/native/`，再兼容按 RID 发布时平铺到程序集或宿主旁的 native 资产。加载前通过 `SetDllDirectoryW` 将实际目录设为当前进程的 DLL 搜索目录，覆盖 SCGDCamLayer 等旧 SDK 在稍后调用 `LoadLibrary` 按名称加载依赖的行为；这会取代宿主先前设置的单一 DLL 搜索目录，宿主在设备运行期间不得覆盖它。不更改系统或用户 `PATH`，不连接或枚举设备；缺少文件、依赖或架构不匹配仍由加载异常报告。原生 DLL、导出和许可证构建无需随本次目录调整而替换。
+`CameraNativeLibrary` 依次查找托管程序集和宿主旁的 `runtimes/win-x64/native/`，兼容 RID 发布时的平铺输出。`SetDllDirectoryW` 将实际目录设为进程 DLL 搜索目录，供 SCGDCamLayer 等 SDK 后续按名称加载依赖。宿主在设备运行时须保留该搜索目录，系统和用户 `PATH` 独立。
 
-传感器业务通过 Engine 的 `LocalSensorSession` 使用 C# TCP/串口实现，保留 MQTT 服务模式，不依赖旧 `cvColorVision.SensorComm` P/Invoke 类。该旧类型与配套内部版 DLL 的旧传感器/TCP 服务导出已退役；仍引用这些公共入口的外部插件需要迁移并重新编译，不能直接使用新的绑定程序集或原生 DLL。PG 绑定仍使用 `Communicate_Type`，其命名空间、类型名与枚举值保持兼容；相机继电器所需的五个串口函数仅作为原生内部实现保留。配套 DLL 同时退役了未使用的 `CalGamut`、`GetMAKETYPE`、`XYZ2xyuv`、`CheckLedJudge`，仍依赖它们的旧调用方也需先迁移。源码清理不代表已更新交付 DLL。
+传感器使用 Engine 的 `LocalSensorSession`（TCP／串口）或 MQTT 服务模式。引用旧 `cvColorVision.SensorComm`、传感器／TCP 服务导出或 `CalGamut`、`GetMAKETYPE`、`XYZ2xyuv`、`CheckLedJudge` 的外部插件须迁移并重编译。PG 通过 `Communicate_Type` 保持枚举及类型兼容，相机继电器的串口函数仅供原生内部调用。
 
 电机控制器 `FOCUS_COMMUN` 与原生及已有配置的数值保持一致：`VID_SERIAL=0`、`CANON_SERIAL=1`、`NED_SERIAL=2`、`LONGFOOT_SERIAL=3`、`TSM_SERIAL=4`、`SV6100=5`。`InitCom` / `CM_InitComEx` 的首参对应原生 `HANDLE&`，C# 必须传 `ref IntPtr` 接收独立电机句柄，不能传相机管理器句柄，也不能把整数状态码当句柄。旧调用方需要按此签名重新编译；新增类型需要配套 DLL，选择项存在不证明串口通信已验收。本地相机会话通过 `CM_InitComEx` 创建电机、下发配置，通过 `CM_ShutDown` 释放；托管适配器串行进入原生电机注册表，避免不同相机对未加锁的原生句柄表并发访问。
 
@@ -31,19 +30,25 @@ related: ["engine.index","engine.native-integration","ui.core"]
 
 当前内部版不包含本地 OLED/CUDA 链路：`cvCamera.dll` 不再导入 `cvOled.dll`，默认交付不含 `cvoled.dll`、`cudart64_12.dll`，C# 的 `CvOledDLL` 及其专用枚举也不再提供。原生导出 `CM_LedCalInit`、`CM_LedCalFind`、`CM_LedCalComBine`、`CM_LedCalFindHighDensity`、`CM_FindHighIndensityLed` 已删除；需要这些入口的旧插件不能直接使用此版本，按序号导入的外部二进制也需要重新核对。本地普通 LED 检测、远端 CVOLED 服务消息和流程节点不属于这条 DLL 依赖链。
 
-OLED/CUDA 备份位于仓库 `docs/_history/native-dependencies/oled-cuda/`，包含移除前的匹配 DLL、原生源码快照、C# 绑定、安装器配置与 SHA-256 清单；恢复步骤见其中的 `README.txt`。恢复须同时处理原生实现/链接输入、C# 声明、工程复制/打包项、共享清单与外部 AIP，不能只放回两个依赖 DLL。此功能裁剪不改变本页的许可证构建约定。
+旧 OLED/CUDA 部署的匹配 DLL、源码和恢复说明位于 `docs/_history/native-dependencies/oled-cuda/README.txt` 所在目录。恢复需要同步核对原生链接、托管声明和打包清单。
 
 Release 构建的 `ValidateGaolitongNativeDependencies` 会在 Build 前检查 `glaDevSys64.dll`、`xGUSB64.dll`、`xGCOM64.dll`、`xserial64.dll` 和 `FTD2XX.dll` 是否存在；缺少其中任一文件就报错。这只是输入存在性门禁，不校验 DLL 能否加载、导出是否匹配或真实设备能否打开。README 也作为 NuGet 包说明打包，但其仓库相对链接不保证包内含有对应知识文件。
 
 `cvCamera.dll` 的 log4z 日志在 `InitResource` 启动前读取进程环境变量 `COLORVISION_NATIVE_LOG_DIRECTORY`。C# 的 `cvCameraCSLib.InitResource` 在未显式设置该变量时，取当前 log4net 文件输出的实际目录，因此原生日志与主程序日志位于同一目录（安装版通常为 `%APPDATA%\ColorVision\Log`）；原生日志仍保留独立的 `.log` 文件、文件名和级别。外部程序可在首次初始化前设置该变量，例如 C# 调用 `Environment.SetEnvironmentVariable(cvCameraCSLib.NativeLogDirectoryEnvironmentVariable, @"D:\ColorVisionLogs")`，或 C++ 调用 `SetEnvironmentVariableW(L"COLORVISION_NATIVE_LOG_DIRECTORY", L"D:\\ColorVisionLogs")`。支持中文目录；路径按进程设置，不按相机句柄设置。直接调用 native 且未设置变量的程序保留原来的当前工作目录 `./log/` 默认值。日志目录在初始化时读取，运行中的日志配置更改不会自动同步；不要为切换日志目录额外调用设备资源初始化或释放。原生导出名称、序号及 `InitResource` 参数保持兼容。
 
-默认交付不含 `cfg/sys.cfg`。配套内部版 `cvCamera.dll` 的相机创建接口在配置路径为 `null` 或空字符串时初始化内置曝光、相机、XYZ 通道和空校准列表；显式文件路径仍保留兼容支持。WPF 的本地相机、视频和 CameraTest 会话使用空路径创建，物理相机及校准参数继续通过既有 JSON 接口注入。不能混用尚未支持空路径初始化的旧 DLL；仅删除配置文件不能替代 native 更新。
+默认交付不含 `cfg/sys.cfg`。配套内部版 `cvCamera.dll` 的相机创建接口在配置路径为 `null` 或空字符串时初始化内置曝光、相机、XYZ 通道和空校准列表；显式文件路径仍保留兼容支持。WPF 的本地相机和视频会话使用空路径创建，物理相机及校准参数继续通过既有 JSON 接口注入。不能混用尚未支持空路径初始化的旧 DLL；仅删除配置文件不能替代 native 更新。
 
 配套内部版 `cvCamera.dll` 不再使用 `CameraAttribute.db` 或旧 `cvTableList` 数据表实现，也不再导入 `sqlite3.dll`。相机读出模式保留 SDK 默认值；制冷能力通过 SDK 查询，温控开关和目标温度使用现有相机配置，停止温控不再依赖属性库。默认交付不含 `cvTableList.dll` / `sqlite3.dll`，托管 SQLite 的 `SQLitePCLRaw` 与 `e_sqlite3.dll` 依赖继续保留。旧 DataTable / SQLiteBaseControl 的 C++ 导出已移除，依赖这些导出或导出序号的外部程序需重新核对。
 
 默认交付也不捆绑 `cfg_files` 中的 IKap `510.vlcf` 和 MIL 的位深映射/DCF 采集配置。HK 的 MVS、GenTL、MVFG 驱动分支不使用这组默认配置；相机驱动仍须按实际设备安装。IKap/MIL 设备需要另行提供与设备匹配的采集配置，这不代表移除了这些相机 SDK 或改变了相机类型枚举。
 
-内部版 `cvCamera.dll` 对 `HK_USB` 和 `HK_CARD` 的 BV/LV/LVTOBV 普通测量及视频采集默认直接调用已安装的 MVS x64 SDK；WPF 继续使用原有 `CM_*` 接口，不另设 HK 会话或兼容分支。旧后端预览的回调注销同时停止该回调启动的采集，重复注销及随后关闭不重复停止；重新注册先清理旧预览，再注册并启动。`CM_SetCallBack`/`CM_SetCallBackEx` 启动失败返回 `CV_ERR_CAM_BEGIN_LIVE`，注销时停止失败返回 `CV_ERR_CAM_STOP_LIVE`，回调设置失败返回 `CV_ERR_CAM_SET_PARAM`，原生 SDK 返回值和具体步骤写入 `CameraPreview` 日志；MVS 错误保留原始错误码。打开前通过 `CM_UpdateCfgJson(Cfg_Camera)` 顶层布尔字段 `useHikMvs` 选择后端：`true` 使用 MVS，`false` 使用旧 SCGDCamLayer。同一 JSON 的顶层整数 `hikBayerQuality` 可选 0 快速、1 均衡、2 最优、3 最优+，仅用于 MVS 彩色拍照；视频固定使用 2（最优）。顶层布尔字段 `hikOutputBgr` 选择彩色输出顺序：`true` 输出 BGR，与旧后端及现有校正契约一致；`false` 保留 RGB，仅供对照。新管理器默认后端 `true`、质量 3、BGR 输出 `true`；后续配置缺少字段时保留已设置值。只传后端、质量或通道顺序字段不重置物理相机参数；非布尔后端/通道顺序、非整数或超出 0–3 的质量、已打开时改变任一偏好均失败，已有连接及输出设置保持不变。WPF 的本机偏好允许随时编辑，仅下次实际打开时下发。彩色 MVS 拍照默认使用 Bayer 插值质量 3（最优+），视频固定使用 2（最优）；打开及切换模式时调用 SDK 设置对应质量，切回拍照恢复本次连接保存的拍照质量，失败回滚同时恢复原模式的质量，先转换为 RGB24/RGB48，再按 `hikOutputBgr` 原地交换红蓝通道，默认交付 BGR24/BGR48；旧 SCGDCamLayer 的 HK 16 位转换也包含这一步，不能从 RGB16 中间格式推断最终输出顺序。LV 为 Mono8/Mono16，忽略通道顺序偏好。平均取图与自动曝光仍使用原生相机层的既有逻辑，本地校正、翻转、缓存和保存仍由现有上层链路处理。CV 滤轮模式、其它采集卡型号及其它相机继续走原接口；MVS 后端不支持 HK 的 QHY 专用 Fast/FastEx 模式。
+内部版 `cvCamera.dll` 对 `HK_USB` 和 `HK_CARD` 的 BV/LV/LVTOBV 普通测量及视频采集默认直接调用已安装的 MVS x64 SDK；WPF 继续使用原有 `CM_*` 接口，不另设 HK 会话或兼容分支。旧后端预览的回调注销同时停止该回调启动的采集，重复注销及随后关闭不重复停止；重新注册先清理旧预览，再注册并启动。`CM_SetCallBack`/`CM_SetCallBackEx` 启动失败返回 `CV_ERR_CAM_BEGIN_LIVE`，注销时停止失败返回 `CV_ERR_CAM_STOP_LIVE`，回调设置失败返回 `CV_ERR_CAM_SET_PARAM`，原生 SDK 返回值和具体步骤写入 `CameraPreview` 日志；MVS 错误保留原始错误码。打开前通过 `CM_UpdateCfgJson(Cfg_Camera)` 顶层布尔字段 `useHikMvs` 选择后端：`true` 使用 MVS，`false` 使用旧 SCGDCamLayer。同一 JSON 的顶层整数 `hikBayerQuality` 可选 0 快速、1 均衡、2 最优、3 最优+，仅用于 MVS 彩色拍照；视频固定使用 2（最优）。顶层布尔字段 `hikOutputBgr` 选择彩色输出顺序：`true` 输出 BGR，与旧后端及现有校正契约一致；`false` 保留 RGB，仅供对照。新管理器默认后端 `true`、质量 3、BGR 输出 `true`；后续配置缺少字段时保留已设置值。只传后端、质量或通道顺序字段不重置物理相机参数；非布尔后端/通道顺序、非整数或超出 0–3 的质量、已打开时改变任一偏好均失败，已有连接及输出设置保持不变。WPF 的本机偏好允许随时编辑，仅下次实际打开时下发。彩色 MVS 拍照默认使用 Bayer 插值质量 3（最优+），视频固定使用 2（最优）；打开及切换模式时调用 SDK 设置对应质量，切回拍照恢复本次连接保存的拍照质量，失败回滚同时恢复原模式的质量，默认交付 BGR24/BGR48。
+
+9568 × 6380 全幅 BayerRG16 以质量档 3 拍照并输出 BGR 时，首张符合条件的实拍 RAW 先由同一 SDK 转成 RGB16 并交换红蓝通道。本帧交付这份 BGR16 作为像素基准。SDK `BGR16_Packed` 直出与本地 RGGB 转换各自基于同一张 RAW 独立校验，所有 BGR 样本逐值一致才启用对应路径。本地转换仍限 GigE `MV-CH610-10TC-TF`、紧凑零偏移全幅布局和相机配置读回匹配，并须先通过合成探针比对。现有 SDK 版本、曝光和增益随相机连接使用，候选资格取决于像素校验。
+
+后续帧按本地转换、SDK 直出、RGB16 加换色的优先级选择通过校验的路径。已启用的候选无法转换或 SDK 返回长度异常时，用同一 RAW 继续尝试下一条可用路径。`HikMvsCapture` 日志的 `Route` 表示实际交付路径，`QualificationMs` 记录首帧校验耗时，`SdkConvertMs`、`SwapMs` 和 `CustomConvertMs` 记录对应转换。其它格式按 SDK RGB 输出及 `hikOutputBgr` 通道顺序处理。旧 SCGDCamLayer 的 HK 16 位转换也在需要时执行红蓝交换。
+
+LV 为 Mono8/Mono16，忽略通道顺序偏好。平均取图与自动曝光仍使用原生相机层的既有逻辑，本地校正、翻转、缓存和保存仍由现有上层链路处理。CV 滤轮模式、其它采集卡型号及其它相机继续走原接口；MVS 后端不支持 HK 的 QHY 专用 Fast/FastEx 模式。
 
 MVS 开始采集前自动配置触发参数，无需用户先在海康客户端设置：保留设备当前支持的 FrameStart 或 FrameBurstStart 选择，当前选择不适用时优先选择支持的 FrameStart，否则选择 FrameBurstStart；先关闭所有触发选择器，设置 AcquisitionMode=Continuous、TriggerSource=Software；设备提供 AcquisitionBurstFrameCount 时设为 1，使用 FrameBurstStart 时该节点必须可用。测量启用所选触发器，每次清理旧帧后发送一次软件触发；视频保持 TriggerMode=Off，由相机连续曝光，不逐帧清缓存或触发，允许采集与转换重叠。参数在打开及模式切换时读回确认，不增加每帧设参。关闭或打开中途失败时，停止采集后按相反顺序恢复原参数，不调用 UserSetSave。参数设置或读回失败仍明确报错，原生日志记录参数名与 SDK 错误码；不能把通用 -10009 打开失败一概认定为相机离线。调用 `MV_CC_OpenDevice` 打开设备，GigE 使用独占权限，CameraLink 按 SDK 规则使用控制权限；SDK 不支持所选质量、像素格式或必要接口时明确失败，不静默降低质量或切回旧采集。`HikMvsSDK`、`HikMvsOpen`、`HikMvsCapture` 原生日志记录 SDK 版本、相机序列号、像素格式、质量、曝光/增益、帧号、连续/软件触发模式及等待/转换耗时。模拟接口验证覆盖缓冲释放和关闭重开，不代表实机验收；质量 3 与质量 2 的像素结果可能不同，启用前须对现场亮度、色度、均匀性和 MTF 等业务指标及连续采集耗时做对照。
 
@@ -87,7 +92,7 @@ MVS 视频回调丢弃坏帧、归还 SDK 缓冲并继续取帧，超时仍无�
 
 平台错误 `CV_ERR_CAM_ID_MATCH=-10007` 明确表示 ID 与枚举设备不匹配；`CV_ERR_CAM_OPEN=-10009` 仅表示设备打开失败。旧 SCGDCamLayer 普通打开日志记录请求 ID、枚举 ID、型号、模式和失败步骤，其指针接口未提供底层 SDK 错误码时明确标记不可用，不推断为 ID 错误。MVS 打开日志记录序列号、传输类型、失败操作及 SDK 错误。
 
-`Test/ColorVision.UI.Tests/NativeCameraErrorTests.cs` 不连接设备，保护操作接口整数返回与状态查询的边界，验证当前程序集全部 `cvCamera.dll` 导入对应交付 DLL 的真实导出、跨 DLL 结构体大小/字段偏移、SDK 码跨线程解释、未知码回退、多个操作的无效句柄错误、取源图失败前不分配缓冲及消息缓冲边界；也检查电机类型数值、初始化句柄回写和源表波特率入口的无设备失败。原生 SDK 替身验证覆盖实际失败透传与后续成功调用，不代替现场 MVS 采集验收。
+交付时应核对 DLL 实际导出与结构布局，并在真实 MVS 环境验收采集。
 
 接口混用 `int`、`bool`、`void`，成功值由具体入口决定。例如 `Spectrometer.GetErrorMessage` 把 `1` 作为成功而返回空字符串，不能套用“所有 native 调用返回 0 才成功”。绑定存在、构建成功或取得返回值，都不能单独证明采集、校准或输出已安全完成；验证设备动作仍需明确授权和真实状态证据。
 
@@ -107,6 +112,7 @@ MVS 视频回调丢弃坏帧、归还 SDK 缓冲并继续取帧，超时仍无�
 | 能力 | 当前入口 | 说明 |
 | --- | --- | --- |
 | 相机/通用视觉 | `Camera/cvCameraCSLib.*.cs` | 相机打开关闭、预览、取帧、配置 JSON、自动曝光、ROI、采样、TIFF、对焦和多类检测函数 |
+| 光谱仪 | `Devices/Spectrometer/` | 光谱设备绑定 |
 | 图卡 | `Devices/PatternGenerator/PG.cs` | PG 初始化、TCP/串口连接、Start/Stop/Reset、帧切换 |
 | 源表/电源 | `Devices/PassSx/PassSx.cs` | 打开关闭、源模式、2/4 线、前后端口、电压电流、步进/扫描 |
 | 极薄入口 | `Algorithms.cs` 等 | 直接暴露少量底层函数 |
@@ -140,32 +146,6 @@ MVS 视频回调丢弃坏帧、归还 SDK 缓冲并继续取帧，超时仍无�
 `pCamMan->SetDeviceMode(mode)` 保存的是许可证中的 `device_mode`，供 `CM_GetDeviceMode` 返回，不是设置相机硬件工作模式。内部版本不执行许可证分支时不要单独补调用；此时设备模式保持为空，上层应继续使用配置的相机型号作为回退。
 
 按 `Release|x64` 构建后，确认相机、vLight 光谱仪和高立通光谱仪的打开路径没有活动的 `LicenseValidate` 调用，再把产物复制到 `DLL/scgd_internal_dll/cvCamera.dll`。静态许可证/HASP 代码或导出仍可能保留在 DLL 中；内部版本的验收标准是上述运行路径不触发许可证验证。
-
-## 变更边界
-
-| 变更类型 | 是否改这里 |
-| --- | --- |
-| DLL 入口名、参数、调用约定、结构体布局变化 | 是 |
-| 采集后的模板判定、OK/NG 规则 | 通常看 `ColorVision.Engine/Templates`、项目包和流程节点 |
-| CVCIE/CVRAW 文件格式 | 通常看 `ColorVision.FileIO` |
-| WPF 按钮、菜单、图像叠加 | 通常看 UI、ImageEditor、结果展示链 |
-| 新客户项目调用已有 native 能力 | 优先复用现有声明；只有 DLL 新增入口或签名变化时扩展这里 |
-
-## 边界
-
-- 关键能力主要来自 native DLL，C# 负责声明、薄包装和数据类型桥接。
-- `cvCameraCSLib` 由 `Camera/cvCameraCSLib.*.cs` 多个 partial 文件组成，除相机控制外还暴露图像处理、自动对焦和检测函数。
-- 接口粒度不统一，不能硬写成整齐分层 API。
-- 上层 Engine、设备服务和插件调用这里；这里不编排宿主窗口或业务流程。
-
-## 关键文件
-
-| 任务 | 先看 |
-| --- | --- |
-| 相机绑定面 | `Camera/cvCameraCSLib.Core.cs`、`Capture.cs`、`Configuration.cs`、`Discovery.cs`、`ImageProcessing.cs` |
-| 图卡 | `Devices/PatternGenerator/PG.cs` |
-| 源表/电源 | `Devices/PassSx/PassSx.cs` |
-| 光谱仪 | `Devices/Spectrometer/` |
 
 ## 验证入口与缺口
 

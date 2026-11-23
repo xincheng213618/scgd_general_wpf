@@ -5,7 +5,6 @@ status: "current"
 summary: "Copilot 会话检查点、任务呈现、重试和内置工具的状态恢复与安全边界。"
 aliases: ["Copilot 会话如何恢复","工具失败能否重试","诊断模式会自动读取日志吗","日志中文乱码","原生日志 光谱仪错误","CopilotAgentSessionCheckpoint","CopilotAgentTaskEventJournal","GetRecentLog","CopilotRecentLogSupport","QueryFlowExecutionStats","QueryDatabaseSql","ExecuteDatabaseSql","rows_returned","data_tsv","SQL查询截断","数据库查询 JSON 脱敏","SQL审批预览","colorvision-database-operations","PreviewWorkspacePatchEnvelope","ApplyWorkspacePatchEnvelope","RunShellCommand"]
 code_paths: ["ColorVision/Copilot/Capabilities/CopilotDatabaseSqlPolicy.Approval.cs","ColorVision/Copilot/Capabilities/CopilotDatabaseSqlTarget.cs","ColorVision/Copilot/Capabilities/CopilotDatabaseMutationRunner.cs","ColorVision/Copilot/Capabilities/CopilotMySqlDatabaseSqlExecutor.Mutation.cs","ColorVision/Copilot/Agent/CopilotAgentSessionCheckpoint.cs","ColorVision/Copilot/Agent/CopilotAgentTaskEventJournal.cs","ColorVision/Copilot/Agent/CopilotAgentTaskEventJournal.Builder.cs","ColorVision/Copilot/State/","ColorVision/Copilot/CopilotChatViewModel.QueuedFollowUps.cs","ColorVision/Copilot/Runtime/CopilotWorkspaceRollbackCoordinator.cs","ColorVision/Copilot/CopilotChatViewModel.AgentTaskCommands.cs","ColorVision/Copilot/CopilotChatViewModel.Conversations.cs","ColorVision/Copilot/CopilotChatViewModel.TurnExecution.cs","ColorVision/Copilot/CopilotChatViewModel.TurnEvents.cs","ColorVision/Copilot/Runtime/CopilotApprovalCoordinator.cs","ColorVision/Copilot/CopilotChatViewModel.Permissions.cs","ColorVision/Copilot/Agent/CopilotQueuedFollowUpCoordinator.cs","ColorVision/Copilot/Agent/CopilotAgentTaskHost.cs","ColorVision/Copilot/Agent/CopilotToolIntentPolicy.cs","ColorVision/Copilot/Agent/Tools/CopilotGetRecentLogTool.cs","ColorVision/Copilot/Capabilities/CopilotRecentLogSupport.cs","ColorVision/Copilot/Capabilities/CopilotAgentCapabilityServices.cs","ColorVision/Copilot/Capabilities/CopilotDatabaseSqlCapability.cs","ColorVision/Copilot/Capabilities/CopilotFlowExecutionStatisticsCapability.cs","ColorVision/Copilot/Agent/Tools/Application/CopilotDatabaseSqlTools.cs","ColorVision/Copilot/Skills/colorvision-database-operations","ColorVision/Copilot/Agent/CopilotToolDispatchWindow.cs","ColorVision/Copilot/Agent/CopilotToolExecution.cs","ColorVision/Copilot/Agent/CopilotToolExecution.Support.cs","ColorVision/Copilot/CopilotChatViewModel.WorkspaceCommands.cs","ColorVision/Copilot/CopilotChatViewModel.MessageInteraction.cs","ColorVision/Copilot/Agent/CopilotAgentTraceEntry.WorkspaceState.cs","ColorVision/Copilot/CopilotChatMessage.Validation.cs","ColorVision/Copilot/CopilotChatMessage.WorkspaceDiff.cs","ColorVision/Copilot/Agent/CopilotAgentConversationMemory.cs","ColorVision/Copilot/Agent/CopilotMicrosoftAgentFrameworkRuntime.State.cs","ColorVision/Copilot/Agent/CopilotMicrosoftAgentFrameworkRuntime.Loop.cs","ColorVision/Copilot/Agent/CopilotMicrosoftAgentFrameworkRuntime.FinalCheckpoint.cs","ColorVision/Copilot/Agent/CopilotUserQuestion.cs", "ColorVision/Copilot/Runtime/CopilotGoalContinuation.cs","ColorVision/Copilot/Capabilities/CopilotWorkspaceChangeSetCapability.cs","ColorVision/Copilot/Capabilities/CopilotWorkspacePatchCapability.Persistence.cs"]
-test_paths: ["Test/ColorVision.Copilot.Tests/CopilotDatabaseSqlApprovalTests.cs","Test/ColorVision.Copilot.Tests/CopilotDatabaseMutationRunnerTests.cs","Test/ColorVision.Copilot.Tests/CopilotAgentSessionCheckpointTests.cs","Test/ColorVision.Copilot.Tests/CopilotAgentTaskEventJournalIntegrityTests.cs","Test/ColorVision.Copilot.Tests/CopilotCancelledToolJournalTests.cs","Test/ColorVision.Copilot.Tests/CopilotRetrySourceLifetimeTests.cs","Test/ColorVision.Copilot.Tests/CopilotSharedCapabilityInputContractTests.cs","Test/ColorVision.Copilot.Tests/CopilotRecentLogCoverageTests.cs","Test/ColorVision.Copilot.Tests/CopilotChatStateRecoveryAttachmentTests.cs","Test/ColorVision.Copilot.Tests/CopilotChatStateProfileReconciliationTests.cs","Test/ColorVision.Copilot.Tests/CopilotToolDispatchWindowTests.cs","Test/ColorVision.Copilot.Tests/CopilotWorkspaceRollbackExecutionTests.cs","Test/ColorVision.Copilot.Tests/CopilotApprovalCoordinatorTests.cs","Test/ColorVision.Copilot.Tests/CopilotWorkspaceRollbackAdmissionTests.cs","Test/ColorVision.Copilot.Tests/CopilotQueuedFollowUpRestartDispatchTests.cs","Test/ColorVision.Copilot.Tests/CopilotQueuedFollowUpCancellationTests.cs","Test/ColorVision.Copilot.Tests/CopilotQueuedProfileRecoveryTests.cs","Test/ColorVision.Copilot.Tests/CopilotQueuedFollowUpRecoveryTests.cs","Test/ColorVision.Copilot.Tests/CopilotSteeringCancellationRecoveryTests.cs","Test/ColorVision.Copilot.Tests/CopilotGoalQueueRecoveryTests.cs","Test/ColorVision.Copilot.Tests/CopilotPendingRecoveryConversationTests.cs","Test/ColorVision.Copilot.Tests/CopilotManagedAttachmentDeletionTests.cs","Test/ColorVision.Copilot.Tests/CopilotChatViewModelProfileIsolationTests.cs","Test/ColorVision.Copilot.Tests/CopilotToolExecutionCancellationTests.cs","Test/ColorVision.Copilot.Tests/CopilotSettledShellCancellationTests.cs","Test/ColorVision.Copilot.Tests/CopilotExternalMcpToolOutcomeTests.cs","Test/ColorVision.Copilot.Tests/CopilotFinalAnswerRecoverySafetyTests.cs","Test/ColorVision.Copilot.Tests/CopilotDatabaseSqlPolicyTests.cs","Test/ColorVision.Copilot.Tests/CopilotWorkspaceCancellationEvidenceTests.cs","Test/ColorVision.Copilot.Tests/CopilotWorkspaceRestartRecoveryTests.cs","Test/ColorVision.Copilot.Tests/CopilotUserQuestionCheckpointTests.cs", "Test/ColorVision.Copilot.Tests/CopilotConversationGoalTests.cs", "Test/ColorVision.Copilot.Tests/CopilotQueuedFollowUpCoordinatorTests.cs"]
 related: ["copilot.runtime","copilot.tool-contracts","copilot.lifecycle","copilot.interactions","engine.mysql-recovery"]
 ---
 
@@ -25,7 +24,7 @@ steering 与 follow-up 不同：前者在活动 `AgentSession` 的下一模型�
 
 运行中补充先成为绑定 run ID 的待确认记录，**入队或出队不等于已送达保存**。只有 Framework 历史成功保存才确认消息 ID 并推进恢复记忆。停止宽限/退出前未确认的输入恢复到原会话草稿，保留新输入和附件、不自动重发、不处理其他 run；提示只能说“尚未确认”，不能断言未执行。晚到事件不重复追加已恢复内容。记录容量不足时也保留草稿，自动审批重试输入同样不能丢失。
 
-顶层恢复先移除旧待发送队列中的宿主 user steering，防止与草稿副本双发；已提交历史及其他后台/Hook 消息保留。子任务没有草稿副本，按原 ID 恢复待发送跟踪，不重复入队，仍计待处理上限。定位 `CopilotSteeringCancellationRecoveryTests`、`CopilotInitialCheckpointPromptRecoveryTests`。
+顶层恢复先移除旧待发送队列中的宿主 user steering，防止与草稿副本双发；已提交历史及其他后台/Hook 消息保留。子任务没有草稿副本，按原 ID 恢复待发送跟踪，不重复入队，仍计待处理上限。
 
 follow-up 队列的交接契约：
 
@@ -38,13 +37,13 @@ follow-up 队列的交接契约：
 - 正常完成的会话可自动启动后继，中断会话须显式启动，不能被其他会话完成带起。“立即发送”提升指定项后请求取消当前模型轮次；本地命令已在处理时只提升、待命令交接。队列删除/编辑仅取消仍等待的项，旧 UI 对象不能取消已经晋升的活动请求或清掉其恢复记录；明确停止走活动取消入口。
 - 可运行本地命令立即分派，其他 Slash 命令以 `IsLocalCommand` 入队，不能去掉 `/` 变普通提示。执行前再次核对取消及保存，失败恢复原文/附件并保护后继；这不撤销已经开始的命令或已接受后继。正常退出保留未消费恢复记录。
 
-实现入口为 `CopilotQueuedFollowUpCoordinator`、`CopilotQueuedFollowUpRecovery` 和 ViewModel 的 Profile/恢复路径；回归从 `CopilotQueuedFollowUpRecoveryTests`、`CopilotQueuedFollowUpCancellationTests`、`CopilotQueuedFollowUpRestartDispatchTests` 与 `CopilotChatViewModelProfileIsolationTests` 定位，不以受控调度测试代替真实模型验收。
+实现入口为 `CopilotQueuedFollowUpCoordinator`、`CopilotQueuedFollowUpRecovery` 和 ViewModel 的 Profile/恢复路径。目标环境按实际模型验证恢复与调度。
 
 ## 磁盘状态回退与附件保护
 
 持续目标重启后先暂停，不因旧队列自动激活。显式目标首轮失去准入资格时恢复用户输入/附件，内部自动续作丢弃；执行前保存失败则回滚消息并暂停仍匹配的目标。普通 Agent 追问可接管目标，本地诊断命令不代替续作；命令产生模型后继时优先后继，目标身份/Active 状态再次复核，避免重复或失效续作。
 
-独立目标评估不能覆盖失败或过期的最后工作区验证：验证后再写入则必须重验，只读调用不能冲掉这个门槛，长记录裁剪也不能丢失最后验证事实。定位 `CopilotConversationGoalTests`、`CopilotGoalQueueRecoveryTests`。
+独立目标评估不能覆盖失败或过期的最后工作区验证：验证后再写入则必须重验，只读调用不能冲掉这个门槛，长记录裁剪也不能丢失最后验证事实。
 
 `CopilotChatStateStore` 的数据保护边界：
 
@@ -58,7 +57,7 @@ follow-up 队列的交接契约：
 
 事件时间保留原日期字符串及偏移，到目标类型才解析，避免 journal ID 和 checkpoint 因时区归一化失效。现有 v1 单成员 gzip 请求/Session 保持大小、严格 UTF-8、CRC32 与原字节数验证；截断 payload 保留供恢复，不能把解压前缀当完整内容。有效旧编码、未压缩文本和以压缩标记开头的字面内容继续兼容。
 
-读取失败提供原面板重试，不显示虚假的空历史；失败构造不订阅全局事件/启动保存。对应测试为 `CopilotChatStateStoreReadFailureTests`、`CopilotChatStateRecoveryAttachmentTests`、`CopilotManagedAttachmentDeletionTests` 和 `CopilotAgentSessionCheckpointTests`；保护附件不证明损坏正文已找回。
+读取失败提供原面板重试，不显示虚假的空历史；失败构造不订阅全局事件/启动保存。附件被保护时，仍须核对正文是否可恢复。
 
 ## 会话分支与恢复隔离
 
@@ -66,7 +65,7 @@ follow-up 队列的交接契约：
 
 `/fork`/`/branch` 通过 `CopilotConversationBranchService` 克隆可见历史及历史附件快照、重新生成消息 ID 并映射有效压缩边界；不复制草稿/待发送附件、checkpoint、RecoveryRequest、最后用量或临时授权。运行中可快照分支而不停止源任务，未闭合 trace 记为 `fork_snapshot_incomplete` 并形成模型可见边界。
 
-分叉只新建 conversation，两个会话仍观察同一工作区，不建 Git branch、不复制/回滚文件。`BranchOrigin` 的父/根/消息/时间仅供导航分组，家族投影对缺父/循环安全收敛，不合并 transcript 或复制运行对象/授权。UI 入口见[会话导航](./copilot-local-interactions.md#会话导航、回顾与出口)，恢复准入回归见 `CopilotPendingRecoveryConversationTests`。
+分叉只新建 conversation，两个会话仍观察同一工作区，不建 Git branch、不复制/回滚文件。`BranchOrigin` 的父/根/消息/时间仅供导航分组，家族投影对缺父/循环安全收敛，不合并 transcript 或复制运行对象/授权。UI 入口见[会话导航](./copilot-local-interactions.md#会话导航、回顾与出口)。
 
 ## AgentSession 会话检查点
 
@@ -87,7 +86,7 @@ Framework `ChatHistoryProvider.InvokedAsync` 是模型历史成功保存的边�
 - Chat/重新生成不用执行 checkpoint。最新回复已有结构化恢复时，通用重试和 `/compact` 不从头执行或清掉安全点；先选择正式恢复，确需重来则明确放弃旧任务。
 - 消息重试使用原请求/附件/Profile 快照，普通重试不因同名 Live Context 而刷新静态附件；旧消息沿原回退。异步准入后再复核原轮次对象、编辑/新增轮次与恢复状态，失效重试不删除回答、不清安全点。切换别的会话不使仍有效原请求失效；消息编辑的取消规则见[草稿编辑](./copilot-local-interactions.md#草稿编辑与历史恢复)。
 
-恢复回归从 `CopilotInitialCheckpointPromptRecoveryTests`、`CopilotUserQuestionCheckpointTests`、`CopilotAgentConversationRecoveryTests` 和 `CopilotRetrySourceLifetimeTests` 定位。真实临时文件/JSON Save/Load 验证不等同于桌面强杀或断电验收，Session 恢复不代表旧批准恢复。
+桌面强制退出和断电后的恢复须在目标环境验收。恢复 Session 后，旧审批仍须按原规则复核。
 
 ## 显式有界重试
 
@@ -113,7 +112,7 @@ Framework `ChatHistoryProvider.InvokedAsync` 是模型历史成功保存的边�
 
 信封首写前全量复核范围/哈希；delete 仅在可写根内，单独授权的根外文件只可更新。授权缩为精确文件时含删除整组首写前拒绝，删除前再复核。删除回滚仅在目标仍缺失时恢复原字节，外部重建同名路径则拒绝整组，绝不覆盖。Windows 无跨文件事务，中途失败逆序补偿；回滚中途失败尽力重应用已回滚项，不承诺原子成功。预览期限阻止新请求，但在途记录/子预览保留到执行补偿结束，不延长后续回滚期限。
 
-`/rollback N`/文件卡先按原会话和变更集防重，异步准备后复核上下文；失效准备不打开审批，迟到未批准动作取消，批准执行仍归原消息。直接 UI 回滚也须保存运行记录和候选路径的写前屏障，缺失/失败不写入。只有完成成功才标已撤销；已发布执行终态不受晚到审批通知覆盖，写后取消的 OutcomeUnknown 及待核查提示随消息保存。定位 `CopilotWorkspaceRollbackAdmissionTests`、`CopilotWorkspaceRollbackExecutionTests`、`CopilotApprovalCoordinatorTests`。
+`/rollback N`/文件卡先按原会话和变更集防重，异步准备后复核上下文；失效准备不打开审批，迟到未批准动作取消，批准执行仍归原消息。直接 UI 回滚也须保存运行记录和候选路径的写前屏障，缺失/失败不写入。只有完成成功才标已撤销；已发布执行终态不受晚到审批通知覆盖，写后取消的 OutcomeUnknown 及待核查提示随消息保存。
 
 ### 数据库查询与写入
 

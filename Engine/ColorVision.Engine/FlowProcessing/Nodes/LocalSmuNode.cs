@@ -1,5 +1,7 @@
 using ColorVision.Engine.PropertyEditor;
 using ColorVision.Engine.Services;
+using ColorVision.Database;
+using ColorVision.Engine.Services.Devices.Camera.Local;
 using ColorVision.Engine.Services.Devices.SMU;
 using ColorVision.Engine.Services.Devices.SMU.Local;
 using ColorVision.Engine.Services.Results;
@@ -211,6 +213,7 @@ public sealed class LocalSmuNode : LocalDeviceFlowNodeBase, IRepeatParameterNode
     {
         var run = GetExecutionParameters<ExecutionParameters>(action);
         var owner = action.RuntimeResources;
+        MySqlConnectedEndpoint? resultDatabase = LocalFlowResultPersistence.ResolveEndpoint(action);
         string key = "LocalSmuFlow:" + run.DeviceCode;
         if (!owner.TryGet<LocalSmuFlowLease>(key, out var lease))
         {
@@ -224,7 +227,7 @@ public sealed class LocalSmuNode : LocalDeviceFlowNodeBase, IRepeatParameterNode
                 run.Device.ExecuteLocalSmuAsync("Open", run.Connection, run.Parameters, true, run.CheckLimits, owner.StopToken, owner).GetAwaiter().GetResult();
             int required = run.ScanParameters.IsListSweep ? 2 : 1;
             if ((run.Device.LocalSession.SweepCapabilities & required) != 0)
-                return ExecuteScan(action, run);
+                return ExecuteScan(action, run, resultDatabase);
         }
         LocalSmuCapture capture = run.Device.ExecuteLocalSmuAsync(run.Parameters.AdvancedSettings == null ? "StepData" : "Advanced", run.Connection, run.Parameters, run.AutoConnect,
             run.CheckLimits, owner.StopToken, owner).GetAwaiter().GetResult()!;
@@ -236,33 +239,33 @@ public sealed class LocalSmuNode : LocalDeviceFlowNodeBase, IRepeatParameterNode
             int advancedId;
             if (capture.IsScan)
             {
-                advancedId = LocalSmuResultService.Save(capture, run.DeviceCode, action, run.ZIndex);
+                advancedId = LocalSmuResultService.SaveFlow(capture, run.DeviceCode, action, run.ZIndex, resultDatabase);
                 var point = capture with { Voltages = [capture.V], Currents = [capture.I], IsScan = false, TotalTime = 0,
                     Details = capture.Details with { SourceValues = [capture.Details.SourceValues[^1]],
                         Resistance = [capture.Details.Resistance[^1]], Status = [capture.Details.Status[^1]] } };
-                SavePoint(action, run, point, publishView: false);
+                SavePoint(action, run, point, resultDatabase, publishView: false);
             }
-            else if (capture.HasMeasurements) advancedId = SavePoint(action, run, capture, publishView: false);
+            else if (capture.HasMeasurements) advancedId = SavePoint(action, run, capture, resultDatabase, publishView: false);
             else
             {
                 advancedId = 0; action.MasterValue(null, 0, LocalSmuResultService.ResultType);
                 action.Data["LocalSmu"] = capture; action.Data.Remove("SMUResult");
             }
             if (capture.IsScan) { action.Data["LocalSmuScan"] = capture; action.Data["SMUScanResult"] = LocalSmuResultService.Response(capture, advancedId); }
-            run.Device.PublishLocalSmu(capture, advancedId);
+            run.Device.PublishLocalSmu(capture, advancedId, resultDatabase);
             if (capture.IsScan && advancedId > 0) ResultMessageBus.Default.PublishPersisted(ResultRoutes.Smu, ResultKinds.Smu, run.DeviceCode, "Scan",
-                action.SerialNumber, run.NodeId, run.ZIndex, advancedId, LocalSmuResultService.ResultType);
+                action.SerialNumber, run.NodeId, run.ZIndex, advancedId, LocalSmuResultService.ResultType, resultDatabase);
             var advancedResponse = LocalSmuResultService.Response(capture, advancedId);
             advancedResponse["ExecutionMode"] = capture.Details.TimingMode;
             return new LocalNodeExecutionResult { Data = advancedResponse };
         }
-        int id = SavePoint(action, run, capture, publishView: true);
+        int id = SavePoint(action, run, capture, resultDatabase, publishView: true);
         var response = LocalSmuResultService.Response(capture, id);
         response["ExecutionMode"] = "Point";
         return new LocalNodeExecutionResult { Data = response };
     }
 
-    private LocalNodeExecutionResult ExecuteScan(CVStartCFC action, ExecutionParameters run)
+    private LocalNodeExecutionResult ExecuteScan(CVStartCFC action, ExecutionParameters run, MySqlConnectedEndpoint? resultDatabase)
     {
         var owner = action.RuntimeResources;
         var scan = run.ScanParameters!;
@@ -270,36 +273,37 @@ public sealed class LocalSmuNode : LocalDeviceFlowNodeBase, IRepeatParameterNode
         LocalSmuCapture capture = run.Device.ExecuteLocalSmuAsync("Scan", run.Connection, scan, run.AutoConnect,
             run.CheckLimits, owner.StopToken, owner).GetAwaiter().GetResult()!;
         owner.StopToken.ThrowIfCancellationRequested();
-        int scanId = LocalSmuResultService.Save(capture, run.DeviceCode, action, run.ZIndex);
+        int scanId = LocalSmuResultService.SaveFlow(capture, run.DeviceCode, action, run.ZIndex, resultDatabase);
         for (int index = 0; index < scan.Points; index++)
         {
             owner.StopToken.ThrowIfCancellationRequested();
             var point = new LocalSmuCapture(run.Parameters with { MeasureValue = scan.SourceValues![index] },
                 [capture.Voltages[index]], [capture.Currents[index]], 0, false) { Generation = capture.Generation, CapturedAt = capture.CapturedAt };
-            SavePoint(action, run, point, publishView: false);
+            SavePoint(action, run, point, resultDatabase, publishView: false);
         }
         action.Data["LocalSmuScan"] = capture;
         var response = LocalSmuResultService.Response(capture, scanId);
         response["ExecutionMode"] = scan.IsListSweep ? "ListScan" : "LinearScan";
         action.Data["SMUScanResult"] = response;
-        run.Device.PublishLocalSmu(capture, scanId);
+        run.Device.PublishLocalSmu(capture, scanId, resultDatabase);
         if (scanId > 0) ResultMessageBus.Default.PublishPersisted(ResultRoutes.Smu, ResultKinds.Smu, run.DeviceCode, "Scan",
-            action.SerialNumber, run.NodeId, run.ZIndex, scanId, LocalSmuResultService.ResultType);
+            action.SerialNumber, run.NodeId, run.ZIndex, scanId, LocalSmuResultService.ResultType, resultDatabase);
         owner.StopToken.ThrowIfCancellationRequested();
         CompleteRepeatBatch(action, scan.Points);
         return new LocalNodeExecutionResult { Data = response };
     }
 
-    private static int SavePoint(CVStartCFC action, ExecutionParameters run, LocalSmuCapture capture, bool publishView)
+    private static int SavePoint(CVStartCFC action, ExecutionParameters run, LocalSmuCapture capture,
+        MySqlConnectedEndpoint? resultDatabase, bool publishView)
     {
-        int id = LocalSmuResultService.Save(capture, run.DeviceCode, action, run.ZIndex);
+        int id = LocalSmuResultService.SaveFlow(capture, run.DeviceCode, action, run.ZIndex, resultDatabase);
         action.MasterValue(null, id, LocalSmuResultService.ResultType);
         action.Data["LocalSmu"] = capture;
         action.Data["SMUResult"] = new SMUResultData((SMUChannelType)(int)capture.Parameters.Channel,
             capture.V, capture.I, id, LocalSmuResultService.ResultType);
-        if (publishView) run.Device.PublishLocalSmu(capture, id);
+        if (publishView) run.Device.PublishLocalSmu(capture, id, resultDatabase);
         if (id > 0) ResultMessageBus.Default.PublishPersisted(ResultRoutes.Smu, ResultKinds.Smu, run.DeviceCode, "StepData",
-            action.SerialNumber, run.NodeId, run.ZIndex, id, LocalSmuResultService.ResultType);
+            action.SerialNumber, run.NodeId, run.ZIndex, id, LocalSmuResultService.ResultType, resultDatabase);
         return id;
     }
 }

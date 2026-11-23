@@ -39,6 +39,8 @@ namespace ColorVision.Engine.Services.RC
                 return updates;
             }
         }
+
+        public void Clear() => Take();
     }
 
     internal readonly record struct PendingServiceUpdates(

@@ -10,6 +10,7 @@ using ColorVision.Engine.Templates;
 using cvColorVision;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
@@ -31,7 +32,13 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 MsgRecordState = MsgRecordState.Sended
             };
             Exception? reservationError = null;
-            try { CameraBackend.BeginLocalCommand(eventName == "Close"); }
+            bool closing = eventName == "Close";
+            Task? pendingCommand = null;
+            try
+            {
+                if (closing) pendingCommand = CameraBackend.BeginLocalClose();
+                else CameraBackend.BeginLocalCommand();
+            }
             catch (Exception ex) { reservationError = ex; }
             Application.Current.Dispatcher.BeginInvoke(async () =>
             {
@@ -41,6 +48,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 {
                     if (failure == null)
                     {
+                        if (pendingCommand != null) await pendingCommand;
                         ObjectDisposedException.ThrowIf(IsDisposed, this);
                         data = await Task.Run(work);
                     }
@@ -48,7 +56,11 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 catch (Exception ex) { failure = ex; }
                 finally
                 {
-                    if (reservationError == null) CameraBackend.EndLocalCommand();
+                    if (reservationError == null)
+                    {
+                        if (closing) CameraBackend.EndLocalClose();
+                        else CameraBackend.EndLocalCommand();
+                    }
                     bool canceled = eventName == "AutoFocus" && failure is OperationCanceledException;
                     record.ReciveTime = DateTime.Now;
                     record.MsgReturn = new MsgReturn
@@ -81,6 +93,42 @@ namespace ColorVision.Engine.Services.Devices.Camera
         internal MsgRecord RunLocalMotorCommand(string eventName, Func<LocalCameraMotorSession, int?> operation)
             => RunLocalCommand(eventName, () => ExecuteLocalMotor(operation));
 
+        internal MsgRecord MoveMotorAndCaptureLocally(int target, bool absolute) => RunLocalCommand("Move", () =>
+        {
+            var (position, vid) = LocalCameraSession.UseMotor(motor =>
+            {
+                int reached = motor.Move(target, absolute);
+                return (reached, motor.ConvertVid(reached));
+            });
+            return CompleteMotorMoveWithCapture(position, vid);
+        });
+
+        internal MsgRecord MoveToVidLocally(double targetMm) => RunLocalCommand("Move", () =>
+        {
+            var (position, vid) = LocalCameraSession.UseMotor(motor => motor.MoveToVid(targetMm));
+            return CompleteMotorMoveWithCapture(position, vid);
+        });
+
+        private object CompleteMotorMoveWithCapture(int position, double? vid)
+        {
+            PublishLocalMotorPosition(position, vid);
+            try
+            {
+                LocalCameraCaptureResult capture = LocalCameraCaptureService.Capture(new LocalCameraCaptureRequest
+                {
+                    Device = this, CameraParameters = BuildLocalCameraParameters(), SaveFiles = false, FlipMode = DisplayConfig.FlipMode
+                });
+                using (capture.Frame) PublishLocalPreview(capture.Frame, null, forceDisplay: true);
+            }
+            catch (Exception ex)
+            {
+                MQTTServiceBase.log.Warn($"[LocalMotor] Camera={Code} Position={position} capture after motor move failed.", ex);
+                throw new InvalidOperationException(string.Format(CultureInfo.CurrentCulture,
+                    EngineLocalization.Get("CameraPanel_MotorMoveCaptureFailed"), position, ex.Message), ex);
+            }
+            return new { nPosition = position, VidPos = vid };
+        }
+
         internal object? ExecuteLocalMotor(Func<LocalCameraMotorSession, int?> operation)
         {
             var result = LocalCameraSession.UseMotor(motor =>
@@ -102,40 +150,76 @@ namespace ColorVision.Engine.Services.Devices.Camera
             });
         }
 
-        internal MsgRecord AutoFocusLocally(AutoFocusParam template, CancellationToken stop = default, bool fineOnly = false)
+        internal MsgRecord AutoFocusLocally(AutoFocusParam template, CancellationToken stop = default, bool fineOnly = false) =>
+            RunLocalAutoFocus(template, stop, fineOnly, captureEvidence: false);
+
+        /// <summary>Runs local autofocus and returns a detached <see cref="CameraAutoFocusEvidence"/> in the completed command.</summary>
+        public MsgRecord AutoFocusLocallyWithEvidence(AutoFocusParam template, CancellationToken stop, bool fineOnly) =>
+            RunLocalAutoFocus(template, stop, fineOnly, captureEvidence: true);
+
+        private MsgRecord RunLocalAutoFocus(AutoFocusParam template, CancellationToken stop, bool fineOnly, bool captureEvidence)
         {
             LocalAutoFocusSettings settings;
             try { settings = LocalAutoFocusSettings.FromTemplate(template, PhyCamera?.Config.MotorConfig ?? Config.MotorConfig) with { FineOnly = fineOnly }; }
             catch (Exception ex) { return RunLocalCommand("AutoFocus", () => throw ex); }
-            float exposure = (float)(Config.IsExpThree ? DisplayConfig.ExpTimeR : DisplayConfig.ExpTime);
+            float exposure = (float)(Config.CameraMode == CameraMode.CV_MODE ? DisplayConfig.ExpTimeR : DisplayConfig.ExpTime);
             float gain = DisplayConfig.Gain;
+            bool saveResult = !captureEvidence && DisplayConfig.SaveLocalAutoFocusChart;
+            string saveDirectory = DisplayConfig.LocalAutoFocusChartDirectory;
             MQTTServiceBase.log.Info($"[LocalAutoFocus] Template Name={template.Name} Id={template.Id}");
             return RunLocalCommand("AutoFocus", () =>
             {
-                LocalAutoFocusResult result = ExecuteLocalAutoFocus(settings, exposure, gain, stop, showProgress: true);
+                OrderedDictionary<int, double>? curve = captureEvidence || saveResult ? new() : null;
+                LocalAutoFocusResult result = ExecuteLocalAutoFocus(settings, exposure, gain, stop, showProgress: true, evidenceSamples: curve);
                 stop.ThrowIfCancellationRequested();
                 LocalCameraCaptureResult capture = LocalCameraCaptureService.Capture(new LocalCameraCaptureRequest
                 {
                     Device = this, CameraParameters = BuildLocalCameraParameters(), SaveFiles = false, FlipMode = DisplayConfig.FlipMode, Stop = stop
                 });
+                CameraAutoFocusEvidence? evidence = null;
                 using (capture.Frame)
                 {
                     stop.ThrowIfCancellationRequested();
                     PublishLocalPreview(capture.Frame, null, forceDisplay: true, focusFrame: true);
+                    if (curve != null)
+                    {
+                        try
+                        {
+                            evidence = new CameraAutoFocusEvidence(LocalCameraPreview.CreateBitmap(capture.Frame), result, curve,
+                                Code, settings.Evaluation.ToString());
+                        }
+                        catch (Exception ex)
+                        {
+                            MQTTServiceBase.log.Warn($"[LocalAutoFocus] Camera={Code} evidence image could not be prepared.", ex);
+                        }
+                    }
                 }
-                return new { result.Position, result.Score, result.Samples, result.TotalTime, result.VidPosition };
+                if (evidence != null)
+                {
+                    if (captureEvidence) return evidence;
+                    try
+                    {
+                        string path = evidence.SaveLocalResult(saveDirectory, DateTime.Now, stop);
+                        MQTTServiceBase.log.Info($"[LocalAutoFocus] Result saved: {path}");
+                    }
+                    catch (Exception ex) when (ex is not OperationCanceledException)
+                    {
+                        MQTTServiceBase.log.Warn($"[LocalAutoFocus] Camera={Code} result could not be saved.", ex);
+                    }
+                }
+                return new { Position = result.MotorPosition, result.Score, result.Samples, result.TotalTime, result.VidPosition };
             });
         }
 
-        internal LocalAutoFocusResult ExecuteLocalAutoFocus(LocalAutoFocusSettings settings, float exposure, float gain, CancellationToken stop = default, bool showProgress = false)
+        internal LocalAutoFocusResult ExecuteLocalAutoFocus(LocalAutoFocusSettings settings, float exposure, float gain,
+            CancellationToken stop = default, bool showProgress = false, IDictionary<int, double>? evidenceSamples = null)
         {
+            settings = settings with { UseMotorReadbackForVid = DisplayConfig.UseMotorReadbackForVid };
             Action<LocalAutoFocusFrame>? preview = showProgress ? source =>
             {
                 if (!stop.IsCancellationRequested) PublishLocalFocusPreview(source, exposure, gain);
             } : null;
             string evaluation = settings.Evaluation.ToString();
-            SortedDictionary<int, double>? curve = showProgress && DisplayConfig.SaveLocalAutoFocusChart ? new() : null;
-            string? directory = curve == null ? null : DisplayConfig.LocalAutoFocusChartDirectory;
             if (showProgress) DispatchFocusView(view => view.FocusChart.BeginAutoFocus(evaluation));
             try
             {
@@ -144,25 +228,12 @@ namespace ColorVision.Engine.Services.Devices.Camera
                     if (!score.HasValue) PublishLocalMotorPosition(position, vid);
                     else
                     {
-                        if (curve != null) curve[position] = score.Value;
+                        if (evidenceSamples != null) evidenceSamples[position] = score.Value;
                         if (showProgress) DispatchFocusView(view => view.FocusChart.AddAutoFocusSample(position, score.Value));
                     }
                 });
                 stop.ThrowIfCancellationRequested();
-                PublishLocalMotorPosition(result.Position, result.VidPosition);
                 if (showProgress) DispatchFocusView(view => view.FocusChart.CompleteAutoFocus(result));
-                if (curve != null)
-                {
-                    try
-                    {
-                        string path = CameraFocusCurve.SavePng(directory, Code, evaluation, curve, result, DateTime.Now);
-                        MQTTServiceBase.log.Info($"[LocalAutoFocus] Chart saved: {path}");
-                    }
-                    catch (Exception ex)
-                    {
-                        MQTTServiceBase.log.Warn($"[LocalAutoFocus] Camera={Code} chart could not be saved.", ex);
-                    }
-                }
                 return result;
             }
             catch (OperationCanceledException)
@@ -177,34 +248,6 @@ namespace ColorVision.Engine.Services.Devices.Camera
             }
         }
 
-        internal async Task<int> MeasureVidCalibrationPositionAsync(LocalAutoFocusSettings settings, CancellationToken stop)
-        {
-            if (!CameraBackend.OpensLocally) throw new InvalidOperationException("请将相机切换到本地取图模式后再校正 VID。");
-            float exposure = (float)(Config.IsExpThree ? DisplayConfig.ExpTimeR : DisplayConfig.ExpTime);
-            float gain = DisplayConfig.Gain;
-            CameraBackend.BeginLocalCommand();
-            try
-            {
-                return await Task.Run(() =>
-                {
-                    lock (LocalCameraSession.SyncRoot)
-                    {
-                        ObjectDisposedException.ThrowIf(IsDisposed, this);
-                        stop.ThrowIfCancellationRequested();
-                        if (LocalCameraSession.IsOpen && LocalCameraSession.OpenedMode == TakeImageMode.Live)
-                            throw new InvalidOperationException("请先停止本地预览再校正 VID。");
-                        EnsureLocalMeasurementConnected(autoConnect: true);
-                        LocalCameraSession.AutoFocus(settings, exposure, gain, stop, includeVid: false);
-                        stop.ThrowIfCancellationRequested();
-                        int position = LocalCameraSession.UseMotor(motor => motor.ReadPosition());
-                        stop.ThrowIfCancellationRequested();
-                        return position;
-                    }
-                }, stop);
-            }
-            finally { CameraBackend.EndLocalCommand(); }
-        }
-
         private void DispatchFocusView(Action<ViewCamera> update)
         {
             ViewCamera? view = ExistingView;
@@ -217,21 +260,21 @@ namespace ColorVision.Engine.Services.Devices.Camera
             });
         }
 
-        private unsafe void PublishLocalFocusPreview(LocalAutoFocusFrame source, float exposure, float gain)
+        internal void PublishLocalFocusPreview(LocalAutoFocusFrame source, float exposure, float gain)
         {
             if (IsDisposed || ExistingView == null) return;
             if (source.Pixels == IntPtr.Zero || source.Width <= 0 || source.Height <= 0 || source.Bits is not (8 or 16) || source.Channels is not (1 or 3))
                 throw new InvalidOperationException("自动对焦过程图像格式无效。");
             int length = checked(source.Width * source.Height * source.Channels * (source.Bits / 8));
-            using LocalFlowFrame frame = LocalFlowFrame.Allocate(new LocalFrameMetadata
+            LocalFrameMetadata metadata = new()
             {
                 Width = source.Width, Height = source.Height, SourceBpp = source.Bits, Channels = source.Channels,
                 Gain = gain, Exposure = source.Channels == 1 ? [exposure] : [exposure, exposure, exposure],
                 DeviceCode = Code, PrimaryBufferKind = LocalFrameBufferKind.CvRaw, FlipMode = DisplayConfig.FlipMode
-            }, length, 0, LocalCameraSession.RawBufferPool);
-            using (LocalFlowFrameLease lease = frame.Acquire()) Buffer.MemoryCopy(source.Pixels.ToPointer(), lease.RawPointer.ToPointer(), lease.RawLength, length);
-            // Publish synchronously copies a frozen snapshot before the native evaluation releases its frame.
-            PublishLocalPreview(frame, null, forceDisplay: true, focusFrame: true);
+            };
+            PublishLocalPreview((Pixels: source.Pixels, Length: length, Metadata: metadata),
+                static raw => LocalCameraPreview.CreateFromBorrowedRaw(raw.Pixels, raw.Length, raw.Metadata),
+                null, forceDisplay: true, focusFrame: true);
         }
 
         internal MsgRecord AutoExposeLocally(ParamBase template, CalibrationParam? calibration)
@@ -256,8 +299,13 @@ namespace ColorVision.Engine.Services.Devices.Camera
             });
         }
 
-        internal MsgRecord CaptureLocally(double[] exposure, CalibrationParam calibration, ParamBase autoExposure)
+        internal MsgRecord CaptureLocally(double[] exposure, CalibrationParam calibration, ParamBase autoExposure,
+            Func<LocalCameraCaptureRequest, LocalCameraCaptureResult>? captureImage = null)
         {
+            MySqlConnectedEndpoint? endpoint = ResultDatabaseEndpoint;
+            if (!OwnsResultDatabase(endpoint)) endpoint = null;
+            bool connectedWithoutOwnership = endpoint == null && MySqlControl.GetInstance().ConnectedEndpoint is { IsCurrent: true };
+
             CameraRunParam parameters = BuildLocalCameraParameters(exposure, calibration);
             string? configuration;
             try { configuration = autoExposure.Id == -1 ? null : LocalAutoExposureTemplate.BuildConfiguration(autoExposure, DisplayConfig.LocalAutoExposureConfig); }
@@ -271,32 +319,31 @@ namespace ColorVision.Engine.Services.Devices.Camera
             return RunLocalCommand("GetData", () =>
             {
                 EnsureLocalMeasurementConnected(autoConnect: false);
-                bool persistResults = MySqlSetting.IsConnect;
-                LocalCameraCaptureResult capture = LocalCameraCaptureService.Capture(request);
+                LocalCameraCaptureResult capture = captureImage == null ? LocalCameraCaptureService.Capture(request) : captureImage(request);
                 using LocalFlowFrame frame = capture.Frame;
-                if (!persistResults)
-                {
-                    PublishLocalPreview(frame, null, forceDisplay: true);
-                    return new { MasterId = 0, MasterResultType = 100 };
-                }
                 MeasureResultImgModel? model = null;
                 string serialNumber = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
                 try
                 {
-                    MeasureBatchModel batch = new() { Code = serialNumber, Name = serialNumber, ArchiveStatus = ArchiveStatus.NotArchived };
-                    int batchId = BatchResultMasterDao.Instance.SaveAndReturnId(batch);
-                    if (batchId <= 0) throw new InvalidOperationException("保存本地相机批次失败；已采集图像仍可预览。");
-                    var result = LocalCameraResultService.CreateModel(batchId, -1, frame, capture, parameters, calibration, request.IsAutoExposure);
-                    result.Id = MeasureImgResultDao.Instance.SaveAndReturnId(result);
-                    if (result.Id <= 0) throw new InvalidOperationException("保存本地相机结果失败；已采集图像仍可预览。");
-                    frame.MasterId = result.Id;
-                    model = result;
+                    if (connectedWithoutOwnership)
+                        throw new InvalidOperationException("本地相机未绑定当前数据库，请重新选择相机后取图。");
+                    if (endpoint == null)
+                        return new { MasterId = 0, MasterResultType = 100 };
+
+                    model = LocalCameraResultService.SaveInteractiveModel(endpoint, serialNumber, capture, parameters, calibration, request.IsAutoExposure);
+                    frame.MasterId = model.Id;
+                }
+                catch (Exception ex)
+                {
+                    throw new InvalidOperationException($"保存本地相机结果失败；已采集图像仍可预览。{ex.Message}", ex);
                 }
                 finally
                 {
-                    PublishLocalPreview(frame, model, forceDisplay: true);
+                    // Live pixels can still be shown when the capture no longer belongs to the visible history.
+                    bool showHistory = model != null && OwnsResultDatabase(endpoint);
+                    PublishLocalPreview(frame, showHistory ? model : null, forceDisplay: true, databaseEndpoint: showHistory ? endpoint : null);
                 }
-                ResultMessageBus.Default.PublishPersisted(ResultRoutes.Camera, ResultKinds.Image, Code, "GetData", serialNumber, string.Empty, -1, model.Id, 100);
+                ResultMessageBus.Default.PublishPersisted(ResultRoutes.Camera, ResultKinds.Image, Code, "GetData", serialNumber, string.Empty, -1, model.Id, 100, endpoint);
                 return new { MasterId = model.Id, MasterResultType = 100 };
             });
         }

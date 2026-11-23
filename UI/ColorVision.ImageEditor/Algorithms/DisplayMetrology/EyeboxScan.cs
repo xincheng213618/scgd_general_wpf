@@ -17,17 +17,31 @@ public sealed partial class DisplayMetrologyProvider
             if (context.Inputs[i].Name != $"sample-{i}") throw new MeasurementException("scan_order_mismatch", "扫描帧须按 sample-0、sample-1… 行优先命名与排序。");
         var reference = context.Inputs[p.ReferenceIndex].Image;
         float[] baseline = ReadSignal(reference, p.Channel, p.DecodeExponent, token);
-        int validPixels = baseline.Count(v => v >= p.ReferenceSignalFloor);
+        int validPixels = 0;
+        double baselineSum = 0;
+        foreach (float value in baseline)
+        {
+            if (value >= p.ReferenceSignalFloor)
+            {
+                validPixels++;
+                baselineSum += value;
+            }
+        }
         if (validPixels == 0) throw new MeasurementException("invalid_scan_reference", "参考帧没有高于有效信号下限的像素。");
-        double baselineSum = baseline.Where(v => v >= p.ReferenceSignalFloor).Sum(v => (double)v);
         var rows = new List<IReadOnlyDictionary<string, JsonElement>>();
         var accepted = new bool[context.Inputs.Count];
         var map = new byte[context.Inputs.Count];
+        float[]? movingSignal = null;
         for (int index = 0; index < context.Inputs.Count; index++)
         {
             token.ThrowIfCancellationRequested();
             context.Progress?.Report(new AlgorithmProgress((double)index / context.Inputs.Count, "eyebox.sample", $"扫描点 {index + 1}/{context.Inputs.Count}"));
-            float[] signal = ReadSignal(context.Inputs[index].Image, p.Channel, p.DecodeExponent, token);
+            float[] signal = baseline;
+            if (index != p.ReferenceIndex)
+            {
+                movingSignal = ReadSignal(context.Inputs[index].Image, p.Channel, p.DecodeExponent, token, movingSignal);
+                signal = movingSignal;
+            }
             double sum = 0;
             int covered = 0;
             for (int i = 0; i < signal.Length; i++)

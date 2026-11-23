@@ -14,7 +14,6 @@
 		<PackageReadmeFile>README.md</PackageReadmeFile>
 	</PropertyGroup>
 	<ItemGroup>
-	  <None Remove="Assets\Image\ColorVision.ico" />
 	  <None Remove="Assets\Image\ColorVision1.ico" />
 	  <None Remove="Assets\uploadbg.avif" />
 	</ItemGroup>
@@ -24,7 +23,6 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <Resource Include="Assets\Image\ColorVision.ico" />
 	  <Resource Include="Assets\Image\ColorVision1.ico" />
 	  <Resource Include="Assets\Image\uploadbg.avif" />
 	</ItemGroup>

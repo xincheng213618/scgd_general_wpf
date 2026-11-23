@@ -131,23 +131,31 @@
         </Grid.ColumnDefinitions>
 
         <Grid x:Name="ImageViewHost" Grid.Column="0" Background="#15191F">
-            <local:ConoscopeImageHost x:Name="ImageView" />
+            <Grid x:Name="ImageSnapshotSurface" Background="#15191F" ClipToBounds="True">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+                <local:ConoscopeImageHost x:Name="ImageView" Grid.RowSpan="2" ClipToBounds="True" />
+                <Viewbox Grid.Row="1" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,6,10,44" StretchDirection="DownOnly" IsHitTestVisible="False">
+                    <Border x:Name="PseudoColorLegendPanel" Padding="6" Background="#DD15191F" BorderBrush="#405F6670" BorderThickness="1" CornerRadius="4" Visibility="Collapsed">
+                        <StackPanel>
+                            <TextBlock x:Name="tbPseudoColorLegendTitle" Foreground="White" FontWeight="Bold" Text="Y" HorizontalAlignment="Center" />
+                            <TextBlock x:Name="tbPseudoColorLegendMax" Margin="0,6,0,4" Foreground="White" FontSize="11" HorizontalAlignment="Center" Text="0" />
+                            <Border Width="18" Height="124" BorderBrush="#55FFFFFF" BorderThickness="1">
+                                <Image x:Name="imgPseudoColorLegend" Stretch="Fill" />
+                            </Border>
+                            <TextBlock x:Name="tbPseudoColorLegendMin" Margin="0,4,0,0" Foreground="White" FontSize="11" HorizontalAlignment="Center" Text="0" />
+                        </StackPanel>
+                    </Border>
+                </Viewbox>
+            </Grid>
             <ComboBox x:Name="cbImageCoordinateSystem" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="10" ToolTip="{x:Static properties:Resources.Con_Category_CoordAxis}" AutomationProperties.Name="{x:Static properties:Resources.Con_Category_CoordAxis}" Width="126" Height="26" SelectedIndex="0" SelectionChanged="cbImageCoordinateSystem_SelectionChanged">
                 <ComboBoxItem Content="{x:Static properties:Resources.BtnPolarCoord}" Tag="Polar"/>
                 <ComboBoxItem Content="H/V" Tag="HorizontalVertical"/>
                 <ComboBoxItem Content="North Polar" Tag="NorthPolar"/>
                 <ComboBoxItem Content="East Polar" Tag="EastPolar"/>
             </ComboBox>
-            <Border x:Name="PseudoColorLegendPanel" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,10,0" Padding="6" Background="#DD15191F" BorderBrush="#405F6670" BorderThickness="1" CornerRadius="4" Visibility="Collapsed" IsHitTestVisible="False">
-                <StackPanel>
-                    <TextBlock x:Name="tbPseudoColorLegendTitle" Foreground="White" FontWeight="SemiBold" Text="Y" HorizontalAlignment="Center" />
-                    <TextBlock x:Name="tbPseudoColorLegendMax" Margin="0,6,0,4" Foreground="White" FontSize="11" HorizontalAlignment="Center" Text="0" />
-                    <Border Width="18" Height="124" BorderBrush="#55FFFFFF" BorderThickness="1">
-                        <Image x:Name="imgPseudoColorLegend" Stretch="Fill" />
-                    </Border>
-                    <TextBlock x:Name="tbPseudoColorLegendMin" Margin="0,4,0,0" Foreground="White" FontSize="11" HorizontalAlignment="Center" Text="0" />
-                </StackPanel>
-            </Border>
             <Border x:Name="CoordinateDragOverlay" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="10,52,0,0" Visibility="Collapsed" IsHitTestVisible="False" Background="#CC202020" BorderBrush="#F28B82" BorderThickness="1" CornerRadius="4" Padding="8,4">
                 <TextBlock x:Name="CoordinateDragOverlayText" Foreground="White" FontSize="11" />
             </Border>

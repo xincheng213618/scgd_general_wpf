@@ -1,3 +1,4 @@
+using ColorVision.Database;
 using ColorVision.Engine.Services.RC;
 using ColorVision.Engine.Services.Terminal;
 using ColorVision.Themes;
@@ -55,17 +56,47 @@ namespace ColorVision.Engine.Services.Types
 
             TerminalServiceConfig terminalServiceConfig = new() { };
 
-            terminalServiceConfig.SendTopic = $"{TypeService.ServiceTypes}/{CreateCode.Text}/CMD/{RCSetting.Instance.Config.RCName}";
-            terminalServiceConfig.SubscribeTopic = $"{TypeService.ServiceTypes}/{CreateCode.Text}/STATUS/{RCSetting.Instance.Config.RCName}";
+            terminalServiceConfig.SendTopic = $"{TypeService.ServiceTypes}/{CreateCode.Text}/CMD/{MqttRCService.RCNodeName}";
+            terminalServiceConfig.SubscribeTopic = $"{TypeService.ServiceTypes}/{CreateCode.Text}/STATUS/{MqttRCService.RCNodeName}";
 
             sysResource.Value = JsonConvert.SerializeObject(terminalServiceConfig);
             AccessControl.Demand("service.create", PermissionMode.Administrator, TypeService.CreationResourceId);
-            int pkId = SysResourceDao.Instance.SaveAndReturnId(sysResource);
+            var resourceDao = SysResourceDao.Instance;
+            bool useLocal = resourceDao.UseLocal;
+            var endpoint = useLocal ? null : MySqlControl.GetInstance().ConnectedEndpoint;
+            int pkId;
+            try
+            {
+                if (useLocal) pkId = resourceDao.SaveAndReturnId(sysResource, local: true);
+                else if (endpoint is { IsCurrent: true })
+                {
+                    using var db = endpoint.CreateDbClient();
+                    pkId = endpoint.IsCurrent ? db.Insertable(sysResource).ExecuteReturnIdentity() : 0;
+                }
+                else pkId = 0;
+            }
+            catch (Exception error)
+            {
+                log4net.LogManager.GetLogger(typeof(CreateType)).Warn("Could not insert the terminal resource into its selected store.", error);
+                MessageBox.Show(this, Properties.Resources.CreationFailedDatabaseInsertFailed, "ColorVision");
+                return;
+            }
             sysResource.Id = pkId;
 
             if (pkId > 0 || SysResourceDao.IsLocalId(pkId))
             {
-                TerminalService terminalService = new TerminalService(sysResource);
+                if (pkId > 0 && endpoint?.IsCurrent != true)
+                {
+                    MessageBox.Show(this, EngineLocalization.Get("服务已写入原配置库。连接已变更，请重新加载后查看。"), "ColorVision");
+                    Close();
+                    return;
+                }
+
+                TerminalService terminalService = new(sysResource)
+                {
+                    ResourceDatabaseEndpoint = endpoint,
+                    LocalConfigurationResourceDao = useLocal ? resourceDao : null
+                };
                 TypeService.AddChild(terminalService);
                 ServiceManager.GetInstance().TerminalServices.Add(terminalService);
                 CreatedTerminal = terminalService;

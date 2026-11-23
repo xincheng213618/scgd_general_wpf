@@ -11,6 +11,7 @@ namespace ColorVision.UI.PropertyEditor.Editor.List
     {
         private readonly Type _elementType;
         private readonly Type? _preferredEditorType;
+        private readonly string? _filePickerHistoryKey;
         private readonly ValueWrapper _valueWrapper;
         private List<Type> _availableEditorTypes = new();
 
@@ -38,11 +39,17 @@ namespace ColorVision.UI.PropertyEditor.Editor.List
         }
 
         public ListItemEditorWindow(Type elementType, object? initialValue, Type? preferredEditorType = null)
+            : this(elementType, initialValue, preferredEditorType, null)
+        {
+        }
+
+        internal ListItemEditorWindow(Type elementType, object? initialValue, Type? preferredEditorType, string? filePickerHistoryKey)
         {
             InitializeComponent();
             ColorVision.Themes.ThemeManagerExtensions.ApplyCaption(this);
             _elementType = elementType;
             _preferredEditorType = preferredEditorType;
+            _filePickerHistoryKey = filePickerHistoryKey;
             _valueWrapper = new ValueWrapper
             {
                 Value = initialValue == null ? CreateEditableClassInstance(elementType) : PropertyGraphCopy.Clone(initialValue, includeNonBrowsableProperties: true)
@@ -252,7 +259,7 @@ namespace ColorVision.UI.PropertyEditor.Editor.List
             {
                 if (list != null)
                 {
-                    var nestedEditor = new ListEditorWindow(list, innerElementType, _preferredEditorType);
+                    var nestedEditor = new ListEditorWindow(list, innerElementType, _preferredEditorType, _filePickerHistoryKey);
                     nestedEditor.Owner = this;
                     
                     if (nestedEditor.ShowDialog() == true)

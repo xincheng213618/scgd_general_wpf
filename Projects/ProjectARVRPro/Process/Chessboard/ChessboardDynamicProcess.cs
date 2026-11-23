@@ -1,9 +1,5 @@
-using ColorVision.Database;
 using ColorVision.Engine;
 using ColorVision.Engine.Media;
-using ColorVision.Engine.Templates.Jsons;
-using ColorVision.Engine.Templates.Jsons.PoiAnalysis;
-using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using Newtonsoft.Json;
 using ProjectARVRPro.Process.KeyedResults;
 using System.Collections.ObjectModel;
@@ -15,9 +11,11 @@ namespace ProjectARVRPro.Process.Chessboard
 {
     public class ChessboardDynamicProcess : ProcessWithRecipeBase<ChessboardDynamicProcessConfig, ChessboardRecipeConfig>
     {
+        internal ChessboardBatchResults BatchResults { get; init; } = new();
+
         public override async Task<bool> Execute(IProcessExecutionContext ctx)
         {
-            if (ctx?.Batch == null || ctx.Result == null) return false;
+            if (ctx?.Batch == null || ctx.Result == null || ctx.ObjectiveTestResult == null) return false;
             var log = ctx.Log;
             ChessboardRecipeConfig recipeConfig = Config.RecipeConfig;
             ChessboardDynamicViewTestResult testResult = new ChessboardDynamicViewTestResult();
@@ -26,8 +24,9 @@ namespace ProjectARVRPro.Process.Chessboard
                 ? "Chessboard_Contrast"
                 : Config.ChessboardContrastResultName.Trim();
             bool databaseContrastFound = false;
-            bool databaseContrastLoaded = false;
+            string? invalidPoiData = null;
             ChessboardContrastCalculationResult? calculation = null;
+            string outputKey = Config.GetOutputKey();
 
             try
             {
@@ -41,71 +40,43 @@ namespace ProjectARVRPro.Process.Chessboard
                         ctx.Result.FileName = fileUrl;
                 }
 
-                var masters = AlgResultMasterDao.Instance.GetAllByBatchId(ctx.Batch.Id);
+                var masters = BatchResults.ReadMasters?.Invoke(ctx.Batch.Id) ?? ctx.ReadMasterResults();
                 foreach (var master in masters)
                 {
                     if (master.ImgFileType == ViewResultAlgType.POI_XYZ)
                     {
                         if (File.Exists(master.ImgFile))
-                        {
                             ctx.Result.FileName = master.ImgFile;
-                        }
-                        var poiPoints = PoiPointResultDao.Instance.GetAllByPid(master.Id);
-                        int id = 0;
-                        foreach (var item in poiPoints)
-                        {
-                            var poi = new PoiResultCIExyuvData(item) { Id = id++ };
-                            chessboardResult.PoixyuvDatas.Add(poi);
-                        }
+                        string? pointError = BatchResults.AppendMeasuredPoints(ctx, master.Id, chessboardResult.PoixyuvDatas);
+                        invalidPoiData ??= pointError;
                     }
 
                     if (master.ImgFileType == ViewResultAlgType.PoiAnalysis && master.TName?.Contains(contrastResultName, StringComparison.Ordinal) == true)
                     {
                         databaseContrastFound = true;
-                        var details = DeatilCommonDao.Instance.GetAllByPid(master.Id);
-                        if (details.Count == 1)
-                        {
-                            var view = new PoiAnalysisDetailViewReslut(details[0]);
-                            if (view.PoiAnalysisResult?.result == null)
-                            {
-                                log?.Error($"Chessboard Dynamic数据库结果内容无效: resultName={contrastResultName}");
-                                continue;
-                            }
-
-                            view.PoiAnalysisResult.result.Value = recipeConfig.ChessboardContrast.Apply(view.PoiAnalysisResult.result.Value);
-                            chessboardResult.ChessboardContrast = Build(
-                                contrastResultName,
-                                view.PoiAnalysisResult.result.Value,
-                                recipeConfig.ChessboardContrast.Min,
-                                recipeConfig.ChessboardContrast.Max);
-                            ctx.Result.Result &= chessboardResult.ChessboardContrast.TestResult;
-                            databaseContrastLoaded = true;
-                            log?.Info($"Chessboard Dynamic对比度来源: database, resultName={contrastResultName}");
-                        }
-                        else
-                            log?.Error($"Chessboard Dynamic数据库结果明细无效: resultName={contrastResultName}, detailCount={details.Count}");
+                        double measured = BatchResults.ReadTemplateContrast(ctx, master.Id, contrastResultName);
+                        double corrected = ChessboardBatchResults.ApplyRecipe(measured, recipeConfig.ChessboardContrast);
+                        chessboardResult.ChessboardContrast = Build(
+                            contrastResultName,
+                            corrected,
+                            recipeConfig.ChessboardContrast.Min,
+                            recipeConfig.ChessboardContrast.Max);
+                        ctx.Result.Result &= chessboardResult.ChessboardContrast.TestResult;
+                        log?.Info($"Chessboard Dynamic对比度来源: database, resultName={contrastResultName}");
                     }
                 }
 
-                if (databaseContrastFound && !databaseContrastLoaded)
-                    return false;
-
                 if (!databaseContrastFound || Config.SaveCsv)
                 {
-                    calculation = ChessboardContrastCalculator.Calculate(
-                        chessboardResult.PoixyuvDatas,
-                        Config.RowCount,
-                        Config.ColumnCount,
-                        Config.FirstPointColor,
-                        Config.StrayLightCoefficient,
-                        Config.AllowNegativeCorrectedDarkLuminance);
+                    calculation = invalidPoiData == null
+                        ? ChessboardContrastCalculator.Calculate(
+                            chessboardResult.PoixyuvDatas, Config.RowCount, Config.ColumnCount, Config.FirstPointColor,
+                            Config.StrayLightCoefficient, Config.AllowNegativeCorrectedDarkLuminance)
+                        : new ChessboardContrastCalculationResult { ErrorMessage = invalidPoiData };
                     if (!calculation.Success)
                     {
                         if (!databaseContrastFound)
-                        {
-                            log?.Error($"Chessboard Dynamic本地计算失败: resultName={contrastResultName}, message={calculation.ErrorMessage}");
-                            return false;
-                        }
+                            throw new InvalidDataException(calculation.ErrorMessage);
 
                         log?.Warn($"Chessboard Dynamic本地CSV分析失败，保留数据库对比度并导出基础POI数据: resultName={contrastResultName}, message={calculation.ErrorMessage}");
                     }
@@ -120,7 +91,7 @@ namespace ProjectARVRPro.Process.Chessboard
                         Value = calculation.CorrectedDarkLuminance,
                         TestValue = calculation.CorrectedDarkLuminance.ToString(Config.ShowConfig)
                     };
-                    double correctedContrast = recipeConfig.ChessboardContrast.Apply(calculation.CorrectedContrast);
+                    double correctedContrast = ChessboardBatchResults.ApplyRecipe(calculation.CorrectedContrast, recipeConfig.ChessboardContrast);
                     chessboardResult.ChessboardContrast = Build(
                         contrastResultName,
                         correctedContrast,
@@ -146,13 +117,13 @@ namespace ProjectARVRPro.Process.Chessboard
                 testResult.Items = CollectItems(chessboardResult);
                 ctx.Result.ViewResultJson = JsonConvert.SerializeObject(testResult);
                 var objectiveResult = JsonConvert.DeserializeObject<ChessboardTestResult>(JsonConvert.SerializeObject(chessboardResult)) ?? new();
-                KeyedTestResultWriter.Write(ctx.ObjectiveTestResult, Config.GetOutputKey(), objectiveResult);
+                KeyedTestResultWriter.Write(ctx.ObjectiveTestResult, outputKey, objectiveResult);
                 if (Config.SaveCsv)
                 {
                     ChessboardCsvExporter.SavePoixyuvDatas(
                         chessboardResult.PoixyuvDatas,
                         ctx,
-                        Config.GetOutputKey(),
+                        outputKey,
                         calculation,
                         chessboardResult.ChessboardContrast?.Value,
                         contrastResultName,
@@ -162,9 +133,29 @@ namespace ProjectARVRPro.Process.Chessboard
             }
             catch (Exception ex)
             {
-                log?.Error(ex);
+                string message = $"棋盘格解析失败 [{outputKey}/{contrastResultName}]：{ex.Message}";
+                log?.Error(message, ex);
+                Reject(ctx, outputKey, message);
                 return false;
             }
+        }
+
+        public override Task<bool> ExecuteFailure(IProcessExecutionContext ctx)
+        {
+            if (ctx?.Result != null && ctx.ObjectiveTestResult != null)
+                Reject(ctx, Config.GetOutputKey(), string.IsNullOrWhiteSpace(ctx.Result.Msg) ? "棋盘格流程未成功完成。" : ctx.Result.Msg);
+            return Task.FromResult(false);
+        }
+
+        private static void Reject(IProcessExecutionContext ctx, string outputKey, string message)
+        {
+            ChessboardBatchResults.Reject(ctx, message);
+            var objective = ctx.ObjectiveTestResult;
+            var results = objective.ChessboardTestResults;
+            string? previousKey = results?.Keys.FirstOrDefault(key => KeyedTestResultDictionary.IsKey(key, outputKey));
+            if (previousKey != null && results!.Remove(previousKey, out var previous)
+                && KeyedTestResultDictionary.IsKey(outputKey, "Chessboard") && ReferenceEquals(objective.ChessboardTestResult, previous))
+                objective.ChessboardTestResult = null!;
         }
 
         public override IReadOnlyList<ObjectiveTestCsvRow> GetObjectiveCsvRows(ProjectARVRReuslt result) =>

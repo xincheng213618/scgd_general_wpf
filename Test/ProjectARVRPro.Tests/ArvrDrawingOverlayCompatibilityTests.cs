@@ -496,6 +496,8 @@ public sealed class ArvrDrawingOverlayCompatibilityTests
         dispatcher.Invoke(action);
     }
 
+    internal static Task RunAsyncOnStaThread(Func<Task> action) => WpfDispatcher.Value.Invoke(action);
+
     private static Dispatcher CreateWpfDispatcher()
     {
         Dispatcher? dispatcher = null;

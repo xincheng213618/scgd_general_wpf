@@ -5,7 +5,6 @@ status: "current"
 summary: "启动顺序与故障恢复：软件渲染兼容参数在 WPF 窗口前生效；初始化进度和ready不代表全部成功，一次性插件跳过不绕过真实故障。"
 aliases: ["启动链路", "App.xaml.cs", "启动界面", "启动动画", "StartWindow", "StartupScene", "StartupUiTrace", "COLORVISION_STARTUP_TRACE", "StopAndReport", "首帧耗时", "首次使用耗时", "启动恢复", "故障恢复", "初始化向导", "安全启动", "启动进度", "初始化失败", "StartupRegistryChecker", "StartupMaintenanceController", "StartupMaintenanceSearchProvider", "StartupRecoveryWindow", "StartupRecoveryPluginScanner", "StartupInitializersCompleted", "MainWindowInitializer", "MainWindowFactory", "CompactMainWindow", "LoadingPlugin", "startup-maintenance", "startup-skip-plugins", "wait-for-process", "safe-start", "skip-plugins", "software-rendering", "StartupRenderingMode", "WPF软件渲染", "ToDesk白屏", "验证并回退"]
 code_paths: ["ColorVision/EntryClass.cs", "ColorVision/App.xaml.cs", "ColorVision/Startup/StartupRenderingMode.cs", "ColorVision/BuiltInModules.cs", "ColorVision/ProgramTimer.cs", "ColorVision/StartWindow.xaml", "ColorVision/StartWindow.xaml.cs", "ColorVision/StartWindow.Presentation.cs", "ColorVision/StartupScene.cs", "ColorVision/StartupUiTrace.cs", "ColorVision/Startup/StartupSession.cs", "ColorVision/Startup/MainWindowInitializerRunner.cs", "UI/ColorVision.UI/Startup/StartupInitializerRunner.cs", "UI/ColorVision.Common/Interfaces/IInitializer/IInitializerDependencies.cs", "ColorVision/Startup/StartupText.cs", "ColorVision/Startup/StartupResources.resx", "ColorVision/Startup/StartupResources.en.resx", "ColorVision/Startup/StartupResources.zh-Hant.resx", "ColorVision/MainWindow.xaml.cs", "ColorVision/MainWindowFactory.cs", "ColorVision/CompactMainWindow.cs", "ColorVision/MainWindowConfig.cs", "ColorVision/SingleInstanceStartupPolicy.cs", "ColorVision/SingleInstanceStartupCoordinator.cs", "ColorVision/SingleInstanceStartupWindow.xaml", "ColorVision/SingleInstanceStartupWindow.xaml.cs", "UI/ColorVision.UI.Desktop/Update/ApplicationUpdateProcessCoordinator.Startup.cs", "ColorVision/StartupFileOpenPolicy.cs", "ColorVision/OperationsApplicationRestartController.cs", "ColorVision/App.StartupMaintenance.cs", "ColorVision/Recovery", "UI/ColorVision.UI/Plugins/PluginLoader.cs", "UI/ColorVision.UI.Desktop/Plugins/PluginRecoveryBackupService.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/StartupRenderingModeTests.cs","Test/ColorVision.UI.Tests/StartupSchedulingTests.cs","Test/ColorVision.UI.Tests/SingleInstanceStartupTests.cs","Test/ColorVision.UI.Tests/SingleInstanceStartupCoordinatorTests.cs","Test/ColorVision.UI.Tests/StartupSceneLifecycleTests.cs","Test/ColorVision.UI.Tests/StartupRecoveryPluginScannerTests.cs","Test/ColorVision.UI.Tests/StartupMaintenanceLifecycleTests.cs","Test/ColorVision.UI.Tests/StartupRecoveryWindowRuntimeTests.cs","Test/ColorVision.Copilot.Tests/CopilotBackgroundShellMaintenanceGuardTests.cs","Test/ColorVision.UI.Tests/StartupFileOpenPolicyTests.cs","Test/ColorVision.UI.Tests/StartupRegistryCheckerTests.cs"]
 related: ["platform.architecture", "platform.startup-integrity", "delivery.update", "plugins.model", "ui.discovery", "ui.wizards", "ui.localization", "ui.themes", "ui.search", "operations.main-window", "engine.devices", "engine.rc-registration", "flow.architecture"]
 ---
 
@@ -28,7 +27,7 @@ related: ["platform.architecture", "platform.startup-integrity", "delivery.updat
 | 恢复选择 | 上次尝试未完成，或显式请求 `recovery` 时，在外部插件装载前显示恢复窗口；退出则不继续，继续时采用用户选定的插件跳过和向导策略 |
 | 外部扩展与窗口 | 先显示 `StartWindow`，首帧后装配宿主与允许的插件，或记录 `PluginsSkipped`；宿主阶段之间和各插件之间让出 UI，封存模块目录后进入向导或初始化器。向导完成后再进入常规初始化器，不重复装载插件 |
 
-单实例判断使用 `Debugger.IsAttached` 和 `APPConfig.AllowMultipleInstances`（“允许程序多开”，默认 `false`）。旧的 `IsMute` 持久化键不迁移，升级后按默认关闭多开并在下次保存时写入语义明确的新键。未附加调试器且不允许多实例时，新启动会直接强制结束同会话、同安装路径的较早实例，不限于异常进程；`--debug` 不参与这个判断。`SingleInstanceStartupWindow` 展示退出进度，`SingleInstanceStartupCoordinator` 在失败后等待用户重试、仅本次直接多开或取消；[单实例启动恢复](../../00-getting-started/first-steps.md#旧进程未退出时重新启动)维护完整操作契约。取消或直接打开会先取消并等待当前结束操作收尾，避免新实例启动后继续结束其它旧进程。窗口期间临时使用显式关闭模式，返回时恢复原有 MainWindow 与 ShutdownMode，防止辅助窗口关闭导致整个应用退出。确认旧实例退出并取得单实例锁后才重载磁盘配置；重载失败保留自动保存关闭并记录错误。直接打开分支不要求取得单实例锁，也不改写多实例设置。旧版命名管道关闭协议继续保留兼容入口，普通窗口关闭仍使用既有流程。真实启动可能更改配置、替换旧实例并按设置启动功能，文档核验不需要执行它。
+单实例分支由 `SingleInstanceStartupPolicy` 根据 `Debugger.IsAttached` 与 `APPConfig.AllowMultipleInstances` 决定。`AllowMultipleInstances` 默认关闭，旧 `IsMute` 键不迁移。`SingleInstanceStartupCoordinator` 负责重试、取消和收尾。显示 `SingleInstanceStartupWindow` 期间，`App` 使用显式关闭模式。确认旧实例退出并取得单实例锁后重载磁盘配置。重载失败时记录错误并保持自动保存关闭。`SingleInstanceReplacementListener` 接收兼容的命名管道关闭请求。 [单实例启动恢复](../../00-getting-started/first-steps.md#旧进程未退出时重新启动)
 
 普通启动在 `WizardCompletionKey=false` 时进入向导；维护请求或恢复选择也可要求显示向导。向导步骤、保存与重启见[配置向导](../../04-api-reference/ui-components/wizards.md)。启动语言读取及设置中更换语言的区别见[界面语言](../../04-api-reference/ui-components/localization.md)。
 
@@ -185,14 +184,4 @@ related: ["platform.architecture", "platform.startup-integrity", "delivery.updat
 
 ## 验证入口与缺口
 
-- 在已知链之间插入未知初始化器时检查完整串行回退。替身不连接真实数据库、MQTT、RC 或设备，实际耗时与外部服务健康仍需独立 Release 启动测量。
-- 受控跨线程投递验证 Started 之后才到达的 Posted 不产生负队列耗时；不覆盖记录上限、所有嵌套 Dispatcher 情形、真实主窗口完整启动性能或 GPU 呈现。
-- 启动窗口生命周期：`StartWindowThemeLifecycleTests` 在 STA WPF 宿主中构造并关闭窗口，检查早期日志缓冲释放、其他 appender 保留、`SystemThemeChanged` 与 `CurrentUIThemeChanged` 订阅恢复及窗口可被 GC；不显示窗口、不执行真实初始化。
-- 启动界面呈现：`StartupPresentationTests` 在显示前移除真实 `ContentRendered` 初始化处理器，再将产品窗口显示到屏幕外；覆盖默认深色、固定浅色独立于应用，以及跟随软件策略下的简英繁与明确深浅主题组合、英文 UseSystem 的两种解析结果。固定策略案例验证配置修改不改变当前窗口，关闭重开后读取新策略。检查后续应用主题变化、英文文字与较长阶段状态布局、辅助名称、无切换按钮、调色不改进度和关闭后主题订阅恢复。阶段文本测试检查类型名映射及未知扩展回退；不执行真实初始化、设备连接或启动流程。配置兼容及设置行验证由[启动页主题测试](../../04-api-reference/ui-components/ColorVision.Themes.md#包入口与验证范围)维护。
-- 动画生命周期：`StartupSceneLifecycleTests` 将场景承载到真实的屏幕外 WPF 窗口，经历浅色、深色、再浅色及隐藏重显，检查层数、上下边缘像素、旧层脱离，以及关闭后场景和被替换层可被 GC。高对比度断言依据测试机器当前设置，不主动切换系统高对比度；不覆盖实际帧率、整体画面效果或全部静态降级组合。
-- 启动分支：`SingleInstanceStartupTests` 检查决策、替换响应及安装范围锁名；`StartupFileOpenPolicyTests` 检查独立文件路由；`StartupRegistryCheckerTests` 使用临时注册表项检查未完成尝试回收。
-- 恢复列表：`StartupRecoveryPluginScannerTests` 使用临时清单和无效 DLL 字节，检查记录匹配、旧式和损坏清单目录；不构成真实插件装载或完整备份恢复测试。
-- 维护交接：`StartupMaintenanceLifecycleTests` 检查参数、确认、关窗取消、保存失败和失败收尾；
-- 后台任务门禁：`CopilotBackgroundShellMaintenanceGuardTests` 使用延迟进程替身检查预留、运行和完成状态，不读取输出，不启动真实维护进程。
-
-测试引用不表示本轮已执行，也不证明安装环境中成功重启、还原或设备健康。源码入口已随各节列明；文档检查只验证结构、路径与检索，实际恢复验收需使用获授权的隔离安装和备份。
+真实启动验收应包括 Release 下的初始化耗时、外部服务健康和 WPF 呈现。成功重启、文件还原、插件装载与设备健康需在获授权的隔离安装和备份环境中分别验证。

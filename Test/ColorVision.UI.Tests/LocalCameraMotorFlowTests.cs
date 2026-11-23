@@ -20,22 +20,24 @@ public class LocalCameraMotorFlowTests
 {
     // Saved motor nodes must share the camera owner and completion path without MQTT.
     [Theory]
-    [InlineData(CamMotorRunType.焦距, false)]
-    [InlineData(CamMotorRunType.光圈, false)]
-    [InlineData(CamMotorRunType.自动对焦, false)]
-    [InlineData(CamMotorRunType.焦距, true)]
-    public async Task ExistingMotorNodeUsesLocalCameraAndAutoConnectsWhenClosed(CamMotorRunType command, bool alreadyOpen)
+    [InlineData(CamMotorRunType.焦距, null)]
+    [InlineData(CamMotorRunType.光圈, null)]
+    [InlineData(CamMotorRunType.自动对焦, null)]
+    [InlineData(CamMotorRunType.焦距, TakeImageMode.Measure_Normal)]
+    [InlineData(CamMotorRunType.自动对焦, TakeImageMode.Live)]
+    public async Task ExistingMotorNodeUsesLocalCameraAndAutoConnectsWhenClosed(CamMotorRunType command, TakeImageMode? openedMode)
     {
         using var scope = new Scope();
-        if (alreadyOpen)
+        if (openedMode.HasValue)
         {
-            scope.Session.Open("camera", TakeImageMode.Measure_Normal, 16);
+            scope.Session.Open("camera", openedMode.Value, 16);
             scope.Backend.SetPreference(false); // The active owner wins over the next-open preference.
         }
         var result = await scope.Run(command);
         Assert.Equal(StatusTypeEnum.Completed, result.Status);
         Assert.Equal(0, scope.Start!.PublishCount);
         Assert.True(scope.Session.IsOpen);
+        Assert.Equal(TakeImageMode.Measure_Normal, scope.Session.OpenedMode);
         Assert.Equal(new[] { "open", "configure" }, scope.Native.Events);
         Assert.NotNull(scope.Response);
         if (command == CamMotorRunType.焦距) Assert.Equal(150, scope.Response.Value<int>("nPosition"));

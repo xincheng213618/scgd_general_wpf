@@ -5,7 +5,6 @@ status: "current"
 summary: "独立 ProjectARVRPro SemiAuto 软件的 ARVR/GECS 双 Socket、可配置指令映射、PG 成功门禁、四页签操作界面、结果解析及客户 ZIP 验证边界。"
 aliases: ["ProjectARVRPro.SemiAuto","ARVR 半自动软件","GECS 半自动","SemiAutomaticWorkflow","semi-auto-profile.json","GecsPacketCodec","GecsClient"]
 code_paths: ["Projects/ProjectARVRPro.SemiAuto/","Scripts/publish_project_arvrpro_semi_auto.py","Scripts/publish_project_arvrpro_semi_auto.bat"]
-test_paths: ["Test/ProjectARVRPro.SemiAuto.Tests/"]
 related: ["projects.arvr-pro-demo","projects.arvr-pro","projects.arvr-pro-protocol","projects.index"]
 ---
 
@@ -79,10 +78,9 @@ ARVR 首次切图请求 -> POWER ON（携带 SN） -> GECS 切图指令
 
 ```powershell
 dotnet build Projects/ProjectARVRPro.SemiAuto/ProjectARVRPro.SemiAuto.csproj -c Release -p:Platform=x64
-dotnet test Test/ProjectARVRPro.SemiAuto.Tests/ProjectARVRPro.SemiAuto.Tests.csproj -c Release -p:Platform=x64
 cmd.exe /d /c Scripts\publish_project_arvrpro_semi_auto.bat --validate-only
 ```
 
-测试覆盖 GECS 组包/拆包、半包/粘包、ASCII 和长度校验、静默 `ALIVE`、电源开关顺序、`processing`、成功/失败回包，以及“PG 成功后确认、失败不确认”的工作流门禁。发布自检还验证配置解析、样例结果解析、CSV 产物和 ZIP 内容。
+发布自检还验证配置解析、样例结果解析、CSV 产物和 ZIP 内容。
 
-这些检查不等于现场硬件验收。真实交付仍需记录 ARVR 版本、PG 固件、目标地址、流程组、`ARVRTestType` 映射、实际指令和回包。
+现场验收需记录 ARVR 版本、PG 固件、目标地址、流程组、`ARVRTestType` 映射、实际指令和回包。

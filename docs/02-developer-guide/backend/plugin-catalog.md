@@ -5,7 +5,6 @@ status: "current"
 summary: "插件市场列表、详情投影、索引刷新与版本缓存；compact不代表按页读取源码数据，ready不证明全量刷新无错误。"
 aliases: ["插件市场索引", "插件目录", "插件详情", "历史包分页", "hashPending", "plugin_index", "package_index", "MarketplaceCatalogService", "MarketplaceDataService", "refresh_plugin_index", "refresh_all_plugin_index", "plugin_catalog_signature", "get_plugin_latest_versions_cached", "view=compact", "view=update"]
 code_paths: ["Web/Backend/marketplace_api_routes.py", "Web/Backend/services/marketplace_api.py", "Web/Backend/marketplace_services.py", "Web/Backend/services/plugin_index.py", "Web/Backend/plugin_marketplace.py", "Web/Backend/catalog_view_models.py", "Web/Backend/plugin_queries.py", "Web/Backend/services/app_latest_version_cache.py", "Web/Backend/services/storage_events.py", "Web/Backend/services/scheduler.py", "Web/Backend/db/repositories/index_state.py"]
-test_paths: ["Web/Backend/test_app.py", "Web/Backend/test_plugin_index.py", "Web/Backend/test_app_latest_version_cache.py"]
 related: ["delivery.backend", "delivery.artifact-delivery", "plugins.model", "plugins.getting-started"]
 ---
 
@@ -78,4 +77,4 @@ compact 的 `archive_page`/`archivePage` 接受1–100000，`archive_page_size`/
 
 ## 验证范围
 
-`test_plugin_index.py` 覆盖索引读/回退、数字版本排序、hash pending及复用/变化、扫描中签名变化、非阻塞全量刷新和发布触发。`test_app.py` 覆盖compact响应与分页参数、列表过滤、批量版本的索引优先及进程缓存复用；`test_app_latest_version_cache.py` 只覆盖storage key的词法路径规范化，不是版本map行为全覆盖。现有测试未单独证明map已存在时缺失ID不会补读磁盘，该结论来自源码分支。这些是测试入口，不是本轮执行记录；它们也不证明生产索引完整、多进程并发安全、真实发布成功或所有请求都无磁盘I/O。
+版本 map 已存在时，缺失 ID 的分支按源码核对。部署需验证生产索引完整性、多进程行为、发布结果及磁盘 I/O。

@@ -594,20 +594,38 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
             try
             {
                 using var db = CreateReadDb();
-                var query = db.Queryable<FlowRunRecord>()
-                    .Where(item => item.Status == FlowStatus.Completed && item.ElapsedMs > 0);
-                query = ApplyFlowIdentityFilter(query, identity);
-
-                FlowRunRecord? record = query
-                    .OrderByDescending(item => item.CompletedTime)
-                    .First();
-                return record?.ElapsedMs ?? 0;
+                return ReadLastCompletedFlowElapsed(db, identity);
             }
             catch (Exception ex)
             {
                 log.Error("查询流程上次执行耗时失败", ex);
                 return 0;
             }
+        }
+
+        private static long ReadLastCompletedFlowElapsed(SqlSugarClient db, FlowIdentity identity)
+        {
+            if (identity.IsEmpty)
+                return 0;
+
+            var query = db.Queryable<FlowRunRecord>()
+                .Where(item => item.Status == FlowStatus.Completed && item.ElapsedMs > 0);
+            return ApplyFlowIdentityFilter(query, identity)
+                .OrderByDescending(item => item.CompletedTime)
+                .First()?.ElapsedMs ?? 0;
+        }
+
+        internal static (long? FlowElapsedMs, Dictionary<string, long> NodeDurations)? ReadProgressHistory(
+            FlowIdentity? identity, string[] nodeIds)
+        {
+            if (!EnsureInitialized())
+                return null;
+
+            using var db = CreateReadDb();
+            long? elapsed = identity is FlowIdentity flow ? ReadLastCompletedFlowElapsed(db, flow) : null;
+            var durations = new Dictionary<string, long>(StringComparer.Ordinal);
+            ReadLatestCompletedDurations(db, nodeIds, durations);
+            return (elapsed, durations);
         }
 
         internal static FlowRunRecord? GetFlowRun(
@@ -715,8 +733,24 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
             FlowStatus status,
             long elapsedMs)
         {
+            Task<int> completion = QueueFlowRunAsync(templateId, flowName, serialNumber, status, elapsedMs);
+            if (TryGetSynchronousWriteResult(completion, _synchronousWriteTimeout, out int result))
+                return result;
+
+            log.Error("插入流程运行记录等待写入队列超时。");
+            return -1;
+        }
+
+        /// <summary>Queues the terminal diagnostic record and returns its identity after the database write.</summary>
+        public static Task<int> QueueFlowRunAsync(
+            int templateId,
+            string? flowName,
+            string? serialNumber,
+            FlowStatus status,
+            long elapsedMs)
+        {
             if (!EnsureInitialized())
-                return -1;
+                return Task.FromResult(-1);
 
             try
             {
@@ -744,20 +778,12 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
                         completion.TrySetResult(-1);
                     }
                 });
-                if (!TryGetSynchronousWriteResult(
-                    completion.Task,
-                    _synchronousWriteTimeout,
-                    out int result))
-                {
-                    log.Error("插入流程运行记录等待写入队列超时。");
-                    return -1;
-                }
-                return result;
+                return completion.Task;
             }
             catch (Exception ex)
             {
                 log.Error("插入流程运行记录失败", ex);
-                return -1;
+                return Task.FromResult(-1);
             }
         }
 

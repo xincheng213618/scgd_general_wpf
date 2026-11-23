@@ -5,7 +5,6 @@ status: "current"
 summary: "本地十字定位的图像菜单、Flow 节点、生产参数、全图坐标、原生返回值与失败诊断。"
 aliases: ["本地十字定位", "本地 FindCross", "M_FindCrossLocal", "M_FindCrossLocalGetLastError", "FindCrossLocal", "FindCrossLocalOptions", "FindCrossLocalResultParser", "LocalFindCrossNode", "PatternCrossV1", "OuterPanel", "ExpectedAngleDegrees", "AngleToleranceDegrees", "CalibrationOffset", "RawGeometricCenter", "LocalFindCrossCenterX", "NativeConfigurationInvalid", "AmbiguousPattern", "PatternClipped", "LegacyParametersIgnored", "标准中心使用图像中心", "最大允许旋转偏差"]
 code_paths: ["Native/include/opencv_media_export.h", "Native/opencv_helper/algorithm/find_cross", "UI/ColorVision.Core/FindCrossLocal.cs", "UI/ColorVision.Core/OpenCVMediaHelper.cs", "UI/ColorVision.ImageEditor/EditorTools/Algorithms/Calculate/FindCross/FindCrossLocalCM.cs", "Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalFindCrossNode.cs", "Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalFindLuminousAreaNode.cs"]
-test_paths: ["Test/opencv_helper_test/test_find_cross.cpp", "Test/ColorVision.UI.Tests/FindCrossLocalTests.cs", "Test/ColorVision.UI.Tests/LocalFindCrossNodeTests.cs", "Test/ColorVision.UI.Tests/FindCrossResultOverlayTests.cs"]
 related: ["algorithms.index", "engine.native-integration", "engine.results", "ui.image-editor", "delivery.native-testing"]
 ---
 
@@ -132,6 +131,8 @@ native 在 `std::lround` 之前计算倾角。需要复算时使用 `diagnostics
 - 成功后保存 FindCross 主结果、一条公共明细及 UTF-8 JSON 文件。结果目录为空时使用 `%LOCALAPPDATA%\ColorVision\Results\FindCross`；文件名带时间和 GUID。历史底图需要上游保存与实际帧一致的文件，节点不把已校正/翻转的内存结果自动关联到未经处理的源图。
 - 下游 `action.Data` 可读取 `LocalFindCrossResult`、`LocalFindCrossCenterX/Y`、`LocalFindCrossRotationAngle`、`LocalFindCrossTiltX/Y`、`LocalFindCrossDiagnostics`、`LocalFindCrossResultFile`；有内容时还保存 `LocalFindCrossRawJson` 和 `LocalFindCrossInteropDiagnostic`。这些中心标量来自兼容结果项，仍是上述取整中心。
 
+持久化图像、搜索区域关注点和成功或失败结果使用同一个批次连接。节点通知携带该连接，设备视图切库后不会用旧通知中的结果 ID 打开新库记录。
+
 检测拒绝或结果校验失败时会尝试保存失败主记录并发布到结果页，随后节点仍失败；不会生成成功明细/JSON，也不把失败主记录作为下游有效 `MasterValue`。输入缺失等前置错误可能更早发生；数据库或发布本身失败时不能假定结果页已有记录。
 
 生产入口输出单十字结果，数据库类型为 `63`、版本为 `1.0`，文件沿用 `result[]`。成功主记录的 `TName` 使用既有 `optCenter` 解析标识，使这组结果进入光轴校准的倾角与旋转结果；失败主记录保持 `LocalFindCross`。参数中的 `Algorithm=LocalFindCross` 保留本地实现身份。`Name` 仅标识 JSON 中的结果项，设置为 `ImageCenter` 也不会增加或切换测量指标；本地十字节点不生成独立的 `ImageCenter` 主记录。
@@ -198,6 +199,5 @@ int M_FindCrossLocalGetLastError(char* buffer, std::uint32_t bufferLength);
 
 ## 验证入口与边界
 
-`FindCrossLocalTests` 覆盖生产参数、兼容 JSON、诊断解析、调用约定及释放异常；其中 `NativeV2Fact` 用例依赖实际 native 环境，不能把普通托管用例等同于导出已执行。`LocalFindCrossNodeTests` 使用替身验证输入选择、生产 JSON、结果校验、事务与失败发布；`FindCrossResultOverlayTests` 检查历史结果绘制契约。
 
 原生合成样本和 `.cvraw` 标注对照入口见[原生测试与调试](../../../02-developer-guide/engine-development/native-testing.md)。检查实际退出码和跳过信息；合成测试、页面构建或正确叠图均不能代替现场图像的精度、重复性及误检验收。

@@ -1,4 +1,3 @@
-using ColorVision.Engine.Services.Devices.Spectrum.Configs;
 using FlowEngineLib;
 using FlowEngineLib.Base;
 using Newtonsoft.Json.Linq;
@@ -12,7 +11,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Local;
 internal sealed class LocalSpectrumNdFlowExecution : FlowLocalExecution
 {
     private readonly DeviceSpectrum device;
-    private readonly ConfigSpectrum config;
+    private readonly LocalSpectrumOpticalScope optics;
     private readonly int port;
     private readonly bool reserved;
     private CancellationToken stop;
@@ -30,7 +29,7 @@ internal sealed class LocalSpectrumNdFlowExecution : FlowLocalExecution
     {
         if (operation != "SetPort") throw new NotSupportedException($"本地光谱 ND 流程不支持 {operation}。");
         this.device = device;
-        config = device.SnapshotLocalConfiguration();
+        optics = device.SnapshotNdCommandOptics();
         port = JObject.FromObject(data).Value<int?>("PortNum") ?? throw new ArgumentException("光谱 ND 流程缺少孔位。");
         reserved = device.SpectrumBackend.OpensLocally;
         if (reserved) device.SpectrumBackend.BeginLocalCommand();
@@ -42,17 +41,20 @@ internal sealed class LocalSpectrumNdFlowExecution : FlowLocalExecution
     public override void Execute()
     {
         using var cancellation = CancellationTokenSource.CreateLinkedTokenSource(stop, reserved ? device.SpectrumBackend.LocalCancellationToken : CancellationToken.None);
-        result = device.ExecuteLocalNd(config, port, cancellation.Token);
+        result = device.ExecuteLocalNd(optics, port, cancellation.Token);
     }
     public override object Complete(CVStartCFC action)
     {
-        if (action.RuntimeResources.IsDisposed || action.IsDel || action.TryGetStopStatus(out _)) throw new OperationCanceledException("流程已停止，丢弃 ND 切位结果。");
-        var confirmed = result ?? throw new InvalidOperationException("ND 没有返回确认孔位。");
-        void Apply() => device.ApplyLocalNdState(confirmed.Port, confirmed.Calibration);
-        if (Application.Current?.Dispatcher is { } dispatcher && !dispatcher.CheckAccess()) dispatcher.Invoke(Apply);
-        else Apply();
-        Release();
-        return new JObject { ["Port"] = confirmed.Port };
+        try
+        {
+            if (action.RuntimeResources.IsDisposed || action.IsDel || action.TryGetStopStatus(out _)) throw new OperationCanceledException("流程已停止，丢弃 ND 切位结果。");
+            var confirmed = result ?? throw new InvalidOperationException("ND 没有返回确认孔位。");
+            bool Apply() => device.ApplyLocalNdState(confirmed.Port, confirmed.Calibration, optics.ConfigurationTarget, optics);
+            bool accepted = Application.Current?.Dispatcher is { } dispatcher && !dispatcher.CheckAccess() ? dispatcher.Invoke(Apply) : Apply();
+            if (!accepted) throw new InvalidOperationException(DeviceSpectrum.NdConfigurationChangedMessage);
+            return new JObject { ["Port"] = confirmed.Port };
+        }
+        finally { Release(); }
     }
     private void Release() { if (reserved && Interlocked.Exchange(ref released, 1) == 0) device.SpectrumBackend.EndLocalCommand(); }
     public override void Dispose() => Release();

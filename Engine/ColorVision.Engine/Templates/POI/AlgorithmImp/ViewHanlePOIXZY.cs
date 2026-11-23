@@ -1,11 +1,12 @@
 ﻿#pragma warning disable CA1725
 using ColorVision.Engine.Media;
 using ColorVision.Engine.Services;
-using ColorVision.Database;
+using ColorVision.Engine.Services.Results;
 using log4net;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.IO;
+using System.Linq;
 using System.Windows.Controls;
 using System.Windows.Data;
 
@@ -32,32 +33,30 @@ namespace ColorVision.Engine.Templates.POI.AlgorithmImp
     public class ViewHanlePOIXZY : IResultHandleBase
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(ViewHandleRealPOI));
+        private readonly Func<int, IReadOnlyList<PoiPointResultModel>?> _readDetails;
+
+        public ViewHanlePOIXZY() : this(PoiHistoryDetails.Read) { }
+
+        internal ViewHanlePOIXZY(Func<int, IReadOnlyList<PoiPointResultModel>?> readDetails) => _readDetails = readDetails;
+
         public override List<ViewResultAlgType> CanHandle { get; } = new List<ViewResultAlgType>() { ViewResultAlgType.POI_XYZ};
         
         public override void SideSave(ViewResultAlg result, string selectedPath)
         {
-            string fileName = Path.Combine(selectedPath, $"{result.ResultType}_{result.Batch}.csv");
-            var PoiResultCIExyuvDatas = result.ViewResults.ToSpecificViewResults<PoiResultCIExyuvData>();
-            PoiResultCIExyuvDatas.SaveCsv(fileName);
+            var PoiResultCIExyuvDatas = PoiHistoryDetails.RequireForExport(result).ToSpecificViewResults<PoiResultCIExyuvData>();
+            AlgorithmSideDataFiles.Write(result, selectedPath, $"{result.ResultType}_{result.Batch}.csv",
+                path => PoiResultCIExyuvDatas.SaveCsv(path));
         }
         public override void Load(ViewResultContext ctx, ViewResultAlg result)
         {
-            if (result.ViewResults == null)
-            {
-                result.ViewResults = new ObservableCollection<IViewResult>();
-                List<PoiPointResultModel> POIPointResultModels = PoiPointResultDao.Instance.GetAllByPid(result.Id);
-                int id = 0;
-                foreach (var item in POIPointResultModels)
-                {
-                    PoiResultCIExyuvData poiResultCIExyuvData = new(item) { Id = id++ };
-                    result.ViewResults.Add(poiResultCIExyuvData);
-                }
-            }
+            PoiHistoryDetails.TryLoad(result, _readDetails, rows => rows.Select((item, id) => new PoiResultCIExyuvData(item) { Id = id }));
         }
         public override void Handle(ViewResultContext ctx, ViewResultAlg result)
         {
 
             OpenSourceImage(ctx, result);
+            var details = PoiHistoryDetails.GetForDisplay(ctx, result);
+            if (details == null) return;
 
             List<GridViewColumn> gridViewColumns = new List<GridViewColumn>();
 
@@ -71,14 +70,14 @@ namespace ColorVision.Engine.Templates.POI.AlgorithmImp
             List<string> bdHeader = new List<string> { "Id", "Name", "PixelPos", "Shapes", "PixelSize", "CCT", "Wave", "X", "Y", "Z", "u", "v", "x", "y" };
 
 
-            if (result.ViewResults.Count <= 4000)
+            if (details.Count <= 4000)
             {
-                foreach (PoiResultCIExyuvData poiResult in result.ViewResults.ToSpecificViewResults<PoiResultCIExyuvData>())
+                foreach (PoiResultCIExyuvData poiResult in details.ToSpecificViewResults<PoiResultCIExyuvData>())
                     PoiOverlayRenderer.Add(ctx.ImageView, poiResult.Point, CVRawOpen.FormatMessage(CVCIEShowConfig.Instance.Template, poiResult));
             }
             else
             {
-                log.Info($"result.ViewResults.Count:{result.ViewResults.Count}");
+                log.Info($"result.ViewResults.Count:{details.Count}");
             }
 
 
@@ -89,7 +88,7 @@ namespace ColorVision.Engine.Templates.POI.AlgorithmImp
                 gridView.Columns.Clear();
                 for (int i = 0; i < header.Count; i++)
                     gridView.Columns.Add(new GridViewColumn() { Header = header[i], DisplayMemberBinding = new Binding(bdHeader[i]) });
-                ctx.ListView.ItemsSource = result.ViewResults;
+                ctx.ListView.ItemsSource = details;
             }
         }
     }

@@ -11,7 +11,6 @@ using log4net;
 using Microsoft.Win32;
 using Newtonsoft.Json;
 using ProjectARVRPro.LegacyARVR;
-using SqlSugar;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
@@ -43,6 +42,7 @@ namespace ProjectARVRPro
         private readonly ResultStatisticsWindowState _windowState;
         private readonly CycleTimeStatisticsWindowConfig? _windowConfig;
         private readonly Offline.ArvrOfflineDataSource? _offlineSource;
+        internal Func<string, Task>? WaitForFlowDiagnosticsAsync { get; init; }
         private bool _openingOffline;
         private bool _closed;
         private readonly ObservableCollection<ResultStatisticsRecordRow> _recordRows = [];
@@ -1700,21 +1700,8 @@ namespace ProjectARVRPro
             try
             {
                 string fileName = dialog.FileName;
-                int[] ids = selectedRows.Select(row => row.Id).ToArray();
-                List<ObjectiveTestResultRecord> exportedRecords = await Task.Run(() =>
-                {
-                    Dictionary<int, ObjectiveTestResultRecord> recordsById = _statisticsStore.GetRecords(ids)
-                        .ToDictionary(record => record.Id);
-                    ResultStatisticsRecordRow[] rows = selectedRows.Where(row => recordsById.ContainsKey(row.Id)).ToArray();
-                    List<ObjectiveTestResultRecord> records = rows.Select(row => recordsById[row.Id]).ToList();
-                    var flowResultsByRecordId = _statisticsStore.QueryFlowDetailsForBatchExport(rows);
-                    ObjectiveTestResultBatchCsvExporter.ExportToCsv(records, flowResultsByRecordId, fileName);
-                    return records;
-                });
-
-                foreach (ObjectiveTestResultRecord record in exportedRecords)
-                    _recordCache[record.Id] = record;
-                MessageBox.Show(this, LocalizedText.Format($"已导出 {exportedRecords.Count:N0} 条记录：{fileName}"), "ColorVision", MessageBoxButton.OK, MessageBoxImage.Information);
+                int exportedCount = await Task.Run(() => _statisticsStore.ExportBatchCsv(selectedRows, fileName));
+                MessageBox.Show(this, LocalizedText.Format($"已导出 {exportedCount:N0} 条记录：{fileName}"), "ColorVision", MessageBoxButton.OK, MessageBoxImage.Information);
             }
             catch (Exception ex)
             {
@@ -1949,6 +1936,16 @@ namespace ProjectARVRPro
                 return;
             }
 
+            bool written = WaitForFlowDiagnosticsAsync == null || await FlowDiagnosticsWriteQueue.WaitAsync(
+                WaitForFlowDiagnosticsAsync(batch.Code ?? string.Empty), FlowDiagnosticsWriteQueue.WriteWaitTimeout);
+            if (_closed)
+                return;
+            if (!written)
+            {
+                MessageBox.Show(this, LocalizedText.Get("流程诊断仍在写入，请稍后打开。"), "ColorVision");
+                return;
+            }
+
             new FlowExecutionAnalysisWindow(batch)
             {
                 Owner = this,
@@ -1956,20 +1953,8 @@ namespace ProjectARVRPro
             }.Show();
         }
 
-        private MeasureBatchModel? GetMeasureBatch(ProjectARVRReuslt? item)
-        {
-            if (_offlineSource != null) return null;
-            if (item == null || item.BatchId <= 0)
-                return null;
-
-            using var db = new SqlSugarClient(new ConnectionConfig
-            {
-                ConnectionString = MySqlControl.GetConnectionString(),
-                DbType = DbType.MySql,
-                IsAutoCloseConnection = true
-            });
-            return db.Queryable<MeasureBatchModel>().Where(model => model.Id == item.BatchId).First();
-        }
+        private MeasureBatchModel? GetMeasureBatch(ProjectARVRReuslt? item) =>
+            _offlineSource == null ? ArvrBatchHistory.Resolve(item) : null;
 
         private void ViewTestResult(ProjectARVRReuslt? item)
         {

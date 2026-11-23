@@ -5,6 +5,7 @@ import type {
   HomePayload,
   PluginDetail,
   PluginListResponse,
+  PublicBenchmarkComparison,
   ReleasesPayload,
   ToolsPayload,
   TransferFilesResponse,
@@ -16,6 +17,7 @@ import {
   deleteJson,
   getCsrfToken,
   getJson,
+  parseResponse,
   redirectToLogin,
   WEB_CLIENT_HEADER_NAME,
   WEB_CLIENT_HEADER_VALUE,
@@ -34,6 +36,15 @@ function queryString(params: Record<string, string | number | undefined>) {
 
 export function getHome(signal?: AbortSignal) {
   return getJson<HomePayload>('/api/site/home?view=compact', signal)
+}
+
+export async function getPublicBenchmarkComparison(includeRunId?: string, signal?: AbortSignal) {
+  const response = await fetch(`/api/benchmarks/comparison${queryString({ includeRunId })}`, {
+    signal,
+    credentials: 'omit',
+    headers: { Accept: 'application/json' },
+  })
+  return parseResponse<PublicBenchmarkComparison>(response, { redirectOnUnauthorized: false })
 }
 
 export function getReleases(params: {

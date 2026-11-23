@@ -20,7 +20,7 @@ namespace ColorVision.Engine.Templates.Jsons.FindCross;
 
 public sealed class ViewHandleLocalRgbCross : IResultHandleBase
 {
-    private readonly Func<int, IReadOnlyList<DetailCommonModel>> readDetails;
+    private readonly Func<int, IReadOnlyList<DetailCommonModel>>? readDetails;
     private static readonly ConditionalWeakTable<ImageView, RenderState> States = new();
     private sealed class RenderState
     {
@@ -29,7 +29,7 @@ public sealed class ViewHandleLocalRgbCross : IResultHandleBase
         internal ResultImagePlaceholderCache Placeholder = new();
     }
 
-    public ViewHandleLocalRgbCross() : this(id => DeatilCommonDao.Instance.GetAllByPid(id)) { }
+    public ViewHandleLocalRgbCross() { }
     internal ViewHandleLocalRgbCross(Func<int, IReadOnlyList<DetailCommonModel>> readDetails) => this.readDetails = readDetails;
     public override string Name => "十字 RGB 分离";
     public override List<ViewResultAlgType> CanHandle { get; } = [ViewResultAlgType.FindCross];
@@ -39,7 +39,7 @@ public sealed class ViewHandleLocalRgbCross : IResultHandleBase
     {
         if (result.ViewResults != null) return;
         LocalRgbCrossHistory history;
-        try { history = LocalRgbCrossHistory.Read(readDetails(result.Id), result.Id); }
+        try { history = LocalRgbCrossHistory.Read(readDetails?.Invoke(result.Id) ?? result.ReadPersistedDetails(DeatilCommonDao.Instance), result.Id); }
         catch (Exception error) { history = LocalRgbCrossHistory.Failure(error.Message); }
         result.ViewResults = new ObservableCollection<IViewResult> { history };
     }

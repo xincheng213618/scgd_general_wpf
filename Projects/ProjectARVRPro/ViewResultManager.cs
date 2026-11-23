@@ -1,7 +1,9 @@
 ﻿#pragma warning disable CA1822,CS8625
 using ColorVision.Common.MVVM;
 using ColorVision.Database;
+using ColorVision.Engine;
 using ColorVision.UI;
+using Microsoft.Data.Sqlite;
 using ProjectARVRPro.Exports;
 using ProjectARVRPro.Exports.Lux;
 using ProjectARVRPro.ImageExport;
@@ -100,6 +102,11 @@ namespace ProjectARVRPro
         }
         private bool _IsSaveImageReuslt;
 
+        [DisplayName("保存 VID 对焦图像"), Category("标记图")]
+        [Description("本地 VID 自动聚焦或微聚焦完成后，在结果输出目录保存带 VID 和最佳电机位置的标记图、清晰度曲线及采样 CSV。CSV 需要支持该功能的主程序。")]
+        public bool SaveVidFocusImages { get => _SaveVidFocusImages; set { _SaveVidFocusImages = value; OnPropertyChanged(); } }
+        private bool _SaveVidFocusImages;
+
         [DisplayName("标记图按流程模板名称命名"), Category("标记图")]
         [Description("开启后使用标记图文件名模板。同一目录中同名图片会被覆盖。")]
         [PropertyVisibility(nameof(IsSaveImageReuslt))]
@@ -173,6 +180,12 @@ namespace ProjectARVRPro
         [PropertyVisibility(nameof(IsSaveImageReuslt))]
         public bool ResultSnapshotIncludeOverlays { get => _ResultSnapshotIncludeOverlays; set { _ResultSnapshotIncludeOverlays = value; OnPropertyChanged(); } }
         private bool _ResultSnapshotIncludeOverlays = true;
+
+        [DisplayName("标记图使用热力图底图"), Category("标记图")]
+        [Description("开启后用按灰度范围生成的彩色热力图作为标记图底图，沿用标记图的文件名、格式、尺寸与混合标记设置。")]
+        [PropertyVisibility(nameof(IsSaveImageReuslt))]
+        public bool ResultSnapshotSaveHeatmap { get => _ResultSnapshotSaveHeatmap; set { _ResultSnapshotSaveHeatmap = value; OnPropertyChanged(); } }
+        private bool _ResultSnapshotSaveHeatmap;
 
         [Browsable(false), EditorBrowsable(EditorBrowsableState.Never)]
         [Newtonsoft.Json.JsonIgnore]
@@ -416,6 +429,12 @@ namespace ProjectARVRPro
 
     }
 
+    internal readonly record struct ArvrResultIdentity(int Id, int BatchId, string SN, string Code, string Model, DateTime CreateTime)
+    {
+        internal static ArvrResultIdentity From(ProjectARVRReuslt item) =>
+            new(item.Id, item.BatchId, item.SN, item.Code, item.Model, item.CreateTime);
+    }
+
     public class ViewResultManager : ViewModelBase,IDisposable
     {
         internal const int MaximumLiveResults = 1000;
@@ -434,16 +453,29 @@ namespace ProjectARVRPro
         public RelayCommand GenericQueryCommand { get; set; }
 
         private readonly SqlSugarClient _db;
+        private readonly string _historyReadConnectionString;
+        private readonly SemaphoreSlim _historyReadGate = new(1, 1);
 
-        public ViewResultManager()
+        public ViewResultManager() : this(SqliteDbPath, ConfigService.Instance.GetRequiredService<ViewResultManagerConfig>())
         {
-            Config = ConfigService.Instance.GetRequiredService<ViewResultManagerConfig>();
+        }
+
+        internal ViewResultManager(string databasePath, ViewResultManagerConfig config)
+        {
+            Config = config;
             QueryCommand = new RelayCommand(a => Query());
             GenericQueryCommand = new RelayCommand(a => GenericQuery());
 
+            _historyReadConnectionString = new SqliteConnectionStringBuilder
+            {
+                DataSource = databasePath,
+                Mode = SqliteOpenMode.ReadOnly,
+                DefaultTimeout = 5,
+                Pooling = false
+            }.ToString();
             _db = new SqlSugarClient(new ConnectionConfig
             {
-                ConnectionString = $"Data Source={SqliteDbPath};Default Timeout=5",
+                ConnectionString = $"Data Source={databasePath};Default Timeout=5",
                 DbType = DbType.Sqlite,
                 IsAutoCloseConnection = true
             });
@@ -485,32 +517,69 @@ namespace ProjectARVRPro
                     .First();
         }
 
-        public void Save(ProjectARVRReuslt item)
+        internal ProjectARVRReuslt? FindByOwnedBatch(MeasureBatchModel batch, string flowName, string? databaseKey)
+        {
+            if (batch.Id <= 0 || string.IsNullOrWhiteSpace(batch.Code) || string.IsNullOrWhiteSpace(databaseKey))
+                return null;
+
+            var displayed = ViewResluts.FirstOrDefault(item => item.BatchId == batch.Id && item.Code == batch.Code
+                && item.Model == flowName && item.BatchDatabaseKey == databaseKey);
+            return displayed ?? _db.Queryable<ProjectARVRReuslt>()
+                .Where(item => item.BatchId == batch.Id && item.Code == batch.Code && item.Model == flowName && item.BatchDatabaseKey == databaseKey)
+                .OrderBy(item => item.Id, OrderByType.Desc)
+                .First();
+        }
+
+        internal bool DeleteResult(ArvrResultIdentity selection)
+        {
+            if (selection.Id <= 0) return false;
+            int deleted = ResultJsonPayloadStorage.RunDatabaseMaintenance(() => _db.Deleteable<ProjectARVRReuslt>()
+                .Where(item => item.Id == selection.Id && item.BatchId == selection.BatchId && item.SN == selection.SN
+                    && item.Code == selection.Code && item.Model == selection.Model && item.CreateTime == selection.CreateTime)
+                .ExecuteCommand());
+            if (deleted == 0) return false;
+
+            var displayed = ViewResluts.FirstOrDefault(item => ArvrResultIdentity.From(item) == selection);
+            if (displayed != null) ViewResluts.Remove(displayed);
+            return true;
+        }
+
+        public void Save(ProjectARVRReuslt item) => Save(item, null);
+
+        internal void Save(ProjectARVRReuslt item, ResultSqliteWriteTiming? timing = null,
+            Func<int, IReadOnlyList<MeasureResultImgModel>>? readMeasureResults = null)
         {
             if (item == null) return;
 
             bool isNew = item.Id <= 0;
             if (isNew)
-                ResultImageDimensions.TryPopulate(item);
+                ResultImageDimensions.TryPopulate(item, readMeasureResults);
 
             bool savePayload = item.ViewResultJson != null;
-            ResultJsonPayloadStorage.RunDatabaseMaintenance(() =>
+            timing?.PrepareMs = timing.FinishStage();
+            bool saved = ResultJsonPayloadStorage.RunDatabaseMaintenance(() =>
             {
+                timing?.GateWaitMs = timing.FinishStage();
                 _db.Ado.BeginTran();
                 try
                 {
+                    timing?.BeginMs = timing.FinishStage();
+                    bool rowWritten = isNew;
                     if (isNew)
                     {
                         item.Id = _db.Insertable(item).ExecuteReturnIdentity();
                     }
                     else
                     {
-                        _db.Updateable(item).ExecuteCommand();
+                        rowWritten = _db.Updateable(item).ExecuteCommand() > 0;
                     }
 
-                    if (savePayload)
-                        ResultJsonPayloadStorage.SaveViewResultJson(_db, item.Id, item.ViewResultJson);
+                    timing?.RowMs = timing.FinishStage();
+                    if (rowWritten && savePayload)
+                        ResultJsonPayloadStorage.SaveViewResultJson(_db, item.Id, item.ViewResultJson, timing);
                     _db.Ado.CommitTran();
+                    timing?.CommitMs = timing.FinishStage();
+                    return rowWritten;
                 }
                 catch
                 {
@@ -521,22 +590,37 @@ namespace ProjectARVRPro
                 }
             });
 
+            if (!saved)
+            {
+                timing?.Succeeded = false;
+                return;
+            }
+
             if (isNew || !ViewResluts.Any(x => ReferenceEquals(x, item) || x.Id == item.Id))
                 AddLiveResult(ViewResluts, item);
+            timing?.PublicationMs = timing.FinishStage();
+            timing?.Succeeded = true;
         }
 
-        internal bool MarkResultProcessingCompleted(ProjectARVRReuslt item, DateTime completedAt)
+        internal bool MarkResultProcessingCompleted(ProjectARVRReuslt item, DateTime completedAt, ResultSqliteWriteTiming? timing = null)
         {
             ArgumentNullException.ThrowIfNull(item);
             item.ResultProcessingCompletedAt = completedAt;
+            timing?.PrepareMs = timing.FinishStage();
             if (item.Id <= 0)
                 return false;
 
             int updatedRows = ResultJsonPayloadStorage.RunDatabaseMaintenance(() =>
-                _db.Updateable<ProjectARVRReuslt>()
+            {
+                timing?.GateWaitMs = timing.FinishStage();
+                int rows = _db.Updateable<ProjectARVRReuslt>()
                     .SetColumns(result => result.ResultProcessingCompletedAt == completedAt)
                     .Where(result => result.Id == item.Id)
-                    .ExecuteCommand());
+                    .ExecuteCommand();
+                timing?.RowMs = timing.FinishStage();
+                return rows;
+            });
+            timing?.Succeeded = updatedRows > 0;
             return updatedRows > 0;
         }
 
@@ -599,6 +683,31 @@ namespace ProjectARVRPro
             return item.ViewResultJson;
         }
 
+        internal async Task<string?> ReadHistoricalViewResultJsonAsync(int id, CancellationToken cancellationToken)
+        {
+            await _historyReadGate.WaitAsync(cancellationToken).ConfigureAwait(false);
+            try
+            {
+                // Keep the gate until the synchronous SQLite read and decompression have finished.
+                string? json = await Task.Run(() =>
+                {
+                    using var db = new SqlSugarClient(new ConnectionConfig
+                    {
+                        ConnectionString = _historyReadConnectionString,
+                        DbType = DbType.Sqlite,
+                        IsAutoCloseConnection = true
+                    });
+                    return ResultJsonPayloadStorage.LoadViewResultJson(db, id);
+                }, cancellationToken).ConfigureAwait(false);
+                cancellationToken.ThrowIfCancellationRequested();
+                return json;
+            }
+            finally
+            {
+                _historyReadGate.Release();
+            }
+        }
+
         public IReadOnlyList<ProjectARVRReuslt> GetObjectiveTestFlowResults(int objectiveRecordId)
         {
             if (objectiveRecordId <= 0)
@@ -635,41 +744,38 @@ namespace ProjectARVRPro
         }
 
         public int SaveObjectiveTestResult(int currentRecordId, ProjectARVRReuslt result, ObjectiveTestResult objectiveTestResult)
+            => SaveObjectiveTestResult(currentRecordId, result, objectiveTestResult, null);
+
+        internal int SaveObjectiveTestResult(int currentRecordId, ProjectARVRReuslt result,
+            ObjectiveTestResult objectiveTestResult, ResultSqliteWriteTiming? timing)
         {
             if (result == null || objectiveTestResult == null) return currentRecordId;
 
             var record = ObjectiveTestResultRecord.Create(result, objectiveTestResult);
+            timing?.PrepareMs = timing.FinishStage();
             return ResultJsonPayloadStorage.RunDatabaseMaintenance(() =>
             {
-                if (currentRecordId > 0)
-                {
-                    var oldRecord = _db.Queryable<ObjectiveTestResultRecord>()
-                        .Where(x => x.Id == currentRecordId)
-                        .Select(x => new ObjectiveTestResultRecord
-                        {
-                            Id = x.Id,
-                            CreateTime = x.CreateTime,
-                            IsFinalized = x.IsFinalized,
-                        })
-                        .First();
-                    if (oldRecord != null)
-                    {
-                        record.Id = currentRecordId;
-                        record.CreateTime = oldRecord.CreateTime;
-                        record.IsFinalized = oldRecord.IsFinalized;
-                    }
-                }
-
+                timing?.GateWaitMs = timing.FinishStage();
                 _db.Ado.BeginTran();
                 try
                 {
-                    if (record.Id > 0)
-                        _db.Updateable(record).Where(x => x.Id == record.Id).ExecuteCommand();
-                    else
+                    timing?.BeginMs = timing.FinishStage();
+                    // Preserve the original session start and finalization state in SQLite.
+                    record.Id = currentRecordId;
+                    if (currentRecordId <= 0 || _db.Updateable(record)
+                        .IgnoreColumns(x => new { x.CreateTime, x.IsFinalized })
+                        .Where(x => x.Id == record.Id)
+                        .ExecuteCommand() == 0)
+                    {
+                        record.Id = 0;
                         record.Id = _db.Insertable(record).ExecuteReturnIdentity();
+                    }
 
-                    ResultJsonPayloadStorage.SaveObjectiveTestResultJson(_db, record.Id, record.ObjectiveTestResultJson);
+                    timing?.RowMs = timing.FinishStage();
+                    ResultJsonPayloadStorage.SaveObjectiveTestResultJson(_db, record.Id, record.ObjectiveTestResultJson, timing);
                     _db.Ado.CommitTran();
+                    timing?.CommitMs = timing.FinishStage();
+                    timing?.Succeeded = true;
                     return record.Id;
                 }
                 catch

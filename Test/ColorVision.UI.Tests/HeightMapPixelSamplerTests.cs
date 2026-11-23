@@ -136,6 +136,33 @@ public sealed class HeightMapPixelSamplerTests
     }
 
     [Fact]
+    public void Gray16SamplingPreservesWpfDisplayIntensityForEverySourceValue()
+    {
+        StaTest.Run(() =>
+        {
+            const int size = 256;
+            byte[] source = new byte[size * size * 2];
+            for (int value = 0; value <= ushort.MaxValue; value++)
+            {
+                source[value * 2] = (byte)value;
+                source[value * 2 + 1] = (byte)(value >> 8);
+            }
+            WriteableBitmap bitmap = CreateBitmap(size, size, PixelFormats.Gray16, source, size * 2);
+            var display = new FormatConvertedBitmap(bitmap, PixelFormats.Bgra32, null, 0);
+            byte[] bgra = new byte[size * size * 4];
+            display.CopyPixels(bgra, size * 4, 0);
+            byte[] expected = new byte[size * size];
+            for (int i = 0; i < expected.Length; i++)
+                expected[i] = bgra[i * 4];
+
+            var sample = InvokeSampler(bitmap, size, size);
+
+            Assert.Equal(expected, sample.Gray);
+            Assert.Null(sample.Alpha);
+        });
+    }
+
+    [Fact]
     public void ConvertBitmapToGray_UnpremultipliesPbgra32BeforeSampling()
     {
         StaTest.Run(() =>
@@ -205,6 +232,31 @@ public sealed class HeightMapPixelSamplerTests
             var sample = InvokeSampler(bitmap, 2, 2);
             Assert.Equal(new byte[] { 76, 150, 29, 255 }, sample.Gray);
             Assert.Equal(new byte[] { 0, 0, 0, 0 }, sample.Alpha);
+        });
+    }
+
+    [Theory]
+    [InlineData(0, 1, 187, 56)]
+    [InlineData(0, 11, 57, 24)]
+    [InlineData(0, 20, 240, 83)]
+    [InlineData(23, 229, 45, 151)]
+    public void Sample_PreservesLuminanceRoundingAtColorMidpoints(int blue, int green, int red, int expected)
+    {
+        StaTest.Run(() =>
+        {
+            byte[] source = new byte[3 * 3 * 3];
+            for (int offset = 0; offset < source.Length; offset += 3)
+            {
+                source[offset] = (byte)blue;
+                source[offset + 1] = (byte)green;
+                source[offset + 2] = (byte)red;
+            }
+            WriteableBitmap bitmap = CreateBitmap(3, 3, PixelFormats.Bgr24, source, 9);
+
+            var sample = InvokeSampler(bitmap, 2, 2);
+
+            Assert.Equal(4, sample.Gray.Length);
+            Assert.All(sample.Gray, value => Assert.Equal((byte)expected, value));
         });
     }
 

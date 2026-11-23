@@ -1,4 +1,6 @@
 #pragma warning disable CA1822,CA1834
+using ColorVision.Common.MVVM;
+using ColorVision.UI.Docking;
 using log4net;
 using System.Diagnostics;
 using System.IO;
@@ -10,7 +12,7 @@ using System.Windows.Threading;
 
 namespace ColorVision.Solution.Terminal
 {
-    public partial class TerminalControl : UserControl, IDisposable
+    public partial class TerminalControl : UserControl, IDisposable, IDockPanelTitleActionProvider
     {
         private enum TerminalLifecycleState
         {
@@ -23,18 +25,24 @@ namespace ColorVision.Solution.Terminal
 
         private const short DefaultTerminalColumns = 120;
         private const short DefaultTerminalRows = 30;
-        private const short MinTerminalColumns = 20;
-        private const short MinTerminalRows = 5;
-        private const short MaxTerminalColumns = 300;
-        private const short MaxTerminalRows = 200;
+        private const short MaxTerminalColumns = 1000;
+        private const short MaxTerminalRows = 500;
+        private const int MaxQueuedOutputChars = 256 * 1024;
+        private const int OutputBatchChars = 16 * 1024;
+
+        private enum UpdateKind { Text, Exit, Resize, Clear }
+
+        private readonly record struct PendingUpdate(UpdateKind Kind, string? Text = null, int ExitCode = 0);
 
         private static readonly ILog log = LogManager.GetLogger(typeof(TerminalControl));
 
         private ConPtyTerminal? _terminal;
         private TerminalScreenBuffer _screenBuffer = new(DefaultTerminalColumns, DefaultTerminalRows);
         private readonly object _outputLock = new();
-        private readonly Queue<(int SessionId, string Text)> _pendingOutput = new();
-        private int _flushQueued;
+        private readonly Queue<PendingUpdate> _pendingOutput = new();
+        private readonly bool _isProjectTerminal;
+        private int _queuedOutputChars;
+        private bool _flushQueued;
         private TerminalLifecycleState _terminalState = TerminalLifecycleState.Exited;
         private bool _disposed;
         private bool _initialShellStarted;
@@ -43,26 +51,54 @@ namespace ColorVision.Solution.Terminal
         private short _terminalCols = DefaultTerminalColumns;
         private short _terminalRows = DefaultTerminalRows;
         private bool _resizeQueued;
+        private bool _resizeAfterOutput;
         private int _terminalSessionId;
         private Action<string>? _outputReceivedHandler;
         private Action<int>? _processExitedHandler;
-
-        // Input tracking for command history
-        private readonly CommandHistory _commandHistory = new();
-        private StringBuilder _currentInput = new();
-        private int _inputCursorPos;
+        private readonly Application? _application;
 
         internal bool IsDisposed => _disposed;
+        internal string CurrentShell => _currentShell;
+        public IReadOnlyList<DockPanelTitleAction> TitleActions { get; }
 
-        private bool CanSendInput => _terminal != null && _terminalState == TerminalLifecycleState.Running;
+        private bool CanSendInput => _terminal != null &&
+            _terminalState is TerminalLifecycleState.Starting or TerminalLifecycleState.Running;
 
-        public TerminalControl()
+        public TerminalControl() : this(isProjectTerminal: false)
         {
+        }
+
+        internal TerminalControl(bool isProjectTerminal)
+        {
+            _isProjectTerminal = isProjectTerminal;
+            TitleActions =
+            [
+                new(new RelayCommand(_ => TerminalService.GetInstance().NewTerminal()), "\uE710", Properties.Resources.Terminal_NewTerminal),
+                new(new RelayCommand<UIElement>(anchor =>
+                {
+                    if (anchor != null)
+                        OpenActionsMenu(anchor);
+                }, anchor => anchor != null && !_disposed), "\uE713", Properties.Resources.Sol_Miv_Settings) { PassButtonAsParameter = true }
+            ];
             InitializeComponent();
 
+            _application = Application.Current;
+            if (_application != null)
+                _application.Exit += Application_Exit;
+
+            if (_isProjectTerminal)
+            {
+                MenuNewPowerShell.Visibility = Visibility.Collapsed;
+                MenuNewCmd.Visibility = Visibility.Collapsed;
+            }
+
             TerminalDisplay.UrlClicked += OnUrlClicked;
+            TerminalDisplay.FontMetricsChanged += QueueResizeToViewport;
+            TerminalDisplay.InputRequested += OnTerminalInputRequested;
             IsVisibleChanged += TerminalControl_IsVisibleChanged;
-            LayoutUpdated += TerminalControl_LayoutUpdated;
+            TerminalScrollViewer.ScrollChanged += TerminalScrollViewer_ScrollChanged;
+            TerminalRoot.IsKeyboardFocusWithinChanged += (_, _) =>
+                TerminalDisplay.SetInputFocus(TerminalRoot.IsKeyboardFocusWithin);
             UpdateTerminalStatus();
         }
 
@@ -90,20 +126,13 @@ namespace ColorVision.Solution.Terminal
             {
                 QueueInitialShellStart();
                 QueueResizeToViewport();
+                RenderBuffer();
             }
-        }
-
-        private void TerminalControl_LayoutUpdated(object? sender, EventArgs e)
-        {
-            if (_initialShellStarted || _disposed)
-                return;
-
-            QueueInitialShellStart();
         }
 
         private void QueueInitialShellStart()
         {
-            if (_disposed || _initialShellStarted || _initialShellStartQueued)
+            if (_disposed || _isProjectTerminal || _initialShellStarted || _initialShellStartQueued)
                 return;
 
             _initialShellStartQueued = true;
@@ -126,14 +155,13 @@ namespace ColorVision.Solution.Terminal
             return IsLoaded && IsVisible;
         }
 
-        private void MarkInitialShellStarted()
-        {
-            _initialShellStarted = true;
-            LayoutUpdated -= TerminalControl_LayoutUpdated;
-        }
+        private void MarkInitialShellStarted() => _initialShellStarted = true;
 
         private void FocusTerminalInput(bool force = false)
         {
+            if (ImeProxy.IsKeyboardFocused)
+                return;
+
             Dispatcher.BeginInvoke(DispatcherPriority.Input, () =>
             {
                 if (_disposed || !IsVisible)
@@ -145,11 +173,11 @@ namespace ColorVision.Solution.Terminal
                 if (!force && !TerminalRoot.IsKeyboardFocusWithin)
                     return;
 
-                TerminalScrollViewer.Focus();
-                ImeProxy.Focus();
                 Keyboard.Focus(ImeProxy);
             });
         }
+
+        private void OnTerminalInputRequested() => FocusTerminalInput(force: true);
 
         public void NotifyPanelActivated()
         {
@@ -157,42 +185,13 @@ namespace ColorVision.Solution.Terminal
                 return;
 
             QueueResizeToViewport();
-
-            if (!CanSendInput)
-            {
-                if (CanStartShellForVisibleControl() &&
-                    (_terminalState is TerminalLifecycleState.Exited or TerminalLifecycleState.Killed))
-                {
-                    MarkInitialShellStarted();
-                    StartShell();
-                }
-                else
-                {
-                    QueueInitialShellStart();
-                }
-            }
+            QueueInitialShellStart();
         }
 
         public void StartShell(string? workingDirectory = null, string? startupCommand = null)
         {
-            if (_disposed)
+            if (_isProjectTerminal)
                 return;
-
-            // StartShell may be called by RunScript before the newly-created dock panel reaches
-            // Loaded. Mark this as the initial shell so the queued Loaded callback cannot restart
-            // the shell and clear the first script's output.
-            MarkInitialShellStarted();
-            StopShell(TerminalLifecycleState.Killed);
-            ResetTrackedInput();
-
-            var terminalSize = CalculateTerminalSize();
-            _terminalCols = terminalSize.cols;
-            _terminalRows = terminalSize.rows;
-            _screenBuffer = new TerminalScreenBuffer(_terminalCols, _terminalRows);
-            int sessionId = ++_terminalSessionId;
-            ClearOutput(sessionId);
-
-            workingDirectory ??= GetDefaultWorkingDirectory();
 
             string commandLine;
             if (_currentShell == "cmd")
@@ -202,21 +201,61 @@ namespace ColorVision.Solution.Terminal
                     ? "powershell.exe -NoLogo -NoExit"
                     : $"powershell.exe -NoLogo -NoExit -EncodedCommand {Convert.ToBase64String(Encoding.Unicode.GetBytes(startupCommand))}";
 
+            _ = StartSessionAsync(commandLine, workingDirectory);
+        }
+
+        internal bool TryStartProjectCommand(string shell, string commandLine, string? workingDirectory)
+        {
+            if (!_isProjectTerminal || _disposed || CanSendInput)
+                return false;
+
+            _currentShell = shell;
+            _ = StartSessionAsync(commandLine, workingDirectory);
+            return true;
+        }
+
+        private async Task StartSessionAsync(string commandLine, string? workingDirectory)
+        {
+            if (_disposed)
+                return;
+
+            // StartShell may be called by RunScript before the newly-created dock panel reaches
+            // Loaded. Mark this as the initial shell so the queued Loaded callback cannot restart
+            // the shell and clear the first script's output.
+            MarkInitialShellStarted();
+            StopShell(TerminalLifecycleState.Killed);
+
+            var terminalSize = CalculateTerminalSize();
+            _terminalCols = terminalSize.cols;
+            _terminalRows = terminalSize.rows;
+            _screenBuffer = new TerminalScreenBuffer(_terminalCols, _terminalRows);
+            int sessionId = _terminalSessionId;
+            TerminalDisplay.ResetViewport();
+            RenderBuffer();
+
+            var terminal = new ConPtyTerminal();
+            _terminal = terminal;
+            _screenBuffer.ResponseReady += response => terminal.Write(response);
+            _outputReceivedHandler = text => OnConPtyOutput(sessionId, text);
+            _processExitedHandler = exitCode => OnConPtyExited(sessionId, exitCode);
+            terminal.OutputReceived += _outputReceivedHandler;
+            terminal.ProcessExited += _processExitedHandler;
+            SetTerminalState(TerminalLifecycleState.Starting);
             try
             {
-                SetTerminalState(TerminalLifecycleState.Starting);
-                _terminal = new ConPtyTerminal();
-                _outputReceivedHandler = text => OnConPtyOutput(sessionId, text);
-                _processExitedHandler = exitCode => OnConPtyExited(sessionId, exitCode);
-                _terminal.OutputReceived += _outputReceivedHandler;
-                _terminal.ProcessExited += _processExitedHandler;
-                _terminal.Start(commandLine, workingDirectory, _terminalCols, _terminalRows);
-                SetTerminalState(TerminalLifecycleState.Running);
-
-                log.Info($"Terminal: ConPTY started ({commandLine}) in {workingDirectory}");
+                workingDirectory ??= GetDefaultWorkingDirectory();
+                await terminal.StartAsync(commandLine, workingDirectory, _terminalCols, _terminalRows);
+                if (ReferenceEquals(_terminal, terminal))
+                {
+                    SetTerminalState(TerminalLifecycleState.Running);
+                    log.Info($"Terminal: ConPTY started ({_currentShell}) in {workingDirectory}");
+                }
             }
             catch (Exception ex)
             {
+                if (!ReferenceEquals(_terminal, terminal))
+                    return;
+
                 ReleaseTerminal();
                 SetTerminalState(TerminalLifecycleState.Exited);
                 AppendOutput($"启动终端失败: {ex.Message}\r\n");
@@ -224,78 +263,11 @@ namespace ColorVision.Solution.Terminal
             }
         }
 
-        public void SendCommand(string command)
-        {
-            if (_disposed)
-                return;
-
-            if (!CanSendInput)
-                StartShell();
-
-            SendText(command + "\r\n", trackInput: false);
-            ResetTrackedInput();
-        }
-
-        public void SendCommand(string command, string workingDirectory)
-        {
-            if (string.IsNullOrWhiteSpace(workingDirectory))
-            {
-                SendCommand(command);
-                return;
-            }
-
-            string changeDirectoryCommand = _currentShell == "cmd"
-                ? $"cd /d \"{workingDirectory.Replace("\"", "\"\"")}\" && {command}"
-                : $"Set-Location -LiteralPath '{workingDirectory.Replace("'", "''")}'; {command}";
-            SendCommand(changeDirectoryCommand);
-        }
-
-        public void SendCommandBatch(IReadOnlyList<TerminalCommandRequest> commands)
-        {
-            if (commands.Count == 0)
-                return;
-
-            SendCommand(BuildBatchCommand(commands, _currentShell));
-        }
-
-        internal static string BuildBatchCommand(IReadOnlyList<TerminalCommandRequest> commands, string shell)
-        {
-            if (string.Equals(shell, "cmd", StringComparison.OrdinalIgnoreCase))
-            {
-                return string.Join(" && ", commands.Select(command =>
-                    $"cd /d \"{command.WorkingDirectory.Replace("\"", "\"\"")}\"" +
-                    $" && echo ==== {EscapeCmdEcho(command.DisplayName)} ====" +
-                    $" && call {command.Command}"));
-            }
-
-            var commandBuilder = new StringBuilder("& { $ErrorActionPreference = 'Stop'; ");
-            foreach (TerminalCommandRequest command in commands)
-            {
-                string displayName = command.DisplayName.Replace("'", "''");
-                string workingDirectory = command.WorkingDirectory.Replace("'", "''");
-                commandBuilder.Append($"Write-Host '==== {displayName} ===='; ");
-                commandBuilder.Append($"Set-Location -LiteralPath '{workingDirectory}'; ");
-                commandBuilder.Append($"& {{ {command.Command} }}; ");
-                commandBuilder.Append($"if (-not $?) {{ throw '命令失败: {displayName}' }}; ");
-            }
-            commandBuilder.Append("}");
-            return commandBuilder.ToString();
-        }
-
-        private static string EscapeCmdEcho(string value)
-        {
-            return value
-                .Replace("^", "^^")
-                .Replace("&", "^&")
-                .Replace("|", "^|")
-                .Replace("<", "^<")
-                .Replace(">", "^>");
-        }
-
         public void RunScript(string filePath)
         {
             if (!File.Exists(filePath))
             {
+                MarkInitialShellStarted();
                 AppendOutput($"文件不存在: {filePath}\r\n");
                 return;
             }
@@ -375,146 +347,134 @@ namespace ColorVision.Solution.Terminal
 
         public void SendCtrlC()
         {
-            if (SendControlSequence("\x03"))
-                ResetTrackedInput();
+            if (CanSendInput)
+                SendTerminalInput("\x03");
         }
 
         private void OnConPtyOutput(int sessionId, string text)
         {
-            if (sessionId != _terminalSessionId)
-                return;
-
-            // Queue raw VT100 output for processing by TerminalScreenBuffer
             lock (_outputLock)
             {
-                _pendingOutput.Enqueue((sessionId, text));
+                while (sessionId == _terminalSessionId && _queuedOutputChars >= MaxQueuedOutputChars)
+                    Monitor.Wait(_outputLock);
+
+                if (sessionId != _terminalSessionId)
+                    return;
+
+                _pendingOutput.Enqueue(new PendingUpdate(UpdateKind.Text, text));
+                _queuedOutputChars += text.Length;
+                QueueOutputFlush();
             }
-            QueueOutputFlush(sessionId);
         }
 
         private void OnConPtyExited(int sessionId, int exitCode)
         {
-            // Write exit message directly into the screen buffer on UI thread
-            Dispatcher.BeginInvoke(() =>
+            lock (_outputLock)
             {
-                if (_disposed || sessionId != _terminalSessionId || _terminalState == TerminalLifecycleState.Killed)
+                if (sessionId != _terminalSessionId)
                     return;
 
-                ReleaseTerminal();
-                SetTerminalState(TerminalLifecycleState.Exited);
-
-                _screenBuffer.Write($"\r\n[终端已退出, 退出代码: {exitCode}]\r\n");
-                RenderBuffer();
-            });
+                _pendingOutput.Enqueue(new PendingUpdate(UpdateKind.Exit, ExitCode: exitCode));
+                QueueOutputFlush();
+            }
         }
 
         private void AppendOutput(string text)
         {
-            // For locally-generated messages (not from ConPTY)
-            Dispatcher.BeginInvoke(() =>
-            {
-                _screenBuffer.Write(text);
-                RenderBuffer();
-            });
-        }
-
-        private void QueueOutputFlush(int sessionId)
-        {
-            if (_disposed || Interlocked.Exchange(ref _flushQueued, 1) == 1)
-                return;
-
-            Dispatcher.BeginInvoke(DispatcherPriority.Normal, () =>
-            {
-                Interlocked.Exchange(ref _flushQueued, 0);
-
-                if (_disposed)
-                    return;
-
-                if (sessionId != _terminalSessionId)
-                {
-                    QueueOutputFlush(_terminalSessionId);
-                    return;
-                }
-
-                FlushPendingOutput(sessionId);
-            });
-        }
-
-        private void FlushPendingOutput(int sessionId)
-        {
-            string rawText;
             lock (_outputLock)
             {
-                if (_pendingOutput.Count == 0) return;
-                var sb = new StringBuilder();
-                while (_pendingOutput.Count > 0)
-                {
-                    var pendingOutput = _pendingOutput.Dequeue();
-                    if (pendingOutput.SessionId == sessionId)
-                        sb.Append(pendingOutput.Text);
-                }
-                rawText = sb.ToString();
+                _pendingOutput.Enqueue(new PendingUpdate(UpdateKind.Text, text));
+                _queuedOutputChars += text.Length;
+                QueueOutputFlush();
             }
+        }
 
-            if (rawText.Length == 0)
+        // Called under _outputLock. One bounded batch per dispatcher operation lets input and
+        // layout run while a process continues to print.
+        private void QueueOutputFlush()
+        {
+            if (_flushQueued)
                 return;
 
-            _screenBuffer.Write(rawText);
-            RenderBuffer();
+            _flushQueued = true;
+            Dispatcher.BeginInvoke(DispatcherPriority.Background, FlushPendingOutput);
+        }
+
+        private void FlushPendingOutput()
+        {
+            bool changed = false;
+            int processedChars = 0;
+            while (!_disposed && processedChars < OutputBatchChars)
+            {
+                PendingUpdate pending;
+                lock (_outputLock)
+                {
+                    if (!_pendingOutput.TryDequeue(out pending))
+                        break;
+                    _queuedOutputChars -= pending.Text?.Length ?? 0;
+                    Monitor.Pulse(_outputLock);
+                }
+
+                switch (pending.Kind)
+                {
+                    case UpdateKind.Resize:
+                        _resizeAfterOutput = false;
+                        changed |= ApplyViewportSize();
+                        break;
+                    case UpdateKind.Clear:
+                        changed |= ApplyClearOutput();
+                        break;
+                    case UpdateKind.Text:
+                        _screenBuffer.Write(pending.Text!);
+                        processedChars += pending.Text!.Length;
+                        changed = true;
+                        break;
+                    case UpdateKind.Exit:
+                        ReleaseTerminal();
+                        SetTerminalState(TerminalLifecycleState.Exited);
+                        _screenBuffer.Write($"\r\n[终端已退出, 退出代码: {pending.ExitCode}]\r\n");
+                        changed = true;
+                        break;
+                }
+            }
+
+            lock (_outputLock)
+            {
+                _flushQueued = false;
+                if (_pendingOutput.Count != 0)
+                    QueueOutputFlush();
+            }
+
+            if (changed && IsVisible)
+                RenderBuffer();
         }
 
         private void RenderBuffer()
         {
             var (lines, cursorLine, cursorCol) = _screenBuffer.RenderLines();
-            TerminalDisplay.UpdateContent(lines, cursorLine, cursorCol);
-            TerminalScrollViewer.InvalidateScrollInfo();
-
-            // Scroll to cursor after layout completes (Loaded priority runs after Render/Layout)
-            Dispatcher.BeginInvoke(DispatcherPriority.Render, () =>
-            {
-                if (_disposed)
-                    return;
-
-                ScrollToCursor();
-                UpdateImeProxyPosition();
-                TerminalDisplay.InvalidateVisual();
-            });
-        }
-
-        private void ScrollToCursor()
-        {
-            double viewportHeight = TerminalScrollViewer.ViewportHeight;
-            if (viewportHeight <= 0) return;
-
-            double cursorY = TerminalDisplay.CursorY;
-            double currentOffset = TerminalScrollViewer.VerticalOffset;
-
-            if (cursorY < currentOffset)
-                TerminalScrollViewer.ScrollToVerticalOffset(cursorY);
-            else if (cursorY + TerminalDisplay.LineHeight > currentOffset + viewportHeight)
-                TerminalScrollViewer.ScrollToVerticalOffset(cursorY + TerminalDisplay.LineHeight - viewportHeight);
+            TerminalDisplay.UpdateContent(lines, cursorLine, cursorCol,
+                _screenBuffer.CursorVisible && CanSendInput, _screenBuffer.IsAlternateScreen,
+                _screenBuffer.ScrollbackDiscarded, _screenBuffer.ScrollbackCount, _screenBuffer.Cols);
+            UpdateImeProxyPosition();
         }
 
         private void ClearOutput()
         {
-            ClearOutput(_terminalSessionId);
+            if (!QueueAfterPendingOutput(UpdateKind.Clear) && ApplyClearOutput())
+                RenderBuffer();
         }
 
-        private void ClearOutput(int sessionId)
+        private bool ApplyClearOutput()
         {
-            lock (_outputLock)
-            {
-                _pendingOutput.Clear();
-            }
-            _screenBuffer.Clear();
-            Dispatcher.BeginInvoke(() =>
-            {
-                if (_disposed || sessionId != _terminalSessionId)
-                    return;
+            if (CanSendInput && _screenBuffer.IsAlternateScreen)
+                return false;
 
-                TerminalDisplay.UpdateContent(new List<TerminalLine>(), 0, 0);
-                TerminalScrollViewer.ScrollToHome();
-            });
+            if (CanSendInput)
+                _screenBuffer.ClearDisplayedOutput();
+            else
+                _screenBuffer.Clear();
+            TerminalDisplay.ResetViewport();
+            return true;
         }
 
         private void KillShell()
@@ -524,25 +484,18 @@ namespace ColorVision.Solution.Terminal
 
         private void StopShell(TerminalLifecycleState finalState)
         {
-            _terminalSessionId++;
-
-            if (_terminal != null)
+            lock (_outputLock)
             {
-                try
-                {
-                    _terminal.Kill();
-                }
-                catch (Exception ex)
-                {
-                    log.Warn($"Terminal: kill shell failed: {ex.Message}");
-                }
-                ReleaseTerminal();
+                _terminalSessionId++;
+                _pendingOutput.Clear();
+                _queuedOutputChars = 0;
+                _resizeAfterOutput = false;
+                Monitor.PulseAll(_outputLock);
             }
+            ReleaseTerminal();
 
             if (_terminalState != TerminalLifecycleState.Disposed)
                 SetTerminalState(finalState);
-
-            ResetTrackedInput();
         }
 
         private void ReleaseTerminal()
@@ -560,7 +513,7 @@ namespace ColorVision.Solution.Terminal
             _terminal = null;
         }
 
-        private string GetDefaultWorkingDirectory()
+        internal static string GetDefaultWorkingDirectory()
         {
             var dirInfo = SolutionManager.GetInstance()?.CurrentSolutionExplorer?.DirectoryInfo;
             if (dirInfo?.Exists == true)
@@ -585,7 +538,7 @@ namespace ColorVision.Solution.Terminal
 
             MenuNewPowerShell.IsEnabled = !disposed;
             MenuNewCmd.IsEnabled = !disposed;
-            MenuClear.IsEnabled = !disposed;
+            MenuClear.IsEnabled = !disposed && (!CanSendInput || !_screenBuffer.IsAlternateScreen);
             MenuKill.IsEnabled = canStop;
         }
 
@@ -604,6 +557,13 @@ namespace ColorVision.Solution.Terminal
             QueueResizeToViewport();
         }
 
+        private void TerminalScrollViewer_ScrollChanged(object sender, ScrollChangedEventArgs e)
+        {
+            if (e.ViewportWidthChange != 0 || e.ViewportHeightChange != 0)
+                QueueResizeToViewport();
+            UpdateImeProxyPosition();
+        }
+
         private void QueueResizeToViewport()
         {
             if (_disposed || _resizeQueued)
@@ -619,12 +579,36 @@ namespace ColorVision.Solution.Terminal
 
         private void SynchronizeTerminalSize()
         {
-            if (_disposed)
+            if (_disposed || !IsVisible || _resizeAfterOutput)
                 return;
+
+            // Bytes already received were produced at the previous terminal width.
+            // Leave the resize behind those chunks.
+            _resizeAfterOutput = QueueAfterPendingOutput(UpdateKind.Resize);
+            if (!_resizeAfterOutput && ApplyViewportSize())
+                RenderBuffer();
+        }
+
+        private bool QueueAfterPendingOutput(UpdateKind kind)
+        {
+            lock (_outputLock)
+            {
+                if (_pendingOutput.Count == 0)
+                    return false;
+                _pendingOutput.Enqueue(new PendingUpdate(kind));
+                QueueOutputFlush();
+                return true;
+            }
+        }
+
+        private bool ApplyViewportSize()
+        {
+            if (_disposed || !IsVisible)
+                return false;
 
             var terminalSize = CalculateTerminalSize();
             if (terminalSize.cols == _terminalCols && terminalSize.rows == _terminalRows)
-                return;
+                return false;
 
             _terminalCols = terminalSize.cols;
             _terminalRows = terminalSize.rows;
@@ -642,16 +626,16 @@ namespace ColorVision.Solution.Terminal
                 }
             }
 
-            RenderBuffer();
+            return true;
         }
 
         private (short cols, short rows) CalculateTerminalSize()
         {
-            double width = TerminalScrollViewer.ViewportWidth;
+            double width = TerminalDisplay.ViewportWidth;
             if (double.IsNaN(width) || double.IsInfinity(width) || width <= 0)
                 width = TerminalScrollViewer.ActualWidth;
 
-            double height = TerminalScrollViewer.ViewportHeight;
+            double height = TerminalDisplay.ViewportHeight;
             if (double.IsNaN(height) || double.IsInfinity(height) || height <= 0)
                 height = TerminalScrollViewer.ActualHeight;
 
@@ -661,11 +645,13 @@ namespace ColorVision.Solution.Terminal
             if (width <= 0 || height <= 0)
                 return (_terminalCols, _terminalRows);
 
-            int cols = Math.Clamp((int)Math.Floor(width / charWidth), MinTerminalColumns, MaxTerminalColumns);
-            int rows = Math.Clamp((int)Math.Floor(height / lineHeight), MinTerminalRows, MaxTerminalRows);
+            int cols = Math.Clamp((int)Math.Floor(width / charWidth), 1, MaxTerminalColumns);
+            int rows = Math.Clamp((int)Math.Floor(height / lineHeight), 1, MaxTerminalRows);
             return ((short)cols, (short)rows);
         }
 
+
+        private void Application_Exit(object sender, ExitEventArgs e) => Dispose();
 
         public void Dispose()
         {
@@ -673,11 +659,14 @@ namespace ColorVision.Solution.Terminal
                 return;
 
             _disposed = true;
+            if (_application != null)
+                _application.Exit -= Application_Exit;
             SetTerminalState(TerminalLifecycleState.Disposed);
-            Interlocked.Exchange(ref _flushQueued, 0);
             TerminalDisplay.UrlClicked -= OnUrlClicked;
+            TerminalDisplay.FontMetricsChanged -= QueueResizeToViewport;
+            TerminalDisplay.InputRequested -= OnTerminalInputRequested;
             IsVisibleChanged -= TerminalControl_IsVisibleChanged;
-            LayoutUpdated -= TerminalControl_LayoutUpdated;
+            TerminalScrollViewer.ScrollChanged -= TerminalScrollViewer_ScrollChanged;
             StopShell(TerminalLifecycleState.Disposed);
             TerminalService.GetInstance().ClearTerminalControl(this);
             GC.SuppressFinalize(this);

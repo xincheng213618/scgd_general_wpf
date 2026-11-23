@@ -5,7 +5,6 @@ status: "current"
 summary: "Backend审计与NAS部署历史的来源、筛选total与summary统计、展示脱敏和保留边界；空审计可能是查询失败，历史成功不证明当前服务或完整恢复。"
 aliases: ["管理记录", "审计日志", "部署历史", "部署历史筛选", "AuditPage", "DeploymentHistoryPage", "get_audit_log_page", "query_deployment_history", "Write-WebDeploymentHistory", "api/admin/audit-log", "api/admin/deployments", "web-deploy-history.jsonl", "malformed_records", "history_retention", "summary.records", "summary.statuses", "summary.sources"]
 code_paths: ["Web/Backend/routes/admin_api.py", "Web/Backend/db_cache.py", "Web/Backend/services/deployment_history.py", "Web/DeploymentHistory.psm1", "Web/Deploy-Nas.ps1", "Web/Frontend/src/services/admin.ts", "Web/Frontend/src/pages/AuditPage.tsx", "Web/Frontend/src/pages/DeploymentHistoryPage.tsx", "Web/Frontend/src/utils/auditLog.ts", "Web/Frontend/src/utils/deploymentHistory.ts"]
-test_paths: ["Web/Backend/test_db_cache.py", "Web/Backend/test_contracts.py", "Web/Backend/test_deployment_history.py", "Web/Test-DeploymentHistory.ps1", "Web/Frontend/tests/auditLog.test.ts", "Web/Frontend/tests/deploymentHistory.test.ts"]
 related: ["delivery.backend", "delivery.backend-auth", "delivery.backend-retention", "delivery.backend-jobs", "delivery.backend-observability", "delivery.web-deployment"]
 ---
 
@@ -71,6 +70,5 @@ status/source按去空白、小写后的精确值过滤；缺status按unknown，
 
 ## 对照测试与验证缺口
 
-`test_db_cache.py` 覆盖审计共同筛选、精确total和越界末页；`test_contracts.py` 覆盖审计分页400及部署入口认证/分页/常规敏感字段投影。`test_deployment_history.py` 覆盖倒序、过滤、坏行计数、缺文件与常规路径移除；`Web/Test-DeploymentHistory.ps1` 使用临时目录验证追加裁剪、坏记录拒绝和失败dry-run不写历史。前端auditLog/deploymentHistory测试覆盖标签、未知值和证据不足文案。
 
 并发历史写入、非标准记录任意字段净化、数据库异常后的空200及真实服务恢复仍需分别验证，不能由检索命中或文档构建通过替代。

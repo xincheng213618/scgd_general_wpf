@@ -1,4 +1,5 @@
 ﻿using ColorVision.Engine.Services;
+using ColorVision.Engine.Services.Devices;
 using ColorVision.Engine.Services.Devices.Algorithm;
 using ColorVision.Engine.Services.Devices.Calibration;
 using ColorVision.Engine.Services.Devices.Camera;
@@ -21,6 +22,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Data;
+using System.Windows.Input;
 
 namespace ColorVision.Engine.PropertyEditor
 {
@@ -28,6 +30,7 @@ namespace ColorVision.Engine.PropertyEditor
     public class DeviceSourceTypeAttribute : Attribute
     {
         public Type DeviceType { get; }
+        public string? LegacyReferenceProperty { get; set; }
         public DeviceSourceTypeAttribute(Type deviceType)
         {
             DeviceType = deviceType;
@@ -36,6 +39,20 @@ namespace ColorVision.Engine.PropertyEditor
 
     public class DeviceNameEditor : IPropertyEditor
     {
+        private readonly Func<Type, IEnumerable<DeviceService>> findDevices;
+
+        public DeviceNameEditor() : this(type => ServiceManager.GetInstance().DeviceServices.Where(type.IsInstanceOfType))
+        {
+        }
+
+        internal DeviceNameEditor(Func<Type, IEnumerable<DeviceService>> findDevices) => this.findDevices = findDevices;
+
+        private sealed record DeviceChoice(DeviceService Device)
+        {
+            public string Code => Device.Code;
+            public string Label => $"{Device.Name} ({Code})";
+        }
+
         public DockPanel GenProperties(PropertyInfo property, object obj)
         {
             var rm = PropertyEditorHelper.GetResourceManager(obj);
@@ -51,24 +68,38 @@ namespace ColorVision.Engine.PropertyEditor
                 SelectedValuePath = "Code"
             };
             HandyControl.Controls.InfoElement.SetShowClearButton(combo, true);
-            combo.SetBinding(Selector.SelectedValueProperty, PropertyEditorHelper.CreateTwoWayBinding(obj, property));
-
-
-            Type? targetType = ResolveDeviceType(property, obj);
-
-            var ItemsSource = targetType == null ? new List<DeviceService>() : ServiceManager.GetInstance().DeviceServices.Where(d => targetType.IsInstanceOfType(d)).ToList();
-
-            combo.ItemsSource = ItemsSource;
-
-
+            var source = property.GetCustomAttribute<DeviceSourceTypeAttribute>();
+            Type? targetType = source?.DeviceType ?? ResolveDeviceType(obj);
+            List<DeviceService> devices = targetType == null ? [] : findDevices(targetType).ToList();
             string? code = property.GetValue(obj)?.ToString();
-            var selectedItem = ItemsSource.FirstOrDefault(x => x.Code == code);
-            if (selectedItem != null)
-                combo.SelectedItem = selectedItem;
+            DeviceService? selectedDevice;
+            string? displayedText = null;
+            if (source?.LegacyReferenceProperty is { } legacyProperty)
+            {
+                combo.SetResourceReference(FrameworkElement.StyleProperty, "ComboBoxPlus.Small");
+                string? legacy = obj.GetType().GetProperty(legacyProperty)?.GetValue(obj) as string;
+                selectedDevice = ScheduledDeviceJobHelper.ResolveDevice(devices, code, legacy, out bool ambiguous);
+                DeviceChoice[] choices = devices.Select(device => new DeviceChoice(device)).ToArray();
+                combo.IsTextSearchEnabled = false;
+                combo.DisplayMemberPath = nameof(DeviceChoice.Label);
+                combo.ItemsSource = choices;
+                var selected = choices.FirstOrDefault(choice => ReferenceEquals(choice.Device, selectedDevice));
+                combo.SelectedItem = selected;
+                displayedText = selected?.Label ?? code ?? legacy ?? string.Empty;
+                if (selected == null) combo.Text = displayedText;
+                if (ambiguous) combo.ToolTip = EngineLocalization.Get("Scheduler_DeviceReferenceAmbiguous");
+            }
+            else
+            {
+                combo.SetBinding(Selector.SelectedValueProperty, PropertyEditorHelper.CreateTwoWayBinding(obj, property));
+                combo.ItemsSource = devices;
+                selectedDevice = devices.FirstOrDefault(device => device.Code == code);
+                if (selectedDevice != null) combo.SelectedItem = selectedDevice;
+            }
 
             var button = new Button
             {
-                DataContext = selectedItem,
+                DataContext = selectedDevice,
                 ToolTip = Properties.Resources.Property
             };
             button.SetResourceReference(FrameworkElement.StyleProperty, "ButtonProperty");
@@ -76,16 +107,56 @@ namespace ColorVision.Engine.PropertyEditor
 
             combo.SelectionChanged += (s, e) =>
             {
-                button.DataContext = combo.SelectedItem;
+                DeviceChoice? selected = combo.SelectedItem as DeviceChoice;
+                button.DataContext = selected?.Device ?? combo.SelectedItem;
                 if (combo.SelectedValue is string selectedCode)
+                {
                     SetValueAndNotify(property, obj, selectedCode);
+                    if (selected != null)
+                    {
+                        displayedText = selected.Label;
+                        combo.ToolTip = null;
+                    }
+                }
             };
 
-            combo.LostFocus += (s, e) =>
+            combo.LostFocus += (s, e) => CommitText();
+            if (displayedText != null)
             {
-                if (combo.SelectedValue is not string && !string.IsNullOrWhiteSpace(combo.Text))
+                combo.PreviewKeyDown += (s, e) =>
+                {
+                    if (e.Key == Key.Enter && !combo.IsDropDownOpen) CommitText();
+                };
+                CommandManager.AddPreviewExecutedHandler(combo, (s, e) =>
+                {
+                    if (e.Command != HandyControl.Interactivity.ControlCommands.Clear) return;
+                    SaveCodeFromText(string.Empty);
+                    e.Handled = true;
+                });
+            }
+
+            void CommitText()
+            {
+                if (displayedText != null)
+                {
+                    string text = combo.Text ?? string.Empty;
+                    if (string.Equals(text, displayedText, StringComparison.Ordinal)) return;
+                    SaveCodeFromText(text);
+                }
+                else if (combo.SelectedValue is not string && !string.IsNullOrWhiteSpace(combo.Text))
+                {
                     SetValueAndNotify(property, obj, combo.Text);
-            };
+                }
+            }
+
+            void SaveCodeFromText(string text)
+            {
+                combo.SelectedIndex = -1;
+                combo.Text = text;
+                SetValueAndNotify(property, obj, string.IsNullOrWhiteSpace(text) ? string.Empty : text);
+                displayedText = text;
+                combo.ToolTip = null;
+            }
 
 
             DockPanel.SetDock(button, Dock.Right);
@@ -96,12 +167,8 @@ namespace ColorVision.Engine.PropertyEditor
             return dockPanel;
         }
 
-        private static Type? ResolveDeviceType(PropertyInfo property, object obj)
+        private static Type? ResolveDeviceType(object obj)
         {
-            var sourceTypeAttr = property.GetCustomAttribute<DeviceSourceTypeAttribute>();
-            if (sourceTypeAttr?.DeviceType != null)
-                return sourceTypeAttr.DeviceType;
-
             if (IsLocalCameraNode(obj))
                 return typeof(DeviceCamera);
 

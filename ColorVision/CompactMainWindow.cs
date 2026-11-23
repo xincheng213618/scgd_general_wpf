@@ -8,7 +8,6 @@ using System.Windows;
 using System.Windows.Automation;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
-using System.Windows.Media.Imaging;
 using System.Windows.Shell;
 using System.Windows.Threading;
 
@@ -27,7 +26,6 @@ public sealed class CompactMainWindow : MainWindow
     private VerticalAlignment _ordinaryMenuVerticalAlignment;
     private Thickness _ordinaryUpdateNotificationMargin;
     private VerticalAlignment _ordinaryUpdateNotificationVerticalAlignment;
-    private BitmapImage? _compactTitleBarPackageIcon;
 
     public CompactMainWindow() : base(useStandardWindowAppearance: false)
     {
@@ -75,7 +73,7 @@ public sealed class CompactMainWindow : MainWindow
             DockingManager1.Margin = new Thickness(0);
             SetCompactHeaderAlignment(true);
             CompactDragRegion.Visibility = Visibility.Visible;
-            _compactTitleBarPackageIcon = ThemeManagerExtensions.TryLoadPackageIcon(this);
+            Icon = ThemeManagerExtensions.TryLoadPackageIcon(this) ?? ThemeManagerExtensions.LoadDefaultWindowIcon();
             _compactTitleBarThemeManager = ThemeManager.Current;
             _compactTitleBarThemeManager.CurrentUIThemeChanged += ApplyCompactTitleBarTheme;
             ApplyCompactTitleBarTheme(_compactTitleBarThemeManager.CurrentUITheme);
@@ -136,18 +134,7 @@ public sealed class CompactMainWindow : MainWindow
         if (_compactTitleBarClosed || _compactTitleBar == null)
             return;
 
-        bool isDark = theme == Theme.Dark;
-        _compactTitleBar.ApplyTheme(isDark);
-        if (_compactTitleBarPackageIcon != null)
-        {
-            Icon = _compactTitleBarPackageIcon;
-        }
-        else
-        {
-            var icon = new BitmapImage(new Uri($"pack://application:,,,/ColorVision.Themes;component/Assets/Image/{(isDark ? "ColorVision1.ico" : "ColorVision.ico")}"));
-            icon.Freeze();
-            Icon = icon;
-        }
+        _compactTitleBar.ApplyTheme(theme == Theme.Dark);
     }
 
     private void CompactTitleBarConfigChanged(object? sender, PropertyChangedEventArgs e)
@@ -238,7 +225,6 @@ public sealed class CompactMainWindow : MainWindow
         _compactTitleBar = null;
         _compactTitleBarConfig = null;
         _compactTitleBarThemeManager = null;
-        _compactTitleBarPackageIcon = null;
         Closed -= CloseCompactTitleBar;
     }
 }

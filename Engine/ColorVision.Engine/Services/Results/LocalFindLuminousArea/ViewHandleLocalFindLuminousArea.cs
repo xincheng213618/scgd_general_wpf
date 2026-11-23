@@ -25,7 +25,7 @@ namespace ColorVision.Engine.Services.Results.LocalFindLuminousArea
              (string.IsNullOrEmpty(result.Version) && string.Equals(result.POITemplateName, "RobustV2", StringComparison.Ordinal)));
 
         public override void Load(ViewResultContext context, ViewResultAlg result) =>
-            result.ViewResults ??= new ObservableCollection<IViewResult>(AlgResultLightAreaDao.Instance.GetAllByPid(result.Id));
+            result.ViewResults ??= new ObservableCollection<IViewResult>(result.ReadPersistedDetails(AlgResultLightAreaDao.Instance));
 
         public override void Handle(ViewResultContext context, ViewResultAlg result)
         {

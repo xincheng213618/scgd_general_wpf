@@ -4,8 +4,7 @@ knowledge_type: "topic"
 status: "current"
 summary: "算法结果交接、已加载批次主记录查询与叠加显示：区分本地中立 Geometry/Overlay、Engine 历史 handler 和客户业务导出，保留来源与文档/revision 生命周期。"
 aliases: ["结果交接","算法结果管理","算法视图配置","历史结果查询","保存数据列","自动保存数据列","结果白色底图","原图缺失","结果尺寸恢复","persistent overlay","overlay 注册句柄","结果CSV","结果列表清空","ResultMessageBus","AlgorithmResultDataSaver","ViewAlgorithmConfig","AutoRefreshView","AutoSaveSideData","AlgorithmResultImageDimensions","算法有结果为什么没有叠加层","ViewResultAlg","ResultHandleRegistry","IViewResult","IResultHandleBase","CanHandle1","AlgorithmOverlayManager","本地算法结果叠加","AlgorithmOverlayRenderer","AlgorithmGeometryArtifact","AlgorithmOverlayArtifact","批次详情","已加载批次结果","InspectLoadedBatchResults","inspect_loaded_batch_results"]
-code_paths: ["Engine/ColorVision.Engine/Services/Core/ViewResultAlg.cs","Engine/ColorVision.Engine/Services/ResultHandleRegistry.cs","Engine/ColorVision.Engine/Abstractions/IResultHandlers.cs","Engine/ColorVision.Engine/Services/Devices/Algorithm/Views/AlgorithmView.xaml.cs","Engine/ColorVision.Engine/Services/Devices/Algorithm/Views/AlgorithmView.xaml","Engine/ColorVision.Engine/Services/Devices/Algorithm/Views/ViewAlgorithmConfig.cs","Engine/ColorVision.Engine/Abstractions/ViewConfigBase.cs","Engine/ColorVision.Engine/Services/Results/ResultMessageBus.cs","Engine/ColorVision.Engine/Services/Results/AlgorithmResultDataSaver.cs","Engine/ColorVision.Engine/Services/Devices/Algorithm/AlgorithmResultImageDimensions.cs","Engine/ColorVision.Engine/Services/Core/ResultImagePresentation.cs","Engine/ColorVision.Engine/Services/Devices/Algorithm/DisplayAlgorithmManager.cs","Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalFindCrossNode.cs","Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalFindLuminousAreaNode.cs","UI/ColorVision.Algorithms/AlgorithmResults.cs","UI/ColorVision.ImageEditor/Algorithms/AlgorithmOverlayRenderer.cs","UI/ColorVision.ImageEditor/Algorithms/AlgorithmOverlayManager.cs","UI/ColorVision.ImageEditor/Contexts/ImageProcessingContext.cs","UI/ColorVision.ImageEditor/ImageView.xaml.cs","UI/ColorVision.ImageEditor/Operations/ImageOperationCoordinator.cs","Engine/ColorVision.Engine/Dao/MeasureBatchPage.xaml.cs","Engine/ColorVision.Engine/Dao/CopilotLoadedBatchResultsReader.cs","Engine/ColorVision.Engine/Dao/CopilotMeasurementResultContextProvider.cs","Engine/ColorVision.Engine/Services/Core/ViewResultImage.cs","ColorVision/Copilot/Capabilities/CopilotLoadedBatchResultsInspectionService.cs","ColorVision/Copilot/Capabilities/CopilotLoadedBatchResultsInspectionService.Cursor.cs","ColorVision/Copilot/Agent/Tools/Application/CopilotInspectLoadedBatchResultsTool.cs","ColorVision/Copilot/Mcp/CopilotMcpToolEnvironment.LoadedBatchResults.cs","ColorVision/Copilot/Mcp/CopilotMcpToolDispatcher.LoadedBatchResults.cs","ColorVision/Copilot/Skills/colorvision-database-operations/SKILL.md","UI/ColorVision.Common/Interfaces/Copilot/CopilotBusinessContextBuilder.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/AlgorithmResultOverlayTests.cs","Test/ColorVision.UI.Tests/FindCrossResultOverlayTests.cs","Test/ColorVision.UI.Tests/LocalFindCrossNodeTests.cs","Test/ColorVision.UI.Tests/LocalFindLuminousAreaNodeTests.cs","Test/ColorVision.UI.Tests/AlgorithmResultImageDimensionsTests.cs","Test/ColorVision.UI.Tests/ResultMessageBusTests.cs","Test/ColorVision.UI.Tests/AlgorithmOverlayManagerTests.cs","Test/ColorVision.UI.Tests/CopilotLoadedBatchResultsWorkflowTests.cs","Test/ColorVision.UI.Tests/CopilotLoadedBatchResultsSourceTests.cs","Test/ColorVision.Copilot.Tests/CopilotLoadedBatchResultsServiceTests.cs","Test/ColorVision.Copilot.Tests/CopilotLoadedBatchResultsToolTests.cs","Test/ColorVision.UI.Tests/CopilotLoadedBatchResultReferenceContextTests.cs"]
+code_paths: ["Engine/ColorVision.Engine/Services/Core/ViewResultAlg.cs","Engine/ColorVision.Engine/Services/ResultHandleRegistry.cs","Engine/ColorVision.Engine/Abstractions/IResultHandlers.cs","Engine/ColorVision.Engine/Services/Devices/Algorithm/Views/AlgorithmView.xaml.cs","Engine/ColorVision.Engine/Services/Devices/Algorithm/Views/AlgorithmView.xaml","Engine/ColorVision.Engine/Services/Devices/Algorithm/Views/ViewAlgorithmConfig.cs","Engine/ColorVision.Engine/Abstractions/ViewConfigBase.cs","Engine/ColorVision.Engine/Services/Results/ResultMessageBus.cs","Engine/ColorVision.Engine/Services/Results/AlgorithmResultPresenter.cs","Engine/ColorVision.Engine/Services/Results/AlgorithmResultDataSaver.cs","Engine/ColorVision.Engine/Services/Results/AlgorithmSideDataFiles.cs","Engine/ColorVision.Engine/Templates/POI/AlgorithmImp/PoiHistoryDetails.cs","Engine/ColorVision.Engine/Services/Devices/Algorithm/AlgorithmResultImageDimensions.cs","Engine/ColorVision.Engine/Services/Core/ResultImagePresentation.cs","Engine/ColorVision.Engine/Services/Devices/Algorithm/DisplayAlgorithmManager.cs","Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalFindCrossNode.cs","Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalFindLuminousAreaNode.cs","UI/ColorVision.Algorithms/AlgorithmResults.cs","UI/ColorVision.ImageEditor/Algorithms/AlgorithmOverlayRenderer.cs","UI/ColorVision.ImageEditor/Algorithms/AlgorithmOverlayManager.cs","UI/ColorVision.ImageEditor/Contexts/ImageProcessingContext.cs","UI/ColorVision.ImageEditor/ImageView.xaml.cs","UI/ColorVision.ImageEditor/Operations/ImageOperationCoordinator.cs","Engine/ColorVision.Engine/Dao/MeasureBatchPage.xaml.cs","Engine/ColorVision.Engine/Dao/CopilotLoadedBatchResultsReader.cs","Engine/ColorVision.Engine/Dao/CopilotMeasurementResultContextProvider.cs","Engine/ColorVision.Engine/Services/Core/ViewResultImage.cs","ColorVision/Copilot/Capabilities/CopilotLoadedBatchResultsInspectionService.cs","ColorVision/Copilot/Capabilities/CopilotLoadedBatchResultsInspectionService.Cursor.cs","ColorVision/Copilot/Agent/Tools/Application/CopilotInspectLoadedBatchResultsTool.cs","ColorVision/Copilot/Mcp/CopilotMcpToolEnvironment.LoadedBatchResults.cs","ColorVision/Copilot/Mcp/CopilotMcpToolDispatcher.LoadedBatchResults.cs","ColorVision/Copilot/Skills/colorvision-database-operations/SKILL.md","UI/ColorVision.Common/Interfaces/Copilot/CopilotBusinessContextBuilder.cs"]
 related: ["engine.index","engine.mqtt","engine.devices","ui.image-editor","algorithms.platform","algorithms.find-cross","algorithms.find-light-area","algorithms.arvr"]
 ---
 
@@ -27,16 +26,18 @@ related: ["engine.index","engine.mqtt","engine.devices","ui.image-editor","algor
 
 ## 接收结果与查询历史
 
-`AlgorithmView` 关联 `DeviceAlgorithm` 时订阅该设备的 MQTT 回包和本地 `ResultMessageBus`；无设备参数的视图不会建立这两种实时订阅。
+`AlgorithmView` 关联 `DeviceAlgorithm` 时订阅 `ResultMessageBus`。手动 MQTT 算法和旧 Flow 的持久化结果由原请求在成功完成时发布，通知携带设备实例和请求时的数据库来源。无设备参数的视图用于历史查询。
 
 | 入口 | 接受与加载条件 |
 | --- | --- |
-| 远端回包 | 设备 Code 精确匹配且 `Data.MasterId` 可转换为正数，随后回查 `AlgResultMasterDao`；这段接收逻辑不以回包 Code 或 EventName 作成功门禁 |
-| 本地结果消息 | ResultKind 为 `algorithm`；Route 为 `local-flow` 时不按设备 Code 过滤，其他通知仍要求 Route 为 `algorithm` 且设备 Code 精确匹配。随后按 MasterId 回查主表，不从消息直接取得像素或明细 |
+| 远端回包 | 原请求匹配回复路由和消息 ID，明确返回 `Code=0` 并给出正数 `Data.MasterId` 时，才通知对应设备的结果视图 |
+| 本地结果消息 | ResultKind 为 `algorithm`。Route 为 `local-flow` 时跨算法页显示，Route 为 `algorithm` 时要求设备 Code 精确匹配。视图按通知携带的数据库与 MasterId 查询主表 |
 | 工具栏 **查询** | 先清当前列表，直接按主表 ID 排序加载；默认倒序、最多 50 条，按 `Count` 完整加载，`Count<=0` 不限条数；不自动限定当前设备或批次 |
 | **高级查询** | 打开主结果表的通用查询窗口；按用户条件和查询数量完整加载，与实时消息筛选分开，不受实时结果保留上限限制 |
 
-回查找不到主记录时跳过并记日志，没有自动重试；加载成功后通过 Dispatcher 排队插入列表，执行前仍检查视图/设备是否已释放。视图按主记录 ID 去重，重复通知不重复创建驻留结果或自动保存数据列。通知到达、数据库可读、列表插入和选中展示不是一个事务；本地消息的 `Code=0` 是固定信封值，算法成败看主记录 `ResultCode`。
+实时回查找不到主记录时记日志。后台读表后通过 Dispatcher 插入列表，查库和插入之前都复核设备与数据库来源。同一连接来源的主记录 ID 只插入一次。切库后，新库同 ID 的实时记录会替换列表里的旧记录。通知到达、数据库可读、列表插入和选中展示各有完成时点。本地消息的 `Code=0` 是固定信封值，算法成败看主记录 `ResultCode`。
+
+切库后会丢弃旧连接的实时通知。普通查询和高级查询在打开时固定数据库连接，读到的主记录都携带该来源。内置处理器用主记录的连接读取明细、批次编号和底图尺寸，自动保存的数据列也使用这份明细。
 
 纯本地算法和文件节点不绑定设备：结果主表的设备代码为空，通知使用 `ResultRoutes.LocalFlow`（`local-flow`），保留 `SerialNumber`、`NodeId`、`ZIndex` 和主结果引用。`LocalPoiNode` 等纯本地算法完成并发布持久化结果后，已订阅的算法详情（包括默认算法）自动新增记录，沿用自动选中、去重和历史容量设置；即使详情尚未显示也能接收。本地算法通知不按设备 Code 过滤，也不修改主表设备归属；文件节点的图像通知不进入算法列表。从流程批次结果或普通历史查询加载时仍使用同一套 DAO 和 handler。相机、校正及服务节点继续采用各自的设备路由。
 
@@ -45,7 +46,7 @@ related: ["engine.index","engine.mqtt","engine.devices","ui.image-editor","algor
 | 配置 | 默认值与作用 |
 | --- | --- |
 | `InsertAtBeginning` / `AutoRefreshView` | 均为 true；实时结果插到开头并选中新项，关闭自动刷新只阻止自动选中，不阻止插入 |
-| `AutoSaveSideData` | false；开启后，实时新增结果在刷新步骤后调用数据列保存；刷新或 handler 抛错可能阻断后续保存 |
+| `AutoSaveSideData` | false；开启后，实时新增结果在刷新步骤后调用数据列保存。保存失败记录结果 ID 和目标目录，后续结果继续处理 |
 | `SaveSideDataDirPath` | 桌面；只给自动数据列保存提供目标目录，不代表每个 handler 都会写出有效数据 |
 | `Count` / `OrderByType` | 50 / Desc；控制普通历史查询，不是实时结果列表的容量上限 |
 | `MaxHistoryCount`（实时结果保留上限） | 500，至少 1 条；实时新增结果时按此上限裁剪当前列表，修改后也立即裁剪当前列表；搜索加载时不裁剪 |
@@ -56,7 +57,7 @@ related: ["engine.index","engine.mqtt","engine.devices","ui.image-editor","algor
 
 手动查询直接填充列表，不走实时新增的自动选中/自动保存流程。清空按钮和删除键只修改内存列表，不删除数据库记录或原文件，之后查询仍可能看到这些结果。
 
-搜索时按查询设置完整加载，可以超过默认 500 条实时保留上限；之后有新实时记录加入，就将同一个列表收回到上限，旧搜索记录也会被淘汰。裁剪按最小主记录 ID 淘汰，表头排序与插入方向不改变规则，晚到的旧通知不会挤掉上限内已保留的较新结果。裁剪选中行会解除选择并清理侧栏和图像，自动刷新开启时再选择新结果。右键菜单与命令按需创建，释放视图时清空驻留结果与去重索引。`ResultHistoryTests` 覆盖实时容量、排序后的淘汰、重复通知、配置兼容、完整搜索后恢复实时上限和释放边界。
+搜索时按查询设置完整加载，可以超过默认 500 条实时保留上限；之后有新实时记录加入，就将同一个列表收回到上限，旧搜索记录也会被淘汰。裁剪按最小主记录 ID 淘汰，表头排序与插入方向不改变规则，晚到的旧通知不会挤掉上限内已保留的较新结果。裁剪选中行会解除选择并清理侧栏和图像，自动刷新开启时再选择新结果。右键菜单与命令按需创建，释放视图时清空驻留结果与去重索引。
 
 ## Engine 历史结果契约
 
@@ -68,11 +69,13 @@ related: ["engine.index","engine.mqtt","engine.devices","ui.image-editor","algor
 | `IResultHandleBase` | 类型匹配、按需加载明细、表格/叠图展示、可选侧边导出 |
 | 项目结果模型 | 客户判定、字段映射和 CSV/MES/Socket 输出 |
 
-`AlgorithmView.listView1_SelectionChanged` 从 `ResultHandles` 取第一个满足 `CanHandle1(result)` 的 handler，然后依次调用 `Load(context, result)`、准备图像坐标空间、`Handle(context, result)`。默认 `CanHandle1` 判断 `CanHandle.Contains(result.ResultType)`，V2 等 handler 可以覆写它并检查结果版本。
+设备算法视图和批次详情的算法页共用 `AlgorithmResultPresenter`。它从 `ResultHandles` 取第一个满足 `CanHandle1(result)` 的 handler，依次调用 `Load(context, result)`、准备图像坐标空间和 `Handle(context, result)`。默认 `CanHandle1` 判断 `CanHandle.Contains(result.ResultType)`，V2 等 handler 可以覆写它并检查结果版本。
 
-主结果与明细的关系是：`AlgResultMasterModel → ViewResultAlg → ResultHandleRegistry/CanHandle1 → Load/DAO → IViewResult → Handle/表格/图元`。不匹配时会清空图像，而不是随意选一个 handler。多个 handler 的匹配条件冲突会受到集合顺序影响，不能以“都能处理同一枚举”作为正确注册。选择变化先清空明细绑定和侧边文本，随后才匹配和加载；`CanHandle1`、`Load`、图像准备或 `Handle` 抛错没有此入口的逐阶段捕获/回滚。尤其 `Load` 发生在清理旧图之前，加载失败时旧底图可能仍在，不能把它当作当前记录的图像。
+主结果经 `AlgResultMasterModel → ViewResultAlg → ResultHandleRegistry/CanHandle1 → Load/DAO → IViewResult → Handle/表格/图元` 交给显示视图。集合顺序决定匹配到的第一个 handler，找不到匹配项时清空图像。设备算法视图切换选择时先清空明细和侧边文本，仍可复用兼容位图。批次详情切换时先清空该页的算法图像和明细，初次加载由选择事件显示首行，取消选择或离开页面时清除该结果的展示。匹配、加载、图像准备、处理或当前图像打开失败时，清除底图、图元和明细，并显示失败记录 ID。日志记录该 ID、批次、结果类型和失败阶段。同一路径的多条设备结果可以接续同一次图像打开。较早选择的失败回调只处理仍归它所有的结果和图像。
 
 Copilot 的 `InspectLoadedBatchResults`／`inspect_loaded_batch_results` 只读取已打开并注册的 `MeasureBatchPage` 详情页内存主记录。自动上下文已提供完整有效 `source_ref`／`expected_source_instance_id` 对时，优先原样用于该页读取；否则省略 `source_ref` 分页发现全部已注册来源，再用目录返回的精确绑定读取。需要单条记录时再传该来源返回的 `result_ref`。这些32位十六进制对象引用不是批次 ID、结果 ID、名称或文件路径，不能从当前激活窗口、选中行或其他业务编号猜测，也不回退到另一个批次。该范围不包括未打开的历史数据库记录、设备算法视图的全部结果或客户项目判定。
+
+批次详情使用该批次绑定的数据库读取图像和算法主记录，并把连接传给算法明细、底图尺寸恢复和数据列导出。旧入口传入未绑定批次时，首次可用的已验证连接成为该批次的读取来源。切库后重新打开原批次仍查询原库，原库不可用时显示可读取的记录并记日志。
 
 `max_items` 默认40、范围1–100；非空 `cursor` 最多4,096字符，须原样续传。`source_ref` 必须同时提供 `expected_source_instance_id`，目录查询也可传该标识以绑定注册表；`result_ref` 必须属于所选来源，且不能与 cursor 并用。目录与结果行分别按 `source_ref`／`result_ref` Ordinal 升序分页，游标绑定注册表来源、查询模式、对应对象集合 revision、所选批次身份和实际交付末行，分页大小可以改变。每页最多18,000字符完整 JSON，预算不足时只移除尚未交付的尾行，再从实际末行续读。
 
@@ -87,6 +90,8 @@ Copilot 的 `InspectLoadedBatchResults`／`inspect_loaded_batch_results` 只读�
 自动测量结果上下文的固定来源 ID 保持 `measurement-results`。有效详情页快照从已有 registration token 一次取得 `LoadedBatchSourceInstanceId`／`LoadedBatchSourceRef`，正文在固定说明之后、长 metadata 之前以 `Loaded batch result source: ` 加完整 JSON 输出对应工具参数对；历史列表、legacy 快照、半对或无效引用不输出绑定。采集引用不创建／重新注册来源；卸载、关闭或模型改变后也不能用旧 rows 重绑。历史聊天附件中的绑定可能已过期，须由正式工具再次核验，失效后重新发现，不能按批次 ID 回退。
 
 本地 Flow 节点失败仍可能产生诊断主记录：`LocalFindLuminousAreaNode` / `LocalFindCrossNode` 在检测拒绝或结果校验失败时尝试保存非零 `ResultCode` 的主记录并发布，随后节点失败；不会把这条记录写成下游有效 `MasterValue`。前置错误、数据库或发布失败可能更早中断，不能保证每次失败都出现在结果页。成功/失败明细、文件和事务规则分别见[发光区定位](../algorithms/templates/find-light-area.md)与[十字定位](../algorithms/detectors/find-cross.md)。
+
+本地十字定位、RGB 十字和圆环鬼影都从已捕获的批次连接读取持久化输入并写入结果。成功通知和 FindCross 的失败诊断通知携带该连接。设备视图只采纳当前连接所属的通知，原库的结果仍可从原批次详情读取。
 
 ## 注册与手动算法发现的区别
 
@@ -108,6 +113,8 @@ Copilot 的 `InspectLoadedBatchResults`／`inspect_loaded_batch_results` 只读�
 
 历史结果完成切图后，右键本地算法取得的帧必须对应当前 `ViewBitmapSource`。ImageView 在取帧时会核对缓存所属的源图对象；源图已替换而缓存仍指向上一条结果时，先使旧 revision 失效并从当前位图重建帧。
 
+`PoiHistoryDetails` 仅在数据库查询和整批明细转换成功后缓存 POI、实时 POI 和 KB 明细。明细不可用时仍显示该结果可读取的图像，同时提示检查数据库连接或运行日志。重新选择结果或保存数据列会重试。读取失败时不发布数据列，查询成功但没有明细时可按原格式导出表头。
+
 客户项目可以有自己的历史图片策略，例如保存原图/标注图的回退。不要把某个项目的策略当成 Engine 全局契约；项目页面和项目测试是该策略的权威入口。
 
 ## 保存数据列与导出图像
@@ -118,7 +125,11 @@ Copilot 的 `InspectLoadedBatchResults`／`inspect_loaded_batch_results` 只读�
 | 工具栏保存图标 | 要求有选中项，但 CSV 导出的是当前 `ViewResults` 全部主记录；追加写入并再次写表头，同时尝试将当前 `ImageShow.Source` 保存为同名 PNG，不包含独立画布叠图 |
 | 结果行右键 **导出** | `ViewResultAlg.Export` 只接受 CIE 文件并打开 `ExportCVCIE`；不是主表 CSV、客户 MES 或所有结果明细的通用导出 |
 
-保存数据列的可用性只检查是否匹配 handler；基类 `SideSave` 是空实现，所以按钮可用、方法返回都不证明文件已生成。多条保存按顺序调用，没有逐项异常隔离或整批回滚。工具栏 CSV 保留默认主表列名和顺序，显示列调整不影响导出。逗号、引号和换行保留在对应字段内。CSV 与 PNG 分别保存。
+保存数据列由匹配的 handler 决定输出。基类 `SideSave` 为空，方法返回仍需核对文件。手动保存逐条处理，失败时继续导出其余记录，完成后汇总失败 ID 并记录详细日志。工具栏 CSV 保留默认主表列名和顺序，显示列调整不影响导出。逗号、引号和换行保留在对应字段内。CSV 与 PNG 分别保存。
+
+`POI_Y`、`POI_XYZ`、实时 POI 和 KB 数据列在名称可用时沿用原文件名。已有文件受保护，后续导出使用 `原名_result-类型-ID`，同一结果再次导出按 `-2`、`-3` 递增保留各份文件。KB 的 CSV 和标注图使用同一后缀，暂存写完后最后发布 CSV。缺少标注图或配对文件写入失败时，保存入口会报告失败。实时 POI 和 KB 原始数据导出的 `PoiName`、`Value` 各占一列，读取 CSV 时可完整取得原字段文本，包括 JSON、逗号、引号和换行。
+
+Ghost2.0、MTF2.0 和 SFR 寻边也按结果保留独立文件。Ghost2.0 每份 JSON 只包含一条完整原始结果。SFR 寻边的测点读取或解析失败时保留可读图像，提示重试并暂停该条导出。POI 分析仍按批次追加 CSV，新文件只写一次表头，`Content` 和 `Value` 各占一列。
 
 ## 统一算法 overlay 是另一条链
 
@@ -150,14 +161,4 @@ Copilot 的 `InspectLoadedBatchResults`／`inspect_loaded_batch_results` 只读�
 
 ## 验证入口与缺口
 
-| 测试 | 已有断言范围 |
-| --- | --- |
-| `AlgorithmResultOverlayTests` / `FindCrossResultOverlayTests` | 多边形笔刷，以及十字历史叠图的原始中心解析与回退 |
-| `ResultImagePresentationTests` / `AlgorithmResultImageDimensionsTests` | 尺寸 JSON、占位缓存、路径/ZIndex/批次尺寸选择；不访问真实数据库 |
-| `ResultMessageBusTests` | 进程内信封字段与顺序退订；不覆盖已排队 UI 回调、DAO 或实际展示 |
-| `AlgorithmOverlayManagerTests` | transient/persistent、同名替换、后台 facade 清理、较旧 revision 清理与新注册保护；部分用例仅测试 store 回滚 |
-| 本地 FindCross / FindLuminousArea 节点测试 | 使用替身核对诊断主记录、发布与下游引用；不等于真实 native、数据库及图像页全链验收 |
-
-已加载批次读取的离线验证入口是 `CopilotLoadedBatchResultsWorkflowTests`：真实详情页注册后沿默认 Engine reader、原生共享调用与 MCP 读取未选中记录，核对精确对象引用、同内部 ID 替换、卸载失效、原始耗时／时间、隐私边界与不改变选择。这些测试不代表真实数据库、设备或模型验收。
-
-本页列出的测试覆盖上述局部边界；handler 扫描失败、条件重叠、Load/Handle 中断、实时重复消息、查询范围和各导出路径仍需对应隔离验证。真实数据库、设备与项目输出需要单独验收，文档和工具校验不能替代运行结果。
+结果验收沿实际 handler、批次查询和导出链核对结果归属、图像、叠加生命周期和失败恢复。真实数据库、设备及项目输出需分别核对。

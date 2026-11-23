@@ -17,12 +17,14 @@ public partial class EditPG : Window
     private readonly ConfigPG target;
     private readonly DisplayPGConfig? displayTarget;
     private readonly string authorizationResourceId;
+    private readonly (DevicePG Device, DeviceConfigurationTarget Target)? openingDevice;
+    internal DeviceConfigurationTarget? OpeningConfigurationTarget => openingDevice?.Target;
     public PGConfigurationDraft Draft { get; }
     public ConfigPG EditConfig => Draft.Config;
 
     public EditPG(DevicePG device) : this(device.Config, GetCategories(device), device.DisplayConfig)
     {
-        Icon = device.Icon;
+        openingDevice = (device, device.CaptureConfigurationTarget());
         if (MySqlSetting.IsConnect)
         {
             CameraPhyID.ItemsSource = PhyCameraManager.GetInstance().PhyCameras;
@@ -81,6 +83,11 @@ public partial class EditPG : Window
         if (HasInvalidInput(EditorContent))
         {
             error = EngineLocalization.Get("请修正输入框中的无效数值。");
+            return false;
+        }
+        if (openingDevice is { } opening && !opening.Device.TryAdmitConfigurationEdit(opening.Target, this))
+        {
+            error = string.Empty;
             return false;
         }
         return Draft.TryApply(target, out error, displayTarget);

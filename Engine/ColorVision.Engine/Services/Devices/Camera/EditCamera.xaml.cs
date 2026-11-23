@@ -23,6 +23,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
         private JObject initialDeviceConfig = null!;
         private readonly bool initialUseLocalCamera;
         private readonly DisplayCameraConfig displayDraft;
+        private readonly DeviceConfigurationTarget openingTarget;
 
         public DeviceCamera DeviceCamera { get; set; }
 
@@ -33,6 +34,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
         public EditCamera(DeviceCamera mQTTDeviceCamera)
         {
             DeviceCamera = mQTTDeviceCamera;
+            openingTarget = mQTTDeviceCamera.CaptureConfigurationTarget();
             initialUseLocalCamera = DeviceCamera.DisplayConfig.UseLocalCamera;
             displayDraft = new DisplayCameraConfig { UseLocalCamera = initialUseLocalCamera };
             InitializeComponent();
@@ -71,10 +73,11 @@ namespace ColorVision.Engine.Services.Devices.Camera
             try
             {
                 DeviceCamera.DemandConfigurationAccess();
+                if (!DeviceCamera.TryAdmitConfigurationEdit(openingTarget, this)) return;
                 if (!JToken.DeepEquals(initialDeviceConfig, JObject.FromObject(EditConfig)))
                 {
                     DeviceCamera.EnsurePhyCameraBindingCanChange(EditConfig.CameraCode);
-                    DeviceCamera.CommitConfiguration(() => EditConfig.CopyTo(DeviceCamera.Config));
+                    DeviceCamera.CommitConfiguration(() => EditConfig.CopyTo(DeviceCamera.Config), openingTarget);
                 }
                 // The live preference setter notifies the backend and persists the display configuration.
                 if (displayDraft.UseLocalCamera != initialUseLocalCamera)

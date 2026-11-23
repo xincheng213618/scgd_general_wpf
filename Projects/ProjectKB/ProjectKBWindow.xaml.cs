@@ -13,7 +13,6 @@ using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.Flow;
 using ColorVision.Engine.FlowProcessing;
 using ColorVision.Engine.Templates.Jsons.KB;
-using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using ColorVision.ImageEditor.Draw;
 using ColorVision.ImageEditor;
 using ColorVision.Themes;
@@ -26,7 +25,6 @@ using log4net;
 using Newtonsoft.Json;
 using ProjectKB.Auth;
 using ProjectKB.Modbus;
-using SqlSugar;
 using ST.Library.UI.NodeEditor;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
@@ -44,12 +42,6 @@ using System.Windows.Media.Imaging;
 
 namespace ProjectKB
 {
-    sealed class KBvalue
-    {
-        public double Y { get; set; }
-        public int PixNumber { get; set; } = 1;
-    }
-
     public class ProjectKBWindowConfig : WindowConfig
     {
         public static ProjectKBWindowConfig Instance => ConfigService.Instance.GetRequiredService<ProjectKBWindowConfig>();
@@ -61,6 +53,7 @@ namespace ProjectKB
     public partial class ProjectKBWindow : Window, IDisposable
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(ProjectKBWindow));
+        private static readonly object MesCallGate = new();
         private static readonly TimeSpan RestartServicesTimeout = TimeSpan.FromMinutes(7);
         private static readonly TimeSpan RefreshAfterRestartTimeout = TimeSpan.FromSeconds(20);
         private const double DefaultRestartServicesExpectedDurationMs = 15000;
@@ -70,6 +63,7 @@ namespace ProjectKB
         private static readonly Regex OutputDetailRowRegex = new(@"^\s*(?<key>\[[^\]\r\n]+\])\s+(?<lv>\S+)\s+(?<lc>\S+%)\s*(?<result>Fail)?\s*$", RegexOptions.CultureInvariant);
         private readonly SemaphoreSlim _refreshGate = new(1, 1);
         private readonly FlowNodeExecutionRecorder _flowNodeExecutionRecorder = new();
+        private readonly KBMesWipState _mesWip = new();
         private readonly CancellationTokenSource _lifetimeCancellation = new();
         private readonly Dictionary<KBItem, DVRectangle> _keyVisuals = new();
         private readonly ResultImagePlaceholderCache _resultImagePlaceholderCache = new();
@@ -623,6 +617,7 @@ namespace ProjectKB
                 FlowName = template.Key;
                 PrepareExecutionStatus();
                 string serialNumber = SNtextBox.Text;
+                _mesWip.BeginRun(serialNumber, Summary.Stage);
                 LastFlowTime = await Task.Run(
                     () => FlowNodeRecordDataBaseHelper.GetLastCompletedFlowElapsed(
                         new FlowIdentity(template.Id, template.Key, template.Key)));
@@ -663,10 +658,10 @@ namespace ProjectKB
                 stopwatch.Reset();
                 stopwatch.Start();
                 _hasExecutionTiming = true;
-                CreateCurrentFlowBatch();
+                KBFlowBatchReceipt receipt = CreateCurrentFlowBatch();
                 _isFlowLifecycleActive = true;
 
-                bool started = await flowControl.TryStartAsync(CurrentFlowResult.Code, _lifetimeCancellation.Token);
+                bool started = await receipt.StartAsync(flowControl, _lifetimeCancellation.Token);
                 if (_isDisposed)
                 {
                     flowControl.FlowCompleted -= FlowControl_FlowCompleted;
@@ -686,7 +681,8 @@ namespace ProjectKB
                     });
                     return;
                 }
-                timer.Change(0, 500); // 启动定时器
+                if (ReferenceEquals(_currentFlowBatch, receipt))
+                    timer.Change(0, 500); // 启动定时器
             }
             catch (Exception ex)
             {
@@ -699,7 +695,7 @@ namespace ProjectKB
                 flowControl?.FlowCompleted -= FlowControl_FlowCompleted;
                 stopwatch.Stop();
                 timer.Change(Timeout.Infinite, 500);
-                if (_currentFlowBatch?.Id > 0 && CurrentFlowResult != null)
+                if (_currentFlowBatch is { } receipt && CurrentFlowResult != null)
                 {
                     await FinalizeCurrentFlowRunAsync(new FlowControlData
                     {
@@ -708,7 +704,7 @@ namespace ProjectKB
                         SerialNumber = CurrentFlowResult.Code,
                         Message = ex.Message,
                         Params = ex.Message,
-                    });
+                    }, receipt);
                 }
                 ShowExecutionResult("Failed", $"流程启动失败：{ex.Message}");
                 _isFlowLifecycleActive = false;
@@ -716,28 +712,26 @@ namespace ProjectKB
             finally
             {
                 _isFlowStartPending = false;
+                if (!_isFlowLifecycleActive)
+                    _mesWip.EndRun();
             }
         }
 
-        private MeasureBatchModel? _currentFlowBatch;
-        private void CreateCurrentFlowBatch()
+        private KBFlowBatchReceipt? _currentFlowBatch;
+        private KBFlowBatchReceipt CreateCurrentFlowBatch()
         {
-            _currentFlowBatch = new MeasureBatchModel
+            var batch = new MeasureBatchModel
             {
                 TId = _currentFlowTemplateId > 0 ? _currentFlowTemplateId : null,
                 Name = CurrentFlowResult.SN,
                 Code = CurrentFlowResult.Code,
                 CreateDate = DateTime.Now,
             };
-            using var db = new SqlSugarClient(new ConnectionConfig
-            {
-                ConnectionString = MySqlControl.GetConnectionString(),
-                DbType = SqlSugar.DbType.MySql,
-                IsAutoCloseConnection = true,
-            });
-            _currentFlowBatch.Id = db.Insertable(_currentFlowBatch).ExecuteReturnIdentity();
-            CurrentFlowResult.BatchId = _currentFlowBatch.Id;
-            _flowNodeExecutionRecorder.StartRun(_currentFlowBatch.Id, CurrentFlowResult.Code);
+            KBFlowBatchReceipt receipt = KBFlowBatchReceipt.Insert(batch);
+            _currentFlowBatch = receipt;
+            CurrentFlowResult.BatchId = receipt.BatchId;
+            _flowNodeExecutionRecorder.StartRun(receipt.BatchId, receipt.Code);
+            return receipt;
         }
 
         private async Task<bool> PreProcessingAsync(string flowName, string serialNumber)
@@ -750,11 +744,6 @@ namespace ProjectKB
         private FlowControl? flowControl;
         private async void FlowControl_FlowCompleted(object? sender, FlowControlData flowControlData)
         {
-            if (sender is FlowControl completedFlowControl)
-                completedFlowControl.FlowCompleted -= FlowControl_FlowCompleted;
-            else if (flowControl != null)
-                flowControl.FlowCompleted -= FlowControl_FlowCompleted;
-
             // FlowControl 会在派发到 UI 前快照订阅者；窗口关闭时的 -= 无法取消已经排队的回调。
             if (_isDisposed)
                 return;
@@ -763,12 +752,12 @@ namespace ProjectKB
             {
                 if (!Dispatcher.CheckAccess())
                 {
-                    Task dispatchedTask = await Dispatcher.InvokeAsync(() => HandleFlowCompletedAsync(flowControlData));
+                    Task dispatchedTask = await Dispatcher.InvokeAsync(() => HandleOwnedFlowCompletedAsync(sender, flowControlData));
                     await dispatchedTask;
                     return;
                 }
 
-                await HandleFlowCompletedAsync(flowControlData);
+                await HandleOwnedFlowCompletedAsync(sender, flowControlData);
             }
             catch (Exception ex)
             {
@@ -777,46 +766,40 @@ namespace ProjectKB
             }
         }
 
-        private async Task FinalizeCurrentFlowRunAsync(FlowControlData flowControlData)
+        private Task HandleOwnedFlowCompletedAsync(object? sender, FlowControlData flowControlData)
         {
-            string serialNumber = string.IsNullOrWhiteSpace(flowControlData.SerialNumber)
-                ? CurrentFlowResult.Code
-                : flowControlData.SerialNumber;
+            if (_isDisposed || flowControl == null || !ReferenceEquals(sender, flowControl) || _currentFlowBatch is not { } receipt ||
+                !string.Equals(receipt.Code, flowControlData.SerialNumber, StringComparison.Ordinal))
+                return Task.CompletedTask;
+
+            flowControl.FlowCompleted -= FlowControl_FlowCompleted;
+            return HandleFlowCompletedAsync(flowControlData);
+        }
+
+        private async Task FinalizeCurrentFlowRunAsync(FlowControlData flowControlData, KBFlowBatchReceipt? receipt)
+        {
+            if (receipt == null || !ReferenceEquals(_currentFlowBatch, receipt))
+                return;
+
+            _currentFlowBatch = null;
+            string serialNumber = receipt.Code;
             flowControlData.SerialNumber = serialNumber;
             long elapsedMilliseconds = Math.Max(0, stopwatch.ElapsedMilliseconds);
             CurrentFlowResult.RunTime = elapsedMilliseconds;
             CurrentFlowResult.FlowStatus = flowControlData.FlowStatus;
-            FlowNodeRecordDataBaseHelper.RecordFlowRun(
-                _currentFlowTemplateId,
-                FlowName,
-                serialNumber,
-                flowControlData.FlowStatus,
-                elapsedMilliseconds);
 
             try
             {
-                MeasureBatchModel? batch = _currentFlowBatch;
-                if (batch == null && CurrentFlowResult.BatchId > 0)
-                    batch = BatchResultMasterDao.Instance.GetById(CurrentFlowResult.BatchId);
-                if (batch != null)
-                {
-                    batch.TId = _currentFlowTemplateId > 0 ? _currentFlowTemplateId : null;
-                    batch.TotalTime = elapsedMilliseconds > int.MaxValue ? int.MaxValue : (int)elapsedMilliseconds;
-                    batch.FlowStatus = flowControlData.FlowStatus;
-                    batch.Result = flowControlData.Params ?? flowControlData.Message ?? flowControlData.EventName;
-                    using var db = new SqlSugarClient(new ConnectionConfig
-                    {
-                        ConnectionString = MySqlControl.GetConnectionString(),
-                        DbType = SqlSugar.DbType.MySql,
-                        IsAutoCloseConnection = true,
-                    });
-                    db.Updateable(batch).ExecuteCommand();
-                }
+                receipt.WriteOutcome(flowControlData.FlowStatus, elapsedMilliseconds,
+                    flowControlData.Params ?? flowControlData.Message ?? flowControlData.EventName);
             }
             catch (Exception ex)
             {
-                log.Error($"回写流程批次失败 => batchId={CurrentFlowResult.BatchId}, serialNumber={serialNumber}", ex);
+                log.Error($"回写流程批次失败 => batchId={receipt.BatchId}, serialNumber={serialNumber}", ex);
             }
+
+            FlowNodeRecordDataBaseHelper.RecordFlowRun(_currentFlowTemplateId, FlowName, serialNumber,
+                flowControlData.FlowStatus, elapsedMilliseconds);
 
             try
             {
@@ -826,16 +809,15 @@ namespace ProjectKB
             }
             catch (Exception ex)
             {
-                log.Error($"结束流程节点统计失败 => batchId={CurrentFlowResult.BatchId}, serialNumber={serialNumber}", ex);
-            }
-            finally
-            {
-                _currentFlowBatch = null;
+                log.Error($"结束流程节点统计失败 => batchId={receipt.BatchId}, serialNumber={serialNumber}", ex);
             }
         }
 
         private async Task HandleFlowCompletedAsync(FlowControlData flowControlData)
         {
+            var receipt = _currentFlowBatch;
+            var source = receipt?.Source;
+            IReadOnlyList<MeasureResultImgModel> ReadImages(int batchId) => source?.GetImages(batchId) ?? [];
             bool isCompleted = flowControlData.EventName == "Completed";
             bool isOverTime = flowControlData.EventName == "OverTime";
             try
@@ -848,7 +830,8 @@ namespace ProjectKB
                 ShowExecutionResult(flowControlData.EventName, flowControlData.Params ?? flowControlData.Message);
                 CurrentFlowResult.Msg = flowControlData.EventName;
 
-                ProjectKBConfig.Instance.SNlocked = false;
+                if (string.Equals(SNtextBox.Text, CurrentFlowResult.SN, StringComparison.Ordinal))
+                    ProjectKBConfig.Instance.SNlocked = false;
                 SNtextBox.Focus();
 
                 if (!isCompleted)
@@ -865,36 +848,40 @@ namespace ProjectKB
                         log.Error("流程运行失败" + flowControlData.EventName + Environment.NewLine + failureMessage);
                         CurrentFlowResult.FlowStatus = FlowStatus.Failed;
 
-                        if (failureMessage.Contains("SDK return failed"))
+                        if (source != null && failureMessage.Contains("SDK return failed", StringComparison.Ordinal))
                         {
-                            MeasureBatchModel Batch = BatchResultMasterDao.Instance.GetByCode(flowControlData.SerialNumber);
-                            if (Batch != null)
+                            try
                             {
-                                var values = MeasureImgResultDao.Instance.GetAllByBatchId(Batch.Id);
-                                if (values.Count > 0)
-                                    CurrentFlowResult.ResultImagFile = values[0].FileUrl;
+                                int batchId = CurrentFlowResult.BatchId;
+                                var image = await Task.Run(() => source.GetImages(batchId).FirstOrDefault());
+                                if (image != null)
+                                    CurrentFlowResult.ResultImagFile = image.FileUrl;
+                            }
+                            catch (Exception ex)
+                            {
+                                log.Warn($"读取失败批次的预览图失败，batchId={CurrentFlowResult.BatchId}", ex);
                             }
                         }
                     }
 
                     CurrentFlowResult.RunTime = Math.Max(0, stopwatch.ElapsedMilliseconds);
-                    ViewResultManager.Save(CurrentFlowResult);
+                    ViewResultManager.Save(CurrentFlowResult, readMeasureResults: ReadImages);
                     ShowExecutionResult(flowControlData.EventName, failureMessage);
 
                     // 先让失败状态完成一次 UI 渲染，再等待节点统计写入和批次落库。
                     await System.Windows.Threading.Dispatcher.Yield(System.Windows.Threading.DispatcherPriority.Background);
                 }
 
-                await FinalizeCurrentFlowRunAsync(flowControlData);
+                await FinalizeCurrentFlowRunAsync(flowControlData, receipt);
 
                 if (!isCompleted)
-                    ViewResultManager.Save(CurrentFlowResult);
+                    ViewResultManager.Save(CurrentFlowResult, readMeasureResults: ReadImages);
 
                 if (isCompleted)
                 {
                     try
                     {
-                        await Dispatcher.InvokeAsync(() => Processing(flowControlData.SerialNumber));
+                        await Dispatcher.InvokeAsync(() => ProcessResultAsync(source)).Task.Unwrap();
                     }
                     catch (Exception ex)
                     {
@@ -909,6 +896,7 @@ namespace ProjectKB
             }
             finally
             {
+                _mesWip.EndRun();
                 _isFlowLifecycleActive = false;
             }
         }
@@ -916,117 +904,73 @@ namespace ProjectKB
         KBItemMaster CurrentFlowResult { get; set; }
 
         #endregion
-        private void Processing(string SerialNumber)
+        private async Task ProcessResultAsync(KBFlowResultSource? source)
         {
-            KBItemMaster KBItemMaster = CurrentFlowResult ?? new KBItemMaster();
-            KBItemMaster.Model = CurrentFlowResult?.Model ?? FlowName;
-            KBItemMaster.SN = CurrentFlowResult?.SN ?? string.Empty;
+            KBItemMaster KBItemMaster = CurrentFlowResult;
             KBRecipeConfig resultRecipe = KBItemMaster.RecipeSnapshot?.Recipe ?? RecipeConfig;
             KBItemMaster.CreateTime = DateTime.Now;
-            KBItemMaster.FlowStatus = FlowStatus.Completed;
+            IReadOnlyList<MeasureResultImgModel> ReadImages(int batchId) => source?.GetImages(batchId) ?? [];
 
-            var Batch = BatchResultMasterDao.Instance.GetByCode(SerialNumber);
-            if (Batch == null)
+            KBFlowMeasurements? measurements;
+            try
             {
-                MessageBox.Show(Application.Current.GetActiveWindow(), LocalizedText.Get("找不到批次号，请检查流程配置"), "ColorVision");
-                ViewResultManager.Save(KBItemMaster);
+                measurements = source == null ? null : await Task.Run(source.ReadMeasurements);
+            }
+            catch (Exception ex)
+            {
+                log.Error($"读取原始批次结果失败，batchId={KBItemMaster.BatchId}", ex);
+                SaveResultProcessingFailure(KBItemMaster, LocalizedText.Get("读取原始批次结果失败，请检查该批次的数据库连接。"), ReadImages);
                 return;
             }
-            KBItemMaster.BatchId = Batch.Id;
-            foreach (var item in AlgResultMasterDao.Instance.GetAllByBatchId(Batch.Id))
+            if (measurements == null)
             {
-                if (item.ImgFileType == ViewResultAlgType.KB || item.ImgFileType == ViewResultAlgType.KB_Raw)
+                SaveResultProcessingFailure(KBItemMaster, LocalizedText.Get("找不到本次流程的原始批次，请检查流程配置。"), ReadImages);
+                return;
+            }
+            foreach (var (item, templateJson) in measurements.Keyboards)
+            {
+                KBItemMaster.KBTemplate = item.TName;
+
+                KBJson? keyboard = null;
+                try
                 {
-                    KBItemMaster.KBTemplate = item.TName;
-
-                    using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
-
-                    var mod = Db.Queryable<ModMasterModel>().Where(x => x.Name == item.TName && x.Pid == 150).First();
-                    if (mod == null)
-                    {
-                        log.Warn($"item.TName{item.TName},Cant find template");
-                        continue;
-                    }
-
-                    KBJson kBJson = JsonConvert.DeserializeObject<KBJson>(mod.JsonVal);
-                    log.Debug(JsonConvert.SerializeObject(kBJson));
-                    if (kBJson != null)
-                    {
-                        foreach (var keyRect in kBJson.KBKeyRects)
-                        {
-                            KBItem kItem = new KBItem();
-                            kItem.Name = keyRect.Name;
-                            kItem.KBKeyRect = keyRect;
-                            KBItemMaster.Items.Add(kItem);
-
-                        }
-                        KBItemMaster.ResultImagFile = item.ResultImagFile;
-
-                    }
+                    if (!string.IsNullOrWhiteSpace(templateJson))
+                        keyboard = JsonConvert.DeserializeObject<KBJson>(templateJson);
                 }
-                if (item.ImgFileType == ViewResultAlgType.POI_Y)
+                catch (JsonException ex)
                 {
-                    var pois = PoiPointResultDao.Instance.GetAllByPid(item.Id);
-                    if (pois != null)
-                    {
-                        foreach (var poi in pois)
-                        {
-                            var list = JsonConvert.DeserializeObject<KBvalue>(poi.Value);
-                            var key = KBItemMaster.Items.First(a => a.Name == poi.PoiName && poi.PoiWidth == a.KBKeyRect.Width);
-                            if (key != null)
-                            {
-                                key.Lv = list.Y;
-                                key.Lv = list.Y * list.PixNumber;
-                                if (key.KBKeyRect.KBKey.Area != 0)
-                                {
-                                    key.Lv = key.Lv / key.KBKeyRect.KBKey.Area;
-                                }
-                                key.Lv = key.KBKeyRect.KBKey.KeyScale * key.Lv * ProjectKBConfig.Instance.KBLVSacle;
-
-                            }
-                        }
-                    }
+                    log.Warn($"无法读取键位模板 {item.TName}", ex);
                 }
-                if (item.ImgFileType == ViewResultAlgType.POI_Y_V2)
+
+                if (keyboard?.KBKeyRects is not { Count: > 0 } keys || keys.Any(key => key == null))
                 {
-                    var pois = PoiPointResultDao.Instance.GetAllByPid(item.Id);
-                    if (pois != null)
-                    {
-                        foreach (var poi in pois)
-                        {
-                            log.Debug(poi.Value);
-                            var list = JsonConvert.DeserializeObject<ObservableCollection<KBvalue>>(poi.Value);
-
-                            var key = KBItemMaster.Items.First(a => a.Name == poi.PoiName && poi.PoiWidth == a.KBKeyRect.Width);
-                            if (key != null)
-                            {
-                                if (list != null && list.Count == 2)
-                                {
-                                    key.Lv = list[0].Y;
-                                    key.Lv = key.Lv * list[0].PixNumber;
-                                    if (key.KBKeyRect.KBKey.Area != 0)
-                                    {
-                                        key.Lv = key.Lv / key.KBKeyRect.KBKey.Area;
-                                    }
-                                    key.Lv = key.KBKeyRect.KBKey.KeyScale * key.Lv * ProjectKBConfig.Instance.KBLVSacle;
-                                    if (key.Lv == 0)
-                                    {
-                                        key.Lc = 0;
-                                    }
-                                }
-                            }
-                        }
-                    }
+                    SaveResultProcessingFailure(KBItemMaster, LocalizedText.Format($"键位模板“{item.TName}”缺失、为空或无法读取，请检查流程配置。"), ReadImages);
+                    return;
                 }
+
+                foreach (var keyRect in keys)
+                    KBItemMaster.Items.Add(new KBItem { Name = keyRect.Name, KBKeyRect = keyRect });
+                KBItemMaster.ResultImagFile = item.ResultImagFile;
             }
 
             if (KBItemMaster.Items.Count == 0)
             {
-                MessageBox.Show(Application.Current.GetActiveWindow(), LocalizedText.Get("找不到对映的按键，请检查流程配置是否计算KB模板"), "ColorVision");
-                ViewResultManager.Save(KBItemMaster);
+                SaveResultProcessingFailure(KBItemMaster, LocalizedText.Get("找不到对映的按键，请检查流程配置是否计算KB模板"), ReadImages);
                 return;
             }
 
+            IReadOnlyList<KBItem> unmeasured = KBMeasurementResults.ApplyLuminance(KBItemMaster.Items, measurements.Points, ProjectKBConfig.Instance.KBLVSacle);
+            if (unmeasured.Count > 0)
+            {
+                foreach (KBItem key in unmeasured)
+                    key.Result = false;
+                KBItemMaster.NbrFailPoints = unmeasured.Count;
+                string keys = string.Join("、", unmeasured.Take(5).Select(key => key.Name));
+                SaveResultProcessingFailure(KBItemMaster, LocalizedText.Format($"缺少有效的按键亮度数据（{unmeasured.Count}/{KBItemMaster.Items.Count}）。请检查 POI 结果与键位模板的名称及宽度。键位：{keys}"), ReadImages);
+                return;
+            }
+
+            KBItemMaster.FlowStatus = FlowStatus.Completed;
             double keyLcNeighborhoodRadiusMm = resultRecipe.KeyLcNeighborhoodRadiusMm;
             double keyLcPixelsPerMillimeter = resultRecipe.KeyLcPixelsPerMillimeter;
             double keyLcNeighborhoodRadiusPixels = GetLcNeighborhoodRadiusPixels(keyLcNeighborhoodRadiusMm, keyLcPixelsPerMillimeter);
@@ -1061,7 +1005,6 @@ namespace ProjectKB
 
             KBItemMaster.LvUniformity = KBItemMaster.MaxLv == 0 ? 0 : KBItemMaster.MinLv / KBItemMaster.MaxLv;
             BacklightAutotuneService.Apply(KBItemMaster, resultRecipe);
-            KBItemMaster.SN = SNtextBox.Text;
 
 
             CalCulLc(KBItemMaster.Items, keyLcNeighborhoodRadiusPixels);
@@ -1096,11 +1039,12 @@ namespace ProjectKB
 
             KBItemMaster.Exposure = "50";
 
-            ViewResultManager.Save(KBItemMaster);
+            ViewResultManager.Save(KBItemMaster, readMeasureResults: ReadImages);
 
             if (ViewResultManager.Config.SaveText)
             {
                 string resultPath = Path.Combine(ViewResultManager.Config.TextSavePath, Tool.SanitizeFileName($"{KBItemMaster.SN}-{KBItemMaster.CreateTime:yyyyMMddHHmmssffff}.txt"));
+                Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(resultPath))!);
                 string result = $"{KBItemMaster.SN},{(KBItemMaster.Result ? "Pass" : "Fail")}, ,";
                 log.Info($"结果正在写入{resultPath},result:{result}");
                 File.WriteAllText(resultPath, result);
@@ -1132,35 +1076,38 @@ namespace ProjectKB
                 if (ViewResultManager.Config.AutoSaveLvCsv)
                 {
                     string lvCsvPath = ViewResultManager.BuildCsvPath(KBItemMaster, ViewResultManager.Config.CsvSavePath, KBCsvDataType.Lv);
-                    KBItemMaster.SaveCsv(lvCsvPath, KBCsvDataType.Lv, ViewResultManager.Config.AppendFalloutSummary);
-                    log.Info($"writecsv:{lvCsvPath}");
+                    string savedPath = KBItemMaster.SaveDailyCsv(lvCsvPath, KBCsvDataType.Lv, ViewResultManager.Config.AppendFalloutSummary);
+                    log.Info($"writecsv:{savedPath}");
                 }
 
                 if (ViewResultManager.Config.AutoSaveLcCsv)
                 {
                     string lcCsvPath = ViewResultManager.BuildCsvPath(KBItemMaster, ViewResultManager.Config.LcCsvSavePath, KBCsvDataType.Lc);
-                    KBItemMaster.SaveCsv(lcCsvPath, KBCsvDataType.Lc, ViewResultManager.Config.AppendFalloutSummary);
-                    log.Info($"writecsv:{lcCsvPath}");
+                    string savedPath = KBItemMaster.SaveDailyCsv(lcCsvPath, KBCsvDataType.Lc, ViewResultManager.Config.AppendFalloutSummary);
+                    log.Info($"writecsv:{savedPath}");
                 }
             });
-            Application.Current.Dispatcher.BeginInvoke(() =>
-            {
-                log.Debug("流程执行结束，设置寄存器为0，触发移动");
-                ModbusControl.GetInstance().SetRegisterValue(0);
-            });
-
-            ///回传MEs 确保Mes配置
-            log.Info($"UseMes{Summary.UseMes} IsCheckWIP{IsCheckWIP}");
-            if (Summary.UseMes && IsCheckWIP)
+            string stage = Summary.Stage;
+            bool hasWipApproval = _mesWip.ConsumeRunApproval(KBItemMaster.SN, stage);
+            log.Info($"UseMes{Summary.UseMes} IsCheckWIP{hasWipApproval}");
+            if (Summary.UseMes && hasWipApproval)
             {
                 try
                 {
-                    string Barcode_Result = KBItemMaster.Result ? "PASS" : "NG";
-                    log.Info($"Collect_test{Summary.Stage},Barcode_NO:{ProjectKBConfig.Instance.SN}Barcode_Result：{Barcode_Result}MachineNO:{Summary.MachineNO}");
-                    IntPtr a = MesDll.Collect_test(Summary.Stage, ProjectKBConfig.Instance.SN, Barcode_Result, Summary.MachineNO, Summary.LineNO, Summary.Opno, Barcode_Result, string.Empty);
-                    var Collect_test = MesDll.PtrToString(a);
-                    ExecutionStatus.Status = ExecutionStatus.Status.WithAdditionalMessage("MES 返回", Collect_test);
-                    log.Info("Collect_test result" + Collect_test);
+                    string serialNumber = KBItemMaster.SN;
+                    string barcodeResult = KBItemMaster.Result ? "PASS" : "NG";
+                    string machine = Summary.MachineNO;
+                    string line = Summary.LineNO;
+                    string opno = Summary.Opno;
+                    log.Info($"Collect_test{stage},Barcode_NO:{serialNumber}Barcode_Result：{barcodeResult}MachineNO:{machine}");
+                    string result = await Task.Run(() =>
+                    {
+                        lock (MesCallGate)
+                            return MesDll.PtrToString(MesDll.Collect_test(stage, serialNumber, barcodeResult, machine, line, opno, barcodeResult, string.Empty));
+                    });
+                    if (!_isDisposed)
+                        ExecutionStatus.Status = ExecutionStatus.Status.WithAdditionalMessage("MES 返回", result);
+                    log.Info("Collect_test result" + result);
                 }
                 catch (Exception ex)
                 {
@@ -1168,9 +1115,31 @@ namespace ProjectKB
                 }
 
             }
-            IsCheckWIP = false;
-            SNtextBox.Text = string.Empty;
+            Application.Current.Dispatcher.BeginInvoke(() =>
+            {
+                log.Debug("流程执行结束，设置寄存器为0，触发移动");
+                ModbusControl.GetInstance().SetRegisterValue(0);
+            });
+
+            if (_isDisposed)
+                return;
+            if (string.Equals(SNtextBox.Text, KBItemMaster.SN, StringComparison.Ordinal))
+            {
+                ProjectKBConfig.Instance.SNlocked = false;
+                SNtextBox.Clear();
+            }
             SNtextBox.Focus();
+        }
+
+        private void SaveResultProcessingFailure(KBItemMaster result, string message, Func<int, IReadOnlyList<MeasureResultImgModel>> readImages)
+        {
+            result.FlowStatus = FlowStatus.Failed;
+            result.Result = false;
+            result.Msg = message;
+            ViewResultManager.Save(result, readMeasureResults: readImages);
+            ShowExecutionResult("Failed", message);
+            log.Warn(message);
+            MessageBox.Show(Application.Current.GetActiveWindow(), message, "ColorVision");
         }
 
         public static bool IsPointInCircle(double px, double py, double centerX, double centerY, double r)
@@ -1672,9 +1641,14 @@ namespace ProjectKB
 
             // Keep the current presentation visible while the next image is decoded to avoid a blank frame.
             (WriteableBitmap? Bitmap, int Width, int Height) presentation;
+            bool isCurrentFlowResult = ReferenceEquals(kBItem, CurrentFlowResult);
+            var liveSource = isCurrentFlowResult ? _currentFlowBatch?.Source : null;
+            Func<int, IReadOnlyList<MeasureResultImgModel>>? readMeasureResults = isCurrentFlowResult
+                ? batchId => liveSource?.GetImages(batchId) ?? []
+                : null;
             try
             {
-                presentation = await Task.Run(() => LoadResultImagePresentation(kBItem));
+                presentation = await Task.Run(() => LoadResultImagePresentation(kBItem, readMeasureResults));
             }
             catch (Exception ex)
             {
@@ -1780,7 +1754,8 @@ namespace ProjectKB
 
         private static bool IsFileSharingViolation(IOException exception) => (exception.HResult & 0xFFFF) is 32 or 33;
 
-        private static (WriteableBitmap? Bitmap, int Width, int Height) LoadResultImagePresentation(KBItemMaster result)
+        private static (WriteableBitmap? Bitmap, int Width, int Height) LoadResultImagePresentation(KBItemMaster result,
+            Func<int, IReadOnlyList<MeasureResultImgModel>>? readMeasureResults)
         {
             WriteableBitmap? bitmap = File.Exists(result.ResultImagFile)
                 ? TryLoadResultBitmap(result.ResultImagFile)
@@ -1792,7 +1767,7 @@ namespace ProjectKB
                 return (null, result.ImageWidth!.Value, result.ImageHeight!.Value);
 
             bool found = KBResultImageDimensions.TryReadFromFile(result.ResultImagFile, out int width, out int height)
-                || KBResultImageDimensions.TryReadFromMeasureResults(result.BatchId, result.ResultImagFile, out width, out height);
+                || KBResultImageDimensions.TryReadFromMeasureResults(result.BatchId, result.ResultImagFile, out width, out height, readMeasureResults);
             return found ? (null, width, height) : (null, 0, 0);
         }
 
@@ -2128,6 +2103,7 @@ namespace ProjectKB
             ImageView.EditorContext.DrawEditorContext.DrawCanvas.PreviewMouseLeftButtonDown -= ImageCanvas_PreviewMouseLeftButtonDown;
             ClearKeyOverlayState();
             ProjectKBConfig.Instance.SNChanged -= Instance_SNChanged;
+            DebounceTimer.Cancel("KBUploadSN");
             UnsubscribeModbusStatus();
             ImageView.Dispose();
             if (flowControl != null)
@@ -2146,58 +2122,85 @@ namespace ProjectKB
             GC.SuppressFinalize(this);
         }
 
-        private void Instance_SNChanged(object? sender, string e)
+        private void Instance_SNChanged(object? sender, string serialNumber)
         {
-            if (Summary.AutoUploadSN)
-            {
-                if (string.IsNullOrWhiteSpace(ProjectKBConfig.Instance.SN)) return;
-
-                DebounceTimer.AddOrResetTimer("KBUploadSN", 500, e => UploadSN(), 0);
-            }
+            _mesWip.InputChanged(serialNumber);
+            if (Summary.AutoUploadSN && !string.IsNullOrWhiteSpace(serialNumber))
+                DebounceTimer.AddOrResetTimerDispatcher("KBUploadSN", 500, () => _ = UploadSNAsync(serialNumber, automatic: true));
         }
-        private bool IsCheckWIP = false;
-        private bool IsUploadSNing { get; set; }
-        private void UploadSN()
-        {
-            if (IsUploadSNing) return;
-            IsUploadSNing = true;
-            IsCheckWIP = false;
-            if (Summary.UseMes)
-            {
 
-                log.Info($"CheckWIP Stage{SummaryManager.GetInstance().Summary.Stage},SN:{ProjectKBConfig.Instance.SN}");
-                IntPtr a = MesDll.CheckWIP(SummaryManager.GetInstance().Summary.Stage, ProjectKBConfig.Instance.SN);
-                var result = MesDll.PtrToString(a);
-                log.Info("CheckWIP Stage result" + result);
-                if (result != "N")
+        private bool _isUploadingSn;
+        private string? _queuedAutomaticUploadSn;
+
+        private async Task UploadSNAsync(string serialNumber, bool automatic)
+        {
+            var config = ProjectKBConfig.Instance;
+            if (_isDisposed || config.SN != serialNumber || (automatic && (!Summary.AutoUploadSN || config.SNlocked)))
+                return;
+            if (_isUploadingSn)
+            {
+                if (automatic)
+                    _queuedAutomaticUploadSn = serialNumber;
+                return;
+            }
+
+            string stage = Summary.Stage;
+            var check = _mesWip.BeginCheck(serialNumber, stage);
+            if (!Summary.UseMes)
+            {
+                config.SNlocked = true;
+                return;
+            }
+
+            _isUploadingSn = true;
+            try
+            {
+                log.Info($"CheckWIP Stage{stage},SN:{serialNumber}");
+                string result = await Task.Run(() =>
                 {
-                    IsUploadSNing = false;
-                    Application.Current.Dispatcher.BeginInvoke(() =>
-                    {
-                        MessageBox.Show(Application.Current.GetActiveWindow(), result, "CheckWIP Stage Fail");
-                        SNtextBox.Focus();
-                        SNtextBox.SelectAll();
-                    });
-
+                    lock (MesCallGate)
+                        return MesDll.PtrToString(MesDll.CheckWIP(stage, serialNumber));
+                });
+                log.Info("CheckWIP Stage result" + result);
+                if (_isDisposed)
                     return;
+
+                check.IsApproved = result == "N";
+                if (!Summary.UseMes || !_mesWip.IsCurrentInputCheck(check, Summary.Stage))
+                    return;
+
+                if (check.IsApproved)
+                    config.SNlocked = true;
+                else
+                {
+                    MessageBox.Show(Application.Current.GetActiveWindow(), result, "CheckWIP Stage Fail");
+                    SNtextBox.Focus();
+                    SNtextBox.SelectAll();
                 }
-                IsCheckWIP = true;
-                ProjectKBConfig.Instance.SNlocked = true;
             }
-            else
+            catch (Exception ex)
             {
-                ProjectKBConfig.Instance.SNlocked = true;
+                log.Error("CheckWIP 调用失败", ex);
             }
-            IsUploadSNing = false;
+            finally
+            {
+                _isUploadingSn = false;
+                if (_queuedAutomaticUploadSn is string queuedSerialNumber)
+                {
+                    _queuedAutomaticUploadSn = null;
+                    _ = UploadSNAsync(queuedSerialNumber, automatic: true);
+                }
+            }
         }
 
-        private void UploadSN_Click(object sender, RoutedEventArgs e)
+        private async void UploadSN_Click(object sender, RoutedEventArgs e)
         {
-            if (IsUploadSNing)
+            if (_isUploadingSn)
             {
                 MessageBox.Show(LocalizedText.Get("上一次上传还未完成"));
+                return;
             }
-            Task.Run(UploadSN);
+            await UploadSNAsync(ProjectKBConfig.Instance.SN, automatic: false);
         }
 
         public ObservableCollection<ISearch> Searches { get; set; } = new ObservableCollection<ISearch>();

@@ -5,7 +5,6 @@ status: "current"
 summary: "ROI统计的区域选择、百分位、直方图、坏点候选计数/返回上限及六文件CSV导出；说明Float32精确统计预算、列名精度限制和实际窗口操作。"
 aliases: ["ROI 统计", "区域统计", "ROI直方图", "ROI百分位", "ROI坏点候选", "ROI 统计导出", "直方图分箱数", "最多返回坏点候选", "RoiStatistics", "ROIStatistics", "RoiStatisticsRectangle", "RoiStatisticsCircle", "RoiStatisticsPolygon", "RoiStatisticsParameters", "RoiStatisticsAlgorithmProvider", "RoiStatisticsEditorTool", "RoiStatisticsResultWindow", "HistogramBins", "Percentiles", "DetectBadPixelCandidates", "BadPixelNeighborhoodRadius", "BadPixelSigmaThreshold", "BadPixelMinimumDeviationFraction", "MaximumBadPixelCandidates", "StdDevPopulation", "roi.bad_pixel_candidate_count", "roi.bad_pixel_channel_candidate_count", "roi_required", "roi_empty_after_clip", "roi_exact_float_statistics_budget_exceeded", "bad_pixel_candidates_truncated"]
 code_paths: ["UI/ColorVision.ImageEditor/Algorithms/RoiStatisticsAlgorithmProvider.cs", "UI/ColorVision.ImageEditor/Algorithms/RoiStatisticsParameters.cs", "UI/ColorVision.ImageEditor/Algorithms/StandardAlgorithmCatalog.cs", "UI/ColorVision.ImageEditor/Algorithms/ImageAlgorithmPlatform.cs", "UI/ColorVision.ImageEditor/Algorithms/AlgorithmPixelRoi.cs", "UI/ColorVision.ImageEditor/Algorithms/ImageAlgorithmInputFactory.cs", "UI/ColorVision.ImageEditor/Algorithms/AlgorithmResultExporter.cs", "UI/ColorVision.ImageEditor/EditorTools/Algorithms/Calculate/RoiStatistics", "UI/ColorVision.ImageEditor/TransientRoiSelectionSession.cs", "UI/ColorVision.Algorithms/AlgorithmInvocation.cs", "UI/ColorVision.Algorithms/AlgorithmResults.cs", "UI/ColorVision.Algorithms/AlgorithmExecution.cs", "UI/ColorVision.ImageEditor/BatchProcessing/BatchAlgorithmAnalysisProcessor.cs", "Engine/ColorVision.Engine/FlowProcessing/Algorithms/LocalFlowImageAlgorithmAdapter.cs", "UI/ColorVision.ImageEditor/EditorTools/Histogram/HistogramEditorTool.cs", "UI/ColorVision.Common/Utilities/ImageUtils.cs"]
-test_paths: []
 related: ["algorithms.platform", "algorithms.index", "algorithms.image-profile", "algorithms.image-comparison"]
 ---
 
@@ -168,6 +167,6 @@ Catalog 别名 `RoiStatistics`、`ROIStatistics`、`RoiStatisticsRectangle`、`R
 | 平均值空白或直方图只有一行 | 检查 ValidCount；没有有限值与常量浮点分布是不同情况 |
 | 百分位设置后结果窗口失败 | 检查格式化至三位小数后的 P 列名是否重复 |
 
-`ImageAlgorithmPerformanceGateTests` 的 1024² Gray8、K=1 用例检查候选存储和耗时，不代表所有尺寸/参数都达到同一性能。
+用目标图像尺寸、位深、ROI 和 K 值评估耗时和候选存储。
 
 现有用例未覆盖百分位列名精度冲突，也不能证明完整鼠标操作、所有通道/ROI 组合和导出失败清理都经过运行验证。公共执行门禁见[统一平台](./image-algorithm-platform-v1.md#m0-验收门禁)。
