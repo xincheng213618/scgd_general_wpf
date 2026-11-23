@@ -1,6 +1,7 @@
 using ColorVision.Common.MVVM;
 using ColorVision.UI.Marketplace;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.IO;
 using System.Net.Http;
 
@@ -120,6 +121,7 @@ public sealed class CloudDriveManager : ViewModelBase
             foreach (var item in pending)
             {
                 if (cancellation.IsCancellationRequested) break;
+                bool showProgress = true;
                 try
                 {
                     item.Error = "";
@@ -137,15 +139,26 @@ public sealed class CloudDriveManager : ViewModelBase
                     item.Status = "校验文件 / 查询断点";
                     item.Refresh();
                     Status = $"正在处理 {item.DisplayName}。可最小化窗口继续使用软件。";
+                    var transferTime = new Stopwatch();
+                    long resumeOffset = 0;
                     var progress = new Progress<TransferProgress>(value =>
                     {
-                        if (item.IsComplete) return;
-                        item.Progress = value.Total == 0 ? 0 : Math.Min(99.9, 100d * value.Sent / value.Total);
+                        if (!showProgress || item.IsComplete) return;
+                        if (!transferTime.IsRunning)
+                        {
+                            resumeOffset = value.Confirmed;
+                            transferTime.Start();
+                        }
+                        item.SentBytes = value.Sent;
+                        long sentThisRun = value.Sent - resumeOffset;
+                        double elapsedSeconds = transferTime.Elapsed.TotalSeconds;
+                        item.EstimatedRemaining = value.Sent < value.Total && sentThisRun > 0 && elapsedSeconds >= 0.5
+                            ? TimeSpan.FromSeconds(Math.Ceiling((value.Total - value.Sent) * elapsedSeconds / sentThisRun))
+                            : null;
                         item.Status = value.Sent == value.Total ? "服务器确认中" : "正在上传";
                         item.Refresh();
                     });
                     await _client.UploadAsync(item, () => { Save(); item.Refresh(); }, progress, cancellation.Token);
-                    item.Progress = 100;
                     item.Status = item.CanShare ? "上传完成" : "分享已过期";
                     Save();
                     // Only remove the ZIP created by this item, after persisting the completed receipt.
@@ -160,6 +173,12 @@ public sealed class CloudDriveManager : ViewModelBase
                 {
                     item.Status = item.IsComplete ? "上传完成" : "上传失败，可重试";
                     item.Error = ex.Message;
+                }
+                finally
+                {
+                    showProgress = false;
+                    item.SentBytes = null;
+                    item.EstimatedRemaining = null;
                 }
                 item.Refresh();
                 Save();

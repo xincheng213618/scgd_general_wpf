@@ -15,6 +15,7 @@ public sealed record TransferProgress(long Sent, long Confirmed, long Total);
 
 public sealed class TransferClient(HttpClient http, Uri baseUri, string clientId)
 {
+    private const int MaxChunkSize = 1024 * 1024;
     private static readonly JsonSerializerOptions JsonOptions = new() { PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower };
 
     public Task<TransferCapabilities> GetCapabilitiesAsync(CancellationToken token) => RequestAsync<TransferCapabilities>(HttpMethod.Get, "api/auth/session", null, null, token);
@@ -50,7 +51,8 @@ public sealed class TransferClient(HttpClient http, Uri baseUri, string clientId
             JsonContent.Create(new { filename = item.RemoteName, total_size = item.Size, fingerprint }, options: JsonOptions), null, token);
         ApplySession(item, session, checkpoint, progress);
         int failures = 0;
-        var buffer = new byte[Math.Clamp(session.ChunkSize, 64 * 1024, 8 * 1024 * 1024)];
+        // Confirm smaller blocks more often so an interrupted connection has less data to resend.
+        var buffer = new byte[Math.Clamp(session.ChunkSize, 64 * 1024, MaxChunkSize)];
         while (!session.Complete && session.Offset < item.Size)
         {
             token.ThrowIfCancellationRequested();

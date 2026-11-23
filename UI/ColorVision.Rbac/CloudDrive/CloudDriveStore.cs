@@ -21,7 +21,6 @@ public sealed class CloudDriveStore(string directory)
         foreach (var item in state.Items)
         {
             if (!Guid.TryParseExact(item.Id, "N", out _)) throw new InvalidDataException("云盘记录标识无效。");
-            item.Progress = item.IsComplete ? 100 : item.Size > 0 ? 100d * item.Offset / item.Size : 0;
             item.Status = item.IsComplete ? item.CanShare ? "上传完成" : "分享已过期" : "已暂停，可继续";
         }
         return state;

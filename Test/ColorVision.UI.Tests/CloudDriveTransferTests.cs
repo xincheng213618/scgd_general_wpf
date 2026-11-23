@@ -4,6 +4,8 @@ using System.IO.Compression;
 using System.Net;
 using System.Net.Http;
 using System.Text.Json;
+using System.Windows;
+using System.Windows.Controls;
 
 namespace ColorVision.UI.Tests;
 
@@ -14,34 +16,107 @@ public sealed class CloudDriveTransferTests : IDisposable
 
     public CloudDriveTransferTests() => Directory.CreateDirectory(_directory);
 
-    [Fact]
-    public async Task RestartResumesPersistedAnonymousIdentityAndConfirmedOffset()
+    [Theory]
+    [InlineData(64 * 1024, 64 * 1024)]
+    [InlineData(8 * 1024 * 1024, 1024 * 1024)]
+    public async Task RestartResumesPersistedAnonymousIdentityAndConfirmedOffset(int suggestedChunkSize, int expectedChunkSize)
     {
         var store = new CloudDriveStore(_directory);
         var state = store.Load(_server.AbsoluteUri);
-        var item = CreateItem(150000);
+        var item = CreateItem(2 * expectedChunkSize + 18928);
         state.Items.Add(item);
-        using var handler = new UploadServer();
+        using var handler = new UploadServer { SuggestedChunkSize = suggestedChunkSize };
         using var http = new HttpClient(handler);
         var client = new TransferClient(http, _server, state.ClientId);
         using var cancel = new CancellationTokenSource();
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() => client.UploadAsync(item, () =>
         {
             store.Save(state);
-            if (item.Offset == 65536) cancel.Cancel();
+            if (item.Offset == expectedChunkSize) cancel.Cancel();
         }, null, cancel.Token));
 
         var restored = store.Load(_server.AbsoluteUri);
         Assert.Equal(state.ClientId, restored.ClientId);
-        Assert.Equal(65536, restored.Items[0].Offset);
+        Assert.Equal(expectedChunkSize, restored.Items[0].Offset);
         var resumedClient = new TransferClient(http, _server, restored.ClientId);
         await resumedClient.UploadAsync(restored.Items[0], () => store.Save(restored), null, CancellationToken.None);
         Assert.True(restored.Items[0].CanShare);
         Assert.Equal(1, handler.CreateCount);
-        Assert.Equal(new long[] { 0, 65536, 131072 }, handler.Offsets);
+        Assert.Equal(new long[] { 0, expectedChunkSize, 2L * expectedChunkSize }, handler.Offsets);
         Assert.Equal(File.ReadAllBytes(item.UploadPath), handler.Data.ToArray());
         Assert.Single(handler.ClientIds.Distinct());
         Assert.Equal(restored.Items[0].ShareUrl, store.Load(_server.AbsoluteUri).Items[0].ShareUrl);
+    }
+
+    [Fact]
+    public async Task ShowsSentKilobytesAndEstimatesRemainingBeforeServerConfirmation()
+    {
+        var store = new CloudDriveStore(_directory);
+        var confirmFirstBlock = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        using var handler = new UploadServer
+        {
+            BeforePatchResponse = (offset, token) => offset == 0
+                ? confirmFirstBlock.Task.WaitAsync(token) : Task.Delay(Timeout.InfiniteTimeSpan, token)
+        };
+        using var http = new HttpClient(handler);
+        var manager = new CloudDriveManager(store, _server, http);
+        manager.AddPaths([CreateItem(150000).UploadPath]);
+        var item = Assert.Single(manager.Items);
+        var row = WpfTestHost.Invoke(() =>
+        {
+            var window = new CloudDriveWindow(manager);
+            var list = Assert.IsType<ListBox>(window.FindName("FilesList"));
+            var template = Assert.IsType<Grid>(list.ItemTemplate.LoadContent());
+            template.DataContext = item;
+            window.Close();
+            return template;
+        });
+        var firstBlockShown = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var secondBlockShown = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        item.PropertyChanged += (_, _) =>
+        {
+            if (item.Progress > 0) firstBlockShown.TrySetResult();
+            if (item.Progress > 50) secondBlockShown.TrySetResult();
+        };
+
+        Task upload = WpfTestHost.Invoke<Task>(() => manager.UploadAsync());
+        try
+        {
+            await firstBlockShown.Task.WaitAsync(TimeSpan.FromSeconds(10));
+            WpfTestHost.Invoke(() =>
+            {
+                Assert.StartsWith("已发送 64 KB / ", Assert.IsType<TextBlock>(row.FindName("UploadDetail")).Text);
+                var bar = Assert.IsType<ProgressBar>(row.FindName("UploadProgressBar"));
+                var percentage = Assert.IsType<TextBlock>(row.FindName("UploadPercentage"));
+                Assert.Equal(100d * 65536 / item.Size, bar.Value);
+                Assert.Equal($"{bar.Value:0.0}%", percentage.Text);
+                Assert.Equal(Visibility.Visible, percentage.Visibility);
+            });
+            Assert.Equal(0, item.Offset);
+            Assert.Equal(0, Assert.Single(store.Load(_server.AbsoluteUri).Items).Offset);
+
+            // Keep the response pending beyond the rate sampling window before sending the next block.
+            await Task.Delay(TimeSpan.FromSeconds(1));
+            confirmFirstBlock.SetResult();
+            await secondBlockShown.Task.WaitAsync(TimeSpan.FromSeconds(10));
+            WpfTestHost.Invoke(() =>
+            {
+                Assert.StartsWith("已发送 128 KB / ", Assert.IsType<TextBlock>(row.FindName("UploadDetail")).Text);
+                var remaining = Assert.IsType<TextBlock>(row.FindName("UploadRemainingTime"));
+                Assert.StartsWith("预计剩余", remaining.Text);
+                Assert.Equal(Visibility.Visible, remaining.Visibility);
+            });
+            Assert.Equal(65536, item.Offset);
+        }
+        finally
+        {
+            WpfTestHost.Invoke(manager.Pause);
+            await upload;
+        }
+
+        Assert.Equal("已暂停，可继续", item.Status);
+        Assert.Equal(100d * 65536 / item.Size, item.Progress);
+        Assert.Equal(65536, Assert.Single(store.Load(_server.AbsoluteUri).Items).Offset);
     }
 
     [Fact]
@@ -156,6 +231,8 @@ public sealed class CloudDriveTransferTests : IDisposable
         public List<string> ClientIds { get; } = [];
         public bool LoseFinalResponse { get; set; }
         public bool CommitThenConflict { get; set; }
+        public int SuggestedChunkSize { get; init; } = 65536;
+        public Func<long, CancellationToken, Task>? BeforePatchResponse { get; init; }
         public int CreateCount { get; private set; }
         public int StatusCount { get; private set; }
         private string _name = "";
@@ -167,6 +244,13 @@ public sealed class CloudDriveTransferTests : IDisposable
             Assert.Null(request.Headers.Authorization);
             Assert.False(request.Headers.Contains("Cookie"));
             ClientIds.Add(request.Headers.GetValues("X-Transfer-Client").Single());
+            if (request.RequestUri!.AbsolutePath == "/api/auth/session")
+            {
+                return new(HttpStatusCode.OK)
+                {
+                    Content = new StringContent("""{"anonymous_transfer_upload_enabled":true,"anonymous_transfer_max_bytes":2147483648}""", System.Text.Encoding.UTF8, "application/json")
+                };
+            }
             if (request.Method == HttpMethod.Post)
             {
                 CreateCount++;
@@ -180,6 +264,7 @@ public sealed class CloudDriveTransferTests : IDisposable
                 Assert.Equal(Data.Length, offset);
                 Offsets.Add(offset);
                 await request.Content!.CopyToAsync(Data, cancellationToken);
+                if (BeforePatchResponse != null) await BeforePatchResponse(offset, cancellationToken);
                 if (CommitThenConflict) { CommitThenConflict = false; return new(HttpStatusCode.Conflict) { Content = new StringContent("{}") }; }
                 if (LoseFinalResponse && Data.Length == _size) { LoseFinalResponse = false; throw new HttpRequestException("response lost"); }
             }
@@ -191,7 +276,7 @@ public sealed class CloudDriveTransferTests : IDisposable
                 {
                     upload_id = UploadId, name = _name, total_size = _size, offset = Data.Length, complete,
                     share_url = complete ? "/transfer/share/" + ShareId : "", expires_at = complete ? DateTimeOffset.UtcNow.AddDays(1).ToString("O") : null,
-                    chunk_size = 65536
+                    chunk_size = SuggestedChunkSize
                 }), System.Text.Encoding.UTF8, "application/json")
             };
         }
