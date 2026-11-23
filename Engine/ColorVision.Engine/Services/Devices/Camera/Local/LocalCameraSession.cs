@@ -41,7 +41,6 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
         internal CameraPreviewColorOrder OpenedPreviewColorOrder { get; private set; }
         internal int OpenedBpp => openedBpp;
         private IntPtr handle;
-        private string? loadedCalibrationJson;
         private sealed record PreviewRegistration(Func<IntPtr, int> Register, Action Stop);
         private PreviewRegistration? preview;
         private PreviewRegistration? retiringPreview;
@@ -199,7 +198,6 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                         OpenedHikOutputBgr = hikOutputBgr;
                         OpenedPreviewColorOrder = previewColorOrder;
                         openedBpp = imageBpp;
-                        loadedCalibrationJson = null;
                         EnsureLicenseAvailable();
                         if (result == cvErrorDefine.CV_ERR_SUCCESS)
                         {
@@ -346,7 +344,6 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                         throw new InvalidOperationException("本地相机返回打开成功，但未建立会话。");
                     if (result == cvErrorDefine.CV_ERR_SUCCESS)
                     {
-                        loadedCalibrationJson = null;
                         OpenedMode = mode;
                         openedBpp = imageBpp;
                         RawBufferPool.Dispose();
@@ -533,7 +530,6 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             if (native.IsOpen(handle)) throw new InvalidOperationException(failureMessage);
             nativeClosePending = false;
             filterWheelPrepared = false;
-            loadedCalibrationJson = null;
         }
 
         private void RequestFocusStop()
@@ -616,30 +612,6 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                     CompletePreviewRetirement();
                     stopped?.Invoke();
                 }
-            }
-        }
-
-        public bool UpdateCalibration(string json)
-        {
-            ArgumentException.ThrowIfNullOrWhiteSpace(json);
-            lock (SyncRoot)
-            {
-                ObjectDisposedException.ThrowIf(disposed, this);
-                if (requiresCloseAfterFailedOpen || handle == IntPtr.Zero || !native.IsOpen(handle))
-                {
-                    return false;
-                }
-                if (string.Equals(loadedCalibrationJson, json, StringComparison.Ordinal))
-                {
-                    return true;
-                }
-                if (!native.UpdateCalibration(handle, json))
-                {
-                    return false;
-                }
-
-                loadedCalibrationJson = json;
-                return true;
             }
         }
 

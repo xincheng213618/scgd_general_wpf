@@ -103,7 +103,6 @@ public class LocalCameraMotorTests
                     () => UseCamera()
                 }, operation => Assert.Contains("重新连接", Assert.Throws<InvalidOperationException>(operation).Message));
                 Assert.Equal(0, measurements);
-                Assert.False(session.UpdateCalibration("{}"));
             }
             else
             {

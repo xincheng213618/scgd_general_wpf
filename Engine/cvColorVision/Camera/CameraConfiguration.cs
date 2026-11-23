@@ -6,22 +6,6 @@ using cvColorVision.Properties;
 
 namespace cvColorVision
 {
-    public class ChannelCalibration
-    {
-        public CalibrationItem DarkNoiseCheck;
-        //暗噪声校正参数
-        public CalibrationItem dsnuCheck;
-        //均匀场校正文件
-        public CalibrationItem uniformityCheck;
-        //缺陷点校正文件
-        public CalibrationItem defectWPCheck;
-        public CalibrationItem defectBPCheck;
-        //畸变校正
-        public CalibrationItem distortionCheck;
-
-        public CalibrationItem defectCheck;
-
-    }
     public class ChannelParam
     {
         //曝光时间，单位毫秒
@@ -30,8 +14,6 @@ namespace cvColorVision
         public int cfwport { set; get; }
         //滤色片类型
         public ImageChannelType channelType { set; get; }
-        //校正
-        public ChannelCalibration check { set; get; }
         //文件名
         public string fileName;
     }
@@ -90,41 +72,11 @@ namespace cvColorVision
         [LocalizedCategory(nameof(Resources.CameraConfigCategory)), TypeConverter(typeof(ExpandableObjectConverter)), LocalizedDisplayName(nameof(Resources.CameraParameters))]
         public CameraCfg cameraCfg { set; get; }
 
-        [LocalizedCategory(nameof(Resources.CalibrationLibraryConfigCategory)), LocalizedDisplayName(nameof(Resources.CalibrationParameters))]
-        public List<CalibrationItem> calibrationLibCfg { set; get; }
-
         [LocalizedCategory(nameof(Resources.ChannelConfigCategory)), LocalizedDisplayName(nameof(Resources.ChannelParameters))]
         public List<ChannelCfg> channelCfg { set; get; }
 
         public ProjectSysCfg()
         {
-        }
-    }
-
-    public class CalibrationItem
-    {
-        public string title { set; get; }
-        public CalibrationType type { set; get; }
-        public bool enable { set; get; }
-        public string doc { set; get; }
-
-        public CalibrationItem()
-        {
-            type = CalibrationType.DefectWPoint;
-            enable = false;
-            title = "";
-            doc = "";
-        }
-        public CalibrationItem(CalibrationType type, bool enable, string title, string fileName)
-        {
-            this.type = type;
-            this.enable = enable;
-            this.title = title;
-            this.doc = fileName;
-        }
-        public override string ToString()
-        {
-            return string.Format("{0}", type);
         }
     }
 }

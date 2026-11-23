@@ -19,7 +19,6 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
         int SwitchMode(IntPtr handle, TakeImageMode mode, int bpp);
         void Close(IntPtr handle);
         void DetachCallback(IntPtr handle);
-        bool UpdateCalibration(IntPtr handle, string json);
         void Release(IntPtr handle);
     }
 
@@ -182,7 +181,6 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             int result = cvCameraCSLib.CM_UnregisterCallBack(handle);
             if (result != cvErrorDefine.CV_ERR_SUCCESS) throw LocalCameraCaptureService.CreateNativeException("注销本地相机视频回调失败", result);
         }
-        public bool UpdateCalibration(IntPtr handle, string json) => cvCameraCSLib.UpdateCfgJson(handle, ConfigType.Cfg_Calibration, json) == cvErrorDefine.CV_ERR_SUCCESS;
         public void Release(IntPtr handle)
         {
             _ = cvCameraCSLib.ReleaseCameraManager(handle);

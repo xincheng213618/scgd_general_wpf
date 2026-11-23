@@ -1,6 +1,5 @@
 #pragma warning disable
 using System.Collections.Generic;
-using System.ComponentModel;
 
 namespace cvColorVision
 {
@@ -24,12 +23,11 @@ namespace cvColorVision
         public string title { set; get; }
         //自动曝光标识
         public bool autoExpFlag { set; get; }
-        //亮度校正
-        public CalibrationItem lumChromaCheck { set; get; }
         //滤色片通道
         public List<ChannelParam> channels;
 
-        public List<CalibrationItem> calibrationlist;
+        // An empty list requests packed RAW.
+        public object[] calibrationlist;
 
         public GetFrameParam()
         {

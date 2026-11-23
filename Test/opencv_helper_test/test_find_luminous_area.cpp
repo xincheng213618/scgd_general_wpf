@@ -37,11 +37,6 @@ using json = nlohmann::json;
 bool RunCalibrationApiSmokeTests();
 bool RunCalibrationCacheSmallBudgetTests();
 bool RunCalibrationRealDataTests(const std::filesystem::path& testRoot);
-bool RunCalibrationLegacyColorComparison(
-    const std::filesystem::path& rawPath,
-    const std::filesystem::path& colorFile,
-    const std::filesystem::path& legacyDll);
-
 bool RunP2AlgorithmTests();
 bool RunNativeLoggingTests();
 bool RunPseudoColorTests();
@@ -3590,7 +3585,6 @@ static constexpr NativeTestCommand nativeTestCommands[] = {
     { "--calibration-smoke", 2, 2, "" },
     { "--calibration-cache-small-budget", 2, 2, "" },
     { "--calibration-real-data", 3, 3, "<test-root>" },
-    { "--calibration-legacy-color", 5, 5, "<file.cvraw> <color-file> <legacy-dll>" },
     { "--p2-only", 2, 2, "" },
     { "--native-log", 2, 2, "" },
     { "--pseudo-color", 2, 2, "" },
@@ -3687,12 +3681,7 @@ int main(int argc, char* argv[])
     if (argc == 3 && std::string(argv[1]) == "--calibration-real-data") {
         return RunCalibrationRealDataTests(std::filesystem::u8path(argv[2])) ? 0 : 1;
     }
-    if (argc == 5 && std::string(argv[1]) == "--calibration-legacy-color") {
-        return RunCalibrationLegacyColorComparison(
-            std::filesystem::u8path(argv[2]),
-            std::filesystem::u8path(argv[3]),
-            std::filesystem::u8path(argv[4])) ? 0 : 1;
-    }
+
     if (argc == 2 && std::string(argv[1]) == "--p2-only") {
         return RunP2AlgorithmTests() ? 0 : 1;
     }

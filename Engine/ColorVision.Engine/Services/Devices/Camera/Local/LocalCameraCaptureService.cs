@@ -391,10 +391,9 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                 posBurst = 0,
                 autoExpFlag = false
             };
-            // Keep packed color RAW in the SDK; null selects legacy split/merge
-            // even when there are no calibration items. Other camera modes retain their existing path.
+            // An empty list selects packed color RAW in cvCamera.dll.
             if (channelCount == 3 && device.Config.CameraMode is CameraMode.BV_MODE or CameraMode.LVTOBV_MODE)
-                param.calibrationlist = new List<CalibrationItem>();
+                param.calibrationlist = Array.Empty<object>();
             float[] exposures = GetExposureValues(device, cameraParameters, channelCount);
             for (int index = 0; index < channelCount; index++)
             {
@@ -403,8 +402,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                 {
                     exp = GetExposureForChannel(device, cameraParameters, channelType, index, exposures),
                     channelType = channelType,
-                    cfwport = cfwPort,
-                    check = new ChannelCalibration()
+                    cfwport = cfwPort
                 });
             }
             return JsonConvert.SerializeObject(param);

@@ -1307,7 +1307,6 @@ public class LocalCameraSessionTests
             Events.Add("detach");
             if (DetachError != null) throw DetachError;
         }
-        public bool UpdateCalibration(IntPtr handle, string json) => true;
         public void Release(IntPtr handle) { Releases++; }
     }
 }
