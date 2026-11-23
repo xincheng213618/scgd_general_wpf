@@ -53,6 +53,8 @@ namespace ColorVision.Core
         public double Contrast { get; init; }
     }
 
+    public sealed record GridDistortionCandidatePoint(double X, double Y);
+
     public sealed record GridDistortionMetrics
     {
         public double HorizontalTvPercent { get; init; }
@@ -101,6 +103,7 @@ namespace ColorVision.Core
         public int CandidateCount { get; init; }
         public int SelectedCount { get; init; }
         public IReadOnlyList<GridDistortionPoint> Points { get; init; } = Array.Empty<GridDistortionPoint>();
+        public IReadOnlyList<GridDistortionCandidatePoint> CandidatePoints { get; init; } = Array.Empty<GridDistortionCandidatePoint>();
         public IReadOnlyList<int> ReferencePointIds { get; init; } = Array.Empty<int>();
         public GridDistortionMetrics? Metrics { get; init; }
         public GridDistortionQuality Quality { get; init; } = new();
@@ -137,6 +140,11 @@ namespace ColorVision.Core
                 }).ToArray();
                 int candidateCount = Integer(root, "candidateCount"), selectedCount = Integer(root, "selectedCount");
                 Require(selectedCount == points.Length && selectedCount <= rows * cols && candidateCount >= selectedCount, "Inconsistent point counts.");
+                GridDistortionCandidatePoint[] candidatePoints = root.TryGetProperty("candidatePoints", out JsonElement candidatesJson)
+                    ? candidatesJson.EnumerateArray().Select(p => new GridDistortionCandidatePoint(Number(p, "x"), Number(p, "y"))).ToArray()
+                    : Array.Empty<GridDistortionCandidatePoint>();
+                Require(candidatePoints.Length <= candidateCount && candidatePoints.All(p => p.X >= 0 && p.X < imageWidth && p.Y >= 0 && p.Y < imageHeight),
+                    "Invalid candidate coordinates or count.");
                 Require(points.All(p => p.Id >= 0 && p.Row >= 0 && p.Row < rows && p.Col >= 0 && p.Col < cols &&
                     p.X >= 0 && p.X < imageWidth && p.Y >= 0 && p.Y < imageHeight && p.Area > 0 && p.Contrast >= 0 && p.Contrast <= 1), "Invalid point geometry or contrast.");
                 Require(points.Select(p => p.Id).Distinct().Count() == points.Length && points.Select(p => (p.Row, p.Col)).Distinct().Count() == points.Length, "Duplicate point IDs or grid positions.");
@@ -172,7 +180,7 @@ namespace ColorVision.Core
                 result = new GridDistortionResult
                 {
                     Success = success, StatusCode = status, Message = Text(root, "message"), ExpectedRows = rows, ExpectedCols = cols,
-                    CandidateCount = candidateCount, SelectedCount = selectedCount, Points = points, ReferencePointIds = references,
+                    CandidateCount = candidateCount, SelectedCount = selectedCount, Points = points, CandidatePoints = candidatePoints, ReferencePointIds = references,
                     Metrics = metrics, Quality = quality, Timings = timings, RawJson = json ?? string.Empty,
                     Warnings = root.GetProperty("warnings").EnumerateArray().Select(p => p.GetString() ?? throw new JsonException("Warning must be a string.")).ToArray()
                 };

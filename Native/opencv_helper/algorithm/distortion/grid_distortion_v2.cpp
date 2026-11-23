@@ -9,6 +9,7 @@
 #include <cmath>
 #include <limits>
 #include <numeric>
+#include <utility>
 #include <vector>
 
 namespace cvcore::distortion {
@@ -136,7 +137,8 @@ bool validateGrid(const std::vector<cv::Point2f>& points, const Options& options
 }
 
 bool orderCandidates(const std::vector<Candidate>& candidates, const Options& options,
-    std::vector<cv::Point2f>& ordered, double& residual, bool& ambiguous)
+    std::vector<cv::Point2f>& ordered, double& residual, bool& ambiguous,
+    const std::vector<Candidate>* normalThresholdCandidates)
 {
     const int expected = options.rows * options.cols;
     if (candidates.size() < static_cast<size_t>(expected)) return false;
@@ -202,51 +204,63 @@ bool orderCandidates(const std::vector<Candidate>& candidates, const Options& op
     }
     if (!found) found = tryOrder(points);
     if (!found) return false;
-    if (candidates.size() > ordered.size()) {
+    if (candidates.size() > ordered.size() || normalThresholdCandidates != nullptr) {
         std::vector<double> selectedAreas;
         for (const auto& p : ordered) {
             const auto selected = std::min_element(candidates.begin(), candidates.end(), [&](const auto& a, const auto& b) { return cv::norm(a.center - p) < cv::norm(b.center - p); });
             selectedAreas.push_back(selected->area);
         }
         const double typicalArea = median(selectedAreas);
-        std::vector<cv::Point2f> lattice;
-        cv::perspectiveTransform(points, lattice, homography.inv());
-        std::array<std::vector<bool>, 4> extensions = {
-            std::vector<bool>(options.cols), std::vector<bool>(options.cols),
-            std::vector<bool>(options.rows), std::vector<bool>(options.rows)
+        const cv::Mat inverseHomography = homography.inv();
+        auto hasAmbiguity = [&](const std::vector<Candidate>& evidence, const std::vector<cv::Point2f>& centers, bool checkOccupiedCells) {
+            if (evidence.empty()) return false;
+            std::vector<cv::Point2f> lattice;
+            cv::perspectiveTransform(centers, lattice, inverseHomography);
+            std::array<std::vector<bool>, 4> extensions = {
+                std::vector<bool>(options.cols), std::vector<bool>(options.cols),
+                std::vector<bool>(options.rows), std::vector<bool>(options.rows)
+            };
+            for (size_t i = 0; i < centers.size(); ++i) {
+                if (evidence[i].area < typicalArea * 0.125 || evidence[i].area > typicalArea * 4.0) continue;
+                // Only local topology establishes a chart extension. Distant
+                // clutter can also match the infinitely extended lattice.
+                const cv::Point2f p = lattice[i];
+                if (!std::isfinite(p.x) || !std::isfinite(p.y)
+                    || p.x < -1.20 || p.x > options.cols + 0.20 || p.y < -1.20 || p.y > options.rows + 0.20
+                    || std::abs(p.x - std::round(p.x)) >= 0.20 || std::abs(p.y - std::round(p.y)) >= 0.20) continue;
+                const int col = static_cast<int>(std::round(p.x));
+                const int row = static_cast<int>(std::round(p.y));
+                if (checkOccupiedCells && std::any_of(ordered.begin(), ordered.end(),
+                    [&](const auto& selected) { return cv::norm(selected - centers[i]) < 0.1; })) continue;
+                if (col >= 0 && col < options.cols && row >= 0 && row < options.rows && checkOccupiedCells) return true;
+                if (col >= 0 && col < options.cols) {
+                    if (row == -1) extensions[0][col] = true;
+                    if (row == options.rows) extensions[1][col] = true;
+                }
+                if (row >= 0 && row < options.rows) {
+                    if (col == -1) extensions[2][row] = true;
+                    if (col == options.cols) extensions[3][row] = true;
+                }
+            }
+            // Require three aligned positions even for an incomplete extension.
+            return std::any_of(extensions.begin(), extensions.end(), [](const auto& edge) {
+                return std::count(edge.begin(), edge.end(), true) >= 3;
+            });
         };
-        for (size_t i = 0; i < points.size(); ++i) {
-            if (candidates[i].area < typicalArea * 0.125 || candidates[i].area > typicalArea * 4.0) continue;
-            bool selected = false;
-            for (const auto& p : ordered) if (cv::norm(p - points[i]) < 0.1) { selected = true; break; }
-            if (selected) continue;
-            const cv::Point2f p = lattice[i];
-            // A distant background dot can coincide with an integer coordinate
-            // of the infinitely extended lattice. Only local topology is evidence
-            // of an undersized chart configuration, not that coincidence alone.
-            if (!std::isfinite(p.x) || !std::isfinite(p.y)
-                || p.x < -1.20 || p.x > options.cols + 0.20 || p.y < -1.20 || p.y > options.rows + 0.20
-                || std::abs(p.x - std::round(p.x)) >= 0.20 || std::abs(p.y - std::round(p.y)) >= 0.20) continue;
-            const int col = static_cast<int>(std::round(p.x));
-            const int row = static_cast<int>(std::round(p.y));
-            if (col >= 0 && col < options.cols && row >= 0 && row < options.rows) {
+        if (candidates.size() > ordered.size() && hasAmbiguity(candidates, points, true)) {
+            ambiguous = true;
+            return false;
+        }
+        if (normalThresholdCandidates != nullptr) {
+            // A stricter mask can hide a dim row. Earlier contours may shift
+            // around occupied cells, so use them only to check extensions.
+            std::vector<cv::Point2f> normalCenters;
+            normalCenters.reserve(normalThresholdCandidates->size());
+            for (const auto& candidate : *normalThresholdCandidates) normalCenters.push_back(candidate.center);
+            if (hasAmbiguity(*normalThresholdCandidates, normalCenters, false)) {
                 ambiguous = true;
                 return false;
             }
-            if (col >= 0 && col < options.cols) {
-                if (row == -1) extensions[0][col] = true;
-                if (row == options.rows) extensions[1][col] = true;
-            }
-            if (row >= 0 && row < options.rows) {
-                if (col == -1) extensions[2][row] = true;
-                if (col == options.cols) extensions[3][row] = true;
-            }
-        }
-        // Require three distinct aligned grid positions to establish a neighboring
-        // row or column, including an incomplete extension with gaps. An isolated
-        // adjacent reflection is not another grid.
-        for (const auto& edge : extensions) {
-            if (std::count(edge.begin(), edge.end(), true) >= 3) { ambiguous = true; return false; }
         }
     }
     return true;
@@ -435,13 +449,24 @@ json calculateGridDistortionV2(const cv::Mat& image, const json& config, const c
     cv::Mat mask;
     const double otsu = cv::threshold(gray8, mask, 0, 255, cv::THRESH_BINARY | cv::THRESH_OTSU);
     const double floor = std::max(1.0, options.minimumContrast * 255.0 * 0.5);
-    const std::array<double, 3> thresholds = { std::max(otsu, floor), std::max(otsu * 0.35, floor), std::max(otsu * 0.10, floor) };
-    std::vector<Candidate> candidates;
+    const double standardThreshold = std::max(otsu, floor);
+    constexpr int firstHigherThresholdAttempt = 3;
+    const double thresholdHeadroom = 255.0 - standardThreshold;
+    const std::array<double, 5> thresholds = {
+        standardThreshold, std::max(otsu * 0.35, floor), std::max(otsu * 0.10, floor),
+        standardThreshold + thresholdHeadroom * 0.5, standardThreshold + thresholdHeadroom * 0.9
+    };
+    std::vector<Candidate> candidates, largestAttempt, normalThresholdCandidates;
     std::vector<cv::Point2f> ordered;
     double residual = 0, candidateMs = 0, gridMs = 0;
-    int maxCandidates = 0, usedAttempt = -1;
+    int usedAttempt = -1;
     bool ambiguous = false;
     for (int attempt = 0; attempt < static_cast<int>(thresholds.size()); ++attempt) {
+        // A bright 7x7 grid can lose a dot when its dim tail is joined to the
+        // core. Re-segment only after the normal passes fail without ambiguity.
+        const bool higherThreshold = attempt >= firstHigherThresholdAttempt;
+        if (higherThreshold && (!options.bright || options.rows != 7 || options.cols != 7 || ambiguous || thresholdHeadroom < 2.0)) break;
+        if (attempt == firstHigherThresholdAttempt) normalThresholdCandidates = largestAttempt;
         if (attempt > 0 && std::abs(thresholds[attempt] - thresholds[attempt - 1]) < 0.5) continue;
         stage = Clock::now();
         if (attempt != 0 || thresholds[attempt] != otsu) {
@@ -449,19 +474,37 @@ json calculateGridDistortionV2(const cv::Mat& image, const json& config, const c
         }
         candidates = detectCandidates(mask, options);
         candidateMs += elapsed(stage);
-        maxCandidates = std::max(maxCandidates, static_cast<int>(candidates.size()));
         stage = Clock::now();
-        const bool found = orderCandidates(candidates, options, ordered, residual, ambiguous);
+        const bool found = orderCandidates(candidates, options, ordered, residual, ambiguous,
+            higherThreshold ? &normalThresholdCandidates : nullptr);
         gridMs += elapsed(stage);
         if (found) { usedAttempt = attempt; break; }
+        if (candidates.size() > largestAttempt.size()) largestAttempt.swap(candidates);
     }
     result["timings"]["candidatesMs"] = candidateMs;
     result["timings"]["gridMs"] = gridMs;
-    result["candidateCount"] = usedAttempt >= 0 ? static_cast<int>(candidates.size()) : maxCandidates;
+    if (usedAttempt < 0) candidates.swap(largestAttempt);
+    result["candidateCount"] = candidates.size();
+    auto failDetection = [&](const char* status, const char* message) {
+        // Bound diagnostic payloads for images with dense clutter. Sample across
+        // contour order so a truncated overlay still covers the image.
+        constexpr size_t maxDiagnosticPoints = 1024;
+        const size_t count = std::min(candidates.size(), maxDiagnosticPoints);
+        json points = json::array();
+        for (size_t i = 0; i < count; ++i) {
+            const auto& center = candidates[i * candidates.size() / count].center;
+            points.push_back({
+                {"x", (center.x + 0.5) / sx - 0.5 + origin.x},
+                {"y", (center.y + 0.5) / sy - 0.5 + origin.y}
+            });
+        }
+        result["candidatePoints"] = std::move(points);
+        return finish(status, message);
+    };
     if (usedAttempt < 0) {
-        if (ambiguous) return finish("ambiguous_grid", "Additional candidates fit an extension of the selected grid; verify the configured rows and columns.");
-        if (maxCandidates < options.rows * options.cols) return finish("too_few_candidates", "The complete grid was not detected. Check missing points, contrast and ROI coverage.");
-        return finish("grid_not_found", "Candidates do not form a complete, consistent grid within the residual limit.");
+        if (ambiguous) return failDetection("ambiguous_grid", "Additional candidates fit an extension of the selected grid; verify the configured rows and columns.");
+        if (candidates.size() < static_cast<size_t>(options.rows * options.cols)) return failDetection("too_few_candidates", "The complete grid was not detected. Check missing points, contrast and ROI coverage.");
+        return failDetection("grid_not_found", "Candidates do not form a complete, consistent grid within the residual limit.");
     }
 
     stage = Clock::now();
@@ -473,18 +516,18 @@ json calculateGridDistortionV2(const cv::Mat& image, const json& config, const c
         double area = 0, contrast = 0;
         if (best == candidates.end() || !refinePoint(image, *best, sx, sy, options, point, area, contrast)) {
             result["timings"]["refineMs"] = elapsed(stage);
-            return finish("low_contrast", "At least one selected point lacks sufficient original-image contrast for refinement.");
+            return failDetection("low_contrast", "At least one selected point lacks sufficient original-image contrast for refinement.");
         }
         refined.push_back(point); areas.push_back(area); contrasts.push_back(contrast);
     }
     result["timings"]["refineMs"] = elapsed(stage);
     stage = Clock::now();
     cv::Mat homography;
-    if (!validateGrid(refined, options, residual, homography)) return finish("grid_residual_too_large", "Refined measured centers fail the grid consistency or residual check.");
+    if (!validateGrid(refined, options, residual, homography)) return failDetection("grid_residual_too_large", "Refined measured centers fail the grid consistency or residual check.");
     const int midR = options.rows / 2, midC = options.cols / 2, lastR = options.rows - 1, lastC = options.cols - 1;
     const std::array<int, 9> references = { 0, midC, lastC, midR * options.cols, midR * options.cols + midC, midR * options.cols + lastC, lastR * options.cols, lastR * options.cols + midC, lastR * options.cols + lastC };
     result["metrics"] = metrics(refined, references, options.tvCalcWay);
-    if (result["metrics"].is_null()) return finish("degenerate_grid", "A reference span is degenerate.");
+    if (result["metrics"].is_null()) return failDetection("degenerate_grid", "A reference span is degenerate.");
     const std::array<const char*, 9> names = { "TL", "TC", "TR", "ML", "C", "MR", "BL", "BC", "BR" };
     for (int id = 0; id < static_cast<int>(refined.size()); ++id) {
         std::string name = "R" + std::to_string(id / options.cols + 1) + "C" + std::to_string(id % options.cols + 1);
@@ -499,7 +542,8 @@ json calculateGridDistortionV2(const cv::Mat& image, const json& config, const c
     result["quality"]["gridResidualFraction"] = residual;
     // A reproducible heuristic, not a calibrated probability or an accuracy estimate.
     result["quality"]["score"] = std::clamp((1.0 - residual / options.maxResidual) * std::min(1.0, minimumContrast / std::max(0.10, options.minimumContrast)), 0.0, 1.0);
-    if (usedAttempt > 0) result["warnings"].push_back("A lower segmentation threshold was needed to recover the complete grid.");
+    if (usedAttempt >= firstHigherThresholdAttempt) result["warnings"].push_back("A higher segmentation threshold was needed to separate bright point cores from tails.");
+    else if (usedAttempt > 0) result["warnings"].push_back("A lower segmentation threshold was needed to recover the complete grid.");
     if (candidates.size() > refined.size()) result["warnings"].push_back("Non-grid candidates were excluded by topology validation.");
     result["timings"]["metricsMs"] = elapsed(stage);
     result["success"] = true;
