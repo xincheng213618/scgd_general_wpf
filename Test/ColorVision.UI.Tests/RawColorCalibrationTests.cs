@@ -94,22 +94,50 @@ public sealed class RawColorCalibrationTests
             Assert.True(CVFileUtil.WriteCIEFile(path, raw));
             byte[] original = File.ReadAllBytes(path);
             CVFileMetadata.SetProperty(path, "future", 12, new byte[] { 7 });
+            byte[] unannotated = File.ReadAllBytes(path);
             using LocalFlowFrame frame = LocalFrameFileService.Load(path);
             using LocalCalibrationCacheManager cache = new("test");
             DeviceCameraCalibrationFile file = new("color", CalibrationType.LumFourColor, "color", Path.GetFileName(calibration), calibration);
-            LocalFrameCalibrationService.CalibrateInPlace(frame, cache, [file], "first", default);
+            void Calibrate(string name, params DeviceCameraCalibrationFile[] files)
+            {
+                cache.Prepare(files, name).Apply(frame, CalibrationOutputMode.FullCie);
+            }
+
+            Calibrate("first", file);
+            Assert.Equal(unannotated, File.ReadAllBytes(path));
+            LocalFrameFileService.SaveColorParametersToInput(frame);
             Assert.Equal("first", ColorCalibrationSnapshot.Read(path, raw)!.Template);
             Assert.True(ColorCalibrationSnapshot.Read(path, raw)!.CanReplay);
-            LocalFrameCalibrationService.CalibrateInPlace(frame, cache, [file], "final", default);
+            Calibrate("final", file);
+            LocalFrameFileService.SaveColorParametersToInput(frame);
             Assert.Equal("final", ColorCalibrationSnapshot.Read(path, raw)!.Template);
             Assert.Equal(3, CVFileMetadata.Read(path).Count);
             Assert.Equal(original, File.ReadAllBytes(path).Take(original.Length));
             byte[] last = File.ReadAllBytes(path);
             DeviceCameraCalibrationFile missing = file with { FullPath = calibration + ".missing" };
-            Assert.ThrowsAny<Exception>(() => LocalFrameCalibrationService.CalibrateInPlace(frame, cache, [missing], "failed", default));
+            Assert.Throws<FileNotFoundException>(() => Calibrate("missing", missing));
             Assert.Equal(last, File.ReadAllBytes(path));
-            // A failed attempt is not a new parameter snapshot; run successfully before saving.
-            LocalFrameCalibrationService.CalibrateInPlace(frame, cache, [file], "saved", default);
+            using LocalFlowFrameLease previous = frame.Acquire();
+            byte[] expectedCie = previous.CopyCieToArray();
+            byte[] expectedRaw = previous.CopyRawToArray();
+            string incompatiblePath = Path.Combine(root, "color-raw8.dat");
+            File.WriteAllText(incompatiblePath, CalibrationJson.Insert(1, "\"bpp\":8,"));
+            string darkPath = Path.Combine(root, "dark.dat");
+            File.WriteAllText(darkPath, """{"bpp":16,"Texp_x":1.0,"DarkNoiseRatio":2.0}""");
+            DeviceCameraCalibrationFile dark = new("dark", CalibrationType.DarkNoise, "dark", "dark.dat", darkPath);
+            DeviceCameraCalibrationFile incompatible = file with { FullPath = incompatiblePath };
+            Assert.Throws<InvalidOperationException>(() => Calibrate("incompatible", dark, incompatible));
+            Assert.Equal("final", frame.Metadata.CalibrationTemplate);
+            Assert.Equal("final", frame.ColorCalibration!.Template);
+            using (LocalFlowFrameLease current = frame.Acquire())
+            {
+                Assert.Equal(expectedRaw, current.CopyRawToArray());
+                Assert.Equal(expectedCie, current.CopyCieToArray());
+            }
+            Assert.Equal(last, File.ReadAllBytes(path));
+            Calibrate("saved", file);
+            Assert.Equal(expectedCie, previous.CopyCieToArray());
+            LocalFrameFileService.SaveColorParametersToInput(frame);
             LocalFrameFileService.SaveCapture(frame, LocalFrameFileService.CreateCapturePath(root, "camera"));
             Assert.Empty(frame.CvCieFilePath);
             Assert.Empty(Directory.EnumerateFiles(root, "*.cvcie", SearchOption.AllDirectories));

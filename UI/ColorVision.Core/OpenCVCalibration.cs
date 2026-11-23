@@ -43,6 +43,55 @@ namespace ColorVision.Core
         }
     }
 
+    public enum CalibrationOutputMode : uint
+    {
+        RawOnly = 0,
+        FullCie = 1,
+        DeferredColor = 2,
+    }
+
+    public enum CalibrationRawLayout : uint
+    {
+        Mono = 0,
+        BgrInterleaved = 1,
+        RgbPlanar = 2,
+    }
+
+    public enum CalibrationRawFlip : uint
+    {
+        None = 0,
+        Vertical = 1,
+        Horizontal = 2,
+        Both = 3,
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct CalibrationFrameRequestV2
+    {
+        private static readonly uint RequestSize = checked((uint)Marshal.SizeOf<CalibrationFrameRequestV2>());
+        private readonly uint StructSize;
+
+        public CalibrationFrameRequestV2() => StructSize = RequestSize;
+
+        public uint Width;
+        public uint Height;
+        public uint BitsPerChannel;
+        public CalibrationRawLayout RawLayout;
+        public CalibrationOutputMode OutputMode;
+        public CalibrationRawFlip RawFlip;
+        public uint RoiX;
+        public uint RoiY;
+        public uint RoiWidth;
+        public uint RoiHeight;
+        public uint ObLeft;
+        public uint ObRight;
+        public uint ObTop;
+        public uint ObBottom;
+        public float ExposureX;
+        public float ExposureY;
+        public float ExposureZ;
+    }
+
     [StructLayout(LayoutKind.Sequential)]
     public struct PoiRequestV1
     {

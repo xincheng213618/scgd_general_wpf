@@ -111,7 +111,11 @@ bool validColorExposure(const ExecutionOptions& options, std::string& error) noe
 struct FileMetadata {
     std::uintmax_t size = 0;
     std::filesystem::file_time_type lastWriteTime{};
+    std::uint64_t fileIndex = 0;
+    DWORD volumeSerial = 0;
+    LONGLONG changeTime = 0;
 
+    bool hasRevision() const noexcept { return fileIndex != 0 && changeTime != 0; }
     bool operator==(const FileMetadata&) const noexcept = default;
 };
 
@@ -356,9 +360,18 @@ public:
 
     [[nodiscard]] CalibrationType type() const noexcept override { return implementation_->type(); }
     [[nodiscard]] bool isColorTransform() const noexcept override { return implementation_->isColorTransform(); }
+    [[nodiscard]] std::optional<std::int32_t> requiredInputDepth() const noexcept override
+    {
+        return implementation_->requiredInputDepth();
+    }
     [[nodiscard]] bool colorTransform(const ExecutionOptions& options, ColorTransform& transform) const override
     {
         return implementation_->colorTransform(options, transform);
+    }
+    [[nodiscard]] bool prepareColorTransform(
+        const ImageView& raw, const ExecutionOptions& options, ColorTransform& transform, std::string& error) const override
+    {
+        return implementation_->prepareColorTransform(raw, options, transform, error);
     }
     [[nodiscard]] bool requiresDistinctOutput() const noexcept override
     {
@@ -627,6 +640,20 @@ bool inspectCalibrationFile(
         error = "Unable to read calibration file modification time: " + fileError.message();
         return false;
     }
+    // Installers may preserve file size and last-write time when replacing coefficients.
+    const HANDLE handle = CreateFileW(canonicalFile.c_str(), FILE_READ_ATTRIBUTES,
+        FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
+    if (handle != INVALID_HANDLE_VALUE) {
+        BY_HANDLE_FILE_INFORMATION info{};
+        FILE_BASIC_INFO basic{};
+        if (GetFileInformationByHandle(handle, &info)
+            && GetFileInformationByHandleEx(handle, FileBasicInfo, &basic, sizeof(basic))) {
+            metadata.fileIndex = (static_cast<std::uint64_t>(info.nFileIndexHigh) << 32) | info.nFileIndexLow;
+            metadata.volumeSerial = info.dwVolumeSerialNumber;
+            metadata.changeTime = basic.ChangeTime.QuadPart;
+        }
+        CloseHandle(handle);
+    }
     return true;
 }
 
@@ -672,8 +699,8 @@ CalibrationFileLoadResult loadCalibrationFileOnce(
     {
         std::unique_lock lock(calibrationFileCacheMutex);
         const auto existing = calibrationFileCache.find(key);
-        if (existing != calibrationFileCache.end()
-            && existing->second->metadata == metadata) {
+        if (existing != calibrationFileCache.end() && existing->second->metadata == metadata
+            && (metadata.hasRevision() || verifiedSource)) {
             entry = existing->second;
             const bool waitedForProducer = entry->loading.load(std::memory_order_acquire);
             if (waitedForProducer) {
@@ -970,7 +997,6 @@ bool CalibrationContext::clear()
 {
     std::scoped_lock lock(mutex_);
     items_.clear();
-    canSeedScratchFromPair_ = false;
     rawScratch_.reset();
     rawScratchCapacity_ = 0;
     rawScratch2_.reset();
@@ -1036,11 +1062,30 @@ bool CalibrationContext::load(CalibrationType type, const std::filesystem::path&
     }
 
     items_.push_back(std::move(item));
-    canSeedScratchFromPair_ = items_.size() >= 3
-        && items_[items_.size() - 3]->type() == CalibrationType::Dsnu
-        && items_[items_.size() - 2]->type() == CalibrationType::Uniformity
-        && (type == CalibrationType::Distortion || type == CalibrationType::ColorDiff);
     if (digest != nullptr) *digest = loadedDigest;
+    return true;
+}
+
+bool CalibrationContext::requiredInputDepth(std::uint32_t& bitsPerChannel)
+{
+    std::scoped_lock lock(mutex_);
+    lastError_.clear();
+    std::uint32_t required = 0;
+    for (const auto& item : items_) {
+        const auto stageDepth = item->requiredInputDepth();
+        if (!stageDepth) continue;
+        if (*stageDepth != 8 && *stageDepth != 16) {
+            lastError_ = "Calibration stage declares unsupported RAW depth: " + std::to_string(*stageDepth);
+            return false;
+        }
+        const auto depth = static_cast<std::uint32_t>(*stageDepth);
+        if (required != 0 && required != depth) {
+            lastError_ = "Calibration template contains incompatible 8-bit and 16-bit RAW requirements";
+            return false;
+        }
+        required = depth;
+    }
+    bitsPerChannel = required;
     return true;
 }
 
@@ -1048,7 +1093,8 @@ bool CalibrationContext::execute(
     const ImageView& raw,
     float* cieData,
     std::size_t cieElementCount,
-    const ExecutionOptions& options)
+    const ExecutionOptions& options,
+    ColorTransform* preparedColor)
 {
     std::scoped_lock lock(mutex_);
     lastError_.clear();
@@ -1070,15 +1116,22 @@ bool CalibrationContext::execute(
         colorItem = item.get();
     }
 
-    if (colorItem != nullptr && cieData == nullptr) {
+    if (preparedColor != nullptr && colorItem == nullptr) {
+        lastError_ = "Selected output requires a luminance/color calibration";
+        return false;
+    }
+    if (preparedColor == nullptr && colorItem != nullptr && cieData == nullptr) {
         lastError_ = "CIE output pointer is null";
         return false;
     }
-    std::size_t requiredCieBytes = 0;
     if (colorItem != nullptr) {
-        if (!validColorExposure(options, lastError_)) {
-            return false;
-        }
+        const bool validColor = preparedColor != nullptr
+            ? colorItem->prepareColorTransform(raw, options, *preparedColor, lastError_)
+            : validColorExposure(options, lastError_);
+        if (!validColor) return false;
+    }
+    const bool writeCie = colorItem != nullptr && cieData != nullptr;
+    if (writeCie) {
         std::uint64_t pixels = 0;
         std::uint64_t requiredElements = 0;
         const auto planes = colorItem->type() == CalibrationType::Luminance ? 1ULL : 3ULL;
@@ -1093,7 +1146,7 @@ bool CalibrationContext::execute(
             lastError_ = "CIE buffer is smaller than the selected color transform requires";
             return false;
         }
-        requiredCieBytes = static_cast<std::size_t>(requiredElements) * sizeof(float);
+        const auto requiredCieBytes = static_cast<std::size_t>(requiredElements) * sizeof(float);
 
         bool validRange = false;
         if (rangesOverlap(raw.data, requiredRawBytes, cieData, requiredCieBytes, validRange)) {
@@ -1106,29 +1159,81 @@ bool CalibrationContext::execute(
         }
     }
 
-    const bool requiresScratch = std::any_of(
-        items_.begin(), items_.end(), [](const auto& item) {
-            return !item->isColorTransform() && item->requiresDistinctOutput();
-        });
-    if (requiresScratch && rawScratchCapacity_ < requiredRawBytes) {
-        std::unique_ptr<std::uint8_t[]> replacement(
-            new (std::nothrow) std::uint8_t[requiredRawBytes]);
-        if (!replacement) {
-            lastError_ = "Not enough memory for the shared calibration work buffer";
+    const bool hasBasic = items_.size() > (colorItem == nullptr ? 0U : 1U);
+    if (options.preserveRawLayout && !options.interleavedBgr && hasBasic) {
+        // Basic stages share the packed BGR execution path. Legacy stages may
+        // assume interleaved indexing or merge planar inputs into packed output.
+        constexpr auto maxCvDimension = static_cast<std::uint32_t>((std::numeric_limits<int>::max)());
+        if (raw.width > maxCvDimension || raw.height > maxCvDimension) {
+            lastError_ = "Planar RAW dimensions exceed OpenCV's integer range";
             return false;
         }
-        rawScratch_ = std::move(replacement);
-        rawScratchCapacity_ = requiredRawBytes;
+        if (!ensureScratch(rawScratch2_, rawScratch2Capacity_, requiredRawBytes)) return false;
+        const int depth = raw.bitsPerChannel == 8 ? CV_8U : CV_16U;
+        const cv::Size size(static_cast<int>(raw.width), static_cast<int>(raw.height));
+        const auto planeBytes = requiredRawBytes / 3;
+        std::array<cv::Mat, 3> bgrPlanes{
+            cv::Mat(size, depth, raw.data + 2 * planeBytes),
+            cv::Mat(size, depth, raw.data + planeBytes),
+            cv::Mat(size, depth, raw.data)
+        };
+        ImageView packed = raw;
+        packed.data = rawScratch2_.get();
+        packed.dataLength = rawScratch2Capacity_;
+        cv::Mat bgr(size, CV_MAKETYPE(depth, 3), packed.data);
+        cv::merge(bgrPlanes.data(), bgrPlanes.size(), bgr);
+        ExecutionOptions packedOptions = options;
+        packedOptions.interleavedBgr = true;
+        if (!executeStages(packed, requiredRawBytes, cieData, packedOptions, colorItem, preparedColor)) return false;
+        cv::split(bgr, bgrPlanes.data());
+        return true;
     }
+    return executeStages(raw, requiredRawBytes, cieData, options, colorItem, preparedColor);
+}
+
+bool CalibrationContext::ensureScratch(
+    std::unique_ptr<std::uint8_t[]>& buffer, std::size_t& capacity, std::size_t requiredBytes)
+{
+    if (capacity >= requiredBytes) return true;
+    std::unique_ptr<std::uint8_t[]> replacement(new (std::nothrow) std::uint8_t[requiredBytes]);
+    if (!replacement) {
+        lastError_ = "Not enough memory for a calibration work buffer";
+        return false;
+    }
+    buffer = std::move(replacement);
+    capacity = requiredBytes;
+    return true;
+}
+
+bool CalibrationContext::executeStages(
+    const ImageView& raw, std::size_t requiredRawBytes, float* cieData, const ExecutionOptions& options,
+    CalibrationItem* colorItem, const ColorTransform* preparedColor)
+{
+    const bool writeCie = colorItem != nullptr && cieData != nullptr;
+    // A trailing deferred color item has already done its work. Exclude it so
+    // the final basic stage can use the same fast paths as a RAW-only plan.
+    auto stages = std::span(items_);
+    if (preparedColor != nullptr && !writeCie && stages.back().get() == colorItem) {
+        stages = stages.first(stages.size() - 1);
+    }
+    const bool requiresScratch = std::any_of(
+        stages.begin(), stages.end(), [](const auto& item) {
+            return !item->isColorTransform() && item->requiresDistinctOutput();
+        });
+    if (requiresScratch && !ensureScratch(rawScratch_, rawScratchCapacity_, requiredRawBytes)) return false;
 
     // Preserve LocalCalibrationCacheManager semantics: every basic item runs
     // in template order; the sole RAW-to-CIE transform always runs last.
-    bool fusedRawFlip = options.rawOutputFlip == 0 && !items_.empty()
-        && items_.back()->type() == CalibrationType::ColorDiff;
+    const bool endsInColorDiff = !stages.empty() && stages.back()->type() == CalibrationType::ColorDiff;
+    const bool canSeedScratchFromPair = !writeCie && stages.size() >= 3
+        && stages[stages.size() - 3]->type() == CalibrationType::Dsnu
+        && stages[stages.size() - 2]->type() == CalibrationType::Uniformity
+        && (endsInColorDiff || stages.back()->type() == CalibrationType::Distortion);
+    bool fusedRawFlip = options.rawOutputFlip == 0 && endsInColorDiff;
     const bool canFuseHorizontalFlip = (options.rawOutputFlip == 1 || options.rawOutputFlip == -1)
         && options.interleavedBgr && options.rgbType == 0 && raw.channels == 3
         && (raw.bitsPerChannel == 8 || reinterpret_cast<std::uintptr_t>(raw.data) % alignof(std::uint16_t) == 0)
-        && !items_.empty() && items_.back()->type() == CalibrationType::ColorDiff;
+        && endsInColorDiff;
     ExecutionOptions calibrationOptions = options;
     calibrationOptions.rawOutputFlip = -99;
     ImageView current = raw;
@@ -1136,25 +1241,24 @@ bool CalibrationContext::execute(
     scratch.data = rawScratch_.get();
     scratch.dataLength = rawScratchCapacity_;
     BgrNonzeroRows nextDistortionRows{};
-    for (std::size_t index = 0; index < items_.size(); ++index) {
-        const auto& item = items_[index];
+    for (std::size_t index = 0; index < stages.size(); ++index) {
+        const auto& item = stages[index];
         if (item->isColorTransform()) {
             continue;
         }
         // Once preceding stages have run, seed scratch from the adjacent maps
         // so final geometry can write back to RAW without a full-frame copy.
-        if (canSeedScratchFromPair_ && colorItem == nullptr
-            && index + 3 == items_.size() && current.data == raw.data) {
-            const auto& geometry = items_.back();
+        if (canSeedScratchFromPair && index + 3 == stages.size() && current.data == raw.data) {
+            const auto& geometry = stages.back();
             if ((options.rawOutputFlip == -99 || fusedRawFlip || canFuseHorizontalFlip
                     || geometry->canFuseRawFlip(scratch, raw, options))
-                && item->tryApplyWithNextTo(*items_[index + 1], current, scratch, calibrationOptions)) {
+                && item->tryApplyWithNextTo(*stages[index + 1], current, scratch, calibrationOptions)) {
                 const auto restorePairOutput = [&] { std::memcpy(raw.data, scratch.data, requiredRawBytes); };
                 std::string error;
                 try {
                     auto geometryOptions = options;
                     if (options.rawOutputFlip == -99 && geometry->type() == CalibrationType::Distortion) {
-                        geometryOptions.correctedBgrRows = items_[index + 1]->nonzeroBgrRows(scratch, calibrationOptions);
+                        geometryOptions.correctedBgrRows = stages[index + 1]->nonzeroBgrRows(scratch, calibrationOptions);
                     }
                     if (geometry->applyOutOfPlace(scratch, raw, geometryOptions, error)) return true;
                 }
@@ -1168,18 +1272,18 @@ bool CalibrationContext::execute(
                 return false;
             }
         }
-        const bool flipAfterPair = options.rawOutputFlip == 0 && index + 2 == items_.size();
-        if (index + 1 < items_.size()
-            && item->tryApplyWithNext(*items_[index + 1], current,
+        const bool flipAfterPair = options.rawOutputFlip == 0 && index + 2 == stages.size();
+        if (index + 1 < stages.size()
+            && item->tryApplyWithNext(*stages[index + 1], current,
                 flipAfterPair ? options : calibrationOptions)) {
             if (flipAfterPair) fusedRawFlip = true;
-            if (index + 2 < items_.size() && items_[index + 2]->type() == CalibrationType::Distortion) {
-                nextDistortionRows = items_[index + 1]->nonzeroBgrRows(current, calibrationOptions);
+            if (index + 2 < stages.size() && stages[index + 2]->type() == CalibrationType::Distortion) {
+                nextDistortionRows = stages[index + 1]->nonzeroBgrRows(current, calibrationOptions);
             }
             ++index;
             continue;
         }
-        if (options.rawOutputFlip == 0 && index + 1 == items_.size()
+        if (options.rawOutputFlip == 0 && index + 1 == stages.size()
             && item->tryApplyWithFlip(current, options)) {
             fusedRawFlip = true;
             continue;
@@ -1188,7 +1292,7 @@ bool CalibrationContext::execute(
         bool applied = false;
         if (item->requiresDistinctOutput()) {
             const ImageView& destination = current.data == raw.data ? scratch : raw;
-            const bool finalStage = index + 1 == items_.size();
+            const bool finalStage = index + 1 == stages.size();
             // With an odd stage count the existing flip also copies scratch back to RAW.
             const bool fuseHorizontalFlip = canFuseHorizontalFlip && finalStage && destination.data == raw.data;
             const auto& stageOptions = finalStage && (fusedRawFlip || fuseHorizontalFlip)
@@ -1216,7 +1320,10 @@ bool CalibrationContext::execute(
         }
     }
 
-    if (colorItem != nullptr) {
+    if (writeCie && preparedColor != nullptr) {
+        writeColorTransform(current, options.interleavedBgr, *preparedColor, cieData);
+    }
+    else if (writeCie) {
         std::string error;
         if (!colorItem->apply(current, cieData, options, error)) {
             lastError_ = error.empty() ? "Luminance/color calibration failed" : std::move(error);
@@ -1347,18 +1454,6 @@ bool CalibrationContext::executeTo(
         return false;
     }
 
-    auto ensureScratch = [&](std::unique_ptr<std::uint8_t[]>& buffer, std::size_t& capacity) {
-        if (capacity >= requiredRawBytes) return true;
-        std::unique_ptr<std::uint8_t[]> replacement(new (std::nothrow) std::uint8_t[requiredRawBytes]);
-        if (!replacement) {
-            lastError_ = "Not enough memory for a calibration work buffer";
-            return false;
-        }
-        buffer = std::move(replacement);
-        capacity = requiredRawBytes;
-        return true;
-    };
-
     if (basicCount == 0) {
         if (correctedRaw != nullptr) {
             std::memcpy(correctedRaw->data, sourceRaw.data, requiredRawBytes);
@@ -1376,11 +1471,11 @@ bool CalibrationContext::executeTo(
     const bool finalSlotMustBeCorrected = correctedRaw != nullptr;
     const bool initialSlotIsCorrected = finalSlotMustBeCorrected && distinctAfterFirst % 2 == 0;
     const bool alternateSlotIsCorrected = finalSlotMustBeCorrected && !initialSlotIsCorrected;
-    if (!initialSlotIsCorrected && !ensureScratch(rawScratch_, rawScratchCapacity_)) {
+    if (!initialSlotIsCorrected && !ensureScratch(rawScratch_, rawScratchCapacity_, requiredRawBytes)) {
         return false;
     }
     if (!alternateSlotIsCorrected && distinctAfterFirst != 0
-        && !ensureScratch(rawScratch2_, rawScratch2Capacity_)) {
+        && !ensureScratch(rawScratch2_, rawScratch2Capacity_, requiredRawBytes)) {
         return false;
     }
 

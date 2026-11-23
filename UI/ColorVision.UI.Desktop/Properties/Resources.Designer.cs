@@ -1707,8 +1707,6 @@ namespace ColorVision.UI.Desktop.Properties {
             }
         }
         
-        }
-        
         /// <summary>
         ///   查找类似 下一步 的本地化字符串。
         /// </summary>
@@ -2049,60 +2047,6 @@ namespace ColorVision.UI.Desktop.Properties {
             get {
                 return ResourceManager.GetString("SkipIncompleteConfigPrompt", resourceCulture);
             }
-        }
-        
-        }
-        
-        }
-        
-        }
-        
-        }
-        
-        }
-        
-        }
-        
-        }
-        
-        }
-        
-        }
-        
-        }
-        
-        }
-        
-        }
-        
-        }
-        
-        }
-        
-        }
-        
-        }
-        
-        }
-        
-        }
-        
-        }
-        
-        }
-        
-        }
-        
-        }
-        
-        }
-        
-        }
-        
-        }
-        
-        }
-        
         }
         
         /// <summary>

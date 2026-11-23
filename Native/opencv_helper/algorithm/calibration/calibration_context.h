@@ -16,7 +16,9 @@ public:
     bool clear();
     void transferWorkBuffersFrom(CalibrationContext& source);
     bool load(CalibrationType type, const std::filesystem::path& file, CalibrationFileDigest* digest = nullptr);
-    bool execute(const ImageView& raw, float* cieData, std::size_t cieElementCount, const ExecutionOptions& options);
+    bool requiredInputDepth(std::uint32_t& bitsPerChannel);
+    bool execute(const ImageView& raw, float* cieData, std::size_t cieElementCount,
+        const ExecutionOptions& options, ColorTransform* preparedColor = nullptr);
     bool executeTo(
         const ImageView& sourceRaw,
         ImageView* correctedRaw,
@@ -30,12 +32,14 @@ public:
     bool colorTransform(const ExecutionOptions& options, ColorTransform& transform) const;
 
 private:
+    bool executeStages(const ImageView& raw, std::size_t requiredRawBytes, float* cieData,
+        const ExecutionOptions& options, CalibrationItem* colorItem, const ColorTransform* preparedColor);
+    bool ensureScratch(std::unique_ptr<std::uint8_t[]>& buffer, std::size_t& capacity, std::size_t requiredBytes);
     mutable std::mutex mutex_;
     // Each entry is a context-local lease over the process-wide per-file
     // cache. Stateless algorithms share their immutable item directly;
     // geometric algorithms use a private executor over shared full-frame maps.
     std::vector<std::shared_ptr<CalibrationItem>> items_;
-    bool canSeedScratchFromPair_ = false;
     std::unique_ptr<std::uint8_t[]> rawScratch_;
     std::size_t rawScratchCapacity_ = 0;
     std::unique_ptr<std::uint8_t[]> rawScratch2_;

@@ -423,22 +423,16 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 .FirstOrDefault(resource => resource.Name == param.CalibrationMode);
             groupResource?.SetCalibrationResource();
 
-            bool hasSelectedCalibration = CalibrationSlotDefinitions.AllSlots.Any(slot => slot.ParamGetter(param).IsSelected);
-            if (groupResource == null || !hasSelectedCalibration)
+            var selectedSlots = CalibrationSlotDefinitions.SelectedSlots(param).ToArray();
+            if (groupResource == null || selectedSlots.Length == 0)
             {
                 errorMessage = string.Format(Properties.Resources.CalibrationFileNotConfiguredWithTemplate, param.Name);
                 return false;
             }
 
             List<DeviceCameraCalibrationFile> resolvedFiles = new();
-            foreach (var slot in CalibrationSlotDefinitions.AllSlots)
+            foreach (var slot in selectedSlots)
             {
-                CalibrationBase selectedCalibration = slot.ParamGetter(param);
-                if (!selectedCalibration.IsSelected)
-                {
-                    continue;
-                }
-
                 CalibrationResource? resource = GetCalibrationTemplateResource(param, slot);
                 if (resource == null || !TryResolveCalibrationFilePath(resource, out string fullPath, out string relativePath, checkFiles))
                 {

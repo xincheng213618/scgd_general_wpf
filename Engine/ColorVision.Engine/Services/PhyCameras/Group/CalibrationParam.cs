@@ -78,22 +78,24 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
         public Dictionary<string, object> ToDictionary()
         {
             Dictionary<string, object> keyValuePairs = new();
-            if (DarkNoise.IsSelected)
+            if (DarkNoise.IsSelected && !DSNU.IsSelected)
                 keyValuePairs.Add(nameof(DarkNoise), DarkNoise.FilePath);
             if (DefectPoint.IsSelected)
                 keyValuePairs.Add(nameof(DefectPoint), DefectPoint.FilePath);
             if (DSNU.IsSelected)
                 keyValuePairs.Add(nameof(DSNU), DSNU.FilePath);
+            if (DarkNoise.IsSelected && DSNU.IsSelected)
+                keyValuePairs.Add(nameof(DarkNoise), DarkNoise.FilePath);
             if (Uniformity.IsSelected)
                 keyValuePairs.Add(nameof(Uniformity), Uniformity.FilePath);
-            if (Distortion.IsSelected)
-                keyValuePairs.Add(nameof(Distortion), Distortion.FilePath);
             if (ColorShift.IsSelected)
                 keyValuePairs.Add(nameof(ColorShift), ColorShift.FilePath);
+            if (Distortion.IsSelected)
+                keyValuePairs.Add(nameof(Distortion), Distortion.FilePath);
+            if (LineArity.IsSelected)
+                keyValuePairs.Add(nameof(LineArity), LineArity.FilePath);
             if (ColorDiff.IsSelected)
                 keyValuePairs.Add(nameof(ColorDiff), ColorDiff.FilePath);
-            if (LineArity.IsSelected)
-                keyValuePairs.Add(nameof(LineArity), LineArity.FilePath);        
             if (AngleShift.IsSelected)
                 keyValuePairs.Add(nameof(AngleShift), AngleShift.FilePath);
             return keyValuePairs;

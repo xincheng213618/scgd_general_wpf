@@ -200,7 +200,7 @@ L/BV 和 CV 节点在所选设备走本地取图时显示“保存文件”，�
 
 `SetCurrentFrame` 把 `LocalFlowFrame` 交给 `FlowRuntimeResources`，更换当前帧不释放旧帧；同一流程多次取图可能同时保留多帧，直到流程在 `DoFinishingCore` 释放资源。不能把“当前帧”理解为全流程只有一个缓冲区。消费者在根引用有效时 `Acquire()`，持有并最终 Dispose `LocalFlowFrameLease`。
 
-**租约不是不可变图像快照。** 下游 `LocalCalibrationNode` 可对同一帧 `CalibrateInPlace`，修改 RAW 并重新分配 CIE（旧地址立即释放）。跨线程长期保留指针或并发预览与校正时，异步消费者必须自行复制稳定快照；UI 不持有原生指针或流程帧租约。`IsMirrorReady` 须与缓冲区各自的翻转状态一起判断：有 CIE 时 RAW 可能仍是传感器方向，不能仅凭 `FlipMode` 判断显示坐标已与 POI 一致。内存快照设计见[内存预览设计](../../02-developer-guide/engine-development/local-camera-memory-preview.md)。
+下游校正节点对已发布的输入建立独立结果。分支可共享只读 RAW，改写共享像素前会复制。旧租约持有自己的 RAW 和 CIE 缓冲直到释放。预览在租约有效期间读取，向 UI 交付独立的显示数据。完整 CIE 内存可以已经镜像，而同帧 RAW 仍在传感器方向。保存可回放的校正 CVRAW 时，文件像素使用结果方向并记录已应用的镜像，后续空间校正可据此恢复传感器坐标。见[内存预览设计](../../02-developer-guide/engine-development/local-camera-memory-preview.md)。
 
 “本地缓存管理 → 相机取图缓冲”的“启用相机取图缓冲”（`CameraRawBufferCacheConfig.IsEnabled`，默认关闭）让每台相机复用最多一块 RAW 工作内存，例如 9568×6380 三通道 16-bit 约 349 MiB；这不是流程在用图像的总内存上限。页面可按相机释放空闲缓冲，关闭开关立即释放空闲部分；连续运行时清理后不保证一直为零。节点阶段耗时中的 `AllocateRawBuffer` / `ReuseRawBuffer` 区分实际申请与复用，`ProcessGcPauseMs` 是整个进程的 GC 暂停增量（嵌套阶段不能相加），`ThreadCpuMs` 不含相机 SDK 线程。
 

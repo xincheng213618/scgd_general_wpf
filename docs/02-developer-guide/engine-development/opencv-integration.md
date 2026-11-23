@@ -89,7 +89,7 @@ CUDA 是另一条边界：Core 通过 `OpenCvCudaBinary` 无条件打包 DLL；�
 | JSON检测 / 焦点评分 | 正JSON长度只证明分配了结果，还须解析业务成功/拒绝；`M_CalArtculation` 返回原始评分，输入准备失败、非有限结果或 guard 捕获异常返回 `-1.0`，须先排除此失败哨兵。0可为有效分数，不能套0成功或归一化阈值 |
 | SFR | `exports/sfr_export.cpp` 使用自身参数/图像/计算及异常码，不套common export表 |
 
-校准的只读 RAW 执行、共享缓存释放和调用者临界区，以及 POI V2 原生选项、Engine 标准测量入口的完整说明见 [API 参考](../../04-api-reference/engine-components/opencv-helper-api.md)；入口分别是 `M_CalibrationExecuteToV1`、`M_CalibrationCacheReleaseV1` 和 `M_CalculatePoiBatchV2`。缓存释放不等于磁盘文件删除或活动Context失效，不能借文档检查调用这些有状态入口。
+相机、文件和流程调用 `LocalCalibrationCacheManager.Prepare(files, templateName)` 准备有序资源，再用 `plan.Apply(frame, output)` 选择校正 RAW、整帧 Y／XYZ 或按需测量。图像尺寸、曝光与传感器 ROI 按帧取得，同一模板可复用。原生层通过 `M_CalibrationExecuteFrameV2` 执行。只读 RAW 兼容入口为 `M_CalibrationExecuteToV1`，共享缓存释放入口为 `M_CalibrationCacheReleaseV1`，整帧 POI 入口为 `M_CalculatePoiBatchV2`。缓冲区与各测量路径见 [API 参考](../../04-api-reference/engine-components/opencv-helper-api.md)。
 
 ## 为什么仓库单独跟踪 `opencv_cuda.dll`
 

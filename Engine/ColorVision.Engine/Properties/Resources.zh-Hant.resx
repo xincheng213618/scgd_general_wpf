@@ -7920,7 +7920,7 @@
   <data name="共用 X (px)" xml:space="preserve"><value>共用 X (px)</value></data>
   <data name="共用 Y (px)" xml:space="preserve"><value>共用 Y (px)</value></data>
   <data name="共用空间偏移（Y / X）" xml:space="preserve"><value>共用空間偏移（Y / X）</value></data>
-  <data name="兼容旧算法：暗噪声采用倍率修正；原文件 Texp_x 为浮点数时比例才生效。" xml:space="preserve"><value>兼容舊算法：暗噪聲採用倍率修正；原文件 Texp_x 爲浮點數時比例才生效。</value></data>
+  <data name="暗噪声倍率作用于每个像素的每个通道。8 位结果限制在 0–255，16 位结果限制在 0–65535。" xml:space="preserve"><value>暗噪聲倍率套用至每個像素的每個通道。8 位元結果限制在 0–255，16 位元結果限制在 0–65535。</value></data>
   <data name="半径 {0} 次项" xml:space="preserve"><value>半徑 {0} 次項</value></data>
   <data name="单色" xml:space="preserve"><value>單色</value></data>
   <data name="单色校正系数" xml:space="preserve"><value>單色校正係數</value></data>
@@ -7954,7 +7954,8 @@
   <data name="无等待指令" xml:space="preserve"><value>無等待指令</value></data>
   <data name="日志" xml:space="preserve"><value>日誌</value></data>
   <data name="暗噪声" xml:space="preserve"><value>暗噪聲</value></data>
-  <data name="暗噪声乘法比例；兼容旧文件，曝光 X 为 JSON 浮点数时才生效。" xml:space="preserve"><value>暗噪聲乘法比例；兼容舊文件，曝光 X 爲 JSON 浮點數時才生效。</value></data>
+  <data name="每个 RAW 样本乘以此倍率。倍率为 1 时保留原值，倍率小于或等于 0 时输出 0。" xml:space="preserve"><value>每個 RAW 樣本乘以此倍率。倍率為 1 時保留原值，倍率小於或等於 0 時輸出 0。</value></data>
+  <data name="可选的标定曝光记录（ms）。暗噪声计算只使用倍率。" xml:space="preserve"><value>選用的標定曝光記錄（ms）。暗噪聲計算只使用倍率。</value></data>
   <data name="暗噪声比例" xml:space="preserve"><value>暗噪聲比例</value></data>
   <data name="曝光 Texp_x" xml:space="preserve"><value>曝光 Texp_x</value></data>
   <data name="曝光 X（ms）" xml:space="preserve"><value>曝光 X（ms）</value></data>

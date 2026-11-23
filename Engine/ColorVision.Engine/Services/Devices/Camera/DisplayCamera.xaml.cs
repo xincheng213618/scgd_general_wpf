@@ -1158,120 +1158,21 @@ namespace ColorVision.Engine.Services.Devices.Camera
                     .OfType<GroupResource>()
                     .FirstOrDefault(resource => resource.Name == param.CalibrationMode);
                 groupResource?.SetCalibrationResource();
-                bool isSelected = (param.Normal?.DarkNoise?.IsSelected ?? false) ||
-                    (param.Normal?.DefectPoint?.IsSelected ?? false) ||
-                    (param.Normal?.Distortion?.IsSelected ?? false) ||
-                    (param.Normal?.DSNU?.IsSelected ?? false) ||
-                    (param.Normal?.ColorShift?.IsSelected ?? false) ||
-                    (param.Normal?.Uniformity?.IsSelected ?? false) ||
-                    (param.Normal?.LineArity?.IsSelected ?? false) ||
-                    (param.Normal?.ColorDiff?.IsSelected ?? false) ||
-                    (param.Color?.Luminance?.IsSelected ?? false) ||
-                    (param.Color?.LumOneColor?.IsSelected ?? false) ||
-                    (param.Color?.LumFourColor?.IsSelected ?? false) ||
-                    (param.Color?.LumMultiColor?.IsSelected ?? false);
-
-                if (groupResource == null || !isSelected)
+                // AngleShift is outside the remote capture preflight contract.
+                var selectedSlots = CalibrationSlotDefinitions.SelectedSlots(param)
+                    .Where(slot => slot.Key != nameof(GroupResource.AngleShift)).ToArray();
+                if (groupResource == null || selectedSlots.Length == 0)
                 {
                     MessageBox1.Show(Application.Current.GetActiveWindow(), string.Format(Properties.Resources.CalibrationFileNotConfiguredWithTemplate, param.Name), "ColorVision");
                     return;
                 }
 
-                if (param.Normal?.DarkNoise?.IsSelected ?? false)
+                foreach (var slot in selectedSlots)
                 {
-                    if (!(groupResource.DarkNoise?.IsValid ?? false))
-                    {
-                        MessageBox1.Show(Application.Current.GetActiveWindow(), string.Format(Properties.Resources.TemplateFileNotExist, param.Name, groupResource.DarkNoise?.FilePath ?? "DarkNoise"), "ColorVision");
-                        return;
-                    }
-                }
-                if (param.Normal?.DefectPoint?.IsSelected ?? false)
-                {
-                    if (!(groupResource.DefectPoint?.IsValid ?? false))
-                    {
-                        MessageBox1.Show(Application.Current.GetActiveWindow(), string.Format(Properties.Resources.TemplateFileNotExist, param.Name, groupResource.DefectPoint?.FilePath ?? "DefectPoint"), "ColorVision");
-                        return;
-                    }
-                }
-                if (param.Normal?.Distortion?.IsSelected ?? false)
-                {
-                    if (!(groupResource.Distortion?.IsValid ?? false))
-                    {
-                        MessageBox1.Show(Application.Current.GetActiveWindow(), string.Format(Properties.Resources.TemplateFileNotExist, param.Name, groupResource.Distortion?.FilePath ?? "Distortion"), "ColorVision");
-                        return;
-                    }
-                }
-                if (param.Normal?.DSNU?.IsSelected ?? false)
-                {
-                    if (!(groupResource.DSNU?.IsValid ?? false))
-                    {
-                        MessageBox1.Show(Application.Current.GetActiveWindow(), string.Format(Properties.Resources.TemplateFileNotExist, param.Name, groupResource.DSNU?.FilePath ?? "DSNU"), "ColorVision");
-                        return;
-                    }
-                }
-                if (param.Normal?.ColorShift?.IsSelected ?? false)
-                {
-                    if (!(groupResource.ColorShift?.IsValid ?? false))
-                    {
-                        MessageBox1.Show(Application.Current.GetActiveWindow(), string.Format(Properties.Resources.TemplateFileNotExist, param.Name, groupResource.ColorShift?.FilePath ?? "ColorShift"), "ColorVision");
-                        return;
-                    }
-                }
-                if (param.Normal?.Uniformity?.IsSelected ?? false)
-                {
-                    if (!(groupResource.Uniformity?.IsValid ?? false))
-                    {
-                        MessageBox1.Show(Application.Current.GetActiveWindow(), string.Format(Properties.Resources.TemplateFileNotExist, param.Name, groupResource.Uniformity?.FilePath ?? "Uniformity"), "ColorVision");
-                        return;
-                    }
-                }
-                if (param.Normal?.LineArity?.IsSelected ?? false)
-                {
-                    if (!(groupResource.LineArity?.IsValid ?? false))
-                    {
-                        MessageBox1.Show(Application.Current.GetActiveWindow(), string.Format(Properties.Resources.TemplateFileNotExist, param.Name, groupResource.LineArity?.FilePath ?? "LineArity"), "ColorVision");
-                        return;
-                    }
-                }
-                if (param.Normal?.ColorDiff?.IsSelected ?? false)
-                {
-                    if (!(groupResource.ColorDiff?.IsValid ?? false))
-                    {
-                        MessageBox1.Show(Application.Current.GetActiveWindow(), string.Format(Properties.Resources.TemplateFileNotExist, param.Name, groupResource.ColorDiff?.FilePath ?? "ColorDiff"), "ColorVision");
-                        return;
-                    }
-                }
-                if (param.Color?.Luminance?.IsSelected ?? false)
-                {
-                    if (!(groupResource.Luminance?.IsValid ?? false))
-                    {
-                        MessageBox1.Show(Application.Current.GetActiveWindow(), string.Format(Properties.Resources.TemplateFileNotExist, param.Name, groupResource.Luminance?.FilePath ?? "Luminance"), "ColorVision");
-                        return;
-                    }
-                }
-                if (param.Color?.LumOneColor?.IsSelected ?? false)
-                {
-                    if (!(groupResource.LumOneColor?.IsValid ?? false))
-                    {
-                        MessageBox1.Show(Application.Current.GetActiveWindow(), string.Format(Properties.Resources.TemplateFileNotExist, param.Name, groupResource.LumOneColor?.FilePath ?? "LumOneColor"), "ColorVision");
-                        return;
-                    }
-                }
-                if (param.Color?.LumFourColor?.IsSelected ?? false)
-                {
-                    if (!(groupResource.LumFourColor?.IsValid ?? false))
-                    {
-                        MessageBox1.Show(Application.Current.GetActiveWindow(), string.Format(Properties.Resources.TemplateFileNotExist, param.Name, groupResource.LumFourColor?.FilePath ?? "LumFourColor"), "ColorVision");
-                        return;
-                    }
-                }
-                if (param.Color?.LumMultiColor?.IsSelected ?? false)
-                {
-                    if (!(groupResource.LumMultiColor?.IsValid ?? false))
-                    {
-                        MessageBox1.Show(Application.Current.GetActiveWindow(), string.Format(Properties.Resources.TemplateFileNotExist, param.Name, groupResource.LumMultiColor?.FilePath ?? "LumMultiColor"), "ColorVision");
-                        return;
-                    }
+                    var resource = slot.GroupGetter(groupResource);
+                    if (resource?.IsValid == true) continue;
+                    MessageBox1.Show(Application.Current.GetActiveWindow(), string.Format(Properties.Resources.TemplateFileNotExist, param.Name, resource?.FilePath ?? slot.Key), "ColorVision");
+                    return;
                 }
             }
 

@@ -127,7 +127,7 @@ internal static class SpectrumRawCalibrationService
             throw new InvalidOperationException("本地相机没有提供 CVRAW 保存路径。");
         // Memory-only camera captures become durable here; existing RAW pixels are never re-written.
         if (!File.Exists(path)) LocalFrameFileService.SaveCapture(frame, path);
-        corrected.Save(path, canReplay: true);
+        corrected.UpdateRawFile(path, canReplay: true);
         int masterId;
         try
         {
@@ -136,7 +136,7 @@ internal static class SpectrumRawCalibrationService
         }
         catch (Exception saveError)
         {
-            try { previous.Save(path, canReplay: true); }
+            try { previous.UpdateRawFile(path, canReplay: true); }
             catch (Exception rollbackError) { throw new AggregateException("图像记录保存失败，且 RAW 色度参数恢复失败。", saveError, rollbackError); }
             throw;
         }

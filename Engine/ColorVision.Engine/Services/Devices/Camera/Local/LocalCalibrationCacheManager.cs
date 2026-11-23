@@ -4,6 +4,7 @@ using FlowEngineLib.Algorithm;
 using log4net;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 
 namespace ColorVision.Engine.Services.Devices.Camera.Local
@@ -44,25 +45,54 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
         public static CalibrationSharedCacheReleaseResult ClearShared()
             => OpenCVCalibration.ClearCalibrationSharedCache();
 
+        public LocalPreparedCalibration Prepare(IReadOnlyList<DeviceCameraCalibrationFile> files, string templateName)
+        {
+            ArgumentNullException.ThrowIfNull(files);
+            var selection = files.ToArray();
+            if (selection.Length == 0)
+                throw new InvalidOperationException($"校正模板“{templateName}”没有选择任何校正文件。");
+            if (selection.Count(file => LocalFrameCalibrationService.IsColorCalibration(file.CalibrationType)) > 1)
+                throw new InvalidOperationException($"校正模板“{templateName}”同时选择了多个亮度/颜色校正文件，本地校正只能使用一个。");
+            return WithCache(() =>
+            {
+                var prepared = FlowNodeTiming.Run("LoadCalibrationResources", () => cache.Prepare(selection));
+                return new LocalPreparedCalibration(this, templateName, prepared.Assets, prepared.InputDepth);
+            });
+        }
+
+        // The keyboard luminance adapter owns a pinned sample array instead of a LocalFlowFrame.
         public LocalCalibrationExecution Execute(
             LocalCalibrationLayout layout,
             IReadOnlyList<DeviceCameraCalibrationFile> calibrationFiles,
             IntPtr rawPointer,
+            ulong rawLength,
             IntPtr ciePointer,
+            ulong cieLength,
             float[] exposure,
             LocalCalibrationRoi calibrationRoi,
-            bool allowAcceleration = false,
+            CalibrationOutputMode outputMode,
             CVImageFlipMode rawOutputFlip = CVImageFlipMode.None)
         {
             ArgumentNullException.ThrowIfNull(calibrationFiles);
             ArgumentNullException.ThrowIfNull(exposure);
             if (rawPointer == IntPtr.Zero) throw new ArgumentException("RAW 指针为空。", nameof(rawPointer));
 
+            return WithCache(() => cache.Execute(layout, cache.Prepare(calibrationFiles).Assets, rawPointer, rawLength,
+                ciePointer, cieLength, exposure, calibrationRoi, outputMode, rawOutputFlip));
+        }
+
+        internal LocalCalibrationExecution ExecutePrepared(LocalCalibrationAsset[] assets, LocalCalibrationLayout layout,
+            IntPtr raw, ulong rawLength, IntPtr cie, ulong cieLength, float[] exposure, LocalCalibrationRoi roi,
+            CalibrationOutputMode output, CVImageFlipMode flip)
+            => WithCache(() => cache.Execute(layout, assets, raw, rawLength, cie, cieLength, exposure, roi, output, flip));
+
+        private T WithCache<T>(Func<T> action)
+        {
             FlowNodeTiming.Run("WaitCalibration", EnterExecution);
             try
             {
                 ObjectDisposedException.ThrowIf(disposed, this);
-                return cache.Execute(layout, calibrationFiles, rawPointer, ciePointer, exposure, calibrationRoi, allowAcceleration, rawOutputFlip);
+                return action();
             }
             finally
             {
@@ -144,7 +174,11 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
         }
     }
 
-    internal readonly record struct LocalCalibrationLayout(int Width, int Height, int Bpp, int Channels);
+    internal readonly record struct LocalCalibrationLayout(int Width, int Height, int Bpp, int Channels)
+    {
+        public static LocalCalibrationLayout FromFrame(LocalFrameMetadata metadata)
+            => new(metadata.Width, metadata.Height, metadata.SourceBpp, metadata.Channels);
+    }
     internal sealed record LocalCalibrationExecution(RawColorTransformV1? Transform,
         ColorVision.ImageEditor.Tif.ImageCalibrationSource[] Sources);
 }

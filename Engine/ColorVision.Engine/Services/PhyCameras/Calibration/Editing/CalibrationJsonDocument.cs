@@ -43,7 +43,7 @@ public sealed class CalibrationJsonDocument
         ServiceTypes.ColorShift => EngineLocalization.Get("通道空间偏移，单位为像素。"),
         ServiceTypes.ColorDiff => EngineLocalization.Get("GR/GB 通道空间对齐的径向多项式和偏移。"),
         ServiceTypes.AngleShift => EngineLocalization.Get("RGB 通道径向多项式；并非旋转角度。"),
-        ServiceTypes.DarkNoise => EngineLocalization.Get("兼容旧算法：暗噪声采用倍率修正；原文件 Texp_x 为浮点数时比例才生效。"),
+        ServiceTypes.DarkNoise => EngineLocalization.Get("暗噪声倍率作用于每个像素的每个通道。8 位结果限制在 0–255，16 位结果限制在 0–65535。"),
         ServiceTypes.Luminance => EngineLocalization.Get("单通道亮度比例，按实际采集曝光归一化。"),
         ServiceTypes.LumOneColor => EngineLocalization.Get("X=aR+dB，Y=bG，Z=cB；按实际采集曝光和文件通道增益归一化。"),
         ServiceTypes.LumFourColor => EngineLocalization.Get("RGB 转 XYZ 矩阵；转换使用实际采集曝光。历史文件中的曝光和增益仅保留兼容信息。"),
@@ -79,7 +79,7 @@ public sealed class CalibrationJsonDocument
     {
         var root = type switch
         {
-            ServiceTypes.DarkNoise => JObject.Parse("{\"Texp_x\":1.0,\"DarkNoiseRatio\":1.0}"),
+            ServiceTypes.DarkNoise => JObject.Parse("{\"DarkNoiseRatio\":1.0}"),
             ServiceTypes.ColorShift => JObject.Parse("{\"fillOffset\":false,\"offset\":[{\"X\":0,\"Y\":0},{\"X\":0,\"Y\":0},{\"X\":0,\"Y\":0}]}"),
             ServiceTypes.Distortion => JObject.Parse("{\"w\":1920,\"h\":1080,\"s_w\":1920,\"s_h\":1080,\"useFisheye\":false,\"alpha\":0.0,\"cameraMatrix\":[1,0,960,0,1,540,0,0,1],\"distCoeffs\":[0,0,0,0,0]}"),
             ServiceTypes.LumMultiColor => JObject.Parse("{\"bpp\":16,\"pa\":[1,0,0,0,1,0,0,0,1],\"Gain\":[1,1,1]}"),
@@ -114,7 +114,8 @@ public sealed class CalibrationJsonDocument
             "MeasDis" => EngineLocalization.Get("测量距离，不可为零；与标定距离使用相同单位。"),
             "CalibDis" => EngineLocalization.Get("标定距离，与测量距离使用相同单位。"),
             "alpha" => EngineLocalization.Get("鱼眼模式下用于计算输出相机矩阵的视场参数。"),
-            "DarkNoiseRatio" => EngineLocalization.Get("暗噪声乘法比例；兼容旧文件，曝光 X 为 JSON 浮点数时才生效。"),
+            "DarkNoiseRatio" => EngineLocalization.Get("每个 RAW 样本乘以此倍率。倍率为 1 时保留原值，倍率小于或等于 0 时输出 0。"),
+            "Texp_x" when Type == ServiceTypes.DarkNoise => EngineLocalization.Get("可选的标定曝光记录（ms）。暗噪声计算只使用倍率。"),
             "fillOffset" => EngineLocalization.Get("通道平移后是否按现有校正算法填充边缘。"),
             _ => label
         };
@@ -164,7 +165,7 @@ public sealed class CalibrationJsonDocument
     {
         switch (Type)
         {
-            case ServiceTypes.DarkNoise: Add("Texp_x", EngineLocalization.Get("曝光 Texp_x")); Add("DarkNoiseRatio", EngineLocalization.Get("暗噪声比例")); break;
+            case ServiceTypes.DarkNoise: Add("DarkNoiseRatio", EngineLocalization.Get("暗噪声比例")); Add("Texp_x", EngineLocalization.Get("曝光 Texp_x")); break;
             case ServiceTypes.ColorShift:
                 Add("fillOffset", EngineLocalization.Get("边缘填充"), kind: CalibrationParameterKind.Boolean);
                 if (Json["offset"] is JArray offsets) for (int i = 0; i < offsets.Count; i++) { Add($"offset[{i}].X", EngineLocalization.Format($"通道 {i + 1} X (px)")); Add($"offset[{i}].Y", EngineLocalization.Format($"通道 {i + 1} Y (px)")); }
@@ -232,7 +233,7 @@ public sealed class CalibrationJsonDocument
             var v = root.SelectToken(path);
             if (!required && (v == null || v.Type == JTokenType.Null)) return true;
             if (legacy && v?.Type == JTokenType.Boolean) return true;
-            if (v?.Type is not (JTokenType.Integer or JTokenType.Float) || !double.IsFinite(v.Value<double>())) { errors.Add(EngineLocalization.Format($"{path} 必须是有限数值。")); return false; }
+            if (v?.Type is not (JTokenType.Integer or JTokenType.Float) || !double.IsFinite((double)v)) { errors.Add(EngineLocalization.Format($"{path} 必须是有限数值。")); return false; }
             return true;
         }
         // Existing native files may encode an integer field as a real; native truncates it.
@@ -258,12 +259,9 @@ public sealed class CalibrationJsonDocument
         switch (Type)
         {
             case ServiceTypes.DarkNoise:
-                // Legacy parser ignores nonnumeric fields and the ratio unless exposure is a JSON real.
-                if (root["Texp_x"]?.Type == JTokenType.Float)
-                {
-                    Number("Texp_x", false);
-                    if (root["DarkNoiseRatio"]?.Type is JTokenType.Integer or JTokenType.Float) { Number("DarkNoiseRatio", false); FloatValue("DarkNoiseRatio"); }
-                }
+                const string ratio = "DarkNoiseRatio";
+                if (Number(ratio) && Math.Abs((double)root[ratio]!) > float.MaxValue)
+                    errors.Add(EngineLocalization.Format($"{ratio} 超出运行算法的 32 位浮点数范围。"));
                 break;
             case ServiceTypes.ColorShift:
                 Boolean("fillOffset");

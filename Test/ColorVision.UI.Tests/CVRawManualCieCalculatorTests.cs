@@ -1,4 +1,6 @@
 using ColorVision.Engine.Media;
+using ColorVision.Engine.Services.Devices.Camera;
+using ColorVision.Engine.Services.Devices.Camera.Local;
 using ColorVision.Engine.Services.PhyCameras.Calibration;
 using ColorVision.Engine.Services.PhyCameras.Group;
 using ColorVision.Engine.Services.POI;
@@ -11,15 +13,15 @@ namespace ColorVision.UI.Tests;
 public sealed class CVRawManualCieCalculatorTests
 {
     [Fact]
-    public void CalibrationSlotsFollowNativeExecutionOrderInsteadOfEnumOrder()
+    public void CalibrationGroupDisplaysDarkSubtractionBeforeTheMultiplier()
     {
         string[] actual = CalibrationSlotDefinitions.NormalSlots.Select(slot => slot.Key).ToArray();
 
         Assert.Equal(new[]
         {
-            nameof(GroupResource.DarkNoise),
             nameof(GroupResource.DefectPoint),
             nameof(GroupResource.DSNU),
+            nameof(GroupResource.DarkNoise),
             nameof(GroupResource.Uniformity),
             nameof(GroupResource.ColorShift),
             nameof(GroupResource.Distortion),
@@ -27,6 +29,27 @@ public sealed class CVRawManualCieCalculatorTests
             nameof(GroupResource.ColorDiff),
             nameof(GroupResource.AngleShift),
         }, actual);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void PreparedTemplateAppliesMeasuredDarkOffsetsBeforeTheMultiplier(bool includeDsnu)
+    {
+        static DeviceCameraCalibrationFile FileFor(cvColorVision.CalibrationType type)
+            => new(type.ToString(), type, type.ToString(), type + ".dat", type + ".dat");
+
+        var dark = FileFor(cvColorVision.CalibrationType.DarkNoise);
+        var defects = FileFor(cvColorVision.CalibrationType.DefectPoint);
+        var dsnu = FileFor(cvColorVision.CalibrationType.DSNU);
+        var uniformity = FileFor(cvColorVision.CalibrationType.Uniformity);
+        var color = FileFor(cvColorVision.CalibrationType.LumFourColor);
+        DeviceCameraCalibrationFile[] selected = includeDsnu ? [color, dark, defects, dsnu, uniformity]
+            : [color, dark, defects, uniformity];
+        DeviceCameraCalibrationFile[] expected = includeDsnu ? [defects, dsnu, dark, uniformity, color]
+            : [dark, defects, uniformity, color];
+        Assert.Equal(expected, OpenCvLocalCalibrationCache.InExecutionOrder(selected));
+        Assert.Equal(expected, OpenCvLocalCalibrationCache.InExecutionOrder(expected));
     }
 
     [Fact]

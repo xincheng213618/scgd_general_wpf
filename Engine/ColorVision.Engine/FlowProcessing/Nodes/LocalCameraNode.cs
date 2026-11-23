@@ -233,7 +233,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                 AutoExposureConfiguration = parameters.AutoExposureConfiguration,
                 AutoFocus = parameters.AutoFocus,
                 SaveFiles = false,
-                AllowAcceleration = true,
+                ColorOutput = LocalColorCalibrationOutput.Deferred,
                 Stop = stopToken
             }, parameters.AutoConnect);
 

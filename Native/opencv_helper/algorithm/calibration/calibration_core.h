@@ -5,6 +5,7 @@
 #include <cstdint>
 #include <filesystem>
 #include <memory>
+#include <optional>
 #include <span>
 #include <string>
 
@@ -60,6 +61,7 @@ struct ExecutionOptions {
     std::array<float, 3> exposure{};
     // Internal execution request; the public V1 options layout stays unchanged.
     std::int32_t rawOutputFlip = -99; // -99: none, 0: vertical, 1: horizontal, -1: both
+    bool preserveRawLayout = false; // V2 returns corrected RAW in the declared input layout.
     BgrNonzeroRows correctedBgrRows{}; // Set only for the Distortion immediately after the fused map pair.
 };
 
@@ -70,13 +72,18 @@ struct ColorTransform {
     std::array<double, 9> coefficients{}; // effective factors, including exposure/gain
 };
 
+void writeColorTransform(const ImageView& raw, bool interleavedBgr, const ColorTransform& transform, float* cieData);
+
 class CalibrationItem {
 public:
     virtual ~CalibrationItem() = default;
 
     [[nodiscard]] virtual CalibrationType type() const noexcept = 0;
     [[nodiscard]] virtual bool isColorTransform() const noexcept { return false; }
+    [[nodiscard]] virtual std::optional<std::int32_t> requiredInputDepth() const noexcept { return {}; }
     [[nodiscard]] virtual bool colorTransform(const ExecutionOptions&, ColorTransform&) const { return false; }
+    [[nodiscard]] virtual bool prepareColorTransform(
+        const ImageView&, const ExecutionOptions&, ColorTransform&, std::string&) const { return false; }
     [[nodiscard]] virtual bool requiresDistinctOutput() const noexcept { return false; }
     [[nodiscard]] virtual bool supportsDistinctOutput() const noexcept
     {

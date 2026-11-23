@@ -1,10 +1,10 @@
 using ColorVision.Database;
+using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.Services.Devices.Camera.Local;
 using log4net;
 using MQTTMessageLib.Camera;
 using Newtonsoft.Json;
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 
@@ -23,7 +23,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration
             ArgumentNullException.ThrowIfNull(request);
 
             string fullPath = request.SourcePath;
-            float[] normalizedExposure = NormalizeExposure(request.Exposure);
+            float[] normalizedExposure = LocalFrameCalibrationService.NormalizeExposure(request.Exposure);
             foreach (var calibrationFile in request.CalibrationFiles)
             {
                 if (!File.Exists(calibrationFile.FullPath))
@@ -32,18 +32,12 @@ namespace ColorVision.Engine.Services.Devices.Calibration
             }
 
             Stopwatch stopwatch = Stopwatch.StartNew();
+            var plan = request.Cache.Prepare(request.CalibrationFiles, request.TemplateName);
             using LocalFlowFrame frame = LocalFrameFileService.Load(fullPath, normalizedExposure, 1);
             if (!frame.HasRaw)
-            {
                 throw new NotSupportedException("本地校正需要 RAW、TIFF 或常规位图源；CVCIE 请切换到 MQTT 服务处理。");
-            }
-
-            LocalFrameCalibrationService.CalibrateInPlace(
-                frame,
-                request.Cache,
-                request.CalibrationFiles,
-                request.TemplateName,
-                LocalCalibrationRoi.ResolveForFrame(frame.Metadata, request.FallbackRoi));
+            plan.Apply(frame, plan.OutputFor(LocalColorCalibrationOutput.FullCie), request.FallbackRoi);
+            LocalFrameFileService.SaveColorParametersToInput(frame);
             string capturePath = LocalFrameFileService.CreateCapturePath(request.OutputRoot ?? string.Empty, request.DeviceCode, frame.Metadata);
             LocalFrameFileService.SaveCapture(frame, capturePath);
             stopwatch.Stop();
@@ -64,25 +58,6 @@ namespace ColorVision.Engine.Services.Devices.Calibration
                 checked((int)Math.Min(stopwatch.ElapsedMilliseconds, int.MaxValue)));
             TryPersist(request.PersistenceEndpoint, request.SerialNumber, model);
             return model;
-        }
-
-        private static float[] NormalizeExposure(IReadOnlyList<float> exposure)
-        {
-            if (exposure.Count == 0)
-            {
-                throw new InvalidOperationException("曝光时间不能为空。");
-            }
-
-            float[] normalized = new float[3];
-            for (int index = 0; index < normalized.Length; index++)
-            {
-                normalized[index] = exposure[Math.Min(index, exposure.Count - 1)];
-                if (!float.IsFinite(normalized[index]) || normalized[index] <= 0)
-                {
-                    throw new InvalidOperationException($"曝光时间必须是大于 0 的有限数值，通道 {index + 1} 当前为 {normalized[index]}。");
-                }
-            }
-            return normalized;
         }
 
         private static MeasureResultImgModel BuildResultModel(

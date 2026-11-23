@@ -270,7 +270,7 @@
                         <Border Style="{StaticResource SectionCardStyle}">
                             <StackPanel>
                                 <TextBlock Text="{display:EngineLang Key='成像校正'}" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,3" />
-                                <ItemsControl ItemsSource="{Binding NormalRows, ElementName=RootWindow}"
+                                <ItemsControl x:Name="NormalCalibrationItems" ItemsSource="{Binding NormalRows, ElementName=RootWindow}"
                                               ItemTemplate="{StaticResource CalibrationRowTemplate}" />
                             </StackPanel>
                         </Border>

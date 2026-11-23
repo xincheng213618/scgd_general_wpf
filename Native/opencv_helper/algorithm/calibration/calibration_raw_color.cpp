@@ -7,6 +7,7 @@
 #include <atomic>
 #include <cmath>
 #include <cstdint>
+#include <iterator>
 #include <limits>
 #include <type_traits>
 
@@ -17,7 +18,11 @@
 #pragma float_control(precise, on)
 #pragma fp_contract(off)
 
+#include "calibration_color_eval.h"
+
 namespace {
+namespace color = cvcore::calibration::color;
+
 template<class Action> int guard(const char* operation, Action action) noexcept
 {
     try { return action() ? M_POI_OK : M_POI_INVALID_ARGUMENT; }
@@ -58,7 +63,7 @@ template<int Stride, class Source>
 void transformScaled(int width, int height, const Source* raw, double factor, float* output)
 {
     transformRows(width, height, [=](std::size_t first, std::size_t last) {
-        for (auto i = first; i < last; ++i) output[i] = static_cast<float>(factor * raw[i * Stride]);
+        for (auto i = first; i < last; ++i) output[i] = color::scale(factor, raw[i * Stride]);
     });
 }
 
@@ -74,8 +79,8 @@ void transformColor(int width, int height, const Source* raw, const double* coef
         return { static_cast<double>(raw[i]), static_cast<double>(raw[pixels + i]), static_cast<double>(raw[pixels * 2 + i]) };
     };
     const auto firstPlane = [](const double* m, double red, double green, double blue) {
-        if constexpr (OneColor) return static_cast<float>(m[0] * red + m[3] * blue);
-        return static_cast<float>(m[0] * red + m[1] * green + m[2] * blue);
+        if constexpr (OneColor) return color::oneColorX(m, red, blue);
+        return color::matrixPlane(m, red, green, blue);
     };
 
     if (channel >= 0) {
@@ -99,8 +104,8 @@ void transformColor(int width, int height, const Source* raw, const double* coef
             const auto [red, green, blue] = rgbAt(i);
             output[i] = firstPlane(m, red, green, blue);
             if constexpr (OneColor) {
-                outY[i] = static_cast<float>(m[1] * green);
-                outZ[i] = static_cast<float>(m[2] * blue);
+                outY[i] = color::scale(m[1], green);
+                outZ[i] = color::scale(m[2], blue);
             }
             else {
                 outY[i] = firstPlane(m + 3, red, green, blue);
@@ -142,7 +147,7 @@ struct Sum {
         // Load RGB once per pixel. Calling the single-channel accessor three times
         // repeatedly branches on layout/kind and doubles the cost of large POIs.
         const double* m = reader.transform.coefficients;
-        if (reader.transform.kind == 2) values[0] += static_cast<float>(m[0] * reader.raw[i]);
+        if (reader.transform.kind == 2) values[0] += color::scale(m[0], reader.raw[i]);
         else {
             double r, g, b;
             if (reader.transform.interleavedBgr) {
@@ -151,14 +156,14 @@ struct Sum {
             }
             else { r = reader.raw[i]; g = reader.raw[reader.pixels + i]; b = reader.raw[reader.pixels * 2 + i]; }
             if (reader.transform.kind == 1) {
-                values[0] += static_cast<float>(m[0] * r + m[3] * b);
-                values[1] += static_cast<float>(m[1] * g);
-                values[2] += static_cast<float>(m[2] * b);
+                values[0] += color::oneColorX(m, r, b);
+                values[1] += color::scale(m[1], g);
+                values[2] += color::scale(m[2], b);
             }
             else {
-                values[0] += static_cast<float>(m[0] * r + m[1] * g + m[2] * b);
-                values[1] += static_cast<float>(m[3] * r + m[4] * g + m[5] * b);
-                values[2] += static_cast<float>(m[6] * r + m[7] * g + m[8] * b);
+                values[0] += color::matrixPlane(m, r, g, b);
+                values[1] += color::matrixPlane(m + 3, r, g, b);
+                values[2] += color::matrixPlane(m + 6, r, g, b);
             }
         }
         ++count;
@@ -173,6 +178,19 @@ struct Sum {
             reinterpret_cast<const cvcore::poi::OptionsV2*>(options), reinterpret_cast<cvcore::poi::ResultV1*>(result));
     }
 };
+
+template<class Sample>
+bool rawColorValuesAreFinite(const Sample* samples, std::size_t pixels, const MRawColorTransformV1& transform)
+{
+    Reader<Sample> reader{samples, transform, pixels};
+    for (std::size_t i = 0; i < pixels; ++i) {
+        Sum pixel;
+        pixel.add(reader, i);
+        if (!std::all_of(pixel.values.begin(), pixel.values.end(), [](double v) { return std::isfinite(v); }))
+            return false;
+    }
+    return true;
+}
 
 #if defined(_M_X64) && !defined(_M_ARM64EC)
 bool disjoint(
@@ -301,6 +319,24 @@ template<class Source> bool regionTyped(int width, int height, const void* raw, 
         for (int x = runs[k].startX; x < runs[k].endX; ++x) sum.add(reader, static_cast<std::size_t>(runs[k].y) * width + x);
     return sum.finish(t.channels, options, result);
 }
+}
+
+bool cvcore::calibration::color::frameValuesAreFinite(const void* raw, std::size_t pixels,
+    std::uint32_t bitsPerChannel, const MRawColorTransformV1& transform, const float* cie)
+{
+    // Each output has at most three scaled terms. Leave headroom for rounding.
+    const double maxSample = bitsPerChannel == 8 ? 255.0 : 65535.0;
+    const double safeFactor = (std::numeric_limits<float>::max)() / (4.0 * maxSample);
+    if (std::all_of(std::begin(transform.coefficients), std::end(transform.coefficients),
+            [safeFactor](double factor) { return std::abs(factor) <= safeFactor; })) return true;
+
+    // Large factors can still produce valid results on dark or cancelling pixels.
+    if (cie != nullptr) {
+        return std::all_of(cie, cie + pixels * transform.channels, [](float value) { return std::isfinite(value); });
+    }
+    return bitsPerChannel == 8
+        ? rawColorValuesAreFinite(static_cast<const std::uint8_t*>(raw), pixels, transform)
+        : rawColorValuesAreFinite(static_cast<const std::uint16_t*>(raw), pixels, transform);
 }
 
 extern "C" COLORVISIONCORE_API int __cdecl M_TransformRawColorV1(int width, int height, int bpp,

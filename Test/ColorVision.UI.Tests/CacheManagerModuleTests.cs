@@ -180,7 +180,8 @@ public sealed class CacheManagerModuleTests
         try
         {
             void Execute() => manager.Execute(new LocalCalibrationLayout(3, 2, 16, 1), [file],
-                pinned.AddrOfPinnedObject(), IntPtr.Zero, [10, 10, 10], default);
+                pinned.AddrOfPinnedObject(), (ulong)raw.Length, IntPtr.Zero, 0, [10, 10, 10], default,
+                CalibrationOutputMode.RawOnly);
 
             Execute();
             Execute();
@@ -205,10 +206,11 @@ public sealed class CacheManagerModuleTests
     }
 
     [Fact]
-    public void DeferredColorHasIndependentBoundedCacheAndRefreshesFileRevisions()
+    public void DeferredColorKeepsBoundedCompletePlansAndRefreshesFileRevisions()
     {
         string root = Directory.CreateTempSubdirectory("cv-deferred-cache-").FullName;
-        GCHandle pinned = GCHandle.Alloc(new byte[3 * 2 * 3 * sizeof(ushort)], GCHandleType.Pinned);
+        byte[] raw = new byte[3 * 2 * 3 * sizeof(ushort)];
+        GCHandle pinned = GCHandle.Alloc(raw, GCHandleType.Pinned);
         try
         {
             using LocalCalibrationCacheManager manager = new("deferred-cache-test");
@@ -226,7 +228,7 @@ public sealed class CacheManagerModuleTests
             Execute(darkB, colorA);
             Assert.Equal(1U, OwnerCount(darkA));
             Assert.Equal(1U, OwnerCount(darkB));
-            Assert.Equal(1U, OwnerCount(colorA));
+            Assert.Equal(2U, OwnerCount(colorA));
 
             Execute(darkA, colorB);
             Execute(darkA, colorA);
@@ -262,7 +264,8 @@ public sealed class CacheManagerModuleTests
 
             LocalCalibrationExecution Execute(DeviceCameraCalibrationFile darkFile, DeviceCameraCalibrationFile colorFile)
                 => manager.Execute(new LocalCalibrationLayout(3, 2, 16, 3), [colorFile, darkFile],
-                    pinned.AddrOfPinnedObject(), IntPtr.Zero, [1, 1, 1], default, allowAcceleration: true);
+                    pinned.AddrOfPinnedObject(), (ulong)raw.Length, IntPtr.Zero, 0, [1, 1, 1], default,
+                    CalibrationOutputMode.DeferredColor);
         }
         finally
         {

@@ -6970,7 +6970,7 @@ Field: </value></data>
   <data name="共用 X (px)" xml:space="preserve"><value>Shared X (px)</value></data>
   <data name="共用 Y (px)" xml:space="preserve"><value>Shared Y (px)</value></data>
   <data name="共用空间偏移（Y / X）" xml:space="preserve"><value>Shared Spatial Offset (Y / X)</value></data>
-  <data name="兼容旧算法：暗噪声采用倍率修正；原文件 Texp_x 为浮点数时比例才生效。" xml:space="preserve"><value>Legacy compatibility: dark noise uses a multiplicative correction. The factor applies only when Texp_x in the original file is a floating-point value.</value></data>
+  <data name="暗噪声倍率作用于每个像素的每个通道。8 位结果限制在 0–255，16 位结果限制在 0–65535。" xml:space="preserve"><value>The dark-noise multiplier applies to every channel of every pixel. The output range is 0–255 for 8-bit samples and 0–65535 for 16-bit samples.</value></data>
   <data name="半径 {0} 次项" xml:space="preserve"><value>Radius Power {0}</value></data>
   <data name="单色" xml:space="preserve"><value>Single Color</value></data>
   <data name="单色校正系数" xml:space="preserve"><value>Single-Color Calibration Coefficients</value></data>
@@ -7004,7 +7004,8 @@ Field: </value></data>
   <data name="无等待指令" xml:space="preserve"><value>No Pending Command</value></data>
   <data name="日志" xml:space="preserve"><value>Log</value></data>
   <data name="暗噪声" xml:space="preserve"><value>Dark Noise</value></data>
-  <data name="暗噪声乘法比例；兼容旧文件，曝光 X 为 JSON 浮点数时才生效。" xml:space="preserve"><value>Dark-noise multiplier. For legacy compatibility, applies only when exposure X is a JSON floating-point value.</value></data>
+  <data name="每个 RAW 样本乘以此倍率。倍率为 1 时保留原值，倍率小于或等于 0 时输出 0。" xml:space="preserve"><value>Each RAW sample is multiplied by this factor. A factor of 1 preserves the sample value. A factor of zero or less produces zero.</value></data>
+  <data name="可选的标定曝光记录（ms）。暗噪声计算只使用倍率。" xml:space="preserve"><value>Optional calibration exposure record (ms). The dark-noise calculation uses only the multiplier.</value></data>
   <data name="暗噪声比例" xml:space="preserve"><value>Dark-Noise Factor</value></data>
   <data name="曝光 Texp_x" xml:space="preserve"><value>Exposure Texp_x</value></data>
   <data name="曝光 X（ms）" xml:space="preserve"><value>Exposure X (ms)</value></data>

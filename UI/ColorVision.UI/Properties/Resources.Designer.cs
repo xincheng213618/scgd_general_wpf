@@ -1725,8 +1725,6 @@ namespace ColorVision.UI.Properties {
             }
         }
         
-        }
-        
         /// <summary>
         ///   查找类似 预热: 的本地化字符串。
         /// </summary>

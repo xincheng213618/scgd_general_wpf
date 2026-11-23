@@ -868,7 +868,8 @@ void verifySharedMapContextLifecycle(
 
     const auto previousWriteTime = std::filesystem::last_write_time(file);
     rewriteFile();
-    std::filesystem::last_write_time(file, previousWriteTime + std::chrono::seconds(2));
+    // An installer can replace the map while preserving its public timestamp and length.
+    std::filesystem::last_write_time(file, previousWriteTime);
 
     // A metadata change creates a new cached generation. Existing contexts must
     // continue to own their old generation while a new context sees new data.
@@ -1947,7 +1948,7 @@ void verifyRawOutputFlip(const std::filesystem::path& directory)
     writeText(distortion, R"({"alpha":0.0,"cameraMatrix":[10,0,8,0,10,6,0,0,1],"distCoeffs":[0.01,-0.003,0.0001,0.0002,0],"h":13,"w":17,"useFisheye":false})");
     writeText(colorDiff, R"({"CalibDis":1,"MeasDis":1,"CenterCol":8,"CenterRow":6,"ColRowCoeffs_GB":[-1,0.25],"ColRowCoeffs_GR":[0.5,-1],"ColorDiffCoeffs_GB":[0.2,0.01],"ColorDiffCoeffs_GR":[-0.3,0.02],"h":13,"w":17})");
     writeText(wideColorDiff, R"({"CalibDis":1,"MeasDis":1,"CenterCol":8,"CenterRow":6,"ColRowCoeffs_GB":[0,20],"ColRowCoeffs_GR":[-20,0],"ColorDiffCoeffs_GB":[0],"ColorDiffCoeffs_GR":[0],"h":13,"w":17})");
-    writeText(dark, R"({"DarkNoiseRatio":2})");
+    writeText(dark, R"({"Texp_x":1.0,"DarkNoiseRatio":1.5})");
     writeText(color, R"({"a":1,"b":0,"c":0,"d":0,"e":1,"f":0,"g":0,"h":0,"i":1})");
     std::vector<std::uint16_t> offsets(17 * 13 * 3);
     std::vector<float> factors(offsets.size());
@@ -2138,6 +2139,274 @@ void verifyLargeMatrixColorOutput(const std::filesystem::path& directory)
     }
 }
 
+void verifyFrameCalibrationModes(const std::filesystem::path& directory)
+{
+    const auto dark = directory / "frame-mode-dark.json";
+    const auto color = directory / "frame-mode-color.json";
+    writeText(dark, R"({"Texp_x":1.0,"DarkNoiseRatio":2.0})");
+    writeText(color, R"({"bpp":16,"a":1,"b":0,"c":0,"d":0,"e":1,"f":0,"g":0,"h":0,"i":1})");
+
+    Context context = createContext();
+    requireResult(M_CalibrationLoadFileW(context.get(), 0, dark.c_str()), context.get(), "new frame basic stage");
+    requireResult(M_CalibrationLoadFileW(context.get(), 8, color.c_str()), context.get(), "new frame color stage");
+    MCalibrationFrameRequestV2 request{};
+    request.structSize = sizeof(request);
+    request.width = 2;
+    request.height = 2;
+    request.rawLayout = M_CALIBRATION_BGR_INTERLEAVED;
+    std::fill_n(request.exposure, 3, 1.0F);
+
+    std::array<std::uint8_t, 12> raw8{};
+    raw8.fill(20);
+    const auto original8 = raw8;
+    std::array<float, 12> cie{};
+    MRawColorTransformV1 transform{};
+    request.bitsPerChannel = 8;
+    request.outputMode = M_CALIBRATION_FULL_CIE;
+    if (M_CalibrationExecuteFrameV2(context.get(), &request, raw8.data(), sizeof(raw8), cie.data(), sizeof(cie), &transform)
+        != M_CALIBRATION_EXECUTE_FAILED || raw8 != original8) {
+        throw std::runtime_error("Full CIE did not reject a RAW depth mismatch before correction");
+    }
+    request.outputMode = M_CALIBRATION_DEFERRED_COLOR;
+    if (M_CalibrationExecuteFrameV2(context.get(), &request, raw8.data(), sizeof(raw8), nullptr, 0, &transform)
+        != M_CALIBRATION_EXECUTE_FAILED || raw8 != original8) {
+        throw std::runtime_error("Deferred color did not reject a RAW depth mismatch before correction");
+    }
+
+    request.bitsPerChannel = 16;
+    std::array<std::uint16_t, 12> fullRaw{ 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70 };
+    auto deferredRaw = fullRaw;
+    request.outputMode = M_CALIBRATION_FULL_CIE;
+    if (M_CalibrationExecuteFrameV2(context.get(), &request,
+            reinterpret_cast<std::uint8_t*>(fullRaw.data()), sizeof(fullRaw), cie.data(), sizeof(cie) - sizeof(float), &transform)
+        != M_CALIBRATION_EXECUTE_FAILED || fullRaw != deferredRaw) {
+        throw std::runtime_error("Full CIE did not reject a short output before correction");
+    }
+    MRawColorTransformV1 aliased{};
+    if (M_CalibrationExecuteFrameV2(context.get(), &request, reinterpret_cast<std::uint8_t*>(&aliased),
+            sizeof(fullRaw), cie.data(), sizeof(cie), &aliased) != M_CALIBRATION_INVALID_ARGUMENT) {
+        throw std::runtime_error("Calibration accepted overlapping transform and pixel buffers");
+    }
+    requireResult(M_CalibrationExecuteFrameV2(context.get(), &request,
+        reinterpret_cast<std::uint8_t*>(fullRaw.data()), sizeof(fullRaw), cie.data(), sizeof(cie), &transform),
+        context.get(), "full CIE output");
+    request.outputMode = M_CALIBRATION_DEFERRED_COLOR;
+    requireResult(M_CalibrationExecuteFrameV2(context.get(), &request,
+        reinterpret_cast<std::uint8_t*>(deferredRaw.data()), sizeof(deferredRaw), nullptr, 0, &transform),
+        context.get(), "deferred color output");
+    std::array<float, 12> replay{};
+    if (M_TransformRawColorV1(2, 2, 16, deferredRaw.data(), sizeof(deferredRaw), &transform,
+            -1, replay.data(), replay.size()) != M_POI_OK
+        || deferredRaw != fullRaw || std::memcmp(replay.data(), cie.data(), sizeof(cie)) != 0) {
+        throw std::runtime_error("Deferred color did not reproduce full CIE output");
+    }
+}
+
+template<class Sample>
+void compareFrameLayouts(void* context, MCalibrationOutputMode mode, MCalibrationRawFlip flip)
+{
+    constexpr unsigned width = 7, height = 5, pixels = width * height;
+    std::array<Sample, 3 * pixels> packed{}, planar{};
+    for (unsigned pixel = 0; pixel < pixels; ++pixel) {
+        for (unsigned channel = 0; channel < 3; ++channel) {
+            const auto sample = static_cast<Sample>(pixel + 1 + channel * 80);
+            planar[channel * pixels + pixel] = sample;
+            packed[pixel * 3 + 2 - channel] = sample;
+        }
+    }
+    MCalibrationFrameRequestV2 request{};
+    request.structSize = sizeof(request);
+    request.width = width;
+    request.height = height;
+    request.bitsPerChannel = sizeof(Sample) * 8;
+    request.outputMode = mode;
+    request.rawFlip = flip;
+    std::fill_n(request.exposure, 3, 1.0F);
+    std::array<float, 3 * pixels> packedCie{}, planarCie{};
+    MRawColorTransformV1 transform{};
+    const bool writeCie = mode == M_CALIBRATION_FULL_CIE;
+    request.rawLayout = M_CALIBRATION_BGR_INTERLEAVED;
+    requireResult(M_CalibrationExecuteFrameV2(context, &request, reinterpret_cast<std::uint8_t*>(packed.data()),
+        sizeof(packed), writeCie ? packedCie.data() : nullptr, writeCie ? sizeof(packedCie) : 0, &transform),
+        context, "packed reference");
+    request.rawLayout = M_CALIBRATION_RGB_PLANAR;
+    requireResult(M_CalibrationExecuteFrameV2(context, &request, reinterpret_cast<std::uint8_t*>(planar.data()),
+        sizeof(planar), writeCie ? planarCie.data() : nullptr, writeCie ? sizeof(planarCie) : 0, &transform),
+        context, "planar frame");
+    if (mode == M_CALIBRATION_DEFERRED_COLOR && M_TransformRawColorV1(width, height, request.bitsPerChannel,
+            planar.data(), sizeof(planar), &transform, -1, planarCie.data(), planarCie.size()) != M_POI_OK) {
+        throw std::runtime_error("Failed to replay the planar transform");
+    }
+    if (mode != M_CALIBRATION_RAW_ONLY && transform.interleavedBgr != 0)
+        throw std::runtime_error("Result transform does not describe the caller's planar layout");
+    for (unsigned channel = 0; channel < 3; ++channel) {
+        for (unsigned pixel = 0; pixel < pixels; ++pixel) {
+            const auto index = channel * pixels + pixel;
+            const auto expected = packed[pixel * 3 + 2 - channel];
+            if (planar[index] != expected || (mode != M_CALIBRATION_RAW_ONLY && planarCie[index] != expected)
+                || (writeCie && planarCie[index] != packedCie[index])) {
+                throw std::runtime_error("Planar RAW or XYZ differs from the packed frame");
+            }
+        }
+    }
+}
+
+void verifyPlanarFrameStages(const std::filesystem::path& directory)
+{
+    const auto shift = directory / "planar-shift.json";
+    const auto dark = directory / "planar-dark.json";
+    const auto color = directory / "planar-color.json";
+    writeText(shift, R"({"fillOffset":false,"offset":[{"X":1,"Y":0},{"X":0,"Y":-1},{"X":-1,"Y":0}]})");
+    writeText(dark, R"({"Texp_x":1.0,"DarkNoiseRatio":2.0})");
+    writeText(color, R"({"a":1,"e":1,"i":1})");
+    Context context = createContext();
+    requireResult(M_CalibrationLoadFileW(context.get(), 12, shift.c_str()), context.get(), "planar ColorShift");
+    requireResult(M_CalibrationLoadFileW(context.get(), 0, dark.c_str()), context.get(), "planar DarkNoise");
+    compareFrameLayouts<std::uint16_t>(context.get(), M_CALIBRATION_RAW_ONLY, M_CALIBRATION_FLIP_BOTH);
+    requireResult(M_CalibrationLoadFileW(context.get(), 8, color.c_str()), context.get(), "planar FourColor");
+    compareFrameLayouts<std::uint16_t>(context.get(), M_CALIBRATION_FULL_CIE, M_CALIBRATION_FLIP_NONE);
+    compareFrameLayouts<std::uint8_t>(context.get(), M_CALIBRATION_DEFERRED_COLOR, M_CALIBRATION_FLIP_HORIZONTAL);
+}
+
+void verifyActualFrameColorRange(const std::filesystem::path& directory)
+{
+    const auto color = directory / "color-range.json";
+    const auto dark = directory / "color-range-dark.json";
+    writeText(color, R"({"a":1e38})");
+    writeText(dark, R"({"Texp_x":1.0,"DarkNoiseRatio":2.0})");
+    Context context = createContext();
+    requireResult(M_CalibrationLoadFileW(context.get(), 0, dark.c_str()), context.get(), "range dark stage");
+    requireResult(M_CalibrationLoadFileW(context.get(), 6, color.c_str()), context.get(), "range luminance stage");
+    MCalibrationFrameRequestV2 request{};
+    request.structSize = sizeof(request);
+    request.width = request.height = 1;
+    request.bitsPerChannel = 16;
+    request.rawLayout = M_CALIBRATION_MONO;
+    std::fill_n(request.exposure, 3, 1.0F);
+    for (auto mode : {M_CALIBRATION_FULL_CIE, M_CALIBRATION_DEFERRED_COLOR}) {
+        request.outputMode = mode;
+        for (auto source : std::array<std::uint16_t, 3>{0, 1, 2}) {
+            std::uint16_t raw = source;
+            float y = 0;
+            MRawColorTransformV1 transform{};
+            transform.reserved = 42;
+            const bool full = mode == M_CALIBRATION_FULL_CIE;
+            const int result = M_CalibrationExecuteFrameV2(context.get(), &request,
+                reinterpret_cast<std::uint8_t*>(&raw), sizeof(raw), full ? &y : nullptr, full ? sizeof(y) : 0, &transform);
+            if (source == 2) {
+                if (result != M_CALIBRATION_EXECUTE_FAILED || transform.reserved != 42
+                    || nativeError(context.get()).find("finite float range") == std::string::npos) {
+                    throw std::runtime_error("Non-finite color result accepted or published");
+                }
+            }
+            else {
+                requireResult(result, context.get(), "representable actual luminance");
+                if (!full && M_TransformRawColorV1(1, 1, 16, &raw, sizeof(raw), &transform, -1, &y, 1) != M_POI_OK)
+                    throw std::runtime_error("Failed to replay extreme but valid luminance");
+                if (y != static_cast<float>(1e38 * (source * 2)))
+                    throw std::runtime_error("Extreme luminance factor changed a representable pixel");
+            }
+        }
+    }
+}
+
+template<class Sample>
+void verifyDarkNoiseSamples(void* context, std::uint32_t gainNumerator)
+{
+    constexpr std::uint32_t width = 7, height = 3, bits = sizeof(Sample) * 8;
+    constexpr std::uint32_t limit = (std::numeric_limits<Sample>::max)();
+    constexpr std::array<std::uint32_t, 20> levels{
+        0, 1, 3, 17, 127, 169, 170, 171, 254, 255, 256, 257, 4096, 32767, 32768, 43689, 43690, 43691, 65534, 65535
+    };
+    for (auto layout : { M_CALIBRATION_MONO, M_CALIBRATION_BGR_INTERLEAVED, M_CALIBRATION_RGB_PLANAR }) {
+        const std::uint32_t channels = layout == M_CALIBRATION_MONO ? 1 : 3;
+        const auto samples = width * height * channels;
+        const auto bytes = samples * sizeof(Sample);
+        // One guard on either side also checks that calibration respects the declared buffer.
+        std::vector<Sample> source(samples + 2, 0xA5);
+        auto expected = source;
+        for (std::size_t i = 0; i < samples; ++i) {
+            const auto sample = (std::min)(levels[i % levels.size()], limit);
+            source[i + 1] = static_cast<Sample>(sample);
+            // Exact integer oracle for our half-integer gains, including truncation and saturation.
+            expected[i + 1] = static_cast<Sample>((std::min)(sample * gainNumerator / 2, limit));
+        }
+        for (bool cropped : {false, true}) {
+            MCalibrationFrameRequestV2 request{};
+            request.structSize = sizeof(request);
+            request.width = width;
+            request.height = height;
+            request.bitsPerChannel = bits;
+            request.rawLayout = layout;
+            request.outputMode = M_CALIBRATION_RAW_ONLY;
+            MCalibrationExecutionOptionsV1 options{};
+            options.structSize = sizeof(options);
+            options.interleavedBgr = layout == M_CALIBRATION_BGR_INTERLEAVED;
+            if (cropped) {
+                // Here width and height describe the already-captured sensor crop.
+                request.sensorRoi[0] = options.roiX = 13;
+                request.sensorRoi[1] = options.roiY = 9;
+                request.sensorRoi[2] = options.roiWidth = width;
+                request.sensorRoi[3] = options.roiHeight = height;
+            }
+            auto pixels = source;
+            requireResult(M_CalibrationExecuteFrameV2(context, &request,
+                reinterpret_cast<std::uint8_t*>(pixels.data() + 1), bytes, nullptr, 0, nullptr),
+                context, "in-place DarkNoise");
+            if (pixels != expected) throw std::runtime_error("DarkNoise did not correct every sample at the input depth");
+
+            auto readOnly = source;
+            std::vector<Sample> output(samples + 2, 0xA5);
+            requireResult(M_CalibrationExecuteToV1(context, width, height, bits, channels,
+                reinterpret_cast<const std::uint8_t*>(readOnly.data() + 1), bytes,
+                reinterpret_cast<std::uint8_t*>(output.data() + 1), bytes, nullptr, 0, &options),
+                context, "separate DarkNoise output");
+            if (readOnly != source || output != expected)
+                throw std::runtime_error("Separate DarkNoise output corrupted its source or produced incorrect samples");
+        }
+    }
+}
+
+void verifyDarkNoise(const std::filesystem::path& directory)
+{
+    const auto dark = directory / "dark.json";
+    writeText(dark, R"({"DarkNoiseRatio":1.5})");
+    Context context = createContext();
+    requireResult(M_CalibrationLoadFileW(context.get(), 0, dark.c_str()), context.get(), "load DarkNoise without exposure");
+    verifyDarkNoiseSamples<std::uint8_t>(context.get(), 3);
+    verifyDarkNoiseSamples<std::uint16_t>(context.get(), 3);
+
+    for (std::uint32_t gain : {0U, 1U}) {
+        const auto path = directory / ("dark-gain-" + std::to_string(gain) + ".json");
+        writeText(path, "{\"DarkNoiseRatio\":" + std::to_string(gain) + "}");
+        Context fastPath = createContext();
+        requireResult(M_CalibrationLoadFileW(fastPath.get(), 0, path.c_str()), fastPath.get(), "load zero or unit DarkNoise gain");
+        verifyDarkNoiseSamples<std::uint8_t>(fastPath.get(), 2 * gain);
+        verifyDarkNoiseSamples<std::uint16_t>(fastPath.get(), 2 * gain);
+    }
+
+    const auto integerExposure = directory / "dark-integer-exposure.json";
+    writeText(integerExposure, R"({"Texp_x":1,"DarkNoiseRatio":2})");
+    std::vector<std::uint8_t> pixels{10, 50, 100, 200};
+    runOne(0, integerExposure, 2, 2, 8, 1, pixels);
+    if (pixels != std::vector<std::uint8_t>{20, 100, 200, 255})
+        throw std::runtime_error("Integer exposure disabled the DarkNoise gain");
+
+    const auto negativeGain = directory / "dark-negative.json";
+    writeText(negativeGain, R"({"DarkNoiseRatio":-0.5})");
+    runOne(0, negativeGain, 2, 2, 8, 1, pixels);
+    if (pixels != std::vector<std::uint8_t>(4, 0))
+        throw std::runtime_error("Negative DarkNoise gain did not saturate to zero");
+
+    const auto invalid = directory / "dark-invalid.json";
+    for (const char* json : {R"({"Texp_x":1.0})", R"({"DarkNoiseRatio":"2"})", R"({"DarkNoiseRatio":1e100})"}) {
+        writeText(invalid, json);
+        if (M_CalibrationLoadFileW(context.get(), 0, invalid.c_str()) != M_CALIBRATION_LOAD_FAILED
+            || M_CalibrationGetItemCount(context.get()) != 1 || nativeError(context.get()).empty())
+            throw std::runtime_error("Invalid DarkNoise gain was accepted or changed the prepared context");
+    }
+}
+
 void runSyntheticCoverage()
 {
     TemporaryDirectory directory(
@@ -2162,20 +2431,11 @@ void runSyntheticCoverage()
     verifyLargeColorDiffOutput(directory.path);
     verifyColorDiffMixedOffsets(directory.path);
     verifyLargeMatrixColorOutput(directory.path);
+    verifyFrameCalibrationModes(directory.path);
+    verifyPlanarFrameStages(directory.path);
+    verifyActualFrameColorRange(directory.path);
 
-    const auto dark = directory.path / "dark.json";
-    writeText(dark, R"({"bpp":16,"Texp_x":1.0,"DarkNoiseRatio":2.0})");
-    std::vector<std::uint16_t> darkPixels(16, 10);
-    std::vector<std::uint8_t> darkRaw(darkPixels.size() * sizeof(std::uint16_t));
-    std::memcpy(darkRaw.data(), darkPixels.data(), darkRaw.size());
-    const std::vector<std::uint8_t> darkSource = darkRaw;
-    runOne(0, dark, 4, 4, 16, 1, darkRaw);
-    verifyReadOnlySingle(0, dark, 4, 4, 16, 1, darkSource);
-    std::memcpy(darkPixels.data(), darkRaw.data(), darkRaw.size());
-    for (std::size_t index = 0; index < darkPixels.size(); ++index) {
-        const std::uint16_t expected = index < 4 ? 20 : 10;
-        if (darkPixels[index] != expected) throw std::runtime_error("DarkNoise compatibility behavior changed");
-    }
+    verifyDarkNoise(directory.path);
 
     const auto defects = directory.path / "defects.dat";
     {
@@ -2273,6 +2533,22 @@ void runSyntheticCoverage()
     }
 
     const auto luminance = directory.path / "luminance.json";
+    {
+        Context context = createContext();
+        std::uint32_t depth = 99;
+        requireResult(M_CalibrationGetInputDepthV1(context.get(), &depth), context.get(), "query neutral depth");
+        if (depth != 0 || M_CalibrationGetInputDepthV1(context.get(), nullptr) != M_CALIBRATION_INVALID_ARGUMENT)
+            throw std::runtime_error("Invalid neutral calibration depth contract");
+        requireResult(M_CalibrationLoadFileW(context.get(), 13, lineArity.c_str()), context.get(), "load linearity depth");
+        requireResult(M_CalibrationGetInputDepthV1(context.get(), &depth), context.get(), "query linearity depth");
+        if (depth != 16) throw std::runtime_error("Linearity must require 16-bit input");
+        const auto lowDepth = directory.path / "depth8.json";
+        writeText(lowDepth, R"({"a":1,"bpp":8})");
+        requireResult(M_CalibrationLoadFileW(context.get(), 6, lowDepth.c_str()), context.get(), "load conflicting depth");
+        depth = 99;
+        if (M_CalibrationGetInputDepthV1(context.get(), &depth) != M_CALIBRATION_INVALID_ARGUMENT || depth != 99)
+            throw std::runtime_error("A conflicting template published an input depth");
+    }
     const auto oneColor = directory.path / "one.json";
     const auto fourColor = directory.path / "four.json";
     const auto multiColor = directory.path / "multi.json";
