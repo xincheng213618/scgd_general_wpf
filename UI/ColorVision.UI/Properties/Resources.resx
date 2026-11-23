@@ -566,9 +566,6 @@
   <data name="Log_OpenFolder" xml:space="preserve">
     <value>打开文件夹</value>
   </data>
-  <data name="TimedOp_ViewStats" xml:space="preserve">
-    <value>查看耗时统计</value>
-  </data>
   <data name="TimedOp_NoHistory" xml:space="preserve">
     <value>暂无历史耗时。</value>
   </data>

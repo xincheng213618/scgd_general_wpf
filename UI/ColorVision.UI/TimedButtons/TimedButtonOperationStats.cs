@@ -88,12 +88,6 @@ namespace ColorVision.UI
         int Clear();
     }
 
-    public interface ITimedButtonOperationStatsWindowLauncher
-    {
-        bool CanOpen { get; }
-        void OpenWindow(string? operationKey = null);
-    }
-
     public readonly struct TimedButtonOperationRecordResult
     {
         public TimedButtonOperationRecordResult(TimedButtonOperationStats stats, bool wasWarmup)
@@ -144,30 +138,6 @@ namespace ColorVision.UI
         internal static void NotifyStatsChanged(string? operationKey)
         {
             StatsChanged?.Invoke(null, new TimedButtonOperationStatsChangedEventArgs(operationKey));
-        }
-    }
-
-    public static class TimedButtonOperationStatsWindowLauncherProvider
-    {
-        private static readonly object SyncRoot = new object();
-        private static ITimedButtonOperationStatsWindowLauncher? _launcher;
-
-        public static void SetLauncher(ITimedButtonOperationStatsWindowLauncher launcher)
-        {
-            ArgumentNullException.ThrowIfNull(launcher);
-
-            lock (SyncRoot)
-            {
-                _launcher = launcher;
-            }
-        }
-
-        public static ITimedButtonOperationStatsWindowLauncher? GetLauncher()
-        {
-            lock (SyncRoot)
-            {
-                return _launcher;
-            }
         }
     }
 
