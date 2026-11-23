@@ -131,7 +131,8 @@
 <p>成功结果仍创建类型 <code>FOV</code>、版本 <code>2.0</code> 的主记录和一条 <code>DetailCommon</code> 明细。明细 JSON 的 <code>ResultFileName</code> 指向本地结果文件，文件的 <code>result</code> 对象保留以下字段及大小写：</p>
 <div class="language-text vp-adaptive-theme"><button title="Copy Code" class="copy"></button><span class="lang">text</span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0" v-pre=""><code><span class="line"><span>D_Fov, H_Fov, V_FOV, clolorVisionH_Fov, clolorVisionV_Fov,</span></span>
 <span class="line"><span>leftDownToRightUp, leftUpToRightDown, message</span></span></code></pre>
-</div><p>流程运行的七项测量值保存在结果文件中；角点、相机编码、<code>FovDist</code>、<code>cameraDegrees</code>、<code>MeasurementMode</code>、<code>BoundaryMode</code>（<code>UpstreamCorners</code>、<code>RobustV2</code> 或 <code>CurvedBoundary</code>）及定位诊断保存在主记录参数中，便于追溯。轮廓模式额外保存 <code>Boundary</code>（轮廓、中心及水平/垂直/斜向端点），角点为空。下游业务判定、导出和协议字段仍由原有结果处理器及客户项目负责。流程保存要求已有批次和可用数据库连接；ImageView 不进入这条持久化链。</p>
+</div><p>流程运行的七项测量值保存在结果文件中；角点、相机编码、<code>FovDist</code>、<code>cameraDegrees</code>、<code>MeasurementMode</code>、<code>BoundaryMode</code>（<code>UpstreamCorners</code>、<code>RobustV2</code> 或 <code>CurvedBoundary</code>）及定位诊断保存在主记录参数中，便于追溯。轮廓模式额外保存 <code>Boundary</code>（轮廓、中心及水平/垂直/斜向端点），角点为空。下游业务判定、导出和协议字段仍由原有结果处理器及客户项目负责。</p>
+<p>流程保存要求已有批次和可用数据库连接。节点在开始时取得该批次绑定的数据库，独立调用时使用当时已验证的连接。上游图像、发光区主记录和角点、批次查询、结果写入及通知均沿用该数据库。失败的定位或角点计算保留诊断主记录与原始错误；成功的主记录与明细共同提交，写入失败时清理尚未引用的结果文件。ImageView 不进入这条持久化链。</p>
 <p>内存帧若直接来自普通图片且未经过校正或翻转，主记录 <code>ImgFile</code> 会保存该原始图片路径，结果列表的“文件”列可正常关联原图。若当前主缓冲区已校正或翻转，只使用与当前缓冲区严格对应的 <code>CvRawFilePath</code> / <code>CvCieFilePath</code>；没有这类已保存文件时保持为空，避免历史叠图错误加载变换前的源图。</p>
 </article>
       <p class="help-footer">此说明随软件提供。指标判定请核对项目约定的公式口径与限值。</p>

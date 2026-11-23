@@ -124,6 +124,8 @@ D_Fov, H_Fov, V_FOV, clolorVisionH_Fov, clolorVisionV_Fov,
 leftDownToRightUp, leftUpToRightDown, message
 ```
 
-流程运行的七项测量值保存在结果文件中；角点、相机编码、`FovDist`、`cameraDegrees`、`MeasurementMode`、`BoundaryMode`（`UpstreamCorners`、`RobustV2` 或 `CurvedBoundary`）及定位诊断保存在主记录参数中，便于追溯。轮廓模式额外保存 `Boundary`（轮廓、中心及水平/垂直/斜向端点），角点为空。下游业务判定、导出和协议字段仍由原有结果处理器及客户项目负责。流程保存要求已有批次和可用数据库连接；ImageView 不进入这条持久化链。
+流程运行的七项测量值保存在结果文件中；角点、相机编码、`FovDist`、`cameraDegrees`、`MeasurementMode`、`BoundaryMode`（`UpstreamCorners`、`RobustV2` 或 `CurvedBoundary`）及定位诊断保存在主记录参数中，便于追溯。轮廓模式额外保存 `Boundary`（轮廓、中心及水平/垂直/斜向端点），角点为空。下游业务判定、导出和协议字段仍由原有结果处理器及客户项目负责。
+
+流程保存要求已有批次和可用数据库连接。节点在开始时取得该批次绑定的数据库，独立调用时使用当时已验证的连接。上游图像、发光区主记录和角点、批次查询、结果写入及通知均沿用该数据库。失败的定位或角点计算保留诊断主记录与原始错误；成功的主记录与明细共同提交，写入失败时清理尚未引用的结果文件。ImageView 不进入这条持久化链。
 
 内存帧若直接来自普通图片且未经过校正或翻转，主记录 `ImgFile` 会保存该原始图片路径，结果列表的“文件”列可正常关联原图。若当前主缓冲区已校正或翻转，只使用与当前缓冲区严格对应的 `CvRawFilePath` / `CvCieFilePath`；没有这类已保存文件时保持为空，避免历史叠图错误加载变换前的源图。

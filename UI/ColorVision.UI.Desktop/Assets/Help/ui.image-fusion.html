@@ -24,7 +24,7 @@
     <main class="help-content">
       <p class="help-kicker">ColorVision · 算法原理 · 离线说明</p>
       <article><h2 id="algorithm-principles" tabindex="-1">景深融合算法原理 <a class="header-anchor" href="#algorithm-principles" aria-label="Permalink to &quot;景深融合算法原理 {#algorithm-principles}&quot;">&ZeroWidthSpace;</a></h2>
-<p>景深融合将一组不同焦点的本地图片融合为一张图像。独立窗口和本地流程节点共同调用 <code>ColorVision.Core.FileFusion</code>，读取磁盘文件，不使用编辑器未保存的修改或流程连续采集帧。算法不依赖远端服务；流程图像结果登记仍依赖已有流程批次和 MySQL。</p>
+<p>景深融合将一组不同焦点的本地图片融合为一张图像。独立窗口和本地流程节点共同调用 <code>ColorVision.Core.FileFusion</code>，读取磁盘文件，不使用编辑器未保存的修改或流程连续采集帧。启用流程持久化时，图像结果登记使用所属批次的 MySQL 连接。</p>
 <p>不同焦点的图片在不同位置包含清晰细节。当前算法先为每张图计算局部清晰度，再在同一像素位置对各帧强度作加权融合。输入应保持同一视场和位置，并按焦点顺序、近似等间隔采集；<strong>尺寸相同不代表已配准</strong>，当前不会自动对齐、去重影或控制电机采集。</p>
 <figure class="algorithm-figure">
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 660 310" role="img" aria-labelledby="fusion-principle-title fusion-principle-desc">
@@ -96,7 +96,7 @@
 </tr>
 </tbody>
 </table></div>
-<p>例如：开始 → 景深融合 → 十字定位 → 结束。每次执行保存一张带唯一名称的 PNG，以现有图像结果类型 <code>100</code> 登记，并通过 <code>SetCurrentFrame</code> 交给后续本地节点。<code>MasterId</code> 指向图像记录，<code>MasterValue</code> 和记录 <code>FileUrl</code> 指向保存后的图片。远端节点仍按自己的文件访问及结果引用契约工作，不因本地保存而自动获得远端文件可见性。</p>
+<p>例如：开始 → 景深融合 → 十字定位 → 结束。每次执行保存一张带唯一名称的 PNG，并通过 <code>SetCurrentFrame</code> 交给后续本地节点。持久化模式按图像结果类型 <code>100</code> 登记，<code>MasterId</code> 指向原库中的记录。离线运行的 <code>MasterId</code> 为 <code>0</code>，下游可以读取内存帧和 <code>MasterValue</code> 指向的本地 PNG。远端节点仍按自己的文件访问及结果引用契约工作。</p>
 <p>窗口和流程节点使用同一组参数，默认值保持清晰度窗口 5、可信度平滑窗口 3、拟合间隔 2、α=0.2、阈值 13。窗口参数编辑器按“常用/高级”分类，提供作用说明与恢复默认值；窗口摘要显示本次设置，耗时列表保存每次执行的参数，便于调参比较。流程节点将参数随 STN 保存，并将实际执行参数写入结果记录的 <code>Params.FusionOptions</code>。</p>
 <div class="table-scroll"><table tabindex="0">
 <thead>
