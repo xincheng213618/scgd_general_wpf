@@ -1,4 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.Engine.Services.Types;
 using cvColorVision;
 using System.Collections.Generic;
 
@@ -41,6 +42,11 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
         public string FileName { get; set; }
         public string Title { get; set; }
 
+        internal CalibrationPackageResourceKey ResourceKey => new(
+            CalibrationType.ToResouceType(),
+            Title,
+            FileName?.Replace('\\', '/').ToUpperInvariant() ?? string.Empty);
+
         public double Gain { get => _Gain; set { _Gain = value; OnPropertyChanged(); } }
         private double _Gain;
 
@@ -67,4 +73,6 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
 
 
     }
+
+    internal readonly record struct CalibrationPackageResourceKey(ServiceTypes Type, string Title, string FileName);
 }
