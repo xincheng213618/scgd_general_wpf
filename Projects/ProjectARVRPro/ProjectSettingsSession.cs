@@ -127,7 +127,9 @@ internal sealed class ProjectSettingsSession
                 return "保留磁盘空间必须大于0 GB。";
             if (property == nameof(ViewResultManagerConfig.CodeDateFormat))
             {
-                try { _ = DateTime.Now.ToString(value as string); }
+                if (value is not string format || string.IsNullOrWhiteSpace(format))
+                    return $"编号时间格式不能为空。默认格式为 {ViewResultManagerConfig.DefaultCodeDateFormat}。";
+                try { _ = DateTime.Now.ToString(format); }
                 catch (FormatException) { return "编号时间格式无效，请使用有效的日期时间格式。"; }
             }
             if (property is nameof(ViewResultManagerConfig.ResultImageFileNameTemplate) or nameof(ViewResultManagerConfig.SourceImageFileNameTemplate)

@@ -1,5 +1,4 @@
 using ColorVision.Database;
-using ColorVision.Engine.FlowProcessing.Diagnostics;
 using Microsoft.Data.Sqlite;
 using System.Globalization;
 using System.IO;
@@ -85,19 +84,8 @@ public sealed class ArvrOfflineDataSource
         return new ArvrOfflineDataSource(sourcePath, directory, aggregateLabel);
     }
 
-    public string ResolveFlowSerialNumber(ProjectARVRReuslt result)
-    {
-        if (string.IsNullOrWhiteSpace(result.SN) || result.BatchId <= 0)
-            throw new InvalidDataException("此条 PG 记录缺少 SN 或批次号，无法关联节点。");
-        var source = new ReadOnlySqliteDatabase(FlowDatabasePath ?? throw new InvalidOperationException("本份资料没有 FlowNodeRecords.db。"));
-        using var db = source.OpenClient();
-        string[] serials = source.Query<FlowNodeRecord>(db).Where(row => row.BatchId == result.BatchId).Select(row => row.SerialNumber).ToList()
-            .Where(serial => serial == result.SN || serial?.StartsWith(result.SN + "_", StringComparison.Ordinal) == true)
-            .Distinct(StringComparer.Ordinal).ToArray();
-        return serials.Length == 1 ? serials[0] : throw new InvalidDataException(serials.Length == 0
-            ? "配套节点库中没有匹配此批次和 SN 的记录。请检查反馈时间范围。"
-            : "此批次和 SN 对应多个运行标识，无法确定唯一关联。请核对资料来源。");
-    }
+    public string ResolveFlowSerialNumber(ProjectARVRReuslt result) => ArvrFlowAnalysisHistory.ResolveSerialNumber(
+        FlowDatabasePath ?? throw new FileNotFoundException("本份资料没有 FlowNodeRecords.db。"), result);
 
     private string? FindDatabase(string name)
     {

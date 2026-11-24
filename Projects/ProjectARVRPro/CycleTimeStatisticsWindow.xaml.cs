@@ -1915,42 +1915,41 @@ namespace ProjectARVRPro
         private async void OpenFlowExecutionAnalysis(ProjectARVRReuslt? result)
         {
             if (result == null) return;
-            if (_offlineSource != null)
+            try
             {
-                try
+                if (_offlineSource is { } source)
                 {
-                    string serial = await Task.Run(() => _offlineSource.ResolveFlowSerialNumber(result));
+                    string serial = await Task.Run(() => source.ResolveFlowSerialNumber(result));
                     if (_closed) return;
-                    new FlowExecutionAnalysisWindow(_offlineSource.FlowDatabasePath!, _offlineSource.Label, result.BatchId, serial)
+                    new FlowExecutionAnalysisWindow(source.FlowDatabasePath!, source.Label, result.BatchId, serial)
                     {
                         Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner,
                     }.Show();
+                    return;
                 }
-                catch (Exception ex) { if (!_closed) MessageBox.Show(this, ex.Message, LocalizedText.Get("现场节点分析"), MessageBoxButton.OK, MessageBoxImage.Information); }
-                return;
-            }
-            MeasureBatchModel? batch = GetMeasureBatch(result);
-            if (batch == null)
-            {
-                MessageBox.Show(this, LocalizedText.Get("找不到批次号，请检查流程配置"), "ColorVision");
-                return;
-            }
 
-            bool written = WaitForFlowDiagnosticsAsync == null || await FlowDiagnosticsWriteQueue.WaitAsync(
-                WaitForFlowDiagnosticsAsync(batch.Code ?? string.Empty), FlowDiagnosticsWriteQueue.WriteWaitTimeout);
-            if (_closed)
-                return;
-            if (!written)
-            {
-                MessageBox.Show(this, LocalizedText.Get("流程诊断仍在写入，请稍后打开。"), "ColorVision");
-                return;
-            }
+                bool written = WaitForFlowDiagnosticsAsync == null || string.IsNullOrWhiteSpace(result.Code)
+                    || await FlowDiagnosticsWriteQueue.WaitAsync(WaitForFlowDiagnosticsAsync(result.Code), FlowDiagnosticsWriteQueue.WriteWaitTimeout);
+                if (_closed) return;
+                if (!written)
+                {
+                    MessageBox.Show(this, LocalizedText.Get("流程诊断仍在写入，请稍后打开。"), "ColorVision");
+                    return;
+                }
 
-            new FlowExecutionAnalysisWindow(batch)
+                MeasureBatchModel batch = await Task.Run(() => ArvrFlowAnalysisHistory.ResolveLocalBatch(result));
+                if (_closed) return;
+                new FlowExecutionAnalysisWindow(batch)
+                {
+                    Owner = this,
+                    WindowStartupLocation = WindowStartupLocation.CenterOwner,
+                }.Show();
+            }
+            catch (Exception ex)
             {
-                Owner = this,
-                WindowStartupLocation = WindowStartupLocation.CenterOwner
-            }.Show();
+                Log.Warn($"打开流程执行分析失败：BatchId={result.BatchId}", ex);
+                if (!_closed) MessageBox.Show(this, ex.Message, LocalizedText.Get("流程执行分析"), MessageBoxButton.OK, MessageBoxImage.Information);
+            }
         }
 
         private MeasureBatchModel? GetMeasureBatch(ProjectARVRReuslt? item) =>

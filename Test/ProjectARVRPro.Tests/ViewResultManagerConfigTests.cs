@@ -16,16 +16,36 @@ public sealed class ViewResultManagerConfigTests
 
         result.Code = config.CreateFlowCode(result.SN, new DateTime(2026, 10, 23, 19, 2, 36));
 
-        Assert.Equal(expected, result.Code);
+        Assert.StartsWith(expected + "_", result.Code, StringComparison.Ordinal);
+        Assert.Matches("^[0-9a-f]{16}$", result.Code[(expected.Length + 1)..]);
         Assert.Equal(serialNumber, result.SN);
     }
 
     [Fact]
-    public void FlowCodeAlsoSanitizesTheConfiguredDateFormat()
+    public void FlowCodesDifferWhenStartedAtTheSameTimeWithASecondsOnlyFormat()
     {
         var config = new ViewResultManagerConfig { CodeUseSN = false, CodeDateFormat = "yyyy/MM/dd HH:mm:ss" };
+        var timestamp = new DateTime(2026, 11, 24, 9, 19, 16);
 
-        Assert.Equal("2026_10_23 19_02_36", config.CreateFlowCode("SN", new DateTime(2026, 10, 23, 19, 2, 36)));
+        string first = config.CreateFlowCode("SN", timestamp);
+        string second = config.CreateFlowCode("SN", timestamp);
+
+        Assert.Matches("^2026_11_24 09_19_16_[0-9a-f]{16}$", first);
+        Assert.Matches("^2026_11_24 09_19_16_[0-9a-f]{16}$", second);
+        Assert.NotEqual(first, second);
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData(" \t")]
+    public void StoredBlankCodeDateFormatLoadsAndGeneratesWithTheDefault(string? format)
+    {
+        string json = JsonConvert.SerializeObject(new { CodeDateFormat = format, CodeUseSN = false });
+        var config = JsonConvert.DeserializeObject<ViewResultManagerConfig>(json)!;
+
+        Assert.Equal("yyyyMMdd'T'HHmmss.fffffff", config.CodeDateFormat);
+        Assert.Matches("^20261124T091916\\.0000000_[0-9a-f]{16}$", config.CreateFlowCode("SN", new DateTime(2026, 11, 24, 9, 19, 16)));
     }
 
     [Fact]

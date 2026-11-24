@@ -692,29 +692,32 @@ namespace ProjectARVRPro
 
         private async void ContextMenu_FlowExecutionAnalysis()
         {
-            MeasureBatchModel? batch = GetSelectedMeasureBatch();
-            if (batch == null)
-            {
-                MessageBox.Show(Application.Current.GetActiveWindow(), LocalizedText.Get("找不到批次号，请检查流程配置"), "ColorVision");
-                return;
-            }
+            if (listView1.SelectedItem is not ProjectARVRReuslt result) return;
 
-            bool written = await FlowDiagnosticsWriteQueue.WaitAsync(
-                _flowDiagnosticsWrites.WhenWritten(batch.Code ?? string.Empty), FlowDiagnosticsWriteQueue.WriteWaitTimeout);
-            if (_isDisposed)
-                return;
-            if (!written)
+            try
             {
-                MessageBox.Show(this, LocalizedText.Get("流程诊断仍在写入，请稍后打开。"), "ColorVision");
-                return;
-            }
+                bool written = string.IsNullOrWhiteSpace(result.Code) || await FlowDiagnosticsWriteQueue.WaitAsync(
+                    _flowDiagnosticsWrites.WhenWritten(result.Code), FlowDiagnosticsWriteQueue.WriteWaitTimeout);
+                if (_isDisposed) return;
+                if (!written)
+                {
+                    MessageBox.Show(this, LocalizedText.Get("流程诊断仍在写入，请稍后打开。"), "ColorVision");
+                    return;
+                }
 
-            var window = new FlowExecutionAnalysisWindow(batch)
+                MeasureBatchModel batch = await Task.Run(() => ArvrFlowAnalysisHistory.ResolveLocalBatch(result));
+                if (_isDisposed) return;
+                new FlowExecutionAnalysisWindow(batch)
+                {
+                    Owner = this,
+                    WindowStartupLocation = WindowStartupLocation.CenterOwner,
+                }.Show();
+            }
+            catch (Exception ex)
             {
-                Owner = Application.Current.GetActiveWindow(),
-                WindowStartupLocation = WindowStartupLocation.CenterOwner,
-            };
-            window.Show();
+                log.Warn($"打开流程执行分析失败：BatchId={result.BatchId}", ex);
+                if (!_isDisposed) MessageBox.Show(this, ex.Message, LocalizedText.Get("流程执行分析"), MessageBoxButton.OK, MessageBoxImage.Information);
+            }
         }
 
         private MeasureBatchModel? GetSelectedMeasureBatch() => ArvrBatchHistory.Resolve(listView1.SelectedItem as ProjectARVRReuslt);

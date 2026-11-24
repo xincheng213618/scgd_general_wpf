@@ -11,7 +11,9 @@ using ProjectARVRPro.Process.Uniformity;
 using SqlSugar;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
+using System.Security.Cryptography;
 using System.Windows;
 
 namespace ProjectARVRPro
@@ -51,6 +53,8 @@ namespace ProjectARVRPro
     [DisplayName("结果与导出设置")]
     public class ViewResultManagerConfig : ViewModelBase, IConfig
     {
+        internal const string DefaultCodeDateFormat = "yyyyMMdd'T'HHmmss.fffffff";
+
         [DisplayName("默认查询条数"), Category("结果列表")]
         [Description("打开结果列表或点击查询时加载的最新记录数；小于等于0表示全部，不删除历史数据。")]
         public int Count { get => _Count; set { _Count = value; OnPropertyChanged(); } }
@@ -65,14 +69,24 @@ namespace ProjectARVRPro
         private bool _CodeUseSN =true;
 
         [DisplayName("编号时间格式"), Category("结果编号")]
-        [Description("用于生成结果编号的时间部分，例如 yyyyMMdd'T'HHmmss.fffffff。")]
-        public string CodeDateFormat { get => _CodeDateFormat; set { _CodeDateFormat = value; OnPropertyChanged(); } }
-        private string _CodeDateFormat = "yyyyMMdd'T'HHmmss.fffffff";
+        [Description("用于生成结果编号的时间部分，不能为空。默认格式为 " + DefaultCodeDateFormat + "。")]
+        [AllowNull]
+        public string CodeDateFormat
+        {
+            get => _CodeDateFormat;
+            set
+            {
+                _CodeDateFormat = string.IsNullOrWhiteSpace(value) ? DefaultCodeDateFormat : value;
+                OnPropertyChanged();
+            }
+        }
+        private string _CodeDateFormat = DefaultCodeDateFormat;
 
         internal string CreateFlowCode(string? serialNumber, DateTime timestamp)
         {
             string prefix = CodeUseSN ? serialNumber + "_" : string.Empty;
-            return ColorVision.Common.Utilities.Tool.SanitizeFileName(prefix + timestamp.ToString(CodeDateFormat));
+            string formattedCode = ColorVision.Common.Utilities.Tool.SanitizeFileName(prefix + timestamp.ToString(CodeDateFormat));
+            return $"{formattedCode}_{RandomNumberGenerator.GetHexString(16, lowercase: true)}";
         }
 
         [DisplayName("按日期创建文件夹"), Category("保存选项")]

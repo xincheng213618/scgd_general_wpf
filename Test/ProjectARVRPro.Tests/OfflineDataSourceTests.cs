@@ -617,6 +617,51 @@ public sealed class OfflineDataSourceTests
     }
 
     [Fact]
+    public void FlowHistoryUsesTheStoredCodeWhenTheBatchIdHasBeenReused()
+    {
+        using var fixture = new Files();
+        fixture.CreateProject("{}");
+        fixture.CreateFlow("new-node", false);
+        string path = Path.Combine(fixture.Root, "FlowNodeRecords.db");
+        using (var db = new SqliteConnection($"Data Source={path};Pooling=False"))
+        {
+            db.Open();
+            Execute(db, """
+                INSERT INTO FlowNodeRecord VALUES(2,20,'2026_09_16 11_58_00','node','old-node','2026-09-16 11:58:00',3);
+                INSERT INTO FlowNodeRecord VALUES(3,21,'SN__20260916T120000','node','legacy-node','2026-09-16 12:00:00',3);
+                """);
+        }
+
+        var source = ArvrOfflineDataSource.Open(fixture.Root, fixture.Cache);
+        var result = new ProjectARVRReuslt { BatchId = 20, Code = "2026_09_16 11_58_00", SN = "sameSN" };
+        string code = ArvrFlowAnalysisHistory.ResolveSerialNumber(path, result);
+        Assert.Equal(result.Code, code);
+        Assert.Equal(code, source.ResolveFlowSerialNumber(result));
+        Assert.Equal("old-node", Assert.Single(new FlowAnalysisDataSource(path).GetByRun(result.BatchId, code)).NodeName);
+        Assert.Throws<InvalidDataException>(() => source.ResolveFlowSerialNumber(new() { BatchId = 21, Code = result.Code, SN = "sameSN" }));
+        Assert.Throws<InvalidDataException>(() => source.ResolveFlowSerialNumber(new() { BatchId = 20, Code = "missing", SN = "sameSN" }));
+        Assert.Equal("SN__20260916T120000", source.ResolveFlowSerialNumber(new() { BatchId = 21, SN = "SN?" }));
+    }
+
+    [Fact]
+    public void FlowHistoryFindsJournalOnlyRunsAndRejectsDuplicateRunIdentities()
+    {
+        using var fixture = new Files();
+        string path = Path.Combine(fixture.Root, "FlowNodeRecords.db");
+        using var db = new SqliteConnection($"Data Source={path};Pooling=False");
+        db.Open();
+        Execute(db, """
+            CREATE TABLE FlowRunRecord(id INTEGER PRIMARY KEY,batch_id INTEGER,serial_number TEXT);
+            INSERT INTO FlowRunRecord VALUES(1,20,'2026_09_16 12_00_00_a1b2c3d4e5f60718');
+            """);
+        var result = new ProjectARVRReuslt { BatchId = 20, Code = "2026_09_16 12_00_00_a1b2c3d4e5f60718" };
+
+        Assert.Equal(result.Code, ArvrFlowAnalysisHistory.ResolveSerialNumber(path, result));
+        Execute(db, "INSERT INTO FlowRunRecord VALUES(2,20,'2026_09_16 12_00_00_a1b2c3d4e5f60718');");
+        Assert.Contains("多个流程运行", Assert.Throws<InvalidDataException>(() => ArvrFlowAnalysisHistory.ResolveSerialNumber(path, result)).Message);
+    }
+
+    [Fact]
     public void CompressedMessagesLoadOnlyFromTheirSourceAndRespectTimeWindow()
     {
         using var fixture = new Files();
