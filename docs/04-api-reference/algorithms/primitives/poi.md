@@ -70,7 +70,6 @@ POI 有专门的主从表结构，不只是普通模板明细：
 
 下游算法里，POI 通常作为输入模板引用：
 
-- `AlgorithmSFRFindROI` 会附带 `POITemplateParam`
 - `AlgorithmOLEDAOI` 也会附带 `POITemplateParam`
 
 Flow 的模板字段、BuildPOI 多模板入口及分析节点对应关系，统一见[POI 模板的 Flow 消费](../templates/poi-template.md#flow-消费)。
@@ -98,7 +97,7 @@ Flow 的模板字段、BuildPOI 多模板入口及分析节点对应关系，统
 | `Engine/ColorVision.Engine/Templates/POI/POIOutput/TemplatePoiOutputParam.cs` | 输出模板 |
 | `Engine/ColorVision.Engine/Templates/POI/POIGenCali/TemplatePOICalParam.cs` | 标定生成模板 |
 | `Engine/ColorVision.Engine/Templates/Jsons/PoiAnalysis/TemplatePoiAnalysis.cs` | JSON POI 分析模板 |
-| `Engine/ColorVision.Engine/Templates/Jsons/SFRFindROI/AlgorithmSFRFindROI.cs` | SFR ROI 查找 |
+| `Engine/ColorVision.Engine/Templates/Jsons/SFRFindROI/AlgorithmSFRFindROI.cs` | 已退役的 SFR 寻边请求适配器 |
 | `Engine/ColorVision.Engine/Templates/Jsons/OLEDAOI/AlgorithmOLEDAOI.cs` | OLED AOI |
 | `Engine/ColorVision.Engine/FlowProcessing/Editor/NodeConfiguration/POINodeConfigurators.cs` | `BuildPOINode` 的多模板补充面板 |
 

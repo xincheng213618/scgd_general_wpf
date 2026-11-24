@@ -14,7 +14,7 @@ ARVR 远端入口通过算法服务计算，宿主负责选择模板、发送请
 
 ## 手动运行与模板对应关系
 
-1. 在算法设备的通用手动面板中选择下表入口。大部分位于 **ARVR** 分组，**SFR寻边** 位于 **Json** 分组。
+1. 在算法设备的通用手动面板中，从 **ARVR** 分组选择下表入口。
 2. 选择对应参数模板；需要编辑时使用模板旁的编辑命令。保存与创建步骤见[模板编辑入口](./template-menu-entries.md)和 [JSON 模板](./json-templates.md)。
 3. 按算法配置关注点或 ROI，并设置算法服务可读取的图像路径。界面的模板、非空路径检查不证明文件在服务端可读。
 4. 点击 **计算**，结合本次请求、服务返回和历史结果判断完成状态。创建 `MsgRecord` 表示已建立请求记录并发起发送，不代表计算或落库成功。
@@ -28,15 +28,16 @@ ARVR 远端入口通过算法服务计算，宿主负责选择模板、发送请
 | ARVR → MTF2.0 | `TemplateMTF2`；`MTF` / `48` | `MTF` | `ViewHandleMTF2`；`Version == "2.0"` |
 | ARVR → FOV2.0 | `TemplateDFOV`；`FOV` / `39` | `FOV` | `ViewHandleDFOV`；`Version == "2.0"` |
 | ARVR → StereoFusion | `TemplateBinocularFusion`；`ARVR.BinocularFusion` / `35` | `ARVR.BinocularFusion` | `ViewHandleBinocularFusion` |
-| Json → SFR寻边 | `TemplateSFRFindROI`；`ARVR.SFR.FindROI` / `36` | `ARVR.SFR.FindROI` | `ViewHandleSFRFindROI` |
 | ARVR → FindCross | `TemplateFindCross`；`FindCross` / `45` | `FindCross` | `ViewHandleFindCross`；`Version == "1.0"` |
 | ARVR → 屏幕缺陷检测 | `TemplateDetectScreenDefects`；`ARVR.DetectScreenDefects` / `58` | `ARVR.DetectScreenDefects` | `ViewHandleDetectScreenDefects` |
 
 表中 FindCross 是远端算法入口；图像编辑器的原生定位及诊断模式见[本地十字定位](../detectors/find-cross.md)。SFR2.0 手动请求使用事件 `SFR`。
 
+**SFR 寻边**（`ARVR.SFR.FindROI`）已退役。模板字典 `36` 和历史结果类型 `60` 继续用于识别旧数据，已有结果仍可查看、导出 CSV 或创建 POI 模板。
+
 ### POI 与版本字段
 
-- **SFR2.0、MTF2.0、FindCross、SFR寻边**：配置界面有关注点模板，但 `JsonDisplayAlgorithmBase.Execute()` 只统一校验主模板与图像输入；各自仅在辅助模板选择有效时加入 `POITemplateParam`。不能把“有选择器”当作“发送前必填检查”，服务端要求需按对应协议确认。
+- **SFR2.0、MTF2.0、FindCross**：配置界面有关注点模板，但 `JsonDisplayAlgorithmBase.Execute()` 只统一校验主模板与图像输入；各自仅在辅助模板选择有效时加入 `POITemplateParam`。不能把“有选择器”当作“发送前必填检查”，服务端要求需按对应协议确认。
 - **屏幕缺陷检测**：辅助选择器标为 **ROI**，使用 POI 模板；未有效选择时仍发送 `POITemplateParam = { ID: -1, Name: null }`。请求还含 `OutputFileName`、`BufferLen`、`IsInversion = false`、`Color = 1`、`Channel = 1`；新配置输出文件名为 `result.json`，缓存大小为 `1024`。
 - **SFR2.0、MTF2.0、FOV2.0、Ghost2.0**：手动请求明确带 `Params.Version = "2.0"`。Ghost2.0 还发送 `CIEFileName`。模板编码相同不代表请求参数可以互换。
 
@@ -53,7 +54,6 @@ ARVR 远端入口通过算法服务计算，宿主负责选择模板、发送请
 | FOV | `FOV` | `TemplateDFOV` |
 | 畸变 | `Distortion` | `TemplateDistortion2`（`distortion` / 字典 `40`）绑定 `TempName` |
 | 双目融合 | `ARVR.BinocularFusion` | `TemplateBinocularFusion` |
-| SFR_FindROI | `ARVR.SFR.FindROI` | `TemplateSFRFindROI` |
 | 十字计算 | `FindCross` | `TemplateFindCross` |
 | 屏幕缺陷检测 | `ARVR.DetectScreenDefects` | `TemplateDetectScreenDefects` |
 
@@ -62,6 +62,8 @@ ARVR 远端入口通过算法服务计算，宿主负责选择模板、发送请
 **AI算法**、**AI算法2**、**ARVR算法** 和 **ARVR.Ghost算法** 使用 `1024` 缓存大小。**AI算法** 和 **ARVR算法** 发送默认绿色。旧流程中这些节点原有的自定义 `Color` 和 `BufferLen` 在加载时忽略，重新保存时省略。
 
 旧 **AI算法** 流程里的灯带检测和像素级灯珠检测、旧 **AI算法2** 流程里的灯带检测和 JND 仍能读取原配置。运行到这些算子时会提示重新选择。新建 **AI算法2** 节点默认选用 MTF。
+
+含 `SFR_FindROI` 的旧流程可以读取原配置。运行到该算子时会提示重新选择，适用于算法节点和兼容 XR 相机节点。
 
 ARVR算法、通用算法和 AI算法2 的 SFR 参数选择器均使用 SFR2.0 JSON 模板。已有流程保存的旧 SFR 模板名称不会自动迁移，应重新选择 SFR2.0 模板并保存流程；字典号 `9` 的 Gamma 模板不能直接作为字典号 `49` 的 JSON 模板使用。
 

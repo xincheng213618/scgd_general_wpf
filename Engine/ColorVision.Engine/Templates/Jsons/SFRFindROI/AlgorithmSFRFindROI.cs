@@ -8,7 +8,6 @@ using System.Collections.Generic;
 
 namespace ColorVision.Engine.Templates.Jsons.SFRFindROI
 {
-    [DisplayAlgorithm(21, "SFR寻边", "Json")]
     public class AlgorithmSFRFindROI : JsonDisplayAlgorithmBase<DualTemplateDisplayAlgorithmConfig>
     {
 

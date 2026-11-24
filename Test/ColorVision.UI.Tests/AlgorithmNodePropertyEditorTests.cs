@@ -11,6 +11,7 @@ using ColorVision.Engine.Templates.Jsons.MTF2;
 using ColorVision.Engine.Templates.Jsons.SFR2;
 using ColorVision.Engine.Templates.LedCheck;
 using ColorVision.Themes;
+using FlowEngineLib;
 using FlowEngineLib.Algorithm;
 using FlowEngineLib.Node.Algorithm;
 using FlowEngineLib.Node.OLED;
@@ -153,6 +154,36 @@ public sealed class AlgorithmNodePropertyEditorTests
         {
             templateRow.RaiseEvent(new RoutedEventArgs(FrameworkElement.UnloadedEvent));
         }
+    });
+
+    [Theory]
+    [InlineData(typeof(AlgorithmNode), AlgorithmType.SFR_FindROI, AlgorithmType.SFR)]
+    [InlineData(typeof(Algorithm2InNode), Algorithm2Type.SFR_FindROI, Algorithm2Type.SFR)]
+    [InlineData(typeof(AlgorithmARVRNode), AlgorithmARVRType.SFR_FindROI, AlgorithmARVRType.SFR)]
+    [InlineData(typeof(CVXRCameraNode), AlgorithmARVRType.SFR_FindROI, AlgorithmARVRType.SFR)]
+    [InlineData(typeof(LVXRCameraNode), AlgorithmARVRType.SFR_FindROI, AlgorithmARVRType.SFR)]
+    public void RetiredSfrFindRoiStaysInSavedConfigurationButCannotBeSelectedOrDispatched(
+        Type nodeType, object retired, object supported) => WithEditorTheme(() =>
+    {
+        var node = (STNode)Activator.CreateInstance(nodeType)!;
+        node.Create();
+        PropertyInfo algorithm = nodeType.GetProperty(nameof(AlgorithmNode.Algorithm))!;
+        node.OnLoadNode(new Dictionary<string, byte[]>
+        {
+            [algorithm.Name] = Encoding.UTF8.GetBytes(retired.ToString()!)
+        });
+        Type? editorType = FlowNodePropertyMetadataProvider.Instance.GetEditorType(algorithm);
+        Assert.NotNull(editorType);
+        var editor = Assert.IsType<AiAlgorithmOperatorPropertiesEditor>(Activator.CreateInstance(editorType));
+        var combo = GetSelector(editor.GenProperties(algorithm, node));
+        var options = combo.Items.OfType<KeyValuePair<object?, string>>().Select(option => option.Key).ToArray();
+        Assert.DoesNotContain(retired, options);
+        Assert.Contains(supported, options);
+        Assert.Equal(retired, algorithm.GetValue(node));
+
+        MethodInfo buildRequestData = nodeType.GetMethod("getBaseEventData", BindingFlags.Instance | BindingFlags.NonPublic)!;
+        var error = Assert.Throws<TargetInvocationException>(() => buildRequestData.Invoke(node, [null]));
+        Assert.Contains("已退役", Assert.IsType<NotSupportedException>(error.InnerException).Message);
     });
 
     private static StackPanel GenerateInspectorProperties(STNode node) => PropertyEditorHelper.GenPropertyEditorControl(

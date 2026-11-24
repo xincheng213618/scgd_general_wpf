@@ -132,7 +132,6 @@ namespace ColorVision.Engine.Templates.Jsons.SFRFindROI
                 }
                 RelayCommand ExportToPoiCommand = new RelayCommand(a => ExportToPoi());
                 result.ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.CreateToPOI, Command = ExportToPoiCommand });
-                result.ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.Debug, Command = new RelayCommand(a => DisplayAlgorithmManager.GetInstance().SetType(new DisplayAlgorithmParam() { Type = typeof(AlgorithmSFRFindROI), ImageFilePath = result.FilePath })) });
             }
 
         }

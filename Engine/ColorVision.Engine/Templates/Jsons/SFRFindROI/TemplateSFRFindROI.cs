@@ -7,6 +7,8 @@ namespace ColorVision.Engine.Templates.Jsons.SFRFindROI
     {
         public static ObservableCollection<TemplateModel<TemplateJsonParam>> Params { get; set; } = new ObservableCollection<TemplateModel<TemplateJsonParam>>();
 
+        public override bool IsRetired => true;
+
         public TemplateSFRFindROI()
         {
             Title = ColorVision.Engine.Properties.Resources.SfrEdgeDetectionTemplateManagement;

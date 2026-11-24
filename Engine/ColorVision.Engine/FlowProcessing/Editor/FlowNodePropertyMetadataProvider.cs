@@ -116,7 +116,8 @@ namespace ColorVision.Engine.FlowProcessing.Editor
                 return typeof(LedCheck2TemplatePropertiesEditor);
 
             if (propertyInfo.Name == nameof(AlgorithmNode.Algorithm)
-                && (owner == typeof(AlgorithmNode) || owner == typeof(Algorithm2InNode)))
+                && (owner == typeof(AlgorithmNode) || owner == typeof(Algorithm2InNode)
+                    || propertyInfo.PropertyType == typeof(AlgorithmARVRType)))
                 return typeof(AiAlgorithmOperatorPropertiesEditor);
 
             if (owner == typeof(AlgorithmNode) && propertyInfo.Name == nameof(AlgorithmNode.POITempName))
