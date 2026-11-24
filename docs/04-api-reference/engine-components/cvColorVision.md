@@ -16,6 +16,8 @@ related: ["engine.index","engine.native-integration","ui.core"]
 
 FOV、SFR、畸变、鬼影与清晰度测量使用本地算法。依赖 `FovImgCentre`／`FovImgCentreEX`、`SFRCalculation`、`GhostGlareDectect` 或 `cvCalArticulation` 的旧调用方须迁移后重编译，并核对 DLL 版本和导出序号。Simple 源码用于同步上游，不参与 DLL 构建。
 
+旧图像裁剪、全局与按 ID 拟合及五点定位共 7 个 P/Invoke 已移除，配套的原生构建同步退役对应导出。使用这些公开方法的旧插件需要迁移并重新编译。相机自动对焦沿用原生 `DataAnalyzer` 拟合。
+
 ## 绑定与交付前提
 
 当前工程目标是 `net10.0-windows7.0`。`cvColorVision.csproj` 从 `DLL/scgd_internal_dll/` 复制和打包供应商 DLL，不在本工程编译这些 native 实现。全部 21 个 DLL 的工程链接、构建/发布输出和 NuGet 包路径统一为 `runtimes/win-x64/native/`，包含 `cvCamera.dll`、CommLibrary、OpenCV 及相机和光谱仪 SDK 的间接依赖。供应商原始输入继续保存在 `DLL/scgd_internal_dll/`。主程序与 PluginKit 的共享文件清单使用相同相对路径，安装工程也须从该目录取文件并安装到对应目录。具体功能还受设备驱动与部署配置约束。校正文件创建由主程序执行，本地校正统一使用 `opencv_helper.dll`；`cvCamera.dll` 继续负责相机等设备接口。

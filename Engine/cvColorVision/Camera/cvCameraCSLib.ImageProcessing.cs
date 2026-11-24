@@ -49,9 +49,6 @@ namespace cvColorVision
         [DllImport(LIBRARY_CVCAMERA, CharSet = CharSet.Auto, EntryPoint = "CM_SetCfwport",CallingConvention = CallingConvention.StdCall)]
         public static extern int CM_SetCfwport(IntPtr handle, int nIndex, int nPort, ImageChannelType eImgChlType);
 
-        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "ImageRect",CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-        public unsafe static extern int ImageRect(int w, int h, int bpp, int channels, byte[] imgdata, IRECT tIRECT, byte[] imgDstdata);
-
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "SkipTake",CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
         private unsafe static extern int SkipTake(byte[] psrcdata, byte[] pdstdata, int nPos, int nCount);
 
@@ -91,21 +88,6 @@ namespace cvColorVision
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "cvDisplayImage",   CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
         public unsafe static extern int cvDisplayImage(IntPtr hWnd, CRECT rt, CVImage iImg);
 
-        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "cvCalcFit",   CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-        public unsafe static extern int cvCalcFit(int nFit, double[] arrX, double[] arrY, int nDataSize);
-        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_CreateFit",  CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-        public unsafe static extern int CM_CreateFit(int id, int nFit, double[] arrX, double[] arrY, int nDataSize);
-
-        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "cvGetFitFy",   CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-        public unsafe static extern int cvGetFitFy(double dXvalue, ref double dYvalue);
-        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_GetFitFy", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-        public unsafe static extern int CM_GetFitFy(int id, double dXvalue, ref double dYvalue);
-
-        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "cvCalcFiveDot",   CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-        public unsafe static extern int cvCalcFiveDot(CVImage iImg, double[] x, double[] y, int nThreshold);
-
-        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_ReleaseFit",CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-        public unsafe static extern int CM_ReleaseFit(int nId);
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "MoveRelPostion",    CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
         public unsafe static extern int MovePostion(IntPtr handle, int nPosition, uint dwTimeOut);
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "GetPosition",  CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
