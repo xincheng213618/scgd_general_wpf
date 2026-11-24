@@ -5,7 +5,7 @@ using System.Linq;
 namespace ColorVision.Core
 {
     /// <summary>
-    /// Measures a filled, isolated luminous area with a visible outer edge.
+    /// Measures a filled, isolated luminous area within the image.
     /// Segmentation supplies a search seed only; full-resolution local gradients
     /// locate the edge without a centre-luminance criterion or straight-line fit.
     /// </summary>
@@ -13,6 +13,16 @@ namespace ColorVision.Core
     {
         private const int MaximumSeedDimension = 1024;
         private const int ContourSamples = 720;
+
+        [Flags]
+        private enum ImageEdge
+        {
+            None = 0,
+            Left = 1,
+            Top = 2,
+            Right = 4,
+            Bottom = 8
+        }
 
         internal static (LuminousAreaDetectionResult Detection, FovBoundaryGeometry Geometry) Detect(HImage image, RoiRect roi, double minimumConfidence)
         {
@@ -70,13 +80,27 @@ namespace ColorVision.Core
             double[] support = [double.NegativeInfinity, double.NegativeInfinity, double.NegativeInfinity, double.NegativeInfinity];
             double minX = double.PositiveInfinity, minY = double.PositiveInfinity;
             double maxX = double.NegativeInfinity, maxY = double.NegativeInfinity;
+            int right = reader.X + reader.Width - 1;
+            int bottom = reader.Y + reader.Height - 1;
+            ImageEdge imageEdges = ImageEdge.None;
+            if (reader.X == 0) imageEdges |= ImageEdge.Left;
+            if (reader.Y == 0) imageEdges |= ImageEdge.Top;
+            if (right == image.cols - 1) imageEdges |= ImageEdge.Right;
+            if (bottom == image.rows - 1) imageEdges |= ImageEdge.Bottom;
+            ImageEdge touchedEdges = ImageEdge.None;
             for (int index = 0; index < labels.Length; index++)
             {
                 if (labels[index] != largestLabel) continue;
                 int x = index % width;
                 int y = index / width;
-                if (x == 0 || y == 0 || x == width - 1 || y == height - 1)
+                ImageEdge seedEdges = ImageEdge.None;
+                if (x == 0) seedEdges |= ImageEdge.Left;
+                if (y == 0) seedEdges |= ImageEdge.Top;
+                if (x == width - 1) seedEdges |= ImageEdge.Right;
+                if (y == height - 1) seedEdges |= ImageEdge.Bottom;
+                if ((seedEdges & ~imageEdges) != ImageEdge.None)
                     throw new InvalidOperationException("曲边发光区接触图像或搜索区域边缘，无法确认完整边界。");
+                touchedEdges |= seedEdges;
                 LuminousAreaPoint point = new(reader.X + x * step, reader.Y + y * step);
                 minX = Math.Min(minX, point.X); maxX = Math.Max(maxX, point.X);
                 minY = Math.Min(minY, point.Y); maxY = Math.Max(maxY, point.Y);
@@ -88,9 +112,11 @@ namespace ColorVision.Core
             }
             ValidateFilledComponent(labels, queue, width, height, largestLabel);
             LuminousAreaPoint center = new((minX + maxX) / 2, (minY + maxY) / 2);
-            if (!IsInside(center)) throw new InvalidOperationException("曲边模式要求中心位于连续、填充的发光区内。");
+            if (ComponentIndex(center) < 0) throw new InvalidOperationException("曲边模式要求中心位于连续、填充的发光区内。");
 
             double confidence = 1;
+            bool hasMeasuredEdge = false;
+            ImageEdge usedImageEdges = ImageEdge.None;
             Dictionary<double, double> raySamples = new();
             List<LuminousAreaPoint> contour = new(ContourSamples + 4);
             for (int sample = 0; sample < ContourSamples; sample++)
@@ -117,7 +143,7 @@ namespace ColorVision.Core
             minX = contour.Min(point => point.X); maxX = contour.Max(point => point.X);
             minY = contour.Min(point => point.Y); maxY = contour.Max(point => point.Y);
             center = new((minX + maxX) / 2, (minY + maxY) / 2);
-            if (!IsInside(center)) throw new InvalidOperationException("曲边发光区中心不在填充区域内。");
+            if (ComponentIndex(center) < 0) throw new InvalidOperationException("曲边发光区中心不在填充区域内。");
 
             double diagonalAngle = Math.Atan2(maxY - minY, maxX - minX);
             FovBoundaryGeometry geometry = new()
@@ -131,17 +157,25 @@ namespace ColorVision.Core
                     FindBoundary(center, diagonalAngle), FindBoundary(center, Math.PI - diagonalAngle)],
                 Contour = contour.OrderBy(point => Math.Atan2(point.Y - center.Y, point.X - center.X)).ToArray()
             };
+            if (!hasMeasuredEdge)
+                throw new InvalidOperationException("曲边发光区没有可定位的明暗边界。");
             if (confidence < minimumConfidence)
                 throw new InvalidOperationException($"曲边发光区定位可信度 {confidence:F3} 低于要求 {minimumConfidence:F3}。");
-            LuminousAreaDetectionResult detection = new(true, "CurvedBoundary", null, confidence, null, string.Empty, null,
-                diagnostic: $"SeedStep={step}; Seed=NoiseBoundedOtsu; Sampling=SpatialMedian; ContourSamples={contour.Count}; Edge=ContrastSupportedLocalGradient; Center=ContourBounds; Axes=ImageXY.");
+            string diagnostic = $"SeedStep={step}; Seed=NoiseBoundedOtsu; Sampling=SpatialMedian; ContourSamples={contour.Count}; Edge=ContrastSupportedLocalGradient; Center=ContourBounds; Axes=ImageXY.";
+            if (usedImageEdges != ImageEdge.None) diagnostic += $" FrameEdges={usedImageEdges}.";
+            LuminousAreaDetectionResult detection = new(true, "CurvedBoundary", null, confidence, null, string.Empty, null, diagnostic: diagnostic);
             return (detection, geometry);
 
-            bool IsInside(LuminousAreaPoint point)
+            int ComponentIndex(LuminousAreaPoint point)
             {
                 int x = (int)Math.Round((point.X - reader.X) / step);
                 int y = (int)Math.Round((point.Y - reader.Y) / step);
-                return x >= 0 && y >= 0 && x < width && y < height && labels[y * width + x] == largestLabel;
+                // The last sample can be up to one seed spacing from the image edge.
+                if (x == width && (touchedEdges & ImageEdge.Right) != ImageEdge.None) x = width - 1;
+                if (y == height && (touchedEdges & ImageEdge.Bottom) != ImageEdge.None) y = height - 1;
+                if (x < 0 || y < 0 || x >= width || y >= height) return -1;
+                int index = y * width + x;
+                return labels[index] == largestLabel ? index : -1;
             }
 
             LuminousAreaPoint FindBoundary(LuminousAreaPoint origin, double angle, bool includeConfidence = true)
@@ -149,28 +183,46 @@ namespace ColorVision.Core
                 raySamples.Clear();
                 double dx = Math.Cos(angle);
                 double dy = Math.Sin(angle);
-                double limitX = dx > 0 ? (reader.X + reader.Width - 1 - origin.X) / dx
+                double limitX = dx > 0 ? (right - origin.X) / dx
                     : dx < 0 ? (reader.X - origin.X) / dx : double.PositiveInfinity;
-                double limitY = dy > 0 ? (reader.Y + reader.Height - 1 - origin.Y) / dy
+                double limitY = dy > 0 ? (bottom - origin.Y) / dy
                     : dy < 0 ? (reader.Y - origin.Y) / dy : double.PositiveInfinity;
                 double limit = Math.Min(limitX, limitY);
+                ImageEdge limitEdges = ImageEdge.None;
+                if (limitX <= limitY) limitEdges |= dx > 0 ? ImageEdge.Right : ImageEdge.Left;
+                if (limitY <= limitX) limitEdges |= dy > 0 ? ImageEdge.Bottom : ImageEdge.Top;
+                bool canEndAtImageEdge = (limitEdges & touchedEdges) == limitEdges;
                 double radius = 0;
                 double innerRadius = double.NaN;
                 while (true)
                 {
                     LuminousAreaPoint point = new(origin.X + dx * radius, origin.Y + dy * radius);
-                    if (!IsInside(point)) break;
-                    if (radius >= limit) throw new InvalidOperationException("曲边发光区边界不可用。");
-                    int x = (int)Math.Round((point.X - reader.X) / step);
-                    int y = (int)Math.Round((point.Y - reader.Y) / step);
-                    if (values[y * width + x] > brightThreshold) innerRadius = radius;
+                    int index = ComponentIndex(point);
+                    if (index < 0) break;
+                    if (radius >= limit)
+                    {
+                        if (!canEndAtImageEdge) throw new InvalidOperationException("曲边发光区边界不可用。");
+                        break;
+                    }
+                    if (values[index] > brightThreshold) innerRadius = radius;
                     radius = Math.Min(radius + Math.Max(0.5, step / 2d), limit);
                 }
                 for (double r = radius + 2 * step; r < limit; r += step)
                 {
                     LuminousAreaPoint point = new(origin.X + dx * r, origin.Y + dy * r);
                     if (point.X < reader.X || point.Y < reader.Y || point.X >= reader.X + reader.Width || point.Y >= reader.Y + reader.Height) break;
-                    if (IsInside(point)) throw new InvalidOperationException("曲边模式要求连续填充图案，当前轮廓含孔洞或同一方向的多段边界。");
+                    if (ComponentIndex(point) >= 0) throw new InvalidOperationException("曲边模式要求连续填充图案，当前轮廓含孔洞或同一方向的多段边界。");
+                }
+                // Confirm brightness at the actual image edge, including non-grid pixels.
+                // A dark opening in the edge must use its measured light-to-dark transition.
+                if (canEndAtImageEdge && limit - radius <= step && At(limit) > threshold)
+                {
+                    if (includeConfidence) usedImageEdges |= limitEdges;
+                    return new(
+                        (limitEdges & ImageEdge.Left) != ImageEdge.None ? reader.X :
+                            (limitEdges & ImageEdge.Right) != ImageEdge.None ? right : origin.X + dx * limit,
+                        (limitEdges & ImageEdge.Top) != ImageEdge.None ? reader.Y :
+                            (limitEdges & ImageEdge.Bottom) != ImageEdge.None ? bottom : origin.Y + dy * limit);
                 }
                 double smoothing = Math.Max(1, step / 2d);
                 // The bright and dim seeds bracket vignetting. Allow four seed
@@ -196,7 +248,11 @@ namespace ColorVision.Core
                 if (!double.IsFinite(bestDrop) || bestDrop <= (maximum - minimum) * 0.01 || !double.IsFinite(inside) || !double.IsFinite(outside))
                     throw new InvalidOperationException("曲边发光区存在缺失、裁切或低对比边界。");
                 double contrast = Math.Clamp((inside - outside) / Math.Max(inside - minimum, (maximum - minimum) * 1e-6), 0, 1);
-                if (includeConfidence) confidence = Math.Min(confidence, contrast);
+                if (includeConfidence)
+                {
+                    hasMeasuredEdge = true;
+                    confidence = Math.Min(confidence, contrast);
+                }
                 return new(origin.X + dx * bestRadius, origin.Y + dy * bestRadius);
 
                 void Search(double from, double to, double increment)
@@ -228,8 +284,7 @@ namespace ColorVision.Core
                 double At(double distance)
                 {
                     // A complete edge can have less background than the usual
-                    // plateau width. Use the last available background sample;
-                    // components touching the ROI have already been rejected.
+                    // plateau width. Use the last available background sample.
                     distance = Math.Min(distance, limit);
                     if (raySamples.TryGetValue(distance, out double value)) return value;
                     double x = Math.Clamp(origin.X + dx * distance, reader.X, reader.X + reader.Width - 1);
@@ -243,13 +298,21 @@ namespace ColorVision.Core
 
         private static void ValidateFilledComponent(int[] labels, int[] queue, int width, int height, int component)
         {
-            // The component never touches the ROI perimeter. Mark its exterior
-            // in the label workspace, leaving the image and seed values intact.
+            // Mark the component's exterior in the label workspace.
             // Unlike angular rays, this also finds holes between neighbouring
             // contour directions. Reuse the connected-component queue.
-            labels[0] = -1;
-            queue[0] = 0;
-            int count = 1;
+            int count = 0;
+            // Contacts with the image can split exterior background into several regions.
+            for (int x = 0; x < width; x++)
+            {
+                Visit(x, 0);
+                Visit(x, height - 1);
+            }
+            for (int y = 1; y < height - 1; y++)
+            {
+                Visit(0, y);
+                Visit(width - 1, y);
+            }
             for (int head = 0; head < count; head++)
             {
                 int current = queue[head];

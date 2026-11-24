@@ -390,6 +390,93 @@ public sealed class FovCalculationTests
             mode: FovMeasurementMode.CurvedBoundary));
     }
 
+    [Theory]
+    [InlineData("Bottom", false)]
+    [InlineData("Bottom", true)]
+    [InlineData("Top", true)]
+    [InlineData("Left", true)]
+    [InlineData("Right", true)]
+    public void CurvedModeUsesPhysicalImageEdgeOnlyWhereTheFieldReachesIt(string side, bool hasCenterNotch)
+    {
+        const int longDimension = 1201, shortDimension = 640;
+        const int centerX = 600, centerY = 356, radius = 312, notchY = 620;
+        bool transposed = side is "Left" or "Right";
+        int width = transposed ? shortDimension : longDimension;
+        int height = transposed ? longDimension : shortDimension;
+        using SyntheticImage image = new(8, 1, (x, y) =>
+        {
+            LuminousAreaPoint point = ToBottomFacingCoordinates(new(x, y));
+            double dx = point.X - centerX;
+            double dy = point.Y - centerY;
+            return dx * dx + dy * dy <= radius * radius
+                && (!hasCenterNotch || point.Y <= notchY + dx * dx / 200d);
+        }, width: width, height: height);
+
+        foreach (RoiRect searchArea in new[] { default(RoiRect), SearchArea(0) })
+        {
+            FovBoundaryGeometry boundary = FovCalculator.DetectAndCalculate(image.Image, searchArea, 9410, 74.2,
+                FovMeasurementMode.CurvedBoundary).Measurement.Boundary!;
+            LuminousAreaPoint[] contour = boundary.Contour.Select(ToBottomFacingCoordinates).ToArray();
+            Assert.Equal(shortDimension - 1, contour.Max(point => point.Y));
+            Assert.Contains(contour, point => point.Y == shortDimension - 1 && point.X < centerX - 75);
+            Assert.Contains(contour, point => point.Y == shortDimension - 1 && point.X > centerX + 75);
+            LuminousAreaPoint endpoint = side switch
+            {
+                "Top" => boundary.Top,
+                "Left" => boundary.Left,
+                "Right" => boundary.Right,
+                _ => boundary.Bottom
+            };
+            double measuredY = ToBottomFacingCoordinates(endpoint).Y;
+            if (hasCenterNotch)
+                Assert.InRange(measuredY, notchY - 1, notchY + 2);
+            else
+                Assert.Equal(shortDimension - 1, measuredY);
+        }
+
+        Assert.Throws<InvalidOperationException>(() => FovCalculator.DetectAndCalculate(image.Image, SearchArea(20),
+            9410, 74.2, FovMeasurementMode.CurvedBoundary));
+
+        LuminousAreaPoint ToBottomFacingCoordinates(LuminousAreaPoint point) => side switch
+        {
+            "Top" => new(point.X, shortDimension - 1 - point.Y),
+            "Left" => new(point.Y, shortDimension - 1 - point.X),
+            "Right" => new(point.Y, point.X),
+            _ => point
+        };
+
+        RoiRect SearchArea(int insetFromPhysicalEdge) => side switch
+        {
+            "Top" => new(150, insetFromPhysicalEdge, 901, shortDimension - 20 - insetFromPhysicalEdge),
+            "Left" => new(insetFromPhysicalEdge, 150, shortDimension - 20 - insetFromPhysicalEdge, 901),
+            "Right" => new(20, 150, shortDimension - 20 - insetFromPhysicalEdge, 901),
+            _ => new(150, 20, 901, shortDimension - 20 - insetFromPhysicalEdge)
+        };
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void CurvedModeDistinguishesCornerBackgroundFromHolesWhenEveryImageEdgeIsClipped(bool hasHole)
+    {
+        using SyntheticImage image = new(8, 1, (x, y) => (x - 150) * (x - 150) + (y - 130) * (y - 130) <= 168 * 168
+            && !(hasHole && Math.Abs(x - 210) <= 6 && Math.Abs(y - 140) <= 6));
+        if (hasHole)
+        {
+            InvalidOperationException error = Assert.Throws<InvalidOperationException>(() =>
+                FovCalculator.DetectAndCalculate(image.Image, default, 9410, 74.2, FovMeasurementMode.CurvedBoundary));
+            Assert.Contains("孔洞", error.Message);
+            return;
+        }
+
+        FovBoundaryGeometry boundary = FovCalculator.DetectAndCalculate(image.Image, default, 9410, 74.2,
+            FovMeasurementMode.CurvedBoundary).Measurement.Boundary!;
+        Assert.Equal(0, boundary.Left.X);
+        Assert.Equal(image.Image.cols - 1, boundary.Right.X);
+        Assert.Equal(0, boundary.Top.Y);
+        Assert.Equal(image.Image.rows - 1, boundary.Bottom.Y);
+    }
+
     [Fact]
     public void CurvedModeRejectsBlankAndUnfilledCenterInsteadOfReturningZeroFov()
     {
