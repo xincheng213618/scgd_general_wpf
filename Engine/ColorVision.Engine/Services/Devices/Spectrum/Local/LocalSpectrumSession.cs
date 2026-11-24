@@ -471,12 +471,19 @@ internal sealed class LocalSpectrumSession : IDisposable
         ref bool moveAttempted, LocalSpectrumOpticalScope? opticalScope)
     {
         NDConfig settings = config.NDConfig;
-        if (!double.IsFinite(settings.NDMinExpTime) || !double.IsFinite(settings.NDMaxExpTime)
-            || settings.NDMinExpTime < 0 || settings.NDMaxExpTime <= settings.NDMinExpTime)
-            throw new InvalidOperationException("ND 自动积分的最大时间必须大于最小时间，且最小时间不能为负数。");
-        if (settings.NDRate.Count == 0 || settings.NDRate.Any(rate => rate < 0) || settings.NDRate.Distinct().Count() != settings.NDRate.Count)
-            throw new InvalidOperationException("请配置非负且不重复的 ND 倍率，每个列表位置对应同索引的物理孔位。");
-        int[] ports = settings.NDRate.Select((rate, port) => (rate, port)).OrderBy(item => item.rate).Select(item => item.port).ToArray();
+        var rates = settings.LocalNDRates?.ToArray() ?? settings.NDRate.Select((rate, port) => KeyValuePair.Create(port, rate)).ToArray();
+        if (rates.Length == 0 || rates.Any(entry => entry.Value < 0) || rates.Select(entry => entry.Value).Distinct().Count() != rates.Length)
+            throw new InvalidOperationException("请为自动换档配置非负且不重复的 ND 孔位倍率。");
+        if (settings.LocalNDRates != null)
+        {
+            int portCount = opticalScope?.Nd?.Connection.Ports ?? LocalSpectrumNd.GetDirectPortCount(settings);
+            if (rates.Any(entry => entry.Key < 0 || entry.Key >= portCount))
+                throw new InvalidOperationException($"ND 自动换档孔位超出滤光轮范围（0–{portCount - 1}）。");
+            int darkPort = GetDarkNdPort(config, SharesNdShutter(config, opticalScope));
+            if (settings.LocalNDRates.ContainsKey(darkPort))
+                throw new InvalidOperationException($"ND 校零孔位 {darkPort} 不能参与自动换档。");
+        }
+        int[] ports = rates.OrderBy(entry => entry.Value).Select(entry => entry.Key).ToArray();
         // Validate every candidate before moving any hardware; a missing file must not cause an uncalibrated capture.
         foreach (int candidate in ports) LocalSpectrumNd.ResolveCalibration(config, candidate, opticalScope);
         if (settings.EnableResetND && current != ports[0])
@@ -492,7 +499,7 @@ internal sealed class LocalSpectrumSession : IDisposable
             int index = Array.IndexOf(ports, current);
             if (index < 0) throw new InvalidOperationException($"当前 ND 孔位 {current} 未配置倍率。");
             float time = FindAutoTime(config, token, opticalScope);
-            int next = time < settings.NDMinExpTime ? index + 1 : time > settings.NDMaxExpTime ? index - 1 : index;
+            int next = time < NDConfig.AutoIntegrationMinimumMs ? index + 1 : time > NDConfig.AutoIntegrationMaximumMs ? index - 1 : index;
             if (next == index) return time;
             if (next < 0 || next >= ports.Length || visited.Contains(ports[next]))
                 throw new InvalidOperationException("ND 自动积分无法在配置的孔位及积分范围内收敛，请检查光路和 ND 参数。");
@@ -509,7 +516,7 @@ internal sealed class LocalSpectrumSession : IDisposable
     {
         bool sharesNdShutter = SharesNdShutter(config, opticalScope);
         if ((config.IsShutterEnable && !sharesNdShutter) || operation == null) { WithShutterBlocked(config, acquireDark, opticalScope); return; }
-        int darkPort = config.NDConfig.DarkNDPort >= 0 ? config.NDConfig.DarkNDPort : sharesNdShutter ? config.ShutterCfg.DarkPort : -1;
+        int darkPort = GetDarkNdPort(config, sharesNdShutter);
         if (darkPort < 0) throw new InvalidOperationException("请配置 ND 校零孔位或启用外部快门后再校零。");
         int previous = operation.GetPort();
         if (previous == darkPort) throw new InvalidOperationException("当前 ND 位于校零孔，请先切到测量孔位。");
@@ -525,6 +532,9 @@ internal sealed class LocalSpectrumSession : IDisposable
         catch (Exception ex) { throw new InvalidOperationException($"校零后恢复 ND 测量位 {previous} 失败，请检查光路。", failure == null ? ex : new AggregateException(failure, ex)); }
         if (failure != null) ExceptionDispatchInfo.Capture(failure).Throw();
     }
+
+    private static int GetDarkNdPort(ConfigSpectrum config, bool sharesNdShutter)
+        => config.NDConfig.DarkNDPort >= 0 ? config.NDConfig.DarkNDPort : sharesNdShutter ? config.ShutterCfg.DarkPort : -1;
 
     private static bool SharesNdShutter(ConfigSpectrum config, LocalSpectrumOpticalScope? opticalScope) => opticalScope?.SharesNdShutter
         ?? (config.IsShutterEnable && config.ShutterCfg.UseFilterWheel

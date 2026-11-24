@@ -142,7 +142,7 @@ public class AlgorithmARVRNode : CVBaseServerNode
 
 	protected override object getBaseEventData(CVStartCFC start)
 	{
-		if (_Algorithm == AlgorithmARVRType.SFR_FindROI)
+		if (!System.Enum.IsDefined(_Algorithm))
 			throw new System.NotSupportedException($"算法编号 {(int)_Algorithm} 已退役或不受支持，请重新选择受支持的算子。");
 
 		AlgorithmParam_ROI algorithmParam_ROI = new AlgorithmParam_ROI();

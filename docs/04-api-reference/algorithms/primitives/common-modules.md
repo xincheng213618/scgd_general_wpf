@@ -16,7 +16,7 @@ related: ["algorithms.index","algorithms.roi-routes","algorithms.poi-routes","al
 
 | 任务 | 模板与源码入口 | 边界 |
 | --- | --- | --- |
-| 发光区、区域定位与裁剪 | [ROI](./roi.md)、`TemplateRoi`、旧 `TemplateSFRFindROI` | 传统参数、JSON 与本地算法路径分开核对 |
+| 发光区、区域定位与裁剪 | [ROI](./roi.md)、`TemplateRoi` | 传统参数与本地算法路径分开核对 |
 | 点集构建、过滤、修正和复用 | [POI](./poi.md)、[POI 模板](../templates/poi-template.md) | `TemplatePoi`、`PoiParam`、`PoiPoint` 被多个算法族使用 |
 | 模板图匹配和 AOI 四角结果 | [Matching](../templates/matching-template.md) | 旧 `AlgorithmTMNode` 分别持有参数模板名与 `TemplateFile`，不附带 POI 模板选择；本地模板匹配使用节点内置配置 |
 | 编排进流程 | [Flow 接入](../templates/flow-engine.md)、[PropertyGrid](../../ui-components/property-grid.md) | 节点执行、参数编辑与模板持久化是不同契约 |
@@ -30,10 +30,6 @@ related: ["algorithms.index","algorithms.roi-routes","algorithms.poi-routes","al
 4. Flow 可从节点参数进入同一服务语义；结果再按实际类型进入历史 handler 或后续节点。
 
 这个结构描述的是服务型模板适配器，不覆盖所有本地算法。具体类是否走 native、本地托管或外部服务，必须沿 `Execute` / `SendCommand` 继续追踪。
-
-## 不可互换的模型
-
-`TemplateRoi` 是传统参数模板。已退役的 ARVR SFR 寻边使用 `TemplateSFRFindROI` JSON 模板和 POI 输入。公共术语相同只能作为检索线索，不能用来推导配置或运行时兼容性。
 
 ## 验证入口与缺口
 

@@ -14,7 +14,7 @@ public enum AlgorithmType
 	灯带检测 = 6,
 	// Value 10 (OLED.GetRIAand) retired on 2026-10-22; do not reuse it.
 	双目融合 = 11,
-	SFR_FindROI = 12,
+	// Value 12 is reserved after retirement.
 	AA布点 = 13,
 	ImageCompound = 14,
 	十字计算 = 15,

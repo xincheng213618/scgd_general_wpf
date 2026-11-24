@@ -68,15 +68,6 @@
       }
     },
     {
-      "id": 36,
-      "code": "ARVR.SFR.FindROI",
-      "name": "SFR寻边",
-      "version": null,
-      "file": "SFRFindROI/ARVR.SFR.FindROI.schema.json",
-      "templateFolder": "SFRFindROI",
-      "schemaFile": "ARVR.SFR.FindROI.schema.json"
-    },
-    {
       "id": 37,
       "code": "BlackMura.Caculate",
       "name": "BlackMura",

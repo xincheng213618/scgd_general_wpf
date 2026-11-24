@@ -7,7 +7,7 @@ public enum AlgorithmARVRType
 	FOV,
 	畸变,
 	双目融合,
-	SFR_FindROI,
-	十字计算,
+	// Value 5 is reserved after retirement.
+	十字计算 = 6,
 	屏幕缺陷检测
 }

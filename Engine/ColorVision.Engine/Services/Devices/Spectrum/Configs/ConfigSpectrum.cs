@@ -184,9 +184,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Configs
         }
         private string _MaguideFile;
 
-        [Category("SpectrumCalibrationCorrection")]
-        [DisplayName("CalibrationGroup")]
-        [Description("SpectrumCalibrationFileSettingsHint")]
+        [Browsable(false)]
         public ObservableCollection<SpectrumCalibrationGroup> CalibrationGroups
         {
             get => _CalibrationGroups;
@@ -194,8 +192,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Configs
         }
         private ObservableCollection<SpectrumCalibrationGroup> _CalibrationGroups = new ObservableCollection<SpectrumCalibrationGroup>();
 
-        [Category("SpectrumCalibrationCorrection")]
-        [DisplayName("SpectrumActiveGroup")]
+        [Browsable(false)]
         public string ActiveCalibrationGroupName { get => _ActiveCalibrationGroupName; set { _ActiveCalibrationGroupName = value; OnPropertyChanged(); OnPropertyChanged(nameof(ActiveCalibrationGroup)); } }
         private string _ActiveCalibrationGroupName = "Default";
 
@@ -242,6 +239,15 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Configs
                 MaguideFile = group.MaguideFile;
             else
                 group.MaguideFile = MaguideFile;
+        }
+
+        internal void ApplyCalibrationAndNdSettings(ConfigSpectrum draft)
+        {
+            CalibrationGroups = draft.CalibrationGroups;
+            ActiveCalibrationGroupName = draft.ActiveCalibrationGroupName;
+            WavelengthFile = draft.WavelengthFile;
+            MaguideFile = draft.MaguideFile;
+            NDConfig = draft.NDConfig;
         }
 
         private void SynchronizeActiveCalibrationGroup(Action<SpectrumCalibrationGroup> synchronize)
@@ -401,6 +407,9 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Configs
 
     public class NDConfig : ViewModelBase
     {
+        internal const int AutoIntegrationMinimumMs = 100;
+        internal const int AutoIntegrationMaximumMs = 1000;
+
         [Category("SpectrumDeviceConnection")]
         [DisplayName("SpectrumNdEnabled")]
         public bool IsNDPort { get => _IsNDPort; set { _IsNDPort = value; OnPropertyChanged(); } }
@@ -435,19 +444,27 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Configs
         public bool EnableResetND { get => _EnableResetND; set { _EnableResetND = value; OnPropertyChanged(); } }
         private bool _EnableResetND;
 
-        [Category("SpectrumDeviceConnection")]
-        [DisplayName("SpectrumNdMaxTime")]
-        public double NDMaxExpTime { get => _NDMaxExpTime; set { _NDMaxExpTime = value; OnPropertyChanged(); } }
-        private double _NDMaxExpTime;
+        // Installed spectrum services require these fields when opening an enabled ND wheel.
+        [JsonProperty("NDMaxExpTime", NullValueHandling = NullValueHandling.Ignore)]
+        private int? LegacyServiceMaximumExposureMs => IsNDPort ? AutoIntegrationMaximumMs : null;
 
-        [Category("SpectrumDeviceConnection")]
-        [DisplayName("SpectrumNdMinTime")]
-        public double NDMinExpTime { get => _NDMinExpTime; set { _NDMinExpTime = value; OnPropertyChanged(); } }
-        private double _NDMinExpTime;
+        [JsonProperty("NDMinExpTime", NullValueHandling = NullValueHandling.Ignore)]
+        private int? LegacyServiceMinimumExposureMs => IsNDPort ? AutoIntegrationMinimumMs : null;
 
         [Category("SpectrumDeviceConnection")]
         [DisplayName("SpectrumNdRates")]
         public List<int> NDRate { get; set; } = new List<int>();
+
+        [Browsable(false), JsonIgnore]
+        public bool ShowLocalNdSettingsInAdvanced => false;
+
+        [PropertyVisibility(nameof(ShowLocalNdSettingsInAdvanced))]
+        [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
+        public Dictionary<int, int>? LocalNDRates { get; set; }
+
+        [PropertyVisibility(nameof(ShowLocalNdSettingsInAdvanced))]
+        [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
+        public int? LocalNDPortCount { get; set; }
 
         [Category("SpectrumDeviceConnection")]
         [DisplayName("SpectrumNdGroups")]

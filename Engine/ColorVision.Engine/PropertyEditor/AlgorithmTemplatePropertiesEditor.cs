@@ -71,7 +71,5 @@ public sealed class AlgorithmTemplatePropertiesEditor : IPropertyEditor
 public sealed class AiAlgorithmOperatorPropertiesEditor : EnumPropertiesEditor
 {
     protected override IEnumerable<Enum> GetValues(Type enumType) => base.GetValues(enumType).Where(value =>
-        value is not (AlgorithmType.灯珠检测 or AlgorithmType.灯带检测 or AlgorithmType.SFR_FindROI
-            or Algorithm2Type.JND or Algorithm2Type.灯带检测 or Algorithm2Type.SFR_FindROI
-            or AlgorithmARVRType.SFR_FindROI));
+        value is not (AlgorithmType.灯珠检测 or AlgorithmType.灯带检测 or Algorithm2Type.JND or Algorithm2Type.灯带检测));
 }

@@ -41,9 +41,14 @@ internal sealed class LocalSpectrumNd(Func<NDConfig, ILocalSpectrumNdOperation>?
     }
 
     internal static LocalCfwPortConnection GetDirectConnection(NDConfig config)
+        => LocalCfwPortConnection.From(new ConfigCfwPort { SzComName = config.SzComName, BaudRate = config.BaudRate, Ports = GetDirectPortCount(config) });
+
+    internal static int GetDirectPortCount(NDConfig config)
     {
-        int highestPort = Math.Max(config.DarkNDPort, config.NDRate.Count - 1);
-        return LocalCfwPortConnection.From(new ConfigCfwPort { SzComName = config.SzComName, BaudRate = config.BaudRate, Ports = highestPort >= 6 ? 12 : 6 });
+        if (config.LocalNDPortCount is int configured) return configured;
+        int highestLegacyPort = Math.Max(config.DarkNDPort, config.NDRate.Count - 1);
+        int highestLocalPort = config.LocalNDRates?.Keys.DefaultIfEmpty(-1).Max() ?? -1;
+        return Math.Max(highestLegacyPort, highestLocalPort) >= 6 ? 12 : 6;
     }
 
     internal void Disconnect() => direct.ExecuteAsync("Close", LocalCfwPortConnection.From(new ConfigCfwPort())).GetAwaiter().GetResult();

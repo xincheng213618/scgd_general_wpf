@@ -100,6 +100,7 @@ namespace ColorVision.UI
 
         private readonly PropertyEditorEditMode _editMode;
         private PropertyEditSession? _editSession;
+        private Func<object>? _createResetDefaults;
 
         public PropertyEditorWindow(object config)
             : this(config, PropertyEditorEditMode.Immediate)
@@ -171,10 +172,21 @@ namespace ColorVision.UI
         private void ResetToFactory_Click(object sender, RoutedEventArgs e)
         {
             SearchBox.Text = string.Empty;
-            _editSession?.ResetToDefaults();
+            if (_createResetDefaults == null)
+                _editSession?.ResetToDefaults();
+            else
+                PropertyGraphCopy.Copy(_createResetDefaults(), CurrentSource);
 
             DisplayProperties(CurrentSource);
-  
+        }
+
+        /// <summary>Uses caller-provided values for the restore-defaults action.</summary>
+        public void ConfigureResetToDefaults(string buttonText, Func<object> createDefaults)
+        {
+            ArgumentNullException.ThrowIfNull(createDefaults);
+            _createResetDefaults = createDefaults;
+            ResetDefaultsButton.Content = buttonText;
+            ResetDefaultsButton.ToolTip = buttonText;
         }
 
         static int GetInheritanceDepth(Type t)

@@ -117,7 +117,6 @@
                     <ListBoxItem x:Name="CalibrationTab" Content="{x:Static properties:Resources.SpectrumCalibrationCorrection}"/>
                     <ListBoxItem x:Name="AcquisitionTab" Content="{x:Static properties:Resources.SpectrumAcquisitionSettings}"/>
                     <ListBoxItem x:Name="ShutterTab" Content="{x:Static properties:Resources.SpectrumShutterSettings}"/>
-                    <ListBoxItem x:Name="NdTab" Content="{x:Static properties:Resources.SpectrumNdSettings}"/>
                 </ListBox>
                 <Grid Grid.Column="2">
                     <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Visibility="{Binding IsSelected, ElementName=ConnectionTab, Converter={StaticResource VisibleWhen}}">
@@ -181,6 +180,14 @@
                         <Border Style="{StaticResource CardStyle}" Margin="0,0,6,12" VerticalAlignment="Top">
                             <StackPanel>
                                 <TextBlock Text="{x:Static properties:Resources.SpectrumCalibrationCorrection}" Style="{StaticResource SectionTitleStyle}"/>
+                                <StackPanel x:Name="CalibrationFileFields"/>
+                                <DockPanel Margin="0,3,0,5" MinHeight="28">
+                                    <Button x:Name="ManageCalibrationGroupsButton" DockPanel.Dock="Right" Content="{x:Static properties:Resources.SpectrumCalibrationGroups_Title}"
+                                            Style="{StaticResource ToolbarButtonStyle}" Margin="8,0,0,0" Click="ManageCalibrationGroups_Click"/>
+                                    <TextBlock MinWidth="125" Margin="0,0,8,0" VerticalAlignment="Center" Text="{x:Static properties:Resources.SpectrumActiveGroup}"/>
+                                    <TextBlock VerticalAlignment="Center" Text="{Binding EditConfig.ActiveCalibrationGroupName}" TextTrimming="CharacterEllipsis"
+                                               ToolTip="{Binding EditConfig.ActiveCalibrationGroupName}"/>
+                                </DockPanel>
                                 <StackPanel x:Name="CalibrationFields"/>
 
                             </StackPanel>
@@ -201,15 +208,6 @@
                                 <TextBlock Text="{x:Static properties:Resources.SpectrumShutterSettings}" Style="{StaticResource SectionTitleStyle}"/>
                                 <StackPanel x:Name="ShutterFields"/>
                                 <StackPanel x:Name="ShutterDetails" Visibility="{Binding EditConfig.IsShutterEnable, Converter={StaticResource VisibleWhen}}"/>
-                            </StackPanel>
-                        </Border>
-                    </ScrollViewer>
-                    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Visibility="{Binding IsSelected, ElementName=NdTab, Converter={StaticResource VisibleWhen}}">
-                        <Border Style="{StaticResource CardStyle}" Margin="0,0,6,12" VerticalAlignment="Top">
-                            <StackPanel>
-                                <TextBlock Text="{x:Static properties:Resources.SpectrumNdSettings}" Style="{StaticResource SectionTitleStyle}"/>
-                                <StackPanel x:Name="NdFields"/>
-
                             </StackPanel>
                         </Border>
                     </ScrollViewer>

@@ -14,7 +14,7 @@ related: ["engine.index","engine.native-integration","ui.core"]
 
 本地相机取图由 `CM_GetFrame` 提供 RAW，校正由 `LocalFrameCalibrationService` 调用本地 `opencv_helper.dll`；POI 的 XYZ、xy/uv、CCT 和主波长测量由 `PoiMeasurementService` 通过 `OpenCVCalibration.M_CalculatePoiBatchV2` 或 RAW 测量入口计算，缓冲寿命由当前帧或 `PoiMeasurementBuffer` 管理。旧句柄式 XYZ 和 `CM_CalculatePoiBatchV1` 已从相机 DLL 退役，旧插件须迁移到本地测量接口并重新编译。
 
-FOV、SFR、畸变、鬼影与清晰度测量使用本地算法。依赖 `FovImgCentre`／`FovImgCentreEX`、`SFRCalculation`、`GhostGlareDectect` 或 `cvCalArticulation` 的旧调用方须迁移后重编译，并核对 DLL 版本和导出序号。Simple 源码用于同步上游，不参与 DLL 构建。
+FOV、SFR、畸变、鬼影与清晰度测量使用本地算法。依赖 `FovImgCentre`／`FovImgCentreEX`、`SFRCalculation`、`GhostGlareDectect` 或 `cvCalArticulation` 的旧调用方须迁移后重编译，并核对 DLL 版本和导出序号。旧 Simple 接口已退出 DLL 交付。原生维护分支已移除其实现、声明和构建开关。
 
 旧图像裁剪、全局与按 ID 拟合及五点定位共 7 个 P/Invoke 已移除，配套的原生构建同步退役对应导出。使用这些公开方法的旧插件需要迁移并重新编译。相机自动对焦沿用原生 `DataAnalyzer` 拟合。
 

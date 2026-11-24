@@ -5,6 +5,7 @@ using ColorVision.Engine.Services.Devices.Camera.Templates.CameraRunParam;
 using ColorVision.Engine.Services.Devices.Camera.Video;
 using ColorVision.Engine.Services.PhyCameras.Group;
 using ColorVision.Engine.Templates;
+using ColorVision.Engine.Templates.Jsons.FOV2;
 using ColorVision.ImageEditor.Realtime;
 using ColorVision.Themes.Controls;
 using ColorVision.UI;
@@ -69,6 +70,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             _isInitializingNodeSettings = sourceNode != null;
             ApplyNodeSettingsToWindow();
             InitializeComponent();
+            FovImageViewRunner.BindCamera(ImageView, Device);
             ColorVision.Themes.ThemeManagerExtensions.ApplyCaption(this);
             DataContext = Device;
             Closed += (_, _) => Dispose();

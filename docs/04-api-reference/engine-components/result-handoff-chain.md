@@ -129,7 +129,7 @@ Copilot 的 `InspectLoadedBatchResults`／`inspect_loaded_batch_results` 只读�
 
 `POI_Y`、`POI_XYZ`、实时 POI 和 KB 数据列在名称可用时沿用原文件名。已有文件受保护，后续导出使用 `原名_result-类型-ID`，同一结果再次导出按 `-2`、`-3` 递增保留各份文件。KB 的 CSV 和标注图使用同一后缀，暂存写完后最后发布 CSV。缺少标注图或配对文件写入失败时，保存入口会报告失败。实时 POI 和 KB 原始数据导出的 `PoiName`、`Value` 各占一列，读取 CSV 时可完整取得原字段文本，包括 JSON、逗号、引号和换行。
 
-Ghost2.0、MTF2.0 和 SFR 寻边也按结果保留独立文件。Ghost2.0 每份 JSON 只包含一条完整原始结果。SFR 寻边的测点读取或解析失败时保留可读图像，提示重试并暂停该条导出。POI 分析仍按批次追加 CSV，新文件只写一次表头，`Content` 和 `Value` 各占一列。
+Ghost2.0 和 MTF2.0 也按结果保留独立文件。Ghost2.0 每份 JSON 只包含一条完整原始结果。POI 分析按批次追加 CSV，新文件只写一次表头，`Content` 和 `Value` 各占一列。
 
 ## 统一算法 overlay 是另一条链
 

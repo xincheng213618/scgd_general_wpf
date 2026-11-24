@@ -2,10 +2,10 @@
 knowledge_id: "algorithms.roi-routes"
 knowledge_type: "index"
 status: "current"
-summary: "按用途定位发光区、SFR 寻边和中立算法 ROI 模型；各分支参数与坐标契约分别维护。"
-aliases: ["ROI到底对应哪个模块","TemplateSFRFindROI","AlgorithmInvocation.Roi"]
-code_paths: ["Engine/ColorVision.Engine/Templates/Jsons/SFRFindROI/TemplateSFRFindROI.cs","UI/ColorVision.Algorithms/AlgorithmInvocation.cs"]
-related: ["algorithms.index","algorithms.find-light-area","algorithms.json-templates","algorithms.arvr","algorithms.platform"]
+summary: "按用途定位本地发光区与中立算法 ROI 模型，并查阅各自的参数与坐标契约。"
+aliases: ["ROI到底对应哪个模块","AlgorithmInvocation.Roi"]
+code_paths: ["UI/ColorVision.Algorithms/AlgorithmInvocation.cs"]
+related: ["algorithms.index","algorithms.find-light-area","algorithms.platform"]
 ---
 
 # ROI 模型与模板入口
@@ -17,13 +17,6 @@ ROI 表示感兴趣区域，在 ColorVision 中由不同能力定义参数与坐
 | 用途 | 模型或模板 | 操作与契约 |
 | --- | --- | --- |
 | 本地发光区四角定位 | `RobustV2` 与 `LocalFindLuminousAreaNode`，不要求检测参数模板 | [本地 V2 的搜索区域、图像来源与 POI 回写](../templates/find-light-area.md#配置本地发光区定位-v2) |
-| ARVR SFR 寻边（已退役） | `TemplateSFRFindROI`，JSON 编码 `ARVR.SFR.FindROI`、字典 `36` | 历史结果仍可查看和导出，见 [ARVR 算法](../templates/arvr-template.md) |
 | 中立算法平台的输入区域 | `AlgorithmInvocation.Roi` 与 `AlgorithmRoi` 的矩形、圆、多边形、折线类型 | [算法平台](../../../02-developer-guide/core-concepts/image-algorithm-platform-v1.md) |
 
-旧 SFR 寻边模板的 JSON Schema 仍可用于识别历史配置。
-
-## 定位实现与验证
-
-SFR 寻边的 JSON 模板与手动适配器位于 `Engine/ColorVision.Engine/Templates/Jsons/SFRFindROI/`。中立 ROI 类型定义在 `UI/ColorVision.Algorithms/AlgorithmInvocation.cs`，本地 V2 由发光区主题指向节点与 native 实现。
-
-先确定执行端和功能，再使用对应主题的参数、测试与结果样例。
+中立 ROI 类型定义在 `UI/ColorVision.Algorithms/AlgorithmInvocation.cs`。本地 V2 的节点与原生实现见发光区主题。

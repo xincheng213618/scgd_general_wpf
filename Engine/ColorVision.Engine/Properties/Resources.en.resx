@@ -1351,9 +1351,6 @@
   <data name="LedBandDetectorManagement" xml:space="preserve">
     <value>Light Bar Detection Template Management</value>
   </data>
-  <data name="SfrEdgeDetectionTemplateManagement" xml:space="preserve">
-    <value>SFR Edge Finding Template Management</value>
-  </data>
   <data name="SfrV2TemplateManagement" xml:space="preserve">
     <value>SFRV2 Template Management</value>
   </data>
@@ -3587,6 +3584,13 @@ Please close camera or other programs using this serial port, or check device co
   <data name="SpectrumCalibrationGroups_NotSelected" xml:space="preserve"><value>Not selected</value></data>
   <data name="SpectrumCalibrationGroups_RemoveGroup" xml:space="preserve"><value>Remove group</value></data>
   <data name="SpectrumCalibrationGroups_SaveHint" xml:space="preserve"><value>Saving writes the calibration files for the current group. The spectrum service restarts if a calibration file changes.</value></data>
+  <data name="SpectrumCalibrationGroups_DraftSaveHint" xml:space="preserve"><value>Save to return to device configuration. Click OK there to apply the changes.</value></data>
+  <data name="SpectrumCalibrationGroups_InvalidNames" xml:space="preserve"><value>Enter a unique name for each calibration group.</value></data>
+  <data name="SpectrumCalibrationGroups_NdRateHint" xml:space="preserve"><value>Leave blank to skip this position during automatic switching.</value></data>
+  <data name="SpectrumCalibrationGroups_NdInvalidHoles" xml:space="preserve"><value>Each filter wheel position can have only one calibration group.</value></data>
+  <data name="SpectrumCalibrationGroups_NdInvalidRates" xml:space="preserve"><value>Enter unique nonnegative integers and leave the attenuation blank for the dark position.</value></data>
+  <data name="SpectrumCalibrationGroups_NdCalibrationRequired" xml:space="preserve"><value>Select wavelength and amplitude files for position {0}.</value></data>
+  <data name="SpectrumCalibrationGroups_NdLocalSaveHint" xml:space="preserve"><value>Reopen the spectrometer after changing the filter wheel connection.</value></data>
   <data name="SpectrumCalibrationGroups_Title" xml:space="preserve"><value>Calibration file groups</value></data>
   <data name="SpectrumCalibrationGroups_WavelengthCalibration" xml:space="preserve"><value>Wavelength calibration</value></data>
   <data name="TemplateEditor_ConfirmSetJsonAsDefault" xml:space="preserve"><value>Use the current template JSON as the default parameters for new and reset templates. Continue?</value></data>
@@ -4428,8 +4432,6 @@ Please close camera or other programs using this serial port, or check device co
   <data name="SpectrumNdBind" xml:space="preserve"><value>Bind filter wheel device</value></data>
   <data name="SpectrumNdDevice" xml:space="preserve"><value>Filter wheel device</value></data>
   <data name="SpectrumNdReset" xml:space="preserve"><value>Allow ND reset</value></data>
-  <data name="SpectrumNdMaxTime" xml:space="preserve"><value>ND maximum exposure (ms)</value></data>
-  <data name="SpectrumNdMinTime" xml:space="preserve"><value>ND minimum exposure (ms)</value></data>
   <data name="SpectrumNdRates" xml:space="preserve"><value>ND attenuation ratios</value></data>
   <data name="SpectrumNdGroups" xml:space="preserve"><value>ND calibration group names</value></data>
   <data name="SpectrumSp100Enabled" xml:space="preserve"><value>Enable dark current compensation</value></data>
@@ -5885,9 +5887,6 @@ Open the spectrum log?</value>
   <data name="亚像素级灯珠检测" xml:space="preserve">
     <value>Subpixel LED Detection</value>
   </data>
-  <data name="SFR寻边" xml:space="preserve">
-    <value>SFR Edge Detection</value>
-  </data>
   <data name="定位算法" xml:space="preserve">
     <value>Positioning Algorithms</value>
   </data>
@@ -5948,9 +5947,6 @@ Open the spectrum log?</value>
   <data name="SFR2.0模板" xml:space="preserve">
     <value>SFR 2.0 Template</value>
   </data>
-  <data name="SFR寻边模板" xml:space="preserve">
-    <value>SFR Edge Template</value>
-  </data>
   <data name="请先选择灯条检测模板" xml:space="preserve">
     <value>Select an LED strip template first</value>
   </data>
@@ -5998,9 +5994,6 @@ Open the spectrum log?</value>
   </data>
   <data name="请先选择SFR2.0模板" xml:space="preserve">
     <value>Select an SFR 2.0 template first</value>
-  </data>
-  <data name="请先选择SFR寻边模板" xml:space="preserve">
-    <value>Select an SFR edge template first</value>
   </data>
   <data name="读取失败" xml:space="preserve">
     <value>Read failed</value>
@@ -7335,6 +7328,18 @@ Field: </value></data>
   <data name="设置校正缓存预算失败：{0}" xml:space="preserve"><value>Could not set the calibration cache budget: {0}</value></data>
   <data name="请输入以 MiB 为单位的非负整数。" xml:space="preserve"><value>Enter a whole number of MiB, zero or greater.</value></data>
   <data name="设为 0 将停止保留共享缓存和自动预热。正在使用的校正计划可继续执行。" xml:space="preserve"><value>Set to 0 to stop retaining shared cache entries and turn off automatic warm-up. Calibration plans already in use can finish.</value></data>
+  <data name="保存到：{0}" xml:space="preserve">
+    <value>Save to: {0}</value>
+  </data>
+  <data name="恢复到全局" xml:space="preserve">
+    <value>Restore Global Settings</value>
+  </data>
+  <data name="全局" xml:space="preserve">
+    <value>Global</value>
+  </data>
+  <data name="配置已更新，请重新打开参数窗口。" xml:space="preserve">
+    <value>The settings or camera source have changed. Reopen the parameter window.</value>
+  </data>
   <data name="DeviceDataPathInvalid" xml:space="preserve"><value>Enter a valid full path, such as D:\CVTest.</value></data>
   <data name="DeviceDataPathConfigure" xml:space="preserve"><value>Configure Path</value></data>
   <data name="DeviceDataPathNoDevices" xml:space="preserve"><value>No devices currently need a data path.</value></data>

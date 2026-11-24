@@ -16,10 +16,15 @@ public partial class ImageView
     private CancellationTokenSource? _staticOpenCancellation;
     private IImageOpen? _retainedOpenerDuringProbe;
     private bool _publishingDecodedContent;
+    private long _cameraRecordContentVersion = -1;
     public Task ImageOpenCompletion { get; private set; } = Task.CompletedTask;
     public IImageContentCapability? ImageContentCapability => _document.Capability;
     public DecodedImageContent? ImageContent => _document.Content;
     public long ContentVersion => _document.ContentVersion;
+
+    /// <summary>Recorded camera identity for the current image content.</summary>
+    public ImageCameraInformation? SourceCamera => _cameraRecordContentVersion == ContentVersion
+        ? _document.ParameterRecord?.Acquisition?.Camera : null;
 
     /// <summary>Publishes provenance without granting any capability to the current pixels.</summary>
     public void SetImageParameterRecord(ColorVisionTiffParameters parameters)
@@ -28,6 +33,7 @@ public partial class ImageView
         ArgumentNullException.ThrowIfNull(parameters);
         ObjectDisposedException.ThrowIf(_document.IsDisposed, this);
         _document.ParameterRecord = parameters;
+        _cameraRecordContentVersion = ContentVersion;
         Opentif.ApplyColorVisionMetadata(Config, parameters);
         if (_publishingDecodedContent) _statusBarImageRevision = -1;
         else if (_statusBarImageInfo != null) RefreshImageStatusBar();
@@ -96,6 +102,7 @@ public partial class ImageView
                 IImageContentCapability? publishingCapability = capability;
                 capability = null;
                 AttachImageContentCapability(publishingCapability);
+                _cameraRecordContentVersion = ContentVersion;
             }
             finally { _publishingDecodedContent = false; }
             UpdateZoomAndScale();

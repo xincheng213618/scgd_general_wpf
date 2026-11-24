@@ -1220,9 +1220,6 @@
   <data name="LedBandDetectorManagement" xml:space="preserve">
     <value>燈條檢測模板管理</value>
   </data>
-  <data name="SfrEdgeDetectionTemplateManagement" xml:space="preserve">
-    <value>SFR尋邊範本管理</value>
-  </data>
 
   <data name="PoiAnalysisTemplateManagement" xml:space="preserve">
     <value>POI分析範本管理</value>
@@ -2564,6 +2561,13 @@
   <data name="SpectrumCalibrationGroups_NotSelected" xml:space="preserve"><value>未選擇</value></data>
   <data name="SpectrumCalibrationGroups_RemoveGroup" xml:space="preserve"><value>移除群組</value></data>
   <data name="SpectrumCalibrationGroups_SaveHint" xml:space="preserve"><value>儲存會寫入目前群組的標定檔案；若標定檔案發生變更，將重新啟動光譜服務。</value></data>
+  <data name="SpectrumCalibrationGroups_DraftSaveHint" xml:space="preserve"><value>儲存後返回裝置設定。點選裝置設定的「確定」後生效。</value></data>
+  <data name="SpectrumCalibrationGroups_InvalidNames" xml:space="preserve"><value>請為每個標定群組填寫不同的名稱。</value></data>
+  <data name="SpectrumCalibrationGroups_NdRateHint" xml:space="preserve"><value>留空則不參與自動換檔。</value></data>
+  <data name="SpectrumCalibrationGroups_NdInvalidHoles" xml:space="preserve"><value>每個濾光輪孔位只能關聯一個標定群組。</value></data>
+  <data name="SpectrumCalibrationGroups_NdInvalidRates" xml:space="preserve"><value>倍率須為不重複的非負整數。請將校零孔位的倍率留空。</value></data>
+  <data name="SpectrumCalibrationGroups_NdCalibrationRequired" xml:space="preserve"><value>請先為孔位 {0} 設定波長和幅值檔案。</value></data>
+  <data name="SpectrumCalibrationGroups_NdLocalSaveHint" xml:space="preserve"><value>修改濾光輪連線後，請重新開啟光譜儀。</value></data>
   <data name="SpectrumCalibrationGroups_Title" xml:space="preserve"><value>標定檔案群組</value></data>
   <data name="SpectrumCalibrationGroups_WavelengthCalibration" xml:space="preserve"><value>波長標定</value></data>
   <data name="TemplateEditor_ConfirmSetJsonAsDefault" xml:space="preserve"><value>將使用目前範本的 JSON 作為新建或重設範本時的預設參數。是否繼續？</value></data>
@@ -2764,8 +2768,6 @@
   <data name="SpectrumNdBind" xml:space="preserve"><value>繫結濾光輪裝置</value></data>
   <data name="SpectrumNdDevice" xml:space="preserve"><value>濾光輪裝置</value></data>
   <data name="SpectrumNdReset" xml:space="preserve"><value>允許 ND 復位</value></data>
-  <data name="SpectrumNdMaxTime" xml:space="preserve"><value>ND 最大曝光時間 (ms)</value></data>
-  <data name="SpectrumNdMinTime" xml:space="preserve"><value>ND 最小曝光時間 (ms)</value></data>
   <data name="SpectrumNdRates" xml:space="preserve"><value>ND 衰減倍率</value></data>
   <data name="SpectrumNdGroups" xml:space="preserve"><value>ND 標定分組名稱</value></data>
   <data name="SpectrumSp100Enabled" xml:space="preserve"><value>啟用暗電流補償</value></data>
@@ -6835,9 +6837,6 @@
   <data name="亚像素级灯珠检测" xml:space="preserve">
     <value>次像素級燈珠檢測</value>
   </data>
-  <data name="SFR寻边" xml:space="preserve">
-    <value>SFR 尋邊</value>
-  </data>
   <data name="定位算法" xml:space="preserve">
     <value>定位演算法</value>
   </data>
@@ -6898,9 +6897,6 @@
   <data name="SFR2.0模板" xml:space="preserve">
     <value>SFR 2.0 範本</value>
   </data>
-  <data name="SFR寻边模板" xml:space="preserve">
-    <value>SFR 尋邊範本</value>
-  </data>
   <data name="请先选择灯条检测模板" xml:space="preserve">
     <value>請先選擇燈條檢測範本</value>
   </data>
@@ -6948,9 +6944,6 @@
   </data>
   <data name="请先选择SFR2.0模板" xml:space="preserve">
     <value>請先選擇 SFR 2.0 範本</value>
-  </data>
-  <data name="请先选择SFR寻边模板" xml:space="preserve">
-    <value>請先選擇 SFR 尋邊範本</value>
   </data>
   <data name="读取失败" xml:space="preserve">
     <value>讀取失敗</value>
@@ -8285,6 +8278,18 @@
   <data name="设置校正缓存预算失败：{0}" xml:space="preserve"><value>無法設定校正快取預算：{0}</value></data>
   <data name="请输入以 MiB 为单位的非负整数。" xml:space="preserve"><value>請輸入以 MiB 為單位的非負整數。</value></data>
   <data name="设为 0 将停止保留共享缓存和自动预热。正在使用的校正计划可继续执行。" xml:space="preserve"><value>設為 0 會停止保留共用快取及自動預熱。使用中的校正計畫可繼續執行。</value></data>
+  <data name="保存到：{0}" xml:space="preserve">
+    <value>儲存到：{0}</value>
+  </data>
+  <data name="恢复到全局" xml:space="preserve">
+    <value>恢復到全域</value>
+  </data>
+  <data name="全局" xml:space="preserve">
+    <value>全域</value>
+  </data>
+  <data name="配置已更新，请重新打开参数窗口。" xml:space="preserve">
+    <value>設定或相機來源已更新，請重新開啟參數視窗。</value>
+  </data>
   <data name="DeviceDataPathInvalid" xml:space="preserve"><value>請輸入有效的完整路徑，例如 D:\CVTest。</value></data>
   <data name="DeviceDataPathConfigure" xml:space="preserve"><value>設定路徑</value></data>
   <data name="DeviceDataPathNoDevices" xml:space="preserve"><value>目前沒有需要設定資料路徑的裝置。</value></data>

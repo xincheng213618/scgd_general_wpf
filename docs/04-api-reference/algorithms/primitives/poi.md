@@ -81,7 +81,7 @@ Flow 的模板字段、BuildPOI 多模板入口及分析节点对应关系，统
 - POI 不是单一检测算法的结果结构，它同时用于检测、布点、分析、AOI 和 Flow。
 - 主模板通过 `PoiMasterDao` 和 `PoiDetailDao` 保存点集。
 - 过滤、修正、标定、输出模板都是当前系统的一等成员。
-- `PoiAnalysis`、`SFR_FindROI`、`OLEDAOI` 是消费 POI，不是创建 POI 的主入口。
+- `PoiAnalysis` 和 `OLEDAOI` 使用已有 POI 作为输入。
 
 ## 关键文件
 
@@ -97,7 +97,6 @@ Flow 的模板字段、BuildPOI 多模板入口及分析节点对应关系，统
 | `Engine/ColorVision.Engine/Templates/POI/POIOutput/TemplatePoiOutputParam.cs` | 输出模板 |
 | `Engine/ColorVision.Engine/Templates/POI/POIGenCali/TemplatePOICalParam.cs` | 标定生成模板 |
 | `Engine/ColorVision.Engine/Templates/Jsons/PoiAnalysis/TemplatePoiAnalysis.cs` | JSON POI 分析模板 |
-| `Engine/ColorVision.Engine/Templates/Jsons/SFRFindROI/AlgorithmSFRFindROI.cs` | 已退役的 SFR 寻边请求适配器 |
 | `Engine/ColorVision.Engine/Templates/Jsons/OLEDAOI/AlgorithmOLEDAOI.cs` | OLED AOI |
 | `Engine/ColorVision.Engine/FlowProcessing/Editor/NodeConfiguration/POINodeConfigurators.cs` | `BuildPOINode` 的多模板补充面板 |
 

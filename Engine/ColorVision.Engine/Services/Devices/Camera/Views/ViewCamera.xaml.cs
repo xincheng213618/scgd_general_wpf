@@ -5,6 +5,7 @@ using ColorVision.Engine.Services.Devices.Camera.Local;
 using ColorVision.Database;
 using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services.Results;
+using ColorVision.Engine.Templates.Jsons.FOV2;
 using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Draw.Special;
 using ColorVision.Themes.Controls;
@@ -158,6 +159,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
         {
             if (IsDisposed || _isInitialized) return;
             _isInitialized = true;
+            FovImageViewRunner.BindCamera(ImageView, Device);
             ImageView.StatusBarItemsChanged += ImageView_StatusBarItemsChanged;
 
             if (ImageView.EditorContext.IEditorToolFactory.GetIEditorTool<ToolReferenceLine>() is ToolReferenceLine toolReferenceLine)
