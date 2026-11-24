@@ -273,4 +273,17 @@ public sealed class SpectrumConfigurationDraftTests
         Assert.Equal(closeCommand, restored.CloseCmd);
         Assert.True(new JObject().ToObject<global::Spectrum.Configs.ShutterConfig>()!.OpenForDark);
     }
+
+    [Fact]
+    public void SpectrumDeviceEditsKeepTheLatestSharedDataPath()
+    {
+        var config = new ConfigSpectrum { FileServerCfg = { DataBasePath = @"D:\Original" } };
+        var draft = new SpectrumConfigurationDraft(config);
+        config.FileServerCfg.DataBasePath = @"D:\Unified";
+        draft.Config.Name = "Renamed";
+
+        Assert.True(draft.TryApply(config, out string error), error);
+        Assert.Equal("Renamed", config.Name);
+        Assert.Equal(@"D:\Unified", config.FileServerCfg.DataBasePath);
+    }
 }

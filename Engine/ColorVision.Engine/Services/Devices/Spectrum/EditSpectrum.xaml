@@ -118,7 +118,6 @@
                     <ListBoxItem x:Name="AcquisitionTab" Content="{x:Static properties:Resources.SpectrumAcquisitionSettings}"/>
                     <ListBoxItem x:Name="ShutterTab" Content="{x:Static properties:Resources.SpectrumShutterSettings}"/>
                     <ListBoxItem x:Name="NdTab" Content="{x:Static properties:Resources.SpectrumNdSettings}"/>
-                    <ListBoxItem x:Name="FileTab" Content="{x:Static properties:Resources.SpectrumFileSettings}"/>
                 </ListBox>
                 <Grid Grid.Column="2">
                     <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Visibility="{Binding IsSelected, ElementName=ConnectionTab, Converter={StaticResource VisibleWhen}}">
@@ -210,15 +209,6 @@
                             <StackPanel>
                                 <TextBlock Text="{x:Static properties:Resources.SpectrumNdSettings}" Style="{StaticResource SectionTitleStyle}"/>
                                 <StackPanel x:Name="NdFields"/>
-
-                            </StackPanel>
-                        </Border>
-                    </ScrollViewer>
-                    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Visibility="{Binding IsSelected, ElementName=FileTab, Converter={StaticResource VisibleWhen}}">
-                        <Border Style="{StaticResource CardStyle}" Margin="0,0,6,12" VerticalAlignment="Top">
-                            <StackPanel>
-                                <TextBlock Text="{x:Static properties:Resources.SpectrumFileSettings}" Style="{StaticResource SectionTitleStyle}"/>
-                                <StackPanel x:Name="FileFields"/>
 
                             </StackPanel>
                         </Border>

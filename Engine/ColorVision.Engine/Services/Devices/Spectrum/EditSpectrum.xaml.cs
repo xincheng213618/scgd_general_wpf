@@ -81,7 +81,6 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             AddFields(ShutterFields, EditConfig, nameof(ConfigSpectrum.IsShutterEnable));
             ShutterDetails.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(EditConfig.ShutterCfg, showCategoryHeader: false));
             NdFields.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(EditConfig.NDConfig, showCategoryHeader: false));
-            FileFields.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(EditConfig.FileServerCfg, showCategoryHeader: false));
         }
 
         private static void AddFields(Panel panel, object config, params string[] names)
@@ -245,7 +244,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             window.Submitted += (_, _) =>
             {
                 Draft.ReloadConnection();
-                foreach (Panel panel in new Panel[] { ConnectionFields, SerialFields, CalibrationFields, AcquisitionFields, ShutterFields, ShutterDetails, NdFields, FileFields }) panel.Children.Clear();
+                foreach (Panel panel in new Panel[] { ConnectionFields, SerialFields, CalibrationFields, AcquisitionFields, ShutterFields, ShutterDetails, NdFields }) panel.Children.Clear();
                 InitializeFields();
                 DataContext = null;
                 DataContext = this;

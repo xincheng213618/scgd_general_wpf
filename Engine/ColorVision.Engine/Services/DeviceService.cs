@@ -13,8 +13,10 @@ using log4net;
 using Newtonsoft.Json;
 using SqlSugar;
 using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
+using System.Linq;
 using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
@@ -116,6 +118,95 @@ namespace ColorVision.Engine.Services
             if (!saved || !IsCurrent(current)) return false;
             resource.Value = value;
             return true;
+        }
+
+        internal static bool TrySaveBatch(IReadOnlyList<(DeviceService Device, DeviceConfigurationTarget Target)> entries,
+            Func<DeviceService, string?, string> updateValue, out IReadOnlyList<DeviceService> changed)
+        {
+            changed = [];
+            if (entries.Count == 0) return true;
+
+            var ordered = entries.OrderBy(entry => entry.Target.id).ToArray();
+            var source = ordered[0].Target;
+            var byId = new Dictionary<int, (DeviceService Device, DeviceConfigurationTarget Target)>();
+            foreach (var (device, target) in ordered)
+            {
+                bool sameSource = target.id > 0
+                    ? source.endpoint != null && ReferenceEquals(target.endpoint, source.endpoint) && target.localResources == null
+                    : SysResourceDao.IsLocalId(target.id) && source.localResources != null
+                        && ReferenceEquals(target.localResources, source.localResources) && target.endpoint == null;
+                if (!sameSource || !target.IsCurrent(device) || !byId.TryAdd(target.id, (device, target))) return false;
+            }
+
+            var pending = new Dictionary<int, string>();
+            bool IsCurrent() => ordered.All(entry => entry.Target.IsCurrent(entry.Device));
+            bool Prepare(SysResourceModel row)
+            {
+                var (device, target) = byId[row.Id];
+                if (!target.Matches(row) || !IsCurrent()) return false;
+                string value = updateValue(device, row.Value);
+                if (!string.Equals(value, row.Value, StringComparison.Ordinal))
+                {
+                    pending.Add(row.Id, value);
+                    row.Value = value;
+                }
+                return true;
+            }
+
+            bool saved = source.localResources is { } local
+                ? local.TryUpdateLocalBatch(byId.Keys.ToArray(), row => (Prepare(row), pending.ContainsKey(row.Id)), IsCurrent)
+                : TrySaveRemote(source.endpoint!);
+            if (!saved) return false;
+
+            var storedChanges = new List<DeviceService>(pending.Count);
+            foreach (var (device, target) in ordered)
+            {
+                if (!pending.TryGetValue(target.id, out string? value)) continue;
+                if (target.IsCurrent(device)) target.resource.Value = value;
+                storedChanges.Add(device);
+            }
+            changed = storedChanges;
+            return true;
+
+            bool TrySaveRemote(MySqlConnectedEndpoint endpoint)
+            {
+                if (!IsCurrent()) return false;
+                using var db = endpoint.CreateDbClient();
+                bool mysql = db.CurrentConnectionConfig.DbType == DbType.MySql;
+                db.Ado.BeginTran();
+                bool committed = false;
+                try
+                {
+                    foreach (var (_, target) in ordered)
+                    {
+                        var rows = db.Queryable<SysResourceModel>().Where(row => row.Id == target.id);
+                        // Lock even unchanged rows until every target has been checked and saved.
+                        var row = (mysql ? rows.TranLock(DbLockType.Wait) : rows).First();
+                        if (row == null) return false;
+                        string? previous = row.Value;
+                        if (!Prepare(row)) return false;
+                        if (!pending.TryGetValue(row.Id, out string? value)) continue;
+
+                        var update = db.Updateable<SysResourceModel>().SetColumns(item => item.Value == value)
+                            .Where(item => item.Id == target.id && item.Type == target.type && item.TenantId == target.tenant
+                                && item.Pid == target.parentId && !item.IsDelete);
+                        if (mysql)
+                            update = update.Where("CAST(`code` AS BINARY) <=> CAST(@originalCode AS BINARY) AND "
+                                + "CAST(`txt_value` AS BINARY) <=> CAST(@originalValue AS BINARY)",
+                                new { originalCode = target.code, originalValue = previous });
+                        else update = update.Where(item => item.Code == target.code && item.Value == previous);
+                        if (update.ExecuteCommand() != 1) return false;
+                    }
+                    if (!IsCurrent()) return false;
+                    db.Ado.CommitTran();
+                    committed = true;
+                    return true;
+                }
+                finally
+                {
+                    if (!committed) db.Ado.RollbackTran();
+                }
+            }
         }
 
         internal bool TrySaveConfiguration(DeviceService current, string nextCode, string name, string value)

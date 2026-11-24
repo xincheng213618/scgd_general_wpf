@@ -8285,4 +8285,13 @@
   <data name="设置校正缓存预算失败：{0}" xml:space="preserve"><value>無法設定校正快取預算：{0}</value></data>
   <data name="请输入以 MiB 为单位的非负整数。" xml:space="preserve"><value>請輸入以 MiB 為單位的非負整數。</value></data>
   <data name="设为 0 将停止保留共享缓存和自动预热。正在使用的校正计划可继续执行。" xml:space="preserve"><value>設為 0 會停止保留共用快取及自動預熱。使用中的校正計畫可繼續執行。</value></data>
+  <data name="DeviceDataPathInvalid" xml:space="preserve"><value>請輸入有效的完整路徑，例如 D:\CVTest。</value></data>
+  <data name="DeviceDataPathConfigure" xml:space="preserve"><value>設定路徑</value></data>
+  <data name="DeviceDataPathNoDevices" xml:space="preserve"><value>目前沒有需要設定資料路徑的裝置。</value></data>
+  <data name="DeviceDataPathStale" xml:space="preserve"><value>裝置清單或設定資料庫已變更，請重新開啟「裝置設定」後再試。</value></data>
+  <data name="DeviceDataPathAlreadyApplied" xml:space="preserve"><value>裝置設定已使用此路徑。</value></data>
+  <data name="DeviceDataPathUpdated" xml:space="preserve"><value>已統一 {0} 台裝置的資料基礎路徑。</value></data>
+  <data name="DeviceDataPathReloadRequested" xml:space="preserve"><value>已請求重新載入 {0} 台裝置。</value></data>
+  <data name="DeviceDataPathReloadPending" xml:space="preserve"><value>等待重新載入的裝置為 {0}。再次套用可重試。</value></data>
+  <data name="DeviceDataPathCameraPending" xml:space="preserve"><value>相機服務將在下次重新載入時使用新路徑（{0}）。</value></data>
 </root>

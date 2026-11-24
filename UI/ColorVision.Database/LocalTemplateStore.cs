@@ -154,7 +154,14 @@ namespace ColorVision.Database
         public bool TryUpdate(string kind, LocalTemplateDocument expected, string name, int schemaVersion, string payload)
         {
             using var connection = Open();
+            return TryUpdate(connection, null, kind, expected, name, schemaVersion, payload);
+        }
+
+        private static bool TryUpdate(SqliteConnection connection, SqliteTransaction? transaction, string kind,
+            LocalTemplateDocument expected, string name, int schemaVersion, string payload)
+        {
             using var command = connection.CreateCommand();
+            command.Transaction = transaction;
             command.CommandText = """
                 UPDATE local_templates SET name=$name,schema_version=$version,payload=$payload
                 WHERE kind=$kind AND id=$id AND name=$previousName
@@ -169,6 +176,26 @@ namespace ColorVision.Database
             command.Parameters.AddWithValue("$previousVersion", expected.SchemaVersion);
             command.Parameters.AddWithValue("$previousPayload", expected.Payload);
             return command.ExecuteNonQuery() == 1;
+        }
+
+        /// <summary>Updates payloads together. A missing document or a rejected payload rolls back the batch.</summary>
+        public bool TryUpdateBatch(string kind, IReadOnlyList<int> ids, Func<LocalTemplateDocument, string?> updatePayload, Func<bool> isCurrent)
+        {
+            if (!isCurrent()) return false;
+            using var connection = Open();
+            using var transaction = connection.BeginTransaction(deferred: false);
+            foreach (int id in ids)
+            {
+                var document = Find(connection, kind, id, transaction);
+                if (document == null) return false;
+                string? payload = updatePayload(document);
+                if (payload == null) return false;
+                if (!string.Equals(payload, document.Payload, StringComparison.Ordinal)
+                    && !TryUpdate(connection, transaction, kind, document, document.Name, document.SchemaVersion, payload)) return false;
+            }
+            if (!isCurrent()) return false;
+            transaction.Commit();
+            return true;
         }
 
         public bool TryDelete(string kind, LocalTemplateDocument expected)

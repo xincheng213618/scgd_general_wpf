@@ -350,8 +350,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Configs
         [DisplayName("SpectrumNdSettings")]
         public NDConfig NDConfig { get; set; } = new NDConfig();
 
-        [Category("SpectrumAcquisitionDisplay")]
-        [DisplayName("SpectrumFileSettings")]
+        [Browsable(false)]
         public FileServerCfg FileServerCfg { get; set; } = new FileServerCfg();
 
         [Category("SpectrumAcquisitionDisplay")]

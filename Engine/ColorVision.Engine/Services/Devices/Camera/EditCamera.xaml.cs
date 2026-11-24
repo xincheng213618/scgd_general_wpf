@@ -1,5 +1,4 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Engine.Cache;
 using ColorVision.Engine.Services.Devices.Camera.Configs;
 using ColorVision.Engine.Services.PhyCameras;
 using ColorVision.Themes;
@@ -64,7 +63,6 @@ namespace ColorVision.Engine.Services.Devices.Camera
             EditContent.DataContext = EditConfig;
 
             LocalCameraField.Content = PropertyEditorHelper.GenProperties(displayDraft, nameof(DisplayCameraConfig.UseLocalCamera));
-            FilePathField.Content = PropertyEditorHelper.GenProperties(EditConfig.FileServerCfg, nameof(FileServerCfg.DataBasePath));
         }
 
         private void Ok_Click(object sender, RoutedEventArgs e)
@@ -77,7 +75,11 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 if (!JToken.DeepEquals(initialDeviceConfig, JObject.FromObject(EditConfig)))
                 {
                     DeviceCamera.EnsurePhyCameraBindingCanChange(EditConfig.CameraCode);
-                    DeviceCamera.CommitConfiguration(() => EditConfig.CopyTo(DeviceCamera.Config), openingTarget);
+                    DeviceCamera.CommitConfiguration(() =>
+                    {
+                        EditConfig.FileServerCfg = DeviceCamera.Config.FileServerCfg;
+                        EditConfig.CopyTo(DeviceCamera.Config);
+                    }, openingTarget);
                 }
                 // The live preference setter notifies the backend and persists the display configuration.
                 if (displayDraft.UseLocalCamera != initialUseLocalCamera)

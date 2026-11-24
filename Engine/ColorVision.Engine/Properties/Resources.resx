@@ -4603,4 +4603,13 @@
   <data name="设置校正缓存预算失败：{0}" xml:space="preserve"><value>设置校正缓存预算失败：{0}</value></data>
   <data name="请输入以 MiB 为单位的非负整数。" xml:space="preserve"><value>请输入以 MiB 为单位的非负整数。</value></data>
   <data name="设为 0 将停止保留共享缓存和自动预热。正在使用的校正计划可继续执行。" xml:space="preserve"><value>设为 0 将停止保留共享缓存和自动预热。正在使用的校正计划可继续执行。</value></data>
+  <data name="DeviceDataPathInvalid" xml:space="preserve"><value>请输入有效的完整路径，例如 D:\CVTest。</value></data>
+  <data name="DeviceDataPathConfigure" xml:space="preserve"><value>配置路径</value></data>
+  <data name="DeviceDataPathNoDevices" xml:space="preserve"><value>当前没有需要配置数据路径的设备。</value></data>
+  <data name="DeviceDataPathStale" xml:space="preserve"><value>设备列表或配置库已变更，请重新打开“设备配置”后重试。</value></data>
+  <data name="DeviceDataPathAlreadyApplied" xml:space="preserve"><value>设备配置已使用此路径。</value></data>
+  <data name="DeviceDataPathUpdated" xml:space="preserve"><value>已统一 {0} 台设备的数据基础路径。</value></data>
+  <data name="DeviceDataPathReloadRequested" xml:space="preserve"><value>已请求重载 {0} 台设备。</value></data>
+  <data name="DeviceDataPathReloadPending" xml:space="preserve"><value>等待重载的设备为 {0}。再次应用可重试。</value></data>
+  <data name="DeviceDataPathCameraPending" xml:space="preserve"><value>相机服务将在下次重载时使用新路径（{0}）。</value></data>
 </root>

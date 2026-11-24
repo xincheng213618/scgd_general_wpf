@@ -7335,4 +7335,13 @@ Field: </value></data>
   <data name="设置校正缓存预算失败：{0}" xml:space="preserve"><value>Could not set the calibration cache budget: {0}</value></data>
   <data name="请输入以 MiB 为单位的非负整数。" xml:space="preserve"><value>Enter a whole number of MiB, zero or greater.</value></data>
   <data name="设为 0 将停止保留共享缓存和自动预热。正在使用的校正计划可继续执行。" xml:space="preserve"><value>Set to 0 to stop retaining shared cache entries and turn off automatic warm-up. Calibration plans already in use can finish.</value></data>
+  <data name="DeviceDataPathInvalid" xml:space="preserve"><value>Enter a valid full path, such as D:\CVTest.</value></data>
+  <data name="DeviceDataPathConfigure" xml:space="preserve"><value>Configure Path</value></data>
+  <data name="DeviceDataPathNoDevices" xml:space="preserve"><value>No devices currently need a data path.</value></data>
+  <data name="DeviceDataPathStale" xml:space="preserve"><value>The device list or configuration database has changed. Reopen Device Configuration and try again.</value></data>
+  <data name="DeviceDataPathAlreadyApplied" xml:space="preserve"><value>Device configurations already use this path.</value></data>
+  <data name="DeviceDataPathUpdated" xml:space="preserve"><value>Updated the data root for {0} devices.</value></data>
+  <data name="DeviceDataPathReloadRequested" xml:space="preserve"><value>Requested reload for {0} devices.</value></data>
+  <data name="DeviceDataPathReloadPending" xml:space="preserve"><value>Reload pending for {0}. Apply again to retry.</value></data>
+  <data name="DeviceDataPathCameraPending" xml:space="preserve"><value>Camera services will use the new path after their next reload ({0}).</value></data>
 </root>

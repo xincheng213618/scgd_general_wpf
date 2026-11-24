@@ -89,6 +89,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Configs
 
         public PhyExpTimeCfg ExpTimeCfg { get; set; } = new PhyExpTimeCfg();
 
+        [Browsable(false)]
         public FileServerCfg FileServerCfg { get; set; } = new FileServerCfg();
 
         public bool IsAutoOpen { get => _IsAutoOpen; set { _IsAutoOpen = value; OnPropertyChanged(); } }

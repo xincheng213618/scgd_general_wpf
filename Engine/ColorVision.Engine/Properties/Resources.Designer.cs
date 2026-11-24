@@ -3992,6 +3992,87 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
+        ///   查找类似 设备配置已使用此路径。 的本地化字符串。
+        /// </summary>
+        public static string DeviceDataPathAlreadyApplied {
+            get {
+                return ResourceManager.GetString("DeviceDataPathAlreadyApplied", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 相机服务将在下次重载时使用新路径（{0}）。 的本地化字符串。
+        /// </summary>
+        public static string DeviceDataPathCameraPending {
+            get {
+                return ResourceManager.GetString("DeviceDataPathCameraPending", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 配置路径 的本地化字符串。
+        /// </summary>
+        public static string DeviceDataPathConfigure {
+            get {
+                return ResourceManager.GetString("DeviceDataPathConfigure", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 请输入有效的完整路径，例如 D:\CVTest。 的本地化字符串。
+        /// </summary>
+        public static string DeviceDataPathInvalid {
+            get {
+                return ResourceManager.GetString("DeviceDataPathInvalid", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 当前没有需要配置数据路径的设备。 的本地化字符串。
+        /// </summary>
+        public static string DeviceDataPathNoDevices {
+            get {
+                return ResourceManager.GetString("DeviceDataPathNoDevices", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 等待重载的设备为 {0}。再次应用可重试。 的本地化字符串。
+        /// </summary>
+        public static string DeviceDataPathReloadPending {
+            get {
+                return ResourceManager.GetString("DeviceDataPathReloadPending", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 已请求重载 {0} 台设备。 的本地化字符串。
+        /// </summary>
+        public static string DeviceDataPathReloadRequested {
+            get {
+                return ResourceManager.GetString("DeviceDataPathReloadRequested", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 设备列表或配置库已变更，请重新打开“设备配置”后重试。 的本地化字符串。
+        /// </summary>
+        public static string DeviceDataPathStale {
+            get {
+                return ResourceManager.GetString("DeviceDataPathStale", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 已统一 {0} 台设备的数据基础路径。 的本地化字符串。
+        /// </summary>
+        public static string DeviceDataPathUpdated {
+            get {
+                return ResourceManager.GetString("DeviceDataPathUpdated", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   查找类似 设备标识已存在,不允许重复添加 的本地化字符串。
         /// </summary>
         public static string DeviceIdentifierAlreadyExists {

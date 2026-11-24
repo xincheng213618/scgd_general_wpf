@@ -4,6 +4,7 @@
         xmlns:devices="clr-namespace:ColorVision.Engine.Services"
         xmlns:core="clr-namespace:ColorVision.Engine.Services.PhyCameras.Group"
         xmlns:terminal="clr-namespace:ColorVision.Engine.Services.Terminal"
+        xmlns:engine="clr-namespace:ColorVision.Engine"
         xmlns:properties="clr-namespace:ColorVision.Engine.Properties"
         Title="{x:Static properties:Resources.WindowServiceTitle}"
         Height="680" Width="1040" MinHeight="520" MinWidth="820"
@@ -126,6 +127,8 @@
                         </ContextMenu>
                     </Button.ContextMenu>
                 </Button>
+                <Button x:Name="ConfigureDataPathButton" Style="{StaticResource NavButton}" Click="ConfigureDataPath_Click"
+                        Content="{engine:EngineLang DeviceDataPathConfigure}"/>
                 <Button Style="{StaticResource NavButton}" Click="ButtonPhyCameraManager_Click">
                     <StackPanel Orientation="Horizontal">
                         <TextBlock Style="{StaticResource IconText}" Text="&#xE722;"/>
