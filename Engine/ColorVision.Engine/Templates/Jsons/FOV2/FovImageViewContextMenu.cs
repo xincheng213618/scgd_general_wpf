@@ -60,7 +60,8 @@ namespace ColorVision.Engine.Templates.Jsons.FOV2
 
         [Category("发光区定位")]
         [DisplayName("最低可信度")]
-        [Description("所选模式的发光区定位结果低于此可信度时拒绝计算；范围 0 到 1。")]
+        [Description("四角自动定位所需的最低可信度，范围 0 到 1。")]
+        [PropertyVisibility(nameof(MeasurementMode), FovMeasurementMode.FourCorners)]
         [Range(0d, 1d)]
         [PropertyEditorType(typeof(SliderPropertiesEditor))]
         public double MinimumConfidence
@@ -339,7 +340,7 @@ namespace ColorVision.Engine.Templates.Jsons.FOV2
                 string.Empty,
                 $"FovDist: {measurement.FovDist:G12}",
                 $"cameraDegrees: {measurement.CameraDegrees:G12}",
-                $"定位可信度: {result.Calculation!.Detection?.Confidence?.ToString("F3") ?? "N/A"}",
+                $"{(measurement.Mode == FovMeasurementMode.CurvedBoundary ? "最弱弧边缘对比度（参考）" : "定位可信度")}: {result.Calculation!.Detection?.Confidence?.ToString("F3") ?? "N/A"}",
                 $"测量模式: {(measurement.Mode == FovMeasurementMode.CurvedBoundary ? "轮廓（实际中心边界，D 为两条中心斜向跨度均值）" : "四角")}",
                 $"边界来源: {result.Calculation!.BoundaryMode}",
                 $"耗时: {result.TotalTime} ms"

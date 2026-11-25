@@ -13,6 +13,10 @@ namespace ColorVision.Core
     {
         private const int MaximumSeedDimension = 1024;
         private const int ContourSamples = 720;
+        private const double RayAngleStep = 2 * Math.PI / ContourSamples;
+        // A weak candidate may need a second look at its position.
+        private const double WeakEdgeContrast = 0.25;
+        private const double NeighborContrastFraction = 0.8;
 
         [Flags]
         private enum ImageEdge
@@ -24,10 +28,19 @@ namespace ColorVision.Core
             Bottom = 8
         }
 
-        internal static (LuminousAreaDetectionResult Detection, FovBoundaryGeometry Geometry) Detect(HImage image, RoiRect roi, double minimumConfidence)
+        private readonly record struct RayBoundary(LuminousAreaPoint Point, double Radius, double Contrast, ImageEdge FrameEdges, bool OuterSampleIsLit)
+        {
+            public bool IsWeak => FrameEdges == ImageEdge.None && Contrast < WeakEdgeContrast;
+        }
+
+        private readonly record struct EdgeSearch(double Start, double End, double MinimumContrast, bool RequireExterior = false);
+
+        internal static (LuminousAreaDetectionResult Detection, FovBoundaryGeometry Geometry) Detect(HImage image, RoiRect roi)
         {
             ImageReader reader = new(image, roi);
             int step = Math.Max(1, (int)Math.Ceiling(Math.Max(reader.Width, reader.Height) / (double)MaximumSeedDimension));
+            double smoothing = Math.Max(1, step / 2d);
+            double plateauDistance = 2 * step + 2 * smoothing;
             int width = (reader.Width + step - 1) / step;
             int height = (reader.Height + step - 1) / step;
             double[] values = reader.ReadSeedGrid(step, width, height);
@@ -114,13 +127,28 @@ namespace ColorVision.Core
             LuminousAreaPoint center = new((minX + maxX) / 2, (minY + maxY) / 2);
             if (ComponentIndex(center) < 0) throw new InvalidOperationException("曲边模式要求中心位于连续、填充的发光区内。");
 
-            double confidence = 1;
-            bool hasMeasuredEdge = false;
             ImageEdge usedImageEdges = ImageEdge.None;
+            int recoveredRays = 0;
+            int skippedExtremumProbes = 0;
             Dictionary<double, double> raySamples = new();
             List<LuminousAreaPoint> contour = new(ContourSamples + 4);
+            var initialContour = new RayBoundary[ContourSamples];
+            var measuredContrasts = new double?[ContourSamples];
             for (int sample = 0; sample < ContourSamples; sample++)
-                contour.Add(FindBoundary(center, 2 * Math.PI * sample / ContourSamples));
+                initialContour[sample] = FindBoundary(center, 2 * Math.PI * sample / ContourSamples);
+            for (int sample = 0; sample < ContourSamples; sample++)
+            {
+                RayBoundary boundary = initialContour[sample];
+                if (boundary.IsWeak)
+                {
+                    int previous = (sample + ContourSamples - 1) % ContourSamples;
+                    int next = (sample + 1) % ContourSamples;
+                    boundary = RecoverWeakBoundary(center, 2 * Math.PI * sample / ContourSamples,
+                        boundary, initialContour[previous], initialContour[next]);
+                }
+                if (boundary.FrameEdges == ImageEdge.None) measuredContrasts[sample] = boundary.Contrast;
+                contour.Add(RecordBoundary(boundary));
+            }
 
             // Include support-extremum directions to keep narrow tips between
             // uniform rays. They are contour samples, not assumed image corners.
@@ -133,10 +161,18 @@ namespace ColorVision.Core
                 LuminousAreaPoint best = contour.MaxBy(point => Support(point, corner));
                 for (int sample = -8; sample <= 8; sample++)
                 {
-                    LuminousAreaPoint point = FindBoundary(center, angle + searchAngle * sample / 8, includeConfidence: false);
-                    if (Support(point, corner) > Support(best, corner)) best = point;
+                    // A probe only refines an extremum already supported by
+                    // the measured ring. Keep that extremum if the probe
+                    // cannot supply a usable local gradient.
+                    RayBoundary? probe = LocateBoundary(center, angle + searchAngle * sample / 8);
+                    if (probe is not RayBoundary measured)
+                    {
+                        skippedExtremumProbes++;
+                        continue;
+                    }
+                    if (Support(measured.Point, corner) > Support(best, corner)) best = measured.Point;
                 }
-                best = FindBoundary(center, Math.Atan2(best.Y - center.Y, best.X - center.X));
+                best = MeasureBoundary(center, Math.Atan2(best.Y - center.Y, best.X - center.X));
                 corners[corner] = best;
                 contour.Add(best);
             }
@@ -149,20 +185,20 @@ namespace ColorVision.Core
             FovBoundaryGeometry geometry = new()
             {
                 Center = center,
-                Left = FindBoundary(center, Math.PI),
-                Right = FindBoundary(center, 0),
-                Top = FindBoundary(center, -Math.PI / 2),
-                Bottom = FindBoundary(center, Math.PI / 2),
-                DiagonalPoints = [FindBoundary(center, diagonalAngle - Math.PI), FindBoundary(center, -diagonalAngle),
-                    FindBoundary(center, diagonalAngle), FindBoundary(center, Math.PI - diagonalAngle)],
+                Left = MeasureBoundary(center, Math.PI),
+                Right = MeasureBoundary(center, 0),
+                Top = MeasureBoundary(center, -Math.PI / 2),
+                Bottom = MeasureBoundary(center, Math.PI / 2),
+                DiagonalPoints = [MeasureBoundary(center, diagonalAngle - Math.PI), MeasureBoundary(center, -diagonalAngle),
+                    MeasureBoundary(center, diagonalAngle), MeasureBoundary(center, Math.PI - diagonalAngle)],
                 Contour = contour.OrderBy(point => Math.Atan2(point.Y - center.Y, point.X - center.X)).ToArray()
             };
-            if (!hasMeasuredEdge)
-                throw new InvalidOperationException("曲边发光区没有可定位的明暗边界。");
-            if (confidence < minimumConfidence)
-                throw new InvalidOperationException($"曲边发光区定位可信度 {confidence:F3} 低于要求 {minimumConfidence:F3}。");
-            string diagnostic = $"SeedStep={step}; Seed=NoiseBoundedOtsu; Sampling=SpatialMedian; ContourSamples={contour.Count}; Edge=ContrastSupportedLocalGradient; Center=ContourBounds; Axes=ImageXY.";
+            double confidence = CalculateContourConfidence(measuredContrasts)
+                ?? throw new InvalidOperationException("曲边发光区没有可定位的明暗边界。");
+            string diagnostic = $"SeedStep={step}; Seed=NoiseBoundedOtsu; Sampling=SpatialMedian; ContourSamples={contour.Count}; Edge=ContrastSupportedLocalGradient; Center=ContourBounds; Axes=ImageXY; Confidence=WeakestSupportedArc.";
             if (usedImageEdges != ImageEdge.None) diagnostic += $" FrameEdges={usedImageEdges}.";
+            if (recoveredRays > 0) diagnostic += $" NeighborRecoveredRays={recoveredRays}.";
+            if (skippedExtremumProbes > 0) diagnostic += $" SkippedExtremumProbes={skippedExtremumProbes}.";
             LuminousAreaDetectionResult detection = new(true, "CurvedBoundary", null, confidence, null, string.Empty, null, diagnostic: diagnostic);
             return (detection, geometry);
 
@@ -178,7 +214,65 @@ namespace ColorVision.Core
                 return labels[index] == largestLabel ? index : -1;
             }
 
-            LuminousAreaPoint FindBoundary(LuminousAreaPoint origin, double angle, bool includeConfidence = true)
+            LuminousAreaPoint RecordBoundary(RayBoundary boundary)
+            {
+                usedImageEdges |= boundary.FrameEdges;
+                return boundary.Point;
+            }
+
+            LuminousAreaPoint MeasureBoundary(LuminousAreaPoint origin, double angle)
+            {
+                RayBoundary boundary = FindBoundary(origin, angle);
+                if (boundary.IsWeak)
+                {
+                    // Supplemental rays guide this measurement. They must not
+                    // invalidate a ray that already has its own measured edge.
+                    try
+                    {
+                        RayBoundary previous = FindBoundary(origin, angle - RayAngleStep);
+                        RayBoundary next = FindBoundary(origin, angle + RayAngleStep);
+                        boundary = RecoverWeakBoundary(origin, angle, boundary, previous, next);
+                    }
+                    catch (InvalidOperationException)
+                    {
+                    }
+                }
+                return RecordBoundary(boundary);
+            }
+
+            RayBoundary RecoverWeakBoundary(LuminousAreaPoint origin, double angle, RayBoundary boundary,
+                RayBoundary previous, RayBoundary next)
+            {
+                if (previous.FrameEdges != ImageEdge.None || next.FrameEdges != ImageEdge.None)
+                    return boundary;
+
+                // A shadow can span several rays. If the outer flank is still
+                // lit, look for a separate transition to background within the
+                // original seed bracket. The two sampling windows cannot overlap.
+                if (previous.IsWeak || next.IsWeak)
+                {
+                    if (!boundary.OuterSampleIsLit) return boundary;
+                    var exterior = new EdgeSearch(boundary.Radius + 2 * plateauDistance, double.PositiveInfinity, WeakEdgeContrast, RequireExterior: true);
+                    return LocateBoundary(origin, angle, exterior) ?? boundary;
+                }
+
+                double expectedRadius = (previous.Radius + next.Radius) / 2;
+                double tolerance = Math.Max(2 * step, Math.Abs(previous.Radius - next.Radius));
+                if (Math.Abs(boundary.Radius - expectedRadius) <= tolerance) return boundary;
+
+                // Neighboring rays only constrain the search. The replacement
+                // must be an independently measured gradient on this ray.
+                double minimumContrast = Math.Max(WeakEdgeContrast, Math.Min(previous.Contrast, next.Contrast) * NeighborContrastFraction);
+                var search = new EdgeSearch(expectedRadius - tolerance, expectedRadius + tolerance, minimumContrast);
+                RayBoundary corrected = LocateBoundary(origin, angle, search) ?? boundary;
+                if (corrected != boundary) recoveredRays++;
+                return corrected;
+            }
+
+            RayBoundary FindBoundary(LuminousAreaPoint origin, double angle) =>
+                LocateBoundary(origin, angle) ?? throw new InvalidOperationException("曲边发光区存在缺失、裁切或低对比边界。");
+
+            RayBoundary? LocateBoundary(LuminousAreaPoint origin, double angle, EdgeSearch? search = null)
             {
                 raySamples.Clear();
                 double dx = Math.Cos(angle);
@@ -217,26 +311,31 @@ namespace ColorVision.Core
                 // A dark opening in the edge must use its measured light-to-dark transition.
                 if (canEndAtImageEdge && limit - radius <= step && At(limit) > threshold)
                 {
-                    if (includeConfidence) usedImageEdges |= limitEdges;
-                    return new(
+                    LuminousAreaPoint point = new(
                         (limitEdges & ImageEdge.Left) != ImageEdge.None ? reader.X :
                             (limitEdges & ImageEdge.Right) != ImageEdge.None ? right : origin.X + dx * limit,
                         (limitEdges & ImageEdge.Top) != ImageEdge.None ? reader.Y :
                             (limitEdges & ImageEdge.Bottom) != ImageEdge.None ? bottom : origin.Y + dy * limit);
+                    return new(point, limit, 1, limitEdges, false);
                 }
-                double smoothing = Math.Max(1, step / 2d);
                 // The bright and dim seeds bracket vignetting. Allow four seed
                 // cells for sampling/median uncertainty, but do not search far
                 // outside this component and jump onto an unrelated lens ring.
                 double start = Math.Max(smoothing, (double.IsNaN(innerRadius) ? radius : innerRadius) - 4 * step);
                 double end = Math.Min(radius + 4 * step, limit);
-                double plateauDistance = 2 * step + 2 * smoothing;
+                double minimumDrop = (maximum - minimum) * 0.01;
+                if (search is { } guided)
+                {
+                    start = Math.Max(start, guided.Start);
+                    end = Math.Min(end, guided.End);
+                }
                 double bestScore = double.NegativeInfinity;
                 double bestDrop = double.NegativeInfinity;
                 double bestRadius = 0;
                 int ties = 0;
                 double coarseStep = Math.Max(1, step / 2d);
                 Search(start, end, coarseStep);
+                if (!double.IsFinite(bestDrop)) return null;
                 double refinementStart = Math.Max(start, bestRadius - coarseStep);
                 double refinementEnd = Math.Min(end, bestRadius + coarseStep);
                 bestScore = double.NegativeInfinity;
@@ -245,15 +344,13 @@ namespace ColorVision.Core
                 Search(refinementStart, refinementEnd, 1);
                 double inside = At(bestRadius - plateauDistance);
                 double outside = At(bestRadius + plateauDistance);
-                if (!double.IsFinite(bestDrop) || bestDrop <= (maximum - minimum) * 0.01 || !double.IsFinite(inside) || !double.IsFinite(outside))
-                    throw new InvalidOperationException("曲边发光区存在缺失、裁切或低对比边界。");
-                double contrast = Math.Clamp((inside - outside) / Math.Max(inside - minimum, (maximum - minimum) * 1e-6), 0, 1);
-                if (includeConfidence)
+                if (!double.IsFinite(bestDrop) || bestDrop <= minimumDrop || !double.IsFinite(inside) || !double.IsFinite(outside))
                 {
-                    hasMeasuredEdge = true;
-                    confidence = Math.Min(confidence, contrast);
+                    return null;
                 }
-                return new(origin.X + dx * bestRadius, origin.Y + dy * bestRadius);
+                double contrast = Math.Clamp((inside - outside) / Math.Max(inside - minimum, (maximum - minimum) * 1e-6), 0, 1);
+                if (search is { } recovery && (contrast < recovery.MinimumContrast || (recovery.RequireExterior && outside > threshold))) return null;
+                return new(new(origin.X + dx * bestRadius, origin.Y + dy * bestRadius), bestRadius, contrast, ImageEdge.None, outside > threshold);
 
                 void Search(double from, double to, double increment)
                 {
@@ -263,6 +360,9 @@ namespace ColorVision.Core
                         double localInside = At(r - plateauDistance);
                         double localOutside = At(r + plateauDistance);
                         double localContrast = Math.Clamp((localInside - localOutside) / Math.Max(localInside - minimum, (maximum - minimum) * 1e-6), 0, 1);
+                        if (search is { } guided && !(drop > minimumDrop && localContrast >= guided.MinimumContrast
+                            && (!guided.RequireExterior || localOutside <= threshold)))
+                            continue;
                         // A text stroke can have a strong gradient without a
                         // sustained light-to-dark transition across the edge.
                         double score = Math.Max(0, drop) * localContrast;
@@ -294,6 +394,28 @@ namespace ColorVision.Core
                     return value;
                 }
             }
+        }
+
+        // Each entry represents one uniformly spaced ray. Null marks a frame
+        // closure without a measured gradient and breaks adjacency.
+        internal static double? CalculateContourConfidence(IReadOnlyList<double?> contrasts)
+        {
+            double? confidence = null;
+            int count = contrasts.Count;
+            for (int index = 0; index < count; index++)
+            {
+                if (contrasts[index] is not double localContrast) continue;
+                // Ignore an isolated dip only when both immediate neighbors
+                // support it. Always read the original values so two adjacent
+                // weak rays remain visible in the diagnostic, including at 360°.
+                if (count >= 3 && contrasts[(index + count - 1) % count] is double previous
+                    && contrasts[(index + 1) % count] is double next)
+                {
+                    localContrast = Math.Max(localContrast, Math.Min(previous, next));
+                }
+                confidence = Math.Min(confidence ?? localContrast, localContrast);
+            }
+            return confidence;
         }
 
         private static void ValidateFilledComponent(int[] labels, int[] queue, int width, int height, int component)

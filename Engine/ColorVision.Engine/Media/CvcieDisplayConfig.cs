@@ -57,7 +57,7 @@ namespace ColorVision.Engine.Media
         }
 
         [Category("CVCIE 显示"), DisplayName("启用真彩显示")]
-        [Description("启用后，新打开的 CVCIE 默认显示 XYZ 真彩 sRGB；关闭后默认显示原图。图层临时切换不改变此开关，转换异常只记日志并回退原图或 Y 灰度。")]
+        [Description("启用后，新打开的 CVCIE 和带可重放 XYZ 校正的 CVRAW 默认显示真彩 sRGB。关闭后默认显示原图。临时切换图层不改变此设置。转换失败时记日志并回退原图或 Y 灰度。")]
         [JsonIgnore]
         public bool EnableTrueColor
         {

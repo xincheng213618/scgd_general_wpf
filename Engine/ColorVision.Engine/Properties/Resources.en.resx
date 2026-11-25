@@ -6787,7 +6787,7 @@ Range {6:G8} to {7:G8}; map is read-only. Preview is a sampled heatmap. V1 uses 
   <data name="原图（CVRAW）" xml:space="preserve"><value>Original Image (CVRAW)</value></data>
   <data name="原始采样点数。均值滤波沿用原规则：小于等于 2 时使用 5 点，支持偶数窗口；SG 必须使用 3～2047 的奇数，且不超过实际采样点数。" xml:space="preserve"><value>Raw sample count. Mean filtering keeps the existing rules: values at or below 2 use 5 points; even windows are supported. SG requires an odd number from 3 to 2047, no greater than the actual sample count.</value></data>
   <data name="参考白亮度" xml:space="preserve"><value>Reference White Luminance</value></data>
-  <data name="启用后，新打开的 CVCIE 默认显示 XYZ 真彩 sRGB；关闭后默认显示原图。图层临时切换不改变此开关，转换异常只记日志并回退原图或 Y 灰度。" xml:space="preserve"><value>When enabled, newly opened CVCIE images default to XYZ true-color sRGB; otherwise they show the original image. Temporary layer changes do not change this setting. Conversion errors are logged and fall back to the original image or Y grayscale.</value></data>
+  <data name="启用后，新打开的 CVCIE 和带可重放 XYZ 校正的 CVRAW 默认显示真彩 sRGB。关闭后默认显示原图。临时切换图层不改变此设置。转换失败时记日志并回退原图或 Y 灰度。" xml:space="preserve"><value>When enabled, CVCIE and CVRAW with replayable XYZ calibration open in true-color sRGB. When disabled, they open in the original view. Temporary layer changes leave this setting as is. Conversion failures are logged and fall back to the original view or Y grayscale.</value></data>
   <data name="启用真彩显示" xml:space="preserve"><value>Enable True Color</value></data>
   <data name="周期（ms）" xml:space="preserve"><value>Period (ms)</value></data>
   <data name="四线制" xml:space="preserve"><value>Four-Wire</value></data>

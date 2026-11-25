@@ -64,12 +64,14 @@ public sealed class RawColorCalibrationTests
             Assert.Equal(PoiMeasurementService.CalculateRaw(full, points), PoiMeasurementService.CalculateRaw(demand, points));
             ClosedPixelRegion polygon = ClosedPixelRegion.Polygon([new Point(3, 3), new Point(12, 4), new Point(7, 14)]);
             Assert.Equal(PoiMeasurementService.CalculateRegion(full, polygon, true), PoiMeasurementService.CalculateRegion(demand, polygon, true));
+            AssertXyzChunkMatchesExpected();
             Assert.Equal(0, demand.RawSource!.CachedXyzBytes);
             Assert.False(demand.RawSource.TryGetCachedChannel(0, out _));
             // Repeated large regions promote to a reusable full buffer with the same result.
             PoiMeasurementPoint large = new(width / 2, height / 2, width, height, PoiMeasurementShape.Rect);
             Assert.Equal(PoiMeasurementService.CalculateRaw(full, [large]), PoiMeasurementService.CalculateRaw(demand, [large]));
             Assert.Equal(expected.Length, demand.RawSource.CachedXyzBytes);
+            AssertXyzChunkMatchesExpected();
             int lastChannel = channels - 1;
             Assert.True(demand.RawSource.TryGetCachedChannel(lastChannel, out var preview));
             Array.Fill(demand.RawSource.CreateChannel(lastChannel), (byte)0);
@@ -77,6 +79,20 @@ public sealed class RawColorCalibrationTests
             Assert.True(preview.Span.SequenceEqual(expected.AsSpan(lastChannel * width * height * sizeof(float))));
             Assert.Throws<ObjectDisposedException>(() => demand.RawSource.CreateChannel(0));
             Assert.Throws<ObjectDisposedException>(() => demand.RawSource.TryGetCachedChannel(0, out _));
+
+            void AssertXyzChunkMatchesExpected()
+            {
+                if (channels != 3) return;
+                const int start = width - 3, count = width + 4;
+                float[] chunk = new float[count * channels];
+                demand.RawSource!.ReadXyzChunk(start, chunk, CancellationToken.None);
+                for (int channel = 0; channel < channels; channel++)
+                {
+                    int offset = (channel * width * height + start) * sizeof(float);
+                    Span<byte> plane = MemoryMarshal.AsBytes(chunk.AsSpan(channel * count, count));
+                    Assert.Equal(expected.AsSpan(offset, plane.Length).ToArray(), plane.ToArray());
+                }
+            }
         }
         finally { OpenCVCalibration.M_CalibrationDestroy(context); File.Delete(calibration); }
     }

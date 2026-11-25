@@ -3,6 +3,7 @@ using ColorVision.Engine.Templates.Jsons.FOV2;
 using ColorVision.Themes;
 using ColorVision.UI;
 using System.IO;
+using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -10,6 +11,26 @@ namespace ColorVision.UI.Tests;
 
 public sealed class FovImageViewSettingsTests
 {
+    [Fact]
+    public void MinimumConfidenceIsVisibleOnlyForFourCorners()
+    {
+        WithConfig((config, _) => Edit(config, (window, draft) =>
+        {
+            Panel properties = Assert.IsAssignableFrom<Panel>(window.FindName("PropertyPanel"));
+            DockPanel minimumConfidence = Assert.Single(properties.Children.OfType<Border>()
+                .SelectMany(border => Assert.IsType<StackPanel>(border.Child).Children.OfType<DockPanel>()),
+                row => (row.Tag as PropertyInfo)?.Name == nameof(FovImageViewOptions.MinimumConfidence));
+
+            Assert.Equal(Visibility.Visible, minimumConfidence.Visibility);
+            draft.MinimumConfidence = 0.61;
+            draft.MeasurementMode = FovMeasurementMode.CurvedBoundary;
+            Assert.Equal(Visibility.Collapsed, minimumConfidence.Visibility);
+            draft.MeasurementMode = FovMeasurementMode.FourCorners;
+            Assert.Equal(Visibility.Visible, minimumConfidence.Visibility);
+            Assert.Equal(0.61, draft.MinimumConfidence);
+        }));
+    }
+
     [Fact]
     public void FovImageViewRetainsConfirmedOptionsAndOnlyAppliesConfirmedDefaults()
     {

@@ -7737,7 +7737,7 @@
   <data name="原图（CVRAW）" xml:space="preserve"><value>原圖（CVRAW）</value></data>
   <data name="原始采样点数。均值滤波沿用原规则：小于等于 2 时使用 5 点，支持偶数窗口；SG 必须使用 3～2047 的奇数，且不超过实际采样点数。" xml:space="preserve"><value>原始採樣點數。均值濾波沿用原規則：小於等於 2 時使用 5 點，支持偶數窗口；SG 必須使用 3～2047 的奇數，且不超過實際採樣點數。</value></data>
   <data name="参考白亮度" xml:space="preserve"><value>參考白亮度</value></data>
-  <data name="启用后，新打开的 CVCIE 默认显示 XYZ 真彩 sRGB；关闭后默认显示原图。图层临时切换不改变此开关，转换异常只记日志并回退原图或 Y 灰度。" xml:space="preserve"><value>啓用後，新打開的 CVCIE 默認顯示 XYZ 真彩 sRGB；關閉後默認顯示原圖。圖層臨時切換不改變此開關，轉換異常只記日誌並回退原圖或 Y 灰度。</value></data>
+  <data name="启用后，新打开的 CVCIE 和带可重放 XYZ 校正的 CVRAW 默认显示真彩 sRGB。关闭后默认显示原图。临时切换图层不改变此设置。转换失败时记日志并回退原图或 Y 灰度。" xml:space="preserve"><value>啓用後，新打開的 CVCIE 和帶可重放 XYZ 校正的 CVRAW 默認顯示真彩 sRGB。關閉後默認顯示原圖。臨時切換圖層不改變此設置。轉換失敗時記日誌並回退原圖或 Y 灰度。</value></data>
   <data name="启用真彩显示" xml:space="preserve"><value>啓用真彩顯示</value></data>
   <data name="周期（ms）" xml:space="preserve"><value>週期（ms）</value></data>
   <data name="四线制" xml:space="preserve"><value>四線制</value></data>

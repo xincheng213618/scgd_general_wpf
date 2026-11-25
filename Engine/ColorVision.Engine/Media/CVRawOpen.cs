@@ -537,7 +537,8 @@ namespace ColorVision.Engine.Media
                     imageView.Config.SetOpenerRuntime("HasCieMeasurements", true, nameof(CVRawOpen), "RAW 与当前色度参数可按需测量");
                     imageView.Config.SetOpenerRuntime("meta", meta, nameof(CVRawOpen), "RAW 原始文件头");
                     imageView.Config.SetOpenerRuntime("Exp", snapshot.Exposure, nameof(CVRawOpen), "色度校正实际曝光");
-                    CvRawLayerController calibrated = CvRawLayerController.CreateCalibratedRaw(imageView, filePath, buffer.RawSource!, displayedLayerId, null);
+                    CvRawLayerController calibrated = CvRawLayerController.CreateCalibratedRaw(imageView, filePath, buffer.RawSource!, displayedLayerId,
+                        sourcePixels: null, includeSrgb: true);
                     imageView.SetLayerController(calibrated);
                     imageView.EditorContext.IEditorToolFactory.ApplyImageOpenTools(this);
                     return calibrated;
@@ -1104,7 +1105,7 @@ namespace ColorVision.Engine.Media
             // Config.ClearProperties normally does this first. Also protect callers that invoke the opener directly.
             ReplaceMeasurementBuffer(null);
             CvcieDisplayConfig displayConfig = CvcieDisplayConfig.Current;
-            bool preferSrgb = displayConfig.EnableTrueColor && isCie;
+            bool preferSrgb = displayConfig.EnableTrueColor;
             CvcieBrightnessMode brightnessMode = displayConfig.BrightnessMode;
             double referenceWhite = displayConfig.ReferenceWhiteLuminance;
             ImageView view = context.ImageView;
@@ -1148,7 +1149,7 @@ namespace ColorVision.Engine.Media
                         throw new OperationCanceledException("Image open request was superseded.", cancellationToken);
                     CvcieFileRevision? fileRevision = isCie ? CvcieFileRevision.Capture(requestedFilePath) : null;
                     WriteableBitmap? srgb = null;
-                    if (preferSrgb)
+                    if (isCie && preferSrgb)
                     {
                         try
                         {
@@ -1308,6 +1309,22 @@ namespace ColorVision.Engine.Media
                     }
                     CVCIEFile cVCIEFile = displaySource?.File ?? viewMetadata?.Header
                         ?? throw new InvalidDataException($"CVCIE 文件头无效：{requestedFilePath}");
+                    if (isRaw && preferSrgb && viewMetadata?.Calibration is { CanReplay: true, Channels: 3 } calibration)
+                    {
+                        try
+                        {
+                            // The file-open gate owns these RAW pixels until publication. Replay without allocating full XYZ planes.
+                            using RawColorMeasurementSource rawColor = new(cVCIEFile, calibration);
+                            srgb = await CvcieSrgbRenderer.RenderRawForDisplayAsync(rawColor, brightnessMode, referenceWhite,
+                                view.Dispatcher, CvRawLayerController.DisplayCacheBudgetBytes, cancellationToken);
+                            displayBitmap = srgb;
+                        }
+                        catch (OperationCanceledException) { throw; }
+                        catch (Exception ex)
+                        {
+                            log.Warn($"CVRAW 真彩转换失败，回退原图：{requestedFilePath}", ex);
+                        }
+                    }
                     if (stagedRaw is { } rawDisplay)
                     {
                         displayBitmap = await PrepareStreamedDisplayAsync(rawDisplay.ReadPixels, cVCIEFile, rawDisplay.Format);
@@ -1326,9 +1343,10 @@ namespace ColorVision.Engine.Media
                     await view.Dispatcher.InvokeAsync(async () =>
                     {
                         VerifyOpenTarget();
-                        WriteableBitmap? editableDisplay = displaySource?.StreamedRaw != null || stagedRaw.HasValue || stagedLuminance ? displayBitmap : null;
+                        WriteableBitmap? editableDisplay = displaySource?.StreamedRaw != null || stagedRaw.HasValue || stagedLuminance
+                            || (isRaw && srgb is { IsFrozen: false }) ? displayBitmap : null;
                         (ImageSource? Source, long Revision, long ContentVersion)? stagingTarget =
-                            editableDisplay == null && !cachedRawReuse.HasValue ? null : initialTarget;
+                            editableDisplay != null || cachedRawReuse.HasValue || (isRaw && srgb != null) ? initialTarget : null;
                         if (displayBitmap is { IsFrozen: true } frozen && EditableBitmapCopy.ShouldCopyInBackground(frozen))
                         {
                             editableDisplay = await EditableBitmapCopy.CreateAsync(frozen, cancellationToken);
@@ -1360,7 +1378,7 @@ namespace ColorVision.Engine.Media
                         context.Config.SetImageMetadata("FileExtType", cVCIEFile.FileExtType, nameof(CVRawOpen), "CVCIE 文件扩展类型");
                         context.Config.SetImageMetadata("srcFileName", cVCIEFile.SrcFileName, nameof(CVRawOpen), "CVCIE 关联源文件名");
 
-                        bool hasRgbLayers = cVCIEFile.Channels >= 3 && (srgb != null
+                        bool hasRgbLayers = cVCIEFile.Channels >= 3 && (isCie && srgb != null
                             ? associatedSource != null : !usesLuminance);
                         CvRawLayerController? controller = InitializeCvFileView(view, requestedFilePath,
                             srgb != null ? "cie-srgb" : usesLuminance ? "cie-y" : "composite", hasRgbLayers, viewMetadata, cVCIEFile, fileRevision);
@@ -1471,7 +1489,8 @@ namespace ColorVision.Engine.Media
             EditorContext.Config.SetImageMetadata(RawCalibrationInformationProvider.MetadataKey, snapshot, nameof(CalibratedImageCapability), "图像内嵌的实际校正参数");
             InstallProfileSources(buffer, snapshot);
             if (buffer.RawSource != null)
-                EditorContext.ImageView.SetLayerController(CvRawLayerController.CreateCalibratedRaw(EditorContext.ImageView, path, buffer.RawSource, "composite", sourcePixels));
+                EditorContext.ImageView.SetLayerController(CvRawLayerController.CreateCalibratedRaw(EditorContext.ImageView, path, buffer.RawSource,
+                    "composite", sourcePixels, includeSrgb: false));
         }
 
         private void InstallProfileSources(PoiMeasurementBuffer buffer, ColorCalibrationSnapshot? snapshot)

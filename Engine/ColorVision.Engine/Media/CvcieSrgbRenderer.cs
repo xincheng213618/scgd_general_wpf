@@ -1,6 +1,8 @@
+using ColorVision.Engine.Services.POI;
 using ColorVision.FileIO;
 using ColorVision.ImageEditor.Presentation;
 using System;
+using System.Buffers;
 using System.IO;
 using System.Numerics;
 using System.Runtime.CompilerServices;
@@ -32,13 +34,14 @@ namespace ColorVision.Engine.Media
         {
             ArgumentNullException.ThrowIfNull(file);
             cancellationToken.ThrowIfCancellationRequested();
-            int pixelCount = ValidateRender(file, brightnessMode, referenceWhiteLuminance);
+            int pixelCount = ValidateRender(file.Cols, file.Rows, file.Channels, file.Bpp, brightnessMode, referenceWhiteLuminance);
             long expectedLength = GetXyzByteLength(pixelCount, file.Bpp);
             byte[]? data = file.Data;
             if (data == null || data.LongLength != expectedLength)
                 throw new InvalidOperationException($"CVCIE XYZ 数据长度不匹配：需要 {expectedLength} 字节，实际 {data?.LongLength ?? 0} 字节。请检查文件是否完整。");
 
-            return PrepareRender(new XyzInput(data, null), file, pixelCount, brightnessMode, referenceWhiteLuminance, cancellationToken);
+            return PrepareRender(new XyzInput(data, null), file.Cols, file.Rows, file.Bpp, pixelCount,
+                brightnessMode, referenceWhiteLuminance, cancellationToken);
         }
 
         public static WriteableBitmap RenderFile(string filePath, CvcieBrightnessMode brightnessMode, double referenceWhiteLuminance, CancellationToken cancellationToken)
@@ -62,6 +65,16 @@ namespace ColorVision.Engine.Media
             => PrepareMemoryRender(file, brightnessMode, referenceWhiteLuminance, cancellationToken)
                 .CreateForDisplayAsync(dispatcher, cacheBudgetBytes, cancellationToken);
 
+        internal static Task<WriteableBitmap> RenderRawForDisplayAsync(RawColorMeasurementSource source, CvcieBrightnessMode brightnessMode,
+            double referenceWhiteLuminance, Dispatcher dispatcher, long cacheBudgetBytes, CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            const int xyzBpp = 32;
+            int pixelCount = ValidateRender(source.Width, source.Height, source.Channels, xyzBpp, brightnessMode, referenceWhiteLuminance);
+            return PrepareRender(new XyzInput(null, null, source), source.Width, source.Height, xyzBpp, pixelCount,
+                brightnessMode, referenceWhiteLuminance, cancellationToken).CreateForDisplayAsync(dispatcher, cacheBudgetBytes, cancellationToken);
+        }
+
         private static RenderPlan PrepareFileRender(FileStream stream, string filePath, CvcieBrightnessMode brightnessMode,
             double referenceWhiteLuminance, CancellationToken cancellationToken)
         {
@@ -70,19 +83,19 @@ namespace ColorVision.Engine.Media
             {
                 if (offset <= 0 || !Supports(header.Channels, header.Bpp))
                     throw new InvalidDataException($"读取 CVCIE 内嵌 XYZ 失败：{filePath}");
-                int pixelCount = ValidateRender(header, brightnessMode, referenceWhiteLuminance);
+                int pixelCount = ValidateRender(header.Cols, header.Rows, header.Channels, header.Bpp, brightnessMode, referenceWhiteLuminance);
                 CvcieDiskPixels pixels = CvcieDiskPixels.Locate(stream, header, offset, GetXyzByteLength(pixelCount, header.Bpp), requireExactLength: true);
-                return PrepareRender(new XyzInput(null, pixels), header, pixelCount,
+                return PrepareRender(new XyzInput(null, pixels), header.Cols, header.Rows, header.Bpp, pixelCount,
                     brightnessMode, referenceWhiteLuminance, cancellationToken);
             }
         }
 
-        private static int ValidateRender(CVCIEFile file, CvcieBrightnessMode brightnessMode, double referenceWhiteLuminance)
+        private static int ValidateRender(int width, int height, int channels, int bpp, CvcieBrightnessMode brightnessMode, double referenceWhiteLuminance)
         {
-            if (!Supports(file.Channels, file.Bpp))
-                throw new InvalidOperationException("XYZ 真彩显示仅支持三通道的 32 位或 64 位浮点 CVCIE 数据。");
-            if (file.Cols <= 0 || file.Rows <= 0)
-                throw new InvalidOperationException("CVCIE 图像尺寸无效，无法生成 XYZ 真彩显示。");
+            if (!Supports(channels, bpp))
+                throw new InvalidOperationException("XYZ 真彩显示仅支持三通道的 32 位或 64 位浮点测量数据。");
+            if (width <= 0 || height <= 0)
+                throw new InvalidOperationException("图像尺寸无效，无法生成 XYZ 真彩显示。");
             if (brightnessMode != CvcieBrightnessMode.Auto && brightnessMode != CvcieBrightnessMode.ReferenceWhite)
                 throw new InvalidOperationException("CVCIE 真彩亮度映射模式无效。");
             if (brightnessMode == CvcieBrightnessMode.ReferenceWhite && (!double.IsFinite(referenceWhiteLuminance) || referenceWhiteLuminance <= 0))
@@ -90,7 +103,7 @@ namespace ColorVision.Engine.Media
 
             try
             {
-                int pixelCount = checked(file.Cols * file.Rows);
+                int pixelCount = checked(width * height);
                 _ = checked(pixelCount * 3); // Bgr24 output must fit an int-sized image buffer.
                 return pixelCount;
             }
@@ -102,15 +115,15 @@ namespace ColorVision.Engine.Media
 
         private static long GetXyzByteLength(int pixelCount, int bpp) => (long)pixelCount * (bpp / 8) * 3;
 
-        private static RenderPlan PrepareRender(XyzInput input, CVCIEFile file, int pixelCount,
+        private static RenderPlan PrepareRender(XyzInput input, int width, int height, int bpp, int pixelCount,
             CvcieBrightnessMode brightnessMode, double referenceWhiteLuminance, CancellationToken cancellationToken)
         {
             // One divisor for the whole image preserves the relative XYZ/linear RGB values.
             // Measured XYZ already includes calibration: exposure and gain are not applied here.
-            Action<IntPtr, int> writePixels = file.Bpp == 32
-                ? PreparePixelWriter<float>(input, file.Cols, pixelCount, brightnessMode, referenceWhiteLuminance, cancellationToken)
-                : PreparePixelWriter<double>(input, file.Cols, pixelCount, brightnessMode, referenceWhiteLuminance, cancellationToken);
-            return new RenderPlan(file.Cols, file.Rows, writePixels);
+            Action<IntPtr, int> writePixels = bpp == 32
+                ? PreparePixelWriter<float>(input, width, pixelCount, brightnessMode, referenceWhiteLuminance, cancellationToken)
+                : PreparePixelWriter<double>(input, width, pixelCount, brightnessMode, referenceWhiteLuminance, cancellationToken);
+            return new RenderPlan(width, height, writePixels);
         }
 
         private static Action<IntPtr, int> PreparePixelWriter<T>(XyzInput input, int width, int pixelCount,
@@ -119,7 +132,7 @@ namespace ColorVision.Engine.Media
         {
             int chunkCount = (pixelCount + ChunkSize - 1) / ChunkSize;
             int workers = Math.Max(1, Environment.ProcessorCount / 2);
-            if (input.File != null) workers = Math.Min(workers, MaxFileWorkers);
+            if (input.Data == null) workers = Math.Min(workers, MaxFileWorkers);
             double divisor = referenceWhiteLuminance;
             if (brightnessMode == CvcieBrightnessMode.Auto)
             {
@@ -222,11 +235,12 @@ namespace ColorVision.Engine.Media
             }
         }
 
-        private readonly record struct XyzInput(byte[]? Data, CvcieDiskPixels? File);
+        private readonly record struct XyzInput(byte[]? Data, CvcieDiskPixels? File, RawColorMeasurementSource? Raw = null);
 
         private readonly ref struct XyzChunk<T> where T : unmanaged
         {
             private readonly CvcieDiskPixels.Chunk<T> _rented;
+            private readonly T[]? _rawSamples;
             public ReadOnlySpan<T> X { get; }
             public ReadOnlySpan<T> Y { get; }
             public ReadOnlySpan<T> Z { get; }
@@ -243,6 +257,27 @@ namespace ColorVision.Engine.Media
                     return;
                 }
 
+                if (input.Raw is { } raw)
+                {
+                    T[] rented = ArrayPool<T>.Shared.Rent(count * 3);
+                    try
+                    {
+                        Span<T> samples = rented.AsSpan(0, count * 3);
+                        // RAW calibration always produces float XYZ, one bounded block at a time.
+                        raw.ReadXyzChunk(start, MemoryMarshal.Cast<T, float>(samples), token);
+                        _rawSamples = rented;
+                        X = samples[..count];
+                        Y = samples.Slice(count, count);
+                        Z = samples.Slice(2 * count, count);
+                    }
+                    catch
+                    {
+                        ArrayPool<T>.Shared.Return(rented);
+                        throw;
+                    }
+                    return;
+                }
+
                 _rented = new CvcieDiskPixels.Chunk<T>(input.File!.Value, pixelCount, 3, start, count, token);
                 ReadOnlySpan<T> block = _rented.Samples;
                 X = block[..count];
@@ -250,7 +285,11 @@ namespace ColorVision.Engine.Media
                 Z = block.Slice(2 * count, count);
             }
 
-            public void Dispose() => _rented.Dispose();
+            public void Dispose()
+            {
+                _rented.Dispose();
+                if (_rawSamples != null) ArrayPool<T>.Shared.Return(_rawSamples);
+            }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
