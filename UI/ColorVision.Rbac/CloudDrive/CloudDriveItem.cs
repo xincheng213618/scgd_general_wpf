@@ -22,7 +22,9 @@ public sealed class CloudDriveItem : ViewModelBase
     public string Error { get; set; } = "";
 
     internal long? SentBytes { get; set; }
+    internal double? UploadBytesPerSecond { get; set; }
     internal TimeSpan? EstimatedRemaining { get; set; }
+    internal string TransferNotice { get; set; } = "";
 
     [JsonIgnore] public double Progress
     {
@@ -39,10 +41,23 @@ public sealed class CloudDriveItem : ViewModelBase
     [JsonIgnore] public bool IsComplete => !string.IsNullOrEmpty(ShareUrl);
     [JsonIgnore] public bool CanShare => IsComplete && (!ExpiresAt.HasValue || ExpiresAt > DateTimeOffset.Now);
     [JsonIgnore] public string SizeText => FormatSize(Size);
-    [JsonIgnore] public string Detail => !string.IsNullOrEmpty(Error) ? Error : IsComplete
-        ? ExpiresAt.HasValue ? $"分享有效至 {ExpiresAt.Value.LocalDateTime:yyyy-MM-dd HH:mm}" : "上传完成，可分享"
-        : SentBytes is long sent ? $"已发送 {FormatSize(sent)} / {SizeText}" : $"{FormatSize(Offset)} / {SizeText}";
-    [JsonIgnore] public string RemainingTimeText => HasUploadProgress && SentBytes < Size
+    [JsonIgnore] public string Detail
+    {
+        get
+        {
+            if (IsComplete)
+                return ExpiresAt.HasValue ? $"分享有效至 {ExpiresAt.Value.LocalDateTime:yyyy-MM-dd HH:mm}" : "上传完成，可分享";
+            if (SentBytes is long sent)
+                return $"已发送 {FormatSize(sent)} / {SizeText} · 服务端已确认 {FormatSize(Offset)}";
+            return Offset > 0 || !string.IsNullOrEmpty(UploadId) ? $"服务端已确认 {FormatSize(Offset)} / {SizeText}" : SizeText;
+        }
+    }
+    [JsonIgnore] public string UploadMessage => string.IsNullOrEmpty(Error) ? TransferNotice : Error;
+    [JsonIgnore] public bool HasUploadMessage => !string.IsNullOrEmpty(UploadMessage);
+    [JsonIgnore] public string CurrentSpeedText => UploadBytesPerSecond is double speed
+        ? $"当前速度 {FormatSize((long)Math.Round(speed))}/s"
+        : "正在测速…";
+    [JsonIgnore] public string RemainingTimeText => HasUploadProgress && SentBytes < Size && !HasUploadMessage
         ? EstimatedRemaining is TimeSpan remaining ? $"预计剩余 {FormatRemainingTime(remaining)}" : "正在估算剩余时间…"
         : "";
 

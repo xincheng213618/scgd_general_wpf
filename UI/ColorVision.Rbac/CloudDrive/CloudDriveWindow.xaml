@@ -44,7 +44,7 @@
                                     <BooleanToVisibilityConverter x:Key="UploadProgressVisibility"/>
                                 </DataTemplate.Resources>
                                 <Grid Margin="2,8">
-                                    <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+                                    <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
                                     <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
                                         <TextBlock Text="{Binding DisplayName}" ToolTip="{Binding SourcePath}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" Margin="0,0,12,0"/>
                                         <TextBlock Grid.Column="1" Text="{Binding Status}" FontSize="12"/>
@@ -58,12 +58,16 @@
                                     </Grid>
                                     <Grid Grid.Row="2">
                                         <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-                                        <TextBlock x:Name="UploadDetail" Text="{Binding Detail}" FontSize="12" TextWrapping="Wrap"
-                                                   Foreground="{DynamicResource UpdateDialog.TextSecondary}"/>
-                                        <TextBlock x:Name="UploadRemainingTime" Grid.Column="1" Text="{Binding RemainingTimeText}" FontSize="12"
-                                                   Margin="12,0,0,0" Foreground="{DynamicResource UpdateDialog.TextSecondary}"
-                                                   Visibility="{Binding HasUploadProgress, Converter={StaticResource UploadProgressVisibility}}"/>
+                                        <TextBlock x:Name="UploadDetail" Text="{Binding Detail}" FontSize="12" TextWrapping="Wrap"/>
+                                        <StackPanel Grid.Column="1" Orientation="Horizontal" Margin="12,0,0,0">
+                                            <TextBlock x:Name="UploadCurrentSpeed" Text="{Binding CurrentSpeedText}" FontSize="12"
+                                                       Visibility="{Binding HasUploadProgress, Converter={StaticResource UploadProgressVisibility}}"/>
+                                            <TextBlock x:Name="UploadRemainingTime" Text="{Binding RemainingTimeText}" FontSize="12" Margin="12,0,0,0"
+                                                       Visibility="{Binding HasUploadProgress, Converter={StaticResource UploadProgressVisibility}}"/>
+                                        </StackPanel>
                                     </Grid>
+                                    <TextBlock x:Name="UploadMessage" Grid.Row="3" Text="{Binding UploadMessage}" FontSize="12" TextWrapping="Wrap"
+                                               Margin="0,4,0,0" Visibility="{Binding HasUploadMessage, Converter={StaticResource UploadProgressVisibility}}"/>
                                 </Grid>
                             </DataTemplate>
                         </ListBox.ItemTemplate>

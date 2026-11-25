@@ -3,11 +3,13 @@ from __future__ import annotations
 import os
 import json
 import re
+import shutil
 import threading
 import time
 from dataclasses import dataclass, replace
 from datetime import datetime, timezone
 from pathlib import Path
+from tempfile import SpooledTemporaryFile
 from typing import IO, Any
 from urllib.parse import quote
 from uuid import uuid4
@@ -701,80 +703,98 @@ def append_transfer_upload(
     requested_offset = _validate_upload_size(offset)
     lock = _get_session_lock(validated_id)
 
-    with lock:
+    def load_session() -> TransferUploadSession:
         session = get_transfer_upload_session(
             root,
             validated_id,
             owner_type=owner_type,
             owner_id=owner_id,
         )
+        if not session.complete and requested_offset != session.offset:
+            raise TransferFileError(f"Upload offset mismatch; expected {session.offset}", 409)
+        return session
+
+    with lock:
+        session = load_session()
         if session.complete:
             return TransferUploadAppendResult(session=session, newly_completed=False)
-        if requested_offset != session.offset:
-            raise TransferFileError(f"Upload offset mismatch; expected {session.offset}", 409)
 
-        metadata_path, part_path = _upload_session_paths(root, validated_id)
-        if not part_path.exists():
-            if session.offset != 0:
-                raise TransferFileError("Upload session data is missing", 409)
-            part_path.touch()
+    try:
+        # Read from the client before taking the write lock so a stalled body cannot block a retry.
+        with SpooledTemporaryFile(max_size=TRANSFER_CHUNK_SIZE, mode="w+b") as staged:
+            size = _stage_transfer_chunk(stream, staged, max_chunk_size, session.total_size - session.offset)
+            with lock:
+                session = load_session()
+                if session.complete:
+                    return TransferUploadAppendResult(session=session, newly_completed=False)
+                if size > session.total_size - session.offset:
+                    raise TransferFileError("Upload exceeds declared file size", 409)
+                return _commit_transfer_chunk(root, session, staged, size)
+    except OSError as exc:
+        raise TransferFileError(f"Upload failed: {exc}", 500) from exc
 
-        bytes_written = 0
-        try:
-            with open(part_path, "r+b") as output:
-                output.truncate(session.offset)
-                output.seek(session.offset)
-                while True:
-                    chunk = stream.read(TRANSFER_CHUNK_SIZE)
-                    if not chunk:
-                        break
-                    next_chunk_size = bytes_written + len(chunk)
-                    next_offset = session.offset + next_chunk_size
-                    if next_chunk_size > max_chunk_size:
-                        raise TransferFileError("Upload chunk is too large", 413)
-                    if next_offset > session.total_size:
-                        raise TransferFileError("Upload exceeds declared file size", 409)
-                    output.write(chunk)
-                    bytes_written = next_chunk_size
-                if bytes_written == 0 and session.offset < session.total_size:
-                    raise TransferFileError("Upload chunk is empty", 400)
-                output.flush()
-                os.fsync(output.fileno())
-        except TransferFileError:
-            raise
-        except OSError as exc:
-            raise TransferFileError(f"Upload failed: {exc}", 500) from exc
 
-        new_offset = session.offset + bytes_written
-        updated = replace(session, offset=new_offset, updated_at=time.time())
-        if new_offset < session.total_size:
-            _write_upload_session(metadata_path, updated)
-            return TransferUploadAppendResult(session=updated, newly_completed=False)
+def _stage_transfer_chunk(stream: IO[bytes], staged: IO[bytes], max_chunk_size: int, remaining: int) -> int:
+    size = 0
+    while chunk := stream.read(TRANSFER_CHUNK_SIZE):
+        size += len(chunk)
+        if size > max_chunk_size:
+            raise TransferFileError("Upload chunk is too large", 413)
+        if size > remaining:
+            raise TransferFileError("Upload exceeds declared file size", 409)
+        staged.write(chunk)
+    if size == 0 and remaining > 0:
+        raise TransferFileError("Upload chunk is empty", 400)
+    staged.seek(0)
+    return size
 
-        target = resolve_transfer_file(root, session.filename)
-        replaced = target.exists()
-        if session.owner_type == ANONYMOUS_TRANSFER_OWNER_TYPE and replaced:
-            _write_upload_session(metadata_path, updated)
-            raise TransferFileError("同名文件已存在，请重命名后重试", 409)
+
+def _commit_transfer_chunk(
+    root: Path,
+    session: TransferUploadSession,
+    staged: IO[bytes],
+    size: int,
+) -> TransferUploadAppendResult:
+    metadata_path, part_path = _upload_session_paths(root, session.upload_id)
+    if not part_path.exists():
+        if session.offset != 0:
+            raise TransferFileError("Upload session data is missing", 409)
+        part_path.touch()
+
+    with open(part_path, "r+b") as output:
+        output.truncate(session.offset)
+        output.seek(session.offset)
+        shutil.copyfileobj(staged, output, TRANSFER_CHUNK_SIZE)
+        output.flush()
+        os.fsync(output.fileno())
+
+    new_offset = session.offset + size
+    updated = replace(session, offset=new_offset, updated_at=time.time())
+    if new_offset < session.total_size:
         _write_upload_session(metadata_path, updated)
-        try:
-            os.replace(part_path, target)
-        except OSError as exc:
-            raise TransferFileError(f"Upload failed: {exc}", 500) from exc
-        completed_at = time.time()
-        expiry = completed_at + ANONYMOUS_TRANSFER_FILE_TTL_SECONDS \
-            if session.owner_type == ANONYMOUS_TRANSFER_OWNER_TYPE else 0.0
-        share = get_or_create_transfer_share(root, session.filename, expires_at=expiry)
-        completed = replace(
-            updated,
-            complete=True,
-            replaced=replaced,
-            updated_at=completed_at,
-            share_token=share.token,
-            expires_at=share.expires_at,
-        )
-        _write_upload_session(metadata_path, completed)
-        return TransferUploadAppendResult(session=completed, newly_completed=True)
+        return TransferUploadAppendResult(session=updated, newly_completed=False)
+
+    target = resolve_transfer_file(root, session.filename)
+    replaced = target.exists()
+    if session.owner_type == ANONYMOUS_TRANSFER_OWNER_TYPE and replaced:
+        _write_upload_session(metadata_path, updated)
+        raise TransferFileError("同名文件已存在，请重命名后重试", 409)
+    _write_upload_session(metadata_path, updated)
+    os.replace(part_path, target)
+    completed_at = time.time()
+    expiry = completed_at + ANONYMOUS_TRANSFER_FILE_TTL_SECONDS \
+        if session.owner_type == ANONYMOUS_TRANSFER_OWNER_TYPE else 0.0
+    share = get_or_create_transfer_share(root, session.filename, expires_at=expiry)
+    completed = replace(
+        updated,
+        complete=True,
+        replaced=replaced,
+        updated_at=completed_at,
+        share_token=share.token,
+        expires_at=share.expires_at,
+    )
+    _write_upload_session(metadata_path, completed)
+    return TransferUploadAppendResult(session=completed, newly_completed=True)
 
 
 def stream_transfer_upload(
