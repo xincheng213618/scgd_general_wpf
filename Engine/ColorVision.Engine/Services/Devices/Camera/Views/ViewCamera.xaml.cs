@@ -7,7 +7,6 @@ using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services.Results;
 using ColorVision.Engine.Templates.Jsons.FOV2;
 using ColorVision.ImageEditor;
-using ColorVision.ImageEditor.Draw.Special;
 using ColorVision.Themes.Controls;
 using ColorVision.UI;
 using ColorVision.UI.Sorts;
@@ -162,10 +161,9 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
             FovImageViewRunner.BindCamera(ImageView, Device);
             ImageView.StatusBarItemsChanged += ImageView_StatusBarItemsChanged;
 
-            if (ImageView.EditorContext.IEditorToolFactory.GetIEditorTool<ToolReferenceLine>() is ToolReferenceLine toolReferenceLine)
-            {
-                toolReferenceLine.ReferenceLine = new ReferenceLine(Device.DisplayConfig.ReferenceLineParam);
-            }
+            string deviceCode = Device.Code;
+            if (!string.IsNullOrWhiteSpace(deviceCode))
+                ImageView.ConfigurationCode = $"Camera:{deviceCode}";
 
             listView1.ItemsSource = ViewResults;
 

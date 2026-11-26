@@ -173,6 +173,10 @@ namespace ColorVision.ImageEditor.Draw
         {
             if (obj is not DrawingVisualBase visual) return [];
 
+            MenuItem top = new() { Header = "Top" };
+            top.Click += (_, _) => _drawContext.DrawCanvas.TopVisual(visual);
+            if (visual is Special.ReferenceLine { EditProfile: not null }) return [top];
+
             MenuItem edit = new() { Header = ColorVision.ImageEditor.Properties.Resources.Draw_Edit };
             edit.Click += (_, _) =>
             {
@@ -182,9 +186,6 @@ namespace ColorVision.ImageEditor.Draw
                     WindowStartupLocation = WindowStartupLocation.CenterOwner
                 }.ShowDialog();
             };
-
-            MenuItem top = new() { Header = "Top" };
-            top.Click += (_, _) => _drawContext.DrawCanvas.TopVisual(visual);
 
             MenuItem delete = new() { Header = ColorVision.ImageEditor.Properties.Resources.Draw_Delete };
             delete.Click += (_, _) =>

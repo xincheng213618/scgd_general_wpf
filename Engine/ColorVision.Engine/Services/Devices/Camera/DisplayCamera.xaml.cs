@@ -18,7 +18,6 @@ using ColorVision.Engine.Templates.Jsons.AutoExpTime;
 using ColorVision.Engine.Utilities;
 using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Draw;
-using ColorVision.ImageEditor.Draw.Special;
 using ColorVision.ImageEditor.EditorTools.Filters;
 using ColorVision.ImageEditor.Realtime;
 using ColorVision.ImageEditor.Settings;
@@ -186,9 +185,6 @@ namespace ColorVision.Engine.Services.Devices.Camera
         [JsonIgnore]
         public string CrossGuideStatus { get => _CrossGuideStatus; set { if (_CrossGuideStatus == value) return; _CrossGuideStatus = value; OnPropertyChanged(); } }
         private string _CrossGuideStatus = string.Empty;
-
-        public ReferenceLineParam ReferenceLineParam { get => _ReferenceLineParam; set { _ReferenceLineParam = value; OnPropertyChanged(); } }
-        private ReferenceLineParam _ReferenceLineParam = new ReferenceLineParam();
 
         public int AvgCount { get => _AvgCount; set { _AvgCount = value; OnPropertyChanged(); } }
         private int _AvgCount = 1;

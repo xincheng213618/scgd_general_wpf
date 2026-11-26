@@ -10045,6 +10045,7 @@
       "code_paths": [
         "UI/ColorVision.ImageEditor/Settings",
         "UI/ColorVision.ImageEditor/ImageView.xaml.cs",
+        "UI/ColorVision.ImageEditor/ImageView.Configuration.cs",
         "UI/ColorVision.ImageEditor/ImageViewConfig.cs",
         "UI/ColorVision.ImageEditor/EditorTools/Filters",
         "UI/ColorVision.ImageEditor/EditorTools/PseudoColor",
