@@ -2017,7 +2017,7 @@ namespace ProjectKB
             contextMenu.Items.Add(new MenuItem() { Command = ViewResultManager.SaveLcCommand, Header = LocalizedText.Get("重新导出 LC CSV...") });
             contextMenu.Items.Add(new Separator());
             contextMenu.Items.Add(new MenuItem() { Command = openFolderCommand, Header = "OpenFolderAndSelectFile" });
-            contextMenu.Items.Add(new MenuItem() { Command = flowExecutionAnalysisCommand, Header = LocalizedText.Get("流程执行分析") });
+            contextMenu.Items.Add(new MenuItem() { Command = flowExecutionAnalysisCommand, Header = LocalizedText.Get("流程分析") });
             contextMenu.Opened += (s, e) => CommandManager.InvalidateRequerySuggested();
 
             listView1.PreviewMouseRightButtonDown += (s, e) =>
