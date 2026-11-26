@@ -92,14 +92,17 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         [Category("AcquisitionDisplay"), LocalizedDisplayName("CameraFocus_UseMotorReadbackForVid")]
         [LocalizedDescription("CameraFocus_UseMotorReadbackForVidHint")]
+        [PropertyVisibility(nameof(UseLocalCamera))]
         public bool UseMotorReadbackForVid { get; set; } = true;
 
         [Category("AcquisitionDisplay"), LocalizedDisplayName("CameraFocusChart_AutoSave")]
         [LocalizedDescription("CameraFocusChart_AutoSaveHint")]
+        [PropertyVisibility(nameof(UseLocalCamera))]
         public bool SaveLocalAutoFocusChart { get; set; }
 
         [Category("AcquisitionDisplay"), LocalizedDisplayName("CameraFocusChart_SaveDirectory")]
         [LocalizedDescription("CameraFocusChart_SaveDirectoryHint"), PropertyEditorType(typeof(TextSelectFolderPropertiesEditor))]
+        [PropertyVisibility(nameof(UseLocalCamera))]
         public string LocalAutoFocusChartDirectory { get; set; } = string.Empty;
 
         public double TakePictureDelay { get; set; }

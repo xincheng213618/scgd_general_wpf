@@ -20,8 +20,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
     public partial class EditCamera : Window
     {
         private JObject initialDeviceConfig = null!;
-        private readonly bool initialUseLocalCamera;
-        private readonly DisplayCameraConfig displayDraft;
+        private readonly CameraAcquisitionSettingsDraft acquisitionDraft;
         private readonly DeviceConfigurationTarget openingTarget;
 
         public DeviceCamera DeviceCamera { get; set; }
@@ -34,8 +33,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
         {
             DeviceCamera = mQTTDeviceCamera;
             openingTarget = mQTTDeviceCamera.CaptureConfigurationTarget();
-            initialUseLocalCamera = DeviceCamera.DisplayConfig.UseLocalCamera;
-            displayDraft = new DisplayCameraConfig { UseLocalCamera = initialUseLocalCamera };
+            acquisitionDraft = new CameraAcquisitionSettingsDraft(DeviceCamera.DisplayConfig);
             InitializeComponent();
             this.ApplyCaption();
         }
@@ -62,7 +60,13 @@ namespace ColorVision.Engine.Services.Devices.Camera
             DataContext = DeviceCamera;
             EditContent.DataContext = EditConfig;
 
-            LocalCameraField.Content = PropertyEditorHelper.GenProperties(displayDraft, nameof(DisplayCameraConfig.UseLocalCamera));
+            foreach (string name in CameraAcquisitionSettingsDraft.EditableProperties)
+            {
+                var field = PropertyEditorHelper.GenProperties(acquisitionDraft.Settings, name, Properties.Resources.ResourceManager);
+                field.Margin = new Thickness(0, 3, 0, 5);
+                field.MinHeight = 28;
+                AcquisitionFields.Children.Add(field);
+            }
         }
 
         private void Ok_Click(object sender, RoutedEventArgs e)
@@ -80,10 +84,9 @@ namespace ColorVision.Engine.Services.Devices.Camera
                         EditConfig.FileServerCfg = DeviceCamera.Config.FileServerCfg;
                         EditConfig.CopyTo(DeviceCamera.Config);
                     }, openingTarget);
+                    initialDeviceConfig = JObject.FromObject(EditConfig);
                 }
-                // The live preference setter notifies the backend and persists the display configuration.
-                if (displayDraft.UseLocalCamera != initialUseLocalCamera)
-                    DeviceCamera.DisplayConfig.UseLocalCamera = displayDraft.UseLocalCamera;
+                DeviceCamera.SaveAcquisitionSettings(acquisitionDraft);
                 DialogResult = true;
             }
             catch (Exception ex)

@@ -6,7 +6,7 @@
         xmlns:controls="clr-namespace:ColorVision.Themes.Controls;assembly=ColorVision.Themes"
         xmlns:hc="https://handyorg.github.io/handycontrol"
         Title="{x:Static properties:Resources.TitleEditCameraConfig}"
-        Width="650" Height="350" MinWidth="580" MinHeight="320" WindowStartupLocation="CenterOwner"
+        Width="650" Height="460" MinWidth="580" MinHeight="320" WindowStartupLocation="CenterOwner"
         Background="{DynamicResource GlobalBackground}" SnapsToDevicePixels="True" UseLayoutRounding="True"
         Initialized="Window_Initialized">
     <Window.Resources>
@@ -37,30 +37,28 @@
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
         <ScrollViewer x:Name="EditContent" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-            <StackPanel>
-                <Border Style="{StaticResource CardStyle}">
-                    <StackPanel>
-                        <TextBlock Text="{x:Static properties:Resources.DeviceConnection}" Style="{StaticResource SectionTitleStyle}"/>
-                        <DockPanel Style="{StaticResource FieldRowStyle}">
-                            <TextBlock Text="{x:Static properties:Resources.FrameDisplayName}" Style="{StaticResource FieldLabelStyle}"/>
-                            <TextBox Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}" Margin="5,0,0,0" Style="{StaticResource TextBox.Small}"/>
-                        </DockPanel>
-                        <DockPanel Style="{StaticResource FieldRowStyle}">
-                            <TextBlock Text="{x:Static properties:Resources.DeviceAutoConnect}" Style="{StaticResource FieldLabelStyle}"/>
-                            <controls:ToggleSwitch HorizontalAlignment="Right" VerticalAlignment="Center" Background="DodgerBlue"
-                                                   AutomationProperties.Name="{x:Static properties:Resources.DeviceAutoConnect}"
-                                                   IsChecked="{Binding IsAutoOpen, Mode=TwoWay}"/>
-                        </DockPanel>
-                        <ContentControl x:Name="LocalCameraField" HorizontalContentAlignment="Stretch" MinHeight="28" Margin="0,3,0,5"/>
-                        <DockPanel Style="{StaticResource FieldRowStyle}">
-                            <TextBlock Text="{x:Static properties:Resources.PhysicalCamera}" Style="{StaticResource FieldLabelStyle}"/>
-                            <hc:ComboBox x:Name="CameraPhyID" IsEditable="True" Text="{Binding CameraCode}" Margin="5,0,0,0"
-                                         Style="{StaticResource ComboBox.Small}" SelectionChanged="CameraPhyID_SelectionChanged"
-                                         AutomationProperties.Name="{x:Static properties:Resources.PhysicalCamera}" hc:InfoElement.ShowClearButton="True"/>
-                        </DockPanel>
-                    </StackPanel>
-                </Border>
-            </StackPanel>
+            <Border Style="{StaticResource CardStyle}" VerticalAlignment="Top">
+                <StackPanel>
+                    <TextBlock Text="{x:Static properties:Resources.DeviceConnection}" Style="{StaticResource SectionTitleStyle}"/>
+                    <DockPanel Style="{StaticResource FieldRowStyle}">
+                        <TextBlock Text="{x:Static properties:Resources.FrameDisplayName}" Style="{StaticResource FieldLabelStyle}"/>
+                        <TextBox Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}" Margin="5,0,0,0" Style="{StaticResource TextBox.Small}"/>
+                    </DockPanel>
+                    <DockPanel Style="{StaticResource FieldRowStyle}">
+                        <TextBlock Text="{x:Static properties:Resources.PhysicalCamera}" Style="{StaticResource FieldLabelStyle}"/>
+                        <hc:ComboBox x:Name="CameraPhyID" IsEditable="True" Text="{Binding CameraCode}" Margin="5,0,0,0"
+                                     Style="{StaticResource ComboBox.Small}" SelectionChanged="CameraPhyID_SelectionChanged"
+                                     AutomationProperties.Name="{x:Static properties:Resources.PhysicalCamera}" hc:InfoElement.ShowClearButton="True"/>
+                    </DockPanel>
+                    <DockPanel Style="{StaticResource FieldRowStyle}">
+                        <TextBlock Text="{x:Static properties:Resources.DeviceAutoConnect}" Style="{StaticResource FieldLabelStyle}"/>
+                        <controls:ToggleSwitch HorizontalAlignment="Right" VerticalAlignment="Center" Background="DodgerBlue"
+                                               AutomationProperties.Name="{x:Static properties:Resources.DeviceAutoConnect}"
+                                               IsChecked="{Binding IsAutoOpen, Mode=TwoWay}"/>
+                    </DockPanel>
+                    <StackPanel x:Name="AcquisitionFields"/>
+                </StackPanel>
+            </Border>
         </ScrollViewer>
         <TextBlock Grid.Row="1" x:Name="StatusText" Foreground="{DynamicResource DangerBrush}" TextWrapping="Wrap" Margin="0,0,4,8" Visibility="Collapsed"/>
         <Border Grid.Row="2" BorderBrush="{DynamicResource GlobalBorderBrush1}" BorderThickness="0,1,0,0" Padding="0,12">

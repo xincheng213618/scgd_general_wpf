@@ -113,7 +113,6 @@ namespace ColorVision.Engine.Services.Devices.Camera
             PhyCamera = PhyCameraManager.GetInstance().GetPhyCamera(Config.CameraCode);
 
             EditRealtimeCameraConfigCommand = new RelayCommand(_ => EditRealtimeCameraConfig());
-            EditDisplayConfigCommand = new RelayCommand(_ => EditDisplayConfig());
             UserCalibrationCommand = new RelayCommand(_ => LumFourColorCalibrationWorkflowWindow.ShowWindow(camera: this));
             OpenCameraLogCommand = new RelayCommand(a => OpenCameraLog());
             ReleaseLocalCalibrationCacheCommand = new RelayCommand(_ => LocalCalibrationCacheManagerWindow.OpenWindow());
@@ -143,21 +142,6 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 cameraLocalWindow.Owner = owner;
             }
             cameraLocalWindow.Show();
-        }
-
-        [CommandDisplay("EditDisplayConfig", Order = -1, CategoryOrder = 0)]
-        [Category("DeviceConnection")]
-        [Description("CommandDisplayConfigHint")]
-        public RelayCommand EditDisplayConfigCommand { get; }
-
-        private void EditDisplayConfig()
-        {
-            new PropertyEditorWindow(DisplayConfig)
-            {
-                Owner = Application.Current.GetActiveWindow(),
-                WindowStartupLocation = WindowStartupLocation.CenterOwner
-            }.ShowDialog();
-            ConfigHandler.GetInstance().Save<DisplayConfigManager>();
         }
 
         public RelayCommand OpenCameraLogCommand { get; set; }
@@ -299,9 +283,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             phyCameraManager.ShowDialog();
         }
 
-        [CommandDisplay("RefreshDeviceList", CategoryOrder = 0)]
-        [Category("DeviceConnection")]
-        [Description("CommandRefreshDevicesHint")]
+        [Browsable(false)]
         public RelayCommand RefreshDeviceIdCommand { get; set; }
         public void RefreshDeviceId()
         {
