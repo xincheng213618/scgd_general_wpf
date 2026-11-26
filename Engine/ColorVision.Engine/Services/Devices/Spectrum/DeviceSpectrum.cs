@@ -451,7 +451,6 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             EmissionSP100SettingCommand = new RelayCommand(a => EmissionSP100Setting());
 
             GetSpectrSerialNumberCommand = new RelayCommand(async _ => await GetSpectrSerialNumberAsync(), _ => !IsDiscoveringSpectrometers);
-            EditDisplayConfigCommand = new RelayCommand(a => EditDisplayConfig());
             OpenCalibrationGroupWindowCommand = new RelayCommand(a => OpenCalibrationGroupWindow());
             ApplyCalibrationGroupCommand = new RelayCommand(a => ApplyActiveCalibrationGroup(true));
             OpenSpectrumCorrectionCommand = new RelayCommand(async _ => await OpenSpectrumCorrectionAsync());
@@ -1336,15 +1335,6 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             {
                 MessageBox.Show(Application.Current.GetActiveWindow(), LocalizedText.Get("未找到光谱日志文件。"), "ColorVision", MessageBoxButton.OK, MessageBoxImage.Information);
             }
-        }
-
-        [CommandDisplay("EditDisplayConfig", Order = -1, CategoryOrder = 0)]
-        [Category("DeviceConnection")]
-        [Description("SpectrumDisplayHint")]
-        public RelayCommand EditDisplayConfigCommand { get; set; }
-        public void EditDisplayConfig()
-        {
-            new PropertyEditorWindow(DisplayConfig) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         }
 
         public IReadOnlyList<HoleMap> GetNDHoleMappings()

@@ -45,14 +45,6 @@ public class LocalDeviceDisplayConfigTests
     }
 
     [Fact]
-    public void SpectrumBackendAndFluxModeAreEditableInDisplayConfiguration()
-    {
-        var properties = PropertyEditorHelper.GetEditableProperties(typeof(DisplaySpectrumConfig));
-        Assert.Contains(properties, property => property.Name == nameof(DisplaySpectrumConfig.UseLocalSpectrum));
-        Assert.Contains(properties, property => property.Name == nameof(DisplaySpectrumConfig.IsLuminousFluxMode));
-    }
-
-    [Fact]
     public void CameraAcquisitionDraftPersistsEditedPreferencesAndPreservesLiveState()
     {
         WpfTestHost.Invoke(() =>

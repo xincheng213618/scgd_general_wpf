@@ -219,13 +219,10 @@
             <TextBlock x:Name="StatusText" Style="{StaticResource HintStyle}" Margin="0,5,0,5" MaxHeight="48" TextTrimming="CharacterEllipsis" ToolTip="{Binding Text, RelativeSource={RelativeSource Self}}"/>
         </StackPanel>
         <Border Grid.Row="2" BorderBrush="{DynamicResource GlobalBorderBrush1}" BorderThickness="0,1,0,0" Padding="0,14,0,14">
-            <DockPanel>
-                <Button x:Name="AdvancedButton" Content="{x:Static properties:Resources.PropertyEdit}" Style="{StaticResource ToolbarButtonStyle}" MinWidth="110" Height="36" Click="Advanced_Click" DockPanel.Dock="Left"/>
-                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                    <Button x:Name="OkButton" Content="{x:Static properties:Resources.OK}" Style="{StaticResource PrimaryToolbarButtonStyle}" MinWidth="110" Height="36" Click="Ok_Click"/>
-                    <Button Content="{x:Static properties:Resources.Cancel}" Style="{StaticResource ToolbarButtonStyle}" MinWidth="110" Height="36" IsCancel="True" Margin="4,0,0,6"/>
-                </StackPanel>
-            </DockPanel>
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button x:Name="OkButton" Content="{x:Static properties:Resources.OK}" Style="{StaticResource PrimaryToolbarButtonStyle}" MinWidth="110" Height="36" Click="Ok_Click"/>
+                <Button Content="{x:Static properties:Resources.Cancel}" Style="{StaticResource ToolbarButtonStyle}" MinWidth="110" Height="36" IsCancel="True" Margin="4,0,0,6"/>
+            </StackPanel>
         </Border>
     </Grid>
 </Window>

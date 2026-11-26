@@ -30,7 +30,8 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                 DisplayConfig.UseLocalSpectrum = displaySource.UseLocalSpectrum;
                 DisplayConfig.IsLuminousFluxMode = displaySource.IsLuminousFluxMode;
             }
-            ReloadConnection();
+            IsSerialConnection = !string.IsNullOrWhiteSpace(Config.ComPort) && Config.ComPort.Trim() != "0";
+            SerialPortName = IsSerialConnection ? Config.ComPortView : string.Empty;
             appliedServiceSettings = GetServiceSettings();
             appliedDisplaySettings = (DisplayConfig.UseLocalSpectrum, DisplayConfig.IsLuminousFluxMode);
         }
@@ -41,12 +42,6 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
         [DisplayName("SpectrumComPort"), PropertyEditorType(typeof(TextSerialPortPropertiesEditor))]
         public string SerialPortName { get => serialPortName; set { serialPortName = value; OnPropertyChanged(); } }
         private string serialPortName = string.Empty;
-
-        internal void ReloadConnection()
-        {
-            IsSerialConnection = !string.IsNullOrWhiteSpace(Config.ComPort) && Config.ComPort.Trim() != "0";
-            SerialPortName = IsSerialConnection ? Config.ComPortView : string.Empty;
-        }
 
         internal bool TryGetPort(out int port)
         {

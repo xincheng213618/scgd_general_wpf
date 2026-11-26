@@ -124,16 +124,14 @@ public sealed class SpectrumConfigurationDraftTests
     [Theory]
     [InlineData(false, null, null)]
     [InlineData(true, 100, 1000)]
-    public void AdvancedPropertyEditsWriteFixedServiceExposureLimitsOnlyForEnabledNd(bool enabled, int? minimum, int? maximum)
+    public void SavingServiceChangesWritesFixedExposureLimitsOnlyForEnabledNd(bool enabled, int? minimum, int? maximum)
     {
         var json = JObject.Parse("""{"NDConfig":{"NDMinExpTime":10,"NDMaxExpTime":300,"LocalNDRates":{"2":64},"LocalNDPortCount":12}}""");
         var config = json.ToObject<ConfigSpectrum>()!;
+        config.NDConfig.EnableResetND = true;
+        config.NDConfig.IsNDPort = enabled;
         var draft = new SpectrumConfigurationDraft(config);
-        var session = PropertyEditSession.Create(draft.Config, PropertyEditorEditMode.Transactional);
-        var advancedConfig = Assert.IsType<ConfigSpectrum>(session.EditableObject);
-        advancedConfig.NDConfig.EnableResetND = true;
-        advancedConfig.NDConfig.IsNDPort = enabled;
-        session.Commit();
+        draft.Config.Name = "Renamed";
 
         Assert.True(draft.TryApply(config, out string error), error);
         Assert.True(config.NDConfig.EnableResetND);
@@ -188,7 +186,14 @@ public sealed class SpectrumConfigurationDraftTests
                 try
                 {
                     Assert.Null(editor.FindName("NdTab"));
+                    Assert.Null(editor.FindName("AdvancedButton"));
                     Assert.IsType<Button>(editor.FindName("ManageCalibrationGroupsButton"));
+                    var connectionFields = Assert.IsType<StackPanel>(editor.FindName("ConnectionFields")).Children.OfType<DockPanel>()
+                        .Select(panel => panel.Tag).OfType<PropertyInfo>().Select(property => property.Name);
+                    Assert.Equal(new[] { nameof(ConfigSpectrum.SpectrometerType), nameof(ConfigSpectrum.IsAutoOpen),
+                        nameof(DisplaySpectrumConfig.UseLocalSpectrum), nameof(DisplaySpectrumConfig.IsLuminousFluxMode) }, connectionFields);
+                    var acquisitionFields = Assert.IsType<StackPanel>(editor.FindName("AcquisitionFields")).Children.OfType<DockPanel>();
+                    Assert.DoesNotContain(acquisitionFields, panel => panel.Tag is PropertyInfo property && property.DeclaringType == typeof(DisplaySpectrumConfig));
                     editor.Draft.DisplayConfig.UseLocalSpectrum = true;
 
                     var window = ShowCalibrationEditor(editor.EditConfig);
