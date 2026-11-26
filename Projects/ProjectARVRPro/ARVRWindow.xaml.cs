@@ -637,7 +637,7 @@ namespace ProjectARVRPro
             contextMenu.Items.Add(new Separator());
             contextMenu.Items.Add(new MenuItem() { Command = openFolderCommand, Header = "OpenFolderAndSelectFile" });
             contextMenu.Items.Add(new MenuItem() { Command = batchHistoryCommand, Header = LocalizedText.Get("流程结果查询") });
-            contextMenu.Items.Add(new MenuItem() { Command = flowExecutionAnalysisCommand, Header = LocalizedText.Get("流程执行分析") });
+            contextMenu.Items.Add(new MenuItem() { Command = flowExecutionAnalysisCommand, Header = LocalizedText.Get("流程分析") });
             contextMenu.Items.Add(new MenuItem() { Command = viewTestResultCommand, Header = LocalizedText.Get("查看测试结果") });
             contextMenu.Items.Add(new MenuItem
             {
@@ -715,8 +715,8 @@ namespace ProjectARVRPro
             }
             catch (Exception ex)
             {
-                log.Warn($"打开流程执行分析失败：BatchId={result.BatchId}", ex);
-                if (!_isDisposed) MessageBox.Show(this, ex.Message, LocalizedText.Get("流程执行分析"), MessageBoxButton.OK, MessageBoxImage.Information);
+                log.Warn($"打开流程分析失败：BatchId={result.BatchId}", ex);
+                if (!_isDisposed) MessageBox.Show(this, ex.Message, LocalizedText.Get("流程分析"), MessageBoxButton.OK, MessageBoxImage.Information);
             }
         }
 

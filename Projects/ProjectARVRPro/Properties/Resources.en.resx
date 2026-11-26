@@ -1071,6 +1071,9 @@ Each database is an independent snapshot; images are not automatically imported 
   <data name="没有可导出的数据" xml:space="preserve">
     <value>No data to export</value>
   </data>
+  <data name="流程分析" xml:space="preserve">
+    <value>Flow Analysis</value>
+  </data>
   <data name="流程执行分析" xml:space="preserve">
     <value>Flow Execution Analysis</value>
   </data>

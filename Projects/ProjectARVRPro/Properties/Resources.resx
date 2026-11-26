@@ -1051,6 +1051,9 @@
   <data name="没有可导出的数据" xml:space="preserve">
     <value>没有可导出的数据</value>
   </data>
+  <data name="流程分析" xml:space="preserve">
+    <value>流程分析</value>
+  </data>
   <data name="流程执行分析" xml:space="preserve">
     <value>流程执行分析</value>
   </data>
