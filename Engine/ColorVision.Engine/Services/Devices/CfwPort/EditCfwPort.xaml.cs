@@ -22,9 +22,8 @@ public partial class EditCfwPort : Window
         InitializeComponent();
         this.ApplyCaption();
         DataContext = Draft;
-        AddFields(ModeFields, nameof(Draft.UseLocalCfwPort), nameof(Draft.IsAutoOpen));
-        AddFields(ConnectionFields, nameof(Draft.SzComName), nameof(Draft.BaudRate), nameof(Draft.Timeout));
-        AddFields(PositionFields, nameof(Draft.Ports), nameof(Draft.RetryCount), nameof(Draft.Delay));
+        AddFields(DeviceFields, nameof(Draft.UseLocalCfwPort), nameof(Draft.IsAutoOpen), nameof(Draft.SzComName),
+            nameof(Draft.BaudRate), nameof(Draft.Timeout), nameof(Draft.Ports), nameof(Draft.RetryCount), nameof(Draft.Delay));
         AddFields(LicenseFields, nameof(Draft.SN));
     }
 

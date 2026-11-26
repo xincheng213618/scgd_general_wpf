@@ -2,14 +2,18 @@ using ColorVision.Database;
 using ColorVision.Engine;
 using ColorVision.Engine.Services;
 using ColorVision.Engine.Services.Devices;
+using ColorVision.Engine.Services.Devices.Algorithm;
+using ColorVision.Engine.Services.Devices.Calibration;
 using ColorVision.Engine.Services.Types;
 using ColorVision.Themes;
 using ColorVision.UI;
 using ColorVision.UI.Authorizations;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using SqlSugar;
 using System.ComponentModel;
 using System.IO;
+using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -79,6 +83,83 @@ public sealed class DeviceConfigurationOwnershipTests
                 fixture.RetireOriginal();
                 device.ResultDatabaseEndpoint = fixture.Replacement;
             }
+        }
+        finally
+        {
+            editor?.Close();
+            foreach (var dictionary in dictionaries) Application.Current.Resources.MergedDictionaries.Remove(dictionary);
+        }
+    });
+
+    [Fact]
+    public void CalibrationDisplayEditSavesLocallyAndPreservesTheOtherSettings() => AsAdministrator(() =>
+    {
+        using var fixture = new Fixture();
+        var previousConfig = ConfigService.Instance;
+        var handler = new ConfigHandler { IsAutoSave = false };
+        var dictionaries = ThemeManager.ResourceDictionaryWhite.Concat(ThemeManager.ResourceDictionaryBase)
+            .Select(uri => new ResourceDictionary { Source = new Uri(uri, UriKind.RelativeOrAbsolute) }).ToArray();
+        foreach (var dictionary in dictionaries) Application.Current.Resources.MergedDictionaries.Add(dictionary);
+        TestEnvironment.SetConfig(handler);
+        CameraBoundDeviceConfigurationWindow? editor = null;
+        try
+        {
+            using var device = fixture.CreateCalibrationDevice();
+            Assert.False(device.DisplayConfig.IsAdvancedExposure);
+            device.DisplayConfig.ExpTimeR = 42;
+            device.DisplayConfig.IsAdvancedExposure = true;
+            editor = device.CreateConfigurationEditor(owner: null);
+            var fields = Assert.IsType<StackPanel>(editor.FindName("ConfigurationFields")).Children.OfType<DockPanel>();
+            Assert.Equal(new[] { "Name", "CameraCode", "UseLocalCalibration" }, fields.Select(field => Assert.IsAssignableFrom<PropertyInfo>(field.Tag).Name));
+
+            var localBackend = TypeDescriptor.GetProperties(editor.Draft)[nameof(DisplayCalibrationConfig.UseLocalCalibration)]!;
+            localBackend.SetValue(editor.Draft, false);
+            Assert.True(device.DisplayConfig.UseLocalCalibration);
+
+            Assert.IsType<Button>(editor.FindName("ConfirmButton")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+
+            Assert.False(device.DisplayConfig.UseLocalCalibration);
+            Assert.True(device.DisplayConfig.IsAdvancedExposure);
+            Assert.Equal(42d, device.DisplayConfig.ExpTimeR);
+            var file = JObject.Parse(File.ReadAllText(handler.ConfigFilePath));
+            var saved = file[ConfigSectionNames.GetSectionName(typeof(DisplayConfigManager))]!.ToObject<DisplayConfigManager>()!
+                .GetDisplayConfig<DisplayCalibrationConfig>(OriginalCode);
+            Assert.False(saved.UseLocalCalibration);
+            Assert.True(saved.IsAdvancedExposure);
+            Assert.Equal(0, fixture.OriginalOpens);
+            Assert.Empty(fixture.Restarts);
+        }
+        finally
+        {
+            editor?.Close();
+            TestEnvironment.SetConfig(previousConfig);
+            foreach (var dictionary in dictionaries) Application.Current.Resources.MergedDictionaries.Remove(dictionary);
+        }
+    });
+
+    [Fact]
+    public void AlgorithmEditorPersistsNameAndPhysicalCameraToItsOpeningDatabase() => AsAdministrator(() =>
+    {
+        using var fixture = new Fixture(ServiceTypes.Algorithm);
+        using var device = fixture.CreateAlgorithmDevice();
+        var dictionaries = ThemeManager.ResourceDictionaryWhite.Concat(ThemeManager.ResourceDictionaryBase)
+            .Select(uri => new ResourceDictionary { Source = new Uri(uri, UriKind.RelativeOrAbsolute) }).ToArray();
+        foreach (var dictionary in dictionaries) Application.Current.Resources.MergedDictionaries.Add(dictionary);
+        CameraBoundDeviceConfigurationWindow? editor = null;
+        try
+        {
+            editor = device.CreateConfigurationEditor(owner: null);
+            editor.Draft.Name = "renamed algorithm";
+            editor.Draft.CameraCode = "physical-camera-code";
+            Assert.Equal("original name", device.Config.Name);
+
+            Assert.IsType<Button>(editor.FindName("ConfirmButton")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+
+            var saved = fixture.ReadRow("original");
+            Assert.Equal("renamed algorithm", saved.Name);
+            Assert.Equal("physical-camera-code", JsonConvert.DeserializeObject<ConfigAlgorithm>(saved.Value)!.SN);
+            Assert.Equal("replacement name", fixture.ReadRow("replacement").Name);
+            Assert.Equal(("type-original", "parent-original", OriginalCode), Assert.Single(fixture.Restarts));
         }
         finally
         {
@@ -231,11 +312,13 @@ public sealed class DeviceConfigurationOwnershipTests
     private sealed class Fixture : IDisposable
     {
         private readonly DirectoryInfo directory = Directory.CreateTempSubdirectory("cv-device-configuration-");
+        private readonly ServiceTypes serviceType;
         private MySqlConnectedEndpoint active;
         private readonly SysResourceModel first;
 
-        internal Fixture()
+        internal Fixture(ServiceTypes serviceType = ServiceTypes.Calibration)
         {
+            this.serviceType = serviceType;
             Original = new MySqlConnectedEndpoint(IsCurrent, () => { OriginalOpens++; return Open("original"); });
             Replacement = new MySqlConnectedEndpoint(IsCurrent, () => { ReplacementOpens++; return Open("replacement"); });
             active = Original;
@@ -262,6 +345,16 @@ public sealed class DeviceConfigurationOwnershipTests
             ResultDatabaseEndpoint = Original, RestartRequest = RecordRestart
         };
 
+        internal DeviceCalibration CreateCalibrationDevice() => new(first)
+        {
+            ResultDatabaseEndpoint = Original, RestartRequest = RecordRestart
+        };
+
+        internal DeviceAlgorithm CreateAlgorithmDevice() => new(first)
+        {
+            ResultDatabaseEndpoint = Original, RestartRequest = RecordRestart
+        };
+
         internal void RetireOriginal() => active = Replacement;
         internal void RecordRestart(string type, string parent, string device) => Restarts.Add((type, parent, device));
         private bool IsCurrent(MySqlConnectedEndpoint endpoint) => ReferenceEquals(endpoint, active);
@@ -278,8 +371,9 @@ public sealed class DeviceConfigurationOwnershipTests
             db.CodeFirst.InitTables<SysResourceModel>();
             db.Ado.ExecuteCommand("CREATE TABLE t_scgd_sys_dictionary (id INTEGER PRIMARY KEY, [key] TEXT, pid INTEGER, val INTEGER)");
             db.Ado.ExecuteCommand("INSERT INTO t_scgd_sys_dictionary ([key], pid, val) VALUES (@route, 1, @type)",
-                new { route = $"type-{store}", type = (int)ServiceTypes.Calibration });
+                new { route = $"type-{store}", type = (int)serviceType });
             var row = Resource(store);
+            row.Type = (int)serviceType;
             row.Pid = db.Insertable(new SysResourceModel { Code = $"parent-{store}", Name = "Parent" }).ExecuteReturnIdentity();
             row.Id = db.Insertable(row).ExecuteReturnIdentity();
             return row;

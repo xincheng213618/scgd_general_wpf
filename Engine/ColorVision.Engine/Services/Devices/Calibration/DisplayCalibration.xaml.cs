@@ -34,15 +34,11 @@ namespace ColorVision.Engine.Services.Devices.Calibration
         public double ExpTimeB { get => _ExpTimeB; set { _ExpTimeB = value; OnPropertyChanged(); } }
         private double _ExpTimeB = 10;
 
-        [Category("高级设置")]
-        [DisplayName("使用三通道曝光")]
-        [Description("分别配置 R、G、B 三个曝光值；关闭时只使用一个曝光值。")]
+        [Browsable(false)]
         public bool IsAdvancedExposure { get => _IsAdvancedExposure; set { _IsAdvancedExposure = value; OnPropertyChanged(); } }
         private bool _IsAdvancedExposure;
 
-        [Category("高级设置")]
-        [DisplayName("使用本地校正")]
-        [Description("使用进程内优化校正；流程中的校正及其下游实时关注点结点一起使用内部调用，实时关注点忽略高级参数。关闭后两者使用原 MQTT 服务。")]
+        [Browsable(false)]
         public bool UseLocalCalibration { get => _UseLocalCalibration; set { _UseLocalCalibration = value; OnPropertyChanged(); } }
         private bool _UseLocalCalibration = true;
 

@@ -4,7 +4,6 @@ using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using System;
 using System.Windows;
 using System.Windows.Controls;
-using ColorVision.UI.Authorizations;
 using ColorVision.UI.Views;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm
@@ -39,20 +38,30 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
                 { PersistenceKey = Config.Code };
             DisplayAlgorithmControlLazy = new Lazy<DisplayAlgorithm>(() => { DisplayAlgorithm ??= new DisplayAlgorithm(this); return DisplayAlgorithm; });
 
-            EditCommand = new RelayCommand(a =>
+            EditCommand = new RelayCommand(_ =>
             {
                 if (!CanConfigure) return;
-                var propertyEditorWindow = new PropertyEditorWindow(Config, PropertyEditorEditMode.Transactional) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
-                var target = ProtectConfigurationEditor(propertyEditorWindow);
-                propertyEditorWindow.Submitted += (_, _) => TryCommitConfiguration(propertyEditorWindow, expectedTarget: target);
-                propertyEditorWindow.ShowDialog();
-
-            }, a => CanConfigure);
+                CreateConfigurationEditor(Application.Current.GetActiveWindow()).ShowDialog();
+            }, _ => CanConfigure);
         }
 
-        private void Con_Submited(object? sender, EventArgs e)
+        internal CameraBoundDeviceConfigurationWindow CreateConfigurationEditor(Window? owner)
         {
-            throw new NotImplementedException();
+            var target = CaptureConfigurationTarget();
+            string openingName = Config.Name;
+            string? openingSerial = Config.SN;
+            var draft = new CameraBoundDeviceConfigurationDraft { Name = openingName, CameraCode = openingSerial };
+            return new CameraBoundDeviceConfigurationWindow(owner, draft, window =>
+            {
+                if (!TryAdmitConfigurationEdit(target, window)) return false;
+                return TryCommitConfiguration(window, () =>
+                {
+                    if (draft.Name != openingName && draft.Name != Config.Name) Config.Name = draft.Name;
+
+                    string serial = draft.CameraCode ?? string.Empty;
+                    if (draft.CameraCode != openingSerial && serial != Config.SN) Config.SN = serial;
+                }, target);
+            });
         }
 
         readonly Lazy<DisplayAlgorithm> DisplayAlgorithmControlLazy;

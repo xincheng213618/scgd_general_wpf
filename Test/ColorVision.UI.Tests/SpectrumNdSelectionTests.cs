@@ -406,6 +406,48 @@ public sealed class SpectrumNdSelectionTests
     }
 
     [Fact]
+    public void FilterWheelConfigurationEditsDisplayNameInTheConnectionCard()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            using var scope = new TestScope();
+            using var device = new DeviceCfwPort(new SysResourceModel
+            {
+                Id = -2, Code = "ND.Configuration", Name = "Original wheel", Value = "{}"
+            });
+            device.DisplayConfig.UseLocalCfwPort = true;
+            var editor = new EditCfwPort(device);
+            try
+            {
+                Assert.Equal("Original wheel", editor.Draft.Name);
+                Pump();
+                var name = Assert.IsType<TextBox>(editor.FindName("DisplayNameTextBox"));
+                var nameRow = Assert.IsType<DockPanel>(name.Parent);
+                var fields = Assert.IsType<StackPanel>(nameRow.Parent);
+                var connectionFields = Assert.IsType<StackPanel>(editor.FindName("DeviceFields"));
+                var licenseFields = Assert.IsType<StackPanel>(editor.FindName("LicenseFields"));
+                Assert.Same(nameRow, fields.Children[1]);
+                Assert.Same(fields, connectionFields.Parent);
+                Assert.Same(fields, licenseFields.Parent);
+
+                Assert.Equal("Original wheel", name.Text);
+                name.SetCurrentValue(TextBox.TextProperty, "Renamed wheel");
+                name.GetBindingExpression(TextBox.TextProperty)!.UpdateSource();
+                Assert.Equal("Renamed wheel", editor.Draft.Name);
+                Assert.Equal("Original wheel", device.Config.Name);
+                Assert.Equal((true, false), editor.Draft.Apply(device.Config, device.DisplayConfig));
+                Assert.Equal("Renamed wheel", device.Config.Name);
+
+                Assert.Equal(Visibility.Collapsed, licenseFields.Visibility);
+                editor.Draft.UseLocalCfwPort = false;
+                Assert.Equal(Visibility.Visible, licenseFields.Visibility);
+                Assert.True(device.DisplayConfig.UseLocalCfwPort);
+            }
+            finally { editor.Close(); }
+        });
+    }
+
+    [Fact]
     public async Task LocalOpenShowsConfirmedHoleOnTheCard()
     {
         TestScope? scope = null;
