@@ -58,11 +58,13 @@ public sealed partial class DisplayMetrologyProvider
             .Concat(FindGhostSeeds(SmoothRingProfile(mean, Math.Max(1, radius * .0025 / step)),
                 SmoothRingProfile(mean, Math.Max(2, radius * .01 / step)), start, end, requiredProminence)
                 .Select(b => (Band: b, RequiresFit: true)));
+        RingBand[][]? traceBands = null;
         foreach (var proposal in proposals)
         {
             token.ThrowIfCancellationRequested();
+            traceBands ??= FindRingTraceBands(polar, length, radius, start, step, requiredProminence, mainBand.Left * step, token);
             var reading = RefineGhostRing(signal, width, height, ellipse, polar, length,
-                proposal.Band, start, end, step, requiredProminence, mainBand.Left * step, token);
+                proposal.Band, traceBands, step, requiredProminence, mainBand.Left * step, token);
             if (proposal.RequiresFit && !reading.Region.HasValue) continue;
             if (reading.Coverage >= 2.0 / 3 && reading.Mean > reading.Background) found.Add(reading);
         }
@@ -292,21 +294,69 @@ public sealed partial class DisplayMetrologyProvider
     private static double[] SmoothRingProfile(double[] profile, double sigma)
     {
         int half = (int)Math.Ceiling(sigma * 3);
+        Span<double> kernel = stackalloc double[2 * half + 1];
+        double weight = 0;
+        for (int d = -half; d <= half; d++)
+        {
+            double w = Math.Exp(-d * d / (2 * sigma * sigma));
+            kernel[d + half] = w;
+            weight += w;
+        }
         var result = new double[profile.Length];
         for (int i = 0; i < result.Length; i++)
         {
-            double sum = 0, weight = 0;
+            double sum = 0;
             for (int d = -half; d <= half; d++)
-            {
-                double w = Math.Exp(-d * d / (2 * sigma * sigma));
-                sum += profile[Math.Clamp(i + d, 0, profile.Length - 1)] * w; weight += w;
-            }
+                sum += profile[Math.Clamp(i + d, 0, profile.Length - 1)] * kernel[d + half];
             result[i] = sum / weight;
         }
         return result;
     }
 
-    private static double RingMedian(double[] values)
+    internal static double RingMedian(double[] values)
+    {
+        if (values.Length != RingAngles) return SortedRingMedian(values);
+
+        // Whole-circle profiles normally contain nonnegative, finite samples.
+        // Keep sort semantics for other values, including the sign of zero.
+        foreach (double value in values)
+            if (BitConverter.DoubleToUInt64Bits(value) >= 0x7ff0000000000000UL)
+                return SortedRingMedian(values);
+
+        int middle = values.Length / 2;
+        int left = 0, right = values.Length - 1;
+        // Partition only the half that still contains the upper middle sample.
+        // Bound the work on unusual profiles before falling back to a sort.
+        for (int remaining = 16; left < right; remaining--)
+        {
+            if (remaining == 0)
+            {
+                values.AsSpan(left, right - left + 1).Sort();
+                break;
+            }
+
+            double pivot = values[(left + right) / 2];
+            int i = left, j = right;
+            do
+            {
+                while (values[i] < pivot) i++;
+                while (values[j] > pivot) j--;
+                if (i > j) break;
+                (values[i], values[j]) = (values[j], values[i]);
+                i++;
+                j--;
+            } while (i <= j);
+            if (middle <= j) right = j;
+            else if (middle >= i) left = i;
+            else break;
+        }
+
+        double lower = values[0];
+        for (int i = 1; i < middle; i++) lower = Math.Max(lower, values[i]);
+        return (lower + values[middle]) / 2;
+    }
+
+    private static double SortedRingMedian(double[] values)
     {
         Array.Sort(values);
         int middle = values.Length / 2;

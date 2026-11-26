@@ -1111,6 +1111,11 @@
   <data name="SpectrumInvalidLicense" xml:space="preserve"><value>许可证内容无效，型号或到期日期无法读取。</value></data>
   <data name="SpectrumManagerHint" xml:space="preserve"><value>管理光谱仪序列号与许可证</value></data>
   <data name="SpectrumManagerSummary" xml:space="preserve"><value>{0} 台光谱仪 / {1} 本次发现</value></data>
+  <data name="SpectrumRemoveLicense" xml:space="preserve"><value>移除许可证</value></data>
+  <data name="SpectrumRemoveLicenseConfirm" xml:space="preserve"><value>确定移除光谱仪 {0} 的许可证？&#xA;&#xA;此操作移除数据库中的许可证记录，保留设备配置和 LIC 文件。</value></data>
+  <data name="SpectrumRemoveLicenseSuccess" xml:space="preserve"><value>已移除光谱仪 {0} 的许可证。</value></data>
+  <data name="SpectrumRemoveLicenseChanged" xml:space="preserve"><value>光谱仪 {0} 的许可证已变更或移除，列表已刷新。</value></data>
+  <data name="SpectrumCatalogSourceChanged" xml:space="preserve"><value>数据库连接已变更，请重新打开物理光谱仪管理。</value></data>
   <data name="SpectrumWorking" xml:space="preserve"><value>正在处理…</value></data>
   <data name="SpectrumScanComplete" xml:space="preserve"><value>本次发现 {0} 台光谱仪，{1} 项查询失败。</value></data>
   <data name="SpectrumImportLicense" xml:space="preserve"><value>导入本地许可证</value></data>

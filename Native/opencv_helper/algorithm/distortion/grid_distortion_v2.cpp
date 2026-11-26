@@ -57,23 +57,26 @@ cv::Mat grayFloat(const cv::Mat& image)
     return gray;
 }
 
-std::vector<Candidate> detectCandidates(const cv::Mat& mask, const Options& options)
+std::vector<Candidate> detectCandidateRows(const cv::Mat& mask, int firstRow, int endRow, double maxWidth, double maxHeight)
 {
     std::vector<std::vector<cv::Point>> contours;
     std::vector<cv::Vec4i> hierarchy;
+    // A component belongs to the band containing its top row. Include enough
+    // neighboring rows to trace every eligible component and reject cut ones.
+    const int top = std::max(0, firstRow - 1);
+    const int bottom = std::min(mask.rows, endRow + static_cast<int>(maxHeight));
     // Keep foreground components inside a surrounding frame or ring. CCOMP
     // promotes these islands to the top level and keeps hole boundaries below
     // their component, so a ring's inner edge cannot become a second dot.
-    cv::findContours(mask, contours, hierarchy, cv::RETR_CCOMP, cv::CHAIN_APPROX_SIMPLE);
+    cv::findContours(mask.rowRange(top, bottom), contours, hierarchy, cv::RETR_CCOMP, cv::CHAIN_APPROX_SIMPLE, cv::Point(0, top));
     std::vector<Candidate> candidates;
-    const double maxWidth = mask.cols * 0.75 / std::max(2, options.cols - 1);
-    const double maxHeight = mask.rows * 0.75 / std::max(2, options.rows - 1);
     for (size_t i = 0; i < contours.size(); ++i) {
         if (hierarchy[i][3] >= 0) continue;
         const auto& contour = contours[i];
         const cv::Rect bounds = cv::boundingRect(contour);
         if (bounds.width < 3 || bounds.height < 3 || bounds.width > maxWidth || bounds.height > maxHeight) continue;
-        if (bounds.x <= 0 || bounds.y <= 0 || bounds.br().x >= mask.cols || bounds.br().y >= mask.rows) continue;
+        if (bounds.y < firstRow || bounds.y >= endRow) continue;
+        if (bounds.x <= 0 || bounds.y <= 0 || bounds.br().x >= mask.cols || bounds.br().y >= bottom) continue;
         const double area = cv::contourArea(contour);
         const double perimeter = cv::arcLength(contour, true);
         const double extent = area / (bounds.width * bounds.height);
@@ -84,6 +87,28 @@ std::vector<Candidate> detectCandidates(const cv::Mat& mask, const Options& opti
         const cv::Moments moments = cv::moments(contour);
         if (moments.m00 <= 0) continue;
         candidates.push_back({ cv::Point2f(static_cast<float>(moments.m10 / moments.m00), static_cast<float>(moments.m01 / moments.m00)), bounds, area });
+    }
+    return candidates;
+}
+
+std::vector<Candidate> detectCandidates(const cv::Mat& mask, const Options& options)
+{
+    const double maxWidth = mask.cols * 0.75 / std::max(2, options.cols - 1);
+    const double maxHeight = mask.rows * 0.75 / std::max(2, options.rows - 1);
+    const int bandCount = std::max(1, std::min({ mask.rows / 192, 8, cv::getNumThreads() }));
+    if (bandCount == 1) return detectCandidateRows(mask, 0, mask.rows, maxWidth, maxHeight);
+
+    std::vector<std::vector<Candidate>> bands(bandCount);
+    cv::parallel_for_(cv::Range(0, bandCount), [&](const cv::Range& range) {
+        for (int i = range.start; i < range.end; ++i) {
+            bands[i] = detectCandidateRows(mask, i * mask.rows / bandCount, (i + 1) * mask.rows / bandCount, maxWidth, maxHeight);
+        }
+    });
+    // CCOMP emits the outer contours in reverse raster discovery order. Keep
+    // that order for grid hypotheses, tied candidates and rejection overlays.
+    std::vector<Candidate> candidates;
+    for (auto band = bands.rbegin(); band != bands.rend(); ++band) {
+        candidates.insert(candidates.end(), band->begin(), band->end());
     }
     return candidates;
 }

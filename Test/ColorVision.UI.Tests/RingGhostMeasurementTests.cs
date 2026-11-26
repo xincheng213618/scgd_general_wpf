@@ -7,6 +7,39 @@ namespace ColorVision.UI.Tests;
 
 public sealed class RingGhostMeasurementTests
 {
+    [Fact]
+    public void AngularMedianMatchesSortForRepeatedValuesAndExceptionalSamples()
+    {
+        const int angles = 720;
+        var random = new Random(7331);
+        // Include ties around the two middle ranks, empty signal, and arrays
+        // that tend to produce unfavourable partitions.
+        for (int i = 0; i < 40; i++)
+            AssertMedian(Enumerable.Range(0, angles).Select(_ => random.Next(8) / 7d).ToArray());
+        AssertMedian(Enumerable.Range(0, angles).Select(i => (double)i).ToArray());
+        AssertMedian(Enumerable.Range(0, angles).Select(i => (double)(angles - i)).ToArray());
+        AssertMedian(Enumerable.Range(0, angles).Select(i => (double)Math.Abs(i - angles / 2)).ToArray());
+        AssertMedian(new double[angles]);
+        AssertMedian(Enumerable.Repeat(double.MaxValue, angles).ToArray());
+
+        var unusual = Enumerable.Range(0, angles).Select(i => i % 5 == 0 ? 0d : -0d).ToArray();
+        AssertMedian(unusual);
+        unusual[0] = double.NaN;
+        unusual[1] = double.PositiveInfinity;
+        unusual[2] = double.NegativeInfinity;
+        AssertMedian(unusual);
+    }
+
+    private static void AssertMedian(double[] input)
+    {
+        var sorted = (double[])input.Clone();
+        Array.Sort(sorted);
+        int middle = sorted.Length / 2;
+        double expected = (sorted[middle - 1] + sorted[middle]) / 2;
+        double actual = DisplayMetrologyProvider.RingMedian((double[])input.Clone());
+        Assert.Equal(BitConverter.DoubleToInt64Bits(expected), BitConverter.DoubleToInt64Bits(actual));
+    }
+
     // Protect weak-signal photometry and the distinction between geometric candidates and physical orders.
     [Theory]
     [InlineData(100, 1, 1, 0)]

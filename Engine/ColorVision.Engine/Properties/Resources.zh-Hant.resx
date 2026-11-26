@@ -2861,6 +2861,11 @@
   <data name="SpectrumInvalidLicense" xml:space="preserve"><value>授權內容無效，型號或到期日期無法讀取。</value></data>
   <data name="SpectrumManagerHint" xml:space="preserve"><value>管理光譜儀序列號與授權</value></data>
   <data name="SpectrumManagerSummary" xml:space="preserve"><value>{0} 台光譜儀 / {1} 本次發現</value></data>
+  <data name="SpectrumRemoveLicense" xml:space="preserve"><value>移除授權</value></data>
+  <data name="SpectrumRemoveLicenseConfirm" xml:space="preserve"><value>確定移除光譜儀 {0} 的授權？&#xA;&#xA;此操作移除資料庫中的授權記錄，保留裝置設定和 LIC 檔案。</value></data>
+  <data name="SpectrumRemoveLicenseSuccess" xml:space="preserve"><value>已移除光譜儀 {0} 的授權。</value></data>
+  <data name="SpectrumRemoveLicenseChanged" xml:space="preserve"><value>光譜儀 {0} 的授權已變更或移除，清單已重新整理。</value></data>
+  <data name="SpectrumCatalogSourceChanged" xml:space="preserve"><value>資料庫連線已變更，請重新開啟實體光譜儀管理。</value></data>
   <data name="SpectrumWorking" xml:space="preserve"><value>正在處理…</value></data>
   <data name="SpectrumScanComplete" xml:space="preserve"><value>本次發現 {0} 台光譜儀，{1} 項查詢失敗。</value></data>
   <data name="SpectrumImportLicense" xml:space="preserve"><value>匯入本機授權</value></data>

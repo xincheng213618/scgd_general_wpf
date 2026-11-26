@@ -16,6 +16,7 @@ using ST.Library.UI.NodeEditor;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
+using System.Numerics;
 using System.Runtime.InteropServices;
 
 namespace ColorVision.UI.Tests;
@@ -252,6 +253,28 @@ public sealed class FovCalculationTests
         InvalidOperationException error = Assert.Throws<InvalidOperationException>(() => FovCalculator.DetectAndCalculate(
             image.Image, default, 9410, 74.2, FovMeasurementMode.CurvedBoundary, minimumConfidence: 0));
         Assert.Contains("缺失、裁切或低对比边界", error.Message);
+    }
+
+    [Theory]
+    [InlineData(false, "曲边模式要求连续填充图案，当前轮廓含孔洞或同一方向的多段边界。")]
+    [InlineData(true, "曲边发光区存在缺失、裁切或低对比边界。")]
+    public void CurvedModeLargeSixteenBitImageReportsTheFirstRayFailure(bool fadeRightEdge, string expectedMessage)
+    {
+        using SyntheticImage image = new(16, 1, (_, _) => true, (x, y, _) =>
+        {
+            int dx = x - 328;
+            int dy = y - 324;
+            // An open notch causes a later ray to re-enter the same component.
+            if (dx <= 30 && Math.Abs(dy - 155) <= 8) return 0;
+            double radius = Math.Sqrt(dx * dx + dy * dy);
+            double direction = Math.Atan2(dy, dx);
+            double fadeWidth = fadeRightEdge ? 90 + 155 * Math.Exp(-Math.Pow(direction / 0.16, 4)) : 90;
+            return 36000 * Math.Clamp((300 - radius) / fadeWidth, 0, 1);
+        }, width: 656, height: 648);
+
+        InvalidOperationException error = Assert.Throws<InvalidOperationException>(() => FovCalculator.DetectAndCalculate(
+            image.Image, default, 9410, 74.2, FovMeasurementMode.CurvedBoundary));
+        Assert.Equal(expectedMessage, error.Message);
     }
 
     [Fact]
@@ -539,6 +562,78 @@ public sealed class FovCalculationTests
         Assert.Equal(full.Bottom, roi.Bottom);
         Assert.Throws<InvalidOperationException>(() => FovCalculator.DetectAndCalculate(image.Image, new RoiRect(80, 10, 200, 240), 9410, 74.2,
             mode: FovMeasurementMode.CurvedBoundary));
+    }
+
+    [Fact]
+    public void SeedMedianMatchesSortedWindowsIncludingSimdTails()
+    {
+        // Cover every tail length on the SIMD width of the current machine.
+        foreach (int width in Enumerable.Range(0, 2 * Vector<double>.Count).Concat([128, 1021]))
+            AssertSeedMedianMatchesSortedWindows(width);
+    }
+
+    private static void AssertSeedMedianMatchesSortedWindows(int width)
+    {
+        var random = new Random(16081);
+        double[] levels = [double.MinValue, -1, 0, 0, 0, 255, 32768, 65535, 65535, 196605, double.MaxValue];
+        double[][] rows = new double[5][];
+        for (int y = 0; y < rows.Length; y++)
+        {
+            rows[y] = new double[width + 4];
+            for (int x = 0; x < rows[y].Length; x++)
+                rows[y][x] = levels[random.Next(levels.Length)];
+            if (width >= 9)
+            {
+                rows[y].AsSpan(0, 5).Fill(double.MinValue);
+                rows[y].AsSpan(width - 1, 5).Fill(double.MaxValue);
+            }
+        }
+
+        double[] output = new double[width];
+        Array.Fill(output, double.NaN);
+        bool written = FovSeedMedian.TryWriteRow(rows[0], rows[1], rows[2], rows[3], rows[4], output);
+        Assert.Equal(Vector.IsHardwareAccelerated && width >= Vector<double>.Count, written);
+        if (!written)
+        {
+            Assert.All(output, value => Assert.True(double.IsNaN(value)));
+            return;
+        }
+
+        double[] window = new double[25];
+        for (int x = 0; x < width; x++)
+        {
+            for (int y = 0; y < rows.Length; y++)
+                rows[y].AsSpan(x, 5).CopyTo(window.AsSpan(y * 5, 5));
+            Array.Sort(window);
+            Assert.Equal(window[12], output[x]);
+        }
+    }
+
+    [Fact]
+    public void CurvedModeLargeSixteenBitRoiMatchesTheSerialFloatPath()
+    {
+        // The seed step is two, so both ROI edges need the clamped halo.
+        // The four-channel image uses the same intensity as the grayscale
+        // reference while varying alpha and using padded rows.
+        RoiRect roi = new(7, 11, 1008, 1028);
+        using SyntheticImage color = new(16, 4, InField, (x, y, channel) =>
+            channel == 3 ? (x * 71 + y * 113) % 65536 : Intensity(x, y) + (channel - 1) * 2000,
+            width: 1020, height: 1044);
+        using SyntheticImage grayscale = new(32, 1, InField, (x, y, _) => Intensity(x, y), width: 1020, height: 1044);
+
+        FovCalculationResult reference = FovCalculator.DetectAndCalculate(grayscale.Image, roi, 9410, 74.2, FovMeasurementMode.CurvedBoundary);
+        FovCalculationResult result = FovCalculator.DetectAndCalculate(color.Image, roi, 9410, 74.2, FovMeasurementMode.CurvedBoundary);
+
+        FovBoundaryGeometry expected = reference.Measurement.Boundary!;
+        FovBoundaryGeometry actual = result.Measurement.Boundary!;
+        Assert.Equal(expected with { DiagonalPoints = actual.DiagonalPoints, Contour = actual.Contour }, actual);
+        Assert.Equal(expected.DiagonalPoints, actual.DiagonalPoints);
+        Assert.Equal(expected.Contour, actual.Contour);
+        Assert.Equal(reference.Measurement.DiagonalFovDegrees, result.Measurement.DiagonalFovDegrees);
+        Assert.Equal(reference.Detection!.Confidence, result.Detection!.Confidence);
+
+        static bool InField(int x, int y) => Math.Pow((x - 510) / 406d, 2) + Math.Pow((y - 525) / 396d, 2) <= 1;
+        static double Intensity(int x, int y) => (InField(x, y) ? 36000 : 3000) + (x * 17 + y * 31) % 127;
     }
 
     [Theory]

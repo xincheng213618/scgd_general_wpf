@@ -26,30 +26,16 @@ public sealed partial class DisplayMetrologyProvider
         }
     }
 
-    private static RingReading RefineGhostRing(float[] signal, int width, int height, RotatedRect primary,
-        double[] polar, int length, RingBand seed, int start, int end, double step,
-        double requiredProminence, double primaryInnerRadius, CancellationToken token)
+    private static RingBand[][] FindRingTraceBands(double[] polar, int length, double primaryRadius,
+        int start, double step, double requiredProminence, double primaryInnerRadius, CancellationToken token)
     {
-        var reading = TryRefineGhostRing(signal, width, height, primary, polar, length, seed, start, end,
-            step, requiredProminence, primaryInnerRadius, preferNearest: false, token);
-        // A brighter neighbouring ring must not steal the trace of a weaker candidate.
-        return reading.Region.HasValue ? reading : TryRefineGhostRing(signal, width, height, primary, polar,
-            length, seed, start, end, step, requiredProminence, primaryInnerRadius, preferNearest: true, token);
-    }
-
-    private static RingReading TryRefineGhostRing(float[] signal, int width, int height, RotatedRect primary,
-        double[] polar, int length, RingBand seed, int start, int end, double step,
-        double requiredProminence, double primaryInnerRadius, bool preferNearest, CancellationToken token)
-    {
-        var original = ReadRingBand(polar, length, seed, requiredProminence * .2);
-        double primaryRadius = (primary.Size.Width + primary.Size.Height) / 4;
-        int padding = Math.Max(seed.Right - seed.Left, (int)(primaryRadius * .1 / step));
         int traceEnd = Math.Min(length - 2, (int)(primaryInnerRadius / step) - 1);
-        const int sectors = RingTraceSectors, anglesPerSector = RingAngles / sectors;
-        var points = new List<Point2f>();
+        const int anglesPerSector = RingAngles / RingTraceSectors;
+        var result = new RingBand[RingTraceSectors][];
         var sectorProfile = new double[length];
         var samples = new double[anglesPerSector];
-        for (int sector = 0; sector < sectors; sector++)
+        var bands = new List<RingBand>();
+        for (int sector = 0; sector < result.Length; sector++)
         {
             token.ThrowIfCancellationRequested();
             for (int r = 0; r < length; r++)
@@ -58,14 +44,47 @@ public sealed partial class DisplayMetrologyProvider
                 sectorProfile[r] = RingMedian(samples);
             }
             double[] smooth = SmoothRingProfile(sectorProfile, Math.Max(1, primaryRadius * .0025 / step));
-            RingBand? nearest = null;
-            // A displaced ring can create two radial horns. Search the complete inner ray;
-            // a window around either horn would miss the opposite side of the same ring.
+            // Follow all inner peaks so both horns of a displaced ring can
+            // support a trace. Every proposed ring uses these same bands.
+            bands.Clear();
             foreach (int peak in FindRingPeaks(smooth, start, traceEnd))
             {
                 RingBand band = FindRingCandidateBand(smooth, peak, start, traceEnd);
                 if (band.Prominence < requiredProminence || band.Right - band.Left < 2
                     || band.Left <= start || band.Right >= traceEnd) continue;
+                bands.Add(band);
+            }
+            result[sector] = bands.ToArray();
+        }
+        return result;
+    }
+
+    private static RingReading RefineGhostRing(float[] signal, int width, int height, RotatedRect primary,
+        double[] polar, int length, RingBand seed, RingBand[][] traceBands, double step,
+        double requiredProminence, double primaryInnerRadius, CancellationToken token)
+    {
+        var reading = TryRefineGhostRing(signal, width, height, primary, polar, length, seed, traceBands,
+            step, requiredProminence, primaryInnerRadius, preferNearest: false, token);
+        // A brighter neighbouring ring must not steal the trace of a weaker candidate.
+        return reading.Region.HasValue ? reading : TryRefineGhostRing(signal, width, height, primary, polar,
+            length, seed, traceBands, step, requiredProminence, primaryInnerRadius, preferNearest: true, token);
+    }
+
+    private static RingReading TryRefineGhostRing(float[] signal, int width, int height, RotatedRect primary,
+        double[] polar, int length, RingBand seed, RingBand[][] traceBands, double step,
+        double requiredProminence, double primaryInnerRadius, bool preferNearest, CancellationToken token)
+    {
+        var original = ReadRingBand(polar, length, seed, requiredProminence * .2);
+        double primaryRadius = (primary.Size.Width + primary.Size.Height) / 4;
+        int padding = Math.Max(seed.Right - seed.Left, (int)(primaryRadius * .1 / step));
+        const int sectors = RingTraceSectors, anglesPerSector = RingAngles / sectors;
+        var points = new List<Point2f>();
+        for (int sector = 0; sector < sectors; sector++)
+        {
+            token.ThrowIfCancellationRequested();
+            RingBand? nearest = null;
+            foreach (RingBand band in traceBands[sector])
+            {
                 // Preserve the ring's identity when another brighter ring is nearby.
                 if (nearest == null || (preferNearest
                     ? Math.Abs((band.Left + band.Right) * .5 - seed.Peak) < Math.Abs((nearest.Left + nearest.Right) * .5 - seed.Peak)

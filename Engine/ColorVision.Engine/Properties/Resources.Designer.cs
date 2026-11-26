@@ -13157,6 +13157,15 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
+        ///   查找类似 数据库连接已变更，请重新打开物理光谱仪管理。 的本地化字符串。
+        /// </summary>
+        public static string SpectrumCatalogSourceChanged {
+            get {
+                return ResourceManager.GetString("SpectrumCatalogSourceChanged", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   查找类似 串口 的本地化字符串。
         /// </summary>
         public static string SpectrumComPort {
@@ -13692,6 +13701,44 @@ namespace ColorVision.Engine.Properties {
             }
         }
         
+        /// <summary>
+        ///   查找类似 移除许可证 的本地化字符串。
+        /// </summary>
+        public static string SpectrumRemoveLicense {
+            get {
+                return ResourceManager.GetString("SpectrumRemoveLicense", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 光谱仪 {0} 的许可证已变更或移除，列表已刷新。 的本地化字符串。
+        /// </summary>
+        public static string SpectrumRemoveLicenseChanged {
+            get {
+                return ResourceManager.GetString("SpectrumRemoveLicenseChanged", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 确定移除光谱仪 {0} 的许可证？
+        ///
+        ///此操作移除数据库中的许可证记录，保留设备配置和 LIC 文件。 的本地化字符串。
+        /// </summary>
+        public static string SpectrumRemoveLicenseConfirm {
+            get {
+                return ResourceManager.GetString("SpectrumRemoveLicenseConfirm", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 已移除光谱仪 {0} 的许可证。 的本地化字符串。
+        /// </summary>
+        public static string SpectrumRemoveLicenseSuccess {
+            get {
+                return ResourceManager.GetString("SpectrumRemoveLicenseSuccess", resourceCulture);
+            }
+        }
+
         /// <summary>
         ///   查找类似 本次发现 {0} 台光谱仪，{1} 项查询失败。 的本地化字符串。
         /// </summary>

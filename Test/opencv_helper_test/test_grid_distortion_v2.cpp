@@ -304,5 +304,36 @@ bool RunGridDistortionV2Tests()
     const json withRingClutter = run(ringClutter, config7);
     check(matches(withRingClutter, regular7.centers) && withRingClutter.value("candidateCount", 0) == 50,
         "foreground ring hole is not a duplicate candidate");
+
+    {
+        // At 1501 rows the seven processing bands have uneven boundaries.
+        // Six grid rows straddle those boundaries and contain tied contour rows.
+        Fixture crossing{cv::Mat(1501, 1600, CV_16U, cv::Scalar(500)), {}};
+        for (int row = 0; row < 7; ++row) for (int col = 0; col < 7; ++col) {
+            const cv::Point center(180 + 205 * col, (row + 1) * crossing.image.rows / 7 - 23);
+            const int radius = row == 6 ? 20 : 27;
+            crossing.centers.emplace_back(center);
+            cv::circle(crossing.image, center, radius, cv::Scalar(45000), cv::FILLED, cv::LINE_8);
+        }
+        cv::Mat missing = crossing.image.clone();
+        cv::circle(missing, cv::Point(crossing.centers[24]), 27, cv::Scalar(500), cv::FILLED, cv::LINE_8);
+
+        struct ThreadCountScope {
+            int previous = cv::getNumThreads();
+            ~ThreadCountScope() { cv::setNumThreads(previous); }
+        } threadCount;
+        const auto measure = [&](const cv::Mat& image) {
+            json result = run(image, config7);
+            if (result.is_object()) result.erase("timings");
+            return result;
+        };
+        cv::setNumThreads(1);
+        const json serial = measure(crossing.image), serialMissing = measure(missing);
+        cv::setNumThreads(8);
+        const json parallel = measure(crossing.image), parallelMissing = measure(missing);
+        check(matches(parallel, crossing.centers) && parallel == serial
+            && rejected(parallelMissing) && parallelMissing.value("candidateCount", 0) == 48
+            && parallelMissing == serialMissing, "cross-band points and rejected candidate order match serial");
+    }
     return failures == 0;
 }

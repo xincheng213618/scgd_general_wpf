@@ -142,6 +142,9 @@
                                     <Button Style="{StaticResource HeaderIconButtonStyle}" Content="&#xE896;" Command="{Binding UpdateCommand}" ToolTip="{x:Static properties:Resources.DownLicOnline}"/>
                                     <Button Style="{StaticResource HeaderIconButtonStyle}" Content="&#xE8C8;" Command="{Binding CopyLicenseCommand}" ToolTip="{x:Static properties:Resources.CopyLicense}"/>
                                     <Button Style="{StaticResource HeaderIconButtonStyle}" Content="&#xEDE1;" Command="{Binding ExportLicenseCommand}" ToolTip="{x:Static properties:Resources.ExportLicense}"/>
+                                    <Button Style="{StaticResource BaseActionButtonStyle}" Content="{x:Static properties:Resources.SpectrumRemoveLicense}"
+                                            Command="{Binding RemoveLicenseCommand}" MinHeight="28" Padding="6,2" Margin="4,0,0,0"
+                                            FontSize="11" Background="Transparent" BorderThickness="0"/>
                                 </StackPanel>
                             </Grid>
                         </Border>

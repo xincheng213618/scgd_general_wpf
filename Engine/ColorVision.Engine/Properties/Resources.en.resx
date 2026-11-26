@@ -4524,6 +4524,11 @@ Please close camera or other programs using this serial port, or check device co
   <data name="SpectrumInvalidLicense" xml:space="preserve"><value>Invalid license content: model or expiry date cannot be read.</value></data>
   <data name="SpectrumManagerHint" xml:space="preserve"><value>Manage spectrometer serials and licenses</value></data>
   <data name="SpectrumManagerSummary" xml:space="preserve"><value>{0} spectrometers / {1} discovered</value></data>
+  <data name="SpectrumRemoveLicense" xml:space="preserve"><value>Remove license</value></data>
+  <data name="SpectrumRemoveLicenseConfirm" xml:space="preserve"><value>Remove the license for spectrometer {0}?&#xA;&#xA;This removes the license records from the database and keeps the device configuration and LIC files.</value></data>
+  <data name="SpectrumRemoveLicenseSuccess" xml:space="preserve"><value>Removed the license for spectrometer {0}.</value></data>
+  <data name="SpectrumRemoveLicenseChanged" xml:space="preserve"><value>The license for spectrometer {0} has changed or was removed. The list has been refreshed.</value></data>
+  <data name="SpectrumCatalogSourceChanged" xml:space="preserve"><value>The database connection has changed. Reopen Physical Spectrometer Manager.</value></data>
   <data name="SpectrumWorking" xml:space="preserve"><value>Working…</value></data>
   <data name="SpectrumScanComplete" xml:space="preserve"><value>Discovered {0} spectrometers; {1} queries failed.</value></data>
   <data name="SpectrumImportLicense" xml:space="preserve"><value>Import local license</value></data>
