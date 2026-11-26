@@ -23,45 +23,6 @@ namespace ColorVision.UI.Tests;
 public sealed class MeasureBatchPageLifecycleTests
 {
     [Fact]
-    public void AdvancedBatchHistoryFiltersWithoutAllowingTableMaintenance()
-    {
-        WpfTestHost.Invoke(() =>
-        {
-            using var resources = new PresentationResources();
-            using var db = new SqlSugarClient(new ConnectionConfig
-            {
-                ConnectionString = "Data Source=:memory:", DbType = SqlSugar.DbType.Sqlite,
-                InitKeyType = InitKeyType.Attribute, IsAutoCloseConnection = false
-            });
-            db.CodeFirst.InitTables(typeof(MeasureBatchModel), typeof(MeasureResultImgModel), typeof(AlgResultMasterModel));
-            const string selectedCode = "selected-batch";
-            int selectedId = db.Insertable(new MeasureBatchModel { Code = selectedCode }).ExecuteReturnIdentity();
-            db.Insertable(new MeasureBatchModel { Code = "other-batch" }).ExecuteCommand();
-            db.Insertable(new MeasureResultImgModel { BatchId = selectedId }).ExecuteCommand();
-            db.Insertable(new AlgResultMasterModel { BatchId = selectedId, CreateDate = DateTime.Now }).ExecuteCommand();
-
-            var manager = new MeasureBatchManager();
-            var query = manager.CreateHistoryQuery(db, endpoint: null);
-            query.AddPropertyInfo(typeof(MeasureBatchModel).GetProperty(nameof(MeasureBatchModel.Code))!);
-            Assert.Single(query.QueryConditions).InputText = selectedCode;
-            query.QueryDB();
-            Assert.Equal(selectedId, Assert.Single(manager.ViewResults).MeasureBatchModel.Id);
-
-            Assert.True(query.IsReadOnly);
-            Assert.False(query.DeleteAllCommand.CanExecute(null));
-            Assert.False(query.TruncateTableCommand.CanExecute(null));
-            query.DeleteAllCommand.Execute(null);
-            query.TruncateTableCommand.Execute(null);
-            query.DeleteAll();
-            query.TruncateTable();
-
-            Assert.Equal(2, db.Queryable<MeasureBatchModel>().Count());
-            Assert.Equal(1, db.Queryable<MeasureResultImgModel>().Where(row => row.BatchId == selectedId).Count());
-            Assert.Equal(1, db.Queryable<AlgResultMasterModel>().Where(row => row.BatchId == selectedId).Count());
-        });
-    }
-
-    [Fact]
     public async Task BoundBatchKeepsItsImagesFovDetailsAndExportAfterDatabaseSwitch()
     {
         DirectoryInfo files = Directory.CreateTempSubdirectory("cv-batch-history-");

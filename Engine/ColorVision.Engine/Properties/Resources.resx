@@ -2281,6 +2281,9 @@
   <data name="流程已打开，但目标节点不存在。请重新保存流程并刷新搜索索引。" xml:space="preserve">
     <value>流程已打开，但目标节点不存在。请重新保存流程并刷新搜索索引。</value>
   </data>
+  <data name="流程分析" xml:space="preserve">
+    <value>流程分析</value>
+  </data>
   <data name="流程执行分析" xml:space="preserve">
     <value>流程执行分析</value>
   </data>

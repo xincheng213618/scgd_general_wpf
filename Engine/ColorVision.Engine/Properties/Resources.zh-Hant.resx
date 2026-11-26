@@ -5202,6 +5202,9 @@
   <data name="流程已恢复" xml:space="preserve">
     <value>流程已恢復</value>
   </data>
+  <data name="流程分析" xml:space="preserve">
+    <value>流程分析</value>
+  </data>
   <data name="流程执行分析" xml:space="preserve">
     <value>流程執行分析</value>
   </data>

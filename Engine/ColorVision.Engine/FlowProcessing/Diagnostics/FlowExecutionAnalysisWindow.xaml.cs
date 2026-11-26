@@ -1,4 +1,5 @@
 using LocalizedText = global::ColorVision.Engine.EngineLocalization;
+using ColorVision.Database;
 using ColorVision.Themes;
 using log4net;
 using System;
@@ -119,7 +120,9 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
             _initialFlowIdentity = initialFlowIdentity;
             _focusFlowNode = focusFlowNode;
             InitializeComponent();
-            ClearAllRecordsButton.Visibility = _dataSource.IsReadOnly ? Visibility.Collapsed : Visibility.Visible;
+            Visibility maintenanceVisibility = _dataSource.IsReadOnly ? Visibility.Collapsed : Visibility.Visible;
+            ClearAllRecordsButton.Visibility = maintenanceVisibility;
+            DatabaseCleanupButton.Visibility = maintenanceVisibility;
             this.ApplyCaption();
         }
 
@@ -418,7 +421,7 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
         private void ShowLoadError(Exception exception)
         {
             log.Warn("加载流程执行分析失败。", exception);
-            ShowEmptyPage(EngineLocalization.Get("流程执行分析"), exception.Message);
+            ShowEmptyPage(EngineLocalization.Get("流程分析"), exception.Message);
         }
 
         private readonly record struct WriteFlushResult(bool Completed, double ElapsedMs);
@@ -479,7 +482,7 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
                         () => NavigateTo(CreateMessageState(null, null)),
                         ClearCurrentFlowRecords,
                         _focusFlowNode != null);
-                    UpdateHeader("流程执行分析", "流程概览", BuildRunSubtitle(_session));
+                    UpdateHeader("流程分析", "流程概览", BuildRunSubtitle(_session));
                     break;
 
                 case FlowAnalysisPageKind.Node:
@@ -510,7 +513,7 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
                                 _session.SerialNumber)),
                         ClearCurrentNodeRecords);
                     UpdateHeader(
-                        "流程执行分析",
+                        "流程分析",
                         "流程概览 / 节点分析",
                         BuildRunSubtitle(_session));
                     break;
@@ -886,6 +889,12 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
             }
         }
 
+        private void OpenDatabaseCleanupButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (!_dataSource.IsReadOnly)
+                DatabaseCleanupWindow.OpenWindow(this);
+        }
+
         private void ExportButton_Click(object sender, RoutedEventArgs e)
         {
             if (_session == null || _session.Records.Count == 0)
@@ -976,7 +985,7 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
             _currentAllRunIndex = -1;
             _currentSameFlowRunIndex = -1;
             UpdateNavigationButtons();
-            UpdateHeader("流程执行分析", "空状态", description);
+            UpdateHeader("流程分析", "空状态", description);
 
             var titleText = new TextBlock
             {

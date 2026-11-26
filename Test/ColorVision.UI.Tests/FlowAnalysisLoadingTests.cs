@@ -36,6 +36,7 @@ public sealed class FlowAnalysisLoadingTests : IDisposable
             };
             window.Show();
             PumpUntil(() => currentLoaded && !Field<bool>(window, "_isNavigationLoading"));
+            Assert.Equal(Visibility.Collapsed, Assert.IsType<Button>(window.FindName("DatabaseCleanupButton")).Visibility);
             Assert.True(navigationPending);
             Assert.True(chartPending);
             Assert.Equal("second", Field<FlowExecutionAnalysisSession>(window, "_session").SerialNumber);

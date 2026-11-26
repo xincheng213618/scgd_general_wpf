@@ -3966,6 +3966,9 @@ Please close camera or other programs using this serial port, or check device co
   <data name="列表显示" xml:space="preserve"><value>Displayed in List</value></data>
   <data name="流程" xml:space="preserve"><value>Flow</value></data>
   <data name="流程概览" xml:space="preserve"><value>Flow Overview</value></data>
+  <data name="流程分析" xml:space="preserve">
+    <value>Flow Analysis</value>
+  </data>
   <data name="流程执行分析" xml:space="preserve"><value>Flow Execution Analysis</value></data>
   <data name="流程执行耗时" xml:space="preserve"><value>Flow Execution Duration</value></data>
   <data name="留空表示全部；例如 Error、Warning" xml:space="preserve"><value>Leave empty for all; for example, Error or Warning</value></data>
