@@ -115,6 +115,8 @@ native 在 `std::lround` 之前计算倾角。需要复算时使用 `diagnostics
 - 成功后保存 FindCross 主结果、一条公共明细及 UTF-8 JSON 文件。结果目录为空时使用 `%LOCALAPPDATA%\ColorVision\Results\FindCross`；文件名带时间和 GUID。历史底图需要上游保存与实际帧一致的文件，节点不把已校正/翻转的内存结果自动关联到未经处理的源图。
 - 下游 `action.Data` 可读取 `LocalFindCrossResult`、`LocalFindCrossCenterX/Y`、`LocalFindCrossRotationAngle`、`LocalFindCrossTiltX/Y`、`LocalFindCrossDiagnostics`、`LocalFindCrossResultFile`；有内容时还保存 `LocalFindCrossRawJson` 和 `LocalFindCrossInteropDiagnostic`。这些中心标量来自兼容结果项，仍是上述取整中心。
 
+持久化图像、搜索区域关注点和成功或失败结果使用同一个批次连接。节点通知携带该连接，设备视图切库后不会用旧通知中的结果 ID 打开新库记录。
+
 检测拒绝或结果校验失败时会尝试保存失败主记录并发布到结果页，随后节点仍失败；不会生成成功明细/JSON，也不把失败主记录作为下游有效 `MasterValue`。输入缺失等前置错误可能更早发生；数据库或发布本身失败时不能假定结果页已有记录。
 
 生产入口输出单十字结果，数据库类型为 `63`、版本为 `1.0`，文件沿用 `result[]`。成功主记录的 `TName` 使用既有 `optCenter` 解析标识，使这组结果进入光轴校准的倾角与旋转结果；失败主记录保持 `LocalFindCross`。参数中的 `Algorithm=LocalFindCross` 保留本地实现身份。`Name` 仅标识 JSON 中的结果项，设置为 `ImageCenter` 也不会增加或切换测量指标；本地十字节点不生成独立的 `ImageCenter` 主记录。
