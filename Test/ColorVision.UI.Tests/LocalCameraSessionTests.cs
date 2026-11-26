@@ -1028,6 +1028,22 @@ public class LocalCameraSessionTests
         Assert.Equal(14, cameraCfg.Properties().Count());
     }
 
+    [Theory]
+    [InlineData(null, false)]
+    [InlineData(false, false)]
+    [InlineData(true, true)]
+    public void PhysicalCameraTemperatureControlDefaultsOffAndPreservesSavedChoice(bool? savedChoice, bool expected)
+    {
+        Assert.False(new ConfigPhyCamera().CameraCfg.TempCtlChecked);
+        var cameraCfg = new JObject();
+        if (savedChoice.HasValue) cameraCfg["tempCtlChecked"] = savedChoice.Value;
+        var config = new JObject { [nameof(ConfigPhyCamera.CameraCfg)] = cameraCfg }.ToObject<ConfigPhyCamera>()!;
+        Assert.Equal(expected, config.CameraCfg.TempCtlChecked);
+
+        var nativeConfig = JObject.Parse(LocalCameraSession.BuildCameraConfigurationJson(config.CameraCfg));
+        Assert.Equal(expected, (bool?)nativeConfig["cameraCfg"]?["tempCtlChecked"]);
+    }
+
     [Fact]
     public void CameraConfigurationJson_PreservesZeroRoiForFullFrame()
     {
