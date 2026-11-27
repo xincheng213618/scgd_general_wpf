@@ -1051,15 +1051,6 @@ namespace FlowEngineLib.Properties {
         }
         
         /// <summary>
-        ///   查找类似 SFR_FindROI 的本地化字符串。
-        /// </summary>
-        internal static string SFR_FindROI {
-            get {
-                return ResourceManager.GetString("SFR_FindROI", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 源表 的本地化字符串。
         /// </summary>
         internal static string SMU {

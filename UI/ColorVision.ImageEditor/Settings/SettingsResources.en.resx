@@ -117,4 +117,10 @@
   <data name="FontWeight" xml:space="preserve"><value>Font weight</value></data>
   <data name="FontStretch" xml:space="preserve"><value>Font stretch</value></data>
   <data name="FlowDirection" xml:space="preserve"><value>Text direction</value></data>
+  <data name="ReferenceLine" xml:space="preserve"><value>Reference Lines</value></data>
+  <data name="ReferenceLineSaveGlobal" xml:space="preserve"><value>Save to: Global</value></data>
+  <data name="ReferenceLineSaveProfile" xml:space="preserve"><value>Save to: {0}</value></data>
+  <data name="ReferenceLineRestoreGlobal" xml:space="preserve"><value>Restore Global Reference Lines</value></data>
+  <data name="ReferenceLineRestoreGlobalConfirm" xml:space="preserve"><value>Clear this profile's reference line settings and use the global settings?</value></data>
+  <data name="ReferenceLineInvalidGeometry" xml:space="preserve"><value>Coordinates, angle, line width, and mapping dimensions must be finite. Line width must be zero or greater.</value></data>
 </root>

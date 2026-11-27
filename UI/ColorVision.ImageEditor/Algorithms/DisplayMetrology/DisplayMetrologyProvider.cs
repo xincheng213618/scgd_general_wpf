@@ -4,6 +4,8 @@ using System;
 using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
@@ -112,6 +114,25 @@ public sealed partial class DisplayMetrologyProvider : IImageAlgorithmProvider, 
         public string Code { get; } = code;
     }
 
+    private static float[]? CreateIntegerSignalDecoder(AlgorithmImageFormat format, double exponent, int entryBudget)
+    {
+        // Alpha and floating-point samples require validation even at excluded reference positions.
+        if (format.IsFloatingPoint() || format.Channels() == 4) return null;
+        int codes = 1 << format.BitsPerChannel();
+        // Callers limit the table by both the available scratch space and the number of samples to decode.
+        if (entryBudget < codes) return null;
+
+        var decoder = new float[codes];
+        double peak = codes - 1;
+        bool identity = codes > 256 && exponent == 1;
+        for (int code = 0; code < codes; code++)
+        {
+            double sample = code / peak;
+            decoder[code] = (float)(identity ? sample : Math.Pow(sample, exponent));
+        }
+        return decoder;
+    }
+
     private static float[] ReadSignal(AlgorithmImageBuffer image, int channel, double exponent, CancellationToken token, float[]? destination = null)
     {
         int channels = image.Format.Channels();
@@ -182,16 +203,29 @@ public sealed partial class DisplayMetrologyProvider : IImageAlgorithmProvider, 
 
     private static float[] ReadUInt16Signal(AlgorithmImageBuffer image, int channel, int channels, double exponent, CancellationToken token, float[] signal)
     {
+        token.ThrowIfCancellationRequested();
         ReadOnlySpan<byte> data = image.Data.Span;
         bool hasAlpha = channels == 4;
         int pixelBytes = channels * sizeof(ushort);
         int alphaOffset = (3 - channel) * sizeof(ushort);
         bool identity = exponent == 1;
+        if (identity && channels == 1 && Vector256.IsHardwareAccelerated && BitConverter.IsLittleEndian
+            && image.Width >= Vector256<ushort>.Count)
+            return ReadLinearGray16Signal(image, data, token, signal);
+
+        // Amortize the existing double-precision decoder over large nonlinear scans.
+        float[]? decoder = identity ? null : CreateIntegerSignalDecoder(image.Format, exponent, image.Width * image.Height / 4);
         for (int y = 0; y < image.Height; y++)
         {
             token.ThrowIfCancellationRequested();
             int offset = y * image.Stride + channel * sizeof(ushort);
             Span<float> output = signal.AsSpan(y * image.Width, image.Width);
+            if (decoder != null)
+            {
+                for (int x = 0; x < output.Length; x++, offset += pixelBytes)
+                    output[x] = decoder[BinaryPrimitives.ReadUInt16LittleEndian(data.Slice(offset, sizeof(ushort)))];
+                continue;
+            }
             for (int x = 0; x < output.Length; x++, offset += pixelBytes)
             {
                 if (hasAlpha && BinaryPrimitives.ReadUInt16LittleEndian(data.Slice(offset + alphaOffset, sizeof(ushort))) != ushort.MaxValue)
@@ -199,6 +233,31 @@ public sealed partial class DisplayMetrologyProvider : IImageAlgorithmProvider, 
                 double value = BinaryPrimitives.ReadUInt16LittleEndian(data.Slice(offset, sizeof(ushort))) / 65535.0;
                 output[x] = (float)(identity ? value : Math.Pow(value, exponent));
             }
+        }
+        return signal;
+    }
+
+    private static float[] ReadLinearGray16Signal(AlgorithmImageBuffer image, ReadOnlySpan<byte> data, CancellationToken token, float[] signal)
+    {
+        int lanes = Vector256<ushort>.Count;
+        Vector256<float> peak = Vector256.Create((float)ushort.MaxValue);
+        for (int y = 0; y < image.Height; y++)
+        {
+            token.ThrowIfCancellationRequested();
+            ReadOnlySpan<ushort> row = MemoryMarshal.Cast<byte, ushort>(data.Slice(y * image.Stride, image.Width * sizeof(ushort)));
+            Span<float> output = signal.AsSpan(y * image.Width, image.Width);
+            ref ushort input = ref MemoryMarshal.GetReference(row);
+            ref float destination = ref MemoryMarshal.GetReference(output);
+            int x = 0;
+            for (; x <= row.Length - lanes; x += lanes)
+            {
+                var (low, high) = Vector256.Widen(Vector256.LoadUnsafe(ref input, (nuint)x));
+                // All UInt16 / 65535 ratios round identically to float via a double or a float division.
+                (Vector256.ConvertToSingle(low.AsInt32()) / peak).StoreUnsafe(ref destination, (nuint)x);
+                (Vector256.ConvertToSingle(high.AsInt32()) / peak).StoreUnsafe(ref destination, (nuint)(x + Vector256<float>.Count));
+            }
+            for (; x < row.Length; x++)
+                output[x] = (float)(row[x] / (double)ushort.MaxValue);
         }
         return signal;
     }
@@ -240,9 +299,10 @@ public sealed partial class DisplayMetrologyProvider : IImageAlgorithmProvider, 
     // Bounded four-connected flood fill. A budget failure rejects the run, never silently reports a partial defect count.
     private static List<Component> Components(byte[] mask, float[] signal, int width, int height, CancellationToken token, int[]? scratchQueue = null)
     {
+        int pixelCount = width * height;
         var components = new List<Component>();
-        var queue = scratchQueue ?? new int[mask.Length];
-        for (int start = 0; start < mask.Length; start++)
+        var queue = scratchQueue ?? new int[pixelCount];
+        for (int start = 0; start < pixelCount; start++)
         {
             if ((start & 4095) == 0) token.ThrowIfCancellationRequested();
             if (mask[start] == 0) continue;

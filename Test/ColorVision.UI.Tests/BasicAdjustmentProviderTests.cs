@@ -11,9 +11,10 @@ public sealed class BasicAdjustmentProviderTests
     [InlineData(AlgorithmImageFormat.Gray8)]
     [InlineData(AlgorithmImageFormat.Gray16)]
     [InlineData(AlgorithmImageFormat.Gray32Float)]
+    [InlineData(AlgorithmImageFormat.Bgr96Float)]
     public async Task NonNeutralProviderMatchesTheSeparatePassOracleExactly(AlgorithmImageFormat format)
     {
-        using Mat source = CreateGraySource(format);
+        using Mat source = CreateSource(format);
         byte[] original = PackedBytes(source);
         using AlgorithmImageBuffer input = new(source.Cols, source.Rows, source.Cols * format.BytesPerPixel(), format, original);
         using Mat expected = source.Clone();
@@ -129,7 +130,7 @@ public sealed class BasicAdjustmentProviderTests
         Assert.NotSame(inputStorage.Array, outputStorage.Array);
     }
 
-    private static Mat CreateGraySource(AlgorithmImageFormat format)
+    private static Mat CreateSource(AlgorithmImageFormat format)
     {
         if (format == AlgorithmImageFormat.Gray8)
         {
@@ -146,6 +147,17 @@ public sealed class BasicAdjustmentProviderTests
         if (format == AlgorithmImageFormat.Gray32Float)
         {
             return Mat.FromArray(new float[,] { { -0.5f, 0, 1e-7f, 0.001f, 0.1f, 0.25f, 0.49999f, 0.5f, 0.9f, 1, 1.5f } });
+        }
+        if (format == AlgorithmImageFormat.Bgr96Float)
+        {
+            const int width = 17, height = 3;
+            float[] samples = [-0.5f, -0.0f, 0, 1e-7f, 0.1f, 0.49999f, 0.9f, 1, 1.5f,
+                float.NaN, float.PositiveInfinity, float.NegativeInfinity];
+            float[] values = new float[width * height * 3];
+            for (int index = 0; index < values.Length; index++) values[index] = samples[index % samples.Length];
+            Mat source = new(height, width, MatType.CV_32FC3);
+            Marshal.Copy(values, 0, source.Data, values.Length);
+            return source;
         }
         throw new ArgumentOutOfRangeException(nameof(format));
     }

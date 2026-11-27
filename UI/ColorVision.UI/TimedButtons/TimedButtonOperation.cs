@@ -1,5 +1,4 @@
 ﻿#pragma warning disable CA1513,CA1716,CA1863
-using ColorVision.UI.Properties;
 using System.Diagnostics;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -24,7 +23,6 @@ namespace ColorVision.UI
 
     public sealed class TimedButtonOperation : IDisposable
     {
-        private const string StatsContextMenuTag = "TimedButtonOperation.OpenStatsWindow";
         private readonly Button _button;
         private readonly TimedButtonOperationOptions _options;
         private readonly DispatcherTimer _timer;
@@ -35,7 +33,6 @@ namespace ColorVision.UI
         private string _runningText = string.Empty;
         private double _expectedDurationMs;
         private bool _isRunning;
-        private bool _statsShortcutAttached;
         private bool _buttonWasEnabled;
 
         public TimedButtonOperation(Button button, TimedButtonOperationOptions options)
@@ -58,7 +55,6 @@ namespace ColorVision.UI
             };
             _timer.Tick += Timer_Tick;
             TimedButtonOperationStatsManager.StatsChanged += TimedButtonOperationStatsManager_StatsChanged;
-            EnsureStatsShortcutAttached();
 
             RefreshIdleState();
         }
@@ -69,8 +65,6 @@ namespace ColorVision.UI
 
         public void RefreshIdleState()
         {
-            EnsureStatsShortcutAttached();
-
             if (_isRunning)
             {
                 return;
@@ -207,48 +201,6 @@ namespace ColorVision.UI
                 : Math.Min(99, (elapsedMilliseconds / _expectedDurationMs) * 100);
 
             _progressHost.UpdateProgress(progress, _runningText);
-        }
-
-        private void EnsureStatsShortcutAttached()
-        {
-            if (_statsShortcutAttached)
-            {
-                return;
-            }
-
-            ITimedButtonOperationStatsWindowLauncher? launcher = TimedButtonOperationStatsWindowLauncherProvider.GetLauncher();
-            if (launcher == null || !launcher.CanOpen)
-            {
-                return;
-            }
-
-            ContextMenu contextMenu = _button.ContextMenu ?? new ContextMenu();
-            bool alreadyExists = contextMenu.Items
-                .OfType<MenuItem>()
-                .Any(item => string.Equals(item.Tag as string, StatsContextMenuTag, StringComparison.Ordinal));
-
-            if (alreadyExists)
-            {
-                _button.ContextMenu = contextMenu;
-                _statsShortcutAttached = true;
-                return;
-            }
-
-            if (contextMenu.Items.Count > 0)
-            {
-                contextMenu.Items.Add(new Separator());
-            }
-
-            MenuItem menuItem = new MenuItem
-            {
-                Header = Resources.TimedOp_ViewStats,
-                Tag = StatsContextMenuTag
-            };
-            menuItem.Click += (_, _) => launcher.OpenWindow(_options.OperationKey);
-
-            contextMenu.Items.Add(menuItem);
-            _button.ContextMenu = contextMenu;
-            _statsShortcutAttached = true;
         }
 
         private void TimedButtonOperationStatsManager_StatsChanged(object? sender, TimedButtonOperationStatsChangedEventArgs e)

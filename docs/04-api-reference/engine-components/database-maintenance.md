@@ -20,7 +20,7 @@ related: ["engine.index", "engine.mysql-maintenance", "ui.sqlite-storage", "ui.d
 
 无参数 `OpenWindow()` 建立全局窗口，默认 ViewModel 通过 `AssemblyHandler.RefreshAssemblies()` 和 `LoadImplementations<IDatabaseCleanupSourceProvider>()` 实例化 provider，再按 `Order`、`DisplayName` 排序。该刷新会重建程序集列表并清空接口实现类型缓存，但不会替换已经打开的维护窗口持有的 provider 实例；发现规则见[程序集与扩展发现](./../../02-developer-guide/core-concepts/extensibility.md)。这里不扫描磁盘上所有 `.db` 文件，也不保证未加载的项目 provider 可见。
 
-`OpenWindow(owner, source)` 只注入一个 provider，Socket 使用此入口。MySQL 工具窗口的“数据清理”和流程结果管理页的“数据库清理”均打开全局窗口。清理目标由窗口内选择的数据源和确认操作决定。
+`OpenWindow(owner, source)` 只注入一个 provider，Socket 使用此入口。MySQL 工具窗口的“数据清理”和本机“流程分析”中的“数据库清理”均打开全局窗口。清理目标由维护窗口内选择的数据源和确认操作决定。离线只读的流程分析隐藏清理入口。
 
 必须保留真正的 `public static void OpenWindow()` 无参数重载：已发布的 ARVR、KB 等项目插件可能仍引用这个二进制签名。把它替换为带可选参数的方法，只能兼容重新编译的源码，旧 DLL 点击“数据清理”会抛 `MissingMethodException`。无参数重载转入同一全局窗口逻辑，不改变单源范围或清理行为；
 

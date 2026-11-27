@@ -44,12 +44,20 @@ namespace ColorVision.ImageEditor.Cie
             {
                 DrawDaylightReference(dc, profile, canvasSize, bitmapPixelSize, scale, pixelsPerDip);
             }
-            DrawMarkers(dc, profile, canvasSize, bitmapPixelSize, scale, pixelsPerDip,
-                markers.Where(m => selectedMarker == null || m.Name != selectedMarker.Name || m.Chromaticity != selectedMarker.Chromaticity).ToArray(), false);
+            if (markers.Count == 0 && selectedMarker == null) return;
+
+            var paint = new MarkerPaint(scale, markers.Count);
+            foreach (CieMarker marker in markers)
+            {
+                if (selectedMarker != null && marker.Name == selectedMarker.Name && marker.Chromaticity == selectedMarker.Chromaticity)
+                    continue;
+
+                DrawMarker(dc, profile, canvasSize, bitmapPixelSize, scale, pixelsPerDip, marker, paint, emphasize: false);
+            }
 
             if (selectedMarker != null)
             {
-                DrawSelection(dc, profile, canvasSize, bitmapPixelSize, scale, pixelsPerDip, selectedMarker);
+                DrawSelection(dc, profile, canvasSize, bitmapPixelSize, scale, pixelsPerDip, selectedMarker, paint);
             }
         }
 
@@ -83,14 +91,6 @@ namespace ColorVision.ImageEditor.Cie
 
                 Point labelPoint = GetCentroid(points);
                 DrawText(dc, gamut.Name, labelPoint + new Vector(6 * scale, -18 * scale), gamut.Stroke, 12 * scale, scale, pixelsPerDip);
-            }
-        }
-
-        private void DrawMarkers(DrawingContext dc, CieDiagramProfile profile, Size canvasSize, Size bitmapPixelSize, double scale, double pixelsPerDip, IReadOnlyList<CieMarker> markers, bool emphasize)
-        {
-            foreach (CieMarker marker in markers)
-            {
-                DrawMarker(dc, profile, canvasSize, bitmapPixelSize, scale, pixelsPerDip, marker, emphasize);
             }
         }
 
@@ -201,7 +201,7 @@ namespace ColorVision.ImageEditor.Cie
             DrawText(dc, temperature.ToString(CultureInfo.InvariantCulture), center + labelOffset, Brushes.Black, 11 * scale, scale, pixelsPerDip);
         }
 
-        private void DrawSelection(DrawingContext dc, CieDiagramProfile profile, Size canvasSize, Size bitmapPixelSize, double scale, double pixelsPerDip, CieMarker marker)
+        private void DrawSelection(DrawingContext dc, CieDiagramProfile profile, Size canvasSize, Size bitmapPixelSize, double scale, double pixelsPerDip, CieMarker marker, MarkerPaint paint)
         {
             Point point = ToCanvasPoint(profile, canvasSize, bitmapPixelSize, marker.Chromaticity);
             if (!IsFinite(point))
@@ -224,10 +224,10 @@ namespace ColorVision.ImageEditor.Cie
             dc.DrawLine(guidePen, new Point(plotRect.Left, point.Y), new Point(plotRect.Right, point.Y));
             dc.DrawLine(guidePen, new Point(point.X, plotRect.Top), new Point(point.X, plotRect.Bottom));
 
-            DrawMarker(dc, profile, canvasSize, bitmapPixelSize, scale, pixelsPerDip, marker, true);
+            DrawMarker(dc, profile, canvasSize, bitmapPixelSize, scale, pixelsPerDip, marker, paint, emphasize: true);
         }
 
-        private void DrawMarker(DrawingContext dc, CieDiagramProfile profile, Size canvasSize, Size bitmapPixelSize, double scale, double pixelsPerDip, CieMarker marker, bool emphasize)
+        private void DrawMarker(DrawingContext dc, CieDiagramProfile profile, Size canvasSize, Size bitmapPixelSize, double scale, double pixelsPerDip, CieMarker marker, MarkerPaint paint, bool emphasize)
         {
             Point point = ToCanvasPoint(profile, canvasSize, bitmapPixelSize, marker.Chromaticity);
             if (!IsFinite(point))
@@ -236,16 +236,42 @@ namespace ColorVision.ImageEditor.Cie
             }
 
             double radius = emphasize ? 6 * scale : 4.5 * scale;
-            SolidColorBrush fill = new(marker.Color);
-            Pen whitePen = new(Brushes.White, 2.2 * scale);
-            Pen blackPen = new(Brushes.Black, 1.1 * scale);
-
-            dc.DrawEllipse(fill, whitePen, point, radius, radius);
-            dc.DrawEllipse(null, blackPen, point, radius, radius);
+            dc.DrawEllipse(paint.Fill(marker.Color), paint.WhiteOutline, point, radius, radius);
+            dc.DrawEllipse(null, paint.BlackOutline, point, radius, radius);
 
             if (!string.IsNullOrWhiteSpace(marker.Name))
             {
                 DrawText(dc, marker.Name, point + new Vector(radius + 4 * scale, -radius - 8 * scale), Brushes.Black, 12 * scale, scale, pixelsPerDip);
+            }
+        }
+
+        private sealed class MarkerPaint(double scale, int markerCount)
+        {
+            private const int FillCacheSize = 16;
+            private readonly Dictionary<Color, SolidColorBrush>? fills = markerCount >= FillCacheSize ? new() : null;
+
+            public Pen WhiteOutline { get; } = CreateOutline(Brushes.White, 2.2 * scale);
+            public Pen BlackOutline { get; } = CreateOutline(Brushes.Black, 1.1 * scale);
+
+            public SolidColorBrush Fill(Color color)
+            {
+                if (fills?.TryGetValue(color, out var cached) == true) return cached;
+
+                SolidColorBrush fill = new(color);
+                // The sample palette reuses colors, while other callers may supply a unique color per marker.
+                if (fills != null && fills.Count < FillCacheSize)
+                {
+                    fill.Freeze();
+                    fills.Add(color, fill);
+                }
+                return fill;
+            }
+
+            private static Pen CreateOutline(Brush brush, double thickness)
+            {
+                Pen outline = new(brush, thickness);
+                outline.Freeze();
+                return outline;
             }
         }
 

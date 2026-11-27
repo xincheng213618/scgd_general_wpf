@@ -4,6 +4,7 @@ using ColorVision.Engine.FlowProcessing.Editor;
 using ColorVision.UI;
 using log4net;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
@@ -454,23 +455,26 @@ public partial class TemplateBrowserWindow : Window
         updatingSelection = true;
         try
         {
-            var source = SourceItems.ToHashSet();
-            foreach (var removed in browserItems.Where(item => !source.Contains(item)).ToArray())
+            if (!TryApplyIndexedSourceChange(e))
             {
-                removed.PropertyChanged -= Item_PropertyChanged;
-                browserItems.Remove(removed);
-            }
-            foreach (var added in SourceItems.Where(item => !browserItems.Contains(item)))
-            {
-                added.PropertyChanged += Item_PropertyChanged;
-                browserItems.Add(added);
-            }
-            int index = 0;
-            foreach (var item in SourceItems.Reverse())
-            {
-                int previous = browserItems.IndexOf(item);
-                if (previous != index) browserItems.Move(previous, index);
-                index++;
+                var source = SourceItems.ToHashSet();
+                foreach (var removed in browserItems.Where(item => !source.Contains(item)).ToArray())
+                {
+                    removed.PropertyChanged -= Item_PropertyChanged;
+                    browserItems.Remove(removed);
+                }
+                foreach (var added in SourceItems.Where(item => !browserItems.Contains(item)))
+                {
+                    added.PropertyChanged += Item_PropertyChanged;
+                    browserItems.Add(added);
+                }
+                int index = 0;
+                foreach (var item in SourceItems.Reverse())
+                {
+                    int previous = browserItems.IndexOf(item);
+                    if (previous != index) browserItems.Move(previous, index);
+                    index++;
+                }
             }
             UpdateSavedPositions();
             items.Refresh();
@@ -479,6 +483,38 @@ public partial class TemplateBrowserWindow : Window
         finally { updatingSelection = false; }
         UpdateStatus();
         RefreshPreview();
+    }
+
+    private bool TryApplyIndexedSourceChange(NotifyCollectionChangedEventArgs change)
+    {
+        if (template.ItemsSource is not IList source) return false;
+
+        int count = browserItems.Count;
+        // Collection notifications use source order, while the browser keeps a reversed copy.
+        int oldIndex = count - 1 - change.OldStartingIndex;
+        int newIndex = source.Count - 1 - change.NewStartingIndex;
+        switch (change.Action)
+        {
+            case NotifyCollectionChangedAction.Add when source.Count == count + 1 && (uint)newIndex <= (uint)count
+                && change.NewItems is [TemplateBase added] && !savedPositions.ContainsKey(added):
+                added.PropertyChanged += Item_PropertyChanged;
+                browserItems.Insert(newIndex, added);
+                return true;
+
+            case NotifyCollectionChangedAction.Remove when source.Count == count - 1 && (uint)oldIndex < (uint)count
+                && change.OldItems is [TemplateBase removed] && ReferenceEquals(browserItems[oldIndex], removed):
+                removed.PropertyChanged -= Item_PropertyChanged;
+                browserItems.RemoveAt(oldIndex);
+                return true;
+
+            case NotifyCollectionChangedAction.Move when source.Count == count && (uint)oldIndex < (uint)count && (uint)newIndex < (uint)count
+                && change.OldItems is [TemplateBase moved] && ReferenceEquals(browserItems[oldIndex], moved):
+                browserItems.Move(oldIndex, newIndex);
+                return true;
+
+            default:
+                return false;
+        }
     }
 
     private void UpdateSavedPositions()

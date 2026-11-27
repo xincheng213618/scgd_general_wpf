@@ -154,8 +154,7 @@ namespace ColorVision.Engine.Services.Devices
         {
             Register(new DeviceServiceFactory<ConfigCamera>(
                 ServiceTypes.Camera,
-                sysResourceModel => new DeviceCamera(sysResourceModel),
-                configureConfig: static (config, _) => config.IsAutoOpen = false));
+                sysResourceModel => new DeviceCamera(sysResourceModel)));
 
             Register(new DeviceServiceFactory<ConfigPG>(
                 ServiceTypes.PG,

@@ -1,0 +1,22 @@
+<Project>
+  <PropertyGroup>
+    <ImportDirectoryBuildProps>false</ImportDirectoryBuildProps>
+    <ImportDirectoryBuildTargets>false</ImportDirectoryBuildTargets>
+  </PropertyGroup>
+  <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net48</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <PlatformTarget>x64</PlatformTarget>
+    <Prefer32Bit>false</Prefer32Bit>
+    <AssemblyTitle>三轴控制台</AssemblyTitle>
+    <Version>0.1.7</Version>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <AssemblyOriginatorKeyFile Condition="Exists('../../ColorVision.snk')">../../ColorVision.snk</AssemblyOriginatorKeyFile>
+    <SignAssembly Condition="'$(AssemblyOriginatorKeyFile)' != ''">true</SignAssembly>
+  </PropertyGroup>
+
+  <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
+</Project>

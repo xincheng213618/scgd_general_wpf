@@ -89,14 +89,49 @@ namespace ColorVision.Engine.Templates.Flow.Search
             {
                 ThrowIfDisposed();
                 using SqliteCommand command = connection.CreateCommand();
-                var sql = new StringBuilder("""
+                bool searchLatestAcrossFlows = normalized.LatestOnly
+                    && normalized.Revision == null
+                    && normalized.FlowKey == null
+                    && normalized.NodeTypeKey == null;
+                var sql = new StringBuilder();
+                if (searchLatestAcrossFlows)
+                {
+                    // Seek to the next flow key through the existing (flow_key, revision) index.
+                    sql.AppendLine("""
+                        WITH RECURSIVE flow_keys(key) AS (
+                            SELECT MIN(flow_key) FROM flow_node_search_index
+                            UNION ALL
+                            SELECT (
+                                SELECT flow_key FROM flow_node_search_index
+                                WHERE flow_key > flow_keys.key
+                                ORDER BY flow_key LIMIT 1
+                            )
+                            FROM flow_keys
+                            WHERE key IS NOT NULL
+                        )
+                        """);
+                }
+                sql.AppendLine("""
                     SELECT
                         flow_key, revision, source_node_guid, node_path,
                         node_type_key, display_name, title, template_name,
                         device_code, service_code, tags, search_text
-                    FROM flow_node_search_index
-                    WHERE 1 = 1
                     """);
+                if (searchLatestAcrossFlows)
+                {
+                    // Drive the lookup from flow keys so MAX is computed once per flow.
+                    sql.AppendLine("""
+                        FROM flow_keys CROSS JOIN flow_node_search_index
+                        WHERE flow_key = flow_keys.key AND revision = (
+                            SELECT MAX(revision) FROM flow_node_search_index
+                            WHERE flow_key = flow_keys.key
+                        )
+                        """);
+                }
+                else
+                {
+                    sql.AppendLine("FROM flow_node_search_index WHERE 1 = 1");
+                }
                 if (normalized.FlowKey != null)
                 {
                     sql.AppendLine(" AND flow_key = $flow_key");
@@ -111,7 +146,7 @@ namespace ColorVision.Engine.Templates.Flow.Search
                         "$revision",
                         normalized.Revision.Value);
                 }
-                else if (normalized.LatestOnly)
+                else if (normalized.LatestOnly && !searchLatestAcrossFlows)
                 {
                     sql.AppendLine("""
                          AND revision = (
@@ -138,10 +173,10 @@ namespace ColorVision.Engine.Templates.Flow.Search
                         $"%{EscapeLike(normalized.Text)}%");
                 }
                 sql.AppendLine();
-                sql.AppendLine("""
-                    ORDER BY revision DESC, flow_key, node_path
-                    LIMIT $limit;
-                    """);
+                sql.Append("ORDER BY revision DESC, flow_key, node_path");
+                if (searchLatestAcrossFlows)
+                    sql.Append(", flow_node_search_index.rowid");
+                sql.AppendLine().AppendLine("LIMIT $limit;");
                 command.Parameters.AddWithValue("$limit", normalized.Limit);
                 command.CommandText = sql.ToString();
 

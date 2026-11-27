@@ -22,6 +22,7 @@ namespace ColorVision.Engine.Media
     public class CVRawThumbnailProvider : IThumbnailProviderWithDimensions
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(CVRawThumbnailProvider));
+        private const long ParallelResizeMinimumPixels = 8L * 1024 * 1024;
         // Bound mapped pages and native conversion buffers across every browser and direct caller.
         private static readonly SemaphoreSlim DecodeSlots = new(2, 2);
 
@@ -183,12 +184,53 @@ namespace ColorVision.Engine.Media
             using Mat? bytes = source.Depth() == MatType.CV_32F ? MediaHelper.ConvertFloatToDisplayBytes(source, cancellationToken) : null;
             cancellationToken.ThrowIfCancellationRequested();
             using Mat thumbnail = new();
-            Cv2.Resize(bytes ?? source, thumbnail, size, 0, 0, InterpolationFlags.Area);
+            ResizeArea(bytes ?? source, thumbnail, size, cancellationToken);
             cancellationToken.ThrowIfCancellationRequested();
             var bitmap = thumbnail.ToWriteableBitmap();
             bitmap.Freeze();
             cancellationToken.ThrowIfCancellationRequested();
             return bitmap;
+        }
+
+        private static void ResizeArea(Mat source, Mat result, Size size, CancellationToken cancellationToken)
+        {
+            int groups = GreatestCommonDivisor(source.Rows, size.Height);
+            int sourceRowsPerGroup = source.Rows / groups;
+            int targetRowsPerGroup = size.Height / groups;
+            int workers = Math.Min(groups, Math.Min(4, Environment.ProcessorCount / 2));
+            double scale = (double)sourceRowsPerGroup / targetRowsPerGroup;
+            MatType depth = source.Depth();
+            // Split only on exact source-row boundaries. A binary-exact vertical scale keeps
+            // OpenCV's area weights the same when a band starts at row zero instead of its full-image offset.
+            if (workers < 2 || size.Height >= source.Rows || (long)source.Rows * source.Cols < ParallelResizeMinimumPixels
+                || (depth != MatType.CV_8U && depth != MatType.CV_16U)
+                || (targetRowsPerGroup & (targetRowsPerGroup - 1)) != 0
+                || (long)source.Rows * targetRowsPerGroup > (1L << 53)
+                || 1 / ((double)targetRowsPerGroup / sourceRowsPerGroup) != scale)
+            {
+                Cv2.Resize(source, result, size, 0, 0, InterpolationFlags.Area);
+                return;
+            }
+
+            result.Create(size.Height, size.Width, source.Type());
+            Parallel.For(0, workers, new ParallelOptions
+            {
+                MaxDegreeOfParallelism = workers,
+                CancellationToken = cancellationToken,
+            }, worker =>
+            {
+                int first = (int)((long)groups * worker / workers);
+                int last = (int)((long)groups * (worker + 1) / workers);
+                using Mat input = source.RowRange(first * sourceRowsPerGroup, last * sourceRowsPerGroup);
+                using Mat output = result.RowRange(first * targetRowsPerGroup, last * targetRowsPerGroup);
+                Cv2.Resize(input, output, new Size(size.Width, output.Rows), 0, 0, InterpolationFlags.Area);
+            });
+        }
+
+        private static int GreatestCommonDivisor(int left, int right)
+        {
+            while (right != 0) (left, right) = (right, left % right);
+            return left;
         }
 
     }

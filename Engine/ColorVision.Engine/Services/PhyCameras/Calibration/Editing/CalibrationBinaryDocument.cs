@@ -2,6 +2,8 @@ using ColorVision.Engine.Services.Types;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Numerics;
+using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 
 namespace ColorVision.Engine.Services.PhyCameras.Calibration.Editing;
@@ -68,16 +70,57 @@ public sealed class CalibrationBinaryDocument
                 }
             }
             else throw new NotSupportedException("此校正不是支持的二进制格式。");
-            doc.Minimum = double.PositiveInfinity; doc.Maximum = double.NegativeInfinity;
-            for (int i = 0; i < doc.ValueCount; i++)
-            {
-                double value = doc.GetValue(i);
-                if (!double.IsFinite(value)) throw new FormatException($"第 {i} 项必须是有限数值。");
-                doc.Minimum = Math.Min(doc.Minimum, value); doc.Maximum = Math.Max(doc.Maximum, value);
-            }
+            doc.ScanValueRange();
             return doc;
         }
         catch (Exception ex) when (ex is EndOfStreamException or OverflowException) { throw new FormatException("校正文件被截断或尺寸溢出。", ex); }
+    }
+
+    private void ScanValueRange()
+    {
+        ReadOnlySpan<byte> payload = original.AsSpan(dataOffset);
+        if (Type == ServiceTypes.DSNU)
+        {
+            ReadOnlySpan<ushort> values = MemoryMarshal.Cast<byte, ushort>(payload);
+            ushort minimum = ushort.MaxValue, maximum = ushort.MinValue;
+            int index = 0;
+            if (Vector.IsHardwareAccelerated && values.Length >= Vector<ushort>.Count)
+            {
+                var vectorMinimum = new Vector<ushort>(ushort.MaxValue);
+                var vectorMaximum = Vector<ushort>.Zero;
+                for (; index <= values.Length - Vector<ushort>.Count; index += Vector<ushort>.Count)
+                {
+                    var current = new Vector<ushort>(values[index..]);
+                    vectorMinimum = Vector.Min(vectorMinimum, current);
+                    vectorMaximum = Vector.Max(vectorMaximum, current);
+                }
+                for (int lane = 0; lane < Vector<ushort>.Count; lane++)
+                {
+                    minimum = Math.Min(minimum, vectorMinimum[lane]);
+                    maximum = Math.Max(maximum, vectorMaximum[lane]);
+                }
+            }
+            for (; index < values.Length; index++)
+            {
+                minimum = Math.Min(minimum, values[index]);
+                maximum = Math.Max(maximum, values[index]);
+            }
+            Minimum = minimum;
+            Maximum = maximum;
+            return;
+        }
+
+        ReadOnlySpan<float> coefficients = MemoryMarshal.Cast<byte, float>(payload);
+        double coefficientMinimum = double.PositiveInfinity, coefficientMaximum = double.NegativeInfinity;
+        for (int index = 0; index < coefficients.Length; index++)
+        {
+            double coefficient = coefficients[index];
+            if (!double.IsFinite(coefficient)) throw new FormatException($"第 {index} 项必须是有限数值。");
+            coefficientMinimum = Math.Min(coefficientMinimum, coefficient);
+            coefficientMaximum = Math.Max(coefficientMaximum, coefficient);
+        }
+        Minimum = coefficientMinimum;
+        Maximum = coefficientMaximum;
     }
 
     public float GetValue(int index)

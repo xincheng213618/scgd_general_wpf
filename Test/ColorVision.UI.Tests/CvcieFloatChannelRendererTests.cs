@@ -1,6 +1,7 @@
 using ColorVision.Engine.Media;
 using ColorVision.FileIO;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 
@@ -151,6 +152,58 @@ public sealed class CvcieFloatChannelRendererTests
                 stream.SetLength(stream.Length - sizeof(float));
 
             Assert.Throws<InvalidDataException>(() => CvRawLayerController.LoadSourceForDisplay(path, out _, out _));
+        }
+        finally { File.Delete(path); }
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void LargeDiskFloat64RenderReleasesFileAfterSuccessOrInvalidSample(bool invalidLastSample)
+    {
+        const int width = 1025;
+        const int height = 1024;
+        string path = Path.Combine(Path.GetTempPath(), $"cv-gray-release-{Guid.NewGuid():N}.cvcie");
+        try
+        {
+            using CVCIEFile file = new()
+            {
+                FileExtType = CVType.CIE, Version = 2, Channels = 1, Bpp = 64,
+                Cols = width, Rows = height, Exp = [1],
+            };
+            Assert.True(CVFileUtil.WriteCIEFile(path, file, (long)width * height * sizeof(double), stream =>
+            {
+                byte[] row = new byte[width * sizeof(double)];
+                Span<double> samples = MemoryMarshal.Cast<byte, double>(row.AsSpan());
+                for (int y = 0; y < height; y++)
+                {
+                    for (int x = 0; x < width; x++)
+                        samples[x] = (y * width + x) % 256 - 128;
+                    if (invalidLastSample && y == height - 1)
+                        samples[^1] = double.NaN;
+                    stream.Write(row);
+                }
+            }));
+
+            StaTest.Run(() =>
+            {
+                WriteableBitmap? bitmap = null;
+                if (invalidLastSample)
+                {
+                    Assert.Throws<InvalidDataException>(() => CvRawLayerController.LoadFileChannel(path, 0, out _, CancellationToken.None));
+                }
+                else
+                {
+                    using CVCIEFile plane = CvRawLayerController.LoadFileChannel(path, 0, out WriteableBitmap? rendered, CancellationToken.None);
+                    bitmap = Assert.IsType<WriteableBitmap>(rendered);
+                    Assert.True(bitmap.IsFrozen);
+                }
+
+                using FileStream stream = new(path, FileMode.Open, FileAccess.Write, FileShare.None);
+                stream.SetLength(0);
+                if (bitmap != null)
+                    Assert.Equal(Enumerable.Range(0, width * height).Select(index => (byte)(index % 256)).ToArray(), ReadPixels(bitmap));
+            });
         }
         finally { File.Delete(path); }
     }

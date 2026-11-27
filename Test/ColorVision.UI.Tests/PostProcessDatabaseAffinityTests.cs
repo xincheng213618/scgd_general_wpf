@@ -1,11 +1,13 @@
 using ColorVision.Database;
 using ColorVision.Engine;
 using ColorVision.Engine.FlowProcessing;
+using ColorVision.Engine.FlowProcessing.Monitoring;
 using ColorVision.Engine.FlowProcessing.PostProcess;
 using ColorVision.Engine.FlowProcessing.PostProcess.IVL;
 using ColorVision.Engine.FlowProcessing.PostProcess.Poi;
 using ColorVision.Engine.Services.Devices.Algorithm;
 using ColorVision.Engine.Services.Devices.SMU.Dao;
+using ColorVision.Engine.Services.Devices.Spectrum.Dao;
 using ColorVision.Engine.Services.Results;
 using ColorVision.Engine.Templates.Jsons;
 using ColorVision.Engine.Templates.Jsons.MTF2;
@@ -42,6 +44,29 @@ public sealed partial class PostProcessDatabaseAffinityTests
         var result = Assert.Single(db.Queryable<AlgResultMasterModel>().Where(item => item.BatchId == batch.Id).ToList());
         Assert.Equal("original-master", result.Result);
         Assert.Null(BatchResultMasterDao.Instance.TryGetOwnedDatabaseFactory(new MeasureBatchModel { Id = BatchId }));
+    }
+
+    [Fact]
+    public async Task LiveIvlReadsSavedResultsFromTheBatchDatabaseAfterReconnect()
+    {
+        using var databases = new ResultDatabases();
+        var batch = new MeasureBatchModel { Id = BatchId, Name = "original", DatabaseEndpoint = databases.First };
+        using (var db = databases.First.CreateDbClient())
+        {
+            db.CodeFirst.InitTables<MeasureBatchModel, SmuScanModel, SpectumResultEntity>();
+            db.Insertable(batch).OffIdentity().ExecuteCommand();
+            db.Insertable(new SmuScanModel { BatchId = BatchId, CreateDate = DateTime.Now, VResult = "[1,2]", IResult = "[0.01,0.02]" }).ExecuteCommand();
+            db.Insertable(new SpectumResultEntity { BatchId = BatchId, CreateDate = DateTime.Now, SmuDataId = 1, fPh = 123 }).ExecuteCommand();
+        }
+        databases.Current = databases.Second;
+
+        LiveIvlSnapshot snapshot = await LiveIvlReader.ReadAsync(batch, CancellationToken.None);
+
+        Assert.Equal("original", snapshot.Name);
+        Assert.Contains(snapshot.Points, point => point is { Voltage: 7, Current: 8 });
+        Assert.Contains(snapshot.Points, point => point is { IsScan: true, Voltage: 2, Current: 20 });
+        Assert.Contains(snapshot.Points, point => point is { Luminance: 123, Voltage: 7, Current: 8 });
+        Assert.Equal(0, databases.SecondReadCount);
     }
 
     [Fact]

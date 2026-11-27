@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
@@ -30,21 +30,22 @@
 
 	<ItemGroup>
 		<PackageReference Include="Microsoft.Xaml.Behaviors.Wpf" Version="1.1.161" />
-		<PackageReference Include="Dirkster.AvalonDock.Themes.VS2013" Version="5.0.1" />
-    <PackageReference Include="HtmlAgilityPack" Version="1.13.0" />
-    <PackageReference Include="Markdig.Signed" Version="1.4.0" />
-    <PackageReference Include="Microsoft.Agents.AI" Version="1.24.0" />
-    <PackageReference Include="Microsoft.Agents.AI.Anthropic" Version="1.24.0" />
-    <PackageReference Include="Microsoft.Agents.AI.Harness" Version="1.24.0" />
-    <PackageReference Include="Microsoft.Agents.AI.OpenAI" Version="1.24.0" />
-    <PackageReference Include="Microsoft.Extensions.AI.OpenAI" Version="10.10.1" />
-    <PackageReference Include="ModelContextProtocol.Core" Version="2.2.0" />
+		<PackageReference Include="Dirkster.AvalonDock.Themes.VS2013" Version="5.0.2" />
+    <PackageReference Include="HtmlAgilityPack" Version="1.13.1" />
+    <PackageReference Include="Markdig.Signed" Version="1.6.0" />
+    <PackageReference Include="Microsoft.Agents.AI" Version="1.28.0" />
+    <PackageReference Include="Microsoft.Agents.AI.Anthropic" Version="1.28.0" />
+    <PackageReference Include="Microsoft.Agents.AI.Harness" Version="1.28.0" />
+    <PackageReference Include="Microsoft.Agents.AI.OpenAI" Version="1.28.0" />
+    <PackageReference Include="Microsoft.Extensions.AI.OpenAI" Version="10.11.1" />
+    <PackageReference Include="ModelContextProtocol.Core" Version="2.4.0" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
+    <!-- Microsoft.Extensions.AI.OpenAI 10.11.1 requires the Responses streaming return type shipped by OpenAI 2.14.0. -->
     <PackageReference Include="OpenAI" Version="2.14.0" />
-    <PackageReference Include="PdfPig" Version="0.1.10" />
+    <PackageReference Include="PdfPig" Version="0.1.16" />
     <!-- Compatibility freeze: keep ScottPlot.WPF 5.0.56 and SkiaSharp 2.88.9; see docs/04-api-reference/ui-components/component-handbook.md. -->
     <PackageReference Include="SkiaSharp" Version="2.88.9" />
-    <PackageReference Include="System.ServiceProcess.ServiceController" Version="10.0.12" />
+    <PackageReference Include="System.ServiceProcess.ServiceController" Version="10.0.15" />
     <PackageReference Include="WpfMath" Version="2.1.0" />
 	</ItemGroup>
 

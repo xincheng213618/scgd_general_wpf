@@ -4,6 +4,8 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.X86;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
@@ -81,14 +83,19 @@ namespace ColorVision.ImageEditor.Algorithms
             }
 
             context.Progress?.Report(new AlgorithmProgress(0.03, "registration.prepare"));
-            using Mat referenceGray = ToNormalizedGray(reference);
-            using Mat movingGray = ToNormalizedGray(moving);
-            if (!Cv2.CheckRange(referenceGray, quiet: true) || !Cv2.CheckRange(movingGray, quiet: true))
-                return ValueTask.FromResult(Failure(context, "registration_nonfinite_input", "Registration inputs contain NaN or infinity.", "inputs"));
+            using Mat referenceGray = ToNormalizedGray(reference, cancellationToken);
+            RegistrationEstimate estimate;
+            using (Mat movingGray = ToNormalizedGray(moving, cancellationToken))
+            {
+                // Integer color conversion and normalization can only produce finite samples.
+                if (reference.Format.IsFloatingPoint()
+                    && (!Cv2.CheckRange(referenceGray, quiet: true) || !Cv2.CheckRange(movingGray, quiet: true)))
+                    return ValueTask.FromResult(Failure(context, "registration_nonfinite_input", "Registration inputs contain NaN or infinity.", "inputs"));
 
-            RegistrationEstimate estimate = parameters.Method == ImageRegistrationMethod.PhaseCorrelation
-                ? EstimatePhase(referenceGray, movingGray, parameters, context, cancellationToken)
-                : EstimateFeatures(referenceGray, movingGray, parameters, context, cancellationToken);
+                estimate = parameters.Method == ImageRegistrationMethod.PhaseCorrelation
+                    ? EstimatePhase(referenceGray, movingGray, parameters, context, cancellationToken)
+                    : EstimateFeatures(referenceGray, movingGray, parameters, context, cancellationToken);
+            }
             if (estimate.Failure != null)
                 return ValueTask.FromResult(Failure(context, estimate.Failure.Code, estimate.Failure.Message, estimate.Failure.Path));
 
@@ -130,7 +137,7 @@ namespace ColorVision.ImageEditor.Algorithms
                     ? new AlgorithmImageBuffer(reference.Width, reference.Height, stride, moving.Format, outputData, reference.DpiX, reference.DpiY)
                     : AlgorithmImageInterop.FromMat(output, reference.DpiX, reference.DpiY, cancellationToken);
                 validityMask = new AlgorithmImageBuffer(reference.Width, reference.Height, reference.Width, AlgorithmImageFormat.Gray8, mask, reference.DpiX, reference.DpiY);
-                double photometricRmse = PhotometricRmse(referenceGray, output, moving.Format, mask, validPixels);
+                double photometricRmse = PhotometricRmse(referenceGray, output, moving.Format, mask, validPixels, cancellationToken);
                 double inverseResidual = GeometricTransformAlgorithmProvider.InverseResidual(matrix, inverse);
                 long outputPixels = checked((long)reference.Width * reference.Height);
 
@@ -658,13 +665,13 @@ namespace ColorVision.ImageEditor.Algorithms
             return result;
         }
 
-        private static Mat ToNormalizedGray(AlgorithmImageBuffer image)
+        private static Mat ToNormalizedGray(AlgorithmImageBuffer image, CancellationToken cancellationToken)
         {
             using AlgorithmImageMatLease lease = AlgorithmImageInterop.BorrowReadOnly(image);
-            return CreateNormalizedGray(lease.Mat, image.Format);
+            return CreateNormalizedGray(lease.Mat, image.Format, cancellationToken);
         }
 
-        private static Mat CreateNormalizedGray(Mat source, AlgorithmImageFormat format)
+        private static Mat CreateNormalizedGray(Mat source, AlgorithmImageFormat format, CancellationToken cancellationToken)
         {
             int channels = format.Channels();
             double peak = format.IsFloatingPoint() ? 1 : format.BitsPerChannel() == 8 ? byte.MaxValue : ushort.MaxValue;
@@ -677,9 +684,17 @@ namespace ColorVision.ImageEditor.Algorithms
                 }
                 else
                 {
-                    Cv2.CvtColor(source, normalized, channels == 3 ? ColorConversionCodes.BGR2GRAY : ColorConversionCodes.BGRA2GRAY);
-                    if (!format.IsFloatingPoint())
-                        normalized.ConvertTo(normalized, MatType.CV_32FC1, 1 / peak);
+                    ColorConversionCodes conversion = channels == 3 ? ColorConversionCodes.BGR2GRAY : ColorConversionCodes.BGRA2GRAY;
+                    if (!format.IsFloatingPoint() && source.Total() >= 1_048_576)
+                    {
+                        NormalizeColorBands(source, normalized, conversion, 1 / peak, cancellationToken);
+                    }
+                    else
+                    {
+                        Cv2.CvtColor(source, normalized, conversion);
+                        if (!format.IsFloatingPoint())
+                            normalized.ConvertTo(normalized, MatType.CV_32FC1, 1 / peak);
+                    }
                 }
                 return normalized;
             }
@@ -690,15 +705,100 @@ namespace ColorVision.ImageEditor.Algorithms
             }
         }
 
-        private static double PhotometricRmse(Mat referenceGray, Mat registered, AlgorithmImageFormat format, byte[] mask, long validPixels)
+        private static void NormalizeColorBands(Mat source, Mat normalized, ColorConversionCodes conversion, double scale, CancellationToken cancellationToken)
+        {
+            int height = source.Rows, width = source.Cols;
+            int grayRowBytes = checked(width * (int)source.ElemSize1());
+            int rowsPerBand = Math.Min(height, Math.Max(1, 512 * 1024 / grayRowBytes));
+            normalized.Create(height, width, MatType.CV_32FC1);
+            using Mat gray = new(rowsPerBand, width, source.Depth());
+            for (int top = 0; top < height;)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                int end = top + Math.Min(rowsPerBand, height - top);
+                using Mat input = source.RowRange(top, end);
+                using Mat output = normalized.RowRange(top, end);
+                using Mat? tail = end - top == rowsPerBand ? null : gray.RowRange(0, end - top);
+                Mat band = tail ?? gray;
+                // Preserve the integer grayscale rounding before scaling into the final float image.
+                Cv2.CvtColor(input, band, conversion);
+                band.ConvertTo(output, MatType.CV_32FC1, scale);
+                top = end;
+            }
+        }
+
+        private static double PhotometricRmse(Mat referenceGray, Mat registered, AlgorithmImageFormat format, byte[] mask, long validPixels, CancellationToken cancellationToken)
         {
             if (validPixels == 0) return double.NaN;
+            if (!format.IsFloatingPoint() && Avx2.IsSupported && registered.Cols >= Vector256<float>.Count && registered.Total() >= 1_048_576)
+                return PhotometricRmseIntegerBands(referenceGray, registered, format, mask, validPixels, cancellationToken);
             // Reuse the owned gray image for the difference and squared residual.
-            using Mat squared = CreateNormalizedGray(registered, format);
+            using Mat squared = CreateNormalizedGray(registered, format, cancellationToken);
             Cv2.Absdiff(referenceGray, squared, squared);
             Cv2.Multiply(squared, squared, squared);
             using Mat maskMat = Mat.FromPixelData(referenceGray.Rows, referenceGray.Cols, MatType.CV_8UC1, mask);
             return Math.Sqrt(Cv2.Mean(squared, maskMat).Val0);
+        }
+
+        private static unsafe double PhotometricRmseIntegerBands(Mat referenceGray, Mat registered, AlgorithmImageFormat format, byte[] mask, long validPixels, CancellationToken cancellationToken)
+        {
+            double scale = 1d / (format.BitsPerChannel() == 8 ? byte.MaxValue : ushort.MaxValue);
+            int channels = format.Channels();
+            int width = referenceGray.Cols;
+            int height = referenceGray.Rows;
+            // Keep the normalized pixels and any intermediate gray samples cache-sized.
+            int rowsPerBand = Math.Max(1, 512 * 1024 / sizeof(float) / width);
+            int vectorEnd = width - width % Vector256<float>.Count;
+            float* reference = (float*)referenceGray.Data;
+            long referenceStride = referenceGray.Step() / sizeof(float);
+            double scalarSum = 0;
+            Vector256<double> sumLow = Vector256<double>.Zero;
+            Vector256<double> sumHigh = Vector256<double>.Zero;
+            using Mat gray = new();
+            using Mat normalized = new();
+            fixed (byte* maskData = mask)
+            {
+                for (int top = 0; top < height;)
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    int end = top + Math.Min(rowsPerBand, height - top);
+                    using Mat band = registered.RowRange(top, end);
+                    if (channels == 1)
+                        band.ConvertTo(normalized, MatType.CV_32FC1, scale);
+                    else
+                    {
+                        Cv2.CvtColor(band, gray, channels == 3 ? ColorConversionCodes.BGR2GRAY : ColorConversionCodes.BGRA2GRAY);
+                        gray.ConvertTo(normalized, MatType.CV_32FC1, scale);
+                    }
+
+                    float* converted = (float*)normalized.Data;
+                    long convertedStride = normalized.Step() / sizeof(float);
+                    for (int y = top; y < end; y++)
+                    {
+                        float* left = reference + y * referenceStride;
+                        float* right = converted + (y - top) * convertedStride;
+                        byte* valid = maskData + y * width;
+                        for (int x = 0; x < vectorEnd; x += Vector256<float>.Count)
+                        {
+                            Vector256<float> difference = Vector256.Load(left + x) - Vector256.Load(right + x);
+                            Vector256<int> selected = Vector256.GreaterThan(Avx2.ConvertToVector256Int32(valid + x), Vector256<int>.Zero);
+                            // Square at float precision as in OpenCV, then accumulate included pixels in double.
+                            Vector256<float> squares = (difference * difference) & selected.AsSingle();
+                            sumLow += Vector256.WidenLower(squares);
+                            sumHigh += Vector256.WidenUpper(squares);
+                        }
+                        for (int x = vectorEnd; x < width; x++)
+                        {
+                            if (valid[x] == 0) continue;
+                            float difference = left[x] - right[x];
+                            scalarSum += difference * difference;
+                        }
+                    }
+                    top = end;
+                }
+            }
+            cancellationToken.ThrowIfCancellationRequested();
+            return Math.Sqrt((Vector256.Sum(sumLow + sumHigh) + scalarSum) / validPixels);
         }
 
         private static Scalar BorderScalar(AlgorithmImageFormat format, ImageRegistrationParameters parameters)

@@ -3,8 +3,8 @@ knowledge_id: "algorithms.arvr"
 knowledge_type: "reference"
 status: "current"
 summary: "ARVR 远端模板与请求对应关系、结果版本及 SFR 曲线与 CSV 范围；本地条纹 MTF 另有独立主题。"
-aliases: ["CV_Ali_calcMtf", "ARVR算法", "MTF SFR FOV模板对应哪个结果", "SFR2.0", "MTF2.0", "FOV2.0", "Ghost2.0", "Ghost1.0", "畸变2.0", "StereoFusion", "SFR寻边", "ARVR屏幕缺陷检测", "SFR曲线", "SFR导出CSV", "MTF@Freq", "Freq@MTF", "AlgorithmARVRNode", "TemplateMTF2", "ViewHandleSFR2", "Sfr2PlotWindow"]
-code_paths: ["Engine/ColorVision.Engine/Templates/Jsons/SFR2", "Engine/ColorVision.Engine/Templates/Jsons/Ghost2", "Engine/ColorVision.Engine/Templates/Jsons/MTF2", "Engine/ColorVision.Engine/Templates/Jsons/FOV2", "Engine/ColorVision.Engine/Templates/Jsons/Distortion2", "Engine/ColorVision.Engine/Templates/Jsons/BinocularFusion", "Engine/ColorVision.Engine/Templates/Jsons/SFRFindROI", "Engine/ColorVision.Engine/Templates/Jsons/FindCross", "Engine/ColorVision.Engine/Templates/Jsons/DetectScreenDefects", "Engine/ColorVision.Engine/Services/Devices/Algorithm/JsonDisplayAlgorithmBase.cs", "Engine/ColorVision.Engine/FlowProcessing/Nodes/Compatibility/Algorithm/AlgorithmARVRNode.cs", "Engine/FlowEngineLib/Base/CVBaseServerNode.cs", "Engine/ColorVision.Engine/PropertyEditor/AlgorithmTemplatePropertiesEditor.cs", "Engine/ColorVision.Engine/Services/ResultHandleRegistry.cs", "Engine/ColorVision.Engine/Services/Devices/Algorithm/Views/AlgorithmView.xaml.cs", "Engine/ColorVision.Engine/Services/Results/AlgorithmResultDataSaver.cs", "Engine/cvColorVision/MQTTMessageLib/Algorithm/MQTTAlgorithmEventEnum.cs"]
+aliases: ["CV_Ali_calcMtf", "ARVR算法", "MTF SFR FOV模板对应哪个结果", "SFR2.0", "MTF2.0", "FOV2.0", "Ghost2.0", "Ghost1.0", "畸变2.0", "StereoFusion", "ARVR屏幕缺陷检测", "SFR曲线", "SFR导出CSV", "MTF@Freq", "Freq@MTF", "AlgorithmARVRNode", "TemplateMTF2", "ViewHandleSFR2", "Sfr2PlotWindow"]
+code_paths: ["Engine/ColorVision.Engine/Templates/Jsons/SFR2", "Engine/ColorVision.Engine/Templates/Jsons/Ghost2", "Engine/ColorVision.Engine/Templates/Jsons/MTF2", "Engine/ColorVision.Engine/Templates/Jsons/FOV2", "Engine/ColorVision.Engine/Templates/Jsons/Distortion2", "Engine/ColorVision.Engine/Templates/Jsons/BinocularFusion", "Engine/ColorVision.Engine/Templates/Jsons/FindCross", "Engine/ColorVision.Engine/Templates/Jsons/DetectScreenDefects", "Engine/ColorVision.Engine/Services/Devices/Algorithm/JsonDisplayAlgorithmBase.cs", "Engine/ColorVision.Engine/FlowProcessing/Nodes/Compatibility/Algorithm/AlgorithmARVRNode.cs", "Engine/FlowEngineLib/Base/CVBaseServerNode.cs", "Engine/ColorVision.Engine/PropertyEditor/AlgorithmTemplatePropertiesEditor.cs", "Engine/ColorVision.Engine/Services/ResultHandleRegistry.cs", "Engine/ColorVision.Engine/Services/Devices/Algorithm/Views/AlgorithmView.xaml.cs", "Engine/ColorVision.Engine/Services/Results/AlgorithmResultDataSaver.cs", "Engine/cvColorVision/MQTTMessageLib/Algorithm/MQTTAlgorithmEventEnum.cs"]
 related: ["algorithms.index", "algorithms.json-templates", "algorithms.template-menus", "algorithms.find-cross", "algorithms.grid-distortion", "engine.results", "algorithms.stripe-mtf"]
 ---
 
@@ -14,7 +14,7 @@ ARVR 远端入口通过算法服务计算，宿主负责选择模板、发送请
 
 ## 手动运行与模板对应关系
 
-1. 在算法设备的通用手动面板中选择下表入口。大部分位于 **ARVR** 分组，**SFR寻边** 位于 **Json** 分组。
+1. 在算法设备的通用手动面板中，从 **ARVR** 分组选择下表入口。
 2. 选择对应参数模板；需要编辑时使用模板旁的编辑命令。保存与创建步骤见[模板编辑入口](./template-menu-entries.md)和 [JSON 模板](./json-templates.md)。
 3. 按算法配置关注点或 ROI，并设置算法服务可读取的图像路径。界面的模板、非空路径检查不证明文件在服务端可读。
 4. 点击 **计算**，结合本次请求、服务返回和历史结果判断完成状态。创建 `MsgRecord` 表示已建立请求记录并发起发送，不代表计算或落库成功。
@@ -28,7 +28,6 @@ ARVR 远端入口通过算法服务计算，宿主负责选择模板、发送请
 | ARVR → MTF2.0 | `TemplateMTF2`；`MTF` / `48` | `MTF` | `ViewHandleMTF2`；`Version == "2.0"` |
 | ARVR → FOV2.0 | `TemplateDFOV`；`FOV` / `39` | `FOV` | `ViewHandleDFOV`；`Version == "2.0"` |
 | ARVR → StereoFusion | `TemplateBinocularFusion`；`ARVR.BinocularFusion` / `35` | `ARVR.BinocularFusion` | `ViewHandleBinocularFusion` |
-| Json → SFR寻边 | `TemplateSFRFindROI`；`ARVR.SFR.FindROI` / `36` | `ARVR.SFR.FindROI` | `ViewHandleSFRFindROI` |
 | ARVR → FindCross | `TemplateFindCross`；`FindCross` / `45` | `FindCross` | `ViewHandleFindCross`；`Version == "1.0"` |
 | ARVR → 屏幕缺陷检测 | `TemplateDetectScreenDefects`；`ARVR.DetectScreenDefects` / `58` | `ARVR.DetectScreenDefects` | `ViewHandleDetectScreenDefects` |
 
@@ -36,7 +35,7 @@ ARVR 远端入口通过算法服务计算，宿主负责选择模板、发送请
 
 ### POI 与版本字段
 
-- **SFR2.0、MTF2.0、FindCross、SFR寻边**：配置界面有关注点模板，但 `JsonDisplayAlgorithmBase.Execute()` 只统一校验主模板与图像输入；各自仅在辅助模板选择有效时加入 `POITemplateParam`。不能把“有选择器”当作“发送前必填检查”，服务端要求需按对应协议确认。
+- **SFR2.0、MTF2.0、FindCross**：配置界面有关注点模板，但 `JsonDisplayAlgorithmBase.Execute()` 只统一校验主模板与图像输入；各自仅在辅助模板选择有效时加入 `POITemplateParam`。不能把“有选择器”当作“发送前必填检查”，服务端要求需按对应协议确认。
 - **屏幕缺陷检测**：辅助选择器标为 **ROI**，使用 POI 模板；未有效选择时仍发送 `POITemplateParam = { ID: -1, Name: null }`。请求还含 `OutputFileName`、`BufferLen`、`IsInversion = false`、`Color = 1`、`Channel = 1`；新配置输出文件名为 `result.json`，缓存大小为 `1024`。
 - **SFR2.0、MTF2.0、FOV2.0、Ghost2.0**：手动请求明确带 `Params.Version = "2.0"`。Ghost2.0 还发送 `CIEFileName`。模板编码相同不代表请求参数可以互换。
 
@@ -53,7 +52,6 @@ ARVR 远端入口通过算法服务计算，宿主负责选择模板、发送请
 | FOV | `FOV` | `TemplateDFOV` |
 | 畸变 | `Distortion` | `TemplateDistortion2`（`distortion` / 字典 `40`）绑定 `TempName` |
 | 双目融合 | `ARVR.BinocularFusion` | `TemplateBinocularFusion` |
-| SFR_FindROI | `ARVR.SFR.FindROI` | `TemplateSFRFindROI` |
 | 十字计算 | `FindCross` | `TemplateFindCross` |
 | 屏幕缺陷检测 | `ARVR.DetectScreenDefects` | `TemplateDetectScreenDefects` |
 
@@ -62,6 +60,8 @@ ARVR 远端入口通过算法服务计算，宿主负责选择模板、发送请
 **AI算法**、**AI算法2**、**ARVR算法** 和 **ARVR.Ghost算法** 使用 `1024` 缓存大小。**AI算法** 和 **ARVR算法** 发送默认绿色。旧流程中这些节点原有的自定义 `Color` 和 `BufferLen` 在加载时忽略，重新保存时省略。
 
 旧 **AI算法** 流程里的灯带检测和像素级灯珠检测、旧 **AI算法2** 流程里的灯带检测和 JND 仍能读取原配置。运行到这些算子时会提示重新选择。新建 **AI算法2** 节点默认选用 MTF。
+
+旧版 SFR 寻边已移除。按算子名称保存的旧流程需在旧版中替换对应算子后再升级。数据库原有记录继续保留，当前版本已移除对应模板入口、历史结果详情及专用导出。
 
 ARVR算法、通用算法和 AI算法2 的 SFR 参数选择器均使用 SFR2.0 JSON 模板。已有流程保存的旧 SFR 模板名称不会自动迁移，应重新选择 SFR2.0 模板并保存流程；字典号 `9` 的 Gamma 模板不能直接作为字典号 `49` 的 JSON 模板使用。
 
@@ -89,7 +89,7 @@ ARVR算法、通用算法和 AI算法2 的 SFR 参数选择器均使用 SFR2.0 J
 
 ## 结果版本与处理器选择
 
-结果处理器先匹配 `ViewResultAlg.ResultType`，再执行各自的 `CanHandle1` 条件。上表标注的版本是**返回结果的 `Version`**；JSON 模板、请求版本和返回版本是不同层次，选择 JSON 模板不保证结果一定进入 V2 处理器。三个 `ARVR.*` 事件对应的结果枚举为 `ARVR_BinocularFusion`、`ARVR_SFR_FindROI`、`ARVR_DetectScreenDefects`。
+结果处理器先匹配 `ViewResultAlg.ResultType`，再执行各自的 `CanHandle1` 条件。上表标注的版本是**返回结果的 `Version`**；JSON 模板、请求版本和返回版本是不同层次，选择 JSON 模板不保证结果一定进入 V2 处理器。双目融合和屏幕缺陷检测分别使用结果类型 `ARVR_BinocularFusion` 和 `ARVR_DetectScreenDefects`。
 
 `ViewHandleDistortion2` 仅接受 2.0 结果。旧模板、调试和结果读取入口均已淘汰；已有远端流程引用不会自动改写，应重新选择畸变2.0模板或改用本地节点。数据库旧记录不会删除，但不再提供专用明细显示、叠加和 CSV 导出。V2 无明细失败记录显示失败原因和参数；成功记录使用一条 JSON 文件明细。[本地点阵畸变 V2](../detectors/grid-distortion-v2.md) 也通过此结构交给 ProjectARVRPro，定位后可选择 TV、九点口径；有效的相对光学估计自动写入既有光学字段，并标明未经独立标定。公共装载、显示和保存链路见 [Engine 结果展示](../../engine-components/result-handoff-chain.md)。
 

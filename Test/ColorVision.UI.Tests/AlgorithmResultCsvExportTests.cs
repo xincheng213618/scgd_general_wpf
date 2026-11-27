@@ -18,15 +18,20 @@ public sealed class AlgorithmResultCsvExportTests : IDisposable
         // More than one writer buffer, with surrogate pairs and quoted multiline fields.
         string text = string.Concat(Enumerable.Repeat("😀x", 40_000)) + ",\"\r\n中文";
         const string heading = "Text,\"quoted\"\r\n列";
+        const string numericText = "1.2500e+00";
+        string longNumericText = "9" + new string('1', 20_000);
+        using JsonDocument number = JsonDocument.Parse(numericText);
+        using JsonDocument longNumber = JsonDocument.Parse(longNumericText);
         using AlgorithmResult result = Result(
             new AlgorithmMeasurementArtifact("metrics", [new AlgorithmMeasurement("mean,\"Y\"", 12.5, "cd/m²", 2, 0.75,
                 new Dictionary<string, string> { ["note"] = text })]),
             new AlgorithmTableArtifact("samples",
-                [new(heading, "string"), new("Number", "number"), new("Missing", "string"), new("Null", "string")],
+                [new(heading, "string"), new("Number", "number"), new("LargeNumber", "number"), new("Missing", "string"), new("Null", "string")],
                 [new Dictionary<string, JsonElement>
                 {
                     [heading] = JsonSerializer.SerializeToElement(text),
-                    ["Number"] = JsonSerializer.SerializeToElement(1.25),
+                    ["Number"] = number.RootElement,
+                    ["LargeNumber"] = longNumber.RootElement,
                     ["Null"] = JsonSerializer.SerializeToElement<string?>(null),
                 }]),
             new AlgorithmGeometryArtifact("geometry", AlgorithmCoordinateSpace.Pixel,
@@ -56,8 +61,8 @@ public sealed class AlgorithmResultCsvExportTests : IDisposable
             Assert.Equal(text, qualifiers.RootElement.GetProperty("note").GetString());
 
         string[][] table = ReadRows(paths[1]);
-        Assert.Equal(new[] { heading, "Number", "Missing", "Null" }, table[0]);
-        Assert.Equal(new[] { text, "1.25", "", "" }, table[1]);
+        Assert.Equal(new[] { heading, "Number", "LargeNumber", "Missing", "Null" }, table[0]);
+        Assert.Equal(new[] { text, numericText, longNumericText, "", "" }, table[1]);
 
         string[] geometry = ReadRows(paths[2])[1];
         Assert.Equal(new[] { "geometry", "Pixel", "circle,1", "Circle" }, geometry[..4]);

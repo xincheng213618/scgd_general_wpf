@@ -1,10 +1,12 @@
 using ColorVision.Algorithms;
 using OpenCvSharp;
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace ColorVision.ImageEditor.Algorithms;
 
@@ -12,6 +14,7 @@ public sealed partial class DisplayMetrologyProvider
 {
     private const int EdgeSpreadBins = 97;
     private const int DftFrequencyCount = 65;
+    private static readonly SemaphoreSlim FieldSfrWorker = new(1, 1);
 
     private static class DftWeights
     {
@@ -43,11 +46,32 @@ public sealed partial class DisplayMetrologyProvider
         var shapes = new List<AlgorithmGeometry>();
         var frequencies = new List<double>();
         var fieldMap = new byte[p.Rows * p.Columns];
+        IEnumerable<(int Index, Rect Bounds)> cells = Grid(width, height, p);
+        EdgeSfr[]? parallelResults = null;
+        // Share one additional worker across Field SFR calls because the outer CPU scheduler
+        // can already run many invocations. Contention falls back to serial processing.
+        const int minimumParallelPixels = 2 * 1024 * 1024;
+        if (fieldMap.Length > 1 && width * height >= minimumParallelPixels && Environment.ProcessorCount > 1 && FieldSfrWorker.Wait(0))
+        {
+            try
+            {
+                var work = cells.ToArray();
+                var results = new EdgeSfr[work.Length];
+                Parallel.For(0, work.Length, new ParallelOptions { MaxDegreeOfParallelism = 2, CancellationToken = token },
+                    index => results[index] = SlantedEdge(signal, width, work[index].Bounds, p, token));
+                parallelResults = results;
+                cells = work;
+            }
+            finally
+            {
+                FieldSfrWorker.Release();
+            }
+        }
         int valid = 0;
-        foreach (var (index, bounds) in Grid(width, height, p))
+        foreach (var (index, bounds) in cells)
         {
             token.ThrowIfCancellationRequested();
-            EdgeSfr result = SlantedEdge(signal, width, bounds, p, token);
+            EdgeSfr result = parallelResults?[index] ?? SlantedEdge(signal, width, bounds, p, token);
             rows.Add(Row(("cell", index), ("centerX_px", bounds.X + (bounds.Width - 1) / 2.0), ("centerY_px", bounds.Y + (bounds.Height - 1) / 2.0),
                 ("valid", result.Valid), ("reason", result.Reason), ("slope", result.Valid ? result.Slope : null),
                 ("edgeFitRms_px", result.Valid ? result.Residual : null), ("mtf50_cyclesPerPixel", result.Mtf50)));
@@ -78,29 +102,46 @@ public sealed partial class DisplayMetrologyProvider
         int width = p.HorizontalEdge ? bounds.Height : bounds.Width;
         int height = p.HorizontalEdge ? bounds.Width : bounds.Height;
         if (width < 40 || height < 32) return new(false, "edge_roi_too_small");
-        double Pixel(int x, int y) => p.HorizontalEdge ? source[(bounds.Y + x) * stride + bounds.X + y] : source[(bounds.Y + y) * stride + bounds.X + x];
+
+        int offset = bounds.Y * stride + bounds.X;
+        int rowStride = p.HorizontalEdge ? 1 : stride;
+        int columnStride = p.HorizontalEdge ? stride : 1;
+        double Pixel(int x, int y) => source[offset + y * rowStride + x * columnStride];
+        // Reorder horizontal samples in bands of at most 512 KiB.
+        const int maxBandSamples = 128 * 1024;
+        int bandRows = p.HorizontalEdge && width * height >= maxBandSamples ? Math.Min(32, maxBandSamples / width) : 0;
+        float[]? band = null;
+        int bandStart = 0, bandEnd = 0;
         var centers = new List<(double Y, double X)>();
         double direction = 0;
-        for (int y = 2; y < height - 2; y++)
+        try
         {
-            token.ThrowIfCancellationRequested();
-            double left = 0, right = 0;
-            for (int x = 0; x < 4; x++) { left += Pixel(x, y) / 4; right += Pixel(width - 1 - x, y) / 4; }
-            double contrast = right - left;
-            if (Math.Abs(contrast) < p.MinimumContrast) return new(false, "low_edge_contrast");
-            if (direction == 0) direction = Math.Sign(contrast);
-            if (Math.Sign(contrast) != direction) return new(false, "mixed_edge_polarity");
-            double sum = 0, weighted = 0, variation = 0;
-            for (int x = 2; x < width - 2; x++)
+            for (int y = 2; y < height - 2; y++)
             {
-                double gradient = direction * (Pixel(x + 1, y) - Pixel(x - 1, y)) / 2;
-                variation += Math.Abs(gradient);
-                sum += gradient; weighted += x * gradient;
+                token.ThrowIfCancellationRequested();
+                // Let the first measured row reject the tile before renting or transposing.
+                if (y == 3 && bandRows >= 4) band = ArrayPool<float>.Shared.Rent(bandRows * width);
+                int start = offset + y * rowStride;
+                int step = columnStride;
+                if (band != null)
+                {
+                    if (y >= bandEnd)
+                    {
+                        bandStart = y;
+                        bandEnd = Math.Min(height - 2, y + bandRows);
+                        TransposeEdgeBand(source, stride, offset + y, width, bandEnd - bandStart, band);
+                    }
+                    start = (y - bandStart) * width;
+                    step = 1;
+                }
+                string? failure = FindEdgeRowCenter(band ?? source, start, step, width, p.MinimumContrast, ref direction, out double center);
+                if (failure != null) return new(false, failure);
+                centers.Add((y, center));
             }
-            if (sum < p.MinimumContrast || variation > Math.Abs(contrast) * 1.5) return new(false, "multiple_or_noisy_edges");
-            double center = weighted / sum;
-            if (center < 15 || center > width - 16) return new(false, "insufficient_edge_support");
-            centers.Add((y, center));
+        }
+        finally
+        {
+            if (band != null) ArrayPool<float>.Shared.Return(band);
         }
         double my = centers.Average(v => v.Y), mx = centers.Average(v => v.X);
         double slope = centers.Sum(v => (v.Y - my) * (v.X - mx)) / centers.Sum(v => (v.Y - my) * (v.Y - my));
@@ -166,5 +207,47 @@ public sealed partial class DisplayMetrologyProvider
             if (mtf[i - 1] >= 0.5 && mtf[i] < 0.5)
             { crossing = (i - 1 + (mtf[i - 1] - 0.5) / (mtf[i - 1] - mtf[i])) / 128; break; }
         return new(true, crossing.HasValue ? "" : "mtf50_not_reached_below_nyquist", slope, rms, crossing, mtf);
+    }
+
+    private static void TransposeEdgeBand(float[] source, int stride, int offset, int width, int rows, float[] destination)
+    {
+        const int block = 32;
+        for (int start = 0; start < width; start += block)
+        {
+            int end = Math.Min(start + block, width);
+            for (int row = 0; row < rows; row++)
+            {
+                int sourceStart = offset + row;
+                int destinationStart = row * width;
+                for (int x = start; x < end; x++)
+                    destination[destinationStart + x] = source[sourceStart + x * stride];
+            }
+        }
+    }
+
+    private static string? FindEdgeRowCenter(float[] samples, int start, int step, int width, double minimumContrast, ref double direction, out double center)
+    {
+        center = 0;
+        double Pixel(int x) => samples[start + x * step];
+        double left = 0, right = 0;
+        for (int x = 0; x < 4; x++) { left += Pixel(x) / 4; right += Pixel(width - 1 - x) / 4; }
+        double contrast = right - left;
+        if (Math.Abs(contrast) < minimumContrast) return "low_edge_contrast";
+        if (direction == 0) direction = Math.Sign(contrast);
+        if (Math.Sign(contrast) != direction) return "mixed_edge_polarity";
+        double sum = 0, weighted = 0, variation = 0;
+        double previous = Pixel(1), current = Pixel(2);
+        for (int x = 2, nextIndex = start + 3 * step; x < width - 2; x++, nextIndex += step)
+        {
+            double next = samples[nextIndex];
+            double gradient = direction * (next - previous) / 2;
+            variation += Math.Abs(gradient);
+            sum += gradient; weighted += x * gradient;
+            previous = current;
+            current = next;
+        }
+        if (sum < minimumContrast || variation > Math.Abs(contrast) * 1.5) return "multiple_or_noisy_edges";
+        center = weighted / sum;
+        return center < 15 || center > width - 16 ? "insufficient_edge_support" : null;
     }
 }

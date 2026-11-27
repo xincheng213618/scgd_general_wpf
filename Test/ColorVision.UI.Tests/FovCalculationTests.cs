@@ -12,7 +12,11 @@ using FlowEngineLib.Base;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using SqlSugar;
+using ST.Library.UI.NodeEditor;
+using System.ComponentModel;
+using System.Diagnostics;
 using System.IO;
+using System.Numerics;
 using System.Runtime.InteropServices;
 
 namespace ColorVision.UI.Tests;
@@ -164,6 +168,142 @@ public sealed class FovCalculationTests
         static bool InField(int x, int y) => x >= 60 && x <= 240 && y >= 50 && y <= 210;
     }
 
+    [Theory]
+    [InlineData(1)]
+    [InlineData(double.NaN)]
+    public void CurvedModeFollowsOuterGradientPastAnIsolatedInteriorShadow(double unusedMinimumConfidence)
+    {
+        using SyntheticImage cleanImage = CreateShadowedCircularField(shadowHalfHeight: 0);
+        using SyntheticImage shadowedImage = CreateShadowedCircularField(shadowHalfHeight: 2);
+        FovBoundaryGeometry clean = FovCalculator.DetectAndCalculate(cleanImage.Image, default, 9410, 74.2,
+            FovMeasurementMode.CurvedBoundary).Measurement.Boundary!;
+        FovCalculationResult result = FovCalculator.DetectAndCalculate(shadowedImage.Image, default, 9410, 74.2,
+            FovMeasurementMode.CurvedBoundary);
+        FovBoundaryGeometry measured = result.Measurement.Boundary!;
+        Assert.InRange(result.Detection!.Confidence!.Value, 0.25, 1);
+        Assert.InRange(measured.Right.X, clean.Right.X - 2, clean.Right.X + 2);
+        LuminousAreaPoint[] nearRight = measured.Contour.Where(point => point.X > clean.Center.X && Math.Abs(point.Y - clean.Center.Y) < 4).ToArray();
+        Assert.Contains(nearRight, point => Math.Abs(point.Y - clean.Center.Y) < 1);
+        Assert.All(nearRight, point => Assert.InRange(point.X, clean.Right.X - 2, clean.Right.X + 2));
+
+        FovCalculationResult compatibility = FovCalculator.DetectAndCalculate(shadowedImage.Image, default, 9410, 74.2,
+            FovMeasurementMode.CurvedBoundary, minimumConfidence: unusedMinimumConfidence);
+        Assert.Equal(result.Detection.Confidence, compatibility.Detection!.Confidence);
+        Assert.Equal(measured.Right, compatibility.Measurement.Boundary!.Right);
+        Assert.Equal(measured.Contour, compatibility.Measurement.Boundary.Contour);
+    }
+
+    [Fact]
+    public void CurvedModeFollowsOuterGradientPastAWideInteriorShadow()
+    {
+        // The wider attenuation affects adjacent measured rays on both sides of 0°.
+        using SyntheticImage cleanImage = CreateShadowedCircularField(shadowHalfHeight: 0);
+        using SyntheticImage shadowedImage = CreateShadowedCircularField(shadowHalfHeight: 20);
+        FovBoundaryGeometry clean = FovCalculator.DetectAndCalculate(cleanImage.Image, default, 9410, 74.2,
+            FovMeasurementMode.CurvedBoundary).Measurement.Boundary!;
+        FovBoundaryGeometry measured = FovCalculator.DetectAndCalculate(shadowedImage.Image, default, 9410, 74.2,
+            FovMeasurementMode.CurvedBoundary).Measurement.Boundary!;
+
+        // The shadow's sharp inner step is well inside the actual outer gradient.
+        Assert.InRange(measured.Right.X, clean.Right.X - 2, clean.Right.X + 2);
+        Assert.All(measured.Contour.Where(point => point.X > clean.Center.X && Math.Abs(point.Y - clean.Center.Y) < 24),
+            point => Assert.InRange(point.X, clean.Right.X - 2, clean.Right.X + 2));
+    }
+
+    [Fact]
+    public void CurvedModeReportsLowContrastAndMeasuresTheVisibleEdge()
+    {
+        const int centerX = 328, centerY = 324, edgeRadius = 240;
+        using SyntheticImage image = new(32, 1, (_, _) => true, (x, y, _) =>
+        {
+            int dx = x - centerX;
+            int dy = y - centerY;
+            double radius = Math.Sqrt(dx * dx + dy * dy);
+            double blend = Math.Exp(-Math.Pow(Math.Atan2(dy, dx) / 0.34, 4));
+            // The slowly fading glare outside the right edge reduces the measured
+            // contrast, but the light-to-dark step at the circle is still visible.
+            return radius <= edgeRadius
+                ? 180 - (180 - 42) * blend * Math.Clamp((radius - 75) / 130, 0, 1)
+                : 42 * 0.88 * blend * Math.Clamp(1 - (radius - edgeRadius) / 55, 0, 1);
+        }, width: 656, height: 648);
+
+        FovCalculationResult result = FovCalculator.DetectAndCalculate(image.Image, default, 9410, 74.2, FovMeasurementMode.CurvedBoundary);
+        Assert.InRange(result.Detection!.Confidence!.Value, 0.1, 0.24);
+        FovBoundaryGeometry boundary = result.Measurement.Boundary!;
+        Assert.InRange(boundary.Right.X, centerX + edgeRadius - 2, centerX + edgeRadius + 1);
+        Assert.All(boundary.Contour.Where(point => point.X > centerX && Math.Abs(point.Y - centerY) < 40),
+            point => Assert.InRange(point.X, centerX + edgeRadius - 5, centerX + edgeRadius + 1));
+    }
+
+    [Fact]
+    public void CurvedModeStillRejectsAnArcWithoutALocatableEdge()
+    {
+        using SyntheticImage image = new(32, 1, (_, _) => true, (x, y, _) =>
+        {
+            int dx = x - 328;
+            int dy = y - 324;
+            double radius = Math.Sqrt(dx * dx + dy * dy);
+            double direction = Math.Atan2(dy, dx);
+            // The field fades gradually across a right-hand sector without a
+            // resolved local edge, while the rest of the boundary is visible.
+            double fadeWidth = 90 + 155 * Math.Exp(-Math.Pow(direction / 0.16, 4));
+            return 180 * Math.Clamp((300 - radius) / fadeWidth, 0, 1);
+        }, width: 656, height: 648);
+
+        InvalidOperationException error = Assert.Throws<InvalidOperationException>(() => FovCalculator.DetectAndCalculate(
+            image.Image, default, 9410, 74.2, FovMeasurementMode.CurvedBoundary, minimumConfidence: 0));
+        Assert.Contains("缺失、裁切或低对比边界", error.Message);
+    }
+
+    [Theory]
+    [InlineData(false, "曲边模式要求连续填充图案，当前轮廓含孔洞或同一方向的多段边界。")]
+    [InlineData(true, "曲边发光区存在缺失、裁切或低对比边界。")]
+    public void CurvedModeLargeSixteenBitImageReportsTheFirstRayFailure(bool fadeRightEdge, string expectedMessage)
+    {
+        using SyntheticImage image = new(16, 1, (_, _) => true, (x, y, _) =>
+        {
+            int dx = x - 328;
+            int dy = y - 324;
+            // An open notch causes a later ray to re-enter the same component.
+            if (dx <= 30 && Math.Abs(dy - 155) <= 8) return 0;
+            double radius = Math.Sqrt(dx * dx + dy * dy);
+            double direction = Math.Atan2(dy, dx);
+            double fadeWidth = fadeRightEdge ? 90 + 155 * Math.Exp(-Math.Pow(direction / 0.16, 4)) : 90;
+            return 36000 * Math.Clamp((300 - radius) / fadeWidth, 0, 1);
+        }, width: 656, height: 648);
+
+        InvalidOperationException error = Assert.Throws<InvalidOperationException>(() => FovCalculator.DetectAndCalculate(
+            image.Image, default, 9410, 74.2, FovMeasurementMode.CurvedBoundary));
+        Assert.Equal(expectedMessage, error.Message);
+    }
+
+    [Fact]
+    public void CurvedModeConfidenceIgnoresAnIsolatedWeakRayAtTheContourSeam()
+    {
+        double? confidence = FovCurvedBoundaryDetector.CalculateContourConfidence([0.19, 0.83, 0.92, 0.72]);
+        Assert.Equal<double?>(0.72, confidence);
+    }
+
+    [Fact]
+    public void CurvedModeConfidenceRetainsAdjacentWeakRaysAcrossTheContourSeam()
+    {
+        double? confidence = FovCurvedBoundaryDetector.CalculateContourConfidence([0.19, 0.83, 0.92, 0.21]);
+        Assert.Equal<double?>(0.21, confidence);
+    }
+
+    [Fact]
+    public void CurvedModeConfidenceDoesNotBridgeAFrameEdgeClosure()
+    {
+        double? confidence = FovCurvedBoundaryDetector.CalculateContourConfidence([0.19, null, 0.92, 0.72]);
+        Assert.Equal<double?>(0.19, confidence);
+    }
+
+    [Fact]
+    public void CurvedModeConfidenceRequiresAMeasuredRay()
+    {
+        Assert.Null(FovCurvedBoundaryDetector.CalculateContourConfidence([null, null, null, null]));
+    }
+
     [Fact]
     public void CurvedModeRejectsResolvableHoleBetweenContourRays()
     {
@@ -205,7 +345,7 @@ public sealed class FovCalculationTests
     [Fact]
     public void ContourFlowInputUsesSourceImageAndNeverLoadsUpstreamCorners()
     {
-        InputOnlyServices services = new();
+        FovTestServices services = new();
         LocalFovNode node = new(services);
         CVStartCFC action = new();
         var endpoint = new MySqlConnectedEndpoint(_ => true, () => throw new NotSupportedException());
@@ -217,6 +357,38 @@ public sealed class FovCalculationTests
         Assert.Equal(0, services.CornerReads);
         Assert.Throws<InvalidOperationException>(() => node.ResolveInput(action, FovMeasurementMode.FourCorners, endpoint));
         Assert.Equal(1, services.CornerReads);
+    }
+
+    [Fact]
+    public void FlowMinimumConfidenceRoundTripsAndReachesCalculation()
+    {
+        const double configuredConfidence = 0.72;
+        LocalFovNode original = new();
+        original.Create();
+        Assert.Equal(0.25, original.MinimumConfidence);
+        Assert.False(TypeDescriptor.GetProperties(original)[nameof(LocalFovNode.MinimumConfidence)]!.IsBrowsable);
+        original.MinimumConfidence = -1;
+        Assert.Equal(0, original.MinimumConfidence);
+        original.MinimumConfidence = 2;
+        Assert.Equal(1, original.MinimumConfidence);
+        original.MinimumConfidence = double.NaN;
+        Assert.Equal(0.25, original.MinimumConfidence);
+        original.MinimumConfidence = configuredConfidence;
+
+        STNodeSavedState state = STNodeSavedState.Parse(original.GetSaveData());
+        FovTestServices services = new(Corners);
+        LocalFovNode restored = new(services);
+        restored.Create();
+        restored.OnLoadNode(state.Properties);
+        Assert.Equal(configuredConfidence, restored.MinimumConfidence);
+
+        CVStartCFC action = new("fov-minimum-confidence");
+        using var resources = action.RuntimeResources;
+        MySqlConnectedEndpoint endpoint = new(_ => true, () => throw new NotSupportedException());
+        new FlowMeasurementBatch(action.SerialNumber, 1, string.Empty, Stopwatch.GetTimestamp(), endpoint).Bind(resources);
+        action.MasterValue(null!, 10, (int)ViewResultAlgType.FindLightArea);
+        Assert.True(restored.ExecuteSynchronously(action).Calculation.UsedProvidedCorners);
+        Assert.Equal<double?>(configuredConfidence, services.ReceivedMinimumConfidence);
     }
 
     [Theory]
@@ -250,7 +422,8 @@ public sealed class FovCalculationTests
             active = b;
             Assert.False(a.IsCurrent);
 
-            var node = new LocalFovNode(new LocalFovNodeServices(resultDirectory));
+            const double configuredConfidence = 0.61;
+            var node = new LocalFovNode(new LocalFovNodeServices(resultDirectory)) { MinimumConfidence = configuredConfidence };
             ResultMessage? received = null;
             using IDisposable subscription = ResultMessageBus.Default.Subscribe(message =>
             {
@@ -299,6 +472,7 @@ public sealed class FovCalculationTests
             Assert.Equal(imageA, master.ImgFile);
             JObject parameters = JObject.Parse(master.Params!);
             Assert.Equal(sourceA.ImageId, parameters.Value<int>("SourceMasterId"));
+            Assert.Equal(configuredConfidence, parameters.Value<double>("MinimumConfidence"));
             Assert.NotNull(received);
             Assert.Same(a, received.DatabaseEndpoint);
             Assert.Equal(master.Id, received.Data.MasterId);
@@ -391,6 +565,165 @@ public sealed class FovCalculationTests
     }
 
     [Fact]
+    public void SeedMedianMatchesSortedWindowsIncludingSimdTails()
+    {
+        // Cover every tail length on the SIMD width of the current machine.
+        foreach (int width in Enumerable.Range(0, 2 * Vector<double>.Count).Concat([128, 1021]))
+            AssertSeedMedianMatchesSortedWindows(width);
+    }
+
+    private static void AssertSeedMedianMatchesSortedWindows(int width)
+    {
+        var random = new Random(16081);
+        double[] levels = [double.MinValue, -1, 0, 0, 0, 255, 32768, 65535, 65535, 196605, double.MaxValue];
+        double[][] rows = new double[5][];
+        for (int y = 0; y < rows.Length; y++)
+        {
+            rows[y] = new double[width + 4];
+            for (int x = 0; x < rows[y].Length; x++)
+                rows[y][x] = levels[random.Next(levels.Length)];
+            if (width >= 9)
+            {
+                rows[y].AsSpan(0, 5).Fill(double.MinValue);
+                rows[y].AsSpan(width - 1, 5).Fill(double.MaxValue);
+            }
+        }
+
+        double[] output = new double[width];
+        Array.Fill(output, double.NaN);
+        bool written = FovSeedMedian.TryWriteRow(rows[0], rows[1], rows[2], rows[3], rows[4], output);
+        Assert.Equal(Vector.IsHardwareAccelerated && width >= Vector<double>.Count, written);
+        if (!written)
+        {
+            Assert.All(output, value => Assert.True(double.IsNaN(value)));
+            return;
+        }
+
+        double[] window = new double[25];
+        for (int x = 0; x < width; x++)
+        {
+            for (int y = 0; y < rows.Length; y++)
+                rows[y].AsSpan(x, 5).CopyTo(window.AsSpan(y * 5, 5));
+            Array.Sort(window);
+            Assert.Equal(window[12], output[x]);
+        }
+    }
+
+    [Fact]
+    public void CurvedModeLargeSixteenBitRoiMatchesTheSerialFloatPath()
+    {
+        // The seed step is two, so both ROI edges need the clamped halo.
+        // The four-channel image uses the same intensity as the grayscale
+        // reference while varying alpha and using padded rows.
+        RoiRect roi = new(7, 11, 1008, 1028);
+        using SyntheticImage color = new(16, 4, InField, (x, y, channel) =>
+            channel == 3 ? (x * 71 + y * 113) % 65536 : Intensity(x, y) + (channel - 1) * 2000,
+            width: 1020, height: 1044);
+        using SyntheticImage grayscale = new(32, 1, InField, (x, y, _) => Intensity(x, y), width: 1020, height: 1044);
+
+        FovCalculationResult reference = FovCalculator.DetectAndCalculate(grayscale.Image, roi, 9410, 74.2, FovMeasurementMode.CurvedBoundary);
+        FovCalculationResult result = FovCalculator.DetectAndCalculate(color.Image, roi, 9410, 74.2, FovMeasurementMode.CurvedBoundary);
+
+        FovBoundaryGeometry expected = reference.Measurement.Boundary!;
+        FovBoundaryGeometry actual = result.Measurement.Boundary!;
+        Assert.Equal(expected with { DiagonalPoints = actual.DiagonalPoints, Contour = actual.Contour }, actual);
+        Assert.Equal(expected.DiagonalPoints, actual.DiagonalPoints);
+        Assert.Equal(expected.Contour, actual.Contour);
+        Assert.Equal(reference.Measurement.DiagonalFovDegrees, result.Measurement.DiagonalFovDegrees);
+        Assert.Equal(reference.Detection!.Confidence, result.Detection!.Confidence);
+
+        static bool InField(int x, int y) => Math.Pow((x - 510) / 406d, 2) + Math.Pow((y - 525) / 396d, 2) <= 1;
+        static double Intensity(int x, int y) => (InField(x, y) ? 36000 : 3000) + (x * 17 + y * 31) % 127;
+    }
+
+    [Theory]
+    [InlineData("Bottom", false)]
+    [InlineData("Bottom", true)]
+    [InlineData("Top", true)]
+    [InlineData("Left", true)]
+    [InlineData("Right", true)]
+    public void CurvedModeUsesPhysicalImageEdgeOnlyWhereTheFieldReachesIt(string side, bool hasCenterNotch)
+    {
+        const int longDimension = 1201, shortDimension = 640;
+        const int centerX = 600, centerY = 356, radius = 312, notchY = 620;
+        bool transposed = side is "Left" or "Right";
+        int width = transposed ? shortDimension : longDimension;
+        int height = transposed ? longDimension : shortDimension;
+        using SyntheticImage image = new(8, 1, (x, y) =>
+        {
+            LuminousAreaPoint point = ToBottomFacingCoordinates(new(x, y));
+            double dx = point.X - centerX;
+            double dy = point.Y - centerY;
+            return dx * dx + dy * dy <= radius * radius
+                && (!hasCenterNotch || point.Y <= notchY + dx * dx / 200d);
+        }, width: width, height: height);
+
+        foreach (RoiRect searchArea in new[] { default(RoiRect), SearchArea(0) })
+        {
+            FovBoundaryGeometry boundary = FovCalculator.DetectAndCalculate(image.Image, searchArea, 9410, 74.2,
+                FovMeasurementMode.CurvedBoundary).Measurement.Boundary!;
+            LuminousAreaPoint[] contour = boundary.Contour.Select(ToBottomFacingCoordinates).ToArray();
+            Assert.Equal(shortDimension - 1, contour.Max(point => point.Y));
+            Assert.Contains(contour, point => point.Y == shortDimension - 1 && point.X < centerX - 75);
+            Assert.Contains(contour, point => point.Y == shortDimension - 1 && point.X > centerX + 75);
+            LuminousAreaPoint endpoint = side switch
+            {
+                "Top" => boundary.Top,
+                "Left" => boundary.Left,
+                "Right" => boundary.Right,
+                _ => boundary.Bottom
+            };
+            double measuredY = ToBottomFacingCoordinates(endpoint).Y;
+            if (hasCenterNotch)
+                Assert.InRange(measuredY, notchY - 1, notchY + 2);
+            else
+                Assert.Equal(shortDimension - 1, measuredY);
+        }
+
+        Assert.Throws<InvalidOperationException>(() => FovCalculator.DetectAndCalculate(image.Image, SearchArea(20),
+            9410, 74.2, FovMeasurementMode.CurvedBoundary));
+
+        LuminousAreaPoint ToBottomFacingCoordinates(LuminousAreaPoint point) => side switch
+        {
+            "Top" => new(point.X, shortDimension - 1 - point.Y),
+            "Left" => new(point.Y, shortDimension - 1 - point.X),
+            "Right" => new(point.Y, point.X),
+            _ => point
+        };
+
+        RoiRect SearchArea(int insetFromPhysicalEdge) => side switch
+        {
+            "Top" => new(150, insetFromPhysicalEdge, 901, shortDimension - 20 - insetFromPhysicalEdge),
+            "Left" => new(insetFromPhysicalEdge, 150, shortDimension - 20 - insetFromPhysicalEdge, 901),
+            "Right" => new(20, 150, shortDimension - 20 - insetFromPhysicalEdge, 901),
+            _ => new(150, 20, 901, shortDimension - 20 - insetFromPhysicalEdge)
+        };
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void CurvedModeDistinguishesCornerBackgroundFromHolesWhenEveryImageEdgeIsClipped(bool hasHole)
+    {
+        using SyntheticImage image = new(8, 1, (x, y) => (x - 150) * (x - 150) + (y - 130) * (y - 130) <= 168 * 168
+            && !(hasHole && Math.Abs(x - 210) <= 6 && Math.Abs(y - 140) <= 6));
+        if (hasHole)
+        {
+            InvalidOperationException error = Assert.Throws<InvalidOperationException>(() =>
+                FovCalculator.DetectAndCalculate(image.Image, default, 9410, 74.2, FovMeasurementMode.CurvedBoundary));
+            Assert.Contains("孔洞", error.Message);
+            return;
+        }
+
+        FovBoundaryGeometry boundary = FovCalculator.DetectAndCalculate(image.Image, default, 9410, 74.2,
+            FovMeasurementMode.CurvedBoundary).Measurement.Boundary!;
+        Assert.Equal(0, boundary.Left.X);
+        Assert.Equal(image.Image.cols - 1, boundary.Right.X);
+        Assert.Equal(0, boundary.Top.Y);
+        Assert.Equal(image.Image.rows - 1, boundary.Bottom.Y);
+    }
+
+    [Fact]
     public void CurvedModeRejectsBlankAndUnfilledCenterInsteadOfReturningZeroFov()
     {
         using SyntheticImage blank = new(8, 1, (_, _) => false);
@@ -403,6 +736,18 @@ public sealed class FovCalculationTests
         Assert.Throws<InvalidOperationException>(() => FovCalculator.DetectAndCalculate(hole.Image, default, 9410, 74.2, mode: FovMeasurementMode.CurvedBoundary));
         Assert.Throws<ArgumentOutOfRangeException>(() => FovCalculator.DetectAndCalculate(default, default, 9410, 74.2, mode: (FovMeasurementMode)99));
     }
+
+    private static SyntheticImage CreateShadowedCircularField(int shadowHalfHeight) => new(32, 1, (_, _) => true, (x, y, _) =>
+    {
+        int dx = x - 328;
+        int dy = y - 324;
+        double radius = Math.Sqrt(dx * dx + dy * dy);
+        double falloff = Math.Clamp((300 - radius) * 2, 0, 180);
+        // A sharp brightness drop inside the broad outer transition.
+        double shadow = shadowHalfHeight > 0 && dx > 0 && Math.Abs(dy) <= shadowHalfHeight && radius >= 250
+            ? 8 * Math.Clamp((266 - radius) / 12, 0, 1) : 0;
+        return Math.Max(0, falloff - shadow);
+    }, width: 656, height: 648);
 
     private sealed class SyntheticImage : IDisposable
     {
@@ -439,21 +784,27 @@ public sealed class FovCalculationTests
         public void Dispose() => Image.Dispose();
     }
 
-    private sealed class InputOnlyServices : ILocalFovNodeServices
+    private sealed class FovTestServices(IReadOnlyList<LuminousAreaPoint>? corners = null) : ILocalFovNodeServices
     {
         public int CornerReads { get; private set; }
+        public double? ReceivedMinimumConfidence { get; private set; }
         public AlgResultMasterModel? GetAlgorithmResult(MySqlConnectedEndpoint endpoint, int masterId) => new() { Params = "{\"SourceMasterId\":5}" };
         public MeasureResultImgModel? GetImageResult(MySqlConnectedEndpoint endpoint, int masterId) => new() { Id = masterId };
         public IReadOnlyList<LuminousAreaPoint> GetLightAreaCorners(MySqlConnectedEndpoint endpoint, int masterId)
         {
             CornerReads++;
-            throw new InvalidOperationException("Upstream corners are not available.");
+            return corners ?? throw new InvalidOperationException("Upstream corners are not available.");
         }
         public LocalFlowFrame LoadFrame(string filePath) => throw new NotSupportedException();
         public MeasureResultImgModel? FindImageResult(MySqlConnectedEndpoint endpoint, string? imageFilePath) => throw new NotSupportedException();
-        public FovCameraCalibration ResolveCalibration(string? sourceCameraDeviceCode, MySqlConnectedEndpoint endpoint) => throw new NotSupportedException();
-        public FovCalculationResult DetectAndCalculate(HImage image, RoiRect roi, double fovDist, double cameraDegrees, IReadOnlyList<LuminousAreaPoint>? coarseCorners, FovMeasurementMode mode) => throw new NotSupportedException();
-        public LocalFovPersistenceResult Persist(LocalFovPersistenceRequest request) => throw new NotSupportedException();
-        public void Publish(LocalFovPublishRequest request) => throw new NotSupportedException();
+        public FovCameraCalibration ResolveCalibration(string? sourceCameraDeviceCode, MySqlConnectedEndpoint endpoint) => new() { CameraDeviceCode = string.Empty };
+        public FovCalculationResult DetectAndCalculate(HImage image, RoiRect roi, double fovDist, double cameraDegrees,
+            IReadOnlyList<LuminousAreaPoint>? coarseCorners, FovMeasurementMode mode, double minimumConfidence)
+        {
+            ReceivedMinimumConfidence = minimumConfidence;
+            return LocalFovNodeServices.Instance.DetectAndCalculate(image, roi, fovDist, cameraDegrees, coarseCorners, mode, minimumConfidence);
+        }
+        public LocalFovPersistenceResult Persist(LocalFovPersistenceRequest request) => new() { MasterId = 1, ResultFilePath = "fixture.json" };
+        public void Publish(LocalFovPublishRequest request) { }
     }
 }

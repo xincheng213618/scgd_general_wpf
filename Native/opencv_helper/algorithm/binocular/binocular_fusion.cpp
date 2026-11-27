@@ -389,26 +389,43 @@ std::vector<OppositePair> makeOppositePairs(
     int centerIndex,
     double minimumDistance)
 {
+    constexpr size_t maximumPairs = 32;
+    const auto strongerPair = [](const OppositePair& lhs, const OppositePair& rhs) {
+        if (lhs.score != rhs.score) {
+            return lhs.score > rhs.score;
+        }
+        return std::tie(lhs.first, lhs.second) < std::tie(rhs.first, rhs.second);
+    };
+    struct Ray
+    {
+        cv::Point2d direction;
+        double length;
+    };
+
     std::vector<OppositePair> pairs;
+    pairs.reserve(maximumPairs);
     const cv::Point2d center = candidates[static_cast<size_t>(centerIndex)].center;
+    std::vector<Ray> rays;
+    rays.reserve(candidates.size());
+    for (const BinocularCrossCandidate& candidate : candidates) {
+        const cv::Point2d direction = candidate.center - center;
+        rays.push_back({ direction, std::hypot(direction.x, direction.y) });
+    }
+
     for (int first = 0; first < static_cast<int>(candidates.size()); ++first) {
-        if (first == centerIndex) {
+        const Ray& firstRay = rays[static_cast<size_t>(first)];
+        if (first == centerIndex || firstRay.length < minimumDistance) {
             continue;
         }
         for (int second = first + 1; second < static_cast<int>(candidates.size()); ++second) {
-            if (second == centerIndex) {
+            const Ray& secondRay = rays[static_cast<size_t>(second)];
+            if (second == centerIndex || secondRay.length < minimumDistance) {
                 continue;
             }
 
-            const cv::Point2d vectorFirst = candidates[static_cast<size_t>(first)].center - center;
-            const cv::Point2d vectorSecond = candidates[static_cast<size_t>(second)].center - center;
-            const double lengthFirst = std::hypot(vectorFirst.x, vectorFirst.y);
-            const double lengthSecond = std::hypot(vectorSecond.x, vectorSecond.y);
-            if (lengthFirst < minimumDistance || lengthSecond < minimumDistance) {
-                continue;
-            }
-
-            const double cosine = dot(vectorFirst, vectorSecond) / (lengthFirst * lengthSecond);
+            const double lengthFirst = firstRay.length;
+            const double lengthSecond = secondRay.length;
+            const double cosine = dot(firstRay.direction, secondRay.direction) / (lengthFirst * lengthSecond);
             if (cosine > -0.65) {
                 continue;
             }
@@ -434,22 +451,25 @@ std::vector<OppositePair> makeOppositePairs(
             OppositePair pair;
             pair.first = first;
             pair.second = second;
-            pair.axis = normalized(candidates[static_cast<size_t>(second)].center -
-                candidates[static_cast<size_t>(first)].center);
             pair.score = 0.30 * oppositionScore + 0.30 * midpointScore +
                 0.25 * symmetryScore + 0.15 * shapeScore;
-            pairs.push_back(pair);
+            if (pairs.size() < maximumPairs) {
+                pairs.push_back(pair);
+                std::push_heap(pairs.begin(), pairs.end(), strongerPair);
+            }
+            else if (strongerPair(pair, pairs.front())) {
+                std::pop_heap(pairs.begin(), pairs.end(), strongerPair);
+                pairs.back() = pair;
+                std::push_heap(pairs.begin(), pairs.end(), strongerPair);
+            }
         }
     }
 
-    std::stable_sort(pairs.begin(), pairs.end(), [](const auto& lhs, const auto& rhs) {
-        if (lhs.score != rhs.score) {
-            return lhs.score > rhs.score;
-        }
-        return std::tie(lhs.first, lhs.second) < std::tie(rhs.first, rhs.second);
-    });
-    if (pairs.size() > 32) {
-        pairs.resize(32);
+    // Only retained pairs need an axis; scores and endpoint indices define their order.
+    std::sort_heap(pairs.begin(), pairs.end(), strongerPair);
+    for (OppositePair& pair : pairs) {
+        pair.axis = normalized(candidates[static_cast<size_t>(pair.second)].center -
+            candidates[static_cast<size_t>(pair.first)].center);
     }
     return pairs;
 }

@@ -118,9 +118,10 @@ namespace ColorVision.Engine.Media
             return new CvRawLayerController(imageView, string.Empty, true, BuildLayers(true, xyz.Channels, xyz.Bpp, false), displayedLayerId, xyz, source);
         }
 
-        internal static CvRawLayerController CreateCalibratedRaw(ImageView imageView, string path, RawColorMeasurementSource source, string displayedLayerId, BitmapSource? sourcePixels)
+        internal static CvRawLayerController CreateCalibratedRaw(ImageView imageView, string path, RawColorMeasurementSource source,
+            string displayedLayerId, BitmapSource? sourcePixels, bool includeSrgb)
         {
-            var layers = BuildLayers(true, source.Channels, 32, source.Channels >= 3).Where(layer => layer.Id != "cie-srgb").ToArray();
+            var layers = BuildLayers(true, source.Channels, 32, source.Channels >= 3, includeSrgb);
             if (sourcePixels?.Format == PixelFormats.Bgr24)
                 layers = layers.Select(layer => layer.SourceChannelIndex is int channel ? layer with { SourceChannelIndex = 2 - channel } : layer).ToArray();
             return new CvRawLayerController(imageView, path, true, layers, displayedLayerId, liveSource: sourcePixels, rawColor: source);
@@ -510,6 +511,8 @@ namespace ColorVision.Engine.Media
             if (layer.Kind != ImageLayerKind.Derived) return await LoadSourceLayerAsync(layer, token);
             WriteableBitmap bitmap = layer.Id switch
             {
+                "cie-srgb" when _rawColor != null => await CvcieSrgbRenderer.RenderRawForDisplayAsync(_rawColor, mode, white,
+                    _imageView.Dispatcher, DisplayCacheBudgetBytes, token),
                 "cie-srgb" => _liveXyz == null
                     ? await CvcieSrgbRenderer.RenderFileForDisplayAsync(_filePath, mode, white, _imageView.Dispatcher, DisplayCacheBudgetBytes, token)
                     : await CvcieSrgbRenderer.RenderForDisplayAsync(_liveXyz, mode, white, _imageView.Dispatcher, DisplayCacheBudgetBytes, token),
@@ -666,7 +669,7 @@ namespace ColorVision.Engine.Media
             return bitmap;
         }
 
-        private static IReadOnlyList<ImageLayerDescriptor> BuildLayers(bool isCie, int channelCount, int bpp, bool hasRgbLayers)
+        private static IReadOnlyList<ImageLayerDescriptor> BuildLayers(bool isCie, int channelCount, int bpp, bool hasRgbLayers, bool includeSrgb = true)
         {
             List<ImageLayerDescriptor> layers = new()
             {
@@ -693,7 +696,7 @@ namespace ColorVision.Engine.Media
                 layers.AddRange(CreateRgbLayers());
             }
 
-            if (CvcieSrgbRenderer.Supports(channelCount, bpp))
+            if (includeSrgb && CvcieSrgbRenderer.Supports(channelCount, bpp))
             {
                 layers.Add(new ImageLayerDescriptor
                 {

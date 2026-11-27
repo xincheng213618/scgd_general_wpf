@@ -102,7 +102,7 @@ public partial class DeviceSpectrum
         ConfigSpectrum config = SnapshotLocalConfiguration();
         bool measures = operation is "GetData" or "EQE.GetData" or "GetDataAuto" or "EQE.GetDataAuto" or "InitDark" or "InitAutoDark";
         return LocalSpectrumOpticalScope.Capture(this, config,
-            includeNd: config.NDConfig.IsNDPort && (measures || operation == "Open"),
+            includeNd: config.NDConfig.HasConfiguredWheel && (measures || operation == "Open"),
             includeShutter: measures || operation is "ShutterConnect" or "ShutterDoOpen" or "ShutterDoClose");
     }
 
@@ -138,7 +138,7 @@ public partial class DeviceSpectrum
         if (LocalSession.IsOpen) return;
         if (licenseSource == null) throw new InvalidOperationException("请先打开本地光谱仪。");
         ConfigSpectrum config = optics.Configuration;
-        if (config.NDConfig.IsNDPort) optics.RequireNdCurrent();
+        if (config.NDConfig.HasConfiguredWheel) optics.RequireNdCurrent();
         lock (SpectrumBackend.Sync)
         {
             EnsureOtherSpectrumBackends(true);
@@ -290,7 +290,7 @@ public partial class DeviceSpectrum
         try
         {
             if (!IsConfigurationTargetCurrent(configurationTarget)) throw new InvalidOperationException(NdConfigurationChangedMessage);
-            if (!Config.NDConfig.IsNDPort) throw new InvalidOperationException("请先在光谱仪配置中启用 ND。");
+            if (!Config.NDConfig.HasConfiguredWheel) throw new InvalidOperationException(LocalSpectrumNd.WheelNotConfigured);
             optics ??= SnapshotNdCommandOptics();
             optics.RequireNdCurrent();
             if (reserveSpectrum) SpectrumBackend.BeginLocalCommand();
@@ -317,15 +317,16 @@ public partial class DeviceSpectrum
         }, () => IsConfigurationTargetCurrent(configurationTarget));
     }
 
-    internal (int Port, LocalSpectrumNd.Calibration Calibration) ExecuteLocalNd(LocalSpectrumOpticalScope optics, int? port, CancellationToken token)
+    internal (int Port, LocalSpectrumNd.Calibration? Calibration) ExecuteLocalNd(LocalSpectrumOpticalScope optics, int? port, CancellationToken token)
     {
         ConfigSpectrum config = optics.Configuration;
-        if (!config.NDConfig.IsNDPort) throw new InvalidOperationException("请先在光谱仪配置中启用 ND。");
+        if (!config.NDConfig.HasConfiguredWheel) throw new InvalidOperationException(LocalSpectrumNd.WheelNotConfigured);
         optics.RequireNdCurrent();
         // Validate the destination before moving, then commit files only after the SDK confirms its position.
-        LocalSpectrumNd.Calibration? calibration = port.HasValue ? LocalSpectrumNd.ResolveCalibration(config, port.Value, optics) : null;
+        bool allowUnassociated = config.NDConfig.HasBoundWheel;
+        LocalSpectrumNd.Calibration? calibration = port.HasValue ? LocalSpectrumNd.ResolveCalibration(config, port.Value, optics, allowUnassociated) : null;
         int actual = LocalSession.ControlNd(config, port, token, opticalScope: optics);
-        return (actual, calibration ?? LocalSpectrumNd.ResolveCalibration(config, actual, optics));
+        return (actual, port.HasValue ? calibration : LocalSpectrumNd.ResolveCalibration(config, actual, optics, allowUnassociated));
     }
 
     internal bool ApplyLocalNdState(int port, LocalSpectrumNd.Calibration? calibration, DeviceConfigurationTarget target, LocalSpectrumOpticalScope? optics = null)

@@ -144,6 +144,19 @@ namespace ColorVision.Engine.Services.PhyCameras.Licenses
             return document != null && LocalStore.TryDelete(StoreKind, document);
         }
 
+        internal bool TryRemoveSpectrumLicense(LicenseModel expected) =>
+            TryDeleteLocal(expected.Id, current => MatchesSpectrumSerial(current, expected.MacAddress) && HasSameLicense(current, expected),
+                current => MatchesSpectrumSerial(current, expected.MacAddress), static () => true);
+
+        internal static bool MatchesSpectrumSerial(LicenseModel license, string? serial) =>
+            license.LiceType == 1 && MatchesSpectrumSerial(license.MacAddress, serial);
+
+        internal static bool MatchesSpectrumSerial(string? candidate, string? serial) =>
+            !string.IsNullOrWhiteSpace(serial) && string.Equals(candidate?.Trim(), serial.Trim(), StringComparison.OrdinalIgnoreCase);
+
+        internal static bool HasSameLicense(LicenseModel current, LicenseModel expected) =>
+            string.Equals(current.LicenseValue, expected.LicenseValue, StringComparison.Ordinal) && current.ExpiryDate == expected.ExpiryDate;
+
         internal int DeleteExpiredLocal(int[] licenseIds, DateTime cutoff)
         {
             int deleted = 0;

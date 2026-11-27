@@ -36,6 +36,7 @@ public sealed class FlowAnalysisLoadingTests : IDisposable
             };
             window.Show();
             PumpUntil(() => currentLoaded && !Field<bool>(window, "_isNavigationLoading"));
+            Assert.Equal(Visibility.Collapsed, Assert.IsType<Button>(window.FindName("DatabaseCleanupButton")).Visibility);
             Assert.True(navigationPending);
             Assert.True(chartPending);
             Assert.Equal("second", Field<FlowExecutionAnalysisSession>(window, "_session").SerialNumber);
@@ -77,6 +78,141 @@ public sealed class FlowAnalysisLoadingTests : IDisposable
             Assert.True(((Button)window.FindName("PreviousSameFlowRunButton")).IsEnabled);
         });
         Assert.Equal(before, File.ReadAllBytes(path));
+    }
+
+    [Fact]
+    public async Task ConcurrentOfflineBatchDetailsKeepMessageAndEventOrderWithoutLoadingPayloads()
+    {
+        string path = CreateDatabase();
+        using (var db = new SqlSugarClient(new ConnectionConfig
+        {
+            ConnectionString = $"Data Source={path};Pooling=False",
+            DbType = DbType.Sqlite,
+        }))
+        {
+            FlowRunRecord run = db.Queryable<FlowRunRecord>().Where(item => item.BatchId == 101).First();
+            DateTime time = new(2026, 10, 3, 8, 1, 0);
+            foreach (int sequence in new[] { 2, 1 })
+            {
+                int messageId = db.Insertable(new FlowNodeMessage
+                {
+                    BatchId = 101, SerialNumber = "second", MsgId = $"message-{sequence}", SendTime = time.AddSeconds(sequence),
+                }).ExecuteReturnIdentity();
+                FlowNodeMessagePayloadStorage.SaveSendPayload(db, messageId, $"payload-{sequence}");
+                db.Insertable(new FlowExecutionEvent
+                {
+                    RunRecordId = run.Id, SequenceNo = sequence, EventKey = $"event-{sequence}",
+                    EventType = "NodeExecuted", OccurredTimeUtc = time.AddSeconds(sequence),
+                }).ExecuteCommand();
+            }
+        }
+        byte[] before = File.ReadAllBytes(path);
+        var source = new FlowAnalysisDataSource(path);
+
+        var requests = await Task.WhenAll(
+            Task.Run(() => source.GetRunDetails(101, "second")),
+            Task.Run(() => source.GetRunDetails(100, "first")));
+        var current = requests[0];
+        var previous = requests[1];
+
+        Assert.Equal("second", Assert.Single(current.Records).SerialNumber);
+        Assert.Equal("second", current.Run?.SerialNumber);
+        Assert.Equal(new[] { "message-1", "message-2" }, current.Messages.Select(item => item.MsgId));
+        Assert.Equal(new long[] { 1, 2 }, current.Events.Select(item => item.SequenceNo));
+        Assert.All(current.Messages, item => Assert.Null(item.SendPayload));
+        Assert.Equal("payload-1", source.GetMessagePayloads(current.Messages[0].Id).SendPayload);
+        Assert.Equal("first", Assert.Single(previous.Records).SerialNumber);
+        Assert.Null(previous.Run);
+        Assert.Empty(previous.Messages);
+        Assert.Empty(previous.Events);
+        Assert.Equal(before, File.ReadAllBytes(path));
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void SessionKeepsChronologicalEventSnapshotAndStablePhaseTies(bool disordered)
+    {
+        DateTime start = new(2026, 10, 3, 8, 0, 0, DateTimeKind.Utc);
+        FlowExecutionEvent[] chronological =
+        [
+            MakeEvent(1, 1, 0, "PreProcessStarted"),
+            MakeEvent(2, 2, 100, "PreProcessCompleted", """{"elapsedMs":90}"""),
+            MakeEvent(3, 3, 100, "PreProcessCompleted", """{"elapsedMs":17}"""),
+            MakeEvent(4, 3, 100, "PreProcessCompleted", """{"elapsedMs":29}"""),
+            MakeEvent(5, 5, 200, "PostProcessStarted"),
+            MakeEvent(6, 6, 340, "PostProcessCompleted", "invalid JSON"),
+            MakeEvent(7, 7, 500, "PostProcessStarted"),
+        ];
+        List<FlowExecutionEvent> events = disordered
+            ? [chronological[5], chronological[0], chronological[2], chronological[6], chronological[4], chronological[1], chronological[3]]
+            : [.. chronological];
+
+        var session = new FlowExecutionAnalysisSession(1, "SN", null, null, [], [], events, start, 0);
+        events.Clear();
+
+        Assert.Equal(chronological, session.Events);
+        Assert.Equal(new FlowExecutionPhaseSummary(29, 140), session.PhaseSummary);
+
+        FlowExecutionEvent MakeEvent(long id, long sequence, int offsetMs, string type, string? data = null) => new()
+        {
+            Id = id,
+            SequenceNo = sequence,
+            OccurredTimeUtc = start.AddMilliseconds(offsetMs),
+            EventType = type,
+            DataJson = data,
+        };
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void SessionMergesOnlyValidActivityAndKeepsMessageOwnership(bool disordered)
+    {
+        DateTime start = new(2026, 10, 3, 8, 0, 0);
+        var first = Node(1, 0, 200, 180);
+        var second = Node(2, 0, 300, 180);
+        var invalid = Node(3, 400, 399, 70);
+        var open = Node(4, 500, null, 0);
+        var timedOut = Node(5, 600, 650, 20);
+        var shortRun = Node(6, 800, 801.9, 0);
+        var last = Node(7, 950, 999.9, 30);
+        List<FlowNodeRecord> nodes = [first, second, invalid, open, timedOut, shortRun, last];
+        var exact = Message(1, first, first.Id, "sn", FlowMessageState.Success);
+        var ignored = Message(2, first, null, "sn", FlowMessageState.Timeout);
+        var wrongSerial = Message(3, timedOut, timedOut.Id, "unrelated", FlowMessageState.Success);
+        var legacy = Message(4, timedOut, null, "sn", FlowMessageState.Success);
+        legacy.StatusCode = -2;
+        List<FlowNodeMessage> messages = [exact, ignored, wrongSerial, legacy];
+        if (disordered)
+        {
+            nodes.Reverse();
+            messages.Reverse();
+        }
+
+        var session = new FlowExecutionAnalysisSession(1, "sn", null, null, nodes, messages, [], start, 100);
+        nodes.Clear();
+        messages.Clear();
+
+        Assert.Equal(new[] { first, second, invalid, open, timedOut, shortRun, last }, session.Records);
+        Assert.Equal(new[] { exact, ignored, wrongSerial, legacy }, session.Messages);
+        Assert.Equal(new[] { first, second, invalid, last, open, timedOut, shortRun }, session.DurationItems.Select(item => item.Record));
+        Assert.Same(exact, Assert.Single(session.GetMessages(first)));
+        Assert.Same(legacy, Assert.Single(session.GetMessages(timedOut)));
+        Assert.Equal(new FlowExecutionAnalysisSummary(999, 350, 649, 110, 460, 7, 2, 2, first.NodeName, 180), session.Summary);
+
+        FlowNodeRecord Node(int id, int startMs, double? endMs, long elapsed) => new()
+        {
+            Id = id, BatchId = 1, SerialNumber = "sn", NodeId = $"node-{id}", NodeName = $"Node {id}",
+            StartTime = start.AddMilliseconds(startMs), EndTime = endMs.HasValue ? start.AddMilliseconds(endMs.Value) : null,
+            ElapsedMs = elapsed,
+        };
+
+        static FlowNodeMessage Message(int id, FlowNodeRecord node, int? nodeId, string serial, FlowMessageState state) => new()
+        {
+            Id = id, BatchId = node.BatchId, SerialNumber = serial, NodeRecordId = nodeId, NodeId = node.NodeId,
+            SendTime = node.StartTime, State = state,
+        };
     }
 
     [Fact]
@@ -223,12 +359,34 @@ public sealed class FlowAnalysisLoadingTests : IDisposable
             .Select(run => new FlowRunNavigationItem(run.Key.BatchId, run.Key.Serial, run.Min(row => row.StartTime)));
 
         Assert.Equal(expected, recent);
-        var bySerial = source.GetRunSummariesBySerialNumbers(["sn", "sn", "quoted'sn", "　"], default);
+        var bySerial = source.GetRunSummariesForFlowRuns(
+            [
+                new FlowRunRecord { SerialNumber = "sn" },
+                new FlowRunRecord { SerialNumber = "sn" },
+                new FlowRunRecord { SerialNumber = "quoted'sn" },
+                new FlowRunRecord { SerialNumber = "　" },
+            ], default);
         Assert.Equal(new[] { "quoted'sn", "sn" }, bySerial.Select(row => row.SerialNumber).Distinct().Order(StringComparer.Ordinal));
         var sameFlow = FlowExecutionAnalysisWindow.BuildSameFlowRunOrder(
             [new FlowRunRecord { SerialNumber = "sn", CompletedTime = new DateTime(2026, 10, 4) }], bySerial);
         var latest = expected.Where(run => run.SerialNumber == "sn").OrderByDescending(run => run.ExecutedTime).First();
         Assert.Equal(latest.BatchId, Assert.Single(sameFlow).BatchId);
+
+        FlowRunRecord[] batched =
+        [
+            new FlowRunRecord { BatchId = 101, SerialNumber = "sn", CompletedTime = new DateTime(2026, 10, 4) },
+            new FlowRunRecord { SerialNumber = "　" },
+        ];
+        var restricted = source.GetRunSummariesForFlowRuns(batched, default);
+        Assert.Equal(101, Assert.Single(restricted).BatchId);
+        Assert.Equal(FlowExecutionAnalysisWindow.BuildSameFlowRunOrder(batched, bySerial),
+            FlowExecutionAnalysisWindow.BuildSameFlowRunOrder(batched, restricted));
+
+        var mixed = batched.Append(new FlowRunRecord { SerialNumber = "sn", CompletedTime = new DateTime(2026, 10, 5) }).ToArray();
+        var unrestricted = source.GetRunSummariesForFlowRuns(mixed, default);
+        Assert.Contains(unrestricted, row => row.BatchId == 102 && row.SerialNumber == "sn");
+        Assert.Equal(FlowExecutionAnalysisWindow.BuildSameFlowRunOrder(mixed, bySerial),
+            FlowExecutionAnalysisWindow.BuildSameFlowRunOrder(mixed, unrestricted));
         Assert.Equal(before, File.ReadAllBytes(path));
     }
 

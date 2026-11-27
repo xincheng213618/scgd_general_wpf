@@ -3,8 +3,8 @@ knowledge_id: "operations.smu"
 knowledge_type: "topic"
 status: "current"
 summary: "SMU本地窗口、直流电阻/功率、扫描/脉冲、触发与关闭状态，以及服务兼容、结果单位和Flow输出释放边界。"
-aliases: ["SMU","源表","本地源表","UseLocalSmu","点测","扫描电压","通道串了","关闭输出","MQTTSMU","SMUParam","SMUSweepModelNode","LocalSmuWindow","电阻测量","脉冲","高阻"]
-code_paths: ["Engine/ColorVision.Engine/Services/Devices/SMU","Engine/cvColorVision/Devices/PassSx/PassSx.cs","Engine/ColorVision.Engine/FlowProcessing/Nodes/Compatibility/SMU","Engine/FlowEngineLib/SMUBaseNode.cs","Engine/FlowEngineLib/Node/SMU"]
+aliases: ["SMU","源表","本地源表","UseLocalSmu","点测","扫描电压","通道串了","关闭输出","MQTTSMU","SMUParam","SMUSweepModelNode","LocalSmuWindow","电阻测量","脉冲","高阻","IVL","实时曲线","LiveIvlWindow"]
+code_paths: ["Engine/ColorVision.Engine/Services/Devices/SMU","Engine/cvColorVision/Devices/PassSx/PassSx.cs","Engine/ColorVision.Engine/FlowProcessing/Nodes/Compatibility/SMU","Engine/FlowEngineLib/SMUBaseNode.cs","Engine/FlowEngineLib/Node/SMU","Engine/ColorVision.Engine/FlowProcessing/Monitoring"]
 related: ["engine.devices","operations.device-configuration","flow.session"]
 ---
 
@@ -154,6 +154,12 @@ related: ["engine.devices","operations.device-configuration","flow.session"]
 新节点从开始使用到流程收尾持有整个本地源表会话的输出使用权，防止在“设置源表 → 相机/光谱仪测量”之间插入其它设置。占用期间，同一会话的手动操作、其它流程及未携带该使用权的旧源表节点会明确提示占用；不要在持有期间混接旧源表读取或设备控制节点。使用权直接归流程资源管理，不作为重复框每轮清除的临时资源；正常收尾后释放，原有本地/服务后端连接互斥与旧流程行为保持原契约。
 
 流程停止或超时后拒绝迟到结果；清理被丢弃结果时检查该次测量的输出归属，不关闭同通道后来开始的测量。SDK 没有可中断接口，超时后的原生调用仍要等返回再完成清理，不能把流程终态当作硬件释放已完成。
+
+## IV / IVL 实时曲线
+
+从 **工具 → IV / IVL 实时曲线** 打开独立窗口。左侧可选择、执行和停止主工作区流程，右侧显示 IV、I-L、V-L、P-L 及电流、电压、亮度的时间趋势。表格列出最近 500 个点，可以切换曲线系列、导出当前批次的数据 CSV 或保存曲线图片。关闭窗口后，流程继续运行。
+
+窗口从当前批次所属的 MySQL 数据库读取源表、相机 XYZ POI 和光谱亮度结果。启用流程结果保存后，节点完成和流程结束会触发刷新，无需配置 IVL 后处理。读取失败时保留上次成功的数据，可点击 **重新读取结果**。仪器返回整批扫描后才显示扫描曲线，时间趋势使用带记录时间的点测和亮度结果。每类结果最多读取最近 20,000 条，扫描最多读取最近 20 条并显示合计 20,000 点，达到上限时窗口会提示。
 
 ## 证据与验证缺口
 

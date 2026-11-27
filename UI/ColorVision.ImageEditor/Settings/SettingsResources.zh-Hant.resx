@@ -117,4 +117,10 @@
   <data name="FontWeight" xml:space="preserve"><value>字型粗細</value></data>
   <data name="FontStretch" xml:space="preserve"><value>字型寬度</value></data>
   <data name="FlowDirection" xml:space="preserve"><value>文字方向</value></data>
+  <data name="ReferenceLine" xml:space="preserve"><value>參考線</value></data>
+  <data name="ReferenceLineSaveGlobal" xml:space="preserve"><value>儲存到：全域</value></data>
+  <data name="ReferenceLineSaveProfile" xml:space="preserve"><value>儲存到：{0}</value></data>
+  <data name="ReferenceLineRestoreGlobal" xml:space="preserve"><value>還原全域參考線</value></data>
+  <data name="ReferenceLineRestoreGlobalConfirm" xml:space="preserve"><value>清除此設定檔的參考線參數，恢復使用全域設定？</value></data>
+  <data name="ReferenceLineInvalidGeometry" xml:space="preserve"><value>參考線座標、角度、線寬和映射尺寸必須為有限數值。線寬必須大於或等於零。</value></data>
 </root>

@@ -269,6 +269,19 @@ def validate_installer_shortcut_icons(aip_path: Path) -> None:
             raise ValueError(f"Shortcut {row.get('Shortcut')} in {aip_path} must use its target executable's default icon. Clear its custom icon in Advanced Installer.")
 
 
+def validate_installer_help_assets(solution_root: Path, installed_files: set[str]) -> None:
+    desktop_project = solution_root / "UI" / "ColorVision.UI.Desktop"
+    help_directory = desktop_project / "Assets" / "Help"
+    required_paths = sorted(path.relative_to(desktop_project).as_posix() for path in help_directory.rglob("*") if path.is_file())
+    if not required_paths:
+        raise ValueError(f"No desktop help assets found in {help_directory}")
+
+    installed_paths = {path.casefold() for path in installed_files}
+    missing_paths = [path for path in required_paths if path.casefold() not in installed_paths]
+    if missing_paths:
+        raise ValueError("Advanced Installer does not include desktop help assets: " + ", ".join(missing_paths))
+
+
 def rebuild_project(msbuild_path: Path, solution_path: Path, advanced_installer_path: Path, aip_path: Path) -> bool:
     try:
         print(f"Running MSBuild: {msbuild_path} {solution_path}")
@@ -298,7 +311,9 @@ def rebuild_project(msbuild_path: Path, solution_path: Path, advanced_installer_
 
         try:
             validate_installer_shortcut_icons(aip_path)
-            validate_basic_template_runtime(runtime_directory, collect_installer_shared_files(aip_path, runtime_directory))
+            installed_files = collect_installer_shared_files(aip_path, runtime_directory)
+            validate_basic_template_runtime(runtime_directory, installed_files)
+            validate_installer_help_assets(solution_path.parent, installed_files)
         except (OSError, ValueError, ElementTree.ParseError) as exc:
             print(f"Installer delivery check failed: {exc}")
             return False

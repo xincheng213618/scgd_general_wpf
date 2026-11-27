@@ -8,6 +8,7 @@ using System.Windows.Interop;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Threading.Tasks;
 
 namespace ColorVision.Common.Utilities
 {
@@ -52,62 +53,20 @@ namespace ColorVision.Common.Utilities
             int height = bitmapSource.PixelHeight;
             int pixelBytes = format.BitsPerPixel / 8;
             int stride = checked(width * pixelBytes);
-            const int targetBufferBytes = 64 * 1024;
-            int rowsPerChunk = Math.Min(height, Math.Max(1, targetBufferBytes / stride));
-            int chunkBytes = checked(rowsPerChunk * stride);
-            // Independent counters let repeated gray values accumulate without serializing every update.
-            Span<int> grayScratch = isGray && chunkBytes >= 4 * pixelBytes
-                ? stackalloc int[HistogramBinCount * 3] : Span<int>.Empty;
-            grayScratch.Clear();
-            byte[] pixelData = ArrayPool<byte>.Shared.Rent(chunkBytes);
-            try
+            bool isBgr = !isGray && !isRgb24 && !isWideRgb;
+            int[] firstColorBins = isBgr ? channel3 : channel1;
+            int[] lastColorBins = isBgr ? channel1 : channel3;
+            const int bandBufferBytes = 512 * 1024;
+            int workers = Math.Min(Environment.ProcessorCount, 4);
+            if (workers > 1 && (long)width * height >= 2 * 1024 * 1024 && stride <= bandBufferBytes && height >= 8)
             {
-                for (int top = 0; top < height;)
-                {
-                    int rowCount = Math.Min(rowsPerChunk, height - top);
-                    bitmapSource.CopyPixels(new Int32Rect(0, top, width, rowCount), pixelData, stride, 0);
-                    int length = rowCount * stride;
-                    if (isGray)
-                    {
-                        CountGrayscale(pixelData.AsSpan(0, length), pixelBytes, channel1, grayScratch);
-                    }
-                    else if (pixelBytes == 4)
-                    {
-                        CountBgr32(pixelData.AsSpan(0, length), channel1, channel2, channel3);
-                    }
-                    else if (isWideRgb)
-                    {
-                        // Each little-endian 16-bit channel uses its high byte as the bin index.
-                        for (int i = 0; i < length; i += pixelBytes)
-                        {
-                            channel1[pixelData[i + 1]]++;
-                            channel2[pixelData[i + 3]]++;
-                            channel3[pixelData[i + 5]]++;
-                        }
-                    }
-                    else
-                    {
-                        int redOffset = isRgb24 ? 0 : 2;
-                        int blueOffset = isRgb24 ? 2 : 0;
-                        for (int i = 0; i < length; i += 3)
-                        {
-                            channel1[pixelData[i + redOffset]]++;
-                            channel2[pixelData[i + 1]]++;
-                            channel3[pixelData[i + blueOffset]]++;
-                        }
-                    }
-                    top += rowCount;
-                }
+                CountHistogramBands(bitmapSource, width, height, stride, pixelBytes, isGray, isWideRgb,
+                    firstColorBins, channel2, lastColorBins, bandBufferBytes, workers);
             }
-            finally
+            else
             {
-                ArrayPool<byte>.Shared.Return(pixelData);
-            }
-
-            if (!grayScratch.IsEmpty)
-            {
-                for (int i = 0; i < HistogramBinCount; i++)
-                    channel1[i] += grayScratch[i] + grayScratch[HistogramBinCount + i] + grayScratch[2 * HistogramBinCount + i];
+                CountHistogramSerial(bitmapSource, width, height, stride, pixelBytes, isGray, isWideRgb,
+                    firstColorBins, channel2, lastColorBins);
             }
 
             if (format == PixelFormats.Gray8)
@@ -118,18 +77,200 @@ namespace ColorVision.Common.Utilities
             return (channel1, channel2, channel3);
         }
 
-        private static void CountBgr32(ReadOnlySpan<byte> pixels, int[] red, int[] green, int[] blue)
+        private static void CountHistogramSerial(BitmapSource bitmapSource, int width, int height, int stride, int pixelBytes,
+            bool isGray, bool isWideRgb, int[] first, int[] green, int[] last)
         {
-            // RenderHistogram supplies 256 bins per channel, and every index is one byte.
+            const int targetBufferBytes = 64 * 1024;
+            int rowsPerChunk = Math.Min(height, Math.Max(1, targetBufferBytes / stride));
+            int chunkBytes = checked(rowsPerChunk * stride);
+            // Independent counters let repeated values accumulate without serializing every update.
+            Span<int> scratch = chunkBytes >= (isGray ? 4 : 2) * pixelBytes
+                ? stackalloc int[HistogramBinCount * 3] : Span<int>.Empty;
+            scratch.Clear();
+            byte[] pixelData = ArrayPool<byte>.Shared.Rent(chunkBytes);
+            try
+            {
+                for (int top = 0; top < height;)
+                {
+                    int rowCount = Math.Min(rowsPerChunk, height - top);
+                    bitmapSource.CopyPixels(new Int32Rect(0, top, width, rowCount), pixelData, stride, 0);
+                    int length = rowCount * stride;
+                    CountHistogramPixels(pixelData.AsSpan(0, length), pixelBytes, isGray, isWideRgb, first, green, last, scratch);
+                    top += rowCount;
+                }
+            }
+            finally
+            {
+                ArrayPool<byte>.Shared.Return(pixelData);
+            }
+
+            MergeHistogramScratch(first, green, last, scratch, isGray);
+        }
+
+        private sealed class HistogramBand(int bufferBytes)
+        {
+            internal readonly int[] First = new int[HistogramBinCount];
+            internal readonly int[] Green = new int[HistogramBinCount];
+            internal readonly int[] Last = new int[HistogramBinCount];
+            internal readonly int[] Scratch = new int[3 * HistogramBinCount];
+            internal readonly byte[] Pixels = ArrayPool<byte>.Shared.Rent(bufferBytes);
+            internal int Length;
+        }
+
+        private static void CountHistogramBands(BitmapSource source, int width, int height, int stride, int pixelBytes,
+            bool isGray, bool isWideRgb, int[] first, int[] green, int[] last, int bandBufferBytes, int workers)
+        {
+            int rowsPerBand = bandBufferBytes / stride;
+            var bands = new HistogramBand[Math.Min(workers, (height - 1) / rowsPerBand + 1)];
+            var options = new ParallelOptions { MaxDegreeOfParallelism = bands.Length, TaskScheduler = TaskScheduler.Default };
+            try
+            {
+                for (int index = 0; index < bands.Length; index++) bands[index] = new HistogramBand(rowsPerBand * stride);
+
+                for (int top = 0; top < height;)
+                {
+                    // WPF reads stay on the caller's thread. Workers only see the copied strips.
+                    int bandCount = 0;
+                    while (bandCount < bands.Length && top < height)
+                    {
+                        HistogramBand band = bands[bandCount++];
+                        int rows = Math.Min(rowsPerBand, height - top);
+                        source.CopyPixels(new Int32Rect(0, top, width, rows), band.Pixels, stride, 0);
+                        band.Length = rows * stride;
+                        top += rows;
+                    }
+                    if (bandCount == 1) CountBand(0);
+                    else Parallel.For(0, bandCount, options, CountBand);
+                }
+
+                foreach (HistogramBand band in bands)
+                {
+                    MergeHistogramScratch(band.First, band.Green, band.Last, band.Scratch, isGray);
+                    for (int i = 0; i < HistogramBinCount; i++)
+                    {
+                        first[i] += band.First[i];
+                        green[i] += band.Green[i];
+                        last[i] += band.Last[i];
+                    }
+                }
+            }
+            finally
+            {
+                foreach (HistogramBand? band in bands)
+                    if (band != null) ArrayPool<byte>.Shared.Return(band.Pixels);
+            }
+
+            void CountBand(int index)
+            {
+                HistogramBand band = bands[index];
+                CountHistogramPixels(band.Pixels.AsSpan(0, band.Length), pixelBytes, isGray, isWideRgb,
+                    band.First, band.Green, band.Last, band.Scratch);
+            }
+        }
+
+        private static void CountHistogramPixels(ReadOnlySpan<byte> pixels, int pixelBytes, bool isGray, bool isWideRgb,
+            int[] first, int[] green, int[] last, Span<int> scratch)
+        {
+            if (isGray) CountGrayscale(pixels, pixelBytes, first, scratch);
+            else if (isWideRgb) CountWideRgb(pixels, pixelBytes, first, green, last, scratch);
+            else CountRgb8(pixels, pixelBytes, first, green, last, scratch);
+        }
+
+        private static void MergeHistogramScratch(int[] first, int[] green, int[] last, ReadOnlySpan<int> scratch, bool isGray)
+        {
+            if (scratch.IsEmpty) return;
+            if (isGray)
+            {
+                for (int i = 0; i < HistogramBinCount; i++)
+                    first[i] += scratch[i] + scratch[HistogramBinCount + i] + scratch[2 * HistogramBinCount + i];
+                return;
+            }
+            for (int i = 0; i < HistogramBinCount; i++)
+            {
+                first[i] += scratch[i];
+                green[i] += scratch[HistogramBinCount + i];
+                last[i] += scratch[2 * HistogramBinCount + i];
+            }
+        }
+
+        private static void CountRgb8(ReadOnlySpan<byte> pixels, int pixelBytes, int[] first, int[] green, int[] last, Span<int> scratch)
+        {
+            ref byte data = ref MemoryMarshal.GetReference(pixels);
+            ref int firstBase = ref MemoryMarshal.GetArrayDataReference(first);
+            ref int greenBase = ref MemoryMarshal.GetArrayDataReference(green);
+            ref int lastBase = ref MemoryMarshal.GetArrayDataReference(last);
+            int offset = 0;
+            int pairBytes = pixelBytes * 2;
+            if (pixels.Length >= pairBytes)
+            {
+                // Alternate bins to keep updates to repeated colors independent.
+                ref int firstScratch = ref MemoryMarshal.GetReference(scratch);
+                ref int greenScratch = ref Unsafe.Add(ref firstScratch, HistogramBinCount);
+                ref int lastScratch = ref Unsafe.Add(ref firstScratch, 2 * HistogramBinCount);
+                if (pixelBytes == 4)
+                {
+                    for (; offset <= pixels.Length - pairBytes; offset += pairBytes)
+                    {
+                        ulong pair = Unsafe.ReadUnaligned<ulong>(ref Unsafe.Add(ref data, offset));
+                        CountRgb8Pixel((uint)pair, ref firstBase, ref greenBase, ref lastBase);
+                        CountRgb8Pixel((uint)(pair >> 32), ref firstScratch, ref greenScratch, ref lastScratch);
+                    }
+                }
+                else
+                {
+                    for (; offset <= pixels.Length - pairBytes; offset += pairBytes)
+                    {
+                        CountRgb8Pixel(ref Unsafe.Add(ref data, offset), ref firstBase, ref greenBase, ref lastBase);
+                        CountRgb8Pixel(ref Unsafe.Add(ref data, offset + 3), ref firstScratch, ref greenScratch, ref lastScratch);
+                    }
+                }
+            }
+            if (offset < pixels.Length)
+                CountRgb8Pixel(ref Unsafe.Add(ref data, offset), ref firstBase, ref greenBase, ref lastBase);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static void CountRgb8Pixel(ref byte pixel, ref int first, ref int green, ref int last)
+        {
+            Unsafe.Add(ref first, pixel)++;
+            Unsafe.Add(ref green, Unsafe.Add(ref pixel, 1))++;
+            Unsafe.Add(ref last, Unsafe.Add(ref pixel, 2))++;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static void CountRgb8Pixel(uint pixel, ref int first, ref int green, ref int last)
+        {
+            Unsafe.Add(ref first, (byte)pixel)++;
+            Unsafe.Add(ref green, (byte)(pixel >> 8))++;
+            Unsafe.Add(ref last, (byte)(pixel >> 16))++;
+        }
+
+        private static void CountWideRgb(ReadOnlySpan<byte> pixels, int pixelBytes, int[] red, int[] green, int[] blue, Span<int> scratch)
+        {
+            ref byte firstPixel = ref MemoryMarshal.GetReference(pixels);
             ref int redBase = ref MemoryMarshal.GetArrayDataReference(red);
             ref int greenBase = ref MemoryMarshal.GetArrayDataReference(green);
             ref int blueBase = ref MemoryMarshal.GetArrayDataReference(blue);
-            foreach (uint pixel in MemoryMarshal.Cast<byte, uint>(pixels))
+            ref int secondBins = ref MemoryMarshal.GetReference(scratch);
+            // Alternating bins let identical high bytes from adjacent pixels accumulate independently.
+            int pairBytes = pixelBytes * 2;
+            int offset = 0;
+            for (; offset <= pixels.Length - pairBytes; offset += pairBytes)
             {
-                Unsafe.Add(ref redBase, (byte)(pixel >> 16))++;
-                Unsafe.Add(ref greenBase, (byte)(pixel >> 8))++;
-                Unsafe.Add(ref blueBase, (byte)pixel)++;
+                CountWideRgbPixel(ref Unsafe.Add(ref firstPixel, offset), ref redBase, ref greenBase, ref blueBase);
+                CountWideRgbPixel(ref Unsafe.Add(ref firstPixel, offset + pixelBytes),
+                    ref secondBins, ref Unsafe.Add(ref secondBins, HistogramBinCount), ref Unsafe.Add(ref secondBins, 2 * HistogramBinCount));
             }
+            if (offset < pixels.Length)
+                CountWideRgbPixel(ref Unsafe.Add(ref firstPixel, offset), ref redBase, ref greenBase, ref blueBase);
+        }
+
+        private static void CountWideRgbPixel(ref byte pixel, ref int red, ref int green, ref int blue)
+        {
+            // The packed pixel has at least six bytes. Only the high byte of each 16-bit channel is used.
+            Unsafe.Add(ref red, Unsafe.Add(ref pixel, 1))++;
+            Unsafe.Add(ref green, Unsafe.Add(ref pixel, 3))++;
+            Unsafe.Add(ref blue, Unsafe.Add(ref pixel, 5))++;
         }
 
         private static void CountGrayscale(ReadOnlySpan<byte> pixels, int pixelBytes, int[] bins, Span<int> scratch)

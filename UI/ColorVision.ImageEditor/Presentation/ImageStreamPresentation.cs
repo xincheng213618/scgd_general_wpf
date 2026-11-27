@@ -174,7 +174,7 @@ public sealed class ImageStreamPresentation : IDisposable
                     (WriteableBitmap display, BitmapSource? displayProxy) = await Task.Run(() =>
                     {
                         WriteableBitmap bitmap = PrepareDisplayBitmap(work);
-                        bitmap.Freeze();
+                        if (!bitmap.IsFrozen) bitmap.Freeze();
                         return (bitmap, (BitmapSource?)ImageRenderProxy.TryCreate(bitmap));
                     }).ConfigureAwait(false);
                     await _context.Dispatcher.InvokeAsync(() =>
@@ -278,6 +278,14 @@ public sealed class ImageStreamPresentation : IDisposable
     private WriteableBitmap PrepareDisplayBitmap(FrameWork work)
     {
         PixelFormat format = work.Source.Format;
+        if (work.Settings == null && format != PixelFormats.Gray32Float)
+        {
+            // SubmitCore retains a frozen snapshot until its channel has been extracted.
+            using HImage pixels = work.Source.ForHImage();
+            try { return ImageChannelPresenter.PrepareChannel(pixels, work.Channel); }
+            finally { GC.KeepAlive(work.Source); }
+        }
+
         if (_process == null && work.Settings is PseudoColorFrameRequest request && work.Source.IsFrozen
             && (format == PixelFormats.Gray8 || format == PixelFormats.Gray16 || format == PixelFormats.Bgr24
                 || format == PixelFormats.Rgb24 || format == PixelFormats.Rgb48 || format == PixelFormats.Bgra32))

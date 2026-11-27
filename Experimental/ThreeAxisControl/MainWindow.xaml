@@ -1,0 +1,608 @@
+<Window x:Class="ThreeAxisControl.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="三轴控制台" Width="968" Height="780" MinWidth="754" MinHeight="468"
+        WindowStartupLocation="CenterScreen" UseLayoutRounding="True" SnapsToDevicePixels="True"
+        Background="#0C1522" Foreground="#ECF3FA" FontFamily="Microsoft YaHei UI, Segoe UI" FontSize="13">
+    <Window.Resources>
+        <SolidColorBrush x:Key="Surface" Color="#142134" />
+        <SolidColorBrush x:Key="Edge" Color="#2C4056" />
+        <SolidColorBrush x:Key="StrongText" Color="#ECF3FA" />
+        <SolidColorBrush x:Key="SecondaryText" Color="#A9BDD1" />
+        <SolidColorBrush x:Key="Focus" Color="#75C7F7" />
+        <SolidColorBrush x:Key="Field" Color="#0D1928" />
+        <SolidColorBrush x:Key="FieldLocked" Color="#1A293B" />
+
+        <Style x:Key="PageTabs" TargetType="TabControl">
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TabControl">
+                        <Grid KeyboardNavigation.TabNavigation="Local">
+                            <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="*" /></Grid.RowDefinitions>
+                            <Border Background="#142136" BorderBrush="{StaticResource Edge}" BorderThickness="0,0,0,1" Padding="18,0">
+                                <TabPanel IsItemsHost="True" KeyboardNavigation.TabIndex="1" />
+                            </Border>
+                            <ContentPresenter x:Name="PART_SelectedContentHost" Grid.Row="1" ContentSource="SelectedContent"
+                                              KeyboardNavigation.TabIndex="2" />
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style x:Key="PageTab" TargetType="TabItem">
+            <Setter Property="Foreground" Value="{StaticResource SecondaryText}" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="MinWidth" Value="94" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TabItem">
+                        <Border x:Name="TabFace" Background="Transparent" BorderBrush="Transparent" BorderThickness="0,0,0,2"
+                                Padding="14,8" Margin="0,0,4,0">
+                            <ContentPresenter ContentSource="Header" RecognizesAccessKey="True"
+                                              HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="TabFace" Property="Background" Value="#1A2C41" />
+                            </Trigger>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="TabFace" Property="BorderBrush" Value="{StaticResource Focus}" />
+                                <Setter Property="Foreground" Value="{StaticResource StrongText}" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="ScrollPage" TargetType="RepeatButton">
+            <Setter Property="Focusable" Value="False" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="RepeatButton"><Border Background="Transparent" /></ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style TargetType="ScrollBar">
+            <Setter Property="Width" Value="12" />
+            <Setter Property="Background" Value="#142134" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ScrollBar">
+                        <Border Background="{TemplateBinding Background}" Padding="2">
+                            <Track x:Name="PART_Track" IsDirectionReversed="True">
+                                <Track.DecreaseRepeatButton>
+                                    <RepeatButton x:Name="PageBack" Style="{StaticResource ScrollPage}" Command="ScrollBar.PageUpCommand" />
+                                </Track.DecreaseRepeatButton>
+                                <Track.IncreaseRepeatButton>
+                                    <RepeatButton x:Name="PageForward" Style="{StaticResource ScrollPage}" Command="ScrollBar.PageDownCommand" />
+                                </Track.IncreaseRepeatButton>
+                                <Track.Thumb>
+                                    <Thumb>
+                                        <Thumb.Template>
+                                            <ControlTemplate TargetType="Thumb">
+                                                <Border x:Name="Grip" Background="#506783" CornerRadius="3" />
+                                                <ControlTemplate.Triggers>
+                                                    <Trigger Property="IsMouseOver" Value="True">
+                                                        <Setter TargetName="Grip" Property="Background" Value="#7A9BBB" />
+                                                    </Trigger>
+                                                </ControlTemplate.Triggers>
+                                            </ControlTemplate>
+                                        </Thumb.Template>
+                                    </Thumb>
+                                </Track.Thumb>
+                            </Track>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="Orientation" Value="Horizontal">
+                                <Setter TargetName="PART_Track" Property="IsDirectionReversed" Value="False" />
+                                <Setter TargetName="PageBack" Property="Command" Value="ScrollBar.PageLeftCommand" />
+                                <Setter TargetName="PageForward" Property="Command" Value="ScrollBar.PageRightCommand" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <Trigger Property="Orientation" Value="Horizontal">
+                    <Setter Property="Width" Value="Auto" />
+                    <Setter Property="Height" Value="12" />
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <Style x:Key="Card" TargetType="Border">
+            <Setter Property="Background" Value="{StaticResource Surface}" />
+            <Setter Property="BorderBrush" Value="{StaticResource Edge}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="10" />
+            <Setter Property="Padding" Value="15,13" />
+        </Style>
+        <Style x:Key="SectionTitle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="17" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+        </Style>
+        <Style x:Key="Caption" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource SecondaryText}" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+        </Style>
+        <Style x:Key="FieldLabel" TargetType="Label">
+            <Setter Property="Foreground" Value="{StaticResource SecondaryText}" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="Padding" Value="0,0,0,3" />
+        </Style>
+        <Style x:Key="StatusText" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource SecondaryText}" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="TextWrapping" Value="Wrap" />
+        </Style>
+
+        <Style TargetType="Button">
+            <Setter Property="Foreground" Value="{StaticResource StrongText}" />
+            <Setter Property="Background" Value="#23364D" />
+            <Setter Property="BorderBrush" Value="#38536E" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Padding" Value="12,6" />
+            <Setter Property="MinHeight" Value="34" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Face" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="5" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" RecognizesAccessKey="True" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Face" Property="BorderBrush" Value="#7AA9CF" />
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Face" Property="Opacity" Value="0.78" />
+                            </Trigger>
+                            <Trigger Property="IsKeyboardFocused" Value="True">
+                                <Setter TargetName="Face" Property="BorderBrush" Value="{StaticResource Focus}" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <Trigger Property="IsEnabled" Value="False">
+                    <Setter Property="Background" Value="#1B2A3C" />
+                    <Setter Property="BorderBrush" Value="#2F4257" />
+                    <Setter Property="Foreground" Value="#ABC0D3" />
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+        <Style x:Key="ConnectButton" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+            <Setter Property="Background" Value="#176A9D" />
+            <Setter Property="BorderBrush" Value="#347FAF" />
+            <Setter Property="MinWidth" Value="104" />
+        </Style>
+        <Style x:Key="MovePlus" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+            <Setter Property="Background" Value="#163D5D" />
+            <Setter Property="BorderBrush" Value="#315C7C" />
+        </Style>
+        <Style x:Key="StopButton" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+            <Setter Property="Background" Value="#A92B3D" />
+            <Setter Property="BorderBrush" Value="#C85162" />
+            <Setter Property="FontSize" Value="14" />
+            <Style.Triggers>
+                <Trigger Property="IsEnabled" Value="False">
+                    <Setter Property="Background" Value="#462936" />
+                    <Setter Property="BorderBrush" Value="#694551" />
+                    <Setter Property="Foreground" Value="#F0D6DC" />
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <Style TargetType="TextBox">
+            <Setter Property="Background" Value="{StaticResource Field}" />
+            <Setter Property="BorderBrush" Value="{StaticResource Edge}" />
+            <Setter Property="Foreground" Value="{StaticResource StrongText}" />
+            <Setter Property="CaretBrush" Value="{StaticResource StrongText}" />
+            <Setter Property="SelectionBrush" Value="#367AA9" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Padding" Value="8,4" />
+            <Setter Property="MinHeight" Value="29" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TextBox">
+                        <Border x:Name="Frame" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}" Padding="{TemplateBinding Padding}" CornerRadius="4">
+                            <Grid>
+                                <ScrollViewer x:Name="PART_ContentHost" VerticalAlignment="Center" />
+                                <TextBlock x:Name="Placeholder" Text="{TemplateBinding Tag}" Visibility="Collapsed"
+                                           TextAlignment="{TemplateBinding TextAlignment}" VerticalAlignment="Center"
+                                           Foreground="{StaticResource SecondaryText}" IsHitTestVisible="False" />
+                            </Grid>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsKeyboardFocusWithin" Value="True">
+                                <Setter TargetName="Frame" Property="BorderBrush" Value="{StaticResource Focus}" />
+                            </Trigger>
+                            <MultiTrigger>
+                                <MultiTrigger.Conditions>
+                                    <Condition Property="Text" Value="" />
+                                    <Condition Property="IsKeyboardFocusWithin" Value="False" />
+                                </MultiTrigger.Conditions>
+                                <Setter TargetName="Placeholder" Property="Visibility" Value="Visible" />
+                            </MultiTrigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <Trigger Property="IsEnabled" Value="False">
+                    <Setter Property="Background" Value="{StaticResource FieldLocked}" />
+                    <Setter Property="Foreground" Value="{StaticResource SecondaryText}" />
+                </Trigger>
+                <Trigger Property="IsReadOnly" Value="True">
+                    <Setter Property="Background" Value="{StaticResource FieldLocked}" />
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+        <Style x:Key="AxisInput" TargetType="TextBox" BasedOn="{StaticResource {x:Type TextBox}}">
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="Margin" Value="0,0,10,0" />
+            <Setter Property="MinHeight" Value="34" />
+            <Setter Property="TextAlignment" Value="Right" />
+            <Setter Property="FontFamily" Value="Consolas" />
+            <Setter Property="FontSize" Value="15" />
+        </Style>
+        <Style x:Key="Position" TargetType="TextBlock">
+            <Setter Property="FontFamily" Value="Consolas" />
+            <Setter Property="FontSize" Value="21" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+            <Setter Property="ToolTip" Value="{Binding Text, RelativeSource={RelativeSource Self}}" />
+        </Style>
+        <Style x:Key="AxisName" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource Focus}" />
+            <Setter Property="FontSize" Value="19" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="Margin" Value="10,0,0,0" />
+        </Style>
+
+        <Style x:Key="PortBox" TargetType="ComboBox">
+            <Setter Property="Background" Value="{StaticResource Field}" />
+            <Setter Property="BorderBrush" Value="{StaticResource Edge}" />
+            <Setter Property="Foreground" Value="{StaticResource StrongText}" />
+            <Setter Property="MinHeight" Value="29" />
+            <Setter Property="ItemsPanel">
+                <Setter.Value><ItemsPanelTemplate><StackPanel /></ItemsPanelTemplate></Setter.Value>
+            </Setter>
+            <Setter Property="ItemContainerStyle">
+                <Setter.Value>
+                    <Style TargetType="ComboBoxItem">
+                        <Setter Property="Foreground" Value="{StaticResource StrongText}" />
+                        <Setter Property="Template">
+                            <Setter.Value>
+                                <ControlTemplate TargetType="ComboBoxItem">
+                                    <Border x:Name="Item" Padding="8,5" Background="Transparent">
+                                        <ContentPresenter />
+                                    </Border>
+                                    <ControlTemplate.Triggers>
+                                        <Trigger Property="IsHighlighted" Value="True">
+                                            <Setter TargetName="Item" Property="Background" Value="#244663" />
+                                        </Trigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </Setter.Value>
+                        </Setter>
+                    </Style>
+                </Setter.Value>
+            </Setter>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ComboBox">
+                        <Grid>
+                            <Border x:Name="Frame" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
+                                    BorderThickness="1" CornerRadius="4" />
+                            <Grid Margin="1">
+                                <Grid.ColumnDefinitions><ColumnDefinition /><ColumnDefinition Width="31" /></Grid.ColumnDefinitions>
+                                <TextBox x:Name="PART_EditableTextBox" Margin="0" Padding="8,3" MinHeight="0"
+                                         Background="Transparent" BorderThickness="0" Foreground="{TemplateBinding Foreground}"
+                                         IsReadOnly="{TemplateBinding IsReadOnly}" />
+                                <ToggleButton Grid.Column="1" Focusable="False" ToolTip="选择串口"
+                                              IsChecked="{Binding IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}">
+                                    <ToggleButton.Template>
+                                        <ControlTemplate TargetType="ToggleButton">
+                                            <Border x:Name="ArrowBackground" CornerRadius="0,3,3,0" Background="#21334A">
+                                                <Path Data="M 0 0 L 4 4 L 8 0" Stroke="#C4D6E7" StrokeThickness="1.5"
+                                                      HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                            </Border>
+                                            <ControlTemplate.Triggers>
+                                                <Trigger Property="IsMouseOver" Value="True">
+                                                    <Setter TargetName="ArrowBackground" Property="Background" Value="#314D69" />
+                                                </Trigger>
+                                            </ControlTemplate.Triggers>
+                                        </ControlTemplate>
+                                    </ToggleButton.Template>
+                                </ToggleButton>
+                            </Grid>
+                            <Popup x:Name="PART_Popup" Placement="Bottom" AllowsTransparency="True"
+                                   IsOpen="{TemplateBinding IsDropDownOpen}" Focusable="False"
+                                   MinWidth="{TemplateBinding ActualWidth}">
+                                <Border Padding="2" Margin="0,3,0,0" Background="#17273A" BorderBrush="{StaticResource Edge}" BorderThickness="1" CornerRadius="4">
+                                    <ScrollViewer MaxHeight="170"><ItemsPresenter /></ScrollViewer>
+                                </Border>
+                            </Popup>
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsKeyboardFocusWithin" Value="True">
+                                <Setter TargetName="Frame" Property="BorderBrush" Value="{StaticResource Focus}" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <Trigger Property="IsEnabled" Value="False">
+                    <Setter Property="Background" Value="{StaticResource FieldLocked}" />
+                    <Setter Property="Foreground" Value="{StaticResource SecondaryText}" />
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+    </Window.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions><RowDefinition Height="72" /><RowDefinition Height="*" /></Grid.RowDefinitions>
+        <Border Background="#142136" BorderBrush="{StaticResource Edge}" BorderThickness="0,0,0,1" Padding="22,0">
+            <Grid>
+                <Grid.ColumnDefinitions><ColumnDefinition /><ColumnDefinition Width="130" /><ColumnDefinition Width="152" /></Grid.ColumnDefinitions>
+                <TextBlock Text="三轴控制台" FontSize="27" FontWeight="SemiBold" VerticalAlignment="Center" />
+                <CheckBox x:Name="Simulation" Grid.Column="1" Content="模拟模式" IsChecked="True" Foreground="{StaticResource StrongText}"
+                          FontSize="14" VerticalAlignment="Center" HorizontalAlignment="Left" />
+                <Button x:Name="Stop" Grid.Column="2" Content="全部停止   Esc" IsEnabled="False"
+                        Style="{StaticResource StopButton}" VerticalAlignment="Center" Height="42"
+                        AutomationProperties.Name="全部停止" ToolTip="向已连接控制器发送软件停止命令" />
+            </Grid>
+        </Border>
+
+        <TabControl x:Name="MainTabs" Grid.Row="1" SelectedIndex="0" Style="{StaticResource PageTabs}">
+            <TabItem x:Name="ControlTab" Header="运动控制" Style="{StaticResource PageTab}">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                    <StackPanel Margin="18,15,18,15">
+                        <Grid Margin="0,0,0,13">
+                            <Grid.ColumnDefinitions><ColumnDefinition /><ColumnDefinition Width="12" /><ColumnDefinition /></Grid.ColumnDefinitions>
+                            <Border Style="{StaticResource Card}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions><ColumnDefinition /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                    <StackPanel>
+                                        <StackPanel Orientation="Horizontal" Margin="0,0,0,3">
+                                            <TextBlock Text="XY 控制器" Style="{StaticResource SectionTitle}" />
+                                            <TextBlock Text="PMC100-2" Style="{StaticResource Caption}" Margin="10,2,0,0" />
+                                        </StackPanel>
+                                        <TextBlock x:Name="XyStatus" Text="未连接" Style="{StaticResource StatusText}" />
+                                    </StackPanel>
+                                    <Button x:Name="XyConnect" Grid.Column="1" Content="连接" VerticalAlignment="Center" Margin="8,0,0,0"
+                                            Style="{StaticResource ConnectButton}" AutomationProperties.Name="连接或断开 XY 控制器" />
+                                </Grid>
+                            </Border>
+                            <Border Grid.Column="2" Style="{StaticResource Card}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions><ColumnDefinition /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                    <StackPanel>
+                                        <StackPanel Orientation="Horizontal" Margin="0,0,0,3">
+                                            <TextBlock Text="Z 控制器" Style="{StaticResource SectionTitle}" />
+                                            <TextBlock Text="MC06-004A" Style="{StaticResource Caption}" Margin="10,2,0,0" />
+                                        </StackPanel>
+                                        <TextBlock x:Name="ZStatus" Text="未连接" Style="{StaticResource StatusText}" />
+                                    </StackPanel>
+                                    <Button x:Name="ZConnect" Grid.Column="1" Content="连接" VerticalAlignment="Center" Margin="8,0,0,0"
+                                            Style="{StaticResource ConnectButton}" AutomationProperties.Name="连接或断开 Z 控制器" />
+                                </Grid>
+                            </Border>
+                        </Grid>
+
+                        <Border Style="{StaticResource Card}" Margin="0,0,0,13">
+                            <StackPanel>
+                                <DockPanel Margin="0,0,0,10">
+                                    <CheckBox x:Name="ContinuousMode" DockPanel.Dock="Right" Content="持续运动" IsChecked="False"
+                                              Foreground="{StaticResource StrongText}" VerticalAlignment="Center" AutomationProperties.Name="持续运动模式"
+                                              ToolTip="按住方向按钮移动，松开停止。限位留空时按步长逐段移动。" />
+                                    <TextBlock Text="轴控制" Style="{StaticResource SectionTitle}" />
+                                </DockPanel>
+                                <Border x:Name="ContinuousNotice" Visibility="Collapsed" Margin="0,0,0,10" Padding="11,6"
+                                        Background="#2C261D" BorderBrush="#6C5637" BorderThickness="1" CornerRadius="5">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions><ColumnDefinition /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                        <TextBlock x:Name="ContinuousNoticeText" Foreground="#FFE6B5" TextWrapping="Wrap"
+                                                   VerticalAlignment="Center" Margin="0,0,10,0" />
+                                        <Button x:Name="ConfigureLimits" Grid.Column="1" Content="设置限位" VerticalAlignment="Center"
+                                                Padding="10,4" MinHeight="30" />
+                                    </Grid>
+                                </Border>
+                                <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+                                    <Grid MinWidth="754">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="43" /><ColumnDefinition Width="133" /><ColumnDefinition />
+                                            <ColumnDefinition Width="87" /><ColumnDefinition Width="83" /><ColumnDefinition Width="83" />
+                                            <ColumnDefinition Width="83" /><ColumnDefinition Width="78" /><ColumnDefinition Width="78" />
+                                        </Grid.ColumnDefinitions>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="30" /><RowDefinition Height="51" /><RowDefinition Height="51" /><RowDefinition Height="51" />
+                                        </Grid.RowDefinitions>
+                                        <Border Grid.ColumnSpan="9" Background="#1E3148" CornerRadius="5" IsHitTestVisible="False" />
+                                        <TextBlock Text="轴" Style="{StaticResource Caption}" Margin="10,0,0,0" />
+                                        <TextBlock Grid.Column="1" Text="位置（脉冲）" Style="{StaticResource Caption}" />
+                                        <TextBlock Grid.Column="2" Text="状态" Style="{StaticResource Caption}" />
+                                        <TextBlock Grid.Column="3" Text="步长（脉冲）" Style="{StaticResource Caption}" />
+                                        <TextBlock Grid.Column="4" Text="初速度" Style="{StaticResource Caption}" />
+                                        <TextBlock Grid.Column="5" Text="加速度" Style="{StaticResource Caption}" />
+                                        <TextBlock Grid.Column="6" Text="最大速度" Style="{StaticResource Caption}" />
+                                        <TextBlock Grid.Column="7" Grid.ColumnSpan="2" Text="移动方向" Style="{StaticResource Caption}" />
+                                        <Border Grid.Row="1" Grid.ColumnSpan="9" BorderBrush="{StaticResource Edge}" BorderThickness="0,0,0,1" IsHitTestVisible="False" />
+                                        <TextBlock Grid.Row="1" Text="X" Style="{StaticResource AxisName}" />
+                                        <TextBlock x:Name="XPosition" Grid.Row="1" Grid.Column="1" Text="—" Style="{StaticResource Position}" />
+                                        <TextBlock x:Name="XStatus" Grid.Row="1" Grid.Column="2" Text="未连接" Style="{StaticResource StatusText}" Margin="0,0,8,0" />
+                                        <TextBox x:Name="XStep" Grid.Row="1" Grid.Column="3" Text="100" Style="{StaticResource AxisInput}"
+                                                 AutomationProperties.Name="X 轴步长（脉冲）" />
+                                        <TextBox x:Name="XStartSpeed" Grid.Row="1" Grid.Column="4" Tag="沿用" Style="{StaticResource AxisInput}"
+                                                 ToolTip="使用控制器原单位。留空沿用控制器初速度。" AutomationProperties.Name="X 轴初速度" />
+                                        <TextBox x:Name="XAcceleration" Grid.Row="1" Grid.Column="5" Tag="沿用" Style="{StaticResource AxisInput}"
+                                                 ToolTip="使用控制器原单位。留空沿用控制器加速度。" AutomationProperties.Name="X 轴加速度" />
+                                        <TextBox x:Name="XSpeed" Grid.Row="1" Grid.Column="6" Tag="沿用" Style="{StaticResource AxisInput}"
+                                                 ToolTip="使用控制器原单位。留空沿用控制器终速度。" AutomationProperties.Name="X 轴最大速度" />
+                                        <Button x:Name="XMinus" Grid.Row="1" Grid.Column="7" IsEnabled="False" Margin="0,5,6,5" />
+                                        <Button x:Name="XPlus" Grid.Row="1" Grid.Column="8" IsEnabled="False" Style="{StaticResource MovePlus}" Margin="0,5,0,5" />
+                                        <Border Grid.Row="2" Grid.ColumnSpan="9" BorderBrush="{StaticResource Edge}" BorderThickness="0,0,0,1" IsHitTestVisible="False" />
+                                        <TextBlock Grid.Row="2" Text="Y" Style="{StaticResource AxisName}" />
+                                        <TextBlock x:Name="YPosition" Grid.Row="2" Grid.Column="1" Text="—" Style="{StaticResource Position}" />
+                                        <TextBlock x:Name="YStatus" Grid.Row="2" Grid.Column="2" Text="未连接" Style="{StaticResource StatusText}" Margin="0,0,8,0" />
+                                        <TextBox x:Name="YStep" Grid.Row="2" Grid.Column="3" Text="100" Style="{StaticResource AxisInput}"
+                                                 AutomationProperties.Name="Y 轴步长（脉冲）" />
+                                        <TextBox x:Name="YStartSpeed" Grid.Row="2" Grid.Column="4" Tag="沿用" Style="{StaticResource AxisInput}"
+                                                 ToolTip="使用控制器原单位。留空沿用控制器初速度。" AutomationProperties.Name="Y 轴初速度" />
+                                        <TextBox x:Name="YAcceleration" Grid.Row="2" Grid.Column="5" Tag="沿用" Style="{StaticResource AxisInput}"
+                                                 ToolTip="使用控制器原单位。留空沿用控制器加速度。" AutomationProperties.Name="Y 轴加速度" />
+                                        <TextBox x:Name="YSpeed" Grid.Row="2" Grid.Column="6" Tag="沿用" Style="{StaticResource AxisInput}"
+                                                 ToolTip="使用控制器原单位。留空沿用控制器终速度。" AutomationProperties.Name="Y 轴最大速度" />
+                                        <Button x:Name="YMinus" Grid.Row="2" Grid.Column="7" IsEnabled="False" Margin="0,5,6,5" />
+                                        <Button x:Name="YPlus" Grid.Row="2" Grid.Column="8" IsEnabled="False" Style="{StaticResource MovePlus}" Margin="0,5,0,5" />
+                                        <Border Grid.Row="3" Grid.ColumnSpan="9" BorderBrush="{StaticResource Edge}" BorderThickness="0,0,0,1" IsHitTestVisible="False" />
+                                        <TextBlock Grid.Row="3" Text="Z" Style="{StaticResource AxisName}" />
+                                        <TextBlock x:Name="ZPosition" Grid.Row="3" Grid.Column="1" Text="—" Style="{StaticResource Position}" />
+                                        <TextBlock x:Name="ZAxisStatus" Grid.Row="3" Grid.Column="2" Text="未连接" Style="{StaticResource StatusText}" Margin="0,0,8,0" />
+                                        <TextBox x:Name="ZStep" Grid.Row="3" Grid.Column="3" Text="100" Style="{StaticResource AxisInput}"
+                                                 AutomationProperties.Name="Z 轴步长（脉冲）" />
+                                        <TextBox x:Name="ZStartSpeed" Grid.Row="3" Grid.Column="4" Tag="默认" Style="{StaticResource AxisInput}"
+                                                 ToolTip="单位为脉冲/秒。留空使用默认初速度。" AutomationProperties.Name="Z 轴初速度" />
+                                        <TextBox x:Name="ZAcceleration" Grid.Row="3" Grid.Column="5" Tag="默认" Style="{StaticResource AxisInput}"
+                                                 ToolTip="单位为脉冲/秒²。留空使用默认加减速。" AutomationProperties.Name="Z 轴加速度" />
+                                        <TextBox x:Name="ZSpeed" Grid.Row="3" Grid.Column="6" Text="100" Style="{StaticResource AxisInput}"
+                                                 ToolTip="单位为脉冲/秒。" AutomationProperties.Name="Z 轴最大速度" />
+                                        <Button x:Name="ZMinus" Grid.Row="3" Grid.Column="7" IsEnabled="False" Margin="0,5,6,5" />
+                                        <Button x:Name="ZPlus" Grid.Row="3" Grid.Column="8" IsEnabled="False" Style="{StaticResource MovePlus}" Margin="0,5,0,5" />
+                                    </Grid>
+                                </ScrollViewer>
+                            </StackPanel>
+                        </Border>
+
+                        <Border Style="{StaticResource Card}">
+                            <Grid>
+                                <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="*" /></Grid.RowDefinitions>
+                                <DockPanel>
+                                    <Button x:Name="CopyLog" DockPanel.Dock="Right" Content="复制记录" IsEnabled="False" Padding="10,4" MinHeight="26" />
+                                    <TextBlock Text="操作记录" Style="{StaticResource SectionTitle}" VerticalAlignment="Center" />
+                                </DockPanel>
+                                <Grid Grid.Row="1" Margin="0,7,0,0" MinHeight="53">
+                                    <ListBox x:Name="Log" Background="Transparent" Foreground="{StaticResource SecondaryText}"
+                                             BorderThickness="0" Padding="0" MaxHeight="108" ScrollViewer.VerticalScrollBarVisibility="Auto"
+                                             ScrollViewer.HorizontalScrollBarVisibility="Auto" AutomationProperties.Name="操作记录" />
+                                    <TextBlock x:Name="LogEmpty" Text="暂无操作记录" Style="{StaticResource Caption}" VerticalAlignment="Top" Margin="2,5,0,0" IsHitTestVisible="False" />
+                                </Grid>
+                            </Grid>
+                        </Border>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+            <TabItem x:Name="SettingsTab" Header="设备设置" Style="{StaticResource PageTab}">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                    <StackPanel Margin="18,15,18,15">
+                        <Grid Margin="0,0,0,13">
+                            <Grid.ColumnDefinitions><ColumnDefinition /><ColumnDefinition Width="12" /><ColumnDefinition /></Grid.ColumnDefinitions>
+                            <Border Style="{StaticResource Card}">
+                                <StackPanel>
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="XY 连接设置" Style="{StaticResource SectionTitle}" />
+                                        <TextBlock Text="PMC100-2" Style="{StaticResource Caption}" Margin="10,2,0,0" />
+                                    </StackPanel>
+                                    <Grid Margin="0,11,0,13">
+                                        <Grid.ColumnDefinitions><ColumnDefinition /><ColumnDefinition Width="12" /><ColumnDefinition /></Grid.ColumnDefinitions>
+                                        <StackPanel>
+                                            <Label Content="串口" Style="{StaticResource FieldLabel}" Target="{Binding ElementName=XyPort}" />
+                                            <ComboBox x:Name="XyPort" Style="{StaticResource PortBox}" IsEditable="True" IsTextSearchEnabled="False"
+                                                      AutomationProperties.Name="XY 串口" />
+                                        </StackPanel>
+                                        <StackPanel Grid.Column="2">
+                                            <Label Content="波特率" Style="{StaticResource FieldLabel}" Target="{Binding ElementName=XyBaud}" />
+                                            <TextBox x:Name="XyBaud" Text="57600" MaxLength="7" />
+                                        </StackPanel>
+                                    </Grid>
+                                    <CheckBox x:Name="XyAutoConnect" Content="启动时连接" HorizontalAlignment="Left"
+                                              Foreground="{StaticResource SecondaryText}" AutomationProperties.Name="启动时连接 XY 控制器"
+                                              ToolTip="下次打开程序时自动连接实机 XY 控制器。" />
+                                </StackPanel>
+                            </Border>
+                            <Border Grid.Column="2" Style="{StaticResource Card}">
+                                <StackPanel>
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="Z 连接设置" Style="{StaticResource SectionTitle}" />
+                                        <TextBlock Text="MC06-004A" Style="{StaticResource Caption}" Margin="10,2,0,0" />
+                                    </StackPanel>
+                                    <Grid Margin="0,11,0,13">
+                                        <Grid.ColumnDefinitions><ColumnDefinition /><ColumnDefinition Width="12" /><ColumnDefinition /></Grid.ColumnDefinitions>
+                                        <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="8" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
+                                        <StackPanel>
+                                            <Label Content="本机 IP" Style="{StaticResource FieldLabel}" Target="{Binding ElementName=ZLocalIp}" />
+                                            <TextBox x:Name="ZLocalIp" Text="192.168.0.200" MaxLength="15" />
+                                        </StackPanel>
+                                        <StackPanel Grid.Column="2">
+                                            <Label Content="设备 IP" Style="{StaticResource FieldLabel}" Target="{Binding ElementName=ZControllerIp}" />
+                                            <TextBox x:Name="ZControllerIp" Text="192.168.0.1" MaxLength="15" />
+                                        </StackPanel>
+                                        <StackPanel Grid.Row="2">
+                                            <Label Content="本机 UDP 端口" Style="{StaticResource FieldLabel}" Target="{Binding ElementName=ZUdp}" />
+                                            <TextBox x:Name="ZUdp" Text="60000" MaxLength="5" />
+                                        </StackPanel>
+                                        <StackPanel Grid.Row="2" Grid.Column="2">
+                                            <Label Content="通道" Style="{StaticResource FieldLabel}" Target="{Binding ElementName=ZChannel}" />
+                                            <TextBox x:Name="ZChannel" Text="1" MaxLength="1" />
+                                        </StackPanel>
+                                    </Grid>
+                                    <CheckBox x:Name="ZAutoConnect" Content="启动时连接" HorizontalAlignment="Left"
+                                              Foreground="{StaticResource SecondaryText}" AutomationProperties.Name="启动时连接 Z 控制器"
+                                              ToolTip="下次打开程序时自动连接实机 Z 控制器。" />
+                                </StackPanel>
+                            </Border>
+                        </Grid>
+
+                        <Border Style="{StaticResource Card}">
+                            <StackPanel>
+                                <TextBlock Text="软件限位（脉冲）" Style="{StaticResource SectionTitle}" />
+                                <TextBlock Text="留空表示该侧未设置软件限位。持续运动仍可按步长逐段执行。"
+                                           Style="{StaticResource Caption}" TextWrapping="Wrap" Margin="0,5,0,11" />
+                                <Grid>
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="50" /><ColumnDefinition /><ColumnDefinition /></Grid.ColumnDefinitions>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="30" /><RowDefinition Height="48" /><RowDefinition Height="48" /><RowDefinition Height="48" />
+                                    </Grid.RowDefinitions>
+                                    <Border Grid.ColumnSpan="3" Background="#1E3148" CornerRadius="5" IsHitTestVisible="False" />
+                                    <TextBlock Text="轴" Style="{StaticResource Caption}" Margin="10,0,0,0" />
+                                    <TextBlock Grid.Column="1" Text="负向限位（最小位置）" Style="{StaticResource Caption}" />
+                                    <TextBlock Grid.Column="2" Text="正向限位（最大位置）" Style="{StaticResource Caption}" />
+                                    <Border Grid.Row="1" Grid.ColumnSpan="3" BorderBrush="{StaticResource Edge}" BorderThickness="0,0,0,1" IsHitTestVisible="False" />
+                                    <TextBlock Grid.Row="1" Text="X" Style="{StaticResource AxisName}" />
+                                    <TextBox x:Name="XMinPosition" Grid.Row="1" Grid.Column="1" Tag="未设置" Style="{StaticResource AxisInput}"
+                                             AutomationProperties.Name="X 轴负向软件限位（脉冲）" />
+                                    <TextBox x:Name="XMaxPosition" Grid.Row="1" Grid.Column="2" Tag="未设置" Style="{StaticResource AxisInput}"
+                                             AutomationProperties.Name="X 轴正向软件限位（脉冲）" />
+                                    <Border Grid.Row="2" Grid.ColumnSpan="3" BorderBrush="{StaticResource Edge}" BorderThickness="0,0,0,1" IsHitTestVisible="False" />
+                                    <TextBlock Grid.Row="2" Text="Y" Style="{StaticResource AxisName}" />
+                                    <TextBox x:Name="YMinPosition" Grid.Row="2" Grid.Column="1" Tag="未设置" Style="{StaticResource AxisInput}"
+                                             AutomationProperties.Name="Y 轴负向软件限位（脉冲）" />
+                                    <TextBox x:Name="YMaxPosition" Grid.Row="2" Grid.Column="2" Tag="未设置" Style="{StaticResource AxisInput}"
+                                             AutomationProperties.Name="Y 轴正向软件限位（脉冲）" />
+                                    <Border Grid.Row="3" Grid.ColumnSpan="3" BorderBrush="{StaticResource Edge}" BorderThickness="0,0,0,1" IsHitTestVisible="False" />
+                                    <TextBlock Grid.Row="3" Text="Z" Style="{StaticResource AxisName}" />
+                                    <TextBox x:Name="ZMinPosition" Grid.Row="3" Grid.Column="1" Tag="未设置" Style="{StaticResource AxisInput}"
+                                             AutomationProperties.Name="Z 轴负向软件限位（脉冲）" />
+                                    <TextBox x:Name="ZMaxPosition" Grid.Row="3" Grid.Column="2" Tag="未设置" Style="{StaticResource AxisInput}"
+                                             AutomationProperties.Name="Z 轴正向软件限位（脉冲）" />
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+        </TabControl>
+    </Grid>
+</Window>

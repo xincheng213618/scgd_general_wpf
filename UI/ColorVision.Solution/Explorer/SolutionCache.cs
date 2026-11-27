@@ -293,8 +293,30 @@ namespace ColorVision.Solution.Explorer
 
         private void ScanDirectory(DirectoryInfo dirInfo)
         {
-            foreach (FileTreeCacheEntry[] batch in EnumerateDirectoryEntries(dirInfo).Chunk(CacheWriteBatchSize))
-                _db.Insertable(batch).ExecuteCommand();
+            // Keep the existing transaction so a failed scan rolls back both deletion and insertion.
+            using SqliteCommand insert = ((SqliteConnection)_db.Ado.Connection).CreateCommand();
+            insert.Transaction = (SqliteTransaction)_db.Ado.Transaction;
+            insert.CommandTimeout = _db.Ado.CommandTimeOut;
+            insert.CommandText = $"INSERT INTO file_tree_cache ({EntryColumns}) VALUES ($path, $parent, $name, $directory, $extension, $size, $ticks)";
+            SqliteParameter path = insert.Parameters.Add("$path", SqliteType.Text);
+            SqliteParameter parent = insert.Parameters.Add("$parent", SqliteType.Text);
+            SqliteParameter name = insert.Parameters.Add("$name", SqliteType.Text);
+            SqliteParameter directory = insert.Parameters.Add("$directory", SqliteType.Integer);
+            SqliteParameter extension = insert.Parameters.Add("$extension", SqliteType.Text);
+            SqliteParameter size = insert.Parameters.Add("$size", SqliteType.Integer);
+            SqliteParameter ticks = insert.Parameters.Add("$ticks", SqliteType.Integer);
+            insert.Prepare();
+            foreach (FileTreeCacheEntry entry in EnumerateDirectoryEntries(dirInfo))
+            {
+                path.Value = entry.FullPath;
+                parent.Value = entry.ParentPath;
+                name.Value = entry.Name;
+                directory.Value = entry.IsDirectory;
+                extension.Value = entry.Extension;
+                size.Value = entry.FileSize;
+                ticks.Value = entry.LastWriteTicks;
+                insert.ExecuteNonQuery();
+            }
         }
 
         private static IEnumerable<FileTreeCacheEntry> EnumerateDirectoryEntries(DirectoryInfo dirInfo)

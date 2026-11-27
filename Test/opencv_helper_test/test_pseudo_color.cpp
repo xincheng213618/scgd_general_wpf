@@ -355,6 +355,14 @@ bool RunPseudoColorTests()
     success &= RunIntoCase(single16, 4096, 61440, cv::COLORMAP_JET, -1);
     success &= RunIntoCase(single16, 5000, 59000, cv::COLORMAP_TURBO, -1, true, 1024, 63000);
     success &= RunIntoCase(single16, 123, 456, cv::COLORMAP_TURBO, -1, true, 4096, 4096);
+    // All four calls share the compact LUT, but the expanded table is tied to the data range.
+    success &= RunIntoCase(single16, 1024, 63000, cv::COLORMAP_TURBO, -1, true, 1024, 63000);
+    success &= RunIntoCase(single16, 2048, 64024, cv::COLORMAP_TURBO, -1, true, 2048, 64024);
+    success &= RunIntoCase(single16, 2048, 64024, cv::COLORMAP_TURBO, -1, true, 2048, 64024);
+    success &= RunIntoCase(single16, 2048, 63000, cv::COLORMAP_TURBO, -1, true, 2048, 63000);
+    cv::Mat small16 = source16(cv::Rect(7, 9, 19, 17));
+    success &= RunIntoCase(small16, 4096, 61440, cv::COLORMAP_JET, 2);
+    success &= RunIntoCase(small16, 5000, 59000, cv::COLORMAP_TURBO, 3, true, 1024, 63000);
     success &= RunIntoCase(source16, 4096, 61440, cv::COLORMAP_DEEPGREEN, -1);
     success &= RunOwnedCase(source16, 4096, 61440, cv::COLORMAP_JET, 1, false, 0, 0);
     success &= RunOwnedCase(source16, 5000, 59000, cv::COLORMAP_TURBO, 3, true, 1024, 63000);

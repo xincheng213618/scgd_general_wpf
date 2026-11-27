@@ -18,6 +18,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Threading;
 
 namespace ProjectARVRPro
 {
@@ -37,7 +38,6 @@ namespace ProjectARVRPro
         private const int FlowPageSize = 1000;
         private const int SuggestionDisplayLimit = 20;
         private static readonly ILog Log = LogManager.GetLogger(typeof(CycleTimeStatisticsWindow));
-        private readonly ViewResultManager? _viewResultManager;
         private readonly ResultStatisticsDataStore _statisticsStore;
         private readonly ResultStatisticsWindowState _windowState;
         private readonly CycleTimeStatisticsWindowConfig? _windowConfig;
@@ -71,6 +71,9 @@ namespace ProjectARVRPro
         private int _totalFlowCount;
         private bool _updatingSnSuggestions;
         private bool _updatingFlowNameSuggestions;
+        private bool _homeTabInitialized;
+        private bool _recordTabInitialized;
+        private bool _combinedTabInitialized;
         private bool _flowTabInitialized;
         private bool _windowLoaded;
         private bool _restoringSearchState = true;
@@ -81,6 +84,7 @@ namespace ProjectARVRPro
         private string _snIndexStatus = string.Empty;
         private string _flowStatus = string.Empty;
         private string _flowNameIndexStatus = string.Empty;
+        private ScottPlot.WPF.WpfPlot? _homeTrendPlot;
         private IReadOnlyList<ResultStatisticsTrendPoint> _homeTrendPoints = [];
         private ResultStatisticsPeriodMode _homeTrendPeriodMode;
         private ResultStatisticsPeriodRange _homeTrendRange = ResultStatisticsPeriod.GetRange(ResultStatisticsPeriodMode.Day, DateTime.Today);
@@ -93,7 +97,6 @@ namespace ProjectARVRPro
             _offlineSource = offlineSource;
             if (offlineSource == null)
             {
-                _viewResultManager = ViewResultManager.GetInstance();
                 _statisticsStore = ResultStatisticsDataStore.Instance;
                 _windowConfig = CycleTimeStatisticsWindowConfig.Instance;
                 _windowState = ProjectARVRProConfig.Instance.ResultStatisticsWindowState ??= new();
@@ -129,10 +132,10 @@ namespace ProjectARVRPro
             CombinedRecordDataGrid.SelectionChanged += CombinedRecordDataGrid_SelectionChanged;
             BuildDetailContextMenu(DetailList);
             BuildDetailContextMenu(CombinedDetailList);
-            ConfigureHomeTrendPlot();
             ApplyStatistics(new ResultStatistics());
             ApplyCombinedStatistics(new ResultStatisticsCombinedDashboard());
             ApplyCombinedVisibility();
+            UpdateHomeTrendPresentation(GetSelectedPeriodMode(HomePeriodMode), IsCombinedStatisticsEnabled);
             _restoringSearchState = false;
             UpdateHomePeriodText();
             UpdateRecordPeriodText();
@@ -164,16 +167,16 @@ namespace ProjectARVRPro
             }
 
             ++_homeLoadVersion;
-            if (IsCombinedStatisticsEnabled)
-                await Task.WhenAll(RefreshHomeAsync(), RefreshCombinedRecordsAsync(1));
-            else
+            _homeTabInitialized = false;
+            if (!IsCombinedStatisticsEnabled)
             {
                 ++_combinedLoadVersion;
                 ++_combinedDetailLoadVersion;
+                _combinedTabInitialized = false;
                 if (StatisticsTabs.SelectedItem == CombinedRecordTab)
-                    StatisticsTabs.SelectedIndex = 1;
-                await RefreshHomeAsync();
+                    StatisticsTabs.SelectedItem = RecordTab;
             }
+            await LoadSelectedTabAsync();
         }
 
         private void ApplyCombinedVisibility()
@@ -228,20 +231,12 @@ namespace ProjectARVRPro
             new Offline.OfflineMessagesWindow(_offlineSource, row) { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show();
         }
 
-        private async void Window_Loaded(object sender, RoutedEventArgs e)
+        private async void Window_ContentRendered(object? sender, EventArgs e)
         {
+            if (_windowLoaded || _closed)
+                return;
             _windowLoaded = true;
-            _ = LoadSnSuggestionsAsync();
-            var tasks = new List<Task> { RefreshHomeAsync(), RefreshRecordsAsync(1) };
-            if (IsCombinedStatisticsEnabled)
-                tasks.Add(RefreshCombinedRecordsAsync(1));
-            if (StatisticsTabs.SelectedItem == FlowQueryTab)
-            {
-                _flowTabInitialized = true;
-                _ = LoadFlowNameSuggestionsAsync();
-                tasks.Add(RefreshFlowsAsync(1));
-            }
-            await Task.WhenAll(tasks);
+            await LoadSelectedTabAsync();
         }
 
         private async void StatisticsTabs_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -250,12 +245,29 @@ namespace ProjectARVRPro
                 return;
 
             CaptureSearchState();
-            if (!_windowLoaded || StatisticsTabs.SelectedItem != FlowQueryTab || _flowTabInitialized)
-                return;
+            if (_windowLoaded)
+                await LoadSelectedTabAsync();
+        }
 
-            _flowTabInitialized = true;
-            _ = LoadFlowNameSuggestionsAsync();
-            await RefreshFlowsAsync(1);
+        private async Task LoadSelectedTabAsync()
+        {
+            object? selected = StatisticsTabs.SelectedItem;
+            if (selected == HomeTab && !_homeTabInitialized)
+                await RefreshHomeAsync();
+            else if (selected == RecordTab && !_recordTabInitialized)
+            {
+                await RefreshRecordsAsync(1);
+                if (!_closed)
+                    _ = LoadSnSuggestionsAsync();
+            }
+            else if (selected == CombinedRecordTab && IsCombinedStatisticsEnabled && !_combinedTabInitialized)
+                await RefreshCombinedRecordsAsync(1);
+            else if (selected == FlowQueryTab && !_flowTabInitialized)
+            {
+                await RefreshFlowsAsync(1);
+                if (!_closed)
+                    _ = LoadFlowNameSuggestionsAsync();
+            }
         }
 
         private async void RecordRefresh_Click(object sender, RoutedEventArgs e)
@@ -588,6 +600,7 @@ namespace ProjectARVRPro
 
         private async Task RefreshHomeAsync()
         {
+            _homeTabInitialized = true;
             ResultStatisticsQuery query = CreateHomeQuery();
             ResultStatisticsPeriodMode mode = GetSelectedPeriodMode(HomePeriodMode);
             int loadVersion = ++_homeLoadVersion;
@@ -597,8 +610,9 @@ namespace ProjectARVRPro
             try
             {
                 DateTime now = DateTime.Now;
-                Task<ResultStatisticsDashboard> dashboardTask = Task.Run(() => _statisticsStore.QueryDashboard(query, mode, now));
-                Task<ResultStatisticsCombinedDashboard>? combinedTask = IsCombinedStatisticsEnabled
+                bool showCombined = IsCombinedStatisticsEnabled;
+                Task<ResultStatisticsDashboard> dashboardTask = Task.Run(() => _statisticsStore.QueryDashboard(query, mode, now, includeTrend: !showCombined));
+                Task<ResultStatisticsCombinedDashboard>? combinedTask = showCombined
                     ? Task.Run(() => _statisticsStore.QueryCombinedDashboard(query, mode, now))
                     : null;
                 ResultStatisticsDashboard dashboard = await dashboardTask;
@@ -609,10 +623,16 @@ namespace ProjectARVRPro
 
                 ApplyStatistics(dashboard.Summary);
                 ApplyCombinedStatistics(combined ?? new ResultStatisticsCombinedDashboard());
-                RenderHomeTrend(combined?.Trend ?? dashboard.Trend, mode, query.From, query.ToExclusive, combined != null);
                 _homeStatus = combined == null
                     ? $"已查询 {dashboard.Summary.TotalCount:N0} 条单侧记录"
                     : $"已查询 {dashboard.Summary.TotalCount:N0} 条单侧记录；匹配 {combined.Summary.TotalCount:N0} 个 L/R 全批次";
+                UpdateStatusText();
+                // Let the summary reach the screen before the plot's first font lookup and draw.
+                await Dispatcher.InvokeAsync(() =>
+                {
+                    if (loadVersion == _homeLoadVersion)
+                        RenderHomeTrend(combined?.Trend ?? dashboard.Trend, mode, query.From, query.ToExclusive, combined != null);
+                }, DispatcherPriority.Background);
             }
             catch (Exception ex)
             {
@@ -623,17 +643,14 @@ namespace ProjectARVRPro
                 ApplyCombinedStatistics(new ResultStatisticsCombinedDashboard());
                 RenderHomeTrend([], mode, query.From, query.ToExclusive, IsCombinedStatisticsEnabled);
                 _homeStatus = "查询失败";
+                UpdateStatusText();
                 MessageBox.Show(this, LocalizedText.Format($"读取首页统计失败：{ex.Message}"), "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-            finally
-            {
-                if (loadVersion == _homeLoadVersion)
-                    UpdateStatusText();
             }
         }
 
         private async Task RefreshRecordsAsync(int pageNumber)
         {
+            _recordTabInitialized = true;
             ResultStatisticsQuery query = CreateRecordQuery(pageNumber);
             int loadVersion = ++_recordLoadVersion;
             RecordRefreshButton.IsEnabled = false;
@@ -685,6 +702,7 @@ namespace ProjectARVRPro
         {
             if (!IsCombinedStatisticsEnabled)
                 return;
+            _combinedTabInitialized = true;
 
             ResultStatisticsQuery query = CreateCombinedQuery(pageNumber);
             int loadVersion = ++_combinedLoadVersion;
@@ -731,6 +749,7 @@ namespace ProjectARVRPro
 
         private async Task RefreshFlowsAsync(int pageNumber)
         {
+            _flowTabInitialized = true;
             FlowExecutionQuery query = CreateFlowQuery(pageNumber);
             int loadVersion = ++_flowLoadVersion;
             FlowRefreshButton.IsEnabled = false;
@@ -739,17 +758,27 @@ namespace ProjectARVRPro
 
             try
             {
-                Task<int> countTask = Task.Run(() => _statisticsStore.QueryFlowExecutionCount(query));
-                Task<IReadOnlyList<FlowExecutionRecordRow>> recordsTask = Task.Run(() => _statisticsStore.QueryFlowExecutions(query));
-                await Task.WhenAll(countTask, recordsTask);
+                int totalCount;
+                IReadOnlyList<FlowExecutionRecordRow> rows;
+                if (string.IsNullOrWhiteSpace(query.Model))
+                {
+                    Task<int> countTask = Task.Run(() => _statisticsStore.QueryFlowExecutionCount(query));
+                    Task<IReadOnlyList<FlowExecutionRecordRow>> recordsTask = Task.Run(() => _statisticsStore.QueryFlowExecutions(query));
+                    await Task.WhenAll(countTask, recordsTask);
+                    (totalCount, rows) = (await countTask, await recordsTask);
+                }
+                else
+                {
+                    (totalCount, rows) = await Task.Run(() => _statisticsStore.QueryFlowSearchPage(query));
+                }
 
                 if (loadVersion != _flowLoadVersion)
                     return;
 
-                ReplaceItems(_flowRows, await recordsTask);
+                ReplaceItems(_flowRows, rows);
                 if (_flowRows.Count > 0)
                     FlowDataGrid.SelectedIndex = 0;
-                _totalFlowCount = await countTask;
+                _totalFlowCount = totalCount;
                 _flowCurrentPage = Math.Clamp(pageNumber, 1, Math.Max(1, GetFlowPageCount()));
                 UpdateFlowPagination();
                 _flowStatus = _totalFlowCount > FlowPageSize
@@ -1159,29 +1188,32 @@ namespace ProjectARVRPro
             CombinedAverageFlowRunTimeText.Text = statistics.AverageFlowRunTimeText;
         }
 
-        private void ConfigureHomeTrendPlot()
+        private ScottPlot.WPF.WpfPlot CreateHomeTrendPlot()
         {
+            var control = new ScottPlot.WPF.WpfPlot();
+            var plot = control.Plot;
             ScottPlot.Color background = GetPlotColor("SecondaryRegionBrush", "#FFFFFF");
             ScottPlot.Color foreground = GetPlotColor("GlobalTextBrush", "#20242A");
             ScottPlot.Color border = GetPlotColor("BorderBrush", "#D8DEE9");
-            HomeTrendPlot.Plot.FigureBackground.Color = background;
-            HomeTrendPlot.Plot.DataBackground.Color = background;
-            HomeTrendPlot.Plot.Axes.Color(foreground);
-            HomeTrendPlot.Plot.Legend.BackgroundColor = background;
-            HomeTrendPlot.Plot.Legend.FontColor = foreground;
-            HomeTrendPlot.Plot.Legend.OutlineColor = border;
+            plot.FigureBackground.Color = background;
+            plot.DataBackground.Color = background;
+            plot.Axes.Color(foreground);
+            plot.Legend.BackgroundColor = background;
+            plot.Legend.FontColor = foreground;
+            plot.Legend.OutlineColor = border;
             string chineseFont = ScottPlot.Fonts.Detect("逐条整组 CT 与累计产量");
-            HomeTrendPlot.Plot.Axes.Title.Label.FontName = chineseFont;
-            HomeTrendPlot.Plot.Axes.Left.Label.FontName = chineseFont;
-            HomeTrendPlot.Plot.Axes.Right.Label.FontName = chineseFont;
-            HomeTrendPlot.Plot.Axes.Bottom.Label.FontName = chineseFont;
-            HomeTrendPlot.Plot.Axes.Left.TickLabelStyle.FontName = chineseFont;
-            HomeTrendPlot.Plot.Axes.Right.TickLabelStyle.FontName = chineseFont;
-            HomeTrendPlot.Plot.Axes.Bottom.TickLabelStyle.FontName = chineseFont;
-            HomeTrendPlot.Plot.Legend.FontName = chineseFont;
-            HomeTrendPlot.Plot.Grid.MajorLineColor = border;
-            HomeTrendPlot.Plot.XLabel("时间");
-            ConfigureHomeTrendPresentation(ResultStatisticsPeriodMode.Day, false);
+            plot.Axes.Title.Label.FontName = chineseFont;
+            plot.Axes.Left.Label.FontName = chineseFont;
+            plot.Axes.Right.Label.FontName = chineseFont;
+            plot.Axes.Bottom.Label.FontName = chineseFont;
+            plot.Axes.Left.TickLabelStyle.FontName = chineseFont;
+            plot.Axes.Right.TickLabelStyle.FontName = chineseFont;
+            plot.Axes.Bottom.TickLabelStyle.FontName = chineseFont;
+            plot.Legend.FontName = chineseFont;
+            plot.Grid.MajorLineColor = border;
+            plot.XLabel("时间");
+            HomeTrendPlotHost.Children.Add(control);
+            return control;
         }
 
         private ScottPlot.Color GetPlotColor(string resourceKey, string fallback)
@@ -1198,35 +1230,39 @@ namespace ProjectARVRPro
             return ScottPlot.Color.FromHex(fallback);
         }
 
-        private void ConfigureHomeTrendPresentation(ResultStatisticsPeriodMode mode, bool combined)
+        private void UpdateHomeTrendPresentation(ResultStatisticsPeriodMode mode, bool combined)
         {
-            string unit = combined ? "L/R 全批次" : "单侧批次";
             HomeTrendHeading.Text = combined ? LocalizedText.Get("L/R 全批次产量与 CT 趋势") : LocalizedText.Get("单侧批次产量与 CT 趋势");
             HomeTrendMode.Visibility = mode == ResultStatisticsPeriodMode.All ? Visibility.Collapsed : Visibility.Visible;
             HomeMonthlyTrendText.Visibility = mode == ResultStatisticsPeriodMode.All ? Visibility.Visible : Visibility.Collapsed;
-            HomeTrendPlot.Plot.Axes.Left.TickGenerator = new ScottPlot.TickGenerators.NumericAutomatic
+        }
+
+        private void ConfigureHomeTrendAxes(ScottPlot.Plot plot, ResultStatisticsPeriodMode mode, bool combined)
+        {
+            string unit = combined ? "L/R 全批次" : "单侧批次";
+            plot.Axes.Left.TickGenerator = new ScottPlot.TickGenerators.NumericAutomatic
             {
                 MinimumTickSpacing = 45,
                 IntegerTicksOnly = mode == ResultStatisticsPeriodMode.All || HomeTrendMode.SelectedIndex == 1,
             };
-            HomeTrendPlot.Plot.Axes.Right.TickGenerator = new ScottPlot.TickGenerators.NumericAutomatic { MinimumTickSpacing = 45 };
+            plot.Axes.Right.TickGenerator = new ScottPlot.TickGenerators.NumericAutomatic { MinimumTickSpacing = 45 };
             if (mode == ResultStatisticsPeriodMode.All)
             {
-                HomeTrendPlot.Plot.Title($"月产量与平均{unit} CT");
-                HomeTrendPlot.Plot.YLabel("产量（组）");
-                HomeTrendPlot.Plot.Axes.Right.Label.Text = LocalizedText.Get("平均 CT（秒）");
+                plot.Title($"月产量与平均{unit} CT");
+                plot.YLabel("产量（组）");
+                plot.Axes.Right.Label.Text = LocalizedText.Get("平均 CT（秒）");
             }
             else if (HomeTrendMode.SelectedIndex == 1)
             {
-                HomeTrendPlot.Plot.Title(LocalizedText.Format($"每小时{LocalizedText.Get(unit)}产量与平均 CT"));
-                HomeTrendPlot.Plot.YLabel(LocalizedText.Get("每小时产量（组）"));
-                HomeTrendPlot.Plot.Axes.Right.Label.Text = LocalizedText.Get("平均 CT（秒）");
+                plot.Title(LocalizedText.Format($"每小时{LocalizedText.Get(unit)}产量与平均 CT"));
+                plot.YLabel(LocalizedText.Get("每小时产量（组）"));
+                plot.Axes.Right.Label.Text = LocalizedText.Get("平均 CT（秒）");
             }
             else
             {
-                HomeTrendPlot.Plot.Title($"逐条{unit} CT 与累计产量");
-                HomeTrendPlot.Plot.YLabel($"{unit} CT（秒）");
-                HomeTrendPlot.Plot.Axes.Right.Label.Text = LocalizedText.Get("累计产量（组）");
+                plot.Title($"逐条{unit} CT 与累计产量");
+                plot.YLabel($"{unit} CT（秒）");
+                plot.Axes.Right.Label.Text = LocalizedText.Get("累计产量（组）");
             }
         }
 
@@ -1249,28 +1285,33 @@ namespace ProjectARVRPro
             _homeTrendPeriodMode = mode;
             _homeTrendRange = new(from, toExclusive);
             _homeTrendCombined = combined;
-            HomeTrendPlot.Plot.Clear();
-            ConfigureHomeTrendPresentation(mode, combined);
+            UpdateHomeTrendPresentation(mode, combined);
             bool hasData = points.Any(item => item.TotalCount > 0);
             HomeTrendEmptyText.Visibility = hasData ? Visibility.Collapsed : Visibility.Visible;
             if (!hasData)
             {
-                HomeTrendPlot.Refresh();
+                HomeTrendPlotHost.Visibility = Visibility.Hidden;
+                HomeTrendEmptyText.Text = LocalizedText.Get("当前范围暂无趋势数据");
                 return;
             }
 
+            var control = _homeTrendPlot ??= CreateHomeTrendPlot();
+            var plot = control.Plot;
+            plot.Clear();
+            ConfigureHomeTrendAxes(plot, mode, combined);
             if (mode == ResultStatisticsPeriodMode.All)
-                RenderHomeMonthlyTrend(points);
+                RenderHomeMonthlyTrend(plot, points);
             else if (HomeTrendMode.SelectedIndex == 1)
-                RenderHomeHourlyTrend(ResultStatisticsTrendBuilder.BuildHourly(points, from, toExclusive), mode, from, toExclusive);
+                RenderHomeHourlyTrend(plot, ResultStatisticsTrendBuilder.BuildHourly(points, from, toExclusive), mode, from, toExclusive);
             else
-                RenderHomeDetailTrend(points, mode, from, toExclusive);
+                RenderHomeDetailTrend(plot, points, mode, from, toExclusive);
 
-            HomeTrendPlot.Plot.ShowLegend(ScottPlot.Alignment.UpperRight);
-            HomeTrendPlot.Refresh();
+            plot.ShowLegend(ScottPlot.Alignment.UpperRight);
+            HomeTrendPlotHost.Visibility = Visibility.Visible;
+            control.Refresh();
         }
 
-        private void RenderHomeMonthlyTrend(IReadOnlyList<ResultStatisticsTrendPoint> points)
+        private void RenderHomeMonthlyTrend(ScottPlot.Plot plot, IReadOnlyList<ResultStatisticsTrendPoint> points)
         {
             var bars = points.Select((item, index) => new ScottPlot.Bar
             {
@@ -1279,15 +1320,15 @@ namespace ProjectARVRPro
                 Size = 0.68,
                 FillColor = ScottPlot.Color.FromHex("#4D8DFF"),
             }).ToArray();
-            ScottPlot.Plottables.BarPlot productionPlot = HomeTrendPlot.Plot.Add.Bars(bars);
+            ScottPlot.Plottables.BarPlot productionPlot = plot.Add.Bars(bars);
             productionPlot.LegendText = "产量";
 
             double[] positions = Enumerable.Range(0, points.Count).Select(index => (double)index).ToArray();
             double[] averageCtSeconds = points
                 .Select(item => item.TotalCount > 0 ? item.AverageCtMilliseconds / 1000d : double.NaN)
                 .ToArray();
-            ScottPlot.Plottables.Scatter ctPlot = HomeTrendPlot.Plot.Add.Scatter(positions, averageCtSeconds);
-            ctPlot.Axes.YAxis = HomeTrendPlot.Plot.Axes.Right;
+            ScottPlot.Plottables.Scatter ctPlot = plot.Add.Scatter(positions, averageCtSeconds);
+            ctPlot.Axes.YAxis = plot.Axes.Right;
             ctPlot.LegendText = "平均整组 CT";
             ctPlot.Color = ScottPlot.Color.FromHex("#F59E0B");
             ctPlot.LineWidth = 2;
@@ -1300,16 +1341,17 @@ namespace ProjectARVRPro
                 if (index % tickStep == 0 || index == points.Count - 1)
                     ticks.Add(new ScottPlot.Tick(index, points[index].Label));
             }
-            HomeTrendPlot.Plot.Axes.Bottom.TickGenerator = new ScottPlot.TickGenerators.NumericManual(ticks.ToArray());
-            HomeTrendPlot.Plot.Axes.Bottom.TickLabelStyle.Rotation = points.Count > 16 ? -35 : 0;
-            HomeTrendPlot.Plot.Axes.SetLimitsX(-0.7, points.Count - 0.3);
-            HomeTrendPlot.Plot.Axes.Left.Min = 0;
-            HomeTrendPlot.Plot.Axes.Left.Max = Math.Max(1, points.Max(item => item.TotalCount) * 1.15);
-            HomeTrendPlot.Plot.Axes.Right.Min = 0;
-            HomeTrendPlot.Plot.Axes.Right.Max = Math.Max(1, averageCtSeconds.Where(double.IsFinite).DefaultIfEmpty(0).Max() * 1.15);
+            plot.Axes.Bottom.TickGenerator = new ScottPlot.TickGenerators.NumericManual(ticks.ToArray());
+            plot.Axes.Bottom.TickLabelStyle.Rotation = points.Count > 16 ? -35 : 0;
+            plot.Axes.SetLimitsX(-0.7, points.Count - 0.3);
+            plot.Axes.Left.Min = 0;
+            plot.Axes.Left.Max = Math.Max(1, points.Max(item => item.TotalCount) * 1.15);
+            plot.Axes.Right.Min = 0;
+            plot.Axes.Right.Max = Math.Max(1, averageCtSeconds.Where(double.IsFinite).DefaultIfEmpty(0).Max() * 1.15);
         }
 
         private void RenderHomeHourlyTrend(
+            ScottPlot.Plot plot,
             IReadOnlyList<ResultStatisticsTrendPoint> points,
             ResultStatisticsPeriodMode mode,
             DateTime from,
@@ -1324,28 +1366,29 @@ namespace ProjectARVRPro
                 Label = mode == ResultStatisticsPeriodMode.Day && item.TotalCount > 0 ? item.TotalCount.ToString() : string.Empty,
                 FillColor = ScottPlot.Color.FromHex("#F59E0B"),
             }).ToArray();
-            ScottPlot.Plottables.BarPlot productionPlot = HomeTrendPlot.Plot.Add.Bars(bars);
+            ScottPlot.Plottables.BarPlot productionPlot = plot.Add.Bars(bars);
             productionPlot.LegendText = LocalizedText.Get("每小时产量");
             productionPlot.ValueLabelStyle.FontSize = 11;
             productionPlot.ValueLabelStyle.ForeColor = GetPlotColor("GlobalTextBrush", "#303030");
 
             double[] times = bars.Select(item => item.Position).ToArray();
             double[] averageCtSeconds = points.Select(item => item.TotalCount > 0 ? item.AverageCtMilliseconds / 1000d : double.NaN).ToArray();
-            ScottPlot.Plottables.Scatter ctPlot = HomeTrendPlot.Plot.Add.Scatter(times, averageCtSeconds);
-            ctPlot.Axes.YAxis = HomeTrendPlot.Plot.Axes.Right;
+            ScottPlot.Plottables.Scatter ctPlot = plot.Add.Scatter(times, averageCtSeconds);
+            ctPlot.Axes.YAxis = plot.Axes.Right;
             ctPlot.LegendText = LocalizedText.Get("每小时平均 CT");
             ctPlot.Color = ScottPlot.Color.FromHex("#4D8DFF");
             ctPlot.LineWidth = 2;
             ctPlot.MarkerSize = 5;
 
-            ConfigureHomeTimeAxis(mode, from, toExclusive);
-            HomeTrendPlot.Plot.Axes.Left.Min = 0;
-            HomeTrendPlot.Plot.Axes.Left.Max = Math.Max(1, points.Max(item => item.TotalCount) * 1.15);
-            HomeTrendPlot.Plot.Axes.Right.Min = 0;
-            HomeTrendPlot.Plot.Axes.Right.Max = Math.Max(1, averageCtSeconds.Where(double.IsFinite).DefaultIfEmpty(0).Max() * 1.15);
+            ConfigureHomeTimeAxis(plot, mode, from, toExclusive);
+            plot.Axes.Left.Min = 0;
+            plot.Axes.Left.Max = Math.Max(1, points.Max(item => item.TotalCount) * 1.15);
+            plot.Axes.Right.Min = 0;
+            plot.Axes.Right.Max = Math.Max(1, averageCtSeconds.Where(double.IsFinite).DefaultIfEmpty(0).Max() * 1.15);
         }
 
         private void RenderHomeDetailTrend(
+            ScottPlot.Plot plot,
             IReadOnlyList<ResultStatisticsTrendPoint> points,
             ResultStatisticsPeriodMode mode,
             DateTime from,
@@ -1366,7 +1409,7 @@ namespace ProjectARVRPro
                 stemYs[offset + 2] = double.NaN;
             }
 
-            ScottPlot.Plottables.Scatter ctPlot = HomeTrendPlot.Plot.Add.Scatter(stemXs, stemYs);
+            ScottPlot.Plottables.Scatter ctPlot = plot.Add.Scatter(stemXs, stemYs);
             ctPlot.LegendText = "逐条整组 CT";
             ctPlot.Color = ScottPlot.Color.FromHex("#4D8DFF");
             ctPlot.LineWidth = points.Count > 5_000 ? 0.6f : 1f;
@@ -1389,21 +1432,21 @@ namespace ProjectARVRPro
             cumulativeXs[^1] = rangeEnd;
             cumulativeYs[^1] = points.Count;
 
-            ScottPlot.Plottables.Scatter cumulativePlot = HomeTrendPlot.Plot.Add.Scatter(cumulativeXs, cumulativeYs);
-            cumulativePlot.Axes.YAxis = HomeTrendPlot.Plot.Axes.Right;
+            ScottPlot.Plottables.Scatter cumulativePlot = plot.Add.Scatter(cumulativeXs, cumulativeYs);
+            cumulativePlot.Axes.YAxis = plot.Axes.Right;
             cumulativePlot.LegendText = "累计产量";
             cumulativePlot.Color = ScottPlot.Color.FromHex("#F59E0B");
             cumulativePlot.LineWidth = 2;
             cumulativePlot.MarkerSize = 0;
 
-            ConfigureHomeTimeAxis(mode, from, toExclusive);
-            HomeTrendPlot.Plot.Axes.Left.Min = 0;
-            HomeTrendPlot.Plot.Axes.Left.Max = Math.Max(1, ctSeconds.DefaultIfEmpty(0).Max() * 1.15);
-            HomeTrendPlot.Plot.Axes.Right.Min = 0;
-            HomeTrendPlot.Plot.Axes.Right.Max = Math.Max(1, points.Count * 1.05);
+            ConfigureHomeTimeAxis(plot, mode, from, toExclusive);
+            plot.Axes.Left.Min = 0;
+            plot.Axes.Left.Max = Math.Max(1, ctSeconds.DefaultIfEmpty(0).Max() * 1.15);
+            plot.Axes.Right.Min = 0;
+            plot.Axes.Right.Max = Math.Max(1, points.Count * 1.05);
         }
 
-        private void ConfigureHomeTimeAxis(ResultStatisticsPeriodMode mode, DateTime from, DateTime toExclusive)
+        private void ConfigureHomeTimeAxis(ScottPlot.Plot plot, ResultStatisticsPeriodMode mode, DateTime from, DateTime toExclusive)
         {
             var ticks = new ScottPlot.TickGenerators.DateTimeAutomatic();
             ticks.LabelFormatter = time =>
@@ -1414,9 +1457,9 @@ namespace ProjectARVRPro
                     ? "24:00"
                     : time.ToString(mode == ResultStatisticsPeriodMode.Day ? timeFormat : $"MM/dd\n{timeFormat}");
             };
-            HomeTrendPlot.Plot.Axes.Bottom.TickGenerator = ticks;
-            HomeTrendPlot.Plot.Axes.Bottom.TickLabelStyle.Rotation = 0;
-            HomeTrendPlot.Plot.Axes.SetLimitsX(from.ToOADate(), toExclusive.ToOADate());
+            plot.Axes.Bottom.TickGenerator = ticks;
+            plot.Axes.Bottom.TickLabelStyle.Rotation = 0;
+            plot.Axes.SetLimitsX(from.ToOADate(), toExclusive.ToOADate());
         }
 
         private void UpdateStatusText()
@@ -1637,7 +1680,7 @@ namespace ProjectARVRPro
                     return;
                 }
 
-                bool useLegacy = _viewResultManager?.Config.UseLegacyARVROutput ?? false;
+                bool useLegacy = _offlineSource == null && ViewResultManager.GetInstance().Config.UseLegacyARVROutput;
                 ObjectiveTestResult? result = JsonConvert.DeserializeObject<ObjectiveTestResult>(record.ObjectiveTestResultJson ?? string.Empty);
                 if (useLegacy && result == null)
                 {
@@ -1864,7 +1907,7 @@ namespace ProjectARVRPro
             contextMenu.Items.Add(new Separator());
             contextMenu.Items.Add(new MenuItem { Command = openFolderCommand, Header = "OpenFolderAndSelectFile" });
             contextMenu.Items.Add(new MenuItem { Command = batchHistoryCommand, Header = LocalizedText.Get("流程结果查询") });
-            contextMenu.Items.Add(new MenuItem { Command = flowExecutionAnalysisCommand, Header = LocalizedText.Get("流程执行分析") });
+            contextMenu.Items.Add(new MenuItem { Command = flowExecutionAnalysisCommand, Header = LocalizedText.Get("流程分析") });
             contextMenu.Items.Add(new MenuItem { Command = viewTestResultCommand, Header = LocalizedText.Get("查看测试结果") });
             contextMenu.Items.Add(new MenuItem
             {
@@ -1915,42 +1958,41 @@ namespace ProjectARVRPro
         private async void OpenFlowExecutionAnalysis(ProjectARVRReuslt? result)
         {
             if (result == null) return;
-            if (_offlineSource != null)
+            try
             {
-                try
+                if (_offlineSource is { } source)
                 {
-                    string serial = await Task.Run(() => _offlineSource.ResolveFlowSerialNumber(result));
+                    string serial = await Task.Run(() => source.ResolveFlowSerialNumber(result));
                     if (_closed) return;
-                    new FlowExecutionAnalysisWindow(_offlineSource.FlowDatabasePath!, _offlineSource.Label, result.BatchId, serial)
+                    new FlowExecutionAnalysisWindow(source.FlowDatabasePath!, source.Label, result.BatchId, serial)
                     {
                         Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner,
                     }.Show();
+                    return;
                 }
-                catch (Exception ex) { if (!_closed) MessageBox.Show(this, ex.Message, LocalizedText.Get("现场节点分析"), MessageBoxButton.OK, MessageBoxImage.Information); }
-                return;
-            }
-            MeasureBatchModel? batch = GetMeasureBatch(result);
-            if (batch == null)
-            {
-                MessageBox.Show(this, LocalizedText.Get("找不到批次号，请检查流程配置"), "ColorVision");
-                return;
-            }
 
-            bool written = WaitForFlowDiagnosticsAsync == null || await FlowDiagnosticsWriteQueue.WaitAsync(
-                WaitForFlowDiagnosticsAsync(batch.Code ?? string.Empty), FlowDiagnosticsWriteQueue.WriteWaitTimeout);
-            if (_closed)
-                return;
-            if (!written)
-            {
-                MessageBox.Show(this, LocalizedText.Get("流程诊断仍在写入，请稍后打开。"), "ColorVision");
-                return;
-            }
+                bool written = WaitForFlowDiagnosticsAsync == null || string.IsNullOrWhiteSpace(result.Code)
+                    || await FlowDiagnosticsWriteQueue.WaitAsync(WaitForFlowDiagnosticsAsync(result.Code), FlowDiagnosticsWriteQueue.WriteWaitTimeout);
+                if (_closed) return;
+                if (!written)
+                {
+                    MessageBox.Show(this, LocalizedText.Get("流程诊断仍在写入，请稍后打开。"), "ColorVision");
+                    return;
+                }
 
-            new FlowExecutionAnalysisWindow(batch)
+                MeasureBatchModel batch = await Task.Run(() => ArvrFlowAnalysisHistory.ResolveLocalBatch(result));
+                if (_closed) return;
+                new FlowExecutionAnalysisWindow(batch)
+                {
+                    Owner = this,
+                    WindowStartupLocation = WindowStartupLocation.CenterOwner,
+                }.Show();
+            }
+            catch (Exception ex)
             {
-                Owner = this,
-                WindowStartupLocation = WindowStartupLocation.CenterOwner
-            }.Show();
+                Log.Warn($"打开流程分析失败：BatchId={result.BatchId}", ex);
+                if (!_closed) MessageBox.Show(this, ex.Message, LocalizedText.Get("流程分析"), MessageBoxButton.OK, MessageBoxImage.Information);
+            }
         }
 
         private MeasureBatchModel? GetMeasureBatch(ProjectARVRReuslt? item) =>

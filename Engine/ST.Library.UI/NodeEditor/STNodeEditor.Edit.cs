@@ -624,7 +624,8 @@ public partial class STNodeEditor
 		return new DelegateDisposable(() =>
 		{
 			_historySuppressionDepth--;
-			if (_historySuppressionDepth == 0)
+			// The outer edit refreshes the cache after its snapshot comparison or rollback.
+			if (_historySuppressionDepth == 0 && _transactionDepth == 0)
 			{
 				RefreshNodeStateCache();
 			}
@@ -741,8 +742,7 @@ public partial class STNodeEditor
 		{
 			return null;
 		}
-		return GetConnections()
-			.Where(connection => ReferenceEquals(connection.Output.Owner, node) || ReferenceEquals(connection.Input.Owner, node))
+		return GetConnections(incidentNode: node)
 			.Select(connection => new STNodeConnectionEditOperation(
 				STNodeOptionReference.Create(connection.Output),
 				STNodeOptionReference.Create(connection.Input),

@@ -34,6 +34,39 @@ public sealed class CalibrationMapCreationTests
     }
 
     [Theory]
+    [InlineData(CalibrationType.DSNU, 1)]
+    [InlineData(CalibrationType.DSNU, 3)]
+    [InlineData(CalibrationType.Uniformity, 1)]
+    [InlineData(CalibrationType.Uniformity, 3)]
+    public void MapPayloadRemainsExactAcrossFullAndPartialBlocks(CalibrationType type, int channels)
+    {
+        const int width = 8193;
+        double[] values = Enumerable.Range(0, width * channels).Select(index => 1.5 + (index * 31 % 127)).ToArray();
+        var image = new CalibrationRawAverage(width, 1, 8, channels, values, 2);
+        double[] channelMeans = Enumerable.Range(0, channels).Select(channel => values.Skip(channel * width).Take(width).Average()).ToArray();
+
+        using var output = new MemoryStream();
+        CalibrationMapCreation.WriteMap(output, image, type, centerRadius: width);
+        output.Position = 0;
+        using var reader = new BinaryReader(output);
+        uint[] header = [1, width, type == CalibrationType.DSNU ? 16u : 32u, (uint)channels, 8];
+        Assert.Equal(header, Enumerable.Range(0, header.Length).Select(_ => reader.ReadUInt32()));
+
+        for (int i = 0; i < width; i++)
+        {
+            for (int channel = channels - 1; channel >= 0; channel--)
+            {
+                double value = values[channel * width + i];
+                if (type == CalibrationType.DSNU)
+                    Assert.Equal((ushort)(value + 0.5), reader.ReadUInt16());
+                else
+                    Assert.Equal((float)(channelMeans[channel] / value), reader.ReadSingle());
+            }
+        }
+        Assert.Equal(output.Length, output.Position);
+    }
+
+    [Theory]
     [InlineData(true, 100, 0, 1)]
     [InlineData(false, 1, 1, 0)]
     public void DefectDetectionUnionsChannelsAndWritesUniqueRowColumnPairs(bool bright, double threshold, uint row, uint col)
@@ -59,6 +92,11 @@ public sealed class CalibrationMapCreationTests
             new(2, 1, 8, 1, new double[] { 0, 1 }, 1), CalibrationType.Uniformity));
         Assert.Throws<OperationCanceledException>(() => CalibrationMapCreation.WriteDefects(output,
             new(1, 1, 8, 1, new double[] { 1 }, 1), 2, false, new CancellationToken(true)));
+        output.SetLength(0);
+        Assert.Throws<OperationCanceledException>(() => CalibrationMapCreation.WriteMap(output,
+            new(1, 1, 8, 1, new double[] { 1 }, 1), CalibrationType.DSNU, cancellationToken: new CancellationToken(true)));
+        Assert.Equal(20, output.Length);
+        Assert.True(output.CanWrite);
         Assert.Throws<ArgumentException>(() => CalibrationMapCreation.Average(Array.Empty<string>()));
     }
 
@@ -89,7 +127,43 @@ public sealed class CalibrationMapCreationTests
         finally { File.Delete(first); File.Delete(second); }
     }
 
-    private static void WriteRaw(string path, int version, int bpp, ushort[] values)
+    [Theory]
+    [InlineData(8, true)]
+    [InlineData(8, false)]
+    [InlineData(16, true)]
+    [InlineData(16, false)]
+    public void AveragePreservesLayoutAndFractionalSamplesAcrossReadBlocks(int bpp, bool interleavedBgr)
+    {
+        const int width = 21847;
+        const int channels = 3;
+        int mask = (1 << bpp) - 1;
+        ushort[] firstValues = Enumerable.Range(0, width * channels)
+            .Select(index => (ushort)((index * 31) & mask)).ToArray();
+        ushort[] secondValues = Enumerable.Range(0, width * channels)
+            .Select(index => (ushort)((index * 47 + 13) & mask)).ToArray();
+        string first = Path.Combine(Path.GetTempPath(), $"calibration-average-{Guid.NewGuid():N}.cvraw");
+        string second = Path.Combine(Path.GetTempPath(), $"calibration-average-{Guid.NewGuid():N}.cvraw");
+        try
+        {
+            WriteRaw(first, 3, bpp, firstValues, width);
+            WriteRaw(second, 3, bpp, secondValues, width);
+            CalibrationRawAverage result = CalibrationMapCreation.Average([first, second], interleavedBgr: interleavedBgr);
+            Assert.Equal((width, 1, channels, bpp, 2), (result.Width, result.Height, result.Channels, result.BitsPerChannel, result.FrameCount));
+            Assert.Equal(width * channels, result.Values.Length);
+            for (int channel = 0; channel < channels; channel++)
+            {
+                for (int pixel = 0; pixel < width; pixel++)
+                {
+                    int output = channel * width + pixel;
+                    int input = interleavedBgr ? pixel * channels + channels - 1 - channel : output;
+                    Assert.Equal((firstValues[input] + secondValues[input]) / 2d, result.Values[output]);
+                }
+            }
+        }
+        finally { File.Delete(first); File.Delete(second); }
+    }
+
+    private static void WriteRaw(string path, int version, int bpp, ushort[] values, int width = 2)
     {
         using var writer = new BinaryWriter(File.Create(path));
         writer.Write(System.Text.Encoding.ASCII.GetBytes("CVCIE"));
@@ -97,7 +171,7 @@ public sealed class CalibrationMapCreationTests
         if (version == 3) writer.Write(0);
         writer.Write(1f); writer.Write(3);
         for (int i = 0; i < 3; i++) writer.Write(10f);
-        writer.Write(2); writer.Write(1); writer.Write(bpp);
+        writer.Write(width); writer.Write(1); writer.Write(bpp);
         int length = values.Length * bpp / 8;
         if (version == 2) writer.Write((long)length); else writer.Write(length);
         foreach (ushort value in values) { if (bpp == 8) writer.Write((byte)value); else writer.Write(value); }

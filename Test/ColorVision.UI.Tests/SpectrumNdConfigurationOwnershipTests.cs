@@ -190,7 +190,8 @@ public sealed class SpectrumNdConfigurationOwnershipTests
                 {
                     owner.ResultDatabaseEndpoint = original;
                     DeviceConfigurationTarget capturedOnOpen = owner.CaptureConfigurationTarget();
-                    owner.Config.NDConfig.NDBindDeviceCode = "changed-wheel";
+                    var draft = new SpectrumConfigurationDraft(owner.Config).Config;
+                    draft.NDConfig.NDBindDeviceCode = "changed-wheel";
                     int notifications = 0;
                     owner.ConfigChanged += (_, _) => notifications++;
                     if (retire)
@@ -199,7 +200,8 @@ public sealed class SpectrumNdConfigurationOwnershipTests
                         owner.ResultDatabaseEndpoint = replacement;
                     }
 
-                    Assert.Equal(!retire, owner.TrySaveCalibrationGroupConfiguration(owner.Config.ActiveCalibrationGroup, true, capturedOnOpen));
+                    Assert.Equal(!retire, owner.TrySaveCalibrationGroupConfiguration(draft, capturedOnOpen));
+                    Assert.Equal(!retire, owner.Config.NDConfig.NDBindDeviceCode == "changed-wheel");
                     Assert.Equal(retire ? 0 : 1, notifications);
                 }
                 finally { DisplayConfigManager.Instance.Configs.TryRemove(code, out _); }

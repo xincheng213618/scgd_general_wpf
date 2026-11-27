@@ -3,6 +3,7 @@ using Microsoft.Data.Sqlite;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 
 namespace ColorVision.Engine.Templates.Flow.Versioning
 {
@@ -152,6 +153,14 @@ namespace ColorVision.Engine.Templates.Flow.Versioning
         {
             return revisionStore.List(flowKey);
         }
+
+        internal IReadOnlyList<FlowRevisionSummary> ListHistory(string flowKey) =>
+            revisionStore is SqliteFlowRevisionStore sqlite
+                ? sqlite.ListHistory(flowKey)
+                : revisionStore.List(flowKey)
+                    .OrderByDescending(revision => revision.Revision)
+                    .Select(FlowRevisionSummary.FromRevision)
+                    .ToArray();
 
         public FlowSemanticDiffResult Compare(
             string flowKey,

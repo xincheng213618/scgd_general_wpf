@@ -14,7 +14,7 @@ related: ["algorithms.platform", "algorithms.index", "operations.calibration"]
 
 稳定算法 ID 为 `colorvision.calibration.imaging-correction`，算法版本 `1.0.0`、参数 schema 为 1，默认运行时启用 CPU Provider。这里的命名图像输入与设备校正文件 ABI 是不同契约；本算法不读取或迁移旧 `cvCamera` 校正文件。相机资源、文件校准和结果落库见[校准服务](../../01-user-guide/devices/calibration.md)。
 
-设备侧 `DarkNoiseCalibration` 仍按 height 索引循环，8/16-bit 分支均以 255 钳位，以保留 cvCamera 的逐字节兼容行为；这不是本页 Dark-frame 的全图逐像素相减。旧文件与执行 ABI 见 [native 校准接口](../../04-api-reference/engine-components/opencv-helper-api.md)。
+设备模板中的 DSNU 用暗场偏置图逐样本扣除黑电平。DarkNoise 使用单一倍率处理整帧的所有通道，按 8 位或 16 位 RAW 的范围饱和。两项同时启用时，先扣除暗场，再施加倍率。文件与执行 ABI 见 [native 校准接口](../../04-api-reference/engine-components/opencv-helper-api.md)。
 
 ## 在 ImageView 中执行
 

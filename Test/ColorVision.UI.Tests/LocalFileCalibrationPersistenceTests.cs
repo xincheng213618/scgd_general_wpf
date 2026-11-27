@@ -1,13 +1,18 @@
+using ColorVision.Core;
 using ColorVision.Database;
 using ColorVision.Engine;
 using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.Services.Devices.Camera.Local;
 using ColorVision.Engine.Services.Devices.Calibration;
 using ColorVision.FileIO;
+using ColorVision.ImageEditor.Tif;
 using cvColorVision;
 using SqlSugar;
 using System.IO;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Windows.Media;
+using System.Windows.Media.Imaging;
 
 namespace ColorVision.UI.Tests;
 
@@ -192,6 +197,237 @@ public sealed class LocalFileCalibrationPersistenceTests
         Assert.Equal((0, -1), (model.Id, model.BatchId));
         Assert.Equal(CalibrationFiles.FileContents, File.ReadAllBytes(model.FileUrl!));
     }
+
+    [Theory]
+    [InlineData(1, "16", 16)]
+    [InlineData(3, "16", 16)]
+    [InlineData(1, "8", 8)]
+    [InlineData(1, "16.0", 8)]
+    [InlineData(1, "\"16\"", 8)]
+    [InlineData(1, null, 8)]
+    public void ManualCalibrationPromotesOnlyForExplicit16BitColorAssets(int channels, string? declaredDepth, int expectedBpp)
+    {
+        using var fixture = new CalibrationFiles();
+        const int width = 3, height = 2;
+        string sourcePath = fixture.GetPath("source.cvraw");
+        using CVCIEFile source = RawColorCalibrationTests.CreateRaw(width, height, 8, channels);
+        byte[] samples = [0, 1, 127, 128, 254, 255];
+        for (int i = 0; i < source.Data.Length; i++) source.Data[i] = samples[i % samples.Length];
+        Assert.True(CVFileUtil.WriteCVRaw(sourcePath, source));
+        var acquisition = new ImageAcquisitionRecord
+        {
+            Width = width, Height = height, BitsPerChannel = 8, Channels = channels,
+            SensorRoi = new ImageSensorRoi(2, 3, width, height), Exposure = source.Exp
+        };
+        CameraFileMetadata.Save(sourcePath, CameraFileMetadata.AcquisitionKind, acquisition);
+        byte[] sourceBytes = File.ReadAllBytes(sourcePath);
+        string calibrationPath = fixture.GetPath("color.json");
+        string calibration = channels == 1 ? "\"a\":1" : "\"a\":1,\"e\":1,\"i\":1,\"Gain_x\":1,\"Gain_y\":1,\"Gain_z\":1";
+        if (declaredDepth != null) calibration += $", /* legacy comments are accepted */ \"bpp\":{declaredDepth}";
+        File.WriteAllText(calibrationPath, "{" + calibration + "}", new System.Text.UTF8Encoding(encoderShouldEmitUTF8Identifier: true));
+
+        const string deviceCode = "file-depth-calibration";
+        using var cache = new LocalCalibrationCacheManager(deviceCode);
+        var request = new LocalFileCalibrationRequest(deviceCode, fixture.GetPath("captures"), sourcePath, "depth-case", source.Exp,
+            TemplateId: 17, TemplateName: "color depth",
+            CalibrationFiles: [new DeviceCameraCalibrationFile("color", channels == 1 ? CalibrationType.Luminance : CalibrationType.LumFourColor,
+                "color", "color.json", calibrationPath)], Cache: cache, FallbackRoi: default, PersistenceEndpoint: null);
+
+        MeasureResultImgModel result = LocalFileCalibrationService.Calibrate(request);
+
+        using (LocalFlowFrame input = LocalFrameFileService.Load(sourcePath))
+        {
+            using LocalFlowFrameLease inputLease = input.Acquire();
+            Assert.Equal(8, input.Metadata.SourceBpp);
+            Assert.Equal(source.Data, inputLease.CopyRawToArray());
+            if (expectedBpp == 16)
+            {
+                Assert.Equal(sourceBytes, File.ReadAllBytes(sourcePath));
+                Assert.Null(input.ColorCalibration);
+            }
+            else
+            {
+                Assert.Equal(8, input.ColorCalibration?.RawBpp);
+                Assert.True(input.ColorCalibration?.CanReplay);
+            }
+        }
+
+        using LocalFlowFrame output = LocalFrameFileService.Load(Assert.IsType<string>(result.FileUrl));
+        Assert.Equal(expectedBpp, output.Metadata.SourceBpp);
+        Assert.Equal(expectedBpp, output.ColorCalibration!.RawBpp);
+        Assert.True(output.ColorCalibration.CanReplay);
+        Assert.Equal(acquisition.SensorRoi, output.Metadata.Acquisition?.SensorRoi);
+        Assert.Equal(8, output.Metadata.Acquisition?.BitsPerChannel);
+        using LocalFlowFrameLease lease = output.Acquire();
+        byte[] expected = expectedBpp == 16 ? source.Data.SelectMany(pixel => new byte[] { 0, pixel }).ToArray() : source.Data;
+        Assert.Equal(expected, lease.CopyRawToArray());
+    }
+
+    [Fact]
+    public void PreparedColorKeepsDepthAndCoefficientsFromTheSameRevision()
+    {
+        using var fixture = new CalibrationFiles();
+        string path = fixture.GetPath("selected-color.json");
+        File.WriteAllText(path, """{"bpp":16,"a":1}""");
+        var firstWrite = File.GetLastWriteTimeUtc(path);
+        DeviceCameraCalibrationFile[] files = [new("color", CalibrationType.Luminance, "Y", "selected-color.json", path)];
+        using var cache = new LocalCalibrationCacheManager("color-revisions");
+        var first = cache.Prepare(files, "luminance");
+        File.WriteAllText(path, """{"bpp": 8,"a":2}""");
+        File.SetLastWriteTimeUtc(path, firstWrite);
+        var second = cache.Prepare(files, "luminance");
+
+        static (int Depth, float Y) Measure(LocalPreparedCalibration plan)
+        {
+            using var frame = LocalFlowFrame.Allocate(new LocalFrameMetadata
+                { Width = 1, Height = 1, Channels = 1, SourceBpp = 8, Exposure = [1] }, 1, 0);
+            using (var input = frame.Acquire()) Marshal.WriteByte(input.RawPointer, 3);
+            plan.Apply(frame, CalibrationOutputMode.FullCie);
+            using var result = frame.Acquire();
+            return (result.Metadata.SourceBpp, BitConverter.ToSingle(result.CopyCieToArray()));
+        }
+
+        Assert.Equal((8, 6f), Measure(second));
+        Assert.Equal((16, 768f), Measure(first));
+        cache.ReleaseCache();
+        Assert.Throws<IOException>(() => Measure(first));
+        Assert.Equal((8, 6f), Measure(second));
+    }
+
+    [Theory]
+    [InlineData(8, false)]
+    [InlineData(16, true)]
+    public void HistoricalPlanarInputsUsePackedMemoryAndRetainTheirOnDiskColorOrder(int depth, bool sourceCanReplay)
+    {
+        using var fixture = new CalibrationFiles();
+        string sourcePath = fixture.GetPath("planar.cvraw");
+        using CVCIEFile raw = RawColorCalibrationTests.CreateRaw(2, 2, depth, 3);
+        raw.Exp = [1, 1, 1];
+        int[] planar = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
+        if (depth == 16) planar = planar.Select(value => value * 257 + 1).ToArray();
+        byte[] Encode(IEnumerable<int> samples) => depth == 8
+            ? samples.Select(sample => (byte)sample).ToArray()
+            : samples.SelectMany(sample => BitConverter.GetBytes((ushort)sample)).ToArray();
+        raw.Data = Encode(planar);
+        byte[] packed = Encode(Enumerable.Range(0, 4).SelectMany(i => new[] { planar[8 + i], planar[4 + i], planar[i] }));
+        Assert.True(CVFileUtil.WriteCVRaw(sourcePath, raw));
+        var identity = RawColorTransformV1.Create();
+        identity.CalibrationType = (int)CalibrationType.LumFourColor;
+        identity.InterleavedBgr = 0;
+        identity.Coefficients[0] = identity.Coefficients[4] = identity.Coefficients[8] = 1;
+        ColorCalibrationSnapshot.Create(identity, 2, 2, depth, raw.Exp, "original").Save(sourcePath, sourceCanReplay);
+        using LocalFlowFrame loaded = LocalFrameFileService.Load(sourcePath);
+        using LocalFlowFrame frame = LocalFrameFileService.Load(sourcePath);
+        Assert.True(frame.ColorCalibration!.InterleavedBgr);
+        Assert.Equal(sourceCanReplay, frame.ColorCalibration.CanReplay);
+        using (var input = frame.Acquire()) Assert.Equal(packed, input.CopyRawToArray());
+
+        string colorPath = fixture.GetPath("identity.json");
+        File.WriteAllText(colorPath, """{"a":1,"e":1,"i":1}""");
+        using var cache = new LocalCalibrationCacheManager("historical-planar");
+        var plan = cache.Prepare([new("color", CalibrationType.LumFourColor, "identity", "identity.json", colorPath)], "recalibrated");
+        plan.Apply(frame, CalibrationOutputMode.FullCie);
+        using (var result = frame.Acquire())
+            Assert.Equal(planar.Select(value => (float)value).ToArray(), MemoryMarshal.Cast<byte, float>(result.CopyCieToArray().AsSpan()).ToArray());
+        LocalFrameFileService.SaveColorParametersToInput(frame);
+        Assert.True(CVFileUtil.Read(sourcePath, out CVCIEFile source));
+        using (source)
+        {
+            Assert.Equal(raw.Data, source.Data);
+            var stored = ColorCalibrationSnapshot.Read(sourcePath, source)!;
+            Assert.Equal("recalibrated", stored.Template);
+            Assert.False(stored.InterleavedBgr);
+            Assert.True(stored.CanReplay);
+        }
+
+        string outputPath = fixture.GetPath("packed.cvraw");
+        LocalFrameFileService.SaveCapture(frame, outputPath);
+        LocalFrameFileService.SaveColorParametersToInput(frame);
+        Assert.True(CVFileUtil.Read(outputPath, out CVCIEFile output));
+        using (output)
+        {
+            Assert.Equal(packed, output.Data);
+            Assert.True(ColorCalibrationSnapshot.Read(outputPath, output)!.InterleavedBgr);
+        }
+        LocalFrameFileService.SaveCapture(frame, sourcePath);
+        LocalFrameFileService.SaveColorParametersToInput(loaded);
+        Assert.True(CVFileUtil.Read(sourcePath, out CVCIEFile replaced));
+        using (replaced)
+        {
+            Assert.Equal(packed, replaced.Data);
+            Assert.True(ColorCalibrationSnapshot.Read(sourcePath, replaced)!.InterleavedBgr);
+        }
+        using CVCIEFile resized = RawColorCalibrationTests.CreateRaw(1, 4, depth, 3);
+        Assert.True(CVFileUtil.WriteCVRaw(sourcePath, resized));
+        byte[] resizedFile = File.ReadAllBytes(sourcePath);
+        Assert.Throws<InvalidDataException>(() => LocalFrameFileService.SaveColorParametersToInput(loaded));
+        Assert.Equal(resizedFile, File.ReadAllBytes(sourcePath));
+    }
+
+    [Fact]
+    public void Historical8BitSnapshotReplaysAt8BitsAndFresh16BitCalibrationKeepsTheOriginal()
+    {
+        using var fixture = new CalibrationFiles();
+        string sourcePath = fixture.GetPath("historical.cvraw");
+        using CVCIEFile source = RawColorCalibrationTests.CreateRaw(3, 2, 8, 1);
+        Assert.True(CVFileUtil.WriteCVRaw(sourcePath, source));
+        RawColorTransformV1 transform = RawColorTransformV1.Create();
+        transform.CalibrationType = (int)CalibrationType.Luminance;
+        transform.Channels = 1;
+        transform.Kind = 2;
+        transform.Coefficients[0] = 2;
+        ColorCalibrationSnapshot.Create(transform, source.Cols, source.Rows, source.Bpp, source.Exp, "historical").Save(sourcePath, true);
+        byte[] sourceBytes = File.ReadAllBytes(sourcePath);
+
+        using LocalFlowFrame loaded = LocalFrameFileService.Load(sourcePath);
+
+        Assert.Equal(8, loaded.Metadata.SourceBpp);
+        Assert.Equal("historical", loaded.ColorCalibration?.Template);
+        Assert.Equal(sourcePath, loaded.CvRawFilePath);
+        using LocalFlowFrameLease lease = loaded.Acquire();
+        Assert.Equal(source.Data, lease.CopyRawToArray());
+        LocalFrameCalibrationService.ReuseColorCalibration(loaded, LocalColorCalibrationOutput.FullCie);
+        Assert.Equal(8, loaded.Metadata.SourceBpp);
+
+        string colorPath = fixture.GetPath("fresh.json");
+        File.WriteAllText(colorPath, """{"bpp":16,"a":1}""");
+        using var cache = new LocalCalibrationCacheManager("historical");
+        var plan = cache.Prepare([new("color", CalibrationType.Luminance, "fresh", "fresh.json", colorPath)], "fresh");
+        plan.Apply(loaded, CalibrationOutputMode.DeferredColor);
+        Assert.Equal(16, loaded.Metadata.SourceBpp);
+        Assert.Equal("fresh", loaded.ColorCalibration?.Template);
+        LocalFrameFileService.SaveColorParametersToInput(loaded);
+        Assert.Equal(sourceBytes, File.ReadAllBytes(sourcePath));
+        using var original = LocalFrameFileService.Load(sourcePath);
+        Assert.Equal("historical", original.ColorCalibration?.Template);
+        string outputPath = fixture.GetPath("promoted.cvraw");
+        LocalFrameFileService.SaveCapture(loaded, outputPath);
+        using var output = LocalFrameFileService.Load(outputPath);
+        Assert.Equal(16, output.ColorCalibration?.RawBpp);
+        Assert.True(output.ColorCalibration?.CanReplay);
+    }
+
+    [Fact]
+    public void BitmapPromotionPreservesInterleavedChannelOrder() => StaTest.Run(() =>
+    {
+        using var fixture = new CalibrationFiles();
+        string path = fixture.GetPath("input.png");
+        byte[] pixels = [0, 128, 255, 17, 1, 254];
+        BitmapSource bitmap = BitmapSource.Create(2, 1, 96, 96, PixelFormats.Bgr24, null, pixels, pixels.Length);
+        var encoder = new PngBitmapEncoder();
+        encoder.Frames.Add(BitmapFrame.Create(bitmap));
+        using (FileStream stream = File.Create(path)) encoder.Save(stream);
+
+        using LocalFlowFrame source = LocalFrameFileService.Load(path);
+        Assert.Equal(8, source.Metadata.SourceBpp);
+        source.ApplyCalibration("working-depth", 0, false, null, (_, _) => default, promoteRaw8To16: true);
+        using LocalFlowFrameLease lease = source.Acquire();
+        Assert.Equal(16, source.Metadata.SourceBpp);
+        Assert.Equal(3, source.Metadata.Channels);
+        Assert.Equal(8, source.Metadata.SourceFileBpp);
+        Assert.Null(source.Metadata.Acquisition);
+        Assert.Equal(new byte[] { 0, 0, 0, 128, 0, 255, 0, 17, 0, 1, 0, 254 }, lease.CopyRawToArray());
+    });
 
     private static void Initialize(SqlSugarClient db) => db.CodeFirst.InitTables(typeof(MeasureBatchModel), typeof(MeasureResultImgModel));
 

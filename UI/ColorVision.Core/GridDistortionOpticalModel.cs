@@ -44,9 +44,8 @@ namespace ColorVision.Core
                 (grid[mr, mc + 1].Y - grid[mr, mc - 1].Y) * factor,
                 (grid[mr + 1, mc].Y - grid[mr - 1, mc].Y) * factor, 0, 0, 0
             ];
-            if (!Fit(coordinates, observed, parameters, out int iterations))
+            if (!Fit(coordinates, observed, parameters, out double[] predicted, out int iterations))
                 return Fail(estimate with { FitIterations = iterations }, "投影径向模型未收敛或参数不可辨识。");
-            Predict(coordinates, parameters, out double[] predicted);
             double sumSquared = 0, maximum = 0;
             for (int i = 0; i < count; i++)
             {
@@ -97,16 +96,15 @@ namespace ColorVision.Core
 
         // H is centred at the measured middle dot. Its local derivative supplies
         // the undistorted pitch; the observed central neighbours only initialise it.
-        private static void Reference(double x, double y, double[] p, out double u, out double v)
+        private static void Reference(double x, double y, ReadOnlySpan<double> p, out double u, out double v)
         {
             double denominator = 1 + p[4] * x + p[5] * y;
             u = (p[0] * x + p[1] * y) / denominator;
             v = (p[2] * x + p[3] * y) / denominator;
         }
 
-        private static bool Predict(double[,] coordinates, double[] p, out double[] predicted)
+        private static bool Predict(double[,] coordinates, ReadOnlySpan<double> p, double[] predicted)
         {
-            predicted = new double[coordinates.GetLength(0) * 2];
             double determinant = p[0] * p[3] - p[1] * p[2];
             if (!double.IsFinite(determinant) || Math.Abs(determinant) < 1e-10) return false;
             for (int i = 0; i < coordinates.GetLength(0); i++)
@@ -123,23 +121,35 @@ namespace ColorVision.Core
             return true;
         }
 
-        private static bool Fit(double[,] coordinates, double[] observed, double[] p, out int iterations)
+        private static bool Fit(double[,] coordinates, double[] observed, double[] p, out double[] predicted, out int iterations)
         {
+            iterations = 0;
+            predicted = new double[observed.Length];
+            if (!Predict(coordinates, p, predicted)) return false;
+
+            // Keep the solver workspace local and reuse it across iterations.
+            var trialPrediction = new double[observed.Length];
+            var lower = new double[observed.Length];
+            var jacobian = new double[observed.Length, ParameterCount];
+            var normal = new double[ParameterCount, ParameterCount];
+            var gradient = new double[ParameterCount];
+            var step = new double[ParameterCount];
+            Span<double> trial = stackalloc double[ParameterCount];
             double damping = 1e-3;
             bool converged = false;
-            iterations = 0;
             for (; iterations < 100; iterations++)
             {
-                if (!Predict(coordinates, p, out double[] predicted)) return false;
                 double cost = Cost(observed, predicted);
                 if (cost < 1e-24) { converged = true; break; }
-                if (!NormalEquations(coordinates, observed, p, predicted, out double[,] normal, out double[] gradient)) return false;
+                if (!NormalEquations(coordinates, observed, p, predicted, trialPrediction, lower, jacobian, normal, gradient)) return false;
                 for (int j = 0; j < ParameterCount; j++) normal[j, j] += damping * Math.Max(normal[j, j], 1e-8);
-                if (!Solve(normal, gradient, out double[] step)) return false;
-                double[] trial = p.Zip(step, (value, delta) => value + delta).ToArray();
-                if (Predict(coordinates, trial, out double[] candidate) && Cost(observed, candidate) < cost)
+                if (!Solve(normal, gradient, step)) return false;
+                for (int j = 0; j < ParameterCount; j++) trial[j] = p[j] + step[j];
+                if (Predict(coordinates, trial, trialPrediction) && Cost(observed, trialPrediction) < cost)
                 {
-                    Array.Copy(trial, p, ParameterCount);
+                    trial.CopyTo(p);
+                    // Retain the validated prediction for the accepted parameters.
+                    (predicted, trialPrediction) = (trialPrediction, predicted);
                     damping = Math.Max(damping / 3, 1e-12);
                     if (step.Max(Math.Abs) < 1e-11) { converged = true; iterations++; break; }
                 }
@@ -151,10 +161,10 @@ namespace ColorVision.Core
                     if (damping > 1e12) return false;
                 }
             }
-            if (!converged || !Predict(coordinates, p, out double[] final)) return false;
+            if (!converged) return false;
             // Check the undamped Jacobian: damping must not mask unidentifiability.
-            return NormalEquations(coordinates, observed, p, final, out double[,] information, out double[] finalGradient)
-                && Solve(information, finalGradient, out _);
+            return NormalEquations(coordinates, observed, p, predicted, trialPrediction, lower, jacobian, normal, gradient)
+                && Solve(normal, gradient, step);
         }
 
         private static double Cost(double[] observed, double[] predicted)
@@ -164,20 +174,23 @@ namespace ColorVision.Core
             return cost;
         }
 
-        private static bool NormalEquations(double[,] coordinates, double[] observed, double[] p, double[] predicted, out double[,] normal, out double[] gradient)
+        private static bool NormalEquations(double[,] coordinates, double[] observed, double[] p, double[] predicted,
+            double[] upper, double[] lower, double[,] jacobian, double[,] normal, double[] gradient)
         {
-            normal = new double[ParameterCount, ParameterCount];
-            gradient = new double[ParameterCount];
-            var jacobian = new double[observed.Length, ParameterCount];
+            Span<double> perturbed = stackalloc double[ParameterCount];
+            p.AsSpan().CopyTo(perturbed);
             for (int j = 0; j < ParameterCount; j++)
             {
                 double epsilon = 1e-6 * (1 + Math.Abs(p[j]));
-                double[] plus = (double[])p.Clone(), minus = (double[])p.Clone();
-                plus[j] += epsilon;
-                minus[j] -= epsilon;
-                if (!Predict(coordinates, plus, out double[] upper) || !Predict(coordinates, minus, out double[] lower)) return false;
+                perturbed[j] = p[j] + epsilon;
+                if (!Predict(coordinates, perturbed, upper)) return false;
+                perturbed[j] = p[j] - epsilon;
+                if (!Predict(coordinates, perturbed, lower)) return false;
+                perturbed[j] = p[j];
                 for (int i = 0; i < observed.Length; i++) jacobian[i, j] = (upper[i] - lower[i]) / (2 * epsilon);
             }
+            Array.Clear(normal);
+            Array.Clear(gradient);
             for (int j = 0; j < ParameterCount; j++)
             {
                 for (int i = 0; i < observed.Length; i++)
@@ -189,10 +202,10 @@ namespace ColorVision.Core
             return true;
         }
 
-        private static bool Solve(double[,] matrix, double[] rhs, out double[] solution)
+        private static bool Solve(double[,] a, double[] rhs, double[] solution)
         {
-            var a = (double[,])matrix.Clone();
-            solution = (double[])rhs.Clone();
+            // Eliminate in the scratch matrix but retain the gradient for convergence checks.
+            Array.Copy(rhs, solution, ParameterCount);
             double maximumDiagonal = Enumerable.Range(0, ParameterCount).Max(i => Math.Abs(a[i, i]));
             for (int column = 0; column < ParameterCount; column++)
             {

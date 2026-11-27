@@ -102,6 +102,7 @@ public sealed class RgbCrossPoolingTests
     [InlineData(8003, 31, 5.0)]
     [InlineData(3200, 32, 1.0)]
     [InlineData(37, 3203, 2.2)]
+    [InlineData(2053, 1049, 1.0)]
     public void PoolingPreservesEveryChannelWithPartialCellsAndUnalignedStride(int searchWidth, int searchHeight, double exponent)
     {
         int width = searchWidth + 11, height = searchHeight + 13;

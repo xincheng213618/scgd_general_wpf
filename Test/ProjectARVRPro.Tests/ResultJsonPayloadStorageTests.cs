@@ -1,5 +1,10 @@
 using ColorVision.Engine;
+using ColorVision.Engine.FlowProcessing;
 using Microsoft.Data.Sqlite;
+using ProjectARVRPro.Exports.Lux;
+using ProjectARVRPro.Process.Chessboard;
+using ProjectARVRPro.Process.MTF.MTFHV048;
+using ProjectARVRPro.Process.MTF.MTFHV058;
 using SqlSugar;
 using System.IO;
 using System.IO.Compression;
@@ -9,6 +14,51 @@ namespace ProjectARVRPro.Tests;
 
 public sealed class ResultJsonPayloadStorageTests
 {
+    [Fact]
+    public void PreparedPayloadKeepsMetadataUpdatesAndRollbackAtomic()
+    {
+        using var database = new TemporaryPayloadDatabase();
+        using var manager = new ViewResultManager(database.Path, new ViewResultManagerConfig());
+        using var db = database.CreateClient();
+        const string json = """{"status":"saved"}""";
+        var item = new ProjectARVRReuslt { SN = "batch", Model = "original", ViewResultJson = json };
+        manager.Save(item);
+
+        item.ViewResultJson = null;
+        item.Model = "updated";
+        manager.Save(item);
+        Assert.Equal(json, ResultJsonPayloadStorage.LoadViewResultJson(db, item.Id));
+
+        int summaryId = manager.SaveObjectiveTestResult(0, item, new ObjectiveTestResult { Msg = "original" });
+        string? summary = ResultJsonPayloadStorage.LoadObjectiveTestResultJson(db, summaryId);
+        db.Ado.ExecuteCommand("""
+            CREATE TRIGGER reject_view BEFORE UPDATE OF "ViewResultJsonGzip" ON "ARVRReuslt"
+            WHEN NEW."Model" = 'rejected'
+            BEGIN SELECT RAISE(ABORT, 'view payload rejected'); END;
+            """);
+        db.Ado.ExecuteCommand("""
+            CREATE TRIGGER reject_summary BEFORE UPDATE OF "ObjectiveTestResultJsonGzip" ON "ObjectiveTestResultRecord"
+            WHEN NEW."LastModel" = 'rejected'
+            BEGIN SELECT RAISE(ABORT, 'summary payload rejected'); END;
+            """);
+
+        var rejected = new ProjectARVRReuslt { SN = item.SN, Model = "rejected", ViewResultJson = json };
+        Assert.Contains("view payload rejected", Assert.ThrowsAny<Exception>(() => manager.Save(rejected)).Message);
+        Assert.Equal(0, rejected.Id);
+        Assert.Equal(item.Id, Assert.Single(db.Queryable<ProjectARVRReuslt>().ToList()).Id);
+        Assert.Same(item, Assert.Single(manager.ViewResluts));
+
+        rejected.Id = item.Id;
+        Assert.Contains("summary payload rejected", Assert.ThrowsAny<Exception>(
+            () => manager.SaveObjectiveTestResult(summaryId, rejected, new ObjectiveTestResult { Msg = "rejected" })).Message);
+        Assert.Equal("updated", Assert.Single(db.Queryable<ObjectiveTestResultRecord>().ToList()).LastModel);
+        Assert.Equal(summary, ResultJsonPayloadStorage.LoadObjectiveTestResultJson(db, summaryId));
+
+        item.ViewResultJson = string.Empty;
+        manager.Save(item);
+        Assert.Null(ResultJsonPayloadStorage.LoadViewResultJson(db, item.Id));
+    }
+
     [Fact]
     public async Task DeleteSelectedStepChecksItsSnapshotAndOnlyDeletesTheLocalResult()
     {
@@ -70,6 +120,100 @@ public sealed class ResultJsonPayloadStorageTests
             () => manager.ReadHistoricalViewResultJsonAsync(corruptId, default));
         Assert.Equal(json, await manager.ReadHistoricalViewResultJsonAsync(validId, default));
         Assert.Null(await manager.ReadHistoricalViewResultJsonAsync(int.MaxValue, default));
+    }
+
+    [Fact]
+    public async Task ObjectiveExportReadsCommittedDetailsWhileTheWriterHoldsMaintenance()
+    {
+        using var database = new TemporaryPayloadDatabase();
+        using var manager = new ViewResultManager(database.Path, new ViewResultManagerConfig());
+        const string serial = "same-batch-serial";
+        const string originalJson = """{"status":"original"}""";
+        const string updatedJson = """{"status":"updated"}""";
+        var previous = new ProjectARVRReuslt { SN = serial };
+        manager.Save(previous);
+        manager.SaveObjectiveTestResult(0, previous, new ObjectiveTestResult());
+        var first = new ProjectARVRReuslt { SN = serial, Model = "original", ViewResultJson = originalJson };
+        manager.Save(first);
+        manager.Save(new ProjectARVRReuslt { SN = "other-serial" });
+        var last = new ProjectARVRReuslt { SN = serial, Model = "last", ViewResultJson = originalJson };
+        manager.Save(last);
+        int objectiveId = manager.SaveObjectiveTestResult(0, last, new ObjectiveTestResult());
+
+        var pending = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        using var releaseWriter = new ManualResetEventSlim();
+        Task writer = Task.Factory.StartNew(() => ResultJsonPayloadStorage.RunDatabaseMaintenance(() =>
+        {
+            using SqlSugarClient db = database.CreateClient();
+            db.Ado.BeginTran();
+            db.Ado.ExecuteCommand("""UPDATE "ARVRReuslt" SET "Model" = 'updated' WHERE "Id" = @id;""",
+                new SugarParameter("@id", first.Id));
+            ResultJsonPayloadStorage.SaveViewResultJson(db, first.Id, updatedJson);
+            pending.SetResult();
+            if (!releaseWriter.Wait(TimeSpan.FromSeconds(10)))
+                throw new TimeoutException("The reader did not release the fixture writer.");
+            db.Ado.CommitTran();
+        }), CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default);
+
+        try
+        {
+            await pending.Task.WaitAsync(TimeSpan.FromSeconds(5));
+            IReadOnlyList<ProjectARVRReuslt> rows = await Task.Run(() => manager.GetObjectiveTestFlowResults(objectiveId))
+                .WaitAsync(TimeSpan.FromSeconds(5));
+            Assert.False(writer.IsCompleted);
+            Assert.Equal([first.Id, last.Id], rows.Select(row => row.Id));
+            Assert.Equal("original", rows[0].Model);
+            Assert.All(rows, row => Assert.Equal(originalJson, row.ViewResultJson));
+        }
+        finally
+        {
+            releaseWriter.Set();
+            await writer;
+        }
+
+        IReadOnlyList<ProjectARVRReuslt> committed = manager.GetObjectiveTestFlowResults(objectiveId);
+        Assert.Equal("updated", committed[0].Model);
+        Assert.Equal(updatedJson, committed[0].ViewResultJson);
+        Assert.Equal(originalJson, committed[1].ViewResultJson);
+    }
+
+    [Fact]
+    public void LuxExportLoadsOnlyCompletedMtfAndChessboardPayloads()
+    {
+        using var database = new TemporaryPayloadDatabase();
+        using var manager = new ViewResultManager(database.Path, new ViewResultManagerConfig());
+        const string mtfJson = """{"MTFDetailViewReslut":{"MTFResult":{"resultChild":[{"name":"Center_0F","childRects":[{"mtfValue":0.1},{"mtfValue":0.2}]}]}}}""";
+        const string chessboardJson = """{"PoixyuvDatas":[{"Name":"P1","Y":5}]}""";
+        ProjectARVRReuslt SaveStep(string type, string json, FlowStatus status = FlowStatus.Completed)
+        {
+            var step = new ProjectARVRReuslt { SN = "batch", ProcessTypeFullName = type, FlowStatus = status, ViewResultJson = json };
+            manager.Save(step);
+            return step;
+        }
+
+        var mtf048 = SaveStep(typeof(MTFHV048Process).FullName!, mtfJson);
+        var mtf058 = SaveStep(typeof(MTFHV058Process).FullName!, mtfJson);
+        var chessboard = SaveStep(typeof(ChessboardDynamicProcess).FullName!, chessboardJson);
+        var other = SaveStep("other-process", "{}");
+        var failed = SaveStep(typeof(MTFHV058Process).FullName!, mtfJson, FlowStatus.Failed);
+        var result = new ObjectiveTestResult { MTFHV048TestResults = [new()], MTFHV058TestResults = [new()] };
+        int objectiveId = manager.SaveObjectiveTestResult(0, failed, result);
+
+        var full = manager.GetObjectiveTestFlowResults(objectiveId);
+        Assert.All(full, row => Assert.NotNull(row.ViewResultJson));
+        using var db = database.CreateClient();
+        db.Ado.ExecuteCommand(
+            $"UPDATE \"ARVRReuslt\" SET \"{ResultJsonPayloadStorage.ViewResultColumnName}\" = X'00010203' WHERE \"Id\" = @id;",
+            new SugarParameter("@id", other.Id));
+        Assert.Throws<InvalidDataException>(() => manager.GetObjectiveTestFlowResults(objectiveId));
+
+        var selected = manager.ReadObjectiveTestFlowResults(objectiveId, LuxCsvProjector.RequiresFlowPayload);
+        Assert.Equal(full.Select(row => row.Id), selected.Select(row => row.Id));
+        Assert.Equal([mtf048.Id, mtf058.Id, chessboard.Id], selected.Where(row => row.ViewResultJson != null).Select(row => row.Id));
+        var expected = LuxCsvProjector.CollectRows(result, LuxCsvFormat.Current, full);
+        Assert.Equal(2, expected.Count(row => row.TestItem == "P1_H1" && row.TestValue == "0.2"));
+        Assert.Contains(expected, row => row.TestScreen == "Chessboard" && row.TestItem == "P1(Lv)" && row.TestValue == "5");
+        Assert.Equal(expected, LuxCsvProjector.CollectRows(result, LuxCsvFormat.Current, selected));
     }
 
     [Fact]

@@ -99,6 +99,30 @@ public sealed class SchedulerHistoryQueryTests : IDisposable
     }
 
     [Fact]
+    public void QueryExecutionHistory_CombinesScopedCountsAndLongDurationsBeforePaging()
+    {
+        using var db = CreateDatabase();
+        DateTime now = new(2026, 7, 26, 12, 0, 0);
+        db.Insertable(new[]
+        {
+            new JobExecutionRecord { JobName = "Camera", GroupName = "Acquisition", StartTime = now, EndTime = now, ExecutionTimeMs = 3_000_000_000L, Success = false },
+            new JobExecutionRecord { JobName = "Camera", GroupName = "Acquisition", StartTime = now, EndTime = now, ExecutionTimeMs = 5_000_000_003L, Success = true },
+            new JobExecutionRecord { JobName = "Camera", GroupName = "Other", StartTime = now, EndTime = now, ExecutionTimeMs = 25L, Success = true },
+        }).ExecuteCommand();
+
+        var result = SchedulerDbManager.QueryExecutionHistory(
+            db, new JobExecutionHistoryRequest(JobName: "Camera", GroupName: "Acquisition", PageIndex: int.MaxValue, PageSize: 1));
+
+        Assert.True(result.QuerySucceeded, result.ErrorMessage);
+        Assert.Equal(2, result.TotalCount);
+        Assert.Equal(1, result.SuccessCount);
+        Assert.Equal(1, result.FailureCount);
+        Assert.Equal(4_000_000_001L, result.AverageExecutionTimeMs);
+        Assert.Equal(2, result.PageIndex);
+        Assert.False(Assert.Single(result.Records).Success);
+    }
+
+    [Fact]
     public void QueryExecutionHistory_ReturnsExplicitFailureForDatabaseErrors()
     {
         string databasePath = Path.Combine(_temporaryDirectory, "missing-parent", "history.db");
@@ -137,6 +161,26 @@ public sealed class SchedulerHistoryQueryTests : IDisposable
 
         Assert.Equal([3, 2], firstPage.Records.Select(record => record.Id));
         Assert.Equal([1], secondPage.Records.Select(record => record.Id));
+    }
+
+    [Fact]
+    public void ReadTaskStats_AggregatesOnlyTheRequestedIdentityAndPreservesEarlierIdOnTimeTies()
+    {
+        using var db = CreateDatabase();
+        DateTime now = new(2026, 7, 26, 12, 0, 0);
+        db.Insertable(new[]
+        {
+            new JobExecutionRecord { JobName = "Camera", GroupName = "A", StartTime = now, EndTime = now, ExecutionTimeMs = 5_000_000_003L, Success = false, Message = "First at latest time" },
+            new JobExecutionRecord { JobName = "Camera", GroupName = "A", StartTime = now.AddMinutes(-1), EndTime = now, ExecutionTimeMs = 100, Success = true, Result = "Older" },
+            new JobExecutionRecord { JobName = "Camera", GroupName = "A", StartTime = now, EndTime = now, ExecutionTimeMs = 3_000_000_000L, Success = true, Result = "Second at latest time" },
+            new JobExecutionRecord { JobName = "Camera", GroupName = "B", StartTime = now.AddMinutes(1), EndTime = now, ExecutionTimeMs = 5, Success = true },
+        }).ExecuteCommand();
+
+        var stats = SchedulerDbManager.ReadTaskStats(db, "Camera", "A");
+        Assert.Equal((3, 2, 1, 2_666_666_701L, 100L, 5_000_000_003L, (string?)null, "First at latest time"), stats);
+
+        var empty = SchedulerDbManager.ReadTaskStats(db, "Camera", "Missing");
+        Assert.Equal((0, 0, 0, 0L, 0L, 0L, (string?)null, (string?)null), empty);
     }
 
     private SqlSugarClient CreateDatabase()

@@ -3378,6 +3378,13 @@ Maximum output: {17:N0} pixels</value>
     <value>Measurement Failed · {0}
 {1}</value>
   </data>
+  <data name="测量失败 · 找到 {0} 个候选点，目标 {1} 个 · {2}&#10;{3}" xml:space="preserve">
+    <value>Measurement Failed · Found {0} candidates, expected {1} · {2}
+{3}</value>
+  </data>
+  <data name="原图用黄色圆圈标出 {0} 个检测点。" xml:space="preserve">
+    <value>Yellow circles mark {0} detected points on the image.</value>
+  </data>
   <data name="测量完成 · {0} × {1} · {2} 个点 · 检测 {3:F2} ms" xml:space="preserve">
     <value>Measurement Complete · {0} × {1} · {2} Points · Detection {3:F2} ms</value>
   </data>

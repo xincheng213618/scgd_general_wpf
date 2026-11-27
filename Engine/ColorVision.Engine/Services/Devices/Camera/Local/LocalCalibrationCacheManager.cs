@@ -4,6 +4,7 @@ using FlowEngineLib.Algorithm;
 using log4net;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 
 namespace ColorVision.Engine.Services.Devices.Camera.Local
@@ -13,7 +14,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
     /// Process-wide maintenance excludes execution across all devices; image
     /// frames remain owned separately by <see cref="LocalFlowFrame"/>.
     /// </summary>
-    internal sealed class LocalCalibrationCacheManager : IDisposable
+    internal sealed partial class LocalCalibrationCacheManager : IDisposable
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(LocalCalibrationCacheManager));
         private static readonly ReaderWriterLockSlim SharedCacheLifecycleGate = new(LockRecursionPolicy.NoRecursion);
@@ -44,30 +45,71 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
         public static CalibrationSharedCacheReleaseResult ClearShared()
             => OpenCVCalibration.ClearCalibrationSharedCache();
 
+        public LocalPreparedCalibration Prepare(IReadOnlyList<DeviceCameraCalibrationFile> files, string templateName)
+        {
+            ArgumentNullException.ThrowIfNull(files);
+            var selection = files.ToArray();
+            ValidateTemplate(selection, templateName);
+            return WithCache(() =>
+            {
+                var prepared = FlowNodeTiming.Run("LoadCalibrationResources", () => cache.Prepare(selection));
+                return new LocalPreparedCalibration(this, templateName, prepared.Assets, prepared.InputDepth);
+            });
+        }
+
+        // The keyboard luminance adapter owns a pinned sample array instead of a LocalFlowFrame.
         public LocalCalibrationExecution Execute(
             LocalCalibrationLayout layout,
             IReadOnlyList<DeviceCameraCalibrationFile> calibrationFiles,
             IntPtr rawPointer,
+            ulong rawLength,
             IntPtr ciePointer,
+            ulong cieLength,
             float[] exposure,
             LocalCalibrationRoi calibrationRoi,
-            bool allowAcceleration = false,
+            CalibrationOutputMode outputMode,
             CVImageFlipMode rawOutputFlip = CVImageFlipMode.None)
         {
             ArgumentNullException.ThrowIfNull(calibrationFiles);
             ArgumentNullException.ThrowIfNull(exposure);
             if (rawPointer == IntPtr.Zero) throw new ArgumentException("RAW 指针为空。", nameof(rawPointer));
 
-            FlowNodeTiming.Run("WaitCalibration", EnterExecution);
+            return WithCache(() => cache.Execute(layout, cache.Prepare(calibrationFiles).Assets, rawPointer, rawLength,
+                ciePointer, cieLength, exposure, calibrationRoi, outputMode, rawOutputFlip));
+        }
+
+        internal LocalCalibrationExecution ExecutePrepared(LocalCalibrationAsset[] assets, LocalCalibrationLayout layout,
+            IntPtr raw, ulong rawLength, IntPtr cie, ulong cieLength, float[] exposure, LocalCalibrationRoi roi,
+            CalibrationOutputMode output, CVImageFlipMode flip)
+            => WithCache(() => cache.Execute(layout, assets, raw, rawLength, cie, cieLength, exposure, roi, output, flip));
+
+        private T WithCache<T>(Func<T> action)
+        {
+            Interlocked.Increment(ref foregroundUsers);
             try
             {
-                ObjectDisposedException.ThrowIf(disposed, this);
-                return cache.Execute(layout, calibrationFiles, rawPointer, ciePointer, exposure, calibrationRoi, allowAcceleration, rawOutputFlip);
+                CancelWarmup();
+                FlowNodeTiming.Run("WaitCalibration", EnterExecution);
+                try
+                {
+                    ObjectDisposedException.ThrowIf(disposed, this);
+                    return action();
+                }
+                finally
+                {
+                    ExitExecution();
+                }
             }
             finally
             {
-                ExitExecution();
+                Interlocked.Decrement(ref foregroundUsers);
             }
+        }
+
+        internal (long LastAccess, LocalCalibrationWarmupPlan Plan)[] CaptureWarmupPlans()
+        {
+            lock (executionGate)
+                return disposed ? [] : cache.CaptureWarmupPlans(deviceCode);
         }
 
         public int ReleaseCache()
@@ -75,6 +117,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             lock (executionGate)
             {
                 ObjectDisposedException.ThrowIf(disposed, this);
+                CancelWarmup();
                 return cache.Release();
             }
         }
@@ -104,6 +147,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             {
                 if (disposed) return;
                 disposed = true;
+                CancelWarmup();
                 try
                 {
                     cache.Dispose();
@@ -144,7 +188,11 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
         }
     }
 
-    internal readonly record struct LocalCalibrationLayout(int Width, int Height, int Bpp, int Channels);
+    internal readonly record struct LocalCalibrationLayout(int Width, int Height, int Bpp, int Channels)
+    {
+        public static LocalCalibrationLayout FromFrame(LocalFrameMetadata metadata)
+            => new(metadata.Width, metadata.Height, metadata.SourceBpp, metadata.Channels);
+    }
     internal sealed record LocalCalibrationExecution(RawColorTransformV1? Transform,
         ColorVision.ImageEditor.Tif.ImageCalibrationSource[] Sources);
 }

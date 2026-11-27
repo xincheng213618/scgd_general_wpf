@@ -6,6 +6,7 @@ using System.IO;
 using System.Runtime.Intrinsics.X86;
 using System.Security.Cryptography;
 using System.Threading.Tasks;
+using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 
@@ -37,9 +38,16 @@ namespace ColorVision.Engine.Media
                 : throw new NotSupportedException($"Lossless measurement export does not support {pixelFormat}.");
             using Mat image = new(pixels.PixelHeight, pixels.PixelWidth, type);
             int stride = checked((int)image.Step());
-            pixels.CopyPixels(System.Windows.Int32Rect.Empty, image.Data, checked(stride * pixels.PixelHeight), stride);
-            if (pixelFormat == PixelFormats.Rgb24 || pixelFormat == PixelFormats.Rgb48)
-                Cv2.CvtColor(image, image, ColorConversionCodes.RGB2BGR);
+            int length = checked(stride * pixels.PixelHeight);
+            bool swapRedBlue = pixelFormat == PixelFormats.Rgb24 || pixelFormat == PixelFormats.Rgb48;
+            const int rgbBufferBytes = 4 * 1024 * 1024;
+            if (swapRedBlue && length > rgbBufferBytes)
+                CopyRgbPixelsForEncoding(pixels, image, stride, Math.Max(1, rgbBufferBytes / stride));
+            else
+            {
+                pixels.CopyPixels(Int32Rect.Empty, image.Data, length, stride);
+                if (swapRedBlue) Cv2.CvtColor(image, image, ColorConversionCodes.RGB2BGR);
+            }
             ImageFormat format = Path.GetExtension(fileName).ToLowerInvariant() switch
             {
                 ".tif" or ".tiff" => ImageFormat.Tiff,
@@ -48,6 +56,22 @@ namespace ColorVision.Engine.Media
             };
             return SaveCore(image, copy, fileName, format, VExportCIE.DefaultTiffCompression,
                 VExportCIE.DefaultPngCompressionLevel, VExportCIE.DefaultJpegQuality, expectedPixelHash);
+        }
+
+        private static void CopyRgbPixelsForEncoding(BitmapSource pixels, Mat image, int stride, int rowsPerBlock)
+        {
+            int width = image.Cols, height = image.Rows;
+            // Convert into the final matrix from a reusable block. In-place CvtColor clones its input.
+            using Mat rgb = new(rowsPerBlock, width, image.Type());
+            for (int top = 0; top < height;)
+            {
+                int rows = Math.Min(rowsPerBlock, height - top);
+                pixels.CopyPixels(new Int32Rect(0, top, width, rows), rgb.Data, checked(stride * rows), stride);
+                using Mat bgr = image.RowRange(top, top + rows);
+                using Mat? tail = rows == rowsPerBlock ? null : rgb.RowRange(0, rows);
+                Cv2.CvtColor(tail ?? rgb, bgr, ColorConversionCodes.RGB2BGR);
+                top += rows;
+            }
         }
 
         private static bool HasMatchingLayout(ColorVisionTiffParameters parameters, BitmapSource pixels)

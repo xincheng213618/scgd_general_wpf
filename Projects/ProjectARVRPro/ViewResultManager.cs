@@ -11,7 +11,9 @@ using ProjectARVRPro.Process.Uniformity;
 using SqlSugar;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
+using System.Security.Cryptography;
 using System.Windows;
 
 namespace ProjectARVRPro
@@ -51,6 +53,8 @@ namespace ProjectARVRPro
     [DisplayName("结果与导出设置")]
     public class ViewResultManagerConfig : ViewModelBase, IConfig
     {
+        internal const string DefaultCodeDateFormat = "yyyyMMdd'T'HHmmss.fffffff";
+
         [DisplayName("默认查询条数"), Category("结果列表")]
         [Description("打开结果列表或点击查询时加载的最新记录数；小于等于0表示全部，不删除历史数据。")]
         public int Count { get => _Count; set { _Count = value; OnPropertyChanged(); } }
@@ -65,14 +69,24 @@ namespace ProjectARVRPro
         private bool _CodeUseSN =true;
 
         [DisplayName("编号时间格式"), Category("结果编号")]
-        [Description("用于生成结果编号的时间部分，例如 yyyyMMdd'T'HHmmss.fffffff。")]
-        public string CodeDateFormat { get => _CodeDateFormat; set { _CodeDateFormat = value; OnPropertyChanged(); } }
-        private string _CodeDateFormat = "yyyyMMdd'T'HHmmss.fffffff";
+        [Description("用于生成结果编号的时间部分，不能为空。默认格式为 " + DefaultCodeDateFormat + "。")]
+        [AllowNull]
+        public string CodeDateFormat
+        {
+            get => _CodeDateFormat;
+            set
+            {
+                _CodeDateFormat = string.IsNullOrWhiteSpace(value) ? DefaultCodeDateFormat : value;
+                OnPropertyChanged();
+            }
+        }
+        private string _CodeDateFormat = DefaultCodeDateFormat;
 
         internal string CreateFlowCode(string? serialNumber, DateTime timestamp)
         {
             string prefix = CodeUseSN ? serialNumber + "_" : string.Empty;
-            return ColorVision.Common.Utilities.Tool.SanitizeFileName(prefix + timestamp.ToString(CodeDateFormat));
+            string formattedCode = ColorVision.Common.Utilities.Tool.SanitizeFileName(prefix + timestamp.ToString(CodeDateFormat));
+            return $"{formattedCode}_{RandomNumberGenerator.GetHexString(16, lowercase: true)}";
         }
 
         [DisplayName("按日期创建文件夹"), Category("保存选项")]
@@ -438,9 +452,17 @@ namespace ProjectARVRPro
     public class ViewResultManager : ViewModelBase,IDisposable
     {
         internal const int MaximumLiveResults = 1000;
-        private static ViewResultManager _instance;
+        private static volatile ViewResultManager? _instance;
         private static readonly object _locker = new();
         public static ViewResultManager GetInstance() { lock (_locker) { _instance ??= new ViewResultManager(); return _instance; } }
+        internal static ResultStatisticsDataStore? GetPreparedStatisticsStore()
+        {
+            ViewResultManager? manager = _instance;
+            return manager != null && string.Equals(manager._databasePath, Path.GetFullPath(SqliteDbPath), StringComparison.OrdinalIgnoreCase)
+                ? manager.StatisticsStore
+                : null;
+        }
+
         public static string DirectoryPath { get; set; } = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + $"\\ColorVision\\Config\\";
 
         public static string SqliteDbPath { get; set; } = DirectoryPath + "ProjectARVRPro.db";
@@ -452,9 +474,11 @@ namespace ProjectARVRPro
         public RelayCommand QueryCommand { get; set; }
         public RelayCommand GenericQueryCommand { get; set; }
 
+        private readonly string _databasePath;
         private readonly SqlSugarClient _db;
         private readonly string _historyReadConnectionString;
         private readonly SemaphoreSlim _historyReadGate = new(1, 1);
+        internal ResultStatisticsDataStore StatisticsStore { get; }
 
         public ViewResultManager() : this(SqliteDbPath, ConfigService.Instance.GetRequiredService<ViewResultManagerConfig>())
         {
@@ -462,26 +486,28 @@ namespace ProjectARVRPro
 
         internal ViewResultManager(string databasePath, ViewResultManagerConfig config)
         {
+            _databasePath = Path.GetFullPath(databasePath);
             Config = config;
             QueryCommand = new RelayCommand(a => Query());
             GenericQueryCommand = new RelayCommand(a => GenericQuery());
 
             _historyReadConnectionString = new SqliteConnectionStringBuilder
             {
-                DataSource = databasePath,
+                DataSource = _databasePath,
                 Mode = SqliteOpenMode.ReadOnly,
                 DefaultTimeout = 5,
                 Pooling = false
             }.ToString();
             _db = new SqlSugarClient(new ConnectionConfig
             {
-                ConnectionString = $"Data Source={databasePath};Default Timeout=5",
+                ConnectionString = $"Data Source={_databasePath};Default Timeout=5",
                 DbType = DbType.Sqlite,
                 IsAutoCloseConnection = true
             });
             _db.Ado.ExecuteCommand("PRAGMA busy_timeout = 5000;");
             _db.Ado.ExecuteCommand("PRAGMA journal_mode = WAL;");
             ResultSqliteSchema.EnsureCreated(_db);
+            StatisticsStore = ResultStatisticsDataStore.FromPreparedDatabase(_databasePath);
             LoadAll(Config.Count);
         }
         public void Query()
@@ -555,8 +581,12 @@ namespace ProjectARVRPro
             if (isNew)
                 ResultImageDimensions.TryPopulate(item, readMeasureResults);
 
-            bool savePayload = item.ViewResultJson != null;
+            string? json = item.ViewResultJson;
             timing?.PrepareMs = timing.FinishStage();
+            // SQLite and the shared maintenance gate are only needed for the write.
+            byte[]? payload = ResultJsonPayloadStorage.Compress(json);
+            if (json != null)
+                timing?.CompressionMs = timing.FinishStage();
             bool saved = ResultJsonPayloadStorage.RunDatabaseMaintenance(() =>
             {
                 timing?.GateWaitMs = timing.FinishStage();
@@ -575,8 +605,11 @@ namespace ProjectARVRPro
                     }
 
                     timing?.RowMs = timing.FinishStage();
-                    if (rowWritten && savePayload)
-                        ResultJsonPayloadStorage.SaveViewResultJson(_db, item.Id, item.ViewResultJson, timing);
+                    if (rowWritten && json != null)
+                    {
+                        ResultJsonPayloadStorage.SaveViewResultPayload(_db, item.Id, payload);
+                        timing?.PayloadMs = timing.FinishStage();
+                    }
                     _db.Ado.CommitTran();
                     timing?.CommitMs = timing.FinishStage();
                     return rowWritten;
@@ -691,12 +724,7 @@ namespace ProjectARVRPro
                 // Keep the gate until the synchronous SQLite read and decompression have finished.
                 string? json = await Task.Run(() =>
                 {
-                    using var db = new SqlSugarClient(new ConnectionConfig
-                    {
-                        ConnectionString = _historyReadConnectionString,
-                        DbType = DbType.Sqlite,
-                        IsAutoCloseConnection = true
-                    });
+                    using SqlSugarClient db = CreateHistoryReadClient();
                     return ResultJsonPayloadStorage.LoadViewResultJson(db, id);
                 }, cancellationToken).ConfigureAwait(false);
                 cancellationToken.ThrowIfCancellationRequested();
@@ -708,32 +736,53 @@ namespace ProjectARVRPro
             }
         }
 
-        public IReadOnlyList<ProjectARVRReuslt> GetObjectiveTestFlowResults(int objectiveRecordId)
+        public IReadOnlyList<ProjectARVRReuslt> GetObjectiveTestFlowResults(int objectiveRecordId) =>
+            ReadObjectiveTestFlowResults(objectiveRecordId, null);
+
+        internal IReadOnlyList<ProjectARVRReuslt> ReadObjectiveTestFlowResults(int objectiveRecordId, Func<ProjectARVRReuslt, bool>? requiresPayload)
         {
             if (objectiveRecordId <= 0)
                 return Array.Empty<ProjectARVRReuslt>();
 
-            return ResultJsonPayloadStorage.RunDatabaseMaintenance(() =>
+            using SqlSugarClient db = CreateHistoryReadClient();
+            // Resolve the batch boundaries, steps and payloads from one committed WAL snapshot.
+            db.Ado.Open();
+            db.Ado.Transaction = ((SqliteConnection)db.Ado.Connection).BeginTransaction(deferred: true);
+            try
             {
-                ObjectiveTestResultRecord? record = _db.Queryable<ObjectiveTestResultRecord>()
+                ObjectiveTestResultRecord? record = db.Queryable<ObjectiveTestResultRecord>()
                     .Where(item => item.Id == objectiveRecordId)
                     .First();
-                if (record == null || record.ResultId <= 0 || string.IsNullOrWhiteSpace(record.SN))
-                    return (IReadOnlyList<ProjectARVRReuslt>)Array.Empty<ProjectARVRReuslt>();
-
-                int previousResultId = _db.Queryable<ObjectiveTestResultRecord>()
-                    .Where(item => item.SN == record.SN && item.Id < record.Id)
-                    .OrderBy(item => item.Id, OrderByType.Desc)
-                    .Select(item => item.ResultId)
-                    .First();
-                List<ProjectARVRReuslt> results = _db.Queryable<ProjectARVRReuslt>()
-                    .Where(item => item.SN == record.SN && item.Id > previousResultId && item.Id <= record.ResultId)
-                    .OrderBy(item => item.Id, OrderByType.Asc)
-                    .ToList();
-                ResultJsonPayloadStorage.LoadViewResultJsons(_db, results);
+                IReadOnlyList<ProjectARVRReuslt> results = [];
+                if (record != null && record.ResultId > 0 && !string.IsNullOrWhiteSpace(record.SN))
+                {
+                    int previousResultId = db.Queryable<ObjectiveTestResultRecord>()
+                        .Where(item => item.SN == record.SN && item.Id < record.Id)
+                        .OrderBy(item => item.Id, OrderByType.Desc)
+                        .Select(item => item.ResultId)
+                        .First();
+                    results = db.Queryable<ProjectARVRReuslt>()
+                        .Where(item => item.SN == record.SN && item.Id > previousResultId && item.Id <= record.ResultId)
+                        .OrderBy(item => item.Id, OrderByType.Asc)
+                        .ToList();
+                    ResultJsonPayloadStorage.LoadViewResultJsons(db, requiresPayload == null ? results : results.Where(requiresPayload));
+                }
+                db.Ado.CommitTran();
                 return results;
-            });
+            }
+            catch
+            {
+                db.Ado.RollbackTran();
+                throw;
+            }
         }
+
+        private SqlSugarClient CreateHistoryReadClient() => new(new ConnectionConfig
+        {
+            ConnectionString = _historyReadConnectionString,
+            DbType = DbType.Sqlite,
+            IsAutoCloseConnection = true
+        });
 
         internal static void AddLiveResult(ObservableCollection<ProjectARVRReuslt> results, ProjectARVRReuslt item)
         {
@@ -753,6 +802,8 @@ namespace ProjectARVRPro
 
             var record = ObjectiveTestResultRecord.Create(result, objectiveTestResult);
             timing?.PrepareMs = timing.FinishStage();
+            byte[]? payload = ResultJsonPayloadStorage.Compress(record.ObjectiveTestResultJson);
+            timing?.CompressionMs = timing.FinishStage();
             return ResultJsonPayloadStorage.RunDatabaseMaintenance(() =>
             {
                 timing?.GateWaitMs = timing.FinishStage();
@@ -772,7 +823,8 @@ namespace ProjectARVRPro
                     }
 
                     timing?.RowMs = timing.FinishStage();
-                    ResultJsonPayloadStorage.SaveObjectiveTestResultJson(_db, record.Id, record.ObjectiveTestResultJson, timing);
+                    ResultJsonPayloadStorage.SaveObjectiveTestResultPayload(_db, record.Id, payload);
+                    timing?.PayloadMs = timing.FinishStage();
                     _db.Ado.CommitTran();
                     timing?.CommitMs = timing.FinishStage();
                     timing?.Succeeded = true;

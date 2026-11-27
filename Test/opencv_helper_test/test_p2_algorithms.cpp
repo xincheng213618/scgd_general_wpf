@@ -184,6 +184,12 @@ bool TestEnhancedGhostExport()
     cv::circle(image, ghostCenter, 11, cv::Scalar(19000), cv::FILLED, cv::LINE_AA);
     cv::circle(image, directionalDecoy, 9, cv::Scalar(19000), cv::FILLED, cv::LINE_AA);
 
+    const cv::Rect roi(7, 11, image.cols, image.rows);
+    cv::Mat parent(image.rows + 30, image.cols + 38, CV_16UC3, cv::Scalar::all(65535));
+    cv::Mat color = parent(cv::Rect(3, 5, image.cols + 22, image.rows + 18));
+    cv::Mat colorRoi = color(roi);
+    cv::cvtColor(image, colorRoi, cv::COLOR_GRAY2BGR);
+
     const json config = {
         { "brightThresholdMode", "fixed" },
         { "ghostThresholdMode", "fixed" },
@@ -210,23 +216,25 @@ bool TestEnhancedGhostExport()
         { "multiScaleLevels", 3 },
         { "multiScaleFactor", 1.6 },
         { "multiScaleThresholdFactor", 0.85 },
-        { "opticalCenter", { { "x", 128.0 }, { "y", 96.0 } } },
+        { "opticalCenter", { { "x", 128.0 + roi.x }, { "y", 96.0 + roi.y } } },
         { "useDirectionalConfidence", true },
         { "minDirectionConfidence", 0.75 },
         { "maxCandidates", 8 }
     };
     const std::string configText = config.dump();
-    HImage view = MakeImageView(image);
+    HImage view = MakeImageView(color);
 
     json output;
     if (!InvokeJsonExport("M_DetectGhosts enhanced", [&](char** result) {
-        return M_DetectGhosts(view, RoiRect{}, configText.c_str(), result);
+        return M_DetectGhosts(view, RoiRect{roi.x, roi.y, roi.width, roi.height}, configText.c_str(), result);
     }, output)) {
         return false;
     }
 
     bool success = true;
     Expect(output.value("success", false), "Enhanced Ghost detection did not succeed.", success);
+    Expect(output.at("roi") == json{{"x", roi.x}, {"y", roi.y}, {"width", roi.width}, {"height", roi.height}},
+        "Enhanced Ghost did not retain the requested ROI.", success);
     Expect(output.value("exposureNormalized", false), "Exposure normalization was not applied.", success);
     Expect(output.value("backgroundModelUsed", false), "Background model was not applied.", success);
     Expect(output.value("analyzedScaleLevels", 0) == 3, "Ghost scale-level count is incorrect.", success);
@@ -234,7 +242,8 @@ bool TestEnhancedGhostExport()
         "Directional filtering did not retain exactly the aligned ghost.", success);
     if (output.contains("candidates") && output.at("candidates").size() == 1) {
         const json& candidate = output.at("candidates").front();
-        Expect(PointDistance(candidate.at("center"), ghostCenter) <= 2.0, "Enhanced Ghost center is inaccurate.", success);
+        Expect(PointDistance(candidate.at("center"), ghostCenter + roi.tl()) <= 2.0, "Enhanced Ghost center is inaccurate.", success);
+        Expect(PointDistance(candidate.at("centerInRoi"), ghostCenter) <= 2.0, "Enhanced Ghost ROI center is inaccurate.", success);
         Expect(candidate.value("directionConfidence", 0.0) > 0.95, "Aligned Ghost direction confidence is too low.", success);
         Expect(candidate.value("directionAngleDegrees", 180.0) < 5.0, "Aligned Ghost direction angle is too large.", success);
         Expect(candidate.value("scaleSupport", 0.0) >= 2.0 / 3.0, "Ghost is not supported across enough scales.", success);
@@ -453,6 +462,53 @@ bool TestKeyboardHaloExport()
     return success;
 }
 
+bool TestKeyboardHaloRegionConversion()
+{
+    bool success = true;
+    cv::RNG random(694229);
+    for (int type : {CV_16UC3, CV_8UC4}) {
+        cv::Mat storage(1110, 1708, type);
+        random.fill(storage, cv::RNG::UNIFORM, cv::Scalar::all(0),
+            cv::Scalar::all(storage.depth() == CV_16U ? 65536 : 256));
+        cv::Mat image = storage(cv::Rect(7, 3, 1681, 1081));
+        const cv::Mat original = storage.clone();
+        HImage input = MakeImageView(image);
+        json config = json::parse(R"({
+            "gray": {"mode":"luminance","validMin":0.09,"validMax":0.90},
+            "haloWidthRatio": 0.25,
+            "excludeKeyRectsFromHalo": true,
+            "keys": [
+                {"id":7,"name":"K7","rect":{"x":512,"y":369,"width":64,"height":64},
+                 "keyOffsetX":-3,"keyOffsetY":8,"haloOffsetX":5,"haloOffsetY":6,
+                 "keyInsetPixels":3,"haloGapPixels":8,"haloWidthPixels":16},
+                {"id":9,"name":"K9","rect":{"x":584,"y":408,"width":42,"height":58},
+                 "calculateHalo":false,"keyInsetPixels":3},
+                {"id":1,"name":"Outside","rect":{"x":1710,"y":1157,"width":32,"height":20}}
+            ],
+            "haloExclusionRects": [{"x":485,"y":365,"width":29,"height":23}]
+        })");
+        json referenceConfig = config;
+        referenceConfig["keys"][0]["haloWidthPixels"] = -1; // 0.25 × 64 gives the same width.
+        const auto run = [&](const json& parameters, json& output) {
+            const std::string text = parameters.dump();
+            return InvokeJsonExport("M_AnalyzeKeyboardHalo cropped gray", [&](char** result) {
+                return M_AnalyzeKeyboardHalo(input, RoiRect{}, text.c_str(), result);
+            }, output);
+        };
+        json cropped;
+        json reference;
+        if (!run(config, cropped) || !run(referenceConfig, reference)) return false;
+        Expect(cropped == reference && cropped.value("statusCode", std::string()) == "partial",
+            "Cropped gray conversion changed measurements or per-key ordering.", success);
+        const json expectedHaloBounds = {{"x",493},{"y",351},{"width",112},{"height",112}};
+        Expect(cropped.at("keys").at(0).at("haloBounds") == expectedHaloBounds,
+            "Cropped gray conversion changed full-frame halo coordinates.", success);
+        Expect(cv::norm(storage, original, cv::NORM_INF) == 0.0,
+            "Keyboard halo measurement modified the input image.", success);
+    }
+    return success;
+}
+
 bool TestKeyboardHaloBulkExport()
 {
     constexpr int KeyRows = 10;
@@ -611,6 +667,44 @@ bool TestLedArrayExport()
     return success;
 }
 
+bool TestLedArrayWrappedRotationExport()
+{
+    cv::Mat image(150, 190, CV_8UC1, cv::Scalar(180));
+    json detections = json::array();
+    const auto addDetection = [&](int x, int y) {
+        detections.push_back({
+            { "id", detections.size() + 1 },
+            { "center", { { "x", x }, { "y", y } } }
+        });
+    };
+
+    // The diagonal pairs form the largest consensus across the ±45° seam.
+    // Each diagonal direction alone has fewer detections than the horizontal pairs.
+    for (int pair = 0; pair < 10; ++pair) {
+        const int x = 24 + (pair % 5) * 30;
+        const int y = 38 + (pair / 5) * 46;
+        const int offsetY = pair < 3 ? 7 : (pair < 6 ? -7 : 0);
+        addDetection(x, y);
+        addDetection(x + 8, y + offsetY);
+    }
+
+    const std::string configText = json{
+        { "rows", 1 }, { "cols", 1 }, { "detections", std::move(detections) }
+    }.dump();
+    const HImage view = MakeImageView(image);
+    json output;
+    if (!InvokeJsonExport("M_AnalyzeLedArray wrapped rotation", [&](char** result) {
+        return M_AnalyzeLedArray(view, RoiRect{}, configText.c_str(), result);
+    }, output)) {
+        return false;
+    }
+
+    bool success = true;
+    const double angle = output.value("angleDegrees", 0.0);
+    Expect(std::abs(std::abs(angle) - 45.0) < 1e-6, "LED rotation consensus lost the wrapped diagonal pairs.", success);
+    return success;
+}
+
 cv::Point2d TransformPoint(const cv::Mat& matrix, const cv::Point2d& point)
 {
     return cv::Point2d(
@@ -683,17 +777,19 @@ bool TestRotatedTemplateExport()
 
     constexpr double EmbeddedAngle = 20.0;
     const RotatedFixture fixture = RotateFixture(templ, EmbeddedAngle);
-    cv::Mat source = cv::Mat::zeros(220, 320, CV_8UC1);
-    const cv::Point topLeft(135, 82);
-    fixture.image.copyTo(source(cv::Rect(topLeft, fixture.image.size())), fixture.mask);
-    const cv::Point2d expectedCenter = cv::Point2d(topLeft) + fixture.centerOffset;
+    // Use a response large enough for cached bands, with suppression near a band boundary.
+    cv::Mat source = cv::Mat::zeros(512, 704, CV_8UC1);
+    const std::array<cv::Point, 2> targetOrigins{ cv::Point(135, 90), cv::Point(518, 112) };
+    for (const cv::Point& topLeft : targetOrigins) {
+        fixture.image.copyTo(source(cv::Rect(topLeft, fixture.image.size())), fixture.mask);
+    }
 
     const json config = {
         { "angleMin", 10.0 },
         { "angleMax", 30.0 },
         { "angleStep", 2.0 },
         { "scoreThreshold", 0.80 },
-        { "maxMatches", 1 },
+        { "maxMatches", targetOrigins.size() },
         { "nmsRadius", 20.0 },
         { "pyramidLevels", 1 },
         { "subpixel", true }
@@ -711,18 +807,24 @@ bool TestRotatedTemplateExport()
 
     bool success = true;
     Expect(output.value("success", false), "Rotated-template matching did not succeed.", success);
-    Expect(output.contains("matches") && output.at("matches").is_array() && !output.at("matches").empty(),
-        "Rotated-template matching returned no match.", success);
-    if (output.contains("matches") && !output.at("matches").empty()) {
-        const json& match = output.at("matches").front();
-        Expect(IsFinitePoint(match.value("center", json())), "Template-match center is not finite.", success);
-        if (IsFinitePoint(match.value("center", json()))) {
-            Expect(PointDistance(match.at("center"), expectedCenter) <= 2.0,
-                "Template-match center is outside tolerance.", success);
+    if (output.contains("matches") && output.at("matches").is_array()) {
+        const json& matches = output.at("matches");
+        Expect(matches.size() == targetOrigins.size(), "Rotated-template matching did not return both peaks.", success);
+        for (const json& match : matches) {
+            Expect(IsFinitePoint(match.value("center", json())), "Template-match center is not finite.", success);
+            Expect(std::abs(match.value("angleDegrees", -999.0) - EmbeddedAngle) <= 2.1,
+                "Template-match angle is outside one search step.", success);
+            Expect(match.value("score", 0.0) >= 0.80, "Template-match score is below threshold.", success);
         }
-        Expect(std::abs(match.value("angleDegrees", -999.0) - EmbeddedAngle) <= 2.1,
-            "Template-match angle is outside one search step.", success);
-        Expect(match.value("score", 0.0) >= 0.80, "Template-match score is below threshold.", success);
+        for (const cv::Point& topLeft : targetOrigins) {
+            const cv::Point2d center = cv::Point2d(topLeft) + fixture.centerOffset;
+            Expect(std::any_of(matches.begin(), matches.end(), [&](const json& match) {
+                return IsFinitePoint(match.value("center", json())) && PointDistance(match.at("center"), center) <= 2.0;
+            }), "Rotated-template matching lost an expected peak.", success);
+        }
+    }
+    else {
+        Expect(false, "Rotated-template matching did not return a match array.", success);
     }
 
     cv::Mat constantTemplate(templ.size(), templ.type(), cv::Scalar(96));
@@ -885,6 +987,39 @@ bool TestBinocularFusionExport()
     };
     expectRejectedShape("M_CalBinocularFusion solid squares", false);
     expectRejectedShape("M_CalBinocularFusion solid circles", true);
+
+    // Symmetric alternatives exercise deterministic ranking beyond the retained 32 pairs.
+    constexpr int gridWidth = 16;
+    constexpr int gridHeight = 8;
+    constexpr int spacing = 55;
+    cv::Mat gridStorage = cv::Mat::zeros(gridHeight * spacing + 8, gridWidth * spacing + 16, CV_8UC1);
+    cv::Mat grid = gridStorage(cv::Rect(6, 2, gridWidth * spacing, gridHeight * spacing));
+    for (int row = 0; row < gridHeight; ++row) {
+        for (int column = 0; column < gridWidth; ++column) {
+            DrawCross(grid, cv::Point(column * spacing + spacing / 2, row * spacing + spacing / 2), 13, 5);
+        }
+    }
+    json denseConfig = config;
+    denseConfig["maxCandidates"] = gridWidth * gridHeight;
+    denseConfig["opticalCenter"] = {{"x", 467}, {"y", 247}};
+    const std::string denseConfigText = denseConfig.dump();
+    json denseOutput;
+    if (!InvokeJsonExport("M_CalBinocularFusion dense candidates", [&](char** result) {
+        return M_CalBinocularFusion(MakeImageView(grid), RoiRect{}, denseConfigText.c_str(), result);
+    }, denseOutput)) {
+        return false;
+    }
+    Expect(denseOutput.value("success", false), "Dense binocular candidate selection failed.", success);
+    Expect(denseOutput.contains("candidates") && denseOutput.at("candidates").size() == gridWidth * gridHeight,
+        "Dense binocular fixture did not preserve all candidates.", success);
+    const json densePoints = denseOutput.value("points", json::object());
+    const std::array<std::pair<const char*, int>, 5> expectedRoles = {{
+        {"center", 72}, {"top", 22}, {"bottom", 122}, {"left", 101}, {"right", 43}
+    }};
+    for (const auto& [role, id] : expectedRoles) {
+        Expect(densePoints.contains(role) && densePoints.at(role).value("candidateId", -1) == id,
+            std::string("Dense binocular ranking changed for role: ") + role, success);
+    }
     return success;
 }
 
@@ -1054,8 +1189,10 @@ bool RunP2AlgorithmTests()
     success = RunCase("Ghost", TestGhostExport) && success;
     success = RunCase("EnhancedGhost", TestEnhancedGhostExport) && success;
     success = RunCase("KeyboardHalo", TestKeyboardHaloExport) && success;
+    success = RunCase("KeyboardHaloRegionConversion", TestKeyboardHaloRegionConversion) && success;
     success = RunCase("KeyboardHaloBulk", TestKeyboardHaloBulkExport) && success;
     success = RunCase("LedArray", TestLedArrayExport) && success;
+    success = RunCase("LedArrayWrappedRotation", TestLedArrayWrappedRotationExport) && success;
     success = RunCase("RotatedTemplate", TestRotatedTemplateExport) && success;
     success = RunCase("ScaledOccludedTemplate", TestScaledOccludedTemplateExport) && success;
     success = RunCase("BinocularFusion", TestBinocularFusionExport) && success;

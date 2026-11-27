@@ -62,8 +62,8 @@ public static class STNodeCanvasWriter
 					archiveWritten = true;
 				}
 				nodeData.Add(payload);
-				AddOptions(optionIndices, node.GetAllInputOptions());
-				AddOptions(optionIndices, node.GetAllOutputOptions());
+				AddOptions(optionIndices, node.InputOptions);
+				AddOptions(optionIndices, node.OutputOptions);
 			}
 			catch (Exception ex)
 			{
@@ -80,9 +80,9 @@ public static class STNodeCanvasWriter
 				&& connection.Input != null
 				&& uniqueConnections.Add((connection.Output, connection.Input)))
 			.OrderBy(connection => GetNodeIndex(nodeIndices, connection.Output.Owner))
-			.ThenBy(connection => GetOptionIndex(connection.Output.Owner.GetAllOutputOptions(), connection.Output))
+			.ThenBy(connection => GetOptionIndex(connection.Output.Owner.OutputOptions, connection.Output))
 			.ThenBy(connection => GetNodeIndex(nodeIndices, connection.Input.Owner))
-			.ThenBy(connection => GetOptionIndex(connection.Input.Owner.GetAllInputOptions(), connection.Input))
+			.ThenBy(connection => GetOptionIndex(connection.Input.Owner.InputOptions, connection.Input))
 			.ToArray();
 		var packedConnections = new long[orderedConnections.Length];
 		for (int i = 0; i < orderedConnections.Length; i++)
@@ -159,34 +159,32 @@ public static class STNodeCanvasWriter
 
 		stream.Write(STNodeConstant.NodeFlag, 0, STNodeConstant.NodeFlag.Length);
 		stream.WriteByte(STNodeConstant.Version);
-		using GZipStream gzip = new GZipStream(stream, CompressionMode.Compress);
-		WriteSingle(gzip, canvasOffsetX);
-		WriteSingle(gzip, canvasOffsetY);
-		WriteSingle(gzip, canvasScale);
-		WriteInt32(gzip, nodeData.Count);
+		using var writer = new BinaryWriter(new GZipStream(stream, CompressionMode.Compress));
+		writer.Write(canvasOffsetX);
+		writer.Write(canvasOffsetY);
+		writer.Write(canvasScale);
+		writer.Write(nodeData.Count);
 		foreach (byte[] payload in nodeData)
 		{
 			if (payload == null || payload.Length == 0)
 				throw new InvalidDataException("A serialized node payload is empty.");
-			WriteInt32(gzip, payload.Length);
-			gzip.Write(payload, 0, payload.Length);
+			writer.Write(payload.Length);
+			writer.Write(payload);
 		}
-		WriteInt32(gzip, packedConnections.Count);
+		writer.Write(packedConnections.Count);
 		foreach (long connection in packedConnections)
-		{
-			byte[] bytes = BitConverter.GetBytes(connection);
-			gzip.Write(bytes, 0, bytes.Length);
-		}
+			writer.Write(connection);
 	}
 
 	private static void AddOptions(
 		Dictionary<STNodeOption, long> optionIndices,
-		IEnumerable<STNodeOption> options)
+		STNodeOptionCollection options)
 	{
-		foreach (STNodeOption option in options)
+		for (int i = 0; i < options.Count; i++)
 		{
-			if (option != null && !optionIndices.ContainsKey(option))
-				optionIndices.Add(option, optionIndices.Count);
+			STNodeOption option = options[i];
+			if (option != null)
+				optionIndices.TryAdd(option, optionIndices.Count);
 		}
 	}
 
@@ -200,10 +198,10 @@ public static class STNodeCanvasWriter
 	}
 
 	private static int GetOptionIndex(
-		STNodeOption[] options,
+		STNodeOptionCollection options,
 		STNodeOption option)
 	{
-		for (int i = 0; i < options.Length; i++)
+		for (int i = 0; i < options.Count; i++)
 		{
 			if (ReferenceEquals(options[i], option))
 				return i;
@@ -234,15 +232,4 @@ public static class STNodeCanvasWriter
 		}
 	}
 
-	private static void WriteSingle(GZipStream stream, float value)
-	{
-		byte[] bytes = BitConverter.GetBytes(value);
-		stream.Write(bytes, 0, bytes.Length);
-	}
-
-	private static void WriteInt32(GZipStream stream, int value)
-	{
-		byte[] bytes = BitConverter.GetBytes(value);
-		stream.Write(bytes, 0, bytes.Length);
-	}
 }

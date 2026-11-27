@@ -82,35 +82,19 @@ void forEachCirclePixel(
     }
 
     const std::int32_t radiusFloor = diameter / 2;
-    const std::int32_t firstRow = (std::max)(0, request.y - radiusFloor);
-    const std::int32_t lastRow = request.y + (std::min)(imageHeight - 1 - request.y, radiusFloor);
-    const std::int32_t maximumExtent = (std::min)(radiusFloor, (std::max)(request.x, imageWidth - 1 - request.x));
-    // Integer pixel distances obey 4 * distanceSquared < diameter² for strict circles.
-    const std::int64_t maximumDistanceSquared = (static_cast<std::int64_t>(diameter) * diameter - (includeBoundary ? 0 : 1)) / 4;
-    std::int32_t extent = 0;
-    for (std::int32_t row = firstRow; row <= lastRow; ++row) {
-        const std::int64_t dy = static_cast<std::int64_t>(row) - request.y;
-        const std::int64_t remaining = maximumDistanceSquared - dy * dy;
-        if (remaining < 0) continue;
-
-        // Each scanline is contiguous. Its extent grows toward the center and shrinks afterward.
-        if (row <= request.y) {
-            while (extent < maximumExtent && static_cast<std::int64_t>(extent + 1) * (extent + 1) <= remaining) {
-                ++extent;
+    const detail::CircleBounds bounds{
+        (std::max)(0, request.y - radiusFloor),
+        request.y + (std::min)(imageHeight - 1 - request.y, radiusFloor),
+        (std::max)(0, request.x - radiusFloor),
+        request.x + (std::min)(imageWidth - 1 - request.x, radiusFloor)
+    };
+    detail::forEachCircleSpan(request.x, request.y, diameter, bounds, includeBoundary,
+        [&](std::int32_t row, std::int32_t firstColumn, std::int32_t lastColumn) {
+            const std::size_t rowStart = static_cast<std::size_t>(row) * imageWidth;
+            for (std::int32_t column = firstColumn; column <= lastColumn; ++column) {
+                consume(rowStart + column);
             }
-        }
-        else {
-            while (static_cast<std::int64_t>(extent) * extent > remaining) {
-                --extent;
-            }
-        }
-        const std::int32_t firstColumn = (std::max)(0, request.x - extent);
-        const std::int32_t lastColumn = request.x + (std::min)(imageWidth - 1 - request.x, extent);
-        const std::size_t rowStart = static_cast<std::size_t>(row) * imageWidth;
-        for (std::int32_t column = firstColumn; column <= lastColumn; ++column) {
-            consume(rowStart + column);
-        }
-    }
+        });
 }
 
 ChannelAverage calculateCircle(
@@ -186,16 +170,20 @@ double calculateMainWave(double x, double y) noexcept
     const double A = (y - kReferenceY) / (x - kReferenceX);
     const double B = -1;
     const double C = y - x * (y - kReferenceY) / (x - kReferenceX);
+    const double divisor = std::sqrt(A * A + B * B);
+    const auto signedDistance = [&](std::size_t index) {
+        return (A * kWaveX[index] + B * kWaveY[index] + C) / divisor;
+    };
     std::array<double, 80> intersections{};
     std::size_t count = 0;
+    double d1 = signedDistance(0);
     for (std::size_t index = 0; index + 1 < kWaveX.size(); ++index) {
-        const double divisor = std::sqrt(A * A + B * B);
-        const double d1 = (A * kWaveX[index] + B * kWaveY[index] + C) / divisor;
-        const double d2 = (A * kWaveX[index + 1] + B * kWaveY[index + 1] + C) / divisor;
+        const double d2 = signedDistance(index + 1);
         if (d1 * d2 <= 0 && count < intersections.size()) {
             intersections[count++] = 380 + static_cast<double>(index * kWaveStep)
                 + kWaveStep * std::fabs(d1) / (std::fabs(d1) + std::fabs(d2));
         }
+        d1 = d2;
     }
 
     double mainWave = -99;

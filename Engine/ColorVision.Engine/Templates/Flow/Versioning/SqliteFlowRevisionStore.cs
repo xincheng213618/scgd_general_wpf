@@ -189,6 +189,32 @@ namespace ColorVision.Engine.Templates.Flow.Versioning
             }
         }
 
+        internal IReadOnlyList<FlowRevisionSummary> ListHistory(string flowKey)
+        {
+            string key = FlowRevisionStoreRules.NormalizeFlowKey(flowKey);
+            lock (sync)
+            {
+                ThrowIfDisposed();
+                using SqliteCommand command = connection.CreateCommand();
+                command.CommandText = """
+                    SELECT revision, source, is_published, binary_hash, author, message, created_time_utc
+                    FROM flow_definition_revision
+                    WHERE flow_key = $flow_key
+                    ORDER BY revision DESC;
+                    """;
+                command.Parameters.AddWithValue("$flow_key", key);
+                using SqliteDataReader reader = command.ExecuteReader();
+                var results = new List<FlowRevisionSummary>();
+                while (reader.Read())
+                {
+                    results.Add(new FlowRevisionSummary(key, reader.GetInt32(0), ReadSource(reader.GetString(1)),
+                        reader.GetInt32(2) != 0, reader.GetString(3), reader.IsDBNull(4) ? null : reader.GetString(4),
+                        reader.IsDBNull(5) ? null : reader.GetString(5), ReadCreatedTime(reader.GetString(6))));
+                }
+                return results;
+            }
+        }
+
         public FlowRevision Append(FlowRevisionAppendRequest request)
         {
             ArgumentNullException.ThrowIfNull(request);
@@ -389,16 +415,7 @@ namespace ColorVision.Engine.Templates.Flow.Versioning
 
         private static FlowRevision ReadRevision(SqliteDataReader reader)
         {
-            string sourceText = reader.GetString(4);
-            if (!Enum.TryParse(
-                sourceText,
-                ignoreCase: false,
-                out FlowRevisionSource source))
-            {
-                throw new InvalidOperationException(
-                    $"无法识别的流程版本来源：{sourceText}");
-            }
-
+            FlowRevisionSource source = ReadSource(reader.GetString(4));
             FlowSemanticDocument? semanticDocument =
                 JsonSerializer.Deserialize<FlowSemanticDocument>(
                     reader.GetString(10),
@@ -435,12 +452,17 @@ namespace ColorVision.Engine.Templates.Flow.Versioning
                 RollbackOfRevision = reader.IsDBNull(14)
                     ? null
                     : reader.GetInt32(14),
-                CreatedTimeUtc = DateTime.Parse(
-                    reader.GetString(15),
-                    CultureInfo.InvariantCulture,
-                    DateTimeStyles.RoundtripKind),
+                CreatedTimeUtc = ReadCreatedTime(reader.GetString(15)),
             };
         }
+
+        private static FlowRevisionSource ReadSource(string text) =>
+            Enum.TryParse(text, ignoreCase: false, out FlowRevisionSource source)
+                ? source
+                : throw new InvalidOperationException($"无法识别的流程版本来源：{text}");
+
+        private static DateTime ReadCreatedTime(string text) =>
+            DateTime.Parse(text, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind);
 
         private void ThrowIfDisposed()
         {

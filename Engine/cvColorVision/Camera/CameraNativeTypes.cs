@@ -67,7 +67,6 @@ namespace cvColorVision
     {
         Cfg_Camera = 0,
         Cfg_ExpTime = 1,
-        Cfg_Calibration = 2,
         Cfg_Channels = 3,
         Cfg_SYSTEM = 4,
     };

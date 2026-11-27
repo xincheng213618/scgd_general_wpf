@@ -45,6 +45,21 @@ public sealed class ConoscopeStreamingExportTests
     }
 
     [Fact]
+    public void MatrixPreservesNonFiniteMarkersAndLongFixedPointCells()
+    {
+        string file = Path.GetTempFileName();
+        try
+        {
+            var context = Context(read: (x, _) => new(0, x == 60 ? double.NaN : x < 120 ? double.PositiveInfinity : double.MaxValue, 0));
+            ConoscopeExportService.ExportPolarWithStep(file, ExportChannel.Y, context, 30, 360, 8);
+            string[] rows = File.ReadAllLines(file).Where(line => line.Length > 0 && !line.StartsWith('#')).ToArray();
+            string largeValue = double.MaxValue.ToString("F8", CultureInfo.InvariantCulture);
+            Assert.Equal(["Phi \\ Theta,0.00,30.00,60.00", $"0.00,--,--,{largeValue}", $"360.00,--,--,{largeValue}"], rows);
+        }
+        finally { File.Delete(file); }
+    }
+
+    [Fact]
     public void CancelMidMatrixRetainsDestinationAndRemovesOnlyOwnedTemporaryFile()
     {
         string file = Path.GetTempFileName();

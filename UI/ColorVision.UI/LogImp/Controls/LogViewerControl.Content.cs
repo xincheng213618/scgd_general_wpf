@@ -5,13 +5,43 @@ namespace ColorVision.UI.LogImp.Controls
 {
     public partial class LogViewerControl
     {
-        private void UpdateVisibleEntriesAfterAppend(IReadOnlyList<LogEntry> displayEntries, bool latestAtTop, int removedCount)
+        private int CountEvictedMatches(int evicted, bool latestAtTop)
+        {
+            // A successful keyword filter leaves the visible rows in the original entries' order.
+            int logIndex = latestAtTop ? _entries.Count - 1 : 0;
+            int visibleIndex = latestAtTop ? _visibleEntries.Count - 1 : 0;
+            int step = latestAtTop ? -1 : 1;
+            int matches = 0;
+            for (int i = 0; i < evicted && (uint)visibleIndex < (uint)_visibleEntries.Count; i++, logIndex += step)
+            {
+                if (!ReferenceEquals(_entries[logIndex], _visibleEntries[visibleIndex])) continue;
+                visibleIndex += step;
+                matches++;
+            }
+            return matches;
+        }
+
+        private void UpdateVisibleEntriesAfterAppend(IReadOnlyList<LogEntry> displayEntries, bool latestAtTop, int removedCount, int evictedMatches)
         {
             if (IsSearchActive)
             {
                 if (removedCount > 0)
                 {
-                    ApplySearchFilter(_searchText);
+                    if (evictedMatches < 0)
+                    {
+                        ApplySearchFilter(_searchText);
+                        return;
+                    }
+
+                    IEnumerable<LogEntry> retained = displayEntries;
+                    int droppedIncoming = displayEntries.Count - _entries.Count;
+                    if (droppedIncoming > 0)
+                        retained = latestAtTop ? displayEntries.Take(_entries.Count) : displayEntries.Skip(droppedIncoming);
+                    if (LogSearchHelper.FilterItems(_searchText, retained, static entry => entry.Text, out var incoming))
+                    {
+                        ResetSelectionState(clearSelection: true);
+                        _visibleEntries.UpdateEnds(incoming, evictedMatches, latestAtTop);
+                    }
                     return;
                 }
 

@@ -142,7 +142,8 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             double fovDist,
             double cameraDegrees,
             IReadOnlyList<LuminousAreaPoint>? coarseCorners,
-            FovMeasurementMode mode);
+            FovMeasurementMode mode,
+            double minimumConfidence);
         LocalFovPersistenceResult Persist(LocalFovPersistenceRequest request);
         void Publish(LocalFovPublishRequest request);
     }
@@ -195,14 +196,15 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             double fovDist,
             double cameraDegrees,
             IReadOnlyList<LuminousAreaPoint>? coarseCorners,
-            FovMeasurementMode mode) =>
+            FovMeasurementMode mode,
+            double minimumConfidence) =>
             FovCalculator.DetectAndCalculate(
                 image,
                 roi,
                 fovDist,
                 cameraDegrees,
                 mode,
-                LocalFindLuminousAreaNode.DefaultMinimumConfidence,
+                minimumConfidence,
                 coarseCorners: coarseCorners);
         public LocalFovPersistenceResult Persist(LocalFovPersistenceRequest request) => LocalFovResultPersistence.Save(request, resultDirectory);
         public void Publish(LocalFovPublishRequest request) => ResultMessageBus.Default.PublishPersisted(
@@ -326,7 +328,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
 
     [STNode("Flow_LocalAlgorithms", "FOV计算", CategoryOrder = 9910, NodeOrder = 20)]
     [FlowEngineLib.FlowNodeDocumentation("将发光区的像素跨度按相机标定换算为水平、垂直和对角视场角。",
-        Usage = "设置配对的 FovDist 与 cameraDegrees；默认四角模式可直接接发光区结果，轮廓模式必须提供同源图像像素。",
+        Usage = "设置配对的 FovDist 与 cameraDegrees。默认四角模式可直接接发光区结果，轮廓模式必须提供同源图像像素。",
         Notes = "四角与轮廓模式的跨度口径不同。结果为几何视场，不能替代亮度或对比度限定的有效视场；无效标定会失败，轮廓模式还会拒绝裁切和可分辨孔洞。",
         TopicId = "algorithms.fov-local")]
     public sealed class LocalFovNode : LocalFlowNodeBase
@@ -335,6 +337,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
         private readonly ILocalFovNodeServices services;
         private double fovDist = 9410;
         private double cameraDegrees = 74.2;
+        private double minimumConfidence = LocalFindLuminousAreaNode.DefaultMinimumConfidence;
         private FovMeasurementMode measurementMode;
         private double luminanceBoundaryRatio = FovLuminousAreaDetector.DefaultBoundaryRatio;
 
@@ -361,6 +364,19 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
         {
             get => measurementMode;
             set { measurementMode = value; OnPropertyChanged(); }
+        }
+
+        // Preserve the four-corner threshold stored by older flows.
+        [Browsable(false)]
+        [STNodeProperty("最低可信度", "旧流程保存的四角自动定位门槛。", true)]
+        public double MinimumConfidence
+        {
+            get => minimumConfidence;
+            set
+            {
+                minimumConfidence = double.IsFinite(value) ? Math.Clamp(value, 0, 1) : LocalFindLuminousAreaNode.DefaultMinimumConfidence;
+                OnPropertyChanged();
+            }
         }
 
         // Kept for old serialized nodes; no longer a geometric FOV setting.
@@ -399,6 +415,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             MySqlConnectedEndpoint? endpoint = LocalFlowResultPersistence.ResolveEndpoint(action);
             double configuredFovDist = FovDist;
             double selectedCameraDegrees = CameraDegrees;
+            double selectedMinimumConfidence = MinimumConfidence;
             FovMeasurementMode selectedMode = MeasurementMode;
             FovCalculator.ValidateCalibration(configuredFovDist, selectedCameraDegrees);
             LocalFovInputContext input = ResolveInput(action, selectedMode, endpoint);
@@ -446,7 +463,8 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                         selectedFovDist,
                         selectedCameraDegrees,
                         input.Corners,
-                        selectedMode));
+                        selectedMode,
+                        selectedMinimumConfidence));
                     stopwatch.Stop();
                 }
                 catch (Exception calculationException) when (calculationException is InvalidOperationException or ArgumentException)
@@ -454,7 +472,8 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                     stopwatch.Stop();
                     int failedTime = checked((int)Math.Min(stopwatch.ElapsedMilliseconds, int.MaxValue));
                     int sourceMasterId = input.SourceMasterId > 0 ? input.SourceMasterId : frameMasterId;
-                    object failedParameters = BuildParameters(input, sourceMasterId, frameId, imageFile, calibration, selectedFovDist, selectedCameraDegrees, selectedMode, null, calculationException.Message);
+                    object failedParameters = BuildParameters(input, sourceMasterId, frameId, imageFile, calibration,
+                        selectedFovDist, selectedCameraDegrees, selectedMode, selectedMinimumConfidence, null, calculationException.Message);
                     LocalFovPersistenceResult failed = FlowNodeTiming.Run("PersistResult", () => services.Persist(new LocalFovPersistenceRequest
                     {
                         DatabaseEndpoint = database,
@@ -479,7 +498,8 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
 
                 int totalTime = checked((int)Math.Min(stopwatch.ElapsedMilliseconds, int.MaxValue));
                 int successfulSourceMasterId = input.SourceMasterId > 0 ? input.SourceMasterId : frameMasterId;
-                object parameters = BuildParameters(input, successfulSourceMasterId, frameId, imageFile, calibration, selectedFovDist, selectedCameraDegrees, selectedMode, calculation, null);
+                object parameters = BuildParameters(input, successfulSourceMasterId, frameId, imageFile, calibration,
+                    selectedFovDist, selectedCameraDegrees, selectedMode, selectedMinimumConfidence, calculation, null);
                 LocalFovPersistenceResult persisted = FlowNodeTiming.Run("PersistResult", () => services.Persist(new LocalFovPersistenceRequest
                 {
                     DatabaseEndpoint = database,
@@ -535,6 +555,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             action.SerialNumber,
             FovDist,
             cameraDegrees = CameraDegrees,
+            MinimumConfidence = MeasurementMode == FovMeasurementMode.FourCorners ? MinimumConfidence : (double?)null,
             MeasurementMode = MeasurementMode.ToString(),
             Localization = MeasurementMode == FovMeasurementMode.CurvedBoundary ? "CurvedBoundary" : "GeometricCorners"
         });
@@ -647,6 +668,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             double fovDist,
             double cameraDegrees,
             FovMeasurementMode mode,
+            double minimumConfidence,
             FovCalculationResult? calculation,
             string? failureReason)
         {
@@ -656,6 +678,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                 Formula = "2*atan((pixelDistance/FovDist)*tan(cameraDegrees/2))*180/PI",
                 FovDist = fovDist,
                 cameraDegrees,
+                MinimumConfidence = mode == FovMeasurementMode.FourCorners ? minimumConfidence : (double?)null,
                 MeasurementMode = mode.ToString(),
                 BoundaryMode = calculation?.BoundaryMode ?? (mode == FovMeasurementMode.CurvedBoundary
                     ? "CurvedBoundary" : input.Corners != null ? "UpstreamCorners" : "RobustV2"),

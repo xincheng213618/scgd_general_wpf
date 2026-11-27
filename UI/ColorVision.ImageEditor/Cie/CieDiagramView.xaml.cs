@@ -32,6 +32,7 @@ namespace ColorVision.ImageEditor.Cie
         private bool _showDaylightReference = true;
         private bool _autoFit = true;
         private bool _isFitting;
+        private bool _deferOverlayRender;
         private DispatcherOperation? _pendingFit;
 
         public CieDiagramView()
@@ -288,8 +289,24 @@ namespace ColorVision.ImageEditor.Cie
             }
         }
 
+        internal void UpdateOverlay(Action update)
+        {
+            bool wasDeferred = _deferOverlayRender;
+            _deferOverlayRender = true;
+            try
+            {
+                update();
+            }
+            finally
+            {
+                _deferOverlayRender = wasDeferred;
+                if (!wasDeferred) RenderOverlay();
+            }
+        }
+
         private void RenderOverlay()
         {
+            if (_deferOverlayRender) return;
             EnsureOverlayVisual();
             using (DrawingContext dc = _segmentVisual.RenderOpen())
             {

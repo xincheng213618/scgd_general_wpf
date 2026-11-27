@@ -243,6 +243,9 @@ public class LVXRCameraNode : CVBaseServerNode
 
 	protected override object getBaseEventData(CVStartCFC start)
 	{
+		if (!System.Enum.IsDefined(_Algorithm))
+			throw new System.NotSupportedException($"算法编号 {(int)_Algorithm} 已退役或不受支持，请重新选择受支持的算子。");
+
 		return new LVXRCameraParam(_FlipMode, _EnableFocus, _Focus, _Aperture, _AvgCount, _Gain, new float[1] { _ExpTime }, _CaliTempName, _POITempName, _POIFilterTempName, _POIReviseTempName, string.Empty, operatorCodeXR, _XRTempName);
 	}
 
@@ -271,9 +274,6 @@ public class LVXRCameraNode : CVBaseServerNode
 			break;
 		case AlgorithmARVRType.双目融合:
 			operatorCodeXR = "ARVR.BinocularFusion";
-			break;
-		case AlgorithmARVRType.SFR_FindROI:
-			operatorCodeXR = "ARVR.SFR.FindROI";
 			break;
 		case AlgorithmARVRType.十字计算:
 			operatorCodeXR = "FindCross";

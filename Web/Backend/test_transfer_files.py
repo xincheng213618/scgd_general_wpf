@@ -4,6 +4,7 @@ import http.client
 import tempfile
 import threading
 import unittest
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 from io import BytesIO
 from pathlib import Path
@@ -206,6 +207,61 @@ class TransferFileServiceTests(unittest.TestCase):
         self.assertEqual(status.offset, 0)
         self.assertTrue(completed.session.complete)
         self.assertEqual((self.root / "interrupted.bin").read_bytes(), b"complete")
+
+    def test_resumable_upload_retry_advances_while_previous_body_is_blocked(self):
+        reading = threading.Event()
+        allow_read = threading.Event()
+
+        class BlockedStream(BytesIO):
+            def read(self, size=-1):
+                reading.set()
+                if not allow_read.wait(timeout=10):
+                    raise TimeoutError("test did not release the request body")
+                return super().read(size)
+
+        owner = {"owner_type": "user", "owner_id": "alice"}
+        session = create_or_resume_transfer_upload(self.root, "concurrent.bin", 8, "a" * 64, **owner)
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            previous = pool.submit(
+                append_transfer_upload, self.root, session.upload_id, 0, BlockedStream(b"old!"), **owner
+            )
+            try:
+                self.assertTrue(reading.wait(timeout=5))
+                retry = pool.submit(
+                    append_transfer_upload, self.root, session.upload_id, 0, BytesIO(b"new!"), **owner
+                )
+                self.assertEqual(retry.result(timeout=5).session.offset, 4)
+            finally:
+                allow_read.set()
+
+            with self.assertRaises(TransferFileError) as stale:
+                previous.result(timeout=5)
+            self.assertEqual(stale.exception.status_code, 409)
+
+        completed = append_transfer_upload(self.root, session.upload_id, 4, BytesIO(b"tail"), **owner)
+        self.assertTrue(completed.session.complete)
+        self.assertEqual((self.root / "concurrent.bin").read_bytes(), b"new!tail")
+
+    def test_staged_upload_chunk_preserves_size_limits(self):
+        owner = {"owner_type": "user", "owner_id": "alice"}
+        session = create_or_resume_transfer_upload(self.root, "bounded.bin", 8, "b" * 64, **owner)
+
+        with patch("transfer_files.TRANSFER_CHUNK_SIZE", 4):
+            for body, limit, status in ((b"", 8, 400), (b"oversized", 8, 413), (b"oversized", 12, 409)):
+                with self.subTest(status=status):
+                    with self.assertRaises(TransferFileError) as rejected:
+                        append_transfer_upload(
+                            self.root, session.upload_id, 0, BytesIO(body), max_chunk_size=limit, **owner
+                        )
+                    self.assertEqual(rejected.exception.status_code, status)
+                    self.assertEqual(get_transfer_upload_session(self.root, session.upload_id, **owner).offset, 0)
+
+            completed = append_transfer_upload(
+                self.root, session.upload_id, 0, BytesIO(b"complete"), max_chunk_size=8, **owner
+            )
+
+        self.assertTrue(completed.session.complete)
+        self.assertEqual((self.root / "bounded.bin").read_bytes(), b"complete")
 
     def test_anonymous_upload_does_not_replace_file_created_during_upload(self):
         session = create_or_resume_transfer_upload(

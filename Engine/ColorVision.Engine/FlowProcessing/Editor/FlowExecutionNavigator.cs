@@ -73,11 +73,8 @@ namespace ColorVision.Engine.FlowProcessing.Editor
                 || string.Equals(fullName, candidate, StringComparison.OrdinalIgnoreCase);
         }
 
-        public void OpenNodeExecutionDetails(CVCommonNode node, bool focusNode = false)
+        public void OpenNodeExecutionDetails(CVCommonNode node)
         {
-            if (focusNode)
-                FocusNode(node);
-
             var window = new FlowExecutionAnalysisWindow(
                 node.NodeID,
                 node.OnGetDrawTitle(),

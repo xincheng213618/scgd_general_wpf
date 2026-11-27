@@ -59,7 +59,7 @@ public enum CVResultType
 	Algorithm_ARVR_BF = 54,
 	Algorithm_KB_Output_Lv = 55,
 	Algorithm_KB_Output_CIE = 56,
-	Algorithm_ARVR_SFR_FindROI = 60,
+	// Result ID 60 is reserved after retirement.
 	Algorithm_ARVR_AAFindPoints = 61,
 	Algorithm_PoiAnalysis = 62,
 	Algorithm_FindCross = 63,

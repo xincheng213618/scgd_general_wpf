@@ -1,6 +1,7 @@
 ﻿using ColorVision.Algorithms;
 using OpenCvSharp;
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
@@ -8,6 +9,7 @@ using System.Numerics;
 using System.Runtime.InteropServices;
 using System.Text.Json;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace ColorVision.ImageEditor.Algorithms;
 
@@ -40,69 +42,20 @@ public sealed partial class DisplayMetrologyProvider
         int width = (search.Width + step - 1) / step, height = (search.Height + step - 1) / step;
         float[][] channels = [new float[width * height], new float[width * height], new float[width * height]];
         int count = input.Format.Channels(), bytes = input.Format.BitsPerChannel() / 8;
-        ReadOnlySpan<byte> data = input.Data.Span;
         if (input.Format == AlgorithmImageFormat.Bgr48 && BitConverter.IsLittleEndian)
         {
-            // Positive decoding is monotonic: pool the original integers before
-            // normalizing/decoding, producing exactly the same float maxima.
-            // Keep every source pixel, including partial cells at the ROI edges.
-            // Max pooling is separable: combine contiguous rows with SIMD first,
-            // then reduce each horizontal cell without mixing B/G/R lanes.
-            ushort[]? pooledRow = step > 1 && Vector.IsHardwareAccelerated ? new ushort[search.Width * 3] : null;
-            for (int py = 0; py < height; py++)
-            {
-                int y0 = py * step, y1 = Math.Min(y0 + step, search.Height);
-                if (pooledRow != null)
-                {
-                    token.ThrowIfCancellationRequested();
-                    Span<ushort> maxima = pooledRow;
-                    MemoryMarshal.Cast<byte, ushort>(data.Slice((search.Y + y0) * input.Stride + search.X * 6, search.Width * 6)).CopyTo(maxima);
-                    int lanes = Vector<ushort>.Count;
-                    for (int y = y0 + 1; y < y1; y++)
-                    {
-                        token.ThrowIfCancellationRequested();
-                        var row = MemoryMarshal.Cast<byte, ushort>(data.Slice((search.Y + y) * input.Stride + search.X * 6, search.Width * 6));
-                        int x = 0;
-                        for (; x <= row.Length - lanes; x += lanes)
-                            Vector.Max(new Vector<ushort>(row.Slice(x, lanes)), new Vector<ushort>(maxima.Slice(x, lanes))).CopyTo(maxima.Slice(x, lanes));
-                        for (; x < row.Length; x++) maxima[x] = Math.Max(maxima[x], row[x]);
-                    }
-                }
-                for (int px = 0; px < width; px++)
-                {
-                    token.ThrowIfCancellationRequested();
-                    int x0 = px * step, x1 = Math.Min(x0 + step, search.Width);
-                    int blue = 0, green = 0, red = 0;
-                    if (pooledRow != null)
-                    {
-                        for (int x = x0 * 3; x < x1 * 3; x += 3)
-                        {
-                            blue = Math.Max(blue, pooledRow[x]);
-                            green = Math.Max(green, pooledRow[x + 1]);
-                            red = Math.Max(red, pooledRow[x + 2]);
-                        }
-                    }
-                    else
-                    {
-                        for (int y = y0; y < y1; y++)
-                        {
-                            var row = MemoryMarshal.Cast<byte, ushort>(data.Slice((search.Y + y) * input.Stride + (search.X + x0) * 6, (x1 - x0) * 6));
-                            for (int x = 0; x < row.Length; x += 3)
-                            {
-                                blue = Math.Max(blue, row[x]);
-                                green = Math.Max(green, row[x + 1]);
-                                red = Math.Max(red, row[x + 2]);
-                            }
-                        }
-                    }
-                    int index = py * width + px;
-                    channels[0][index] = (float)(exponent == 1 ? red / 65535d : Math.Pow(red / 65535d, exponent));
-                    channels[1][index] = (float)(exponent == 1 ? green / 65535d : Math.Pow(green / 65535d, exponent));
-                    channels[2][index] = (float)(exponent == 1 ? blue / 65535d : Math.Pow(blue / 65535d, exponent));
-                }
-            }
+            const int pixelsPerWorker = 1024 * 1024;
+            int workers = Math.Min(8, Math.Min(Environment.ProcessorCount,
+                Math.Min(height, (int)((long)search.Width * search.Height / pixelsPerWorker))));
+            if (workers <= 1)
+                PoolBgr48LocatorRows(input, search, exponent, channels, width, step, 0, height, token);
+            else
+                Parallel.For(0, workers, new ParallelOptions { CancellationToken = token, MaxDegreeOfParallelism = workers },
+                    worker => PoolBgr48LocatorRows(input, search, exponent, channels, width, step,
+                        height * worker / workers, height * (worker + 1) / workers, token));
             return (channels, width, height, step);
         }
+        ReadOnlySpan<byte> data = input.Data.Span;
         if (step > 1 && (bytes is 1 or 2))
         {
             int maximum = bytes == 1 ? byte.MaxValue : ushort.MaxValue;
@@ -157,6 +110,76 @@ public sealed partial class DisplayMetrologyProvider
             }
         }
         return (channels, width, height, step);
+    }
+
+    private static void PoolBgr48LocatorRows(AlgorithmImageBuffer input, Rect search, double exponent, float[][] channels,
+        int width, int step, int firstRow, int endRow, CancellationToken token)
+    {
+        // Positive decoding is monotonic, so the original integers can be pooled first.
+        // Each worker pools a disjoint range of complete cells, with its own scratch row.
+        // Combine source rows with SIMD before reducing each horizontal cell.
+        ReadOnlySpan<byte> data = input.Data.Span;
+        int rowSamples = search.Width * 3;
+        ushort[]? pooledRow = step > 1 && Vector.IsHardwareAccelerated ? ArrayPool<ushort>.Shared.Rent(rowSamples) : null;
+        try
+        {
+            for (int py = firstRow; py < endRow; py++)
+            {
+                int y0 = py * step, y1 = Math.Min(y0 + step, search.Height);
+                if (pooledRow != null)
+                {
+                    token.ThrowIfCancellationRequested();
+                    Span<ushort> maxima = pooledRow.AsSpan(0, rowSamples);
+                    MemoryMarshal.Cast<byte, ushort>(data.Slice((search.Y + y0) * input.Stride + search.X * 6, search.Width * 6)).CopyTo(maxima);
+                    int lanes = Vector<ushort>.Count;
+                    for (int y = y0 + 1; y < y1; y++)
+                    {
+                        token.ThrowIfCancellationRequested();
+                        var row = MemoryMarshal.Cast<byte, ushort>(data.Slice((search.Y + y) * input.Stride + search.X * 6, search.Width * 6));
+                        int x = 0;
+                        for (; x <= row.Length - lanes; x += lanes)
+                            Vector.Max(new Vector<ushort>(row.Slice(x, lanes)), new Vector<ushort>(maxima.Slice(x, lanes))).CopyTo(maxima.Slice(x, lanes));
+                        for (; x < row.Length; x++) maxima[x] = Math.Max(maxima[x], row[x]);
+                    }
+                }
+                for (int px = 0; px < width; px++)
+                {
+                    token.ThrowIfCancellationRequested();
+                    int x0 = px * step, x1 = Math.Min(x0 + step, search.Width);
+                    int blue = 0, green = 0, red = 0;
+                    if (pooledRow != null)
+                    {
+                        for (int x = x0 * 3; x < x1 * 3; x += 3)
+                        {
+                            blue = Math.Max(blue, pooledRow[x]);
+                            green = Math.Max(green, pooledRow[x + 1]);
+                            red = Math.Max(red, pooledRow[x + 2]);
+                        }
+                    }
+                    else
+                    {
+                        for (int y = y0; y < y1; y++)
+                        {
+                            var row = MemoryMarshal.Cast<byte, ushort>(data.Slice((search.Y + y) * input.Stride + (search.X + x0) * 6, (x1 - x0) * 6));
+                            for (int x = 0; x < row.Length; x += 3)
+                            {
+                                blue = Math.Max(blue, row[x]);
+                                green = Math.Max(green, row[x + 1]);
+                                red = Math.Max(red, row[x + 2]);
+                            }
+                        }
+                    }
+                    int index = py * width + px;
+                    channels[0][index] = (float)(exponent == 1 ? red / 65535d : Math.Pow(red / 65535d, exponent));
+                    channels[1][index] = (float)(exponent == 1 ? green / 65535d : Math.Pow(green / 65535d, exponent));
+                    channels[2][index] = (float)(exponent == 1 ? blue / 65535d : Math.Pow(blue / 65535d, exponent));
+                }
+            }
+        }
+        finally
+        {
+            if (pooledRow != null) ArrayPool<ushort>.Shared.Return(pooledRow);
+        }
     }
 
     private static double CrossSample(ReadOnlySpan<byte> data, int offset, int bytes) => bytes == 1 ? data[offset] / 255.0

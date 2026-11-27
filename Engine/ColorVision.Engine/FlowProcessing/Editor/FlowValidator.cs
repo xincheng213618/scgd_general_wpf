@@ -35,8 +35,8 @@ namespace ColorVision.Engine.FlowProcessing.Editor
             if (!FlowEngineLib.Repeat.FlowRepeatRegion.TryValidate(nodeEditor.Nodes.Cast<STNode>(), out error))
                 return false;
 
-            ConnectionInfo[] connections = nodeEditor.GetConnectionInfo();
-            log.Debug($"CheckFlow: 节点数={nodeEditor.Nodes.Count}, 连接数={connections.Length}");
+            if (log.IsDebugEnabled)
+                log.Debug($"CheckFlow: 节点数={nodeEditor.Nodes.Count}");
 
             STNode[] startNodes = nodeEditor.Nodes.OfType<BaseStartNode>().ToArray();
             if (startNodes.Length == 0)
@@ -52,7 +52,7 @@ namespace ColorVision.Engine.FlowProcessing.Editor
                 return false;
             }
 
-            if (!IsPathExists(startNodes, endNodes, connections))
+            if (!HasExecutionPath(nodeEditor, startNodes, endNodes))
             {
                 error = Properties.Resources.Flow_NoPathFromStartToEnd;
                 invalidStart = startNodes.Length == 1 ? startNodes[0] : null;
@@ -63,20 +63,8 @@ namespace ColorVision.Engine.FlowProcessing.Editor
             return true;
         }
 
-        private static bool IsPathExists(IEnumerable<STNode> startNodes, HashSet<STNode> endNodes, ConnectionInfo[] connections)
+        private static bool HasExecutionPath(STNodeEditor nodeEditor, STNode[] startNodes, HashSet<STNode> endNodes)
         {
-            var children = new Dictionary<STNode, List<STNode>>();
-            foreach (ConnectionInfo connection in connections)
-            {
-                if (connection.Output.DataType != typeof(CVStartCFC) || connection.Input.DataType != typeof(CVStartCFC))
-                    continue;
-
-                STNode source = connection.Output.Owner;
-                if (!children.TryGetValue(source, out List<STNode>? targets))
-                    children.Add(source, targets = new List<STNode>(1));
-                targets.Add(connection.Input.Owner);
-            }
-
             var visited = new HashSet<STNode>();
             var queue = new Queue<STNode>();
             foreach (STNode start in startNodes)
@@ -90,13 +78,18 @@ namespace ColorVision.Engine.FlowProcessing.Editor
                 STNode current = queue.Dequeue();
                 if (endNodes.Contains(current))
                     return true;
-                if (!children.TryGetValue(current, out List<STNode>? nextNodes))
-                    continue;
 
-                foreach (STNode child in nextNodes)
+                foreach (STNodeOption output in current.GetAllOutputOptions())
                 {
-                    if (visited.Add(child))
-                        queue.Enqueue(child);
+                    if (output.DataType != typeof(CVStartCFC) || output.Owner != current)
+                        continue;
+
+                    foreach (STNodeOption input in output.ConnectedOption)
+                    {
+                        if (input is { IsInput: true, Owner: STNode child }
+                            && input.DataType == typeof(CVStartCFC) && child.Owner == nodeEditor && visited.Add(child))
+                            queue.Enqueue(child);
+                    }
                 }
             }
 

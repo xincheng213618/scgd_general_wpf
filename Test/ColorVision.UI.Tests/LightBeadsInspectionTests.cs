@@ -41,6 +41,42 @@ public sealed class LightBeadsInspectionTests
     }
 
     [Fact]
+    public void LargeWindowsKeepClippedPeaksAndRejectANonFiniteFinalRow()
+    {
+        const int pitch = 512, origin = 20, size = origin + 3 * pitch + 2, stride = size + 3;
+        const float brightness = 187.25f;
+        var pixels = new float[stride * size];
+        var centers = new List<LightBeadCenter>();
+        for (int row = 0; row < 4; row++)
+            for (int column = 0; column < 4; column++)
+            {
+                int x = origin + column * pitch, y = origin + row * pitch;
+                centers.Add(new(x, y));
+                for (int dy = -1; dy <= 1; dy++)
+                    for (int dx = -1; dx <= 1; dx++)
+                        pixels[(y + dy) * stride + x + dx] = brightness;
+            }
+        int invalidX = origin + pitch, invalidY = origin + pitch;
+        pixels[(invalidY + pitch / 4 + 1) * stride + invalidX] = float.NaN;
+        GCHandle pin = GCHandle.Alloc(pixels, GCHandleType.Pinned);
+        try
+        {
+            var image = new HImage { rows = size, cols = size, channels = 1, depth = 32,
+                stride = stride * sizeof(float), pData = pin.AddrOfPinnedObject(), isDispose = true };
+            var result = LightBeadsInspector.Inspect(image, centers, 4, 4);
+            Assert.Equal(15, result.NormalCount);
+            var invalid = Assert.Single(result.Points, point => point.Status == LightBeadStatus.Unknown);
+            Assert.Equal((2, 2, (double)invalidX, (double)invalidY), (invalid.Row, invalid.Column, invalid.X, invalid.Y));
+            var clipped = result.Points[^1];
+            Assert.Equal(((double)(size - 2), (double)(size - 2), (double)brightness), (clipped.X, clipped.Y, clipped.Brightness));
+        }
+        finally
+        {
+            pin.Free();
+        }
+    }
+
+    [Fact]
     public void SpecifiedDimensionsRejectAnEntireMissingBoundaryRow()
     {
         using var fixture = new GridFixture();

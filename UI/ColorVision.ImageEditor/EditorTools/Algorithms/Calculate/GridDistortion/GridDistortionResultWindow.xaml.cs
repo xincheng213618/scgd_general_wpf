@@ -27,6 +27,15 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.GridDistortio
             SummaryText.Text = result.Success
                 ? LocalizedText.Format($"测量完成 · {result.ExpectedRows} × {result.ExpectedCols} · {result.SelectedCount} 个点 · 检测 {result.Timings.TotalMs:F2} ms")
                 : LocalizedText.Format($"测量失败 · {result.StatusCode}\n{result.Message}");
+            if (!result.Success)
+            {
+                if (result.ExpectedRows > 0 && result.ExpectedCols > 0)
+                    SummaryText.Text = LocalizedText.Format($"测量失败 · 找到 {result.CandidateCount} 个候选点，目标 {result.ExpectedRows * result.ExpectedCols} 个 · {result.StatusCode}\n{result.Message}");
+                int markedCount = result.CandidatePoints.Count > 0 ? result.CandidatePoints.Count : result.Points.Count;
+                LegendText.Visibility = markedCount > 0 ? Visibility.Visible : Visibility.Collapsed;
+                LegendText.Text = LocalizedText.Format($"原图用黄色圆圈标出 {markedCount} 个检测点。");
+                ResultTabs.SelectedItem = DiagnosticsTab;
+            }
             _rows = BuildMetricRows(result, _analysis);
             MetricsGrid.ItemsSource = _rows;
             PointsGrid.ItemsSource = result.Points.OrderBy(p => p.Row).ThenBy(p => p.Col).Select(p => new

@@ -349,25 +349,28 @@ namespace ColorVision.Engine.FlowProcessing.Editor
         /// </summary>
         private void ReduceCrossings()
         {
-            if (_layers.Count <= 1) return;
+            if (_layers.Count <= 1 || !_layers.Any(layer => layer.Count > 1)) return;
+
+            var incomingEdges = _portEdges.ToLookup(edge => edge.To);
+            var outgoingEdges = _portEdges.ToLookup(edge => edge.From);
 
             for (int iter = 0; iter < CrossingReductionIterations; iter++)
             {
                 // Forward sweep: order each layer based on parents in the previous layer
                 for (int i = 1; i < _layers.Count; i++)
                 {
-                    OrderLayerByBarycenter(_layers[i], _layers[i - 1], useParents: true);
+                    OrderLayerByBarycenter(_layers[i], _layers[i - 1], incomingEdges, useParents: true);
                 }
 
                 // Backward sweep: order each layer based on children in the next layer
                 for (int i = _layers.Count - 2; i >= 0; i--)
                 {
-                    OrderLayerByBarycenter(_layers[i], _layers[i + 1], useParents: false);
+                    OrderLayerByBarycenter(_layers[i], _layers[i + 1], outgoingEdges, useParents: false);
                 }
             }
 
             // Post-processing: swap adjacent nodes to further reduce crossings
-            SwapOptimize();
+            SwapOptimize(incomingEdges, outgoingEdges);
         }
 
         /// <summary>
@@ -376,78 +379,55 @@ namespace ColorVision.Engine.FlowProcessing.Editor
         /// Port indices are used as fractional offsets so that nodes connecting to upper
         /// ports tend to be placed above nodes connecting to lower ports.
         /// </summary>
-        private void OrderLayerByBarycenter(List<STNode> layer, List<STNode> fixedLayer, bool useParents)
+        private static void OrderLayerByBarycenter(List<STNode> layer, List<STNode> fixedLayer,
+            ILookup<STNode, PortEdge> edgesByNode, bool useParents)
         {
             if (layer.Count <= 1) return;
 
-            // Build position map for fixed layer
-            var fixedPositions = new Dictionary<STNode, int>();
-            for (int i = 0; i < fixedLayer.Count; i++)
-            {
-                fixedPositions[fixedLayer[i]] = i;
-            }
-
-            // Compute port-aware barycenter for each node in the layer
-            var barycenters = new Dictionary<STNode, double>();
+            var fixedPositions = GetLayerPositions(fixedLayer);
+            var order = new Dictionary<STNode, (double Center, int OriginalIndex)>(layer.Count);
             for (int i = 0; i < layer.Count; i++)
             {
-                var node = layer[i];
-
-                // Gather relevant port edges
-                var relevantEdges = new List<PortEdge>();
-                foreach (var edge in _portEdges)
+                STNode node = layer[i];
+                double sum = 0, primarySum = 0;
+                int count = 0, primaryCount = 0;
+                foreach (var edge in edgesByNode[node])
                 {
-                    if (useParents)
+                    if (!TryGetNeighborPortPosition(edge, fixedPositions, useParents, out double position))
+                        continue;
+                    sum += position;
+                    count++;
+                    if (edge.IsPrimaryLayoutEdge)
                     {
-                        if (edge.To == node && fixedPositions.ContainsKey(edge.From))
-                            relevantEdges.Add(edge);
-                    }
-                    else
-                    {
-                        if (edge.From == node && fixedPositions.ContainsKey(edge.To))
-                            relevantEdges.Add(edge);
+                        primarySum += position;
+                        primaryCount++;
                     }
                 }
 
-                var primaryEdges = relevantEdges.Where(edge => edge.IsPrimaryLayoutEdge).ToList();
-                if (primaryEdges.Count > 0)
-                    relevantEdges = primaryEdges;
-
-                if (relevantEdges.Count > 0)
-                {
-                    double sum = 0;
-                    foreach (var edge in relevantEdges)
-                    {
-                        if (useParents)
-                        {
-                            // Parent position + fractional offset for its output port
-                            double portOffset = PortFraction(edge.OutputPortIndex, edge.OutputPortCount);
-                            sum += fixedPositions[edge.From] + portOffset;
-                        }
-                        else
-                        {
-                            // Child position + fractional offset for its input port
-                            double portOffset = PortFraction(edge.InputPortIndex, edge.InputPortCount);
-                            sum += fixedPositions[edge.To] + portOffset;
-                        }
-                    }
-                    barycenters[node] = sum / relevantEdges.Count;
-                }
-                else
-                {
-                    // Keep relative position for disconnected nodes
-                    barycenters[node] = i;
-                }
+                // Control edges take priority, and the previous order resolves equal centers.
+                double center = primaryCount > 0 ? primarySum / primaryCount : count > 0 ? sum / count : i;
+                order[node] = (center, i);
             }
+            layer.Sort((a, b) => order[a].CompareTo(order[b]));
+        }
 
-            // Stable sort by barycenter value while keeping the previous order for ties.
-            var originalOrder = layer.Select((node, index) => new { node, index })
-                .ToDictionary(item => item.node, item => item.index);
-            layer.Sort((a, b) =>
-            {
-                int compare = barycenters[a].CompareTo(barycenters[b]);
-                return compare != 0 ? compare : originalOrder[a].CompareTo(originalOrder[b]);
-            });
+        private static Dictionary<STNode, int> GetLayerPositions(List<STNode> layer)
+        {
+            var positions = new Dictionary<STNode, int>(layer.Count);
+            for (int index = 0; index < layer.Count; index++)
+                positions[layer[index]] = index;
+            return positions;
+        }
+
+        private static bool TryGetNeighborPortPosition(PortEdge edge, Dictionary<STNode, int> positions, bool useParents,
+            out double position)
+        {
+            position = 0;
+            if (!positions.TryGetValue(useParents ? edge.From : edge.To, out int index)) return false;
+            position = index + (useParents
+                ? PortFraction(edge.OutputPortIndex, edge.OutputPortCount)
+                : PortFraction(edge.InputPortIndex, edge.InputPortCount));
+            return true;
         }
 
         /// <summary>
@@ -1754,49 +1734,23 @@ namespace ColorVision.Engine.FlowProcessing.Editor
             return ((double)portIndex / (portCount - 1) - 0.5) * 0.6;
         }
 
-        /// <summary>
-        /// Count edge crossings between layer at <paramref name="layerIdx"/> and the next layer,
-        /// considering port positions for accurate crossing detection on multi-port nodes.
-        /// </summary>
-        private int CountLayerCrossings(int layerIdx)
+        private static long GetSwapCrossingReduction(IEnumerable<PortEdge> firstEdges, IEnumerable<PortEdge> secondEdges,
+            Dictionary<STNode, int> neighborPositions, bool useParents)
         {
-            if (layerIdx < 0 || layerIdx >= _layers.Count - 1) return 0;
-
-            var layer1 = _layers[layerIdx];
-            var layer2 = _layers[layerIdx + 1];
-
-            // Build position maps
-            var pos1 = new Dictionary<STNode, int>();
-            for (int i = 0; i < layer1.Count; i++) pos1[layer1[i]] = i;
-            var pos2 = new Dictionary<STNode, int>();
-            for (int i = 0; i < layer2.Count; i++) pos2[layer2[i]] = i;
-
-            // Collect edges between these two layers with port-aware positions
-            var edges = new List<(double src, double tgt)>();
-            foreach (var e in _portEdges)
+            // Port offsets stay inside each node's slot. Swapping adjacent nodes only
+            // reverses pairs with an edge on each of the two nodes.
+            long removed = 0;
+            foreach (var first in firstEdges)
             {
-                if (pos1.ContainsKey(e.From) && pos2.ContainsKey(e.To))
+                if (!TryGetNeighborPortPosition(first, neighborPositions, useParents, out double firstPosition))
+                    continue;
+                foreach (var second in secondEdges)
                 {
-                    double src = pos1[e.From] + PortFraction(e.OutputPortIndex, e.OutputPortCount);
-                    double tgt = pos2[e.To] + PortFraction(e.InputPortIndex, e.InputPortCount);
-                    edges.Add((src, tgt));
+                    if (TryGetNeighborPortPosition(second, neighborPositions, useParents, out double secondPosition))
+                        removed += firstPosition.CompareTo(secondPosition);
                 }
             }
-
-            // Count crossings — O(E²), acceptable for typical flow graph sizes
-            int crossings = 0;
-            for (int i = 0; i < edges.Count; i++)
-            {
-                for (int j = i + 1; j < edges.Count; j++)
-                {
-                    if ((edges[i].src < edges[j].src && edges[i].tgt > edges[j].tgt) ||
-                        (edges[i].src > edges[j].src && edges[i].tgt < edges[j].tgt))
-                    {
-                        crossings++;
-                    }
-                }
-            }
-            return crossings;
+            return removed;
         }
 
         /// <summary>
@@ -1804,8 +1758,9 @@ namespace ColorVision.Engine.FlowProcessing.Editor
         /// reduce edge crossings. This catches cases the barycenter heuristic misses,
         /// especially around multi-input nodes like logical AND (逻辑与).
         /// </summary>
-        private void SwapOptimize()
+        private void SwapOptimize(ILookup<STNode, PortEdge> incomingEdges, ILookup<STNode, PortEdge> outgoingEdges)
         {
+            Dictionary<STNode, int>[] positions = _layers.Select(GetLayerPositions).ToArray();
             bool improved = true;
             int maxPasses = 10;
             int pass = 0;
@@ -1820,27 +1775,18 @@ namespace ColorVision.Engine.FlowProcessing.Editor
                     var layer = _layers[li];
                     for (int i = 0; i < layer.Count - 1; i++)
                     {
-                        // Count current crossings involving this layer
-                        int currentCrossings = 0;
-                        if (li > 0) currentCrossings += CountLayerCrossings(li - 1);
-                        if (li < _layers.Count - 1) currentCrossings += CountLayerCrossings(li);
+                        STNode first = layer[i], second = layer[i + 1];
+                        long reduction = 0;
+                        if (li > 0)
+                            reduction += GetSwapCrossingReduction(incomingEdges[first], incomingEdges[second], positions[li - 1], useParents: true);
+                        if (li < _layers.Count - 1)
+                            reduction += GetSwapCrossingReduction(outgoingEdges[first], outgoingEdges[second], positions[li + 1], useParents: false);
+                        if (reduction <= 0) continue;
 
-                        // Try swapping adjacent nodes
-                        (layer[i], layer[i + 1]) = (layer[i + 1], layer[i]);
-
-                        int newCrossings = 0;
-                        if (li > 0) newCrossings += CountLayerCrossings(li - 1);
-                        if (li < _layers.Count - 1) newCrossings += CountLayerCrossings(li);
-
-                        if (newCrossings < currentCrossings)
-                        {
-                            improved = true; // Keep the swap
-                        }
-                        else
-                        {
-                            // Revert the swap
-                            (layer[i], layer[i + 1]) = (layer[i + 1], layer[i]);
-                        }
+                        (layer[i], layer[i + 1]) = (second, first);
+                        positions[li][second] = i;
+                        positions[li][first] = i + 1;
+                        improved = true;
                     }
                 }
             }

@@ -9,19 +9,26 @@ namespace ColorVision.UI.Tests;
 
 public sealed class FileFusionTests
 {
-    [Fact]
-    public void CpuNativeIntegrationReturnsOwnedManagedImageForTwoFiles()
+    [Theory]
+    [InlineData(2, 4, 4)]
+    [InlineData(4, 1025, 512)]
+    public void CpuNativeIntegrationReturnsOwnedManagedImageForShallowStacks(int count, int width, int height)
     {
         using var fixture = new FusionFixture();
-        FileFusionResult result = FileFusion.Default.Execute([fixture.Add("图像甲.png", value: 123), fixture.Add("图像乙.png", value: 123)], FileFusionMode.CPU);
+        const int firstValue = 120;
+        string[] files = Enumerable.Range(0, count)
+            .Select(index => fixture.Add($"图像{index}.png", width: width, height: height, value: (byte)(firstValue + 2 * index))).ToArray();
+        FileFusionResult result = FileFusion.Default.Execute(files, FileFusionMode.CPU);
         Assert.Equal(FileFusionMode.CPU, result.ActualMode);
-        Assert.Equal(4, result.Image.PixelWidth);
-        Assert.Equal(4, result.Image.PixelHeight);
+        Assert.Equal(width, result.Image.PixelWidth);
+        Assert.Equal(height, result.Image.PixelHeight);
         Assert.Equal(PixelFormats.Gray8, result.Image.Format);
         Assert.True(result.Image.IsFrozen);
-        byte[] pixels = new byte[16];
-        result.Image.CopyPixels(pixels, 4, 0);
-        Assert.All(pixels, pixel => Assert.Equal(123, pixel));
+        byte[] pixels = new byte[width * height];
+        result.Image.CopyPixels(pixels, width, 0);
+        // Flat frames carry no focus weights, so every pixel keeps their arithmetic mean.
+        int expected = firstValue + count - 1;
+        Assert.DoesNotContain(pixels, pixel => pixel != expected);
     }
 
     [Fact]
@@ -181,12 +188,12 @@ internal sealed class FusionFixture : IDisposable
     public string Directory { get; } = Path.Combine(Path.GetTempPath(), "ColorVisionFusionTests", Guid.NewGuid().ToString("N"));
     public FusionFixture() => System.IO.Directory.CreateDirectory(Directory);
 
-    public string Add(string name, PixelFormat? format = null, int width = 4, byte value = 0)
+    public string Add(string name, PixelFormat? format = null, int width = 4, byte value = 0, int height = 4)
     {
         string path = Path.Combine(Directory, name);
         PixelFormat pixelFormat = format ?? PixelFormats.Gray8;
         int stride = width * pixelFormat.BitsPerPixel / 8;
-        BitmapSource image = BitmapSource.Create(width, 4, 96, 96, pixelFormat, null, Enumerable.Repeat(value, stride * 4).ToArray(), stride);
+        BitmapSource image = BitmapSource.Create(width, height, 96, 96, pixelFormat, null, Enumerable.Repeat(value, stride * height).ToArray(), stride);
         var encoder = new PngBitmapEncoder();
         encoder.Frames.Add(BitmapFrame.Create(image));
         using FileStream stream = File.Create(path);

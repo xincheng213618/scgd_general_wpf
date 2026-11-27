@@ -1,12 +1,16 @@
 using ColorVision.UI;
 using log4net;
+using Microsoft.Data.Sqlite;
 using SqlSugar;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
+using ParameterType = System.Data.DbType;
 
 namespace ColorVision.Engine.FlowProcessing.Diagnostics
 {
@@ -23,6 +27,8 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
 
         // Shared persistent connection for the write queue
         private static SqlSugarClient? _sharedDb;
+        private static string? _preparedConnectionString;
+        private static int _preparedSchemaVersion;
         private static readonly BlockingCollection<Action<SqlSugarClient>> _writeQueue = new BlockingCollection<Action<SqlSugarClient>>();
         private static readonly ConcurrentDictionary<long, Task> _pendingWriteProducers = new ConcurrentDictionary<long, Task>();
         private static Thread _writerThread;
@@ -60,10 +66,17 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
                 try
                 {
                     SqlSugarClient sharedDb = CreateDb();
-                    FlowDiagnosticsMaintenanceGate.RunExclusive(
-                        () => FlowDiagnosticsSchemaMigrator.EnsureSchema(sharedDb));
-
                     _sharedDb = sharedDb;
+                    FlowDiagnosticsMaintenanceGate.RunExclusive(() =>
+                    {
+                        FlowDiagnosticsSchemaMigrator.EnsureSchema(sharedDb);
+                        string connectionString = sharedDb.CurrentConnectionConfig.ConnectionString;
+                        string dataSource = new SqliteConnectionStringBuilder(connectionString).DataSource;
+                        _preparedConnectionString = Path.IsPathFullyQualified(dataSource) ? connectionString : null;
+                        if (_preparedConnectionString != null)
+                            _preparedSchemaVersion = sharedDb.Ado.GetInt("PRAGMA schema_version;");
+                    });
+
                     _writerThread = new Thread(WriteLoop)
                     {
                         IsBackground = true,
@@ -87,6 +100,21 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
                 }
             }
         }
+
+        internal static bool HasPreparedSchema(SqlSugarClient db) =>
+            UsesWriterDatabase(db)
+            && db.Ado.GetInt("PRAGMA schema_version;") == Volatile.Read(ref _preparedSchemaVersion);
+
+        internal static void RefreshPreparedSchema(SqlSugarClient db)
+        {
+            if (UsesWriterDatabase(db))
+                Volatile.Write(ref _preparedSchemaVersion, db.Ado.GetInt("PRAGMA schema_version;"));
+        }
+
+        private static bool UsesWriterDatabase(SqlSugarClient db) =>
+            _initialized && _preparedConnectionString != null
+            && db.CurrentConnectionConfig.DbType == DbType.Sqlite
+            && string.Equals(db.CurrentConnectionConfig.ConnectionString, _preparedConnectionString, StringComparison.Ordinal);
 
         private static void WriteLoop()
         {
@@ -220,11 +248,11 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
                 {
                     int messageId = 0;
                     WriteNodeExecution(db,
-                        () => recordId = db.Insertable(startRecord).ExecuteReturnIdentity(),
+                        () => recordId = InsertTimingRecord(db, startRecord),
                         startMessage == null ? null : () =>
                         {
                             startMessage.NodeRecordId = recordId;
-                            int id = db.Insertable(startMessage).ExecuteReturnIdentity();
+                            int id = InsertStartMessage(db, startMessage);
                             FlowNodeMessagePayloadStorage.SaveSendPayload(db, id, startMessage.SendPayload);
                             messageId = id;
                         },
@@ -274,10 +302,10 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
                 try
                 {
                     WriteNodeExecution(db,
-                        () => db.Updateable(record).ExecuteCommand(),
+                        () => UpdateTimingRecord(db, record),
                         message == null ? null : () =>
                         {
-                            db.Updateable(message).ExecuteCommand();
+                            UpdateMessageMetadata(db, message);
                             FlowNodeMessagePayloadStorage.SaveRecvPayload(db, message.Id, message.RecvPayload);
                         },
                         preserveTimingOnMessageFailure);
@@ -290,6 +318,93 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
                 completion.TrySetResult(true);
             });
             return completion.Task;
+        }
+
+        private static int InsertTimingRecord(SqlSugarClient db, FlowNodeRecord record)
+        {
+            return db.Ado.GetInt("""
+                INSERT INTO FlowNodeRecord (
+                    batch_id, serial_number, node_id, node_name, node_type, start_time, end_time, elapsed_ms)
+                VALUES (@batchId, @serialNumber, @nodeId, @nodeName, @nodeType, @startTime, @endTime, @elapsedMs);
+                SELECT last_insert_rowid();
+                """, CreateTimingParameters(record));
+        }
+
+        private static void UpdateTimingRecord(SqlSugarClient db, FlowNodeRecord record)
+        {
+            db.Ado.ExecuteCommand("""
+                UPDATE FlowNodeRecord SET
+                    batch_id = @batchId, serial_number = @serialNumber, node_id = @nodeId, node_name = @nodeName,
+                    node_type = @nodeType, start_time = @startTime, end_time = @endTime, elapsed_ms = @elapsedMs
+                WHERE id = @id;
+                """, CreateTimingParameters(record, includeId: true));
+        }
+
+        private static SugarParameter[] CreateTimingParameters(FlowNodeRecord record, bool includeId = false)
+        {
+            var parameters = new SugarParameter[includeId ? 9 : 8];
+            parameters[0] = new("@batchId", record.BatchId);
+            parameters[1] = new("@serialNumber", record.SerialNumber, ParameterType.String);
+            parameters[2] = new("@nodeId", record.NodeId, ParameterType.String);
+            parameters[3] = new("@nodeName", record.NodeName, ParameterType.String);
+            parameters[4] = new("@nodeType", record.NodeType, ParameterType.String);
+            parameters[5] = new("@startTime", record.StartTime, ParameterType.DateTime);
+            parameters[6] = new("@endTime", record.EndTime, ParameterType.DateTime);
+            parameters[7] = new("@elapsedMs", record.ElapsedMs);
+            if (includeId)
+                parameters[8] = new("@id", record.Id);
+            return parameters;
+        }
+
+        private static int InsertStartMessage(SqlSugarClient db, FlowNodeMessage message)
+        {
+            // The queued start snapshot has no receive fields. Keep payload storage in the same transaction.
+            return db.Ado.GetInt("""
+                INSERT INTO FlowNodeMessage (
+                    batch_id, serial_number, node_record_id, node_id, node_name, msg_id, event_name,
+                    send_topic, send_time, recv_topic, recv_time, status_code, status_message, state)
+                VALUES (
+                    @batchId, @serialNumber, @nodeRecordId, @nodeId, @nodeName, @msgId, @eventName,
+                    @sendTopic, @sendTime, NULL, NULL, NULL, NULL, @state);
+                SELECT last_insert_rowid();
+                """,
+                new SugarParameter("@batchId", message.BatchId),
+                new SugarParameter("@serialNumber", message.SerialNumber, ParameterType.String),
+                new SugarParameter("@nodeRecordId", message.NodeRecordId, ParameterType.Int32),
+                new SugarParameter("@nodeId", message.NodeId, ParameterType.String),
+                new SugarParameter("@nodeName", message.NodeName, ParameterType.String),
+                new SugarParameter("@msgId", message.MsgId, ParameterType.String),
+                new SugarParameter("@eventName", message.EventName, ParameterType.String),
+                new SugarParameter("@sendTopic", message.SendTopic, ParameterType.String),
+                new SugarParameter("@sendTime", message.SendTime, ParameterType.DateTime),
+                new SugarParameter("@state", (long)message.State));
+        }
+
+        private static void UpdateMessageMetadata(SqlSugarClient db, FlowNodeMessage message)
+        {
+            db.Ado.ExecuteCommand("""
+                UPDATE FlowNodeMessage SET
+                    batch_id = @batchId, serial_number = @serialNumber, node_record_id = @nodeRecordId,
+                    node_id = @nodeId, node_name = @nodeName, msg_id = @msgId, event_name = @eventName,
+                    send_topic = @sendTopic, send_time = @sendTime, recv_topic = @recvTopic,
+                    recv_time = @recvTime, status_code = @statusCode, status_message = @statusMessage, state = @state
+                WHERE id = @id;
+                """,
+                new SugarParameter("@id", message.Id),
+                new SugarParameter("@batchId", message.BatchId),
+                new SugarParameter("@serialNumber", message.SerialNumber, ParameterType.String),
+                new SugarParameter("@nodeRecordId", message.NodeRecordId, ParameterType.Int32),
+                new SugarParameter("@nodeId", message.NodeId, ParameterType.String),
+                new SugarParameter("@nodeName", message.NodeName, ParameterType.String),
+                new SugarParameter("@msgId", message.MsgId, ParameterType.String),
+                new SugarParameter("@eventName", message.EventName, ParameterType.String),
+                new SugarParameter("@sendTopic", message.SendTopic, ParameterType.String),
+                new SugarParameter("@sendTime", message.SendTime, ParameterType.DateTime),
+                new SugarParameter("@recvTopic", message.RecvTopic, ParameterType.String),
+                new SugarParameter("@recvTime", message.RecvTime, ParameterType.DateTime),
+                new SugarParameter("@statusCode", message.StatusCode, ParameterType.Int32),
+                new SugarParameter("@statusMessage", message.StatusMessage, ParameterType.String),
+                new SugarParameter("@state", (long)message.State));
         }
 
         private static void WriteNodeExecution(SqlSugarClient db, Action writeTiming, Action? writeMessage,
@@ -367,7 +482,7 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
                 {
                     try
                     {
-                        int id = db.Insertable(item).ExecuteReturnIdentity();
+                        int id = InsertTimingRecord(db, item);
                         item.Id = id;
                         tcs.TrySetResult(id);
                     }
@@ -402,7 +517,7 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
             {
                 try
                 {
-                    db.Updateable(item).ExecuteCommand();
+                    UpdateTimingRecord(db, item);
                 }
                 catch (Exception ex)
                 {
@@ -506,10 +621,51 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
         {
             EnsureInitialized();
             using var db = CreateReadDb();
-            return db.Queryable<FlowNodeRecord>()
-                .Where(item => item.NodeId == nodeId && (batchIds.Contains(item.BatchId) || serialNumbers.Contains(item.SerialNumber)))
-                .OrderByDescending(item => item.StartTime)
-                .ToList();
+            return SelectNodeRecordsForRuns(db.Queryable<FlowNodeRecord>(), nodeId, batchIds, serialNumbers).ToList();
+        }
+
+        internal static ISugarQueryable<FlowNodeRecord> SelectNodeRecordsForRuns(
+            ISugarQueryable<FlowNodeRecord> query, string nodeId, int[] batchIds, string[] serialNumbers)
+        {
+            if (serialNumbers.Length != 0 || batchIds.Length == 0
+                || query.Context.CurrentConnectionConfig.DbType != DbType.Sqlite)
+            {
+                return query.Where(item => item.NodeId == nodeId && (batchIds.Contains(item.BatchId) || serialNumbers.Contains(item.SerialNumber)))
+                    .OrderByDescending(item => item.StartTime);
+            }
+
+            string batches = JsonSerializer.Serialize(batchIds);
+            if (!ShouldSeekComparisonByBatch(query.Context, nodeId, batches, batchIds.Length))
+                return query.Where(item => item.NodeId == nodeId && batchIds.Contains(item.BatchId));
+
+            // Use the same projection for live and archived schemas. The comparison orders the merged records.
+            return query.Context.SqlQueryable<FlowNodeRecord>($"""
+                SELECT record.* FROM (SELECT DISTINCT value FROM json_each(@comparisonBatches)) requested
+                CROSS JOIN ({query.ToSql().Key}) record ON record.batch_id = requested.value
+                WHERE record.node_id = @comparisonNode
+                """).AddParameters(new { comparisonBatches = batches, comparisonNode = nodeId });
+        }
+
+        private static bool ShouldSeekComparisonByBatch(ISqlSugarClient db, string nodeId, string batches, int batchCount)
+        {
+            // Compare bounded index-only reads. Keep the node lookup for short histories or broad batches.
+            return db.Ado.GetInt("""
+                SELECT CASE WHEN (
+                    SELECT COUNT(*) FROM sqlite_schema WHERE type = 'index' AND tbl_name = 'FlowNodeRecord'
+                        AND name IN ('idx_flow_node_record_node_time', 'idx_flow_node_record_batch_time')
+                ) = 2 THEN EXISTS (
+                    WITH node_count AS MATERIALIZED (
+                        SELECT COUNT(*) AS n FROM (
+                            SELECT 1 FROM FlowNodeRecord WHERE node_id = @nodeId LIMIT 32768)
+                    )
+                    SELECT 1 FROM node_count
+                    WHERE CASE WHEN n > @minimumNodeRows THEN NOT EXISTS (
+                        SELECT 1 FROM FlowNodeRecord
+                        WHERE batch_id IN (SELECT value FROM json_each(@batches))
+                        LIMIT 1 OFFSET (SELECT n / 2 FROM node_count)
+                    ) ELSE 0 END
+                ) ELSE 0 END
+                """, new { nodeId, batches, minimumNodeRows = (long)batchCount * 2 }) != 0;
         }
 
         public static List<FlowNodeRecord> GetBySerialNumbers(IEnumerable<string> serialNumbers)
@@ -603,16 +759,63 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
             }
         }
 
-        private static long ReadLastCompletedFlowElapsed(SqlSugarClient db, FlowIdentity identity)
+        internal static long ReadLastCompletedFlowElapsed(SqlSugarClient db, FlowIdentity identity)
         {
             if (identity.IsEmpty)
                 return 0;
+
+            if (db.CurrentConnectionConfig.DbType == DbType.Sqlite
+                && identity.FlowKey is string flowKey && identity.TemplateId > 0)
+            {
+                FlowRunRecord? latest = ReadLatestCompletedFlowCandidate(db, flowKey, identity.TemplateId);
+                if (latest == null)
+                    return 0;
+                // The left join returns an empty entity when the original ordering is needed.
+                if (latest.Id != 0)
+                    return latest.ElapsedMs;
+            }
 
             var query = db.Queryable<FlowRunRecord>()
                 .Where(item => item.Status == FlowStatus.Completed && item.ElapsedMs > 0);
             return ApplyFlowIdentityFilter(query, identity)
                 .OrderByDescending(item => item.CompletedTime)
                 .First()?.ElapsedMs ?? 0;
+        }
+
+        private static FlowRunRecord? ReadLatestCompletedFlowCandidate(SqlSugarClient db, string flowKey, int templateId)
+        {
+            // Each branch can seek using its own completion index. Two rows are enough to detect ties,
+            // which the original query continues to resolve. An older legacy run cannot beat the keyed leader.
+            return db.SqlQueryable<FlowRunRecord>("""
+                WITH keyed AS (
+                    SELECT id, completed_time FROM FlowRunRecord
+                    WHERE flow_key = @flowKey AND status = @completed AND elapsed_ms > 0
+                    ORDER BY completed_time DESC LIMIT 2
+                ), candidates AS MATERIALIZED (
+                    SELECT id, completed_time FROM keyed
+                    UNION ALL
+                    SELECT id, completed_time FROM (
+                        SELECT id, completed_time FROM FlowRunRecord
+                        WHERE template_id = @templateId AND (flow_key IS NULL OR flow_key = '')
+                            AND status = @completed AND elapsed_ms > 0
+                            AND completed_time >= COALESCE(
+                                (SELECT MAX(completed_time) FROM keyed),
+                                (SELECT MIN(completed_time) FROM FlowRunRecord WHERE template_id = @templateId))
+                        ORDER BY completed_time DESC LIMIT 2
+                    )
+                ), leaders AS (
+                    SELECT MIN(id) AS id, COUNT(*) AS frequency FROM candidates
+                    WHERE completed_time = (SELECT MAX(completed_time) FROM candidates)
+                )
+                SELECT run.* FROM leaders LEFT JOIN FlowRunRecord AS run ON leaders.frequency = 1 AND run.id = leaders.id
+                WHERE leaders.frequency > 0
+                    OR EXISTS (SELECT 1 FROM keyed WHERE completed_time IS NULL)
+                    OR EXISTS (
+                        SELECT 1 FROM FlowRunRecord
+                        WHERE template_id = @templateId AND (flow_key IS NULL OR flow_key = '')
+                            AND status = @completed AND elapsed_ms > 0 AND completed_time IS NULL
+                    )
+                """).AddParameters(new { flowKey, templateId, completed = (int)FlowStatus.Completed }).First();
         }
 
         internal static (long? FlowElapsedMs, Dictionary<string, long> NodeDurations)? ReadProgressHistory(
@@ -821,7 +1024,7 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
             }
         }
 
-        private static ISugarQueryable<FlowRunRecord>
+        internal static ISugarQueryable<FlowRunRecord>
             ApplyFlowIdentityFilter(
                 ISugarQueryable<FlowRunRecord> query,
                 FlowIdentity identity)
@@ -1065,7 +1268,12 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
             try
             {
                 using var db = CreateReadDb();
-                return db.Queryable<FlowNodeMessage>().Where(x => x.BatchId == batchId && x.NodeId == nodeId).OrderBy(x => x.SendTime).ToList();
+                // Equal send times follow the existing batch/time index's reverse scan.
+                return db.Queryable<FlowNodeMessage>()
+                    .Where(x => x.BatchId == batchId && x.NodeId == nodeId)
+                    .OrderBy(x => x.SendTime)
+                    .OrderByDescending(x => x.Id)
+                    .ToList();
             }
             catch (Exception ex)
             {

@@ -41,49 +41,38 @@ namespace ColorVision.ImageEditor.Tif
             BitmapOpenRequests.VerifyTarget(context, requestedFilePath, cancellationToken);
             metadata.Apply(context, requestedFilePath, nameof(CommonImageOpen));
 
-            var (decodedImage, writeableBitmap) = await _requests.PrepareAsync(async () =>
+            var (original, decodedMetadata, writeableBitmap) = await _requests.PrepareAsync(async () =>
             {
                 BitmapOpenRequests.VerifyTarget(context, requestedFilePath, cancellationToken);
-                DecodedImage decoded = await Task.Run(() => DecodeImage(requestedFilePath), cancellationToken);
+                using DecodedImage decoded = await Task.Run(() => DecodeImage(requestedFilePath), cancellationToken);
                 BitmapOpenRequests.VerifyTarget(context, requestedFilePath, cancellationToken);
 
                 // Stage a private, editable copy before publishing any metadata for this request.
                 BitmapSource source = decoded.BitmapSource;
-                WriteableBitmap display = source.IsFrozen && EditableBitmapCopy.ShouldCopyInBackground(source)
+                WriteableBitmap display = decoded.SourceStream != null || (source.IsFrozen && EditableBitmapCopy.ShouldCopyInBackground(source))
                     ? await EditableBitmapCopy.CreateAsync(source, cancellationToken)
                     : new WriteableBitmap(source);
-                return (decoded, display);
+                return (decoded.Metadata.ColorVisionParameters == null ? display : source, decoded.Metadata, display);
             }, cancellationToken);
 
             BitmapOpenRequests.VerifyTarget(context, requestedFilePath, cancellationToken);
             context.Config.SetImageMetadata(ImageViewPropertyKeys.ImageWidth, writeableBitmap.PixelWidth, nameof(CommonImageOpen), "位图像素宽度");
             context.Config.SetImageMetadata(ImageViewPropertyKeys.ImageHeight, writeableBitmap.PixelHeight, nameof(CommonImageOpen), "位图像素高度");
-            ApplyMetadata(context, decodedImage.Metadata);
+            ApplyMetadata(context, decodedMetadata);
 
             BitmapOpenRequests.VerifyTarget(context, requestedFilePath, cancellationToken);
-            var parameters = decodedImage.Metadata.ColorVisionParameters;
             await context.ImageView.PublishDecodedImageContentAsync(
-                new DecodedImageContent(parameters == null ? writeableBitmap : decodedImage.BitmapSource, parameters, requestedFilePath),
+                new DecodedImageContent(original, decodedMetadata.ColorVisionParameters, requestedFilePath),
                 writeableBitmap, cancellationToken);
         }
 
         private static DecodedImage DecodeImage(string filePath)
         {
-            using FileStream stream = new(filePath, FileMode.Open, FileAccess.Read, FileShare.Read);
             string extension = Path.GetExtension(filePath).ToLowerInvariant();
             if (extension == ".png")
-            {
-                PngBitmapDecoder decoder = new(stream, BitmapCreateOptions.PreservePixelFormat, BitmapCacheOption.OnLoad);
-                if (decoder.Frames.Count == 0)
-                    throw new InvalidDataException($"PNG 文件不包含可显示帧：{filePath}");
+                return DecodePng(filePath);
 
-                BitmapFrame frame = decoder.Frames[0];
-                ImageMetadata metadata = ReadMetadata(frame.Metadata as BitmapMetadata);
-                if (frame.CanFreeze && !frame.IsFrozen)
-                    frame.Freeze();
-                return new DecodedImage(frame, metadata);
-            }
-
+            using FileStream stream = new(filePath, FileMode.Open, FileAccess.Read, FileShare.Read);
             ImageMetadata fallbackMetadata = ReadMetadata(stream, extension);
             stream.Position = 0;
             BitmapImage bitmapImage = new();
@@ -93,6 +82,42 @@ namespace ColorVision.ImageEditor.Tif
             bitmapImage.EndInit();
             bitmapImage.Freeze();
             return new DecodedImage(bitmapImage, fallbackMetadata);
+        }
+
+        private static DecodedImage DecodePng(string filePath)
+        {
+            FileStream stream = new(filePath, FileMode.Open, FileAccess.Read, FileShare.Read);
+            try
+            {
+                BitmapFrame frame = ReadPngFrame(stream, filePath, BitmapCacheOption.None);
+                ImageMetadata metadata = ReadMetadata(frame.Metadata as BitmapMetadata);
+                // Ordinary PNGs can decode into the editable bitmap while the file is still open.
+                if (metadata.ColorVisionParameters == null && frame.IsFrozen)
+                    return new DecodedImage(frame, metadata, stream);
+
+                // Measurement content must keep the original pixels available after closing the file.
+                stream.Position = 0;
+                frame = ReadPngFrame(stream, filePath, BitmapCacheOption.OnLoad);
+                stream.Dispose();
+                return new DecodedImage(frame, metadata);
+            }
+            catch
+            {
+                stream.Dispose();
+                throw;
+            }
+        }
+
+        private static BitmapFrame ReadPngFrame(FileStream stream, string filePath, BitmapCacheOption cacheOption)
+        {
+            PngBitmapDecoder decoder = new(stream, BitmapCreateOptions.PreservePixelFormat, cacheOption);
+            if (decoder.Frames.Count == 0)
+                throw new InvalidDataException($"PNG 文件不包含可显示帧：{filePath}");
+
+            BitmapFrame frame = decoder.Frames[0];
+            if (frame.CanFreeze && !frame.IsFrozen)
+                frame.Freeze();
+            return frame;
         }
 
         private static ImageMetadata ReadMetadata(Stream stream, string extension)
@@ -156,7 +181,10 @@ namespace ColorVision.ImageEditor.Tif
                 context.Config.SetImageMetadata(ImageViewPropertyKeys.ImageSubject, metadata.Subject, nameof(CommonImageOpen), "EXIF 主题");
         }
 
-        private sealed record DecodedImage(BitmapSource BitmapSource, ImageMetadata Metadata);
+        private sealed record DecodedImage(BitmapSource BitmapSource, ImageMetadata Metadata, FileStream? SourceStream = null) : IDisposable
+        {
+            public void Dispose() => SourceStream?.Dispose();
+        }
 
         private sealed record ImageMetadata(
             string? CameraModel,

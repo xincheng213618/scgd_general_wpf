@@ -25,7 +25,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
         public string? AutoExposureConfiguration { get; init; }
         public LocalAutoFocusSettings? AutoFocus { get; init; }
         public bool SaveFiles { get; init; }
-        public bool AllowAcceleration { get; init; }
+        public LocalColorCalibrationOutput ColorOutput { get; init; }
         public CancellationToken Stop { get; init; }
     }
 
@@ -45,6 +45,8 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             ref uint sourceBpp, ref uint destinationBpp, ref uint channels, IntPtr raw, IntPtr cie);
 
         private static readonly SemaphoreSlim CaptureLock = new(1, 1);
+
+        internal static bool IsCaptureInProgress => CaptureLock.CurrentCount == 0;
         private static readonly uint RawFrameLeaseSize = (uint)Marshal.SizeOf<CameraRawFrameLeaseV1>();
         private static readonly (ImageChannelType ChannelType, int CfwPort)[] DefaultChannelOrder =
         {
@@ -123,8 +125,10 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                 if (!float.IsFinite(exposure) || exposure <= 0) throw new InvalidOperationException("曝光时间必须为大于 0 的有限值。");
             LocalFlowFrame? frame = null;
             Stopwatch stopwatch = Stopwatch.StartNew();
+            var calibrationPlan = calibrationFiles.Count == 0 ? null
+                : device.LocalCalibrationCacheManager.Prepare(calibrationFiles, request.Calibration?.Name ?? string.Empty);
+            long prepareTimeMs = calibrationPlan == null ? 0 : stopwatch.ElapsedMilliseconds;
             int captureTimeMs = 0;
-            int calibrationTimeMs = 0;
             int saveTimeMs = 0;
             try
             {
@@ -164,15 +168,6 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                 }
 
                 int rawLength = checked((int)((ulong)(sourceBpp / 8) * width * height * channels));
-                int cieLength = calibrationFiles.Count == 0
-                    ? 0
-                    : LocalFrameCalibrationService.GetRequiredCieLength(
-                        checked((int)width),
-                        checked((int)height),
-                        checked((int)channels),
-                        calibrationFiles,
-                        request.Calibration?.Name ?? string.Empty);
-                if (request.AllowAcceleration) cieLength = 0;
                 float[] exposure = GetExposureValues(device, cameraParameters, (int)channels);
                 LocalFrameMetadata metadata = new()
                 {
@@ -202,19 +197,18 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                         AverageCount = cameraParameters.AvgCount,
                         ChannelOrder = channels == 1 ? "Y" : device.Config.IsExpThree ? "X/Y/Z" : "R/G/B"
                     },
-                    PrimaryBufferKind = cieLength > 0 ? LocalFrameBufferKind.CvCie : LocalFrameBufferKind.CvRaw,
-                    FlipMode = request.FlipMode,
-                    IsMirrorReady = calibrationFiles.Count > 0
+                    PrimaryBufferKind = LocalFrameBufferKind.CvRaw,
+                    FlipMode = request.FlipMode
                 };
                 if (sourceBpp == 16 && channels == 3 && device.LocalCameraSession.OpenedMode == TakeImageMode.Measure_Normal
                     && cvCameraCSLib.TryGetRawFrameLeaseV1(out var acquireRaw, out var releaseRaw))
                 {
-                    frame = TryCaptureOwnedRawFrame(cameraHandle, captureJson, metadata, rawLength, cieLength,
+                    frame = TryCaptureOwnedRawFrame(cameraHandle, captureJson, metadata, rawLength, 0,
                         acquireRaw, releaseRaw, request.Stop, out captureTimeMs);
                 }
                 if (frame == null)
                 {
-                    frame = FlowNodeTiming.Run("AllocateFrame", () => LocalFlowFrame.Allocate(metadata, rawLength, cieLength, device.LocalCameraSession.RawBufferPool));
+                    frame = FlowNodeTiming.Run("AllocateFrame", () => LocalFlowFrame.Allocate(metadata, rawLength, 0, device.LocalCameraSession.RawBufferPool));
                     using LocalFlowFrameLease lease = frame.Acquire();
                     Stopwatch captureStopwatch = Stopwatch.StartNew();
                     using var captureStage = FlowNodeTiming.Measure("CaptureFrame");
@@ -224,20 +218,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                     captureStage?.Complete();
                 }
 
-                if (calibrationFiles.Count > 0)
-                {
-                    Stopwatch calibrationStopwatch = Stopwatch.StartNew();
-                    LocalFrameCalibrationService.CalibrateInPlace(
-                        frame,
-                        device.LocalCalibrationCacheManager,
-                        calibrationFiles,
-                        request.Calibration?.Name ?? string.Empty,
-                        LocalCalibrationRoi.ResolveForFrame(frame.Metadata, cameraConfig: null),
-                        allowAcceleration: request.AllowAcceleration);
-                    calibrationStopwatch.Stop();
-                    calibrationTimeMs = ToMilliseconds(calibrationStopwatch.ElapsedMilliseconds);
-                }
-                else FlowNodeTiming.Skip("Calibration");
+                int calibrationTimeMs = ToMilliseconds(prepareTimeMs + ApplyCaptureCalibration(frame, calibrationPlan, request.ColorOutput));
 
                 request.Stop.ThrowIfCancellationRequested();
                 if (request.SaveFiles)
@@ -269,6 +250,18 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                 frame?.Dispose();
                 throw;
             }
+        }
+
+        internal static int ApplyCaptureCalibration(LocalFlowFrame frame, LocalPreparedCalibration? plan, LocalColorCalibrationOutput output)
+        {
+            if (plan == null)
+            {
+                FlowNodeTiming.Skip("Calibration");
+                return 0;
+            }
+            long started = Stopwatch.GetTimestamp();
+            plan.Apply(frame, plan.OutputFor(output));
+            return ToMilliseconds((long)Stopwatch.GetElapsedTime(started).TotalMilliseconds);
         }
 
         internal static LocalFlowFrame? TryCaptureOwnedRawFrame(IntPtr cameraHandle, string captureJson,
@@ -391,10 +384,9 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                 posBurst = 0,
                 autoExpFlag = false
             };
-            // Keep packed color RAW in the SDK; null selects legacy split/merge
-            // even when there are no calibration items. Other camera modes retain their existing path.
+            // An empty list selects packed color RAW in cvCamera.dll.
             if (channelCount == 3 && device.Config.CameraMode is CameraMode.BV_MODE or CameraMode.LVTOBV_MODE)
-                param.calibrationlist = new List<CalibrationItem>();
+                param.calibrationlist = Array.Empty<object>();
             float[] exposures = GetExposureValues(device, cameraParameters, channelCount);
             for (int index = 0; index < channelCount; index++)
             {
@@ -403,8 +395,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                 {
                     exp = GetExposureForChannel(device, cameraParameters, channelType, index, exposures),
                     channelType = channelType,
-                    cfwport = cfwPort,
-                    check = new ChannelCalibration()
+                    cfwport = cfwPort
                 });
             }
             return JsonConvert.SerializeObject(param);

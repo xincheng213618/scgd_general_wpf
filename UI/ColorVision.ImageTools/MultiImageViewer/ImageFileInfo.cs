@@ -172,6 +172,14 @@ namespace ColorVision.Solution.MultiImageViewer
             LoadFileInfo(loadCachedInfo);
         }
 
+        internal ImageFileInfo(string filePath, long fileSize, DateTime lastModified)
+        {
+            _filePath = filePath;
+            _fileSize = fileSize;
+            _lastModified = lastModified;
+            _fileExists = true;
+        }
+
         private void LoadFileInfo(bool loadCachedInfo)
         {
             try

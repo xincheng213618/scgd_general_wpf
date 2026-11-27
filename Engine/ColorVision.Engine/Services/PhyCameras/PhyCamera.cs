@@ -1266,22 +1266,19 @@ namespace ColorVision.Engine.Services.PhyCameras
 
                     Dictionary<string, List<ZipCalibrationItem>> AllCalFiles = JsonConvert.DeserializeObject<Dictionary<string, List<ZipCalibrationItem>>>(ReadCalibrationPackageText(Calibrationcfg));
 
-                    Dictionary<string, CalibrationResource> keyValuePairs2 = new();
+                    Dictionary<CalibrationPackageResourceKey, CalibrationResource> importedResources = new();
                     List<string> importedDistortionFiles = new();
 
-                    var uniqueItems = AllCalFiles.SelectMany(item => item.Value)
-                             .GroupBy(x => new { x.CalibrationType, x.Title })
-                             .Select(g => g.First());
+                    CalibrationPackageManifest manifest = new(AllCalFiles.SelectMany(item => item.Value));
+                    var uploads = manifest.Items.Select(item => (Item: item, Progress: new FileUploadInfo { FileName = item.Title })).ToList();
 
-                    foreach (var item in uniqueItems)
+                    Application.Current.Dispatcher.Invoke(() =>
                     {
-                        Application.Current.Dispatcher.Invoke(() =>
-                        {
-                            UploadList.Add(new FileUploadInfo() { FileName = item.Title });
-                        });
-                    }
+                        foreach (var upload in uploads)
+                            UploadList.Add(upload.Progress);
+                    });
 
-                    foreach (var item in uniqueItems)
+                    foreach (var (item, uploadMeta) in uploads)
                     {
                         string FilePath = string.Empty;
                         switch (item.CalibrationType)
@@ -1339,7 +1336,6 @@ namespace ColorVision.Engine.Services.PhyCameras
                                 break;
                         }
 
-                        FileUploadInfo uploadMeta = UploadList.First(a => a.FileName == item.Title);
                         uploadMeta.FilePath = FilePath;
                         if (string.IsNullOrWhiteSpace(FilePath) || !File.Exists(FilePath))
                         {
@@ -1361,18 +1357,19 @@ namespace ColorVision.Engine.Services.PhyCameras
                             string FileName = Path.GetFileName(FilePath);
                             string DesFilePath = Path.Combine(DesPath, FileName);
                             File.Copy(FilePath, DesFilePath, true);
-                            File.Delete(FilePath);
                             int resourceType = (int)item.CalibrationType.ToResouceType();
                             string remark = item.ToJsonN(new JsonSerializerSettings());
 
                             using var db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
-                            SysResourceModel sysResourceModel = db.Queryable<SysResourceModel>()
+                            List<SysResourceModel> candidates = db.Queryable<SysResourceModel>()
                                 .Where(a => a.Pid == SysResourceModel.Id
                                             && a.Type == resourceType
                                             && a.Name == item.Title
                                             && a.IsDelete == false
                                             && a.IsEnable == true)
-                                .First();
+                                .OrderBy(a => a.Id)
+                                .ToList();
+                            SysResourceModel? sysResourceModel = manifest.FindExistingResource(item, candidates, FileName);
 
                             if (sysResourceModel == null)
                             {
@@ -1427,7 +1424,7 @@ namespace ColorVision.Engine.Services.PhyCameras
                                 });
                             }
 
-                            keyValuePairs2.TryAdd(item.Title, calibrationResource);
+                            importedResources.Add(item.ResourceKey, calibrationResource);
                             if (item.CalibrationType == CalibrationType.Distortion)
                                 importedDistortionFiles.Add(DesFilePath);
                             uploadMeta.UploadStatus = UploadStatus.Completed;
@@ -1479,9 +1476,10 @@ namespace ColorVision.Engine.Services.PhyCameras
 
                                         foreach (var item1 in zipCalibrationGroup.List)
                                         {
-                                            if (keyValuePairs2.TryGetValue(item1.Title, out var colorVisionVCalibratioItems))
+                                            ZipCalibrationItem? item = manifest.ResolveGroupItem(item1);
+                                            if (item != null && importedResources.TryGetValue(item.ResourceKey, out var calibrationResource))
                                             {
-                                                groupResource.AddChild(colorVisionVCalibratioItems);
+                                                groupResource.AddChild(calibrationResource);
                                             }
                                         }
                                         groupResource.SetCalibrationResource();

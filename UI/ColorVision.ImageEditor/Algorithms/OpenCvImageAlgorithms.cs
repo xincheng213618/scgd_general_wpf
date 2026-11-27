@@ -30,9 +30,12 @@ namespace ColorVision.ImageEditor.Algorithms
             CancellationToken cancellationToken = default)
             => AdjustBasicTo(source, () => destination, exposure, brightness, contrast, gamma, cancellationToken);
 
-        /// <summary>Requests one caller-owned destination at final writeback, avoiding storage for superseded work.</summary>
+        /// <summary>Requests one caller-owned destination, normally at final writeback.</summary>
+        /// <param name="useDestinationAsWorkingBuffer">
+        /// Allows early writes when the destination is independent of the source and unpublished until success.
+        /// </param>
         public static void AdjustBasicTo(Mat source, Func<Mat> createDestination, double exposure, double brightness, double contrast, double gamma,
-            CancellationToken cancellationToken = default)
+            CancellationToken cancellationToken = default, bool useDestinationAsWorkingBuffer = false)
         {
             ArgumentNullException.ThrowIfNull(createDestination);
             MatType depth = source.Depth();
@@ -65,13 +68,22 @@ namespace ColorVision.ImageEditor.Algorithms
                 }
             }
 
+            bool floating = depth == MatType.CV_32F || depth == MatType.CV_64F;
             if (source.Channels() != 4)
             {
+                if (floating && useDestinationAsWorkingBuffer)
+                {
+                    // Float input is already at the working depth and nominal scale.
+                    Mat destination = RequestDestination(createDestination, cancellationToken);
+                    source.CopyTo(destination);
+                    AdjustNormalizedTone(destination, source.Type(), alpha, beta, gammaValue, cancellationToken);
+                    cancellationToken.ThrowIfCancellationRequested();
+                    return;
+                }
                 ApplyToneAdjustment(source, createDestination, alpha, beta, gammaValue, maximum, cancellationToken);
                 return;
             }
 
-            bool floating = depth == MatType.CV_32F || depth == MatType.CV_64F;
             Mat[] channels = Cv2.Split(source);
             try
             {
@@ -192,6 +204,14 @@ namespace ColorVision.ImageEditor.Algorithms
 
         private static void ApplyBilateralBgra(Mat source, Mat destination, MatType depth, int diameter, double sigmaColor, double sigmaSpace)
         {
+            const int colorBandBytes = 2 * 1024 * 1024;
+            if (depth == MatType.CV_16U && source.Total() * 6 > colorBandBytes)
+            {
+                int bandRows = Math.Max(1, colorBandBytes / (source.Cols * 6));
+                ApplyBilateralBgra16(source, destination, bandRows, diameter, sigmaColor, sigmaSpace);
+                return;
+            }
+
             using Mat color = new();
             Cv2.CvtColor(source, color, ColorConversionCodes.BGRA2BGR);
             // Bilateral filtering needs float for 16-bit color. Alpha remains in the source format.
@@ -218,6 +238,43 @@ namespace ColorVision.ImageEditor.Algorithms
             else
             {
                 Cv2.MixChannels([result, source], [destination], [0, 0, 1, 1, 2, 2, 6, 3]);
+            }
+        }
+
+        private static void ApplyBilateralBgra16(Mat source, Mat destination, int bandRows, int diameter, double sigmaColor, double sigmaSpace)
+        {
+            int height = source.Rows;
+            int width = source.Cols;
+            using Mat filtered = new();
+            using Mat colorBand = new();
+            using (Mat converted = new(height, width, MatType.CV_32FC3))
+            {
+                for (int top = 0; top < height;)
+                {
+                    int end = top + Math.Min(bandRows, height - top);
+                    using Mat sourceRows = source.RowRange(top, end);
+                    using Mat convertedRows = converted.RowRange(top, end);
+                    Cv2.CvtColor(sourceRows, colorBand, ColorConversionCodes.BGRA2BGR);
+                    colorBand.ConvertTo(convertedRows, MatType.CV_32FC3);
+                    top = end;
+                }
+                // Keep one whole-image filter: OpenCV uses the full float range for its weights.
+                Cv2.BilateralFilter(converted, filtered, diameter, sigmaColor, sigmaSpace);
+            }
+
+            destination.Create(height, width, source.Type());
+            using Mat? alpha = OverlapsAtDifferentOffsets(source, destination) ? new Mat() : null;
+            if (alpha != null) Cv2.ExtractChannel(source, alpha, 3);
+            int[] channels = [0, 0, 1, 1, 2, 2, alpha == null ? 6 : 3, 3];
+            for (int top = 0; top < height;)
+            {
+                int end = top + Math.Min(bandRows, height - top);
+                using Mat filteredRows = filtered.RowRange(top, end);
+                using Mat alphaRows = (alpha ?? source).RowRange(top, end);
+                using Mat destinationRows = destination.RowRange(top, end);
+                filteredRows.ConvertTo(colorBand, MatType.CV_16UC3);
+                Cv2.MixChannels([colorBand, alphaRows], [destinationRows], channels);
+                top = end;
             }
         }
 
@@ -252,7 +309,7 @@ namespace ColorVision.ImageEditor.Algorithms
             cancellationToken.ThrowIfCancellationRequested();
         }
 
-        private static bool OverlapsAtDifferentOffsets(Mat source, Mat destination)
+        internal static bool OverlapsAtDifferentOffsets(Mat source, Mat destination)
         {
             if (ReferenceEquals(source, destination)) return false;
             nuint sourceStart = (nuint)source.Data;

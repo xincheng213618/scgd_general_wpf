@@ -1,6 +1,7 @@
 using ColorVision.Algorithms;
 using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Algorithms;
+using ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.RoiStatistics;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -10,6 +11,56 @@ namespace ColorVision.UI.Tests;
 
 public sealed class AlgorithmOverlayManagerTests
 {
+    [Theory]
+    [InlineData(256, false)]
+    [InlineData(2048, true)]
+    public async Task RoiResultKeepsItsOverlayWhileLoadingDetailTabs(int histogramBins, bool deferDetails)
+    {
+        using var input = new AlgorithmImageBuffer(2, 2, 6, AlgorithmImageFormat.Bgr24,
+            [8, 16, 32, 64, 32, 16, 32, 64, 128, 128, 64, 32]);
+        using AlgorithmResult result = await ImageAlgorithmPlatform.Runner.RunAsync(new AlgorithmRunRequest
+        {
+            Invocation = AlgorithmInvocation.Create(StandardAlgorithmIds.RoiStatistics,
+                new RoiStatisticsParameters { HistogramBins = histogramBins, DetectBadPixelCandidates = false },
+                new RectangleAlgorithmRoi(0, 0, 2, 2)),
+            Inputs = [new AlgorithmInput { Name = "source", Image = input }],
+            RequiredCapabilities = AlgorithmHostCapabilities.Headless | AlgorithmHostCapabilities.Local | AlgorithmHostCapabilities.Roi,
+        });
+        Assert.Equal(AlgorithmResultStatus.Succeeded, result.Status);
+
+        using TestImageView host = new();
+        WpfTestHost.Invoke(() =>
+        {
+            var context = host.View.EditorContext.ProcessingContext;
+            using var window = new RoiStatisticsResultWindow(result, context, host.View.EditorContext.DrawEditorContext);
+            var tabs = Assert.Single(Assert.IsType<Grid>(window.Content).Children.OfType<TabControl>());
+            var summaryTab = Assert.IsType<TabItem>(tabs.Items[0]);
+            var histogramTab = Assert.IsType<TabItem>(tabs.Items[1]);
+            var candidatesTab = Assert.IsType<TabItem>(tabs.Items[2]);
+            var histogram = Assert.Single(Assert.IsType<Grid>(histogramTab.Content).Children.OfType<DataGrid>());
+            var candidates = Assert.IsType<DataGrid>(candidatesTab.Content);
+
+            Assert.Equal(3, Assert.IsType<DataGrid>(summaryTab.Content).Items.Count);
+            Assert.Equal(deferDetails, histogram.ItemsSource == null);
+            Assert.Equal(deferDetails, candidates.ItemsSource == null);
+            var overlay = Assert.Single(context.SnapshotAlgorithmOverlayRegistrations());
+
+            tabs.SelectedIndex = 1;
+            Assert.Equal(histogramBins * 3, histogram.Items.Count);
+            var histogramRows = histogram.ItemsSource;
+            tabs.SelectedIndex = 2;
+            Assert.NotNull(candidates.ItemsSource);
+            Assert.Empty(candidates.Items);
+            tabs.SelectedIndex = 1;
+            Assert.Same(histogramRows, histogram.ItemsSource);
+            Assert.Same(overlay.Visual, Assert.Single(context.SnapshotAlgorithmOverlayRegistrations()).Visual);
+
+            window.Dispose();
+            Assert.True(result.IsDisposed);
+            Assert.Empty(context.SnapshotAlgorithmOverlayRegistrations());
+        });
+    }
+
     [Fact]
     public void ApplicationVisualUsesManagedReplacementAndSourceLifetime()
     {
@@ -82,6 +133,42 @@ public sealed class AlgorithmOverlayManagerTests
             Assert.Empty(context.SnapshotAlgorithmOverlayRegistrations());
             Assert.Empty(context.AlgorithmOverlays.Snapshot());
             session.Dispose();
+        });
+    }
+
+    [Fact]
+    public void SparseOverlayUsesTheLastGeometryForItsIdAndSkipsMissingIds()
+    {
+        using TestImageView host = new();
+        WpfTestHost.Invoke(() =>
+        {
+            ImageProcessingContext context = host.View.EditorContext.ProcessingContext;
+            AlgorithmOverlayArtifact overlay = new("sparse", AlgorithmOverlayLifetime.Transient,
+                [new("point", new()), new("missing", new())]);
+            using AlgorithmResult result = new()
+            {
+                Artifacts =
+                [
+                    new AlgorithmGeometryArtifact("pixels", AlgorithmCoordinateSpace.Pixel,
+                    [
+                        new("point", AlgorithmGeometryKind.Point, [new(1, 2)]),
+                        new("hidden-1", AlgorithmGeometryKind.Point, [new(3, 4)]),
+                        new("hidden-2", AlgorithmGeometryKind.Point, [new(5, 6)]),
+                        new("hidden-3", AlgorithmGeometryKind.Point, [new(7, 8)]),
+                    ]),
+                    new AlgorithmGeometryArtifact("physical", AlgorithmCoordinateSpace.Physical,
+                        [new("point", AlgorithmGeometryKind.Point, [new(12.7, 25.4)])]),
+                    overlay,
+                ],
+            };
+
+            using IDisposable session = AlgorithmOverlayRenderer.Apply(context, host.View.EditorContext.DrawEditorContext, result);
+
+            var visual = Assert.IsType<DrawingVisual>(Assert.Single(context.SnapshotAlgorithmOverlayRegistrations()).Visual);
+            var drawing = Assert.IsType<GeometryDrawing>(Assert.Single(visual.Drawing.Children));
+            var ellipse = Assert.IsType<EllipseGeometry>(drawing.Geometry);
+            Assert.Equal(new Point(48, 96), ellipse.Center);
+            Assert.Same(overlay, Assert.Single(context.AlgorithmOverlays.Snapshot()));
         });
     }
 

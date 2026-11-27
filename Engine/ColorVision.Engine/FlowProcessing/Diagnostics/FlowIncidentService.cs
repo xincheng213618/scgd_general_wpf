@@ -115,8 +115,7 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
         {
             this.db = db ?? throw new ArgumentNullException(nameof(db));
             this.ownsDb = ownsDb;
-            FlowDiagnosticsMaintenanceGate.RunExclusive(
-                () => FlowDiagnosticsSchemaMigrator.EnsureSchema(db));
+            FlowDiagnosticsSchemaMigrator.PrepareServiceConnection(db, ownsDb);
         }
 
         public FlowIncidentPage Query(FlowIncidentQuery? query = null)

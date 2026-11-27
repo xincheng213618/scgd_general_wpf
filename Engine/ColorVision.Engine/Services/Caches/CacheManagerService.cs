@@ -48,7 +48,7 @@ namespace ColorVision.Engine.Services.Caches
             }
         }
 
-        private static CacheModuleSnapshot ReadSnapshot(ICacheModule module)
+        internal static CacheModuleSnapshot ReadSnapshot(ICacheModule module)
         {
             try
             {

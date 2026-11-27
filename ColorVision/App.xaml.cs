@@ -2,6 +2,7 @@
 using ColorVision.Common.MVVM;
 using ColorVision.Copilot.Mcp;
 using ColorVision.Core;
+using ColorVision.Engine.Services.Devices.Camera.Local;
 using ColorVision.Engine.Services.Operations;
 using ColorVision.Recovery;
 using ColorVision.Themes;
@@ -662,6 +663,7 @@ namespace ColorVision
                 (step, exception) => log.Error($"Application exit cleanup step '{step}' failed.", exception);
             ApplicationExitCleanup.Run(
                 [
+                    new("calibration cache snapshot", LocalCalibrationWarmupConfig.SaveAtApplicationExit),
                     new("local application failure watchdog", OperationsApplicationFailureWatchdog.SignalCleanExit),
                     new("Windows application restart registration", () =>
                     {

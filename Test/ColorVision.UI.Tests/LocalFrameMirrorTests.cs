@@ -197,17 +197,6 @@ public sealed class LocalFrameMirrorTests
     }
 
     [Fact]
-    public void ColorOnlyTemplateCanContinueFromMirroredRaw()
-    {
-        DeviceCameraCalibrationFile color = new("color", CalibrationType.LumFourColor, "color", "color.cfg", "C:\\color.cfg");
-        DeviceCameraCalibrationFile basic = new("uniformity", CalibrationType.Uniformity, "uniformity", "uniformity.cfg", "C:\\uniformity.cfg");
-
-        Assert.True(LocalFrameCalibrationService.IsColorOnlyTemplate(new[] { color }));
-        Assert.False(LocalFrameCalibrationService.IsColorOnlyTemplate(new[] { basic, color }));
-        Assert.False(LocalFrameCalibrationService.IsColorOnlyTemplate(Array.Empty<DeviceCameraCalibrationFile>()));
-    }
-
-    [Fact]
     public void CalibrationUsesDatabaseExposureFallbackOnlyForAllZeroFileMetadata()
     {
         float[] fallback = { 12.5f, 25, 50 };
@@ -250,19 +239,10 @@ public sealed class LocalFrameMirrorTests
     [Fact]
     public void ReleasingTheLastFrameReferencePreventsLateCieAllocation()
     {
-        var storage = new LocalFlowFrame.SharedFrameStorage(1, 0, rawBufferPool: null);
-        storage.ReleaseReference();
-        try
-        {
-            Assert.Throws<ObjectDisposedException>(() => storage.ResizeCieBuffer(sizeof(float)));
-            Assert.Equal(IntPtr.Zero, storage.CiePointer);
-            Assert.Equal(0, storage.CieLength);
-        }
-        finally
-        {
-            // Clean up the late allocation when this regression runs against an older build.
-            if (storage.CiePointer != IntPtr.Zero) storage.ResizeCieBuffer(0);
-        }
+        using LocalFlowFrame frame = LocalFlowFrame.Allocate(new LocalFrameMetadata(), 1, 0);
+        frame.Dispose();
+        Assert.Throws<ObjectDisposedException>(() => frame.ApplyCalibration("color", sizeof(float), false, null, (_, _) => default));
+        Assert.False(frame.HasCie);
     }
 
     [Fact]

@@ -43,6 +43,55 @@ namespace ColorVision.Core
         }
     }
 
+    public enum CalibrationOutputMode : uint
+    {
+        RawOnly = 0,
+        FullCie = 1,
+        DeferredColor = 2,
+    }
+
+    public enum CalibrationRawLayout : uint
+    {
+        Mono = 0,
+        BgrInterleaved = 1,
+        RgbPlanar = 2,
+    }
+
+    public enum CalibrationRawFlip : uint
+    {
+        None = 0,
+        Vertical = 1,
+        Horizontal = 2,
+        Both = 3,
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct CalibrationFrameRequestV2
+    {
+        private static readonly uint RequestSize = checked((uint)Marshal.SizeOf<CalibrationFrameRequestV2>());
+        private readonly uint StructSize;
+
+        public CalibrationFrameRequestV2() => StructSize = RequestSize;
+
+        public uint Width;
+        public uint Height;
+        public uint BitsPerChannel;
+        public CalibrationRawLayout RawLayout;
+        public CalibrationOutputMode OutputMode;
+        public CalibrationRawFlip RawFlip;
+        public uint RoiX;
+        public uint RoiY;
+        public uint RoiWidth;
+        public uint RoiHeight;
+        public uint ObLeft;
+        public uint ObRight;
+        public uint ObTop;
+        public uint ObBottom;
+        public float ExposureX;
+        public float ExposureY;
+        public float ExposureZ;
+    }
+
     [StructLayout(LayoutKind.Sequential)]
     public struct PoiRequestV1
     {
@@ -354,7 +403,13 @@ namespace ColorVision.Core
         public static extern int M_CalibrationGetItemCount(IntPtr context);
 
         [DllImport(LibPath, CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
+        private static extern int M_CalibrationGetItemEstimatedBytesV1(IntPtr context, uint itemIndex, out ulong estimatedBytes);
+
+        [DllImport(LibPath, CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
         private static extern int M_CalibrationCacheGetStatsV1(ref CalibrationCacheStatsV1 statistics);
+
+        [DllImport(LibPath, CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
+        private static extern int M_CalibrationCacheSetBudgetV1(ulong budgetBytes);
 
         [DllImport(LibPath, CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
         private static extern int M_CalibrationCacheGetEntryV1(
@@ -403,6 +458,47 @@ namespace ColorVision.Core
                 required = result;
             }
             return required <= 1 ? string.Empty : "Native calibration error changed while being read.";
+        }
+
+        /// <summary>Reads the parsed memory estimate for the file generation loaded into this context.</summary>
+        public static ulong GetCalibrationItemEstimatedBytes(IntPtr context, uint itemIndex)
+        {
+            try
+            {
+                EnsureCalibrationCacheResult(M_CalibrationGetItemEstimatedBytesV1(context, itemIndex, out ulong bytes),
+                    nameof(M_CalibrationGetItemEstimatedBytesV1));
+                return bytes;
+            }
+            catch (Exception ex) when (ex is DllNotFoundException or EntryPointNotFoundException or BadImageFormatException)
+            {
+                throw CreateCalibrationCacheCompatibilityException(ex);
+            }
+        }
+
+        /// <summary>Reads process-wide retained memory and budget without enumerating file paths.</summary>
+        public static CalibrationSharedCacheStatistics GetCalibrationSharedCacheStatistics()
+        {
+            try
+            {
+                return ToManaged(ReadCalibrationCacheStatistics());
+            }
+            catch (Exception ex) when (ex is DllNotFoundException or EntryPointNotFoundException or BadImageFormatException)
+            {
+                throw CreateCalibrationCacheCompatibilityException(ex);
+            }
+        }
+
+        /// <summary>Applies a retention budget in bytes and immediately trims idle assets. Zero disables retention.</summary>
+        public static void SetCalibrationSharedCacheBudget(ulong budgetBytes)
+        {
+            try
+            {
+                EnsureCalibrationCacheResult(M_CalibrationCacheSetBudgetV1(budgetBytes), nameof(M_CalibrationCacheSetBudgetV1));
+            }
+            catch (Exception ex) when (ex is DllNotFoundException or EntryPointNotFoundException or BadImageFormatException)
+            {
+                throw CreateCalibrationCacheCompatibilityException(ex);
+            }
         }
 
         /// <summary>

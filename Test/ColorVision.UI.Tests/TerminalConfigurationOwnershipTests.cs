@@ -1,9 +1,12 @@
 using ColorVision.Database;
 using ColorVision.Engine;
+using ColorVision.Engine.Services;
 using ColorVision.Engine.Services.Devices;
+using ColorVision.Engine.Services.Devices.Calibration;
 using ColorVision.Engine.Services.PhyCameras.Licenses;
 using ColorVision.Engine.Services.Terminal;
 using ColorVision.Engine.Services.Types;
+using ColorVision.UI;
 using ColorVision.UI.Authorizations;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -187,6 +190,41 @@ public sealed class TerminalConfigurationOwnershipTests
         Assert.Equal(0, fixture.ReplacementOpens);
     });
 
+    [Theory]
+    [InlineData(null, @"D:\CVTest")]
+    [InlineData(@"E:\LocalPreference", @"E:\LocalPreference")]
+    public void ChildCreationUsesTheLocalDataPath(string? configuredPath, string expectedPath) => AsAdministrator(() =>
+    {
+        using var fixture = new Fixture();
+        fixture.SeedDataDevice("original", @"C:\offline-test\original");
+        var terminal = fixture.Terminal;
+        Assert.True(DeviceServiceFactoryRegistry.TryGetFactory(ServiceTypes.Calibration, out var factory));
+        var configHandler = fixture.CreateLocalConfigHandler();
+        if (configuredPath != null)
+        {
+            Assert.True(configHandler.TrySave(new DeviceDataPathSettings { DataBasePath = configuredPath }, out string error), error);
+            configHandler.LoadConfigs();
+        }
+
+        var previous = ConfigService.Instance;
+        SysResourceModel? saved;
+        try
+        {
+            ConfigService.SetInstance(configHandler);
+            Assert.True(TerminalDeviceCreation.TryPersist(terminal, terminal.CaptureConfigurationTarget(), factory!, ChildCode, "new calibration", out saved));
+        }
+        finally { ConfigService.SetInstance(previous); }
+
+        var children = fixture.ReadChildren("original");
+        var child = Assert.Single(children, row => row.Code == ChildCode);
+        Assert.Equal(saved!.Id, child.Id);
+        Assert.Equal(expectedPath, JsonConvert.DeserializeObject<ConfigCalibration>(child.Value!)!.FileServerCfg.DataBasePath);
+        var existing = Assert.Single(children, row => row.Code == "offline-existing-data-device");
+        Assert.Equal(@"C:\offline-test\original", JsonConvert.DeserializeObject<ConfigCalibration>(existing.Value!)!.FileServerCfg.DataBasePath);
+        Assert.Empty(fixture.ReadChildren("replacement"));
+        Assert.Equal(0, fixture.ReplacementOpens);
+    });
+
     [Fact]
     public void ChildCreationRollsBackIfTheOriginalSourceRetiresAfterInsert() => AsAdministrator(() =>
     {
@@ -332,6 +370,7 @@ public sealed class TerminalConfigurationOwnershipTests
         internal void SwitchDatabase() => active = Replacement;
         private bool IsCurrent(MySqlConnectedEndpoint endpoint) => ReferenceEquals(active, endpoint);
         internal SysResourceDao CreateLocalDao(string store) => new(new LocalTemplateStore(PathFor(store)), () => false);
+        internal ConfigHandler CreateLocalConfigHandler() => new() { ConfigFilePath = Path.Combine(directory.FullName, "app-config.json") };
 
         internal SysResourceModel ReadTerminal(string store)
         {
@@ -343,6 +382,19 @@ public sealed class TerminalConfigurationOwnershipTests
         {
             using var db = Open(store);
             return db.Queryable<SysResourceModel>().Where(row => row.Pid == Terminal.SysResourceModel.Id).ToList();
+        }
+
+        internal void SeedDataDevice(string store, string dataPath)
+        {
+            using var db = Open(store);
+            var owner = Terminal.SysResourceModel;
+            var config = new ConfigCalibration();
+            config.FileServerCfg.DataBasePath = dataPath;
+            db.Insertable(new SysResourceModel
+            {
+                Code = "offline-existing-data-device", Name = "existing data device", Pid = owner.Id,
+                Type = owner.Type, TenantId = owner.TenantId, Value = JsonConvert.SerializeObject(config)
+            }).ExecuteCommand();
         }
 
         internal void SeedReloadDevices()

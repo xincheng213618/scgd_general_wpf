@@ -20,9 +20,6 @@ namespace cvColorVision
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_SetPortComParam", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
         public static extern int CM_SetPortComParam(IntPtr handle, [MarshalAs(UnmanagedType.Bool)] bool enabled, string port, uint baudRate);
 
-        [DllImport(LIBRARY_CVCAMERA, CharSet = CharSet.Auto, EntryPoint = "CM_SetIndent", CallingConvention = CallingConvention.StdCall)]
-        public static extern int CM_SetIndent(IntPtr handle, int nL, int nT, int nR, int nB);
-
         [DllImport(LIBRARY_CVCAMERA, CharSet = CharSet.Auto, EntryPoint = "CM_SetFlip", CallingConvention = CallingConvention.StdCall)]
         public static extern int CM_SetFlip(IntPtr handle, int flipCode);
 

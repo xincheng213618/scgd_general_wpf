@@ -55,7 +55,7 @@
 
 	<ItemGroup>
 		<PackageReference Include="AvalonEdit" Version="6.3.1.120" />
-		<PackageReference Include="log4net" Version="3.5.0" />
+		<PackageReference Include="log4net" Version="3.6.0" />
 		<PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
 		<PackageReference Include="OpenCvSharp5" Version="5.0.0.20261011" />
 		<PackageReference Include="OpenCvSharp5.runtime.win" Version="5.0.0.20261011" />

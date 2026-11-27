@@ -1,4 +1,5 @@
 using ColorVision.Database;
+using Microsoft.Data.Sqlite;
 using SqlSugar;
 using System.Data;
 using System.IO;
@@ -43,20 +44,17 @@ namespace ProjectARVRPro
             EnsureBlobColumn(db, ObjectiveResultTableName, ObjectiveResultColumnName);
         }
 
-        public static void SaveViewResultJson(SqlSugarClient db, int id, string? json, ResultSqliteWriteTiming? timing = null)
-            => SaveJson(db, ViewResultTableName, ViewResultColumnName, id, json, timing);
+        public static void SaveViewResultJson(SqlSugarClient db, int id, string? json)
+            => SaveViewResultPayload(db, id, Compress(json));
 
-        public static void SaveObjectiveTestResultJson(SqlSugarClient db, int id, string? json, ResultSqliteWriteTiming? timing = null)
-            => SaveJson(db, ObjectiveResultTableName, ObjectiveResultColumnName, id, json, timing);
+        public static void SaveObjectiveTestResultJson(SqlSugarClient db, int id, string? json)
+            => SaveObjectiveTestResultPayload(db, id, Compress(json));
 
-        private static void SaveJson(SqlSugarClient db, string tableName, string columnName, int id, string? json,
-            ResultSqliteWriteTiming? timing)
-        {
-            byte[]? payload = Compress(json);
-            timing?.CompressionMs = timing.FinishStage();
-            SavePayload(db, tableName, columnName, id, payload);
-            timing?.PayloadMs = timing.FinishStage();
-        }
+        internal static void SaveViewResultPayload(SqlSugarClient db, int id, byte[]? payload)
+            => SavePayload(db, ViewResultTableName, ViewResultColumnName, id, payload);
+
+        internal static void SaveObjectiveTestResultPayload(SqlSugarClient db, int id, byte[]? payload)
+            => SavePayload(db, ObjectiveResultTableName, ObjectiveResultColumnName, id, payload);
 
         public static string? LoadViewResultJson(SqlSugarClient db, int id)
         {
@@ -75,6 +73,28 @@ namespace ProjectARVRPro
         public static void LoadViewResultJsons(SqlSugarClient db, IEnumerable<ProjectARVRReuslt> results, ReadOnlySqliteDatabase? offline = null) =>
             LoadPayloads(db, results, result => result.Id, (result, json) => result.ViewResultJson = json,
                 ViewResultTableName, ViewResultColumnName, nameof(ProjectARVRReuslt.ViewResultJson), offline);
+
+        internal static string? ReadObjectiveSummary(SqliteCommand command, int id, ReadOnlySqliteDatabase? offline)
+        {
+            if (command.CommandText.Length == 0)
+            {
+                var (gzip, legacy) = PayloadColumns(ObjectiveResultTableName, ObjectiveResultColumnName,
+                    nameof(ObjectiveTestResultRecord.ObjectiveTestResultJson), offline);
+                command.CommandText = $"SELECT {gzip}, {legacy} FROM \"{ObjectiveResultTableName}\" WHERE \"Id\" = @id;";
+                command.Parameters.Add("@id", SqliteType.Integer).Value = id;
+                command.Prepare();
+            }
+            else
+            {
+                command.Parameters[0].Value = id;
+            }
+
+            using var reader = command.ExecuteReader();
+            if (!reader.Read()) return null;
+            byte[]? payload = ReadBytes(reader.GetValue(0));
+            return Decompress(payload, detectEncodingFromByteOrderMarks: offline != null)
+                ?? (reader.IsDBNull(1) ? null : reader.GetString(1));
+        }
 
         internal static BatchViewPayloads ReadBatchViewPayloads(SqlSugarClient db, IEnumerable<ProjectARVRReuslt> results, ReadOnlySqliteDatabase? offline)
         {
@@ -136,8 +156,7 @@ namespace ProjectARVRPro
         private static void ReadPayloadValues(SqlSugarClient db, IEnumerable<int> recordIds, string tableName, string gzipColumn, string legacyColumn,
             ReadOnlySqliteDatabase? offline, Action<int, byte[]?, string?> readPayload)
         {
-            string gzip = offline == null || offline.HasColumn(tableName, gzipColumn) ? $"\"{gzipColumn}\"" : "NULL";
-            string legacy = offline?.HasColumn(tableName, legacyColumn) == true ? $"\"{legacyColumn}\"" : "NULL";
+            var (gzip, legacy) = PayloadColumns(tableName, gzipColumn, legacyColumn, offline);
             foreach (int[] ids in recordIds.Chunk(500))
             {
                 SugarParameter[] parameters = ids
@@ -155,6 +174,13 @@ namespace ProjectARVRPro
                     readPayload(reader.GetInt32(0), payload, legacyText);
                 }
             }
+        }
+
+        private static (string Gzip, string Legacy) PayloadColumns(string tableName, string gzipColumn, string legacyColumn, ReadOnlySqliteDatabase? offline)
+        {
+            string gzip = offline == null || offline.HasColumn(tableName, gzipColumn) ? $"\"{gzipColumn}\"" : "NULL";
+            string legacy = offline?.HasColumn(tableName, legacyColumn) == true ? $"\"{legacyColumn}\"" : "NULL";
+            return (gzip, legacy);
         }
 
         internal sealed class BatchViewPayloads

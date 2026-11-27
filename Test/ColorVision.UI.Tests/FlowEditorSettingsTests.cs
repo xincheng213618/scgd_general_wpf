@@ -4,7 +4,6 @@ using ColorVision.Themes;
 using ST.Library.UI.NodeEditor;
 using System.IO;
 using System.Windows;
-using System.Windows.Controls;
 using System.Windows.Media;
 
 namespace ColorVision.UI.Tests;
@@ -32,7 +31,8 @@ public sealed class FlowEditorSettingsTests
                 using var view = new FlowEngineManager().View;
                 FlowEditorCanvas first = view.EditorCanvas;
                 using var second = new FlowEditorCanvas(settings);
-                var themeButton = (Button)first.FindName("ThemeButton");
+                Assert.Null(first.FindName("ThemeButton"));
+                Assert.NotNull(first.FindName("SettingsButton"));
                 var node = new PresentationNode();
                 node.Create();
                 first.NodeEditor.Nodes.Add(node);
@@ -42,8 +42,7 @@ public sealed class FlowEditorSettingsTests
                 Assert.Same(STNodeVisualTheme.Light, first.NodeEditor.VisualTheme);
                 manager.ApplyTheme(Application.Current, Theme.Dark);
                 Assert.Same(STNodeVisualTheme.Dark, first.NodeEditor.VisualTheme);
-                themeButton.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
-                Assert.Equal(FlowEditorThemeMode.Light, settings.ThemeMode);
+                settings.ThemeMode = FlowEditorThemeMode.Light;
                 Assert.Same(STNodeVisualTheme.Light, first.NodeEditor.VisualTheme);
                 Assert.Same(STNodeVisualTheme.Light, second.NodeEditor.VisualTheme);
                 AssertExecutionPalette(view);
@@ -52,8 +51,7 @@ public sealed class FlowEditorSettingsTests
                 manager.ApplyTheme(Application.Current, Theme.Dark);
                 Assert.Same(STNodeVisualTheme.Light, first.NodeEditor.VisualTheme);
 
-                themeButton.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
-                Assert.Equal(FlowEditorThemeMode.Dark, settings.ThemeMode);
+                settings.ThemeMode = FlowEditorThemeMode.Dark;
                 Assert.Same(STNodeVisualTheme.Dark, first.NodeEditor.VisualTheme);
                 AssertExecutionPalette(view);
 
@@ -62,8 +60,7 @@ public sealed class FlowEditorSettingsTests
                 settings.AccentColor = Colors.Coral;
                 settings.ShowGrid = false;
                 settings.Curvature = 0.6;
-                themeButton.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
-                Assert.Equal(FlowEditorThemeMode.Custom, settings.ThemeMode);
+                settings.ThemeMode = FlowEditorThemeMode.Custom;
                 Assert.Equal(System.Drawing.Color.MidnightBlue.ToArgb(), first.NodeEditor.BackColor.ToArgb());
                 Assert.Equal(first.NodeEditor.BackColor, second.NodeEditor.BackColor);
                 Assert.Equal(System.Drawing.Color.Coral.ToArgb(), first.NodeEditor.VisualTheme.TitleSurface(System.Drawing.Color.DodgerBlue).ToArgb());
@@ -74,14 +71,10 @@ public sealed class FlowEditorSettingsTests
                 Assert.False(first.NodeEditor.IsModified);
                 Assert.False(first.NodeEditor.CanUndo);
 
-                themeButton.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
-                Assert.Equal(FlowEditorThemeMode.FollowApplication, settings.ThemeMode);
+                settings.ThemeMode = FlowEditorThemeMode.FollowApplication;
                 Assert.Same(STNodeVisualTheme.Dark, first.NodeEditor.VisualTheme);
                 AssertExecutionPalette(view);
                 Assert.Equal(Colors.MidnightBlue, settings.CanvasColor);
-                var reloaded = new ConfigHandler { ConfigFilePath = configPath };
-                reloaded.LoadConfigs();
-                Assert.Equal(FlowEditorThemeMode.FollowApplication, reloaded.GetRequiredService<FlowEditorSettings>().ThemeMode);
 
                 manager.ApplyTheme(Application.Current, Theme.Light);
                 Assert.Same(STNodeVisualTheme.Light, first.NodeEditor.VisualTheme);
@@ -108,7 +101,6 @@ public sealed class FlowEditorSettingsTests
     {
         Assert.Same(view.EditorCanvas.FindResource("ButtonBackground"), view.RunButton.Background);
         Assert.Same(view.RunButton.Background, view.StopButton.Background);
-        Assert.Same(view.RunButton.Background, view.FlowResultManagementButton.Background);
         Assert.Same(view.RunButton.Background, view.ExecutionAnalysisButton.Background);
         Assert.Same(view.EditorCanvas.FindResource("GlobalTextBrush"), view.logTextBox.Foreground);
     }

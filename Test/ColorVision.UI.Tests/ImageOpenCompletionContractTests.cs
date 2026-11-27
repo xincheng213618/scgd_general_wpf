@@ -70,6 +70,7 @@ public sealed class ImageOpenCompletionContractTests(ITestOutputHelper output)
                 return view.ImageOpenCompletion;
             });
 
+            using (new FileStream(path, FileMode.Open, FileAccess.ReadWrite, FileShare.None)) { }
             WpfTestHost.Invoke(() =>
             {
                 var display = Assert.IsType<WriteableBitmap>(view!.ViewBitmapSource);
@@ -93,6 +94,51 @@ public sealed class ImageOpenCompletionContractTests(ITestOutputHelper output)
         {
             if (view != null) WpfTestHost.Invoke(view.Dispose);
             if (File.Exists(path)) File.Delete(path);
+        }
+    }
+
+    [Fact]
+    public async Task LargeRgb48TiffReleasesTheDecoderStreamAndPublishesEditablePixels()
+    {
+        const int width = 2049, height = 701, stride = width * 6;
+        const string title = "RGB48 streaming fixture";
+        byte[] expected = new byte[stride * height];
+        for (int index = 0; index < expected.Length; index++) expected[index] = (byte)(index + (index >> 8));
+        string path = Path.Combine(Path.GetTempPath(), $"colorvision-rgb48-open-{Guid.NewGuid():N}.tiff");
+        ImageView? view = null;
+        try
+        {
+            await WpfTestHost.Invoke(() =>
+            {
+                EnsureImageViewTestResources();
+                BitmapSource source = BitmapSource.Create(width, height, 144, 120, PixelFormats.Rgb48, null, expected, stride);
+                BitmapMetadata metadata = new("tiff") { Title = title };
+                TiffBitmapEncoder encoder = new() { Compression = TiffCompressOption.Lzw };
+                encoder.Frames.Add(BitmapFrame.Create(source, null, metadata, null));
+                using (FileStream file = File.Create(path)) encoder.Save(file);
+
+                view = new ImageView { EnableEditorImageServices = false };
+                view.OpenImage(path);
+                return view.ImageOpenCompletion;
+            });
+
+            using (new FileStream(path, FileMode.Open, FileAccess.ReadWrite, FileShare.None)) { }
+            WpfTestHost.Invoke(() =>
+            {
+                var display = Assert.IsType<WriteableBitmap>(view!.ViewBitmapSource);
+                Assert.False(display.IsFrozen);
+                Assert.Equal(PixelFormats.Rgb48, display.Format);
+                Assert.Equal(title, view.Config.GetProperties<string>(ImageViewPropertyKeys.ImageTitle));
+                Assert.Same(display, view.ImageContent!.Pixels);
+                byte[] actual = new byte[expected.Length];
+                display.CopyPixels(actual, stride, 0);
+                Assert.True(actual.AsSpan().SequenceEqual(expected));
+            });
+        }
+        finally
+        {
+            if (view != null) WpfTestHost.Invoke(view.Dispose);
+            File.Delete(path);
         }
     }
 
@@ -122,7 +168,7 @@ public sealed class ImageOpenCompletionContractTests(ITestOutputHelper output)
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
-    public async Task LargePngPublishesEditablePixelsWithDecodedDpiAndPalette(bool indexed)
+    public async Task LargePngReleasesFileAndPublishesEditablePixelsWithDecodedDpiAndPalette(bool indexed)
     {
         int width = indexed ? 4097 : 2049;
         int height = indexed ? 2051 : 1025;
@@ -151,6 +197,8 @@ public sealed class ImageOpenCompletionContractTests(ITestOutputHelper output)
                 view.OpenImage(path);
                 return view.ImageOpenCompletion;
             });
+
+            File.Delete(path);
 
             WpfTestHost.Invoke(() =>
             {

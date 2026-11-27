@@ -93,35 +93,22 @@ namespace ColorVision.Scheduler.Data
             {
                 db.Ado.BeginTran();
                 transactionStarted = true;
-                int totalCount = 0;
-                int pageCount = 0;
-                var records = BuildHistoryQuery(db, request)
-                    .OrderBy($"{nameof(JobExecutionRecord.StartTime)} DESC, {nameof(JobExecutionRecord.Id)} DESC")
-                    .ToPageList(pageIndex, pageSize, ref totalCount, ref pageCount);
-                pageCount = totalCount == 0 ? 0 : Math.Max(1, pageCount);
-
-                if (pageCount == 0)
-                {
-                    pageIndex = 1;
-                }
-                else if (pageIndex > pageCount)
-                {
-                    pageIndex = pageCount;
-                    records = BuildHistoryQuery(db, request)
+                var summary = BuildHistoryQuery(db, request)
+                    .Select(record => new ExecutionHistoryAggregate
+                    {
+                        TotalCount = SqlFunc.AggregateCount(record.Id),
+                        SuccessCount = SqlFunc.IsNull(SqlFunc.AggregateSum(record.Success ? 1 : 0), 0),
+                        TotalExecutionTimeMs = SqlFunc.IsNull(SqlFunc.AggregateSum(record.ExecutionTimeMs), 0L),
+                    })
+                    .First();
+                int totalCount = summary.TotalCount;
+                int pageCount = totalCount == 0 ? 0 : (totalCount - 1) / pageSize + 1;
+                pageIndex = pageCount == 0 ? 1 : Math.Min(pageIndex, pageCount);
+                IReadOnlyList<JobExecutionRecord> records = totalCount == 0
+                    ? Array.Empty<JobExecutionRecord>()
+                    : BuildHistoryQuery(db, request)
                         .OrderBy($"{nameof(JobExecutionRecord.StartTime)} DESC, {nameof(JobExecutionRecord.Id)} DESC")
                         .ToPageList(pageIndex, pageSize);
-                }
-
-                int successCount = request.ResultFilter switch
-                {
-                    JobExecutionResultFilter.Succeeded => totalCount,
-                    JobExecutionResultFilter.Failed => 0,
-                    _ => BuildHistoryQuery(db, request).Count(record => record.Success),
-                };
-                int failureCount = totalCount - successCount;
-                long totalExecutionTimeMs = totalCount == 0
-                    ? 0
-                    : BuildHistoryQuery(db, request).Sum(record => record.ExecutionTimeMs);
 
                 var result = new JobExecutionHistoryPage
                 {
@@ -131,9 +118,9 @@ namespace ColorVision.Scheduler.Data
                     PageSize = pageSize,
                     TotalCount = totalCount,
                     PageCount = pageCount,
-                    SuccessCount = successCount,
-                    FailureCount = failureCount,
-                    AverageExecutionTimeMs = totalCount == 0 ? 0 : totalExecutionTimeMs / totalCount,
+                    SuccessCount = summary.SuccessCount,
+                    FailureCount = totalCount - summary.SuccessCount,
+                    AverageExecutionTimeMs = totalCount == 0 ? 0 : summary.TotalExecutionTimeMs / totalCount,
                 };
                 db.Ado.CommitTran();
                 transactionStarted = false;
@@ -161,6 +148,13 @@ namespace ColorVision.Scheduler.Data
                     PageSize = pageSize,
                 };
             }
+        }
+
+        private sealed class ExecutionHistoryAggregate
+        {
+            public int TotalCount { get; set; }
+            public int SuccessCount { get; set; }
+            public long TotalExecutionTimeMs { get; set; }
         }
 
         private static ISugarQueryable<JobExecutionRecord> BuildHistoryQuery(
@@ -240,35 +234,58 @@ namespace ColorVision.Scheduler.Data
         /// <summary>
         /// 获取指定任务的聚合统计信息（用于重启后恢复）
         /// </summary>
-        public (int RunCount, int SuccessCount, int FailureCount, long AvgMs, long MinMs, long MaxMs, string? LastResult, string? LastMessage) 
+        public (int RunCount, int SuccessCount, int FailureCount, long AvgMs, long MinMs, long MaxMs, string? LastResult, string? LastMessage)
             GetTaskStats(string jobName, string groupName)
         {
             try
             {
                 using var db = CreateClient();
-                var records = db.Queryable<JobExecutionRecord>()
-                    .Where(r => r.JobName == jobName && r.GroupName == groupName)
-                    .ToList();
-
-                if (records.Count == 0)
-                    return (0, 0, 0, 0, 0, 0, null, null);
-
-                int runCount = records.Count;
-                int successCount = records.Count(r => r.Success);
-                int failureCount = runCount - successCount;
-                long avgMs = (long)records.Average(r => r.ExecutionTimeMs);
-                long minMs = records.Min(r => r.ExecutionTimeMs);
-                long maxMs = records.Max(r => r.ExecutionTimeMs);
-
-                var last = records.OrderByDescending(r => r.StartTime).First();
-
-                return (runCount, successCount, failureCount, avgMs, minMs, maxMs, last.Result, last.Message);
+                return ReadTaskStats(db, jobName, groupName);
             }
             catch (Exception ex)
             {
                 _logger.Error("Failed to get task stats", ex);
                 return (0, 0, 0, 0, 0, 0, null, null);
             }
+        }
+
+        internal static (int RunCount, int SuccessCount, int FailureCount, long AvgMs, long MinMs, long MaxMs, string? LastResult, string? LastMessage)
+            ReadTaskStats(SqlSugarClient db, string jobName, string groupName)
+        {
+            // One statement keeps the counters and the latest execution in the same SQLite snapshot.
+            var stats = db.Ado.SqlQuery<TaskStatsRow>("""
+                SELECT summary.*, latest.Result AS LastResult, latest.Message AS LastMessage
+                FROM (
+                    SELECT COUNT(*) AS RunCount,
+                           COALESCE(SUM(CASE WHEN Success THEN 1 ELSE 0 END), 0) AS SuccessCount,
+                           COALESCE(SUM(ExecutionTimeMs), 0) AS TotalMs,
+                           COALESCE(MIN(ExecutionTimeMs), 0) AS MinMs,
+                           COALESCE(MAX(ExecutionTimeMs), 0) AS MaxMs
+                    FROM job_execution_record
+                    WHERE JobName = @jobName AND GroupName = @groupName
+                ) AS summary
+                LEFT JOIN job_execution_record AS latest ON latest.Id = (
+                    SELECT Id FROM job_execution_record
+                    WHERE JobName = @jobName AND GroupName = @groupName
+                    ORDER BY StartTime DESC, Id ASC
+                    LIMIT 1
+                )
+                """, new SugarParameter("@jobName", jobName), new SugarParameter("@groupName", groupName)).Single();
+
+            long average = stats.RunCount == 0 ? 0 : (long)((double)stats.TotalMs / stats.RunCount);
+            return (stats.RunCount, stats.SuccessCount, stats.RunCount - stats.SuccessCount,
+                average, stats.MinMs, stats.MaxMs, stats.LastResult, stats.LastMessage);
+        }
+
+        private sealed class TaskStatsRow
+        {
+            public int RunCount { get; set; }
+            public int SuccessCount { get; set; }
+            public long TotalMs { get; set; }
+            public long MinMs { get; set; }
+            public long MaxMs { get; set; }
+            public string? LastResult { get; set; }
+            public string? LastMessage { get; set; }
         }
 
         /// <summary>

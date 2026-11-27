@@ -36,19 +36,16 @@ namespace ColorVision.Engine.Templates.Flow.Versioning
             if (string.IsNullOrWhiteSpace(flowParam.FlowKey))
             {
                 RevisionGrid.ItemsSource =
-                    Array.Empty<FlowVersionHistoryRow>();
+                    Array.Empty<FlowRevisionSummary>();
                 StatusText.Text = EngineLocalization.Get("当前流程还没有稳定 FlowKey。");
                 return;
             }
 
             try
             {
-                IReadOnlyList<FlowRevision> revisions =
-                    FlowCatalogProvider.Shared.List(flowParam.FlowKey);
-                RevisionGrid.ItemsSource = revisions
-                    .OrderByDescending(item => item.Revision)
-                    .Select(item => new FlowVersionHistoryRow(item))
-                    .ToArray();
+                IReadOnlyList<FlowRevisionSummary> revisions =
+                    FlowCatalogProvider.Shared.ListHistory(flowParam.FlowKey);
+                RevisionGrid.ItemsSource = revisions;
                 StatusText.Text = revisions.Count == 0
                     ? EngineLocalization.Get("本机尚未产生版本；保存一次后会建立版本 1。")
                     : EngineLocalization.Format($"本机共 {revisions.Count} 个不可变版本，当前画布对应版本 {flowParam.TemplateRevision?.ToString() ?? EngineLocalization.Get("未知")}。");
@@ -56,7 +53,7 @@ namespace ColorVision.Engine.Templates.Flow.Versioning
             catch (Exception ex)
             {
                 RevisionGrid.ItemsSource =
-                    Array.Empty<FlowVersionHistoryRow>();
+                    Array.Empty<FlowRevisionSummary>();
                 StatusText.Text = EngineLocalization.Format($"读取版本目录失败：{ex.Message}");
             }
         }
@@ -65,9 +62,9 @@ namespace ColorVision.Engine.Templates.Flow.Versioning
             object sender,
             RoutedEventArgs e)
         {
-            FlowVersionHistoryRow[] selected =
+            FlowRevisionSummary[] selected =
                 RevisionGrid.SelectedItems
-                    .Cast<FlowVersionHistoryRow>()
+                    .Cast<FlowRevisionSummary>()
                     .OrderBy(item => item.Revision)
                     .ToArray();
             if (selected.Length != 2)
@@ -131,7 +128,7 @@ namespace ColorVision.Engine.Templates.Flow.Versioning
             }
 
             if (RevisionGrid.SelectedItem
-                is not FlowVersionHistoryRow selected)
+                is not FlowRevisionSummary selected)
             {
                 MessageBox.Show(
                     this,
@@ -161,12 +158,18 @@ namespace ColorVision.Engine.Templates.Flow.Versioning
             if (confirmation != MessageBoxResult.Yes)
                 return;
 
-            var restoreService = new FlowVersionRestoreService();
-            FlowVersionRestoreResult result = restoreService.Restore(
-                new FlowVersionRestoreRequest(
-                    flowParam,
-                    selected.Model,
-                    expectedContentHash));
+            FlowVersionRestoreResult result;
+            try
+            {
+                FlowRevision revision = FlowCatalogProvider.Shared.GetRevision(selected.FlowKey, selected.Revision)
+                    ?? throw new InvalidOperationException(EngineLocalization.Get("所选版本已不存在，请刷新版本历史。"));
+                result = new FlowVersionRestoreService().Restore(
+                    new FlowVersionRestoreRequest(flowParam, revision, expectedContentHash));
+            }
+            catch (Exception ex)
+            {
+                result = FlowVersionRestoreResult.Failure(ex.Message);
+            }
             if (!result.Succeeded)
             {
                 MessageBox.Show(
@@ -208,33 +211,6 @@ namespace ColorVision.Engine.Templates.Flow.Versioning
             {
                 IsEnabled = true;
             }
-        }
-
-        private sealed class FlowVersionHistoryRow
-        {
-            public FlowVersionHistoryRow(FlowRevision model)
-            {
-                Model = model;
-            }
-
-            public FlowRevision Model { get; }
-
-            public int Revision => Model.Revision;
-
-            public FlowRevisionSource Source => Model.Source;
-
-            public bool IsPublished => Model.IsPublished;
-
-            public DateTime CreatedTimeUtc => Model.CreatedTimeUtc;
-
-            public string? Author => Model.Author;
-
-            public string? Message => Model.Message;
-
-            public string ShortBinaryHash =>
-                Model.BinaryHash.Length <= 12
-                    ? Model.BinaryHash
-                    : Model.BinaryHash[..12];
         }
     }
 }

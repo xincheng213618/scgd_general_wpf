@@ -5,6 +5,7 @@
 #include <nlohmann/json.hpp>
 #include <opencv2/opencv.hpp>
 #include <opencv2/geometry.hpp>
+#include <algorithm>
 #include <array>
 #include <cmath>
 #include <iostream>
@@ -69,6 +70,13 @@ json run(const cv::Mat& image, json config = json::object(), RoiRect roi = {})
 bool rejected(const json& result)
 {
     return result.is_object() && !result.value("success", true) && result.contains("metrics") && result["metrics"].is_null();
+}
+
+bool usedHigherSegmentationThreshold(const json& result)
+{
+    return std::any_of(result["warnings"].begin(), result["warnings"].end(), [](const json& warning) {
+        return warning.get_ref<const std::string&>().find("higher segmentation threshold") != std::string::npos;
+    });
 }
 
 bool matches(const json& result, const std::vector<cv::Point2f>& expected, double tolerance = 0.75)
@@ -155,7 +163,24 @@ bool RunGridDistortionV2Tests()
     }
     cv::Mat missing = p3.image.clone();
     cv::circle(missing, cv::Point(p3.centers.back()), 30, cv::Scalar(0), cv::FILLED);
-    check(rejected(run(missing)), "missing point rejected");
+    const RoiRect missingRoi{100, 75, missing.cols, missing.rows};
+    cv::Mat paddedMissing(missing.rows + 150, missing.cols + 200, CV_8U, cv::Scalar(0));
+    missing.copyTo(paddedMissing(cv::Rect(missingRoi.x, missingRoi.y, missingRoi.width, missingRoi.height)));
+    const json rejectedMissing = run(paddedMissing, {{"maxProcessingSize", 800}}, missingRoi);
+    bool candidatesMatch = rejected(rejectedMissing)
+        && rejectedMissing.value("candidateCount", 0) == 8 && rejectedMissing.value("selectedCount", -1) == 0
+        && rejectedMissing["points"].empty() && rejectedMissing.contains("candidatePoints")
+        && rejectedMissing["candidatePoints"].size() == 8;
+    if (candidatesMatch) {
+        const auto& points = rejectedMissing["candidatePoints"];
+        for (size_t i = 0; i < 8; ++i) {
+            const cv::Point2f expected = p3.centers[i] + cv::Point2f(100, 75);
+            candidatesMatch &= std::any_of(points.begin(), points.end(), [&](const json& point) {
+                return std::hypot(point.at("x").get<double>() - expected.x, point.at("y").get<double>() - expected.y) < 2;
+            });
+        }
+    }
+    check(candidatesMatch, "missing point rejected and detected candidates mapped through resize and ROI");
     cv::Mat saturated = p3.image.clone();
     cv::rectangle(saturated, cv::Rect(center.x - 55, center.y - 55, 111, 111), cv::Scalar(255), cv::FILLED);
     check(rejected(run(saturated)), "saturated occlusion rejected");
@@ -235,8 +260,67 @@ bool RunGridDistortionV2Tests()
         check(matches(run(surrounded, config), grid.centers), dimension == 3 ? "3x3 inside foreground ring" : "7x7 inside foreground ring");
     }
 
+    {
+        Fixture grid{ cv::Mat(1000, 1400, CV_16U, cv::Scalar(3000)), {} };
+        const cv::Point first(440, 300);
+        const cv::Point tailStart = first + cv::Point(0, 400);
+        cv::line(grid.image, tailStart, tailStart + cv::Point(-80, 65), cv::Scalar(14000), 11, cv::LINE_8);
+        for (int row = 0; row < 3; ++row) for (int col = 0; col < 3; ++col) {
+            const cv::Point point = first + cv::Point(200 * col, 200 * row);
+            grid.centers.emplace_back(point);
+            cv::circle(grid.image, point, 18, cv::Scalar(46000), cv::FILLED, cv::LINE_8);
+        }
+        const json recovered = run(grid.image);
+        check(matches(recovered, grid.centers, 3.0) && usedHigherSegmentationThreshold(recovered),
+            "bright 16U 3x3 with a tailed corner recovers at a higher threshold");
+
+        const cv::Point last(grid.centers.back());
+        cv::circle(grid.image, last, 18, cv::Scalar(3000), cv::FILLED, cv::LINE_8);
+        cv::circle(grid.image, last + cv::Point(6, -35), 18, cv::Scalar(46000), cv::FILLED, cv::LINE_8);
+        const json shifted = run(grid.image);
+        check(rejected(shifted) && shifted.value("statusCode", "") == "grid_residual_too_large",
+            "higher threshold rejects a shifted bright replacement for a missing 3x3 corner");
+    }
+
+    {
+        Fixture grid{ cv::Mat(1000, 1400, CV_16U, cv::Scalar(3000)), {} };
+        const cv::Point first(440, 300);
+        for (int row = 0; row < 5; ++row) for (int col = 0; col < 5; ++col) {
+            const cv::Point point = first + cv::Point(100 * col, 100 * row);
+            grid.centers.emplace_back(point);
+            const bool alternatingCore = row % 2 == 0 && col % 2 == 0;
+            cv::circle(grid.image, point, 18, cv::Scalar(alternatingCore ? 46000 : 3500), cv::FILLED, cv::LINE_8);
+        }
+        const json config5 = {{"expectedRows", 5}, {"expectedCols", 5}};
+        check(matches(run(grid.image, config5), grid.centers, 3.0), "correctly configured 5x5 measures all bright and dim cores");
+
+        const cv::Point tailStart = first + cv::Point(0, 400);
+        cv::line(grid.image, tailStart, tailStart + cv::Point(-80, 65), cv::Scalar(14000), 11, cv::LINE_8);
+        cv::circle(grid.image, tailStart, 18, cv::Scalar(46000), cv::FILLED, cv::LINE_8);
+        const json wrongGrid = run(grid.image);
+        check(rejected(wrongGrid) && wrongGrid.value("statusCode", "") == "ambiguous_grid",
+            "higher threshold rejects an alternating 3x3 subset of a finer 5x5 grid");
+    }
+
     const Fixture regular7 = makeRegularGrid(7, 7);
     const json config7 = {{"expectedRows", 7}, {"expectedCols", 7}};
+    cv::Mat tailed(regular7.image.size(), CV_16U, cv::Scalar(3000));
+    const cv::Point corner = regularCenter(6, 0);
+    cv::line(tailed, corner, corner + cv::Point(-80, 80), cv::Scalar(12000), 8, cv::LINE_8);
+    for (const auto& center : regular7.centers)
+        cv::circle(tailed, cv::Point(center), 14, cv::Scalar(25000), cv::FILLED, cv::LINE_8);
+    const json recovered = run(tailed, config7);
+    check(matches(recovered, regular7.centers, 3.0) && usedHigherSegmentationThreshold(recovered),
+        "bright 16U 7x7 with a tailed corner recovers at a higher threshold");
+    cv::Mat dimExtension = tailed.clone();
+    for (int col = 0; col < 7; ++col)
+        cv::circle(dimExtension, regularCenter(7, col), 14, cv::Scalar(4000), cv::FILLED, cv::LINE_8);
+    const json rejectedExtension = run(dimExtension, config7);
+    check(rejected(rejectedExtension) && rejectedExtension.value("statusCode", "") == std::string("ambiguous_grid"),
+        "higher threshold recovery rejects a dim extra row seen at the normal threshold");
+    cv::circle(tailed, corner, 14, cv::Scalar(3000), cv::FILLED, cv::LINE_8);
+    check(rejected(run(tailed, config7)), "a tail without a dot core still leaves the 7x7 incomplete");
+
     cv::Mat distant = regular7.image.clone();
     cv::circle(distant, regularCenter(3, 12), 14, cv::Scalar(160), cv::FILLED, cv::LINE_8);
     check(matches(run(distant, config7), regular7.centers), "remote isolated integer-lattice point is not a grid extension");
@@ -268,5 +352,36 @@ bool RunGridDistortionV2Tests()
     const json withRingClutter = run(ringClutter, config7);
     check(matches(withRingClutter, regular7.centers) && withRingClutter.value("candidateCount", 0) == 50,
         "foreground ring hole is not a duplicate candidate");
+
+    {
+        // At 1501 rows the seven processing bands have uneven boundaries.
+        // Six grid rows straddle those boundaries and contain tied contour rows.
+        Fixture crossing{cv::Mat(1501, 1600, CV_16U, cv::Scalar(500)), {}};
+        for (int row = 0; row < 7; ++row) for (int col = 0; col < 7; ++col) {
+            const cv::Point center(180 + 205 * col, (row + 1) * crossing.image.rows / 7 - 23);
+            const int radius = row == 6 ? 20 : 27;
+            crossing.centers.emplace_back(center);
+            cv::circle(crossing.image, center, radius, cv::Scalar(45000), cv::FILLED, cv::LINE_8);
+        }
+        cv::Mat missing = crossing.image.clone();
+        cv::circle(missing, cv::Point(crossing.centers[24]), 27, cv::Scalar(500), cv::FILLED, cv::LINE_8);
+
+        struct ThreadCountScope {
+            int previous = cv::getNumThreads();
+            ~ThreadCountScope() { cv::setNumThreads(previous); }
+        } threadCount;
+        const auto measure = [&](const cv::Mat& image) {
+            json result = run(image, config7);
+            if (result.is_object()) result.erase("timings");
+            return result;
+        };
+        cv::setNumThreads(1);
+        const json serial = measure(crossing.image), serialMissing = measure(missing);
+        cv::setNumThreads(8);
+        const json parallel = measure(crossing.image), parallelMissing = measure(missing);
+        check(matches(parallel, crossing.centers) && parallel == serial
+            && rejected(parallelMissing) && parallelMissing.value("candidateCount", 0) == 48
+            && parallelMissing == serialMissing, "cross-band points and rejected candidate order match serial");
+    }
     return failures == 0;
 }

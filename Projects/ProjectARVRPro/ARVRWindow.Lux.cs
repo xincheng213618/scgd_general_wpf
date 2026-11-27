@@ -127,7 +127,7 @@ public partial class ARVRWindow
                     var request = session.Request;
                     var csvLog = new LuxCsvWriteContext(request.SerialNumber, CurrentFlowResult?.BatchId,
                         request.MachineNo, session.FlowGroup, request.SocketCode);
-                    if (!await ExportCustomerReportAsync(options, request.SerialNumber, DateTime.Now, csvLog))
+                    if (!await ExportCustomerReportAsync(options, request.SerialNumber, DateTime.Now, ObjectiveTestResultRecordId, csvLog))
                     {
                         string path = Path.Combine(options.CsvDirectory, Tool.SanitizeFileName($"C_{request.SerialNumber}.csv"));
                         LuxDeviceReportWriter.Write(path, stagingPath => ObjectiveTestResultCsvExporter.ExportToCsv(ObjectiveTestResult, stagingPath), csvLog);

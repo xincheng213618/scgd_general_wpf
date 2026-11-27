@@ -117,17 +117,28 @@ public sealed class ProcessStepProjectionTests
             Assert.Same(first, progress.Steps[0].Meta);
             Assert.Same(second, progress.Steps[1].Meta);
             Assert.Equal(2, progress.Steps[1].Number);
+            const string failureDetail = "Point grid recognition failed.\ngrid_not_found";
             progress.Start(0);
             progress.UpdateElapsed(0, 250, 1000);
-            progress.Finish(0, false);
+            progress.Finish(0, false, failureDetail);
             progress.Start(1);
             progress.Finish(1, true);
             Assert.Equal(CircularProgressState.Failed, progress.Steps[0].State);
             Assert.Equal(25, progress.Steps[0].Progress);
+            Assert.Contains(failureDetail, progress.Steps[0].Details);
             Assert.Equal(CircularProgressState.Completed, progress.Steps[1].State);
             Assert.Equal(CircularProgressState.Waiting, progress.Steps[2].State);
+            Assert.DoesNotContain(failureDetail, progress.Steps[1].Details);
+
+            progress.Start(0);
+            Assert.DoesNotContain(failureDetail, progress.Steps[0].Details);
+            progress.Finish(0, false, failureDetail);
+            progress.Finish(0, true);
+            Assert.DoesNotContain(failureDetail, progress.Steps[0].Details);
+            progress.Finish(0, false, failureDetail);
             progress.Reset();
             Assert.All(progress.Steps, step => Assert.Equal(CircularProgressState.Waiting, step.State));
+            Assert.DoesNotContain(failureDetail, progress.Steps[0].Details);
         });
     }
 }

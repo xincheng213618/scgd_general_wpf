@@ -3,6 +3,9 @@ using System;
 using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Linq;
+using System.Numerics;
+using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
@@ -124,6 +127,14 @@ namespace ColorVision.ImageEditor.Algorithms
                         if ((y & 31) == 0) cancellationToken.ThrowIfCancellationRequested();
                         source.Data.Span.Slice(y * source.Stride, rowBytes).CopyTo(outputBytes.AsSpan(y * rowBytes, rowBytes));
                     }
+                }
+                else if (dark != null && flat == null && shading == null && darkStatistics.InvalidSamples == 0
+                    && !source.Format.IsFloatingPoint() && BitConverter.IsLittleEndian)
+                {
+                    bool preserveAlpha = correctedChannels != sourceChannels;
+                    correction.ClippedLowSamples = source.Format.BitsPerChannel() == 8
+                        ? ApplyIntegerDark<byte>(source, dark, outputBytes, preserveAlpha, cancellationToken, context.Progress)
+                        : ApplyIntegerDark<ushort>(source, dark, outputBytes, preserveAlpha, cancellationToken, context.Progress);
                 }
                 else
                 {
@@ -461,11 +472,63 @@ namespace ColorVision.ImageEditor.Algorithms
             CancellationToken cancellationToken,
             IProgress<AlgorithmProgress>? progress)
         {
+            // Integer radiometric output rows are independent. Keep rejecting invocations in raster order.
+            int workers = Math.Min(source.Height, Math.Min(Environment.ProcessorCount, 4));
+            bool useParallel = workers > 1
+                && !source.Format.IsFloatingPoint()
+                && (long)source.Width * source.Height >= 1024 * 1024
+                && (dark != null || flat != null || shading != null)
+                && parameters.InvalidReferencePolicy != InvalidReferencePixelPolicy.RejectInvocation;
+            if (!useParallel)
+            {
+                ApplyRadiometricRows(source, dark, flat, shading, destination, validity, correctedChannels, parameters,
+                    flatTargets, shadingTarget, statistics, 0, source.Height, cancellationToken, progress);
+                return;
+            }
+
+            var workerStatistics = new CorrectionStatistics[workers];
+            progress?.Report(new AlgorithmProgress(0.2, "imaging-correction.apply"));
+            Parallel.For(0, workers, new ParallelOptions { MaxDegreeOfParallelism = workers, CancellationToken = cancellationToken }, worker =>
+            {
+                int start = (int)((long)source.Height * worker / workers);
+                int end = (int)((long)source.Height * (worker + 1) / workers);
+                var local = new CorrectionStatistics();
+                ApplyRadiometricRows(source, dark, flat, shading, destination, validity, correctedChannels, parameters,
+                    flatTargets, shadingTarget, local, start, end, cancellationToken, progress: null);
+                workerStatistics[worker] = local;
+            });
+            foreach (CorrectionStatistics local in workerStatistics)
+            {
+                statistics.InvalidOutputPixels += local.InvalidOutputPixels;
+                statistics.ClippedLowSamples += local.ClippedLowSamples;
+                statistics.ClippedHighSamples += local.ClippedHighSamples;
+                statistics.NonFiniteOutputSamples += local.NonFiniteOutputSamples;
+            }
+            progress?.Report(new AlgorithmProgress(0.75, "imaging-correction.apply"));
+        }
+
+        private static void ApplyRadiometricRows(
+            AlgorithmImageBuffer source,
+            AlgorithmImageBuffer? dark,
+            AlgorithmImageBuffer? flat,
+            AlgorithmImageBuffer? shading,
+            byte[] destination,
+            byte[] validity,
+            int correctedChannels,
+            ImagingCorrectionParameters parameters,
+            double[] flatTargets,
+            double shadingTarget,
+            CorrectionStatistics statistics,
+            int firstRow,
+            int endRow,
+            CancellationToken cancellationToken,
+            IProgress<AlgorithmProgress>? progress)
+        {
             int sourceChannels = source.Format.Channels();
             int sampleBits = source.Format.BitsPerChannel();
             int rowBytes = checked(source.Width * sourceChannels * (sampleBits / 8));
             bool copyIntegerRows = (sampleBits is 8 or 16) && dark == null && flat == null && shading == null;
-            for (int y = 0; y < source.Height; y++)
+            for (int y = firstRow; y < endRow; y++)
             {
                 if ((y & 15) == 0)
                 {
@@ -563,6 +626,72 @@ namespace ColorVision.ImageEditor.Algorithms
                     }
                 }
             }
+        }
+
+        private static long ApplyIntegerDark<T>(
+            AlgorithmImageBuffer source,
+            AlgorithmImageBuffer dark,
+            byte[] destination,
+            bool preserveAlpha,
+            CancellationToken cancellationToken,
+            IProgress<AlgorithmProgress>? progress)
+            where T : unmanaged, IBinaryInteger<T>, IUnsignedNumber<T>
+        {
+            // For 8- and 16-bit samples, normalizing, subtracting and rounding back to the
+            // original depth gives the exact saturated integer difference.
+            int rowBytes = source.Width * source.Format.BytesPerPixel();
+            int lanes = Vector256<T>.Count;
+            Vector256<T> correctionMask = Vector256<T>.AllBitsSet;
+            if (preserveAlpha && Vector256.IsHardwareAccelerated)
+            {
+                Vector256<T> alphaIndex = Vector256.Create(T.CreateChecked(3));
+                correctionMask = ~Vector256.Equals(Vector256<T>.Indices & alphaIndex, alphaIndex);
+            }
+
+            long clipped = 0;
+            for (int y = 0; y < source.Height; y++)
+            {
+                if ((y & 15) == 0)
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    progress?.Report(new AlgorithmProgress(0.2 + 0.55 * y / source.Height, "imaging-correction.apply"));
+                }
+                ReadOnlySpan<T> original = MemoryMarshal.Cast<byte, T>(source.Data.Span.Slice(y * source.Stride, rowBytes));
+                ReadOnlySpan<T> reference = MemoryMarshal.Cast<byte, T>(dark.Data.Span.Slice(y * dark.Stride, rowBytes));
+                Span<T> output = MemoryMarshal.Cast<byte, T>(destination.AsSpan(y * rowBytes, rowBytes));
+                int index = 0;
+                if (Vector256.IsHardwareAccelerated)
+                {
+                    ref T originalStart = ref MemoryMarshal.GetReference(original);
+                    ref T referenceStart = ref MemoryMarshal.GetReference(reference);
+                    ref T outputStart = ref MemoryMarshal.GetReference(output);
+                    for (; index <= original.Length - lanes; index += lanes)
+                    {
+                        Vector256<T> samples = Vector256.LoadUnsafe(ref originalStart, (nuint)index);
+                        Vector256<T> offsets = Vector256.LoadUnsafe(ref referenceStart, (nuint)index) & correctionMask;
+                        (Vector256.Max(samples, offsets) - offsets).StoreUnsafe(ref outputStart, (nuint)index);
+                        clipped += BitOperations.PopCount(Vector256.LessThan(samples, offsets).ExtractMostSignificantBits());
+                    }
+                }
+                for (; index < original.Length; index++)
+                {
+                    T value = original[index];
+                    T offset = preserveAlpha && (index & 3) == 3 ? T.Zero : reference[index];
+                    if (value < offset)
+                    {
+                        output[index] = T.Zero;
+                        clipped++;
+                    }
+                    else
+                    {
+                        output[index] = value - offset;
+                    }
+                }
+            }
+
+            cancellationToken.ThrowIfCancellationRequested();
+            progress?.Report(new AlgorithmProgress(0.75, "imaging-correction.apply"));
+            return clipped;
         }
 
         private static void ApplyBadPixels(

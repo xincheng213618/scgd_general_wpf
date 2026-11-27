@@ -6,11 +6,13 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
+using ParameterType = System.Data.DbType;
 
 namespace ColorVision.Engine.FlowProcessing.Diagnostics
 {
     internal sealed class FlowExecutionJournal : IFlowExecutionJournal
     {
+        private const string SnapshotMismatch = "相同内容哈希对应了不同的模板快照。";
         private static readonly ILog log = LogManager.GetLogger(typeof(FlowExecutionJournal));
         private static readonly object WriteLock =
             FlowDiagnosticsMaintenanceGate.SyncRoot;
@@ -59,10 +61,7 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
             this.processProbe =
                 processProbe ?? throw new ArgumentNullException(nameof(processProbe));
 
-            lock (WriteLock)
-            {
-                FlowDiagnosticsSchemaMigrator.EnsureSchema(db);
-            }
+            FlowDiagnosticsSchemaMigrator.PrepareServiceConnection(db, ownsDb);
         }
 
         public FlowRunRecord BeginRun(FlowTemplateSnapshot snapshot, FlowRunRecord run)
@@ -104,7 +103,7 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
                     return existingRun;
                 }
 
-                FlowTemplateSnapshot persistedSnapshot = GetOrCreateSnapshot(snapshot);
+                var persistedSnapshot = GetOrCreateSnapshot(snapshot);
                 run.SnapshotId = persistedSnapshot.Id;
                 run.ContentHash = persistedSnapshot.ContentHash;
                 if (run.TemplateRevision == null)
@@ -208,11 +207,7 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
             ThrowIfDisposed();
             PrepareEvent(executionEvent);
 
-            return WriteTransaction(() =>
-            {
-                EnsureRunExists(executionEvent.RunRecordId);
-                return AppendEventCore(executionEvent);
-            });
+            return WriteTransaction(() => AppendEventCore(executionEvent, verifyRunExists: true));
         }
 
         public FlowNodeAttempt BeginAttempt(FlowNodeAttempt attempt)
@@ -235,6 +230,9 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
 
             return WriteTransaction(() =>
             {
+                if (db.CurrentConnectionConfig.DbType == DbType.Sqlite && TryInsertSqliteAttempt(attempt))
+                    return attempt;
+
                 FlowRunRecord? run = db.Queryable<FlowRunRecord>().InSingle(attempt.RunRecordId);
                 if (run == null)
                     throw new InvalidOperationException($"找不到流程运行记录 {attempt.RunRecordId}。");
@@ -266,6 +264,46 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
                 attempt.Id = db.Insertable(attempt).ExecuteReturnBigIdentity();
                 return attempt;
             });
+        }
+
+        private bool TryInsertSqliteAttempt(FlowNodeAttempt attempt)
+        {
+            // A retry or a terminal run must not consume an attempt number or an identity.
+            using var reader = db.Ado.GetDataReader("""
+                INSERT INTO FlowNodeAttempt (
+                    run_record_id, legacy_node_record_id, node_id, attempt_no, invocation_id,
+                    started_time_utc, completed_time_utc, outcome, error_code, error_message)
+                SELECT @runId, @legacyId, @nodeId,
+                    COALESCE((
+                        SELECT CASE attempt_no
+                            WHEN 2147483647 THEN -2147483648
+                            ELSE attempt_no + 1 END
+                        FROM FlowNodeAttempt
+                        WHERE run_record_id = @runId AND node_id = @nodeId
+                        ORDER BY attempt_no DESC LIMIT 1
+                    ), 1),
+                    @invocation, @started, NULL, NULL, NULL, NULL
+                WHERE EXISTS (
+                    SELECT 1 FROM FlowRunRecord
+                    WHERE id = @runId AND status = @running AND completed_time_utc IS NULL
+                )
+                    AND NOT EXISTS (
+                        SELECT 1 FROM FlowNodeAttempt WHERE run_record_id = @runId AND invocation_id = @invocation
+                    )
+                RETURNING id, attempt_no
+                """,
+                new SugarParameter("@runId", attempt.RunRecordId),
+                new SugarParameter("@legacyId", attempt.LegacyNodeRecordId),
+                new SugarParameter("@nodeId", attempt.NodeId),
+                new SugarParameter("@invocation", attempt.InvocationId),
+                new SugarParameter("@started", attempt.StartedTimeUtc),
+                new SugarParameter("@running", (int)FlowStatus.Runing));
+            if (!reader.Read())
+                return false;
+
+            attempt.Id = reader.GetInt64(0);
+            attempt.AttemptNo = reader.GetInt32(1);
+            return true;
         }
 
         public FlowNodeAttempt CompleteAttempt(
@@ -303,9 +341,36 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
                 attempt.Outcome = outcome;
                 attempt.ErrorCode = errorCode;
                 attempt.ErrorMessage = errorMessage;
-                db.Updateable(attempt).ExecuteCommand();
+                if (db.CurrentConnectionConfig.DbType == DbType.Sqlite)
+                    UpdateSqliteAttempt(attempt);
+                else
+                    db.Updateable(attempt).ExecuteCommand();
                 return attempt;
             });
+        }
+
+        private void UpdateSqliteAttempt(FlowNodeAttempt attempt)
+        {
+            // Bind the same fields as the entity update, including the start time parsed from older rows.
+            db.Ado.ExecuteCommand("""
+                UPDATE FlowNodeAttempt SET
+                    run_record_id = @runId, legacy_node_record_id = @legacyId, node_id = @nodeId,
+                    attempt_no = @attemptNo, invocation_id = @invocation, started_time_utc = @started,
+                    completed_time_utc = @completed, outcome = @outcome, error_code = @errorCode,
+                    error_message = @errorMessage
+                WHERE id = @id;
+                """,
+                new SugarParameter("@id", attempt.Id),
+                new SugarParameter("@runId", attempt.RunRecordId),
+                new SugarParameter("@legacyId", attempt.LegacyNodeRecordId, ParameterType.Int32),
+                new SugarParameter("@nodeId", attempt.NodeId, ParameterType.String),
+                new SugarParameter("@attemptNo", attempt.AttemptNo),
+                new SugarParameter("@invocation", attempt.InvocationId, ParameterType.String),
+                new SugarParameter("@started", attempt.StartedTimeUtc, ParameterType.DateTime),
+                new SugarParameter("@completed", attempt.CompletedTimeUtc, ParameterType.DateTime),
+                new SugarParameter("@outcome", attempt.Outcome, ParameterType.String),
+                new SugarParameter("@errorCode", attempt.ErrorCode, ParameterType.String),
+                new SugarParameter("@errorMessage", attempt.ErrorMessage, ParameterType.String));
         }
 
         public FlowIncident CreateIncident(FlowIncident incident)
@@ -467,7 +532,7 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
                 DataJson = detailsJson,
             };
             PrepareEvent(recoveredEvent);
-            FlowExecutionEvent persistedEvent = AppendEventCore(recoveredEvent);
+            FlowExecutionEvent persistedEvent = AppendEventCore(recoveredEvent, verifyRunExists: false);
 
             var incident = new FlowIncident
             {
@@ -486,8 +551,14 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
             return new FlowRunRecoveryResult(run, persistedEvent, persistedIncident);
         }
 
-        private FlowExecutionEvent AppendEventCore(FlowExecutionEvent executionEvent)
+        private FlowExecutionEvent AppendEventCore(FlowExecutionEvent executionEvent, bool verifyRunExists)
         {
+            if (db.CurrentConnectionConfig.DbType == DbType.Sqlite && TryInsertSqliteEvent(executionEvent))
+                return executionEvent;
+
+            if (verifyRunExists)
+                EnsureRunExists(executionEvent.RunRecordId);
+
             FlowExecutionEvent? existing = db.Queryable<FlowExecutionEvent>()
                 .Where(item =>
                     item.RunRecordId == executionEvent.RunRecordId
@@ -510,6 +581,47 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
             return executionEvent;
         }
 
+        private bool TryInsertSqliteEvent(FlowExecutionEvent executionEvent)
+        {
+            // Emit no row for a duplicate so it cannot advance SQLite's identity counter.
+            // The run key and sequence indexes serve the two event subqueries.
+            using var reader = db.Ado.GetDataReader("""
+                INSERT INTO FlowExecutionEvent (
+                    run_record_id, sequence_no, event_key, event_type, occurred_time_utc,
+                    node_id, attempt_id, code, message, data_json)
+                SELECT @runId,
+                    COALESCE((
+                        SELECT CASE sequence_no
+                            WHEN 9223372036854775807 THEN -9223372036854775808
+                            ELSE sequence_no + 1 END
+                        FROM FlowExecutionEvent
+                        WHERE run_record_id = @runId
+                        ORDER BY sequence_no DESC LIMIT 1
+                    ), 1),
+                    @key, @type, @occurred, @nodeId, @attemptId, @code, @message, @data
+                WHERE EXISTS (SELECT 1 FROM FlowRunRecord WHERE id = @runId)
+                    AND NOT EXISTS (
+                        SELECT 1 FROM FlowExecutionEvent WHERE run_record_id = @runId AND event_key = @key
+                    )
+                RETURNING id, sequence_no
+                """,
+                new SugarParameter("@runId", executionEvent.RunRecordId),
+                new SugarParameter("@key", executionEvent.EventKey),
+                new SugarParameter("@type", executionEvent.EventType),
+                new SugarParameter("@occurred", executionEvent.OccurredTimeUtc),
+                new SugarParameter("@nodeId", executionEvent.NodeId),
+                new SugarParameter("@attemptId", executionEvent.AttemptId),
+                new SugarParameter("@code", executionEvent.Code),
+                new SugarParameter("@message", executionEvent.Message),
+                new SugarParameter("@data", executionEvent.DataJson));
+            if (!reader.Read())
+                return false;
+
+            executionEvent.Id = reader.GetInt64(0);
+            executionEvent.SequenceNo = reader.GetInt64(1);
+            return true;
+        }
+
         private FlowIncident CreateIncidentCore(FlowIncident incident)
         {
             FlowIncident? existing = db.Queryable<FlowIncident>()
@@ -528,7 +640,40 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
             return incident;
         }
 
-        private FlowTemplateSnapshot GetOrCreateSnapshot(FlowTemplateSnapshot snapshot)
+        private (long Id, string ContentHash, int? TemplateRevision) GetOrCreateSnapshot(FlowTemplateSnapshot snapshot)
+        {
+            var existing = db.CurrentConnectionConfig.DbType == DbType.Sqlite && snapshot.FlowKey != null
+                ? FindSqliteSnapshot(snapshot)
+                : FindSnapshot(snapshot);
+            if (existing.HasValue)
+                return existing.Value;
+
+            snapshot.Id = db.Insertable(snapshot).ExecuteReturnBigIdentity();
+            return (snapshot.Id, snapshot.ContentHash, snapshot.TemplateRevision);
+        }
+
+        private (long Id, string ContentHash, int? TemplateRevision)? FindSqliteSnapshot(FlowTemplateSnapshot snapshot)
+        {
+            // The flow-key/hash index identifies one row. Return only metadata after checking its stored bytes.
+            using var reader = db.Ado.GetDataReader("""
+                SELECT id, content_hash, template_revision,
+                    CASE WHEN content_length = @length AND content = @content THEN 1 ELSE 0 END
+                FROM FlowTemplateSnapshot
+                WHERE flow_key = @key AND content_hash = @hash
+                LIMIT 1
+                """,
+                new SugarParameter("@length", snapshot.ContentLength),
+                new SugarParameter("@content", snapshot.Content),
+                new SugarParameter("@key", snapshot.FlowKey),
+                new SugarParameter("@hash", snapshot.ContentHash));
+            if (!reader.Read())
+                return null;
+            if (!reader.GetBoolean(3))
+                throw new InvalidOperationException(SnapshotMismatch);
+            return (reader.GetInt64(0), reader.GetString(1), reader.IsDBNull(2) ? null : reader.GetInt32(2));
+        }
+
+        private (long Id, string ContentHash, int? TemplateRevision)? FindSnapshot(FlowTemplateSnapshot snapshot)
         {
             FlowTemplateSnapshot? existing;
             if (!string.IsNullOrWhiteSpace(snapshot.FlowKey))
@@ -548,18 +693,11 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
                         && item.ContentHash == snapshot.ContentHash)
                     .First();
             }
-            if (existing != null)
-            {
-                if (existing.ContentLength != snapshot.ContentLength
-                    || !existing.Content.SequenceEqual(snapshot.Content))
-                {
-                    throw new InvalidOperationException("相同内容哈希对应了不同的模板快照。");
-                }
-                return existing;
-            }
-
-            snapshot.Id = db.Insertable(snapshot).ExecuteReturnBigIdentity();
-            return snapshot;
+            if (existing == null)
+                return null;
+            if (existing.ContentLength != snapshot.ContentLength || !existing.Content.SequenceEqual(snapshot.Content))
+                throw new InvalidOperationException(SnapshotMismatch);
+            return (existing.Id, existing.ContentHash, existing.TemplateRevision);
         }
 
         private void EnsureRunExists(int runRecordId)

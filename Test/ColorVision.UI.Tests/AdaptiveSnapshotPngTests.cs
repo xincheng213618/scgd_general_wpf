@@ -26,18 +26,26 @@ public sealed class AdaptiveSnapshotPngTests
             pixels[222 * width + 26] = 0xFEB757CD;
 
             string parameters = new ColorVisionTiffParameters { SourceType = "Camera" }.ToJson();
-            BitmapFrame CreateFrame() => ImageSnapshotMetadata.CreateFrame(
-                BitmapSource.Create(width, height, 192, 48, PixelFormats.Pbgra32, null, pixels, stride),
-                parameters, "png");
+            BitmapSource CreatePixels()
+            {
+                BitmapSource result = BitmapSource.Create(width, height, 192, 48, PixelFormats.Pbgra32, null, pixels, stride);
+                result.Freeze();
+                return result;
+            }
 
-            BitmapFrame frame = CreateFrame();
-            Assert.Null(AdaptiveSnapshotPng.TryEncode(frame, halfSize: false, default));
-            var adaptive = Assert.IsType<AdaptiveSnapshotPng.EncodedPng>(AdaptiveSnapshotPng.TryEncode(frame, halfSize: true, default));
+            // The export passes frozen pixels to the worker, which creates and encodes its own frame.
+            AdaptiveSnapshotPng.EncodedPng? Encode(BitmapSource source, bool halfSize) =>
+                Task.Run(() => AdaptiveSnapshotPng.TryEncode(
+                    ImageSnapshotMetadata.CreateFrame(source, parameters, "png"), halfSize, default)).GetAwaiter().GetResult();
+
+            BitmapSource source = CreatePixels();
+            Assert.Null(Encode(source, halfSize: false));
+            var adaptive = Assert.IsType<AdaptiveSnapshotPng.EncodedPng>(Encode(source, halfSize: true));
             using MemoryStream adaptiveFile = new();
             adaptive.Write(adaptiveFile);
             using MemoryStream referenceFile = new();
             PngBitmapEncoder wpf = new();
-            wpf.Frames.Add(frame);
+            wpf.Frames.Add(ImageSnapshotMetadata.CreateFrame(source, parameters, "png"));
             wpf.Save(referenceFile);
 
             BitmapFrame expected = Decode(referenceFile);
@@ -61,7 +69,7 @@ public sealed class AdaptiveSnapshotPngTests
 
             // This pixel falls outside the sampled rows, so only checking every row rejects it.
             pixels[222 * width + 777] = 0x3F000000;
-            Assert.Null(AdaptiveSnapshotPng.TryEncode(CreateFrame(), halfSize: true, default));
+            Assert.Null(Encode(CreatePixels(), halfSize: true));
         });
     }
 

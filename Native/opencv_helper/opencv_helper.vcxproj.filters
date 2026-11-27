@@ -96,6 +96,9 @@
     <ClInclude Include="algorithm\calibration\calibration_context.h">
       <Filter>算法\Calibration</Filter>
     </ClInclude>
+    <ClInclude Include="algorithm\calibration\calibration_color_eval.h">
+      <Filter>算法\Calibration</Filter>
+    </ClInclude>
     <ClInclude Include="algorithm\poi\poi_batch.h" />
     <ClInclude Include="algorithm\calibration\calibration_geometric.h">
       <Filter>算法\Calibration</Filter>

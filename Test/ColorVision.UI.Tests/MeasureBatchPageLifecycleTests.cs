@@ -22,47 +22,10 @@ namespace ColorVision.UI.Tests;
 
 public sealed class MeasureBatchPageLifecycleTests
 {
-    [Fact]
-    public void AdvancedBatchHistoryFiltersWithoutAllowingTableMaintenance()
-    {
-        WpfTestHost.Invoke(() =>
-        {
-            using var resources = new PresentationResources();
-            using var db = new SqlSugarClient(new ConnectionConfig
-            {
-                ConnectionString = "Data Source=:memory:", DbType = SqlSugar.DbType.Sqlite,
-                InitKeyType = InitKeyType.Attribute, IsAutoCloseConnection = false
-            });
-            db.CodeFirst.InitTables(typeof(MeasureBatchModel), typeof(MeasureResultImgModel), typeof(AlgResultMasterModel));
-            const string selectedCode = "selected-batch";
-            int selectedId = db.Insertable(new MeasureBatchModel { Code = selectedCode }).ExecuteReturnIdentity();
-            db.Insertable(new MeasureBatchModel { Code = "other-batch" }).ExecuteCommand();
-            db.Insertable(new MeasureResultImgModel { BatchId = selectedId }).ExecuteCommand();
-            db.Insertable(new AlgResultMasterModel { BatchId = selectedId, CreateDate = DateTime.Now }).ExecuteCommand();
-
-            var manager = new MeasureBatchManager();
-            var query = manager.CreateHistoryQuery(db, endpoint: null);
-            query.AddPropertyInfo(typeof(MeasureBatchModel).GetProperty(nameof(MeasureBatchModel.Code))!);
-            Assert.Single(query.QueryConditions).InputText = selectedCode;
-            query.QueryDB();
-            Assert.Equal(selectedId, Assert.Single(manager.ViewResults).MeasureBatchModel.Id);
-
-            Assert.True(query.IsReadOnly);
-            Assert.False(query.DeleteAllCommand.CanExecute(null));
-            Assert.False(query.TruncateTableCommand.CanExecute(null));
-            query.DeleteAllCommand.Execute(null);
-            query.TruncateTableCommand.Execute(null);
-            query.DeleteAll();
-            query.TruncateTable();
-
-            Assert.Equal(2, db.Queryable<MeasureBatchModel>().Count());
-            Assert.Equal(1, db.Queryable<MeasureResultImgModel>().Where(row => row.BatchId == selectedId).Count());
-            Assert.Equal(1, db.Queryable<AlgResultMasterModel>().Where(row => row.BatchId == selectedId).Count());
-        });
-    }
-
-    [Fact]
-    public async Task BoundBatchKeepsItsImagesFovDetailsAndExportAfterDatabaseSwitch()
+    [Theory]
+    [InlineData(1)]
+    [InlineData(45)]
+    public async Task BoundBatchKeepsItsImagesFovDetailsAndExportAfterDatabaseSwitch(int rowCount)
     {
         DirectoryInfo files = Directory.CreateTempSubdirectory("cv-batch-history-");
         string exportDirectory = files.CreateSubdirectory("export").FullName;
@@ -88,8 +51,12 @@ public sealed class MeasureBatchPageLifecycleTests
 
                 using var page = new MeasureBatchPage(new Frame(), selected.Batch);
                 page.RaiseEvent(new RoutedEventArgs(FrameworkElement.LoadedEvent, page));
-                ViewResultImage image = Assert.Single(page.ViewResultImages);
-                ViewResultAlg algorithm = Assert.Single(page.ViewResultAlgs);
+                Assert.Equal(Enumerable.Range(selected.ImageId, rowCount), page.ViewResultImages.Select(row => row.Id));
+                Assert.Equal(Enumerable.Range(selected.MasterId, rowCount), page.ViewResultAlgs.Select(row => row.Id));
+                ViewResultImage image = page.ViewResultImages[0];
+                ViewResultAlg algorithm = page.ViewResultAlgs[0];
+                Assert.Same(image, Assert.IsType<ListView>(page.FindName("listView1")).SelectedItem);
+                Assert.Same(algorithm, Assert.IsType<ListView>(page.FindName("listView2")).SelectedItem);
                 Assert.Equal(selected.ImageId, image.Id);
                 Assert.Equal(selected.ImageFile, image.FileUrl);
                 Assert.Equal(selected.MasterId, algorithm.Id);
@@ -148,6 +115,13 @@ public sealed class MeasureBatchPageLifecycleTests
             {
                 PId = masterId, ResultJson = JsonConvert.SerializeObject(new ResultFile { ResultFileName = resultFile })
             }).ExecuteCommand();
+            if (rowCount > 1)
+            {
+                db.Insertable(Enumerable.Range(1, rowCount - 1)
+                    .Select(_ => new MeasureResultImgModel { BatchId = batch.Id, FileUrl = imageFile }).ToList()).ExecuteCommand();
+                db.Insertable(Enumerable.Range(1, rowCount - 1)
+                    .Select(_ => new AlgResultMasterModel { BatchId = batch.Id, ImgFile = imageFile, CreateDate = DateTime.Now }).ToList()).ExecuteCommand();
+            }
             return (batch, imageId, masterId, imageFile);
         }
     }

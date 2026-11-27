@@ -24,6 +24,9 @@ public sealed class STNodeGroupEventArgs : EventArgs
 
 public sealed class STNodeGroup
 {
+    private const int SidePadding = 18;
+    private const int HeaderPadding = 34;
+
     public STNode[] Nodes { get; }
     public Rectangle Bounds { get; }
     public Rectangle HeaderBounds { get; }
@@ -35,19 +38,31 @@ public sealed class STNodeGroup
         Nodes = nodes;
         Rectangle bounds = nodes[0].Rectangle;
         foreach (STNode node in nodes)
-        {
-            bounds = Rectangle.Union(bounds, node.Rectangle);
-            if (!string.IsNullOrEmpty(node.Mark)) bounds = Rectangle.Union(bounds, node.MarkRectangle);
-        }
-        Bounds = Rectangle.FromLTRB(bounds.Left - 18, bounds.Top - 34, bounds.Right + 18, bounds.Bottom + 18);
-        HeaderBounds = new Rectangle(Bounds.Left, Bounds.Top, Bounds.Width, 30);
+            bounds = Rectangle.Union(bounds, GetMemberBounds(node));
+        Bounds = ExpandBounds(bounds);
+        HeaderBounds = GetHeaderBounds(Bounds);
         Title = ((ISTNodeGroupMember)nodes[0]).GroupTitle;
         State = ((ISTNodeGroupMember)nodes[0]).GroupState;
     }
+
+    internal static Rectangle GetMemberBounds(STNode node) => string.IsNullOrEmpty(node.Mark)
+        ? node.Rectangle
+        : Rectangle.Union(node.Rectangle, node.MarkRectangle);
+
+    internal static Rectangle ExpandBounds(Rectangle bounds) => Rectangle.FromLTRB(
+        bounds.Left - SidePadding, bounds.Top - HeaderPadding, bounds.Right + SidePadding, bounds.Bottom + SidePadding);
+
+    internal static Rectangle GetHeaderBounds(Rectangle bounds) => new(bounds.Left, bounds.Top, bounds.Width, 30);
+
+    internal static bool CanExpandBounds(Rectangle bounds) =>
+        bounds.Left >= int.MinValue + SidePadding && bounds.Top >= int.MinValue + HeaderPadding
+        && bounds.Right <= int.MaxValue - SidePadding && bounds.Bottom <= int.MaxValue - SidePadding;
 }
 
 public partial class STNodeEditor
 {
+    private readonly Dictionary<string, Rectangle> m_group_hover_member_bounds = new(StringComparer.Ordinal);
+
     public event EventHandler<STNodeGroupEventArgs> NodeGroupDoubleClick;
 
     public STNodeGroup[] GetNodeGroups() => Nodes.Cast<STNode>()
@@ -77,9 +92,11 @@ public partial class STNodeEditor
         }
     }
 
-    private bool TryBeginNodeGroupInteraction(STNodeMouseEventArgs e)
+    private bool TryBeginNodeGroupInteraction(STNodeMouseEventArgs e, NodeFindInfo hit)
     {
-        STNodeGroup group = FindNodeGroupHeader(m_pt_down_in_canvas);
+        if (!CanHitNodeGroupHeader(hit)) return false;
+        Point point = Point.Round(m_pt_down_in_canvas);
+        STNodeGroup group = GetNodeGroups().LastOrDefault(group => group.HeaderBounds.Contains(point));
         if (group == null) return false;
         m_node_down = null;
         m_gp_hover = null;
@@ -106,11 +123,31 @@ public partial class STNodeEditor
         return true;
     }
 
-    private STNodeGroup FindNodeGroupHeader(PointF point)
+    private static bool CanHitNodeGroupHeader(NodeFindInfo hit) =>
+        hit.Node == null && hit.NodeOption == null && string.IsNullOrEmpty(hit.Mark);
+
+    private bool IsNodeGroupHeader(PointF point)
     {
-        NodeFindInfo hit = FindNodeFromPoint(point);
-        if (hit.Node != null || hit.NodeOption != null || !string.IsNullOrEmpty(hit.Mark)) return null;
-        return GetNodeGroups().LastOrDefault(group => group.HeaderBounds.Contains(Point.Round(point)));
+        // Group membership and geometry can change directly on nodes between pointer events.
+        m_group_hover_member_bounds.Clear();
+        for (int index = 0; index < Nodes.Count; index++)
+        {
+            STNode node = Nodes[index];
+            if (node is not ISTNodeGroupMember member) continue;
+            string groupId = member.GroupId;
+            if (string.IsNullOrEmpty(groupId)) continue;
+            Rectangle memberBounds = STNodeGroup.GetMemberBounds(node);
+            m_group_hover_member_bounds[groupId] = m_group_hover_member_bounds.TryGetValue(groupId, out Rectangle bounds)
+                ? Rectangle.Union(bounds, memberBounds)
+                : Rectangle.Union(node.Rectangle, memberBounds);
+        }
+
+        Point roundedPoint = Point.Round(point);
+        foreach (Rectangle bounds in m_group_hover_member_bounds.Values)
+        {
+            if (STNodeGroup.GetHeaderBounds(STNodeGroup.ExpandBounds(bounds)).Contains(roundedPoint)) return true;
+        }
+        return false;
     }
 
     private static void RemapImportedGroups(IReadOnlyList<STNode> nodes)

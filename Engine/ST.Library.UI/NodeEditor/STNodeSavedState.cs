@@ -81,25 +81,44 @@ public sealed class STNodeSavedState
 
     public static byte[] Write(string modelKey, string typeKey, IReadOnlyDictionary<string, byte[]> properties)
     {
-        using var stream = new MemoryStream();
-        using var writer = new BinaryWriter(stream, Encoding.UTF8, leaveOpen: true);
-        foreach (string header in new[] { modelKey, typeKey })
-        {
-            byte[] value = Encoding.UTF8.GetBytes(header);
-            if (value.Length > byte.MaxValue)
-                throw new InvalidDataException("节点类型名称过长。");
-            writer.Write((byte)value.Length);
-            writer.Write(value);
-        }
+        int modelLength = GetHeaderByteCount(modelKey);
+        int typeLength = GetHeaderByteCount(typeKey);
+        int payloadLength = 2 + modelLength + typeLength;
+        foreach (var property in properties)
+            payloadLength = checked(payloadLength + 2 * sizeof(int) + Encoding.UTF8.GetByteCount(property.Key) + property.Value.Length);
+
+        byte[] data = GC.AllocateUninitializedArray<byte>(payloadLength);
+        Span<byte> remaining = data;
+        WriteHeader(ref remaining, modelKey, modelLength);
+        WriteHeader(ref remaining, typeKey, typeLength);
         foreach (var property in properties)
         {
-            byte[] name = Encoding.UTF8.GetBytes(property.Key);
-            writer.Write(name.Length);
-            writer.Write(name);
-            writer.Write(property.Value.Length);
-            writer.Write(property.Value);
+            int nameLength = Encoding.UTF8.GetBytes(property.Key, remaining[sizeof(int)..]);
+            BinaryPrimitives.WriteInt32LittleEndian(remaining, nameLength);
+            remaining = remaining[(sizeof(int) + nameLength)..];
+            BinaryPrimitives.WriteInt32LittleEndian(remaining, property.Value.Length);
+            property.Value.AsSpan().CopyTo(remaining[sizeof(int)..]);
+            remaining = remaining[(sizeof(int) + property.Value.Length)..];
         }
-        return stream.ToArray();
+
+        if (!remaining.IsEmpty)
+            throw new InvalidOperationException("节点属性在保存过程中发生变化。");
+        return data;
+    }
+
+    private static int GetHeaderByteCount(string text)
+    {
+        int length = Encoding.UTF8.GetByteCount(text);
+        if (length > byte.MaxValue)
+            throw new InvalidDataException("节点类型名称过长。");
+        return length;
+    }
+
+    private static void WriteHeader(ref Span<byte> destination, string text, int length)
+    {
+        destination[0] = (byte)length;
+        Encoding.UTF8.GetBytes(text, destination.Slice(1, length));
+        destination = destination[(1 + length)..];
     }
 
     internal STNode CreateNode()

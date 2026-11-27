@@ -28,6 +28,8 @@ public partial class JsonPropertyEditorControl : UserControl
     private readonly Dictionary<string, string> _drafts = new(StringComparer.Ordinal);
     private readonly Dictionary<string, Action<JToken>> _refreshEditors = new(StringComparer.Ordinal);
     private bool _unfilteredRows;
+    private List<ParameterEntry>? _renderedSearchEntries;
+    private (CultureInfo Formatting, CultureInfo Resources) _renderedSearchCulture;
     private sealed record ParameterEntry(string Path, string Name, string Group, string GroupName, string SearchText);
 
     private sealed record ParameterGroup(Expander Element, string Path, string SearchText);
@@ -325,14 +327,18 @@ public partial class JsonPropertyEditorControl : UserControl
         if (_loading) return;
         var current = _document?.SelectToken(path);
         if (current == null || JToken.DeepEquals(current, replacement)) return;
-        if (!HaveSameFieldShape(current, replacement)) _unfilteredRows = false;
+        if (!HaveSameFieldShape(current, replacement))
+        {
+            _unfilteredRows = false;
+            _renderedSearchEntries = null;
+        }
         current.Replace(replacement);
         JsonValueChanged?.Invoke(this, _document!.ToString(Formatting.Indented));
     }
 
     private void SearchTextBox_TextChanged(object sender, TextChangedEventArgs e)
     {
-        if (!_loading && PropertyPanel != null) ApplyFilter();
+        if (!_loading && PropertyPanel != null) ApplyFilter(reuseMatchingRows: true);
     }
 
     private void IndexEntries(JToken token, string name, string group, string groupName)
@@ -353,7 +359,7 @@ public partial class JsonPropertyEditorControl : UserControl
         }
     }
 
-    private void ApplyFilter()
+    private void ApplyFilter(bool reuseMatchingRows = false)
     {
         var query = SearchTextBox.Text.Trim();
         var group = (GroupSelector.SelectedItem as ComboBoxItem)?.Tag as string;
@@ -364,6 +370,16 @@ public partial class JsonPropertyEditorControl : UserControl
             ? group == null || entry.Group == group
             : entry.SearchText.Contains(query, StringComparison.OrdinalIgnoreCase) ||
               (_document?.SelectToken(entry.Path)?.ToString().Contains(query, StringComparison.OrdinalIgnoreCase) == true)).ToList();
+        var culture = (CultureInfo.CurrentCulture, CultureInfo.CurrentUICulture);
+        if (reuseMatchingRows && query.Length > 0 && _renderedSearchCulture == culture &&
+            _renderedSearchEntries?.SequenceEqual(entries) == true)
+        {
+            foreach (var section in _groups)
+                section.Element.IsExpanded = true;
+            return;
+        }
+
+        _renderedSearchEntries = null;
         PropertyPanel.Children.Clear();
         _groups.Clear();
         _refreshEditors.Clear();
@@ -396,6 +412,11 @@ public partial class JsonPropertyEditorControl : UserControl
             PropertyPanel.Children.Add(new TextBlock { Text = _entries.Count == 0 ? LocalizedText.Get("对象中还没有参数，请在 JSON 视图添加。") : LocalizedText.Get("没有找到匹配参数，试试字段名、说明或值。"), TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 20, 0, 20), Opacity = .65 });
         ResultCountText.Text = LocalizedText.Format($"{entries.Count} / {_entries.Count} 项");
         GroupSelector.IsEnabled = query.Length == 0;
+        if (query.Length > 0)
+        {
+            _renderedSearchEntries = entries;
+            _renderedSearchCulture = culture;
+        }
     }
 
     private Grid CreateGroupHeader(string title, string path, int count)

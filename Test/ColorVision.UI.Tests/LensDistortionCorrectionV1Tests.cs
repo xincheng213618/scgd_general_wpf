@@ -133,6 +133,45 @@ public sealed class LensDistortionCorrectionV1Tests
     }
 
     [Fact]
+    public async Task ValidityAndDisplacementMatchAnAnalyticMapAcrossMixedRowsAndTheTail()
+    {
+        const int width = 11, height = 9;
+        const double tolerance = 1e-5;
+        using AlgorithmImageBuffer input = Pattern(width, height, AlgorithmImageFormat.Gray16);
+        LensDistortionCorrectionParameters parameters = new()
+        {
+            FxPixels = 7, FyPixels = 8, PrincipalPointMode = LensDistortionPrincipalPointMode.Explicit,
+            PrincipalPointX = 5, PrincipalPointY = 4,
+            K1 = 0.4, P1 = 0.015, P2 = -0.03,
+        };
+        using AlgorithmResult result = await RunAsync(input, parameters);
+        Assert.Equal(AlgorithmResultStatus.Succeeded, result.Status);
+
+        var expectedMask = new byte[width * height];
+        double displacementSum = 0, maximumDisplacement = 0;
+        int valid = 0;
+        for (int y = 0; y < height; y++)
+            for (int x = 0; x < width; x++)
+            {
+                var (mappedX, mappedY) = BrownMap(parameters, x, y);
+                double sourceX = (float)mappedX, sourceY = (float)mappedY;
+                double dx = sourceX - x, dy = sourceY - y;
+                double displacement = Math.Sqrt(dx * dx + dy * dy);
+                displacementSum += displacement;
+                maximumDisplacement = Math.Max(displacement, maximumDisplacement);
+                if (sourceX < -tolerance || sourceX > width - 1 + tolerance || sourceY < -tolerance || sourceY > height - 1 + tolerance)
+                    continue;
+                expectedMask[y * width + x] = byte.MaxValue;
+                valid++;
+            }
+        Assert.InRange(valid, 1, width * height - 1);
+        Assert.Equal(expectedMask, Image(result, "valid-region-mask").Data.ToArray());
+        Assert.Equal(valid, Measurement(result, "lens-distortion.valid_pixel_count"));
+        Assert.Equal(displacementSum / (width * height), Measurement(result, "lens-distortion.mean_displacement"), 7);
+        Assert.Equal(maximumDisplacement, Measurement(result, "lens-distortion.maximum_displacement"), 7);
+    }
+
+    [Fact]
     public async Task OptimalCameraMatrixReturnsDistinctMatrixAndExplicitValidityDiagnostics()
     {
         using AlgorithmImageBuffer input = Pattern(160, 120, AlgorithmImageFormat.Bgr24);

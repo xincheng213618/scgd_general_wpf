@@ -59,7 +59,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             CameraRunParam? cameraParameters, CalibrationParam? calibration, bool isAutoExposure)
         {
             string fileUrl = !string.IsNullOrWhiteSpace(frame.CvCieFilePath) ? frame.CvCieFilePath : frame.CvRawFilePath;
-            bool? savedRawFileFlipApplied = string.IsNullOrWhiteSpace(frame.CvRawFilePath) ? null : frame.IsRawFlipApplied;
+            bool? savedRawFileFlipApplied = string.IsNullOrWhiteSpace(frame.CvRawFilePath) ? null : frame.SavedRawFlipApplied ?? frame.IsRawFlipApplied;
             bool? savedCieFileFlipApplied = string.IsNullOrWhiteSpace(frame.CvCieFilePath) ? null : frame.IsCieFlipApplied;
             bool? savedFileFlipApplied = !string.IsNullOrWhiteSpace(frame.CvCieFilePath)
                 ? savedCieFileFlipApplied

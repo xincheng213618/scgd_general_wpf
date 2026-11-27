@@ -1,3 +1,4 @@
+using ColorVision.Core;
 using ColorVision.Engine.Media;
 using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.Services.Devices.Camera.Local;
@@ -118,8 +119,8 @@ public sealed class ImageAcquisitionMetadataTests
             byte[] original = File.ReadAllBytes(input);
             using LocalFlowFrame frame = LocalFrameFileService.Load(input);
             using LocalCalibrationCacheManager manager = new("basic-provenance");
-            LocalFrameCalibrationService.CalibrateInPlace(frame, manager,
-                [new DeviceCameraCalibrationFile("dark", CalibrationType.DarkNoise, "暗噪声", "dark.dat", dark)], "基础校正", default);
+            var plan = manager.Prepare([new("dark", CalibrationType.DarkNoise, "暗噪声", "dark.dat", dark)], "基础校正");
+            plan.Apply(frame, CalibrationOutputMode.RawOnly);
             Assert.Null(frame.ColorCalibration);
             Assert.Equal(original, File.ReadAllBytes(input));
             LocalFrameFileService.SaveCapture(frame, output);
@@ -169,8 +170,8 @@ public sealed class ImageAcquisitionMetadataTests
             }, raw.Data.Length, 0);
             using (var lease = frame.Acquire()) Marshal.Copy(raw.Data, 0, lease.RawPointer, raw.Data.Length);
             using LocalCalibrationCacheManager manager = new("test-acquisition");
-            LocalFrameCalibrationService.CalibrateInPlace(frame, manager,
-                [new DeviceCameraCalibrationFile("color", CalibrationType.LumFourColor, "色度", "色度.dat", calibration)], "模板A", default, allowAcceleration: true);
+            var plan = manager.Prepare([new("color", CalibrationType.LumFourColor, "色度", "色度.dat", calibration)], "模板A");
+            plan.Apply(frame, CalibrationOutputMode.DeferredColor);
             var provenance = Assert.IsType<ImageCalibrationSummary>(frame.CalibrationProvenance);
             Assert.Equal(expectedHash, Assert.Single(provenance.Sources).FileSha256);
             // Saving must retain the resource actually loaded, even after the external template changes.

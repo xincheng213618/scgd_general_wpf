@@ -2,6 +2,7 @@ using ColorVision.Core;
 using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Draw;
 using ColorVision.ImageEditor.EditorTools.Algorithms.Calculate;
+using ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.GridDistortion;
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Threading;
@@ -34,7 +35,7 @@ public sealed class AlgorithmResultOverlayTests
     {
         WpfTestHost.Invoke(() =>
         {
-            var context = CreateFovContext();
+            var context = CreateOverlayContext();
             FovMeasurement measurement = new()
             {
                 Corners =
@@ -71,7 +72,7 @@ public sealed class AlgorithmResultOverlayTests
     {
         WpfTestHost.Invoke(() =>
         {
-            var context = CreateFovContext();
+            var context = CreateOverlayContext();
             FovMeasurement measurement = FovCalculator.Calculate(
                 [new(10, 20), new(210, 20), new(210, 120), new(10, 120)], 9410, 74.2) with
             {
@@ -120,7 +121,43 @@ public sealed class AlgorithmResultOverlayTests
         });
     }
 
-    private static (ImageProcessingContext ImageContext, DrawEditorContext DrawContext, DrawCanvas Canvas) CreateFovContext()
+    [Fact]
+    public void RejectedGridShowsCountsAndMarksCandidatesWithoutGridLines()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            var context = CreateOverlayContext();
+            using DrawCanvas canvas = context.Canvas;
+            GridDistortionResult result = new()
+            {
+                StatusCode = "too_few_candidates",
+                ExpectedRows = 7,
+                ExpectedCols = 7,
+                CandidateCount = 48,
+                CandidatePoints = Enumerable.Range(0, 48).Select(i => new GridDistortionCandidatePoint(100 + i * 20, 80)).ToArray()
+            };
+            GridDistortionImageViewRunner.RenderResult(context.ImageContext, context.DrawContext, result);
+            DVCircleText[] markers = canvas.Visuals.OfType<DVCircleText>().ToArray();
+            Assert.Equal(48, markers.Length);
+            Assert.Equal("48", markers[^1].Attribute.Msg);
+            Assert.All(markers, marker => Assert.Equal(AlgorithmResultOverlay.GridDistortionTag, marker.BaseAttribute.Tag));
+            Assert.Empty(canvas.Visuals.OfType<DVLine>());
+
+            GridDistortionResultWindow window = new(result, null);
+            try
+            {
+                Assert.Contains("48", window.SummaryText.Text);
+                Assert.Contains("49", window.SummaryText.Text);
+                Assert.Same(window.DiagnosticsTab, window.ResultTabs.SelectedItem);
+            }
+            finally { window.Close(); }
+
+            GridDistortionImageViewRunner.RenderResult(context.ImageContext, context.DrawContext, new GridDistortionResult());
+            Assert.Empty(canvas.Visuals.OfType<DVCircleText>());
+        });
+    }
+
+    private static (ImageProcessingContext ImageContext, DrawEditorContext DrawContext, DrawCanvas Canvas) CreateOverlayContext()
     {
         DrawCanvas canvas = new();
         Zoombox zoombox = new()

@@ -26,11 +26,13 @@ public class ServiceInfo
 		_ServiceCode = serviceCode;
 	}
 
-	public virtual string GetKey()
+	public virtual string GetKey() => GetKey(ServiceType, _ServiceCode);
+
+	internal static string GetKey(string serviceType, string serviceCode)
 	{
-		if (!string.IsNullOrEmpty(_ServiceCode))
+		if (!string.IsNullOrEmpty(serviceCode))
 		{
-			return $"{ServiceType}.{_ServiceCode}";
+			return $"{serviceType}.{serviceCode}";
 		}
 		return string.Empty;
 	}

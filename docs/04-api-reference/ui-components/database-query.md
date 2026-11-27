@@ -4,7 +4,7 @@ knowledge_type: "topic"
 status: "current"
 summary: "实体驱动的通用查询窗口，支持参数化筛选、调用方固定范围、前后台查询和只读模式。可写模式的表维护作用于整表。"
 aliases: ["通用查询", "高级查询", "查询窗口", "查询条件保存", "筛选结果", "SQL预览", "清空条件", "清空表", "截断表", "查询取消", "GenericQueryWindow", "GenericQuery", "QueryCondition", "QueryOperator", "GenericQueryConditionSupport", "GenericQuerySessionStore", "GenericQueryBaseConfig"]
-code_paths: ["UI/ColorVision.Database/GenericQueryWindow.xaml", "UI/ColorVision.Database/GenericQueryWindow.xaml.cs", "UI/ColorVision.Database/GenericQueryConditionSupport.cs", "UI/ColorVision.Database/GenericQuerySessionStore.cs", "UI/ColorVision.Database/IEntity.cs", "Engine/ColorVision.Engine/Dao/MeasureBatchManagerPage.xaml.cs", "Engine/ColorVision.Engine/Messages/MessagesListManager.cs", "UI/ColorVision.SocketProtocol/SocketMessageManager.cs"]
+code_paths: ["UI/ColorVision.Database/GenericQueryWindow.xaml", "UI/ColorVision.Database/GenericQueryWindow.xaml.cs", "UI/ColorVision.Database/GenericQueryConditionSupport.cs", "UI/ColorVision.Database/GenericQuerySessionStore.cs", "UI/ColorVision.Database/IEntity.cs", "Engine/ColorVision.Engine/Messages/MessagesListManager.cs", "UI/ColorVision.SocketProtocol/SocketMessageManager.cs"]
 related: ["ui.database", "ui.sqlite-storage", "operations.data", "ui.socket-protocol"]
 ---
 
@@ -76,7 +76,6 @@ Socket 查询在自己的维护锁内执行整表 `DELETE`，并保留消息 ID 
 
 ## 实际调用方与验证
 
-- `Engine/ColorVision.Engine/Dao/MeasureBatchManagerPage.xaml.cs`：以只读模式查询 MySQL 批次。`GenericQuery<T,T1>` 转成页面的 `ViewBatchResult` 并替换结果集合，调用方负责连接释放。
 - `Engine/ColorVision.Engine/Messages/MessagesListManager.cs`：查询 `MsgRecord` 并替换 `MsgRecords`，在 finally 释放连接；这与 Socket 的库和集合不同。
 - `UI/ColorVision.SocketProtocol/SocketMessageManager.cs`：定制查询、SQLite 整表操作及维护锁接入；列表与压缩正文按 ID 读取的责任分开。
 

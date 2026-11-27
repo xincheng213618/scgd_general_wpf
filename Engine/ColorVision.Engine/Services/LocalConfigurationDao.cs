@@ -100,6 +100,19 @@ namespace ColorVision.Engine.Services
                 JsonConvert.SerializeObject(model, JsonSettings));
         }
 
+        internal bool TryUpdateLocalBatch(IReadOnlyList<int> ids, Func<T, (bool Accepted, bool Changed)> update, Func<bool> isCurrent)
+        {
+            if (ids.Any(id => !IsLocalId(id))) return false;
+            int[] documentIds = ids.Select(id => checked(-1 - id)).ToArray();
+            return LocalStore.TryUpdateBatch(kind, documentIds, document =>
+            {
+                T model = Decode(document);
+                var (accepted, changed) = update(model);
+                if (!accepted) return null;
+                return changed ? JsonConvert.SerializeObject(model, JsonSettings) : document.Payload;
+            }, isCurrent);
+        }
+
         protected int TryInsertLocalChild(int parentId, T child, Func<T, bool> matchesParent, Func<T, bool> conflicts,
             Func<bool> isCurrent)
         {

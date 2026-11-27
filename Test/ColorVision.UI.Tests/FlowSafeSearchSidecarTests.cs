@@ -205,4 +205,50 @@ public sealed class FlowSafeSearchSidecarTests
             Assert.Equal("新曝光节点", hit.DisplayName);
         }
     }
+
+    [Fact]
+    public void LatestOnlySelectsEachFlowsNewestIndexedRevisionBeforeFiltering()
+    {
+        using var index = new SqliteFlowNodeSearchIndex("Data Source=:memory:");
+        var query = new FlowNodeSearchQuery
+        {
+            Text = "曝光_%",
+            LatestOnly = true,
+        };
+        Assert.Empty(index.Search(query));
+
+        var first = new FlowNodeSearchDocument
+        {
+            SourceNodeGuid = Guid.Parse("f40bd9ae-8f97-46ea-a78d-f43c996912ce"),
+            NodePath = "root/capture",
+            NodeTypeKey = "CameraNode",
+            DisplayName = "曝光_%",
+        };
+        var second = new FlowNodeSearchDocument
+        {
+            SourceNodeGuid = Guid.Parse("7f08650d-32f8-4613-a171-a58692be307e"),
+            NodePath = first.NodePath,
+            NodeTypeKey = first.NodeTypeKey,
+            DisplayName = first.DisplayName,
+        };
+        var nonmatching = new FlowNodeSearchDocument
+        {
+            SourceNodeGuid = first.SourceNodeGuid,
+            NodePath = first.NodePath,
+            NodeTypeKey = "SpectrumNode",
+            DisplayName = "曝光-1",
+        };
+        index.ReplaceRevision("flow:a", 1, [first]);
+        index.ReplaceRevision("flow:a", 8, [nonmatching]);
+        index.ReplaceRevision("flow:b", 4, [first, second]);
+        index.ReplaceRevision("flow:c", 5, [second]);
+        index.ReplaceRevision("flow:c", 9, []);
+
+        Assert.Equal(
+            [("flow:c", 5, second.SourceNodeGuid), ("flow:b", 4, first.SourceNodeGuid), ("flow:b", 4, second.SourceNodeGuid)],
+            index.Search(query).Select(hit => (hit.FlowKey, hit.Revision, hit.SourceNodeGuid)));
+
+        index.ReplaceRevision("flow:a", 8, []);
+        Assert.Equal(1, index.Search(query)[^1].Revision);
+    }
 }

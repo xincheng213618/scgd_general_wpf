@@ -7,6 +7,8 @@ using System.Text;
 
 namespace ColorVision.FileIO
 {
+    public readonly record struct CVFilePixelLayout(int Width, int Height, int BitsPerChannel, int Channels);
+
     /// <summary>A versioned, opaque parameter value. Unknown kinds and versions survive updates.</summary>
     public sealed class CVFileProperty
     {
@@ -61,7 +63,7 @@ namespace ColorVision.FileIO
 
         private static CVFileReadCache.FileTail SetPropertyCore(Stream stream, string kind, uint version, byte[] value)
         {
-            var (pixelStart, pixelEnd) = GetPixelRange(stream);
+            var (pixelStart, pixelEnd, _) = GetPixelRange(stream);
             Dictionary<string, CVFileProperty> properties = ReadProperties(stream, pixelEnd, true);
             properties[kind] = new CVFileProperty(version, value);
             return new CVFileReadCache.FileTail(pixelStart, pixelEnd, Serialize(properties, pixelEnd));
@@ -78,11 +80,20 @@ namespace ColorVision.FileIO
                 if (item.Value == null || item.Value.Value.Length > MaximumMetadataBytes) throw new ArgumentException("Invalid metadata property.", nameof(updates));
                 detached.Add(item.Key, new CVFileProperty(item.Value.Version, item.Value.Value));
             }
+            UpdateProperties(filePath, (_, _) => detached);
+        }
+
+        /// <summary>Builds property updates from the target's validated pixel layout and current records under the file write lock.
+        /// The callback must only compute and return replacement records.</summary>
+        public static void UpdateProperties(string filePath,
+            Func<CVFilePixelLayout, IReadOnlyDictionary<string, CVFileProperty>, IReadOnlyDictionary<string, CVFileProperty>> createUpdates)
+        {
+            ArgumentNullException.ThrowIfNull(createUpdates);
             CVFileReadCache.UpdateMetadata(filePath, stream =>
             {
-                var (pixelStart, pixelEnd) = GetPixelRange(stream);
+                var (pixelStart, pixelEnd, layout) = GetPixelRange(stream);
                 var properties = ReadProperties(stream, pixelEnd, true);
-                foreach (var item in detached) properties[item.Key] = item.Value;
+                foreach (var item in createUpdates(layout, properties)) properties[item.Key] = item.Value;
                 return new CVFileReadCache.FileTail(pixelStart, pixelEnd, Serialize(properties, pixelEnd));
             });
         }
@@ -225,7 +236,7 @@ namespace ColorVision.FileIO
             }
         }
 
-        private static (long Start, long End) GetPixelRange(Stream stream)
+        private static (long Start, long End, CVFilePixelLayout Layout) GetPixelRange(Stream stream)
         {
             stream.Position = 0;
             using (var reader = new BinaryReader(stream, Encoding.ASCII, true))
@@ -246,7 +257,7 @@ namespace ColorVision.FileIO
                 ValidatePixelLayout(width, height, bpp, channels, length);
                 if (length > stream.Length - stream.Position)
                     throw new InvalidDataException("Invalid ColorVision pixel payload.");
-                return (stream.Position, checked(stream.Position + length));
+                return (stream.Position, checked(stream.Position + length), new(width, height, bpp, channels));
             }
         }
 

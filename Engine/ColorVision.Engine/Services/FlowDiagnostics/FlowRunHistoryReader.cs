@@ -31,9 +31,12 @@ public sealed class FlowRunHistoryReader
     private const int MaximumNodeIdCharacters = 128;
     private static readonly string[] AttemptColumns =
         ["id", "run_record_id", "node_id", "attempt_no", "started_time_utc", "completed_time_utc", "outcome", "error_code"];
+    private static readonly string AttemptProjection = $"""
+        id,run_record_id,substr(node_id,1,{MaximumNodeIdCharacters + 1}),attempt_no,started_time_utc,completed_time_utc,
+        {Identifier("outcome")},{Identifier("error_code")}
+        """;
     private static readonly string AttemptQuerySql = $"""
-        SELECT id,run_record_id,substr(node_id,1,{MaximumNodeIdCharacters + 1}),attempt_no,started_time_utc,completed_time_utc,
-            {Identifier("outcome")},{Identifier("error_code")} FROM FlowNodeAttempt
+        SELECT {AttemptProjection} FROM FlowNodeAttempt
         WHERE run_record_id=$id AND node_id COLLATE BINARY=$nodeId COLLATE BINARY ORDER BY id DESC LIMIT {MaximumAttemptsPerRun + 1}
         """;
     private readonly string _databasePath;
@@ -97,14 +100,21 @@ public sealed class FlowRunHistoryReader
             previous.RemoveAt(maxRuns);
         var attemptsAvailable = nodeId != null && database.HasTable("FlowNodeAttempt")
             && AttemptColumns.All(column => database.HasColumn("FlowNodeAttempt", column));
-        using var attemptQuery = attemptsAvailable ? Command(connection, transaction, AttemptQuerySql, runRecordId) : null;
+        var batchedAttempts = attemptsAvailable && previous.Count > 0 && !HasAttemptRunIndex(connection, transaction)
+            ? ReadBatchedAttempts(connection, transaction, [runRecordId, .. previous.Select(item => item.Run.Id)], nodeId!, cancellationToken)
+            : null;
+        using var attemptQuery = attemptsAvailable && batchedAttempts == null
+            ? Command(connection, transaction, AttemptQuerySql, runRecordId)
+            : null;
         attemptQuery?.Parameters.AddWithValue("$nodeId", nodeId!);
         var textTruncated = anchor.TextWasTruncated || previous.Any(item => item.TextWasTruncated);
         FlowRunHistoryEntry Entry(ProjectedRun item)
         {
-            if (attemptQuery == null)
+            if (!attemptsAvailable)
                 return new(item.Run, Array.Empty<FlowNodeAttempt>(), false);
-            var attempts = ReadAttempts(attemptQuery, item.Run.Id, cancellationToken);
+            var attempts = batchedAttempts == null
+                ? ReadAttempts(attemptQuery!, item.Run.Id, cancellationToken)
+                : batchedAttempts[item.Run.Id];
             var truncated = attempts.Count > MaximumAttemptsPerRun;
             if (truncated)
                 attempts.RemoveAt(MaximumAttemptsPerRun);
@@ -148,6 +158,58 @@ public sealed class FlowRunHistoryReader
 
     private sealed record ProjectedAttempt(FlowNodeAttempt Attempt, bool TextWasTruncated);
 
+    private static bool HasAttemptRunIndex(SqliteConnection connection, SqliteTransaction transaction)
+    {
+        using var command = Command(connection, transaction, """
+            SELECT EXISTS (
+                SELECT 1
+                FROM temp.pragma_index_list('FlowNodeAttempt', 'main') i
+                CROSS JOIN temp.pragma_index_xinfo(i.name, 'main') k
+                WHERE i.partial = 0 AND k.seqno = 0 AND k.name = 'run_record_id' COLLATE NOCASE
+            )
+            """);
+        return (long)command.ExecuteScalar()! != 0;
+    }
+
+    private static Dictionary<int, List<ProjectedAttempt>> ReadBatchedAttempts(SqliteConnection connection,
+        SqliteTransaction transaction, int[] runIds, string nodeId, CancellationToken cancellationToken)
+    {
+        // Some retained databases lack the run index. One descending scan can fill all
+        // the requested histories, holding at most one extra row per run for truncation.
+        using var command = Command(connection, transaction, string.Empty);
+        var variables = new string[runIds.Length];
+        var rows = new Dictionary<int, List<ProjectedAttempt>>(runIds.Length);
+        for (int index = 0; index < runIds.Length; index++)
+        {
+            string parameter = "$run" + index;
+            variables[index] = parameter;
+            command.Parameters.AddWithValue(parameter, runIds[index]);
+            rows.Add(runIds[index], []);
+        }
+        command.Parameters.AddWithValue("$nodeId", nodeId);
+        command.CommandText = $"""
+            SELECT {AttemptProjection} FROM FlowNodeAttempt
+            WHERE run_record_id IN ({string.Join(",", variables)}) AND node_id COLLATE BINARY=$nodeId COLLATE BINARY
+            ORDER BY id DESC
+            """;
+        cancellationToken.ThrowIfCancellationRequested();
+        using var reader = command.ExecuteReader();
+        int pendingRuns = runIds.Length;
+        int rowLimit = MaximumAttemptsPerRun + 1;
+        while (pendingRuns > 0 && reader.Read())
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var attempts = rows[reader.GetInt32(1)];
+            if (attempts.Count == rowLimit)
+                continue;
+
+            attempts.Add(ReadAttempt(reader));
+            if (attempts.Count == rowLimit)
+                pendingRuns--;
+        }
+        return rows;
+    }
+
     private static List<ProjectedAttempt> ReadAttempts(SqliteCommand command, int runId, CancellationToken cancellationToken)
     {
         command.Parameters["$id"].Value = runId;
@@ -157,27 +219,33 @@ public sealed class FlowRunHistoryReader
         while (reader.Read())
         {
             cancellationToken.ThrowIfCancellationRequested();
-            var truncated = false;
-            var attempt = new FlowNodeAttempt
-            {
-                Id = reader.GetInt64(0), RunRecordId = reader.GetInt32(1),
-                NodeId = Text(reader, 2, MaximumNodeIdCharacters, ref truncated) ?? string.Empty,
-                AttemptNo = reader.GetInt32(3), StartedTimeUtc = reader.GetDateTime(4), CompletedTimeUtc = Date(reader, 5),
-                Outcome = Text(reader, 6, MaximumIdentifierCharacters, ref truncated),
-                ErrorCode = Text(reader, 7, MaximumIdentifierCharacters, ref truncated),
-            };
-            attempts.Add(new(attempt, truncated));
+            attempts.Add(ReadAttempt(reader));
         }
         return attempts;
     }
 
-    private static SqliteCommand Command(SqliteConnection connection, SqliteTransaction transaction, string sql, int id)
+    private static ProjectedAttempt ReadAttempt(SqliteDataReader reader)
+    {
+        var truncated = false;
+        var attempt = new FlowNodeAttempt
+        {
+            Id = reader.GetInt64(0), RunRecordId = reader.GetInt32(1),
+            NodeId = Text(reader, 2, MaximumNodeIdCharacters, ref truncated) ?? string.Empty,
+            AttemptNo = reader.GetInt32(3), StartedTimeUtc = reader.GetDateTime(4), CompletedTimeUtc = Date(reader, 5),
+            Outcome = Text(reader, 6, MaximumIdentifierCharacters, ref truncated),
+            ErrorCode = Text(reader, 7, MaximumIdentifierCharacters, ref truncated),
+        };
+        return new(attempt, truncated);
+    }
+
+    private static SqliteCommand Command(SqliteConnection connection, SqliteTransaction transaction, string sql, int? id = null)
     {
         var command = connection.CreateCommand();
         command.Transaction = transaction;
         command.CommandTimeout = 2;
         command.CommandText = sql;
-        command.Parameters.AddWithValue("$id", id);
+        if (id.HasValue)
+            command.Parameters.AddWithValue("$id", id.Value);
         return command;
     }
 

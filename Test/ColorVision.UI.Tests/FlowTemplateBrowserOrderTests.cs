@@ -61,6 +61,16 @@ public sealed class FlowTemplateBrowserOrderTests
                 Assert.Equal(new[] { first, last }, list.Items.Cast<TemplateBase>());
                 Assert.Same(last, list.SelectedItem);
 
+                var inserted = new TemplateBase { Id = idSign * 35, Key = "Match inserted" };
+                template.Items.Insert(1, inserted);
+                Assert.Equal(new[] { first, inserted, last }, list.Items.Cast<TemplateBase>());
+                Assert.Same(last, list.SelectedItem);
+                inserted.IsSelected = true;
+                Assert.Contains(inserted, list.SelectedItems.Cast<TemplateBase>());
+                template.Items.RemoveAt(1);
+                Assert.Equal(new[] { first, last }, list.Items.Cast<TemplateBase>());
+                Assert.Same(last, list.SelectedItem);
+
                 search.Clear();
                 var added = new TemplateBase { Id = idSign * 40, Key = "Newest" };
                 template.Items.Add(added);

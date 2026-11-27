@@ -76,7 +76,7 @@ double NormalizeAxisAngle(double angleDegrees)
     return angleDegrees;
 }
 
-double Percentile(std::vector<double> values, double fraction)
+double SelectPercentile(std::vector<double>& values, double fraction)
 {
     if (values.empty()) return 0.0;
     fraction = std::clamp(fraction, 0.0, 1.0);
@@ -247,39 +247,70 @@ double BilinearSample(const cv::Mat& image, double x, double y)
     return upper * (1.0 - fy) + lower * fy;
 }
 
+struct SampleCoordinate
+{
+    int first;
+    int second;
+    double fraction;
+};
+
+SampleCoordinate SplitCoordinate(double position, int length)
+{
+    const int first = static_cast<int>(position);
+    return { first, std::min(first + 1, length - 1), position - first };
+}
+
+template<bool horizontal>
 ArmSupport MeasureArm(
     const cv::Mat& aligned,
     const cv::Point2d& center,
-    const cv::Point2d& direction,
-    double requiredLength,
-    int halfBand,
-    double supportThreshold)
+    double direction,
+    double supportThreshold,
+    std::vector<double>& profile)
 {
-    const cv::Point2d normal(-direction.y, direction.x);
-    const int sampleCount = std::max(8, static_cast<int>(std::floor(requiredLength)));
-    std::vector<double> profile;
-    profile.reserve(sampleCount);
-    const double gap = std::max(3.0, halfBand * 1.5);
-    for (int index = 0; index < sampleCount; ++index) {
-        const cv::Point2d base = center + direction * (gap + index + 0.5);
-        double sum = 0.0;
-        int count = 0;
-        for (int offset = -halfBand; offset <= halfBand; ++offset) {
-            const cv::Point2d point = base + normal * offset;
-            if (point.x >= 0.0 && point.y >= 0.0
-                && point.x <= aligned.cols - 1.0 && point.y <= aligned.rows - 1.0) {
-                sum += BilinearSample(aligned, point.x, point.y);
-                count++;
-            }
+    constexpr int halfBand = 2;
+    constexpr double gap = 3.0;
+    const int alongLength = horizontal ? aligned.cols : aligned.rows;
+    const int acrossLength = horizontal ? aligned.rows : aligned.cols;
+    const double alongCenter = horizontal ? center.x : center.y;
+    const double acrossCenter = horizontal ? center.y : center.x;
+    const double normal = horizontal ? direction : -direction;
+
+    // Aligned arms sample the same transverse coordinates at each step.
+    std::array<SampleCoordinate, 2 * halfBand + 1> across;
+    int count = 0;
+    for (int offset = -halfBand; offset <= halfBand; ++offset) {
+        const double position = acrossCenter + normal * offset;
+        if (position >= 0.0 && position <= acrossLength - 1.0) {
+            across[count++] = SplitCoordinate(position, acrossLength);
         }
-        profile.push_back(count > 0 ? sum / count : 0.0);
+    }
+
+    for (int index = 0; index < static_cast<int>(profile.size()); ++index) {
+        const double position = alongCenter + direction * (gap + index + 0.5);
+        if (count == 0 || !(position >= 0.0 && position <= alongLength - 1.0)) {
+            profile[index] = 0.0;
+            continue;
+        }
+        const auto along = SplitCoordinate(position, alongLength);
+        double sum = 0.0;
+        for (int offset = 0; offset < count; ++offset) {
+            const auto& x = horizontal ? along : across[offset];
+            const auto& y = horizontal ? across[offset] : along;
+            const float* top = aligned.ptr<float>(y.first);
+            const float* bottom = aligned.ptr<float>(y.second);
+            const double upper = top[x.first] * (1.0 - x.fraction) + top[x.second] * x.fraction;
+            const double lower = bottom[x.first] * (1.0 - x.fraction) + bottom[x.second] * x.fraction;
+            sum += upper * (1.0 - y.fraction) + lower * y.fraction;
+        }
+        profile[index] = sum / count;
     }
     const int supported = static_cast<int>(std::count_if(
         profile.begin(), profile.end(),
         [&](double value) { return value >= supportThreshold; }));
     return {
         static_cast<double>(supported) / std::max<size_t>(1, profile.size()),
-        Percentile(profile, 0.35)
+        SelectPercentile(profile, 0.35)
     };
 }
 
@@ -297,6 +328,7 @@ cv::Point2d TransformPoint(const cv::Mat& transform, const cv::Point2d& point)
 
 CoarseCandidatePair EvaluateAngle(
     const cv::Mat& response,
+    cv::Mat& aligned,
     double angleDegrees,
     PatternPolarity polarity,
     const PatternCrossConfig& config,
@@ -309,7 +341,6 @@ CoarseCandidatePair EvaluateAngle(
         cv::Point2f((response.cols - 1) * 0.5f, (response.rows - 1) * 0.5f),
         angleDegrees,
         1.0);
-    cv::Mat aligned;
     cv::warpAffine(
         response, aligned, sourceToAligned, response.size(), cv::INTER_LINEAR,
         cv::BORDER_CONSTANT, cv::Scalar(0));
@@ -337,26 +368,25 @@ CoarseCandidatePair EvaluateAngle(
         mean[0] + standardDeviation[0] * 0.20);
     cv::Mat alignedToSource;
     cv::invertAffineTransform(sourceToAligned, alignedToSource);
-    const std::array<cv::Point2d, 4> directions{
-        cv::Point2d(-1.0, 0.0), cv::Point2d(1.0, 0.0),
-        cv::Point2d(0.0, -1.0), cv::Point2d(0.0, 1.0)
-    };
+    std::vector<double> profile(std::max(8, static_cast<int>(std::floor(requiredLength))));
 
     for (const ProjectionPeak& row : rows) {
         for (const ProjectionPeak& column : columns) {
             const cv::Point2d center(column.coordinate, row.coordinate);
-            std::array<ArmSupport, 4> arms{};
-            std::vector<double> contrasts;
+            const std::array<ArmSupport, 4> arms{
+                MeasureArm<true>(aligned, center, -1.0, supportThreshold, profile),
+                MeasureArm<true>(aligned, center, 1.0, supportThreshold, profile),
+                MeasureArm<false>(aligned, center, -1.0, supportThreshold, profile),
+                MeasureArm<false>(aligned, center, 1.0, supportThreshold, profile)
+            };
             double minimumCoverage = 1.0;
+            double minimumContrast = arms.front().contrast;
             double maximumContrast = 0.0;
-            for (size_t index = 0; index < directions.size(); ++index) {
-                arms[index] = MeasureArm(
-                    aligned, center, directions[index], requiredLength, 2, supportThreshold);
-                contrasts.push_back(arms[index].contrast);
-                minimumCoverage = std::min(minimumCoverage, arms[index].coverage);
-                maximumContrast = std::max(maximumContrast, arms[index].contrast);
+            for (const auto& arm : arms) {
+                minimumCoverage = std::min(minimumCoverage, arm.coverage);
+                minimumContrast = std::min(minimumContrast, arm.contrast);
+                maximumContrast = std::max(maximumContrast, arm.contrast);
             }
-            const double minimumContrast = *std::min_element(contrasts.begin(), contrasts.end());
             const double balance = maximumContrast > 0.0 ? minimumContrast / maximumContrast : 0.0;
             const bool valid = minimumCoverage >= config.minArmCoverage
                 && minimumContrast >= config.minContrast * 0.18;
@@ -467,10 +497,11 @@ bool FitAxisRobust(
         for (int index : inlierIndices) {
             distances.push_back(DistanceToLine(samples[index].point, point, direction));
         }
-        const double median = Percentile(distances, 0.5);
+        auto orderedDistances = distances;
+        const double median = SelectPercentile(orderedDistances, 0.5);
         std::vector<double> deviations;
         for (double distance : distances) deviations.push_back(std::abs(distance - median));
-        const double mad = Percentile(deviations, 0.5);
+        const double mad = SelectPercentile(deviations, 0.5);
         const double threshold = std::max(0.45, median + 3.5 * 1.4826 * mad);
         std::vector<int> next;
         for (size_t index = 0; index < inlierIndices.size(); ++index) {
@@ -584,7 +615,7 @@ bool SampleAxis(
                 maximumProjection,
                 std::abs((sample.point - coarseCenter).dot(fit.direction)));
         }
-        quality.contrast = Percentile(contrasts, 0.25);
+        quality.contrast = SelectPercentile(contrasts, 0.25);
         quality.span = maximumProjection;
         quality.fitRms = fit.rms;
     }
@@ -818,8 +849,8 @@ PatternCrossResult FindPatternCross(const cv::Mat& image, const PatternCrossConf
         angles.push_back(angle);
     }
     std::vector<CoarseCandidatePair> angleCandidates(angles.size());
-    // Each angle creates a rotated response. Bound the number that can coexist
-    // when a large processing image is requested.
+    // Each stripe reuses a rotated response buffer across angles. Bound the
+    // number that can coexist when a large processing image is requested.
     constexpr size_t alignedImageBudget = 48 * 1024 * 1024;
     const int maxConcurrentAngles = static_cast<int>(std::clamp(
         alignedImageBudget / (coarseGray.total() * coarseGray.elemSize()), size_t(1), size_t(8)));
@@ -828,8 +859,9 @@ PatternCrossResult FindPatternCross(const cv::Mat& image, const PatternCrossConf
         for (PatternPolarity polarity : ResolvePolarities(config.polarity)) {
             const cv::Mat response = BuildSignedResponse(coarseGray, background, polarity);
             cv::parallel_for_(cv::Range(0, static_cast<int>(angles.size())), [&](const cv::Range& range) {
+                cv::Mat aligned;
                 for (int index = range.start; index < range.end; ++index) {
-                    angleCandidates[index] = EvaluateAngle(response, angles[index], polarity, config, scale);
+                    angleCandidates[index] = EvaluateAngle(response, aligned, angles[index], polarity, config, scale);
                 }
             }, maxConcurrentAngles);
             // Preserve the serial evaluation order, including equal scores.

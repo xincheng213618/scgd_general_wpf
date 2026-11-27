@@ -65,6 +65,8 @@ public partial class STNodeEditor : System.Windows.Controls.Control, IDisposable
 
 	private Rectangle _CanvasValidBounds;
 	private bool _replacingCanvasNodes;
+	private int _canvasBoundsDeferralDepth;
+	private bool _canvasBoundsDirty;
 
 	private float _CanvasScale = 1f;
 
@@ -204,13 +206,9 @@ public partial class STNodeEditor : System.Windows.Controls.Control, IDisposable
 
 	private Dictionary<STNode, Point> m_dic_pt_selected = new Dictionary<STNode, Point>();
 
-	private List<int> m_lst_magnet_x = new List<int>();
-
-	private List<int> m_lst_magnet_y = new List<int>();
-
-	private List<int> m_lst_magnet_mx = new List<int>();
-
-	private List<int> m_lst_magnet_my = new List<int>();
+	private const int MagnetDistance = 5;
+	private readonly Dictionary<int, int> m_magnet_x = new();
+	private readonly Dictionary<int, int> m_magnet_y = new();
 
 	private DateTime m_dt_vw = DateTime.Now;
 
@@ -236,7 +234,7 @@ public partial class STNodeEditor : System.Windows.Controls.Control, IDisposable
 
 	private Rectangle m_rect_canvas_drag_lock;
 
-	private Dictionary<GraphicsPath, ConnectionInfo> m_dic_gp_info = new Dictionary<GraphicsPath, ConnectionInfo>();
+	private readonly Dictionary<GraphicsPath, (ConnectionInfo Connection, RectangleF HitBounds)> m_dic_gp_info = new();
 
 	private List<Point> m_lst_node_out = new List<Point>();
 
@@ -298,7 +296,14 @@ public partial class STNodeEditor : System.Windows.Controls.Control, IDisposable
 	}
 
 	[Browsable(false)]
-	public Rectangle CanvasValidBounds => _CanvasValidBounds;
+	public Rectangle CanvasValidBounds
+	{
+		get
+		{
+			RefreshDeferredCanvasBounds();
+			return _CanvasValidBounds;
+		}
+	}
 
 	[Browsable(false)]
 	public float CanvasScale => _CanvasScale;
@@ -1264,7 +1269,7 @@ public partial class STNodeEditor : System.Windows.Controls.Control, IDisposable
 			}
 		}
 		NodeFindInfo nodeFindInfo = FindNodeFromPoint(m_pt_down_in_canvas);
-		if (nodeFindInfo.Node == null && nodeEvent.Button == STMouseButtons.Left && TryBeginNodeGroupInteraction(nodeEvent))
+		if (nodeEvent.Button == STMouseButtons.Left && TryBeginNodeGroupInteraction(nodeEvent, nodeFindInfo))
 		{
 			e.Handled = true;
 			return;
@@ -1448,7 +1453,7 @@ public partial class STNodeEditor : System.Windows.Controls.Control, IDisposable
 			}
 		}
 		NodeFindInfo nodeFindInfo = FindNodeFromPoint(m_pt_in_canvas);
-		Cursor = EnableEdit && FindNodeGroupHeader(m_pt_in_canvas) != null
+		Cursor = EnableEdit && CanHitNodeGroupHeader(nodeFindInfo) && IsNodeGroupHeader(m_pt_in_canvas)
 			? Cursors.SizeAll : null;
 		bool flag = false;
 		if (_HoverNode != nodeFindInfo.Node)
@@ -1472,15 +1477,7 @@ public partial class STNodeEditor : System.Windows.Controls.Control, IDisposable
 		}
 		else
 		{
-			GraphicsPath graphicsPath = null;
-			foreach (KeyValuePair<GraphicsPath, ConnectionInfo> item in m_dic_gp_info)
-			{
-				if (item.Key.IsOutlineVisible(m_pt_in_canvas, m_p_line_hover))
-				{
-					graphicsPath = item.Key;
-					break;
-				}
-			}
+			GraphicsPath graphicsPath = FindHoveredConnection(m_pt_in_canvas);
 			if (m_gp_hover != graphicsPath)
 			{
 				m_gp_hover = graphicsPath;
@@ -1888,32 +1885,44 @@ public partial class STNodeEditor : System.Windows.Controls.Control, IDisposable
 		Graphics graphics = dt.Graphics;
 		graphics.SmoothingMode = SmoothingMode.HighQuality;
 		m_p_line_hover.Color = Color.FromArgb(10, 0, 0, 0);
-		foreach (STNode node in _Nodes)
+		using GraphicsPath connectionPath = new();
+		for (int nodeIndex = 0; nodeIndex < _Nodes.Count; nodeIndex++)
 		{
-			foreach (STNodeOption outputOption in node.OutputOptions)
+			STNodeOptionCollection outputs = _Nodes[nodeIndex].OutputOptions;
+			for (int portIndex = 0; portIndex < outputs.Count; portIndex++)
 			{
-				if (outputOption == STNodeOption.Empty)
+				STNodeOption outputOption = outputs[portIndex];
+				if (outputOption == STNodeOption.Empty || outputOption.ConnectionCount == 0)
 				{
 					continue;
 				}
 				m_p_line.Color = GetOptionColor(outputOption);
+				float x1 = outputOption.DotLeft + outputOption.DotSize;
+				float y1 = outputOption.DotTop + outputOption.DotSize / 2;
 				foreach (STNodeOption item in outputOption.ConnectedOption)
 				{
-					float x1 = outputOption.DotLeft + outputOption.DotSize;
-					float y1 = outputOption.DotTop + outputOption.DotSize / 2;
 					float x2 = item.DotLeft - 1;
 					float y2 = item.DotTop + item.DotSize / 2;
+					connectionPath.Reset();
+					AddBezier(connectionPath, x1, y1, x2, y2, _Curvature);
 					if (_VisualTheme == null)
-						DrawBezier(graphics, m_p_line_hover, x1, y1, x2, y2, _Curvature);
-					DrawBezier(graphics, m_p_line, x1, y1, x2, y2, _Curvature);
+						graphics.DrawPath(m_p_line_hover, connectionPath);
+					graphics.DrawPath(m_p_line, connectionPath);
 					if (m_is_buildpath)
 					{
-						GraphicsPath key = CreateBezierPath(x1, y1, x2, y2, _Curvature);
-						m_dic_gp_info.Add(key, new ConnectionInfo
+						RectangleF hitBounds = connectionPath.GetBounds(null, m_p_line_hover);
+						// Leave room for rounding at the edge of the stroked path.
+						hitBounds.Inflate(1f, 1f);
+						var hitPath = (GraphicsPath)connectionPath.Clone();
+						try
 						{
-							Output = outputOption,
-							Input = item
-						});
+							m_dic_gp_info.Add(hitPath, (new ConnectionInfo { Output = outputOption, Input = item }, hitBounds));
+						}
+						catch
+						{
+							hitPath.Dispose();
+							throw;
+						}
 					}
 				}
 			}
@@ -2041,7 +2050,7 @@ public partial class STNodeEditor : System.Windows.Controls.Control, IDisposable
 		graphics.SmoothingMode = SmoothingMode.None;
 		if (lstPts.Count == _Nodes.Count && _Nodes.Count != 0)
 		{
-			graphics.FillRectangle(solidBrush, CanvasToControl(_CanvasValidBounds));
+			graphics.FillRectangle(solidBrush, CanvasToControl(CanvasValidBounds));
 		}
 		graphics.FillRectangle(solidBrush, 0, 0, 4, sz.Height);
 		graphics.FillRectangle(solidBrush, sz.Width - 4, 0, 4, sz.Height);
@@ -2164,13 +2173,23 @@ public partial class STNodeEditor : System.Windows.Controls.Control, IDisposable
 	internal void BuildLinePath()
 	{
 		m_gp_hover = null;
-		foreach (KeyValuePair<GraphicsPath, ConnectionInfo> item in m_dic_gp_info)
+		foreach (GraphicsPath path in m_dic_gp_info.Keys)
 		{
-			item.Key.Dispose();
+			path.Dispose();
 		}
 		m_dic_gp_info.Clear();
 		m_is_buildpath = true;
 		Invalidate();
+	}
+
+	private GraphicsPath FindHoveredConnection(PointF point)
+	{
+		foreach (var (path, target) in m_dic_gp_info)
+		{
+			if (target.HitBounds.Contains(point) && path.IsOutlineVisible(point, m_p_line_hover))
+				return path;
+		}
+		return null;
 	}
 
 	internal void OnDrawAlert(Graphics g)
@@ -2208,10 +2227,11 @@ public partial class STNodeEditor : System.Windows.Controls.Control, IDisposable
 	private ConnectionStatus DisConnectionHover()
 	{
 		GraphicsPath gpHover = m_gp_hover;
-		if (gpHover == null || !m_dic_gp_info.TryGetValue(gpHover, out ConnectionInfo connectionInfo))
+		if (gpHover == null || !m_dic_gp_info.TryGetValue(gpHover, out var target))
 		{
 			return ConnectionStatus.DisConnected;
 		}
+		ConnectionInfo connectionInfo = target.Connection;
 		ConnectionStatus connectionStatus = connectionInfo.Output.DisConnectOption(connectionInfo.Input);
 		if (connectionStatus == ConnectionStatus.DisConnected)
 		{
@@ -2412,50 +2432,74 @@ public partial class STNodeEditor : System.Windows.Controls.Control, IDisposable
 		Invalidate();
 	}
 
+	/// <summary>Coalesces canvas bounds calculations for a synchronous series of geometry changes.</summary>
+	public IDisposable DeferCanvasBoundsUpdates()
+	{
+		Dispatcher.VerifyAccess();
+		_canvasBoundsDeferralDepth++;
+		return new DelegateDisposable(() =>
+		{
+			if (--_canvasBoundsDeferralDepth == 0)
+				RefreshDeferredCanvasBounds();
+		});
+	}
+
+	private void RefreshDeferredCanvasBounds()
+	{
+		if (_canvasBoundsDirty && !_replacingCanvasNodes)
+			CalculateCanvasBounds();
+	}
+
 	protected internal virtual void BuildBounds()
 	{
 		if (_replacingCanvasNodes)
 			return;
+		if (_canvasBoundsDeferralDepth != 0)
+		{
+			_canvasBoundsDirty = true;
+			return;
+		}
+		CalculateCanvasBounds();
+	}
 
+	private void CalculateCanvasBounds()
+	{
+		_canvasBoundsDirty = false;
 		if (_Nodes.Count == 0)
 		{
 			_CanvasValidBounds = ControlToCanvas(ClientRectangle);
 			return;
 		}
-		int num = int.MaxValue;
-		int num2 = int.MaxValue;
-		int num3 = int.MinValue;
-		int num4 = int.MinValue;
+		int left = int.MaxValue, top = int.MaxValue, right = int.MinValue, bottom = int.MinValue;
+		Rectangle? groupedBounds = null;
 		foreach (STNode node in _Nodes)
 		{
-			if (num > node.Left)
+			Extend(node.Rectangle);
+			if (node is ISTNodeGroupMember member && !string.IsNullOrEmpty(member.GroupId))
 			{
-				num = node.Left;
-			}
-			if (num2 > node.Top)
-			{
-				num2 = node.Top;
-			}
-			if (num3 < node.Right)
-			{
-				num3 = node.Right;
-			}
-			if (num4 < node.Bottom)
-			{
-				num4 = node.Bottom;
+				Rectangle bounds = STNodeGroup.GetMemberBounds(node);
+				groupedBounds = groupedBounds is Rectangle combined ? Rectangle.Union(combined, bounds) : bounds;
 			}
 		}
-		foreach (STNodeGroup group in GetNodeGroups())
+		if (groupedBounds is Rectangle members)
 		{
-			num = Math.Min(num, group.Bounds.Left);
-			num2 = Math.Min(num2, group.Bounds.Top);
-			num3 = Math.Max(num3, group.Bounds.Right);
-			num4 = Math.Max(num4, group.Bounds.Bottom);
+			// Each group has the same padding, so pad the union once for canvas limits.
+			if (STNodeGroup.CanExpandBounds(members))
+				Extend(STNodeGroup.ExpandBounds(members));
+			else
+				// At integer limits keep the original per-group wrapping behavior.
+				foreach (STNodeGroup group in GetNodeGroups())
+					Extend(group.Bounds);
 		}
-		_CanvasValidBounds.X = num - 60;
-		_CanvasValidBounds.Y = num2 - 60;
-		_CanvasValidBounds.Width = num3 - num + 120;
-		_CanvasValidBounds.Height = num4 - num2 + 120;
+		_CanvasValidBounds = new Rectangle(left - 60, top - 60, right - left + 120, bottom - top + 120);
+
+		void Extend(Rectangle bounds)
+		{
+			left = Math.Min(left, bounds.Left);
+			top = Math.Min(top, bounds.Top);
+			right = Math.Max(right, bounds.Right);
+			bottom = Math.Max(bottom, bounds.Bottom);
+		}
 	}
 
 	private bool PointInRectangle(Rectangle rect, float x, float y)
@@ -2481,72 +2525,51 @@ public partial class STNodeEditor : System.Windows.Controls.Control, IDisposable
 
 	private void BuildMagnetLocation()
 	{
-		m_lst_magnet_x.Clear();
-		m_lst_magnet_y.Clear();
+		m_magnet_x.Clear();
+		m_magnet_y.Clear();
 		foreach (STNode node in _Nodes)
 		{
 			if (!node.IsSelected)
 			{
-				m_lst_magnet_x.Add(node.Left);
-				m_lst_magnet_x.Add(node.Left + node.Width / 2);
-				m_lst_magnet_x.Add(node.Left + node.Width);
-				m_lst_magnet_y.Add(node.Top);
-				m_lst_magnet_y.Add(node.Top + node.Height / 2);
-				m_lst_magnet_y.Add(node.Top + node.Height);
+				m_magnet_x.TryAdd(node.Left, m_magnet_x.Count);
+				m_magnet_x.TryAdd(node.Left + node.Width / 2, m_magnet_x.Count);
+				m_magnet_x.TryAdd(node.Right, m_magnet_x.Count);
+				m_magnet_y.TryAdd(node.Top, m_magnet_y.Count);
+				m_magnet_y.TryAdd(node.Top + node.Height / 2, m_magnet_y.Count);
+				m_magnet_y.TryAdd(node.Bottom, m_magnet_y.Count);
 			}
 		}
 	}
 
 	private MagnetInfo CheckMagnet(STNode node)
 	{
-		m_mi.XMatched = (m_mi.YMatched = false);
-		m_lst_magnet_mx.Clear();
-		m_lst_magnet_my.Clear();
-		m_lst_magnet_mx.Add(node.Left + node.Width / 2);
-		m_lst_magnet_mx.Add(node.Left);
-		m_lst_magnet_mx.Add(node.Left + node.Width);
-		m_lst_magnet_my.Add(node.Top + node.Height / 2);
-		m_lst_magnet_my.Add(node.Top);
-		m_lst_magnet_my.Add(node.Top + node.Height);
-		bool flag = false;
-		foreach (int item in m_lst_magnet_mx)
-		{
-			foreach (int item2 in m_lst_magnet_x)
-			{
-				if (Math.Abs(item - item2) <= 5)
-				{
-					flag = true;
-					m_mi.X = item2;
-					m_mi.OffsetX = item - item2;
-					m_mi.XMatched = true;
-					break;
-				}
-			}
-			if (flag)
-			{
-				break;
-			}
-		}
-		flag = false;
-		foreach (int item3 in m_lst_magnet_my)
-		{
-			foreach (int item4 in m_lst_magnet_y)
-			{
-				if (Math.Abs(item3 - item4) <= 5)
-				{
-					flag = true;
-					m_mi.Y = item4;
-					m_mi.OffsetY = item3 - item4;
-					m_mi.YMatched = true;
-					break;
-				}
-			}
-			if (flag)
-			{
-				break;
-			}
-		}
+		m_mi.XMatched = TryFindMagnet(m_magnet_x, node.Left + node.Width / 2, ref m_mi.X, ref m_mi.OffsetX)
+			|| TryFindMagnet(m_magnet_x, node.Left, ref m_mi.X, ref m_mi.OffsetX)
+			|| TryFindMagnet(m_magnet_x, node.Right, ref m_mi.X, ref m_mi.OffsetX);
+		m_mi.YMatched = TryFindMagnet(m_magnet_y, node.Top + node.Height / 2, ref m_mi.Y, ref m_mi.OffsetY)
+			|| TryFindMagnet(m_magnet_y, node.Top, ref m_mi.Y, ref m_mi.OffsetY)
+			|| TryFindMagnet(m_magnet_y, node.Bottom, ref m_mi.Y, ref m_mi.OffsetY);
 		return m_mi;
+	}
+
+	private static bool TryFindMagnet(Dictionary<int, int> guides, int position, ref int match, ref int offset)
+	{
+		if (guides.Count == 0) return false;
+
+		// Integer guides within range may belong to different nodes. Keep the first
+		// guide in canvas order, even if a later guide is closer to the pointer.
+		int first = int.MaxValue;
+		for (int delta = -MagnetDistance; delta <= MagnetDistance; delta++)
+		{
+			int candidate = unchecked(position + delta);
+			if (guides.TryGetValue(candidate, out int order) && order < first)
+			{
+				first = order;
+				match = candidate;
+				offset = -delta;
+			}
+		}
+		return first != int.MaxValue;
 	}
 
 	private void DrawBezier(Graphics g, Pen p, PointF ptStart, PointF ptEnd, float f)
@@ -2563,6 +2586,20 @@ public partial class STNodeEditor : System.Windows.Controls.Control, IDisposable
 	public static GraphicsPath CreateBezierPath(float x1, float y1, float x2, float y2, float f)
 	{
 		GraphicsPath graphicsPath = new GraphicsPath();
+		try
+		{
+			AddBezier(graphicsPath, x1, y1, x2, y2, f);
+			return graphicsPath;
+		}
+		catch
+		{
+			graphicsPath.Dispose();
+			throw;
+		}
+	}
+
+	private static void AddBezier(GraphicsPath graphicsPath, float x1, float y1, float x2, float y2, float f)
+	{
 		if (x2 < x1 && Math.Abs(y2 - y1) < 60f)
 		{
 			float routeY = Math.Max(y1, y2) + 70f;
@@ -2571,7 +2608,7 @@ public partial class STNodeEditor : System.Windows.Controls.Control, IDisposable
 			float midpointX = (x1 + x2) / 2f;
 			graphicsPath.AddBezier(x1, y1, startGutterX, y1, startGutterX, routeY, midpointX, routeY);
 			graphicsPath.AddBezier(midpointX, routeY, endGutterX, routeY, endGutterX, y2, x2, y2);
-			return graphicsPath;
+			return;
 		}
 
 		float num = Math.Abs(x1 - x2) * f;
@@ -2580,7 +2617,6 @@ public partial class STNodeEditor : System.Windows.Controls.Control, IDisposable
 			num = 30f;
 		}
 		graphicsPath.AddBezier(x1, y1, x1 + num, y1, x2 - num, y2, x2, y2);
-		return graphicsPath;
 	}
 
 	private void RenderBorder(Graphics g, Rectangle rect, Image img)
@@ -2722,29 +2758,18 @@ public partial class STNodeEditor : System.Windows.Controls.Control, IDisposable
 		m_find.Mark = null;
 		for (int num = _Nodes.Count - 1; num >= 0; num--)
 		{
-			if (!string.IsNullOrEmpty(_Nodes[num].Mark) && PointInRectangle(_Nodes[num].MarkRectangle, pt.X, pt.Y))
+			STNode node = _Nodes[num];
+			if (!string.IsNullOrEmpty(node.Mark) && PointInRectangle(node.MarkRectangle, pt.X, pt.Y))
 			{
-				m_find.Mark = _Nodes[num].Mark;
-				m_find.MarkLines = _Nodes[num].MarkLines;
+				m_find.Mark = node.Mark;
+				m_find.MarkLines = node.MarkLines;
 				return m_find;
 			}
-			foreach (STNodeOption inputOption in _Nodes[num].InputOptions)
+			// A later port wins, with outputs above inputs when their hit areas overlap.
+			m_find.NodeOption = FindHitOption(node.OutputOptions, pt, dotPadding) ?? FindHitOption(node.InputOptions, pt, dotPadding);
+			if (PointInRectangle(node.Rectangle, pt.X, pt.Y))
 			{
-				if (inputOption != STNodeOption.Empty && PointInRectangle(Rectangle.Inflate(inputOption.DotRectangle, dotPadding, dotPadding), pt.X, pt.Y))
-				{
-					m_find.NodeOption = inputOption;
-				}
-			}
-			foreach (STNodeOption outputOption in _Nodes[num].OutputOptions)
-			{
-				if (outputOption != STNodeOption.Empty && PointInRectangle(Rectangle.Inflate(outputOption.DotRectangle, dotPadding, dotPadding), pt.X, pt.Y))
-				{
-					m_find.NodeOption = outputOption;
-				}
-			}
-			if (PointInRectangle(_Nodes[num].Rectangle, pt.X, pt.Y))
-			{
-				m_find.Node = _Nodes[num];
+				m_find.Node = node;
 			}
 			if (m_find.NodeOption != null || m_find.Node != null)
 			{
@@ -2752,6 +2777,19 @@ public partial class STNodeEditor : System.Windows.Controls.Control, IDisposable
 			}
 		}
 		return m_find;
+	}
+
+	private STNodeOption FindHitOption(STNodeOptionCollection options, PointF pt, int dotPadding)
+	{
+		for (int index = options.Count - 1; index >= 0; index--)
+		{
+			STNodeOption option = options[index];
+			if (option != STNodeOption.Empty && PointInRectangle(Rectangle.Inflate(option.DotRectangle, dotPadding, dotPadding), pt.X, pt.Y))
+			{
+				return option;
+			}
+		}
+		return null;
 	}
 
 	public STNode[] GetSelectedNode()
@@ -2843,10 +2881,11 @@ public partial class STNodeEditor : System.Windows.Controls.Control, IDisposable
 		}
 		if (_LimitCanvasToContentBounds)
 		{
-			int num = (int)((float)(_CanvasValidBounds.Left + 50) * _CanvasScale);
-			int num2 = (int)((float)(_CanvasValidBounds.Top + 50) * _CanvasScale);
-			int num3 = (int)((float)(_CanvasValidBounds.Right - 50) * _CanvasScale);
-			int num4 = (int)((float)(_CanvasValidBounds.Bottom - 50) * _CanvasScale);
+			Rectangle bounds = CanvasValidBounds;
+			int num = (int)((float)(bounds.Left + 50) * _CanvasScale);
+			int num2 = (int)((float)(bounds.Top + 50) * _CanvasScale);
+			int num3 = (int)((float)(bounds.Right - 50) * _CanvasScale);
+			int num4 = (int)((float)(bounds.Bottom - 50) * _CanvasScale);
 			if ((float)num3 + x < 0f)
 			{
 				x = -num3;
@@ -2915,18 +2954,20 @@ public partial class STNodeEditor : System.Windows.Controls.Control, IDisposable
 	public void FitCanvasToNodes(float maximumScale = 1f)
 	{
 		BuildBounds();
-		if (_Nodes.Count == 0 || ClientSize.Width <= 0 || ClientSize.Height <= 0 || _CanvasValidBounds.Width <= 0 || _CanvasValidBounds.Height <= 0)
+		Rectangle bounds = CanvasValidBounds;
+		if (_Nodes.Count == 0 || ClientSize.Width <= 0 || ClientSize.Height <= 0 || bounds.Width <= 0 || bounds.Height <= 0)
 		{
 			return;
 		}
-		float scaleX = (float)ClientSize.Width / _CanvasValidBounds.Width;
-		float scaleY = (float)ClientSize.Height / _CanvasValidBounds.Height;
+		float scaleX = (float)ClientSize.Width / bounds.Width;
+		float scaleY = (float)ClientSize.Height / bounds.Height;
 		float scale = Math.Min(Math.Min(scaleX, scaleY), maximumScale);
 		float centerX = ClientSize.Width / 2f;
 		float centerY = ClientSize.Height / 2f;
 		ScaleCanvas(scale, centerX, centerY);
-		float contentCenterX = _CanvasValidBounds.Left + _CanvasValidBounds.Width / 2f;
-		float contentCenterY = _CanvasValidBounds.Top + _CanvasValidBounds.Height / 2f;
+		bounds = CanvasValidBounds;
+		float contentCenterX = bounds.Left + bounds.Width / 2f;
+		float contentCenterY = bounds.Top + bounds.Height / 2f;
 		MoveCanvas(centerX - contentCenterX * _CanvasScale, centerY - contentCenterY * _CanvasScale, bAnimation: false, CanvasMoveArgs.All);
 	}
 
@@ -2935,24 +2976,11 @@ public partial class STNodeEditor : System.Windows.Controls.Control, IDisposable
 		return GetConnections();
 	}
 
-	public ConnectionInfo[] GetConnections()
+	public ConnectionInfo[] GetConnections() => GetConnections(incidentNode: null);
+
+	private ConnectionInfo[] GetConnections(STNode incidentNode)
 	{
-		List<ConnectionInfo> connections = new List<ConnectionInfo>();
-		foreach (STNode node in _Nodes)
-		{
-			STNodeOptionCollection outputs = node.OutputOptions;
-			for (int outputIndex = 0; outputIndex < outputs.Count; outputIndex++)
-			{
-				STNodeOption output = outputs[outputIndex];
-				foreach (STNodeOption input in output.ConnectedOption)
-				{
-					if (input != null && input.IsInput && input.Owner != null && input.Owner.Owner == this)
-					{
-						connections.Add(new ConnectionInfo { Output = output, Input = input });
-					}
-				}
-			}
-		}
+		List<ConnectionInfo> connections = CollectConnections(incidentNode);
 		if (connections.Count <= 1)
 			return connections.ToArray();
 
@@ -2970,25 +2998,53 @@ public partial class STNodeEditor : System.Windows.Controls.Control, IDisposable
 			.ToArray();
 	}
 
+	private List<ConnectionInfo> CollectConnections(STNode incidentNode)
+	{
+		List<ConnectionInfo> connections = new List<ConnectionInfo>();
+		foreach (STNode node in _Nodes)
+		{
+			STNodeOptionCollection outputs = node.OutputOptions;
+			for (int outputIndex = 0; outputIndex < outputs.Count; outputIndex++)
+			{
+				STNodeOption output = outputs[outputIndex];
+				bool includeAllTargets = incidentNode == null || ReferenceEquals(output.Owner, incidentNode);
+				foreach (STNodeOption input in output.ConnectedOption)
+				{
+					if (input != null && input.IsInput && input.Owner != null && input.Owner.Owner == this
+						&& (includeAllTargets || ReferenceEquals(input.Owner, incidentNode)))
+					{
+						connections.Add(new ConnectionInfo { Output = output, Input = input });
+					}
+				}
+			}
+		}
+		return connections;
+	}
+
 	public static bool CanFindNodePath(STNode nodeStart, STNode nodeFind)
 	{
-		var visited = new HashSet<STNode> { nodeStart };
-		var pending = new Stack<STNode>();
-		pending.Push(nodeStart);
-		while (pending.Count > 0)
+		HashSet<STNode> visited = null;
+		Stack<STNode> pending = null;
+		STNode current = nodeStart;
+		do
 		{
-			foreach (STNodeOption outputOption in pending.Pop().OutputOptions)
+			STNodeOptionCollection outputs = current.OutputOptions;
+			for (int i = 0; i < outputs.Count; i++)
 			{
-				foreach (STNodeOption inputOption in outputOption.ConnectedOption)
+				foreach (STNodeOption inputOption in outputs[i].ConnectedOption)
 				{
 					STNode next = inputOption.Owner;
 					if (next == nodeFind)
 						return true;
-					if (next != null && visited.Add(next))
-						pending.Push(next);
+					if (next == null)
+						continue;
+
+					visited ??= new HashSet<STNode> { nodeStart };
+					if (visited.Add(next))
+						(pending ??= new Stack<STNode>()).Push(next);
 				}
 			}
-		}
+		} while (pending != null && pending.TryPop(out current));
 		return false;
 	}
 
@@ -3037,10 +3093,11 @@ public partial class STNodeEditor : System.Windows.Controls.Control, IDisposable
 
 	public void SaveCanvas(Stream s)
 	{
+		// The writer orders the collected connections by canvas node and option position.
 		STNodeCanvasWriter.Write(
 			s,
 			_Nodes.Cast<STNode>(),
-			GetConnections(),
+			CollectConnections(incidentNode: null),
 			_CanvasOffsetX,
 			_CanvasOffsetY,
 			_CanvasScale);
@@ -3106,7 +3163,8 @@ public partial class STNodeEditor : System.Windows.Controls.Control, IDisposable
 
 	public void LoadCanvas(byte[] byData)
 	{
-		using MemoryStream s = new MemoryStream(byData);
+		ArgumentNullException.ThrowIfNull(byData);
+		using MemoryStream s = new MemoryStream(byData, 0, byData.Length, writable: false, publiclyVisible: true);
 		LoadCanvas(s);
 	}
 

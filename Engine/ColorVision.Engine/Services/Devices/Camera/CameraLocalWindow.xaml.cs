@@ -5,13 +5,13 @@ using ColorVision.Engine.Services.Devices.Camera.Templates.CameraRunParam;
 using ColorVision.Engine.Services.Devices.Camera.Video;
 using ColorVision.Engine.Services.PhyCameras.Group;
 using ColorVision.Engine.Templates;
+using ColorVision.Engine.Templates.Jsons.FOV2;
 using ColorVision.ImageEditor.Realtime;
 using ColorVision.Themes.Controls;
 using ColorVision.UI;
 using cvColorVision;
 using FlowEngineLib.Algorithm;
 using log4net;
-using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -70,6 +70,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             _isInitializingNodeSettings = sourceNode != null;
             ApplyNodeSettingsToWindow();
             InitializeComponent();
+            FovImageViewRunner.BindCamera(ImageView, Device);
             ColorVision.Themes.ThemeManagerExtensions.ApplyCaption(this);
             DataContext = Device;
             Closed += (_, _) => Dispose();
@@ -533,248 +534,6 @@ namespace ColorVision.Engine.Services.Devices.Camera
             return ComboxCalibrationTemplate.SelectedValue as CalibrationParam;
         }
 
-        private static bool IsColorCalibration(CalibrationType calibrationType)
-        {
-            return calibrationType == CalibrationType.Luminance
-                || calibrationType == CalibrationType.LumOneColor
-                || calibrationType == CalibrationType.LumFourColor
-                || calibrationType == CalibrationType.LumMultiColor;
-        }
-
-        private bool TryGetSelectedCalibrationFiles(bool showErrorMessage, out IReadOnlyList<DeviceCameraCalibrationFile> calibrationFiles)
-        {
-            calibrationFiles = Array.Empty<DeviceCameraCalibrationFile>();
-
-            CalibrationParam? calibrationParam = GetSelectedCalibrationTemplate();
-            if (calibrationParam == null || calibrationParam.Id == -1)
-            {
-                return true;
-            }
-
-            if (Device.TryGetCalibrationTemplateFiles(calibrationParam, out calibrationFiles, out string? errorMessage))
-            {
-                return true;
-            }
-
-            if (showErrorMessage && !string.IsNullOrWhiteSpace(errorMessage))
-            {
-                MessageBox1.Show(Application.Current.GetActiveWindow(), errorMessage, "ColorVision");
-            }
-
-            return false;
-        }
-
-        private static CalibrationItem CreateCalibrationItem(DeviceCameraCalibrationFile calibrationFile)
-        {
-            return new CalibrationItem(calibrationFile.CalibrationType, true, calibrationFile.FullPath, calibrationFile.FullPath);
-        }
-
-        private bool TryLoadNativeCalibrationLibrary(IReadOnlyList<DeviceCameraCalibrationFile> calibrationFiles)
-        {
-            if (calibrationFiles.Count == 0)
-            {
-                return true;
-            }
-
-            string json = JsonConvert.SerializeObject(new
-            {
-                calibrationLibCfg = calibrationFiles.Select(CreateCalibrationItem).ToList(),
-            });
-
-            if (Device.LocalCameraSession.UpdateCalibration(json))
-            {
-                return true;
-            }
-
-            log.Error("Failed to load the selected calibration files into the native camera calibration library.");
-            MessageBox1.Show(Application.Current.GetActiveWindow(),
-                Properties.Resources.Engine_Msg_CalculateCieFailed.Replace("{0}", "CM_UpdateCfgJson", StringComparison.Ordinal), "ColorVision");
-            return false;
-        }
-
-        private static void PopulateLegacyChannelChecks(ChannelCalibration channelCheck, IReadOnlyList<DeviceCameraCalibrationFile> calibrationFiles)
-        {
-            foreach (DeviceCameraCalibrationFile calibrationFile in calibrationFiles)
-            {
-                CalibrationItem calibrationItem = CreateCalibrationItem(calibrationFile);
-                switch (calibrationFile.CalibrationType)
-                {
-                    case CalibrationType.DarkNoise:
-                        channelCheck.DarkNoiseCheck = calibrationItem;
-                        break;
-                    case CalibrationType.DSNU:
-                        channelCheck.dsnuCheck = calibrationItem;
-                        break;
-                    case CalibrationType.Uniformity:
-                        channelCheck.uniformityCheck = calibrationItem;
-                        break;
-                    case CalibrationType.DefectPoint:
-                    case CalibrationType.DefectBPoint:
-                    case CalibrationType.DefectWPoint:
-                        channelCheck.defectCheck = calibrationItem;
-                        break;
-                    case CalibrationType.Distortion:
-                        channelCheck.distortionCheck = calibrationItem;
-                        break;
-                }
-            }
-        }
-
-        private static void ApplyCalibrationTemplate(GetFrameParam param, IReadOnlyList<DeviceCameraCalibrationFile> calibrationFiles)
-        {
-            if (calibrationFiles.Count == 0)
-            {
-                return;
-            }
-
-            List<CalibrationItem> calibrationList = new();
-            foreach (DeviceCameraCalibrationFile calibrationFile in calibrationFiles)
-            {
-                CalibrationItem calibrationItem = CreateCalibrationItem(calibrationFile);
-                if (IsColorCalibration(calibrationFile.CalibrationType))
-                {
-                    param.lumChromaCheck = calibrationItem;
-                }
-                else
-                {
-                    calibrationList.Add(calibrationItem);
-                }
-            }
-
-            if (calibrationList.Count > 0)
-            {
-                param.calibrationlist = calibrationList;
-            }
-        }
-
-        private static readonly (ImageChannelType ChannelType, int CfwPort)[] DefaultChannelOrder =
-        {
-            (ImageChannelType.Gray_Y, 0),
-            (ImageChannelType.Gray_X, 1),
-            (ImageChannelType.Gray_Z, 2),
-        };
-
-        private static readonly (ImageChannelType ChannelType, int CfwPort)[] ColorFrameChannelOrder =
-        {
-            (ImageChannelType.Gray_X, 0),
-            (ImageChannelType.Gray_Y, 1),
-            (ImageChannelType.Gray_Z, 2),
-        };
-
-        private IReadOnlyList<(ImageChannelType ChannelType, int CfwPort)> GetSelectedChannelConfigs(int channelCount)
-        {
-            // BV/LVTOBV cameras return one interleaved three-channel frame. The native no-CFW
-            // path stores that frame in the first logical channel and expects it to be Gray_X.
-            if (channelCount == 3 && m_eCameraMode is CameraMode.BV_MODE or CameraMode.LVTOBV_MODE)
-            {
-                return ColorFrameChannelOrder;
-            }
-
-            List<(ImageChannelType ChannelType, int CfwPort)> channelConfigs = new(channelCount);
-
-            AppendChannelConfigs(channelConfigs, Device.Config.CFW.ChannelCfgs, channelCount);
-            if (channelConfigs.Count < channelCount)
-            {
-                AppendChannelConfigs(channelConfigs, Device.PhyCamera?.Config.CFW.ChannelCfgs, channelCount);
-            }
-
-            for (int i = channelConfigs.Count; i < channelCount; i++)
-            {
-                channelConfigs.Add(DefaultChannelOrder[Math.Min(i, DefaultChannelOrder.Length - 1)]);
-            }
-
-            return channelConfigs;
-        }
-
-        private static void AppendChannelConfigs(
-            List<(ImageChannelType ChannelType, int CfwPort)> channelConfigs,
-            IEnumerable<ColorVision.Engine.Services.PhyCameras.Configs.ChannelCfg>? configuredChannels,
-            int maxCount)
-        {
-            if (configuredChannels == null)
-            {
-                return;
-            }
-
-            foreach (ColorVision.Engine.Services.PhyCameras.Configs.ChannelCfg configuredChannel in configuredChannels)
-            {
-                if (channelConfigs.Count >= maxCount)
-                {
-                    break;
-                }
-
-                channelConfigs.Add((configuredChannel.Chtype, configuredChannel.Cfwport));
-            }
-        }
-
-        private float GetExposureForChannel(ImageChannelType channelType, int channelIndex, IReadOnlyList<float> exposureValues)
-        {
-            if (!Device.Config.IsExpThree)
-            {
-                return exposureValues[Math.Min(channelIndex, exposureValues.Count - 1)];
-            }
-
-            return channelType switch
-            {
-                ImageChannelType.Gray_X => (float)Device.DisplayConfig.ExpTimeR,
-                ImageChannelType.Gray_Y => (float)Device.DisplayConfig.ExpTimeG,
-                ImageChannelType.Gray_Z => (float)Device.DisplayConfig.ExpTimeB,
-                _ => exposureValues[Math.Min(channelIndex, exposureValues.Count - 1)],
-            };
-        }
-
-        private bool TryBuildParam(out string json, out IReadOnlyList<DeviceCameraCalibrationFile> calibrationFiles)
-        {
-            json = string.Empty;
-            calibrationFiles = Array.Empty<DeviceCameraCalibrationFile>();
-            GetFrameParam param = new GetFrameParam();
-
-            param.channelCount = GetSelectedChannelCount();
-            param.measureCount = Math.Max(Device.DisplayConfig.AvgCount, 1);
-            param.title = "";
-            param.ob = 4;
-            param.obR = 0;
-            param.obT = 0;
-            param.obB = 0;
-
-            param.startBurst = 1;
-            param.endBurst = 3;
-            param.posBurst = 0;
-
-            param.autoExpFlag = Device.Config.IsAutoExpose;
-
-            if (!TryGetSelectedCalibrationFiles(true, out calibrationFiles))
-            {
-                return false;
-            }
-
-            ApplyCalibrationTemplate(param, calibrationFiles);
-
-            param.channels = new List<ChannelParam>();
-
-            IReadOnlyList<(ImageChannelType ChannelType, int CfwPort)> channelConfigs = GetSelectedChannelConfigs(param.channelCount);
-            float[] exp = GetCurrentExposureValues(param.channelCount);
-
-            for (int i = 0; i < param.channelCount; i++)
-            {
-                (ImageChannelType channelType, int cfwPort) = channelConfigs[i];
-                ChannelParam channel = new ChannelParam();
-                channel.exp = GetExposureForChannel(channelType, i, exp);
-                channel.channelType = channelType;
-                channel.cfwport = cfwPort;
-
-                ChannelCalibration channelCheck = new ChannelCalibration();
-                channel.check = channelCheck;
-
-                PopulateLegacyChannelChecks(channelCheck, calibrationFiles);
-
-                param.channels.Add(channel);
-            }
-
-            json = JsonConvert.SerializeObject(param);
-            return true;
-        }
-
         private void cb_CM_TYPE_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (Device.CameraBackend.LocalOwned) return;
@@ -1041,26 +800,6 @@ namespace ColorVision.Engine.Services.Devices.Camera
             rawArray = preview.CieData;
             preview.Show(ImageView, copyBitmap: false);
             FitFirstCaptureToWindow();
-        }
-
-        private float[] GetCurrentExposureValues(int channelCount)
-        {
-            if (!Device.Config.IsExpThree)
-            {
-                float exposure = (float)Device.DisplayConfig.ExpTime;
-                return Enumerable.Repeat(exposure, Math.Max(channelCount, 1)).ToArray();
-            }
-
-            float exposureR = (float)Device.DisplayConfig.ExpTimeR;
-            float exposureG = (float)Device.DisplayConfig.ExpTimeG;
-            float exposureB = (float)Device.DisplayConfig.ExpTimeB;
-
-            return channelCount switch
-            {
-                <= 1 => new[] { exposureR },
-                2 => new[] { exposureR, exposureG },
-                _ => new[] { exposureR, exposureG, exposureB },
-            };
         }
 
         private async void btn_CalAutoExp_Click(object sender, RoutedEventArgs e)

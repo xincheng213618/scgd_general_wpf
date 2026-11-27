@@ -105,7 +105,8 @@ namespace ProjectARVRPro
                 }
             }
 
-            return CollectSummaryMetrics(record, getFallbackSummary);
+            ObjectiveTestResult? summary = ReadSummary(record, getFallbackSummary);
+            return summary == null ? Array.Empty<ObjectiveTestResultMetric>() : ObjectiveTestResultMetricCollector.Collect(summary);
         }
 
         private static void CollectMetricValues(
@@ -130,27 +131,25 @@ namespace ProjectARVRPro
                 }
             }
 
-            foreach (ObjectiveTestResultMetric metric in CollectSummaryMetrics(record, getFallbackSummary))
-                values.Add(metric.Key, metric.Value);
+            ObjectiveTestResult? summary = ReadSummary(record, getFallbackSummary);
+            if (summary != null)
+                ObjectiveTestResultMetricCollector.CollectValues(summary, values);
         }
 
-        private static IReadOnlyList<ObjectiveTestResultMetric> CollectSummaryMetrics(
+        private static ObjectiveTestResult? ReadSummary(
             ObjectiveTestResultRecord record, Func<ObjectiveTestResultRecord, string?>? getFallbackSummary)
         {
             string? json = getFallbackSummary == null ? record.ObjectiveTestResultJson : getFallbackSummary(record);
             if (string.IsNullOrWhiteSpace(json))
-                return Array.Empty<ObjectiveTestResultMetric>();
+                return null;
 
             try
             {
-                ObjectiveTestResult? result = JsonConvert.DeserializeObject<ObjectiveTestResult>(json);
-                return result == null
-                    ? Array.Empty<ObjectiveTestResultMetric>()
-                    : ObjectiveTestResultMetricCollector.Collect(result);
+                return JsonConvert.DeserializeObject<ObjectiveTestResult>(json);
             }
             catch (JsonException)
             {
-                return Array.Empty<ObjectiveTestResultMetric>();
+                return null;
             }
         }
 

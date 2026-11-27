@@ -3,7 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:i18n="clr-namespace:ColorVision.Engine"
         xmlns:properties="clr-namespace:ColorVision.Engine.Properties"
-        Title="{i18n:EngineLang Key='滤色轮配置'}" Width="620" Height="540" MinWidth="500" MinHeight="390"
+        Title="{i18n:EngineLang Key='滤色轮配置'}" Width="620" Height="500" MinWidth="500" MinHeight="390"
         WindowStartupLocation="CenterOwner" Background="{DynamicResource GlobalBackground}"
         SnapsToDevicePixels="True" UseLayoutRounding="True">
     <Window.Resources>
@@ -11,11 +11,7 @@
             <ResourceDictionary.MergedDictionaries>
                 <ResourceDictionary Source="/ColorVision.Engine;component/Services/PhyCameras/PhyCameraConsoleStyles.xaml"/>
             </ResourceDictionary.MergedDictionaries>
-            <BooleanToVisibilityConverter x:Key="VisibleWhen"/>
-            <Style x:Key="CardStyle" TargetType="Border">
-                <Setter Property="Background" Value="{DynamicResource ButtonBackground}"/>
-                <Setter Property="BorderBrush" Value="{DynamicResource GlobalBorderBrush1}"/>
-                <Setter Property="BorderThickness" Value="1"/>
+            <Style x:Key="CardStyle" TargetType="Border" BasedOn="{StaticResource MetricCardStyle}">
                 <Setter Property="CornerRadius" Value="8"/>
                 <Setter Property="Padding" Value="16,10"/>
                 <Setter Property="Margin" Value="0,0,4,10"/>
@@ -29,37 +25,20 @@
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
         <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-            <StackPanel>
-                <Border Style="{StaticResource CardStyle}">
-                    <StackPanel>
-                        <TextBlock Text="{i18n:EngineLang Key='设备与连接'}" Style="{StaticResource SectionTitleStyle}"/>
-                        <StackPanel x:Name="ModeFields"/>
-                        <StackPanel x:Name="ConnectionFields"/>
-                    </StackPanel>
-                </Border>
-                <Border Style="{StaticResource CardStyle}">
-                    <StackPanel>
-                        <TextBlock Text="{i18n:EngineLang Key='孔位与读回'}" Style="{StaticResource SectionTitleStyle}"/>
-                        <StackPanel x:Name="PositionFields"/>
-                    </StackPanel>
-                </Border>
-                <Border>
-                    <Border.Style>
-                        <Style TargetType="Border" BasedOn="{StaticResource CardStyle}">
-                            <Style.Triggers>
-                                <DataTrigger Binding="{Binding UseLocalCfwPort}" Value="True">
-                                    <Setter Property="Visibility" Value="Collapsed"/>
-                                </DataTrigger>
-                            </Style.Triggers>
-                        </Style>
-                    </Border.Style>
-                    <StackPanel>
-                        <TextBlock Text="{i18n:EngineLang Key='服务设置'}" Style="{StaticResource SectionTitleStyle}"/>
-                        <StackPanel x:Name="LicenseFields"/>
-
-                    </StackPanel>
-                </Border>
-            </StackPanel>
+            <Border Style="{StaticResource CardStyle}" VerticalAlignment="Top">
+                <StackPanel>
+                    <TextBlock Text="{x:Static properties:Resources.DeviceConnection}" Style="{StaticResource SectionTitleStyle}"/>
+                    <DockPanel MinHeight="28" Margin="0,3,0,3">
+                        <TextBlock Text="{x:Static properties:Resources.FrameDisplayName}" MinWidth="120" VerticalAlignment="Center"
+                                   Foreground="{DynamicResource GlobalTextBrush}"/>
+                        <TextBox x:Name="DisplayNameTextBox" Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}"
+                                 Margin="5,0,0,0" Style="{StaticResource TextBox.Small}"
+                                 AutomationProperties.Name="{x:Static properties:Resources.FrameDisplayName}"/>
+                    </DockPanel>
+                    <StackPanel x:Name="DeviceFields"/>
+                    <StackPanel x:Name="LicenseFields" Visibility="{Binding UseLocalCfwPort, Converter={StaticResource bool2VisibilityConverter1}}"/>
+                </StackPanel>
+            </Border>
         </ScrollViewer>
         <TextBlock Grid.Row="1" x:Name="StatusText" Foreground="{DynamicResource DangerBrush}" TextWrapping="Wrap" Margin="0,0,4,8"/>
         <Border Grid.Row="2" BorderBrush="{DynamicResource GlobalBorderBrush1}" BorderThickness="0,1,0,0" Padding="0,12">

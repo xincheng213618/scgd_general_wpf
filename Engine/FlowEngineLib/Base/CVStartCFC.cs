@@ -53,7 +53,7 @@ public class CVStartCFC : CVBaseCFC
 	private BaseStartNode StartNode;
 
 	[JsonIgnore]
-	private FlowFinishState finishState = new FlowFinishState();
+	private readonly FlowFinishState finishState;
 
 	[JsonIgnore]
 	public StatusTypeEnum? FinishedStatus
@@ -71,7 +71,7 @@ public class CVStartCFC : CVBaseCFC
 	}
 
 	[JsonIgnore]
-	public FlowRuntimeResources RuntimeResources { get; private set; } = new FlowRuntimeResources();
+	public FlowRuntimeResources RuntimeResources { get; private set; }
 
 	public CVStartCFC()
 		: this("")
@@ -81,10 +81,12 @@ public class CVStartCFC : CVBaseCFC
 	public CVStartCFC(StatusTypeEnum statusType, Dictionary<string, object> data)
 		: base(statusType, data)
 	{
+		finishState = new FlowFinishState();
+		RuntimeResources = new FlowRuntimeResources();
 	}
 
 	public CVStartCFC(CVStartCFC startCFC)
-		: this(startCFC.FlowStatus, startCFC.Data)
+		: base(startCFC.FlowStatus, startCFC.Data)
 	{
 		StartNode = startCFC.StartNode;
 		PersistResults = startCFC.PersistResults;
@@ -115,6 +117,8 @@ public class CVStartCFC : CVBaseCFC
 	public CVStartCFC(BaseStartNode startNode, ActionTypeEnum actionType, string sn)
 		: base(sn, actionType)
 	{
+		finishState = new FlowFinishState();
+		RuntimeResources = new FlowRuntimeResources();
 		StartNode = startNode;
 	}
 

@@ -70,7 +70,9 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.GridDistortio
                     {
                         try { analysis = GridDistortionAnalysis.Calculate(result); }
                         catch (ArgumentException ex)
-                        { result = GridDistortionResult.CreateFailure("InvalidGridGeometry", ex.Message, result.NativeReturnCode, result.RawJson); }
+                        {
+                            result = result with { Success = false, StatusCode = "InvalidGridGeometry", Message = ex.Message, InteropDiagnostic = ex.Message, Metrics = null };
+                        }
                     }
                 }
                 catch (Exception ex)
@@ -81,7 +83,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.GridDistortio
                 {
                     if (!imageContext.IsCurrentImageRevision(revision) ||
                         !AlgorithmResultOverlay.IsCurrentRequest(drawContext, AlgorithmResultOverlay.GridDistortionTag, request)) return;
-                    if (result.Success) RenderResult(imageContext, drawContext, result);
+                    RenderResult(imageContext, drawContext, result);
                     GridDistortionResultWindow window = new(result, analysis) { Owner = Application.Current.GetActiveWindow() };
                     window.Show();
                 });
@@ -90,19 +92,30 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.GridDistortio
 
         internal static void RenderResult(ImageProcessingContext imageContext, DrawEditorContext drawContext, GridDistortionResult result)
         {
-            AlgorithmResultOverlay.ClearTagged(drawContext, AlgorithmResultOverlay.GridDistortionTag);
-            if (!result.Success || result.Metrics == null) return;
+            const string tag = AlgorithmResultOverlay.GridDistortionTag;
+            AlgorithmResultOverlay.ClearTagged(drawContext, tag);
             double scaleX = LuminousAreaDetector.GetPixelToDipScale(imageContext.Config.GetProperties<double>(ImageViewPropertyKeys.DpiX));
             double scaleY = LuminousAreaDetector.GetPixelToDipScale(imageContext.Config.GetProperties<double>(ImageViewPropertyKeys.DpiY));
+            if (!result.Success)
+            {
+                var detected = result.CandidatePoints.Count > 0
+                    ? result.CandidatePoints.Select(p => new Point(p.X * scaleX, p.Y * scaleY))
+                    : result.Points.Select(p => new Point(p.X * scaleX, p.Y * scaleY));
+                int index = 0;
+                foreach (Point point in detected)
+                    AlgorithmResultOverlay.AddLabel(drawContext, point, (++index).ToString(), Brushes.Gold, tag);
+                return;
+            }
+            if (result.Metrics == null) return;
             Point Position(GridDistortionPoint point) => new(point.X * scaleX, point.Y * scaleY);
             GridDistortionOverlayRenderer.AppendLines(drawContext,
                 result.Points.OrderBy(point => point.Row).ThenBy(point => point.Col).Select(Position).ToArray(),
-                result.ExpectedRows, result.ExpectedCols, AlgorithmResultOverlay.GridDistortionTag);
+                result.ExpectedRows, result.ExpectedCols, tag);
             foreach (GridDistortionPoint point in result.Points)
             {
                 bool reference = result.ReferencePointIds.Contains(point.Id);
                 AlgorithmResultOverlay.AddLabel(drawContext, Position(point), $"{(reference ? "参考 " : string.Empty)}({point.Row + 1},{point.Col + 1})",
-                    reference ? Brushes.OrangeRed : Brushes.DeepSkyBlue, AlgorithmResultOverlay.GridDistortionTag);
+                    reference ? Brushes.OrangeRed : Brushes.DeepSkyBlue, tag);
             }
         }
     }

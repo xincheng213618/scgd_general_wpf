@@ -10,6 +10,7 @@ using ColorVision.ImageEditor.Tif;
 using ColorVision.Algorithms;
 using System.ComponentModel;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Threading;
 using Newtonsoft.Json.Linq;
 using System.Windows;
@@ -271,6 +272,43 @@ public sealed class EmbeddedCalibratedImageTests
                 Assert.NotNull(view.Config.GetProperties<ColorCalibrationSnapshot>(RawCalibrationInformationProvider.MetadataKey));
                 Assert.Throws<InvalidOperationException>(() => capability.CalculatePoi([new(0, 0, 1, 1, PoiMeasurementShape.Point)], true));
             });
+        }
+        finally { WpfTestHost.Invoke(view.Dispose); }
+    }
+
+    [Fact]
+    public async Task Rgb48BindingPreservesChannelsAcrossBlocksAndTheFinalPixels()
+    {
+        const int width = 641, height = 149;
+        ushort[] rgb = new ushort[width * height * 3];
+        new Random(9331).NextBytes(MemoryMarshal.AsBytes(rgb.AsSpan()));
+        var snapshot = new ColorCalibrationSnapshot
+        {
+            Width = width, Height = height, RawBpp = 16, Channels = 3, TransformKind = 0,
+            Coefficients = [2, 0, 0, 0, 3, 0, 0, 0, 4], Exposure = [1, 1, 1],
+        };
+        ImageView view = WpfTestHost.Invoke(CreateView);
+        try
+        {
+            await WpfTestHost.Invoke(() =>
+            {
+                BitmapSource original = BitmapSource.Create(width, height, 96, 96, PixelFormats.Rgb48, null, rgb, width * 6);
+                original.Freeze();
+                return Publish(view, new(original, Parameters(original, snapshot, 3), "rgb48-blocks.tiff"));
+            });
+
+            ImageProfileSourceOption option = WpfTestHost.Invoke(() => Assert.Single(view.EditorContext.ProcessingContext.ProfileMeasurementSources!));
+            using IImageProfileMeasurementSource profile = option.Open(default);
+            var batched = Assert.IsAssignableFrom<IBatchedImageProfileMeasurementSource>(profile);
+            (int X, int Y)[] points = [.. Enumerable.Range(0, 24).Select(x => (x, 0)), (640, 135), (0, 136), (640, 148)];
+            double[] actual = new double[points.Length * profile.RawChannelCount];
+            batched.ReadPixels(points, actual);
+            for (int index = 0; index < points.Length; index++)
+            {
+                int start = (points[index].Y * width + points[index].X) * 3;
+                ushort red = rgb[start], green = rgb[start + 1], blue = rgb[start + 2];
+                Assert.Equal(new double[] { blue, green, red, 2 * red, 3 * green, 4 * blue }, actual.AsSpan(index * 6, 6).ToArray());
+            }
         }
         finally { WpfTestHost.Invoke(view.Dispose); }
     }

@@ -20,7 +20,23 @@ namespace ProjectARVRPro
 
             var metrics = new List<ObjectiveTestResultMetric>();
             var keys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            VisitMetrics(result, (testName, itemName, value) =>
+            {
+                string key = testName + KeySeparator + itemName;
+                if (keys.Add(key))
+                    metrics.Add(new ObjectiveTestResultMetric(key, $"{testName}_{itemName}", value));
+            });
+            return metrics;
+        }
 
+        internal static void CollectValues(ObjectiveTestResult result, Dictionary<string, string> values)
+        {
+            VisitMetrics(result, (testName, itemName, value) =>
+                values.TryAdd(testName + KeySeparator + itemName, value));
+        }
+
+        private static void VisitMetrics(ObjectiveTestResult result, Action<string, string, string> addMetric)
+        {
             foreach (PropertyInfo property in ObjectiveProperties)
             {
                 if (IsSeparatelyCollectedProperty(property.Name))
@@ -56,25 +72,25 @@ namespace ProjectARVRPro
                     for (int index = 0; index < list.Count; index++)
                     {
                         if (list[index] is object item)
-                            CollectObject(item, $"{testName}{index + 1}", metrics, keys);
+                            CollectObject(item, $"{testName}{index + 1}", addMetric);
                     }
                 }
                 else
                 {
-                    CollectObject(value, testName, metrics, keys);
+                    CollectObject(value, testName, addMetric);
                 }
             }
 
-            CollectDynamicItems(result.DynamicTestResults, metrics, keys);
-            CollectKeyedObjects(result.DynamicMTFHV058TestResults, metrics, keys);
-            CollectKeyedObjects(result.MTFH07TestResults, metrics, keys);
-            CollectKeyedObjects(result.MTFV07TestResults, metrics, keys);
-            CollectKeyedObjects(result.LuminanceChromaticityTestResults, metrics, keys);
-            CollectKeyedObjects(result.LuminanceChromaticityYWTestResults, metrics, keys);
-            CollectKeyedObjects(result.FieldOfViewTestResults, metrics, keys);
-            CollectKeyedObjects(result.RingGhostTestResults, metrics, keys);
-            CollectKeyedObjects(result.ChessboardTestResults, metrics, keys);
-            CollectDynamicPois(result.DynamicPoixyuvDatas, metrics, keys);
+            CollectDynamicItems(result.DynamicTestResults, addMetric);
+            CollectKeyedObjects(result.DynamicMTFHV058TestResults, addMetric);
+            CollectKeyedObjects(result.MTFH07TestResults, addMetric);
+            CollectKeyedObjects(result.MTFV07TestResults, addMetric);
+            CollectKeyedObjects(result.LuminanceChromaticityTestResults, addMetric);
+            CollectKeyedObjects(result.LuminanceChromaticityYWTestResults, addMetric);
+            CollectKeyedObjects(result.FieldOfViewTestResults, addMetric);
+            CollectKeyedObjects(result.RingGhostTestResults, addMetric);
+            CollectKeyedObjects(result.ChessboardTestResults, addMetric);
+            CollectDynamicPois(result.DynamicPoixyuvDatas, addMetric);
             if (result.DynamicRgbCrossResults != null)
                 foreach (var pair in result.DynamicRgbCrossResults)
                     if (pair.Value != null)
@@ -83,10 +99,8 @@ namespace ProjectARVRPro
                             if (point.Comparisons.Count == 0) RgbCrossResultParser.PopulateComparisons(point);
                             foreach (var comparison in point.Comparisons)
                                 AddMetric(pair.Key, point.Id + "_" + comparison.Key,
-                                    (comparison.Value.JudgedValue ?? comparison.Value.Value)?.ToString("R", CultureInfo.InvariantCulture) ?? "", metrics, keys);
+                                    (comparison.Value.JudgedValue ?? comparison.Value.Value)?.ToString("R", CultureInfo.InvariantCulture) ?? "", addMetric);
                         }
-
-            return metrics;
         }
 
         private static bool IsSeparatelyCollectedProperty(string propertyName)
@@ -113,8 +127,7 @@ namespace ProjectARVRPro
 
         private static void CollectDynamicItems<TCollection>(
             IReadOnlyDictionary<string, TCollection>? results,
-            ICollection<ObjectiveTestResultMetric> metrics,
-            ISet<string> keys)
+            Action<string, string, string> addMetric)
             where TCollection : IEnumerable<ObjectiveTestItem>
         {
             if (results == null)
@@ -128,15 +141,14 @@ namespace ProjectARVRPro
                 foreach (ObjectiveTestItem? item in result.Value)
                 {
                     if (item != null)
-                        AddItem(result.Key, item.Name, item, metrics, keys);
+                        AddItem(result.Key, item.Name, item, addMetric);
                 }
             }
         }
 
         private static void CollectKeyedObjects<T>(
             IReadOnlyDictionary<string, T>? results,
-            ICollection<ObjectiveTestResultMetric> metrics,
-            ISet<string> keys)
+            Action<string, string, string> addMetric)
         {
             if (results == null)
                 return;
@@ -144,14 +156,13 @@ namespace ProjectARVRPro
             foreach (KeyValuePair<string, T> result in results)
             {
                 if (result.Value is object value)
-                    CollectObject(value, result.Key, metrics, keys);
+                    CollectObject(value, result.Key, addMetric);
             }
         }
 
         private static void CollectDynamicPois<TCollection>(
             IReadOnlyDictionary<string, TCollection>? results,
-            ICollection<ObjectiveTestResultMetric> metrics,
-            ISet<string> keys)
+            Action<string, string, string> addMetric)
             where TCollection : IEnumerable<PoixyuvData>
         {
             if (results == null)
@@ -165,7 +176,7 @@ namespace ProjectARVRPro
                 foreach (PoixyuvData? poi in result.Value)
                 {
                     if (poi != null)
-                        AddPoi(result.Key, poi, metrics, keys);
+                        AddPoi(result.Key, poi, addMetric);
                 }
             }
         }
@@ -173,8 +184,7 @@ namespace ProjectARVRPro
         private static void CollectObject(
             object source,
             string testName,
-            ICollection<ObjectiveTestResultMetric> metrics,
-            ISet<string> keys)
+            Action<string, string, string> addMetric)
         {
             ResultPropertySet properties = ResultPropertySet.For(source.GetType());
             foreach (PropertyInfo property in properties.OrderedProperties)
@@ -191,7 +201,7 @@ namespace ProjectARVRPro
 
                 if (value is ObjectiveTestItem item)
                 {
-                    AddItem(testName, property.Name, item, metrics, keys);
+                    AddItem(testName, property.Name, item, addMetric);
                 }
                 else if (value is IEnumerable<PoixyuvData> pois)
                 {
@@ -201,7 +211,7 @@ namespace ProjectARVRPro
                     foreach (PoixyuvData? poi in pois)
                     {
                         if (poi != null)
-                            AddPoi(poiTestName, poi, metrics, keys);
+                            AddPoi(poiTestName, poi, addMetric);
                     }
                 }
                 else if (value != null &&
@@ -209,7 +219,7 @@ namespace ProjectARVRPro
                          property.PropertyType != typeof(string) &&
                          value is not IEnumerable)
                 {
-                    CollectObject(value, testName, metrics, keys);
+                    CollectObject(value, testName, addMetric);
                 }
             }
         }
@@ -226,47 +236,37 @@ namespace ProjectARVRPro
             string testName,
             string fallbackItemName,
             ObjectiveTestItem item,
-            ICollection<ObjectiveTestResultMetric> metrics,
-            ISet<string> keys)
+            Action<string, string, string> addMetric)
         {
             string itemName = string.IsNullOrWhiteSpace(item.Name) ? fallbackItemName : item.Name;
             string value = string.IsNullOrWhiteSpace(item.TestValue)
                 ? item.Value.ToString("R", CultureInfo.InvariantCulture)
                 : item.TestValue;
-            AddMetric(testName, itemName, value, metrics, keys);
+            AddMetric(testName, itemName, value, addMetric);
         }
 
         private static void AddPoi(
             string testName,
             PoixyuvData poi,
-            ICollection<ObjectiveTestResultMetric> metrics,
-            ISet<string> keys)
+            Action<string, string, string> addMetric)
         {
             string poiName = string.IsNullOrWhiteSpace(poi.Name) ? "POI" : poi.Name;
-            AddMetric(testName, $"{poiName}(Lv)", poi.Y.ToString("R", CultureInfo.InvariantCulture), metrics, keys);
-            AddMetric(testName, $"{poiName}(Cx)", poi.x.ToString("R", CultureInfo.InvariantCulture), metrics, keys);
-            AddMetric(testName, $"{poiName}(Cy)", poi.y.ToString("R", CultureInfo.InvariantCulture), metrics, keys);
-            AddMetric(testName, $"{poiName}(u')", poi.u.ToString("R", CultureInfo.InvariantCulture), metrics, keys);
-            AddMetric(testName, $"{poiName}(v')", poi.v.ToString("R", CultureInfo.InvariantCulture), metrics, keys);
+            AddMetric(testName, $"{poiName}(Lv)", poi.Y.ToString("R", CultureInfo.InvariantCulture), addMetric);
+            AddMetric(testName, $"{poiName}(Cx)", poi.x.ToString("R", CultureInfo.InvariantCulture), addMetric);
+            AddMetric(testName, $"{poiName}(Cy)", poi.y.ToString("R", CultureInfo.InvariantCulture), addMetric);
+            AddMetric(testName, $"{poiName}(u')", poi.u.ToString("R", CultureInfo.InvariantCulture), addMetric);
+            AddMetric(testName, $"{poiName}(v')", poi.v.ToString("R", CultureInfo.InvariantCulture), addMetric);
         }
 
         private static void AddMetric(
             string testName,
             string itemName,
             string value,
-            ICollection<ObjectiveTestResultMetric> metrics,
-            ISet<string> keys)
+            Action<string, string, string> addMetric)
         {
             string normalizedTestName = string.IsNullOrWhiteSpace(testName) ? "Result" : testName.Trim();
             string normalizedItemName = string.IsNullOrWhiteSpace(itemName) ? "Item" : itemName.Trim();
-            string key = normalizedTestName + KeySeparator + normalizedItemName;
-            if (!keys.Add(key))
-                return;
-
-            metrics.Add(new ObjectiveTestResultMetric(
-                key,
-                $"{normalizedTestName}_{normalizedItemName}",
-                value ?? string.Empty));
+            addMetric(normalizedTestName, normalizedItemName, value ?? string.Empty);
         }
     }
 }

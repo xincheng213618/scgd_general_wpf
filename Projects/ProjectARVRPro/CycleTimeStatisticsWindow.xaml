@@ -5,7 +5,6 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ProjectARVRPro"
-        xmlns:ScottPlot="clr-namespace:ScottPlot.WPF;assembly=ScottPlot.WPF"
         mc:Ignorable="d"
         Title="{display:DisplayText Key='结果统计'}"
         Width="1280"
@@ -15,7 +14,7 @@
         Background="{DynamicResource GlobalBackground}"
         SnapsToDevicePixels="True"
         UseLayoutRounding="True"
-        Loaded="Window_Loaded">
+        ContentRendered="Window_ContentRendered">
     <Window.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
@@ -156,7 +155,7 @@
             <TextBlock x:Name="DataSourceText" Text="{display:DisplayText Key='本机运行数据'}" VerticalAlignment="Center" Foreground="{DynamicResource GlobalTextBrush}" TextTrimming="CharacterEllipsis" ToolTip="{Binding Text, RelativeSource={RelativeSource Self}}"/>
         </DockPanel>
         <TabControl Grid.Row="1" x:Name="StatisticsTabs" Background="Transparent" BorderThickness="0" SelectionChanged="StatisticsTabs_SelectionChanged">
-            <TabItem Header="{display:DisplayText Key='首页'}">
+            <TabItem x:Name="HomeTab" Header="{display:DisplayText Key='首页'}">
                 <Grid Margin="0,10,0,0">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
@@ -259,9 +258,9 @@
                                 </StackPanel>
                                 <TextBlock x:Name="HomeTrendHeading" Text="{display:DisplayText Key='产量与 CT 趋势'}" FontSize="16" FontWeight="SemiBold" VerticalAlignment="Center" Foreground="{DynamicResource GlobalTextBrush}"/>
                             </DockPanel>
-                            <ScottPlot:WpfPlot x:Name="HomeTrendPlot" Grid.Row="1" MinHeight="120"/>
+                            <Grid x:Name="HomeTrendPlotHost" Grid.Row="1" MinHeight="120"/>
                             <TextBlock x:Name="HomeTrendEmptyText" Grid.Row="1"
-                                       Text="{display:DisplayText Key='当前范围暂无趋势数据'}"
+                                       Text="{display:DisplayText Key='正在查询趋势数据…'}"
                                        HorizontalAlignment="Center"
                                        VerticalAlignment="Center"
                                        Foreground="{DynamicResource GlobalTextBrush}"
@@ -273,7 +272,7 @@
                 </Grid>
             </TabItem>
 
-            <TabItem Header="{display:DisplayText Key='批次记录'}">
+            <TabItem x:Name="RecordTab" Header="{display:DisplayText Key='批次记录'}">
                 <Grid Margin="0,10,0,0">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>

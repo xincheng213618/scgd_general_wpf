@@ -16,6 +16,7 @@ public abstract partial class STNode : INotifyPropertyChanged
 	private const int DefaultTitleHeight = 26;
 	private const int TitleHorizontalPadding = 40;
 	private const int TitleVerticalOffset = 2;
+	private static readonly ConditionalWeakTable<Type, PropertyInfo[]> s_persistentProperties = new();
 
 	public event PropertyChangedEventHandler PropertyChanged;
 
@@ -737,6 +738,11 @@ public abstract partial class STNode : INotifyPropertyChanged
 		}
 	}
 
+	private static PropertyInfo[] GetPersistentProperties(Type type) => s_persistentProperties.GetValue(type,
+		static nodeType => nodeType.GetProperties()
+			.Where(property => property.IsDefined(typeof(STNodePropertyAttribute), inherit: true))
+			.ToArray());
+
 	internal Dictionary<string, byte[]> OnSaveNode()
 	{
 		Dictionary<string, byte[]> dictionary = new Dictionary<string, byte[]>();
@@ -752,31 +758,28 @@ public abstract partial class STNode : INotifyPropertyChanged
 		}
 		dictionary.Add("LockOption", new byte[1] { _LockOption ? ((byte)1) : ((byte)0) });
 		dictionary.Add("LockLocation", new byte[1] { _LockLocation ? ((byte)1) : ((byte)0) });
-		Type type = GetType();
-		PropertyInfo[] properties = type.GetProperties();
-		foreach (PropertyInfo propertyInfo in properties)
+		foreach (PropertyInfo propertyInfo in GetPersistentProperties(GetType()))
 		{
-			object[] customAttributes = propertyInfo.GetCustomAttributes(inherit: true);
-			object[] array = customAttributes;
-			foreach (object obj in array)
+			foreach (STNodePropertyAttribute attribute in propertyInfo.GetCustomAttributes(typeof(STNodePropertyAttribute), inherit: true))
 			{
-				if (obj is STNodePropertyAttribute)
+				Type descriptorType = attribute.DescriptorType;
+				STNodePropertyDescriptor descriptor;
+				if (descriptorType == typeof(STNodePropertyDescriptor))
 				{
-					STNodePropertyAttribute sTNodePropertyAttribute = obj as STNodePropertyAttribute;
-					object obj2 = Activator.CreateInstance(sTNodePropertyAttribute.DescriptorType);
-					if (!(obj2 is STNodePropertyDescriptor))
-					{
-						throw new InvalidOperationException("[STNodePropertyAttribute.Type]参数值必须为[STNodePropertyDescriptor]或者其子类的类型");
-					}
-					STNodePropertyDescriptor sTNodePropertyDescriptor = (STNodePropertyDescriptor)Activator.CreateInstance(sTNodePropertyAttribute.DescriptorType);
-					sTNodePropertyDescriptor.Node = this;
-					sTNodePropertyDescriptor.PropertyInfo = propertyInfo;
-					byte[] bytesFromValue = sTNodePropertyDescriptor.GetBytesFromValue();
-					if (bytesFromValue != null)
-					{
-						dictionary.Add(propertyInfo.Name, bytesFromValue);
-					}
+					descriptor = new STNodePropertyDescriptor();
 				}
+				else
+				{
+					// Preserve plugin descriptor construction and validation order.
+					if (Activator.CreateInstance(descriptorType) is not STNodePropertyDescriptor)
+						throw new InvalidOperationException("[STNodePropertyAttribute.Type]参数值必须为[STNodePropertyDescriptor]或者其子类的类型");
+					descriptor = (STNodePropertyDescriptor)Activator.CreateInstance(descriptorType);
+				}
+				descriptor.Node = this;
+				descriptor.PropertyInfo = propertyInfo;
+				byte[] bytes = descriptor.GetBytesFromValue();
+				if (bytes != null)
+					dictionary.Add(propertyInfo.Name, bytes);
 			}
 		}
 		OnSaveNode(dictionary);
@@ -1219,9 +1222,7 @@ public abstract partial class STNode : INotifyPropertyChanged
 			_Height = BitConverter.ToInt32(dic["Height"], 0);
 		}
 		Mark = dic.TryGetValue("Mark", out byte[] mark) ? Encoding.UTF8.GetString(mark) : null;
-		Type type = GetType();
-		PropertyInfo[] properties = type.GetProperties();
-		foreach (PropertyInfo propertyInfo in properties)
+		foreach (PropertyInfo propertyInfo in GetPersistentProperties(GetType()))
 		{
 			foreach (STNodePropertyAttribute attribute in propertyInfo.GetCustomAttributes(typeof(STNodePropertyAttribute), inherit: true))
 			{

@@ -72,6 +72,24 @@ namespace ColorVision.Engine.Templates.Flow.Versioning
         }
     }
 
+    internal sealed record FlowRevisionSummary(
+        string FlowKey,
+        int Revision,
+        FlowRevisionSource Source,
+        bool IsPublished,
+        string BinaryHash,
+        string? Author,
+        string? Message,
+        DateTime CreatedTimeUtc)
+    {
+        public string ShortBinaryHash =>
+            BinaryHash.Length <= 12 ? BinaryHash : BinaryHash[..12];
+
+        internal static FlowRevisionSummary FromRevision(FlowRevision revision) =>
+            new(revision.FlowKey, revision.Revision, revision.Source, revision.IsPublished,
+                revision.BinaryHash, revision.Author, revision.Message, revision.CreatedTimeUtc);
+    }
+
     public sealed record FlowRevisionWriteCondition(
         int? ParentRevision,
         string? BaseBinaryHash)

@@ -26,7 +26,7 @@
 		<None Update="Devices\Spectrometer\ColorRenderingData\NOTICE.txt" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" TargetPath="ThirdPartyNotices\Colour-Science.txt" Pack="true" PackagePath="contentFiles/any/any/ThirdPartyNotices/Colour-Science.txt" />
 	</ItemGroup>
 	<ItemGroup>
-		<PackageReference Include="log4net" Version="3.5.0" />
+		<PackageReference Include="log4net" Version="3.6.0" />
 		<PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
 		<PackageReference Include="OpenCvSharp5" Version="5.0.0.20261011" />
 		<PackageReference Include="OpenCvSharp5.runtime.win" Version="5.0.0.20261011" />

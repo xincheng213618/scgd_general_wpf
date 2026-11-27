@@ -21,17 +21,14 @@ public sealed class FlowRepeatRegion
     public int Count => Nodes[0].RepeatCount;
     public string Id => Nodes[0].RepeatRegionId;
 
-    private FlowRepeatRegion(CVCommonNode[] nodes)
+    private FlowRepeatRegion(CVCommonNode[] nodes, STNodeOption input, STNodeOption output)
     {
         Nodes = nodes;
-        Input = Ports(nodes[0], true)[0];
-        Output = Ports(nodes[nodes.Length - 1], false)[0];
+        Input = input;
+        Output = output;
     }
 
     public static string Text(string key) => Properties.Resources.ResourceManager.GetString(key, CultureInfo.CurrentUICulture) ?? key;
-
-    private static STNodeOption[] Ports(STNode node, bool input) =>
-        (input ? node.GetAllInputOptions() : node.GetAllOutputOptions()).Where(port => port.DataType == typeof(CVStartCFC)).ToArray();
 
     internal static void ResetStates(BaseStartNode start)
     {
@@ -47,9 +44,12 @@ public sealed class FlowRepeatRegion
                 member.ResetRepeatState();
                 FlowRepeatRegionRun.ResetPortStates(member, null);
             }
-            foreach (STNodeOption output in Ports(node, false))
+            foreach (STNodeOption output in node.GetAllOutputOptions())
+            {
+                if (output.DataType != typeof(CVStartCFC)) continue;
                 foreach (STNodeOption connected in output.ConnectedOption)
                     if (connected.Owner != null) pending.Enqueue(connected.Owner);
+            }
         }
     }
 
@@ -60,45 +60,92 @@ public sealed class FlowRepeatRegion
         STNode[] selected = selection.Distinct().ToArray();
         if (selected.Length == 0 || selected.Any(node => node is not CVCommonNode || node is BaseStartNode || node is CVEndNode || node is LoopNode || node is LoopNextNode)) return false;
         var members = selected.Cast<CVCommonNode>().ToHashSet();
+        var links = new Dictionary<CVCommonNode, (int Incoming, STNodeOption[] Targets)>(members.Count);
+        CVCommonNode entry = null, exit = null;
+        STNodeOption entryPort = null, exitPort = null;
         foreach (CVCommonNode node in members)
         {
-            STNodeOption[] inputs = Ports(node, true), outputs = Ports(node, false);
-            if (inputs.Length == 0 || outputs.Length != 1 || inputs.Any(input => input.ConnectionCount > 1)) return false;
-            if (node.GetAllInputOptions().Concat(node.GetAllOutputOptions()).Any(port => port != STNodeOption.Empty
-                && !(node is ISTNodeHub && port is STNodeHubOption && port.DataType == typeof(object) && port.ConnectionCount == 0)
-                && port.DataType != typeof(CVStartCFC) && port.DataType != typeof(CVMQTTRequest) && port.DataType != typeof(MQActionEvent))) return false;
+            STNodeOption firstInput = null, output = null;
+            int inputCount = 0, incoming = 0;
+            foreach (STNodeOption input in node.GetAllInputOptions())
+            {
+                if (input.DataType != typeof(CVStartCFC))
+                {
+                    if (!IsAllowedNonFlowPort(node, input)) return false;
+                    continue;
+                }
+
+                if (input.ConnectionCount > 1) return false;
+                firstInput ??= input;
+                inputCount++;
+                foreach (STNodeOption connected in input.ConnectedOption)
+                    if (members.Contains(connected.Owner as CVCommonNode)) incoming++;
+            }
+            if (inputCount == 0) return false;
+            if (incoming == 0)
+            {
+                if (entry != null || inputCount != 1) return false;
+                entry = node;
+                entryPort = firstInput;
+            }
+            else if (incoming != inputCount) return false;
+
+            foreach (STNodeOption candidate in node.GetAllOutputOptions())
+            {
+                if (candidate.DataType != typeof(CVStartCFC))
+                {
+                    if (!IsAllowedNonFlowPort(node, candidate)) return false;
+                    continue;
+                }
+
+                if (output != null) return false;
+                output = candidate;
+            }
+            if (output == null) return false;
+
+            STNodeOption[] targets = output.ConnectedOption.ToArray();
+            bool hasInternalTarget = false, hasExternalTarget = false;
+            foreach (STNodeOption target in targets)
+            {
+                if (members.Contains(target.Owner as CVCommonNode)) hasInternalTarget = true;
+                else hasExternalTarget = true;
+            }
+            if (!hasInternalTarget)
+            {
+                if (exit != null) return false;
+                exit = node;
+                exitPort = output;
+            }
+            else if (hasExternalTarget) return false;
+            links.Add(node, (incoming, targets));
         }
-        var incoming = members.ToDictionary(node => node, node => Ports(node, true)
-            .Sum(input => input.ConnectedOption.Count(port => members.Contains(port.Owner as CVCommonNode))));
-        CVCommonNode[] entries = members.Where(node => incoming[node] == 0).ToArray();
-        if (entries.Length != 1) return false;
-        CVCommonNode entry = entries[0];
-        if (Ports(entry, true).Length != 1) return false;
-        foreach (CVCommonNode node in members.Where(node => node != entry))
-            if (Ports(node, true).Any(input => input.ConnectionCount != 1
-                || !members.Contains(input.ConnectedOption.Single().Owner as CVCommonNode))) return false;
-        var targets = members.ToDictionary(node => node, node => Ports(node, false)[0].ConnectedOption.ToArray());
-        CVCommonNode[] exits = members.Where(node => !targets[node].Any(port => members.Contains(port.Owner as CVCommonNode))).ToArray();
-        if (exits.Length != 1) return false;
-        foreach (CVCommonNode node in members.Where(node => node != exits[0]))
-            if (targets[node].Any(port => !members.Contains(port.Owner as CVCommonNode))) return false;
+        if (entry == null || exit == null) return false;
+
         // Count input edges, including two distinct inputs supplied by the same predecessor.
         var pending = new Queue<CVCommonNode>();
         pending.Enqueue(entry);
-        var ordered = new List<CVCommonNode>();
+        var ordered = new List<CVCommonNode>(members.Count);
         while (pending.Count > 0)
         {
             CVCommonNode current = pending.Dequeue();
             ordered.Add(current);
-            foreach (STNodeOption target in targets[current])
-                if (target.Owner is CVCommonNode successor && members.Contains(successor) && --incoming[successor] == 0)
-                    pending.Enqueue(successor);
+            foreach (STNodeOption target in links[current].Targets)
+            {
+                if (target.Owner is not CVCommonNode successor || !links.TryGetValue(successor, out var next)) continue;
+                next.Incoming--;
+                links[successor] = next;
+                if (next.Incoming == 0) pending.Enqueue(successor);
+            }
         }
-        if (ordered.Count != members.Count || ordered[ordered.Count - 1] != exits[0]) return false;
-        region = new FlowRepeatRegion(ordered.ToArray());
+        if (ordered.Count != members.Count || ordered[ordered.Count - 1] != exit) return false;
+        region = new FlowRepeatRegion(ordered.ToArray(), entryPort, exitPort);
         error = string.Empty;
         return true;
     }
+
+    private static bool IsAllowedNonFlowPort(CVCommonNode node, STNodeOption port) =>
+        port == STNodeOption.Empty || port.DataType == typeof(CVMQTTRequest) || port.DataType == typeof(MQActionEvent)
+        || (node is ISTNodeHub && port is STNodeHubOption && port.DataType == typeof(object) && port.ConnectionCount == 0);
 
     public static bool TryValidate(IEnumerable<STNode> nodes, out string error)
     {
@@ -240,8 +287,17 @@ internal sealed class FlowRepeatRegionRun : IDisposable
 
     internal static void ResetPortStates(CVCommonNode node, FlowRepeatRegionRun owner, bool requireOwner = false)
     {
-        foreach (STNodeOption port in node.GetAllInputOptions().Concat(node.GetAllOutputOptions()).Where(port => port.DataType == typeof(CVStartCFC)))
+        STNodeOption[] inputs = node.GetAllInputOptions();
+        STNodeOption[] outputs = node.GetAllOutputOptions();
+        ResetOptionStates(inputs, owner, requireOwner);
+        ResetOptionStates(outputs, owner, requireOwner);
+    }
+
+    private static void ResetOptionStates(STNodeOption[] options, FlowRepeatRegionRun owner, bool requireOwner)
+    {
+        foreach (STNodeOption port in options)
         {
+            if (port.DataType != typeof(CVStartCFC)) continue;
             PortDataState state = portData.GetValue(port, _ => new PortDataState());
             lock (state)
             {
@@ -301,13 +357,22 @@ internal sealed class FlowRepeatRegionRun : IDisposable
         lock (sync)
         {
             if (!Accepts(action) || !OwnsPort(port) || !inputs.TryGetValue(node, out STNodeOption[] required)
-                || required.Any(input => !arrivals.Contains(input)) || !outputs.Add(port))
+                || !AllRequiredInputsArrived(required) || !outputs.Add(port))
             {
                 RestorePort(port);
                 return false;
             }
             return RememberPort(port, action);
         }
+    }
+
+    private bool AllRequiredInputsArrived(STNodeOption[] required)
+    {
+        foreach (STNodeOption port in required)
+        {
+            if (!arrivals.Contains(port)) return false;
+        }
+        return true;
     }
 
     internal bool TryResolveParameter(CVCommonNode node, CVStartCFC action, string key, out double value)

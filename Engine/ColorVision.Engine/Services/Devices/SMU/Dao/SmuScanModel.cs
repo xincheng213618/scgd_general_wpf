@@ -1,4 +1,6 @@
 ﻿using ColorVision.Database;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using SqlSugar;
 using System;
 
@@ -50,5 +52,14 @@ namespace ColorVision.Engine.Services.Devices.SMU.Dao
 
         [SugarColumn(ColumnName = "create_date", IsNullable = false, ColumnDescription = "创建日期", DefaultValue = "CURRENT_TIMESTAMP")]
         public DateTime CreateDate { get; set; }
+
+        internal static double[] ReadValues(string? json)
+        {
+            if (string.IsNullOrWhiteSpace(json)) return [];
+            var payload = JToken.Parse(json);
+            return payload.Type == JTokenType.String
+                ? JsonConvert.DeserializeObject<double[]>(payload.Value<string>() ?? string.Empty) ?? []
+                : payload.ToObject<double[]>() ?? [];
+        }
     }
 }

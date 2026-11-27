@@ -181,11 +181,13 @@ public sealed class GeometricTransformV1Tests
     }
 
     [Theory]
-    [InlineData(5, 7, 0.01)]
-    [InlineData(129, 131, 0.0005)]
-    public async Task PerspectiveMatrixRoundTripsPointsAndMaskUsesInverseMappedPixelCenters(int inputWidth, int outputWidth, double projection)
+    [InlineData(5, 4, 7, 6, 0.01, -0.015)]
+    [InlineData(129, 4, 131, 6, 0.0005, -0.015)]
+    [InlineData(2049, 2048, 2051, 2049, 0.00008, -0.00003)]
+    public async Task PerspectiveMatrixRoundTripsPointsAndMaskUsesInverseMappedPixelCenters(
+        int inputWidth, int inputHeight, int outputWidth, int outputHeight, double projectionX, double projectionY)
     {
-        using AlgorithmImageBuffer input = CreatePattern(inputWidth, 4, AlgorithmImageFormat.Gray16);
+        using AlgorithmImageBuffer input = CreatePattern(inputWidth, inputHeight, AlgorithmImageFormat.Gray16);
         GeometricTransformParameters parameters = new()
         {
             Kind = GeometricTransformKind.Perspective,
@@ -195,11 +197,11 @@ public sealed class GeometricTransformV1Tests
             M21 = -0.03,
             M22 = 0.95,
             M23 = 0.2,
-            M31 = projection,
-            M32 = -0.015,
+            M31 = projectionX,
+            M32 = projectionY,
             Canvas = GeometricTransformCanvas.ExplicitSize,
             OutputWidth = outputWidth,
-            OutputHeight = 6,
+            OutputHeight = outputHeight,
         };
         using AlgorithmResult result = await RunAsync(input, parameters);
         AlgorithmTableArtifact table = result.GetArtifact<AlgorithmTableArtifact>("geometric-transform-matrix")!;

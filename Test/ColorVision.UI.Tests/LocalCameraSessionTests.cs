@@ -21,6 +21,47 @@ namespace ColorVision.UI.Tests;
 
 public class LocalCameraSessionTests
 {
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void CalibrationWarmupTracksMeasurementSessionsAndSkipsReadyCaptures(bool legacyReopen)
+    {
+        var native = new FakeNative { SwitchResult = legacyReopen ? cvErrorDefine.CV_ERR_CAM_TYPE_NOT : cvErrorDefine.CV_ERR_SUCCESS };
+        var changes = new List<bool>();
+        var config = new ConfigCamera { CameraID = "camera-1", ImageBpp = ImageBpp.bpp16 };
+        using var session = new LocalCameraSession(native, new CameraBackendState(true), config, measurementAvailabilityChanged: changes.Add);
+        session.Open("camera-1", TakeImageMode.Live, 8);
+        Assert.Empty(changes);
+        session.EnsureMeasurement(false);
+        session.EnsureMeasurement(false);
+        session.SwitchMode(TakeImageMode.Measure_Normal, 16);
+        Assert.Equal(new[] { true }, changes);
+        session.SwitchMode(TakeImageMode.Live, 8);
+        session.Close(true);
+        session.EnsureMeasurement(true);
+        session.Open("camera-1", TakeImageMode.Measure_Normal, 16);
+        session.Dispose();
+        Assert.Equal(new[] { true, false, true, false }, changes);
+    }
+
+    [Fact]
+    public void FailedMeasurementOpenAndFailedCloseFollowActualCameraState()
+    {
+        var native = new FakeNative { OpenResult = -1 };
+        var changes = new List<bool>();
+        using var session = new LocalCameraSession(native, new CameraBackendState(true), measurementAvailabilityChanged: changes.Add);
+        Assert.Equal(-1, session.Open("camera-1", TakeImageMode.Measure_Normal, 16));
+        Assert.Empty(changes);
+        native.OpenResult = cvErrorDefine.CV_ERR_SUCCESS;
+        session.Open("camera-1", TakeImageMode.Measure_Normal, 16);
+        native.IgnoreClose = true;
+        Assert.Throws<InvalidOperationException>(() => session.Close(true));
+        Assert.Equal(new[] { true }, changes);
+        native.IgnoreClose = false;
+        session.Close(true);
+        Assert.Equal(new[] { true, false }, changes);
+    }
+
     [Fact]
     public void PreviewUsesTheColorOrderOfTheOpenedMvsSession()
     {
@@ -987,6 +1028,22 @@ public class LocalCameraSessionTests
         Assert.Equal(14, cameraCfg.Properties().Count());
     }
 
+    [Theory]
+    [InlineData(null, false)]
+    [InlineData(false, false)]
+    [InlineData(true, true)]
+    public void PhysicalCameraTemperatureControlDefaultsOffAndPreservesSavedChoice(bool? savedChoice, bool expected)
+    {
+        Assert.False(new ConfigPhyCamera().CameraCfg.TempCtlChecked);
+        var cameraCfg = new JObject();
+        if (savedChoice.HasValue) cameraCfg["tempCtlChecked"] = savedChoice.Value;
+        var config = new JObject { [nameof(ConfigPhyCamera.CameraCfg)] = cameraCfg }.ToObject<ConfigPhyCamera>()!;
+        Assert.Equal(expected, config.CameraCfg.TempCtlChecked);
+
+        var nativeConfig = JObject.Parse(LocalCameraSession.BuildCameraConfigurationJson(config.CameraCfg));
+        Assert.Equal(expected, (bool?)nativeConfig["cameraCfg"]?["tempCtlChecked"]);
+    }
+
     [Fact]
     public void CameraConfigurationJson_PreservesZeroRoiForFullFrame()
     {
@@ -1307,7 +1364,6 @@ public class LocalCameraSessionTests
             Events.Add("detach");
             if (DetachError != null) throw DetachError;
         }
-        public bool UpdateCalibration(IntPtr handle, string json) => true;
         public void Release(IntPtr handle) { Releases++; }
     }
 }

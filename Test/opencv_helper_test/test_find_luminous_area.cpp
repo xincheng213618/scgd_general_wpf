@@ -37,11 +37,6 @@ using json = nlohmann::json;
 bool RunCalibrationApiSmokeTests();
 bool RunCalibrationCacheSmallBudgetTests();
 bool RunCalibrationRealDataTests(const std::filesystem::path& testRoot);
-bool RunCalibrationLegacyColorComparison(
-    const std::filesystem::path& rawPath,
-    const std::filesystem::path& colorFile,
-    const std::filesystem::path& legacyDll);
-
 bool RunP2AlgorithmTests();
 bool RunNativeLoggingTests();
 bool RunPseudoColorTests();
@@ -1197,6 +1192,44 @@ bool smokeCalArtculationUsesRawPixelScale()
         && nearlyEqual(stddev16, 32767.5, 1e-9);
 }
 
+bool smokeCalArtculationLaplacianMatchesFullFrameReduction()
+{
+    cv::RNG random(680280);
+    for (int type : {CV_8UC1, CV_8UC3}) {
+        cv::Mat storage(633, 826, type);
+        random.fill(storage, cv::RNG::UNIFORM, cv::Scalar::all(0), cv::Scalar::all(256));
+        cv::Mat image = storage(cv::Rect(9, 4, 767, 568));
+        const cv::Mat original = image.clone();
+        const HImage input = createHImageFromMat(image);
+        const cv::Mat view(image.rows, image.cols, type, image.data, image.step);
+        for (const auto& roi : {RoiRect{13, 17, 717, 463}, RoiRect{-14, 35, 720, 502}}) {
+            const cv::Rect bounds = cv::Rect(roi.x, roi.y, roi.width, roi.height)
+                & cv::Rect(0, 0, image.cols, image.rows);
+            const cv::Mat area = view(bounds);
+            cv::Mat gray;
+            if (type == CV_8UC3) {
+                cv::cvtColor(area, gray, cv::COLOR_BGR2GRAY);
+            }
+            else {
+                gray = area;
+            }
+            cv::Mat laplacian;
+            cv::Laplacian(gray, laplacian, CV_32F, 3);
+            cv::Scalar mean;
+            cv::Scalar stddev;
+            cv::meanStdDev(laplacian, mean, stddev);
+            if (M_CalArtculation(input, Laplacian, roi) != cv::mean(cv::abs(laplacian))[0]
+                || M_CalArtculation(input, VarianceOfLaplacian, roi) != stddev[0] * stddev[0]) {
+                return false;
+            }
+        }
+        if (cv::norm(image, original, cv::NORM_INF) != 0) {
+            return false;
+        }
+    }
+    return true;
+}
+
 bool smokeCalArtculationGray32FloatDoesNotMutateSource()
 {
     cv::Mat image(2, 3, CV_32FC1);
@@ -1818,6 +1851,46 @@ bool smokeDistortionP9ReportsExtraCandidateWarning()
 
     FreeResult(result);
     return ok;
+}
+
+bool smokeDistortionP9KeepsForegroundLabelOrder()
+{
+    cv::Mat storage(1237, 1580, CV_16UC1, cv::Scalar(321));
+    cv::Mat image = storage(cv::Rect(7, 3, 1561, 1231));
+    for (int y : {126, 345, 580}) {
+        for (int x : {150, 414, 687}) {
+            cv::circle(image, cv::Point(x, y), 35, cv::Scalar(53000), -1);
+            cv::circle(image, cv::Point(x + 7, y + 2), 32, cv::Scalar(53000), -1);
+        }
+    }
+    cv::circle(image, cv::Point(820, 233), 17, cv::Scalar(53000), -1);
+    cv::circle(image, cv::Point(915, 287), 17, cv::Scalar(53000), -1);
+    const cv::Mat original = storage.clone();
+    const HImage input = createHImageFromMat(image);
+    const auto detect = [&](const RoiRect& roi, const char* config) {
+        char* result = nullptr;
+        const int length = M_CalDistortionP9(input, roi, config, &result);
+        json output;
+        if (length > 0 && result != nullptr) {
+            output = json::parse(result, result + length - 1, nullptr, false);
+        }
+        FreeResult(result);
+        return output;
+    };
+    for (const auto* config : {R"({"minRectSize":10})", R"({"threshold":20000,"minRectSize":10})"}) {
+        json large = detect({41, 39, 1501, 1181}, config);
+        json reference = detect({41, 39, 1000, 740}, config);
+        if (!large.is_object() || !reference.is_object()
+            || !large.value("success", false) || large.value("candidateCount", 0) != 11) {
+            return false;
+        }
+        large.erase("image");
+        reference.erase("image");
+        if (large != reference) {
+            return false;
+        }
+    }
+    return cv::norm(storage, original, cv::NORM_INF) == 0.0;
 }
 
 std::filesystem::path findDesktopDistortionP9Fixture()
@@ -2948,6 +3021,37 @@ bool smokeConvertImageHandlesStrideAndOwnedBuffer()
     return true;
 }
 
+bool smokeRemoveMoireMatchesSeparateWorkBuffers()
+{
+    cv::RNG random(5138);
+    for (int type : { CV_16UC3, CV_32FC1 }) {
+        cv::Mat backing(37, 51, type);
+        if (type == CV_16UC3) random.fill(backing, cv::RNG::UNIFORM, 0, 65536);
+        else random.fill(backing, cv::RNG::UNIFORM, -1000, 1000);
+        const cv::Mat saved = backing.clone();
+        const cv::Mat region = backing(cv::Rect(2, 1, 47, 35));
+        const HImage image = createHImageFromMat(region);
+        const cv::Mat source = HImageToMatView(image);
+
+        cv::Mat blurred, downsampled, smoothed, upsampled, expected;
+        cv::GaussianBlur(source, blurred, cv::Size(5, 5), 0);
+        cv::pyrDown(blurred, downsampled);
+        cv::GaussianBlur(downsampled, smoothed, cv::Size(5, 5), 0);
+        cv::pyrUp(smoothed, upsampled, source.size());
+        cv::addWeighted(source, 1.5, upsampled, -0.5, 0, expected);
+
+        HImage output{};
+        const int status = M_RemoveMoire(image, &output);
+        const cv::Mat actual = HImageToMatView(output);
+        const bool passed = status == 0 && output.pData != image.pData && !output.isDispose
+            && actual.type() == expected.type() && actual.size() == expected.size()
+            && cv::norm(actual, expected, cv::NORM_INF) == 0 && cv::norm(backing, saved, cv::NORM_INF) == 0;
+        M_FreeHImageData(output.pData);
+        if (!passed) return false;
+    }
+    return true;
+}
+
 bool smokeConvertImageClearsOutputsOnFailure()
 {
     unsigned char* output = reinterpret_cast<unsigned char*>(static_cast<uintptr_t>(1));
@@ -2960,6 +3064,85 @@ bool smokeConvertImageClearsOutputsOnFailure()
         && output == nullptr
         && length == 0
         && scaleFactor == 0;
+}
+
+bool smokeFindLightBeadsKeepsDarkCandidateCoordinates()
+{
+    cv::Mat image(287, 361, CV_8UC1, cv::Scalar(0));
+    for (int row = 0; row < 3; ++row) {
+        for (int column = 0; column < 4; ++column) {
+            if (row == 1 && column == 2) continue;
+            cv::circle(image, cv::Point(101 + column * 21, 92 + row * 22), 4, cv::Scalar(220), -1);
+        }
+    }
+    const cv::Mat original = image.clone();
+    const HImage input = createHImageFromMat(image);
+    const RoiRect roi{39, 53, 279, 198};
+    const auto detect = [&](const char* config) {
+        char* result = nullptr;
+        const int length = M_FindLightBeads(input, roi, config, &result);
+        json output;
+        if (length > 0 && result != nullptr) {
+            output = json::parse(result, result + length - 1, nullptr, false);
+        }
+        FreeResult(result);
+        return output;
+    };
+
+    const json expected = json::parse(R"({
+        "BlackCenterCount": 3, "BlackCenters": [[73,50],[89,65],[105,65]],
+        "CenterCount": 11, "Centers": [[126,84],[105,84],[84,84],[63,84],[126,62],[84,62],[63,62],[126,40],[105,40],[84,40],[63,40]],
+        "ExpectedCount": 12, "MissingCount": 1
+    })");
+    if (detect(R"({"Threshold":30,"MinSize":2,"MaxSize":24,"Rows":3,"Cols":4})") != expected) {
+        return false;
+    }
+
+    json withoutDark = expected;
+    withoutDark["BlackCenterCount"] = 0;
+    withoutDark["BlackCenters"] = json::array();
+    withoutDark["ExpectedCount"] = 0;
+    withoutDark["MissingCount"] = 0;
+    return detect(R"({"Threshold":20,"MinSize":2,"MaxSize":0,"Rows":0,"Cols":0})") == withoutDark
+        && cv::norm(image, original, cv::NORM_INF) == 0.0;
+}
+
+bool smokeDetectKeyRegionsKeepsOrderAndCoordinates()
+{
+    for (int type : {CV_16UC3, CV_16UC4}) {
+        cv::Mat storage(1056, 1294, type, cv::Scalar(50, 100, 300, 401));
+        cv::Mat image = storage(cv::Rect(7, 2, 1277, 1051));
+        json expected = json::array();
+        for (int y : {160, 385, 610}) {
+            for (int x : {160, 439, 721, 993}) {
+                cv::rectangle(image, cv::Rect(x, y, 139, 92), cv::Scalar(49000, 61000, 52000, 2300), -1);
+                expected.push_back({{"Height", 84}, {"Width", 127}, {"X", x + 6}, {"Y", y + 4}});
+            }
+        }
+        const cv::Mat original = storage.clone();
+        const HImage input = createHImageFromMat(image);
+        const RoiRect roi{42, 32, 1172, 945};
+        for (int threshold : {-1, 100}) {
+            const std::string config = json{
+                {"Threshold", threshold}, {"MinArea", 100}, {"MaxArea", 0}, {"MarginRatio", 0.05}
+            }.dump();
+            char* result = nullptr;
+            const int length = M_DetectKeyRegions(input, roi, config.c_str(), &result);
+            json output;
+            if (length > 0 && result != nullptr) {
+                output = json::parse(result, result + length - 1, nullptr, false);
+            }
+            FreeResult(result);
+            if (!output.is_object() || output.value("Count", 0) != 12
+                || output.value("KeyRegions", json::array()) != expected) {
+                return false;
+            }
+        }
+        if (cv::norm(storage, original, cv::NORM_INF) != 0.0) {
+            return false;
+        }
+    }
+    return true;
 }
 
 bool smokeDrawPoiImageInvalidArgsClearOutput()
@@ -3004,6 +3187,47 @@ bool smokeDrawPoiImageInvalidArgsClearOutput()
         && out.pData == nullptr;
 
     return nullPointsCleared && oddCountCleared && badRadiusCleared;
+}
+
+bool smokeDrawPoiImageWritesOwnedPackedOutput()
+{
+    cv::RNG random(680280);
+    for (int type : {CV_8UC1, CV_8UC3, CV_16UC1, CV_16UC3}) {
+        cv::Mat storage(53, 87, type);
+        random.fill(storage, cv::RNG::UNIFORM, cv::Scalar::all(0),
+            cv::Scalar::all(storage.depth() == CV_8U ? 256 : 65536));
+        cv::Mat source = storage(cv::Rect(9, 3, 67, 43));
+        const cv::Mat original = storage.clone();
+        const HImage input = createHImageFromMat(source);
+        int points[] = {0, 0, 13, 11, 65, 42, -2, 8};
+        const int coordinateCount = static_cast<int>(std::size(points));
+        for (int thickness : {-1, 1, 3}) {
+            cv::Mat expected;
+            if (source.channels() == 1) {
+                cv::cvtColor(source, expected, cv::COLOR_GRAY2BGR);
+            }
+            else {
+                expected = source.clone();
+            }
+            const int red = source.depth() == CV_8U ? 255 : 65535;
+            for (int i = 0; i < coordinateCount; i += 2) {
+                cv::circle(expected, cv::Point(points[i], points[i + 1]), 5, cv::Scalar(0, 0, red), thickness);
+            }
+
+            HImage output{};
+            const int status = M_DrawPoiImage(input, &output, 5, points, coordinateCount, thickness);
+            const bool matches = status == 0 && output.pData != nullptr && output.pData != input.pData
+                && !output.isDispose && output.rows == input.rows && output.cols == input.cols
+                && output.channels == 3 && output.depth == input.depth
+                && output.stride == static_cast<int>(expected.step)
+                && cv::norm(HImageToMatView(output), expected, cv::NORM_INF) == 0.0;
+            M_FreeHImageData(output.pData);
+            if (!matches || cv::norm(storage, original, cv::NORM_INF) != 0.0) {
+                return false;
+            }
+        }
+    }
+    return true;
 }
 
 bool smokeChannelExportsInvalidArgsClearOutput()
@@ -3590,7 +3814,6 @@ static constexpr NativeTestCommand nativeTestCommands[] = {
     { "--calibration-smoke", 2, 2, "" },
     { "--calibration-cache-small-budget", 2, 2, "" },
     { "--calibration-real-data", 3, 3, "<test-root>" },
-    { "--calibration-legacy-color", 5, 5, "<file.cvraw> <color-file> <legacy-dll>" },
     { "--p2-only", 2, 2, "" },
     { "--native-log", 2, 2, "" },
     { "--pseudo-color", 2, 2, "" },
@@ -3654,7 +3877,13 @@ int main(int argc, char* argv[])
     if (argc == 2 && std::string(argv[1]) == "--image-helpers-only") {
         const bool passed = smokeHImageHelpersValidateLayoutAndOwnership()
             && smokeConvertImageHandlesStrideAndOwnedBuffer()
-            && smokeConvertImageClearsOutputsOnFailure();
+            && smokeConvertImageClearsOutputsOnFailure()
+            && smokeFindLightBeadsKeepsDarkCandidateCoordinates()
+            && smokeDetectKeyRegionsKeepsOrderAndCoordinates()
+            && smokeDrawPoiImageInvalidArgsClearOutput()
+            && smokeDrawPoiImageWritesOwnedPackedOutput()
+            && smokeCalArtculationLaplacianMatchesFullFrameReduction()
+            && smokeRemoveMoireMatchesSeparateWorkBuffers();
         std::cout << "Image helper focused tests: " << (passed ? "PASS" : "FAIL") << std::endl;
         return passed ? 0 : 1;
     }
@@ -3687,12 +3916,7 @@ int main(int argc, char* argv[])
     if (argc == 3 && std::string(argv[1]) == "--calibration-real-data") {
         return RunCalibrationRealDataTests(std::filesystem::u8path(argv[2])) ? 0 : 1;
     }
-    if (argc == 5 && std::string(argv[1]) == "--calibration-legacy-color") {
-        return RunCalibrationLegacyColorComparison(
-            std::filesystem::u8path(argv[2]),
-            std::filesystem::u8path(argv[3]),
-            std::filesystem::u8path(argv[4])) ? 0 : 1;
-    }
+
     if (argc == 2 && std::string(argv[1]) == "--p2-only") {
         return RunP2AlgorithmTests() ? 0 : 1;
     }
@@ -3722,6 +3946,7 @@ int main(int argc, char* argv[])
             && smokeDistortionP9RecoversUnevenBrightGrid()
             && smokeDistortionP9ReportsMissingPoint()
             && smokeDistortionP9ReportsExtraCandidateWarning()
+            && smokeDistortionP9KeepsForegroundLabelOrder()
             && smokeDistortionP9DesktopFixtureIfPresent();
         std::cout << "DistortionP9 focused tests: " << (passed ? "PASS" : "FAIL") << std::endl;
         return passed ? 0 : 1;
@@ -3773,6 +3998,11 @@ int main(int argc, char* argv[])
 
     if (!smokeCalArtculationUsesRawPixelScale()) {
         std::cerr << "M_CalArtculation raw pixel scale test failed" << std::endl;
+        return 1;
+    }
+
+    if (!smokeCalArtculationLaplacianMatchesFullFrameReduction()) {
+        std::cerr << "M_CalArtculation Laplacian reduction test failed" << std::endl;
         return 1;
     }
 
@@ -3831,6 +4061,11 @@ int main(int argc, char* argv[])
         return 1;
     }
 
+    if (!smokeDistortionP9KeepsForegroundLabelOrder()) {
+        std::cerr << "M_CalDistortionP9 foreground labeling test failed" << std::endl;
+        return 1;
+    }
+
     if (!smokeDistortionP9DesktopFixtureIfPresent()) {
         std::cerr << "M_CalDistortionP9 desktop fixture test failed" << std::endl;
         return 1;
@@ -3851,8 +4086,28 @@ int main(int argc, char* argv[])
         return 1;
     }
 
+    if (!smokeRemoveMoireMatchesSeparateWorkBuffers()) {
+        std::cerr << "M_RemoveMoire output or ownership test failed" << std::endl;
+        return 1;
+    }
+
+    if (!smokeFindLightBeadsKeepsDarkCandidateCoordinates()) {
+        std::cerr << "M_FindLightBeads dark candidate coordinates test failed" << std::endl;
+        return 1;
+    }
+
+    if (!smokeDetectKeyRegionsKeepsOrderAndCoordinates()) {
+        std::cerr << "M_DetectKeyRegions ordered coordinates test failed" << std::endl;
+        return 1;
+    }
+
     if (!smokeDrawPoiImageInvalidArgsClearOutput()) {
         std::cerr << "M_DrawPoiImage invalid-args clear test failed" << std::endl;
+        return 1;
+    }
+
+    if (!smokeDrawPoiImageWritesOwnedPackedOutput()) {
+        std::cerr << "M_DrawPoiImage owned packed output test failed" << std::endl;
         return 1;
     }
 

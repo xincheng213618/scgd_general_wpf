@@ -4,7 +4,10 @@ using ColorVision.ImageEditor.Algorithms;
 using ColorVision.ImageEditor.Presentation;
 using log4net;
 using System;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.X86;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
@@ -295,6 +298,9 @@ namespace ColorVision.ImageEditor.Realtime
                     }
                     else
                     {
+                        // Reversing BGR48's 16-bit samples mirrors the pixels and orders them as RGB.
+                        int mirrorUnitCount = frame.SourceIsBgr48 ? frame.Width * 3 : frame.Width;
+                        int mirrorUnitBytes = frame.SourceIsBgr48 ? sizeof(ushort) : pixelBytes;
                         for (int y = 0; y < frame.Height; y++)
                         {
                             int sourceY = flipX ? frame.Height - 1 - y : y;
@@ -307,27 +313,7 @@ namespace ColorVision.ImageEditor.Realtime
                                 continue;
                             }
 
-                            if (!frame.SourceIsBgr48 && pixelBytes is 1 or 3 or 4)
-                            {
-                                CopyMirroredRow(sourceRow, targetRow, frame.Width, pixelBytes);
-                                continue;
-                            }
-
-                            for (int x = 0; x < frame.Width; x++)
-                            {
-                                byte* source = sourceRow + (frame.Width - 1 - x) * pixelBytes;
-                                byte* target = targetRow + x * pixelBytes;
-                                if (frame.SourceIsBgr48)
-                                {
-                                    target[0] = source[4];
-                                    target[1] = source[5];
-                                    target[2] = source[2];
-                                    target[3] = source[3];
-                                    target[4] = source[0];
-                                    target[5] = source[1];
-                                }
-                                else Buffer.MemoryCopy(source, target, pixelBytes, pixelBytes);
-                            }
+                            CopyMirroredRow(sourceRow, targetRow, mirrorUnitCount, mirrorUnitBytes);
                         }
                     }
 
@@ -343,16 +329,16 @@ namespace ColorVision.ImageEditor.Realtime
 
         private static unsafe void CopyMirroredRow(byte* sourceRow, byte* targetRow, int width, int pixelBytes)
         {
-            if (pixelBytes == 3)
+            if (pixelBytes is 3 or 6)
             {
-                byte* source = sourceRow + (width - 1) * 3;
-                byte* target = targetRow;
-                for (int x = 0; x < width; x++, source -= 3, target += 3)
-                {
-                    target[0] = source[0];
-                    target[1] = source[1];
-                    target[2] = source[2];
-                }
+                CopyMirroredPackedRow(sourceRow, targetRow, width * pixelBytes, pixelBytes);
+                return;
+            }
+
+            if (pixelBytes is not (1 or 2 or 4))
+            {
+                for (int x = 0; x < width; x++)
+                    Buffer.MemoryCopy(sourceRow + (width - 1 - x) * pixelBytes, targetRow + x * pixelBytes, pixelBytes, pixelBytes);
                 return;
             }
 
@@ -360,8 +346,48 @@ namespace ColorVision.ImageEditor.Realtime
             Buffer.MemoryCopy(sourceRow, targetRow, rowBytes, rowBytes);
             if (pixelBytes == 1)
                 new Span<byte>(targetRow, width).Reverse();
+            else if (pixelBytes == 2)
+                new Span<ushort>(targetRow, width).Reverse();
             else
                 new Span<uint>(targetRow, width).Reverse();
+        }
+
+        private static unsafe void CopyMirroredPackedRow(byte* sourceRow, byte* target, int remainingBytes, int pixelBytes)
+        {
+            byte* source = sourceRow + remainingBytes;
+            if (Ssse3.IsSupported)
+            {
+                Vector128<byte> order = pixelBytes == 3
+                    ? Vector128.Create((byte)13, 14, 15, 10, 11, 12, 7, 8, 9, 4, 5, 6, 128, 128, 128, 128)
+                    : Vector128.Create((byte)10, 11, 12, 13, 14, 15, 4, 5, 6, 7, 8, 9, 128, 128, 128, 128);
+                // Read the vector ending at the last remaining pixel and write only its 12 mirrored bytes.
+                // Both accesses stay within the pixel row even when there is no stride padding.
+                for (; remainingBytes >= 16; remainingBytes -= 12, source -= 12, target += 12)
+                {
+                    Vector128<byte> mirrored = Ssse3.Shuffle(Sse2.LoadVector128(source - 16), order);
+                    Unsafe.WriteUnaligned(target, mirrored.AsUInt64().ToScalar());
+                    Unsafe.WriteUnaligned(target + 8, Sse2.ShiftRightLogical128BitLane(mirrored, 8).AsUInt32().ToScalar());
+                }
+            }
+
+            if (pixelBytes == 3)
+            {
+                for (; source != sourceRow; target += 3)
+                {
+                    source -= 3;
+                    Unsafe.WriteUnaligned(target, Unsafe.ReadUnaligned<ushort>(source));
+                    target[2] = source[2];
+                }
+            }
+            else
+            {
+                for (; source != sourceRow; target += 6)
+                {
+                    source -= 6;
+                    Unsafe.WriteUnaligned(target, Unsafe.ReadUnaligned<uint>(source));
+                    Unsafe.WriteUnaligned(target + 4, Unsafe.ReadUnaligned<ushort>(source + 4));
+                }
+            }
         }
 
         private void UpdateImageMetadata(FrameInfo frame)

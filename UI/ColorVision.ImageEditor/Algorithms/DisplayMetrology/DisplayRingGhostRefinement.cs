@@ -26,46 +26,64 @@ public sealed partial class DisplayMetrologyProvider
         }
     }
 
-    private static RingReading RefineGhostRing(float[] signal, int width, int height, RotatedRect primary,
-        double[] polar, int length, RingBand seed, int start, int end, double step,
-        double requiredProminence, double primaryInnerRadius, CancellationToken token)
+    private static RingBand[][] FindRingTraceBands(double[] polar, int length, double primaryRadius,
+        int start, double step, double requiredProminence, double primaryInnerRadius, CancellationToken token)
     {
-        var reading = TryRefineGhostRing(signal, width, height, primary, polar, length, seed, start, end,
-            step, requiredProminence, primaryInnerRadius, preferNearest: false, token);
-        // A brighter neighbouring ring must not steal the trace of a weaker candidate.
-        return reading.Region.HasValue ? reading : TryRefineGhostRing(signal, width, height, primary, polar,
-            length, seed, start, end, step, requiredProminence, primaryInnerRadius, preferNearest: true, token);
-    }
-
-    private static RingReading TryRefineGhostRing(float[] signal, int width, int height, RotatedRect primary,
-        double[] polar, int length, RingBand seed, int start, int end, double step,
-        double requiredProminence, double primaryInnerRadius, bool preferNearest, CancellationToken token)
-    {
-        var original = ReadRingBand(polar, length, seed, requiredProminence * .2);
-        double primaryRadius = (primary.Size.Width + primary.Size.Height) / 4;
-        int padding = Math.Max(seed.Right - seed.Left, (int)(primaryRadius * .1 / step));
         int traceEnd = Math.Min(length - 2, (int)(primaryInnerRadius / step) - 1);
-        const int sectors = RingTraceSectors, anglesPerSector = RingAngles / sectors;
-        var points = new List<Point2f>();
+        const int anglesPerSector = RingAngles / RingTraceSectors;
+        var result = new RingBand[RingTraceSectors][];
         var sectorProfile = new double[length];
         var samples = new double[anglesPerSector];
-        for (int sector = 0; sector < sectors; sector++)
+        var bands = new List<RingBand>();
+        double sigma = Math.Max(1, primaryRadius * .0025 / step);
+        // Peak detection reads the adjacent lower radius, and band extrema include traceEnd.
+        int profileStart = start - 1, profileEnd = traceEnd + 1;
+        for (int sector = 0; sector < result.Length; sector++)
         {
             token.ThrowIfCancellationRequested();
-            for (int r = 0; r < length; r++)
-            {
-                for (int a = 0; a < anglesPerSector; a++) samples[a] = polar[(sector * anglesPerSector + a) * length + r];
-                sectorProfile[r] = RingMedian(samples);
-            }
-            double[] smooth = SmoothRingProfile(sectorProfile, Math.Max(1, primaryRadius * .0025 / step));
-            RingBand? nearest = null;
-            // A displaced ring can create two radial horns. Search the complete inner ray;
-            // a window around either horn would miss the opposite side of the same ring.
+            FillRingMedianWindow(polar, sectorProfile, samples, sector * anglesPerSector, profileStart, profileEnd, sigma);
+            double[] smooth = SmoothRingProfile(sectorProfile, sigma, profileStart, profileEnd);
+            // Follow all inner peaks so both horns of a displaced ring can
+            // support a trace. Every proposed ring uses these same bands.
+            bands.Clear();
             foreach (int peak in FindRingPeaks(smooth, start, traceEnd))
             {
                 RingBand band = FindRingCandidateBand(smooth, peak, start, traceEnd);
                 if (band.Prominence < requiredProminence || band.Right - band.Left < 2
                     || band.Left <= start || band.Right >= traceEnd) continue;
+                bands.Add(band);
+            }
+            result[sector] = bands.ToArray();
+        }
+        return result;
+    }
+
+    private static RingReading RefineGhostRing(float[] signal, int width, int height, RotatedRect primary,
+        double[] polar, int length, RingBand seed, RingBand[][] traceBands, double step,
+        double requiredProminence, double primaryInnerRadius, CancellationToken token)
+    {
+        var reading = TryRefineGhostRing(signal, width, height, primary, polar, length, seed, traceBands,
+            step, requiredProminence, primaryInnerRadius, preferNearest: false, token);
+        // A brighter neighbouring ring must not steal the trace of a weaker candidate.
+        return reading.Region.HasValue ? reading : TryRefineGhostRing(signal, width, height, primary, polar,
+            length, seed, traceBands, step, requiredProminence, primaryInnerRadius, preferNearest: true, token);
+    }
+
+    private static RingReading TryRefineGhostRing(float[] signal, int width, int height, RotatedRect primary,
+        double[] polar, int length, RingBand seed, RingBand[][] traceBands, double step,
+        double requiredProminence, double primaryInnerRadius, bool preferNearest, CancellationToken token)
+    {
+        var original = ReadRingBand(polar, length, seed, requiredProminence * .2);
+        double primaryRadius = (primary.Size.Width + primary.Size.Height) / 4;
+        int padding = Math.Max(seed.Right - seed.Left, (int)(primaryRadius * .1 / step));
+        const int sectors = RingTraceSectors, anglesPerSector = RingAngles / sectors;
+        var points = new List<Point2f>();
+        for (int sector = 0; sector < sectors; sector++)
+        {
+            token.ThrowIfCancellationRequested();
+            RingBand? nearest = null;
+            foreach (RingBand band in traceBands[sector])
+            {
                 // Preserve the ring's identity when another brighter ring is nearby.
                 if (nearest == null || (preferNearest
                     ? Math.Abs((band.Left + band.Right) * .5 - seed.Peak) < Math.Abs((nearest.Left + nearest.Right) * .5 - seed.Peak)
@@ -119,16 +137,13 @@ public sealed partial class DisplayMetrologyProvider
 
         int refinedLength = (int)Math.Ceiling((fit.Size.Width + fit.Size.Height) / 4 * 1.3 / step) + 1;
         double[] refinedPolar = SampleRing(signal, width, height, fit, step, refinedLength, token);
-        var profile = new double[refinedLength];
-        var values = new double[RingAngles];
-        for (int r = 0; r < refinedLength; r++)
-        {
-            for (int a = 0; a < RingAngles; a++) values[a] = refinedPolar[a * refinedLength + r];
-            profile[r] = RingMedian(values);
-        }
-        profile = SmoothRingProfile(profile, Math.Max(1, primaryRadius * .0025 / step));
         int expected = (int)Math.Round((fit.Size.Width + fit.Size.Height) / 4 / step);
         int searchLeft = Math.Max(3, expected - padding), searchRight = Math.Min(refinedLength - 2, expected + padding);
+        var profile = new double[refinedLength];
+        var values = new double[RingAngles];
+        double sigma = Math.Max(1, primaryRadius * .0025 / step);
+        FillRingMedianWindow(refinedPolar, profile, values, 0, searchLeft - 1, searchRight + 1, sigma);
+        profile = SmoothRingProfile(profile, sigma, searchLeft - 1, searchRight + 1);
         var refinedBands = FindRingPeaks(profile, searchLeft, searchRight)
             .Select(peak => FindRingCandidateBand(profile, peak, searchLeft, searchRight))
             .Where(band => band.Prominence >= requiredProminence && band.Left > searchLeft
@@ -148,6 +163,20 @@ public sealed partial class DisplayMetrologyProvider
         // displaced ring. Use the independently tracked sectors for its support check.
         double coverage = Math.Min((double)points.Count / sectors, reading.Coverage);
         return coverage >= 2.0 / 3 ? reading with { Region = fit, Coverage = coverage } : original;
+    }
+
+    private static void FillRingMedianWindow(double[] polar, double[] profile, double[] samples, int firstAngle,
+        int start, int endExclusive, double sigma)
+    {
+        // Populate the full support of the Gaussian at every requested radius.
+        int half = RingSmoothingRadius(sigma);
+        int end = Math.Min(profile.Length, endExclusive + half);
+        for (int r = Math.Max(0, start - half); r < end; r++)
+        {
+            for (int a = 0, offset = firstAngle * profile.Length + r; a < samples.Length; a++, offset += profile.Length)
+                samples[a] = polar[offset];
+            profile[r] = RingMedian(samples);
+        }
     }
 
     private static bool IsUsableGhostEllipse(RotatedRect ellipse, double primaryRadius)

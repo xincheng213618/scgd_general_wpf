@@ -1,5 +1,6 @@
 using ColorVision.Engine.Services.Types;
 using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -10,7 +11,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
     {
         public static CalibrationExportPlan Create(PhyCamera phyCamera)
         {
-            List<CalibrationExportFile> files = new();
+            Dictionary<string, CalibrationExportFile> files = new(StringComparer.OrdinalIgnoreCase);
             List<CalibrationExportText> textEntries = new();
             Dictionary<string, List<ZipCalibrationItem>> index = new();
             List<ZipCalibrationItem> calibrationItems = new();
@@ -20,7 +21,8 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
             {
                 if (item is CalibrationResource calibrationResource)
                 {
-                    calibrationItems.Add(CreateItem(calibrationResource));
+                    ZipCalibrationItem calibrationItem = CreateItem(calibrationResource);
+                    calibrationItems.Add(calibrationItem);
 
                     ServiceTypes serviceType = (ServiceTypes)calibrationResource.SysResourceModel.Type;
                     string relativePath = calibrationResource.SysResourceModel.Value ?? string.Empty;
@@ -31,9 +33,8 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
                         relativePath);
                     if (File.Exists(sourcePath))
                     {
-                        files.Add(new CalibrationExportFile(
-                            sourcePath,
-                            Path.Combine("Calibration", serviceType.ToString(), calibrationResource.Config.FileName)));
+                        string entryPath = Path.Combine("Calibration", serviceType.ToString(), calibrationItem.FileName).Replace('\\', '/');
+                        files[entryPath] = new CalibrationExportFile(sourcePath, entryPath);
                     }
                 }
 
@@ -65,14 +66,21 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
                     phyCamera.CameraLicenseModel.LicenseValue ?? string.Empty));
             }
 
-            return new CalibrationExportPlan(files, textEntries);
+            return new CalibrationExportPlan(files.Values.ToArray(), textEntries);
         }
 
-        private static ZipCalibrationItem CreateItem(CalibrationResource calibrationResource) => new()
+        private static ZipCalibrationItem CreateItem(CalibrationResource calibrationResource)
         {
-            CalibrationType = ((ServiceTypes)calibrationResource.SysResourceModel.Type).ToCalibrationType(),
-            Title = calibrationResource.Config.Title,
-            FileName = calibrationResource.Config.FileName
-        };
+            string? storedName = calibrationResource.SysResourceModel.Value;
+            string fileName = !string.IsNullOrWhiteSpace(storedName) && storedName == Path.GetFileName(storedName)
+                ? storedName
+                : calibrationResource.Config.FileName;
+            return new ZipCalibrationItem
+            {
+                CalibrationType = ((ServiceTypes)calibrationResource.SysResourceModel.Type).ToCalibrationType(),
+                Title = calibrationResource.Config.Title,
+                FileName = fileName
+            };
+        }
     }
 }

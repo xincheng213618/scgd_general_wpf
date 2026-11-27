@@ -57,7 +57,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                 flipMode);
         }
 
-        private static void FlipRaw(
+        internal static void FlipRaw(
             IntPtr pointer,
             int byteLength,
             int width,
@@ -86,7 +86,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             Cv2.Flip(image, image, ToOpenCvFlipMode(flipMode));
         }
 
-        private static void FlipPlanarCie(
+        internal static void FlipPlanarCie(
             IntPtr pointer,
             int byteLength,
             int width,

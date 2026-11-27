@@ -3,6 +3,9 @@ using OpenCvSharp;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
+using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.X86;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
@@ -296,6 +299,10 @@ namespace ColorVision.ImageEditor.Algorithms
             const double tolerance = 1e-5;
             double upperX = width - 1 + tolerance;
             double upperY = height - 1 + tolerance;
+            var lowerBound = Vector256.Create(-tolerance);
+            var upperBoundX = Vector256.Create(upperX);
+            var upperBoundY = Vector256.Create(upperY);
+            var vectorMaximum = Vector256<double>.Zero;
             for (int y = 0; y < height; y++)
             {
                 if ((y & 31) == 0)
@@ -303,12 +310,70 @@ namespace ColorVision.ImageEditor.Algorithms
                     cancellationToken.ThrowIfCancellationRequested();
                     progress?.Report(new AlgorithmProgress(0.3 + 0.4 * y / Math.Max(1, height), "lens-distortion.mask"));
                 }
-                ReadOnlySpan<float> xRow = new((void*)mapX.Ptr(y), width);
-                ReadOnlySpan<float> yRow = new((void*)mapY.Ptr(y), width);
+                float* xData = (float*)mapX.Ptr(y);
+                float* yData = (float*)mapY.Ptr(y);
+                ReadOnlySpan<float> xRow = new(xData, width);
+                ReadOnlySpan<float> yRow = new(yData, width);
                 Span<byte> maskRow = mask.AsSpan(y * width, width);
                 int firstValidX = width;
                 int lastValidX = -1;
-                for (int x = 0; x < width; x++)
+                int x = 0;
+                if (Avx.IsSupported && Sse2.IsSupported)
+                {
+                    var outputX = Vector256.Create(0d, 1d, 2d, 3d);
+                    var outputY = Vector256.Create((double)y);
+                    var step = Vector256.Create(4d);
+                    var exponentMask = Vector128.Create(0x7f800000);
+                    for (; x <= width - 4; x += 4, outputX = Avx.Add(outputX, step))
+                    {
+                        Vector128<float> coordinatesX = Vector128.Load(xData + x);
+                        Vector128<float> coordinatesY = Vector128.Load(yData + x);
+                        Vector256<double> vectorSourceX = Avx.ConvertToVector256Double(coordinatesX);
+                        Vector256<double> vectorSourceY = Avx.ConvertToVector256Double(coordinatesY);
+                        int validBits = Avx.MoveMask(Avx.And(
+                            Avx.And(Avx.CompareGreaterThanOrEqual(vectorSourceX, lowerBound), Avx.CompareLessThanOrEqual(vectorSourceX, upperBoundX)),
+                            Avx.And(Avx.CompareGreaterThanOrEqual(vectorSourceY, lowerBound), Avx.CompareLessThanOrEqual(vectorSourceY, upperBoundY))));
+                        // A coordinate inside all four bounds is already known to be finite.
+                        if (validBits != 0b1111)
+                        {
+                            var nonFiniteX = Sse2.CompareEqual(Sse2.And(coordinatesX.AsInt32(), exponentMask), exponentMask);
+                            var nonFiniteY = Sse2.CompareEqual(Sse2.And(coordinatesY.AsInt32(), exponentMask), exponentMask);
+                            if (Sse.MoveMask(Sse2.Or(nonFiniteX, nonFiniteY).AsSingle()) != 0)
+                                throw new InvalidOperationException("The lens-distortion map contains non-finite coordinates.");
+                        }
+
+                        var dx = Avx.Subtract(vectorSourceX, outputX);
+                        var dy = Avx.Subtract(vectorSourceY, outputY);
+                        var distances = Avx.Sqrt(Avx.Add(Avx.Multiply(dx, dx), Avx.Multiply(dy, dy)));
+                        vectorMaximum = Avx.Max(vectorMaximum, distances);
+                        // Preserve the scalar summation order, including out-of-bounds map coordinates.
+                        displacementSum += distances.GetElement(0);
+                        displacementSum += distances.GetElement(1);
+                        displacementSum += distances.GetElement(2);
+                        displacementSum += distances.GetElement(3);
+
+                        if (validBits == 0b1111)
+                        {
+                            Unsafe.WriteUnaligned(ref maskRow[x], uint.MaxValue);
+                            valid += 4;
+                            if (firstValidX == width) firstValidX = x;
+                            lastValidX = x + 3;
+                        }
+                        else if (validBits != 0)
+                        {
+                            for (int lane = 0; lane < 4; lane++)
+                            {
+                                if ((validBits & (1 << lane)) == 0) continue;
+                                int column = x + lane;
+                                maskRow[column] = byte.MaxValue;
+                                valid++;
+                                if (firstValidX == width) firstValidX = column;
+                                lastValidX = column;
+                            }
+                        }
+                    }
+                }
+                for (; x < width; x++)
                 {
                     float mapSourceX = xRow[x];
                     float mapSourceY = yRow[x];
@@ -337,6 +402,9 @@ namespace ColorVision.ImageEditor.Algorithms
                 }
             }
             cancellationToken.ThrowIfCancellationRequested();
+            if (Avx.IsSupported && Sse2.IsSupported)
+                for (int lane = 0; lane < Vector256<double>.Count; lane++)
+                    maximumDisplacement = Math.Max(maximumDisplacement, vectorMaximum.GetElement(lane));
             Rect bounds = valid == 0
                 ? new Rect()
                 : new Rect(minimumX, minimumY, maximumX - minimumX + 1, maximumY - minimumY + 1);

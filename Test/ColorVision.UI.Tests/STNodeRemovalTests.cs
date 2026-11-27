@@ -8,6 +8,46 @@ public sealed class STNodeRemovalTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
+    public void RemovingNodeInsideEditLeavesCorrectBaselineForTheNextPropertyChange(bool cancel)
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            using var editor = new STNodeEditor { EnableEdit = true, EnableHistory = true };
+            var source = new RemovalTestNode();
+            var target = new RemovalTestNode();
+            source.Create();
+            target.Create();
+            source.Mark = "Before edit";
+            editor.Nodes.AddRange([source, target]);
+            Assert.Equal(ConnectionStatus.Connected, source.Output.ConnectOption(target.Input));
+            editor.ClearHistory();
+
+            using (var transaction = editor.BeginEditTransaction("Remove test node"))
+            {
+                editor.Nodes.Remove(target);
+                source.Mark = "During edit";
+                if (cancel)
+                    transaction.Cancel();
+            }
+
+            string expectedMark = cancel ? "Before edit" : "During edit";
+            Assert.Equal(expectedMark, source.Mark);
+            Assert.Equal(cancel, editor.Nodes.Contains(target));
+            Assert.Equal(cancel ? 1 : 0, editor.GetConnections().Length);
+            Assert.Equal(!cancel, editor.CanUndo);
+            editor.MarkSaved();
+
+            source.Mark = "Next property edit";
+            Assert.True(editor.IsModified);
+            editor.Undo();
+            Assert.Equal(expectedMark, source.Mark);
+            Assert.False(editor.IsModified);
+        });
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
     public void ClearNotifiesAfterEachNodeAndItsConnectionsLeaveEitherHost(bool hosted)
     {
         StaTest.Run(() =>
@@ -64,11 +104,14 @@ public sealed class STNodeRemovalTests
             foreach (RemovalTestNode node in new[] { source, middle, target }) { node.Create(); editor.Nodes.Add(node); }
             Assert.Equal(ConnectionStatus.Connected, source.Output.ConnectOption(middle.Input));
             Assert.Equal(ConnectionStatus.Connected, middle.Output.ConnectOption(target.Input));
+            Assert.Equal(ConnectionStatus.Connected, source.Output.ConnectOption(target.Input));
+            var unaffected = new ConnectionInfo { Output = source.Output, Input = target.Input };
             editor.OptionDisConnecting += (_, args) => args.Continue = false;
             Assert.Equal(ConnectionStatus.Reject, source.Output.DisConnectOption(middle.Input));
             foreach (RemovalTestNode node in new[] { source, middle, target }) node.LockOption = true;
             editor.SetActiveNode(middle);
             STNode[] originalOrder = editor.Nodes.Cast<STNode>().ToArray();
+            ConnectionInfo[] originalConnections = editor.GetConnections();
             editor.ClearHistory();
             int removed = 0;
             int disconnected = 0;
@@ -90,11 +133,11 @@ public sealed class STNodeRemovalTests
                 Assert.DoesNotContain(middle, editor.GetSelectedNode());
                 Assert.NotSame(middle, editor.ActiveNode);
                 Assert.Equal(2, editor.Nodes.Count);
-                Assert.Empty(editor.GetConnections());
-                Assert.Empty(source.Output.ConnectedOption);
+                Assert.Equal(unaffected, Assert.Single(editor.GetConnections()));
+                Assert.Same(target.Input, Assert.Single(source.Output.ConnectedOption));
                 Assert.Empty(middle.Input.ConnectedOption);
                 Assert.Empty(middle.Output.ConnectedOption);
-                Assert.Empty(target.Input.ConnectedOption);
+                Assert.Same(source.Output, Assert.Single(target.Input.ConnectedOption));
             };
 
             // Ordinary disconnect can be vetoed; removing a node must still release its graph edges.
@@ -107,11 +150,11 @@ public sealed class STNodeRemovalTests
             Assert.Equal(originalOrder, editor.Nodes.Cast<STNode>());
             Assert.Same(editor, middle.Owner);
             Assert.All(new[] { source, middle, target }, node => Assert.True(node.LockOption));
-            Assert.Equal(2, editor.GetConnections().Length);
-            Assert.Same(middle.Input, Assert.Single(source.Output.ConnectedOption));
+            Assert.Equal(originalConnections, editor.GetConnections());
+            Assert.Contains(middle.Input, source.Output.ConnectedOption);
             Assert.Same(source.Output, Assert.Single(middle.Input.ConnectedOption));
             Assert.Same(target.Input, Assert.Single(middle.Output.ConnectedOption));
-            Assert.Same(middle.Output, Assert.Single(target.Input.ConnectedOption));
+            Assert.Contains(middle.Output, target.Input.ConnectedOption);
             Assert.False(editor.CanUndo);
 
             editor.Redo();
@@ -120,7 +163,7 @@ public sealed class STNodeRemovalTests
             Assert.True(source.LockOption);
             Assert.True(middle.LockOption);
             Assert.True(target.LockOption);
-            Assert.Empty(editor.GetConnections());
+            Assert.Equal(unaffected, Assert.Single(editor.GetConnections()));
         });
     }
 

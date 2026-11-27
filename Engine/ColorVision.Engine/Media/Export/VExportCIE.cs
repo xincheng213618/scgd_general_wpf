@@ -136,12 +136,6 @@ namespace ColorVision.Engine.Media
             catch { output.Dispose(); throw; }
         }
 
-        private static Mat CreateSingleChannelMat(CVCIEFile fileInfo, byte[] data)
-        {
-            ValidateImageBuffer(fileInfo, 1, data);
-            return Mat.FromPixelData(fileInfo.Rows, fileInfo.Cols, MatType.MakeType(fileInfo.Depth, 1), data);
-        }
-
         private static int GetSingleChannelByteCount(CVCIEFile fileInfo)
         {
             if (fileInfo.Rows <= 0 || fileInfo.Cols <= 0)
@@ -497,19 +491,22 @@ namespace ColorVision.Engine.Media
                     if (calibration != null && selectedMeasurementCount > 0)
                     {
                         using RawColorMeasurementSource colorSource = new(cvcie, calibration);
+                        using CVCIEFile channelFile = new()
+                        {
+                            FileExtType = CVType.Raw, FilePath = fileName, Version = cvcie.Version,
+                            Rows = cvcie.Rows, Cols = cvcie.Cols, Bpp = 32, Channels = cvcie.Channels,
+                            Gain = cvcie.Gain, Exp = calibration.Exposure, NDPort = cvcie.NDPort,
+                        };
+                        int channelPixels = GetSingleChannelByteCount(channelFile) / sizeof(float);
+                        using Mat channelImage = new(cvcie.Rows, cvcie.Cols, MatType.CV_32FC1);
+                        Span<float> plane;
+                        unsafe { plane = new Span<float>((void*)channelImage.Data, channelPixels); }
                         for (int channel = 0; channel < calibration.Channels; channel++)
                         {
                             string channelName = calibration.Channels == 1 ? "Y" : channel == 0 ? "X" : channel == 1 ? "Y" : "Z";
                             bool selected = channelName == "X" ? exportX : channelName == "Y" ? exportY : exportZ;
                             if (!selected) continue;
-                            using CVCIEFile channelFile = new()
-                            {
-                                FileExtType = CVType.Raw, FilePath = fileName, Version = cvcie.Version,
-                                Rows = cvcie.Rows, Cols = cvcie.Cols, Bpp = 32, Channels = cvcie.Channels,
-                                Gain = cvcie.Gain, Exp = calibration.Exposure, NDPort = cvcie.NDPort,
-                                Data = colorSource.CreateChannel(channel)
-                            };
-                            using Mat channelImage = CreateSingleChannelMat(channelFile, channelFile.Data);
+                            colorSource.CopyChannelTo(channel, plane);
                             SaveImage(channelImage, "_" + channelName, channelFile, channelName);
                         }
                     }

@@ -33,11 +33,15 @@ internal sealed class EditorCodeAnalysis(string? language)
     internal void ReadLine(DocumentLine line, string code)
     {
         if (_words.Count < 20_000)
-            foreach (Match match in Identifier.Matches(code))
+        {
+            var words = _words.GetAlternateLookup<ReadOnlySpan<char>>();
+            foreach (ValueMatch match in Identifier.EnumerateMatches(code))
             {
-                if (match.Length is > 1 and <= 100) _words.Add(match.Value);
+                if (match.Length is > 1 and <= 100)
+                    words.Add(code.AsSpan(match.Index, match.Length));
                 if (_words.Count >= 20_000) break;
             }
+        }
         for (int i = 0; i < code.Length; i++)
         {
             char c = code[i];
@@ -64,7 +68,10 @@ internal sealed class EditorCodeAnalysis(string? language)
         };
         if (declaration is { Success: false } && language is "C#" or "C++" or "Java")
         {
-            string firstWord = Identifier.Match(code).Value;
+            var identifiers = Identifier.EnumerateMatches(code);
+            ReadOnlySpan<char> firstWord = identifiers.MoveNext()
+                ? code.AsSpan(identifiers.Current.Index, identifiers.Current.Length)
+                : default;
             if (firstWord is not ("return" or "throw" or "await" or "using" or "new" or "yield")) declaration = MethodSymbol.Match(code);
         }
         if (declaration is not { Success: true }) return;

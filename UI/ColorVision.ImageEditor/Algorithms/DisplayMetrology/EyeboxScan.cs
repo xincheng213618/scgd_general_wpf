@@ -1,5 +1,6 @@
 using ColorVision.Algorithms;
 using System;
+using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
@@ -31,25 +32,26 @@ public sealed partial class DisplayMetrologyProvider
         var rows = new List<IReadOnlyDictionary<string, JsonElement>>();
         var accepted = new bool[context.Inputs.Count];
         var map = new byte[context.Inputs.Count];
+        int decoderBudget = (int)Math.Min(baseline.Length, (long)validPixels * (context.Inputs.Count - 1));
+        float[]? decoder = CreateIntegerSignalDecoder(reference.Format, p.DecodeExponent, decoderBudget);
         float[]? movingSignal = null;
         for (int index = 0; index < context.Inputs.Count; index++)
         {
             token.ThrowIfCancellationRequested();
             context.Progress?.Report(new AlgorithmProgress((double)index / context.Inputs.Count, "eyebox.sample", $"扫描点 {index + 1}/{context.Inputs.Count}"));
-            float[] signal = baseline;
-            if (index != p.ReferenceIndex)
+            double sum;
+            int covered;
+            if (decoder != null && index != p.ReferenceIndex)
+                (sum, covered) = MeasureEyeboxIntegerFrame(context.Inputs[index].Image, baseline, decoder, p, token);
+            else
             {
-                movingSignal = ReadSignal(context.Inputs[index].Image, p.Channel, p.DecodeExponent, token, movingSignal);
-                signal = movingSignal;
-            }
-            double sum = 0;
-            int covered = 0;
-            for (int i = 0; i < signal.Length; i++)
-            {
-                if ((i & 4095) == 0) token.ThrowIfCancellationRequested();
-                if (baseline[i] < p.ReferenceSignalFloor) continue;
-                sum += signal[i];
-                if (signal[i] >= baseline[i] * p.MinimumPixelRatio) covered++;
+                float[] signal = baseline;
+                if (index != p.ReferenceIndex)
+                {
+                    movingSignal = ReadSignal(context.Inputs[index].Image, p.Channel, p.DecodeExponent, token, movingSignal);
+                    signal = movingSignal;
+                }
+                (sum, covered) = MeasureEyeboxDecodedFrame(signal, baseline, p, token);
             }
             double meanRatio = sum / baselineSum, coverage = (double)covered / validPixels;
             accepted[index] = meanRatio >= p.MinimumMeanRatio && coverage >= p.MinimumCoverage;
@@ -71,5 +73,51 @@ public sealed partial class DisplayMetrologyProvider
             ("sampled_span_x", (p.Columns - 1) * p.StepXMillimeters, "mm"), ("sampled_span_y", (p.Rows - 1) * p.StepYMillimeters, "mm"));
         artifacts.Add(new AlgorithmImageArtifact("eyebox-sample-grid", "visualization", new AlgorithmImageBuffer(p.Columns, p.Rows, p.Columns, AlgorithmImageFormat.Gray8, map),
             new Dictionary<string, string> { ["coordinates"] = "scan-grid, not image pixels", ["area"] = "mesh cells with four accepted sampled corners; unsampled interior is not verified" }));
+    }
+
+    private static (double Sum, int Covered) MeasureEyeboxIntegerFrame(AlgorithmImageBuffer image, float[] baseline,
+        float[] decoder, EyeboxScanParameters p, CancellationToken token)
+    {
+        int channels = image.Format.Channels();
+        int sampleBytes = image.Format.BitsPerChannel() / 8;
+        int pixelBytes = channels * sampleBytes;
+        int channelOffset = channels == 1 ? 0 : p.Channel * sampleBytes;
+        double floor = p.ReferenceSignalFloor, minimumRatio = p.MinimumPixelRatio;
+        ReadOnlySpan<byte> data = image.Data.Span;
+        double sum = 0;
+        int covered = 0;
+        for (int y = 0; y < image.Height; y++)
+        {
+            token.ThrowIfCancellationRequested();
+            ReadOnlySpan<byte> row = data.Slice(y * image.Stride, image.Width * pixelBytes);
+            int rowStart = y * image.Width;
+            for (int x = 0, offset = channelOffset; x < image.Width; x++, offset += pixelBytes)
+            {
+                int index = rowStart + x;
+                if ((index & 4095) == 0) token.ThrowIfCancellationRequested();
+                float reference = baseline[index];
+                if (reference < floor) continue;
+                int code = sampleBytes == 1 ? row[offset] : BinaryPrimitives.ReadUInt16LittleEndian(row.Slice(offset, sizeof(ushort)));
+                float sample = decoder[code];
+                sum += sample;
+                if (sample >= reference * minimumRatio) covered++;
+            }
+        }
+        return (sum, covered);
+    }
+
+    private static (double Sum, int Covered) MeasureEyeboxDecodedFrame(float[] signal, float[] baseline,
+        EyeboxScanParameters p, CancellationToken token)
+    {
+        double sum = 0;
+        int covered = 0;
+        for (int i = 0; i < signal.Length; i++)
+        {
+            if ((i & 4095) == 0) token.ThrowIfCancellationRequested();
+            if (baseline[i] < p.ReferenceSignalFloor) continue;
+            sum += signal[i];
+            if (signal[i] >= baseline[i] * p.MinimumPixelRatio) covered++;
+        }
+        return (sum, covered);
     }
 }

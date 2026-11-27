@@ -39,7 +39,9 @@ internal static class AdaptiveSnapshotPng
             || !HasMostlyUniformPixels(frame, cancellationToken))
             return null;
 
-        BitmapSource sample = CaptureSample(frame, cancellationToken);
+        int stride = width * 4;
+        byte[] scratch = GC.AllocateUninitializedArray<byte>(stride * SampleHeight);
+        BitmapSource sample = CaptureSample(frame, scratch, stride, cancellationToken);
         int referenceSize = GetWpfCompressedSize(sample);
         // On half-size frames the WPF encoder is already fast. Dense samples can compress
         // to a similar size in both encoders even when the adaptive encoder takes longer.
@@ -53,14 +55,16 @@ internal static class AdaptiveSnapshotPng
         // Nearby color equality alone misses low-density noise. Compare the actual encoders
         // over several strips and check the extrapolated size again during the full encode.
         int sampleCeiling = referenceSize + referenceSize / 25;
-        if (Compress(sample, sampleCeiling, cancellationToken).Count == 0)
+        // BitmapSource.Create copies the sample into its own bitmap. Reuse the capture
+        // buffer for the raw and filtered rows of both compression passes.
+        if (Compress(sample, sampleCeiling, scratch, cancellationToken).Count == 0)
             return null;
 
         byte[]? ancillary = GetWpfAncillaryChunks(frame);
         if (ancillary == null)
             return null;
 
-        ArraySegment<byte> compressed = Compress(frame, (int)sizeCeiling, cancellationToken);
+        ArraySegment<byte> compressed = Compress(frame, (int)sizeCeiling, scratch, cancellationToken);
         return compressed.Count == 0 ? null : new EncodedPng(width, height, ancillary, compressed);
     }
 
@@ -89,12 +93,10 @@ internal static class AdaptiveSnapshotPng
         return uniformPixels * 20 >= sampleRows * sampleColumns * 19;
     }
 
-    private static BitmapSource CaptureSample(BitmapSource frame, CancellationToken cancellationToken)
+    private static BitmapSource CaptureSample(BitmapSource frame, byte[] pixels, int stride, CancellationToken cancellationToken)
     {
         int width = frame.PixelWidth;
         int height = frame.PixelHeight;
-        int stride = width * 4;
-        byte[] pixels = GC.AllocateUninitializedArray<byte>(stride * SampleHeight);
         for (int strip = 0; strip < StripCount; strip++)
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -173,13 +175,15 @@ internal static class AdaptiveSnapshotPng
 
     private static ReadOnlySpan<byte> ReadChunkType(ReadOnlySpan<byte> data, int offset) => data.Slice(offset + 4, 4);
 
-    private static ArraySegment<byte> Compress(BitmapSource frame, int sizeCeiling, CancellationToken cancellationToken)
+    private static ArraySegment<byte> Compress(BitmapSource frame, int sizeCeiling, byte[] scratch, CancellationToken cancellationToken)
     {
         int width = frame.PixelWidth;
         int stride = width * 4;
-        byte[] pixels = GC.AllocateUninitializedArray<byte>(stride * BatchHeight);
-        byte[] filtered = GC.AllocateUninitializedArray<byte>((stride + 1) * BatchHeight);
-        byte[] previous = new byte[stride];
+        int batchBytes = stride * BatchHeight;
+        int filteredStride = stride + 1;
+        Span<byte> previous = scratch.AsSpan(batchBytes, stride);
+        Span<byte> filtered = scratch.AsSpan(batchBytes + stride, filteredStride * BatchHeight);
+        previous.Clear();
         BitmapSource? straightAlpha = null;
         using MemoryStream compressed = new();
         using (ZLibStream writer = new(compressed, new ZLibCompressionOptions { CompressionLevel = 6 }, leaveOpen: true))
@@ -189,8 +193,9 @@ internal static class AdaptiveSnapshotPng
                 cancellationToken.ThrowIfCancellationRequested();
                 int rows = Math.Min(BatchHeight, frame.PixelHeight - top);
                 Int32Rect region = new(0, top, width, rows);
-                frame.CopyPixels(region, pixels, stride, 0);
-                ReadOnlySpan<uint> packed = MemoryMarshal.Cast<byte, uint>(pixels.AsSpan(0, rows * stride));
+                frame.CopyPixels(region, scratch, stride, 0);
+                Span<byte> pixels = scratch.AsSpan(0, rows * stride);
+                ReadOnlySpan<uint> packed = MemoryMarshal.Cast<byte, uint>(pixels);
                 if (!IsOpaque(packed))
                 {
                     foreach (uint pixel in packed)
@@ -200,20 +205,20 @@ internal static class AdaptiveSnapshotPng
                     // WPF can round the alpha of antialiased marks to 254 over an opaque base.
                     // Use the same WIC straight-alpha conversion as the PNG encoder for those rows.
                     straightAlpha ??= new FormatConvertedBitmap(frame, PixelFormats.Bgra32, null, 0);
-                    straightAlpha.CopyPixels(region, pixels, stride, 0);
+                    straightAlpha.CopyPixels(region, scratch, stride, 0);
                 }
 
                 for (int row = 0; row < rows; row++)
                 {
-                    ReadOnlySpan<byte> raw = pixels.AsSpan(row * stride, stride);
-                    ReadOnlySpan<byte> prior = row == 0 ? previous : pixels.AsSpan((row - 1) * stride, stride);
-                    Span<byte> output = filtered.AsSpan(row * (stride + 1), stride + 1);
+                    ReadOnlySpan<byte> raw = pixels.Slice(row * stride, stride);
+                    ReadOnlySpan<byte> prior = row == 0 ? previous : pixels.Slice((row - 1) * stride, stride);
+                    Span<byte> output = filtered.Slice(row * filteredStride, filteredStride);
                     int filter = SelectFilter(raw, prior);
                     output[0] = (byte)filter;
                     FilterRow(raw, prior, output[1..], filter);
                 }
-                pixels.AsSpan((rows - 1) * stride, stride).CopyTo(previous);
-                writer.Write(filtered.AsSpan(0, rows * (stride + 1)));
+                pixels.Slice((rows - 1) * stride, stride).CopyTo(previous);
+                writer.Write(filtered[..(rows * filteredStride)]);
                 if (compressed.Length > sizeCeiling)
                     return default;
             }

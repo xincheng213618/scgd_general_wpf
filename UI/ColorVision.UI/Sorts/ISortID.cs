@@ -14,6 +14,12 @@ using System.Windows.Media;
 
 namespace ColorVision.UI.Sorts
 {
+    public interface ISortableCollection
+    {
+        /// <summary>Applies a stable sort when the collection can publish the reorder as a single change.</summary>
+        bool TrySortBy(Func<object, object?> keySelector, IComparer<object?> keyComparer);
+    }
+
     public static partial class SortableExtension
     {
         public static readonly DependencyProperty SortMemberPathProperty = DependencyProperty.RegisterAttached(
@@ -67,13 +73,12 @@ namespace ColorVision.UI.Sorts
 
             var propertyPath = ResolvePropertyPath(itemType, propertyName);
 
-            var sortedItems = items
-                .Select((item, index) => new SortItem(item, GetPropertyValue(item, propertyPath), index))
-                .OrderBy(item => item, new SortItemComparer(descending))
-                .Select(item => item.Item)
-                .ToList();
+            var comparer = new SortValueComparer(descending);
+            object? SelectKey(object item) => GetPropertyValue(item, propertyPath);
+            if (collection is ISortableCollection sortable && sortable.TrySortBy(SelectKey, comparer))
+                return;
 
-            UpdateCollection(collection, sortedItems);
+            UpdateCollection(collection, items.OrderBy(SelectKey, comparer).ToList());
         }
 
         private static bool TryGetSortPropertyName(Type itemType, GridViewColumn column, string? headerText, ResourceManager? resourceManager, out string propertyName)
@@ -348,45 +353,12 @@ namespace ColorVision.UI.Sorts
                 list.Add(item);
         }
 
-        private sealed class SortItem
+        private sealed class SortValueComparer(bool descending) : IComparer<object?>
         {
-            public SortItem(object item, object? value, int index)
+            public int Compare(object? x, object? y)
             {
-                Item = item;
-                Value = value;
-                Index = index;
-            }
-
-            public object Item { get; }
-
-            public object? Value { get; }
-
-            public int Index { get; }
-        }
-
-        private sealed class SortItemComparer : IComparer<SortItem>
-        {
-            private readonly bool _descending;
-
-            public SortItemComparer(bool descending)
-            {
-                _descending = descending;
-            }
-
-            public int Compare(SortItem? x, SortItem? y)
-            {
-                if (x == null && y == null)
-                    return 0;
-                if (x == null)
-                    return -1;
-                if (y == null)
-                    return 1;
-
-                int result = CompareValues(x.Value, y.Value);
-                if (_descending)
-                    result = -result;
-
-                return result != 0 ? result : x.Index.CompareTo(y.Index);
+                int result = CompareValues(x, y);
+                return descending ? -result : result;
             }
         }
     }

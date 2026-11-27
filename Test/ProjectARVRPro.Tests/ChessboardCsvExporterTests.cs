@@ -5,6 +5,7 @@ using ProjectARVRPro.Process.Chessboard;
 using System.Collections.ObjectModel;
 using System.Globalization;
 using System.IO;
+using System.Text;
 
 namespace ProjectARVRPro.Tests;
 
@@ -28,11 +29,16 @@ public sealed class ChessboardCsvExporterTests
         Assert.True(calculation.Success, calculation.ErrorMessage);
 
         string path = Path.Combine(Path.GetTempPath(), $"ProjectARVRPro_ChessboardCsv_{Guid.NewGuid():N}.csv");
+        string directPath = Path.ChangeExtension(path, ".direct.csv");
         try
         {
             new ObservableCollection<PoiResultCIExyuvData>(points).SaveCsv(path);
             string enhanced = ChessboardCsvExporter.BuildEnhancedCsvContent(
                 File.ReadAllText(path), calculation, calculation.CorrectedContrast, "contrast", "local");
+            File.WriteAllText(path, enhanced, Encoding.UTF8);
+            ChessboardCsvExporter.WriteCsvFile(
+                directPath, points, calculation, calculation.CorrectedContrast, "contrast", "local");
+            Assert.Equal(File.ReadAllBytes(path), File.ReadAllBytes(directPath));
 
             using var csv = new CsvParser(new StringReader(enhanced), CultureInfo.InvariantCulture);
             Assert.True(csv.Read());
@@ -58,6 +64,7 @@ public sealed class ChessboardCsvExporterTests
         finally
         {
             File.Delete(path);
+            File.Delete(directPath);
         }
     }
 

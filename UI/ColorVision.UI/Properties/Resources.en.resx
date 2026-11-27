@@ -527,9 +527,6 @@
   <data name="Log_OpenFolder" xml:space="preserve">
     <value>Open Folder</value>
   </data>
-  <data name="TimedOp_ViewStats" xml:space="preserve">
-    <value>View Timing Stats</value>
-  </data>
   <data name="TimedOp_NoHistory" xml:space="preserve">
     <value>No timing history.</value>
   </data>

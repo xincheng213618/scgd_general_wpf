@@ -164,6 +164,46 @@ public sealed class ImageComparisonV1Tests
     }
 
     [Fact]
+    public async Task LargePaddedBgra64VisualizationsPreserveRoundingClampingAndAlphaExclusion()
+    {
+        const int width = 1025;
+        const int height = 1025;
+        const int stride = width * 8 + 3;
+        const int lastPixel = (height - 1) * stride + (width - 1) * 8;
+        byte[] left = new byte[stride * height];
+        byte[] right = new byte[stride * height];
+        ushort[] firstLeft = [100, 0, 0, ushort.MaxValue];
+        ushort[] firstRight = [0, 100, 0, 0];
+        ushort[] lastLeft = [ushort.MaxValue, 0, 0, 0];
+        ushort[] lastRight = [0, ushort.MaxValue, 0, 0];
+        MemoryMarshal.AsBytes(firstLeft.AsSpan()).CopyTo(left);
+        MemoryMarshal.AsBytes(firstRight.AsSpan()).CopyTo(right);
+        MemoryMarshal.AsBytes(lastLeft.AsSpan()).CopyTo(left.AsSpan(lastPixel));
+        MemoryMarshal.AsBytes(lastRight.AsSpan()).CopyTo(right.AsSpan(lastPixel));
+        using AlgorithmImageBuffer reference = new(width, height, stride, AlgorithmImageFormat.Bgra64, left);
+        using AlgorithmImageBuffer candidate = new(width, height, stride, AlgorithmImageFormat.Bgra64, right);
+        using AlgorithmResult result = await RunAsync(reference, candidate, new ImageComparisonParameters
+        {
+            HeatmapMaximum = 200.125,
+            IncludeAlphaInMetrics = false,
+            EnableSsim = false,
+            EnableAlignmentPrecheck = false,
+        }, outputs: ImageComparisonArtifactOutputs.InteractiveVisualizations);
+
+        Assert.Equal(AlgorithmResultStatus.Succeeded, result.Status);
+        AssertVisualization("absolute-difference-visualization", [127, 127, 0], [255, 255, 0]);
+        AssertVisualization("signed-difference-visualization", [191, 64, 128], [255, 0, 128]);
+        AssertVisualization("difference-heatmap", [128, 255, 127], [0, 0, 128]);
+
+        void AssertVisualization(string name, byte[] first, byte[] last)
+        {
+            AlgorithmImageBuffer image = Image(result, name);
+            Assert.Equal(first, image.Data.Span[..3].ToArray());
+            Assert.Equal(last, image.Data.Span[^3..].ToArray());
+        }
+    }
+
+    [Fact]
     public async Task ExcludedNonFiniteAlphaDoesNotContaminateMetricHeatmap()
     {
         using AlgorithmImageBuffer reference = Floats([10, 20, 30, 1], 1, 1, AlgorithmImageFormat.Bgra128Float);

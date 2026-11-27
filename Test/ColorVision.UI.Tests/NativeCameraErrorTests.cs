@@ -183,7 +183,6 @@ public class NativeCameraErrorTests
         AssertLayout<CRECT>(16, [nameof(CRECT.x), nameof(CRECT.y), nameof(CRECT.cx), nameof(CRECT.cy)], [0, 4, 8, 12]);
         AssertLayout<IRECT>(16, [nameof(IRECT.x), nameof(IRECT.y), nameof(IRECT.cx), nameof(IRECT.cy)], [0, 4, 8, 12]);
         AssertLayout<AutoFocusCfg>(48, [nameof(AutoFocusCfg.forwardparam), nameof(AutoFocusCfg.curtailparam), nameof(AutoFocusCfg.curStep), nameof(AutoFocusCfg.stopStep), nameof(AutoFocusCfg.minPosition), nameof(AutoFocusCfg.maxPosition), nameof(AutoFocusCfg.eEvaFunc), nameof(AutoFocusCfg.dMinValue)], [0, 8, 16, 20, 24, 28, 32, 40]);
-        AssertLayout<cvCameraCSLib.ChromaInfo>(44, ["fX", "fY", "fZ", "fx", "fy", "fu", "fv", "fCCT", "fWave", "nMidPointX", "nMidPointY"], [0, 4, 8, 12, 16, 20, 24, 28, 32, 36, 40]);
     }
 
     [Fact]

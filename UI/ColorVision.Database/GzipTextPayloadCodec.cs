@@ -14,6 +14,7 @@ namespace ColorVision.Database
     {
         public const int DefaultMaximumUtf8Bytes = 64 * 1024 * 1024;
         private const int Utf8BufferSize = 64 * 1024;
+        private const int MaximumPooledDecodeBytes = 1024 * 1024;
         private const int StackUtf8BufferSize = 1024;
         private const int MaximumUtf8BytesPerChar = 3;
         private static readonly UTF8Encoding StrictUtf8 = new(false, true);
@@ -99,8 +100,8 @@ namespace ColorVision.Database
             {
                 using var input = new MemoryStream(compressedBytes, writable: false);
                 using var gzip = new GZipStream(input, CompressionMode.Decompress);
-                if (expectedUtf8Length is int expected && expected <= Utf8BufferSize)
-                    return DecodeSmallKnownLength(gzip, expected, maximumUtf8Bytes);
+                if (expectedUtf8Length is int expected && expected <= MaximumPooledDecodeBytes)
+                    return DecodeKnownLength(gzip, expected, maximumUtf8Bytes);
 
                 using var output = new MemoryStream(expectedUtf8Length.GetValueOrDefault());
                 byte[] buffer = ArrayPool<byte>.Shared.Rent(Utf8BufferSize);
@@ -135,7 +136,7 @@ namespace ColorVision.Database
             }
         }
 
-        private static string DecodeSmallKnownLength(GZipStream gzip, int expected, int maximumUtf8Bytes)
+        private static string DecodeKnownLength(GZipStream gzip, int expected, int maximumUtf8Bytes)
         {
             byte[] buffer = ArrayPool<byte>.Shared.Rent(Utf8BufferSize);
             byte[]? rented = null;
@@ -145,14 +146,21 @@ namespace ColorVision.Database
                     ? stackalloc byte[expected]
                     : (rented = ArrayPool<byte>.Shared.Rent(expected)).AsSpan(0, expected);
                 int length = 0;
-                int read;
-                // Keep the same read size and check the full stream before reporting a length mismatch.
-                while ((read = gzip.Read(buffer, 0, Utf8BufferSize)) != 0)
+                // Full blocks can be read directly into the output. Keep reading into scratch
+                // after the declared length to detect oversized streams before reporting a mismatch.
+                while (true)
                 {
+                    bool readIntoOutput = expected - length >= Utf8BufferSize;
+                    Span<byte> destination = readIntoOutput
+                        ? output.Slice(length, Utf8BufferSize)
+                        : buffer.AsSpan(0, Utf8BufferSize);
+                    int read = gzip.Read(destination);
+                    if (read == 0)
+                        break;
                     if (read > maximumUtf8Bytes - length)
                         throw new InvalidDataException($"解压后的载荷超过允许上限 {maximumUtf8Bytes:N0} 字节。");
-                    if (read <= expected - length)
-                        buffer.AsSpan(0, read).CopyTo(output[length..]);
+                    if (!readIntoOutput && read <= expected - length)
+                        destination[..read].CopyTo(output[length..]);
                     length += read;
                 }
 

@@ -39,11 +39,25 @@ DarkNoise, three defect-point variants, DSNU, Uniformity, Luminance, OneColor,
 FourColor, MultiColor, Distortion, ColorShift, LineArity, ColorDiff, and
 AngleShift. Value `10` (`LumColor`) is reserved and intentionally rejected.
 
-RAW corrections run in template order. At most one luminance/color transform runs afterward and writes float planes (`X`, `Y`, `Z` in order, or one plane for luminance). Color-transform exposures must be finite and positive. Check size arguments in bytes for RAW and float elements for CIE.
+Native RAW stages run in caller-supplied order. When preparing a local camera template, Engine places the DSNU offset subtraction before the DarkNoise multiplier. DarkNoise multiplies every delivered RAW sample by the finite numeric `DarkNoiseRatio`, then saturates and truncates to the working unsigned depth. A template can include one luminance or color transform. Color-transform exposures must be finite and positive.
+
+Engine calls `M_CalibrationExecuteFrameV2` with one prepared context for the ordered file set. The request declares the actual RAW dimensions, sample depth, layout (mono, packed BGR, or planar RGB), sensor ROI, exposure, and output mode. Buffer capacities are specified in bytes.
+
+`M_CalibrationGetInputDepthV1` returns the context's required input depth via its output parameter. Zero accepts either sample depth. Linearity requires 16 bits. A V1 DSNU or Uniformity map declares the expected RAW depth independently of its table element type. V0 maps leave the RAW depth open. An integer `bpp` in a color model constrains the input depth. Conflicting requirements fail during template preparation.
+
+- `RawOnly` applies a basic-only template and returns the corrected RAW in place.
+- `FullCie` returns corrected RAW, a float buffer containing planar XYZ or single-plane Y, and the effective color transform. The CIE buffer must be supplied by the caller.
+- `DeferredColor` returns corrected RAW and the effective transform. POI, preview, and full-image replay use that transform with the corrected RAW. The caller supplies an empty CIE buffer descriptor.
+
+Both color modes validate the real frame and prepare the same effective factors before any RAW correction. The full-frame writer, RAW replay and POI accumulation share the component math. RAW mirroring can be requested in the RAW output modes. Each output buffer has its own storage. The caller must own the mutable RAW for the duration of the call and discard any partially written output after execution fails.
+
+V2 computes with finite double-precision factors and stores Y or XYZ as 32-bit floats. When extreme coefficients could overflow that range, both color modes validate the values for the actual corrected pixels. A non-finite result fails the frame and the caller must discard its outputs.
+
+The corrected RAW and returned color transform use the layout declared in the V2 request, including after spatial correction and mirroring. A planar RGB request containing basic stages uses packed BGR internally for those stages, then writes the corrected samples back to their original planes.
 
 `M_CalibrationExecuteRawWithFlipV1` is equivalent to applying RAW correction and then flipping (`0` up/down, `1` left/right, `-1` both). It rejects templates containing luminance/color conversion. Planar RAW is flipped plane by plane. Failed calls leave unusable output.
 
-Engine uses this entry for an unflipped RAW frame when the helper backend runs standard correction. Full CIE, metadata-only and legacy paths retain their existing behavior. For performance comparisons add `CalibrationAlgorithm` and `MirrorImage`, because the fused path includes mirroring in the former. `AngleShift` uses the same coordinate and zero-fill rules in full-frame and tiled interpolation. Its implementation controls the IPP and buffer thresholds.
+The same eligible fused operations are used by V2 for RAW mirroring. For performance comparisons add `CalibrationAlgorithm` and `MirrorImage`, because the fused path includes mirroring in the former. `AngleShift` uses the same coordinate and zero-fill rules in full-frame and tiled interpolation. Its implementation controls the IPP and buffer thresholds.
 
 `M_CalibrationExecuteToV1` borrows a read-only source RAW pointer. It can write
 corrected RAW, planar CIE, or both without first copying the source in managed
@@ -74,11 +88,19 @@ the context's last-error text between them.
 
 Parsed calibration assets are retained process-wide by calibration type and
 canonical file path, so different camera/template groups reuse the same file
-data and precomputed maps while keeping independent execution contexts. File
-size and last-write time invalidate stale generations. The default retained
-memory budget is 4 GiB; set `COLORVISION_CALIBRATION_CACHE_MB` before first use
-to override it (`0` disables retention). DSNU and Uniformity count the memory
-retained by the parsed maps, including lossless packed data and its indexes. Use
+data and precomputed maps while keeping independent execution contexts. Size,
+last-write time, Windows file identity and change time distinguish revisions,
+including replacements that retain the original timestamp. Where a revision
+token is unavailable, Engine hashes the source and native loads reuse only
+content-verified maps. The default retained memory budget is 4 GiB.
+`COLORVISION_CALIBRATION_CACHE_MB` sets the initial budget in MiB before first
+use. `M_CalibrationCacheSetBudgetV1` applies the budget in bytes at runtime.
+ColorVision saves the value entered on the calibration cache page and reapplies
+it at startup. Zero disables shared retention and background warmup.
+DSNU and Uniformity count the memory retained by the parsed maps, including
+lossless packed data and its indexes. `M_CalibrationGetItemEstimatedBytesV1`
+reports the shared-cache estimate for a specific loaded stage and file revision,
+even after that revision leaves the cache index. Use
 `M_CalibrationCacheGetStatsV1`/`M_CalibrationCacheGetEntryV1` to inspect the
 cache and `M_CalibrationCacheReleaseV1` to drop cache-owned references. Releasing
 the cache never invalidates a live context; the release result reports memory

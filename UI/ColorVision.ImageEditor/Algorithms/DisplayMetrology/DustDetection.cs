@@ -42,17 +42,22 @@ public sealed partial class DisplayMetrologyProvider
             throw new MeasurementException("no_analysis_region", "没有足够的有效成像区域，请检查成像阈值与边界内缩。");
         context.Progress?.Report(new AlgorithmProgress(0.2, "dust.background", "分析成像区域内的暗斑"));
         using Mat score = new(height, width, MatType.CV_32FC1, Scalar.All(0));
+        Rect scoreBounds = Cv2.BoundingRect(mask);
+        // Only the masked scores can become candidates. The non-isolated ROI
+        // lets GaussianBlur read the same parent pixels across the score bounds.
+        using Mat smoothedRegion = new(smoothed, scoreBounds);
+        using Mat scoreRegion = new(score, scoreBounds);
         using (Mat background = new())
         using (Mat delta = new())
         {
             foreach (int kernel in new[] { 31, 121, p.BackgroundKernel }.Distinct())
             {
                 token.ThrowIfCancellationRequested();
-                Cv2.GaussianBlur(smoothed, background, new Size(kernel, kernel), 0, borderType: BorderTypes.Reflect101);
-                Cv2.Subtract(background, smoothed, delta);
+                Cv2.GaussianBlur(smoothedRegion, background, new Size(kernel, kernel), 0, borderType: BorderTypes.Reflect101);
+                Cv2.Subtract(background, smoothedRegion, delta);
                 Cv2.Max(background, 1e-6, background);
                 Cv2.Divide(delta, background, delta);
-                Cv2.Max(score, delta, score);
+                Cv2.Max(scoreRegion, delta, scoreRegion);
             }
         }
         using Mat candidateMask = new();
@@ -151,22 +156,21 @@ public sealed partial class DisplayMetrologyProvider
         Cv2.FindContours(foreground, out Point[][] contours, out _, RetrievalModes.External, ContourApproximationModes.ApproxSimple);
         if (contours.Length == 0) throw new MeasurementException("no_illuminated_region", "未找到成像区域。");
         Point[] largest = contours.MaxBy(c => Cv2.ContourArea(c))!;
-        using Mat filled = new(signal.Rows, signal.Cols, MatType.CV_8UC1, Scalar.All(0));
-        Cv2.DrawContours(filled, new[] { largest }, -1, Scalar.All(255), -1);
         Rect bounds = Cv2.BoundingRect(largest);
-        // Outside zeros cannot affect the distance when the contour leaves a zero image border.
-        bool touchesBorder = bounds.X == 0 || bounds.Y == 0 || bounds.Right == width || bounds.Bottom == height;
-        using Mat? padded = touchesBorder ? new Mat() : null;
-        if (padded != null)
-            Cv2.CopyMakeBorder(filled, padded, 1, 1, 1, 1, BorderTypes.Constant, Scalar.All(0));
+        // The distance transform uses a 5x5 neighborhood. Keep those zero pixels
+        // around the cropped contour, including at the physical image edges.
+        const int padding = 2;
+        using Mat filled = new(bounds.Height + 2 * padding, bounds.Width + 2 * padding, MatType.CV_8UC1, Scalar.All(0));
+        Cv2.DrawContours(filled, new[] { largest }, -1, Scalar.All(255), -1,
+            offset: new Point(padding - bounds.X, padding - bounds.Y));
         using Mat distance = new();
-        Cv2.DistanceTransform(padded ?? filled, distance, DistanceTypes.L2, DistanceTransformMasks.Mask5);
-        using Mat? interior = padded == null ? null : new Mat(distance, new Rect(1, 1, width, height));
-        Mat mask = new();
+        Cv2.DistanceTransform(filled, distance, DistanceTypes.L2, DistanceTransformMasks.Mask5);
+        using Mat interior = new(distance, new Rect(padding, padding, bounds.Width, bounds.Height));
+        Mat mask = new(height, width, MatType.CV_8UC1, Scalar.All(0));
         try
         {
-            Cv2.Threshold(interior ?? distance, mask, p.BorderMargin, 255, ThresholdTypes.Binary);
-            mask.ConvertTo(mask, MatType.CV_8UC1);
+            using Mat target = new(mask, bounds);
+            Cv2.Compare(interior, p.BorderMargin, target, CmpTypes.GT);
             return mask;
         }
         catch { mask.Dispose(); throw; }

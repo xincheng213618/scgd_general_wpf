@@ -1,5 +1,6 @@
 using ColorVision.Database;
 using ColorVision.UI;
+using System.Collections.Generic;
 
 namespace ColorVision.Engine.FlowProcessing.Diagnostics
 {
@@ -13,15 +14,28 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
 
         protected override void ExportTables(SqliteFeedbackExport export)
         {
-            string recentRuns = export.Recent("FlowRunRecord", "src", ["completed_time"],
-                "started_time_utc", "completed_time_utc", "last_heartbeat_utc", "recovered_time_utc");
+            string[] localRunTimes = ["completed_time"];
+            string[] utcRunTimes = ["started_time_utc", "completed_time_utc", "last_heartbeat_utc", "recovered_time_utc"];
+            string recentRuns = export.Recent("FlowRunRecord", "src", localRunTimes, utcRunTimes);
+            var probes = new List<string>();
+            var linkedRunSets = new List<string>();
+            void AddRunEvidence(string table, string recent, bool matchBatch)
+            {
+                string Match(string run) => matchBatch
+                    ? $"child.batch_id = {run}.batch_id AND child.serial_number IS {run}.serial_number"
+                    : $"child.run_record_id = {run}.id";
+
+                probes.Add($"EXISTS (SELECT 1 FROM source.\"{table}\" child WHERE {Match("src")} AND {recent})");
+                linkedRunSets.Add($"src.id IN (SELECT run.id FROM source.\"{table}\" child JOIN source.FlowRunRecord run ON {Match("run")} WHERE {recent})");
+            }
+
             foreach (string table in new[] { "FlowNodeRecord", "FlowNodeMessage" })
             {
                 if (!export.HasTable(table)) continue;
                 string recent = table == "FlowNodeRecord"
                     ? export.Recent(table, "child", ["start_time", "end_time"])
                     : export.Recent(table, "child", ["send_time", "recv_time"]);
-                recentRuns += $" OR EXISTS (SELECT 1 FROM source.\"{table}\" child WHERE child.batch_id = src.batch_id AND child.serial_number IS src.serial_number AND {recent})";
+                AddRunEvidence(table, recent, matchBatch: true);
             }
             foreach (var (table, times) in new[]
             {
@@ -31,7 +45,28 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
             })
             {
                 if (export.HasTable(table))
-                    recentRuns += $" OR EXISTS (SELECT 1 FROM source.\"{table}\" child WHERE child.run_record_id = src.id AND {export.Recent(table, "child", [], times)})";
+                    AddRunEvidence(table, export.Recent(table, "child", [], times), matchBatch: false);
+            }
+
+            if (probes.Count > 0)
+            {
+                string linkedByProbe = string.Join(" OR ", probes);
+                if (export.HasColumn("FlowRunRecord", "id"))
+                {
+                    // Share the child searches when most runs need them. Keep per-run probes for
+                    // mostly recent sources and when a legacy ID cannot identify one row.
+                    string inRange = export.Recent("FlowRunRecord", "run", localRunTimes, utcRunTimes);
+                    string useSets = $"""
+                        (SELECT COUNT(*) = COUNT(DISTINCT run.id)
+                            AND COUNT(*) FILTER (WHERE {inRange}) * 2 < COUNT(*)
+                         FROM source.FlowRunRecord run)
+                        """;
+                    recentRuns += $" OR CASE WHEN {useSets} THEN ({string.Join(" OR ", linkedRunSets)}) ELSE ({linkedByProbe}) END";
+                }
+                else
+                {
+                    recentRuns += $" OR ({linkedByProbe})";
+                }
             }
             export.ExportTable("FlowRunRecord", recentRuns);
 

@@ -71,12 +71,10 @@ namespace ColorVision.Core
             double minimumConfidence = 0.25,
             IReadOnlyList<LuminousAreaPoint>? coarseCorners = null)
         {
-            ValidateCalibration(fovDist, cameraDegrees);
-            if (!double.IsFinite(minimumConfidence) || minimumConfidence < 0 || minimumConfidence > 1)
-                throw new ArgumentOutOfRangeException(nameof(minimumConfidence), "Minimum confidence must be between 0 and 1.");
             if (mode == FovMeasurementMode.CurvedBoundary)
             {
-                var boundary = FovCurvedBoundaryDetector.Detect(image, roi, minimumConfidence);
+                ValidateCalibration(fovDist, cameraDegrees);
+                var boundary = FovCurvedBoundaryDetector.Detect(image, roi);
                 FovBoundaryGeometry geometry = boundary.Geometry;
                 double diagonal1 = PixelDistanceToDegrees(Distance(geometry.DiagonalPoints[3], geometry.DiagonalPoints[1]), fovDist, cameraDegrees);
                 double diagonal2 = PixelDistanceToDegrees(Distance(geometry.DiagonalPoints[0], geometry.DiagonalPoints[2]), fovDist, cameraDegrees);

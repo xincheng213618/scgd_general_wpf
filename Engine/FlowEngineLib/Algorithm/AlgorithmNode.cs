@@ -122,9 +122,6 @@ public class AlgorithmNode : CVBaseServerNode
 		case AlgorithmType.双目融合:
 			operatorCode = "ARVR.BinocularFusion";
 			break;
-		case AlgorithmType.SFR_FindROI:
-			operatorCode = "ARVR.SFR.FindROI";
-			break;
 		case AlgorithmType.AA布点:
 			operatorCode = "ARVR.AA.FindPoints";
 			break;
@@ -147,7 +144,6 @@ public class AlgorithmNode : CVBaseServerNode
 		{
 		case AlgorithmType.MTF:
 		case AlgorithmType.SFR:
-		case AlgorithmType.SFR_FindROI:
 		case AlgorithmType.十字计算:
 			algorithmParam = new AlgorithmParam_ROI
 			{

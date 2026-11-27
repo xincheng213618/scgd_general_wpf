@@ -761,6 +761,42 @@ public sealed class CvFilePixelSafetyTests
     }
 
     [Fact]
+    public async Task LargeRawThumbnailMatchesWholeImageAreaResizeAtFractionalBandScale()
+    {
+        const int width = 3600, height = 2420, outputWidth = 120, outputHeight = 80;
+        byte[] pixels = new byte[width * height];
+        new Random(5921).NextBytes(pixels);
+        byte[] expected = new byte[outputWidth * outputHeight];
+        using (Mat original = Mat.FromPixelData(height, width, MatType.CV_8UC1, pixels))
+        using (Mat resized = new())
+        {
+            Cv2.Resize(original, resized, new OpenCvSharp.Size(outputWidth, outputHeight), 0, 0, InterpolationFlags.Area);
+            Marshal.Copy(resized.Data, expected, 0, expected.Length);
+        }
+
+        string path = Path.Combine(Path.GetTempPath(), $"RawThumbnailBands_{Guid.NewGuid():N}.cvraw");
+        try
+        {
+            using CVCIEFile file = new()
+            {
+                Version = 2, Cols = width, Rows = height, Bpp = 8, Channels = 1,
+                FileExtType = CVType.Raw, Exp = [1], Data = pixels,
+            };
+            Assert.True(CVFileUtil.WriteCIEFile(path, file));
+
+            var result = await new CVRawThumbnailProvider().GenerateThumbnailWithDimensionsAsync(path, outputWidth, default);
+            var (thumbnail, originalWidth, originalHeight) = Assert.NotNull(result);
+            Assert.Equal((width, height), (originalWidth, originalHeight));
+            Assert.Equal((outputWidth, outputHeight), (thumbnail.PixelWidth, thumbnail.PixelHeight));
+            Assert.True(thumbnail.IsFrozen);
+            byte[] actual = new byte[expected.Length];
+            thumbnail.CopyPixels(actual, outputWidth, 0);
+            Assert.Equal(expected, actual);
+        }
+        finally { File.Delete(path); }
+    }
+
+    [Fact]
     public async Task RawThumbnailAndDimensionsUseDiskWhenTheOpenedCacheStillHasOlderPixels()
     {
         string path = Path.Combine(Path.GetTempPath(), $"RawThumbnailRevision_{Guid.NewGuid():N}.cvraw");

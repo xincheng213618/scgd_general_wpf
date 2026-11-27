@@ -27,6 +27,10 @@ related: ["operations.camera","operations.physical-camera","operations.device-co
 
 编辑物理参数时，在“物理相机管理”选择目标相机，再点击详情区的“修改配置”。编辑逻辑服务时使用该逻辑相机的 `EditCommand`，此入口要求管理员权限。逻辑配置窗口选择物理相机后，自动将其参数带入编辑副本。点击“提交”时核对逻辑 `Code` 与物理 `CameraCode`，提交后才保存绑定。
 
+逻辑相机的 **设备自动连接**（`ConfigCamera.IsAutoOpen`）在界面新建和读取缺少该字段的配置时默认关闭。配置中显式保存的值继续生效。服务按此字段决定是否自动打开物理相机，本地流程取图由节点按需连接。
+
+物理相机的 **温控**（`CameraCfg.tempCtlChecked`）在新建配置和缺少该字段的配置中默认关闭，已有显式选择继续生效。海康 MVS 取图路径没有接入制冷控制，当前随附的旧 `SCGDCamLayer` 中 `HK_USB` 和 `HK_CARD` 也不报告制冷能力。QHY 机型需由 SDK 报告支持制冷，开启温控后才按目标温度调节。
+
 `ConfigPhyCamera.ApplyTo(ConfigCamera)` 复制通道、CFW、电机、模式、型号、采集模式、位深和曝光上下限。`includeCameraId` 默认 `true`，逻辑相机的 `CameraID` 是物理配置的兼容镜像；`includeCameraType` 默认 `true`。它不复制物理 `CameraCfg`、文件服务配置或显示端当前曝光/增益。
 
 电机配置的“启用电机”排在最前面，关闭时隐藏电机的详细参数及 VID；开启后恢复原有参数，不清空串口、行程或映射文件。VID 同样先显示“启用 VID”，关闭时隐藏映射文件和拟合参数。显示条件使用共享属性编辑器的元数据，物理配置窗口和通用属性编辑入口保持一致；独立电机设备使用的基础配置仍直接显示其参数。相机联动 `IsCameraLinkage` 默认 `false`，不在可编辑界面显示，保留已有配置值的读取与保存兼容；它控制电机连接失败是否使相机打开失败，不是自动对焦开关。

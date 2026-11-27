@@ -40,14 +40,34 @@
                              HorizontalContentAlignment="Stretch">
                         <ListBox.ItemTemplate>
                             <DataTemplate>
+                                <DataTemplate.Resources>
+                                    <BooleanToVisibilityConverter x:Key="UploadProgressVisibility"/>
+                                </DataTemplate.Resources>
                                 <Grid Margin="2,8">
-                                    <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+                                    <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
                                     <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
                                         <TextBlock Text="{Binding DisplayName}" ToolTip="{Binding SourcePath}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" Margin="0,0,12,0"/>
                                         <TextBlock Grid.Column="1" Text="{Binding Status}" FontSize="12"/>
                                     </Grid>
-                                    <ProgressBar Grid.Row="1" Style="{x:Null}" Minimum="0" Maximum="100" Value="{Binding Progress}" Height="5" Margin="0,10,0,7"/>
-                                    <TextBlock Grid.Row="2" Text="{Binding Detail}" FontSize="12" TextWrapping="Wrap" Foreground="{DynamicResource UpdateDialog.TextSecondary}"/>
+                                    <Grid Grid.Row="1" Margin="0,6,0,4" MinHeight="18">
+                                        <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                        <ProgressBar x:Name="UploadProgressBar" Style="{x:Null}" Minimum="0" Maximum="100" Value="{Binding Progress, Mode=OneWay}" Height="6"/>
+                                        <TextBlock x:Name="UploadPercentage" Grid.Column="1" Text="{Binding ProgressText}" FontSize="12" FontWeight="SemiBold"
+                                                   Margin="10,0,0,0" MinWidth="48" TextAlignment="Right" VerticalAlignment="Center"
+                                                   Visibility="{Binding HasUploadProgress, Converter={StaticResource UploadProgressVisibility}}"/>
+                                    </Grid>
+                                    <Grid Grid.Row="2">
+                                        <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                        <TextBlock x:Name="UploadDetail" Text="{Binding Detail}" FontSize="12" TextWrapping="Wrap"/>
+                                        <StackPanel Grid.Column="1" Orientation="Horizontal" Margin="12,0,0,0">
+                                            <TextBlock x:Name="UploadCurrentSpeed" Text="{Binding CurrentSpeedText}" FontSize="12"
+                                                       Visibility="{Binding HasUploadProgress, Converter={StaticResource UploadProgressVisibility}}"/>
+                                            <TextBlock x:Name="UploadRemainingTime" Text="{Binding RemainingTimeText}" FontSize="12" Margin="12,0,0,0"
+                                                       Visibility="{Binding HasUploadProgress, Converter={StaticResource UploadProgressVisibility}}"/>
+                                        </StackPanel>
+                                    </Grid>
+                                    <TextBlock x:Name="UploadMessage" Grid.Row="3" Text="{Binding UploadMessage}" FontSize="12" TextWrapping="Wrap"
+                                               Margin="0,4,0,0" Visibility="{Binding HasUploadMessage, Converter={StaticResource UploadProgressVisibility}}"/>
                                 </Grid>
                             </DataTemplate>
                         </ListBox.ItemTemplate>

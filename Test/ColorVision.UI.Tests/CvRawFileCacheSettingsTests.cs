@@ -1,4 +1,5 @@
 using ColorVision.Engine.Media;
+using ColorVision.Core;
 using ColorVision.Engine.Services.Caches;
 using ColorVision.Engine.Services.Devices.Camera.Local;
 using ColorVision.FileIO;
@@ -14,6 +15,56 @@ namespace ColorVision.UI.Tests;
 
 public sealed class CvRawFileCacheSettingsTests
 {
+    [Fact]
+    public void CalibrationBudgetEditsRefreshOnlyTheSelectedModuleAndAcceptZero()
+    {
+        ulong original = OpenCVCalibration.GetCalibrationSharedCacheStatistics().BudgetBytes;
+        IConfigService previous = ConfigService.Instance;
+        DirectoryInfo directory = Directory.CreateTempSubdirectory("CalibrationBudgetUI-");
+        string path = Path.Combine(directory.FullName, "config.json");
+        TestEnvironment.SetConfig(new ConfigHandler { ConfigFilePath = path });
+        var window = WpfTestHost.Invoke(() => new LocalCalibrationCacheManagerWindow());
+        try
+        {
+            WaitUntilIdle(window);
+            var nav = WpfTestHost.Invoke(() => (ListBox)window.FindName("CacheNavigation"));
+            var page = WpfTestHost.Invoke(() => nav.Items.Cast<CacheNavigationItem>().Single(item => item.Id == "Calibration"));
+            WpfTestHost.Invoke(() =>
+            {
+                nav.SelectedItem = page;
+                TextBox input = (TextBox)window.FindName("CalibrationBudgetTextBox");
+                Button apply = (Button)window.FindName("ApplyCalibrationBudgetButton");
+                Assert.Equal((original >> 20).ToString(), input.Text);
+                input.Text = "-1";
+                apply.RaiseEvent(new RoutedEventArgs(ButtonBase.ClickEvent));
+                Assert.Equal(original, OpenCVCalibration.GetCalibrationSharedCacheStatistics().BudgetBytes);
+                Assert.Contains("MiB", ((TextBlock)window.FindName("StatusText")).Text);
+                input.Text = "0";
+                apply.RaiseEvent(new RoutedEventArgs(ButtonBase.ClickEvent));
+                Assert.Equal(Visibility.Collapsed, ((FrameworkElement)window.FindName("LoadingOverlay")).Visibility);
+                Assert.True(nav.IsEnabled);
+            });
+            WaitUntilIdle(window);
+            Assert.Equal(0UL, OpenCVCalibration.GetCalibrationSharedCacheStatistics().BudgetBytes);
+            WpfTestHost.Invoke(() =>
+            {
+                Assert.Same(page, nav.SelectedItem);
+                Assert.Equal("0", ((TextBox)window.FindName("CalibrationBudgetTextBox")).Text);
+                Assert.Equal(Visibility.Collapsed, ((ProgressBar)window.FindName("CalibrationBudgetUsageBar")).Visibility);
+            });
+            Assert.Equal(0, Newtonsoft.Json.Linq.JObject.Parse(File.ReadAllText(path))[typeof(LocalCalibrationWarmupConfig).FullName!]!["MemoryBudgetMiB"]!.ToObject<int>());
+        }
+        finally
+        {
+            WaitUntilIdle(window);
+            WpfTestHost.Invoke(() => window.Close());
+            OpenCVCalibration.SetCalibrationSharedCacheBudget(original);
+            TestEnvironment.SetConfig(previous);
+            foreach (string file in Directory.EnumerateFiles(directory.FullName)) File.Delete(file);
+            directory.Delete();
+        }
+    }
+
     [Fact]
     public void BulkReleaseKeepsExplicitModuleScopeAcrossSearchAndRefresh()
     {
@@ -64,7 +115,7 @@ public sealed class CvRawFileCacheSettingsTests
         bool previousEnabled = CVFileReadCache.IsEnabled;
         int previousMaximumEntries = CVFileReadCache.MaximumEntries;
         TestEnvironment.SetConfig(new ConfigHandler { ConfigFilePath = path });
-        CVFileReadCache.IsEnabled = true;
+        CVFileReadCache.IsEnabled = false;
         CVFileReadCache.MaximumEntries = 1;
         LocalCalibrationCacheManagerWindow? window = null;
         ToggleButton? option = null;
@@ -72,9 +123,9 @@ public sealed class CvRawFileCacheSettingsTests
         try
         {
             Assert.Equal(1, CvRawFileCacheConfig.Current.MaximumEntries);
-            Assert.False(CvRawFileCacheConfig.Current.IsEnabled);
+            Assert.True(CvRawFileCacheConfig.Current.IsEnabled);
             new CvRawFileCacheInitializer().InitializeAsync().GetAwaiter().GetResult();
-            Assert.False(CVFileReadCache.IsEnabled);
+            Assert.True(CVFileReadCache.IsEnabled);
             window = WpfTestHost.Invoke(() =>
             {
                 EnsurePropertyEditorResources();
@@ -88,6 +139,7 @@ public sealed class CvRawFileCacheSettingsTests
                 Assert.Equal(Visibility.Visible, ((FrameworkElement)window.FindName("OverviewPanel")).Visibility);
                 Assert.Equal(Visibility.Visible, ((FrameworkElement)window.FindName("ImageCacheOptionsPanel")).Visibility);
                 Assert.Equal(Visibility.Visible, ((FrameworkElement)window.FindName("CameraCacheOptionsPanel")).Visibility);
+                Assert.Equal(Visibility.Collapsed, ((FrameworkElement)window.FindName("CalibrationWarmupOptionsPanel")).Visibility);
                 var checkbox = (CheckBox)window.FindName("ImageCacheEnabledCheckBox");
                 var property = typeof(CvRawFileCacheConfig).GetProperty(nameof(CvRawFileCacheConfig.IsEnabled))!;
                 var registration = property.GetCustomAttribute<ConfigSettingAttribute>();
@@ -97,9 +149,8 @@ public sealed class CvRawFileCacheSettingsTests
                 // Global options use the shared property-editor path and the persisted singleton.
                 DockPanel editor = PropertyEditorHelper.GenProperties(property, CvRawFileCacheConfig.Current);
                 option = Assert.Single(editor.Children.OfType<ToggleButton>());
-                Assert.False(checkbox.IsChecked);
-                Assert.False(option.IsChecked);
-                option.SetCurrentValue(ToggleButton.IsCheckedProperty, true);
+                Assert.True(checkbox.IsChecked);
+                Assert.True(option.IsChecked);
                 var countProperty = typeof(CvRawFileCacheConfig).GetProperty(nameof(CvRawFileCacheConfig.MaximumEntries))!;
                 var countRegistration = countProperty.GetCustomAttribute<ConfigSettingAttribute>();
                 Assert.NotNull(countRegistration);
@@ -121,17 +172,25 @@ public sealed class CvRawFileCacheSettingsTests
             WaitUntilIdle(window);
             Assert.False(ReadSavedSetting(path));
             Assert.Equal(2, ReadSavedCount(path));
+            var moduleGrid = WpfTestHost.Invoke(() => (DataGrid)window.FindName("CacheModulesGrid"));
+            var oldModules = WpfTestHost.Invoke(() => moduleGrid.Items.Cast<CacheModuleViewItem>().ToDictionary(item => item.Id));
+            var originalPage = WpfTestHost.Invoke(() => ((ListBox)window.FindName("CacheNavigation")).SelectedItem);
             WpfTestHost.Invoke(() =>
             {
                 var checkbox = (CheckBox)window.FindName("ImageCacheEnabledCheckBox");
                 checkbox.SetCurrentValue(ToggleButton.IsCheckedProperty, true);
                 checkbox.RaiseEvent(new RoutedEventArgs(ButtonBase.ClickEvent));
+                Assert.Equal(Visibility.Collapsed, ((FrameworkElement)window.FindName("LoadingOverlay")).Visibility);
+                Assert.True(((FrameworkElement)window.FindName("CacheContentPanel")).IsEnabled);
             });
             WaitUntilIdle(window);
             WpfTestHost.Invoke(() =>
             {
                 Assert.True(option!.IsChecked);
                 Assert.True(CVFileReadCache.IsEnabled);
+                Assert.Same(originalPage, ((ListBox)window.FindName("CacheNavigation")).SelectedItem);
+                foreach (var row in moduleGrid.Items.Cast<CacheModuleViewItem>()) Assert.Same(oldModules[row.Id], row);
+                Assert.True(oldModules["ImageFile"].Snapshot.IsEnabled);
             });
             Assert.True(ReadSavedSetting(path));
             WpfTestHost.Invoke(() =>
@@ -154,11 +213,25 @@ public sealed class CvRawFileCacheSettingsTests
                 Assert.True(((CheckBox)window.FindName("ImageCacheEnabledCheckBox")).IsChecked);
                 Assert.Equal(Visibility.Visible, ((FrameworkElement)window.FindName("ImageCacheOptionsPanel")).Visibility);
                 Assert.Equal(Visibility.Collapsed, ((FrameworkElement)window.FindName("CameraCacheOptionsPanel")).Visibility);
+                navigation.SelectedItem = navigation.Items.Cast<CacheNavigationItem>().Single(item => item.Id == "Calibration");
+                Assert.Equal(Visibility.Visible, ((FrameworkElement)window.FindName("CalibrationWarmupOptionsPanel")).Visibility);
+                var warmup = (CheckBox)window.FindName("CalibrationWarmupCheckBox");
+                Assert.True(warmup.IsChecked);
+                warmup.SetCurrentValue(ToggleButton.IsCheckedProperty, false);
+                warmup.RaiseEvent(new RoutedEventArgs(ButtonBase.ClickEvent));
+                Assert.False(LocalCalibrationWarmupHistory.Enabled);
             });
             Assert.Equal(3, ReadSavedCount(path));
+            object selectedPage = WpfTestHost.Invoke(() => ((ListBox)window.FindName("CacheNavigation")).SelectedItem);
+            object details = WpfTestHost.Invoke(() => ((DataGrid)window.FindName("CacheDetailsGrid")).ItemsSource);
             WpfTestHost.Invoke(() => { option!.SetCurrentValue(ToggleButton.IsCheckedProperty, false); ConfigService.Instance.SaveConfigs(); });
             WaitUntilIdle(window);
-            WpfTestHost.Invoke(() => window.Close());
+            WpfTestHost.Invoke(() =>
+            {
+                Assert.Same(selectedPage, ((ListBox)window.FindName("CacheNavigation")).SelectedItem);
+                Assert.Same(details, ((DataGrid)window.FindName("CacheDetailsGrid")).ItemsSource);
+                window.Close();
+            });
             window = null;
 
             // Simulate a new process whose native cache starts enabled before loading saved settings.
@@ -186,7 +259,7 @@ public sealed class CvRawFileCacheSettingsTests
     }
 
     [Fact]
-    public void CameraCacheIsOptInAndDisablingRetiresIdleAndReturnedBuffersAcrossExistingAndNewPools()
+    public void CameraCacheDefaultsOnAndDisablingRetiresIdleAndReturnedBuffersAcrossExistingAndNewPools()
     {
         string root = Path.Combine(Path.GetTempPath(), $"camera-cache-settings-{Guid.NewGuid():N}");
         Directory.CreateDirectory(root);
@@ -197,13 +270,13 @@ public sealed class CvRawFileCacheSettingsTests
         LocalCalibrationCacheManagerWindow? window = null;
         try
         {
-            Assert.False(CameraRawBufferCacheConfig.Current.IsEnabled);
-            LocalCameraRawBufferPool.IsCacheEnabled = true;
+            Assert.True(CameraRawBufferCacheConfig.Current.IsEnabled);
+            LocalCameraRawBufferPool.IsCacheEnabled = false;
             new CameraRawBufferCacheInitializer().InitializeAsync().GetAwaiter().GetResult();
-            Assert.False(LocalCameraRawBufferPool.IsCacheEnabled);
+            Assert.True(LocalCameraRawBufferPool.IsCacheEnabled);
             using var existingPool = new LocalCameraRawBufferPool();
             using (var frame = LocalFlowFrame.Allocate(new LocalFrameMetadata(), 64, 0, existingPool)) { }
-            Assert.Equal(0, existingPool.IdleBytes);
+            Assert.Equal(64, existingPool.IdleBytes);
 
             window = WpfTestHost.Invoke(() => new LocalCalibrationCacheManagerWindow());
             WaitUntilIdle(window);
@@ -212,13 +285,10 @@ public sealed class CvRawFileCacheSettingsTests
                 Assert.Equal(Visibility.Visible, ((FrameworkElement)window.FindName("CameraCacheOptionsPanel")).Visibility);
                 Assert.Equal(Visibility.Visible, ((FrameworkElement)window.FindName("ImageCacheOptionsPanel")).Visibility);
                 var checkbox = (CheckBox)window.FindName("CameraCacheEnabledCheckBox");
-                Assert.False(checkbox.IsChecked);
-                checkbox.SetCurrentValue(ToggleButton.IsCheckedProperty, true);
-                checkbox.RaiseEvent(new RoutedEventArgs(ButtonBase.ClickEvent));
+                Assert.True(checkbox.IsChecked);
             });
             WaitUntilIdle(window);
             Assert.True(LocalCameraRawBufferPool.IsCacheEnabled);
-            Assert.True(ReadSavedCameraSetting(path));
             using var newPool = new LocalCameraRawBufferPool();
             using var borrowed = LocalFlowFrame.Allocate(new LocalFrameMetadata(), 64, 0, existingPool);
             using var lease = borrowed.Acquire();
@@ -238,6 +308,8 @@ public sealed class CvRawFileCacheSettingsTests
                 var checkbox = (CheckBox)window.FindName("CameraCacheEnabledCheckBox");
                 checkbox.SetCurrentValue(ToggleButton.IsCheckedProperty, false);
                 checkbox.RaiseEvent(new RoutedEventArgs(ButtonBase.ClickEvent));
+                Assert.Equal(Visibility.Collapsed, ((FrameworkElement)window.FindName("LoadingOverlay")).Visibility);
+                Assert.True(((FrameworkElement)window.FindName("CacheContentPanel")).IsEnabled);
             });
             WaitUntilIdle(window);
             Assert.False(ReadSavedCameraSetting(path));
@@ -304,12 +376,13 @@ public sealed class CvRawFileCacheSettingsTests
     private static void WaitUntilIdle(LocalCalibrationCacheManagerWindow window)
     {
         FieldInfo busy = typeof(LocalCalibrationCacheManagerWindow).GetField("isBusy", BindingFlags.NonPublic | BindingFlags.Instance)!;
-        // A config change only queues RefreshAsync, so drain the dispatcher before trusting isBusy;
-        // the window ignores clicks while busy.
         Assert.True(SpinWait.SpinUntil(() =>
         {
             window.Dispatcher.Invoke(() => { }, System.Windows.Threading.DispatcherPriority.ApplicationIdle);
-            return WpfTestHost.Invoke(() => !(bool)busy.GetValue(window)!);
+            return WpfTestHost.Invoke(() => !(bool)busy.GetValue(window)!
+                && ((FrameworkElement)window.FindName("ImageCacheOptionsPanel")).IsEnabled
+                && ((FrameworkElement)window.FindName("CameraCacheOptionsPanel")).IsEnabled
+                && ((FrameworkElement)window.FindName("CalibrationBudgetPanel")).IsEnabled);
         }, TimeSpan.FromSeconds(10)));
     }
 

@@ -6,6 +6,7 @@ using log4net.Core;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.ComponentModel.DataAnnotations;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -90,6 +91,9 @@ namespace ColorVision.UI
         public Dictionary<string, List<PropertyInfo>> categoryGroups { get; set; } = new Dictionary<string, List<PropertyInfo>>();
         
         private string searchText = string.Empty;
+        private readonly Dictionary<PropertyInfo, SearchMetadata?> searchMetadata = new();
+        private ResourceManager? searchResourceManager;
+        private CultureInfo? searchCulture;
         private PropertySortMode currentSortMode = PropertySortMode.Default;
         private object CurrentSource => _editSession?.EditableObject ?? Config;
 
@@ -100,6 +104,7 @@ namespace ColorVision.UI
 
         private readonly PropertyEditorEditMode _editMode;
         private PropertyEditSession? _editSession;
+        private Func<object>? _createResetDefaults;
 
         public PropertyEditorWindow(object config)
             : this(config, PropertyEditorEditMode.Immediate)
@@ -171,10 +176,21 @@ namespace ColorVision.UI
         private void ResetToFactory_Click(object sender, RoutedEventArgs e)
         {
             SearchBox.Text = string.Empty;
-            _editSession?.ResetToDefaults();
+            if (_createResetDefaults == null)
+                _editSession?.ResetToDefaults();
+            else
+                PropertyGraphCopy.Copy(_createResetDefaults(), CurrentSource);
 
             DisplayProperties(CurrentSource);
-  
+        }
+
+        /// <summary>Uses caller-provided values for the restore-defaults action.</summary>
+        public void ConfigureResetToDefaults(string buttonText, Func<object> createDefaults)
+        {
+            ArgumentNullException.ThrowIfNull(createDefaults);
+            _createResetDefaults = createDefaults;
+            ResetDefaultsButton.Content = buttonText;
+            ResetDefaultsButton.ToolTip = buttonText;
         }
 
         static int GetInheritanceDepth(Type t)
@@ -237,6 +253,7 @@ namespace ColorVision.UI
 
         private void RebuildDisplay(object source)
         {
+            searchMetadata.Clear();
             PropertyPanel.Children.Clear();
             TreeNodes.Clear();
 
@@ -452,6 +469,17 @@ namespace ColorVision.UI
                 return;
 
             bool showAll = string.IsNullOrWhiteSpace(searchText);
+            if (!showAll)
+            {
+                ResourceManager? resourceManager = PropertyEditorHelper.GetResourceManager(CurrentSource);
+                CultureInfo culture = CultureInfo.CurrentUICulture;
+                if (!ReferenceEquals(resourceManager, searchResourceManager) || !Equals(culture, searchCulture))
+                {
+                    searchMetadata.Clear();
+                    searchResourceManager = resourceManager;
+                    searchCulture = culture;
+                }
+            }
             foreach (UIElement child in PropertyPanel.Children)
             {
                 if (child is Border border && border.Child is StackPanel stackPanel)
@@ -506,7 +534,22 @@ namespace ColorVision.UI
 
         private bool MatchesSearch(PropertyInfo property)
         {
-            ResourceManager? resourceManager = PropertyEditorHelper.GetResourceManager(CurrentSource);
+            ResourceManager? resourceManager = searchResourceManager;
+            if (!PropertyEditorHelper.HasActiveMetadataProvider)
+            {
+                if (!searchMetadata.TryGetValue(property, out SearchMetadata? metadata))
+                {
+                    metadata = CreateSearchMetadata(resourceManager, property);
+                    searchMetadata.Add(property, metadata);
+                }
+
+                if (metadata is { } cached)
+                    return cached.DisplayName.Contains(searchText, StringComparison.OrdinalIgnoreCase)
+                        || property.Name.Contains(searchText, StringComparison.OrdinalIgnoreCase)
+                        || cached.Description.Contains(searchText, StringComparison.OrdinalIgnoreCase)
+                        || cached.Category.Contains(searchText, StringComparison.OrdinalIgnoreCase);
+            }
+
             string displayName = PropertyEditorHelper.GetDisplayName(resourceManager, property);
             if (displayName.Contains(searchText, StringComparison.OrdinalIgnoreCase))
                 return true;
@@ -519,14 +562,27 @@ namespace ColorVision.UI
             if (description.Contains(searchText, StringComparison.OrdinalIgnoreCase))
                 return true;
 
-            string category = PropertyEditorHelper.GetLocalizedString(
-                resourceManager,
-                property.GetCustomAttribute<CategoryAttribute>()?.Category ?? PropertyEditorHelper.GetDisplayMetadata(property, display => display.GetGroupName()) ?? property.DeclaringType?.Name);
-            if (category.Contains(searchText, StringComparison.OrdinalIgnoreCase))
-                return true;
-
-            return false;
+            return GetSearchCategory(resourceManager, property).Contains(searchText, StringComparison.OrdinalIgnoreCase);
         }
+
+        private static SearchMetadata? CreateSearchMetadata(ResourceManager? resourceManager, PropertyInfo property)
+        {
+            // Derived attributes and DisplayAttribute resource properties can supply changing values.
+            if ((property.GetCustomAttribute<DisplayNameAttribute>() is { } name && name.GetType() != typeof(DisplayNameAttribute))
+                || (property.GetCustomAttribute<DescriptionAttribute>() is { } description && description.GetType() != typeof(DescriptionAttribute))
+                || (property.GetCustomAttribute<CategoryAttribute>() is { } category && category.GetType() != typeof(CategoryAttribute))
+                || property.GetCustomAttribute<DisplayAttribute>()?.ResourceType != null)
+                return null;
+
+            return new SearchMetadata(PropertyEditorHelper.GetDisplayName(resourceManager, property),
+                PropertyEditorHelper.GetDescription(resourceManager, property), GetSearchCategory(resourceManager, property));
+        }
+
+        private static string GetSearchCategory(ResourceManager? resourceManager, PropertyInfo property) =>
+            PropertyEditorHelper.GetLocalizedString(resourceManager, property.GetCustomAttribute<CategoryAttribute>()?.Category
+                ?? PropertyEditorHelper.GetDisplayMetadata(property, display => display.GetGroupName()) ?? property.DeclaringType?.Name);
+
+        private readonly record struct SearchMetadata(string DisplayName, string Description, string Category);
 
         private void SortComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {

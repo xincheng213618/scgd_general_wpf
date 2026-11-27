@@ -58,6 +58,31 @@ public sealed class HeightMapDxGeometryTests
     }
 
     [Fact]
+    public void LargeMeshKeepsRowMajorTriangleOrderAroundAnAlphaHole()
+    {
+        const int width = 1025, height = 513, holeX = 514, holeY = 257;
+        byte[] gray = new byte[width * height];
+        byte[] alpha = new byte[gray.Length];
+        Array.Fill(alpha, byte.MaxValue);
+        alpha[holeY * width + holeX] = 127;
+
+        var mesh = HeightMapDxGeometry.Build(new HeightMapSample(gray, alpha, width, height), 511, 255, CancellationToken.None);
+
+        Assert.Equal(((width - 1) * (height - 1) - 4) * 6, mesh.Indices.Length);
+        int firstSkipped = (holeY - 1) * (width - 1) + holeX - 1;
+        int firstFollowing = (holeY - 1) * width + holeX + 1;
+        AssertQuad(firstSkipped, firstFollowing);
+        int rowAfterHole = holeY + 1;
+        AssertQuad(rowAfterHole * (width - 1) - 4, rowAfterHole * width);
+
+        void AssertQuad(int cellOffset, int vertex)
+        {
+            int[] expected = [vertex, vertex + width, vertex + 1, vertex + 1, vertex + width, vertex + width + 1];
+            Assert.True(mesh.Indices.Slice(cellOffset * 6, 6).SequenceEqual(expected));
+        }
+    }
+
+    [Fact]
     public void ReducedMesh_DoesNotBridgeATransparentPixelBetweenCoarseCorners()
     {
         byte[] gray = Enumerable.Repeat((byte)180, 25).ToArray();

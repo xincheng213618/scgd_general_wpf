@@ -109,6 +109,18 @@ namespace ColorVision.Engine.Services
                 ClearCopilotDeviceContext();
         }
 
+        private void ConfigureDataPath_Click(object sender, RoutedEventArgs e)
+        {
+            var services = ServiceManager.GetInstance();
+            bool pathOnlyChange = _initialConfiguration?.SequenceEqual(CaptureConfiguration(services.TypeServices)) == true;
+            var dialog = new DeviceDataPathWindow(new DeviceDataPathConfiguration(ConfigHandler.GetInstance(), () => ServiceManager.GetInstance().DeviceServices))
+            {
+                Owner = this,
+            };
+            dialog.ShowDialog();
+            if (dialog.HasApplied && pathOnlyChange) _initialConfiguration = CaptureConfiguration(services.TypeServices);
+        }
+
         protected override void OnClosed(EventArgs e)
         {
             ClearCopilotDeviceContext();

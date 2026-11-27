@@ -1,4 +1,5 @@
 using ColorVision.Database;
+using ColorVision.UI.Sorts;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -9,9 +10,10 @@ using System.Linq;
 namespace ColorVision.Engine.Services.Results
 {
     // Queries load fully; the next live insertion applies the usual limit to the same list.
-    internal sealed class ResultHistoryCollection<T>(Func<T, int> getId, int maxCount) : ObservableCollection<T> where T : class
+    internal sealed class ResultHistoryCollection<T>(Func<T, int> getId, int maxCount) : ObservableCollection<T>, ISortableCollection where T : class
     {
-        private readonly SortedDictionary<int, T> _byId = new();
+        private const int BatchSortMinimumCount = 1000;
+        private SortedDictionary<int, T> _byId = new();
         private IQueryResultList<T>? _queryResults;
         private int _maxCount = Math.Max(1, maxCount);
 
@@ -28,6 +30,24 @@ namespace ColorVision.Engine.Services.Results
         }
 
         public bool ContainsId(int id) => _byId.ContainsKey(id);
+
+        bool ISortableCollection.TrySortBy(Func<object, object?> keySelector, IComparer<object?> keyComparer)
+        {
+            if (Count < BatchSortMinimumCount) return false;
+            CheckReentrancy();
+            T[] sorted = Items.OrderBy(keySelector.Invoke, keyComparer).ToArray();
+            int firstChanged = 0;
+            while (firstChanged < sorted.Length && ReferenceEquals(Items[firstChanged], sorted[firstChanged]))
+                firstChanged++;
+
+            if (firstChanged == sorted.Length) return true;
+            for (int i = firstChanged; i < sorted.Length; i++)
+                Items[i] = sorted[i];
+
+            OnPropertyChanged(new PropertyChangedEventArgs("Item[]"));
+            OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset));
+            return true;
+        }
 
         protected override void InsertItem(int index, T item)
         {
@@ -89,6 +109,8 @@ namespace ColorVision.Engine.Services.Results
 
             CheckReentrancy();
             int cutoffId = _byId.Keys.ElementAt(removeCount - 1);
+            // Rebuild only when the discarded rows substantially outnumber the retained rows.
+            var retainedById = removeCount >= 2L * limit ? new SortedDictionary<int, T>() : null;
             int retainedCount = 0;
             int adjustedIndex = insertionIndex;
             for (int index = 0; index < Count; index++)
@@ -97,15 +119,20 @@ namespace ColorVision.Engine.Services.Results
                 int id = getId(item);
                 if (id <= cutoffId)
                 {
-                    _byId.Remove(id);
+                    if (retainedById == null) _byId.Remove(id);
                     if (index < insertionIndex) adjustedIndex--;
                     continue;
                 }
                 if (retainedCount != index) Items[retainedCount] = item;
+                retainedById?.Add(id, item);
                 retainedCount++;
             }
             // WPF observes the finished list once instead of reprocessing every removed row.
-            while (Count > retainedCount) Items.RemoveAt(Count - 1);
+            if (Items is List<T> list)
+                list.RemoveRange(retainedCount, Count - retainedCount);
+            else
+                while (Count > retainedCount) Items.RemoveAt(Count - 1);
+            if (retainedById != null) _byId = retainedById;
             PublishReset();
             return adjustedIndex;
         }

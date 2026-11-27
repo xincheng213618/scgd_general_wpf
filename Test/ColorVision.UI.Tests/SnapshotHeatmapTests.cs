@@ -34,6 +34,39 @@ public sealed class SnapshotHeatmapTests
     }
 
     [Theory]
+    [InlineData(0, 255)]
+    [InlineData(23, 189)]
+    public void ByteLuminanceHeatmapMatchesSeparateIndexConversion(int minimum, int maximum)
+    {
+        StaTest.Run(() =>
+        {
+            const int width = 37, height = 19, stride = 40;
+            byte[] pixels = new byte[stride * height];
+            for (int y = 0; y < height; y++)
+            for (int x = 0; x < width; x++)
+                pixels[y * stride + x] = (byte)(minimum + (y * width + x) % (maximum - minimum + 1));
+            BitmapSource source = BitmapSource.Create(width, height, 96, 96, PixelFormats.Gray8, null, pixels, stride);
+            using Mat luminance = Mat.FromPixelData(height, width, MatType.CV_8UC1, pixels, stride);
+            using Mat indices = new();
+            double scale = 255d / (maximum - minimum);
+            luminance.ConvertTo(indices, MatType.CV_8U, scale, -minimum * scale);
+            using Mat jet = new();
+            Cv2.ApplyColorMap(indices, jet, ColormapTypes.Jet);
+
+            BitmapSource result = SnapshotHeatmap.Create(source, width, height, 96, 96, CancellationToken.None);
+
+            byte[] expected = new byte[width * height * 3];
+            byte[] actual = new byte[expected.Length];
+            Marshal.Copy(jet.Data, expected, 0, expected.Length);
+            result.CopyPixels(actual, width * 3, 0);
+            Assert.Equal(expected, actual);
+            byte[] sourcePixels = new byte[pixels.Length];
+            source.CopyPixels(sourcePixels, stride, 0);
+            Assert.Equal(pixels, sourcePixels);
+        });
+    }
+
+    [Theory]
     [InlineData(2)]
     [InlineData(4)]
     public void DownscaledHeatmapMatchesFullImageAreaSamplingAndGlobalColorRange(int divisor)

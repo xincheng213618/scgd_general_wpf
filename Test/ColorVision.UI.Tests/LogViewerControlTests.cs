@@ -42,4 +42,95 @@ public sealed class LogViewerControlTests
             Assert.Equal(string.Empty, mirror.GetValue(viewer));
         });
     }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void RollingKeywordFilterKeepsMatchingRowsInOrderAcrossTrimming(bool latestAtTop)
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            var viewer = new LogViewerControl { ViewerMode = LogViewerMode.Virtualized, MaxEntries = 4 };
+            viewer.RaiseEvent(new RoutedEventArgs(FrameworkElement.LoadedEvent));
+            ListBox list = Assert.IsType<ListBox>(viewer.FindName("EntriesListBox"));
+            list.SetCurrentValue(ItemsControl.ItemsSourceProperty, viewer.VisibleEntries);
+            var duplicate = new LogEntry("keep duplicate", LogEntryLevel.Info);
+            var hidden = new LogEntry("hide this", LogEntryLevel.Warning);
+            var retained = new LogEntry("keep selected", LogEntryLevel.Info);
+            var incoming = new LogEntry("keep new", LogEntryLevel.Info);
+
+            viewer.SetEntries([duplicate, hidden, duplicate, retained], latestAtTop);
+            Assert.True(viewer.ApplySearchFilter("keep"));
+            list.SelectedItem = retained;
+            Assert.Same(retained, list.SelectedItem);
+            viewer.AppendEntries([hidden, incoming], latestAtTop, autoScroll: false);
+            Assert.Null(list.SelectedItem);
+            AssertVisible([duplicate, retained, incoming]);
+
+            var another = new LogEntry("keep another", LogEntryLevel.Info);
+            viewer.AppendEntries([retained, incoming, hidden, duplicate, another], latestAtTop, autoScroll: false);
+            AssertVisible([incoming, duplicate, another]);
+
+            Assert.False(viewer.ApplySearchFilter("["));
+            viewer.AppendEntries([hidden, retained], latestAtTop, autoScroll: false);
+            AssertVisible([incoming, duplicate, another]);
+
+            void AssertVisible(LogEntry[] chronological)
+            {
+                if (latestAtTop) Array.Reverse(chronological);
+                Assert.Equal(chronological, viewer.VisibleEntries);
+                Assert.Equal(chronological, list.Items.Cast<LogEntry>());
+            }
+        });
+    }
+
+    [Fact]
+    public void RangeSelectionKeepsOrderAndPrimaryAfterExternalSelection()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            var viewer = new LogViewerControl { ViewerMode = LogViewerMode.Virtualized };
+            var first = new LogEntry("first", LogEntryLevel.Info);
+            var repeated = new LogEntry("repeated", LogEntryLevel.Info);
+            var fourth = new LogEntry("fourth", LogEntryLevel.Info);
+            var last = new LogEntry("last", LogEntryLevel.Info);
+            viewer.SetEntries([first, repeated, repeated, fourth, last], latestAtTop: false);
+            viewer.RaiseEvent(new RoutedEventArgs(FrameworkElement.LoadedEvent));
+            ListBox list = Assert.IsType<ListBox>(viewer.FindName("EntriesListBox"));
+            list.SetCurrentValue(ItemsControl.ItemsSourceProperty, viewer.VisibleEntries);
+            var selectRange = typeof(LogViewerControl).GetMethod("SelectEntryRange", BindingFlags.Instance | BindingFlags.NonPublic)!
+                .CreateDelegate<Action<int, int>>(viewer);
+            int changes = 0;
+            list.SelectionChanged += (_, _) => changes++;
+
+            selectRange(1, 2);
+            list.SelectedItems.Clear();
+            list.SelectedIndex = 2;
+            Assert.Equal(2, list.SelectedIndex);
+            selectRange(1, 3);
+            AssertSelection(1, repeated, repeated, fourth);
+
+            changes = 0;
+            selectRange(1, 3);
+            Assert.Equal(0, changes);
+            selectRange(1, 4);
+            AssertSelection(1, repeated, repeated, fourth, last);
+            Assert.Equal(1, changes);
+            selectRange(1, 2);
+            AssertSelection(1, repeated, repeated);
+            selectRange(1, 1);
+            AssertSelection(1, repeated);
+
+            list.SelectedItems.Add(last);
+            selectRange(1, 0);
+            AssertSelection(0, first, repeated);
+
+            void AssertSelection(int index, params LogEntry[] entries)
+            {
+                Assert.Equal(index, list.SelectedIndex);
+                Assert.Same(entries[0], list.SelectedItem);
+                Assert.Equal(entries, list.SelectedItems.Cast<LogEntry>());
+            }
+        });
+    }
 }

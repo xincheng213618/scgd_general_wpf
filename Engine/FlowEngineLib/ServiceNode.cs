@@ -35,13 +35,16 @@ public class ServiceNode
 
 	public void AddMQTTService(CVBaseServerNode service)
 	{
-		MQTTServiceInfo service2 = new MQTTServiceInfo
+		string code = service.NodeName;
+		if (string.IsNullOrEmpty(code) || MQTTServices.ContainsKey(code))
+			return;
+
+		MQTTServices.Add(code, new MQTTServiceInfo
 		{
 			ServiceType = service.NodeType,
-			ServiceCode = service.NodeName,
+			ServiceCode = code,
 			PublishTopic = service.DefaultPublishTopic,
 			SubscribeTopic = service.DefaultSubscribeTopic
-		};
-		AddMQTTService(service2);
+		});
 	}
 }

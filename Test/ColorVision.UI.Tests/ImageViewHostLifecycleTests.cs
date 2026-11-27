@@ -6,9 +6,11 @@ using ColorVision.Engine.Services;
 using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.Services.Devices.Camera.Local;
 using ColorVision.Engine.Services.PhyCameras.Configs;
+using ColorVision.Engine.Templates.Jsons.FOV2;
 using ColorVision.Engine.Templates.Jsons.KB;
 using ColorVision.Engine.Templates.POI;
 using ColorVision.ImageEditor;
+using ColorVision.ImageEditor.Tif;
 using ColorVision.Solution.MultiImageViewer;
 using ColorVision.Themes;
 using ColorVision.UI;
@@ -33,6 +35,53 @@ namespace ColorVision.UI.Tests;
 
 public sealed class ImageViewHostLifecycleTests(ITestOutputHelper output)
 {
+    [Fact]
+    public async Task FovCameraScopeUsesTheCurrentImagesAcquisition()
+    {
+        using var captured = new ImageFile(new ColorVisionTiffParameters
+        {
+            Acquisition = new ImageAcquisitionRecord
+            {
+                Camera = new ImageCameraInformation { CameraId = "CAM-123", DeviceCode = "DEV.Camera", DeviceName = "Inspection" }
+            }
+        });
+        using var plain = new ImageFile();
+        var scope = WpfTestHost.Invoke(() => new PresentationScope());
+        ImageView view = WpfTestHost.Invoke(() => new ImageView());
+        try
+        {
+            await Open(captured.Path);
+            WpfTestHost.Invoke(() =>
+            {
+                Assert.Equal("camera:CAM-123", FovImageViewRunner.ResolveCamera(view)?.Key);
+                SetPixels(view);
+                Assert.Null(FovImageViewRunner.ResolveCamera(view));
+            });
+
+            await Open(plain.Path);
+            Assert.Null(WpfTestHost.Invoke(() => FovImageViewRunner.ResolveCamera(view)));
+            await Open(captured.Path);
+            Assert.Equal("camera:CAM-123", WpfTestHost.Invoke(() => FovImageViewRunner.ResolveCamera(view)?.Key));
+        }
+        finally
+        {
+            WpfTestHost.Invoke(() =>
+            {
+                view.Dispose();
+                scope.Dispose();
+            });
+        }
+
+        async Task Open(string path)
+        {
+            await WpfTestHost.Invoke(() =>
+            {
+                Assert.True(view.TryOpenImage(path));
+                return view.ImageOpenCompletion;
+            }).WaitAsync(TimeSpan.FromSeconds(10));
+        }
+    }
+
     [Theory]
     [InlineData("roi")]
     [InlineData("poi")]
@@ -625,18 +674,38 @@ public sealed class ImageViewHostLifecycleTests(ITestOutputHelper output)
     {
         using var image = new ImageFile();
         DirectoryInfo folder = Directory.CreateTempSubdirectory("ColorVision-PreviewLimit-");
-        string[] paths = Enumerable.Range(0, 12).Select(index => Path.Combine(folder.FullName, $"image-{index:D2}.png")).ToArray();
+        string folderPath = Path.GetRelativePath(Environment.CurrentDirectory, folder.FullName);
+        string[] paths = Enumerable.Range(0, 12).Select(index => Path.Combine(folder.FullName, $"image-{index:D2}.PNG")).ToArray();
+        string unsupported = Path.Combine(folder.FullName, "image-00.txt");
+        string nested = Path.Combine(folder.FullName, "nested.png");
+        string nestedImage = Path.Combine(nested, "image.png");
         var scope = WpfTestHost.Invoke(() => new MultiImageScope(showThumbnails: false));
         try
         {
-            foreach (string path in paths) File.Copy(image.Path, path);
-            string[] enumerated = Directory.GetFiles(folder.FullName, "*.*", SearchOption.TopDirectoryOnly);
+            DateTime written = new(2024, 3, 1, 2, 3, 4, DateTimeKind.Utc);
+            for (int index = 0; index < paths.Length; index++)
+            {
+                File.Copy(image.Path, paths[index]);
+                File.SetLastWriteTimeUtc(paths[index], written.AddMinutes(index));
+            }
+            File.SetAttributes(paths[2], FileAttributes.Hidden);
+            File.WriteAllText(unsupported, "not an image");
+            Directory.CreateDirectory(nested);
+            File.Copy(image.Path, nestedImage);
+            string[] enumerated = Directory.EnumerateFiles(folderPath, "*.*", SearchOption.TopDirectoryOnly)
+                .Where(path => string.Equals(Path.GetExtension(path), ".png", StringComparison.OrdinalIgnoreCase))
+                .ToArray();
+            var expectedMetadata = enumerated.ToDictionary(path => path, path =>
+            {
+                FileInfo file = new(path);
+                return (file.Length, file.LastWriteTime);
+            });
             string preferred = enumerated[^1];
             await WpfTestHost.Invoke(() =>
             {
                 MultiImageViewer.Config.MaxDisplayCount = 10;
                 scope.Viewer.FilePath = preferred;
-                return scope.Viewer.LoadFromFolderAsync(folder.FullName);
+                return scope.Viewer.LoadFromFolderAsync(folderPath);
             }).WaitAsync(TimeSpan.FromSeconds(10));
 
             await WpfTestHost.Invoke(() => scope.View.ImageOpenCompletion).WaitAsync(TimeSpan.FromSeconds(10));
@@ -644,6 +713,13 @@ public sealed class ImageViewHostLifecycleTests(ITestOutputHelper output)
             {
                 Assert.Equal(preferred, scope.Viewer.GetSelectedFile()?.FilePath);
                 Assert.Equal(enumerated.Take(9).Append(preferred), scope.Viewer.ImageFiles.Select(item => item.FilePath));
+                Assert.All(scope.Viewer.ImageFiles, item =>
+                {
+                    var (length, modified) = expectedMetadata[item.FilePath];
+                    Assert.True(item.FileExists);
+                    Assert.Equal(length, item.FileSize);
+                    Assert.Equal(modified.ToBinary(), item.LastModified.ToBinary());
+                });
                 Assert.Equal(preferred, scope.View.Config.FilePath);
             });
         }
@@ -651,6 +727,12 @@ public sealed class ImageViewHostLifecycleTests(ITestOutputHelper output)
         {
             WpfTestHost.Invoke(scope.Dispose);
             foreach (string path in paths) File.Delete(path);
+            File.Delete(unsupported);
+            if (Directory.Exists(nested))
+            {
+                File.Delete(nestedImage);
+                Directory.Delete(nested);
+            }
             folder.Delete();
         }
     }
@@ -1271,13 +1353,20 @@ public sealed class ImageViewHostLifecycleTests(ITestOutputHelper output)
     {
         public string Path { get; } = System.IO.Path.Combine(System.IO.Path.GetTempPath(), $"ColorVision-image-lifetime-{Guid.NewGuid():N}", "sample.png");
 
-        public ImageFile()
+        public ImageFile(ColorVisionTiffParameters? parameters = null)
         {
             Directory.CreateDirectory(System.IO.Path.GetDirectoryName(Path)!);
             WpfTestHost.Invoke(() =>
             {
                 var encoder = new PngBitmapEncoder();
-                encoder.Frames.Add(BitmapFrame.Create(new WriteableBitmap(64, 32, 96, 96, PixelFormats.Gray8, null)));
+                var bitmap = new WriteableBitmap(64, 32, 96, 96, PixelFormats.Gray8, null);
+                BitmapMetadata? metadata = null;
+                if (parameters != null)
+                {
+                    metadata = new BitmapMetadata("png");
+                    metadata.SetQuery(ColorVisionTiffParameters.PngDescriptionQuery, parameters.ToJson());
+                }
+                encoder.Frames.Add(BitmapFrame.Create(bitmap, null, metadata, null));
                 using var stream = File.Create(Path);
                 encoder.Save(stream);
             });

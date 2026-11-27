@@ -1,5 +1,6 @@
 using ColorVision.Algorithms;
 using System;
+using System.Buffers;
 using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Globalization;
@@ -134,17 +135,36 @@ namespace ColorVision.ImageEditor.Algorithms
             bool metricsOnly = requestedOutputs == ImageComparisonArtifactOutputs.None;
             bool writeDifferenceVisual = absoluteVisualData != null || signedVisualData != null;
             bool trackArtifactOverflow = isFloat && signedData != null;
-            bool useByteVisualTables = bytesPerChannel == 1 && (writeDifferenceVisual || heatmapData != null);
-            Span<ushort> differenceColors = useByteVisualTables && writeDifferenceVisual ? stackalloc ushort[511] : [];
-            Span<uint> heatmapColors = useByteVisualTables && heatmapData != null ? stackalloc uint[256] : [];
+            // Amortize the larger UInt16 tables over megapixel visualizations.
+            bool useWordVisualTables = bytesPerChannel == 2 && (long)reference.Width * reference.Height >= 1_048_576;
+            int differenceColorBias = useWordVisualTables ? ushort.MaxValue : byte.MaxValue;
+            bool useIntegerVisualTables = bytesPerChannel == 1 || useWordVisualTables;
+            int differenceColorCount = 2 * differenceColorBias + 1;
+            int heatmapColorCount = differenceColorBias + 1;
+            using IMemoryOwner<ushort>? rentedDifferenceColors = useWordVisualTables && writeDifferenceVisual
+                ? MemoryPool<ushort>.Shared.Rent(differenceColorCount)
+                : null;
+            using IMemoryOwner<uint>? rentedHeatmapColors = useWordVisualTables && heatmapData != null
+                ? MemoryPool<uint>.Shared.Rent(heatmapColorCount)
+                : null;
+            Span<ushort> differenceColors = useIntegerVisualTables && writeDifferenceVisual
+                ? rentedDifferenceColors == null ? stackalloc ushort[2 * byte.MaxValue + 1] : rentedDifferenceColors.Memory.Span[..differenceColorCount]
+                : [];
+            Span<uint> heatmapColors = useIntegerVisualTables && heatmapData != null
+                ? rentedHeatmapColors == null ? stackalloc uint[byte.MaxValue + 1] : rentedHeatmapColors.Memory.Span[..heatmapColorCount]
+                : [];
             for (int i = 0; i < differenceColors.Length; i++)
             {
-                int difference = i - byte.MaxValue;
+                if (useWordVisualTables && (i & 4095) == 0) cancellationToken.ThrowIfCancellationRequested();
+                int difference = i - differenceColorBias;
                 differenceColors[i] = (ushort)(VisualChannel(difference, displayMaximum, false)
                     | VisualChannel(difference, displayMaximum, true) << 8);
             }
             for (int i = 0; i < heatmapColors.Length; i++)
+            {
+                if (useWordVisualTables && (i & 4095) == 0) cancellationToken.ThrowIfCancellationRequested();
                 heatmapColors[i] = HeatmapColor(i, displayMaximum);
+            }
             int comparedChannelCount = channels == 4 && !parameters.IncludeAlphaInMetrics ? 3 : channels;
             int scannedChannelCount = metricsOnly ? comparedChannelCount : channels;
             var samplingBounds = region.GetSamplingBounds(reference);
@@ -216,21 +236,21 @@ namespace ColorVision.ImageEditor.Algorithms
                     }
                     if (absoluteVisualData != null)
                     {
-                        if (useByteVisualTables)
-                            WriteByteVisualPixel(absoluteVisualData, visualRow + x * 3, differences, channels, differenceColors, 0);
+                        if (useIntegerVisualTables)
+                            WriteIntegerVisualPixel(absoluteVisualData, visualRow + x * 3, differences, channels, differenceColors, differenceColorBias, 0);
                         else
                             WriteVisualPixel(absoluteVisualData, visualRow + x * 3, differences, channels, displayMaximum, false, displayInvalid);
                     }
                     if (signedVisualData != null)
                     {
-                        if (useByteVisualTables)
-                            WriteByteVisualPixel(signedVisualData, visualRow + x * 3, differences, channels, differenceColors, 8);
+                        if (useIntegerVisualTables)
+                            WriteIntegerVisualPixel(signedVisualData, visualRow + x * 3, differences, channels, differenceColors, differenceColorBias, 8);
                         else
                             WriteVisualPixel(signedVisualData, visualRow + x * 3, differences, channels, displayMaximum, true, displayInvalid);
                     }
                     if (heatmapData != null)
                     {
-                        if (useByteVisualTables)
+                        if (useIntegerVisualTables)
                             WritePackedColor(heatmapData, visualRow + x * 3, inRegion ? heatmapColors[(int)pixelMaximum] : 0);
                         else
                             WriteHeatmapPixel(heatmapData, visualRow + x * 3, pixelMaximum, displayMaximum, inRegion, heatmapInvalid);
@@ -553,12 +573,12 @@ namespace ColorVision.ImageEditor.Algorithms
         private static bool Has(ImageComparisonArtifactOutputs outputs, ImageComparisonArtifactOutputs requested)
             => (outputs & requested) != 0;
 
-        private static void WriteByteVisualPixel(byte[] output, int offset, ReadOnlySpan<double> differences, int channels, ReadOnlySpan<ushort> colors, int shift)
+        private static void WriteIntegerVisualPixel(byte[] output, int offset, ReadOnlySpan<double> differences, int channels, ReadOnlySpan<ushort> colors, int bias, int shift)
         {
-            byte first = (byte)(colors[(int)differences[0] + byte.MaxValue] >> shift);
+            byte first = (byte)(colors[(int)differences[0] + bias] >> shift);
             output[offset] = first;
-            output[offset + 1] = channels == 1 ? first : (byte)(colors[(int)differences[1] + byte.MaxValue] >> shift);
-            output[offset + 2] = channels == 1 ? first : (byte)(colors[(int)differences[2] + byte.MaxValue] >> shift);
+            output[offset + 1] = channels == 1 ? first : (byte)(colors[(int)differences[1] + bias] >> shift);
+            output[offset + 2] = channels == 1 ? first : (byte)(colors[(int)differences[2] + bias] >> shift);
         }
 
         private static void WriteVisualPixel(byte[] output, int offset, ReadOnlySpan<double> differences, int channels, double maximum, bool signed, bool invalid)

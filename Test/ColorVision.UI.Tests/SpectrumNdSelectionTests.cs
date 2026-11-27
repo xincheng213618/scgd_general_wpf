@@ -37,9 +37,11 @@ public sealed class SpectrumNdSelectionTests
 {
     // Exercise the real registration, routing, shared wheel session and file commit without a spectrum SDK or MQTT.
     [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public async Task SpectrumNdNodeForwardsToLocalWheelAndCommitsCalibrationOnlyAfterConfirmedMove(bool localSpectrum)
+    [InlineData(false, true)]
+    [InlineData(true, true)]
+    [InlineData(false, false)]
+    [InlineData(true, false)]
+    public async Task SpectrumNdNodeForwardsToLocalWheelAndCommitsCalibrationOnlyAfterConfirmedMove(bool localSpectrum, bool autoSwitchEnabled)
     {
         var managerField = typeof(ServiceManager).GetField("_instance", BindingFlags.NonPublic | BindingFlags.Static)!;
         object? previousManager = null;
@@ -67,7 +69,7 @@ public sealed class SpectrumNdSelectionTests
                     Value = JsonConvert.SerializeObject(new ConfigCfwPort { SzComName = "COM7800" }) }, new LocalCfwPortSession(native));
                 spectrum = CreateSpectrum();
                 spectrum.SpectrumBackend.SetPreference(localSpectrum);
-                spectrum.Config.NDConfig.IsNDPort = true;
+                spectrum.Config.NDConfig.IsNDPort = autoSwitchEnabled;
                 spectrum.Config.NDConfig.IsBingNDDevice = true;
                 spectrum.Config.NDConfig.NDBindDeviceCode = wheel.Code;
                 spectrum.Config.CalibrationGroups = [new() { GroupName = "ND0", NDHoleIndex = 0, WavelengthFile = wave, MaguideFile = first },
@@ -120,6 +122,32 @@ public sealed class SpectrumNdSelectionTests
             Assert.Equal(MsgRecordState.Fail, failed.MsgRecordState);
             WpfTestHost.Invoke(() => Assert.Equal("ND1", spectrum!.Config.ActiveCalibrationGroupName));
             Assert.Equal(second, spectrum!.Config.MaguideFile);
+
+            if (!autoSwitchEnabled)
+            {
+                DeviceSpectrum owner = spectrum!;
+                native.WrongRead = false;
+                WpfTestHost.Invoke(() => owner.DisplayConfig.PortNum = 2);
+                MsgRecord unassociated = await NdCommand(() => owner.DService.SetPort());
+                Assert.Equal(MsgRecordState.Success, unassociated.MsgRecordState);
+                Assert.Equal(2, native.Port);
+                WpfTestHost.Invoke(() =>
+                {
+                    Assert.Equal(2, owner.DisplayConfig.PortNum);
+                    Assert.Equal("ND1", owner.Config.ActiveCalibrationGroupName);
+                    Assert.Equal(second, owner.Config.MaguideFile);
+                });
+
+                native.Port = 0;
+                MsgRecord readChangedPort = await NdCommand(() => owner.DService.GetPort());
+                Assert.Equal(MsgRecordState.Success, readChangedPort.MsgRecordState);
+                WpfTestHost.Invoke(() =>
+                {
+                    Assert.Equal(0, owner.DisplayConfig.PortNum);
+                    Assert.Equal("ND0", owner.Config.ActiveCalibrationGroupName);
+                    Assert.Equal(first, owner.Config.MaguideFile);
+                });
+            }
         }
         finally
         {
@@ -256,13 +284,13 @@ public sealed class SpectrumNdSelectionTests
                     MsgRecord set = device.RunLocalSpectrumCommand("SetPort");
                     Pump();
                     Assert.Equal(MsgRecordState.Fail, set.MsgRecordState);
-                    Assert.Contains("启用 ND", (string)set.MsgReturn.Message);
+                    Assert.Contains("绑定 ND 滤光轮", (string)set.MsgReturn.Message);
                     Assert.Equal("ND1", device.Config.ActiveCalibrationGroupName);
                     Assert.Equal("nd1-magnitude.dat", device.Config.MaguideFile);
                     MsgRecord read = device.RunLocalSpectrumCommand("GetPort");
                     Pump();
                     Assert.Equal(MsgRecordState.Fail, read.MsgRecordState);
-                    Assert.Contains("启用 ND", (string)read.MsgReturn.Message);
+                    Assert.Contains("绑定 ND 滤光轮", (string)read.MsgReturn.Message);
                     Assert.Equal(0, client.Commands.Reader.Count);
                 }
 
@@ -402,6 +430,48 @@ public sealed class SpectrumNdSelectionTests
             finally { managerField.SetValue(null, previous); }
 
             static string Label(object item) => (string)TypeDescriptor.GetProperties(item)["Label"]!.GetValue(item)!;
+        });
+    }
+
+    [Fact]
+    public void FilterWheelConfigurationEditsDisplayNameInTheConnectionCard()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            using var scope = new TestScope();
+            using var device = new DeviceCfwPort(new SysResourceModel
+            {
+                Id = -2, Code = "ND.Configuration", Name = "Original wheel", Value = "{}"
+            });
+            device.DisplayConfig.UseLocalCfwPort = true;
+            var editor = new EditCfwPort(device);
+            try
+            {
+                Assert.Equal("Original wheel", editor.Draft.Name);
+                Pump();
+                var name = Assert.IsType<TextBox>(editor.FindName("DisplayNameTextBox"));
+                var nameRow = Assert.IsType<DockPanel>(name.Parent);
+                var fields = Assert.IsType<StackPanel>(nameRow.Parent);
+                var connectionFields = Assert.IsType<StackPanel>(editor.FindName("DeviceFields"));
+                var licenseFields = Assert.IsType<StackPanel>(editor.FindName("LicenseFields"));
+                Assert.Same(nameRow, fields.Children[1]);
+                Assert.Same(fields, connectionFields.Parent);
+                Assert.Same(fields, licenseFields.Parent);
+
+                Assert.Equal("Original wheel", name.Text);
+                name.SetCurrentValue(TextBox.TextProperty, "Renamed wheel");
+                name.GetBindingExpression(TextBox.TextProperty)!.UpdateSource();
+                Assert.Equal("Renamed wheel", editor.Draft.Name);
+                Assert.Equal("Original wheel", device.Config.Name);
+                Assert.Equal((true, false), editor.Draft.Apply(device.Config, device.DisplayConfig));
+                Assert.Equal("Renamed wheel", device.Config.Name);
+
+                Assert.Equal(Visibility.Collapsed, licenseFields.Visibility);
+                editor.Draft.UseLocalCfwPort = false;
+                Assert.Equal(Visibility.Visible, licenseFields.Visibility);
+                Assert.True(device.DisplayConfig.UseLocalCfwPort);
+            }
+            finally { editor.Close(); }
         });
     }
 

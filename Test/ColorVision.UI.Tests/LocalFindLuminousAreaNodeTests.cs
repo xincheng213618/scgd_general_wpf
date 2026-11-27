@@ -550,7 +550,7 @@ public sealed class LocalFindLuminousAreaNodeTests
             LocalFindLuminousAreaPublishRequest? published = null;
             FakeNodeServices services = new()
             {
-                LoadFrameHandler = LocalFrameFileService.Load,
+                LoadFrameHandler = path => LocalFrameFileService.Load(path),
                 DetectHandler = (image, roi, minimumConfidence) =>
                 {
                     Assert.Equal(8, image.cols);
@@ -701,7 +701,7 @@ public sealed class LocalFindLuminousAreaNodeTests
                     Assert.Equal(92, masterId);
                     return new MeasureResultImgModel { Id = masterId, FileUrl = filePath };
                 },
-                LoadFrameHandler = LocalFrameFileService.Load,
+                LoadFrameHandler = path => LocalFrameFileService.Load(path),
                 DetectHandler = (_, _, _) => CreateSuccessfulDetection(),
                 PersistHandler = _ => 193
             };

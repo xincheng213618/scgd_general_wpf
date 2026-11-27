@@ -1,9 +1,11 @@
 using ColorVision.Engine.FlowProcessing.Diagnostics;
 using ColorVision.FileIO;
-using Newtonsoft.Json;
+using FlowEngineLib.Algorithm;
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Windows;
 using System.Windows.Media;
@@ -13,16 +15,24 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
 {
     internal static class LocalFrameFileService
     {
-        private static readonly log4net.ILog Log = log4net.LogManager.GetLogger(typeof(LocalFrameFileService));
         private const int CopyBufferSize = 1024 * 1024;
         private static readonly object CapturePathSync = new();
         private static readonly HashSet<string> CapturePaths = new(StringComparer.OrdinalIgnoreCase);
         private static string? capturePathTimestamp;
 
-        public static LocalFlowFrame Load(string filePath)
-            => Load(filePath, null, null);
+        internal static void SaveColorParametersToInput(LocalFlowFrame frame)
+        {
+            if (frame.ColorCalibration is not ColorCalibrationSnapshot snapshot) return;
+            bool canReplay = !string.IsNullOrWhiteSpace(frame.CvRawFilePath);
+            // A transform calculated from promoted pixels cannot describe the original 8-bit file.
+            if (!canReplay && frame.Metadata.SourceFileBpp != 0 && frame.Metadata.SourceFileBpp != snapshot.RawBpp) return;
+            string rawPath = canReplay ? frame.CvRawFilePath : frame.Metadata.SourceFilePath;
+            if (!string.Equals(Path.GetExtension(rawPath), ".cvraw", StringComparison.OrdinalIgnoreCase)
+                || (!CVFileReadCache.GetCachedLength(rawPath).HasValue && !File.Exists(rawPath))) return;
+            FlowNodeTiming.Run("SaveColorParameters", () => snapshot.UpdateRawFile(rawPath, canReplay && snapshot.CanReplay, frame.Metadata.FlipMode));
+        }
 
-        internal static LocalFlowFrame Load(string filePath, float[]? exposureOverride, float? gainOverride)
+        public static LocalFlowFrame Load(string filePath, float[]? exposureOverride = null, float? gainOverride = null)
         {
             if (string.IsNullOrWhiteSpace(filePath)) throw new ArgumentException("图像文件路径为空。", nameof(filePath));
             string fullPath = Path.GetFullPath(filePath);
@@ -112,9 +122,13 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                 {
                     throw new InvalidOperationException("The RAW mirror operation failed; the frame cannot be saved safely.");
                 }
-                // Copy the runtime orientation exactly. Deferred/non-primary RAW stays
-                // canonical; materializing its pending mirror only in the file would
-                // lose orientation metadata and break spatial calibration after reload.
+                // Calibrated files are measured directly by viewers and mapped readers, so their pixels
+                // use result coordinates. Record the physical flip for later sensor-coordinate stages.
+                bool mirrorForReplay = lease.ColorCalibration?.CanReplay == true && !lease.IsRawFlipApplied;
+                using LocalFlowFrame? mirrored = mirrorForReplay ? LocalFlowFrame.Allocate(lease.Metadata, lease.RawLength, 0) : null;
+                using LocalFlowFrameLease? copy = mirrored?.Acquire();
+                if (copy != null) CopyMirroredRaw(lease, copy.RawPointer);
+                bool storedFlipApplied = lease.IsRawFlipApplied || mirrorForReplay;
                 using CVCIEFile rawFile = new()
                 {
                     Version = 1,
@@ -128,7 +142,10 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                     SrcFileName = string.Empty,
                     Data = Array.Empty<byte>()
                 };
-                Dictionary<string, CVFileProperty> properties = lease.ColorCalibration?.CreateProperties(canReplay: true) ?? new();
+                ColorCalibrationSnapshot? stored = lease.ColorCalibration;
+                if (stored != null)
+                    stored = stored with { AppliedRawFlip = storedFlipApplied ? lease.Metadata.FlipMode : CVImageFlipMode.None };
+                Dictionary<string, CVFileProperty> properties = stored?.CreateProperties(stored.CanReplay) ?? new();
                 if (lease.Metadata.Acquisition != null)
                     properties.Add(CameraFileMetadata.AcquisitionKind, CameraFileMetadata.CreateProperty(lease.Metadata.Acquisition));
                 if (lease.ColorCalibration == null && lease.CalibrationProvenance != null)
@@ -138,7 +155,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                     if (!CVFileUtil.WriteCVRaw(
                         rawPath,
                         rawFile,
-                        lease.RawPointer,
+                        copy?.RawPointer ?? lease.RawPointer,
                         lease.RawLength,
                         saveMode,
                         properties))
@@ -147,8 +164,17 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                     }
                 });
                 frame.CvRawFilePath = rawPath;
+                frame.SavedRawFlipApplied = storedFlipApplied;
             }
             saveStage?.Complete();
+        }
+
+        private static unsafe void CopyMirroredRaw(LocalFlowFrameLease source, IntPtr destination)
+        {
+            Buffer.MemoryCopy((void*)source.RawPointer, (void*)destination, source.RawLength, source.RawLength);
+            LocalFrameMetadata metadata = source.Metadata;
+            LocalFrameMirrorService.FlipRaw(destination, source.RawLength, metadata.Width, metadata.Height,
+                metadata.SourceBpp, metadata.Channels, metadata.FlipMode);
         }
 
         private static LocalFlowFrame LoadColorVisionFile(
@@ -174,15 +200,11 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             bool isCie = string.Equals(Path.GetExtension(filePath), ".cvcie", StringComparison.OrdinalIgnoreCase);
             fileInfo.FileExtType = isCie ? CVType.CIE : CVType.Raw;
             var properties = CameraFileMetadata.ReadOptionalProperties(stream);
-            ColorCalibrationSnapshot? snapshot = null;
-            if (!isCie && properties != null)
-            {
-                try { snapshot = ColorCalibrationSnapshot.Read(properties, fileInfo); }
-                catch (Exception error) when (error is InvalidDataException or JsonException or OverflowException)
-                {
-                    Log.Warn($"RAW 色度校正参数不可用，保留原图：{filePath}", error);
-                }
-            }
+            ColorCalibrationSnapshot? snapshot = !isCie && properties != null
+                ? ColorCalibrationSnapshot.ReadOptionalRaw(filePath, properties, new(fileInfo.Cols, fileInfo.Rows, fileInfo.Bpp, fileInfo.Channels))
+                : null;
+            bool planarRgb = snapshot is { Channels: 3, InterleavedBgr: false };
+            int frameLength = (int)dataLength;
             var records = CameraFileMetadata.Read(properties);
             LocalFrameMetadata metadata = new()
             {
@@ -195,21 +217,32 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                 Exposure = CloneExposure(exposureOverride ?? fileInfo.Exp),
                 SourceFilePath = filePath,
                 CalibrationTemplate = snapshot?.Template ?? string.Empty,
+                FlipMode = snapshot?.AppliedRawFlip ?? CVImageFlipMode.None,
+                IsMirrorReady = snapshot?.CanReplay == true,
                 CaptureTime = captureTime,
                 Acquisition = records.Acquisition,
                 PrimaryBufferKind = isCie ? LocalFrameBufferKind.CvCie : LocalFrameBufferKind.CvRaw
             };
-            LocalFlowFrame frame = LocalFlowFrame.Allocate(metadata, isCie ? 0 : (int)dataLength, isCie ? (int)dataLength : 0);
+            LocalFlowFrame frame = LocalFlowFrame.Allocate(metadata, isCie ? 0 : frameLength, isCie ? frameLength : 0);
             frame.CalibrationProvenance = records.Provenance;
             try
             {
                 using LocalFlowFrameLease lease = frame.Acquire();
-                FlowNodeTiming.Run("ReadImageBuffer", () => CopyStreamToPointer(stream, isCie ? lease.CiePointer : lease.RawPointer, (int)dataLength));
+                FlowNodeTiming.Run("ReadImageBuffer", () =>
+                {
+                    if (!planarRgb)
+                        CopyStreamToPointer(stream, isCie ? lease.CiePointer : lease.RawPointer, (int)dataLength);
+                    else if (fileInfo.Bpp == 8)
+                        ReadPlanarRgbAsBgr<byte>(stream, lease.RawPointer, fileInfo.Cols * fileInfo.Rows);
+                    else
+                        ReadPlanarRgbAsBgr<ushort>(stream, lease.RawPointer, fileInfo.Cols * fileInfo.Rows);
+                });
                 if (isCie) frame.CvCieFilePath = filePath;
                 else
                 {
                     frame.CvRawFilePath = filePath;
-                    frame.ColorCalibration = snapshot;
+                    if (metadata.FlipMode != CVImageFlipMode.None) frame.MarkPrimaryBufferFlipApplied();
+                    frame.ColorCalibration = planarRgb ? snapshot! with { InterleavedBgr = true } : snapshot;
                 }
                 return frame;
             }
@@ -220,7 +253,8 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             }
         }
 
-        private static LocalFlowFrame LoadBitmap(string filePath, Stream stream, DateTime captureTime, float[]? exposureOverride, float? gainOverride)
+        private static LocalFlowFrame LoadBitmap(string filePath, Stream stream, DateTime captureTime,
+            float[]? exposureOverride, float? gainOverride)
         {
             BitmapDecoder decoder = BitmapDecoder.Create(stream, BitmapCreateOptions.PreservePixelFormat, BitmapCacheOption.OnLoad);
             BitmapSource source = decoder.Frames[0];
@@ -288,6 +322,35 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             {
                 frame.Dispose();
                 throw;
+            }
+        }
+
+        private static unsafe void ReadPlanarRgbAsBgr<T>(Stream stream, IntPtr pixels, int pixelCount) where T : unmanaged
+        {
+            Span<T> bgr = new(pixels.ToPointer(), checked(pixelCount * 3));
+            T[] chunk = ArrayPool<T>.Shared.Rent(Math.Min(pixelCount, CopyBufferSize / sizeof(T)));
+            try
+            {
+                // Read each source plane sequentially into bounded scratch storage.
+                for (int channel = 2; channel >= 0; channel--)
+                {
+                    int output = channel;
+                    for (int first = 0; first < pixelCount;)
+                    {
+                        Span<T> samples = chunk.AsSpan(0, Math.Min(chunk.Length, pixelCount - first));
+                        stream.ReadExactly(MemoryMarshal.AsBytes(samples));
+                        foreach (T sample in samples)
+                        {
+                            bgr[output] = sample;
+                            output += 3;
+                        }
+                        first += samples.Length;
+                    }
+                }
+            }
+            finally
+            {
+                ArrayPool<T>.Shared.Return(chunk);
             }
         }
 

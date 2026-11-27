@@ -690,10 +690,7 @@ public class FlowEngineControl : FlowEngineAPI, IDisposable
 		{
 			StopStartNode(startNode);
 		}
-		foreach (DeviceNode device in devices)
-		{
-			NodeManager.RemoveDevice(device);
-		}
+		NodeManager.RemoveDevices(devices);
 	}
 
 	public void LoadFromFile(string strFileName, List<MQTTServiceInfo> services)

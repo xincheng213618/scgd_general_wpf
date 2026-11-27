@@ -15,6 +15,36 @@ namespace ColorVision.UI.Tests;
 public class STNodeGroupInteractionTests
 {
     [Fact]
+    public void CanvasBoundsIncludeCurrentGroupAndMarkExtents()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            using var editor = new GroupEditor();
+            var nodes = CreateNodes(editor);
+            nodes[0].Mark = "Camera setup";
+            nodes[2].SetRepeatRegion("second-region", 3, 1);
+            nodes[2].Location = new Point(-400, -250);
+            AssertBounds();
+
+            nodes[0].Location = new Point(-500, -340);
+            AssertBounds();
+
+            nodes[2].SetRepeatRegion(string.Empty, 1, 0);
+            nodes[2].Location = new Point(900, 210);
+            AssertBounds();
+
+            void AssertBounds()
+            {
+                Rectangle[] rectangles = nodes.Select(node => node.Rectangle)
+                    .Concat(editor.GetNodeGroups().Select(group => group.Bounds)).ToArray();
+                Assert.Equal(Rectangle.FromLTRB(rectangles.Min(rectangle => rectangle.Left) - 60,
+                    rectangles.Min(rectangle => rectangle.Top) - 60, rectangles.Max(rectangle => rectangle.Right) + 60,
+                    rectangles.Max(rectangle => rectangle.Bottom) + 60), editor.CanvasValidBounds);
+            }
+        });
+    }
+
+    [Fact]
     public void GroupHeaderKeepsNodeCommentsAndExternalPortsAccessible()
     {
         WpfTestHost.Invoke(() =>
@@ -33,6 +63,7 @@ public class STNodeGroupInteractionTests
             var markPoint = new Point(nodes[0].MarkRectangle.Left + 10, nodes[0].MarkRectangle.Top + 10);
             Assert.Equal(nodes[0].Mark, editor.FindNodeFromPoint(markPoint).Mark);
             Assert.False(editor.PressAt(markPoint));
+            Assert.False(editor.HoversGroupAt(markPoint));
 
             var outsider = new FlowMenuTestNode();
             outsider.Create();
@@ -45,6 +76,7 @@ public class STNodeGroupInteractionTests
             Assert.Null(editor.FindNodeFromPoint(portPoint).Node);
             Assert.Same(port, editor.FindNodeFromPoint(portPoint).NodeOption);
             Assert.False(editor.PressAt(portPoint));
+            Assert.False(editor.HoversGroupAt(portPoint));
 
             editor.Measure(new System.Windows.Size(800, 360));
             editor.Arrange(new Rect(0, 0, 800, 360));
@@ -52,6 +84,27 @@ public class STNodeGroupInteractionTests
             Rectangle visibleGroup = editor.CanvasToControl(group.Bounds);
             Assert.True(visibleGroup.Top >= 0 && visibleGroup.Left >= 0);
             Assert.True(visibleGroup.Bottom <= editor.ActualHeight && visibleGroup.Right <= editor.ActualWidth);
+        });
+    }
+
+    [Fact]
+    public void GroupHeaderHoverUsesCurrentLocationsAndMembership()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            using var editor = new GroupEditor();
+            var nodes = CreateNodes(editor);
+            Rectangle header = Assert.Single(editor.GetNodeGroups()).HeaderBounds;
+            var originalPoint = new Point(header.Left + 10, header.Top + 10);
+            Assert.True(editor.HoversGroupAt(originalPoint));
+
+            nodes[0].Top -= 80;
+            var movedPoint = new Point(originalPoint.X, originalPoint.Y - 80);
+            Assert.True(editor.HoversGroupAt(movedPoint));
+            Assert.False(editor.HoversGroupAt(originalPoint));
+
+            nodes[0].SetRepeatRegion(string.Empty, 1, 0);
+            Assert.False(editor.HoversGroupAt(movedPoint));
         });
     }
 
@@ -81,6 +134,42 @@ public class STNodeGroupInteractionTests
             editor.Redo();
             Assert.Equal(new Point(initial[1].X + 80, initial[1].Y + 40), nodes[1].Location);
             Assert.Single(editor.GetNodeGroups());
+        });
+    }
+
+    [Fact]
+    public void HeaderDragSnapsToFirstCenterGuideWithinFiveUnits()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            using var editor = new GroupEditor();
+            var nodes = CreateNodes(editor);
+            Point first = nodes[0].Location;
+            Point second = nodes[1].Location;
+            Point delta = new(-560, -300);
+            Point unsnapped = new(first.X + delta.X, first.Y + delta.Y);
+            Point center = new(unsnapped.X + nodes[0].Width / 2, unsnapped.Y + nodes[0].Height / 2);
+            // The first outsider matches the moving edges, but the moving center takes priority.
+            nodes[2].Location = new Point(unsnapped.X - nodes[2].Width, unsnapped.Y - nodes[2].Height);
+            AddGuide(new Point(center.X - 6, center.Y + 6));
+            AddGuide(new Point(center.X - 5, center.Y + 5));
+            AddGuide(center);
+            AddGuide(new Point(center.X - 5, center.Y + 5));
+
+            Assert.True(editor.PressHeader());
+            editor.DragBy(delta.X, delta.Y);
+            editor.FinishDrag();
+
+            Assert.Equal(new Point(unsnapped.X - 5, unsnapped.Y + 5), nodes[0].Location);
+            Assert.Equal(new Point(second.X + delta.X - 5, second.Y + delta.Y + 5), nodes[1].Location);
+
+            void AddGuide(Point location)
+            {
+                var guide = new FlowMenuTestNode();
+                guide.Create();
+                guide.Location = location;
+                editor.Nodes.Add(guide);
+            }
         });
     }
 
@@ -182,7 +271,17 @@ public class STNodeGroupInteractionTests
             m_pt_down_in_control = CanvasToControl(Point.Round(m_pt_down_in_canvas));
             CurrentAction = CanvasAction.None;
             return (bool)typeof(STNodeEditor).GetMethod("TryBeginNodeGroupInteraction", BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(this,
-                [new STNodeMouseEventArgs(STMouseButtons.Left, clicks, m_pt_down_in_control.X, m_pt_down_in_control.Y, 0)])!;
+                [new STNodeMouseEventArgs(STMouseButtons.Left, clicks, m_pt_down_in_control.X, m_pt_down_in_control.Y, 0), FindNodeFromPoint(point)])!;
+        }
+
+        public bool HoversGroupAt(Point point)
+        {
+            LimitCanvasToContentBounds = false;
+            var args = new MouseEventArgs(Mouse.PrimaryDevice, Environment.TickCount);
+            System.Windows.Point pointer = args.GetPosition(this);
+            MoveCanvas((int)pointer.X - point.X * CanvasScale, (int)pointer.Y - point.Y * CanvasScale, false, CanvasMoveArgs.All);
+            OnMouseMove(args);
+            return Cursor == Cursors.SizeAll;
         }
 
         public void DragBy(int x, int y)

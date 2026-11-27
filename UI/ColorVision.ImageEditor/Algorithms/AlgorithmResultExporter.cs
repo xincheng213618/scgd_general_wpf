@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.Json;
 using System.Threading;
@@ -17,6 +18,7 @@ namespace ColorVision.ImageEditor.Algorithms
     public static class AlgorithmResultExporter
     {
         private const int StructuredJsonFlushBytes = 128 * 1024;
+        private const int CsvCharacterBufferSize = 16 * 1024;
         private static readonly SearchValues<char> CsvQuoteCharacters = SearchValues.Create(",\"\r\n");
         private static readonly UTF8Encoding Utf8WithBom = new(encoderShouldEmitUTF8Identifier: true);
 
@@ -310,7 +312,8 @@ namespace ColorVision.ImageEditor.Algorithms
                 FileShare.None,
                 bufferSize: 64 * 1024,
                 FileOptions.Asynchronous | FileOptions.SequentialScan);
-            await using StreamWriter writer = new(stream, Utf8WithBom, bufferSize: 64 * 1024, leaveOpen: true);
+            // Match the field buffer so the writer's char and UTF-8 buffers stay below the large object threshold.
+            await using StreamWriter writer = new(stream, Utf8WithBom, bufferSize: CsvCharacterBufferSize, leaveOpen: true);
             CsvFieldBuffer csv = new(writer);
             switch (output.Kind)
             {
@@ -373,7 +376,8 @@ namespace ColorVision.ImageEditor.Algorithms
                 for (int index = 0; index < columns.Count; index++)
                 {
                     string name = columns[index].Name;
-                    await writer.WriteFieldAsync(row.TryGetValue(name, out JsonElement value) ? JsonText(value) : null, index == 0, cancellationToken).ConfigureAwait(false);
+                    JsonElement value = row.TryGetValue(name, out JsonElement cell) ? cell : default;
+                    await writer.WriteTableFieldAsync(value, index == 0, cancellationToken).ConfigureAwait(false);
                 }
                 await writer.AppendAsync(Environment.NewLine.AsMemory(), cancellationToken).ConfigureAwait(false);
                 reportRows(1);
@@ -453,6 +457,8 @@ namespace ColorVision.ImageEditor.Algorithms
         {
             JsonValueKind.Null or JsonValueKind.Undefined => string.Empty,
             JsonValueKind.String => value.GetString() ?? string.Empty,
+            JsonValueKind.True => "true",
+            JsonValueKind.False => "false",
             _ => value.GetRawText(),
         };
 
@@ -493,8 +499,24 @@ namespace ColorVision.ImageEditor.Algorithms
         private sealed class CsvFieldBuffer(StreamWriter writer)
         {
             // Bound memory independently of field or row length.
-            private readonly char[] _buffer = new char[16 * 1024];
+            private readonly char[] _buffer = new char[CsvCharacterBufferSize];
             private int _count;
+
+            public ValueTask WriteTableFieldAsync(JsonElement value, bool first, CancellationToken cancellationToken)
+            {
+                if (value.ValueKind != JsonValueKind.Number)
+                    return WriteFieldAsync(JsonText(value), first, cancellationToken);
+
+                cancellationToken.ThrowIfCancellationRequested();
+                ReadOnlySpan<byte> number = JsonMarshal.GetRawUtf8Value(value);
+                if (number.Length > _buffer.Length - _count - (first ? 0 : 1))
+                    return WriteFieldAsync(value.GetRawText(), first, cancellationToken);
+
+                // JSON number tokens are ASCII and contain no CSV quote characters.
+                if (!first) _buffer[_count++] = ',';
+                _count += Encoding.UTF8.GetChars(number, _buffer.AsSpan(_count));
+                return ValueTask.CompletedTask;
+            }
 
             public ValueTask WriteFieldAsync(string? value, bool first, CancellationToken cancellationToken)
             {

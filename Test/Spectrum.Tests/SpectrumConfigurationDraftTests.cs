@@ -1,6 +1,20 @@
+using ColorVision.Engine;
+using ColorVision.Engine.Services;
+using ColorVision.Engine.Services.Devices.CfwPort;
 using ColorVision.Engine.Services.Devices.Spectrum;
+using ColorVision.Engine.Services.Devices.Spectrum.Calibration;
 using ColorVision.Engine.Services.Devices.Spectrum.Configs;
+using ColorVision.Engine.Services.PhyCameras;
+using ColorVision.Engine.Services.PhyCameras.Configs;
+using ColorVision.Themes;
+using ColorVision.UI;
+using ColorVision.UI.Tests;
 using Newtonsoft.Json.Linq;
+using System.Reflection;
+using System.Runtime.CompilerServices;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Threading;
 
 namespace Spectrum.Tests;
 
@@ -107,6 +121,311 @@ public sealed class SpectrumConfigurationDraftTests
         Assert.Single(config.CalibrationGroups);
     }
 
+    [Theory]
+    [InlineData(false, null, null)]
+    [InlineData(true, 100, 1000)]
+    public void SavingServiceChangesWritesFixedExposureLimitsOnlyForEnabledNd(bool enabled, int? minimum, int? maximum)
+    {
+        var json = JObject.Parse("""{"NDConfig":{"NDMinExpTime":10,"NDMaxExpTime":300,"LocalNDRates":{"2":64},"LocalNDPortCount":12}}""");
+        var config = json.ToObject<ConfigSpectrum>()!;
+        config.NDConfig.EnableResetND = true;
+        config.NDConfig.IsNDPort = enabled;
+        var draft = new SpectrumConfigurationDraft(config);
+        draft.Config.Name = "Renamed";
+
+        Assert.True(draft.TryApply(config, out string error), error);
+        Assert.True(config.NDConfig.EnableResetND);
+        var nd = Assert.IsType<JObject>(JObject.FromObject(config)[nameof(ConfigSpectrum.NDConfig)]);
+        Assert.Equal(minimum, (int?)nd["NDMinExpTime"]);
+        Assert.Equal(maximum, (int?)nd["NDMaxExpTime"]);
+        Assert.Equal(64, config.NDConfig.LocalNDRates![2]);
+        Assert.Equal(12, config.NDConfig.LocalNDPortCount);
+        Assert.DoesNotContain(PropertyEditorHelper.GetEditableProperties(typeof(NDConfig)), property =>
+            property.Name is "NDMinExpTime" or "NDMaxExpTime");
+    }
+
+    [Fact]
+    public void CalibrationEditorUsesTheRegisteredWheelsHolesAndUpdatesOnlyTheSelectedAttenuation()
+    {
+        WithCalibrationEditorTheme(() =>
+        {
+            const string newWheel = "ND.SparseWheel";
+            const string savedWheel = "SAVED-WHEEL";
+            var camera = (PhyCamera)RuntimeHelpers.GetUninitializedObject(typeof(PhyCamera));
+            camera.SysResourceModel = new SysResourceModel { Code = "PHY.CFW.SPECTRUM" };
+            camera.Config = new ConfigPhyCamera();
+            camera.Config.FilterWheelConfig.HoleMapping = [
+                new HoleMap { HoleIndex = 2, HoleName = "ND64" },
+                new HoleMap { HoleIndex = 5, HoleName = "ND1000" }];
+
+            var cameraManagerField = typeof(PhyCameraManager).GetField("_instance", BindingFlags.Static | BindingFlags.NonPublic)!;
+            object? previousCameraManager = cameraManagerField.GetValue(null);
+            var cameraManager = (PhyCameraManager)RuntimeHelpers.GetUninitializedObject(typeof(PhyCameraManager));
+            cameraManager.PhyCameras = [camera];
+            var services = ServiceManager.GetInstance();
+            var previousDevices = services.DeviceServices;
+            var wheel = (DeviceCfwPort)RuntimeHelpers.GetUninitializedObject(typeof(DeviceCfwPort));
+            wheel.SysResourceModel = new SysResourceModel { Code = newWheel, Name = "Sparse wheel" };
+            wheel.Config = new ConfigCfwPort { SN = camera.Code, Ports = 6 };
+            try
+            {
+                cameraManagerField.SetValue(null, cameraManager);
+                services.DeviceServices = [wheel];
+                var config = new ConfigSpectrum { WavelengthFile = "original-wave.dat", MaguideFile = "original-mag.dat" };
+                config.EnsureCalibrationGroups();
+                config.CalibrationGroups.Add(new SpectrumCalibrationGroup
+                {
+                    GroupName = "ND1000", NDHoleIndex = 5, WavelengthFile = "nd1000-wave.dat", MaguideFile = "nd1000-mag.dat"
+                });
+                config.NDConfig.IsBingNDDevice = true;
+                config.NDConfig.NDBindDeviceCode = savedWheel;
+                config.NDConfig.NDRate = [0, 8];
+                config.NDConfig.LocalNDRates = new Dictionary<int, int> { [5] = 1000 };
+
+                var editor = new EditSpectrum(config, new DisplaySpectrumConfig { UseLocalSpectrum = false });
+                try
+                {
+                    Assert.Null(editor.FindName("NdTab"));
+                    Assert.Null(editor.FindName("AdvancedButton"));
+                    Assert.IsType<Button>(editor.FindName("ManageCalibrationGroupsButton"));
+                    var connectionFields = Assert.IsType<StackPanel>(editor.FindName("ConnectionFields")).Children.OfType<DockPanel>()
+                        .Select(panel => panel.Tag).OfType<PropertyInfo>().Select(property => property.Name);
+                    Assert.Equal(new[] { nameof(ConfigSpectrum.SpectrometerType), nameof(ConfigSpectrum.IsAutoOpen),
+                        nameof(DisplaySpectrumConfig.UseLocalSpectrum), nameof(DisplaySpectrumConfig.IsLuminousFluxMode) }, connectionFields);
+                    var acquisitionFields = Assert.IsType<StackPanel>(editor.FindName("AcquisitionFields")).Children.OfType<DockPanel>();
+                    Assert.DoesNotContain(acquisitionFields, panel => panel.Tag is PropertyInfo property && property.DeclaringType == typeof(DisplaySpectrumConfig));
+                    editor.Draft.DisplayConfig.UseLocalSpectrum = true;
+
+                    var window = ShowCalibrationEditor(editor.EditConfig);
+                    try { EditGroup(window); }
+                    finally { window.Close(); }
+                    Assert.Equal("Default", editor.EditConfig.ActiveCalibrationGroupName);
+                    Assert.Equal("original-wave.dat", editor.EditConfig.WavelengthFile);
+                    Assert.Equal(savedWheel, editor.EditConfig.NDConfig.NDBindDeviceCode);
+                    Assert.Equal(5, Assert.Single(editor.EditConfig.NDConfig.LocalNDRates!).Key);
+                    Assert.False(editor.EditConfig.NDConfig.IsNDPort);
+
+                    window = ShowCalibrationEditor(editor.EditConfig);
+                    try
+                    {
+                        EditGroup(window);
+                        Assert.True(window.TrySaveChanges(out string error), error);
+                    }
+                    finally { window.Close(); }
+
+                    Assert.Equal("ND2", editor.EditConfig.ActiveCalibrationGroupName);
+                    Assert.Equal("new-wave.dat", editor.EditConfig.WavelengthFile);
+                    Assert.Equal("new-mag.dat", editor.EditConfig.MaguideFile);
+                    Assert.Equal(newWheel, editor.EditConfig.NDConfig.NDBindDeviceCode);
+                    Assert.True(editor.EditConfig.NDConfig.IsBingNDDevice);
+                    Assert.Equal("Default", config.ActiveCalibrationGroupName);
+                    Assert.Equal(savedWheel, config.NDConfig.NDBindDeviceCode);
+                    Assert.True(editor.Draft.TryApply(config, out string applyError), applyError);
+                    Assert.Equal("ND2", config.ActiveCalibrationGroupName);
+                    Assert.Equal(2, config.ActiveCalibrationGroup.NDHoleIndex);
+                    Assert.True(config.NDConfig.IsNDPort);
+                    Assert.Equal(newWheel, config.NDConfig.NDBindDeviceCode);
+                    var rates = Assert.IsType<Dictionary<int, int>>(config.NDConfig.LocalNDRates);
+                    Assert.Equal(new[] { 2, 5 }, rates.Keys.Order());
+                    Assert.Equal(64, rates[2]);
+                    Assert.Equal(1000, rates[5]);
+                    Assert.Equal(new[] { 0, 8 }, config.NDConfig.NDRate);
+                }
+                finally { editor.Close(); }
+            }
+            finally
+            {
+                services.DeviceServices = previousDevices;
+                cameraManagerField.SetValue(null, previousCameraManager);
+            }
+
+            static void EditGroup(SpectrumCalibrationGroupWindow window)
+            {
+                Assert.Null(window.FindName("NdRateInputs"));
+                Assert.Null(window.FindName("DirectConnectionFields"));
+                Assert.Null(window.FindName("ComboBoxDirectPortCount"));
+                var wheelChoice = Assert.IsType<ComboBox>(window.FindName("ComboBoxCfwService"));
+                var holes = Assert.IsType<ComboBox>(window.FindName("ComboBoxNDHole"));
+                var enabled = Assert.IsType<CheckBox>(window.FindName("LocalNdEnabled"));
+                var rate = Assert.IsType<TextBox>(window.FindName("NdAttenuationInput"));
+                Assert.Single(holes.Items);
+
+                wheelChoice.SelectedValue = newWheel;
+                Assert.True(enabled.IsEnabled);
+                Assert.False(rate.IsVisible);
+                Assert.Equal(3, holes.Items.Count);
+                holes.SelectedIndex = 2;
+                Assert.Equal(5, holes.SelectedValue);
+                Assert.False(window.TrySaveChanges(out string duplicateHoleError));
+                Assert.NotEmpty(duplicateHoleError);
+                holes.SelectedIndex = 0;
+                enabled.SetCurrentValue(CheckBox.IsCheckedProperty, true);
+                Assert.False(rate.IsVisible);
+                holes.SelectedIndex = 1;
+                Assert.Equal(2, holes.SelectedValue);
+                Assert.True(rate.IsVisible);
+                rate.SetCurrentValue(TextBox.TextProperty, "64");
+
+                var groups = Assert.IsType<ComboBox>(window.FindName("ComboBoxGroups"));
+                var selected = Assert.IsType<SpectrumCalibrationGroup>(groups.SelectedItem);
+                Assert.Equal(2, selected.NDHoleIndex);
+                selected.GroupName = "ND2";
+                selected.WavelengthFile = "new-wave.dat";
+                selected.MaguideFile = "new-mag.dat";
+            }
+        });
+    }
+
+    [Fact]
+    public void AddAndRenameCalibrationGroupsUseValidatedNamesAndKeepChangesInTheDraft()
+    {
+        WithCalibrationEditorTheme(() =>
+        {
+            var config = new ConfigSpectrum();
+            config.EnsureCalibrationGroups();
+            var draft = new SpectrumConfigurationDraft(config);
+            var window = ShowCalibrationEditor(draft.Config);
+            try
+            {
+                var groups = Assert.IsType<ComboBox>(window.FindName("ComboBoxGroups"));
+                EditName(window, "BtnAddGroup", "   ", "  Custom ND  ");
+                Assert.Equal("Custom ND", Assert.IsType<SpectrumCalibrationGroup>(groups.SelectedItem).GroupName);
+                Assert.Single(draft.Config.CalibrationGroups);
+
+                EditName(window, "BtnRenameGroup", "  dEfAuLt  ", "  Renamed ND  ", "Custom ND");
+                Assert.Equal("Renamed ND", Assert.IsType<SpectrumCalibrationGroup>(groups.SelectedItem).GroupName);
+                Assert.Single(draft.Config.CalibrationGroups);
+                Assert.True(window.TrySaveChanges(out string saveError), saveError);
+                Assert.Equal("Renamed ND", draft.Config.ActiveCalibrationGroupName);
+                Assert.Equal("Default", Assert.Single(config.CalibrationGroups).GroupName);
+                Assert.True(draft.TryApply(config, out string applyError), applyError);
+                Assert.Equal(new[] { "Default", "Renamed ND" }, config.CalibrationGroups.Select(group => group.GroupName));
+                Assert.Equal("Renamed ND", config.ActiveCalibrationGroupName);
+            }
+            finally { window.Close(); }
+        });
+
+        static void EditName(Window owner, string buttonName, string invalid, string valid, string? initial = null)
+        {
+            var open = Assert.IsType<Button>(owner.FindName(buttonName));
+            var interaction = owner.Dispatcher.InvokeAsync(() =>
+            {
+                var dialogs = owner.OwnedWindows.Cast<Window>().ToArray();
+                try
+                {
+                    var dialog = Assert.Single(dialogs);
+                    var children = Descendants(dialog).ToArray();
+                    var input = Assert.Single(children.OfType<TextBox>());
+                    var error = Assert.Single(children.OfType<TextBlock>(), text => text.Name == "NameError");
+                    var confirm = Assert.Single(children.OfType<Button>(), button => button.IsDefault);
+                    if (initial != null) Assert.Equal(initial, input.Text);
+
+                    input.Text = invalid;
+                    Click(confirm);
+                    Assert.True(dialog.IsVisible);
+                    Assert.Equal(Visibility.Visible, error.Visibility);
+
+                    input.Text = valid;
+                    Click(confirm);
+                    Assert.False(dialog.IsVisible);
+                }
+                finally
+                {
+                    foreach (var dialog in dialogs.Where(dialog => dialog.IsVisible)) dialog.Close();
+                }
+            }, DispatcherPriority.ApplicationIdle);
+            Click(open);
+            owner.Dispatcher.Invoke(() => { }, DispatcherPriority.ApplicationIdle);
+            interaction.Task.GetAwaiter().GetResult();
+        }
+
+        static void Click(Button button) => button.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+
+        static IEnumerable<DependencyObject> Descendants(DependencyObject parent)
+        {
+            foreach (var child in LogicalTreeHelper.GetChildren(parent).OfType<DependencyObject>())
+            {
+                yield return child;
+                foreach (var descendant in Descendants(child)) yield return descendant;
+            }
+        }
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void CalibrationSavePreservesTheLegacyDirectWheel(bool disableAutoSwitch)
+    {
+        WithCalibrationEditorTheme(() =>
+        {
+            var config = new ConfigSpectrum { WavelengthFile = "original-wave.dat", MaguideFile = "original-mag.dat" };
+            config.EnsureCalibrationGroups();
+            config.ActiveCalibrationGroup.NDHoleIndex = 8;
+            config.NDConfig.IsNDPort = true;
+            config.NDConfig.IsBingNDDevice = false;
+            config.NDConfig.SzComName = "COM5";
+            config.NDConfig.BaudRate = 19200;
+            config.NDConfig.LocalNDPortCount = disableAutoSwitch ? null : 12;
+            config.NDConfig.DarkNDPort = 1;
+            config.NDConfig.EnableResetND = true;
+            config.NDConfig.LocalNDRates = new Dictionary<int, int> { [8] = 256 };
+            JObject originalNd = JObject.FromObject(config.NDConfig);
+
+            var window = ShowCalibrationEditor(config);
+            try
+            {
+                var groups = Assert.IsType<ComboBox>(window.FindName("ComboBoxGroups"));
+                var group = Assert.IsType<SpectrumCalibrationGroup>(groups.SelectedItem);
+                var holes = Assert.IsType<ComboBox>(window.FindName("ComboBoxNDHole"));
+                Assert.Equal(8, holes.SelectedValue);
+                if (disableAutoSwitch)
+                {
+                    var enabled = Assert.IsType<CheckBox>(window.FindName("LocalNdEnabled"));
+                    enabled.SetCurrentValue(CheckBox.IsCheckedProperty, false);
+                }
+                group.MaguideFile = "new-mag.dat";
+                Assert.True(window.TrySaveChanges(out string error), error);
+                Assert.Equal("new-mag.dat", config.MaguideFile);
+                if (disableAutoSwitch)
+                {
+                    originalNd[nameof(NDConfig.IsNDPort)] = false;
+                    originalNd[nameof(NDConfig.LocalNDPortCount)] = 12;
+                    originalNd.Remove("NDMinExpTime");
+                    originalNd.Remove("NDMaxExpTime");
+                    Assert.True(config.NDConfig.HasConfiguredWheel);
+                }
+                Assert.True(JToken.DeepEquals(originalNd, JObject.FromObject(config.NDConfig)));
+            }
+            finally { window.Close(); }
+        });
+    }
+
+    private static SpectrumCalibrationGroupWindow ShowCalibrationEditor(ConfigSpectrum config)
+    {
+        var window = new SpectrumCalibrationGroupWindow(config, opensLocally: true)
+        {
+            Left = -10000, Top = -10000, ShowInTaskbar = false, ShowActivated = false,
+        };
+        window.Show();
+        window.Dispatcher.Invoke(() => { }, DispatcherPriority.ApplicationIdle);
+        return window;
+    }
+
+    private static void WithCalibrationEditorTheme(Action action)
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            ResourceDictionary[] dictionaries = ThemeManager.ResourceDictionaryWhite.Concat(ThemeManager.ResourceDictionaryBase)
+                .Select(uri => new ResourceDictionary { Source = new Uri(uri, UriKind.RelativeOrAbsolute) }).ToArray();
+            foreach (var dictionary in dictionaries) Application.Current.Resources.MergedDictionaries.Add(dictionary);
+            try { action(); }
+            finally
+            {
+                foreach (var dictionary in dictionaries) Application.Current.Resources.MergedDictionaries.Remove(dictionary);
+            }
+        });
+    }
+
     [Fact]
     public void ApplyPreservesLiveSubscribersAndDoesNotShareDraftCollections()
     {
@@ -174,6 +493,19 @@ public sealed class SpectrumConfigurationDraftTests
         Assert.False(draft.ServiceSettingsChanged);
         Assert.True(display.UseLocalSpectrum);
         Assert.False(display.IsLuminousFluxMode);
+    }
+
+    [Fact]
+    public void SpectrumDeviceEditsKeepTheLatestSharedDataPath()
+    {
+        var config = new ConfigSpectrum { FileServerCfg = { DataBasePath = @"D:\Original" } };
+        var draft = new SpectrumConfigurationDraft(config);
+        config.FileServerCfg.DataBasePath = @"D:\Unified";
+        draft.Config.Name = "Renamed";
+
+        Assert.True(draft.TryApply(config, out string error), error);
+        Assert.Equal("Renamed", config.Name);
+        Assert.Equal(@"D:\Unified", config.FileServerCfg.DataBasePath);
     }
 
     [Fact]

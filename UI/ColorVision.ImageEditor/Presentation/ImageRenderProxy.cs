@@ -108,9 +108,22 @@ internal static class ImageRenderProxy
 
     private static unsafe void CopyRgb48(WriteableBitmap source, WriteableBitmap target)
     {
-        CopyRgb48Rows(source.BackBuffer, source.BackBufferStride,
-            target.BackBuffer, target.BackBufferStride, source.PixelWidth, 0, source.PixelHeight);
+        int width = source.PixelWidth;
+        int height = source.PixelHeight;
+        if ((long)width * height >= 1024 * 1024 && height > 1 && Environment.ProcessorCount > 1)
+            CopyRgb48InTwoBands(source.BackBuffer, source.BackBufferStride, target.BackBuffer, target.BackBufferStride, width, height);
+        else
+            CopyRgb48Rows(source.BackBuffer, source.BackBufferStride, target.BackBuffer, target.BackBufferStride, width, 0, height);
         GC.KeepAlive(source);
+    }
+
+    // The caller retains the source and keeps the target locked until both bands finish.
+    internal static void CopyRgb48InTwoBands(nint source, int sourceStride, nint target, int targetStride, int width, int height)
+    {
+        int middle = height / 2;
+        Parallel.Invoke(new ParallelOptions { MaxDegreeOfParallelism = 2, TaskScheduler = TaskScheduler.Default },
+            () => CopyRgb48Rows(source, sourceStride, target, targetStride, width, 0, middle),
+            () => CopyRgb48Rows(source, sourceStride, target, targetStride, width, middle, height));
     }
 
     internal static unsafe void CopyRgb48Rows(nint source, int sourceStride, nint target, int targetStride,
@@ -141,23 +154,41 @@ internal static class ImageRenderProxy
         }
     }
 
-    private static unsafe void CopyGray16(WriteableBitmap source, WriteableBitmap target)
+    private static void CopyGray16(WriteableBitmap source, WriteableBitmap target)
     {
-        byte* sourceBase = (byte*)source.BackBuffer;
-        byte* targetBase = (byte*)target.BackBuffer;
+        nint sourceBase = source.BackBuffer;
+        nint targetBase = target.BackBuffer;
         int sourceStride = source.BackBufferStride;
         int targetStride = target.BackBufferStride;
         int width = source.PixelWidth;
         int height = source.PixelHeight;
         uint[] colors = LazyInitializer.EnsureInitialized(ref _gray16Colors, CreateGray16Colors);
-        for (int y = 0; y < height; y++)
+        if ((long)width * height >= 1024 * 1024 && height > 1 && Environment.ProcessorCount > 1)
         {
-            ushort* from = (ushort*)(sourceBase + (long)y * sourceStride);
-            uint* to = (uint*)(targetBase + (long)y * targetStride);
-            for (int x = 0; x < width; x++)
-                to[x] = colors[from[x]];
+            int middle = height / 2;
+            Parallel.Invoke(new ParallelOptions { MaxDegreeOfParallelism = 2, TaskScheduler = TaskScheduler.Default },
+                () => CopyGray16Rows(sourceBase, sourceStride, targetBase, targetStride, width, 0, middle, colors),
+                () => CopyGray16Rows(sourceBase, sourceStride, targetBase, targetStride, width, middle, height, colors));
         }
+        else
+            CopyGray16Rows(sourceBase, sourceStride, targetBase, targetStride, width, 0, height, colors);
         GC.KeepAlive(source);
+    }
+
+    private static unsafe void CopyGray16Rows(nint source, int sourceStride, nint target, int targetStride,
+        int width, int firstRow, int rowEnd, uint[] colors)
+    {
+        // The WIC table has exactly one entry for every possible ushort sample.
+        fixed (uint* lookup = colors)
+        {
+            for (int y = firstRow; y < rowEnd; y++)
+            {
+                ushort* from = (ushort*)(source + (long)y * sourceStride);
+                uint* to = (uint*)(target + (long)y * targetStride);
+                for (int x = 0; x < width; x++)
+                    to[x] = lookup[from[x]];
+            }
+        }
     }
 
     private static unsafe uint[] CreateGray16Colors()

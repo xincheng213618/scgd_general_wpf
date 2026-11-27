@@ -1,5 +1,7 @@
 using ColorVision.Engine.FlowProcessing;
 using ColorVision.Engine.FlowProcessing.Diagnostics;
+using ColorVision.UI;
+using Microsoft.Data.Sqlite;
 using SqlSugar;
 using System.IO;
 using System.Security.Cryptography;
@@ -38,6 +40,125 @@ public class FlowDiagnosticsSchemaTests
             FlowTemplateSnapshotFactory.Create(templateId: 1, "not-base64"));
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task NodeWriterRetainsTimingOnlyWhenRequestedAfterPayloadFailure(bool preserveTiming)
+    {
+        string path = ConfigService.Instance.GetRequiredService<FlowNodeRecordConfig>().SqliteDbPath;
+        using SqlSugarClient db = CreateDb(path);
+        const int batch = 782_961;
+        string serial = $"writer'校验-{Guid.NewGuid():N}";
+        var startedAt = new DateTime(2026, 11, 27, 5, 3, 2).AddTicks(1234567);
+        var finishedAt = startedAt.AddSeconds(2);
+        FlowNodeRecord record = new()
+        {
+            BatchId = batch, SerialNumber = serial, NodeId = "node-1", NodeName = "采集'🧭",
+            StartTime = startedAt, EndTime = finishedAt, ElapsedMs = 99,
+        };
+        FlowNodeMessage message = new()
+        {
+            BatchId = batch, SerialNumber = serial, MsgId = "MQTT'🧭", SendTime = startedAt, SendPayload = "",
+            RecvTime = finishedAt, State = FlowMessageState.Fail,
+        };
+
+        int recordId = await FlowNodeRecordDataBaseHelper.InsertNodeExecutionAsync(record, message, preserveTiming);
+        Assert.True(recordId > 0);
+        Assert.Equal(recordId, message.NodeRecordId);
+        var storedRecord = db.Queryable<FlowNodeRecord>().InSingle(recordId);
+        Assert.Equal(batch, storedRecord.BatchId);
+        Assert.Equal(serial, storedRecord.SerialNumber);
+        Assert.Equal(record.NodeId, storedRecord.NodeId);
+        Assert.Equal(record.NodeName, storedRecord.NodeName);
+        Assert.Null(storedRecord.NodeType);
+        Assert.Equal(startedAt, storedRecord.StartTime);
+        Assert.Null(storedRecord.EndTime);
+        Assert.Equal(0, storedRecord.ElapsedMs);
+        var stored = db.Queryable<FlowNodeMessage>().InSingle(message.Id);
+        Assert.Equal(message.MsgId, stored.MsgId);
+        Assert.Equal(serial, stored.SerialNumber);
+        Assert.Equal(startedAt, stored.SendTime);
+        Assert.Null(stored.RecvTime);
+        Assert.Equal(FlowMessageState.Sent, stored.State);
+        Assert.Equal(new FlowNodeMessagePayloads("", null), FlowNodeMessagePayloadStorage.LoadPayloads(db, message.Id));
+
+        record.EndTime = finishedAt;
+        record.ElapsedMs = 3_000_000_000;
+        message.RecvPayload = "\ud800"; // Strict UTF-8 rejects an unpaired surrogate after the metadata write.
+        await FlowNodeRecordDataBaseHelper.UpdateNodeExecutionAsync(record, message, preserveTiming);
+        storedRecord = db.Queryable<FlowNodeRecord>().InSingle(recordId);
+        Assert.Equal(preserveTiming ? finishedAt : (DateTime?)null, storedRecord.EndTime);
+        Assert.Equal(preserveTiming ? record.ElapsedMs : 0, storedRecord.ElapsedMs);
+        stored = db.Queryable<FlowNodeMessage>().InSingle(message.Id);
+        Assert.Null(stored.RecvTime);
+        Assert.Equal(FlowMessageState.Sent, stored.State);
+
+        message.RecvPayload = "接收 🧭";
+        message.StatusCode = -1;
+        record.NodeName = null!;
+        record.NodeType = "CameraNode";
+        await FlowNodeRecordDataBaseHelper.UpdateNodeExecutionAsync(record, message, preserveTiming);
+        storedRecord = db.Queryable<FlowNodeRecord>().InSingle(recordId);
+        Assert.Null(storedRecord.NodeName);
+        Assert.Equal(record.NodeType, storedRecord.NodeType);
+        Assert.Equal(finishedAt, storedRecord.EndTime);
+        Assert.Equal(record.ElapsedMs, storedRecord.ElapsedMs);
+        stored = db.Queryable<FlowNodeMessage>().InSingle(message.Id);
+        Assert.Equal(finishedAt, stored.RecvTime);
+        Assert.Equal(-1, stored.StatusCode);
+        Assert.Equal(FlowMessageState.Fail, stored.State);
+        Assert.Equal(new FlowNodeMessagePayloads("", message.RecvPayload), FlowNodeMessagePayloadStorage.LoadPayloads(db, message.Id));
+
+        string failedSerial = serial + "-invalid-send";
+        FlowNodeRecord failedRecord = new() { BatchId = batch, SerialNumber = failedSerial, StartTime = startedAt };
+        FlowNodeMessage failedMessage = new()
+        {
+            BatchId = batch, SerialNumber = failedSerial, SendTime = startedAt, SendPayload = "\ud800",
+        };
+        int failedId = await FlowNodeRecordDataBaseHelper.InsertNodeExecutionAsync(failedRecord, failedMessage, preserveTiming);
+        Assert.Equal(preserveTiming, failedId > 0);
+        Assert.Equal(0, failedMessage.Id);
+        Assert.Null(failedMessage.NodeRecordId);
+        Assert.Equal(preserveTiming, db.Queryable<FlowNodeRecord>().Any(row => row.SerialNumber == failedSerial));
+        Assert.False(db.Queryable<FlowNodeMessage>().Any(row => row.SerialNumber == failedSerial));
+    }
+
+    [Fact]
+    public async Task ConfiguredReadersReuseNodeWriterSchemaDuringAnotherWrite()
+    {
+        string path = Path.GetFullPath(ConfigService.Instance.GetRequiredService<FlowNodeRecordConfig>().SqliteDbPath);
+        string tempRoot = Path.TrimEndingDirectorySeparator(Path.GetFullPath(Path.GetTempPath())) + Path.DirectorySeparatorChar;
+        Assert.StartsWith(tempRoot, path, StringComparison.OrdinalIgnoreCase);
+        Assert.True(FlowNodeRecordDataBaseHelper.FlushPendingWrites(TimeSpan.FromSeconds(5)));
+
+        var query = new FlowIncidentQuery { State = FlowIncidentStates.All };
+        using var prepared = new FlowIncidentService();
+        int committed = prepared.Query(query).TotalCount;
+
+        using var writer = new SqliteConnection(new SqliteConnectionStringBuilder { DataSource = path, Pooling = false }.ToString());
+        writer.Open();
+        using var transaction = writer.BeginTransaction(deferred: false);
+        using var command = writer.CreateCommand();
+        command.Transaction = transaction;
+        command.CommandText = """
+            INSERT INTO FlowIncident(run_record_id, kind, severity, state, summary, detected_time_utc)
+            VALUES(1, 'NodeFailure', 'Error', 'Open', 'Uncommitted fixture', '2026-11-27 00:00:00');
+            """;
+        command.ExecuteNonQuery();
+
+        Task<int> reader = Task.Run(() =>
+        {
+            using var journal = new FlowExecutionJournal();
+            using var incidents = new FlowIncidentService();
+            return incidents.Query(query).TotalCount;
+        });
+        Task completed = await Task.WhenAny(reader, Task.Delay(TimeSpan.FromSeconds(3)));
+        transaction.Rollback();
+        int actual = await reader;
+        Assert.Same(reader, completed);
+        Assert.Equal(committed, actual);
+    }
+
     [Fact]
     public void SchemaMigrationUpgradesLegacyRunTableAndIsIdempotent()
     {
@@ -68,6 +189,32 @@ public class FlowDiagnosticsSchemaTests
                 SELECT name FROM sqlite_master
                 WHERE type = 'index' AND tbl_name = 'FlowRunRecord' AND name = 'idx_flow_run_normalized_key_id'
                 """));
+            string legacySerialIndex = db.Ado.GetString("""
+                SELECT sql FROM sqlite_master
+                WHERE type = 'index' AND tbl_name = 'FlowRunRecord' AND name = 'idx_flow_run_legacy_serial'
+                """);
+            Assert.Contains("(serial_number COLLATE BINARY)", legacySerialIndex, StringComparison.OrdinalIgnoreCase);
+            Assert.Contains("WHERE batch_id IS NULL AND serial_number IS NOT NULL", legacySerialIndex, StringComparison.OrdinalIgnoreCase);
+            string attemptIndex = db.Ado.GetString("""
+                SELECT sql FROM sqlite_master
+                WHERE type = 'index' AND tbl_name = 'FlowNodeAttempt' AND name = 'idx_flow_node_attempt_run_node_number'
+                """);
+            Assert.Contains("(run_record_id, node_id, attempt_no DESC)", attemptIndex, StringComparison.OrdinalIgnoreCase);
+            Assert.Equal("idx_flow_node_attempt_run_node", db.Ado.GetString("""
+                SELECT name FROM sqlite_master
+                WHERE type = 'index' AND tbl_name = 'FlowNodeAttempt' AND name = 'idx_flow_node_attempt_run_node'
+                """));
+            string incidentIndex = db.Ado.GetString("""
+                SELECT sql FROM sqlite_master
+                WHERE type = 'index' AND tbl_name = 'FlowIncident' AND name = 'idx_flow_incident_detected_id_state'
+                """);
+            Assert.Contains("(detected_time_utc DESC, id DESC, state)", incidentIndex, StringComparison.OrdinalIgnoreCase);
+            string messageIndex = db.Ado.GetString("""
+                SELECT sql FROM sqlite_master
+                WHERE type = 'index' AND tbl_name = 'FlowNodeMessage' AND name = 'idx_flow_node_message_batch_node'
+                """);
+            Assert.Contains("(batch_id, node_id)", messageIndex, StringComparison.OrdinalIgnoreCase);
+            Assert.Contains("WHERE batch_id IS NOT NULL AND node_id IS NOT NULL", messageIndex, StringComparison.OrdinalIgnoreCase);
 
             HashSet<string> columns = db.DbMaintenance
                 .GetColumnInfosByTableName("FlowRunRecord")
@@ -186,6 +333,54 @@ public class FlowDiagnosticsSchemaTests
         Assert.Equal(2, durations.Count);
         Assert.Equal(30, durations["node"]);
         Assert.Equal(25, durations["quoted'node"]);
+    }
+
+    [Fact]
+    public void LatestFlowDurationUsesBothIdentityBranchesAndKeepsTies()
+    {
+        using var db = new SqlSugarClient(new ConnectionConfig { ConnectionString = "Data Source=:memory:", DbType = DbType.Sqlite });
+        FlowDiagnosticsSchemaMigrator.EnsureSchema(db);
+        var identity = new FlowIdentity(42, "plan'甲", "Flow");
+        var time = new DateTime(2026, 11, 27, 10, 0, 0).AddTicks(1234567);
+
+        void Add(int template, string? key, long elapsed, int seconds, FlowStatus status = FlowStatus.Completed)
+        {
+            db.Insertable(new FlowRunRecord
+            {
+                TemplateId = template, FlowKey = key, ElapsedMs = elapsed,
+                CompletedTime = time.AddSeconds(seconds), Status = status,
+            }).ExecuteCommand();
+        }
+
+        long ReadDuration() => FlowNodeRecordDataBaseHelper.ReadLastCompletedFlowElapsed(db, identity);
+        long ReadWithOriginalOrdering() => FlowNodeRecordDataBaseHelper.ApplyFlowIdentityFilter(
+                db.Queryable<FlowRunRecord>().Where(row => row.Status == FlowStatus.Completed && row.ElapsedMs > 0), identity)
+            .OrderByDescending(row => row.CompletedTime).First().ElapsedMs;
+
+        Add(42, "different", 600, 6);
+        int reads = 0;
+        db.Aop.OnLogExecuting = (_, _) => reads++;
+        Assert.Equal(0, ReadDuration());
+        db.Aop.OnLogExecuting = null;
+        Assert.Equal(1, reads);
+
+        Add(42, null, 100, 1);
+        Add(42, "", 200, 2);
+        Assert.Equal(200, ReadDuration());
+
+        Add(43, identity.FlowKey, 3_000_000_000, 3);
+        Add(42, " ", 500, 5);
+        Add(42, identity.FlowKey, 700, 7, FlowStatus.Failed);
+        Add(42, identity.FlowKey, 0, 8);
+        Assert.Equal(3_000_000_000, ReadDuration());
+
+        Add(42, null, 400, 4);
+        Assert.Equal(400, ReadDuration());
+        Add(42, identity.FlowKey, 405, 4);
+        Assert.Equal(ReadWithOriginalOrdering(), ReadDuration());
+        Add(42, identity.FlowKey, 901, 9);
+        Add(43, identity.FlowKey, 902, 9);
+        Assert.Equal(ReadWithOriginalOrdering(), ReadDuration());
     }
 
     [Fact]

@@ -8,6 +8,8 @@ using Newtonsoft.Json;
 using System;
 using System.Buffers;
 using System.IO;
+using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.X86;
 using System.Security.Cryptography;
 using System.Threading;
 using System.Threading.Tasks;
@@ -171,7 +173,37 @@ public sealed class CalibratedImageContentProvider : IImageContentProvider, IIma
         ushort* red = (ushort*)destination;
         ushort* green = (ushort*)(destination + planeLength);
         ushort* blue = (ushort*)(destination + 2 * planeLength);
-        for (int pixel = 0; pixel < pixelCount; pixel++, packed += 3)
+        int pixel = 0;
+        if (Ssse3.IsSupported)
+        {
+            // Three vectors hold eight packed pixels. Each control word either selects both
+            // bytes of one sample or clears that lane for a sample from another vector.
+            const ushort clear = 0x8080;
+            var redFirst = Vector128.Create((ushort)0x0100, 0x0706, 0x0D0C, clear, clear, clear, clear, clear).AsByte();
+            var redSecond = Vector128.Create(clear, clear, clear, 0x0302, 0x0908, 0x0F0E, clear, clear).AsByte();
+            var redThird = Vector128.Create(clear, clear, clear, clear, clear, clear, 0x0504, 0x0B0A).AsByte();
+            var greenFirst = Vector128.Create((ushort)0x0302, 0x0908, 0x0F0E, clear, clear, clear, clear, clear).AsByte();
+            var greenSecond = Vector128.Create(clear, clear, clear, 0x0504, 0x0B0A, clear, clear, clear).AsByte();
+            var greenThird = Vector128.Create(clear, clear, clear, clear, clear, 0x0100, 0x0706, 0x0D0C).AsByte();
+            var blueFirst = Vector128.Create((ushort)0x0504, 0x0B0A, clear, clear, clear, clear, clear, clear).AsByte();
+            var blueSecond = Vector128.Create(clear, clear, 0x0100, 0x0706, 0x0D0C, clear, clear, clear).AsByte();
+            var blueThird = Vector128.Create(clear, clear, clear, clear, clear, 0x0302, 0x0908, 0x0F0E).AsByte();
+
+            for (; pixel <= pixelCount - 8; pixel += 8, packed += 24)
+            {
+                Vector128<byte> first = Sse2.LoadVector128((byte*)packed);
+                Vector128<byte> second = Sse2.LoadVector128((byte*)(packed + 8));
+                Vector128<byte> third = Sse2.LoadVector128((byte*)(packed + 16));
+                Sse2.Store((byte*)(red + pixel), Gather(redFirst, redSecond, redThird));
+                Sse2.Store((byte*)(green + pixel), Gather(greenFirst, greenSecond, greenThird));
+                Sse2.Store((byte*)(blue + pixel), Gather(blueFirst, blueSecond, blueThird));
+
+                Vector128<byte> Gather(Vector128<byte> a, Vector128<byte> b, Vector128<byte> c)
+                    => Sse2.Or(Sse2.Or(Ssse3.Shuffle(first, a), Ssse3.Shuffle(second, b)), Ssse3.Shuffle(third, c));
+            }
+        }
+
+        for (; pixel < pixelCount; pixel++, packed += 3)
         {
             red[pixel] = packed[0];
             green[pixel] = packed[1];

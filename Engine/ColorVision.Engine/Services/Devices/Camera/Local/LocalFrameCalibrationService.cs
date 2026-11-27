@@ -1,17 +1,21 @@
 using ColorVision.Engine.FlowProcessing.Diagnostics;
 using ColorVision.Core;
-using ColorVision.FileIO;
 using cvColorVision;
 using FlowEngineLib.Algorithm;
 using ColorVision.Engine.Services.PhyCameras.Configs;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.IO;
 using ColorVision.ImageEditor.Tif;
 
 namespace ColorVision.Engine.Services.Devices.Camera.Local
 {
+    internal enum LocalColorCalibrationOutput
+    {
+        FullCie,
+        Deferred
+    }
+
     internal readonly record struct LocalCalibrationRoi(int X, int Y, int Width, int Height)
     {
         public bool IsConfigured => Width > 0 && Height > 0;
@@ -48,173 +52,153 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
     }
 
     /// <summary>
-    /// Applies a camera calibration template directly to a process-local RAW buffer.
-    /// Basic stages update RAW in place; a color stage additionally writes CIE data.
+    /// A revision of a template. Its ordered resources are independent of the frame layout, exposure and result requested.
+    /// The device cache owns the native context so this object can be reused without holding a file or device handle.
     /// </summary>
-    internal static class LocalFrameCalibrationService
+    internal sealed class LocalPreparedCalibration
     {
-        public static void CalibrateInPlace(
-            LocalFlowFrame frame,
-            LocalCalibrationCacheManager cacheManager,
-            IReadOnlyList<DeviceCameraCalibrationFile> calibrationFiles,
-            string calibrationTemplate,
-            LocalCalibrationRoi calibrationRoi,
-            IReadOnlyList<float>? zeroExposureFallback = null,
-            bool allowAcceleration = false)
+        private readonly LocalCalibrationCacheManager cache;
+        private readonly LocalCalibrationAsset[] assets;
+        private readonly LocalCalibrationAsset[] basic;
+        private readonly LocalCalibrationAsset? color;
+        private readonly string template;
+        private readonly uint inputDepth;
+
+        internal LocalPreparedCalibration(LocalCalibrationCacheManager cache, string template, LocalCalibrationAsset[] assets, uint inputDepth)
+        {
+            this.cache = cache;
+            this.template = template;
+            this.assets = assets;
+            this.inputDepth = inputDepth;
+            color = assets.SingleOrDefault(file => LocalFrameCalibrationService.IsColorCalibration(file.CalibrationType));
+            basic = color == null ? assets : assets.Where(file => file != color).ToArray();
+        }
+
+        public bool HasColor => color != null;
+        public bool HasBasicCalibration => basic.Length != 0;
+
+        public CalibrationOutputMode OutputFor(LocalColorCalibrationOutput preference, bool requireColor = false)
+        {
+            if (!HasColor)
+            {
+                if (requireColor) throw MissingColor();
+                return CalibrationOutputMode.RawOnly;
+            }
+            return preference switch
+            {
+                LocalColorCalibrationOutput.FullCie => CalibrationOutputMode.FullCie,
+                LocalColorCalibrationOutput.Deferred => CalibrationOutputMode.DeferredColor,
+                _ => throw new ArgumentOutOfRangeException(nameof(preference))
+            };
+        }
+
+        public void Apply(LocalFlowFrame frame, CalibrationOutputMode output, LocalCalibrationRoi fallbackRoi = default,
+            IReadOnlyList<float>? zeroExposureFallback = null)
         {
             using var calibrationStage = FlowNodeTiming.Measure("Calibration");
             ArgumentNullException.ThrowIfNull(frame);
-            ArgumentNullException.ThrowIfNull(cacheManager);
-            ArgumentNullException.ThrowIfNull(calibrationFiles);
-            CalibrationPlan plan = CreatePlan(
-                frame.Metadata.Width,
-                frame.Metadata.Height,
-                frame.Metadata.Channels,
-                calibrationFiles,
-                calibrationTemplate);
-            bool sourceRawAlreadyMirrored;
-            using (LocalFlowFrameLease source = frame.Acquire())
+            if (output is not (CalibrationOutputMode.RawOnly or CalibrationOutputMode.FullCie or CalibrationOutputMode.DeferredColor))
+                throw new ArgumentOutOfRangeException(nameof(output));
+            bool useColor = output != CalibrationOutputMode.RawOnly;
+            if (useColor && color == null) throw MissingColor();
+            LocalFrameMetadata metadata = frame.Metadata;
+            if (useColor)
+            {
+                int requiredChannels = color!.CalibrationType == CalibrationType.Luminance ? 1 : 3;
+                if (metadata.Channels != requiredChannels)
+                    throw new InvalidOperationException($"亮度/颜色校正“{color.DisplayName}”要求 {requiredChannels} 通道 RAW，当前为 {metadata.Channels} 通道。");
+            }
+            int cieLength = output == CalibrationOutputMode.FullCie
+                ? checked(sizeof(float) * metadata.Width * metadata.Height * metadata.Channels) : 0;
+            float[] effectiveExposure = useColor
+                ? LocalFrameCalibrationService.ResolveExposureForCalibration(metadata.Exposure, zeroExposureFallback)
+                : metadata.Exposure;
+            float[] normalizedExposure = useColor ? LocalFrameCalibrationService.NormalizeExposure(effectiveExposure) : [];
+            frame.ApplyCalibration(template, cieLength, HasBasicCalibration, effectiveExposure, (source, cie) =>
             {
                 ValidateSource(source);
-                sourceRawAlreadyMirrored = IsRawAlreadyMirrored(source);
-                ValidateMirroredRawContinuation(sourceRawAlreadyMirrored, plan);
-            }
-            float[] effectiveExposure = plan.GeneratesCie
-                ? ResolveExposureForCalibration(frame.Metadata.Exposure, zeroExposureFallback)
-                : frame.Metadata.Exposure;
-            float[] normalizedExposure = plan.GeneratesCie ? NormalizeExposure(effectiveExposure) : Array.Empty<float>();
-            frame.PrepareForCalibration(calibrationTemplate, allowAcceleration ? 0 : plan.CieLength, plan.HasBasicCalibration, effectiveExposure);
-            RawColorTransformV1? colorTransform;
-            ImageCalibrationSource[] sources;
-            using (LocalFlowFrameLease lease = frame.Acquire())
-            {
-                CVImageFlipMode rawOutputFlip = plan.HasBasicCalibration
-                    && lease.Metadata.PrimaryBufferKind == LocalFrameBufferKind.CvRaw && !lease.IsRawFlipApplied
-                    ? lease.Metadata.FlipMode : CVImageFlipMode.None;
-                LocalCalibrationExecution execution = cacheManager.Execute(
-                    new LocalCalibrationLayout(
-                        lease.Metadata.Width,
-                        lease.Metadata.Height,
-                        lease.Metadata.SourceBpp,
-                        lease.Metadata.Channels),
-                    calibrationFiles,
-                    lease.RawPointer,
-                    plan.GeneratesCie ? lease.CiePointer : IntPtr.Zero,
-                    normalizedExposure,
-                    calibrationRoi,
-                    allowAcceleration,
-                    rawOutputFlip);
-                colorTransform = execution.Transform;
-                sources = execution.Sources;
-                if (rawOutputFlip != CVImageFlipMode.None)
-                    lease.MarkBufferFlipApplied(LocalFrameBufferKind.CvRaw);
-                if (plan.GeneratesCie && !allowAcceleration && sourceRawAlreadyMirrored)
+                var layout = LocalCalibrationLayout.FromFrame(source.Metadata);
+                if (inputDepth == 8 && layout.Bpp == 16)
+                    throw new InvalidOperationException($"校正模板“{template}”要求 8 位 RAW；输入为 16 位，无法无损转换。");
+                var calibrationRoi = LocalCalibrationRoi.ResolveForFrame(source.Metadata, fallbackRoi);
+                CVImageFlipMode flip = source.Metadata.FlipMode;
+                LocalFrameMirrorService.ValidateFlipMode(flip);
+                if (flip != CVImageFlipMode.None && source.IsRawFlipApplied && HasBasicCalibration)
                 {
-                    lease.MarkBufferFlipApplied(LocalFrameBufferKind.CvCie);
+                    throw new InvalidOperationException("已翻转的 RAW 只能继续执行亮度/色度校正；不能再次执行常规或基于传感器坐标的空间校正。");
                 }
-            }
-            if (frame.IsFlipApplied) FlowNodeTiming.Skip("MirrorImage");
-            else FlowNodeTiming.Run("MirrorImage", () => LocalFrameMirrorService.ApplyPending(frame));
-            frame.CalibrationProvenance = new ImageCalibrationSummary
-            {
-                Template = calibrationTemplate, CalibratedUtc = DateTime.UtcNow,
-                Backend = cacheManager.BackendName, Sources = sources
-            };
-            if (colorTransform.HasValue)
-            {
-                ColorCalibrationSnapshot snapshot = ColorCalibrationSnapshot.Create(colorTransform.Value,
-                    frame.Metadata.Width, frame.Metadata.Height, frame.Metadata.SourceBpp, normalizedExposure, calibrationTemplate)
-                    with { Provenance = frame.CalibrationProvenance };
-                frame.CalibrationProvenance = snapshot.ToSummary();
-                frame.ColorCalibration = snapshot;
-                string rawPath = frame.CvRawFilePath;
-                bool canReplay = !string.IsNullOrWhiteSpace(rawPath);
-                if (!canReplay) rawPath = frame.Metadata.SourceFilePath;
-                if (!string.IsNullOrWhiteSpace(rawPath) && (CVFileReadCache.GetCachedLength(rawPath).HasValue || File.Exists(rawPath))
-                    && string.Equals(Path.GetExtension(rawPath), ".cvraw", StringComparison.OrdinalIgnoreCase))
-                    FlowNodeTiming.Run("SaveColorParameters", () => snapshot.Save(rawPath, canReplay));
-            }
+                CVImageFlipMode rawOutputFlip = cieLength == 0 && !source.IsRawFlipApplied ? flip : CVImageFlipMode.None;
+                LocalCalibrationExecution execution = cache.ExecutePrepared(useColor ? assets : basic, layout, source.RawPointer,
+                    (ulong)source.RawLength, cie, (ulong)cieLength, normalizedExposure, calibrationRoi, output, rawOutputFlip);
+                if (cieLength > 0 && !source.IsRawFlipApplied)
+                {
+                    FlowNodeTiming.Run("MirrorImage", () => LocalFrameMirrorService.FlipPlanarCie(
+                        cie, cieLength, layout.Width, layout.Height, layout.Channels, flip));
+                }
+                else FlowNodeTiming.Skip("MirrorImage");
+
+                ImageCalibrationSummary provenance = new()
+                {
+                    Template = template, CalibratedUtc = DateTime.UtcNow,
+                    Backend = cache.BackendName, Sources = execution.Sources
+                };
+                ColorCalibrationSnapshot? snapshot = execution.Transform is RawColorTransformV1 transform
+                    ? ColorCalibrationSnapshot.Create(transform, layout.Width, layout.Height, layout.Bpp,
+                        normalizedExposure, template) with { Provenance = provenance }
+                    : null;
+                return new(snapshot, snapshot?.ToSummary() ?? provenance, rawOutputFlip != CVImageFlipMode.None);
+            }, promoteRaw8To16: inputDepth == 16);
             calibrationStage?.Complete();
         }
 
-        public static int GetRequiredCieLength(
-            int width,
-            int height,
-            int sourceChannels,
-            IReadOnlyList<DeviceCameraCalibrationFile> calibrationFiles,
-            string calibrationTemplate)
-            => CreatePlan(width, height, sourceChannels, calibrationFiles, calibrationTemplate).CieLength;
+        private InvalidOperationException MissingColor()
+            => new($"校正模板“{template}”没有亮度/颜色校正模型，无法生成 Y/XYZ 或按需测量。");
 
-        internal static void ReuseColorCalibration(LocalFlowFrame frame, bool allowAcceleration)
+        private static void ValidateSource(LocalFlowFrameLease source)
+        {
+            if (!source.HasRaw || source.RawPointer == IntPtr.Zero) throw new InvalidOperationException("当前本地帧没有 RAW 内存，无法执行校正。");
+            if (source.IsBufferFlipFailed(LocalFrameBufferKind.CvRaw))
+                throw new InvalidOperationException("RAW 镜像失败，当前帧不能继续校正。");
+            if (source.Metadata.Width <= 0 || source.Metadata.Height <= 0) throw new InvalidOperationException("当前本地帧的图像尺寸无效。");
+            if (source.Metadata.SourceBpp is not (8 or 16)) throw new NotSupportedException($"本地校正仅支持 8 位或 16 位 RAW，当前位深：{source.Metadata.SourceBpp}。");
+            if (source.Metadata.Channels is not (1 or 3)) throw new NotSupportedException($"本地校正仅支持单通道或三通道 RAW，当前通道数：{source.Metadata.Channels}。");
+            int length = checked((source.Metadata.SourceBpp / 8) * source.Metadata.Width * source.Metadata.Height * source.Metadata.Channels);
+            if (length > source.RawLength) throw new InvalidOperationException($"RAW 内存长度不足：需要 {length} 字节，实际 {source.RawLength} 字节。");
+        }
+    }
+
+    internal static class LocalFrameCalibrationService
+    {
+        internal static void ReuseColorCalibration(LocalFlowFrame frame, LocalColorCalibrationOutput output)
         {
             ColorCalibrationSnapshot snapshot = frame.ColorCalibration
                 ?? throw new InvalidOperationException("切换色度输出模式需要带校正参数的 RAW 输入，不能使用仅有 CIE 的帧。");
             if (!frame.HasRaw || !snapshot.CanReplay)
                 throw new InvalidOperationException("切换色度输出模式需要可回放的 RAW 输入。");
-            bool rawAlreadyMirrored = frame.IsRawFlipApplied;
-            ImageCalibrationSummary? provenance = frame.CalibrationProvenance;
-            int cieLength = allowAcceleration ? 0 : checked(4 * frame.Metadata.Width * frame.Metadata.Height * frame.Metadata.Channels);
-            frame.PrepareForCalibration(snapshot.Template, cieLength, false);
-            if (!allowAcceleration)
+            int cieLength = output == LocalColorCalibrationOutput.FullCie
+                ? checked(sizeof(float) * frame.Metadata.Width * frame.Metadata.Height * frame.Metadata.Channels)
+                : 0;
+            frame.ApplyCalibration(snapshot.Template, cieLength, false, null, (source, cie) =>
             {
-                using LocalFlowFrameLease lease = frame.Acquire();
-                RawColorTransformV1 transform = snapshot.ToNative();
-                int result = OpenCVMediaHelper.M_TransformRawColorV1(lease.Metadata.Width, lease.Metadata.Height, lease.Metadata.SourceBpp,
-                    lease.RawPointer, checked((ulong)lease.RawLength), in transform, -1, lease.CiePointer, checked((ulong)lease.CieLength / 4));
-                if (result != OpenCVCalibration.PoiOk) throw new InvalidOperationException($"生成本地 CIE 内存失败，错误码：{result}。");
-                if (rawAlreadyMirrored) lease.MarkBufferFlipApplied(LocalFrameBufferKind.CvCie);
-            }
-            LocalFrameMirrorService.ApplyPending(frame);
-            frame.ColorCalibration = snapshot;
-            frame.CalibrationProvenance = provenance;
-        }
-
-        private static void ValidateSource(LocalFlowFrameLease source)
-        {
-            if (!source.HasRaw) throw new InvalidOperationException("当前本地帧没有 RAW 内存，无法执行校正。");
-            if (source.RawPointer == IntPtr.Zero) throw new InvalidOperationException("当前本地帧的 RAW 指针无效。");
-            if (source.Metadata.Width <= 0 || source.Metadata.Height <= 0) throw new InvalidOperationException("当前本地帧的图像尺寸无效。");
-            if (source.Metadata.SourceBpp is not (8 or 16)) throw new NotSupportedException($"本地校正仅支持 8 位或 16 位 RAW，当前位深：{source.Metadata.SourceBpp}。");
-            if (source.Metadata.Channels is not (1 or 3)) throw new NotSupportedException($"本地校正仅支持单通道或三通道 RAW，当前通道数：{source.Metadata.Channels}。");
-            int expectedLength = GetExpectedRawLength(source);
-            if (expectedLength > source.RawLength) throw new InvalidOperationException($"RAW 内存长度不足：需要 {expectedLength} 字节，实际 {source.RawLength} 字节。");
-        }
-
-        private static int GetExpectedRawLength(LocalFlowFrameLease source)
-            => checked((source.Metadata.SourceBpp / 8) * source.Metadata.Width * source.Metadata.Height * source.Metadata.Channels);
-
-        private static CalibrationPlan CreatePlan(
-            int width,
-            int height,
-            int sourceChannels,
-            IReadOnlyList<DeviceCameraCalibrationFile> calibrationFiles,
-            string calibrationTemplate)
-        {
-            if (calibrationFiles.Count == 0)
-            {
-                throw new InvalidOperationException($"校正模板“{calibrationTemplate}”没有选择任何校正文件。");
-            }
-
-            DeviceCameraCalibrationFile[] colorFiles = calibrationFiles.Where(file => IsColorCalibration(file.CalibrationType)).ToArray();
-            if (colorFiles.Length > 1)
-            {
-                throw new InvalidOperationException($"校正模板“{calibrationTemplate}”同时选择了多个亮度/颜色校正文件，本地校正只能使用一个。");
-            }
-            if (width <= 0 || height <= 0)
-            {
-                throw new InvalidOperationException($"Invalid calibration image size: {width}x{height}.");
-            }
-            bool hasBasicCalibration = !IsColorOnlyTemplate(calibrationFiles);
-            if (colorFiles.Length == 0) return new CalibrationPlan(false, 0, hasBasicCalibration);
-
-            int cieChannels = GetCieChannelCount(colorFiles[0], sourceChannels);
-            return new CalibrationPlan(true, checked(4 * width * height * cieChannels), hasBasicCalibration);
-        }
-
-        internal static bool IsColorOnlyTemplate(IReadOnlyList<DeviceCameraCalibrationFile> calibrationFiles)
-        {
-            ArgumentNullException.ThrowIfNull(calibrationFiles);
-            return calibrationFiles.Count > 0 && calibrationFiles.All(file => IsColorCalibration(file.CalibrationType));
+                LocalFrameMetadata metadata = source.Metadata;
+                LocalFrameMirrorService.ValidateFlipMode(metadata.FlipMode);
+                if (cieLength > 0)
+                {
+                    RawColorTransformV1 transform = snapshot.ToNative();
+                    int result = OpenCVMediaHelper.M_TransformRawColorV1(metadata.Width, metadata.Height, metadata.SourceBpp,
+                        source.RawPointer, (ulong)source.RawLength, in transform, -1, cie, (ulong)cieLength / sizeof(float));
+                    if (result != OpenCVCalibration.PoiOk) throw new InvalidOperationException($"生成本地 CIE 内存失败，错误码：{result}。");
+                    if (!source.IsRawFlipApplied)
+                        LocalFrameMirrorService.FlipPlanarCie(cie, cieLength, metadata.Width, metadata.Height,
+                            metadata.Channels, metadata.FlipMode);
+                }
+                else if (!source.IsRawFlipApplied)
+                {
+                    LocalFrameMirrorService.FlipRaw(source.RawPointer, source.RawLength, metadata.Width, metadata.Height,
+                        metadata.SourceBpp, metadata.Channels, metadata.FlipMode);
+                }
+                return new(snapshot, source.CalibrationProvenance, cieLength == 0 && !source.IsRawFlipApplied);
+            });
         }
 
         internal static float[] ResolveExposureForCalibration(float[] exposure, IReadOnlyList<float>? zeroExposureFallback)
@@ -227,25 +211,13 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                 : exposure;
         }
 
-        private static bool IsRawAlreadyMirrored(LocalFlowFrameLease source)
-            => source.Metadata.FlipMode != FlowEngineLib.Algorithm.CVImageFlipMode.None && source.IsRawFlipApplied;
-
-        private static void ValidateMirroredRawContinuation(bool sourceRawAlreadyMirrored, CalibrationPlan plan)
+        internal static float[] NormalizeExposure(IReadOnlyList<float> exposure)
         {
-            if (!sourceRawAlreadyMirrored) return;
-            if (!plan.GeneratesCie || plan.HasBasicCalibration)
-            {
-                throw new InvalidOperationException("已翻转的 RAW 只能继续执行亮度/色度校正；不能再次执行常规或基于传感器坐标的空间校正。");
-            }
-        }
-
-        private static float[] NormalizeExposure(float[] exposure)
-        {
-            if (exposure == null || exposure.Length == 0) throw new InvalidOperationException("RAW 图像没有曝光时间，无法执行亮度/颜色校正。");
+            if (exposure == null || exposure.Count == 0) throw new InvalidOperationException("RAW 图像没有曝光时间，无法执行亮度/颜色校正。");
             float[] normalized = new float[3];
             for (int index = 0; index < normalized.Length; index++)
             {
-                normalized[index] = exposure[Math.Min(index, exposure.Length - 1)];
+                normalized[index] = exposure[Math.Min(index, exposure.Count - 1)];
                 if (!float.IsFinite(normalized[index]) || normalized[index] <= 0)
                 {
                     throw new InvalidOperationException($"RAW 图像曝光时间必须是有限正数，通道 {index} 的值为 {normalized[index]}。");
@@ -254,20 +226,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             return normalized;
         }
 
-        private static bool IsColorCalibration(CalibrationType type)
+        internal static bool IsColorCalibration(CalibrationType type)
             => type is CalibrationType.Luminance or CalibrationType.LumOneColor or CalibrationType.LumFourColor or CalibrationType.LumMultiColor;
-
-        private static int GetCieChannelCount(DeviceCameraCalibrationFile colorFile, int sourceChannels)
-        {
-            int requiredChannels = colorFile.CalibrationType == CalibrationType.Luminance ? 1 : 3;
-            if (sourceChannels != requiredChannels)
-            {
-                string calibrationName = colorFile.CalibrationType == CalibrationType.Luminance ? "亮度校正" : "单色/四色/多色校正";
-                throw new InvalidOperationException($"{calibrationName}“{colorFile.DisplayName}”要求 {requiredChannels} 通道 RAW，当前为 {sourceChannels} 通道。");
-            }
-            return requiredChannels;
-        }
-
-        private readonly record struct CalibrationPlan(bool GeneratesCie, int CieLength, bool HasBasicCalibration);
     }
 }

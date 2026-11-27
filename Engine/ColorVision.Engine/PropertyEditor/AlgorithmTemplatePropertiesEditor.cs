@@ -8,7 +8,6 @@ using ColorVision.Engine.Templates.Jsons.FOV2;
 using ColorVision.Engine.Templates.Jsons.Ghost2;
 using ColorVision.Engine.Templates.Jsons.MTF2;
 using ColorVision.Engine.Templates.Jsons.SFR2;
-using ColorVision.Engine.Templates.Jsons.SFRFindROI;
 using FlowEngineLib.Algorithm;
 using FlowEngineLib.Node.Algorithm;
 using FlowEngineLib.Node.OLED;
@@ -42,7 +41,6 @@ public sealed class AlgorithmTemplatePropertiesEditor : IPropertyEditor
         AlgorithmType.FOV => new TemplateDFOV(),
         AlgorithmType.鬼影 => new TemplateGhostQK(),
         AlgorithmType.畸变 => new TemplateDistortion2(),
-        AlgorithmType.SFR_FindROI => new TemplateSFRFindROI(),
         AlgorithmType.双目融合 => new TemplateBinocularFusion(),
         AlgorithmType.AA布点 => new TemplateAAFindPoints(),
         AlgorithmType.十字计算 => new TemplateFindCross(),
@@ -53,7 +51,6 @@ public sealed class AlgorithmTemplatePropertiesEditor : IPropertyEditor
     {
         Algorithm2Type.MTF => new TemplateMTF2(),
         Algorithm2Type.SFR => new TemplateSFR2(),
-        Algorithm2Type.SFR_FindROI => new TemplateSFRFindROI(),
         Algorithm2Type.十字计算 => new TemplateFindCross(),
         _ => null
     };
@@ -64,7 +61,6 @@ public sealed class AlgorithmTemplatePropertiesEditor : IPropertyEditor
         AlgorithmARVRType.SFR => new TemplateSFR2(),
         AlgorithmARVRType.FOV => new TemplateDFOV(),
         AlgorithmARVRType.畸变 => new TemplateDistortion2(),
-        AlgorithmARVRType.SFR_FindROI => new TemplateSFRFindROI(),
         AlgorithmARVRType.双目融合 => new TemplateBinocularFusion(),
         AlgorithmARVRType.十字计算 => new TemplateFindCross(),
         AlgorithmARVRType.屏幕缺陷检测 => new TemplateDetectScreenDefects(),

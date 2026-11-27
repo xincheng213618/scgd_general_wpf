@@ -101,6 +101,34 @@ public sealed class FlowValidatorTests
     }
 
     [Fact]
+    public void ConnectionsThroughAnotherCanvasDoNotProvideAnExecutionPath()
+    {
+        WithGraph(graph =>
+        {
+            using var otherEditor = new STNodeEditor();
+            var start = graph.Add(new ValidationStartNode());
+            var end = graph.Add(new CVEndNode());
+            var external = new FlowRerouteNode();
+            external.Create();
+            otherEditor.Nodes.Add(external);
+            try
+            {
+                Assert.Equal(ConnectionStatus.Connected, start.GetAllOutputOptions().Single(port => port.DataType == typeof(CVStartCFC))
+                    .ConnectOption(external.GetAllInputOptions().Single(), isOwnerOfOwner: false));
+                Assert.Equal(ConnectionStatus.Connected, external.GetAllOutputOptions().Single().ConnectOption(end.m_in_start, isOwnerOfOwner: false));
+
+                Assert.False(graph.TryValidate(out string error, out STNode? invalid));
+                Assert.Equal(ColorVision.Engine.Properties.Resources.Flow_NoPathFromStartToEnd, error);
+                Assert.Same(start, invalid);
+            }
+            finally
+            {
+                otherEditor.Nodes.Clear();
+            }
+        });
+    }
+
+    [Fact]
     public void LegacyLoopAndBoundHubRemainValidAlongTheirExecutionPorts()
     {
         WithGraph(graph =>

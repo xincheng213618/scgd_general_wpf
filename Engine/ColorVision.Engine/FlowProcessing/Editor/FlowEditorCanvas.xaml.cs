@@ -739,7 +739,6 @@ namespace ColorVision.Engine.FlowProcessing.Editor
             SetBrush("PrimaryTextBrush", theme.Text);
             SetBrush("SecondaryTextBrush", theme.SecondaryText);
             SetBrush("PrimaryBrush", theme.Accent);
-            ThemeButton.ToolTip = EngineLocalization.Get("画布主题") + " → " + EngineLocalization.Get(NextTheme.Label);
         }
 
         private void SetBrush(string key, Color color)
@@ -747,20 +746,6 @@ namespace ColorVision.Engine.FlowProcessing.Editor
             var brush = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromArgb(color.A, color.R, color.G, color.B));
             brush.Freeze();
             Resources[key] = brush;
-        }
-
-        private (FlowEditorThemeMode Mode, string Label) NextTheme => _settings.ThemeMode switch
-        {
-            FlowEditorThemeMode.Light => (FlowEditorThemeMode.Dark, "深色"),
-            FlowEditorThemeMode.Dark => (FlowEditorThemeMode.Custom, "自定义配色"),
-            FlowEditorThemeMode.Custom => (FlowEditorThemeMode.FollowApplication, "跟随软件主题"),
-            _ => (FlowEditorThemeMode.Light, "浅色")
-        };
-
-        private void ThemeButton_Click(object sender, RoutedEventArgs e)
-        {
-            _settings.ThemeMode = NextTheme.Mode;
-            SaveSettings();
         }
 
         private void SettingsButton_Click(object sender, RoutedEventArgs e)

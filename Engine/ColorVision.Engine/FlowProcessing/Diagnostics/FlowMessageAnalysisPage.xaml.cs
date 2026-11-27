@@ -11,8 +11,6 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
 {
     internal partial class FlowMessageAnalysisPage : Page
     {
-        private const int MaximumDisplayedMessages = 2000;
-
         private readonly FlowExecutionAnalysisSession _session;
         private readonly FlowNodeRecord? _scopeRecord;
         private readonly Action<FlowNodeRecord> _openNode;
@@ -82,7 +80,7 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
                     new NodeFilterOption(null, EngineLocalization.Get("全部节点"))
                 };
                 nodeOptions.AddRange(_sourceMessages
-                    .GroupBy(GetNodeKey, StringComparer.Ordinal)
+                    .GroupBy(FlowMessageNodeKey.From)
                     .Select(group =>
                     {
                         FlowNodeMessage first = group.First();
@@ -120,77 +118,43 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
         private void ApplyFilter()
         {
             FlowNodeMessage? currentSelection = MessageListView.SelectedItem as FlowNodeMessage;
-            IEnumerable<FlowNodeMessage> filtered = _sourceMessages;
-
-            if (!IsNodeScoped)
-            {
-                if (NodeFilterComboBox.SelectedItem is NodeFilterOption nodeOption &&
-                    nodeOption.Key != null)
-                {
-                    filtered = filtered.Where(message =>
-                        string.Equals(GetNodeKey(message), nodeOption.Key, StringComparison.Ordinal));
-                }
-
-                if (StateFilterComboBox.SelectedItem is StateFilterOption stateOption &&
-                    stateOption.State.HasValue)
-                {
-                    filtered = filtered.Where(message => message.State == stateOption.State.Value);
-                }
-            }
-
-            List<FlowNodeMessage> matchingMessages = filtered.ToList();
-            FlowNodeMessage? preferredSelection = FindPreferredSelection(
-                matchingMessages,
-                currentSelection,
-                _requestedMessageId);
+            FlowMessageNodeKey? node = IsNodeScoped ? null : (NodeFilterComboBox.SelectedItem as NodeFilterOption)?.Key;
+            FlowMessageState? state = IsNodeScoped ? null : (StateFilterComboBox.SelectedItem as StateFilterOption)?.State;
+            FlowMessageListProjection projection = FlowMessageListProjection.Build(
+                _sourceMessages, node, state, currentSelection, _requestedMessageId);
             _requestedMessageId = null;
 
-            List<FlowNodeMessage> displayedMessages = matchingMessages
-                .Take(MaximumDisplayedMessages)
-                .ToList();
-            if (preferredSelection != null &&
-                displayedMessages.Count == MaximumDisplayedMessages &&
-                !displayedMessages.Contains(preferredSelection))
-            {
-                displayedMessages[displayedMessages.Count - 1] = preferredSelection;
-            }
+            MessageListView.ItemsSource = projection.DisplayedMessages;
+            UpdateStatistics(projection);
+            UpdateEmptyState(projection.MatchingCount);
 
-            MessageListView.ItemsSource = displayedMessages;
-            UpdateStatistics(matchingMessages.Count, displayedMessages.Count);
-            UpdateEmptyState(matchingMessages.Count);
-
-            if (displayedMessages.Count == 0)
+            if (projection.SelectedMessage == null)
             {
                 MessageListView.SelectedItem = null;
                 UpdateMessageDetails(null);
                 return;
             }
 
-            MessageListView.SelectedItem = preferredSelection != null &&
-                                           displayedMessages.Contains(preferredSelection)
-                ? preferredSelection
-                : displayedMessages[0];
+            MessageListView.SelectedItem = projection.SelectedMessage;
             MessageListView.ScrollIntoView(MessageListView.SelectedItem);
         }
 
-        private void UpdateStatistics(int matchingCount, int displayedCount)
+        private void UpdateStatistics(FlowMessageListProjection projection)
         {
-            int issueCount = _sourceMessages.Count(message =>
-                message.State == FlowMessageState.Fail ||
-                message.State == FlowMessageState.Timeout);
-
+            const int limit = FlowMessageListProjection.MaximumDisplayedMessages;
+            int matchingCount = projection.MatchingCount;
             TotalMessageCountText.Text = _sourceMessages.Count.ToString("N0");
-            IssueMessageCountText.Text = issueCount.ToString("N0");
+            IssueMessageCountText.Text = projection.IssueCount.ToString("N0");
             FilteredMessageCountText.Text = matchingCount.ToString("N0");
-            DisplayedMessageCountText.Text = displayedCount.ToString("N0");
+            DisplayedMessageCountText.Text = projection.DisplayedMessages.Count.ToString("N0");
             ListScopeSummaryText.Text = matchingCount == _sourceMessages.Count
                 ? EngineLocalization.Format($"{matchingCount:N0} 条")
                 : EngineLocalization.Format($"{matchingCount:N0} / {_sourceMessages.Count:N0} 条");
 
-            bool isLimited = matchingCount > MaximumDisplayedMessages;
+            bool isLimited = matchingCount > limit;
             LimitNoticePanel.Visibility = isLimited ? Visibility.Visible : Visibility.Collapsed;
             LimitNoticeText.Text = isLimited
-                ? EngineLocalization.Format($"为保证界面流畅，列表最多显示 {MaximumDisplayedMessages:N0} 条。当前筛选完整匹配 {matchingCount:N0} 条，上方统计仍基于完整数据。")
+                ? EngineLocalization.Format($"为保证界面流畅，列表最多显示 {limit:N0} 条。当前筛选完整匹配 {matchingCount:N0} 条，上方统计仍基于完整数据。")
                 : string.Empty;
         }
 
@@ -296,24 +260,6 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
             return null;
         }
 
-        private static FlowNodeMessage? FindPreferredSelection(
-            IReadOnlyList<FlowNodeMessage> messages,
-            FlowNodeMessage? currentSelection,
-            int? requestedMessageId)
-        {
-            if (requestedMessageId.HasValue)
-            {
-                FlowNodeMessage? requested = messages.FirstOrDefault(message =>
-                    message.Id == requestedMessageId.Value);
-                if (requested != null)
-                    return requested;
-            }
-
-            return currentSelection != null && messages.Contains(currentSelection)
-                ? currentSelection
-                : null;
-        }
-
         private static bool IsSameNode(FlowNodeRecord record, FlowNodeMessage message)
         {
             if (!string.IsNullOrWhiteSpace(record.NodeId) &&
@@ -334,15 +280,6 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
                    left.SendTime == right.SendTime &&
                    string.Equals(left.MsgId, right.MsgId, StringComparison.Ordinal) &&
                    string.Equals(left.NodeId, right.NodeId, StringComparison.Ordinal);
-        }
-
-        private static string GetNodeKey(FlowNodeMessage message)
-        {
-            if (!string.IsNullOrWhiteSpace(message.NodeId))
-                return $"id:{message.NodeId}";
-            if (!string.IsNullOrWhiteSpace(message.NodeName))
-                return $"name:{message.NodeName}";
-            return "unknown";
         }
 
         private static string GetNodeDisplayName(FlowNodeMessage message)
@@ -464,7 +401,7 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
             _showOverview();
         }
 
-        private sealed record NodeFilterOption(string? Key, string Label);
+        private sealed record NodeFilterOption(FlowMessageNodeKey? Key, string Label);
 
         private sealed record StateFilterOption(FlowMessageState? State, string Label);
     }

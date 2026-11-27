@@ -58,13 +58,13 @@ internal sealed class LocalSpectrumOpticalScope
 
         NDConfig ndConfig = config.NDConfig;
         string? ndCode = ndConfig.NDBindDeviceCode;
-        bool ndEnabled = ndConfig.IsNDPort;
+        bool ndAvailable = ndConfig.HasConfiguredWheel;
         bool ndBound = ndConfig.IsBingNDDevice;
         int ndDarkPort = ndConfig.DarkNDPort;
         LocalCfwPortConnection directConnection = LocalSpectrumNd.GetDirectConnection(ndConfig);
-        ownsNd = () => IsDeviceCurrent && live.NDConfig.IsNDPort == ndEnabled && live.NDConfig.IsBingNDDevice == ndBound
+        ownsNd = () => IsDeviceCurrent && live.NDConfig.HasConfiguredWheel == ndAvailable && live.NDConfig.IsBingNDDevice == ndBound
             && string.Equals(live.NDConfig.NDBindDeviceCode, ndCode, StringComparison.Ordinal)
-            && (!ndEnabled || (live.NDConfig.DarkNDPort == ndDarkPort
+            && (!ndAvailable || (live.NDConfig.DarkNDPort == ndDarkPort
                 && (ndBound || LocalSpectrumNd.GetDirectConnection(live.NDConfig) == directConnection)));
 
         ShutterConfig shutterConfig = config.ShutterCfg;
@@ -75,14 +75,14 @@ internal sealed class LocalSpectrumOpticalScope
         bool SameHierarchy(DeviceCfwPort wheel) => resourceId > 0
             ? wheel.SysResourceModel.Id > 0 && endpoint != null && ReferenceEquals(wheel.ResultDatabaseEndpoint, endpoint)
             : localDao != null && ReferenceEquals(LocalDao(wheel), localDao);
-        if (includesNd && ndBound && (ndEnabled || !string.IsNullOrWhiteSpace(ndCode)))
+        if (includesNd && ndBound && ndAvailable)
             Nd = new LocalSpectrumWheelBinding(FindWheel(wheels.Where(SameHierarchy), ndCode), manager!, forceLocal: true);
         if (includesShutter && shutterConfig.UseFilterWheel)
         {
             var wheel = FindWheel(wheels.Where(SameHierarchy), shutterConfig.FilterWheelDeviceCode);
             Shutter = ReferenceEquals(NdDevice, wheel) ? Nd : new LocalSpectrumWheelBinding(wheel, manager!, forceLocal: false);
         }
-        if (includesNd && ndEnabled && !ndBound)
+        if (includesNd && ndAvailable && !ndBound)
         {
             DirectNdConnection = directConnection;
             directNdPeers = wheels.Where(wheel => UsesPort(wheel, directConnection.PortName)).ToArray();

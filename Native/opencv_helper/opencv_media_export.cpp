@@ -784,6 +784,46 @@ inline double Square(double value)
 {
 	return value * value;
 }
+
+#ifdef _MSC_VER
+#pragma float_control(precise, on, push)
+#endif
+double ReduceLaplacian8(const cv::Mat& gray, bool variance)
+{
+	constexpr int bandRows = 64;
+	const int bandCount = (gray.rows - 1) / bandRows + 1;
+	struct Moments { double sum = 0.0; double magnitude = 0.0; };
+	std::vector<Moments> bands(bandCount);
+	const int stripes = (std::min)({bandCount, 8, cv::getNumThreads()});
+	cv::parallel_for_(cv::Range(0, bandCount), [&](const cv::Range& range) {
+		cv::Mat laplacian;
+		for (int band = range.start; band < range.end; ++band) {
+			const int top = band * bandRows;
+			const int end = top + (std::min)(bandRows, gray.rows - top);
+			// Keep the parent image visible to OpenCV at band and ROI borders.
+			cv::Laplacian(gray.rowRange(top, end), laplacian, CV_16S, 3);
+			if (variance) bands[band].sum = cv::sum(laplacian)[0];
+			bands[band].magnitude = variance ? laplacian.dot(laplacian) : cv::norm(laplacian, cv::NORM_L1);
+		}
+	}, stripes);
+
+	// For 8-bit input, all 3x3 derivatives have magnitude at most 2040.
+	// Their integer sums and square sums fit exactly in double for int-sized images.
+	Moments total;
+	for (const auto& band : bands) {
+		total.sum += band.sum;
+		total.magnitude += band.magnitude;
+	}
+	const double scale = 1.0 / gray.total();
+	if (!variance) return total.magnitude * scale;
+	// Match meanStdDev's rounding and the original squared-deviation score.
+	const double mean = total.sum * scale;
+	const double deviation = std::sqrt((std::max)(total.magnitude * scale - mean * mean, 0.0));
+	return Square(deviation);
+}
+#ifdef _MSC_VER
+#pragma float_control(pop)
+#endif
 }
 
 
@@ -805,7 +845,6 @@ COLORVISIONCORE_API double M_CalArtculation(HImage img, FocusAlgorithm type, Roi
 		double value = -1.0;
 		cv::Mat mean;
 		cv::Mat stddev;
-		cv::Mat laplacian_mat;
 		cv::Mat grad_x;
 		cv::Mat grad_y;
 		cv::Mat gradient_mat;
@@ -833,21 +872,28 @@ COLORVISIONCORE_API double M_CalArtculation(HImage img, FocusAlgorithm type, Roi
 			break;
 
 		case Laplacian:
-			if (gray_mat.rows < 2 || gray_mat.cols < 2) {
-				return 0.0;
-			}
-			cv::Laplacian(gray_mat, laplacian_mat, CV_32F, 3);
-			value = cv::mean(cv::abs(laplacian_mat))[0];
-			break;
-
 		case VarianceOfLaplacian:
+		{
 			if (gray_mat.rows < 2 || gray_mat.cols < 2) {
 				return 0.0;
 			}
+			const bool variance = type == VarianceOfLaplacian;
+			if (gray_mat.depth() == CV_8U && gray_mat.total() >= 256 * 1024
+				&& gray_mat.total() <= (std::numeric_limits<int>::max)()) {
+				value = ReduceLaplacian8(gray_mat, variance);
+				break;
+			}
+			cv::Mat laplacian_mat;
 			cv::Laplacian(gray_mat, laplacian_mat, CV_32F, 3);
-			cv::meanStdDev(laplacian_mat, mean, stddev);
-			value = Square(stddev.at<double>(0, 0));
+			if (variance) {
+				cv::meanStdDev(laplacian_mat, mean, stddev);
+				value = Square(stddev.at<double>(0, 0));
+			}
+			else {
+				value = cv::mean(cv::abs(laplacian_mat))[0];
+			}
 			break;
+		}
 
 		case EnergyOfGradient:
 			if (gray_mat.rows < 2 || gray_mat.cols < 2) {
@@ -1034,26 +1080,41 @@ COLORVISIONCORE_API int M_DrawPoiImage(HImage img, HImage* outImage,int radius, 
 		if (pointCount > 0 && point == nullptr) {
 			return ExportInvalidArgument;
 		}
-		if (mat.channels() != 3) {
-			if (mat.channels() == 1) {
-				// 将单通道图像转换为三通道
-				cv::cvtColor(mat, mat, cv::COLOR_GRAY2BGR);
-			}
-			else {
-				return ExportInvalidArgument;
-			}
+		if (mat.channels() != 1 && mat.channels() != 3) {
+			return ExportInvalidArgument;
+		}
+		if (mat.channels() == 1 && mat.depth() == CV_64F) {
+			// Preserve OpenCV's unsupported-depth error before attempting output allocation.
+			cv::cvtColor(mat, mat, cv::COLOR_GRAY2BGR);
 		}
 
-		cv::Mat out = mat.clone();
+		constexpr int outputChannels = 3;
+		size_t stride = 0;
+		size_t totalBytes = 0;
+		int outputType = 0;
+		if (!HImageTryGetRowBytes(mat.cols, outputChannels, img.depth, &stride, &outputType)
+			|| stride > static_cast<size_t>((std::numeric_limits<int>::max)())
+			|| !HImageTryMultiplySize(mat.rows, stride, &totalBytes)) {
+			return ExportAllocationFailed;
+		}
+		CoTaskMemBuffer buffer(static_cast<uchar*>(CoTaskMemAlloc(totalBytes)));
+		if (!buffer) {
+			return ExportAllocationFailed;
+		}
+
+		cv::Mat out(mat.rows, mat.cols, outputType, buffer.get(), stride);
+		if (mat.channels() == 1) {
+			cv::cvtColor(mat, out, cv::COLOR_GRAY2BGR);
+		}
+		else {
+			mat.copyTo(out);
+		}
 		const int drawRet = drawPoiImage(out, out, radius, point, pointCount, thickness);
 		if (drawRet != 0) {
 			return ExportAlgorithmFailed;
 		}
 
-		const int convertCode = MatToHImage(out, outImage);
-		if (convertCode != 0) {
-			return ExportAllocationFailed;
-		}
+		*outImage = HImage{ mat.rows, mat.cols, outputChannels, img.depth, static_cast<int>(stride), false, buffer.release() };
 		return 0;
 		});
 }

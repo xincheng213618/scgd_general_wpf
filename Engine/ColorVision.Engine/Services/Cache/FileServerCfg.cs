@@ -14,12 +14,14 @@ namespace ColorVision.Engine.Cache
 
     public class FileServerCfg : ViewModelBase
     {
+        internal const string DefaultDataBasePath = @"D:\CVTest";
+
         /// <summary>
         /// 数据基础路径
         /// </summary>
         [LocalizedDisplayName(nameof(Resources.DataBasicPath)), PropertyEditorType(typeof(TextSelectFolderPropertiesEditor))]
         public string DataBasePath { get => _DataBasePath; set { _DataBasePath = value; OnPropertyChanged(); } }
-        private string _DataBasePath = "D:\\CVTest";
+        private string _DataBasePath = DefaultDataBasePath;
 
         /// <summary>
         /// 端口地址

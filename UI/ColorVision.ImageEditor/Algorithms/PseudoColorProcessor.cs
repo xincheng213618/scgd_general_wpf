@@ -92,14 +92,20 @@ namespace ColorVision.ImageEditor.Algorithms
                 throw new ArgumentException("A fixed range requires 0 ≤ minimum < maximum ≤ 65535.");
             if (ReferenceEquals(source, output)) throw new ArgumentException("The output image must be independent of the source.", nameof(output));
 
-            using Mat? selected = index < 0 || (autoRange && source.Channels() > 1) ? new Mat() : null;
+            bool bandedRange = autoRange && index >= 0 && source.Channels() > 1
+                && (long)source.Rows * source.Cols * source.ElemSize1() >= 4 * 1024 * 1024
+                && !MemoryOverlaps(source, output);
+            using Mat? selected = index < 0 || (autoRange && source.Channels() > 1 && !bandedRange) ? new Mat() : null;
             if (selected != null)
             {
                 ImageChannelProcessor.Select(source, selected, channel, cancellationToken);
                 index = 0;
             }
             Mat samples = selected ?? source;
-            if (autoRange) Cv2.MinMaxLoc(samples, out minimum, out maximum);
+            if (bandedRange)
+                (minimum, maximum) = FindChannelRange(source, index, cancellationToken);
+            else if (autoRange)
+                Cv2.MinMaxLoc(samples, out minimum, out maximum);
             cancellationToken.ThrowIfCancellationRequested();
 
             // Index the LUT directly by source value, preserving narrow windows on 16-bit images.
@@ -117,6 +123,30 @@ namespace ColorVision.ImageEditor.Algorithms
                 output.Create(samples.Rows, samples.Cols, MatType.CV_8UC3);
                 Lookup(samples, index, mapped, output, cancellationToken);
                 RememberTable(ref _sampleRangeTable, cached, key, mapped);
+            }
+            return (minimum, maximum);
+        }
+
+        private static bool MemoryOverlaps(Mat source, Mat output)
+            => (nuint)output.Data < (nuint)source.DataEnd && (nuint)source.Data < (nuint)output.DataEnd;
+
+        private static (double Minimum, double Maximum) FindChannelRange(Mat source, int channel, CancellationToken cancellationToken)
+        {
+            // Keep one small channel buffer for range detection, then map the input channel directly.
+            const int scratchBytes = 1024 * 1024;
+            int rowsPerBand = (int)Math.Max(1, scratchBytes / (source.Cols * source.ElemSize1()));
+            double minimum = ushort.MaxValue, maximum = 0;
+            using Mat selected = new();
+            for (int top = 0; top < source.Rows;)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                int end = top + Math.Min(rowsPerBand, source.Rows - top);
+                using Mat part = source.RowRange(top, end);
+                Cv2.ExtractChannel(part, selected, channel);
+                Cv2.MinMaxLoc(selected, out double bandMinimum, out double bandMaximum);
+                minimum = Math.Min(minimum, bandMinimum);
+                maximum = Math.Max(maximum, bandMaximum);
+                top = end;
             }
             return (minimum, maximum);
         }

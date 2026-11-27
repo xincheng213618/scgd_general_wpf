@@ -654,9 +654,6 @@
   <data name="SFR" xml:space="preserve">
     <value>SFR</value>
   </data>
-  <data name="SFR_FindROI" xml:space="preserve">
-    <value>SFR_FindROI</value>
-  </data>
   <data name="MTF" xml:space="preserve">
     <value>MTF</value>
   </data>

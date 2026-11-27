@@ -6,7 +6,8 @@ using ColorVision.Common.Utilities;
 using ColorVision.Core;
 using ColorVision.Database;
 using ColorVision.Engine.Media;
-using ColorVision.Engine.Services.PhyCameras;
+using ColorVision.Engine.Services.Devices.Camera;
+using ColorVision.Engine.Services.Devices.Camera.Local;
 using ColorVision.Engine.Services.PhyCameras.Group;
 using ColorVision.Engine.Templates.Jsons.KB;
 using ColorVision.Engine.Services;
@@ -30,7 +31,6 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
-using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
@@ -175,9 +175,6 @@ namespace ColorVision.Engine.Templates.POI
         private readonly DispatcherTimer _keyboardRecalculationTimer;
         private bool _isClosing;
         private bool _isApplyingKeyboardResults;
-        private IntPtr _keyboardCalibrationHandle;
-        private int _keyboardCalibrationResourceId = -1;
-        private string _keyboardCalibrationCameraPath = string.Empty;
 
         public KBJson KBJson { get; set; }
         public KBPoiConfig PoiConfig => KBJson.PoiConfig;
@@ -203,7 +200,6 @@ namespace ColorVision.Engine.Templates.POI
                 _backgroundCapture.Cancel();
                 _keyboardRecalculationTimer.Stop();
                 _dirtyKeyboardKeys.Clear();
-                ReleaseKeyboardCalibration();
                 var config = EditPoiParam1Config.Instance;
                 // Persist preferences without retaining columns or menu handlers from this window.
                 if (ReferenceEquals(config.GridViewColumnVisibilitys, GridViewColumnVisibilitys))
@@ -1668,12 +1664,8 @@ namespace ColorVision.Engine.Templates.POI
             if (output["keys"] is not JArray measurements || measurements.Count != keyVisuals.Count)
                 throw new InvalidDataException("KB 计算返回的按键数量与模板不一致。");
 
-            IntPtr calibrationHandle = PoiConfig.DefaultDoKey
-                ? GetOrCreateKeyboardCalibrationHandle()
-                : IntPtr.Zero;
-            float[] calibrationExposure = new[] { PoiConfig.Exp, PoiConfig.Exp, PoiConfig.Exp };
-            if (calibrationHandle != IntPtr.Zero)
-                calibrationExposure = GetKeyboardCalibrationExposure();
+            var camera = PoiConfig.DefaultDoKey ? PoiConfig.DeviceCamera : null;
+            var luminanceFile = camera == null ? null : ResolveKeyboardLuminanceFile(camera);
 
             List<string> csvRows = new()
             {
@@ -1683,8 +1675,9 @@ namespace ColorVision.Engine.Templates.POI
             bool wasApplyingKeyboardResults = _isApplyingKeyboardResults;
             try
             {
-                if (calibrationHandle != IntPtr.Zero &&
-                    !TryCalibrateKeyboardMeans(calibrationHandle, measurements, calibrationExposure, out calibratedKeyValues))
+                if (luminanceFile != null &&
+                    !TryCalibrateKeyboardMeans(camera.LocalCalibrationCacheManager, luminanceFile, measurements,
+                        GetKeyboardCalibrationExposure(), out calibratedKeyValues))
                 {
                     calibratedKeyValues = null;
                     log.Warn("KB 批量亮度校正失败，本次回退为未校正灰阶。");
@@ -1762,82 +1755,31 @@ namespace ColorVision.Engine.Templates.POI
             return Math.Clamp(value / maximum, 0.0, 1.0);
         }
 
-        private IntPtr GetOrCreateKeyboardCalibrationHandle()
+        private DeviceCameraCalibrationFile? ResolveKeyboardLuminanceFile(DeviceCamera camera)
         {
             if (PoiConfig.CalibrationParams == null ||
                 PoiConfig.CalibrationTemplateIndex < 0 ||
                 PoiConfig.CalibrationTemplateIndex >= PoiConfig.CalibrationParams.Count ||
                 PoiConfig.CalibrationParams[PoiConfig.CalibrationTemplateIndex] is not TemplateModel<CalibrationParam> templateModel)
             {
-                ReleaseKeyboardCalibration();
                 log.Warn("KB 未配置亮度校正模板，将返回未校正灰阶。");
-                return IntPtr.Zero;
+                return null;
             }
             if (string.IsNullOrEmpty(templateModel.Value.Color.Luminance.FilePath))
             {
-                ReleaseKeyboardCalibration();
                 log.Info("KB 四色校正不支持当前单通道快速校正，将返回未校正灰阶。");
-                return IntPtr.Zero;
+                return null;
             }
 
-            int resourceId = templateModel.Value.Color.Luminance.Id;
-            if (PoiConfig.DeviceCamera?.PhyCamera is not PhyCamera phyCamera)
-            {
-                ReleaseKeyboardCalibration();
-                return IntPtr.Zero;
-            }
-            string cameraPath = Path.Combine(phyCamera.Config.FileServerCfg.FileBasePath, phyCamera.Code);
-            if (_keyboardCalibrationHandle != IntPtr.Zero &&
-                _keyboardCalibrationResourceId == resourceId &&
-                string.Equals(_keyboardCalibrationCameraPath, cameraPath, StringComparison.OrdinalIgnoreCase))
-            {
-                return _keyboardCalibrationHandle;
-            }
-
-            var resource = SysResourceDao.Instance.GetById(resourceId);
-            if (resource == null)
-            {
-                ReleaseKeyboardCalibration();
-                return IntPtr.Zero;
-            }
-            string luminFile = Path.Combine(
-                cameraPath,
-                "cfg",
-                resource.Value);
-            if (!File.Exists(luminFile))
-            {
-                ReleaseKeyboardCalibration();
-                log.Warn($"找不到 KB 亮度校正文件：{luminFile}");
-                return IntPtr.Zero;
-            }
-
-            ReleaseKeyboardCalibration();
-            int createResult = OpenCVCalibration.M_CalibrationCreate(out IntPtr handle);
-            if (createResult != OpenCVCalibration.CalibrationOk || handle == IntPtr.Zero ||
-                OpenCVCalibration.M_CalibrationLoadFileW(handle, (int)CalibrationType.Luminance, luminFile) != OpenCVCalibration.CalibrationOk)
-            {
-                if (handle != IntPtr.Zero)
-                    _ = OpenCVCalibration.M_CalibrationDestroy(handle);
-                log.Warn($"KB 亮度校正加载失败，将返回未校正灰阶：{luminFile}");
-                return IntPtr.Zero;
-            }
-
-            _keyboardCalibrationHandle = handle;
-            _keyboardCalibrationResourceId = resourceId;
-            _keyboardCalibrationCameraPath = cameraPath;
-            log.Info($"KB 单通道校正：{luminFile}");
-            return handle;
-        }
-
-        private void ReleaseKeyboardCalibration()
-        {
-            if (_keyboardCalibrationHandle != IntPtr.Zero)
-            {
-                _ = OpenCVCalibration.M_CalibrationDestroy(_keyboardCalibrationHandle);
-                _keyboardCalibrationHandle = IntPtr.Zero;
-            }
-            _keyboardCalibrationResourceId = -1;
-            _keyboardCalibrationCameraPath = string.Empty;
+            if (camera.PhyCamera is not { } phyCamera) return null;
+            CalibrationSlotDefinition slot = CalibrationSlotDefinitions.ByKey[nameof(GroupResource.Luminance)];
+            var resource = camera.GetCalibrationTemplateResource(templateModel.Value, slot);
+            string? relativePath = resource?.SysResourceModel.Value;
+            // Older keyboard templates can refer to a resource present only in the database.
+            if (resource == null) relativePath = SysResourceDao.Instance.GetById(templateModel.Value.Color.Luminance.Id)?.Value;
+            if (string.IsNullOrWhiteSpace(relativePath)) return null;
+            string path = Path.Combine(phyCamera.Config.FileServerCfg.FileBasePath, phyCamera.Code, "cfg", relativePath);
+            return new(slot.Key, CalibrationType.Luminance, templateModel.Value.Color.Luminance.FilePath, relativePath, path);
         }
 
         private float[] GetKeyboardCalibrationExposure()
@@ -1861,8 +1803,8 @@ namespace ColorVision.Engine.Templates.POI
             return result;
         }
 
-        private static bool TryCalibrateKeyboardMeans(
-            IntPtr calibrationHandle,
+        internal static unsafe bool TryCalibrateKeyboardMeans(
+            LocalCalibrationCacheManager cache, DeviceCameraCalibrationFile file,
             JArray measurements,
             float[] exposure,
             out double[] calibratedValues)
@@ -1885,31 +1827,24 @@ namespace ColorVision.Engine.Templates.POI
                 return true;
 
             ushort[] rawValueArray = rawValues.ToArray();
-            byte[] source = new byte[rawValueArray.Length * sizeof(ushort)];
-            Buffer.BlockCopy(rawValueArray, 0, source, 0, source.Length);
-            byte[] luminance = new byte[rawValueArray.Length * sizeof(float)];
-            CalibrationExecutionOptionsV1 options = CalibrationExecutionOptionsV1.Create(exposure);
-            GCHandle sourceHandle = default, luminanceHandle = default;
-            int result;
+            float[] luminance = new float[rawValueArray.Length];
             try
             {
-                sourceHandle = GCHandle.Alloc(source, GCHandleType.Pinned);
-                luminanceHandle = GCHandle.Alloc(luminance, GCHandleType.Pinned);
-                result = OpenCVCalibration.M_CalibrationExecute(calibrationHandle, (uint)rawValueArray.Length, 1, 16, 1,
-                    sourceHandle.AddrOfPinnedObject(), (ulong)source.Length,
-                    luminanceHandle.AddrOfPinnedObject(), (ulong)rawValueArray.Length, in options);
+                fixed (ushort* input = rawValueArray)
+                fixed (float* output = luminance)
+                    cache.Execute(new(rawValueArray.Length, 1, 16, 1), [file], (IntPtr)input,
+                        (ulong)rawValueArray.Length * sizeof(ushort), (IntPtr)output, (ulong)luminance.Length * sizeof(float),
+                        exposure, default, CalibrationOutputMode.FullCie);
             }
-            finally
+            catch (Exception error) when (error is IOException or UnauthorizedAccessException or InvalidOperationException)
             {
-                if (luminanceHandle.IsAllocated) luminanceHandle.Free();
-                if (sourceHandle.IsAllocated) sourceHandle.Free();
-            }
-            if (result != OpenCVCalibration.CalibrationOk)
+                log.Warn($"KB 亮度校正失败：{file.FullPath}", error);
                 return false;
+            }
 
             for (int index = 0; index < measurementIndexes.Count; index++)
             {
-                float value = BitConverter.ToSingle(luminance, index * sizeof(float));
+                float value = luminance[index];
                 if (float.IsFinite(value))
                     calibratedValues[measurementIndexes[index]] = value;
             }

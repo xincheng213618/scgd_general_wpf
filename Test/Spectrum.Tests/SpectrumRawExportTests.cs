@@ -51,7 +51,8 @@ public sealed class SpectrumRawExportTests
     {
         var first = SpectrumRawExporter.CaptureStoredSpectrum([-0.5f, float.NaN, float.PositiveInfinity], 400, 405, 2.5f, 2) with
         {
-            MeasurementId = 3, AcquisitionParametersJson = "{\"name\":\"a,b\",\n\"FilterBW\":5}", Ra = double.NaN
+            MeasurementId = 3, DeviceCode = "设备,\"A\"\r\n通道", AcquisitionParametersJson = "{\"name\":\"a,b\",\n\"FilterBW\":5}",
+            Ra = double.NaN, RenderingIndices = [92.5, double.PositiveInfinity], RenderingStatus = "valid, \"stored\""
         };
         var second = SpectrumRawExporter.CaptureStoredSpectrum([1, 2], 500, 501, 1, 3) with { MeasurementId = 4, AbsoluteUnit = "W/nm", Mode = "LuminousFlux" };
         var rows = Read(SpectrumRawExporter.CreateCsv([first, second]));
@@ -61,6 +62,13 @@ public sealed class SpectrumRawExportTests
         Assert.Equal("Infinity", rows[2]["AbsoluteSpectrum"]);
         Assert.Empty(rows[0]["Ra"]);
         Assert.Equal(first.AcquisitionParametersJson, rows[0]["AcquisitionParametersJson"]);
+        Assert.Equal(first.DeviceCode, rows[2]["DeviceCode"]);
+        Assert.Equal(first.RenderingStatus, rows[2]["ColorRenderingStatus"]);
+        Assert.Equal("92.5", rows[2]["R1"]);
+        Assert.Empty(rows[2]["R2"]);
+        Assert.Empty(rows[2]["R15"]);
+        Assert.Empty(rows[^1]["DeviceCode"]);
+        Assert.Empty(rows[^1]["ColorRenderingStatus"]);
         Assert.Equal("W/nm", rows[^1]["AbsoluteSpectrumUnit"]);
     }
 

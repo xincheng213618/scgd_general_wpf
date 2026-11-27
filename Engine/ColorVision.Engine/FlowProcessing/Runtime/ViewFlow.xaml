@@ -217,39 +217,16 @@
                                 Margin="10,0,0,0" Padding="5" CornerRadius="7"
                                 Background="{DynamicResource GlobalBackground}"
                                 BorderBrush="{DynamicResource GlobalBorderBrush}" BorderThickness="1">
-                            <StackPanel Orientation="Horizontal">
-                                <Button x:Name="FlowResultManagementButton" Style="{StaticResource ExecutionActionButtonStyle}"
-                                        Command="{Binding FlowEngineManager.MeasureBatchManagerCommand}"
-                                        ToolTip="{x:Static properties:Resources.FlowResultManagement}"
-                                        AutomationProperties.Name="{x:Static properties:Resources.FlowResultManagement}">
-                                    <StackPanel Orientation="Horizontal">
-                                        <TextBlock Text="&#xE8F1;" FontFamily="Segoe MDL2 Assets" FontSize="16"
-                                                   Foreground="{DynamicResource GlobalTextBrush}" VerticalAlignment="Center"/>
-                                        <TextBlock Text="{x:Static properties:Resources.FlowResultManagement}" Margin="6,0,0,0"
-                                                   Foreground="{DynamicResource GlobalTextBrush}" VerticalAlignment="Center"/>
-                                    </StackPanel>
-                                </Button>
-                                <Button x:Name="ExecutionAnalysisButton" Style="{StaticResource ExecutionActionButtonStyle}"
-                                        Click="Button_Click_NodeAnalysis" ToolTip="{engine:EngineLang 执行分析}"
-                                        AutomationProperties.Name="{engine:EngineLang 执行分析}">
-                                    <StackPanel Orientation="Horizontal">
-                                        <TextBlock Text="&#xE9D9;" FontFamily="Segoe MDL2 Assets" FontSize="16"
-                                                   Foreground="{DynamicResource GlobalTextBrush}" VerticalAlignment="Center"/>
-                                        <TextBlock Text="{engine:EngineLang 执行分析}" Margin="6,0,0,0"
-                                                   Foreground="{DynamicResource GlobalTextBrush}" VerticalAlignment="Center"/>
-                                    </StackPanel>
-                                </Button>
-                                <Button x:Name="ErrorNodeDetailsButton" Style="{StaticResource ExecutionActionButtonStyle}"
-                                        Visibility="Collapsed" Click="ErrorNodeDetailsButton_Click"
-                                        AutomationProperties.Name="{x:Static properties:Resources.Flow_NodeExecutionDetails}">
-                                    <StackPanel Orientation="Horizontal">
-                                        <TextBlock Text="&#xE946;" FontFamily="Segoe MDL2 Assets" FontSize="16"
-                                                   Foreground="{DynamicResource GlobalTextBrush}" VerticalAlignment="Center"/>
-                                        <TextBlock Text="{x:Static properties:Resources.Flow_NodeExecutionDetails}" Margin="6,0,0,0"
-                                                   Foreground="{DynamicResource GlobalTextBrush}" VerticalAlignment="Center"/>
-                                    </StackPanel>
-                                </Button>
-                            </StackPanel>
+                            <Button x:Name="ExecutionAnalysisButton" Style="{StaticResource ExecutionActionButtonStyle}"
+                                    Click="Button_Click_NodeAnalysis" ToolTip="{engine:EngineLang 流程分析}"
+                                    AutomationProperties.Name="{engine:EngineLang 流程分析}">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="&#xE9D9;" FontFamily="Segoe MDL2 Assets" FontSize="16"
+                                               Foreground="{DynamicResource GlobalTextBrush}" VerticalAlignment="Center"/>
+                                    <TextBlock Text="{engine:EngineLang 流程分析}" Margin="6,0,0,0"
+                                               Foreground="{DynamicResource GlobalTextBrush}" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </Button>
                         </Border>
                     </Grid>
                 </Grid>

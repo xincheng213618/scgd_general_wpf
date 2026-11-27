@@ -31,10 +31,10 @@ ColorVision 的通用属性面板由属性元数据、`PropertyEditorHelper` 和
 生成器读取公开可读、非索引属性上的 `CommandDisplay`，包含基类命令，跳过 `Browsable(false)`、空命令和未标注属性。分类使用 `Category`，分类顺序使用 `CommandDisplay.CategoryOrder`，组内顺序使用 `Order`；名称和说明分别使用 `CommandDisplay.DisplayName` 与 `Description`，由对象资源管理器本地化。未分类命令独立归组，只有一个无分类组时省略分类标题。
 
 ```csharp
-[CommandDisplay("RefreshDeviceList", Order = 1, CategoryOrder = 0)]
+[CommandDisplay("ManagePhysicalCamera", CategoryOrder = 0)]
 [Category("DeviceConnection")]
-[Description("CommandRefreshDevicesHint")]
-public RelayCommand RefreshDeviceIdCommand { get; set; }
+[Description("CommandPhysicalCameraHint")]
+public RelayCommand OpenPhyCameraMangerCommand { get; set; }
 ```
 
 `DeviceConnection` 等字符串是资源键，资源缺失时回退到原文。设备通用分类为 **设备与连接、校准与校正、采集与显示、数据与日志、服务与维护**，只显示实际有命令的分类。运行日志归入数据与日志；许可证和删除归入服务与维护。设备的服务重启命令标记为 `Browsable(false)`，属性页不显示，右键菜单仍绑定原命令。新增按钮应维护命令元数据及资源，不为某种设备增加一份手写界面。
@@ -45,7 +45,7 @@ public RelayCommand RefreshDeviceIdCommand { get; set; }
 
 生成器拥有传入容器的内容，重新生成会替换旧按钮，宿主不要在容器中预置业务按钮。保留原有公开方法签名，现有调用端自动使用统一样式；Flow 节点检查器的 `compact: true` 保持平铺的小按钮工具栏，不加入分类卡片。
 
-相机、光谱仪和校正模块的“编辑显示配置”统一归入“设备与连接”，分组顺序为 `0`，与修改配置等设备设置入口放在一起。
+**修改配置** 命令由对应设备打开编辑窗口。相机、光谱仪和校正模块的窗口在同一入口提供可调整的本机选项，宿主确定工作副本与编辑范围。持久化边界见[设备配置](../../01-user-guide/devices/configuration.md#编辑、保存与远端应用)。
 
 ## 设置行呈现
 

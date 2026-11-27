@@ -127,7 +127,6 @@ JSON 模板将一条参数保存为数据库 `ModMasterModel.JsonVal`，由 `ITe
 | LED 灯条 `LEDStripDetectionV2` | `26` / `LEDStripDetection` |
 | OLED AOI | `28` / `OLED.AOI`；四合一、复判、黑屏分别使用字典 `55`、`56`、`57` 的独立 Code |
 | 双目融合 | `35` / `ARVR.BinocularFusion` |
-| SFR 找 ROI | `36` / `ARVR.SFR.FindROI` |
 | BlackMura | `37` / `BlackMura.Caculate` |
 | Ghost / FOV / Distortion | `38` / `ghost`，`39` / `FOV`，`40` / `distortion` |
 | AA 构建 POI / 找点 | `41` / `BuildPOI`，`42` / `FindLightArea` |

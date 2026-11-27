@@ -70,7 +70,7 @@ Reader 仅接受版本 1、2、3。`Bpp` 在通道计算中是**每通道采样�
 
 一次读取从同一个文件流或缓存快照取得文件头和像素。分别调用路径版 header/data 时会各自打开，需一致时应共用同一流。`ReadFile` 不校验读满。
 
-`CVFileReadCache` 默认关闭。启用后，`MaximumEntries` 限制 CVRAW 槽位，默认 1；`Synchronous=0` 和旧值 1 同步保存，`MemoryOnly=2` 依赖缓存启用。命中按规范路径忽略大小写，不打开磁盘文件，也不探测外部写入、删除或占用。程序内保存和参数写入成功后发布新快照，已有读取继续使用旧快照。单独探测 header 或参数不加载整幅图。槽位不足且不能回收空闲磁盘槽位时直接读盘，保留仅缓存图像；新内存保存或主动清理仍可淘汰它们。
+`CVFileReadCache` 默认开启，已保存的设置继续生效。启用后，`MaximumEntries` 限制 CVRAW 槽位，默认 1。`Synchronous=0` 和旧值 1 同步保存，`MemoryOnly=2` 依赖缓存启用。命中按规范路径忽略大小写，不打开磁盘文件，也不探测外部写入、删除或占用。程序内保存和参数写入成功后发布新快照，已有读取继续使用旧快照。单独探测 header 或参数不加载整幅图。槽位不足且不能回收空闲磁盘槽位时直接读盘，保留仅缓存图像；新内存保存或主动清理仍可淘汰它们。
 
 “全局选项 → 常规 → 文件归档”和状态栏“内存缓存管理”共用 `CvRawFileCacheConfig`。减少数量或关闭时空闲缓冲立即释放，在途读写继续使用原缓冲直至归还。关闭后停止缓存命中和填充；同步保存仍可写盘。只存内存的图像被淘汰后无法恢复，需留存时使用“保存文件”。该开关只作用于应用的文件缓存。
 
@@ -117,7 +117,7 @@ Reader 仅接受版本 1、2、3。`Bpp` 在通道计算中是**每通道采样�
 - 基本校正已经改变 RAW 像素时，新保存的校正后 RAW 可以重放色度矩阵；原始传感器 RAW 仅记录该快照并标记 `CanReplay=false`，避免在未经过相同基本校正的像素上套矩阵。恢复完整基本校正链不属于此参数版本。
 - 只读或被占用的 RAW 会报告写入失败。参数更新使用排他文件句柄，尾块写入、截断和 `Flush()` 在返回前完成并关闭文件，随后可从磁盘路径重新读回；与同步 RAW 保存一致，数据经操作系统文件缓存写入，不额外强制硬件刷盘，避免小参数更新等待此前整幅 RAW 的写入。遇到写异常时仍尽力回滚；不承诺数据已到达硬件介质、进程崩溃或断电原子性。校验失败后打开器保留 RAW 显示并禁用这组色度能力，不修改像素来“修复”参数。
 
-可重放参数使 RAW 获得 `HasCieMeasurements` 能力，但 `IsCVCIE` 仍为 false，文件身份和原图保持 RAW。支持光标实时数据、CIE 图、POI 及 X/Y/Z 灰度通道；单通道亮度文件只有 Y。此路径不提供 XYZ→sRGB 全彩图层。真正的 CVCIE 保持原有全彩功能。
+带可重放参数的 CVRAW 获得 `HasCieMeasurements` 能力，`IsCVCIE` 仍为 false。支持光标实时数据、CIE 图及 POI。三通道文件可选 X/Y/Z 灰度及“真彩 sRGB（XYZ）”，单通道亮度文件提供 Y 灰度。
 
 “图像设置 → 图像信息”可查看实际记录的色度校正参数。三通道按 X/Y/Z 行、R/G/B 列显示矩阵；系数已含执行时的归一化，不能再叠加曝光或增益。`CanReplay=false` 仍可查看参数。
 
@@ -143,13 +143,13 @@ Reader 仅接受版本 1、2、3。`Bpp` 在通道计算中是**每通道采样�
 
 ## Engine 真彩显示与原图回退
 
-Engine 的 `CVRawOpen` / `CvRawLayerController` 为 CVCIE 提供“真彩 sRGB（XYZ）”，只取文件内嵌 XYZ。`ReadCVCIE` 与 `OpenLocalCVFile` 仍按自己的关联图语义工作；FileIO 不依赖 UI。
+Engine 的 `CVRawOpen` / `CvRawLayerController` 为带完整 XYZ 的 CVCIE 和带可重放校正参数的三通道 CVRAW 提供“真彩 sRGB（XYZ）”。CVCIE 使用内嵌 XYZ。CVRAW 从本次打开的 RAW 像素和校正参数分块回放 XYZ，保留 RAW 文件身份与原始测量数据。开启或切换真彩只生成显示位图。FileIO 的关联图读取由 `ReadCVCIE` 与 `OpenLocalCVFile` 独立处理。
 
-全局设置位于“图像设置 → 文件打开 → CVCIE”，由 `CvcieDisplayConfig` 和 `CvcieDisplaySettingProvider` 管理。`EnableTrueColor` 默认关闭持久为 `Source`，开启为 `Srgb`，只决定新打开 CVCIE（含手动计算接入的内存结果）的初始图层。当前视图切换 `Composite`、真彩及 X/Y/Z 不保存为全局默认。改全局设置不会主动刷新所有已打开文件，重新选择真彩才读取当前亮度参数。 [设置保存语义](../../02-developer-guide/core-concepts/image-editor-settings-plan.md)
+全局设置位于“图像设置 → 文件打开 → CVCIE”，由 `CvcieDisplayConfig` 和 `CvcieDisplaySettingProvider` 管理。`EnableTrueColor` 默认关闭并持久化为 `Source`，初始图层为原图。开启后持久化为 `Srgb`，打开支持真彩的图像或接入带完整 XYZ 的内存 CIE 结果时优先显示真彩。通过图层下拉框可临时切换当前图像，再次选择真彩时读取当前亮度参数。 [设置保存语义](../../02-developer-guide/core-concepts/image-editor-settings-plan.md)
 
-`CvcieSrgbRenderer` 接受完整的三平面 32 位 float 或 64 位 double 数据。它按 D65 XYZ 到线性 sRGB 转换、共享亮度缩放与标准分段编码输出 8 位 BGR。源 XYZ 和 POI 数值保持原样。默认 `Auto` 按整图最大正分量缩放，适合观察单幅图片。跨图比较可固定 `ReferenceWhiteLuminance`，单位与 Y 相同；初始值 65535 是应用配置，并非计量参考或 sRGB 标准。有限负值、色域外和值超显示范围的分量在显示时裁剪。非有限像素、长度错误、无效参数或转换溢出拒绝真彩。
+`CvcieSrgbRenderer` 将三平面 32 位 float 或 64 位 double XYZ 按 D65 转为线性 sRGB，经共享亮度缩放和分段编码输出 8 位 BGR。源 XYZ 和 POI 数值保持原样。默认 `Auto` 按整图最大正分量缩放，适合观察单幅图片。跨图比较可固定 `ReferenceWhiteLuminance`，单位与 Y 相同，应用初始值为 65535。显示时裁剪负值、色域外和超出显示范围的分量。非有限像素、长度错误、无效参数或转换溢出拒绝真彩。
 
-真彩失败写日志，回退尺寸匹配的关联原图、同名 CVRAW 或有效 Y。单通道文件用第 0 平面显示 Y。X/Y/Z 读取单一平面，浮点灰度走独立 MinMax，不受真彩参考白影响。读图与切换都拒绝过期结果；所需文件变化时保留当前显示，重新打开才能读新文件。缓存只作显示复用，不能充当源文件快照。原始测量与关联图显示各自绑定本次打开的来源。 [编辑器上下文](../ui-components/image-editor-context.md) · [打开图像与完成信号](../ui-components/ColorVision.ImageEditor.md#打开图像与完成信号)
+真彩失败写日志。CVRAW 回退原图，CVCIE 回退尺寸匹配的关联原图、同名 CVRAW 或有效 Y。单通道文件用第 0 平面显示 Y。X/Y/Z 读取单一平面，浮点灰度独立按 MinMax 映射。读图与切换都拒绝过期结果。所需文件变化时保留当前显示，重新打开才能读新文件。显示缓存只用于复用位图，原始测量与关联图显示各自绑定本次打开的来源。 [编辑器上下文](../ui-components/image-editor-context.md) · [打开图像与完成信号](../ui-components/ColorVision.ImageEditor.md#打开图像与完成信号)
 
 打开 CVCIE 并显示大型单通道或三通道 8/16 位关联 CVRAW 时，已有尺寸与像素格式匹配的可编辑位图可继续复用。需要新建位图时，从已核对的关联文件分块读取，初次发布完成后归还关联文件句柄。切回 Composite 时重新核对已选关联文件的身份，再分块生成显示位图。
 

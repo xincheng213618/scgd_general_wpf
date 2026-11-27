@@ -32,6 +32,13 @@ public sealed class FlowNodeComparisonTests : IDisposable
             AddNode(db, 12, "current", "fov", "wrong-same-sn");
             AddNode(db, 11, "wrong-sn", "fov", "wrong-sn");
             AddNode(db, 11, "previous", "different-node", "same-name");
+            db.Ado.ExecuteCommand("""
+                WITH RECURSIVE history(batch_id) AS (
+                    VALUES (100) UNION ALL SELECT batch_id + 1 FROM history WHERE batch_id < 200
+                )
+                INSERT INTO FlowNodeRecord (batch_id, serial_number, node_id, start_time, elapsed_ms)
+                SELECT batch_id, 'other-history', 'fov', @time, 20 FROM history;
+                """, new SugarParameter("@time", _time));
         }
         using (SqlSugarClient db = CreateDatabase(otherPath))
         {
@@ -43,12 +50,50 @@ public sealed class FlowNodeComparisonTests : IDisposable
         var session = Session(source, current, currentMessage, currentRun);
         FlowNodeComparisonHistory history = source.GetNodeComparisonHistory(session, current);
         Assert.True(history.HasFlowIdentity);
-        Assert.Equal(new[] { "current", "previous" }, history.Records.Select(item => item.SerialNumber).Order().ToArray());
+        Assert.Equal(new[] { "previous", "current" }, history.Records.Select(item => item.SerialNumber));
         Assert.Equal(2, history.Messages.Count);
         Assert.All(history.Messages, message => { Assert.Null(message.SendPayload); Assert.Null(message.RecvPayload); });
         Assert.Equal("a-current", source.GetMessagePayloads(currentMessage.Id).RecvPayload);
         Assert.Equal("b-current", new FlowAnalysisDataSource(otherPath).GetMessagePayloads(currentMessage.Id).RecvPayload);
         Assert.Equal(before, File.ReadAllBytes(path));
+    }
+
+    [Fact]
+    public void OfflineRunHistoryKeepsLocalKeysAndPositiveLegacyFallbackSeparate()
+    {
+        string path = Path.Combine(_directory, "run-identities.db");
+        const string flowKey = "local-flow:known";
+        int local;
+        int sameKey;
+        int missingKey;
+        int emptyKey;
+        using (var db = CreateDatabase(path))
+        {
+            local = AddHistoryRun(db, -7, flowKey, 10);
+            emptyKey = AddHistoryRun(db, 42, "", 15);
+            missingKey = AddHistoryRun(db, 42, null, 20);
+            sameKey = AddHistoryRun(db, 77, flowKey, 30);
+            AddHistoryRun(db, -7, null, 40);
+            AddHistoryRun(db, 42, "LOCAL-FLOW:KNOWN", 45);
+            AddHistoryRun(db, 4, null, 55);
+        }
+        byte[] before = File.ReadAllBytes(path);
+        var source = new FlowAnalysisDataSource(path);
+
+        Assert.Equal(new[] { sameKey, local },
+            source.GetFlowRuns(new FlowIdentity(-7, flowKey, "Shared")).Select(run => run.Id));
+        Assert.Equal(new[] { sameKey, missingKey, emptyKey, local },
+            source.GetFlowRuns(new FlowIdentity(42, flowKey, "Shared")).Select(run => run.Id));
+        Assert.Equal(before, File.ReadAllBytes(path));
+
+        int AddHistoryRun(SqlSugarClient db, int templateId, string? key, int offsetMs) => db.Insertable(new FlowRunRecord
+        {
+            TemplateId = templateId,
+            FlowKey = key,
+            FlowName = "Shared",
+            RunKey = Guid.NewGuid().ToString("N"),
+            CompletedTime = _time.AddMilliseconds(offsetMs),
+        }).ExecuteReturnIdentity();
     }
 
     [Fact]
@@ -92,6 +137,31 @@ public sealed class FlowNodeComparisonTests : IDisposable
         Assert.True(history.HasFlowIdentity);
         Assert.Equal(2, history.Records.Count);
         Assert.Single(history.BuildRows(), row => row.Message == null);
+    }
+
+    [Fact]
+    public void LegacyRunLookupRequiresOneExactSerialWithoutABatch()
+    {
+        string path = Path.Combine(_directory, "legacy-serial.db");
+        int legacyId;
+        using (var db = CreateDatabase(path))
+        {
+            legacyId = AddRun(db, null, "Exact ", "legacy-flow").Id;
+            AddRun(db, 100, "Exact ", "modern-flow");
+            AddRun(db, null, "Repeated", "ambiguous-first");
+            AddRun(db, null, "Repeated", "ambiguous-second");
+        }
+        byte[] before = File.ReadAllBytes(path);
+        var source = new FlowAnalysisDataSource(path);
+
+        Assert.Equal(legacyId, Assert.Single(Lookup("Exact ")).Id);
+        Assert.Empty(Lookup("Exact"));
+        Assert.Empty(Lookup("exact "));
+        Assert.Empty(Lookup("Repeated"));
+        Assert.Equal(before, File.ReadAllBytes(path));
+
+        List<FlowRunRecord> Lookup(string serial) => source.GetSameFlowRuns(
+            new FlowExecutionAnalysisSession(100, serial, null, null, [], [], [], _time, 0, source));
     }
 
     [Fact]
@@ -180,6 +250,92 @@ public sealed class FlowNodeComparisonTests : IDisposable
 
         Assert.Equal(new[] { blankSerial, matching }, session.GetMessages(record));
         Assert.False(Assert.Single(session.DurationItems).IsTimedOut);
+    }
+
+    [Fact]
+    public void LegacyMessageOwnershipStaysScopedToTheRecordSnapshot()
+    {
+        var first = new FlowNodeRecord
+        {
+            Id = 1, BatchId = 3, SerialNumber = "one", NodeId = "fov", NodeName = "FOV",
+            StartTime = _time, EndTime = _time.AddSeconds(1),
+        };
+        var second = new FlowNodeRecord
+        {
+            Id = 2, BatchId = 3, SerialNumber = "two", NodeId = "fov", NodeName = "FOV",
+            StartTime = _time.AddMilliseconds(500), EndTime = _time.AddSeconds(1),
+        };
+        var legacy = new FlowNodeMessage
+        {
+            Id = 1, BatchId = 3, NodeName = "FOV",
+            SendTime = _time.AddMilliseconds(550), State = FlowMessageState.Timeout,
+        };
+        var unmatched = new FlowNodeMessage
+        {
+            Id = 2, BatchId = 3, NodeName = "FOV",
+            SendTime = _time.AddSeconds(2), State = FlowMessageState.Timeout,
+        };
+        var lookup = new FlowExecutionAnalysisPresentation.NodeMessageLookup([first], [unmatched, legacy]);
+        var largerLookup = new FlowExecutionAnalysisPresentation.NodeMessageLookup([first, second], [legacy, unmatched]);
+
+        Assert.Same(legacy, Assert.Single(lookup.GetMessages(second)));
+        Assert.Same(legacy, Assert.Single(lookup.GetMessages(first)));
+        Assert.Empty(largerLookup.GetMessages(first));
+        Assert.Same(legacy, Assert.Single(largerLookup.GetMessages(second)));
+        Assert.Same(legacy, Assert.Single(lookup.GetMessages(first)));
+    }
+
+    [Fact]
+    public void LargeLegacyBatchKeepsWindowBoundariesAndSnapshotOwnership()
+    {
+        const int batchId = 3;
+        FlowNodeRecord first = new()
+        {
+            Id = 1, BatchId = batchId, SerialNumber = "sn", NodeId = "fov", NodeName = "FOV",
+            StartTime = _time, EndTime = _time.AddMilliseconds(100),
+        };
+        FlowNodeRecord open = new()
+        {
+            Id = 2, BatchId = batchId, SerialNumber = "sn", NodeId = "open", NodeName = "Open",
+            StartTime = _time.AddSeconds(-2),
+        };
+        FlowNodeRecord sameStartHigherId = new()
+        {
+            Id = 3, BatchId = batchId, SerialNumber = first.SerialNumber, NodeId = first.NodeId, NodeName = first.NodeName,
+            StartTime = first.StartTime, EndTime = first.EndTime,
+        };
+        FlowNodeRecord[] fillers = Enumerable.Range(0, 20).Select(index => new FlowNodeRecord
+        {
+            Id = index + 4, BatchId = batchId, SerialNumber = "sn", NodeId = "fov", NodeName = "FOV",
+            StartTime = _time.AddSeconds(index + 10), EndTime = _time.AddSeconds(index + 11),
+        }).ToArray();
+        FlowNodeMessage lower = new() { Id = 2, BatchId = batchId, NodeName = "FOV", SendTime = _time.AddMilliseconds(-250) };
+        FlowNodeMessage upper = new() { Id = 3, BatchId = batchId, NodeId = "fov", SendTime = _time.AddMilliseconds(350) };
+        FlowNodeMessage equalUpper = new() { Id = 4, BatchId = batchId, NodeId = "fov", SendTime = upper.SendTime };
+        FlowNodeMessage tooEarly = new() { Id = 1, BatchId = batchId, NodeId = "fov", SendTime = lower.SendTime.AddTicks(-1) };
+        FlowNodeMessage tooLate = new() { Id = 5, BatchId = batchId, NodeId = "fov", SendTime = upper.SendTime.AddTicks(1) };
+        FlowNodeMessage lateOpen = new() { Id = 6, BatchId = batchId, NodeId = "open", SendTime = _time.AddDays(1) };
+        var lookup = new FlowExecutionAnalysisPresentation.NodeMessageLookup([open, sameStartHigherId, .. fillers, first],
+            [tooLate, equalUpper, lower, tooEarly, upper, lateOpen]);
+
+        Assert.Equal(new[] { lower, equalUpper, upper }, lookup.GetMessages(first));
+        Assert.Empty(lookup.GetMessages(sameStartHigherId));
+        Assert.Same(lateOpen, Assert.Single(lookup.GetMessages(open)));
+
+        FlowNodeRecord copy = new()
+        {
+            Id = first.Id, BatchId = batchId, SerialNumber = first.SerialNumber, NodeId = first.NodeId, NodeName = first.NodeName,
+            StartTime = _time.AddDays(1), EndTime = _time.AddDays(1),
+        };
+        Assert.Equal(lookup.GetMessages(first), lookup.GetMessages(copy));
+
+        FlowNodeRecord external = new()
+        {
+            Id = 100, BatchId = batchId, SerialNumber = first.SerialNumber, NodeId = first.NodeId,
+            StartTime = upper.SendTime, EndTime = upper.SendTime,
+        };
+        Assert.Equal(new[] { equalUpper, upper, tooLate }, lookup.GetMessages(external));
+        Assert.Equal(new[] { lower, equalUpper, upper }, lookup.GetMessages(first));
     }
 
     [Fact]

@@ -1051,6 +1051,9 @@
   <data name="没有可导出的数据" xml:space="preserve">
     <value>没有可导出的数据</value>
   </data>
+  <data name="流程分析" xml:space="preserve">
+    <value>流程分析</value>
+  </data>
   <data name="流程执行分析" xml:space="preserve">
     <value>流程执行分析</value>
   </data>
@@ -1286,4 +1289,13 @@
   <data name="双击打开流程模板，右键编辑配置。" xml:space="preserve"><value>双击打开流程模板，右键编辑配置。</value></data>
   <data name="现场数据副本" xml:space="preserve"><value>现场数据副本</value></data>
   <data name="清理已结束应用会话的过期只读副本，原始反馈资料保留；本次运行导入的副本受保护。" xml:space="preserve"><value>清理已结束应用会话的过期只读副本，原始反馈资料保留；本次运行导入的副本受保护。</value></data>
+  <data name="点阵画面识别失败，未找到符合要求的完整点阵。" xml:space="preserve"><value>点阵画面识别失败，未找到符合要求的完整点阵。</value></data>
+  <data name="流程 {0} · SN {1} · {2:yyyy/MM/dd HH:mm:ss}" xml:space="preserve"><value>流程 {0} · SN {1} · {2:yyyy/MM/dd HH:mm:ss}</value></data>
+  <data name="该记录未保存具体原因。" xml:space="preserve"><value>该记录未保存具体原因。</value></data>
+  <data name="原始错误" xml:space="preserve"><value>原始错误</value></data>
+  <data name="上一个报错" xml:space="preserve"><value>上一个报错</value></data>
+  <data name="下一个报错" xml:space="preserve"><value>下一个报错</value></data>
+  <data name="跳转到当前筛选中的报错记录。" xml:space="preserve"><value>跳转到当前筛选中的报错记录。</value></data>
+  <data name="该方向没有可查看的报错记录。已跳过缺图 {0} 条。" xml:space="preserve"><value>该方向没有可查看的报错记录。已跳过缺图 {0} 条。</value></data>
+  <data name="历史异常：{0}" xml:space="preserve"><value>历史异常：{0}</value></data>
 </root>

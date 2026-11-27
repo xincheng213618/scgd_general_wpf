@@ -515,6 +515,9 @@
   <data name="正在读取生产统计和检测记录..." xml:space="preserve">
     <value>Reading production statistics and inspection records...</value>
   </data>
+  <data name="流程分析" xml:space="preserve">
+    <value>Flow Analysis</value>
+  </data>
   <data name="流程执行分析" xml:space="preserve">
     <value>Flow Execution Analysis</value>
   </data>

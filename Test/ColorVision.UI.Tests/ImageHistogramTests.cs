@@ -77,6 +77,54 @@ public sealed class ImageHistogramTests
         });
     }
 
+    [Theory]
+    [InlineData("Bgr24", 11)]
+    [InlineData("Rgb24", 11)]
+    [InlineData("Bgr32", 11)]
+    [InlineData("Bgra32", 11)]
+    [InlineData("Bgr24", 521)]
+    public void PackedColorCountsMatchAcrossChunksAndOddTails(string formatName, int height)
+    {
+        StaTest.Run(() =>
+        {
+            const int width = 4097;
+            PixelFormat format = formatName switch
+            {
+                "Bgr24" => PixelFormats.Bgr24,
+                "Rgb24" => PixelFormats.Rgb24,
+                "Bgr32" => PixelFormats.Bgr32,
+                _ => PixelFormats.Bgra32,
+            };
+            bool rgb = format == PixelFormats.Rgb24;
+            int pixelBytes = format.BitsPerPixel / 8;
+            int stride = width * pixelBytes + 3;
+            byte[] pixels = new byte[height * stride];
+            int[] expectedRed = new int[256], expectedGreen = new int[256], expectedBlue = new int[256];
+            for (int y = 0; y < height; y++)
+            for (int x = 0; x < width; x++)
+            {
+                byte redValue = (byte)(x * 17 + y);
+                byte greenValue = (byte)(x / 20 + y * 13);
+                byte blueValue = (byte)(x % 5 + y * 29);
+                int offset = y * stride + x * pixelBytes;
+                pixels[offset + (rgb ? 0 : 2)] = redValue;
+                pixels[offset + 1] = greenValue;
+                pixels[offset + (rgb ? 2 : 0)] = blueValue;
+                if (pixelBytes == 4) pixels[offset + 3] = (byte)((x & 1) * 255);
+                expectedRed[redValue]++;
+                expectedGreen[greenValue]++;
+                expectedBlue[blueValue]++;
+            }
+            BitmapSource source = BitmapSource.Create(width, height, 96, 96, format, null, pixels, stride);
+
+            var (red, green, blue) = ImageUtils.RenderHistogram(source);
+
+            Assert.Equal(expectedRed, red);
+            Assert.Equal(expectedGreen, green);
+            Assert.Equal(expectedBlue, blue);
+        });
+    }
+
     [Fact]
     public void Rgb48CountsHighBytesInRgbOrderIncludingFinalPartialChunk()
     {

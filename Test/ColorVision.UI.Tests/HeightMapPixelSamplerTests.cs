@@ -122,15 +122,15 @@ public sealed class HeightMapPixelSamplerTests
             byte[] source =
             [
                 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-                0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-                0x80, 0x80, 0x80, 0x80, 0x80, 0x80,
-                0x40, 0x40, 0x40, 0x40, 0x40, 0x40,
+                0xFF, 0xFF, 0xFF, 0x00, 0xFF, 0x00,
+                0xFF, 0x00, 0xFF, 0x80, 0xFF, 0x00,
+                0xFF, 0x00, 0xFF, 0x00, 0xFF, 0x40,
             ];
             WriteableBitmap bitmap = CreateBitmap(2, 2, PixelFormats.Rgb48, source, 12);
 
             var sample = InvokeSampler(bitmap, 2, 2);
 
-            Assert.Equal(new byte[] { 0, 255, 128, 64 }, sample.Gray);
+            Assert.Equal(new byte[] { 0, 76, 75, 7 }, sample.Gray);
             Assert.Null(sample.Alpha);
         });
     }

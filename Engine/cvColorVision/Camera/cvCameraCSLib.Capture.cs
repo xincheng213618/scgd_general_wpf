@@ -66,11 +66,6 @@ namespace cvColorVision
             return builder.ToString();
         }
 
-        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "LedCheckYaQi", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-        public unsafe static extern int LedCheckYaQi([MarshalAs(UnmanagedType.I1)] bool isdebug, int checkChannel, UInt32 w, UInt32 h, UInt32 bpp, UInt32 channels, byte[] imgdata
-            , int isguding, int gudingrid, int lunkuomianji, int pointNum, double hegexishu, int erzhihuapiancha, double[] databanjin
-            , int[] datazuobiaoX, int[] datazuobiaoY, int picwid
-            , int pichig, int[] 关注范围, int 发光区二值化补正, int boundry, double[] LengthCheck, double[] LengthRange, double[] LengthResult, [MarshalAs(UnmanagedType.I1)] bool isuseLocalRdPoint, float[] localRdMark, double[] PointX, double[] PointY);
 
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_GetSN",  CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
         private unsafe static extern int CM_GetSN(IntPtr handle, StringBuilder sn, int len);
@@ -87,31 +82,11 @@ namespace cvColorVision
 
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_SplitDataEx", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
         public unsafe static extern int CM_SplitDataEx(int w, int h, int bpp, byte[] srcimgdata, byte[] dstX, byte[] dstY, byte[] dstZ);
-        [StructLayout(LayoutKind.Sequential, Pack = 8)]
-        public struct ChromaInfo
-        {
-            public float fX;
-            public float fY;
-            public float fZ;
-            public float fx;
-            public float fy;
-            public float fu;
-            public float fv;
-            public float fCCT;
-            public float fWave;
-            public int nMidPointX;
-            public int nMidPointY;
-        };
-
-        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_GetMask", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-        public unsafe static extern int CM_GetMask(IntPtr handle, int[] pX, int[] pY, uint nLen, ref ChromaInfo chromaInfo);
 
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_MergeData", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
         public unsafe static extern int CM_MergeData(uint w, uint h, uint bpp, uint channels, byte[] imgdata);
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_MergeDataEx", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
         public unsafe static extern int CM_MergeDataEx(uint w, uint h, uint bpp, byte[] imgdata, byte[] srcX, byte[] srcY, byte[] srcZ);
-        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_GetBGRBuffer", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-        public unsafe static extern int CM_GetBGRBuffer(IntPtr handle, ref int w, ref int h, ref int bpp, ref int channels, byte[] imgdata);
 
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_GetFrameMemLength",  CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
         public unsafe static extern uint CM_GetFrameMemLength(IntPtr handle);

@@ -9,7 +9,7 @@ namespace ProjectARVRPro;
 public partial class ARVRWindow
 {
     private async Task<bool> ExportCustomerReportAsync(CustomTestResultExportOptions options, string serialNumber, DateTime exportTime,
-        LuxCsvWriteContext? csvLog = null)
+        int objectiveRecordId, LuxCsvWriteContext? csvLog = null, IReadOnlyList<ProjectARVRReuslt>? flowResults = null)
     {
         CustomTestResultOutputProfile profile = options.Profile;
         bool luxProfile = CustomTestResultExportService.IsLuxProfile(profile);
@@ -33,7 +33,7 @@ public partial class ARVRWindow
                 LuxMtfFormat = options.LuxMtfFormat,
                 LuxLuminanceUniformityFormat = options.LuxLuminanceUniformityFormat,
                 FlowResults = luxProfile
-                    ? ViewResultManager.GetObjectiveTestFlowResults(ObjectiveTestResultRecordId)
+                    ? flowResults ?? ViewResultManager.ReadObjectiveTestFlowResults(objectiveRecordId, LuxCsvProjector.RequiresFlowPayload)
                     : Array.Empty<ProjectARVRReuslt>()
             };
             outputPath = CustomTestResultExportService.GetOutputPath(context, profile);

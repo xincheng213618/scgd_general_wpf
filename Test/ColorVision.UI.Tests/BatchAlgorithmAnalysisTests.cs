@@ -22,7 +22,13 @@ public sealed class BatchAlgorithmAnalysisTests
     {
         using var cancellation = new CancellationTokenSource();
         using var scheduler = new AlgorithmExecutionScheduler(cpuConcurrency: 1);
-        var processor = CreateProcessor(scheduler, cancellation.Cancel);
+        var loader = new GrayImageLoader();
+        bool releasedBeforeAnalysis = false;
+        var processor = CreateProcessor(scheduler, cancellation.Cancel, _ =>
+        {
+            releasedBeforeAnalysis = loader.LastImage?.IsDisposed == true;
+            return "samples";
+        }, loader);
         string directory = Directory.CreateTempSubdirectory("ColorVision-BatchAnalysis-").FullName;
         string sourcePath = Path.Combine(directory, "sample.fixture");
         string primary = Path.Combine(directory, format == BatchAnalysisExportFormat.Json ? "sample_analysis.json" : "sample_analysis.csv");
@@ -39,6 +45,7 @@ public sealed class BatchAlgorithmAnalysisTests
                 AvoidOverwrite = false,
             }, cancellationToken: cancellation.Token);
 
+            Assert.True(releasedBeforeAnalysis, "The decoded Mat must be released before the provider runs.");
             Assert.True(cancellation.IsCancellationRequested, "The batch must reach table serialization.");
             Assert.Equal(expected.Order(), Directory.GetFiles(directory).Order());
             foreach (string path in expected) Assert.Equal($"prior {Path.GetFileName(path)}", File.ReadAllText(path));
@@ -145,7 +152,7 @@ public sealed class BatchAlgorithmAnalysisTests
     }
 
     private static BatchAlgorithmAnalysisProcessor CreateProcessor(AlgorithmExecutionScheduler scheduler, Action onReadRow,
-        Func<string?, string>? tableName = null)
+        Func<string?, string>? tableName = null, IBatchImageLoader? loader = null)
     {
         var catalog = new AlgorithmCatalog();
         catalog.Register(new AlgorithmDescriptor(AnalysisId, new AlgorithmVersion(1, 0, 0), "Test", "Test",
@@ -153,13 +160,14 @@ public sealed class BatchAlgorithmAnalysisTests
             new AlgorithmParameterSchema(1, [], AlgorithmJson.ToElement(new NoAlgorithmParameters())),
             Formats, Capabilities));
         var runtime = new AlgorithmRuntime(catalog, [new TableProvider(onReadRow, tableName)], scheduler);
-        return new BatchAlgorithmAnalysisProcessor([new GrayImageLoader()], runtime);
+        return new BatchAlgorithmAnalysisProcessor([loader ?? new GrayImageLoader()], runtime);
     }
 
     private sealed class GrayImageLoader : IBatchImageLoader
     {
         public IReadOnlyCollection<string> Extensions => [".fixture", ".csv"];
-        public Mat Load(string filePath) => new(1, 1, MatType.CV_8UC1, Scalar.All(42));
+        public Mat? LastImage { get; private set; }
+        public Mat Load(string filePath) => LastImage = new(1, 1, MatType.CV_8UC1, Scalar.All(42));
     }
 
     private sealed class TableProvider(Action onReadRow, Func<string?, string>? tableName) : IImageAlgorithmProvider

@@ -38,8 +38,17 @@
         <ItemsControl.ItemsPanel><ItemsPanelTemplate><UniformGrid Rows="1"/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
         <ItemsControl.ItemTemplate>
             <DataTemplate>
-                <Button Style="{StaticResource StepButton}" Tag="{Binding}" ToolTip="{Binding Details}"
+                <Button Style="{StaticResource StepButton}" Tag="{Binding}"
                         AutomationProperties.Name="{Binding Details}" MouseDoubleClick="Step_MouseDoubleClick" PreviewKeyDown="Step_PreviewKeyDown">
+                    <Button.ToolTip>
+                        <ToolTip Content="{Binding PlacementTarget.DataContext.Details, RelativeSource={RelativeSource Self}}">
+                            <ToolTip.ContentTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding}" MaxWidth="420" TextWrapping="Wrap"/>
+                                </DataTemplate>
+                            </ToolTip.ContentTemplate>
+                        </ToolTip>
+                    </Button.ToolTip>
                     <Button.ContextMenu>
                         <ContextMenu Opened="StepMenu_Opened">
                             <MenuItem Header="{display:DisplayText Key='打开流程模板'}" Click="OpenTemplate_Click"/>

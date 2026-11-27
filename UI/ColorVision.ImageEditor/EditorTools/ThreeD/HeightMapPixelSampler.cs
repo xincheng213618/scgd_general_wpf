@@ -34,14 +34,15 @@ namespace ColorVision.ImageEditor.EditorTools.ThreeD
             PixelFormat sourceFormat = source.Format;
             bool isGray16 = sourceFormat == PixelFormats.Gray16;
             bool isGray = sourceFormat == PixelFormats.Gray8 || isGray16;
-            bool isOpaqueColor = sourceFormat == PixelFormats.Bgr24 || sourceFormat == PixelFormats.Bgr32;
+            bool isRgb48 = sourceFormat == PixelFormats.Rgb48;
+            bool isOpaqueColor = sourceFormat == PixelFormats.Bgr24 || sourceFormat == PixelFormats.Bgr32 || isRgb48;
             bool isOpaque = isGray || isOpaqueColor;
             // Gray16-to-Bgra32 conversion is faster for the small, disjoint row copies in sparse sampling.
             PixelFormat copyFormat = isGray && (!isGray16 || copyStrips) ? PixelFormats.Gray8
                 : isOpaqueColor ? sourceFormat : PixelFormats.Bgra32;
             BitmapSource pixels = sourceFormat == copyFormat ? source : new FormatConvertedBitmap(source, copyFormat, null, 0);
             if (targetWidth == sourceWidth && targetHeight == sourceHeight)
-                return SampleAtSourceSize(pixels, copyFormat == PixelFormats.Gray8, isOpaque, cancellationToken);
+                return SampleAtSourceSize(pixels, copyFormat == PixelFormats.Gray8, isOpaque, isRgb48, cancellationToken);
 
             int bytesPerPixel = pixels.Format.BitsPerPixel / 8;
             int sourceStride = checked(sourceWidth * bytesPerPixel);
@@ -106,6 +107,13 @@ namespace ColorVision.ImageEditor.EditorTools.ThreeD
                         bottomLeftGray = rows[bottomOffset + leftOffset];
                         bottomRightGray = rows[bottomOffset + rightOffset];
                     }
+                    else if (isRgb48)
+                    {
+                        topLeftGray = ReadRgb48Gray(rows, topOffset + leftOffset);
+                        topRightGray = ReadRgb48Gray(rows, topOffset + rightOffset);
+                        bottomLeftGray = ReadRgb48Gray(rows, bottomOffset + leftOffset);
+                        bottomRightGray = ReadRgb48Gray(rows, bottomOffset + rightOffset);
+                    }
                     else
                     {
                         topLeftGray = ReadColorGray(rows, topOffset + leftOffset);
@@ -130,7 +138,7 @@ namespace ColorVision.ImageEditor.EditorTools.ThreeD
             return new HeightMapSample(gray, hasTransparency ? alpha : null, targetWidth, targetHeight);
         }
 
-        private static HeightMapSample SampleAtSourceSize(BitmapSource pixels, bool isGray, bool isOpaque,
+        private static HeightMapSample SampleAtSourceSize(BitmapSource pixels, bool isGray, bool isOpaque, bool isRgb48,
             CancellationToken cancellationToken)
         {
             int width = pixels.PixelWidth;
@@ -156,6 +164,12 @@ namespace ColorVision.ImageEditor.EditorTools.ThreeD
                         cancellationToken.ThrowIfCancellationRequested();
                         int sourceOffset = row * stride;
                         int targetOffset = (top + row) * width;
+                        if (isRgb48)
+                        {
+                            for (int x = 0; x < width; x++, sourceOffset += bytesPerPixel)
+                                gray[targetOffset + x] = ReadRgb48Gray(rows, sourceOffset);
+                            continue;
+                        }
                         for (int x = 0; x < width; x++, sourceOffset += bytesPerPixel)
                         {
                             int index = targetOffset + x;
@@ -189,10 +203,14 @@ namespace ColorVision.ImageEditor.EditorTools.ThreeD
         }
 
         private static byte ReadColorGray(byte[] pixels, int offset)
+            => RoundColorGray(pixels[offset], pixels[offset + 1], pixels[offset + 2]);
+
+        // RGB48's high bytes match WPF's 8-bit display conversion.
+        private static byte ReadRgb48Gray(byte[] pixels, int offset)
+            => RoundColorGray(pixels[offset + 5], pixels[offset + 3], pixels[offset + 1]);
+
+        private static byte RoundColorGray(int blue, int green, int red)
         {
-            int blue = pixels[offset];
-            int green = pixels[offset + 1];
-            int red = pixels[offset + 2];
             int weighted = blue * 114 + green * 587 + red * 299 + 500;
             int gray = weighted / 1000;
             // Only an exact midpoint can be rounded differently by the original floating-point expression.

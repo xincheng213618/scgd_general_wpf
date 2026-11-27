@@ -1,3 +1,4 @@
+using ColorVision.Engine.FlowProcessing;
 using ProjectARVRPro.Process.W51;
 using ProjectARVRPro.Process.OpticCenter;
 using ProjectARVRPro.Process.Distortion;
@@ -11,6 +12,10 @@ internal static partial class ArvrEvidenceImages
 {
     public static IReadOnlyList<ProjectARVRReuslt> Select(IEnumerable<ProjectARVRReuslt> records, bool matchingOnly, EvidenceCategory category = EvidenceCategory.LuminousArea) =>
         records.Where(record => !matchingOnly || Matches(record, category)).ToArray();
+
+    public static bool HasExecutionError(ProjectARVRReuslt record) =>
+        record.FlowStatus == FlowStatus.OverTime
+        || record.FlowStatus == FlowStatus.Failed && record.Msg?.Trim() is not ("测试已取消" or "用户停止测试");
 
     public static bool Matches(ProjectARVRReuslt record, EvidenceCategory category) => category switch
     {

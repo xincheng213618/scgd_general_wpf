@@ -1,5 +1,6 @@
 ﻿using ColorVision.Themes;
 using ColorVision.UI;
+using ColorVision.Engine.Services.Devices.Camera.Local;
 using ColorVision.UI.Languages;
 using ColorVision.UI.Plugins;
 using log4net;
@@ -60,6 +61,13 @@ namespace ColorVision.Engine
 
             MainWindow mainWindow = new MainWindow();
             mainWindow.Show();
+        }
+
+        protected override void OnExit(ExitEventArgs e)
+        {
+            try { LocalCalibrationWarmupConfig.SaveAtApplicationExit(); }
+            catch (Exception ex) { log.Error("Unable to save the calibration cache at application exit.", ex); }
+            base.OnExit(e);
         }
 
         private static async Task InitializeStandaloneEngineAsync()

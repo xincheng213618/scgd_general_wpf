@@ -13,9 +13,9 @@
         </Grid.RowDefinitions>
         <TextBox x:Name="SummaryText" IsReadOnly="True" BorderThickness="0" Background="Transparent"
                  FontWeight="SemiBold" FontSize="16" TextWrapping="Wrap" Margin="0,0,0,8"/>
-        <TextBlock Grid.Row="1" TextWrapping="Wrap" Margin="0,0,0,12"
+        <TextBlock x:Name="LegendText" Grid.Row="1" TextWrapping="Wrap" Margin="0,0,0,12"
                    Text="{display:DisplayText Key='一次定位，计算全部指标方案。蓝色：完整点阵；橙色：参考 9 点。所有坐标均为原图像素。'}"/>
-        <TabControl Grid.Row="2">
+        <TabControl x:Name="ResultTabs" Grid.Row="2">
             <TabItem Header="{display:DisplayText Key='畸变指标'}">
                 <DataGrid x:Name="MetricsGrid" AutoGenerateColumns="False" IsReadOnly="True" CanUserAddRows="False" CanUserDeleteRows="False"
                           SelectionUnit="CellOrRowHeader" ClipboardCopyMode="IncludeHeader" HeadersVisibility="Column">
@@ -60,7 +60,7 @@
                     </DataGrid.Columns>
                 </DataGrid>
             </TabItem>
-            <TabItem Header="{display:DisplayText Key='质量与耗时'}">
+            <TabItem x:Name="DiagnosticsTab" Header="{display:DisplayText Key='质量与耗时'}">
                 <TextBox x:Name="DiagnosticsText" IsReadOnly="True" AcceptsReturn="True" TextWrapping="Wrap"
                          VerticalScrollBarVisibility="Auto" Padding="12"/>
             </TabItem>

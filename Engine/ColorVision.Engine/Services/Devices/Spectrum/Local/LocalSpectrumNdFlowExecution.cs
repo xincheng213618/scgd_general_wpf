@@ -15,7 +15,7 @@ internal sealed class LocalSpectrumNdFlowExecution : FlowLocalExecution
     private readonly int port;
     private readonly bool reserved;
     private CancellationToken stop;
-    private (int Port, LocalSpectrumNd.Calibration Calibration)? result;
+    private (int Port, LocalSpectrumNd.Calibration? Calibration)? result;
     private int released;
 
     internal static bool Supports(CVBaseServerNode node) => node is FWNode { ModelType: FWModelType.Spectrum_FilterWheel } && node.NodeType == "Spectrum";

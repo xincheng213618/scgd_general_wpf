@@ -7,6 +7,7 @@ using ColorVision.Engine.Services.Devices.Camera.Views;
 using ColorVision.Engine.Services.Results;
 using ColorVision.Engine.Templates.Jsons.RingGhost;
 using ColorVision.Database;
+using ColorVision.UI.Sorts;
 using Microsoft.VisualBasic.FileIO;
 using Newtonsoft.Json;
 using SqlSugar;
@@ -154,6 +155,51 @@ public sealed class ResultHistoryTests
             Assert.Null(list.SelectedItem);
             Assert.Equal(-1, list.SelectedIndex);
             Assert.Equal(2, Assert.IsType<Row>(Assert.Single(list.Items.Cast<object>())).Id);
+            list.ItemsSource = null;
+        });
+    }
+
+    [Theory]
+    [InlineData(999, false)]
+    [InlineData(1000, true)]
+    public void SortingKeepsStableOrderAndTheSelectedHistoryRows(int count, bool batchSort)
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            var history = new ResultHistoryCollection<ViewResultImage>(row => row.Id, count);
+            DateTime date = new(2026, 1, 20);
+            ViewResultImage[] rows = Enumerable.Range(1, count)
+                .Select(id => new ViewResultImage { Id = id, CreateTime = date.AddDays(id % 3) })
+                .ToArray();
+            history.QueryResults.AddRange(rows);
+            ListView list = new() { ItemsSource = history, SelectionMode = SelectionMode.Extended };
+            ViewResultImage firstSelected = rows[count / 2];
+            ViewResultImage secondSelected = rows[count / 3];
+            list.SelectedItems.Add(firstSelected);
+            list.SelectedItems.Add(secondSelected);
+
+            List<NotifyCollectionChangedAction> changes = [];
+            history.CollectionChanged += (_, args) => changes.Add(args.Action);
+            history.SortByProperty(nameof(ViewResultImage.CreateTime));
+
+            Assert.Equal(rows.OrderBy(row => row.CreateTime), history);
+            Assert.Same(firstSelected, list.SelectedItem);
+            Assert.Contains(secondSelected, list.SelectedItems.Cast<ViewResultImage>());
+            Assert.Equal(2, list.SelectedItems.Count);
+            if (batchSort)
+                Assert.Equal(NotifyCollectionChangedAction.Reset, Assert.Single(changes));
+            else
+            {
+                Assert.NotEmpty(changes);
+                Assert.All(changes, change => Assert.Equal(NotifyCollectionChangedAction.Move, change));
+            }
+
+            changes.Clear();
+            history.SortByProperty(nameof(ViewResultImage.CreateTime));
+            Assert.Empty(changes);
+            history.Add(new ViewResultImage { Id = count + 1 });
+            Assert.False(history.ContainsId(1));
+            Assert.True(history.ContainsId(count + 1));
             list.ItemsSource = null;
         });
     }
@@ -308,28 +354,28 @@ public sealed class ResultHistoryTests
         WpfTestHost.Invoke(() =>
         {
             var rows = new ResultHistoryCollection<Row>(row => row.Id, 500);
-            for (int id = 1; id <= 1000; id++) rows.QueryResults.Add(new Row { Id = id });
+            rows.QueryResults.AddRange(Enumerable.Range(1, 2000).Select(id => new Row { Id = id }));
             Row selected = selectRetained ? rows[^1] : rows[0];
             ListView list = new() { ItemsSource = rows, SelectedItem = selected };
             var changes = new List<NotifyCollectionChangedAction>();
             NotifyCollectionChangedEventHandler onChanged = (_, e) => changes.Add(e.Action);
             rows.CollectionChanged += onChanged;
-            rows.Insert(0, new Row { Id = 1001 });
+            rows.Insert(0, new Row { Id = 2001 });
             rows.CollectionChanged -= onChanged;
             Assert.Equal(new[] { NotifyCollectionChangedAction.Reset, NotifyCollectionChangedAction.Remove, NotifyCollectionChangedAction.Add }, changes);
             Assert.Same(selectRetained ? selected : null, list.SelectedItem);
-            Assert.Equal(Enumerable.Range(502, 499).Prepend(1001), rows.Select(row => row.Id));
-            Assert.False(rows.ContainsId(501));
+            Assert.Equal(Enumerable.Range(1502, 499).Prepend(2001), rows.Select(row => row.Id));
+            Assert.False(rows.ContainsId(1501));
 
-            for (int id = 1002; id <= 1600; id++) rows.Insert(0, new Row { Id = id });
+            for (int id = 2002; id <= 2600; id++) rows.Insert(0, new Row { Id = id });
             rows.Move(0, rows.Count - 1);
-            rows.Add(new Row { Id = 1600 });
-            rows.Add(new Row { Id = 1001 });
+            rows.Add(new Row { Id = 2600 });
+            rows.Add(new Row { Id = 2001 });
             Assert.Equal(500, rows.Count);
-            Assert.Equal(Enumerable.Range(1101, 500), rows.Select(row => row.Id).Order());
+            Assert.Equal(Enumerable.Range(2101, 500), rows.Select(row => row.Id).Order());
             Assert.Null(list.SelectedItem);
             rows.MaxCount = 1;
-            Assert.Equal(1600, Assert.Single(rows).Id);
+            Assert.Equal(2600, Assert.Single(rows).Id);
             rows.Clear();
             Assert.Null(list.SelectedItem);
             Assert.False(rows.ContainsId(1));

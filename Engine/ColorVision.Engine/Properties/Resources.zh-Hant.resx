@@ -1220,9 +1220,6 @@
   <data name="LedBandDetectorManagement" xml:space="preserve">
     <value>燈條檢測模板管理</value>
   </data>
-  <data name="SfrEdgeDetectionTemplateManagement" xml:space="preserve">
-    <value>SFR尋邊範本管理</value>
-  </data>
 
   <data name="PoiAnalysisTemplateManagement" xml:space="preserve">
     <value>POI分析範本管理</value>
@@ -2549,21 +2546,33 @@
   <data name="SfrPlot_SeriesNotFoundOrCalculationFailed" xml:space="preserve"><value>找不到曲線或計算失敗</value></data>
   <data name="SpectrumCalibrationGroups_AddGroup" xml:space="preserve"><value>新增群組</value></data>
   <data name="SpectrumCalibrationGroups_AmplitudeCalibration" xml:space="preserve"><value>振幅標定</value></data>
-  <data name="SpectrumCalibrationGroups_AutoApplyNdHint" xml:space="preserve"><value>切換到此 ND 位置時自動套用</value></data>
+  <data name="SpectrumCalibrationGroups_AutoApplyNdHint" xml:space="preserve"><value>濾光輪到達關聯孔位後，自動套用此群組的標定檔案。</value></data>
+  <data name="SpectrumCalibrationGroups_AutoSwitchNd" xml:space="preserve"><value>擷取時自動切換 ND</value></data>
+  <data name="SpectrumCalibrationGroups_AutoSwitchNdHint" xml:space="preserve"><value>擷取啟用 ND 和自動積分後，依衰減倍率切換孔位。</value></data>
+  <data name="SpectrumCalibrationGroups_CalibrationFiles" xml:space="preserve"><value>標定檔案</value></data>
   <data name="SpectrumCalibrationGroups_CurrentAmplitude" xml:space="preserve"><value>目前振幅</value></data>
-  <data name="SpectrumCalibrationGroups_CurrentGroup" xml:space="preserve"><value>目前群組：</value></data>
+  <data name="SpectrumCalibrationGroups_CurrentGroup" xml:space="preserve"><value>目前群組</value></data>
   <data name="SpectrumCalibrationGroups_CurrentWavelength" xml:space="preserve"><value>目前波長</value></data>
   <data name="SpectrumCalibrationGroups_DatFileFilter" xml:space="preserve"><value>DAT 檔案 (*.dat)|*.dat|所有檔案|*.*</value></data>
-  <data name="SpectrumCalibrationGroups_FilterWheelPosition" xml:space="preserve"><value>濾色輪位置</value></data>
-  <data name="SpectrumCalibrationGroups_FilterWheelService" xml:space="preserve"><value>濾色輪服務</value></data>
+  <data name="SpectrumCalibrationGroups_FilterWheelPosition" xml:space="preserve"><value>關聯孔位</value></data>
+  <data name="SpectrumCalibrationGroups_FilterWheelService" xml:space="preserve"><value>濾光輪服務</value></data>
   <data name="SpectrumCalibrationGroups_GroupDetails" xml:space="preserve"><value>群組詳細資料</value></data>
   <data name="SpectrumCalibrationGroups_GroupName" xml:space="preserve"><value>群組名稱</value></data>
   <data name="SpectrumCalibrationGroups_KeepAtLeastOneGroup" xml:space="preserve"><value>至少保留一個群組</value></data>
   <data name="SpectrumCalibrationGroups_NoAssociation" xml:space="preserve"><value>無關聯</value></data>
   <data name="SpectrumCalibrationGroups_NotLoadedFormat" xml:space="preserve"><value>{0}（未載入）</value></data>
   <data name="SpectrumCalibrationGroups_NotSelected" xml:space="preserve"><value>未選擇</value></data>
+  <data name="SpectrumCalibrationGroups_NdAssociation" xml:space="preserve"><value>ND 濾光輪關聯</value></data>
   <data name="SpectrumCalibrationGroups_RemoveGroup" xml:space="preserve"><value>移除群組</value></data>
+  <data name="SpectrumCalibrationGroups_RenameGroup" xml:space="preserve"><value>編輯名稱</value></data>
   <data name="SpectrumCalibrationGroups_SaveHint" xml:space="preserve"><value>儲存會寫入目前群組的標定檔案；若標定檔案發生變更，將重新啟動光譜服務。</value></data>
+  <data name="SpectrumCalibrationGroups_DraftSaveHint" xml:space="preserve"><value>儲存後返回裝置設定。點選裝置設定的「確定」後生效。</value></data>
+  <data name="SpectrumCalibrationGroups_InvalidNames" xml:space="preserve"><value>請為每個標定群組填寫不同的名稱。</value></data>
+  <data name="SpectrumCalibrationGroups_NdRateHint" xml:space="preserve"><value>留空則不參與自動換檔。</value></data>
+  <data name="SpectrumCalibrationGroups_NdInvalidHoles" xml:space="preserve"><value>每個濾光輪孔位只能關聯一個標定群組。</value></data>
+  <data name="SpectrumCalibrationGroups_NdInvalidRates" xml:space="preserve"><value>倍率須為不重複的非負整數。請將校零孔位的倍率留空。</value></data>
+  <data name="SpectrumCalibrationGroups_NdCalibrationRequired" xml:space="preserve"><value>請先為孔位 {0} 設定波長和幅值檔案。</value></data>
+  <data name="SpectrumCalibrationGroups_NdLocalSaveHint" xml:space="preserve"><value>修改濾光輪連線後，請重新開啟光譜儀。</value></data>
   <data name="SpectrumCalibrationGroups_Title" xml:space="preserve"><value>標定檔案群組</value></data>
   <data name="SpectrumCalibrationGroups_WavelengthCalibration" xml:space="preserve"><value>波長標定</value></data>
   <data name="TemplateEditor_ConfirmSetJsonAsDefault" xml:space="preserve"><value>將使用目前範本的 JSON 作為新建或重設範本時的預設參數。是否繼續？</value></data>
@@ -2764,8 +2773,6 @@
   <data name="SpectrumNdBind" xml:space="preserve"><value>繫結濾光輪裝置</value></data>
   <data name="SpectrumNdDevice" xml:space="preserve"><value>濾光輪裝置</value></data>
   <data name="SpectrumNdReset" xml:space="preserve"><value>允許 ND 復位</value></data>
-  <data name="SpectrumNdMaxTime" xml:space="preserve"><value>ND 最大曝光時間 (ms)</value></data>
-  <data name="SpectrumNdMinTime" xml:space="preserve"><value>ND 最小曝光時間 (ms)</value></data>
   <data name="SpectrumNdRates" xml:space="preserve"><value>ND 衰減倍率</value></data>
   <data name="SpectrumNdGroups" xml:space="preserve"><value>ND 標定分組名稱</value></data>
   <data name="SpectrumSp100Enabled" xml:space="preserve"><value>啟用暗電流補償</value></data>
@@ -2859,6 +2866,11 @@
   <data name="SpectrumInvalidLicense" xml:space="preserve"><value>授權內容無效，型號或到期日期無法讀取。</value></data>
   <data name="SpectrumManagerHint" xml:space="preserve"><value>管理光譜儀序列號與授權</value></data>
   <data name="SpectrumManagerSummary" xml:space="preserve"><value>{0} 台光譜儀 / {1} 本次發現</value></data>
+  <data name="SpectrumRemoveLicense" xml:space="preserve"><value>移除授權</value></data>
+  <data name="SpectrumRemoveLicenseConfirm" xml:space="preserve"><value>確定移除光譜儀 {0} 的授權？&#xA;&#xA;此操作移除資料庫中的授權記錄，保留裝置設定和 LIC 檔案。</value></data>
+  <data name="SpectrumRemoveLicenseSuccess" xml:space="preserve"><value>已移除光譜儀 {0} 的授權。</value></data>
+  <data name="SpectrumRemoveLicenseChanged" xml:space="preserve"><value>光譜儀 {0} 的授權已變更或移除，清單已重新整理。</value></data>
+  <data name="SpectrumCatalogSourceChanged" xml:space="preserve"><value>資料庫連線已變更，請重新開啟實體光譜儀管理。</value></data>
   <data name="SpectrumWorking" xml:space="preserve"><value>正在處理…</value></data>
   <data name="SpectrumScanComplete" xml:space="preserve"><value>本次發現 {0} 台光譜儀，{1} 項查詢失敗。</value></data>
   <data name="SpectrumImportLicense" xml:space="preserve"><value>匯入本機授權</value></data>
@@ -5195,6 +5207,9 @@
   <data name="流程已恢复" xml:space="preserve">
     <value>流程已恢復</value>
   </data>
+  <data name="流程分析" xml:space="preserve">
+    <value>流程分析</value>
+  </data>
   <data name="流程执行分析" xml:space="preserve">
     <value>流程執行分析</value>
   </data>
@@ -6835,9 +6850,6 @@
   <data name="亚像素级灯珠检测" xml:space="preserve">
     <value>次像素級燈珠檢測</value>
   </data>
-  <data name="SFR寻边" xml:space="preserve">
-    <value>SFR 尋邊</value>
-  </data>
   <data name="定位算法" xml:space="preserve">
     <value>定位演算法</value>
   </data>
@@ -6898,9 +6910,6 @@
   <data name="SFR2.0模板" xml:space="preserve">
     <value>SFR 2.0 範本</value>
   </data>
-  <data name="SFR寻边模板" xml:space="preserve">
-    <value>SFR 尋邊範本</value>
-  </data>
   <data name="请先选择灯条检测模板" xml:space="preserve">
     <value>請先選擇燈條檢測範本</value>
   </data>
@@ -6948,9 +6957,6 @@
   </data>
   <data name="请先选择SFR2.0模板" xml:space="preserve">
     <value>請先選擇 SFR 2.0 範本</value>
-  </data>
-  <data name="请先选择SFR寻边模板" xml:space="preserve">
-    <value>請先選擇 SFR 尋邊範本</value>
   </data>
   <data name="读取失败" xml:space="preserve">
     <value>讀取失敗</value>
@@ -7211,8 +7217,8 @@
   <data name="CameraPanel_Region" xml:space="preserve"><value>區域</value></data>
   <data name="CameraPanel_LocalExposure" xml:space="preserve"><value>本機參數</value></data>
   <data name="启用相机取图缓冲" xml:space="preserve"><value>啟用相機取圖緩衝</value></data>
-  <data name="默认关闭，流程加速时可手动开启。开启后每台相机最多保留一块空闲 RAW 缓冲；关闭时释放空闲缓冲，在用图像归还后释放。" xml:space="preserve"><value>預設關閉，流程加速時可手動開啟。開啟後每台相機最多保留一塊空閒 RAW 緩衝；關閉時釋放空閒緩衝，在用影像歸還後釋放。</value></data>
-  <data name="默认关闭，流程加速时可手动开启。关闭后读写照常执行，不保留空闲缓冲；在用缓冲归还后释放。" xml:space="preserve"><value>預設關閉，流程加速時可手動開啟。關閉後讀寫照常執行，不保留空閒緩衝；在用緩衝歸還後釋放。</value></data>
+  <data name="默认开启，每台相机最多保留一块空闲 RAW 缓冲。关闭后释放空闲缓冲，在用图像归还时释放。" xml:space="preserve"><value>預設開啟，每部相機最多保留一塊閒置 RAW 緩衝。關閉後會釋放閒置緩衝，使用中的影像於歸還時釋放。</value></data>
+  <data name="默认开启，缓存最近使用的 CVRAW 文件。关闭后文件读写照常，空闲缓冲立即释放，在用缓冲归还时释放。" xml:space="preserve"><value>預設開啟，快取最近使用的 CVRAW 檔案。關閉後檔案讀寫照常，閒置緩衝立即釋放，使用中的緩衝於歸還時釋放。</value></data>
   <data name="实验功能" xml:space="preserve"><value>實驗功能</value></data>
   <data name="截图缓存" xml:space="preserve"><value>截圖快取</value></data>
   <data name="按图像视图统计截图导出缓冲。空闲缓冲可立即释放，在用缓冲归还后释放；已保存的截图文件保留。" xml:space="preserve"><value>依影像檢視統計截圖匯出緩衝。閒置緩衝可立即釋放，使用中的緩衝歸還後釋放；已儲存的截圖檔案保留。</value></data>
@@ -7744,7 +7750,7 @@
   <data name="原图（CVRAW）" xml:space="preserve"><value>原圖（CVRAW）</value></data>
   <data name="原始采样点数。均值滤波沿用原规则：小于等于 2 时使用 5 点，支持偶数窗口；SG 必须使用 3～2047 的奇数，且不超过实际采样点数。" xml:space="preserve"><value>原始採樣點數。均值濾波沿用原規則：小於等於 2 時使用 5 點，支持偶數窗口；SG 必須使用 3～2047 的奇數，且不超過實際採樣點數。</value></data>
   <data name="参考白亮度" xml:space="preserve"><value>參考白亮度</value></data>
-  <data name="启用后，新打开的 CVCIE 默认显示 XYZ 真彩 sRGB；关闭后默认显示原图。图层临时切换不改变此开关，转换异常只记日志并回退原图或 Y 灰度。" xml:space="preserve"><value>啓用後，新打開的 CVCIE 默認顯示 XYZ 真彩 sRGB；關閉後默認顯示原圖。圖層臨時切換不改變此開關，轉換異常只記日誌並回退原圖或 Y 灰度。</value></data>
+  <data name="启用后，新打开的 CVCIE 和带可重放 XYZ 校正的 CVRAW 默认显示真彩 sRGB。关闭后默认显示原图。临时切换图层不改变此设置。转换失败时记日志并回退原图或 Y 灰度。" xml:space="preserve"><value>啓用後，新打開的 CVCIE 和帶可重放 XYZ 校正的 CVRAW 默認顯示真彩 sRGB。關閉後默認顯示原圖。臨時切換圖層不改變此設置。轉換失敗時記日誌並回退原圖或 Y 灰度。</value></data>
   <data name="启用真彩显示" xml:space="preserve"><value>啓用真彩顯示</value></data>
   <data name="周期（ms）" xml:space="preserve"><value>週期（ms）</value></data>
   <data name="四线制" xml:space="preserve"><value>四線制</value></data>
@@ -7920,7 +7926,7 @@
   <data name="共用 X (px)" xml:space="preserve"><value>共用 X (px)</value></data>
   <data name="共用 Y (px)" xml:space="preserve"><value>共用 Y (px)</value></data>
   <data name="共用空间偏移（Y / X）" xml:space="preserve"><value>共用空間偏移（Y / X）</value></data>
-  <data name="兼容旧算法：暗噪声采用倍率修正；原文件 Texp_x 为浮点数时比例才生效。" xml:space="preserve"><value>兼容舊算法：暗噪聲採用倍率修正；原文件 Texp_x 爲浮點數時比例才生效。</value></data>
+  <data name="暗噪声倍率作用于每个像素的每个通道。8 位结果限制在 0–255，16 位结果限制在 0–65535。" xml:space="preserve"><value>暗噪聲倍率套用至每個像素的每個通道。8 位元結果限制在 0–255，16 位元結果限制在 0–65535。</value></data>
   <data name="半径 {0} 次项" xml:space="preserve"><value>半徑 {0} 次項</value></data>
   <data name="单色" xml:space="preserve"><value>單色</value></data>
   <data name="单色校正系数" xml:space="preserve"><value>單色校正係數</value></data>
@@ -7954,7 +7960,8 @@
   <data name="无等待指令" xml:space="preserve"><value>無等待指令</value></data>
   <data name="日志" xml:space="preserve"><value>日誌</value></data>
   <data name="暗噪声" xml:space="preserve"><value>暗噪聲</value></data>
-  <data name="暗噪声乘法比例；兼容旧文件，曝光 X 为 JSON 浮点数时才生效。" xml:space="preserve"><value>暗噪聲乘法比例；兼容舊文件，曝光 X 爲 JSON 浮點數時才生效。</value></data>
+  <data name="每个 RAW 样本乘以此倍率。倍率为 1 时保留原值，倍率小于或等于 0 时输出 0。" xml:space="preserve"><value>每個 RAW 樣本乘以此倍率。倍率為 1 時保留原值，倍率小於或等於 0 時輸出 0。</value></data>
+  <data name="可选的标定曝光记录（ms）。暗噪声计算只使用倍率。" xml:space="preserve"><value>選用的標定曝光記錄（ms）。暗噪聲計算只使用倍率。</value></data>
   <data name="暗噪声比例" xml:space="preserve"><value>暗噪聲比例</value></data>
   <data name="曝光 Texp_x" xml:space="preserve"><value>曝光 Texp_x</value></data>
   <data name="曝光 X（ms）" xml:space="preserve"><value>曝光 X（ms）</value></data>
@@ -8275,4 +8282,75 @@
   <data name="服务设置" xml:space="preserve"><value>服務設定</value></data>
   <data name="正在读取当前孔位…" xml:space="preserve"><value>正在讀取目前孔位…</value></data>
   <data name="{0}（当前）" xml:space="preserve"><value>{0}（目前）</value></data>
+  <data name="相机进入测量模式后自动预热" xml:space="preserve"><value>相機進入測量模式後自動預熱</value></data>
+  <data name="系统空闲后，加载上次退出应用时仍在缓存中的校正计划。" xml:space="preserve"><value>系統閒置後，載入上次關閉應用程式時仍在快取中的校正計畫。</value></data>
+  <data name="进入测量模式 2 秒后开始检查空闲状态，空闲时在后台加载。" xml:space="preserve"><value>進入測量模式 2 秒後開始檢查閒置狀態，系統閒置時於背景載入。</value></data>
+  <data name="内存预算（MiB）" xml:space="preserve"><value>記憶體預算（MiB）</value></data>
+  <data name="校正缓存预算使用率" xml:space="preserve"><value>校正快取預算使用率</value></data>
+  <data name="校正缓存已用 {0} / 预算 {1}" xml:space="preserve"><value>校正快取已用 {0}／預算 {1}</value></data>
+  <data name="设置校正缓存预算失败：{0}" xml:space="preserve"><value>無法設定校正快取預算：{0}</value></data>
+  <data name="请输入以 MiB 为单位的非负整数。" xml:space="preserve"><value>請輸入以 MiB 為單位的非負整數。</value></data>
+  <data name="设为 0 将停止保留共享缓存和自动预热。正在使用的校正计划可继续执行。" xml:space="preserve"><value>設為 0 會停止保留共用快取及自動預熱。使用中的校正計畫可繼續執行。</value></data>
+  <data name="保存到：{0}" xml:space="preserve">
+    <value>儲存到：{0}</value>
+  </data>
+  <data name="恢复到全局" xml:space="preserve">
+    <value>恢復到全域</value>
+  </data>
+  <data name="全局" xml:space="preserve">
+    <value>全域</value>
+  </data>
+  <data name="配置已更新，请重新打开参数窗口。" xml:space="preserve">
+    <value>設定或相機來源已更新，請重新開啟參數視窗。</value>
+  </data>
+  <data name="DeviceDataPathInvalid" xml:space="preserve"><value>請輸入有效的完整路徑，例如 D:\CVTest。</value></data>
+  <data name="DeviceDataPathConfigure" xml:space="preserve"><value>設定路徑</value></data>
+  <data name="DeviceDataPathNoDevices" xml:space="preserve"><value>目前沒有需要設定資料路徑的裝置。</value></data>
+  <data name="DeviceDataPathStale" xml:space="preserve"><value>裝置清單或設定資料庫已變更，請重新開啟「裝置設定」後再試。</value></data>
+  <data name="DeviceDataPathAlreadyApplied" xml:space="preserve"><value>裝置設定已使用此路徑。</value></data>
+  <data name="DeviceDataPathUpdated" xml:space="preserve"><value>已統一 {0} 台裝置的資料基礎路徑。</value></data>
+  <data name="DeviceDataPathReloadRequested" xml:space="preserve"><value>已請求重新載入 {0} 台裝置。</value></data>
+  <data name="DeviceDataPathReloadPending" xml:space="preserve"><value>等待重新載入的裝置為 {0}。再次套用可重試。</value></data>
+  <data name="DeviceDataPathCameraPending" xml:space="preserve"><value>相機服務將在下次重新載入時使用新路徑（{0}）。</value></data>
+  <data name=" · 已达到显示上限，仅显示最近记录" xml:space="preserve"><value> · 已達到顯示上限，僅顯示最近記錄</value></data>
+  <data name="I-L 曲线" xml:space="preserve"><value>I-L 曲線</value></data>
+  <data name="I-L：电流 → 亮度" xml:space="preserve"><value>I-L：電流 → 亮度</value></data>
+  <data name="I-t：电流随时间" xml:space="preserve"><value>I-t：電流隨時間</value></data>
+  <data name="IV / IVL 实时曲线" xml:space="preserve"><value>IV / IVL 實時曲線</value></data>
+  <data name="IV 曲线" xml:space="preserve"><value>IV 曲線</value></data>
+  <data name="IV：电压 → 电流" xml:space="preserve"><value>IV：電壓 → 電流</value></data>
+  <data name="L-t：亮度随时间" xml:space="preserve"><value>L-t：亮度隨時間</value></data>
+  <data name="P-L 曲线" xml:space="preserve"><value>P-L 曲線</value></data>
+  <data name="P-L：功率 → 亮度" xml:space="preserve"><value>P-L：功率 → 亮度</value></data>
+  <data name="PNG 图片|*.png" xml:space="preserve"><value>PNG 圖片|*.png</value></data>
+  <data name="V-L 曲线" xml:space="preserve"><value>V-L 曲線</value></data>
+  <data name="V-L：电压 → 亮度" xml:space="preserve"><value>V-L：電壓 → 亮度</value></data>
+  <data name="V-t：电压随时间" xml:space="preserve"><value>V-t：電壓隨時間</value></data>
+  <data name="{0:N0} 个数据点 · {1} 个系列 · 更新于 {2:HH:mm:ss}" xml:space="preserve"><value>{0:N0} 個數據點 · {1} 個系列 · 更新於 {2:HH:mm:ss}</value></data>
+  <data name="亮度 (cd/m²)" xml:space="preserve"><value>亮度 (cd/m²)</value></data>
+  <data name="亮度随时间变化" xml:space="preserve"><value>亮度隨時間變化</value></data>
+  <data name="保存曲线图片" xml:space="preserve"><value>保存曲線圖片</value></data>
+  <data name="导出当前数据 CSV" xml:space="preserve"><value>導出當前數據 CSV</value></data>
+  <data name="尚无可导出的数据。" xml:space="preserve"><value>尚無可導出的數據。</value></data>
+  <data name="当前批次显示数据已导出。" xml:space="preserve"><value>當前批次顯示數據已導出。</value></data>
+  <data name="当前流程没有已保存的批次，请启用流程结果保存并连接 MySQL。" xml:space="preserve"><value>當前流程沒有已保存的批次，請啓用流程結果保存並連接 MySQL。</value></data>
+  <data name="扫描数据在仪器返回整批结果后显示；时间趋势使用实际记录时间。" xml:space="preserve"><value>掃描數據在儀器返回整批結果後顯示；時間趨勢使用實際記錄時間。</value></data>
+  <data name="批次 #{0}" xml:space="preserve"><value>批次 #{0}</value></data>
+  <data name="批次 #{0} · {1}&#xA;状态：{2}" xml:space="preserve"><value>批次 #{0} · {1}&#xA;狀態：{2}</value></data>
+  <data name="显示数据系列" xml:space="preserve"><value>顯示數據系列</value></data>
+  <data name="曲线图片已保存。" xml:space="preserve"><value>曲線圖片已保存。</value></data>
+  <data name="曲线模式" xml:space="preserve"><value>曲線模式</value></data>
+  <data name="正在监控 · 未配对亮度 {0} · 无效记录 {1}" xml:space="preserve"><value>正在監控 · 未配對亮度 {0} · 無效記錄 {1}</value></data>
+  <data name="电压随时间变化" xml:space="preserve"><value>電壓隨時間變化</value></data>
+  <data name="电流随时间变化" xml:space="preserve"><value>電流隨時間變化</value></data>
+  <data name="等待已保存的源表、相机 POI 或光谱结果" xml:space="preserve"><value>等待已保存的源表、相機 POI 或光譜結果</value></data>
+  <data name="等待流程批次…" xml:space="preserve"><value>等待流程批次…</value></data>
+  <data name="等待读取已保存结果…" xml:space="preserve"><value>等待讀取已保存結果…</value></data>
+  <data name="自动适应坐标范围" xml:space="preserve"><value>自動適應座標範圍</value></data>
+  <data name="读取失败，下一节点完成时重试，也可重新读取：{0}" xml:space="preserve"><value>讀取失敗，下一節點完成時重試，也可重新讀取：{0}</value></data>
+  <data name="选择并执行流程，节点完成后自动更新右侧曲线。" xml:space="preserve"><value>選擇並執行流程，節點完成後自動更新右側曲線。</value></data>
+  <data name="重新读取结果" xml:space="preserve"><value>重新讀取結果</value></data>
+  <data name="重置坐标范围" xml:space="preserve"><value>重置座標範圍</value></data>
+  <data name="找不到当前批次所属的结果数据库连接。" xml:space="preserve"><value>找不到目前批次所屬的結果資料庫連線。</value></data>
+  <data name="找不到所选批次，请检查批次 ID。" xml:space="preserve"><value>找不到選取的批次，請檢查批次 ID。</value></data>
 </root>

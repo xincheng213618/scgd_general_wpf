@@ -28,26 +28,42 @@ namespace ColorVision.ImageEditor.Algorithms
             ArgumentNullException.ThrowIfNull(image);
             ArgumentNullException.ThrowIfNull(draw);
             ArgumentNullException.ThrowIfNull(result);
+            AlgorithmOverlayArtifact[] overlays = result.Artifacts.OfType<AlgorithmOverlayArtifact>().ToArray();
+            if (overlays.Length == 0) return new RenderSession([]);
+
+            var geometryArtifacts = result.Artifacts.OfType<AlgorithmGeometryArtifact>();
+            long geometryCount = geometryArtifacts.Sum(artifact => (long)artifact.Geometries.Count);
+            long itemCount = overlays.Sum(overlay => (long)overlay.Items.Count);
+            // Large fit results may retain far more measured points than their overlay displays.
+            HashSet<string>? visibleIds = geometryCount > itemCount * 2
+                ? overlays.SelectMany(overlay => overlay.Items).Select(item => item.GeometryId).ToHashSet(StringComparer.Ordinal)
+                : null;
             Dictionary<string, (AlgorithmGeometry Geometry, AlgorithmCoordinateSpace Space)> geometries = new(StringComparer.Ordinal);
-            foreach (AlgorithmGeometryArtifact artifact in result.Artifacts.OfType<AlgorithmGeometryArtifact>())
+            foreach (AlgorithmGeometryArtifact artifact in geometryArtifacts)
             foreach (AlgorithmGeometry geometry in artifact.Geometries)
-                geometries[geometry.Id] = (geometry, artifact.CoordinateSpace);
+                if (visibleIds == null || visibleIds.Contains(geometry.Id))
+                    geometries[geometry.Id] = (geometry, artifact.CoordinateSpace);
 
             Guid documentInstanceId = image.DocumentInstanceId;
             long sourceRevision = image.ImageRevision;
             List<IAlgorithmOverlayRegistration> registrations = new();
             try
             {
-                foreach (AlgorithmOverlayArtifact overlay in result.Artifacts.OfType<AlgorithmOverlayArtifact>())
+                foreach (AlgorithmOverlayArtifact overlay in overlays)
                 {
                     DrawingVisual visual = new();
                     OverlayPaint paint = default;
+                    BitmapSource? bitmap = image.ViewBitmapSource as BitmapSource;
+                    double dpiX = bitmap?.DpiX ?? 96;
+                    double dpiY = bitmap?.DpiY ?? 96;
+                    double zoom = draw.ZoomRatio;
+                    double safeZoom = double.IsFinite(zoom) && zoom > 0 ? zoom : 1;
                     using (DrawingContext context = visual.RenderOpen())
                     {
                         foreach (AlgorithmOverlayItem item in overlay.Items)
                         {
                             if (!geometries.TryGetValue(item.GeometryId, out var entry)) continue;
-                            DrawGeometry(context, entry.Geometry, entry.Space, item.Style, image, draw.ZoomRatio, ref paint);
+                            DrawGeometry(context, entry.Geometry, entry.Space, item.Style, dpiX, dpiY, safeZoom, ref paint);
                         }
                     }
                     if (image.TryRegisterAlgorithmOverlay(
@@ -75,40 +91,40 @@ namespace ColorVision.ImageEditor.Algorithms
             AlgorithmGeometry geometry,
             AlgorithmCoordinateSpace space,
             AlgorithmOverlayStyle style,
-            ImageProcessingContext image,
-            double zoom,
+            double dpiX,
+            double dpiY,
+            double safeZoom,
             ref OverlayPaint paint)
         {
-            double dpiX = image.ViewBitmapSource is BitmapSource bitmap ? bitmap.DpiX : 96;
-            double dpiY = image.ViewBitmapSource is BitmapSource bitmapY ? bitmapY.DpiY : 96;
-            AlgorithmPoint[] points = geometry.Points.Select(point => AlgorithmCoordinates.ToPixel(point, space, dpiX, dpiY)).ToArray();
-            double safeZoom = double.IsFinite(zoom) && zoom > 0 ? zoom : 1;
+            IReadOnlyList<AlgorithmPoint> points = geometry.Points;
+            int count = points.Count;
+            Point first = count == 0 ? default : ToPoint(points[0], space, dpiX, dpiY);
             var (pen, fill) = paint.Get(style, Math.Max(0.25, style.StrokeWidth) / safeZoom);
             switch (geometry.Kind)
             {
-                case AlgorithmGeometryKind.Point when points.Length >= 1:
+                case AlgorithmGeometryKind.Point when count >= 1:
                     double radius = 3 / safeZoom;
-                    context.DrawEllipse(fill ?? pen.Brush, pen, ToPoint(points[0]), radius, radius);
+                    context.DrawEllipse(fill ?? pen.Brush, pen, first, radius, radius);
                     break;
-                case AlgorithmGeometryKind.Line when points.Length >= 2:
-                    context.DrawLine(pen, ToPoint(points[0]), ToPoint(points[1]));
+                case AlgorithmGeometryKind.Line when count >= 2:
+                    context.DrawLine(pen, first, ToPoint(points[1], space, dpiX, dpiY));
                     break;
-                case AlgorithmGeometryKind.Circle when points.Length >= 1 && geometry.Radius is double sourceRadius:
+                case AlgorithmGeometryKind.Circle when count >= 1 && geometry.Radius is double sourceRadius:
                     double radiusX = space == AlgorithmCoordinateSpace.Pixel ? sourceRadius : sourceRadius * dpiX / 25.4;
                     double radiusY = space == AlgorithmCoordinateSpace.Pixel ? sourceRadius : sourceRadius * dpiY / 25.4;
-                    context.DrawEllipse(fill, pen, ToPoint(points[0]), radiusX, radiusY);
+                    context.DrawEllipse(fill, pen, first, radiusX, radiusY);
                     break;
-                case AlgorithmGeometryKind.Rectangle when points.Length >= 2:
-                    context.DrawRectangle(fill, pen, new Rect(ToPoint(points[0]), ToPoint(points[1])));
+                case AlgorithmGeometryKind.Rectangle when count >= 2:
+                    context.DrawRectangle(fill, pen, new Rect(first, ToPoint(points[1], space, dpiX, dpiY)));
                     break;
-                case AlgorithmGeometryKind.Polygon when points.Length >= 3:
-                    context.DrawGeometry(fill, pen, Path(points, closed: true));
+                case AlgorithmGeometryKind.Polygon when count >= 3:
+                    context.DrawGeometry(fill, pen, Path(points, first, space, dpiX, dpiY, closed: true));
                     break;
-                case AlgorithmGeometryKind.Polyline when points.Length >= 2:
-                    context.DrawGeometry(null, pen, Path(points, closed: false));
+                case AlgorithmGeometryKind.Polyline when count >= 2:
+                    context.DrawGeometry(null, pen, Path(points, first, space, dpiX, dpiY, closed: false));
                     break;
             }
-            if (!string.IsNullOrWhiteSpace(style.Label) && points.Length > 0)
+            if (!string.IsNullOrWhiteSpace(style.Label) && count > 0)
             {
                 FormattedText text = new(
                     style.Label,
@@ -118,18 +134,25 @@ namespace ColorVision.ImageEditor.Algorithms
                     11 / safeZoom,
                     pen.Brush,
                     1);
-                context.DrawText(text, ToPoint(points[0]));
+                context.DrawText(text, first);
             }
         }
 
-        private static PathGeometry Path(IReadOnlyList<AlgorithmPoint> points, bool closed)
+        private static PathGeometry Path(IReadOnlyList<AlgorithmPoint> points, Point first, AlgorithmCoordinateSpace space, double dpiX, double dpiY, bool closed)
         {
-            PathFigure figure = new() { StartPoint = ToPoint(points[0]), IsClosed = closed, IsFilled = closed };
-            figure.Segments.Add(new PolyLineSegment(points.Skip(1).Select(ToPoint), true));
+            Point[] vertices = new Point[points.Count - 1];
+            for (int index = 1; index < points.Count; index++)
+                vertices[index - 1] = ToPoint(points[index], space, dpiX, dpiY);
+            PathFigure figure = new() { StartPoint = first, IsClosed = closed, IsFilled = closed };
+            figure.Segments.Add(new PolyLineSegment(vertices, true));
             return new PathGeometry([figure]);
         }
 
-        private static Point ToPoint(AlgorithmPoint point) => new(point.X, point.Y);
+        private static Point ToPoint(AlgorithmPoint point, AlgorithmCoordinateSpace space, double dpiX, double dpiY)
+        {
+            AlgorithmPoint pixel = AlgorithmCoordinates.ToPixel(point, space, dpiX, dpiY);
+            return new Point(pixel.X, pixel.Y);
+        }
 
         private static Brush ParseBrush(string value, Brush fallback)
         {

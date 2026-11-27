@@ -12,6 +12,8 @@ using SqlSugar;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Collections.Specialized;
+using System.ComponentModel;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -29,6 +31,7 @@ namespace ColorVision.Engine
     public partial class MeasureBatchPage : Page, IDisposable
     {
         private static readonly ILog Log = LogManager.GetLogger(typeof(MeasureBatchPage));
+        private const int PerItemNotificationLimit = 32;
 
         public Frame Frame { get; set; }
         public MeasureBatchModel MeasureBatchModel { get; set; }
@@ -60,8 +63,8 @@ namespace ColorVision.Engine
             Loaded += Page_Loaded;
         }
 
-        public ObservableCollection<ViewResultImage> ViewResultImages { get; set; } = new ObservableCollection<ViewResultImage>();
-        public ObservableCollection<ViewResultAlg> ViewResultAlgs { get; set; } = new ObservableCollection<ViewResultAlg>();
+        public ObservableCollection<ViewResultImage> ViewResultImages { get; set; } = new BatchResultRows<ViewResultImage>();
+        public ObservableCollection<ViewResultAlg> ViewResultAlgs { get; set; } = new BatchResultRows<ViewResultAlg>();
 
 
         private void Page_Initialized(object sender, EventArgs e)
@@ -136,12 +139,47 @@ namespace ColorVision.Engine
                 return;
             }
 
-            foreach (var item in images)
-                ViewResultImages.Add(new ViewResultImage(item));
-            foreach (var item in algorithms)
+            AppendResults(ViewResultImages, images, static item => new ViewResultImage(item));
+            AppendResults(ViewResultAlgs, algorithms, item =>
             {
                 item.DatabaseEndpoint = endpoint;
-                ViewResultAlgs.Add(new ViewResultAlg(item, batch.Code));
+                return new ViewResultAlg(item, batch.Code);
+            });
+        }
+
+        private static void AppendResults<TModel, TView>(ObservableCollection<TView> destination,
+            IReadOnlyList<TModel> rows, Func<TModel, TView> createView)
+        {
+            if (rows.Count > PerItemNotificationLimit && destination is BatchResultRows<TView> batchRows)
+            {
+                batchRows.AddRange(rows.Select(createView));
+                return;
+            }
+
+            foreach (TModel row in rows)
+                destination.Add(createView(row));
+        }
+
+        private sealed class BatchResultRows<T> : ObservableCollection<T>
+        {
+            internal void AddRange(IEnumerable<T> rows)
+            {
+                CheckReentrancy();
+                int initialCount = Count;
+                try
+                {
+                    foreach (T row in rows)
+                        Items.Add(row);
+                }
+                finally
+                {
+                    if (Count != initialCount)
+                    {
+                        OnPropertyChanged(new PropertyChangedEventArgs(nameof(Count)));
+                        OnPropertyChanged(new PropertyChangedEventArgs("Item[]"));
+                        OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset));
+                    }
+                }
             }
         }
 

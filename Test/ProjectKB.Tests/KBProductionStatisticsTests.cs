@@ -171,6 +171,42 @@ public class KBProductionStatisticsTests
     }
 
     [Fact]
+    public void CalculateKeepsSameTimeTrendOrderAndExcludesNonpositiveCycleTimesFromMonthlyAverages()
+    {
+        DateTime start = new(2026, 1, 1);
+        DateTime january = start.AddDays(4);
+        DateTime february = start.AddMonths(1);
+        KBItemMaster[] results =
+        [
+            CreateResult(4, null, february, FlowStatus.Completed, true, 2700),
+            CreateResult(3, null, january, FlowStatus.Completed, false, 1900),
+            CreateResult(1, null, january, FlowStatus.Completed, true, 0),
+            CreateResult(2, null, january, FlowStatus.Completed, true, 1101),
+            CreateResult(5, null, january, FlowStatus.Canceled, false, 800),
+        ];
+
+        KBProductionStatistics trend = KBProductionStatisticsCalculator.Calculate(
+            results, [], start, start.AddMonths(2), february, KBProductionPeriodMode.Month);
+        Assert.Equal([0d, 1101d, 1900d, 2700d], trend.TrendRows.Select(point => point.AverageCtMilliseconds));
+
+        KBProductionStatistics monthly = KBProductionStatisticsCalculator.Calculate(
+            results, [], start, start.AddMonths(2), february, KBProductionPeriodMode.All);
+        Assert.Collection(monthly.TrendRows,
+            point =>
+            {
+                Assert.Equal(start, point.Time);
+                Assert.Equal(3, point.ProductionCount);
+                Assert.Equal(1500.5, point.AverageCtMilliseconds);
+            },
+            point =>
+            {
+                Assert.Equal(february, point.Time);
+                Assert.Equal(1, point.ProductionCount);
+                Assert.Equal(2700, point.AverageCtMilliseconds);
+            });
+    }
+
+    [Fact]
     public void DataStoreReusesMatchingSessionAndStartsANewOneWhenProductionInfoChanges()
     {
         string databasePath = Path.Combine(Path.GetTempPath(), $"ProjectKB-{Guid.NewGuid():N}.db");

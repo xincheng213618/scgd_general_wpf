@@ -141,10 +141,11 @@ namespace ColorVision.UI.LogImp
             return true;
         }
 
+        internal static bool IsKeywordSearch(string searchText) => searchText.IndexOfAny(RegexSpecialChars) < 0;
+
         private static bool TryCreateMatcher(string searchText, out SearchMatcher matcher)
         {
-            var containsRegex = searchText.IndexOfAny(RegexSpecialChars) >= 0;
-            if (containsRegex)
+            if (!IsKeywordSearch(searchText))
             {
                 if (!TryGetRegex(searchText, out var regex))
                 {

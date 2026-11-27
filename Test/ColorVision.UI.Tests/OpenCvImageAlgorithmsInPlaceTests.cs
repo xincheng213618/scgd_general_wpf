@@ -140,12 +140,15 @@ public class OpenCvImageAlgorithmsInPlaceTests
         AssertAlphaEqual(original, actual);
     }
 
-    [Fact]
-    public void BilateralBgra64KeepsOriginalAlphaWhenDestinationOverlapsSource()
+    [Theory]
+    [InlineData(17, 12)]
+    [InlineData(1073, 401)]
+    public void BilateralBgra64KeepsOriginalAlphaWhenDestinationOverlapsSource(int width, int height)
     {
-        using Mat owner = CreateFourChannelSource("CV_16UC4");
-        using Mat source = new(owner, new Rect(1, 2, 17, 12));
-        Rect target = new(2, 2, 17, 12);
+        using Mat owner = new(height + 6, width + 6, MatType.CV_16UC4);
+        Cv2.Randu(owner, Scalar.All(0), Scalar.All(ushort.MaxValue + 1d));
+        using Mat source = new(owner, new Rect(1, 2, width, height));
+        Rect target = new(2, 3, width, height);
         using Mat destination = new(owner, target);
         using Mat expectedOwner = owner.Clone();
         using Mat expectedTarget = new(expectedOwner, target);

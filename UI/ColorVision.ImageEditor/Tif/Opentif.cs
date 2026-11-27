@@ -113,10 +113,10 @@ namespace ColorVision.ImageEditor.Tif
             BitmapOpenRequests.VerifyTarget(context, requestedFilePath, cancellationToken);
             metadata.Apply(context, requestedFilePath, nameof(Opentif));
 
-            var (decodedImage, writeableBitmap) = await _requests.PrepareAsync(async () =>
+            var (original, decodedMetadata, writeableBitmap) = await _requests.PrepareAsync(async () =>
             {
                 BitmapOpenRequests.VerifyTarget(context, requestedFilePath, cancellationToken);
-                DecodedImage decoded = await Task.Run(() => DecodeImage(requestedFilePath), cancellationToken);
+                using DecodedImage decoded = await Task.Run(() => DecodeImage(requestedFilePath), cancellationToken);
                 BitmapOpenRequests.VerifyTarget(context, requestedFilePath, cancellationToken);
 
                 // Providers may await or cancel before publication; keep the display staging private.
@@ -125,34 +125,56 @@ namespace ColorVision.ImageEditor.Tif
                 BitmapSource source = decoded.BitmapSource;
                 bool normalizeFloat = source.Format == PixelFormats.Gray32Float && TifOpenConfig.Current.ConvertGray32FloatToGray16OnOpen;
                 var display = await PrepareDisplayBitmapAsync(source, 96, 96, normalizeFloat, cancellationToken);
-                return (decoded, display);
+                return (decoded.RetainedOriginal, decoded.Metadata, display);
             }, cancellationToken);
 
             BitmapOpenRequests.VerifyTarget(context, requestedFilePath, cancellationToken);
             context.Config.SetImageMetadata(ImageViewPropertyKeys.ImageWidth, writeableBitmap.PixelWidth, nameof(Opentif), "位图像素宽度");
             context.Config.SetImageMetadata(ImageViewPropertyKeys.ImageHeight, writeableBitmap.PixelHeight, nameof(Opentif), "位图像素高度");
-            ApplyMetadata(context, decodedImage.Metadata);
+            ApplyMetadata(context, decodedMetadata);
 
             BitmapOpenRequests.VerifyTarget(context, requestedFilePath, cancellationToken);
-            var parameters = decodedImage.Metadata.ColorVisionParameters;
-            BitmapSource original = decodedImage.BitmapSource;
             await context.ImageView.PublishDecodedImageContentAsync(
-                new DecodedImageContent(parameters == null && original.Format != PixelFormats.Gray32Float ? writeableBitmap : original, parameters, requestedFilePath),
+                new DecodedImageContent(original ?? writeableBitmap, decodedMetadata.ColorVisionParameters, requestedFilePath),
                 writeableBitmap, cancellationToken);
         }
 
         private static DecodedImage DecodeImage(string filePath)
         {
-            using FileStream stream = new(filePath, FileMode.Open, FileAccess.Read, FileShare.Read);
-            TiffBitmapDecoder decoder = new(stream, BitmapCreateOptions.PreservePixelFormat, BitmapCacheOption.OnLoad);
+            FileStream stream = new(filePath, FileMode.Open, FileAccess.Read, FileShare.Read);
+            try
+            {
+                BitmapFrame frame = DecodeFirstFrame(stream, filePath, BitmapCacheOption.None);
+                ImageMetadata metadata = ReadMetadata(frame.Metadata as BitmapMetadata);
+                if (metadata.ColorVisionParameters != null || frame.Format == PixelFormats.Gray32Float)
+                {
+                    // A measurement/export source must remain available independently of the file handle.
+                    stream.Position = 0;
+                    frame = DecodeFirstFrame(stream, filePath, BitmapCacheOption.OnLoad);
+                    stream.Dispose();
+                    return new DecodedImage(frame, metadata, null);
+                }
+
+                // Decode directly into the editable bitmap while the same file snapshot remains open.
+                return new DecodedImage(frame, metadata, stream);
+            }
+            catch
+            {
+                stream.Dispose();
+                throw;
+            }
+        }
+
+        private static BitmapFrame DecodeFirstFrame(FileStream stream, string filePath, BitmapCacheOption cacheOption)
+        {
+            TiffBitmapDecoder decoder = new(stream, BitmapCreateOptions.PreservePixelFormat, cacheOption);
             if (decoder.Frames.Count == 0)
                 throw new InvalidDataException($"TIFF file contains no image frames: {filePath}");
 
             BitmapFrame frame = decoder.Frames[0];
-            ImageMetadata metadata = ReadMetadata(frame.Metadata as BitmapMetadata);
             if (frame.CanFreeze && !frame.IsFrozen)
                 frame.Freeze();
-            return new DecodedImage(frame, metadata);
+            return frame;
         }
 
         internal static Task<WriteableBitmap> PrepareDisplayBitmapAsync(BitmapSource source, double dpiX, double dpiY,
@@ -433,7 +455,11 @@ namespace ColorVision.ImageEditor.Tif
                 config.SetImageMetadata("ColorVision.RenderedOutput", JsonConvert.SerializeObject(parameters.RenderedOutput), owner, "渲染输出的尺寸与像素格式");
         }
 
-        private sealed record DecodedImage(BitmapSource BitmapSource, ImageMetadata Metadata);
+        private sealed record DecodedImage(BitmapSource BitmapSource, ImageMetadata Metadata, FileStream? SourceStream) : IDisposable
+        {
+            public BitmapSource? RetainedOriginal => SourceStream == null ? BitmapSource : null;
+            public void Dispose() => SourceStream?.Dispose();
+        }
 
         private sealed record ImageMetadata(
             string? CameraModel,

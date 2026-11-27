@@ -118,7 +118,7 @@ public sealed class SqliteFeedbackCollectorTests : IDisposable
         using (var source = Open(SourcePath))
             Execute(source, """
                 CREATE TABLE FlowRunRecord (id INTEGER PRIMARY KEY, batch_id INTEGER, serial_number TEXT, completed_time TEXT, started_time_utc TEXT, snapshot_id INTEGER);
-                CREATE TABLE FlowNodeRecord (id INTEGER PRIMARY KEY, batch_id INTEGER, serial_number TEXT, start_time TEXT, end_time TEXT, elapsed_ms INTEGER);
+                CREATE TABLE FlowNodeRecord (id INTEGER PRIMARY KEY, batch_id INTEGER, serial_number TEXT COLLATE NOCASE, start_time TEXT, end_time TEXT, elapsed_ms INTEGER);
                 CREATE TABLE FlowNodeMessage (id INTEGER PRIMARY KEY, batch_id INTEGER, serial_number TEXT, node_record_id INTEGER, send_time TEXT, recv_time TEXT, send_payload_gzip BLOB);
                 CREATE TABLE FlowExecutionEvent (id INTEGER PRIMARY KEY, run_record_id INTEGER, occurred_time_utc TEXT);
                 CREATE TABLE FlowNodeAttempt (id INTEGER PRIMARY KEY, run_record_id INTEGER, started_time_utc TEXT, legacy_node_record_id INTEGER);
@@ -128,15 +128,20 @@ public sealed class SqliteFeedbackCollectorTests : IDisposable
                   (1, 11, 'new', '2026-09-16 11:00:00', NULL, 100),
                   (2, 12, 'boundary', '2026-09-08 12:00:00', '2026-09-09 04:00:00', 100),
                   (3, 11, 'old-other-sn', '2026-09-01 12:00:00', NULL, 101),
-                  (4, 13, NULL, '2026-09-01 12:00:00', NULL, 100);
+                  (4, 13, NULL, '2026-09-01 12:00:00', NULL, 100),
+                  (5, 14, 'LegacyCase', '2026-09-01 12:00:00', NULL, 100),
+                  (6, 15, 'event-only', '2026-09-01 12:00:00', NULL, 100),
+                  (7, 13, '', '2026-09-01 12:00:00', NULL, 101);
                 INSERT INTO FlowNodeRecord VALUES
                   (10, 11, 'new', '2026-09-08 12:00:00', NULL, 18000),
                   (11, 11, 'old-other-sn', '2026-09-08 12:00:00', NULL, 20000),
-                  (12, 13, NULL, '2026-09-16 11:00:00', NULL, 18000);
+                  (12, 13, NULL, '2026-09-16 11:00:00', NULL, 18000),
+                  (13, 14, 'legacycase', '2026-09-16 11:00:00', NULL, 18000);
                 INSERT INTO FlowNodeMessage VALUES
                   (20, 11, 'new', 10, '2026-09-08 12:00:00', NULL, X'010203'),
                   (21, 11, 'old-other-sn', 11, '2026-09-08 12:00:00', NULL, X'04');
-                INSERT INTO FlowExecutionEvent VALUES (30, 1, '2026-09-08 12:00:00'), (31, 3, '2026-09-08 12:00:00');
+                INSERT INTO FlowExecutionEvent VALUES
+                  (30, 1, '2026-09-08 12:00:00'), (31, 3, '2026-09-08 12:00:00'), (32, 6, '2026-09-16 03:00:00');
                 INSERT INTO FlowNodeAttempt VALUES (40, 1, '2026-09-08 12:00:00', 10);
                 INSERT INTO FlowIncident VALUES (50, 1, '2026-09-08 12:00:00');
                 INSERT INTO FlowTemplateSnapshot VALUES (100, X'0102'), (101, X'0304');
@@ -144,11 +149,11 @@ public sealed class SqliteFeedbackCollectorTests : IDisposable
         var files = Collect(new FlowDiagnosticsFeedbackCollector());
         Assert.True(ReadStatus(files).Value<string>("Error") == null, ReadStatus(files).ToString());
         using var result = Open(files.Single(file => file.EntryPath.EndsWith(".db")).FilePath);
-        Assert.Equal("1,2,4", Scalar(result, "SELECT group_concat(id) FROM FlowRunRecord;"));
-        Assert.Equal("10,12", Scalar(result, "SELECT group_concat(id) FROM FlowNodeRecord;"));
+        Assert.Equal("1,2,4,5,6", Scalar(result, "SELECT group_concat(id) FROM FlowRunRecord;"));
+        Assert.Equal("10,12,13", Scalar(result, "SELECT group_concat(id) FROM FlowNodeRecord;"));
         Assert.Equal("20", Scalar(result, "SELECT group_concat(id) FROM FlowNodeMessage;"));
         Assert.Equal("010203", Scalar(result, "SELECT hex(send_payload_gzip) FROM FlowNodeMessage;"));
-        Assert.Equal("30", Scalar(result, "SELECT group_concat(id) FROM FlowExecutionEvent;"));
+        Assert.Equal("30,32", Scalar(result, "SELECT group_concat(id) FROM FlowExecutionEvent;"));
         Assert.Equal("40", Scalar(result, "SELECT group_concat(id) FROM FlowNodeAttempt;"));
         Assert.Equal("50", Scalar(result, "SELECT group_concat(id) FROM FlowIncident;"));
         Assert.Equal("100", Scalar(result, "SELECT group_concat(id) FROM FlowTemplateSnapshot;"));

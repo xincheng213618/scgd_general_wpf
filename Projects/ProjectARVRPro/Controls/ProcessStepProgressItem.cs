@@ -52,19 +52,21 @@ public sealed class ProcessStepProgressItem : ViewModelBase
         UpdateDetails();
     }
 
-    internal void Finish(bool succeeded)
+    internal void Finish(bool succeeded, string? failureDetail = null)
     {
         State = succeeded ? CircularProgressState.Completed : CircularProgressState.Failed;
         if (succeeded) Progress = 100;
         StatusText = DisplayText.Get(succeeded ? "已完成" : "失败");
-        UpdateDetails();
+        UpdateDetails(succeeded ? null : failureDetail);
     }
 
-    private void UpdateDetails()
+    private void UpdateDetails(string? failureDetail = null)
     {
-        Details = $"{Meta.Name}\n{DisplayText.Get("流程模板")}: {Meta.FlowTemplate}\n{StatusText}";
+        string details = $"{Meta.Name}\n{DisplayText.Get("流程模板")}: {Meta.FlowTemplate}\n{StatusText}";
         if (State == CircularProgressState.Running && double.IsFinite(Progress))
-            Details += $"\n{Progress:F0}% · " + DisplayText.Get("进度根据历史耗时估算，以实际完成为准。");
-        Details += "\n" + DisplayText.Get("双击打开流程模板，右键编辑配置。");
+            details += $"\n{Progress:F0}% · " + DisplayText.Get("进度根据历史耗时估算，以实际完成为准。");
+        if (!string.IsNullOrWhiteSpace(failureDetail))
+            details += "\n" + failureDetail;
+        Details = details + "\n" + DisplayText.Get("双击打开流程模板，右键编辑配置。");
     }
 }

@@ -1,6 +1,7 @@
 using ColorVision.UI.Desktop.Download;
 using Newtonsoft.Json.Linq;
 using System.Collections.Concurrent;
+using System.Collections.Specialized;
 using System.IO;
 using System.Net;
 using System.Net.Http;
@@ -169,6 +170,35 @@ public sealed class DownloadManagerLifecycleTests : IDisposable
         Assert.Equal("removed", rpc.Statuses[oldGid]["status"]?.ToString());
         Assert.Equal("waiting", rpc.Statuses[task.Gid!]["status"]?.ToString());
         Assert.Equal((int)DownloadStatus.Waiting, Entry(task.Id).Status);
+    }
+
+    [Fact]
+    public async Task LoadRecordsPublishesOneSnapshotInRecentOrder()
+    {
+        var manager = Manager(new FakeRpc());
+        var store = new DownloadTaskStore(_dbPath);
+        DateTime latest = new(2026, 11, 26, 12, 0, 0);
+        int first = AddRecord("first.bin", latest);
+        int older = AddRecord("older.bin", latest.AddDays(-1));
+        int last = AddRecord("last.bin", latest);
+        var notifications = new List<(NotifyCollectionChangedAction Action, int[] TaskIds)>();
+        WpfTestHost.Invoke(() => manager.Tasks.CollectionChanged += (_, e) =>
+            notifications.Add((e.Action, manager.Tasks.Select(task => task.Id).ToArray())));
+
+        await manager.LoadRecordsAsync();
+
+        var snapshot = Assert.Single(notifications);
+        Assert.Equal(NotifyCollectionChangedAction.Reset, snapshot.Action);
+        Assert.Equal([last, first, older], snapshot.TaskIds);
+
+        int AddRecord(string name, DateTime created) => store.Insert(new DownloadEntry
+        {
+            Url = $"http://example.invalid/{name}",
+            FileName = name,
+            SavePath = Path.Combine(_root, name),
+            Status = (int)DownloadStatus.FileDeleted,
+            CreateTime = created,
+        });
     }
 
     [Fact]

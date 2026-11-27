@@ -24,19 +24,32 @@ internal sealed class FlowAnalysisDataSource
         }
     }
 
-    private List<T> Read<T>(Func<ISugarQueryable<T>, ISugarQueryable<T>> filter, Func<List<T>> live) where T : class, new()
+    private List<T> Read<T>(Func<ISugarQueryable<T>, ISugarQueryable<T>> filter, Func<List<T>> live,
+        SqlSugarClient? readClient = null) where T : class, new()
     {
         if (_database == null) return live();
         string table = typeof(T).Name;
         if (!_database.HasTable(table)) return [];
-        using var db = _database.OpenClient();
-        return filter(_database.Query<T>(db)).ToList();
+        using var ownedClient = readClient == null ? _database.OpenClient() : null;
+        return filter(_database.Query<T>(readClient ?? ownedClient!)).ToList();
+    }
+
+    internal (List<FlowNodeRecord> Records, List<FlowNodeMessage> Messages, FlowRunRecord? Run, List<FlowExecutionEvent> Events)
+        GetRunDetails(int batchId, string? serialNumber)
+    {
+        // Share the offline connection for this page load while retaining each query's existing scope.
+        using var readClient = _database?.OpenClient();
+        List<FlowNodeRecord> records = GetByRun(batchId, serialNumber, readClient);
+        List<FlowNodeMessage> messages = GetMessagesByRun(batchId, serialNumber, readClient);
+        FlowRunRecord? run = GetFlowRun(batchId, serialNumber, readClient);
+        List<FlowExecutionEvent> events = run == null ? [] : GetExecutionEvents(run.Id, readClient);
+        return (records, messages, run, events);
     }
 
     internal bool FlushPendingWrites(TimeSpan timeout) => IsReadOnly || FlowNodeRecordDataBaseHelper.FlushPendingWrites(timeout);
-    internal List<FlowNodeRecord> GetByRun(int batchId, string? serialNumber) => Read<FlowNodeRecord>(
+    internal List<FlowNodeRecord> GetByRun(int batchId, string? serialNumber, SqlSugarClient? readClient = null) => Read<FlowNodeRecord>(
         q => q.Where(x => x.BatchId == batchId).WhereIF(!string.IsNullOrWhiteSpace(serialNumber), x => x.SerialNumber == serialNumber).OrderBy(x => x.StartTime),
-        () => FlowNodeRecordDataBaseHelper.GetByRun(batchId, serialNumber));
+        () => FlowNodeRecordDataBaseHelper.GetByRun(batchId, serialNumber), readClient);
     internal FlowNodeRecord? GetLatestRecord() => Read<FlowNodeRecord>(
         q => q.OrderByDescending(x => x.StartTime).Take(1), () => One(FlowNodeRecordDataBaseHelper.GetLatestRecord())).FirstOrDefault();
     internal FlowNodeRecord? GetLastByNodeId(string nodeId) => _database == null
@@ -46,10 +59,18 @@ internal sealed class FlowAnalysisDataSource
     internal List<FlowRunNavigationSummary> GetRecentRunSummaries(int batchLimit, CancellationToken cancellationToken)
         => ReadRunNavigation(db => FlowRunNavigationReader.ReadRecent(db, batchLimit, cancellationToken));
 
-    internal List<FlowRunNavigationSummary> GetRunSummariesBySerialNumbers(IEnumerable<string> serialNumbers, CancellationToken cancellationToken)
+    internal List<FlowRunNavigationSummary> GetRunSummariesForFlowRuns(IReadOnlyList<FlowRunRecord> runs, CancellationToken cancellationToken)
     {
-        string[] serials = serialNumbers.Where(serial => !string.IsNullOrWhiteSpace(serial)).Distinct(StringComparer.Ordinal).ToArray();
-        return serials.Length == 0 ? [] : ReadRunNavigation(db => FlowRunNavigationReader.ReadBySerials(db, serials, cancellationToken));
+        FlowRunRecord[] namedRuns = runs.Where(run => !string.IsNullOrWhiteSpace(run.SerialNumber)).ToArray();
+        if (namedRuns.Length == 0)
+            return [];
+
+        string[] serials = namedRuns.Select(run => run.SerialNumber!).Distinct(StringComparer.Ordinal).ToArray();
+        // Runs with explicit batches cannot match a node run elsewhere. Legacy runs
+        // still need every matching serial to find the latest node run.
+        int[]? batchIds = namedRuns.Any(run => !run.BatchId.HasValue)
+            ? null : namedRuns.Select(run => run.BatchId!.Value).Distinct().ToArray();
+        return ReadRunNavigation(db => FlowRunNavigationReader.ReadBySerials(db, serials, batchIds, cancellationToken));
     }
 
     private List<FlowRunNavigationSummary> ReadRunNavigation(Func<SqlSugarClient, List<FlowRunNavigationSummary>> read)
@@ -60,9 +81,9 @@ internal sealed class FlowAnalysisDataSource
         return read(db);
     }
 
-    internal List<FlowNodeMessage> GetMessagesByRun(int batchId, string? serialNumber) => Read<FlowNodeMessage>(
+    internal List<FlowNodeMessage> GetMessagesByRun(int batchId, string? serialNumber, SqlSugarClient? readClient = null) => Read<FlowNodeMessage>(
         q => q.Where(x => x.BatchId == batchId).WhereIF(!string.IsNullOrWhiteSpace(serialNumber), x => x.SerialNumber == serialNumber).OrderBy(x => x.SendTime),
-        () => FlowNodeRecordDataBaseHelper.GetMessagesByRun(batchId, serialNumber));
+        () => FlowNodeRecordDataBaseHelper.GetMessagesByRun(batchId, serialNumber), readClient);
     internal List<FlowNodeMessage> GetHistoryMessagesByNodeId(string nodeId, IEnumerable<int> batchIds)
     {
         int[] ids = batchIds.Distinct().ToArray();
@@ -97,20 +118,20 @@ internal sealed class FlowAnalysisDataSource
         string[] legacySerials = runs.Where(item => !item.BatchId.HasValue && !string.IsNullOrWhiteSpace(item.SerialNumber))
             .Select(item => item.SerialNumber!).Distinct(StringComparer.Ordinal).ToArray();
         List<FlowNodeRecord> records = Read<FlowNodeRecord>(
-            q => q.Where(item => item.NodeId == record.NodeId && (batchIds.Contains(item.BatchId) || legacySerials.Contains(item.SerialNumber)))
-                .OrderByDescending(item => item.StartTime),
+            q => FlowNodeRecordDataBaseHelper.SelectNodeRecordsForRuns(q, record.NodeId, batchIds, legacySerials),
             () => FlowNodeRecordDataBaseHelper.GetNodeRecordsForRuns(record.NodeId, batchIds, legacySerials));
         records.AddRange(session.Records.Where(item => item.NodeId == record.NodeId));
-        FlowNodeComparisonHistory filtered = FlowNodeComparisonHistory.ForRuns(record.NodeId, runs, records, []);
-        List<FlowNodeMessage> messages = GetHistoryMessagesByNodeId(record.NodeId, filtered.Records.Select(item => item.BatchId));
+        FlowNodeRecord[] selectedRecords = FlowNodeComparisonHistory.SelectRunRecords(record.NodeId, runs, records);
+        List<FlowNodeMessage> messages = GetHistoryMessagesByNodeId(record.NodeId, selectedRecords.Select(item => item.BatchId));
         messages.AddRange(session.Messages.Where(item => item.NodeId == record.NodeId));
-        return FlowNodeComparisonHistory.ForRuns(record.NodeId, runs, records, messages);
+        return FlowNodeComparisonHistory.FromSelectedRecords(record.NodeId, selectedRecords, messages);
     }
-    internal FlowRunRecord? GetFlowRun(int batchId, string? serialNumber) => Read<FlowRunRecord>(
+    internal FlowRunRecord? GetFlowRun(int batchId, string? serialNumber, SqlSugarClient? readClient = null) => Read<FlowRunRecord>(
         q => FlowNodeRecordDataBaseHelper.SelectFlowRun(q, batchId, serialNumber),
-        () => One(FlowNodeRecordDataBaseHelper.GetFlowRun(batchId, serialNumber))).FirstOrDefault();
-    internal List<FlowExecutionEvent> GetExecutionEvents(int runId) => Read<FlowExecutionEvent>(
-        q => q.Where(x => x.RunRecordId == runId).OrderBy(x => x.SequenceNo), () => FlowNodeRecordDataBaseHelper.GetExecutionEvents(runId));
+        () => One(FlowNodeRecordDataBaseHelper.GetFlowRun(batchId, serialNumber)), readClient).FirstOrDefault();
+    internal List<FlowExecutionEvent> GetExecutionEvents(int runId, SqlSugarClient? readClient = null) => Read<FlowExecutionEvent>(
+        q => q.Where(x => x.RunRecordId == runId).OrderBy(x => x.SequenceNo),
+        () => FlowNodeRecordDataBaseHelper.GetExecutionEvents(runId), readClient);
     internal List<FlowRunRecord> GetSameFlowRuns(FlowExecutionAnalysisSession session)
     {
         FlowRunRecord? run = session.Run ?? GetUniqueLegacyFlowRun(session.SerialNumber);
@@ -130,16 +151,10 @@ internal sealed class FlowAnalysisDataSource
             () => FlowNodeRecordDataBaseHelper.GetLegacyFlowRuns(serialNumber));
         return candidates.Count == 1 ? candidates[0] : null;
     }
-    internal List<FlowRunRecord> GetFlowRuns(FlowIdentity identity)
-    {
-        return Read<FlowRunRecord>(q =>
-        {
-            if (identity.FlowKey is string key)
-                q = q.Where(x => x.FlowKey == key || ((x.FlowKey == null || x.FlowKey == "") && identity.TemplateId > 0 && x.TemplateId == identity.TemplateId));
-            else if (identity.TemplateId > 0) q = q.Where(x => x.TemplateId == identity.TemplateId);
-            else q = q.Where(x => x.TemplateId <= 0 && (x.FlowKey == null || x.FlowKey == "") && x.FlowName == identity.FlowName);
-            return q.OrderByDescending(x => x.CompletedTime).Take(500);
-        }, () => FlowNodeRecordDataBaseHelper.GetFlowRuns(identity));
-    }
+    internal List<FlowRunRecord> GetFlowRuns(FlowIdentity identity) => Read<FlowRunRecord>(
+        q => FlowNodeRecordDataBaseHelper.ApplyFlowIdentityFilter(q, identity)
+            .OrderByDescending(x => x.CompletedTime).Take(500),
+        () => FlowNodeRecordDataBaseHelper.GetFlowRuns(identity));
+
     private static List<T> One<T>(T? value) where T : class => value == null ? [] : [value];
 }

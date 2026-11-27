@@ -422,15 +422,8 @@ namespace ColorVision.ImageEditor
             return value.ToString("0.##", CultureInfo.InvariantCulture);
         }
 
-        private static string FormatRgbText<T>(T r, T g, T b)
-        {
-            return string.Concat(
-                Convert.ToString(r, CultureInfo.InvariantCulture),
-                "\n",
-                Convert.ToString(g, CultureInfo.InvariantCulture),
-                "\n",
-                Convert.ToString(b, CultureInfo.InvariantCulture));
-        }
+        private static string FormatRgbText(ushort r, ushort g, ushort b)
+            => string.Create(CultureInfo.InvariantCulture, $"{r}\n{g}\n{b}");
 
         private static double QuantizeFontSize(double fontSize)
         {
