@@ -8305,6 +8305,10 @@
   </data>
   <data name="DeviceDataPathInvalid" xml:space="preserve"><value>請輸入有效的完整路徑，例如 D:\CVTest。</value></data>
   <data name="DeviceDataPathConfigure" xml:space="preserve"><value>設定路徑</value></data>
+  <data name="WorkstationSourceNext" xml:space="preserve"><value>下次啟動的工作站設定來源</value></data>
+  <data name="WorkstationSourceAutomatic" xml:space="preserve"><value>啟動時依連線選擇</value></data>
+  <data name="WorkstationSourceLocal" xml:space="preserve"><value>本機 SQLite</value></data>
+  <data name="WorkstationSourceActive" xml:space="preserve"><value>本次設定來源：{0}</value></data>
   <data name="DeviceDataPathNoDevices" xml:space="preserve"><value>目前沒有需要設定資料路徑的裝置。</value></data>
   <data name="DeviceDataPathStale" xml:space="preserve"><value>裝置清單或設定資料庫已變更，請重新開啟「裝置設定」後再試。</value></data>
   <data name="DeviceDataPathAlreadyApplied" xml:space="preserve"><value>裝置設定已使用此路徑。</value></data>

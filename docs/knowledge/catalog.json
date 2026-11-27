@@ -4467,6 +4467,7 @@
         "Engine/ColorVision.Engine/Dao/SysResourceGoupModel.cs",
         "Engine/ColorVision.Engine/Dao/VSysResourceDao.cs",
         "UI/ColorVision.Database/BaseTableDao.cs",
+        "Engine/ColorVision.Engine/Services/WorkstationConfiguration.cs",
         "Engine/ColorVision.Engine/Services/LocalConfigurationDao.cs",
         "Engine/ColorVision.Engine/Services/ServiceManager.cs",
         "Engine/ColorVision.Engine/Services/ServiceInitializer.cs",
@@ -9355,7 +9356,7 @@
       "knowledge_id": "ui.database",
       "knowledge_type": "topic",
       "status": "current",
-      "summary": "MySQL 连接配置与业务 DAO、POI 模板的 SQLite 自动回退，以及旧插件注册的二进制兼容。",
+      "summary": "MySQL 连接配置与业务 DAO、POI 模板的工位存储来源，以及旧插件注册的二进制兼容。",
       "aliases": [
         "数据库操作",
         "数据库浏览器",

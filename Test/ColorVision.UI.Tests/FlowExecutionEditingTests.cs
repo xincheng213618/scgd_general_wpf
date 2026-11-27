@@ -8,6 +8,8 @@ using ColorVision.Engine.FlowProcessing.Nodes;
 using ColorVision.Engine.FlowProcessing.PostProcess;
 using ColorVision.Engine.FlowProcessing.PreProcess;
 using ColorVision.Engine.FlowProcessing.Scheduling;
+using ColorVision.Engine.MQTT;
+using ColorVision.Engine.Services.RC;
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.Flow;
 using ColorVision.Scheduler;
@@ -37,6 +39,37 @@ namespace ColorVision.UI.Tests;
 public sealed class FlowExecutionEditingTests
 {
     private static readonly FieldInfo ConfigHandlerInstance = typeof(ConfigHandler).GetField("_instance", BindingFlags.Static | BindingFlags.NonPublic)!;
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void EditorExplainsTheSelectedStartsRemoteDependencyWhenRegistryIsUnavailable(bool connected)
+    {
+        WithFixture(fixture =>
+        {
+            var remote = new HeadlessObservedServerNode { Token = "test-private-token" };
+            remote.Create();
+            fixture.View.STNodeEditorMain.Nodes.Add(remote);
+            Assert.Equal(ConnectionStatus.Connected, fixture.Start.Output.ConnectOption(remote.GetAllInputOptions()[0]));
+            using var registry = new MqttRCService(MQTTControl.GetInstance(), _ => Task.CompletedTask, startKeepAlive: false);
+            typeof(MqttRCService).GetField("_isConnect", BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(registry, connected ? 1 : 0);
+            var singleton = typeof(MqttRCService).GetField("_instance", BindingFlags.Static | BindingFlags.NonPublic)!;
+            object? previous = singleton.GetValue(null);
+            singleton.SetValue(null, registry);
+            try
+            {
+                var failure = Assert.Throws<InvalidOperationException>(() => PumpUntil(
+                    fixture.Session.RunFlowAndWaitForFinalizationAsync(reportStartupFailures: true)));
+                Assert.Contains(connected ? ColorVision.Engine.Properties.Resources.TokenEmpty_RefreshingToken_PleaseRetry
+                    : ColorVision.Engine.Properties.Resources.RegistryCenterNotConnected, failure.Message);
+                Assert.Contains("Editing test start → Observed server (Service=TEST/Observed, DeviceCode=DEV)", failure.Message);
+                Assert.DoesNotContain("test-private-token", failure.Message);
+                Assert.Equal(failure.Message, fixture.View.logTextBox.Text);
+                Assert.False(fixture.PreProcess.Entered.Task.IsCompleted);
+            }
+            finally { singleton.SetValue(null, previous); }
+        });
+    }
 
     [Theory]
     [InlineData(FlowStatus.Completed)]

@@ -115,6 +115,7 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
         <Grid Margin="0,0,0,16">
             <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
@@ -214,5 +215,15 @@
                 </Grid>
             </Border>
         </Grid>
+        <WrapPanel Grid.Row="2" Margin="0,12,0,0" VerticalAlignment="Center">
+            <Label Target="{Binding ElementName=ConfigurationSourceSelector}" VerticalAlignment="Center"
+                   Content="{engine:EngineLang WorkstationSourceNext}"/>
+            <ComboBox x:Name="ConfigurationSourceSelector" MinWidth="145" VerticalAlignment="Center" SelectedValuePath="Tag">
+                <ComboBoxItem Tag="{x:Static devices:WorkstationConfigurationSource.AutomaticAtStartup}" Content="{engine:EngineLang WorkstationSourceAutomatic}"/>
+                <ComboBoxItem Tag="{x:Static devices:WorkstationConfigurationSource.Local}" Content="{engine:EngineLang WorkstationSourceLocal}"/>
+                <ComboBoxItem Tag="{x:Static devices:WorkstationConfigurationSource.MySql}" Content="MySQL"/>
+            </ComboBox>
+            <TextBlock x:Name="ActiveConfigurationSource" Margin="14,0,0,0" VerticalAlignment="Center"/>
+        </WrapPanel>
     </Grid>
 </Window>

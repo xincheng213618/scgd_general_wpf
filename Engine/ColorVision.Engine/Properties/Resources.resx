@@ -4626,6 +4626,10 @@
   </data>
   <data name="DeviceDataPathInvalid" xml:space="preserve"><value>请输入有效的完整路径，例如 D:\CVTest。</value></data>
   <data name="DeviceDataPathConfigure" xml:space="preserve"><value>配置路径</value></data>
+  <data name="WorkstationSourceNext" xml:space="preserve"><value>下次启动的工位配置来源</value></data>
+  <data name="WorkstationSourceAutomatic" xml:space="preserve"><value>启动时按连接选择</value></data>
+  <data name="WorkstationSourceLocal" xml:space="preserve"><value>本地 SQLite</value></data>
+  <data name="WorkstationSourceActive" xml:space="preserve"><value>本次配置来源：{0}</value></data>
   <data name="DeviceDataPathNoDevices" xml:space="preserve"><value>当前没有需要配置数据路径的设备。</value></data>
   <data name="DeviceDataPathStale" xml:space="preserve"><value>设备列表或配置库已变更，请重新打开“设备配置”后重试。</value></data>
   <data name="DeviceDataPathAlreadyApplied" xml:space="preserve"><value>设备配置已使用此路径。</value></data>

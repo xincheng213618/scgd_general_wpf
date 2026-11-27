@@ -11,11 +11,13 @@ namespace ColorVision.Engine.Templates.POI;
 internal static class LocalPoiSearchRegionResolver
 {
     // Read persisted service point types directly: editor GraphicTypes has different values.
-    public static Int32Rect Load(string templateName, MySqlConnectedEndpoint? endpoint = null)
+    public static Int32Rect Load(string templateName, MySqlConnectedEndpoint? endpoint, PoiTemplateStorage? storage = null)
     {
         string name = templateName.Trim();
         if (name.Length == 0) throw new ArgumentException("搜索区域关注点模板名称不能为空。", nameof(templateName));
-        using SqlSugarClient db = endpoint?.CreateDbClient() ?? MySqlControl.CreateDbClient();
+        storage ??= PoiTemplateStorage.Default;
+        if (storage.IsLocal) return Resolve(LocalRegionDetails(storage.ReadLocalByName(name)), name);
+        using SqlSugarClient db = storage.OpenTemplateDatabase(endpoint);
         PoiMasterModel? master = db.Queryable<PoiMasterModel>()
             .Where(item => item.Name == name && item.TenantId == 0 && item.IsDelete == false)
             .OrderBy(item => item.Id).First();
@@ -24,6 +26,26 @@ internal static class LocalPoiSearchRegionResolver
             .Where(item => item.Pid == master.Id && item.IsDelete == false)
             .OrderBy(item => item.Id).ToList();
         return Resolve(details, name);
+    }
+
+    internal static PoiDetailModel[] LocalRegionDetails(PoiParam template)
+    {
+        var points = template.PoiPoints;
+        int type;
+        if (points.Count == 1 && points[0].PointType is PoiShape.Rect or PoiShape.LeftTopRect)
+            type = (int)points[0].PointType.ToAlgorithmPoiShape();
+        else if (points.Count == 4 && (points.All(point => point.PointType == PoiShape.Quadrilateral)
+            || points.Select((point, index) => point.PointType == PoiShape.Point && point.Name == $"PointInt{index + 1}").All(matches => matches)))
+            type = LocalLuminousAreaPoiTemplateUpdater.PolygonFourPointType;
+        else
+            throw Invalid(template.Name, "需要一个中心或左上角矩形，或按 LT、RT、RB、LB 保存的四边形角点或 PointInt1 至 PointInt4。");
+
+        // SQLite stores editor shapes and floating-point pixels. Convert at the legacy geometry boundary only.
+        return points.Select(point => new PoiDetailModel
+        {
+            Type = (ColorVision.ImageEditor.GraphicTypes)type, PixX = checked((int)point.PixX), PixY = checked((int)point.PixY),
+            PixWidth = checked((int)point.PixWidth), PixHeight = checked((int)point.PixHeight)
+        }).ToArray();
     }
 
     internal static Int32Rect Resolve(IReadOnlyList<PoiDetailModel> details, string templateName)

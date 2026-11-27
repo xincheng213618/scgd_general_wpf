@@ -66,6 +66,8 @@ public sealed class FlowRuntimeHost : IDisposable, IAsyncDisposable
         .Cast<STNode>()
         .ToArray();
 
+    public Base.CVBaseServerNode? FindRemoteServiceNode(string startNodeName) => _control.FindRemoteServiceNode(startNodeName);
+
     public async Task LoadAsync(
         byte[] canvasData,
         IEnumerable<MQTTServiceInfo>? services = null,

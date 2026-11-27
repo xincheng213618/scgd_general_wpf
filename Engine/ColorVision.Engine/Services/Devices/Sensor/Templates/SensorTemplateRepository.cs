@@ -13,8 +13,7 @@ internal static class SensorTemplateRepository
     internal static IReadOnlyList<LocalSensorCommand> ReadCommands(string category, int templateId, string? templateName)
     {
         SensorTemplateDictionaryService.RequireDefaultCategory(category);
-        if (!MySqlSetting.IsConnect) throw new InvalidOperationException("传感器模板需要连接 MySQL。");
-        using var db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = DbType.MySql, IsAutoCloseConnection = true });
+        using var db = WorkstationConfiguration.RequireEndpoint().CreateDbClient();
         var dictionary = SensorTemplateDictionaryService.GetDefaultDictionary(db)
             ?? throw new InvalidDataException(SensorTemplateDictionaryService.GetUnavailableMessage(category));
         var query = db.Queryable<ModMasterModel>().Where(value => value.Pid == dictionary.Id && !value.IsDelete && value.TenantId == 0);

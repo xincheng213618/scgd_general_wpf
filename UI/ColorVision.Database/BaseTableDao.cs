@@ -14,7 +14,7 @@ namespace ColorVision.Database
 {
     public class BaseTableDao<T> where T : class, IEntity, new()
     {
-
+        protected internal virtual SqlSugarClient OpenDatabase() => new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
     }
 
     public static class BaseTableDaoExtensions
@@ -95,7 +95,7 @@ namespace ColorVision.Database
             if (!EnsureConnected()) return new List<T>();
             return ExecuteSafe(() =>
             {
-                using var db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
+                using var db = dao.OpenDatabase();
                 var query = db.Queryable<T>();
                 if (limit > 0) query = query.Take(limit);
                 return query.ToList();
@@ -107,7 +107,7 @@ namespace ColorVision.Database
             if (!EnsureConnected()) return Task.FromResult(new List<T>());
             return ExecuteSafeAsync(async () =>
             {
-                using var db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
+                using var db = dao.OpenDatabase();
                 var query = db.Queryable<T>();
                 if (limit > 0) query = query.Take(limit);
                 token.ThrowIfCancellationRequested();
@@ -126,7 +126,7 @@ namespace ColorVision.Database
             if (!EnsureConnected()) return false;
             rows = ExecuteSafe<List<T>?>(() =>
             {
-                using var db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
+                using var db = dao.OpenDatabase();
                 return db.Queryable<T>().Where("pid = @pid", new { pid }).ToList();
             }, null);
             return rows != null;
@@ -138,7 +138,7 @@ namespace ColorVision.Database
             if (id == null || id <= 0) return default;
             return ExecuteSafe(() =>
             {
-                using var db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
+                using var db = dao.OpenDatabase();
                 return db.Queryable<T>().First(x => x.Id == id) ?? default;
             }, default(T));
         }
@@ -149,7 +149,7 @@ namespace ColorVision.Database
             if (id == null || id <= 0) return Task.FromResult<T?>(default);
             return ExecuteSafeAsync(async () =>
             {
-                using var db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
+                using var db = dao.OpenDatabase();
                 return await db.Queryable<T>().Where(x => x.Id == id).FirstAsync();
             }, default(T));
         }
@@ -159,7 +159,7 @@ namespace ColorVision.Database
             if (!EnsureConnected()) return new List<T>();
             return ExecuteSafe(() =>
             {
-                using var db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
+                using var db = dao.OpenDatabase();
                 return db.Queryable<T>().Where("batch_id = @batchid", new { batchid }).ToList();
             }, new List<T>());
         }
@@ -171,7 +171,7 @@ namespace ColorVision.Database
 
             return ExecuteSafe(() =>
             {
-                var db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
+                using var db = dao.OpenDatabase();
                 var query = db.Queryable<T>();
                 foreach (var kv in param)
                 {
@@ -207,7 +207,7 @@ namespace ColorVision.Database
 
             return ExecuteSafeAsync(async () =>
             {
-                var db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
+                using var db = dao.OpenDatabase();
                 var query = db.Queryable<T>();
                 foreach (var kv in param)
                 {
@@ -254,7 +254,7 @@ namespace ColorVision.Database
             if (!EnsureConnected()) return -1;
             return ExecuteSafe(() =>
             {
-                using var db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
+                using var db = dao.OpenDatabase();
                 if (item.Id <= 0)
                 {
                     var newId = DatabaseCommandTiming.Execute(db, "Insert." + typeof(T).Name, () => db.Insertable(item).ExecuteReturnIdentity());
@@ -273,7 +273,7 @@ namespace ColorVision.Database
             if (!EnsureConnected()) return -1;
             return await ExecuteSafeAsync(async () =>
             {
-                using var db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
+                using var db = dao.OpenDatabase();
                 if (item.Id <= 0)
                 {
                     var newId = await db.Insertable(item).ExecuteReturnIdentityAsync();
@@ -308,7 +308,7 @@ namespace ColorVision.Database
             if (id <= 0) return 0;
             return ExecuteSafe(() =>
             {
-                using var db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
+                using var db = dao.OpenDatabase();
                 return db.Deleteable<T>().Where(x => x.Id == id).ExecuteCommand();
             }, -1);
         }
@@ -319,7 +319,7 @@ namespace ColorVision.Database
             if (id <= 0) return Task.FromResult(0);
             return ExecuteSafeAsync(async () =>
             {
-                using var db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
+                using var db = dao.OpenDatabase();
                 return await db.Deleteable<T>().Where(x => x.Id == id).ExecuteCommandAsync();
             }, -1);
         }
@@ -329,7 +329,7 @@ namespace ColorVision.Database
             if (!EnsureConnected()) return -1;
             return ExecuteSafe(() =>
             {
-                using var db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
+                using var db = dao.OpenDatabase();
                 return db.Deleteable<T>().Where(predicate).ExecuteCommand();
             }, -1);
         }
@@ -339,7 +339,7 @@ namespace ColorVision.Database
             if (!EnsureConnected()) return Task.FromResult(-1);
             return ExecuteSafeAsync(async () =>
             {
-                using var db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
+                using var db = dao.OpenDatabase();
                 return await db.Deleteable<T>().Where(predicate).ExecuteCommandAsync();
             }, -1);
         }
@@ -349,7 +349,7 @@ namespace ColorVision.Database
             if (!EnsureConnected()) return false;
             return ExecuteSafe(() =>
             {
-                using var db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
+                using var db = dao.OpenDatabase();
                 return db.Queryable<T>().Any(predicate);
             }, false);
         }
@@ -359,7 +359,7 @@ namespace ColorVision.Database
             if (!EnsureConnected()) return Task.FromResult(false);
             return ExecuteSafeAsync(async () =>
             {
-                using var db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
+                using var db = dao.OpenDatabase();
                 return await db.Queryable<T>().AnyAsync(predicate);
             }, false);
         }
@@ -369,7 +369,7 @@ namespace ColorVision.Database
             if (!EnsureConnected()) return 0;
             return ExecuteSafe(() =>
             {
-                using var db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
+                using var db = dao.OpenDatabase();
                 var q = db.Queryable<T>();
                 if (predicate != null) q = q.Where(predicate);
                 return q.Count();
@@ -381,7 +381,7 @@ namespace ColorVision.Database
             if (!EnsureConnected()) return Task.FromResult(0);
             return ExecuteSafeAsync(async () =>
             {
-                using var db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
+                using var db = dao.OpenDatabase();
                 var q = db.Queryable<T>();
                 if (predicate != null) q = q.Where(predicate);
                 return await q.CountAsync();
@@ -395,7 +395,7 @@ namespace ColorVision.Database
             if (!EnsureConnected()) return (new List<T>(), 0);
             return ExecuteSafe(() =>
             {
-                using var db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
+                using var db = dao.OpenDatabase();
                 var q = db.Queryable<T>();
                 if (predicate != null) q = q.Where(predicate);
                 if (orderBy != null)
@@ -417,7 +417,7 @@ namespace ColorVision.Database
             if (!EnsureConnected()) return Task.FromResult((new List<T>(), 0));
             return ExecuteSafeAsync(async () =>
             {
-                using var db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
+                using var db = dao.OpenDatabase();
                 var q = db.Queryable<T>();
                 if (predicate != null) q = q.Where(predicate);
                 if (orderBy != null)
@@ -443,7 +443,7 @@ namespace ColorVision.Database
             if (items == null) return 0;
             return ExecuteSafe(() =>
             {
-                using var db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
+                using var db = dao.OpenDatabase();
 
                 return db.Insertable(items.ToList()).ExecuteCommand();
             }, -1);
@@ -456,7 +456,7 @@ namespace ColorVision.Database
             return ExecuteSafeAsync(async () =>
             {
                 token.ThrowIfCancellationRequested();
-                using var db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
+                using var db = dao.OpenDatabase();
                 return await db.Insertable(items.ToList()).ExecuteCommandAsync();
             }, -1);
         }
@@ -468,7 +468,7 @@ namespace ColorVision.Database
             if (!EnsureConnected()) return 1;
             return ExecuteSafe(() =>
             {
-                using var db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
+                using var db = dao.OpenDatabase();
                 if (!db.Queryable<T>().Any()) return 1;
                 var maxId = db.Queryable<T>().Max(it => it.Id);
                 return maxId > 0 ? maxId + 1 : 1;

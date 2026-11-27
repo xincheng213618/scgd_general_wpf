@@ -495,7 +495,7 @@ namespace ColorVision.Engine.Services
         {
             SysResourceModel = sysResourceModel;
             if (sysResourceModel.Id > 0)
-                ResultDatabaseEndpoint = MySqlControl.GetInstance().ConnectedEndpoint;
+                ResultDatabaseEndpoint = WorkstationConfiguration.ConnectedEndpoint;
             else if (SysResourceDao.IsLocalId(sysResourceModel.Id))
                 LocalConfigurationResourceDao = SysResourceDao.Instance;
             ContextMenu = new ContextMenu();

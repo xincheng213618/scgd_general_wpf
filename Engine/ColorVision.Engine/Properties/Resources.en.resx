@@ -7355,6 +7355,10 @@ Field: </value></data>
   </data>
   <data name="DeviceDataPathInvalid" xml:space="preserve"><value>Enter a valid full path, such as D:\CVTest.</value></data>
   <data name="DeviceDataPathConfigure" xml:space="preserve"><value>Configure Path</value></data>
+  <data name="WorkstationSourceNext" xml:space="preserve"><value>Workstation configuration on next start</value></data>
+  <data name="WorkstationSourceAutomatic" xml:space="preserve"><value>Use connection at startup</value></data>
+  <data name="WorkstationSourceLocal" xml:space="preserve"><value>Local SQLite</value></data>
+  <data name="WorkstationSourceActive" xml:space="preserve"><value>Current source: {0}</value></data>
   <data name="DeviceDataPathNoDevices" xml:space="preserve"><value>No devices currently need a data path.</value></data>
   <data name="DeviceDataPathStale" xml:space="preserve"><value>The device list or configuration database has changed. Reopen Device Configuration and try again.</value></data>
   <data name="DeviceDataPathAlreadyApplied" xml:space="preserve"><value>Device configurations already use this path.</value></data>

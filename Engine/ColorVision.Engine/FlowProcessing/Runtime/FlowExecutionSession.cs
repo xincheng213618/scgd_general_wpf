@@ -1151,27 +1151,6 @@ namespace ColorVision.Engine.FlowProcessing
             }
             FlowParam selectedFlowParam =
                 executionSnapshot.CreateFlowParam();
-            bool requiresServices = View.STNodeEditorMain.Nodes
-                .OfType<CVBaseServerNode>()
-                .Any(node => node.RequiresRemoteService);
-            if (requiresServices && !MqttRCService.GetInstance().IsConnect)
-            {
-                if (reportStartupFailures)
-                    throw new InvalidOperationException(ColorVision.Engine.Properties.Resources.RegistryCenterNotConnected);
-                MessageBox.Show(Application.Current.GetActiveWindow(),ColorVision.Engine.Properties.Resources.RegistryCenterNotConnected);
-                return default;
-            }
-
-            if (requiresServices && MqttRCService.GetInstance().ServiceTokens.Count == 0)
-            {
-                MqttRCService.GetInstance().QueryServices();
-                View.ShowExecutionSummary(ColorVision.Engine.Properties.Resources.TokenEmpty_RefreshingToken_PleaseRetry);
-                if (reportStartupFailures)
-                    throw new InvalidOperationException(ColorVision.Engine.Properties.Resources.TokenEmpty_RefreshingToken_PleaseRetry);
-                MessageBox.Show(Application.Current.GetActiveWindow(), ColorVision.Engine.Properties.Resources.TokenEmpty_RefreshingToken_PleaseRetry);
-                return default;
-            }
-
             RefreshStartNodeSelection(SelectedStartNodeName);
             string? startNodeName = SelectedStartNodeName;
             if (string.IsNullOrWhiteSpace(startNodeName))
@@ -1180,6 +1159,27 @@ namespace ColorVision.Engine.FlowProcessing
                     throw new InvalidOperationException(ColorVision.Engine.Properties.Resources.WorkflowStartNodeNotFound_RunFailed);
                 MessageBox.Show(WindowHelpers.GetActiveWindow(), ColorVision.Engine.Properties.Resources.WorkflowStartNodeNotFound_RunFailed, "ColorVision");
                 return default;
+            }
+
+            if (View.FlowEngineControl.FindRemoteServiceNode(startNodeName) is { } remote)
+            {
+                var registry = MqttRCService.GetInstance();
+                string? failure = null;
+                if (!registry.IsConnect)
+                    failure = ColorVision.Engine.Properties.Resources.RegistryCenterNotConnected;
+                else if (registry.ServiceTokens.Count == 0)
+                {
+                    registry.QueryServices();
+                    failure = ColorVision.Engine.Properties.Resources.TokenEmpty_RefreshingToken_PleaseRetry;
+                }
+                if (failure != null)
+                {
+                    string message = $"{failure} {FlowControl.DescribeRemoteDependency(startNodeName, remote)}";
+                    View.ShowExecutionSummary(message);
+                    if (reportStartupFailures) throw new InvalidOperationException(message);
+                    MessageBox.Show(Application.Current.GetActiveWindow(), message);
+                    return default;
+                }
             }
 
             string sn = ColorVision.Common.Utilities.Tool.SanitizeFileName(requestedSerialNumber ?? CreateFlowSerialNumber());

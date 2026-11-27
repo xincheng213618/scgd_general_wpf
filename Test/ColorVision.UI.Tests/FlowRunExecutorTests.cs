@@ -242,6 +242,14 @@ public class FlowRunExecutorTests
             int attempts = 0;
             using var fixture = new FlowFixture(() => ++attempts == 1 ? throw lookupError : []);
             TestStartNode start = fixture.AddConnectedStart("Selected");
+            var remote = new HeadlessObservedServerNode();
+            remote.Create();
+            fixture.Editor.Nodes.Add(remote);
+            Task<FlowRunExecutionResult> local = fixture.Executor.RunAsync("Selected", "SN-Local", executionTimeout: null);
+            start.Complete("SN-Local", StatusTypeEnum.Completed);
+            Assert.Equal(FlowRunTermination.EngineCompleted, local.GetAwaiter().GetResult().Termination);
+            Assert.Equal(0, attempts);
+            Assert.Equal(ConnectionStatus.Connected, start.StartOutput.ConnectOption(remote.GetAllInputOptions()[0]));
 
             Assert.Same(lookupError, Assert.Throws<InvalidOperationException>(() => fixture.Executor.RunAsync(
                 "Selected", "SN-Unavailable", executionTimeout: null).GetAwaiter().GetResult()));

@@ -135,7 +135,7 @@ namespace ColorVision.Engine.Services.Devices.Sensor.Templates
             {
                 if (Param.Id > 0 && sensorCommand.Model.Id > 0)
                 {
-                    using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
+                    using var Db = WorkstationConfiguration.RequireEndpoint().CreateDbClient();
                     Db.Deleteable<ModDetailModel>().Where(x => x.Id == sensorCommand.Model.Id && x.Pid == Param.Id).ExecuteCommand();
                 }
                 Param.ModDetailModels.Remove(sensorCommand.Model);

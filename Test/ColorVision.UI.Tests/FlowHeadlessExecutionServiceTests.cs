@@ -247,6 +247,30 @@ public sealed class FlowHeadlessExecutionServiceTests
     }
 
     [Fact]
+    public void LocalAndRemoteStartsInTheSameSavedCanvasHaveIndependentSnapshotRequirements()
+    {
+        RunInSta(async () =>
+        {
+            using var editor = new STNodeEditor();
+            using var local = new MQTTStartNode { NodeName = "Local", Server = string.Empty };
+            var other = new HeadlessTestStartNode { NodeName = "Remote" };
+            var end = new CVEndNode();
+            var remote = new HeadlessObservedServerNode();
+            foreach (var node in new STNode[] { local, other, end, remote }) { node.Create(); editor.Nodes.Add(node); }
+            Assert.Equal(ConnectionStatus.Connected, local.m_op_start.ConnectOption(end.m_in_start));
+            Assert.Equal(ConnectionStatus.Connected, other.m_op_start.ConnectOption(remote.GetAllInputOptions()[0]));
+            byte[] canvas = editor.GetCanvasData();
+
+            var localRun = await FlowHeadlessExecutionService.Shared.RunAsync(new(canvas, "Local", "local-no-registry", executionTimeout: TimeSpan.FromSeconds(5)));
+            Assert.True(localRun.Succeeded, localRun.Data.Message);
+            var remoteRun = await FlowHeadlessExecutionService.Shared.RunAsync(new(canvas, "Remote", "remote-no-registry"));
+            Assert.False(remoteRun.Started);
+            Assert.Contains("no MQTT service snapshot", remoteRun.Data.Message);
+            Assert.Contains("Remote → Observed server (Service=TEST/Observed, DeviceCode=DEV)", remoteRun.Data.Message);
+        });
+    }
+
+    [Fact]
     public void LocalScriptRunsWithDisconnectedMqttStartAndNoServiceSnapshot()
     {
         RunInSta(async () =>

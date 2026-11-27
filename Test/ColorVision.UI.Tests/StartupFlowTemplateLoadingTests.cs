@@ -1,4 +1,6 @@
 using ColorVision.Database;
+using ColorVision.Engine;
+using SqlSugar;
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.Flow;
 using System.Collections.ObjectModel;
@@ -37,7 +39,13 @@ public sealed class StartupFlowTemplateLoadingTests
                 {
                     entered.TrySetResult();
                     if (!release.Wait(TimeSpan.FromSeconds(10))) throw new TimeoutException("Test storage was not released.");
-                    throw new IOException("Synthetic unavailable database; use empty local storage.");
+                    var db = new SqlSugarClient(new ConnectionConfig
+                    {
+                        ConnectionString = $"Data Source={Path.Combine(root, "server.db")};Pooling=False",
+                        DbType = DbType.Sqlite, IsAutoCloseConnection = true
+                    });
+                    db.CodeFirst.InitTables<ModMasterModel>();
+                    return db;
                 });
                 return template.LoadAsync();
             });

@@ -40,8 +40,8 @@ related: ["platform.architecture", "platform.service-host", "plugins.windows-ser
 | 相机采集 | 本地会话、采集、预览、流程内存帧、后端占用保护已存在 | 本地相机仍通过 `cvColorVision` 调用 `cvCamera.dll`；部分结果落库仍依赖 MySQL；多进程设备占用需现场验收 | `LocalCameraNative.cs`、`DeviceCamera.Local.cs`、[相机契约](../01-user-guide/devices/camera.md) |
 | 光谱采集 | 本地窗口、共享会话、流程适配、校零和自动积分已有实现 | 仍使用原生光谱接口；外部快门自动控制、ND/端口操作及 EQE 同步频率本地支持不完整；离线历史仍不完整 | `LocalSpectrumSession.cs`、[光谱契约](../04-api-reference/engine-components/spectrum-device.md) |
 | 校正 | 本地校正采用自有 `opencv_helper`，文件/内存处理及用户校正已有入口 | 部分模板资源加载及流程结果保存仍依赖 MySQL；需逐项确认文件格式、数值和可追溯性 | `LocalCalibrationCacheManager.cs`、[校正契约](../01-user-guide/devices/calibration.md) |
-| 流程编排 | 自有 Flow 引擎、执行会话、诊断、本地模板已有实现；纯本地图可跳过注册中心要求 | 本地流程定义不保证每个节点离线；服务节点仍依赖 RC/token；部分本地算法和客户后处理依赖数据库 | `FlowExecutionSession.cs`、[执行契约](../01-user-guide/workflow/execution.md) |
-| 配置与模板 | 设备、许可证及部分模板已支持本地 SQLite；本地对象重连后仍保存到本地 | 当前新查询以连接状态选本地/MySQL；本地流程导入和服务 `.cvflow` 关联模板迁移的能力不同 | `LocalConfigurationDao.cs`、[流程模板](../04-api-reference/engine-components/template-flow-chain.md) |
+| 流程编排 | 自有 Flow 引擎、执行会话、诊断、本地模板已有实现；仅通向本地节点的起点可跳过注册中心检查 | 本地流程定义不保证每个节点离线；服务节点仍依赖 RC/token；部分本地算法和客户后处理依赖数据库 | `FlowExecutionSession.cs`、[执行契约](../01-user-guide/workflow/execution.md) |
+| 配置与模板 | 设备、许可证及部分模板已支持本地 SQLite；本地对象重连后仍保存到本地 | 设备目录、Flow 和 POI 按工位来源选择；仅支持 MySQL 的模板、服务 `.cvflow` 关联模板迁移仍有单独依赖 | `LocalConfigurationDao.cs`、[流程模板](../04-api-reference/engine-components/template-flow-chain.md) |
 | 算法 | 自有统一 Runner/provider、Native 算法、Engine 本地节点及直接 native 工具已形成基础 | 同时存在统一算法、直接 native 工具及 Engine 模板/MQTT 三条链；要按实际算法和节点确认执行、参数及结果依赖 | [算法入口](../04-api-reference/algorithms/README.md) |
 | 结果与归档 | 客户端已负责很多结果展示、文件保存、数据库清理及流程后处理 | 离线采集不自动形成可重开的业务历史；客户端归档浏览/配置已移除，旧服务的批次归档职责尚无客户端替代；清理、归档与备份职责不能混同 | `LocalCameraResultService.cs`、`LocalSpectrumResultService.cs`、`MySqlResultCleanupProvider.cs` |
 | 其余设备 | PG、SMU、Motor、Sensor、LightingController 等仍有 MQTT 适配；部分底层绑定已存在 | 不能由“有 DLL 接口”推定主程序已有完整本地控制；设备型号、联动、保护动作和现场需求需逐项核实 | `Engine/ColorVision.Engine/Services/Devices/`、`Engine/cvColorVision/` |
@@ -52,11 +52,11 @@ related: ["platform.architecture", "platform.service-host", "plugins.windows-ser
 
 ### 配置来源应成为明确选择
 
-`LocalConfigurationDao.UseLocal` 当前取决于是否连接 MySQL。`ServiceManager` 订阅连接变化并执行 `LoadServices()`，重载会释放旧设备并重新装配。这套实现提供了离线基础，但连接变化仍可能影响设备集合；不能将它直接视为稳定的生产配置管理。
+工位已能在启动时固定设备目录、流程和 POI 的本地或 MySQL 来源。本地工位的设备会话和模板不会因数据库连接变化而重载。每轮测量涉及的校正文件版本与仅支持 MySQL 的专用参数，仍需按业务链确认。
 
 建议引入显式运行配置：固定设备身份、配置来源、模板版本、校正资源和执行后端。一轮运行取得不可变快照，网络状态只改变可用性；切换配置在空闲状态明确执行。现有“本地对象重连仍保存本地”的规则继续保留。
 
-优先增加显式来源选择和切换门禁，不先搬迁全部表。设备身份需要独立于本地负数 ID 和旧 MySQL 正数 ID；由映射记录保留旧 ID，不能把其中一个数据库主键直接当成跨系统唯一身份。
+来源选择已在管理员服务配置中提供，重启 ColorVision 生效。设备身份需要独立于本地负数 ID 和旧 MySQL 正数 ID；由映射记录保留旧 ID，不能把其中一个数据库主键直接当成跨系统唯一身份。
 
 ### 本地结果需要形成完整历史
 

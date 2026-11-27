@@ -19,7 +19,7 @@ internal sealed class LicenseCatalogSource
         PhyLicenseDao dao = PhyLicenseDao.Instance;
         if (dao.UseLocal) return new LicenseCatalogSource(dao);
 
-        MySqlConnectedEndpoint? endpoint = MySqlControl.GetInstance().ConnectedEndpoint;
+        MySqlConnectedEndpoint? endpoint = WorkstationConfiguration.ConnectedEndpoint;
         if (endpoint is not { IsCurrent: true }) throw SourceChanged();
         return new LicenseCatalogSource(endpoint);
     }

@@ -39,12 +39,8 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
                 return new CalibrationTemplateCloneResult(0, Array.Empty<string>(), Array.Empty<string>());
             List<int> requestedOrder = sourceTemplateIds.ToList();
 
-            using var db = new SqlSugarClient(new ConnectionConfig
-            {
-                ConnectionString = MySqlControl.GetConnectionString(),
-                DbType = SqlSugar.DbType.MySql,
-                IsAutoCloseConnection = true
-            });
+            var endpoint = WorkstationConfiguration.RequireEndpoint();
+            using var db = endpoint.CreateDbClient();
 
             List<ModMasterModel> sourceMasters = db.Queryable<ModMasterModel>()
                 .Where(model => model.Pid == CalibrationTemplateDictionaryId
@@ -167,6 +163,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
                     clonedCount++;
                 }
 
+                if (!endpoint.IsCurrent) throw new InvalidOperationException("原配置数据库连接已失效，请重新打开相机配置。");
                 db.Ado.CommitTran();
             }
             catch

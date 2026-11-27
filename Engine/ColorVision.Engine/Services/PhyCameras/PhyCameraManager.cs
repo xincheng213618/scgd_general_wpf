@@ -53,7 +53,11 @@ namespace ColorVision.Engine.Services.PhyCameras
             OpenDeviceManagerCommand = new RelayCommand(a => OpenDeviceManager());
             OpenLicenseManagerCommand = new RelayCommand(a => OpenLicenseManager());
 
-            MySqlControl.GetInstance().MySqlConnectChanged += (s, e) => Application.Current.Dispatcher.Invoke(() => LoadPhyCamera());
+            MySqlControl.GetInstance().MySqlConnectChanged += (_, _) =>
+            {
+                if (!loadedDirectory && WorkstationConfiguration.ConnectedEndpoint != null)
+                    Application.Current.Dispatcher.Invoke(LoadPhyCamera);
+            };
             LoadPhyCamera();
             PhyCameras.CollectionChanged += (s, e) =>
             {
@@ -567,11 +571,31 @@ namespace ColorVision.Engine.Services.PhyCameras
 
         public ObservableCollection<PhyCamera> PhyCameras { get; set; } = new ObservableCollection<PhyCamera>();
 
+        private bool loadedDirectory;
+
         public void LoadPhyCamera()
         {
+            var resources = SysResourceDao.Instance;
+            List<SysResourceModel> list;
+            if (resources.UseLocal)
+                list = resources.GetAllType((int)ServiceTypes.PhyCamera);
+            else if (WorkstationConfiguration.ConnectedEndpoint is { } endpoint)
+            {
+                try
+                {
+                    using var db = endpoint.CreateDbClient();
+                    list = db.Queryable<SysResourceModel>().Where(row => row.Type == (int)ServiceTypes.PhyCamera && !row.IsDelete).ToList();
+                    if (!endpoint.IsCurrent) return;
+                }
+                catch (Exception error)
+                {
+                    log4net.LogManager.GetLogger(typeof(PhyCameraManager)).Warn("Could not load the workstation physical camera directory.", error);
+                    return;
+                }
+            }
+            else return;
             var phyCameraBackup = PhyCameras.ToDictionary(pc => pc.Id, pc => pc);
 
-            var list = SysResourceDao.Instance.GetAllType((int)ServiceTypes.PhyCamera);
             foreach (var stale in PhyCameras.Where(camera => !list.Any(row => row.Id == camera.Id && !string.IsNullOrWhiteSpace(row.Value))).ToArray()) PhyCameras.Remove(stale);
             foreach (var item in list)
             {
@@ -597,6 +621,7 @@ namespace ColorVision.Engine.Services.PhyCameras
                 }
             }
 
+            loadedDirectory = true;
             Loaded?.Invoke(this, EventArgs.Empty);
             RefreshCameraSummary();
         }

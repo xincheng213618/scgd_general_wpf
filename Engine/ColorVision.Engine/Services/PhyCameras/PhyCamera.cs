@@ -427,6 +427,12 @@ namespace ColorVision.Engine.Services.PhyCameras
         {
             if (MessageBox.Show(Application.Current.GetActiveWindow(), Properties.Resources.ClearDatabaseItems, Properties.Resources.Reset, MessageBoxButton.YesNoCancel) == MessageBoxResult.Yes)
             {
+                var endpoint = SysResourceDao.IsLocalId(Id) ? null : WorkstationConfiguration.ConnectedEndpoint;
+                if (!SysResourceDao.IsLocalId(Id) && endpoint == null)
+                {
+                    MessageBox.Show(Application.Current.GetActiveWindow(), EngineLocalization.Get("原设备或配置库已失效，请关闭窗口后重新选择设备。"), Properties.Resources.Reset);
+                    return;
+                }
                 CalibrationParams.Clear();
                 this.VisualChildren.Clear();
                 Task.Run(() =>
@@ -436,7 +442,8 @@ namespace ColorVision.Engine.Services.PhyCameras
                         foreach (var child in SysResourceDao.Instance.GetAllByPid(Id)) SysResourceDao.Instance.DeleteById(child.Id);
                         return;
                     }
-                    using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, });
+                    if (endpoint?.IsCurrent != true) return;
+                    using var Db = endpoint.CreateDbClient();
                     Db.Deleteable<SysResourceModel>().Where(x => x.Pid == SysResourceModel.Id).ExecuteCommand();
                     var ModMasterModels = Db.Queryable<ModMasterModel>().Where(x => x.ResourceId == Id).ToList();
                     foreach (var item in ModMasterModels)
@@ -453,6 +460,12 @@ namespace ColorVision.Engine.Services.PhyCameras
             DemandDeleteAccess();
             if (MessageBox1.Show(Application.Current.GetActiveWindow(), Properties.Resources.ConfirmDelete, Properties.Resources.Delete, MessageBoxButton.OKCancel) == MessageBoxResult.Cancel) return;
             DemandDeleteAccess();
+            var endpoint = SysResourceDao.IsLocalId(Id) ? null : WorkstationConfiguration.ConnectedEndpoint;
+            if (!SysResourceDao.IsLocalId(Id) && endpoint == null)
+            {
+                MessageBox.Show(Application.Current.GetActiveWindow(), EngineLocalization.Get("原资源或配置库已变更，请重新选择后再删除。"), Properties.Resources.Delete);
+                return;
+            }
             CalibrationParams.Clear();
             this.VisualChildren.Clear();
 
@@ -464,7 +477,7 @@ namespace ColorVision.Engine.Services.PhyCameras
                 PhyCameraManager.GetInstance().PhyCameras.Remove(this);
                 return;
             }
-            using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, });
+            using var Db = endpoint!.CreateDbClient();
             Db.Deleteable<SysResourceModel>().Where(x => x.Pid == SysResourceModel.Id).ExecuteCommand();
 
             var ModMasterModels = Db.Queryable<ModMasterModel>().Where(x => x.ResourceId == Id).ToList();
@@ -1360,7 +1373,7 @@ namespace ColorVision.Engine.Services.PhyCameras
                             int resourceType = (int)item.CalibrationType.ToResouceType();
                             string remark = item.ToJsonN(new JsonSerializerSettings());
 
-                            using var db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
+                            using var db = WorkstationConfiguration.RequireEndpoint().CreateDbClient();
                             List<SysResourceModel> candidates = db.Queryable<SysResourceModel>()
                                 .Where(a => a.Pid == SysResourceModel.Id
                                             && a.Type == resourceType

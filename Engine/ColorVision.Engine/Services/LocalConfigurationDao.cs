@@ -15,17 +15,18 @@ namespace ColorVision.Engine.Services
     {
         private readonly string kind;
         protected readonly LocalTemplateStore LocalStore;
-        private readonly Func<bool> isConnected;
+        private readonly Func<bool>? isConnected;
         private static readonly JsonSerializerSettings JsonSettings = new() { ContractResolver = new ConfigurationContractResolver() };
 
         protected LocalConfigurationDao(string kind, LocalTemplateStore? store = null, Func<bool>? isConnected = null)
         {
             this.kind = kind;
             LocalStore = store ?? new LocalTemplateStore(LocalTemplateStore.DefaultDatabasePath);
-            this.isConnected = isConnected ?? (() => MySqlSetting.IsConnect);
+            this.isConnected = isConnected;
         }
 
-        public bool UseLocal => !isConnected();
+        public bool UseLocal => isConnected == null ? WorkstationConfiguration.UseLocal : !isConnected();
+        protected override SqlSugarClient OpenDatabase() => WorkstationConfiguration.RequireEndpoint().CreateDbClient();
         public static bool IsLocalId(int id) => id <= -2;
 
         public List<T> GetAll(int limit = -1) => UseLocal ? GetLocal(limit) : BaseTableDaoExtensions.GetAll(this, limit);

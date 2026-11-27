@@ -64,7 +64,7 @@ namespace ColorVision.Engine.Services.Terminal
         internal TerminalService(SysResourceModel sysResourceModel, MQTTServiceTerminalBase? transport)
         {
             SysResourceModel = sysResourceModel;
-            if (sysResourceModel.Id > 0) ResourceDatabaseEndpoint = MySqlControl.GetInstance().ConnectedEndpoint;
+            if (sysResourceModel.Id > 0) ResourceDatabaseEndpoint = WorkstationConfiguration.ConnectedEndpoint;
             else if (SysResourceDao.IsLocalId(sysResourceModel.Id)) LocalConfigurationResourceDao = SysResourceDao.Instance;
 
 

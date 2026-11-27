@@ -1135,7 +1135,7 @@ namespace ColorVision.Engine.Templates.POI
             {
                 await Task.Run(() => storage.Save(snapshot));
                 PoiParam.Id = snapshot.Id;
-                PoiParam.Storage = storage;
+                PoiParam.Storage = snapshot.Storage;
                 PoiParam.DetailsLoaded = true;
             }
             finally

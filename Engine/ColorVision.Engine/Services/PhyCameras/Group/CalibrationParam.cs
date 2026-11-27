@@ -229,10 +229,10 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
     {
         public static void LoadResourceParams<T>(ObservableCollection<TemplateModel<T>> ResourceParams, int resourceId) where T : ParamModBase, new()
         {
-            if (!MySqlSetting.IsConnect)
+            if (SysResourceDao.IsLocalId(resourceId) || WorkstationConfiguration.ConnectedEndpoint is not { } endpoint)
                 return;
             var existingParams = ResourceParams.ToDictionary(rp => rp.Id, rp => rp);
-            using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
+            using var Db = endpoint.CreateDbClient();
 
             List<ModMasterModel> smus = Db.Queryable<ModMasterModel>().Where(x=>x.Pid ==2).Where(x => x.ResourceId == resourceId).Where(x=>x.TenantId == 0).Where(x => x.IsDelete == false).ToList();
             foreach (var dbModel in smus)

@@ -31,8 +31,8 @@ public sealed class LocalFindLuminousAreaNodeTests
     {
         using var files = new FusionFixture();
         MySqlConnectedEndpoint? current = null;
-        var original = new MySqlConnectedEndpoint(candidate => ReferenceEquals(candidate, current), () => Open("original.db"));
-        var replacement = new MySqlConnectedEndpoint(candidate => ReferenceEquals(candidate, current), () => Open("replacement.db"));
+        var original = new MySqlConnectedEndpoint(candidate => ReferenceEquals(candidate, current), () => Open("original.db"), new("TEST", 3306, "original"));
+        var replacement = new MySqlConnectedEndpoint(candidate => ReferenceEquals(candidate, current), () => Open("replacement.db"), new("TEST", 3306, "replacement"));
         current = original;
         Init(original);
         Init(replacement);
@@ -42,6 +42,7 @@ public sealed class LocalFindLuminousAreaNodeTests
         using (var second = replacement.CreateDbClient())
             Assert.Equal(batch.Id, second.Insertable(new MeasureBatchModel { Code = action.SerialNumber }).ExecuteReturnIdentity());
 
+        var templates = LocalPoiSearchRegionTests.ServiceTemplates(files.Directory, original);
         current = replacement;
         LocalLuminousAreaCorner[] corners =
         [
@@ -51,10 +52,10 @@ public sealed class LocalFindLuminousAreaNodeTests
 
         try
         {
-            var services = LocalFindLuminousAreaNodeServices.Instance;
+            var services = new LocalFindLuminousAreaNodeServices(templates);
             Assert.Equal(LocalLuminousAreaPoiTemplateShape.LeftTopRectangle, services.UpdatePoiTemplate("same-template", corners, original));
-            Assert.Equal(new Int32Rect(4, 5, 21, 16), LocalPoiSearchRegionResolver.Load("same-template", original));
-            Assert.Equal(new Int32Rect(30, 30, 3, 4), LocalPoiSearchRegionResolver.Load("same-template", replacement));
+            Assert.Equal(new Int32Rect(4, 5, 21, 16), LocalPoiSearchRegionResolver.Load("same-template", original, templates));
+            Assert.Equal(new Int32Rect(30, 30, 3, 4), LocalPoiSearchRegionResolver.Load("same-template", replacement, LocalPoiSearchRegionTests.ServiceTemplates(files.Directory, replacement)));
 
             int masterId = services.Persist(new LocalFindLuminousAreaPersistenceRequest
             {
@@ -85,20 +86,67 @@ public sealed class LocalFindLuminousAreaNodeTests
             db.CodeFirst.InitTables<MeasureBatchModel>();
             db.CodeFirst.InitTables<AlgResultMasterModel>();
             db.CodeFirst.InitTables<AlgResultLightAreaModel>();
-            db.CodeFirst.InitTables<PoiMasterModel>();
-            db.CodeFirst.InitTables<PoiDetailModel>();
-            int id = db.Insertable(new PoiMasterModel
-            {
-                Name = "same-template", Type = 0, Width = 64, Height = 48, CfgJson = "{}", Remark = string.Empty,
-                LeftTopX = 0, LeftTopY = 0, RightTopX = 63, RightTopY = 0,
-                RightBottomX = 63, RightBottomY = 47, LeftBottomX = 0, LeftBottomY = 47,
-            }).ExecuteReturnIdentity();
-            db.Insertable(new PoiDetailModel
-            {
-                Pid = id, Name = "region", Type = (GraphicTypes)LocalLuminousAreaPoiTemplateUpdater.LeftTopRectPointType,
-                PixX = 30, PixY = 30, PixWidth = 3, PixHeight = 4,
-            }).ExecuteCommand();
+            SeedNamedPoi(db, 30);
         }
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void NamedPoiWithoutAMatchingBatchUsesOnlyTheAvailableWorkstationDatabase(bool hasForeignBatch)
+    {
+        using var files = new FusionFixture();
+        MySqlConnectedEndpoint? current = null;
+        MySqlConnectedEndpoint Endpoint(string name) => new(candidate => ReferenceEquals(candidate, current), () =>
+            new SqlSugarClient(new ConnectionConfig
+            {
+                DbType = DbType.Sqlite, ConnectionString = $"Data Source={Path.Combine(files.Directory, name)};Pooling=False",
+                InitKeyType = InitKeyType.Attribute, IsAutoCloseConnection = true,
+            }), new("TEST", 3306, name));
+        var config = Endpoint("config.db");
+        var other = Endpoint("other.db");
+        current = config;
+        var templates = LocalPoiSearchRegionTests.ServiceTemplates(files.Directory, config);
+        var services = new LocalFindLuminousAreaNodeServices(templates);
+        using var configDb = config.CreateDbClient();
+        using var otherDb = other.CreateDbClient();
+        SeedNamedPoi(configDb, 15);
+        SeedNamedPoi(otherDb, 30);
+        var batch = hasForeignBatch ? other : null;
+        LocalLuminousAreaCorner[] corners =
+        [
+            new() { X = 5, Y = 6 }, new() { X = 25, Y = 6 },
+            new() { X = 25, Y = 16 }, new() { X = 5, Y = 16 },
+        ];
+        Int32Rect Read() => LocalPoiSearchRegionResolver.Load("same-template", batch, templates);
+        void Write() => services.UpdatePoiTemplate("same-template", corners, batch);
+
+        Assert.Equal(new Int32Rect(15, 30, 3, 4), Read());
+        Write();
+        Assert.Equal(new Int32Rect(5, 6, 21, 11), Read());
+        Assert.Equal(5, configDb.Queryable<PoiDetailModel>().Single().PixX);
+
+        current = other;
+        Assert.Contains("原 MySQL 连接不可用", Assert.Throws<InvalidOperationException>(() => Read()).Message);
+        Assert.Contains("原 MySQL 连接不可用", Assert.Throws<InvalidOperationException>(Write).Message);
+        Assert.Equal(30, otherDb.Queryable<PoiDetailModel>().Single().PixX);
+    }
+
+    private static void SeedNamedPoi(SqlSugarClient db, int x)
+    {
+        db.CodeFirst.InitTables<PoiMasterModel>();
+        db.CodeFirst.InitTables<PoiDetailModel>();
+        int id = db.Insertable(new PoiMasterModel
+        {
+            Name = "same-template", Type = 0, Width = 64, Height = 48, CfgJson = "{}", Remark = string.Empty,
+            LeftTopX = 0, LeftTopY = 0, RightTopX = 63, RightTopY = 0,
+            RightBottomX = 63, RightBottomY = 47, LeftBottomX = 0, LeftBottomY = 47,
+        }).ExecuteReturnIdentity();
+        db.Insertable(new PoiDetailModel
+        {
+            Pid = id, Name = "region", Type = (GraphicTypes)LocalLuminousAreaPoiTemplateUpdater.LeftTopRectPointType,
+            PixX = x, PixY = 30, PixWidth = 3, PixHeight = 4,
+        }).ExecuteCommand();
     }
 
     [Fact]

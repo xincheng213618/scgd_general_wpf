@@ -13,7 +13,7 @@ namespace ColorVision.Engine.Services.PhySpectrums
     {
         private static SqlSugarClient OpenDatabase(MySqlConnectedEndpoint? endpoint)
         {
-            endpoint ??= MySqlControl.GetInstance().ConnectedEndpoint;
+            endpoint ??= WorkstationConfiguration.ConnectedEndpoint;
             if (endpoint == null)
                 throw new InvalidOperationException(Properties.Resources.SpectrumDatabaseRequired);
             if (!endpoint.IsCurrent)

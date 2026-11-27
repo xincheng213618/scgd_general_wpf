@@ -36,12 +36,12 @@ internal interface ILocalRgbCrossNodeServices
     void Publish(string serialNumber, string nodeId, int zIndex, int masterId, MySqlConnectedEndpoint? endpoint);
 }
 
-internal sealed class LocalRgbCrossNodeServices : ILocalRgbCrossNodeServices
+internal sealed class LocalRgbCrossNodeServices(PoiTemplateStorage? templateStorage = null) : ILocalRgbCrossNodeServices
 {
     public string ResolveResultDirectory(string configuredDirectory, MySqlConnectedEndpoint? endpoint) =>
         LocalAlgorithmResultDirectory.Resolve(configuredDirectory, RequireEndpoint(endpoint));
     public Int32Rect LoadSearchRegionTemplate(string name, MySqlConnectedEndpoint? endpoint) =>
-        LocalPoiSearchRegionResolver.Load(name, RequireEndpoint(endpoint));
+        LocalPoiSearchRegionResolver.Load(name, endpoint, templateStorage);
     public LocalFlowFrame LoadFrame(string path) => LocalFrameFileService.Load(path);
     public MeasureResultImgModel? GetImageResult(int id, MySqlConnectedEndpoint? endpoint) =>
         MeasureImgResultDao.ReadResult(RequireEndpoint(endpoint), id);

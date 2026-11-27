@@ -129,7 +129,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Licenses
             int[] remoteIds = System.Linq.Enumerable.ToArray(System.Linq.Enumerable.Where(licenseIds, id => id > 0));
             if (remoteIds.Length == 0) return DeleteExpiredLocal(licenseIds, cutoff);
 
-            MySqlConnectedEndpoint? endpoint = MySqlControl.GetInstance().ConnectedEndpoint;
+            MySqlConnectedEndpoint? endpoint = WorkstationConfiguration.ConnectedEndpoint;
             if (UseLocal || endpoint is not { IsCurrent: true })
                 throw new InvalidOperationException("MySQL 未连接，不能删除服务器许可证。");
 
@@ -182,7 +182,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Licenses
         public LicenseModel? GetByMAC(string Code, bool? local = null)
         {
            if (local ?? UseLocal) return System.Linq.Enumerable.FirstOrDefault(GetLocal(), model => string.Equals(model.MacAddress, Code, StringComparison.OrdinalIgnoreCase));
-           using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
+           using var Db = OpenDatabase();
            return GetByMAC(Db, Code);
         }
 

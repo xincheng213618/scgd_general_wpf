@@ -108,13 +108,9 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
         void Publish(LocalFindLuminousAreaPublishRequest request);
     }
 
-    internal sealed class LocalFindLuminousAreaNodeServices : ILocalFindLuminousAreaNodeServices
+    internal sealed class LocalFindLuminousAreaNodeServices(PoiTemplateStorage? templateStorage = null) : ILocalFindLuminousAreaNodeServices
     {
         public static LocalFindLuminousAreaNodeServices Instance { get; } = new();
-
-        private LocalFindLuminousAreaNodeServices()
-        {
-        }
 
         public LocalFlowFrame LoadFrame(string filePath) => LocalFrameFileService.Load(filePath);
 
@@ -131,7 +127,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             LocalLuminousAreaPoiTemplateUpdater.Update(
                 templateName,
                 corners.Select(corner => new LuminousAreaPoint(corner.X, corner.Y)).ToArray(),
-                RequireEndpoint(endpoint));
+                endpoint, templateStorage);
 
         public int Persist(LocalFindLuminousAreaPersistenceRequest request)
         {

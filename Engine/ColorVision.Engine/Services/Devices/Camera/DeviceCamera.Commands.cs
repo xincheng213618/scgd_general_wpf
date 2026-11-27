@@ -304,7 +304,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
         {
             MySqlConnectedEndpoint? endpoint = ResultDatabaseEndpoint;
             if (!OwnsResultDatabase(endpoint)) endpoint = null;
-            bool connectedWithoutOwnership = endpoint == null && MySqlControl.GetInstance().ConnectedEndpoint is { IsCurrent: true };
+            bool connectedWithoutOwnership = endpoint == null && WorkstationConfiguration.ConnectedEndpoint is { IsCurrent: true };
 
             CameraRunParam parameters = BuildLocalCameraParameters(exposure, calibration);
             string? configuration;
